@@ -20,21 +20,21 @@
 
 (每完成一个 task 后用 ✅/❌/⏳ 更新)
 
-- ⏳ **A1** `pnpm test` ≥ 50 测试 passed
-- ⏳ **A2** ctx7 manifest 在正向测试中 pass
-- ⏳ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿
+- ⏳ **A1** `pnpm test` ≥ 50 测试 passed (batch 2 现状: 16/50)
+- ⏳ **A2** ctx7 manifest 在正向测试中 pass (batch 2 用 ctx7 yaml 字符串作为 positive test fixture，待 T7 落地真 manifests/tools/ctx7.yaml 后正式打 ✅)
+- ⏳ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 2 现状: 6 negative + 3 line-mapping = 9/35)
 - ⏳ **A4** GitHub Actions mac/linux/win × Node 22 全绿
-- ⏳ **A5** `npx ajv compile -s schemas/manifest.v1.schema.json --strict=true` exit 0
-- ⏳ **A6** vitest bench 100 manifest < 50ms
-- ⏳ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改
-- ⏳ **A8** `git ls-files --eol manifests/*.yaml` 输出 LF
+- ⏳ **A5** `npx ajv compile -s schemas/manifest.v1.schema.json --strict=true` exit 0 (待 T5 build:schema 后)
+- ⏳ **A6** vitest bench 100 manifest < 50ms (待 T8.6)
+- ⏳ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 2 ✅ 未改)
+- ⏳ **A8** `git ls-files --eol manifests/*.yaml` 输出 LF (manifests/ 仍空，待 T7)
 
 ### A.3 Wave 进度概览
 
 | Wave | 内容 | Tasks | 状态 |
 |------|------|-------|------|
 | 1 | 仓库骨架与工具链 | T1 + T2 | ✅ 完成（batch 1 = T1.1/1.2/1.3-partial/2.1-2.6 共 9 子任务；batch 1.5 = T1.3 完整 + T1.4 LICENSE/NOTICE + T1.5 per-dir READMEs 共 3 子任务） |
-| 2 | Schema 实现与 validator | T3 + T4 | ⏳ 未开始 |
+| 2 | Schema 实现与 validator | T3 + T4 | ✅ 完成（batch 2 = F5 deferred deps + T3.1-T3.5 schema 5 子任务 + T4.1-T4.4 validator/tests 4 子任务 = 10 commits；16 tests passing；典型 Rule 1 / Rule 2 deviations 见 § B F8-F10） |
 | 3 | Schema artifact + SCHEMA.md | T5 + T6 | ⏳ 未开始 |
 | 4 | 9 上游 dry-run | T7 | ⏳ 未开始 |
 | 5 | 测试矩阵 | T8 | ⏳ 未开始 |
@@ -66,6 +66,17 @@
 2026-05-11 | T1.3-complete | vendor/ENTRY-CRITERIA.md (39 lines, mandatory whitelist + forbidden + CI 守门 bash) | (this commit)
 2026-05-11 | T1.4 | LICENSE (Apache-2.0 full text, 201 lines, ≥ 200 acceptance) + NOTICE (20 lines, "Not affiliated with Harness Inc." disclaimer) + NOTICES.md (27 lines, auto-population format spec) | (this commit)
 2026-05-11 | T1.5 | 6 per-dir READMEs (manifests/ workflows/ routing/ config-templates/ schemas/ tests/) — each ≤ 30 lines, references ADR/SPEC sections; .gitkeep retained (24 already in place from batch 1) | (this commit)
+2026-05-11 | batch 2 (T3+T4) complete | 10 atomic commits — F5 deferred deps + 5 T3 schema子任务 + 4 T4 validator/test子任务; all 4 acceptance gates GREEN (typecheck / lint / test / build); 16 vitest passing (1 positive + 6 negative + 3 line-mapping + 5 illegal matrix + 1 legal sanity); see § B F8-F10 for deviations (TypeBox-Ajv discriminator shape mismatch, ajv-formats CJS interop under verbatimModuleSyntax, type×method matrix Rule 2 enforcement) | (commits below)
+2026-05-11 | F5 deferred deps | added ajv@^8.17.1 ajv-formats@^3.0.1 ajv-errors@^3.0.0 @sinclair/typebox@^0.34.49 yaml@^2.8.4 (5 runtime deps + 14 transitive) | 2ac6159
+2026-05-11 | T3.1 | metadata schema (apiVersion + kind + MetadataSchema with upstream block + SPDX whitelist) | 3e9cc84
+2026-05-11 | T3.4 | 6 install method schemas + InstallSchema discriminator union (cc-plugin-marketplace / git-clone-with-setup / npx-skill-installer / npm-cli / mcp-stdio-add / mcp-http-add); each method's required fields per ADR 0001 line 64-65 | 35bf74b
+2026-05-11 | T3.2 | spec schema (TypeEnum × ComponentType + Verify + Uninstall + UpstreamHealth + Stability + FallbackAction + Platform + Signature? + TestedWithVersions? + mutually_exclusive_with?) | 63ae886
+2026-05-11 | T3.3 | ManifestSchema main entry (apiVersion + kind + metadata + spec, additionalProperties: false 全树, $id + title + description) | 2f0b95e
+2026-05-11 | T3.5 | schema/types.ts re-exports Manifest + Static helper (TS infer 自 ManifestBase) | 619bb4c
+2026-05-11 | T4.1 | validate.ts (yaml parseDocument + Ajv strict + discriminator + lazy compile) + positive test (full valid cli-npm manifest) — RED→GREEN; F8/F9 deviation 见 § B | 2223d9b
+2026-05-11 | T4.2 | errors.ts (ajvErrorToFriendly + yamlParseErrorToFriendly) + 6 negative tests (missing field / wrong type / unknown field / non-SPDX / matrix violation / multi-error) + Rule 2 matrix allOf 约束 在 ManifestSchema 顶层 (F10) — RED→GREEN | f5aa7af
+2026-05-11 | T4.3 | yaml CST line/column mapping (LineCounter + doc.getIn(path, true) → range[0] → linePos) + 3 line-mapping tests（含 CRLF tolerant test） — RED→GREEN | 223b04c
+2026-05-11 | T4.4 | discriminator 矩阵测试（5 非法组合 cc-plugin×git-clone-with-setup / cc-plugin×npm-cli / cc-skill-pack×npm-cli / mcp-npm×npm-cli / cli-npm×git-clone-with-setup + 1 legal sanity cli-npm×npm-cli），零新代码，全 GREEN（依赖 T4.2 matrix allOf 约束） | 8eeec01
 
 ### A.5 Session 中断恢复指引
 
@@ -211,6 +222,80 @@
   - **不构成 ADR errata**：A8 acceptance bar 的"含义"未变（repo 内 LF），仅是验证命令的 bug 修复。
 
 > 顺手标注：plan-checker 的 V4 修正本意正确，但命令实现错了。这正是 PLAN-CHECK § "可选 fix" 标注 V4 为非阻塞的合理性体现——execute 阶段发现并修正，符合 GSD 流程预期。
+
+---
+
+#### F8 — TypeBox `Type.Union(..., { discriminator })` 输出 anyOf，与 Ajv 严格 discriminator 不兼容
+
+- **Date**：2026-05-11
+- **Trigger task**：T4.1 GREEN 阶段 vitest run 报 `strict mode: missing type "object" for keyword "discriminator"` (strictTypes)
+- **Symptom**：`@sinclair/typebox@0.34.49` 的 `Type.Union(branches, { discriminator: { propertyName: 'method' } })` 实际输出 JSON Schema:
+  ```json
+  { "discriminator": { "propertyName": "method" }, "anyOf": [...] }
+  ```
+  但 Ajv 8 `discriminator: true` strict mode 要求顶层显式：
+  ```json
+  { "type": "object", "discriminator": {...}, "required": ["method"], "oneOf": [...] }
+  ```
+  即必须 `oneOf` 不能 `anyOf` + 必须有 `type: "object"` + 必须有 `required: ["method"]` + （strictRequired 命中时）需 `properties.method` 显式声明。
+- **Hypothesis**：TypeBox 设计选择 `anyOf` 是 spec-conformant for unions（draft-2020-12 中 `anyOf` 与 `oneOf` 在 union 语义都对 discriminator + uniqueness 由 Ajv 自己 enforce 即可），但 Ajv 实装层选择限制 `discriminator` 仅与 `oneOf` 配合。属于上下游设计分歧。GA-1 调研 § 关键代码模式建议 `Type.Union(...)` 是当时未验证的乐观路径。
+- **Impact**：T3.4 InstallSchema 直接使用 Type.Union 内置 discriminator 无法被 Ajv 编译。Rule 1 deviation — bug fix 不影响 ADR 0001 决策（type×method 矩阵 + discriminator 模式不变）。
+- **Resolution**：✅ 在 `src/manifest/schema/installMethods/index.ts` 末尾手工构造 Ajv-friendly InstallSchema：
+  ```ts
+  export const InstallSchema = {
+    type: 'object',
+    discriminator: { propertyName: 'method' },
+    required: ['method'],
+    properties: { method: { type: 'string' } },
+    oneOf: branches as unknown as object[],
+  } as const
+  ```
+  TS 类型仍由 `Type.Union(branches)` 推导，运行时 schema 由 hand-rolled object 提供。`spec.ts` 用 `Type.Unsafe<Install>(InstallSchema)` 把 hand-rolled schema 包装回 TypeBox TSchema，保持 Static<typeof ManifestBase> 推导链完整。
+- **Decision impact**：无 ADR errata；GA-1 调研文档若再次被引用应在 footer 加注："TypeBox Type.Union 内置 discriminator 选项在 v0.34.x 输出 anyOf，与 Ajv 8 strict discriminator 模式不兼容；正确做法是 hand-roll oneOf 顶层 schema 或等待 TypeBox/Ajv 任一方对接修复"。
+
+---
+
+#### F9 — `verbatimModuleSyntax: true` 下 ajv-formats CJS default import 类型擦除
+
+- **Date**：2026-05-11
+- **Trigger task**：T4.1 typecheck 阶段
+- **Symptom**：`import addFormats from 'ajv-formats'` 配合 `import Ajv from 'ajv'` 在 tsconfig.json 启用 `verbatimModuleSyntax: true` (per ADR 0002) + `module: NodeNext` 下报：
+  - `Type 'typeof import("...")' has no call signatures` (ajv-formats default)
+  - `Type 'typeof import("...")' has no construct signatures` (ajv default)
+- **Hypothesis**：`verbatimModuleSyntax: true` 禁用 `esModuleInterop` 的 synthetic-default 行为。CJS 包 `module.exports = X; exports.default = X` 在 NodeNext + verbatim 下的类型推导走 namespace 路径，default 字段必须显式 `.default` 解引用。Ajv 自身额外提供 `export class Ajv` 命名导出，可直接 `import { Ajv } from 'ajv'`；ajv-formats 没有命名导出，必须 `import * as ns from 'ajv-formats'` + 运行时 `(ns as any).default`。
+- **Impact**：T4.1 validate.ts 写法须特化 ajv-formats interop。无 ADR 影响（ADR 0002 选 verbatimModuleSyntax 决策不变；只是导入风格细化）。
+- **Resolution**：✅ validate.ts 头部：
+  ```ts
+  import { Ajv } from 'ajv'                                    // 命名导出，verbatim-friendly
+  import * as ajvFormatsNs from 'ajv-formats'                   // CJS default-only
+  const addFormats = (ajvFormatsNs as unknown as { default: (a: Ajv) => Ajv }).default
+  ```
+  代码注释中 inline 解释（IMPL NOTE Rule 1 / F9）让贡献者立刻看懂为什么这么写。无运行时性能影响。
+- **Decision impact**：无 ADR errata。建议 v0.4 maintainer onboarding 文档 + CONTRIBUTING.md 增补 "verbatimModuleSyntax + CJS interop" small section。
+
+---
+
+#### F10 — Rule 2 enforcement: type×method 矩阵约束在 ADR 0001 中已定义但 schema 实装层缺失
+
+- **Date**：2026-05-11
+- **Trigger task**：T4.2 negative tests 阶段（"rejects type=cli-npm with method=cc-plugin-marketplace"）
+- **Symptom**：单纯的 InstallSchema discriminator 仅校验"method 在 6 method 之一 + 该 method 的 fields 完整"，**不**校验 spec.type 与 install.method 的合法配对。`type: cli-npm` + `method: cc-plugin-marketplace` 在 discriminator 层被当作合法（cc-plugin-marketplace 自己合法 + cli-npm 自己合法），但矩阵层 ADR 0001 line 104-113 明确禁止此组合。
+- **Hypothesis**：T3.4 commit 时只实装 ADR 0001 type×method 矩阵的"method 自身合法性 + per-method 必填字段"，遗漏 cross-field（spec.type ↔ spec.install.method）约束。task_plan T3.4 line 580-589 已规划顶层 if/then 约束，但在 batch 2 范围被压缩描述。
+- **Impact**：缺此约束 = ADR 0001 关键决策（4 type × 5 method 矩阵防止配置错误）失效。属于 **Rule 2 deviation**: auto-add missing critical functionality（schema 决策已在 ADR 定义，仅是实装层未覆盖；非 ADR 字段不足，不触发 T7.10 反哺）。
+- **Resolution**：✅ T4.2 commit 中在 ManifestSchema 顶层加 `allOf: [...]` 约束链，每条 `if (spec.type == X) then (install.method ∈ allowedMethods[X])`。代码：
+  ```ts
+  const matrix = {
+    'cc-plugin': ['cc-plugin-marketplace'],
+    'cc-skill-pack': ['cc-plugin-marketplace', 'git-clone-with-setup', 'npx-skill-installer'],
+    'mcp-npm': ['mcp-stdio-add', 'mcp-http-add'],
+    'cli-npm': ['npm-cli'],
+  }
+  // each entry → { if: { spec.type == X }, then: { spec.install.method enum [...] } }
+  ```
+  ManifestBase（TypeBox 对象）不变，矩阵约束以 plain JSON Schema 形式追加为 `allOf`。Static<typeof ManifestBase> 类型推导继续 work（types.ts 改 import ManifestBase 而非 ManifestSchema）。T4.4 discriminator 矩阵测试（5 illegal + 1 legal sanity）全 GREEN 验证此约束有效。
+- **Decision impact**：无 ADR errata（ADR 0001 line 104-113 矩阵已是 SSOT，本次只是把"决策"翻译成"实装"）。task_plan.md T3.4 / T3.5 status 已更新。
+
+---
 
 ### B.4 C2 callout 专用追踪（T7.10 反哺判定）
 

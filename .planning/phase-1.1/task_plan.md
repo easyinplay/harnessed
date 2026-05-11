@@ -350,7 +350,7 @@
 ### T3. manifest schema v1 实现（依赖 T2）
 
 #### T3.1 TypeBox schema 入口 + apiVersion / kind
-- [ ] **目标**：建立 schema 主入口与版本字段
+- [x] **目标**：建立 schema 主入口与版本字段
 - **文件 1**：`/d/GitCode/harnessed/src/manifest/schema/apiVersion.ts`
 - **内容**：
   ```ts
@@ -387,7 +387,7 @@
 ---
 
 #### T3.2 metadata 子 schema（含 upstream block）
-- [ ] **目标**：完整覆盖 ADR 0001 metadata 必填字段 + SPDX license 白名单
+- [x] **目标**：完整覆盖 ADR 0001 metadata 必填字段 + SPDX license 白名单
 - **文件**：`/d/GitCode/harnessed/src/manifest/schema/metadata.ts`
 - **内容**（关键骨架）：
   ```ts
@@ -430,7 +430,7 @@
 ---
 
 #### T3.3 spec 子 schema 主壳 + type × method 矩阵
-- [ ] **目标**：完整覆盖 ADR 0001 spec 块 17 必填字段，矩阵用 oneOf + discriminator
+- [x] **目标**：完整覆盖 ADR 0001 spec 块 17 必填字段，矩阵用 oneOf + discriminator
 - **文件**：`/d/GitCode/harnessed/src/manifest/schema/spec.ts`
 - **内容**（关键骨架，install 字段引用 T3.4）：
   ```ts
@@ -536,7 +536,7 @@
 ---
 
 #### T3.4 6 个 install method 差异化 schema
-- [ ] **目标**：把 ADR 0001 type × method 矩阵翻译成 oneOf + discriminator
+- [x] **目标**：把 ADR 0001 type × method 矩阵翻译成 oneOf + discriminator
 - **文件**：
   - `src/manifest/schema/installMethods/ccPluginMarketplace.ts`：method=`cc-plugin-marketplace` + git_ref required
   - `src/manifest/schema/installMethods/gitCloneWithSetup.ts`：method=`git-clone-with-setup` + git_ref required
@@ -594,7 +594,8 @@
 ---
 
 #### T3.5 reject list 字段约束（additionalProperties + dynamic shell escape detection）
-- [ ] **目标**：4 项 reject（dynamic shell escape / eval / extends / unknown fields）
+- [x] **目标**：4 项 reject（dynamic shell escape / eval / extends / unknown fields）
+  - **status**：batch 2 完成 additionalProperties: false 全树覆盖（每个 Type.Object 显式声明）+ schema/types.ts 导出 Manifest type；动态 shell escape 检测（题目原 T4.4）按题目重定义推迟到后续 batch（T4.4 已重新定义为 discriminator 矩阵测试，与 task_plan 原 T4.4 不同）。
 - **范围**：
   - **unknown fields**：每个 Type.Object 都已加 `additionalProperties: false`（T3.1-T3.4 已做） — 但需 sanity check 全树
   - **extends 字段**：JSON Schema 层在 schema 中无 `extends` 关键字声明，结合 `additionalProperties: false` 自然 reject
@@ -609,7 +610,7 @@
 ### T4. manifest validator 实现（依赖 T3）
 
 #### T4.1 Ajv compile + strict mode + discriminator
-- [ ] **目标**：建立 validator 单例
+- [x] **目标**：建立 validator 单例
 - **文件**：`/d/GitCode/harnessed/src/manifest/validate.ts`
 - **关键代码**：
   ```ts
@@ -647,7 +648,8 @@
 ---
 
 #### T4.2 yaml CST range → 行号映射
-- [ ] **目标**：把 Ajv `instancePath`（如 `/spec/install/method`）映射到 yaml 文件实际行号
+- [x] **目标**：把 Ajv `instancePath`（如 `/spec/install/method`）映射到 yaml 文件实际行号
+  - **batch 2 status**：T4.2 在 batch 2 中实装为 errors.ts (Ajv ErrorObject → 友好 message + path) + matrix allOf 约束（Rule 2 deviation）。原 task_plan T4.2 行号映射部分由 batch 2 T4.3 完成。
 - **文件**：`/d/GitCode/harnessed/src/manifest/errors.ts`
 - **关键代码**：
   ```ts
@@ -721,7 +723,8 @@
 ---
 
 #### T4.3 `validateManifestFile(yamlSource, filename)` 公开 API
-- [ ] **目标**：单一入口接受 yaml 字符串 + 文件名 → 返回 `{ok, manifest|errors}` discriminated union
+- [x] **目标**：单一入口接受 yaml 字符串 + 文件名 → 返回 `{ok, manifest|errors}` discriminated union
+  - **batch 2 status**：题目重定义后 T4.3 = 行号映射测试 + LineCounter/doc.getIn 集成。原 task_plan 公开 API 已在 batch 2 T4.1 完成（src/manifest/validate.ts 公开 validateManifestFile）。
 - **文件**：`/d/GitCode/harnessed/src/manifest/validate.ts`（增补 T4.1 内容）
 - **关键代码增补**：
   ```ts
@@ -778,6 +781,7 @@
 
 #### T4.4 shell escape 自定义检测（pre-Ajv pass）
 - [ ] **目标**：reject `${...}` `$(...)` `eval` `!ruby/regexp` 等动态求值
+  - **batch 2 status**：题目重定义后 batch 2 T4.4 = discriminator 矩阵测试（已完成，5 illegal + 1 legal sanity = 6 tests passing，零新代码）。原 task_plan T4.4 shell escape 检测仍未实装，推迟到后续 batch（依赖 T7+ 9 上游 dry-run 验证）。
 - **文件**：`/d/GitCode/harnessed/src/manifest/shellEscape.ts`
 - **关键代码**：
   ```ts
