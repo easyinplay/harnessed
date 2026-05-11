@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: superpowers
+  display_name: superpowers
+  description: Senior-engineer skill plugin (brainstorming, TDD, git worktrees) auto-activated by Claude.
+  upstream:
+    source: superpowers
+    homepage: https://github.com/obra/superpowers
+    repository: https://github.com/obra/superpowers.git
+    license: MIT
+    notice: superpowers by Jesse Vincent (obra) and Prime Radiant team, used as execution-layer engineering quality skills.
+spec:
+  type: cc-plugin
+  component_type: command
+  install:
+    method: cc-plugin-marketplace
+    cmd: "/plugin marketplace add obra/superpowers-marketplace && /plugin install superpowers@superpowers-marketplace"
+    git_ref: v5.1.0
+    idempotent_check: "/plugin list | grep -q superpowers"
+  verify:
+    cmd: "/plugin list | grep -q superpowers"
+    timeout_ms: 5000
+  uninstall:
+    cmd: "/plugin uninstall superpowers@superpowers-marketplace"
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-11"
+    last_known_good_version: 5.1.0
+    fallback_action: warn
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
