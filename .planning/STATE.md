@@ -19,7 +19,7 @@
 
 - **GSD phase**：v0.1.0 Phase 1.1 ✅ **COMPLETED — SHIPPED 2026-05-12**
 - **当前里程碑**：v0.1.0
-- **下一 phase**：Phase 1.2（cross-OS CI 实测 + cli-npm + mcp-stdio installer + harnessed setup/doctor）
+- **下一 phase**：Phase 1.2（cli-npm + mcp-stdio installer + harnessed setup/doctor）— cross-OS CI 已实证可用（mac/linux/win 三平台全绿，run 25686045249）
 - **状态**：✅ **Ready for Phase 1.2**
 - **进度**：1 / 16 phases 已完成 ▓░░░░░░░░░░░░░░░ 6%
 
@@ -36,9 +36,9 @@
 
 1. ✅ ~~Phase 1.1 全 47 子任务完成~~ — 2026-05-12 ship
 2. ✅ ~~ADR 0001 / 0002 / 0003 全部 accepted~~ — schema v1 frozen
-3. ✅ ~~两个 local tag 打好~~ — `adr-0001-accepted` + `v0.1.0-alpha.1-schema-frozen`
-4. ⏳ **A4 acceptance bar pending CI run**（main agent 决定何时 push 触发 GitHub Actions）
-5. ⏳ **进入 Phase 1.2**（cross-OS CI 实测 + cli-npm + mcp-stdio installer 实装 + setup/doctor 命令骨架）
+3. ✅ ~~两个 local tag 打好~~ — `adr-0001-accepted` + `v0.1.0-alpha.1-schema-frozen`（已 push 到 origin）
+4. ✅ ~~A4 acceptance bar~~ — CI run 25686045249 @ 92b355c 三平台全绿 (ubuntu 27s / macos 21s / windows 43s)；**Phase 1.1 全 8/8 ✅**
+5. ⏳ **进入 Phase 1.2**（cli-npm + mcp-stdio installer 实装 + setup/doctor 命令骨架；cross-OS CI 已实证可用）
 6. ⏳ Phase 1.3（DAG resolver + harnessed-router 引擎）
 7. ⏳ Phase 1.4（research workflow 端到端 + routing/search.md SSOT）
 
@@ -49,7 +49,7 @@
 - ✅ **Phase 1.1 SHIPPED**（2026-05-12）
   - 47 atomic 子任务全部完成或合理 deferred（见 `.planning/phase-1.1/progress.md` § B F16 deferred 表）
   - 50 commits / 71 vitest passing / 10 manifests / 30+ fixtures / 3 SCHEMA.md / bench 21.7ms
-  - **Acceptance bar 7/8 ✅** — A1/A2/A3/A5/A6/A7/A8 全绿；A4 ⏳ pending CI on first push
+  - **Acceptance bar 8/8 ✅** — A1/A2/A3/A4/A5/A6/A7/A8 全绿（A4: CI run 25686045249 三平台全绿 @ 2026-05-12，详见 § B F18）
   - 3 ADR accepted: 0001 schema v1 / 0002 toolchain / 0003 install method count errata
   - 2 local tag: `adr-0001-accepted`（A7 baseline sentry）+ `v0.1.0-alpha.1-schema-frozen`（milestone）
   - VERIFICATION.md（140L）+ CONTRIBUTING.md（139L）+ README expand（72L）+ MAINTAINER-ONBOARDING stub（50L）

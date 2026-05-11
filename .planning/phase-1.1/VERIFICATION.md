@@ -47,9 +47,17 @@ corepack pnpm test -- --reporter=verbose 2>&1 | grep -E "(required|discriminator
 # 期望：56+ 负向 tests（14 required + 17 discriminator + 7 type-error + 7 unknown-field + 5 line-mapping + 6 errors = 56）
 ```
 
-### A4: GitHub Actions mac/linux/win × Node 22 全绿
+### A4: GitHub Actions mac/linux/win × Node 22 全绿 ✅
 
-**异步**：CI 在 push 后由 `.github/workflows/ci.yml` 触发。
+**已实证 2026-05-12**：[run 25686045249](https://github.com/easyinplay/harnessed/actions/runs/25686045249) @ commit `92b355c` — ubuntu 27s ✅ / macos 21s ✅ / windows 43s ✅。
+
+**异步**：CI 在 push 后由 `.github/workflows/ci.yml` 触发。后续验证：
+
+```bash
+gh run list -R easyinplay/harnessed --limit 1
+```
+
+> **F18 注**：首次 run 25685166326 windows 失败 perf gate（59.22ms / 50ms）— GitHub Actions windows-latest 是 cloud VM ~3× 慢于 local。修复方案 platform-aware threshold（`tests/integration/manifest-validate.perf.test.ts`：CI win 100ms / 其他 50ms）。详见 `progress.md § B F18`。
 
 本地 dry-run 跨 OS 等价性：
 
@@ -127,7 +135,7 @@ git ls-files --eol "manifests/*.yaml" | awk '$1 != "i/lf"' | wc -l
 
 ## Phase 1.2 Prerequisites + How to Reproduce
 
-下一阶段（v0.1 phase 1.2 — cli-npm + mcp-stdio installer + cross-OS CI 实测）依赖 schema v1 frozen + 10 dry-run manifests（含 ctx7 / tavily-mcp / exa-mcp 三个 install 目标）+ validator 公开 API + schema artifact + CI matrix config。⏳ 首次 push 后 A4 实际验证。
+下一阶段（v0.1 phase 1.2 — cli-npm + mcp-stdio installer + setup/doctor 命令）依赖 schema v1 frozen + 10 dry-run manifests（含 ctx7 / tavily-mcp / exa-mcp 三个 install 目标）+ validator 公开 API + schema artifact + CI matrix config。✅ A4 已通过 CI run 25686045249 实证（2026-05-12）。
 
 ```bash
 git clone <repo-url> harnessed-repro && cd harnessed-repro

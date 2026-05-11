@@ -23,7 +23,7 @@
 - ✅ **A1** `pnpm test` ≥ 50 测试 passed (batch 5: 71/50 — 28 baseline + 43 新增)
 - ✅ **A2** ctx7 manifest 在正向测试中 pass (batch 4 T7.9b 落地真 manifests/tools/ctx7.yaml + tests/fixtures/manifests/valid/ctx7.yaml；fixture-driven test 自动 cover)
 - ✅ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 5: 56/35 — T8.2 14 + T8.3 17 + T8.4 7 + T8.5 7 + T4 errors 6 + line-mapping 5)
-- ⏳ **A4** GitHub Actions mac/linux/win × Node 22 全绿 (batch 6 T9.1: ci.yml config-ready — 36 lines, 3-OS × Node 22 matrix, defaults shell: bash, fail-fast: false, validate:schema in-line; **pending CI run on first push**, main agent 决定是否 push)
+- ✅ **A4** GitHub Actions mac/linux/win × Node 22 全绿 (run 25686045249 @ commit 92b355c, 2026-05-12: ubuntu 27s ✅ / macos 21s ✅ / windows 43s ✅; F18 platform-aware threshold fix 后通过；首次 run 25685166326 win 失败 perf 59.22ms / 50ms — 见 § B F18)
 - ✅ **A5** `node ./scripts/validate-schema.mjs` exit 0 (batch 3 T5.3 达成；用 Ajv 2020 entry 因 artifact 声明 draft-2020-12 — F11)
 - ✅ **A6** vitest bench 100 manifest < 50ms (batch 5 T8.6: 21.7ms mean / 50 samples / RME ±1.5%)
 - ✅ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 4 ✅ 未改 — T7.10 verdict 显示 schema v1 sufficient，无 errata 需求)
