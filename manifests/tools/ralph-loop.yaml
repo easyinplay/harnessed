@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: ralph-loop
+  display_name: ralph-loop
+  description: Sub-task delivery loop with completion-promise (Anthropic-official). Windows requires jq + Git Bash.
+  upstream:
+    source: ralph-loop
+    homepage: https://github.com/anthropics/claude-plugins-official/tree/main/plugins/ralph-loop
+    repository: https://github.com/anthropics/claude-plugins-official.git
+    license: MIT
+    notice: ralph-loop maintained by Anthropic in claude-plugins-official, used as sub-task delivery guarantor in harnessed.
+spec:
+  type: cc-plugin
+  component_type: command
+  install:
+    method: cc-plugin-marketplace
+    cmd: "/plugin install ralph-loop@claude-plugins-official"
+    git_ref: HEAD
+    idempotent_check: "/plugin list | grep -q ralph-loop"
+  verify:
+    cmd: "/plugin list | grep -q ralph-loop"
+    timeout_ms: 5000
+  uninstall:
+    cmd: "/plugin uninstall ralph-loop@claude-plugins-official"
+  upstream_health:
+    stability: beta
+    last_check: "2026-05-11"
+    last_known_good_version: main
+    fallback_action: warn
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
