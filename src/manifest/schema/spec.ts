@@ -4,7 +4,7 @@
 //         tested_with_versions?, mutually_exclusive_with?.
 
 import { Type } from '@sinclair/typebox'
-import { InstallSchema } from './installMethods/index.js'
+import { type Install, InstallSchema } from './installMethods/index.js'
 
 const TypeEnum = Type.Union([
   Type.Literal('cc-plugin'),
@@ -61,11 +61,7 @@ const UpstreamHealth = Type.Object(
   { additionalProperties: false },
 )
 
-const Platform = Type.Union([
-  Type.Literal('linux'),
-  Type.Literal('darwin'),
-  Type.Literal('win32'),
-])
+const Platform = Type.Union([Type.Literal('linux'), Type.Literal('darwin'), Type.Literal('win32')])
 
 const Signature = Type.Object(
   { sigstore_bundle: Type.String({ format: 'uri' }) },
@@ -84,7 +80,7 @@ export const SpecSchema = Type.Object(
   {
     type: TypeEnum,
     component_type: ComponentType,
-    install: InstallSchema,
+    install: Type.Unsafe<Install>(InstallSchema),
     verify: Verify,
     uninstall: Uninstall,
     upstream_health: UpstreamHealth,
