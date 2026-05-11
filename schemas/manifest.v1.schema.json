@@ -1,0 +1,811 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "type": "object",
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "properties": {
+    "apiVersion": {
+      "const": "harnessed/v1",
+      "type": "string"
+    },
+    "kind": {
+      "const": "Manifest",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "description",
+        "upstream"
+      ],
+      "properties": {
+        "name": {
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "minLength": 1,
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "maxLength": 120,
+          "type": "string"
+        },
+        "upstream": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "source",
+            "homepage",
+            "repository",
+            "license",
+            "notice"
+          ],
+          "properties": {
+            "source": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "homepage": {
+              "format": "uri",
+              "type": "string"
+            },
+            "repository": {
+              "format": "uri",
+              "type": "string"
+            },
+            "license": {
+              "anyOf": [
+                {
+                  "const": "MIT",
+                  "type": "string"
+                },
+                {
+                  "const": "Apache-2.0",
+                  "type": "string"
+                },
+                {
+                  "const": "BSD-3-Clause",
+                  "type": "string"
+                },
+                {
+                  "const": "ISC",
+                  "type": "string"
+                },
+                {
+                  "const": "0BSD",
+                  "type": "string"
+                }
+              ]
+            },
+            "notice": {
+              "minLength": 1,
+              "maxLength": 500,
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "spec": {
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "type",
+        "component_type",
+        "install",
+        "verify",
+        "uninstall",
+        "upstream_health",
+        "signed_by",
+        "platforms"
+      ],
+      "properties": {
+        "type": {
+          "anyOf": [
+            {
+              "const": "cc-plugin",
+              "type": "string"
+            },
+            {
+              "const": "cc-skill-pack",
+              "type": "string"
+            },
+            {
+              "const": "mcp-npm",
+              "type": "string"
+            },
+            {
+              "const": "cli-npm",
+              "type": "string"
+            }
+          ]
+        },
+        "component_type": {
+          "anyOf": [
+            {
+              "const": "command",
+              "type": "string"
+            },
+            {
+              "const": "behavior-rule",
+              "type": "string"
+            },
+            {
+              "const": "mcp-tool",
+              "type": "string"
+            },
+            {
+              "const": "cli-binary",
+              "type": "string"
+            }
+          ]
+        },
+        "install": {
+          "type": "object",
+          "discriminator": {
+            "propertyName": "method"
+          },
+          "required": [
+            "method"
+          ],
+          "properties": {
+            "method": {
+              "type": "string"
+            }
+          },
+          "oneOf": [
+            {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "method",
+                "cmd",
+                "git_ref",
+                "idempotent_check"
+              ],
+              "properties": {
+                "method": {
+                  "const": "cc-plugin-marketplace",
+                  "type": "string"
+                },
+                "cmd": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "env": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "args": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {}
+                  }
+                },
+                "git_ref": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "idempotent_check": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "method",
+                "cmd",
+                "git_ref",
+                "idempotent_check"
+              ],
+              "properties": {
+                "method": {
+                  "const": "git-clone-with-setup",
+                  "type": "string"
+                },
+                "cmd": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "env": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "args": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {}
+                  }
+                },
+                "git_ref": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "idempotent_check": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "method",
+                "cmd",
+                "npm_version",
+                "idempotent_check"
+              ],
+              "properties": {
+                "method": {
+                  "const": "npx-skill-installer",
+                  "type": "string"
+                },
+                "cmd": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "env": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "args": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {}
+                  }
+                },
+                "npm_version": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "idempotent_check": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "method",
+                "cmd",
+                "npm_version",
+                "idempotent_check"
+              ],
+              "properties": {
+                "method": {
+                  "const": "npm-cli",
+                  "type": "string"
+                },
+                "cmd": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "env": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "args": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {}
+                  }
+                },
+                "npm_version": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "idempotent_check": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "method",
+                "cmd",
+                "npm_version",
+                "idempotent_check"
+              ],
+              "properties": {
+                "method": {
+                  "const": "mcp-stdio-add",
+                  "type": "string"
+                },
+                "cmd": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "env": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "args": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {}
+                  }
+                },
+                "npm_version": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "idempotent_check": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "method",
+                "cmd",
+                "npm_version",
+                "idempotent_check"
+              ],
+              "properties": {
+                "method": {
+                  "const": "mcp-http-add",
+                  "type": "string"
+                },
+                "cmd": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "env": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "args": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {}
+                  }
+                },
+                "npm_version": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "idempotent_check": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
+            }
+          ]
+        },
+        "verify": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "cmd"
+          ],
+          "properties": {
+            "cmd": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "timeout_ms": {
+              "minimum": 100,
+              "maximum": 60000,
+              "type": "integer"
+            },
+            "expected_exit_code": {
+              "type": "integer"
+            }
+          }
+        },
+        "uninstall": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "cmd"
+          ],
+          "properties": {
+            "cmd": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "cleanup_paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "upstream_health": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "stability",
+            "last_check",
+            "last_known_good_version",
+            "fallback_action"
+          ],
+          "properties": {
+            "stability": {
+              "anyOf": [
+                {
+                  "const": "stable",
+                  "type": "string"
+                },
+                {
+                  "const": "beta",
+                  "type": "string"
+                },
+                {
+                  "const": "unstable",
+                  "type": "string"
+                },
+                {
+                  "const": "archived",
+                  "type": "string"
+                }
+              ]
+            },
+            "last_check": {
+              "format": "date",
+              "type": "string"
+            },
+            "last_known_good_version": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "fallback_action": {
+              "anyOf": [
+                {
+                  "const": "warn",
+                  "type": "string"
+                },
+                {
+                  "const": "block",
+                  "type": "string"
+                },
+                {
+                  "const": "use_alternative",
+                  "type": "string"
+                }
+              ]
+            },
+            "alternative": {
+              "type": "string"
+            }
+          }
+        },
+        "signed_by": {
+          "pattern": "^[a-zA-Z0-9-]+$",
+          "minLength": 1,
+          "type": "string"
+        },
+        "signature": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "sigstore_bundle"
+          ],
+          "properties": {
+            "sigstore_bundle": {
+              "format": "uri",
+              "type": "string"
+            }
+          }
+        },
+        "platforms": {
+          "minItems": 1,
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "const": "linux",
+                "type": "string"
+              },
+              {
+                "const": "darwin",
+                "type": "string"
+              },
+              {
+                "const": "win32",
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "tested_with_versions": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "cc_versions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "node_versions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "mutually_exclusive_with": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$id": "https://harnessed.dev/schemas/manifest.v1.schema.json",
+  "title": "harnessed Manifest v1",
+  "description": "Per ADR 0001. Strict mode (additionalProperties: false everywhere).",
+  "allOf": [
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "cc-plugin"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "install": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "enum": [
+                      "cc-plugin-marketplace"
+                    ]
+                  }
+                },
+                "required": [
+                  "method"
+                ]
+              }
+            },
+            "required": [
+              "install"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "cc-skill-pack"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "install": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "enum": [
+                      "cc-plugin-marketplace",
+                      "git-clone-with-setup",
+                      "npx-skill-installer"
+                    ]
+                  }
+                },
+                "required": [
+                  "method"
+                ]
+              }
+            },
+            "required": [
+              "install"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "mcp-npm"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "install": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "enum": [
+                      "mcp-stdio-add",
+                      "mcp-http-add"
+                    ]
+                  }
+                },
+                "required": [
+                  "method"
+                ]
+              }
+            },
+            "required": [
+              "install"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    },
+    {
+      "if": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "const": "cli-npm"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "spec": {
+            "type": "object",
+            "properties": {
+              "install": {
+                "type": "object",
+                "properties": {
+                  "method": {
+                    "enum": [
+                      "npm-cli"
+                    ]
+                  }
+                },
+                "required": [
+                  "method"
+                ]
+              }
+            },
+            "required": [
+              "install"
+            ]
+          }
+        },
+        "required": [
+          "spec"
+        ]
+      }
+    }
+  ]
+}

@@ -14,7 +14,8 @@
       "!**/vendor",
       "!**/*.snap",
       "!**/.tscache",
-      "!**/coverage"
+      "!**/coverage",
+      "!schemas/*.schema.json"
     ]
   },
   "formatter": {
