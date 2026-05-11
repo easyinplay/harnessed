@@ -24,7 +24,10 @@ const fixtures: Array<{ name: string; source: string }> = readdirSync(FIXTURE_DI
   .filter((f) => f.endsWith('.yaml') || f.endsWith('.yml'))
   .map((name) => ({ name, source: readFileSync(resolve(FIXTURE_DIR, name), 'utf8') }))
 
-const IS_CI_WIN = !!process.env.CI && process.platform === 'win32'
+// Use GITHUB_ACTIONS specifically (not generic CI env) to avoid false
+// positives in other CI providers / local IDEs that set CI=true but
+// don't have the slow shared-VM Windows runner. Phase 1.1.1 hotfix H6.
+const IS_CI_WIN = process.env.GITHUB_ACTIONS === 'true' && process.platform === 'win32'
 const THRESHOLD_MS = IS_CI_WIN ? 100 : 50
 const RUNS = 5
 const OPS_PER_RUN = 100
