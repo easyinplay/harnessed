@@ -1,4 +1,8 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# NOTE: spec.install.cmd is a Claude Code REPL slash command, NOT a shell command.
+# cc-plugin-marketplace install method's actual mechanism is undefined for
+# headless installer execution. See progress.md § B F20.
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:

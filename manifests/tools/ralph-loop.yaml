@@ -1,4 +1,12 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# NOTE: spec.install.cmd is a Claude Code REPL slash command, NOT a shell command.
+# cc-plugin-marketplace install method's actual mechanism is undefined for
+# headless installer execution. Phase 1.2 plan-phase will resolve via one of:
+#   (A) Auto-print prompt + require user to paste into CC REPL (semi-automated);
+#   (B) Headless `claude plugin install <name>` CLI if/when CC ships it;
+#   (C) Defer ralph-loop to v0.2+ (until headless mechanism exists).
+# Tracked: progress.md § B F20.
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:
