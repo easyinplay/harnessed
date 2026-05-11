@@ -27,7 +27,7 @@
 ### T1. 仓库骨架初始化（Day 1, 无依赖）
 
 #### T1.1 创建 4 层目录骨架
-- [ ] **目标**：建立 SPEC § 4 + B7 增补的完整仓库目录树
+- [x] **目标**：建立 SPEC § 4 + B7 增补的完整仓库目录树
 - **文件 / 命令**：
   ```bash
   cd /d/GitCode/harnessed
@@ -56,7 +56,7 @@
 ---
 
 #### T1.2 写 `.gitattributes` 强制 yaml/json/md 行尾 LF（C3 mitigation Day 1 落地）
-- [ ] **目标**：避免 Windows checkout 后 yaml/json 被 autocrlf 篡改导致 Ajv 解析失败
+- [x] **目标**：避免 Windows checkout 后 yaml/json 被 autocrlf 篡改导致 Ajv 解析失败
 - **文件**：`/d/GitCode/harnessed/.gitattributes`
 - **内容**：
   ```gitattributes
@@ -96,7 +96,8 @@
 ---
 
 #### T1.3 增补 `.gitignore` + `vendor/ENTRY-CRITERIA.md` 占位
-- [ ] **目标**：确保 dist / node_modules / .harnessed / 测试覆盖率产物不入仓
+- [~] **目标**：确保 dist / node_modules / .harnessed / 测试覆盖率产物不入仓
+  - **batch 1 status**：`.gitignore` ✅ done; `vendor/ENTRY-CRITERIA.md` 留待后续 batch（不在题目 batch 1 范围内）
 - **文件 1**：`/d/GitCode/harnessed/.gitignore`（在现有基础上增补）
 - **追加内容**：
   ```gitignore
@@ -215,7 +216,7 @@
 ### T2. 工具链初始化（依赖 T1）
 
 #### T2.1 写 `package.json`（直接复制 ADR 0002 模板）
-- [ ] **目标**：装好 corepack + pnpm 10.12 + 全部 runtime/dev deps
+- [x] **目标**：装好 corepack + pnpm 10.12 + 全部 runtime/dev deps
 - **文件**：`/d/GitCode/harnessed/package.json`
 - **内容**：直接复制 GRAY-AREA-2 § 推荐 package.json 模板（已 ready-to-use）；占位字段 `<owner>` 替换为实际 GitHub 用户名 / 组织名
 - **执行命令**：
@@ -233,7 +234,7 @@
 ---
 
 #### T2.2 写 `tsconfig.json`（ADR 0002 模板）
-- [ ] **目标**：TS 严格模式 + Node 22 ESM target + tsc 仅 typecheck
+- [x] **目标**：TS 严格模式 + Node 22 ESM target + tsc 仅 typecheck
 - **文件**：`/d/GitCode/harnessed/tsconfig.json`
 - **内容**：直接复制 GRAY-AREA-2 § 推荐 tsconfig.json 模板
 - **验收**：
@@ -244,7 +245,7 @@
 ---
 
 #### T2.3 写 `tsup.config.ts`（ADR 0002 模板）
-- [ ] **目标**：tsup 自动处理 shebang / chmod +x / pure ESM 输出
+- [x] **目标**：tsup 自动处理 shebang / chmod +x / pure ESM 输出
 - **文件**：`/d/GitCode/harnessed/tsup.config.ts`
 - **内容**：直接复制 GRAY-AREA-2 § 推荐 tsup.config.ts 模板（含 entry: index/cli/schemas）
 - **验收**：（在 T2.6 后）
@@ -256,7 +257,7 @@
 ---
 
 #### T2.4 写 `biome.json`（ADR 0002 模板）
-- [ ] **目标**：单工具 lint + format
+- [x] **目标**：单工具 lint + format
 - **文件**：`/d/GitCode/harnessed/biome.json`
 - **内容**：直接复制 GRAY-AREA-2 § 推荐 biome.json 模板
 - **验收**：
@@ -267,7 +268,7 @@
 ---
 
 #### T2.5 写 `vitest.config.ts`
-- [ ] **目标**：vitest 4 + coverage v8 + tests/ 目录约定
+- [x] **目标**：vitest 4 + coverage v8 + tests/ 目录约定
 - **文件**：`/d/GitCode/harnessed/vitest.config.ts`
 - **内容**：
   ```ts
@@ -302,7 +303,7 @@
 ---
 
 #### T2.6 占位 `src/index.ts` `src/cli.ts` `src/schemas/index.ts`
-- [ ] **目标**：tsup 三入口可 build 出 dist/{index,cli,schemas/index}.mjs
+- [x] **目标**：tsup 三入口可 build 出 dist/{index,cli,schemas/index}.mjs
 - **文件 1**：`/d/GitCode/harnessed/src/cli.ts`
 - **内容**：
   ```ts
