@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: exa-mcp
+  display_name: Exa MCP
+  description: Neural-search MCP for descriptive queries / academic papers / batch URL fetch (web_fetch_exa).
+  upstream:
+    source: exa-mcp-server
+    homepage: https://docs.exa.ai/reference/exa-mcp
+    repository: https://github.com/exa-labs/exa-mcp-server.git
+    license: MIT
+    notice: exa-mcp-server by exa-labs (official), used as semantic-search MCP per harnessed routing rules.
+spec:
+  type: mcp-npm
+  component_type: mcp-tool
+  install:
+    method: mcp-stdio-add
+    cmd: "claude mcp add --scope project --transport stdio exa-mcp -- npx --yes exa-mcp-server@^3.2.0"
+    npm_version: ^3.2.0
+    idempotent_check: "claude mcp list | grep -q exa"
+  verify:
+    cmd: "claude mcp list | grep -q exa"
+    timeout_ms: 10000
+  uninstall:
+    cmd: "claude mcp remove --scope project exa-mcp"
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-11"
+    last_known_good_version: 3.2.1
+    fallback_action: use_alternative
+    alternative: tavily-mcp
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
