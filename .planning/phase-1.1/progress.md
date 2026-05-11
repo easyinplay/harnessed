@@ -33,7 +33,7 @@
 
 | Wave | 内容 | Tasks | 状态 |
 |------|------|-------|------|
-| 1 | 仓库骨架与工具链 | T1 + T2 | ⏳ 进行中（batch 1 完成 = T1+T2 全部 11 子任务） |
+| 1 | 仓库骨架与工具链 | T1 + T2 | ✅ 完成（batch 1 = T1.1/1.2/1.3-partial/2.1-2.6 共 9 子任务；batch 1.5 = T1.3 完整 + T1.4 LICENSE/NOTICE + T1.5 per-dir READMEs 共 3 子任务） |
 | 2 | Schema 实现与 validator | T3 + T4 | ⏳ 未开始 |
 | 3 | Schema artifact + SCHEMA.md | T5 + T6 | ⏳ 未开始 |
 | 4 | 9 上游 dry-run | T7 | ⏳ 未开始 |
@@ -62,6 +62,10 @@
 2026-05-11 | T2.4 | vitest.config.ts (v8 coverage + thresholds 80/75/80/80 + benchmark glob) | (next commit)
 2026-05-11 | T2.5 | tsup.config.ts (3 entries → .mjs via outExtension; dts on; esm only; node22 target) + minimal placeholder src/cli.ts/src/index.ts/src/schemas/index.ts (Rule 3 — needed for build to pass) | (next commit)
 2026-05-11 | T2.6 | corepack prepare pnpm@10.12.0 --activate (--enable failed via ACL on Program Files; see § B F1) + corepack pnpm install → 108 packages; esbuild postinstall via pnpm.onlyBuiltDependencies | (next commit)
+2026-05-11 | batch 1.5 (T1 残项收尾) complete | 3 canonical subtasks (T1.3 vendor/ENTRY-CRITERIA.md + T1.4 LICENSE/NOTICE/NOTICES.md + T1.5 6 per-dir READMEs) — Apache-2.0 形式合规 + Harness Inc. disclaimer + 6 顶层目录 README; pnpm typecheck/lint/build all green; see § B F6 (no surprises) | (commit below)
+2026-05-11 | T1.3-complete | vendor/ENTRY-CRITERIA.md (39 lines, mandatory whitelist + forbidden + CI 守门 bash) | (this commit)
+2026-05-11 | T1.4 | LICENSE (Apache-2.0 full text, 201 lines, ≥ 200 acceptance) + NOTICE (20 lines, "Not affiliated with Harness Inc." disclaimer) + NOTICES.md (27 lines, auto-population format spec) | (this commit)
+2026-05-11 | T1.5 | 6 per-dir READMEs (manifests/ workflows/ routing/ config-templates/ schemas/ tests/) — each ≤ 30 lines, references ADR/SPEC sections; .gitkeep retained (24 already in place from batch 1) | (this commit)
 
 ### A.5 Session 中断恢复指引
 
@@ -177,6 +181,18 @@
 ---
 
 [尚未开始 — 等待 execute-phase 启动；后续 finding 追加在此]
+
+---
+
+#### F6 — batch 1.5 收尾 T1 残项 — 无意外
+
+- **Date**：2026-05-11
+- **Trigger task**：T1.3 完整收尾 + T1.4 + T1.5
+- **Symptom**：（按规则即使无意外也 log）
+- **Hypothesis**：N/A
+- **Impact**：T1+T2 共 11 个 canonical 子任务现已全部完成；wave 1 ✅ closed；ready for batch 2 (T3+T4 manifest schema 实装)。
+- **Resolution**：✅ 全部按 task_plan.md 模板落实；pnpm typecheck/lint/build 三命令全绿；新增 10 个文件（LICENSE 201L / NOTICE 20L / NOTICES.md 27L / vendor/ENTRY-CRITERIA.md 39L / 6 per-dir READMEs）；无 schema / ADR 影响；无 deferred deps 改动（F5 deferred 清单仍按 batch 2 计划实施）。
+- **Decision impact**：无；karpathy simplicity 沿用——LICENSE 用标准 Apache-2.0 文本（不裁剪），其余文件保持 ≤ 30 行 minimal。
 
 ### B.4 C2 callout 专用追踪（T7.10 反哺判定）
 

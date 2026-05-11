@@ -96,8 +96,8 @@
 ---
 
 #### T1.3 增补 `.gitignore` + `vendor/ENTRY-CRITERIA.md` 占位
-- [~] **目标**：确保 dist / node_modules / .harnessed / 测试覆盖率产物不入仓
-  - **batch 1 status**：`.gitignore` ✅ done; `vendor/ENTRY-CRITERIA.md` 留待后续 batch（不在题目 batch 1 范围内）
+- [x] **目标**：确保 dist / node_modules / .harnessed / 测试覆盖率产物不入仓 + vendor 准入门槛文档化
+  - **status**：`.gitignore` ✅ done (batch 1) + `vendor/ENTRY-CRITERIA.md` ✅ done (batch 1.5, 39 行 ≥ 20)
 - **文件 1**：`/d/GitCode/harnessed/.gitignore`（在现有基础上增补）
 - **追加内容**：
   ```gitignore
@@ -155,7 +155,7 @@
 ---
 
 #### T1.4 写 LICENSE（Apache-2.0）+ NOTICE
-- [ ] **目标**：满足 Apache-2.0 license 形式要求 + Harness Inc. 商标 disclaimer
+- [x] **目标**：满足 Apache-2.0 license 形式要求 + Harness Inc. 商标 disclaimer
 - **文件 1**：`/d/GitCode/harnessed/LICENSE`
 - **内容**：完整 Apache License 2.0 文本（从 https://www.apache.org/licenses/LICENSE-2.0.txt 复制）+ 版权头：
   ```
@@ -197,7 +197,7 @@
 ---
 
 #### T1.5 各层目录占位 README + .gitkeep
-- [ ] **目标**：避免空目录被 git 忽略；每层目录有可读 README ≤ 30 行说明用途
+- [x] **目标**：避免空目录被 git 忽略；每层目录有可读 README ≤ 30 行说明用途
 - **文件**：
   - `manifests/README.md`：说明这是上游描述层（不 vendor，仅声明 install/check），引用 ADR 0001 + manifests/SCHEMA.md
   - `workflows/README.md`：说明这是 composition skill 层，引用 SPEC § 10 + workflows/SCHEMA.md
