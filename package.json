@@ -64,7 +64,12 @@
     "format": "biome format --write ."
   },
   "dependencies": {
-    "commander": "^13.0.0"
+    "@sinclair/typebox": "^0.34.49",
+    "ajv": "^8.20.0",
+    "ajv-errors": "^3.0.0",
+    "ajv-formats": "^3.0.1",
+    "commander": "^13.0.0",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.0.0",
