@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: gsd
+  display_name: GSD (Get Shit Done)
+  description: Project-manager orchestrator providing /gsd-* discuss-plan-execute-verify workflow.
+  upstream:
+    source: get-shit-done-cc
+    homepage: https://github.com/gsd-build/get-shit-done
+    repository: https://github.com/gsd-build/get-shit-done.git
+    license: MIT
+    notice: GSD by gsd-build (TACHES), used as orchestration layer in harnessed plan-feature workflow.
+spec:
+  type: cli-npm
+  component_type: command
+  install:
+    method: npm-cli
+    cmd: "npx --yes get-shit-done-cc@^1.41.0 install"
+    npm_version: ^1.41.0
+    idempotent_check: "test -d ~/.claude/skills/gsd"
+  verify:
+    cmd: "npx --yes get-shit-done-cc@^1.41.0 --version"
+    timeout_ms: 10000
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/gsd"
+    cleanup_paths:
+      - ~/.claude/skills/gsd
+  upstream_health:
+    stability: beta
+    last_check: "2026-05-11"
+    last_known_good_version: 1.41.2
+    fallback_action: warn
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
+  tested_with_versions:
+    node_versions:
+      - "22"
