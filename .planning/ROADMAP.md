@@ -48,7 +48,7 @@
    - 加 `upstream_health: { stability, last_check, fallback_action }`
    - 加 `signed_by: <maintainer github username>`
    - 4 type 共有/分支字段全部 frozen，schema 改动后必须走 ADR
-2. **5 种 installer 中的 3 个**（research workflow 实际用到）
+2. **6 种 installer 中的 3 个**（research workflow 实际用到，详见 ADR-0003 errata）
    - `cli-npm`（ctx7，覆盖 npm_global + npx fallback）
    - `mcp-stdio-add`（Tavily, Exa）
    - 内置 `harnessed-router` 引擎
@@ -121,7 +121,7 @@
 
 - **Phase 2.1：cc-plugin-marketplace + npx-skill / git-clone-with-setup installer**
   - 4 步 fallback uninstall；component_type 区分（command / behavior-rule / mcp-tool / cli-binary）
-  - 验收：5 种 installer 全部覆盖 9 个上游
+  - 验收：6 种 installer 全部覆盖 9 个上游
 - **Phase 2.2：karpathy-skills behavior-rule 注入引擎 + CLAUDE.md merge**
   - 显式标注 source（harnessed/private/project）+ override 优先级
   - 验收：用户 CLAUDE.md 不被破坏；卸载完全清理

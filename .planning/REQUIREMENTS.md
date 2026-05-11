@@ -35,11 +35,11 @@
 - **版本**：v0.1
 - **验收**：JSON Schema validator 单测 100% 覆盖；任意非法 manifest 立即 reject 不进入运行时
 
-### R1.2 4 种 type 支持（5 种 install method 子枚举）
-- **描述**：4 type 不变（`cc-plugin` / `cc-skill-pack` / `mcp-server` / `cli-binary`），每 type 内 install.method 支持 5 种子方法
-- **来源**：SUMMARY § 二 冲突 2 决议
+### R1.2 4 种 type 支持（6 种 install method 子枚举 — 见 ADR-0003 errata）
+- **描述**：4 type 不变（`cc-plugin` / `cc-skill-pack` / `mcp-server` / `cli-binary`），每 type 内 install.method 支持 6 种子方法
+- **来源**：SUMMARY § 二 冲突 2 决议 + ADR 0003 errata（mcp-stdio-add / mcp-http-add 拆为独立 method）
 - **版本**：v0.1（其中 cli-npm + mcp-stdio Day 1）；v0.2（cc-plugin-marketplace + npx-skill / git-clone-with-setup）
-- **验收**：5 种 method 全部覆盖 9 个 MVP 上游
+- **验收**：6 种 method 全部覆盖 9 个 MVP 上游（其中 mcp-http-add 是 schema-only placeholder，phase 1.2+ 接真上游）
 
 ### R1.3 DAG resolver Day 1
 - **描述**：install engine 不是 sequential，是先解析全图再拓扑排序；循环依赖 schema 校验阶段拒绝

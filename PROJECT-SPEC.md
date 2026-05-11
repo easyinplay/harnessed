@@ -44,12 +44,13 @@
 
 **Manifest type 覆盖（4 种）**：`cc-plugin` / `cc-skill-pack` / `mcp-npm` / `cli-npm` — schema 简洁性优先（决策见 ADR 0001）。
 
-**安装通道（5 种异构 — install.method 子枚举）**：
+**安装通道（6 种异构 — install.method 子枚举，详见 ADR-0003 errata）**：
 - `cc-plugin-marketplace`（superpowers, ralph-loop, planning-with-files-plugin）
 - `git-clone-with-setup`（gstack — 当前未 plugin 化）
 - `npx-skill-installer`（mattpocock-skills, karpathy-skills, planning-with-files 替代）
 - `npm-cli`（GSD, ctx7）
-- `mcp-stdio-add` / `mcp-http-add`（Tavily, Exa, context7-mcp）
+- `mcp-stdio-add`（Tavily, Exa）
+- `mcp-http-add`（v0.1 phase 1.1 schema 占位，phase 1.2+ 真上游如 Vercel/Cloudflare MCP）
 
 **Component type（manifest 必填字段）**：`component_type` ∈ `command | behavior-rule | mcp-tool | cli-binary` — 区分语义差异巨大的组件（karpathy-skills 是 CLAUDE.md 注入的行为规范，与命令式 skill 安装/卸载逻辑不同）。
 

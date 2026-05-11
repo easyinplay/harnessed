@@ -125,7 +125,7 @@
 |------|------|------|
 | 路由 B+C 混合 + 85% 验收 | SPEC § 5.1 + R03 § 2.4 | Sonnet 100% / Haiku 84% 实证 |
 | schema apiVersion + upstream_health + signed_by | R04 P0 + R03 § 6.5 | 仿 K8s CRD 模式 |
-| 5 种 install method 用子枚举（type 仍 4） | SUMMARY § 二 冲突 2 决议 | schema 简洁性优先 |
+| 6 种 install method 用子枚举（type 仍 4） | SUMMARY § 二 冲突 2 决议 + ADR-0003 errata | schema 简洁性优先；mcp-stdio-add / mcp-http-add 拆为独立 method |
 | Hook 措辞重写 | SUMMARY § 二 冲突 3 决议 | 配置纯 yaml/md + 脚本严格审计 |
 | Cross-OS 前移 | SPEC § 11 修订 | R03 红旗 6 + R04 P0 |
 | 单点维护风险升级 | SPEC § 7 修订 | R04 学术 36%/年 |
