@@ -7,10 +7,10 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/harnessed-dev/harnessed.git"
+    "url": "https://github.com/easyinplay/harnessed.git"
   },
-  "homepage": "https://github.com/harnessed-dev/harnessed#readme",
-  "bugs": "https://github.com/harnessed-dev/harnessed/issues",
+  "homepage": "https://github.com/easyinplay/harnessed#readme",
+  "bugs": "https://github.com/easyinplay/harnessed/issues",
   "keywords": [
     "claude-code",
     "ai-harness",
