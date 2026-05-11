@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: mattpocock-skills
+  display_name: mattpocock-skills
+  description: 17 single-slash command skills (/diagnose /zoom-out /tdd /grill-with-docs etc.) by Matt Pocock.
+  upstream:
+    source: mattpocock/skills
+    homepage: https://github.com/mattpocock/skills
+    repository: https://github.com/mattpocock/skills.git
+    license: MIT
+    notice: mattpocock-skills by Matt Pocock, used as on-demand engineering tactics (招式) in harnessed.
+spec:
+  type: cc-skill-pack
+  component_type: command
+  install:
+    method: npx-skill-installer
+    cmd: "npx --yes skills@latest add mattpocock/skills"
+    npm_version: ^1.0.0
+    idempotent_check: "test -d ~/.claude/skills/mattpocock-skills"
+  verify:
+    cmd: "test -f ~/.claude/skills/mattpocock-skills/diagnose.md"
+    timeout_ms: 5000
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/mattpocock-skills"
+    cleanup_paths:
+      - ~/.claude/skills/mattpocock-skills
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-11"
+    last_known_good_version: main-76-commits
+    fallback_action: warn
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
