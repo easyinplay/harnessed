@@ -17,6 +17,7 @@ import { LineCounter, parseDocument } from 'yaml'
 import { ajvErrorToFriendly, type ValidationError, yamlParseErrorToFriendly } from './errors.js'
 import { ManifestSchema } from './schema/index.js'
 import type { Manifest } from './schema/types.js'
+import { checkSecurityViolations } from './security.js'
 
 const addFormats = (ajvFormatsNs as unknown as { default: (a: Ajv) => Ajv }).default
 
@@ -55,6 +56,14 @@ export function validateManifestFile(yamlSource: string, filename: string): Vali
       ok: false,
       errors: doc.errors.map((e) => yamlParseErrorToFriendly(e, filename)),
     }
+  }
+
+  // Phase 1.1.1 hotfix B1: pre-Ajv security gate. Reject `$(...)`, `${...}`,
+  // backtick, etc. in any cmd field BEFORE structural validation so users
+  // see the security failure first (not a confusing field-shape error).
+  const securityErrors = checkSecurityViolations(doc, filename, lineCounter)
+  if (securityErrors.length > 0) {
+    return { ok: false, errors: securityErrors }
   }
 
   const data = doc.toJS()
