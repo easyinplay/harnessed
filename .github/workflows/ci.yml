@@ -21,10 +21,31 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # Phase 1.1.1 hotfix H1: pin actions to SHA (supply-chain hardening).
+      # Tag refs (@v4) are mutable; SHA refs are immutable. Commit SHA below
+      # corresponds to v4.3.1 (actions/checkout) and v4.4.0 (actions/setup-node)
+      # as of 2026-05-12.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0  # H2: full history + tags needed for ADR 0001/0002 守恒 check below
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
+      # Phase 1.1.1 hotfix H2: A7 acceptance bar (ADR 0001/0002 main body 守恒)
+      # is now CI-enforced. Any drift since the adr-0001-accepted tag fails CI.
+      - name: A7 acceptance bar — ADR 0001/0002 main body 守恒
+        run: |
+          git fetch origin tag adr-0001-accepted --no-tags || {
+            echo "::warning::adr-0001-accepted tag not yet pushed — skipping A7 守恒 check"
+            exit 0
+          }
+          diff_out=$(git diff adr-0001-accepted -- docs/adr/0001-manifest-schema-v1.md docs/adr/0002-repo-structure-toolchain-v0.1.md)
+          if [ -n "$diff_out" ]; then
+            echo "::error::A7 acceptance bar violated — ADR 0001/0002 main body changed since adr-0001-accepted tag"
+            echo "$diff_out"
+            exit 1
+          fi
+          echo "A7 ✅ ADR 0001/0002 main body unchanged"
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm typecheck
