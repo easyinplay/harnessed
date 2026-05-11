@@ -402,12 +402,13 @@ T7.1-T7.9 9 上游 dry-run 期间，每发现一个 schema 字段不足或语义
 | exa-mcp | mcp-npm × mcp-stdio-add × mcp-tool | 无 | C | ✅ pass |
 | ctx7 | cli-npm × npm-cli × cli-binary | 无 | C | ✅ pass — **A2 acceptance bar** |
 
-**T7.10 verdict（2026-05-12，T7.9b 完成后）**：✅ **schema v1 sufficient** — 9 上游（10 manifests）全部通过 strict schema 校验，**零字段缺失**，**不需要** ADR 0003 errata。详见 § B F14。
+**T7.10 verdict（2026-05-12，T7.9b 完成后）**：✅ **schema v1 sufficient** — 9 上游（10 manifests）全部通过 strict schema 校验，**零字段缺失**，**schema body 不需要** ADR 0003 errata；但 V1 BLOCKER 历史遗留的 install method 数 5/6 文档对齐 errata 在 T7.10 后顺带处理（见 § B.5）。详见 § B F14。
 
 ### B.5 已升级为 ADR 的 finding 索引
 
-(如果某 finding 触发 ADR 0003 errata，在此表追加索引)
+(如果某 finding 触发 ADR errata，在此表追加索引)
 
 | Finding ID | ADR | 决策摘要 | 决策日期 |
 |-----------|-----|---------|---------|
-| (none) | (none) | (none) | (none) |
+| V1 BLOCKER (PLAN-CHECK) | [ADR 0003](../../docs/adr/0003-install-method-count-errata.md) | install method 数 5→6 文档对齐（SPEC § 2 + REQUIREMENTS R1.2 + ROADMAP § 5 + STATE）；ADR 0001 main body 不动维持 A7 守恒 | 2026-05-12 |
+| F14 (T7.10 verdict) | (no schema errata) | schema v1 sufficient — 无字段缺失；触发 V1 BLOCKER 文档对齐时机（→ ADR 0003） | 2026-05-12 |
