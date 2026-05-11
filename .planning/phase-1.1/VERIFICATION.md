@@ -1,0 +1,140 @@
+# Phase 1.1 Verification (Reproduction Guide)
+
+> **Purpose**：让任何 reviewer / fork 能本地复现 phase 1.1 的 8 acceptance bar 验收
+> **Tag baseline**：`v0.1.0-alpha.1-schema-frozen`（local tag — 见 T10.3）
+> **Created**：2026-05-12（batch 6 collapse）
+
+## Prerequisites
+
+- Node.js ≥ 22.0.0
+- Git（Windows: Git Bash 推荐）
+- 5 分钟 + 干净仓库（`git status` clean）
+
+## Setup
+
+```bash
+git clone <repo-url>
+cd harnessed
+git checkout v0.1.0-alpha.1-schema-frozen   # phase 1.1 milestone tag
+corepack enable
+corepack pnpm install --frozen-lockfile
+```
+
+如 Windows ACL 报错，参考 [CONTRIBUTING.md](../../CONTRIBUTING.md) "Windows Workaround"。
+
+## Acceptance Bar A1-A8 复现
+
+### A1: `pnpm test` ≥ 50 测试 passed
+
+```bash
+corepack pnpm test
+# 期望：Test Files 10 passed, Tests 71 passed
+```
+
+### A2: ctx7 manifest 在正向测试中 pass
+
+```bash
+corepack pnpm test -- --reporter=verbose 2>&1 | grep ctx7
+# 期望：ctx7.yaml validates ✓
+```
+
+或 fixture-driven 自动 cover：A1 全绿 = A2 全绿（ctx7 在 fixture-driven test 中）。
+
+### A3: ≥ 35 个负向测试 + 行号 assertion 全绿
+
+```bash
+corepack pnpm test -- --reporter=verbose 2>&1 | grep -E "(required|discriminator|type-error|unknown-field|line-mapping)" | grep -v PASS | wc -l
+# 期望：56+ 负向 tests（14 required + 17 discriminator + 7 type-error + 7 unknown-field + 5 line-mapping + 6 errors = 56）
+```
+
+### A4: GitHub Actions mac/linux/win × Node 22 全绿
+
+**异步**：CI 在 push 后由 `.github/workflows/ci.yml` 触发。
+
+本地 dry-run 跨 OS 等价性：
+
+```bash
+corepack pnpm typecheck && \
+corepack pnpm lint && \
+corepack pnpm test && \
+corepack pnpm build && \
+corepack pnpm build:schema && \
+corepack pnpm validate:schema && \
+node ./dist/cli.mjs --version
+```
+
+每条命令必须 exit 0。CI runner 跑同样命令。
+
+### A5: schema artifact Ajv 2020 strict 编译 exit 0
+
+```bash
+corepack pnpm build:schema && corepack pnpm validate:schema
+# 期望：[validate-schema] OK — schemas/manifest.v1.schema.json is a valid JSON Schema (Ajv 8 strict + discriminator)
+```
+
+### A6: vitest bench 100 manifest < 50ms
+
+```bash
+corepack pnpm bench
+# 期望：mean ~22ms（baseline 21.7ms / 22.2ms / 22.7ms）
+```
+
+CI-enforced gate：`tests/integration/manifest-validate.perf.test.ts` 阈值 < 50ms。
+
+### A7: ADR 0001/0002 main body 未被 phase 1.1 修改
+
+```bash
+git log --oneline -- docs/adr/0001-manifest-schema-v1.md docs/adr/0002-repo-structure-toolchain-v0.1.md
+# 期望：1 commit (initial skeleton)，无后续改动
+```
+
+或对比 baseline tag：
+
+```bash
+git diff adr-0001-accepted -- docs/adr/0001-manifest-schema-v1.md
+# 期望：empty diff
+```
+
+### A8: manifests/*.yaml 全部 LF
+
+```bash
+git ls-files --eol "manifests/*.yaml" | awk '$1 != "i/lf"' | wc -l
+# 期望：0
+```
+
+## 已知 Findings 索引
+
+完整 finding narratives 见 [progress.md § B](./progress.md#section-b--findings--decision-log)。
+
+| ID | 主题 | Resolution |
+| -- | ---- | ---------- |
+| F1 | corepack ACL on Windows + .gitkeep | ✅ Workaround in CONTRIBUTING.md |
+| F2 | Biome 2.4 schema breaking | ✅ `biome migrate --write` |
+| F3 | `pnpm run typecheck` shell shim issue | ✅ tsc 直调 |
+| F4 | tsup `.mjs` 后缀 | ✅ `outExtension` 配置 |
+| F5 | deferred deps to batch 2 | ✅ karpathy simplicity |
+| F6 | batch 1.5 收尾无意外 | ✅ N/A |
+| F7 | A8 验收命令 V4 fix | ✅ `awk '$1 != "i/lf"'` |
+| F8 | TypeBox Union discriminator → Ajv 不兼容 | ✅ hand-rolled oneOf |
+| F9 | verbatimModuleSyntax CJS interop | ✅ namespace + .default |
+| F10 | type×method matrix Rule 2 | ✅ allOf in ManifestSchema |
+| F11 | Ajv 2020 entry 必要性 | ✅ `ajv/dist/2020.js` |
+| F12 | biome JSON formatter conflict | ✅ ignore schemas/*.schema.json |
+| F13 | routing/SCHEMA.md 200 行约束 | ✅ 199 行 (compress) |
+| F14 | T7.10 verdict — schema v1 sufficient | ✅ no errata needed |
+| F15 | matrix illegal count 17 vs 18 | ✅ 17 implemented (24 - 7 legal) |
+| F16 | T8.4/T8.5/T8.7 redefined | ✅ deferred-items table |
+
+## Phase 1.2 Prerequisites + How to Reproduce
+
+下一阶段（v0.1 phase 1.2 — cli-npm + mcp-stdio installer + cross-OS CI 实测）依赖 schema v1 frozen + 10 dry-run manifests（含 ctx7 / tavily-mcp / exa-mcp 三个 install 目标）+ validator 公开 API + schema artifact + CI matrix config。⏳ 首次 push 后 A4 实际验证。
+
+```bash
+git clone <repo-url> harnessed-repro && cd harnessed-repro
+corepack enable && corepack pnpm install --frozen-lockfile
+corepack pnpm typecheck && corepack pnpm lint && corepack pnpm test \
+  && corepack pnpm build && corepack pnpm build:schema \
+  && corepack pnpm validate:schema && corepack pnpm bench \
+  && node ./dist/cli.mjs --version
+# 全绿 = phase 1.1 复现成功
+```
