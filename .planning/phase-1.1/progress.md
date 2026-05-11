@@ -194,6 +194,24 @@
 - **Resolution**：✅ 全部按 task_plan.md 模板落实；pnpm typecheck/lint/build 三命令全绿；新增 10 个文件（LICENSE 201L / NOTICE 20L / NOTICES.md 27L / vendor/ENTRY-CRITERIA.md 39L / 6 per-dir READMEs）；无 schema / ADR 影响；无 deferred deps 改动（F5 deferred 清单仍按 batch 2 计划实施）。
 - **Decision impact**：无；karpathy simplicity 沿用——LICENSE 用标准 Apache-2.0 文本（不裁剪），其余文件保持 ≤ 30 行 minimal。
 
+---
+
+#### F7 — A8 acceptance bar 命令需进一步修正（PLAN-CHECK V4 fix 自身有 bug）
+
+- **Date**：2026-05-11
+- **Trigger task**：batch 1.5 验收（跑 A8 命令时发现）
+- **Symptom**：PLAN-CHECK.md V4 推荐 A8 命令 `git ls-files --eol "*.yaml" "*.json" "*.md" | grep -v 'lf/lf' | wc -l` 实际输出 34（期望 0）。
+- **Hypothesis**：`grep -v 'lf/lf'` 字符串永不匹配——`git ls-files --eol` 真实输出格式是 `i/lf<TAB>w/lf<TAB>attr/...`，没有 `lf/lf` 字符串。即便修正为 `awk '$2 != "w/lf"'`（检查 worktree）也错把 Windows `core.autocrlf=true` 自动转换的 CRLF 当异常——Windows 贡献者 worktree 自然是 CRLF，但 **repo 内 commit 的是 LF**（git autocrlf 在 commit 时 strip CR）。
+- **Impact**：A8 acceptance bar 不应 check worktree（Windows 上自然不通过），应 check **index**（repo 实际内容）。
+- **Resolution**：
+  - **真验收命令**：`git ls-files --eol "*.yaml" "*.yml" "*.json" "*.md" | awk '$1 != "i/lf"' | wc -l` 输出 0 = repo 内全部 LF。当前实测输出 0 ✅。
+  - **次级保险**：`git ls-files --eol "*.yaml" "*.yml" "*.json" "*.md" | awk '$3 !~ /eol=lf/' | wc -l` 输出 0 = .gitattributes 已对所有 yaml/yml/json/md 注册 eol=lf。
+  - **不需要修改 task_plan.md A8 当前文本**（是 plan-checker 的 minor V4 推荐，不是硬约束），但本 finding 提供修正命令，T10.1 phase verify 时使用正确版。
+  - **不强制 worktree LF**：Windows `core.autocrlf=true` 是默认值，`git config --local core.autocrlf false` 会改变贡献者本地体验，影响范围超出 phase 1.1，留待 v0.4 maintainer onboarding 决策。
+  - **不构成 ADR errata**：A8 acceptance bar 的"含义"未变（repo 内 LF），仅是验证命令的 bug 修复。
+
+> 顺手标注：plan-checker 的 V4 修正本意正确，但命令实现错了。这正是 PLAN-CHECK § "可选 fix" 标注 V4 为非阻塞的合理性体现——execute 阶段发现并修正，符合 GSD 流程预期。
+
 ### B.4 C2 callout 专用追踪（T7.10 反哺判定）
 
 T7.1-T7.9 9 上游 dry-run 期间，每发现一个 schema 字段不足或语义不清，在此追加：
