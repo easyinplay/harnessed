@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: planning-with-files
+  display_name: planning-with-files
+  description: Persistent 3-file planning skill (task_plan.md / findings.md / progress.md) Manus-style.
+  upstream:
+    source: planning-with-files
+    homepage: https://github.com/OthmanAdi/planning-with-files
+    repository: https://github.com/OthmanAdi/planning-with-files.git
+    license: MIT
+    notice: planning-with-files by OthmanAdi, used as plan-persistence base in harnessed plan-feature workflow.
+spec:
+  type: cc-skill-pack
+  component_type: command
+  install:
+    method: cc-plugin-marketplace
+    cmd: "/plugin marketplace add OthmanAdi/planning-with-files && /plugin install planning-with-files@planning-with-files"
+    git_ref: v2.37.0
+    idempotent_check: "/plugin list | grep -q planning-with-files"
+  verify:
+    cmd: "/plugin list | grep -q planning-with-files"
+    timeout_ms: 5000
+  uninstall:
+    cmd: "/plugin uninstall planning-with-files@planning-with-files"
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-11"
+    last_known_good_version: 2.37.0
+    fallback_action: warn
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
