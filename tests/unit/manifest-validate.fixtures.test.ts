@@ -13,9 +13,7 @@ import { validateManifestFile } from '../../src/manifest/validate.js'
 
 const FIXTURE_DIR = resolve('tests/fixtures/manifests/valid')
 
-const yamlFiles = readdirSync(FIXTURE_DIR).filter(
-  (f) => f.endsWith('.yaml') || f.endsWith('.yml'),
-)
+const yamlFiles = readdirSync(FIXTURE_DIR).filter((f) => f.endsWith('.yaml') || f.endsWith('.yml'))
 
 describe('valid manifest fixtures pass strict validation', () => {
   if (yamlFiles.length === 0) {
