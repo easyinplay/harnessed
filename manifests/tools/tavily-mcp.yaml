@@ -30,7 +30,7 @@ spec:
     last_known_good_version: 0.2.19
     fallback_action: use_alternative
     alternative: exa-mcp
-  signed_by: harnessed-maintainers
+  signed_by: easyinplay
   platforms:
     - linux
     - darwin

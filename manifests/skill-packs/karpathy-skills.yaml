@@ -31,7 +31,7 @@ spec:
     last_check: "2026-05-11"
     last_known_good_version: main-28-commits
     fallback_action: warn
-  signed_by: harnessed-maintainers
+  signed_by: easyinplay
   platforms:
     - linux
     - darwin

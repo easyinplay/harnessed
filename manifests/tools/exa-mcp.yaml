@@ -30,7 +30,7 @@ spec:
     last_known_good_version: 3.2.1
     fallback_action: use_alternative
     alternative: tavily-mcp
-  signed_by: harnessed-maintainers
+  signed_by: easyinplay
   platforms:
     - linux
     - darwin
