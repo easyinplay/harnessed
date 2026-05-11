@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: tavily-mcp
+  display_name: Tavily MCP
+  description: Web search / extract / map / crawl MCP server. Default web search via tavily_search.
+  upstream:
+    source: tavily-mcp
+    homepage: https://docs.tavily.com/docs/mcp
+    repository: https://github.com/tavily-ai/tavily-mcp.git
+    license: MIT
+    notice: tavily-mcp by tavily-ai (official), used as default web-search MCP per harnessed routing rules.
+spec:
+  type: mcp-npm
+  component_type: mcp-tool
+  install:
+    method: mcp-stdio-add
+    cmd: "claude mcp add --scope project --transport stdio tavily-mcp -- npx --yes tavily-mcp@^0.2.0"
+    npm_version: ^0.2.0
+    idempotent_check: "claude mcp list | grep -q tavily"
+  verify:
+    cmd: "claude mcp list | grep -q tavily"
+    timeout_ms: 10000
+  uninstall:
+    cmd: "claude mcp remove --scope project tavily-mcp"
+  upstream_health:
+    stability: beta
+    last_check: "2026-05-11"
+    last_known_good_version: 0.2.19
+    fallback_action: use_alternative
+    alternative: exa-mcp
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
