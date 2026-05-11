@@ -1,0 +1,34 @@
+# Force LF line endings repo-wide.
+# Windows native checkouts must NOT introduce CRLF in yaml/json/md/ts —
+# Ajv yaml parser + shebang lines + JSON Schema parsers all require LF.
+# (ASSUMPTIONS C3 callout — Day 1 mitigation.)
+
+# Default: detect text vs binary, but always emit LF on checkout
+* text=auto eol=lf
+
+# Critical config files: hard-lock LF
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.jsonc text eol=lf
+*.md text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.js text eol=lf
+
+# CLI shebang entrypoints + shell scripts: LF mandatory
+# (CRLF in shebang causes "bad interpreter" spawn failures on linux/mac)
+bin/* text eol=lf
+scripts/*.sh text eol=lf
+scripts/*.mjs text eol=lf
+
+# Binary files (do not touch line endings)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.lock binary

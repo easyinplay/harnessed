@@ -1,0 +1,29 @@
+# Node / pnpm
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.tscache/
+*.tsbuildinfo
+
+# Test
+coverage/
+*.snap
+.vitest-cache/
+
+# Logs / env
+*.log
+.env
+.env.local
+
+# harnessed runtime state (project-local)
+.harnessed/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
