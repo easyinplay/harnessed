@@ -200,6 +200,7 @@
                 },
                 "git_ref": {
                   "minLength": 1,
+                  "pattern": "^([a-f0-9]{7,40}|v?\\d+\\.\\d+\\.\\d+([.-][\\w.-]+)?)$",
                   "type": "string"
                 },
                 "idempotent_check": {
@@ -245,6 +246,7 @@
                 },
                 "git_ref": {
                   "minLength": 1,
+                  "pattern": "^([a-f0-9]{7,40}|v?\\d+\\.\\d+\\.\\d+([.-][\\w.-]+)?)$",
                   "type": "string"
                 },
                 "idempotent_check": {

@@ -17,7 +17,7 @@ spec:
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin install ralph-loop@claude-plugins-official"
-    git_ref: HEAD
+    git_ref: 45896c8f2fe68e68ca2a8e3554d4441f48475431
     idempotent_check: "/plugin list | grep -q ralph-loop"
   verify:
     cmd: "/plugin list | grep -q ralph-loop"
