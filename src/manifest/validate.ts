@@ -1,6 +1,7 @@
 // Manifest validator entry per ADR 0001 + GA-1.
 // Pipeline: yaml.parseDocument -> doc.toJS() -> Ajv compiled validator -> typed Manifest.
-// T4.1 baseline: parse + Ajv strict + discriminator. T4.2 adds friendly errors,
+// T4.1 baseline: parse + Ajv strict + discriminator.
+// T4.2 extracts friendly-error mapping to ./errors.ts.
 // T4.3 adds yaml CST line/column mapping.
 //
 // IMPL NOTE (Rule 1 / F8): tsconfig has `verbatimModuleSyntax: true` (per ADR
@@ -10,17 +11,15 @@
 // and pull `.default` at runtime — that mirrors what the CJS module actually
 // exposes (`module.exports = formatsPlugin; exports.default = formatsPlugin`).
 
-import { Ajv, type ErrorObject } from 'ajv'
+import { Ajv } from 'ajv'
 import * as ajvFormatsNs from 'ajv-formats'
 import { parseDocument } from 'yaml'
+import { ajvErrorToFriendly, type ValidationError, yamlParseErrorToFriendly } from './errors.js'
 import { ManifestSchema } from './schema/index.js'
 import type { Manifest } from './schema/types.js'
 
-// ajv-formats deref: under NodeNext + verbatimModuleSyntax we receive a
-// namespace whose `.default` is the actual plugin function.
 const addFormats = (ajvFormatsNs as unknown as { default: (a: Ajv) => Ajv }).default
 
-// Ajv instance — created once, validator compiled lazily.
 const ajv = addFormats(
   new Ajv({
     strict: true,
@@ -36,21 +35,12 @@ const ajv = addFormats(
 let _compiled: ReturnType<typeof ajv.compile<Manifest>> | null = null
 function getValidator() {
   if (!_compiled) {
-    // ManifestSchema is a TypeBox-built JSON Schema object. Cast through unknown
-    // because Ajv's generic does not infer Static<>.
     _compiled = ajv.compile<Manifest>(ManifestSchema as unknown as object)
   }
   return _compiled
 }
 
-export interface ValidationError {
-  file: string
-  path: string
-  message: string
-  line: number | null
-  column: number | null
-  keyword: string
-}
+export type { ValidationError } from './errors.js'
 
 export type ValidateResult =
   | { ok: true; manifest: Manifest }
@@ -62,31 +52,17 @@ export function validateManifestFile(yamlSource: string, filename: string): Vali
   if (doc.errors.length > 0) {
     return {
       ok: false,
-      errors: doc.errors.map((e) => ({
-        file: filename,
-        path: '/',
-        message: e.message,
-        line: e.linePos?.[0]?.line ?? null,
-        column: e.linePos?.[0]?.col ?? null,
-        keyword: 'yaml-parse',
-      })),
+      errors: doc.errors.map((e) => yamlParseErrorToFriendly(e, filename)),
     }
   }
 
   const data = doc.toJS()
   const validate = getValidator()
   if (!validate(data)) {
-    const errs: ErrorObject[] = validate.errors ?? []
+    const errs = validate.errors ?? []
     return {
       ok: false,
-      errors: errs.map((err) => ({
-        file: filename,
-        path: err.instancePath || '/',
-        message: err.message ?? 'unknown error',
-        line: null,
-        column: null,
-        keyword: err.keyword,
-      })),
+      errors: errs.map((err) => ajvErrorToFriendly(err, filename)),
     }
   }
 
