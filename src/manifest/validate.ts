@@ -13,7 +13,7 @@
 
 import { Ajv } from 'ajv'
 import * as ajvFormatsNs from 'ajv-formats'
-import { parseDocument } from 'yaml'
+import { LineCounter, parseDocument } from 'yaml'
 import { ajvErrorToFriendly, type ValidationError, yamlParseErrorToFriendly } from './errors.js'
 import { ManifestSchema } from './schema/index.js'
 import type { Manifest } from './schema/types.js'
@@ -47,7 +47,8 @@ export type ValidateResult =
   | { ok: false; errors: ValidationError[] }
 
 export function validateManifestFile(yamlSource: string, filename: string): ValidateResult {
-  const doc = parseDocument(yamlSource)
+  const lineCounter = new LineCounter()
+  const doc = parseDocument(yamlSource, { lineCounter })
 
   if (doc.errors.length > 0) {
     return {
@@ -62,7 +63,7 @@ export function validateManifestFile(yamlSource: string, filename: string): Vali
     const errs = validate.errors ?? []
     return {
       ok: false,
-      errors: errs.map((err) => ajvErrorToFriendly(err, filename)),
+      errors: errs.map((err) => ajvErrorToFriendly(err, filename, doc, lineCounter)),
     }
   }
 
