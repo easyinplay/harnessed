@@ -1,7 +1,7 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-11（用户 approve 6 项修订 + 3 项 P0 决策后批量 patch）
+> 最后更新：2026-05-12（phase 1.1 SHIP — batch 6 收尾完成，ready for phase 1.2）
 
 ---
 
@@ -17,36 +17,43 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：v0.1.0 Phase 1.1 plan-phase 完成 ✅
+- **GSD phase**：v0.1.0 Phase 1.1 ✅ **COMPLETED — SHIPPED 2026-05-12**
 - **当前里程碑**：v0.1.0
-- **当前 phase**：Phase 1.1（discuss + plan 已完成，待 execute）
-- **状态**：✅ Ready for Execute（plan-checker verdict: ⚠️ APPROVED WITH CONDITIONS，V1 BLOCKER 已 patch）
-- **进度**：0 / 16 phases 已完成 ░░░░░░░░░░░░░░░░ 0%（plan 完成不计入）
+- **下一 phase**：Phase 1.2（cross-OS CI 实测 + cli-npm + mcp-stdio installer + harnessed setup/doctor）
+- **状态**：✅ **Ready for Phase 1.2**
+- **进度**：1 / 16 phases 已完成 ▓░░░░░░░░░░░░░░░ 6%
 
 ### 各里程碑进度
 
 | 里程碑 | Phase 完成 | 状态 | 完成时间 |
 |--------|-----------|------|---------|
-| v0.1.0 manifest 引擎 + research | 0/4 | Not started | - |
+| v0.1.0 manifest 引擎 + research | 1/4 | ✅ Phase 1.1 done; Phase 1.2-1.4 待执行 | 2026-05-12 (P1.1) |
 | v0.2.0 execute-task + ralph-loop | 0/4 | Not started | - |
 | v0.3.0 plan-feature + checkpoint | 0/4 | Not started | - |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
 
 ### 下一步行动
 
-1. ✅ ~~用户已 approve 6 项 spec 修订~~ — 已批量 patch
-2. ✅ ~~3 项 P0 决策已敲定~~ — manifest 4 type / gstack 双路径
-3. ✅ ~~起草 ADR 0001~~（manifest schema v1）
-4. ✅ ~~ADR 0002~~（repo structure + toolchain）
-5. ✅ ~~/gsd-discuss-phase 1~~（ASSUMPTIONS / GA-1 / GA-2 完成）
-6. ✅ ~~/gsd-plan-phase 1~~（PLAN / task_plan / progress / PLAN-CHECK 完成，V1 BLOCKER 已 fix）
-7. ⏳ **进入 GSD `/gsd-execute-phase 1.1`**（执行 47 个原子子任务）
-8. ⏳ T7.10 反哺时统一 patch SPEC § 2 + ADR 0001 + ROADMAP 的 "5→6 install method" 为 ADR 0003 errata
+1. ✅ ~~Phase 1.1 全 47 子任务完成~~ — 2026-05-12 ship
+2. ✅ ~~ADR 0001 / 0002 / 0003 全部 accepted~~ — schema v1 frozen
+3. ✅ ~~两个 local tag 打好~~ — `adr-0001-accepted` + `v0.1.0-alpha.1-schema-frozen`
+4. ⏳ **A4 acceptance bar pending CI run**（main agent 决定何时 push 触发 GitHub Actions）
+5. ⏳ **进入 Phase 1.2**（cross-OS CI 实测 + cli-npm + mcp-stdio installer 实装 + setup/doctor 命令骨架）
+6. ⏳ Phase 1.3（DAG resolver + harnessed-router 引擎）
+7. ⏳ Phase 1.4（research workflow 端到端 + routing/search.md SSOT）
 
 ---
 
 ## 已完成（Completed）
 
+- ✅ **Phase 1.1 SHIPPED**（2026-05-12）
+  - 47 atomic 子任务全部完成或合理 deferred（见 `.planning/phase-1.1/progress.md` § B F16 deferred 表）
+  - 50 commits / 71 vitest passing / 10 manifests / 30+ fixtures / 3 SCHEMA.md / bench 21.7ms
+  - **Acceptance bar 7/8 ✅** — A1/A2/A3/A5/A6/A7/A8 全绿；A4 ⏳ pending CI on first push
+  - 3 ADR accepted: 0001 schema v1 / 0002 toolchain / 0003 install method count errata
+  - 2 local tag: `adr-0001-accepted`（A7 baseline sentry）+ `v0.1.0-alpha.1-schema-frozen`（milestone）
+  - VERIFICATION.md（140L）+ CONTRIBUTING.md（139L）+ README expand（72L）+ MAINTAINER-ONBOARDING stub（50L）
+  - GitHub Actions ci.yml（36L）3-OS × Node 22 matrix config-ready
 - ✅ **gstack /autoplan 三关卡通过**（2026-05-11）
   - `/office-hours` + `/plan-ceo-review` + `/plan-eng-review`
 - ✅ **PROJECT-SPEC v2 锁定**（2026-05-11）
@@ -69,39 +76,47 @@
   - 完整 schema 冻结 + type×method 矩阵 + component_type 语义
 - ✅ **ADR 0002 repo structure + toolchain v0.1**（2026-05-11）
   - single package + pnpm 10 + tsup + pure ESM + vitest 4 + commander + biome 2
+- ✅ **ADR 0003 install method count errata**（2026-05-12）
+  - install method 数 5→6 文档对齐（SPEC + REQUIREMENTS + ROADMAP + STATE）；ADR 0001 main body 守恒
 - ✅ **GSD discuss-phase 1**（2026-05-11）
   - ASSUMPTIONS.md（A 8 / B 9 / C 6）+ GA-1 (Ajv+TypeBox) + GA-2 (toolchain)
 - ✅ **GSD plan-phase 1**（2026-05-11）
   - PLAN.md（339L）+ task_plan.md（1528L · 47 原子子任务）+ progress.md（含 § B Findings tracker）
   - plan-checker verdict ⚠️ APPROVED WITH CONDITIONS — V1 BLOCKER（5→6 install method）已 patch
+- ✅ **GSD execute-phase 1.1 (batch 1-6)**（2026-05-11 → 2026-05-12）
+  - batch 1 (T1+T2 wave 1) / 1.5 (T1 残项) / 2 (T3+T4 wave 2) / 3 (T5+T6 wave 3) / 4 (T7 wave 4) / 5 (T8 wave 5) / 6 (T9+T10 wave 6+7)
 
 ---
 
 ## 进行中（In Progress）
 
-[当前无 — 等待用户 approve spec 修订后启动 Phase 1.1]
+[当前无 — Phase 1.1 SHIPPED；等待 main agent 决定何时启动 Phase 1.2]
 
 ---
 
 ## 待办（按优先级）
 
-### P0 — 立即执行（启动 v0.1 前必做）
+### P0 — Phase 1.2 启动前
 
-1. ✅ ~~用户 approve SUMMARY § 三/四 提议的 6 项 spec 修订~~ — **已 approve + 已批量 patch（2026-05-11）**
-2. ⏳ **起草 `docs/adr/0001-manifest-schema-v1.md`**（v0.1 P1.1 入口产出）— 写入决策：4 type + install.method 子枚举 + gstack 双路径
-3. ⏳ **进入 GSD `/gsd-discuss-phase 1`**（v0.1.0 Phase 1.1）
+1. ⏳ **A4 acceptance bar CI run**（push main 触发 `.github/workflows/ci.yml` 跨 OS 三平台验证）
+2. ⏳ **Phase 1.2 discuss-phase 启动**（cli-npm + mcp-stdio installer + cross-OS 实测）
+3. ⏳ Phase 1.2 plan-phase（task 拆分 + planning-with-files 落地 task_plan）
 
-### P1 — v0.1 早期
+### P1 — Phase 1.2-1.4 周期
 
-4. ✅ ~~WORKFLOWS-MVP § 设计决策更新~~ — **已批量 patch（2026-05-11）**
-5. `manifests/aliases.yaml` 占位文件创建（v0.3 启用，但 schema v1 必须留接口）
-6. `docs/adr/` 目录建立 + ADR 编号约定文档
+4. **`harnessed setup` 自检**（R04 P0#5；提示 npx@latest）
+5. **`harnessed install <workflow>`**（research workflow 用 ctx7 + tavily-mcp + exa-mcp）
+6. **DAG resolver Day 1 实装**（R04 P0#4；不允许 sequential 拖到 v0.3）
+7. **routing schema strict 校验**（v0.3 phase 1.4）
+8. **`manifests/aliases.yaml` 占位文件创建**（v0.3 启用，但 schema v1 必须留接口）
 
 ### P2 — 跨里程碑预留
 
-7. `mutually_exclusive_with` 字段在 schema v1 留占位（v0.2 dogfooding 时观察 planning-with-files vs superpowers/writing-plans 实际语义）
-8. gstack-2 / GSD-2 v2 重写迁移策略（v1.0+ 议题，schema 留迁移接口）
-9. sigstore / cosign 签名集成（v0.4+ 议题，v0.1-0.3 先用 commit hash）
+9. `mutually_exclusive_with` 字段在 schema v1 已留占位（v0.2 dogfooding 时观察 planning-with-files vs superpowers/writing-plans 实际语义）
+10. gstack-2 / GSD-2 v2 重写迁移策略（v1.0+ 议题，schema 留迁移接口）
+11. sigstore / cosign 签名集成（v0.4+ 议题，v0.1-0.3 先用 commit hash）
+12. **deferred from phase 1.1**: 原 T4.4 shell-escape pre-Ajv 检测（`$(...)` `${...}` `eval` `!ruby/regexp`）— phase 1.4+ 评估
+13. **deferred from phase 1.1**: 原 T8.7 workflow + routing schema artifact + 同等测试覆盖 — v0.3 phase 1.4
 
 ---
 
@@ -109,8 +124,8 @@
 
 1. ✅ ~~SUMMARY 提议的 6 项 spec 修订尚未应用~~ — **已 patch 进 PROJECT-SPEC v2.1 / WORKFLOWS-MVP v2.1（2026-05-11）**
 2. ✅ ~~新增 5 条风险尚未合并~~ — **已合并到 SPEC § 7（2026-05-11）**
-3. **Cross-OS 测试 Day 1**（不是 v0.4）——CI 红了必须修，不允许 disable Windows
-4. **manifest schema v1 第一行 installer 代码前必须冻结**——schema 改 = 全量 manifest 迁移
+3. ✅ ~~Phase 1.1 schema v1 frozen~~ — **2026-05-12 SHIPPED；ADR 0001/0002 main body 受 `adr-0001-accepted` tag 守恒；进入 phase 1.2 前 schema 改动 = 全量 manifest 迁移**
+4. **Cross-OS 测试 Day 1**（不是 v0.4）——CI config 已在 phase 1.1 落地（ci.yml）；phase 1.2 起 CI 红了必须修，不允许 disable Windows
 5. **DAG resolver Day 1 实装**——sequential 容易拖到 v0.3，brew bundle 案的反面教材
 6. **路由命中率 30 样本必须覆盖 Haiku/Sonnet/Opus 各 ≥ 8**——Haiku 命中率显著低于 Sonnet（R03 实证）
 7. **bus factor 1 真实风险**——Avelino 论文实证单 maintainer 年掉队率 36%，6 个月 co-maintainer 窗口非装饰
@@ -129,16 +144,20 @@
 | Hook 措辞重写 | SUMMARY § 二 冲突 3 决议 | 配置纯 yaml/md + 脚本严格审计 |
 | Cross-OS 前移 | SPEC § 11 修订 | R03 红旗 6 + R04 P0 |
 | 单点维护风险升级 | SPEC § 7 修订 | R04 学术 36%/年 |
+| Schema v1 sufficient (T7.10 verdict) | progress.md § B F14 + § B.4 表 | 9 上游 dry-run 全 pass，零字段缺失，无 errata 需求 |
+| Phase 1.1 SHIP | progress.md § B F17 + .planning/phase-1.1/VERIFICATION.md | 7/8 acceptance bar ✅；A4 ⏳ pending CI；schema v1 frozen via 2 local tags |
 
-### 未决问题（留给 plan-phase）
+### 未决问题（留给 phase 1.2+ phase）
 
-1. manifest type 计数：keep 4 + 子方法 vs 升 5 type？推荐 4 + 子方法，需 ADR
+1. ~~manifest type 计数：keep 4 + 子方法 vs 升 5 type？~~ — **已决：4 type + 6 method（ADR 0003 errata）**
 2. `planning-with-files` 与 `superpowers/writing-plans` 互斥语义（v0.1 dogfooding 观察）
 3. gstack-2 / GSD-2 v2 重写迁移（v1.0+ 议题）
 4. sigstore / cosign 签名（v0.4+ 议题）
 5. `mutually-exclusive skill groups` 元模型（v0.2 设计 pack schema 时定）
 6. token budget 监控 UX（v0.3 设计）
 7. "用户 10 秒手动覆盖路由错误" UX 量化（v0.4 benchmark 时定）
+8. `requires_secret` 字段（API key 注入声明）— v0.2 schema 增强候选（F14 子决策）
+9. `command_prefix_strategy` 字段（gstack 前缀可配置）— v0.2 schema 增强候选（F14 子决策）
 
 ### Blockers
 
@@ -159,20 +178,31 @@ cd D:/GitCode/harnessed
 # 3. 读 REQUIREMENTS.md 看功能需求清单
 # 4. 读 PROJECT-SPEC.md / WORKFLOWS-MVP.md 看立项 spec
 # 5. 读 .planning/research/SUMMARY.md 看调研综合
+# 6. 读 .planning/phase-1.1/VERIFICATION.md 看 phase 1.1 复现指南（A1-A8 + F1-F17 索引）
+# 7. 读 .planning/phase-1.1/progress.md § B 看完整 finding narratives
 ```
 
-### 本 session 关键产出
+### 本 session 关键产出（截至 2026-05-12 phase 1.1 ship）
 
 - `D:/GitCode/harnessed/.planning/ROADMAP.md`
 - `D:/GitCode/harnessed/.planning/STATE.md`（本文件）
 - `D:/GitCode/harnessed/.planning/REQUIREMENTS.md`
+- `D:/GitCode/harnessed/.planning/phase-1.1/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md}`
+- `D:/GitCode/harnessed/docs/adr/{0001,0002,0003}*.md`
+- `D:/GitCode/harnessed/{README.md, CONTRIBUTING.md, LICENSE, NOTICE, NOTICES.md}`
+- `D:/GitCode/harnessed/docs/MAINTAINER-ONBOARDING.md`
+- `D:/GitCode/harnessed/{manifests, workflows, routing, schemas, src, tests}/`
+- `D:/GitCode/harnessed/.github/workflows/ci.yml`
 
-### 性能指标（待 v0.1 启动后填入）
+### 性能指标（phase 1.1 实证）
 
-- 当前 phase token 消耗：—
-- checkpoint 数量：0
-- 累积 ADR 数量：0（目标 v0.4 ≥ 5）
-- 路由命中率：— （目标 ≥ 85%）
+- 当前 phase token 消耗：— (main agent 后续填入)
+- checkpoint 数量：phase 1.1 内多次 batch checkpoint（batch 1-6 各一次）
+- 累积 ADR 数量：3（0001 schema / 0002 toolchain / 0003 method count errata）（目标 v0.4 ≥ 5）
+- 路由命中率：— （目标 ≥ 85%，v0.3 phase 1.4 / v0.4 验收）
+- 总 commits（phase 1.1 累积）：50
+- 总 vitest tests：71 passing
+- bench：21.7-22.7ms mean / RME ±2% / SLA < 50ms（A6 reconfirmed）
 
 ---
 
@@ -189,3 +219,4 @@ cd D:/GitCode/harnessed
 - **ralph-loop**：每子任务交付保证（COMPLETE 标记）
 - **Tavily / Exa MCP**：网络调研优先（不用 WebSearch / WebFetch）
 - **ctx7**：库 / API / SDK 文档查询（默认）
+

@@ -23,7 +23,7 @@
 - ✅ **A1** `pnpm test` ≥ 50 测试 passed (batch 5: 71/50 — 28 baseline + 43 新增)
 - ✅ **A2** ctx7 manifest 在正向测试中 pass (batch 4 T7.9b 落地真 manifests/tools/ctx7.yaml + tests/fixtures/manifests/valid/ctx7.yaml；fixture-driven test 自动 cover)
 - ✅ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 5: 56/35 — T8.2 14 + T8.3 17 + T8.4 7 + T8.5 7 + T4 errors 6 + line-mapping 5)
-- ⏳ **A4** GitHub Actions mac/linux/win × Node 22 全绿
+- ⏳ **A4** GitHub Actions mac/linux/win × Node 22 全绿 (batch 6 T9.1: ci.yml config-ready — 36 lines, 3-OS × Node 22 matrix, defaults shell: bash, fail-fast: false, validate:schema in-line; **pending CI run on first push**, main agent 决定是否 push)
 - ✅ **A5** `node ./scripts/validate-schema.mjs` exit 0 (batch 3 T5.3 达成；用 Ajv 2020 entry 因 artifact 声明 draft-2020-12 — F11)
 - ✅ **A6** vitest bench 100 manifest < 50ms (batch 5 T8.6: 21.7ms mean / 50 samples / RME ±1.5%)
 - ✅ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 4 ✅ 未改 — T7.10 verdict 显示 schema v1 sufficient，无 errata 需求)
@@ -38,8 +38,8 @@
 | 3 | Schema artifact + SCHEMA.md | T5 + T6 | ✅ 完成（batch 3 = T5.1-T5.4 schema artifact 4 子任务 + T6.1-T6.3 SCHEMA.md 3 子任务 = 6 atomic commits（T5.4 verified 无 commit）；18 tests passing；A5 acceptance bar 已达成；F11 finding 见 § B） |
 | 4 | 9 上游 dry-run | T7 | ✅ 完成（batch 4 = T7.0 fixture-loader scaffold + T7.1-T7.9b 10 个 atomic upstream manifests + T7.10 verdict = 12 commits；28 tests passing；A2 ctx7 ✅ + A7 ADR 守恒 ✅ + A8 LF ✅；T7.10 verdict: **schema v1 sufficient — 无字段缺失，无 errata 需求**；see § B F14 + § B.4 C2 表） |
 | 5 | 测试矩阵 | T8 | ✅ 完成（batch 5 = T8.1 ✅ already-done T7.0 fixture-driven + T8.2 14 required-field + T8.3 17 illegal matrix (5→17) + T8.4 7 type-error + T8.5 7 unknown-field strict-line + T8.6 bench + perf gate + T8.7 line-mapping +2 = 6 atomic commits + 1 task_plan/progress sync；71 tests passing (+43 since batch 4)；A1/A3/A6 ✅；perf 21.7ms mean (43% headroom)；see § B F15 (matrix count 17 vs 18) + F16 (T8.4 redefinition) + F17 (no-op) deferred items table） |
-| 6 | CI + Docs | T9 | ⏳ 未开始 |
-| 7 | Phase verify | T10 | ⏳ 未开始 |
+| 6 | CI + Docs | T9 | ✅ 完成（batch 6 = T9.1 ci.yml + T9.2 merged into ci.yml + T9.3 README expand + T9.4 CONTRIBUTING + T9.5 MAINTAINER-ONBOARDING + T9.6 ADR README done = 4 atomic commits + 2 verification-only `[x]`；A4 ⏳ pending CI run on first push） |
+| 7 | Phase verify | T10 | ✅ 完成（batch 6 = T10.1 全套 7 命令本地全绿 + T10.2 VERIFICATION.md (140L) + T10.3 STATE.md → ready for phase 1.2 + T10.4 两个 local tag — 见 § B F17 phase 1.1 ship narrative） |
 
 ### A.4 进度日志（追加式 — newest at bottom）
 
@@ -106,6 +106,16 @@
 2026-05-12 | T8.5 | tests/unit/manifest-validate.unknown-fields.test.ts (7 tests) — top-level extra_field / metadata.unknown_meta / upstream.upstream_extra / spec.custom_field / install.unknown_install_field / upstream_health.unsupported_key + aggregate non-null line check；strict line=expected assertion (LineCounter 准确定位 unknown field 节点行号) | bc06af0
 2026-05-12 | T8.6 | tests/integration/manifest-validate.bench.ts (vitest bench, 100 ops × 50 samples, 21.7ms mean) + tests/integration/manifest-validate.perf.test.ts (CI-enforced threshold gate < 50ms via perf-gate test) + package.json scripts.bench；A6 acceptance bar ✅ 达成 | d037bb2
 2026-05-12 | T8.7 | tests/unit/manifest-validate.line-mapping.test.ts +2 (platforms[0] sequence index line 31 + nested install.npm_version line 18)；total 5 line-mapping tests (含 batch 2 T4.3 已完成的 missing-name / bad-license / CRLF-tolerant 3 个) | be41e99
+2026-05-12 | batch 6 (T9+T10) complete — Phase 1.1 SHIPPED 🎉 | 5 atomic commits + 2 local tags — T9.1 ci.yml (36L 3-OS × Node 22 matrix; defaults shell:bash 统一 PowerShell) + T9.2 merged into ci.yml (validate:schema step) + T9.3 README expand (28→72L; ECC wedge / quick start placeholder / repo tree / ADR links / sponsor placeholder) + T9.4 CONTRIBUTING (139L; F1 Windows corepack workaround / F3 / F9 verbatim CJS / F11 Ajv 2020 + manifest commit rules + ADR 写作规则 + 不允许列表) + T9.5 MAINTAINER-ONBOARDING (50L stub for v0.4) + T9.6 ADR README ✅ already-done (no commit) + T10.1 acceptance bar 7 命令本地全绿 (typecheck/lint/test 71/71/build/build:schema/validate:schema/bench 22.2ms/CLI version) + T10.2 VERIFICATION.md (140L 复现指南 + F1-F16 索引 + phase 1.2 prereq) + T10.3 STATE.md → ready for phase 1.2 + T10.4 git tag adr-0001-accepted + v0.1.0-alpha.1-schema-frozen (local only — main agent 决定何时 push)；A4 ⏳ pending CI on first push (其他 7 个 acceptance bar ✅)；see § B F17 ship narrative | (commits below)
+2026-05-12 | T9.1 | .github/workflows/ci.yml (36L; ubuntu/macos/windows-latest × Node 22; corepack enable → frozen install → typecheck/lint/test/build/build:schema/validate:schema → node dist/cli.mjs --version; defaults shell:bash; fail-fast:false; concurrency cancel-in-progress) | a9e1a7e
+2026-05-12 | T9.2 | merged into T9.1 ci.yml (`corepack pnpm validate:schema` 已 inline in ci.yml step；不另建 schema-validate.yml workflow，karpathy simplicity) | (no separate commit — covered by a9e1a7e)
+2026-05-12 | T9.3 | README.md 28→72 lines: ECC wedge / Apache-2.0 badge / Harness Inc. disclaimer header / quick start placeholder (npx harnessed@latest setup) / repo structure ASCII tree / v0.1.0-alpha.1 status (7/8 ✅ + A4 ⏳) / 7 文档导航链接 / sponsor + co-maintainer placeholder / Apache-2.0 license link | bd4daaf
+2026-05-12 | T9.4 | CONTRIBUTING.md (139L): prerequisites + setup + Windows corepack ACL workaround (F1) + 11 命令清单 + commit message 格式 (phase-N.M: T<N>.<M>) + ADR 写作规则 (ADR 0001/0002 main body 守恒 — A7 acceptance bar) + manifest 提交规则 (SCHEMA.md + ADR 0001 + ADR 0003) + findings 文档化 → progress.md § B + F9 verbatimModuleSyntax CJS interop pattern + F11 Ajv 2020 entry 必要性 + 不允许列表 (vendor / dynamic shell escape / extends / lock 文件统一 / no-verify / 修改 ADR main body) + karpathy simplicity 原则引用 | e798d74
+2026-05-12 | T9.5 | docs/MAINTAINER-ONBOARDING.md (50L stub): v0.4 启用 + 6 月窗口 + co-maintainer 角色定位 (commit access + ADR review + cross-OS CI 守门) + 8 必读文档 + v0.4 启动前 TODO + R04 36%/年掉队率 awareness + Avelino et al. truck factor reference | 0cf2182
+2026-05-12 | T9.6 | docs/adr/README.md ✅ already-complete (ADR 0001/0002/0003 全部索引在 ffc1ff1 ADR 0003 commit 中已完成；本 batch 无需 diff — 直接 `[x]`) | (no commit)
+2026-05-12 | T10.1 | 全套 7 命令本地全绿: typecheck (tsc --noEmit) ✅ + lint (biome 34 files) ✅ + test (10 files / 71 tests passed) ✅ + build (tsup ESM 3 entries + DTS) ✅ + build:schema (7.81 KB artifact) ✅ + validate:schema (Ajv 8 strict + discriminator OK) ✅ + bench (22.2ms mean / 50 samples / RME ±2.11% / hz 44.96) ✅ + node dist/cli.mjs --version → 0.1.0-alpha.1 ✅ | (no commit — verification-only)
+2026-05-12 | T10.2 | .planning/phase-1.1/VERIFICATION.md (140L): A1-A8 复现命令清单 (含 fixture-driven A2 / git diff baseline A7 / awk i/lf A8) + F1-F16 finding 索引表 (resolution 简述) + phase 1.2 prereq 列表 + how-to-reproduce 一键脚本 | 05516c3
+2026-05-12 | T10.3 | git tag (local only) — adr-0001-accepted (HEAD baseline for A7 守恒 future detection 通过 git diff adr-0001-accepted -- docs/adr/0001-*.md) + v0.1.0-alpha.1-schema-frozen (phase 1.1 milestone — schema v1 frozen + 71 tests + 10 upstreams dry-run + bench 21.7ms + 3 ADRs accepted) | (tag-only no commit; main agent 决定是否 push) 
 
 ### A.5 Session 中断恢复指引
 
@@ -428,6 +438,46 @@
 
 ---
 
+#### F17 — Phase 1.1 ship narrative + batch 6 deferred items audit
+
+- **Date**：2026-05-12
+- **Trigger task**：T9 + T10（batch 6 phase verify 收尾）
+- **Symptom**：（按规则即使无意外也 log — 这是 phase 1.1 ship milestone）batch 6 完成 T9.1-T9.6 + T10.1-T10.4 共 10 task，phase 1.1 全部 47 个原子子任务完成或合理 deferred；7/8 acceptance bar ✅，A4 因 CI 异步触发 ⏳ pending first push。
+- **Hypothesis**：N/A — 这是预期路径
+- **Impact**：
+  - **正向**：phase 1.1 SHIP；schema v1 frozen via tag `adr-0001-accepted` + `v0.1.0-alpha.1-schema-frozen`；71 vitest passing + bench 22.2ms < 50ms（A6 reconfirmed in T10.1）；ADR 0001/0002 main body 自 initial commit 后零改动（A7 reconfirmed via `git log` 仅 1 entry）；manifests/*.yaml 全 i/lf（A8 reconfirmed via `awk '$1 != "i/lf"' | wc -l` = 0）。
+  - **CI config-ready 但 CI 异步**：A4 仍 ⏳ pending — `.github/workflows/ci.yml` 36 行 ≤ 60，3-OS × Node 22 矩阵 `defaults: { run: { shell: bash } }` 统一 PowerShell 行为；`fail-fast: false` 跨 OS 全失败可见；`concurrency cancel-in-progress` 防 stale；`validate:schema` step inline；首次 push 后由 main agent 决定何时 push 触发 CI。
+- **Resolution**：✅ phase 1.1 ship locked
+- **Decision impact**：
+  - 主决策：**phase 1.1 acceptance bar 7/8 通过 → 进入 phase 1.2 (cli-npm + mcp-stdio installer + cross-OS CI 实测)**。
+  - **2 个 local tag 打好（不 push）**：
+    1. `adr-0001-accepted`：A7 acceptance bar 的 baseline tag — 之后任何 `docs/adr/0001-*.md` 修改将被 `git diff adr-0001-accepted -- docs/adr/0001-*.md` 检测到；用作 phase 1.2+ 的守恒 sentry。
+    2. `v0.1.0-alpha.1-schema-frozen`：phase 1.1 milestone tag — schema v1 frozen + 71 tests + 10 upstreams dry-run + bench 21.7ms + 3 ADRs accepted（0001 / 0002 / 0003）。
+  - **5 atomic commits**（batch 6）：
+    - `a9e1a7e`：T9.1 ci.yml
+    - `bd4daaf`：T9.3 README expand
+    - `e798d74`：T9.4 CONTRIBUTING.md
+    - `0cf2182`：T9.5 MAINTAINER-ONBOARDING.md stub
+    - `05516c3`：T10.2 VERIFICATION.md
+    - 加最终 sync commit（T10.4 STATE.md → ready for phase 1.2 + task_plan/progress sync）= 6 atomic commits
+- **batch 6 deferred items audit（无新 deferred；F16 deferred 表已涵盖）**：
+  - 原 task T4.4 shell-escape detection: 仍 deferred，phase 1.4+ 评估（schema v1 sufficient 后非阻塞）
+  - 原 task T8.4 reject-list 4 项: 仍 deferred（含 shell-escape / extends 顶层 / yaml dangerous tag），phase 1.4+
+  - 原 task T8.7 workflow + routing schema 同等覆盖: 仍 deferred 到 v0.3 phase 1.4
+  - 这些 deferred 不影响 phase 1.1 ship — 见 F16 的 deferred-items 表与时间安排
+- **Phase 1.1 总结统计**（accumulated）：
+  - **总 commits**：50（main agent 验证：`git log --oneline | wc -l`）
+  - **总 tests**：71 vitest passing
+  - **总 manifests**：10（4 type × 5 method × 4 component_type 矩阵覆盖）
+  - **总 ADRs accepted**：3（0001 schema v1 / 0002 toolchain / 0003 install method count errata）
+  - **总 fixtures**：10 valid + 30+ invalid
+  - **总 SCHEMA.md**：3（manifests 180L / workflows 157L / routing 199L）
+  - **bench**：21.7ms / 22.2ms / 22.7ms（多次测量 mean），perf gate < 50ms ✅
+  - **acceptance bar**：A1 ✅ A2 ✅ A3 ✅ **A4 ⏳ (pending CI)** A5 ✅ A6 ✅ A7 ✅ A8 ✅ → 7/8 ✅
+- **未触发 ADR errata**：本 batch 不出 ADR 0004。所有 deferred 项在已有 finding（F16）/ ROADMAP 中已有跟踪。
+
+---
+
 ### B.4 C2 callout 专用追踪（T7.10 反哺判定）
 
 T7.1-T7.9 9 上游 dry-run 期间，每发现一个 schema 字段不足或语义不清，在此追加：
@@ -455,3 +505,4 @@ T7.1-T7.9 9 上游 dry-run 期间，每发现一个 schema 字段不足或语义
 |-----------|-----|---------|---------|
 | V1 BLOCKER (PLAN-CHECK) | [ADR 0003](../../docs/adr/0003-install-method-count-errata.md) | install method 数 5→6 文档对齐（SPEC § 2 + REQUIREMENTS R1.2 + ROADMAP § 5 + STATE）；ADR 0001 main body 不动维持 A7 守恒 | 2026-05-12 |
 | F14 (T7.10 verdict) | (no schema errata) | schema v1 sufficient — 无字段缺失；触发 V1 BLOCKER 文档对齐时机（→ ADR 0003） | 2026-05-12 |
+| F17 (Phase 1.1 ship) | (no schema errata) | phase 1.1 SHIP — 7/8 acceptance bar ✅ + A4 ⏳ pending CI；2 local tags adr-0001-accepted + v0.1.0-alpha.1-schema-frozen；ready for phase 1.2 | 2026-05-12 |
