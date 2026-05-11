@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: karpathy-skills
+  display_name: andrej-karpathy-skills
+  description: CLAUDE.md behavior rules (Think Before Coding / Simplicity / Surgical / Goal-Driven) — no commands.
+  upstream:
+    source: andrej-karpathy-skills
+    homepage: https://github.com/forrestchang/andrej-karpathy-skills
+    repository: https://github.com/forrestchang/andrej-karpathy-skills.git
+    license: MIT
+    notice: karpathy-skills by forrestchang (rules attributed to Andrej Karpathy), used as cross-cutting coding behavior rules (心法).
+spec:
+  type: cc-skill-pack
+  component_type: behavior-rule
+  install:
+    method: npx-skill-installer
+    cmd: "npx --yes skills@latest add forrestchang/andrej-karpathy-skills"
+    npm_version: ^1.0.0
+    idempotent_check: "grep -q karpathy-skills ~/.claude/CLAUDE.md"
+  verify:
+    cmd: "grep -q 'Think Before Coding' ~/.claude/CLAUDE.md"
+    timeout_ms: 5000
+  uninstall:
+    cmd: "sed -i '/<!-- karpathy-skills:start -->/,/<!-- karpathy-skills:end -->/d' ~/.claude/CLAUDE.md"
+    cleanup_paths:
+      - ~/.claude/CLAUDE.md.harnessed-bak
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-11"
+    last_known_good_version: main-28-commits
+    fallback_action: warn
+  signed_by: harnessed-maintainers
+  platforms:
+    - linux
+    - darwin
+    - win32
