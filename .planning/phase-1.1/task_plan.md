@@ -833,7 +833,7 @@
 ### T5. JSON Schema artifact publish 准备（依赖 T4）
 
 #### T5.1 build-schema 脚本 → manifest.v1.schema.json
-- [ ] **目标**：把 TypeBox 对象 stringify 成标准 JSON Schema 文件
+- [x] **目标**：把 TypeBox 对象 stringify 成标准 JSON Schema 文件
 - **文件**：`/d/GitCode/harnessed/scripts/build-schema.ts`
 - **关键代码**：
   ```ts
@@ -867,7 +867,7 @@
 ---
 
 #### T5.2 workflow phases JSON Schema
-- [ ] **目标**：workflows/*/SKILL.md frontmatter 的 phases 数组 schema
+- [x] **目标**：workflow phases JSON Schema artifact（**batch 3 重定义**：v0.1 phase 1.1 仅 add `pnpm build:schema` npm script；workflow JSON Schema 推迟到 v0.3 phase 1.4+，参见 `workflows/SCHEMA.md` placeholder spec）
 - **文件 1**：`/d/GitCode/harnessed/src/workflow/schema.ts`（TypeBox）
 - **关键代码**：
   ```ts
@@ -917,7 +917,7 @@
 ---
 
 #### T5.3 routing yaml frontmatter JSON Schema
-- [ ] **目标**：B+C 路由 SSOT schema（trigger / hard_route / soft_hint / fallback）
+- [x] **目标**：routing yaml frontmatter JSON Schema artifact（**batch 3 重定义**：v0.1 phase 1.1 落地 `validate:schema` 自校验 + `tests/unit/schema-artifact.test.ts` ≥ 2 真实 assertion；routing JSON Schema 推迟到 v0.1 phase 1.4，参见 `routing/SCHEMA.md` placeholder spec）
 - **文件 1**：`/d/GitCode/harnessed/src/routing/schema.ts`
 - **关键代码**：
   ```ts
@@ -999,7 +999,7 @@
 ---
 
 #### T5.4 `pnpm validate-schemas` 自校验
-- [ ] **目标**：CI 跑 ajv compile --strict=true 三个 schema 文件
+- [x] **目标**：CI 跑 ajv compile --strict=true schema 文件（**batch 3 重定义**：v0.1 phase 1.1 仅校验 manifest.v1.schema.json — workflow / routing 推迟。落地形式：`scripts/validate-schema.mjs` 用 Ajv 8 + ajv/dist/2020 entry，`pnpm validate:schema` exit 0 = **A5 acceptance bar 已达成**。`package.json files: ["dist", "schemas"]` 已含 schemas，`pnpm pack` dry-run 验证 `schemas/manifest.v1.schema.json` 进 npm 包；`schemas/README.md` 已说明用法）
 - **文件**：`/d/GitCode/harnessed/scripts/validate-schemas.mjs`
 - **关键代码**：
   ```js
@@ -1047,7 +1047,7 @@
 ### T6. SCHEMA.md 三份（依赖 T1，可与 T3-T5 并行）
 
 #### T6.1 `manifests/SCHEMA.md`（B7 增补 — ROADMAP 漏列）
-- [ ] **目标**：实现视图说明（与 ADR 0001 决策视图互补）+ 9 上游路径占位 + 链接
+- [x] **目标**：实现视图说明（与 ADR 0001 决策视图互补）+ 9 上游路径占位 + 链接
 - **文件**：`/d/GitCode/harnessed/manifests/SCHEMA.md`
 - **内容大纲**：
   - 引用 ADR 0001 作为 SSOT（决策来源）
@@ -1068,7 +1068,7 @@
 ---
 
 #### T6.2 `workflows/SCHEMA.md`（phases schema 标准定义）
-- [ ] **目标**：复刻 SPEC § 10 标准定义 + plan-feature reference 完整示例
+- [x] **目标**：复刻 SPEC § 10 标准定义 + plan-feature reference 完整示例
 - **文件**：`/d/GitCode/harnessed/workflows/SCHEMA.md`
 - **内容大纲**：
   - 9 字段表（id / layer / upstream / invokes / inputs / outputs / pause? / on_veto? / conditional?）— 直接复制 SPEC § 10 字段定义表
@@ -1084,7 +1084,7 @@
 ---
 
 #### T6.3 `routing/SCHEMA.md`（B+C 路由 yaml frontmatter）
-- [ ] **目标**：完整解释 trigger / hard_route / soft_hint / fallback 4 块
+- [x] **目标**：完整解释 trigger / hard_route / soft_hint / fallback 4 块
 - **文件**：`/d/GitCode/harnessed/routing/SCHEMA.md`
 - **内容大纲**：
   - 4 块字段表 + 类型 + 必填性

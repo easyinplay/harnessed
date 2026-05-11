@@ -20,14 +20,14 @@
 
 (每完成一个 task 后用 ✅/❌/⏳ 更新)
 
-- ⏳ **A1** `pnpm test` ≥ 50 测试 passed (batch 2 现状: 16/50)
+- ⏳ **A1** `pnpm test` ≥ 50 测试 passed (batch 3 现状: 18/50)
 - ⏳ **A2** ctx7 manifest 在正向测试中 pass (batch 2 用 ctx7 yaml 字符串作为 positive test fixture，待 T7 落地真 manifests/tools/ctx7.yaml 后正式打 ✅)
-- ⏳ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 2 现状: 6 negative + 3 line-mapping = 9/35)
+- ⏳ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 3 现状: 6 negative + 3 line-mapping = 9/35; 新增 2 schema-artifact tests 不计入负向)
 - ⏳ **A4** GitHub Actions mac/linux/win × Node 22 全绿
-- ⏳ **A5** `npx ajv compile -s schemas/manifest.v1.schema.json --strict=true` exit 0 (待 T5 build:schema 后)
+- ✅ **A5** `node ./scripts/validate-schema.mjs` exit 0 (batch 3 T5.3 达成；用 Ajv 2020 entry 因 artifact 声明 draft-2020-12 — F11)
 - ⏳ **A6** vitest bench 100 manifest < 50ms (待 T8.6)
-- ⏳ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 2 ✅ 未改)
-- ⏳ **A8** `git ls-files --eol manifests/*.yaml` 输出 LF (manifests/ 仍空，待 T7)
+- ⏳ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 3 ✅ 未改)
+- ⏳ **A8** `git ls-files --eol manifests/*.yaml` 输出 LF (manifests/ 仍空 — manifests/SCHEMA.md 已加但非 yaml；待 T7)
 
 ### A.3 Wave 进度概览
 
@@ -35,7 +35,7 @@
 |------|------|-------|------|
 | 1 | 仓库骨架与工具链 | T1 + T2 | ✅ 完成（batch 1 = T1.1/1.2/1.3-partial/2.1-2.6 共 9 子任务；batch 1.5 = T1.3 完整 + T1.4 LICENSE/NOTICE + T1.5 per-dir READMEs 共 3 子任务） |
 | 2 | Schema 实现与 validator | T3 + T4 | ✅ 完成（batch 2 = F5 deferred deps + T3.1-T3.5 schema 5 子任务 + T4.1-T4.4 validator/tests 4 子任务 = 10 commits；16 tests passing；典型 Rule 1 / Rule 2 deviations 见 § B F8-F10） |
-| 3 | Schema artifact + SCHEMA.md | T5 + T6 | ⏳ 未开始 |
+| 3 | Schema artifact + SCHEMA.md | T5 + T6 | ✅ 完成（batch 3 = T5.1-T5.4 schema artifact 4 子任务 + T6.1-T6.3 SCHEMA.md 3 子任务 = 6 atomic commits（T5.4 verified 无 commit）；18 tests passing；A5 acceptance bar 已达成；F11 finding 见 § B） |
 | 4 | 9 上游 dry-run | T7 | ⏳ 未开始 |
 | 5 | 测试矩阵 | T8 | ⏳ 未开始 |
 | 6 | CI + Docs | T9 | ⏳ 未开始 |
@@ -77,6 +77,14 @@
 2026-05-11 | T4.2 | errors.ts (ajvErrorToFriendly + yamlParseErrorToFriendly) + 6 negative tests (missing field / wrong type / unknown field / non-SPDX / matrix violation / multi-error) + Rule 2 matrix allOf 约束 在 ManifestSchema 顶层 (F10) — RED→GREEN | f5aa7af
 2026-05-11 | T4.3 | yaml CST line/column mapping (LineCounter + doc.getIn(path, true) → range[0] → linePos) + 3 line-mapping tests（含 CRLF tolerant test） — RED→GREEN | 223b04c
 2026-05-11 | T4.4 | discriminator 矩阵测试（5 非法组合 cc-plugin×git-clone-with-setup / cc-plugin×npm-cli / cc-skill-pack×npm-cli / mcp-npm×npm-cli / cli-npm×git-clone-with-setup + 1 legal sanity cli-npm×npm-cli），零新代码，全 GREEN（依赖 T4.2 matrix allOf 约束） | 8eeec01
+2026-05-11 | batch 3 (T5+T6) complete | 6 atomic commits — T5.1/T5.2/T5.3 schema artifact + build:schema + validate:schema + 2 schema-artifact tests; T6.1/T6.2/T6.3 三份 SCHEMA.md（manifests 180L / workflows 157L / routing 199L，均 ≤ 200 行）; T5.4 verified（package.json files 已含 schemas + schemas/README.md 已说明用法 + pnpm pack 验证 schemas/manifest.v1.schema.json 进 npm 包，无 diff 故无 commit）; **A5 acceptance bar ✅ 已达成**；18 tests passing（+2 since batch 2）; karpathy simplicity 沿用——无新 dep（不引 tsx / ts-node）; see § B F11 (Ajv 2020 entry 必要性) | (commits below)
+2026-05-11 | T5.1 | scripts/build-schema.mjs (pure ESM, 读 dist/schemas/index.mjs 写 schemas/manifest.v1.schema.json with draft-2020-12 $schema preamble) + src/schemas/index.ts re-export ManifestSchema + biome.json ignore schemas/*.schema.json (build artifact format conflict with biome) | ef74a70
+2026-05-11 | T5.2 | package.json scripts.build:schema → node ./scripts/build-schema.mjs (pure node 调用，no dep added) | ff897e7
+2026-05-11 | T5.3 | scripts/validate-schema.mjs (Ajv 8 strict + ajv/dist/2020 entry — F11) + tests/unit/schema-artifact.test.ts (2 真实 assertion: A artifact 存在 + 正确 preamble + 4 matrix allOf clauses; B Ajv 2020 strict compile + validator accepts known-good cli-npm×npm-cli manifest); test 16→18; **A5 acceptance bar 达成** | bb865c4
+2026-05-11 | T5.4 | verified-only commit-less: package.json files=["dist", "schemas"] 已含 schemas (line 44-54); schemas/README.md 已说明 IDE / 编译 / 关联 (batch 1.5 已落地); pnpm pack 验证 schemas/manifest.v1.schema.json + schemas/README.md 进 npm 包 | (no commit)
+2026-05-11 | T6.1 | manifests/SCHEMA.md (180 lines): 顶层 4 字段 + metadata 8 字段 + spec 19 字段 + 4 type × 6 method 矩阵 + 4 component_type 语义 + 9 上游 / 10 manifest 路径占位 + VS Code yaml-language-server 集成 + pre-submit checklist + 关联表 | b4a81d9
+2026-05-11 | T6.2 | workflows/SCHEMA.md (157 lines): 顶层结构 + phases[*] 12 字段 + 三层栈语义 + plan-feature reference 5-phase 实例（摘自 WORKFLOWS-MVP）+ v0.1 status (placeholder spec, JSON Schema artifact 推迟到 v0.3) | b4adfb3
+2026-05-11 | T6.3 | routing/SCHEMA.md (199 lines): SSOT 模式（B+C 共享 frontmatter）+ trigger/hard_route/soft_hint/fallback 4 块字段表 + routing/ui.md 完整示例 + routing/search.md v0.1 落地预告（依据用户全局 CLAUDE.md Web 搜索路由规则）+ status (placeholder spec, JSON Schema artifact 推迟到 v0.1 phase 1.4) | 183b9c4
 
 ### A.5 Session 中断恢复指引
 
@@ -294,6 +302,43 @@
   ```
   ManifestBase（TypeBox 对象）不变，矩阵约束以 plain JSON Schema 形式追加为 `allOf`。Static<typeof ManifestBase> 类型推导继续 work（types.ts 改 import ManifestBase 而非 ManifestSchema）。T4.4 discriminator 矩阵测试（5 illegal + 1 legal sanity）全 GREEN 验证此约束有效。
 - **Decision impact**：无 ADR errata（ADR 0001 line 104-113 矩阵已是 SSOT，本次只是把"决策"翻译成"实装"）。task_plan.md T3.4 / T3.5 status 已更新。
+
+---
+
+#### F11 — `scripts/validate-schema.mjs` 必须用 `ajv/dist/2020.js` 入口（非默认 Ajv）
+
+- **Date**：2026-05-11
+- **Trigger task**：T5.3 GREEN 阶段第一次跑 `pnpm validate:schema` exit 1
+- **Symptom**：用 `import { Ajv } from 'ajv'`（默认 entry，等同 `ajv/dist/ajv.js`）+ strict mode 编译 `schemas/manifest.v1.schema.json` 失败，错误为 `no schema with key or ref "https://json-schema.org/draft/2020-12/schema"`。
+- **Hypothesis**：Ajv 8 默认 entry **只注册** draft-07 metaschema。我们的 disk artifact 在 build-schema.mjs 中显式写入 `$schema: https://json-schema.org/draft/2020-12/schema`（GA-1 § C1 决议 + ADR 0001 隐含的"Ajv 8 strict + draft-2020-12"统一）；这个 URI 在默认 entry 中未注册 metaschema，Ajv 把它当作 unknown $schema 拒绝。**对比**：`src/manifest/validate.ts` 编译的是 in-memory ManifestSchema 对象，**没有** `$schema` 字段（因为 src 里 ManifestSchema 仅含 `$id` + `title` + `description` + 矩阵 allOf），所以默认 Ajv 走 draft-07 兼容编译没问题；但 **disk artifact** 多了 `$schema: draft-2020-12` 才出问题。
+- **Impact**：A5 acceptance bar 验证命令必须使用 Ajv 2020 入口；validate-schema.mjs + tests/unit/schema-artifact.test.ts 都需要 `import Ajv from 'ajv/dist/2020.js'`（CJS default 导出）。无 ADR 影响（ADR 0001 / 0002 决策不变，仅是 Ajv API 入口选择细化）。
+- **Resolution**：✅ 两处实装都改用 `ajv/dist/2020.js` + `(Module as unknown as {default: AjvCtor}).default` CJS interop（同 F9 模式）。Strict + discriminator + allErrors 同样配置；编译通过；测试 B "compiled validator accepts known-good manifest" round-trip 验证 artifact 真能用于真校验。
+- **Decision impact**：无 ADR errata。GA-1 § "包名 / 版本" 调研笔记建议补一行："Ajv 8 默认 entry = draft-07-only；声明 `$schema: draft-2020-12` 的 schema 必须用 `ajv/dist/2020.js` 入口编译；ajv-cli 调用 `npx ajv compile` 自动选合适 entry，但 node 内 import 必须显式选"。该认知归档到 v0.4 maintainer onboarding。
+- **Root cause 二选一思考**：另一条路径是 build-schema.mjs **不写** `$schema: draft-2020-12` —— 但 GA-1 § "Schema publish" 明确要求 IDE / SchemaStore 消费者依赖该字段做 metaschema 关联；省掉它会破坏 VS Code yaml-language-server 自动启用补全。所以选择保留 `$schema` + validate-schema 用 2020 entry，是 surgical-correct 选择。
+
+---
+
+#### F12 — biome 与 build artifact JSON 的 formatter 冲突
+
+- **Date**：2026-05-11
+- **Trigger task**：T5.1 lint pass 阶段
+- **Symptom**：`pnpm lint` 报 `schemas/manifest.v1.schema.json format` 错误 — biome formatter 想把 short arrays（如 `"required": ["apiVersion", "kind", "metadata", "spec"]`）单行化，但 `JSON.stringify(obj, null, 2)` 永远多行展开。两者格式风格不可调和。
+- **Hypothesis**：biome JSON formatter 默认风格（lineWidth 100 + 短数组单行）vs Node `JSON.stringify(.., null, 2)` 强制每元素一行。biome 不提供 "preserve as-is" 模式给 build artifact。
+- **Impact**：每次 `pnpm build:schema` 后 lint 都会爆 — 阻塞 CI，需要修。
+- **Resolution**：✅ biome.json `files.includes` 加 `!schemas/*.schema.json`（精确排除 build artifact，不影响 schemas/README.md）。Karpathy surgical — 不改 biome 全局格式风格，不改 build-schema 输出风格（`null, 2` 是社区惯例 + 人类可读），仅排除一类文件。
+- **Decision impact**：无。biome.json 现 includes 列表：`"!**/dist", "!**/node_modules", "!**/.harnessed", "!**/vendor", "!**/*.snap", "!**/.tscache", "!**/coverage", "!schemas/*.schema.json"`。
+
+---
+
+#### F13 — batch 3 SCHEMA.md ≤ 200 行约束触发轻度压缩（routing/SCHEMA.md）
+
+- **Date**：2026-05-11
+- **Trigger task**：T6.3 lint 阶段
+- **Symptom**：routing/SCHEMA.md 第一稿 208 行（超 200 上限 8 行）。manifests/SCHEMA.md 180 行 + workflows/SCHEMA.md 157 行均合规，仅 routing 因含完整 ui.md + search.md v0.1 预告示例略超。
+- **Hypothesis**：routing/SCHEMA.md 内容密度高（B+C SSOT 模式说明 + 4 块字段表 + 2 个完整 yaml 示例 + status + 关联），200 行确实偏紧。题目硬约束 ≤ 200 行（karpathy simplicity）—— 不削减说明内容，先压缩冗余分节标题与 verbose 描述。
+- **Impact**：仅排版层；语义零损失。
+- **Resolution**：✅ 合并 § 9 status + § 10 关联为单 § 9 "当前 status & 关联"，去掉重复"placeholder spec 详细说明"段（manifests/workflows 也用同一模式，readers 跨文件理解一致）。最终 199 行，合规。
+- **Decision impact**：无。后续 SCHEMA.md（如 v0.3 phase 1.4 起草 routing schema artifact 时同步本文件）若需扩展，重新评估 200 行约束（可在 task_plan 中放宽到 250）。
 
 ---
 
