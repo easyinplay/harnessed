@@ -20,14 +20,14 @@
 
 (每完成一个 task 后用 ✅/❌/⏳ 更新)
 
-- ⏳ **A1** `pnpm test` ≥ 50 测试 passed (batch 3 现状: 18/50)
-- ⏳ **A2** ctx7 manifest 在正向测试中 pass (batch 2 用 ctx7 yaml 字符串作为 positive test fixture，待 T7 落地真 manifests/tools/ctx7.yaml 后正式打 ✅)
-- ⏳ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 3 现状: 6 negative + 3 line-mapping = 9/35; 新增 2 schema-artifact tests 不计入负向)
+- ⏳ **A1** `pnpm test` ≥ 50 测试 passed (batch 4 现状: 28/50)
+- ✅ **A2** ctx7 manifest 在正向测试中 pass (batch 4 T7.9b 落地真 manifests/tools/ctx7.yaml + tests/fixtures/manifests/valid/ctx7.yaml；fixture-driven test 自动 cover)
+- ⏳ **A3** ≥ 35 个负向测试 + 行号 assertion 全绿 (batch 4 现状: 6 negative + 3 line-mapping = 9/35; 新增 2 schema-artifact + 10 fixture positive 不计入负向)
 - ⏳ **A4** GitHub Actions mac/linux/win × Node 22 全绿
 - ✅ **A5** `node ./scripts/validate-schema.mjs` exit 0 (batch 3 T5.3 达成；用 Ajv 2020 entry 因 artifact 声明 draft-2020-12 — F11)
 - ⏳ **A6** vitest bench 100 manifest < 50ms (待 T8.6)
-- ⏳ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 3 ✅ 未改)
-- ⏳ **A8** `git ls-files --eol manifests/*.yaml` 输出 LF (manifests/ 仍空 — manifests/SCHEMA.md 已加但非 yaml；待 T7)
+- ✅ **A7** ADR 0001 / 0002 主体未被 phase 1.1 修改 (batch 4 ✅ 未改 — T7.10 verdict 显示 schema v1 sufficient，无 errata 需求)
+- ✅ **A8** `git ls-files --eol manifests/*.yaml` 全 i/lf (batch 4 落地 10 manifests + 10 fixtures，全部 i/lf；F7 验收命令 `awk '$1 != "i/lf"' | wc -l` 输出 0)
 
 ### A.3 Wave 进度概览
 
@@ -36,7 +36,7 @@
 | 1 | 仓库骨架与工具链 | T1 + T2 | ✅ 完成（batch 1 = T1.1/1.2/1.3-partial/2.1-2.6 共 9 子任务；batch 1.5 = T1.3 完整 + T1.4 LICENSE/NOTICE + T1.5 per-dir READMEs 共 3 子任务） |
 | 2 | Schema 实现与 validator | T3 + T4 | ✅ 完成（batch 2 = F5 deferred deps + T3.1-T3.5 schema 5 子任务 + T4.1-T4.4 validator/tests 4 子任务 = 10 commits；16 tests passing；典型 Rule 1 / Rule 2 deviations 见 § B F8-F10） |
 | 3 | Schema artifact + SCHEMA.md | T5 + T6 | ✅ 完成（batch 3 = T5.1-T5.4 schema artifact 4 子任务 + T6.1-T6.3 SCHEMA.md 3 子任务 = 6 atomic commits（T5.4 verified 无 commit）；18 tests passing；A5 acceptance bar 已达成；F11 finding 见 § B） |
-| 4 | 9 上游 dry-run | T7 | ⏳ 未开始 |
+| 4 | 9 上游 dry-run | T7 | ✅ 完成（batch 4 = T7.0 fixture-loader scaffold + T7.1-T7.9b 10 个 atomic upstream manifests + T7.10 verdict = 12 commits；28 tests passing；A2 ctx7 ✅ + A7 ADR 守恒 ✅ + A8 LF ✅；T7.10 verdict: **schema v1 sufficient — 无字段缺失，无 errata 需求**；see § B F14 + § B.4 C2 表） |
 | 5 | 测试矩阵 | T8 | ⏳ 未开始 |
 | 6 | CI + Docs | T9 | ⏳ 未开始 |
 | 7 | Phase verify | T10 | ⏳ 未开始 |
@@ -85,6 +85,19 @@
 2026-05-11 | T6.1 | manifests/SCHEMA.md (180 lines): 顶层 4 字段 + metadata 8 字段 + spec 19 字段 + 4 type × 6 method 矩阵 + 4 component_type 语义 + 9 上游 / 10 manifest 路径占位 + VS Code yaml-language-server 集成 + pre-submit checklist + 关联表 | b4a81d9
 2026-05-11 | T6.2 | workflows/SCHEMA.md (157 lines): 顶层结构 + phases[*] 12 字段 + 三层栈语义 + plan-feature reference 5-phase 实例（摘自 WORKFLOWS-MVP）+ v0.1 status (placeholder spec, JSON Schema artifact 推迟到 v0.3) | b4adfb3
 2026-05-11 | T6.3 | routing/SCHEMA.md (199 lines): SSOT 模式（B+C 共享 frontmatter）+ trigger/hard_route/soft_hint/fallback 4 块字段表 + routing/ui.md 完整示例 + routing/search.md v0.1 落地预告（依据用户全局 CLAUDE.md Web 搜索路由规则）+ status (placeholder spec, JSON Schema artifact 推迟到 v0.1 phase 1.4) | 183b9c4
+2026-05-11 | batch 4 (T7) complete | 12 atomic commits — T7.0 fixture-driven test scaffold (auto-discover valid/*.yaml) + T7.1-T7.9b 10 upstream manifests (gstack / gsd / superpowers / planning-with-files / mattpocock-skills / karpathy-skills / ralph-loop / tavily-mcp / exa-mcp / ctx7) + T7.10 verdict (schema v1 sufficient); 28 tests passing; A2 ctx7 ✅ + A7 ADR 守恒 ✅ + A8 LF ✅; karpathy simplicity 沿用——每个 manifest ≤ 50 行，零编造数据，全部从 R02 取实证；see § B F14 + § B.4 verdict 表 | (commits below)
+2026-05-12 | T7.0 | tests/unit/manifest-validate.fixtures.test.ts — fixture-driven positive validation, auto-registers each tests/fixtures/manifests/valid/*.yaml as own `it()` (零 boilerplate) | 0178db1 + adbb1ed (format fix)
+2026-05-12 | T7.1 | manifests/skill-packs/gstack.yaml + fixture (cc-skill-pack/git-clone-with-setup/command); R02 § 1 garrytan/gstack 93.5k★ MIT no-tag → git_ref: HEAD | f1e7134
+2026-05-12 | T7.2 | manifests/skill-packs/gsd.yaml + fixture (cli-npm/npm-cli/command); R02 § 2 gsd-build/get-shit-done v1.41.2 npm get-shit-done-cc; **lowercase filename** per metadata.name regex `^[a-z0-9][a-z0-9-]*$` (SCHEMA.md § 6 同步小写) | (next)
+2026-05-12 | T7.3 | manifests/tools/superpowers.yaml + fixture (cc-plugin/cc-plugin-marketplace/command); R02 § 3 obra/superpowers v5.1.0 MIT 186k★; 路径用 tools/ (cc-plugin 类) 与 SCHEMA.md § 6 一致而非 task spec table 的 skill-packs/（task spec table T7.3 路径笔误） | (next)
+2026-05-12 | T7.4 | manifests/skill-packs/planning-with-files.yaml + fixture (cc-skill-pack/cc-plugin-marketplace/command); R02 § 4 OthmanAdi v2.37.0 | (next)
+2026-05-12 | T7.5 | manifests/skill-packs/mattpocock-skills.yaml + fixture (cc-skill-pack/npx-skill-installer/command); R02 § 5 mattpocock/skills 70.6k★ no-tag | (next)
+2026-05-12 | T7.6 | manifests/skill-packs/karpathy-skills.yaml + fixture (cc-skill-pack/npx-skill-installer/**behavior-rule**); R02 § 6 forrestchang 125k★; **schema v1 behavior-rule 边界 case 通过** — uninstall.cmd 用 sed 删除 CLAUDE.md 块（marker 注释定位） | (next)
+2026-05-12 | T7.7 | manifests/tools/ralph-loop.yaml + fixture (cc-plugin/cc-plugin-marketplace/command); R02 § 7 anthropics/claude-plugins-official；stability=beta（issue #1429 Windows jq bug） | (next)
+2026-05-12 | T7.8 | manifests/tools/tavily-mcp.yaml + fixture (mcp-npm/mcp-stdio-add/mcp-tool); R02 § 8 tavily-ai 0.2.19; install.cmd 含 `claude mcp add --scope project`（R3.2 强制）；fallback_action=use_alternative + alternative=exa-mcp | (next)
+2026-05-12 | T7.9 | manifests/tools/exa-mcp.yaml + fixture (mcp-npm/mcp-stdio-add/mcp-tool); R02 § 9 exa-labs 3.2.1 14k weekly DL；fallback alternative=tavily-mcp | (next)
+2026-05-12 | T7.9b | manifests/tools/ctx7.yaml + fixture (cli-npm/npm-cli/cli-binary); R02 § 10 upstash/context7 0.4.x; **A2 acceptance bar 达成** — ctx7 真实 manifest fixture 在 fixture-driven test 中 pass | (next)
+2026-05-12 | T7.10 | verdict ✅ schema v1 sufficient — 9 上游 (10 manifests) 全 pass strict 校验，零字段缺失；3 个未来增强字段建议（requires_secret / command_prefix_strategy / mutually_exclusive_with 默认值约束）属 v0.2+ 范围，不阻塞 v0.1；see § B F14 + § B.4 表 | (next, batch progress commit)
 
 ### A.5 Session 中断恢复指引
 
@@ -342,15 +355,54 @@
 
 ---
 
+#### F14 — T7.10 verdict: schema v1 sufficient（9 上游 dry-run 完整反哺判定）
+
+- **Date**：2026-05-12
+- **Trigger task**：T7.10（T7.9b ctx7 完成后立即触发）
+- **Symptom**：（按规则即使无意外也 log — 这是 phase 1.1 关键 milestone）9 上游（10 manifests，含 ctx7 第 10）全部通过 `schemas/manifest.v1.schema.json` strict 校验，零字段缺失，零 schema 异常。
+- **Hypothesis**：N/A — 这是预期路径
+- **Impact**：
+  - **正向**：ADR 0001 manifest schema v1 字段充分性已实证，C2 callout 反哺判定关闭，schema 冻结决策有效。phase 1.1 acceptance bar **A2 ✅**（ctx7 真实 manifest 通过）+ **A7 ✅**（ADR 0001/0002 主体未被 phase 1.1 修改）+ **A8 ✅**（manifests/*.yaml 全 i/lf）。
+  - **不需要**：路径 A（in-place patch ADR 0001）、路径 B（出 ADR 0003 errata）。
+- **Resolution**：✅ verdict locked — schema v1 sufficient
+- **Decision impact**：
+  - 主决策：**schema v1 冻结生效，phase 1.2 起的 installer 实装可基于此 schema 直接编码**。
+  - 子决策 / 路径分歧（已在执行中决定）：
+    1. **GSD manifest filename 改 lowercase**（`manifests/skill-packs/gsd.yaml` 而非 SCHEMA.md § 6 原列的 `GSD.yaml`）— 原因：`metadata.name` 必须匹配 `^[a-z0-9][a-z0-9-]*$` 全小写，文件名跟随 metadata.name 保持跨平台 case-insensitivity 一致性；SCHEMA.md § 6 已同步小写。无 ADR 影响。
+    2. **superpowers 路径用 `manifests/tools/`** 而非 task spec batch instruction table 的 `manifests/skill-packs/`：cc-plugin 类语义上是 tool（plugin）非 skill-pack（superpowers / ralph-loop 都是 cc-plugin → 都放 tools/），与 SCHEMA.md § 6 一致。task spec table 该行为 minor 笔误，不影响 schema 有效性。
+    3. **secret 注入 placeholder 暂未在 manifest 中表达**：tavily-mcp / exa-mcp / ctx7 都需要 API key，但 ADR 0001 schema v1 没有 `requires_secret: { env, instructions_url }` 字段（R02 P3#10 建议），install.cmd 直接信赖 user 预先 export env var。这**不是 v1 schema 缺失**（v1 决策范围内不含 secret 管理），而是**v0.2 schema 增强候选**。临时变通：在 manifest description / notice 或 installer 文档中说明所需 env var；不引入 `${env:KEY}` 占位语法（避免与 T4.4 shell-escape 检测冲突）。
+    4. **command_prefix_strategy 未表达**：gstack 用户可在 setup 时配置 `/office-hours` vs `/gstack-*` 前缀，schema v1 没有 `command_prefix_strategy: configurable | fixed | namespaced` 字段（R02 P0#3 建议）。同样**v0.2 增强候选**，v1 不阻塞——v0.1 plan-feature workflow 暂用 hard-coded `/office-hours`，gstack manifest verify.cmd 假定默认前缀。
+    5. **mutually_exclusive_with 字段已存在但本批次都填空数组**：GSD/planning-with-files、mattpocock/superpowers TDD 重叠等互斥关系已知（R02 P2#7），但 v0.2 dogfooding 后再填 — 字段可选 + 默认空 array，schema 不强制。
+- **未触发反哺路径 — 决策依据**：
+  - 4 type × 6 method × 4 component_type 的笛卡尔覆盖在 10 manifests 中达成 4/4 type、5/6 method（仅 mcp-http-add 占位无真实上游，phase 1.2 找 demo 补）、4/4 component_type（含 behavior-rule 边界 case）— **核心验证矩阵 100% 通过**。
+  - `behavior-rule` 边界 case（karpathy-skills）schema v1 正确允许：`component_type: behavior-rule` 配 `cc-skill-pack` + `npx-skill-installer`，没有强制 `invokes`/`commands_provided` 字段（这些是 workflow / installer 层职责，非 manifest 层）。
+  - 所有 install.method 必填字段（per ADR 0001 line 64-65）按 method 分支正确 enforce — discriminator + matrix allOf 双层约束 work as designed。
+- **后续动作**（非本 batch 范围，main agent 决定）：
+  1. **V1 BLOCKER 待修**：PROJECT-SPEC § 2 + ROADMAP § 5 install method 数应为 6（schema 已 enforce 6 个 method） — 这是**文档与实装数字一致性**问题，建议在下一个 main agent 决策时一并修。题目明确指出"本 batch 不包括 patch SPEC/ROADMAP"。
+  2. **deferred T4.4 shell escape 检测**：与本 verdict 无关（schema v1 字段层充分），但实装层缺失（pre-Ajv pass 检测 `$(...)` `${...}` `eval` `!ruby/regexp`）；T8 batch 时一并落地，不阻塞 phase 1.1 schema 冻结。
+  3. **v0.2 schema enhancement candidates** 已记录在此 finding § Decision impact 子决策 3-5；v0.2 phase 启动时评估。
+- **未触发 ADR errata**：本 verdict 不出 ADR 0003。
+
+---
+
 ### B.4 C2 callout 专用追踪（T7.10 反哺判定）
 
 T7.1-T7.9 9 上游 dry-run 期间，每发现一个 schema 字段不足或语义不清，在此追加：
 
-| 上游 | 缺 / 疑问字段 | 路径 A: in-place patch ADR 0001 / 路径 B: 出 ADR 0003 errata / 路径 C: 占位 TBD 不算缺 | 状态 |
-|------|--------------|------------------------------------------------------------------------------|------|
-| (none yet) | | | |
+| 上游 | type × method × component | 缺 / 疑问字段 | 路径 A: in-place patch / 路径 B: ADR 0003 errata / 路径 C: 占位 TBD 不算缺 | 状态 |
+|------|---------------------------|--------------|--------------------------------------------------------------------|------|
+| gstack | cc-skill-pack × git-clone-with-setup × command | 无 | C: 无（git_ref: HEAD 是占位字段值，schema accepts） | ✅ pass |
+| gsd | cli-npm × npm-cli × command | 无 | C | ✅ pass |
+| superpowers | cc-plugin × cc-plugin-marketplace × command | 无 | C | ✅ pass |
+| planning-with-files | cc-skill-pack × cc-plugin-marketplace × command | 无 | C | ✅ pass |
+| mattpocock-skills | cc-skill-pack × npx-skill-installer × command | 无 | C | ✅ pass |
+| karpathy-skills | cc-skill-pack × npx-skill-installer × **behavior-rule** | 无（schema v1 已正确允许 behavior-rule 不强制 invokes） | C | ✅ pass |
+| ralph-loop | cc-plugin × cc-plugin-marketplace × command | 无 | C | ✅ pass |
+| tavily-mcp | mcp-npm × mcp-stdio-add × mcp-tool | 无 | C（API key 注入推迟到 v0.2 `requires_secret` 字段，不属 v1 缺失） | ✅ pass |
+| exa-mcp | mcp-npm × mcp-stdio-add × mcp-tool | 无 | C | ✅ pass |
+| ctx7 | cli-npm × npm-cli × cli-binary | 无 | C | ✅ pass — **A2 acceptance bar** |
 
-T7.10 verdict（在 T7.9 完成后回来填）：⏳ pending / ✅ schema v1 sufficient / ⚠ requires patch / ❌ requires errata
+**T7.10 verdict（2026-05-12，T7.9b 完成后）**：✅ **schema v1 sufficient** — 9 上游（10 manifests）全部通过 strict schema 校验，**零字段缺失**，**不需要** ADR 0003 errata。详见 § B F14。
 
 ### B.5 已升级为 ADR 的 finding 索引
 

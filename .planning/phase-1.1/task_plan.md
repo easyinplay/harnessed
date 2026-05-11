@@ -1104,7 +1104,7 @@
 > ⚠️ **dry-run 性质**：本 phase 仅验证 schema 字段充分性，9 个 manifest 在 phase 1.2 装 installer 时再精化字段值。
 
 #### T7.1 起草 `manifests/skill-packs/gstack.yaml`（git-clone-with-setup, cc-skill-pack, command）
-- [ ] 文件：`manifests/skill-packs/gstack.yaml`
+- [x] 文件：`manifests/skill-packs/gstack.yaml`
 - 关键字段（dry-run，可填占位 placeholder）：
   ```yaml
   apiVersion: harnessed/v1
@@ -1150,7 +1150,7 @@
 ---
 
 #### T7.2 起草 `manifests/skill-packs/GSD.yaml`（npm-cli, cli-npm, command）
-- [ ] 文件：`manifests/skill-packs/GSD.yaml`
+- [x] 文件：`manifests/skill-packs/gsd.yaml` (lowercase per metadata.name regex; SCHEMA.md § 6 synced)
 - 关键差异：`type: cli-npm`、`install.method: npm-cli`、`npm_version: ^minor`
 - **验收**：validator pass；npm_version 字段格式正确
 - **决策来源**：SPEC § 2 上游 2
@@ -1158,7 +1158,7 @@
 ---
 
 #### T7.3 起草 `manifests/tools/superpowers.yaml`（cc-plugin-marketplace, cc-plugin, command）
-- [ ] 文件：`manifests/tools/superpowers.yaml`
+- [x] 文件：`manifests/tools/superpowers.yaml`
 - 关键差异：`type: cc-plugin`、`install.method: cc-plugin-marketplace`
 - **验收**：validator pass
 - **决策来源**：SPEC § 2 上游 3
@@ -1166,21 +1166,21 @@
 ---
 
 #### T7.4 起草 `manifests/skill-packs/planning-with-files.yaml`（cc-plugin-marketplace, cc-skill-pack, command）
-- [ ] 文件：`manifests/skill-packs/planning-with-files.yaml`
+- [x] 文件：`manifests/skill-packs/planning-with-files.yaml`
 - **验收**：validator pass
 - **决策来源**：SPEC § 2 上游 4
 
 ---
 
 #### T7.5 起草 `manifests/skill-packs/mattpocock-skills.yaml`（npx-skill-installer, cc-skill-pack, command）
-- [ ] 文件：`manifests/skill-packs/mattpocock-skills.yaml`
+- [x] 文件：`manifests/skill-packs/mattpocock-skills.yaml`
 - **验收**：validator pass
 - **决策来源**：SPEC § 2 上游 5
 
 ---
 
 #### T7.6 起草 `manifests/skill-packs/karpathy-skills.yaml`（npx-skill-installer, cc-skill-pack, **behavior-rule**）
-- [ ] 文件：`manifests/skill-packs/karpathy-skills.yaml`
+- [x] 文件：`manifests/skill-packs/karpathy-skills.yaml`
 - 关键差异：`component_type: behavior-rule`（与 command 语义不同 — CLAUDE.md 注入而非命令注册）
 - **验收**：
   - [ ] validator pass
@@ -1191,14 +1191,14 @@
 ---
 
 #### T7.7 起草 `manifests/tools/ralph-loop.yaml`（cc-plugin-marketplace, cc-plugin, command）
-- [ ] 文件：`manifests/tools/ralph-loop.yaml`
+- [x] 文件：`manifests/tools/ralph-loop.yaml`
 - **验收**：validator pass
 - **决策来源**：SPEC § 2 上游 7
 
 ---
 
 #### T7.8 起草 `manifests/tools/tavily-mcp.yaml`（mcp-stdio-add, mcp-npm, mcp-tool）
-- [ ] 文件：`manifests/tools/tavily-mcp.yaml`
+- [x] 文件：`manifests/tools/tavily-mcp.yaml`
 - 关键差异：`type: mcp-npm`、`component_type: mcp-tool`、`install.method: mcp-stdio-add`、`npm_version: ^minor`
 - **验收**：
   - [ ] validator pass
@@ -1208,8 +1208,8 @@
 ---
 
 #### T7.9 起草 `manifests/tools/exa-mcp.yaml` + `manifests/tools/ctx7.yaml`（合并任务）
-- [ ] **文件 1**：`manifests/tools/exa-mcp.yaml`（mcp-stdio-add, mcp-npm, mcp-tool）
-- [ ] **文件 2**：`manifests/tools/ctx7.yaml`（npm-cli, cli-npm, cli-binary）— **acceptance bar A2 要求 ctx7 manifest 在正向测试中 pass**
+- [x] **文件 1**：`manifests/tools/exa-mcp.yaml`（mcp-stdio-add, mcp-npm, mcp-tool）
+- [x] **文件 2**：`manifests/tools/ctx7.yaml`（npm-cli, cli-npm, cli-binary）— **acceptance bar A2 要求 ctx7 manifest 在正向测试中 pass**
 - 关键差异 ctx7：`type: cli-npm`、`component_type: cli-binary`
 - **验收**：
   - [ ] 两份 yaml validator pass
@@ -1219,7 +1219,8 @@
 ---
 
 #### T7.10 反哺 ADR 0001（条件性）
-- [ ] **触发条件**：T7.1-T7.9 中任一 manifest validator 报 schema 缺字段错（不算 placeholder 占位 TBD-COMMIT-HASH 这种字段值类错误）
+- [x] **触发条件**：T7.1-T7.9 中任一 manifest validator 报 schema 缺字段错（不算 placeholder 占位 TBD-COMMIT-HASH 这种字段值类错误）
+- **未触发** ✅：9 上游（10 manifests）全 pass strict schema 校验，零字段缺失。verdict: **schema v1 sufficient**（progress.md § B.4 + F14 详述）。
 - **如触发**：
   - 路径 A：缺字段是 add-only（不破坏现有 v1）→ in-place patch ADR 0001 + bump 文件 last-updated date + 记入 progress.md § B
   - 路径 B：缺字段需改语义（破坏 v1 冻结）→ 出 `docs/adr/0003-manifest-schema-v1-errata.md` 解释 errata 范围 + 升级路径 + Status: "Accepted"

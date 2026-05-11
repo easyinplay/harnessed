@@ -115,7 +115,7 @@ phase 1.1 dry-run 验证字段充分性；实际 install/verify 命令在 phase 
 | 上游 | 文件路径 | type | install.method | component_type |
 |---|---|---|---|---|
 | gstack | `manifests/skill-packs/gstack.yaml` | cc-skill-pack | git-clone-with-setup | command |
-| GSD | `manifests/skill-packs/GSD.yaml` | cli-npm | npm-cli | command |
+| GSD | `manifests/skill-packs/gsd.yaml` | cli-npm | npm-cli | command |
 | superpowers | `manifests/tools/superpowers.yaml` | cc-plugin | cc-plugin-marketplace | command |
 | planning-with-files | `manifests/skill-packs/planning-with-files.yaml` | cc-skill-pack | cc-plugin-marketplace | command |
 | mattpocock-skills | `manifests/skill-packs/mattpocock-skills.yaml` | cc-skill-pack | npx-skill-installer | command |
