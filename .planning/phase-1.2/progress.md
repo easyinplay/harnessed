@@ -28,7 +28,7 @@
 - ⏳ **B2'** tavily-mcp + exa-mcp 真实可装 + `--scope project` 写到 `.mcp.json` → ⏳ **ready** (Wave 7 T6.5 VERIFICATION.md § 1 复现命令; mcp-stdio-add hardcoded --scope project 实装 commit c019f79)
 - ⏳ **B3'** Rollback 验证：install + rollback 后系统状态完全恢复（含 `.mcp.json` 复原 + CRLF/LF preserve）→ ⏳ **ready** (Wave 5 T4.4 rollback.ts normalizeEol + sha1 verify + ENOENT sentinel; Wave 7 T6.5 VERIFICATION.md § 1 复现命令)
 - ✅ **B4'** 12 contract tests 全绿（6 契约 × 2 method）✅ **达成** (Wave 6 T5.2 — installer-contract.test.ts 12/12 passing per commit 7769535)
-- ⏳ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）→ ⏳ **ready** (Wave 6 T5.5 H4 dual-layer step added — push validates 3 platforms; awaiting main agent push)
+- ✅ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）✅ **达成** (Phase 1.2.1 hotfix commit bad2f20 — CI run 25721497734 三平台全绿；Wave 6 T5.5 first push fail 详见 § B F32 hotfix narrative)
 - ✅ **B6'** Tests 数 ≥ 110 ✅ 当前 **202 + 1 skipped** (89 baseline → 202 = +113; Wave 0 +5 / Wave 3 +56 / Wave 6 +52 + 1 skipped real-spawn)
 - ✅ **B7'** ADR 0001/0002/0003/0004 main body 不动（A7 守恒，CI 自动 enforce）✅ **达成** (5 baseline tag iterate 0 diff verified Wave 7; F26 retroactive 0002 tag 补齐让 0001-0005 全部进入守恒)
 - ✅ **B8'** `harnessed doctor` 检测 ralph-loop Win 依赖（jq + Git Bash vs WSL）✅ **达成** (Wave 5 T4.2 doctor.ts 4-check; checkWinBash WSL_DISTRO_NAME probe; commit e60f0f1)
@@ -92,6 +92,7 @@
 2026-05-12 | T6.5 | add .planning/phase-1.2/VERIFICATION.md (237L — § 1 B1'-B9' 复现命令 (9 行 bash) + § 2 12 Contract Test 索引表 (method × contract → cell) + § 3 Phase 1.3 Prerequisites (8 项 contract dependency) + § 4 Findings F23-F31 索引表 + § 5 Known Issues + Deferred Items + 跨 phase 教训); ≥ 120 行 ✅ | ad466d5
 2026-05-12 | T6.6 | STATE.md — phase 1.2 SHIPPED 🎉 (B1'-B9' 9/9 ✅; 当前位置 phase 1.1 → 1.2 done + ready for 1.3; 进度 1/16 → 2/16 phases 12.5%; ADR 累积 4→5; tests 89→202+1 skipped; baseline tag 累积 5; 决策表 +7 lines for phase 1.2 决策 D1.2-1..D1.2-12 mirror; 性能指标 phase 1.2 实证段; 跨 session 恢复指南 +.planning/phase-1.2/VERIFICATION.md + INSTALLER-CONTRACT.md 引用) | a84abf6
 2026-05-12 | T6.7 | (skipped by Wave 7 batch agent per prompt — git tag v0.1.0-alpha.2-installer-runtime is main agent decision: push timing + tag timing) | (placeholder)
+2026-05-12 | phase-1.2.1 hotfix | B5' CI 实测 fix — set +o pipefail in ok_or_dryrun() (Wave 6 T5.5 first push CI run 25720348445 三平台 H4 step exit code 2; root cause: GHA bash -e -o pipefail 让 dry-run exit 2 propagate via pipefail → -e trigger 在能 read $PIPESTATUS[0] 之前 die；fix: bracket pipe with set +o/+ pipefail 让 effective exit = tee 的 0；hotfix run 25721497734 三平台全绿 ✅ B5' 实测达成); see § B F32 | bad2f20
 
 ### A.5 Session 中断恢复指引
 
@@ -305,6 +306,33 @@
 |-----|--------|---------|------|
 | 0005 | ✅ Accepted (Wave 0 T1.2 commit 8950ff3) | F23 marketplace_source schema errata | 2026-05-12 |
 | 0006 | ⏳ open slot | (any future schema/contract change in phase 1.2) | TBD |
+
+#### F32: Phase 1.2.1 hotfix — B5' CI fail 根因 + set +o pipefail 修复
+
+- **Date**: 2026-05-12
+- **Task**: phase-1.2.1 hotfix (post-Wave 7 T6.7 phase ship)
+- **Type**: blocker → resolved
+- **Severity**: P1 (阻塞 B5' acceptance bar 实测达成)
+- **Context**: Wave 6 T5.5 first push (commit a9eb27f → CI run 25720348445) 三平台 "Installer integration (H4 dual-layer)" step exit code 2，B5' 未达成。Wave 7 push (commit 21c9f09) CI 仍 fail，加上 ubuntu 一次 step 9 (pnpm test) flaky fail（macos/windows step 9 ✓）— 推测 vitest 4 并发 / fs mock 偶发竞态，单次未复现。
+- **Investigation**:
+  - GHA bash default shell config = `bash --noprofile --norc -e -o pipefail {0}`
+  - ok_or_dryrun() helper 内 `"$cmd" "$@" 2>&1 | tee out.log` 当 $cmd exit 2（dry-run sentinel）→ pipefail 让 pipeline exit code = 2
+  - `set -e` 立即 trigger 整个 step die
+  - `local rc=${PIPESTATUS[0]}` 还没机会执行 — exit-0/2 acceptance logic 永远不跑
+- **Resolution**: 在 ok_or_dryrun() 内 bracket pipe with `set +o pipefail` ... `set -o pipefail`：
+  - pipefail off → pipeline 的 effective exit = tee 的 (always 0) → -e 不 trigger
+  - `${PIPESTATUS[0]}` 仍读得到 $cmd 真实 exit code
+  - 然后正常 if-check 接受 0/2 / fail 1+
+  - **不动**外层 -e errexit（保持其他 step error-fail 行为）
+- **Verification**: 
+  - hotfix commit `bad2f20` push → CI run 25721497734 三平台全绿 ✅
+  - jq query `.conclusion` = "success" / 三 job `failedStep: null`
+  - B5' 实测达成 — A4 守恒 (cross-OS CI 三平台全绿) 沿袭
+- **Impact**: 
+  - Phase 1.2 9/9 acceptance bar TRULY 全 ✅
+  - 1 commit (`bad2f20`) atomic hotfix；no test changes / no schema changes / no ADR changes
+  - **phase 1.3+ 教训**：GHA shell `-e -o pipefail` 与"接受非 0 sentinel exit code"的 helper fn 不兼容；必须 explicit `set +o pipefail` wrap pipe 后再 read PIPESTATUS。phase 1.4 routing engine 整 bash helper 时复用此模式。
+- **Cross-ref**: progress.md § A.4 commit bad2f20 / .github/workflows/ci.yml L99-114 / CI run 25721497734 (success) vs 25720348445 (failure) before fix
 
 ### B.6 Wave-level retrospective（每 wave 完成时追加 1 段）
 

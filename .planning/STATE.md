@@ -17,7 +17,7 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：v0.1.0 Phase 1.2 ✅ **COMPLETED — SHIPPED 2026-05-12** （Phase 1.1 + 1.1.1 hotfix 已于先前 ship）
+- **GSD phase**：v0.1.0 Phase 1.2 ✅ **COMPLETED — SHIPPED 2026-05-12** + **Phase 1.2.1 hotfix shipped 2026-05-12 (B5' CI fix — set +o pipefail in ok_or_dryrun)** （Phase 1.1 + 1.1.1 hotfix 已于先前 ship）
 - **当前里程碑**：v0.1.0
 - **下一 phase**：Phase 1.3（DAG resolver + harnessed-router 引擎 + setup 完整版）— phase 1.2 已落地 `runInstall(manifest, opts)` 公共 API + `InstallResult` discriminated union + `levelOf(method)` Level seed + `.harnessed/state.json` SSOT schema + `InstallError.keyword` 错误库 — 全部 prereq ready (见 phase-1.2 VERIFICATION.md § 3)
 - **状态**：✅ **Ready for Phase 1.3**
@@ -40,9 +40,10 @@
 4. ✅ ~~A4 acceptance bar~~ — CI run 25686045249 @ 92b355c 三平台全绿；**Phase 1.1 全 8/8 ✅**
 5. ✅ ~~Phase 1.1.1 hotfix~~ — 9 项 paranoid review fixes shipped (B1+B2+M1+H1-H7)；tests 71→89；ADR 0001/0002 不动 (A7 守恒)
 6. ✅ ~~Phase 1.2 SHIPPED~~ — 2026-05-12；installer runtime ready；B1'-B9' 9/9 acceptance bar；ADR 累积 5；tests 89→202+1 skipped
-7. ⏳ **main agent push origin + tag `v0.1.0-alpha.2-installer-runtime`**（T6.7；CI 第 N 轮验证 H4 dual-layer step + A7 守恒 5 tag iterate）
-8. ⏳ **进入 Phase 1.3 plan-phase**（DAG resolver + harnessed-router 引擎 + setup 完整版）
-9. ⏳ Phase 1.4（research workflow 端到端 + routing/search.md SSOT）
+7. ✅ ~~Phase 1.2.1 hotfix~~ — 2026-05-12；B5' CI fail fix (commit `bad2f20` — `set +o pipefail` in ok_or_dryrun helper)；CI run 25721497734 三平台全绿；**B5' acceptance bar 实测达成**（见 phase-1.2/progress.md § B F32）
+8. ⏳ **main agent tag `v0.1.0-alpha.2-installer-runtime`**（T6.7；CI 已三平台全绿验证）
+9. ⏳ **进入 Phase 1.3 plan-phase**（DAG resolver + harnessed-router 引擎 + setup 完整版）
+10. ⏳ Phase 1.4（research workflow 端到端 + routing/search.md SSOT）
 
 ---
 
