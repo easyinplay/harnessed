@@ -42,6 +42,7 @@
 | [0001](./0001-manifest-schema-v1.md) | Manifest Schema v1 | Accepted | 2026-05-11 |
 | [0002](./0002-repo-structure-toolchain-v0.1.md) | Repository Structure and Toolchain v0.1 | Accepted | 2026-05-11 |
 | [0003](./0003-install-method-count-errata.md) | Install Method Count Errata (5 → 6) | Accepted | 2026-05-12 |
+| [0004](./0004-installer-dry-run-diff-preview-contract.md) | Installer Dry-Run + Diff Preview UX Contract | Accepted | 2026-05-12 |
 
 ## 参考
 
