@@ -23,6 +23,9 @@ spec:
     cmd: "/plugin marketplace add OthmanAdi/planning-with-files && /plugin install planning-with-files@planning-with-files"
     git_ref: v2.37.0
     idempotent_check: "/plugin list | grep -q planning-with-files"
+    marketplace_source:        # ADR 0005 — third-party marketplace structured metadata
+      source: github
+      repo: OthmanAdi/planning-with-files
   verify:
     cmd: "/plugin list | grep -q planning-with-files"
     timeout_ms: 5000
