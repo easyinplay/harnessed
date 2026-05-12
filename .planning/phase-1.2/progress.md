@@ -42,7 +42,7 @@
 | 1 | Lib helpers L0 类型基座 | T2.1 (1 task) | ✅ done (commit ca46a59; types.ts 64L; typecheck 0 errors; ready for Wave 2 import) |
 | 2 | Lib helpers L1（5 helpers 并行 — spawn / preflight / diff / confirm / backup） | T2.2 - T2.6 (5 task) | ✅ done (commits 355654b / 718c7f7 / e1f16b0 / 646935a / 3687b00; 5 lib/* files; types.ts imported by all 5; tests still 94; A7 0 diff; F27 logged) |
 | 3 | Lib helpers L2 + Unit Tests（state.ts + 6 lib unit test 文件） | T2.7 - T2.8 (2 task — T2.8 含 6 文件) | ✅ done (commits 8fdbe85 / f6e36ca; state.ts 100L; 6 unit test files; tests 94 → 150 +56; A7 0 diff 5 tag; lint/typecheck 0) |
-| 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ⏳ pending |
+| 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ✅ done (commits 95c0501 / c019f79 / f6acbda; npmCli 135L + mcpStdioAdd 230L + index 66L; tests still 150; A7 0 diff 5 tag; F30 logged; 1 dead-code self-correction) |
 | 5 | CLI subcommands（install + doctor + audit + rollback/status/backup-list） | T4.1 - T4.4 (4 task) | ⏳ pending |
 | 6 | 顶层 wire + Tests + Cross-OS CI 扩展（cli.ts + contract test 12 cell + method/cli unit + ci.yml installer step + real-spawn skipIf） | T5.1 - T5.6 (6 task) | ⏳ pending |
 | 7 | Docs + Phase verify（INSTALLER-CONTRACT + README + CONTRIBUTING + ADR README + VERIFICATION + STATE + tag） | T6.1 - T6.7 (7 task) | ⏳ pending |
@@ -72,7 +72,9 @@
 2026-05-12 | T2.6 | add src/installers/lib/backup.ts (167L ISO-ts dir + sha1 + per-file eol field + ENOENT pure-create sentinel); over 130L target by 37L (4 explicit error paths) | 3687b00
 2026-05-12 | T2.7 | add src/installers/lib/state.ts (100L .harnessed/state.json SSOT — readState/writeState/updateInstalled; atomic .tmp+rename; ENOENT default; karpathy YAGNI no audit/checkpoints) | 8fdbe85
 2026-05-12 | T2.8 | add 6 lib unit tests (preflight 6 / diff 8 / confirm 12 / backup 10 / spawn 10 / state 10 = 56 tests); tests 94 → 150; vi.mock isolation for fs/child_process/@clack; C6 mitigation (zero real IO); see § B F29 deviation note | f6e36ca
-2026-05-12 | T3.1 | add src/installers/npmCli.ts (135L 含 H3 三选一 prompt + L4↔L1 + dry-run short-circuit + 全部 lib/* 复用); biome formatter expansion 把 80 行 logic → 135L wc-l (85 non-blank); see § B F30 deviation note
+2026-05-12 | T3.1 | add src/installers/npmCli.ts (135L 含 H3 三选一 prompt + L4↔L1 + dry-run short-circuit + 全部 lib/* 复用); biome formatter expansion 把 80 行 logic → 135L wc-l (85 non-blank); see § B F30 deviation note | 95c0501
+2026-05-12 | T3.2 | add src/installers/mcpStdioAdd.ts (230L L3 + H2 inline checkCmdString per-args[i] + hardcoded --scope project per CC #54803 + verify via grep -q exit code per C2); main-agent dead-code self-correction (-3L, removed wasted runArgs call from socket-close mid-write); biome formatter expanded args[]/JSON.stringify multi-line; ~120 non-blank logic lines | c019f79
+2026-05-12 | T3.3 | add src/installers/index.ts (66L 6-method dispatch table + 4 phase-2.1 placeholder + levelOf seed; Pattern G barrel; biome organizeImports applied) | f6acbda
 
 ### A.5 Session 中断恢复指引
 
@@ -323,7 +325,26 @@
 - F29 教训：phase 2.1 cc-plugin-marketplace 实装时若 InstallResult 加新 ok:true 变体，先在 types.ts 加 `kind` discriminator 字段（surgical），避免 test 端再加 guard
 - T2.8 6 文件总行数 ~1187L vs phase-1.1 整个 unit test 套件 ~1100L — phase 1.2 lib unit test 单独已超 phase-1.1 全部 test 量，对 wave 4-6 contract test (~12 cell × ~30L = ~360L) + cli unit test (~200L) 总规模有信心，不需要预先 split
 
-[empty — 后续 wave ✅ 后追加]
+#### Wave 4 ✅ retro (2026-05-12)
+
+**What worked**:
+- 3 installer 干净分离 — npmCli (135L) 走 lib/* 全 helper 复用 + H3 三选一 inline `p.select()` (karpathy YAGNI 不抽 selectAt helper)；mcpStdioAdd (230L) 自建 runArgs 工厂（不调通用 spawn.ts — D1.2-10 决策）+ H2 inline `checkCmdString` per-args[i]；index (66L) 6-method dispatch + 4 phase-2.1 placeholder + levelOf seed
+- ADR 0004 § 5 强契约（hardcoded `--scope project`）落到 mcpStdioAdd.ts L94 — 不可由 manifest 覆盖，CC #54803 user-scope bug 永久规避
+- Pattern G barrel + Pattern C "no throw on expected paths" 在 index.ts placeholder 实装上完美契合 — phase 2.1 想接 cc-plugin-marketplace 时只需替换一个 import + 调用 levelOf 已 cover
+- 5 ADR baseline tag (0001-0005) iterate 全 0 diff，A7 守恒持续生效
+- tests 仍 150 (Wave 4 不加 test，符合 plan — installer unit test 在 Wave 6 T5.3)
+
+**What was inefficient / surprised**:
+- T3.2 mcpStdioAdd 实装时 socket close mid-write 触发 dead-code 残留：agent 先写 `const v = await runArgs(...)` 然后意识到 runArgs always prefixes 'claude' 不适合 verify shell call，改写 inline `vr` 替代但忘删 `v` 行 + 用 `void v` workaround。**main agent 自纠正**：删 L172 + L201 dead code 共 -3 行，typecheck/lint 全绿。**phase 1.3+ 教训**：长 task agent socket-close 风险 → 写 helper 时如发现首选 path 不通要"完整删除回退"，不留 `void` workaround；main-agent 接手时优先 grep `void [a-z] // ` 模式快速定位。
+- T3.3 index.ts 第一次 commit 触发 biome organizeImports 修复（type imports 排前 + alphabetical）— 沿袭 Wave 2 教训：所有新文件先跑 `biome check --write` 一次再手动 commit，避免 lint round-trip。
+- T3.2 230L 显著超 80L 软目标：mcpStdioAdd 真实 logic ~120 non-blank（4 个 phase 错误对象 × ~12L + 自建 runArgs ProcResult 工厂 25L + verify shell 分支 ~30L）— 与 Wave 2 backup.ts 167L 同款 trade-off：Pattern C 强制每 phase 显式映射 keyword，不折叠保留诊断粒度。**phase 1.3+ 教训**：D1.2-10 决策（mcpStdioAdd 不调通用 spawn）令本文件天然超目标 — task_plan 估行 60L 应改为"逻辑行数 ≤ 80L; 总行数 ≤ 240L"。
+- npmCli.ts 的 H3 三选一 prompt 实装走 inline `p.select()`（不扩展 confirm.ts 加 selectAt helper）— karpathy YAGNI 选择，单 caller 不值抽抽。**phase 2.1 教训**：若 cc-plugin-marketplace 也需要类似 3-way prompt 时再抽 lib/confirm.ts selectAt。
+
+**Phase 1.3 / Wave 5 如何沿用**:
+- index.ts 的 `runInstall(manifest, opts)` 公共 API 直接给 cli/install.ts (T4.1) 消费 — Wave 5 无需再 wrap
+- mcpStdioAdd.ts 的 ProcResult interface 可独立提到 lib/types.ts（如 phase 2.1 mcp-http-add 也需要）— phase 1.2 内 1 个 caller 不抽（YAGNI）
+- index.ts 的 levelOf seed 设计：phase 1.4 routing engine 拿到 manifest 时可直接 import levelOf 复用 Level 推断（不需要 reimplement）
+- T3.2 dead-code 自纠正经验：long-running task 中断恢复 SOP = main-agent grep `void [a-z]` / `// .*above.*wrong` / `replaced by` 等 in-comment marker 快速定位
 
 ---
 

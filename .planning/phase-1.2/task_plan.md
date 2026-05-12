@@ -398,7 +398,7 @@
 ---
 
 #### T3.2 写 src/installers/mcpStdioAdd.ts
-- [ ] **目标**：mcp-npm × mcp-stdio-add 实装 — Level: L3；强制 `--scope project`；idempotent 用 grep -q（C2 mitigation）
+- [x] **目标**：mcp-npm × mcp-stdio-add 实装 — Level: L3；强制 `--scope project`；idempotent 用 grep -q（C2 mitigation）
 - **文件**：`/d/GitCode/harnessed/src/installers/mcpStdioAdd.ts`
 - **内容大纲**（~50 行）：
   - 顶部 IMPL NOTE：引用 ADR 0004 契约 5 + R03 § 3.3 红旗 1（CC #54803 user-scope bug）
@@ -424,7 +424,7 @@
 ---
 
 #### T3.3 写 src/installers/index.ts — dispatch + runInstall orchestrator
-- [ ] **目标**：2-method dispatch + 其余 4 method 显式 placeholder（ROADMAP phase 2.1 unblock）
+- [x] **目标**：2-method dispatch + 其余 4 method 显式 placeholder（ROADMAP phase 2.1 unblock）
 - **文件**：`/d/GitCode/harnessed/src/installers/index.ts`
 - **内容大纲**（~40 行）：
   ```typescript
