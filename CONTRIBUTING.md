@@ -132,6 +132,45 @@ import Ajv from 'ajv/dist/2020.js'  // CJS default — 注意 interop
 
 详见用户全局 CLAUDE.md 路由规则。
 
+## How to add a doctor check (Pattern I — auto-glob)
+
+`harnessed doctor` 检查 4 项 phase 1.2 baseline（Node ≥ 22 / MCP scope / jq present / Win bash flavor）。新加 check 走以下步骤：
+
+1. **加 check fn**：`src/cli/doctor.ts` 加新函数 `checkXxx(): DoctorResult`，返回 `{ ok, name, version?, fixHint? }`。Pattern I auto-glob 风格——每 check 平均 25-35 行，含 cross-OS fix hint 三分支（Win/Mac/Linux）。
+2. **register 到 entry**：`runDoctor()` 顶部加 `const xxx = await checkXxx()` + `printResult(xxx)`。无需手动维护 check 数组——doctor.ts 用 sequential await 顺序展示。
+3. **加 unit test**：`tests/unit/cli-doctor.test.ts` 加 BASE+modifier cell（Pattern J），mock `node:child_process` spawnSync 模拟 cmd not found / cmd ok / cmd version-mismatch 三场景。
+4. **跑 acceptance**：`corepack pnpm test -- --filter cli-doctor` 全绿；`corepack pnpm typecheck && corepack pnpm lint` 0 errors；提交时跑 `biome check --write` 一次 format pass 避免 lint round-trip（Wave 4-5 教训）。
+
+参考实装：`src/cli/doctor.ts` checkWinBash（双 step：`where bash` → `bash -c "echo $WSL_DISTRO_NAME"` 探 WSL）。
+
+## ADR 0005 marketplace_source schema errata 写作背景
+
+ADR 0005（2026-05-12 accepted）补 `cc-plugin-marketplace.spec.install.marketplace_source` optional 字段——为什么不直接改 ADR 0001？
+
+**A7 守恒**：ADR 0001 / 0002 / 0003 / 0004 main body 一旦 accepted，**永久禁止 inline 修改**。CI workflow 通过 5 个 baseline tag (`adr-0001-accepted` / 0002 / 0003 / 0004 / 0005) 自动 enforce——任一 tag 之后 main body 任何字符 diff = CI fail（详见 `.github/workflows/ci.yml` "A7 acceptance bar" step iterate 5 tag）。
+
+**Errata 流程**：
+
+1. 发现 schema 字段缺口（如 phase 1.2 实装 `cc-plugin-marketplace` installer 时发现 manifest 描述 marketplace 来源 URL）
+2. 起草新 ADR `0005-<short-title>.md`，Status `Proposed` → 决策 review → `Accepted`
+3. 改对应 `src/manifest/typebox/<methodSchema>.ts` 加 optional 字段（不动 schema kernel；run `corepack pnpm build:schema` 重生 artifact）
+4. 同步 manifest fixture（如 `manifests/skill-packs/planning-with-files.yaml` add `marketplace_source`）
+5. 加 unit tests（Pattern J BASE+modifier，5 cell × 平均 1.4 assertion）
+6. 更新 `docs/adr/README.md` 索引；ADR 0001 main body 在 § Status 之后加 cross-ref 注释（**不改 main body**，仅在标题行加 "see ADR 0005 for ..." prefix）
+7. CI 复跑 5 baseline tag iterate 全 0 diff — A7 守恒满足
+
+ADR 0005 实装路径（commit 8950ff3 → 715f880 → 1ec7478 → 840e606）即此流程的 reference implementation——任何后续 schema errata（ADR 0006+）沿用同款。
+
+## Phase Verification Index
+
+每 phase ship 时落 `.planning/phase-<N.M>/VERIFICATION.md`（≥ 120 行）—— 任何人按文件可复现该 phase acceptance bar。phase 1.1 由 `VERIFICATION.md` 引导 8 项 A1-A8 复现；phase 1.2 由同款文件引导 9 项 B1'-B9'。文件包含：
+
+- § 1 Acceptance Bar 复现命令（每 bar 一行 bash）
+- § 2 Contract / Integration test 索引表
+- § 3 下一 phase prereq（依赖契约）
+- § 4 Findings 索引（progress.md § B 反向链接）
+- § 5 Known issues + deferred items 列表
+
 ## Questions?
 
 - Issues: [GitHub Issues](https://github.com/<owner>/harnessed/issues)
