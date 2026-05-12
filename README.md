@@ -35,11 +35,49 @@ harnessed/
 └── docs/adr/           # 架构决策记录
 ```
 
-## v0.1.0-alpha.1 状态
+## v0.1.0-alpha.2 状态
 
+- **Phase 1.2 shipped** ✅（cli-npm + mcp-stdio installer runtime + 5 CLI subcommands + 12 contract tests + ADR 0005 errata + 202 tests / 1 skipped）
+- **Acceptance bar B1'-B9' 9/9** ✅（contract test 12/12 / A7 ADR 0001-0005 守恒 / 5 baseline tag iterate / Cross-OS CI dual-layer step）
 - **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + 89 tests + bench 21.7ms + B1 shell-escape security gate + 3 ADRs）
-- **Acceptance bar 8/8** ✅（CI run 25704797536 三平台全绿 + A7 自动守恒）
-- **Next**：phase 1.2（cli-npm + mcp-stdio installer + setup/doctor 命令骨架）
+- **Next**：phase 1.3（DAG resolver + harnessed-router 引擎 + setup 完整版）
+
+## Install Quick Start（phase 1.2 ready）
+
+`harnessed install <name>` **默认 dry-run**——列出将装的上游 / 改的文件，必须 `y` / `--apply` 才执行。详见 [docs/INSTALLER-CONTRACT.md](./docs/INSTALLER-CONTRACT.md) 6 条用户视角硬契约。
+
+```bash
+# 默认 dry-run（看 diff，不写盘）
+harnessed install ctx7
+
+# 显式 apply（交互场景）
+harnessed install ctx7 --apply
+
+# 自动化场景（CI 流水线）— 双 flag 必须
+harnessed install tavily-mcp --non-interactive --apply
+
+# 看已装状态 / 备份 / 清理
+harnessed status
+harnessed backup list
+harnessed gc --older-than 30d --apply
+
+# 出错恢复（一行回滚 + EOL preserve + sha1 verify）
+harnessed rollback 2026-05-12T15:30:00Z
+
+# 健康检查（4-check：Node ≥ 22 / MCP scope / jq present / Win bash flavor）
+harnessed doctor
+```
+
+### Flags
+
+| Flag | 说明 |
+| ---- | ---- |
+| `--apply` | 显式执行（默认 dry-run） |
+| `--dry-run` | 永不写盘（即使加 `--apply` 也优先 dry-run） |
+| `--system` | L4 全局装允许（否则自动降级 L1 npx ephemeral） |
+| `--non-interactive` | 自动化场景；必须配合 `--apply` 或 `--dry-run` 否则 exit 2 |
+| `--full-diff` | 展开 > 200 行的 diff 折叠 |
+| `--no-color` | 强制 nocolor（即使 TTY） |
 
 ## 使用流程（phase 1.2 实装后启用）
 
