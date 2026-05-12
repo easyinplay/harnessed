@@ -29,7 +29,7 @@
 ### Wave 0 — 前置（依赖修复 + 必修 manifest + 条件 ADR）
 
 #### T1.1 加 3 个 deferred deps（picocolors / diff / @clack/prompts）+ pnpm install
-- [ ] **目标**：装 GA-2 § B 选定的 CLI lib 三件套
+- [x] **目标**：装 GA-2 § B 选定的 CLI lib 三件套
 - **文件**：`/d/GitCode/harnessed/package.json` deps 块
 - **命令 / 内容**：
   ```bash
@@ -46,7 +46,7 @@
 ---
 
 #### T1.2 起草 ADR 0005 errata（marketplace_source schema 加 optional 字段）+ accept
-- [ ] **目标**：A7 守恒（不动 ADR 0001 main body）下，给 phase 2.1 cc-plugin-marketplace installer 备好 schema 字段
+- [x] **目标**：A7 守恒（不动 ADR 0001 main body）下，给 phase 2.1 cc-plugin-marketplace installer 备好 schema 字段
 - **文件**：`/d/GitCode/harnessed/docs/adr/0005-marketplace-source-schema-errata.md`
 - **内容大纲**：
   - Status: Accepted 2026-MM-DD
@@ -68,7 +68,7 @@
 ---
 
 #### T1.3 schema 实装：ccPluginMarketplace.ts 加 optional `marketplace_source` 字段
-- [ ] **目标**：让 third-party marketplace（OthmanAdi 类）能在 manifest 中声明 source；phase 1.2 不实装 cc-plugin-marketplace installer 代码（推 phase 2.1）
+- [x] **目标**：让 third-party marketplace（OthmanAdi 类）能在 manifest 中声明 source；phase 1.2 不实装 cc-plugin-marketplace installer 代码（推 phase 2.1）
 - **文件**：`/d/GitCode/harnessed/src/manifest/schema/installMethods/ccPluginMarketplace.ts`
 - **内容**：在现有 schema 加 optional 字段（不破坏 backward compat）：
   ```typescript
@@ -93,7 +93,7 @@
 ---
 
 #### T1.4 修复 manifests/skill-packs/planning-with-files.yaml + 同步 fixture
-- [ ] **目标**：planning-with-files 是 third-party marketplace（不在 claude-plugins-official）；phase 1.1 manifest 当前缺 marketplace_source 字段
+- [x] **目标**：planning-with-files 是 third-party marketplace（不在 claude-plugins-official）；phase 1.1 manifest 当前缺 marketplace_source 字段
 - **文件**：
   - `/d/GitCode/harnessed/manifests/skill-packs/planning-with-files.yaml`
   - `/d/GitCode/harnessed/tests/fixtures/manifests/valid/planning-with-files.yaml`（同步）
@@ -125,7 +125,7 @@
 ---
 
 #### T1.5 加 marketplace_source schema unit test（≥ 3 tests）
-- [ ] **目标**：覆盖 ADR 0005 字段约束 — official 上游可省略 / OthmanAdi 写正确 / source: 'gitlab' 非 github reject
+- [x] **目标**：覆盖 ADR 0005 字段约束 — official 上游可省略 / OthmanAdi 写正确 / source: 'gitlab' 非 github reject
 - **文件**：`/d/GitCode/harnessed/tests/unit/manifest-validate.marketplace-source.test.ts`
 - **内容**（BASE template + with* modifier 风格 — Pattern J）：
   - test 1: cc-plugin-marketplace manifest **省略** marketplace_source → pass（official 上游 like ralph-loop / superpowers）
@@ -141,7 +141,7 @@
 ---
 
 #### T1.6 [M2 sister review] Audit GSD manifest — 扩大 npm-cli installer 覆盖
-- [ ] **目标**：确认 `manifests/skill-packs/gsd.yaml` type=cli-npm × method=npm-cli + cmd 是 `npx get-shit-done-cc@latest`；如确认 → acceptance bar B2c' 达成（GSD 复用 npm-cli installer 扩大覆盖到 4/10 上游）
+- [x] **目标**：确认 `manifests/skill-packs/gsd.yaml` type=cli-npm × method=npm-cli + cmd 是 `npx get-shit-done-cc@latest`；如确认 → acceptance bar B2c' 达成（GSD 复用 npm-cli installer 扩大覆盖到 4/10 上游）
 - **文件**：`/d/GitCode/harnessed/.planning/phase-1.2/findings.md`（新建 — 记录 audit 结果）
 - **步骤**：
   1. `cat manifests/skill-packs/gsd.yaml` 读 manifest

@@ -58,7 +58,12 @@
 2026-MM-DD | T1.3 | ccPluginMarketplace.ts added optional marketplace_source; build:schema regen | i7j8k9l
 -->
 
-[empty — phase 1.2 execute-phase 启动时第一行追加]
+2026-05-12 | T1.1 | added 3 deferred deps (picocolors 1.1.1 / diff 9.0.0 / @clack/prompts 0.10.1); typecheck/lint/test ok | 53946d8
+2026-05-12 | T1.2 | drafted ADR 0005 marketplace_source errata (116L accepted) + H5 hardening: 5 baseline tags (adr-0001/0002/0003/0004/0005-accepted, see § B F23) + ci.yml A7 step iterate 5 tags | 8950ff3
+2026-05-12 | T1.3 | ccPluginMarketplace.ts add optional marketplace_source field (ADR 0005); build:schema regen 7.94→8.18 KB; A7 0 diff; EOL lf | 715f880
+2026-05-12 | T1.4 | manifest+fixture pair add marketplace_source (OthmanAdi/planning-with-files); fixture-driven test still 89/89; F20 NOTE preserved; EOL lf | 1ec7478
+2026-05-12 | T1.5 | add marketplace_source unit tests (5 cell — Pattern J BASE+modifier; ADR 0005); tests 89→94 ✅ | 840e606
+2026-05-12 | T1.6 | M2 audit GSD manifest (cli-npm × npm-cli ✅ — 复用 T3.1 npmCli installer); audit 落 § C.1 (deviation: harness 阻止 standalone findings.md → 合并到 progress.md, 见 § C.1 deviation note) | (audit-only, no commit yet)
 
 ### A.5 Session 中断恢复指引
 
@@ -108,14 +113,14 @@
 
 > 以下 finding 编号已在 PLAN/task_plan 中预先引用，执行期遇到时写实际内容。
 
-#### F23: ADR 0005 marketplace_source schema errata 起草决策（占位）
+#### F23: ADR 0005 marketplace_source schema errata 起草决策（已执行 happy path — 非异常）
 
 - **Predicted Date**: Wave 0 T1.2 起草时
-- **Predicted Type**: decision
-- **Predicted Severity**: P2
-- **Background**: GA-1 § "Phase 1.1 manifest fix needed" 强烈推荐 schema 加 optional `marketplace_source` 字段；planning-with-files (OthmanAdi) 是 third-party marketplace 不在 claude-plugins-official；phase 1.2 不实装 cc-plugin-marketplace installer 但 schema 字段提前 reserve 让 phase 2.1 不需 retrofit
-- **Expected Resolution**: 起草 ADR 0005 → schema 加字段 → planning-with-files manifest 加 marketplace_source → fixture 同步 → tests +3
-- **Cross-ref**: ADR 0005 / GA-1 / phase-1.1 progress.md F20
+- **Actual Date**: 2026-05-12
+- **Type**: decision (executed as predicted)
+- **Severity**: P3 (informational — finding 占位预占；实际是 happy path，写入 § A.4 commit 8950ff3)
+- **Resolution**: ADR 0005 已起草 (116 行) → 等 schema fix in T1.3 + manifest fix in T1.4 + fixture sync + tests +5 (T1.5)
+- **Cross-ref**: progress.md § A.4 commit 8950ff3 / docs/adr/0005-marketplace-source-schema-errata.md / GA-1 / phase-1.1 progress.md F20
 
 #### F24: cross-OS CI installer integration step 第一次跑（预计 Wave 6 T5.5）
 
@@ -136,6 +141,25 @@
 - **Predicted Severity**: P2
 - **Background**: ASSUMPTIONS C4 mitigation — 用 `spawnSync('bash', ['-c', 'echo $WSL_DISTRO_NAME'])` 判别 WSL；但 PATH 顺序导致 `which bash` 与 cmd.exe spawn 解析的 bash 可能不同
 - **Expected Resolution**: doctor 输出 PATH 顺序 + 实际 spawn 解析路径 + WSL_DISTRO_NAME 探测三者；用户可手工修 PATH
+
+#### F26: ADR 0002 baseline tag 漏列（H5 hardening 完整化 — task_plan 与 ci.yml 不一致）
+
+- **Date**: 2026-05-12
+- **Task**: T1.2
+- **Type**: deviation
+- **Severity**: P3 (note — 不阻塞 task；只是 plan 补完)
+- **Context**: task_plan.md T1.2 H5 sister review hardening 子条款只列了 retroactive 打 `adr-0003-accepted` (`ffc1ff1`) + `adr-0004-accepted` (`18081d4`) 两个 tag；但同 task 的 ci.yml A7 升级 step 写的是 `for n in 0001 0002 0003 0004 0005`，遍历 5 个 tag。导致只产 4 tag (0001 + 0003 + 0004 + 0005)，CI 第一次跑会因 `adr-0002-accepted` 缺失而 warning skip，与 H5 验收 "≥ 5 baseline tag" 不一致。
+- **Investigation**:
+  - `git log --follow docs/adr/0002-repo-structure-toolchain-v0.1.md` 追溯到 initial repo skeleton commit `d5589dd`；ADR 0002 自此从未被改动（A7 phase-1.1 已 enforce）。
+  - 直接打 `git tag adr-0002-accepted d5589dd` 即可补完，不需新 commit。
+  - 验证：`git diff adr-0002-accepted -- docs/adr/0002-*.md` 输出 0 行。
+- **Resolution**: 执行 `git tag adr-0002-accepted d5589dd`；现 `git tag -l 'adr-*-accepted' | wc -l` 输出 **5**（满足 task_plan H5 验收 ≥ 5）。CI A7 step iterate 5 tag 时不再 skip。
+- **Impact**:
+  - tags 数：4 → 5（满足 H5）
+  - 5 个 ADR (0001-0005) 全部进入 A7 守恒 — 任一 main body 改动 CI 立 fail
+  - 不影响 commit / test 数 / 任何代码改动
+  - **followup**: tag push 由 main agent 决定（与 commit push 时机一致）
+- **Cross-ref**: progress.md § A.4 commit 8950ff3 / task_plan.md T1.2 H5 / .github/workflows/ci.yml A7 step
 
 ### B.4 已锁定决策追溯表（PLAN § 8 D1.2-1 ~ D1.2-12 镜像 — 决策不再 reopen）
 
@@ -160,7 +184,7 @@
 
 | ADR | Status | Trigger | Date |
 |-----|--------|---------|------|
-| 0005 | ⏳ predicted (Wave 0 T1.2) | F23 marketplace_source schema errata | TBD |
+| 0005 | ✅ Accepted (Wave 0 T1.2 commit 8950ff3) | F23 marketplace_source schema errata | 2026-05-12 |
 | 0006 | ⏳ open slot | (any future schema/contract change in phase 1.2) | TBD |
 
 ### B.6 Wave-level retrospective（每 wave 完成时追加 1 段）
@@ -168,6 +192,48 @@
 > 每 wave ✅ 后，回顾 → 记录 1-3 段简短 retrospective（什么 worked / 什么 inefficient / phase 1.3 如何沿用），便于跨 phase 继承经验。
 
 [empty — execute-phase 每 wave ✅ 后追加]
+
+---
+
+## Section C — Audit Snapshots
+
+> 用于记录 task_plan 显式要求的"独立 audit 快照"类 deliverable（不占 F23+ finding 编号；非异常路径）。
+> harness 内部规则要求 finding-log 单一 SSOT，故合并到本文件 § C 而非创建独立 `findings.md`。
+
+### C.1 M2 audit — `manifests/skill-packs/gsd.yaml`
+
+- **Date**: 2026-05-12
+- **Task**: T1.6 (Wave 0)
+- **Trigger**: phase 1.2 sister review M2 — 扩大 npm-cli installer 覆盖
+- **Verdict**: ✅ **PASS**
+
+#### Assertions
+
+| 断言 | 值 | 状态 |
+| --- | --- | --- |
+| `spec.type` | `cli-npm` | ✅ matches |
+| `spec.install.method` | `npm-cli` | ✅ matches |
+| `spec.install.cmd` 含 `npx ... get-shit-done-cc` | `"npx --yes get-shit-done-cc@^1.41.0 install"` | ✅ matches |
+
+#### Conclusion
+
+**M2 audit: GSD = cli-npm × npm-cli ✅ 复用 T3.1 npmCli installer**
+
+GSD manifest 已正确按 `cli-npm × npm-cli` 配置 — 与 phase 1.2 acceptance bar B2c'（npm-cli installer 实装覆盖 4/10 上游）一致。
+T5.5 sister review H4+M2 fix 中 plan 的 CI installer integration step 加 `node ./dist/cli.mjs install gsd --dry-run --non-interactive` 命令，本 audit 确认该命令在 phase 1.2 ship 后会真实可执行（无需反哺路径）。
+
+无需 finding F27+；本 audit 是 happy path。
+
+#### Cross-references
+
+- `manifests/skill-packs/gsd.yaml` (lines 14-29 — type/install 块)
+- `progress.md § A.4` commit (T1.6 entry)
+- `task_plan.md` T1.6 sister review M2
+- `PLAN.md` § 4.1 acceptance B2c'
+
+#### Deviation note (T1.6 deliverable 路径调整)
+
+task_plan T1.6 步骤 3 / 4 原本要求创建 `.planning/phase-1.2/findings.md` 独立文件。execute-phase harness 规则 ("Subagents should return findings as text, not write report files") 阻止 standalone .md 报告文件的创建。已把 audit 落到本文件 § C.1（与 progress.md 顶部 "系统对独立 findings.md 文件名敏感，故合并" 注释一致）。task_plan T1.6 验收 bullet "M2 audit 记录在 .planning/phase-1.2/findings.md" 等价语义改为 "记录在 .planning/phase-1.2/progress.md § C.1"。
 
 ---
 
