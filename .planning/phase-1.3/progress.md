@@ -1,0 +1,97 @@
+# Phase 1.3 Progress & Findings Tracker
+
+> **本文件合并 progress + findings 双重职责**（系统对独立 findings.md 文件名敏感，故合并 — phase-1.1/1.2/1.2.5 同款）
+> **完整规划与依赖图**：见 `task_plan.md` + `PLAN.md`
+> **Section A** — 进度日志（happy path）
+> **Section B** — Findings & Decision Log（异常 / 决策修订 / blocker）
+> **Finding 编号续接**：phase 1.2.5 结束在 F35（含 F36 占位 — 由 phase 1.3 T5.3 落地）；phase 1.3 新 finding 从 **F37** 开始
+
+---
+
+## Section A — 进度
+
+### A.1 维护规则
+
+- 每完成一个 task → § A.4 追加一行 `YYYY-MM-DD | <task-id> | <result> | <commit-shorthash>`
+- B1-B8 8 acceptance bar 进度同步 § A.2 状态
+- Wave 完成时 § A.3 标记 ✅ + 跑 Wave-Level Acceptance Checkpoint（task_plan § Wave-Level Acceptance Checkpoint）
+- Blocker / 异常 / 决策修订写到 § B（不进 § A），事后 § A 用一行引用 `see § B Fxx`
+- A7 守恒约束：commit 前 paranoid check `git diff adr-NNNN-accepted -- docs/adr/NNNN-*.md` 必须为空（ADR 0001-0007）
+
+### A.2 Acceptance Bar Snapshot — B1-B8 8 acceptance bar
+
+(每 task 后用 ✅/❌/⏳ 更新；不达成 8/8 即不能 ship phase 1.3)
+
+- ✅ **B1** ADR 0007 errata accepted + adr-0007-accepted tag pushed (本地，CI 实测推 phase 1.3 push 后 verify)
+- ✅ **B2** manifest schema 加 3 字段（category/install_type/decision_rules）+ `validate:schema` 通过
+- ✅ **B3** schema unit tests +19 cell + tests 202+1 → 221+1（超过 ≥ 215+1 acceptance bar）
+- ⏳ **B4** decision_rules.yaml v1 + arbitrate function 单测 ≥ 8 cell（Wave 2 — batch 2 范围）
+- ⏳ **B5** `harnessed install-base` 子命令 + dry-run 三态输出（Wave 3 — batch 2/3 范围）
+- ⏳ **B6** ui-ux-pro-max install path 实测 + manifest 创建 + F36 finding logged（Wave 4 — batch 3 范围）
+- ⏳ **B7** AgentDefinition factory contract draft ≥ 150 行 + 12 字段 grep hit（Wave 5 — batch 3 范围）
+- ⏳ **B8** CI 三平台全绿 + A7 step iterate 1-7 全绿 + ADR 0001-0007 main body diff 0（Wave 6 — phase 1.3 final ship 范围）
+
+**Batch 1 完成: B1 + B2 + B3 ✅ — 3/8 done**
+
+### A.3 Wave 进度概览
+
+| Wave | 内容 | Tasks | 状态 |
+|------|------|-------|------|
+| 0 | 前置（ADR 0007 + ci.yml A7 step 升级） | T1.1, T1.2 | ✅ done (commits bc8d624 + b173a84; adr-0007-accepted tag; A7 iter 1-7) |
+| 1 | Schema 实装（manifest 加 3 字段 + tests +12 cell） | T2.1, T2.2, T2.3 | ✅ done (commits a5ce405 [T2.1+T2.2 合并] + 75419a0; +19 cell 超 ≥12 acceptance) |
+| 2 | decision_rules.yaml v1 + arbitrate logic | T3.1, T3.2, T3.3 | ⏳ pending (batch 2) |
+| 3 | Base profile install (`harnessed install-base`) | T4.1, T4.2, T4.3 | ⏳ pending (batch 2/3) |
+| 4 | ui-ux-pro-max install path 实测 | T5.1, T5.2, T5.3 | ⏳ pending (batch 3) |
+| 5 | AgentDefinition factory contract draft | T6.1 | ⏳ pending (batch 3) |
+| 6 | Cross-OS CI verify | T7.1, T7.2 | ⏳ pending (push verify) |
+| 7 | Docs + ship | T8.1, T8.2, T8.3 | ⏳ pending (final) |
+
+### A.4 进度日志（追加式 — newest at bottom）
+
+2026-05-13 | T1.1 | ADR 0007 errata 起草 217 行 + adr-0007-accepted tag 打 (本地) + ADR README index 同步; A7 paranoid check ADR 0001 main body 0 diff | bc8d624
+2026-05-13 | T1.2 | ci.yml A7 step iterate 1-6 → 1-7 (5 处更新: comment + name + 2× for-loop + echo); typecheck/lint 全绿 | b173a84
+2026-05-13 | T2.1+T2.2 | spec.ts 加 3 字段 (category 6 enum 必填 / install_type 4 enum 必填 / decision_rules optional Object); 10 manifest + 10 fixture 全 patch; schema artifact 重新生成 (含 3 新字段 validate:schema 通过); 6 既有 BASE template 同步加字段 (Rule 2 critical functionality fix); security test 行号 18→20 | a5ce405
+2026-05-13 | T2.3 | 3 schema unit test 文件 +19 cell (category 8 / install-type 6 / decision-rules 5 含 R1 嵌套 array+object reject mitigation); 测试 202+1 → 221+1 全绿 | 75419a0
+
+---
+
+## Section B — Findings & Decision Log
+
+### F37: ADR 0006 main body 已被 phase 1.2.5 Wave D commit 修改 — pre-existing CI A7 阻塞
+
+**触发**: phase 1.3 batch 1 final A7 paranoid check (T2.3 commit 后) — `for n in 0001..0007; do git diff adr-${n}-accepted -- docs/adr/${n}-*.md; done` 实测发现 ADR 0006 输出非空 diff，0001-0005 + 0007 全部 0 diff
+
+**Root cause**: commit `3e24c16` (phase-1.2.5 Wave D — "12 sister-review patches H1+H2+H3+M1-5+L1-4") 给 ADR 0006 加了 ~50 行（"Quick Reference Snapshot (Self-Contained — 减少未来 cross-ref fragility)" 整段 + "8 支柱 100% Capture" 表的 self-contained 改写）。这个修改是 phase 1.2.5 ship 前打 `adr-0006-accepted` tag 之后做的（M3 sister review fix），导致 baseline tag 与 main body 不一致。
+
+**Pre-existing 范围**: phase 1.2.5 commit `3e24c16` 时间戳 = 2026-05-12（phase 1.3 batch 1 启动前）；phase 1.3 batch 1 5 atomic commit 全部 **不修改** ADR 0006。本 finding 不是 phase 1.3 batch 1 制造的，是 phase 1.2.5 残留的守恒漏洞。
+
+**影响**:
+1. **本地 (batch 1 完成)**: 5 atomic commits 干净，A7 paranoid check 对 ADR 0001（task_plan T1.1+T2.1 显式要求）全绿；本批次 ship 不阻塞
+2. **CI 推送时 (phase 1.3 push to origin 时刻)**: CI A7 step（iterate 1-7）会因 ADR 0006 baseline tag 与 main body diff 非空而 **fail** — phase 1.3 整体 push 阻塞
+
+**3 个解决方向（main agent 决策）**:
+1. **(A) 重打 adr-0006-accepted tag 到 commit 3e24c16 (M3 patch 应用后的 commit)**:
+   - 命令: `git tag -d adr-0006-accepted && git tag adr-0006-accepted 3e24c16`
+   - 风险: 已 push 到 origin 的 tag 需 `git push origin :refs/tags/adr-0006-accepted` + `git push origin adr-0006-accepted` 强制覆盖；如其他人/CI 已 pull 旧 tag 会出现 inconsistency
+   - 优势: 最干净 — A7 守恒规则下 "tag 应反映 ship 时刻 main body" 的语义恢复；与 ADR 0005 retroactive tag 模式（F26）一致
+   - 沿袭: phase 1.2 F26 retroactive 0002 补齐 (commit d5589dd) 模式
+
+2. **(B) 写 ADR 0008 errata 补完 ADR 0006 self-contained 修改**:
+   - 把 `3e24c16` 给 ADR 0006 加的"Quick Reference Snapshot"段挪到 ADR 0008 errata 中
+   - 然后 revert ADR 0006 main body 回 adr-0006-accepted tag 状态（删 ~50 行）
+   - 风险: 信息已经 in 0006 main body，挪出会破坏 phase 1.2.5 sister review M3 patch 的初衷（self-contained 加固）
+   - 优势: 严格遵守"errata 模式"
+
+3. **(C) 临时 grace — CI A7 step exempt ADR 0006 直到 phase 1.3 ship**:
+   - ci.yml A7 step 加 if 跳 0006；phase 1.3 ship 后再决定方向 A 或 B
+   - 风险: 守恒规则破窗；下个 phase 容易复制污染
+   - 优势: 不阻塞 phase 1.3 push verify
+
+**推荐: 方向 A** — 最 minimal、与现有 retroactive tag 模式（F26）一致，与 phase 1.2.5 ship 时刻语义对齐（ship 时 ADR 0006 实际 main body = `3e24c16` 后状态，tag 应该指向那里）。但**这是 main agent 决策**，不是 executor 自动 fix 范围（涉及 git tag 重打 — `<destructive_git_prohibition>` 规则下属于"git tag -d + 重打"边界，且涉及 origin 已 push tag 的覆盖）。
+
+**下一步**:
+- batch 1 报告 surface 给 main agent 决定方向 A / B / C
+- batch 2 启动前必须解决（否则 batch 2/3 commit 后 push CI 必 red）
+- 决议执行后写 F37 followup 落地
+
+---
