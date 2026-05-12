@@ -567,7 +567,7 @@
 ### Wave 6 — 顶层 wire + Tests + Cross-OS CI 扩展（依赖 Wave 5）
 
 #### T5.1 改 src/cli.ts 顶层 — 注册 5 个子命令
-- [ ] **目标**：Wave 5 的 5 个子命令挂到 commander root
+- [x] **目标**：Wave 5 的 5 个子命令挂到 commander root
 - **文件**：`/d/GitCode/harnessed/src/cli.ts`
 - **内容**（在现有 phase-1.1 cli.ts skeleton 之上）：
   ```typescript
@@ -599,7 +599,7 @@
 ---
 
 #### T5.2 写 tests/integration/installer-contract.test.ts — 6 契约 × 2 method = 12 cell
-- [ ] **目标**：ADR 0004 6 硬契约 × 2 method（npm-cli + mcp-stdio-add）= 12 contract test 全绿
+- [x] **目标**：ADR 0004 6 硬契约 × 2 method（npm-cli + mcp-stdio-add）= 12 contract test 全绿
 - **文件**：`/d/GitCode/harnessed/tests/integration/installer-contract.test.ts`
 - **内容大纲**（~250 行）：
   - 顶部 `vi.mock('child_process')` + `vi.mock('@clack/prompts')` + `vi.mock('node:fs/promises')`（C6 mitigation）
@@ -632,7 +632,7 @@
 ---
 
 #### T5.3 写 method-level unit tests（3 文件）
-- [ ] **目标**：npmCli / mcpStdioAdd / index 各一文件 — BASE manifest + with* modifier
+- [x] **目标**：npmCli / mcpStdioAdd / index 各一文件 — BASE manifest + with* modifier
 - **文件**（3 文件）：
   - `tests/unit/installers-npmCli.test.ts`
   - `tests/unit/installers-mcpStdioAdd.test.ts`
@@ -650,7 +650,7 @@
 ---
 
 #### T5.4 写 cli-level unit tests（5 文件）
-- [ ] **目标**：commander parse + InstallResult narrow + exit code assertion
+- [x] **目标**：commander parse + InstallResult narrow + exit code assertion
 - **文件**（5 文件 — 5 路并行）：
   - `tests/unit/cli-install.test.ts`
   - `tests/unit/cli-doctor.test.ts`
@@ -669,7 +669,7 @@
 ---
 
 #### T5.5 扩展 .github/workflows/ci.yml — installer integration step（H4 sister review fix — 双层验证）
-- [ ] **目标**：3 平台 CI 加 installer integration step **双层验证（H4 sister review fix）**: (1) **mock claude CLI shim** 验证 spawn invocation args 正确（CI runner 默认未装 claude CLI，避免 B2 死锁）；(2) real spawn ctx7 + GSD（npm-cli 不依赖 claude CLI） **--dry-run only**；tmpdir 隔离 — C6 mitigation
+- [x] **目标**：3 平台 CI 加 installer integration step **双层验证（H4 sister review fix）**: (1) **mock claude CLI shim** 验证 spawn invocation args 正确（CI runner 默认未装 claude CLI，避免 B2 死锁）；(2) real spawn ctx7 + GSD（npm-cli 不依赖 claude CLI） **--dry-run only**；tmpdir 隔离 — C6 mitigation
 - **文件**：
   - `/d/GitCode/harnessed/.github/workflows/ci.yml`（追加 step）
   - `/d/GitCode/harnessed/scripts/ci/mock-claude-cli.sh`（新文件 — H4 mock shim）
@@ -723,7 +723,7 @@
 ---
 
 #### T5.6 （可选）real-spawn skipIf gate — 仅 phase 1.2 final acceptance
-- [ ] **目标**：phase 1.2 ship 前手工跑一次真 install + verify + rollback；CI 仅 dry-run（避免污染）
+- [x] **目标**：phase 1.2 ship 前手工跑一次真 install + verify + rollback；CI 仅 dry-run（避免污染）
 - **文件**：`/d/GitCode/harnessed/tests/integration/installer-real-spawn.test.ts`
 - **内容大纲**（~80 行）：
   - `it.skipIf(!process.env.HARNESSED_REAL_SPAWN)('real ctx7 install + verify + rollback', async () => { ... })`
@@ -903,4 +903,4 @@ phase-1.2: T6.7 close phase 1.2 — installer runtime ready
 | harnessed setup 完整自检（npx@latest 提示）| phase 1.3 | GA-5 推迟 |
 | 真 git origin URL 篡改 audit | phase 2.4 | 需已 install 副本存在 |
 | Plugin uninstall 4 步 fallback | phase 2.4 | R6.5 v0.2 范围 |
-| `harnessed gc --older-than 30d` 备份清理 | phase 2.4 | ADR 0004 § Consequences 负面 3 已注 |
+| ~~`harnessed gc --older-than 30d` 备份清理~~ | ~~phase 2.4~~ | ✅ **已在 phase 1.2 T4.4 ship**（M1 sister review fix + ADR 0004 § Consequences Negative #3 mitigation — F31 followup 2 移除此行） |

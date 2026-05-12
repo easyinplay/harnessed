@@ -27,8 +27,8 @@
 - ⏳ **B1'** 3 平台真实可装 ctx7 + dry-run UX 跑通（mac/linux/win）
 - ⏳ **B2'** tavily-mcp + exa-mcp 真实可装 + `--scope project` 写到 `.mcp.json`
 - ⏳ **B3'** Rollback 验证：install + rollback 后系统状态完全恢复（含 `.mcp.json` 复原 + CRLF/LF preserve）
-- ⏳ **B4'** 12 contract tests 全绿（6 契约 × 2 method）
-- ⏳ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）
+- ⏳ **B4'** 12 contract tests 全绿（6 契约 × 2 method）→ ✅ **达成** (Wave 6 T5.2 — installer-contract.test.ts 12/12 passing per commit 7769535)
+- ⏳ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）→ ⏳ **ready** (Wave 6 T5.5 H4 dual-layer step added — push validates 3 platforms)
 - ⏳ **B6'** Tests 数 ≥ 110（89 baseline + 12 contract + ~10 install unit + ~5 doctor/audit unit + ~3 schema marketplace_source）→ 当前 **150/130** ✅ (Wave 0 +5 / Wave 3 +56) — target 已达成 (150 > 110)，剩余 wave 4-7 还会再加
 - ⏳ **B7'** ADR 0001/0002/0003/0004 main body 不动（A7 守恒，CI 自动 enforce）→ Wave 0 ✅ partial: ADR 0001-0005 全部进入 baseline tag 守恒（5 tag, ci.yml iterate）
 - ⏳ **B8'** `harnessed doctor` 检测 ralph-loop Win 依赖（jq + Git Bash vs WSL）
@@ -44,7 +44,7 @@
 | 3 | Lib helpers L2 + Unit Tests（state.ts + 6 lib unit test 文件） | T2.7 - T2.8 (2 task — T2.8 含 6 文件) | ✅ done (commits 8fdbe85 / f6e36ca; state.ts 100L; 6 unit test files; tests 94 → 150 +56; A7 0 diff 5 tag; lint/typecheck 0) |
 | 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ✅ done (commits 95c0501 / c019f79 / f6acbda; npmCli 135L + mcpStdioAdd 230L + index 66L; tests still 150; A7 0 diff 5 tag; F30 logged; 1 dead-code self-correction) |
 | 5 | CLI subcommands（install + doctor + audit + rollback/status/backup-list/gc M1） | T4.1 - T4.4 (4 task) | ✅ done (commits c95835c / e60f0f1 / 9221d02 / 193aab9; install 117L + doctor 152L + audit 125L + rollback 87L + status 31L + backup-list 54L + gc 131L; tests still 150; A7 0 diff 5 tag; F31 cluster logged — multi-check / 4-file 软上限超 30%-337%) |
-| 6 | 顶层 wire + Tests + Cross-OS CI 扩展（cli.ts + contract test 12 cell + method/cli unit + ci.yml installer step + real-spawn skipIf） | T5.1 - T5.6 (6 task) | ⏳ pending |
+| 6 | 顶层 wire + Tests + Cross-OS CI 扩展（cli.ts + contract test 12 cell + method/cli unit + ci.yml installer step + real-spawn skipIf） | T5.1 - T5.6 (6 task) | ✅ done (commits 4ea2e61 / 7769535 / df68a67 / 221b653 / 91ebe93 / d768dc1; cli.ts wire 7 register fn incl gc per F31 followup 1; 12 contract cell + 19 method unit + 21 cli unit; ci.yml H4 dual-layer + mock-claude-cli.sh; real-spawn skipIf gate; tests 150 → 202 + 1 skipped (+52); B4' ✅ + B5' ready (push validates)) |
 | 7 | Docs + Phase verify（INSTALLER-CONTRACT + README + CONTRIBUTING + ADR README + VERIFICATION + STATE + tag） | T6.1 - T6.7 (7 task) | ⏳ pending |
 
 **总计**：37 atomic 子任务（实际 task ID 数：T1.1-T1.5 + T2.1-T2.8 + T3.1-T3.3 + T4.1-T4.4 + T5.1-T5.6 + T6.1-T6.7 = 5 + 8 + 3 + 4 + 6 + 7 = **33 task numbers**；其中 T2.8 含 6 文件 + T4.4 含 3 文件 + T5.3 含 3 文件 + T5.4 含 5 文件 → atomic 子任务实际 ~45+）
@@ -79,6 +79,12 @@
 2026-05-12 | T4.2 | add src/cli/doctor.ts (152L 4-check Node ≥ 22 / MCP scope (project .mcp.json + ~/.claude.json mcpServers empty) / jq present / Win bash flavor (C4 WSL_DISTRO_NAME probe)); see § B F31 finding | e60f0f1
 2026-05-12 | T4.3 | add src/cli/audit.ts (125L manifest 内自一致 — repository pattern https://...git / signed_by 非 placeholder set / git_ref 非 HEAD/main/master second-line check; auto-glob manifests/{tools,skill-packs}/*.yaml) | 9221d02
 2026-05-12 | T4.4 | add 4 cli subcommands (rollback 87L C3 eol preserve + ENOENT sentinel + sha1 verify / status 31L state.json read / backup-list 54L commander 'backup list' nested / gc 131L M1 mitigation per ADR 0004 § Consequences Negative #3); see § B F31 finding | 193aab9
+2026-05-12 | T5.1 | wire src/cli.ts top-level (7 register fn — install/doctor/audit/rollback/status/backup-list/gc per F31 followup 1; commander root .name('harnessed').version('0.1.0-alpha.2-installer-runtime')) | 4ea2e61
+2026-05-12 | T5.2 | add tests/integration/installer-contract.test.ts (12 cell — 6 ADR 0004 contracts × 2 method [npm-cli + mcp-stdio-add]; vi.mock node:child_process / @clack/prompts / node:fs/promises C6 mitigation; inline manifest factory); tests 150 → 162 ✅ B4' | 7769535
+2026-05-12 | T5.3 | add 3 method unit tests (npmCli 5 / mcpStdioAdd 5 / index 9 = 19 tests); tests 162 → 181 | df68a67
+2026-05-12 | T5.4 | add 5 cli unit tests (install/doctor/audit/rollback/status); tests 181 → 202 (+21) | 221b653
+2026-05-12 | T5.5 | add ci.yml installer integration step (H4 dual-layer mock + real) + scripts/ci/mock-claude-cli.sh (38L); ok_or_dryrun() bash helper accepts exit 0 + 2 (dry-run sentinel); B5' ready (push validates 3 platforms) | 91ebe93
+2026-05-12 | T5.6 | add tests/integration/installer-real-spawn.test.ts (skipIf gate — HARNESSED_REAL_SPAWN env); single test npm-cli ctx7 install + state + backup; tmpdir + npm_config_prefix isolation; B1'/B2'/B3' ready file (final verify Wave 7); tests 202 → 202 + 1 skipped | d768dc1
 
 ### A.5 Session 中断恢复指引
 
@@ -396,6 +402,29 @@
 - F31 教训：Wave 6 contract test 若涉及 cli/*.ts 顶层 process.exit() 调用，应在 vi.mock('node:process') 替代 ['exit'] 而不是 process.exit = () => never（Phase 1.2 contract test 12 cell 估 ~360L，但 cli unit test 估 ~200L 应改为 ~280L 给 H1 flag-gate / gc duration parse / rollback eol normalize 这类带分支 logic 的 case 留余量）
 - gc.ts 的 dirSizeKb 递归 walker + parseDuration 单位解析模式可独立提到 lib/util.ts（如果 phase 2.4 加 stale 检测 / 或 phase 1.4 加 audit.log rotation 时需要类似单位解析）— 当前 single-caller YAGNI 不抽
 - rollback.ts 的 normalizeEol(buf, eol) 函数模式：phase 2.x 若做 manifest patch / config merge 时需保持原文件 EOL，可直接复用本文件 5 行实装
+
+#### Wave 6 ✅ retro (2026-05-12)
+
+**What worked**:
+- 6 task / 6 commit 干净分离（4ea2e61 wire / 7769535 contract / df68a67 method / 221b653 cli unit / 91ebe93 ci.yml + mock shim / d768dc1 real-spawn skipIf）— B4' contract test 12/12 一次 ✅；tests 150 → 202 + 1 skipped (+52)
+- F31 followup 1 落实：cli.ts wire **7 个 register fn**（含 registerGc），不止 task_plan.md T5.1 列的 6 个；main agent 跑 T5.1 时已补全 import + 调用
+- F31 followup 2 落实：task_plan.md L906 deferred 表格 "harnessed gc → phase 2.4" 行已在本 batch 加 strikethrough + ✅ 标注（避免 plan 漂移）
+- T5.2 contract test 用 inline manifest factory（B/M-style）替代 yaml fixtures — 12 cell 一个文件搞定 + 减少 fixture overhead，符合 task_plan 注释建议
+- T5.5 ci.yml H4 dual-layer 设计 (`ok_or_dryrun()` bash helper accepts exit 0 + 2 dry-run sentinel) 是 T5.5 关键合理化：CLI dry-run 默认 exit 2 (aborted: user-cancel)，CI step 视 exit 0+2 为 success，仅 exit 1 fail — 与 ADR 0004 契约 1 dry-run-default 完全对齐
+- T5.6 real-spawn skipIf gate (`describe.skipIf(!HARNESSED_REAL_SPAWN)`) — CI 默认跳；手工 final acceptance run 才执行；tmpdir + npm_config_prefix 隔离设计严守 C6 mitigation
+- A7 守恒 5 baseline tag 持续 0 diff（连续 5 wave 守恒不变）；A8 LF 全 9 个新文件 i/lf attr/text 正确
+- karpathy 风格：cli.ts 顶层 wire 仅 30L wire-only（dispatcher 设计验证有效，零胶水层）
+
+**What was inefficient / surprised**:
+- Wave 6 agent 在 93 tool uses 后 API balance error mid-T5.5 — main agent 接手验证 T5.5 working tree 改动质量后 commit + 写 T5.6。Agent 已完成 T5.1-T5.4 + T5.5 文件 staged but not committed；main agent 自纠正路径流畅。**phase 1.3+ 教训**：长 task batch socket close 风险持续存在，每 task 完成立即 commit（不要 batch commit 多 task）— Wave 6 agent 已沿用此模式，所以 T5.1-T5.4 都 isolated commit 不丢工作。
+- T5.6 real-spawn signature 与 phase-1.1.1 hotfix 后的 `validateManifestFile(yamlSource, filename)` 二参签名首次写时按 task_plan 写成 `(filePath)` 一参签名 — typecheck 触发 TS2554，main agent 一次修正（read yaml + 传 filename）。**phase 2.x 教训**：跨 phase 跨 batch 复用 phase-1.1 函数前必须 `grep "^export.*<fnName>"` 确认实际签名，特别是 phase-1.1.1 hotfix 重写的函数（validate / security 等）。
+- T5.6 first write 用了 `backupDirs[0]!` non-null assertion 触发 biome `noNonNullAssertion` warning — 改为显式 `if (!firstBackup) throw` guard，typecheck + lint 干净。**phase 1.3+ 教训**：array index access in test 必须用 explicit guard，不允许 `!` operator（与 phase-1.1.1 H1 sister review 同款规则一致）。
+
+**Phase 1.3 / Wave 7 如何沿用**:
+- contract test 12 cell + method/cli unit 配合 mock node:child_process / @clack/prompts / node:fs/promises 模式 — phase 1.3 DAG resolver / harnessed-router 测试 setup 直接复用
+- T5.5 ok_or_dryrun() bash helper + ci.yml 双层 step 风格：phase 1.3 加 routing engine integration test 时，shell snippet helper / mock CLI shim 路径可直接复用（PATH-injection + chmod +x + tmpdir 隔离三件套）
+- T5.6 skipIf gate 模式（`describe.skipIf(!HARNESSED_<FEATURE>)`) — phase 1.4 routing engine 要求"30 样本路由命中率"测试时同款 skipIf gate 是合理路径
+- F31 followup 1 教训：未来 wave 间 cross-reference task_plan 项目数 vs 实际实装项目数 — 如果发现 N 项 vs N+1 项不一致，立即在前一 wave retro 写 followup 标记，避免下一 wave 漏 import / 漏 register
 
 ---
 
