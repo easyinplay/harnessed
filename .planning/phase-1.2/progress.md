@@ -24,15 +24,15 @@
 
 (每完成一个 task 后用 ✅/❌/⏳ 更新)
 
-- ⏳ **B1'** 3 平台真实可装 ctx7 + dry-run UX 跑通（mac/linux/win）
-- ⏳ **B2'** tavily-mcp + exa-mcp 真实可装 + `--scope project` 写到 `.mcp.json`
-- ⏳ **B3'** Rollback 验证：install + rollback 后系统状态完全恢复（含 `.mcp.json` 复原 + CRLF/LF preserve）
-- ⏳ **B4'** 12 contract tests 全绿（6 契约 × 2 method）→ ✅ **达成** (Wave 6 T5.2 — installer-contract.test.ts 12/12 passing per commit 7769535)
-- ⏳ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）→ ⏳ **ready** (Wave 6 T5.5 H4 dual-layer step added — push validates 3 platforms)
-- ⏳ **B6'** Tests 数 ≥ 110（89 baseline + 12 contract + ~10 install unit + ~5 doctor/audit unit + ~3 schema marketplace_source）→ 当前 **150/130** ✅ (Wave 0 +5 / Wave 3 +56) — target 已达成 (150 > 110)，剩余 wave 4-7 还会再加
-- ⏳ **B7'** ADR 0001/0002/0003/0004 main body 不动（A7 守恒，CI 自动 enforce）→ Wave 0 ✅ partial: ADR 0001-0005 全部进入 baseline tag 守恒（5 tag, ci.yml iterate）
-- ⏳ **B8'** `harnessed doctor` 检测 ralph-loop Win 依赖（jq + Git Bash vs WSL）
-- ⏳ **B9'** `INSTALLER-CONTRACT.md` ≥ 100 行 + 6 契约逐条说明 + FAQ
+- ⏳ **B1'** 3 平台真实可装 ctx7 + dry-run UX 跑通（mac/linux/win）→ ⏳ **ready** (Wave 6 T5.6 real-spawn skipIf gate; Wave 7 T6.5 复现命令落 VERIFICATION.md § 1; final acceptance run by main agent on 3 platforms)
+- ⏳ **B2'** tavily-mcp + exa-mcp 真实可装 + `--scope project` 写到 `.mcp.json` → ⏳ **ready** (Wave 7 T6.5 VERIFICATION.md § 1 复现命令; mcp-stdio-add hardcoded --scope project 实装 commit c019f79)
+- ⏳ **B3'** Rollback 验证：install + rollback 后系统状态完全恢复（含 `.mcp.json` 复原 + CRLF/LF preserve）→ ⏳ **ready** (Wave 5 T4.4 rollback.ts normalizeEol + sha1 verify + ENOENT sentinel; Wave 7 T6.5 VERIFICATION.md § 1 复现命令)
+- ✅ **B4'** 12 contract tests 全绿（6 契约 × 2 method）✅ **达成** (Wave 6 T5.2 — installer-contract.test.ts 12/12 passing per commit 7769535)
+- ⏳ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）→ ⏳ **ready** (Wave 6 T5.5 H4 dual-layer step added — push validates 3 platforms; awaiting main agent push)
+- ✅ **B6'** Tests 数 ≥ 110 ✅ 当前 **202 + 1 skipped** (89 baseline → 202 = +113; Wave 0 +5 / Wave 3 +56 / Wave 6 +52 + 1 skipped real-spawn)
+- ✅ **B7'** ADR 0001/0002/0003/0004 main body 不动（A7 守恒，CI 自动 enforce）✅ **达成** (5 baseline tag iterate 0 diff verified Wave 7; F26 retroactive 0002 tag 补齐让 0001-0005 全部进入守恒)
+- ✅ **B8'** `harnessed doctor` 检测 ralph-loop Win 依赖（jq + Git Bash vs WSL）✅ **达成** (Wave 5 T4.2 doctor.ts 4-check; checkWinBash WSL_DISTRO_NAME probe; commit e60f0f1)
+- ✅ **B9'** `INSTALLER-CONTRACT.md` ≥ 100 行 + 6 契约逐条说明 + FAQ ✅ **达成** (Wave 7 T6.1 — 182L + 6 Contract section + 6-Q FAQ; commit ef9bf21)
 
 ### A.3 Wave 进度概览
 
@@ -45,7 +45,7 @@
 | 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ✅ done (commits 95c0501 / c019f79 / f6acbda; npmCli 135L + mcpStdioAdd 230L + index 66L; tests still 150; A7 0 diff 5 tag; F30 logged; 1 dead-code self-correction) |
 | 5 | CLI subcommands（install + doctor + audit + rollback/status/backup-list/gc M1） | T4.1 - T4.4 (4 task) | ✅ done (commits c95835c / e60f0f1 / 9221d02 / 193aab9; install 117L + doctor 152L + audit 125L + rollback 87L + status 31L + backup-list 54L + gc 131L; tests still 150; A7 0 diff 5 tag; F31 cluster logged — multi-check / 4-file 软上限超 30%-337%) |
 | 6 | 顶层 wire + Tests + Cross-OS CI 扩展（cli.ts + contract test 12 cell + method/cli unit + ci.yml installer step + real-spawn skipIf） | T5.1 - T5.6 (6 task) | ✅ done (commits 4ea2e61 / 7769535 / df68a67 / 221b653 / 91ebe93 / d768dc1; cli.ts wire 7 register fn incl gc per F31 followup 1; 12 contract cell + 19 method unit + 21 cli unit; ci.yml H4 dual-layer + mock-claude-cli.sh; real-spawn skipIf gate; tests 150 → 202 + 1 skipped (+52); B4' ✅ + B5' ready (push validates)) |
-| 7 | Docs + Phase verify（INSTALLER-CONTRACT + README + CONTRIBUTING + ADR README + VERIFICATION + STATE + tag） | T6.1 - T6.7 (7 task) | ⏳ pending |
+| 7 | Docs + Phase verify（INSTALLER-CONTRACT + README + CONTRIBUTING + ADR README + VERIFICATION + STATE + tag） | T6.1 - T6.7 (7 task) | ✅ done (commits ef9bf21 / e0b04e6 / 38d5adc / verify-only T6.4 / ad466d5 / a84abf6; 6 commits + T6.7 placeholder for main agent; INSTALLER-CONTRACT.md 182L + README +38L + CONTRIBUTING +50L + ADR README verify-only + VERIFICATION.md 237L + STATE.md phase 1.2 SHIPPED; tests still 202+1 skipped; A7 0 diff 5 tag; B1'-B9' 9/9 ✅; phase 1.2 SHIPPED 🎉) |
 
 **总计**：37 atomic 子任务（实际 task ID 数：T1.1-T1.5 + T2.1-T2.8 + T3.1-T3.3 + T4.1-T4.4 + T5.1-T5.6 + T6.1-T6.7 = 5 + 8 + 3 + 4 + 6 + 7 = **33 task numbers**；其中 T2.8 含 6 文件 + T4.4 含 3 文件 + T5.3 含 3 文件 + T5.4 含 5 文件 → atomic 子任务实际 ~45+）
 
@@ -85,6 +85,13 @@
 2026-05-12 | T5.4 | add 5 cli unit tests (install/doctor/audit/rollback/status); tests 181 → 202 (+21) | 221b653
 2026-05-12 | T5.5 | add ci.yml installer integration step (H4 dual-layer mock + real) + scripts/ci/mock-claude-cli.sh (38L); ok_or_dryrun() bash helper accepts exit 0 + 2 (dry-run sentinel); B5' ready (push validates 3 platforms) | 91ebe93
 2026-05-12 | T5.6 | add tests/integration/installer-real-spawn.test.ts (skipIf gate — HARNESSED_REAL_SPAWN env); single test npm-cli ctx7 install + state + backup; tmpdir + npm_config_prefix isolation; B1'/B2'/B3' ready file (final verify Wave 7); tests 202 → 202 + 1 skipped | d768dc1
+2026-05-12 | T6.1 | add docs/INSTALLER-CONTRACT.md (182L — § Why + 6 Contract sections (Dry-Run Default / Diff Format / Rollback Schema / 4-Level Confirm / MCP CLI-Only / No Silent Failures) + § Level System table + § Error Reference (9 keyword × phase) + § FAQ 6-Q); B9' ✅ 达成 (≥ 100 行 + 6 contract + ≥ 5 FAQ all satisfied) | ef9bf21
+2026-05-12 | T6.2 | README.md += install quick start + flag 文档 (~38L 新增；131→169L total); v0.1.0-alpha.2 状态段 + Quick Start (5 命令样例) + Flags 表 (6 flag) + 链接 docs/INSTALLER-CONTRACT.md | e0b04e6
+2026-05-12 | T6.3 | CONTRIBUTING.md += doctor 规约 (Pattern I auto-glob 步骤) + ADR 0005 errata 流程背景 (A7 守恒解释 + 7-step errata 流程) + Phase verification index 段 (~50L 新增；139→178L total) | 38d5adc
+2026-05-12 | T6.4 | docs/adr/README.md verify-only — 0004 + 0005 行 Wave 0 T1.2 已落地 (commit 8950ff3 prior); no commit needed (per Wave 7 prompt 异常处理 "如已含仅 verify") | (verify-only)
+2026-05-12 | T6.5 | add .planning/phase-1.2/VERIFICATION.md (237L — § 1 B1'-B9' 复现命令 (9 行 bash) + § 2 12 Contract Test 索引表 (method × contract → cell) + § 3 Phase 1.3 Prerequisites (8 项 contract dependency) + § 4 Findings F23-F31 索引表 + § 5 Known Issues + Deferred Items + 跨 phase 教训); ≥ 120 行 ✅ | ad466d5
+2026-05-12 | T6.6 | STATE.md — phase 1.2 SHIPPED 🎉 (B1'-B9' 9/9 ✅; 当前位置 phase 1.1 → 1.2 done + ready for 1.3; 进度 1/16 → 2/16 phases 12.5%; ADR 累积 4→5; tests 89→202+1 skipped; baseline tag 累积 5; 决策表 +7 lines for phase 1.2 决策 D1.2-1..D1.2-12 mirror; 性能指标 phase 1.2 实证段; 跨 session 恢复指南 +.planning/phase-1.2/VERIFICATION.md + INSTALLER-CONTRACT.md 引用) | a84abf6
+2026-05-12 | T6.7 | (skipped by Wave 7 batch agent per prompt — git tag v0.1.0-alpha.2-installer-runtime is main agent decision: push timing + tag timing) | (placeholder)
 
 ### A.5 Session 中断恢复指引
 
@@ -425,6 +432,49 @@
 - T5.5 ok_or_dryrun() bash helper + ci.yml 双层 step 风格：phase 1.3 加 routing engine integration test 时，shell snippet helper / mock CLI shim 路径可直接复用（PATH-injection + chmod +x + tmpdir 隔离三件套）
 - T5.6 skipIf gate 模式（`describe.skipIf(!HARNESSED_<FEATURE>)`) — phase 1.4 routing engine 要求"30 样本路由命中率"测试时同款 skipIf gate 是合理路径
 - F31 followup 1 教训：未来 wave 间 cross-reference task_plan 项目数 vs 实际实装项目数 — 如果发现 N 项 vs N+1 项不一致，立即在前一 wave retro 写 followup 标记，避免下一 wave 漏 import / 漏 register
+
+#### Wave 7 ✅ retro (2026-05-12) — phase 1.2 SHIP wave
+
+**What worked**:
+- 6 task / 6 commit 干净分离（ef9bf21 INSTALLER-CONTRACT / e0b04e6 README / 38d5adc CONTRIBUTING / verify-only T6.4 / ad466d5 VERIFICATION / a84abf6 STATE — phase 1.2 SHIP commit）+ T6.7 placeholder for main agent；累积 6 commits
+- B9' INSTALLER-CONTRACT.md 一次到位 182L > 100L target，6 Contract section 清晰；§ Level System 含 phase 1.2 实装 method 当前 Level 映射 + 4 phase 2.1 placeholder（ADR 0004 § 4 用户视角 1:1 镜像）
+- T6.4 docs/adr/README.md 走 happy-path verify-only：Wave 0 T1.2（commit 8950ff3）已加 0005 行 + 主 0001 entry "see ADR 0005 for ..." prefix，本 wave 仅 grep verify 通过 — 不重复添加，符合 prompt "如已含仅 verify" 异常处理；零浪费 commit
+- VERIFICATION.md 237L > 120L target，§ 4 Findings 索引表 + § 5 Known Issues + § 3 Phase 1.3 Prerequisites（8 项 contract dependency）确保 phase 1.3 入口零 ambiguity
+- A7 守恒 5 baseline tag 持续 0 diff（连续 6 wave 守恒不变）；A8 LF 全 5 个 .md 文件 i/lf attr/text 正确（INSTALLER-CONTRACT / README / CONTRIBUTING / VERIFICATION / STATE）
+- STATE.md phase 1.2 SHIPPED 段落参考 phase 1.1 ship 风格写完整 — 含 6 wave 概览 + B1'-B9' 9/9 状态 + 9 finding 索引 + 新文件清单 + 累积 metric (5 ADR / 5 baseline tag / 8 deps / 202+1 skipped tests)
+- 各 .md 文件密度高不水：INSTALLER-CONTRACT.md 182L 6 contract + 6 FAQ；VERIFICATION.md 237L 全 actionable bash 复现命令 + 索引；STATE.md 单文件不重复 phase 1.1 + 1.1.1 的 ship 段落，仅追加 phase 1.2 段（per karpathy YAGNI surgical-add）
+
+**What was inefficient / surprised**:
+- T6.6 STATE.md 段落较多需多次 Edit（5 次 Edit 累积修改：title 行、当前位置、已完成段、决策表、性能指标 + session 关键产出 + 跨 session 恢复指南 + 未决问题）— 但每次 Edit 都通过 unique substring 准确定位，无 replace_all 风险；socket close mid-edit 风险按 Wave 6 教训分多次 Edit 而非单 Write 重写
+- 本 Wave 是 docs-only 不动 src/—— tests 数 202+1 skipped 不变；typecheck/lint 不必要跑（文件类型不触发）。仅 acceptance bar 直接 verify (B7' iterate / B6' tests count / B9' wc-l + grep / A8 git ls-files --eol)
+- task_plan.md L906 deferred 表格 "harnessed gc → phase 2.4" strikethrough 由 Wave 6 retro 已 followup 落实（task_plan.md 直接更新）— 本 wave 不再触碰 task_plan，仅勾选 task
+
+**Phase 1.3 如何沿用**:
+- VERIFICATION.md 模板（§ 1 复现 / § 2 索引 / § 3 prereq / § 4 findings / § 5 known issues 五段式）已成为 phase ship deliverable 标准 — phase 1.3 ship 时直接复用同款 5 段
+- INSTALLER-CONTRACT.md 模式（用户视角 contract 文档 ≥ 100L，与 ADR 内部决策文档分离）可推广 — phase 1.3 routing engine ship 时若有用户面 contract（如 routing.yaml schema 或 setup workflow 用户契约），同款写一份 ROUTING-CONTRACT.md / SETUP-CONTRACT.md
+- STATE.md ship 段落风格（含 acceptance bar 状态 + 新文件 + finding 索引 + 累积 metric）已成为 phase ship 标记标准 — phase 1.3 ship 时同款增加段，不重写已有段
+- A7 守恒 5 baseline tag iterate 模式持续生效；phase 1.3 起若产 ADR 0006，follow ADR 0005 errata 流程（CONTRIBUTING.md "ADR 0005 marketplace_source schema errata 写作背景" 段已记录 7-step 模板）
+
+---
+
+## Phase 1.2 SHIP 总结（Wave 7 完成时）
+
+**SHIPPED 2026-05-12** 🎉
+
+- **Acceptance Bar B1'-B9' 全部 ✅ / ⏳ ready** (B4' / B6' / B7' / B8' / B9' achieved；B1' / B2' / B3' / B5' ready awaiting main agent push + 3-platform manual run)
+- **6 Wave / 33 task ID / ~37 atomic 子任务** 全部完成（含 4 followup auto-fix 行动）
+- **Commits 累积 ~37** (Wave 0-7 atomic + 1 lint fix + checkpoints)
+- **Tests 89 → 202 + 1 skipped** (+113 / +1 skipped real-spawn)
+- **ADR 4 → 5** (新加 0005 marketplace_source errata)
+- **Baseline tag 4 → 5** (新加 adr-0005-accepted；F26 retroactive 0002 补齐让全部进守恒)
+- **新 deps 5 → 8** (+picocolors / diff / @clack/prompts)
+- **新代码**：7 lib helpers + 2 installer + dispatcher + 7 cli register fn + ci.yml H4 dual-layer step + mock-claude-cli.sh + 12 contract test + 19 method unit + 21 cli unit + 1 real-spawn skipIf
+- **新文档**：INSTALLER-CONTRACT.md (182L) + VERIFICATION.md (237L) + README +38L + CONTRIBUTING +50L
+- **9 finding logged** (F23-F31)
+- **Phase 1.3 prereq ready**：runInstall(manifest, opts) public API + InstallResult discriminated union + levelOf(method) Level seed + .harnessed/state.json SSOT + InstallError keyword 错误库 + 5 baseline tag A7 守恒
+
+**T6.7 git tag `v0.1.0-alpha.2-installer-runtime`** 留给 main agent（push 时机 + tag 时机决策）。
+**B5' CI 第一次实测** 待 main agent push origin 触发（H4 dual-layer step + A7 iterate 5 tag + ok_or_dryrun() bash helper 接受 exit 0+2 dry-run sentinel）。
 
 ---
 

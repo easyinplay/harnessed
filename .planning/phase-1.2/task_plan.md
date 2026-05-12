@@ -741,7 +741,7 @@
 ### Wave 7 — Docs + Phase verify（依赖 Wave 6）
 
 #### T6.1 写 docs/INSTALLER-CONTRACT.md ≥ 100 行
-- [ ] **目标**：ADR 0004 6 契约用户视角 + 错误信息库 + FAQ
+- [x] **目标**：ADR 0004 6 契约用户视角 + 错误信息库 + FAQ
 - **文件**：`/d/GitCode/harnessed/docs/INSTALLER-CONTRACT.md`
 - **内容大纲**（≥ 100 行）：
   - § 1 Why this contract — 为什么需要 dry-run + diff + rollback
@@ -758,7 +758,7 @@
 ---
 
 #### T6.2 更新 README.md — 加 install quick start + flag 文档
-- [ ] **目标**：README 加 `harnessed install` quick start 段落 + 链接 INSTALLER-CONTRACT.md
+- [x] **目标**：README 加 `harnessed install` quick start 段落 + 链接 INSTALLER-CONTRACT.md
 - **文件**：`/d/GitCode/harnessed/README.md`
 - **追加内容**（在 phase-1.1 现有 72 行之后）：
   - § Quick Start — `harnessed install ctx7` / `harnessed install tavily-mcp --apply`
@@ -772,7 +772,7 @@
 ---
 
 #### T6.3 更新 CONTRIBUTING.md — 加 doctor 部分 + ADR 0005 errata 写作背景
-- [ ] **目标**：维护者新加 doctor check 时的指南 + ADR 0005 起草背景
+- [x] **目标**：维护者新加 doctor check 时的指南 + ADR 0005 起草背景
 - **文件**：`/d/GitCode/harnessed/CONTRIBUTING.md`
 - **追加内容**（在 phase-1.1 现有 139 行之后）：
   - § "How to add a doctor check" — 步骤 + Pattern I 示例（auto-glob）
@@ -784,7 +784,7 @@
 ---
 
 #### T6.4 更新 docs/adr/README.md — 加 0004 + 0005 index
-- [ ] **目标**：ADR index 追加 0004 / 0005
+- [x] **目标**：ADR index 追加 0004 / 0005
 - **文件**：`/d/GitCode/harnessed/docs/adr/README.md`
 - **追加内容**：
   - `0004-installer-dry-run-diff-preview-contract.md` — Accepted 2026-05-12
@@ -796,7 +796,7 @@
 ---
 
 #### T6.5 写 .planning/phase-1.2/VERIFICATION.md
-- [ ] **目标**：B1'-B9' 复现命令清单 + 12 contract test 索引 + F23+ finding 索引
+- [x] **目标**：B1'-B9' 复现命令清单 + 12 contract test 索引 + F23+ finding 索引
 - **文件**：`/d/GitCode/harnessed/.planning/phase-1.2/VERIFICATION.md`
 - **内容大纲**（≥ 120 行 — phase-1.1 VERIFICATION.md 风格）：
   - § 1 Acceptance Bar 复现命令（B1'-B9' 各一行 bash）
@@ -812,7 +812,7 @@
 ---
 
 #### T6.6 更新 .planning/STATE.md — phase 1.2 completed
-- [ ] **目标**：标记 phase 1.2 ship + 解锁 phase 1.3 / 1.4 / 2.1
+- [x] **目标**：标记 phase 1.2 ship + 解锁 phase 1.3 / 1.4 / 2.1
 - **文件**：`/d/GitCode/harnessed/.planning/STATE.md`
 - **内容修改**：
   - 当前位置：phase 1.2 ✅ COMPLETED — SHIPPED 2026-MM-DD
