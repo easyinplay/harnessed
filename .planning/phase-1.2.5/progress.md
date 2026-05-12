@@ -40,7 +40,7 @@
 | A | Researcher 调研 (R1 routing engine + R2 skill ecosystem) | R1 + R2 (parallel async) | ✅ done (R1 450L HIGH conf + R2 700L HIGH conf; F33 实证 + F34 6 类 + 23 命令实证) |
 | B | 综合 (ASSUMPTIONS + 5 GRAY-AREA) | B.1 - B.6 | ✅ done (5 GRAY-AREA + ASSUMPTIONS; 8/8 capture; D1.2.5-1 ~ D1.2.5-12 lock; GA-2/3/4 enforcement 路径与 D1.2.5-3/-9 对齐) |
 | C | Spec 修订 (PROJECT-SPEC v3.0 + ADR 0006 + ROADMAP 重排) | C.1 - C.3 | ✅ done (commits 51c8dc2 / 32803ad / 33da1a0; ADR 0006 314L accepted; PROJECT-SPEC v2.1 → v3.0 wedge 升级 + § 2 base/extension; ROADMAP v3 phase 1.3+ 重排; ci.yml A7 iterate 1-6; adr-0006-accepted tag pushed) |
-| D | Cross-validation (sister CC review + paranoid + final acceptance) | D.1 - D.4 | 🔄 starting |
+| D | Cross-validation (sister CC review + paranoid + final acceptance) | D.1 - D.4 | ✅ done (sister review SISTER-REVIEW.md APPROVED WITH PATCHES; 12 patches applied — H1+H2+H3+M1+M2+M3+M4+M5+L1+L2+L3+L4; 3 ship gate verified ✅; phase 1.2.5 ready for ship + advance phase 1.3) |
 
 ### A.4 进度日志（追加式 — newest at bottom）
 
@@ -65,6 +65,23 @@
 2026-05-12 | C.4 | docs/adr/README.md += 0006 索引行 + adr-0006-accepted tag 打 (6 baseline tag 全到位) | 32803ad
 2026-05-12 | C.5 | ci.yml A7 step iterate 1-5 → 1-6 (ADR 0006 加入 A7 守恒) + push origin + push adr-0006-accepted tag | 33da1a0
 2026-05-12 | D.start | Wave D 启动 — spawn general-purpose agent 做 8 支柱 100% capture cross-validation review (paranoid lens) | (in-progress)
+2026-05-12 | D.1 | SISTER-REVIEW.md done (348L); verdict APPROVED WITH PATCHES; 8/8 实质 capture + 5/5 P0 一致 + A7 守恒 100% (ADR 0001-0005 diff 全 0); 3 H + 5 M + 4 L 级 finding 详 SISTER-REVIEW; phase 1.3 readiness 8/10 (3 H fix 后 9.5/10) | (in-progress)
+2026-05-12 | D.2 | Wave D.2 patches 12 项 applied (H1+H2+H3+M1+M2+M3+M4+M5+L1+L2+L3+L4):
+- H1: GRAY-AREA-3 标题 + § 1 + § 5 capture verification "16+" → "23"
+- H2: ROADMAP § 139-198 + § 282-356 v3 重排 (v0.2.0 phase 拆分 + 依赖图 ascii art)
+- H3: ADR 0006 § 4 A4' 行加 4 原则名 (Think Before Coding / Simplicity First / Surgical Changes / Goal-Driven Execution)
+- M1: ADR 0006 § 4 8 支柱表加 self-contained 关键定义列
+- M2: GRAY-AREA-1 § 5 EOL 行加 caveat (不能仅靠 git ls-files --eol)
+- M3: ADR 0006 加 § Quick Reference Snapshot (减少 cross-ref fragility)
+- M4: GRAY-AREA-3 § 6 stale "R2 必填项" 删除 → "R2 调研已完成 ✅"
+- M5: ROADMAP phase 1.3 加 AgentDefinition factory contract draft deliverable
+- L1: progress.md § B.4 链回 ASSUMPTIONS § D
+- L2: GRAY-AREA-4 § 5 残留"待 R2 写"改为"已对齐"
+- L3: PROJECT-SPEC § 11 v0.1.0 周期 1-2 周 → 3-5 周 (v3 扩大范围)
+- L4: GRAY-AREA-3 § 1.1 表 "16+" → "23"
+| (pending commit)
+2026-05-12 | D.3 | Ship gate verification: ✅ Gate 1 (GA-3 实质 16+ 0 hit; 残留 L11 用户笔记历史引用 + L53 R2 实证语境 OK) ✅ Gate 2 (ROADMAP P1.4 = routing engine v1; 旧版 0 hit) ✅ Gate 3 (ADR 0006 4 心法名 each 2 hit = 4/4) | (pending commit)
+2026-05-12 | D.4 | phase 1.2.5 SHIP — 8/8 支柱 100% capture verified; 12 D1.2.5 决策追溯完整; 6 baseline tag (ADR 0001-0006-accepted) 全到位; phase 1.3 ready (8/10 → 9.5/10 after Wave D.2) | (pending commit)
 
 ### A.5 Wave-Level Acceptance Checkpoints
 
@@ -169,9 +186,9 @@
   - GRAY-AREA-5 § 2.3 candidate 实测打分表
 - **Cross-ref**: RESEARCH-2 § 4.4 风险 / GRAY-AREA-5 / ASSUMPTIONS D1.2.5-10/-11/-12
 
-### B.4 已锁定决策追溯表（Wave B ASSUMPTIONS 完成后填）
+### B.4 已锁定决策追溯表（D1.2.5-1 ~ D1.2.5-12 lock）
 
-[empty — Wave B 完成后填 D1.2.5-1 ~ D1.2.5-N]
+→ **见 ASSUMPTIONS § D 决策追溯表 D1.2.5-1 ~ D1.2.5-12**（本表统一 SSOT — Wave B sister review L1 fix）
 
 ### B.5 ADR 升级索引
 
@@ -214,6 +231,37 @@
 - 6 category × decision rules 表已 lock — phase 1.3 manifest schema 加 `category` + `decision_rules` 字段时 1:1 mapping
 
 [Wave C / Wave D retro 各自 wave 完成后追加]
+
+#### Wave C ✅ retro (2026-05-12)
+
+**What worked**:
+- ADR 0006 (314L) 单文件起草 + PROJECT-SPEC v3.0 surgical patch + ROADMAP v3 重排 一 single batch 完成
+- adr-0006-accepted tag 立即打 + ci.yml A7 step iterate 1-5 → 1-6 (6 baseline tag 全守恒)
+- 与 phase 1.1-1.2 的 ADR 起草风格保持一致（Status / Context / Decision / Consequences / Compliance / References）
+
+**What was inefficient**:
+- 第一次 batch edit 时 docs/adr/README.md 被 linter 自动修改导致 Edit 失败 — 需 Read + 重做（5 min loss）
+- ROADMAP 依赖图 ascii art 第一次 Wave C edit 时漏掉 (only § 73-97 v3 段 update)，遗留旧版 § 282-356 与 v3 段冲突 → Wave D sister review H2 finding
+
+**Phase 1.3+ 沿用**:
+- ADR 0006 self-contained "Quick Reference Snapshot" 模式（M3 fix） — 后续 ADR 0007+ 可复用避免 cross-ref fragility
+- PROJECT-SPEC § 11 ship 节奏跟 v3 ROADMAP 一致 — 类似的"周期估算"修订应一并 sync (L3 教训)
+
+#### Wave D ✅ retro (2026-05-12)
+
+**What worked**:
+- Sister review 独立 paranoid 视角找出 3 H + 5 M + 4 L 级 finding，全部具体可操作
+- Wave D.2 patches 12 项 single batch 完成 + 3 ship gate verify 闭环
+- 8 支柱 100% capture 实质达成（不只占位 — 内容质量经 review verify）
+- 12 D1.2.5 决策追溯链 4 层（RESEARCH → ASSUMPTIONS → ADR → GRAY-AREA）一致
+
+**What was inefficient**:
+- ROADMAP ascii art Edit 第一次 old_string match 失败（之前 Wave C edit 改过空白字符）— 需 Read 后重做
+- GA-3 § 6 R2 必填项 stale Edit 第一次 fail（同样 string 改过 "对" 字）— 但经验是 batch edit 前先 Read 确认 exact bytes
+
+**Phase 1.3+ 沿用**:
+- Sister review (general-purpose agent paranoid lens) 模式可复用为每 phase ship 前的 Wave D 标准
+- Ship gate verification 三条 grep 模式（残留旧标识符 / 旧 phase 拆分 / 关键定义 hit）可作 phase ship 通用 acceptance bar 模板
 
 ---
 

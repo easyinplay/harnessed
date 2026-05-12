@@ -223,7 +223,7 @@ hooks:
 | **A6'** 心法+招式配对 | § 4 整段 + § 4.1 流程示意图 + § 4.2 配对实例 | ✅ |
 | **A6'** day-to-day 模式 | § 4.1 编码循环图 (心法 always-on × 招式 on-demand) | ✅ |
 
-A4' + A6' (部分) 100% capture ✅ — A6' 还需 GRAY-AREA-3 (mattpocock 16+ phase routing) 完成 cross-ref；待 R2 返回后写。
+A4' + A6' 100% capture ✅ — A6' cross-ref GA-3 § 4 已对齐 (mattpocock 23 招式 phase routing)
 
 ---
 

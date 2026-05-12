@@ -1,9 +1,8 @@
-# GRAY-AREA-3: mattpocock 16+ 招式 Phase Routing 决策树
+# GRAY-AREA-3: mattpocock 23 招式 Phase Routing 决策树
 
-> **目的**: capture A5' (mattpocock 16+ 命令 phase routing) + A6' (心法+招式配对完整版) — phase 1.2.5 8 支柱 acceptance bar
-> **来源**: 用户笔记 § "核心原则与角色定位" + CLAUDE.md + R2 调研真实命令清单（待返回填充）
-> **状态**: 🔄 prep (mapping schema + 已 explicit 命令归类完成；完整 16+ list 待 R2 返回填充)
-> **R2 责任**: 真实命令清单 verify (GitHub repo) + 推断未在用户笔记里 explicit 归类的命令
+> **目的**: capture A5' (mattpocock 23 命令 phase routing) + A6' (心法+招式配对完整版) — phase 1.2.5 8 支柱 acceptance bar
+> **来源**: 用户笔记 § "核心原则与角色定位" + CLAUDE.md + R2 调研真实命令清单（已填充 — 来自 RESEARCH-2 § 3.1 GitHub API 实证）
+> **状态**: ✅ 完成（R2 实证 23 skills；v0.1 catalog 18 active）
 
 ---
 
@@ -17,7 +16,7 @@
 |---|---|---|
 | 性质 | 态度 / 原则 always-on | **命令 / 工具 on-demand** |
 | trigger | 编码全程默认 | **按场景需要召唤** |
-| 数量 | 4 核心原则 | **16+ 命令** |
+| 数量 | 4 核心原则 | **23 命令 (v0.1 catalog 18 active)** |
 | 类比 | 工程师"职业操守" | **工程师"工具箱"** |
 
 ### 1.2 招式的 phase-aware 性
@@ -269,25 +268,19 @@ routing engine 不强制招式，而是 **prompt 推荐**：
 
 | Acceptance Bar | 本文档 capture | 状态 |
 |---|---|---|
-| **A5'** 16+ 命令 list | § 2.1 已含 8 explicit + § 2.2 R2 待填 | 🔄 partial (待 R2) |
+| **A5'** 23 命令 list | § 2.1 已含 8 explicit + § 2.2 R2 实证 18 active 完整 | ✅ |
 | **A5'** 5 phase × 命令 mapping | § 2.1 表格 + § 3.1 schema | ✅ |
 | **A5'** routing engine schema | § 3.1 yaml | ✅ |
 | **A6'** 心法+招式配对机制 | § 4.1 运作图 + § 4.2 特性表 | ✅ |
 | **A6'** day-to-day 模式 | § 4.3 JWT auth 实例完整流程 | ✅ |
 
-A5' partial (待 R2 补完整命令清单) / A6' 100% capture ✅
+A5' 100% capture (R2 实证 23 skills) ✅ / A6' 100% capture ✅
 
 ---
 
-## § 6 R2 返回后必填项
+## § 6 R2 调研已完成 ✅
 
-R2 (gsd-project-researcher) 完成后回填本文档：
-- [ ] § 2.2 真实 16+ 命令清单（来自 GitHub repo verify）
-- [ ] 未 explicit 归类的命令推断 phase（Discuss / Plan / Execute / 维护 / Token-省）
-- [ ] 真实命令的 install method（mattpocock/skills 是 pack 还是单独命令？）
-- [ ] § 3.1 schema 补全（trigger 条件可能扩展）
-
-R2 返回后 main agent 二次 edit 本文档完成 A5' final capture。
+R2 (gsd-project-researcher) 已完成 — 23 skill 实证清单见 § 2.2；mapping schema 完整。本 GA-3 状态：✅ 100% capture (A5' + A6')。
 
 ---
 

@@ -80,16 +80,16 @@ routing engine 在主流程跑（**不在 subagent 内** — CC 架构禁止 sub
 
 ### 4. 8 支柱 100% Capture 验收（acceptance bar）
 
-| 支柱 | 内容 | Capture 文档 |
+| 支柱 | 关键定义（self-contained） | Capture 文档 |
 |---|---|---|
-| **A1'** | gstack 6+ 虚拟角色矩阵 + trigger + sanity check | `GRAY-AREA-2-gstack-roles.md` § 2 |
-| **A2'** | gstack 双职责（"做什么" Strategy vs "是否值得做" Governance）| `GRAY-AREA-2-gstack-roles.md` § 1 |
-| **A3'** | GSD 环境质量层（CI/lockfile/Cross-OS/Corepack/EOL/A7）| `ASSUMPTIONS.md` § B + `GRAY-AREA-1-routing-engine.md` § 5 |
-| **A4'** | karpathy 心法 4 原则 1:1 enforce + always-on 注入 | `GRAY-AREA-4-karpathy-enforcement.md` § 2 + § 3.1 (a-revised main agent factory inject) |
-| **A5'** | mattpocock **23** 招式 phase routing 决策树 | `GRAY-AREA-3-mattpocock-phase-routing.md` § 2.2 (R2 实证) + § 3 |
-| **A6'** | 心法+招式配对 day-to-day 模式 | `GRAY-AREA-3` § 4 + `GRAY-AREA-4` § 4 |
-| **A7'** | superpower brainstorming + TDD 触发 hybrid | `GRAY-AREA-1` § 4 (mandatory + heuristic + optional) |
-| **A8'** | **6 大 category** × decision rules + curate criteria | `GRAY-AREA-1` § 2 § 3 + `GRAY-AREA-5-curate-criteria.md` |
+| **A1'** | gstack **6+ 虚拟角色矩阵**: CEO / EM (Engineering Manager) / Designer / Paranoid Staff Engineer / QA / CSO（+ Investigator / 发布工程师 / 复盘官扩展）+ 各角色 trigger + sanity check | `GRAY-AREA-2-gstack-roles.md` § 2 |
+| **A2'** | gstack **双职责区分**: "做什么" Strategy（高层决策 / 商业战略 / scope 决策）vs "是否值得做" Governance（治理关卡 / sanity check / Paranoid 风险 / 安全 / 设计审查）| `GRAY-AREA-2-gstack-roles.md` § 1 |
+| **A3'** | GSD **环境质量层 7 维度**: CI 守恒 / Lockfile / Cross-OS / Corepack / 工具版本 / EOL 行尾 / A7 守恒（adr-NNNN-accepted baseline tag iterate）| `ASSUMPTIONS.md` § B + `GRAY-AREA-1-routing-engine.md` § 5 |
+| **A4'** | karpathy **心法 4 原则** 1:1 enforce + always-on 注入: **(1) Think Before Coding** （编码前必先 brainstorming） **(2) Simplicity First** （最小有效代码 / YAGNI） **(3) Surgical Changes** （atomic commit / single concern） **(4) Goal-Driven Execution** （每行代码服务明确 acceptance criterion）— 通过 main agent `AgentDefinition` factory inject 到 subagent prompt 字段 | `GRAY-AREA-4-karpathy-enforcement.md` § 2 + § 3.1 (a-revised) |
+| **A5'** | mattpocock **23 招式** phase routing 决策树（v0.1 catalog **18 active**：10 engineering + 4 productivity + 4 misc + 4 deprecated 排除 + 3 in-progress + 2 personal deferred）— 5 phase 归类: Discuss / Plan / Execute / 维护 / Token-省 | `GRAY-AREA-3-mattpocock-phase-routing.md` § 2.2 (R2 实证) + § 3 |
+| **A6'** | **心法+招式配对** day-to-day 模式: 心法 always-on baseline (CLAUDE.md inject) + 招式 on-demand by phase (trigger prompt) + ralph-loop wrap COMPLETE | `GRAY-AREA-3` § 4 + `GRAY-AREA-4` § 4 |
+| **A7'** | superpower **brainstorming + TDD 触发 hybrid**: mandatory_tdd_triggers (核心业务 / 算法 / auth / SLA ≥ 99.9%) + heuristic (mattpocock /tdd 内置 vertical slice) + optional user-decide | `GRAY-AREA-1` § 4 |
+| **A8'** | **6 大 skill category** × decision rules + **curate criteria 5 项 mandatory** (OSI license / ≥100 stars / 6mo 活跃 / SKILL.md / Org 或 ≥2 contributors): meta / engineering / design / content / testing / search | `GRAY-AREA-1` § 2 § 3 + `GRAY-AREA-5-curate-criteria.md` |
 
 ### 5. 5 P0 灰色地带 Lock
 
@@ -170,6 +170,51 @@ ADR 0006 ship 前必须通过：
 ### Baseline Tag 升级
 
 `adr-0006-accepted` 加入 A7 守恒 baseline tag iterate 列表（**6 个 baseline tag** = adr-0001 / 0002 / 0003 / 0004 / 0005 / 0006）；CI A7 step iterate 全部 6 tag。
+
+## Quick Reference Snapshot (Self-Contained — 减少未来 cross-ref fragility)
+
+> 此节为 ADR self-containment 加固（M3 sister review fix）— 长期未来 reader 只读本 ADR 即可拿到关键数据点，不依赖 GRAY-AREA 文件存活。
+
+**双层架构**: Base (10 manifest + 3 workflow phase 1.1-1.2 已 ship) + Extension (6 category × M 候选 phase 1.3+ 加)
+
+**6 大 category**:
+- **meta** — skill-creator (anthropics) + find-skills (vercel-labs)
+- **engineering** — gstack + GSD + superpower + planning-with-files + mattpocock(18) + karpathy + ralph-loop
+- **design** — ui-ux-pro-max (midwayjs/midway/.codex) + frontend-design (anthropics)
+- **content** — pptx + docx + xlsx + pdf (anthropics) + baoyu-skills(21 — license None warn)
+- **testing** — webapp-testing + playwright-cli + @playwright/test + chrome-devtools-mcp
+- **search** — tavily-mcp (default) + exa-mcp-server (描述式/学术/批量/token 敏感)
+
+**6+ gstack 虚拟角色 + 强制级别**:
+- 🔒 强制: `/office-hours` + `/plan-ceo-review` (新功能启动) / `/review` (关键模块 PR 前)
+- ⚠️ 复杂架构: `/plan-eng-review`
+- ⭐ 可选: `/design-review` / `/qa` / `/cso` / `/investigate` / `/ship` / `/retro`
+
+**4 心法 (always-on)**: Think Before Coding · Simplicity First · Surgical Changes · Goal-Driven Execution
+
+**23 招式 5 phase 归类 (mattpocock — v0.1 catalog 18 active)**:
+- Discuss: `/grill-with-docs` · `/grill-me` · `/to-prd`
+- Plan: `/to-issues` · `/zoom-out`
+- Execute: `/tdd` · `/diagnose` · `/zoom-out` · `/prototype` · `/triage`
+- 维护: `/improve-codebase-architecture` · `/setup-pre-commit` · `/setup-matt-pocock-skills` · `/git-guardrails-claude-code`
+- Token-省: `/caveman` · `/handoff`
+- meta-skill (兼): `/write-a-skill`
+- 一次性: `/migrate-to-shoehorn` · `/scaffold-exercises`
+- 排除: deprecated 4 (design-an-interface / qa / request-refactor-plan / ubiquitous-language) + personal 2 + in-progress 3
+
+**5 项 mandatory curate criteria (v0.1)**:
+1. license OSI approved
+2. stars ≥ 100 (OR ≥50 + 3mo active)
+3. last commit ≤ 6 months
+4. has SKILL.md OR plugin.json
+5. owner Org OR ≥2 active contributors
+
+**3 红旗 (RESEARCH-1 § 5.3)**:
+- 🔴 P0: subagent 不能嵌套 — phase 1.4 routing engine **必须** main-process-driven (已 lock D1.2.5-3)
+- 🟡 P1: `/reload-plugins` skill bug — install 后 fresh subagent invoke 验证 fallback
+- 🟡 P1: subagent final message summarize 风险 — main agent system prompt 强制 verbatim COMPLETE marker
+
+---
 
 ## References
 

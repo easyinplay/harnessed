@@ -108,52 +108,57 @@
 
 ---
 
-## v0.2.0 — execute-task workflow + ralph-loop（2-3 周）
+## v0.2.0 — Sub-task Loop + Extension Installers（v3 重排，3-4 周）
 
 ### Goal
 
-把子任务级编排（高频场景）打透，补齐剩余 2 种 installer，落实 karpathy-skills 的 behavior-rule 注入语义，引入 doctor health check 与 audit。
+打通子任务级编排（execute-task workflow + ralph-loop full integration），实装 4 个 phase-2.1 placeholder installer，落地 design / content / testing 3 个 extension category 真实候选，doctor health check + audit 完整版。
 
-### 必含项（直接采纳 SUMMARY § 五 v0.2.0 MUST 7 项）
+### 必含项（v3 重排 — ADR 0006 § 6 + ASSUMPTIONS § E lock）
 
-1. **剩下 2 种 installer**
-   - `cc-plugin-marketplace`（superpowers, ralph-loop）
-   - `npx-skill-installer` / `git-clone-with-setup`（mattpocock-skills, karpathy-skills, gstack）
-2. **execute-task workflow 跑通**（WORKFLOWS § 2）
-3. **ralph-loop Windows fix**：doctor 检查 jq + bash（Git Bash 路径）；workflow 模板强制 `--max-iterations`（issue #1429 兜底）
-4. **`harnessed doctor` health check**（R04 P1#8）：6 月无 commit 上游标 stale + weekly cron
-5. **`harnessed audit` 命令**（R04 P1#10）：检查上游 git origin URL 未被篡改
-6. **karpathy-skills 作为 behavior-rule 实装**（R02 § 6）：CLAUDE.md 注入策略 + 多源 merge 规则
-7. **plugin 卸载强制 CLI 不走 TUI**（R03 § 1.3 issue #52456）：`claude plugin uninstall --prune` + 4 步 fallback
+1. **4 个 phase-2.1 placeholder installer 实装**（cc-plugin-marketplace + git-clone-with-setup + npx-skill-installer + mcp-http-add — 详 ADR 0003 errata + ADR 0007 errata install_type 字段）
+2. **execute-task workflow + ralph-loop 完整集成**（WORKFLOWS § 2 + 主流程 routing engine 调用 ralph-loop wrap "...COMPLETE" --completion-promise）
+3. **design / content / testing category extension installer + decision rule 实测**:
+   - design: ui-ux-pro-max install adapter (D1.2.5-11 — 视 phase 1.3 实测结果决定 install path) + frontend-design
+   - content: anthropics/skills pptx/docx/xlsx/pdf + baoyu-skills (license None warn — D1.2.5-10)
+   - testing: webapp-testing + playwright-cli + chrome-devtools-mcp
+4. **doctor health check 完整版**（R04 P1#8）: 6 月无 commit 上游标 stale + weekly cron + ralph-loop Win 兼容 (jq + Git Bash)
+5. **audit 完整版**（R04 P1#10）: git origin URL 篡改 + signed_by 校验 + plugin uninstall 4 步 fallback (R03 § 1.3)
+6. **karpathy-skills behavior-rule 实装**（R02 § 6）: CLAUDE.md 注入策略 + 多源 merge 规则 + override 优先级
+7. **6 install method 全覆盖 10 上游**（v0.1 base 7 个 + extension 部分覆盖）
 
 ### 验收标准
 
-1. 用户跑 `/harnessed:execute-task "实现 X 功能"`，自动经过 brainstorming → karpathy 心法编码（按需召唤 mattpocock）→ 条件 TDD → ralph-loop 交付 COMPLETE，5 步全产出 checkpoint。
-2. Windows 用户 `harnessed doctor` 立刻指出缺 jq / bash 不是 Git Bash 时给出修复命令；ralph-loop 即使上游 `--completion-promise` 失效也因 `--max-iterations` 兜底不会无限循环。
-3. `harnessed audit` 检测上游被替换为恶意 fork（git origin 改名）时立即报警。
-4. 6 个月无 commit 的上游被 doctor 标 stale，提示用户切换 fallback 或冻结当前版本。
-5. karpathy CLAUDE.md 行为规范注入后，多源（用户私有 + harnessed 默认）有清晰 merge 顺序，用户可关闭。
+1. 用户跑 `/harnessed:execute-task "实现 X 功能"`，自动经过 brainstorming → karpathy 心法 always-on → 按需召唤 mattpocock 招式 → 条件 TDD → ralph-loop 交付 COMPLETE，每子任务 verbatim COMPLETE 回流主流程。
+2. design / content / testing category 各能 demo 一个 task（UI 设计 / PPT 生成 / E2E 测试）routing 命中 + auto-install + invoke。
+3. Windows 用户 `harnessed doctor` 立刻指出缺 jq / bash 不是 Git Bash 时给出修复命令；ralph-loop 即使上游 `--completion-promise` 失效也因 `--max-iterations` 兜底不会无限循环。
+4. `harnessed audit` 检测上游被替换为恶意 fork（git origin 改名）时立即报警；4 步 fallback uninstall 100% 清理。
+5. 6 个月无 commit 的上游被 doctor 标 stale；karpathy CLAUDE.md 行为规范注入后多源 merge 顺序清晰可关闭。
 
-### Phase 拆分
+### Phase 拆分（v3 重排）
 
-- **Phase 2.1：cc-plugin-marketplace + npx-skill / git-clone-with-setup installer**
-  - 4 步 fallback uninstall；component_type 区分（command / behavior-rule / mcp-tool / cli-binary）
-  - 验收：6 种 installer 全部覆盖 9 个上游
-- **Phase 2.2：karpathy-skills behavior-rule 注入引擎 + CLAUDE.md merge**
-  - 显式标注 source（harnessed/private/project）+ override 优先级
-  - 验收：用户 CLAUDE.md 不被破坏；卸载完全清理
-- **Phase 2.3：execute-task workflow + routing/execute.md + mattpocock 按需召唤**
-  - on_demand_invoke 触发引擎；TDD 条件触发
-  - 验收：30 样本子任务流水跑通（含 UI / backend / algorithm 三类）
-- **Phase 2.4：ralph-loop Windows 兼容 + doctor health check + audit 命令**
-  - jq / Git Bash 探测；upstream_health weekly cron；origin URL 校验
-  - 验收：Windows native CI 跑过 ralph-loop 完整链路；audit 检测出 origin 篡改
+- **Phase 2.1：4 phase-2.1 placeholder installer 实装**
+  - cc-plugin-marketplace (anthropics + ui-ux-pro-max + frontend-design 系) + git-clone-with-setup + npx-skill-installer + mcp-http-add
+  - install_type 字段 enforcement（D1.2.5-12）
+  - 验收：6 install method 全部覆盖 + ui-ux-pro-max install path 实测 (D1.2.5-11) 通过
+- **Phase 2.2：execute-task workflow + ralph-loop full integration + 主流程 routing engine 调用**
+  - 主进程 spawn subagent 时自动 ralph-loop wrap "...COMPLETE" --completion-promise
+  - main agent system prompt 强制 verbatim COMPLETE marker（F33 P1 mitigation）
+  - 验收：30 子任务样本 ralph-loop COMPLETE 检测 100% 准确（不被主 summarize 误吞）
+- **Phase 2.3：design / content / testing extension category MVP**
+  - 3 category × 真实候选 install adapter + decision rule 实测
+  - karpathy-skills behavior-rule 注入引擎 + CLAUDE.md merge
+  - 验收：30 category-specific 样本 routing 命中 ≥ 85%（含 override "做出风格" 等 anchor）
+- **Phase 2.4：doctor health check + audit 完整版 + ralph-loop Win 兼容**
+  - jq / Git Bash 探测；upstream_health weekly cron；origin URL 校验；plugin uninstall 4 步 fallback
+  - 验收：Windows native CI 跑过 ralph-loop 完整链路；audit 检测出 origin 篡改 + 模拟恶意 fork
 
 ### 关键风险
 
-- ⚠️ **ralph-loop completion-promise 不可靠**（issue #1429）→ schema 强制 max_iterations required
+- ⚠️ **ralph-loop completion-promise 不可靠**（issue #1429）→ schema 强制 max_iterations required + main agent system prompt verbatim COMPLETE
 - ⚠️ **Windows 上 jq + bash 未声明依赖**（R02 红旗）→ doctor 不通过则拒绝执行
 - ⚠️ **karpathy behavior-rule 与用户私有 CLAUDE.md 冲突** → 必须有清晰 merge 顺序 + 一键关闭
+- ⚠️ **ui-ux-pro-max install adapter 可能需自维护**（D1.2.5-11）→ 视 phase 1.3 实测结果，必要时 phase 2.1 提供 fork-and-mirror 方案
 
 ---
 
@@ -279,80 +284,101 @@
 
 ---
 
-## Phase 之间的依赖图
+## Phase 之间的依赖图（v3 重排）
 
 ```
-                                  ┌─────────────────────────────┐
-                                  │  v0.1.0 Foundation          │
-                                  │                             │
-                                  │  P1.1 schema + ADR ─────────┐│
-                                  │       │                     ││
-                                  │       ▼                     ││
-                                  │  P1.2 cross-OS CI +         ││
-                                  │       cli-npm + mcp-stdio   ││
-                                  │       │                     ││
-                                  │       ▼                     ││
-                                  │  P1.3 DAG + setup/doctor    ││
-                                  │       │                     ││
-                                  │       ▼                     ││
-                                  │  P1.4 research workflow ────┘│
-                                  └────────────┬────────────────┘
-                                               │
-                                               ▼
-                                  ┌─────────────────────────────┐
-                                  │  v0.2.0 Sub-task Loop       │
-                                  │                             │
-                                  │  P2.1 cc-plugin + git-clone │
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P2.2 karpathy behavior     │
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P2.3 execute-task + routing│
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P2.4 ralph Win + doctor    │
-                                  │       + audit               │
-                                  └────────────┬────────────────┘
-                                               │
-                                               ▼
-                                  ┌─────────────────────────────┐
-                                  │  v0.3.0 Long-chain          │
-                                  │                             │
-                                  │  P3.1 checkpoint + resume   │
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P3.2 gstack prefix +       │
-                                  │       plan-feature ref      │
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P3.3 aliases + known-good  │
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P3.4 routing ≥85% acceptance│
-                                  └────────────┬────────────────┘
-                                               │
-                                               ▼
-                                  ┌─────────────────────────────┐
-                                  │  v0.4.0 Stabilize           │
-                                  │                             │
-                                  │  P4.1 benchmark 公开        │
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P4.2 co-maintainer + Sponsors│
-                                  │       │                     │
-                                  │       ▼                     │
-                                  │  P4.3 audit log + ADR 全集  │
-                                  └─────────────────────────────┘
+v0.1.0 Foundation (3-5 周, v3 扩大范围)
+  ┌─────────────────────────────────────────────────┐
+  │ P1.1 schema + ADR 0001-0002 ✅ SHIPPED         │
+  │       │                                         │
+  │       ▼                                         │
+  │ P1.2 cli-npm + mcp-stdio + cross-OS CI ✅      │
+  │      SHIPPED (含 1.2.1 hotfix)                  │
+  │       │                                         │
+  │       ▼                                         │
+  │ P1.2.5 architecture wedge revision (ADR 0006)  │
+  │      🔄 IN-PROGRESS (Wave A/B/C done)          │
+  │       │                                         │
+  │       ▼                                         │
+  │ P1.3 base profile + categorization schema      │
+  │      (ADR 0007 errata) + ui-ux-pro-max install │
+  │      path 实测 + decision_rules.yaml v1        │
+  │      + AgentDefinition factory contract draft  │
+  │       │                                         │
+  │       ▼                                         │
+  │ P1.4 routing engine v1 + research workflow E2E │
+  │      (main-process-driven; 6 category × 12+    │
+  │      decision rules MVP; verbatim COMPLETE)    │
+  │       │                                         │
+  │       ▼                                         │
+  │ P1.5 DAG resolver + Semantic Router v2 升级    │
+  │      (循环依赖检测 + embedding kNN 语义增强)   │
+  └─────────────────────┬───────────────────────────┘
+                        │
+                        ▼
+v0.2.0 Sub-task Loop + Extension Installers (3-4 周, v3 重排)
+  ┌─────────────────────────────────────────────────┐
+  │ P2.1 4 phase-2.1 placeholder installer 实装    │
+  │      (cc-plugin-marketplace + git-clone-with-  │
+  │       setup + npx-skill-installer + mcp-http)  │
+  │       │                                         │
+  │       ▼                                         │
+  │ P2.2 execute-task workflow + ralph-loop full   │
+  │      integration (主流程 routing engine 调用    │
+  │      ralph-loop wrap + verbatim COMPLETE 回流) │
+  │       │                                         │
+  │       ▼                                         │
+  │ P2.3 design/content/testing extension category │
+  │      MVP + karpathy behavior-rule 注入 +       │
+  │      30 category-specific 样本 routing ≥ 85%   │
+  │       │                                         │
+  │       ▼                                         │
+  │ P2.4 doctor health check + audit + ralph-loop  │
+  │      Win 兼容 (jq / Git Bash / weekly cron /   │
+  │      4 步 fallback uninstall)                   │
+  └─────────────────────┬───────────────────────────┘
+                        │
+                        ▼
+v0.3.0 Long-chain (3-4 周)
+  ┌─────────────────────────────────────────────────┐
+  │ P3.1 plan-feature workflow + checkpoint engine │
+  │      + harnessed resume                         │
+  │       │                                         │
+  │       ▼                                         │
+  │ P3.2 gstack 前缀探测 + workflow 变量插值 +     │
+  │      governance gates (pause + on_veto)        │
+  │       │                                         │
+  │       ▼                                         │
+  │ P3.3 aliases + deprecation marker +            │
+  │      known-good 版本组合                        │
+  │       │                                         │
+  │       ▼                                         │
+  │ P3.4 routing 命中率 ≥ 85% acceptance (含       │
+  │      Semantic Router v2 验证 + token budget)   │
+  └─────────────────────┬───────────────────────────┘
+                        │
+                        ▼
+v0.4.0 Stabilize (2-3 周)
+  ┌─────────────────────────────────────────────────┐
+  │ P4.1 dogfooding benchmark 公开                  │
+  │       │                                         │
+  │       ▼                                         │
+  │ P4.2 co-maintainer + Sponsors + stale-bot      │
+  │       │                                         │
+  │       ▼                                         │
+  │ P4.3 routing audit log + ADR 全集 + v1.0-RC    │
+  └─────────────────────────────────────────────────┘
 
 并行机会：
-- P1.1 + P1.2 schema 与 CI 骨架 可前 1-2 天并行
-- P2.2 (karpathy behavior) 与 P2.3 (execute-task workflow) 在 P2.1 完成后可并行
-- P4.1 benchmark 数据采集 与 P4.2 onboarding 文档 可并行
+- P1.1 ↔ P1.2 schema 与 CI 骨架 (已 happened ✅)
+- P2.2 (execute-task) ↔ P2.3 (extension category) 在 P2.1 完成后可并行
+- P4.1 benchmark ↔ P4.2 onboarding 文档可并行
+
 依赖硬要求：
-- 所有 v0.2 phase 依赖 v0.1 schema + DAG resolver
-- v0.3 checkpoint 必须先于 plan-feature 实装（P3.1 先于 P3.2）
-- v0.4 benchmark 必须晚于 P3.4（命中率验收）
+- 所有 v0.2 phase 依赖 v0.1 categorization schema (P1.3) + routing engine v1 (P1.4)
+- v0.3 plan-feature 依赖 v0.2 execute-task (workflow phase chaining)
+- v0.4 benchmark 依赖 P3.4 命中率验收完成
+- v0.1 P1.5 (Semantic Router v2) 必须先于 v0.3 P3.4 (命中率验收前提)
 ```
 
 ---

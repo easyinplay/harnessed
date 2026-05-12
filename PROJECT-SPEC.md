@@ -398,7 +398,7 @@ phases:
 
 | 版本 | 周期 | 内容 | 验证目标 |
 |------|------|------|---------|
-| **v0.1.0** | 1-2 周 | manifest 引擎 + setup/doctor + `research` workflow + **cross-OS 测试基线（Mac/Linux/Windows native — Day 1 启用）** + DAG resolver + ADR 0001 | 4 种 type installer 中 3 个跑通（cli-npm / mcp-stdio-add / 内置 router）+ 三平台 e2e 通过 |
+| **v0.1.0** | **3-5 周** (v3 扩大范围 — 含 phase 1.3 + 1.4 + 1.5) | base profile + manifest 引擎 + setup/doctor + `research` workflow + categorization schema (ADR 0007 errata) + routing engine v1 (main-process-driven) + DAG + Semantic Router + cross-OS 基线 + ADR 0001 / 0002 / 0006 | 6 install method 全部覆盖 base 7 上游 + decision_rules.yaml v1 + 6 category routing engine MVP + 三平台 e2e + 8 支柱 100% capture verify |
 | **v0.2.0** | 2-3 周 | + `execute-task` workflow + ralph-loop 编排 + 剩 2 种 installer（cc-plugin-marketplace + npx-skill-installer/git-clone-with-setup）+ harnessed doctor 健康检查 + harnessed audit | 子任务级编排（高频场景）+ TDD 集成 + Windows ralph-loop fix（jq+bash 路径） |
 | **v0.3.0** | 3-4 周 | + `plan-feature` workflow + 三层栈编排 + checkpoint 机制 + B+C 路由实测命中率 ≥ 85% + gstack 命令前缀探测 + manifests/aliases.yaml | 长链路 + pause 点 + 跨 phase 状态传递 |
 | **v0.4.0** | 2-3 周 | dogfooding benchmark + co-maintainer 招募 + 路由透明度日志 + GitHub Sponsors 启用 | 进入稳定期 |

@@ -288,7 +288,7 @@ routing engine 在 spawn subagent 时**继承**主流程的环境质量基线（
 | **CI 守恒 (3 平台 / Node 22)** | subagent 不直接 enforce — 但 subagent 启动时 inject "在 windows-latest 跑代码时遵循 R03 § 3.7 cmd /c wrapper" 到 prompt 字段 |
 | **Lockfile 一致性** | subagent 内 `corepack pnpm install` 必须 `--frozen-lockfile`（已在 mattpocock /improve-codebase-architecture 等 skill 默认）|
 | **Cross-OS** | subagent prompt 含 `process.platform === 'win32'` 分支处理（参考 phase 1.2 实证 F18 教训）|
-| **EOL 行尾** | subagent 写文件后 main agent 检查 `git ls-files --eol` — fail 则 ralph-loop COMPLETE 拒绝接受 |
+| **EOL 行尾** | subagent 写文件后 main agent 在 commit 前 check（如用 `Get-Content -Raw` PowerShell match `\r\n` 或读字节流；不能仅用 `git ls-files --eol`，因新文件未 commit 时该命令不暴露 EOL — M2 sister review caveat）；fail 则 ralph-loop COMPLETE 拒绝接受。**phase 1.3 实装时确定具体 enforcement 接口** |
 | **A7 守恒** | subagent 不允许改 `docs/adr/000{1,2,3,4,5}-*.md` main body — install_type=skill 的 skill 不应触碰 ADR；如触碰则 routing engine 拒绝 |
 
 ---
