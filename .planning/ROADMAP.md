@@ -70,24 +70,41 @@
 
 ### Phase 拆分
 
-- **Phase 1.1：repo 骨架 + manifest schema v1 frozen + ADR 0001**
-  - 仓库 4 层目录、`workflows/SCHEMA.md`、`routing/SCHEMA.md`、JSON Schema 文件、`docs/adr/0001-manifest-schema-v1.md`
-  - 验收：schema validator 单测全绿；任意非法 manifest 被 reject
-- **Phase 1.2：cross-OS CI Day 1 + cli-npm + mcp-stdio installer**
-  - GitHub Actions 矩阵（mac/linux/win-native）；npx `cmd /c` wrapper；`installers/cli-npm.ts` + `installers/mcp-stdio.ts`；`--scope project` 强制
-  - 验收：3 平台 install Tavily+Exa+ctx7 idempotent + dry-run 通过
-- **Phase 1.3：DAG resolver + harnessed-router 引擎 + setup/doctor 命令**
-  - 拓扑排序、循环依赖检测、显式降级输出、`harnessed setup` 自版本检查、`.harnessed-backup/` rollback
-  - 验收：人为构造循环依赖时 schema 阶段 reject；setup 改文件前 100% explicit confirm
-- **Phase 1.4：research workflow 端到端 + routing/search.md**
-  - `/harnessed:research` SKILL.md + `routing/search.md` SSOT；分支 ctx7/tavily/exa/parallel；checkpoint 写入
-  - 验收：30 真实查询样本 ≥ 85% 命中（v0.1 内部基线，v0.4 重测公开）
+> **v3 重排（ADR 0006 phase 1.2.5 wedge 重定位 后）** — 详 `.planning/phase-1.2.5/ASSUMPTIONS.md` § E
 
-### 关键风险
+- **Phase 1.1：repo 骨架 + manifest schema v1 frozen + ADR 0001** ✅ SHIPPED 2026-05-12
+- **Phase 1.2：cli-npm + mcp-stdio installer + setup/doctor 命令骨架** ✅ SHIPPED 2026-05-12 (含 phase 1.2.1 hotfix B5')
+- **Phase 1.2.5：Architecture revision discuss-phase** 🔄 in-progress (Wave A/B done; Wave C/D pending)
+  - 8 支柱 100% capture lock + 5 P0 决策 lock + ADR 0006 起草 + ROADMAP v3 重排
+  - 不动已 ship 代码 (A7 守恒)；准备 phase 1.3 implementation
+- **Phase 1.3：Base profile + Categorization schema + decision_rules.yaml v1**（v3 重排）
+  - 新 ADR 0007 errata：manifest schema 加 `category` + `decision_rules` + `install_type` 字段（A7 守恒不动 0001）
+  - `harnessed install --base` 一键装齐 base profile (10 固定 manifest)
+  - `.planning/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy)
+  - ui-ux-pro-max install path 实测 (D1.2.5-11)
+  - 验收：base profile 一键装齐 mac/linux/win 全绿；decision_rules.yaml schema validation 通过；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate
+- **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）
+  - main-process-driven routing engine (D1.2.5-3) — `claude plugin install` + `/reload-plugins` + AgentDefinition factory
+  - 6 category × 12+ decision rules MVP（design / content / testing / search 优先）
+  - L1 关键词路由（DMN Priority Hit Policy）
+  - research workflow E2E + sub-routing 沿用 search category
+  - 主 agent system prompt verbatim COMPLETE 强制 (F33 P1 mitigation)
+  - 验收：6 category routing engine 跑通；30 真实查询样本路由命中率 ≥ 85%（v0.1 内部基线）
+- **Phase 1.5：DAG resolver + Semantic Router 语义增强（v0.2 起点合并）**（v3 新加）
+  - DAG resolver + 拓扑排序（原 phase 1.3）
+  - Semantic Router L2 升级（embedding kNN）
+  - 高频 workflow 模式编码（D1.2.5-4 P0-4 渐进策略）
+  - 验收：循环依赖 schema 阶段 reject；Semantic Router 能识别 "做出风格" 等 phrase
 
-- ⚠️ **DAG resolver 临时绕过的诱惑**：早期上游少时 sequential 也能 work，会拖到 v0.3 才补 → 强制 Day 1 实装（R04 失败模式 4，brew bundle 案）
-- ⚠️ **schema 冻结仓促**：第一行 installer 代码前必须冻结，后续改 schema = 全 manifest 迁移（SPEC § 8.1）
-- ⚠️ **Windows native 被遗忘**：默认开发在 Mac，CI 红了直接 disable Windows 是常见反模式 → 红了必须修，不允许 disable
+### 关键风险（v3 update）
+
+- ⚠️ **DAG resolver 推迟到 phase 1.5**：v3 重排后 phase 1.3 不再含 DAG（base profile 安装顺序明确，不需拓扑），但 phase 1.5 + Semantic Router 升级一起做时必须实装（守 R04 失败模式 4 brew bundle 教训）
+- ⚠️ **schema 冻结仓促**：第一行 installer 代码前必须冻结，后续改 schema = 全 manifest 迁移 — phase 1.3 加 `category` / `decision_rules` / `install_type` 字段走 ADR 0007 errata（A7 守恒不动 0001）
+- ⚠️ **Windows native 被遗忘**：默认开发在 Mac，CI 红了直接 disable Windows 是常见反模式 → 红了必须修，不允许 disable（phase 1.2.1 hotfix 已实证 B5' 修复）
+- ⚠️ **Routing engine 三红旗（来自 phase 1.2.5 RESEARCH-1）**：
+  - 🔴 P0: subagent 不能嵌套 — phase 1.4 routing engine 必须 main-process-driven (已 lock D1.2.5-3)
+  - 🟡 P1: `/reload-plugins` skill bug — phase 1.4 实装时设计 install 后 fresh subagent invoke 验证 fallback
+  - 🟡 P1: subagent final message summarize 风险 — phase 1.4 main agent system prompt 强制 verbatim COMPLETE marker
 
 ---
 

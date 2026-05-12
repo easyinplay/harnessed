@@ -1,60 +1,86 @@
-# harnessed — 立项参数 Spec Sheet (v2)
+# harnessed — 立项参数 Spec Sheet (v3)
 
-> 状态：✅ **Locked** — 已通过 gstack `/autoplan` 三关卡（/office-hours + /plan-ceo-review + /plan-eng-review）
-> 决策完成日期：2026-05-11
-> 下一步：GSD `/gsd-new-project` 立项 → planning-with-files 落地
+> 状态：✅ **Locked v3** — phase 1.2.5 architecture revision discuss-phase 完成（ADR 0006 wedge 重定位）
+> v2 决策完成日期：2026-05-11
+> v3 wedge 升级：2026-05-12（基于 phase 1.2.5 RESEARCH-1/2 + 8 支柱 100% capture + 5 P0 lock）
+> 下一步：Phase 1.3 base profile + categorization schema (新 ADR 0007 errata)
 
 ---
 
-## 1. 已敲定参数（v2 已扩展）
+## 1. 已敲定参数（v3 wedge 升级）
 
 | 维度 | 决策 | 理由 |
 |------|------|------|
-| **项目名** | `harnessed` | 商标干净（不撞 Harness.io 子产品观感）+ 单词形式 + npm/GitHub 全可注册 + 圈内人秒懂 AI agent harness 语义 |
-| **定位** | AI coding harness 生态的「包管理器 + composition orchestrator」 | 市场空白：ECC 等是 all-in-one 自建派，没有清晰的「装配主义」代表作 |
+| **项目名** | `harnessed` | 商标干净 + 单词形式 + npm/GitHub 全可注册 + 圈内人秒懂 AI agent harness 语义 |
+| **定位** (v3 升级) | **完整三层栈方法论的可执行 engine — 6+ 虚拟角色 / 双职责治理 / 环境质量 / 4 心法 / 23 招式 phase 路由 / 心法-招式配对 / brainstorming-TDD 触发规则 / 6 skill category — 全部从静态 CLAUDE.md 升级为 subagent-isolated routing engine** | 不是"装配市面 skill"，是"把 CLAUDE.md 协作规则机器化"（详 ADR 0006）|
 | **目标用户** | 开源社区（非商业化，GitHub Sponsors 兜底） | |
 | **跨 harness** | 架构保留多 harness 抽象层，**Claude Code 先行** | 全做工作量指数级，CC 用户基数最大 |
 | **实现语言** | Node.js + TypeScript | (a) CC 用户 100% 有 Node；(b) `npx <pkg>@latest setup` 是生态事实标准；(c) 大多数被 orchestrate 的组件本身是 npm 包；(d) 跨 harness 时其他 harness 也是 Node 生态 |
-| **集成模型** | **方案 Z (Composition Skill)** — 不 vendor 上游代码 | License 0 负担、上游升级自动收益、品牌内聚、轻量 |
+| **集成模型** | **方案 Z (Composition Skill)** — 不 vendor 上游代码（v3 强化：base + extension 叠加，extension 走 routing engine 按需装）| License 0 负担、上游升级自动收益、品牌内聚、轻量 |
 | **MVP workflow** | `research` → `execute-task` → `plan-feature`（**按 v0.1→v0.3 递增 ship**，不砍范围） | 每个版本验证一类核心能力，风险分摊 |
-| **License** | **Apache-2.0**（v2 升级自 MIT） | 专利授权明确，适合「路由元规则 / composition schema」类 IP；对企业用户友好（未来不阻碍 enterprise plugin） |
+| **License** | **Apache-2.0**（v2 升级自 MIT）| 专利授权明确，适合「路由元规则 / composition schema」类 IP |
 | **命名空间** | `/harnessed:*` 完整前缀 | 可读 > 短，撞名风险归零 |
-| **路由机制** | **B+C 混合**：skill 强声明 description（默认层）+ UserPromptSubmit hook 硬路由（关键路径） | routing/*.md 作 SSOT，详见 § 9 |
-| **发布渠道** | npm + Claude Code marketplace 双轨 | MVP 双轨即可；GitHub Releases / Homebrew tap 推 v2+ |
+| **路由机制** | **B+C 混合**（已 ship phase 1.1-1.2）+ **Main-Process-Driven Routing Engine**（v3 新加，phase 1.4 ship）：base layer 用 B+C 命令路由；extension layer 用 routing engine 决策路由（DMN Priority Hit Policy + L2 LLM Supervisor fallback）| ADR 0006 + GRAY-AREA-1 |
+| **发布渠道** | npm + Claude Code marketplace 双轨 | MVP 双轨即可 |
 | **持续性** | GitHub Sponsors + 6 个月 co-maintainer 招募窗口；无应招者则进入 maintenance-only | 单点维护风险显式兜底 |
+
+### 1.1 v3 Wedge 升级要点（新加 — ADR 0006 lock）
+
+**之前 wedge** (v1-v2): "AI coding harness 生态的「装配主义包管理器 + composition orchestrator」— 不 vendor 上游代码"
+
+**v3 wedge**: "**完整三层栈方法论的可执行 engine** — 把用户 CLAUDE.md 里写好的协作规则（gstack 6+ 角色 / GSD orchestration / superpower brainstorming+TDD / karpathy 4 心法 / mattpocock 23 招式 / 心法-招式配对 / 6 skill category × decision rules）从**静态文档**升级为 **subagent-isolated routing engine** 机器化执行"
+
+**双层架构**:
+- **Base Layer** (phase 1.1-1.2 已 ship)：10 固定 manifest + 3 workflow MVP + B+C 命令路由 → `harnessed install --base` 一键装齐
+- **Extension Layer** (phase 1.3+ 加)：6 大 category × M 候选 + decision rules + curate criteria → main-process-driven routing engine 按需 install + invoke
+
+**核心 wedge 守恒**: 不 vendor 上游 prompt（违反 wedge）；只编码 *何时触发* + *如何决策*（routing logic）；subagent 仅 invoke 已注入 skill。
 
 ---
 
-## 2. 上游依赖清单（MVP 范围内）
+## 2. 上游依赖清单（v3 双层架构）
+
+### 2.1 Base Layer (phase 1.1-1.2 已 ship — 不动)
 
 每个 workflow 隐式声明依赖，setup 引擎自动解析依赖图。
 
-| 上游 | 类型 | workflow 引用 | 安装方式 | 锁版本策略（见 § 5.5） |
-|------|------|--------------|---------|----------------------|
-| **gstack** | CC skill-pack（开源 93.5k★） | plan-feature | `git clone + ./setup`（**双路径验证**：v0.1 doctor 同时探测 plugin 化路径预留） | git commit hash |
-| **GSD** | CLI npm（开源 61.4k★） | plan-feature, execute-task | `npx get-shit-done-cc@latest` | git commit hash |
-| **superpowers** | CC plugin（开源 186k★） | plan-feature, execute-task | `claude plugin install`（marketplace） | git commit hash |
+| 上游 | 类型 | workflow 引用 | 安装方式 | 锁版本策略 |
+|------|------|--------------|---------|-----------|
+| **gstack** | CC skill-pack（开源 93.5k★）| plan-feature | `git clone + ./setup` | git commit hash |
+| **GSD** | CLI npm（开源 61.4k★）| plan-feature, execute-task | `npx get-shit-done-cc@latest` | git commit hash |
+| **superpowers** | CC plugin（开源 186k★）| plan-feature, execute-task | `claude plugin install`（marketplace）| git commit hash |
 | **planning-with-files** | skill 包 | plan-feature | `claude plugin install` 或 `npx skills@latest add` | git commit hash |
-| **mattpocock-skills** | skills 集合（开源 70.6k★） | execute-task | `npx skills@latest add mattpocock/skills` | git commit hash |
-| **karpathy-skills** | **behavior-rule**（CLAUDE.md 注入，非命令式 skill，开源 125k★） | execute-task | `npx skills@latest add` + CLAUDE.md merge 策略 | git commit hash |
-| **ralph-loop** | CC plugin（开源） | execute-task | `claude plugin install` | git commit hash |
+| **mattpocock-skills** | skills 集合（开源 70.6k★）| execute-task | `npx skills@latest add mattpocock/skills` | git commit hash |
+| **karpathy-skills** | **behavior-rule** | execute-task | `npx skills@latest add` + CLAUDE.md merge | git commit hash |
+| **ralph-loop** | CC plugin（开源）| execute-task | `claude plugin install` | git commit hash |
 | **Tavily MCP** | MCP server (本地 npm) | research | `claude mcp add --scope project` + npx | `^minor` |
 | **Exa MCP** | MCP server (本地 npm) | research | `claude mcp add --scope project` + npx | `^minor` |
-| **ctx7** | CLI (npm global) | research | `npm i -g` 或 `npx`（fallback） | `^minor` |
+| **ctx7** | CLI (npm global) | research | `npm i -g` 或 `npx`（fallback）| `^minor` |
 
-**Manifest type 覆盖（4 种）**：`cc-plugin` / `cc-skill-pack` / `mcp-npm` / `cli-npm` — schema 简洁性优先（决策见 ADR 0001）。
+### 2.2 Extension Layer (phase 1.3+ — 6 大 category × M 候选)
 
-**安装通道（6 种异构 — install.method 子枚举，详见 ADR-0003 errata）**：
-- `cc-plugin-marketplace`（superpowers, ralph-loop, planning-with-files-plugin）
-- `git-clone-with-setup`（gstack — 当前未 plugin 化）
-- `npx-skill-installer`（mattpocock-skills, karpathy-skills, planning-with-files 替代）
-- `npm-cli`（GSD, ctx7）
-- `mcp-stdio-add`（Tavily, Exa）
-- `mcp-http-add`（v0.1 phase 1.1 schema 占位，phase 1.2+ 真上游如 Vercel/Cloudflare MCP）
+每个 extension skill 通过 manifest `category` + `decision_rules` 字段声明（ADR 0007 errata 加，A7 守恒不动 0001）；routing engine 按 task 上下文决定 install + invoke。
 
-**Component type（manifest 必填字段）**：`component_type` ∈ `command | behavior-rule | mcp-tool | cli-binary` — 区分语义差异巨大的组件（karpathy-skills 是 CLAUDE.md 注入的行为规范，与命令式 skill 安装/卸载逻辑不同）。
+详尽候选库见 `RESEARCH-2-skill-ecosystem.md` § 1 + `GRAY-AREA-1-routing-engine.md` § 3 (6 category × decision rules schema)。
 
-MVP 后续可加 MCP Docker（GitHub MCP）+ MCP HTTP（Vercel/Cloudflare MCP）+ 配置型（hooks）扩展到 6 种 type。
+| Category | Base 已含 (phase 1.1-1.2) | Extension 候选 (phase 1.3+ 按需装) | Decision rule anchor |
+|---|---|---|---|
+| **meta** | (none) | skill-creator (anthropics) + find-skills (vercel-labs) | 创建 → skill-creator / 搜索 → find-skills |
+| **engineering** | gstack + GSD + superpower + planning-with-files + mattpocock + karpathy + ralph-loop | (engineering 类已被 base 全覆盖) | 详 GRAY-AREA-3 § 3.3 mattpocock 5 phase × 18 active 命令 |
+| **design** | (none) | ui-ux-pro-max (midwayjs/midway/.codex) + frontend-design (anthropics) | 默认 ui-ux-pro-max；override "做出风格" → frontend-design 主导 |
+| **content** | (none) | pptx + docx + xlsx + pdf (anthropics) + baoyu-skills 21 (jimliu — license: None warn) | .pptx → pptx；中文 deck → baoyu (license warn)；微信微博 → baoyu-post-* |
+| **testing** | (none) | webapp-testing (anthropics) + playwright-cli (microsoft) + @playwright/test (npm) + chrome-devtools-mcp (ChromeDevTools) | perf/a11y/memory → chrome-devtools-mcp 强制；E2E+Python → webapp-testing；E2E TS → @playwright/test；探查 → playwright-cli |
+| **search** | tavily-mcp + exa-mcp（已 base） | (search 类已被 base 覆盖；可选其他 search MCP) | 默认 tavily；学术/描述式/批量 URL/token 敏感 → exa；整站抓 → tavily 强制 |
+
+**Manifest type 覆盖（v3 仍 4 种）**：`cc-plugin` / `cc-skill-pack` / `mcp-npm` / `cli-npm`（ADR 0001 不动；A7 守恒）
+
+**Manifest install method 覆盖（v3 仍 6 种）**：详 ADR 0003 errata。
+
+**Manifest install_type 字段（v3 新加，走 ADR 0007 errata）**：`skill | mcp | npm | git`（区分 skill / MCP server / npm / git 4 种安装路径，因 chrome-devtools-mcp 是 MCP 不是 skill — D1.2.5-12）
+
+**Manifest category 字段（v3 新加，走 ADR 0007 errata）**：`meta | engineering | design | content | testing | search`（A8' 6 大 category）
+
+**Manifest decision_rules 字段（v3 新加，走 ADR 0007 errata）**：optional YAML 块，含 `trigger` / `default_expert` / `arbitration_rule` / `override_signals` 字段（详 GRAY-AREA-1 § 2 schema）
 
 ---
 
