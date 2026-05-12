@@ -29,7 +29,7 @@
 - ⏳ **B3'** Rollback 验证：install + rollback 后系统状态完全恢复（含 `.mcp.json` 复原 + CRLF/LF preserve）
 - ⏳ **B4'** 12 contract tests 全绿（6 契约 × 2 method）
 - ⏳ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）
-- ⏳ **B6'** Tests 数 ≥ 110（89 baseline + 12 contract + ~10 install unit + ~5 doctor/audit unit + ~3 schema marketplace_source）→ 当前 **94/130** (Wave 0 +5)
+- ⏳ **B6'** Tests 数 ≥ 110（89 baseline + 12 contract + ~10 install unit + ~5 doctor/audit unit + ~3 schema marketplace_source）→ 当前 **150/130** ✅ (Wave 0 +5 / Wave 3 +56) — target 已达成 (150 > 110)，剩余 wave 4-7 还会再加
 - ⏳ **B7'** ADR 0001/0002/0003/0004 main body 不动（A7 守恒，CI 自动 enforce）→ Wave 0 ✅ partial: ADR 0001-0005 全部进入 baseline tag 守恒（5 tag, ci.yml iterate）
 - ⏳ **B8'** `harnessed doctor` 检测 ralph-loop Win 依赖（jq + Git Bash vs WSL）
 - ⏳ **B9'** `INSTALLER-CONTRACT.md` ≥ 100 行 + 6 契约逐条说明 + FAQ
@@ -41,7 +41,7 @@
 | 0 | 前置（deps add + ADR 0005 + schema 加字段 + planning-with-files manifest fix） | T1.1 - T1.5 (5 task) | ✅ done (commits 53946d8 / 8950ff3 / 715f880 / 1ec7478 / 840e606 / 13922d5; tests 89→94; A7 0 diff; 5 baseline tags) |
 | 1 | Lib helpers L0 类型基座 | T2.1 (1 task) | ✅ done (commit ca46a59; types.ts 64L; typecheck 0 errors; ready for Wave 2 import) |
 | 2 | Lib helpers L1（5 helpers 并行 — spawn / preflight / diff / confirm / backup） | T2.2 - T2.6 (5 task) | ✅ done (commits 355654b / 718c7f7 / e1f16b0 / 646935a / 3687b00; 5 lib/* files; types.ts imported by all 5; tests still 94; A7 0 diff; F27 logged) |
-| 3 | Lib helpers L2 + Unit Tests（state.ts + 6 lib unit test 文件） | T2.7 - T2.8 (2 task — T2.8 含 6 文件) | ⏳ pending |
+| 3 | Lib helpers L2 + Unit Tests（state.ts + 6 lib unit test 文件） | T2.7 - T2.8 (2 task — T2.8 含 6 文件) | ✅ done (commits 8fdbe85 / f6e36ca; state.ts 100L; 6 unit test files; tests 94 → 150 +56; A7 0 diff 5 tag; lint/typecheck 0) |
 | 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ⏳ pending |
 | 5 | CLI subcommands（install + doctor + audit + rollback/status/backup-list） | T4.1 - T4.4 (4 task) | ⏳ pending |
 | 6 | 顶层 wire + Tests + Cross-OS CI 扩展（cli.ts + contract test 12 cell + method/cli unit + ci.yml installer step + real-spawn skipIf） | T5.1 - T5.6 (6 task) | ⏳ pending |
@@ -70,6 +70,8 @@
 2026-05-12 | T2.4 | add src/installers/lib/diff.ts (75L jsdiff createPatch + stripTrailingCr + picocolors.isColorSupported + 200L fold); types.ts +DiffPlan/DiffFile; see § B F28 deviation note (signature widened to take ctx) | e1f16b0
 2026-05-12 | T2.5 | add src/installers/lib/confirm.ts (82L 4-level + isCancel guard each await + L4 --system flag short-circuit) | 646935a
 2026-05-12 | T2.6 | add src/installers/lib/backup.ts (167L ISO-ts dir + sha1 + per-file eol field + ENOENT pure-create sentinel); over 130L target by 37L (4 explicit error paths) | 3687b00
+2026-05-12 | T2.7 | add src/installers/lib/state.ts (100L .harnessed/state.json SSOT — readState/writeState/updateInstalled; atomic .tmp+rename; ENOENT default; karpathy YAGNI no audit/checkpoints) | 8fdbe85
+2026-05-12 | T2.8 | add 6 lib unit tests (preflight 6 / diff 8 / confirm 12 / backup 10 / spawn 10 / state 10 = 56 tests); tests 94 → 150; vi.mock isolation for fs/child_process/@clack; C6 mitigation (zero real IO); see § B F29 deviation note | f6e36ca
 
 ### A.5 Session 中断恢复指引
 
@@ -198,6 +200,22 @@
 - **Impact**: T2.7+ caller 调 `renderDiff(plan, ctx)` 替代 `renderDiff(plan)`；task_plan 表格的"单一导出 renderDiff(plan)"等价语义改为"renderDiff(plan, ctx)"；不影响行数 / 测试数 / 其他 helper。
 - **Cross-ref**: progress.md § A.4 commit e1f16b0 / src/installers/lib/diff.ts L43 / task_plan.md T2.4 子条款
 
+#### F29: spawn.ts test 中 `'ok' in r && r.ok` 不能 narrow（SpawnOk 与 BackupResult 重叠 ok:true）
+
+- **Date**: 2026-05-12
+- **Task**: T2.8 (spawn.test.ts)
+- **Type**: deviation
+- **Severity**: P3 (note — test 内部修复)
+- **Context**: spawn.test.ts 用 `expect('ok' in r && r.ok).toBe(true); if ('ok' in r && r.ok) { r.exitCode ... }` 想 narrow 到 SpawnOk 分支；但 `spawnCmd` 返回 `SpawnOk | InstallResult`，而 InstallResult 的 ok:true 变体也叫 `{ ok: true; backupId; appliedFiles }` —— TypeScript 把两个 ok:true 合并后取交集，丢了 SpawnOk 独有的 exitCode/stdout/stderr 字段，typecheck 红。
+- **Investigation**:
+  - 三选一：(a) 在 SpawnOk 加 `kind: 'spawn-ok'` discriminator —— 改 src/ 文件影响 phase 1.1 已通过的 test，karpathy 否决；(b) 用 type assertion `as SpawnOk` —— 失去类型安全；(c) test-file-internal type guard 函数（`function isSpawnOk(r): r is SpawnOk { return 'exitCode' in r }`）。
+- **Resolution**: 走 (c) — spawn.test.ts 顶部加 5 行 isSpawnOk + isInstallFailure type guard（基于 `'exitCode' in r` 与 `'ok' in r && !r.ok` 区分），各 test 用 guard 替代 `'ok' in r && r.ok`。仅 test 文件改动，src/ 0 影响。
+- **Impact**:
+  - spawn.test.ts +5 行 type guard helper，不影响其他 5 个 unit test 文件（它们的 mock 形状直接 narrow，不存在 SpawnOk×BackupResult 重叠问题）
+  - 未来 phase 2.1+ 若要在 InstallResult 的 ok:true 分支加额外字段（例如 cc-plugin-marketplace 加 marketplaceVersion），可考虑沿用 (a) 加 discriminator 路径解决根本问题；目前 phase 1.2 不需要
+  - **followup**: 无（test 自闭环）
+- **Cross-ref**: progress.md § A.4 commit f6e36ca / tests/unit/installers-lib-spawn.test.ts L30-L41 / src/installers/lib/spawn.ts SpawnOk export
+
 ### B.4 已锁定决策追溯表（PLAN § 8 D1.2-1 ~ D1.2-12 镜像 — 决策不再 reopen）
 
 | 决策 ID | 内容 | 来源 |
@@ -262,6 +280,28 @@
 - types.ts 未来加 state.json schema 类型（T2.7）时同样走 plain TS interface 不走 TypeBox（D1.2-7 + karpathy YAGNI 已锁）
 - backup.ts ENOENT pure-create sentinel (`backup: ''`) 的设计要在 cli/rollback.ts 显式 honor — 否则 rollback 误读为 "restore empty file" 而不是 "unlink"
 - T2.8 6-file unit test 直接复用 5 helper 已落地的 export 形状，不需要再调整任何 signature
+
+#### Wave 3 ✅ retro (2026-05-12)
+
+**What worked**:
+- T2.7 state.ts 落地紧凑 (100L) — atomic write-then-rename + ENOENT 默认 default state + 静默 fallback (malformed JSON / wrong version → default 而非 throw)；不预留 audit/checkpoints 字段（D1.2-7 锁定）；3 export (readState/writeState/updateInstalled) 一次写完
+- T2.8 6 unit test 文件并行写法高效：每文件独立 BASE InstallContext fixture（Pattern J）+ vi.mock 顶部声明在 import 之前（vitest hoist 要求）+ 总计 56 个 test 全 pass，C6 mitigation（zero real spawn / fs / network IO）严守
+- vi.mock 隔离干净：6 文件 × 平均 2 module mock，未发现 cross-file mock leak（vitest 4 自动模块隔离）；`vi.mocked()` 类型推断让 mock helper 调用全 typecheck 通过
+- spawn.test.ts 自建 EventEmitter-based FakeChild + setImmediate 异步 emit close — 完整覆盖 stdout/stderr/exitCode/error 4 路径而无需真 spawn
+- diff.test.ts 通过 ANSI strip 函数让测试 color-env 无关：CI/local 任一环境通过（避免 phase 1.1 F18 那类 platform-aware 阈值复杂度）
+- A7 守恒 5 个 ADR baseline tag 全 0 diff（手工跑 for 循环 verify 通过）
+
+**What was inefficient / surprised**:
+- F29: spawn.test.ts 中 `'ok' in r && r.ok` 无法 narrow — TypeScript 把 SpawnOk.ok:true 与 InstallResult.ok:true 合并后丢失 SpawnOk 独有字段。修复 = test 文件加 5 行 type guard。**phase 1.3+ 教训**：discriminated Result type 中如有多个 ok:true 变体，必须加显式 discriminator 字段（`kind: 'spawn-ok' | 'backup-ok'`）—— 否则消费方 narrow 失败，要么改源文件加 kind，要么 test 内部加 guard。Phase 1.2 选择 test-内部修复（不影响已通过的 phase-1.1 test）；phase 2.1 cc-plugin-marketplace 若加新 ok:true 变体，应优先在 types.ts 加 kind 字段。
+- diff.test.ts 第一次写的 "color=false → no ANSI" 断言依赖 pc.isColorSupported 的环境推断，本地 TTY 跑出 ANSI 导致 test 红 —— 改写为 "ANSI strip 后 round-trip 不变" 的 env-agnostic 断言，避免 mock picocolors 内部状态。**phase 1.3+ 教训**：测试涉及 picocolors / chalk 等 env-driven UI lib 时，断言要写"strip 后 invariant"而非"是否染色"。
+- backup.test.ts + spawn.test.ts 的 biome formatter 自动改动 array-of-1 项目缩进格式（多行→单行），第一次提交前 lint 触发；用 `biome check --write` 一次修复，无需手工。
+- spawn.test.ts 的 `${...}` 在 it() 描述里触发 noTemplateCurlyInString 警告，必须**在 it() 行之前**单独加一行 `// biome-ignore`（不是行内或下一行，与 phase-1.1 manifest-validate.security.test.ts 同款模式）。
+
+**Phase 1.3 / Wave 4 如何沿用**:
+- npmCli.ts / mcpStdioAdd.ts 的 unit test（T5.3 wave 6）可直接复用 Pattern J BASE InstallContext + vi.mock spawn fixture；spawn.test.ts 的 FakeChild 工厂可提取到 tests/helpers/ 共享（如果 wave 6 需要）
+- state.ts 的 atomic write-then-rename 模式可在 phase 1.4 routing-engine 写 `.harnessed/checkpoints.json` 时直接复用
+- F29 教训：phase 2.1 cc-plugin-marketplace 实装时若 InstallResult 加新 ok:true 变体，先在 types.ts 加 `kind` discriminator 字段（surgical），避免 test 端再加 guard
+- T2.8 6 文件总行数 ~1187L vs phase-1.1 整个 unit test 套件 ~1100L — phase 1.2 lib unit test 单独已超 phase-1.1 全部 test 量，对 wave 4-6 contract test (~12 cell × ~30L = ~360L) + cli unit test (~200L) 总规模有信心，不需要预先 split
 
 [empty — 后续 wave ✅ 后追加]
 

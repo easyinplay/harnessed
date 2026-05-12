@@ -324,7 +324,7 @@
 ### Wave 3 — Lib helpers L2 + Unit Tests（依赖 Wave 2）
 
 #### T2.7 写 src/installers/lib/state.ts
-- [ ] **目标**：`.harnessed/state.json` 单一 SSOT — 已装清单 + 版本 + 最后 install 时间；不预留 audit.log / current-workflow（推 phase 1.4 / 3.1）
+- [x] **目标**：`.harnessed/state.json` 单一 SSOT — 已装清单 + 版本 + 最后 install 时间；不预留 audit.log / current-workflow（推 phase 1.4 / 3.1）
 - **文件**：`/d/GitCode/harnessed/src/installers/lib/state.ts`
 - **内容大纲**（~50 行）：
   - 单一导出 `readState(cwd) / writeState(cwd, state) / updateInstalled(cwd, name, version)` 三 helper
@@ -338,14 +338,14 @@
   - `writeState` 用 atomic update（write to .tmp + rename）防 concurrent corruption
   - `readState` 文件缺失时返回 default `{ version: '1', installed: {} }`
 - **验收**：
-  - [ ] `corepack pnpm typecheck && corepack pnpm lint` 0 错误
-  - [ ] 单元测试 (T2.8) 覆盖：缺文件返回 default / atomic write / concurrent simulation
+  - [x] `corepack pnpm typecheck && corepack pnpm lint` 0 错误
+  - [x] 单元测试 (T2.8) 覆盖：缺文件返回 default / atomic write / concurrent simulation
 - **决策来源**：ASSUMPTIONS B7 候选 1 + ADR 0004 契约 6（partial install 状态显示）
 
 ---
 
 #### T2.8 写 lib helpers unit tests（5-6 个文件 — 6 路并行）
-- [ ] **目标**：每 lib helper 1 测试文件；BASE InstallContext + with* modifier 风格（Pattern J）
+- [x] **目标**：每 lib helper 1 测试文件；BASE InstallContext + with* modifier 风格（Pattern J）
 - **文件**（6 文件并行）：
   - `tests/unit/installers-lib-preflight.test.ts`
   - `tests/unit/installers-lib-diff.test.ts`
@@ -358,9 +358,9 @@
   - 5-10 个 `it()` test 覆盖：normal path / edge case / error path
   - 使用 `vi.mock(...)` 隔离 fs / child_process / @clack/prompts
 - **验收**：
-  - [ ] tests 92 → ≥ 102（+10 至少 — 6 文件 × 平均 ≥ 1.7 test）
-  - [ ] `corepack pnpm test -- --filter installers-lib` 全绿
-  - [ ] 无任何真实 spawn / 真实 fs 写文件（mock-only）
+  - [x] tests 92 → ≥ 102（+10 至少 — 6 文件 × 平均 ≥ 1.7 test）
+  - [x] `corepack pnpm test -- --filter installers-lib` 全绿
+  - [x] 无任何真实 spawn / 真实 fs 写文件（mock-only）
 - **决策来源**：PATTERNS § 4.1 D-5 + Pattern J + Pattern I + ASSUMPTIONS C6 mitigation
 
 ---
