@@ -61,6 +61,25 @@ function lineOf(node: Node | null | undefined, lineCounter: LineCounter): number
   return lineCounter.linePos(offset).line
 }
 
+/**
+ * String-level shell-escape detector for runtime defense-in-depth.
+ *
+ * Phase 1.2 lib/spawn.ts re-runs this on `manifest.spec.install.cmd` right
+ * before child_process.spawn(): if a future caller (e.g. phase 1.4 routing,
+ * a test harness, or an installer that bypasses validate.ts) hands an
+ * unvalidated cmd string to spawn, we still refuse to execute. Same pattern
+ * set as `checkSecurityViolations`, just operating on a raw string instead
+ * of a yaml AST node — no source-line/path context here.
+ *
+ * Returns the offending pattern descriptor on first hit, or null if clean.
+ */
+export function checkCmdString(cmd: string): { label: string; hint: string } | null {
+  for (const pat of PATTERNS) {
+    if (pat.test(cmd)) return { label: pat.label, hint: pat.hint }
+  }
+  return null
+}
+
 function checkScalarCmd(
   doc: Document.Parsed,
   lineCounter: LineCounter,
