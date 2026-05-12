@@ -2,6 +2,7 @@
 // Phase 1.1.1 hotfix H4 — bulk replace signed_by placeholder.
 // Preserves LF line endings (.gitattributes compliance, A8 acceptance bar).
 import { readFileSync, writeFileSync } from 'node:fs'
+
 const files = process.argv.slice(2)
 let n = 0
 for (const f of files) {
