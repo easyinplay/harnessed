@@ -72,3 +72,58 @@ jobs:
       - run: corepack pnpm build:schema
       - run: corepack pnpm validate:schema
       - run: node ./dist/cli.mjs --version
+      # Phase 1.2 T5.5 — installer integration (H4 dual-layer):
+      #   Layer 1 — mock claude CLI shim PATH-injected: lets mcp-stdio-add
+      #     installer reach diff-render without "claude: command not found"
+      #     on bare CI runners (no real claude install required).
+      #   Layer 2 — real spawn ctx7 + gsd (npm-cli, claude-CLI-independent)
+      #     dry-run: exercises npmCli installer end-to-end against real npm
+      #     binaries the runner already ships. Tmpdir + npm_config_prefix
+      #     isolate any global state changes from the runner's home dir.
+      # Win edge: Git Bash on windows-latest sees `mock-bin/claude` (no .exe)
+      # and tries to invoke it via cmd.exe; we use bash-shebang shim + chmod
+      # +x which Git Bash handles via shebang routing. This pattern is
+      # validated in phase 1.1.1 H4 sister review.
+      - name: Installer integration (H4 dual-layer — mock shim + real npm-cli dry-run)
+        env:
+          npm_config_prefix: ${{ runner.temp }}/npm-prefix
+        shell: bash
+        run: |
+          # CLI exit-code map (per cli/install.ts):
+          #   0 = ok (apply succeeded)
+          #   1 = error
+          #   2 = aborted / dry-run sentinel / level-flag-missing
+          # Dry-run runs ALWAYS exit 2 (the "aborted: user-cancel" dry-run
+          # sentinel from npmCli.ts L97 + mcpStdioAdd.ts L153). We accept
+          # exit 2 here as a successful dry-run; only exit 1 (error) fails CI.
+          ok_or_dryrun() {
+            local cmd="$1"
+            shift
+            "$cmd" "$@" 2>&1 | tee out.log
+            local rc=${PIPESTATUS[0]}
+            if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then return 0; fi
+            echo "::error::installer command exited $rc (expected 0 or 2)"
+            return 1
+          }
+
+          mkdir -p "$npm_config_prefix"
+          # H4 layer 1 — mock claude CLI shim on PATH (no real claude needed)
+          chmod +x scripts/ci/mock-claude-cli.sh
+          mkdir -p "${{ runner.temp }}/mock-bin"
+          cp scripts/ci/mock-claude-cli.sh "${{ runner.temp }}/mock-bin/claude"
+          export PATH="${{ runner.temp }}/mock-bin:$PATH"
+
+          # H4 layer 1 — mcp-stdio-add dry-run: shim must be reachable; diff
+          # output must mention .mcp.json + the manifest name.
+          ok_or_dryrun node ./dist/cli.mjs install tavily-mcp --dry-run --non-interactive
+          grep -q "tavily-mcp" out.log
+          grep -q ".mcp.json" out.log
+          ok_or_dryrun node ./dist/cli.mjs install exa-mcp --dry-run --non-interactive
+          grep -q "exa-mcp" out.log
+
+          # H4 layer 2 — real spawn npm-cli (no claude CLI dep) dry-run.
+          # ctx7 + gsd both declare `npm install -g` (L4); --system flag
+          # required to pass confirmAt() level gate; --dry-run still
+          # short-circuits before any global-PATH mutation.
+          ok_or_dryrun node ./dist/cli.mjs install ctx7 --dry-run --non-interactive --system
+          ok_or_dryrun node ./dist/cli.mjs install gsd --dry-run --non-interactive --system
