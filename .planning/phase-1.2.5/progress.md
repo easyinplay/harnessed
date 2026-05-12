@@ -45,9 +45,11 @@
 <!-- 示例：2026-MM-DD | <wave>.<step> | <result> | <commit-shorthash> -->
 
 2026-05-12 | A.start | KICKOFF.md created (156L); 8 支柱 acceptance bar A1'-A8' locked; 5 P0 灰色地带 enumerated; 4 wave 分解; researcher R1+R2 spawned async parallel | (in-progress)
-2026-05-12 | B.prep.1 | progress.md 框架 created (本文件) | (in-progress)
-2026-05-12 | B.prep.2 | GRAY-AREA-2-gstack-roles.md prepared (A1'+A2' 完整 capture from 用户笔记 + CLAUDE.md, 不依赖 researcher) | (in-progress)
-2026-05-12 | B.prep.3 | GRAY-AREA-4-karpathy-enforcement.md prepared (A4' 完整 capture from 用户笔记) | (in-progress)
+2026-05-12 | B.prep.1 | progress.md 框架 created (本文件) | aea12e5
+2026-05-12 | B.prep.2 | GRAY-AREA-2-gstack-roles.md prepared (A1'+A2' 完整 capture from 用户笔记 + CLAUDE.md, 不依赖 researcher) | f1298ff
+2026-05-12 | B.prep.3 | GRAY-AREA-4-karpathy-enforcement.md prepared (A4' 完整 capture from 用户笔记) | 41e986c
+2026-05-12 | B.prep.4 | GRAY-AREA-3-mattpocock-phase-routing.md prepared (A5' partial schema + A6' 100% capture; § 2.2 完整 16+ 命令清单待 R2) | fd1a1c7
+2026-05-12 | A.R1 | RESEARCH-1-routing-engine.md done (450L; HIGH confidence); 🔴 F33 实证 — subagent 内 reload 不可行; 🟢 main-process-driven routing 唯一路径; P0-1 → (a) 独立 decision_rules.yaml; P0-2 → (b) 中等深度编码 (不 vendor 治理 skill prompt); 推荐双层 router (Semantic Router + LangGraph Supervisor); 3 红旗 + 6 open questions; see § B F33 narrative | (pending commit)
 
 ### A.5 Wave-Level Acceptance Checkpoints
 
@@ -85,13 +87,36 @@
 
 ### B.3 已知预期 finding 占位
 
-#### F33: routing engine subagent reload 可行性（预计 Wave A R1）
+#### F33: routing engine subagent reload 可行性（**已实证 — 🔴 不可行**）
 
-- **Predicted Date**: Wave A R1 调研完成
-- **Predicted Type**: discovery | blocker (depending on outcome)
-- **Predicted Severity**: P0 if CC 不支持 subagent skill reload (迫使 architecture 大改)
-- **Background**: 用户提议 subagent isolation = 决策路由 + skill 安装 + invoke 全在 subagent 内。如 CC v2.x 不支持 subagent 内 skill 动态 reload，整个 architecture 要换路径（main agent 提前装 + subagent 仅 invoke）
-- **Expected Resolution**: 视 R1 调研结论决定 GRAY-AREA-1 设计
+- **Date**: 2026-05-12
+- **Wave**: A.R1
+- **Type**: discovery → blocker (架构 wedge 修订必须)
+- **Severity**: P0（影响整个 phase 1.4 routing engine 设计）
+- **Context**: 用户提议的 subagent isolation = 决策路由 + skill 安装 + invoke 全在 subagent 内。R1 调研 (450L HIGH confidence) 实证此路径**不可行**。
+- **Investigation**:
+  - 4 篇官方 docs + 4 个 GitHub issues + 多个第三方文章交叉印证
+  - 事实 A: subagent 不继承 main agent skill description（`AgentDefinition.skills: [...]` 必须显式列）
+  - 事实 B: live change detection 仅覆盖部分目录，project root skill 需完整 restart（issue #46040 仍 open）
+  - 事实 C: `/reload-plugins` 是 **main session 命令**，不是 subagent 命令；且 issue #35641 / #37862 仍 open
+  - 事实 D: subagent **不能 spawn 嵌套 subagent**（官方明文禁止 — `Agent` 不允许在 subagent's `tools` 数组）
+- **Resolution**: 架构 wedge 修订 — **routing engine 必须 main-process-driven**：
+  - 主进程查 `decision_rules.yaml` → 主进程 `claude plugin install` + `/reload-plugins` → 主进程用 `AgentDefinition` factory 动态构造 subagent（`skills:` 字段 startup 全文注入）→ subagent 仅 invoke 已注入 skill → ralph-loop COMPLETE 通过 final message **verbatim** 回流
+- **Impact**:
+  - 之前 architecture 图 "Layer 2 subagent 内 routing engine activate" 错误 — 必须修订为 "Layer 1 主流程含 routing engine"
+  - subagent isolation 仍成立（仅 invoke 已注入 skill；context 完全隔离）
+  - 但主流程不再"上下文最小化" — 含 routing logic + install + factory 构造（仍可控因为是函数式 logic，不是 LLM 推理）
+  - GRAY-AREA-2 / GRAY-AREA-3 / GRAY-AREA-4 enforcement schema 需要 Wave B 综合时修订（"subagent.start() inject" → "main agent factory 构造时 prompt 字段注入"）
+- **Cross-ref**: 
+  - `RESEARCH-1-routing-engine.md` § 1 (subagent reload 不可行) + § 1.4 (alternative 设计图)
+  - GitHub issues: #32910 / #35641 / #37862 / #46040
+  - 官方 docs: code.claude.com/docs/en/agent-sdk/subagents
+
+#### F33-followup: 3 P0/P1 红旗（来自 R1 § 5.3）
+
+- **🔴 P0**: subagent 不能嵌套 — phase 1.4 routing engine **必须** main-process-driven（已 lock 到 F33 resolution）
+- **🟡 P1**: `/reload-plugins` skill bug (issue #35641) — 设计 fallback：每次 install 后**主进程**用 fresh subagent invoke 验证 skill 可用
+- **🟡 P1**: subagent final message 可能被主 summarize → ralph-loop COMPLETE 检测会失效 — main agent system prompt **必须**强制 "verbatim return COMPLETE marker"
 
 #### F34: 用户笔记里某些 skill 真实性 (预计 Wave A R2)
 
