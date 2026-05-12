@@ -31,15 +31,16 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
-      # Phase 1.1.1 hotfix H2 + Phase 1.2 H5 + Phase 1.2.5 wedge:
-      # A7 acceptance bar enforces ADR 0001-0006 main body 守恒 (unchanged
+      # Phase 1.1.1 hotfix H2 + Phase 1.2 H5 + Phase 1.2.5 wedge + Phase 1.3 ADR 0007 errata:
+      # A7 acceptance bar enforces ADR 0001-0007 main body 守恒 (unchanged
       # since each adr-NNNN-accepted baseline tag). Any drift fails CI.
-      # Phase 1.2.5 加 ADR 0006 (three-stack mechanization wedge); baseline
-      # tag iterate 扩到 6 个。
-      - name: A7 acceptance bar — ADR 0001-0006 main body 守恒
+      # Phase 1.2.5 加 ADR 0006 (three-stack mechanization wedge); Phase 1.3
+      # 加 ADR 0007 (categorization schema errata — manifest 加 3 字段);
+      # baseline tag iterate 扩到 7 个.
+      - name: A7 acceptance bar — ADR 0001-0007 main body 守恒
         run: |
           missing_tags=()
-          for n in 0001 0002 0003 0004 0005 0006; do
+          for n in 0001 0002 0003 0004 0005 0006 0007; do
             if ! git fetch origin "tag" "adr-${n}-accepted" --no-tags 2>/dev/null; then
               missing_tags+=("adr-${n}-accepted")
               continue
@@ -50,7 +51,7 @@ jobs:
             exit 0
           fi
           fail=0
-          for n in 0001 0002 0003 0004 0005 0006; do
+          for n in 0001 0002 0003 0004 0005 0006 0007; do
             diff_out=$(git diff "adr-${n}-accepted" -- "docs/adr/${n}-*.md")
             if [ -n "$diff_out" ]; then
               echo "::error::A7 acceptance bar violated — ADR ${n} main body changed since adr-${n}-accepted tag"
@@ -61,7 +62,7 @@ jobs:
           if [ "$fail" -ne 0 ]; then
             exit 1
           fi
-          echo "A7 ✅ ADR 0001-0006 main body unchanged"
+          echo "A7 ✅ ADR 0001-0007 main body unchanged"
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm typecheck
