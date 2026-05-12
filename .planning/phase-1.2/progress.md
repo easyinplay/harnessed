@@ -40,7 +40,7 @@
 |------|------|-------|------|
 | 0 | 前置（deps add + ADR 0005 + schema 加字段 + planning-with-files manifest fix） | T1.1 - T1.5 (5 task) | ✅ done (commits 53946d8 / 8950ff3 / 715f880 / 1ec7478 / 840e606 / 13922d5; tests 89→94; A7 0 diff; 5 baseline tags) |
 | 1 | Lib helpers L0 类型基座 | T2.1 (1 task) | ✅ done (commit ca46a59; types.ts 64L; typecheck 0 errors; ready for Wave 2 import) |
-| 2 | Lib helpers L1（5 helpers 并行 — spawn / preflight / diff / confirm / backup） | T2.2 - T2.6 (5 task) | ⏳ pending |
+| 2 | Lib helpers L1（5 helpers 并行 — spawn / preflight / diff / confirm / backup） | T2.2 - T2.6 (5 task) | ✅ done (commits 355654b / 718c7f7 / e1f16b0 / 646935a / 3687b00; 5 lib/* files; types.ts imported by all 5; tests still 94; A7 0 diff; F27 logged) |
 | 3 | Lib helpers L2 + Unit Tests（state.ts + 6 lib unit test 文件） | T2.7 - T2.8 (2 task — T2.8 含 6 文件) | ⏳ pending |
 | 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ⏳ pending |
 | 5 | CLI subcommands（install + doctor + audit + rollback/status/backup-list） | T4.1 - T4.4 (4 task) | ⏳ pending |
@@ -65,6 +65,11 @@
 2026-05-12 | T1.5 | add marketplace_source unit tests (5 cell — Pattern J BASE+modifier; ADR 0005); tests 89→94 ✅ | 840e606
 2026-05-12 | T1.6 | M2 audit GSD manifest (cli-npm × npm-cli ✅ — 复用 T3.1 npmCli installer); audit 落 § C.1 (deviation: harness 阻止 standalone findings.md → 合并到 progress.md, 见 § C.1 deviation note) | 13922d5
 2026-05-12 | T2.1 | add src/installers/lib/types.ts (64L — Level/InstallOpts/InstallContext/InstallError/InstallResult/Installer); typecheck 0 errors; tests still 94 | ca46a59
+2026-05-12 | T2.2 | add src/installers/lib/spawn.ts (130L cross-OS spawn + B1 二次 security check via new checkCmdString helper); see § B F27 deviation note | 355654b
+2026-05-12 | T2.3 | add src/installers/lib/preflight.ts (99L 3-check Pattern D — platform/git_ref/idempotent); typecheck 0 errors | 718c7f7
+2026-05-12 | T2.4 | add src/installers/lib/diff.ts (75L jsdiff createPatch + stripTrailingCr + picocolors.isColorSupported + 200L fold); types.ts +DiffPlan/DiffFile; see § B F28 deviation note (signature widened to take ctx) | e1f16b0
+2026-05-12 | T2.5 | add src/installers/lib/confirm.ts (82L 4-level + isCancel guard each await + L4 --system flag short-circuit) | 646935a
+2026-05-12 | T2.6 | add src/installers/lib/backup.ts (167L ISO-ts dir + sha1 + per-file eol field + ENOENT pure-create sentinel); over 130L target by 37L (4 explicit error paths) | 3687b00
 
 ### A.5 Session 中断恢复指引
 
@@ -162,6 +167,37 @@
   - **followup**: tag push 由 main agent 决定（与 commit push 时机一致）
 - **Cross-ref**: progress.md § A.4 commit 8950ff3 / task_plan.md T1.2 H5 / .github/workflows/ci.yml A7 step
 
+#### F27: spawn.ts 二次 security check 需要 string-level helper（task_plan 假设 vs security.ts 实际签名）
+
+- **Date**: 2026-05-12
+- **Task**: T2.2
+- **Type**: deviation
+- **Severity**: P3 (note — 不阻塞 task；surgical add)
+- **Context**: task_plan T2.2 子条款"内部步骤 1：二次跑 `checkSecurityViolations(cmd)` from `../../manifest/security.js`（Pattern D pre-pass）"暗示 `checkSecurityViolations` 接 `(cmd: string)`。但实际 phase 1.1.1 实装的 `checkSecurityViolations(doc, filename, lineCounter)` 接 yaml AST + LineCounter，因为 B1 hotfix 设计为 walk yaml CST 拿源行号。spawn.ts 拿到的是已 parse 后的 `manifest.spec.install.cmd` 字符串，没有 AST/lineCounter 上下文。
+- **Investigation**:
+  - 三选一方案：(a) spawn.ts inline 同款 regex（DRY 损失）；(b) 给 security.ts 加新 export `checkCmdString(s)`；(c) 把 `PATTERNS` 数组 export，spawn.ts 复用。
+  - (b) 最 surgical：现有 `PATTERNS` array 保持私有（封装），新加 5 行 helper 函数走同款规则，spawn.ts 调用一次拿 `{ label, hint } | null`；不动 `checkSecurityViolations` 任何行。
+  - (c) 会暴露内部数据结构（RegExp 不是稳定 API）；(a) 5 个 helper 各 inline → 重复 3 行 × 5 = 严重违反 karpathy DRY。
+- **Resolution**: 走 (b) — security.ts 增 `export function checkCmdString(cmd: string): { label, hint } | null`（同款 PATTERNS 循环 + 早返回）。spawn.ts 调用并把结果 wrap 进 InstallResult `phase: 'preflight'` + `keyword: 'security-gate-bypass'`。两文件同 commit (355654b)。
+- **Impact**:
+  - security.ts 增 1 export（19 行 incl 注释），不动现有函数行为 → 89 个 phase 1.1 test 0 影响
+  - spawn.ts 1 import + 1 调用 + 1 早返回；防御深度满足 ADR 0004 契约 6
+  - **followup**: phase 1.2 T2.8 unit test 必加 spawn.ts × `${...}` cmd 场景验证 InstallResult shape
+- **Cross-ref**: progress.md § A.4 commit 355654b / src/manifest/security.ts L58-L78 / src/installers/lib/spawn.ts L46-L60 / task_plan.md T2.2 子条款 1
+
+#### F28: diff.ts renderDiff 签名改为 (plan, ctx) — fullDiff flag 不在 plan 里
+
+- **Date**: 2026-05-12
+- **Task**: T2.4
+- **Type**: deviation
+- **Severity**: P3 (note)
+- **Context**: task_plan T2.4 子条款"单一导出 `renderDiff(plan: DiffPlan): string`"。但同 task 的内部步骤要求"ctx.opts.fullDiff = true 时全展开"——`fullDiff` 在 InstallContext.opts 里，不在 DiffPlan 里。
+- **Investigation**:
+  - 三选一：(a) 把 fullDiff 拷进 DiffPlan（数据冗余，违反 SSOT）；(b) 用 module-level mutable global（线程不安全 — 单进程 OK 但 anti-pattern）；(c) 加 ctx 参数。
+- **Resolution**: 走 (c) — `renderDiff(plan: DiffPlan, ctx: InstallContext): string`。InstallContext 已有 opts.fullDiff，直接读。仅 1 行 signature 调整，不影响 caller 复杂度（caller 永远有 ctx 在手）。
+- **Impact**: T2.7+ caller 调 `renderDiff(plan, ctx)` 替代 `renderDiff(plan)`；task_plan 表格的"单一导出 renderDiff(plan)"等价语义改为"renderDiff(plan, ctx)"；不影响行数 / 测试数 / 其他 helper。
+- **Cross-ref**: progress.md § A.4 commit e1f16b0 / src/installers/lib/diff.ts L43 / task_plan.md T2.4 子条款
+
 ### B.4 已锁定决策追溯表（PLAN § 8 D1.2-1 ~ D1.2-12 镜像 — 决策不再 reopen）
 
 | 决策 ID | 内容 | 来源 |
@@ -208,6 +244,24 @@
 - A7 守恒模式（ADR XXXX-accepted tag + ci iterate）将随每 phase 累积；phase 1.3 完成时自动有 6 baseline tag (0001-0006) 入守恒
 - progress.md § C audit snapshot 子 section 模式可承载 phase 1.3 ralph-loop / DAG resolver 的"自审计快照"
 - Pattern J 已实战验证适用 schema field test，phase 1.3 DAG resolver test 同款
+
+#### Wave 2 ✅ retro (2026-05-12)
+
+**What worked**:
+- 5 helpers 顺序 commit (T2.2 → T2.3 → T2.4 → T2.5 → T2.6) 干净分离 — 每 commit 单独 typecheck/lint/test 全绿；94 → 94 tests（unit tests Wave 3 才加）
+- types.ts SSOT 设计验证有效：5 个 helper 都从 types.js 单 import 拿 InstallContext / InstallResult / InstallError；新加 DiffPlan/DiffFile 一个文件搞定，没有散落
+- IMPL NOTE 注释规约（Pattern H）按 PATTERNS § D-6 全配齐：spawn.ts 引 R03 § 3.7 + B1 hotfix；diff.ts 引 C3 + nodejs/node#39673；confirm.ts 引 GA-2 § B.3 isCancel 守卫；backup.ts 引 C3 eol field
+- B1 二次 security check 实装走 surgical-add 路径（security.ts 加 checkCmdString helper，不动 checkSecurityViolations）— 89 phase-1.1 test 0 风险
+
+**What was inefficient / surprised**:
+- task_plan T2.2 子条款"二次跑 checkSecurityViolations(cmd)"暗示字符串签名，但 phase-1.1.1 实装是 yaml AST 签名（接 doc/lineCounter）— 2 文档信息密度不一致（F27）。**phase 1.3+ 教训**：跨 phase 复用现有函数前，task_plan 必须写清楚"调用签名"而不仅"调用名"——尤其 phase 1.1.1 hotfix 类、签名带源位置上下文的函数。
+- diff.ts renderDiff(plan) 签名漏掉 ctx.opts.fullDiff 来源（F28）— task_plan 内部步骤已写"ctx.opts.fullDiff"但顶层签名没 reflect ctx 参数。**phase 1.3+ 教训**：plan-with-files 写 helper signature 时，所有内部步骤引用的字段必须出现在签名 typeparam 中，不允许"内部步骤里冒出来的隐藏依赖"。
+- backup.ts 比 130L 目标多 37L (167L) — 4 个显式 error path（mkdir/read/write/metadata）每个 ~10 行 try/catch + InstallError 构造。可以折成 helper 减重，但 Pattern C "no throw on expected paths" 要求每路径独立映射 keyword，折叠会损失诊断粒度 → 选择超行 over 失诊断。**phase 1.3+ 教训**：Pattern C 强制 4 phase × 4 keyword 的 fs 操作 helper 行数估计应在 130-180 区间，不是 ~120。
+
+**Phase 1.3 / Wave 3 如何沿用**:
+- types.ts 未来加 state.json schema 类型（T2.7）时同样走 plain TS interface 不走 TypeBox（D1.2-7 + karpathy YAGNI 已锁）
+- backup.ts ENOENT pure-create sentinel (`backup: ''`) 的设计要在 cli/rollback.ts 显式 honor — 否则 rollback 误读为 "restore empty file" 而不是 "unlink"
+- T2.8 6-file unit test 直接复用 5 helper 已落地的 export 形状，不需要再调整任何 signature
 
 [empty — 后续 wave ✅ 后追加]
 

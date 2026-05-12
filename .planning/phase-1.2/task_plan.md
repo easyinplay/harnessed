@@ -215,7 +215,7 @@
 ### Wave 2 — Lib helpers L1（5 路并行；依赖 T2.1）
 
 #### T2.2 写 src/installers/lib/spawn.ts
-- [ ] **目标**：跨 OS spawn 封装 + B1 二次 security check（防 phase 1.4 routing 绕过 schema 直传字符串场景）
+- [x] **目标**：跨 OS spawn 封装 + B1 二次 security check（防 phase 1.4 routing 绕过 schema 直传字符串场景）
 - **文件**：`/d/GitCode/harnessed/src/installers/lib/spawn.ts`
 - **内容大纲**（~90 行）：
   - 顶部 IMPL NOTE：引用 R03 § 3.7（Win cmd /c wrapper）
@@ -236,7 +236,7 @@
 ---
 
 #### T2.3 写 src/installers/lib/preflight.ts
-- [ ] **目标**：第一道 gate — 在 dry-run plan 之前快速过滤明显不可装场景
+- [x] **目标**：第一道 gate — 在 dry-run plan 之前快速过滤明显不可装场景
 - **文件**：`/d/GitCode/harnessed/src/installers/lib/preflight.ts`
 - **内容大纲**（~80 行）：
   - 顶部注释解释"为什么 preflight 不合到 spawn"（让用户先看到 platform 不支持 / git_ref invalid，不是 spawn 报错）
@@ -254,7 +254,7 @@
 ---
 
 #### T2.4 写 src/installers/lib/diff.ts
-- [ ] **目标**：unified diff 渲染 + 跨 OS CRLF 处理 + isTTY-aware nocolor
+- [x] **目标**：unified diff 渲染 + 跨 OS CRLF 处理 + isTTY-aware nocolor
 - **文件**：`/d/GitCode/harnessed/src/installers/lib/diff.ts`
 - **内容大纲**（~60 行）：
   - 顶部 IMPL NOTE 2 条：
@@ -278,7 +278,7 @@
 ---
 
 #### T2.5 写 src/installers/lib/confirm.ts
-- [ ] **目标**：4-level confirm + isCancel 守卫（防 Ctrl-C 变 undefined-poisoning bug — GA-2 § B.3）
+- [x] **目标**：4-level confirm + isCancel 守卫（防 Ctrl-C 变 undefined-poisoning bug — GA-2 § B.3）
 - **文件**：`/d/GitCode/harnessed/src/installers/lib/confirm.ts`
 - **内容大纲**（~70 行）：
   - 顶部 IMPL NOTE：引用 GA-2 § B.3 + Clack v0.10 isCancel 守卫规约
@@ -299,7 +299,7 @@
 ---
 
 #### T2.6 写 src/installers/lib/backup.ts
-- [ ] **目标**：ISO-ts 备份目录 + metadata.json + sha1 + **per-file eol 字段**（CRLF preservation C3 mitigation）
+- [x] **目标**：ISO-ts 备份目录 + metadata.json + sha1 + **per-file eol 字段**（CRLF preservation C3 mitigation）
 - **文件**：`/d/GitCode/harnessed/src/installers/lib/backup.ts`
 - **内容大纲**（~120 行）：
   - 顶部 IMPL NOTE：引用 C3（CRLF/LF preservation in metadata.eol field）
