@@ -1,7 +1,7 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-12（phase 1.1 SHIP — batch 6 收尾完成，ready for phase 1.2）
+> 最后更新：2026-05-12（phase 1.1.1 hotfix shipped — paranoid review 9 项 fixes 全部 ✅，ready for phase 1.2 plan-phase）
 
 ---
 
@@ -17,10 +17,10 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：v0.1.0 Phase 1.1 ✅ **COMPLETED — SHIPPED 2026-05-12**
+- **GSD phase**：v0.1.0 Phase 1.1 ✅ **COMPLETED — SHIPPED 2026-05-12** + **Phase 1.1.1 hotfix shipped 2026-05-12**
 - **当前里程碑**：v0.1.0
-- **下一 phase**：Phase 1.2（cli-npm + mcp-stdio installer + harnessed setup/doctor）— cross-OS CI 已实证可用（mac/linux/win 三平台全绿，run 25686045249）
-- **状态**：✅ **Ready for Phase 1.2**
+- **下一 phase**：Phase 1.2（cli-npm + mcp-stdio installer + harnessed setup/doctor）— cross-OS CI 已实证可用（mac/linux/win 三平台全绿，run 25686045249）；phase 1.1.1 hotfix 后 CI 第二轮等 main agent push 验证
+- **状态**：✅ **Ready for Phase 1.2 (post-hotfix)**
 - **进度**：1 / 16 phases 已完成 ▓░░░░░░░░░░░░░░░ 6%
 
 ### 各里程碑进度
@@ -38,14 +38,20 @@
 2. ✅ ~~ADR 0001 / 0002 / 0003 全部 accepted~~ — schema v1 frozen
 3. ✅ ~~两个 local tag 打好~~ — `adr-0001-accepted` + `v0.1.0-alpha.1-schema-frozen`（已 push 到 origin）
 4. ✅ ~~A4 acceptance bar~~ — CI run 25686045249 @ 92b355c 三平台全绿 (ubuntu 27s / macos 21s / windows 43s)；**Phase 1.1 全 8/8 ✅**
-5. ⏳ **进入 Phase 1.2**（cli-npm + mcp-stdio installer 实装 + setup/doctor 命令骨架；cross-OS CI 已实证可用）
-6. ⏳ Phase 1.3（DAG resolver + harnessed-router 引擎）
-7. ⏳ Phase 1.4（research workflow 端到端 + routing/search.md SSOT）
+5. ✅ ~~Phase 1.1.1 hotfix~~ — 9 项 paranoid review fixes shipped (B1+B2+M1+H1-H7)；tests 71→89；ADR 0001/0002 不动 (A7 守恒)
+6. ⏳ **main agent push origin + 等 CI run 验证 phase 1.1.1**（第 2 轮 CI；新 actions SHA + A7 守恒 step 实测）
+7. ⏳ **进入 Phase 1.2 plan-phase**（cli-npm + mcp-stdio installer 实装 + setup/doctor 命令骨架）
+8. ⏳ Phase 1.3（DAG resolver + harnessed-router 引擎）
+9. ⏳ Phase 1.4（research workflow 端到端 + routing/search.md SSOT）
 
 ---
 
 ## 已完成（Completed）
 
+- ✅ **Phase 1.1.1 hotfix SHIPPED**（2026-05-12）
+  - paranoid staff engineer review 后续 — 9 项 fixes 全部 ship；ADR 0001/0002 main body 不动 (A7 守恒)
+  - 10 atomic commits + 1 lint fix；tests 71→89（+18）：B1 security gate 9 + B2/M1 git_ref pattern 9
+  - 见 `.planning/phase-1.1/progress.md` § B F19-F22；task_plan.md § "Phase 1.1.1 Hotfix Batch" 索引表
 - ✅ **Phase 1.1 SHIPPED**（2026-05-12）
   - 47 atomic 子任务全部完成或合理 deferred（见 `.planning/phase-1.1/progress.md` § B F16 deferred 表）
   - 50 commits / 71 vitest passing / 10 manifests / 30+ fixtures / 3 SCHEMA.md / bench 21.7ms
@@ -98,8 +104,8 @@
 
 ### P0 — Phase 1.2 启动前
 
-1. ⏳ **A4 acceptance bar CI run**（push main 触发 `.github/workflows/ci.yml` 跨 OS 三平台验证）
-2. ⏳ **Phase 1.2 discuss-phase 启动**（cli-npm + mcp-stdio installer + cross-OS 实测）
+1. ⏳ **Phase 1.1.1 hotfix CI verification**（main agent push 后第 2 轮 CI run，验证新 actions SHA + A7 守恒 step + git_ref pattern + B1 security gate 全平台通过）
+2. ⏳ **Phase 1.2 discuss-phase 启动**（cli-npm + mcp-stdio installer + cross-OS 实测 + cc-plugin-marketplace headless 机制决策 — 见 § B F20）
 3. ⏳ Phase 1.2 plan-phase（task 拆分 + planning-with-files 落地 task_plan）
 
 ### P1 — Phase 1.2-1.4 周期
@@ -189,20 +195,21 @@ cd D:/GitCode/harnessed
 - `D:/GitCode/harnessed/.planning/REQUIREMENTS.md`
 - `D:/GitCode/harnessed/.planning/phase-1.1/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md}`
 - `D:/GitCode/harnessed/docs/adr/{0001,0002,0003}*.md`
-- `D:/GitCode/harnessed/{README.md, CONTRIBUTING.md, LICENSE, NOTICE, NOTICES.md}`
+- `D:/GitCode/harnessed/{README.md, CONTRIBUTING.md, SECURITY.md, LICENSE, NOTICE, NOTICES.md}`
 - `D:/GitCode/harnessed/docs/MAINTAINER-ONBOARDING.md`
 - `D:/GitCode/harnessed/{manifests, workflows, routing, schemas, src, tests}/`
 - `D:/GitCode/harnessed/.github/workflows/ci.yml`
 
-### 性能指标（phase 1.1 实证）
+### 性能指标（phase 1.1 + 1.1.1 实证）
 
 - 当前 phase token 消耗：— (main agent 后续填入)
-- checkpoint 数量：phase 1.1 内多次 batch checkpoint（batch 1-6 各一次）
+- checkpoint 数量：phase 1.1 内多次 batch checkpoint（batch 1-6 各一次）；phase 1.1.1 hotfix 1 次 batch
 - 累积 ADR 数量：3（0001 schema / 0002 toolchain / 0003 method count errata）（目标 v0.4 ≥ 5）
 - 路由命中率：— （目标 ≥ 85%，v0.3 phase 1.4 / v0.4 验收）
-- 总 commits（phase 1.1 累积）：50
-- 总 vitest tests：71 passing
+- 总 commits（phase 1.1 累积 50 + phase 1.1.1 hotfix 10）：60
+- 总 vitest tests：89 passing（phase 1.1.1 +18：B1 security 9 + B2/M1 git_ref 9）
 - bench：21.7-22.7ms mean / RME ±2% / SLA < 50ms（A6 reconfirmed）
+- 总 manifests / fixtures / SCHEMA.md：10 / 30+ / 3（phase 1.1 base，phase 1.1.1 仅修字段值）
 
 ---
 

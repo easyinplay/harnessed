@@ -28,7 +28,8 @@ corepack pnpm install --frozen-lockfile
 
 ```bash
 corepack pnpm test
-# 期望：Test Files 10 passed, Tests 71 passed
+# 期望（phase 1.1 baseline）：Test Files 10 passed, Tests 71 passed
+# 期望（phase 1.1.1 hotfix 后）：Test Files 12 passed, Tests 89 passed (+B1 9 + B2/M1 9)
 ```
 
 ### A2: ctx7 manifest 在正向测试中 pass
@@ -96,7 +97,7 @@ git log --oneline -- docs/adr/0001-manifest-schema-v1.md docs/adr/0002-repo-stru
 # 期望：1 commit (initial skeleton)，无后续改动
 ```
 
-或对比 baseline tag：
+或对比 baseline tag（**phase 1.1.1 hotfix H2 已自动化进 CI**：`.github/workflows/ci.yml` "A7 acceptance bar — ADR 0001/0002 main body 守恒" step 自动跑 `git diff adr-0001-accepted -- docs/adr/0001-*.md docs/adr/0002-*.md`，非空 diff 失败 CI；本地手动跑等价命令）：
 
 ```bash
 git diff adr-0001-accepted -- docs/adr/0001-manifest-schema-v1.md
@@ -132,6 +133,12 @@ git ls-files --eol "manifests/*.yaml" | awk '$1 != "i/lf"' | wc -l
 | F14 | T7.10 verdict — schema v1 sufficient | ✅ no errata needed |
 | F15 | matrix illegal count 17 vs 18 | ✅ 17 implemented (24 - 7 legal) |
 | F16 | T8.4/T8.5/T8.7 redefined | ✅ deferred-items table |
+| F17 | Phase 1.1 ship narrative | ✅ 7/8 acceptance bar; A4 ⏳ pending CI |
+| F18 | CI windows-latest cloud VM ~3× slower | ✅ platform-aware threshold (100ms CI win / 50ms 其他) |
+| F19 | Phase 1.1.1 hotfix (paranoid review 9 项) | ✅ B1+B2+M1+H1-H7 shipped; ADR 0001/0002 不动 |
+| F20 | cc-plugin-marketplace REPL slash-command headless 机制 | ⏳ deferred to phase 1.2 plan-phase |
+| F21 | git_ref schema pattern (M1) | ✅ ccPluginMarketplace + gitCloneWithSetup pattern enforced |
+| F22 | SECURITY.md vulnerability disclosure (H7) | ✅ 52 lines, 2 channels, SLA |
 
 ## Phase 1.2 Prerequisites + How to Reproduce
 

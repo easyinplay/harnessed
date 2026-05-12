@@ -40,6 +40,7 @@
 | 5 | 测试矩阵 | T8 | ✅ 完成（batch 5 = T8.1 ✅ already-done T7.0 fixture-driven + T8.2 14 required-field + T8.3 17 illegal matrix (5→17) + T8.4 7 type-error + T8.5 7 unknown-field strict-line + T8.6 bench + perf gate + T8.7 line-mapping +2 = 6 atomic commits + 1 task_plan/progress sync；71 tests passing (+43 since batch 4)；A1/A3/A6 ✅；perf 21.7ms mean (43% headroom)；see § B F15 (matrix count 17 vs 18) + F16 (T8.4 redefinition) + F17 (no-op) deferred items table） |
 | 6 | CI + Docs | T9 | ✅ 完成（batch 6 = T9.1 ci.yml + T9.2 merged into ci.yml + T9.3 README expand + T9.4 CONTRIBUTING + T9.5 MAINTAINER-ONBOARDING + T9.6 ADR README done = 4 atomic commits + 2 verification-only `[x]`；A4 ⏳ pending CI run on first push） |
 | 7 | Phase verify | T10 | ✅ 完成（batch 6 = T10.1 全套 7 命令本地全绿 + T10.2 VERIFICATION.md (140L) + T10.3 STATE.md → ready for phase 1.2 + T10.4 两个 local tag — 见 § B F17 phase 1.1 ship narrative） |
+| 8 | **phase 1.1.1 hotfix (paranoid review)** | B1+B2+H1-H7+M1 | ✅ 完成（2026-05-12，10 atomic commits — B1 security gate / B2+M1 git_ref SHA pin / H1+H2 actions pin + A7 CI step / H3 repo URL / H4 signed_by / H5 cc-plugin-marketplace annotation / H6 GITHUB_ACTIONS env / H7 SECURITY.md + 1 lint fix；tests 71→89 (+18)；ADR 0001/0002 不动 — A7 守恒；see § B F19-F22） |
 
 ### A.4 进度日志（追加式 — newest at bottom）
 
@@ -116,6 +117,16 @@
 2026-05-12 | T10.1 | 全套 7 命令本地全绿: typecheck (tsc --noEmit) ✅ + lint (biome 34 files) ✅ + test (10 files / 71 tests passed) ✅ + build (tsup ESM 3 entries + DTS) ✅ + build:schema (7.81 KB artifact) ✅ + validate:schema (Ajv 8 strict + discriminator OK) ✅ + bench (22.2ms mean / 50 samples / RME ±2.11% / hz 44.96) ✅ + node dist/cli.mjs --version → 0.1.0-alpha.1 ✅ | (no commit — verification-only)
 2026-05-12 | T10.2 | .planning/phase-1.1/VERIFICATION.md (140L): A1-A8 复现命令清单 (含 fixture-driven A2 / git diff baseline A7 / awk i/lf A8) + F1-F16 finding 索引表 (resolution 简述) + phase 1.2 prereq 列表 + how-to-reproduce 一键脚本 | 05516c3
 2026-05-12 | T10.3 | git tag (local only) — adr-0001-accepted (HEAD baseline for A7 守恒 future detection 通过 git diff adr-0001-accepted -- docs/adr/0001-*.md) + v0.1.0-alpha.1-schema-frozen (phase 1.1 milestone — schema v1 frozen + 71 tests + 10 upstreams dry-run + bench 21.7ms + 3 ADRs accepted) | (tag-only no commit; main agent 决定是否 push) 
+2026-05-12 | wave 8 (phase 1.1.1 hotfix) complete | 10 atomic commits (B1+B2+M1+H1-H7+lint) — paranoid staff engineer review follow-up; tests 71→89 (+18); ADR 0001/0002 main body 不动 (A7 守恒)；see § B F19 (B1 narrative) + F20 (cc-plugin-marketplace headless) + F21 (M1 git_ref schema) + F22 (H7 SECURITY.md) | (commits below)
+2026-05-12 | B1 | src/manifest/security.ts (TDD RED→GREEN) — pre-Ajv shell-escape gate; 4 patterns ($(…), ${…}, backtick, dangerous yaml tags); 9 new tests | e6fb17e
+2026-05-12 | B2+M1 | git_ref pattern in ccPluginMarketplace + gitCloneWithSetup schemas (^([a-f0-9]{7,40}\|v?\d+\.\d+\.\d+([.-][\w.-]+)?)$); gstack manifest+fixture → 7489506...; ralph-loop manifest+fixture → 45896c8...; 9 git_ref tests; schema artifact regenerated | 64418ad
+2026-05-12 | H1+H2 | actions/checkout@34e1148 v4.3.1 + actions/setup-node@49933ea v4.4.0 SHA-pinned; A7 守恒 CI step (git diff adr-0001-accepted with fallback warning); fetch-depth: 0 enabled | 693dcfd
+2026-05-12 | H3 | package.json repo URLs (repository.url + homepage + bugs) → easyinplay/harnessed | 18bb6bc
+2026-05-12 | H4 | signed_by: harnessed-maintainers → easyinplay (10 manifests + 10 fixtures = 20 files); LF preserved (A8 ✅); scripts/h4-replace-signed-by.mjs helper kept for audit | ee20a59
+2026-05-12 | H5 | yaml comment annotation on cc-plugin-marketplace manifests (ralph-loop / superpowers / planning-with-files) — REPL slash-command nature, headless mechanism TBD phase 1.2 | 101f0b4
+2026-05-12 | H6 | F18 perf gate detection: process.env.CI → process.env.GITHUB_ACTIONS === 'true' (avoids false-positive on other providers + local IDE) | 376f0b8
+2026-05-12 | H7 | SECURITY.md (52L) — vulnerability disclosure channel; GH Security Advisories + email; in/out scope; SLA; coordinated disclosure 90d; v0.1.1 known limitations | 112e9ba
+2026-05-12 | lint fix | scripts/h4-replace-signed-by.mjs blank line after import (biome assist/source/organizeImports) | ca9aad0
 
 ### A.5 Session 中断恢复指引
 
@@ -500,6 +511,73 @@
   - **未来若用户在自家 Windows 机器测得 > 50ms** → 才需要重评 A6（届时可能要 ADR errata 把 baseline 升到 80-100ms）；目前没有该证据
   - **CI yml 不改** — perf test 自检测 `process.env.CI`（GitHub Actions 自动注入）+ `process.platform`，无 yml 配置耦合
 
+> **Phase 1.1.1 hotfix update (2026-05-12)**：H6 把 detection 收紧到 `process.env.GITHUB_ACTIONS === 'true'`，避免对其他 CI provider / 本地 IDE harness（也可能 set CI=true）误开 100ms relaxation。GitHub Actions runner 在 Windows 上的慢是该 finding 的明确证据来源；其他 provider 没有同样证据。
+
+---
+
+#### F19 — Paranoid staff engineer review (post phase 1.1 ship) → phase 1.1.1 hotfix batch
+
+- **Date**：2026-05-12
+- **Trigger task**：post-ship gstack `/review` (Paranoid Staff Engineer agent)
+- **Symptom**：phase 1.1 SHIP 后，paranoid review 找出 9 项问题（B1+B2+H1-H7），分类如下：
+  - **B 系（critical bug / security gap）**：B1 ADR 声称的 shell-escape 拒绝在 schema 层缺失（phase 1.2 installer 实装会 spawn arbitrary cmd → RCE 风险）；B2 两个 manifest 用 `git_ref: HEAD` 击穿 ADR 0001 版本锁哲学
+  - **H 系（high priority hardening）**：H1 actions tag 可篡改 → SHA pin；H2 A7 守恒未 CI 自动化；H3 package.json placeholder repo URL；H4 signed_by placeholder org；H5 cc-plugin-marketplace headless execution mechanism 未定义；H6 F18 detection 漏；H7 缺 SECURITY.md
+- **Hypothesis**：N/A — review findings 实证
+- **Impact**：
+  - **B1**：v0.1.0 ship 前必修 — phase 1.2 installer 直接 spawn cmd 会执行任意代码
+  - **B2/M1**：ADR 0001 版本锁决策完整性
+  - **H1-H7**：security hygiene + governance hardening；不阻塞 phase 1.2 但 phase 1.2 plan-phase 之前需到位
+- **Resolution**：✅ phase 1.1.1 hotfix batch 9 项全部 ship，scope 严格按 review；ADR 0001/0002 main body 不改（A7 守恒）
+- **Decision impact**：
+  - 主决策：**不打 phase 1.2 起步前 SHIP 阻塞**；hotfix batch 完成后 main agent 推 origin + 等 CI run，CI 全绿后 phase 1.2 plan-phase 可以启动
+  - **不出 ADR errata** — B1/B2/M1 schema 实装层补缺（ADR 0001 main body 字段语义未变，仅是实装层填补 ADR 已声称的 reject 清单 + 加 git_ref pattern 约束）
+  - **不打新 tag** — phase 1.1.1 是 hotfix 推进 main 即可；future v0.1.0-alpha.2 tag 留 phase 1.2 ship 时打
+
+---
+
+#### F20 — cc-plugin-marketplace install method headless 执行机制未定义（B1.2 plan-phase 待决）
+
+- **Date**：2026-05-12
+- **Trigger task**：H5 (paranoid review)
+- **Symptom**：3 manifests（ralph-loop / superpowers / planning-with-files）的 `spec.install.cmd` 是 Claude Code REPL slash command（`/plugin install foo@bar`），不是 shell command；headless installer 不能直接 spawn 这个字符串。schema 层无问题（cmd 字段仅是 string），但**实际执行机制未定义**。
+- **Hypothesis**：cc-plugin-marketplace 设计假设 user 通过 CC REPL 交互执行；harnessed v0.1 的 installer 期望全自动 → mismatch。
+- **Impact**：phase 1.2 installer 实装时若不解决，3 个 manifests 不能 install。但**不影响 phase 1.1 schema 冻结**（schema 字段层都 OK）。
+- **Resolution**：⏳ deferred 到 phase 1.2 plan-phase 决策。3 manifests 顶部加 yaml comment 标注此 limitation；保留 3 个候选路径：
+  - (A) Auto-print prompt + require user paste into CC REPL（半自动；最低改动；user friction 中）
+  - (B) Headless `claude plugin install <name>` CLI（需要 CC team 实装该 CLI；时间不可控）
+  - (C) Defer 这 3 manifests 到 v0.2+（最 conservative；v0.1 SHIP 缺这 3 个上游）
+- **Decision impact**：
+  - phase 1.2 plan-phase 必须在 install pipeline 设计阶段决策；不是 schema 改动；不阻塞 phase 1.1.1 hotfix
+  - 备注：v0.4 maintainer onboarding 也需 awareness — 候选 (B) 取决于上游是否 ship CLI；track 这个 dependency
+
+---
+
+#### F21 — git_ref schema pattern 加约束（M1 顺手做的 schema 强化）
+
+- **Date**：2026-05-12
+- **Trigger task**：M1（B2 hotfix 顺带做 — 防止未来 manifest 再用 branch ref）
+- **Symptom**：schema v1 phase 1.1 阶段 `git_ref: Type.String({ minLength: 1 })` — 接受任何非空字符串。这导致 B2 出现 — gstack 和 ralph-loop 用 `HEAD` 通过校验。
+- **Hypothesis**：单纯 minLength 校验不能表达"必须是 SHA 或 SemVer tag"语义。需要 regex pattern。
+- **Impact**：B2 fix 只改具体 manifest 不够 — 未来贡献者再写 `HEAD` 仍会通过。M1 加 schema-level pattern 强制阻断。
+- **Resolution**：✅ ccPluginMarketplace + gitCloneWithSetup 加 `pattern: ^([a-f0-9]{7,40}|v?\\d+\\.\\d+\\.\\d+([.-][\\w.-]+)?)$`；reject HEAD/main/master/feature/foo；accept SHA 7-40 hex / SemVer tag (v 可选 / pre-release suffix OK)
+- **Decision impact**：
+  - **不构成 ADR 0001 errata** — ADR 0001 § "版本锁哲学" 已经 stipulate "锁版本"；M1 仅是把"决策"翻译成"实装"（与 F10 同模式）
+  - schema artifact 重新 build；6 ADR 0003 install method 中其余 4 method（npx-skill-installer / npm-cli / mcp-stdio-add / mcp-http-add）暂不加 git_ref（只有 git-based methods 有 git_ref 字段）
+
+---
+
+#### F22 — SECURITY.md 缺失 → vulnerability disclosure channel gap（H7）
+
+- **Date**：2026-05-12
+- **Trigger task**：H7 (paranoid review)
+- **Symptom**：repo 没有 SECURITY.md → 安全研究员若发现漏洞无明确 disclosure 通道；GitHub Security tab 无 policy 引用。
+- **Hypothesis**：phase 1.1 ship 时聚焦 schema 冻结，安全 governance 文档缺位是预期遗漏；paranoid review 是恰当 catch。
+- **Impact**：CVE 申请 / 协调披露流程不顺畅；研究员可能直接公开 0day。
+- **Resolution**：✅ SECURITY.md（52 行）含：(1) supported versions（pre-release 免责）；(2) 2 reporting 通道（GH Security Advisory + email easyinplay@gmail.com）；(3) in/out scope（upstream 漏洞 out-of-scope，明确 trust 边界）；(4) SLA 48h ack / 7d initial / 30d fix；(5) coordinated 90d disclosure；(6) v0.1 phase 1.1.1 known limitations。
+- **Decision impact**：
+  - **不构成 ADR** — SECURITY.md 是 governance 文档不是技术决策
+  - **未来扩展**：v0.4 maintainer onboarding 后增加多 reporter；v1.0 ship 后扩 supported versions matrix；threat model 进 THREAT-MODEL.md (separate doc, v0.4)
+
 ---
 
 ### B.4 C2 callout 专用追踪（T7.10 反哺判定）
@@ -530,3 +608,4 @@ T7.1-T7.9 9 上游 dry-run 期间，每发现一个 schema 字段不足或语义
 | V1 BLOCKER (PLAN-CHECK) | [ADR 0003](../../docs/adr/0003-install-method-count-errata.md) | install method 数 5→6 文档对齐（SPEC § 2 + REQUIREMENTS R1.2 + ROADMAP § 5 + STATE）；ADR 0001 main body 不动维持 A7 守恒 | 2026-05-12 |
 | F14 (T7.10 verdict) | (no schema errata) | schema v1 sufficient — 无字段缺失；触发 V1 BLOCKER 文档对齐时机（→ ADR 0003） | 2026-05-12 |
 | F17 (Phase 1.1 ship) | (no schema errata) | phase 1.1 SHIP — 7/8 acceptance bar ✅ + A4 ⏳ pending CI；2 local tags adr-0001-accepted + v0.1.0-alpha.1-schema-frozen；ready for phase 1.2 | 2026-05-12 |
+| F19 (Phase 1.1.1 hotfix) | (no ADR errata) | 9 项 paranoid review fixes shipped；ADR 0001/0002 main body 不动 (A7 守恒)；schema 实装层补 B1 security gate + M1 git_ref pattern；governance 加 H1+H2 CI hardening + H7 SECURITY.md | 2026-05-12 |

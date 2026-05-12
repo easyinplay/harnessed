@@ -1535,3 +1535,28 @@ phase-1.1: T10.4 freeze manifest schema v1 — close phase 1.1
 - [ ] 任何意外 / 决策修订已写入 progress.md § B（如发生）
 - [ ] commit message 含 task ID + 简短 action + 决策来源（ADR / GA / SPEC § 章节）
 - [ ] 该 task 涉及代码改动 → `pnpm typecheck && pnpm lint && pnpm test` 局部都通过
+
+---
+
+## Phase 1.1.1 Hotfix Batch (Paranoid Staff Engineer Review Follow-up)
+
+**Trigger**：post-ship paranoid review surfaced 9 items (B1+B2+H1-H7) requiring fix before phase 1.2.
+**Date**：2026-05-12
+**Scope**：strictly limited to 9 items; no scope expansion. ADR 0001/0002 main body untouched (A7 守恒).
+**Result**：tests 71 → 89 (+18); 9 atomic commits + 1 lint fix; all acceptance bars still green.
+
+| Item | Type | Description | Tests | Commit |
+|------|------|-------------|-------|--------|
+| B1 | security | pre-Ajv shell-escape gate (src/manifest/security.ts) — 4 patterns: $(…), ${…}, backtick, dangerous yaml tags | +9 | e6fb17e |
+| B2 | drift fix | replace git_ref: HEAD with real SHAs in gstack + ralph-loop manifests | covered by M1 | 64418ad |
+| M1 | schema | add git_ref pattern (SHA 7-40 hex \| SemVer tag) to ccPluginMarketplace + gitCloneWithSetup | +9 | 64418ad |
+| H1 | supply-chain | pin actions/checkout + setup-node to commit SHA in ci.yml | n/a | 693dcfd |
+| H2 | CI gate | A7 守恒 step in ci.yml (git diff adr-0001-accepted) | n/a | 693dcfd |
+| H3 | metadata | package.json repo URL → easyinplay/harnessed | n/a | 18bb6bc |
+| H4 | placeholder | signed_by: harnessed-maintainers → easyinplay (10 manifests + 10 fixtures) | n/a | ee20a59 |
+| H5 | doc | annotate cc-plugin-marketplace REPL slash-command nature (3 manifests + F20 finding) | n/a | 101f0b4 |
+| H6 | CI accuracy | F18 perf gate uses GITHUB_ACTIONS (not generic CI env) | n/a | 376f0b8 |
+| H7 | security disclosure | SECURITY.md (52 lines, 2 reporting channels, SLA, scope) | n/a | 112e9ba |
+
+**Status**：✅ all 9 items shipped; main agent decides push timing + observes CI run.
+
