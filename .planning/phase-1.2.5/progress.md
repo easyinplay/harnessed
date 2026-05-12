@@ -39,8 +39,8 @@
 |------|------|-------|------|
 | A | Researcher 调研 (R1 routing engine + R2 skill ecosystem) | R1 + R2 (parallel async) | ✅ done (R1 450L HIGH conf + R2 700L HIGH conf; F33 实证 + F34 6 类 + 23 命令实证) |
 | B | 综合 (ASSUMPTIONS + 5 GRAY-AREA) | B.1 - B.6 | ✅ done (5 GRAY-AREA + ASSUMPTIONS; 8/8 capture; D1.2.5-1 ~ D1.2.5-12 lock; GA-2/3/4 enforcement 路径与 D1.2.5-3/-9 对齐) |
-| C | Spec 修订 (PROJECT-SPEC v3.0 + ADR 0006 + ROADMAP 重排) | C.1 - C.3 | ⏳ pending |
-| D | Cross-validation (sister CC review + paranoid + final acceptance) | D.1 - D.4 | ⏳ pending |
+| C | Spec 修订 (PROJECT-SPEC v3.0 + ADR 0006 + ROADMAP 重排) | C.1 - C.3 | ✅ done (commits 51c8dc2 / 32803ad / 33da1a0; ADR 0006 314L accepted; PROJECT-SPEC v2.1 → v3.0 wedge 升级 + § 2 base/extension; ROADMAP v3 phase 1.3+ 重排; ci.yml A7 iterate 1-6; adr-0006-accepted tag pushed) |
+| D | Cross-validation (sister CC review + paranoid + final acceptance) | D.1 - D.4 | 🔄 starting |
 
 ### A.4 进度日志（追加式 — newest at bottom）
 
@@ -59,6 +59,12 @@
 2026-05-12 | B.3 | GRAY-AREA-2 修订 — § 4 P0-2 lock 改为 (b) 中等深度 (与 ASSUMPTIONS 一致；R1 § 5.2 推荐) + enforcement 路径 main-process-driven | (pending commit)
 2026-05-12 | B.4 | GRAY-AREA-3 修订 — § 2.2 加 R2 实证 23 真实命令清单 (18 active 进 v0.1 catalog；4 deprecated + 2 personal + 3 in-progress 排除) + § 3.1 schema 修订为 main-process-driven (主进程 install + AgentDefinition factory inject — F33 实证) | (pending commit)
 2026-05-12 | B.5 | GRAY-AREA-4 修订 — § 3.1 候选 (a) → (a-revised) main agent factory 构造时 inject prompt 字段 (D1.2.5-9) + § 3.4 推荐 (a-revised) + 部分 (b) hook reminder | (pending commit)
+2026-05-12 | C.1 | PROJECT-SPEC v2.1 → v3.0 — § 1 v3 wedge 升级 + § 1.1 wedge 重定位段 (新加) + § 2.1 Base Layer (10 manifest 不动) + § 2.2 Extension Layer (6 大 category × M 候选 + 决策规则 anchor) + manifest schema 字段说明 (install_type/category/decision_rules 走 ADR 0007 errata) | 51c8dc2
+2026-05-12 | C.2 | docs/adr/0006-three-stack-mechanization-wedge.md (314L Accepted) — Context (3 轮纠偏 + RESEARCH 1/2 实证) + Decision 6 大块 (双层架构 + 三角色横切 + main-process-driven routing + 8 支柱 + 5 P0 + ROADMAP 重排) + Consequences 14 条 + Compliance + 全套 References | 51c8dc2
+2026-05-12 | C.3 | ROADMAP v3 重排 — phase 1.1/1.2 ✅ SHIPPED 标记 + phase 1.2.5 🔄 + phase 1.3 base profile + categorization schema (新 ADR 0007 errata) + phase 1.4 routing engine v1 + phase 1.5 新加 DAG + Semantic Router + 关键风险段加 3 红旗 (RESEARCH-1) | 51c8dc2
+2026-05-12 | C.4 | docs/adr/README.md += 0006 索引行 + adr-0006-accepted tag 打 (6 baseline tag 全到位) | 32803ad
+2026-05-12 | C.5 | ci.yml A7 step iterate 1-5 → 1-6 (ADR 0006 加入 A7 守恒) + push origin + push adr-0006-accepted tag | 33da1a0
+2026-05-12 | D.start | Wave D 启动 — spawn general-purpose agent 做 8 支柱 100% capture cross-validation review (paranoid lens) | (in-progress)
 
 ### A.5 Wave-Level Acceptance Checkpoints
 
