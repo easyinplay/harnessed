@@ -159,7 +159,7 @@
 ### Wave 1 — Lib helpers L0 类型基座（无依赖；Wave 0 完成后启动）
 
 #### T2.1 写 src/installers/lib/types.ts
-- [ ] **目标**：建立 phase 1.2 全 installer 类型基座 — 一处 import，全 phase 复用
+- [x] **目标**：建立 phase 1.2 全 installer 类型基座 — 一处 import，全 phase 复用
 - **文件**：`/d/GitCode/harnessed/src/installers/lib/types.ts`
 - **内容大纲**（~50 行）：
   ```typescript

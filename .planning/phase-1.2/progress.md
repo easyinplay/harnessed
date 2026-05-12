@@ -29,8 +29,8 @@
 - ⏳ **B3'** Rollback 验证：install + rollback 后系统状态完全恢复（含 `.mcp.json` 复原 + CRLF/LF preserve）
 - ⏳ **B4'** 12 contract tests 全绿（6 契约 × 2 method）
 - ⏳ **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）
-- ⏳ **B6'** Tests 数 ≥ 110（89 baseline + 12 contract + ~10 install unit + ~5 doctor/audit unit + ~3 schema marketplace_source）
-- ⏳ **B7'** ADR 0001/0002/0003/0004 main body 不动（A7 守恒，CI 自动 enforce）
+- ⏳ **B6'** Tests 数 ≥ 110（89 baseline + 12 contract + ~10 install unit + ~5 doctor/audit unit + ~3 schema marketplace_source）→ 当前 **94/130** (Wave 0 +5)
+- ⏳ **B7'** ADR 0001/0002/0003/0004 main body 不动（A7 守恒，CI 自动 enforce）→ Wave 0 ✅ partial: ADR 0001-0005 全部进入 baseline tag 守恒（5 tag, ci.yml iterate）
 - ⏳ **B8'** `harnessed doctor` 检测 ralph-loop Win 依赖（jq + Git Bash vs WSL）
 - ⏳ **B9'** `INSTALLER-CONTRACT.md` ≥ 100 行 + 6 契约逐条说明 + FAQ
 
@@ -38,8 +38,8 @@
 
 | Wave | 内容 | Tasks | 状态 |
 |------|------|-------|------|
-| 0 | 前置（deps add + ADR 0005 + schema 加字段 + planning-with-files manifest fix） | T1.1 - T1.5 (5 task) | ⏳ pending |
-| 1 | Lib helpers L0 类型基座 | T2.1 (1 task) | ⏳ pending |
+| 0 | 前置（deps add + ADR 0005 + schema 加字段 + planning-with-files manifest fix） | T1.1 - T1.5 (5 task) | ✅ done (commits 53946d8 / 8950ff3 / 715f880 / 1ec7478 / 840e606 / 13922d5; tests 89→94; A7 0 diff; 5 baseline tags) |
+| 1 | Lib helpers L0 类型基座 | T2.1 (1 task) | ✅ done (commit ca46a59; types.ts 64L; typecheck 0 errors; ready for Wave 2 import) |
 | 2 | Lib helpers L1（5 helpers 并行 — spawn / preflight / diff / confirm / backup） | T2.2 - T2.6 (5 task) | ⏳ pending |
 | 3 | Lib helpers L2 + Unit Tests（state.ts + 6 lib unit test 文件） | T2.7 - T2.8 (2 task — T2.8 含 6 文件) | ⏳ pending |
 | 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ⏳ pending |
@@ -63,7 +63,8 @@
 2026-05-12 | T1.3 | ccPluginMarketplace.ts add optional marketplace_source field (ADR 0005); build:schema regen 7.94→8.18 KB; A7 0 diff; EOL lf | 715f880
 2026-05-12 | T1.4 | manifest+fixture pair add marketplace_source (OthmanAdi/planning-with-files); fixture-driven test still 89/89; F20 NOTE preserved; EOL lf | 1ec7478
 2026-05-12 | T1.5 | add marketplace_source unit tests (5 cell — Pattern J BASE+modifier; ADR 0005); tests 89→94 ✅ | 840e606
-2026-05-12 | T1.6 | M2 audit GSD manifest (cli-npm × npm-cli ✅ — 复用 T3.1 npmCli installer); audit 落 § C.1 (deviation: harness 阻止 standalone findings.md → 合并到 progress.md, 见 § C.1 deviation note) | (audit-only, no commit yet)
+2026-05-12 | T1.6 | M2 audit GSD manifest (cli-npm × npm-cli ✅ — 复用 T3.1 npmCli installer); audit 落 § C.1 (deviation: harness 阻止 standalone findings.md → 合并到 progress.md, 见 § C.1 deviation note) | 13922d5
+2026-05-12 | T2.1 | add src/installers/lib/types.ts (64L — Level/InstallOpts/InstallContext/InstallError/InstallResult/Installer); typecheck 0 errors; tests still 94 | ca46a59
 
 ### A.5 Session 中断恢复指引
 
@@ -191,7 +192,24 @@
 
 > 每 wave ✅ 后，回顾 → 记录 1-3 段简短 retrospective（什么 worked / 什么 inefficient / phase 1.3 如何沿用），便于跨 phase 继承经验。
 
-[empty — execute-phase 每 wave ✅ 后追加]
+#### Wave 0 ✅ retro (2026-05-12)
+
+**What worked**:
+- ADR 0005 errata 路径流畅 — A7 守恒（ADR 0001 main body 0 diff）+ 仅在 ccPluginMarketplace.ts 加 optional 字段 + fixture-driven test 自动验证 manifest pair → 6 task 共 6 commits 干净分离
+- H5 hardening: 5 baseline tags + ci.yml iterate 5 tag 让"未来任何 ADR 0001-0005 main body 漂移自动 CI fail"成为 hard guarantee
+- T1.5 Pattern J BASE+modifier 风格直接复用 phase-1.1 git-ref test 结构（5 cell × 平均 1.4 assertion）— tests 89→94 (+5) 与 plan target 完全对齐
+- T1.6 GSD audit happy-path（cli-npm × npm-cli + cmd 全 match）— B2c' (npm-cli installer 覆盖 4/10 上游) 如期可达成
+
+**What was inefficient / surprised**:
+- task_plan T1.2 H5 子条款只列 0003/0004 retroactive tag，但同 task 的 ci.yml 升级 step iterate 5 tag — 第一次跑 `git tag -l` 才发现 0002 漏列（F26）。**phase 1.3+ 教训**：plan-with-files 写 ci.yml + tag 任何 "iterate N items" 时，**plan 步骤必须显式枚举所有 N 项**（不能只列差异项）。
+- task_plan T1.6 步骤 3 / 4 要求创建 `.planning/phase-1.2/findings.md` 独立文件，但 execute-phase harness 规则阻止 standalone .md 报告创建 — 改写到 progress.md § C.1 (audit snapshot 子 section)。**phase 1.3+ 教训**：所有 audit / 阶段性 deliverable 直接落到 progress.md 子 section（§ C / § D），不创建独立 findings.md / audit.md / report.md 文件。
+
+**Phase 1.3 如何沿用**:
+- A7 守恒模式（ADR XXXX-accepted tag + ci iterate）将随每 phase 累积；phase 1.3 完成时自动有 6 baseline tag (0001-0006) 入守恒
+- progress.md § C audit snapshot 子 section 模式可承载 phase 1.3 ralph-loop / DAG resolver 的"自审计快照"
+- Pattern J 已实战验证适用 schema field test，phase 1.3 DAG resolver test 同款
+
+[empty — 后续 wave ✅ 后追加]
 
 ---
 
