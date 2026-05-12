@@ -22,21 +22,23 @@
 
 (每 wave step 后用 ✅/❌/⏳ 更新；不达成 8/8 即不能进 phase 1.3)
 
-- ⏳ **A1'** gstack 6+ 虚拟角色矩阵 + 触发条件 + sanity check
-- ⏳ **A2'** gstack 双职责区分（"做什么" vs "是否值得做"）
-- ⏳ **A3'** GSD 环境质量层（CI / lockfile / Cross-OS / Corepack / 工具版本基线）
-- ⏳ **A4'** karpathy 心法 4 原则 1:1 enforce + always-on 注入
-- ⏳ **A5'** mattpocock 16+ 招式 phase routing 决策树
-- ⏳ **A6'** 心法+招式配对（主流程注入 + subagent phase trigger）
-- ⏳ **A7'** superpower brainstorming + TDD 触发规则
-- ⏳ **A8'** 4+ skill category × decision rules + curate criteria
+- ✅ **A1'** gstack 6+ 虚拟角色矩阵 + 触发条件 + sanity check (GRAY-AREA-2 § 2 完整 + § 4 P0-2 lock (b))
+- ✅ **A2'** gstack 双职责区分（"做什么" vs "是否值得做"）(GRAY-AREA-2 § 1)
+- ✅ **A3'** GSD 环境质量层（CI/lockfile/Cross-OS/Corepack/EOL/A7） (ASSUMPTIONS § B + GRAY-AREA-1 § 5)
+- ✅ **A4'** karpathy 心法 4 原则 1:1 enforce + always-on 注入 (GRAY-AREA-4 § 2 + § 3.1 修订为 a-revised main agent factory inject)
+- ✅ **A5'** mattpocock **23** 招式 phase routing 决策树 (GRAY-AREA-3 § 2.2 R2 实证 + § 3 schema main-process-driven)
+- ✅ **A6'** 心法+招式配对（主流程注入 + subagent phase trigger） (GRAY-AREA-3 § 4 + GRAY-AREA-4 § 4)
+- ✅ **A7'** superpower brainstorming + TDD 触发规则 (GRAY-AREA-1 § 4 hybrid: mandatory + heuristic + optional)
+- ✅ **A8'** **6 大 category** × decision rules + curate criteria (GRAY-AREA-1 § 2 § 3 + GRAY-AREA-5 完整 v0.1 5 项 + v0.4+ checklist)
+
+**8/8 ✅ Capture 完成 — 待 Wave D cross-validation 最终 verify**
 
 ### A.3 Wave 进度概览
 
 | Wave | 内容 | Steps | 状态 |
 |------|------|-------|------|
-| A | Researcher 调研 (R1 routing engine + R2 skill ecosystem) | R1 + R2 (parallel async) | 🔄 in-progress |
-| B | 综合 (ASSUMPTIONS + 5 GRAY-AREA) | B.1 - B.6 | ⏳ pending (B.3 + B.5 已 prepare 走预备做) |
+| A | Researcher 调研 (R1 routing engine + R2 skill ecosystem) | R1 + R2 (parallel async) | ✅ done (R1 450L HIGH conf + R2 700L HIGH conf; F33 实证 + F34 6 类 + 23 命令实证) |
+| B | 综合 (ASSUMPTIONS + 5 GRAY-AREA) | B.1 - B.6 | ✅ done (5 GRAY-AREA + ASSUMPTIONS; 8/8 capture; D1.2.5-1 ~ D1.2.5-12 lock; GA-2/3/4 enforcement 路径与 D1.2.5-3/-9 对齐) |
 | C | Spec 修订 (PROJECT-SPEC v3.0 + ADR 0006 + ROADMAP 重排) | C.1 - C.3 | ⏳ pending |
 | D | Cross-validation (sister CC review + paranoid + final acceptance) | D.1 - D.4 | ⏳ pending |
 
@@ -50,6 +52,13 @@
 2026-05-12 | B.prep.3 | GRAY-AREA-4-karpathy-enforcement.md prepared (A4' 完整 capture from 用户笔记) | 41e986c
 2026-05-12 | B.prep.4 | GRAY-AREA-3-mattpocock-phase-routing.md prepared (A5' partial schema + A6' 100% capture; § 2.2 完整 16+ 命令清单待 R2) | fd1a1c7
 2026-05-12 | A.R1 | RESEARCH-1-routing-engine.md done (450L; HIGH confidence); 🔴 F33 实证 — subagent 内 reload 不可行; 🟢 main-process-driven routing 唯一路径; P0-1 → (a) 独立 decision_rules.yaml; P0-2 → (b) 中等深度编码 (不 vendor 治理 skill prompt); 推荐双层 router (Semantic Router + LangGraph Supervisor); 3 红旗 + 6 open questions; see § B F33 narrative | (pending commit)
+2026-05-12 | A.R2 | RESEARCH-2-skill-ecosystem.md done (700L; HIGH confidence); 6 大 category 实证 (不是 4+ — meta/engineering/design/content/testing/search); 23 mattpocock skills (不是 16+); 17 anthropics + 21 baoyu 全实测可访问; ui-ux-pro-max 在 midwayjs/midway/.codex/skills/ 是 Codex skill (待 v0.1 实测 install path); jimliu/baoyu-skills license: None warn; brave-search-mcp 已弃; chrome-devtools-mcp 是 MCP 不是 skill; P0-3 → (c) phase-aware 渐进; P0-5 → (a+b) hybrid; see § B F34 | (pending commit)
+2026-05-12 | B.1 | ASSUMPTIONS.md (227L) — 8 支柱 capture 总览 + A3' 环境质量层 lock + 5 P0 lock + D1.2.5-1 ~ D1.2.5-12 决策追溯表 + ROADMAP 重排 (phase 1.3 = base profile + categorization schema; phase 1.4 = routing engine v1; phase 1.5 = DAG + Semantic Router 升级) | c8cb344
+2026-05-12 | B.2 | GRAY-AREA-1-routing-engine.md (348L) — main-process-driven architecture diagram (D1.2.5-3) + decision_rules.yaml v1 schema (DMN Priority Hit Policy + 6 category × 12 rules 实例) + § 4 superpower brainstorming + TDD 触发 hybrid (A7') + § 5 GSD env quality enforcement (A3' partial) + § 6 main agent system prompt (verbatim COMPLETE F33 P1 mitigation) | c8cb344
+2026-05-12 | B.6 | GRAY-AREA-5-curate-criteria.md (191L) — v0.1 5 项 mandatory + advisory score + v0.1 candidate 实测打分表 (jimliu pending_license + mattpocock warn) + official maintainer override 列表 + v0.4+ community PR checklist + OSSF Scorecard subset | c8cb344
+2026-05-12 | B.3 | GRAY-AREA-2 修订 — § 4 P0-2 lock 改为 (b) 中等深度 (与 ASSUMPTIONS 一致；R1 § 5.2 推荐) + enforcement 路径 main-process-driven | (pending commit)
+2026-05-12 | B.4 | GRAY-AREA-3 修订 — § 2.2 加 R2 实证 23 真实命令清单 (18 active 进 v0.1 catalog；4 deprecated + 2 personal + 3 in-progress 排除) + § 3.1 schema 修订为 main-process-driven (主进程 install + AgentDefinition factory inject — F33 实证) | (pending commit)
+2026-05-12 | B.5 | GRAY-AREA-4 修订 — § 3.1 候选 (a) → (a-revised) main agent factory 构造时 inject prompt 字段 (D1.2.5-9) + § 3.4 推荐 (a-revised) + 部分 (b) hook reminder | (pending commit)
 
 ### A.5 Wave-Level Acceptance Checkpoints
 
@@ -118,13 +127,41 @@
 - **🟡 P1**: `/reload-plugins` skill bug (issue #35641) — 设计 fallback：每次 install 后**主进程**用 fresh subagent invoke 验证 skill 可用
 - **🟡 P1**: subagent final message 可能被主 summarize → ralph-loop COMPLETE 检测会失效 — main agent system prompt **必须**强制 "verbatim return COMPLETE marker"
 
-#### F34: 用户笔记里某些 skill 真实性 (预计 Wave A R2)
+#### F34: 6 大 category + 23 mattpocock skills 实证（已 ✅）
 
-- **Predicted Date**: Wave A R2 调研完成
-- **Predicted Type**: discovery
-- **Predicted Severity**: P2-P3
-- **Background**: 用户笔记里 ui-ux-pro-max / frontend-design / PPTX 等是否真实开源 skill (有 GitHub repo) 还是抽象概念名 — 影响 v0.1 candidate 库实际可装性
-- **Expected Resolution**: R2 verify 真实存在性 → 真实候选进 v0.1 / 概念名留 v0.2+ 等社区出 skill
+- **Date**: 2026-05-12
+- **Wave**: A.R2
+- **Type**: discovery
+- **Severity**: P2 (架构数据修正)
+- **Context**: 用户笔记里提议 4+ category（meta/engineering/design/content）+ 16+ mattpocock skills；R2 实证后修正为 6 类 + 23 skills。
+- **Investigation**:
+  - GitHub API 直接抓 mattpocock/skills repo → 23 skills (10 engineering + 4 productivity + 4 misc + 4 deprecated + 3 in-progress + 2 personal)
+  - ctx7 skills search + WebFetch 各 candidate 真实性 verify
+  - 用户笔记笼统说"4+"，调研后确定 6 类（加 testing + search 是用户 CLAUDE.md 隐含但未单独 enumerate 的类）
+- **Resolution**:
+  - 6 大 category lock (D1.2.5-6) — meta + engineering + design + content + testing + search
+  - 23 mattpocock skills lock (D1.2.5-7) — 18 active 进 v0.1 catalog；4 deprecated 排除；3 in-progress + 2 personal deferred
+- **Impact**: 
+  - GRAY-AREA-1 § 3 / decision_rules.yaml 含 6 category × 12 rules 实例
+  - GRAY-AREA-3 § 2.2 真实 18 active 命令归类（取代 placeholder）
+- **Cross-ref**: RESEARCH-2 § 1 + § 3.1 / ASSUMPTIONS § C P0-3 + D1.2.5-6 / D1.2.5-7
+
+#### F35: 关键 skill 真实性 + 风险（部分 ⚠️ + ✅）
+
+- **Date**: 2026-05-12
+- **Wave**: A.R2
+- **Type**: discovery + risk
+- **Severity**: P2 (v0.1 必修)
+- **Resolution**:
+  - ✅ ui-ux-pro-max 真实存在但藏在 midwayjs/midway/.codex/skills/ — Codex skill 不是独立 CC plugin → D1.2.5-11 phase 1.3 必须实测 install path
+  - ⚠️ jimliu/baoyu-skills license: None — D1.2.5-10 v0.1 标 pending_license advisory 收录 + warn user opt-in；v0.2 联系 maintainer 加 LICENSE
+  - ⚠️ mattpocock 单 maintainer (Avelino 36%/年风险) — GRAY-AREA-5 § 2.3 advisory warn + phase 2.x mirror backup 计划
+  - ✅ chrome-devtools-mcp / playwright-mcp / tavily-mcp / exa-mcp 全 Org 维护 + Apache-2.0/MIT + 高 stars
+  - ❌ brave-search-mcp 已弃用 (CLAUDE.md 已记录) — manifest 显式 deprecated 列表
+- **Impact**:
+  - manifest schema 加 `install_type: skill | mcp | npm | git` 字段 (D1.2.5-12)
+  - GRAY-AREA-5 § 2.3 candidate 实测打分表
+- **Cross-ref**: RESEARCH-2 § 4.4 风险 / GRAY-AREA-5 / ASSUMPTIONS D1.2.5-10/-11/-12
 
 ### B.4 已锁定决策追溯表（Wave B ASSUMPTIONS 完成后填）
 
@@ -139,7 +176,38 @@
 
 ### B.6 Wave-level retrospective
 
-[empty — 每 wave 完成后追加]
+#### Wave A ✅ retro (2026-05-12)
+
+**What worked**:
+- R1 + R2 parallel async — 总用时 ~10 min vs 串行 ~30 min（节省 67%）
+- R1 / R2 工具分配清晰：R1 主用 WebSearch + WebFetch 官方 docs；R2 主用 ctx7 skills search + gh api + WebFetch GitHub repo
+- 两个 researcher 输出质量都 HIGH confidence（450L + 700L），References 含完整 access date 印证
+
+**What was inefficient**:
+- 用户笔记里"4+ category"和"16+ mattpocock skills"过于笼统 — R2 调研花约 20% 时间纠正数据（6 类 / 23 skills）
+- ui-ux-pro-max 隐藏在 midwayjs/midway/.codex/skills/ 不在标准路径 — R2 探索成本高
+
+**Phase 1.3+ 沿用**:
+- parallel async researcher 模式可复用（GA-researcher 替代单 main agent 顺序调研）
+- ctx7 skills search 应当在 phase 1.3 build 时直接集成（用户体验：`harnessed search <query>` 内部调 ctx7）
+
+#### Wave B ✅ retro (2026-05-12)
+
+**What worked**:
+- B.prep (B.3/B.4/B.5 prep) 等 researcher 期间做不依赖 R1/R2 的工作 — 节省后 30% 时间
+- ASSUMPTIONS / GRAY-AREA-1 / GRAY-AREA-5 single batch commit — 3 文件 703L 一次 ship 减少 commit graph 噪音
+- GRAY-AREA-2/3/4 enforcement 路径修订用 surgical Edit（4 patches）非 rewrite — 守住 phase 1.1-1.2 atomic commit 风格
+- D1.2.5-3 (main-process-driven) 一旦 lock 后，所有 GRAY-AREA enforcement 路径自动统一到一处（factory inject）
+
+**What was inefficient**:
+- GA-2 § 4 P0-2 (a) "1:1 enforce" 与 ASSUMPTIONS lock (b) "中等深度" 表面冲突，实际相容 — patch 时需小心 word choice 避免歧义
+- GA-3 § 2.2 placeholder → R2 实证替换 — 应在 prep 阶段就标注 "R2 完成后必填" 提示更早
+
+**Phase 1.3+ 沿用**:
+- decision_rules.yaml DMN Priority Hit Policy schema 已 lock — phase 1.4 实装时直接 reference GRAY-AREA-1 § 2
+- 6 category × decision rules 表已 lock — phase 1.3 manifest schema 加 `category` + `decision_rules` 字段时 1:1 mapping
+
+[Wave C / Wave D retro 各自 wave 完成后追加]
 
 ---
 
@@ -149,14 +217,14 @@
 
 | 支柱 | 验证文档 | 验证查询 (cmd / grep / 文件检查) | 状态 |
 |---|---|---|---|
-| **A1'** gstack 6+ 角色矩阵 | GRAY-AREA-2 + ADR 0006 § X | grep "Designer\|QA\|CSO\|EM\|Paranoid\|CEO" 全 hit + matrix table 含触发条件列 | ⏳ |
-| **A2'** gstack 双职责 | GRAY-AREA-2 + ADR 0006 | grep "做什么\|是否值得做\|strategy.*governance" 区分明确 | ⏳ |
-| **A3'** GSD 环境质量层 | GRAY-AREA-* + ADR 0006 + ROADMAP | grep "环境质量\|CI 守恒\|lockfile\|Cross-OS\|Corepack" 全 hit | ⏳ |
-| **A4'** karpathy 4 原则 1:1 enforce | GRAY-AREA-4 + ADR 0006 | grep "Think Before Coding\|Simplicity First\|Surgical Changes\|Goal-Driven" 4/4 hit + always-on 注入机制描述 | ⏳ |
-| **A5'** mattpocock 16+ 招式 phase routing | GRAY-AREA-3 + ADR 0006 | 16+ 命令 list 含 phase 归类 + 5 phase × 命令 mapping table | ⏳ |
-| **A6'** 心法+招式配对 | GRAY-AREA-3 + GRAY-AREA-4 + ADR 0006 | 显式描述 "心法 always-on + 招式 on-demand by phase" 配对机制 | ⏳ |
-| **A7'** superpower brainstorming + TDD 触发 | GRAY-AREA-1 + ADR 0006 | 核心业务/算法/高可靠性 识别规则 + 触发流程 schema | ⏳ |
-| **A8'** 4+ skill category × decision rules + curate criteria | GRAY-AREA-1 + GRAY-AREA-5 + ADR 0006 | category list ≥ 4 + 每 category 至少 1 个 decision rule 实例 + curate criteria 5+ 项 | ⏳ |
+| **A1'** gstack 6+ 角色矩阵 | GRAY-AREA-2 § 2 + ADR 0006 § X (Wave C 待) | grep "Designer\|QA\|CSO\|EM\|Paranoid\|CEO" 全 hit + matrix table 含触发条件列 | ✅ Wave B (待 Wave D verify) |
+| **A2'** gstack 双职责 | GRAY-AREA-2 § 1 + ADR 0006 (Wave C 待) | grep "做什么\|是否值得做\|Strategy.*Governance" 区分明确 | ✅ Wave B (待 Wave D verify) |
+| **A3'** GSD 环境质量层 | ASSUMPTIONS § B + GRAY-AREA-1 § 5 + ADR 0006 + ROADMAP (Wave C 待) | grep "环境质量\|CI 守恒\|lockfile\|Cross-OS\|Corepack" 全 hit | ✅ Wave B (待 Wave D verify) |
+| **A4'** karpathy 4 原则 1:1 enforce | GRAY-AREA-4 § 2 + § 3.1 修订 (a-revised) + ADR 0006 (Wave C 待) | grep "Think Before Coding\|Simplicity First\|Surgical Changes\|Goal-Driven" 4/4 hit + always-on 注入机制描述 | ✅ Wave B (待 Wave D verify) |
+| **A5'** mattpocock 23 招式 phase routing | GRAY-AREA-3 § 2.2 (R2 实证) + § 3 schema + ADR 0006 (Wave C 待) | 23 命令 list 含 phase 归类 + 5 phase × 命令 mapping table | ✅ Wave B (待 Wave D verify) |
+| **A6'** 心法+招式配对 | GRAY-AREA-3 § 4 + GRAY-AREA-4 § 4 + ADR 0006 (Wave C 待) | 显式描述 "心法 always-on + 招式 on-demand by phase" 配对机制 | ✅ Wave B (待 Wave D verify) |
+| **A7'** superpower brainstorming + TDD 触发 | GRAY-AREA-1 § 4 (mandatory + heuristic + optional) + ADR 0006 (Wave C 待) | 核心业务/算法/高可靠性 识别规则 + 触发流程 schema | ✅ Wave B (待 Wave D verify) |
+| **A8'** 6 category × decision rules + curate criteria | GRAY-AREA-1 § 2 § 3 + GRAY-AREA-5 + ADR 0006 (Wave C 待) | category list = 6 + 每 category 至少 1 个 decision rule 实例 + curate criteria 5+ 项 | ✅ Wave B (待 Wave D verify) |
 
 ---
 

@@ -85,63 +85,77 @@ gstack（决策）→ GSD（稳定）→ superpower（严谨执行）
 
 ---
 
-## § 3 always-on 注入机制（A4' enforcement）
+## § 3 always-on 注入机制（A4' enforcement — main-process-driven per D1.2.5-9）
 
-A4' 要求 routing engine **1:1 enforce 4 原则到 subagent 编码守则层**。三种 enforcement 候选：
+A4' 要求 routing engine **1:1 enforce 4 原则到 subagent 编码守则层**。**修正自原 § 3.1 候选 (a) "subagent.start() inject"** — F33 实证后改为 **(a-revised) main agent 在 AgentDefinition factory 构造 subagent 时 inject**：
 
-### 3.1 候选 (a) — CLAUDE.md auto-injection（推荐）
+### 3.1 候选 (a-revised) — Main agent 在 AgentDefinition factory inject（推荐 ✅）
 
-routing engine 在 subagent 启动时自动 inject 一段 system prompt 到 subagent context：
+main-process-driven path（D1.2.5-9 lock）：主进程 routing engine 在 spawn subagent 之前用 AgentDefinition factory 构造 subagent 时，**把 4 原则 always-on 注入到 `prompt:` 字段**：
 
 ```yaml
-subagent_system_prompt_injection:
-  source: routing/karpathy-heart.md   # 中心化 SSOT (路径推荐)
-  inject_at: subagent.start()
-  scope: 子任务编码全过程
-  content: |
-    # andrej-karpathy 心法 (4 原则) — always-on enforce
-    
-    1. **Think Before Coding** — 编码前必须先 brainstorming 澄清；不允许直接 Edit/Write
-    2. **Simplicity First** — 最小有效代码；YAGNI；不预留 future feature
-    3. **Surgical Changes** — 每修改是 atomic commit；不 batch logical change
-    4. **Goal-Driven Execution** — 每行代码服务明确 acceptance criterion
-    
-    违反任一原则 → ralph-loop COMPLETE 拒绝接受
+# main agent code (伪代码 - phase 1.4 实装)
+karpathy_heart_text = readFile('.planning/karpathy-heart.md')  # 中心化 SSOT
+subagent_def = {
+  name: f"subtask-{task.id}",
+  description: task.description,
+  prompt: f"""
+{karpathy_heart_text}
+[karpathy 心法 4 原则 — always-on enforce]
+1. **Think Before Coding** — 编码前必须先 brainstorming 澄清; 不允许直接 Edit/Write
+2. **Simplicity First** — 最小有效代码; YAGNI; 不预留 future feature
+3. **Surgical Changes** — 每修改是 atomic commit; 不 batch logical change
+4. **Goal-Driven Execution** — 每行代码服务明确 acceptance criterion
+违反任一原则 → ralph-loop COMPLETE 拒绝接受
+
+---
+{task_specific_context}
+{override_signals}
+""",
+  skills: routing_decision.skills,
+  tools: routing_decision.tools,
+}
+spawn subagent with subagent_def
 ```
 
 **优点**：
-- subagent 内自动 enforce，无需 user 手动触发
+- subagent context 启动即含 4 原则（无需 subagent 内部 inject — F33 lock）
 - 与 brainstorming + TDD + ralph-loop 自然 chain
-- routing engine 升级时（v0.2/v0.4）只需改 SSOT 一处
+- routing engine 升级（v0.2/v0.4）只需改 SSOT 一处
+- main process 控制 inject 内容 — 可观测可审计
 
-**缺点**：
-- 占 subagent context window (~50 tokens × 4 原则 = ~200 tokens)
-- 如 CC subagent 不支持 system prompt injection，需 fallback
+**实施**：
+- `.planning/karpathy-heart.md` 作为中心化 SSOT（含 4 原则 + 配套行为示例）
+- AgentDefinition factory 每次 spawn 时读 SSOT → inject prompt
+- inject 内容 ~250 tokens（4 原则 + 简短示例），占 subagent context 约 0.1%
 
-### 3.2 候选 (b) — Pre-edit hook reminder
+### 3.2 候选 (b) — Pre-edit hook reminder (辅助路径)
 
-routing engine 在 subagent 内每次 Edit/Write 前**hook 提醒**：
+在 routing engine 主流程级别配置 pre-edit hook（CC settings.json `hooks` 字段），**子任务大改动时**触发心法 reminder：
 
 ```yaml
-pre_edit_hook:
-  trigger: subagent.tool_use("Edit" | "Write")
-  message: "心法 check: 这次修改是否 (1) 已 brainstorm? (2) 最小代码? (3) atomic? (4) 服务明确目标?"
+# settings.json hooks
+hooks:
+  pre_edit:
+    trigger: "subagent attempts Edit/Write && (changed_files >= 5 OR new_file_created)"
+    invoke: |
+      [心法 reminder — 大改动校验]
+      Continuing this edit means: 
+      (1) brainstorm done? (2) minimal code? (3) atomic? (4) serves criterion?
+      Y to continue / N to stop and reconsider
 ```
 
-**优点**: token 省（只在 edit 时提醒）；用户可见 enforcement
-**缺点**: 干扰 subagent 流；hook fatigue 用户/agent 可能 skim
+**优点**: token 省 (只在 high-risk 时触发); 用户可见
+**缺点**: 增加 CC settings 复杂度; 频繁 trigger 可能 fatigue
 
-### 3.3 候选 (c) — 文档 only（不 enforce）
+### 3.3 候选 (c) — 文档 only（不 enforce）— ✗ 不采用
 
-仅在 docs/CONTRIBUTING.md 写心法说明，靠 user / subagent 自觉。
+仅 docs/CONTRIBUTING.md 写心法说明 — A4' 验收 fail（用户硬要求 100% 实现）
 
-**优点**: 0 implementation 成本
-**缺点**: **A4' 验收 fail** — 用户硬要求 100% 实现 = (c) 不通过
+### 3.4 推荐：(a-revised) + 部分 (b) 混合（**最终方案**）
 
-### 3.4 推荐：(a) + 部分 (b) 混合
-
-- **(a) 主路径**: subagent 启动时 inject CLAUDE.md auto-injection（4 原则 always-on）
-- **(b) 关键时刻**: 子任务大改动（changed_files ≥ 5 / new file created）触发 pre-edit reminder hook（避免高风险修改 violating 心法）
+- **(a-revised) 主路径**: AgentDefinition factory inject（4 原则 always-on 注入到 subagent prompt 字段）
+- **(b) 关键时刻**: 子任务大改动（changed_files ≥ 5 OR new file created）触发 pre-edit hook reminder
 - **(c) ✗**: 不采用（验收 fail）
 
 ---

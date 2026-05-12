@@ -146,20 +146,23 @@ reviews:
 
 ---
 
-## § 4 P0-2 决策（gstack 治理关卡编码深度）— 推荐 (a) 1:1 enforce
+## § 4 P0-2 决策（gstack 治理关卡编码深度）— Lock (b) 中等深度（D1.2.5-3 路径修订）
 
-> P0-2 候选: (a) routing engine 1:1 enforce 强制级别 / (b) 仅 prompt 提示 / (c) 不编码（用户手工触发）
+> P0-2 候选: (a) routing engine 1:1 enforce 强制级别 / **(b) 中等深度编码：路由 *何时触发* 治理 skill，但 *不 vendor* 治理 skill 的 prompt** / (c) 不编码
 
-**推荐 (a) 1:1 enforce**，理由：
+**Lock (b) 中等深度**（与 ASSUMPTIONS.md § C P0-2 一致；R1 § 5.2 推荐），理由：
 
-1. **用户硬要求 100% 实现** — (b)(c) 都会让 8 支柱 acceptance bar A1' 不达成
-2. **gstack 的核心价值是治理强制** — 如果 routing engine 不 enforce，gstack 就退化为"建议工具"，失去 wedge 价值
-3. **phase 1.1.1 + 1.2 经验**：A7 守恒 / B1 security gate / H4 mock shim 等都是 hard enforce 才让架构稳健 — gstack 治理关卡是同等级
-4. **trade-off**：implementation 成本提升 ~30%（routing engine 加 phase-level gates + arch 复杂度检测），但获得"硬保证完整三层栈方法论 100% 实现"
+1. **守 wedge "不 vendor" 原则** — gstack 治理 skill (`/office-hours` / `/plan-ceo-review` / `/review` 等)是 mattpocock 生态成熟资产；harnessed vendor 这些 prompt = 违反 wedge
+2. **但 *何时触发* 是 harnessed 核心 routing 逻辑** — 这就是 decision_rules.yaml 该编码的层次（详 GRAY-AREA-1 § 2 + § 3）
+3. **保留 (a) 1:1 enforce 强制级别**（BLOCKING / RECOMMENDED）—（b) 中等深度 = (a) BLOCKING 强制级别 + 不 vendor prompt = 两者**相容**而非互斥
+4. **phase 1.1.1 + 1.2 经验**：A7 守恒 / B1 security gate / H4 mock shim 等都是 hard enforce；gstack 治理关卡同等级
+5. **trade-off**：implementation 成本提升 ~30%（routing engine 加 phase-level gates + arch 复杂度检测），但获得"硬保证三层栈方法论 100% 实现"
 
 ### 实现策略（v0.1 起步）
 
-- **v0.1**: phase-level BLOCKING gates 全实装（new-feature-launch / complex-arch / key-module-pr）
+**enforcement 路径**: 主流程 routing engine（D1.2.5-3 main-process-driven）— phase-level gates 在 main agent 跑 GSD orchestration 时触发：
+
+- **v0.1**: phase-level BLOCKING gates 全实装（new-feature-launch / complex-arch / key-module-pr）— main agent 主流程触发，不 spawn subagent，直接 `claude plugin install <gstack-skill>` + 主进程 invoke
 - **v0.2**: subtask-level RECOMMENDED reviews 加（design-review / qa / cso）
 - **v0.4+**: sanity check 增量扩展（gstack agent feature 演进时同步）
 

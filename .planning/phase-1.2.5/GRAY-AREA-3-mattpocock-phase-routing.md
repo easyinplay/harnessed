@@ -49,73 +49,109 @@
 | **维护** | `/improve-codebase-architecture` | 架构健康检查 — 周期性走查找架构债 | 维护期 / phase 完成后 / 季度健康检查 |
 | **Token-省** | `/caveman` | 节省 token — 不需要长解释时用 | 简单 task / 长 session 中后期 |
 
-### 2.2 R2 调研补充（待填）
+### 2.2 R2 调研补充（已填充 — 来自 RESEARCH-2 § 3.1 GitHub API 实证）
 
-R2 任务：
-1. 从 mattpocock GitHub repo 抓取真实完整 16+ 命令清单
-2. 对未在用户笔记中 explicit 归类的命令推断 phase（Discuss / Plan / Execute / 维护 / Token-省）
-3. 更新本表格（§ 2.2）
+**真实总数：23 skills（不是预测的 16+）**：10 engineering + 4 productivity + 4 misc + 4 deprecated + 3 in-progress + 2 personal。详尽清单见 `RESEARCH-2-skill-ecosystem.md` § 3.1。本节只列**进 v0.1 catalog 的 18 个 active skill**（去除 deprecated 4 + personal 2 + in-progress 但具体 phase 不明 1）：
 
-预填占位（R2 返回后替换）：
-
-```
-| Phase | 命令 (R2 调研) | 用途 | 触发条件 |
+| Phase | 命令 | 路径 | 触发条件 |
 |---|---|---|---|
-| ? | <command-1> | <purpose-from-readme> | <推断 trigger> |
-| ? | <command-2> | ... | ... |
-| ... | (R2 调研后 8+ 命令补全) | ... | ... |
-```
+| **Discuss** | `/grill-with-docs` ★ | engineering/ | 代码任务 + CONTEXT.md/ADR + ubiquitous language（用户笔记 explicit）|
+| **Discuss** | `/grill-me` | productivity/ | **非代码任务**澄清 / 决策树发散（R2 新增）|
+| **Discuss** | `/to-prd` ★ | engineering/ | 对话 context 已成熟 → 沉淀 PRD（用户笔记 explicit）|
+| **Plan** | `/to-issues` ★ | engineering/ | PRD/plan/spec → GitHub issues 拆分（用户笔记 explicit）|
+| **Plan** | `/zoom-out` | engineering/ | 进 plan 阶段前看陌生模块 broader context（笔记 explicit + R2 推断 plan phase 也适用）|
+| **Execute** | `/tdd` ★ | engineering/ | red-green-refactor 子任务（用户笔记 explicit）|
+| **Execute** | `/diagnose` ★ | engineering/ | hard bug / perf regression 系统化排错（用户笔记 explicit）|
+| **Execute** | `/zoom-out` ★ | engineering/ | 跨陌生模块跳转编码（用户笔记 explicit）|
+| **Execute** | `/prototype` | engineering/ | UI/state/business 设计需 throwaway 探索（R2 新增）|
+| **Execute** | `/triage` | engineering/ | issue 进入 → role-based triage（R2 新增）|
+| **维护** | `/improve-codebase-architecture` ★ | engineering/ | 周期性架构健康检查（推荐 3-7d cadence；用户笔记 explicit）|
+| **维护** | `/setup-pre-commit` | misc/ | 新项目 / pre-commit 缺失 → 一次性装（R2 新增）|
+| **维护** | `/setup-matt-pocock-skills` | engineering/ | 装 mattpocock 全家桶后必须 run 一次（per repo；R2 新增）|
+| **维护** | `/git-guardrails-claude-code` | misc/ | 防 destructive git ops（CLAUDE.md hard rule 配套；R2 新增）|
+| **Token-省** | `/caveman` ★ | productivity/ | 上下文紧 / 不需详细解释 / batch（用户笔记 explicit；超压缩 ~75% tokens）|
+| **Token-省** | `/handoff` | productivity/ | 对话过长 → compact 给下个 session（R2 新增）|
+| **meta-skill** | `/write-a-skill` | productivity/ | 创建新 skill / progressive disclosure 模式（R2 新增 — 与 anthropics/skill-creator 重叠备选）|
+| **misc / 一次性** | `/migrate-to-shoehorn`, `/scaffold-exercises` | misc/ | 特定迁移 / exercise 模板 — 一次性场景（R2 新增）|
+
+★ = 用户笔记 explicit 提到的命令；其余为 R2 实证补充。
+
+**deprecated 4 项不进 catalog**: design-an-interface / qa / request-refactor-plan / ubiquitous-language（其中 ubiquitous-language 已合到 grill-with-docs；qa 改用 anthropic /qa）
+
+**in-progress 3 项 deferred 到 v0.2+ verify**: review (mattpocock 自家 review，与 paranoid /review 区分) / writing-beats / writing-fragments / writing-shape
+
+**personal 2 项不进 catalog**: edit-article / obsidian-vault（mattpocock 个人专用）
 
 ---
 
-## § 3 routing engine 内 招式 trigger schema（A5' enforcement）
+## § 3 routing engine 内 招式 trigger schema（A5' enforcement — main-process-driven per D1.2.5-3）
 
 ### 3.1 Phase 自动检测 + 命令推荐
 
-routing engine 在 subagent 内根据**当前 phase** + **task 上下文**决定招式触发：
+**enforcement 路径**: 主流程 routing engine 在 spawn subagent **之前**根据当前 phase + task 上下文决定招式触发；命中 trigger → 主进程 install + 主进程 `/reload-plugins` → AgentDefinition factory inject 到 subagent skills/prompt 字段（subagent 启动后**仅 invoke 已注入 skill**，不能在 subagent 内 install — F33 实证）。
 
 ```yaml
 mattpocock_phase_routing:
   - phase: Discuss
     triggers:
-      - condition: subtask.spec_clarity == "ambiguous"
+      - condition: subtask.spec_clarity == "ambiguous" AND subtask.is_code == true
         recommend: /grill-with-docs
-        prompt: "spec 不明 — 用 /grill-with-docs 澄清?"
-      - condition: subtask.scope == "feature" && subtask.requires_prd == true
+        prompt: "代码任务 spec 不明 — 用 /grill-with-docs 澄清 + 维护 CONTEXT.md/ADR?"
+      - condition: subtask.spec_clarity == "ambiguous" AND subtask.is_code == false
+        recommend: /grill-me
+        prompt: "非代码任务澄清 — 用 /grill-me 决策树发散?"
+      - condition: subtask.scope == "feature" && subtask.context_mature == true
         recommend: /to-prd
-        prompt: "大功能 — 用 /to-prd 沉淀正式 PRD?"
+        prompt: "context 已成熟 — 用 /to-prd 沉淀 PRD?"
   
   - phase: Plan
     triggers:
       - condition: prev_phase == "Discuss" && task_decomposition_pending
         recommend: /to-issues
-        prompt: "需要把 PRD 拆成 issue?"
+        prompt: "PRD 已就绪 — 用 /to-issues 拆 GitHub issues?"
+      - condition: working_in_unfamiliar_module
+        recommend: /zoom-out
+        prompt: "陌生模块 — 用 /zoom-out 拉远看全貌?"
   
   - phase: Execute
     triggers:
       - condition: subtask.is_core_business || subtask.is_algorithm || subtask.high_reliability
         recommend: /tdd
         prompt: "核心 logic — 用 /tdd 走 red-green-refactor?"
-        note: superpower:test-driven-development 是备选
+        note: "obra/superpowers-skills (TDD) 是备选 — 见 GRAY-AREA-1 § 4.1 mandatory_tdd_triggers"
       - condition: error_encountered || test_failing
         recommend: /diagnose
         prompt: "遇到 bug — 用 /diagnose 系统排错?"
       - condition: working_in_unfamiliar_module
         recommend: /zoom-out
         prompt: "陌生模块 — 用 /zoom-out 拉远看全貌?"
+      - condition: subtask.needs_throwaway_exploration
+        recommend: /prototype
+        prompt: "UI/state/business 探索 — 用 /prototype throwaway 设计?"
   
   - phase: 维护
     triggers:
-      - condition: triggered_periodically (每 sprint / 每 phase 完成)
+      - condition: triggered_periodically (每 sprint / 每 phase 完成 / 3-7d cadence)
         recommend: /improve-codebase-architecture
         prompt: "维护检查 — 跑 /improve-codebase-architecture?"
+      - condition: new_project_setup && pre_commit_missing
+        recommend: /setup-pre-commit
+      - condition: mattpocock_skills_installed_first_time
+        recommend: /setup-matt-pocock-skills
+        rationale: "per repo 必须 run 一次"
+      - condition: new_repo
+        recommend: /git-guardrails-claude-code
+        rationale: "防 destructive git ops"
   
   - phase: Token-省
     triggers:
       - condition: session_length > threshold || subtask.simple_action
         recommend: /caveman
         prompt: "节省 token — 用 /caveman 简洁模式?"
-        scope: 任意 phase 都可叠加
+        scope: "任意 phase 都可叠加"
+      - condition: session_too_long_needs_handoff
+        recommend: /handoff
+        prompt: "对话过长 — 用 /handoff compact 给下个 session?"
 ```
 
 ### 3.2 推荐模式（招式 ≠ 强制）
