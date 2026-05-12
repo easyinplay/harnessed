@@ -206,6 +206,25 @@
                 "idempotent_check": {
                   "minLength": 1,
                   "type": "string"
+                },
+                "marketplace_source": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "source",
+                    "repo"
+                  ],
+                  "properties": {
+                    "source": {
+                      "const": "github",
+                      "type": "string"
+                    },
+                    "repo": {
+                      "pattern": "^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$",
+                      "minLength": 3,
+                      "type": "string"
+                    }
+                  }
                 }
               }
             },
