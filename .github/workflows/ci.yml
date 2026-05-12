@@ -99,8 +99,16 @@ jobs:
           ok_or_dryrun() {
             local cmd="$1"
             shift
+            # GHA bash default = `-e -o pipefail`. Pipefail makes the pipeline
+            # exit non-0 if `$cmd` exits non-0 (even when tee exits 0), which
+            # then triggers `-e` and kills the step before we can inspect
+            # ${PIPESTATUS[0]}. Disable pipefail just around this pipe so the
+            # pipeline's exit code = tee's (always 0); we read ${PIPESTATUS[0]}
+            # explicitly to honor the dry-run exit-2 sentinel. (Phase 1.2.1 hotfix.)
+            set +o pipefail
             "$cmd" "$@" 2>&1 | tee out.log
             local rc=${PIPESTATUS[0]}
+            set -o pipefail
             if [ "$rc" -eq 0 ] || [ "$rc" -eq 2 ]; then return 0; fi
             echo "::error::installer command exited $rc (expected 0 or 2)"
             return 1
