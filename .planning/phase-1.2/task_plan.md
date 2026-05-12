@@ -368,7 +368,7 @@
 ### Wave 4 — Install methods + Dispatcher（依赖 Wave 1+2+3）
 
 #### T3.1 写 src/installers/npmCli.ts
-- [ ] **目标**：cli-npm × npm-cli 实装 — Level: L4 if global / L1 if npx fallback；用户拒 L4 → 自动降级 L1（B3 候选 1）
+- [x] **目标**：cli-npm × npm-cli 实装 — Level: L4 if global / L1 if npx fallback；用户拒 L4 → 自动降级 L1（B3 候选 1）
 - **文件**：`/d/GitCode/harnessed/src/installers/npmCli.ts`
 - **内容大纲**（~50 行）：
   - 单一导出 `installNpmCli: Installer = async (ctx) => { ... }`

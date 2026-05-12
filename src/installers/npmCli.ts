@@ -1,0 +1,135 @@
+// Phase 1.2 install method 1/2 — cli-npm × npm-cli per ADR 0004 + ASSUMPTIONS B3.
+//
+// IMPL NOTE (Rule 1 / ASSUMPTIONS B3 候选 1 + H3 sister review fix): when a
+// manifest declares `npm install -g <pkg>` (Level L4) but the user has NOT
+// passed `--system`, do NOT silently flip to npx — that is "decision masking"
+// and erodes trust. Present an explicit 3-way `p.select()`: (a) abort and
+// re-run with --system / (b) downgrade to L1 npx ephemeral / (c) abort.
+// Default is (c) — safest action wins on Enter / Ctrl-C / Esc.
+//
+// IMPL NOTE (Rule 1 / D-1 reuse): every multi-line block delegates to a lib/*
+// helper. This installer is a thin orchestrator; if you find yourself adding
+// fs/spawn/diff logic *here*, lift it to lib/.
+
+import * as p from '@clack/prompts'
+import { backup } from './lib/backup.js'
+import { confirmAt } from './lib/confirm.js'
+import { renderDiff } from './lib/diff.js'
+import { preflight } from './lib/preflight.js'
+import { spawnCmd } from './lib/spawn.js'
+import { updateInstalled } from './lib/state.js'
+import type {
+  DiffPlan,
+  InstallContext,
+  InstallError,
+  Installer,
+  InstallResult,
+  Level,
+} from './lib/types.js'
+
+function detectLevel(cmd: string): Level {
+  if (/\bnpm\s+install\s+-g\b/.test(cmd)) return 'L4'
+  if (/\bnpx\b/.test(cmd)) return 'L1'
+  return 'L4' // safest default: assume worst-case scope
+}
+function err(ctx: InstallContext, path: string, message: string, keyword: string): InstallError {
+  return { file: ctx.manifest.metadata.name, path, message, line: null, column: null, keyword }
+}
+
+export const installNpmCli: Installer = async (ctx) => {
+  // Discriminator narrow — index.ts only routes here when method === 'npm-cli'.
+  const install = ctx.manifest.spec.install
+  if (install.method !== 'npm-cli') {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: err(
+        ctx,
+        '/spec/install/method',
+        `installNpmCli received non-npm-cli method '${install.method}' (dispatch bug)`,
+        'dispatch-mismatch',
+      ),
+    }
+  }
+  const pre = preflight(ctx)
+  if (!pre.ok) {
+    if (pre.abortReason === 'platform-mismatch')
+      return { aborted: true, reason: 'platform-mismatch' }
+    const e = pre.errors[0] ?? err(ctx, '/', 'preflight failed (no detail)', 'preflight')
+    return { ok: false, phase: 'preflight', error: e }
+  }
+  let level = detectLevel(install.cmd)
+  let cmd = install.cmd
+  const plan: DiffPlan = { files: [] }
+  // L1 npx & L4 global both produce "(no file changes)" diff — L4 PATH mod is
+  // not previewable as a unified diff; the cmd echo is the audit trail.
+  process.stdout.write(renderDiff(plan, ctx))
+  if (level === 'L4')
+    process.stdout.write('  (L4 system install — global PATH change; see cmd above)\n')
+  const conf = await confirmAt(level, { ...ctx, level })
+  if (!conf.proceed) {
+    if (level === 'L4' && conf.reason === 'flag-missing' && !ctx.opts.nonInteractive) {
+      // H3 three-way prompt (interactive only — non-interactive already short-circuited)
+      const choice = await p.select({
+        message: 'L4 install requires --system. Choose:',
+        options: [
+          { value: 'retry', label: 'Retry with --system flag (re-run command)' },
+          { value: 'npx', label: 'Downgrade to L1 npx ephemeral install (no global)' },
+          { value: 'abort', label: 'Abort install' },
+        ],
+        initialValue: 'abort',
+      })
+      if (p.isCancel(choice) || choice === 'abort') return { aborted: true, reason: 'user-cancel' }
+      if (choice === 'retry') return { aborted: true, reason: 'level-flag-missing' }
+      // 'npx' branch: rebuild cmd + re-confirm at L1
+      cmd = `npx --yes ${ctx.manifest.metadata.upstream.source}@${install.npm_version}`
+      level = 'L1'
+      const conf2 = await confirmAt('L1', { ...ctx, level: 'L1' })
+      if (!conf2.proceed) return { aborted: true, reason: 'user-cancel' }
+    } else {
+      // confirm.reason 'flag-missing' (L4 non-interactive) maps to InstallResult
+      // 'level-flag-missing'; 'user-cancel' / undefined → 'user-cancel'.
+      const reason = conf.reason === 'flag-missing' ? 'level-flag-missing' : 'user-cancel'
+      return { aborted: true, reason }
+    }
+  }
+  // dry-run short-circuit (preview-only, never writes — ADR 0004 contract 1)
+  if (ctx.opts.dryRun) return { aborted: true, reason: 'user-cancel' }
+  const bk = await backup(plan, ctx)
+  if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
+  const sp = await spawnCmd(ctx, cmd, [])
+  if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
+  if (sp.exitCode !== 0) {
+    return {
+      ok: false,
+      phase: 'spawn',
+      backupId: bk.backupId,
+      error: err(
+        ctx,
+        '/spec/install/cmd',
+        `install cmd exited ${sp.exitCode}: ${sp.stderr.slice(0, 200)}`,
+        'install-failed',
+      ),
+    }
+  }
+  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [])
+  if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
+  const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0
+  if (vr.exitCode !== expected) {
+    return {
+      ok: false,
+      phase: 'verify',
+      backupId: bk.backupId,
+      error: err(
+        ctx,
+        '/spec/verify/cmd',
+        `verify exit ${vr.exitCode} ≠ expected ${expected}`,
+        'verify-failed',
+      ),
+    }
+  }
+  // manifest sha1 capture is a Wave 5 CLI concern (it owns the raw yaml bytes);
+  // T3.1 records empty-string placeholder per state.ts schema.
+  await updateInstalled(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
+  return { ok: true, backupId: bk.backupId, appliedFiles: [] }
+}
