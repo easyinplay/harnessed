@@ -36,6 +36,8 @@ metadata:
 spec:
   type: cli-npm
   component_type: cli-binary
+  category: search
+  install_type: npm
   install:
     method: npm-cli
     cmd: npm install -g secfix
@@ -85,7 +87,7 @@ describe('validateManifestFile — security (B1 shell-escape pre-Ajv gate)', () 
       expect(e?.path).toContain('install')
       expect(e?.path).toContain('cmd')
       expect(e?.message).toMatch(/\$\(/)
-      expect(e?.line).toBe(18)
+      expect(e?.line).toBe(20)
     }
   })
 
@@ -99,7 +101,7 @@ describe('validateManifestFile — security (B1 shell-escape pre-Ajv gate)', () 
       const e = result.errors[0]
       expect(e?.keyword).toBe('security')
       expect(e?.message).toMatch(/\$\{/)
-      expect(e?.line).toBe(18)
+      expect(e?.line).toBe(20)
     }
   })
 
@@ -163,13 +165,13 @@ describe('validateManifestFile — security (B1 shell-escape pre-Ajv gate)', () 
     expect(result.ok).toBe(true)
   })
 
-  it('reports correct line number for install.cmd violation (line 18 in BASE)', () => {
+  it('reports correct line number for install.cmd violation (line 20 in BASE)', () => {
     const yaml = withInstallCmd('echo $(date)')
     const result = validateManifestFile(yaml, 'sec9.yaml')
     expect(result.ok).toBe(false)
     if (!result.ok) {
       const e = result.errors[0]
-      expect(e?.line).toBe(18)
+      expect(e?.line).toBe(20)
       expect(e?.file).toBe('sec9.yaml')
     }
   })

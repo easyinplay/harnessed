@@ -30,6 +30,8 @@ metadata:
 spec:
   type: cc-skill-pack
   component_type: command
+  category: engineering
+  install_type: git
   install:
     method: git-clone-with-setup
     cmd: "git clone https://example.com/x ~/.claude/skills/gitref"

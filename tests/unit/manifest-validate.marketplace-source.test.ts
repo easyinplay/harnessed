@@ -25,6 +25,8 @@ metadata:
 spec:
   type: cc-skill-pack
   component_type: command
+  category: engineering
+  install_type: skill
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin marketplace add example/market && /plugin install market@market"
@@ -63,6 +65,8 @@ metadata:
 spec:
   type: cli-npm
   component_type: command
+  category: search
+  install_type: npm
   install:
     method: npm-cli
     cmd: "npx --yes example-cli@1.0.0"

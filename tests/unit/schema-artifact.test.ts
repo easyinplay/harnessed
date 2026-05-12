@@ -48,6 +48,8 @@ const VALID_MANIFEST = {
   spec: {
     type: 'cli-npm',
     component_type: 'cli-binary',
+    category: 'search',
+    install_type: 'npm',
     install: {
       method: 'npm-cli',
       cmd: 'npm install -g ctx7@^1.0.0',

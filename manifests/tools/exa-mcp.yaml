@@ -14,6 +14,8 @@ metadata:
 spec:
   type: mcp-npm
   component_type: mcp-tool
+  category: search
+  install_type: mcp
   install:
     method: mcp-stdio-add
     cmd: "claude mcp add --scope project --transport stdio exa-mcp -- npx --yes exa-mcp-server@^3.2.0"

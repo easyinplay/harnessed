@@ -106,7 +106,9 @@
         "uninstall",
         "upstream_health",
         "signed_by",
-        "platforms"
+        "platforms",
+        "category",
+        "install_type"
       ],
       "properties": {
         "type": {
@@ -616,6 +618,93 @@
           "type": "array",
           "items": {
             "type": "string"
+          }
+        },
+        "category": {
+          "anyOf": [
+            {
+              "const": "meta",
+              "type": "string"
+            },
+            {
+              "const": "engineering",
+              "type": "string"
+            },
+            {
+              "const": "design",
+              "type": "string"
+            },
+            {
+              "const": "content",
+              "type": "string"
+            },
+            {
+              "const": "testing",
+              "type": "string"
+            },
+            {
+              "const": "search",
+              "type": "string"
+            }
+          ]
+        },
+        "install_type": {
+          "anyOf": [
+            {
+              "const": "skill",
+              "type": "string"
+            },
+            {
+              "const": "mcp",
+              "type": "string"
+            },
+            {
+              "const": "npm",
+              "type": "string"
+            },
+            {
+              "const": "git",
+              "type": "string"
+            }
+          ]
+        },
+        "decision_rules": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "trigger": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "default_expert": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "arbitration_rule": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "override_signals": {
+              "type": "array",
+              "items": {
+                "additionalProperties": false,
+                "type": "object",
+                "required": [
+                  "phrase",
+                  "use"
+                ],
+                "properties": {
+                  "phrase": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "use": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                }
+              }
+            }
           }
         }
       }

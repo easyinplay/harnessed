@@ -18,6 +18,8 @@ metadata:
 spec:
   type: cc-skill-pack
   component_type: command
+  category: engineering
+  install_type: skill
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin marketplace add OthmanAdi/planning-with-files && /plugin install planning-with-files@planning-with-files"

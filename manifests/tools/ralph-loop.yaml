@@ -22,6 +22,8 @@ metadata:
 spec:
   type: cc-plugin
   component_type: command
+  category: engineering
+  install_type: skill
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin install ralph-loop@claude-plugins-official"

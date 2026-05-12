@@ -14,6 +14,8 @@ metadata:
 spec:
   type: cli-npm
   component_type: command
+  category: engineering
+  install_type: npm
   install:
     method: npm-cli
     cmd: "npx --yes get-shit-done-cc@^1.41.0 install"

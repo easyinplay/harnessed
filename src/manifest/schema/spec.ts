@@ -1,7 +1,8 @@
 // spec sub-schema per ADR 0001 § Top-level structure.
 // Fields: type, component_type, install (discriminated union), verify, uninstall,
 //         upstream_health, signed_by, signature?, platforms,
-//         tested_with_versions?, mutually_exclusive_with?.
+//         tested_with_versions?, mutually_exclusive_with?,
+//         category, install_type, decision_rules? (ADR 0007 errata — phase 1.3 加).
 
 import { Type } from '@sinclair/typebox'
 import { type Install, InstallSchema } from './installMethods/index.js'
@@ -76,6 +77,46 @@ const TestedWithVersions = Type.Object(
   { additionalProperties: false },
 )
 
+// ADR 0007 errata — categorization schema (phase 1.3 T2.1 加 3 字段).
+// `category` (必填, 6 enum) + `install_type` (必填, 4 enum, 与 install.method 1:N 闭合) +
+// `decision_rules` (optional, per-manifest decision hint — 全局 rule-set 在
+// .planning/decision_rules.yaml T3.1, schema 完全独立).
+const Category = Type.Union([
+  Type.Literal('meta'),
+  Type.Literal('engineering'),
+  Type.Literal('design'),
+  Type.Literal('content'),
+  Type.Literal('testing'),
+  Type.Literal('search'),
+])
+
+const InstallType = Type.Union([
+  Type.Literal('skill'),
+  Type.Literal('mcp'),
+  Type.Literal('npm'),
+  Type.Literal('git'),
+])
+
+const DecisionRules = Type.Object(
+  {
+    trigger: Type.Optional(Type.String({ minLength: 1 })),
+    default_expert: Type.Optional(Type.String({ minLength: 1 })),
+    arbitration_rule: Type.Optional(Type.String({ minLength: 1 })),
+    override_signals: Type.Optional(
+      Type.Array(
+        Type.Object(
+          {
+            phrase: Type.String({ minLength: 1 }),
+            use: Type.String({ minLength: 1 }),
+          },
+          { additionalProperties: false },
+        ),
+      ),
+    ),
+  },
+  { additionalProperties: false },
+)
+
 export const SpecSchema = Type.Object(
   {
     type: TypeEnum,
@@ -89,6 +130,9 @@ export const SpecSchema = Type.Object(
     platforms: Type.Array(Platform, { minItems: 1, uniqueItems: true }),
     tested_with_versions: Type.Optional(TestedWithVersions),
     mutually_exclusive_with: Type.Optional(Type.Array(Type.String())),
+    category: Category,
+    install_type: InstallType,
+    decision_rules: Type.Optional(DecisionRules),
   },
   { additionalProperties: false },
 )

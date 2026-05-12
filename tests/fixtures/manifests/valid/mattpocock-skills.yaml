@@ -14,6 +14,8 @@ metadata:
 spec:
   type: cc-skill-pack
   component_type: command
+  category: engineering
+  install_type: skill
   install:
     method: npx-skill-installer
     cmd: "npx --yes skills@latest add mattpocock/skills"

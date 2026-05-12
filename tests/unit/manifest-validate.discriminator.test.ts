@@ -129,6 +129,8 @@ metadata:
 spec:
   type: ${c.type}
   component_type: ${c.componentType}
+  category: engineering
+  install_type: skill
   install:
 ${c.install}
   verify:

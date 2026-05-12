@@ -14,6 +14,8 @@ metadata:
 spec:
   type: cc-plugin
   component_type: command
+  category: engineering
+  install_type: skill
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin marketplace add obra/superpowers-marketplace && /plugin install superpowers@superpowers-marketplace"
