@@ -60,5 +60,27 @@ export type InstallResult =
 
 export type Installer = (ctx: InstallContext) => Promise<InstallResult>
 
+// DiffPlan — input shape for lib/diff.ts renderDiff() and lib/backup.ts
+// backup(). Per ADR 0004 contract 2 (dry-run plan must be unified-diff
+// renderable) + contract 3 (every modified file must be backed up).
+//
+// `scope` distinguishes home-dir writes (e.g. ~/.claude.json) from project-
+// dir writes (e.g. <project>/.mcp.json) so backup.ts can mirror them under
+// .harnessed-backup/<id>/HOME/ vs .harnessed-backup/<id>/PROJECT/.
+//
+// `oldText` may be empty (file does not yet exist — pure-create); `newText`
+// may be empty (file is being deleted — pure-delete). Both empty = no-op
+// and should not appear in plan.files[].
+export interface DiffFile {
+  target: string // absolute path on disk that will be written
+  scope: 'HOME' | 'PROJECT'
+  oldText: string
+  newText: string
+}
+
+export interface DiffPlan {
+  files: DiffFile[]
+}
+
 // Re-export Manifest so downstream files only need this single import path.
 export type { Manifest }
