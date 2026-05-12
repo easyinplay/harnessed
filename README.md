@@ -19,19 +19,6 @@
 - **包管理器思维**：`harnessed install <workflow>` 自动解析依赖图、`doctor` 健康检查
 - **强意见 vs all-in-one**：用户面对 `/harnessed:*` 统一入口，不需学每家上游术语
 
-## Quick Start (placeholder — 实际 install 由 v0.1 phase 1.2 实装)
-
-```bash
-# 一次性 setup（v0.1 phase 1.2 起可用）
-npx harnessed@latest setup
-
-# 装 research workflow（含 ctx7 + Tavily MCP + Exa MCP）
-harnessed install research
-
-# 检测环境
-harnessed doctor
-```
-
 ## Repo Structure
 
 ```
@@ -50,9 +37,80 @@ harnessed/
 
 ## v0.1.0-alpha.1 状态
 
-- **Phase 1.1 schema frozen** ✅ (manifest schema v1 + 10 上游 dry-run + 71 tests + bench 21.7ms)
-- **Acceptance bar 7/8** ✅ — A4 (cross-OS CI) ⏳ pending first push
-- **Next**：phase 1.2（cli-npm + mcp-stdio installer + cross-OS CI 实测）
+- **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + 89 tests + bench 21.7ms + B1 shell-escape security gate + 3 ADRs）
+- **Acceptance bar 8/8** ✅（CI run 25704797536 三平台全绿 + A7 自动守恒）
+- **Next**：phase 1.2（cli-npm + mcp-stdio installer + setup/doctor 命令骨架）
+
+## 使用流程（phase 1.2 实装后启用）
+
+harnessed 是 **CLI + CC skill 混合体**——CLI 管装/检/恢复，skill 管编排：
+
+```bash
+# 1. 一次性 setup（装 workflow skills 到 ~/.claude/skills/、配置 hooks）
+npx harnessed@latest setup
+
+# 2. 装某个 workflow 用到的所有上游 plugin（一行装齐 4-5 个上游）
+harnessed install plan-feature
+# → 自动装 gstack + superpowers + GSD + planning-with-files
+
+# 3. 跑 workflow（在 Claude Code 内输入 slash command）
+/harnessed:plan-feature "新功能 X"
+# → 调度 5 phase: gstack governance → superpowers brainstorm → GSD discuss/plan → planning-with-files persist
+# → 暂停点等用户 approve（CEO veto / final task_plan lock）
+
+# 4. 中断后恢复
+harnessed status   # 看当前 phase
+harnessed resume   # 从最近 checkpoint 继续
+
+# 5. 健康检查
+harnessed doctor   # 检测上游 stale / Windows ACL / 配置漂移
+```
+
+## FAQ — 常见疑问
+
+**Q1. 装了 harnessed，还需要装 superpowers/gstack/GSD 等上游 plugin 吗？**
+
+需要，但**用户感知 = 一行命令**：`harnessed install <workflow>` 自动解析 manifest 依赖图、装齐所有上游。类比 `brew install <formula>` 装全套依赖——你不需要单独 `brew install` 每个依赖项。
+
+**Q2. 为什么不把 superpowers/gstack 的相关 skill 直接 vendor 进 harnessed 仓库？**
+
+4 条理由：
+
+1. **差异化哲学**（[ADR 0001](./docs/adr/0001-manifest-schema-v1.md) + PROJECT-SPEC § 6 wedge）：harnessed 是「装配主义包管理器」对位 ECC 的「all-in-one 自建派」。vendor = 失去 wedge → 沦为又一个 plugin pack
+2. **License + attribution 噩梦**：vendor 4-5 个主动维护的上游 = 复杂 license 拼盘 + 违反 [vendor/ENTRY-CRITERIA.md](./vendor/ENTRY-CRITERIA.md)（要求"上游已停摆"才允许 vendor）
+3. **上游升级反向**：当前 manifest 描述 → 上游升级用户重 install 即得新版；vendor 后必须手动 sync code → 永远落后
+4. **Bus factor 1**：单 maintainer 维护 vendor 4-5 上游 = 加速 burnout（Avelino 论文实证 OSS 单 maintainer 年掉队率 36%）
+
+**Q3. gstack 的 `/office-hours`、GSD 的 `/gsd-discuss-phase`、superpowers 的 brainstorming 看起来都是"plan/discuss"类，是不是重叠？**
+
+不是。它们是**三层栈的不同阶段**（PROJECT-SPEC § 10 phases schema 显式编排）：
+
+| 阶段 | 上游 | 职责 |
+|------|------|------|
+| Governance | gstack | 多角色决策关卡（CEO/EM/Designer/Paranoid Engineer） |
+| Brainstorming | superpowers | 子任务设计澄清、方案对比 |
+| Orchestration | GSD | 高层 phase 任务图 + 依赖分析 |
+| Persistence | planning-with-files | 持久化 task_plan / progress / findings 到 markdown |
+
+`/harnessed:plan-feature` 把这 4 个阶段串起来——每个阶段做不同事，输出喂给下一阶段。**没有合并**。
+
+**Q4. workflow phase 之间是自动跑还是等用户？**
+
+看 `workflows/<name>/SKILL.md` frontmatter 的 `pause` 字段：
+
+- `pause: human_review` → 阻塞等用户 approve（governance gate / final lock 用，如 plan-feature 的 phase 01 + 05）
+- 无 `pause` → 自动 chain 到下一 phase（中间步骤）
+
+每个 phase 输出写到 `.harnessed/checkpoints/`，session 中断后 `harnessed resume` 从最近 checkpoint 继续。
+
+**Q5. harnessed 自己是 CC plugin 吗？**
+
+混合体：
+
+- `npx harnessed@latest setup` 跑的是 **Node.js CLI**（`bin/harnessed`）
+- setup 装的 **workflow skills**（markdown）进 `~/.claude/skills/`，由 Claude Code 在运行时加载
+- `/harnessed:*` 是 CC 内的 slash command，触发 skill 执行
+- CLI 和 CC skill 共享 `.harnessed/checkpoints/` 状态目录
 
 ## 文档导航
 
@@ -62,6 +120,7 @@ harnessed/
 - [.planning/ROADMAP.md](./.planning/ROADMAP.md) — 4 milestones × 3-5 phases 路线图
 - [.planning/STATE.md](./.planning/STATE.md) — 跨 session 项目记忆 SSOT
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — 贡献指南（含 Windows corepack ACL workaround）
+- [SECURITY.md](./SECURITY.md) — 漏洞披露通道
 
 ## Sponsor / Co-maintainer
 
