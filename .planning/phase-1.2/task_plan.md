@@ -60,7 +60,10 @@
   - [ ] ADR 0005 文件 ≥ 60 行
   - [ ] `docs/adr/README.md` 含 0005 链接
   - [ ] `git diff adr-0001-accepted -- docs/adr/0001-*.md` 输出空（A7 守恒）
-- **决策来源**：GA-1 § Recommendation + ASSUMPTIONS A8 + phase-1.1 ADR 0003 errata 风格
+  - [ ] **[H5 sister review governance hardening]** ADR 0005 commit 后立即 `git tag adr-0005-accepted HEAD` + 追溯打 `git tag adr-0003-accepted ffc1ff1` (ADR 0003 commit) + `git tag adr-0004-accepted 18081d4` (ADR 0004 commit) — 共 3 个新 tag
+  - [ ] **[H5]** 改 `.github/workflows/ci.yml` A7 step 由 hardcoded `git diff adr-0001-accepted -- docs/adr/0001-*.md docs/adr/0002-*.md` 升级为 iterate 全部 5 baseline tag (`for n in 0001 0002 0003 0004 0005; do git diff adr-$n-accepted -- "docs/adr/$n-*.md"; done` — 任一非空 diff 即 fail)
+  - [ ] **[H5]** `git tag -l 'adr-*-accepted' | wc -l` ≥ 5
+- **决策来源**：GA-1 § Recommendation + ASSUMPTIONS A8 + phase-1.1 ADR 0003 errata 风格 + sister review H5
 
 ---
 
@@ -134,6 +137,22 @@
   - [ ] tests 89 → ≥ 92（+3 至少）
   - [ ] 每 test assert path-substring + keyword（`required` / `enum` / `pattern` / `additionalProperties`）
 - **决策来源**：Pattern J + GA-1 § "Phase 1.1 manifest fix needed" 校验需求
+
+---
+
+#### T1.6 [M2 sister review] Audit GSD manifest — 扩大 npm-cli installer 覆盖
+- [ ] **目标**：确认 `manifests/skill-packs/gsd.yaml` type=cli-npm × method=npm-cli + cmd 是 `npx get-shit-done-cc@latest`；如确认 → acceptance bar B2c' 达成（GSD 复用 npm-cli installer 扩大覆盖到 4/10 上游）
+- **文件**：`/d/GitCode/harnessed/.planning/phase-1.2/findings.md`（新建 — 记录 audit 结果）
+- **步骤**：
+  1. `cat manifests/skill-packs/gsd.yaml` 读 manifest
+  2. assert: `spec.type == 'cli-npm'` + `spec.install.method == 'npm-cli'` + `spec.install.cmd` 含 `npx get-shit-done-cc`
+  3. 如全部正确 → 在 `.planning/phase-1.2/findings.md` 记录 "M2 audit: GSD = cli-npm × npm-cli ✅ 复用 T3.1 npmCli installer"
+  4. 如 GSD 实际是 cc-plugin（type/method 不匹配） → 反哺路径：写 finding F23+ + 推 phase 2.1（与 ralph-loop 同 batch）+ acceptance B2c' 不达成
+- **验收**：
+  - [ ] M2 audit 记录在 `.planning/phase-1.2/findings.md`
+  - [ ] 如 GSD = cli-npm × npm-cli → T5.5 CI step 加 `node ./dist/cli.mjs install gsd --dry-run --non-interactive`（H4 sister review fix 中已 plan 该命令）
+  - [ ] 不动 ADR 0001 main body（A7 守恒）
+- **决策来源**：sister review M2
 
 ---
 
@@ -359,8 +378,12 @@
     3. planDryRun(ctx) → 计算 will-modify（global = npm prefix；npx = ephemeral cache 仅）
     4. console.log(renderDiff(plan))（注：npx ephemeral 时 plan 为空 → print "no persistent file changes"）
     5. confirmAt(level, ctx)：
-       - level=L4 + ctx.opts.system=false → **降级 L1**：print "global install requires --system; falling back to npx ephemeral. Use 'harnessed install <name> --system' for permanent global install." + 改 cmd 为 `npx --yes <pkg>@<version>` + level=L1
-       - 重跑 confirmAt(L1, ctx) → 直接 proceed
+       - level=L4 + ctx.opts.system=false → **prompt 三选一**（H3 sister review fix — 不再 silent decision masking）：
+         - (a) "Retry with --system flag" → abort with exit 2 + clear message "rerun with: harnessed install <name> --system"
+         - (b) "Downgrade to L1 npx ephemeral install" → 改 cmd 为 `npx --yes <pkg>@<version>` + level=L1 + 重跑 confirmAt(L1, ctx)
+         - (c) "Abort install" → exit 2 (aborted, not error)
+       - 默认选项 (c) abort（最安全）；用户必须显式选 (a) 或 (b)
+       - 该 prompt 复用 lib/confirm.ts @clack/prompts select widget
     6. backup(plan)（npx 时 plan 为空 → backupId 空但 .harnessed-backup/<ts>/metadata.json 仍记录）
     7. spawnCmd(ctx, cmd, args) — Win 自动注入 `cmd /c`（lib/spawn 已封装）
     8. verify(manifest.spec.verify) — 跑 verify.cmd
@@ -388,6 +411,7 @@
     5. confirmAt(L3, ctx) → 失败 return aborted
     6. backup(plan) — 备份 .mcp.json
     7. **不调通用 spawn.ts 路径** — 直接 `spawnSync('claude', ['mcp', 'add', '--scope', 'project', '--transport', 'stdio', name, '--', 'npx', '--yes', `${pkg}@${version}`])`
+       **[H2 defense in depth — sister review]** spawn 之前 inline `import { detectShellEscape } from '../manifest/security.js'`，对每个 args[i] 字符串二次 check（即使 mcp-stdio bypass 通用 spawn.ts 仍走 B1 security gate）。如检测到 `$(...)` / `${...}` / backtick / 危险 yaml tag → return InstallResult ok=false + InstallError keyword='security-gate-bypass' + 不进入 spawn。
     8. verify — 用 `claude mcp list` pipe `grep -q <name>` 查 exit code（**不解析 stdout** — C2 mitigation）
     9. updateInstalled
     10. return InstallResult
@@ -460,6 +484,9 @@
   - 单一导出 `registerInstall(program: Command)`
   - 内部：
     - `program.command('install <name>') ... .option('--apply') .option('--dry-run') .option('--system') .option('--non-interactive') .option('--full-diff') .option('--no-color')`
+    - **[H1 sister review fix — pre-action flag validation]**：进入 action 前先校验 flag 组合：
+      - `opts.nonInteractive && !opts.apply && !opts.dryRun` → console.error("specify --apply or --dry-run explicitly in non-interactive mode") + process.exit(2)
+      - 防 prompt 阻塞死锁（@clack/prompts 在 stdin 不可交互时 hang）
     - action(name, opts) → 加载 manifest（fs.readFile + validateManifestFile from phase 1.1）→ runInstall → narrow result → exit code mapping：
       - `result.ok === true` → process.exit(0)
       - `result.aborted === true` → process.exit(2)（aborted 不算 error）
@@ -508,12 +535,13 @@
 
 ---
 
-#### T4.4 写 src/cli/rollback.ts + status.ts + backup-list.ts
-- [ ] **目标**：3 子命令 — rollback / status / backup list；CRLF/LF preservation per metadata.eol
-- **文件**（3 文件）：
+#### T4.4 写 src/cli/rollback.ts + status.ts + backup-list.ts + gc.ts
+- [ ] **目标**：4 子命令 — rollback / status / backup list / **gc**（M1 sister review fix — 与 ADR 0004 § Consequences Negative #3 一致）；CRLF/LF preservation per metadata.eol
+- **文件**（4 文件）：
   - `/d/GitCode/harnessed/src/cli/rollback.ts`（~50 行）
   - `/d/GitCode/harnessed/src/cli/status.ts`（~30 行）
   - `/d/GitCode/harnessed/src/cli/backup-list.ts`（~25 行）
+  - `/d/GitCode/harnessed/src/cli/gc.ts`（~30 行 — M1 sister review fix）
 - **内容大纲**：
   - **rollback.ts**：
     - 顶部 IMPL NOTE：引用 C3 CRLF eol preservation
@@ -522,10 +550,17 @@
     - `harnessed status` → 读 `.harnessed/state.json` → print installed[] 列表 + 版本 + 时间；ADR 0004 契约 6 partial install 状态行（如有）
   - **backup-list.ts**：
     - `harnessed backup list` → 列出 `.harnessed-backup/*/metadata.json` 摘要（ts + installer + manifest）
+  - **gc.ts** (M1 sister review fix — ADR 0004 § Consequences Negative #3 mitigation)：
+    - 顶部 IMPL NOTE：引用 ADR 0004 § Consequences + sister review M1
+    - `harnessed gc --older-than <duration>` → glob `.harnessed-backup/*/metadata.json` → filter ts < (now - duration) → dry-run 默认（list candidates）；`--apply` 真删
+    - flags: `--older-than 30d` (default) / `--keep-last <N>` / `--apply` / `--dry-run`（与 install 风格一致）
+    - print 总释放空间（du -ks 概数）+ 每个 deleted dir 的 ts + manifest name
 - **验收**：
   - [ ] `corepack pnpm typecheck && corepack pnpm lint` 0 错误
   - [ ] 手工测试：rollback 后文件 EOL 保持原状（diff 0 行差异）
-- **决策来源**：ADR 0004 § 3 + ASSUMPTIONS C3 + Pattern C + Pattern B + Pattern H
+  - [ ] **[M1 sister review]** `harnessed gc --older-than 30d --dry-run` 列出 ≥ 30d backup（fixture 模拟）；`--apply` 真删后 `harnessed backup list` 不再含 deleted ts
+  - [ ] **[M1]** ADR 0004 § Consequences Negative #3 与 PLAN T4.4 一致（gc 在 phase 1.2 ship 而非 phase 2.4）
+- **决策来源**：ADR 0004 § 3 + § Consequences Negative #3 + ASSUMPTIONS C3 + Pattern C + Pattern B + Pattern H + sister review M1
 
 ---
 
@@ -633,26 +668,57 @@
 
 ---
 
-#### T5.5 扩展 .github/workflows/ci.yml — installer integration step
-- [ ] **目标**：3 平台 CI 加 installer integration step（real spawn ctx7 + tavily/exa **--dry-run only**；tmpdir 隔离 — C6 mitigation）
-- **文件**：`/d/GitCode/harnessed/.github/workflows/ci.yml`
+#### T5.5 扩展 .github/workflows/ci.yml — installer integration step（H4 sister review fix — 双层验证）
+- [ ] **目标**：3 平台 CI 加 installer integration step **双层验证（H4 sister review fix）**: (1) **mock claude CLI shim** 验证 spawn invocation args 正确（CI runner 默认未装 claude CLI，避免 B2 死锁）；(2) real spawn ctx7 + GSD（npm-cli 不依赖 claude CLI） **--dry-run only**；tmpdir 隔离 — C6 mitigation
+- **文件**：
+  - `/d/GitCode/harnessed/.github/workflows/ci.yml`（追加 step）
+  - `/d/GitCode/harnessed/scripts/ci/mock-claude-cli.sh`（新文件 — H4 mock shim）
+- **mock shim 内容**（`scripts/ci/mock-claude-cli.sh`，~25 行）：
+  ```bash
+  #!/usr/bin/env bash
+  # H4 sister review: CI mock claude CLI shim — verify harnessed spawn invocation args
+  # without depending on real claude CLI install. Echos args to stderr for assertion;
+  # emits canned responses for `claude mcp list / add` subcommands.
+  echo "[mock-claude] $*" >&2
+  case "$1 $2" in
+    "mcp list") echo "tavily-mcp"; echo "exa-mcp"; exit 0 ;;
+    "mcp add") exit 0 ;;
+    "mcp remove") exit 0 ;;
+    *) echo "[mock-claude] unsupported subcommand: $1 $2" >&2; exit 1 ;;
+  esac
+  ```
 - **追加 step**（在 `corepack pnpm test` 之后）：
   ```yaml
-  - name: Installer integration (real spawn, dry-run only)
+  - name: Installer integration (H4 dual-layer — mock shim + real npm-cli dry-run)
     env:
       npm_config_prefix: ${{ runner.temp }}/npm-prefix
+    shell: bash
     run: |
-      mkdir -p $npm_config_prefix
+      mkdir -p "$npm_config_prefix"
+      # H4 layer 1: mock claude CLI shim - PATH-injected
+      chmod +x scripts/ci/mock-claude-cli.sh
+      mkdir -p "${{ runner.temp }}/mock-bin"
+      cp scripts/ci/mock-claude-cli.sh "${{ runner.temp }}/mock-bin/claude"
+      export PATH="${{ runner.temp }}/mock-bin:$PATH"
+      
       corepack pnpm build
-      node ./dist/cli.mjs install ctx7 --dry-run --non-interactive
-      node ./dist/cli.mjs install tavily-mcp --dry-run --non-interactive
+      
+      # H4 layer 1: dry-run with mock shim - verifies invocation args correctness
+      node ./dist/cli.mjs install tavily-mcp --dry-run --non-interactive 2>&1 | tee mock-tavily.log
+      grep -q "claude mcp add --scope project --transport stdio tavily-mcp" mock-tavily.log
       node ./dist/cli.mjs install exa-mcp --dry-run --non-interactive
+      
+      # H4 layer 2: real spawn ctx7 + GSD (npm-cli, no claude CLI dep) - dry-run only
+      node ./dist/cli.mjs install ctx7 --dry-run --non-interactive
+      node ./dist/cli.mjs install gsd --dry-run --non-interactive  # M2 sister review
   ```
 - **验收**：
   - [ ] CI 三平台 (ubuntu/macos/windows × Node 22) installer integration step 全 ✅
-  - [ ] B5' acceptance bar 达成（A4 沿袭）
+  - [ ] **[H4 layer 1]** mock shim grep 验证 `claude mcp add --scope project --transport stdio tavily-mcp` args 完整正确（无依赖真 claude CLI）
+  - [ ] **[H4 layer 2]** real ctx7 + GSD dry-run 跑通（npm-cli installer 复用 — M2 扩大覆盖）
+  - [ ] B5' acceptance bar 达成（A4 沿袭）；B2b' + B2c' 也达成
   - [ ] tmpdir 隔离不污染 CI runner 全局环境
-- **决策来源**：A5 + ASSUMPTIONS C6 + R5.1
+- **决策来源**：A5 + ASSUMPTIONS C6 + R5.1 + sister review H4 + sister review M2
 
 ---
 

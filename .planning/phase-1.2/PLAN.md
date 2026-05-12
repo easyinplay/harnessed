@@ -70,12 +70,13 @@ acceptance_high_level:
 | Task ID | 名称 | 输出 | Analog | 决策来源 |
 |---------|------|------|--------|---------|
 | **T1.1** | 加 3 个 deferred deps（picocolors / diff / @clack/prompts）+ pnpm install | `package.json` deps 块 + `pnpm-lock.yaml` | phase-1.1 F5 deferred deps add | GA-2 § B + ADR 0002 |
-| **T1.2** | 起草 ADR 0005 errata（marketplace_source schema 加 optional 字段）+ accept | `docs/adr/0005-marketplace-source-schema-errata.md` + `docs/adr/README.md` index 更新 | phase-1.1 ADR 0003 errata 风格 | GA-1 § "Phase 1.1 manifest fix needed" + A7 守恒（不动 ADR 0001 main body） |
+| **T1.2** | 起草 ADR 0005 errata（marketplace_source schema 加 optional 字段）+ accept；**[H5 governance hardening — sister review]** ADR 0005 accepted 后立即 `git tag adr-0005-accepted` + 追溯打 `adr-0003-accepted` + `adr-0004-accepted` 双 tag + 改 `.github/workflows/ci.yml` A7 step iterate 全部 5 个 baseline tag 守恒 ADR 0001-0005 main body | `docs/adr/0005-*.md` + `docs/adr/README.md` index + 3 git tags + ci.yml A7 step extend | phase-1.1 ADR 0003 errata 风格 + sister review H5 | GA-1 § "Phase 1.1 manifest fix needed" + A7 守恒（不动 ADR 0001 main body）+ sister review H5 |
+| **T1.6** | **[M2 sister review]** Audit `manifests/skill-packs/gsd.yaml` 确认 type=cli-npm × method=npm-cli + cmd 是 `npx get-shit-done-cc@latest`；如确认 → acceptance bar 加 B2c'（GSD 复用 npm-cli installer 扩大覆盖到 4/10 上游） | manifest audit report + 可能 acceptance bar update | phase-1.1 manifest 实证模式 + sister review M2 | sister review M2 |
 | **T1.3** | schema 实装：`ccPluginMarketplace.ts` 加 optional `marketplace_source: { source: 'github', repo: pattern }` 字段（**纯 schema 层**，phase 1.2 不实装 cc-plugin-marketplace installer 代码 — 仅修字段供 phase 2.1 消费）+ 重新 build:schema | `src/manifest/schema/installMethods/ccPluginMarketplace.ts` + `schemas/manifest.v1.schema.json` 重新生成 | phase-1.1 T3.4 schema pattern | ADR 0005 errata + GA-1 § "schema-extension and manifest-fix coupled commit" |
 | **T1.4** | 修复 `manifests/skill-packs/planning-with-files.yaml` 加 `marketplace_source: { source: github, repo: "OthmanAdi/planning-with-files" }` + 同步 fixture | manifest + fixture | phase-1.1.1 H4 manifest+fixture 同步 | GA-1 § "planning-with-files: NOT in claude-plugins-official" |
 | **T1.5** | 加 schema unit test（≥ 3 tests：official 上游 omit / OthmanAdi 写正确 / source: 'gitlab' 非 github reject）| `tests/unit/manifest-validate.marketplace-source.test.ts` | phase-1.1 manifest-validate.discriminator.test.ts BASE template + with* | Pattern J + GA-1 |
 
-**Wave 0 验收**: pnpm typecheck/lint/test/build 全绿；ADR 0001 main body 0 字节修改（A7 验收）；planning-with-files manifest 通过 strict 校验；deps 已装；tests 89 → ≥ 92。
+**Wave 0 验收**: pnpm typecheck/lint/test/build 全绿；ADR 0001 main body 0 字节修改（A7 验收）；planning-with-files manifest 通过 strict 校验；deps 已装；tests 89 → ≥ 92；**[H5 sister review]** `git tag -l 'adr-*-accepted' | wc -l` ≥ 5（0001-0005 全 tag）+ ci.yml A7 step iterate 全部 5 baseline tag。
 
 ---
 
@@ -118,8 +119,8 @@ acceptance_high_level:
 
 | Task ID | 名称 | 输出 | Analog | 决策来源 |
 |---------|------|------|--------|---------|
-| **T3.1** | 写 `src/installers/npmCli.ts` — Level: L4 if global / L1 if npx fallback；调 `preflight → planDryRun → renderDiff → confirmAt → backup → spawnCmd → verify`；用户拒 L4 → 自动降级 L1 + 显式告知（B3 候选 1）| ~50 行 | C + 调用 lib/* helpers | ADR 0004 契约 1+2+3+4+6 + ASSUMPTIONS B3 + GA-2 骨架 |
-| **T3.2** | 写 `src/installers/mcpStdioAdd.ts` — Level: L3；**不调通用 spawn.ts**，直接 spawn `claude mcp add --scope project --transport stdio NAME -- npx ...`；idempotent_check 走 `claude mcp list \| grep -q NAME`（**仅 exit code，不解析 stdout** — C2 mitigation）| ~50 行 | C + Pattern H (IMPL NOTE: CC #54803 user-scope bug) | ADR 0004 契约 5 + ASSUMPTIONS C2 + R3.2 |
+| **T3.1** | 写 `src/installers/npmCli.ts` — Level: L4 if global / L1 if npx fallback；调 `preflight → planDryRun → renderDiff → confirmAt → backup → spawnCmd → verify`；**用户拒 L4 → prompt 三选一: (a) retry L4 / (b) downgrade to L1 npx / (c) abort**（不再 silent decision masking — H3 sister review fix）| ~60 行 | C + 调用 lib/* helpers | ADR 0004 契约 1+2+3+4+6 + ASSUMPTIONS B3 + GA-2 骨架 + sister review H3 |
+| **T3.2** | 写 `src/installers/mcpStdioAdd.ts` — Level: L3；**不调通用 spawn.ts**，直接 spawn `claude mcp add --scope project --transport stdio NAME -- npx ...`；**[H2 defense in depth]** spawn 前 inline `import { detectShellEscape } from '../manifest/security.js'` 对 args[] 二次 check（mcp-stdio bypass 通用 spawn.ts 仍走 B1 security gate）；idempotent_check 走 `claude mcp list \| grep -q NAME`（**仅 exit code，不解析 stdout** — C2 mitigation）| ~55 行 | C + Pattern H (IMPL NOTE: CC #54803 user-scope bug + H2 defense in depth) | ADR 0004 契约 5 + ASSUMPTIONS C2 + R3.2 + sister review H2 |
 | **T3.3** | 写 `src/installers/index.ts` — 2-method dispatch table + `runInstall(manifest, opts)` orchestrator；其余 4 method `() => { throw new Error('not yet implemented in phase 1.2 — see phase 2.1') }` placeholder | ~40 行 | G (barrel) + GA-2 骨架 | PATTERNS § 二 + ASSUMPTIONS B6 |
 
 **Wave 4 验收**: 2 method 文件 + dispatch index；`runInstall(manifest, { dryRun: true })` 对 ctx7 fixture 不报错（mock spawn）；其余 4 method 调用抛 explicit error。
@@ -130,10 +131,10 @@ acceptance_high_level:
 
 | Task ID | 名称 | 输出 | Analog | 决策来源 |
 |---------|------|------|--------|---------|
-| **T4.1** | 写 `src/cli/install.ts` — commander subcommand + flags `--apply` `--dry-run` `--system` `--non-interactive` `--full-diff` `--no-color`；narrow InstallResult → exit code (ok=0 / aborted=2 / error=1) | ~80 行 | C + Pattern H (IMPL NOTE: ADR 0004 双 flag --non-interactive --apply) | ADR 0004 契约 1 + GA-2 § B.1 |
+| **T4.1** | 写 `src/cli/install.ts` — commander subcommand + flags `--apply` `--dry-run` `--system` `--non-interactive` `--full-diff` `--no-color`；narrow InstallResult → exit code (ok=0 / aborted=2 / error=1)；**`--non-interactive` 单独使用（无 `--apply`/`--dry-run`）→ 立即 exit 2 + error message `'specify --apply or --dry-run explicitly in non-interactive mode'`**（H1 防 prompt 阻塞死锁 — sister review fix）| ~85 行 | C + Pattern H (IMPL NOTE: ADR 0004 双 flag --non-interactive --apply + H1 fail-fast) | ADR 0004 契约 1 + GA-2 § B.1 + sister review H1 |
 | **T4.2** | 写 `src/cli/doctor.ts` — 4 项最小 check：(a) Node ≥ 22；(b) MCP scope（解析 .mcp.json 存在 & 不在 ~/.claude.json）；(c) jq 存在；(d) Win bash 路径（Git Bash vs WSL — 用 `spawnSync('bash', ['-c', 'echo $WSL_DISTRO_NAME'])` 判别 — C4 mitigation）| ~80 行 | C + I (fixture-driven check list) | ASSUMPTIONS B4 候选 1 + C4 mitigation + R2.2 + R5.3 ralph-loop Win fix 骨架 |
 | **T4.3** | 写 `src/cli/audit.ts` — 10 上游（manifests/{tools,skill-packs}/*.yaml）→ parse → 比对 `metadata.upstream.repository`；本 phase 仅做 **manifest 内自一致校验**（已 install 副本的 git origin 比对推到 phase 2.4 真 audit）| ~60 行 | C + I (auto-glob manifests/) | ASSUMPTIONS B4 候选 1 + R2.3 (skeleton) |
-| **T4.4** | 写 `src/cli/rollback.ts` + `src/cli/status.ts` + `src/cli/backup-list.ts`（gc --older-than 推 phase 2.4） | ~100 行（3 文件） | C + B (lazy load metadata.json + sha1) + Pattern H (CRLF eol preservation) | ADR 0004 § 3 + ASSUMPTIONS C3 |
+| **T4.4** | 写 `src/cli/rollback.ts` + `src/cli/status.ts` + `src/cli/backup-list.ts` + **`src/cli/gc.ts`**（**gc 命令 phase 1.2 ship — 与 ADR 0004 § Consequences Negative #3 mitigation 一致；M1 sister review fix；30 行 small command**）| ~130 行（4 文件） | C + B (lazy load metadata.json + sha1) + Pattern H (CRLF eol preservation) | ADR 0004 § 3 + § Consequences Negative #3 + ASSUMPTIONS C3 + sister review M1 |
 
 **Wave 5 验收**: 5 子命令文件（install + doctor + audit + rollback + status；backup-list 与 rollback 同文件或独立）；commander route 注册到 cli root（Wave 6 wire 时验证）。
 
@@ -147,7 +148,7 @@ acceptance_high_level:
 | **T5.2** | 写 `tests/integration/installer-contract.test.ts` — 6 contract × 2 method = **12 cell** matrix；`vi.mock('child_process')` 隔离；fixtures `tests/fixtures/installers/<method>/<contract>.yaml` | ~250 行 | I (auto-glob) + J (BASE + modifier) | ADR 0004 § Compliance + PATTERNS § 4.1 + ASSUMPTIONS C6 mitigation |
 | **T5.3** | 写 `tests/unit/installers-{npmCli,mcpStdioAdd,index}.test.ts` — BASE manifest + with* modifier + vi.mock spawn + assert InstallResult shape | ~150 行（3 文件） | J + C | PATTERNS D-5 |
 | **T5.4** | 写 `tests/unit/cli-{install,doctor,audit,rollback,status}.test.ts` — commander parse + InstallResult narrow + exit code assertion；mock CLI inputs | ~150 行（5 文件） | J + C | PATTERNS § 4.1 |
-| **T5.5** | 扩展 `.github/workflows/ci.yml` — 加 installer integration step（real spawn ctx7 + tavily / exa **--dry-run only**；用 tmpdir + `npm_config_prefix` 隔离 — C6 mitigation）| ci.yml +~15L | phase-1.1 ci.yml | A5 + ASSUMPTIONS C6 + R5.1 |
+| **T5.5** | 扩展 `.github/workflows/ci.yml` — installer integration step **双层验证（H4 sister review fix）**: (1) **mock claude CLI shim**（在 runner PATH 优先注入 fake `claude` shell script — echo "tavily-mcp" 等响应）验证 spawn invocation args 正确，避免 CI runner 默认未装 claude CLI 导致 B2 死锁；(2) real spawn ctx7（npm-cli 不依赖 claude CLI） **--dry-run only**；tmpdir + `npm_config_prefix` 隔离 — C6 mitigation | ci.yml +~30L + 1 mock shim script | phase-1.1 ci.yml + sister review H4 | A5 + ASSUMPTIONS C6 + R5.1 + sister review H4 |
 | **T5.6** | （可选）`it.skipIf(!CI && !ACCEPTANCE)` final 真 spawn run — 仅 phase 1.2 final acceptance + CI 周期跑（可推到 wave 7 acceptance）| `tests/integration/installer-real-spawn.test.ts` | K (perf threshold gate skipIf 风格) | ASSUMPTIONS C6 |
 
 **Wave 6 验收**: tests 102 → ≥ 110；3 平台 CI 全绿（installer integration step 含 dry-run real spawn）；contract test 12 cell 全绿。
@@ -257,7 +258,9 @@ T6.1 INSTALLER-CONTRACT.md ──> T6.2-T6.4 README/CONTRIBUTING/ADR README
 | Bar | 验收命令 / 检查 | 来源 |
 |-----|---------------|------|
 | **B1'** ctx7 真实可装 + dry-run UX 跑通 (mac/linux/win) | 手工 / CI 跑 `harnessed install ctx7 --dry-run` 输出 unified diff + summary + L4 prompt（global）/ L1 教学（npx fallback）；3 平台无报错 | ROADMAP Phase 1.2 must-have + ADR 0004 契约 1+2+4 |
-| **B2'** tavily-mcp + exa-mcp 真实可装 + `--scope project` 写到 .mcp.json | 手工 / CI 跑 `harnessed install tavily-mcp --apply` → `.mcp.json` 含 tavily 条目；`claude mcp list` 含 tavily；`~/.claude.json` 不被改 | R3.2 + ADR 0004 契约 5 |
+| **B2a'** tavily-mcp + exa-mcp **本地真实可装**（ship-time 手动验证 — H4 sister review fix）| **本地手动**（非 CI；ship-time）跑 `harnessed install tavily-mcp --apply` → `.mcp.json` 含 tavily 条目；`claude mcp list` 含 tavily；`~/.claude.json` 不被改 | R3.2 + ADR 0004 契约 5 + sister review H4 |
+| **B2b'** CI 验证 spawn invocation args 正确（mock claude CLI shim — H4 sister review fix）| `pnpm test -- --filter installer-contract` 12 cell 通过 + CI installer integration step 含 mock shim 验证 `claude mcp add --scope project --transport stdio ...` args 完全正确（无依赖真 claude CLI） | R3.2 + ADR 0004 契约 5 + sister review H4 |
+| **B2c'** GSD 复用 npm-cli installer（M2 sister review — 扩大覆盖到 4/10 上游）| 跑 `harnessed install gsd --dry-run` → 输出 unified diff 含 `npx get-shit-done-cc@latest` invocation；CI mock 验证 args 正确（不必真装）| R5.1 + sister review M2 |
 | **B3'** Rollback 验证 — install + rollback 后系统状态完全恢复（含 .mcp.json 复原 + CRLF/LF preserve） | 跑 `harnessed install tavily-mcp --apply` → `harnessed rollback <ts>` → `claude mcp list` 不含 tavily；diff `.mcp.json` 与 install 前 0 行差异（含 EOL）| ADR 0004 契约 3 + ASSUMPTIONS C3 |
 | **B4'** 12 contract tests 全绿（6 契约 × 2 method）| `pnpm test -- --filter installer-contract` 输出 12/12 ✅ | ADR 0004 § Compliance |
 | **B5'** Cross-OS CI 三平台保持全绿（A4 守恒）| GitHub Actions UI 显示 ubuntu/macos/windows × Node 22 = 3 jobs 全 ✅ + 含 installer integration step | R5.1 + A4 acceptance bar 沿袭 |
