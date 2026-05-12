@@ -477,7 +477,7 @@
 ### Wave 5 — CLI subcommands（4 路并行；依赖 Wave 4）
 
 #### T4.1 写 src/cli/install.ts
-- [ ] **目标**：commander subcommand 注册 + flags + InstallResult narrow → exit code
+- [x] **目标**：commander subcommand 注册 + flags + InstallResult narrow → exit code
 - **文件**：`/d/GitCode/harnessed/src/cli/install.ts`
 - **内容大纲**（~80 行）：
   - 顶部 IMPL NOTE：引用 ADR 0004 契约 1 双 flag --non-interactive --apply
@@ -499,7 +499,7 @@
 ---
 
 #### T4.2 写 src/cli/doctor.ts
-- [ ] **目标**：4 项最小 check（Node / MCP scope / jq / Win bash — Git Bash vs WSL detect）
+- [x] **目标**：4 项最小 check（Node / MCP scope / jq / Win bash — Git Bash vs WSL detect）
 - **文件**：`/d/GitCode/harnessed/src/cli/doctor.ts`
 - **内容大纲**（~80 行）：
   - 顶部 IMPL NOTE：引用 C4 mitigation（`spawnSync('bash', ['-c', 'echo $WSL_DISTRO_NAME'])` 判别 WSL）
@@ -519,7 +519,7 @@
 ---
 
 #### T4.3 写 src/cli/audit.ts
-- [ ] **目标**：phase 1.2 仅做 manifest 内自一致校验（已 install 副本 origin 比对推 phase 2.4）
+- [x] **目标**：phase 1.2 仅做 manifest 内自一致校验（已 install 副本 origin 比对推 phase 2.4）
 - **文件**：`/d/GitCode/harnessed/src/cli/audit.ts`
 - **内容大纲**（~60 行）：
   - 单一导出 `registerAudit(program: Command)`
@@ -536,7 +536,7 @@
 ---
 
 #### T4.4 写 src/cli/rollback.ts + status.ts + backup-list.ts + gc.ts
-- [ ] **目标**：4 子命令 — rollback / status / backup list / **gc**（M1 sister review fix — 与 ADR 0004 § Consequences Negative #3 一致）；CRLF/LF preservation per metadata.eol
+- [x] **目标**：4 子命令 — rollback / status / backup list / **gc**（M1 sister review fix — 与 ADR 0004 § Consequences Negative #3 一致）；CRLF/LF preservation per metadata.eol
 - **文件**（4 文件）：
   - `/d/GitCode/harnessed/src/cli/rollback.ts`（~50 行）
   - `/d/GitCode/harnessed/src/cli/status.ts`（~30 行）

@@ -43,7 +43,7 @@
 | 2 | Lib helpers L1（5 helpers 并行 — spawn / preflight / diff / confirm / backup） | T2.2 - T2.6 (5 task) | ✅ done (commits 355654b / 718c7f7 / e1f16b0 / 646935a / 3687b00; 5 lib/* files; types.ts imported by all 5; tests still 94; A7 0 diff; F27 logged) |
 | 3 | Lib helpers L2 + Unit Tests（state.ts + 6 lib unit test 文件） | T2.7 - T2.8 (2 task — T2.8 含 6 文件) | ✅ done (commits 8fdbe85 / f6e36ca; state.ts 100L; 6 unit test files; tests 94 → 150 +56; A7 0 diff 5 tag; lint/typecheck 0) |
 | 4 | Install methods + Dispatcher（npmCli + mcpStdioAdd + index） | T3.1 - T3.3 (3 task) | ✅ done (commits 95c0501 / c019f79 / f6acbda; npmCli 135L + mcpStdioAdd 230L + index 66L; tests still 150; A7 0 diff 5 tag; F30 logged; 1 dead-code self-correction) |
-| 5 | CLI subcommands（install + doctor + audit + rollback/status/backup-list） | T4.1 - T4.4 (4 task) | ⏳ pending |
+| 5 | CLI subcommands（install + doctor + audit + rollback/status/backup-list/gc M1） | T4.1 - T4.4 (4 task) | ✅ done (commits c95835c / e60f0f1 / 9221d02 / 193aab9; install 117L + doctor 152L + audit 125L + rollback 87L + status 31L + backup-list 54L + gc 131L; tests still 150; A7 0 diff 5 tag; F31 cluster logged — multi-check / 4-file 软上限超 30%-337%) |
 | 6 | 顶层 wire + Tests + Cross-OS CI 扩展（cli.ts + contract test 12 cell + method/cli unit + ci.yml installer step + real-spawn skipIf） | T5.1 - T5.6 (6 task) | ⏳ pending |
 | 7 | Docs + Phase verify（INSTALLER-CONTRACT + README + CONTRIBUTING + ADR README + VERIFICATION + STATE + tag） | T6.1 - T6.7 (7 task) | ⏳ pending |
 
@@ -75,6 +75,10 @@
 2026-05-12 | T3.1 | add src/installers/npmCli.ts (135L 含 H3 三选一 prompt + L4↔L1 + dry-run short-circuit + 全部 lib/* 复用); biome formatter expansion 把 80 行 logic → 135L wc-l (85 non-blank); see § B F30 deviation note | 95c0501
 2026-05-12 | T3.2 | add src/installers/mcpStdioAdd.ts (230L L3 + H2 inline checkCmdString per-args[i] + hardcoded --scope project per CC #54803 + verify via grep -q exit code per C2); main-agent dead-code self-correction (-3L, removed wasted runArgs call from socket-close mid-write); biome formatter expanded args[]/JSON.stringify multi-line; ~120 non-blank logic lines | c019f79
 2026-05-12 | T3.3 | add src/installers/index.ts (66L 6-method dispatch table + 4 phase-2.1 placeholder + levelOf seed; Pattern G barrel; biome organizeImports applied) | f6acbda
+2026-05-12 | T4.1 | add src/cli/install.ts (117L commander register + H1 pre-action flag gate (--non-interactive without --apply/--dry-run → exit 2) + InstallResult narrow → exit code 0/1/2; auto-resolve manifests/{tools,skill-packs}/<name>.yaml) | c95835c
+2026-05-12 | T4.2 | add src/cli/doctor.ts (152L 4-check Node ≥ 22 / MCP scope (project .mcp.json + ~/.claude.json mcpServers empty) / jq present / Win bash flavor (C4 WSL_DISTRO_NAME probe)); see § B F31 finding | e60f0f1
+2026-05-12 | T4.3 | add src/cli/audit.ts (125L manifest 内自一致 — repository pattern https://...git / signed_by 非 placeholder set / git_ref 非 HEAD/main/master second-line check; auto-glob manifests/{tools,skill-packs}/*.yaml) | 9221d02
+2026-05-12 | T4.4 | add 4 cli subcommands (rollback 87L C3 eol preserve + ENOENT sentinel + sha1 verify / status 31L state.json read / backup-list 54L commander 'backup list' nested / gc 131L M1 mitigation per ADR 0004 § Consequences Negative #3); see § B F31 finding | 193aab9
 
 ### A.5 Session 中断恢复指引
 
@@ -238,6 +242,31 @@
   - **followup**: 若 phase 1.4 再实装 4 个 placeholder method 时仍超目标，考虑提取 `phaseExecute(plan, ctx, cmd, args)` 共享 backup+spawn+verify+updateInstalled 子序列到 lib/orchestrate.ts；T3.1 单独不值得抽（YAGNI — 仅 1 个 caller）
 - **Cross-ref**: progress.md § A.4 commit (T3.1) / src/installers/npmCli.ts / biome.json lineWidth:100
 
+#### F31: Wave 5 cli/* 4 文件 4 命令 行数软上限集体超出 (multi-check + commander nesting + M1 gc 实装真实成本)
+
+- **Date**: 2026-05-12
+- **Task**: T4.1 (note) / T4.2 / T4.3 / T4.4 (cluster)
+- **Type**: deviation
+- **Severity**: P3 (note — formatting + 真实 logic 复杂度，非 logic 膨胀；测试/守恒/契约全绿)
+- **Context**: task_plan T4.1-T4.4 软目标分别为 80 / 80 / 60 / (50+30+25+30) = 135L；实装为 117 / 152 / 125 / (87+31+54+131) = 446L；总计超目标 230%（plan 235L → 实际 581L）。
+- **Investigation**:
+  - **T4.1 install.ts (117L vs 80L 软上限, +46%)**：H1 pre-action flag gate + manifests/{tools,skill-packs} 自动 fallback + InstallResult 三分支 narrow（aborted/ok/error）+ formatError 帮手 + biome lineWidth:100 把 console.error template 展开多行 — non-blank 约 75 行符合"逻辑层 ≤ 80"。
+  - **T4.2 doctor.ts (152L vs 80L 软上限, +90%)**：4 个 check 各带 Win/Mac/Linux fix hint 三分支（jq winget/brew/apt）+ checkWinBash 双 step（where bash → bash -c WSL_DISTRO_NAME probe）+ checkMcpScope 双源（.mcp.json 项目存在 + ~/.claude.json 用户作用域为空）；每 check 平均 25-35 行不易压缩。Pattern J BASE+modifier 不适用（4 check 输入差异极大不能共享 fixture）。
+  - **T4.3 audit.ts (125L vs 60L 软上限, +108%)**：multi-manifest aggregation byManifest Map + 三 check（repo pattern / signed_by placeholder / git_ref forbidden）+ readdir 双目录遍历（tools + skill-packs） + Pattern E ValidationError → AuditFinding 转化层 — logic 紧凑无 helper 重复。
+  - **T4.4 cluster (303L vs 135L 软上限, +124%)**：
+    - rollback.ts 87L vs 50L (+74%)：normalizeEol(buf, eol) Buffer→string→Buffer 转换 + ENOENT pure-create sentinel branch (`backup === ''` → unlink) + sha1 verify guard，3 个不同 error 退出码各占 4-5 行。
+    - status.ts 31L vs 30L (+3%) ✓ 唯一在目标内的文件。
+    - backup-list.ts 54L vs 25L (+116%)：commander 'backup list' nested sub-command 需要 register layer (`const backup = program.command('backup'); backup.command('list')`) + per-snapshot try/catch fallback (metadata.json 缺失 graceful 降级)；实际 logic 极薄但 commander API 强制 boilerplate。
+    - gc.ts 131L vs 30L (+337% — 最大偏差)：M1 mitigation 实装真实成本 = parseDuration helper (15L d/h/m/w 单位) + dirSizeKb 递归 walker (18L) + ISO timestamp parse (backup id `:` 替换 `-` 反推) + keepLast Set 保护 + cutoff filter + dry-run/apply 双路径 + size-aware report；plan 估 30L 严重低估（M1 mitigation 真实复杂度未 surface 到 plan-phase 估行）。
+  - **三选一 trade-off**：(a) 折叠 4 check 共享 fixture (BASE+modifier) — 不适用（输入异质）；(b) 抽 helper 到 lib/cli-utils.ts (formatFinding, eolNormalize, dirSizeKb) — single caller × 3 各 1 个 caller，YAGNI 否决；(c) 接受超行 — 与 Wave 2/4 backup.ts 167L、mcpStdioAdd.ts 230L 同款 trade-off 路径。
+- **Resolution**: 走 (c) — 接受 Wave 5 581L vs 235L plan，全部 typecheck/lint/test/A7 全绿；非 logic 膨胀（formatter 展开 + commander API boilerplate + 真实 cross-OS branching）。**phase 1.3+ task_plan 估行教训**：cli/*.ts 文件实装含 commander API + 跨平台 fix hint + 多源 check 时，软上限应 × 2 estimate；M1-class mitigation 任务（gc / rollback eol / per-platform fallback）软上限 × 4 estimate。
+- **Impact**:
+  - 不影响 acceptance bar（typecheck/lint/test/A7/A8 全绿；tests 仍 150）
+  - 不影响 Wave 6 — register* 函数 export 形状与 task_plan T5.1 描述一致（register{Install,Doctor,Audit,Rollback,Status,BackupList,Gc} 共 7 个 register fn，task_plan T5.1 表格列 6 个 — 缺 registerGc 一行需 plan-phase 接续时 patch；详见 followup）
+  - **followup 1**：Wave 6 T5.1 cli.ts 顶层 wire 时需加 `import { registerGc } from './cli/gc.js'` 第 7 行 import + `registerGc(program)` 第 7 行调用（task_plan T5.1 表格只列 6 子命令，gc 是 M1 后补 — main agent / 下个 batch 注意）
+  - **followup 2**：task_plan.md L906 deferred 表格 "harnessed gc --older-than 30d 备份清理 → phase 2.4" 与 ADR 0004 § Consequences Negative #3 已矛盾（已实装在 phase 1.2）— 下次进度 sync 同步删除该行，避免 plan vs 实装漂移
+- **Cross-ref**: progress.md § A.4 commits (c95835c / e60f0f1 / 9221d02 / 193aab9) / src/cli/{install,doctor,audit,rollback,status,backup-list,gc}.ts / ADR 0004 § Consequences Negative #3 / task_plan.md T4.1-T4.4 / sister review M1 + H1
+
 ### B.4 已锁定决策追溯表（PLAN § 8 D1.2-1 ~ D1.2-12 镜像 — 决策不再 reopen）
 
 | 决策 ID | 内容 | 来源 |
@@ -345,6 +374,28 @@
 - mcpStdioAdd.ts 的 ProcResult interface 可独立提到 lib/types.ts（如 phase 2.1 mcp-http-add 也需要）— phase 1.2 内 1 个 caller 不抽（YAGNI）
 - index.ts 的 levelOf seed 设计：phase 1.4 routing engine 拿到 manifest 时可直接 import levelOf 复用 Level 推断（不需要 reimplement）
 - T3.2 dead-code 自纠正经验：long-running task 中断恢复 SOP = main-agent grep `void [a-z]` / `// .*above.*wrong` / `replaced by` 等 in-comment marker 快速定位
+
+#### Wave 5 ✅ retro (2026-05-12)
+
+**What worked**:
+- 4 task / 4 commit 干净分离（c95835c install / e60f0f1 doctor / 9221d02 audit / 193aab9 4-file cluster）— T4.4 4 文件单 commit 策略减少 commit-graph 噪音 + 保持 logic locality（rollback/status/backup-list/gc 共享 metadata.json schema 读法）
+- M1 sister review fix 执行到位：gc.ts 真正实装在 phase 1.2（与 ADR 0004 § Consequences Negative #3 一致），未推 phase 2.4；rollback.ts 严守 C3 eol field + ENOENT pure-create sentinel + sha1 verify 三重防御；H1 sister review fix 在 install.ts 的 pre-action gate 防 `--non-interactive` 死锁
+- runInstall(manifest, opts) 公共 API 在 cli/install.ts 消费一行调用 + InstallResult 三分支 narrow 干净 — Wave 4 dispatcher 设计验证有效，Wave 5 无 wrap 层
+- A7 守恒 5 baseline tag 持续 0 diff（连续 4 wave 守恒不变）；A8 LF 全 7 个新文件 i/lf attr/text 正确
+- biome check --write 沿袭 Wave 4 教训：每文件 commit 前一次 format pass，零 lint round-trip
+- karpathy plain-function 路径在 cli/* 实装中验证有效：每 cli/*.ts 单一 register* 函数 export，无 OOP / class / 装饰器层；7 个 register 函数总计 697L production code（vs phase 1.1 整 manifest layer 约 600L production），密度合理
+
+**What was inefficient / surprised**:
+- F31: Wave 5 4 task 软上限集体超出（最大 gc.ts +337%）— task_plan 估行严重低估 cli/* 实装真实成本：commander API 的 nested sub-command boilerplate（backup-list 拿到 +116%）+ 跨平台 fix hint 三分支（jq/Win bash/Mac brew）+ M1 mitigation 真实 logic（gc 的 parseDuration + dirSizeKb 走盘 + ISO ts 反推 + keepLast set）。**phase 1.3+ 教训**：cli/*.ts 软上限规则改为 commander 简单 register × 30L base + 每 cross-OS branch +20L + 每 nested sub-command +15L + 每 helper fn +20L；M1-class 任务（含真实 fs / network / 跨平台 logic 的 mitigation）软上限 × 4 plan estimate。
+- task_plan T5.1 表格 Wave 6 顶层 wire 列出 6 子命令 imports（install/doctor/audit/rollback/status/backup-list），但实装包含 7 个 register fn（多了 registerGc）— main agent 在 batch 6 wire 时需补一行 import + 调用，不阻塞但需注意。已在 F31 followup 1 标注。
+- task_plan.md L906 deferred 表格行 "harnessed gc → phase 2.4" 与本 wave 实装矛盾，需下次 progress sync 删除。已在 F31 followup 2 标注。
+- doctor.ts 的 `process.platform === 'darwin'` 三层 nested ternary 触发 biome formatter 重排 — 主动修改单 commit 内自纠正，未触发 lint round-trip。
+
+**Phase 1.3 / Wave 6 如何沿用**:
+- 7 个 register* fn 形状（单 export 单 program 注册）让 Wave 6 T5.1 cli.ts 顶层 wire 仅需 7 行 import + 7 行调用 — 不需要任何额外胶水层
+- F31 教训：Wave 6 contract test 若涉及 cli/*.ts 顶层 process.exit() 调用，应在 vi.mock('node:process') 替代 ['exit'] 而不是 process.exit = () => never（Phase 1.2 contract test 12 cell 估 ~360L，但 cli unit test 估 ~200L 应改为 ~280L 给 H1 flag-gate / gc duration parse / rollback eol normalize 这类带分支 logic 的 case 留余量）
+- gc.ts 的 dirSizeKb 递归 walker + parseDuration 单位解析模式可独立提到 lib/util.ts（如果 phase 2.4 加 stale 检测 / 或 phase 1.4 加 audit.log rotation 时需要类似单位解析）— 当前 single-caller YAGNI 不抽
+- rollback.ts 的 normalizeEol(buf, eol) 函数模式：phase 2.x 若做 manifest patch / config merge 时需保持原文件 EOL，可直接复用本文件 5 行实装
 
 ---
 
