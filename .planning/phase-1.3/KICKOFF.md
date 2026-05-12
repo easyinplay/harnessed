@@ -30,7 +30,7 @@ Phase 1.2.5 architecture revision discuss-phase 完成（ADR 0006 + 8 支柱 100
   - `decision_rules: optional Object` (DMN Priority Hit Policy schema — D1.2.5-5)
 - [ ] **B3** schema 字段 unit tests ≥ 12 cell — 6 category enum × 4 install_type enum × decision_rules require/optional；tests 202 + 1 skipped → ≥ 215 + 1 skipped
 - [ ] **B4** `.planning/decision_rules.yaml` v1 schema 落地 — 从 GRAY-AREA-1 § 2 提取 6 category × ≥ 12 rules MVP（含 design / content / testing / search / meta / engineering decision_rule_anchor）
-- [ ] **B5** `harnessed install --base` 命令 — cli/install.ts 加 `--base` flag；一键装齐 phase 1.1-1.2 已 ship 10 manifest
+- [ ] **B5** `harnessed install-base` **独立子命令**（D-9 — 不加 --base flag，避免与现有 6 flag + H1 pre-action gate 冲突）— `src/cli/install-base.ts` 新文件；一键装齐 phase 1.1-1.2 已 ship 10 manifest
 - [ ] **B6** ui-ux-pro-max install path 实测（D1.2.5-11）— `npx skills@latest add midwayjs/midway` 验证 OR install adapter 实装（git-clone + 子目录拷贝 + symlink 兜底）
 - [ ] **B7** AgentDefinition factory contract draft — `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` ≥ 100 行（function signature + AgentDefinition schema + 错误处理路径）— phase 1.3 仅 draft 不实装（推 phase 1.4）
 - [ ] **B8** Cross-OS CI 三平台保持全绿 + ci.yml A7 step iterate 1-7（新加 0007 baseline tag）+ ADR 0001-0006 main body 守恒持续

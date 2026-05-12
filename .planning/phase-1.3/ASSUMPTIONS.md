@@ -50,7 +50,7 @@
 | 决策 ID | 内容 | 来源 |
 |---|---|---|
 | **D1.3-1** | phase 1.3 范围 = schema layer（不实装 routing engine 本身 — phase 1.4 工作）| KICKOFF § "Phase 1.3 与 phase 1.4 边界" |
-| **D1.3-2** | manifest schema 3 新字段 = category（6 enum）+ install_type（4 enum）+ decision_rules（optional Object）| ADR 0006 § 1 + § 4 + ASSUMPTIONS phase 1.2.5 D1.2.5-12 |
+| **D1.3-2** | manifest schema 3 新字段 = category（6 enum）+ install_type（4 enum，**B-2 1:N 闭合**: skill→{cc-plugin-marketplace, npx-skill-installer} / mcp→{mcp-stdio-add, mcp-http-add} / npm→{npm-cli} / git→{git-clone-with-setup}）+ decision_rules（optional Object — **B-1: per-manifest hint，与 .planning/decision_rules.yaml 全局 rule-set 完全独立 schema**）| ADR 0006 § 1 + § 4 + ASSUMPTIONS phase 1.2.5 D1.2.5-12 + PLAN-CHECK B-1/B-2 fix |
 | **D1.3-3** | DMN YAML 库选型 = 复用 yaml + Ajv + TypeBox + 手写 < 50 行 Priority 仲裁 | R2 § 1.2 P0-1 lock |
 | **D1.3-4** | TypeBox 嵌套 = 每层独立 `additionalProperties: false` + `Type.Array(Type.Object)` 合法 | R2 § 2 P0-2 lock |
 | **D1.3-5** | ui-ux-pro-max install path = 路径 B (git-clone-with-setup) 主推 + 路径 A specimen 测试 | R2 § 3.2 P0-3 lock |

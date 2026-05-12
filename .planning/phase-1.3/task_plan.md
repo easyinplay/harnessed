@@ -38,7 +38,7 @@
     - `install_type: 'skill' | 'mcp' | 'npm' | 'git'`（必填，D1.2.5-12 — 区分 skill / MCP / npm / git 4 种安装路径）
     - `decision_rules: { trigger?, default_expert?, arbitration_rule?, override_signals?[] }`（optional Object — DMN-style 关键词匹配 + 仲裁规则）
   - Consequences: phase 1.3 仅 schema 加字段；phase 1.4 routing engine 消费这些字段；phase 1.1-1.2 已 ship 10 manifest 全部需要补 category + install_type 字段（迁移由 T2.1 完成）
-  - Compliance: ADR 0001 main body 不动（A7 守恒）；fixture-driven validate test 自动覆盖（T2.3）
+  - Compliance: ADR 0001 main body 不动（A7 守恒）；fixture-driven validate test 自动覆盖（T2.3）；**W-2 D-9 propagation**: ADR 0006 § 6 描述 "harnessed install --base flag" → 实装走 D-9 决策 = 独立 `harnessed install-base` 子命令（不加 --base flag），覆盖 ADR 0006 § 6 描述（A7 守恒规则下不能改 ADR 0006 main body，故 D-9 决策由本 ADR 0007 errata Compliance 段官方覆盖）
   - References: ADR 0006 § 4 + 5 / RESEARCH (R2) / PATTERNS (R1) / ASSUMPTIONS / GRAY-AREA-1 § 2 schema
 - **同步**: 更新 `docs/adr/README.md` index（加 0007 行）
 - **后置命令**:
@@ -59,11 +59,15 @@
 #### T1.2 ci.yml A7 step iterate 1-6 → 1-7
 - [ ] **目标**: ADR 0007 加入 A7 守恒 baseline tag iterate；phase 1.3 push 后 CI 实测 7 个 baseline tag 全绿
 - **文件**: `/d/GitCode/harnessed/.github/workflows/ci.yml`
-- **内容修改**: A7 step 内的 `for n in 0001 0002 0003 0004 0005 0006` → `for n in 0001 0002 0003 0004 0005 0006 0007`；comment 升级 "ADR 0001-0007 main body 守恒"
+- **内容修改**（**S-1 4 处明确化** — 实际行号 push 前以 `grep -n '0001 0002' .github/workflows/ci.yml` 实测为准）:
+  - **L34-L38** comment（"ADR baseline tag" 描述段）: "ADR 0001-0006 main body 守恒" → "ADR 0001-0007 main body 守恒"
+  - **L42** A7 step `for n in 0001 ... 0006` 列表头次出现：加 `0007`
+  - **L53** A7 step `for n in 0001 ... 0006` 第二次出现（如有）：加 `0007`
+  - **L64** A7 step echo 文案 "iterate 0001-0006" → "iterate 0001-0007"
 - **验收**:
-  - [ ] CI yaml 含 0007 in iterate
+  - [ ] CI yaml 含 0007 in iterate (`grep -c "0007" .github/workflows/ci.yml` ≥ 2)
   - [ ] `corepack pnpm typecheck && corepack pnpm lint` 0 错误（不应触发 — yaml 改不影响 ts）
-- **决策来源**: B8 acceptance bar + phase 1.2.5 commit 33da1a0 升级模式
+- **决策来源**: B8 acceptance bar + phase 1.2.5 commit 33da1a0 升级模式 + S-1 PLAN-CHECK fix
 
 ---
 
@@ -71,10 +75,19 @@
 
 #### T2.1 src/manifest/schema/spec.ts 加 3 字段（Pattern L spec-level metadata 加法）
 - [ ] **目标**: 在 SpecSchema 顶层加 3 字段，影响所有 manifest type；现有 10 manifest 全部补字段
+- **IMPL NOTE — B-1 schema 区分**:
+  - `manifest.spec.decision_rules` (本 task 加) **是 per-manifest decision hint**（manifest 自己声明 "我适合什么场景"），与全局 `.planning/decision_rules.yaml`（T3.1 起草，含 `hit_policy` + `rules[]` + `fallback_supervisor` + `deprecated[]`）**是两个完全独立 schema**。
+  - phase 1.4 routing engine **优先读全局 yaml**（`loadDecisionRules()`）；manifest 字段是 backup hint，phase 1.4 实装时按需 fallback。
+  - T2.3 unit test（`manifest-validate.decision-rules.test.ts`）只测 manifest.spec.decision_rules；T3.3 unit test（`routing-decisionRules.test.ts`）只测全局 yaml。两个 schema isolated 不混。
+- **IMPL NOTE — B-2 install_type 1:N 映射**（4 enum × 6 install method 闭合）:
+  - `install_type: skill` → method 可为 `cc-plugin-marketplace` / `npx-skill-installer`（CC 生态 skill 装载，2 method 同 enum）
+  - `install_type: mcp` → method 可为 `mcp-stdio-add` / `mcp-http-add`（2 method 同 enum）
+  - `install_type: npm` → method 为 `npm-cli`（npm package install，1:1）
+  - `install_type: git` → method 为 `git-clone-with-setup`（git clone + setup script，1:1）
 - **文件**: 
   - `/d/GitCode/harnessed/src/manifest/schema/spec.ts`（修改）
-  - `/d/GitCode/harnessed/manifests/{tools,skill-packs}/*.yaml`（10 文件 — 全部加 category + install_type 字段；decision_rules optional 暂不加）
-  - `/d/GitCode/harnessed/tests/fixtures/manifests/valid/*.yaml`（同步）
+  - 全部 manifest yaml — **B-3 glob 自动列举**：`manifests/{tools,skill-packs}/*.yaml`（不写死路径；execute 阶段命令: `find manifests -name '*.yaml'` 或 `ls manifests/{tools,skill-packs}/*.yaml`，再 yq foreach 加字段）
+  - `/d/GitCode/harnessed/tests/fixtures/manifests/valid/*.yaml`（fixture 同步）
 - **内容**（参 R2 § 2.3 TypeBox 嵌套示例 + ccPluginMarketplace.ts:29-37 marketplace_source pattern）:
   ```typescript
   // SpecSchema 加：
@@ -85,6 +98,7 @@
   install_type: Type.Union([
     Type.Literal('skill'), Type.Literal('mcp'), Type.Literal('npm'), Type.Literal('git'),
   ]),
+  // per-manifest decision hint（非全局 rule-set — 全局在 .planning/decision_rules.yaml T3.1）
   decision_rules: Type.Optional(Type.Object({
     trigger: Type.Optional(Type.String({ minLength: 1 })),
     default_expert: Type.Optional(Type.String({ minLength: 1 })),
@@ -95,28 +109,27 @@
     }, { additionalProperties: false }))),
   }, { additionalProperties: false })),
   ```
-- **10 manifest category + install_type 映射**（基于 phase 1.1 上游清单）:
+- **manifest category + install_type 映射**（execute 时用 `find manifests -name '*.yaml'` 自动列举；以下表为 reference，**实际文件位置以 glob 结果为准**）:
   ```yaml
-  # tools/
-  ctx7.yaml:        { category: search, install_type: npm }
-  tavily-mcp.yaml:  { category: search, install_type: mcp }
-  exa-mcp.yaml:     { category: search, install_type: mcp }
-  # skill-packs/
-  gstack.yaml:           { category: engineering, install_type: git }
-  gsd.yaml:              { category: engineering, install_type: npm }
-  superpowers.yaml:      { category: engineering, install_type: skill }
-  planning-with-files.yaml: { category: engineering, install_type: skill }
-  mattpocock-skills.yaml: { category: engineering, install_type: skill }
-  karpathy-skills.yaml:   { category: engineering, install_type: skill }
-  ralph-loop.yaml:        { category: engineering, install_type: skill }
+  # 实际文件路径以 glob 结果为准（B-3 fix）
+  ctx7.yaml:               { category: search, install_type: npm }    # method: npm-cli
+  tavily-mcp.yaml:         { category: search, install_type: mcp }    # method: mcp-stdio-add
+  exa-mcp.yaml:            { category: search, install_type: mcp }    # method: mcp-stdio-add
+  gstack.yaml:             { category: engineering, install_type: git }    # method: git-clone-with-setup
+  gsd.yaml:                { category: engineering, install_type: npm }    # method: npm-cli
+  superpowers.yaml:        { category: engineering, install_type: skill }  # method: cc-plugin-marketplace（B-2 闭合）
+  planning-with-files.yaml:{ category: engineering, install_type: skill }  # method: cc-plugin-marketplace（B-2 闭合）
+  mattpocock-skills.yaml:  { category: engineering, install_type: skill }  # method: 视实测 cc-plugin-marketplace 或 npx-skill-installer
+  karpathy-skills.yaml:    { category: engineering, install_type: skill }  # method: 视实测 cc-plugin-marketplace 或 npx-skill-installer
+  ralph-loop.yaml:         { category: engineering, install_type: skill }  # method: cc-plugin-marketplace（B-2 闭合）
   ```
 - **后置**: `corepack pnpm build:schema` 重新生成 `schemas/manifest.v1.schema.json`
 - **验收**:
   - [ ] `corepack pnpm typecheck && corepack pnpm lint` 0 错误
-  - [ ] `corepack pnpm test -- --filter fixtures` 全绿（10 manifest fixture pass）
+  - [ ] `corepack pnpm test -- --filter fixtures` 全绿（实际 manifest 数 = `find manifests -name '*.yaml' | wc -l` 输出，全 fixture pass）
   - [ ] `git diff adr-0001-accepted -- docs/adr/0001-*.md` 输出空（A7 守恒 paranoid check）
   - [ ] `schemas/manifest.v1.schema.json` 含 3 新字段
-- **决策来源**: ADR 0007 + R2 § 2 P0-2 lock + R1 D-7 Pattern L
+- **决策来源**: ADR 0007 + R2 § 2 P0-2 lock + R1 D-7 Pattern L + PLAN-CHECK B-1/B-2/B-3 fix
 
 ---
 
@@ -152,13 +165,18 @@
 
 #### T3.1 .planning/decision_rules.yaml v1 起草
 - [ ] **目标**: 落地 6 category × ≥ 12 rules MVP；从 GRAY-AREA-1 § 2 schema 提取
+- **IMPL NOTE — B-1 schema 区分**: 本文件是**全局 rule-set**（`hit_policy` / `rules[]` / `fallback_supervisor` / `deprecated[]`）— 与 T2.1 加的 manifest.spec.decision_rules（per-manifest hint）schema 完全独立。phase 1.4 routing engine **优先读本文件**。
+- **IMPL NOTE — W-6 v1 frozen criteria + v2 migration**:
+  - v1 frozen 一旦 phase 1.3 ship → 任何字段改动必走 ADR 0008+ errata 路径（A7 守恒模式 — 不动 v1 main body）
+  - v2 演化时同步打 `scripts/migrate-decision-rules-v1-to-v2.mjs` 迁移脚本（沿袭 phase 1.1 H4 mock-claude-cli.sh shim pattern）
+  - `version: 1` 字段是 reserved，phase 1.4+ 任何 reader 必先 check version 否则 reject
 - **文件**: `/d/GitCode/harnessed/.planning/decision_rules.yaml`
 - **内容大纲**（参 GRAY-AREA-1 § 2 schema）:
   ```yaml
-  version: 1
+  version: 1  # reserved — v2 演化必走 ADR 0008+ errata + migration script (W-6)
   hit_policy: P  # Priority Hit Policy
   rules:
-    # design (2 rules)
+    # === design (2 rules) ===
     - id: ui-task-bold-style-override
       priority: 100
       domain: design
@@ -169,20 +187,24 @@
       domain: design
       when: { task_type: ui-design }
       decision: { primary_expert: ui-ux-pro-max, secondary_expert: frontend-design, ... }
-    # content (2 rules)
+    # === content (2 rules) ===
     - id: pptx-file-task
     - id: chinese-content-deck
-    # testing (4 rules)
+    # === testing (4 rules) ===
     - id: perf-a11y-memory
     - id: e2e-with-python-backend
     - id: e2e-default
     - id: ai-explore-debug
-    # search (2 rules)
+    # === search (2 rules) ===
     - id: search-academic-or-batch-or-token-sensitive
     - id: search-default
-    # meta (2 rules)
+    # === meta (2 rules) ===
     - id: meta-create-skill
     - id: meta-find-skill
+    # === engineering (W-1 + S-2 占位 — 0 rules in v1) ===
+    # NOTE: engineering category base layer 已装（gstack/GSD/superpowers/karpathy/mattpocock/ralph-loop/planning-with-files），
+    #       不需 install routing；rules 推 phase 1.4 加（参 GRAY-AREA-3 § 3.3 mattpocock_phases routing schema：
+    #       discuss/plan/execute/verify 分阶段调度 23 招式，含心法 4 + 招式 23）。
   fallback_supervisor: { trigger: "L1 无 rule 命中 OR 多 rule 同 priority 冲突", llm: claude-opus-4-7 }
   deprecated:
     - { id: brave-search-mcp, reason: "API 改 $5/月信用 + 强制信用卡", fallback: tavily-mcp + exa-mcp }
@@ -191,7 +213,9 @@
   - [ ] yaml 通过 lint（参 phase 1.1 yaml lint pipeline）
   - [ ] `git ls-files --eol .planning/decision_rules.yaml` 应 `i/lf`
   - [ ] 12 rules 全含必填字段（id / priority / domain / when / decision）
-- **决策来源**: GRAY-AREA-1 § 2 + ADR 0006 § 4 A8' + ASSUMPTIONS D1.3-X
+  - [ ] engineering category 注释占位行存在（W-1 + S-2 verify — `grep "engineering.*占位" .planning/decision_rules.yaml`）
+  - [ ] `version: 1` reserved 字段存在（W-6 verify）
+- **决策来源**: GRAY-AREA-1 § 2 + ADR 0006 § 4 A8' + ASSUMPTIONS D1.3-X + PLAN-CHECK B-1/W-1/S-2/W-6 fix
 
 ---
 
@@ -302,13 +326,18 @@
 - **验收**:
   - [ ] 文件存在 + executable
   - [ ] 至少 1 平台（Mac 或 Linux）实测跑通输出 result
+  - [ ] **W-4 condition**: 如条件允许，也跑 Win Git Bash 验证；若 Win 卡（npx skills CLI 在 Win 兼容性不确定），record finding F36-Win 而非阻塞（**Win fail ≠ phase 1.3 阻塞**；至少 1 平台 Mac/Linux pass 即接受）
   - [ ] **不**入 CI test suite（D-10 — 一次性 verify）
-- **决策来源**: D-10 + R2 § 3.2 路径 B 主推
+- **决策来源**: D-10 + R2 § 3.2 路径 B 主推 + W-4 PLAN-CHECK fix
 
 ---
 
 #### T5.2 manifests/skill-packs/ui-ux-pro-max.yaml
 - [ ] **目标**: 视 T5.1 实测结果决定 install method
+- **W-3 fallback 决策树**（基于 T5.1 result）:
+  1. **`PATH_A_OK` + `PATH_B_OK`** → manifest 用**路径 B**（`git-clone-with-setup` + 锁 v4-next tip SHA）— 防 vercel-labs/skills issue #373 update break v4-next；路径 A 不写入 production manifest（仅 specimen 验证）
+  2. **`PATH_A_BROKEN` + `PATH_B_OK`** → manifest 必走**路径 B**（`git-clone-with-setup`）；F36 finding 记录路径 A broken 现象 + issue #373 引用
+  3. **`BOTH_BROKEN`** → 不创建 ui-ux-pro-max manifest；F36 finding 记录 BLOCKER + 推 phase 1.4 evaluate fork-and-mirror 方案；不阻塞 phase 1.3 其他 task ship（B6 降级为 manifest 创建 deferred）
 - **文件**: `/d/GitCode/harnessed/manifests/skill-packs/ui-ux-pro-max.yaml`
 - **内容**（以 Path B 为主推，路径 A 通过则可二选）:
   ```yaml
@@ -342,16 +371,30 @@
         - { phrase: "experimental", use: frontend-design }
   ```
 - **验收**:
-  - [ ] `corepack pnpm test -- --filter fixtures` 全绿（11 manifest 含新加 ui-ux-pro-max）
+  - [ ] T5.1 result ∈ {PATH_A_OK + PATH_B_OK, PATH_A_BROKEN + PATH_B_OK} → manifest 创建
+  - [ ] T5.1 result = BOTH_BROKEN → manifest 不创建 + F36 finding logged + B6 降级
+  - [ ] `corepack pnpm test -- --filter fixtures` 全绿（manifest 创建时 11 manifest）
   - [ ] `git ls-files --eol manifests/skill-packs/ui-ux-pro-max.yaml` 应 `i/lf`
-- **决策来源**: D1.3-5 路径 B + ADR 0007 schema 字段 + GRAY-AREA-1 § 2 yaml schema
+- **决策来源**: D1.3-5 路径 B + ADR 0007 schema 字段 + GRAY-AREA-1 § 2 yaml schema + W-3 PLAN-CHECK fix fallback 决策树
 
 ---
 
 #### T5.3 progress.md F36 finding
 - [ ] **目标**: T5.1 实测结果记录到 progress.md § B
+- **S-3 F36 narrative 模板**（沿袭 phase 1.2.5 progress.md § B F33-F35 风格）:
+  ```markdown
+  ### F36: ui-ux-pro-max install path 实测（D1.2.5-11 / D1.3-5）
+
+  **触发**: phase 1.3 T5.1 shell probe（scripts/probe/ui-ux-pro-max-install.sh）
+  **平台**: <Mac/Linux/Win>
+  **Path A 结果**: <PATH_A_OK / PATH_A_BROKEN — 含原因，如 vercel-labs/skills #373 hardcode /tree/main/ 必破 v4-next>
+  **Path B 结果**: <PATH_B_OK / PATH_B_BROKEN — 含 git ref + setup script 是否成功>
+  **决策**: 视 fallback 决策树（task_plan T5.2 W-3）→ <manifest 创建 with method=git-clone-with-setup / manifest 不创建 + 推 phase 1.4>
+  **影响**: phase 1.4 routing engine 调用 design category 时 <可用 ui-ux-pro-max / 暂不可用，需 fork-and-mirror>
+  **下一步**: <无 / phase 1.4 evaluate fork-and-mirror 方案 / phase 2.1 install adapter 加 git-clone-with-setup method runtime>
+  ```
 - **内容**: F36 finding narrative — 实测跑哪条路径 / 是否成功 / install adapter 是否启用 / 推 phase 1.4 还是 phase 1.5 优化
-- **决策来源**: F33-F35 narrative 模式（phase 1.2.5 progress.md § B）
+- **决策来源**: F33-F35 narrative 模式（phase 1.2.5 progress.md § B）+ S-3 PLAN-CHECK fix
 
 ---
 
@@ -377,11 +420,15 @@
   - § 4 skills 字段语义: string[] reference 主进程预 install 的 skill 名（fail-fast SkillNotInstalledError）
   - § 5 错误处理路径: skill not installed / no-COMPLETE / spawn fail / verbatim COMPLETE summarize 风险
   - § 6 ralph-loop 集成: --completion-promise "COMPLETE" + --max-iterations 20 + factory 内 maxTurns × 50 兜底
-  - § 7 phase 1.4 implementation roadmap (1-2 段)
+  - § 7 phase 1.4 implementation roadmap + **W-5 consumption 接口契约**:
+    - phase 1.4 plan-phase 启动时，**plan-checker 用本 contract 做 V1 BLOCKER 检查**（任何 phase 1.4 task 涉及 AgentDefinition factory 实装必须引用本 contract 12 字段 + 错误处理路径作为 acceptance bar）
+    - phase 1.4 execute-phase 时，factory 实装代码必须 1:1 对应本 contract § 2 12 字段 + § 3 signature + § 5 错误处理路径；任何字段缺失 / signature 偏离 = phase 1.4 plan-checker reject
+    - 本 contract 起 **phase 1.3 ship 时刻 frozen**（v1）；任何 v2 演化必走 ADR 0008+ errata 路径（A7 守恒模式）
 - **验收**:
   - [ ] `wc -l docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` ≥ 150
   - [ ] grep "12 字段\|disallowedTools\|memory\|maxTurns\|background\|effort\|skills.*string\[\]\|verbatim COMPLETE" 全 hit
-- **决策来源**: D-12 + R2 § 4 P0-4 + sister review M5 (phase 1.2.5)
+  - [ ] § 7 含 phase 1.4 plan-checker V1 BLOCKER 检查段（W-5 verify — `grep "V1 BLOCKER" docs/AGENT-DEFINITION-FACTORY-CONTRACT.md`）
+- **决策来源**: D-12 + R2 § 4 P0-4 + sister review M5 (phase 1.2.5) + W-5 PLAN-CHECK fix
 
 ---
 
@@ -412,18 +459,30 @@
 
 ### Wave 7 — Docs + ship
 
-#### T8.1 update STATE.md phase 1.3 SHIPPED
-- [ ] **目标**: STATE.md 标记 phase 1.3 ship + 解锁 phase 1.4
+#### T8.1 update STATE.md phase 1.3 SHIPPED + B-4 audit 补全
+- [ ] **目标**: STATE.md 标记 phase 1.3 ship + 解锁 phase 1.4 + **B-4: audit 补全过时块**
 - **文件**: `/d/GitCode/harnessed/.planning/STATE.md`
+- **B-4 起手 audit step**（phase 1.3 ship 前 STATE.md 已停在 phase 1.2，未记 1.1.1 / 1.2.1 / 1.2.5）:
+  - [ ] STATE.md "已完成" 段补 ✅ Phase 1.1.1 hotfix（2026-05-12）entry — paranoid review 9 项 fixes / tests 71→89 / A7 守恒
+  - [ ] STATE.md "已完成" 段补 ✅ Phase 1.2.1 hotfix（2026-05-12）entry — B5' CI fail fix `set +o pipefail` / commit bad2f20 / CI run 25721497734 三平台全绿
+  - [ ] STATE.md "已完成" 段补 ✅ Phase 1.2.5 architecture revision（2026-05-12）entry — ADR 0006 wedge 重定位 / 8 支柱 100% capture / 6 baseline tag
+- **B-4 进度算法明确**: phase 1.2.5 算独立 phase → ROADMAP v3 重排后总 phase 数 = v0.1 (1.1+1.2+1.2.5+1.3+1.4+1.5 = 6) + v0.2 (4) + v0.3 (4) + v0.4 (3) = **17 phase**（**不再是 16**）
+  - phase 1.3 ship 后：4 / 17 phases 已完成 (1.1, 1.2, 1.2.5, 1.3) ≈ **23.5%**
+  - STATE.md L4 "总工期" + L24 "进度" + L28 各里程碑表全部更新
+  - ROADMAP.md L7 "16 phases" → "17 phases" 同步（已在 plan-phase Wave B.4 fix 中预先 patch — execute 阶段验证）
 - **内容修改**:
   - 当前位置: phase 1.3 ✅ COMPLETED — SHIPPED 2026-MM-DD
   - 下一 phase: 1.4 (routing engine v1 + research workflow E2E)
-  - 进度: 3 / 16 phases ▓▓▓░░░░░░░░░░░░░ 18.75%
-  - 已完成段加 "Phase 1.3 SHIPPED" 条目
-  - 累积 ADR: 6 → 7（加 ADR 0007 errata）
+  - 进度: 4 / 17 phases ▓▓▓▓░░░░░░░░░░░░░ 23.5%（v3 重排后 17 phase）
+  - 已完成段加 "Phase 1.1.1 hotfix" / "Phase 1.2.1 hotfix" / "Phase 1.2.5 architecture revision" / "Phase 1.3 SHIPPED" 4 entry
+  - 累积 ADR: 5 → 7（加 ADR 0006 wedge + ADR 0007 errata）
+  - 累积 baseline tag: 5 → 7（加 adr-0006-accepted + adr-0007-accepted）
 - **验收**:
-  - [ ] STATE.md phase 1.3 段落完整
-  - [ ] 进度表更新
+  - [ ] STATE.md phase 1.1.1 / 1.2.1 / 1.2.5 / 1.3 4 段落完整
+  - [ ] 进度表 4/17 = 23.5% （v3 重排后总 phase 数）
+  - [ ] ROADMAP.md L7 "17 phases" 已同步（plan-phase pre-patch 验证）
+  - [ ] 累积 ADR / baseline tag count 准确
+- **决策来源**: phase 1.2/1.2.5 ship 史 + B-4 PLAN-CHECK fix
 
 ---
 

@@ -3,7 +3,7 @@
 > 状态：✅ 立项已完成（gstack /autoplan 三关卡 + 4 researcher + synthesizer + roadmapper）
 > 日期：2026-05-11
 > 输入来源：`PROJECT-SPEC.md` v2、`WORKFLOWS-MVP.md` v2、`research/SUMMARY.md`（4/4 HIGH 置信）
-> Granularity：standard（4 milestones × 3-5 phases = 共 16 phases）
+> Granularity：standard（4 milestones × 3-5 phases = 共 17 phases — v3 重排后含 phase 1.2.5 + 1.5）
 
 ---
 
@@ -79,7 +79,7 @@
   - 不动已 ship 代码 (A7 守恒)；准备 phase 1.3 implementation
 - **Phase 1.3：Base profile + Categorization schema + decision_rules.yaml v1**（v3 重排）
   - 新 ADR 0007 errata：manifest schema 加 `category` + `decision_rules` + `install_type` 字段（A7 守恒不动 0001）
-  - `harnessed install --base` 一键装齐 base profile (10 固定 manifest)
+  - `harnessed install-base` **独立子命令** (D-9 — 不加 --base flag) 一键装齐 base profile (10 固定 manifest)
   - `.planning/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy)
   - ui-ux-pro-max install path 实测 (D1.2.5-11)
   - 验收：base profile 一键装齐 mac/linux/win 全绿；decision_rules.yaml schema validation 通过；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate
