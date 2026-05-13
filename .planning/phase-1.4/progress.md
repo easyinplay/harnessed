@@ -20,14 +20,14 @@
 
 ### A.2 Acceptance Bar Snapshot — C1-C8 8 acceptance bar
 
-- ⏳ **C1** main-process-driven routing engine 实装 — engine.ts 170L ≤ 200L ✅; ≥10 unit cell (12 实测 ✅); verbatim COMPLETE 回流验证 ✅ (Wave 6 CI verify 推 batch 4)
-- ⏳ **C2** AgentDefinition factory 实装 — agentDefinition.ts 148L ≤ 150L ✅; 12 字段 1:1 contract ✅; 4 错误处理路径 ✅ (Wave 6 CI verify 推 batch 4)
-- ⏳ **C3** 6 category routing rules MVP execute — 30 sample ≥ 85% (T6.2 实测 100.0% 30/30 ✅; CI verify 推 batch 4)
-- ⏳ **C4** research workflow E2E — research.ts 93L ≤ 100L ✅; cli.ts 9th register fn ✅; integration test +3 mock cell + 1 real-spawn skipIf gate ✅ (CI verify 推 batch 4)
-- ⏳ **C5** systemPrompt verbatim COMPLETE — systemPrompt.ts 43L ≤ 80L ✅; 1:1 对齐 contract § 5.4 ✅; D-18 enforce ✅
-- ⏳ **C6** 30 真实查询样本路由命中率 ≥ 85% — 实测 100.0% (30/30) ✅; per-category 全 5/5 ✅; 4 F42 fallthrough corrected
-- ⏳ **C7** Cross-OS CI 三平台保持全绿 + A7 step iter 1-8 ✅ (本地 verify 全 0; push verify 推 batch 4)
-- ✅ **C8** ADR 0008 errata accepted + adr-0008-accepted tag (T1.1 ✅ — 本地 push 推 batch 4 with tag)
+- ✅ **C1** main-process-driven routing engine 实装 — engine.ts 170L ≤ 200L ✅; ≥10 unit cell (12 实测 ✅); verbatim COMPLETE 回流验证 ✅ (Wave 6 CI verify run 25804037789 三平台全绿)
+- ✅ **C2** AgentDefinition factory 实装 — agentDefinition.ts 148L ≤ 150L ✅; 12 字段 1:1 contract ✅; 4 错误处理路径 ✅ (Wave 6 CI verify run 25804037789 三平台全绿)
+- ✅ **C3** 6 category routing rules MVP execute — 30 sample ≥ 85% (T6.2 实测 100.0% 30/30 ✅; CI verify run 25804037789 三平台全绿)
+- ✅ **C4** research workflow E2E — research.ts 93L ≤ 100L ✅; cli.ts 9th register fn ✅; integration test +3 mock cell + 1 real-spawn skipIf gate ✅ (CI verify run 25804037789 三平台全绿)
+- ✅ **C5** systemPrompt verbatim COMPLETE — systemPrompt.ts 43L ≤ 80L ✅; 1:1 对齐 contract § 5.4 ✅; D-18 enforce ✅
+- ✅ **C6** 30 真实查询样本路由命中率 ≥ 85% — 实测 100.0% (30/30) ✅; per-category 全 5/5 ✅; 4 F42 fallthrough corrected
+- ✅ **C7** Cross-OS CI 三平台保持全绿 + A7 step iter 1-8 ✅ (CI run 25804037789 @ 8f56514 — macOS 1m18s / Win 58s / Ubuntu 36s 全 success；A7 全 8 ADR 0 diff)
+- ✅ **C8** ADR 0008 errata accepted + adr-0008-accepted tag (T1.1 ✅ — push pushed batch 1 时序)
 
 ### A.3 Wave Status
 
@@ -37,8 +37,8 @@
 - ✅ **Wave 3** (Tests engine + agentDefinition unit) — T4.1 + T4.2 done
 - ✅ **Wave 4** (research workflow E2E sub-routing) — T5.1 + T5.2 + T5.3 done (batch 3)
 - ✅ **Wave 5** (30 sample SAMPLES.md + sample-driven test) — T6.1 + T6.2 done (batch 3); 命中率 100.0% (30/30)
-- ⏳ **Wave 6** (Cross-OS CI verify) — T7.x 推 batch 4
-- ⏳ **Wave 7** (Docs + ship) — T8.x 推 batch 4
+- ✅ **Wave 6** (Cross-OS CI verify) — T7.1 done (CI run 25804037789 三平台全绿; T7.2 未触发 — 0 hotfix needed; T7.3 跳过 — routing engine 不调 manifest validate hot path 0 perf 影响 karpathy YAGNI)
+- ✅ **Wave 7** (Docs + ship) — T8.1 + T8.2 + T8.4 done (batch 4); T8.3 push tag main agent 决定
 
 ### A.4 进度日志
 
@@ -57,7 +57,14 @@
 | 2026-05-13 | T5.2 | cli.ts wire registerResearch (9th register fn; comment 8 → 9 subcommands) | `8cd0898` |
 | 2026-05-13 | T5.3 | tests/integration/routing-research-workflow.test.ts +3 mock cell + 1 real-spawn skipIf gate; tests 256+1 → 259+2; F42 placeholder reframe cell 2 fallback | `b547cf8` |
 | 2026-05-13 | T6.1 | SAMPLES.md 268L ≥ 200L; 30 sample 6 category × 5 + 13 ambiguous + engineering all fallback + § 6 source traceability + § 7 plan-checker verify cmds | `4dc434a` |
-| 2026-05-13 | T6.2 | routing-30-samples.test.ts +30 cell + load + summary; 命中率 100.0% (30/30); per-category 全 5/5; F42 fix 4 fallthrough hypothesis sync ground truth (SAMPLES.md prompt+category frozen, expected updated) | `<pending>` |
+| 2026-05-13 | T6.2 | routing-30-samples.test.ts +30 cell + load + summary; 命中率 100.0% (30/30); per-category 全 5/5; F42 fix 4 fallthrough hypothesis sync ground truth (SAMPLES.md prompt+category frozen, expected updated) | `8f56514` |
+| 2026-05-13 | T7.1 | CI run 25804037789 @ 8f56514 三平台全绿 (macOS 1m18s / Win 58s / Ubuntu 36s); A7 step iter 1-8 全 8 ADR 0 diff; tests 291+2 三平台 consistent | (push) |
+| 2026-05-13 | T7.2 | 未触发 — 0 hotfix needed (CI 第 1 轮三平台一次过) | n/a |
+| 2026-05-13 | T7.3 | 跳过 — routing engine 不调 manifest validate hot path (engine.route 直走 arbitrate / agentFactory / spawn — no validateManifestFile)；karpathy YAGNI；0 perf 影响 | n/a |
+| 2026-05-13 | T8.1 | STATE.md SHIPPED 5/17 = 29.4% + B-4 audit phase 1.4 + 累积 ADR 8 / tag 8 / tests 291+2 + 决策表 +6 entries + 待办 P0/P1/P2 重排 | `4ed46e3` |
+| 2026-05-13 | T8.2 | VERIFICATION.md 327L (≥ 150L) — C1-C8 复现 + Phase 1.5 prereq 8 接口 + F40-F42 索引 + § 6 acceptance summary table | `7d9a88f` |
+| 2026-05-13 | T8.3 | (main agent decide) push tag v0.1.0-alpha.4-routing-engine — executor verify all C1-C8 done 建议 push tag | (pending main agent) |
+| 2026-05-13 | T8.4 | phase 1.5 prereq notes (STATE.md explicit 段 P0/P1/P2 + ROADMAP.md phase 1.4 ✅ SHIPPED + phase 1.5 描述 update + 关键风险三红旗全 resolved) | `a76e09b` |
 
 ---
 
