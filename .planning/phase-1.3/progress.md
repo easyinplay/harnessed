@@ -26,13 +26,14 @@
 - ✅ **B2** manifest schema 加 3 字段（category/install_type/decision_rules）+ `validate:schema` 通过
 - ✅ **B3** schema unit tests +19 cell + tests 202+1 → 221+1（超过 ≥ 215+1 acceptance bar）
 - ✅ **B4** decision_rules.yaml v1 (12 rules + version: 1 + fallback_supervisor) + arbitrate function 单测 8 cell + tests 221+1 → 229+1
-- ⏳ **B5** `harnessed install-base` 子命令 + dry-run 三态输出（Wave 3 — batch 3 范围）
-- ⏳ **B6** ui-ux-pro-max install path 实测 + manifest 创建 + F36 finding logged（Wave 4 — batch 3 范围）
+- ✅ **B5** `harnessed install-base` 子命令 (D-9 独立子命令) + dry-run 三态输出 (D-11 installed/skipped/failed) + tests +5 cell (229+1 → 234+1)
+- ✅ **B6** ui-ux-pro-max install path 实测 PATH_A_OK + PATH_B_OK + manifest 创建 (路径 B git-clone-with-setup) + F36 finding logged + fixture +1 cell (234+1 → 235+1)
 - ⏳ **B7** AgentDefinition factory contract draft ≥ 150 行 + 12 字段 grep hit（Wave 5 — batch 3 范围）
 - ⏳ **B8** CI 三平台全绿 + A7 step iterate 1-7 全绿 + ADR 0001-0007 main body diff 0（Wave 6 — phase 1.3 final ship 范围）
 
 **Batch 1 完成: B1 + B2 + B3 ✅ — 3/8 done**
 **Batch 2 完成: B4 ✅ — 4/8 done**
+**Batch 3 in flight: B5 + B6 ✅ — 6/8 done (pending B7 Wave 5)**
 
 ### A.3 Wave 进度概览
 
@@ -41,9 +42,9 @@
 | 0 | 前置（ADR 0007 + ci.yml A7 step 升级） | T1.1, T1.2 | ✅ done (commits bc8d624 + b173a84; adr-0007-accepted tag; A7 iter 1-7) |
 | 1 | Schema 实装（manifest 加 3 字段 + tests +12 cell） | T2.1, T2.2, T2.3 | ✅ done (commits a5ce405 [T2.1+T2.2 合并] + 75419a0; +19 cell 超 ≥12 acceptance) |
 | 2 | decision_rules.yaml v1 + arbitrate logic | T3.1, T3.2, T3.3 | ✅ done (commits a74aa9e + 093fced + 58a2840; 12 rules + arbitrate ≤7L + 8 cell; tests 229+1) |
-| 3 | Base profile install (`harnessed install-base`) | T4.1, T4.2, T4.3 | ⏳ pending (batch 3) |
-| 4 | ui-ux-pro-max install path 实测 | T5.1, T5.2, T5.3 | ⏳ pending (batch 3) |
-| 5 | AgentDefinition factory contract draft | T6.1 | ⏳ pending (batch 3) |
+| 3 | Base profile install (`harnessed install-base`) | T4.1, T4.2, T4.3 | ✅ done (commits ace8dc0 + b14c5ff + 5e85282; +5 cell; 8 register fn; D-9 + D-11 ✅) |
+| 4 | ui-ux-pro-max install path 实测 | T5.1, T5.2, T5.3 | ✅ done (commits e49e5f8 + 6a4a1f4; PATH_A+B 双 OK; v4-next tip SHA e89d70e4bcd0; +1 fixture cell) |
+| 5 | AgentDefinition factory contract draft | T6.1 | ⏳ pending (batch 3 — Wave 5 next) |
 | 6 | Cross-OS CI verify | T7.1, T7.2 | ⏳ pending (push verify) |
 | 7 | Docs + ship | T8.1, T8.2, T8.3 | ⏳ pending (final) |
 
@@ -56,6 +57,12 @@
 2026-05-13 | T3.1 | .planning/decision_rules.yaml v1 起草 (179 行); version: 1 + hit_policy: P + 12 rules (design 2 / content 2 / testing 4 / search 2 / meta 2; engineering v1 占位 0 rules) + fallback_supervisor (claude-opus-4-7) + deprecated brave-search-mcp; yaml parse 0 error; 与 manifest.spec.decision_rules schema 完全独立 (B-1 区分) | a74aa9e
 2026-05-13 | T3.2 | src/routing/decisionRules.ts 105 行 (vs ≤100 预算微超 5 行 — biome formatter 单 Literal 一行 enforce; arbitrate 7 行 ≤30); export loadDecisionRules (yaml.parseDocument → toJS → Ajv strict → checkCmdString 二次过滤 B1 sec gate) + arbitrate Priority Hit Policy (R2 § 1.3 sketch); typecheck/lint 全绿 | 093fced
 2026-05-13 | T3.3 | tests/unit/routing-decisionRules.test.ts +8 cell (3 schema validate / 1 B1 security $(...) reject / 4 arbitrate Priority Hit Policy); 测试 221+1 → 229+1 全绿; B4 acceptance bar ≥8 cell 命中 | 58a2840
+2026-05-13 | T4.1 | src/cli/install-base.ts (102L, biome formatter forced expand 比 task_plan ≤100 微超 2L; 与 install.ts 117L 同 register fn 模式); D-9 独立子命令 + D-11 三态输出 (installed/skipped/failed); H1 gate (--non-interactive 必须配 --apply/--dry-run); auto-glob manifests/{tools,skill-packs}/*.yaml; phase 2.1 placeholder method (cc-plugin-marketplace/git-clone-with-setup/npx-skill-installer/mcp-http-add) → skipped; exit 0/1/2 三态 | ace8dc0
+2026-05-13 | T4.2 | src/cli.ts wire registerInstallBase (8 register fn; install/install-base 子命令 sibling 模式); comment 升级 7→8 subcommands; node ./dist/cli.mjs --help 验证 install-base 子命令出现; install-base --help 显示 --apply/--dry-run/--non-interactive 3 flags | b14c5ff
+2026-05-13 | T4.3 | tests/unit/cli-install-base.test.ts +5 cell (H1 gate / happy path 2 manifest / placeholder skip / dispatcher fail / 全 placeholder degenerate); mocks fs/promises + runInstall + validateManifestFile; 测试 229+1 → 234+1 全绿; B5 acceptance bar 命中 | 5e85282
+2026-05-13 | T5.1 | scripts/probe/ui-ux-pro-max-install.sh (108L bash, executable); D-10 shell probe (不入 CI test suite); Path A + Path B 双路径 with H3c 90s soft timeout; 实测 Win Git Bash MINGW64 双路径 OK (PATH_A_OK + PATH_B_OK); v4-next tip SHA = e89d70e4bcd0; W-3 fallback 决策树 → 用 Path B 主推 | e49e5f8
+2026-05-13 | T5.2 | manifests/skill-packs/ui-ux-pro-max.yaml + tests/fixtures/ mirror; install_type=git + method=git-clone-with-setup; git_ref e89d70e4bcd0ae04709a773db549cf61fcf813ac (40 hex); cmd 用 fixed cache path ~/.claude/skills/.cache/midway-uiux 避开 $(mktemp -d) — Rule 2 H7 security gate compliance; decision_rules per-manifest hint (trigger UI/UX 设计 / default ui-ux-pro-max / override 做出风格→frontend-design); 测试 234+1 → 235+1 (fixture +1 cell auto-register); EOL i/lf | 6a4a1f4
+2026-05-13 | T5.3 | progress.md F36 finding (ui-ux-pro-max install path 实测结果) + § A.2 状态 B5/B6 ✅ + § A.3 Wave 3/4 done; 6/8 acceptance bar done (pending B7 Wave 5 + B8 final ship) | (this commit)
 
 ---
 
@@ -187,5 +194,44 @@ macOS / Windows pass：macOS CI 比 Ubuntu runner 快、Windows 已有 100ms rel
 **下一步**: commit 2 atomic (M1 refactor + plan-phase patches incl. F39) → push → batch 3 启动。
 
 **status**: ✅ APPLIED — sister patch round 6/8 (H1b/H2/H3a/H3c/M1 + F39 narrative); H1a/M2 deferred; H3d rejected.
+
+---
+
+### F36: ui-ux-pro-max install path 实测（D1.2.5-11 / D1.3-5）
+
+**触发**: phase 1.3 batch 3 Wave 4 T5.1 shell probe — `scripts/probe/ui-ux-pro-max-install.sh` 跑通
+
+**平台**: Win Git Bash (MINGW64_NT-10.0-26200, kernel 3.6.7-fb42d713.x86_64) — phase 1.3 Wave 4 W-4 condition 比预期宽松 (Win 也 pass; Mac/Linux 待 phase 1.4 cross-OS verify 时同步)
+
+**Path A 结果**: **PATH_A_OK** ✅
+- 命令: `npx --yes skills@latest add https://github.com/midwayjs/midway/tree/v4-next/.codex/skills/ui-ux-pro-max -g -a claude-code -y`
+- 输出: "Installed 1 skill ✓ ui-ux-pro-max (copied) → ~\\.claude\\skills\\ui-ux-pro-max"
+- skills CLI 在 Win Git Bash 完全兼容 v4-next 分支 + tree URL with branch ref + 子目录 cherry-pick
+- **但 update 必破** (vercel-labs/skills issue #373 — lock file 不存 branch ref, subsequent `npx skills update` will hardcode `/tree/main/` URL)
+- 即 一次性 install OK, repeated update 不可信赖
+
+**Path B 结果**: **PATH_B_OK** ✅ (D1.3-5 主推路径)
+- 命令: `git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git <tmp>` + `cp -R .codex/skills/ui-ux-pro-max → ~/.claude/skills/`
+- v4-next tip SHA: `e89d70e4bcd0ae04709a773db549cf61fcf813ac` (40 hex, `git ls-remote` 实证 2026-05-13)
+- SKILL.md 装入 `~/.claude/skills/ui-ux-pro-max/SKILL.md` (8244 bytes)
+- 优势: 不依赖 skills CLI internal lock file 行为, 锁 SHA 完全可重现, update 时只需 SHA bump (manifest 改 git_ref) 不踩 issue #373
+
+**决策**: W-3 fallback 决策树第 1 路径 — **PATH_A_OK + PATH_B_OK → 采用 Path B**
+- T5.2 创建 `manifests/skill-packs/ui-ux-pro-max.yaml`:
+  - `category: design`, `install_type: git`, `install.method: git-clone-with-setup`
+  - `git_ref: e89d70e4bcd0ae04709a773db549cf61fcf813ac` (锁 v4-next tip SHA)
+  - cmd 用 fixed cache path `~/.claude/skills/.cache/midway-uiux` (避开 `$(mktemp -d)` POSIX command substitution — phase 1.1.1 H7 security gate compliance)
+  - decision_rules per-manifest hint: trigger UI/UX 设计 / default_expert ui-ux-pro-max / override_signals 做出风格/experimental/design-led → frontend-design (per CLAUDE.md UI/UX 路由规则)
+
+**影响 (positive)**: phase 1.4 routing engine 调用 design category 时 ui-ux-pro-max 可即用 (走 git-clone-with-setup install adapter — 仍是 phase 2.1 placeholder method 但 manifest schema OK + decision_rules hint 已落地, install runtime phase 2.1 实装时直接 unblock).
+
+**影响 (mitigated)**: vercel-labs/skills issue #373 update bug — 我们走路径 B, 不走路径 A 的 `npx skills update` 路径, 自动避开 hardcode `/tree/main/` 问题. update 时由 manifest `git_ref` 字段 SHA bump 控制 — phase 1.5+ 加 `harnessed update` 子命令时, 只需重 clone + diff cmp 即可.
+
+**下一步**:
+- 无 immediate blocker — phase 1.3 acceptance bar B6 ✅
+- phase 2.1 install adapter 实装 git-clone-with-setup runtime 时, 用 ui-ux-pro-max manifest 作 first-class fixture
+- phase 1.5+ 评估 `harnessed update` 子命令 (用 SHA-based diff cmp, 不依赖 skills CLI update)
+
+**status**: ✅ RESOLVED — Path A specimen 跑通 + Path B 主推已 ship; B6 acceptance bar 命中.
 
 ---
