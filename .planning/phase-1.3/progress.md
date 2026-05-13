@@ -154,3 +154,38 @@ macOS / Windows pass：macOS CI 比 Ubuntu runner 快、Windows 已有 100ms rel
 **status**: ✅ HOTFIX READY — 待 commit + push CI re-run verify
 
 ---
+
+### F39: Sister review (3 H + 2 M) patch round — phase 1.3.1 cleanup batch
+
+**触发**: phase 1.3 batch 2 (Wave 2) ship 后另一 cc 做 paranoid sister review，输出 5 finding (3 H + 2 M)：H1 perf gate 趋势警报 / H2 README wedge unsync / H3 工期偏乐观 / M1 decision_rules.yaml 位置不当 / M2 ADR 0006 SSOT drift defense 重复。
+
+**main agent 决议路径 AA — 全 accept (跟 phase 1.2.5 12-patch standard 一样)**:
+
+| Finding | 处理 | 落地位置 |
+|---|---|---|
+| **H1a** ADR 0007 Consequences 节加 perf cost 透明化 | **DEFERRED** — ADR 0007 main body A7 守恒 lock；phase 1.4 ADR 0008 errata 时官方更新 | (phase 1.4) |
+| **H1b** Wave 6 加 perf attribution task | ✅ APPLIED — task_plan T7.3 新加，输出 PERF-ATTRIBUTION.md ≥ 50 行 | task_plan T7.3 + PLAN.md Wave 6 表 |
+| **H2** README L1-L20 wedge v3 sync | ✅ APPLIED (planning) — task_plan T8.1 扩 scope，Wave 7 execute 时实施 README 改 | task_plan T8.1 |
+| **H3a** 工期 3-5 → 5-7 工作日 | ✅ APPLIED — PLAN.md L8 + KICKOFF.md 已更新 | PLAN.md / KICKOFF.md |
+| **H3c** Wave 4 timeout escape (路径 A ≥4h 阻塞切路径 B) | ✅ APPLIED — task_plan T5.1 验收加 H3c condition | task_plan T5.1 |
+| **H3d** T6.1 拆分 T6.1a/b | **REJECTED** — main agent 倾向 karpathy surgical (150 行 contract draft 单 task 合理保留原子) | (no change) |
+| **M1** decision_rules.yaml `.planning/` → `routing/` | ✅ APPLIED — git mv + 3 code/test comment updates + 5 plan-phase doc path replace | routing/decision_rules.yaml |
+| **M2** ADR 0006 self-contained snapshot SSOT drift | **DEFERRED** — v0.4 maintainer onboarding 加监控警示 (sister review 推荐 not now) | (v0.4) |
+
+**M1 git mv 影响**:
+- `git mv .planning/decision_rules.yaml → routing/decision_rules.yaml`
+- 3 code/test comment refs updated: `src/manifest/schema/spec.ts:83` / `src/routing/decisionRules.ts` header / `tests/unit/manifest-validate.decision-rules.test.ts:15`
+- 5 live SSOT plan-phase docs path replace_all: task_plan / ASSUMPTIONS / KICKOFF / PLAN / ROADMAP
+- `src/routing/decisionRules.ts` header 加一行 "phase 1.3.1 sister patch M1 path migration" 透明化注释
+- typecheck/lint/test 全绿（230 same as before — no test path dependency；loadDecisionRules 函数 takes path as parameter，无 hardcoded constant）
+- **A7 守恒 holds**: ADR 0007 main body 4 处 `.planning/decision_rules.yaml` 引用未动（locked by adr-0007-accepted tag），属 ship-time accurate，phase 1.4 ADR 0008 errata 官方更新
+
+**H1a defer rationale**: sister review H1 推荐 ADR 0007 Consequences 节加 perf cost transparency，但 ADR 0007 已 tagged adr-0007-accepted；A7 守恒禁止 main body modification。F38 narrative + T7.3 perf attribution 共同提供 transparency；phase 1.4 ADR 0008 errata 时正式 inline。
+
+**沿袭**: phase 1.2.5 sister review 12 patches (commit 3e24c16 H1+H2+H3+M1-5+L1-4) 同款标准 — 全 accept + applicable 立修 + non-applicable defer。
+
+**下一步**: commit 2 atomic (M1 refactor + plan-phase patches incl. F39) → push → batch 3 启动。
+
+**status**: ✅ APPLIED — sister patch round 6/8 (H1b/H2/H3a/H3c/M1 + F39 narrative); H1a/M2 deferred; H3d rejected.
+
+---

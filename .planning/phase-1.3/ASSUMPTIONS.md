@@ -13,7 +13,7 @@
 | **B1** | ADR 0007 errata 起草 + accepted + `adr-0007-accepted` tag | `docs/adr/0007-categorization-schema-errata.md` (W execute T1.1) | ⏳ |
 | **B2** | manifest schema 加 3 字段（`category` enum 6 / `install_type` enum 4 / `decision_rules` optional Object）| `src/manifest/schema/spec.ts` 修改（W execute T2.1）— **新 Pattern L spec-level metadata 加法** | ⏳ |
 | **B3** | schema unit tests ≥ 12 cell；tests 202+1 skipped → ≥ 215+1 skipped | `tests/unit/manifest-validate.{category,install-type,decision-rules}.test.ts` 3 文件（W execute T2.3）| ⏳ |
-| **B4** | `.planning/decision_rules.yaml` v1 + Priority arbitrate logic（≤ 50 行）| `.planning/decision_rules.yaml` + `src/routing/decisionRules.ts`（W execute T3.1+T3.2）| ⏳ |
+| **B4** | `routing/decision_rules.yaml` v1 + Priority arbitrate logic（≤ 50 行）| `routing/decision_rules.yaml` + `src/routing/decisionRules.ts`（W execute T3.1+T3.2）| ⏳ |
 | **B5** | `harnessed install-base` 独立子命令（D-9 R1 推荐）| `src/cli/install-base.ts` + `src/cli.ts` registerInstallBase（W execute T4.1+T4.2）| ⏳ |
 | **B6** | ui-ux-pro-max install path 实测（D1.2.5-11）— shell probe + adapter 兜底 | `scripts/probe/ui-ux-pro-max-install.sh` + `manifests/skill-packs/ui-ux-pro-max.yaml`（W execute T5.x）| ⏳ |
 | **B7** | AgentDefinition factory contract draft ≥ 100 行（**12 字段**完整版 — R2 Q4 实证）| `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md`（W execute T6.1）| ⏳ |
@@ -50,7 +50,7 @@
 | 决策 ID | 内容 | 来源 |
 |---|---|---|
 | **D1.3-1** | phase 1.3 范围 = schema layer（不实装 routing engine 本身 — phase 1.4 工作）| KICKOFF § "Phase 1.3 与 phase 1.4 边界" |
-| **D1.3-2** | manifest schema 3 新字段 = category（6 enum）+ install_type（4 enum，**B-2 1:N 闭合**: skill→{cc-plugin-marketplace, npx-skill-installer} / mcp→{mcp-stdio-add, mcp-http-add} / npm→{npm-cli} / git→{git-clone-with-setup}）+ decision_rules（optional Object — **B-1: per-manifest hint，与 .planning/decision_rules.yaml 全局 rule-set 完全独立 schema**）| ADR 0006 § 1 + § 4 + ASSUMPTIONS phase 1.2.5 D1.2.5-12 + PLAN-CHECK B-1/B-2 fix |
+| **D1.3-2** | manifest schema 3 新字段 = category（6 enum）+ install_type（4 enum，**B-2 1:N 闭合**: skill→{cc-plugin-marketplace, npx-skill-installer} / mcp→{mcp-stdio-add, mcp-http-add} / npm→{npm-cli} / git→{git-clone-with-setup}）+ decision_rules（optional Object — **B-1: per-manifest hint，与 routing/decision_rules.yaml 全局 rule-set 完全独立 schema**）| ADR 0006 § 1 + § 4 + ASSUMPTIONS phase 1.2.5 D1.2.5-12 + PLAN-CHECK B-1/B-2 fix |
 | **D1.3-3** | DMN YAML 库选型 = 复用 yaml + Ajv + TypeBox + 手写 < 50 行 Priority 仲裁 | R2 § 1.2 P0-1 lock |
 | **D1.3-4** | TypeBox 嵌套 = 每层独立 `additionalProperties: false` + `Type.Array(Type.Object)` 合法 | R2 § 2 P0-2 lock |
 | **D1.3-5** | ui-ux-pro-max install path = 路径 B (git-clone-with-setup) 主推 + 路径 A specimen 测试 | R2 § 3.2 P0-3 lock |

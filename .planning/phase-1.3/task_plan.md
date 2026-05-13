@@ -76,7 +76,7 @@
 #### T2.1 src/manifest/schema/spec.ts 加 3 字段（Pattern L spec-level metadata 加法）
 - [ ] **目标**: 在 SpecSchema 顶层加 3 字段，影响所有 manifest type；现有 10 manifest 全部补字段
 - **IMPL NOTE — B-1 schema 区分**:
-  - `manifest.spec.decision_rules` (本 task 加) **是 per-manifest decision hint**（manifest 自己声明 "我适合什么场景"），与全局 `.planning/decision_rules.yaml`（T3.1 起草，含 `hit_policy` + `rules[]` + `fallback_supervisor` + `deprecated[]`）**是两个完全独立 schema**。
+  - `manifest.spec.decision_rules` (本 task 加) **是 per-manifest decision hint**（manifest 自己声明 "我适合什么场景"），与全局 `routing/decision_rules.yaml`（T3.1 起草，含 `hit_policy` + `rules[]` + `fallback_supervisor` + `deprecated[]`）**是两个完全独立 schema**。
   - phase 1.4 routing engine **优先读全局 yaml**（`loadDecisionRules()`）；manifest 字段是 backup hint，phase 1.4 实装时按需 fallback。
   - T2.3 unit test（`manifest-validate.decision-rules.test.ts`）只测 manifest.spec.decision_rules；T3.3 unit test（`routing-decisionRules.test.ts`）只测全局 yaml。两个 schema isolated 不混。
 - **IMPL NOTE — B-2 install_type 1:N 映射**（4 enum × 6 install method 闭合）:
@@ -98,7 +98,7 @@
   install_type: Type.Union([
     Type.Literal('skill'), Type.Literal('mcp'), Type.Literal('npm'), Type.Literal('git'),
   ]),
-  // per-manifest decision hint（非全局 rule-set — 全局在 .planning/decision_rules.yaml T3.1）
+  // per-manifest decision hint（非全局 rule-set — 全局在 routing/decision_rules.yaml T3.1）
   decision_rules: Type.Optional(Type.Object({
     trigger: Type.Optional(Type.String({ minLength: 1 })),
     default_expert: Type.Optional(Type.String({ minLength: 1 })),
@@ -163,14 +163,14 @@
 
 ### Wave 2 — decision_rules.yaml v1 + arbitrate logic
 
-#### T3.1 .planning/decision_rules.yaml v1 起草
+#### T3.1 routing/decision_rules.yaml v1 起草
 - [ ] **目标**: 落地 6 category × ≥ 12 rules MVP；从 GRAY-AREA-1 § 2 schema 提取
 - **IMPL NOTE — B-1 schema 区分**: 本文件是**全局 rule-set**（`hit_policy` / `rules[]` / `fallback_supervisor` / `deprecated[]`）— 与 T2.1 加的 manifest.spec.decision_rules（per-manifest hint）schema 完全独立。phase 1.4 routing engine **优先读本文件**。
 - **IMPL NOTE — W-6 v1 frozen criteria + v2 migration**:
   - v1 frozen 一旦 phase 1.3 ship → 任何字段改动必走 ADR 0008+ errata 路径（A7 守恒模式 — 不动 v1 main body）
   - v2 演化时同步打 `scripts/migrate-decision-rules-v1-to-v2.mjs` 迁移脚本（沿袭 phase 1.1 H4 mock-claude-cli.sh shim pattern）
   - `version: 1` 字段是 reserved，phase 1.4+ 任何 reader 必先 check version 否则 reject
-- **文件**: `/d/GitCode/harnessed/.planning/decision_rules.yaml`
+- **文件**: `/d/GitCode/harnessed/routing/decision_rules.yaml`
 - **内容大纲**（参 GRAY-AREA-1 § 2 schema）:
   ```yaml
   version: 1  # reserved — v2 演化必走 ADR 0008+ errata + migration script (W-6)
@@ -211,9 +211,9 @@
   ```
 - **验收**:
   - [ ] yaml 通过 lint（参 phase 1.1 yaml lint pipeline）
-  - [ ] `git ls-files --eol .planning/decision_rules.yaml` 应 `i/lf`
+  - [ ] `git ls-files --eol routing/decision_rules.yaml` 应 `i/lf`
   - [ ] 12 rules 全含必填字段（id / priority / domain / when / decision）
-  - [ ] engineering category 注释占位行存在（W-1 + S-2 verify — `grep "engineering.*占位" .planning/decision_rules.yaml`）
+  - [ ] engineering category 注释占位行存在（W-1 + S-2 verify — `grep "engineering.*占位" routing/decision_rules.yaml`）
   - [ ] `version: 1` reserved 字段存在（W-6 verify）
 - **决策来源**: GRAY-AREA-1 § 2 + ADR 0006 § 4 A8' + ASSUMPTIONS D1.3-X + PLAN-CHECK B-1/W-1/S-2/W-6 fix
 
@@ -327,6 +327,7 @@
   - [ ] 文件存在 + executable
   - [ ] 至少 1 平台（Mac 或 Linux）实测跑通输出 result
   - [ ] **W-4 condition**: 如条件允许，也跑 Win Git Bash 验证；若 Win 卡（npx skills CLI 在 Win 兼容性不确定），record finding F36-Win 而非阻塞（**Win fail ≠ phase 1.3 阻塞**；至少 1 平台 Mac/Linux pass 即接受）
+  - [ ] **H3c sister patch — Path A 4-hour timeout escape**: 路径 A `npx skills` 实测如阻塞 ≥ 4 小时（vercel-labs/skills issue #373 / 兼容性问题 / 网络故障）→ 立即切**路径 B git-clone-with-setup**（D1.3-5 主推路径）兜底，记 F36 finding；**不阻塞 phase 1.3 整体推进**（Wave 4 是高风险 timebox-bound task）
   - [ ] **不**入 CI test suite（D-10 — 一次性 verify）
 - **决策来源**: D-10 + R2 § 3.2 路径 B 主推 + W-4 PLAN-CHECK fix
 
@@ -457,9 +458,29 @@
 
 ---
 
+#### T7.3 (H1b sister patch) Perf attribution — schema 加 3 字段 perf cost 量化
+- [ ] **目标**: 响应 sister review H1 finding — perf gate 第 2 次放松 (50→75ms F38) 趋势警报；做一次 root cause attribution，量化 phase 1.3 schema 加 3 字段对 manifest validate 路径的 perf cost
+- **背景**:
+  - phase 1.1 baseline: 21.7ms mean / RME ±2% (vitest bench output) / SLA 50ms
+  - phase 1.3 现状: ubuntu CI 50.14ms 越线 → F38 hotfix relax 50→75ms
+  - sister H1 推荐: profile + 对比 v0.1.0-alpha.1 (21.7ms) vs alpha.2 vs phase 1.3，识别 schema 加 3 字段（category/install_type/decision_rules nested array+object）贡献的 ms 量
+- **文件**: `.planning/phase-1.3/PERF-ATTRIBUTION.md`（新文件，≥ 50 行）
+- **内容大纲**:
+  - § 1 Methodology: vitest bench --run + git stash apply v0.1.0-alpha.1 / alpha.2 / phase 1.3 spec.ts 各取 best-of-10
+  - § 2 Results table: 各阶段 mean / RME / 字段数量 / Ajv compile 时间
+  - § 3 Attribution: 每个新加字段（category 6 enum / install_type 4 enum / decision_rules nested）对 mean 的 increment 估算
+  - § 4 Conclusion: 是否 schema 加字段 root cause 还是 CI runner 噪音；phase 1.4 是否需进一步优化
+- **验收**:
+  - [ ] PERF-ATTRIBUTION.md ≥ 50 行
+  - [ ] § 2 results table 含 ≥ 3 阶段 baseline
+  - [ ] § 4 conclusion 给出 actionable next-step（优化 / 接受现状 / 持续监控）
+- **决策来源**: sister review H1b PLAN-CHECK fix + F38 root cause investigation 透明化
+
+---
+
 ### Wave 7 — Docs + ship
 
-#### T8.1 update STATE.md phase 1.3 SHIPPED + B-4 audit 补全
+#### T8.1 update STATE.md phase 1.3 SHIPPED + B-4 audit 补全 + H2 README sync
 - [ ] **目标**: STATE.md 标记 phase 1.3 ship + 解锁 phase 1.4 + **B-4: audit 补全过时块**
 - **文件**: `/d/GitCode/harnessed/.planning/STATE.md`
 - **B-4 起手 audit step**（phase 1.3 ship 前 STATE.md 已停在 phase 1.2，未记 1.1.1 / 1.2.1 / 1.2.5）:
@@ -482,7 +503,13 @@
   - [ ] 进度表 4/17 = 23.5% （v3 重排后总 phase 数）
   - [ ] ROADMAP.md L7 "17 phases" 已同步（plan-phase pre-patch 验证）
   - [ ] 累积 ADR / baseline tag count 准确
-- **决策来源**: phase 1.2/1.2.5 ship 史 + B-4 PLAN-CHECK fix
+- **H2 sister patch — README L1-L20 wedge sync (新加 scope)**:
+  - [ ] README L3 一句话定位: 从 "AI coding harness 生态的装配主义包管理器 + composition orchestrator" → 升级为 "完整三层栈方法论的可执行 engine — 6+ 虚拟角色 / 双职责治理 / 4 心法 / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化"
+  - [ ] README 关键差异化段加一条 "三层栈机器化"（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师 三角色横切）
+  - [ ] README v0.1.0-alpha.2 状态加 phase 1.2.5 architecture revision wedge 升级 + ADR 0006 引用
+  - [ ] "装配主义包管理器" 作为 phase 1.1-1.2 base layer 描述保留（不删，但下沉至次要 paragraph，不再是顶层 wedge）
+  - **决策来源**: sister review H2 PLAN-CHECK fix — README 是项目门面 + STATE.md SSOT 一致性原则；phase 1.3 ship 前必修
+- **决策来源**: phase 1.2/1.2.5 ship 史 + B-4 PLAN-CHECK fix + H2 sister patch (README sync)
 
 ---
 

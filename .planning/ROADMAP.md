@@ -80,7 +80,7 @@
 - **Phase 1.3：Base profile + Categorization schema + decision_rules.yaml v1**（v3 重排）
   - 新 ADR 0007 errata：manifest schema 加 `category` + `decision_rules` + `install_type` 字段（A7 守恒不动 0001）
   - `harnessed install-base` **独立子命令** (D-9 — 不加 --base flag) 一键装齐 base profile (10 固定 manifest)
-  - `.planning/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy)
+  - `routing/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy)
   - ui-ux-pro-max install path 实测 (D1.2.5-11)
   - 验收：base profile 一键装齐 mac/linux/win 全绿；decision_rules.yaml schema validation 通过；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate
 - **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）
