@@ -44,8 +44,8 @@
 8. ✅ ~~Phase 1.2.5 architecture revision SHIPPED~~ — 2026-05-12；ADR 0006 wedge 重定位（"装配主义包管理器" → "完整三层栈方法论的可执行 engine"）；8 支柱 100% capture lock + 5 P0 决策 lock；6 baseline tag 全部加入 A7 守恒 iterate；ROADMAP v3 重排 16 → 17 phase（加 phase 1.2.5 + phase 1.5）；不动已 ship 代码 (A7 守恒)
 9. ✅ ~~Phase 1.3 SHIPPED~~ — 2026-05-13；base profile + categorization schema + decision_rules.yaml v1；B1-B8 8/8 acceptance bar；ADR 累积 7（加 0007 errata）；baseline tag 5 → 7（加 adr-0006-accepted retag → 3e24c16 + adr-0007-accepted）；tests 202+1 → 235+1 skipped (+33)；含 phase 1.3.1 hotfix bundle（F37/F38/F39 — sister review patch round 6/8 applied + 2 deferred）；详 `.planning/phase-1.3/{progress.md, VERIFICATION.md, PERF-ATTRIBUTION.md}`
 10. ✅ ~~main agent tag `v0.1.0-alpha.3-base-profile`~~ — pushed
-11. ✅ ~~Phase 1.4 SHIPPED~~ — 2026-05-13；routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample 100.0% hit；C1-C8 8/8 acceptance bar；ADR 累积 8（加 0008 errata 含 H1a perf transparency + M1 yaml path migration + R6 engineering category 推 phase 1.5）；baseline tag 7 → 8（加 adr-0008-accepted）；tests 235+1 → 291+2 skipped (+56)；CI run 25804037789 @ 8f56514 三平台全绿；详 `.planning/phase-1.4/{progress.md, VERIFICATION.md}`
-12. ⏳ **main agent tag `v0.1.0-alpha.4-routing-engine`**（T8.3；CI 已三平台全绿验证 — run 25804037789 @ 8f56514）
+11. ✅ ~~Phase 1.4 SHIPPED~~ — 2026-05-13；routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample 100.0% hit (**expected behavior match**；specific rule match 21/30 = 70% — 9 plan-phase expected fallback/fallthrough：engineering 5/5 v1 占位 0 rules 走 fallback_supervisor + 4 array trigger v1 miss fallthrough；array semantic match 升级推 phase 1.5 DAG resolver — sister review T1 transparency strengthening)；C1-C8 8/8 acceptance bar；ADR 累积 8（加 0008 errata 含 H1a perf transparency + M1 yaml path migration + R6 engineering category 推 phase 1.5）；baseline tag 7 → 8（加 adr-0008-accepted）；tests 235+1 → 291+2 skipped (+56)；CI run 25804037789 @ 8f56514 + 25805032247 @ fe97a72 三平台全绿；详 `.planning/phase-1.4/{progress.md, VERIFICATION.md}`
+12. ✅ **main agent tag `v0.1.0-alpha.4-routing-engine` pushed** — fe97a72；4 milestone tag 累积（alpha.1-schema-frozen / alpha.2-installer-runtime / alpha.3-base-profile / alpha.4-routing-engine）
 13. ⏳ **进入 Phase 1.5 plan-phase**（DAG resolver + Semantic Router L2 + engineering category routing rules + mattpocock 23 招式 phase routing schema）
 
 ---
@@ -366,6 +366,19 @@ cd D:/GitCode/harnessed
    - **R6 mitigation**: phase 1.4 KICKOFF 第 38 行 explicit lock + ADR 0008 § Consequences R6 跟踪条目
    - **现状**: phase 1.4 30 sample 中 engineering 5/5 走 fallback_supervisor (claude-opus-4-7) — 单模型兜底；phase 1.5 加 23 招式 phase routing schema 后能精确路由 discuss/plan/execute/verify
    - **接口扩展**: `routing/decision_rules.yaml` 加 engineering category 新 rules + manifest spec 顶层 `phase` 字段（discuss/plan/execute/verify enum 候选）
+
+3. **PERF-ATTRIBUTION-2.md ship — DAG resolver hot path bench** (sister review T3 transparency — phase 1.5 acceptance bar D9 候选)
+   - **触发**: phase 1.5 DAG resolver 频繁调 `validateManifestFile` (依赖图解析必经路径) — 不 audit 风险 100ms→200ms perf 跳跃 ship 前才发现
+   - **范围**:
+     - manifest validate 调用次数 baseline (phase 1.4 routing engine 0 hot path) vs phase 1.5 DAG (≥ N 次/调用)
+     - 单 manifest validate 时间 baseline (phase 1.3 ship 28ms) 是否 regress (≥ 5% threshold)
+     - 续 phase 1.3 PERF-ATTRIBUTION.md 模式 + phase 1.4 跳过 T7.3 透明性补强
+   - **决策点**: phase 1.5 plan-phase Wave 6 acceptance bar D9 (类 phase 1.4 C7 模式)
+
+4. **v0.1.0-alpha.4 release notes 显式 known limitations** (sister review T2 transparency — 推 phase 1.5 release window 顺手 patch)
+   - **触发**: phase 1.4 30 sample 100.0% hit metric 用户视角误读风险（specific rule match 21/30 = 70% — array trigger v1 miss 影响 search-5 批量 URL → tavily fallback ~10× cost vs exa intent）
+   - **范围**: README v0.1.0-alpha.4 状态段已加 5 行注脚 (sister T1 inline) — phase 1.5 release notes (CHANGELOG.md or GitHub Release) 加 ## Known Limitations 段
+   - **决策点**: phase 1.5 ship 时 release notes 内联 (类 phase 1.4 ADR 0008 inline phase 1.3 deferred items 模式)
 
 ### P1 — phase 1.5 周期内评估
 

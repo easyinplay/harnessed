@@ -36,14 +36,19 @@ harnessed/
 └── docs/adr/           # 架构决策记录
 ```
 
-## v0.1.0-alpha.3 状态
+## v0.1.0-alpha.4 状态
 
+- **Phase 1.4 shipped** ✅（routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample inline truth table + 291+2 tests + ADR 0008 errata）
+  - **3 routing 文件 karpathy 严守**: engine.ts 170L / agentDefinition.ts 148L / systemPrompt.ts 43L
+  - **30 sample**: 100.0% (30/30) **expected behavior match** ≥ 85% v0.1 内部基线
+  - **Specific rule match 21/30 = 70%** (9 plan-phase expected fallback/fallthrough — engineering category v1 占位 0 rules + 4 array trigger v1 miss); array semantic match 升级 phase 1.5 DAG resolver
+  - **Known limitations**: routing engine v1 仅 L1 关键词路由 + supervisor fallback；array trigger 场景（批量 URL / academic / perf-a11y-memory / ai-explore）走 fallback；phase 1.5 DAG resolver + Semantic Router L2 升级修复
 - **Phase 1.3 shipped** ✅（categorization schema 3 字段 + decision_rules.yaml v1 12 rules + `harnessed install-base` 子命令 + ui-ux-pro-max install path 实测 + AgentDefinition factory contract draft + 235 tests / 1 skipped + ADR 0007 errata）
 - **Phase 1.2.5 architecture revision shipped** ✅（[ADR 0006](./docs/adr/0006-architecture-wedge-revision-v3.md) — wedge 升级 "装配主义包管理器" → "完整三层栈方法论的可执行 engine"；8 支柱 100% capture lock；ROADMAP v3 重排 16 → 17 phase）
 - **Phase 1.2 shipped** ✅（cli-npm + mcp-stdio installer runtime + 5 CLI subcommands + 12 contract tests + ADR 0005 errata + 含 phase 1.2.1 hotfix B5'）
 - **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + bench 21.7-22.6ms + B1 shell-escape security gate + 3 ADRs）
-- **Acceptance bar B1-B8 8/8** ✅（A7 ADR 0001-0007 守恒 / 7 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25790126213）
-- **Next**：phase 1.4（routing engine v1 + research workflow E2E + main-process-driven `claude plugin install` + AgentDefinition factory invoke）
+- **Acceptance bar C1-C8 8/8** ✅（A7 ADR 0001-0008 守恒 / 8 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25804037789 + 25805032247）
+- **Next**：phase 1.5（DAG resolver + Semantic Router L2 + engineering category routing rules + mattpocock 23 招式 phase routing schema）
 
 ## Install Quick Start（phase 1.2 ready）
 
