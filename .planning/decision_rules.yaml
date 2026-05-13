@@ -1,0 +1,179 @@
+# yaml-language-server: $schema=../schemas/decision-rules.v1.schema.json
+#
+# decision_rules.yaml v1 — phase 1.3 T3.1 起草 (frozen at phase 1.3 ship)
+#
+# IMPL NOTE (KICKOFF B1 + ASSUMPTIONS § C P0-1 + GRAY-AREA-1 § 2 真理 source):
+#   - 全局 rule-set (DMN Priority Hit Policy 风格) — phase 1.4 routing engine 优先 load 本文件
+#   - 与 manifest.spec.decision_rules (per-manifest hint, ADR 0007 errata T2.1 加) schema 完全独立
+#   - W-6 v2 演化路径: 任何 v1 字段改动必走 ADR 0008+ errata + scripts/migrate-decision-rules-v1-to-v2.mjs
+#   - W-1 + S-2 engineering category v1 占位 0 rules — base layer (gstack/GSD/superpowers/...) 已装,
+#     不需 install routing; rules 推 phase 1.4 加 (参 GRAY-AREA-3 § 3.3 mattpocock_phases routing)
+#   - B1 security: 本文件 string fields 不允许 shell metacharacters ($(...) / ${...} / backtick) —
+#     loadDecisionRules() 内 checkCmdString 二次过滤 (沿袭 phase 1.1.1 H7 mitigation pattern)
+
+version: 1
+hit_policy: P  # Priority — 多规则命中时按 priority 字段排序取最高
+
+# === L1 路由：关键词 + 优先级 ===
+rules:
+  # ─── design (2 rules) ────────────────────────────────────────
+  - id: ui-task-bold-style-override
+    priority: 100
+    domain: design
+    when:
+      task_type: ui-design
+      override_keywords:
+        - 做出风格
+        - design-led
+        - experimental
+        - 独特
+        - creative
+        - distinctive
+    decision:
+      primary_expert: frontend-design
+      secondary_expert: ui-ux-pro-max
+      conflict_policy: primary_wins
+      rationale: 用户明示 style-driven, 由 frontend-design 主导剩余维度
+
+  - id: ui-task-default
+    priority: 50
+    domain: design
+    when:
+      task_type: ui-design
+    decision:
+      primary_expert: ui-ux-pro-max
+      secondary_expert: frontend-design
+      conflict_policy: primary_wins
+      rationale: 数据驱动 + 标准化 + 可解释 优先 (CLAUDE.md UI 路由默认)
+
+  # ─── content (2 rules) ───────────────────────────────────────
+  - id: pptx-file-task
+    priority: 80
+    domain: content
+    when:
+      task_type: pptx-file-operation
+    decision:
+      primary_expert: anthropics-skills-pptx
+      rationale: PowerPoint 文件操作 — anthropics 官方 skill
+
+  - id: chinese-content-deck
+    priority: 70
+    domain: content
+    when:
+      task_type: slide-deck
+      language: zh
+    decision:
+      primary_expert: jimliu-baoyu-skills-baoyu-slide-deck
+      warn: 'license: None — D1.2.5-10 pending license verify'
+      rationale: 中文 deck 场景, baoyu-skills license 待 phase 1.5 verify
+
+  # ─── testing (4 rules) ───────────────────────────────────────
+  - id: perf-a11y-memory
+    priority: 100
+    domain: testing
+    when:
+      task_type:
+        - performance
+        - a11y
+        - memory-leak
+        - Core Web Vitals
+        - LCP
+    decision:
+      primary_expert: chrome-devtools-mcp
+      forbidden_experts:
+        - playwright-cli
+        - playwright-test
+        - webapp-testing
+      rationale: 笔记硬规则 — perf/a11y/memory 不允许 playwright 系列做诊断
+
+  - id: e2e-with-python-backend
+    priority: 70
+    domain: testing
+    when:
+      task_type: e2e-test
+      backend_language: python
+    decision:
+      primary_expert: webapp-testing
+      rationale: setup 需调 Python 后端 (Tortoise ORM / pandas / backend utils)
+
+  - id: e2e-default
+    priority: 50
+    domain: testing
+    when:
+      task_type: e2e-test
+    decision:
+      primary_expert: playwright-test
+      rationale: 默认 E2E TS — frontend 是 TS/React/Vue, setup 仅浏览器 + HTTP API
+
+  - id: ai-explore-debug
+    priority: 50
+    domain: testing
+    when:
+      task_type:
+        - ai-explore
+        - interaction-debug
+        - element-ref
+    decision:
+      primary_expert: playwright-cli
+      rationale: Bash 一行命令 + token 最省 — 探查页面结构/调试一次性交互
+
+  # ─── search (2 rules) ────────────────────────────────────────
+  - id: search-academic-or-batch-or-token-sensitive
+    priority: 80
+    domain: search
+    when:
+      task_type: search
+      signals:
+        - 学术
+        - 论文
+        - describe
+        - 批量 URL
+        - token-sensitive
+    decision:
+      primary_expert: exa-mcp
+      rationale: 描述式查询/学术/批量抓取/token 敏感 — Exa highlights 密度高
+
+  - id: search-default
+    priority: 50
+    domain: search
+    when:
+      task_type: search
+    decision:
+      primary_expert: tavily-mcp
+      rationale: 默认 — 关键词查询/库 API 文档/新闻时效信息/生产 RAG
+
+  # ─── meta (2 rules) ──────────────────────────────────────────
+  - id: meta-create-skill
+    priority: 50
+    domain: meta
+    when:
+      task_type: skill-creation
+    decision:
+      primary_expert: anthropics-skills-skill-creator
+      rationale: meta 创建 skill — anthropics 官方 skill-creator
+
+  - id: meta-find-skill
+    priority: 50
+    domain: meta
+    when:
+      task_type: skill-discovery
+    decision:
+      primary_expert: vercel-labs-skills-find-skills
+      rationale: meta 搜索 skill — vercel-labs 生态发现入口
+
+  # ─── engineering (W-1 + S-2 v1 占位 — 0 rules) ───────────────
+  # NOTE: engineering category base layer 已装 (gstack/GSD/superpowers/karpathy/
+  #       mattpocock/ralph-loop/planning-with-files), 不需 install routing;
+  #       rules 推 phase 1.4 加 (参 GRAY-AREA-3 § 3.3 mattpocock_phases routing schema:
+  #       discuss/plan/execute/verify 分阶段调度 23 招式, 含心法 4 + 招式 23).
+
+# === L2 路由：LLM Supervisor (复杂仲裁仅 fallback) ===
+fallback_supervisor:
+  trigger: L1 无 rule 命中 OR 多 rule 同 priority 冲突 OR 用户 prompt 含未列在 override_keywords 的语义
+  llm: claude-opus-4-7
+
+# === Deprecation 提示 ===
+deprecated:
+  - id: brave-search-mcp
+    reason: API 改 5 USD 月度信用 + 强制信用卡
+    fallback: tavily-mcp + exa-mcp
