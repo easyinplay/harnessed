@@ -351,6 +351,52 @@ cd D:/GitCode/harnessed
 
 ---
 
+## Phase 1.5 Prereq Notes（phase 1.4 ship 后 explicit 启动 prereq — T8.4）
+
+> phase 1.5 plan-phase 启动**直接消费 phase 1.4 输出**，无需重做。完整 8 接口契约见 `.planning/phase-1.4/VERIFICATION.md` § 2 + `PLAN.md` § 4。
+
+### P0 — phase 1.5 启动必备
+
+1. **DAG resolver + Semantic Router L2 (embedding kNN)** — 解锁 plan-feature workflow context routing
+   - **接口入口**: `engine.route(task, opts)` (phase 1.4 已 ship — `src/routing/engine.ts`)；DAG resolver 替换 arbitrate 步骤；其余编排步骤同源
+   - **EngineResult narrow pattern**: `if ('ok' in result && result.ok === false)` (F41 takeaway — TS strict union narrow 防陷阱)
+   - **来源**: ROADMAP.md v0.1.0 phase 1.5 + R04 P0#4 (sequential 不允许拖到 v0.3)
+
+2. **engineering category routing rules + mattpocock 23 招式 phase routing schema** — 完成 8 支柱 A1' / A5' enforcement
+   - **R6 mitigation**: phase 1.4 KICKOFF 第 38 行 explicit lock + ADR 0008 § Consequences R6 跟踪条目
+   - **现状**: phase 1.4 30 sample 中 engineering 5/5 走 fallback_supervisor (claude-opus-4-7) — 单模型兜底；phase 1.5 加 23 招式 phase routing schema 后能精确路由 discuss/plan/execute/verify
+   - **接口扩展**: `routing/decision_rules.yaml` 加 engineering category 新 rules + manifest spec 顶层 `phase` 字段（discuss/plan/execute/verify enum 候选）
+
+### P1 — phase 1.5 周期内评估
+
+3. **`initialPrompt` + `criticalSystemReminder_EXPERIMENTAL` v1.1 contract errata 评估** (D1.4-2)
+   - **来源**: phase 1.4 RESEARCH § 2 fresh 2026 暴露 2 新字段；contract v1 frozen at phase 1.3 ship — 不动 main body 守 A7 (D1.4-2 lock)
+   - **决策点**: phase 1.5 errata window 走 ADR 0009 errata 加 `initialPrompt: string` + `criticalSystemReminder_EXPERIMENTAL: string` 2 字段，AgentDefinition 12 字段 → 14 字段 1:1 binding；T4.2 cell 1 W-5 V1 BLOCKER drift detector 同步扩展
+   - **预期 impact**: spawn 时刻 main agent 注入 initialPrompt 进 subagent context (复用 ralph-loop wrap pattern + verbatim COMPLETE marker 约束)
+
+4. **F40-2 `@anthropic-ai/claude-agent-sdk` deps 引入评估** (推 phase 1.5 D1.4-2 errata window 同步)
+   - **现状**: phase 1.4 agentDefinition.ts 用 inline `interface AgentDefinition` 1:1 contract § 2 (12 字段)；package.json 不污染 dep；karpathy YAGNI
+   - **触发条件**: research workflow E2E (T5.x) 真实调用 query() API 时 (HARNESSED_REAL_SPAWN=1 spawn 真实 main-process subagent) 才引入 deps
+   - **决策点**: 视 phase 1.5 实装 DAG resolver 调用 spawn 频率 + Semantic Router L2 supervisor 调用 query() API 真实形态实证后决定
+
+5. **`--add-plugin ralph-wiggum` 官方 plugin headless mode 切换评估** (D1.4-3)
+   - **现状**: phase 1.4 自实装 `src/routing/lib/ralphLoop.ts` ≤ 50L (wedge 原则 — 自实装 small 是核心 wedge)；KICKOFF lock 严守
+   - **触发条件**: v0.2+ 官方 plugin 成熟度可信 + 自实装 cost > 切换 cost 时
+   - **决策点**: phase 2.1+ + ADR 0009+ errata 评估窗口
+
+### P2 — 跨里程碑预留 (phase 1.4 deferred items)
+
+6. **F42 array semantic match 升级** (R5 array fallthrough → match 行为)
+   - **现状**: phase 1.4 arbitrate v1 array-field rule (priority=100 ui-task-bold-style-override / priority=80 search-academic-or-batch-or-token-sensitive) v1 miss → priority=50 default rule fallthrough 命中
+   - **影响**: 4 SAMPLES expected_rule_id v0.1 fallthrough — design-3/-5 (`ui-task-default`) / search-4/-5 (`search-default`)；命中 default rule (非 array-trigger rule) 不影响 routing primary 命中率 (设计意图仍达成 — ui-design 走 ui-ux-pro-max / search 走 tavily-mcp)
+   - **决策点**: phase 1.5 评估 OR ADR 0009 errata 路径；升级回 array-trigger rule 命中后 4 SAMPLES expected_rule_id 同步升级（SAMPLES.md § 8.1 升级映射已落地）
+
+7. **phase 1.4 30 sample → phase 3.4 v0.3.0 完整命中率 100+ sample × 多 model × stability 验收**
+   - **现状**: phase 1.4 30 sample inline truth table (Pattern P) 单 model 单环境 100% hit ≥ 85% v0.1 内部基线
+   - **升级路径**: W-3 fixture migration script `scripts/migrate-samples-inline-to-fixture.mjs` 把 SAMPLES.md inline truth → tests/fixtures/routing/samples/*.yaml；phase 3.4 v0.3.0 release 验收时 100+ sample × Haiku/Sonnet/Opus 各 ≥ 8 × stability run × 3 验收
+
+---
+
 ## 框架治理路由（呼应 ~/.claude/CLAUDE.md）
 
 本项目在 v0.1+ 的子任务执行阶段须遵循：

@@ -83,28 +83,32 @@
   - `routing/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy, 12 rules) ✅
   - ui-ux-pro-max install path 实测 (D1.2.5-11) ✅ PATH_A+B 双 OK
   - 验收：B1-B8 8/8 acceptance bar；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate ✅；CI run 25790126213 三平台全绿
-- **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）⏳ NEXT
-  - main-process-driven routing engine (D1.2.5-3) — `claude plugin install --scope project` + 不依赖 `/reload-plugins` (fresh subagent invoke + filesystem scan path D1.4-1) + AgentDefinition factory 1:1 对应 contract v1 12 字段
-  - 5 category × 12 decision rules MVP execute（design / content / testing / search **+ meta** 5 category 实测命中；engineering category v1 占位 0 rules 走 fallback_supervisor — mattpocock 23 招式 phase routing 推 phase 1.5）
-  - L1 关键词路由（DMN Priority Hit Policy）+ fallback_supervisor LLM L2 兜底
-  - research workflow E2E + sub-routing 沿用 search category
-  - 主 agent system prompt verbatim COMPLETE 强制 (F33 P1 mitigation) + 4 心法 always-on baseline inject (D1.4-14)
-  - 验收：5 category routing engine 跑通；30 真实查询样本路由命中率 ≥ 85%（v0.1 内部基线 — phase 3.4 v0.3.0 完整命中率验收）
-- **Phase 1.5：DAG resolver + Semantic Router 语义增强（v0.2 起点合并）**（v3 新加）
+- **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）✅ SHIPPED 2026-05-13
+  - main-process-driven routing engine (D1.2.5-3) — `src/routing/engine.ts` 170L Pattern N (主流程编排) ✅
+  - AgentDefinition factory 1:1 对应 contract v1 12 字段 (`src/routing/agentDefinition.ts` 148L + 4 typed error class + 4 心法 prepend D1.4-14) ✅
+  - systemPrompt verbatim COMPLETE (`src/routing/systemPrompt.ts` 43L Pattern O + D-18 1:1 contract § 5.4 + F33 P1 mitigation) ✅
+  - 5 category × decision rules MVP execute (design / content / testing / search / meta) — engineering category v1 占位 0 rules 走 fallback_supervisor (R6 mitigation, 推 phase 1.5) ✅
+  - L1 关键词路由 (DMN Priority Hit Policy) + fallback_supervisor LLM L2 兜底 ✅
+  - research workflow E2E (`src/cli/research.ts` 93L + 9th register fn + integration test +3 mock cell + 1 real-spawn skipIf) ✅
+  - 30 真实查询样本路由命中率 **100.0% (30/30)** ≥ 85% v0.1 内部基线（per-category 全 5/5；4 F42 fallthrough corrected — phase 3.4 v0.3.0 完整命中率验收推 phase 3.4） ✅
+  - 验收：C1-C8 8/8 acceptance bar；ADR 累积 7→8 (0008 errata 含 H1a perf transparency reference + M1 yaml path migration 官方化 + R6 engineering category 推 phase 1.5)；CI run 25804037789 @ 8f56514 三平台全绿；A7 step iter 1-8 全 8 ADR 守恒
+- **Phase 1.5：DAG resolver + Semantic Router 语义增强 + engineering category routing + mattpocock 23 招式 phase routing**（v3 重排 + phase 1.4 ship 后扩展）⏳ NEXT
   - DAG resolver + 拓扑排序（原 phase 1.3）
   - Semantic Router L2 升级（embedding kNN）
   - 高频 workflow 模式编码（D1.2.5-4 P0-4 渐进策略）
-  - 验收：循环依赖 schema 阶段 reject；Semantic Router 能识别 "做出风格" 等 phrase
+  - **phase 1.4 ship 后新增**: engineering category routing rules (R6 mitigation — 完成 8 支柱 A1' / A5' enforcement) + mattpocock 23 招式 phase routing schema (discuss/plan/execute/verify 分阶段调度)
+  - **phase 1.4 ship 后评估候选** (推 phase 1.5 evaluation window): D1.4-2 `initialPrompt` + `criticalSystemReminder_EXPERIMENTAL` v1.1 contract errata (走 ADR 0009 errata) / F40-2 `@anthropic-ai/claude-agent-sdk` deps 引入 (视 query() 真实调用频率) / F42 array semantic match 升级 (R5 array fallthrough → match 行为)
+  - 验收：循环依赖 schema 阶段 reject；Semantic Router 能识别 "做出风格" 等 phrase；engineering 5/5 命中精确 phase routing
 
 ### 关键风险（v3 update）
 
 - ⚠️ **DAG resolver 推迟到 phase 1.5**：v3 重排后 phase 1.3 不再含 DAG（base profile 安装顺序明确，不需拓扑），但 phase 1.5 + Semantic Router 升级一起做时必须实装（守 R04 失败模式 4 brew bundle 教训）
-- ⚠️ **schema 冻结仓促**：第一行 installer 代码前必须冻结，后续改 schema = 全 manifest 迁移 — phase 1.3 加 `category` / `decision_rules` / `install_type` 字段走 ADR 0007 errata（A7 守恒不动 0001）
-- ⚠️ **Windows native 被遗忘**：默认开发在 Mac，CI 红了直接 disable Windows 是常见反模式 → 红了必须修，不允许 disable（phase 1.2.1 hotfix 已实证 B5' 修复）
-- ⚠️ **Routing engine 三红旗（来自 phase 1.2.5 RESEARCH-1）**：
-  - 🔴 P0: subagent 不能嵌套 — phase 1.4 routing engine 必须 main-process-driven (已 lock D1.2.5-3)
-  - 🟡 P1: `/reload-plugins` skill bug — phase 1.4 实装时设计 install 后 fresh subagent invoke 验证 fallback
-  - 🟡 P1: subagent final message summarize 风险 — phase 1.4 main agent system prompt 强制 verbatim COMPLETE marker
+- ⚠️ **schema 冻结仓促**：第一行 installer 代码前必须冻结，后续改 schema = 全 manifest 迁移 — phase 1.3 加 `category` / `decision_rules` / `install_type` 字段走 ADR 0007 errata（A7 守恒不动 0001）；phase 1.4 routing engine 实装走 ADR 0008 errata（A7 守恒不动 0001-0007）；phase 1.5 候选 ADR 0009 errata 加 `initialPrompt` / `criticalSystemReminder_EXPERIMENTAL` 2 新字段（D1.4-2 评估）
+- ⚠️ **Windows native 被遗忘**：默认开发在 Mac，CI 红了直接 disable Windows 是常见反模式 → 红了必须修，不允许 disable（phase 1.2.1 hotfix 已实证 B5' 修复；phase 1.4 CI run 25804037789 三平台全绿实证 ✅）
+- ✅ **Routing engine 三红旗（来自 phase 1.2.5 RESEARCH-1）已实证**（phase 1.4 ship 验收）：
+  - ✅ P0 (resolved): subagent 不能嵌套 — phase 1.4 routing engine main-process-driven 已 ship (D1.2.5-3 + D1.4-1 spike 实证)
+  - ✅ P1 (resolved): `/reload-plugins` skill bug — phase 1.4 实装时设计 install 后 fresh subagent invoke + filesystem scan + sleep retry idempotent_check + RestartRequiredError 兜底 (R2 mitigation 已 ship)
+  - ✅ P1 (resolved): subagent final message summarize 风险 — phase 1.4 systemPrompt.ts D-18 1:1 对齐 contract § 5.4 + verbatim COMPLETE marker 强制 (F33 P1 mitigation 已 ship)
 
 ---
 
@@ -308,13 +312,18 @@ v0.1.0 Foundation (3-5 周, v3 扩大范围)
   │       │                                         │
   │       ▼                                         │
   │ P1.4 routing engine v1 + research workflow E2E │
-  │      (main-process-driven; 6 category × 12+    │
-  │      decision rules MVP; verbatim COMPLETE)    │
-  │      ⏳ NEXT                                    │
+  │      (main-process-driven; 5 category × 12      │
+  │      decision rules MVP execute; verbatim       │
+  │      COMPLETE; 30 sample 100.0% hit ≥ 85%       │
+  │      v0.1 内部基线)                              │
+  │      ✅ SHIPPED 2026-05-13                      │
   │       │                                         │
   │       ▼                                         │
   │ P1.5 DAG resolver + Semantic Router v2 升级    │
-  │      (循环依赖检测 + embedding kNN 语义增强)   │
+  │      + engineering category routing rules +    │
+  │      mattpocock 23 招式 phase routing schema   │
+  │      (循环依赖检测 + embedding kNN + 8 支柱     │
+  │       A1'/A5' enforcement R6 mitigation)        │
   └─────────────────────┬───────────────────────────┘
                         │
                         ▼
