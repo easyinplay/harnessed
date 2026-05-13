@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: ui-ux-pro-max
+  display_name: ui-ux-pro-max (midwayjs/midway)
+  description: Data-driven, standards-based UI/UX expert skill (Codex skill ported via git-clone-with-setup; v4-next branch).
+  upstream:
+    source: midwayjs/midway
+    homepage: https://github.com/midwayjs/midway/tree/v4-next/.codex/skills/ui-ux-pro-max
+    repository: https://github.com/midwayjs/midway.git
+    license: MIT
+    notice: |
+      ui-ux-pro-max skill from midwayjs/midway v4-next branch (Codex skill ported to Claude Code skills/).
+      D1.3-5 path B 主推 (avoids vercel-labs/skills issue #373 update break on non-main branches).
+spec:
+  type: cc-skill-pack
+  component_type: command
+  category: design
+  install_type: git
+  install:
+    method: git-clone-with-setup
+    cmd: "rm -rf ~/.claude/skills/.cache/midway-uiux && git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.claude/skills/.cache/midway-uiux && mkdir -p ~/.claude/skills && cp -R ~/.claude/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.claude/skills/ui-ux-pro-max && rm -rf ~/.claude/skills/.cache/midway-uiux"
+    git_ref: e89d70e4bcd0ae04709a773db549cf61fcf813ac
+    idempotent_check: "test -f ~/.claude/skills/ui-ux-pro-max/SKILL.md"
+  verify:
+    cmd: "test -f ~/.claude/skills/ui-ux-pro-max/SKILL.md"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/ui-ux-pro-max"
+    cleanup_paths:
+      - ~/.claude/skills/ui-ux-pro-max
+  upstream_health:
+    stability: beta
+    last_check: "2026-05-13"
+    last_known_good_version: v4-next-e89d70e4bcd0
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
+  decision_rules:
+    trigger: "user 请求 UI/UX 设计 / 前端组件 / design system / 数据驱动可视化"
+    default_expert: ui-ux-pro-max
+    arbitration_rule: "ui-ux-pro-max 出主方案 (数据驱动 / 标准化); frontend-design 补 layout / 动效 / 装饰细节"
+    override_signals:
+      - phrase: "做出风格"
+        use: frontend-design
+      - phrase: "experimental"
+        use: frontend-design
+      - phrase: "design-led"
+        use: frontend-design
