@@ -81,7 +81,7 @@ describe('runRouting — happy + verbatim COMPLETE (Anchor 1+2)', () => {
       { rulesPath, skillsRoot, spawn: async (_d: AgentDefinition) => 'doing work...\nCOMPLETE' },
     )
     expect(result).toMatchObject({ ok: true })
-    if (result.ok === true) {
+    if ('ok' in result && result.ok === true) {
       expect(result.matchedRule?.id).toBe('search-default')
       expect(result.result).toContain('COMPLETE')
     }
@@ -108,7 +108,7 @@ describe('runRouting — fallback / install fail / verbatim mismatch', () => {
       },
     )
     expect(result).toMatchObject({ ok: true })
-    if (result.ok === true) {
+    if ('ok' in result && result.ok === true) {
       expect(result.matchedRule).toBeNull()
       expect(result.result).toContain('fallback supervisor result')
     }
@@ -145,7 +145,7 @@ describe('runRouting — fallback / install fail / verbatim mismatch', () => {
       { rulesPath, skillsRoot },
     )
     expect(result).toMatchObject({ ok: false, phase: 'install' })
-    if (result.ok === false) {
+    if ('ok' in result && result.ok === false) {
       const err = result.error
       const isExpected =
         err instanceof RestartRequiredError || err instanceof SkillNotInstalledError
@@ -203,7 +203,7 @@ describe('runRouting — security + restart bail', () => {
       { rulesPath, skillsRoot },
     )
     expect(result).toMatchObject({ ok: false, phase: 'arbitrate' })
-    if (result.ok === false) {
+    if ('ok' in result && result.ok === false) {
       expect(result.error.message).toMatch(/security violation/)
     }
   })
@@ -215,7 +215,7 @@ describe('runRouting — security + restart bail', () => {
       { rulesPath, skillsRoot },
     )
     expect(result).toMatchObject({ ok: false, phase: 'install' })
-    if (result.ok === false) {
+    if ('ok' in result && result.ok === false) {
       expect(result.error).toBeInstanceOf(RestartRequiredError)
     }
   }, 10_000)
@@ -250,7 +250,7 @@ rules:
       { rulesPath, skillsRoot },
     )
     expect(result).toMatchObject({ ok: false, phase: 'arbitrate' })
-    if (result.ok === false) {
+    if ('ok' in result && result.ok === false) {
       expect(result.error).toBeInstanceOf(InvalidDecisionError)
     }
   })
