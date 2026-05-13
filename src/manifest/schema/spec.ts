@@ -80,7 +80,7 @@ const TestedWithVersions = Type.Object(
 // ADR 0007 errata — categorization schema (phase 1.3 T2.1 加 3 字段).
 // `category` (必填, 6 enum) + `install_type` (必填, 4 enum, 与 install.method 1:N 闭合) +
 // `decision_rules` (optional, per-manifest decision hint — 全局 rule-set 在
-// .planning/decision_rules.yaml T3.1, schema 完全独立).
+// routing/decision_rules.yaml T3.1, schema 完全独立).
 const Category = Type.Union([
   Type.Literal('meta'),
   Type.Literal('engineering'),

@@ -1,8 +1,11 @@
-// Phase 1.3 T3.2 — decision_rules.yaml v1 loader + Priority Hit Policy arbitrate.
+// Phase 1.3 T3.2 — routing/decision_rules.yaml v1 loader + Priority Hit Policy arbitrate.
 // IMPL NOTE (R2 § 1.3 + KICKOFF B1 + D1.3-3): yaml.parseDocument → toJS → Ajv strict
 // validate → checkCmdString 二次过滤 (B1 沿袭 phase 1.1.1 H7 pattern). 全局 rule-set,
 // 与 manifest.spec.decision_rules (per-manifest hint, ADR 0007) schema 完全独立.
 // 仅支持 PRIORITY hit policy (D1.3-3 lock); COLLECT/RULE_ORDER 等推 phase 1.4+.
+// Path migrated from .planning/ to routing/ in phase 1.3.1 sister patch M1
+// (ADR 0007 references in main body retained as ship-time accurate; ADR 0008
+// errata in phase 1.4 will officially document path).
 
 import { readFileSync } from 'node:fs'
 import { type Static, Type as T } from '@sinclair/typebox'

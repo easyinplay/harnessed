@@ -12,7 +12,7 @@
 // override_signal entry. Field is optional — omitting it must pass.
 //
 // IMPL NOTE — B-1 schema 区分: this is per-manifest hint, distinct from the
-// global rule-set in `.planning/decision_rules.yaml` (T3.1, separate Ajv
+// global rule-set in `routing/decision_rules.yaml` (T3.1, separate Ajv
 // schema). T2.3 here ONLY tests manifest.spec.decision_rules.
 //
 // Pattern J: BASE template + replace marker → covers 4 cells (omit pass /
