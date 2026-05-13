@@ -74,16 +74,16 @@
 
 - **Phase 1.1：repo 骨架 + manifest schema v1 frozen + ADR 0001** ✅ SHIPPED 2026-05-12
 - **Phase 1.2：cli-npm + mcp-stdio installer + setup/doctor 命令骨架** ✅ SHIPPED 2026-05-12 (含 phase 1.2.1 hotfix B5')
-- **Phase 1.2.5：Architecture revision discuss-phase** 🔄 in-progress (Wave A/B done; Wave C/D pending)
+- **Phase 1.2.5：Architecture revision discuss-phase** ✅ SHIPPED 2026-05-12
   - 8 支柱 100% capture lock + 5 P0 决策 lock + ADR 0006 起草 + ROADMAP v3 重排
   - 不动已 ship 代码 (A7 守恒)；准备 phase 1.3 implementation
-- **Phase 1.3：Base profile + Categorization schema + decision_rules.yaml v1**（v3 重排）
-  - 新 ADR 0007 errata：manifest schema 加 `category` + `decision_rules` + `install_type` 字段（A7 守恒不动 0001）
-  - `harnessed install-base` **独立子命令** (D-9 — 不加 --base flag) 一键装齐 base profile (10 固定 manifest)
-  - `routing/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy)
-  - ui-ux-pro-max install path 实测 (D1.2.5-11)
-  - 验收：base profile 一键装齐 mac/linux/win 全绿；decision_rules.yaml schema validation 通过；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate
-- **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）
+- **Phase 1.3：Base profile + Categorization schema + decision_rules.yaml v1**（v3 重排）✅ SHIPPED 2026-05-13
+  - 新 ADR 0007 errata：manifest schema 加 `category` + `decision_rules` + `install_type` 字段（A7 守恒不动 0001）✅
+  - `harnessed install-base` **独立子命令** (D-9 — 不加 --base flag) 一键装齐 base profile (10 固定 manifest) ✅
+  - `routing/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy, 12 rules) ✅
+  - ui-ux-pro-max install path 实测 (D1.2.5-11) ✅ PATH_A+B 双 OK
+  - 验收：B1-B8 8/8 acceptance bar；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate ✅；CI run 25790126213 三平台全绿
+- **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）⏳ NEXT
   - main-process-driven routing engine (D1.2.5-3) — `claude plugin install` + `/reload-plugins` + AgentDefinition factory
   - 6 category × 12+ decision rules MVP（design / content / testing / search 优先）
   - L1 关键词路由（DMN Priority Hit Policy）
@@ -297,18 +297,20 @@ v0.1.0 Foundation (3-5 周, v3 扩大范围)
   │       │                                         │
   │       ▼                                         │
   │ P1.2.5 architecture wedge revision (ADR 0006)  │
-  │      🔄 IN-PROGRESS (Wave A/B/C done)          │
+  │      ✅ SHIPPED 2026-05-12                      │
   │       │                                         │
   │       ▼                                         │
   │ P1.3 base profile + categorization schema      │
   │      (ADR 0007 errata) + ui-ux-pro-max install │
   │      path 实测 + decision_rules.yaml v1        │
   │      + AgentDefinition factory contract draft  │
+  │      ✅ SHIPPED 2026-05-13                      │
   │       │                                         │
   │       ▼                                         │
   │ P1.4 routing engine v1 + research workflow E2E │
   │      (main-process-driven; 6 category × 12+    │
   │      decision rules MVP; verbatim COMPLETE)    │
+  │      ⏳ NEXT                                    │
   │       │                                         │
   │       ▼                                         │
   │ P1.5 DAG resolver + Semantic Router v2 升级    │

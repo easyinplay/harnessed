@@ -1,7 +1,7 @@
 # harnessed
 
-> AI coding harness 生态的**装配主义包管理器** + composition orchestrator
-> 不 vendor 上游代码，用 manifest 描述 install/check，用 composition skill 编排多上游工作流
+> **完整三层栈方法论的可执行 engine** — 6+ 虚拟角色（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师）/ 双职责治理 / 4 心法 always-on / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化
+> 在装配主义 base 之上：不 vendor 上游代码，用 manifest 描述 install/check，用 composition skill 编排多上游工作流（详 [ADR 0006](./docs/adr/0006-architecture-wedge-revision-v3.md)）
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-pre--launch-orange)](./.planning/ROADMAP.md)
@@ -10,13 +10,14 @@
 
 ## 一句话定位
 
-别人造轮子（如 ECC 自家 30 agents/135 skills），我们做"指挥棒"——装配市面上最优秀的开源 Claude Code 生态组件，用强意见的 composition skill 编织成统一工作流。
+别人造轮子（如 ECC 自家 30 agents/135 skills），我们做"指挥棒"——装配市面上最优秀的开源 Claude Code 生态组件，用强意见的 composition skill 织成统一工作流；上层把 CLAUDE.md 里写的"gstack 决策 → GSD 项目经理 → superpowers 资深工程师"三层栈方法论机器化为可执行 engine。
 
 ## 关键差异化
 
-- **不 vendor**：上游代码不进我们仓库，靠 manifest 描述 install/check（schema v1 frozen — see [ADR 0001](./docs/adr/0001-manifest-schema-v1.md)）
+- **三层栈机器化**（[ADR 0006](./docs/adr/0006-architecture-wedge-revision-v3.md)）：gstack（决策层 / 6+ 虚拟角色 / 治理关卡） + GSD（项目经理 / phase orchestration / 状态持久化） + superpowers（资深工程师 / 子任务执行质量） + andrej-karpathy-skills（4 心法 always-on baseline） + mattpocock-skills（23 招式 by-phase routing） — 8 支柱 100% capture，把 CLAUDE.md 协作规则机器化为可执行 engine
+- **不 vendor**（base layer）：上游代码不进我们仓库，靠 manifest 描述 install/check（schema v1 frozen — see [ADR 0001](./docs/adr/0001-manifest-schema-v1.md)；phase 1.3 加 categorization 3 字段 errata see [ADR 0007](./docs/adr/0007-categorization-schema-extension.md)）
 - **Composition Skill**：自家 workflow skill 当指挥棒，调度多个上游协同（research / execute-task / plan-feature 三 MVP workflow）
-- **包管理器思维**：`harnessed install <workflow>` 自动解析依赖图、`doctor` 健康检查
+- **包管理器思维**：`harnessed install <workflow>` 自动解析依赖图、`doctor` 健康检查、`install-base` 一键装齐 base profile（10 固定 manifest）
 - **强意见 vs all-in-one**：用户面对 `/harnessed:*` 统一入口，不需学每家上游术语
 
 ## Repo Structure
@@ -35,12 +36,14 @@ harnessed/
 └── docs/adr/           # 架构决策记录
 ```
 
-## v0.1.0-alpha.2 状态
+## v0.1.0-alpha.3 状态
 
-- **Phase 1.2 shipped** ✅（cli-npm + mcp-stdio installer runtime + 5 CLI subcommands + 12 contract tests + ADR 0005 errata + 202 tests / 1 skipped）
-- **Acceptance bar B1'-B9' 9/9** ✅（contract test 12/12 / A7 ADR 0001-0005 守恒 / 5 baseline tag iterate / Cross-OS CI dual-layer step）
-- **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + 89 tests + bench 21.7ms + B1 shell-escape security gate + 3 ADRs）
-- **Next**：phase 1.3（DAG resolver + harnessed-router 引擎 + setup 完整版）
+- **Phase 1.3 shipped** ✅（categorization schema 3 字段 + decision_rules.yaml v1 12 rules + `harnessed install-base` 子命令 + ui-ux-pro-max install path 实测 + AgentDefinition factory contract draft + 235 tests / 1 skipped + ADR 0007 errata）
+- **Phase 1.2.5 architecture revision shipped** ✅（[ADR 0006](./docs/adr/0006-architecture-wedge-revision-v3.md) — wedge 升级 "装配主义包管理器" → "完整三层栈方法论的可执行 engine"；8 支柱 100% capture lock；ROADMAP v3 重排 16 → 17 phase）
+- **Phase 1.2 shipped** ✅（cli-npm + mcp-stdio installer runtime + 5 CLI subcommands + 12 contract tests + ADR 0005 errata + 含 phase 1.2.1 hotfix B5'）
+- **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + bench 21.7-22.6ms + B1 shell-escape security gate + 3 ADRs）
+- **Acceptance bar B1-B8 8/8** ✅（A7 ADR 0001-0007 守恒 / 7 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25790126213）
+- **Next**：phase 1.4（routing engine v1 + research workflow E2E + main-process-driven `claude plugin install` + AgentDefinition factory invoke）
 
 ## Install Quick Start（phase 1.2 ready）
 
@@ -154,7 +157,7 @@ harnessed doctor   # 检测上游 stale / Windows ACL / 配置漂移
 
 - [PROJECT-SPEC.md](./PROJECT-SPEC.md) — 立项参数 spec sheet（v2.1）
 - [WORKFLOWS-MVP.md](./WORKFLOWS-MVP.md) — 3 个 MVP workflow 展开（v2.1）
-- [docs/adr/](./docs/adr/) — 架构决策记录（0001 schema / 0002 toolchain / 0003 method count errata）
+- [docs/adr/](./docs/adr/) — 架构决策记录（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source errata / **0006 architecture-wedge-revision-v3** / **0007 categorization-schema-extension errata**）
 - [.planning/ROADMAP.md](./.planning/ROADMAP.md) — 4 milestones × 3-5 phases 路线图
 - [.planning/STATE.md](./.planning/STATE.md) — 跨 session 项目记忆 SSOT
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — 贡献指南（含 Windows corepack ACL workaround）
