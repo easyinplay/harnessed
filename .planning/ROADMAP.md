@@ -84,12 +84,12 @@
   - ui-ux-pro-max install path 实测 (D1.2.5-11) ✅ PATH_A+B 双 OK
   - 验收：B1-B8 8/8 acceptance bar；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate ✅；CI run 25790126213 三平台全绿
 - **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）⏳ NEXT
-  - main-process-driven routing engine (D1.2.5-3) — `claude plugin install` + `/reload-plugins` + AgentDefinition factory
-  - 6 category × 12+ decision rules MVP（design / content / testing / search 优先）
-  - L1 关键词路由（DMN Priority Hit Policy）
+  - main-process-driven routing engine (D1.2.5-3) — `claude plugin install --scope project` + 不依赖 `/reload-plugins` (fresh subagent invoke + filesystem scan path D1.4-1) + AgentDefinition factory 1:1 对应 contract v1 12 字段
+  - 5 category × 12 decision rules MVP execute（design / content / testing / search **+ meta** 5 category 实测命中；engineering category v1 占位 0 rules 走 fallback_supervisor — mattpocock 23 招式 phase routing 推 phase 1.5）
+  - L1 关键词路由（DMN Priority Hit Policy）+ fallback_supervisor LLM L2 兜底
   - research workflow E2E + sub-routing 沿用 search category
-  - 主 agent system prompt verbatim COMPLETE 强制 (F33 P1 mitigation)
-  - 验收：6 category routing engine 跑通；30 真实查询样本路由命中率 ≥ 85%（v0.1 内部基线）
+  - 主 agent system prompt verbatim COMPLETE 强制 (F33 P1 mitigation) + 4 心法 always-on baseline inject (D1.4-14)
+  - 验收：5 category routing engine 跑通；30 真实查询样本路由命中率 ≥ 85%（v0.1 内部基线 — phase 3.4 v0.3.0 完整命中率验收）
 - **Phase 1.5：DAG resolver + Semantic Router 语义增强（v0.2 起点合并）**（v3 新加）
   - DAG resolver + 拓扑排序（原 phase 1.3）
   - Semantic Router L2 升级（embedding kNN）

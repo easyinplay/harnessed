@@ -96,7 +96,7 @@
 - **验收**:
   - [ ] 文件存在 + executable
   - [ ] 至少 1 平台（Mac 或 Linux）实测跑通输出 result
-  - [ ] **W-4 condition**: 如条件允许，也跑 Win Git Bash 验证；若 Win 卡（claude headless CLI 在 Win 兼容性不确定），record finding 而非阻塞
+  - [ ] **W-4 condition**: 如条件允许，也跑 Win Git Bash 验证；若 Win 卡（claude headless CLI 在 Win 兼容性不确定），record **F40-Win finding**（沿袭 phase 1.3 F36-Win 命名风格）而非阻塞
   - [ ] **不**入 CI test suite（沿袭 phase 1.3 D-10）
 - **决策来源**: D1.4-1 + D1.4-3 + R1 + R2 mitigation Step 1
 
@@ -164,8 +164,8 @@
 - [ ] **目标**: C2 acceptance bar — AgentDefinition factory 实装；≤ 150L (D1.4-7)；W-5 V1 BLOCKER 1:1 对应 contract enforce
 - **文件**: `/d/GitCode/harnessed/src/routing/agentDefinition.ts`（**新文件**）
 - **内容大纲**（≤ 150L）:
-  - **顶部 IMPL NOTE** (Pattern H): "Implements docs/AGENT-DEFINITION-FACTORY-CONTRACT.md v1 (frozen at phase 1.3 ship)" + ADR 0008 cross-link + D-14 (throw-error not Result wrap) + D1.4-14 (4 心法 inject)
-  - **TypeBox-derived type alias** (沿用 Pattern A — phase 1.1 schema 风格):
+  - **顶部 IMPL NOTE** (Pattern H): "Implements docs/AGENT-DEFINITION-FACTORY-CONTRACT.md v1 (frozen at phase 1.3 ship)" + ADR 0008 cross-link + D-14 (throw-error not Result wrap) + D1.4-14 (4 心法 inject) + **任何 enum 偏离 = ADR 0008 errata 触发 (D-18 enforce)**
+  - **TypeScript-derived type alias (S-2 sister patch — contract § 3 锁定)**: `import type AgentDefinition from '@anthropic-ai/claude-agent-sdk'` — **不本地重定义** AgentDefinition；本地 interface 仅用于 `TaskContext` / `ArbitrateResult` / `AgentDefinitionOpts` (3 input types)。**理由**: 零 enum drift 风险（只要 SDK 版本 fixed），自动追随官方 SDK 升级；以下 12 字段 reference 仅为 plan-phase doc，实际 import from SDK
     ```typescript
     export interface AgentDefinition {
       // 必填 (contract § 2.1)
@@ -177,11 +177,11 @@
       model?: 'haiku' | 'sonnet' | 'opus'
       skills?: string[]
       mcpServers?: Record<string, McpConfig>
-      memory?: 'persistent' | 'ephemeral'
+      memory?: 'user' | 'project' | 'local'
       maxTurns?: number
       background?: boolean
       effort?: 'low' | 'medium' | 'high'
-      permissionMode?: 'default' | 'bypassPermissions' | 'plan'
+      permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan'
     }
     ```
   - **4 typed error classes** (contract § 5.1 — D1.4-2 / R5):
@@ -251,6 +251,7 @@
   - [ ] `grep -E "do NOT summarize\|paraphrase\|verbatim.*COMPLETE\|max-iterations.*50\|skill.*fail-fast" src/routing/systemPrompt.ts` 全 hit
   - [ ] IMPL NOTE 头部含 contract § 5.4 verbatim 1:1 enforce + D-18 + F33 + ADR 0008
   - [ ] export 2 const (SYSTEM_PROMPT + COMPLETE_INSTRUCTION)
+  - [ ] **S-3 sister patch — T4.1 加 unit test cell 11**: `test('SYSTEM_PROMPT 1:1 contract § 5.4 line content', () => { expect(SYSTEM_PROMPT).toContain('do NOT summarize, paraphrase'); expect(SYSTEM_PROMPT).toContain('verbatim grep `^COMPLETE$`'); ... })` — Pattern O single-source enforce；任何 prompt 内容偏离 = test fail = 触发 ADR 0008+ errata
 - **决策来源**: D1.4-8 / D-18 / F33 P1 mitigation / KICKOFF C5 / contract § 5.4 / R5
 
 ---
@@ -318,6 +319,7 @@
     4. 如返回 `{ok: false; phase; error}`: print friendly error + exit 1
     5. 如返回 `{aborted: true; reason}`: print abort + exit 2
 - **install adapter helper**: 如 spillover 需要 `installResearchWorkflowDeps()` (D1.4-4 sequential MCP)，抽到 `src/routing/lib/installAdapter.ts`（PLAN.md § 4 接口契约）
+- **install adapter invoke 路径 (W-2 sister patch — D1.4-4 子决策)**: **优先 library call** (`import { runInstall } from '../installers/index.js'`) — phase 1.4 行 `harnessed install` subprocess 模式作为 fallback；测试 mock 走 library call inject。**理由**: subprocess 与 R1 Wave 1 Spike 重叠，且 library call 快 + 同 stack debug 易
 - **验收**:
   - [ ] `corepack pnpm typecheck && corepack pnpm lint` 0 错误
   - [ ] 文件 ≤ 100 行
@@ -380,6 +382,7 @@
     - engineering 5 sample (全部走 fallback expected — R6 mitigation Step 2)
   - **§ 3 ≥ 85% baseline 业界 alignment** — LangChain Top-1 ≥ 0.85 引用 (RESEARCH § 4)
   - **§ 4 v0.3.0 升级路径** — phase 3.4 完整命中率验收 100+ sample × 多 model × stability (D1.4-5 lock 仅 v0.1 内部基线)
+    - **fixture 化迁移 script 名 (W-3 sister patch)**: `scripts/migrate-samples-inline-to-fixture.mjs`（沿袭 phase 1.1 H4 hotfix migration script pattern + phase 1.3 sister review W-6 yaml v1→v2 migration script pattern）；估 30 min 工作量；PATTERNS § 4 D-16 反驳预案已 cite
 - **验收**:
   - [ ] ≥ 30 sample 全字段（id / category / prompt / expected_rule_id / expected_primary_expert / rationale）
   - [ ] 6 category × 5 sample 均衡分布
@@ -465,6 +468,7 @@
   - 累积 ADR: 7 → 8（加 ADR 0008 errata）
   - 累积 baseline tag: 7 → 8（加 adr-0008-accepted）
   - tests count: 235+1 → ~286+1
+- **进度算法 verify (W-5 sister patch — 沿袭 phase 1.3 B-4 风格)**: 5/17 = (v0.1 phase 1.1+1.2+1.2.5+1.3+1.4 = 5 done) / (v0.1 6 + v0.2 4 + v0.3 4 + v0.4 3 = 17 total) = **29.4%** — 数学闭合验证
 - **验收**:
   - [ ] STATE.md phase 1.4 段落完整
   - [ ] 进度表 5/17 = 29.4%

@@ -187,7 +187,7 @@ phase 1.4 ship 必须证明：
 | Wave 0 | adr-0008-accepted tag + ci.yml A7 iter 1-8 + commits 干净 + `git diff adr-0001-accepted -- docs/adr/0001-*.md` 空 |
 | Wave 1 | spike script executable + SPIKE-REPORT.md ≥ 80 行 + 实测 query() API 路径 + verbatim COMPLETE feasibility 结论 + skill load filesystem scan 行为 |
 | Wave 2 | typecheck/lint 全绿 + engine ≤ 200L / factory ≤ 150L / systemPrompt ≤ 80L 三 hard limit 满足 + Pattern H IMPL NOTE 5+ 处分布 + `routing/index.ts` barrel re-export |
-| Wave 3 | tests 228 + 1 → ≥ 246 + 1 skipped (+18 cell, 10 engine + 8 factory) + V1 BLOCKER 比对（手工 plan-checker 可视）+ 4 error paths 全覆盖 |
+| Wave 3 | tests 235+1 → ≥ 253+1 skipped (+18 cell, 10 engine + 8 factory) + V1 BLOCKER 比对（手工 plan-checker 可视）+ 4 error paths 全覆盖 |
 | Wave 4 | research.ts CLI 命令存在 + cli.ts 9th register fn + integration test ≥ 3 cell（默认 mock 全绿；env-gated real-spawn 可选验证）|
 | Wave 5 | SAMPLES.md ≥ 30 sample + 30-sample test 命中率 ≥ 85% + per-sample drill-down 失败 sample 输出 + SAMPLES.md selection rationale + ≥ 3 ambiguous |
 | Wave 6 | CI 三平台 success + A7 iter 1-8 全绿 + （可选 perf attribution 续 phase 1.3 T7.3 transparency）|

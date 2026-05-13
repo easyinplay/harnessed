@@ -114,7 +114,7 @@
 - **mitigation**:
   - **Step 1 (D1.4-4 实施)**: install adapter 先 Phase A (ctx7 npm install + Tavily/Exa idempotent_check parallel) → Phase B (Tavily MCP add + Exa MCP add **sequential**) → Phase C (verify 全并行)
   - **Step 2**: 加 IMPL NOTE 在 engine.ts install missing 段说明依赖决策（无依赖图，串行 + idempotent skip = 最简）— phase 1.5 DAG resolver 升级
-  - **Step 3 (lockfile 检查 — 如 phase 1.4 行有余力)**: install adapter 加 `.planning/.mcp-install.lock` 或 atomic write rename（避免用户并行手动操作 race）；若超时间预算可推 phase 1.5
+  - **Step 3 (lockfile 检查 — phase 1.4 时间预算判断 — W-1 sister patch)**: 若 T5.1 install adapter 实装 ≤ 60 min 完成（track in progress.md F40+） → 加 lockfile（atomic write rename `~/.claude.json.tmp` → rename，避免用户并行手动操作 race）；若 > 60 min 触发 → record finding F40+ + 推 phase 1.5 DAG resolver 时一起做
   - **Step 4 (走 wrapper)**: 走 phase 1.3 ship 的 `harnessed install <name> --apply --non-interactive` 子命令而非直接 `claude mcp add`（复用 idempotency 逻辑）
 
 ### R5: AgentDefinition factory 12 字段 1:1 对齐 contract drift 风险（W-5 V1 BLOCKER）
