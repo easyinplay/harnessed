@@ -95,3 +95,33 @@
 - 决议执行后写 F37 followup 落地
 
 ---
+
+### F37 Resolution: 方向 A 落地 — adr-0006-accepted retroactive 重打到 3e24c16 (沿袭 phase 1.2 F26 模式)
+
+**决议时刻**: 2026-05-13（phase 1.3 batch 2 启动前）；main agent 决策路径 AA — retroactive 重打。
+
+**执行步骤**:
+1. `git tag -d adr-0006-accepted`（删本地旧 tag at 32803ad）
+2. `git tag adr-0006-accepted 3e24c16`（recreate 在 phase 1.2.5 Wave D M3 patch 应用后的 commit）
+3. A7 守恒 verify — 全 7 ADR baseline tag 0 diff:
+   - adr-0001-accepted: 0 diff lines ✅
+   - adr-0002-accepted: 0 diff lines ✅
+   - adr-0003-accepted: 0 diff lines ✅
+   - adr-0004-accepted: 0 diff lines ✅
+   - adr-0005-accepted: 0 diff lines ✅
+   - **adr-0006-accepted: 0 diff lines ✅**（从 82 → 0，F37 解决）
+   - adr-0007-accepted: 0 diff lines ✅
+4. push origin: `git push origin main` + `git push origin :refs/tags/adr-0006-accepted` + `git push origin adr-0006-accepted adr-0007-accepted`（force overwrite remote 0006 tag + push 新 0007 tag）
+
+**沿袭 F26 模式**: phase 1.2 F26 retroactive 重打 adr-0002-accepted 到 d5589dd（同款 reason — "tag 应反映 ship 时刻 main body" 语义恢复）。
+
+**影响 (positive)**:
+- CI A7 step iterate 1-7 在 phase 1.3 push 时刻全绿（解锁 batch 2/3 启动）
+- baseline tag 永久守恒规则恢复 — A7 paranoid check 全 7 ADR 0 diff
+- phase 1.2.5 sister review M3 patch 的 self-contained 加固保留（不需 revert）
+
+**Caveat**: tag force overwrite 会让 origin 已 pull 旧 tag 的 client/CI 出现 inconsistency。本项目当前 single-maintainer + CI 在 push 时 fresh fetch，影响最小。
+
+**status**: ✅ RESOLVED — batch 2 unblocked
+
+---
