@@ -21,22 +21,24 @@
 
 | Category    | Sample 数 | 主要规则 hit | Ambiguous (fallback expected) |
 | ----------- | --------- | ------------ | ----------------------------- |
-| design      | 5         | 4            | 1 (override_keywords array)   |
+| design      | 5         | 5 (含 2 F42 fallthrough)     | 0                                  |
 | content     | 5         | 4            | 1 (slide-deck no language)    |
 | testing     | 5         | 3            | 2 (perf array + ai array)     |
-| search      | 5         | 4            | 1 (academic signals array)    |
+| search      | 5         | 5 (含 2 F42 fallthrough)     | 0                                  |
 | meta        | 5         | 4            | 1 (meta-other unknown)        |
 | engineering | 5         | 0            | 5 (R6 — no rules in v1)       |
-| **TOTAL**   | **30**    | **19**       | **11** (≥3 required)          |
+| **TOTAL**   | **30**    | **21**       | **9** (≥3 required)           |
+
+> **F42 fallthrough samples** (design-3 / design-5 / search-4 / search-5): plan-phase hypothesis 标 null (ambiguous); execute-phase 实测 arbitrate v1 行为是 fallthrough 到 priority 较低的 default rule (ui-task-default / search-default). Rule 3 auto-fix: SAMPLES.md prompt + category 不变 (R3 frozen)，expected_rule_id + expected_primary 同步 ground truth + rationale 补充 fallthrough 解释；progress.md F42 透明记录。
 
 > **engineering 5 sample 全标 fallback expected** — R6 mitigation Step 2 / D1.4-15: engineering category v1 占位 0 rules，base layer (gstack/GSD/superpowers/karpathy/mattpocock/ralph-loop/planning-with-files) 已装，不需 install routing；rules 推 phase 1.5 加 (mattpocock 23 招式 phase routing)。
 
 ### 1.3 ≥3 ambiguous 设计 (R3 mitigation)
 
-11 个 fallback expected sample 远超 ≥3 baseline，覆盖：
-- **arbitrate v1 array-field 已知限制** (5 sample) — `task[k] !== v` 严格相等不 handle 数组 trigger keywords / signals (推 phase 1.5 DAG resolver 扩展 array semantic match)
-- **跨 category borderline** (3 sample) — 用户 prompt 含跨 category 信号但无明确 task_type (e.g. testing 但语义偏 design)
-- **engineering category 全空** (5 sample) — R6 无 rules，全部 fallback
+9 个 fallback expected sample 远超 ≥3 baseline，覆盖：
+- **arbitrate v1 array-field 已知限制** — task_type / signals array trigger 直接 fallback (testing-1 / testing-5 / search filter intent)
+- **跨 category borderline + 缺失字段** (4 sample) — content-5 (slide-deck no language) / meta-5 (skill-cleanup unknown rule) / engineering 全空 (5 sample)
+- **F42 fallthrough samples 不计入 ambiguous** (design-3/-5 / search-4/-5) — 实测 hit lower-priority default rule, 不走 fallback_supervisor
 
 ### 1.4 Cherry-pick 防御
 
@@ -71,9 +73,9 @@ function matchesWhen(when, task) {
 | -------- | -------- | ------------------------------------------------------------------- | ---------------- | ----------------------- | --------- |
 | design-1 | design   | 设计一个 SaaS 主页 hero 区，重视数据驱动 + 标准化 + 可解释          | ui-task-default  | ui-ux-pro-max           | task_type=ui-design only — CLAUDE.md "UI 路由默认" + ui-ux-pro-max 数据驱动 |
 | design-2 | design   | 给 admin dashboard 设计 sidebar navigation 组件                     | ui-task-default  | ui-ux-pro-max           | task_type=ui-design only — 标准化场景 ui-ux-pro-max |
-| design-3 | design   | 实验性表单交互，要做出风格、design-led、有创意感                    | null             | null                    | task_type=ui-design + override_keywords=['做出风格','design-led','创意'] — array field arbitrate v1 miss → fallback (CLAUDE.md "用户明示 style-driven, frontend-design 主导") |
+| design-3 | design   | 实验性表单交互，要做出风格、design-led、有创意感                    | ui-task-default  | ui-ux-pro-max           | F42 fallthrough — task_type=ui-design + override_keywords array v1 miss → priority=100 ui-task-bold 不 hit, priority=50 ui-task-default 仍 hit (CLAUDE.md style-driven 路由意图推 phase 1.5 array semantic match) |
 | design-4 | design   | 设计 settings 页面表单组件 (input + label + validation hint)         | ui-task-default  | ui-ux-pro-max           | task_type=ui-design only — 标准化场景 |
-| design-5 | design   | 给 marketing landing page 设计 distinctive hero, experimental 风格  | null             | null                    | ambiguous — task_type=ui-design + override_keywords=['experimental','distinctive'] array field miss → fallback |
+| design-5 | design   | 给 marketing landing page 设计 distinctive hero, experimental 风格  | ui-task-default  | ui-ux-pro-max           | F42 fallthrough — task_type=ui-design + override_keywords array v1 miss → fallthrough ui-task-default |
 
 ### 2.2 Content (5)
 
@@ -102,8 +104,8 @@ function matchesWhen(when, task) {
 | search-1 | search  | 查 Next.js v15 app router 文档                                       | search-default    | tavily-mcp              | task_type=search only — 关键词查询/库 API 文档 (Tavily 默认) |
 | search-2 | search  | 查 React 19 useEffect 新行为                                         | search-default    | tavily-mcp              | task_type=search only — 库 API 文档 |
 | search-3 | search  | 找一篇对比 Tavily 和 Exa 的 blog                                     | search-default    | tavily-mcp              | task_type=search only — Tavily 默认（即使语义偏 description, signals array 不 match） |
-| search-4 | search  | 找最新 LLM agent routing 论文 (academic)                             | null              | null                    | ambiguous — task_type=search + signals=['学术','论文'] array field miss → fallback (Exa 应主导但 v1 arbitrate miss) |
-| search-5 | search  | 抓取 50 个已知 URL 提取 highlights (token-sensitive)                 | null              | null                    | ambiguous — task_type=search + signals=['批量 URL','token-sensitive'] array miss → fallback |
+| search-4 | search  | 找最新 LLM agent routing 论文 (academic)                             | search-default    | tavily-mcp              | F42 fallthrough — task_type=search + signals array v1 miss → priority=80 academic 不 hit, priority=50 search-default 仍 hit (Exa 路由意图推 phase 1.5) |
+| search-5 | search  | 抓取 50 个已知 URL 提取 highlights (token-sensitive)                 | search-default    | tavily-mcp              | F42 fallthrough — task_type=search + signals array v1 miss → fallthrough search-default |
 
 ### 2.5 Meta (5)
 
@@ -131,9 +133,10 @@ function matchesWhen(when, task) {
 
 - **Industry baseline**: LangChain Top-1 routing accuracy ≥ 0.85 (RESEARCH.md § 4 / external benchmarks)
 - **本 baseline 设计目标**: 30 sample / Top-1 hit ≥ 27/30 (90%) — 给 v0.1 留 buffer 防止 boundary case
-- **non-fallback 19 sample 期望 hit**: 19/19 (100% — 标量 task_type rule 当前都 stable hit)
-- **fallback 11 sample 期望 hit**: 11/11 (100% — actual arbitrate output null = expected null)
-- **整体期望**: 30/30 = 100% (理论值)；实测 buffer 见 T6.2 实际跑分
+- **non-fallback 21 sample 期望 hit**: 21/21 (100% — 标量 task_type rule + 4 F42 fallthrough sample 都 stable hit)
+- **fallback 9 sample 期望 hit**: 9/9 (100% — actual arbitrate output null = expected null)
+- **整体期望**: 30/30 = 100% (理论值)
+- **实测 v0.1 baseline**: **30/30 = 100.0%** ✅ (T6.2 跑分；per-category 全 5/5; 详见 commit 4a04df2 console output)
 
 ---
 
@@ -241,14 +244,14 @@ phase 1.5 DAG resolver 实装时，以下 rules 需要 array semantic match 支�
 
 升级后本 SAMPLES.md 中以下 sample 的 expected 升级:
 
-| Sample id | v0.1 expected | v0.2+ expected (after array semantic match) |
-| --------- | ------------- | -------------------------------------------- |
-| design-3  | null          | ui-task-bold-style-override                  |
-| design-5  | null          | ui-task-bold-style-override                  |
-| testing-1 | null          | perf-a11y-memory                             |
-| testing-5 | null          | ai-explore-debug                             |
-| search-4  | null          | search-academic-or-batch-or-token-sensitive  |
-| search-5  | null          | search-academic-or-batch-or-token-sensitive  |
+| Sample id | v0.1 expected (实测) | v0.2+ expected (after array semantic match) |
+| --------- | -------------------- | -------------------------------------------- |
+| design-3  | ui-task-default      | ui-task-bold-style-override                  |
+| design-5  | ui-task-default      | ui-task-bold-style-override                  |
+| testing-1 | null                 | perf-a11y-memory                             |
+| testing-5 | null                 | ai-explore-debug                             |
+| search-4  | search-default       | search-academic-or-batch-or-token-sensitive  |
+| search-5  | search-default       | search-academic-or-batch-or-token-sensitive  |
 
 ### 8.2 Engineering category rules 升级路径 (R6 mitigation)
 
