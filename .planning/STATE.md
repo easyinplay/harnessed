@@ -1,14 +1,14 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-13（**phase 1.3 SHIPPED** — base profile + categorization schema + decision_rules.yaml v1 ready；B1-B8 8/8 acceptance bar；ADR 累积 5 → 7；baseline tag 5 → 7；tests 202+1 → 235+1 skipped；ready for phase 1.4）
+> 最后更新：2026-05-13（**phase 1.4 SHIPPED** — routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample 100% hit；C1-C8 8/8 acceptance bar；ADR 累积 7 → 8；baseline tag 7 → 8；tests 235+1 → 291+2 skipped；ready for phase 1.5）
 
 ---
 
 ## 项目核心引用
 
-- **核心价值**：AI coding harness 生态的「装配主义包管理器 + 完整三层栈方法论的可执行 engine」——不 vendor 上游，composition skill 编排；6+ 虚拟角色（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师）/ 双职责治理 / 4 心法 / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化
-- **当前关注**：v0.1.0（manifest 引擎 + research workflow，3-5 周 v3 重排范围）
+- **核心价值**：AI coding harness 生态的「装配主义包管理器 + 完整三层栈方法论的可执行 engine」——routing engine v1 已实装（main-process-driven query→arbitrate→install missing→factory→spawn→ralph-loop→verbatim COMPLETE 闭合）；6+ 虚拟角色（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师）/ 双职责治理 / 4 心法 / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化
+- **当前关注**：v0.1.0（manifest 引擎 + research workflow，3-5 周 v3 重排范围 — phase 1.4 ship 后核心 wedge: routing engine v1 + research workflow E2E + 30 sample 100% hit + 7 接口契约 frozen for phase 1.5）
 - **总工期**：~10-12 周（4 milestones × 3-5 phases = 共 **17 phases** v3 重排后）
 - **License**：Apache-2.0（开源 / GitHub Sponsors 兜底）
 - **仓库**：`D:\GitCode\harnessed\`（Node.js + TypeScript）
@@ -17,17 +17,17 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：v0.1.0 Phase 1.3 ✅ **COMPLETED — SHIPPED 2026-05-13**（含 phase 1.3.1 hotfix bundle: F37 retag adr-0006-accepted / F38 perf gate 50→75ms / F39 sister review 6/8 patches applied + 2 deferred；前置 phase 1.1 + 1.1.1 / 1.2 + 1.2.1 / 1.2.5 已 ship）
+- **GSD phase**：v0.1.0 Phase 1.4 ✅ **COMPLETED — SHIPPED 2026-05-13**（含 routing engine v1 主流程 + AgentDefinition factory 1:1 contract + research workflow E2E + 30 sample 命中率 100.0%；前置 phase 1.1 + 1.1.1 / 1.2 + 1.2.1 / 1.2.5 / 1.3 + 1.3.1 已 ship）
 - **当前里程碑**：v0.1.0
-- **下一 phase**：Phase 1.4（Routing engine v1 实装 + research workflow E2E）— phase 1.3 已落地 categorization schema (3 字段: category 6 enum / install_type 4 enum / decision_rules optional) + `routing/decision_rules.yaml` v1 (12 rules + Priority hit policy) + `harnessed install-base` 子命令 + ui-ux-pro-max install path 实测 + AgentDefinition factory contract 12 字段 draft — 全部 prereq ready (见 phase-1.3 VERIFICATION.md § 2)
-- **状态**：✅ **Ready for Phase 1.4**
-- **进度**：4 / 17 phases 已完成 ▓▓▓▓░░░░░░░░░░░░░░ 23.5%
+- **下一 phase**：Phase 1.5（DAG resolver + Semantic Router L2 + engineering category routing rules + mattpocock 23 招式 phase routing schema）— phase 1.4 已落地 routing engine v1 (`src/routing/{engine.ts 170L, agentDefinition.ts 148L, systemPrompt.ts 43L}`) + research workflow E2E (`src/cli/research.ts` + 9th register fn) + SAMPLES.md 30 sample inline truth table + 8 接口契约 frozen for phase 1.5（详 `.planning/phase-1.4/PLAN.md` § 4 + VERIFICATION.md § 2）
+- **状态**：✅ **Ready for Phase 1.5**
+- **进度**：5 / 17 phases 已完成 ▓▓▓▓▓░░░░░░░░░░░░ 29.4%
 
 ### 各里程碑进度
 
 | 里程碑 | Phase 完成 | 状态 | 完成时间 |
 |--------|-----------|------|---------|
-| v0.1.0 manifest 引擎 + research | 4/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 done; Phase 1.4-1.5 待执行 | 2026-05-12 (P1.1+P1.2+P1.2.5) / 2026-05-13 (P1.3) |
+| v0.1.0 manifest 引擎 + research | 5/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 done; Phase 1.5 待执行 | 2026-05-12 (P1.1+P1.2+P1.2.5) / 2026-05-13 (P1.3+P1.4) |
 | v0.2.0 Sub-task Loop + Extension Installers | 0/4 | Not started | - |
 | v0.3.0 plan-feature + checkpoint | 0/4 | Not started | - |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
@@ -43,14 +43,35 @@
 7. ✅ ~~Phase 1.2.1 hotfix~~ — 2026-05-12；B5' CI fail fix (commit `bad2f20` — `set +o pipefail` in ok_or_dryrun helper)；CI run 25721497734 三平台全绿；**B5' acceptance bar 实测达成**（见 phase-1.2/progress.md § B F32）
 8. ✅ ~~Phase 1.2.5 architecture revision SHIPPED~~ — 2026-05-12；ADR 0006 wedge 重定位（"装配主义包管理器" → "完整三层栈方法论的可执行 engine"）；8 支柱 100% capture lock + 5 P0 决策 lock；6 baseline tag 全部加入 A7 守恒 iterate；ROADMAP v3 重排 16 → 17 phase（加 phase 1.2.5 + phase 1.5）；不动已 ship 代码 (A7 守恒)
 9. ✅ ~~Phase 1.3 SHIPPED~~ — 2026-05-13；base profile + categorization schema + decision_rules.yaml v1；B1-B8 8/8 acceptance bar；ADR 累积 7（加 0007 errata）；baseline tag 5 → 7（加 adr-0006-accepted retag → 3e24c16 + adr-0007-accepted）；tests 202+1 → 235+1 skipped (+33)；含 phase 1.3.1 hotfix bundle（F37/F38/F39 — sister review patch round 6/8 applied + 2 deferred）；详 `.planning/phase-1.3/{progress.md, VERIFICATION.md, PERF-ATTRIBUTION.md}`
-10. ⏳ **main agent tag `v0.1.0-alpha.3-base-profile`**（T8.3；CI 已三平台全绿验证 — run 25790126213 @ 7c9b66f）
-11. ⏳ **进入 Phase 1.4 plan-phase**（routing engine v1 + research workflow E2E + main-process-driven `claude plugin install` + `/reload-plugins` + AgentDefinition factory invoke）
-12. ⏳ Phase 1.5（DAG resolver + Semantic Router L2 升级 — embedding kNN）
+10. ✅ ~~main agent tag `v0.1.0-alpha.3-base-profile`~~ — pushed
+11. ✅ ~~Phase 1.4 SHIPPED~~ — 2026-05-13；routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample 100.0% hit；C1-C8 8/8 acceptance bar；ADR 累积 8（加 0008 errata 含 H1a perf transparency + M1 yaml path migration + R6 engineering category 推 phase 1.5）；baseline tag 7 → 8（加 adr-0008-accepted）；tests 235+1 → 291+2 skipped (+56)；CI run 25804037789 @ 8f56514 三平台全绿；详 `.planning/phase-1.4/{progress.md, VERIFICATION.md}`
+12. ⏳ **main agent tag `v0.1.0-alpha.4-routing-engine`**（T8.3；CI 已三平台全绿验证 — run 25804037789 @ 8f56514）
+13. ⏳ **进入 Phase 1.5 plan-phase**（DAG resolver + Semantic Router L2 + engineering category routing rules + mattpocock 23 招式 phase routing schema）
 
 ---
 
 ## 已完成（Completed）
 
+- ✅ **Phase 1.4 SHIPPED**（2026-05-13）
+  - 21 atomic 子任务全部完成（Wave 0-7 跑完；详 `.planning/phase-1.4/progress.md` § A.4）
+  - **Acceptance bar C1-C8 8/8** ✅
+    - C1 main-process-driven routing engine 实装 — `engine.ts` 170L ≤ 200L + ≥ 10 unit cell (12 实测) + verbatim COMPLETE 闭合 (Wave 6 CI verify run 25804037789 三平台全绿)
+    - C2 AgentDefinition factory 实装 — `agentDefinition.ts` 148L ≤ 150L + 12 字段 1:1 contract + 4 typed error class
+    - C3 6 category routing rules MVP execute — 30 sample 命中率 100.0% (30/30) ≥ 85% baseline；design/content/testing/search/meta 全 5/5；engineering 全 fallback_supervisor
+    - C4 research workflow E2E — `research.ts` 93L ≤ 100L + `cli.ts` 9th register fn + integration test +3 mock cell + 1 real-spawn skipIf gate
+    - C5 systemPrompt verbatim COMPLETE — `systemPrompt.ts` 43L ≤ 80L + 1:1 对齐 contract § 5.4 + D-18 enforce
+    - C6 30 真实查询样本路由命中率 ≥ 85% — 实测 100.0% (30/30) ✅；per-category 全 5/5；4 F42 fallthrough corrected
+    - C7 Cross-OS CI 三平台全绿 + A7 step iter 1-8 ✅ (run 25804037789 @ 8f56514；macOS 1m18s / Win 58s / Ubuntu 36s)
+    - C8 ADR 0008 errata accepted + adr-0008-accepted tag pushed (172L 6-section)
+  - **8 wave 完整跑完**：Wave 0 ADR 0008 errata + ci.yml A7 iter 1-8 / Wave 1 spike main-process query() API 实证 + SPIKE-REPORT 7 anchor decisions / Wave 2 engine.ts + agentDefinition.ts + systemPrompt.ts 实装 / Wave 3 engine + agentDefinition unit (+21 cell) / Wave 4 research workflow E2E sub-routing / Wave 5 SAMPLES.md + 30-sample integration test (Pattern P) / Wave 6 cross-OS CI verify (T7.3 perf attribution 跳过 — routing engine 不调 manifest validate hot path 0 perf 影响) / Wave 7 docs + ship
+  - **3 routing 文件**：`src/routing/engine.ts`(170L Pattern N — 主流程编排) + `src/routing/agentDefinition.ts`(148L 12 字段 + 4 typed error + 4 心法 prepend D1.4-14) + `src/routing/systemPrompt.ts`(43L Pattern O verbatim 1:1 contract § 5.4 D-18) + `src/routing/lib/ralphLoop.ts`(spillover) + `src/routing/index.ts`(barrel)
+  - **新 ADR**：0008 routing-engine-v1-errata（A7 守恒：ADR 0001-0007 main body 0 diff；含 phase 1.3 deferred H1a perf transparency reference + M1 yaml path migration 官方化 + R6 engineering category 推 phase 1.5）
+  - **新 baseline tag**：7 → 8（加 `adr-0008-accepted`；CI A7 step iterate 1-8 全 8 ADR 守恒）
+  - **新文件**：`docs/adr/0008-routing-engine-v1-errata.md` + `src/routing/{engine.ts, agentDefinition.ts, systemPrompt.ts, index.ts, lib/ralphLoop.ts}` + `src/cli/research.ts` + `tests/unit/routing-{engine, agentDefinition}.test.ts`(+21 cell) + `tests/integration/{routing-research-workflow, routing-30-samples}.test.ts`(+3+30 cell) + `scripts/spike/routing-spawn-agent.sh` + `.planning/phase-1.4/{KICKOFF.md, ASSUMPTIONS.md, RESEARCH.md, PATTERNS.md, PLAN.md, task_plan.md, PLAN-CHECK.md, PLAN-CHECK-ROUND-2.md, SPIKE-REPORT.md, SAMPLES.md, progress.md, VERIFICATION.md}`
+  - **3 finding logged**：F40-2 (SDK type alias deferred — agentDefinition.ts 改用本地 structural interface；karpathy YAGNI；推 phase 1.5 D1.4-2 errata window) / F41 (engine.test.ts narrow guard fix — TS strict union narrowing across no-discriminator variant；6 处 `if ('ok' in result && result.ok === false)` Rule 3 trivial auto-fix) / F42 (SAMPLES.md plan-phase hypothesis correction — 4 sample expected fallthrough not fallback; arbitrate v1 array-field miss → priority=50 default rule fallthrough hit；R3 frozen 边界澄清 expected/hypothesis 可改 prompt+category 不可改)
+  - **Pattern N/O/P 新生**：Pattern N (engine.ts 主流程编排 ≤ 200L Wave 2 anchor) / Pattern O (systemPrompt.ts verbatim instructional template ≤ 80L D-18 1:1 contract § 5.4) / Pattern P (SAMPLES.md inline truth table ≥ 85% tolerance threshold 30 sample × 6 category v0.1 内部基线)
+  - **15 D1.4-* 决策 lock**：D1.4-1 main-process query() API 实证路径 / D1.4-2 contract v1 frozen 不动 main body 守 A7（推 phase 1.5 errata） / D1.4-3 自实装 ralph-loop wrap ≤ 50L 是 wedge 原则 / D1.4-4 sequential MCP add + parallel ctx7 / D1.4-5 30 sample 选取标准 (6 category × 5 + ≥ 3 ambiguous) / D1.4-14 4 心法 always-on baseline inject / D1.4-15 research independent subcommand (D-15)
+  - 见 `.planning/phase-1.4/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md, SPIKE-REPORT.md, SAMPLES.md}`
 - ✅ **Phase 1.3 SHIPPED**（2026-05-13）
   - 22 atomic 子任务全部完成（含 phase 1.3.1 hotfix bundle 6 commit; sister review F39 6/8 applied + 2 deferred；详 `.planning/phase-1.3/progress.md` § A.4）
   - **Acceptance bar B1-B8 8/8** ✅
@@ -149,39 +170,42 @@
 
 ## 进行中（In Progress）
 
-[当前无 — Phase 1.3 SHIPPED；等待 main agent 决定 push tag `v0.1.0-alpha.3-base-profile` + 启动 Phase 1.4]
+[当前无 — Phase 1.4 SHIPPED；等待 main agent 决定 push tag `v0.1.0-alpha.4-routing-engine` + 启动 Phase 1.5]
 
 ---
 
 ## 待办（按优先级）
 
-### P0 — Phase 1.4 启动前
+### P0 — Phase 1.5 启动前
 
-1. ⏳ **Phase 1.3 push tag `v0.1.0-alpha.3-base-profile`** (T8.3；main agent 决定时机；CI 已三平台全绿验证 — run 25790126213 @ 7c9b66f)
-2. ⏳ **Phase 1.4 discuss-phase 启动**（routing engine v1 实装 + research workflow E2E + main-process-driven `claude plugin install` + `/reload-plugins` skill bug 探测 + AgentDefinition factory invoke）
-3. ⏳ Phase 1.4 plan-phase（task 拆分 + planning-with-files 落地 task_plan）
-4. ⏳ Phase 1.4 ADR 0008 errata（H1a defer 收尾 — ADR 0007 perf cost transparency inline / M1 已 applied 但 ADR 0007 4 处 path ref 仍 lock，需正式 patch）
+1. ⏳ **Phase 1.4 push tag `v0.1.0-alpha.4-routing-engine`** (T8.3；main agent 决定时机；CI 已三平台全绿验证 — run 25804037789 @ 8f56514)
+2. ⏳ **Phase 1.5 discuss-phase 启动**（DAG resolver + Semantic Router L2 embedding kNN + engineering category routing rules + mattpocock 23 招式 phase routing schema）
+3. ⏳ Phase 1.5 plan-phase（task 拆分 + planning-with-files 落地 task_plan）
+4. ⏳ Phase 1.5 ADR 0009 候选评估（`initialPrompt` + `criticalSystemReminder_EXPERIMENTAL` v1.1 contract errata D1.4-2 + array semantic match 升级 R5/F42 fallthrough → match）
 
-### P1 — Phase 1.4-1.5 周期
+### P1 — Phase 1.5 周期
 
-5. **Phase 1.4 routing engine v1 实装**：6 category × 12+ decision rules MVP；L1 关键词路由（DMN Priority Hit Policy）；30 真实查询样本路由命中率 ≥ 85%（v0.1 内部基线）
-6. **Phase 1.4 main agent system prompt 强制 verbatim COMPLETE**（F33 P1 mitigation；防 subagent final message summarize 误吞）
-7. **Phase 1.5 DAG resolver Day 1 实装**（R04 P0#4；不允许 sequential 拖到 v0.3）
-8. **Phase 1.5 Semantic Router L2 升级**（embedding kNN 语义增强；高频 workflow 模式编码）
-9. **routing schema strict 校验**（v0.3 phase 1.4 → 实际已在 phase 1.3 落地 routing/decision_rules.yaml schema 验证）
+5. **Phase 1.5 DAG resolver Day 1 实装**（R04 P0#4；不允许 sequential 拖到 v0.3）
+6. **Phase 1.5 Semantic Router L2 升级**（embedding kNN 语义增强；高频 workflow 模式编码）
+7. **Phase 1.5 engineering category routing rules + mattpocock 23 招式 phase routing schema** — 完成 8 支柱 A1' / A5' enforcement (phase 1.4 R6 mitigation)
+8. **`initialPrompt` + `criticalSystemReminder_EXPERIMENTAL` v1.1 contract errata 评估**（D1.4-2 — fresh 2026 RESEARCH § 2 暴露的 2 新字段）
+9. **F40-2 `@anthropic-ai/claude-agent-sdk` deps 引入评估**（推 phase 1.5 D1.4-2 errata window — 视 research workflow E2E 是否需要 query() 真实调用决定 deps 引入；karpathy YAGNI 至 phase 1.5）
+10. **`--add-plugin ralph-wiggum` 官方 plugin headless mode 切换评估**（D1.4-3；v0.2+ 评估窗口）
+11. **routing schema strict 校验**（v0.3 phase 1.4 → 实际已在 phase 1.3 落地 routing/decision_rules.yaml schema 验证）
 
 ### P2 — 跨里程碑预留
 
-10. `mutually_exclusive_with` 字段在 schema v1 已留占位（v0.2 dogfooding 时观察 planning-with-files vs superpowers/writing-plans 实际语义）
-11. gstack-2 / GSD-2 v2 重写迁移策略（v1.0+ 议题，schema 留迁移接口）
-12. sigstore / cosign 签名集成（v0.4+ 议题，v0.1-0.3 先用 commit hash）
-13. **deferred from phase 1.1**: 原 T4.4 shell-escape pre-Ajv 检测（`$(...)` `${...}` `eval` `!ruby/regexp`）— phase 1.4+ 评估
-14. **deferred from phase 1.1**: 原 T8.7 workflow + routing schema artifact + 同等测试覆盖 — v0.3 phase 1.4 (routing/decision_rules.yaml v1 已落地，但完整 workflow schema artifact 仍 deferred)
-15. **deferred from phase 1.2**: cc-plugin-marketplace / git-clone-with-setup / npx-skill-installer 实装代码 — phase 2.1（GA-1 Recommendation Option C timing）
-16. **deferred from phase 1.2**: mcp-http-add 实装 — phase 2.x（无真实上游 demo）
-17. **deferred from phase 1.2**: 6 月 stale upstream check + `--force` flag for idempotent_check — phase 2.4 / 2.1+
-18. **deferred from phase 1.3 sister review**: H1a ADR 0007 Consequences 节加 perf cost 透明化 — phase 1.4 ADR 0008 errata（PERF-ATTRIBUTION.md 已承担过渡 transparency 角色）
-19. **deferred from phase 1.3 sister review**: M2 ADR 0006 self-contained snapshot SSOT drift defense — v0.4 maintainer onboarding 加监控警示
+12. `mutually_exclusive_with` 字段在 schema v1 已留占位（v0.2 dogfooding 时观察 planning-with-files vs superpowers/writing-plans 实际语义）
+13. gstack-2 / GSD-2 v2 重写迁移策略（v1.0+ 议题，schema 留迁移接口）
+14. sigstore / cosign 签名集成（v0.4+ 议题，v0.1-0.3 先用 commit hash）
+15. **deferred from phase 1.1**: 原 T4.4 shell-escape pre-Ajv 检测（`$(...)` `${...}` `eval` `!ruby/regexp`）— phase 1.4+ 评估
+16. **deferred from phase 1.1**: 原 T8.7 workflow + routing schema artifact + 同等测试覆盖 — v0.3 phase 1.4 (routing/decision_rules.yaml v1 已落地，但完整 workflow schema artifact 仍 deferred)
+17. **deferred from phase 1.2**: cc-plugin-marketplace / git-clone-with-setup / npx-skill-installer 实装代码 — phase 2.1（GA-1 Recommendation Option C timing）
+18. **deferred from phase 1.2**: mcp-http-add 实装 — phase 2.x（无真实上游 demo）
+19. **deferred from phase 1.2**: 6 月 stale upstream check + `--force` flag for idempotent_check — phase 2.4 / 2.1+
+20. **deferred from phase 1.3 sister review**: M2 ADR 0006 self-contained snapshot SSOT drift defense — v0.4 maintainer onboarding 加监控警示
+21. **deferred from phase 1.4 (F42)**: array semantic match 升级 (R5 array fallthrough → match 行为) — phase 1.5 评估 OR ADR 0009 errata 路径；4 SAMPLES expected_rule_id v0.1 fallthrough → v0.2+ 升级回 array-trigger rule (SAMPLES.md § 8.1 升级映射已落地)
+22. **deferred from phase 1.4 (P2)**: phase 1.4 30 sample → phase 3.4 v0.3.0 完整命中率 100+ sample × 多 model × stability 验收（W-3 fixture migration script `scripts/migrate-samples-inline-to-fixture.mjs` — phase 3.4 fixture 化迁移基线）
 
 ---
 
@@ -191,11 +215,12 @@
 2. ✅ ~~新增 5 条风险尚未合并~~ — **已合并到 SPEC § 7（2026-05-11）**
 3. ✅ ~~Phase 1.1 schema v1 frozen~~ — **2026-05-12 SHIPPED；ADR 0001/0002 main body 受 `adr-0001-accepted` tag 守恒；进入 phase 1.2 前 schema 改动 = 全量 manifest 迁移**
 4. ✅ ~~Phase 1.3 schema 加 3 字段 (category/install_type/decision_rules)~~ — **2026-05-13 SHIPPED via ADR 0007 errata；A7 守恒：ADR 0001 main body 0 diff；adr-0007-accepted tag iterate 1-7 全 7 ADR baseline tag 守恒**
-5. **Cross-OS 测试 Day 1**（不是 v0.4）——CI config 已在 phase 1.1 落地（ci.yml）；phase 1.2 起 CI 红了必须修，不允许 disable Windows
-6. **DAG resolver Day 1 实装**——sequential 容易拖到 v0.3，brew bundle 案的反面教材；v3 重排推到 phase 1.5（base profile 安装顺序明确，不需拓扑）
-7. **路由命中率 30 样本必须覆盖 Haiku/Sonnet/Opus 各 ≥ 8**——Haiku 命中率显著低于 Sonnet（R03 实证）
-8. **bus factor 1 真实风险**——Avelino 论文实证单 maintainer 年掉队率 36%，6 个月 co-maintainer 窗口非装饰
-9. **Phase 1.4 verbatim COMPLETE 强制**——subagent final message summarize 风险（F33 P1 mitigation）；main agent system prompt 必须显式要求 verbatim COMPLETE marker
+5. ✅ ~~Phase 1.4 routing engine v1 + research workflow E2E~~ — **2026-05-13 SHIPPED via ADR 0008 errata；A7 守恒：ADR 0001-0007 main body 0 diff；adr-0008-accepted tag iterate 1-8 全 8 ADR baseline tag 守恒；30 sample 100.0% hit ≥ 85% baseline；3 routing 文件 (engine.ts 170L / agentDefinition.ts 148L / systemPrompt.ts 43L) karpathy 严守 ≤ 200/150/80**
+6. **Cross-OS 测试 Day 1**（不是 v0.4）——CI config 已在 phase 1.1 落地（ci.yml）；phase 1.2 起 CI 红了必须修，不允许 disable Windows
+7. **DAG resolver Day 1 实装**——sequential 容易拖到 v0.3，brew bundle 案的反面教材；v3 重排推到 phase 1.5（base profile 安装顺序明确，不需拓扑）
+8. **路由命中率 30 样本必须覆盖 Haiku/Sonnet/Opus 各 ≥ 8**——Haiku 命中率显著低于 Sonnet（R03 实证）；phase 1.4 30 sample × 6 category 100% hit (单 model 单环境基线，phase 3.4 v0.3.0 升级多 model × stability 验收)
+9. **bus factor 1 真实风险**——Avelino 论文实证单 maintainer 年掉队率 36%，6 个月 co-maintainer 窗口非装饰
+10. ✅ ~~Phase 1.4 verbatim COMPLETE 强制~~ — **2026-05-13 SHIPPED；systemPrompt.ts D-18 1:1 contract § 5.4 enforce + main agent system prompt verbatim COMPLETE marker (F33 P1 mitigation)；T6.2 30-sample test 验证主流程 verbatim COMPLETE 不被 summarize 误吞**
 
 ---
 
@@ -227,6 +252,12 @@
 | Phase 1.3 perf cost 量化 (schema +3 字段 cost +12% / 100 ops) | phase-1.3 PERF-ATTRIBUTION.md + F38 | 同机本地 phase 1.1 20.13 / 1.2 20.80 / 1.3 22.58ms; CI Ubuntu spike 50.14ms hotfix 50→75ms relax (data-driven 不优化 schema validation) |
 | `routing/decision_rules.yaml` v1 schema (Priority Hit Policy + 12 rules) | phase-1.3 T3.1 + RESEARCH-2 | DMN Priority hit policy；6 category × 12 rules MVP；fallback_supervisor=claude-opus-4-7；deprecated brave-search-mcp |
 | ADR 0006 baseline tag retroactive 重打到 3e24c16 (F37) | phase-1.3 progress.md § B F37 | 沿袭 phase 1.2 F26 模式；phase 1.2.5 Wave D commit 3e24c16 加 ~50 行 self-contained snapshot 后 tag 与 main body 漂移 → retag 修复
+| Phase 1.4 SHIP — routing engine v1 + research workflow E2E + 30 sample 100% hit | phase-1.4 progress.md § A.4 + VERIFICATION.md | C1-C8 8/8 ✅；3 routing 文件 (engine.ts 170L / agentDefinition.ts 148L / systemPrompt.ts 43L)；30 sample 100.0% hit (30/30) ≥ 85% baseline；ADR 7→8；tests 235+1 → 291+2 skipped |
+| ADR 0008 routing-engine-v1-errata | phase-1.4 progress.md + ADR 0008 | A7 守恒：ADR 0001-0007 main body 0 diff；含 phase 1.3 deferred H1a perf transparency reference + M1 yaml path migration 官方化 + R6 engineering category 推 phase 1.5 跟踪条目 |
+| Pattern N/O/P 新生 (engine 主流程编排 / systemPrompt verbatim 1:1 / SAMPLES inline truth table) | phase-1.4 PATTERNS.md + PLAN.md § 2 | Pattern N ≤ 200L Wave 2 anchor；Pattern O ≤ 80L D-18 1:1 contract § 5.4；Pattern P ≥ 85% tolerance threshold 30 sample × 6 category v0.1 内部基线 |
+| AgentDefinition 12 字段 1:1 contract drift detector (T4.2 cell 1) | phase-1.4 T4.2 + W-5 V1 BLOCKER | inline interface 替代 SDK type alias (F40-2)；karpathy YAGNI；推 phase 1.5 D1.4-2 errata window 评估 deps 引入 |
+| F42 SAMPLES expected fallthrough not fallback (R3 frozen 边界澄清) | phase-1.4 progress.md § B F42 | R3 mitigation Step 3 严守 prompt+category 不可改；expected/hypothesis 必须同步 ground truth (test 永远 fail 否则)；4 sample (design-3/-5 + search-4/-5) 升级映射推 phase 1.5 array semantic match |
+| Phase 1.4 perf 0 影响 (T7.3 跳过) | phase-1.4 task_plan T7.3 trigger 条件 + KICKOFF YAGNI | routing engine 不调用 manifest validate hot path (engine.route 直走 arbitrate / agentFactory / spawn — no validateManifestFile)；T7.3 触发条件不满足；karpathy YAGNI 跳过 PERF-ATTRIBUTION-2.md |
 
 ### 未决问题（留给 phase 1.3+ phase）
 
@@ -267,14 +298,18 @@ cd D:/GitCode/harnessed
 # 7. 读 .planning/phase-1.2/VERIFICATION.md 看 phase 1.2 复现指南（B1'-B9' + F23-F31 索引 + Phase 1.3 prereq）
 # 8. 读 .planning/phase-1.3/VERIFICATION.md 看 phase 1.3 复现指南（B1-B8 + F36-F39 索引 + Phase 1.4 prereq）
 # 9. 读 .planning/phase-1.3/PERF-ATTRIBUTION.md 看 schema 3 字段 perf cost 量化结论 (H1b sister patch 落地)
-# 10. 读 docs/INSTALLER-CONTRACT.md 看 phase 1.2 installer UX 6 contract（用户视角）
-# 11. 读 docs/AGENT-DEFINITION-FACTORY-CONTRACT.md 看 phase 1.3 AgentDefinition factory 12 字段 contract draft
-# 12. 读 docs/adr/0006-architecture-wedge-revision-v3.md 看完整三层栈方法论 wedge 定义 (8 支柱 capture)
-# 13. 读 docs/adr/0007-categorization-schema-extension.md 看 phase 1.3 schema errata
-# 14. 读 .planning/phase-1.{1,2,2.5,3}/progress.md § B 看完整 finding narratives
+# 10. 读 .planning/phase-1.4/VERIFICATION.md 看 phase 1.4 复现指南（C1-C8 + F40-F42 索引 + Phase 1.5 prereq 8 接口契约）
+# 11. 读 .planning/phase-1.4/SAMPLES.md 看 30 sample inline truth table + R3 frozen + § 8 升级映射
+# 12. 读 .planning/phase-1.4/SPIKE-REPORT.md 看 main-process query() API 实证 + 7 anchor decisions
+# 13. 读 docs/INSTALLER-CONTRACT.md 看 phase 1.2 installer UX 6 contract（用户视角）
+# 14. 读 docs/AGENT-DEFINITION-FACTORY-CONTRACT.md 看 phase 1.3 AgentDefinition factory 12 字段 contract draft (phase 1.4 已实装 1:1 binding)
+# 15. 读 docs/adr/0006-architecture-wedge-revision-v3.md 看完整三层栈方法论 wedge 定义 (8 支柱 capture)
+# 16. 读 docs/adr/0007-categorization-schema-extension.md 看 phase 1.3 schema errata
+# 17. 读 docs/adr/0008-routing-engine-v1-errata.md 看 phase 1.4 routing engine v1 errata + R6 deferred
+# 18. 读 .planning/phase-1.{1,2,2.5,3,4}/progress.md § B 看完整 finding narratives
 ```
 
-### 本 session 关键产出（截至 2026-05-13 phase 1.3 ship）
+### 本 session 关键产出（截至 2026-05-13 phase 1.4 ship）
 
 - `D:/GitCode/harnessed/.planning/ROADMAP.md`（v3 重排：16 → 17 phase）
 - `D:/GitCode/harnessed/.planning/STATE.md`（本文件）
@@ -283,34 +318,36 @@ cd D:/GitCode/harnessed
 - `D:/GitCode/harnessed/.planning/phase-1.2/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md, ASSUMPTIONS.md, PATTERNS.md, GRAY-AREA-1, GRAY-AREA-2, PLAN-CHECK.md}`
 - `D:/GitCode/harnessed/.planning/phase-1.2.5/{ASSUMPTIONS.md, RESEARCH-1, RESEARCH-2, ADR-0006-DRAFT.md, progress.md, KICKOFF.md, PATTERNS.md}`
 - `D:/GitCode/harnessed/.planning/phase-1.3/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md, KICKOFF.md, ASSUMPTIONS.md, RESEARCH.md, PATTERNS.md, PERF-ATTRIBUTION.md, PLAN-CHECK.md, PLAN-CHECK-ROUND-2.md}`
-- `D:/GitCode/harnessed/docs/adr/{0001,0002,0003,0004,0005,0006,0007}*.md`
+- `D:/GitCode/harnessed/.planning/phase-1.4/{KICKOFF.md, ASSUMPTIONS.md, RESEARCH.md, PATTERNS.md, PLAN.md, task_plan.md, PLAN-CHECK.md, PLAN-CHECK-ROUND-2.md, SPIKE-REPORT.md, SAMPLES.md, progress.md, VERIFICATION.md}`
+- `D:/GitCode/harnessed/docs/adr/{0001,0002,0003,0004,0005,0006,0007,0008}*.md`
 - `D:/GitCode/harnessed/docs/{INSTALLER-CONTRACT.md, AGENT-DEFINITION-FACTORY-CONTRACT.md}`
 - `D:/GitCode/harnessed/{README.md, CONTRIBUTING.md, SECURITY.md, LICENSE, NOTICE, NOTICES.md}`
 - `D:/GitCode/harnessed/docs/MAINTAINER-ONBOARDING.md`
 - `D:/GitCode/harnessed/{manifests, workflows, routing, schemas, src, tests}/`
 - `D:/GitCode/harnessed/src/installers/{lib/{types,spawn,preflight,diff,confirm,backup,state}.ts, npmCli.ts, mcpStdioAdd.ts, index.ts}`（phase 1.2 — 7 lib + 2 installer + dispatcher）
-- `D:/GitCode/harnessed/src/cli/{install,doctor,audit,rollback,status,backup-list,gc,install-base}.ts`（phase 1.2 — 7 register fn + phase 1.3 install-base = 8 register fn）
-- `D:/GitCode/harnessed/src/routing/decisionRules.ts`（phase 1.3 — 105L; loadDecisionRules + arbitrate Priority Hit Policy + B1 security gate）
+- `D:/GitCode/harnessed/src/cli/{install,doctor,audit,rollback,status,backup-list,gc,install-base,research}.ts`（phase 1.2 — 7 register fn + phase 1.3 install-base = 8 register fn + phase 1.4 research = 9 register fn）
+- `D:/GitCode/harnessed/src/routing/{decisionRules.ts, engine.ts, agentDefinition.ts, systemPrompt.ts, index.ts, lib/ralphLoop.ts}`（phase 1.3 decisionRules + phase 1.4 engine 170L / agentDefinition 148L / systemPrompt 43L / barrel + ralphLoop spillover）
 - `D:/GitCode/harnessed/routing/decision_rules.yaml`（phase 1.3 — 179L v1 schema; 12 rules + version: 1 + fallback_supervisor + hit_policy: P；M1 sister patch 移自 .planning/）
 - `D:/GitCode/harnessed/manifests/skill-packs/ui-ux-pro-max.yaml`（phase 1.3 — install_type=git + method=git-clone-with-setup; v4-next tip SHA e89d70e4bcd0; decision_rules per-manifest hint）
 - `D:/GitCode/harnessed/scripts/probe/ui-ux-pro-max-install.sh`（phase 1.3 — 108L; D-10 shell probe Win Git Bash 双路径 OK; 不入 CI）
-- `D:/GitCode/harnessed/tests/integration/{installer-contract.test.ts, installer-real-spawn.test.ts}`（phase 1.2 — 12 contract + 1 real-spawn skipIf）
-- `D:/GitCode/harnessed/tests/unit/installers-{npmCli,mcpStdioAdd,index,lib-*}.test.ts` + `cli-{install,doctor,audit,rollback,status,install-base}.test.ts`（phase 1.2 — 6 lib + 19 method + 21 cli unit; phase 1.3 + cli-install-base 5 cell + routing-decisionRules 8 cell + manifest-validate.{category 8, install-type 6, decision-rules 5}）
-- `D:/GitCode/harnessed/.github/workflows/ci.yml`（含 phase 1.2 H4 dual-layer installer step + phase 1.3 A7 step iterate 1-7 ADR守恒）
+- `D:/GitCode/harnessed/scripts/spike/routing-spawn-agent.sh`（phase 1.4 — D1.4-1 spike script; main-process query() API 实证）
+- `D:/GitCode/harnessed/tests/integration/{installer-contract.test.ts, installer-real-spawn.test.ts, routing-research-workflow.test.ts, routing-30-samples.test.ts}`（phase 1.2 — 12 contract + 1 real-spawn skipIf；phase 1.4 — 3 mock E2E + 1 real-spawn skipIf + 30 sample-driven cell + 1 load + 1 summary skipIf）
+- `D:/GitCode/harnessed/tests/unit/installers-{npmCli,mcpStdioAdd,index,lib-*}.test.ts` + `cli-{install,doctor,audit,rollback,status,install-base}.test.ts` + `routing-{decisionRules,engine,agentDefinition}.test.ts`（phase 1.2 — 6 lib + 19 method + 21 cli unit; phase 1.3 + cli-install-base 5 cell + routing-decisionRules 8 cell + manifest-validate.{category 8, install-type 6, decision-rules 5}; phase 1.4 + routing-engine 12 cell + routing-agentDefinition 9 cell）
+- `D:/GitCode/harnessed/.github/workflows/ci.yml`（含 phase 1.2 H4 dual-layer installer step + phase 1.4 A7 step iterate 1-8 ADR守恒）
 - `D:/GitCode/harnessed/scripts/ci/mock-claude-cli.sh`（phase 1.2 mock shim）
 
-### 性能指标（phase 1.1 + 1.1.1 + 1.2 + 1.2.1 + 1.2.5 + 1.3 实证）
+### 性能指标（phase 1.1 + 1.1.1 + 1.2 + 1.2.1 + 1.2.5 + 1.3 + 1.4 实证）
 
 - 当前 phase token 消耗：— (main agent 后续填入)
-- checkpoint 数量：phase 1.1 内多次 batch checkpoint（batch 1-6 各一次）；phase 1.1.1 hotfix 1 次 batch；phase 1.2 共 7 batch (Wave 0-7)；phase 1.2.1 hotfix 1 batch；phase 1.2.5 多 wave；phase 1.3 共 4 batch (batch 1+2+3+4)
-- 累积 ADR 数量：**7**（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source schema errata / 0006 architecture-wedge-revision-v3 / 0007 categorization-schema-extension errata）（目标 v0.4 ≥ 5 ✅ 已达）
-- 累积 baseline tag 数量：**7**（adr-0001/0002/0003/0004/0005/0006/0007-accepted；0006 phase 1.3 F37 retroactive 重打到 3e24c16）+ 2 milestone tag（v0.1.0-alpha.1-schema-frozen + v0.1.0-alpha.2-installer-runtime；v0.1.0-alpha.3-base-profile pending T8.3 main agent 决定）
-- 路由命中率：— （目标 ≥ 85%，v0.3 phase 1.4 / v0.4 验收）
-- 总 commits（phase 1.1 累积 50 + phase 1.1.1 hotfix 10 + phase 1.2 ~37 + phase 1.2.1 hotfix 1 + phase 1.2.5 多 + phase 1.3 ~24 atomic + checkpoints）：~140
-- 总 vitest tests：**235 passing + 1 skipped**（phase 1.3: +33 from phase 1.2 baseline 202+1；分布 schema unit +19 / decision_rules +8 / cli-install-base +5 / fixture +1）
-- bench：phase 1.3 22.58ms mean / RME ±1.88% / SLA < 75ms（phase 1.3.1 hotfix relax；本地仍 ~3.3× headroom；详 PERF-ATTRIBUTION.md § 2-4）
-- 总 manifests / fixtures / SCHEMA.md：10 / 30+ / 3（phase 1.1 base，phase 1.2 fixture pair add marketplace_source 字段，phase 1.3 add ui-ux-pro-max manifest + 10 fixture mirror 加 3 字段 — manifest 数 10 → 11 后又 +1 fixture cell = 235+1）
-- 新 deps：8（5 phase 1.1 base：Ajv + TypeBox + yaml + Ajv-formats + Ajv-errors + 3 phase 1.2：picocolors + diff + @clack/prompts；phase 1.3 不加 dep）
+- checkpoint 数量：phase 1.1 内多次 batch checkpoint（batch 1-6 各一次）；phase 1.1.1 hotfix 1 次 batch；phase 1.2 共 7 batch (Wave 0-7)；phase 1.2.1 hotfix 1 batch；phase 1.2.5 多 wave；phase 1.3 共 4 batch (batch 1+2+3+4)；phase 1.4 共 4 batch (batch 1+2+3+4)
+- 累积 ADR 数量：**8**（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source schema errata / 0006 architecture-wedge-revision-v3 / 0007 categorization-schema-extension errata / 0008 routing-engine-v1-errata）（目标 v0.4 ≥ 5 ✅ 已达）
+- 累积 baseline tag 数量：**8**（adr-0001/0002/0003/0004/0005/0006/0007/0008-accepted；0006 phase 1.3 F37 retroactive 重打到 3e24c16）+ 2 milestone tag（v0.1.0-alpha.1-schema-frozen + v0.1.0-alpha.2-installer-runtime；v0.1.0-alpha.3-base-profile pushed；v0.1.0-alpha.4-routing-engine pending T8.3 main agent 决定）
+- 路由命中率：**phase 1.4 30 sample 100.0% (30/30) v0.1 内部基线** ✅；目标 ≥ 85% 达成；per-category 5/5 design+content+testing+search+meta；engineering 5/5 fallback_supervisor expected (phase 1.5 unblock)；phase 3.4 v0.3.0 升级 100+ sample × 多 model × stability 验收
+- 总 commits（phase 1.1 累积 50 + phase 1.1.1 hotfix 10 + phase 1.2 ~37 + phase 1.2.1 hotfix 1 + phase 1.2.5 多 + phase 1.3 ~24 atomic + phase 1.4 ~21 atomic + checkpoints）：~165
+- 总 vitest tests：**291 passing + 2 skipped**（phase 1.4: +56 from phase 1.3 baseline 235+1；分布 routing-engine +12 / routing-agentDefinition +9 / routing-research-workflow +3 +1 skipped real-spawn / routing-30-samples +30 +1 skipped real-spawn + 1 load + 1 summary）
+- bench：phase 1.3 22.58ms mean / RME ±1.88% / SLA < 75ms（phase 1.3.1 hotfix relax；本地仍 ~3.3× headroom；详 PERF-ATTRIBUTION.md § 2-4）；phase 1.4 routing engine 不调 manifest validate hot path → 0 perf 影响 (T7.3 跳过 — engine.route 直走 arbitrate/agentFactory/spawn)
+- 总 manifests / fixtures / SCHEMA.md：10 / 30+ / 3（phase 1.4 不加 manifest，只加 routing 文件）
+- 新 deps：8（5 phase 1.1 base：Ajv + TypeBox + yaml + Ajv-formats + Ajv-errors + 3 phase 1.2：picocolors + diff + @clack/prompts；phase 1.3 不加 dep；phase 1.4 不加 dep — F40-2 SDK type alias 推 phase 1.5）
 
 ---
 
