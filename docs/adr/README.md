@@ -46,6 +46,7 @@
 | [0005](./0005-marketplace-source-schema-errata.md) | marketplace_source Schema Errata (cc-plugin-marketplace 字段补完) | Accepted | 2026-05-12 |
 | [0006](./0006-three-stack-mechanization-wedge.md) | Three-Stack Methodology Mechanization Wedge (架构重定位 — 6+ 角色 / 双职责 / 4 心法 / 23 招式 / 6 category routing engine) | Accepted | 2026-05-12 |
 | [0007](./0007-categorization-schema-errata.md) | Categorization Schema Errata (manifest 加 category / install_type / decision_rules 字段) | Accepted | 2026-05-13 |
+| [0008](./0008-routing-engine-v1-errata.md) | Routing Engine v1 Errata (phase 1.3 deferred items inline — H1a perf transparency / M1 yaml path migration / D1.4-2 contract delta / phase 1.4 接口契约升级跟踪点) | Accepted | 2026-05-13 |
 
 ## 参考
 
