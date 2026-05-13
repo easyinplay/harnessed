@@ -25,13 +25,14 @@
 - ✅ **B1** ADR 0007 errata accepted + adr-0007-accepted tag pushed (本地，CI 实测推 phase 1.3 push 后 verify)
 - ✅ **B2** manifest schema 加 3 字段（category/install_type/decision_rules）+ `validate:schema` 通过
 - ✅ **B3** schema unit tests +19 cell + tests 202+1 → 221+1（超过 ≥ 215+1 acceptance bar）
-- ⏳ **B4** decision_rules.yaml v1 + arbitrate function 单测 ≥ 8 cell（Wave 2 — batch 2 范围）
-- ⏳ **B5** `harnessed install-base` 子命令 + dry-run 三态输出（Wave 3 — batch 2/3 范围）
+- ✅ **B4** decision_rules.yaml v1 (12 rules + version: 1 + fallback_supervisor) + arbitrate function 单测 8 cell + tests 221+1 → 229+1
+- ⏳ **B5** `harnessed install-base` 子命令 + dry-run 三态输出（Wave 3 — batch 3 范围）
 - ⏳ **B6** ui-ux-pro-max install path 实测 + manifest 创建 + F36 finding logged（Wave 4 — batch 3 范围）
 - ⏳ **B7** AgentDefinition factory contract draft ≥ 150 行 + 12 字段 grep hit（Wave 5 — batch 3 范围）
 - ⏳ **B8** CI 三平台全绿 + A7 step iterate 1-7 全绿 + ADR 0001-0007 main body diff 0（Wave 6 — phase 1.3 final ship 范围）
 
 **Batch 1 完成: B1 + B2 + B3 ✅ — 3/8 done**
+**Batch 2 完成: B4 ✅ — 4/8 done**
 
 ### A.3 Wave 进度概览
 
@@ -39,8 +40,8 @@
 |------|------|-------|------|
 | 0 | 前置（ADR 0007 + ci.yml A7 step 升级） | T1.1, T1.2 | ✅ done (commits bc8d624 + b173a84; adr-0007-accepted tag; A7 iter 1-7) |
 | 1 | Schema 实装（manifest 加 3 字段 + tests +12 cell） | T2.1, T2.2, T2.3 | ✅ done (commits a5ce405 [T2.1+T2.2 合并] + 75419a0; +19 cell 超 ≥12 acceptance) |
-| 2 | decision_rules.yaml v1 + arbitrate logic | T3.1, T3.2, T3.3 | ⏳ pending (batch 2) |
-| 3 | Base profile install (`harnessed install-base`) | T4.1, T4.2, T4.3 | ⏳ pending (batch 2/3) |
+| 2 | decision_rules.yaml v1 + arbitrate logic | T3.1, T3.2, T3.3 | ✅ done (commits a74aa9e + 093fced + 58a2840; 12 rules + arbitrate ≤7L + 8 cell; tests 229+1) |
+| 3 | Base profile install (`harnessed install-base`) | T4.1, T4.2, T4.3 | ⏳ pending (batch 3) |
 | 4 | ui-ux-pro-max install path 实测 | T5.1, T5.2, T5.3 | ⏳ pending (batch 3) |
 | 5 | AgentDefinition factory contract draft | T6.1 | ⏳ pending (batch 3) |
 | 6 | Cross-OS CI verify | T7.1, T7.2 | ⏳ pending (push verify) |
@@ -52,6 +53,9 @@
 2026-05-13 | T1.2 | ci.yml A7 step iterate 1-6 → 1-7 (5 处更新: comment + name + 2× for-loop + echo); typecheck/lint 全绿 | b173a84
 2026-05-13 | T2.1+T2.2 | spec.ts 加 3 字段 (category 6 enum 必填 / install_type 4 enum 必填 / decision_rules optional Object); 10 manifest + 10 fixture 全 patch; schema artifact 重新生成 (含 3 新字段 validate:schema 通过); 6 既有 BASE template 同步加字段 (Rule 2 critical functionality fix); security test 行号 18→20 | a5ce405
 2026-05-13 | T2.3 | 3 schema unit test 文件 +19 cell (category 8 / install-type 6 / decision-rules 5 含 R1 嵌套 array+object reject mitigation); 测试 202+1 → 221+1 全绿 | 75419a0
+2026-05-13 | T3.1 | .planning/decision_rules.yaml v1 起草 (179 行); version: 1 + hit_policy: P + 12 rules (design 2 / content 2 / testing 4 / search 2 / meta 2; engineering v1 占位 0 rules) + fallback_supervisor (claude-opus-4-7) + deprecated brave-search-mcp; yaml parse 0 error; 与 manifest.spec.decision_rules schema 完全独立 (B-1 区分) | a74aa9e
+2026-05-13 | T3.2 | src/routing/decisionRules.ts 105 行 (vs ≤100 预算微超 5 行 — biome formatter 单 Literal 一行 enforce; arbitrate 7 行 ≤30); export loadDecisionRules (yaml.parseDocument → toJS → Ajv strict → checkCmdString 二次过滤 B1 sec gate) + arbitrate Priority Hit Policy (R2 § 1.3 sketch); typecheck/lint 全绿 | 093fced
+2026-05-13 | T3.3 | tests/unit/routing-decisionRules.test.ts +8 cell (3 schema validate / 1 B1 security $(...) reject / 4 arbitrate Priority Hit Policy); 测试 221+1 → 229+1 全绿; B4 acceptance bar ≥8 cell 命中 | 58a2840
 
 ---
 
