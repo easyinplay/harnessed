@@ -1,22 +1,26 @@
 // Phase 1.4 T3.1 — main-process-driven routing engine v1 (Pattern N).
+// Phase 1.5 T3.4 upgrade — DAG resolver pre-check + Semantic Router L2 fallthrough.
 //
 // IMPL NOTE — implements ADR 0006 § 1 双层架构 + KICKOFF C1 (main-process
 // orchestrator). D1.2.5-3 lock: routing engine runs in the main session,
 // spawns subagents via `query({ options: { agents: { name: agentDef } } })`
 // (Anchor 6) — never recursive (Fact D / RESEARCH-1 § 1.1 hard ceiling).
 // F33 P1 mitigation: subagent final message must contain verbatim COMPLETE
-// (`^COMPLETE$` multiline regex, Anchor 2 — SPIKE-REPORT.md § 3.1 实测
-// FEASIBLE on Win Git Bash claude CLI v2.1.133). D1.4-1 reload bypass:
-// install via library call (W-2) → sleep + retry idempotent_check (Anchor 3,
-// extracted to lib/ralphLoop.ts to honor ≤200L) → fresh subagent via
-// query() (CC runtime auto-loads `~/.claude/skills/<name>/SKILL.md`); we
-// **never** call `/reload-plugins` (GitHub #35641 / #46594 still open Q1-Q2
-// 2026). D1.4-3 wedge: ralphLoopWrap is self-implemented ≤50L (Anchor 4,
-// lib/ralphLoop.ts) — verbatim grep + iteration counter; no anthropics/
-// claude-code/plugins/ralph-wiggum dep. ADR 0008 § Decision 4 cross-link
-// tracks the 8 接口契约 upgrade points (PLAN.md § 4). Contract § 3
-// agentFactory signature is honored 1:1 by createAgent (T3.2). Default
-// per-spawn timeout 60s (Anchor 7, ENV `HARNESSED_SPAWN_TIMEOUT_MS`).
+// (`^COMPLETE$` multiline regex, Anchor 2 — SPIKE-REPORT.md § 3.1 实测 FEASIBLE).
+// D1.4-1 reload bypass: install via library call (W-2) → sleep + retry
+// idempotent_check (Anchor 3, lib/ralphLoop.ts) → fresh subagent via query()
+// (CC auto-loads `~/.claude/skills/<name>/SKILL.md`); we **never** call
+// `/reload-plugins` (GitHub #35641 / #46594 open). D1.4-3 wedge: ralphLoopWrap
+// self-implemented ≤50L (Anchor 4, lib/ralphLoop.ts). ADR 0008 § Decision 4
+// tracks the 8 接口契约 upgrade points (PLAN.md § 4). createAgent (T3.2)
+// honors contract § 3; default per-spawn timeout 60s (Anchor 7).
+//
+// IMPL NOTE — phase 1.5 T3.4 (ADR 0009 / D1.5-11): route gains two layers
+// around L1 arbitrate without breaking the phase 1.4 fallback_supervisor 三层
+// 兜底 contract (PLAN.md § 4 #4): PRE-arbitrate resolveDag() cycle pre-check
+// (opts.dagNodes → friendly InvalidDecisionError on cycle), and POST-arbitrate
+// -miss semanticRouter.match() L2 (v0.1 stub → null pass-through to L3; v0.2+
+// swaps stub body only). EngineResult stays the same 三态 union (F41 takeaway).
 
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -31,6 +35,7 @@ import {
   SkillNotInstalledError,
   type TaskContext,
 } from './agentDefinition.js'
+import { type DagNode, resolveDag } from './dag.js'
 import { arbitrate, loadDecisionRules, type Rule } from './decisionRules.js'
 import {
   ensureSkillsInstalled,
@@ -38,6 +43,7 @@ import {
   ralphLoopWrap,
   VerbatimCompleteFailError,
 } from './lib/ralphLoop.js'
+import { match as semanticMatch } from './semanticRouter.js'
 
 export { MaxIterationsExceededError, VerbatimCompleteFailError } from './lib/ralphLoop.js'
 
@@ -63,6 +69,11 @@ export interface RoutingOpts {
   fallbackSupervisor?: (task: TaskContext) => Promise<string>
   /** AgentDefinition factory overrides forwarded into createAgent. */
   agentOpts?: AgentDefinitionOpts
+  /** Optional skill dependency graph — resolved (Kahn) before arbitrate; a
+   *  cycle short-circuits to phase='arbitrate' with a friendly error (T3.4). */
+  dagNodes?: DagNode[]
+  /** Semantic threshold forwarded to the L2 semanticRouter stub (v0.1 unused). */
+  semanticThreshold?: number
 }
 
 /** Anchor 6 — production spawn wrapper. Tests inject `opts.spawn` directly;
@@ -100,7 +111,19 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   const maxIter = opts.maxIterations ?? 20
   const spawnFn = opts.spawn ?? defaultSpawn
 
-  // Step 1 — arbitrate (Anchor 1 step 1)
+  // Step 0 — DAG pre-check (T3.4, ADR 0009). Resolve the optional skill
+  // dependency graph via Kahn; a cycle is rejected before arbitrate.
+  if (opts.dagNodes && opts.dagNodes.length > 0) {
+    const dag = resolveDag(opts.dagNodes)
+    if (!dag.ok) {
+      const error = new InvalidDecisionError(
+        `skill dependency cycle: ${dag.cycle.join(' → ')} (see ADR 0009 § DAG resolver)`,
+      )
+      return { ok: false, phase: 'arbitrate', error }
+    }
+  }
+
+  // Step 1 — arbitrate (Anchor 1 step 1, L1 keyword routing)
   let rules: Rule[]
   try {
     rules = loadDecisionRules(rulesPath).rules
@@ -115,6 +138,12 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   const decision = buildDecision(matched)
 
   if (!matched) {
+    // Step 1b — L2 Semantic Router (T3.4). v0.1 stub always returns no-match
+    // (rule stays null), so v0.1 is a guaranteed pass-through to L3 below;
+    // v0.2+ swaps the stub body only and may resolve `semantic.rule` here.
+    const semantic = await semanticMatch(task.task, opts.semanticThreshold)
+    void semantic.rule // v0.2+ feeds a matched rule into install + factory.
+    // Step 1c — L3 fallback_supervisor LLM (phase 1.4 三层兜底 contract).
     if (opts.fallbackSupervisor) {
       const result = await opts.fallbackSupervisor(task)
       return { ok: true, result, matchedRule: null }
