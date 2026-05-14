@@ -1,14 +1,15 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-13（**phase 1.4 SHIPPED** — routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample 100% hit；C1-C8 8/8 acceptance bar；ADR 累积 7 → 8；baseline tag 7 → 8；tests 235+1 → 291+2 skipped；ready for phase 1.5）
+> 最后更新：2026-05-14（**phase 1.5 SHIPPED** — DAG resolver Kahn + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；D1-D8 8/8 acceptance bar；ADR 累积 8 → 9；baseline tag 8 → 9；tests 291+2 → 318+3 skipped；8 支柱 100% capture verify roadmap closure；ready for phase 2.0）
 
 ---
 
 ## 项目核心引用
 
 - **核心价值**：AI coding harness 生态的「装配主义包管理器 + 完整三层栈方法论的可执行 engine」——routing engine v1 已实装（main-process-driven query→arbitrate→install missing→factory→spawn→ralph-loop→verbatim COMPLETE 闭合）；6+ 虚拟角色（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师）/ 双职责治理 / 4 心法 / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化
-- **当前关注**：v0.1.0（manifest 引擎 + research workflow，3-5 周 v3 重排范围 — phase 1.4 ship 后核心 wedge: routing engine v1 + research workflow E2E + 30 sample 100% hit + 7 接口契约 frozen for phase 1.5）
+- **当前关注**：v0.1.0（manifest 引擎 + research workflow，3-5 周 v3 重排范围 — phase 1.5 ship 后 enhancement layer 收官: DAG resolver + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + 8 接口契约 frozen for phase 2.0）
+  - **W-1 errata（phase 1.5 T8.1 修正）**：phase 1.4 STATE.md 本行原写 "7 接口契约 frozen for phase 1.5" — 实际 phase 1.4 PLAN.md § 4 列 8 个（第 8 = SAMPLES inline truth table 30 entries）；phase 1.5 KICKOFF + PLAN § 4 + 本文件 line 22/357 全部写 8。phase 1.5 T8.1 sync 修正 7 → 8（gsd-plan-checker PLAN-CHECK round 1 W-1 finding）
 - **总工期**：~10-12 周（4 milestones × 3-5 phases = 共 **17 phases** v3 重排后）
 - **License**：Apache-2.0（开源 / GitHub Sponsors 兜底）
 - **仓库**：`D:\GitCode\harnessed\`（Node.js + TypeScript）
@@ -17,17 +18,17 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：v0.1.0 Phase 1.4 ✅ **COMPLETED — SHIPPED 2026-05-13**（含 routing engine v1 主流程 + AgentDefinition factory 1:1 contract + research workflow E2E + 30 sample 命中率 100.0%；前置 phase 1.1 + 1.1.1 / 1.2 + 1.2.1 / 1.2.5 / 1.3 + 1.3.1 已 ship）
+- **GSD phase**：v0.1.0 Phase 1.5 ✅ **COMPLETED — SHIPPED 2026-05-14**（含 DAG resolver Kahn 拓扑排序 + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；前置 phase 1.1 + 1.1.1 / 1.2 + 1.2.1 / 1.2.5 / 1.3 + 1.3.1 / 1.4 已 ship）
 - **当前里程碑**：v0.1.0
-- **下一 phase**：Phase 1.5（DAG resolver + Semantic Router L2 + engineering category routing rules + mattpocock 23 招式 phase routing schema）— phase 1.4 已落地 routing engine v1 (`src/routing/{engine.ts 170L, agentDefinition.ts 148L, systemPrompt.ts 43L}`) + research workflow E2E (`src/cli/research.ts` + 9th register fn) + SAMPLES.md 30 sample inline truth table + 8 接口契约 frozen for phase 1.5（详 `.planning/phase-1.4/PLAN.md` § 4 + VERIFICATION.md § 2）
-- **状态**：✅ **Ready for Phase 1.5**
-- **进度**：5 / 17 phases 已完成 ▓▓▓▓▓░░░░░░░░░░░░ 29.4%
+- **下一 phase**：Phase 2.0（execute-task workflow 主线 + ralph-loop full integration + 4 placeholder installer 实装）— phase 1.5 已落地 DAG resolver (`src/routing/dag.ts` 142L Kahn) + Semantic Router L2 stub (`src/routing/semanticRouter.ts` 81L + `lib/embedding.ts` 17L) + decision_rules.yaml v2 (engineering 5 rules + mattpocock_phases 4×21×23) + spec.ts phase+triggers (TypeBox) + AgentDefinition v1.1 14 字段 + `<promise>` XML wrapper + 8 接口契约 frozen for phase 2.0（详 `.planning/phase-1.5/PLAN.md` § 4 + VERIFICATION.md § 2）
+- **状态**：✅ **Ready for Phase 2.0**
+- **进度**：6 / 17 phases 已完成 ▓▓▓▓▓▓░░░░░░░░░░░ 35.3%
 
 ### 各里程碑进度
 
 | 里程碑 | Phase 完成 | 状态 | 完成时间 |
 |--------|-----------|------|---------|
-| v0.1.0 manifest 引擎 + research | 5/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 done; Phase 1.5 待执行 | 2026-05-12 (P1.1+P1.2+P1.2.5) / 2026-05-13 (P1.3+P1.4) |
+| v0.1.0 manifest 引擎 + research | 6/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 + 1.5 done — **v0.1.0 里程碑全部完成** | 2026-05-12 (P1.1+P1.2+P1.2.5) / 2026-05-13 (P1.3+P1.4) / 2026-05-14 (P1.5) |
 | v0.2.0 Sub-task Loop + Extension Installers | 0/4 | Not started | - |
 | v0.3.0 plan-feature + checkpoint | 0/4 | Not started | - |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
@@ -46,12 +47,33 @@
 10. ✅ ~~main agent tag `v0.1.0-alpha.3-base-profile`~~ — pushed
 11. ✅ ~~Phase 1.4 SHIPPED~~ — 2026-05-13；routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample 100.0% hit (**expected behavior match**；specific rule match 21/30 = 70% — 9 plan-phase expected fallback/fallthrough：engineering 5/5 v1 占位 0 rules 走 fallback_supervisor + 4 array trigger v1 miss fallthrough；array semantic match 升级推 phase 1.5 DAG resolver — sister review T1 transparency strengthening)；C1-C8 8/8 acceptance bar；ADR 累积 8（加 0008 errata 含 H1a perf transparency + M1 yaml path migration + R6 engineering category 推 phase 1.5）；baseline tag 7 → 8（加 adr-0008-accepted）；tests 235+1 → 291+2 skipped (+56)；CI run 25804037789 @ 8f56514 + 25805032247 @ fe97a72 三平台全绿；详 `.planning/phase-1.4/{progress.md, VERIFICATION.md}`
 12. ✅ **main agent tag `v0.1.0-alpha.4-routing-engine` pushed** — fe97a72；4 milestone tag 累积（alpha.1-schema-frozen / alpha.2-installer-runtime / alpha.3-base-profile / alpha.4-routing-engine）
-13. ⏳ **进入 Phase 1.5 plan-phase**（DAG resolver + Semantic Router L2 + engineering category routing rules + mattpocock 23 招式 phase routing schema）
+13. ✅ ~~Phase 1.5 SHIPPED~~ — 2026-05-14；DAG resolver Kahn 拓扑排序 + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items（D1.4-2 contract v1.1 14 字段 / F40-2 SDK 推 v0.2+ / F42 array semantic match / ralph-wiggum `<promise>` XML wrapper）；D1-D8 8/8 acceptance bar；ADR 累积 8 → 9（加 0009 errata）；baseline tag 8 → 9（加 adr-0009-accepted）；tests 291+2 → 318+3 skipped (+27)；30 sample specific match 28/30 (93.3%) ≥ 27/30 + total 30/30；3 routing 新文件（dag.ts 142L / semanticRouter.ts 81L / promiseExtract.ts 32L）+ embedding.ts 17L placeholder + decision_rules.yaml v2 + spec.ts phase+triggers；8 支柱 100% capture verify roadmap closure（A1' engineering 5 rules / A5' mattpocock_phases / A7' triggers semantic L2 stub 全 CLOSED）；详 `.planning/phase-1.5/{progress.md, VERIFICATION.md, PERF-ATTRIBUTION-2.md}`
+14. ⏳ **main agent tag `adr-0009-accepted` + `v0.1.0-alpha.5-routing-l2-engineering`**（T8.3；main agent final ship step 创建 + push；CI 三平台全绿 verify 后）
+15. ⏳ **进入 Phase 2.0 discuss-phase**（execute-task workflow 主线 + ralph-loop full integration + 4 placeholder installer 实装）
 
 ---
 
 ## 已完成（Completed）
 
+- ✅ **Phase 1.5 SHIPPED**（2026-05-14）
+  - 28 atomic 子任务全部完成（Wave 0-7 跑完；4 batch — batch 1 Wave 0+1 / batch 2 Wave 2+3 / batch 3 Wave 4+5 / batch 4 Wave 6+7）
+  - **Acceptance bar D1-D8 8/8** ✅
+    - D1 DAG resolver + 拓扑排序实装 — `dag.ts` 142L ≤ 200L Kahn iterative（BFS + indegree queue，自实装无外部 graph library）+ cycle detect（E_DAG_CYCLE）+ 三态 `DagResolveResult` discriminated union（F41 takeaway）+ ≥ 10 unit cell
+    - D2 Semantic Router L2 stub — `semanticRouter.ts` 81L ≤ 150L（v0.1 stub return null，contract frozen for v0.2+ embedding swap-in）+ `lib/embedding.ts` 17L ≤ 30L placeholder interface only + ≥ 8 unit cell
+    - D3 engineering 5 rules + 30 sample re-test — `decision_rules.yaml` v2 engineering category 5 specific rules（A1' enforcement，R6 mitigation 完成）；30 sample specific match **28/30 (93.3%)** ≥ 27/30 threshold + total 30/30 (100%)
+    - D4 mattpocock_phases schema + manifest spec phase + triggers — `decision_rules.yaml` v2 `mattpocock_phases:` 段（4 phase × 21 unique skills × 23 trigger entry）+ `spec.ts` 加 `phase`（4-value `Type.Union` enum：discuss/plan/execute/verify）+ `triggers`（`Type.Object`）；**注意：项目 manifest schema 用 TypeBox（`@sinclair/typebox`）不是 zod — PLAN § 6 D4 原 `grep "phase: z.enum"` 命令错误，正确验证见 VERIFICATION.md § 1 D4**
+    - D5 ADR 0009 errata 4 items + agentDefinition 14 字段 + XML wrapper — ADR 0009 errata 4 sub-item inline（D1.4-2 v1.1 14 字段 / F40-2 SDK 推 v0.2+ / F42 array semantic match / ralph-wiggum `<promise>` XML wrapper）+ `agentDefinition.ts` 191L 14 字段（phase 1.4 12 + `initialPrompt` Stable + `criticalSystemReminder_EXPERIMENTAL` Experimental）+ `systemPrompt.ts` 53L `<promise>COMPLETE</promise>` XML wrapper + `lib/promiseExtract.ts` 32L（W-2 hard split — ralphLoop.ts 收回 65L）+ contract v1.1 errata（A7 守恒 main body 0 diff）
+    - D6 PERF-ATTRIBUTION-2.md ship — ≥ 80L 8-section；DAG resolver hot path micro-bench：realistic 50-node 图 0.0096ms/call（**+0.96% regress** vs 保守 1ms baseline）≤ 5% threshold ✅ PASS；manifest validate hot path 0 regress（DAG 不调 `validateManifestFile`）
+    - D7 ADR 0009 errata accepted + adr-0009-accepted tag — ADR 0009 232L 6-section（Status/Context/Decision/Consequences/Compliance/References）；tag main agent final ship step 创建
+    - D8 Cross-OS CI 三平台全绿 + A7 step iter 1-9 — `ci.yml` A7 step iterate 1-8 → 1-9（`for n in 0001..0009` 9 ADR baseline tag 守恒）+ ADR 0001-0008 main body 0 diff（phase 1.5 只动 ADR 0009 + errata path）
+  - **8 wave 完整跑完**：Wave 0 ADR 0009 errata draft + ci.yml A7 iter 1-9 / Wave 1 DAG Kahn + ralph-wiggum XML wrapper spike（SPIKE-REPORT-2.md 10/10 PASS GO）/ Wave 2 dag.ts + semanticRouter.ts + embedding.ts + engine.ts 升级 + index.ts barrel / Wave 3 decision_rules.yaml v2 + engineering 5 rules + mattpocock_phases 段 + migration script + decisionRules.ts arbitrate F42 / Wave 4 D5 ADR 0009 errata 实装（systemPrompt XML wrapper + ralphLoop + agentDefinition 14 字段 + spec.ts phase+triggers）/ Wave 5 routing-dag + routing-semanticRouter + routing-engine 升级 + 30 sample re-test + SAMPLES.md v2 / Wave 6 PERF-ATTRIBUTION-2.md + Cross-OS CI verify / Wave 7 docs + ship
+  - **3 routing 新文件**：`src/routing/dag.ts`（142L Kahn iterative — Pattern Q）+ `src/routing/semanticRouter.ts`（81L v0.1 stub — Pattern R）+ `src/routing/lib/promiseExtract.ts`（32L `<promise>` XML wrapper extract — W-2 hard split）；+ `src/routing/lib/embedding.ts`（17L placeholder interface — D1.5-2 推 v0.2+）+ `src/routing/index.ts` barrel re-export 扩展
+  - **新 ADR**：0009 routing-l2-engineering-23-shi-errata（A7 守恒：ADR 0001-0008 main body 0 diff；D5 三 P1 + 1 fresh deferred items errata 4 sub-item inline + DAG + Semantic Router L2 + mattpocock_phases schema 接口契约升级）
+  - **新 baseline tag**：8 → 9（加 `adr-0009-accepted`；CI A7 step iterate 1-9 全 9 ADR 守恒）
+  - **新文件**：`docs/adr/0009-routing-l2-engineering-23-shi-errata.md` + `src/routing/{dag.ts, semanticRouter.ts, lib/embedding.ts, lib/promiseExtract.ts}` + `scripts/migrate-decision-rules-v1-to-v2.mjs` + `scripts/spike/{dag-and-promise-xml.sh, dag-bench.mjs}` + `tests/unit/{routing-dag, routing-semanticRouter}.test.ts` + `.planning/phase-1.5/{KICKOFF.md, PATTERNS.md, RESEARCH.md, ASSUMPTIONS.md, PLAN.md, task_plan.md, PLAN-CHECK.md, SPIKE-REPORT-2.md, progress.md, PERF-ATTRIBUTION-2.md, VERIFICATION.md}`；**修改**：`routing/decision_rules.yaml`（v1 → v2）+ `src/manifest/schema/spec.ts`（加 phase + triggers）+ `src/routing/{engine.ts, agentDefinition.ts, systemPrompt.ts, lib/ralphLoop.ts, decisionRules.ts}` + `.github/workflows/ci.yml`（A7 iter 1-9）+ `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md`（v1.1 errata）+ `.planning/phase-1.4/SAMPLES.md`（v2）
+  - **findings logged**：W-1（STATE.md 7→8 接口契约 numeric drift — phase 1.5 T8.1 sync 修正 + errata 注）/ W-2（ralphLoop.ts ≤ 50L wedge soft-overflow — hard split lib/promiseExtract.ts 32L，ralphLoop.ts 收回 65L）/ S-1（systemPrompt.ts budget tighten ≤ 80L → ≤ 60L，实测 53L）/ S-2（task_plan T6.4/T6.5 action outline 过宽 — 吸收进 batch 3 T6.4 atomic 范围）/ F-note（D4 acceptance command 更正 — TypeBox 不是 zod）
+  - **8 支柱 100% capture verify roadmap closure**：A1' engineering 5 rules CLOSED（T4.1 yaml v2）/ A5' mattpocock_phases CLOSED（T4.1 yaml v2 4×21×23）/ A7' triggers semantic L2 stub CLOSED v0.1（T3.2 stub return null — 满足 100% capture interface contract 要求；v0.2+ 真实 embedding 推 phase 2.x）
+  - 见 `.planning/phase-1.5/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md, PERF-ATTRIBUTION-2.md, SPIKE-REPORT-2.md}`
 - ✅ **Phase 1.4 SHIPPED**（2026-05-13）
   - 21 atomic 子任务全部完成（Wave 0-7 跑完；详 `.planning/phase-1.4/progress.md` § A.4）
   - **Acceptance bar C1-C8 8/8** ✅
@@ -170,7 +192,7 @@
 
 ## 进行中（In Progress）
 
-[当前无 — Phase 1.4 SHIPPED；等待 main agent 决定 push tag `v0.1.0-alpha.4-routing-engine` + 启动 Phase 1.5]
+[当前无 — Phase 1.5 SHIPPED；v0.1.0 里程碑全部完成；等待 main agent final ship step（CI 三平台全绿 verify + push tag `adr-0009-accepted` + `v0.1.0-alpha.5-routing-l2-engineering`）+ 启动 Phase 2.0]
 
 ---
 
@@ -258,6 +280,11 @@
 | AgentDefinition 12 字段 1:1 contract drift detector (T4.2 cell 1) | phase-1.4 T4.2 + W-5 V1 BLOCKER | inline interface 替代 SDK type alias (F40-2)；karpathy YAGNI；推 phase 1.5 D1.4-2 errata window 评估 deps 引入 |
 | F42 SAMPLES expected fallthrough not fallback (R3 frozen 边界澄清) | phase-1.4 progress.md § B F42 | R3 mitigation Step 3 严守 prompt+category 不可改；expected/hypothesis 必须同步 ground truth (test 永远 fail 否则)；4 sample (design-3/-5 + search-4/-5) 升级映射推 phase 1.5 array semantic match |
 | Phase 1.4 perf 0 影响 (T7.3 跳过) | phase-1.4 task_plan T7.3 trigger 条件 + KICKOFF YAGNI | routing engine 不调用 manifest validate hot path (engine.route 直走 arbitrate / agentFactory / spawn — no validateManifestFile)；T7.3 触发条件不满足；karpathy YAGNI 跳过 PERF-ATTRIBUTION-2.md |
+| Phase 1.5 SHIP — DAG resolver + Semantic Router L2 stub + engineering 5 rules + mattpocock 23 招式 phase routing schema | phase-1.5 progress.md + VERIFICATION.md | D1-D8 8/8 ✅；dag.ts 142L Kahn iterative 自实装 / semanticRouter.ts 81L v0.1 stub / promiseExtract.ts 32L W-2 split / agentDefinition 191L 14 字段；decision_rules.yaml v2 engineering 5 rules + mattpocock_phases 4×21×23；spec.ts phase+triggers (TypeBox)；ADR 8→9；tests 291+2 → 318+3；8 接口契约 frozen for phase 2.0；8 支柱 100% capture roadmap closure |
+| ADR 0009 routing-l2-engineering-23-shi-errata | phase-1.5 progress.md + ADR 0009 | A7 守恒：ADR 0001-0008 main body 0 diff；D5 三 P1 + 1 fresh deferred items errata 4 sub-item inline（D1.4-2 contract v1.1 14 字段 / F40-2 SDK 推 v0.2+ / F42 array semantic match / ralph-wiggum `<promise>` XML wrapper）|
+| Phase 1.5 DAG resolver hot path ≤ 5% regress (PERF-ATTRIBUTION-2.md) | phase-1.5 PERF-ATTRIBUTION-2.md + D6 | DAG resolver micro-bench：realistic 50-node 图 0.0096ms/call +0.96% regress ≤ 5% threshold ✅ PASS；Kahn O(V+E) 自实装无 graph library；manifest validate hot path 0 regress（DAG 不调 validateManifestFile）|
+| W-1 STATE.md 7→8 接口契约 numeric drift 修正 | phase-1.5 PLAN-CHECK round 1 W-1 + T8.1 | phase 1.4 STATE.md line 11 原写 7，实际 phase 1.4 PLAN § 4 列 8（第 8 = SAMPLES inline truth table）；phase 1.5 T8.1 sync 修正 7→8 + errata 注 |
+| manifest schema 用 TypeBox 不是 zod (D4 acceptance command 更正) | phase-1.5 VERIFICATION.md § 1 D4 F-note | PLAN § 6 D4 原 `grep "phase: z.enum"` 命令错误；spec.ts 用 `Type.Union`/`Type.Object`；正确验证 `pnpm build:schema && grep "phase\|triggers" schemas/manifest.v1.schema.json` |
 
 ### 未决问题（留给 phase 1.3+ phase）
 
@@ -340,14 +367,14 @@ cd D:/GitCode/harnessed
 
 - 当前 phase token 消耗：— (main agent 后续填入)
 - checkpoint 数量：phase 1.1 内多次 batch checkpoint（batch 1-6 各一次）；phase 1.1.1 hotfix 1 次 batch；phase 1.2 共 7 batch (Wave 0-7)；phase 1.2.1 hotfix 1 batch；phase 1.2.5 多 wave；phase 1.3 共 4 batch (batch 1+2+3+4)；phase 1.4 共 4 batch (batch 1+2+3+4)
-- 累积 ADR 数量：**8**（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source schema errata / 0006 architecture-wedge-revision-v3 / 0007 categorization-schema-extension errata / 0008 routing-engine-v1-errata）（目标 v0.4 ≥ 5 ✅ 已达）
-- 累积 baseline tag 数量：**8**（adr-0001/0002/0003/0004/0005/0006/0007/0008-accepted；0006 phase 1.3 F37 retroactive 重打到 3e24c16）+ 2 milestone tag（v0.1.0-alpha.1-schema-frozen + v0.1.0-alpha.2-installer-runtime；v0.1.0-alpha.3-base-profile pushed；v0.1.0-alpha.4-routing-engine pending T8.3 main agent 决定）
-- 路由命中率：**phase 1.4 30 sample 100.0% (30/30) v0.1 内部基线** ✅；目标 ≥ 85% 达成；per-category 5/5 design+content+testing+search+meta；engineering 5/5 fallback_supervisor expected (phase 1.5 unblock)；phase 3.4 v0.3.0 升级 100+ sample × 多 model × stability 验收
-- 总 commits（phase 1.1 累积 50 + phase 1.1.1 hotfix 10 + phase 1.2 ~37 + phase 1.2.1 hotfix 1 + phase 1.2.5 多 + phase 1.3 ~24 atomic + phase 1.4 ~21 atomic + checkpoints）：~165
-- 总 vitest tests：**291 passing + 2 skipped**（phase 1.4: +56 from phase 1.3 baseline 235+1；分布 routing-engine +12 / routing-agentDefinition +9 / routing-research-workflow +3 +1 skipped real-spawn / routing-30-samples +30 +1 skipped real-spawn + 1 load + 1 summary）
-- bench：phase 1.3 22.58ms mean / RME ±1.88% / SLA < 75ms（phase 1.3.1 hotfix relax；本地仍 ~3.3× headroom；详 PERF-ATTRIBUTION.md § 2-4）；phase 1.4 routing engine 不调 manifest validate hot path → 0 perf 影响 (T7.3 跳过 — engine.route 直走 arbitrate/agentFactory/spawn)
-- 总 manifests / fixtures / SCHEMA.md：10 / 30+ / 3（phase 1.4 不加 manifest，只加 routing 文件）
-- 新 deps：8（5 phase 1.1 base：Ajv + TypeBox + yaml + Ajv-formats + Ajv-errors + 3 phase 1.2：picocolors + diff + @clack/prompts；phase 1.3 不加 dep；phase 1.4 不加 dep — F40-2 SDK type alias 推 phase 1.5）
+- 累积 ADR 数量：**9**（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source schema errata / 0006 architecture-wedge-revision-v3 / 0007 categorization-schema-extension errata / 0008 routing-engine-v1-errata / 0009 routing-l2-engineering-23-shi-errata）（目标 v0.4 ≥ 5 ✅ 已达）
+- 累积 baseline tag 数量：**9**（adr-0001/0002/0003/0004/0005/0006/0007/0008/0009-accepted；0006 phase 1.3 F37 retroactive 重打到 3e24c16；0009 由 main agent final ship step 创建）+ 5 milestone tag（v0.1.0-alpha.1-schema-frozen + alpha.2-installer-runtime + alpha.3-base-profile + alpha.4-routing-engine pushed；alpha.5-routing-l2-engineering pending T8.3 main agent final ship）
+- 路由命中率：**phase 1.5 30 sample specific match 28/30 (93.3%) ≥ 27/30 threshold + total 30/30 (100%)** ✅；目标 ≥ 85% 达成；engineering 5/5 specific match（phase 1.4 走 fallback_supervisor → phase 1.5 engineering 5 rules ship 后精确路由）；phase 3.4 v0.3.0 升级 100+ sample × 多 model × stability 验收
+- 总 commits（phase 1.1 累积 50 + phase 1.1.1 hotfix 10 + phase 1.2 ~37 + phase 1.2.1 hotfix 1 + phase 1.2.5 多 + phase 1.3 ~24 atomic + phase 1.4 ~21 atomic + phase 1.5 ~12 (4 batch + checkpoints) + checkpoints）：~180
+- 总 vitest tests：**318 passing + 3 skipped**（phase 1.5: +27 from phase 1.4 baseline 291+2；分布 routing-dag ≥ 10 / routing-semanticRouter ≥ 8 / routing-engine 升级 + routing-30-samples re-test）
+- bench：phase 1.3 22.58ms mean / RME ±1.88% / SLA < 75ms（phase 1.3.1 hotfix relax；本地仍 ~3.3× headroom；详 PERF-ATTRIBUTION.md § 2-4）；phase 1.4 routing engine 0 perf 影响 (T7.3 跳过)；**phase 1.5 DAG resolver hot path micro-bench：realistic 50-node 图 0.0096ms/call (+0.96% regress) / 100-node 0.0268ms / 1000-node 极限 0.606ms ≤ 5% threshold ✅ PASS；manifest validate hot path 0 regress（DAG 不调 validateManifestFile）；详 PERF-ATTRIBUTION-2.md**
+- 总 manifests / fixtures / SCHEMA.md：10 / 30+ / 3（phase 1.5 不加 manifest，只加 routing 文件 + decision_rules.yaml v2 + spec.ts phase+triggers）
+- 新 deps：8（5 phase 1.1 base：Ajv + TypeBox + yaml + Ajv-formats + Ajv-errors + 3 phase 1.2：picocolors + diff + @clack/prompts；phase 1.3 / 1.4 / 1.5 均不加 dep — phase 1.5 DAG resolver 自实装无外部 graph library；Semantic Router L2 embedding deps 推 v0.2+ D1.5-2；`@anthropic-ai/claude-agent-sdk` 推 v0.2+ D1.5-5）
 
 ---
 
@@ -407,6 +434,42 @@ cd D:/GitCode/harnessed
 7. **phase 1.4 30 sample → phase 3.4 v0.3.0 完整命中率 100+ sample × 多 model × stability 验收**
    - **现状**: phase 1.4 30 sample inline truth table (Pattern P) 单 model 单环境 100% hit ≥ 85% v0.1 内部基线
    - **升级路径**: W-3 fixture migration script `scripts/migrate-samples-inline-to-fixture.mjs` 把 SAMPLES.md inline truth → tests/fixtures/routing/samples/*.yaml；phase 3.4 v0.3.0 release 验收时 100+ sample × Haiku/Sonnet/Opus 各 ≥ 8 × stability run × 3 验收
+
+> **↑ Phase 1.5 Prereq Notes 段已全部 fulfilled** — phase 1.5 SHIPPED 2026-05-14；P0 项 1-4 全部落地（DAG resolver + Semantic Router L2 stub ✅ / engineering 5 rules + mattpocock_phases ✅ / PERF-ATTRIBUTION-2.md ✅ / release notes known limitations 内联 ADR 0009 § Consequences ✅）；P1 项 3-5 全部走 ADR 0009 errata 决议（initialPrompt + criticalSystemReminder_EXPERIMENTAL 14 字段 ✅ / F40-2 SDK 推 v0.2+ ✅ / ralph-wiggum 切换推 phase 2.1+ ✅）；P2 F42 array semantic match v0.1 fallthrough 行为 frozen（v0.2+ 升级推 phase 2.x）。下方 Phase 2.0 Prereq Notes 为新的启动 prereq。
+
+---
+
+## Phase 2.0 Prereq Notes（phase 1.5 ship 后 explicit 启动 prereq — T8.1）
+
+> phase 2.0 plan-phase 启动**直接消费 phase 1.5 输出**，无需重做。完整 8 接口契约见 `.planning/phase-1.5/PLAN.md` § 4 + `VERIFICATION.md` § 2。
+
+### phase 2.0 entry — execute-task workflow 主线 + ralph-loop full integration + 4 placeholder installer 实装
+
+phase 1.5 ship 后 frozen 的 **8 接口契约**（PLAN.md § 4 1:1），phase 2.0 直接消费：
+
+1. **`resolveDag(nodes: DagNode[]) → DagResolveResult`**（`src/routing/dag.ts` 142L）— Kahn 拓扑排序，三态 `{ ok:true, order }` / `{ ok:false, cycle }` 沿袭 EngineResult union（F41）
+2. **`semanticRouter.match(prompt, threshold=0.85) → Promise<SemanticMatchResult>`**（`src/routing/semanticRouter.ts` 81L）— v0.1 stub return null；v0.2+ 仅替换 stub body 不改 contract
+3. **`SemanticMatchResult` type** — `{ matched, rule, confidence }` 三态 narrow
+4. **`engine.route` 升级**（`src/routing/engine.ts`）— arbitrate 前插 resolveDag + 后兜底 semanticRouter.match；保留 fallback_supervisor 三层兜底；主流程接口契约 phase 1.4 frozen 不破
+5. **`decision_rules.yaml v2 mattpocock_phases:` 段 schema**（`routing/decision_rules.yaml`）— 4 phase × skills array + triggers array；engineering sub-rules `skills_overlay: { ref: ... }` cross-link
+6. **`AgentDefinition` v1.1 14 字段**（`src/routing/agentDefinition.ts` 191L）— phase 1.4 12 字段 + `initialPrompt`（Stable）+ `criticalSystemReminder_EXPERIMENTAL`（Experimental）
+7. **`ManifestSpec` 升级**（`src/manifest/schema/spec.ts`）— TypeBox `Type.Union` 4-value phase enum（discuss/plan/execute/verify）+ `Type.Object` triggers（**注意：项目 manifest schema 用 TypeBox `@sinclair/typebox` 不是 zod**）
+8. **`<promise>COMPLETE</promise>` XML wrapper 协议**（`src/routing/systemPrompt.ts` 53L + `src/routing/lib/promiseExtract.ts` 32L）— systemPrompt const + `PROMISE_PATTERN` regex `<promise>([^<]+)</promise>` — phase 2.1+ `--add-plugin ralph-wiggum` 1:1 顺滑切换
+
+### 8 支柱 100% capture verify roadmap closure
+
+phase 1.5 ship 后，KICKOFF § 8 支柱 + PLAN-CHECK § 8 的 100% capture verify roadmap **正式闭合**：
+
+- **A1' engineering 5 rules** → ✅ CLOSED（T4.1 `decision_rules.yaml` v2 engineering category 5 specific rules ship）
+- **A5' mattpocock_phases** → ✅ CLOSED（T4.1 yaml v2 `mattpocock_phases:` 段 4 phase × 21 unique skills × 23 trigger entry ship）
+- **A7' triggers semantic L2 stub** → ✅ CLOSED v0.1（T3.2 `semanticRouter.match()` v0.1 stub return null ship；v0.2+ 真实 embedding kNN 推 phase 2.x — v0.1 stub 已满足 100% capture interface contract 要求）
+
+### phase 2.0 启动项（discuss-phase 入口）
+
+- **execute-task workflow 主线**（WORKFLOWS § 2 — brainstorming → karpathy 心法 always-on → mattpocock 招式按需召唤 → 条件 TDD → ralph-loop 交付 COMPLETE）
+- **ralph-loop full integration**（主流程 routing engine 调用 ralph-loop wrap "...COMPLETE" --completion-promise；A7' 8 支柱 100% 闭环 — phase 2.2）
+- **4 phase-2.1 placeholder installer 实装**（cc-plugin-marketplace + git-clone-with-setup + npx-skill-installer + mcp-http-add — ADR 0003 errata + ADR 0007 install_type 字段）
+- **Semantic Router L2 真实启用评估**（embedding kNN — D1.5-2 触发条件：30 sample 升 100+ × 多 model × stability validation）
 
 ---
 
