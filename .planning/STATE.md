@@ -1,7 +1,7 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-15（**🎯 v0.1.0 MILESTONE SHIPPED** — 6/6 phase 完成 + milestone audit passed（post-reconciliation Path A）+ archived；前置 phase 1.5 SHIPPED + sister review remediation：DAG resolver Kahn + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；D1-D8 8/8；ADR 累积 9；baseline tag 9；tests 318+3 skipped；8 支柱 capture：A1'/A5' CLOSED + A7' **INTERFACE CLOSED / CAPABILITY DEFERRED v0.2+**；ready for phase 2.0）
+> 最后更新：2026-05-15（**🚀 v0.2.0 MILESTONE ACTIVE** — 轻量激活 + research refresh 完成（3 researcher：execute-task+ralph / installers / extensions + SUMMARY）；scope confirmed（Phase 2.1-2.4 骨架保留 + 11 refinement fold）；关键决议 SDK Phase 2.2 INTRODUCE NOW + ralph-wiggum plugin 不切换 + 建议 ADR 0010。前置 **🎯 v0.1.0 MILESTONE SHIPPED & ARCHIVED**：6/6 phase + audit passed（post-reconciliation Path A）+ git tag v0.1.0；9 ADR + 9 baseline tag；tests 318+3）
 
 ---
 
@@ -18,18 +18,19 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：🎯 **v0.1.0 MILESTONE ✅ SHIPPED & ARCHIVED 2026-05-15** — 6/6 phase 完成（1.1 + 1.1.1 / 1.2 + 1.2.1 / 1.2.5 / 1.3 + 1.3.1 / 1.4 / 1.5 + 1.5.1）；milestone audit `passed`（post-reconciliation Path A — ADR 0006 re-scope 回填 REQUIREMENTS.md traceability）；归档 `.planning/milestones/v0.1.0-{ROADMAP,REQUIREMENTS}.md`；git tag `v0.1.0`
-- **当前里程碑**：v0.1.0 ✅ CLOSED → 下一里程碑 v0.2.0（待 `/gsd-new-milestone` 启动）
-- **下一 phase**：Phase 2.0（execute-task workflow 主线 + ralph-loop full integration + 4 placeholder installer 实装）— **phase 2.0 Wave 0 必办**：phase 1.5 sister review H3/H4/M1 + transparency verify checklist 结构性根治（详本文件下方 "Phase 1.5 Sister Review — Deferred to Phase 2.0 Wave 0"）。phase 1.5 已落地 8 接口契约 frozen for phase 2.0（详 `.planning/phase-1.5/PLAN.md` § 4 + ROADMAP.md v0.2.0 phase 2.0 prereq notes）
-- **状态**：✅ **v0.1.0 CLOSED — Ready for v0.2.0**
-- **进度**：6 / 17 phases 已完成 ▓▓▓▓▓▓░░░░░░░░░░░ 35.3%（v0.1.0 里程碑 100%）
+- **GSD phase**：🚀 **v0.2.0 MILESTONE ACTIVE**（2026-05-15 启动 — 轻量激活 + research 刷新，scope confirmed）— v0.1.0 ✅ SHIPPED & ARCHIVED（6/6 phase；milestone audit `passed` post-reconciliation Path A；归档 `.planning/milestones/v0.1.0-{ROADMAP,REQUIREMENTS}.md`；git tag `v0.1.0`）
+- **当前里程碑**：v0.2.0 Sub-task Loop + Extension Installers（Phase 2.1-2.4；roadmap 骨架原 /autoplan + v3 重排时定，本次 research refresh 保留骨架 + fold 11 refinement）
+- **下一 phase**：**Phase 2.1**（4 installer methods 实装 — mcp-http-add → git-clone-with-setup → cc-plugin-marketplace → npx-skill-installer）— **Phase 2.1 plan-phase 启动前 Wave 0 必办**：phase 1.5 sister review H3/H4/M1 + transparency verify checklist 结构性根治（详本文件下方 "Phase 1.5 Sister Review — Deferred to Phase 2.0 Wave 0"）+ research refinement #8/#10/#11（license whitelist 扩展 + bundle-install schema + checkCmdString carve-out）
+- **状态**：✅ **v0.2.0 ACTIVE — Ready for Phase 2.1 plan-phase**（research refresh 完成,详 `.planning/research/v0.2.0-SUMMARY.md`）
+- **进度**：6 / 17 phases 已完成 ▓▓▓▓▓▓░░░░░░░░░░░ 35.3%（v0.1.0 里程碑 100%；v0.2.0 0/4）
+- **research refresh 关键决议**：D1.5-5 SDK → **Phase 2.2 INTRODUCE NOW**（`@anthropic-ai/claude-agent-sdk` 0.2.141）；R6 ralph-wiggum plugin → **不切换**（自实装 ralphLoopWrap 是正确永久架构）；建议 Phase 2.2 起 **ADR 0010**（SDK 引入 + ralph-wiggum keep-vs-switch + H3 budget errata）
 
 ### 各里程碑进度
 
 | 里程碑 | Phase 完成 | 状态 | 完成时间 |
 |--------|-----------|------|---------|
 | v0.1.0 manifest 引擎 + research | 6/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 + 1.5 done — **v0.1.0 里程碑全部完成** | 2026-05-12 (P1.1+P1.2+P1.2.5) / 2026-05-13 (P1.3+P1.4) / 2026-05-14 (P1.5) |
-| v0.2.0 Sub-task Loop + Extension Installers | 0/4 | Not started | - |
+| v0.2.0 Sub-task Loop + Extension Installers | 0/4 | 🚀 ACTIVE — research refresh done, Phase 2.1 plan-phase 待启动 | 启动 2026-05-15 |
 | v0.3.0 plan-feature + checkpoint | 0/4 | Not started | - |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
 
