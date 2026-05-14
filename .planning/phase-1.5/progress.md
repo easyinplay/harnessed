@@ -1,8 +1,8 @@
 # Phase 1.5 Progress
 
-> 最后更新: 2026-05-14 — Wave D.1 initial state (plan-phase complete, execute-phase 启动准备)
+> 最后更新: 2026-05-14 — Batch 1 Wave 0+1 ✅ (ADR 0009 232L + ci.yml A7 iter 1-9 + spike 10/10 PASS + SPIKE-REPORT GO)
 > Phase: v0.1.0 Phase 1.5 — DAG Resolver + Semantic Router L2 + engineering 23 招式 phase routing
-> 状态: 🔄 execute-phase 待启动
+> 状态: 🔄 execute-phase Batch 2 (Wave 2+3) 待启动
 
 ---
 
