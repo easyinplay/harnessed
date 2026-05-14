@@ -80,8 +80,9 @@ describe('research workflow E2E — mock cells (always run)', () => {
       skillsRoot,
       spawn: async (def: AgentDefinition) => {
         invokedAgentDef = def
-        // Simulate verbatim grep `^COMPLETE$/m` happy round-trip (Anchor 2 SPIKE-REPORT § 3.1)
-        return 'searched ctx7 docs for Next.js v15 app router\nCOMPLETE'
+        // Simulate verbatim <promise>COMPLETE</promise> XML wrapper happy
+        // round-trip (Anchor 2 — phase 1.5 T5.2 XML wrapper upgrade).
+        return 'searched ctx7 docs for Next.js v15 app router\n<promise>COMPLETE</promise>'
       },
     })
 
@@ -112,7 +113,7 @@ describe('research workflow E2E — mock cells (always run)', () => {
         fallbackSupervisor: async (task) => {
           supervisorCalls++
           // Mock LLM L2 supervisor returning a synthesized result for the task.
-          return `L2 supervisor handled: ${task.task}\nCOMPLETE`
+          return `L2 supervisor handled: ${task.task}\n<promise>COMPLETE</promise>`
         },
       },
     )

@@ -2,7 +2,20 @@
 // Fields: type, component_type, install (discriminated union), verify, uninstall,
 //         upstream_health, signed_by, signature?, platforms,
 //         tested_with_versions?, mutually_exclusive_with?,
-//         category, install_type, decision_rules? (ADR 0007 errata — phase 1.3 加).
+//         category, install_type, decision_rules? (ADR 0007 errata — phase 1.3 加),
+//         phase?, triggers? (ADR 0009 errata — phase 1.5 T5.5 加).
+//
+// IMPL NOTE — phase 1.5 T5.5 (ADR 0009 § Decision / D1.5-6 / D1.5-7 / Pattern L
+// spec-level metadata 加法 + Pattern T): adds 2 optional spec-level fields for
+// the mattpocock 23 招式 phase routing schema. `phase` is a 4-value enum
+// (discuss / plan / execute / verify) mirroring `decision_rules.yaml` v2
+// `mattpocock_phases` keys; `triggers` is an optional object carrying routing
+// hints (complexity_threshold / tdd_required / brainstorming_required). Both
+// optional — additive only, A7' 8-pillar enforcement (no existing manifest
+// broken). NOTE: this schema uses TypeBox (`@sinclair/typebox`), the project's
+// established schema lib — NOT zod; the task_plan `z.enum` / `z.object` outline
+// is a planning-doc shorthand, implemented here as `Type.Union` / `Type.Object`
+// per ADR 0001 + the no-new-deps constraint.
 
 import { Type } from '@sinclair/typebox'
 import { type Install, InstallSchema } from './installMethods/index.js'
@@ -117,6 +130,25 @@ const DecisionRules = Type.Object(
   { additionalProperties: false },
 )
 
+// ADR 0009 errata — mattpocock 23 招式 phase routing schema (phase 1.5 T5.5).
+// `Phase` (optional, 4 enum — 1:1 with decision_rules.yaml v2 mattpocock_phases
+// keys) + `Triggers` (optional, routing hints per D1.5-7). Both additive.
+const Phase = Type.Union([
+  Type.Literal('discuss'),
+  Type.Literal('plan'),
+  Type.Literal('execute'),
+  Type.Literal('verify'),
+])
+
+const Triggers = Type.Object(
+  {
+    complexity_threshold: Type.Optional(Type.Integer({ minimum: 1 })),
+    tdd_required: Type.Optional(Type.Boolean()),
+    brainstorming_required: Type.Optional(Type.Boolean()),
+  },
+  { additionalProperties: false },
+)
+
 export const SpecSchema = Type.Object(
   {
     type: TypeEnum,
@@ -133,6 +165,9 @@ export const SpecSchema = Type.Object(
     category: Category,
     install_type: InstallType,
     decision_rules: Type.Optional(DecisionRules),
+    // ADR 0009 errata (phase 1.5 T5.5) — mattpocock phase routing schema.
+    phase: Type.Optional(Phase),
+    triggers: Type.Optional(Triggers),
   },
   { additionalProperties: false },
 )

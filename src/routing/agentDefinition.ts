@@ -1,13 +1,19 @@
 // Phase 1.4 T3.2 — AgentDefinition factory (1:1 docs/AGENT-DEFINITION-FACTORY-
 // CONTRACT.md v1, frozen at phase 1.3 ship).
+// Phase 1.5 T5.3 — contract v1.1: 12 → 14 字段 (ADR 0009 § Decision Errata 1 /
+// D1.5-4 sub-item 1). Adds `initialPrompt` (Stable) +
+// `criticalSystemReminder_EXPERIMENTAL` (Experimental — `_EXPERIMENTAL` suffix
+// signals the field name itself may change without a semver bump).
 //
-// IMPL NOTE — implements docs/AGENT-DEFINITION-FACTORY-CONTRACT.md v1 (frozen
-// at phase 1.3 ship). ADR 0008 § Decision 4 cross-link tracks routing engine
-// v1 接口契约升级. D-14 throw-error (not Result wrap) — typed error classes
-// propagate to engine.ts narrow into EngineResult. D1.4-14 prepends Karpathy
-// 4 心法 always-on baseline + COMPLETE_INSTRUCTION (1:1 imported from
-// systemPrompt.ts T3.3). Any enum drift across the 12 字段 = ADR 0008+ errata
-// trigger (D-18 enforce — W-5 V1 BLOCKER cell 1 enum value asserts).
+// IMPL NOTE — implements docs/AGENT-DEFINITION-FACTORY-CONTRACT.md v1.1 (v1
+// frozen at phase 1.3 ship; v1.1 additive errata appended at phase 1.5). ADR
+// 0009 § Decision Errata 1 cross-link tracks the 12 → 14 字段 delta. D-14
+// throw-error (not Result wrap) — typed error classes propagate to engine.ts
+// narrow into EngineResult. D1.4-14 prepends Karpathy 4 心法 always-on baseline
+// + COMPLETE_INSTRUCTION (1:1 imported from systemPrompt.ts T3.3). Any enum
+// drift across the 14 字段 = ADR 0009+ errata trigger (D-18 enforce — W-5 V1
+// BLOCKER drift detector enum extended 12 → 14: see AGENT_DEFINITION_FIELDS +
+// routing-engine.test.ts cell 13 / routing-agentDefinition.test.ts cell 1).
 //
 // IMPL NOTE — F40-2 (executor 2026-05-13): contract § 3 shows
 // `import type { AgentDefinition } from '@anthropic-ai/claude-agent-sdk'` as
@@ -25,8 +31,9 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { COMPLETE_INSTRUCTION } from './systemPrompt.js'
 
-/** AgentDefinition — structural mirror of contract § 2 (12 fields). Drift
- *  caught by routing-agentDefinition.test.ts cell 1 enum value asserts. */
+/** AgentDefinition — structural mirror of contract § 2 v1.1 (14 fields). Drift
+ *  caught by routing-agentDefinition.test.ts cell 1 + routing-engine.test.ts
+ *  cell 13 enum value asserts (W-5 V1 BLOCKER drift detector — 14 字段). */
 export interface AgentDefinition {
   // Required (§ 2.1)
   description: string
@@ -42,7 +49,37 @@ export interface AgentDefinition {
   background?: boolean
   effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max' | number
   permissionMode?: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan'
+  // v1.1 errata (§ 2.3 — ADR 0009 § Decision Errata 1, 2026-05-14)
+  /** Stable (2026-05): auto-submitted as the first user turn when a plugin
+   *  agent runs as the main-thread agent (plugin settings.json `agent: <name>`
+   *  upgrade scenario only). */
+  initialPrompt?: string
+  /** EXPERIMENTAL: critical reminder injected into the system prompt. The
+   *  `_EXPERIMENTAL` suffix signals the API may rename this field WITHOUT a
+   *  semver bump — monitor code.claude.com/docs/en/agent-sdk/typescript release
+   *  notes (ADR 0009 § Consequences 负面 3). */
+  criticalSystemReminder_EXPERIMENTAL?: string
 }
+
+/** W-5 V1 BLOCKER drift detector — the canonical 14-field name list (contract
+ *  v1.1 § 2). Any add/remove here MUST land with a matching contract.md errata
+ *  + test cell (D-18 enforce). Extended 12 → 14 at phase 1.5 T5.3. */
+export const AGENT_DEFINITION_FIELDS = [
+  'description',
+  'prompt',
+  'tools',
+  'disallowedTools',
+  'model',
+  'skills',
+  'mcpServers',
+  'memory',
+  'maxTurns',
+  'background',
+  'effort',
+  'permissionMode',
+  'initialPrompt',
+  'criticalSystemReminder_EXPERIMENTAL',
+] as const
 
 /** Routing arbitrate output (1:1 contract § 3). */
 export interface ArbitrateResult {
@@ -144,5 +181,11 @@ export async function createAgent(
     background: false,
     effort: opts.effortOverride ?? 'medium',
     permissionMode: opts.permissionModeOverride ?? 'default',
+    // v1.1 errata (ADR 0009 § Decision Errata 1) — `initialPrompt` carries the
+    // task body for the plugin-main-thread upgrade path;
+    // `criticalSystemReminder_EXPERIMENTAL` re-asserts the verbatim
+    // <promise>COMPLETE</promise> contract at the system-prompt layer.
+    initialPrompt: task.task,
+    criticalSystemReminder_EXPERIMENTAL: COMPLETE_INSTRUCTION,
   }
 }

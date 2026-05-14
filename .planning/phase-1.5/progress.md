@@ -82,16 +82,16 @@
 
 | Task | 文件 | 状态 |
 |------|------|------|
-| T5.1 | `src/routing/systemPrompt.ts` XML wrapper | ⏳ |
-| T5.2 | `src/routing/lib/ralphLoop.ts` XML wrapper (+ lib/promiseExtract.ts W-2) | ⏳ |
-| T5.3 | `src/routing/agentDefinition.ts` 12→14 字段 | ⏳ |
-| T5.4 | `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` v1.1 errata | ⏳ |
-| T5.5 | `src/manifest/schema/spec.ts` phase enum + triggers | ⏳ |
-| T6.1 | `tests/unit/routing-dag.test.ts` (≥10 cell) | ⏳ |
-| T6.2 | `tests/unit/routing-semanticRouter.test.ts` (≥8 cell) | ⏳ |
-| T6.3 | `tests/unit/routing-engine.test.ts` 升级 | ⏳ |
-| T6.4 | `tests/integration/routing-30-samples.test.ts` 升级 | ⏳ |
-| T6.5 | `.planning/phase-1.4/SAMPLES.md` v2 update (9 sample) | ⏳ |
+| T5.1 | `src/routing/systemPrompt.ts` XML wrapper (53L ≤80L) | ✅ |
+| T5.2 | `src/routing/lib/ralphLoop.ts` XML wrapper (65L) + `lib/promiseExtract.ts` (32L, W-2 hard split) | ✅ |
+| T5.3 | `src/routing/agentDefinition.ts` 12→14 字段 (191L ≤200L; +AGENT_DEFINITION_FIELDS drift detector) | ✅ |
+| T5.4 | `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` v1.1 errata (main body 0 删除 — A7 守恒) | ✅ |
+| T5.5 | `src/manifest/schema/spec.ts` phase enum + triggers (TypeBox — 项目 schema lib) | ✅ |
+| T6.1 | `tests/unit/routing-dag.test.ts` (14 cell) | ✅ |
+| T6.2 | `tests/unit/routing-semanticRouter.test.ts` (9 cell + 1 skip) | ✅ |
+| T6.3 | `tests/unit/routing-engine.test.ts` 升级 (12→16 cell) | ✅ |
+| T6.4 | `tests/integration/routing-30-samples.test.ts` 升级 (specific 28/30 + total 30/30) | ✅ |
+| T6.5 | `.planning/phase-1.4/SAMPLES.md` v2 update (§ 8.4 errata — 11 sample 映射) | ✅ |
 
 ### Batch 4 — Wave 6+7 final ship (T7.1~T8.4)
 

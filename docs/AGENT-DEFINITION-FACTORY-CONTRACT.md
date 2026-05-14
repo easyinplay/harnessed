@@ -215,3 +215,37 @@ This contract is **frozen at phase 1.3 ship time as v1**. Any v2 evolution (字�
 - CLAUDE.md § ralph-loop — `--completion-promise "COMPLETE" --max-iterations 20` convention
 - ADR 0001 § "字段拒绝清单" — security gate (factory output cmd field 不允许 `${...}` / `$(...)` / backtick)
 - ADR 0007 — manifest schema 3-field errata (category + install_type + decision_rules — phase 1.3 ship)
+
+---
+
+## § Errata Log v1.1 (2026-05-14 — phase 1.5 ADR 0009 § Decision Errata 1)
+
+> **A7 守恒**: contract main body (§ 1-8) is **frozen v1 — 0 lines changed**. This
+> Errata Log is an additive section appended at phase 1.5 ship, following the
+> same pattern as ADR 0003 (install method count 5 → 6) / ADR 0005
+> (marketplace_source schema 补完) / ADR 0008 (routing engine v1 errata). v2
+> evolution still requires a fresh ADR 0010+ errata per § 7.3.
+
+### Errata 1 — D1.4-2 contract v1.1 (12 → 14 字段)
+
+The official Claude Agent SDK `AgentDefinition` schema carries **2 fields beyond
+the 12 documented in § 2** (surfaced during phase 1.4 ADR 0008 § Decision 3).
+phase 1.5 T5.3 implements them additively:
+
+| # | 字段 | 类型 | 必填 | 稳定性 | 用途 |
+|---|------|------|------|--------|------|
+| 13 | `initialPrompt` | `string` | No | **Stable** (2026-05) | Auto-submitted as the first user turn when a plugin agent runs as the main-thread agent (plugin `settings.json` `agent: <name>` upgrade scenario only). |
+| 14 | `criticalSystemReminder_EXPERIMENTAL` | `string` | No | **Experimental** | Critical reminder injected into the system prompt. The `_EXPERIMENTAL` suffix signals the **field name itself may change without a semver bump** — monitor `code.claude.com/docs/en/agent-sdk/typescript` release notes. The suffix is preserved verbatim in code (NOT stripped). |
+
+**W-5 V1 BLOCKER 守恒**: the drift detector enum (`AGENT_DEFINITION_FIELDS` in
+`src/routing/agentDefinition.ts`) is sync-extended 12 → 14 enum values. Any
+add/remove still triggers an ADR 0009+ errata + matching test cell
+(`routing-engine.test.ts` cell 13 / `routing-agentDefinition.test.ts` cell 1).
+
+**Additive guarantee**: v1 字段 1-12 semantics are unchanged (still frozen). Both
+new fields are optional, so existing factory call sites are not broken — this is
+a purely additive errata (same mode as ADR 0003 / ADR 0005).
+
+**Source**: ADR 0009 § Decision Errata 1 + `.planning/phase-1.5/RESEARCH.md` § 4.1
++ `.planning/phase-1.5/ASSUMPTIONS.md` D1.5-4 sub-item 1 +
+`code.claude.com/docs/en/agent-sdk/typescript` (fetched 2026-05-13).

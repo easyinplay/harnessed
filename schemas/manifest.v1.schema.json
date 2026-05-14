@@ -706,6 +706,42 @@
               }
             }
           }
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "const": "discuss",
+              "type": "string"
+            },
+            {
+              "const": "plan",
+              "type": "string"
+            },
+            {
+              "const": "execute",
+              "type": "string"
+            },
+            {
+              "const": "verify",
+              "type": "string"
+            }
+          ]
+        },
+        "triggers": {
+          "additionalProperties": false,
+          "type": "object",
+          "properties": {
+            "complexity_threshold": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "tdd_required": {
+              "type": "boolean"
+            },
+            "brainstorming_required": {
+              "type": "boolean"
+            }
+          }
         }
       }
     }

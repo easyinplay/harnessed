@@ -12,6 +12,7 @@ export type {
   TaskContext,
 } from './agentDefinition.js'
 export {
+  AGENT_DEFINITION_FIELDS,
   createAgent,
   InvalidDecisionError,
   MissingSkillsError,
@@ -24,7 +25,12 @@ export type { DecisionRulesFile, Rule } from './decisionRules.js'
 export { arbitrate, loadDecisionRules } from './decisionRules.js'
 export type { EngineResult, RoutingOpts } from './engine.js'
 export { runRouting } from './engine.js'
-export { MaxIterationsExceededError, VerbatimCompleteFailError } from './lib/ralphLoop.js'
+export { extractPromise, PROMISE_PATTERN } from './lib/promiseExtract.js'
+export {
+  isComplete,
+  MaxIterationsExceededError,
+  VerbatimCompleteFailError,
+} from './lib/ralphLoop.js'
 export type { SemanticMatchResult } from './semanticRouter.js'
 export {
   createSemanticRouter,

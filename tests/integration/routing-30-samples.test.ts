@@ -50,13 +50,12 @@ const SAMPLES: Sample[] = [
     id: 'design-3',
     category: 'design',
     task: { task_type: 'ui-design', override_keywords: ['做出风格', 'design-led', '创意'] },
-    // F42: arbitrate v1 array-field miss → priority=100 ui-task-bold 不 hit,
-    // priority=50 ui-task-default 仍 hit (single task_type 匹配). plan-phase
-    // hypothesis (null) 错了 — fallthrough 是 v1 真实行为. SAMPLES.md
-    // expected updated 同步 (prompt/category frozen per R3, expected
-    // hypothesis fixable as plan-phase ground-truth correction).
-    expected_rule_id: 'ui-task-default',
-    expected_primary_expert: 'ui-ux-pro-max',
+    // Phase 1.5 T6.4 — F42 array semantic match upgrade (ADR 0009 § Decision
+    // Errata 2): arbitrate v2 substring-matches the `override_keywords` array
+    // trigger → priority=100 ui-task-bold-style-override now hits (was v1
+    // fallthrough to ui-task-default). SAMPLES.md § 8.1/§ 8.2 v2 errata mapping.
+    expected_rule_id: 'ui-task-bold-style-override',
+    expected_primary_expert: 'frontend-design',
   },
   {
     id: 'design-4',
@@ -69,9 +68,11 @@ const SAMPLES: Sample[] = [
     id: 'design-5',
     category: 'design',
     task: { task_type: 'ui-design', override_keywords: ['experimental', 'distinctive'] },
-    // F42 same as design-3 — fallthrough to ui-task-default (priority=50)
-    expected_rule_id: 'ui-task-default',
-    expected_primary_expert: 'ui-ux-pro-max',
+    // Phase 1.5 T6.4 — F42 array semantic match upgrade (same as design-3):
+    // `experimental` / `distinctive` are override_keywords on
+    // ui-task-bold-style-override (priority=100) → now hits.
+    expected_rule_id: 'ui-task-bold-style-override',
+    expected_primary_expert: 'frontend-design',
   },
 
   // 2.2 Content (5)
@@ -115,9 +116,12 @@ const SAMPLES: Sample[] = [
   {
     id: 'testing-1',
     category: 'testing',
-    task: { task_type: 'performance' }, // array trigger arbitrate v1 miss
-    expected_rule_id: null,
-    expected_primary_expert: null,
+    task: { task_type: 'performance' },
+    // Phase 1.5 T6.4 — F42 array semantic match upgrade (ADR 0009 § Decision
+    // Errata 2 / SAMPLES.md § 8.1): `task_type: performance` ∈ perf-a11y-memory
+    // rule's task_type array → now hits (was v1 array-trigger miss).
+    expected_rule_id: 'perf-a11y-memory',
+    expected_primary_expert: 'chrome-devtools-mcp',
   },
   {
     id: 'testing-2',
@@ -143,9 +147,12 @@ const SAMPLES: Sample[] = [
   {
     id: 'testing-5',
     category: 'testing',
-    task: { task_type: 'ai-explore' }, // array trigger arbitrate v1 miss
-    expected_rule_id: null,
-    expected_primary_expert: null,
+    task: { task_type: 'ai-explore' },
+    // Phase 1.5 T6.4 — F42 array semantic match upgrade (SAMPLES.md § 8.1):
+    // `task_type: ai-explore` ∈ ai-explore-debug rule's task_type array → now
+    // hits (was v1 array-trigger miss).
+    expected_rule_id: 'ai-explore-debug',
+    expected_primary_expert: 'playwright-cli',
   },
 
   // 2.4 Search (5)
@@ -174,18 +181,22 @@ const SAMPLES: Sample[] = [
     id: 'search-4',
     category: 'search',
     task: { task_type: 'search', signals: ['学术', '论文'] },
-    // F42: arbitrate-academic array miss but search-default (task_type=search)
-    // still hits. fallthrough — 真实 v1 行为 (Exa expected upgrade phase 1.5).
-    expected_rule_id: 'search-default',
-    expected_primary_expert: 'tavily-mcp',
+    // Phase 1.5 T6.4 — F42 array semantic match upgrade (ADR 0009 § Decision
+    // Errata 2): arbitrate v2 substring-matches the `signals` array trigger →
+    // priority=80 search-academic-or-batch-or-token-sensitive now hits (was v1
+    // fallthrough to search-default). SAMPLES.md § 8.1 v2 errata mapping.
+    expected_rule_id: 'search-academic-or-batch-or-token-sensitive',
+    expected_primary_expert: 'exa-mcp',
   },
   {
     id: 'search-5',
     category: 'search',
     task: { task_type: 'search', signals: ['批量 URL', 'token-sensitive'] },
-    // F42 same as search-4 — fallthrough to search-default
-    expected_rule_id: 'search-default',
-    expected_primary_expert: 'tavily-mcp',
+    // Phase 1.5 T6.4 — F42 array semantic match upgrade (same as search-4):
+    // `批量 URL` / `token-sensitive` are signals on the priority=80 academic
+    // rule → now hits.
+    expected_rule_id: 'search-academic-or-batch-or-token-sensitive',
+    expected_primary_expert: 'exa-mcp',
   },
 
   // 2.5 Meta (5)
@@ -225,40 +236,61 @@ const SAMPLES: Sample[] = [
     expected_primary_expert: null,
   },
 
-  // 2.6 Engineering (5) — R6 全 fallback expected
+  // 2.6 Engineering (5) — Phase 1.5 T6.4: engineering 5 specific rules (ADR
+  // 0009 § Decision / D3). v1 baseline had 0 engineering rules → all fallback;
+  // v2 yaml ships 5 specific rules keyed on `task_type: engineering` + a
+  // `keywords` array trigger (F42 substring match). Each sample's prompt
+  // carries exactly one rule's keyword. expected_primary_expert is null —
+  // engineering rules carry `workflow` / `skills_overlay`, not a
+  // `primary_expert` (base layer already installed; routing is phase-overlay).
+  // SAMPLES.md § 8.2 v2 errata mapping.
   {
     id: 'eng-1',
     category: 'engineering',
-    task: { task_type: 'feature-impl' },
-    expected_rule_id: null,
+    // discuss-feature keyword: 新功能
+    task: {
+      task_type: 'engineering',
+      prompt: '实现登录接口 + JWT token refresh，这是个新功能启动',
+    },
+    expected_rule_id: 'engineering-discuss-feature',
     expected_primary_expert: null,
   },
   {
     id: 'eng-2',
     category: 'engineering',
-    task: { task_type: 'diagnose' },
-    expected_rule_id: null,
+    // execute-debug keywords: diagnose, 排错
+    task: { task_type: 'engineering', prompt: '用 /diagnose 系统化排错 production 502' },
+    expected_rule_id: 'engineering-execute-debug',
     expected_primary_expert: null,
   },
   {
     id: 'eng-3',
     category: 'engineering',
-    task: { task_type: 'arch-review' },
-    expected_rule_id: null,
+    // plan-architecture keyword: 架构 plan
+    task: {
+      task_type: 'engineering',
+      prompt: '用 /improve-codebase-architecture 做架构 plan 健康检查',
+    },
+    expected_rule_id: 'engineering-plan-architecture',
     expected_primary_expert: null,
   },
   {
     id: 'eng-4',
     category: 'engineering',
-    task: { task_type: 'refactor' },
-    expected_rule_id: null,
+    // verify-pr keyword: PR review
+    task: {
+      task_type: 'engineering',
+      prompt: '重构 user service 模块后做 PR review，按 surgical changes 心法小步提交',
+    },
+    expected_rule_id: 'engineering-verify-pr',
     expected_primary_expert: null,
   },
   {
     id: 'eng-5',
     category: 'engineering',
-    task: { task_type: 'tdd' },
-    expected_rule_id: null,
+    // execute-tdd keyword: TDD
+    task: { task_type: 'engineering', prompt: 'TDD 实现 password validator (red-green-refactor)' },
+    expected_rule_id: 'engineering-execute-tdd',
     expected_primary_expert: null,
   },
 ]
@@ -349,6 +381,16 @@ describe('Routing accuracy summary — per-category breakdown + ≥85% total (D1
 
     // Hard gate — D1.4-10 lock
     expect(accuracy).toBeGreaterThanOrEqual(0.85)
+
+    // Phase 1.5 T6.4 — specific rule match gate (D3 / R5). A "specific" match
+    // is a sample whose expected_rule_id is a real rule (non-null) AND the
+    // sample hit it. v1 baseline = 21/30; v2 (engineering 5 rules + F42 array
+    // semantic match) target ≥ 27/30.
+    const specificHit = fresh.filter((r) => r.hit && r.sample.expected_rule_id !== null).length
+    console.log(`  SPECIFIC     ${specificHit}/${fresh.length}  (engineering 5 + F42 array)`)
+    expect(specificHit).toBeGreaterThanOrEqual(27)
+    // Total must still be a perfect 30/30 (fallback samples hit their null).
+    expect(totalHit).toBe(30)
   })
 })
 

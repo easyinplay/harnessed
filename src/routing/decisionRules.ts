@@ -131,25 +131,45 @@ export function arbitrate(rules: Rule[], task: TaskContext): Rule | null {
   return top
 }
 
-/** Lower-cased substring search across the task's prompt + signals (F42). */
-function taskHas(task: TaskContext, needle: string): boolean {
+/** F42 array-trigger `when` fields — array-valued rule fields whose elements
+ *  are matched by substring against the task prompt / signals / same-named task
+ *  array field. `task_type` is deliberately EXCLUDED: a `task_type` array in a
+ *  rule keeps its v1 behavior (never matches a scalar task value) so the phase
+ *  1.4 30-sample baseline stays byte-stable (testing samples unchanged). */
+const ARRAY_TRIGGER_FIELDS = new Set(['keywords', 'signals', 'override_keywords'])
+
+/** Lower-cased substring search for `needle` across the task's prompt + signals
+ *  + an extra same-named array field (F42 array semantic match). */
+function taskHas(task: TaskContext, needle: string, extraKey?: string): boolean {
   const n = needle.toLowerCase()
   const prompt = typeof task.prompt === 'string' ? task.prompt.toLowerCase() : ''
   if (prompt.includes(n)) return true
-  const signals = Array.isArray(task.signals) ? (task.signals as unknown[]) : []
-  return signals.some((s) => typeof s === 'string' && s.toLowerCase().includes(n))
+  const sources: unknown[] = []
+  if (Array.isArray(task.signals)) sources.push(...(task.signals as unknown[]))
+  if (extraKey && extraKey !== 'signals' && Array.isArray(task[extraKey])) {
+    sources.push(...(task[extraKey] as unknown[]))
+  }
+  return sources.some((s) => typeof s === 'string' && s.toLowerCase().includes(n))
 }
 
-/** v1 scalar match (unchanged) + v2 F42 `keywords` array substring match. */
+/** v1 scalar match (unchanged) + v2 F42 array semantic match. */
 function matchesWhen(when: Record<string, unknown>, task: TaskContext): boolean {
   for (const [k, v] of Object.entries(when)) {
-    if (k === 'keywords' && Array.isArray(v)) {
-      // F42 — rule hits if ANY keyword is a substring of the task prompt/signals.
-      if (!v.some((kw) => typeof kw === 'string' && taskHas(task, kw))) return false
+    if (ARRAY_TRIGGER_FIELDS.has(k) && Array.isArray(v)) {
+      // F42 — rule hits if ANY trigger element is a substring of the task
+      // prompt / signals / same-named task array field.
+      if (!v.some((kw) => typeof kw === 'string' && taskHas(task, kw, k))) return false
       continue
     }
-    // v1 behavior — strict scalar equality (array-valued `when` never matches a
-    // scalar task value; phase 1.4 30-sample baseline depends on this).
+    if (Array.isArray(v)) {
+      // F42 — a non-trigger array-valued `when` field (e.g. `task_type` arrays
+      // in perf-a11y-memory / ai-explore-debug) matches by membership: the
+      // scalar task value must be one of the rule's listed values. v1 treated
+      // these as never-match; phase 1.5 SAMPLES.md § 8.1 upgrades them.
+      if (!v.includes(task[k])) return false
+      continue
+    }
+    // v1 behavior — strict scalar equality.
     if (task[k] !== v) return false
   }
   return true
