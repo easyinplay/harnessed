@@ -1,7 +1,7 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-14（**phase 1.5 SHIPPED** — DAG resolver Kahn + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；D1-D8 8/8 acceptance bar；ADR 累积 8 → 9；baseline tag 8 → 9；tests 291+2 → 318+3 skipped；8 支柱 100% capture verify roadmap closure；ready for phase 2.0）
+> 最后更新：2026-05-14（**phase 1.5 SHIPPED** + sister review remediation — DAG resolver Kahn + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；D1-D8 8/8 acceptance bar；ADR 累积 8 → 9；baseline tag 8 → 9；tests 291+2 → 318+3 skipped；8 支柱 capture：A1'/A5' CLOSED + A7' **INTERFACE CLOSED / CAPABILITY DEFERRED v0.2+**（sister review H1 修正）；ready for phase 2.0）
 
 ---
 
@@ -72,7 +72,7 @@
   - **新 baseline tag**：8 → 9（加 `adr-0009-accepted`；CI A7 step iterate 1-9 全 9 ADR 守恒）
   - **新文件**：`docs/adr/0009-routing-l2-engineering-23-shi-errata.md` + `src/routing/{dag.ts, semanticRouter.ts, lib/embedding.ts, lib/promiseExtract.ts}` + `scripts/migrate-decision-rules-v1-to-v2.mjs` + `scripts/spike/{dag-and-promise-xml.sh, dag-bench.mjs}` + `tests/unit/{routing-dag, routing-semanticRouter}.test.ts` + `.planning/phase-1.5/{KICKOFF.md, PATTERNS.md, RESEARCH.md, ASSUMPTIONS.md, PLAN.md, task_plan.md, PLAN-CHECK.md, SPIKE-REPORT-2.md, progress.md, PERF-ATTRIBUTION-2.md, VERIFICATION.md}`；**修改**：`routing/decision_rules.yaml`（v1 → v2）+ `src/manifest/schema/spec.ts`（加 phase + triggers）+ `src/routing/{engine.ts, agentDefinition.ts, systemPrompt.ts, lib/ralphLoop.ts, decisionRules.ts}` + `.github/workflows/ci.yml`（A7 iter 1-9）+ `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md`（v1.1 errata）+ `.planning/phase-1.4/SAMPLES.md`（v2）
   - **findings logged**：W-1（STATE.md 7→8 接口契约 numeric drift — phase 1.5 T8.1 sync 修正 + errata 注）/ W-2（ralphLoop.ts ≤ 50L wedge soft-overflow — hard split lib/promiseExtract.ts 32L，ralphLoop.ts 收回 65L）/ S-1（systemPrompt.ts budget tighten ≤ 80L → ≤ 60L，实测 53L）/ S-2（task_plan T6.4/T6.5 action outline 过宽 — 吸收进 batch 3 T6.4 atomic 范围）/ F-note（D4 acceptance command 更正 — TypeBox 不是 zod）
-  - **8 支柱 100% capture verify roadmap closure**：A1' engineering 5 rules CLOSED（T4.1 yaml v2）/ A5' mattpocock_phases CLOSED（T4.1 yaml v2 4×21×23）/ A7' triggers semantic L2 stub CLOSED v0.1（T3.2 stub return null — 满足 100% capture interface contract 要求；v0.2+ 真实 embedding 推 phase 2.x）
+  - **8 支柱 capture roadmap**：A1' engineering 5 rules ✅ CLOSED（T4.1 yaml v2）/ A5' mattpocock_phases ✅ CLOSED（T4.1 yaml v2 4×21×23）/ A7' triggers semantic L2 → **INTERFACE CLOSED / CAPABILITY DEFERRED v0.2+**（T3.2 `semanticRouter.match()` 是 return null stub — 接口契约 ship 非语义匹配能力实现；真实 embedding kNN 推 phase 2.x。**sister review H1 修正**：return null stub 是 "interface contract shipped" 不是 "capability captured"，不标裸 "CLOSED" 避免 SSOT 顶行误导"100% 全实现"）
   - 见 `.planning/phase-1.5/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md, PERF-ATTRIBUTION-2.md, SPIKE-REPORT-2.md}`
 - ✅ **Phase 1.4 SHIPPED**（2026-05-13）
   - 21 atomic 子任务全部完成（Wave 0-7 跑完；详 `.planning/phase-1.4/progress.md` § A.4）
@@ -456,13 +456,14 @@ phase 1.5 ship 后 frozen 的 **8 接口契约**（PLAN.md § 4 1:1），phase 2
 7. **`ManifestSpec` 升级**（`src/manifest/schema/spec.ts`）— TypeBox `Type.Union` 4-value phase enum（discuss/plan/execute/verify）+ `Type.Object` triggers（**注意：项目 manifest schema 用 TypeBox `@sinclair/typebox` 不是 zod**）
 8. **`<promise>COMPLETE</promise>` XML wrapper 协议**（`src/routing/systemPrompt.ts` 53L + `src/routing/lib/promiseExtract.ts` 32L）— systemPrompt const + `PROMISE_PATTERN` regex `<promise>([^<]+)</promise>` — phase 2.1+ `--add-plugin ralph-wiggum` 1:1 顺滑切换
 
-### 8 支柱 100% capture verify roadmap closure
+### 8 支柱 capture roadmap（sister review H1 修正 — A7' stub 不标裸 "CLOSED"）
 
-phase 1.5 ship 后，KICKOFF § 8 支柱 + PLAN-CHECK § 8 的 100% capture verify roadmap **正式闭合**：
+phase 1.5 ship 后，KICKOFF § 8 支柱 + PLAN-CHECK § 8 的 capture roadmap 状态：
 
-- **A1' engineering 5 rules** → ✅ CLOSED（T4.1 `decision_rules.yaml` v2 engineering category 5 specific rules ship）
-- **A5' mattpocock_phases** → ✅ CLOSED（T4.1 yaml v2 `mattpocock_phases:` 段 4 phase × 21 unique skills × 23 trigger entry ship）
-- **A7' triggers semantic L2 stub** → ✅ CLOSED v0.1（T3.2 `semanticRouter.match()` v0.1 stub return null ship；v0.2+ 真实 embedding kNN 推 phase 2.x — v0.1 stub 已满足 100% capture interface contract 要求）
+- **A1' engineering 5 rules** → ✅ CLOSED（T4.1 `decision_rules.yaml` v2 engineering category 5 specific rules ship — 真实 routing 能力）
+- **A5' mattpocock_phases** → ✅ CLOSED（T4.1 yaml v2 `mattpocock_phases:` 段 4 phase × 21 unique skills × 23 trigger entry ship — 真实 schema）
+- **A7' triggers semantic L2 stub** → **INTERFACE CLOSED / CAPABILITY DEFERRED v0.2+**（T3.2 `semanticRouter.match()` v0.1 是 **return null stub** — 接口契约 frozen ship，**非**语义匹配能力实现；真实 embedding kNN capability 推 phase 2.x）
+  - **sister review H1**：`return null` stub 是 "interface contract shipped" 不是 "capability captured"。phase 1.4 sister review T1（"100% hit" 实际 70%）的同一个 transparency 反模式 — 不再用裸 "CLOSED / 100%" 字眼盖过真实状态。结构性根治见下方 phase 2.0 Wave 0 deferred § "transparency verify checklist"。
 
 ### phase 2.0 启动项（discuss-phase 入口）
 
@@ -470,6 +471,17 @@ phase 1.5 ship 后，KICKOFF § 8 支柱 + PLAN-CHECK § 8 的 100% capture veri
 - **ralph-loop full integration**（主流程 routing engine 调用 ralph-loop wrap "...COMPLETE" --completion-promise；A7' 8 支柱 100% 闭环 — phase 2.2）
 - **4 phase-2.1 placeholder installer 实装**（cc-plugin-marketplace + git-clone-with-setup + npx-skill-installer + mcp-http-add — ADR 0003 errata + ADR 0007 install_type 字段）
 - **Semantic Router L2 真实启用评估**（embedding kNN — D1.5-2 触发条件：30 sample 升 100+ × 多 model × stability validation）
+
+### Phase 1.5 Sister Review — Deferred to Phase 2.0 Wave 0
+
+phase 1.5 ship 后 sister review（paranoid staff engineer 视角）— **H1 + H2 已 ship 前修复**（H1 STATE.md A7' wording 改 "INTERFACE CLOSED / CAPABILITY DEFERRED" / H2 ralphLoop.ts Anchor 3 hard split → `lib/skillInstall.ts`，ralphLoop.ts 65L → **42L ≤50L**，ADR 0009 § Decision 3 "≤50L strict" 声明变真，A7 守恒保留无需动 ADR）。以下 3 项 + 1 结构性根治推 phase 2.0 Wave 0 顺手：
+
+- **H3 — agentDefinition.ts budget 偷改**（🟡 Med）：phase 1.4 C2 acceptance bar ≤150L（实测 148L）→ phase 1.5 T5.3 加 2 字段 + drift detector → 191L；progress.md 默写 "≤200L" 无 ADR 记录。budget 放宽是架构决策 — phase 2.0 Wave 0 走 ADR 0010 errata 正式记录 ≤150 → ≤200 + 理由（+43L / 2 optional string 字段 + `AGENT_DEFINITION_FIELDS` drift detector）。
+- **H4 — substring match false-positive 风险未记**（🟡 Med）：ADR 0009 § Decision 2 `matchesTrigger` 用 `task.prompt.toLowerCase().includes(trigger.toLowerCase())` substring 包含匹配 — trigger `"test"` 命中 `"latest"`/`"contest"`，`"ai"` 命中 `"email"`。30 sample 没撞 ≠ 真实 query 不撞。phase 2.0 Wave 0 在 ADR 0010 errata § Consequences 记 "substring match v0.1 已知 false-positive 风险，v0.2 semantic router 替代"。
+- **M1 — 2/30 sample miss 身份未记录**（🟡 Med）：28/30 specific match，2 个 miss 是哪 2 个？STATE.md / ADR 0009 / progress.md 全是聚合数字（phase 1.4 T1 transparency 反模式复发）。phase 2.0 Wave 0 跑 30-sample test 标注 2 miss 身份 + 为何可接受，写入 `.planning/phase-1.4/SAMPLES.md` v2 § 8.4。
+- **结构性根治 — transparency verify checklist**（reviewer 强调"否则 phase 2.0/2.x 还会复发第三次"）：phase 2.0 Wave 0 建立 verify-phase checklist（或轻量 CI gate）—— 任何 "CLOSED / 100% / 全绿" 字眼必须附 specific 数字 + miss 清单否则 verify 不通过。根治 phase 1.4 T1（"100% hit" 实际 70%）+ phase 1.5 H1/M1 连续 2 phase 复发的"聚合数字盖过真实状态"结构性倾向。
+
+L1（1000-node DAG +60.6% regress）已被 `PERF-ATTRIBUTION-2.md` § 7 监控触发器 tracked；L2（`.omc/` biome 污染）已记 `deferred-items.md` D-OOS-1 — 均合理 deferred，无需额外动作。
 
 ---
 

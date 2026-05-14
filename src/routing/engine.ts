@@ -38,11 +38,11 @@ import {
 import { type DagNode, resolveDag } from './dag.js'
 import { arbitrate, loadDecisionRules, type Rule } from './decisionRules.js'
 import {
-  ensureSkillsInstalled,
   MaxIterationsExceededError,
   ralphLoopWrap,
   VerbatimCompleteFailError,
 } from './lib/ralphLoop.js'
+import { ensureSkillsInstalled } from './lib/skillInstall.js'
 import { match as semanticMatch } from './semanticRouter.js'
 
 export { MaxIterationsExceededError, VerbatimCompleteFailError } from './lib/ralphLoop.js'

@@ -166,6 +166,8 @@ phase 2.0 v0.2.0 starting point = execute-task workflow + ralph-loop full integr
 
 **100% capture verify roadmap truly closed** (A1prime + A5prime + A7prime v0.1 all ship); A7prime v0.2+ true embedding deferred to phase 2.x, phase 1.5 v0.1 stub already satisfies 100% capture interface contract requirement.
 
+> **Sister review H1 errata (2026-05-14)** — the "A7prime CLOSED v0.1" / "100% capture truly closed" wording above overstates A7prime. `semanticRouter.match()` is a `return null` stub: **INTERFACE CLOSED, CAPABILITY DEFERRED v0.2+** — interface contract shipped, not semantic-matching capability captured. A1prime/A5prime are genuinely closed (real rules + schema ship); A7prime is interface-only. STATE.md A7' wording corrected accordingly; this verdict snapshot is preserved with this errata note rather than rewritten. Root-cause fix (transparency verify checklist) deferred to phase 2.0 Wave 0.
+
 ---
 
 ## Section 9 Karpathy Simplicity
