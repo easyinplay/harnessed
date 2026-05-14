@@ -1,7 +1,7 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-14（**phase 1.5 SHIPPED** + sister review remediation — DAG resolver Kahn + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；D1-D8 8/8 acceptance bar；ADR 累积 8 → 9；baseline tag 8 → 9；tests 291+2 → 318+3 skipped；8 支柱 capture：A1'/A5' CLOSED + A7' **INTERFACE CLOSED / CAPABILITY DEFERRED v0.2+**（sister review H1 修正）；ready for phase 2.0）
+> 最后更新：2026-05-15（**🎯 v0.1.0 MILESTONE SHIPPED** — 6/6 phase 完成 + milestone audit passed（post-reconciliation Path A）+ archived；前置 phase 1.5 SHIPPED + sister review remediation：DAG resolver Kahn + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；D1-D8 8/8；ADR 累积 9；baseline tag 9；tests 318+3 skipped；8 支柱 capture：A1'/A5' CLOSED + A7' **INTERFACE CLOSED / CAPABILITY DEFERRED v0.2+**；ready for phase 2.0）
 
 ---
 
@@ -18,11 +18,11 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：v0.1.0 Phase 1.5 ✅ **COMPLETED — SHIPPED 2026-05-14**（含 DAG resolver Kahn 拓扑排序 + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper；前置 phase 1.1 + 1.1.1 / 1.2 + 1.2.1 / 1.2.5 / 1.3 + 1.3.1 / 1.4 已 ship）
-- **当前里程碑**：v0.1.0
-- **下一 phase**：Phase 2.0（execute-task workflow 主线 + ralph-loop full integration + 4 placeholder installer 实装）— phase 1.5 已落地 DAG resolver (`src/routing/dag.ts` 142L Kahn) + Semantic Router L2 stub (`src/routing/semanticRouter.ts` 81L + `lib/embedding.ts` 17L) + decision_rules.yaml v2 (engineering 5 rules + mattpocock_phases 4×21×23) + spec.ts phase+triggers (TypeBox) + AgentDefinition v1.1 14 字段 + `<promise>` XML wrapper + 8 接口契约 frozen for phase 2.0（详 `.planning/phase-1.5/PLAN.md` § 4 + VERIFICATION.md § 2）
-- **状态**：✅ **Ready for Phase 2.0**
-- **进度**：6 / 17 phases 已完成 ▓▓▓▓▓▓░░░░░░░░░░░ 35.3%
+- **GSD phase**：🎯 **v0.1.0 MILESTONE ✅ SHIPPED & ARCHIVED 2026-05-15** — 6/6 phase 完成（1.1 + 1.1.1 / 1.2 + 1.2.1 / 1.2.5 / 1.3 + 1.3.1 / 1.4 / 1.5 + 1.5.1）；milestone audit `passed`（post-reconciliation Path A — ADR 0006 re-scope 回填 REQUIREMENTS.md traceability）；归档 `.planning/milestones/v0.1.0-{ROADMAP,REQUIREMENTS}.md`；git tag `v0.1.0`
+- **当前里程碑**：v0.1.0 ✅ CLOSED → 下一里程碑 v0.2.0（待 `/gsd-new-milestone` 启动）
+- **下一 phase**：Phase 2.0（execute-task workflow 主线 + ralph-loop full integration + 4 placeholder installer 实装）— **phase 2.0 Wave 0 必办**：phase 1.5 sister review H3/H4/M1 + transparency verify checklist 结构性根治（详本文件下方 "Phase 1.5 Sister Review — Deferred to Phase 2.0 Wave 0"）。phase 1.5 已落地 8 接口契约 frozen for phase 2.0（详 `.planning/phase-1.5/PLAN.md` § 4 + ROADMAP.md v0.2.0 phase 2.0 prereq notes）
+- **状态**：✅ **v0.1.0 CLOSED — Ready for v0.2.0**
+- **进度**：6 / 17 phases 已完成 ▓▓▓▓▓▓░░░░░░░░░░░ 35.3%（v0.1.0 里程碑 100%）
 
 ### 各里程碑进度
 

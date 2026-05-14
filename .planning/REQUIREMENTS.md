@@ -2,7 +2,9 @@
 
 > 功能需求清单（每条带唯一 ID + 来源 + 版本 + 验收标准）
 > 来源：PROJECT-SPEC v2、WORKFLOWS-MVP v2、research/SUMMARY.md（4/4 HIGH）
-> 最后更新：2026-05-11
+> 最后更新：2026-05-15（v0.1.0 milestone audit reconciliation — ADR 0006 架构修订 re-scope 回填；详 `.planning/v0.1.0-MILESTONE-AUDIT.md` § 5）
+
+> **ADR 0006 re-scope 说明**：phase 1.2.5 架构修订把项目从"装配主义包管理器"重定位为"完整三层栈方法论的可执行 engine"。部分 v0.1 原始需求的实现形态因此变更 —— ROADMAP 已 v3 重排，本文件 traceability 表同步回填（R2.1 re-scoped / R4.3+R4.4 superseded / R4.1 adjusted / R1.3+R3.4 partial）。
 
 ---
 
@@ -46,6 +48,7 @@
 - **来源**：R04 § 失败模式 4（brew bundle issue #21416） + P0#4
 - **版本**：v0.1
 - **验收**：人为构造循环依赖 manifest 时立即 reject；并行 install 顺序符合拓扑序
+- **状态（v0.1.0 audit）**：⚠️ **Partial** — phase 1.5 ship `src/routing/dag.ts` 142L Kahn iterative + cycle detect（E_DAG_CYCLE）+ 14 unit cell，wired into `engine.route` 签名。**推 phase 2.x 完成**：(1) manifest `depends_on` / `install_after` 字段（spec.ts 暂无）；(2) production caller（`install-base` 当前用 alphabetical glob 非拓扑序，无代码传 `opts.dagNodes`）；(3) 循环依赖 reject 当前在 `resolveDag` 运行时，REQ 原文要求的 schema 校验阶段 reject 待 `depends_on` 字段落地后实装。触发条件：phase 2.2 execute-task workflow 出现真实多 manifest 依赖图。
 
 ### R1.4 schema 严格 JSON Schema 校验
 - **描述**：学 Kubeconform `-strict` 模式，未声明字段 / 类型不匹配立即 fail
@@ -62,6 +65,7 @@
 - **来源**：SPEC § 8.4 + R04 P0#5（CRA 装机即过期反面教材）
 - **版本**：v0.1
 - **验收**：30 秒内完成；零静默改文件；rollback 1 命令完成
+- **状态（v0.1.0 audit）**：🔄 **Re-scoped by ADR 0006** — 单体 `harnessed setup` 命令拆分为 `harnessed install-base`（一键装齐 base profile 10 manifest，D-9）+ per-installer dry-run / explicit confirm / `.harnessed-backup/` 写入（ADR 0004 INSTALLER-CONTRACT.md 6 契约）。能力已 v0.1 ship（dry-run default + diff + 4-Level confirm + rollback 1 命令），命令形态变更。原"启动自检自身版本"未单独实装为命令 — 推 phase 2.4 doctor 完整版（version staleness check 与 6-month upstream stale check 一起做）。
 
 ### R2.2 `harnessed doctor` health check
 - **描述**：检查 Node 版本、MCP scope、上游 git origin URL 未篡改、6 月无 commit 上游标 stale；Windows 环境额外检查 jq + bash（Git Bash 路径）
@@ -108,6 +112,7 @@
 - **来源**：WORKFLOWS § 1 设计决策
 - **版本**：v0.1（v0.2 升级）
 - **验收**：用户可见每个来源独立段落；命令实际执行透明
+- **状态（v0.1.0 audit）**：⚠️ **Partial** — phase 1.4 routing engine 选源 OK（research workflow E2E dry-run 路径完整），但 segment-by-source merge 模块依赖真实 spawn 输出 —— 随 F40-2 `@anthropic-ai/claude-agent-sdk` deps 一起 deferred v0.2+（phase 2.2 execute-task workflow + ralph-loop full integration 时实装真实 `query()` spawn）。
 
 ---
 
@@ -118,6 +123,7 @@
 - **来源**：SPEC § 9
 - **版本**：v0.1
 - **验收**：改一处两层同步生效；schema validator 单测全绿
+- **状态（v0.1.0 audit）**：🔧 **Adjusted by ADR 0006** — SSOT 形态从 `routing/*.md` + B/C 双层 yaml frontmatter 改为 `routing/decision_rules.yaml` v2 单一 SSOT（main-process-driven routing engine 消费，D1.2.5-3）。CI 校验仍在（Ajv-validated loader + schema unit test 全绿）。"改一处两层同步生效"的双层语义被 main-process engine 单一编排取代 —— B/C 双层不再适用。
 
 ### R4.2 路由命中率 ≥ 85% 验收
 - **描述**：30 真实任务样本（Haiku/Sonnet/Opus 各 ≥ 8） + token budget 监控（skill description 总和 ≤ 1% context window）
@@ -130,12 +136,14 @@
 - **来源**：SPEC § 9 + § 8.5
 - **版本**：v0.1
 - **验收**：模拟 hook fail 场景不阻塞；显式告知降级原因
+- **状态（v0.1.0 audit）**：🔄 **Superseded by ADR 0006** — C 层 UserPromptSubmit hook 机制被 **main-process-driven routing engine 取代**（D1.2.5-3 — subagent 不能动态 install/reload skill，路由必须主进程跑）。"hook 失败降级回 B 层" 的语义由 routing engine 三层兜底取代：L1 keyword arbitrate → L2 semanticRouter（v0.1 stub）→ L3 fallback_supervisor LLM（`src/routing/engine.ts`）。hook 子系统不再是 v0.1 范围。
 
 ### R4.4 hook 安全约束（重写）
 - **描述**：routing/*.md 配置纯 yaml/md；harnessed 自带的 hook 脚本严格审计 + install 时 print 全文 + 不调任意 shell（Node.js 内置 fs/child_process 受控调用）；1-key uninstall 完全清理（settings.json hook entry + script files）
 - **来源**：SPEC § 8.3 修订（SUMMARY § 二 冲突 3 决议） + R03 § 5.4
 - **版本**：v0.1
 - **验收**：install 时 100% print hook 代码；uninstall 后 settings.json + script files 零残留
+- **状态（v0.1.0 audit）**：🔄 **Superseded by ADR 0006** — 同 R4.3，main-process-driven routing engine 取代 hook 机制，harnessed 不再 ship 自带 hook 脚本，hook 安全审计/print/uninstall 不适用。security gate 由 phase 1.1.1 H7 `checkCmdString` shell-escape 过滤 + ADR 0004 installer 6 契约（dry-run + diff + confirm + no-silent-failure）承接（R9.3 satisfied）。
 
 ---
 
@@ -318,25 +326,37 @@
 
 ## Traceability（需求 → 里程碑）
 
-| Req | Milestone | Status |
-|-----|-----------|--------|
-| R1.1 schema v1 冻结 | v0.1 | Pending |
-| R1.2 4 type + 5 method | v0.1 / v0.2 | Pending |
-| R1.3 DAG resolver | v0.1 | Pending |
-| R1.4 严格 schema 校验 | v0.1 | Pending |
-| R2.1 setup 自检 | v0.1 | Pending |
-| R2.2 doctor health | v0.1 / v0.2 | Pending |
-| R2.3 audit | v0.2 | Pending |
-| R2.4 audit log | v0.4 | Pending |
-| R3.1-R3.4 research | v0.1 | Pending |
-| R4.1 routing SSOT | v0.1 | Pending |
-| R4.2 命中率 ≥ 85% 验收 | v0.3 | Pending |
-| R4.3 hook 降级 | v0.1 | Pending |
-| R4.4 hook 安全 | v0.1 | Pending |
-| R5.1-R5.2 cross-OS | v0.1 | Pending |
-| R5.3 ralph Win | v0.2 | Pending |
-| R6.1-R6.5 execute-task | v0.2 | Pending |
-| R7.1-R7.6 plan-feature + checkpoint | v0.3 | Pending |
-| R8.1-R8.5 稳定期 | v0.4 | Pending |
-| R9.1-R9.5 长期 NFR | v0.1 起持续 | Pending |
-| RX.1-RX.6 拒绝清单 | 全周期 | Locked |
+> **v0.1.0 milestone audit reconciliation（2026-05-15）** — v0.1 需求状态回填，详 `.planning/v0.1.0-MILESTONE-AUDIT.md`。
+> Status 取值：`Done` / `Partial`（部分实装 + 推后续 phase）/ `Re-scoped`（ADR 0006 形态变更，能力已 ship）/ `Superseded`（ADR 0006 机制取代，不再适用）/ `Adjusted`（ADR 0006 形态调整）/ `Pending` / `Locked`。
+
+| Req | Milestone | Status | 备注（v0.1.0 audit） |
+|-----|-----------|--------|---------------------|
+| R1.1 schema v1 冻结 | v0.1 | ✅ Done | ADR 0001 baseline-tag + CI A7 守恒（phase 1.1） |
+| R1.2 4 type + 6 method | v0.1 / v0.2 | ✅ Done (v0.1 portion) | cli-npm + mcp-stdio real，4 placeholder → phase 2.1（phase 1.2） |
+| R1.3 DAG resolver | v0.1 → 2.x | ⚠️ Partial | Kahn + cycle detect + 14 cell ship；depends_on 字段 + production caller + schema-层 reject 推 phase 2.x（phase 1.5） |
+| R1.4 严格 schema 校验 | v0.1 | ✅ Done | additionalProperties:false + Ajv strict + negative tests（phase 1.1） |
+| R2.1 setup 自检 | v0.1 → 2.4 | 🔄 Re-scoped (ADR 0006) | 拆分为 install-base + per-installer dry-run/confirm/backup；version staleness check 推 phase 2.4 doctor 完整版 |
+| R2.2 doctor health | v0.1 / v0.2 | ✅ Done (v0.1 basics) | Node≥22 + MCP scope + jq + Win bash 4 check（phase 1.2）；完整版 phase 2.4 |
+| R2.3 audit | v0.2 | Pending | — |
+| R2.4 audit log | v0.4 | Pending | — |
+| R3.1 多源调研路由 | v0.1 | ✅ Done (v0.1 dry-run) | research.ts → routing engine；real spawn deferred v0.2+（phase 1.4） |
+| R3.2 MCP --scope project | v0.1 | ✅ Done | mcpStdioAdd.ts hardcode + doctor 检查（phase 1.2） |
+| R3.3 Windows npx cmd /c | v0.1 | ✅ Done | spawn.ts win32 分支（phase 1.2） |
+| R3.4 多源合并策略 v1 | v0.1 → v0.2 | ⚠️ Partial | 选源 OK；segment-by-source merge 随 F40-2 SDK dep deferred v0.2+ |
+| R4.1 routing SSOT | v0.1 | 🔧 Adjusted (ADR 0006) | SSOT 改为 decision_rules.yaml v2 单一 SSOT；B/C 双层被 main-process engine 取代 |
+| R4.2 命中率 ≥ 85% 验收 | v0.3 | Pending | phase 3.4（30 sample × 多 model × stability） |
+| R4.3 hook 降级 | v0.1 | 🔄 Superseded (ADR 0006) | main-process-driven routing engine 三层兜底取代 hook 降级机制（D1.2.5-3） |
+| R4.4 hook 安全 | v0.1 | 🔄 Superseded (ADR 0006) | 同 R4.3；security gate 由 checkCmdString + ADR 0004 installer 6 契约承接 |
+| R5.1-R5.2 cross-OS | v0.1 | ✅ Done | CI 三平台全绿 + spawn.ts platform 分支（phase 1.1+） |
+| R5.3 ralph Win | v0.2 | Pending | phase 2.4 |
+| R6.1-R6.5 execute-task | v0.2 | Pending | — |
+| R7.1-R7.6 plan-feature + checkpoint | v0.3 | Pending | — |
+| R8.1-R8.5 稳定期 | v0.4 | Pending | — |
+| R9.1 单 maintainer 缓解 | v0.1 起持续 | ✅ Done (v0.1) / Ongoing | YAML 数据格式 + 9 ADR baseline-tag + CI A7 + signed_by |
+| R9.2 透明度 | v0.1 起持续 | ✅ Done (v0.1) / Ongoing | matched_rule 打印 + ADR for 非常规决策 + 无静默 skip |
+| R9.3 安全 | v0.1 起持续 | ✅ Done (v0.1) / Ongoing | install dry-run + diff + confirm + checkCmdString + license whitelist |
+| R9.4 上游 breaking change | v0.1 起持续 | ✅ Done (v0.1 basics) / Ongoing | upstream_health 字段；weekly cron + aliases 推 v0.3/v0.4 |
+| R9.5 范围蔓延防御 | v0.1 起持续 | ✅ Done (v0.1) / Ongoing | RX.1-RX.6 reject list locked + workflow 数量约束 |
+| RX.1-RX.6 拒绝清单 | 全周期 | 🔒 Locked | — |
+
+**v0.1.0 milestone 结算**：20 个 v0.1-tagged 需求 — 14 Done + 2 Partial（R1.3/R3.4，推后续 phase）+ 2 Superseded（R4.3/R4.4，ADR 0006 取代）+ 1 Re-scoped（R2.1，ADR 0006 形态变更）+ 1 Adjusted（R4.1，ADR 0006 形态调整）。无遗留"忘做"缺口 — Partial/Re-scoped/Superseded/Adjusted 均有明确去向。

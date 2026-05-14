@@ -35,81 +35,23 @@
 
 ---
 
-## v0.1.0 — manifest 引擎 + research workflow（1-2 周）
+## v0.1.0 — manifest 引擎 + research workflow ✅ SHIPPED 2026-05-15
 
-### Goal
+> **里程碑已归档** — 6/6 phase 完成（1.1 / 1.2 / 1.2.5 / 1.3 / 1.4 / 1.5）。完整 phase 详情 + milestone summary + key decisions 见 **[`.planning/milestones/v0.1.0-ROADMAP.md`](milestones/v0.1.0-ROADMAP.md)**;需求结算见 **[`.planning/milestones/v0.1.0-REQUIREMENTS.md`](milestones/v0.1.0-REQUIREMENTS.md)**;审计见 **[`.planning/v0.1.0-MILESTONE-AUDIT.md`](v0.1.0-MILESTONE-AUDIT.md)**(passed, post-reconciliation)。
 
-把 manifest schema 冻结住、把 3 个 installer + DAG resolver + research workflow 端到端跑通；从 Day 1 守住 cross-OS 与 schema 严格校验。
+**交付**:manifest schema v1 frozen + main-process-driven routing engine v1 + DAG resolver(Kahn)+ Semantic Router L2 stub + research workflow E2E + base profile installer + engineering 23 招式 phase routing schema。9 ADR + 9 baseline tag(A7 守恒)+ 318+3 tests + CI 三平台全绿。ADR 0006 wedge 重定位:"装配主义包管理器" → "完整三层栈方法论的可执行 engine"。
 
-### 必含项（直接采纳 SUMMARY § 五 v0.1.0 MUST 9 项）
+<details>
+<summary>6 phase 一行索引</summary>
 
-1. **manifest schema v1 冻结**（SPEC § 8.1 + R03 § 6.5 + R04 P0）
-   - 加 `apiVersion: harnessed/v1`（仿 K8s CRD）
-   - 加 `upstream_health: { stability, last_check, fallback_action }`
-   - 加 `signed_by: <maintainer github username>`
-   - 4 type 共有/分支字段全部 frozen，schema 改动后必须走 ADR
-2. **6 种 installer 中的 3 个**（research workflow 实际用到，详见 ADR-0003 errata）
-   - `cli-npm`（ctx7，覆盖 npm_global + npx fallback）
-   - `mcp-stdio-add`（Tavily, Exa）
-   - 内置 `harnessed-router` 引擎
-3. **DAG resolver 从 Day 1**（R04 P0#4）：先解析全图再拓扑排序；循环依赖 schema 校验拒绝
-4. **research workflow 跑通**（WORKFLOWS § 1）：30 个真实查询样本验证
-5. **第一份 ADR**：`docs/adr/0001-manifest-schema-v1.md`（R04 P0#6）
-6. **`harnessed setup` 启动自检自身版本**（R04 P0#5；提示 `npx@latest`）
-7. **routing schema 严格 JSON Schema 校验**（学 Kubeconform `-strict`，R04 P0#7）
-8. **Cross-OS 测试 Day 1 启用**（R03 红旗 6 + R04 P0）：CI 矩阵 macOS + Linux + Windows native；npx 自动注入 `cmd /c` wrapper
-9. **MCP installer 强制 `--scope project`**（R03 § 3.3，避开 v2.1.122 user scope bug）
+- **Phase 1.1** repo 骨架 + manifest schema v1 frozen + ADR 0001-0003 — ✅ 2026-05-12
+- **Phase 1.2** cli-npm + mcp-stdio installer + CLI 子命令骨架 + ADR 0004-0005 — ✅ 2026-05-12(含 1.2.1 hotfix)
+- **Phase 1.2.5** Architecture revision(ADR 0006 wedge 重定位 + ROADMAP v3 重排)— ✅ 2026-05-12(INSERTED)
+- **Phase 1.3** base profile + categorization schema + decision_rules.yaml v1 + ADR 0007 — ✅ 2026-05-13(含 1.3.1 hotfix)
+- **Phase 1.4** routing engine v1 + research workflow E2E + 30 sample + ADR 0008 — ✅ 2026-05-13
+- **Phase 1.5** DAG resolver + Semantic Router L2 stub + engineering 23 招式 phase routing + ADR 0009 — ✅ 2026-05-14(含 1.5.1 sister review remediation)
 
-### 验收标准（goal-backward 观察清单）
-
-1. 用户在干净的 Mac/Linux/Windows 上 `npx harnessed@latest setup`，30 秒内完成 + 显式 confirm + 写入 `.harnessed/`，零交互错误。
-2. `harnessed install research` 通过 DAG 顺序装好 Tavily + Exa + ctx7，过程中每步 print 实际命令、错误时 print 降级原因，无静默 skip。
-3. `harnessed doctor` 检测出 Node 版本/MCP scope/上游 git origin 篡改，给出可复制粘贴的修复命令。
-4. `/harnessed:research "Next.js app router 在 v15 怎么用"` 自动路由到 ctx7，30 样本命中率 ≥ 85%（v0.1 内部抽样验证）。
-5. CI 三平台全绿；schema 任何字段缺失/类型错误立即 fail（不进入运行时）。
-
-### Phase 拆分
-
-> **v3 重排（ADR 0006 phase 1.2.5 wedge 重定位 后）** — 详 `.planning/phase-1.2.5/ASSUMPTIONS.md` § E
-
-- **Phase 1.1：repo 骨架 + manifest schema v1 frozen + ADR 0001** ✅ SHIPPED 2026-05-12
-- **Phase 1.2：cli-npm + mcp-stdio installer + setup/doctor 命令骨架** ✅ SHIPPED 2026-05-12 (含 phase 1.2.1 hotfix B5')
-- **Phase 1.2.5：Architecture revision discuss-phase** ✅ SHIPPED 2026-05-12
-  - 8 支柱 100% capture lock + 5 P0 决策 lock + ADR 0006 起草 + ROADMAP v3 重排
-  - 不动已 ship 代码 (A7 守恒)；准备 phase 1.3 implementation
-- **Phase 1.3：Base profile + Categorization schema + decision_rules.yaml v1**（v3 重排）✅ SHIPPED 2026-05-13
-  - 新 ADR 0007 errata：manifest schema 加 `category` + `decision_rules` + `install_type` 字段（A7 守恒不动 0001）✅
-  - `harnessed install-base` **独立子命令** (D-9 — 不加 --base flag) 一键装齐 base profile (10 固定 manifest) ✅
-  - `routing/decision_rules.yaml` v1 schema 落地 (DMN Priority Hit Policy, 12 rules) ✅
-  - ui-ux-pro-max install path 实测 (D1.2.5-11) ✅ PATH_A+B 双 OK
-  - 验收：B1-B8 8/8 acceptance bar；ADR 0006/0007 baseline tag 加入 A7 守恒 iterate ✅；CI run 25790126213 三平台全绿
-- **Phase 1.4：Routing engine v1 实装 + research workflow E2E**（v3 重排）✅ SHIPPED 2026-05-13
-  - main-process-driven routing engine (D1.2.5-3) — `src/routing/engine.ts` 170L Pattern N (主流程编排) ✅
-  - AgentDefinition factory 1:1 对应 contract v1 12 字段 (`src/routing/agentDefinition.ts` 148L + 4 typed error class + 4 心法 prepend D1.4-14) ✅
-  - systemPrompt verbatim COMPLETE (`src/routing/systemPrompt.ts` 43L Pattern O + D-18 1:1 contract § 5.4 + F33 P1 mitigation) ✅
-  - 5 category × decision rules MVP execute (design / content / testing / search / meta) — engineering category v1 占位 0 rules 走 fallback_supervisor (R6 mitigation, 推 phase 1.5) ✅
-  - L1 关键词路由 (DMN Priority Hit Policy) + fallback_supervisor LLM L2 兜底 ✅
-  - research workflow E2E (`src/cli/research.ts` 93L + 9th register fn + integration test +3 mock cell + 1 real-spawn skipIf) ✅
-  - 30 真实查询样本路由命中率 **100.0% (30/30)** ≥ 85% v0.1 内部基线（per-category 全 5/5；4 F42 fallthrough corrected — phase 3.4 v0.3.0 完整命中率验收推 phase 3.4） ✅
-  - 验收：C1-C8 8/8 acceptance bar；ADR 累积 7→8 (0008 errata 含 H1a perf transparency reference + M1 yaml path migration 官方化 + R6 engineering category 推 phase 1.5)；CI run 25804037789 @ 8f56514 三平台全绿；A7 step iter 1-8 全 8 ADR 守恒
-- **Phase 1.5：DAG resolver + Semantic Router 语义增强 + engineering category routing + mattpocock 23 招式 phase routing**（v3 重排 + phase 1.4 ship 后扩展）✅ SHIPPED 2026-05-14 — **v0.1.0 里程碑全部完成（6/6 phase）**
-  - DAG resolver + 拓扑排序（原 phase 1.3）✅ — `src/routing/dag.ts` 142L Kahn iterative（BFS + indegree queue，自实装无外部 graph library）+ cycle detect（E_DAG_CYCLE）+ 三态 `DagResolveResult` discriminated union
-  - Semantic Router L2 stub ✅ — `src/routing/semanticRouter.ts` 81L v0.1 stub return null（contract frozen for v0.2+ embedding swap-in）+ `lib/embedding.ts` 17L placeholder interface；真实 embedding kNN 推 phase 2.x（D1.5-2 lock）
-  - 高频 workflow 模式编码（D1.2.5-4 P0-4 渐进策略）✅ — mattpocock_phases yaml v2 4 phase × 21 unique skills × 23 trigger entry
-  - **engineering category routing rules** ✅ — `routing/decision_rules.yaml` v2 engineering category 5 specific rules（R6 mitigation — 完成 8 支柱 A1' / A5' enforcement）+ **mattpocock 23 招式 phase routing schema** ✅ — `src/manifest/schema/spec.ts` 加 `phase`（4-value `Type.Union` enum：discuss/plan/execute/verify）+ `triggers`（`Type.Object`）；**注意：manifest schema 用 TypeBox（`@sinclair/typebox`）不是 zod**
-  - **phase 1.4 ship 后评估候选 — 全部走 ADR 0009 errata 决议** ✅: D1.4-2 `initialPrompt` + `criticalSystemReminder_EXPERIMENTAL` v1.1 contract errata（agentDefinition 12→14 字段 1:1 binding）/ F40-2 `@anthropic-ai/claude-agent-sdk` deps 引入推 v0.2+（karpathy YAGNI）/ F42 array semantic match v0.1 fallthrough 行为 frozen（v0.2+ 升级推 phase 2.x）/ ralph-wiggum `<promise>` XML wrapper 升级（systemPrompt 53L + promiseExtract.ts 32L W-2 hard split）
-  - 验收：**D1-D8 8/8 acceptance bar** ✅；ADR 累积 8→9（加 0009 errata）；baseline tag 8→9（加 adr-0009-accepted）；tests 291+2 → 318+3 skipped；30 sample specific match 28/30 (93.3%) ≥ 27/30 + total 30/30；DAG resolver hot path ≤ 5% regress（realistic 50-node 图 +0.96% ✅ PASS — PERF-ATTRIBUTION-2.md）；CI A7 step iterate 1-9 全 9 ADR baseline tag 守恒（ADR 0001-0008 main body 0 diff）；详 `.planning/phase-1.5/{progress.md, VERIFICATION.md, PERF-ATTRIBUTION-2.md}`
-  - **8 支柱 100% capture verify roadmap closure** ✅ — A1' engineering 5 rules CLOSED / A5' mattpocock_phases CLOSED / A7' triggers semantic L2 stub CLOSED v0.1（A1' / A5' / A7' 静态 schema + verify roadmap 全部 ship 本 phase）
-
-### 关键风险（v3 update）
-
-- ⚠️ **DAG resolver 推迟到 phase 1.5**：v3 重排后 phase 1.3 不再含 DAG（base profile 安装顺序明确，不需拓扑），但 phase 1.5 + Semantic Router 升级一起做时必须实装（守 R04 失败模式 4 brew bundle 教训）
-- ⚠️ **schema 冻结仓促**：第一行 installer 代码前必须冻结，后续改 schema = 全 manifest 迁移 — phase 1.3 加 `category` / `decision_rules` / `install_type` 字段走 ADR 0007 errata（A7 守恒不动 0001）；phase 1.4 routing engine 实装走 ADR 0008 errata（A7 守恒不动 0001-0007）；phase 1.5 候选 ADR 0009 errata 加 `initialPrompt` / `criticalSystemReminder_EXPERIMENTAL` 2 新字段（D1.4-2 评估）
-- ⚠️ **Windows native 被遗忘**：默认开发在 Mac，CI 红了直接 disable Windows 是常见反模式 → 红了必须修，不允许 disable（phase 1.2.1 hotfix 已实证 B5' 修复；phase 1.4 CI run 25804037789 三平台全绿实证 ✅）
-- ✅ **Routing engine 三红旗（来自 phase 1.2.5 RESEARCH-1）已实证**（phase 1.4 ship 验收）：
-  - ✅ P0 (resolved): subagent 不能嵌套 — phase 1.4 routing engine main-process-driven 已 ship (D1.2.5-3 + D1.4-1 spike 实证)
-  - ✅ P1 (resolved): `/reload-plugins` skill bug — phase 1.4 实装时设计 install 后 fresh subagent invoke + filesystem scan + sleep retry idempotent_check + RestartRequiredError 兜底 (R2 mitigation 已 ship)
-  - ✅ P1 (resolved): subagent final message summarize 风险 — phase 1.4 systemPrompt.ts D-18 1:1 对齐 contract § 5.4 + verbatim COMPLETE marker 强制 (F33 P1 mitigation 已 ship)
+</details>
 
 ---
 
