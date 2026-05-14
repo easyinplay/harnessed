@@ -20,12 +20,12 @@
     2. `license_source` audit 字段:optional enum `README | registry | none | anthropics-official`
     3. bundle-install:新 optional `provides: Type.Array({ id, component_type }, { minItems: 2, uniqueItems: true })` 顶层字段;`install`/`verify`/`uninstall` 保持 singular(D2.1-1/D2.1-2)
     4. install_type enforcement:`install_type` ↔ `install.method` 1:N 闭合 cross-field check
-    5. **H3 errata**: agentDefinition.ts budget ≤150L → ≤200L 正式记录(phase 1.5 实测 191L;理由:+43L = 2 optional string 字段 `initialPrompt`+`criticalSystemReminder_EXPERIMENTAL` + `AGENT_DEFINITION_FIELDS` drift detector)
+    5. **H3 errata**: agentDefinition.ts budget ≤150L → ≤200L 正式记录。**W2 fix — drafting 前先实测对齐 3 处数字**:`wc -l src/routing/agentDefinition.ts`(phase 1.5 ship 191L)+ 读 `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` v1.1 实际字段数;ADR 按实测写,统一:measured = 191L / new budget cap = ≤200L / delta = 148→191L 即 +43L(2 optional string 字段 `initialPrompt`+`criticalSystemReminder_EXPERIMENTAL` + `AGENT_DEFINITION_FIELDS` drift detector)
     6. **D-16**: `--header` `${ENV_VAR}` 处理 = installer 在 arg 构造前 resolve `process.env`(B1 checkCmdString gate 零改动)
   - **§ Consequences**: **H4** — `arbitrate` substring match(ADR 0009 § Decision 2 `task.prompt.toLowerCase().includes(trigger.toLowerCase())`)已知 false-positive 风险(trigger `"test"` 命中 `"latest"`/`"contest"`);v0.2+ semantic router L2 替代;transparency verify checklist 防 verdict 反模式复发
   - **§ Compliance**: `git diff adr-0001-accepted -- docs/adr/0001-*.md` = 0(A7 守恒);ADR 0001-0009 main body 不动
   - **§ Errata-path note**: ship 时 `adr-0010-accepted` baseline tag;ci.yml A7 step iter 1-9 → 1-10
-- **read_first**: `docs/adr/0009-routing-l2-engineering-23-shi-errata.md`(errata 风格 reference)/ `docs/adr/0008-routing-engine-v1-errata.md` / `.planning/phase-2.1/2.1-CONTEXT.md`(D-03/D-04/D-08/D-16)/ `.planning/phase-2.1/RESEARCH.md`(D2.1-1)
+- **read_first**: `docs/adr/0009-routing-l2-engineering-23-shi-errata.md`(errata 风格 reference + § Decision 2 = H4 substring match factual source)/ `docs/adr/0008-routing-engine-v1-errata.md`(errata 风格)/ `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md`(S3 — H3 errata 的对象文档,v1.1 字段数 factual source)/ `.planning/phase-2.1/2.1-CONTEXT.md`(D-03/D-04/D-08/D-16)/ `.planning/phase-2.1/RESEARCH.md`(D2.1-1)
 - **acceptance_criteria**:
   - `wc -l docs/adr/0010-installer-schema-extension-errata.md` ≥ 100
   - `grep -c "^## " docs/adr/0010-installer-schema-extension-errata.md` ≥ 6
@@ -132,12 +132,15 @@
      - marker token 行首:`Verdict:` / `状态:` / `Closure:`
      - 人工判断部分(miss list 是否完整、count 是否正确)checklist 说明
      - 背景:phase 1.4 T1("100% hit" 实际 70%)+ phase 1.5 H1/M1 连续 2 phase transparency 反模式复发,结构性根治
-  2. `scripts/check-transparency-verdicts.mjs`(~15-25L pure ESM)— scan 限定 glob `.planning/**/PLAN-CHECK.md` + `.planning/**/*-AUDIT.md` + `.planning/**/VERIFICATION.md`,只匹配行首 `Verdict:`/`状态:`/`Closure:` 的行,若该行无 `\d+/\d+` ratio AND 无 `miss:` 声明 → exit 1 + 打印违规行。自由 prose 不匹配(D2.1-8 false-positive mitigation)
+  2. `scripts/check-transparency-verdicts.mjs`(~15-25L pure ESM)— scan 限定 glob `.planning/**/PLAN-CHECK.md` + `.planning/**/*-AUDIT.md` + `.planning/**/VERIFICATION.md`,匹配行首 `Verdict:`/`状态:`/`Closure:` 的 marker 行(**S5 — regex 须容忍 0-2 个 markdown bold `*` 包裹**,如 `**Verdict:**` 与 `Verdict:` 均匹配),若该行无 `\d+/\d+` ratio AND 无 `miss:` 声明 → 打印违规行。自由 prose 不匹配(D2.1-8 false-positive mitigation)
+     - **W3 — 锁定 warn-only round 1**:gate **首轮 warn-only**(打印违规行 + `process.exit(0)`)—— 历史 verdict 文档(phase 1.x PLAN-CHECK / v0.1.0-MILESTONE-AUDIT / 各 phase VERIFICATION)写于 gate 之前,多用自由 prose 结论,首轮 enforce 会 red CI 在历史文档上。round 1 warn-only,**flip 到 enforce(exit 1)推 phase 2.2**(phase 2.2 起所有新 verdict 文档已遵守 marker 约定)。脚本顶部 const `ENFORCE = false` + 注释 "// W3: warn-only round 1; flip to true in phase 2.2"
   3. `.github/workflows/ci.yml` 加 step `node scripts/check-transparency-verdicts.mjs`(在 A7 step 附近)
+  4. `docs/TRANSPARENCY-VERDICT-CHECKLIST.md` 明示 marker 允许 markdown bold 包裹(`**Verdict:**` 合法)
 - **read_first**: `.planning/phase-1.5/PLAN-CHECK.md` § 8(verdict 文档结构 reference)/ `.planning/v0.1.0-MILESTONE-AUDIT.md`(AUDIT 文档结构)/ `.github/workflows/ci.yml`(A7 step pattern)/ `.planning/phase-2.1/RESEARCH.md` § 3(D2.1-7/8)
 - **acceptance_criteria**:
   - `wc -l docs/TRANSPARENCY-VERDICT-CHECKLIST.md` ≥ 40
-  - `test -f scripts/check-transparency-verdicts.mjs && node scripts/check-transparency-verdicts.mjs && echo "gate PASS"` (现有 verdict 文档须先合规或 gate 设 warn-only 首轮 — execute 时决定)
+  - `test -f scripts/check-transparency-verdicts.mjs && node scripts/check-transparency-verdicts.mjs; echo "exit=$?"` → **exit=0**(W3 warn-only round 1 — 即使历史文档违规也 exit 0 + 打印 warning)
+  - `grep -c "ENFORCE = false" scripts/check-transparency-verdicts.mjs` ≥ 1(W3 lock)
   - `grep -c "check-transparency-verdicts" .github/workflows/ci.yml` ≥ 1
 - **决策来源**: E3 + D2.1-7 + D2.1-8
 

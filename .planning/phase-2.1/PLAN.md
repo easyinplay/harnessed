@@ -67,7 +67,11 @@ Wave 5 — tests + ship (E8)              [T6.1~T6.6]
   └─ T6.6 VERIFICATION.md (≥120L)
 ```
 
-Wave 0 必须最先 — license whitelist(T1.2)是 cc-plugin/extension 候选前置;bundle-install `provides:`(T1.3)是 document-skills 前置;`--header` env-resolution approach(T1.1 ADR 记 D-16)是 mcp-http-add 前置。Wave 1-4 顺序严格(D-10 低风险优先,每 wave 依赖前 wave 的 lib helper 复用验证)。
+Wave 0 必须最先 — license whitelist(T1.2)是 cc-plugin/extension 候选前置;bundle-install `provides:`(T1.3)是 document-skills 前置;`--header` env-resolution approach(T1.1 ADR 记 D-16)是 mcp-http-add 前置。
+
+**S1 — Wave 依赖约定**:**所有 Wave 1-5 task 隐式 depends_on 全部 Wave 0**(schema/checklist 是 installer/ship 的硬前置)。task_plan 各 installer task 的 `depends_on` 只显式列前一 installer(lib-helper 复用验证链),Wave 0 前置为全局约定不逐条列。
+
+**S2 — Wave 1-4 串行是风险控制选择,非代码依赖**:4 个 installer 在代码上**互不依赖**(各 clone 不同 analog,无 cross-import)。串行(D-10 低风险优先)是 main-agent direct-write 后的保守编排 + CONTEXT-locked 实装顺序。**execute-phase 若用 parallel batch executor,Wave 1-4 可一次性并行 dispatch**(只保留 T6.1 dispatch table 的 fan-in 依赖)—— W4/S2:executor 自行决定保守逐个 vs 并行,两者皆 acceptable。
 
 ---
 
