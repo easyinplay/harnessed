@@ -169,7 +169,7 @@ Wave 0 — STATE.md 6 项 prereq backlog 一次根治 + ADR draft (F1)
   ├─ T0.2  ADR <实占N> draft(5 章节 sketch only,Wave 6 详细 fill)
   ├─ T0.3  M3 perf gate 根治(D2.3-1)— 新 perf-bench.yml + ci.yml perf step skip(it.skip(IS_GHA))+ STATE.md L553 close
   ├─ T0.4  M1 schema regen CI gate(`corepack pnpm build:schema && git diff --exit-code schemas/`,~10L)
-  ├─ T0.5  T1.2 schemaVersion consumer grep gate(`grep -r "branchOnSchemaVersion(" src/ | wc -l ≥ 2`, **B1 plan-check fix** honest baseline)
+  ├─ T0.5  T1.2 schemaVersion consumer grep gate(`grep -r "branchOnSchemaVersion" src/ | wc -l ≥ 2`, **B1 plan-check fix** honest baseline; SUGGESTION-1 delta: no-paren grep 与 plan text 一致)
   ├─ T0.6  T1.3 Win pwsh provenance sentinel(`if: runner.os == 'Windows'` + `shell: pwsh`)
   ├─ T0.7  M2 intel L236-238 ## 实施进度回填 节(每 entry 标 IMPL: Phase 2.2 (commit) 或 PENDING)
   ├─ T0.8  T5 deferred-items review — RETROSPECTIVE.md 模板加节 + scripts/check-deferred-items.mjs(warn-only ≤80L)

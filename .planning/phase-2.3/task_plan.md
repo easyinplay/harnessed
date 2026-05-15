@@ -4,7 +4,7 @@
 > **Author**: gsd-planner (Wave B)
 > **Sources**: KICKOFF § 2 Wave 拓扑 + ASSUMPTIONS § A bar mapping + ASSUMPTIONS § B 39 lock + PATTERNS § 2 code excerpts + RESEARCH D2.3-1~D2.3-7 + § 1.3 / § 2.4 / § 3.5 implementation sketches
 > **Style**: 沿袭 phase 1.5 / 2.1 / 2.2 task_plan.md atomic sub-task structure(file path / action concrete values / read_first / acceptance_criteria grep-verifiable / decision source)
-> **Task count**: 34 atomic tasks across 7 Waves
+> **Task count**: 35 atomic tasks across 7 Waves (W0:10 / W1:6 / W2:5 / W3:3 / W4:3 / W5:4 / W6:4) — W0 T0.10 always_active spike 提前(W1 plan-check fix from Wave C delta)
 > **Hard limit verify**: every code-producing task 含 `wc -l` 或 ≤N 行 acceptance criterion
 
 > ⚠️ **Placeholder sed-replace discipline (Phase 2.1 W1 plan-check fix sister precedent)**: T0.1 resolve `<实占N>` 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + 所有 NEW ADR/SPEC 文件批量 sed-replace 字面占位:`sed -i "s/<实占N>/<actual-NNNN>/g" .planning/phase-2.3/task_plan.md .planning/phase-2.3/PLAN.md .planning/phase-2.3/KICKOFF.md docs/adr/<actual-NNNN>-*.md`(以及任何 grep 命中的其他文件)。**zero 字面 `<实占N>` 残留**是 W0 commit 前置条件(grep `<实占N>` .planning/phase-2.3/ docs/adr/ 必须 exit 1)。
@@ -141,7 +141,7 @@
   ```yaml
   - name: schemaVersion consumer gate (Phase 2.3 Wave 0 T1.2)
     run: |
-      count=$(grep -r "branchOnSchemaVersion(" src/ | wc -l | tr -d ' ')
+      count=$(grep -r "branchOnSchemaVersion" src/ | wc -l | tr -d ' ')
       if [ "$count" -lt 2 ]; then
         echo "::error::expected ≥ 2 branchOnSchemaVersion call sites (Phase 2.2 W2 helper-only adoption baseline; Phase 2.3+ expands per surface — see ADR <实占N> § 7 errata), found $count"
         exit 1
@@ -154,7 +154,7 @@
 - **acceptance_criteria**:
   - `grep -E "schemaVersion consumer gate.*Phase 2.3 Wave 0 T1.2" .github/workflows/ci.yml` 命中
   - `grep -E 'count.*grep -r.*branchOnSchemaVersion' .github/workflows/ci.yml` 命中
-  - **本地 verify**:`grep -r "branchOnSchemaVersion(" src/ | wc -l` ≥ 2(B1 plan-check fix: ≥7 → ≥2 honest baseline,反映 Phase 2.2 W2 helper-only adoption 真相 — consumer count 当前 = 2;Phase 2.3+ 逐步扩 consumer per surface,详 T0.2 ADR § 7 errata)
+  - **本地 verify**:`grep -r "branchOnSchemaVersion" src/ | wc -l` ≥ 2(B1 plan-check fix: ≥7 → ≥2 honest baseline,反映 Phase 2.2 W2 helper-only adoption 真相 — consumer count 当前 = 2;Phase 2.3+ 逐步扩 consumer per surface,详 T0.2 ADR § 7 errata)
 - **decision_source**: B-29 + CONTEXT D-07
 
 ### T0.6 — T1.3 Win pwsh provenance sentinel
@@ -934,7 +934,7 @@
   - `author` = git user.email (executor 实占 via `git config user.email` OR fallback `process.env.USER`)
   - **5 answers storage — 两路径选一**:
     - **Path A (preferred, 无 schema bump)**: 写 sibling file `manifests/skill-packs/<name>.ee5-answers.json` (5 named field: `q1_reusable_surface` / `q2_name_fit` / `q3_overlap` / `q4_concept_vs_identity` / `q5_user_understanding`);不污染 provenance.schema.json 4 字段
-    - **Path B (若 executor 偏好 inline, 需 schema bump)**: 扩展 provenance.schema.json 加 optional `ee5_answers: { q1, q2, q3, q4, q5: string }` field + check-provenance.mjs walker 可选 validate (若 manifest source = `"phase-2.3-w3-ee5-cli"` then ee5_answers required)
+    - **Path B (alternative considered — SUGGESTION-3 delta: NOT recommended)**: provenance.schema.json + schema bump 路径已评估但 Path A 简洁性占优;executor 不必走 Path B
   - **Recommendation**: Path A (sibling JSON file) — Karpathy 最简 + 不破 Phase 2.2 ship 的 provenance schema;executor 实占 write path = `manifests/skill-packs/<name>.ee5-answers.json`
 
 ### T3.2 — src/cli.ts register registerManifestAdd
@@ -1300,4 +1300,4 @@
 
 ---
 
-*Phase 2.3 task_plan.md complete — 34 atomic tasks across 7 Waves (W0:9 / W1:6 / W2:5 / W3:3 / W4:3 / W5:4 / W6:4);hard limit verify per task;sed-replace `<实占N>` discipline embedded near T0.1。 Wave B planner ready for Wave C plan-checker。*
+*Phase 2.3 task_plan.md complete — **35 atomic tasks** across 7 Waves (W0:10 / W1:6 / W2:5 / W3:3 / W4:3 / W5:4 / W6:4);hard limit verify per task;sed-replace `<实占N>` discipline embedded near T0.1; W1 plan-check fix from Wave C delta (T0.10 always_active spike 提前) + S-2 cosmetic count sync。 Wave B planner ready for Wave C plan-checker → ✅ delta APPROVED WITH CONDITIONS (0B/0W/3S cosmetic) → execute-phase Wave 0 ready。*
