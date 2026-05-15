@@ -100,3 +100,18 @@ The `ENFORCE` flag **flips to `true` in phase 2.2**, by which point all new verd
 3. Include `miss: none` (verified) or `miss: <full enumerated list>`.
 4. Run `node scripts/check-transparency-verdicts.mjs` locally — fix any flagged lines.
 5. Manually self-check the human-judgment items above before claiming closure.
+
+## Status freshness markers
+
+Phase 2.2 T0.4/T0.5 extends the gate with a **front-matter freshness check**. Top-level
+project docs (`README.md` and `PROJECT-SPEC.md`) MUST carry a `Status:` (or `状态:`) marker
+within their first 50 lines whose content includes the latest shipped milestone token from
+`.planning/ROADMAP.md` (e.g. `v0.1.0`). The gate scans for a line matching
+`STATUS_MARKER = /^\s*>?\s*\*{0,2}(?:Status|状态)\*{0,2}\s*[:：]\s*(.+)$/m` (the optional
+leading `>` and bold `**` tolerate blockquote / bold wrapping — B-17 false-positive
+mitigation). `getLatestShippedToken()` finds the latest `## vN.N.N — ... ✅ SHIPPED` header
+in ROADMAP.md and the marker text must contain that version token. Scope is narrow —
+`FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md']` only — so other docs are unaffected.
+Update the marker whenever a new milestone ships (same time you bump ROADMAP top-level).
+Sub-phase tokens (e.g. `Phase 2.1 shipped`) may be appended alongside the milestone token
+for narrative clarity; only the milestone token is mechanically enforced.

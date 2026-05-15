@@ -6,6 +6,8 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-pre--launch-orange)](./.planning/ROADMAP.md)
 
+> **Status:** v0.1.0 shipped + Phase 2.1 shipped — execute-task workflow in Phase 2.2 (in-progress)
+
 > Not affiliated with, endorsed by, or sponsored by Harness Inc.（见 [NOTICE](./NOTICE)）
 
 ## 一句话定位
