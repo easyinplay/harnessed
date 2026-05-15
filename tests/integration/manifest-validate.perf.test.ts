@@ -59,7 +59,11 @@ function runOnce(): number {
   return performance.now() - t0
 }
 
-describe('performance gate (T8.6 — A6 acceptance bar)', () => {
+// Phase 2.3 Wave 0 T0.3 — M3 perf gate 根治 (D2.3-1 (a) 移出 CI critical path).
+// Perf gate 现仅 nightly cron (`.github/workflows/perf-bench.yml`) 跑 advisory-only;
+// PR/push 的 ci.yml `pnpm test` 跳过 — 终止 50→75→100→130→160 累积 nudge.
+// 本地 dev `pnpm test` 仍跑 (IS_GHA=false), 保 schema-width regression 检测.
+describe.skipIf(process.env.GITHUB_ACTIONS === 'true')('performance gate (T8.6 — A6 acceptance bar)', () => {
   it(`100 manifest validations complete in < ${THRESHOLD_MS}ms (best-of-${RUNS})${IS_CI_WIN ? ' [CI win cloud VM, F18b]' : IS_CI_NIX ? ' [CI nix cloud VM, F38b]' : ''}`, () => {
     expect(fixtures.length).toBeGreaterThanOrEqual(10)
     // Warm up Ajv lazy compile + V8 inline caches.
