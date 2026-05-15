@@ -105,6 +105,19 @@ jobs:
             echo "::error::schemas/ drift detected — run 'corepack pnpm build:schema' locally and commit"
             exit 1
           }
+      # Phase 2.3 Wave 0 T0.5 — schemaVersion consumer call site gate (T1.2).
+      # B1 plan-check fix (≥7 → ≥2 honest baseline) — Phase 2.2 W2 schemaVersion
+      # 实际 helper-only adoption; ≥2 反映当前 grep -r "branchOnSchemaVersion" src/
+      # = src/types/schemaVersion.ts (定义+self-ref). Phase 2.3+ 逐步扩 consumer per
+      # surface (handoff doc / phases-yaml / manifest state / installer state /
+      # route decision log / checkpoint / agent definition factory). 详 ADR 0012 § 7.
+      - name: schemaVersion consumer gate (Phase 2.3 Wave 0 T1.2)
+        run: |
+          count=$(grep -r "branchOnSchemaVersion" src/ | wc -l | tr -d ' ')
+          if [ "$count" -lt 2 ]; then
+            echo "::error::expected >= 2 branchOnSchemaVersion call sites (Phase 2.2 W2 helper-only adoption baseline; Phase 2.3+ expands per surface — see ADR 0012 § 7 errata), found $count"
+            exit 1
+          fi
       - run: corepack pnpm validate:schema
       - run: node ./dist/cli.mjs --version
       # Phase 1.2 T5.5 — installer integration (H4 dual-layer):
