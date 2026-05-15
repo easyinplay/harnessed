@@ -1,10 +1,14 @@
-// Phase 1.2 unit tests for src/installers/index.ts (dispatcher / level seed).
+// Phase 1.2 → 2.1 unit tests for src/installers/index.ts (dispatcher / level seed).
 //
-// Covers (Pattern G barrel + ADR 0004 + ADR 0005):
-//   - 6-method dispatch table is fully populated (no undefined slots)
-//   - npm-cli routes to installNpmCli; mcp-stdio-add routes to installMcpStdioAdd
-//   - 4 phase-2.1 placeholders (cc-plugin-marketplace / git-clone-with-setup /
-//     npx-skill-installer / mcp-http-add) yield explicit phase-deferred error
+// Covers (Pattern G barrel + ADR 0004 + ADR 0005 + ADR 0010 errata):
+//   - 6-method dispatch table is fully populated (no undefined slots) — all 6
+//     methods runtime-ready as of phase 2.1 Wave 5 (T6.1); `phase21Placeholder`
+//     const has been deleted
+//   - npm-cli routes to installNpmCli; mcp-stdio-add → installMcpStdioAdd;
+//     mcp-http-add → installMcpHttpAdd; git-clone-with-setup →
+//     installGitCloneWithSetup; cc-plugin-marketplace →
+//     installCcPluginMarketplace; npx-skill-installer → installNpxSkillInstaller
+//   - All 6 entries are distinct function references (no shared placeholder)
 //   - levelOf seed: npm-cli=L4, mcp-stdio-add=L3, mcp-http-add=L3,
 //     cc-plugin-marketplace=L3, git-clone-with-setup=L2, npx-skill-installer=L2
 //
@@ -33,7 +37,13 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
+import { installCcPluginMarketplace } from '../../src/installers/ccPluginMarketplace.js'
+import { installGitCloneWithSetup } from '../../src/installers/gitCloneWithSetup.js'
 import { installers, runInstall } from '../../src/installers/index.js'
+import { installMcpHttpAdd } from '../../src/installers/mcpHttpAdd.js'
+import { installMcpStdioAdd } from '../../src/installers/mcpStdioAdd.js'
+import { installNpmCli } from '../../src/installers/npmCli.js'
+import { installNpxSkillInstaller } from '../../src/installers/npxSkillInstaller.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
 const spawnMock = vi.mocked(spawn)
@@ -136,33 +146,30 @@ describe('installers dispatch table', () => {
     }
   })
 
-  it('npm-cli + mcp-stdio-add are NOT the phase-deferred placeholder (different fn refs)', () => {
-    expect(installers['npm-cli']).not.toBe(installers['cc-plugin-marketplace'])
-    expect(installers['mcp-stdio-add']).not.toBe(installers['cc-plugin-marketplace'])
+  it('all 6 dispatch entries route to their real installer (distinct fn refs)', () => {
+    // Phase 2.1 Wave 5 T6.1 — `phase21Placeholder` is gone; each method now
+    // points to its own installer module. Identity check confirms the dispatch
+    // table was wired correctly, no entry left aliased to a shared placeholder.
+    expect(installers['npm-cli']).toBe(installNpmCli)
+    expect(installers['mcp-stdio-add']).toBe(installMcpStdioAdd)
+    expect(installers['mcp-http-add']).toBe(installMcpHttpAdd)
+    expect(installers['git-clone-with-setup']).toBe(installGitCloneWithSetup)
+    expect(installers['cc-plugin-marketplace']).toBe(installCcPluginMarketplace)
+    expect(installers['npx-skill-installer']).toBe(installNpxSkillInstaller)
   })
 
-  it('all 4 phase-2.1 placeholders share the same function reference', () => {
-    const placeholder = installers['cc-plugin-marketplace']
-    expect(installers['git-clone-with-setup']).toBe(placeholder)
-    expect(installers['npx-skill-installer']).toBe(placeholder)
-    expect(installers['mcp-http-add']).toBe(placeholder)
+  it('all 6 dispatch entries are mutually distinct (no shared placeholder)', () => {
+    const refs = [
+      installers['npm-cli'],
+      installers['mcp-stdio-add'],
+      installers['mcp-http-add'],
+      installers['git-clone-with-setup'],
+      installers['cc-plugin-marketplace'],
+      installers['npx-skill-installer'],
+    ]
+    // Set size = array length → every entry is a unique fn reference.
+    expect(new Set(refs).size).toBe(refs.length)
   })
-
-  for (const method of [
-    'cc-plugin-marketplace',
-    'git-clone-with-setup',
-    'npx-skill-installer',
-    'mcp-http-add',
-  ] as const) {
-    it(`runInstall(${method}) → phase-deferred error`, async () => {
-      const r = await runInstall(manifestForMethod(method), BASE_OPTS)
-      expect(r).toMatchObject({ ok: false, phase: 'preflight' })
-      if ('error' in r && r.error) {
-        expect(r.error.keyword).toBe('phase-deferred')
-        expect(r.error.message).toContain('phase 2.1')
-      }
-    })
-  }
 
   it('runInstall routes npm-cli to installNpmCli (level seed L4 visible via flag-missing path)', async () => {
     const s = silence()

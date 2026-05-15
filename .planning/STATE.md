@@ -1,7 +1,7 @@
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
-> 最后更新：2026-05-15（**🚀 v0.2.0 MILESTONE ACTIVE** — 轻量激活 + research refresh 完成（3 researcher：execute-task+ralph / installers / extensions + SUMMARY）；scope confirmed（Phase 2.1-2.4 骨架保留 + 11 refinement fold）；关键决议 SDK Phase 2.2 INTRODUCE NOW + ralph-wiggum plugin 不切换 + 建议 ADR 0010。前置 **🎯 v0.1.0 MILESTONE SHIPPED & ARCHIVED**：6/6 phase + audit passed（post-reconciliation Path A）+ git tag v0.1.0；9 ADR + 9 baseline tag；tests 318+3）
+> 最后更新：2026-05-15（**Phase 2.1 SHIPPED** — 4 placeholder installer 实装完成（mcpHttpAdd / gitCloneWithSetup / ccPluginMarketplace / npxSkillInstaller）+ Wave 0 schema 前置（license whitelist MIT-0+anthropics-official / license_source / provides[] / install_type enforce）+ sister review 结构性根治（TRANSPARENCY-VERDICT-CHECKLIST CI gate W3 warn-only + CONTRIBUTING SSOT 引用纪律）+ ADR 0010 errata；E1-E8 8/8 acceptance bar；6 install method 全 runtime-ready，phase21Placeholder 删除；10 ADR + 10 baseline tag（pending T6.5 main agent tag push）；tests 318+3 → 374+3。前置 **🚀 v0.2.0 MILESTONE ACTIVE**；前置 **🎯 v0.1.0 MILESTONE SHIPPED & ARCHIVED**：6/6 phase + audit passed + git tag v0.1.0）
 
 ---
 
@@ -18,11 +18,11 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：🚀 **v0.2.0 MILESTONE ACTIVE**（2026-05-15 启动 — 轻量激活 + research 刷新，scope confirmed）— v0.1.0 ✅ SHIPPED & ARCHIVED（6/6 phase；milestone audit `passed` post-reconciliation Path A；归档 `.planning/milestones/v0.1.0-{ROADMAP,REQUIREMENTS}.md`；git tag `v0.1.0`）
-- **当前里程碑**：v0.2.0 Sub-task Loop + Extension Installers（Phase 2.1-2.4；roadmap 骨架原 /autoplan + v3 重排时定，本次 research refresh 保留骨架 + fold 11 refinement）
-- **下一 phase**：**Phase 2.1**（4 installer methods 实装 — mcp-http-add → git-clone-with-setup → cc-plugin-marketplace → npx-skill-installer）— **Phase 2.1 plan-phase 启动前 Wave 0 必办**：phase 1.5 sister review H3/H4/M1 + transparency verify checklist 结构性根治（详本文件下方 "Phase 1.5 Sister Review — Deferred to Phase 2.1 Wave 0"）+ research refinement #8/#10/#11（license whitelist 扩展 + bundle-install schema + checkCmdString carve-out）
-- **状态**：✅ **v0.2.0 ACTIVE — Ready for Phase 2.1 plan-phase**（research refresh 完成,详 `.planning/research/v0.2.0-SUMMARY.md`）
-- **进度**：6 / 17 phases 已完成 ▓▓▓▓▓▓░░░░░░░░░░░ 35.3%（v0.1.0 里程碑 100%；v0.2.0 0/4）
+- **GSD phase**：✅ **Phase 2.1 SHIPPED**（2026-05-15 — 4 placeholder installer 实装 + Wave 0 schema/sister-review/docs batch；E1-E8 8/8 acceptance bar；6 install method 全 runtime-ready）— 前置 🚀 **v0.2.0 MILESTONE ACTIVE**；前置 ✅ v0.1.0 SHIPPED & ARCHIVED（6/6 phase；git tag `v0.1.0`）
+- **当前里程碑**：v0.2.0 Sub-task Loop + Extension Installers（Phase 2.1-2.4；roadmap 骨架原 /autoplan + v3 重排时定，本次 research refresh 保留骨架 + fold 11 refinement）— **Phase 2.1 1/4 完成**
+- **下一 phase**：**Phase 2.2** discuss-phase（execute-task workflow 主线 + ralph-loop full integration + `@anthropic-ai/claude-agent-sdk` 0.2.141 INTRODUCE NOW + transparency CI gate flip ENFORCE = true + 起 ADR 0011 errata — ADR 编号由 Phase 2.2 plan-phase 流程分配，不预占）
+- **状态**：✅ **Phase 2.1 SHIPPED — Ready for Phase 2.2 discuss-phase**（pending main agent T6.4 CI verify + T6.5 `adr-0010-accepted` + `v0.2.0-alpha.1-installers` tag push）
+- **进度**：7 / 17 phases 已完成 ▓▓▓▓▓▓▓░░░░░░░░░░ 41.2%（v0.1.0 里程碑 100%；v0.2.0 1/4 = 25%）
 - **research refresh 关键决议**：D1.5-5 SDK → **Phase 2.2 INTRODUCE NOW**（`@anthropic-ai/claude-agent-sdk` 0.2.141）；R6 ralph-wiggum plugin → **不切换**（自实装 ralphLoopWrap 是正确永久架构）；Phase 2.2 起 schema errata ADR 含 SDK 引入 + ralph-wiggum keep-vs-switch + **per-phase model tier**（`.planning/intel/omc-comparison.md` 第 4 条 — phases schema 加 `model:` 字段）—— **ADR 编号由 Phase 2.2 plan-phase 流程分配，不预占**（沿袭 intel § 0 SSOT 引用纪律；Phase 2.1 CONTEXT D-08 暂记 0011，以 plan-phase 实占为准）。注：H3 agentDefinition budget errata 已归 **Phase 2.1 ADR 0010**（installer-schema-extension-errata），非 Phase 2.2 范围
 
 ### 各里程碑进度
@@ -30,7 +30,7 @@
 | 里程碑 | Phase 完成 | 状态 | 完成时间 |
 |--------|-----------|------|---------|
 | v0.1.0 manifest 引擎 + research | 6/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 + 1.5 done — **v0.1.0 里程碑全部完成** | 2026-05-12 (P1.1+P1.2+P1.2.5) / 2026-05-13 (P1.3+P1.4) / 2026-05-14 (P1.5) |
-| v0.2.0 Sub-task Loop + Extension Installers | 0/4 | 🚀 ACTIVE — research refresh done, Phase 2.1 plan-phase 待启动 | 启动 2026-05-15 |
+| v0.2.0 Sub-task Loop + Extension Installers | 1/4 | 🚀 ACTIVE — Phase 2.1 SHIPPED 2026-05-15；Phase 2.2 待启动 | 启动 2026-05-15 / Phase 2.1 ship 2026-05-15 |
 | v0.3.0 plan-feature + checkpoint | 0/4 | Not started | - |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
 
@@ -56,6 +56,25 @@
 
 ## 已完成（Completed）
 
+- ✅ **Phase 2.1 SHIPPED**（2026-05-15）
+  - 23 atomic 子任务全部完成（Wave 0-5；T1.9 user-directed post-Wave-C 加入；详 `.planning/phase-2.1/{progress.md, VERIFICATION.md}`）
+  - **Acceptance bar E1-E8 8/8** ✅
+    - E1 ADR 0010 draft — `docs/adr/0010-installer-schema-extension-errata.md` ≥ 100L 6-section（Status/Context/Decision/Consequences/Compliance/Errata-path note）+ 7 关键 decision 项命中（license_source / provides / H3 / H4 / --header / MIT-0 / anthropics-official）；errata 沿袭 ADR 0008/0009 风格
+    - E2 schema 扩展 — `spec.ts` license whitelist `MIT-0` + `anthropics-official` + `license_source` 4-enum optional 字段 + `ProvidedUnit` schema（id + component_type + `minItems: 2` + `uniqueItems: true`）；`validate.ts` install_type↔method cross-field refinement；`decision_rules.yaml` 移除 chinese-content-deck rule `warn:`；3 schema test 文件 ≥13 新 cell（5 license + 5 bundle + 3 install-type）
+    - E3 transparency 纪律基建 — `TRANSPARENCY-VERDICT-CHECKLIST.md` 定义 `Verdict:`/`状态:`/`Closure:` marker 约定 + `check-transparency-verdicts.mjs` CI gate W3 warn-only round 1（`ENFORCE = false`；phase 2.2 flip enforce）+ M1 SAMPLES § 8.4 标注 2/30 miss 身份 + CONTRIBUTING.md SSOT 引用纪律 section（语义锚定 phase 编号 + ADR 编号绝不预占 + 反面教材）
+    - E4 mcp-http-add — `mcpHttpAdd.ts` (clone mcpStdioAdd ~85%) + D-12 hardcode `--scope project` + D-16 `--header ${ENV_VAR}` env-resolution carve-out（B1 gate 零改动 — resolve 在 args 构造前）+ `.mcp.json` entry shape `{type:'http',url,headers}` + verify `claude mcp list | grep -q ${name}` exit-code；unit test ≥6 cell
+    - E5 git-clone-with-setup — `gitCloneWithSetup.ts` (~55% reuse npmCli orchestrator + mcpStdioAdd preflight/verify) + inline `gitRevParseHead` ≤10L (D-15 — 单 caller YAGNI 不建 lib/gitVerify.ts) + strict SHA-only enforcement (ADR 0001 reproducibility — `git rev-parse HEAD` returns SHA，authority must be SHA)；unit test ≥6 cell
+    - E6 cc-plugin-marketplace — `ccPluginMarketplace.ts` (~65% clone mcpStdioAdd direct-spawn + two sequential `runArgs`) + D-20 idempotency（step-1 `marketplace add` 非零退出非致命 IF step-2 `plugin install` 成功）+ D-12 hardcode `--scope project` + diff target `.claude/settings.json` `enabledPlugins` + verify `claude plugin list --json | grep -q <pluginName>` exit-code；unit test ≥6 cell
+    - E7 npx-skill-installer — `npxSkillInstaller.ts` (~50% reuse npmCli npx 模式) + flexible pin enforcement（preflight enforce `skills@<version-spec>` shape forbidding `@latest`，不 hardcode `1.5.7`）+ `--copy` + `--global` 强制（D2.1-5 — Win symlink-safe + user scope）+ **D2.1-6 CRITICAL real-path verify** (`fs.access('~/.claude/skills/<name>/SKILL.md')` — 真实路径，非 npx exit code；D-02 ~/.agents/ vs ~/.claude/ bridge known limitation logged)；unit test ≥6 cell
+    - E8 dispatch table + contract + CI + tag — `src/installers/index.ts` 6 method dispatch table 全覆盖 + `phase21Placeholder` 删除（4-line swap + 4 imports + 1 deletion per PATTERNS § 4）；`tests/integration/installer-contract.test.ts` extend 4 新 factory + `methods` 数组扩 2→6 + `SYSTEM_FLAG_REQUIRED` Set + `CLAUDE_CLI_METHODS` Set（区分 L4 npm-cli vs L2/L3 + 区分 claude-CLI 走者）— 36 cell（6 method × 6 contract）全绿；ci.yml A7 step iter 1-9 → 1-10（两处 for loop + step name + 注释更新 + phase 2.1 errata 说明注释）；A7 守恒 ADR 0001-0009 main body 0 diff；CI 三平台全绿 verify + push + `adr-0010-accepted` tag main agent T6.5 创建
+  - **6 wave 完整跑完**：Wave 0 ADR 0010 + schema 4 项 + transparency CI gate W3 + M1 + CONTRIBUTING SSOT (T1.1-T1.9) / Wave 1 mcpHttpAdd (T2.1+T2.2) / Wave 2 gitCloneWithSetup (T3.1+T3.2) / Wave 3 ccPluginMarketplace (T4.1+T4.2) / Wave 4 npxSkillInstaller (T5.1+T5.2) / Wave 5 dispatch + contract test + ci.yml A7 iter 1-10 + STATE/progress/VERIFICATION (T6.1-T6.6)
+  - **6 install method 全 runtime-ready** — npm-cli + mcp-stdio-add（phase 1.2 ship）+ mcp-http-add + git-clone-with-setup + cc-plugin-marketplace + npx-skill-installer（phase 2.1 ship）；`phase21Placeholder` const + 注释引用 全删
+  - **新 ADR**：0010 installer-schema-extension-errata（A7 守恒：ADR 0001-0009 main body 0 diff；license whitelist MIT-0 + anthropics-official + license_source audit + bundle-install provides[] + install_type↔method 1:N enforcement + H3 agentDefinition budget ≤200L errata + H4 substring match known limitation + D-16 --header env-resolution carve-out）
+  - **新 baseline tag**：9 → 10（加 `adr-0010-accepted`；CI A7 step iterate 1-10 全 10 ADR 守恒）；候选 milestone tag `v0.2.0-alpha.1-installers`
+  - **新文件**：`docs/adr/0010-installer-schema-extension-errata.md` + `docs/TRANSPARENCY-VERDICT-CHECKLIST.md` + `scripts/check-transparency-verdicts.mjs` + `src/installers/{mcpHttpAdd,gitCloneWithSetup,ccPluginMarketplace,npxSkillInstaller}.ts` + `tests/unit/installers-{mcpHttpAdd,gitCloneWithSetup,ccPluginMarketplace,npxSkillInstaller}.test.ts` + 3 schema test 文件 + `.planning/phase-2.1/{KICKOFF.md, ASSUMPTIONS.md, RESEARCH.md, PATTERNS.md, PLAN.md, task_plan.md, PLAN-CHECK.md, progress.md, VERIFICATION.md}`；**修改**：`src/manifest/schema/spec.ts` + `src/manifest/validate.ts` + `src/installers/index.ts` + `routing/decision_rules.yaml` + `.github/workflows/ci.yml` + `tests/integration/installer-contract.test.ts` + `tests/unit/installers-index.test.ts` + `.planning/phase-1.4/SAMPLES.md` + `CONTRIBUTING.md`
+  - **9 finding logged**：Wave 1-4 — F2.1-1 (Rule 2 schema-gap parse-from-cmd × 3：mcp-http url+headers / git-clone dest / cc-plugin marketplaceRef+plugin@mkt — cmd 保留 audit-trail，args authoritative) / F2.1-2 (Rule 2 git-clone strict SHA-only enforcement — schema 允许 SHA OR SemVer，installer enforce SHA-only) / F2.1-3 (Rule 2 npx-skill flexible pin enforcement — preflight 验 pin shape 不 hardcode `1.5.7`)；Wave 5 — F2.5-1 (Rule 1 stale phase-deferred tests 替换为 dispatch identity 测试) / F2.5-2 (Rule 1 contract test C5 mcp-cli-only regex tighten — 原 `\bclaude\b` 误命中 `claude-code` 因 `\b` 在 `e-`) / F2.5-3 (Rule 1 cc-plugin fixture git_ref 40-hex SHA compliance — preflight GIT_REF_SHAPE) / F2.5-4 (Rule 2 contract test mock `fs.access` for npx-skill real-path verify)；Wave 0 known limitations — D-02 npx ~/.agents/ vs ~/.claude/ 完整桥接 deferred / H4 substring match false-positive v0.2+ semantic router 替代
+  - **sister review 结构性根治**：T1.8 SAMPLES § 8.4 miss 身份标注（防 phase 1.4 T1 "100% 实际 70%" + phase 1.5 H1/M1 "聚合数字盖过真实状态" 反模式第三次复发）+ T1.7 TRANSPARENCY-VERDICT-CHECKLIST CI gate（W3 warn-only round 1 + phase 2.2 flip enforce）+ T1.9 CONTRIBUTING SSOT 引用纪律 section（intel/参考文档不写死 phase/ADR 编号 — 反面教材 omc-comparison.md 写死 "phase 2.0" + "ADR 0010" v0.2.0 激活即 stale）
+  - 见 `.planning/phase-2.1/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md}`
 - ✅ **Phase 1.5 SHIPPED**（2026-05-14）
   - 28 atomic 子任务全部完成（Wave 0-7 跑完；4 batch — batch 1 Wave 0+1 / batch 2 Wave 2+3 / batch 3 Wave 4+5 / batch 4 Wave 6+7）
   - **Acceptance bar D1-D8 8/8** ✅
@@ -368,11 +387,11 @@ cd D:/GitCode/harnessed
 
 - 当前 phase token 消耗：— (main agent 后续填入)
 - checkpoint 数量：phase 1.1 内多次 batch checkpoint（batch 1-6 各一次）；phase 1.1.1 hotfix 1 次 batch；phase 1.2 共 7 batch (Wave 0-7)；phase 1.2.1 hotfix 1 batch；phase 1.2.5 多 wave；phase 1.3 共 4 batch (batch 1+2+3+4)；phase 1.4 共 4 batch (batch 1+2+3+4)
-- 累积 ADR 数量：**9**（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source schema errata / 0006 architecture-wedge-revision-v3 / 0007 categorization-schema-extension errata / 0008 routing-engine-v1-errata / 0009 routing-l2-engineering-23-shi-errata）（目标 v0.4 ≥ 5 ✅ 已达）
-- 累积 baseline tag 数量：**9**（adr-0001/0002/0003/0004/0005/0006/0007/0008/0009-accepted；0006 phase 1.3 F37 retroactive 重打到 3e24c16；0009 由 main agent final ship step 创建）+ 5 milestone tag（v0.1.0-alpha.1-schema-frozen + alpha.2-installer-runtime + alpha.3-base-profile + alpha.4-routing-engine pushed；alpha.5-routing-l2-engineering pending T8.3 main agent final ship）
+- 累积 ADR 数量：**10**（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source schema errata / 0006 architecture-wedge-revision-v3 / 0007 categorization-schema-extension errata / 0008 routing-engine-v1-errata / 0009 routing-l2-engineering-23-shi-errata / 0010 installer-schema-extension-errata）（目标 v0.4 ≥ 5 ✅ 已达）
+- 累积 baseline tag 数量：**10**（adr-0001/0002/0003/0004/0005/0006/0007/0008/0009/0010-accepted；0006 phase 1.3 F37 retroactive 重打到 3e24c16；0009 由 main agent phase 1.5 final ship step 创建；0010 由 main agent phase 2.1 T6.5 final ship step 创建）+ 5-6 milestone tag（v0.1.0-alpha.1-schema-frozen + alpha.2-installer-runtime + alpha.3-base-profile + alpha.4-routing-engine + alpha.5-routing-l2-engineering + v0.1.0 archive；候选 `v0.2.0-alpha.1-installers` pending phase 2.1 T6.5 main agent ship）
 - 路由命中率：**phase 1.5 30 sample specific match 28/30 (93.3%) ≥ 27/30 threshold + total 30/30 (100%)** ✅；目标 ≥ 85% 达成；engineering 5/5 specific match（phase 1.4 走 fallback_supervisor → phase 1.5 engineering 5 rules ship 后精确路由）；phase 3.4 v0.3.0 升级 100+ sample × 多 model × stability 验收
 - 总 commits（phase 1.1 累积 50 + phase 1.1.1 hotfix 10 + phase 1.2 ~37 + phase 1.2.1 hotfix 1 + phase 1.2.5 多 + phase 1.3 ~24 atomic + phase 1.4 ~21 atomic + phase 1.5 ~12 (4 batch + checkpoints) + checkpoints）：~180
-- 总 vitest tests：**318 passing + 3 skipped**（phase 1.5: +27 from phase 1.4 baseline 291+2；分布 routing-dag ≥ 10 / routing-semanticRouter ≥ 8 / routing-engine 升级 + routing-30-samples re-test）
+- 总 vitest tests：**374 passing + 3 skipped**（phase 2.1: +56 from phase 1.5 baseline 318+3；分布 8 schema test (license/bundle/install-type) + 24 installer unit test (4 installer × ≥6 cell) + 24 contract test (4 新 method × 6 contract) + 2 dispatch identity test - 4 stale phase-deferred test = +54 + 2 = +56）
 - bench：phase 1.3 22.58ms mean / RME ±1.88% / SLA < 75ms（phase 1.3.1 hotfix relax；本地仍 ~3.3× headroom；详 PERF-ATTRIBUTION.md § 2-4）；phase 1.4 routing engine 0 perf 影响 (T7.3 跳过)；**phase 1.5 DAG resolver hot path micro-bench：realistic 50-node 图 0.0096ms/call (+0.96% regress) / 100-node 0.0268ms / 1000-node 极限 0.606ms ≤ 5% threshold ✅ PASS；manifest validate hot path 0 regress（DAG 不调 validateManifestFile）；详 PERF-ATTRIBUTION-2.md**
 - 总 manifests / fixtures / SCHEMA.md：10 / 30+ / 3（phase 1.5 不加 manifest，只加 routing 文件 + decision_rules.yaml v2 + spec.ts phase+triggers）
 - 新 deps：8（5 phase 1.1 base：Ajv + TypeBox + yaml + Ajv-formats + Ajv-errors + 3 phase 1.2：picocolors + diff + @clack/prompts；phase 1.3 / 1.4 / 1.5 均不加 dep — phase 1.5 DAG resolver 自实装无外部 graph library；Semantic Router L2 embedding deps 推 v0.2+ D1.5-2；`@anthropic-ai/claude-agent-sdk` 推 v0.2+ D1.5-5）

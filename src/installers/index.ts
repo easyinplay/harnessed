@@ -1,8 +1,9 @@
-// Phase 1.2 installer dispatch table.
+// Phase 1.2 → 2.1 installer dispatch table.
 //
-// Phase 1.2 implements 2 of 6 install methods: npm-cli + mcp-stdio-add.
+// Phase 1.2 shipped 2 of 6 install methods: npm-cli + mcp-stdio-add.
 // Phase 2.1 unblocks the remaining 4 (cc-plugin-marketplace / git-clone-with-setup /
-// npx-skill-installer / mcp-http-add) — see ROADMAP v0.2.0 + ADR 0005.
+// npx-skill-installer / mcp-http-add). All 6 methods are now runtime-ready —
+// the phase21 placeholder const has been removed. See PATTERNS § 4 + ADR 0010 errata.
 //
 // Level mapping per ADR 0004 § 4 (4-level confirm strictness):
 //   L1: harnessed-local writes only      → npx ephemeral
@@ -16,30 +17,20 @@
 // after the dry-run preview when cmd uses npx.
 
 import type { Installer, InstallOpts, InstallResult, Level, Manifest } from './lib/types.js'
+import { installCcPluginMarketplace } from './ccPluginMarketplace.js'
+import { installGitCloneWithSetup } from './gitCloneWithSetup.js'
+import { installMcpHttpAdd } from './mcpHttpAdd.js'
 import { installMcpStdioAdd } from './mcpStdioAdd.js'
 import { installNpmCli } from './npmCli.js'
-
-const phase21Placeholder: Installer = async (ctx) => ({
-  ok: false,
-  phase: 'preflight',
-  error: {
-    file: ctx.manifest.metadata.name,
-    path: '/spec/install/method',
-    message: `Install method '${ctx.manifest.spec.install.method}' is reserved for phase 2.1 — see ROADMAP v0.2.0 + ADR 0005`,
-    line: null,
-    column: null,
-    keyword: 'phase-deferred',
-    suggest: 'wait for v0.2.0 release, or open an issue if blocked',
-  },
-})
+import { installNpxSkillInstaller } from './npxSkillInstaller.js'
 
 export const installers: Record<Manifest['spec']['install']['method'], Installer> = {
   'npm-cli': installNpmCli,
   'mcp-stdio-add': installMcpStdioAdd,
-  'cc-plugin-marketplace': phase21Placeholder,
-  'git-clone-with-setup': phase21Placeholder,
-  'npx-skill-installer': phase21Placeholder,
-  'mcp-http-add': phase21Placeholder,
+  'cc-plugin-marketplace': installCcPluginMarketplace,
+  'git-clone-with-setup': installGitCloneWithSetup,
+  'npx-skill-installer': installNpxSkillInstaller,
+  'mcp-http-add': installMcpHttpAdd,
 }
 
 function levelOf(manifest: Manifest): Level {
