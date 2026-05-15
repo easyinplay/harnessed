@@ -184,4 +184,20 @@ intel directive(L92 EE-5 必上 + L130-135 CD-3 显式负空间)已 D-03 + D-04 
 
 ---
 
+## § 7 EE-5 manifest-add self-meta gate (本 phase 5 NEW upstream adapter self-application)
+
+> **W5 plan-check fix** — Phase 2.3 introduces 5 NEW upstream adapters,按 D-03 BOTH + B-14 BLOCKER rule (若 KICKOFF 列出新 upstream adapter 且 § 7 任一题未答 → BLOCKER),本 KICKOFF self-instance EE-5 5 题:
+
+| Adapter | ① reusable surface? | ② name fit + conflict? | ③ overlap? | ④ concept vs identity? | ⑤ user 无 upstream 理解? |
+|---------|---------------------|------------------------|------------|------------------------|--------------------------|
+| frontend-design | YES (D-08 anchor redirect target) | YES fit / NO conflict | PARTIAL by-design (与 ui-ux-pro-max 正交) | CONCEPT (style-led design 概念) | YES (frontend design 通用术语) |
+| anthropics-skills-pptx | YES (content category 标准能力) | YES fit / NO conflict | NO (content 当前无 pptx) | CONCEPT (pptx 文件生成通用) | YES (pptx generation skill 通用术语) |
+| anthropics-skills-slide-deck | YES (中文 PPT 演示稿 + `chinese-content-deck` rule already production) | YES fit / NO conflict | NO (与 T1.2 pptx 互补) | CONCEPT (slide-deck 中文演示概念) | YES (slide deck skill 通用术语) |
+| playwright-test | YES (TS/React/Vue e2e 业界标准) | YES fit / NO conflict | NO (testing e2e-default rule 已 production) | CONCEPT (browser e2e test 通用) | YES (playwright test 业内广为人知) |
+| chrome-devtools-mcp | YES (perf/a11y/memory-leak diagnostics) | YES fit / NO conflict | NO (perf/a11y 维度无 expert) | CONCEPT (W3C-style 标准 + MCP transport) | YES (chrome devtools mcp 业内术语) |
+
+详细 5×5 = 25 answers 在 `task_plan.md` T1.1-T1.5 各 task 内联 (W5 plan-check fix Karpathy simplicity)。
+
+---
+
 **phase 2.3 KICKOFF complete** — Wave A(R1 PATTERNS + R2 RESEARCH 并行, 带 anti-stall 约束)启动准备。

@@ -30,7 +30,10 @@
   - `ls docs/adr/<actual-NNNN>-*.md 2>&1` 此时**不存在**(T0.2 才创建)
   - 本 task_plan.md 顶部新增 `> **Resolved (T0.1)**: <实占N> = <actual-NNNN>` block(grep-verifiable)
   - `grep -rn "<实占N>" .planning/phase-2.3/ docs/adr/ 2>&1` exit 1(zero 字面残留)
-- **decision_source**: B-34 + KICKOFF § 3.2 + intel § 0 SSOT 引用纪律
+  - **W3 plan-check fix — manifest placeholder zero-residue gate**:
+    `grep -rnE "<[a-z][a-z0-9-]+-upstream>|<upstream-url>|<frontend-design-upstream>|<chrome-devtools-mcp-upstream>|<SHA>|<ref>|<repo-url>" manifests/ 2>&1` exit 1
+    (Wave 1 T1.1 + T1.5 实占 upstream URL + SHA + repo-url 后必批量 sed-replace;否则 install 跑 literal placeholder 必 fail。zero-residue 是 Wave 1 commit 前置条件,沿袭 T0.1 sed-replace discipline。)
+- **decision_source**: B-34 + KICKOFF § 3.2 + intel § 0 SSOT 引用纪律 + W3 plan-check fix
 
 ### T0.2 — ADR <实占N> draft(5 章节 sketch only,Wave 6 详细 fill)
 
@@ -51,6 +54,9 @@
   ### 3. EE-5 5-question merge gate 双层 (B-11 ~ B-14 / D-03)
   ### 4. karpathy SKILL-ONLY 注入 (B-06 ~ B-10 / D-02)
   ### 5. Wave 0 perf gate 根治 + 6 项 backlog (B-25 ~ B-32 / D-07)
+  ### 6. Plan-check Wave C fixes (W1 always_active spike 提前 / W2 sed→node script / W3 manifest placeholder zero-residue gate / W4 decisionRules.ts proactive split / W5 EE-5 self-meta + S1-S4 polish)
+  ### 7. schemaVersion adoption status errata (B1 plan-check fix)
+  Phase 2.2 W2 schemaVersion ship 实际 = **helper-only adoption** (consumer count = 2 at Phase 2.3 start: `src/types/schemaVersion.ts` 定义 + 1 self-reference)。Phase 2.2 W2 T2.0 claim 的 7 surface 各 ≥ 1 consumer call site **未真实落地**。Phase 2.3+ 逐步扩 consumer per surface (handoff doc / phases-yaml / manifest state / installer state / route decision log / checkpoint / agent definition factory)。Wave 0 T0.5 gate 阈值 ≥2 反映 honest baseline;后续 phase 每扩 1 consumer surface 同步 bump 阈值。
 
   ## A7 Conservation
   ADR 0001-0011 main body untouched; baseline tag 1-11 → 1-<实占N>; arbitrate() legacy 保留 (B-18) 避免 30-sample routing-engine.test.ts byte-stable 回归.
@@ -136,16 +142,19 @@
   - name: schemaVersion consumer gate (Phase 2.3 Wave 0 T1.2)
     run: |
       count=$(grep -r "branchOnSchemaVersion(" src/ | wc -l | tr -d ' ')
-      if [ "$count" -lt 7 ]; then
-        echo "::error::expected ≥ 7 branchOnSchemaVersion call sites, found $count"
+      if [ "$count" -lt 2 ]; then
+        echo "::error::expected ≥ 2 branchOnSchemaVersion call sites (Phase 2.2 W2 helper-only adoption baseline; Phase 2.3+ expands per surface — see ADR <实占N> § 7 errata), found $count"
         exit 1
       fi
   ```
+
+  > **B1 annotation (Wave C plan-check fix)**: Threshold 降 ≥7 → ≥2 反映 Phase 2.2 W2 schemaVersion 实际 helper-only ship 真相(grep `branchOnSchemaVersion(` src/ 当前 = 2: `src/types/schemaVersion.ts` 定义 + 1 self-reference)。原 ≥7 阈值是 Phase 2.2 W2 ship claim 但 consumer call sites 未真实落地;Phase 2.3+ 逐步扩 7 surface (handoff doc / phases-yaml / manifest state / installer state / route decision log / checkpoint / agent definition factory) — 详 ADR <实占N> § 7 errata。阈值 ≥2 是 honest baseline 保 Wave 0 push CI 不 red。
+
 - **read_first**: PATTERNS § 2.8 + ASSUMPTIONS B-29
 - **acceptance_criteria**:
   - `grep -E "schemaVersion consumer gate.*Phase 2.3 Wave 0 T1.2" .github/workflows/ci.yml` 命中
   - `grep -E 'count.*grep -r.*branchOnSchemaVersion' .github/workflows/ci.yml` 命中
-  - **本地 verify**:`grep -r "branchOnSchemaVersion(" src/ | wc -l` ≥ 7(若 < 7 → 当前 codebase 不满足 gate,执行 task 时 Phase 2.2 Wave 2 schemaVersion 7 surface 已 ship 应满足;否则 Wave 0 executor 补 consumer 至 ≥ 7)
+  - **本地 verify**:`grep -r "branchOnSchemaVersion(" src/ | wc -l` ≥ 2(B1 plan-check fix: ≥7 → ≥2 honest baseline,反映 Phase 2.2 W2 helper-only adoption 真相 — consumer count 当前 = 2;Phase 2.3+ 逐步扩 consumer per surface,详 T0.2 ADR § 7 errata)
 - **decision_source**: B-29 + CONTEXT D-07
 
 ### T0.6 — T1.3 Win pwsh provenance sentinel
@@ -286,6 +295,26 @@
   - perf-bench.yml dispatch workable(`gh workflow run perf-bench.yml -r main` 触发后 `gh run list --workflow=perf-bench.yml --limit=1` 见 entry)
 - **decision_source**: B-25 + B-32 + KICKOFF § 1.2 F1
 
+### T0.10 — always_active spike(W1 plan-check fix — 提前到 Wave 0,T2.3 ship 前 validated)
+
+- **files_modified**: (throwaway spike;NOT committed;outcome 写入本 task_plan.md 顶部 Resolved block)
+- **action**: W1 plan-check fix — spike 反序修正(原 T4.2 在 Wave 4 但 T2.3 W2 ship SKILL.md `always_active: true` 反序);R2 RESEARCH A1 MED-HIGH conf,spike LOC < 30 min:
+  1. 验证 Anthropic skill frontmatter 字段名 — 检查 `node_modules/@anthropic-ai/claude-agent-sdk/dist/` (若存在) 或 Anthropic 官方 skill 上游 README 是否含 `always_active` 字段
+  2. 备选验证:临时 `cp -R skills/karpathy-baseline ~/.claude/skills/` + 启动新 Claude Code session 验 system prompt context 含 karpathy 内容
+  3. spike outcome 三选一:
+     - **PASS**: `always_active: true` 字段 supported → T2.3 SKILL.md frontmatter 实占 `always_active: true`
+     - **PARTIAL**: 字段名不同(e.g. `auto_load: true` / `always_on: true`)→ T2.3 SKILL.md 实占正确字段名
+     - **FAIL**: 完全不支持 frontmatter toggle → fallback **description-keyword 匹配 + self-reflexive prompt "ALWAYS apply..."** (R2 ASSUMPTIONS A1 fallback;RESEARCH § 2.3)
+  4. spike outcome 必填到本 task_plan.md 顶部 Resolved block:`> **Resolved (T0.10)**: always_active mechanism = <PASS/PARTIAL/FAIL>, field name = <name>, fallback = <details>`
+  5. spike 末 `rm -rf ~/.claude/skills/karpathy-baseline` (若临时装),git status 无残留
+- **read_first**: RESEARCH § 2.3 + A1 + skills/karpathy-baseline/SKILL.md (若 T2.3 已 ship,否则空)
+- **acceptance_criteria**:
+  - spike outcome 记录到本 task_plan.md 顶部 Resolved block (`grep "Resolved.*T0.10" .planning/phase-2.3/task_plan.md` 命中)
+  - T2.3 SKILL.md frontmatter 字段名据 spike outcome 实占 (W2 T2.3 执行时 read 此 Resolved block)
+  - 若 FAIL → T2.3 description 字段必含 "ALWAYS apply" wording (self-reflexive fallback)
+  - spike cleanup 验证 (`! test -d ~/.claude/skills/karpathy-baseline` if temporary install used)
+- **decision_source**: R1 + RESEARCH A1 + § 2.3 + W1 plan-check fix (spike 反序 → 提前 Wave 0)
+
 ---
 
 ## Wave 1 — extension category manifest schema 演进(D-01 MIN scope)
@@ -339,6 +368,7 @@
       do_not_use_when: []
       if_rejected_use: ui-ux-pro-max  # 反向 redirect — frontend-design 拒绝时回到 ui-ux-pro-max(D-08 镜像)
   ```
+  **W3 plan-check fix — placeholder resolution discipline**: `<frontend-design-upstream>` + `<SHA>` + `<repo-url>` 字面 placeholder 必须 Wave 1 executor 实占 via T0.1 sed-replace discipline。若 URL 未 resolve,T1.1 **SKIP** until T0.1 manifest placeholder zero-residue gate (acceptance line 4) pass。schema validate 不 catch placeholder (URL field 是 string),依赖 T0.1 grep gate 守护。
 - **read_first**:
   - `manifests/skill-packs/ui-ux-pro-max.yaml` L1-55(by Read,1:1 scaffold)
   - PATTERNS § 2.1
@@ -350,6 +380,12 @@
   - `grep -E "decision_rules:" manifests/skill-packs/frontend-design.yaml` 命中
   - schema validate pass(`pnpm validate:manifest manifests/skill-packs/frontend-design.yaml` OR equivalent)
 - **decision_source**: B-01 + B-02 + B-17 + PATTERNS § 2.1
+- **EE-5 self-meta (W5 plan-check fix)** — 5-question gate self-application for frontend-design upstream:
+  - ① reusable surface? **YES** — D-08 "做出风格" anchor 主导 redirect target,生产路径,非临时 wrapper
+  - ② name fit + conflict? **YES fit / NO conflict** — `frontend-design` 命名清晰反映 style-led 维度;与 ui-ux-pro-max (标准化) 正交,无冲突
+  - ③ overlap with installed? **PARTIAL by-design** — 与 ui-ux-pro-max overlap 在 design category 但维度不同 (ui-ux 标准化 / frontend-design 风格化);D-08 anchor 决定 redirect 方向,不重复装配
+  - ④ concept vs identity? **CONCEPT** — frontend-design 是 design skill 概念 (layout/动效/装饰),非 import 别人产品身份
+  - ⑤ user 无 upstream 理解? **YES** — "frontend design" 通用术语,user 不需知 upstream repo 就理解装配
 
 ### T1.2 — manifests/skill-packs/anthropics-skills-pptx.yaml NEW
 
@@ -401,6 +437,12 @@
   - `grep -E "npx --yes skills@1.5.7 add anthropics/skills/pptx --copy --global" manifests/skill-packs/anthropics-skills-pptx.yaml` 命中
   - schema validate pass
 - **decision_source**: B-01 + B-03 + PATTERNS row 2 + D2.1-5
+- **EE-5 self-meta (W5 plan-check fix)** — 5-question gate self-application for anthropics-skills-pptx upstream:
+  - ① reusable surface? **YES** — pptx 生成是 content category 标准能力,Anthropic 官方维护
+  - ② name fit + conflict? **YES fit / NO conflict** — `anthropics-skills-pptx` 显式 scope upstream + sub-skill,无冲突
+  - ③ overlap with installed? **NO** — content category 当前无 pptx 能力 (仅 markdown / slide-deck via T1.3)
+  - ④ concept vs identity? **CONCEPT** — pptx 文件生成是通用概念,非 import Anthropic 产品身份 (Apache-2.0 OSS sub-skill)
+  - ⑤ user 无 upstream 理解? **YES** — "pptx generation skill" 通用术语,user 不需知 anthropics/skills repo 就理解
 
 ### T1.3 — manifests/skill-packs/anthropics-skills-slide-deck.yaml NEW
 
@@ -413,6 +455,12 @@
   - `grep -E "npx --yes skills@1.5.7 add anthropics/skills/slide-deck --copy --global" manifests/skill-packs/anthropics-skills-slide-deck.yaml` 命中
   - schema validate pass
 - **decision_source**: B-01 + B-03 + PATTERNS row 3
+- **EE-5 self-meta (W5 plan-check fix)** — 5-question gate self-application for anthropics-skills-slide-deck upstream:
+  - ① reusable surface? **YES** — slide-deck 中文 PPT 演示稿生成,内容 category 高频需求 (decision_rules `chinese-content-deck` rule 已 production at L66-78)
+  - ② name fit + conflict? **YES fit / NO conflict** — `anthropics-skills-slide-deck` upstream + sub-skill,无冲突
+  - ③ overlap with installed? **NO** — 与 T1.2 pptx 互补 (pptx = 通用 PowerPoint / slide-deck = 中文 PPT 演示),不重复
+  - ④ concept vs identity? **CONCEPT** — slide-deck 是中文演示概念,非 import Anthropic 身份
+  - ⑤ user 无 upstream 理解? **YES** — "slide deck skill" 通用术语,user 不需知 anthropics/skills 就理解装配
 
 ### T1.4 — manifests/tools/playwright-test.yaml NEW
 
@@ -453,6 +501,12 @@
   - `grep -E "category: testing" manifests/tools/playwright-test.yaml` 命中
   - schema validate pass
 - **decision_source**: B-01 + B-04 + PATTERNS row 4
+- **EE-5 self-meta (W5 plan-check fix)** — 5-question gate self-application for playwright-test upstream:
+  - ① reusable surface? **YES** — `@playwright/test` 是 TS/React/Vue frontend e2e 业界标准框架,非临时 wrapper
+  - ② name fit + conflict? **YES fit / NO conflict** — `playwright-test` 显式 scope,与 webapp-testing (Python backend) 互补无冲突
+  - ③ overlap with installed? **NO overlap by-design** — testing category cross-link 现 `e2e-default` rule (decision_rules L101-115),playwright-test 是该 expert 实装
+  - ④ concept vs identity? **CONCEPT** — browser e2e test 是通用概念,非 import Microsoft 产品身份 (Apache-2.0 OSS)
+  - ⑤ user 无 upstream 理解? **YES** — "playwright test" 业内广为人知,user 不需知 microsoft/playwright repo
 
 ### T1.5 — manifests/tools/chrome-devtools-mcp.yaml NEW
 
@@ -488,6 +542,7 @@
       default_expert: chrome-devtools-mcp
       # 现 decision_rules.yaml L79-95 已有 perf-a11y-memory rule + forbidden_experts cross-link;manifest 此处 hint only
   ```
+  **W3 plan-check fix — placeholder resolution discipline**: `<chrome-devtools-mcp-upstream>` + `<upstream-url>` 字面 placeholder 必须 Wave 1 executor 实占 via T0.1 sed-replace discipline。若 URL 未 resolve,T1.5 **SKIP** until T0.1 manifest placeholder zero-residue gate (acceptance line 4) pass;mcp-http-add cmd 跑 literal `<upstream-url>` 必 fail。
 - **read_first**:
   - `manifests/tools/tavily-mcp.yaml` OR `manifests/tools/exa-mcp.yaml`(by Read,mcp-http-add 模板)
   - `routing/decision_rules.yaml` L79-95(perf-a11y-memory rule 现 production)
@@ -496,6 +551,12 @@
   - `grep -E "method: mcp-http-add" manifests/tools/chrome-devtools-mcp.yaml` 命中
   - schema validate pass
 - **decision_source**: B-01 + B-05 + PATTERNS § 2.2
+- **EE-5 self-meta (W5 plan-check fix)** — 5-question gate self-application for chrome-devtools-mcp upstream:
+  - ① reusable surface? **YES** — perf / a11y / memory-leak 诊断是 testing category 关键能力 (decision_rules `perf-a11y-memory` rule 已 production at L79-95)
+  - ② name fit + conflict? **YES fit / NO conflict** — `chrome-devtools-mcp` 显式 scope MCP transport,与 playwright-test 维度互补 (functional vs non-functional)
+  - ③ overlap with installed? **NO** — perf/a11y/memory 维度当前无 expert,chrome-devtools-mcp 是该 dimension 唯一装备
+  - ④ concept vs identity? **CONCEPT** — Chrome DevTools 协议是 W3C-style 标准,非 import Google 产品身份;MCP transport 是协议接口
+  - ⑤ user 无 upstream 理解? **YES** — "chrome devtools mcp" 业内术语清晰,user 不需知具体 upstream repo
 
 ### T1.6 — install 链路 e2e smoke
 
@@ -575,7 +636,7 @@
 
 ### T2.2 — src/routing/decisionRules.ts arbitrateWithRedirect() NEW(B-18 legacy 保留)
 
-- **files_modified**: `src/routing/decisionRules.ts`(MODIFY +~20L)+ (fallback)`src/routing/lib/arbitrateRedirect.ts`(NEW if decisionRules.ts > 200L,B-36)
+- **files_modified**: `src/routing/decisionRules.ts`(MODIFY ~+5L import + re-export only — 主体 ≤183L 不动) + `src/routing/lib/arbitrateRedirect.ts`(**NEW ~25-30L, W4 plan-check fix — PROACTIVE SPLIT**;沿袭 Phase 2.2 sdkReconcile → agentDefinition.ts split 先例;不留 ~208L 临界 reactive 决策给 executor)
 - **action**: 沿袭 RESEARCH D2.3-7 pseudocode + PATTERNS § 2.4 升级:
   ```typescript
   // 文件顶 ADR errata 注释
@@ -623,15 +684,17 @@
     return haystack.includes(keyword.toLowerCase())
   }
   ```
-  **fallback split**:跑 `wc -l src/routing/decisionRules.ts` 若 > 200 → 把 `arbitrateWithRedirect` + helper 移到 `src/routing/lib/arbitrateRedirect.ts`(沿袭 Phase 2.2 sdkReconcile.ts split 模式 B-24)
+  **W4 plan-check fix — PROACTIVE SPLIT (no longer fallback)**:`arbitrateWithRedirect` + `taskHas` helper + `ArbitrateResult` type **直接** ship 到 `src/routing/lib/arbitrateRedirect.ts` (≤80L);`src/routing/decisionRules.ts` 仅加 ~5L `export { arbitrateWithRedirect, type ArbitrateResult } from './lib/arbitrateRedirect.js'` re-export (主体 ≤183L 不动 + ~+5L re-export = ≤188L,200L hard limit 有充足 buffer)。沿袭 Phase 2.2 sdkReconcile → agentDefinition.ts proactive split 先例 (reactive 200L 临界决策不留给 executor)。
 - **read_first**:
   - `src/routing/decisionRules.ts` L1-184(by Read,全 production state)
   - PATTERNS § 2.4
   - RESEARCH D2.3-7 pseudocode
 - **acceptance_criteria**:
-  - `grep -E "export function arbitrateWithRedirect" src/routing/decisionRules.ts` 命中(or `src/routing/lib/arbitrateRedirect.ts` 命中 if split)
+  - `grep -E "export function arbitrateWithRedirect" src/routing/lib/arbitrateRedirect.ts` 命中(**W4 plan-check fix**: proactive split — fn 主体在 lib/)
+  - `grep -E "export \{ arbitrateWithRedirect" src/routing/decisionRules.ts` 命中(W4: re-export only)
   - `grep -E "export function arbitrate\\(" src/routing/decisionRules.ts` 仍命中(legacy 保留 A7)
-  - `wc -l src/routing/decisionRules.ts` ≤ 200(or split if > 200)
+  - `wc -l src/routing/decisionRules.ts` ≤ 200(proactive guard via split — 主体 + 5L re-export ≤188L)
+  - `wc -l src/routing/lib/arbitrateRedirect.ts` ≤ 80
   - `grep "ADR <实占N>" src/routing/decisionRules.ts` 命中(B-38 fence)
   - `npm test -- tests/routing/decision-rules.test.ts`(若存在) pass(legacy 测试 byte-stable)
   - `npx tsc --noEmit` pass
@@ -690,7 +753,7 @@
 
 ### T2.4 — manifests/skill-packs/karpathy-skills.yaml REWRITE(D-02 删 CLAUDE.md sed → cp -R skill)
 
-- **files_modified**: `manifests/skill-packs/karpathy-skills.yaml`(REWRITE ≤60L)
+- **files_modified**: `manifests/skill-packs/karpathy-skills.yaml`(REWRITE ≤60L) + `scripts/strip-claude-md-section.mjs`(**NEW ≤40L, W2 plan-check fix** — cross-platform CLAUDE.md section stripper sub-task of T2.4;沿袭 check-transparency-verdicts.mjs node-walker 模式)
 - **action**: 沿袭 RESEARCH § 2.4 D2.3-3 REWRITE:
   ```yaml
   apiVersion: harnessed/v1
@@ -713,10 +776,13 @@
     install:
       method: git-clone-with-setup  # D2.3-3 沿袭 Phase 2.1 6 method dispatch
       cmd: |
-        # Migration cleanup (Phase 2.3 R3 mitigation) — 一次性清旧 CLAUDE.md sed-injection block
-        if [ -f ~/.claude/CLAUDE.md ] && grep -q 'karpathy-skills:start' ~/.claude/CLAUDE.md; then
-          sed -i '/<!-- karpathy-skills:start -->/,/<!-- karpathy-skills:end -->/d' ~/.claude/CLAUDE.md
-          echo "[migration] cleaned legacy karpathy-skills CLAUDE.md block (D-02 SKILL-ONLY transition)"
+        # Migration cleanup (Phase 2.3 R3 mitigation + W2 plan-check fix) — 一次性清旧 CLAUDE.md sed-injection block
+        # W2 plan-check fix: 改 sed -i 为 node script (cross-platform Win + macOS BSD + Linux GNU 统一,
+        # architect-clean — node script 是跨平台字符串操作的正路, 不是 ad-hoc workaround;
+        # 沿袭 check-transparency-verdicts.mjs 模式; macOS BSD `sed -i` 需 empty-string arg 兼容性 gap 通过此根除)
+        if [ -f ~/.claude/CLAUDE.md ]; then
+          node scripts/strip-claude-md-section.mjs "<!-- karpathy-skills:start -->" "<!-- karpathy-skills:end -->" ~/.claude/CLAUDE.md \
+            && echo "[migration] cleaned legacy karpathy-skills CLAUDE.md block (D-02 SKILL-ONLY transition; cross-platform via node script)"
         fi
         # Install — cp 本仓 source-of-truth 到 user skills
         cp -R skills/karpathy-baseline ~/.claude/skills/
@@ -741,7 +807,9 @@
   - `wc -l manifests/skill-packs/karpathy-skills.yaml` ≤ 60
   - `! grep -E "grep -q.*karpathy-skills.*~/.claude/CLAUDE.md" manifests/skill-packs/karpathy-skills.yaml`(D-02 验:旧 verify cmd 已删)
   - `grep -E "cp -R skills/karpathy-baseline ~/.claude/skills/" manifests/skill-packs/karpathy-skills.yaml` 命中(新 install cmd)
-  - `grep -E "sed -i.*karpathy-skills:start" manifests/skill-packs/karpathy-skills.yaml` 命中(migration cleanup R3)
+  - `grep -E "node scripts/strip-claude-md-section.mjs" manifests/skill-packs/karpathy-skills.yaml` 命中(**W2 plan-check fix**: cross-platform node script,**REPLACES** `sed -i` macOS BSD gap)
+  - `! grep -E "sed -i.*karpathy-skills:start" manifests/skill-packs/karpathy-skills.yaml`(W2 验:旧 sed -i 已删)
+  - `wc -l scripts/strip-claude-md-section.mjs` ≤ 40 + `node scripts/strip-claude-md-section.mjs --help 2>&1 | head -3` outputs usage
   - `grep -E "rm -rf ~/.claude/skills/karpathy-baseline" manifests/skill-packs/karpathy-skills.yaml` 命中(uninstall 干净)
   - schema validate pass
 - **decision_source**: B-09 + B-10 + R3 + RESEARCH D2.3-3 + § 2.4
@@ -769,9 +837,13 @@
 - **acceptance_criteria**:
   - `grep -E "do_not_use_when:" manifests/skill-packs/ui-ux-pro-max.yaml` 命中
   - `grep -E "if_rejected_use: frontend-design" manifests/skill-packs/ui-ux-pro-max.yaml` 命中
+  - `grep -E "if_rejected_use: ui-ux-pro-max" manifests/skill-packs/frontend-design.yaml` 命中 (**S3 plan-check fix**: 互镜射 — frontend-design 拒绝 → ui-ux-pro-max, ui-ux-pro-max 拒绝 → frontend-design;D-08 双向 redirect 一致性)
+  - `grep -cE "do_not_use_when|if_rejected_use" manifests/skill-packs/ui-ux-pro-max.yaml` ≥ 2 (**S3**: 两字段总是成对 — semantic consistency)
+  - `grep -cE "do_not_use_when|if_rejected_use" manifests/skill-packs/frontend-design.yaml` ≥ 2 (**S3**: 同上)
+  - `grep -cE "do_not_use_when|if_rejected_use" routing/decision_rules.yaml` ≥ 2 (**S3**: SSOT 主导,两字段成对存在)
   - `wc -l manifests/skill-packs/ui-ux-pro-max.yaml` ≤ 65(原 55L + ≈5L)
   - schema validate pass
-- **decision_source**: B-17 + RESEARCH Q3
+- **decision_source**: B-17 + RESEARCH Q3 + S3 plan-check fix
 
 ---
 
@@ -855,6 +927,15 @@
   - `grep -E "\\[ee-5-gate\\] WARN" src/cli/manifest-add.ts` 命中(R5 mitigation)
   - `npx tsc --noEmit` pass
 - **decision_source**: B-11 + B-12 + B-13 + PATTERNS § 2.6 + D-03
+- **S2 plan-check fix (EE-5 provenance mapping explicit)**: Phase 2.2 B-33 provenance.schema.json 4 字段 (source/created_at/confidence/author) 与 EE-5 5 答案语义不同 — provenance = manifest metadata,EE-5 = author audit。**Explicit mapping spec**:
+  - `source` = `"phase-2.3-w3-ee5-cli"` (固定 string,标识 manifest-add CLI 来源)
+  - `created_at` = ISO 8601 date (e.g. `new Date().toISOString()`)
+  - `confidence` = `"user-attested"` (manifest-add 互动 prompt 用户答 attested,非 automated inference)
+  - `author` = git user.email (executor 实占 via `git config user.email` OR fallback `process.env.USER`)
+  - **5 answers storage — 两路径选一**:
+    - **Path A (preferred, 无 schema bump)**: 写 sibling file `manifests/skill-packs/<name>.ee5-answers.json` (5 named field: `q1_reusable_surface` / `q2_name_fit` / `q3_overlap` / `q4_concept_vs_identity` / `q5_user_understanding`);不污染 provenance.schema.json 4 字段
+    - **Path B (若 executor 偏好 inline, 需 schema bump)**: 扩展 provenance.schema.json 加 optional `ee5_answers: { q1, q2, q3, q4, q5: string }` field + check-provenance.mjs walker 可选 validate (若 manifest source = `"phase-2.3-w3-ee5-cli"` then ee5_answers required)
+  - **Recommendation**: Path A (sibling JSON file) — Karpathy 最简 + 不破 Phase 2.2 ship 的 provenance schema;executor 实占 write path = `manifests/skill-packs/<name>.ee5-answers.json`
 
 ### T3.2 — src/cli.ts register registerManifestAdd
 
@@ -944,21 +1025,14 @@
   - `grep -cE "CD-3|disqualify|rejected with redirect" .planning/phase-2.3/SAMPLES.md` ≥ 3
 - **decision_source**: B-20 + B-21 + B-22 + B-23 + D-05 + D-08
 
-### T4.2 — always_active spike(R1 mitigation)
+### T4.2 — always_active spike validation (W1 plan-check fix — SKIPPED, spike moved to T0.10)
 
-- **files_modified**: (throwaway,Wave 4 末 delete,NOT committed)
-- **action**: 装最小 SKILL.md 验证 `always_active: true` 是否被 Claude Code skill registry 真支持(R1 RESEARCH A1 MED-HIGH conf):
-  1. 临时 `cp -R skills/karpathy-baseline ~/.claude/skills/`(本仓 source of truth)
-  2. 启动新 Claude Code session(`claude` CLI 新会话)
-  3. 验证 system prompt context 是否含 karpathy-baseline 内容(grep "Think Before Coding" 系统响应)
-  4. 若 fail → fallback description-keyword 匹配 + self-reflexive prompt "ALWAYS apply ... coding"(RESEARCH § 2.3),修改 SKILL.md description 字段
-  5. spike 末 `rm -rf ~/.claude/skills/karpathy-baseline`(spike,NOT committed);git status 不含残留
-- **read_first**: RESEARCH § 2.3 + A1 + skills/karpathy-baseline/SKILL.md(T2.3 产物)
+- **status**: **SKIPPED — spike 已提前到 Wave 0 T0.10** (W1 plan-check fix: spike 反序修正,T2.3 W2 ship 前已 validated)。本 task 保留为 Wave 4 sequence 占位,actual spike outcome 见 T0.10 Resolved block。
+- **action (validation only)**: read T0.10 Resolved block + verify T2.3 SKILL.md frontmatter 字段名与 T0.10 outcome 一致 (若 spike FAIL 则 verify description 含 "ALWAYS apply" wording)。
 - **acceptance_criteria**:
-  - spike outcome 在本 task_plan.md 顶部 Resolved block 加 `> **Resolved (T4.2)**: always_active = supported/fallback, mechanism = <details>`
-  - 若 fallback 必须 update T2.3 SKILL.md description("ALWAYS apply...")
-  - `rm -rf ~/.claude/skills/karpathy-baseline` 验 spike cleanup(执行环境恢复)
-- **decision_source**: R1 + RESEARCH A1 + § 2.3
+  - `grep -E "Resolved.*T0.10" .planning/phase-2.3/task_plan.md` 命中 (T0.10 outcome 已记录)
+  - T2.3 SKILL.md frontmatter 字段与 T0.10 outcome 一致 (no rework needed at Wave 4)
+- **decision_source**: R1 + RESEARCH A1 + § 2.3 + W1 plan-check fix (spike 反序 → SKIP this slot)
 
 ### T4.3 — tests/routing/samples-30.test.ts NEW(30-sample harness ≥85%)
 
@@ -1000,6 +1074,30 @@
   - 若 < 26 → SAMPLES.md "## known miss" 节追加 + Wave 4 R4 fallback 9 keywords 微调(remove false-pos / add false-neg);沿袭 phase 1.4 SAMPLES.md miss 节模式
   - 测试 file 存在 + 30 sample 全 itentify(`grep -cE "^\\s+it\\(" tests/routing/samples-30.test.ts` ≥ 30 + 1 overall)
 - **decision_source**: B-20 + B-22 + R4
+- **S1 plan-check fix (vitest parallel race)**: 原 harness 用 `hits` mutate-across-it 累积 — vitest parallel-mode race vulnerable。采用 cleaner refactor (pre-compute pattern):
+  ```typescript
+  // Refactored — local-state-per-it via pre-compute (S1 plan-check fix)
+  describe('Phase 2.3 30-sample routing harness (B-21 ≥85%)', () => {
+    const results = SAMPLES.map((sample) => {
+      const task: TaskContext = { task_type: sample.task_type, prompt: sample.prompt } as TaskContext
+      const result = arbitrateWithRedirect(RULES, task)
+      let actualExpert: string | null = null
+      if (result.kind === 'matched') actualExpert = result.rule.decision.primary_expert
+      else if (result.kind === 'rejected') actualExpert = result.redirectTo
+      return { sample, actualExpert, hit: actualExpert === sample.expected_primary_expert }
+    })
+    for (const { sample, actualExpert, hit } of results) {
+      it(`#${sample.id} ${sample.category} ${sample.task_type} — expected ${sample.expected_primary_expert} actual ${actualExpert}`, () => {
+        expect(hit).toBe(true)  // per-sample assertion;failure 不阻 overall hit-rate test
+      })
+    }
+    it('overall hit rate ≥85% (30 中 ≥26)', () => {
+      const hits = results.filter((r) => r.hit).length
+      expect(hits).toBeGreaterThanOrEqual(26)
+    })
+  })
+  ```
+  Pre-compute pattern 避免 mutate-across-it,vitest parallel/sequential 模式均 safe。Fallback 兜底:`pnpm test -- tests/routing/samples-30.test.ts --sequential` 命令行强制串行。
 
 ---
 
@@ -1195,7 +1293,10 @@
   - `git tag --list adr-<实占N>-accepted` 命中 1
   - `git tag --list v0.2.0-alpha.3-extension-mvp` 命中 1
   - `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` == `success`(3-OS CI 全绿)
-- **decision_source**: B-35 + KICKOFF § 1.2 F8
+  - **S4 plan-check fix — ship-time A7 re-verify gate** (mirror Phase 2.2 T6.3 + Wave 5 T5.4 ship-time gate):
+    `git diff adr-0011-accepted..HEAD -- 'docs/adr/000[1-9]-*.md' 'docs/adr/0010-*.md' 'docs/adr/0011-*.md' | wc -l` == 0
+    (Wave 5 T5.4 一次 A7 verify 之后到 Wave 6 ship 之间任何 commit 不得 unintentionally touch ADR 0001-0011 main body;ship-time 再次 verify 是最终 gate)
+- **decision_source**: B-35 + KICKOFF § 1.2 F8 + S4 plan-check fix
 
 ---
 

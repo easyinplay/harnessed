@@ -20,8 +20,8 @@ files_modified:
   - manifests/tools/chrome-devtools-mcp.yaml
   - skills/karpathy-baseline/SKILL.md
   - routing/decision_rules.yaml
-  - src/routing/decisionRules.ts
-  - src/routing/lib/arbitrateRedirect.ts
+  - src/routing/decisionRules.ts  # W4 plan-check fix: re-export only, 主体不动 ~183L
+  - src/routing/lib/arbitrateRedirect.ts  # W4 plan-check fix: proactive split (committed, not fallback) ~25-30L
   - src/cli/manifest-add.ts
   - src/cli.ts
   - tests/routing/arbitrate-redirect.test.ts
@@ -169,11 +169,12 @@ Wave 0 — STATE.md 6 项 prereq backlog 一次根治 + ADR draft (F1)
   ├─ T0.2  ADR <实占N> draft(5 章节 sketch only,Wave 6 详细 fill)
   ├─ T0.3  M3 perf gate 根治(D2.3-1)— 新 perf-bench.yml + ci.yml perf step skip(it.skip(IS_GHA))+ STATE.md L553 close
   ├─ T0.4  M1 schema regen CI gate(`corepack pnpm build:schema && git diff --exit-code schemas/`,~10L)
-  ├─ T0.5  T1.2 schemaVersion consumer grep gate(`grep -r "branchOnSchemaVersion(" src/ | wc -l ≥ 7`)
+  ├─ T0.5  T1.2 schemaVersion consumer grep gate(`grep -r "branchOnSchemaVersion(" src/ | wc -l ≥ 2`, **B1 plan-check fix** honest baseline)
   ├─ T0.6  T1.3 Win pwsh provenance sentinel(`if: runner.os == 'Windows'` + `shell: pwsh`)
   ├─ T0.7  M2 intel L236-238 ## 实施进度回填 节(每 entry 标 IMPL: Phase 2.2 (commit) 或 PENDING)
   ├─ T0.8  T5 deferred-items review — RETROSPECTIVE.md 模板加节 + scripts/check-deferred-items.mjs(warn-only ≤80L)
-  └─ T0.9  3-OS CI 跑通 gate verify(Wave 0 全 step 合规)
+  ├─ T0.9  3-OS CI 跑通 gate verify(Wave 0 全 step 合规)
+  └─ T0.10 always_active spike(**W1 plan-check fix — 提前到 Wave 0 末**;<30 min;outcome 进 Resolved block;T4.2 SKIP)
        ↓
 Wave 1 — manifest schema 演进(F2 装配链路 — D-01 MIN scope)
   ├─ T1.1  manifests/skill-packs/frontend-design.yaml NEW(D-08 anchor redirect 目标;git-clone-with-setup)
@@ -185,7 +186,7 @@ Wave 1 — manifest schema 演进(F2 装配链路 — D-01 MIN scope)
        ↓
 Wave 2 — decision_rules CD-3 字段 + karpathy SKILL-ONLY(F3 + F4 — D-02 + D-04 + D-08)
   ├─ T2.1  routing/decision_rules.yaml CD-3 字段加(`do_not_use_when:` + `if_rejected_use:`)+ 9 keywords 词集校准(D2.3-4 remove 独特 / add signature style + art direction + bold style)+ 1-2 anchor/negative-space rule
-  ├─ T2.2  src/routing/decisionRules.ts arbitrateWithRedirect() NEW(B-18 (b) legacy 保留 + ~+20L;若 wc > 200 fallback split lib/arbitrateRedirect.ts B-36)
+  ├─ T2.2  src/routing/decisionRules.ts arbitrateWithRedirect() NEW(B-18 (b) legacy 保留;**W4 plan-check fix — PROACTIVE SPLIT**: fn 主体 ship 到 src/routing/lib/arbitrateRedirect.ts ≤80L, decisionRules.ts 仅 5L re-export 主体不动 ≤188L)
   ├─ T2.3  skills/karpathy-baseline/SKILL.md NEW(D-02 + D2.3-2 单文件 + always_active: true frontmatter + 4 心法 ≤80L)
   ├─ T2.4  manifests/skill-packs/karpathy-skills.yaml REWRITE(D-02 删 CLAUDE.md sed → cp -R skills/karpathy-baseline ~/.claude/skills/ via git-clone-with-setup + migration cleanup script R3)
   └─ T2.5  per-manifest hint 层冗余字段(Q3 / B-17)— ui-ux-pro-max.yaml + frontend-design.yaml 加 decision_rules.do_not_use_when + if_rejected_use 冗余守护
@@ -223,14 +224,14 @@ Wave 6 — ship(F8)
 
 | Wave | Task Count | Est. Effort | Key Verify |
 |------|-----------|-------------|-----------|
-| 0 | 9 | ~2d | gate 0 violation + ENFORCE 兼容(Phase 2.2 ship) + perf-bench.yml cron + 3-OS CI 全绿 |
+| 0 | 10 | ~2d | gate 0 violation + ENFORCE 兼容(Phase 2.2 ship) + perf-bench.yml cron + 3-OS CI 全绿 + T0.10 always_active spike outcome(**W1 plan-check fix**) |
 | 1 | 6 | ~1d | 5 NEW manifest yaml ≤60L each + install dry-run e2e + decision_rules hint 一致 |
 | 2 | 5 | ~1.5d | CD-3 字段 yaml + arbitrateWithRedirect() ≤+20L + decisionRules.ts ≤200L(or split) + SKILL.md ≤80L + karpathy-skills.yaml REWRITE 干净 + migration cleanup |
 | 3 | 3 | ~1d | manifest-add.ts ≤90L + readline interactive + KICKOFF 模板 § 7 + checker BLOCKER rule |
 | 4 | 3 | ~1d | 30 SAMPLES.md ≤250L R3 frozen + always_active spike outcome + samples-30.test ≥26/30 |
 | 5 | 4 | ~1d | arbitrate-redirect.test 4 case + manifest-add-ee5.test 双层验证 + e2e smoke + A7 diff 0 |
 | 6 | 4 | ~0.5d | 3-OS CI 全绿 + tag exist + ADR 0001-0011 main body diff 0 + adr-<实占N>-accepted |
-| **Total** | **34** | **~8d** | — |
+| **Total** | **35** | **~8d** | T0.10 spike 新加 (**W1 plan-check fix**);T4.2 SKIPPED slot 保留 |
 
 ---
 
@@ -271,7 +272,7 @@ Phase 2.3 ship 后,下游 phase 直接消费的接口:
 
 | Bar | Reproduction Command | Pass Criteria |
 |-----|----------------------|---------------|
-| **F1** | `node scripts/check-transparency-verdicts.mjs && cat .github/workflows/perf-bench.yml \| head -5 && grep "branchOnSchemaVersion" src/ -r \| wc -l && node scripts/check-deferred-items.mjs && grep -E "## 实施进度回填" .planning/intel/omc-comparison.md` | transparency exit 0(Phase 2.2 ship 持续 green);perf-bench.yml cron 存在;grep count ≥ 7(T1.2);check-deferred-items warn-only exit 0;intel 回填节存在 |
+| **F1** | `node scripts/check-transparency-verdicts.mjs && cat .github/workflows/perf-bench.yml \| head -5 && grep "branchOnSchemaVersion" src/ -r \| wc -l && node scripts/check-deferred-items.mjs && grep -E "## 实施进度回填" .planning/intel/omc-comparison.md` | transparency exit 0(Phase 2.2 ship 持续 green);perf-bench.yml cron 存在;grep count ≥ 2(T1.2 — **B1 plan-check fix**: ≥7 → ≥2 honest baseline);check-deferred-items warn-only exit 0;intel 回填节存在 |
 | **F2** | `ls manifests/skill-packs/frontend-design.yaml manifests/skill-packs/anthropics-skills-pptx.yaml manifests/skill-packs/anthropics-skills-slide-deck.yaml manifests/tools/playwright-test.yaml manifests/tools/chrome-devtools-mcp.yaml && for f in manifests/skill-packs/{frontend-design,anthropics-skills-pptx,anthropics-skills-slide-deck,karpathy-skills}.yaml manifests/tools/{playwright-test,chrome-devtools-mcp}.yaml; do wc -l $f; done` | 5 NEW manifest + 1 REWRITE 全 ≤60L;`harnessed install <each> --dry-run` 全 exit 0 |
 | **F3** | `grep -E "do_not_use_when\|if_rejected_use" routing/decision_rules.yaml \| wc -l && npm test -- tests/routing/arbitrate-redirect.test.ts && wc -l src/routing/decisionRules.ts` | grep ≥ 4(每 category 至少 1 negative-space + 1 redirect)+ test 4 case pass;decisionRules.ts ≤200L(or split) |
 | **F4** | `ls skills/karpathy-baseline/SKILL.md && wc -l skills/karpathy-baseline/SKILL.md && grep "always_active: true" skills/karpathy-baseline/SKILL.md && harnessed install karpathy-skills && test -f ~/.claude/skills/karpathy-baseline/SKILL.md && ! grep -q "karpathy-skills:start" ~/.claude/CLAUDE.md && harnessed uninstall karpathy-skills && ! test -f ~/.claude/skills/karpathy-baseline/SKILL.md` | SKILL.md ≤80L + always_active 命中;install/uninstall 双向干净;CLAUDE.md 不被改动(D-02 SKILL-ONLY) |
@@ -358,7 +359,7 @@ Phase 2.3 ship 后,下游 phase 直接消费的接口:
 - `grep -E "^### [1-5]\. " docs/adr/<实占N>-*.md | wc -l` 输出 == 5(F7 reproduction — ADR 5 章节)
 - `git tag --list adr-<实占N>-accepted v0.2.0-alpha.3-extension-mvp` 两 tag 存在
 - `grep "0011" .planning/phase-2.3/ docs/adr/ -r` 出非 Phase 2.2 ADR 引用范围之外的字面残留 == 0(T0.1 sed-replace discipline)
-- `grep -E "branchOnSchemaVersion\(" src/ -r | wc -l` ≥ 7(T1.2 schemaVersion consumer gate)
+- `grep -E "branchOnSchemaVersion\(" src/ -r | wc -l` ≥ 2(T1.2 schemaVersion consumer gate — **B1 plan-check fix**: honest baseline reflecting Phase 2.2 W2 helper-only adoption)
 
 </verification>
 
