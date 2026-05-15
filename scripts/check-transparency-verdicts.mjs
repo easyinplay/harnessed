@@ -39,12 +39,18 @@ function checkFreshness(violations) {
   if (!latest) return
   for (const file of FRONT_MATTER_DOCS) {
     let head
-    try { head = readFileSync(file, 'utf8').split(/\r?\n/).slice(0, 50).join('\n') }
-    catch { violations.push(`${file}:0  front-matter doc missing`); continue }
+    try {
+      head = readFileSync(file, 'utf8').split(/\r?\n/).slice(0, 50).join('\n')
+    } catch {
+      violations.push(`${file}:0  front-matter doc missing`)
+      continue
+    }
     const match = head.match(STATUS_MARKER)
     if (!match) violations.push(`${file}:1  missing Status: marker in first 50 lines`)
     else if (!match[1].includes(latest))
-      violations.push(`${file}:1  Status "${match[1].trim()}" missing latest shipped token "${latest}"`)
+      violations.push(
+        `${file}:1  Status "${match[1].trim()}" missing latest shipped token "${latest}"`,
+      )
   }
 }
 
