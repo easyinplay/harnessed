@@ -83,6 +83,34 @@
                 {
                   "const": "0BSD",
                   "type": "string"
+                },
+                {
+                  "const": "MIT-0",
+                  "type": "string"
+                },
+                {
+                  "const": "anthropics-official",
+                  "type": "string"
+                }
+              ]
+            },
+            "license_source": {
+              "anyOf": [
+                {
+                  "const": "README",
+                  "type": "string"
+                },
+                {
+                  "const": "registry",
+                  "type": "string"
+                },
+                {
+                  "const": "none",
+                  "type": "string"
+                },
+                {
+                  "const": "anthropics-official",
+                  "type": "string"
                 }
               ]
             },
@@ -740,6 +768,45 @@
             },
             "brainstorming_required": {
               "type": "boolean"
+            }
+          }
+        },
+        "provides": {
+          "minItems": 2,
+          "uniqueItems": true,
+          "type": "array",
+          "items": {
+            "additionalProperties": false,
+            "type": "object",
+            "required": [
+              "id",
+              "component_type"
+            ],
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "component_type": {
+                "anyOf": [
+                  {
+                    "const": "command",
+                    "type": "string"
+                  },
+                  {
+                    "const": "behavior-rule",
+                    "type": "string"
+                  },
+                  {
+                    "const": "mcp-tool",
+                    "type": "string"
+                  },
+                  {
+                    "const": "cli-binary",
+                    "type": "string"
+                  }
+                ]
+              }
             }
           }
         }
