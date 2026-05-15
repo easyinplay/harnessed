@@ -15,6 +15,41 @@
 
 ---
 
+## Phase 2.3 Wave 0 preheat — extension category MVP + karpathy 注入 (2026-05-16 in-progress)
+
+> 本节 Wave 0 进行中 preheat 记录；Phase 2.3 ship 后 promote 为 milestone retrospective 完整版。
+
+### W0 8/10 task shipped (2026-05-16)
+
+- T0.1 ✅ ADR `<实占N>` → 0012 实占 + zero-residue placeholder gate (a5c75e0)
+- T0.2 ✅ ADR 0012 draft 9 章节 sketch (2087f19)
+- T0.3 ✅ M3 perf gate 根治 — D2.3-1 (a) 移出 CI critical path + 新 perf-bench.yml nightly cron (02b3eaf) — **终止 50→75→100→130→160 累积 nudge anti-pattern**
+- T0.4 ✅ M1 schema regen drift CI gate — `pnpm build:schema && git diff --exit-code schemas/` (3976425)
+- T0.5 ✅ T1.2 schemaVersion consumer call site gate (B1 honest ≥2) (fdc2f3b)
+- T0.6 ✅ T1.3 Win pwsh provenance sentinel (b5a32d8)
+- T0.7 ✅ M2 intel L236-238 实施进度回填 节 (b4d32cf)
+- T0.8 ✅ T5 deferred-items review cadence — `scripts/check-deferred-items.mjs` + RETROSPECTIVE + ci.yml warn-only (0d966b4)
+
+### T0.10 always_active spike outcome (key finding)
+
+**Spike result: FAIL** — SDK 0.3.142 `skillFrontmatter` 只 extract `name + source + tokens`；无 `always_active` / `auto_load` / `always_on` 任何字段变体。 R2 ASSUMPTION A1 (MED-HIGH confidence) 验证 wrong。
+
+**Fallback path (D2.3-3 from RESEARCH § 2 A1 secondary)**:
+- SKILL.md frontmatter 不含 `always_active: true`
+- `description:` 字段用 high-precision keyword 集 (e.g. "ALWAYS apply Karpathy 4 心法 baseline: ...")
+- SKILL.md body 首段 self-reflexive prompt "ALWAYS apply these 4 心法 to every coding decision..."
+- Claude Code session start 时 description-keyword discovery + LLM 看到首段 prompt 自我激活
+
+**Affects W2 T2.3 SKILL.md design** + **ADR 0012 § 4 karpathy SKILL-ONLY chapter fill** — 调整待 Wave 6 T6.1 finalize 时正式记录。
+
+### Patterns observed (preheat — to consolidate at Phase 2.3 ship time)
+
+1. **Spike-first sequence works**: T0.10 提前 spike (W1 plan-check fix from Wave C delta) 把 "先 ship 后 spike" reverse 顺序 catch — W2 T2.3 SKILL.md ship 时 frontmatter 设计已 informed。 Spike spec MUST precede consumer ship。
+2. **Fallback paths must be locked at research time**: R2 § 2 A1 已 lock fallback (description-keyword)，否则 T0.10 FAIL 会触发 Wave 0 中断或 over-engineering 探索。 Research-time conditional branching = ship 时无需重新评估。
+3. **M3 perf gate 根治 via removal not threshold**: D2.3-1 (a) 移出 critical path = 业内共识 (vitest/Next.js/Deno/TanStack Query nightly cron 模式)。 Phase 2.2 累计 3 次 nudge 终止 — 根治 = 重新审视 gate 位置 (critical vs advisory)，不是无限调阈值。
+
+---
+
 ## Phase 2.2 milestone retrospective — execute-task workflow + ralph-loop full SDK integration（2026-05-15 ship）
 
 ### What Worked

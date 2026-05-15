@@ -21,8 +21,8 @@
 
 - **GSD phase**：✅ **Phase 2.2 SHIPPED**（2026-05-15 — execute-task workflow + ralph-loop full SDK integration；F1-F8 8/8 acceptance bar；SDK 0.3.142 introduced；dual-signal 4-layer + per-phase model tier + schemaVersion 7-surface + provenance gate + Task Session 复用 conditional → DEFERRED v0.3.0；transparency CI gate W3 ENFORCE=true）— 前置 ✅ Phase 2.1 SHIPPED；前置 🚀 **v0.2.0 MILESTONE 2/4**；前置 ✅ v0.1.0 SHIPPED & ARCHIVED（6/6 phase；git tag `v0.1.0`）
 - **当前里程碑**：v0.2.0 Sub-task Loop + Extension Installers（Phase 2.1-2.4）— **Phase 2.2 2/4 完成**
-- **下一 phase**：**Phase 2.3** discuss-phase（待启 — roadmap 骨架原 /autoplan + v3 重排时定，下一 phase plan-phase 时定具体范围）
-- **状态**：✅ **Phase 2.2 SHIPPED — Ready for Phase 2.3 discuss-phase**（T6.5 CI run 待 main agent push tag 触发 + tags `adr-0011-accepted` + candidate `v0.2.0-alpha.2-execute-task` pushed to origin；A7 守恒 ADR 0001-0010 main body 0 diff verified T6.3）
+- **下一 phase**：**Phase 2.3** execute-phase Wave 0 IN PROGRESS — discuss + plan-phase + plan-check + CC + delta 全 ship 2026-05-16 (commits e45889d / 52e2a97 / 54055ef / 481e1be / a4e8b93 / 43b9fee); Wave 0 8/10 task shipped (T0.1-T0.8 commits a5c75e0 / 2087f19 / 02b3eaf / 3976425 / fdc2f3b / b5a32d8 / b4d32cf / 0d966b4) + T0.9-T0.10 收尾中 (T0.10 always_active spike FAIL → fallback path: description-keyword + self-reflexive prompt per R2 A1)
+- **状态**：🚧 **Phase 2.3 Wave 0 IN PROGRESS** — Wave 0 6 项 backlog 一次根治 (M1 schema regen CI gate / M2 intel 回填 / M3 perf gate 移出 critical path 新 perf-bench.yml / T1.2 schemaVersion grep gate / T1.3 Win pwsh sentinel / T5 deferred-items review) + ADR 0012 draft 9 章节 + T0.10 spike FAIL 决断 fallback；A7 守恒 ADR 0001-0011 main body 0 diff 保。 Wave 0 ship 后 Wave 1-6 execute
 - **进度**：8 / 17 phases 已完成 ▓▓▓▓▓▓▓▓░░░░░░░░░ 47.1%（v0.1.0 里程碑 100%；v0.2.0 2/4 = 50%）
 - **Phase 2.2 关键决议 ship 总结**：(1) SDK 0.3.142 INTRODUCE NOW + AgentDefinition 5-字段 SDK input + 9-字段 inject（T1.1 实测修正 research baseline 4→5/10→9，disallowedTools 迁至 SDK input layer）；(2) ralph-wiggum 不切换，`ralphLoopWrap` 自实装永久架构 + `<promise>` XML wrapper + jq Win 红旗 R6 closed；(3) dual-signal completion 4-layer（PRIMARY structured_output + FALLBACK `<promise>` + Tier A 选定）；(4) contract v1.2 reconcile inline（AGENT-DEFINITION-FACTORY-CONTRACT.md main body 0 diff A7 守恒）；(5) per-phase model tier `phases.yaml` schema + 4 phase 默认表 `[opus,sonnet,sonnet,haiku]` + `--model-tier inherit` B-10 escape hatch；(6) transparency CI gate W3 ENFORCE=true 落地 + freshness check 扩展 README/PROJECT-SPEC；(7) **delta CD-5** ⭐⭐⭐ schemaVersion 7-surface 单一兼容门 (D-16)；(8) **delta CD-6** ⭐⭐ provenance gate BEFORE-W4 hard fail + scope 限 runtime artifact (D-17)；(9) **delta CD-4** ⭐⭐ Task Session 复用 → SC4 PARTIAL → B-35 fallback → T4.4 DEFERRED → v0.3.0 (D-18)；**EE-4** ⭐⭐ plan 4 维量化阈值 schema → DEFERRED → Phase 2.4 doctor 完整版 OR phase 2.5 独立
 
@@ -31,7 +31,7 @@
 | 里程碑 | Phase 完成 | 状态 | 完成时间 |
 |--------|-----------|------|---------|
 | v0.1.0 manifest 引擎 + research | 6/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 + 1.5 done — **v0.1.0 里程碑全部完成** | 2026-05-12 (P1.1+P1.2+P1.2.5) / 2026-05-13 (P1.3+P1.4) / 2026-05-14 (P1.5) |
-| v0.2.0 Sub-task Loop + Extension Installers | 2/4 | 🚀 ACTIVE — Phase 2.1 + Phase 2.2 SHIPPED 2026-05-15；Phase 2.3 待启动 | 启动 2026-05-15 / Phase 2.1 ship 2026-05-15 / Phase 2.2 ship 2026-05-15 |
+| v0.2.0 Sub-task Loop + Extension Installers | 2/4 | 🚀 ACTIVE — Phase 2.1 + Phase 2.2 SHIPPED 2026-05-15; Phase 2.3 Wave 0 IN PROGRESS (8/10 task shipped 2026-05-16, T0.10 spike FAIL → fallback decided) | 启动 2026-05-15 / Phase 2.1 ship 2026-05-15 / Phase 2.2 ship 2026-05-15 / Phase 2.3 discuss+plan+CC ship 2026-05-16 |
 | v0.3.0 plan-feature + checkpoint | 0/4 | Not started | - |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
 
@@ -58,7 +58,7 @@
 19. ✅ ~~**transparency CI gate `ENFORCE` flip 为 `true`**~~（**Phase 2.2 Wave 0 T0.6 落地 done** — `scripts/check-transparency-verdicts.mjs` `ENFORCE=true` + 13 verdict 文档 marker migration (10 ADD + 3 REPAIR) + W3 lock 解除；CI run 3-OS 全绿）
 20. ✅ ~~**Phase 2.2 discuss-phase + plan-phase + execute-phase 全 ship**~~（execute-task workflow 主线 + ralph-loop full integration + SDK 0.3.142 INTRODUCE NOW + per-phase model tier + ADR 0011 9 章节 errata 合并；F1-F8 8/8；详 `.planning/phase-2.2/`）
 21. ✅ ~~**phase 2.2 Wave 0 freshness ext**~~（**T0.4 落地 done** — `STATUS_MARKER` regex + `FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md']` + `ROADMAP_LATEST_RE` + `getLatestShippedToken()` + `checkFreshness()`；`check-transparency-verdicts.mjs` 75L ≤ 75）
-22. ⏳ **进入 Phase 2.3 discuss-phase**（待启 — roadmap 骨架原 /autoplan + v3 重排时定，下一 phase plan-phase 时定具体范围；v0.2.0 milestone 2/4 → 3/4 推进）
+22. 🚧 **Phase 2.3 Wave 0 IN PROGRESS** (2026-05-16) — discuss + plan + Wave A + Wave B + Wave C plan-check + CC fix + delta cosmetic 全 ship；Wave 0 8/10 task shipped (T0.1-T0.8) + T0.9 STATE/RETRO preheat + T0.10 always_active spike FAIL 决断 fallback (description-keyword + self-reflexive prompt per R2 A1)；Wave 0 ship 后 Wave 1-6 execute (v0.2.0 milestone 2/4 → 3/4 推进)
 23. ⏳ **v0.3.0 backlog**：T4.4 Task Session 复用 完整版 (B-35 fallback) — closure infra 三件套已 ready (sdkSpawn.onSessionId / ralphLoopWrap.resumeSessionId / engine.wrappedSpawn capturedSessionId)，consumer 接入 + `harnessed.phases.v1` schema bump 加 `task_session_id?` field 即可
 24. ⏳ **Phase 2.4 backlog**：EE-4 plan 4 维量化阈值 schema (omo ⭐⭐) — Phase 2.4 doctor 完整版 absorb OR 独立 phase 2.5
 
