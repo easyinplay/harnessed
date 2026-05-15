@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harnessed.dev/schemas/provenance.schema.json",
+  "title": "Harnessed Runtime Artifact Provenance",
+  "description": "Sibling .provenance.json metadata required for every runtime artifact under .harnessed/sessions/**, .harnessed/checkpoints/**, .harnessed/route-logs/**. Phase 2.2 T4.0 — ECC pattern per intel omc-comparison.md § CD-6 + B-33 + B-34 + ADR 0011 § 8. Curated paths (workflows/**, manifest.yaml, docs/**) are NOT in scope and do NOT require provenance.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "created_at", "confidence", "author"],
+  "properties": {
+    "source": {
+      "type": "string",
+      "enum": ["curated", "learned", "imported", "evolved"],
+      "description": "4-class origin (沿袭 ECC SKILL-PLACEMENT-POLICY.md). curated = human-authored. learned = ralph-loop iteration product. imported = external 3rd-party adoption. evolved = subagent / pipeline self-modification."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when this artifact was produced. UTC preferred (Z suffix)."
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "0..1 trust score. curated = 1.0; learned ≤ 0.9; imported ≤ 0.8; evolved decays with each cycle (e.g. 0.9 × 0.95^n)."
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Subagent name (e.g. 'ui-ux-pro-max'), human user identifier, OR ralph-loop iteration id (e.g. 'ralph-iter-7/4-deliver')."
+    }
+  }
+}

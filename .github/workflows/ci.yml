@@ -77,6 +77,13 @@ jobs:
       # on violations); ENFORCE flag flips to true in phase 2.2.
       - name: Transparency verdict-marker gate (warn-only round 1)
         run: node scripts/check-transparency-verdicts.mjs
+      # Phase 2.2 T4.0 — provenance gate (ADR 0011 § 8, B-33+B-34, CD-6 ⭐⭐).
+      # Walks .harnessed/{sessions,checkpoints,route-logs}/** — every runtime
+      # artifact must have sibling .provenance.json (4 fields per
+      # provenance.schema.json). Curated paths (workflows/**, manifest.yaml)
+      # NOT in scope per R8.
+      - name: Provenance gate (Phase 2.2 W4 hard fail — CD-6)
+        run: node scripts/check-provenance.mjs
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm typecheck
