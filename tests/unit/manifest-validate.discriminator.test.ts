@@ -114,7 +114,28 @@ const ILLEGAL_PAIRS: ReadonlyArray<[IllegalCase['type'], string]> = [
   ['cli-npm', 'mcp-http-add'],
 ]
 
+// install_type ↔ install.method 1:N closure (ADR 0010 errata § Decision 4) is
+// now validate-layer enforced. Derive a closure-consistent install_type from
+// the method so the matrix fixtures don't trip the cross-field check on top of
+// the type×method allOf constraint under test.
+function installTypeForMethod(method: string): string {
+  switch (method) {
+    case 'npm-cli':
+      return 'npm'
+    case 'mcp-stdio-add':
+    case 'mcp-http-add':
+      return 'mcp'
+    case 'git-clone-with-setup':
+      return 'git'
+    default:
+      return 'skill' // cc-plugin-marketplace / npx-skill-installer
+  }
+}
+
 function buildYaml(c: IllegalCase): string {
+  // Extract the method from the install block (`    method: x`).
+  const methodMatch = c.install.match(/method:\s*(\S+)/)
+  const method = methodMatch?.[1] ?? 'npm-cli'
   return `apiVersion: harnessed/v1
 kind: Manifest
 metadata:
@@ -130,7 +151,7 @@ spec:
   type: ${c.type}
   component_type: ${c.componentType}
   category: engineering
-  install_type: skill
+  install_type: ${installTypeForMethod(method)}
   install:
 ${c.install}
   verify:

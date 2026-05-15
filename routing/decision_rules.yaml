@@ -73,8 +73,7 @@ rules:
       language: zh
     decision:
       primary_expert: jimliu-baoyu-skills-baoyu-slide-deck
-      warn: 'license: None — D1.2.5-10 pending license verify'
-      rationale: 中文 deck 场景, baoyu-skills license 待 phase 1.5 verify
+      rationale: 中文 deck 场景, baoyu-skills license resolved 为 MIT-0 (D-05 / ADR 0010)
 
   # ─── testing (4 rules) ───────────────────────────────────────
   - id: perf-a11y-memory

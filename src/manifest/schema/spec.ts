@@ -149,6 +149,20 @@ const Triggers = Type.Object(
   { additionalProperties: false },
 )
 
+// ADR 0010 errata — bundle-install modeling (#10, D2.1-1). One install action
+// may surface multiple named units (e.g. document-skills → pptx/docx/xlsx/pdf).
+// `provides` absent ⇒ atomic manifest (unchanged behavior). Present ⇒ one
+// install exposes N named units. `install`/`verify`/`uninstall` stay singular —
+// the bundle is installed by ONE action. Bundle manifests use the existing
+// `type: 'cc-skill-pack'` (D2.1-2 — no new TypeEnum/ComponentType value).
+const ProvidedUnit = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }), // routing-addressable, <org>-<repo>-<unit>
+    component_type: ComponentType, // reuse existing union
+  },
+  { additionalProperties: false },
+)
+
 export const SpecSchema = Type.Object(
   {
     type: TypeEnum,
@@ -168,6 +182,8 @@ export const SpecSchema = Type.Object(
     // ADR 0009 errata (phase 1.5 T5.5) — mattpocock phase routing schema.
     phase: Type.Optional(Phase),
     triggers: Type.Optional(Triggers),
+    // ADR 0010 errata (phase 2.1 T1.3) — bundle-install `provides` field.
+    provides: Type.Optional(Type.Array(ProvidedUnit, { minItems: 2, uniqueItems: true })),
   },
   { additionalProperties: false },
 )

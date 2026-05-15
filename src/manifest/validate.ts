@@ -47,6 +47,37 @@ export type ValidateResult =
   | { ok: true; manifest: Manifest }
   | { ok: false; errors: ValidationError[] }
 
+// ADR 0010 errata (phase 2.1 T1.4) — install_type ↔ install.method 1:N closure
+// enforcement. TypeBox `Type` cannot express cross-field constraints, so this
+// is a validate-layer refinement rule. Maps each install_type enum value to its
+// closed set of legal install.method values (ADR 0007 1:N closure). install
+// methods not in this map (currently none) are unconstrained.
+const INSTALL_TYPE_METHODS: Record<string, readonly string[]> = {
+  npm: ['npm-cli'],
+  mcp: ['mcp-stdio-add', 'mcp-http-add'],
+  git: ['git-clone-with-setup'],
+  skill: ['cc-plugin-marketplace', 'npx-skill-installer'],
+}
+
+function checkInstallTypeMismatch(manifest: Manifest, filename: string): ValidationError[] {
+  const spec = manifest.spec as { install_type?: string; install?: { method?: string } }
+  const installType = spec.install_type
+  const method = spec.install?.method
+  if (!installType || !method) return []
+  const allowed = INSTALL_TYPE_METHODS[installType]
+  if (!allowed || allowed.includes(method)) return []
+  return [
+    {
+      file: filename,
+      path: 'spec.install.method',
+      message: `install_type '${installType}' is not compatible with install.method '${method}' (ADR 0007 1:N closure — expected one of: ${allowed.join(', ')})`,
+      line: null,
+      column: null,
+      keyword: 'install-type-mismatch',
+    },
+  ]
+}
+
 export function validateManifestFile(yamlSource: string, filename: string): ValidateResult {
   const lineCounter = new LineCounter()
   const doc = parseDocument(yamlSource, { lineCounter })
@@ -76,5 +107,14 @@ export function validateManifestFile(yamlSource: string, filename: string): Vali
     }
   }
 
-  return { ok: true, manifest: data as Manifest }
+  // ADR 0010 errata (phase 2.1 T1.4) — cross-field install_type ↔ install.method
+  // 1:N closure check. Runs after Ajv structural validation passes (needs a
+  // well-formed manifest); TypeBox `Type` cannot express cross-field rules.
+  const manifest = data as Manifest
+  const crossFieldErrors = checkInstallTypeMismatch(manifest, filename)
+  if (crossFieldErrors.length > 0) {
+    return { ok: false, errors: crossFieldErrors }
+  }
+
+  return { ok: true, manifest }
 }

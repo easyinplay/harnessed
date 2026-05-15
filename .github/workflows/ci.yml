@@ -67,6 +67,12 @@ jobs:
             exit 1
           fi
           echo "A7 ✅ ADR 0001-0009 main body unchanged"
+      # Phase 2.1 T1.7 — transparency verdict-marker gate (ADR 0010, D2.1-7/8).
+      # Scans .planning verdict docs for closure-marker lines missing an N/N
+      # ratio + miss: declaration. W3: warn-only round 1 (script exits 0 even
+      # on violations); ENFORCE flag flips to true in phase 2.2.
+      - name: Transparency verdict-marker gate (warn-only round 1)
+        run: node scripts/check-transparency-verdicts.mjs
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm typecheck

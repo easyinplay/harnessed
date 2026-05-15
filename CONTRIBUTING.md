@@ -79,6 +79,28 @@ phase-1.1: T8.6 add bench + perf gate (A6 acceptance bar)
 **重要**：ADR 0001 / 0002 main body 一旦 `Accepted`，**禁止 inline 修改**（A7 acceptance bar 守恒）。
 任何修改必须出新 ADR errata（参考 [`0003-install-method-count-errata.md`](./docs/adr/0003-install-method-count-errata.md) 模式）。
 
+## intel / 参考文档的 SSOT 引用规则
+
+`.planning/intel/**` 及任何引用 phase / ADR 编号的参考文档（外部对比、研究笔记、借鉴清单）
+是**外部参考，不是 SSOT**。引用 SSOT 资源（phase 编号、ADR 编号）时必须防 stale —— 本节
+把该纪律从 intel-local 提升为**项目级文档纪律**，所有贡献者遵守。
+
+- **phase 编号 → 语义锚定**：引用 phase 时用语义描述（"Phase 2.2 = execute-task
+  workflow"），**不只靠数字**。phase 编号是可被 insert 的 —— `phase 1.2.5` 插入即先例；
+  纯数字引用在 phase 重排后即 stale。
+- **ADR 编号 → 绝不预占**：ADR 编号是"先 plan-phase 先占"的**动态资源**。需要新 ADR 时
+  写"需起 errata ADR（编号由对应 phase plan-phase 流程分配）"，**不写死 `ADR NNNN`**。
+  预占的编号会被实际 plan-phase 流程抢占 → 引用失效。
+- **校验时机**：任何 phase discuss-phase 取用参考文档时，先比对当前 `.planning/ROADMAP.md`
+  / `docs/adr/` 的**实际编号**，发现 drift 即就地修正。
+- **适用范围**：`.planning/intel/**` + 任何引用 phase / ADR 编号的参考 / 研究文档。
+
+**反面教材**：`.planning/intel/omc-comparison.md` 2026-05-14 初版写死 "phase 2.0" +
+"ADR 0010" —— 2026-05-15 v0.2.0 激活 + Phase 2.1 plan-phase 后即 stale（execute-task
+实际是 Phase 2.2；ADR 0010 已被 Phase 2.1 installer-schema-extension-errata 占用）。
+本规则与上文「ADR 写作规则」§ "编号 = 上一个 ADR 编号 + 1，永不重用" 互补：ADR 写作侧
+管"如何分配"，本节管"参考文档如何引用尚未分配的编号"。
+
 ## Manifest 提交规则
 
 每份 `manifests/tools/*.yaml` 或 `manifests/skill-packs/*.yaml` 必须：

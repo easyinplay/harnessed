@@ -314,3 +314,24 @@ phase 1.5 ship 三处升级 —— engineering 5 specific rules (ADR 0009 § Dec
 Source: ADR 0009 § Decision Errata 1+2 + `.planning/phase-1.5/task_plan.md` T6.4/T6.5
 + § 8.1 Array-field rules 升级路径 + § 8.2 Engineering category rules 升级路径 +
 `src/routing/decisionRules.ts` `matchesWhen` F42 array semantic match (phase 1.5 T6.4)。
+
+### 8.4.1 phase 1.5 M1 transparency gap 补全 — 2/30 specific-match miss 身份标注 (phase 2.1 T1.8)
+
+> **背景**: phase 1.5 M1 sister review finding —— "specific match 28/30 (93.3%)" verdict
+> 当时未具名标注剩余 2 个 miss sample 的身份，属 transparency 反模式（claim 有 ratio 但
+> miss list 未 enumerate）。phase 2.1 Wave 0 T1.8 补全此 gap：跑
+> `corepack pnpm test -- tests/integration/routing-30-samples` 确认 30/30 total pass +
+> 28/30 specific match，下表具名标注 2 个 fallback-expected sample 的 id + category +
+> 为何 acceptable。
+
+| miss sample id | category | expected_rule_id | 为何 acceptable（预期 fallthrough / 升级路径）|
+| -------------- | -------- | ---------------- | --------------------------------------------- |
+| content-5 | content | null（fallback expected）| **预期 fallback** —— prompt "用英文做销售 deck, 不需要 pptx 文件直接展示用"，task_type=slide-deck 但**无 language=zh**。`chinese-content-deck` rule 要求 `task_type: slide-deck` + `language: zh` 双键 match，缺 language 键 → arbitrate 正确 fallthrough 到 `fallback_supervisor`。这是 schema 设计的正确行为（双键约束防止英文 deck 误路由到中文 baoyu skill），非 routing bug。v0.2+ 若加 English-deck specific rule 可升级，但当前 fallback 是**正确语义**。 |
+| meta-5 | meta | null（fallback expected）| **预期 fallback** —— prompt "帮我整理 ~/.claude/skills/ 下哪些是过时的应该 gc"，task_type=skill-cleanup（维护期 gc 场景投影），decision_rules.yaml v2 **无对应 rule**（meta category 仅 `meta-create-skill` / `meta-find-skill` 两 rule，不覆盖 cleanup/gc）。arbitrate 正确 fallthrough 到 `fallback_supervisor` 由 LLM L2 仲裁。这是 v0.1 内部 baseline 的已知 coverage gap（§ 1.2 表中 meta 列标注 "1 ambiguous"），非 routing bug；v0.2+ 若 meta-cleanup 成为高频场景可加 specific rule。 |
+
+**账目确认**: 30/30 total hit（fallback expected sample 的 actual null = expected null
+即命中）+ 28/30 specific match（expected_rule_id ≠ null 且命中）。2 个 specific-match
+miss = content-5 + meta-5，**两者均为 expected_rule_id = null 的 fallback-expected
+sample** —— 即 specific-match 分母 30 中这 2 个本就不期望 specific rule 命中，"miss" 是
+分类口径问题而非 routing 失败。**miss: content-5 / meta-5**（both fallback-expected,
+acceptable per schema 双键约束 + meta coverage gap，非 bug）。

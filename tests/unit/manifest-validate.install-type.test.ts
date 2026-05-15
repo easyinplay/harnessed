@@ -8,11 +8,17 @@
 //   mcp   → mcp-stdio-add / mcp-http-add
 //   npm   → npm-cli
 //   git   → git-clone-with-setup
-// (schema does not enforce cross-field 1:N closure — phase 1.4 routing engine
-//  does runtime check; schema only validates enum membership.)
 //
-// Pattern J: BASE template + replace marker → covers 4 valid + 2 invalid
-// cases (6 cells total ≥ 4 required).
+// ADR 0010 errata (phase 2.1 T1.4) UPGRADE: the 1:N closure is now mechanically
+// enforced at the validate layer (`install-type-mismatch` keyword). The BASE
+// fixture below is `type: cli-npm` + `method: npm-cli`, so the only
+// closure-consistent install_type is `npm`. The original "4 valid enum values"
+// loop (skill/mcp/git/npm all accepted in isolation) no longer holds — those
+// combos are now correctly rejected. Closure behavior is covered by the
+// dedicated describe block at the bottom of this file.
+//
+// Pattern J: BASE template + replace marker → enum membership (1 valid + 2
+// invalid) + closure enforcement (3 cells).
 
 import { describe, expect, it } from 'vitest'
 import { validateManifestFile } from '../../src/manifest/validate.js'
@@ -64,17 +70,15 @@ function withInstallType(value: string | null): string {
 }
 
 describe('validateManifestFile — install_type field (ADR 0007)', () => {
-  // ─── 4 valid enum values ────────────────────────────────────────────
-  const validValues = ['skill', 'mcp', 'npm', 'git'] as const
-
-  for (const v of validValues) {
-    it(`accepts install_type: ${v}`, () => {
-      const yaml = withInstallType(v)
-      const result = validateManifestFile(yaml, `it-${v}.yaml`)
-      if (!result.ok) console.error(`install_type=${v} errors:`, result.errors)
-      expect(result.ok).toBe(true)
-    })
-  }
+  // ─── Closure-consistent valid value ─────────────────────────────────
+  // BASE is cli-npm × npm-cli, so install_type: npm is the only closure-valid
+  // value (ADR 0010 errata § Decision 4 — see closure describe block below).
+  it('accepts install_type: npm (closure-consistent with npm-cli BASE)', () => {
+    const yaml = withInstallType('npm')
+    const result = validateManifestFile(yaml, 'it-npm.yaml')
+    if (!result.ok) console.error('install_type=npm errors:', result.errors)
+    expect(result.ok).toBe(true)
+  })
 
   // ─── Invalid enum value ─────────────────────────────────────────────
   it('rejects install_type: invalid (out of 4 enum)', () => {
@@ -97,6 +101,39 @@ describe('validateManifestFile — install_type field (ADR 0007)', () => {
       const e = result.errors.find(
         (er) => er.keyword === 'required' && er.message.includes('install_type'),
       )
+      expect(e).toBeDefined()
+    }
+  })
+})
+
+// Phase 2.1 T1.6 — install_type ↔ install.method 1:N closure enforcement
+// (ADR 0010 errata § Decision 4). validate-layer cross-field check; throws
+// `keyword: 'install-type-mismatch'` when install_type and install.method are
+// inconsistent. BASE above uses install_type: npm + method: npm-cli (matched).
+describe('validateManifestFile — install_type ↔ install.method closure (ADR 0010)', () => {
+  it('accepts npm ↔ npm-cli (matched closure)', () => {
+    // BASE fixture is npm + npm-cli — already a matched pair.
+    const result = validateManifestFile(withInstallType('npm'), 'it-closure-ok.yaml')
+    if (!result.ok) console.error('npm↔npm-cli errors:', result.errors)
+    expect(result.ok).toBe(true)
+  })
+
+  it('rejects git ↔ npm-cli (install-type-mismatch)', () => {
+    // BASE install.method is npm-cli; install_type: git is not in its closure.
+    const result = validateManifestFile(withInstallType('git'), 'it-closure-bad.yaml')
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      const e = result.errors.find((er) => er.keyword === 'install-type-mismatch')
+      expect(e).toBeDefined()
+      expect(e?.path).toBe('spec.install.method')
+    }
+  })
+
+  it('rejects skill ↔ npm-cli (install-type-mismatch — skill closure excludes npm-cli)', () => {
+    const result = validateManifestFile(withInstallType('skill'), 'it-closure-skill.yaml')
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      const e = result.errors.find((er) => er.keyword === 'install-type-mismatch')
       expect(e).toBeDefined()
     }
   })
