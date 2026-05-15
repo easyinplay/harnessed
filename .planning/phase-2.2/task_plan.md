@@ -6,7 +6,7 @@
 > **Author**: gsd-planner (Wave B)
 > **Sources**: KICKOFF § 2 Wave 拓扑 + ASSUMPTIONS § A bar mapping + ASSUMPTIONS § B 31 lock + PATTERNS § 2 code excerpts + RESEARCH § 1.6 / § 2.4 / § 3.5 implementation sketches
 > **Style**: 沿袭 phase 1.5 / 2.1 task_plan.md atomic sub-task structure(file path / action concrete values / read_first / acceptance_criteria grep-verifiable / decision source)
-> **Task count**: 33 atomic tasks across 7 Waves
+> **Task count**: 35 (or 36 if T1.2 SC4 pass) atomic tasks across 7 Waves — delta absorbed 2026-05-15 (T2.0 schemaVersion / T4.0 provenance / T4.4 Task Session conditional + T1.2 SC4 augment)
 > **Hard limit verify**: every code-producing task 含 `wc -l` 或 ≤N 行 acceptance criterion
 
 ---
@@ -196,6 +196,12 @@
   - **Spike 末 `rm scripts/spike-outputFormat-agents.mjs`(B-06,NOT committed)**;git status 不含此 file
 - **decision_source**: B-06 + B-07 + RESEARCH § 1.5 + § 1.6 + D2.2-5
 
+> **Delta augment (2026-05-15, B-35 / D-18)** — SC4 added: verify `@anthropic-ai/claude-agent-sdk` 暴露 session resume API。
+> - **SC4 acceptance**:① `.d.ts` 含 `resume?: string` option on `query()`(necessary)② spike 实测 resume 后 agent state(memory / tools / conversation history)carry to new query() call(sufficient,omo `task_sessions[task_key]` 语义)
+> - **SC4 outcome record**:跑完 spike 在本 task_plan.md 顶部 Resolved block 加 `> **Resolved (T1.2 SC4)**: SDK session resume API = pass/fail, branch = Wave 4 T4.4 active/deferred`
+> - **Branch impact**:SC4 pass → Wave 4 T4.4 active(phase manifest 加 `task_session_id?: string`);SC4 fail → Wave 4 T4.4 skip,CD-4 转 v0.3.0 deferred(non-blocker)
+> - **decision_source (delta)**:B-35 + B-36 + CONTEXT D-18 + intel CD-4(L139-147)
+
 ### T1.3 — `npm i @anthropic-ai/claude-agent-sdk` + lockfile verify
 
 - **files_modified**: `package.json`(MODIFY +1 dep)+ `package-lock.json`(MODIFY by npm)
@@ -235,6 +241,27 @@
 ---
 
 ## Wave 2 — agentFactory contract v1.2 reconcile + dual-signal 4-layer
+
+### T2.0 — schemaVersion infrastructure NEW(7 surface naming + consumer branch helper)— delta D-16 / B-32
+
+- **files_modified**: `src/types/schemaVersion.ts`(NEW ~30L)+ `docs/SCHEMA-VERSION-CONVENTION.md`(NEW ~50L)— OR Wave 2 executor decides TypeBox schema vs convention-only doc
+- **action**: 沿袭 CD-5 ⭐⭐⭐ ECC pattern(intel L149-157)— 7 surface 单一兼容门:
+  1. naming 约定 `harnessed.<surface>.v1`(7 surface 列表 B-32:routing snapshot / handoff doc / phases.yaml / manifest state / installer state / route decision log / checkpoint)
+  2. 写 `src/types/schemaVersion.ts` 含 `type SchemaVersion<S extends string> = \`harnessed.\${S}.v1\`` + `SCHEMA_VERSIONS` const map(7 entry)+ helper `branchOnSchemaVersion<T>(v: string, handlers: { v1: () => T; unknown: () => T }): T`
+  3. 3 rules 文档化(`docs/SCHEMA-VERSION-CONVENTION.md`):(a) consumer 必须 branch-on-version,(b) 未知 enum 值 graceful degrade(adapter-specific 字符串 = 合法,视作 `unknown`-bucket,不 fail),(c) 新增字段必须 nested 不能 top-level
+  4. **纯学不 vendor**(intel CD-5 实施约束)— 引擎层算法结构,不引入 ECC 外部代码
+  5. T2.1 / T2.2 / T2.3 / T2.4 / T3.1 / T3.3 等后续 schema-producing task 必引用此 const,实际 7 surface 字段引入分布在 Wave 2-4(routing snapshot / phases.yaml / manifest state 等)
+- **read_first**:
+  - `.planning/intel/omc-comparison.md` § CD-5(L149-157)
+  - ASSUMPTIONS B-32(7 surface 列表)
+  - ADR 0011 § 7 SchemaVersion(T0.2 sketch)
+- **acceptance_criteria**:
+  - `ls src/types/schemaVersion.ts` 命中(or convention-only doc 命中)
+  - `grep -E 'harnessed\.\w+\.v1' src/types/schemaVersion.ts` 命中 ≥ 7(7 surface 都列入)
+  - `grep -E 'branchOnSchemaVersion|SCHEMA_VERSIONS' src/types/schemaVersion.ts` 命中
+  - `npx tsc --noEmit` pass
+  - Wave 2 末 verify(F4 reproduction):`grep -E 'schemaVersion.*harnessed\.\w+\.v1' src/types/*.ts src/routing/*.ts src/workflow/*.ts | wc -l` ≥ 7(7 surface 真实引入字段位)
+- **decision_source**: B-32 + CONTEXT D-16 + intel CD-5(L149-157)+ ADR 0011 § 7
 
 ### T2.1 — `src/routing/lib/sdkReconcile.ts` NEW
 
@@ -556,6 +583,39 @@
 
 ## Wave 4 — ralph-loop full integration 主流程
 
+### T4.0 — provenance.schema.json NEW + composition/installer enforce(hard gate prereq)— delta D-17 / B-33+B-34
+
+- **files_modified**: `provenance.schema.json`(NEW ~5KB / ~60L JSON schema)+ `scripts/check-provenance.mjs`(NEW ~50L)+ existing composition skill / installer hook 文件(MODIFY,加 enforce call)
+- **action**: 沿袭 CD-6 ⭐⭐ ECC pattern(intel L159-167)— BEFORE-W4 hard gate:
+  1. 写 `provenance.schema.json`(JSON Schema Draft 2020-12)含 4 字段:
+     - `source` enum:`curated` / `learned` / `imported` / `evolved`(沿袭 ECC SKILL-PLACEMENT-POLICY.md 4 类产源)
+     - `created_at` string format date-time(ISO 8601)
+     - `confidence` number minimum 0 maximum 1(curated=1.0;evolved 视演化次数 decay)
+     - `author` string minLength 1(subagent name OR human user OR ralph-loop iteration id)
+     - top-level `required: ['source', 'created_at', 'confidence', 'author']` + `additionalProperties: false`
+  2. 写 `scripts/check-provenance.mjs`(沿袭 `check-transparency-verdicts.mjs` walker pattern):
+     - scope 限定 runtime artifact path:`.harnessed/sessions/**`、`.harnessed/checkpoints/**`、`.harnessed/route-logs/**` 等(R8 mitigation — 不扫 curated path 如 `workflows/**/SKILL.md`、`manifest.yaml`)
+     - 任何 runtime artifact 必须 sibling `.provenance.json`,否则 violation
+     - validate `.provenance.json` against `provenance.schema.json`(用 `ajv` 或手写最小 validator)
+     - violations > 0 → exit 1(hard fail)
+  3. composition skill / installer 加 enforce hook:产 runtime artifact 时同步写 sibling `.provenance.json`(具体 hook 形式由 executor 决,可选 commit-time hook OR runtime auto-write)
+  4. CI integration:在 `ci.yml` 加 step `node scripts/check-provenance.mjs`(在 transparency gate step 之后,W4 工作开始之前 — 即本 Wave 4 第一步)
+  5. 3-OS sentinel:Win Git Bash 跑 check-provenance.mjs verify
+- **read_first**:
+  - `.planning/intel/omc-comparison.md` § CD-6(L159-167)
+  - ASSUMPTIONS B-33 + B-34
+  - ADR 0011 § 8 Provenance gate(T0.2 sketch)
+  - `scripts/check-transparency-verdicts.mjs`(walker pattern 参考)
+- **acceptance_criteria**:
+  - `ls provenance.schema.json scripts/check-provenance.mjs` 命中 2 file
+  - `node -e "const s = require('./provenance.schema.json'); console.log(Object.keys(s.properties).sort().join(','))"` 输出 `author,confidence,created_at,source`
+  - `wc -l provenance.schema.json` ≤ 100(~5KB target)
+  - `wc -l scripts/check-provenance.mjs` ≤ 80
+  - **Hard fail test**:在 `.harnessed/sessions/test-no-provenance/dummy.md` 创个无 sibling provenance 的文件 → `node scripts/check-provenance.mjs` exit code == 1 + stderr 含 violation path → 然后补 sibling → exit 0 → cleanup test fixture
+  - CI step 加入 verify(ci.yml grep 命中 `check-provenance.mjs` step)
+  - **Scope verify**:在 `workflows/execute-task/SKILL.md`(curated path)旁不需要 `.provenance.json`,check-provenance.mjs 不扫(`grep -E 'workflows/' scripts/check-provenance.mjs` 输出 walker exclusion regex 中含 `workflows/`)
+- **decision_source**: B-33 + B-34 + CONTEXT D-17 + intel CD-6(L159-167)+ ADR 0011 § 8
+
 ### T4.1 — `src/routing/lib/sdkSpawn.ts` NEW(query() async-iterable consumer)
 
 - **files_modified**: `src/routing/lib/sdkSpawn.ts`(NEW ~80-120L)
@@ -660,6 +720,38 @@
   - routing-engine.test.ts 升级 ≥ 3 new test case(端到端 + max-iter + injection seam)
   - `gh run list --limit 1 --json conclusion -q '.[0].conclusion'` Win 矩阵 == `success`
 - **decision_source**: B-04 + B-31 + R6
+
+---
+
+### T4.4 — Task Session 集成(**conditional — only if T1.2 SC4 pass**)— delta D-18 / B-35+B-36
+
+> ⚠️ **CONDITIONAL TASK**:仅当 T1.2 SC4(SDK `resume?: string` API verify)pass 时执行;若 SC4 fail,**skip 本任务**并在 task_plan.md Resolved block 记录 `> **Resolved (T4.4)**: SKIPPED (SC4 fail → CD-4 deferred → v0.3.0 checkpoint 完整版)`。
+
+- **files_modified**(SC4 pass branch only):
+  - `src/manifest/schema/spec.ts` OR `src/workflow/schema/phases.ts`(MODIFY,加 `task_session_id?: string` optional field 到 phase manifest entry)
+  - `src/routing/lib/sdkSpawn.ts`(MODIFY,加 `task_session_id` 优先 resume 逻辑 — `opts.resumeSessionId ?? taskSession.session_id`)
+  - `src/cli/execute-task.ts`(MODIFY,Wave 5 T5.1 后再加;本 task 仅 schema + sdkSpawn 改;CLI side 由 Wave 5 executor 接续)
+- **action**(SC4 pass branch only):
+  1. phase manifest TypeBox schema 加 `task_session_id: Type.Optional(Type.String())`(沿袭 B-32 schemaVersion 章节 3 rule "新增字段必须 nested"— 加在 phase entry 内嵌 sub-object `runtime: { task_session_id?: string }` 而非 top-level)
+  2. `sdkSpawn` 加 `resumeSessionId` 优先级:`opts.resumeSessionId ?? def.runtime?.task_session_id ?? undefined`(omo `task_sessions[task_key]` 语义)
+  3. executor 4-phase chain 中,phase 03 (test) 失败回炉 phase 02 (code) 时,read prev phase `task_session_id` → 注入 next phase spawn `resumeSessionId`(复用同 subagent context)
+  4. test:tests/routing/task-session.test.ts(NEW ~40L)— mock SDK query 含 `resume` option;verify resume call 传递 `task_session_id`;verify state carry(memory / tools subset)
+  5. **Schema interaction with B-32**:phase manifest 加 `task_session_id` 字段属 schemaVersion 7 surface 第 3 项(phases.yaml `harnessed.phases.v1` — 见 T2.0)— 即 nested field 加在 `harnessed.phases.v1` schema 内 phase entry 子节点;**bump 不 trigger v2**(沿袭 B-32 rule 3 "新增字段必须 nested" → 仍是 v1)
+- **read_first**(SC4 pass branch only):
+  - T1.2 SC4 outcome(若 fail,SKIP 本 task)
+  - ASSUMPTIONS B-35 + B-36
+  - ADR 0011 § 9 Task Session(T0.2 sketch + T6.1 ship 时 fill)
+  - `.planning/intel/omc-comparison.md` § CD-4(L139-147)
+- **acceptance_criteria**(SC4 pass branch only):
+  - `grep -E 'task_session_id\?:\s*string|task_session_id: Type\.Optional' src/manifest/schema/spec.ts src/workflow/schema/phases.ts | wc -l` ≥ 1
+  - `grep -E 'opts\.resumeSessionId.*task_session_id|task_session_id.*resumeSessionId' src/routing/lib/sdkSpawn.ts` 命中
+  - `npm test -- tests/routing/task-session.test.ts` pass
+  - `npx tsc --noEmit` pass
+  - task_plan.md Resolved block 含 `> **Resolved (T4.4)**: SC4 pass — Task Session 实装 ship(phase manifest task_session_id field + sdkSpawn resume logic)`
+- **acceptance_criteria**(SC4 fail branch — SKIP):
+  - task_plan.md Resolved block 含 `> **Resolved (T4.4)**: SKIPPED (SC4 fail → CD-4 deferred → v0.3.0 checkpoint 完整版)`
+  - 无 schema / sdkSpawn / test 改动(`git diff --name-only HEAD` 不含 src/manifest src/routing src/workflow tests/routing/task-session 任一)
+- **decision_source**: B-35 + B-36 + CONTEXT D-18 + intel CD-4(L139-147)+ ADR 0011 § 9
 
 ---
 
@@ -851,7 +943,7 @@
   - T0.2 draft + ASSUMPTIONS § B 31 lock
 - **acceptance_criteria**:
   - `grep -E "Status: Accepted" docs/adr/0011-*.md` 命中
-  - `grep -E "^### [1-6]\\." docs/adr/0011-*.md | wc -l` == 6
+  - `grep -E "^### [1-9]\\." docs/adr/0011-*.md | wc -l` == 9(delta absorbed — ADR 0011 实占已 9 章节:原 6 + delta 3 schemaVersion / provenance / Task Session)
   - `grep -E "(B-0[1-9]|B-[12][0-9]|B-3[01])" docs/adr/0011-*.md | wc -l` ≥ 20(20+ B-lock cite)
   - `grep -E "AGENT-DEFINITION-FACTORY-CONTRACT\\.md main body" docs/adr/0011-*.md` 命中(A7 守恒声明)
 - **decision_source**: B-20 + B-21 + B-22
@@ -926,4 +1018,18 @@ R6.1 + R3.4 + R5.3 requirement IDs 全 covered:
 
 ---
 
-*Phase 2.2 task_plan.md complete — 33 atomic tasks across 7 Waves (W0 7 + W1 4 + W2 5 + W3 4 + W4 3 + W5 5 + W6 5);每 task 含 file path + concrete action + read_first + grep-verifiable acceptance + decision source citation;Karpathy 5 hard limit + A7 守恒 + 31 lock 全 trace。*
+*Phase 2.2 task_plan.md complete — 35 (or 36 if SC4 pass) atomic tasks across 7 Waves (W0 7 + W1 4 + W2 6 [+T2.0] + W3 4 + W4 4 [+T4.0, optional +T4.4] + W5 5 + W6 5);每 task 含 file path + concrete action + read_first + grep-verifiable acceptance + decision source citation;Karpathy 5 hard limit + A7 守恒 + 31 lock 全 trace。*
+
+
+---
+
+## Discuss-phase delta absorbed — 2026-05-15
+
+| Delta item | Source | Decision | Tasks added/modified | ASSUMPTIONS § B | ADR 0011 章节 |
+|-----------|--------|---------|---------------------|-----------------|---------------|
+| **CD-5 schemaVersion 单一兼容门** ⭐⭐⭐ | intel L149-157 (ECC) | FULL — 7 surface `harnessed.<surface>.v1` + consumer branch + 3 rules | T2.0 NEW (Wave 2 prep) | B-32 | § 7 |
+| **CD-6 provenance gate** ⭐⭐ | intel L159-167 (ECC) | BEFORE-W4 hard fail — ~5KB schema + 4 fields + composition/installer enforce | T4.0 NEW (Wave 4 prereq) | B-33 + B-34 | § 8 |
+| **CD-4 Task Session 复用** ⭐⭐ | intel L139-147 (omo) | PIGGY-W1 conditional — SC4 verify SDK resume API → pass branch实装 / fail branch deferred | T1.2 augment (SC4) + T4.4 NEW conditional (Wave 4) | B-35 + B-36 | § 9 |
+| **EE-4 plan 4 维量化阈值** ⭐⭐ | intel L74-82 (omo) | DEFER-2.4 — Phase 2.4 doctor 完整版 absorb OR 独立 phase 2.5 | (无 Phase 2.2 task — deferred 项) | (无 lock — deferred) | (无章节 — Phase 2.2 不动 ADR) |
+
+**Net effect**:Phase 2.2 task count 33 → 35 (or 36 if SC4 pass);ADR 0011 章节 6 → 9;B-lock 31 → 36(B-32~B-36 加入);F2 reproduction regex `^### [1-6]\. ` → `^### [1-9]\. ` + wc 6 → 9。

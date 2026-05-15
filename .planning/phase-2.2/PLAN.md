@@ -52,13 +52,13 @@ must_haves:
     - "phases.yaml 含 `model:` 必填字段,agentFactory 读 phase.model 注 AgentDefinition.model"
     - "scripts/check-transparency-verdicts.mjs ENFORCE=true,全 13 verdict 文档 marker 合规,CI 全绿"
     - "README/PROJECT-SPEC Status: marker 反映最新 shipped phase,freshness check 扫过 0 violation"
-    - "ADR errata 0011 accepted 含 6 章节;ADR 0001-0010 main body 0 diff;baseline tag 1-10 → 1-0011"
+    - "ADR errata 0011 accepted 含 9 章节(原 6 + delta 3:schemaVersion / provenance gate / Task Session conditional);ADR 0001-0010 main body 0 diff;baseline tag 1-10 → 1-0011"
     - "30 子任务 SAMPLES.md COMPLETE 检测 100% 准确(沿袭 phase 1.4 R3 frozen rationale)"
     - "3-OS CI 全绿(Win Git Bash + macOS + Linux)含 SDK spawn 实际跑 + transparency ENFORCE=true 实测"
   artifacts:
     - path: "docs/adr/0011-execute-task-sdk-ralph.md"
-      provides: "单 ADR errata 6 章节(SDK 引入 / ralph-wiggum keep / dual-signal / contract v1.2 / model tier / Wave 0 transparency)"
-      contains: "## SDK 引入, ## dual-signal completion, ## per-phase model tier, ## transparency CI gate flip"
+      provides: "单 ADR errata 9 章节(SDK 引入 / ralph-wiggum keep / dual-signal / contract v1.2 / model tier / Wave 0 transparency / schemaVersion / provenance gate / Task Session 复用 conditional)"
+      contains: "## SDK 引入, ## dual-signal completion, ## per-phase model tier, ## transparency CI gate flip, ## SchemaVersion, ## Provenance gate, ## Task Session"
     - path: "src/routing/lib/sdkSpawn.ts"
       provides: "SDK query() async-iterable consumer + JSON envelope return"
       exports: ["sdkSpawn"]
@@ -120,11 +120,11 @@ must_haves:
 ---
 
 <objective>
-Phase 2.2 把 v0.1.0 routing engine v1 + Phase 2.1 6 install method runtime-ready 升级为**真实 SDK spawn subagent + ralph-loop 完整闭合**。实装 execute-task workflow 4-phase chain(brainstorming → karpathy 心法 → mattpocock 招式 → conditional TDD → ralph-loop COMPLETE)+ per-phase model tier schema + dual-signal completion 4-layer + Wave 0 transparency 一次性根治。
+Phase 2.2 把 v0.1.0 routing engine v1 + Phase 2.1 6 install method runtime-ready 升级为**真实 SDK spawn subagent + ralph-loop 完整闭合**。实装 execute-task workflow 4-phase chain(brainstorming → karpathy 心法 → mattpocock 招式 → conditional TDD → ralph-loop COMPLETE)+ per-phase model tier schema + dual-signal completion 4-layer + Wave 0 transparency 一次性根治 + 2026-05-15 discuss-phase delta 3 items(schemaVersion 7 surface / provenance gate hard fail / Task Session 复用 conditional)。
 
 **Purpose**:R6.1(execute-task workflow 主线 — execute-task chain 与 ralph-loop 真实闭合)+ R3.4(multi-source merge v1 — SDK introduction 闭合 phase 1.4 F33 summarize-risk 通过 structured output dual-signal)+ R5.3(ralph-loop Win 兼容 — partial,Phase 2.4 全兼容)。
 
-**Output**:7 Wave × ~28 atomic task(F1-F8 acceptance bars 全 ship)+ 单 ADR errata(实占 N)+ `v0.2.0-alpha.2-execute-task` 候选 tag。
+**Output**:7 Wave × ~33 atomic task(F1-F8 acceptance bars 全 ship)+ 单 ADR errata(实占 N,9 章节)+ `v0.2.0-alpha.2-execute-task` 候选 tag。
 </objective>
 
 <execution_context>
@@ -161,13 +161,13 @@ Phase 2.2 把 v0.1.0 routing engine v1 + Phase 2.1 6 install method runtime-read
 ## § 1 Goal & Scope
 
 ### 1.1 Goal
-真实 SDK spawn subagent + ralph-loop 完整闭合 + execute-task workflow 4-phase chain + per-phase model tier + Wave 0 transparency 一次性根治。
+真实 SDK spawn subagent + ralph-loop 完整闭合 + execute-task workflow 4-phase chain + per-phase model tier + Wave 0 transparency 一次性根治 + delta 3 items(D-16/D-17/D-18)。
 
 ### 1.2 In Scope
 F1-F8 acceptance bars(详 ASSUMPTIONS § A)。
 
 ### 1.3 Out of Scope
-Phase 2.3 / 2.4 / v0.3.0 + intel 第 2/3 条 + 动态 model routing + checkpoint 完整版(详 CONTEXT § Deferred + KICKOFF § 1.3)。
+Phase 2.3 / 2.4 / v0.3.0 + intel 第 2/3 条 + 动态 model routing + checkpoint 完整版 + EE-4 plan 4 维量化阈值(deferred → Phase 2.4)(详 CONTEXT § Deferred + KICKOFF § 1.3)。
 
 ---
 
@@ -176,20 +176,21 @@ Phase 2.3 / 2.4 / v0.3.0 + intel 第 2/3 条 + 动态 model routing + checkpoint
 ```
 Wave 0 — transparency 一次性根治 + ADR draft (F1 + F2 draft)
   ├─ T0.1  扫 ROADMAP.md + max(NNNN) 实占 ADR 编号 N
-  ├─ T0.2  ADR <N> draft(6 章节 — sketch only,详细 Wave 6 ship 时 fill)
+  ├─ T0.2  ADR <N> draft(9 章节 — sketch only,详细 Wave 6 ship 时 fill;含 delta § 7 schemaVersion / § 8 provenance / § 9 Task Session conditional)
   ├─ T0.3  13 verdict 文档 manual marker migration(10 ADD + 3 REPAIR)
   ├─ T0.4  freshness ext 扩展 scripts/check-transparency-verdicts.mjs(+25L)
   ├─ T0.5  README + PROJECT-SPEC 加 Status: marker + TRANSPARENCY-VERDICT-CHECKLIST 加 § Status freshness
   ├─ T0.6  ENFORCE=true atomic flip(独立 commit,B-18)
   └─ T0.7  3-OS CI 跑通 gate verify
        ↓
-Wave 1 — SDK spike + 引入 (F3)
-  ├─ T1.1  npm view @anthropic-ai/claude-agent-sdk version 复核 + 对照 .d.ts 重验 14→4 字段
-  ├─ T1.2  spike scripts/spike-outputFormat-agents.mjs(throwaway,Win 实跑)
+Wave 1 — SDK spike + 引入 (F3) — delta 加 SC4 SDK session resume API verify (CD-4 D-18 / B-35)
+  ├─ T1.1  npm view @anthropic-ai/claude-agent-sdk version 复核 + 对照 .d.ts 重验 14→4 字段 + SC4 .d.ts `resume?: string` option 检查(delta D-18)
+  ├─ T1.2  spike scripts/spike-outputFormat-agents.mjs(throwaway,Win 实跑)+ SC4 实测 resume 后 agent state carry(delta D-18)
   ├─ T1.3  npm i @anthropic-ai/claude-agent-sdk + package-lock.json verify
   └─ T1.4  3-OS CI verify SDK install + smoke import
        ↓
-Wave 2 — agentFactory contract v1.2 + dual-signal 4-layer (F4)
+Wave 2 — agentFactory contract v1.2 + dual-signal 4-layer (F4) — delta 同步引入 schemaVersion 7 surface (CD-5 D-16 / B-32)
+  ├─ T2.0  schemaVersion infrastructure NEW(7 surface naming convention `harnessed.<surface>.v1` + consumer branch helper + 3 rules)(delta D-16)
   ├─ T2.1  src/routing/lib/sdkReconcile.ts NEW(toSdkAgentDefinition + injectFactoryInternalFields)
   ├─ T2.2  src/routing/completionSchema.ts NEW(COMPLETION_SCHEMA unified)
   ├─ T2.3  src/routing/systemPrompt.ts +schema const append + 1 prompt 段
@@ -202,10 +203,12 @@ Wave 3 — per-phase model tier schema (F5)
   ├─ T3.3  workflows/execute-task/phases.yaml NEW(4 phase × intel 第 4 条默认表)
   └─ T3.4  test:tests/workflow/load-phases.test.ts(schema valid + invalid + missing model)
        ↓
-Wave 4 — ralph-loop full integration 主流程 (F6)
+Wave 4 — ralph-loop full integration 主流程 (F6) — delta 启动前 provenance hard gate prereq (CD-6 D-17 / B-33+B-34) + Task Session conditional 集成 (CD-4 D-18 / B-35+B-36)
+  ├─ T4.0  provenance.schema.json NEW + composition skill/installer enforce(hard fail on missing sibling `.provenance.json`)(delta D-17 — BEFORE-W4 hard gate)
   ├─ T4.1  src/routing/lib/sdkSpawn.ts NEW(query() async-iterable consumer + JSON envelope)
   ├─ T4.2  src/routing/engine.ts 升级:替 defaultSpawn placeholder + 三层 fallback orchestration
   ├─ T4.3  test:tests/routing/sdk-spawn.test.ts + routing-engine.test.ts(end-to-end + isComplete dual-signal)
+  └─ T4.4  Task Session 集成(**conditional — only if T1.2 SC4 pass**):phase manifest schema 加 `task_session_id?: string` + executor resume logic(delta D-18)
        ↓
 Wave 5 — execute-task CLI + 30 sample (F7)
   ├─ T5.1  src/cli/execute-task.ts NEW(10th register fn,沿袭 research.ts scaffold)
@@ -215,14 +218,19 @@ Wave 5 — execute-task CLI + 30 sample (F7)
   └─ T5.5  test:tests/cli/execute-task.test.ts + 30 sample harness(SAMPLES.md → CI run + COMPLETE 100% 验证)
        ↓
 Wave 6 — ship (F8)
-  ├─ T6.1  ADR <N> finalize 6 章节(Wave 0 draft → Wave 6 详细 fill 完成)+ accepted
+  ├─ T6.1  ADR <N> finalize 9 章节(Wave 0 draft → Wave 6 详细 fill 完成 — 原 6 + delta 3)+ accepted;**ADR 0011 实占已 9 章节**
   ├─ T6.2  ci.yml A7 step iter 1-10 → 1-<N>
   ├─ T6.3  ADR 0001-0010 main body diff verify(0 diff)
   ├─ T6.4  RETROSPECTIVE.md 续编 + STATE.md 更新
   └─ T6.5  baseline tag adr-<N>-accepted + v0.2.0-alpha.2-execute-task 候选 tag
 ```
 
-**Wave 0 必须最先**(B-19)— ENFORCE=true 后续 wave CI 全凭 gate 通过运行。Wave 1 GO/NO-GO(spike 决定)是 Wave 2-4 prereq。Wave 5 依赖 Wave 2-4 全完成。
+**Wave 0 必须最先**(B-19)— ENFORCE=true 后续 wave CI 全凭 gate 通过运行。Wave 1 GO/NO-GO(spike 决定 — 含 SC4 outcome)是 Wave 2-4 prereq。Wave 4 启动前 provenance hard gate(T4.0)必上(delta D-17,B-33+B-34)。Wave 5 依赖 Wave 2-4 全完成。
+
+> **Delta absorption notes (2026-05-15)**:
+> - **Wave 1** entry 加 SC4 verify SDK session resume API(CD-4 D-18 / B-35)— T1.1/T1.2 augment,边际成本接近零
+> - **Wave 2** entry 加 schemaVersion 7-surface 引入(CD-5 D-16 / B-32)— T2.0 NEW infra prep,Wave 2 SDK reconcile 同步
+> - **Wave 4** entry 加 provenance hard gate prereq(CD-6 D-17 / B-33+B-34)— T4.0 NEW BEFORE-W4 hard gate + Task Session 集成 conditional(CD-4 D-18)— T4.4 NEW conditional task
 
 ---
 
@@ -233,13 +241,13 @@ Wave 6 — ship (F8)
 | Wave | Task Count | Est. Effort | Key Verify |
 |------|-----------|-------------|-----------|
 | 0 | 7 | ~2d | gate 0 violation + ENFORCE=true commit + 3-OS CI 全绿 |
-| 1 | 4 | ~1d | spike pass + package-lock verify + 3-OS smoke |
-| 2 | 5 | ~2d | sdkReconcile.test pass + isComplete 4-layer test pass + agentDefinition.ts ≤200L + ralphLoop ≤50L |
+| 1 | 4 | ~1d | spike pass + SC4 outcome recorded + package-lock verify + 3-OS smoke |
+| 2 | 6 | ~2d | schemaVersion 7 surface 引入 + sdkReconcile.test pass + isComplete 4-layer test pass + agentDefinition.ts ≤200L + ralphLoop ≤50L |
 | 3 | 4 | ~1d | loadPhases.test pass + phases.yaml schema 实例 valid |
-| 4 | 3 | ~2d | engine.ts ≤200L(split sdkSpawn 后)+ 端到端 spawn test pass + Win Git Bash 跑 |
+| 4 | 4 (5 if SC4 pass) | ~2d | provenance hard gate test pass + engine.ts ≤200L(split sdkSpawn 后)+ 端到端 spawn test pass + Win Git Bash 跑 + (conditional) Task Session resume |
 | 5 | 5 | ~2d | 30 sample COMPLETE 100% 准确 + execute-task CLI exit code 0/1/2 3-state verify |
 | 6 | 5 | ~1d | 3-OS CI 全绿 + A7 守恒 verify + adr-<N>-accepted tag |
-| **Total** | **33** | **~11d** | — |
+| **Total** | **35 (36 if SC4 pass)** | **~11d** | — |
 
 ---
 
@@ -253,14 +261,17 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 | Phase 2.3 karpathy behavior-rule + CLAUDE.md merge | `SystemPrompt` `COMPLETION_SCHEMA` const + KARPATHY_BASELINE prepend pattern | B-27(systemPrompt.ts ≤80L pattern 复用) |
 | Phase 2.4 doctor 完整版 + audit | `src/routing/lib/sdkSpawn.ts` async-iterable + session_id capture + SDK error classify | T4.1(sdkSpawn.ts 新文件 — doctor + audit 复用 session_id capture) |
 | Phase 2.4 ralph-loop Win 全兼容 | `src/routing/lib/ralphLoop.ts` resumeSessionId 闭包 + dual-signal isComplete + Win Git Bash 验证 | B-26 + T2.4(ralph-loop ≤50L 主体保持,Win 兼容 partial 已 ship) |
-| v0.3.0 checkpoint 完整版(handoff 四字段 + harnessed resume) | sdkSpawn session_id capture + ralphLoop resume 接续 + SDKResultMessage envelope | T4.1 session_id callback + B-26 |
+| Phase 2.4 doctor / EE-4 plan checker absorb | `gsd-plan-checker` schema 改造(4 维量化阈值)— 与 Phase 2.2 主线 orthogonal,deferred 至 Phase 2.4 OR 独立 phase 2.5 | 无 Phase 2.2 lock(deferred 项) |
+| Phase 2.3+ schemaVersion v2 演进 | 7 surface `harnessed.<surface>.v1` 字段已 ship + consumer branch helper | B-32 / D-16(schemaVersion 单一兼容门已立) |
+| Phase 2.3+ provenance gate 扩展(audit log + 4 字段细化) | `provenance.schema.json` 4 字段 + composition/installer enforce path 已 ship | B-33 + B-34 / D-17(hard gate 已立) |
+| v0.3.0 checkpoint 完整版(handoff 四字段 + harnessed resume) | sdkSpawn session_id capture + ralphLoop resume 接续 + SDKResultMessage envelope + (conditional) phase manifest `task_session_id` 字段 | T4.1 session_id callback + B-26 + (conditional) B-35/B-36 |
 | v0.3+ 动态 model routing | `workflows/<name>/phases.yaml` model 字段 + agentFactory 读 phase.model | B-08 + B-12(static model tier 跑通后再 dynamic resolver) |
 
 ---
 
 ## § 5 Risks
 
-详 ASSUMPTIONS § C(R1-R6)。**no Wave 1 BLOCKER**(R1 degraded fallback Tier A 已 verified functional);**no SSOT 引用纪律 risk**(R5 单线性顺序);**partial Win 兼容 risk**(R6 Wave 1 spike Win 实跑 + Wave 6 3-OS CI sentinel,若 Win 失败 partial R5.3 ship + Phase 2.4 全兼容)。
+详 ASSUMPTIONS § C(R1-R9 含 delta R7/R8/R9)。**no Wave 1 BLOCKER**(R1 degraded fallback Tier A 已 verified functional);**no SSOT 引用纪律 risk**(R5 单线性顺序);**partial Win 兼容 risk**(R6 Wave 1 spike Win 实跑 + Wave 6 3-OS CI sentinel,若 Win 失败 partial R5.3 ship + Phase 2.4 全兼容);**delta R7** schemaVersion 7 surface retrofit 工作量(B-32 列表是 scope guide,fallback 分批);**delta R8** provenance gate 误伤 curated artifact(scope 限定 runtime artifact path,curated path 不扫);**delta R9** SC4 verify 不确定性(colon-test 判定 + fail branch 走 deferred)。
 
 ---
 
@@ -269,11 +280,11 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 | Bar | Reproduction Command | Pass Criteria |
 |-----|----------------------|---------------|
 | **F1** | `node scripts/check-transparency-verdicts.mjs` | exit 0,stdout includes "13/13 verdict markers compliant + 2/2 Status: markers compliant",`grep "ENFORCE = true" scripts/check-transparency-verdicts.mjs` 命中 |
-| **F2** | `ls docs/adr/<N>-*.md && grep -E "^### [1-6]\. (SDK 引入\|ralph-wiggum keep\|dual-signal completion\|contract v1\.2 reconcile\|per-phase model tier\|Wave 0 transparency)" docs/adr/<N>-*.md \| wc -l` | wc 输出 == 6(与 T0.2/T6.1 实际 `### N. ` heading-3 numbered form 一致;W3 plan-check fix)|
-| **F3** | `npm view @anthropic-ai/claude-agent-sdk version && grep "@anthropic-ai/claude-agent-sdk" package.json && npm test -- tests/sdk-import.smoke.test.ts` | SDK version 与 lockfile match,smoke test pass on 3 OS |
-| **F4** | `npm test -- tests/routing/sdk-reconcile.test.ts tests/routing/isComplete.test.ts && wc -l src/routing/agentDefinition.ts src/routing/lib/sdkReconcile.ts src/routing/lib/ralphLoop.ts src/routing/lib/promiseExtract.ts` | tests pass;agentDefinition.ts ≤200L,ralphLoop ≤50L,promiseExtract ≤50L,sdkReconcile ≤80L |
+| **F2** | `ls docs/adr/<N>-*.md && grep -E "^### [1-9]\. (SDK 引入\|ralph-wiggum keep\|dual-signal completion\|contract v1\.2 reconcile\|per-phase model tier\|Wave 0 transparency\|SchemaVersion\|Provenance gate\|Task Session)" docs/adr/<N>-*.md \| wc -l` | wc 输出 == 9(与 T0.2/T6.1 实际 `### N. ` heading-3 numbered form 一致;**Wave 2 discuss-delta absorbed CD-5/CD-6/CD-4 → ADR 0011 扩 6→9 章节**,W3 plan-check 数 6 升 9)|
+| **F3** | `npm view @anthropic-ai/claude-agent-sdk version && grep "@anthropic-ai/claude-agent-sdk" package.json && npm test -- tests/sdk-import.smoke.test.ts` | SDK version 与 lockfile match,smoke test pass on 3 OS;**delta SC4 outcome** recorded in task_plan.md Resolved block(pass → Wave 4 T4.4 active;fail → deferred)|
+| **F4** | `npm test -- tests/routing/sdk-reconcile.test.ts tests/routing/isComplete.test.ts && wc -l src/routing/agentDefinition.ts src/routing/lib/sdkReconcile.ts src/routing/lib/ralphLoop.ts src/routing/lib/promiseExtract.ts && grep -E 'schemaVersion.*harnessed\\.\\w+\\.v1' src/types/*.ts src/routing/*.ts src/workflow/*.ts \| wc -l` | tests pass;agentDefinition.ts ≤200L,ralphLoop ≤50L,promiseExtract ≤50L,sdkReconcile ≤80L;**delta** schemaVersion 命中 ≥ 7(7 surface 全引入,B-32)|
 | **F5** | `npm test -- tests/workflow/load-phases.test.ts && node -e "const {loadPhases} = require('./dist/workflow/loadPhases'); console.log(loadPhases('workflows/execute-task/phases.yaml').phases.map(p=>p.model))"` | tests pass;stdout `['opus','sonnet','sonnet','haiku']`(intel 第 4 条默认表) |
-| **F6** | `npm test -- tests/routing/sdk-spawn.test.ts tests/routing/routing-engine.test.ts && wc -l src/routing/engine.ts src/routing/lib/sdkSpawn.ts` | tests pass;engine ≤200L,sdkSpawn ≤120L |
+| **F6** | `npm test -- tests/routing/sdk-spawn.test.ts tests/routing/routing-engine.test.ts && wc -l src/routing/engine.ts src/routing/lib/sdkSpawn.ts && ls provenance.schema.json && node scripts/check-provenance.mjs` | tests pass;engine ≤200L,sdkSpawn ≤120L;**delta** provenance.schema.json 存在 + check-provenance hard gate exit 0 |
 | **F7** | `npm test -- tests/cli/execute-task.test.ts && node dist/cli.js execute-task --task "test" --dry-run --non-interactive && node scripts/run-samples.mjs .planning/phase-2.2/SAMPLES.md` | tests pass;dry-run exit 0;30 sample COMPLETE 100% |
 | **F8** | `gh run list --workflow=ci.yml --limit=1` + `git tag --list adr-<N>-accepted v0.2.0-alpha.2-execute-task` + `git diff <baseline-tag-1-10>..HEAD -- "docs/adr/000[1-9]-*.md" "docs/adr/0010-*.md" | wc -l` | CI all-green 3 OS;tags exist;diff wc == 0(A7 守恒)|
 
@@ -284,14 +295,14 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 | Wave | Checkpoint Type | Gate Check | Action if FAIL |
 |------|----------------|-----------|----------------|
 | 0 | auto | `node scripts/check-transparency-verdicts.mjs` exit 0 含 ENFORCE 实测 | revert ENFORCE=true atomic commit → identify missed file → 补 marker → re-commit |
-| 1 | auto(decision implicit) | Spike script Win 实跑 success criteria 1+2+3 ≥ Tier A | 若 Tier B → 升级 plan dual-signal 退到 outer FALLBACK 主路径(B-07 已预案);若 Tier C → 不会出现 |
-| 2 | auto | 4-layer isComplete 4 path 全 test pass;hard limit verify | split 再细化(sdkReconcile/ralphLoop 单 fn 移到独立 file)|
+| 1 | auto(decision implicit) | Spike script Win 实跑 success criteria 1+2+3 ≥ Tier A;**SC4** outcome recorded(pass/fail 二选一,non-blocker) | 若 Tier B → 升级 plan dual-signal 退到 outer FALLBACK 主路径(B-07 已预案);若 Tier C → 不会出现;**SC4 fail** → Wave 4 T4.4 skip,CD-4 deferred(non-blocker) |
+| 2 | auto | 4-layer isComplete 4 path 全 test pass;hard limit verify;**delta** schemaVersion 7 surface 引入(B-32,grep ≥ 7) | split 再细化(sdkReconcile/ralphLoop 单 fn 移到独立 file);schemaVersion 不足 7 → 分批补(R7 fallback) |
 | 3 | auto | schema 接受 valid yaml + reject missing model;intel 4 phase model 默认表实例 | typebox 错误时校验 `Type.Union` 顺序 + `additionalProperties: false` 配置 |
-| 4 | auto + Win sentinel | 端到端 spawn Win Git Bash 跑(real SDK call,需要 ANTHROPIC_API_KEY env)| 若 Win spawn fail → R6 升级到 Phase 2.4 BLOCKER + 本 phase ship partial(skip Win-only sample)|
+| 4 | auto + Win sentinel | 端到端 spawn Win Git Bash 跑(real SDK call,需要 ANTHROPIC_API_KEY env);**delta T4.0** provenance hard gate test pass(runtime artifact 缺 sibling `.provenance.json` → CI red);**delta T4.4 conditional** SC4 pass 走 Task Session 实装 / SC4 fail 走 deferred | 若 Win spawn fail → R6 升级到 Phase 2.4 BLOCKER + 本 phase ship partial(skip Win-only sample);若 provenance gate 误伤 curated → R8 scope 限定 runtime path 修正 |
 | 5 | auto | 30 sample COMPLETE 100% + execute-task CLI 3-state exit code | sample miss 列入 SAMPLES.md "known miss" 节 + plan-phase replan(沿袭 phase 1.4 SAMPLES.md miss 节模式)|
-| 6 | auto | 3-OS CI 全绿 + tag exist + A7 diff 0 | rollback to last stable commit + investigate;A7 diff > 0 必须 revert 改动到 ADR 0001-0010 main body |
+| 6 | auto | 3-OS CI 全绿 + tag exist + A7 diff 0 + **ADR 0011 实占已 9 章节**(F2 grep wc == 9) | rollback to last stable commit + investigate;A7 diff > 0 必须 revert 改动到 ADR 0001-0010 main body |
 
-**Wave 1 spike 是隐式 decision checkpoint**:Tier A pass → Wave 2-4 走 PRIMARY 路径;Tier B → Wave 2-4 走 FALLBACK 主路径(B-07 已预案,non-blocker);Tier C 不会出现(`promiseExtract.ts` 32L 已 ship)。
+**Wave 1 spike 是隐式 decision checkpoint**:Tier A pass → Wave 2-4 走 PRIMARY 路径;Tier B → Wave 2-4 走 FALLBACK 主路径(B-07 已预案,non-blocker);Tier C 不会出现(`promiseExtract.ts` 32L 已 ship)。**Wave 1 SC4 是 conditional branch decision**:pass → Wave 4 T4.4 active(Task Session 实装);fail → Wave 4 T4.4 skip + CD-4 deferred 转 v0.3.0(non-blocker)。
 
 ---
 
@@ -300,11 +311,11 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 | 维度 | phase 2.2(本) | phase 2.3 | phase 2.4 |
 |------|---------------|-----------|-----------|
 | workflow | execute-task 主线 + ralph-loop full integration | design/content/testing extension MVP + karpathy behavior-rule + CLAUDE.md merge | — |
-| schema | phases.yaml + `model:` 必填 + contract v1.2 reconcile | extension category schema(若需要)| — |
-| ADR | 单 ADR errata 0011 6 章节(本 phase 实占)| 新 ADR errata(Phase 2.3 决策)| 新 ADR errata(Phase 2.4 决策)|
-| SDK | INTRODUCE NOW + 4-layer dual-signal | — | — |
-| transparency | gate ENFORCE=true 一次性根治 + Status: marker convention + freshness ext | — | — |
-| installer | 复用 Phase 2.1 6 method | extension category install adapter 真实候选实装 | — |
+| schema | phases.yaml + `model:` 必填 + contract v1.2 reconcile + schemaVersion 7 surface(delta D-16)+ (conditional) phase manifest `task_session_id` field(delta D-18) | extension category schema(若需要)| — |
+| ADR | 单 ADR errata 0011 9 章节(本 phase 实占 — 原 6 + delta 3)| 新 ADR errata(Phase 2.3 决策)| 新 ADR errata(Phase 2.4 决策 + EE-4 plan 4 维量化阈值 absorb)|
+| SDK | INTRODUCE NOW + 4-layer dual-signal + (conditional) Task Session resume | — | — |
+| transparency | gate ENFORCE=true 一次性根治 + Status: marker convention + freshness ext + provenance gate hard fail(delta D-17) | — | — |
+| installer | 复用 Phase 2.1 6 method + provenance gate enforce | extension category install adapter 真实候选实装 | — |
 | doctor | — | — | 完整版 jq/Git Bash 探测 + weekly cron + audit + ralph-loop Win 全兼容 |
 | checkpoint | execute-task 长链路 checkpoint 模板(handoff 四字段可用)| — | — |
 | sample | 30 sample(15 复用 + 15 新增)| extension category sample 候选 | doctor sample |
@@ -321,6 +332,7 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 | External SDK boundary → @anthropic-ai/claude-agent-sdk | Anthropic SDK 网络调用 + API key env(ANTHROPIC_API_KEY)|
 | YAML 文件 input → loadPhases parser | `workflows/<name>/phases.yaml` 用户可改 → schema validate 防止 YAML injection / unknown 字段 |
 | Subagent output → main agent ralph-loop | subagent text 含 `<promise>COMPLETE</promise>` 可能 user-injected 触发 false COMPLETE → regex match 严格 |
+| Runtime artifact → provenance gate | composition skill/installer 产 artifact 必须 sibling `.provenance.json`(delta — D-17 hard gate)|
 
 ## STRIDE Threat Register
 
@@ -335,6 +347,7 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 | T-2.2-07 | Tampering | `STATUS_MARKER` regex matching front-matter doc input | mitigate | regex anchored `^\s*>?\s*\*{0,2}(?:Status\|状态)\*{0,2}\s*[:：]\s*(.+)$`(B-17 tolerance);仅扫前 50 行(implementation sketch RESEARCH § 3.5)|
 | T-2.2-08 | Repudiation | transparency gate violation 历史 audit | accept | git history 已记录所有 verdict marker commit;`scripts/check-transparency-verdicts.mjs` CI step 输出 violation list 进 CI log;不需要独立 audit log(Phase 2.4 audit infra 时再做)|
 | T-2.2-09 | Elevation of Privilege | SDK `allowedTools` 默认 broad(Read/Edit/Write/Grep/Glob/Bash/Task) | mitigate | execute-task workflow phase 1 (clarify) `allowedTools: ['Read', 'Grep', 'Glob']`(no Write);phase 2-3 (code/test) full;phase 4 (deliver) excludes destructive tools(reviewer 倾向 — 但本 phase scope 内全 broad,Phase 2.3 fine-tune per-phase tool gating)|
+| T-2.2-10 | Tampering | Runtime artifact 缺 sibling `.provenance.json` 绕过 hard gate(delta D-17)| mitigate | composition skill + installer enforce hard fail(B-34);CI step `scripts/check-provenance.mjs` 扫 runtime path(`.harnessed/sessions/**` 等);scope 限定避 curated 误伤(R8) |
 </threat_model>
 
 <verification>
@@ -347,13 +360,15 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 - `node dist/cli.js execute-task --task "test" --dry-run --non-interactive` exit 0
 - 30 sample 跑通 SAMPLES.md COMPLETE 100% 准确
 - `git tag --list adr-<N>-accepted v0.2.0-alpha.2-execute-task` 两 tag 存在
+- `grep -E "^### [1-9]\. " docs/adr/0011-*.md | wc -l` 输出 == 9(F2 reproduction — ADR 9 章节,delta absorbed)
+- (delta) `node scripts/check-provenance.mjs` exit 0(runtime artifact sibling .provenance.json 全合规)
 </verification>
 
 <success_criteria>
 - F1-F8 全 ship(详 § 6 reproduction commands)
-- 31 个 decision lock(B-01 ~ B-31)全 ship,**zero unresolved conflict**
-- 33 atomic task 全 done + 7 Wave 全 checkpoint pass
-- ADR errata 0011 accepted + baseline tag updated
+- 36 个 decision lock(B-01 ~ B-36 含 delta B-32~B-36)全 ship,**zero unresolved conflict**
+- 35 (or 36 if SC4 pass) atomic task 全 done + 7 Wave 全 checkpoint pass
+- ADR errata 0011 accepted 含 9 章节(原 6 + delta 3)+ baseline tag updated
 - v0.2.0-alpha.2-execute-task 候选 milestone tag created
 - `.planning/STATE.md` + `RETROSPECTIVE.md` 续编 reflect Phase 2.2 ship
 </success_criteria>

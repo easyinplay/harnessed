@@ -2,7 +2,7 @@
 
 > **Authored**: 2026-05-15
 > **Author**: gsd-planner (Wave B)
-> **Sources**: `KICKOFF.md` § 1-6 / `2.2-CONTEXT.md` D-01~D-15 / `PATTERNS.md` D-WP-1~D-WP-7 / `RESEARCH.md` D2.2-1~D2.2-7 / `.planning/research/v0.2.0-execute-task-ralph.md` HIGH conf / `.planning/intel/omc-comparison.md` 第 4 条
+> **Sources**: `KICKOFF.md` § 1-6 / `2.2-CONTEXT.md` D-01~D-15 + delta D-16~D-18 / `PATTERNS.md` D-WP-1~D-WP-7 / `RESEARCH.md` D2.2-1~D2.2-7 / `.planning/research/v0.2.0-execute-task-ralph.md` HIGH conf / `.planning/intel/omc-comparison.md` 第 4 条 + CD-5(L149-157) + CD-6(L159-167) + CD-4(L139-147)
 > **Style**: 沿袭 phase 1.5 / 2.1 ASSUMPTIONS.md(§ A acceptance-bar status table + § B decision lock 合并 + § C risks 一行 mitigation + § D references)
 
 ---
@@ -12,11 +12,11 @@
 | Bar | What it asserts | Source artifact | Status entering plan-phase | Mapped Wave |
 |-----|-----------------|-----------------|-----------------------------|-------------|
 | **F1** | Wave 0 transparency 一次性根治:`ENFORCE=true` + 全 13 verdict 文档 marker 合规 + freshness ext 扩展(README/PROJECT-SPEC `Status:` marker) | `scripts/check-transparency-verdicts.mjs` + `.planning/**/PLAN-CHECK\|VERIFICATION\|*-AUDIT.md` × 13 + `README.md` + `docs/PROJECT-SPEC.md` | INFRA ready(Phase 2.1 T1.7);marker 0/13 合规;ENFORCE=false;freshness ext 未实装 | **Wave 0** |
-| **F2** | 单 ADR errata draft 覆盖 Phase 2.2 全决策(SDK 引入 + ralph-wiggum keep + dual-signal + contract v1.2 + per-phase model tier + Wave 0 transparency)— **编号 plan-phase 实占** | `docs/adr/0011-*.md` | NEW;编号由本 plan-phase 实占(intel § 0 SSOT 引用纪律,不预占)；本 plan / task_plan / ASSUMPTIONS 一律写 `0011` | **Wave 0**(draft)→ **Wave 6**(accepted + baseline tag) |
-| **F3** | SDK 引入:`@anthropic-ai/claude-agent-sdk` 版本复核 + `outputFormat` × `agents`-map 组合 spike + package.json + lockfile + 3-OS CI verify | `package.json` + `package-lock.json` + `scripts/spike-outputFormat-agents.mjs`(throwaway,**not committed** per D2.2-5)+ `ci.yml` 3-OS 矩阵 | NOT started;SDK 未引入;spike 未跑;research § 4 open question 未 verify | **Wave 1** |
-| **F4** | agentFactory contract v1.2 reconcile + dual-signal completion 4-layer 实装(D2.2-4) | `src/routing/agentDefinition.ts` + `src/routing/lib/sdkReconcile.ts`(NEW per D-WP-5)+ `src/routing/lib/ralphLoop.ts` + `src/routing/lib/promiseExtract.ts` + `src/routing/completionSchema.ts`(NEW)| 14 字段 v1.1 现存;`toSdkAgentDefinition` / `injectFactoryInternalFields` / 4-layer `isComplete` 未实装 | **Wave 2** |
+| **F2** | 单 ADR errata draft 覆盖 Phase 2.2 全决策(SDK 引入 + ralph-wiggum keep + dual-signal + contract v1.2 + per-phase model tier + Wave 0 transparency + delta CD-5/CD-6/CD-4)— **编号 plan-phase 实占** | `docs/adr/0011-*.md` | NEW;编号由本 plan-phase 实占(intel § 0 SSOT 引用纪律,不预占)；本 plan / task_plan / ASSUMPTIONS 一律写 `0011` | **Wave 0**(draft)→ **Wave 6**(accepted + baseline tag) |
+| **F3** | SDK 引入:`@anthropic-ai/claude-agent-sdk` 版本复核 + `outputFormat` × `agents`-map 组合 spike + SC4 session resume API verify(delta D-18)+ package.json + lockfile + 3-OS CI verify | `package.json` + `package-lock.json` + `scripts/spike-outputFormat-agents.mjs`(throwaway,**not committed** per D2.2-5)+ `ci.yml` 3-OS 矩阵 | NOT started;SDK 未引入;spike 未跑;research § 4 open question 未 verify | **Wave 1** |
+| **F4** | agentFactory contract v1.2 reconcile + dual-signal completion 4-layer 实装(D2.2-4)+ schemaVersion 7 surface 引入(delta D-16) | `src/routing/agentDefinition.ts` + `src/routing/lib/sdkReconcile.ts`(NEW per D-WP-5)+ `src/routing/lib/ralphLoop.ts` + `src/routing/lib/promiseExtract.ts` + `src/routing/completionSchema.ts`(NEW)| 14 字段 v1.1 现存;`toSdkAgentDefinition` / `injectFactoryInternalFields` / 4-layer `isComplete` 未实装 | **Wave 2** |
 | **F5** | per-phase model tier schema:`workflows/<name>/phases.yaml` schema + 4 phase 默认表 + `--model-tier inherit` CLI flag + agentFactory 读 `phase.model` | `src/workflow/schema/phases.ts`(NEW per D-WP-1)+ `src/workflow/loadPhases.ts`(NEW)+ `workflows/execute-task/phases.yaml`(NEW)+ `src/cli/execute-task.ts` --model-tier 解析 | NOT started;phases.yaml schema 不存在;commander flag 未加 | **Wave 3** |
-| **F6** | ralph-loop full integration:`engine.route()` spawn placeholder → SDK `query()` real;`ralphLoopWrap` callback 升级接 SDK;verbatim COMPLETE 回流 | `src/routing/engine.ts`(替 `defaultSpawn`)+ `src/routing/lib/sdkSpawn.ts`(NEW)+ `src/routing/lib/ralphLoop.ts`(升级接 resumeSessionId)| 现 placeholder 抛 'engine.defaultSpawn is a placeholder';SDK 真接入未做 | **Wave 4** |
+| **F6** | ralph-loop full integration:`engine.route()` spawn placeholder → SDK `query()` real;`ralphLoopWrap` callback 升级接 SDK;verbatim COMPLETE 回流 + provenance gate 启动前必上(delta D-17)+ Task Session 集成 conditional(delta D-18 SC4 pass branch) | `src/routing/engine.ts`(替 `defaultSpawn`)+ `src/routing/lib/sdkSpawn.ts`(NEW)+ `src/routing/lib/ralphLoop.ts`(升级接 resumeSessionId)+ `provenance.schema.json`(NEW)| 现 placeholder 抛 'engine.defaultSpawn is a placeholder';SDK 真接入未做 | **Wave 4** |
 | **F7** | execute-task CLI 10th register fn + 4-phase chain orchestration + 30 子任务 SAMPLES.md COMPLETE 100% 准确 | `src/cli/execute-task.ts`(NEW)+ `src/cli.ts`(register)+ `.planning/phase-2.2/SAMPLES.md`(NEW,30 sample,沿袭 phase 1.4 R3 frozen)+ `tests/cli/execute-task.test.ts`(NEW) | NOT started | **Wave 5** |
 | **F8** | Ship:3-OS CI 全绿 含 transparency ENFORCE=true 实测 + ADR baseline tag `adr-0011-accepted` + `ci.yml` A7 iter `1-10 → 1-0011` + ADR 0001-0010 main body 0 diff + `v0.2.0-alpha.2-execute-task` 候选 tag | `ci.yml` + git tag + `.planning/STATE.md` + `RETROSPECTIVE.md` 续编 | NOT started | **Wave 6** |
 
@@ -24,7 +24,7 @@
 
 ## § B — Consolidated Decision Locks
 
-合并三处来源:**CONTEXT D-01~D-15**(discuss-phase 锁)+ **PATTERNS D-WP-1~D-WP-7**(pattern-mapper 提案 → plan-phase 决)+ **RESEARCH D2.2-1~D2.2-7**(researcher 决议)。同号但跨来源不同语义(如 RESEARCH 内部用 `D2.2-1` 指代 SDK introduction 的本地 ID,与 CONTEXT D-11 同决议)— 此处统一 → CONTEXT 主、RESEARCH 补、PATTERNS 提案选项。
+合并三处来源:**CONTEXT D-01~D-18**(discuss-phase 锁 + 2026-05-15 delta)+ **PATTERNS D-WP-1~D-WP-7**(pattern-mapper 提案 → plan-phase 决)+ **RESEARCH D2.2-1~D2.2-7**(researcher 决议)。同号但跨来源不同语义(如 RESEARCH 内部用 `D2.2-1` 指代 SDK introduction 的本地 ID,与 CONTEXT D-11 同决议)— 此处统一 → CONTEXT 主、RESEARCH 补、PATTERNS 提案选项。
 
 ### B.1 SDK & spawn
 
@@ -64,7 +64,7 @@
 
 | Lock | Decision | Source chain |
 |------|----------|--------------|
-| **B-20** | **独立 1 个 ADR** 覆盖 Phase 2.2 全决策(沿袭 phase 1.4 ADR 0008 多决策合并 errata 模式)— 内部 6 章节:① SDK 引入 ② ralph-wiggum keep ③ dual-signal completion 4-layer ④ contract v1.2 reconcile ⑤ per-phase model tier schema errata ⑥ Wave 0 transparency CI gate flip + freshness ext | CONTEXT D-09 + PATTERNS D-WP-7 |
+| **B-20** | **独立 1 个 ADR** 覆盖 Phase 2.2 全决策(沿袭 phase 1.4 ADR 0008 多决策合并 errata 模式)— 内部 **9 章节**(原 6 + delta 3):① SDK 引入 ② ralph-wiggum keep ③ dual-signal completion 4-layer ④ contract v1.2 reconcile ⑤ per-phase model tier schema errata ⑥ Wave 0 transparency CI gate flip + freshness ext ⑦ SchemaVersion 单一兼容门(B-32)⑧ Provenance gate hard fail(B-33+B-34)⑨ Task Session 复用 conditional(B-35+B-36) | CONTEXT D-09 + D-16~D-18 + PATTERNS D-WP-7 |
 | **B-21** | ADR 编号**由 Phase 2.2 plan-phase 实占**(intel § 0 + Phase 2.1 T1.9 CONTRIBUTING.md 项目级 SSOT 引用纪律)— 本 phase 一切文档写 `0011` 或 "ADR errata(编号 plan-phase 实占)"。**禁写 `ADR 0011`** | CONTEXT D-10 + intel § 0 |
 | **B-22** | A7 守恒持续:ADR 0001-0010 main body **0 diff**;新 ADR 走 errata 路径(不动旧 ADR);ship 时 baseline tag `1-10 → 1-0011`;CI `ci.yml` A7 step iter 同步;`docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` + `docs/INSTALLER-CONTRACT.md` main body 不动(contract v1.2 reconcile 走 ADR errata inline 注释) | CONTEXT D-15 + KICKOFF § 3.1 |
 
@@ -87,7 +87,17 @@
 | **B-30** | TypeBox not zod — schema 改动用 `@sinclair/typebox` `Type.*`;沿袭 Phase 2.1 ADR 0010 errata 注释块 fence pattern;每 schema 改动行加 `// ADR 0011 errata — <topic> (phase 2.2 W<N> — F<N>)` | KICKOFF § 3.3 + PATTERNS § 3.2 |
 | **B-31** | A8 LF line endings — 所有新文件 LF;Win 测试需 Git Bash;`gitCloneWithSetup` Phase 2.1 已实证 PATH_A+B 双 OK,新 SDK call 路径同 Win 兼容验证(Wave 1 spike Win 跑 + Wave 6 CI 3-OS) | KICKOFF § 3.8 |
 
-### B.7 RESOLVED conflict chain notes
+### B.7 Discuss-phase delta locks（2026-05-15 — CD-5 / CD-6 / CD-4 absorbed)
+
+| Lock | Decision | Source chain |
+|------|----------|--------------|
+| **B-32** | **CD-5 FULL schemaVersion scope** — 7 surface 列表:① routing snapshot ② handoff doc ③ phases.yaml ④ manifest state ⑤ installer state ⑥ route decision log ⑦ checkpoint;naming 约定 `harnessed.<surface>.v1`(e.g. `harnessed.routing-snapshot.v1`);3 rules:(a) consumer 必须 branch-on-version,(b) 未知 enum 值 graceful degrade(不 fail),(c) 新字段必须 nested(不能 top-level)。**Wave 2 SDK contract v1.2 reconcile 同步引入** | CONTEXT D-16 + intel CD-5(L149-157)+ DISCUSSION-LOG delta gray area 5 |
+| **B-33** | **CD-6 BEFORE-W4 provenance schema** — `provenance.schema.json` ~5KB JSON schema,4 字段:`source`(curated/learned/imported/evolved 等产源 enum)、`created_at`(ISO timestamp)、`confidence`(0-1 float)、`author`(string)。**Wave 4 ralph-loop integration 启动前必上(hard gate prereq)**;hard fail enforcement(CI red 如 runtime artifact 缺 sibling `.provenance.json`) | CONTEXT D-17 + intel CD-6(L159-167)+ DISCUSSION-LOG delta gray area 6 |
+| **B-34** | **CD-6 enforce path** — composition skill + installer 加 lint check;runtime artifact(routing 决策日志 / handoff doc / failed-route 记录 / checkpoint 修复 / session learnings)必须 sibling `.provenance.json`,否则 hard fail(commit/CI red)。**CI integration**:Wave 4 启动前 `scripts/check-provenance.mjs`(或扩展 existing transparency gate)加 enforce step;3-OS sentinel | CONTEXT D-17 + intel CD-6 + DISCUSSION-LOG delta gray area 6 |
+| **B-35** | **CD-4 PIGGY-W1 SDK verify branch** — Wave 1 spike(T1.1 / T1.2)加 **SC4** success criterion:verify `@anthropic-ai/claude-agent-sdk` 是否暴露 session resume API(查 `.d.ts` `resume?: string` option on `query()` + 实测 spike call 真能 resume 同 session)。**Branch outcome**:① SC4 pass → Wave 4 ralph-loop integration 集成 `task_session_id`(优先 resume 同 session);② SC4 fail → CD-4 加入 deferred(v0.3.0 checkpoint 完整版),Phase 2.2 不实装、不动 phase manifest schema | CONTEXT D-18 + intel CD-4(L139-147)+ DISCUSSION-LOG delta gray area 8 |
+| **B-36** | **CD-4 conditional schema** — phase manifest schema **条件性**修改:① SC4 pass → 加 `task_session_id?: string`(optional field)到 phase manifest TypeBox schema + executor 优先 resume 逻辑(Wave 4 集成);② SC4 fail → 不动 schema,不引入字段,功能 deferred。**Wave 0 T0.2 ADR draft 写 conditional 决策语义**;Wave 1 T1.2 SC4 跑完后,Wave 2 schemaVersion 7 surface 列表如包含 phase manifest 也需 conditional reflect(SC4 pass 才加 task_session_id field) | CONTEXT D-18 + intel CD-4 + DISCUSSION-LOG delta gray area 8 + B-35 piggy |
+
+### B.8 RESOLVED conflict chain notes
 
 - **D2.2-1 (RESEARCH 内部 ID) vs D-11 (CONTEXT)** — 两者同决议(SDK INTRODUCE NOW),RESEARCH 内部 ID 仅章节定位用;**统一以 CONTEXT D-11 为主 lock,B-04 引用**
 - **D-07c CONTEXT (Claude's Discretion: planner 决具体形态) → RESEARCH § 3 三候选评估 → 推荐 (b) 结构化 marker** — 决策链 RESOLVED:CONTEXT 留给 planner,RESEARCH 决候选,plan-phase 锁定 **B-16 = RESEARCH 推荐**(原因:架构一致性 + karpathy simplicity + 零 false-positive)
@@ -95,6 +105,7 @@
 - **agentDefinition.ts 是否 split 到 sdkReconcile.ts** — CONTEXT 未指定(planner discretion),PATTERNS D-WP-5 推荐 split,RESEARCH 未涉及 — **B-24 = PATTERNS 推荐 LOCK**(原因:Karpathy 5 hard limit 严守 + sister phase 1.5 split 模式已验证)
 - **phases.yaml schema 位置** — CONTEXT 未指定,PATTERNS D-WP-1 推荐 (b) 新文件,RESEARCH 未涉及 — **B-13 = PATTERNS 推荐 LOCK**(原因:do-one-thing-well + spec.ts 已 190L 临界)
 - **30 sample 来源** — CONTEXT 留给 planner(R3 frozen 风格),PATTERNS D-WP-6 提案 15+15 — **B-29 = PATTERNS 推荐 LOCK**
+- **delta CD-5 / CD-6 / CD-4** — 2026-05-15 user 锁定 FULL / BEFORE-W4 / PIGGY-W1 三决策(DISCUSSION-LOG delta);ADR 0011 章节 6 → 9 扩展;B-32~B-36 5 lock 加入;**no cross-source conflict**(delta 是 net-add,无覆盖原 lock 语义)
 
 **No unresolved cross-source conflicts.** All decision chains converge.
 
@@ -110,6 +121,9 @@
 | **R4** | `ENFORCE=true` flip 后 CI red(后续 wave 任何 commit 含未补 marker 的新 verdict 文档)| MEDIUM | Wave 0 必最先(B-19);Wave 1-6 任何新增 `PLAN-CHECK\|VERIFICATION\|*-AUDIT.md` 必须含 marker 行(execute-phase 模板加约束);Wave C plan-checker 自身的 PLAN-CHECK.md 也必 marker compliant |
 | **R5** | ADR 编号实占冲突(plan-phase 实占 N 时,git 上已有 N - 即并发其他 phase 占了)| LOW | Wave 0 task 第一步 `ls docs/adr/` + 取 `max(NNNN) + 1`(沿袭 intel § 0 SSOT 引用纪律 + CONTRIBUTING.md 项目级约定);**单线性顺序** — solo 开发无并发风险 |
 | **R6** | `ralph-loop` Win32 spawn 兼容性(R5.3 partial,Phase 2.4 全兼容)— SDK `query()` Win spawn 行为未实证 | LOW-MEDIUM | Wave 1 spike Win 实跑(B-31);Wave 6 CI 3-OS 矩阵 sentinel;LF line endings(B-31);若 Win spike 失败 → 升级到 Phase 2.4 ralph-loop Win compat task batch 优先级(本 phase 仍 ship,partial R5.3) |
+| **R7** | **delta CD-5 schemaVersion 7 surface 一次性 retrofit 工作量低估**(B-32)— routing snapshot / handoff doc / phases.yaml / manifest state / installer state / route decision log / checkpoint 7 surface 字段位都需要 schema 修改 | LOW-MEDIUM | Wave 2 executor 视具体实施(TypeBox schema vs convention-only doc)定;**fallback**:若 7 surface 一次性引入超 Wave 2 预算,可分批 — 关键 4 surface(routing snapshot / phases.yaml / manifest state / installer state)Wave 2 必做,其余 3 surface(handoff doc / route decision log / checkpoint)Wave 5 / 6 补;**non-blocker for Wave 2**(B-32 列表是 scope guide 不是 commit) |
+| **R8** | **delta CD-6 provenance gate 误伤 curated artifact**(B-33+B-34)— composition skill 已 ship 的 curated artifact 也被 hard gate 扫到 → CI red | LOW | Wave 4 T4.0 executor 实施 gate 时 scope **限定 runtime artifact path**(e.g. `.harnessed/sessions/**` `.harnessed/checkpoints/**`);curated path(`workflows/**/SKILL.md` `manifest.yaml` 等)不扫;**fallback**:若 scope 仍误伤,加 explicit allowlist regex(沿袭 transparency gate `walk()` pattern) |
+| **R9** | **delta CD-4 SC4 verify 不确定性**(B-35)— `@anthropic-ai/claude-agent-sdk` `.d.ts` 可能含 `resume?: string` 但 runtime 行为不符合 omo task_session 语义(只能 resume conversation 不能 resume agent context) | LOW | SC4 判定 colon-test:① `.d.ts` 含 `resume` option(necessary)② spike 实测 resume 后 agent state 真的保留(`memory` 字段、tools 状态、conversation history 全 carry)(sufficient);若 ① pass ② fail → 仍 deferred(SC4 fail,B-36 第二分支);Wave 1 T1.2 executor 决判定颗粒度 |
 
 ---
 
@@ -117,13 +131,14 @@
 
 ### D.1 In-phase 上游产出
 - `.planning/phase-2.2/KICKOFF.md` — § 1-6(F1-F8 + Wave 拓扑 + 8 hard constraint + R1/R2 分工 + 预算 + 边界)
-- `.planning/phase-2.2/2.2-CONTEXT.md` — discuss-phase 4 灰色地带 + 15 D-决策 + canonical refs
+- `.planning/phase-2.2/2.2-CONTEXT.md` — discuss-phase 4 灰色地带 + 15 D-决策 + delta D-16~D-18 + canonical refs
+- `.planning/phase-2.2/2.2-DISCUSSION-LOG.md` — 4 gray area alternatives + delta gray area 5~8 alternatives(CD-5 / CD-6 / EE-4 / CD-4)
 - `.planning/phase-2.2/PATTERNS.md` — 9 file analog mapping + ~62% reuse + 7 D-WP proposals
 - `.planning/phase-2.2/RESEARCH.md` — 3 focused topics + 7 D2.2-* decision locks + assumption log A1-A4
 
 ### D.2 Carry-forward 主依据
 - `.planning/research/v0.2.0-execute-task-ralph.md` — SDK INTRODUCE + ralph-wiggum keep + dual-signal v1 + 5-phase orchestration + reject list(HIGH conf,2026-05-15,valid ~2026-06-15)
-- `.planning/intel/omc-comparison.md` 第 4 条 — per-phase model tier intel actionable + § 0 SSOT 引用纪律
+- `.planning/intel/omc-comparison.md` — 第 4 条 per-phase model tier intel actionable + § 0 SSOT 引用纪律 + delta-absorbed items:CD-5(L149-157)、CD-6(L159-167)、CD-4(L139-147)、EE-4 deferred(L74-82)
 - `.planning/ROADMAP.md` v0.2.0 Phase 2.2 — Goal + 必含项 + 验收 5 项 + 关键风险
 
 ### D.3 Frozen 接口契约(本 phase 升级或消费)
@@ -151,4 +166,4 @@
 
 ---
 
-*phase 2.2 ASSUMPTIONS.md complete — § A 8 acceptance bars mapped to 7 Wave / § B 31 lock 全消化 6 来源(CONTEXT 15 + PATTERNS 7 + RESEARCH 7 + intel 1 + KICKOFF 1 + planner inference 0 conflict)/ § C 6 risk 全 mitigation / § D references full chain.*
+*phase 2.2 ASSUMPTIONS.md complete — § A 8 acceptance bars mapped to 7 Wave / § B 36 lock 全消化 7 来源(CONTEXT 18 incl delta + PATTERNS 7 + RESEARCH 7 + intel 4 incl CD-5/CD-6/CD-4 + KICKOFF 1 + planner inference 0 conflict)/ § C 9 risk 全 mitigation(R1-R6 + delta R7-R9)/ § D references full chain.*
