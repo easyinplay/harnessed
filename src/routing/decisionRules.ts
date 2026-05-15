@@ -1,5 +1,9 @@
 // Phase 1.3 T3.2 — routing/decision_rules.yaml v1 loader + Priority Hit Policy arbitrate.
 // Phase 1.5 T4.3 — v2 schema (mattpocock_phases + engineering rules) + F42 arbitrate.
+// Phase 2.3 W2 T2.2 — ADR 0012 errata: CD-3 negative-space + if_rejected_use redirect
+// sister fn `arbitrateWithRedirect` lives in lib/arbitrateRedirect.ts (proactive split,
+// 沿袭 Phase 2.2 sdkReconcile 先例). Legacy `arbitrate()` 保留 byte-stable (B-18 A7 守恒
+// + 30-sample routing-engine.test.ts byte-stable preservation per PATTERNS D-WP-5(b)).
 // IMPL NOTE (R2 § 1.3 + KICKOFF B1 + D1.3-3): yaml.parseDocument → toJS → Ajv strict
 // validate → checkCmdString 二次过滤 (B1 沿袭 phase 1.1.1 H7 pattern). 全局 rule-set,
 // 与 manifest.spec.decision_rules (per-manifest hint, ADR 0007) schema 完全独立.
@@ -181,3 +185,6 @@ function matchesWhen(when: Record<string, unknown>, task: TaskContext): boolean 
 export function getMattpocockPhases(file: DecisionRulesFile): MattpocockPhases | null {
   return file.mattpocock_phases ?? null
 }
+
+// Phase 2.3 W2 T2.2 — CD-3 redirect-aware arbitrate (B-18 proactive split + ADR 0012 errata).
+export { type ArbitrateResult, arbitrateWithRedirect } from './lib/arbitrateRedirect.js'
