@@ -271,7 +271,7 @@ export const PhasesSchema = Type.Object(
 spec.ts L93-96 + L133-135 + L152-156 注释块 pattern(`// ADR <N> errata — <topic> (phase <X.Y> T<N>)`)— Phase 2.2 ADR 编号实占后,**所有 schema 改动行**加同款 fence。例:
 
 ```typescript
-// ADR <实占N> errata — per-phase model tier schema (phase 2.2 W3 — F5).
+// ADR 0011 errata — per-phase model tier schema (phase 2.2 W3 — F5).
 // `model` is 4-enum(haiku/sonnet/opus/inherit), defaults per intel 第 4 条 表:
 //   01-clarify=opus/sonnet, 02-code=sonnet, 03-test=sonnet/haiku, 04-deliver=haiku.
 // `--model-tier inherit` CLI flag override 逃生口(D-04)。

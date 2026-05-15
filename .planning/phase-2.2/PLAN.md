@@ -22,7 +22,7 @@ files_modified:
   - README.md
   - docs/PROJECT-SPEC.md
   - docs/TRANSPARENCY-VERDICT-CHECKLIST.md
-  - docs/adr/<实占N>-execute-task-sdk-ralph.md
+  - docs/adr/0011-execute-task-sdk-ralph.md
   - src/routing/agentDefinition.ts
   - src/routing/lib/sdkReconcile.ts
   - src/routing/lib/sdkSpawn.ts
@@ -52,11 +52,11 @@ must_haves:
     - "phases.yaml 含 `model:` 必填字段,agentFactory 读 phase.model 注 AgentDefinition.model"
     - "scripts/check-transparency-verdicts.mjs ENFORCE=true,全 13 verdict 文档 marker 合规,CI 全绿"
     - "README/PROJECT-SPEC Status: marker 反映最新 shipped phase,freshness check 扫过 0 violation"
-    - "ADR errata <实占N> accepted 含 6 章节;ADR 0001-0010 main body 0 diff;baseline tag 1-10 → 1-<实占N>"
+    - "ADR errata 0011 accepted 含 6 章节;ADR 0001-0010 main body 0 diff;baseline tag 1-10 → 1-0011"
     - "30 子任务 SAMPLES.md COMPLETE 检测 100% 准确(沿袭 phase 1.4 R3 frozen rationale)"
     - "3-OS CI 全绿(Win Git Bash + macOS + Linux)含 SDK spawn 实际跑 + transparency ENFORCE=true 实测"
   artifacts:
-    - path: "docs/adr/<实占N>-execute-task-sdk-ralph.md"
+    - path: "docs/adr/0011-execute-task-sdk-ralph.md"
       provides: "单 ADR errata 6 章节(SDK 引入 / ralph-wiggum keep / dual-signal / contract v1.2 / model tier / Wave 0 transparency)"
       contains: "## SDK 引入, ## dual-signal completion, ## per-phase model tier, ## transparency CI gate flip"
     - path: "src/routing/lib/sdkSpawn.ts"
@@ -301,7 +301,7 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 |------|---------------|-----------|-----------|
 | workflow | execute-task 主线 + ralph-loop full integration | design/content/testing extension MVP + karpathy behavior-rule + CLAUDE.md merge | — |
 | schema | phases.yaml + `model:` 必填 + contract v1.2 reconcile | extension category schema(若需要)| — |
-| ADR | 单 ADR errata <实占N> 6 章节(本 phase 实占)| 新 ADR errata(Phase 2.3 决策)| 新 ADR errata(Phase 2.4 决策)|
+| ADR | 单 ADR errata 0011 6 章节(本 phase 实占)| 新 ADR errata(Phase 2.3 决策)| 新 ADR errata(Phase 2.4 决策)|
 | SDK | INTRODUCE NOW + 4-layer dual-signal | — | — |
 | transparency | gate ENFORCE=true 一次性根治 + Status: marker convention + freshness ext | — | — |
 | installer | 复用 Phase 2.1 6 method | extension category install adapter 真实候选实装 | — |
@@ -353,7 +353,7 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 - F1-F8 全 ship(详 § 6 reproduction commands)
 - 31 个 decision lock(B-01 ~ B-31)全 ship,**zero unresolved conflict**
 - 33 atomic task 全 done + 7 Wave 全 checkpoint pass
-- ADR errata <实占N> accepted + baseline tag updated
+- ADR errata 0011 accepted + baseline tag updated
 - v0.2.0-alpha.2-execute-task 候选 milestone tag created
 - `.planning/STATE.md` + `RETROSPECTIVE.md` 续编 reflect Phase 2.2 ship
 </success_criteria>

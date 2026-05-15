@@ -91,7 +91,7 @@ Wave 6 — ship (F8)
 ## § 3 Hard Constraints（不可违反）
 
 1. **A7 守恒** — ADR 0001-0010 main body 0 diff;Phase 2.2 新 ADR 走 errata 路径(不动旧 ADR);ship 时 baseline tag 10 → 11(N 实占);ci.yml A7 step iter 1-10 → 1-N;`docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` + `docs/INSTALLER-CONTRACT.md` main body 不动(contract v1.2 走 ADR errata inline)
-2. **ADR 编号不预占**(intel § 0 SSOT 引用纪律,Phase 2.1 T1.9 CONTRIBUTING 项目级)— 本 phase 一切文档(KICKOFF/PATTERNS/RESEARCH/ASSUMPTIONS/PLAN/task_plan)写 "ADR errata(编号 plan-phase 实占)" 或 "ADR <实占N>",**不写 ADR 0011**(Phase 2.1 D-08 暂记 0011 仅参考);plan-phase Wave 7 ship 时 git mv / new file 决定实际编号
+2. **ADR 编号不预占**(intel § 0 SSOT 引用纪律,Phase 2.1 T1.9 CONTRIBUTING 项目级)— 本 phase 一切文档(KICKOFF/PATTERNS/RESEARCH/ASSUMPTIONS/PLAN/task_plan)写 "ADR errata(编号 plan-phase 实占)" 或 "ADR 0011",**不写 ADR 0011**(Phase 2.1 D-08 暂记 0011 仅参考);plan-phase Wave 7 ship 时 git mv / new file 决定实际编号
 3. **TypeBox not zod** — schema 改动用 `@sinclair/typebox` `Type.*`;沿袭 Phase 2.1 ADR 0010 errata 注释块 fence 模式
 4. **dual-signal completion**(D-02)— PRIMARY = SDK `outputFormat: { type: 'json_schema' }` `structured_output`;FALLBACK = `<promise>COMPLETE</promise>` `extractPromise`;不允许只用单一信号
 5. **Karpathy simplicity 5 hard limit 严守**(继承 Phase 1.5)— `engine.ts` ≤200L / `agentDefinition.ts` ≤200L(H3 errata cap)/ `systemPrompt.ts` ≤80L / `ralphLoop.ts` ≤50L 主体(D1.4-3 + Phase 1.5.1 enforced)/ `promiseExtract.ts` ≤50L;新文件超 hard limit 必须 spillover to lib/

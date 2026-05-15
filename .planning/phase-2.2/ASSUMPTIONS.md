@@ -12,13 +12,13 @@
 | Bar | What it asserts | Source artifact | Status entering plan-phase | Mapped Wave |
 |-----|-----------------|-----------------|-----------------------------|-------------|
 | **F1** | Wave 0 transparency 一次性根治:`ENFORCE=true` + 全 13 verdict 文档 marker 合规 + freshness ext 扩展(README/PROJECT-SPEC `Status:` marker) | `scripts/check-transparency-verdicts.mjs` + `.planning/**/PLAN-CHECK\|VERIFICATION\|*-AUDIT.md` × 13 + `README.md` + `docs/PROJECT-SPEC.md` | INFRA ready(Phase 2.1 T1.7);marker 0/13 合规;ENFORCE=false;freshness ext 未实装 | **Wave 0** |
-| **F2** | 单 ADR errata draft 覆盖 Phase 2.2 全决策(SDK 引入 + ralph-wiggum keep + dual-signal + contract v1.2 + per-phase model tier + Wave 0 transparency)— **编号 plan-phase 实占** | `docs/adr/<实占N>-*.md` | NEW;编号由本 plan-phase 实占(intel § 0 SSOT 引用纪律,不预占)；本 plan / task_plan / ASSUMPTIONS 一律写 `<实占N>` | **Wave 0**(draft)→ **Wave 6**(accepted + baseline tag) |
+| **F2** | 单 ADR errata draft 覆盖 Phase 2.2 全决策(SDK 引入 + ralph-wiggum keep + dual-signal + contract v1.2 + per-phase model tier + Wave 0 transparency)— **编号 plan-phase 实占** | `docs/adr/0011-*.md` | NEW;编号由本 plan-phase 实占(intel § 0 SSOT 引用纪律,不预占)；本 plan / task_plan / ASSUMPTIONS 一律写 `0011` | **Wave 0**(draft)→ **Wave 6**(accepted + baseline tag) |
 | **F3** | SDK 引入:`@anthropic-ai/claude-agent-sdk` 版本复核 + `outputFormat` × `agents`-map 组合 spike + package.json + lockfile + 3-OS CI verify | `package.json` + `package-lock.json` + `scripts/spike-outputFormat-agents.mjs`(throwaway,**not committed** per D2.2-5)+ `ci.yml` 3-OS 矩阵 | NOT started;SDK 未引入;spike 未跑;research § 4 open question 未 verify | **Wave 1** |
 | **F4** | agentFactory contract v1.2 reconcile + dual-signal completion 4-layer 实装(D2.2-4) | `src/routing/agentDefinition.ts` + `src/routing/lib/sdkReconcile.ts`(NEW per D-WP-5)+ `src/routing/lib/ralphLoop.ts` + `src/routing/lib/promiseExtract.ts` + `src/routing/completionSchema.ts`(NEW)| 14 字段 v1.1 现存;`toSdkAgentDefinition` / `injectFactoryInternalFields` / 4-layer `isComplete` 未实装 | **Wave 2** |
 | **F5** | per-phase model tier schema:`workflows/<name>/phases.yaml` schema + 4 phase 默认表 + `--model-tier inherit` CLI flag + agentFactory 读 `phase.model` | `src/workflow/schema/phases.ts`(NEW per D-WP-1)+ `src/workflow/loadPhases.ts`(NEW)+ `workflows/execute-task/phases.yaml`(NEW)+ `src/cli/execute-task.ts` --model-tier 解析 | NOT started;phases.yaml schema 不存在;commander flag 未加 | **Wave 3** |
 | **F6** | ralph-loop full integration:`engine.route()` spawn placeholder → SDK `query()` real;`ralphLoopWrap` callback 升级接 SDK;verbatim COMPLETE 回流 | `src/routing/engine.ts`(替 `defaultSpawn`)+ `src/routing/lib/sdkSpawn.ts`(NEW)+ `src/routing/lib/ralphLoop.ts`(升级接 resumeSessionId)| 现 placeholder 抛 'engine.defaultSpawn is a placeholder';SDK 真接入未做 | **Wave 4** |
 | **F7** | execute-task CLI 10th register fn + 4-phase chain orchestration + 30 子任务 SAMPLES.md COMPLETE 100% 准确 | `src/cli/execute-task.ts`(NEW)+ `src/cli.ts`(register)+ `.planning/phase-2.2/SAMPLES.md`(NEW,30 sample,沿袭 phase 1.4 R3 frozen)+ `tests/cli/execute-task.test.ts`(NEW) | NOT started | **Wave 5** |
-| **F8** | Ship:3-OS CI 全绿 含 transparency ENFORCE=true 实测 + ADR baseline tag `adr-<实占N>-accepted` + `ci.yml` A7 iter `1-10 → 1-<实占N>` + ADR 0001-0010 main body 0 diff + `v0.2.0-alpha.2-execute-task` 候选 tag | `ci.yml` + git tag + `.planning/STATE.md` + `RETROSPECTIVE.md` 续编 | NOT started | **Wave 6** |
+| **F8** | Ship:3-OS CI 全绿 含 transparency ENFORCE=true 实测 + ADR baseline tag `adr-0011-accepted` + `ci.yml` A7 iter `1-10 → 1-0011` + ADR 0001-0010 main body 0 diff + `v0.2.0-alpha.2-execute-task` 候选 tag | `ci.yml` + git tag + `.planning/STATE.md` + `RETROSPECTIVE.md` 续编 | NOT started | **Wave 6** |
 
 ---
 
@@ -65,8 +65,8 @@
 | Lock | Decision | Source chain |
 |------|----------|--------------|
 | **B-20** | **独立 1 个 ADR** 覆盖 Phase 2.2 全决策(沿袭 phase 1.4 ADR 0008 多决策合并 errata 模式)— 内部 6 章节:① SDK 引入 ② ralph-wiggum keep ③ dual-signal completion 4-layer ④ contract v1.2 reconcile ⑤ per-phase model tier schema errata ⑥ Wave 0 transparency CI gate flip + freshness ext | CONTEXT D-09 + PATTERNS D-WP-7 |
-| **B-21** | ADR 编号**由 Phase 2.2 plan-phase 实占**(intel § 0 + Phase 2.1 T1.9 CONTRIBUTING.md 项目级 SSOT 引用纪律)— 本 phase 一切文档写 `<实占N>` 或 "ADR errata(编号 plan-phase 实占)"。**禁写 `ADR 0011`** | CONTEXT D-10 + intel § 0 |
-| **B-22** | A7 守恒持续:ADR 0001-0010 main body **0 diff**;新 ADR 走 errata 路径(不动旧 ADR);ship 时 baseline tag `1-10 → 1-<实占N>`;CI `ci.yml` A7 step iter 同步;`docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` + `docs/INSTALLER-CONTRACT.md` main body 不动(contract v1.2 reconcile 走 ADR errata inline 注释) | CONTEXT D-15 + KICKOFF § 3.1 |
+| **B-21** | ADR 编号**由 Phase 2.2 plan-phase 实占**(intel § 0 + Phase 2.1 T1.9 CONTRIBUTING.md 项目级 SSOT 引用纪律)— 本 phase 一切文档写 `0011` 或 "ADR errata(编号 plan-phase 实占)"。**禁写 `ADR 0011`** | CONTEXT D-10 + intel § 0 |
+| **B-22** | A7 守恒持续:ADR 0001-0010 main body **0 diff**;新 ADR 走 errata 路径(不动旧 ADR);ship 时 baseline tag `1-10 → 1-0011`;CI `ci.yml` A7 step iter 同步;`docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` + `docs/INSTALLER-CONTRACT.md` main body 不动(contract v1.2 reconcile 走 ADR errata inline 注释) | CONTEXT D-15 + KICKOFF § 3.1 |
 
 ### B.5 Karpathy hard limits & file split
 
@@ -84,7 +84,7 @@
 |------|----------|--------------|
 | **B-28** | `execute-task` workflow CLI 唯一入路 = `harnessed execute-task <name>`(D-WP-2 选项 a)— SKILL.md `trigger_phrases` 仅 forward-looking 文档,**实装(GSD orchestration 自动召唤)推 Phase 2.3 extension category** | PATTERNS D-WP-2 → **PLANNER LOCK** |
 | **B-29** | 30 子任务 SAMPLES.md 选取(D-WP-6) = phase 1.4 SAMPLES.md 30 sample 中**复用 15 + 新增 15 execute-task 专属**(覆盖:4-phase chain 各 phase trigger × 4 + ralph-loop max-iter 退场 × 3 + structured_output PRIMARY vs FALLBACK 路径 × 4 + dual-signal degraded path × 2 + 异常路径 × 2) | PATTERNS D-WP-6 + phase 1.4 R3 frozen rationale |
-| **B-30** | TypeBox not zod — schema 改动用 `@sinclair/typebox` `Type.*`;沿袭 Phase 2.1 ADR 0010 errata 注释块 fence pattern;每 schema 改动行加 `// ADR <实占N> errata — <topic> (phase 2.2 W<N> — F<N>)` | KICKOFF § 3.3 + PATTERNS § 3.2 |
+| **B-30** | TypeBox not zod — schema 改动用 `@sinclair/typebox` `Type.*`;沿袭 Phase 2.1 ADR 0010 errata 注释块 fence pattern;每 schema 改动行加 `// ADR 0011 errata — <topic> (phase 2.2 W<N> — F<N>)` | KICKOFF § 3.3 + PATTERNS § 3.2 |
 | **B-31** | A8 LF line endings — 所有新文件 LF;Win 测试需 Git Bash;`gitCloneWithSetup` Phase 2.1 已实证 PATH_A+B 双 OK,新 SDK call 路径同 Win 兼容验证(Wave 1 spike Win 跑 + Wave 6 CI 3-OS) | KICKOFF § 3.8 |
 
 ### B.7 RESOLVED conflict chain notes

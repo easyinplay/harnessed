@@ -1,5 +1,7 @@
 # Phase 2.2 — task_plan.md
 
+> **Resolved (T0.1, 2026-05-15)**: `0011` = **`0011`** (latest ADR on disk = `0010-installer-schema-extension-errata.md` → next = `0011`); `ROADMAP_LATEST_RE` = `/^##\s+v\d+\.\d+\.\d+\s+—.*✅\s*SHIPPED/m` (matches top-level milestone header with `✅ SHIPPED` suffix in `.planning/ROADMAP.md`; latest match → `v0.1.0`); freshness `Status:` marker must additionally carry `Phase 2.1 shipped` token (sourced from STATE.md, sub-phase ship not yet promoted to ROADMAP top-level header — Wave 0 freshness gate validates BOTH tokens via STATUS_MARKER tolerance).
+
 > **Authored**: 2026-05-15
 > **Author**: gsd-planner (Wave B)
 > **Sources**: KICKOFF § 2 Wave 拓扑 + ASSUMPTIONS § A bar mapping + ASSUMPTIONS § B 31 lock + PATTERNS § 2 code excerpts + RESEARCH § 1.6 / § 2.4 / § 3.5 implementation sketches
@@ -16,25 +18,25 @@
 - **files_modified**: (read-only)
 - **action**:
   1. 跑 `ls -1 docs/adr/ | grep -E '^[0-9]{4}-.*\.md$' | sort | tail -1` 读最新 ADR 编号,取 `NNNN`
-  2. `<实占N>` := `printf '%04d' $((10#NNNN + 1))`(zero-padded 4 digit,e.g. `0011`)
+  2. `0011` := `printf '%04d' $((10#NNNN + 1))`(zero-padded 4 digit,e.g. `0011`)
   3. 跑 `head -100 .planning/ROADMAP.md | grep -E '^##\s+(v[0-9.]+|Phase\s+[0-9.]+)'` 读 latest header pattern → 决定 freshness check 的 `ROADMAP_LATEST_RE` regex(RESEARCH § 3.6 open detail)
   4. 把实占 N + ROADMAP_LATEST_RE 决议**记录到本 task_plan.md 第 1 行 frontmatter-style block**(供后续 task 引用)
 - **read_first**:
   - `ls docs/adr/`(by Bash)
   - `head -100 .planning/ROADMAP.md`(by Read)
 - **acceptance_criteria**:
-  - `ls docs/adr/<实占N>-*.md 2>&1` 此时**不存在**(T0.2 才创建)
-  - 本 task_plan.md 顶部新增 `> **Resolved**: <实占N>=NNNN+1, ROADMAP_LATEST_RE=...` block(grep-verifiable)
+  - `ls docs/adr/0011-*.md 2>&1` 此时**不存在**(T0.2 才创建)
+  - 本 task_plan.md 顶部新增 `> **Resolved**: 0011=NNNN+1, ROADMAP_LATEST_RE=...` block(grep-verifiable)
 - **decision_source**: B-21 + RESEARCH § 3.6
 
-> ⚠️ **Placeholder sed-replace discipline (W1 plan-check fix)**: T0.1 resolve `<实占N>` 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + 所有 NEW ADR/SPEC 文件批量 sed-replace 字面占位:`sed -i "s/<实占N>/<actual-NNNN>/g" .planning/phase-2.2/task_plan.md .planning/phase-2.2/PLAN.md .planning/phase-2.2/KICKOFF.md docs/adr/<actual-NNNN>-*.md`(以及任何 grep 命中的其他文件)。**zero 字面 `<实占N>` 残留**是 W0 commit 前置条件(grep `<实占N>` .planning/phase-2.2/ docs/adr/ 必须 exit 1)。
+> ⚠️ **Placeholder sed-replace discipline (W1 plan-check fix)**: T0.1 resolve `0011` 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + 所有 NEW ADR/SPEC 文件批量 sed-replace 字面占位:`sed -i "s/0011/<actual-NNNN>/g" .planning/phase-2.2/task_plan.md .planning/phase-2.2/PLAN.md .planning/phase-2.2/KICKOFF.md docs/adr/<actual-NNNN>-*.md`(以及任何 grep 命中的其他文件)。**zero 字面 `0011` 残留**是 W0 commit 前置条件(grep `0011` .planning/phase-2.2/ docs/adr/ 必须 exit 1)。
 
-### T0.2 — ADR <实占N> draft(6 章节 sketch)
+### T0.2 — ADR 0011 draft(6 章节 sketch)
 
-- **files_modified**: `docs/adr/<实占N>-execute-task-sdk-ralph.md`(NEW)
+- **files_modified**: `docs/adr/0011-execute-task-sdk-ralph.md`(NEW)
 - **action**: 创建 ADR file 含 6 章节 sketch(详细 Wave 6 T6.1 fill):
   ```markdown
-  # ADR <实占N>: execute-task workflow + ralph-loop SDK introduction
+  # ADR 0011: execute-task workflow + ralph-loop SDK introduction
   Status: Draft (phase 2.2 W0 draft → W6 accepted)
   Date: 2026-05-15
   ## Context
@@ -47,16 +49,16 @@
   ### 5. per-phase model tier schema (B-08~B-13)
   ### 6. Wave 0 transparency CI gate flip + freshness ext (B-14~B-19)
   ## A7 Conservation
-  ADR 0001-0010 main body untouched; baseline tag 1-10 → 1-<实占N>; contract v1.1 → v1.2 reconcile via this errata inline (AGENT-DEFINITION-FACTORY-CONTRACT.md main body 不动).
+  ADR 0001-0010 main body untouched; baseline tag 1-10 → 1-0011; contract v1.1 → v1.2 reconcile via this errata inline (AGENT-DEFINITION-FACTORY-CONTRACT.md main body 不动).
   ## References
   ```
 - **read_first**:
   - `docs/adr/0010-*.md`(by Read,作 errata fence pattern 参考)
   - `.planning/phase-2.2/ASSUMPTIONS.md` § B(by Read,锁列表)
 - **acceptance_criteria**:
-  - `ls docs/adr/<实占N>-*.md` 命中 1 file
-  - `grep -E "^### [1-6]\. " docs/adr/<实占N>-*.md | wc -l` == 6
-  - `grep "Status: Draft" docs/adr/<实占N>-*.md` 命中
+  - `ls docs/adr/0011-*.md` 命中 1 file
+  - `grep -E "^### [1-6]\. " docs/adr/0011-*.md | wc -l` == 6
+  - `grep "Status: Draft" docs/adr/0011-*.md` 命中
 - **decision_source**: B-20 + B-21 + KICKOFF § 3.2
 
 ### T0.3 — 13 verdict 文档 manual marker migration
@@ -240,7 +242,7 @@
 - **action**: 沿袭 PATTERNS § 2.3 ADAPT spec:
   ```typescript
   // src/routing/lib/sdkReconcile.ts(NEW)
-  // ADR <实占N> errata — contract v1.2 reconcile (phase 2.2 W2 — F4).
+  // ADR 0011 errata — contract v1.2 reconcile (phase 2.2 W2 — F4).
   // Splits 2 helper fn from agentDefinition.ts to keep agentDefinition.ts ≤200L hard limit (B-24).
   import type { AgentDefinition } from '../agentDefinition.js'
   import type { AgentDefinition as SdkAgentDef } from '@anthropic-ai/claude-agent-sdk'
@@ -280,7 +282,7 @@
   - `wc -l src/routing/lib/sdkReconcile.ts` ≤ 80
   - `grep -E "export function (toSdkAgentDefinition|injectFactoryInternalFields)" src/routing/lib/sdkReconcile.ts | wc -l` == 2
   - `npx tsc --noEmit` pass
-  - `grep "ADR <实占N>" src/routing/lib/sdkReconcile.ts` 命中(B-30 fence)
+  - `grep "ADR 0011" src/routing/lib/sdkReconcile.ts` 命中(B-30 fence)
 - **decision_source**: B-01 + B-24 + PATTERNS D-WP-5 + § 2.3
 
 ### T2.2 — `src/routing/completionSchema.ts` NEW(Unified COMPLETION_SCHEMA)
@@ -289,7 +291,7 @@
 - **action**: 沿袭 RESEARCH § 1.4 unified schema spec:
   ```typescript
   // src/routing/completionSchema.ts(NEW)
-  // ADR <实占N> errata — dual-signal completion 4-layer (phase 2.2 W2 — F4).
+  // ADR 0011 errata — dual-signal completion 4-layer (phase 2.2 W2 — F4).
   // Unified COMPLETION_SCHEMA(D2.2-1)— 4 phase chain 共享一 schema,Karpathy YAGNI (RESEARCH § 1.4).
   export const COMPLETION_SCHEMA = {
     type: 'object',
@@ -320,7 +322,7 @@
   1. import `COMPLETION_SCHEMA` from `./completionSchema.js`
   2. 在 `SYSTEM_PROMPT` 末尾 append 1 段 belt-and-suspenders 注入(沿袭 PATTERNS § 2.3 推荐):
      ```typescript
-     // ADR <实占N> errata — dual-signal PRIMARY schema inject (phase 2.2 W2 — F4).
+     // ADR 0011 errata — dual-signal PRIMARY schema inject (phase 2.2 W2 — F4).
      export const SYSTEM_PROMPT = `${EXISTING_SYSTEM_PROMPT}
 
      ## Completion signal (dual-signal — emit BOTH)
@@ -412,7 +414,7 @@
 - **action**: 沿袭 PATTERNS § 3.1 TypeBox 模板:
   ```typescript
   // src/workflow/schema/phases.ts(NEW)
-  // ADR <实占N> errata — per-phase model tier schema (phase 2.2 W3 — F5).
+  // ADR 0011 errata — per-phase model tier schema (phase 2.2 W3 — F5).
   // ModelTier 4-enum(haiku/sonnet/opus/inherit),defaults per intel 第 4 条 表:
   //   01-clarify=opus/sonnet, 02-code=sonnet, 03-test=sonnet/haiku, 04-deliver=haiku.
   // `--model-tier inherit` CLI flag override 逃生口(B-10)。
@@ -560,7 +562,7 @@
 - **action**: 沿袭 PATTERNS § 2.2 ADAPT spec + RESEARCH § 3.1 executeSubtask shape:
   ```typescript
   // src/routing/lib/sdkSpawn.ts(NEW)
-  // ADR <实占N> errata — SDK introduction + ralph-loop full integration (phase 2.2 W4 — F6).
+  // ADR 0011 errata — SDK introduction + ralph-loop full integration (phase 2.2 W4 — F6).
   // engine.ts ≤200L hard limit 守 → split sdkSpawn 到此(B-25)。
   import { query, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk'
   import type { AgentDefinition } from '../agentDefinition.js'
@@ -669,7 +671,7 @@
 - **action**: 沿袭 PATTERNS § 2.1 COPY scaffold from `src/cli/research.ts`:
   ```typescript
   // src/cli/execute-task.ts(NEW)
-  // ADR <实占N> errata — execute-task workflow CLI (phase 2.2 W5 — F7).
+  // ADR 0011 errata — execute-task workflow CLI (phase 2.2 W5 — F7).
   // 10th register fn — 沿袭 phase 1.4 T5.1 research.ts pattern.
   import { Command } from 'commander'
   import { route, EngineResult } from '../routing/engine.js'
@@ -746,7 +748,7 @@
 - **action**:
   1. import `registerExecuteTask` from `./cli/execute-task.js`(沿袭 L9 import pattern)
   2. 在 `registerResearch(program)` 后加 `registerExecuteTask(program)`
-  3. 文件顶 comment 改为 "10 subcommands per ADR 0004 + 0007 + 0008 + <实占N>"
+  3. 文件顶 comment 改为 "10 subcommands per ADR 0004 + 0007 + 0008 + 0011"
 - **read_first**: `src/cli.ts`(by Read,沿袭 register pattern)
 - **acceptance_criteria**:
   - `grep -E "import.*registerExecuteTask.*from '\\./cli/execute-task" src/cli.ts | wc -l` == 1
@@ -831,9 +833,9 @@
 
 ## Wave 6 — ship
 
-### T6.1 — ADR <实占N> finalize 6 章节(Wave 0 draft → 详细 fill)
+### T6.1 — ADR 0011 finalize 6 章节(Wave 0 draft → 详细 fill)
 
-- **files_modified**: `docs/adr/<实占N>-execute-task-sdk-ralph.md`(MODIFY,fill detail)
+- **files_modified**: `docs/adr/0011-execute-task-sdk-ralph.md`(MODIFY,fill detail)
 - **action**: 升级 T0.2 draft 为 accepted 状态:
   1. Status: `Draft` → `Accepted (phase 2.2 W6 — 2026-05-15)`
   2. 6 章节每节 fill detail:
@@ -843,24 +845,24 @@
      - **§ 4 contract v1.2 reconcile**:cite B-01,14→4 字段 unpack + 10 字段 inject;**inline 注释**(`AGENT-DEFINITION-FACTORY-CONTRACT.md` main body 不动,reconcile 走此 ADR errata)
      - **§ 5 per-phase model tier schema errata**:cite B-08~B-13,intel 第 4 条默认表,`--model-tier inherit` 逃生口
      - **§ 6 Wave 0 transparency CI gate flip + freshness ext**:cite B-14~B-19,STATUS_MARKER regex,FRONT_MATTER_DOCS list
-  3. ## A7 Conservation 节:`baseline tag 1-10 → 1-<实占N>`(T6.5 创建)
+  3. ## A7 Conservation 节:`baseline tag 1-10 → 1-0011`(T6.5 创建)
   4. ## References 节:全 source(KICKOFF / CONTEXT / PATTERNS / RESEARCH / ASSUMPTIONS / research/v0.2.0 / intel / Phase 2.1 D-08 暂记 0011 仅参考)
 - **read_first**:
   - T0.2 draft + ASSUMPTIONS § B 31 lock
 - **acceptance_criteria**:
-  - `grep -E "Status: Accepted" docs/adr/<实占N>-*.md` 命中
-  - `grep -E "^### [1-6]\\." docs/adr/<实占N>-*.md | wc -l` == 6
-  - `grep -E "(B-0[1-9]|B-[12][0-9]|B-3[01])" docs/adr/<实占N>-*.md | wc -l` ≥ 20(20+ B-lock cite)
-  - `grep -E "AGENT-DEFINITION-FACTORY-CONTRACT\\.md main body" docs/adr/<实占N>-*.md` 命中(A7 守恒声明)
+  - `grep -E "Status: Accepted" docs/adr/0011-*.md` 命中
+  - `grep -E "^### [1-6]\\." docs/adr/0011-*.md | wc -l` == 6
+  - `grep -E "(B-0[1-9]|B-[12][0-9]|B-3[01])" docs/adr/0011-*.md | wc -l` ≥ 20(20+ B-lock cite)
+  - `grep -E "AGENT-DEFINITION-FACTORY-CONTRACT\\.md main body" docs/adr/0011-*.md` 命中(A7 守恒声明)
 - **decision_source**: B-20 + B-21 + B-22
 
-### T6.2 — `ci.yml` A7 iter `1-10 → 1-<实占N>`
+### T6.2 — `ci.yml` A7 iter `1-10 → 1-0011`
 
 - **files_modified**: `ci.yml`(MODIFY,A7 step iter range)
-- **action**: 找到 A7 step iter 行(沿袭 phase 1.4 ADR 0008 A7 step pattern),改 `for i in $(seq 1 10)` → `for i in $(seq 1 <实占N>)`(or等价 syntax,看 ci.yml 现 form)
+- **action**: 找到 A7 step iter 行(沿袭 phase 1.4 ADR 0008 A7 step pattern),改 `for i in $(seq 1 10)` → `for i in $(seq 1 0011)`(or等价 syntax,看 ci.yml 现 form)
 - **read_first**: `ci.yml`(by Read,定位 A7 step)
 - **acceptance_criteria**:
-  - `grep -E "seq 1 <实占N>|seq 1 ${N}" ci.yml | wc -l` ≥ 1
+  - `grep -E "seq 1 0011|seq 1 ${N}" ci.yml | wc -l` ≥ 1
   - `grep -E "seq 1 10" ci.yml | wc -l` == 0(旧 iter 已替换)
 - **decision_source**: B-22 + KICKOFF § 1.2 F8
 
@@ -891,13 +893,13 @@
 
 - **files_modified**: (git tag-only)
 - **action**:
-  1. `git tag adr-<实占N>-accepted -m "phase 2.2 ship — ADR <实占N> accepted, A7 baseline 1-10 → 1-<实占N>"`
+  1. `git tag adr-0011-accepted -m "phase 2.2 ship — ADR 0011 accepted, A7 baseline 1-10 → 1-0011"`
   2. `git tag v0.2.0-alpha.2-execute-task -m "phase 2.2 candidate milestone — execute-task workflow + ralph-loop SDK introduction"`
   3. (不 push origin 等用户手动 push,沿袭 phase 1.5 / 2.1 ship pattern)
 - **read_first**: T6.1 + T6.2 + T6.3 全 pass 后才执行
 - **acceptance_criteria**:
-  - `git tag --list adr-<实占N>-accepted v0.2.0-alpha.2-execute-task | wc -l` == 2
-  - `git show adr-<实占N>-accepted --no-patch` 显示 commit hash + tag message 含 "phase 2.2 ship"
+  - `git tag --list adr-0011-accepted v0.2.0-alpha.2-execute-task | wc -l` == 2
+  - `git show adr-0011-accepted --no-patch` 显示 commit hash + tag message 含 "phase 2.2 ship"
   - 3-OS CI 全绿(最后一次 push 触发)
 - **decision_source**: B-22 + KICKOFF § 1.2 F8
 
