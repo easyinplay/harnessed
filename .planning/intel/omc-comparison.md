@@ -269,3 +269,30 @@ execute-task 各 phase model 建议：
 | V-2 Manual fallback bundle（边界）| | | ✅ |
 
 **条目计数**：11 条核心借鉴（EE 5 + CD 6）+ 2 条愿景（V-1 + V-2 边界）+ 不借鉴清单 5 组（含 4 项目特性）。
+
+---
+
+## 实施进度回填
+
+> **Authored**: Phase 2.3 Wave 0 T0.7 (2026-05-16)
+> **Purpose**: 每 intel actionable entry 标 `IMPL: Phase X.Y (commit hash)` 或 `PENDING (defer to ...)`/`DEFERRED` — 防 intel drift。 沿袭 § 0 SSOT 引用纪律。 Phase 2.3 Wave 0 起每 ship phase 时同步更新本节。
+
+| Intel Entry | Status | Implementation / Notes |
+|-------------|--------|-----------------------|
+| EE-1 role-router scoring 中间层 (L40-) | DEFERRED (v0.3+) | 路由命中率验收时 — 30 sample → 100+ × multi-model 升级时再评估 |
+| EE-2 (OMC) resolved_routing 快照冻结 (L?-) | PENDING (v0.3+ evaluation) | karpathy YAGNI — 真实 mid-session drift 出现后再做 |
+| EE-2 (ECC) 9-field manifest schema | DEFERRED (Phase 2.4 manifest schema 演进同步评估) | 与 Phase 2.3 MIN scope 不冲突 |
+| EE-3 keyword-detector hook (C 层) | PENDING (Phase 2.2+ 实装时机) | 现成参考省时间, 待 hook 引入时直接读 OMC `keyword-detector.mjs` |
+| EE-4 plan 4 维量化阈值 schema (L?-) | DEFERRED (Phase 2.4 doctor 完整版 absorb OR 独立 Phase 2.5) | 与 Phase 2.3 extension category 主线 orthogonal (D-06) |
+| EE-5 反 thin wrapper 5-question merge gate (L84-104) | IMPL: Phase 2.3 (本 phase, Wave 3 T3.1-T3.2) | `harnessed manifest add <upstream>` CLI 5 题 + plan-phase 模板 5 题 + gsd-plan-checker BLOCKER (D-03 双层); KICKOFF § 7 self-instance 5 adapter × 5 题 inline |
+| CD-1 handoff 四字段完整模板 | PENDING (v0.3.0 checkpoint 完整版) | Phase 2.2 已用模板格式, 完整机制 v0.3.0 |
+| CD-2 ⭐ per-phase model tier (L106-127) | IMPL: Phase 2.2 (commit `97d4da2` T3.1 schema + `ffe83b9` T3.2 loadPhases + `7799bf5` T3.3 phases.yaml + `b94e8bd` T3.4 tests) | `workflows/execute-task/phases.yaml` 4 phase × model 表 (opus/sonnet/sonnet/haiku); TypeBox 4-enum ModelTier + PhaseEntry schema; 沿袭 ADR 0011 § Decision 5 |
+| CD-3 显式职责负空间 + `if_rejected_use` (L130-135) | IMPL: Phase 2.3 (本 phase, Wave 2 T2.2 + T2.3) | `decision_rules.yaml` schema 加 `do_not_use_when:` + `if_rejected_use:` optional fields (TypeBox); `arbitrate()` ~15L 升级读 negative-space → down-rank + reject redirect target; ADR 0012 § 4 |
+| CD-4 Task Session 复用 (L139-147) | PENDING (v0.3.0 — Phase 2.2 T1.2 SC4 PARTIAL → B-35 fallback branch triggered; closure infra 三件套 ready) | sdkSpawn.onSessionId / ralphLoopWrap.resumeSessionId / engine.wrappedSpawn capturedSessionId v0.3.0 consumer 接入 + `harnessed.phases.v1` schema bump 加 `task_session_id?` field; 详 `.planning/phase-2.2/T4.4-DEFERRED-onboarding.md` |
+| CD-5 ⭐ `schemaVersion` 单一兼容门 (L149-157) | IMPL: Phase 2.2 (commit `4d71b1d` T2.0 — helper-only adoption baseline; consumer 扩 Phase 2.3+ 逐 surface land) | `src/types/schemaVersion.ts` SchemaVersion<S> template literal + SCHEMA_VERSIONS const map + branchOnSchemaVersion<T> helper + TypeBox SchemaVersionLiteral union; **honest adoption status**: consumer count = 2 (Phase 2.3 W0 起点), 7 surface (handoff/phases-yaml/manifest state/installer state/route decision log/checkpoint/agent definition factory) 逐 phase land per ADR 0012 § 7 errata |
+| CD-6 三层 skill 产源 + provenance gate (L159-167) | IMPL: Phase 2.2 (commit `2e5a18b` T4.0 — provenance gate hard fail BEFORE-W4) | `provenance.schema.json` 4 字段 (source enum + created_at + confidence + author); `scripts/check-provenance.mjs` ENFORCE=true walker; ci.yml step Phase 2.2 W4 加 + Phase 2.3 W0 T0.6 Win pwsh sentinel 加固; runtime scope 限 `.harnessed/{sessions,checkpoints,route-logs}/**` (R8 mitigation) |
+| V-1 动态 model routing 愿景 | DEFERRED (v0.3+ discuss) | static CD-2 跑通 (Phase 2.2 ship) 后再考虑升级 |
+| V-2 Manual fallback bundle export 边界 case | DEFERRED (v0.4+ 评估) | wedge 风险警示 — 决策前先答 "保 wedge vs 破 wedge" |
+
+**Status summary**: 5 IMPL (CD-2/CD-3/CD-5/CD-6/EE-5) + 1 PIGGY (CD-3 同 phase Wave 2 ship) + 5 PENDING + 4 DEFERRED = 14 entry tracked。 Phase 2.3 ship 时同步 update CD-3 + EE-5 commit hash 回填本表。
+
