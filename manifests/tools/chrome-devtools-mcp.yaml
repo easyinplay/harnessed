@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: chrome-devtools-mcp
+  display_name: Chrome DevTools MCP
+  description: Performance / a11y / memory-leak diagnostics via Chrome DevTools MCP (LCP / Core Web Vitals / ARIA / heap snapshot).
+  upstream:
+    source: chrome-devtools-mcp
+    homepage: https://github.com/ChromeDevTools/chrome-devtools-mcp
+    repository: https://github.com/ChromeDevTools/chrome-devtools-mcp.git
+    license: Apache-2.0
+    notice: |
+      chrome-devtools-mcp by ChromeDevTools team (Apache-2.0, npm stdio MCP).
+      Method = mcp-stdio-add (research § 3.3: no HTTP endpoint; matches tavily-mcp shape).
+      testing category — perf / a11y / memory-leak; routed via `perf-a11y-memory` rule.
+spec:
+  type: mcp-npm
+  component_type: mcp-tool
+  category: testing
+  install_type: mcp
+  install:
+    method: mcp-stdio-add
+    cmd: "claude mcp add --scope project --transport stdio chrome-devtools-mcp -- npx --yes chrome-devtools-mcp@^0.1.0"
+    npm_version: ^0.1.0
+    idempotent_check: "claude mcp list | grep -q chrome-devtools-mcp"
+  verify:
+    cmd: "claude mcp list | grep -q chrome-devtools-mcp"
+    timeout_ms: 10000
+  uninstall:
+    cmd: "claude mcp remove --scope project chrome-devtools-mcp"
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-16"
+    last_known_good_version: "0.1.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
+  decision_rules:
+    trigger: "perf / a11y / memory-leak / LCP / Core Web Vitals"
+    default_expert: chrome-devtools-mcp
