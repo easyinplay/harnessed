@@ -1,0 +1,27 @@
+# execute-task workflow — per-phase model tier (ADR 0011 errata / intel CD-2 § 第 4 条).
+# Default table sourced from `.planning/intel/omc-comparison.md` § CD-2 (phase 2.2 W3 — T3.3).
+# Override via CLI: `--model-tier inherit` (B-10 escape hatch).
+workflow: execute-task
+phases:
+  - id: 01-clarify
+    name: brainstorming
+    upstream: superpowers brainstorming
+    model: opus            # intel 第 4 条: opus / sonnet — 任务复杂度澄清
+    skills: ['brainstorming']
+    max_iterations: 5
+  - id: 02-code
+    name: code (karpathy 心法 always-on)
+    upstream: karpathy
+    model: sonnet
+    max_iterations: 20
+  - id: 03-test
+    name: test (conditional TDD + mattpocock 招式)
+    upstream: superpowers TDD
+    model: sonnet          # intel 第 4 条: sonnet / haiku — TDD red-green-refactor
+    skills: ['test-driven-development']
+    max_iterations: 15
+  - id: 04-deliver
+    name: deliver (ralph-loop COMPLETE)
+    upstream: ralph-loop
+    model: haiku           # intel 第 4 条: 04-deliver=haiku (省 token — 迭代验收循环关键点)
+    max_iterations: 20
