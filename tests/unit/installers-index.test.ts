@@ -40,11 +40,11 @@ import { spawn } from 'node:child_process'
 import { installCcPluginMarketplace } from '../../src/installers/ccPluginMarketplace.js'
 import { installGitCloneWithSetup } from '../../src/installers/gitCloneWithSetup.js'
 import { installers, runInstall } from '../../src/installers/index.js'
+import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { installMcpHttpAdd } from '../../src/installers/mcpHttpAdd.js'
 import { installMcpStdioAdd } from '../../src/installers/mcpStdioAdd.js'
 import { installNpmCli } from '../../src/installers/npmCli.js'
 import { installNpxSkillInstaller } from '../../src/installers/npxSkillInstaller.js'
-import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
 const spawnMock = vi.mocked(spawn)
 

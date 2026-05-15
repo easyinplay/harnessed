@@ -16,9 +16,9 @@
 // to L4 here as the safest pre-confirmation seed — npmCli may downgrade to L1
 // after the dry-run preview when cmd uses npx.
 
-import type { Installer, InstallOpts, InstallResult, Level, Manifest } from './lib/types.js'
 import { installCcPluginMarketplace } from './ccPluginMarketplace.js'
 import { installGitCloneWithSetup } from './gitCloneWithSetup.js'
+import type { Installer, InstallOpts, InstallResult, Level, Manifest } from './lib/types.js'
 import { installMcpHttpAdd } from './mcpHttpAdd.js'
 import { installMcpStdioAdd } from './mcpStdioAdd.js'
 import { installNpmCli } from './npmCli.js'
