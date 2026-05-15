@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: frontend-design
+  display_name: frontend-design (anthropics/skills)
+  description: Style-led / distinctive aesthetic skill. D-08 "做出风格" override anchor; complements ui-ux-pro-max.
+  upstream:
+    source: github.com/anthropics/skills
+    homepage: https://github.com/anthropics/skills/tree/main/skills/frontend-design
+    repository: https://github.com/anthropics/skills.git
+    license: anthropics-official
+    notice: |
+      frontend-design sub-skill from anthropics/skills (source-available; anthropics-official carve-out per .planning/research/v0.2.0-extensions.md § 1).
+      D-08 "做出风格" override anchor — primary expert when user requests style-led / distinctive / bold design.
+      Routing complementary to ui-ux-pro-max (data-driven / standards-based). See routing/decision_rules.yaml `ui-task-bold-style-override`.
+spec:
+  type: cc-skill-pack
+  component_type: command
+  category: design
+  install_type: git
+  install:
+    method: git-clone-with-setup
+    cmd: "rm -rf ~/.claude/skills/.cache/anthropics-skills-fe && git clone https://github.com/anthropics/skills.git ~/.claude/skills/.cache/anthropics-skills-fe && (cd ~/.claude/skills/.cache/anthropics-skills-fe && git checkout f458cee31a7577a47ba0c9a101976fa599385174) && mkdir -p ~/.claude/skills && cp -R ~/.claude/skills/.cache/anthropics-skills-fe/skills/frontend-design ~/.claude/skills/frontend-design && rm -rf ~/.claude/skills/.cache/anthropics-skills-fe"
+    git_ref: f458cee31a7577a47ba0c9a101976fa599385174
+    idempotent_check: "test -f ~/.claude/skills/frontend-design/SKILL.md"
+  verify:
+    cmd: "test -f ~/.claude/skills/frontend-design/SKILL.md"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/frontend-design"
+    cleanup_paths:
+      - ~/.claude/skills/frontend-design
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-16"
+    last_known_good_version: main-2026-05-09
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
+  decision_rules:
+    trigger: "user 请求 style-led / 独特创意 / 做出风格 / distinctive"
+    default_expert: frontend-design
+    arbitration_rule: "frontend-design 主导剩余维度 (layout / motion / decoration); ui-ux-pro-max 补标准化主方案"
+    override_signals:
+      - phrase: "做出风格"
+        use: frontend-design
+      - phrase: "experimental"
+        use: frontend-design
+      - phrase: "design-led"
+        use: frontend-design
