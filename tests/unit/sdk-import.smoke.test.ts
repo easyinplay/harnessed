@@ -5,8 +5,8 @@
 //
 // Acceptance: B-04 SDK pin + B-31 Win 兼容 verify.
 
-import { describe, expect, it } from 'vitest'
 import { query } from '@anthropic-ai/claude-agent-sdk'
+import { describe, expect, it } from 'vitest'
 
 describe('SDK smoke import', () => {
   it('query is a function', () => {
