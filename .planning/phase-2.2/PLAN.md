@@ -269,7 +269,7 @@ Phase 2.2 ship 后,下游 phase 直接消费的接口:
 | Bar | Reproduction Command | Pass Criteria |
 |-----|----------------------|---------------|
 | **F1** | `node scripts/check-transparency-verdicts.mjs` | exit 0,stdout includes "13/13 verdict markers compliant + 2/2 Status: markers compliant",`grep "ENFORCE = true" scripts/check-transparency-verdicts.mjs` 命中 |
-| **F2** | `ls docs/adr/<N>-*.md && grep -E "^## (SDK 引入|ralph-wiggum keep|dual-signal completion|contract v1\.2 reconcile|per-phase model tier|Wave 0 transparency)" docs/adr/<N>-*.md \| wc -l` | wc 输出 == 6 |
+| **F2** | `ls docs/adr/<N>-*.md && grep -E "^### [1-6]\. (SDK 引入\|ralph-wiggum keep\|dual-signal completion\|contract v1\.2 reconcile\|per-phase model tier\|Wave 0 transparency)" docs/adr/<N>-*.md \| wc -l` | wc 输出 == 6(与 T0.2/T6.1 实际 `### N. ` heading-3 numbered form 一致;W3 plan-check fix)|
 | **F3** | `npm view @anthropic-ai/claude-agent-sdk version && grep "@anthropic-ai/claude-agent-sdk" package.json && npm test -- tests/sdk-import.smoke.test.ts` | SDK version 与 lockfile match,smoke test pass on 3 OS |
 | **F4** | `npm test -- tests/routing/sdk-reconcile.test.ts tests/routing/isComplete.test.ts && wc -l src/routing/agentDefinition.ts src/routing/lib/sdkReconcile.ts src/routing/lib/ralphLoop.ts src/routing/lib/promiseExtract.ts` | tests pass;agentDefinition.ts ≤200L,ralphLoop ≤50L,promiseExtract ≤50L,sdkReconcile ≤80L |
 | **F5** | `npm test -- tests/workflow/load-phases.test.ts && node -e "const {loadPhases} = require('./dist/workflow/loadPhases'); console.log(loadPhases('workflows/execute-task/phases.yaml').phases.map(p=>p.model))"` | tests pass;stdout `['opus','sonnet','sonnet','haiku']`(intel 第 4 条默认表) |

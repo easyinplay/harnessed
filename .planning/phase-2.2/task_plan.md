@@ -27,6 +27,8 @@
   - 本 task_plan.md 顶部新增 `> **Resolved**: <实占N>=NNNN+1, ROADMAP_LATEST_RE=...` block(grep-verifiable)
 - **decision_source**: B-21 + RESEARCH § 3.6
 
+> ⚠️ **Placeholder sed-replace discipline (W1 plan-check fix)**: T0.1 resolve `<实占N>` 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + 所有 NEW ADR/SPEC 文件批量 sed-replace 字面占位:`sed -i "s/<实占N>/<actual-NNNN>/g" .planning/phase-2.2/task_plan.md .planning/phase-2.2/PLAN.md .planning/phase-2.2/KICKOFF.md docs/adr/<actual-NNNN>-*.md`(以及任何 grep 命中的其他文件)。**zero 字面 `<实占N>` 残留**是 W0 commit 前置条件(grep `<实占N>` .planning/phase-2.2/ docs/adr/ 必须 exit 1)。
+
 ### T0.2 — ADR <实占N> draft(6 章节 sketch)
 
 - **files_modified**: `docs/adr/<实占N>-execute-task-sdk-ralph.md`(NEW)
