@@ -1,16 +1,22 @@
-// Phase 1.4 T3.1 spillover — engine.ts ≤200L hard limit (D-13 / D1.4-6).
-// Phase 1.5 T5.2 — `<promise>COMPLETE</promise>` XML wrapper upgrade: the raw
-// `^COMPLETE$/m` regex moved to the hard-split helper lib/promiseExtract.ts
-// (ADR 0009 § Decision Errata 3 / D1.5-4 sub-item 3 / PLAN-CHECK W-2).
-// Phase 1.5.1 sister review H2 — Anchor 3 (skill install) hard split to
-// lib/skillInstall.ts so this file (Anchor 4 ralph-loop wedge) honors the
-// D1.4-3 ≤50L strict limit declared in ADR 0009 § Decision Errata 3.
+// Phase 1.4 T3.1 / 1.5 T5.2 / 2.2 W2 T2.4 — ralph-loop wedge (D1.4-3 ≤50L).
+// Phase 2.2 W2 T2.4 adds dual-signal 4-layer isComplete + resumeSessionId
+// closure (ADR 0011 errata / B-02 B-26 / PATTERNS § 2.2 § 2.4 / RESEARCH § 1.3).
 
+import type { SdkResultEnvelope } from '../completionSchema.js'
 import { extractPromise } from './promiseExtract.js'
 
-/** True when the agent output carries a verbatim `<promise>COMPLETE</promise>`. */
+/** 4-layer dual-signal completion detect: (1) outer PRIMARY structured_output,
+ *  (2) outer FALLBACK <promise> in result text, (3) inner FALLBACK on raw
+ *  string (non-JSON envelope — test mock / degraded; B-07 Tier A path). */
 export function isComplete(output: string): boolean {
-  return extractPromise(output) === 'COMPLETE'
+  try {
+    const env = JSON.parse(output) as SdkResultEnvelope
+    if (env.subtype === 'success' && env.structured_output?.status === 'COMPLETE') return true
+    if (extractPromise(env.text ?? env.result ?? '') === 'COMPLETE') return true
+    return false
+  } catch {
+    return extractPromise(output) === 'COMPLETE'
+  }
 }
 
 export class MaxIterationsExceededError extends Error {
@@ -27,16 +33,17 @@ export class VerbatimCompleteFailError extends Error {
   }
 }
 
-/** Anchor 4 — ralph-loop wedge (D1.4-3 self-implemented). External max-iter
- *  (20) × internal maxTurns (50) = 1000 round-trip ceiling. */
+/** Anchor 4 wedge — `resumeSessionId` flows through `spawn` so T4.1 sdkSpawn
+ *  can attach SDK session resume (CD-4 deferred to v0.3.0 per B-35). */
 export async function ralphLoopWrap(
-  spawn: () => Promise<string>,
+  spawn: (resumeSessionId?: string) => Promise<string>,
   maxIter: number,
 ): Promise<string> {
   let last = ''
+  let sessionId: string | undefined
   for (let i = 0; i < maxIter; i++) {
-    last = await spawn()
-    if (isComplete(last)) return last // Anchor 2 — verbatim XML wrapper extract
+    last = await spawn(sessionId)
+    if (isComplete(last)) return last
   }
   throw new MaxIterationsExceededError(maxIter)
 }

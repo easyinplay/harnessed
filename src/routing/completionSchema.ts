@@ -22,3 +22,12 @@ export const COMPLETION_SCHEMA = {
 
 export type CompletionStatus = 'COMPLETE' | 'PARTIAL' | 'BLOCKED'
 export type CompletionPhase = '01-clarify' | '02-code' | '03-test' | '04-deliver'
+
+/** SDK result envelope shape consumed by lib/ralphLoop.ts `isComplete` 4-layer
+ *  detect. Mirrors `SDKResultMessage` (sdk.d.ts) — only the fields we read. */
+export interface SdkResultEnvelope {
+  subtype?: string
+  structured_output?: { status?: CompletionStatus }
+  text?: string
+  result?: string
+}
