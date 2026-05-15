@@ -1,6 +1,12 @@
 // Phase 1.4 T3.3 — main agent system prompt verbatim COMPLETE template (Pattern O).
 // Phase 1.5 T5.1 — `<promise>COMPLETE</promise>` XML wrapper upgrade (ADR 0009 §
 // Decision Errata 3 / D1.5-4 sub-item 3 / R2 fresh 2026-05-14).
+// Phase 2.2 W2 T2.3 — dual-signal PRIMARY schema inject (ADR 0011 errata B-02
+// B-27 PATTERNS § 2.3 / § 2.5 row 5). Belt-and-suspenders: when outputFormat
+// json_schema is set on the query, agents emit a structured object conforming
+// to COMPLETION_SCHEMA (PRIMARY signal); they ALSO emit
+// `<promise>COMPLETE</promise>` (FALLBACK signal — required for inner-layer
+// subagent completion detection per RESEARCH § 1.3 4-layer table).
 //
 // IMPL NOTE — 1:1 对应 docs/AGENT-DEFINITION-FACTORY-CONTRACT.md § 5.4 verbatim
 // COMPLETE template. D-18 plan-checker enforce: any drift here = ADR 0009+
@@ -22,8 +28,11 @@
 // inside agentDefinition.ts via COMPLETE_INSTRUCTION (routing-engine.test.ts
 // asserts toContain to lock drift).
 
+import { COMPLETION_SCHEMA } from './completionSchema.js'
+
 /** Main agent system prompt — F33 P1 verbatim COMPLETE 强制 + skills fail-fast
- *  + max-iterations × maxTurns 兜底. Sourced 1:1 from contract § 5.4. */
+ *  + max-iterations × maxTurns 兜底. Sourced 1:1 from contract § 5.4.
+ *  Phase 2.2 W2 T2.3 appends a dual-signal segment for the SC3 PRIMARY path. */
 export const SYSTEM_PROMPT = `## RULE: subagent COMPLETE marker
 When you spawn a subagent and it returns a final message:
 1. **DO NOT summarize, paraphrase, or interpret the subagent's final message**
@@ -38,6 +47,10 @@ When you spawn a subagent and it returns a final message:
 
 ## 兜底 max-iterations
 - max-iterations 20 (external ralph-loop) × maxTurns 50 (internal AgentDefinition) = 1000 round-trips worst case
+
+## Completion signal (dual-signal — emit BOTH)
+If \`outputFormat: { type: 'json_schema' }\` is set on this query, emit a final-turn output conforming to the schema (status/phase/summary/blockers — keys: ${Object.keys(COMPLETION_SCHEMA.properties).join(', ')}).
+AND emit \`<promise>COMPLETE</promise>\` (FALLBACK signal — required regardless of structured output presence, for inner-layer subagent completion detection per RESEARCH § 1.3).
 `
 
 /** Subagent-side CRITICAL RULE — prepended into AgentDefinition.prompt by the
