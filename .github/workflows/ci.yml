@@ -96,6 +96,15 @@ jobs:
       - run: corepack pnpm test
       - run: corepack pnpm build
       - run: corepack pnpm build:schema
+      # Phase 2.3 Wave 0 T0.4 — M1 schema regen drift gate (Phase 2.2 RETROSPECTIVE
+      # Lesson 6 自我建议落地). Catches spec.ts → schemas/manifest.v1.schema.json
+      # drift (Phase 2.1 → Phase 2.2 hygiene commit 18150a5 precedent).
+      - name: Schema regen gate (Phase 2.3 Wave 0 M1)
+        run: |
+          git diff --exit-code schemas/ || {
+            echo "::error::schemas/ drift detected — run 'corepack pnpm build:schema' locally and commit"
+            exit 1
+          }
       - run: corepack pnpm validate:schema
       - run: node ./dist/cli.mjs --version
       # Phase 1.2 T5.5 — installer integration (H4 dual-layer):
