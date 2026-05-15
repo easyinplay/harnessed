@@ -36,19 +36,19 @@ harnessed/
 └── docs/adr/           # 架构决策记录
 ```
 
-## v0.1.0-alpha.4 状态
+## v0.2.0-alpha.1 状态
 
+- **🎯 v0.1.0 MILESTONE 100% SHIPPED & ARCHIVED** ✅（6/6 phase；audit `passed` post-reconciliation；归档 `.planning/milestones/v0.1.0-{ROADMAP,REQUIREMENTS}.md`；git tag `v0.1.0`）
+- **🚀 v0.2.0 MILESTONE ACTIVE** — Phase 2.1/2.4 = 1/4 完成
+- **Phase 2.1 shipped** ✅（4 placeholder installer 实装 → 6 install method 全 runtime-ready + Wave 0 schema/sister-review/docs batch；E1-E8 8/8；ADR 0010 errata + `adr-0010-accepted` + `v0.2.0-alpha.1-installers` 双 tag pushed；374+3 tests；含 phase 2.1.1 hotfix CI lint `b9c932a`；**transparency 反模式 CI gate 结构性根治**：`check-transparency-verdicts.mjs` warn-only round 1 → phase 2.2 flip enforce）
+- **Phase 1.5 shipped** ✅（DAG resolver Kahn 142L + Semantic Router L2 stub 81L + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper + ralphLoop 65L→42L hard split）
 - **Phase 1.4 shipped** ✅（routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample inline truth table + 291+2 tests + ADR 0008 errata）
-  - **3 routing 文件 karpathy 严守**: engine.ts 170L / agentDefinition.ts 148L / systemPrompt.ts 43L
-  - **30 sample**: 100.0% (30/30) **expected behavior match** ≥ 85% v0.1 内部基线
-  - **Specific rule match 21/30 = 70%** (9 plan-phase expected fallback/fallthrough — engineering category v1 占位 0 rules + 4 array trigger v1 miss); array semantic match 升级 phase 1.5 DAG resolver
-  - **Known limitations**: routing engine v1 仅 L1 关键词路由 + supervisor fallback；array trigger 场景（批量 URL / academic / perf-a11y-memory / ai-explore）走 fallback；phase 1.5 DAG resolver + Semantic Router L2 升级修复
-- **Phase 1.3 shipped** ✅（categorization schema 3 字段 + decision_rules.yaml v1 12 rules + `harnessed install-base` 子命令 + ui-ux-pro-max install path 实测 + AgentDefinition factory contract draft + 235 tests / 1 skipped + ADR 0007 errata）
+- **Phase 1.3 shipped** ✅（categorization schema 3 字段 + decision_rules.yaml v1 12 rules + `harnessed install-base` 子命令 + 235 tests + ADR 0007 errata）
 - **Phase 1.2.5 architecture revision shipped** ✅（[ADR 0006](./docs/adr/0006-architecture-wedge-revision-v3.md) — wedge 升级 "装配主义包管理器" → "完整三层栈方法论的可执行 engine"；8 支柱 100% capture lock；ROADMAP v3 重排 16 → 17 phase）
 - **Phase 1.2 shipped** ✅（cli-npm + mcp-stdio installer runtime + 5 CLI subcommands + 12 contract tests + ADR 0005 errata + 含 phase 1.2.1 hotfix B5'）
 - **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + bench 21.7-22.6ms + B1 shell-escape security gate + 3 ADRs）
-- **Acceptance bar C1-C8 8/8** ✅（A7 ADR 0001-0008 守恒 / 8 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25804037789 + 25805032247）
-- **Next**：phase 1.5（DAG resolver + Semantic Router L2 + engineering category routing rules + mattpocock 23 招式 phase routing schema）
+- **Acceptance bar E1-E8 8/8 (Phase 2.1)** ✅（A7 ADR 0001-0010 守恒 / 10 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25900941988）
+- **Next**：Phase 2.2 discuss-phase（execute-task workflow 主线 + ralph-loop full integration + `@anthropic-ai/claude-agent-sdk` 0.2.141 INTRODUCE NOW + per-phase model tier + transparency CI gate `ENFORCE` flip 为 true）
 
 ## Install Quick Start（phase 1.2 ready）
 

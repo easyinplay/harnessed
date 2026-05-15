@@ -8,8 +8,9 @@
 ## 项目核心引用
 
 - **核心价值**：AI coding harness 生态的「装配主义包管理器 + 完整三层栈方法论的可执行 engine」——routing engine v1 已实装（main-process-driven query→arbitrate→install missing→factory→spawn→ralph-loop→verbatim COMPLETE 闭合）；6+ 虚拟角色（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师）/ 双职责治理 / 4 心法 / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化
-- **当前关注**：v0.1.0（manifest 引擎 + research workflow，3-5 周 v3 重排范围 — phase 1.5 ship 后 enhancement layer 收官: DAG resolver + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + 8 接口契约 frozen for phase 2.0）
+- **当前关注**：v0.2.0（Sub-task Loop + Extension Installers，Phase 2.1-2.4 — Phase 2.1 ship 后 6 install method 全 runtime-ready + ADR 0010 schema errata + **transparency 反模式 CI gate 结构性根治**；下一 Phase 2.2 execute-task workflow + ralph-loop full integration + SDK INTRODUCE NOW + per-phase model tier per intel + transparency CI gate `ENFORCE` flip 为 true）
   - **W-1 errata（phase 1.5 T8.1 修正）**：phase 1.4 STATE.md 本行原写 "7 接口契约 frozen for phase 1.5" — 实际 phase 1.4 PLAN.md § 4 列 8 个（第 8 = SAMPLES inline truth table 30 entries）；phase 1.5 KICKOFF + PLAN § 4 + 本文件 line 22/357 全部写 8。phase 1.5 T8.1 sync 修正 7 → 8（gsd-plan-checker PLAN-CHECK round 1 W-1 finding）
+  - **当前关注 sister review M1 修正（2026-05-15 phase-2.1 sister review）**：本行原写 "v0.1.0（manifest 引擎 + research workflow） — phase 1.5 ship 后..." — 实际 v0.1.0 已 100% SHIPPED & ARCHIVED + Phase 2.1 SHIPPED。已 sync 到 v0.2.0 当前 phase。沿袭 intel § 0 SSOT 引用纪律 — phase 编号语义锚定。
 - **总工期**：~10-12 周（4 milestones × 3-5 phases = 共 **17 phases** v3 重排后）
 - **License**：Apache-2.0（开源 / GitHub Sponsors 兜底）
 - **仓库**：`D:\GitCode\harnessed\`（Node.js + TypeScript）
@@ -21,7 +22,7 @@
 - **GSD phase**：✅ **Phase 2.1 SHIPPED**（2026-05-15 — 4 placeholder installer 实装 + Wave 0 schema/sister-review/docs batch；E1-E8 8/8 acceptance bar；6 install method 全 runtime-ready）— 前置 🚀 **v0.2.0 MILESTONE ACTIVE**；前置 ✅ v0.1.0 SHIPPED & ARCHIVED（6/6 phase；git tag `v0.1.0`）
 - **当前里程碑**：v0.2.0 Sub-task Loop + Extension Installers（Phase 2.1-2.4；roadmap 骨架原 /autoplan + v3 重排时定，本次 research refresh 保留骨架 + fold 11 refinement）— **Phase 2.1 1/4 完成**
 - **下一 phase**：**Phase 2.2** discuss-phase（execute-task workflow 主线 + ralph-loop full integration + `@anthropic-ai/claude-agent-sdk` 0.2.141 INTRODUCE NOW + transparency CI gate flip ENFORCE = true + 起 ADR 0011 errata — ADR 编号由 Phase 2.2 plan-phase 流程分配，不预占）
-- **状态**：✅ **Phase 2.1 SHIPPED — Ready for Phase 2.2 discuss-phase**（pending main agent T6.4 CI verify + T6.5 `adr-0010-accepted` + `v0.2.0-alpha.1-installers` tag push）
+- **状态**：✅ **Phase 2.1 SHIPPED — Ready for Phase 2.2 discuss-phase**（T6.4 CI run 25900941988 三平台全绿 + T6.5 tags `adr-0010-accepted` + `v0.2.0-alpha.1-installers` pushed to origin → `b9c932a`；含 phase 2.1.1 hotfix CI lint）
 - **进度**：7 / 17 phases 已完成 ▓▓▓▓▓▓▓░░░░░░░░░░ 41.2%（v0.1.0 里程碑 100%；v0.2.0 1/4 = 25%）
 - **research refresh 关键决议**：D1.5-5 SDK → **Phase 2.2 INTRODUCE NOW**（`@anthropic-ai/claude-agent-sdk` 0.2.141）；R6 ralph-wiggum plugin → **不切换**（自实装 ralphLoopWrap 是正确永久架构）；Phase 2.2 起 schema errata ADR 含 SDK 引入 + ralph-wiggum keep-vs-switch + **per-phase model tier**（`.planning/intel/omc-comparison.md` 第 4 条 — phases schema 加 `model:` 字段）—— **ADR 编号由 Phase 2.2 plan-phase 流程分配，不预占**（沿袭 intel § 0 SSOT 引用纪律；Phase 2.1 CONTEXT D-08 暂记 0011，以 plan-phase 实占为准）。注：H3 agentDefinition budget errata 已归 **Phase 2.1 ADR 0010**（installer-schema-extension-errata），非 Phase 2.2 范围
 
@@ -49,8 +50,14 @@
 11. ✅ ~~Phase 1.4 SHIPPED~~ — 2026-05-13；routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample 100.0% hit (**expected behavior match**；specific rule match 21/30 = 70% — 9 plan-phase expected fallback/fallthrough：engineering 5/5 v1 占位 0 rules 走 fallback_supervisor + 4 array trigger v1 miss fallthrough；array semantic match 升级推 phase 1.5 DAG resolver — sister review T1 transparency strengthening)；C1-C8 8/8 acceptance bar；ADR 累积 8（加 0008 errata 含 H1a perf transparency + M1 yaml path migration + R6 engineering category 推 phase 1.5）；baseline tag 7 → 8（加 adr-0008-accepted）；tests 235+1 → 291+2 skipped (+56)；CI run 25804037789 @ 8f56514 + 25805032247 @ fe97a72 三平台全绿；详 `.planning/phase-1.4/{progress.md, VERIFICATION.md}`
 12. ✅ **main agent tag `v0.1.0-alpha.4-routing-engine` pushed** — fe97a72；4 milestone tag 累积（alpha.1-schema-frozen / alpha.2-installer-runtime / alpha.3-base-profile / alpha.4-routing-engine）
 13. ✅ ~~Phase 1.5 SHIPPED~~ — 2026-05-14；DAG resolver Kahn 拓扑排序 + Semantic Router L2 stub + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items（D1.4-2 contract v1.1 14 字段 / F40-2 SDK 推 v0.2+ / F42 array semantic match / ralph-wiggum `<promise>` XML wrapper）；D1-D8 8/8 acceptance bar；ADR 累积 8 → 9（加 0009 errata）；baseline tag 8 → 9（加 adr-0009-accepted）；tests 291+2 → 318+3 skipped (+27)；30 sample specific match 28/30 (93.3%) ≥ 27/30 + total 30/30；3 routing 新文件（dag.ts 142L / semanticRouter.ts 81L / promiseExtract.ts 32L）+ embedding.ts 17L placeholder + decision_rules.yaml v2 + spec.ts phase+triggers；8 支柱 100% capture verify roadmap closure（A1' engineering 5 rules / A5' mattpocock_phases / A7' triggers semantic L2 stub 全 CLOSED）；详 `.planning/phase-1.5/{progress.md, VERIFICATION.md, PERF-ATTRIBUTION-2.md}`
-14. ⏳ **main agent tag `adr-0009-accepted` + `v0.1.0-alpha.5-routing-l2-engineering`**（T8.3；main agent final ship step 创建 + push；CI 三平台全绿 verify 后）
-15. ⏳ **进入 Phase 2.0 discuss-phase**（execute-task workflow 主线 + ralph-loop full integration + 4 placeholder installer 实装）
+14. ✅ ~~main agent tag `adr-0009-accepted` + `v0.1.0-alpha.5-routing-l2-engineering` pushed~~
+15. ✅ ~~v0.1.0 MILESTONE SHIPPED & ARCHIVED~~ — 2026-05-15；audit `passed` post-reconciliation Path A；归档 `.planning/milestones/v0.1.0-{ROADMAP,REQUIREMENTS}.md`；git tag `v0.1.0` pushed
+16. ✅ ~~Phase 2.1 SHIPPED~~ — 2026-05-15；4 placeholder installer → 6 install method 全 runtime-ready + Wave 0 schema/sister-review/docs batch；E1-E8 8/8；ADR 累积 10（加 0010 installer-schema-extension-errata）；baseline tag 10（加 adr-0010-accepted）；tests 318+3 → 374+3 (+56)；CI run 25900941988 三平台全绿；详 `.planning/phase-2.1/{progress.md, VERIFICATION.md}`
+17. ✅ ~~Phase 2.1.1 hotfix~~ — 2026-05-15；CI lint failure fix (commit `b9c932a` — biome `organizeImports` auto-fix on `src/installers/index.ts` + `tests/unit/installers-index.test.ts` post-Wave-5 dispatch swap)；CI run 25900941988 三平台全绿；同 commit 触发 final ship CI verify
+18. ✅ ~~main agent tag `adr-0010-accepted` + `v0.2.0-alpha.1-installers` pushed~~ → `b9c932a`；10 ADR baseline tag + 5 milestone tag 累积
+19. ⏳ **transparency CI gate `ENFORCE` flip 为 `true`**（Phase 2.2 Wave 0 必办）— `scripts/check-transparency-verdicts.mjs` 顶部 const + 历史 verdict 文档迁移到结构化 marker（`Verdict:` / `状态:` / `Closure:` 行首 + `\d+/\d+` ratio + `miss:` 声明）；W3 lock from Phase 2.1 T1.7 — 当前 warn-only round 1
+20. ⏳ **进入 Phase 2.2 discuss-phase**（execute-task workflow 主线 + ralph-loop full integration + `@anthropic-ai/claude-agent-sdk` 0.2.141 INTRODUCE NOW + per-phase model tier per intel omc-comparison.md 第 4 条 + 起 schema errata ADR — 编号由 Phase 2.2 plan-phase 流程分配,不预占）
+21. ⏳ **phase 2.2 Wave 0 候选 — transparency CI gate 扩展覆盖 README/PROJECT-SPEC 状态节 freshness check**（sister review 洞察:T1.9 把 SSOT 引用纪律提升项目级但 README/PROJECT-SPEC 自身 stale；T1.7 CI gate 当前只扫 verdict 文档,可扩展为 doc freshness gate — Phase 2.2 plan 时评估）
 
 ---
 
@@ -75,6 +82,12 @@
   - **9 finding logged**：Wave 1-4 — F2.1-1 (Rule 2 schema-gap parse-from-cmd × 3：mcp-http url+headers / git-clone dest / cc-plugin marketplaceRef+plugin@mkt — cmd 保留 audit-trail，args authoritative) / F2.1-2 (Rule 2 git-clone strict SHA-only enforcement — schema 允许 SHA OR SemVer，installer enforce SHA-only) / F2.1-3 (Rule 2 npx-skill flexible pin enforcement — preflight 验 pin shape 不 hardcode `1.5.7`)；Wave 5 — F2.5-1 (Rule 1 stale phase-deferred tests 替换为 dispatch identity 测试) / F2.5-2 (Rule 1 contract test C5 mcp-cli-only regex tighten — 原 `\bclaude\b` 误命中 `claude-code` 因 `\b` 在 `e-`) / F2.5-3 (Rule 1 cc-plugin fixture git_ref 40-hex SHA compliance — preflight GIT_REF_SHAPE) / F2.5-4 (Rule 2 contract test mock `fs.access` for npx-skill real-path verify)；Wave 0 known limitations — D-02 npx ~/.agents/ vs ~/.claude/ 完整桥接 deferred / H4 substring match false-positive v0.2+ semantic router 替代
   - **sister review 结构性根治**：T1.8 SAMPLES § 8.4 miss 身份标注（防 phase 1.4 T1 "100% 实际 70%" + phase 1.5 H1/M1 "聚合数字盖过真实状态" 反模式第三次复发）+ T1.7 TRANSPARENCY-VERDICT-CHECKLIST CI gate（W3 warn-only round 1 + phase 2.2 flip enforce）+ T1.9 CONTRIBUTING SSOT 引用纪律 section（intel/参考文档不写死 phase/ADR 编号 — 反面教材 omc-comparison.md 写死 "phase 2.0" + "ADR 0010" v0.2.0 激活即 stale）
   - 见 `.planning/phase-2.1/{PLAN.md, task_plan.md, progress.md, VERIFICATION.md}`
+- ✅ **Phase 2.1.1 hotfix SHIPPED**（2026-05-15）
+  - phase 2.1 ship 触发 CI run 25900868139 三平台全 fail — biome `organizeImports` 强制排序规则 reject Wave 5 T6.1 dispatch table swap + Wave 5 F2.5-1 stale-test 替换为 dispatch identity 测试时新增的 4 个 import 未按 biome 字典序排
+  - 2 atomic 文件 fix — `src/installers/index.ts` + `tests/unit/installers-index.test.ts`（`corepack pnpm exec biome check --write` auto-fix）；可修复因为是 FIXABLE rule
+  - 1 atomic commit `b9c932a` — phase-2.1.1: hotfix CI lint；CI run 25900941988 三平台全绿；ADR 0001-0010 main body 不动 (A7 守恒)；同 commit 触发 final ship CI verify + `adr-0010-accepted` / `v0.2.0-alpha.1-installers` tag push
+  - **Root cause + lesson**：executor 本地 lint 看到 `.omc/` errors（untracked tooling state）覆盖了真正问题的可见性 — 后续 executor 报告需 disambiguate "errors in changed tracked files" vs "errors in untracked tooling state"。沿袭 phase 1.2.1 / 1.3.1 / 1.5.1 hotfix 模式
+  - 见 `.planning/phase-2.1/progress.md`（hotfix 节附加）
 - ✅ **Phase 1.5 SHIPPED**（2026-05-14）
   - 28 atomic 子任务全部完成（Wave 0-7 跑完；4 batch — batch 1 Wave 0+1 / batch 2 Wave 2+3 / batch 3 Wave 4+5 / batch 4 Wave 6+7）
   - **Acceptance bar D1-D8 8/8** ✅

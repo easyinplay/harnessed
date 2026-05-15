@@ -1,9 +1,9 @@
 # harnessed — 立项参数 Spec Sheet (v3)
 
-> 状态：✅ **Locked v3** — phase 1.2.5 architecture revision discuss-phase 完成（ADR 0006 wedge 重定位）
+> 状态：✅ **Locked v3** + 🚀 **v0.2.0 MILESTONE ACTIVE**（v0.1.0 100% SHIPPED & ARCHIVED 2026-05-15；Phase 2.1 SHIPPED 2026-05-15 — 6 install method 全 runtime-ready + ADR 0010 schema errata；progress 7/17 = 41.2%）
 > v2 决策完成日期：2026-05-11
 > v3 wedge 升级：2026-05-12（基于 phase 1.2.5 RESEARCH-1/2 + 8 支柱 100% capture + 5 P0 lock）
-> 下一步：Phase 1.3 base profile + categorization schema (新 ADR 0007 errata)
+> 下一步：Phase 2.2 discuss-phase（execute-task workflow + ralph-loop full integration + SDK INTRODUCE NOW + per-phase model tier）
 
 ---
 
