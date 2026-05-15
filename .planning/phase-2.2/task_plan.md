@@ -31,10 +31,10 @@
 
 > ⚠️ **Placeholder sed-replace discipline (W1 plan-check fix)**: T0.1 resolve `0011` 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + 所有 NEW ADR/SPEC 文件批量 sed-replace 字面占位:`sed -i "s/0011/<actual-NNNN>/g" .planning/phase-2.2/task_plan.md .planning/phase-2.2/PLAN.md .planning/phase-2.2/KICKOFF.md docs/adr/<actual-NNNN>-*.md`(以及任何 grep 命中的其他文件)。**zero 字面 `0011` 残留**是 W0 commit 前置条件(grep `0011` .planning/phase-2.2/ docs/adr/ 必须 exit 1)。
 
-### T0.2 — ADR 0011 draft(6 章节 sketch)
+### T0.2 — ADR 0011 draft(9 章节 sketch — 原 6 + discuss-delta 3)
 
 - **files_modified**: `docs/adr/0011-execute-task-sdk-ralph.md`(NEW)
-- **action**: 创建 ADR file 含 6 章节 sketch(详细 Wave 6 T6.1 fill):
+- **action**: 创建 ADR file 含 9 章节 sketch — 原 6 + discuss-delta 3 (CD-5 schemaVersion / CD-6 provenance / CD-4 Task Session)(详细 Wave 6 T6.1 fill):
   ```markdown
   # ADR 0011: execute-task workflow + ralph-loop SDK introduction
   Status: Draft (phase 2.2 W0 draft → W6 accepted)
@@ -925,12 +925,12 @@
 
 ## Wave 6 — ship
 
-### T6.1 — ADR 0011 finalize 6 章节(Wave 0 draft → 详细 fill)
+### T6.1 — ADR 0011 finalize 9 章节(Wave 0 draft → 详细 fill — 原 6 + discuss-delta 3)
 
 - **files_modified**: `docs/adr/0011-execute-task-sdk-ralph.md`(MODIFY,fill detail)
 - **action**: 升级 T0.2 draft 为 accepted 状态:
   1. Status: `Draft` → `Accepted (phase 2.2 W6 — 2026-05-15)`
-  2. 6 章节每节 fill detail:
+  2. 9 章节每节 fill detail (原 6 + discuss-delta 3):
      - **§ 1 SDK 引入**:cite B-04,research v0.2.0 § 1-3,SDK currentVer(T1.1 resolved)
      - **§ 2 ralph-wiggum keep**:cite B-05,jq Win 红旗,interactive-TUI rationale
      - **§ 3 dual-signal completion 4-layer**:cite B-02,RESEARCH § 1.3 4 layer table,COMPLETION_SCHEMA inline
