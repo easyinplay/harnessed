@@ -4,6 +4,17 @@
 
 ---
 
+## Deferred items review (Phase 2.3 W0 T0.8 cadence — 起每 ship phase 触发)
+
+> 每 ship phase 时强制运行 `node scripts/check-deferred-items.mjs` + 人工 cat 各 `.planning/phase-*/deferred-items.md` + grep DEFERRED entry 是否触发条件已满足 (e.g. T4.4 Task Session conditional pass → 触发 v0.3.0 实施)。
+> 沿袭 D-OOS-1 `.omc/` 2026-05-13 → 2026-05-15 三 phase 未 review process bug 根因修正。
+
+**Review history**:
+- Phase 2.3 W0 (2026-05-16 — 本 phase 启动 W0): T1.1 dual-signal real-API (等 ANTHROPIC_API_KEY env, v0.3.0 prep) / T4.4 Task Session (SC4 PARTIAL → v0.3.0 stable bridge/assistant API) / EE-4 plan 4 维量化阈值 (Phase 2.4 doctor) — PENDING (无 trigger 满足)
+- Phase 2.3 ship (TBD): 同步触发条件复查 + 本表更新
+
+---
+
 ## Phase 2.2 milestone retrospective — execute-task workflow + ralph-loop full SDK integration（2026-05-15 ship）
 
 ### What Worked

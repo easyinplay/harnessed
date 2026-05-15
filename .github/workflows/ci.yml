@@ -98,6 +98,12 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: node scripts/check-provenance.mjs
+      # Phase 2.3 Wave 0 T0.8 — Deferred items review cadence (T5).
+      # 沿袭 transparency gate W3 warn-only round 1 模式 (Phase 2.2 flip ENFORCE=true 前置).
+      # D-OOS-1 .omc/ 2026-05-13 → 2026-05-15 三 phase 未 review process bug 根治.
+      - name: Deferred items review (Phase 2.3 Wave 0 T5, warn-only round 1)
+        run: node scripts/check-deferred-items.mjs
+        continue-on-error: true
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm typecheck
