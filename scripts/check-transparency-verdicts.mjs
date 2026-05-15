@@ -15,9 +15,12 @@ const MARKER = /^\s*\*{0,2}(?:Verdict|状态|Closure)\*{0,2}\s*[:：]/
 const HAS_RATIO = /\d+\s*\/\s*\d+/
 const HAS_MISS = /miss\s*[:：]/i
 // Phase 2.2 T0.4 — front-matter Status: freshness gate (B-16/B-17 + RESEARCH § 3.5)
+// Phase 2.2 post-ship hardening — extended to dual-token (milestone + sub-phase) per
+// T0.1 original intent (Wave 0 implementation was milestone-only — caught by sister review).
 const STATUS_MARKER = /^\s*>?\s*\*{0,2}(?:Status|状态)\*{0,2}\s*[:：]\s*(.+)$/m
 const FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md']
 const ROADMAP_LATEST_RE = /^##\s+v\d+\.\d+\.\d+\s+—.*✅\s*SHIPPED/m
+const STATE_LATEST_SUBPHASE_RE = /\*{2}Phase\s+(\d+\.\d+)\s+SHIPPED\*{2}/g
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -34,9 +37,18 @@ function getLatestShippedToken() {
   return m ? m[0].match(/v\d+\.\d+\.\d+/)[0] : null
 }
 
+function getLatestShippedSubphase() {
+  const state = readFileSync('.planning/STATE.md', 'utf8')
+  const matches = [...state.matchAll(STATE_LATEST_SUBPHASE_RE)].map((m) => m[1])
+  if (!matches.length) return null
+  return `Phase ${matches.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0]}`
+}
+
 function checkFreshness(violations) {
-  const latest = getLatestShippedToken()
-  if (!latest) return
+  const milestone = getLatestShippedToken()
+  const subphase = getLatestShippedSubphase()
+  const required = [milestone, subphase].filter(Boolean)
+  if (!required.length) return
   for (const file of FRONT_MATTER_DOCS) {
     let head
     try {
@@ -46,11 +58,15 @@ function checkFreshness(violations) {
       continue
     }
     const match = head.match(STATUS_MARKER)
-    if (!match) violations.push(`${file}:1  missing Status: marker in first 50 lines`)
-    else if (!match[1].includes(latest))
-      violations.push(
-        `${file}:1  Status "${match[1].trim()}" missing latest shipped token "${latest}"`,
-      )
+    if (!match) {
+      violations.push(`${file}:1  missing Status: marker in first 50 lines`)
+      continue
+    }
+    for (const token of required)
+      if (!match[1].includes(token))
+        violations.push(
+          `${file}:1  Status "${match[1].trim()}" missing latest shipped token "${token}"`,
+        )
   }
 }
 

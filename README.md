@@ -6,7 +6,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-pre--launch-orange)](./.planning/ROADMAP.md)
 
-> **Status:** v0.1.0 shipped + Phase 2.1 shipped — execute-task workflow in Phase 2.2 (in-progress)
+> **Status:** v0.1.0 shipped + Phase 2.2 shipped — Phase 2.3 待启动（design/content/testing extension category MVP）
 
 > Not affiliated with, endorsed by, or sponsored by Harness Inc.（见 [NOTICE](./NOTICE)）
 
@@ -41,7 +41,8 @@ harnessed/
 ## v0.2.0-alpha.1 状态
 
 - **🎯 v0.1.0 MILESTONE 100% SHIPPED & ARCHIVED** ✅（6/6 phase；audit `passed` post-reconciliation；归档 `.planning/milestones/v0.1.0-{ROADMAP,REQUIREMENTS}.md`；git tag `v0.1.0`）
-- **🚀 v0.2.0 MILESTONE ACTIVE** — Phase 2.1/2.4 = 1/4 完成
+- **🚀 v0.2.0 MILESTONE ACTIVE** — Phase 2.1+2.2/2.4 = 2/4 完成
+- **Phase 2.2 shipped** ✅（execute-task workflow + ralph-loop full SDK integration；SDK `@anthropic-ai/claude-agent-sdk@0.3.142` INTRODUCE + AgentDefinition 5-字段 SDK input + 9-字段 prompt-inject contract v1.2 reconcile；dual-signal completion 4-layer + per-phase model tier `[opus,sonnet,sonnet,haiku]` + schemaVersion 7-surface 单一兼容门 (CD-5) + provenance gate hard fail (CD-6) + transparency CI gate W3 ENFORCE=true；F1-F8 8/8；ADR 0011 9 章节 errata 合并；30/30 sample harness COMPLETE 100%；432+3 tests；`adr-0011-accepted` + `v0.2.0-alpha.2-execute-task` 双 tag pushed；CD-4 Task Session 复用 conditional → SC4 PARTIAL → T4.4 DEFERRED v0.3.0；EE-4 plan 4 维量化阈值 → DEFERRED Phase 2.4）
 - **Phase 2.1 shipped** ✅（4 placeholder installer 实装 → 6 install method 全 runtime-ready + Wave 0 schema/sister-review/docs batch；E1-E8 8/8；ADR 0010 errata + `adr-0010-accepted` + `v0.2.0-alpha.1-installers` 双 tag pushed；374+3 tests；含 phase 2.1.1 hotfix CI lint `b9c932a`；**transparency 反模式 CI gate 结构性根治**：`check-transparency-verdicts.mjs` warn-only round 1 → phase 2.2 flip enforce）
 - **Phase 1.5 shipped** ✅（DAG resolver Kahn 142L + Semantic Router L2 stub 81L + engineering 5 routing rules + mattpocock 23 招式 phase routing schema + ADR 0009 errata 4 items + `<promise>` XML wrapper + ralphLoop 65L→42L hard split）
 - **Phase 1.4 shipped** ✅（routing engine v1 + AgentDefinition factory + research workflow E2E + 30 sample inline truth table + 291+2 tests + ADR 0008 errata）
@@ -50,7 +51,8 @@ harnessed/
 - **Phase 1.2 shipped** ✅（cli-npm + mcp-stdio installer runtime + 5 CLI subcommands + 12 contract tests + ADR 0005 errata + 含 phase 1.2.1 hotfix B5'）
 - **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + bench 21.7-22.6ms + B1 shell-escape security gate + 3 ADRs）
 - **Acceptance bar E1-E8 8/8 (Phase 2.1)** ✅（A7 ADR 0001-0010 守恒 / 10 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25900941988）
-- **Next**：Phase 2.2 discuss-phase（execute-task workflow 主线 + ralph-loop full integration + `@anthropic-ai/claude-agent-sdk` 0.2.141 INTRODUCE NOW + per-phase model tier + transparency CI gate `ENFORCE` flip 为 true）
+- **Acceptance bar F1-F8 8/8 (Phase 2.2)** ✅（A7 ADR 0001-0011 守恒 / 11 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25924933870）
+- **Next**：Phase 2.3 discuss-phase（design/content/testing extension category MVP + karpathy behavior-rule 注入 + 30 category-specific 样本 routing ≥ 85%；intel 指定必上 EE-5 反 thin wrapper 5-question merge gate + CD-3 显式职责负空间 `if_rejected_use:<id>`）
 
 ## Install Quick Start（phase 1.2 ready）
 

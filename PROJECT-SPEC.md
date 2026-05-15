@@ -1,9 +1,9 @@
 # harnessed — 立项参数 Spec Sheet (v3)
 
-> 状态：✅ **Locked v3** + 🚀 **v0.2.0 MILESTONE ACTIVE**（v0.1.0 100% SHIPPED & ARCHIVED 2026-05-15；Phase 2.1 SHIPPED 2026-05-15 — 6 install method 全 runtime-ready + ADR 0010 schema errata；progress 7/17 = 41.2%）
+> 状态：✅ **Locked v3** + 🚀 **v0.2.0 MILESTONE ACTIVE**（v0.1.0 100% SHIPPED & ARCHIVED 2026-05-15；Phase 2.1 SHIPPED 2026-05-15；Phase 2.2 SHIPPED 2026-05-15 — execute-task workflow + ralph-loop full SDK integration + ADR 0011 9 章节 errata 合并；progress 8/17 = 47.1%）
 > v2 决策完成日期：2026-05-11
 > v3 wedge 升级：2026-05-12（基于 phase 1.2.5 RESEARCH-1/2 + 8 支柱 100% capture + 5 P0 lock）
-> 下一步：Phase 2.2 discuss-phase（execute-task workflow + ralph-loop full integration + SDK INTRODUCE NOW + per-phase model tier）
+> 下一步：Phase 2.3 discuss-phase（design/content/testing extension category MVP + karpathy behavior-rule 注入 + 30 category-specific 样本 routing ≥ 85%；intel 必上 EE-5 5-question gate + CD-3 负空间 `if_rejected_use:<id>`）
 
 ---
 
