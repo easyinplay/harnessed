@@ -3,35 +3,45 @@ apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: karpathy-skills
-  display_name: andrej-karpathy-skills
-  description: CLAUDE.md behavior rules (Think Before Coding / Simplicity / Surgical / Goal-Driven) — no commands.
+  display_name: Karpathy Baseline (心法 always-on)
+  description: Andrej Karpathy 心法 always-on SKILL-ONLY injection (D-02 锁 不动 CLAUDE.md).
   upstream:
-    source: andrej-karpathy-skills
+    source: github.com/forrestchang/andrej-karpathy-skills
     homepage: https://github.com/forrestchang/andrej-karpathy-skills
     repository: https://github.com/forrestchang/andrej-karpathy-skills.git
     license: MIT
-    notice: karpathy-skills by forrestchang (rules attributed to Andrej Karpathy), used as cross-cutting coding behavior rules (心法).
+    notice: |
+      rules attributed to Andrej Karpathy; distilled to ~/.claude/skills/karpathy-baseline/SKILL.md
+      from source-of-truth skills/karpathy-baseline/SKILL.md in this repository. D-02 SKILL-ONLY
+      injection — CLAUDE.md untouched (replaces prior CLAUDE.md sed-injection path).
 spec:
   type: cc-skill-pack
-  component_type: behavior-rule
-  category: engineering
+  component_type: command
+  category: meta
   install_type: skill
   install:
-    method: npx-skill-installer
-    cmd: "npx --yes skills@latest add forrestchang/andrej-karpathy-skills"
-    npm_version: ^1.0.0
-    idempotent_check: "grep -q karpathy-skills ~/.claude/CLAUDE.md"
+    method: git-clone-with-setup
+    cmd: |
+      if [ -f ~/.claude/CLAUDE.md ]; then
+        node scripts/strip-claude-md-section.mjs "<!-- karpathy-skills:start -->" "<!-- karpathy-skills:end -->" ~/.claude/CLAUDE.md \
+          && echo "[migration] cleaned legacy karpathy-skills CLAUDE.md block (D-02 SKILL-ONLY transition; cross-platform via node script)"
+      fi
+      mkdir -p ~/.claude/skills
+      cp -R skills/karpathy-baseline ~/.claude/skills/
+    git_ref: HEAD
+    idempotent_check: "test -f ~/.claude/skills/karpathy-baseline/SKILL.md"
   verify:
-    cmd: "grep -q 'Think Before Coding' ~/.claude/CLAUDE.md"
+    cmd: "test -f ~/.claude/skills/karpathy-baseline/SKILL.md"
     timeout_ms: 5000
+    expected_exit_code: 0
   uninstall:
-    cmd: "sed -i '/<!-- karpathy-skills:start -->/,/<!-- karpathy-skills:end -->/d' ~/.claude/CLAUDE.md"
+    cmd: "rm -rf ~/.claude/skills/karpathy-baseline"
     cleanup_paths:
-      - ~/.claude/CLAUDE.md.harnessed-bak
+      - ~/.claude/skills/karpathy-baseline
   upstream_health:
     stability: stable
-    last_check: "2026-05-11"
-    last_known_good_version: main-28-commits
+    last_check: "2026-05-16"
+    last_known_good_version: skill-only-v1
     fallback_action: warn
   signed_by: easyinplay
   platforms:
