@@ -9,7 +9,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const ENFORCE = false
+const ENFORCE = true
 const ROOT = '.planning'
 const MARKER = /^\s*\*{0,2}(?:Verdict|状态|Closure)\*{0,2}\s*[:：]/
 const HAS_RATIO = /\d+\s*\/\s*\d+/
