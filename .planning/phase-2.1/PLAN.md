@@ -18,7 +18,7 @@ ship 后 **6 install method 全覆盖**(npm-cli + mcp-stdio-add 已 ship + 本 p
 
 - **E1**: `docs/adr/0010-installer-schema-extension-errata.md`(≥100L 6-section)
 - **E2**: license whitelist(MIT-0 + anthropics-official + license_source)+ bundle-install `provides:` 字段 + install_type enforcement + decision_rules.yaml `warn:` 移除 + schema unit tests
-- **E3**: `docs/TRANSPARENCY-VERDICT-CHECKLIST.md` + `scripts/check-transparency-verdicts.mjs` + ci.yml step + M1 SAMPLES § 8.4
+- **E3**: `docs/TRANSPARENCY-VERDICT-CHECKLIST.md` + `scripts/check-transparency-verdicts.mjs` + ci.yml step + M1 SAMPLES § 8.4 + `CONTRIBUTING.md` SSOT 引用纪律 section（T1.9 — 文档诚实纪律,user-directed post-Wave-C）
 - **E4**: `src/installers/mcpHttpAdd.ts` + unit test
 - **E5**: `src/installers/gitCloneWithSetup.ts` + unit test
 - **E6**: `src/installers/ccPluginMarketplace.ts` + unit test
@@ -40,15 +40,16 @@ ship 后 **6 install method 全覆盖**(npm-cli + mcp-stdio-add 已 ship + 本 p
 ## § 2 Wave 拓扑
 
 ```
-Wave 0 — sister review 结清 + schema 前置 + ADR 0010 (E1+E2+E3)  [T1.1~T1.8]
+Wave 0 — sister review 结清 + schema 前置 + ADR 0010 (E1+E2+E3)  [T1.1~T1.9]
   ├─ T1.1 ADR 0010 draft
   ├─ T1.2 license whitelist + license_source     ┐
   ├─ T1.3 bundle-install `provides:` 字段          ├─ schema (E2)
   ├─ T1.4 install_type enforcement                │
   ├─ T1.5 decision_rules.yaml `warn:` 移除         │
   ├─ T1.6 schema unit tests                       ┘
-  ├─ T1.7 transparency checklist + CI gate + ci.yml step  ┐ (E3)
-  └─ T1.8 M1 SAMPLES § 8.4 miss 身份标注                    ┘
+  ├─ T1.7 transparency checklist + CI gate + ci.yml step  ┐
+  ├─ T1.8 M1 SAMPLES § 8.4 miss 身份标注                    ├─ 文档诚实纪律 (E3)
+  └─ T1.9 CONTRIBUTING.md SSOT 引用纪律 (user-directed)     ┘
        ↓ (Wave 0 全完成 — license/bundle/checkCmdString 是 installer 前置)
 Wave 1 — mcp-http-add (E4)              [T2.1 installer + T2.2 unit test]   ← 最先,mcpStdioAdd proven sibling
        ↓
@@ -75,7 +76,7 @@ Wave 0 必须最先 — license whitelist(T1.2)是 cc-plugin/extension 候选前
 
 ---
 
-## § 3 任务表（22 atomic 子任务 — 详 task_plan.md 各 task 验收 / 决策来源）
+## § 3 任务表（23 atomic 子任务 — 详 task_plan.md 各 task 验收 / 决策来源；T1.9 user-directed post-Wave-C 加入）
 
 | Wave | Task | 文件 | 决策来源 |
 |------|------|------|---------|
@@ -87,6 +88,7 @@ Wave 0 必须最先 — license whitelist(T1.2)是 cc-plugin/extension 候选前
 | 0 | T1.6 | `tests/unit/manifest-validate.*.test.ts` 扩展 | E2 + Pattern J |
 | 0 | T1.7 | `docs/TRANSPARENCY-VERDICT-CHECKLIST.md` + `scripts/check-transparency-verdicts.mjs` + `.github/workflows/ci.yml` step | E3 + D2.1-7 + D2.1-8 |
 | 0 | T1.8 | `.planning/phase-1.4/SAMPLES.md` § 8.4 — M1 2/30 miss 身份标注 | E3 + M1 |
+| 0 | T1.9 | `CONTRIBUTING.md` — intel/参考文档 SSOT 引用纪律 section | E3 + user-directed(intel § 0 提升为项目级) |
 | 1 | T2.1 | `src/installers/mcpHttpAdd.ts` | E4 + D-12 + D-16 + PATTERNS § 2 mcpHttpAdd(~85% clone) |
 | 1 | T2.2 | `tests/unit/installers-mcpHttpAdd.test.ts` | E4 + Pattern K |
 | 2 | T3.1 | `src/installers/gitCloneWithSetup.ts` | E5 + D-13 + D-15 + PATTERNS § 2 gitCloneWithSetup(~55%) |

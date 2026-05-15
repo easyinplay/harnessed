@@ -1,12 +1,12 @@
 # Phase 2.1 task_plan — 4 installer methods 实装
 
 > **Authored**: 2026-05-15 (Wave B — main agent direct-write per anti-stall protocol)
-> **22 atomic 子任务 / 6 wave**
+> **23 atomic 子任务 / 6 wave**（Wave 0 = T1.1~T1.9；T1.9 user-directed post-Wave-C 加入）
 > 每 task: 文件 / action(CONCRETE values)/ read_first / acceptance_criteria(grep/wc/test 可验)/ 决策来源
 
 ---
 
-## Wave 0 — sister review 结清 + schema 前置 + ADR 0010（T1.1~T1.8）
+## Wave 0 — sister review 结清 + schema 前置 + ADR 0010（T1.1~T1.9）
 
 ### T1.1 — ADR 0010 draft
 
@@ -154,6 +154,24 @@
   - `.planning/phase-1.4/SAMPLES.md` § 8.4 含 2 个具名 miss sample(id + category + rationale)
   - `grep -c "miss" .planning/phase-1.4/SAMPLES.md` ≥ 2
 - **决策来源**: E3 + M1
+
+### T1.9 — CONTRIBUTING.md SSOT 引用纪律 section（user-directed,post-Wave-C 加入）
+
+- **文件**: `CONTRIBUTING.md`(extend — 加新 section)
+- **wave**: 0 | **depends_on**: — | **autonomous**: yes
+- **action**: 把 `.planning/intel/omc-comparison.md` § 0 的 "SSOT 引用纪律" 从 intel-local 提升为**项目级文档纪律**,在 `CONTRIBUTING.md` 加一节 `## intel / 参考文档的 SSOT 引用规则`(~15-25L):
+  - **核心理念**:intel / 参考文档是**外部参考,不是 SSOT** —— 引用 SSOT 资源(phase / ADR 编号)必须防 stale
+  - **phase 编号** → 用**语义锚定**("Phase 2.2 = execute-task workflow"),不只靠数字(phase 可被 insert — phase 1.2.5 即先例)
+  - **ADR 编号** → **绝不预占**(ADR 编号是"先 plan-phase 先占"的动态资源);需新 ADR 时写"需起 errata ADR(编号由对应 phase plan-phase 流程分配)",不写死 ADR NNNN
+  - **校验时机** → 任何 phase discuss-phase 取用参考文档时,先比对当前 `ROADMAP.md` / `docs/adr/` 实际编号,发现 drift 即就地修正
+  - **反面教材**:引 `.planning/intel/omc-comparison.md` 2026-05-14 初版写死 "phase 2.0" + "ADR 0010" → v0.2.0 激活后即 stale 的真实案例
+  - 适用范围:`.planning/intel/**` + 任何引用 phase/ADR 编号的参考文档
+- **read_first**: `CONTRIBUTING.md`(现有结构 — phase 1.1 ship 139L)/ `.planning/intel/omc-comparison.md` § 0(2026-05-15 重写版 — 提升的源)
+- **acceptance_criteria**:
+  - `grep -c "SSOT 引用" CONTRIBUTING.md` ≥ 1
+  - `grep -c "绝不预占\|语义锚定" CONTRIBUTING.md` ≥ 2
+  - `wc -l CONTRIBUTING.md` 比 ship 前 +15 以上
+- **决策来源**: user-directed(2026-05-15 — intel omc-comparison.md 重写后 follow-through;与 T1.7 transparency verify checklist 同属"文档诚实纪律"结构性修复,折叠进 Wave 0)
 
 ---
 
@@ -393,7 +411,7 @@
 ## Ship line
 
 phase 2.1 ship 后:
-- **22 atomic 子任务** 全完成(Wave 0-5)
+- **23 atomic 子任务** 全完成(Wave 0-5；T1.9 user-directed post-Wave-C 加入)
 - **6 install method 全 runtime-ready** — `phase21Placeholder` 删除
 - **E1-E8 8/8 acceptance bar**
 - ADR 累积 9 → **10**;baseline tag 9 → **10**(adr-0010-accepted)
