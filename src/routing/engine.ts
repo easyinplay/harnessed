@@ -1,26 +1,18 @@
 // Phase 1.4 T3.1 — main-process-driven routing engine v1 (Pattern N).
 // Phase 1.5 T3.4 upgrade — DAG resolver pre-check + Semantic Router L2 fallthrough.
+// Phase 2.2 W4 T4.2 upgrade — defaultSpawn = real sdkSpawn (lib/sdkSpawn.ts).
 //
-// IMPL NOTE — implements ADR 0006 § 1 双层架构 + KICKOFF C1 (main-process
-// orchestrator). D1.2.5-3 lock: routing engine runs in the main session,
-// spawns subagents via `query({ options: { agents: { name: agentDef } } })`
-// (Anchor 6) — never recursive (Fact D / RESEARCH-1 § 1.1 hard ceiling).
-// F33 P1 mitigation: subagent final message must contain verbatim COMPLETE
-// (`^COMPLETE$` multiline regex, Anchor 2 — SPIKE-REPORT.md § 3.1 实测 FEASIBLE).
-// D1.4-1 reload bypass: install via library call (W-2) → sleep + retry
-// idempotent_check (Anchor 3, lib/ralphLoop.ts) → fresh subagent via query()
-// (CC auto-loads `~/.claude/skills/<name>/SKILL.md`); we **never** call
-// `/reload-plugins` (GitHub #35641 / #46594 open). D1.4-3 wedge: ralphLoopWrap
-// self-implemented ≤50L (Anchor 4, lib/ralphLoop.ts). ADR 0008 § Decision 4
-// tracks the 8 接口契约 upgrade points (PLAN.md § 4). createAgent (T3.2)
-// honors contract § 3; default per-spawn timeout 60s (Anchor 7).
-//
-// IMPL NOTE — phase 1.5 T3.4 (ADR 0009 / D1.5-11): route gains two layers
-// around L1 arbitrate without breaking the phase 1.4 fallback_supervisor 三层
-// 兜底 contract (PLAN.md § 4 #4): PRE-arbitrate resolveDag() cycle pre-check
-// (opts.dagNodes → friendly InvalidDecisionError on cycle), and POST-arbitrate
-// -miss semanticRouter.match() L2 (v0.1 stub → null pass-through to L3; v0.2+
-// swaps stub body only). EngineResult stays the same 三态 union (F41 takeaway).
+// IMPL NOTE — ADR 0006 § 1 双层架构 + KICKOFF C1 (main-process orchestrator).
+// D1.2.5-3 lock: routing engine runs in the main session, spawns subagents
+// via `query({ options: { agents: { name: agentDef } } })` (Anchor 6) — never
+// recursive (Fact D / RESEARCH-1 § 1.1). F33 P1 mitigation: verbatim
+// <promise>COMPLETE</promise> (Anchor 2). D1.4-1 reload bypass via fresh
+// query() (Anchor 3 / lib/ralphLoop.ts) — never /reload-plugins (#35641/#46594).
+// D1.4-3 wedge: ralphLoopWrap ≤50L. ADR 0008 § Decision 4 tracks 8 接口契约
+// upgrade points (PLAN.md § 4). createAgent honors contract § 3.
+// Phase 1.5 T3.4 (ADR 0009 / D1.5-11): PRE-arbitrate resolveDag() cycle
+// pre-check + POST-arbitrate-miss semanticRouter.match() L2 (v0.1 stub —
+// null pass-through to L3 fallback_supervisor); EngineResult stays 三态 union.
 
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -42,6 +34,7 @@ import {
   ralphLoopWrap,
   VerbatimCompleteFailError,
 } from './lib/ralphLoop.js'
+import { sdkSpawn } from './lib/sdkSpawn.js'
 import { ensureSkillsInstalled } from './lib/skillInstall.js'
 import { match as semanticMatch } from './semanticRouter.js'
 
@@ -55,35 +48,23 @@ export type EngineResult =
 
 /** Routing engine entry options. */
 export interface RoutingOpts {
-  /** Path to decision_rules.yaml (defaults to ./routing/decision_rules.yaml). */
-  rulesPath?: string
-  /** Filesystem root for skill probes; injected by tests/e2e wrapper. */
-  skillsRoot?: string
-  /** Mock spawn callback — production wires `query()`; tests pass mocks. */
-  spawn?: (agentDef: AgentDefinition) => Promise<string>
-  /** External ralph-loop max iterations (D1.4-3 lock 20). */
-  maxIterations?: number
-  /** Per-spawn timeout in ms (Anchor 7 cold-start margin). */
-  spawnTimeoutMs?: number
-  /** Fallback supervisor invocation hook (returns result string when no rule hits). */
-  fallbackSupervisor?: (task: TaskContext) => Promise<string>
-  /** AgentDefinition factory overrides forwarded into createAgent. */
-  agentOpts?: AgentDefinitionOpts
-  /** Optional skill dependency graph — resolved (Kahn) before arbitrate; a
-   *  cycle short-circuits to phase='arbitrate' with a friendly error (T3.4). */
-  dagNodes?: DagNode[]
-  /** Semantic threshold forwarded to the L2 semanticRouter stub (v0.1 unused). */
-  semanticThreshold?: number
+  rulesPath?: string // defaults to ./routing/decision_rules.yaml
+  skillsRoot?: string // fs root for skill probes; injected by tests/e2e
+  spawn?: (agentDef: AgentDefinition) => Promise<string> // test mock seam
+  maxIterations?: number // ralph-loop limit (D1.4-3 lock 20)
+  spawnTimeoutMs?: number // per-spawn timeout in ms (Anchor 7)
+  fallbackSupervisor?: (task: TaskContext) => Promise<string> // L3 兜底
+  agentOpts?: AgentDefinitionOpts // factory overrides forwarded into createAgent
+  dagNodes?: DagNode[] // optional skill DAG (Kahn pre-check, T3.4)
+  semanticThreshold?: number // L2 semanticRouter stub threshold (v0.1 unused)
 }
 
-/** Anchor 6 — production spawn wrapper. Tests inject `opts.spawn` directly;
- *  the real `query({ allowedTools: [...,'Agent'], agents })` wiring lands
- *  in T5.1 research.ts adapter. The shape here documents the contract. */
-async function defaultSpawn(_def: AgentDefinition): Promise<string> {
-  throw new Error(
-    'engine.defaultSpawn is a placeholder — pass opts.spawn or use harnessed-research wrapper (T5.1).',
-  )
-}
+/** Anchor 6 — production spawn = real sdkSpawn (T4.2). Replaces phase 1.4
+ *  placeholder; backward-compat test seam preserved via opts.spawn (1-arg). */
+const defaultSpawn = (
+  def: AgentDefinition,
+  ctx: { expertName: string; resumeSessionId?: string; onSessionId?: (id: string) => void },
+) => sdkSpawn(def, ctx)
 
 function buildDecision(matched: Rule | null): ArbitrateResult {
   if (!matched) {
@@ -109,7 +90,7 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   const rulesPath = opts.rulesPath ?? join('routing', 'decision_rules.yaml')
   const skillsRoot = opts.skillsRoot ?? join(homedir(), '.claude', 'skills')
   const maxIter = opts.maxIterations ?? 20
-  const spawnFn = opts.spawn ?? defaultSpawn
+  const userSpawn = opts.spawn
 
   // Step 0 — DAG pre-check (T3.4, ADR 0009). Resolve the optional skill
   // dependency graph via Kahn; a cycle is rejected before arbitrate.
@@ -183,9 +164,24 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
     return { ok: false, phase: 'spawn', error: error as Error }
   }
 
-  // Step 4 + 5 — spawn + ralph-loop wrap (Anchor 4, lib/ralphLoop.ts)
+  // Step 4 + 5 — spawn + ralph-loop wrap (Anchor 4 / T4.2 sdkSpawn wire-up).
+  // userSpawn (test seam, 1-arg) ignores resumeSessionId; defaultSpawn=sdkSpawn
+  // consumes it. CD-4 closure-ready (T4.4 deferred to v0.3.0 per B-35).
+  const expertName = (matched.decision.primary_expert as string | null) ?? 'unknown'
+  let capturedSessionId: string | undefined
+  const wrappedSpawn = async (resumeSessionId?: string): Promise<string> =>
+    userSpawn
+      ? userSpawn(agentDef)
+      : defaultSpawn(agentDef, {
+          expertName,
+          ...(resumeSessionId ? { resumeSessionId } : {}),
+          onSessionId: (id) => {
+            capturedSessionId = id
+          },
+        })
+  void capturedSessionId
   try {
-    const result = await ralphLoopWrap(() => spawnFn(agentDef), maxIter)
+    const result = await ralphLoopWrap(wrappedSpawn, maxIter)
     return { ok: true, result, matchedRule: matched }
   } catch (error) {
     if (error instanceof MaxIterationsExceededError) {
