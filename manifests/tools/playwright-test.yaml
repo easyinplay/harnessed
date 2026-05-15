@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: playwright-test
+  display_name: Playwright Test (microsoft/playwright-cli)
+  description: End-to-end browser test framework. Frontend e2e (TS / React / Vue) default per decision_rules e2e-default.
+  upstream:
+    source: github.com/microsoft/playwright-cli
+    homepage: https://github.com/microsoft/playwright-cli
+    repository: https://github.com/microsoft/playwright-cli.git
+    license: Apache-2.0
+    notice: |
+      playwright-test skill from microsoft/playwright-cli (Microsoft official, Apache-2.0; .planning/research/v0.2.0-extensions.md § 3.2).
+      testing category — frontend e2e default; routed via decision_rules.yaml `e2e-default` rule (priority 50 at L107-114).
+      perf / a11y / memory-leak forbidden — those route to chrome-devtools-mcp per `perf-a11y-memory` rule (L79-95).
+spec:
+  type: cc-skill-pack
+  component_type: command
+  category: testing
+  install_type: skill
+  install:
+    method: npx-skill-installer
+    cmd: "npx --yes skills@1.5.7 add microsoft/playwright-cli --copy --global"
+    npm_version: ^1.5.7
+    idempotent_check: "test -f ~/.claude/skills/playwright-cli/SKILL.md"
+  verify:
+    cmd: "test -f ~/.claude/skills/playwright-cli/SKILL.md"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/playwright-cli"
+    cleanup_paths:
+      - ~/.claude/skills/playwright-cli
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-16"
+    last_known_good_version: "1.5.7"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
+  decision_rules:
+    trigger: "e2e test / browser test / TypeScript frontend e2e"
+    default_expert: playwright-test
