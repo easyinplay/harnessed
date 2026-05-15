@@ -83,7 +83,7 @@
 | **B-26** | **M1 schema regen CI gate** = `.github/workflows/ci.yml` 加 step `corepack pnpm build:schema && git diff --exit-code schemas/`(~10L) — RETROSPECTIVE Lesson 6 自我建议落地 | CONTEXT D-07 + PATTERNS § 2.8 + Phase 2.2 RETROSPECTIVE |
 | **B-27** | **M2 intel 实施进度回填** = `.planning/intel/omc-comparison.md` L236-238 加 `## 实施进度回填` 节,每 entry 标 `IMPL: Phase 2.2 (commit hash)` 或 `PENDING`(纯文档,无 CI) | CONTEXT D-07 + § 0 SSOT 引用纪律 |
 | **B-28** | **M3 perf gate 根治策略 = D2.3-1 候选 (a) 移出 CI critical path**(advisory nightly only) — 新 `.github/workflows/perf-bench.yml`(~25L cron `0 3 * * *` + advisory annotation)+ `ci.yml` 删 perf.test.ts step(保留 file 但 `it.skip(IS_GHA)`);Karpathy 真根治;4 累计 nudge anti-pattern 终结;vitest/Next.js/Deno 业内 advisory-only 共识 | RESEARCH D2.3-1 + § 1.3 |
-| **B-29** | **T1.2 schemaVersion consumer gate** = `ci.yml` grep gate `grep -r "branchOnSchemaVersion(" src/ \| wc -l ≥ 2`(**B1 plan-check fix**: ≥7 → ≥2 honest baseline reflecting Phase 2.2 W2 helper-only adoption — consumer count = 2 at Phase 2.3 start: `src/types/schemaVersion.ts` 定义 + 1 self-reference;Phase 2.3+ 逐步扩 7 surface,详 ADR <实占N> § 7 errata) | CONTEXT D-07 + Phase 2.3 Wave C plan-check fix |
+| **B-29** | **T1.2 schemaVersion consumer gate** = `ci.yml` grep gate `grep -r "branchOnSchemaVersion(" src/ \| wc -l ≥ 2`(**B1 plan-check fix**: ≥7 → ≥2 honest baseline reflecting Phase 2.2 W2 helper-only adoption — consumer count = 2 at Phase 2.3 start: `src/types/schemaVersion.ts` 定义 + 1 self-reference;Phase 2.3+ 逐步扩 7 surface,详 ADR 0012 § 7 errata) | CONTEXT D-07 + Phase 2.3 Wave C plan-check fix |
 | **B-30** | **T1.3 Win provenance sentinel** = `ci.yml` Win-only pwsh step `if: runner.os == 'Windows'` + `shell: pwsh` + `pwsh -c "node scripts/check-provenance.mjs"`(Win path-sep 行为验) | CONTEXT D-07 + PATTERNS § 2.8 |
 | **B-31** | **T5 deferred-items review** = **D-WP-6 (b) markdown 模板 + warn-only CI script**(`scripts/check-deferred-items.mjs` 沿袭 check-transparency-verdicts.mjs walker pattern ~80L,ENFORCE=false round 1) + RETROSPECTIVE.md 模板加 `## Deferred items review` 节;round 2 ENFORCE 推迟到下 phase | PATTERNS D-WP-6 + § 2.7 |
 | **B-32** | Wave 0 task 排序 = **M3 first**(后续 wave CI 稳定性依赖 perf gate 移出 critical path)→ M1 + T1.2 + T1.3 同 Wave 0(ci.yml 同文件改动 sequential)→ M2 + T5(纯文档 + new script,parallel)→ ADR draft sketch(T0.x)| CONTEXT D-07 hint + 推理 |
@@ -93,8 +93,8 @@
 | Lock | Decision | Source chain |
 |------|----------|--------------|
 | **B-33** | **新 ADR errata 覆盖 Phase 2.3 全决策**(沿袭 phase 1.4 ADR 0008 + phase 2.2 ADR 0011 多决策合并 errata 模式)— 内部章节 sketch 5:① extension category MVP 装配 + manifest schema ② CD-3 negative-space + if_rejected_use + arbitrateWithRedirect ③ EE-5 5-question merge gate 双层 ④ karpathy SKILL-ONLY 注入 + always_active 形态 ⑤ Wave 0 perf gate 根治(移出 CI critical path)+ schemaVersion grep gate + deferred-items review cadence | CONTEXT D-06(EE-4 DEFER-2.4)+ KICKOFF § 3.2 |
-| **B-34** | **ADR 编号 = plan-phase 实占,绝不预占**(intel § 0 + CONTRIBUTING.md 项目级 SSOT 引用纪律)— 本 phase 所有文档(KICKOFF/PATTERNS/RESEARCH/ASSUMPTIONS/PLAN/task_plan/NEW ADR)写 `<实占N>` placeholder;**禁写 `ADR 0012`**;T0.1 sed-replace discipline 批量 resolve(Phase 2.1 W1 plan-check fix 沿袭) | PATTERNS D-WP-8 + KICKOFF § 3.2 |
-| **B-35** | **A7 守恒持续**:ADR 0001-0011 main body **0 diff**;新 ADR 走 errata 路径;ship 时 baseline tag `1-11 → 1-<实占N>`;CI `ci.yml` A7 step iter 同步;`docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` + `docs/INSTALLER-CONTRACT.md` main body 不动;`arbitrate()` legacy 保留(B-18)避免 30-sample routing-engine.test.ts byte-stable 回归 | KICKOFF § 3.1 + B-18 |
+| **B-34** | **ADR 编号 = plan-phase 实占,绝不预占**(intel § 0 + CONTRIBUTING.md 项目级 SSOT 引用纪律)— 本 phase 所有文档(KICKOFF/PATTERNS/RESEARCH/ASSUMPTIONS/PLAN/task_plan/NEW ADR)写 `0012` placeholder;**禁写 `ADR 0012`**;T0.1 sed-replace discipline 批量 resolve(Phase 2.1 W1 plan-check fix 沿袭) | PATTERNS D-WP-8 + KICKOFF § 3.2 |
+| **B-35** | **A7 守恒持续**:ADR 0001-0011 main body **0 diff**;新 ADR 走 errata 路径;ship 时 baseline tag `1-11 → 1-0012`;CI `ci.yml` A7 step iter 同步;`docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` + `docs/INSTALLER-CONTRACT.md` main body 不动;`arbitrate()` legacy 保留(B-18)避免 30-sample routing-engine.test.ts byte-stable 回归 | KICKOFF § 3.1 + B-18 |
 
 ### B.8 Karpathy Hard Limits & File Split
 
@@ -102,7 +102,7 @@
 |------|----------|--------------|
 | **B-36** | Karpathy 5 hard limit 继承:`engine.ts` ≤200L / `agentDefinition.ts` ≤200L(H3 errata cap)/ `systemPrompt.ts` ≤80L / `ralphLoop.ts` ≤50L 主体 / `promiseExtract.ts` ≤50L;**Phase 2.3 不动 engine.ts 主体**(arbitrate 改在 decisionRules.ts);decisionRules.ts 现 ~180L + `arbitrateWithRedirect()` ~20L + helper ~5L ≈ ~205L → **可能超** → fallback split 到 `src/routing/lib/arbitrateRedirect.ts`(B-18 (b) 默认 inline,超 200L 时 split) | KICKOFF § 3.6 + PATTERNS § 2.4 |
 | **B-37** | manifest yaml hard limit = **≤60L each**(沿袭 ui-ux-pro-max.yaml 55L);decisionRules.ts arbitrate 升级 ≤+20L;karpathy-baseline.md SKILL.md ≤80L(D2.3-2);manifest-add.ts EE-5 CLI ≤90L(沿袭 research.ts 93L scaffold);check-perf-bench.yml ≤50L;check-deferred-items.mjs ≤80L;SAMPLES.md ≤250L | KICKOFF § 3.6 + 推理 |
-| **B-38** | TypeBox not zod — schema 改动用 `@sinclair/typebox` `Type.*`;沿袭 ADR 0010/0011 errata 注释块 fence 模式;新 ADR errata 注释行 `// ADR <实占N> errata — <topic> (phase 2.3 W<N> — F<N>)` | KICKOFF § 3.3 |
+| **B-38** | TypeBox not zod — schema 改动用 `@sinclair/typebox` `Type.*`;沿袭 ADR 0010/0011 errata 注释块 fence 模式;新 ADR errata 注释行 `// ADR 0012 errata — <topic> (phase 2.3 W<N> — F<N>)` | KICKOFF § 3.3 |
 | **B-39** | A8 LF line endings — 所有新文件 LF;Win 测试需 Git Bash;新 SAMPLES.md + SKILL.md + decision_rules.yaml CD-3 字段 + 5 NEW manifest yaml 全 LF;Win sentinel T1.3 验 path-sep 行为 | KICKOFF § 3.9 |
 
 ### B.9 RESOLVED conflict chain notes
@@ -114,7 +114,7 @@
 - **D-WP-4 + D-WP-5 PATTERNS proposal** + **D2.3-7 RESEARCH ~15L 增量** → **B-18 + B-19 = (b) legacy 保留 + 新 fn `arbitrateWithRedirect()`**(原因:A7 守恒 + 30-sample byte-stable + 防 cycle by-default)
 - **D-WP-6 (a/b/c) PATTERNS proposal** → **B-31 = (b) markdown 模板 + warn-only CI script**(原因:沿袭 Phase 2.1 transparency W3 warn-only round 1 + W4 ENFORCE 阶梯)
 - **D-WP-7 (a/b) PATTERNS proposal** → **B-22 = (a) Wave B frozen**(原因:沿袭 phase 1.4 / 2.2 SAMPLES.md plan-phase Wave B frozen + execute-phase 不允许改触发 ADR errata)
-- **D-WP-8 PATTERNS** + **KICKOFF § 3.2 + intel § 0 + CONTRIBUTING.md** → **B-34 = ADR 编号不预占,T0.1 sed-replace `<实占N>`**(单线性 solo 开发无并发风险,Phase 2.1 W1 plan-check fix 沿袭)
+- **D-WP-8 PATTERNS** + **KICKOFF § 3.2 + intel § 0 + CONTRIBUTING.md** → **B-34 = ADR 编号不预占,T0.1 sed-replace `0012`**(单线性 solo 开发无并发风险,Phase 2.1 W1 plan-check fix 沿袭)
 - **Q3 per-manifest hint vs DR-only D-04** — RESEARCH Q3 推荐"加 per-manifest hint 作冗余守护",**B-17 LOCK** 该路径不破 D-04 DR-only(per-manifest 历来是 fallback hint,全局 yaml 仍是 SSOT)
 - **Q5 karpathy-skills.yaml backward compat** — RESEARCH Q5 推荐"install 时跑 migration cleanup script 一次性清旧 CLAUDE.md block",**B-10 LOCK** 含 mitigation(清除而非注入,符合 D-02 精神)
 

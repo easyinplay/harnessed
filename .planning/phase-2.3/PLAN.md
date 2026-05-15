@@ -11,7 +11,7 @@ files_modified:
   - scripts/check-deferred-items.mjs
   - .planning/intel/omc-comparison.md
   - .planning/RETROSPECTIVE.md
-  - docs/adr/<实占N>-extension-mvp-karpathy-inject.md
+  - docs/adr/0012-extension-mvp-karpathy-inject.md
   - manifests/skill-packs/frontend-design.yaml
   - manifests/skill-packs/anthropics-skills-pptx.yaml
   - manifests/skill-packs/anthropics-skills-slide-deck.yaml
@@ -42,10 +42,10 @@ must_haves:
     - "decision_rules.yaml CD-3 字段 (do_not_use_when + if_rejected_use) 在 arbitrateWithRedirect 返回 `{ kind: 'rejected', redirectTo }`"
     - "做出风格 anchor 9 keywords(D2.3-4)在 30 SAMPLES.md ≥85% 命中(30 中 ≥26)"
     - "Wave 0 6 项一次根治:M1 schema regen gate + M2 intel 回填 + M3 perf gate 移出 critical path(perf-bench.yml NEW + ci.yml perf step skip)+ T1.2 schemaVersion grep gate + T1.3 Win pwsh sentinel + T5 deferred-items review(warn-only)"
-    - "ADR errata <实占N> accepted 含 5 章节(extension category MVP + CD-3 + EE-5 + karpathy SKILL-ONLY + Wave 0 perf gate);ADR 0001-0011 main body 0 diff;baseline tag 1-11 → 1-<实占N>"
+    - "ADR errata 0012 accepted 含 5 章节(extension category MVP + CD-3 + EE-5 + karpathy SKILL-ONLY + Wave 0 perf gate);ADR 0001-0011 main body 0 diff;baseline tag 1-11 → 1-0012"
     - "3-OS CI 全绿(Win Git Bash + macOS + Linux)含 manifest install 链路 e2e + arbitrate redirect 实跑 + Win pwsh provenance sentinel"
   artifacts:
-    - path: "docs/adr/<实占N>-extension-mvp-karpathy-inject.md"
+    - path: "docs/adr/0012-extension-mvp-karpathy-inject.md"
       provides: "Phase 2.3 单 ADR errata 5 章节(extension category MVP / CD-3 negative-space / EE-5 双层 gate / karpathy SKILL-ONLY / Wave 0 perf gate 根治)"
       contains: "### 1. extension category MVP, ### 2. CD-3, ### 3. EE-5, ### 4. karpathy SKILL-ONLY, ### 5. Wave 0 perf gate"
     - path: "skills/karpathy-baseline/SKILL.md"
@@ -165,8 +165,8 @@ EE-4 plan 4 维量化阈值(DEFER-2.4 / D-06)+ T4.4 Task Session 完整版(v0.3.
 
 ```
 Wave 0 — STATE.md 6 项 prereq backlog 一次根治 + ADR draft (F1)
-  ├─ T0.1  ADR 编号实占(<实占N>)+ ROADMAP latest-shipped token + sed-replace placeholder discipline
-  ├─ T0.2  ADR <实占N> draft(5 章节 sketch only,Wave 6 详细 fill)
+  ├─ T0.1  ADR 编号实占(0012)+ ROADMAP latest-shipped token + sed-replace placeholder discipline
+  ├─ T0.2  ADR 0012 draft(5 章节 sketch only,Wave 6 详细 fill)
   ├─ T0.3  M3 perf gate 根治(D2.3-1)— 新 perf-bench.yml + ci.yml perf step skip(it.skip(IS_GHA))+ STATE.md L553 close
   ├─ T0.4  M1 schema regen CI gate(`corepack pnpm build:schema && git diff --exit-code schemas/`,~10L)
   ├─ T0.5  T1.2 schemaVersion consumer grep gate(`grep -r "branchOnSchemaVersion" src/ | wc -l ≥ 2`, **B1 plan-check fix** honest baseline; SUGGESTION-1 delta: no-paren grep 与 plan text 一致)
@@ -208,10 +208,10 @@ Wave 5 — integration + tests(F7 A7 守恒)
   └─ T5.4  A7 守恒 verify — `git diff <baseline-1-11>..HEAD -- "docs/adr/00[0-1][0-9]-*.md" | wc -l` == 0
        ↓
 Wave 6 — ship(F8)
-  ├─ T6.1  ADR <实占N> finalize 5 章节(Wave 0 draft → Wave 6 详细 fill 完成)+ accepted
-  ├─ T6.2  ci.yml A7 step iter 1-11 → 1-<实占N>
+  ├─ T6.1  ADR 0012 finalize 5 章节(Wave 0 draft → Wave 6 详细 fill 完成)+ accepted
+  ├─ T6.2  ci.yml A7 step iter 1-11 → 1-0012
   ├─ T6.3  STATE.md 续编 + RETROSPECTIVE.md 加 milestone retrospective(deferred items review 跑通)
-  └─ T6.4  baseline tag adr-<实占N>-accepted + v0.2.0-alpha.3-extension-mvp 候选 tag
+  └─ T6.4  baseline tag adr-0012-accepted + v0.2.0-alpha.3-extension-mvp 候选 tag
 ```
 
 **Wave 0 必须最先**(B-25 + B-32)— M3 perf gate 根治不解后续 wave CI 不稳。 Wave 1 先于 Wave 2(decision_rules `if_rejected_use: frontend-design` 需 frontend-design.yaml 先 ship)。 Wave 4 SAMPLES.md 依赖 Wave 1+2+3 全完成(adapter 装配 + rule 集 + EE-5 gate 全在位)。 Wave 5 依赖 Wave 4 SAMPLES R3 frozen。
@@ -230,7 +230,7 @@ Wave 6 — ship(F8)
 | 3 | 3 | ~1d | manifest-add.ts ≤90L + readline interactive + KICKOFF 模板 § 7 + checker BLOCKER rule |
 | 4 | 3 | ~1d | 30 SAMPLES.md ≤250L R3 frozen + always_active spike outcome + samples-30.test ≥26/30 |
 | 5 | 4 | ~1d | arbitrate-redirect.test 4 case + manifest-add-ee5.test 双层验证 + e2e smoke + A7 diff 0 |
-| 6 | 4 | ~0.5d | 3-OS CI 全绿 + tag exist + ADR 0001-0011 main body diff 0 + adr-<实占N>-accepted |
+| 6 | 4 | ~0.5d | 3-OS CI 全绿 + tag exist + ADR 0001-0011 main body diff 0 + adr-0012-accepted |
 | **Total** | **35** | **~8d** | T0.10 spike 新加 (**W1 plan-check fix**);T4.2 SKIPPED slot 保留 |
 
 ---
@@ -278,8 +278,8 @@ Phase 2.3 ship 后,下游 phase 直接消费的接口:
 | **F4** | `ls skills/karpathy-baseline/SKILL.md && wc -l skills/karpathy-baseline/SKILL.md && grep "always_active: true" skills/karpathy-baseline/SKILL.md && harnessed install karpathy-skills && test -f ~/.claude/skills/karpathy-baseline/SKILL.md && ! grep -q "karpathy-skills:start" ~/.claude/CLAUDE.md && harnessed uninstall karpathy-skills && ! test -f ~/.claude/skills/karpathy-baseline/SKILL.md` | SKILL.md ≤80L + always_active 命中;install/uninstall 双向干净;CLAUDE.md 不被改动(D-02 SKILL-ONLY) |
 | **F5** | `wc -l src/cli/manifest-add.ts && npm test -- tests/cli/manifest-add-ee5.test.ts && grep -E "## § 7 EE-5\|EE-5 gate" .planning/phase-2.3/KICKOFF.md` | manifest-add.ts ≤90L;5-question test pass;KICKOFF § 7 节存在 |
 | **F6** | `wc -l .planning/phase-2.3/SAMPLES.md && npm test -- tests/routing/samples-30.test.ts && grep -E "做出风格" .planning/phase-2.3/SAMPLES.md \| wc -l` | SAMPLES ≤250L;samples-30.test.ts ≥26/30 pass;≥1 做出风格 anchor case |
-| **F7** | `git diff <baseline-1-11>..HEAD -- "docs/adr/0001-*.md" "docs/adr/0002-*.md" ... "docs/adr/0011-*.md" \| wc -l && ls docs/adr/<实占N>-*.md && grep -E "^### [1-5]\. " docs/adr/<实占N>-*.md \| wc -l` | A7 diff wc == 0;ADR <实占N> 存在 + 5 章节 |
-| **F8** | `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` + `git tag --list adr-<实占N>-accepted v0.2.0-alpha.3-extension-mvp` | CI all-green 3 OS;两 tag 存在 |
+| **F7** | `git diff <baseline-1-11>..HEAD -- "docs/adr/0001-*.md" "docs/adr/0002-*.md" ... "docs/adr/0011-*.md" \| wc -l && ls docs/adr/0012-*.md && grep -E "^### [1-5]\. " docs/adr/0012-*.md \| wc -l` | A7 diff wc == 0;ADR 0012 存在 + 5 章节 |
+| **F8** | `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` + `git tag --list adr-0012-accepted v0.2.0-alpha.3-extension-mvp` | CI all-green 3 OS;两 tag 存在 |
 
 ---
 
@@ -303,7 +303,7 @@ Phase 2.3 ship 后,下游 phase 直接消费的接口:
 |------|------------------|----------------|-----------|
 | workflow | execute-task 主线 + ralph-loop full integration ✅ | extension category MVP + karpathy 注入引擎 + 30 routing ≥85% | — |
 | schema | phases.yaml + model + contract v1.2 + schemaVersion 7 surface ✅ | decision_rules CD-3 optional fields(do_not_use_when + if_rejected_use)+ open record(B-16 do nothing) | — |
-| ADR | 0011 单 ADR 9 章节 ✅ | 新 ADR errata <实占N> 5 章节(extension MVP / CD-3 / EE-5 / karpathy SKILL-ONLY / Wave 0 perf gate) | 新 ADR(Phase 2.4 决策 + EE-4 absorb) |
+| ADR | 0011 单 ADR 9 章节 ✅ | 新 ADR errata 0012 5 章节(extension MVP / CD-3 / EE-5 / karpathy SKILL-ONLY / Wave 0 perf gate) | 新 ADR(Phase 2.4 决策 + EE-4 absorb) |
 | SDK | INTRODUCE + 4-layer dual-signal ✅ | — | — |
 | transparency | gate ENFORCE=true + 全史迁移 + freshness ext ✅ | M1+M2+M3+T1.2+T1.3+T5 Wave 0 backlog 一次根治 | — |
 | installer | 6 method dispatch frozen ✅ | extension category 5 NEW + 1 REWRITE adapter 真实装配 | — |
@@ -356,8 +356,8 @@ Phase 2.3 ship 后,下游 phase 直接消费的接口:
 - `harnessed install frontend-design && test -f ~/.claude/skills/frontend-design/SKILL.md` 跑通(若执行环境)
 - `harnessed install karpathy-skills && test -f ~/.claude/skills/karpathy-baseline/SKILL.md && ! grep -q "karpathy-skills:start" ~/.claude/CLAUDE.md`(D-02 SKILL-ONLY 验)
 - 30 sample 跑通 samples-30.test.ts ≥26/30 命中(≥85% B-21)
-- `grep -E "^### [1-5]\. " docs/adr/<实占N>-*.md | wc -l` 输出 == 5(F7 reproduction — ADR 5 章节)
-- `git tag --list adr-<实占N>-accepted v0.2.0-alpha.3-extension-mvp` 两 tag 存在
+- `grep -E "^### [1-5]\. " docs/adr/0012-*.md | wc -l` 输出 == 5(F7 reproduction — ADR 5 章节)
+- `git tag --list adr-0012-accepted v0.2.0-alpha.3-extension-mvp` 两 tag 存在
 - `grep "0011" .planning/phase-2.3/ docs/adr/ -r` 出非 Phase 2.2 ADR 引用范围之外的字面残留 == 0(T0.1 sed-replace discipline)
 - `grep -E "branchOnSchemaVersion\(" src/ -r | wc -l` ≥ 2(T1.2 schemaVersion consumer gate — **B1 plan-check fix**: honest baseline reflecting Phase 2.2 W2 helper-only adoption)
 
@@ -367,7 +367,7 @@ Phase 2.3 ship 后,下游 phase 直接消费的接口:
 - F1-F8 全 ship(详 § 6 reproduction commands)
 - 39 个 decision lock(B-01 ~ B-39)全 ship,**zero unresolved conflict**
 - 34 atomic task 全 done + 7 Wave 全 checkpoint pass
-- ADR errata <实占N> accepted 含 5 章节 + baseline tag updated(1-11 → 1-<实占N>)
+- ADR errata 0012 accepted 含 5 章节 + baseline tag updated(1-11 → 1-0012)
 - v0.2.0-alpha.3-extension-mvp 候选 milestone tag created
 - `.planning/STATE.md` + `.planning/RETROSPECTIVE.md` 续编 reflect Phase 2.3 ship(deferred items review 节跑通)
 - decision_rules.yaml CD-3 字段 + 9 keywords 词集 frozen(execute-phase R3 cherry-pick 防御沿袭)

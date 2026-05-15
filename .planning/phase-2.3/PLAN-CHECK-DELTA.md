@@ -8,7 +8,7 @@
 
 ## Summary
 
-10/10 CC fixes traced + closed at plan layer。 Cross-cut A7 守恒 PASS (ADR 0001-0011 0-diff); SSOT 引用纪律 PASS (49 `<实占N>` placeholders consistently used, zero NEW literal `0012`)。 Verdict sustains base APPROVED WITH CONDITIONS with 3 cosmetic SUGGESTION items (1 LOC tweak each for Wave 0 executor pickup)。
+10/10 CC fixes traced + closed at plan layer。 Cross-cut A7 守恒 PASS (ADR 0001-0011 0-diff); SSOT 引用纪律 PASS (49 `0012` placeholders consistently used, zero NEW literal `0012`)。 Verdict sustains base APPROVED WITH CONDITIONS with 3 cosmetic SUGGESTION items (1 LOC tweak each for Wave 0 executor pickup)。
 
 ## 10 CC Fix Delta Checks
 
@@ -31,7 +31,7 @@
 `git diff a4e8b93^..a4e8b93 -- docs/adr/` → **0 lines** diff。 ADR 0001-0011 main body byte-stable。 **PASS** ✅
 
 ### SSOT 引用纪律
-- `<实占N>` placeholder hits: **49** (KICKOFF / PATTERNS / RESEARCH / ASSUMPTIONS / PLAN / task_plan consistent)
+- `0012` placeholder hits: **49** (KICKOFF / PATTERNS / RESEARCH / ASSUMPTIONS / PLAN / task_plan consistent)
 - Literal `0012` injection: **0** new (all existing hits in benign "不预占 0012" framing per intel § 0)
 - T0.1 sed-replace discipline preserved (Wave 0 first task resolve placeholder + batch sed-replace)
 - **PASS** ✅

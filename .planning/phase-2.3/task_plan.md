@@ -1,5 +1,8 @@
 # Phase 2.3 — task_plan.md
 
+> **Resolved (T0.1, 2026-05-16)**: `0012` = `0012` (next after `docs/adr/0011-execute-task-sdk-ralph.md` = Phase 2.2 ship)。ROADMAP latest-shipped token verified = "Phase 2.2 SHIPPED 2026-05-15" (ROADMAP.md L34 `v0.2.0 Sub-task Loop ... Phase 2.1 + Phase 2.2 SHIPPED`). 后续 task_plan / PLAN / ASSUMPTIONS / PLAN-CHECK-DELTA 引用 `0012` 实占。
+> **Resolved (T0.10, 2026-05-16)**: always_active spike outcome = `<filled at T0.10>` (Wave 0 末 spike 写入).
+>
 > **Authored**: 2026-05-16
 > **Author**: gsd-planner (Wave B)
 > **Sources**: KICKOFF § 2 Wave 拓扑 + ASSUMPTIONS § A bar mapping + ASSUMPTIONS § B 39 lock + PATTERNS § 2 code excerpts + RESEARCH D2.3-1~D2.3-7 + § 1.3 / § 2.4 / § 3.5 implementation sketches
@@ -7,7 +10,7 @@
 > **Task count**: 35 atomic tasks across 7 Waves (W0:10 / W1:6 / W2:5 / W3:3 / W4:3 / W5:4 / W6:4) — W0 T0.10 always_active spike 提前(W1 plan-check fix from Wave C delta)
 > **Hard limit verify**: every code-producing task 含 `wc -l` 或 ≤N 行 acceptance criterion
 
-> ⚠️ **Placeholder sed-replace discipline (Phase 2.1 W1 plan-check fix sister precedent)**: T0.1 resolve `<实占N>` 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + 所有 NEW ADR/SPEC 文件批量 sed-replace 字面占位:`sed -i "s/<实占N>/<actual-NNNN>/g" .planning/phase-2.3/task_plan.md .planning/phase-2.3/PLAN.md .planning/phase-2.3/KICKOFF.md docs/adr/<actual-NNNN>-*.md`(以及任何 grep 命中的其他文件)。**zero 字面 `<实占N>` 残留**是 W0 commit 前置条件(grep `<实占N>` .planning/phase-2.3/ docs/adr/ 必须 exit 1)。
+> ⚠️ **Placeholder sed-replace discipline (Phase 2.1 W1 plan-check fix sister precedent)**: T0.1 resolve `0012` 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + 所有 NEW ADR/SPEC 文件批量 sed-replace 字面占位:`sed -i "s/0012/<actual-NNNN>/g" .planning/phase-2.3/task_plan.md .planning/phase-2.3/PLAN.md .planning/phase-2.3/KICKOFF.md docs/adr/<actual-NNNN>-*.md`(以及任何 grep 命中的其他文件)。**zero 字面 `0012` 残留**是 W0 commit 前置条件(grep `0012` .planning/phase-2.3/ docs/adr/ 必须 exit 1)。
 
 ---
 
@@ -18,29 +21,29 @@
 - **files_modified**: (read-only;后续 task 批量 sed-replace)
 - **action**:
   1. 跑 `ls -1 docs/adr/ | grep -E '^[0-9]{4}-.*\.md$' | sort | tail -1` 读最新 ADR 编号,取 `NNNN`(预期 `0011` 来自 Phase 2.2)
-  2. `<实占N>` := `printf '%04d' $((10#NNNN + 1))`(zero-padded 4 digit,预期 `0012` 但**不预占**,以实际 ls 结果为准)
+  2. `0012` := `printf '%04d' $((10#NNNN + 1))`(zero-padded 4 digit,预期 `0012` 但**不预占**,以实际 ls 结果为准)
   3. 跑 `head -100 .planning/ROADMAP.md | grep -E '^##\s+(v[0-9.]+|Phase\s+[0-9.]+)'` 读 latest header pattern → 验 STATE freshness token 仍 valid("Phase 2.2 shipped")
   4. 把实占 N + ROADMAP latest token 决议**记录到本 task_plan.md 顶部 Resolved block**(供后续 task 引用)
-  5. **批量 sed-replace** `<实占N>` 字面占位 — `grep -rl "<实占N>" .planning/phase-2.3/ docs/adr/ | xargs sed -i "s/<实占N>/<actual-NNNN>/g"`(zero 字面残留)
+  5. **批量 sed-replace** `0012` 字面占位 — `grep -rl "0012" .planning/phase-2.3/ docs/adr/ | xargs sed -i "s/0012/<actual-NNNN>/g"`(zero 字面残留)
 - **read_first**:
   - `ls docs/adr/`(by Bash)
   - `head -100 .planning/ROADMAP.md`(by Read)
   - ASSUMPTIONS B-34(SSOT 引用纪律)
 - **acceptance_criteria**:
   - `ls docs/adr/<actual-NNNN>-*.md 2>&1` 此时**不存在**(T0.2 才创建)
-  - 本 task_plan.md 顶部新增 `> **Resolved (T0.1)**: <实占N> = <actual-NNNN>` block(grep-verifiable)
-  - `grep -rn "<实占N>" .planning/phase-2.3/ docs/adr/ 2>&1` exit 1(zero 字面残留)
+  - 本 task_plan.md 顶部新增 `> **Resolved (T0.1)**: 0012 = <actual-NNNN>` block(grep-verifiable)
+  - `grep -rn "0012" .planning/phase-2.3/ docs/adr/ 2>&1` exit 1(zero 字面残留)
   - **W3 plan-check fix — manifest placeholder zero-residue gate**:
     `grep -rnE "<[a-z][a-z0-9-]+-upstream>|<upstream-url>|<frontend-design-upstream>|<chrome-devtools-mcp-upstream>|<SHA>|<ref>|<repo-url>" manifests/ 2>&1` exit 1
     (Wave 1 T1.1 + T1.5 实占 upstream URL + SHA + repo-url 后必批量 sed-replace;否则 install 跑 literal placeholder 必 fail。zero-residue 是 Wave 1 commit 前置条件,沿袭 T0.1 sed-replace discipline。)
 - **decision_source**: B-34 + KICKOFF § 3.2 + intel § 0 SSOT 引用纪律 + W3 plan-check fix
 
-### T0.2 — ADR <实占N> draft(5 章节 sketch only,Wave 6 详细 fill)
+### T0.2 — ADR 0012 draft(5 章节 sketch only,Wave 6 详细 fill)
 
-- **files_modified**: `docs/adr/<实占N>-extension-mvp-karpathy-inject.md`(NEW)
+- **files_modified**: `docs/adr/0012-extension-mvp-karpathy-inject.md`(NEW)
 - **action**: 创建 ADR file 含 5 章节 sketch(详细 Wave 6 T6.1 fill):
   ```markdown
-  # ADR <实占N>: extension category MVP + karpathy inject 引擎
+  # ADR 0012: extension category MVP + karpathy inject 引擎
 
   Status: Draft (phase 2.3 W0 draft → W6 accepted)
   Date: 2026-05-16
@@ -59,7 +62,7 @@
   Phase 2.2 W2 schemaVersion ship 实际 = **helper-only adoption** (consumer count = 2 at Phase 2.3 start: `src/types/schemaVersion.ts` 定义 + 1 self-reference)。Phase 2.2 W2 T2.0 claim 的 7 surface 各 ≥ 1 consumer call site **未真实落地**。Phase 2.3+ 逐步扩 consumer per surface (handoff doc / phases-yaml / manifest state / installer state / route decision log / checkpoint / agent definition factory)。Wave 0 T0.5 gate 阈值 ≥2 反映 honest baseline;后续 phase 每扩 1 consumer surface 同步 bump 阈值。
 
   ## A7 Conservation
-  ADR 0001-0011 main body untouched; baseline tag 1-11 → 1-<实占N>; arbitrate() legacy 保留 (B-18) 避免 30-sample routing-engine.test.ts byte-stable 回归.
+  ADR 0001-0011 main body untouched; baseline tag 1-11 → 1-0012; arbitrate() legacy 保留 (B-18) 避免 30-sample routing-engine.test.ts byte-stable 回归.
 
   ## References
   ```
@@ -67,9 +70,9 @@
   - `docs/adr/0011-*.md`(by Read,作 errata fence pattern 参考)
   - `.planning/phase-2.3/ASSUMPTIONS.md` § B(by Read,锁列表)
 - **acceptance_criteria**:
-  - `ls docs/adr/<实占N>-*.md` 命中 1 file
-  - `grep -E "^### [1-5]\. " docs/adr/<实占N>-*.md | wc -l` == 5
-  - `grep "Status: Draft" docs/adr/<实占N>-*.md` 命中
+  - `ls docs/adr/0012-*.md` 命中 1 file
+  - `grep -E "^### [1-5]\. " docs/adr/0012-*.md | wc -l` == 5
+  - `grep "Status: Draft" docs/adr/0012-*.md` 命中
 - **decision_source**: B-33 + B-34 + KICKOFF § 3.2
 
 ### T0.3 — M3 perf gate 根治(D2.3-1 (a) 移出 CI critical path)
@@ -143,12 +146,12 @@
     run: |
       count=$(grep -r "branchOnSchemaVersion" src/ | wc -l | tr -d ' ')
       if [ "$count" -lt 2 ]; then
-        echo "::error::expected ≥ 2 branchOnSchemaVersion call sites (Phase 2.2 W2 helper-only adoption baseline; Phase 2.3+ expands per surface — see ADR <实占N> § 7 errata), found $count"
+        echo "::error::expected ≥ 2 branchOnSchemaVersion call sites (Phase 2.2 W2 helper-only adoption baseline; Phase 2.3+ expands per surface — see ADR 0012 § 7 errata), found $count"
         exit 1
       fi
   ```
 
-  > **B1 annotation (Wave C plan-check fix)**: Threshold 降 ≥7 → ≥2 反映 Phase 2.2 W2 schemaVersion 实际 helper-only ship 真相(grep `branchOnSchemaVersion(` src/ 当前 = 2: `src/types/schemaVersion.ts` 定义 + 1 self-reference)。原 ≥7 阈值是 Phase 2.2 W2 ship claim 但 consumer call sites 未真实落地;Phase 2.3+ 逐步扩 7 surface (handoff doc / phases-yaml / manifest state / installer state / route decision log / checkpoint / agent definition factory) — 详 ADR <实占N> § 7 errata。阈值 ≥2 是 honest baseline 保 Wave 0 push CI 不 red。
+  > **B1 annotation (Wave C plan-check fix)**: Threshold 降 ≥7 → ≥2 反映 Phase 2.2 W2 schemaVersion 实际 helper-only ship 真相(grep `branchOnSchemaVersion(` src/ 当前 = 2: `src/types/schemaVersion.ts` 定义 + 1 self-reference)。原 ≥7 阈值是 Phase 2.2 W2 ship claim 但 consumer call sites 未真实落地;Phase 2.3+ 逐步扩 7 surface (handoff doc / phases-yaml / manifest state / installer state / route decision log / checkpoint / agent definition factory) — 详 ADR 0012 § 7 errata。阈值 ≥2 是 honest baseline 保 Wave 0 push CI 不 red。
 
 - **read_first**: PATTERNS § 2.8 + ASSUMPTIONS B-29
 - **acceptance_criteria**:
@@ -640,7 +643,7 @@
 - **action**: 沿袭 RESEARCH D2.3-7 pseudocode + PATTERNS § 2.4 升级:
   ```typescript
   // 文件顶 ADR errata 注释
-  // ADR <实占N> errata — CD-3 negative-space + if_rejected_use redirect (phase 2.3 W2 — F3).
+  // ADR 0012 errata — CD-3 negative-space + if_rejected_use redirect (phase 2.3 W2 — F3).
   // Legacy arbitrate() 保留 A7 守恒 (B-18 (b));新 fn arbitrateWithRedirect() 走 ArbitrateResult discriminated union.
 
   export type ArbitrateResult =
@@ -695,7 +698,7 @@
   - `grep -E "export function arbitrate\\(" src/routing/decisionRules.ts` 仍命中(legacy 保留 A7)
   - `wc -l src/routing/decisionRules.ts` ≤ 200(proactive guard via split — 主体 + 5L re-export ≤188L)
   - `wc -l src/routing/lib/arbitrateRedirect.ts` ≤ 80
-  - `grep "ADR <实占N>" src/routing/decisionRules.ts` 命中(B-38 fence)
+  - `grep "ADR 0012" src/routing/decisionRules.ts` 命中(B-38 fence)
   - `npm test -- tests/routing/decision-rules.test.ts`(若存在) pass(legacy 测试 byte-stable)
   - `npx tsc --noEmit` pass
 - **decision_source**: B-18 + B-19 + B-36 + RESEARCH D2.3-7 + PATTERNS D-WP-5 + § 2.4
@@ -1215,7 +1218,7 @@
   for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011; do
     diff=$(git diff $baseline..HEAD -- "docs/adr/${n}-*.md" | wc -l)
     if [ "$diff" -gt 0 ]; then
-      # Allow errata fence comment additions only (`<!-- ADR <实占N> errata`); else fail
+      # Allow errata fence comment additions only (`<!-- ADR 0012 errata`); else fail
       echo "::error::ADR ${n} main body diff $diff lines"
       exit 1
     fi
@@ -1239,9 +1242,9 @@
 
 ## Wave 6 — ship(F8)
 
-### T6.1 — ADR <实占N> finalize 5 章节(Wave 0 draft → 详细 fill)
+### T6.1 — ADR 0012 finalize 5 章节(Wave 0 draft → 详细 fill)
 
-- **files_modified**: `docs/adr/<实占N>-extension-mvp-karpathy-inject.md`(MODIFY — Wave 0 sketch → finalize)
+- **files_modified**: `docs/adr/0012-extension-mvp-karpathy-inject.md`(MODIFY — Wave 0 sketch → finalize)
 - **action**: 5 章节详细 fill(rationale + alternatives + consequences + references);Status: Draft → Accepted
   - 章节 ① extension category MVP — 引 B-01~B-05 + D-01 + R2 critical finding(decision_rules v2 已 ship,Phase 2.3 是 ADAPT 非 greenfield)
   - 章节 ② CD-3 — 引 B-15~B-19 + D-04 + RESEARCH D2.3-7 pseudocode + D-WP-1 (b) do nothing schema
@@ -1250,18 +1253,18 @@
   - 章节 ⑤ Wave 0 perf gate 根治 — 引 B-25~B-32 + D-07 + RESEARCH D2.3-1(D2.3-1 (a) 移出 CI critical path)
 - **read_first**: ASSUMPTIONS § B 全锁 + RESEARCH § 1-3 + PATTERNS § 3
 - **acceptance_criteria**:
-  - `grep "Status: Accepted" docs/adr/<实占N>-*.md` 命中
-  - `grep -cE "^### [1-5]\. " docs/adr/<实占N>-*.md` == 5
+  - `grep "Status: Accepted" docs/adr/0012-*.md` 命中
+  - `grep -cE "^### [1-5]\. " docs/adr/0012-*.md` == 5
   - 每章节含 `## Decision` + `## Rationale` + `## Consequences`(章节内子节)
 - **decision_source**: B-33 + B-34 + KICKOFF § 1.2 F7
 
-### T6.2 — ci.yml A7 step iter 1-11 → 1-<实占N>
+### T6.2 — ci.yml A7 step iter 1-11 → 1-0012
 
 - **files_modified**: `.github/workflows/ci.yml`(MODIFY — A7 守恒 step 迭代)
-- **action**: 定位 A7 step iter range,改 `1-11` → `1-<实占N>`(沿袭 Phase 2.2 T6.2)
+- **action**: 定位 A7 step iter range,改 `1-11` → `1-0012`(沿袭 Phase 2.2 T6.2)
 - **read_first**: `.github/workflows/ci.yml`(by Read,A7 step L53-78 附近)
 - **acceptance_criteria**:
-  - `grep -E "1-<实占N>" .github/workflows/ci.yml` 命中(实际 N 数字)
+  - `grep -E "1-0012" .github/workflows/ci.yml` 命中(实际 N 数字)
   - `! grep -E "1-11" .github/workflows/ci.yml`(旧 range 全替换)
 - **decision_source**: B-35 + KICKOFF § 3.1
 
@@ -1279,18 +1282,18 @@
   - `node scripts/check-deferred-items.mjs` exit 0(warn-only round 1)
 - **decision_source**: B-31 + KICKOFF § 1.2 F8
 
-### T6.4 — baseline tag adr-<实占N>-accepted + v0.2.0-alpha.3-extension-mvp
+### T6.4 — baseline tag adr-0012-accepted + v0.2.0-alpha.3-extension-mvp
 
 - **files_modified**: (no file;git tag)
 - **action**:
   ```bash
-  git tag adr-<实占N>-accepted -m "ADR <实占N> Phase 2.3 extension MVP + karpathy inject accepted"
+  git tag adr-0012-accepted -m "ADR 0012 Phase 2.3 extension MVP + karpathy inject accepted"
   git tag v0.2.0-alpha.3-extension-mvp -m "v0.2.0-alpha.3 — Phase 2.3 extension category MVP + karpathy SKILL-ONLY + CD-3 negative-space + EE-5 双层 gate + Wave 0 perf gate 根治"
-  git push origin adr-<实占N>-accepted v0.2.0-alpha.3-extension-mvp
+  git push origin adr-0012-accepted v0.2.0-alpha.3-extension-mvp
   ```
 - **read_first**: `git tag --list adr-*-accepted`(verify 1-11 全 in;新 N 不冲突)
 - **acceptance_criteria**:
-  - `git tag --list adr-<实占N>-accepted` 命中 1
+  - `git tag --list adr-0012-accepted` 命中 1
   - `git tag --list v0.2.0-alpha.3-extension-mvp` 命中 1
   - `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` == `success`(3-OS CI 全绿)
   - **S4 plan-check fix — ship-time A7 re-verify gate** (mirror Phase 2.2 T6.3 + Wave 5 T5.4 ship-time gate):
@@ -1300,4 +1303,4 @@
 
 ---
 
-*Phase 2.3 task_plan.md complete — **35 atomic tasks** across 7 Waves (W0:10 / W1:6 / W2:5 / W3:3 / W4:3 / W5:4 / W6:4);hard limit verify per task;sed-replace `<实占N>` discipline embedded near T0.1; W1 plan-check fix from Wave C delta (T0.10 always_active spike 提前) + S-2 cosmetic count sync。 Wave B planner ready for Wave C plan-checker → ✅ delta APPROVED WITH CONDITIONS (0B/0W/3S cosmetic) → execute-phase Wave 0 ready。*
+*Phase 2.3 task_plan.md complete — **35 atomic tasks** across 7 Waves (W0:10 / W1:6 / W2:5 / W3:3 / W4:3 / W5:4 / W6:4);hard limit verify per task;sed-replace `0012` discipline embedded near T0.1; W1 plan-check fix from Wave C delta (T0.10 always_active spike 提前) + S-2 cosmetic count sync。 Wave B planner ready for Wave C plan-checker → ✅ delta APPROVED WITH CONDITIONS (0B/0W/3S cosmetic) → execute-phase Wave 0 ready。*
