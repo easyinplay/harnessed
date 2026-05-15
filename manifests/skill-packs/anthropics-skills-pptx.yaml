@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: anthropics-skills-pptx
+  display_name: Anthropic Skills — pptx
+  description: PowerPoint deck generation skill from anthropics/skills upstream (English-first slide-deck output).
+  upstream:
+    source: github.com/anthropics/skills
+    homepage: https://github.com/anthropics/skills/tree/main/skills/pptx
+    repository: https://github.com/anthropics/skills.git
+    license: anthropics-official
+    notice: |
+      Anthropic skills — pptx sub-skill from anthropics/skills (source-available; anthropics-official carve-out per .planning/research/v0.2.0-extensions.md § 2.1).
+      content category — PowerPoint file generation; routed via decision_rules.yaml `pptx-file-task` (priority 80).
+spec:
+  type: cc-skill-pack
+  component_type: command
+  category: content
+  install_type: skill
+  install:
+    method: npx-skill-installer
+    cmd: "npx --yes skills@1.5.7 add anthropics/skills/pptx --copy --global"
+    npm_version: ^1.5.7
+    idempotent_check: "test -f ~/.claude/skills/pptx/SKILL.md"
+  verify:
+    cmd: "test -f ~/.claude/skills/pptx/SKILL.md"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/pptx"
+    cleanup_paths:
+      - ~/.claude/skills/pptx
+  upstream_health:
+    stability: stable
+    last_check: "2026-05-16"
+    last_known_good_version: "1.5.7"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
+  decision_rules:
+    trigger: "user 请求生成 pptx / PowerPoint / slide deck (English)"
+    default_expert: anthropics-skills-pptx
