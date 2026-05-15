@@ -89,6 +89,15 @@ jobs:
       # NOT in scope per R8.
       - name: Provenance gate (Phase 2.2 W4 hard fail — CD-6)
         run: node scripts/check-provenance.mjs
+      # Phase 2.3 Wave 0 T0.6 — Provenance Win pwsh sentinel (T1.3).
+      # Phase 1.3.1 F37 路径分隔符踩过坑; Phase 2.2 T4.0 check-provenance.mjs
+      # 跑过 4-step synthetic 但 glob .harnessed/{sessions,checkpoints,route-logs}/**
+      # 在 Win path-sep 行为未验. 此 step Win-only invoke 走 pwsh shell, 验
+      # Win path-sep behavior parity with bash.
+      - name: Provenance gate (Win pwsh sentinel, Phase 2.3 Wave 0 T1.3)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: node scripts/check-provenance.mjs
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm typecheck
