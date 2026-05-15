@@ -63,24 +63,27 @@ function runOnce(): number {
 // Perf gate 现仅 nightly cron (`.github/workflows/perf-bench.yml`) 跑 advisory-only;
 // PR/push 的 ci.yml `pnpm test` 跳过 — 终止 50→75→100→130→160 累积 nudge.
 // 本地 dev `pnpm test` 仍跑 (IS_GHA=false), 保 schema-width regression 检测.
-describe.skipIf(process.env.GITHUB_ACTIONS === 'true')('performance gate (T8.6 — A6 acceptance bar)', () => {
-  it(`100 manifest validations complete in < ${THRESHOLD_MS}ms (best-of-${RUNS})${IS_CI_WIN ? ' [CI win cloud VM, F18b]' : IS_CI_NIX ? ' [CI nix cloud VM, F38b]' : ''}`, () => {
-    expect(fixtures.length).toBeGreaterThanOrEqual(10)
-    // Warm up Ajv lazy compile + V8 inline caches.
-    for (let i = 0; i < 3; i++) runOnce()
+describe.skipIf(process.env.GITHUB_ACTIONS === 'true')(
+  'performance gate (T8.6 — A6 acceptance bar)',
+  () => {
+    it(`100 manifest validations complete in < ${THRESHOLD_MS}ms (best-of-${RUNS})${IS_CI_WIN ? ' [CI win cloud VM, F18b]' : IS_CI_NIX ? ' [CI nix cloud VM, F38b]' : ''}`, () => {
+      expect(fixtures.length).toBeGreaterThanOrEqual(10)
+      // Warm up Ajv lazy compile + V8 inline caches.
+      for (let i = 0; i < 3; i++) runOnce()
 
-    // Take the best-of-N mean. With ajv compiled + warmed up the variance
-    // between runs is small (RME ±2% in the bench harness); best-of-N just
-    // protects against an unlucky GC sweep.
-    let bestMs = Number.POSITIVE_INFINITY
-    for (let i = 0; i < RUNS; i++) {
-      const ms = runOnce()
-      if (ms < bestMs) bestMs = ms
-    }
+      // Take the best-of-N mean. With ajv compiled + warmed up the variance
+      // between runs is small (RME ±2% in the bench harness); best-of-N just
+      // protects against an unlucky GC sweep.
+      let bestMs = Number.POSITIVE_INFINITY
+      for (let i = 0; i < RUNS; i++) {
+        const ms = runOnce()
+        if (ms < bestMs) bestMs = ms
+      }
 
-    expect(
-      bestMs,
-      `100 manifest validations took ${bestMs.toFixed(2)}ms (threshold ${THRESHOLD_MS}ms${IS_CI_WIN ? ' [CI win cloud VM, F18b]' : IS_CI_NIX ? ' [CI nix cloud VM, F38b]' : ''}, A6 acceptance bar). Run vitest bench --run for a full sample.`,
-    ).toBeLessThan(THRESHOLD_MS)
-  })
-})
+      expect(
+        bestMs,
+        `100 manifest validations took ${bestMs.toFixed(2)}ms (threshold ${THRESHOLD_MS}ms${IS_CI_WIN ? ' [CI win cloud VM, F18b]' : IS_CI_NIX ? ' [CI nix cloud VM, F38b]' : ''}, A6 acceptance bar). Run vitest bench --run for a full sample.`,
+      ).toBeLessThan(THRESHOLD_MS)
+    })
+  },
+)
