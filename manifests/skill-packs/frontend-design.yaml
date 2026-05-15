@@ -53,3 +53,11 @@ spec:
         use: frontend-design
       - phrase: "design-led"
         use: frontend-design
+    # Phase 2.3 W2 T2.5 (S3 plan-check fix) — 双向 redirect 一致性。
+    # frontend-design 拒绝 → ui-ux-pro-max (sister 镜射 ui-ux-pro-max 拒绝 → frontend-design,见该 manifest)
+    do_not_use_when:
+      - data-driven
+      - 标准化
+      - design system 严谨
+      - 数据可视化
+    if_rejected_use: ui-ux-pro-max

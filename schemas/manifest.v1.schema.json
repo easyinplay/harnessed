@@ -732,6 +732,18 @@
                   }
                 }
               }
+            },
+            "do_not_use_when": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "if_rejected_use": {
+              "minLength": 1,
+              "type": "string"
             }
           }
         },

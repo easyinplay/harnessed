@@ -52,3 +52,10 @@ spec:
         use: frontend-design
       - phrase: "design-led"
         use: frontend-design
+    # Phase 2.3 W2 T2.5 — B-17 per-manifest hint 冗余守护层 (SSOT 主导 routing/decision_rules.yaml — D-04)
+    do_not_use_when:
+      - 做出风格
+      - 独创
+      - 风格化
+      - design-led
+    if_rejected_use: frontend-design

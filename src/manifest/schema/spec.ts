@@ -126,6 +126,11 @@ const DecisionRules = Type.Object(
         ),
       ),
     ),
+    // Phase 2.3 W2 T2.5 — CD-3 negative-space hint mirror (B-17 per-manifest hint
+    // redundant guard layer; SSOT remains routing/decision_rules.yaml — D-04 lead).
+    // Additive optional; existing manifests unchanged (A7 守恒).
+    do_not_use_when: Type.Optional(Type.Array(Type.String({ minLength: 1 }), { minItems: 1 })),
+    if_rejected_use: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 )
