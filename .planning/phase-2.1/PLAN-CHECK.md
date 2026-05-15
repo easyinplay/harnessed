@@ -266,4 +266,4 @@ Conditions: before starting Wave 0 in execute-phase, the T1.7 implementer explic
 ---
 
 Phase 2.1 PLAN-CHECK complete — Wave C independent verification
-Verdict: APPROVED WITH CONDITIONS (0B / 4W / 5S) — 2026-05-15
+**Verdict:** APPROVED WITH CONDITIONS (0/9 BLOCKER resolved, 4 WARNING + 5 SUGGESTION advisory, miss: none — 9 findings 全 inline patch <30 min OR execute-phase batch 1 natural absorb;W3 decide-at-execute-time 明确 lock 为 warn-only round 1;W4 + S2 Wave-topology parallelization 备案文档化) — 2026-05-15

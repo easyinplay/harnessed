@@ -424,3 +424,7 @@ phase 2.3 = **extension category 实装**（document-skills bundle-install with 
 - decision_rules.yaml bundle-routing（D2.1-3 — phase 2.3）
 - design/content/testing extension category 真实候选实装（phase 2.3）
 - transparency CI gate ENFORCE flip（W3 — phase 2.2 起新 verdict 文档已遵守 marker）
+
+---
+
+**Verdict:** SHIPPED (8/8 acceptance bars E1-E8, miss: none — ADR 0010 ≥100L 6-section + license_source/provides/H3/H4/--header/MIT-0/anthropics-official ≥ 7 关键 decision + schema 4 项 license whitelist + license_source + ProvidedUnit + install-type-mismatch validate + chinese-content-deck warn 移除 + 13 new schema cell + TRANSPARENCY-VERDICT-CHECKLIST.md ≥40L + check-transparency-verdicts.mjs W3 warn-only round 1 + SAMPLES § 8.4 miss 标注 + CONTRIBUTING SSOT 引用纪律 + mcpHttpAdd.ts (clone ~85%) + gitCloneWithSetup.ts inline SHA-verify (~55%) + ccPluginMarketplace.ts two-step spawn (~65%) + npxSkillInstaller.ts fs.access real-path verify (~50%) + 4 unit test 文件 ≥6 cell 各 + dispatch table 6 method runtime-ready / phase21Placeholder 删除 + contract test 36 cell + ci.yml A7 iter 1-10 + 374+3 tests + ADR 0001-0009 0 diff + F2.1-1~F2.1-3 + F2.5-1~F2.5-4 全 RESOLVED + adr-0010-accepted tag pending main agent ship)

@@ -325,3 +325,7 @@ phase 1.5 = **optimization + DAG**（DAG resolver + 拓扑排序 + Semantic Rout
 - `--add-plugin ralph-wiggum` 官方 plugin headless mode 切换（v0.2+ 评估；phase 1.4 自实装 ≤ 50L 是 wedge 原则 — D1.4-3）
 - 100+ sample × 多 model × stability 完整命中率验收（推 phase 3.4 v0.3.0 release）
 - F42 array semantic match 升级（推 phase 1.5 评估 OR ADR 0009 errata 路径；W-3 fixture migration script `scripts/migrate-samples-inline-to-fixture.mjs` phase 3.4 启用基线）
+
+---
+
+**Verdict:** SHIPPED (8/8 acceptance bars C1-C8, miss: none — engine.ts 170L Pattern N + 12 cell + agentDefinition.ts 148L + 12 字段 1:1 contract + 4 typed error + 9 cell + 6 category routing MVP 100% (30/30) + research workflow E2E 93L + 9th register fn + 3 mock cell + systemPrompt.ts 43L Pattern O verbatim + SAMPLES.md 268L 30 sample + ≥85% baseline 100% hit + CI run 25804037789 @ 8f56514 三平台 success + A7 step iter 1-8 全 8 ADR 0 diff + ADR 0008 errata 172L 6-section + adr-0008-accepted tag + 291+2 tests + F40-2/F41/F42 全 RESOLVED)

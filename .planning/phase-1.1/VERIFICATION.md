@@ -153,3 +153,7 @@ corepack pnpm typecheck && corepack pnpm lint && corepack pnpm test \
   && node ./dist/cli.mjs --version
 # 全绿 = phase 1.1 复现成功
 ```
+
+---
+
+**Verdict:** SHIPPED (8/8 acceptance bars A1-A8, miss: none — schema v1 frozen + 89 tests passed phase 1.1.1 hotfix 后 + ctx7 真实 manifest pass + Cross-OS Day 1 CI 三平台全绿 run 25686045249 + ADR 0001/0002 A7 守恒 baseline tag accepted + Ajv 2020 strict 编译 OK + vitest bench < 50ms + manifests/*.yaml LF)

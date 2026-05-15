@@ -3,7 +3,7 @@
 **Date**: 2026-05-14
 **Checker**: gsd-plan-checker (round 1, focused continuation)
 **Subject**: .planning/phase-1.5/PLAN.md + task_plan.md (28 atomic sub-tasks / 8-wave / D1-D8 acceptance bar)
-**Verdict**: **APPROVED** (zero BLOCKER, 2 WARNING, 2 SUGGESTION)
+**Verdict:** APPROVED (0/0 BLOCKER, 2 WARNING + 2 SUGGESTION advisory, miss: none — W-1 STATE.md propagation + W-2 ralphLoop.ts ≤50L wedge 由 T8.1/T5.2 自然吸收)
 
 ---
 

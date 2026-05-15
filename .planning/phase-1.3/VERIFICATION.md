@@ -289,3 +289,7 @@ gh run list --limit 1 --json conclusion,headSha,databaseId
 - **decision_rules.yaml** (`routing/decision_rules.yaml`) — v1 schema (12 rules / Priority Hit Policy / fallback_supervisor)
 - **Phase 1.2 VERIFICATION** (`.planning/phase-1.2/VERIFICATION.md`) — 上游 phase 复现指南 (B1'-B9')
 - **STATE.md** (`.planning/STATE.md`) — 跨 session 项目记忆 SSOT
+
+---
+
+**Verdict:** SHIPPED (8/8 acceptance bars B1-B8, miss: none — ADR 0007 errata + adr-0007-accepted tag + manifest schema 3 字段 + 19 new schema cell + routing/decision_rules.yaml v1 12 rules + arbitrate Priority Hit Policy + harnessed install-base 子命令 + ui-ux-pro-max install path 实测 + AgentDefinition contract draft 12 字段 + CI run 25790126213 @ 7c9b66f 三平台全绿 + A7 step iter 1-7 + 235+1 tests + F37/F38/F39 hotfix 全 RESOLVED)

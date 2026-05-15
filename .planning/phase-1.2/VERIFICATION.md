@@ -235,3 +235,7 @@ corepack pnpm typecheck && corepack pnpm lint && corepack pnpm test \
 - [docs/adr/0004](../../docs/adr/0004-installer-dry-run-diff-preview-contract.md) — UX 契约起源 ADR
 - [docs/adr/0005](../../docs/adr/0005-marketplace-source-schema-errata.md) — Schema errata
 - [.github/workflows/ci.yml](../../.github/workflows/ci.yml) — CI 三平台 + A7 iterate 5 tag + H4 installer integration step
+
+---
+
+**Verdict:** SHIPPED (9/9 acceptance bars B1'-B9', miss: none — 3 平台真实可装 ctx7 + dry-run + mcp-stdio --scope project hardcode + rollback CRLF/LF preserve + 12 contract tests 全绿 + Cross-OS CI 三平台全绿 + 202+1 tests + ADR 0001-0005 A7 守恒 + doctor jq + Win bash flavor + INSTALLER-CONTRACT.md 182L 6 契约 + FAQ)

@@ -118,3 +118,7 @@ T9.1 (`ci.yml` 三平台) 看似涉嫌 cross-OS，但实际只是 typecheck/lint
 2. **install method 数 = 6**：T3.4 写 6 个 file（不是 5），T8.3 矩阵非法组合数也按 6 method × 4 type = 24 - 6 legal (per ADR 0001 矩阵) = **18 illegal**，而非 PLAN.md T8.3 / task_plan.md 当前写的 14。**这是 V1 的连锁影响 — execute 时必须重算并扩充测试 fixture**。
 3. **A7 验收锁 schema**：phase 1.1 结束前必须 `git tag adr-0001-accepted` 并把 A7 改写成 `git diff adr-0001-accepted -- docs/adr/0001-manifest-schema-v1.md` exit 0（仅允许通过 ADR 0003 反哺，不允许 inline 改 ADR 0001）。
 
+---
+
+**Verdict:** APPROVED WITH CONDITIONS (1/1 BLOCKER resolved, 3 SUGGESTION advisory, miss: none — V1 install method 5→6 数错 ADR 0003 errata 路径 patch + V2/V3/V4 inline acceptance refinement;phase 1.1 ship 时 V1 闭环修复)
+

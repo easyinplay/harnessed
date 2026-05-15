@@ -131,3 +131,7 @@ PATTERNS.md L196-227 列出 17 file mappings，task_plan.md sync 状态：
 
 3. **Wave 4 可走 vertical slice 备案**（PR10 缓解）：如 T3.1 npmCli 卡 cross-OS bug 超 2 天，先 ship T3.2 mcpStdioAdd（B2 acceptance bar）+ index.ts 仅注册 mcp-stdio-add，npm-cli 留 phase21Placeholder——之后再补 npmCli。这样 phase 1.2 仍能 partial-ship 并验证 ADR 0004 6 契约的 6 cell（mcp-stdio 一半）。但默认走 horizontal（2 method 并行），vertical 仅作风险预案。
 
+---
+
+**Verdict:** APPROVED (0/0 BLOCKER, 3 SUGGESTION advisory, miss: none — V1-V5 5 个核心验证点全通;A7 守恒明确;out-of-scope 列表与 ROADMAP 一致;3 可选优化 callout (T2.6 backup 粒度 / T5.2 fixture 命名 / B5+B8 manual buffer) 执行期决定)
+
