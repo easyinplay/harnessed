@@ -208,7 +208,7 @@ Wave 4 — ralph-loop full integration 主流程 (F6) — delta 启动前 proven
   ├─ T4.1  src/routing/lib/sdkSpawn.ts NEW(query() async-iterable consumer + JSON envelope)
   ├─ T4.2  src/routing/engine.ts 升级:替 defaultSpawn placeholder + 三层 fallback orchestration
   ├─ T4.3  test:tests/routing/sdk-spawn.test.ts + routing-engine.test.ts(end-to-end + isComplete dual-signal)
-  └─ T4.4  Task Session 集成(**conditional — only if T1.2 SC4 pass**):phase manifest schema 加 `task_session_id?: string` + executor resume logic(delta D-18)
+  └─ ~~T4.4~~  **🚫 DEFERRED → v0.3.0** (T1.2 SC4 PARTIAL — SDK 0.3.142 session resume API @alpha + 仅走 bridge/assistant 子系统非 query() → B-35 fallback triggered 2026-05-15;spec 保留为 v0.3.0 实施参考)
        ↓
 Wave 5 — execute-task CLI + 30 sample (F7)
   ├─ T5.1  src/cli/execute-task.ts NEW(10th register fn,沿袭 research.ts scaffold)

@@ -167,3 +167,5 @@
 ---
 
 *phase 2.2 ASSUMPTIONS.md complete — § A 8 acceptance bars mapped to 7 Wave / § B 36 lock 全消化 7 来源(CONTEXT 18 incl delta + PATTERNS 7 + RESEARCH 7 + intel 4 incl CD-5/CD-6/CD-4 + KICKOFF 1 + planner inference 0 conflict)/ § C 9 risk 全 mitigation(R1-R6 + delta R7-R9)/ § D references full chain.*
+
+> **B-35 fallback branch triggered (2026-05-15, T1.2 SC4 PARTIAL)**: SDK 0.3.142 session resume API verify = primitives exist (`bridge.d.ts BridgeSessionHandle.sessionId` + `attachBridgeSession` + `assistant.d.ts WorkerState.claudeSessionId`) BUT (a) `@alpha`, (b) NOT via main `query()` API (Phase 2.2 ralph-loop 用 query() per research § 1.3). B-35 fail branch effective → **CD-4 推迟到 v0.3.0 checkpoint 完整版**, T4.4 task DEFERRED, B-36 conditional schema 字段不实装。 B-35 + B-36 在 Wave 4 executor 视角下 **trigger known: fail**, 跳过 conditional 路径。

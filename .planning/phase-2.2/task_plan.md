@@ -729,9 +729,9 @@
 
 ---
 
-### T4.4 — Task Session 集成(**conditional — only if T1.2 SC4 pass**)— delta D-18 / B-35+B-36
+### T4.4 — Task Session 集成 — **🚫 DEFERRED → v0.3.0 (T1.2 SC4 PARTIAL — B-35 fallback branch triggered 2026-05-15)** — delta D-18 / B-35+B-36
 
-> ⚠️ **CONDITIONAL TASK**:仅当 T1.2 SC4(SDK `resume?: string` API verify)pass 时执行;若 SC4 fail,**skip 本任务**并在 task_plan.md Resolved block 记录 `> **Resolved (T4.4)**: SKIPPED (SC4 fail → CD-4 deferred → v0.3.0 checkpoint 完整版)`。
+> 🚫 **DEFERRED (2026-05-15, T1.2 SC4 PARTIAL)**: SDK 0.3.142 session resume API = primitives exist via `@alpha` bridge/assistant subsystems, NOT via main `query()` API (Phase 2.2 ralph-loop 用 query() per research § 1.3) → 违 Karpathy simplicity for v0.2.0 stable → **CD-4 推迟到 v0.3.0 checkpoint 完整版**, B-35 fallback branch 触发. Wave 4 executor 应**skip** 本任务 + 在 task_plan.md Resolved block 记录 `> **Resolved (T4.4)**: SKIPPED (T1.2 SC4 PARTIAL → CD-4 deferred → v0.3.0 checkpoint 完整版)`. 以下 spec 保留为 v0.3.0 实施参考。
 
 - **files_modified**(SC4 pass branch only):
   - `src/manifest/schema/spec.ts` OR `src/workflow/schema/phases.ts`(MODIFY,加 `task_session_id?: string` optional field 到 phase manifest entry)
@@ -1024,7 +1024,7 @@ R6.1 + R3.4 + R5.3 requirement IDs 全 covered:
 
 ---
 
-*Phase 2.2 task_plan.md complete — 35 (or 36 if SC4 pass) atomic tasks across 7 Waves (W0 7 + W1 4 + W2 6 [+T2.0] + W3 4 + W4 4 [+T4.0, optional +T4.4] + W5 5 + W6 5);每 task 含 file path + concrete action + read_first + grep-verifiable acceptance + decision source citation;Karpathy 5 hard limit + A7 守恒 + 31 lock 全 trace。*
+*Phase 2.2 task_plan.md complete — **35 atomic tasks across 7 Waves** (W0 7 + W1 4 + W2 6 [+T2.0] + W3 4 + W4 4 [+T4.0] + W5 5 + W6 5)。T4.4 (Task Session 集成) DEFERRED 到 v0.3.0 checkpoint per T1.2 SC4 PARTIAL (B-35 fallback branch triggered 2026-05-15);spec 保留作 v0.3.0 实施参考。每 task 含 file path + concrete action + read_first + grep-verifiable acceptance + decision source citation;Karpathy 5 hard limit + A7 守恒 + 36 lock 全 trace。*
 
 
 ---
