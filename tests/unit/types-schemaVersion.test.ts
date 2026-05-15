@@ -1,0 +1,86 @@
+// Phase 2.2 Wave 2 T2.0 — unit tests for src/types/schemaVersion.ts.
+// Covers CD-5 contract: 7 surfaces named, branch helper degrades unknown
+// gracefully, TypeBox literal union accepts only known surfaces.
+
+import { Value } from '@sinclair/typebox/value'
+import { describe, expect, it } from 'vitest'
+import {
+  branchOnSchemaVersion,
+  SCHEMA_VERSIONS,
+  SchemaVersionLiteral,
+} from '../../src/types/schemaVersion.js'
+
+describe('SCHEMA_VERSIONS — 7 surfaces (B-32 / D-16)', () => {
+  it('has exactly 7 surface entries', () => {
+    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(7)
+  })
+
+  it('every value matches `harnessed.<surface>.v1` shape', () => {
+    for (const v of Object.values(SCHEMA_VERSIONS)) {
+      expect(v).toMatch(/^harnessed\.[a-z-]+\.v1$/)
+    }
+  })
+
+  it('values are uniqueness-locked (no duplicate surface names)', () => {
+    const values = Object.values(SCHEMA_VERSIONS)
+    expect(new Set(values).size).toBe(values.length)
+  })
+
+  it('covers the 7 named B-32 surfaces', () => {
+    const expectedSurfaces = [
+      'routing-snapshot',
+      'handoff-doc',
+      'phases-yaml',
+      'manifest-state',
+      'installer-state',
+      'route-decision-log',
+      'checkpoint',
+    ]
+    const actualSurfaces = Object.values(SCHEMA_VERSIONS).map((v) => v.split('.')[1])
+    for (const s of expectedSurfaces) {
+      expect(actualSurfaces).toContain(s)
+    }
+  })
+})
+
+describe('SchemaVersionLiteral — TypeBox accept/reject', () => {
+  it('accepts every known SCHEMA_VERSIONS value', () => {
+    for (const v of Object.values(SCHEMA_VERSIONS)) {
+      expect(Value.Check(SchemaVersionLiteral, v)).toBe(true)
+    }
+  })
+
+  it('rejects an unknown adapter-specific string', () => {
+    expect(Value.Check(SchemaVersionLiteral, 'harnessed.adapter-x.v1')).toBe(false)
+  })
+
+  it('rejects a v2 string (future-proof — v2 must enter union explicitly)', () => {
+    expect(Value.Check(SchemaVersionLiteral, 'harnessed.routing-snapshot.v2')).toBe(false)
+  })
+})
+
+describe('branchOnSchemaVersion — rule (a) branch + rule (b) graceful degrade', () => {
+  it('routes a known v1 value to the v1 handler', () => {
+    const result = branchOnSchemaVersion(SCHEMA_VERSIONS.routingSnapshot, {
+      v1: () => 'v1-branch',
+      unknown: () => 'unknown-branch',
+    })
+    expect(result).toBe('v1-branch')
+  })
+
+  it('routes an unknown adapter-specific string to the unknown handler (graceful degrade)', () => {
+    const result = branchOnSchemaVersion('harnessed.custom-adapter.v1', {
+      v1: () => 'v1-branch',
+      unknown: () => 'unknown-branch',
+    })
+    expect(result).toBe('unknown-branch')
+  })
+
+  it('routes a malformed empty string to the unknown handler (does NOT throw)', () => {
+    const result = branchOnSchemaVersion('', {
+      v1: () => 'v1-branch',
+      unknown: () => 'unknown-branch',
+    })
+    expect(result).toBe('unknown-branch')
+  })
+})
