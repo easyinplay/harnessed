@@ -3,6 +3,7 @@ import { Command } from 'commander'
 import { registerAudit } from './cli/audit.js'
 import { registerBackupList } from './cli/backup-list.js'
 import { registerDoctor } from './cli/doctor.js'
+import { registerExecuteTask } from './cli/execute-task.js'
 import { registerGc } from './cli/gc.js'
 import { registerInstall } from './cli/install.js'
 import { registerInstallBase } from './cli/install-base.js'
@@ -17,10 +18,11 @@ program
   .description('AI coding harness package manager + composition orchestrator')
   .version('0.1.0-alpha.2-installer-runtime')
 
-// 9 subcommands per ADR 0004 + ADR 0007 + ADR 0008 (research added in phase 1.4 — D-15 独立子命令).
+// 10 subcommands per ADR 0004 + 0007 + 0008 + 0011 (execute-task added in phase 2.2 — B-28 独立子命令).
 registerInstall(program)
 registerInstallBase(program)
 registerResearch(program)
+registerExecuteTask(program)
 registerDoctor(program)
 registerAudit(program)
 registerRollback(program)
