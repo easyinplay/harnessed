@@ -31,13 +31,22 @@ rules:
     domain: design
     when:
       task_type: ui-design
+      # Phase 2.3 W2 T2.1 — 9 keywords 词集校准 (RESEARCH § 3.3 D2.3-4):
+      # ADD: signature style / art direction / bold style (high-signal anchors)
+      # KEEP: 做出风格 / 独创 / 风格化 / 品牌调性 / design-led / distinctive / creative / experimental
+      # REMOVED: 独特 (false-pos "独特的搜索方案" 太高 — RESEARCH § 3.3)
       override_keywords:
         - 做出风格
+        - 独创
+        - 风格化
+        - 品牌调性
         - design-led
-        - experimental
-        - 独特
-        - creative
         - distinctive
+        - signature style
+        - art direction
+        - bold style
+        - creative
+        - experimental
     decision:
       primary_expert: frontend-design
       secondary_expert: ui-ux-pro-max
@@ -54,6 +63,14 @@ rules:
       secondary_expert: frontend-design
       conflict_policy: primary_wins
       rationale: 数据驱动 + 标准化 + 可解释 优先 (CLAUDE.md UI 路由默认)
+      # Phase 2.3 W2 T2.1 — D-04 CD-3 negative-space + redirect (NEW optional fields).
+      # 若 task 含 style-led 信号则 reject 本规则,redirect 到 frontend-design (D-08 双向 redirect 一致性).
+      do_not_use_when:
+        - 做出风格
+        - 独创
+        - 风格化
+        - design-led
+      if_rejected_use: frontend-design
 
   # ─── content (2 rules) ───────────────────────────────────────
   - id: pptx-file-task
@@ -74,6 +91,12 @@ rules:
     decision:
       primary_expert: jimliu-baoyu-skills-baoyu-slide-deck
       rationale: 中文 deck 场景, baoyu-skills license resolved 为 MIT-0 (D-05 / ADR 0010)
+      # Phase 2.3 W2 T2.1 — CD-3 negative-space: 通用 markdown 文档不走 deck-pack.
+      # (no if_rejected_use — content 段 default fallback 到 supervisor 而非定向 redirect)
+      do_not_use_when:
+        - 通用 markdown 文档
+        - generic markdown
+        - plain doc
 
   # ─── testing (4 rules) ───────────────────────────────────────
   - id: perf-a11y-memory
@@ -103,6 +126,12 @@ rules:
     decision:
       primary_expert: webapp-testing
       rationale: setup 需调 Python 后端 (Tortoise ORM / pandas / backend utils)
+      # Phase 2.3 W2 T2.1 — CD-3 negative-space: 若 task 明示无 Python backend → redirect 到 playwright-test 默认。
+      do_not_use_when:
+        - pure-frontend
+        - no-Python-backend
+        - no python backend
+      if_rejected_use: playwright-test
 
   - id: e2e-default
     priority: 50
