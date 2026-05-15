@@ -8,6 +8,8 @@
 
 > **Blocked (T1.2 SC1-SC3, 2026-05-15)**: `ANTHROPIC_API_KEY` UNSET in current execution environment → runtime spike of `query()` + `outputFormat` + `agents` map deferred. **User-action-required**: set `ANTHROPIC_API_KEY` env var, then re-run T1.2 SC1-SC3 verify (spike script throwaway per B-06). Phase 2.2 Wave 2-4 design can proceed on assumption SC3 PRIMARY path (structured_output) — if user runtime spike reveals SC3 Tier A fallback only, B-07 non-blocker absorbs cleanly.
 
+> **Resolved (T4.4, 2026-05-15)**: SKIPPED (T1.2 SC4 PARTIAL → CD-4 deferred → v0.3.0 checkpoint 完整版). Wave 4 executor confirmed B-35 fallback branch triggered — SDK 0.3.142 session resume API exists only via `@alpha` bridge/assistant subsystems (not main `query()` path). T4.4 conditional integration NOT shipped in v0.2.0; Wave 4 W4 ships closure infra ONLY: `sdkSpawn.onSessionId` callback + `ralphLoopWrap` `resumeSessionId` closure (T2.4) + engine `wrappedSpawn` capture-and-discard `capturedSessionId` — wires are ready; consumer added in v0.3.0 when API stabilizes. **Files NOT changed** per spec (T4.4 SC4 fail branch AC): `src/manifest/schema/spec.ts` / `src/workflow/schema/phases.ts` (no `task_session_id` field) / `tests/routing/task-session.test.ts` (not created).
+
 > **Authored**: 2026-05-15
 > **Author**: gsd-planner (Wave B)
 > **Sources**: KICKOFF § 2 Wave 拓扑 + ASSUMPTIONS § A bar mapping + ASSUMPTIONS § B 31 lock + PATTERNS § 2 code excerpts + RESEARCH § 1.6 / § 2.4 / § 3.5 implementation sketches
