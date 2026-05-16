@@ -18,7 +18,11 @@ const HAS_MISS = /miss\s*[:：]/i
 // Phase 2.2 post-ship hardening — extended to dual-token (milestone + sub-phase) per
 // T0.1 original intent (Wave 0 implementation was milestone-only — caught by sister review).
 const STATUS_MARKER = /^\s*>?\s*\*{0,2}(?:Status|状态)\*{0,2}\s*[:：]\s*(.+)$/m
-const FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md']
+// Phase 2.3 W6 T-W6-1 (sister review backlog absorb) — STATE.md added to close
+// Phase 2.2 T0.4 freshness gate blind spot: STATE.md L4 "最后更新" was stale
+// 2026-05-15 → 2026-05-16 without being caught by this gate (sister review H1).
+// FRONT_MATTER_DOCS is the canonical scan list for freshness Status: markers.
+const FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md', '.planning/STATE.md']
 const ROADMAP_LATEST_RE = /^##\s+v\d+\.\d+\.\d+\s+—.*✅\s*SHIPPED/m
 const STATE_LATEST_SUBPHASE_RE = /\*{2}Phase\s+(\d+\.\d+)\s+SHIPPED\*{2}/g
 

@@ -6,7 +6,7 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-pre--launch-orange)](./.planning/ROADMAP.md)
 
-> **Status:** v0.1.0 shipped + Phase 2.2 shipped — Phase 2.3 待启动（design/content/testing extension category MVP）
+> **Status:** v0.1.0 shipped + Phase 2.2 shipped + **Phase 2.3 SHIPPED 2026-05-16** — extension category MVP (design/content/testing) + karpathy SKILL-ONLY 注入 + EE-5 5-question CLI gate + CD-3 negative-space + 30/30 routing 100% (v0.2.0 milestone 3/4). Next: Phase 2.4 doctor 完整版.
 
 > Not affiliated with, endorsed by, or sponsored by Harness Inc.（见 [NOTICE](./NOTICE)）
 
@@ -52,7 +52,7 @@ harnessed/
 - **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + bench 21.7-22.6ms + B1 shell-escape security gate + 3 ADRs）
 - **Acceptance bar E1-E8 8/8 (Phase 2.1)** ✅（A7 ADR 0001-0010 守恒 / 10 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25900941988）
 - **Acceptance bar F1-F8 8/8 (Phase 2.2)** ✅（A7 ADR 0001-0011 守恒 / 11 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25924933870）
-- **Next**：Phase 2.3 execute Wave 3 EE-5 双闸 gate CLI（Wave 0+1+2 SHIPPED 2026-05-16 — 6 backlog 一次根治 + 5 NEW manifest + CD-3 surgical arbitrate + karpathy SKILL-ONLY；Wave 3-6 剩 14 task）
+- **Next**：Phase 2.4 doctor 完整版（Phase 2.3 SHIPPED 2026-05-16 — 7 Waves W0-W6 全 ship 31+ atomic commits + DI-1 hotfix + 3 sister review backlog absorb; v0.2.0 milestone 3/4 = 75%; ADR 0012 9 章节 errata accepted; 12 ADR + 12 baseline tag）
 
 ## Install Quick Start（phase 1.2 ready）
 
