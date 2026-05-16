@@ -12,12 +12,20 @@ import { readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { validateManifestFile } from '../manifest/validate.js'
+// Phase 2.4 W4 T4.1 — runtime-layer helpers (B-28 + B-29 + D2.4-16 + D2.4-17).
+import {
+  auditInstallCmdIntegrity,
+  auditOriginIntegrity,
+  auditProvenance,
+} from './lib/audit-helpers.js'
 
 const REPO_URL_PATTERN = /^https:\/\/[^\s]+\.git$/
 const SIGNED_BY_PLACEHOLDERS = new Set(['unsigned', 'todo', 'placeholder', 'tbd', 'unknown'])
 const FORBIDDEN_GIT_REFS = new Set(['HEAD', 'main', 'master'])
 
-interface AuditFinding {
+// Phase 2.4 W4 T4.1 — exported for sister-share with src/cli/lib/audit-helpers.ts
+// (3 runtime-layer helpers reuse same finding shape; karpathy YAGNI no audit-types.ts).
+export interface AuditFinding {
   manifest: string
   level: 'warn' | 'error'
   field: string
@@ -80,8 +88,12 @@ async function auditOne(yamlPath: string): Promise<AuditFinding[]> {
 export function registerAudit(program: Command): void {
   program
     .command('audit')
-    .description('Second-line manifest self-consistency audit (no network)')
-    .action(async () => {
+    .description('Second-line manifest self-consistency audit (manifest + runtime layers)')
+    .option(
+      '--skip-runtime',
+      'skip runtime-layer checks (origin tamper / provenance) — manifest only',
+    )
+    .action(async (opts: { skipRuntime?: boolean }) => {
       const root = process.cwd()
       const dirs = ['manifests/tools', 'manifests/skill-packs']
       const yamls: string[] = []
@@ -95,8 +107,29 @@ export function registerAudit(program: Command): void {
       }
       yamls.sort()
 
+      // Manifest-layer findings (Phase 1.2 ship — schema drift / placeholders / moving refs).
       const findings: AuditFinding[] = []
-      for (const y of yamls) findings.push(...(await auditOne(y)))
+      const validManifests: Array<{
+        path: string
+        m: import('../manifest/schema/types.js').Manifest
+      }> = []
+      for (const y of yamls) {
+        const src = await readFile(y, 'utf8')
+        const v = validateManifestFile(src, y)
+        if (v.ok) validManifests.push({ path: y, m: v.manifest })
+        findings.push(...(await auditOne(y)))
+      }
+
+      // Phase 2.4 W4 T4.1 — runtime-layer findings per B-28 + B-29 + R2:
+      //  1. origin URL tamper (hard-fail mode via shared checkOrigin helper)
+      //  2. install.cmd shell-injection + npm-pkg-vs-upstream cross-check
+      //  3. provenance gate (delegates to scripts/check-provenance.mjs)
+      // --skip-runtime escape hatch for offline / pre-init env (B-29 carve-out).
+      if (!opts.skipRuntime) {
+        findings.push(...auditOriginIntegrity(root))
+        for (const { m } of validManifests) findings.push(...auditInstallCmdIntegrity(m))
+        findings.push(...auditProvenance())
+      }
 
       const byManifest = new Map<string, AuditFinding[]>()
       for (const f of findings) {
@@ -115,6 +148,15 @@ export function registerAudit(program: Command): void {
             console.log(`${mark} ${y}\n    ${f.field}: ${f.detail}`)
             if (f.level === 'error') errorCount++
           }
+        }
+      }
+      // Phase 2.4 W4: emit runtime-layer findings (manifest key = 'project' or m.metadata.name).
+      for (const [mname, fs] of byManifest) {
+        if (yamls.includes(mname)) continue // manifest-layer already printed above
+        for (const f of fs) {
+          const mark = f.level === 'error' ? '✗' : '⚠'
+          console.log(`${mark} [${mname}] ${f.field}: ${f.detail}`)
+          if (f.level === 'error') errorCount++
         }
       }
       console.log(
