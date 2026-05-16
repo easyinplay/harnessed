@@ -31,6 +31,19 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 
 ---
 
+## Advisory Absorb Path — dashboard polish round 2 commit attribution 复盘 (Phase 3.1 W0.2 absorb)
+
+> sister M2+M3 backlog absorption (Phase 3.1 W0.2 cluster) — Phase 2.4 handoff intel L482 草案 "polish round 2 独立 commit" 未被 executor 采纳, 合理 absorb 进 W3 主 commit cluster (`cf00d17` T3.2 SSE watcher + `008f9ab` T3.3 multi-project). polish 2 changes 100% 存活 (Phycat CSS + `.sort().reverse()` + `.slice().reverse()` 全在), 仅 commit attribution 改路径.
+
+**Timeline**:
+- handoff intel L482 (Phase 2.4 W2-W3 boundary, 2026-05-16): "推 polish round 2 独立 commit 隔离观察"
+- executor decision (Phase 2.4 W3 `cf00d17` + `008f9ab`): absorb 进 main W3 commit cluster, dashboard.mjs 改动 atomic with SSE watcher + multi-project
+- post-ship lesson: **scope-coherent absorb** 比强 standalone 干净 — 单 Wave 单 file 多 commit = artificial atomicity
+
+**Cadence note for future advisory**: executor 在 advisory 与 task 紧耦合的情况下选择 absorb 进相邻 task commit 是合理判断 — handoff intel "独立 commit" 是推荐路径不是强制. 沿袭 future advisory phrasing: "推荐独立 commit OR absorb 进 next task (executor 判断)" 避免 "advisory rejected" 暗示 (sister LinkedIn "草案不动" 反 pattern).
+
+---
+
 ## Phase 2.4 milestone retrospective — doctor 完整版 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel（2026-05-16 ship）+ 🎯 v0.2.0 MILESTONE 4/4 CLOSE
 
 ### What Worked
