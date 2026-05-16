@@ -107,6 +107,19 @@ jobs:
       - name: Deferred items review (Phase 2.3 Wave 0 T5, warn-only round 1)
         run: node scripts/check-deferred-items.mjs
         continue-on-error: true
+      # Phase 2.4 W2 T2.4 — EE-4 plan-checker quantitative gate (B-11 + B-12 + D-02).
+      # Walker scripts/run-plan-checker.mjs (T2.2 f986d42) consumes T2.1 schema
+      # routing/plan-review-schema.yaml; BLOCKER (<=2/4 dims) -> exit 1 + ::error::
+      # annotation; manual /gsd-plan-phase rerun required (B-12, NOT auto-spawn).
+      # W2 ship: ENFORCE=false (warn-only round 1, sister transparency gate W3
+      # 模式) -- phase-2.4 self-check expected BLOCKER mid-flight (NEW files Wave
+      # 3-6 + meta-discussion weasel; deferred-items.md item #2 trigger Wave 6
+      # end-state verify). Wave 6 ship flip ENFORCE=true.
+      - name: EE-4 plan-checker quant gate (Phase 2.4 W2 T2.4, warn-only round 1)
+        env:
+          ENFORCE: 'false'
+        run: node scripts/run-plan-checker.mjs .planning/
+        continue-on-error: true
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm typecheck

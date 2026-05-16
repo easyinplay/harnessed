@@ -6,12 +6,14 @@
 
 ## Active deferred items
 
-### 1. T2.2 walker hard limit ≤100L → ≤130L soft-tolerance (Wave 2 ship 2026-05-16)
+### 1. T2.2 + T2.4 line-limit soft-tolerance post-biome auto-format (Wave 2 ship 2026-05-16)
 
-- **来源**: task_plan.md T2.2 acceptance L515 (`wc -l scripts/run-plan-checker.mjs ≤ 100`)
-- **实际**: 130L post-biome (auto-format expansion of long single-line multi-clause statements + complex regex literals)
-- **Rationale (deviation Rule 1 — biome blocking)**: biome formatter deterministically expands long single-line constructs (yaml-parse, scoring functions, JSON.stringify); the 4-regex scoring + threshold integration + walker recursion can not fit ≤100L while remaining biome-clean. Sister precedent: task_plan.md L596 `tests/integration/plan-checker-quant.test.ts ≤80 (~60L target)` — soft tolerance norm。 The functional intent (zero-dep walker, ENFORCE flag, multi-line regex aware, BLOCKER exit 1) is met。
-- **Trigger to revisit**: Wave 6 T6.1 ADR 0013 finalize OR v0.3.0 if walker grows further。 Consider extracting regex/threshold into separate module if 150L breached。
+- **来源**: task_plan.md T2.2 L515 `wc -l scripts/run-plan-checker.mjs ≤ 100` + T2.4 L595 `wc -l tests/integration/plan-checker-quant.test.ts ≤ 80 (~60L target)`
+- **实际**:
+  - `scripts/run-plan-checker.mjs` = 130L (vs ≤100L spec)
+  - `tests/integration/plan-checker-quant.test.ts` = 103L (vs ≤80L spec)
+- **Rationale (deviation Rule 1 — biome blocking)**: biome formatter deterministically expands (a) long single-line multi-clause statements, (b) complex regex literals, (c) JSON.stringify arg objects, (d) type alias inline declarations. T2.2 4-regex scoring + threshold integration + walker recursion can not fit ≤100L biome-clean; T2.4 4-cell integration test with synthetic fixture + yaml schema validation + type assertion can not fit ≤80L biome-clean。 Sister precedent: task_plan.md L596 marks T2.4 ≤80 as "~60L target" — soft tolerance norm。 Functional intent (zero-dep walker / 4-cell test / yaml schema parity / BLOCKER detection) fully met。
+- **Trigger to revisit**: Wave 6 T6.1 ADR 0013 finalize OR v0.3.0 if either file grows further。 Consider extracting regex/threshold into separate module if walker 150L breached。 Consider per-cell file split if test 130L breached。
 - **Disposition**: ACCEPTED — Wave 2 ship.
 
 ### 2. T2.2 phase-2.4 self-check exit 1 mid-flight (Wave 2 ship 2026-05-16)
