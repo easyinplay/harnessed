@@ -4,8 +4,30 @@
 // 任何 runtime artifact 必须有 sibling `.provenance.json`, 否则 violation.
 // 沿袭 check-transparency-verdicts.mjs walker pattern (W3 ENFORCE=true).
 // Curated paths (workflows/**, manifest.yaml, docs/**) NOT in scope — see R8.
+// Phase 2.4 Wave 0 T0.4 (M2 absorb) — branchOnSchemaVersion 3rd consumer (was 2 helper-only):
+// runtime provenance.json files may carry a `schemaVersion` field for forward-compat
+// (handoff-doc / phases-yaml / manifest-state / installer-state / route-decision-log /
+// checkpoint / agent-definition-factory surfaces). Per ADR 0011 § R3 rule (a):
+// consumers MUST branch on schemaVersion via the helper. The .mjs runtime can't import
+// the TS module directly (NodeNext + verbatimModuleSyntax + noEmit ts → bundled .mjs);
+// inline-port the helper here mirroring src/types/schemaVersion.ts (SSOT remains TS;
+// grep -r "branchOnSchemaVersion" src/ scripts/ ≥ 3 — M2 long-tail consumer #3 landed).
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+
+const KNOWN_V1_SURFACES = [
+  'harnessed.routing-snapshot.v1',
+  'harnessed.handoff-doc.v1',
+  'harnessed.phases-yaml.v1',
+  'harnessed.manifest-state.v1',
+  'harnessed.installer-state.v1',
+  'harnessed.route-decision-log.v1',
+  'harnessed.checkpoint.v1',
+]
+
+function branchOnSchemaVersion(v, handlers) {
+  return KNOWN_V1_SURFACES.includes(v) ? handlers.v1() : handlers.unknown()
+}
 
 const ENFORCE = true
 const RUNTIME_ROOTS = ['.harnessed/sessions', '.harnessed/checkpoints', '.harnessed/route-logs']
@@ -45,6 +67,21 @@ function validateProvenance(file) {
   }
   if (parsed.author != null && (typeof parsed.author !== 'string' || parsed.author.length === 0)) {
     errs.push(`${file}: author must be non-empty string`)
+  }
+  // Phase 2.4 W0 T0.4 — branchOnSchemaVersion consumer: forward-compat schemaVersion
+  // branch (degrade gracefully on absent/unknown — non-v1 schemaVersion is informational,
+  // not a hard violation; only future v2 surfaces with breaking-change semantics would error).
+  if (parsed.schemaVersion != null) {
+    branchOnSchemaVersion(parsed.schemaVersion, {
+      v1: () => {
+        /* known v1 surface — current validators are v1-shape compatible */
+      },
+      unknown: () => {
+        errs.push(
+          `${file}: schemaVersion "${parsed.schemaVersion}" unknown (expected one of harnessed.<surface>.v1)`,
+        )
+      },
+    })
   }
   return errs
 }
