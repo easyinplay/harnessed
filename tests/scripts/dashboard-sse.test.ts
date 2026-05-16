@@ -1,20 +1,41 @@
 // Phase 2.4 W3 T3.2 — dashboard.mjs SSE watcher test (4 cells per task_plan T3.2).
+// Phase 3.3 W0 T0.2 — flaky fix path (a): random ephemeral port via net.createServer({port:0}) +
+//   DASHBOARD_PORT env injection (sister Phase 2.4 W4 Win 3-tier 8s waitFor pattern).
 //
-// We spawn the dashboard at a random high port (override via DASHBOARD_PORT env var
-// if we add it later; for now we test against the production 47180 port — if it
-// collides on the developer machine, the test skipIf bails). All HTTP calls use
-// node built-in http.request (zero npm dep parity per W5 gate).
+// We spawn the dashboard at a random ephemeral port (via getEphemeralPort helper using
+// node net.createServer({port:0}) MDN std). DASHBOARD_PORT env var is injected into the
+// child spawn so dashboard.mjs L39 additive override picks it up. No more probe-and-skip
+// branches — 4 cells always run since random port eliminates collision risk.
 
 import { spawn } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { request } from 'node:http'
+import { createServer as createNetServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 const DASHBOARD = join(process.cwd(), 'scripts', 'dashboard.mjs')
-const PORT = 47180
+// Phase 3.3 W0 T0.2 — random ephemeral port (mutable; populated in beforeAll via getEphemeralPort()).
+let PORT = 0
+
+/** Random ephemeral port helper (sister Node net.createServer({port:0}) MDN std). */
+function getEphemeralPort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = createNetServer()
+    srv.listen(0, '127.0.0.1', () => {
+      const addr = srv.address()
+      if (addr && typeof addr === 'object') {
+        const port = addr.port
+        srv.close(() => resolve(port))
+      } else {
+        srv.close(() => reject(new Error('failed to get ephemeral port')))
+      }
+    })
+    srv.on('error', reject)
+  })
+}
 
 interface ChildHandle {
   proc: ReturnType<typeof spawn>
@@ -64,35 +85,30 @@ function sseConnect(untilMs: number): Promise<string> {
   })
 }
 
-async function waitFor(port: number, timeoutMs = 5000): Promise<void> {
+// Phase 3.3 W0 T0.2 — 8s waitFor timeout (sister Phase 2.4 W4 Win 3-tier pattern).
+async function waitFor(port: number, timeoutMs = 8000): Promise<void> {
   const start = Date.now()
+  let lastErr: Error | null = null
   while (Date.now() - start < timeoutMs) {
     try {
       const r = await httpGet('/', 500)
       if (r.status === 200) return
-    } catch {
-      // not up yet
+    } catch (e) {
+      lastErr = e as Error
     }
     await new Promise((r) => setTimeout(r, 100))
   }
-  throw new Error(`dashboard did not start on :${port} within ${timeoutMs}ms`)
+  throw new Error(
+    `dashboard did not start on :${port} within ${timeoutMs}ms (last: ${lastErr?.message})`,
+  )
 }
 
 let handle: ChildHandle | null = null
-const portTaken = { value: false }
 
 beforeAll(async () => {
-  // Probe — skip if port already in use (e.g. developer is running dashboard).
-  try {
-    const r = await httpGet('/', 500)
-    if (r.status === 200) {
-      portTaken.value = true
-      return
-    }
-  } catch {
-    // good — port free, proceed.
-  }
-
+  // Phase 3.3 W0 T0.2 — random ephemeral port + DASHBOARD_PORT env injection.
+  // No more probe-and-skip (random port eliminates collision with dev's running dashboard).
+  PORT = await getEphemeralPort()
   const tmpRoot = await mkdtemp(join(tmpdir(), 'dash-sse-'))
   await mkdir(join(tmpRoot, '.planning'), { recursive: true })
   await writeFile(join(tmpRoot, '.planning', 'STATE.md'), '# initial state\n')
@@ -101,9 +117,10 @@ beforeAll(async () => {
     cwd: tmpRoot,
     stdio: 'ignore',
     detached: false,
+    env: { ...process.env, DASHBOARD_PORT: String(PORT) }, // ← inject env var (matches dashboard.mjs L39 additive override)
   })
   handle = { proc, tmpRoot }
-  await waitFor(PORT)
+  await waitFor(PORT, 8000)
 }, 15_000)
 
 afterAll(async () => {
@@ -115,13 +132,12 @@ afterAll(async () => {
 
 describe('dashboard SSE watcher (T3.2)', () => {
   it('cell 1 — /events returns SSE handshake `: connected`', async () => {
-    if (portTaken.value) return
     const body = await sseConnect(500)
     expect(body).toContain(': connected')
   })
 
   it('cell 2 — STATE.md touch fires `event: state-changed` within 2s', async () => {
-    if (portTaken.value || !handle) return
+    if (!handle) throw new Error('handle not initialized')
     const connectPromise = sseConnect(2000)
     // give the SSE client a moment to register before mutating the file
     await new Promise((r) => setTimeout(r, 200))
@@ -131,7 +147,7 @@ describe('dashboard SSE watcher (T3.2)', () => {
   })
 
   it('cell 3 — debounce: 5 rapid touches within 500ms → only 1 event fires', async () => {
-    if (portTaken.value || !handle) return
+    if (!handle) throw new Error('handle not initialized')
     const connectPromise = sseConnect(1500)
     await new Promise((r) => setTimeout(r, 200))
     // 5 rapid writes within 100ms (well inside the 500ms debounce window).
@@ -145,7 +161,6 @@ describe('dashboard SSE watcher (T3.2)', () => {
   })
 
   it('cell 4 — B-27 localhost-only bind: 127.0.0.1 works (positive control)', async () => {
-    if (portTaken.value) return
     // We can't easily test "0.0.0.0 connect fails" on localhost (loopback subsumes),
     // but we can assert the dashboard responds on 127.0.0.1 — which is what
     // server.listen(PORT, '127.0.0.1') guarantees + cell 1 already demonstrated.

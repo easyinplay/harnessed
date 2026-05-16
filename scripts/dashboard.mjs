@@ -36,7 +36,7 @@ import { createConnection } from 'node:net'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-const PORT = 47180
+const PORT = Number(process.env.DASHBOARD_PORT ?? 47180)
 const ROOT = process.cwd()
 const PLANNING = join(ROOT, '.planning')
 const ADR = join(ROOT, 'docs', 'adr')
