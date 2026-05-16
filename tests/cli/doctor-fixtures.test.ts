@@ -59,6 +59,14 @@ function applyScenario(s: Scenario): void {
     const argv = (args ?? []) as string[]
     if ((cmd === 'where' || cmd === 'which') && argv[0] === 'jq')
       return { status: s.jq ? 0 : 127, stdout: s.jq ? '/usr/bin/jq\n' : '' } as never
+    // Phase 3.2 W1 T1.5 — 6th check gstack PROBE: scenarios all assume 'prefixed'
+    // gstack-only state (clean PROBE pass, prefix='gstack-'). Scenario matrix could
+    // be expanded later for gstack=bare/both/neither — current 6 scenarios match
+    // doctor's check#1-5 axes (jq/bash/git/mcp/node) NOT gstack axis (T1.8 covers it).
+    if ((cmd === 'where' || cmd === 'which') && argv[0] === 'gstack-office-hours')
+      return { status: 0, stdout: '/usr/bin/gstack-office-hours\n' } as never
+    if ((cmd === 'where' || cmd === 'which') && argv[0] === 'office-hours')
+      return { status: 1, stdout: '' } as never
     if (cmd === 'where' || cmd === 'which')
       return s.bashFlavor === 'missing'
         ? ({ status: 1, stdout: '' } as never)
@@ -99,7 +107,7 @@ async function runCli(): Promise<{
   }
 }
 
-describe('Phase 2.4 W5 T5.1 — doctor 5-check × 6-scenario fixture matrix (30 cells)', () => {
+describe('Phase 2.4 W5 T5.1 — doctor 6-check × 6-scenario fixture matrix (36 cells, Phase 3.2 W1 bump 5→6)', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -113,10 +121,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 5-check × 6-scenario fixture matrix (30 
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 5 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 6 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(5)
+      expect(parsed.checks).toHaveLength(6)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -124,6 +132,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 5-check × 6-scenario fixture matrix (30 
           'jq present',
           'bash flavor (win)',
           'origin URL',
+          'gstack prefix', // ← Phase 3.2 W1 T1.5 6th check
         ]),
       )
       if (scenario.name === 'missing-jq') {

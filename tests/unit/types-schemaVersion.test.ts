@@ -10,9 +10,9 @@ import {
   SchemaVersionLiteral,
 } from '../../src/types/schemaVersion.js'
 
-describe('SCHEMA_VERSIONS — 8 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkflow)', () => {
-  it('has exactly 8 surface entries', () => {
-    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(8)
+describe('SCHEMA_VERSIONS — 10 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkflow + Phase 3.2 W1 T1.1 config + governance)', () => {
+  it('has exactly 10 surface entries', () => {
+    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(10)
   })
 
   it('every value matches `harnessed.<surface>.v1` shape', () => {
@@ -26,7 +26,7 @@ describe('SCHEMA_VERSIONS — 8 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkfl
     expect(new Set(values).size).toBe(values.length)
   })
 
-  it('covers the 8 named surfaces (7 B-32 + currentWorkflow Phase 3.1 W1 T1.1)', () => {
+  it('covers the 10 named surfaces (7 B-32 + currentWorkflow Phase 3.1 + config/governance Phase 3.2)', () => {
     const expectedSurfaces = [
       'routing-snapshot',
       'handoff-doc',
@@ -36,6 +36,8 @@ describe('SCHEMA_VERSIONS — 8 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkfl
       'route-decision-log',
       'checkpoint',
       'current-workflow', // ← Phase 3.1 W1 T1.1 8th surface
+      'config', // ← Phase 3.2 W1 T1.1 9th surface (D-01 PROBE)
+      'governance', // ← Phase 3.2 W1 T1.1 10th surface (D-04 PUSH)
     ]
     const actualSurfaces = Object.values(SCHEMA_VERSIONS).map((v) => v.split('.')[1])
     for (const s of expectedSurfaces) {

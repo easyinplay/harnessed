@@ -65,6 +65,28 @@ describe('cli/doctor', () => {
     spawnSyncMock.mockImplementation((cmd: string, args?: readonly string[]) => {
       const argv = (args ?? []) as string[]
       if (cmd === 'where' || cmd === 'which') {
+        // Phase 3.2 W1 T1.8 — 6th check gstack PROBE: gstack-only branch (pass).
+        // gstack-office-hours found → pass; office-hours NOT found → "gstack-only" mode (D-01 PROBE first branch).
+        if (argv[0] === 'gstack-office-hours') {
+          return {
+            status: 0,
+            stdout: '/usr/bin/gstack-office-hours\n',
+            stderr: '',
+            signal: null,
+            pid: 0,
+            output: [],
+          } as ReturnType<typeof spawnSync>
+        }
+        if (argv[0] === 'office-hours') {
+          return {
+            status: 1,
+            stdout: '',
+            stderr: '',
+            signal: null,
+            pid: 0,
+            output: [],
+          } as ReturnType<typeof spawnSync>
+        }
         // where/which jq → /usr/bin/jq; where/which bash → /usr/bin/bash
         return {
           status: 0,

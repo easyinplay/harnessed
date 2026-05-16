@@ -44,12 +44,26 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string }>
 
 const REPO = 'https://github.com/easyinplay/harnessed.git'
 
-function mockSpawn(opts: { jq?: boolean; gitUrl?: string } = {}): void {
-  const { jq = true, gitUrl = REPO } = opts
+function mockSpawn(
+  opts: { jq?: boolean; gitUrl?: string; gstack?: 'prefixed' | 'bare' | 'both' | 'neither' } = {},
+): void {
+  const { jq = true, gitUrl = REPO, gstack = 'prefixed' } = opts
   spawnSyncMock.mockImplementation((cmd: string, args?: readonly string[]) => {
     const argv = (args ?? []) as string[]
     if ((cmd === 'where' || cmd === 'which') && argv[0] === 'jq')
       return { status: jq ? 0 : 127, stdout: jq ? '/usr/bin/jq\n' : '' } as never
+    // Phase 3.2 W1 T1.5 — 6th check gstack PROBE: 4 outcome branches via gstack opt.
+    if ((cmd === 'where' || cmd === 'which') && argv[0] === 'gstack-office-hours') {
+      const found = gstack === 'prefixed' || gstack === 'both'
+      return {
+        status: found ? 0 : 1,
+        stdout: found ? '/usr/bin/gstack-office-hours\n' : '',
+      } as never
+    }
+    if ((cmd === 'where' || cmd === 'which') && argv[0] === 'office-hours') {
+      const found = gstack === 'bare' || gstack === 'both'
+      return { status: found ? 0 : 1, stdout: found ? '/usr/bin/office-hours\n' : '' } as never
+    }
     if (cmd === 'where' || cmd === 'which') return { status: 0, stdout: '/usr/bin/bash\n' } as never
     if (cmd === 'bash') return { status: 0, stdout: '' } as never // empty WSL probe
     if (cmd === 'git') return { status: 0, stdout: `${gitUrl}\n` } as never
@@ -59,7 +73,7 @@ function mockSpawn(opts: { jq?: boolean; gitUrl?: string } = {}): void {
   readFileSyncMock.mockReturnValue(JSON.stringify({ repository: { url: REPO } }))
 }
 
-describe('cli/doctor — Phase 2.4 W1 5-check + --json + exit policy', () => {
+describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + --json + exit policy', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -67,12 +81,12 @@ describe('cli/doctor — Phase 2.4 W1 5-check + --json + exit policy', () => {
   })
   afterEach(() => vi.restoreAllMocks())
 
-  it('cell 1 — all 5 checks pass → exit 0 + summary "pass"', async () => {
+  it('cell 1 — all 6 checks pass → exit 0 + summary "pass" (Phase 3.2 W1 bump 5→6)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: unknown[]; summary: string }
-    expect(p.checks).toHaveLength(5)
+    expect(p.checks).toHaveLength(6)
     expect(p.summary).toBe('pass')
   })
 

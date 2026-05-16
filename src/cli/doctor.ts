@@ -133,10 +133,18 @@ async function checkOriginUrl(): Promise<CheckResult> {
   return { name: 'origin URL', status: r.status, message: r.detail, fix: r.fix }
 }
 
+// Phase 3.2 W1 T1.5 — 6th check: gstack command prefix PROBE (D-01 LOCKED).
+// Sister Phase 2.4 W1 checkOriginUrl L130-134 dynamic import + delegate pattern.
+async function checkGstackPrefix(): Promise<CheckResult> {
+  const { probeGstackPrefix } = await import('./lib/probe-gstack.js')
+  const r = probeGstackPrefix()
+  return { name: 'gstack prefix', status: r.status, message: r.detail, fix: r.fix }
+}
+
 export function registerDoctor(program: Command): void {
   program
     .command('doctor')
-    .description('Preflight checks (Node / MCP scope / jq / Win bash / origin URL)')
+    .description('Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix)')
     .option('--json', 'output JSON instead of human-readable')
     .action(async (opts: { json?: boolean }) => {
       const results: CheckResult[] = [
@@ -145,6 +153,7 @@ export function registerDoctor(program: Command): void {
         checkJq(),
         checkWinBash(),
         await checkOriginUrl(),
+        await checkGstackPrefix(), // ← Phase 3.2 W1 T1.5 ADD 6th check (D-01 PROBE)
       ]
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')
