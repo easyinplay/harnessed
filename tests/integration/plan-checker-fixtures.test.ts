@@ -89,7 +89,8 @@ describe('Phase 2.4 W5 T5.2 — plan-checker 16-real + 14-synthetic fixture matr
     expect(pass).toBeGreaterThanOrEqual(Math.floor(all.length * 0.85)) // ≥85% PASS (real baseline 15/16=94%)
   })
 
-  it('14 synthetic fixtures cover PASS/WARNING/BLOCKER spectrum per T2.0 RELAX', () => {
+  // Win timeout 30s (sister Phase 1.3.1 F38 + Phase 2.2 Lesson 5 — Win execSync overhead × 14 fixtures > 5s default; nix=15s; per CI 25958795383 Win failure 6593ms)
+  it('14 synthetic fixtures cover PASS/WARNING/BLOCKER spectrum per T2.0 RELAX', { timeout: process.platform === 'win32' ? 30000 : 15000 }, () => {
     for (let i = 0; i < SYNTHETIC.length; i++) {
       const { out } = runWalker(tmpDirs[i] as string, { ENFORCE: 'false' })
       const [v] = parseVerdicts(out)
