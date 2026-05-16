@@ -1,0 +1,50 @@
+# routing/plan-review-schema.yaml (Phase 2.4 W2 D-02 ABSORB)
+# NEW SSOT for EE-4 plan-checker quantitative rubric.
+# Source: .planning/intel/omc-comparison.md L74-82 (omo 4 维原型 formalize; 含 detection / verification dimensions).
+# NOT vendor: 不复刻 vendor prompt 字眼 (含希腊神话 character naming), 仅借 4 维 schema 形态 (B-09 + intel L80).
+# Schema location: yaml-only SSOT (D-WP-2 (a)), NOT TypeBox regen (Karpathy YAGNI per B-10).
+# Thresholds: T2.0 baseline spike outcome RELAX (c8e4147) -- intel defaults
+#   (1.0/0.8/0.9/0) score 健康 ship phase-2.2 + phase-2.3 task_plan = 3/4 WARNING
+#   -> RELAX fr 1.0->0.80 (NEW-file 容忍) + ac 0.9->0.80 (heuristic 覆盖盲点).
+schemaVersion: 1
+apiVersion: harnessed/v1
+kind: PlanReview
+metadata:
+  name: ee-4-plan-review-schema
+  version: 1
+  source: intel/omc-comparison.md L74-82
+  baseline_spike: phase-2.4 T2.0 (commit c8e4147, 2026-05-16)
+spec:
+  dimensions:
+    file_references_verified:
+      description: "plan 提及的 file path 存在比 >= threshold (NEW file 容忍)"
+      threshold: 0.80
+      measurement: "regex files?(_modified|_created): -> token split -> fs.existsSync ratio"
+      rationale: "T2.0 spike: phase-2.2 fr=0.833, phase-2.3 fr=0.893; intel 1.0 过严"
+    reference_sources_real:
+      description: "plan 引用 .md/.yaml 路径存在比 >= threshold (anchor refs B-NN / ADR N / Phase X.Y 不参与 -- 按 structural assumed valid)"
+      threshold: 0.80
+      measurement: "regex (decision_source|see|ref): -> .md/.yaml token -> fs.existsSync ratio; no md ref -> 1.0"
+      rationale: "intel L74-82 默认, T2.0 confirm both plans sr=1.000"
+    concrete_acceptance:
+      description: "acceptance_criteria 子 bullet 含可量化 signal 比 >= threshold"
+      threshold: 0.80
+      measurement: "regex acceptance_criteria:\\n + indented sub-bullets; quant heuristic grep -c|wc -l|exit \\d+|<=N|>=N|==N|命中|absent|present|! grep|0 (增|副|残) etc."
+      rationale: "T2.0 spike: phase-2.2 ac=0.921, phase-2.3 ac=0.948; intel 0.9 紧贴, 留 false-neg 余地"
+    business_logic_assumptions:
+      description: "weasel words (presumably|likely|probably|maybe|should be|assumed) 计数 <= threshold; 白名单 (per D-NN) / (locked) / assumption (名词) 不计"
+      threshold: 0
+      measurement: "regex weasel words count; whitelist context window 80 chars"
+      rationale: "intel 0 默认, T2.0 confirm both plans weasel=0"
+  scoring:
+    pass_threshold: 4    # 4/4 -> PASS (APPROVED)
+    warning_threshold: 3 # 3/4 -> WARNING (APPROVED WITH CONDITIONS)
+    blocker_threshold: 2 # <=2/4 -> BLOCKER (REJECTED, manual rerun)
+  verdict_mapping:
+    pass: "APPROVED -- 4/4 dimensions met"
+    warning: "APPROVED WITH CONDITIONS -- 3/4 dimensions met, see warnings"
+    blocker: "REJECTED -- <=2/4 dimensions met, plan-phase rerun required (manual per B-12)"
+  enforcement:
+    ci_step: ".github/workflows/ci.yml step EE-4 plan-checker (Phase 2.4 W2 D-02 / T2.4)"
+    auto_spawn: false  # B-12: manual /gsd-plan-phase rerun; v0.3.0 absorbs auto-spawn
+    walker: "scripts/run-plan-checker.mjs (T2.2 ship)"
