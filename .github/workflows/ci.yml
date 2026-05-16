@@ -125,6 +125,20 @@ jobs:
       - run: corepack pnpm typecheck
       - run: corepack pnpm lint
       - run: corepack pnpm test
+      # Phase 2.4 W4 T4.3 — ralph-loop Win sentinel (B-30 MIN 5 fixture).
+      # Sister Phase 2.3 W0 T0.6 provenance pwsh sentinel pattern (above). Verifies
+      # ralph-loop wrapper contract (isComplete / MaxIterationsExceededError /
+      # resumeSessionId propagation / structured_output PRIMARY path) under Win
+      # event-loop + Git Bash fork timing (Phase 1.1 finding: WSL bash.exe breaks
+      # subagent fork; doctor.ts T1.2 验过 Git Bash 路径 per B-04). Mock subagent
+      # per B-30 + O5 (real CC SDK 需 ANTHROPIC_API_KEY OOS). shell:bash per B-04
+      # (Git Bash path verified; pwsh sister reserved for provenance gate only).
+      # Note: pnpm test (L127 above) already runs ALL tests; this step explicitly
+      # invokes the Win-only sentinel for fail-fast surfacing in CI logs.
+      - name: ralph-loop Win sentinel (Phase 2.4 W4 T4.3 — MIN 5 fixture per B-30)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: corepack pnpm test -- tests/routing/ralph-loop-win-sentinel.test.ts
       - run: corepack pnpm build
       - run: corepack pnpm build:schema
       # Phase 2.3 Wave 0 T0.4 — M1 schema regen drift gate (Phase 2.2 RETROSPECTIVE
