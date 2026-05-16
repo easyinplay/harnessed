@@ -31,14 +31,14 @@
 - **Rationale**: 不在 W5 scope (W5 adds tests/integration/plan-checker-fixtures.test.ts + tests/cli/doctor-fixtures.test.ts + tests/integration/phase-2.4-e2e.test.ts — 不 touch ci.yml 或 run-plan-checker.mjs). 但 pre-existing bug since W2 T2.4 ship (commit 55b0329 2026-05-16) — masked by continue-on-error。
 - **Fix**: Reorder ci.yml — move EE-4 step to AFTER `corepack pnpm install --frozen-lockfile` (L124+) OR pre-install `yaml` package globally before EE-4 OR `npm install --no-save yaml` before EE-4 step。 Single-line move, no functional change.
 - **Trigger to revisit**: Wave 6 ship — must fix before flipping `ENFORCE=true` (T2.4 deferred plan) since `continue-on-error: false` would surface this immediately as red CI. T6.x ship checklist must include "EE-4 actually runs successfully end-state".
-- **Disposition**: ACTIVE — Wave 6 fix mandatory (Wave 5 ship OK because step is `continue-on-error: true`).
+- **Disposition**: ~~ACTIVE~~ → **RESOLVED Wave 6 T6.2** (ci.yml step reorder — EE-4 step moved AFTER `corepack pnpm install --frozen-lockfile` so `yaml` package resolution works; W2 T2.4 step kept `continue-on-error: true` + `ENFORCE: 'false'` per deferred-items #2 phase-2.4 self-check inherent meta-discussion false-positive; ENFORCE=true flip 推 v0.3.0 W0 prep)
 - **Detection**: Wave 5 T5.3 e2e ship 时 `gh run view` log grep — identified by W5 executor mid-wave verify per scope-boundary discipline。
 
 (Phase 2.4 Wave 0 起 stub — 后续 Wave 识别的 deferred item 在此 append; Wave 6 ship-time review cadence 强制 cat)
 
 ## Resolved / promoted
 
-(从 active 移到 resolved 时记录 commit hash + 触发原因)
+- **#3 EE-4 plan-checker CI step ordering bug** → RESOLVED Wave 6 T6.2 (commit pending, this wave) — root cause: step ran BEFORE `pnpm install --frozen-lockfile`, `yaml` (in dependencies L79 package.json) not yet installed → ERR_MODULE_NOT_FOUND. Fix: 1-line yaml step reorder (move AFTER pnpm install). ENFORCE=true flip remains v0.3.0 W0 prep per deferred-items #2 inherent self-referential meta-discussion fr/weasel score (not a real CI BLOCKER).
 
 ---
 
