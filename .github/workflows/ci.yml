@@ -31,8 +31,8 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
-      # Phase 1.1.1 hotfix H2 + Phase 1.2 H5 + Phase 1.2.5 wedge + Phase 1.3 ADR 0007 errata + Phase 1.4 ADR 0008 errata + Phase 1.5 ADR 0009 errata + Phase 2.1 ADR 0010 errata + Phase 2.2 ADR 0011 errata:
-      # A7 acceptance bar enforces ADR 0001-0011 main body 守恒 (unchanged
+      # Phase 1.1.1 hotfix H2 + Phase 1.2 H5 + Phase 1.2.5 wedge + Phase 1.3 ADR 0007 errata + Phase 1.4 ADR 0008 errata + Phase 1.5 ADR 0009 errata + Phase 2.1 ADR 0010 errata + Phase 2.2 ADR 0011 errata + Phase 2.3 ADR 0012 errata:
+      # A7 acceptance bar enforces ADR 0001-0012 main body 守恒 (unchanged
       # since each adr-NNNN-accepted baseline tag). Any drift fails CI.
       # Phase 1.2.5 加 ADR 0006 (three-stack mechanization wedge); Phase 1.3
       # 加 ADR 0007 (categorization schema errata — manifest 加 3 字段);
@@ -49,11 +49,14 @@ jobs:
       # completion 4-layer + per-phase model tier + Wave 0 transparency gate
       # flip + schemaVersion 7-surface + provenance gate hard fail + Task
       # Session 复用 conditional DEFERRED → v0.3.0 — 9 章节 errata 合并);
-      # baseline tag iterate 扩到 11 个 (1-10 → 1-0011, T6.2 落地).
-      - name: A7 acceptance bar — ADR 0001-0011 main body 守恒
+      # Phase 2.3 加 ADR 0012 (extension category MVP + karpathy SKILL inject
+      # 引擎 + EE-5 双层 + CD-3 negative-space + 30-sample routing 100%
+      # (≥85% bar 远超) + Wave 0 backlog 6 项一次根治 — 9 章节 errata 合并);
+      # baseline tag iterate 扩到 12 个 (1-0011 → 1-0012, Phase 2.3 W6 T6.2 落地).
+      - name: A7 acceptance bar — ADR 0001-0012 main body 守恒
         run: |
           missing_tags=()
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011; do
+          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012; do
             if ! git fetch origin "tag" "adr-${n}-accepted" --no-tags 2>/dev/null; then
               missing_tags+=("adr-${n}-accepted")
               continue
@@ -64,7 +67,7 @@ jobs:
             exit 0
           fi
           fail=0
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011; do
+          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012; do
             diff_out=$(git diff "adr-${n}-accepted" -- "docs/adr/${n}-*.md")
             if [ -n "$diff_out" ]; then
               echo "::error::A7 acceptance bar violated — ADR ${n} main body changed since adr-${n}-accepted tag"
@@ -75,7 +78,7 @@ jobs:
           if [ "$fail" -ne 0 ]; then
             exit 1
           fi
-          echo "A7 ✅ ADR 0001-0011 main body unchanged"
+          echo "A7 ✅ ADR 0001-0012 main body unchanged"
       # Phase 2.1 T1.7 — transparency verdict-marker gate (ADR 0010, D2.1-7/8).
       # Scans .planning verdict docs for closure-marker lines missing an N/N
       # ratio + miss: declaration. W3: warn-only round 1 (script exits 0 even
