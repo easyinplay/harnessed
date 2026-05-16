@@ -34,15 +34,20 @@ export class VerbatimCompleteFailError extends Error {
 }
 
 /** Anchor 4 wedge — `resumeSessionId` flows through `spawn` so T4.1 sdkSpawn
- *  can attach SDK session resume (CD-4 deferred to v0.3.0 per B-35). */
+ *  can attach SDK session resume (CD-4 **activated Phase 3.1 W3 T3.1** —
+ *  T4.4 dead-wiring 首消费者 per RESEARCH § 1.5; D-04 WIRE-IN LOCKED).
+ *  `onSessionId` callback fires on iter 1 SDK system:init capture, allowing
+ *  iter 2+ to pass the captured id back via `resumeSessionId` arg. */
 export async function ralphLoopWrap(
-  spawn: (resumeSessionId?: string) => Promise<string>,
+  spawn: (resumeSessionId?: string, onSessionId?: (id: string) => void) => Promise<string>,
   maxIter: number,
 ): Promise<string> {
   let last = ''
   let sessionId: string | undefined
   for (let i = 0; i < maxIter; i++) {
-    last = await spawn(sessionId)
+    last = await spawn(sessionId, (id) => {
+      sessionId = id
+    })
     if (isComplete(last)) return last
   }
   throw new MaxIterationsExceededError(maxIter)
