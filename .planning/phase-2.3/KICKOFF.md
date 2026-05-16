@@ -198,6 +198,36 @@ intel directive(L92 EE-5 必上 + L130-135 CD-3 显式负空间)已 D-03 + D-04 
 
 详细 5×5 = 25 answers 在 `task_plan.md` T1.1-T1.5 各 task 内联 (W5 plan-check fix Karpathy simplicity)。
 
+### § 7.1 gsd-plan-checker BLOCKER 规则参引 (W3 T3.3 双闸 L2)
+
+> **运行时双闸**: § 7 表是 plan-phase **声明侧** (KICKOFF 自陈 5 题答案); `harnessed manifest-add <upstream>` CLI 是 execute-phase **运行时侧** (`src/cli/manifest-add.ts` W3 T3.1 ship)。 D-03 BOTH 锁两侧都不绕。
+>
+> **gsd-plan-checker 行为约定** (Phase 2.3 ship, 实际 prompt 修改是 `~/.claude/agents/gsd-plan-checker.md` 全局 agent 文件 — 项目内 ship 不动 agent 文件本身,只 declare 行为契约):
+>
+> - **BLOCKER 触发条件**: KICKOFF.md 列出新 upstream adapter (`manifests/**.yaml` NEW entry) **AND** § 7 表 ① ~ ⑤ 任一答案为 `<fill>` / 空 / 占位符
+> - **WARNING 触发**: § 7 表存在但 1 题填非占位答案 (要求 5 题全填,缺 1 即 WARNING)
+> - **PASS**: § 7 表 5 题全填且非占位
+>
+> CLI 侧 (T3.1 `manifest-add.ts`) 互动答 5 题强制非空 (L65-68 `requires non-empty answer` exit 1); `--non-interactive --dry-run` 模式发 `[ee-5-gate] WARN` 但不绕 plan-phase BLOCKER (D-03 BOTH 二层 防 thin wrapper)。
+>
+> **CLI sample 5-question 流程** (W3 T3.3 transparency):
+> ```
+> $ harnessed manifest-add upstream-foo --dry-run
+> ① 是真 reusable surface 还是临时 wrapper?
+> > YES reusable surface (provides X capability)
+> ② 上游名字 fit 项目 shape 吗? 有现有命名冲突吗?
+> > YES fit / NO conflict
+> ③ 与已装配组件有 overlap surface 吗?
+> > NO overlap (与 existing-bar 正交)
+> ④ 是 import 概念 (可控) 还是 import 别人产品身份 (高耦合)?
+> > CONCEPT (general X-style 概念)
+> ⑤ user 不知 upstream 还能理解该装配吗?
+> > YES (通用术语)
+> [manifest-add] EE-5 gate passed (dry-run); would write manifests/skill-packs/upstream-foo.ee5-answers.json
+> { "upstream": "upstream-foo", "created_at": "2026-05-16T...", "author": "...",
+>   "q1_reusable_surface": "YES reusable surface (provides X capability)", ... }
+> ```
+
 ---
 
 **phase 2.3 KICKOFF complete** — Wave A(R1 PATTERNS + R2 RESEARCH 并行, 带 anti-stall 约束)启动准备。
