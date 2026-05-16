@@ -10,10 +10,11 @@
 //       bucket — adapter-specific strings are legal, never throw)
 //   (c) new fields MUST be added nested (never top-level on existing surface)
 //
-// The 10 surfaces (B-32 + Phase 3.1 W1 T1.1 ADD `currentWorkflow` + Phase 3.2
-// W1 T1.1 ADD `config` + `governance`) are the schema-producing artifacts in
-// Wave 2-4 + Phase 3.1 (workflow state machine) + Phase 3.2 (plan-feature
-// workflow infra for D-01 PROBE + D-04 PUSH governance):
+// The 11 surfaces (B-32 + Phase 3.1 W1 T1.1 ADD `currentWorkflow` + Phase 3.2
+// W1 T1.1 ADD `config` + `governance` + Phase 3.3 W0 T0.5 BACKFILL `planFeature`)
+// are the schema-producing artifacts in Wave 2-4 + Phase 3.1 (workflow state
+// machine) + Phase 3.2 (plan-feature workflow infra for D-01 PROBE + D-04 PUSH
+// governance + plan-feature DSL):
 //   - routing-snapshot      : routing engine arbitrate output snapshot
 //   - handoff-doc           : phase → phase handoff document
 //   - phases-yaml           : workflows/execute-task/phases.yaml
@@ -24,6 +25,7 @@
 //   - current-workflow      : workflow state machine (active / paused / complete)  ← Phase 3.1 W1 T1.1 ADD (8th surface, D-02 KARPATHY 3-state lock)
 //   - config                : .harnessed/config.json (gstack_prefix store)        ← Phase 3.2 W1 T1.1 ADD (9th surface, D-01 PROBE)
 //   - governance            : .harnessed/governance.json (gstack veto status)     ← Phase 3.2 W1 T1.1 ADD (10th surface, D-04 PUSH)
+//   - plan-feature          : src/workflow/schema/planFeature.ts (plan-feature workflow DSL)  ← Phase 3.3 W0 T0.5 BACKFILL (11th surface, sister Phase 3.2 W2 T2.2 b875e21 stale claim fix)
 //
 // TypeBox is the established schema lib (sister of `src/manifest/schema/spec.ts`).
 
@@ -48,6 +50,7 @@ export const SCHEMA_VERSIONS = {
   currentWorkflow: 'harnessed.current-workflow.v1', // ← Phase 3.1 W1 T1.1 ADD 8th surface (D-02 KARPATHY 3-state)
   config: 'harnessed.config.v1', // ← Phase 3.2 W1 T1.1 ADD 9th surface (D-01 PROBE gstack_prefix store)
   governance: 'harnessed.governance.v1', // ← Phase 3.2 W1 T1.1 ADD 10th surface (D-04 PUSH veto status)
+  planFeature: 'harnessed.plan-feature.v1', // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface (sister Phase 3.2 W2 T2.2 b875e21 commit msg claim "11th surface" was LATENT STALE — never registered; T0.5 surgical fix per sister Phase 3.2 W2 T2.6 latent W1 c37ee29 Rule 1 pattern)
 } as const
 
 /** TypeBox literal union — useful as a refinement on a `schemaVersion` field
@@ -63,6 +66,7 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.currentWorkflow), // ← Phase 3.1 W1 T1.1 ADD 8th surface
   Type.Literal(SCHEMA_VERSIONS.config), // ← Phase 3.2 W1 T1.1 ADD 9th surface
   Type.Literal(SCHEMA_VERSIONS.governance), // ← Phase 3.2 W1 T1.1 ADD 10th surface
+  Type.Literal(SCHEMA_VERSIONS.planFeature), // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface
 ])
 
 export type SchemaVersionLiteralType = Static<typeof SchemaVersionLiteral>
