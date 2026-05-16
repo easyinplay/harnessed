@@ -10,11 +10,12 @@
 //       bucket — adapter-specific strings are legal, never throw)
 //   (c) new fields MUST be added nested (never top-level on existing surface)
 //
-// The 11 surfaces (B-32 + Phase 3.1 W1 T1.1 ADD `currentWorkflow` + Phase 3.2
-// W1 T1.1 ADD `config` + `governance` + Phase 3.3 W0 T0.5 BACKFILL `planFeature`)
-// are the schema-producing artifacts in Wave 2-4 + Phase 3.1 (workflow state
-// machine) + Phase 3.2 (plan-feature workflow infra for D-01 PROBE + D-04 PUSH
-// governance + plan-feature DSL):
+// The 13 surfaces (B-32 + Phase 3.1 W1 T1.1 ADD `currentWorkflow` + Phase 3.2
+// W1 T1.1 ADD `config` + `governance` + Phase 3.3 W0 T0.5 BACKFILL `planFeature`
+// + Phase 3.3 W1 T1.1 ADD `aliases` + `knownGood`) are the schema-producing
+// artifacts in Wave 2-4 + Phase 3.1 (workflow state machine) + Phase 3.2
+// (plan-feature workflow infra) + Phase 3.3 (manifest-domain aliases.yaml +
+// known-good version lock):
 //   - routing-snapshot      : routing engine arbitrate output snapshot
 //   - handoff-doc           : phase → phase handoff document
 //   - phases-yaml           : workflows/execute-task/phases.yaml
@@ -26,6 +27,8 @@
 //   - config                : .harnessed/config.json (gstack_prefix store)        ← Phase 3.2 W1 T1.1 ADD (9th surface, D-01 PROBE)
 //   - governance            : .harnessed/governance.json (gstack veto status)     ← Phase 3.2 W1 T1.1 ADD (10th surface, D-04 PUSH)
 //   - plan-feature          : src/workflow/schema/planFeature.ts (plan-feature workflow DSL)  ← Phase 3.3 W0 T0.5 BACKFILL (11th surface, sister Phase 3.2 W2 T2.2 b875e21 stale claim fix)
+//   - aliases               : manifests/aliases.yaml (D-01 RICH upstream rename redirect + metadata)  ← Phase 3.3 W1 T1.1 ADD (12th surface, D-01 RICH)
+//   - known-good            : versions/<harnessed-ver>-known-good.yaml (D-03 YAML per-ver version lock)  ← Phase 3.3 W1 T1.1 ADD (13th surface, D-03 YAML manifest)
 //
 // TypeBox is the established schema lib (sister of `src/manifest/schema/spec.ts`).
 
@@ -51,6 +54,8 @@ export const SCHEMA_VERSIONS = {
   config: 'harnessed.config.v1', // ← Phase 3.2 W1 T1.1 ADD 9th surface (D-01 PROBE gstack_prefix store)
   governance: 'harnessed.governance.v1', // ← Phase 3.2 W1 T1.1 ADD 10th surface (D-04 PUSH veto status)
   planFeature: 'harnessed.plan-feature.v1', // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface (sister Phase 3.2 W2 T2.2 b875e21 commit msg claim "11th surface" was LATENT STALE — never registered; T0.5 surgical fix per sister Phase 3.2 W2 T2.6 latent W1 c37ee29 Rule 1 pattern)
+  aliases: 'harnessed.aliases.v1', // ← Phase 3.3 W1 T1.1 ADD 12th surface (D-01 RICH manifests/aliases.yaml upstream rename redirect + metadata)
+  knownGood: 'harnessed.known-good.v1', // ← Phase 3.3 W1 T1.1 ADD 13th surface (D-03 YAML versions/<harnessed-ver>-known-good.yaml per-version lock)
 } as const
 
 /** TypeBox literal union — useful as a refinement on a `schemaVersion` field
@@ -67,6 +72,8 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.config), // ← Phase 3.2 W1 T1.1 ADD 9th surface
   Type.Literal(SCHEMA_VERSIONS.governance), // ← Phase 3.2 W1 T1.1 ADD 10th surface
   Type.Literal(SCHEMA_VERSIONS.planFeature), // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface
+  Type.Literal(SCHEMA_VERSIONS.aliases), // ← Phase 3.3 W1 T1.1 ADD 12th surface
+  Type.Literal(SCHEMA_VERSIONS.knownGood), // ← Phase 3.3 W1 T1.1 ADD 13th surface
 ])
 
 export type SchemaVersionLiteralType = Static<typeof SchemaVersionLiteral>
