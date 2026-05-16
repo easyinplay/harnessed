@@ -85,6 +85,55 @@
 - **版本**：v0.4
 - **验收**：用户可 grep 排错；100% 决策可追溯
 
+### R2.4.1 doctor 健康检查主流程 MIN 5 check（v0.2 — Phase 2.4 D-01）
+- **描述**：`harnessed doctor` MIN 5 check（Node ≥ 22 / MCP scope / jq present / Win bash flavor / origin URL 校验）+ `--json` flag CI 友好输出 + status 三档（pass/warn/fail）exit policy；weekly cron / upstream_health / uninstall 4 步 fallback DEFER v0.3+ 评估
+- **来源**：ROADMAP L113-114 + .planning/phase-2.4/ASSUMPTIONS B-01~B-07 + 2.4-CONTEXT D-01
+- **版本**：v0.2
+- **验收**：`harnessed doctor --json | jq '.summary'` 输出 pass/warn/fail；5 check 全 method 独立；warn exit 0 / fail exit 1
+- **状态**：In Progress (Phase 2.4 W1)
+
+### R2.4.2 EE-4 plan-checker 4 维量化阈值 schema（v0.2 — Phase 2.4 D-02）
+- **描述**：`routing/plan-review-schema.yaml` NEW yaml-only SSOT 4 维（file_references_verified / reference_sources_real / concrete_acceptance / business_logic_assumptions）+ `scripts/run-plan-checker.mjs` walker + `.claude/agents/gsd-plan-checker.md` project-local override 量化输出节；BLOCKER auto-rerun DOWN-SCOPE 为 CI fail + manual rerun（auto-spawn 推 v0.3.0）
+- **来源**：.planning/intel/omc-comparison.md L74-82 + L286 EE-4 PENDING + ASSUMPTIONS B-08~B-15
+- **版本**：v0.2
+- **验收**：`node scripts/run-plan-checker.mjs .planning/phase-X.Y/` 输出 4 维 score + verdict（PASS / WARNING / BLOCKER）+ BLOCKER 时 `::error::` annotation + exit 1
+- **状态**：In Progress (Phase 2.4 W2)
+
+### R2.4.3 README CI counter integrity gate B 路径（v0.2 — Phase 2.4 D-03）
+- **描述**：`.github/workflows/ci.yml` 加 ~15L yaml step 三计数一致才 PASS（line-start + bold 精度 grep regex 排除 enumeration line 命中）+ Wave 0 pre-flight FIX README drift 后才 push；H3 root-cause-class 第 3 次复发根治
+- **来源**：.planning/STATE.md H3 backlog + ASSUMPTIONS B-16 + B-17 + 2.4-CONTEXT D-03
+- **版本**：v0.2
+- **验收**：CI step 三计数 grep -cE 精度匹配（`^- \*\*Phase 2\.[1-9] shipped\*\* ✅` + `^- \*\*Acceptance bar [A-Z]1-[A-Z]8 8/8 \(Phase 2\.[1-9]\)\*\* ✅` + L44 N/4 counter numerator）；mismatch → exit 1
+- **状态**：In Progress (Phase 2.4 W0)
+
+### R2.4.4 Dashboard C 路径 SessionStart hook auto-install（v0.2 — Phase 2.4 D-04 § 3.1）
+- **描述**：`src/installers/ccHookAdd.ts` NEW 7th installer（sister mcp-stdio-add / mcp-http-add naming）+ 3 处 schema enum 加（InstallType +'hook' / TypeEnum +'cc-hook' / install.method +'cc-hook-add'）+ `manifests/cc-hooks/dashboard-autospawn.yaml` 第一 fixture；JSON deep-merge 进 `~/.claude/settings.json` hooks 块 + idempotent + backup + verify
+- **来源**：.planning/intel/dashboard-handoff-2026-05-16.md § 3.1 + ASSUMPTIONS B-20~B-22
+- **版本**：v0.2
+- **验收**：`harnessed install dashboard-autospawn --dry-run` exit 0；`harnessed uninstall dashboard-autospawn` 干净清理；3 处 enum grep count 全命中
+- **状态**：In Progress (Phase 2.4 W3)
+
+### R2.4.5 Dashboard C 路径 STATE.md SSE watcher（v0.2 — Phase 2.4 D-04 § 3.2）
+- **描述**：`scripts/dashboard.mjs` +~50L `fs.watch('.planning/STATE.md')` + debounce 500ms + SSE `/events` endpoint（zero-dep — text/event-stream HTTP 内建 + EventSource 浏览器原生 reconnect）替 WebSocket；localhost-only bind `127.0.0.1` 防外部连接
+- **来源**：.planning/intel/dashboard-handoff-2026-05-16.md § 3.2 + ASSUMPTIONS B-23 + B-24 + B-27
+- **版本**：v0.2
+- **验收**：SSE `/events` stream 含 `state-changed` event；client 用 EventSource 替 polling；零 npm dep import；localhost-only bind verify
+- **状态**：In Progress (Phase 2.4 W3)
+
+### R2.4.6 Dashboard C 路径 多项目支持（v0.2 — Phase 2.4 D-04 § 3.3）
+- **描述**：`scripts/dashboard.mjs` +~80L `/api/projects` endpoint 读 `~/.claude/harnessed-projects.json` 配置 + 左栏 project selector + URL routing `?project=<path>` + `history.pushState` no-reload；首次创建 auto-init（默认 cwd as first project）
+- **来源**：.planning/intel/dashboard-handoff-2026-05-16.md § 3.3 + ASSUMPTIONS B-25
+- **版本**：v0.2
+- **验收**：`/api/projects` 返回 JSON list；client dropdown 切换 project 无 reload；auto-init from cwd
+- **状态**：In Progress (Phase 2.4 W3)
+
+### R2.4.7 ralph-loop Windows 兼容 sentinel（v0.2 — Phase 2.4 F5 / R5.3 extension）
+- **描述**：`tests/routing/ralph-loop-win-sentinel.test.ts` NEW 5 fixture（simple-complete / multi-iter / max-iter-exceeded / subagent-spawn-mock / timeout）+ CI matrix `if: runner.os == 'Windows'` + `shell: bash`；anti-redo discipline NOT 30 sample（Phase 2.3 sister 不重做）
+- **来源**：ROADMAP L115 + ASSUMPTIONS B-30 + 2.4-CONTEXT D2.4-18
+- **版本**：v0.2
+- **验收**：Win matrix 跑 5 fixture 全 pass；subagent-spawn fixture mock（real CC SDK 需 ANTHROPIC_API_KEY OOS）
+- **状态**：In Progress (Phase 2.4 W4)
+
 ---
 
 ## R3. Research workflow（v0.1）

@@ -331,7 +331,7 @@ Phase 2.4 ship 后,v0.3.0 直接消费的接口:
 - **R9** cc-hook 3 处 enum 漏一处 → LOW;Wave 3 T3.1 三处 grep verify acceptance criteria
 - **R10** README counter gate 第一 push CI red → LOW;Wave 0 T0.3 pre-flight local grep 校准
 - **R11** ADR 编号实占冲突 → LOW;solo 单线性 + sed-replace discipline
-- **R12** v0.2.0 milestone tag 已存在 → LOW;Wave 6 T6.4 第一步 `git tag --list v0.2.0` 检 + fallback v0.2.0-final
+- **R12** v0.2.0 milestone tag 已存在 → LOW;Wave 6 T6.4 第一步 `git tag --list 'v0.2.0*'` 检 (glob 兼容 fallback) + S3 fallback decision tree (v0.2.0-final / v0.2.0-extension / destructive delete+re-create per executor judgment);F8 reproduction tag glob 一致 (`v0.2.0*`)
 - **R13** Win sentinel subagent-spawn mock 偏真实 SDK → LOW-MED;Phase 2.4 MIN: mock (real SDK v0.3.0 prep T1.1 sister)
 
 **no Wave 1/2 BLOCKER**;**no SSOT 引用纪律 risk** (R11 单线性);**partial Win 兼容** (R7 Wave 3 settings.json Win 跑 + Wave 4 ralph-loop-win-sentinel CI + Wave 6 3-OS CI sentinel)。
@@ -349,7 +349,7 @@ Phase 2.4 ship 后,v0.3.0 直接消费的接口:
 | **F5** | `wc -l src/cli/audit.ts src/cli/lib/audit-helpers.ts && npm test -- tests/cli/audit.test.ts && grep "Win sentinel" .github/workflows/ci.yml && npm test -- tests/routing/ralph-loop-win-sentinel.test.ts` (Win-only) | audit.ts ≤200L (split helper 后);audit-helpers.ts ≤50L;audit.test 4 case (origin drift + install.cmd injection + upstream cross-check + provenance spawn) 全 pass;Win sentinel CI step 存在;Win sentinel 5 fixture 全 pass on Win matrix |
 | **F6** | `npm test -- tests/cli/doctor-fixtures.test.ts && npm test -- tests/integration/plan-checker-fixtures.test.ts && npm test -- tests/integration/phase-2.4-e2e.test.ts` | 30 doctor fixture 全 pass (5 check × 6 env scenario per B-31);30 plan-checker fixture 全 pass (Phase 1.1~2.3 plan 跑 4 维量化);e2e 全链路 pass |
 | **F7** | `git diff <baseline-1-12>..HEAD -- "docs/adr/0001-*.md" "docs/adr/0002-*.md" ... "docs/adr/0012-*.md" \| wc -l && ls docs/adr/<实占NNNN>-*.md && grep -E "^### [1-9]\\. " docs/adr/<实占NNNN>-*.md \| wc -l` | A7 diff wc == 0;ADR <实占N> 存在 + 9 章节 |
-| **F8** | `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` + `git tag --list adr-<实占N>-accepted v0.2.0-alpha.4-doctor v0.2.0` + `ls .planning/milestones/v0.2.0-*.md .planning/v0.2.0-MILESTONE-AUDIT.md` + `grep -E "Phase 2\\\\.4 SHIPPED\|v0\\\\.2\\\\.0 4/4" .planning/STATE.md .planning/ROADMAP.md` | CI all-green 3 OS;3 tag 全存在;v0.2.0 milestone archive 3 files 存在;STATE + ROADMAP 含 ship marker |
+| **F8** | `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` + `git tag --list 'adr-<实占N>-accepted' 'v0.2.0-alpha.4-doctor' 'v0.2.0*'` + `ls .planning/milestones/v0.2.0-*.md .planning/v0.2.0-MILESTONE-AUDIT.md` + `grep -E "Phase 2\\\\.4 SHIPPED\|v0\\\\.2\\\\.0 4/4" .planning/STATE.md .planning/ROADMAP.md` | CI all-green 3 OS;3 tag 全存在 (含 v0.2.0 主 path OR v0.2.0-final / v0.2.0-extension fallback per S3 + R12 decision tree — tag glob `'v0.2.0*'` 兼容 fallback);v0.2.0 milestone archive 3 files 存在;STATE + ROADMAP 含 ship marker |
 
 ---
 
@@ -359,7 +359,7 @@ Phase 2.4 ship 后,v0.3.0 直接消费的接口:
 |------|----------------|-----------|----------------|
 | 0 | auto | ADR 编号实占 + sed-replace zero residue + README counter gate local pre-flight + schemaVersion consumer land + 3-OS CI 全绿 | ADR 编号冲突 → max(NNNN)+1 重选;README counter drift → 修 README 后再 push;schemaVersion consumer 漏 → 加补 |
 | 1 | auto | doctor.ts ≤215L + origin-check.ts ≤80L + doctor.test 5 check pass | doctor.ts > 215L → R1 fallback split `src/cli/doctor/*.ts`;origin-check 复用接口偏 → 调 signature |
-| 2 | auto | spike Resolved block + yaml ≤60L + mjs ≤100L + agent override + quant test pass | spike 显 ≥1 plan BLOCKER → R3/R4 阈值放宽 (concrete_acceptance 0.9 → 0.8);agent override 漏 manual rerun anchor → 补 |
+| 2 | auto | spike Resolved block + yaml ≤60L + mjs ≤100L + agent override + quant test pass + **S4 plan-check fix — phase-2.2/2.3 task_plan path verify** (`ls .planning/phase-2.{2,3}/task_plan.md` exit 0) | spike 显 ≥1 plan BLOCKER → R3/R4 阈值放宽 (concrete_acceptance 0.9 → 0.8);agent override 漏 manual rerun anchor → 补;若 multi-plan-NN 模式 → 选 1 baseline OR average score per S4 plan-check fix |
 | 3 | auto | ccHookAdd.ts ≤100L + dispatch 7th + 3 处 enum + dashboard.mjs ≤700L + T3.4 fallback if > 650L + install dry-run pass + SSE /events stream pass + /api/projects pass | enum 漏 → R9 三处 grep 补;dashboard.mjs > 650L → R5 T3.4 split SHELL HTML;settings.json merge 破 user hooks → R7 idempotent + backup + verify;Win merge conflict → R8 T3.2 先 merge T3.3 rebase |
 | 4 | auto | audit.ts ≤200L (helper split) + audit-helpers.ts ≤50L + audit.test 4 case + Win sentinel 5 fixture pass | audit.ts > 200L 持续 → R2 helper 再 split;Win sentinel timeout fixture fail → R13 mock 调整 |
 | 5 | auto | 30 doctor fixture + 30 plan-checker fixture + e2e 全 pass | doctor fixture 某 env scenario fail → 修 check method;plan-checker fixture baseline 漂 → 阈值校准 |

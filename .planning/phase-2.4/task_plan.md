@@ -11,6 +11,20 @@
 
 ---
 
+## Resolved Blocks (executor fill in-place, sister Phase 2.3 task_plan precedent)
+
+> ⚠️ **W4 plan-check fix** — task_plan 顶部 Resolved 区设 skeleton (4 spike/decision block); executor in-place fill 后 commit; grep-verifiable 锚点 supplied for downstream task acceptance.
+
+> **Resolved (T0.1)**: <PENDING — Wave 0 T0.1 fill: 实占 N + ROADMAP latest-shipped token + sed-replace exit verify>
+
+> **Resolved (T2.0)**: <PENDING — Wave 2 T2.0 spike fill: EE-4 baseline spike outcome (phase-2.3 + phase-2.2 task_plan 4 维 score + 阈值校准决策)>
+
+> **Resolved (T3.4)**: <PENDING — Wave 3 T3.4 fill: dashboard.mjs wc -l 结果 + SPLIT/SKIP 决策 per B-26 + B-39 + R5>
+
+> **Resolved (T6.4)**: <PENDING — Wave 6 T6.4 fill: `git tag --list v0.2.0` pre-flight outcome (proceed create vs S3 fallback decision tree)>
+
+---
+
 ## Wave 0 — STATE.md 5 项 prereq backlog 一次根治 + ADR draft
 
 ### T0.1 — ADR 编号实占 + ROADMAP latest-shipped token + sed-replace placeholder discipline
@@ -80,21 +94,24 @@
 
 - **files_modified**: `.github/workflows/ci.yml`(MODIFY +~15L step) + `README.md`(MODIFY only if pre-flight 校准发现 drift, fix 三计数一致)
 - **action**:
-  1. **Pre-flight regex calibration**(local,push 前) — 跑:
+  1. **Pre-flight regex calibration + FIX** (local, push 前 — **B1 plan-check fix: regex 精度提升 + 实测 SHIPPED=4/BARS=3/L44=3 三者不一致 mandate FIX**) — 跑精度版 grep (line-start + bold + Phase 2.X 限定排除 Phase 1.X 历史 + 排除 L44 enumeration line 命中):
      ```bash
-     SHIPPED=$(grep -cE "Phase 2\.[0-9]+ shipped" README.md)
-     BARS=$(grep -cE "Acceptance bar [A-Z][0-9]" README.md)
-     L44=$(sed -n '44p' README.md | grep -oE '[0-9]+/4' | head -1 | cut -d/ -f1)
+     # 精度版 — line-start `- ` + bold `**` + Phase 2.[1-9] (限当前 v0.2.0 cycle, 排除 1.X 历史)
+     SHIPPED=$(grep -cE "^- \*\*Phase 2\.[1-9] shipped\*\* ✅" README.md)
+     BARS=$(grep -cE "^- \*\*Acceptance bar [A-Z]1-[A-Z]8 8/8 \(Phase 2\.[1-9]\)\*\* ✅" README.md)
+     # L44 = "Phase 2.1+2.2+2.3/2.4 = N/4 完成" 行内 numerator (head -1 防多命中)
+     L44=$(grep -oE "Phase 2\.1\+2\.2(\+2\.3)?(\+2\.4)?/2\.4 = ([0-9])/4 完成" README.md | grep -oE "[0-9]/4" | head -1 | cut -d/ -f1)
      echo "shipped=$SHIPPED bars=$BARS L44=$L44"
      ```
-     **若三者不一致** → 先修 README 漂移 (Phase 2.3 ship 后实际值是 3 shipped + 3 bars + 3/4),**再** ship CI gate。
+     **MANDATORY FIX (B1 plan-check fix path a)** — 实测当前 Phase 2.3 ship 后状态 SHIPPED=4 (Phase 2.1+2.2+2.3+1.5) / BARS=3 (Phase 2.1+2.2+2.3) / L44=3。 精度 regex 后三者应 align (SHIPPED=BARS=L44=3 since Phase 1.5 ship marker 不命中 Phase 2.[1-9] 限定);如仍不一致 → executor 必先 FIX README L44 行 (校到 4 marker SHIPPED) OR 加 Phase 2.4 SHIPPED entry (T6.3 提前 land hint) OR 改 README enumeration token 准确化,**再** ship CI gate。 sister Phase 2.3 PLAN-CHECK B1 类似 pre-flight 模式 (counter drift surface 前置修)。
   2. `.github/workflows/ci.yml` 在 transparency / provenance step 后加 `README counter integrity gate` step ~15L yaml(沿袭 Phase 2.2 T0.4 freshness gate pattern + Phase 2.3 W0 T0.5 schemaVersion grep gate sister):
      ```yaml
-     - name: README counter integrity gate (Phase 2.4 Wave 0 D-03 B 路径)
+     - name: README counter integrity gate (Phase 2.4 Wave 0 D-03 B 路径 — B1 plan-check fix regex 精度)
        run: |
-         SHIPPED=$(grep -cE "Phase 2\.[0-9]+ shipped" README.md)
-         BARS=$(grep -cE "Acceptance bar [A-Z][0-9]" README.md)
-         L44=$(sed -n '44p' README.md | grep -oE '[0-9]+/4' | head -1 | cut -d/ -f1)
+         # B1 plan-check fix — line-start + bold + Phase 2.[1-9] 精度排除 Phase 1.X 历史 + L44 enumeration
+         SHIPPED=$(grep -cE "^- \*\*Phase 2\.[1-9] shipped\*\* ✅" README.md)
+         BARS=$(grep -cE "^- \*\*Acceptance bar [A-Z]1-[A-Z]8 8/8 \(Phase 2\.[1-9]\)\*\* ✅" README.md)
+         L44=$(grep -oE "Phase 2\.1\+2\.2(\+2\.3)?(\+2\.4)?/2\.4 = ([0-9])/4 完成" README.md | grep -oE "[0-9]/4" | head -1 | cut -d/ -f1)
          if [ "$SHIPPED" != "$BARS" ] || [ "$SHIPPED" != "$L44" ]; then
            echo "::error::README counter drift: shipped=$SHIPPED bars=$BARS L44=$L44"
            exit 1
@@ -107,7 +124,7 @@
   - PATTERNS § 2.10 + RESEARCH § 4.3 + CONTEXT D-03 hint L65-75
 - **acceptance_criteria**:
   - `grep -E "README counter integrity gate" .github/workflows/ci.yml | wc -l` == 1
-  - `bash -c 'SHIPPED=$(grep -cE "Phase 2\.[0-9]+ shipped" README.md); BARS=$(grep -cE "Acceptance bar [A-Z][0-9]" README.md); L44=$(sed -n "44p" README.md | grep -oE "[0-9]+/4" | head -1 | cut -d/ -f1); [ "$SHIPPED" = "$BARS" ] && [ "$SHIPPED" = "$L44" ]'` exit 0 (local pre-flight passes — 防第一 push CI red)
+  - **B1 plan-check fix — 精度 regex 三计数 pre-flight verify**: `bash -c 'SHIPPED=$(grep -cE "^- \*\*Phase 2\.[1-9] shipped\*\* ✅" README.md); BARS=$(grep -cE "^- \*\*Acceptance bar [A-Z]1-[A-Z]8 8/8 \(Phase 2\.[1-9]\)\*\* ✅" README.md); L44=$(grep -oE "Phase 2\.1\+2\.2(\+2\.3)?(\+2\.4)?/2\.4 = ([0-9])/4 完成" README.md | grep -oE "[0-9]/4" | head -1 | cut -d/ -f1); [ "$SHIPPED" = "$BARS" ] && [ "$SHIPPED" = "$L44" ]'` exit 0 (local pre-flight passes 后才 push — 防第一 push CI red; 若 fail executor must FIX README L44 enumeration OR 加 Phase 2.4 entry to align counters)
   - `wc -l .github/workflows/ci.yml` 增量 ~15L
 - **decision_source**: B-16 + B-17 + CONTEXT D-03 + RESEARCH § 4.3 + R10
 
@@ -136,13 +153,15 @@
   - `wc -l scripts/check-provenance.mjs` 增量 ≤ 5 行
 - **decision_source**: B-33 + RESEARCH § 0 prereq backlog + Phase 2.3 W0 T0.5 sister grep gate
 
-### T0.5 — M1 RETRO + T3 v0.3.0 prep + deferred-items review 强化 (parallel 纯文档/script)
+### T0.5 — M1 RETRO + T3 v0.3.0 prep + deferred-items review 强化 + REQUIREMENTS R2.4.1~R2.4.7 expand verify (B2 plan-check fix) + W1 mkdir tests dirs (parallel 纯文档/script)
 
-- **files_modified**: `.planning/RETROSPECTIVE.md`(MODIFY 加 dashboard polish round 1 历史 cluster 一句补) + `.planning/STATE.md`(MODIFY 加 v0.3.0 启动 prereq 节) + `scripts/check-deferred-items.mjs`(MODIFY 沿袭 Phase 2.3 T0.8 cadence 强化 — 加 Phase 2.4 phase dir 进 walker 路径) + `.planning/phase-2.4/deferred-items.md`(NEW empty stub or existing extension)
+- **files_modified**: `.planning/RETROSPECTIVE.md`(MODIFY 加 dashboard polish round 1 历史 cluster 一句补) + `.planning/STATE.md`(MODIFY 加 v0.3.0 启动 prereq 节) + `scripts/check-deferred-items.mjs`(MODIFY 沿袭 Phase 2.3 T0.8 cadence 强化 — 加 Phase 2.4 phase dir 进 walker 路径) + `.planning/phase-2.4/deferred-items.md`(NEW empty stub or existing extension) + **`.planning/REQUIREMENTS.md`(MODIFY +R2.4.1~R2.4.7 expand per B2 plan-check fix, sister R6.1-R6.5 + R7.1-R7.6 expand 模式 — pre-applied in plan-check fix CC commit; T0.5 verifies in-place + grep gate)** + **`tests/installers/` + `tests/scripts/`(NEW directories per W1 plan-check fix — mkdir -p; required pre-Wave-2/Wave-3 NEW test ship)**
 - **action**:
   1. `.planning/RETROSPECTIVE.md` 加 M1 entry — dashboard polish round 1 (commit 161621c) 历史 cluster note (一句 e.g. "Phase 2.3 ship 时 dashboard 0b4e76d NEW + 161621c polish round 1 = sister cluster,Phase 2.4 C 路径 absorb 是 round 2 完整 ship")
   2. `.planning/STATE.md` 加 `## v0.3.0 启动 prereq` 节 — T3 backlog (plan-feature workflow + checkpoint + 路由命中率验收 + gstack 前缀探测) + EE-4 BLOCKER auto-spawn rerun (Phase 2.4 down-scope 推 v0.3.0)
   3. `scripts/check-deferred-items.mjs` 沿袭 Phase 2.3 T0.8 模式,加 Phase 2.4 deferred 进 walker 路径 + ENFORCE 仍 warn-only round 1 (Phase 2.4 ship 时 ENFORCE 阶梯推 v0.3.0)
+  4. **B2 plan-check fix — REQUIREMENTS R2.4.1~R2.4.7 expand verify** (沿袭 R6.1-R6.5 + R7.1-R7.6 expand 模式; 7 子 ID = R2.4.1 doctor 5 check / R2.4.2 EE-4 plan-checker schema / R2.4.3 README CI counter gate / R2.4.4 dashboard SessionStart hook / R2.4.5 dashboard SSE watcher / R2.4.6 dashboard 多项目 / R2.4.7 ralph-loop Win sentinel) — pre-applied in plan-check fix CC commit; verify in-place: `grep -cE "^### R2\.4\.[1-7]" .planning/REQUIREMENTS.md` == 7;若发现 stale 或缺,executor re-apply per .planning/phase-2.4/PLAN-CHECK.md B2 fix path (a)。
+  5. **W1 plan-check fix — mkdir tests dirs** (pre-Wave-2/Wave-3 ship): `mkdir -p tests/installers tests/scripts` — Wave 3 T3.1 (`tests/installers/ccHookAdd.test.ts`) + T3.2 (`tests/scripts/dashboard-sse.test.ts`) + T3.3 (`tests/scripts/dashboard-multi-project.test.ts`) 必前置;否则 vitest NEW test file fail。
 - **read_first**:
   - `.planning/RETROSPECTIVE.md`(by Read,Phase 2.3 milestone retrospective 模板)
   - `.planning/STATE.md` L601+(by Read,Phase 2.4 Prereq Notes 节)
@@ -152,7 +171,9 @@
   - `grep -E "v0\.3\.0 启动 prereq" .planning/STATE.md | wc -l` ≥ 1
   - `grep -E "phase-2\.4" scripts/check-deferred-items.mjs | wc -l` ≥ 1
   - `node scripts/check-deferred-items.mjs` exit 0 (warn-only round 1)
-- **decision_source**: B-32 + Phase 2.3 T0.8 sister precedent + STATE.md L601+ Phase 2.4 Prereq Notes
+  - **B2 plan-check fix verify**: `grep -cE "^### R2\.4\.[1-7]" .planning/REQUIREMENTS.md` == 7 (R2.4.1~R2.4.7 全 expand);PLAN frontmatter `requirements: [R2.4.1, ..., R2.4.7]` 与 REQUIREMENTS.md align (无 stale ref)
+  - **W1 plan-check fix verify**: `[ -d tests/installers ] && [ -d tests/scripts ]` exit 0 (both dirs exist 前置 Wave 2/3 NEW test file ship)
+- **decision_source**: B-32 + Phase 2.3 T0.8 sister precedent + STATE.md L601+ Phase 2.4 Prereq Notes + .planning/phase-2.4/PLAN-CHECK.md B2 + W1 plan-check fix path (a)
 
 ### T0.6 — 3-OS CI 跑通 gate verify (Wave 0 全 step 合规)
 
@@ -247,7 +268,8 @@
        return { name: 'origin URL', status: r.status, message: r.detail, fix: r.fix }
      }
      ```
-  4. `registerDoctor()` action() refactor(L129-152):加 `--json` flag option + results 累积 + 三档 exit policy(warn = 0, fail = 1 per B-06):
+  4. **W3 plan-check fix — proactive split decision** (sister Phase 2.3 W4 arbitrateRedirect.ts proactive split precedent): planner 决 **(a) single-file 维持 per B-03 + D-WP-3 (a)** (≤215L 5% 超 hard limit 容忍, Karpathy "Don't split until pain") — doctor.ts ~210L acceptable; **若 wc -l > 215L** (post-ship 实测) → R1 fallback split `src/cli/doctor/checks.ts` (~80L 抽 5 check method) + `src/cli/doctor.ts` ~150L (orchestrator only)。 注: origin-check helper 抽 `src/cli/lib/origin-check.ts` is **sister-share rationale not split signal** (per B-03 + D2.4-3);proactive split decision = (a) per plan-phase lock (single-file ≤215L), reactive R1 trigger = split if wc > 215L 持续。
+  5. `registerDoctor()` action() refactor(L129-152):加 `--json` flag option + results 累积 + 三档 exit policy(warn = 0, fail = 1 per B-06):
      ```ts
      .option('--json', 'output JSON instead of human-readable')
      .action(async (opts: { json?: boolean }) => {
@@ -323,7 +345,8 @@
        score = sum([fr ≥ 1.0, sr ≥ 0.8, ac ≥ 0.9, w == 0])
        verdict = PASS if score == 4 else WARNING if score == 3 else BLOCKER
      ```
-  2. **跑 2 plan baseline** (Phase 2.3 + Phase 2.2 task_plan.md)
+  1.5 **S4 plan-check fix — multi-plan path verify** (T2.0 spike 前置): `ls .planning/phase-2.{2,3}/task_plan.md 2>&1` — verify both paths exist (Phase 2.3 + Phase 2.2 task_plan.md);若 multi-plan-NN 模式 (e.g. task_plan-01.md / task_plan-02.md) — 选最完整 task_plan.md 1 个 baseline OR 全跑 average score (executor judgment based on file count)。 实测 Phase 2.2/2.3 are 单 task_plan.md 模式 expected。
+  2. **跑 2 plan baseline** (Phase 2.3 + Phase 2.2 task_plan.md, per step 1.5 verify outcome)
   3. **记录 outcome 到本 task_plan.md 顶部 Resolved block** (沿袭 Phase 2.3 T0.10 always_active spike Resolved 模式):
      ```
      > **Resolved (T2.0, 2026-05-16)**: EE-4 baseline spike outcome:
@@ -433,9 +456,15 @@
     return found / paths.length
   }
   function scoreSourceRefs(content) {
-    const refs = [...content.matchAll(/(?:decision_source|see|ref):\s*([^\n]+\.md)/g)].map(m => m[1].trim())
-    if (refs.length === 0) return 1.0
-    return refs.filter(r => existsSync(r)).length / refs.length
+    // W6 plan-check fix — multi-line regex aware: decision_source 块可跨多行 (e.g. "- **decision_source**: B-32 + KICKOFF § 3")
+    // 不只 .md path — 加 B-NN / Phase X.Y / § X / ADR N / R-NN anchor pattern 防 false-pass (T2.0 baseline spike 显 ref count 极少 → score 0/0 = 1.0 false-pass risk per RESEARCH § 2.2.2 edge case)
+    // Strategy: (1) capture .md path refs (existsSync check) (2) ALSO count anchor refs (B-NN / Phase X.Y / § X / ADR N / R-NN) as "structural refs" (not file-checkable but valid sources)
+    const mdRefs = [...content.matchAll(/(?:decision_source|see|ref):\s*([^\n]+\.md)/gm)].map(m => m[1].trim())
+    const anchorRefs = [...content.matchAll(/(?:decision_source|see|ref):[^\n]*?(B-\d+|Phase \d+\.\d+|§ ?\d+(?:\.\d+)*|ADR \d+|R\d+)/gm)]
+    const totalRefs = mdRefs.length + anchorRefs.length
+    if (totalRefs === 0) return 1.0  // legitimate no-ref plan (rare)
+    if (mdRefs.length === 0) return 1.0  // anchor-only refs (structural, not file-checkable) — assume valid
+    return mdRefs.filter(r => existsSync(r)).length / mdRefs.length
   }
   function scoreAcceptance(content) {
     const blocks = [...content.matchAll(/(?:acceptance_criteria|Acceptance):([\s\S]*?)(?=\n##|\n-\s|\Z)/g)].map(m => m[1])
@@ -627,8 +656,13 @@
      }
 
      export const uninstallCcHookAdd: Installer = async (ctx) => {
-       // rm matching hook entry from settings.json + provenance 撤销 (沿袭 6 installer uninstall pattern)
-       // ... ~20L symmetric to install ...
+       // S2 plan-check fix — uninstall 4 step 详细 (sister Phase 2.1 4 installer uninstall pattern; symmetric to install ~20L):
+       // (1) Read ~/.claude/settings.json — find matching hook block by hook_command exact match
+       // (2) Splice matching entry from settings.hooks[hook_event][] array (or delete event key if empty)
+       // (3) backup() before write + writeFile new settings.json
+       // (4) Verify hook unregistered: re-read JSON.parse + assert NO matching hook_command in hooks[hook_event][]
+       // + emit done message + provenance state.json updateInstalled() removal (sister 6 installer uninstall pattern)
+       // Idempotent: if no matching hook found → return { ok: true, skipped: true, reason: 'not-installed' }
      }
      ```
   2. `src/installers/index.ts` 加 dispatch + levelOf 沿袭 PATTERNS § 2.6:
@@ -730,6 +764,15 @@
      es.addEventListener('state-changed', () => { dot.classList.add('changed'); t.textContent='文件有更新, 点击 ⟳ 刷新' })
      ```
   3. **localhost-only bind** (B-27 R5 mitigation) — dashboard.mjs L478 `listen(PORT)` 改 `listen(PORT, '127.0.0.1')` 防 SSE endpoint 被外部恶意 client connect resource exhaustion
+  3.5 **W5 plan-check fix — zero-dep grep gate** (Phase 2.2 dashboard.mjs L11 "Zero external deps" promise 维持): Wave 3 T3.2 + T3.3 ship pre-commit 必跑 `grep -cE "^import.*from\s+['\"](ws|socket\.io|express|fastify|cors|helmet|body-parser)['\"]" scripts/dashboard.mjs` == 0 (NO npm dep imports — 仅 `node:*` built-ins allowed);违反则 Wave 3 fail-fast。
+  3.6 **S1 plan-check fix — SSE reconnect re-fetch** (RESEARCH § 3.2.2 reconnect 期 state-changed event 丢失补偿 path): client-side 加 EventSource `onopen` handler — reconnect 触发时显式 re-fetch current page (沿袭现 loadPage() 模式):
+     ```js
+     es.onopen = () => {
+       // S1 plan-check fix — reconnect 期可能错过 state-changed event, re-fetch current page 强制 refresh
+       if (typeof loadPage === 'function' && currentPage) loadPage(currentPage)
+     }
+     ```
+     标准 SSE 模式 — EventSource 内建 reconnect 但不补 events; client-side 显式 re-fetch 兜 (Last-Event-Id header reserve for v0.3.0 enhancement if drift surfaces)。
   4. `tests/scripts/dashboard-sse.test.ts` ~40L:
      - cell 1: spawn dashboard + `curl -N http://localhost:47180/events` 收到 `: connected\n\n`
      - cell 2: touch `.planning/STATE.md` → SSE 1s 内收到 `event: state-changed`
@@ -745,6 +788,8 @@
   - `grep -E "listen\\(PORT,?\\s*'127\\.0\\.0\\.1'" scripts/dashboard.mjs | wc -l` ≥ 1 (B-27 localhost bind)
   - `wc -l scripts/dashboard.mjs` ≤ 600 (T3.2 +~50L 后 505+50=555 — T3.3 后再涨 ~80L → 635L 软限内)
   - `grep -E "ws\\|WebSocket\\b" scripts/dashboard.mjs | grep -v "EventSource\\|state-changed\\|web socket" | wc -l` == 0 (NOT ws — sanity)
+  - **W5 plan-check fix — zero-dep grep gate**: `grep -cE "^import.*from\s+['\"](ws|socket\.io|express|fastify|cors|helmet|body-parser)['\"]" scripts/dashboard.mjs` == 0 (zero npm dep imports — 仅 `node:*` built-ins 允许; Phase 2.2 L11 promise 维持)
+  - **S1 plan-check fix — SSE reconnect re-fetch**: `grep -E "es\.onopen|loadPage\(currentPage\)" scripts/dashboard.mjs | wc -l` ≥ 1 (reconnect path 显式)
   - `corepack pnpm test -- tests/scripts/dashboard-sse.test.ts` 全 4 cell pass
 - **decision_source**: B-23 + B-24 + B-27 + D2.4-9 + D2.4-10 + RESEARCH § 3.2 + R5 + R6
 
@@ -1087,7 +1132,14 @@
 
 - **files_modified**: `.planning/milestones/v0.2.0-ROADMAP.md`(NEW snapshot) + `.planning/milestones/v0.2.0-REQUIREMENTS.md`(NEW snapshot) + `.planning/v0.2.0-MILESTONE-AUDIT.md`(NEW) + git tag (3 个)
 - **action**:
-  1. **Pre-flight tag check** (R12 mitigation): `git tag --list v0.2.0` — 若存在 → fallback `v0.2.0-final` (planner 实占 决);若不存在 → proceed create
+  1. **Pre-flight tag check** (R12 mitigation + **S3 plan-check fix — fallback decision tree**): `git tag --list v0.2.0` — 决策树:
+     - **(a) `v0.2.0` tag 不存** → proceed create `v0.2.0` (主 path, 实测 `git tag --list 'v0.2.0*'` = 3 alpha tag 不命中 v0.2.0 大 tag, expect this path)
+     - **(b) `v0.2.0` tag 已存** → fallback 决断 (executor judgment based on existing tag context):
+       - (b.1) tag 是历史误占 (commit hash 不是 Phase 2.4 ship) → `v0.2.0-final` (沿袭 Phase 1.5 v0.1.0 close 模板)
+       - (b.2) tag 是 extension category v0.2.0 占 → `v0.2.0-extension` differentiator
+       - (b.3) 复杂场景 → `git tag -d v0.2.0` (local) + `git push --delete origin v0.2.0` + re-create (需 user 显式 confirm — destructive op, planner Wave 6 决, NOT auto)
+     - Resolved (T6.4) block 顶部记录 fallback 决断 (Wave 6 T6.4 fill)
+     - Phase 1.5 v0.1.0 close sister 模板 — v0.1.0 tag 历史 ship 时未踩 fallback (proceed create path 走通), Phase 2.4 v0.2.0 expect 同 (a) path
   2. Snapshot `.planning/ROADMAP.md` § v0.2.0 节 → `.planning/milestones/v0.2.0-ROADMAP.md` (沿袭 `.planning/milestones/v0.1.0-ROADMAP.md` 模板)
   3. Snapshot `.planning/REQUIREMENTS.md` v0.2.0 scope → `.planning/milestones/v0.2.0-REQUIREMENTS.md`
   4. 创建 `.planning/v0.2.0-MILESTONE-AUDIT.md` — 含:
@@ -1096,12 +1148,16 @@
      - milestone-level lessons:Wave 0 prereq 一次根治模式成熟 + R2 critical finding sister precedent + ADR errata 模式 + sister-share helper pattern
      - v0.3.0 启动 prereq 列表 (T3 backlog + plan-feature workflow + checkpoint + 路由命中率验收 + gstack 前缀探测 + EE-4 auto-spawn rerun + Task Session 复用完整版)
      - 沿袭 `.planning/v0.1.0-MILESTONE-AUDIT.md` 模板
-  5. Git tag 3 个:
+  5. Git tag 3 个 (per S3 plan-check fix fallback decision tree, step 1 outcome 决):
      ```bash
      git tag adr-<实占N>-accepted
      git tag v0.2.0-alpha.4-doctor
-     git tag v0.2.0  # 大里程碑 — v0.2.0 alpha cycle 4/4 close
-     # (若 v0.2.0 tag 已存,R12 fallback v0.2.0-final OR alpha.4-doctor only)
+     # S3 fallback decision tree apply — choose ONE based on step 1 outcome:
+     git tag v0.2.0  # (a) 主 path — v0.2.0 大里程碑, v0.2.0 alpha cycle 4/4 close
+     # OR fallback:
+     # git tag v0.2.0-final         # (b.1) 历史误占 fallback
+     # git tag v0.2.0-extension     # (b.2) extension category differentiator
+     # (b.3 destructive delete+re-create 需 user 显式 confirm, NOT in this script)
      ```
 - **read_first**:
   - `.planning/v0.1.0-MILESTONE-AUDIT.md`(by Read,Phase 1.5 v0.1.0 close 模板)

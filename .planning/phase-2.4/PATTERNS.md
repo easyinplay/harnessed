@@ -18,9 +18,9 @@
 | 3 | `routing/plan-review-schema.yaml` (NEW, D-02 EE-4 4 维 SSOT) | config / schema | declarative (yaml → TypeBox runtime validate → checker consume) | `routing/decision_rules.yaml` v2 顶层 schema shape (Phase 1.5 ship + Phase 2.3 三 category 段) + `intel/omc-comparison.md` L74-82 omo Metis/Momus 原型 | **~60%** | **COPY** yaml top-level `apiVersion` / `kind` / `metadata` / `spec` 框架 (沿袭 decision_rules.yaml 范式);**ADAPT** 4 维 keys 全新 — `thresholds.{file_references_verified: 1.0, reference_sources_real: 0.8, concrete_acceptance: 0.9, business_logic_assumptions: 0}` + `scoring.{pass_threshold: 4, warning_threshold: 3, blocker_threshold: 2}` (D-02 hint § 1.2 F3);yaml 单一 SSOT (D-02 Hard Constraint #5),不与 decision_rules.yaml 合并 |
 | 4 | `scripts/run-plan-checker.mjs` (NEW, D-02 CI step) | CI script | batch (cli arg → glob phase dir → yaml schema apply → JSON output) | `scripts/check-transparency-verdicts.mjs` (96L, walker + violation array + ENFORCE flag + exit code) + `scripts/check-provenance.mjs` (71L, walker + JSON validator + exit code) | **~75%** | **COPY** walker pattern L29-36 + violation array + ENFORCE=true exit 1 模式 (W3 round 1 警示沿袭);**ADAPT** 输入 = `.planning/phase-X.Y/task_plan.md + PLAN.md` (走 grep file references + reference sources count + acceptance bar regex 命中数);输出 = `plan-check.json` (4 维 score + verdict 三档);BLOCKER (≤2/4) exit 1 强制 plan-phase 重跑 |
 | 5 | `~/.claude/agents/gsd-plan-checker` agent prompt ~30L 量化输出节 (MODIFIED, D-02) | agent prompt | declarative (markdown agent definition) | gsd-plan-checker agent (全局 `~/.claude/agents/`) — 现 BLOCKER/WARNING/SUGGESTION 三档 (Phase 2.2/2.3 PLAN-CHECK.md verdict 模式实证) | **~50%** | **ADAPT-mostly** — 加新 ~30L 节 `## EE-4 4 维量化输出` 读 `routing/plan-review-schema.yaml` threshold + 输出 4 维 score + BLOCKER 三档 (4/4 PASS / 3/4 WARNING / ≤2/4 BLOCKER);沿袭现有三档 verdict 模式 (Phase 2.3 PLAN-CHECK.md `APPROVED WITH CONDITIONS (0 BLOCKER / 4 WARNING / 5 SUGGESTION)` 风格);agent 不动 main body — additive 节追加 |
-| 6 | `src/installers/cc-hook-installer.ts` (NEW, D-04 3.1, ~30L → ≤100L Karpathy hard limit) | service (installer) | request-response (manifest → fs.writeFile hook config → result) | `src/installers/npxSkillInstaller.ts` (217L, Phase 2.1 6/6 ship — 最近似形态: 也用 `homedir()/.claude/` 目标路径 + real-path verify + L2 confirm + DiffPlan) | **~70%** | **COPY** installer skeleton L65-78 (dispatch-mismatch guard) + L79-85 preflight + L131-145 DiffPlan + L147-152 L2 confirm + L154-155 backup + L160-172 spawn-or-fs + L174-193 real-path verify + L215-216 updateInstalled + uninstall pair;**ADAPT** target path `homedir()/.claude/settings.json` (hook 块 merge JSON not file write) + skip spawn (纯 JSON parse + mutate + write) + verify = `JSON.parse(settings).hooks.SessionStart` 含 manifest declared cmd;沿袭 6 installer Level mapping (L3 — `~/.claude.json` user-config 同档) |
-| 7 | `src/installers/index.ts` 加第 7 dispatch entry (MODIFIED, D-04 3.1) | dispatch / registry | declarative (Record dispatch table) | 现 `src/installers/index.ts` L27-34 `installers: Record<...>` 6 entries + `levelOf()` switch L36-49 | **~95%** | **COPY-mostly** — additive: import `installCcHook` + dispatch entry `'cc-hook': installCcHook` + `levelOf` switch case `'cc-hook': return 'L3'` (沿袭 `mcp-stdio-add`/`mcp-http-add`/`cc-plugin-marketplace` 同 L3 user-config — ~/.claude/settings.json 写入);6 → 7 method dispatch table 升级,A7 守恒 — additive only 不动旧 entry |
-| 8 | `src/manifest/schema/spec.ts` 加 `install_type: 'cc-hook'` enum 项 + `src/manifest/schema/installMethods/ccHook.ts` (NEW) (MODIFIED, D-04 3.1) | schema | declarative (TypeBox enum extension) | 现 `spec.ts` L106-111 `InstallType` Union 4 enum (skill/mcp/npm/git) + `installMethods/index.ts` L20-27 6-branch `discriminator: { propertyName: 'method' }` oneOf pattern + 现 6 `installMethods/<name>.ts` 文件 | **~90%** | **COPY** TypeBox `Type.Union([...])` 加项 + `installMethods/ccHook.ts` 复刻 `npxSkillInstaller.ts` schema shape (NpxSkillInstaller TypeBox object 含 method literal + cmd + idempotent_check + git_ref/optional);**ADAPT** `InstallType` 加 `Type.Literal('cc-hook')` (5 enum); `installMethods/ccHook.ts` `method: Type.Literal('cc-hook')` + ccHook-specific field (hook_event: SessionStart/UserPromptSubmit/... enum + matcher: string regex);`installMethods/index.ts` `branches` array 7th entry |
+| 6 | `src/installers/ccHookAdd.ts` (NEW, D-04 3.1, ~30L → ≤100L Karpathy hard limit) | service (installer) | request-response (manifest → fs.writeFile hook config → result) | `src/installers/npxSkillInstaller.ts` (217L, Phase 2.1 6/6 ship — 最近似形态: 也用 `homedir()/.claude/` 目标路径 + real-path verify + L2 confirm + DiffPlan) | **~70%** | **COPY** installer skeleton L65-78 (dispatch-mismatch guard) + L79-85 preflight + L131-145 DiffPlan + L147-152 L2 confirm + L154-155 backup + L160-172 spawn-or-fs + L174-193 real-path verify + L215-216 updateInstalled + uninstall pair;**ADAPT** target path `homedir()/.claude/settings.json` (hook 块 merge JSON not file write) + skip spawn (纯 JSON parse + mutate + write) + verify = `JSON.parse(settings).hooks.SessionStart` 含 manifest declared cmd;沿袭 6 installer Level mapping (L3 — `~/.claude.json` user-config 同档) |
+| 7 | `src/installers/index.ts` 加第 7 dispatch entry (MODIFIED, D-04 3.1) | dispatch / registry | declarative (Record dispatch table) | 现 `src/installers/index.ts` L27-34 `installers: Record<...>` 6 entries + `levelOf()` switch L36-49 | **~95%** | **COPY-mostly** — additive: import `installCcHookAdd` + dispatch entry `'cc-hook-add': installCcHookAdd` + `levelOf` switch case `'cc-hook-add': return 'L3'` (沿袭 `mcp-stdio-add`/`mcp-http-add`/`cc-plugin-marketplace` 同 L3 user-config — ~/.claude/settings.json 写入);6 → 7 method dispatch table 升级,A7 守恒 — additive only 不动旧 entry |
+| 8 | `src/manifest/schema/spec.ts` 加 `install_type: 'hook'` enum 项 (TypeEnum +`'cc-hook'`) + `src/manifest/schema/installMethods/ccHookAdd.ts` (NEW) (MODIFIED, D-04 3.1) | schema | declarative (TypeBox enum extension) | 现 `spec.ts` L106-111 `InstallType` Union 4 enum (skill/mcp/npm/git) + `installMethods/index.ts` L20-27 6-branch `discriminator: { propertyName: 'method' }` oneOf pattern + 现 6 `installMethods/<name>.ts` 文件 | **~90%** | **COPY** TypeBox `Type.Union([...])` 加项 + `installMethods/ccHook.ts` 复刻 `npxSkillInstaller.ts` schema shape (NpxSkillInstaller TypeBox object 含 method literal + cmd + idempotent_check + git_ref/optional);**ADAPT** `InstallType` 加 `Type.Literal('cc-hook')` (5 enum); `installMethods/ccHook.ts` `method: Type.Literal('cc-hook')` + ccHook-specific field (hook_event: SessionStart/UserPromptSubmit/... enum + matcher: string regex);`installMethods/index.ts` `branches` array 7th entry |
 | 9 | `scripts/dashboard.mjs` 加 STATE.md watcher + WebSocket push ~50L (MODIFIED, D-04 3.2) | service (dashboard server) | event-driven (fs.watch event → debounce → ws broadcast) | 现 `scripts/dashboard.mjs` L435-445 `watchedPaths()` (现 polling /mtime 路径列表) + L186-224 `pageDashboard()` shell + L406-429 client-side polling `setInterval(poll, 2000)` 模式 | **~65%** | **COPY** `watchedPaths()` L435-445 path list (复用);**ADAPT** 替 polling → push: 加 `import { watch } from 'node:fs'` (D-04 hint § 1.2 F4) + debounce 500ms + WebSocket server (port 47180 share OR 47181 sidecar — D-WP-5 决);client SHELL HTML L406-429 改 `setInterval` 为 `new WebSocket('ws://localhost:<port>')` + onmessage → dot.classList.add('changed');沿袭现 dot UI L401-402 + auto-refresh 逻辑 |
 | 10 | `scripts/dashboard.mjs` 加多项目 nav + URL routing ~80L (MODIFIED, D-04 3.3) | service (dashboard server) | request-response (HTTP /api/projects → JSON + client route) | 现 `scripts/dashboard.mjs` L447-473 `createServer` + `/page/<name>` routing pattern + L389-405 nav HTML L390-400 (现 7 entry hardcoded list) | **~60%** | **COPY** route handler shape L447-473 (路由 dispatch);**ADAPT** 加 `/api/projects` endpoint (read `~/.claude/harnessed-projects.json` → JSON list) + `/api/project/<id>/STATE` endpoint (per-project STATE.md content);加左栏 nav 渲染项目列表 (上方 `<h1>harnessed</h1>` 加 project select dropdown OR sidebar separate column);client-side `?project=<path>` URL routing — `history.pushState` no-reload (复用现 `loadPage()` L409-414 模式扩展为 `loadProject()`);现 PORT 47180 不动 (沿袭 idempotent probe L496-505) |
 | 11 | `.github/workflows/ci.yml` 加 README CI counter gate ~15L step (MODIFIED, D-03 B 路径) | CI gate | batch (bash grep counts + comparison) | 现 `ci.yml` L120-125 schema regen gate (15L) + L132-138 schemaVersion consumer gate (Phase 2.3 W0 T1.2) + L86-87 transparency verdict gate (single-line script invoke) | **~90%** | **COPY** step shape `- name: <human> ... run: <bash 多行>` + bash exit 1 on mismatch 模式 (L132-138 grep + count + condition exit 1 直接 analog);**ADAPT** D-03 exact yaml block per CONTEXT.md hint L65-75 — `SHIPPED=$(grep -cE "Phase 2\.[0-9]+ shipped" README.md)` + `BARS=$(grep -cE "Acceptance bar [A-Z][0-9]" README.md)` + `L44=$(sed -n '44p' README.md ...)` + 三计数 if 比对 exit 1;regex pattern planner 实占 (sample README 行格式后 lock) |
@@ -29,6 +29,8 @@
 ---
 
 ## § 2 Per-target Concrete Code Excerpts
+
+> **W2 plan-check fix (2026-05-16)** — § 2.5 + § 2.6 + § 2.7 全 sed-replace `ccHookInstaller` → `ccHookAdd` + `'cc-hook'` (method key) → `'cc-hook-add'` per D-WP-4 (b) lock (B-20 + D2.4-13 sister `mcp-stdio-add` / `mcp-http-add` -add verb suffix);InstallType enum literal 保留 `'hook'` (NOT cc-hook),TypeEnum 保留 `'cc-hook'`,install.method 改 `'cc-hook-add'` (B-22 3 处 enum 加 — InstallType + TypeEnum + install.method 各异)。 § 3 D-WP-4 (a) `ccHookInstaller.ts` 历史 proposal name 残留 (作 decision 记录,RESOLVED via (b)),其余 import / symbol / dispatch / branches 全 cleanup。
 
 ### 2.1 `src/cli/doctor.ts` ~38L → ~150L — analog: 现 doctor.ts L1-152 (4 check baseline)
 
@@ -161,12 +163,12 @@ if (verdict === 'BLOCKER') {                                    // ← ≤2/4 BL
 }
 ```
 
-### 2.5 `src/installers/cc-hook-installer.ts` (NEW ≤100L) — analog: `npxSkillInstaller.ts` (217L)
+### 2.5 `src/installers/ccHookAdd.ts` (NEW ≤100L) — analog: `npxSkillInstaller.ts` (217L) — D-WP-4 (b) sister `mcp-stdio-add`/`mcp-http-add` -add verb suffix
 
 **COPY installer skeleton** (`npxSkillInstaller.ts` L65-78 dispatch guard + L79-85 preflight + L131-145 DiffPlan + L147-152 L2 confirm + L174-193 real-path verify):
 
 ```ts
-// src/installers/cc-hook-installer.ts (Karpathy hard limit ≤100L per KICKOFF § 3 #8)
+// src/installers/ccHookAdd.ts (Karpathy hard limit ≤100L per KICKOFF § 3 #8) — D-WP-4 (b) lock: cc-hook-add method + ccHookAdd.ts file (sister mcpStdioAdd / mcpHttpAdd)
 import { readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -177,9 +179,9 @@ import { preflight } from './lib/preflight.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, InstallContext, Installer, InstallResult } from './lib/types.js'
 
-export const installCcHook: Installer = async (ctx) => {
+export const installCcHookAdd: Installer = async (ctx) => {
   const install = ctx.manifest.spec.install
-  if (install.method !== 'cc-hook') {                            // ← COPY npxSkillInstaller L67-78 dispatch-mismatch guard
+  if (install.method !== 'cc-hook-add') {                            // ← COPY npxSkillInstaller L67-78 dispatch-mismatch guard
     return { ok: false, phase: 'preflight', error: { /* ... */ keyword: 'dispatch-mismatch' } }
   }
   const pre = preflight(ctx)
@@ -211,7 +213,7 @@ export const installCcHook: Installer = async (ctx) => {
 **COPY-additive** (现 `src/installers/index.ts` L27-49 dispatch + levelOf,新增 entry 不动旧):
 
 ```ts
-import { installCcHook } from './ccHookInstaller.js'              // ← ADD
+import { installCcHookAdd } from './ccHookAdd.js'                  // ← ADD (D-WP-4 (b) lock)
 // ... 现 6 import 不动 ...
 
 export const installers: Record<Manifest['spec']['install']['method'], Installer> = {
@@ -221,7 +223,7 @@ export const installers: Record<Manifest['spec']['install']['method'], Installer
   'git-clone-with-setup': installGitCloneWithSetup,
   'npx-skill-installer': installNpxSkillInstaller,
   'mcp-http-add': installMcpHttpAdd,
-  'cc-hook': installCcHook,                                       // ← ADD 7th entry
+  'cc-hook-add': installCcHookAdd,                                // ← ADD 7th entry (D-WP-4 (b) lock)
 }
 
 function levelOf(manifest: Manifest): Level {
@@ -230,7 +232,7 @@ function levelOf(manifest: Manifest): Level {
     case 'mcp-stdio-add':
     case 'mcp-http-add':
     case 'cc-plugin-marketplace':
-    case 'cc-hook':                                               // ← ADD 沿袭 L3 user-config (~/.claude/settings.json)
+    case 'cc-hook-add':                                            // ← ADD 沿袭 L3 user-config (D-WP-4 (b) lock) (~/.claude/settings.json)
       return 'L3'
     case 'git-clone-with-setup':
     case 'npx-skill-installer':
@@ -241,7 +243,7 @@ function levelOf(manifest: Manifest): Level {
 }
 ```
 
-### 2.7 `src/manifest/schema/spec.ts` enum 升级 + `installMethods/ccHook.ts` (NEW) — analog: L106-111 InstallType + installMethods/index.ts L20-27
+### 2.7 `src/manifest/schema/spec.ts` 3 处 enum 升级 + `installMethods/ccHookAdd.ts` (NEW) — analog: L106-111 InstallType + installMethods/index.ts L20-27
 
 **ADAPT InstallType enum** (现 spec.ts L106-111):
 
@@ -251,16 +253,16 @@ const InstallType = Type.Union([
   Type.Literal('mcp'),
   Type.Literal('npm'),
   Type.Literal('git'),
-  Type.Literal('cc-hook'),                                        // ← ADD (additive, A7 守恒)
+  Type.Literal('hook'),                                           // ← ADD (additive InstallType, A7 守恒, B-22)
 ])
 ```
 
-**NEW `installMethods/ccHook.ts`** (复刻 `npxSkillInstaller.ts` schema shape):
+**NEW `installMethods/ccHookAdd.ts`** (复刻 `npxSkillInstaller.ts` schema shape; method literal = `'cc-hook-add'` per D-WP-4 (b)):
 
 ```ts
 import { Type } from '@sinclair/typebox'
-export const CcHook = Type.Object({
-  method: Type.Literal('cc-hook'),
+export const CcHookAdd = Type.Object({
+  method: Type.Literal('cc-hook-add'),
   cmd: Type.String({ minLength: 1 }),                            // 沿袭 6 method 共通字段
   hook_event: Type.Union([
     Type.Literal('SessionStart'),
@@ -279,7 +281,7 @@ export const CcHook = Type.Object({
 const branches = [
   CcPluginMarketplace, GitCloneWithSetup, NpxSkillInstaller,
   NpmCli, McpStdioAdd, McpHttpAdd,
-  CcHook,                                                         // ← ADD 7th branch
+  CcHookAdd,                                                      // ← ADD 7th branch (D-WP-4 (b) lock)
 ] as const
 ```
 
@@ -421,7 +423,7 @@ window.addEventListener('popstate', () => { /* re-render from URL */ })
 
 **Recommendation**: **默认 a** (hard limit 未破,Karpathy "Don't split until pain" — Phase 2.4 ship 后 v0.3+ weekly cron / upstream_health 加新 check 才评估 split);origin-check 抽 `src/cli/lib/origin-check.ts` 因为 sister to audit 共享 (§ 1 row 2),非 split signal。
 
-### D-WP-4: `cc-hook-installer.ts` 文件名 vs `cc-hook-add.ts` 命名约定
+### D-WP-4: `cc-hook-installer.ts` 文件名 vs `cc-hook-add.ts` 命名约定 — **RESOLVED via (b) `ccHookAdd.ts` per B-20** (W2 plan-check fix annotation; proposal text retained as decision record)
 
 **Context**: Phase 2.1 6 installer 文件名 = method name + `Installer.ts` 后缀 (`ccPluginMarketplace.ts` 无 `Installer` 后缀, `npxSkillInstaller.ts` 有 `Installer` 后缀, `mcpHttpAdd.ts` `mcpStdioAdd.ts` `npmCli.ts` 无后缀, `gitCloneWithSetup.ts` 无后缀) — **历史不一致**。 7th 走哪?
 
@@ -454,7 +456,7 @@ window.addEventListener('popstate', () => { /* re-render from URL */ })
 | `routing/plan-review-schema.yaml` NEW | **~60%** | yaml 框架沿袭 decision_rules.yaml + intel 原型 |
 | `scripts/run-plan-checker.mjs` NEW | **~75%** | walker + ENFORCE 模式直接 copy |
 | gsd-plan-checker prompt 修改 | **~50%** | additive ~30L 量化输出节 |
-| `src/installers/cc-hook-installer.ts` NEW | **~70%** | npxSkillInstaller skeleton 复刻 + L3 confirm + JSON merge |
+| `src/installers/ccHookAdd.ts` NEW | **~70%** | npxSkillInstaller skeleton 复刻 + L3 confirm + JSON merge |
 | `src/installers/index.ts` 加 7th entry | **~95%** | additive dispatch 表 + levelOf switch case |
 | `src/manifest/schema/spec.ts` + `installMethods/ccHook.ts` | **~90%** | InstallType enum 加项 + npxSkillInstaller schema 复刻 |
 | `scripts/dashboard.mjs` watcher + WS push | **~65%** | watchedPaths 复用 + polling → push 改造 |
@@ -479,7 +481,7 @@ R2 RESEARCH 必须覆盖 3 项 (D-01~D-04 主决议已锁,R2 聚焦 D-WP-5 + 实
 3. **ralph-loop Win 兼容验收 sentinel scope** (KICKOFF § 4 R2-3) — Phase 2.2 已部分覆盖;Phase 2.4 完整 sentinel scope = MIN 1 spawn vs 完整 30 sample? 推 MIN 5 fixture sample (CONTEXT.md `Claude's Discretion` 已倾向)。 影响 § 2.11 `test:e2e:ralph-loop:win-sentinel` 实现 + ci.yml step。
 
 **额外 R1 PATTERNS 输出 (本文档已覆盖)**:
-- `cc-hook-installer.ts` 文件名 D-WP-4 → planner 决 (推 c — `ccHook.ts`)
+- `cc-hook-installer.ts` (历史 proposal name 残留 in D-WP-4 § 3) D-WP-4 → planner 决 **(b) `ccHookAdd.ts` + method `cc-hook-add`** (B-20 LOCK per D2.4-13 sister `mcp-stdio-add` / `mcp-http-add` -add verb suffix); W2 plan-check fix sed-replace § 2.5-2.7 字面 cleanup, § 3 D-WP-4 proposal text 保留 as decision record
 - `dashboard.mjs` modular split D-WP-1 → planner 决 (推 c — 部分 split)
 - `plan-review-schema.yaml` schema regen D-WP-2 → planner 决 (推 a — yaml-only)
 - `doctor.ts` split D-WP-3 → planner 决 (推 a — single-file ≤200L)
