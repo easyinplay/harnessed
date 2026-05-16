@@ -27,6 +27,12 @@ const FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md', '.planning/STATE.md']
 // shipped (= v0.1.0 oldest since ROADMAP order ASC), not latest. Now matchAll + capture + last.
 const ROADMAP_SHIPPED_RE = /^##\s+(v\d+\.\d+\.\d+)\s+—.*✅\s*SHIPPED/gm
 const STATE_LATEST_SUBPHASE_RE = /\*{2}Phase\s+(\d+\.\d+)\s+SHIPPED\*{2}/g
+// Phase 3.3 W0 T0.1 (D-04 (b) COLLAPSE 5-recurrence terminus): STATE.md L4 frontmatter
+// `> Status:` line deleted (project-memory dual-SSOT anti-pattern 5th recurrence — 4 priors:
+// README L9 / README L44 / PROJECT-SPEC / STATE freshness scope). "当前位置" block (L21-27)
+// is now sole SoT for phase ship event log. STATE_POSITION_RE is the OR-fallback marker
+// scanned on FULL file when STUTUS_MARKER first-50-lines scan misses for STATE.md.
+const STATE_POSITION_RE = /\*\*Phase [1-9]\.[0-9]+ SHIPPED\*\*/m
 
 function walk(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -64,6 +70,18 @@ function checkFreshness(violations) {
     }
     const match = head.match(STATUS_MARKER)
     if (!match) {
+      // Phase 3.3 W0 T0.1 (D-04 (b) COLLAPSE) — STATE.md specific OR-fallback to STATE_POSITION_RE
+      // on FULL file (covers "当前位置" block as single SoT post-COLLAPSE; README + PROJECT-SPEC
+      // unchanged behavior since they're user-facing docs where Status: line is semantic anchor).
+      if (file === '.planning/STATE.md') {
+        const full = readFileSync(file, 'utf8')
+        if (!STATE_POSITION_RE.test(full)) {
+          violations.push(
+            `${file}:1  missing both Status: marker (first 50L) AND STATE_POSITION_RE (full file)`,
+          )
+        }
+        continue // STATE.md OK if EITHER pattern matches
+      }
       violations.push(`${file}:1  missing Status: marker in first 50 lines`)
       continue
     }
