@@ -12,6 +12,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:fs/promises', () => ({ readdir: vi.fn(), readFile: vi.fn() }))
 vi.mock('../../src/manifest/validate.js', () => ({ validateManifestFile: vi.fn() }))
+// Phase 3.2 W0.1 fix (RESEARCH § 8.3 Path A LOCKED): mock runtime layer helpers
+// so manifest-only tests don't accidentally trigger real git/provenance
+// subprocesses (Phase 2.4 W4 added these as eager imports in src/cli/audit.ts L17-19).
+vi.mock('../../src/cli/lib/audit-helpers.js', () => ({
+  auditOriginIntegrity: vi.fn(() => []), // no findings = no exit-1 trigger
+  auditInstallCmdIntegrity: vi.fn(() => []),
+  auditProvenance: vi.fn(() => []),
+}))
 
 import { readdir, readFile } from 'node:fs/promises'
 import { Command } from 'commander'
