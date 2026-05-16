@@ -70,6 +70,13 @@ const CASES: DryRunCase[] = [
     // (Rule 1 BUG fix — no HTTP endpoint upstream, npm stdio MCP per research § 3.3).
     expectedMethod: 'mcp-stdio-add',
   },
+  // Phase 2.3 W6 DI-1 hotfix — karpathy-skills.yaml schema-only validation
+  // moved to dedicated test below (not in 5-manifest dry-run dispatch list).
+  // Reason: karpathy's install.cmd is local `cp -R skills/karpathy-baseline` (no
+  // actual git clone — sourced via repo-local file system), but gitCloneWithSetup
+  // installer's preflight (gitRevParseHead) parses cmd for `git clone <url> <dest>`
+  // and rejects custom cmds. Schema-level fix (DI-1) preserved; full installer-
+  // level support requires a NEW `local-copy` install_type/method (deferred v0.2.4+).
 ]
 
 const DRY_RUN_OPTS: InstallOpts = {
@@ -145,5 +152,29 @@ describe('Phase 2.3 Wave 1 — 5 NEW adapter manifest install dry-run e2e', () =
     expect(dist.design ?? 0).toBeGreaterThanOrEqual(1)
     expect(dist.content ?? 0).toBeGreaterThanOrEqual(2)
     expect(dist.testing ?? 0).toBeGreaterThanOrEqual(2)
+  })
+
+  // Phase 2.3 W6 DI-1 hotfix verify — schema-only sentinel for karpathy-skills.yaml.
+  // Detects future regression on (a) git_ref pattern (40-hex SHA / SemVer required;
+  // "HEAD" rejected per Phase 1.1.1 hotfix M1 GIT_REF_PATTERN), (b) install_type ↔
+  // install.method 1:N closure (ADR 0007). karpathy is excluded from the dispatch
+  // dry-run above because its install.cmd uses local `cp -R` (no git clone),
+  // which gitCloneWithSetup installer's preflight rejects — full installer-level
+  // support deferred to v0.2.4+ via a new `local-copy` install method.
+  it('karpathy-skills — schema-only regression sentinel (DI-1 hotfix Phase 2.3 W6)', () => {
+    const yamlSrc = readFileSync(
+      resolve(process.cwd(), 'manifests/skill-packs/karpathy-skills.yaml'),
+      'utf8',
+    )
+    const v = validateManifestFile(yamlSrc, 'manifests/skill-packs/karpathy-skills.yaml')
+    expect(v.ok, 'karpathy-skills schema must validate (DI-1 hotfix verify)').toBe(true)
+    if (!v.ok) return
+    // git_ref must match GIT_REF_PATTERN (40-hex SHA / SemVer). Future regression
+    // to literal "HEAD" / "main" / "master" would re-trigger DI-1.
+    const install = v.manifest.spec.install as { git_ref?: string; method?: string }
+    expect(install.git_ref).toMatch(/^([a-f0-9]{7,40}|v?\d+\.\d+\.\d+([.-][\w.-]+)?)$/)
+    // install_type ↔ method 1:N closure — `git` ∈ {git-clone-with-setup}.
+    expect(v.manifest.spec.install_type).toBe('git')
+    expect(install.method).toBe('git-clone-with-setup')
   })
 })

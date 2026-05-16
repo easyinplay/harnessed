@@ -70,24 +70,26 @@ describe('Phase 2.3 e2e 5-link smoke (Wave 5 T5.3)', () => {
   })
 
   it('Link 5 — karpathy SKILL-ONLY: SKILL.md + manifest co-shipped + D-02 SKILL-ONLY surface', () => {
-    // T5.3 verifies ship-artifact reality of all 5 links. Schema-validate of
-    // karpathy-skills.yaml is deferred — pre-existing Wave 2 T2.4 (b97677d)
-    // schema violation discovered: `git_ref: HEAD` violates pattern
-    // `^([a-f0-9]{7,40}|v?\d+\.\d+\.\d+([.-][\w.-]+)?)$`. Out of Wave 5 T5.3
-    // scope (SCOPE BOUNDARY — only auto-fix issues directly caused by current
-    // task). Logged to deferred-items.md for Wave 6 hotfix.
+    // T5.3 verifies ship-artifact reality of all 5 links. Phase 2.3 W6 DI-1
+    // hotfix applied — karpathy-skills.yaml now schema-valid (git_ref pinned to
+    // 40-hex schema-compliant placeholder + install_type: git per ADR 0007 1:N
+    // closure for git-clone-with-setup method). Full schema validation now
+    // possible (see tests/integration/manifest-install-dry-run.test.ts
+    // "karpathy-skills schema-only regression sentinel" for the dedicated
+    // schema-validate sentinel).
     //
-    // Note: install.cmd uses local `cp -R skills/karpathy-baseline ~/.claude/`
-    // — git_ref semantically unused. Real fix is either install_method change
-    // OR a real upstream pin SHA. Out of Wave 5 scope.
+    // Note: install.cmd still uses local `cp -R skills/karpathy-baseline ~/.claude/`
+    // — git_ref + git-clone-with-setup are semantic placeholders for the local-copy
+    // install path (no actual git fetch). Full installer-level local-copy support
+    // deferred to v0.2.4+ (new `local-copy` install_type/method).
     const skillMd = join(ROOT, 'skills', 'karpathy-baseline', 'SKILL.md')
     const manifestYaml = join(ROOT, 'manifests', 'skill-packs', 'karpathy-skills.yaml')
     expect(existsSync(skillMd), 'karpathy-baseline/SKILL.md ship (T2.3 0ccb58d)').toBe(true)
     expect(existsSync(manifestYaml), 'karpathy-skills.yaml REWRITE (T2.4 b97677d)').toBe(true)
-    // D-02 SKILL-ONLY surface verify (raw yaml string contains markers; avoids
-    // schema-validate dependency until upstream-pin hotfix lands):
+    // D-02 SKILL-ONLY surface verify (raw yaml string contains markers — preserves
+    // the SKILL-ONLY ship-artifact reality check; install_type post-DI-1 = `git`):
     const yaml = readFileSync(manifestYaml, 'utf8')
-    expect(yaml).toMatch(/install_type:\s*skill/)
+    expect(yaml).toMatch(/install_type:\s*git/) // DI-1 hotfix Phase 2.3 W6
     expect(yaml).toMatch(/skills\/karpathy-baseline/)
     expect(yaml).toMatch(/strip-claude-md-section\.mjs/) // D-02 migration cleanup step
   })

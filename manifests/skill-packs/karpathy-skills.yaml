@@ -18,8 +18,22 @@ spec:
   type: cc-skill-pack
   component_type: command
   category: meta
-  install_type: skill
+  # Phase 2.3 W6 DI-1 hotfix — install_type: git (not skill) per ADR 0007 1:N
+  # closure (skill ∈ {cc-plugin-marketplace, npx-skill-installer}; git ∈ {git-clone-with-setup}).
+  # Semantic: karpathy-baseline IS a skill in nature (placed at ~/.claude/skills/),
+  # but its install method is local-copy from a git-origin upstream (forrestchang/
+  # andrej-karpathy-skills) — install_type tracks the install method semantics
+  # (file-system shape), not the runtime artifact placement.
+  install_type: git
   install:
+    # Phase 2.3 W6 DI-1 hotfix — git_ref schema pin (Phase 1.1.1 hotfix M1 GIT_REF_PATTERN
+    # requires 7-40 hex SHA or SemVer tag; "HEAD" is rejected by the manifest schema).
+    # NOTE: cmd uses local `cp -R skills/karpathy-baseline ~/.claude/skills/` —
+    # git_ref is semantically UNUSED by this local-copy install path. The all-zeros
+    # SHA below is a 40-hex schema-compliant placeholder. The canonical upstream
+    # this SKILL.md derives from is forrestchang/andrej-karpathy-skills (see
+    # metadata.upstream.repository) — pin to a real SHA when the local-copy path
+    # is migrated to a true `git clone` install method (deferred to v0.2.4+).
     method: git-clone-with-setup
     cmd: |
       if [ -f ~/.claude/CLAUDE.md ]; then
@@ -28,7 +42,7 @@ spec:
       fi
       mkdir -p ~/.claude/skills
       cp -R skills/karpathy-baseline ~/.claude/skills/
-    git_ref: HEAD
+    git_ref: "0000000000000000000000000000000000000000"
     idempotent_check: "test -f ~/.claude/skills/karpathy-baseline/SKILL.md"
   verify:
     cmd: "test -f ~/.claude/skills/karpathy-baseline/SKILL.md"
