@@ -250,8 +250,8 @@ ${sections
 }
 
 function pageHistory() {
-  const phases = listDirs(PLANNING)
-  return `<h2>📜 Phase History</h2><p class="subtitle">${phases.length} 个 phase 目录</p>
+  const phases = listDirs(PLANNING).slice().reverse()
+  return `<h2>📜 Phase History</h2><p class="subtitle">${phases.length} 个 phase 目录（最新在上）</p>
 ${phases
   .map((p) => {
     const tp = read(join(PLANNING, p, 'task_plan.md'))
@@ -279,7 +279,8 @@ function pageADRs() {
   const adrs = readdirSync(ADR)
     .filter((f) => /^\d{4}-.*\.md$/.test(f))
     .sort()
-  return `<h2>📚 ADRs</h2><p class="subtitle">${adrs.length} 个 ADR 文档</p>
+    .reverse()
+  return `<h2>📚 ADRs</h2><p class="subtitle">${adrs.length} 个 ADR 文档（最新在上）</p>
 ${adrs
   .map((f) => {
     const c = read(join(ADR, f))
@@ -361,6 +362,29 @@ hr{border:0;border-top:1px solid #30363d;margin:18px 0}
 .dot.changed{background:#f0883e;animation:p 1s infinite}
 @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
 ul,ol{padding-left:22px}
+/* Phycat-Cherry 借鉴 (dark-friendly): typography + heading decorations + blockquote */
+body{font-family:-apple-system,Segoe UI,Roboto,"LXGW WenKai","PingFang SC","Microsoft YaHei",sans-serif;word-spacing:1px}
+#content>h2:first-child{text-align:center;padding-bottom:14px;position:relative;margin-bottom:6px}
+#content>h2:first-child::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:48px;height:4px;border-radius:4px;background:linear-gradient(90deg,#58a6ff,#7ee787);box-shadow:0 0 0 3px rgba(88,166,255,.1)}
+.card h1{font-size:1.55rem;text-align:center;margin:0.6em auto 1em;color:#fff;padding-bottom:10px;position:relative;width:fit-content;min-width:120px}
+.card h1::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:40px;height:3px;border-radius:3px;background:linear-gradient(90deg,#58a6ff,#7ee787)}
+.card h2{font-size:1.25rem;border-bottom:1px solid #30363d;padding-bottom:6px;margin-top:1.4em;color:#fff}
+.card h3{position:relative;padding-left:14px;margin-top:1.2em}
+.card h3::before{content:'';position:absolute;left:0;top:8px;width:4px;height:18px;background:linear-gradient(180deg,#58a6ff,#7ee787);border-radius:2px}
+.card h4{position:relative;padding-left:20px;margin-top:1em;font-size:1rem;color:#e6edf3}
+.card h4::before{content:'';position:absolute;left:0;top:7px;width:9px;height:9px;border-radius:50%;background:transparent;border:2px solid #58a6ff;transition:all .2s ease;box-sizing:border-box}
+.card h4:hover::before{background:#58a6ff;box-shadow:0 0 0 3px rgba(88,166,255,.2);transform:scale(1.1)}
+.card h5{position:relative;padding-left:14px;margin-top:0.8em;font-size:0.95rem;color:#e6edf3}
+.card h5::before{content:'▸';position:absolute;left:0;color:#58a6ff;font-size:0.9em}
+.card h6{position:relative;padding-left:14px;margin-top:0.8em;font-size:0.9rem;color:#8b949e}
+.card h6::before{content:'—';position:absolute;left:0;color:#58a6ff}
+.card p{margin:10px 0;line-height:1.75}
+.card li{margin:6px 0;line-height:1.7}
+.card hr{border:0;height:1px;background:linear-gradient(90deg,transparent,#30363d 30%,#30363d 70%,transparent);margin:24px 0}
+.card strong{color:#e6edf3;font-weight:700}
+.card blockquote{position:relative;margin:14px 0;padding:12px 16px 12px 40px;border-left:4px solid #58a6ff;border-radius:0 8px 8px 0;background:rgba(88,166,255,.06);color:#c9d1d9}
+.card blockquote::before{content:'❝';position:absolute;left:12px;top:6px;font-size:22px;color:#58a6ff;opacity:.6;line-height:1.2;font-family:Georgia,serif}
+.card blockquote p,.card blockquote li{margin:6px 0}
 </style></head><body>
 <div class="layout">
 <nav class="nav">

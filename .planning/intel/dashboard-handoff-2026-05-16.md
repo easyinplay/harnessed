@@ -356,3 +356,127 @@ Tested 2026-05-16:
 2. **若要 squash** 进 0b4e76d，可以 `git commit --fixup=0b4e76d` 然后 `git rebase -i --autosquash` —— 但**不推荐**（dashboard.mjs 是新文件，第一次 NEW 已经 push，rewriting history 会污染上游分支）
 3. **推荐路径**：独立 commit ship —— 既保留 NEW 历史，也保留 polish iteration 历史 (sister cadence 一致)
 
+---
+
+## Update — Polish Round 2（2026-05-16，post Phase 2.3 ship）
+
+Polish Round 1 commit `161621c` 后用户提供 Typora Phycat-Cherry 主题导出 HTML 样本（`C:/Users/easyi/Desktop/{STATE,ROADMAP,PLAN}.html`），驱动第二轮 typography polish + 顺手 fix 两个 sort 倒序。 第三个独立 commit 候选。
+
+### Follow-up commit 草案
+
+```
+tooling(dashboard): polish round 2 — Phycat-Cherry inspired typography + heading decorations + reverse ADRs/History order
+
+Inspired by Typora Phycat-Cherry theme (sumruler/typora-theme-phycat), borrowed
+typography rhythm + heading decorations into dark-friendly accent. All inline
+JS-constant CSS + 2 surgical .reverse() calls; no new deps; no breaking change.
+
+Phycat-Cherry borrowed (dark-friendly adapted):
+  - 字体栈 add "LXGW WenKai" / "PingFang SC" / "Microsoft YaHei" (中文优化)
+  - 段落 word-spacing 1px / .card p line-height 1.75 / .card li line-height 1.7
+  - #content > h2:first-child (page title) — 居中 + bottom 4px 渐变下划线 +
+    box-shadow halo (蓝→绿 gradient #58a6ff → #7ee787)
+  - .card h1 — 居中 + 3px 渐变下划线 (markdown 顶级标题 like ROADMAP)
+  - .card h2 — bottom border 1px + 加粗
+  - .card h3 — 左侧 4×18px 渐变 accent bar (::before)
+  - .card h4 — 9px 圆环 + hover 填充 + scale 1.1 + shadow halo
+  - .card h5 — ▸ 三角符号 prefix
+  - .card h6 — — 破折号 prefix + 灰色
+  - .card blockquote — 圆角 8px + ❝ Georgia 引号 ::before + 半透明蓝色 bg +
+    border-left 4px (升级自原 3px solid 简版)
+  - .card hr — 渐变 transparent → #30363d → transparent (替代纯色线)
+  - .card strong — color #e6edf3 加深
+
+未照搬 Phycat (dark/dev 场景不适用):
+  - Phycat 衬线字体 (Optima/Georgia serif) → 保留 sans-serif (dense 技术内容更顺)
+  - ::after icon mask SVG 装饰 → 太重，省
+  - task-list pulse animation → 项目 markdown 不用 task list
+  - counter-reset 章节自动编号 → 与已有 markdown # 数字结构 overlapping
+  - h3/h4 hover translateX(6px) → 与现有 card-level translateY hover 冲突
+
+Sort order fixes (user feedback):
+  - pageADRs(): .sort() → .sort().reverse() (12 ADR 0012→0001 最新在上)
+  - pageHistory(): listDirs(PLANNING) → listDirs(PLANNING).slice().reverse()
+    (phase-2.4 → 2.3 → 2.2 → ... → 1.1 最新在上)
+  - subtitle 加 "（最新在上）" 提示
+
+Total diff: ~28L net CSS + 2 surgical reverse calls + 2 subtitle string updates.
+scripts/dashboard.mjs ~475L → ~503L.
+
+Tested 2026-05-16:
+  - 5 endpoints 200
+  - ADRs 倒序 verified: 0012 / 0011 / 0010 / 0009 / 0008 ...
+  - History 倒序 verified: phase-2.4 / phase-2.3 / 2.2 / 2.1 / 1.5 / 1.4 ...
+  - Phycat CSS rules served: .card h1::after / h3::before / h4::before (hover) /
+    h5::before (▸) / h6::before (—) / blockquote ❝ + 圆角 + accent
+
+不动: package.json / .gitignore / src/* / .planning/* / docs/adr/* / CI /
+  已 ship phase artifacts. A7 守恒 trivially 满足.
+```
+
+### 变更摘要
+
+| Polish 项 | 改动 | Trigger |
+|----------|------|---------|
+| 字体栈 i18n 优化 | body 加 LXGW WenKai / PingFang SC / Microsoft YaHei | Phycat-Cherry 借鉴 |
+| 段落 rhythm | line-height 1.75 / word-spacing 1px / margin 10px | Phycat-Cherry 借鉴 |
+| Page title 装饰 | `#content > h2:first-child` 居中 + 渐变下划线 + halo | Phycat-Cherry 借鉴 |
+| .card h1 装饰 | 居中 + 渐变下划线（markdown 顶层）| Phycat-Cherry 借鉴 |
+| .card h2 装饰 | bottom border 加粗 | Phycat-Cherry 借鉴 |
+| .card h3 装饰 | 左侧 4×18px 渐变 accent bar `::before` | Phycat-Cherry 借鉴 |
+| .card h4 装饰 | 9px 圆环 + hover 填充 + scale + shadow halo | Phycat-Cherry 借鉴 |
+| .card h5/h6 装饰 | ▸ 三角 / — 破折号 prefix | Phycat-Cherry 借鉴 |
+| blockquote 升级 | 圆角 8px + ❝ Georgia 引号 + 半透明 bg + 4px accent | Phycat-Cherry 借鉴（升级自原简版）|
+| hr 渐变 | transparent → #30363d → transparent | Phycat-Cherry 借鉴 |
+| strong 加深 | color #e6edf3 | Phycat-Cherry 借鉴 |
+| **ADRs 倒序** ⭐ | `.reverse()` after sort | 用户反馈 |
+| **Phase History 倒序** ⭐ | `.slice().reverse()` | 用户反馈 |
+
+### 用户 feedback 处理
+
+1. **"正文显示效果还有待改进"** + 提供 Phycat-Cherry HTML 样本 → ✅ 11 项 typography polish dark-friendly 适配
+2. **"ADRS Phase History 是不是应该倒叙显示"** → ✅ 两处 `.reverse()` + subtitle 加 "（最新在上）" 提示
+
+### 实测验证
+
+```
+✅ ADRs 倒序: 0012 / 0011 / 0010 / 0009 / 0008 ... （curl verified）
+✅ History 倒序: phase-2.4 / 2.3 / 2.2 / 2.1 / 1.5 / 1.4 / 1.3 / 1.2.5 / 1.2 / 1.1
+✅ Phycat CSS 全 served (h1-h6 ::before/::after + blockquote + hr 全在)
+✅ port-occupied silent exit 仍正常
+✅ --no-open flag 仍正常
+✅ 5 endpoints 200
+```
+
+### Phase 归属（与前两轮一致）
+
+`tooling(dashboard):` 独立 commit（沿袭 0b4e76d NEW + 161621c polish round 1 风格）。 不与 Phase 2.3 ship 或 Phase 2.4 discuss-phase 耦合；A7 守恒 trivially 满足。
+
+### Dashboard 演进时间线
+
+```
+2026-05-16 早上    0b4e76d  tooling: scripts/dashboard.mjs NEW (~456L)
+2026-05-16 中午    161621c  tooling(dashboard): polish round 1 + rename Dashboard→STATE (~475L)
+2026-05-16 下午    <TBD>    tooling(dashboard): polish round 2 — Phycat-Cherry + reverse (~503L)
+```
+
+3 commit 演进路径 = sister cadence 一致；每轮独立 ship 留 iteration 历史 ↗
+
+### 顺手发现（free intel）
+
+测试 history 倒序时发现 **`.planning/phase-2.4/` 目录已创建** —— Phase 2.4 discuss-phase 已启动。 dashboard `Current Phase` 自动识别 phase-2.4 为 latest。 main agent 这一轮 polish 期间，另一边 CC 已经在 prep Phase 2.4（doctor 完整版）。
+
+下一次 review trigger: Phase 2.4 W0 启动前 / W6 ship 后。 dashboard tool 是否进 Phase 2.4 doctor 完整版 (C 路径整合 SessionStart hook auto-install + STATE.md watcher + 多项目支持) 仍是 advisory backlog。
+
+---
+
+## 累积 dashboard tool ship 总结（3 commit）
+
+| Commit | Type | LOC | Trigger | 核心改动 |
+|--------|------|-----|---------|---------|
+| `0b4e76d` | NEW | ~456L | main agent 设计 + user accept | 单文件 ESM 零依赖 read-only `.planning/` 可视化；7 nav SPA；HTTP server :47180 + mtime polling；--no-open + port-occupied silent exit hook-ready |
+| `161js polish round 1` (`161621c`) | polish | +~20L (475L) | main agent + user feedback | 居中 main + 4 stats + tests trend ↑12 + ADR count bug fix + sidebar 色差 + cards hover + sticky top bar + Dashboard → STATE 命名 |
+| polish round 2 (此 commit) | polish | +~28L (~503L) | user 提供 Phycat-Cherry HTML 样本 + 反馈倒序 | 11 项 Phycat-Cherry typography 借鉴（dark-friendly 适配）+ ADRs/History 倒序 |
+
+→ **dashboard.mjs 自此 production-quality**，下一次主要演进窗口是 Phase 2.4 doctor 完整版 absorb C 路径（SessionStart hook auto-install + STATE.md watcher + 多项目支持）。
+
