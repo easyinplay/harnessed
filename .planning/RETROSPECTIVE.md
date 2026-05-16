@@ -44,6 +44,49 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 
 ---
 
+## Phase 3.2 milestone retrospective — gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装 (2026-05-17 ship) — v0.3.0 milestone 2/4 progress
+
+### What Went Well
+
+- **W0.1 cli-audit env-dep CI red 解 (Phase 3.1 deferred #1 priority bump)**: R2 § 8 fix path A locally verified recipe (vi.mock audit-helpers.js) executed verbatim. CI 3-OS green restored 596+ pass.
+- **D-01 PROBE → D-04 PUSH 全 4 activated zero-dep**: probe-gstack.ts (sister origin-check.ts) + interpolate.ts (zero npm dep守门 JINJA strict) + governance.ts (sister state.ts) + workflow/run.ts (B-01 fix activatePhase BEFORE isVetoed locked).
+- **schemaVersion 8→11 surface single 兼容门 (Phase 2.2 CD-5 模式延袭)**: config.v1 + governance.v1 + planFeature.v1 三个独立 surface per Karpathy single-responsibility, branchOnSchemaVersion 守门 consistent.
+- **doctor.ts Karpathy ≤200L clean (R2 § 1.4 baseline correction)**: KICKOFF stale 215L 修正 to 实测 175L; 加 6th check 186L 仍 clean, no helper-split needed (vs Phase 3.1 W-01 必 split).
+- **3-wave executor batch + 1 hotfix-within-wave**: W0 4 commits + W1 8 commits (7 atomic + 1 deferred #2 doc) + W2 8 commits (6 atomic + 1 Rule 1 fix + 1 deferred #3 RESOLVED) + W3 e2e+ADR+ship 5+ commits = 总 24+ commits clean cadence.
+
+### What Surprised Us
+
+- **Latent W1 governance.v1 vetoed_at format bug 被 W2 T2.6 fixture 3 抓出**: TypeBox `format: 'date-time'` 需 FormatRegistry.Set 注册否则 Value.Check 返 false. W1 T1.7 ship d989c8e 起静默 (governance vetoed timestamp validate 失败 → null → isVetoed false → workflow 跑穿 veto). c37ee29 Rule 1 surgical fix → ISO_DATE_RE pattern; deferred #3 RESOLVED 同 commit.
+- **Phase 3.1 sister deferred #1 cli-audit env-dep 复刻验证机制**: W0.1 fix path A vi.mock pattern 与 Phase 3.1 sister 修法 isomorphic — established pattern for "test mock not covering newly-added runtime helpers" recurring class.
+- **W-01 sister precedent 复用**: cli-doctor.test.ts (Phase 1.2 起) 在 T1.8 6th check 加后 fail 同 cli-audit pattern, T1.8 commit 内 1 行 vi.mock 扩 spawnSync mock 覆盖 — 不开新 task, 不污 src.
+
+### What We'd Change
+
+- **Executor agent stall pattern recurring**: Wave 1 + Wave 3 executor 都在 ~40 tool uses 后 stalled mid-task. Anti-stall 协议 working (partial commit shipped) 但需考虑 dispatch granularity 更小 (3-4 task per executor instead of 6-8).
+- **Pre-existing dashboard-sse env-dep flaky 未在 Phase 3.1 ship 时 catch**: 当时 CI green 但 local fail; Phase 3.2 W1 post-fix verify 才发现. Future: post-ship full local sweep also recommended sister CI green verify.
+
+### Lessons Learned
+
+- **Karpathy hard limit ≤200L 实测 baseline 必 verify**: KICKOFF 引用 doctor.ts 215L stale, R2 实测 175L. Lesson: planner pre-flight 实测 file LoC, KICKOFF copy-paste 不靠.
+- **TypeBox format vs pattern 选择**: 全 project sister checkpoint.v1 用 pattern regex, governance.v1 W1 引入 format 是 inconsistent. Lesson: 沿袭 sister pattern (FormatRegistry.Set 重 setup, pattern regex 简单 zero-setup).
+- **JINJA strict throw vs fallback empty**: Karpathy fail-loud 符合 Phase 3.1 D-01 enforceBudget throw 模式. Lesson: 一致 fail-loud policy 跨 helper.
+
+### Process Improvements
+
+- **W0.1 sister-class recipe lockable**: Phase 3.1 deferred #1 fix path A locally verified 在 W0 first task 一次执行 — sister pattern "test mock not covering newly-added runtime helpers" 已成熟可复用模板.
+- **W-02 PhasesSchema unconditional extend 优先于 conditional/parallel schema**: Karpathy DRY 复用 parent schema (loadPhases-derived); 加 Optional fields backward-compatible.
+- **Path divergence doc (W-03)**: PATTERNS.md § 2.4 indicative-of-pattern interpretation 允许 colocation rule choice (workflow/schema/ per sister phases.ts), 不强制 PATTERNS exact path. Recommend future PATTERNS 注明 indicative vs binding.
+
+### Carry-forward
+
+- **DEFERRED #2 dashboard-sse pre-existing flaky** → Phase 3.3 OR dedicated `fix(dashboard-sse-test)` patch session (3 fix path candidates documented in deferred-items.md)
+- **userSpawn session_id capture (Phase 3.1 DEFERRED #2)** → Phase 3.4+ if real userSpawn demand (fresh-session fallback per B-02 still acceptable)
+- **EE-4 BLOCKER auto-spawn rerun** → Phase 3.4 后 evaluate
+- **plan-feature 真接外部 gsd-* spawn (D-03 WIRED MVP)** → Phase 3.3+ dogfood 时 transition stub → real
+- 4 Wave topology pattern + 24 commit cadence + sister fix-class recipe lockable 都 ready 供 Phase 3.3 复用
+
+---
+
 ## Phase 3.1 milestone retrospective — checkpoint 引擎 + harnessed resume + compact 协议 + T4.4 closure infra activation 闭环（2026-05-16 ship）— v0.3.0 milestone 第 1 phase START
 
 ### What Went Well
