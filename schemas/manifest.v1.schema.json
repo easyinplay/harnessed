@@ -156,6 +156,10 @@
             {
               "const": "cli-npm",
               "type": "string"
+            },
+            {
+              "const": "cc-hook",
+              "type": "string"
             }
           ]
         },
@@ -483,6 +487,69 @@
                   "type": "string"
                 }
               }
+            },
+            {
+              "additionalProperties": false,
+              "type": "object",
+              "required": [
+                "method",
+                "cmd",
+                "hook_event",
+                "hook_command",
+                "idempotent_check"
+              ],
+              "properties": {
+                "method": {
+                  "const": "cc-hook-add",
+                  "type": "string"
+                },
+                "cmd": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "env": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^(.*)$": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "hook_event": {
+                  "anyOf": [
+                    {
+                      "const": "SessionStart",
+                      "type": "string"
+                    },
+                    {
+                      "const": "UserPromptSubmit",
+                      "type": "string"
+                    },
+                    {
+                      "const": "PreToolUse",
+                      "type": "string"
+                    },
+                    {
+                      "const": "PostToolUse",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "hook_matcher": {
+                  "type": "string"
+                },
+                "hook_command": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "idempotent_check": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              }
             }
           ]
         },
@@ -692,6 +759,10 @@
             },
             {
               "const": "git",
+              "type": "string"
+            },
+            {
+              "const": "hook",
               "type": "string"
             }
           ]

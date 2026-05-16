@@ -10,6 +10,7 @@
 // Static<>; Ajv accepts hand-rolled JSON Schema objects with no DX cost.
 
 import { type Static, Type } from '@sinclair/typebox'
+import { CcHookAdd } from './ccHookAdd.js'
 import { CcPluginMarketplace } from './ccPluginMarketplace.js'
 import { GitCloneWithSetup } from './gitCloneWithSetup.js'
 import { McpHttpAdd } from './mcpHttpAdd.js'
@@ -24,6 +25,7 @@ const branches = [
   NpmCli,
   McpStdioAdd,
   McpHttpAdd,
+  CcHookAdd,
 ] as const
 
 // Hand-built JSON Schema that Ajv `discriminator: true` strict mode accepts.

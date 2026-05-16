@@ -25,6 +25,10 @@ const TypeEnum = Type.Union([
   Type.Literal('cc-skill-pack'),
   Type.Literal('mcp-npm'),
   Type.Literal('cli-npm'),
+  // Phase 2.4 W3 T3.1 (D-04 § 3.1 + R2.4.4 + B-22) — 5th type, 1:1 with install_type:'hook'.
+  // Lifecycle hooks registered to ~/.claude/settings.json (SessionStart / UserPromptSubmit /
+  // PreToolUse / PostToolUse) via the cc-hook-add install method.
+  Type.Literal('cc-hook'),
 ])
 
 const ComponentType = Type.Union([
@@ -108,6 +112,8 @@ const InstallType = Type.Union([
   Type.Literal('mcp'),
   Type.Literal('npm'),
   Type.Literal('git'),
+  // Phase 2.4 W3 T3.1 (D-04 § 3.1 + R2.4.4 + B-22) — 5th install_type, 1:1 with TypeEnum:'cc-hook'.
+  Type.Literal('hook'),
 ])
 
 const DecisionRules = Type.Object(

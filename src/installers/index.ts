@@ -16,6 +16,7 @@
 // to L4 here as the safest pre-confirmation seed — npmCli may downgrade to L1
 // after the dry-run preview when cmd uses npx.
 
+import { installCcHookAdd } from './ccHookAdd.js'
 import { installCcPluginMarketplace } from './ccPluginMarketplace.js'
 import { installGitCloneWithSetup } from './gitCloneWithSetup.js'
 import type { Installer, InstallOpts, InstallResult, Level, Manifest } from './lib/types.js'
@@ -31,6 +32,8 @@ export const installers: Record<Manifest['spec']['install']['method'], Installer
   'git-clone-with-setup': installGitCloneWithSetup,
   'npx-skill-installer': installNpxSkillInstaller,
   'mcp-http-add': installMcpHttpAdd,
+  // Phase 2.4 W3 T3.1 (D-04 § 3.1) — 7th installer.
+  'cc-hook-add': installCcHookAdd,
 }
 
 function levelOf(manifest: Manifest): Level {
@@ -39,6 +42,9 @@ function levelOf(manifest: Manifest): Level {
     case 'mcp-stdio-add':
     case 'mcp-http-add':
     case 'cc-plugin-marketplace':
+    case 'cc-hook-add':
+      // ~/.claude/settings.json is shared user-scope state (L3 tier sister
+      // mcp-stdio CC #54803 "shared user state" warning).
       return 'L3'
     case 'git-clone-with-setup':
     case 'npx-skill-installer':

@@ -338,6 +338,52 @@ function ccPluginManifest(): Manifest {
   } as unknown as Manifest
 }
 
+function ccHookAddManifest(): Manifest {
+  // Phase 2.4 W3 T3.1 (D-04 § 3.1 + R2.4.4) — 7th installer contract row.
+  // cc-hook-add does NOT spawn (registers entry into ~/.claude/settings.json
+  // via fs.writeFile); C5 mcp-cli-only contract expects invokedClaude=false.
+  return {
+    apiVersion: 'harnessed/v1',
+    kind: 'Manifest',
+    metadata: {
+      name: 'cc-hook-fixture',
+      display_name: 'CC Hook Fixture',
+      description: 'fixture',
+      upstream: {
+        source: 'cc-hook-fixture',
+        homepage: 'https://example.com',
+        repository: 'https://github.com/example/cc-hook-fixture.git',
+        license: 'MIT',
+        notice: 'fixture',
+      },
+    },
+    spec: {
+      type: 'cc-hook',
+      component_type: 'command',
+      category: 'meta',
+      install_type: 'hook',
+      install: {
+        method: 'cc-hook-add',
+        cmd: 'node scripts/dashboard.mjs --no-open',
+        hook_event: 'SessionStart',
+        hook_matcher: 'startup|resume',
+        hook_command: 'node scripts/dashboard.mjs --no-open',
+        idempotent_check: 'grep -q dashboard.mjs ~/.claude/settings.json',
+      },
+      verify: { cmd: 'true', timeout_ms: 5000, expected_exit_code: 0 },
+      uninstall: { cmd: 'true' },
+      upstream_health: {
+        stability: 'beta',
+        last_check: '2026-05-16',
+        last_known_good_version: '0.2.0',
+        fallback_action: 'warn',
+      },
+      signed_by: 'easyinplay',
+      platforms: ['linux', 'darwin', 'win32'],
+    },
+  } as unknown as Manifest
+}
+
 function npxSkillManifest(): Manifest {
   return {
     apiVersion: 'harnessed/v1',
@@ -392,6 +438,8 @@ const factories = {
   'git-clone-with-setup': gitCloneManifest,
   'cc-plugin-marketplace': ccPluginManifest,
   'npx-skill-installer': npxSkillManifest,
+  // Phase 2.4 W3 T3.1 — 7th installer contract row (D-04 § 3.1 + R2.4.4).
+  'cc-hook-add': ccHookAddManifest,
 }
 
 // --- Contract test grid (6 methods × 6 contracts = 36 cells) ----------------
@@ -403,6 +451,8 @@ const methods = [
   'git-clone-with-setup',
   'cc-plugin-marketplace',
   'npx-skill-installer',
+  // Phase 2.4 W3 T3.1 — 7th installer (D-04 § 3.1).
+  'cc-hook-add',
 ] as const
 type Method = (typeof methods)[number]
 

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+# Phase 2.4 W3 T3.1 (D-04 § 3.1 + R2.4.4) — first cc-hook-add fixture.
+# Registers a SessionStart hook that auto-spawns the harnessed dashboard
+# (--no-open keeps the hook quiet; user clicks the URL in the welcome banner).
+# Idempotent — re-install on existing matching entry → skip.
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: dashboard-autospawn
+  display_name: Dashboard Autospawn (SessionStart)
+  description: SessionStart hook that boots the harnessed read-only dashboard on every CC session start.
+  upstream:
+    source: dashboard-autospawn
+    homepage: https://github.com/easyinplay/harnessed
+    repository: https://github.com/easyinplay/harnessed.git
+    license: MIT
+    notice: First-party harnessed hook (Phase 2.4 W3 T3.1 D-04 § 3.1).
+spec:
+  type: cc-hook
+  component_type: command
+  category: meta
+  install_type: hook
+  install:
+    method: cc-hook-add
+    cmd: "node scripts/dashboard.mjs --no-open"
+    hook_event: SessionStart
+    hook_matcher: "startup|resume"
+    hook_command: "node scripts/dashboard.mjs --no-open"
+    idempotent_check: "grep -q dashboard.mjs ~/.claude/settings.json"
+  verify:
+    cmd: "grep -q dashboard.mjs ~/.claude/settings.json"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "true"
+  upstream_health:
+    stability: beta
+    last_check: "2026-05-16"
+    last_known_good_version: "0.2.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
