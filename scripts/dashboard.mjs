@@ -22,7 +22,7 @@
 //     }
 //   }
 import { execSync, spawn } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync, watch } from 'node:fs'
 import { createServer } from 'node:http'
 import { createConnection } from 'node:net'
 import { join } from 'node:path'
@@ -417,15 +417,13 @@ for(const a of document.querySelectorAll('.nav a'))a.onclick=e=>{e.preventDefaul
 async function r(){
   const cur=document.querySelector('.nav a.active')?.dataset.p||'dashboard'
   await loadPage(cur);dot.classList.remove('changed');t.textContent='已刷新 '+new Date().toLocaleTimeString()
-  const m=await(await fetch('/mtime')).json();mt0=m.max
 }
-async function poll(){
-  try{const m=await(await fetch('/mtime')).json()
-    if(mt0&&m.max>mt0){dot.classList.add('changed');t.textContent='文件有更新，点击 ⟳ 刷新'}
-    if(!mt0)mt0=m.max
-  }catch{}
-}
-loadPage('dashboard');setInterval(poll,2000)
+// T3.2 (D-04 § 3.2 + B-23 + S1) — SSE replaces 2s polling. EventSource reconnects
+// automatically; S1 fix: onopen re-fetches current page (reconnect may miss events).
+const es=new EventSource('/events')
+es.addEventListener('state-changed',()=>{dot.classList.add('changed');t.textContent='文件有更新, 点击 ⟳ 刷新'})
+es.onopen=()=>{const cur=document.querySelector('.nav a.active')?.dataset.p;if(cur)loadPage(cur)}
+loadPage('dashboard')
 </script>
 </body></html>`
 
@@ -444,11 +442,46 @@ const watchedPaths = () => {
   return list
 }
 
+// Phase 2.4 W3 T3.2 (D-04 § 3.2 + B-23 + B-24 + B-27 + W5 + S1) — SSE watcher
+// replaces 2s polling. Zero npm-dep (only node:fs.watch + node built-in SSE).
+// B-24: watch STATE.md only (Win recursive watch is unstable).
+// B-27: localhost-only bind (defense against resource exhaustion).
+const sseClients = new Set()
+let debounceTimer = null
+try {
+  watch(join(PLANNING, 'STATE.md'), () => {
+    clearTimeout(debounceTimer)
+    debounceTimer = setTimeout(() => {
+      const msg = `event: state-changed\ndata: ${JSON.stringify({ ts: Date.now() })}\n\n`
+      for (const r of sseClients) {
+        try {
+          r.write(msg)
+        } catch {
+          // dead client — `req.on('close')` will splice it
+        }
+      }
+    }, 500)
+  })
+} catch {
+  // STATE.md may not exist yet (fresh project); SSE will silently no-op
+}
+
 const server = createServer((req, res) => {
   const url = req.url || '/'
   if (url === '/') {
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
     return res.end(SHELL)
+  }
+  if (url === '/events') {
+    res.writeHead(200, {
+      'content-type': 'text/event-stream',
+      'cache-control': 'no-cache',
+      connection: 'keep-alive',
+    })
+    res.write(': connected\n\n')
+    sseClients.add(res)
+    req.on('close', () => sseClients.delete(res))
+    return
   }
   if (url === '/mtime') {
     res.writeHead(200, { 'content-type': 'application/json' })
@@ -475,7 +508,9 @@ const server = createServer((req, res) => {
 // Probe port — if occupied, another dashboard is already running, exit 0 silent.
 // (Makes this script idempotent + safe to invoke from CC hooks repeatedly.)
 function start() {
-  server.listen(PORT, () => {
+  // T3.2 (B-27 R5 mitigation) — localhost-only bind. Prevents external clients
+  // from connecting to /events and exhausting SSE client set / fs.watch.
+  server.listen(PORT, '127.0.0.1', () => {
     const url = `http://localhost:${PORT}`
     console.log(`\n  harnessed dashboard: ${url}\n  (Ctrl+C to stop)\n`)
     if (NO_OPEN) return
