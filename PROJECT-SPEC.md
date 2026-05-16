@@ -1,9 +1,9 @@
 # harnessed — 立项参数 Spec Sheet (v3)
 
-> 状态：✅ **Locked v3** + 🎯 **v0.2.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-16**（v0.1.0 100% SHIPPED & ARCHIVED 2026-05-15；Phase 2.1 SHIPPED 2026-05-15；Phase 2.2 SHIPPED 2026-05-15 — execute-task workflow + ralph-loop full SDK integration + ADR 0011 9 章节 errata 合并；Phase 2.3 SHIPPED 2026-05-16 — extension category MVP + karpathy SKILL-ONLY 注入 + EE-5 5-question CLI gate + CD-3 negative-space arbitrate redirect + 30/30 routing 100% + ADR 0012 9 章节 errata 合并；**Phase 2.4 SHIPPED 2026-05-16** — doctor 完整版 + EE-4 plan-checker 4 维 SSOT + dashboard C 路径 3 子 FULL absorb + audit hard-fail + ralph-loop Win sentinel + ADR 0013 9 章节 errata 合并；progress 10/17 = 58.8%）
+> 状态：✅ **Locked v3** + 🎯 **v0.2.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-16** + **Phase 3.1 SHIPPED 2026-05-16** — checkpoint 引擎 TEMPLATE + archive 双轨 + harnessed resume 12th CLI + compact 75% placeholder + T4.4 closure infra activation 闭环 (D-04 WIRE-IN 实证) + ADR 0014 9 章节 errata 合并（v0.1.0 100% SHIPPED & ARCHIVED 2026-05-15；Phase 2.1 SHIPPED 2026-05-15；Phase 2.2 SHIPPED 2026-05-15 — execute-task workflow + ralph-loop full SDK integration + ADR 0011 9 章节 errata 合并；Phase 2.3 SHIPPED 2026-05-16 — extension category MVP + karpathy SKILL-ONLY 注入 + EE-5 5-question CLI gate + CD-3 negative-space arbitrate redirect + 30/30 routing 100% + ADR 0012 9 章节 errata 合并；**Phase 2.4 SHIPPED 2026-05-16** — doctor 完整版 + EE-4 plan-checker 4 维 SSOT + dashboard C 路径 3 子 FULL absorb + audit hard-fail + ralph-loop Win sentinel + ADR 0013 9 章节 errata 合并；progress 11/17 = 64.7%）
 > v2 决策完成日期：2026-05-11
 > v3 wedge 升级：2026-05-12（基于 phase 1.2.5 RESEARCH-1/2 + 8 支柱 100% capture + 5 P0 lock）
-> 下一步：Phase 2.4 doctor 完整版（EE-4 plan 4 维量化阈值 schema absorb OR phase 2.5 独立）
+> 下一步：Phase 3.2 gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装 + DEFERRED #1 W0.3 ENFORCE flip prereq (STATE/README format normalization)
 
 ---
 

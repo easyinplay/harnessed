@@ -44,6 +44,58 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 
 ---
 
+## Phase 3.1 milestone retrospective — checkpoint 引擎 + harnessed resume + compact 协议 + T4.4 closure infra activation 闭环（2026-05-16 ship）— v0.3.0 milestone 第 1 phase START
+
+### What Went Well
+
+- **W3 T4.4 closure infra activation 闭环 = 1 milestone 闲置后首消费者 zero throwaway**：Phase 2.2 W4 T4.1 ship `sdkSpawn.onSessionId` + `ralphLoopWrap.resumeSessionId` + `engine.wrappedSpawn capturedSessionId` 三件套，conditional B-35 fallback DEFER → Phase 3.1 W3 T3.1+T3.2 **首消费者** activation 闭环 (D-04 WIRE-IN 实证)。 Phase 2.2 RETRO Lesson 1 "closure-infra-only 实施 = 零 throwaway 零阻塞" 兑现 — closure 三件套 1 milestone 闲置后激活 = 0 sunk cost；consumer 接入仅 30L cross 2 files (ralphLoop L43 + engine wedge L182)。 **经验**：conditional spike → fallback closure infra → 下 milestone consumer 接入 pattern 已 promoted 为 standard cross-phase practice。
+- **W0 5-task one-shot absorb 沿袭 Phase 2.2-2.4 atomic-batch 模式**：W0.1 AUDIT.md § 0.5 Line Budget Deviations Accepted (doctor.ts 215L +7% B-03 5% tolerance + dashboard.mjs 610L well-under ≤650L 透明登记) / W0.2 RETROSPECTIVE Advisory Absorb Path 节 (polish round 2 commit attribution 复盘) / W0.3 ci.yml README completeness check WARN-ONLY round 1 (B-01 sister Phase 2.1 transparency 4-phase warn-only round 1 pattern) / W0.4 phase-2.4 self-check fr ≥ 0.80 verify report (deferred-items #2 self-referential 解决证据) / W0.5 tests/checkpoint/cli/integration dirs scaffold + vitest glob verify = 5 commits one-shot ship。 **经验**：phase-start Wave 0 backlog cleanup 已成熟为 cross-milestone standard practice (Phase 2.3 6 项 / Phase 2.4 5 项 / Phase 3.1 5 项)。
+- **W-01 PRIMARY extract engineHook.ts 49L = engine.ts ≤200L Karpathy clean restored**：orchestrator decision W-01 promote engineHook.ts 从 wedge → PRIMARY extract sister Phase 2.2 sdkReconcile.ts 56L pattern；engine.ts 195→200L (≤200L hard limit edge, 0 tolerance used per Karpathy clean spec)；engineHook.ts 单独承接 checkpoint bridge logic (activatePhase + completePhase double-write) 保持 engine.ts 主流程清晰。 **经验**：≤50L helper extract pattern (sdkReconcile / engineHook) 已 promoted 为 cross-phase reusable extraction recipe — primary engine 主文件守 hard limit edge + helper 单一职责 + 测试隔离。
+- **W-04 phaseId via TaskContext typed field = 0 `as any` cast**：orchestrator decision W-04 fix path a (推荐) via schema field 加 `phaseId?: string` instead of B path (cast `as any`)。 typed field clean + null fallback `'unknown'` warn-only fail-loud (`'[harnessed] WARN engineHook: phaseId="unknown" — checkpoint paths fall back...'`)。 **经验**：避免 `as any` cast 通过 schema field 扩 + null sentinel + warn-only fail-loud (sister Phase 2.2 type-only AgentDefinition 5-字段 vs 9-字段 reconcile pattern)。
+
+### What Surprised Us
+
+- **B-02 userSpawn niche docs vs extend cost 判断**：orchestrator decision B-02 userSpawn signature `(agentDef) => Promise<string>` 不加 onSessionId out-param (breaking change > value, <5% niche)；resume.ts falls back to fresh session + reload checkpoint (DEFERRED #2 → Phase 3.4+ if real demand)。 acceptable tradeoff — userSpawn 是 test seam 主要使用场景不要求 session_id capture；real production path 走 defaultSpawn 100% covered。**经验**：interface extension 决策应权衡 niche % vs breaking change cost；fresh-session fallback + 透明 deferred 是合理 escape hatch。
+- **R2 § 1 cwd field critical addition for SDK session resume**：code.claude.com `<encoded-cwd>` 路径 critical constraint — RESEARCH 阶段实测 SDK session_id resume 跨 cwd 失败案例，checkpoint schema 必加 `cwd` field + resume 时 cwd mismatch warn (不强 block 保 RELOAD lock 不偷袭用户)。 **经验**：external API 跨主机/跨 cwd 行为 spike-first 实测 critical — 不依赖 doc fossil。
+- **engine.ts 200L 边界**：W-01 PRIMARY extract 后 engine.ts 195L baseline → 加 5L for `activatePhase(phaseId)` + `completePhase()` calls = 200L exactly。 0 tolerance used per Karpathy clean spec；任何 future expand 必须 W-01 类似 extract 或 ADR errata 论证。 **经验**：≤200L hard limit edge 是 commit-level signal — 触 limit 就 trigger PRIMARY extract decision instead of 5% tolerance accept (sister Phase 2.4 doctor.ts 215L 合理性论证 5% accept 是 exception，不应作 default)。
+
+### What We'd Change
+
+- **cli-audit 2 pre-existing fail (pre-Phase 1.2) needs scheduled fix session**：tests/cli/audit baseline 2 fail pre-existing, Phase 3.1 ship 仍未修 — out of scope per Rule 4 (architectural; cli/audit.ts 内部逻辑 + tests refactor needed)。 **改进**：Phase 3.2 排定 1 scheduled fix session 优先于新 feature land — pre-existing fail 累计 risk = "broken windows" CI signal 麻木 (sister Phase 2.4 deferred-items #3 EE-4 ERR_MODULE_NOT_FOUND ship-time catch lesson)。
+
+### Lessons Learned
+
+- **Lesson 1：W-01 PRIMARY extract pattern 复用 (engineHook.ts 49L sister sdkReconcile.ts 56L)**。 Phase 2.2 sdkReconcile.ts ≤56L 已建立"helper extract for testability + main file 主流程 ≤200L"pattern；Phase 3.1 engineHook.ts 49L 第 2 次复用 = pattern 已成熟为 standard primary engine 主文件 hard limit 守护策略 (sister cross-phase reusable extraction recipe)。
+- **Lesson 2：closure infra forward-compat 1 milestone 后激活 = high ROI**。 Phase 2.2 T4.1/T4.2/T4.3 +1d 开发量 但 T4.4 DEFERRED v0.3.0 — Phase 3.1 W3 T3.1+T3.2 30L cross 2 files 即激活闭环 (cross 2 files = ralphLoop L43 dead-wiring 删 + engine.ts L182 void placeholder 删 + checkpoint.write 触发)。 "conditional spike → fallback closure infra → next milestone consumer 接入" pattern 已 promoted 为 standard cross-phase practice。
+- **Lesson 3：avoid `as any` cast via schema field 加 + null sentinel + warn-only fail-loud**。 W-04 fix path a (typed field) vs B (cast) 选 A — phaseId via TaskContext typed field + 'unknown' fallback + warn-only stderr。 sister Phase 2.2 type-only AgentDefinition 5-字段 vs 9-字段 reconcile pattern — schema 是 SSOT, cast 是 anti-pattern。
+
+### Process Improvements
+
+- **Sister-review absorb tier-call pattern continued — Wave C iter 1 2 BLOCKER + 4 WARNING → revision iter 1 6/6 fix per orchestrator decisions (B-01 + B-02 + W-01 + W-02 + W-03 + W-04) + iter 2 PASS**。 4-D-decision Batch-1 lock (D-01 + D-02 + D-03 + D-04) + 6 fix in revision iter 1 = sister Phase 2.4 W0 backlog 5 项一次根治 cadence 复用。 plan-checker EE-4 4/4 PASS RELAX baseline held strong across both iters。
+- **Spike-first sequencing 跨 cross-phase 仍生效**：Phase 3.1 plan-phase Wave A R1 gsd-pattern-mapper 363→412L 15 files mapped + R2 gsd-phase-researcher RESEARCH.md 990L 12 sections = research baseline locked 后 Wave B planner directly consume，无 baseline drift；sister Phase 2.3 R-1 spike-first sequence pattern 跨 phase 复用。
+
+### Carry-forward
+
+- **DEFERRED #1 Phase 3.2 W0**: README completeness check ENFORCE flip — STATE.md/README.md format normalization prereq (sister Phase 2.1 transparency 4-phase warn-only round 1 → ENFORCE pattern)
+- **DEFERRED #2 Phase 3.4+ if demand**: userSpawn session_id capture niche (currently fresh-session fallback acceptable per B-02; consumer demand triggers re-eval)
+- **cli-audit Phase 3.2 fix session**: 2 pre-existing fail pre-Phase 1.2 — out of scope Phase 3.1; Phase 3.2 排定 1 scheduled fix session 优先于新 feature
+- **EE-4 BLOCKER auto-spawn rerun**: Phase 2.4 D-02 down-scope → v0.3.0 plan-feature workflow w/ checkpoint 成熟后接入 (Phase 3.3 or Phase 3.4)
+
+### Cost Patterns
+
+- **commit 数**：Phase 3.1 = 27+ atomic commits (W0 5 + W1 4 + W2 4 + W3 3 + W4 5 + W5 6 final ship)
+- **tests 增量**：543 → 596 (+53 cells across W0-W5；最大单 commit +11 cells = W2 T2.4 checkpoint template + archive tests + D-01 grep gate)
+- **CI runs**：~6 runs (W0 + W1 + W2 + W3 + W4 + W5 ship final)
+- **hard limit edge 情况**：engine.ts 195→200L = ≤200L hard limit edge (0 tolerance used per W-01 PRIMARY extract decision); engineHook.ts 49L (≤50L per W-01 acceptance); 全 NEW files (template/state/archive/sigintTrap/resume/compact/cli-resume) 全 ≤80L hard limit
+- **closure infra activation 实施成本**：W3 T3.1 + T3.2 cross 2 files 30L (ralphLoop L43 dead-wiring 删 + engine.ts wedge L182 void placeholder 删 + W-01 engineHook.ts 49L 新增) = D-04 WIRE-IN 实证 + Phase 2.2 closure infra 三件套 0 sunk cost validation
+
+### Next Phase Prep Notes
+
+- **Phase 3.2 discuss-phase 启动入口**：v0.3.0 milestone 1/4 → 2/4 推进；gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装 + governance 层 pause + on_veto；候选启动 `/gsd-discuss-phase 3.2`
+- **Sister review 触发**：Phase 3.1 ship 后建议跑 sister review post-ship (gstack `/review` Paranoid Staff Engineer)，重点：(1) ADR 0014 9 章节 vs Phase 2.2/2.3/2.4 ADR 0011/0012/0013 模板一致性；(2) engineHook.ts 49L PRIMARY extract pattern testability + 单一职责完整性；(3) SIGINT trap 30s timeout fallback corner case (Win 双 Ctrl+C force quit OS 行为；resume cwd mismatch warn-only soft fail policy 是否合理)；(4) compact.ts 75% threshold MVP placeholder 是否 future-proof (Phase 3.4 actual fold logic 接入路径预留);  (5) phase-2.4/task_plan self-check fr ≥ 0.80 (deferred-items #2 self-referential 解决证据) verify report 是否 hold
+
+---
+
 ## Phase 2.4 milestone retrospective — doctor 完整版 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel（2026-05-16 ship）+ 🎯 v0.2.0 MILESTONE 4/4 CLOSE
 
 ### What Worked

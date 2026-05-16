@@ -153,9 +153,10 @@
 
 ### Phase 拆分
 
-- **Phase 3.1：checkpoint 引擎 + harnessed resume + compact 协议**
+- **Phase 3.1：checkpoint 引擎 + harnessed resume + compact 协议** ✅ SHIPPED 2026-05-16
   - 摘要 < 1k token；archive 完整；`current-workflow.json` 状态机
-  - 验收：人为中断 session 后从 03 phase 续跑成功
+  - 验收：人为中断 session 后从 03 phase 续跑成功 ✅ (DOGFOOD-T5.5.md)
+  - ship 总结：6 Waves W0-W5 全 ship 27+ atomic commits；checkpoint TEMPLATE 摘要 (zero LLM call) + archive 双轨 + harnessed resume 12th CLI + compact 75% placeholder + T4.4 closure infra activation 闭环 (D-04 WIRE-IN 实证)；engine.ts 195→200L Karpathy clean ≤200L restored (W-01 PRIMARY extract engineHook.ts 49L)；0 `as any` cast (W-04)；ADR 0014 9 章节 errata accepted；tests 543→596 (+53)；14 ADR + 14 baseline tag；F1-F8 8/8
 - **Phase 3.2：gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装**
   - 三选一探测；`invokes` 字段插值；governance 层 pause + on_veto
   - 验收：用户 gstack 装哪种前缀都能跑通
