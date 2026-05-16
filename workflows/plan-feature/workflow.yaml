@@ -1,0 +1,40 @@
+# workflows/plan-feature/workflow.yaml — Phase 3.2 W2 T2.4 (D-03 WIRED LOCKED)
+# 5-phase reference implementation; Phase 3.3+ dogfood 时换真 gsd-discuss/plan/execute spawn.
+# R7.1 acceptance: 30 plan-feature 场景跑通 + CEO veto halt_workflow
+# R7.4 acceptance: 用户三种前缀场景任一都跑通 (JINJA `{{ gstack_prefix }}` 插值)
+workflow: plan-feature
+on_veto: halt_workflow  # workflow-level (NOT per-phase per RESEARCH § 5.2 DRY) — D-04 PUSH 任 1 phase 转换前 read = vetoed → 全 halt
+phases:
+  - id: 01-gstack-decision
+    name: gstack-decision (governance gate — CEO/EM/Designer/Paranoid/QA/CSO)
+    upstream: gstack
+    model: opus              # 高层决策 = opus
+    invokes: '{{ gstack_prefix }}office-hours'  # D-02 JINJA 插值 (gstack-office-hours OR office-hours)
+    skills: ['plan-feature-decision']
+    max_iterations: 1
+  - id: 02-brainstorm
+    name: brainstorm (execution + ui-ux-pro-max UI 任务)
+    upstream: superpowers
+    model: sonnet            # 设计澄清 = sonnet
+    skills: ['plan-feature-brainstorm']
+    max_iterations: 5
+  - id: 03-gsd-discuss
+    name: gsd-discuss (orchestration — phase discussion)
+    upstream: gsd
+    model: sonnet
+    invokes: 'gsd-discuss-phase'  # GSD 命令固定无 prefix
+    skills: ['plan-feature-discuss']
+    max_iterations: 3
+  - id: 04-gsd-plan
+    name: gsd-plan (orchestration — phase planning)
+    upstream: gsd
+    model: sonnet
+    invokes: 'gsd-plan-phase'
+    skills: ['plan-feature-plan']
+    max_iterations: 3
+  - id: 05-persist
+    name: persist (planning-with-files MD persistence)
+    upstream: planning-with-files
+    model: haiku             # 文档写入 = haiku 省 token (sister Phase 2.2 CD-2 04-deliver=haiku)
+    skills: ['plan-feature-persist']
+    max_iterations: 5
