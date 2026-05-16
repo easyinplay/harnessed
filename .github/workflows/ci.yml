@@ -136,6 +136,20 @@ jobs:
             echo "::error::expected >= 2 branchOnSchemaVersion call sites (Phase 2.2 W2 helper-only adoption baseline; Phase 2.3+ expands per surface — see ADR 0012 § 7 errata), found $count"
             exit 1
           fi
+      # Phase 2.4 Wave 0 T0.3 — README counter integrity gate (D-03 B 路径 / B1 plan-check fix regex 精度).
+      # 三计数一致 才 PASS (SHIPPED == BARS == L44). 沿袭 Phase 2.2 T0.4 freshness gate pattern + Phase 2.3
+      # Wave 0 T0.5 schemaVersion grep gate sister. line-start + bold + Phase 2.[1-9] 精度排除 Phase 1.X 历史
+      # marker. root-cause-class 第 3 次复发根治 (Phase 2.2 + Phase 2.3 W3-prereq + Phase 2.3 ship 后).
+      - name: README counter integrity gate (Phase 2.4 Wave 0 D-03 B 路径)
+        run: |
+          SHIPPED=$(grep -cE "^- \*\*Phase 2\.[1-9] shipped\*\* ✅" README.md)
+          BARS=$(grep -cE "^- \*\*Acceptance bar [A-Z]1-[A-Z]8 8/8 \(Phase 2\.[1-9]\)\*\* ✅" README.md)
+          L44=$(grep -oE "Phase 2\.1\+2\.2(\+2\.3)?(\+2\.4)?/2\.4 = ([0-9])/4 完成" README.md | grep -oE "[0-9]/4" | head -1 | cut -d/ -f1)
+          if [ "$SHIPPED" != "$BARS" ] || [ "$SHIPPED" != "$L44" ]; then
+            echo "::error::README counter drift: shipped=$SHIPPED bars=$BARS L44=$L44 (expect 3-equal)"
+            exit 1
+          fi
+          echo "README counter integrity ✅ shipped=$SHIPPED bars=$BARS L44=$L44"
       - run: corepack pnpm validate:schema
       - run: node ./dist/cli.mjs --version
       # Phase 1.2 T5.5 — installer integration (H4 dual-layer):
