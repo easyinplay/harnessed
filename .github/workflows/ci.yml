@@ -197,15 +197,15 @@ jobs:
       # CI gate warn-only round 1' + Phase 2.3 W0 perf gate 'moved out of CI critical path to
       # nightly cron advisory' pattern). Sister D-03 counter gate (consistency check 三计数自洽)
       # + completeness check (STATE/README 跨文件无漏) 互补.
-      - name: README completeness check (Phase 3.1 W0.3 — STATE.md vs README per-phase shipped count) [WARN-ONLY round 1]
-        continue-on-error: true
+      - name: README completeness check (Phase 3.2 W0.2 — STATE.md vs README per-phase shipped count) [ENFORCE Phase 3.2 W0.2]
         run: |
           STATE_COUNT=$(grep -cE "^[-*]?\s*\*?\*?Phase [1-9]\.[0-9]\*?\*?.*[Ss]hipped" .planning/STATE.md)
           README_COUNT=$(grep -cE "^[-*]?\s*\*?\*?Phase [1-9]\.[0-9]\*?\*?.*[Ss]hipped" README.md)
           echo "STATE.md per-phase shipped count: $STATE_COUNT"
           echo "README.md per-phase shipped count: $README_COUNT"
           if [ "$STATE_COUNT" -ne "$README_COUNT" ]; then
-            echo "::warning::README completeness drift (advisory, warn-only round 1): STATE=$STATE_COUNT README=$README_COUNT — fix in Phase 3.2 W0 prereq before ENFORCE flip"
+            echo "::error::README completeness drift: STATE=$STATE_COUNT README=$README_COUNT"
+            exit 1
           else
             echo "README completeness OK: STATE=$STATE_COUNT README=$README_COUNT"
           fi

@@ -36,6 +36,22 @@
 | v0.3.0 plan-feature + checkpoint | 1/4 | 🚀 **STARTED — Phase 3.1 SHIPPED 2026-05-16** (checkpoint 引擎 TEMPLATE + archive 双轨 + harnessed resume 12th CLI + compact 75% placeholder + T4.4 closure infra activation 闭环 D-04 WIRE-IN 实证 + W0 backlog 4 项一次根治; ADR 0014 9 章节 errata accepted; tests 543→596 +53; 14 ADR + 14 baseline tag); next: Phase 3.2 gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装 + DEFERRED #1 W0.3 ENFORCE flip prereq | 启动 2026-05-16 / Phase 3.1 ship 2026-05-16 |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
 
+### 已完成 phase ship 历史 (W0.2 — README sync SSOT)
+
+> 与 README.md L46-56 一一对应; grep gate `^[-*]?\s*\*?\*?Phase [1-9]\.[0-9]\*?\*?.*[Ss]hipped` 计 count 与 README 等
+
+- **Phase 3.1 shipped** ✅ (2026-05-16) — checkpoint 引擎 + harnessed resume 12th CLI + compact 75% placeholder
+- **Phase 2.4 shipped** ✅ (2026-05-16) — doctor 完整版 + EE-4 4 维 SSOT + dashboard C 路径
+- **Phase 2.3 shipped** ✅ (2026-05-16) — extension MVP + karpathy SKILL-ONLY + 30/30 routing 100%
+- **Phase 2.2 shipped** ✅ (2026-05-15) — execute-task workflow + SDK 0.3.142 + per-phase model tier
+- **Phase 2.1 shipped** ✅ (2026-05-15) — 6 install method runtime-ready + transparency CI gate
+- **Phase 1.5 shipped** ✅ (2026-05-14) — DAG resolver + Semantic Router L2 stub + 23 招式 routing
+- **Phase 1.4 shipped** ✅ (2026-05-13) — routing engine v1 + AgentDefinition factory
+- **Phase 1.3 shipped** ✅ (2026-05-13) — categorization schema + decision_rules.yaml v1
+- **Phase 1.2.5 architecture revision shipped** ✅ (2026-05-12) — ADR 0006 wedge 升级
+- **Phase 1.2 shipped** ✅ (2026-05-12) — cli-npm + mcp-stdio runtime + 5 CLI subcommands
+- **Phase 1.1 + 1.1.1 hotfix shipped** ✅ (2026-05-12) — schema v1 frozen + 10 manifest + 3 ADR
+
 ### 下一步行动
 
 1. ✅ ~~Phase 1.1 全 47 子任务完成~~ — 2026-05-12 ship
