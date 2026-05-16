@@ -93,7 +93,7 @@ D2.4-1~D2.4-20 全 absorbed (见 ASSUMPTIONS § B mapping); 6 R2 critical findin
 
 ### Check 8 — SSOT 引用纪律
 
-8/8 PASS: ADR 编号绝不预占 (intel § 0 + CONTRIBUTING.md 项目级 anchor) + sed-replace discipline (沿袭 Phase 2.1 W1 + Phase 2.3 T0.1 plan-check fix) + Phase 编号语义锚定 (KICKOFF § 6 + PLAN § 8) + intel L74-82 + L286 引用一致 + dashboard-handoff § 3 ~160L 全 absorb + ROADMAP L113-115 引用 + STATE.md L601+ Phase 2.4 Prereq 5 项全 trace + 现 docs/adr/ ls 实测 0009-0012 4 ADR, T0.1 max+1 = 0013 但不预占 (sed-replace `<实占N>` placeholder 全文).
+8/8 PASS: ADR 编号绝不预占 (intel § 0 + CONTRIBUTING.md 项目级 anchor) + sed-replace discipline (沿袭 Phase 2.1 W1 + Phase 2.3 T0.1 plan-check fix) + Phase 编号语义锚定 (KICKOFF § 6 + PLAN § 8) + intel L74-82 + L286 引用一致 + dashboard-handoff § 3 ~160L 全 absorb + ROADMAP L113-115 引用 + STATE.md L601+ Phase 2.4 Prereq 5 项全 trace + 现 docs/adr/ ls 实测 0009-0012 4 ADR, T0.1 max+1 = 0013 但不预占 (sed-replace `0013` placeholder 全文).
 
 ### Check 9 — 7 Wave coverage + dependency graph + 29 task count
 
@@ -342,7 +342,7 @@ execute-phase Wave 0~6 executor 必验:
 - **Wave 3** (~2 工作日) — cc-hook installer + dashboard SSE + 多项目 + 3 sub-task 并行 (T3.2 先 merge T3.3 rebase per B-19)
 - **Wave 4** (~1 工作日) — audit 完整版扩 + Win sentinel 5 fixture
 - **Wave 5** (~1 工作日) — 30 doctor + 30 plan-checker + e2e
-- **Wave 6 ship** (~0.5 工作日) — ADR <实占N> Accepted + 3 tag + v0.2.0 milestone close
+- **Wave 6 ship** (~0.5 工作日) — ADR 0013 Accepted + 3 tag + v0.2.0 milestone close
 
 Total estimated execute-phase: **~7-8 工作日** (PLAN § 3 ~8d 一致).
 

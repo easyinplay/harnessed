@@ -7,7 +7,7 @@
 > **Task count**: 29 atomic tasks across 7 Waves (W0:6 / W1:3 / W2:5 / W3:4 / W4:3 / W5:3 / W6:5)
 > **Hard limit verify**: every code-producing task 含 `wc -l` 或 ≤N 行 acceptance criterion
 
-> ⚠️ **Placeholder sed-replace discipline (Phase 2.1 W1 + Phase 2.3 T0.1 plan-check fix sister precedent)**: T0.1 resolve `<实占N>` (predicted `0013` but **绝不预占**) 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + ASSUMPTIONS.md + 所有 NEW ADR 文件批量 sed-replace 字面占位:`grep -rl "<实占N>\|<实占NNNN>\|<实占NNNN>" .planning/phase-2.4/ docs/adr/ | xargs sed -i "s/<实占NNNN>/<actual-NNNN>/g; s/<实占N>/<actual-NNNN>/g"`(以及任何 grep 命中的其他文件)。**zero 字面 `<实占` 残留**是 W0 commit 前置条件 (`grep -rn "<实占" .planning/phase-2.4/ docs/adr/` 必须 exit 1)。同时禁写 `ADR 0013` 字面 (intel § 0 + CONTRIBUTING.md 项目级 SSOT 引用纪律 + D2.4-20)。
+> ⚠️ **Placeholder sed-replace discipline (Phase 2.1 W1 + Phase 2.3 T0.1 plan-check fix sister precedent)**: T0.1 resolve `0013` (predicted `0013` but **绝不预占**) 后,**在 commit 任何 T0.2+ 产物前**,必须对本 task_plan.md + PLAN.md + KICKOFF.md + ASSUMPTIONS.md + 所有 NEW ADR 文件批量 sed-replace 字面占位:`grep -rl "0013\|0013\|0013" .planning/phase-2.4/ docs/adr/ | xargs sed -i "s/0013/<actual-NNNN>/g; s/0013/<actual-NNNN>/g"`(以及任何 grep 命中的其他文件)。**zero 字面 `<实占` 残留**是 W0 commit 前置条件 (`grep -rn "<实占" .planning/phase-2.4/ docs/adr/` 必须 exit 1)。同时禁写 `ADR 0013` 字面 (intel § 0 + CONTRIBUTING.md 项目级 SSOT 引用纪律 + D2.4-20)。
 
 ---
 
@@ -15,7 +15,7 @@
 
 > ⚠️ **W4 plan-check fix** — task_plan 顶部 Resolved 区设 skeleton (4 spike/decision block); executor in-place fill 后 commit; grep-verifiable 锚点 supplied for downstream task acceptance.
 
-> **Resolved (T0.1)**: <PENDING — Wave 0 T0.1 fill: 实占 N + ROADMAP latest-shipped token + sed-replace exit verify>
+> **Resolved (T0.1)**: 实占 N = **0013** (ls docs/adr/ tail-1 = `0012-extension-mvp-karpathy-inject.md`, max+1 = `0013`); ROADMAP latest-shipped token = "Phase 2.3 shipped" (verify pass, STATE freshness consistent); sed-replace batch executed on 4 files (.planning/phase-2.4/{ASSUMPTIONS,PLAN-CHECK,PLAN,task_plan}.md); `grep -rnE "<实占N>|<实占NNNN>" .planning/phase-2.4/` exit 1 ✅ (zero literal placeholder residue; 3 narrative backtick-quoted `<实占` self-references in task_plan.md L10/L38 + PLAN-CHECK.md L92 are sed-replace discipline historical text, sister ADR 0012 L102 pattern); ADR 0012 main body untouched (A7 守恒)。执行日期 2026-05-16 Wave 0。
 
 > **Resolved (T2.0)**: <PENDING — Wave 2 T2.0 spike fill: EE-4 baseline spike outcome (phase-2.3 + phase-2.2 task_plan 4 维 score + 阈值校准决策)>
 
@@ -32,27 +32,27 @@
 - **files_modified**: (read-only;后续 task 批量 sed-replace)
 - **action**:
   1. 跑 `ls -1 docs/adr/ | grep -E '^[0-9]{4}-.*\.md$' | sort | tail -1` 读最新 ADR 编号,取 `NNNN`(预期 `0012` 来自 Phase 2.3 ship)
-  2. `<实占N>` := `printf '%04d' $((10#NNNN + 1))`(zero-padded 4 digit,预期 `0013` 但**绝不预占**,以实际 ls 结果为准)
+  2. `0013` := `printf '%04d' $((10#NNNN + 1))`(zero-padded 4 digit,预期 `0013` 但**绝不预占**,以实际 ls 结果为准)
   3. 跑 `head -100 .planning/ROADMAP.md | grep -E '^##\s+(v[0-9.]+|Phase\s+[0-9.]+)'` 读 latest header pattern → 验 STATE freshness token 仍 valid("Phase 2.3 shipped")
   4. 把实占 N + ROADMAP latest token 决议**记录到本 task_plan.md 顶部 Resolved block**(供后续 task 引用)
-  5. **批量 sed-replace** `<实占N>` / `<实占NNNN>` 字面占位 — `grep -rl "<实占" .planning/phase-2.4/ docs/adr/ | xargs sed -i "s/<实占NNNN>/<actual-NNNN>/g; s/<实占N>/<actual-NNNN>/g"`(zero 字面残留)
+  5. **批量 sed-replace** `0013` / `0013` 字面占位 — `grep -rl "<实占" .planning/phase-2.4/ docs/adr/ | xargs sed -i "s/0013/<actual-NNNN>/g; s/0013/<actual-NNNN>/g"`(zero 字面残留)
 - **read_first**:
   - `ls docs/adr/`(by Bash)
   - `head -100 .planning/ROADMAP.md`(by Read)
   - ASSUMPTIONS B-36(SSOT 引用纪律)
 - **acceptance_criteria**:
   - `ls docs/adr/<actual-NNNN>-*.md 2>&1` 此时**不存在**(T0.2 才创建)
-  - 本 task_plan.md 顶部新增 `> **Resolved (T0.1)**: <实占N> = <actual-NNNN>` block(grep-verifiable)
-  - `grep -rnE "<实占N>|<实占NNNN>|<实占NNNN>" .planning/phase-2.4/ docs/adr/ 2>&1` exit 1(zero 字面残留)
+  - 本 task_plan.md 顶部新增 `> **Resolved (T0.1)**: 0013 = <actual-NNNN>` block(grep-verifiable)
+  - `grep -rnE "0013|0013|0013" .planning/phase-2.4/ docs/adr/ 2>&1` exit 1(zero 字面残留)
   - **禁写 `ADR 0013` 字面 verify**: `grep -rn "ADR 0013\|0013" .planning/phase-2.4/ docs/adr/<actual-NNNN>-*.md 2>&1` 仅命中 actual-NNNN (若 actual = 0013 命中;否则 exit 1)
 - **decision_source**: B-36 + KICKOFF § 3 Hard Constraint #2 + intel § 0 SSOT 引用纪律
 
-### T0.2 — ADR <实占N> draft (9 章节 sketch only, Wave 6 详细 fill)
+### T0.2 — ADR 0013 draft (9 章节 sketch only, Wave 6 详细 fill)
 
-- **files_modified**: `docs/adr/<实占NNNN>-phase-2.4-doctor-ee4-dashboard-c-path.md`(NEW)
+- **files_modified**: `docs/adr/0013-phase-2.4-doctor-ee4-dashboard-c-path.md`(NEW)
 - **action**: 创建 ADR file 含 9 章节 sketch(详细 Wave 6 T6.1 fill):
   ```markdown
-  # ADR <实占NNNN>: Phase 2.4 — doctor MIN + EE-4 plan-checker + dashboard C 路径 + Win sentinel
+  # ADR 0013: Phase 2.4 — doctor MIN + EE-4 plan-checker + dashboard C 路径 + Win sentinel
 
   Status: Draft (phase 2.4 W0 draft → W6 accepted)
   Date: 2026-05-16
@@ -72,7 +72,7 @@
   ### 9. Wave 0 backlog 5 项一次根治 (B-32 + B-33) — schemaVersion long-tail land scripts/check-provenance.mjs as 1 consumer + RETRO/STATE/deferred cadence 强化
 
   ## A7 Conservation
-  ADR 0001-0012 main body untouched; baseline tag 1-12 → 1-<实占N>; ci.yml A7 iter 1-12 → 1-<实占N>;
+  ADR 0001-0012 main body untouched; baseline tag 1-12 → 1-0013; ci.yml A7 iter 1-12 → 1-0013;
   docs/AGENT-DEFINITION-FACTORY-CONTRACT.md + docs/INSTALLER-CONTRACT.md main body 不动。
 
   ## References
@@ -1063,9 +1063,9 @@
 
 ## Wave 6 — ship + v0.2.0 4/4 close (F7 + F8)
 
-### T6.1 — ADR <实占N> finalize 9 章节 (Wave 0 draft → Wave 6 详细 fill) + accepted
+### T6.1 — ADR 0013 finalize 9 章节 (Wave 0 draft → Wave 6 详细 fill) + accepted
 
-- **files_modified**: `docs/adr/<实占NNNN>-phase-2.4-doctor-ee4-dashboard-c-path.md`(MODIFY,T0.2 sketch → finalize 详细 fill 9 章节)
+- **files_modified**: `docs/adr/0013-phase-2.4-doctor-ee4-dashboard-c-path.md`(MODIFY,T0.2 sketch → finalize 详细 fill 9 章节)
 - **action**:
   1. 每章节详细 fill (T0.2 sketch → finalize),沿袭 Phase 2.3 ADR 0012 模板模式:
      - § 1 doctor 5 check MIN scope (B-01~B-07) — 含 R2 critical finding "152L not 38L" rationale + 5% 超 hard limit 容忍 + origin-check helper sister-share
@@ -1090,19 +1090,19 @@
   - `wc -l docs/adr/<actual-NNNN>-*.md` ≤ 500 (沿袭 Phase 2.3 ADR 0012 详细 fill 行数)
 - **decision_source**: B-35 + B-36 + KICKOFF § 3 Hard Constraint #2
 
-### T6.2 — ci.yml A7 step iter 1-12 → 1-<实占N> + ADR 0001-0012 main body 0 diff verify
+### T6.2 — ci.yml A7 step iter 1-12 → 1-0013 + ADR 0001-0012 main body 0 diff verify
 
 - **files_modified**: `.github/workflows/ci.yml`(MODIFY A7 step iter range)
 - **action**:
   1. 找 `ci.yml` A7 step (Phase 2.3 ship iter 1-12)
-  2. iter 1-12 → 1-<实占N>(预期 1-13 但实占,以 T0.1 outcome 为准)
+  2. iter 1-12 → 1-0013(预期 1-13 但实占,以 T0.1 outcome 为准)
   3. Run A7 verify locally: `for n in $(seq -w 1 12); do git diff adr-<previous-baseline>..HEAD -- "docs/adr/${n}-*.md" | wc -l; done` 必全 0
   4. `docs/AGENT-DEFINITION-FACTORY-CONTRACT.md` + `docs/INSTALLER-CONTRACT.md` main body 0 diff verify
 - **read_first**:
   - `.github/workflows/ci.yml` A7 step(by Read,Phase 2.3 ship iter 1-12 范围)
   - ASSUMPTIONS B-37
 - **acceptance_criteria**:
-  - `grep -E "iter.*1-<实占N>\|iter.*1-0013" .github/workflows/ci.yml | wc -l` ≥ 1 (实占 N)
+  - `grep -E "iter.*1-0013\|iter.*1-0013" .github/workflows/ci.yml | wc -l` ≥ 1 (实占 N)
   - Local A7 verify: `for n in $(seq -w 1 12); do git diff adr-0012-accepted..HEAD -- "docs/adr/${n}-*.md"; done` 全 empty
   - CI Wave 6 push A7 step 全绿
 - **decision_source**: B-37 + KICKOFF § 3 Hard Constraint #10
@@ -1150,7 +1150,7 @@
      - 沿袭 `.planning/v0.1.0-MILESTONE-AUDIT.md` 模板
   5. Git tag 3 个 (per S3 plan-check fix fallback decision tree, step 1 outcome 决):
      ```bash
-     git tag adr-<实占N>-accepted
+     git tag adr-0013-accepted
      git tag v0.2.0-alpha.4-doctor
      # S3 fallback decision tree apply — choose ONE based on step 1 outcome:
      git tag v0.2.0  # (a) 主 path — v0.2.0 大里程碑, v0.2.0 alpha cycle 4/4 close
@@ -1190,4 +1190,4 @@
 
 ---
 
-*Phase 2.4 task_plan.md complete — 29 atomic tasks across 7 Waves (W0:6 / W1:3 / W2:5 / W3:4 / W4:3 / W5:3 / W6:5);全 task 含 `wc -l` / regex grep / TypeScript compile / vitest pass / CI step grep verify acceptance criterion;沿袭 Phase 2.3 task_plan.md atomic sub-task structure;6 R2 critical finding absorb 进 task body (T0.3 README pre-flight + T1.2 doctor.ts 152L baseline + T4.1 audit.ts 125L baseline + T3.2 SSE not WebSocket + T2.0 EE-4 baseline spike + T2.3 manual rerun anchor);7 open question O1-O7 全 surface in task body (O1 manual rerun anchor T2.3 + O2 T3.4 fallback gate + O3 T2.0 spike + O4 hook_type MIN scope T3.1 implicit + O5 mock subagent T4.3 + O6 SSE 不双轨 T3.2 + O7 auto-init T3.3);ADR `<实占N>` placeholder 全文使用 T0.1 sed-replace discipline 沿袭 Phase 2.1 + Phase 2.3 sister precedent。*
+*Phase 2.4 task_plan.md complete — 29 atomic tasks across 7 Waves (W0:6 / W1:3 / W2:5 / W3:4 / W4:3 / W5:3 / W6:5);全 task 含 `wc -l` / regex grep / TypeScript compile / vitest pass / CI step grep verify acceptance criterion;沿袭 Phase 2.3 task_plan.md atomic sub-task structure;6 R2 critical finding absorb 进 task body (T0.3 README pre-flight + T1.2 doctor.ts 152L baseline + T4.1 audit.ts 125L baseline + T3.2 SSE not WebSocket + T2.0 EE-4 baseline spike + T2.3 manual rerun anchor);7 open question O1-O7 全 surface in task body (O1 manual rerun anchor T2.3 + O2 T3.4 fallback gate + O3 T2.0 spike + O4 hook_type MIN scope T3.1 implicit + O5 mock subagent T4.3 + O6 SSE 不双轨 T3.2 + O7 auto-init T3.3);ADR `0013` placeholder 全文使用 T0.1 sed-replace discipline 沿袭 Phase 2.1 + Phase 2.3 sister precedent。*

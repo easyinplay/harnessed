@@ -10,7 +10,7 @@ files_modified:
   - .planning/RETROSPECTIVE.md
   - .planning/STATE.md
   - .planning/ROADMAP.md
-  - docs/adr/<实占NNNN>-phase-2.4-doctor-ee4-dashboard-c-path.md
+  - docs/adr/0013-phase-2.4-doctor-ee4-dashboard-c-path.md
   - README.md  # Wave 0 pre-flight calibration only if drift detected; otherwise unchanged
   - src/cli/doctor.ts
   - src/cli/audit.ts
@@ -63,11 +63,11 @@ must_haves:
     - "CI runs README counter integrity gate and fails if `grep -cE \"Phase 2\\\\.[0-9]+ shipped\"` ≠ `grep -cE \"Acceptance bar [A-Z][0-9]\"` ≠ `sed -n '44p' | grep -oE '[0-9]+/4'`"
     - "Windows native CI matrix step runs `tests/routing/ralph-loop-win-sentinel.test.ts` (5 fixture: simple-complete / multi-iter / max-iter / subagent-spawn-mock / timeout) and passes"
     - "Wave 0 5 项 prereq backlog 一次根治: H3 README CI counter gate ship + M1 RETRO dashboard polish 历史 cluster 一句补 + M2 schemaVersion 7 surface land 1 consumer (`scripts/check-provenance.mjs` per B-33) + T3 v0.3.0 backlog 预启动注记 (NOT land) + deferred-items review 强化 (沿袭 Phase 2.3 T0.8)"
-    - "ADR errata <实占N> accepted 含 9 章节 (doctor 5 check MIN + EE-4 plan-review-schema + EE-4 BLOCKER down-scope + dashboard C 路径 3 子 + SSE 替 WebSocket + cc-hook 3 处 enum + README counter B 路径 + audit 完整版扩 + Wave 0 backlog); ADR 0001-0012 main body 0 diff; baseline tag 1-12 → 1-<实占N>"
+    - "ADR errata 0013 accepted 含 9 章节 (doctor 5 check MIN + EE-4 plan-review-schema + EE-4 BLOCKER down-scope + dashboard C 路径 3 子 + SSE 替 WebSocket + cc-hook 3 处 enum + README counter B 路径 + audit 完整版扩 + Wave 0 backlog); ADR 0001-0012 main body 0 diff; baseline tag 1-12 → 1-0013"
     - "3-OS CI 全绿 (Win Git Bash + macOS + Linux) 含 Wave 0/2/4 加固 step 全跑 + ralph-loop Win sentinel 跑通 + 30 doctor fixture + 30 plan-checker fixture + 全链路 e2e"
-    - "v0.2.0 milestone close 完成: `adr-<实占N>-accepted` + `v0.2.0-alpha.4-doctor` + `v0.2.0` milestone tag (大里程碑) + `.planning/milestones/v0.2.0-{ROADMAP,REQUIREMENTS}.md` archive + `.planning/v0.2.0-MILESTONE-AUDIT.md` audit + ROADMAP § v0.2.0 4/4 phase ✅ + STATE.md 续编 + v0.3.0 启动 prereq"
+    - "v0.2.0 milestone close 完成: `adr-0013-accepted` + `v0.2.0-alpha.4-doctor` + `v0.2.0` milestone tag (大里程碑) + `.planning/milestones/v0.2.0-{ROADMAP,REQUIREMENTS}.md` archive + `.planning/v0.2.0-MILESTONE-AUDIT.md` audit + ROADMAP § v0.2.0 4/4 phase ✅ + STATE.md 续编 + v0.3.0 启动 prereq"
   artifacts:
-    - path: "docs/adr/<实占NNNN>-phase-2.4-doctor-ee4-dashboard-c-path.md"
+    - path: "docs/adr/0013-phase-2.4-doctor-ee4-dashboard-c-path.md"
       provides: "Phase 2.4 单 ADR errata 9 章节 (doctor MIN / EE-4 plan-review-schema / EE-4 BLOCKER down-scope / dashboard C 路径 3 子 / SSE 替 WebSocket / cc-hook 3 处 enum / README counter B 路径 / audit 完整版扩 / Wave 0 backlog 根治)"
       contains: "### 1. doctor 5 check MIN, ### 2. EE-4 plan-review-schema, ### 3. EE-4 BLOCKER down-scope, ### 4. dashboard C 路径, ### 5. SSE 替 WebSocket, ### 6. cc-hook 3 处 enum, ### 7. README counter B 路径, ### 8. audit 完整版扩, ### 9. Wave 0 backlog"
     - path: "src/cli/doctor.ts"
@@ -103,7 +103,7 @@ must_haves:
     - path: "tests/routing/ralph-loop-win-sentinel.test.ts"
       provides: "Win-only sentinel 5 fixture e2e (simple-complete / multi-iter / max-iter / subagent-spawn-mock / timeout) ~80L"
     - path: ".github/workflows/ci.yml"
-      provides: "Wave 0 README counter gate step (B-17) + Wave 2 EE-4 plan-checker step (B-11) + Wave 4 Win sentinel step (B-30) + A7 iter 1-12 → 1-<实占N>"
+      provides: "Wave 0 README counter gate step (B-17) + Wave 2 EE-4 plan-checker step (B-11) + Wave 4 Win sentinel step (B-30) + A7 iter 1-12 → 1-0013"
     - path: ".planning/v0.2.0-MILESTONE-AUDIT.md"
       provides: "v0.2.0 4 phase 历史 ship 审计 + cumulative metric (Phase 2.1 + 2.2 + 2.3 + 2.4 ship 路径 + sister review 闭环 + Karpathy hard limit 遵守度) — 沿袭 v0.1.0-MILESTONE-AUDIT.md 模板"
   key_links:
@@ -233,9 +233,9 @@ T4.4 Task Session 复用完整版 (v0.3.0 checkpoint) + T1.1 dual-signal 4-layer
 
 ```
 Wave 0 — STATE.md 5 项 prereq backlog 一次根治 + ADR draft (F1)
-  ├─ T0.1  ADR 编号实占 (<实占N>, 预期 0013) + ROADMAP latest-shipped token + sed-replace placeholder discipline
+  ├─ T0.1  ADR 编号实占 (0013, 预期 0013) + ROADMAP latest-shipped token + sed-replace placeholder discipline
   │         (沿袭 Phase 2.3 T0.1 — solo 单线性无并发 + max(NNNN)+1)
-  ├─ T0.2  ADR <实占N> draft 9 章节 sketch only (Wave 6 详细 fill)
+  ├─ T0.2  ADR 0013 draft 9 章节 sketch only (Wave 6 详细 fill)
   ├─ T0.3  README CI counter gate B 路径 ship (B-16 + B-17) — Wave 0 pre-flight regex calibration (local grep 校准当前 README) + .github/workflows/ci.yml +~15L yaml step
   ├─ T0.4  M2 schemaVersion 7 surface land 1 consumer (B-33) — scripts/check-provenance.mjs 加 1 行 branchOnSchemaVersion consumer call site
   ├─ T0.5  M1 RETRO dashboard polish 历史 cluster 一句补 + T3 v0.3.0 backlog 预启动注记 + deferred-items review 强化 (parallel 纯文档/script: RETROSPECTIVE.md entry + STATE.md note + scripts/check-deferred-items.mjs cadence 沿袭 Phase 2.3 T0.8)
@@ -266,10 +266,10 @@ Wave 5 — 30-sample integration e2e (F6 — D2.4-19 — anti-redo Phase 2.3 30 
   └─ T5.3  tests/integration/phase-2.4-e2e.test.ts NEW ~100L (全链路 e2e: doctor → plan-checker → dashboard 多项目 + SSE watcher)
        ↓
 Wave 6 — ship + v0.2.0 4/4 close (F7 + F8)
-  ├─ T6.1  ADR <实占N> finalize 9 章节 (Wave 0 draft → Wave 6 详细 fill) + accepted
-  ├─ T6.2  ci.yml A7 step iter 1-12 → 1-<实占N> + ADR 0001-0012 main body 0 diff verify
+  ├─ T6.1  ADR 0013 finalize 9 章节 (Wave 0 draft → Wave 6 详细 fill) + accepted
+  ├─ T6.2  ci.yml A7 step iter 1-12 → 1-0013 + ADR 0001-0012 main body 0 diff verify
   ├─ T6.3  STATE.md 续编 Phase 2.4 SHIPPED + .planning/RETROSPECTIVE.md milestone retrospective (含 deferred items review 跑通 + v0.2.0 alpha cycle close lessons)
-  ├─ T6.4  v0.2.0 milestone close (B-42 + B-43) — 3 tag (adr-<实占N>-accepted + v0.2.0-alpha.4-doctor + v0.2.0 milestone) + .planning/milestones/v0.2.0-{ROADMAP,REQUIREMENTS}.md archive + .planning/v0.2.0-MILESTONE-AUDIT.md NEW (沿袭 v0.1.0 close 模式)
+  ├─ T6.4  v0.2.0 milestone close (B-42 + B-43) — 3 tag (adr-0013-accepted + v0.2.0-alpha.4-doctor + v0.2.0 milestone) + .planning/milestones/v0.2.0-{ROADMAP,REQUIREMENTS}.md archive + .planning/v0.2.0-MILESTONE-AUDIT.md NEW (沿袭 v0.1.0 close 模式)
   └─ T6.5  ROADMAP § v0.2.0 4 phase 全 ✅ + v0.3.0 启动 prereq 列表 (T3 backlog + plan-feature workflow + checkpoint cadence + gstack 前缀探测)
 ```
 
@@ -295,7 +295,7 @@ Wave 6 — ship + v0.2.0 4/4 close (F7 + F8)
 | 3 | 4 | ~2d | ccHookAdd.ts ≤100L + 3 处 enum 加 + dispatch 7th + dashboard SSE + 多项目 + dashboard.mjs ≤700L soft cap (T3.4 split fallback if >650L) |
 | 4 | 3 | ~1d | audit.ts ≤200L (helper split) + audit-helpers.ts ≤50L + audit.test 4 case + ralph-loop-win-sentinel 5 fixture pass on Win |
 | 5 | 3 | ~1d | 30 doctor fixture pass + 30 plan-checker fixture pass + e2e 全链路 pass |
-| 6 | 5 | ~1d | 3-OS CI 全绿 + 3 tag exist + ADR 0001-0012 main body diff 0 + adr-<实占N>-accepted + v0.2.0 milestone archive 完成 + ROADMAP 4/4 ✅ |
+| 6 | 5 | ~1d | 3-OS CI 全绿 + 3 tag exist + ADR 0001-0012 main body diff 0 + adr-0013-accepted + v0.2.0 milestone archive 完成 + ROADMAP 4/4 ✅ |
 | **Total** | **29** | **~8d** | F1-F8 全 ship + v0.2.0 alpha cycle close |
 
 ---
@@ -348,8 +348,8 @@ Phase 2.4 ship 后,v0.3.0 直接消费的接口:
 | **F4** | `wc -l src/installers/ccHookAdd.ts scripts/dashboard.mjs && grep "'cc-hook-add'" src/installers/index.ts && grep -E "'hook'\|'cc-hook'\|'cc-hook-add'" src/manifest/schema/spec.ts \| wc -l && harnessed install dashboard-autospawn --dry-run && curl -N http://localhost:47180/events & sleep 1; touch .planning/STATE.md; sleep 1; kill %1 && curl http://localhost:47180/api/projects \| jq '.[].name'` | ccHookAdd.ts ≤100L;dashboard.mjs ≤700L soft cap (T3.4 fallback if >650L per B-26);dispatch 7th 'cc-hook-add' 命中;3 处 enum 加项 grep count == 3;install dry-run exit 0;SSE /events stream 含 `state-changed` event;`/api/projects` 返回 JSON list (含 cwd as default) |
 | **F5** | `wc -l src/cli/audit.ts src/cli/lib/audit-helpers.ts && npm test -- tests/cli/audit.test.ts && grep "Win sentinel" .github/workflows/ci.yml && npm test -- tests/routing/ralph-loop-win-sentinel.test.ts` (Win-only) | audit.ts ≤200L (split helper 后);audit-helpers.ts ≤50L;audit.test 4 case (origin drift + install.cmd injection + upstream cross-check + provenance spawn) 全 pass;Win sentinel CI step 存在;Win sentinel 5 fixture 全 pass on Win matrix |
 | **F6** | `npm test -- tests/cli/doctor-fixtures.test.ts && npm test -- tests/integration/plan-checker-fixtures.test.ts && npm test -- tests/integration/phase-2.4-e2e.test.ts` | 30 doctor fixture 全 pass (5 check × 6 env scenario per B-31);30 plan-checker fixture 全 pass (Phase 1.1~2.3 plan 跑 4 维量化);e2e 全链路 pass |
-| **F7** | `git diff <baseline-1-12>..HEAD -- "docs/adr/0001-*.md" "docs/adr/0002-*.md" ... "docs/adr/0012-*.md" \| wc -l && ls docs/adr/<实占NNNN>-*.md && grep -E "^### [1-9]\\. " docs/adr/<实占NNNN>-*.md \| wc -l` | A7 diff wc == 0;ADR <实占N> 存在 + 9 章节 |
-| **F8** | `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` + `git tag --list 'adr-<实占N>-accepted' 'v0.2.0-alpha.4-doctor' 'v0.2.0*'` + `ls .planning/milestones/v0.2.0-*.md .planning/v0.2.0-MILESTONE-AUDIT.md` + `grep -E "Phase 2\\\\.4 SHIPPED\|v0\\\\.2\\\\.0 4/4" .planning/STATE.md .planning/ROADMAP.md` | CI all-green 3 OS;3 tag 全存在 (含 v0.2.0 主 path OR v0.2.0-final / v0.2.0-extension fallback per S3 + R12 decision tree — tag glob `'v0.2.0*'` 兼容 fallback);v0.2.0 milestone archive 3 files 存在;STATE + ROADMAP 含 ship marker |
+| **F7** | `git diff <baseline-1-12>..HEAD -- "docs/adr/0001-*.md" "docs/adr/0002-*.md" ... "docs/adr/0012-*.md" \| wc -l && ls docs/adr/0013-*.md && grep -E "^### [1-9]\\. " docs/adr/0013-*.md \| wc -l` | A7 diff wc == 0;ADR 0013 存在 + 9 章节 |
+| **F8** | `gh run list --workflow=ci.yml --limit=1 --json conclusion -q '.[0].conclusion'` + `git tag --list 'adr-0013-accepted' 'v0.2.0-alpha.4-doctor' 'v0.2.0*'` + `ls .planning/milestones/v0.2.0-*.md .planning/v0.2.0-MILESTONE-AUDIT.md` + `grep -E "Phase 2\\\\.4 SHIPPED\|v0\\\\.2\\\\.0 4/4" .planning/STATE.md .planning/ROADMAP.md` | CI all-green 3 OS;3 tag 全存在 (含 v0.2.0 主 path OR v0.2.0-final / v0.2.0-extension fallback per S3 + R12 decision tree — tag glob `'v0.2.0*'` 兼容 fallback);v0.2.0 milestone archive 3 files 存在;STATE + ROADMAP 含 ship marker |
 
 ---
 
@@ -373,7 +373,7 @@ Phase 2.4 ship 后,v0.3.0 直接消费的接口:
 |------|------------------|----------------|--------|
 | workflow | extension category MVP + karpathy 注入引擎 ✅ | **doctor 完整版 + EE-4 plan-checker absorb + dashboard C 路径 absorb + Win sentinel** | plan-feature workflow + checkpoint |
 | schema | decision_rules CD-3 字段 ✅ | plan-review-schema.yaml 4 维 SSOT + install_type/typeEnum/install.method 3 处 enum 加 (cc-hook) | task_session_id field bump |
-| ADR | 0012 单一覆盖 Phase 2.3 全决策 ✅ | 新 ADR <实占N> errata 9 章节 (**不预占 0013**) | 新 ADR plan-feature |
+| ADR | 0012 单一覆盖 Phase 2.3 全决策 ✅ | 新 ADR 0013 errata 9 章节 (**不预占 0013**) | 新 ADR plan-feature |
 | installer | 6 method dispatch + extension 5 NEW adapter ✅ | + cc-hook-add 第 7 method (dashboard 3.1 SessionStart hook) | (frozen) |
 | skill 注入 | karpathy-baseline SKILL-ONLY ✅ | (不动) | (不动) |
 | gate | EE-5 5-question merge gate 双层 ✅ | EE-4 4 维 plan-checker 量化 BLOCKER (manual rerun per B-12) + README CI counter gate B 路径 | 路由命中率验收 ≥ N% + EE-4 auto-spawn rerun |
@@ -429,10 +429,10 @@ Phase 2.4 ship 后,v0.3.0 直接消费的接口:
 
 1. F1-F8 acceptance bar 全 pass (§ 6 reproduction commands 全 PASS)
 2. 7 Wave checkpoint 全 PASS (§ 7 table)
-3. A7 守恒 — ADR 0001-0012 main body 0 diff;ADR <实占N> errata 9 章节 accepted;baseline tag 1-12 → 1-<实占N>;ci.yml A7 iter 同步
+3. A7 守恒 — ADR 0001-0012 main body 0 diff;ADR 0013 errata 9 章节 accepted;baseline tag 1-12 → 1-0013;ci.yml A7 iter 同步
 4. Karpathy hard limit 守 — `doctor.ts` ≤215L (5% 超容忍);`origin-check.ts` ≤80L;`ccHookAdd.ts` ≤100L;`audit.ts` ≤200L (helper split 后);`audit-helpers.ts` ≤50L;`run-plan-checker.mjs` ≤100L;`plan-review-schema.yaml` ≤60L;`dashboard.mjs` ≤700L soft cap (dev tool,T3.4 fallback if >650L)
 5. 3-OS CI 全绿 (Win Git Bash + macOS + Linux) 含 README counter gate + EE-4 plan-checker step + ralph-loop Win sentinel + 30 fixture × 2 + e2e
-6. **v0.2.0 milestone close** — `adr-<实占N>-accepted` + `v0.2.0-alpha.4-doctor` + **`v0.2.0`** 3 tag + .planning/milestones/v0.2.0-{ROADMAP,REQUIREMENTS}.md archive + .planning/v0.2.0-MILESTONE-AUDIT.md NEW + ROADMAP § v0.2.0 4 phase 全 ✅ + STATE.md Phase 2.4 SHIPPED + v0.3.0 启动 prereq
+6. **v0.2.0 milestone close** — `adr-0013-accepted` + `v0.2.0-alpha.4-doctor` + **`v0.2.0`** 3 tag + .planning/milestones/v0.2.0-{ROADMAP,REQUIREMENTS}.md archive + .planning/v0.2.0-MILESTONE-AUDIT.md NEW + ROADMAP § v0.2.0 4 phase 全 ✅ + STATE.md Phase 2.4 SHIPPED + v0.3.0 启动 prereq
 </success_criteria>
 
 <output>
