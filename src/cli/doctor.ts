@@ -141,10 +141,20 @@ async function checkGstackPrefix(): Promise<CheckResult> {
   return { name: 'gstack prefix', status: r.status, message: r.detail, fix: r.fix }
 }
 
+// Phase 3.3 W1 T1.7 — 7th check: deprecated manifests via aliases.yaml (D-02
+// DOCTOR-ONLY-WARN). Sister L138-142 checkGstackPrefix 100% reuse: dynamic
+// import + delegate to PRIMARY helper src/cli/lib/check-deprecations.ts.
+async function checkDeprecations(): Promise<CheckResult> {
+  const { checkDeprecations: runCheck } = await import('./lib/check-deprecations.js')
+  return runCheck()
+}
+
 export function registerDoctor(program: Command): void {
   program
     .command('doctor')
-    .description('Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix)')
+    .description(
+      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations)',
+    )
     .option('--json', 'output JSON instead of human-readable')
     .action(async (opts: { json?: boolean }) => {
       const results: CheckResult[] = [
@@ -154,6 +164,7 @@ export function registerDoctor(program: Command): void {
         checkWinBash(),
         await checkOriginUrl(),
         await checkGstackPrefix(), // ← Phase 3.2 W1 T1.5 ADD 6th check (D-01 PROBE)
+        await checkDeprecations(), // ← Phase 3.3 W1 T1.7 ADD 7th check (D-02 DOCTOR-ONLY-WARN)
       ]
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')

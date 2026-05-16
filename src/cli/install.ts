@@ -34,6 +34,7 @@ interface RawOpts {
   nonInteractive?: boolean
   fullDiff?: boolean
   color?: boolean // commander turns --no-color into color: false
+  knownGood?: boolean // ← Phase 3.3 W1 T1.9 ADD (D-03 YAML version lock consume)
 }
 
 function formatError(e: InstallError): string {
@@ -53,6 +54,10 @@ export function registerInstall(program: Command): void {
     .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
     .option('--full-diff', 'expand diffs longer than 200 lines')
     .option('--no-color', 'disable ANSI colors (auto-detected when piped)')
+    .option(
+      '--known-good',
+      'use known-good version lock from versions/<harnessed-ver>-known-good.yaml',
+    )
     .action(async (name: string, raw: RawOpts) => {
       // H1 pre-action flag gate (see file header IMPL NOTE).
       if (raw.nonInteractive && !raw.apply && !raw.dryRun) {
@@ -63,8 +68,14 @@ export function registerInstall(program: Command): void {
         process.exit(2)
       }
 
-      const manifestPath = resolve(process.cwd(), `manifests/tools/${name}.yaml`)
-      const skillPackPath = resolve(process.cwd(), `manifests/skill-packs/${name}.yaml`)
+      // Phase 3.3 W1 T1.8 ADD — D-01 alias redirect (D-02 silent install,
+      // NO console output per R7.5 验收 "install 通过" 语义对齐; doctor 7th
+      // check is the human-readable deprecation audit surface).
+      const { resolveAlias } = await import('../manifest/aliases.js')
+      const resolvedName = resolveAlias(name) ?? name
+
+      const manifestPath = resolve(process.cwd(), `manifests/tools/${resolvedName}.yaml`)
+      const skillPackPath = resolve(process.cwd(), `manifests/skill-packs/${resolvedName}.yaml`)
       let yamlSrc: string
       let chosenPath = manifestPath
       try {
@@ -75,8 +86,8 @@ export function registerInstall(program: Command): void {
           chosenPath = skillPackPath
         } catch {
           console.error(
-            `error: manifest '${name}' not found\n` +
-              `  fix:  ensure manifests/tools/${name}.yaml or manifests/skill-packs/${name}.yaml exists`,
+            `error: manifest '${resolvedName}' not found\n` +
+              `  fix:  ensure manifests/tools/${resolvedName}.yaml or manifests/skill-packs/${resolvedName}.yaml exists`,
           )
           process.exit(1)
         }
@@ -97,6 +108,18 @@ export function registerInstall(program: Command): void {
         fullDiff: raw.fullDiff === true,
         color: raw.color === false ? false : 'auto',
       }
+
+      // Phase 3.3 W1 T1.9 ADD — D-03 known-good lock consume (lazy load only
+      // when flag set per Karpathy YAGNI Discretion lock).
+      if (raw.knownGood) {
+        const { getPinnedVersion } = await import('../manifest/knownGood.js')
+        const harnessedVer = '0.3.0' // TODO Phase 3.4: read from package.json (DEFERRED #AD)
+        const pinned = getPinnedVersion(v.manifest.metadata.name, harnessedVer)
+        if (pinned && v.manifest.spec.install.method === 'npm-cli') {
+          ;(v.manifest.spec.install as { npm_version?: string }).npm_version = pinned
+        }
+      }
+
       const result = await runInstall(v.manifest, opts)
 
       if ('aborted' in result) {
