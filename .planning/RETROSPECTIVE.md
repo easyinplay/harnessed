@@ -12,7 +12,22 @@
 **Review history**:
 - Phase 2.3 W0 (2026-05-16 — 本 phase 启动 W0): T1.1 dual-signal real-API (等 ANTHROPIC_API_KEY env, v0.3.0 prep) / T4.4 Task Session (SC4 PARTIAL → v0.3.0 stable bridge/assistant API) / EE-4 plan 4 维量化阈值 (Phase 2.4 doctor) — PENDING (无 trigger 满足)
 - **Phase 2.3 ship** (2026-05-16 — 本 phase ship): T1.1 dual-signal real-API PENDING (无 ANTHROPIC_API_KEY env 触发 — v0.3.0 prep continues) / T4.4 Task Session PENDING (closure infra 三件套 ready, consumer 接入 + schema bump 走 v0.3.0) / EE-4 plan 4 维量化阈值 PENDING (Phase 2.4 doctor 完整版 absorb 候选) / **DI-1 RESOLVED** (Phase 2.3 W6 hotfix commit `5ccc631` — karpathy-skills.yaml schema-compliant: git_ref pin 40-hex all-zeros + install_type:git per ADR 0007 1:N closure; 全 local-copy install method DEFERRED v0.2.4+)
+- **Phase 2.4 W0** (2026-05-16 — 本 phase 启动 W0): cadence walker round-2 warn-only continues (phase-2.4/deferred-items.md stub created in T0.5; check-deferred-items.mjs phase-aware token added; Phase 2.4 ship 后评估 ENFORCE=true flip per round-3 cadence)
 - Phase 2.4 ship (TBD): 同步触发条件复查 + 本表更新
+
+---
+
+## dashboard tool cross-phase history cluster (M1 absorb — Phase 2.4 Wave 0 T0.6)
+
+> sister Phase 2.3 RETROSPECTIVE What Worked § "dashboard tooling (T-W6-2 absorb) cross-phase reference" extension。 跨 phase 2.2/2.3/2.4 boundary tooling reference cluster — 单一 tool 多次跨 phase 演化的 sister observability 模板。
+
+**Timeline cluster**:
+- **`0b4e76d`** (Phase 2.2/2.3 boundary, 2026-05-15): `scripts/dashboard.mjs` NEW ~456L zero-dep ESM read-only `.planning/` + `docs/adr/` + git visualization + tiny inline md→html + mtime polling + hook-ready `--no-open` + port-occupied silent exit
+- **`161621c`** (Phase 2.3 ship 时, 2026-05-16): UX polish round 1 — 7 项 UX 改善 + 1 silent bug fix + rename Dashboard → STATE (page heading + window title + sidebar)
+- **`3fc0c42`** (Phase 2.4 Wave 0 pre-flight, 2026-05-16): UX polish round 2 — reverse sort (latest first) Phase History + ADRs + Phycat-Cherry dark-friendly typography borrow (heading decorations 4 级 + blockquote + font stack incl. LXGW WenKai)
+- **Phase 2.4 Wave 3 (TBD)**: dashboard C 路径 FULL absorb (D-04) — SessionStart hook auto-install + STATE.md SSE watcher + 多项目支持 (3 子功能 atomic, sister cluster Wave 3 3 sub-task)
+
+advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish round 2 (commit `3fc0c42`) 都是 NEW (commit `0b4e76d`) 的延伸, 不另立功能 entry；Phase 2.4 C 路径 FULL absorb 才是主功能 ship (sister ADR 0013 § 4 Decision)。 此 M1 entry sister STATE.md L611 M1 backlog 一句补诺言交付。
 
 ---
 
