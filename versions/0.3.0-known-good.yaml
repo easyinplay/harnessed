@@ -1,0 +1,9 @@
+# versions/0.3.0-known-good.yaml — Phase 3.3 R7.6 MVP seed
+# Phase 3.4 dogfood fills upstreams with actual e2e-verified pinned versions
+# (e.g., claude-agent-sdk@0.3.142, gstack@1.5.0, etc).
+# Schema: src/manifest/schema/known-good.v1.ts (13th surface, D-03 YAML manifest)
+
+schemaVersion: harnessed.known-good.v1
+harnessed_version: '0.3.0'
+e2e_verified_at: '2026-05-17'  # placeholder; Phase 3.4 updates with actual e2e date
+upstreams: []  # Phase 3.4 dogfood adds: [{name: 'claude-agent-sdk', version: '...', install_method: 'npm-cli'}, ...]

@@ -1,0 +1,14 @@
+# manifests/aliases.yaml — Phase 3.3 R7.5 deprecation marker + upstream rename redirect
+# Phase 3.3 MVP empty seed; Phase 3.4 dogfood adds first actual deprecation entries.
+# Schema: src/manifest/schema/aliases.v1.ts (12th surface, D-01 RICH)
+#
+# Example entry shape (commented for reference, uncomment + populate when needed):
+# old-package-name:
+#   redirect: new-package-name
+#   reason: upstream renamed (v2.0 rebrand)
+#   since_version: '0.3.0'
+#   deprecation_date: '2026-05-17'
+#   removal_date: '2026-12-31'  # optional, 长尾窗口
+
+schemaVersion: harnessed.aliases.v1
+aliases: {}
