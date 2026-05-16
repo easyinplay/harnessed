@@ -1,21 +1,16 @@
-// Phase 1.4 T3.1 — main-process-driven routing engine v1 (Pattern N).
-// Phase 1.5 T3.4 upgrade — DAG resolver pre-check + Semantic Router L2 fallthrough.
-// Phase 2.2 W4 T4.2 upgrade — defaultSpawn = real sdkSpawn (lib/sdkSpawn.ts).
-//
-// IMPL NOTE — ADR 0006 § 1 双层架构 + KICKOFF C1 (main-process orchestrator).
-// D1.2.5-3 lock: routing engine runs in the main session, spawns subagents
-// via `query({ options: { agents: { name: agentDef } } })` (Anchor 6) — never
-// recursive (Fact D / RESEARCH-1 § 1.1). F33 P1 mitigation: verbatim
-// <promise>COMPLETE</promise> (Anchor 2). D1.4-1 reload bypass via fresh
-// query() (Anchor 3 / lib/ralphLoop.ts) — never /reload-plugins (#35641/#46594).
-// D1.4-3 wedge: ralphLoopWrap ≤50L. ADR 0008 § Decision 4 tracks 8 接口契约
-// upgrade points (PLAN.md § 4). createAgent honors contract § 3.
-// Phase 1.5 T3.4 (ADR 0009 / D1.5-11): PRE-arbitrate resolveDag() cycle
-// pre-check + POST-arbitrate-miss semanticRouter.match() L2 (v0.1 stub —
-// null pass-through to L3 fallback_supervisor); EngineResult stays 三态 union.
+// Phase 1.4 T3.1 → 1.5 T3.4 → 2.2 W4 T4.2 → 3.1 W3 T3.2 main-process routing
+// engine (Pattern N). ADR 0006 § 1 双层架构. Spawns subagents via query({
+// agents: { name: agentDef } }) — never recursive. F33 verbatim <promise>
+// COMPLETE</promise>. D1.4-1 fresh query() reload bypass. D1.4-3 ralphLoopWrap
+// ≤50L. ADR 0008 § 4 接口契约 8 upgrade points. T3.4 (ADR 0009) PRE-arbitrate
+// DAG cycle pre-check + POST-arbitrate L2 semanticRouter (v0.1 stub null
+// pass-through to L3). Phase 3.1 W3 T3.2 (D-04 WIRE-IN): activatePhase +
+// completePhase hooks bridge engine → checkpoint module (W-01 orchestrator
+// PRIMARY extract to engineHook.ts ≤50L; engine.ts ≤200L Karpathy clean).
 
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import {
   type AgentDefinition,
   type AgentDefinitionOpts,
@@ -164,12 +159,21 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
     return { ok: false, phase: 'spawn', error: error as Error }
   }
 
-  // Step 4 + 5 — spawn + ralph-loop wrap (Anchor 4 / T4.2 sdkSpawn wire-up).
-  // userSpawn (test seam, 1-arg) ignores resumeSessionId; defaultSpawn=sdkSpawn
-  // consumes it. CD-4 closure-ready (T4.4 deferred to v0.3.0 per B-35).
+  // Phase 3.1 W3 T3.2 (W-04 fix path a): phaseId via TaskContext typed field.
+  const phaseId = task.phaseId ?? 'unknown'
+  await activatePhase(phaseId)
+
+  // Step 4+5 spawn + ralph-loop. userSpawn = fresh-session-only path (B-02):
+  // test seam signature `(agentDef) => Promise<string>` has no onSessionId
+  // out-param by design (YAGNI <5% niche, breaking change > value); resume.ts
+  // falls back to fresh session + reload checkpoint (DEFERRED #2). defaultSpawn
+  // captures session_id; T3.1 ralphLoop propagates it iter 2+ (CD-4 activated).
   const expertName = (matched.decision.primary_expert as string | null) ?? 'unknown'
   let capturedSessionId: string | undefined
-  const wrappedSpawn = async (resumeSessionId?: string): Promise<string> =>
+  const wrappedSpawn = async (
+    resumeSessionId?: string,
+    onSessionIdInner?: (id: string) => void,
+  ): Promise<string> =>
     userSpawn
       ? userSpawn(agentDef)
       : defaultSpawn(agentDef, {
@@ -177,11 +181,12 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
           ...(resumeSessionId ? { resumeSessionId } : {}),
           onSessionId: (id) => {
             capturedSessionId = id
+            onSessionIdInner?.(id)
           },
         })
-  void capturedSessionId
   try {
     const result = await ralphLoopWrap(wrappedSpawn, maxIter)
+    await completePhase({ phaseId, sessionId: capturedSessionId, status: 'complete' })
     return { ok: true, result, matchedRule: matched }
   } catch (error) {
     if (error instanceof MaxIterationsExceededError) {
