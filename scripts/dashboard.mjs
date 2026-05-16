@@ -173,6 +173,16 @@ function fileMtimes(paths) {
     .reduce((a, x) => Math.max(a, x.m), 0)
 }
 
+// Parse "tests A→B (+N)" or "tests N+M" from STATE.md (first match = latest).
+// Returns { current: number, delta: number|null } or null if not found.
+function parseTestsStat(state) {
+  const m = state.match(/tests?\s+\d+(?:\+\d+)?\s*→\s*(\d+)(?:\+\d+)?\s*\(\+(\d+)\)/i)
+  if (m) return { current: Number(m[1]), delta: Number(m[2]) }
+  const m2 = state.match(/tests?\s+(\d+)(?:\+\d+)?/i)
+  if (m2) return { current: Number(m2[1]), delta: null }
+  return null
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Pages — each returns an HTML fragment (shell wraps it)
 // ────────────────────────────────────────────────────────────────────────────
@@ -181,8 +191,15 @@ function pageDashboard() {
   const stateHead = head(state, 35)
   const commits = gitLog(8)
   const phases = listDirs(PLANNING)
+  const adrCount = existsSync(ADR)
+    ? readdirSync(ADR).filter((f) => /^\d{4}-.*\.md$/.test(f)).length
+    : 0
+  const tests = parseTestsStat(state)
+  const testTrend =
+    tests && tests.delta != null ? ` <span class="trend up">↑${tests.delta}</span>` : ''
+  const testBig = tests ? `${tests.current}${testTrend}` : '—'
   return `
-<h2>📊 Dashboard</h2>
+<h2>📊 STATE</h2>
 <p class="subtitle">最新项目状态（来自 .planning/STATE.md）</p>
 
 <div class="card">
@@ -191,7 +208,8 @@ ${md(stateHead)}
 
 <div class="row">
   <div class="stat"><div class="big">${phases.length}</div><div class="lbl">phase 目录</div></div>
-  <div class="stat"><div class="big">${listDirs(ADR, '').filter((f) => /^\d{4}-/.test(f)).length}</div><div class="lbl">ADR 文档</div></div>
+  <div class="stat"><div class="big">${adrCount}</div><div class="lbl">ADR 文档</div></div>
+  <div class="stat"><div class="big">${testBig}</div><div class="lbl">tests 通过</div></div>
   <div class="stat"><div class="big">${commits.length}</div><div class="lbl">最近 commits</div></div>
 </div>
 
@@ -301,26 +319,31 @@ ${commits.map((c) => `<tr><td><code>${c.h}</code></td><td>${c.d}</td><td>${esc(c
 // ────────────────────────────────────────────────────────────────────────────
 const SHELL = `<!doctype html>
 <html lang="zh-CN" data-theme="dark"><head><meta charset="utf-8"/>
-<title>harnessed dashboard</title>
+<title>harnessed STATE</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0d1117;color:#c9d1d9;font-size:14px;line-height:1.6}
 .layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-.nav{background:#161b22;border-right:1px solid #30363d;padding:18px 0}
+.nav{background:#0a0d11;border-right:1px solid #30363d;padding:18px 0;position:sticky;top:0;align-self:start;height:100vh;max-height:100vh;overflow-y:auto}
 .nav h1{font-size:15px;margin:0 18px 18px;color:#58a6ff}
 .nav .v{font-size:11px;color:#8b949e;margin:-12px 18px 18px}
-.nav a{display:block;padding:10px 18px;color:#c9d1d9;text-decoration:none;border-left:3px solid transparent;cursor:pointer}
-.nav a:hover{background:#21262d}
+.nav a{display:block;padding:10px 18px;color:#c9d1d9;text-decoration:none;border-left:3px solid transparent;cursor:pointer;transition:background .15s ease}
+.nav a:hover{background:#161b22}
 .nav a.active{background:#1f2933;border-left-color:#58a6ff;color:#fff}
-.main{padding:24px 32px;max-width:1100px}
+.main{padding:24px clamp(24px,4vw,48px);max-width:1100px;margin:0 auto;width:100%}
 h2{margin:0 0 4px;color:#fff;font-size:22px}
 h3{color:#fff;margin:18px 0 10px;font-size:17px}
 .subtitle{color:#8b949e;margin:0 0 18px;font-size:13px}
-.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 18px;margin:14px 0}
+.card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 18px;margin:14px 0;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.4);border-color:#3b434c}
 .row{display:flex;gap:14px;margin:14px 0;flex-wrap:wrap}
-.stat{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 22px;flex:1;min-width:140px;text-align:center}
+.stat{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 22px;flex:1;min-width:140px;text-align:center;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.stat:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.4);border-color:#3b434c}
 .stat .big{font-size:28px;font-weight:700;color:#58a6ff}
 .stat .lbl{font-size:12px;color:#8b949e;margin-top:4px}
+.trend{font-size:14px;font-weight:600;vertical-align:middle;margin-left:4px}
+.trend.up{color:#7ee787}
+.trend.down{color:#f0883e}
 .muted{color:#8b949e;font-size:12px}
 .badge{display:inline-block;background:#1f2933;border:1px solid #30363d;padding:2px 8px;border-radius:10px;font-size:11px;color:#7ee787}
 table{width:100%;border-collapse:collapse;margin:10px 0}
@@ -330,21 +353,20 @@ tr:hover td{background:#1f2933}
 code{background:#1f2933;padding:1px 5px;border-radius:3px;font-family:Consolas,Monaco,monospace;font-size:12px;color:#79c0ff}
 pre{background:#1f2933;padding:12px;border-radius:6px;overflow-x:auto}
 pre code{background:none;padding:0;color:#c9d1d9}
-blockquote{border-left:3px solid #58a6ff;margin:10px 0;padding:6px 14px;background:#161b22;color:#8b949e}
+blockquote{border-left:3px solid #58a6ff;margin:10px 0;padding:6px 14px;background:#0d1117;color:#8b949e}
 a{color:#58a6ff;text-decoration:none}a:hover{text-decoration:underline}
 hr{border:0;border-top:1px solid #30363d;margin:18px 0}
-.top{position:fixed;top:14px;right:18px;display:flex;gap:10px;align-items:center;background:#161b22;border:1px solid #30363d;padding:6px 12px;border-radius:6px;font-size:12px;color:#8b949e}
+.top{position:sticky;top:0;z-index:10;display:flex;gap:10px;align-items:center;background:rgba(13,17,23,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid #30363d;border-radius:6px;padding:8px 14px;margin:0 0 14px;font-size:12px;color:#8b949e}
 .dot{width:8px;height:8px;border-radius:50%;background:#7ee787}
 .dot.changed{background:#f0883e;animation:p 1s infinite}
 @keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
 ul,ol{padding-left:22px}
 </style></head><body>
-<div class="top"><span class="dot" id="dot"></span><span id="t">就绪</span><a href="#" onclick="r();return false">⟳ 刷新</a></div>
 <div class="layout">
 <nav class="nav">
 <h1>harnessed</h1>
-<div class="v">dashboard · read-only</div>
-<a data-p="dashboard" class="active">📊 Dashboard</a>
+<div class="v">STATE · read-only</div>
+<a data-p="dashboard" class="active">📊 STATE</a>
 <a data-p="roadmap">🗺 Roadmap</a>
 <a data-p="current">📋 Current Phase</a>
 <a data-p="history">📜 Phase History</a>
@@ -352,15 +374,18 @@ ul,ol{padding-left:22px}
 <a data-p="intel">🔍 Intel & Retro</a>
 <a data-p="activity">💬 Activity</a>
 </nav>
-<main class="main" id="main">loading…</main>
+<main class="main">
+<div class="top"><span class="dot" id="dot"></span><span id="t">就绪</span><a href="#" onclick="r();return false">⟳ 刷新</a></div>
+<div id="content">loading…</div>
+</main>
 </div>
 <script>
 let mt0=0
-const main=document.getElementById('main'),dot=document.getElementById('dot'),t=document.getElementById('t')
+const content=document.getElementById('content'),dot=document.getElementById('dot'),t=document.getElementById('t')
 async function loadPage(p){
   for(const a of document.querySelectorAll('.nav a'))a.classList.toggle('active',a.dataset.p===p||a.dataset.p===p.split('-')[0])
-  main.innerHTML='loading…'
-  const r=await fetch('/page/'+p);main.innerHTML=await r.text()
+  content.innerHTML='loading…'
+  const r=await fetch('/page/'+p);content.innerHTML=await r.text()
   window.scrollTo(0,0)
 }
 window.loadPage=loadPage
