@@ -10,6 +10,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('node:child_process', () => ({ spawnSync: vi.fn() }))
 vi.mock('node:fs/promises', () => ({ readFile: vi.fn() }))
 vi.mock('node:fs', () => ({ readFileSync: vi.fn() }))
+// Phase 3.3 W1 T1.12 — 7th check mock (same reason as tests/cli/doctor.test.ts):
+// global fs mocks would corrupt aliases.yaml load path; deprecation logic
+// covered in tests/cli/check-deprecations.test.ts + tests/manifest/aliases.test.ts.
+vi.mock('../../src/cli/lib/check-deprecations.js', () => ({
+  checkDeprecations: () => ({
+    name: 'deprecated manifests',
+    status: 'pass',
+    message: 'no deprecated manifests',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -107,7 +117,7 @@ async function runCli(): Promise<{
   }
 }
 
-describe('Phase 2.4 W5 T5.1 — doctor 6-check × 6-scenario fixture matrix (36 cells, Phase 3.2 W1 bump 5→6)', () => {
+describe('Phase 2.4 W5 T5.1 — doctor 7-check × 6-scenario fixture matrix (42 cells, Phase 3.3 W1 bump 6→7)', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -121,10 +131,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 6-check × 6-scenario fixture matrix (36 
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 6 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 7 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(6)
+      expect(parsed.checks).toHaveLength(7)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -133,6 +143,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 6-check × 6-scenario fixture matrix (36 
           'bash flavor (win)',
           'origin URL',
           'gstack prefix', // ← Phase 3.2 W1 T1.5 6th check
+          'deprecated manifests', // ← Phase 3.3 W1 T1.7 7th check
         ]),
       )
       if (scenario.name === 'missing-jq') {

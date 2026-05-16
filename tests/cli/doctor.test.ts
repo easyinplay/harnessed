@@ -6,6 +6,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('node:child_process', () => ({ spawnSync: vi.fn() }))
 vi.mock('node:fs/promises', () => ({ readFile: vi.fn() }))
 vi.mock('node:fs', () => ({ readFileSync: vi.fn() }))
+// Phase 3.3 W1 T1.12 — 7th check mock: doctor tests mock node:fs globally with
+// JSON content; loading aliases.yaml via yaml.parse would fail. Mock the helper
+// to always emit pass-status (deprecation logic is unit-tested in
+// tests/cli/check-deprecations.test.ts and tests/manifest/aliases.test.ts).
+vi.mock('../../src/cli/lib/check-deprecations.js', () => ({
+  checkDeprecations: () => ({
+    name: 'deprecated manifests',
+    status: 'pass',
+    message: 'no deprecated manifests',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -73,7 +84,7 @@ function mockSpawn(
   readFileSyncMock.mockReturnValue(JSON.stringify({ repository: { url: REPO } }))
 }
 
-describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + --json + exit policy', () => {
+describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + Phase 3.3 W1 7-check + --json + exit policy', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -81,13 +92,15 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + --json + 
   })
   afterEach(() => vi.restoreAllMocks())
 
-  it('cell 1 — all 6 checks pass → exit 0 + summary "pass" (Phase 3.2 W1 bump 5→6)', async () => {
+  it('cell 1 — all 7 checks pass → exit 0 + summary "pass" (Phase 3.3 W1 bump 6→7)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
-    const p = JSON.parse(stdout) as { checks: unknown[]; summary: string }
-    expect(p.checks).toHaveLength(6)
+    const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
+    expect(p.checks).toHaveLength(7)
     expect(p.summary).toBe('pass')
+    // Phase 3.3 W1 T1.12 — 7th check assertion (deprecated manifests = pass when no aliases.yaml)
+    expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
   })
 
   it('cell 2 — origin URL drift → warn → exit 0 per B-06 (warn ≠ fail)', async () => {
