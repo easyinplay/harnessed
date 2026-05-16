@@ -40,3 +40,37 @@ Original deferred entry below preserved for traceability. Resolution: commit `c3
   - (c) Update fixture 3 to send schemaVersion exactly matching SCHEMA_VERSIONS.governance (if test was mis-matched)
 - **W2 test count impact**: 619 pass / 1 fail (governance fixture 3) / 4 skipped — 8 new T2.6 unit fixtures all PASS (3 run.test.ts + 3 loadPhases-interpolate.test.ts + 2 planFeature.test.ts)
 - **Why not Rule 1 auto-fix**: this is governance.ts schema/test interaction issue not directly caused by W2 changes; would expand W2 scope; deferring per SCOPE BOUNDARY
+
+---
+
+## Phase 3.2 ship sister review absorb (2026-05-17, post-ship)
+
+Sister review identified 3 H-tier + 2 M-tier + 5 T-tier observations. Tiered absorb per established cadence:
+
+### H-tier inline absorbed (this commit cycle)
+
+- **H1 STATE.md "当前位置" L21-25 sync to Phase 3.2 SHIPPED**: ✅ FIXED 2026-05-17 (inline patch — GSD phase / 当前里程碑 / 下一 phase / 状态 / 进度 5 lines sync; sister Phase 2.4 H1 absorb pattern)
+- **H2 STATE.md L35 milestone table v0.3.0 1/4 → 2/4**: ✅ FIXED 2026-05-17 (inline patch — milestone table 行 sync, Phase 3.1+3.2 both listed)
+- **L4 frontmatter 最后更新 2026-05-16 → 2026-05-17**: ✅ FIXED 2026-05-17 (also caught — sister H1 same root cause)
+
+### H-tier deferred to Phase 3.3 W0 prereq (structural, 30-min spike + decision)
+
+- **H3 STATE.md dual-SSOT root cause (freshness gate scope vs "当前位置" block 不覆盖)** — Phase 3.3 W0 必修 (sister review 5th recurrence pattern: README L9 / README L44 / PROJECT-SPEC / STATE freshness scope / 现在 STATE 当前位置块).
+  - Fix path candidates:
+    - (a) Extend `scripts/check-transparency-verdicts.mjs` scope: add "当前位置" block "Phase N.M SHIPPED" pattern check (sister Phase 2.4 H2 freshness gate 2nd 硬化 round 2 模式)
+    - (b) Collapse dual-SSOT: 删 STATE.md L4 frontmatter Status line, 仅保 "当前位置" block as single SSOT (Karpathy YAGNI, sister T2 推荐)
+    - (c) Collapse inverse: 删 "当前位置" block, 仅保 L4 frontmatter Status (gate already covers; lose "当前位置" human-readable structure)
+  - Sister review 倾向 (b) per Karpathy YAGNI; orchestrator 待 Phase 3.3 W0 决定 (need to verify whether dashboard.mjs/other consumers depend on "当前位置" block parsing)
+
+### M-tier deferred to Phase 3.3 W0 prereq
+
+- **M1 dashboard-sse 4 cell flaky 一次根治** (Phase 3.2 deferred #2 已 logged) — Phase 3.3 W0 sister"deferred-items → 下 phase W0 一次根治"模式延续 (沿袭 4 phase 连续 cadence: 2.3 / 2.4 / 3.1 / 3.2). Fix path 3 candidates per deferred #2.
+- **M2 Phase 3.1 deferred-items 复查** — ✅ VERIFIED 2026-05-17 (only #1 cli-audit, 已 W0.1 RESOLVED 同 commit b41a84a; no other active items)
+
+### T-tier (Phase 3.3 W0 planning consideration)
+
+- **T1 H1+H2 surgical fix**: ✅ DONE inline this absorb commit
+- **T2 H3 fix path 决定** → Phase 3.3 W0 prereq backlog
+- **T3 Phase 3.3 W0 backlog 候选**: H3 dual-SSOT + M1 dashboard-sse + M2 已 verified (无 active) = 2 项 absorb (sister Phase 3.1 W0 4 项 + Phase 3.2 W0 3 项 cadence)
+- **T4 dashboard 下游伤害**: dashboard.mjs 渲染 STATE 时 dual-SSOT 互相矛盾 → 用户从 dashboard 看到自相矛盾状态 (H3 根治 时附带 fix)
+- **T5 v0.3.0 节奏**: 进度 12/17 = 70.6%, 2 phase/day 节奏 → v0.3.0 剩 2 phase + v0.4.0 3 phase ≈ 2-3 day 全 ship (paranoid review cadence keep)
