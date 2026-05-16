@@ -52,7 +52,7 @@ harnessed/
 - **Phase 1.1 + 1.1.1 hotfix shipped** ✅（schema v1 frozen + 10 上游 manifest + bench 21.7-22.6ms + B1 shell-escape security gate + 3 ADRs）
 - **Acceptance bar E1-E8 8/8 (Phase 2.1)** ✅（A7 ADR 0001-0010 守恒 / 10 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25900941988）
 - **Acceptance bar F1-F8 8/8 (Phase 2.2)** ✅（A7 ADR 0001-0011 守恒 / 11 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25924933870）
-- **Next**：Phase 2.3 discuss-phase（design/content/testing extension category MVP + karpathy behavior-rule 注入 + 30 category-specific 样本 routing ≥ 85%；intel 指定必上 EE-5 反 thin wrapper 5-question merge gate + CD-3 显式职责负空间 `if_rejected_use:<id>`）
+- **Next**：Phase 2.3 execute Wave 3 EE-5 双闸 gate CLI（Wave 0+1+2 SHIPPED 2026-05-16 — 6 backlog 一次根治 + 5 NEW manifest + CD-3 surgical arbitrate + karpathy SKILL-ONLY；Wave 3-6 剩 14 task）
 
 ## Install Quick Start（phase 1.2 ready）
 
