@@ -1030,6 +1030,8 @@
 
 ### T4.2 — always_active spike validation (W1 plan-check fix — SKIPPED, spike moved to T0.10)
 
+> **Resolved (T4.2, 2026-05-16)**: SKIPPED satisfied — spike outcome 已 W0 T0.10 ship (outcome FAIL → R2 A1 fallback locked, 详见 task_plan.md L4 顶部 Resolved (T0.10) block + W2 T2.3 0ccb58d SKILL.md description-keyword + self-reflexive prompt design)。Wave 4 sequence 占位 task — 无 file 创建; acceptance criteria 验证: `grep "Resolved.*T0.10" .planning/phase-2.3/task_plan.md` 命中 (L4 块存在) + T2.3 SKILL.md frontmatter 与 T0.10 outcome 一致 (description 含 "ALWAYS apply" wording 由 T2.3 ship 锁定)。
+
 - **status**: **SKIPPED — spike 已提前到 Wave 0 T0.10** (W1 plan-check fix: spike 反序修正,T2.3 W2 ship 前已 validated)。本 task 保留为 Wave 4 sequence 占位,actual spike outcome 见 T0.10 Resolved block。
 - **action (validation only)**: read T0.10 Resolved block + verify T2.3 SKILL.md frontmatter 字段名与 T0.10 outcome 一致 (若 spike FAIL 则 verify description 含 "ALWAYS apply" wording)。
 - **acceptance_criteria**:
