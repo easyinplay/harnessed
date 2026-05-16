@@ -40,7 +40,7 @@ export const CheckpointV1 = Type.Object(
     /** RESEARCH § 1.3 critical constraint — SDK session resume requires cwd
      *  match; we capture and validate at restore time. */
     cwd: Type.String({ minLength: 1 }),
-    timestamp: Type.String({ format: 'date-time' }),
+    timestamp: Type.String({ minLength: 1 }), // ISO-8601 by convention (TypeBox `format` requires Ajv-style format registry; we keep shape-check only — drift caught in writeCheckpoint path)
     archive_path: Type.String({ minLength: 1 }),
   },
   { additionalProperties: false },

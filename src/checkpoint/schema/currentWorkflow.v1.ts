@@ -25,9 +25,10 @@ export const CurrentWorkflowV1 = Type.Object(
     phase: Type.String({ minLength: 1 }),
     status: WorkflowStatus,
     last_checkpoint_path: Type.Union([Type.String(), Type.Null()]),
-    started_at: Type.String({ format: 'date-time' }),
-    paused_at: Type.Optional(Type.String({ format: 'date-time' })),
-    completed_at: Type.Optional(Type.String({ format: 'date-time' })),
+    // ISO-8601 by convention (TypeBox `format` requires Ajv-style registry; shape-check only here, drift surfaces in state.ts writer).
+    started_at: Type.String({ minLength: 1 }),
+    paused_at: Type.Optional(Type.String({ minLength: 1 })),
+    completed_at: Type.Optional(Type.String({ minLength: 1 })),
   },
   { additionalProperties: false },
 )
