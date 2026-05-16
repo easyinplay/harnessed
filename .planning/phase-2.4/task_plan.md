@@ -25,7 +25,7 @@
 >   - **Validation**: 校准后 phase-2.3 = 4/4 PASS, phase-2.2 = 3/4 WARNING(fr=0.833 仍紧贴 0.80 阈值)；rationale 健康 shipped plan 至少 WARNING，PASS 留给 zero-NEW edge case (T2.0 spike confirm RELAX 不退化为永远 PASS rubber-stamp)
 >   - **W3 fix Walker multi-line aware**: acceptance_criteria 块跨 5-10 行 (header + indented sub-bullets) — walker 用 `m` flag + 子 bullet 级 quant 检测, sister Phase 2.3 T-W3 cross-line 修法
 
-> **Resolved (T3.4)**: <PENDING — Wave 3 T3.4 fill: dashboard.mjs wc -l 结果 + SPLIT/SKIP 决策 per B-26 + B-39 + R5>
+> **Resolved (T3.4, 2026-05-16)**: `wc -l scripts/dashboard.mjs` = **610** (post T3.1+T3.2+T3.3 ship); 610 ≤ 650L T3.4 split trigger → **SKIP** (PARTIAL split fallback NOT triggered;保持单文件 per B-26 default decision + 沿袭 Phase 2.3 W3 reactive-vs-proactive split discipline — 不到必要不抽)。措施 baseline: T3.2 +35L (SSE+B-27 bind) + T3.3 +70L (multi-project nav + harnessed-projects.json) = +105L from 505L baseline,under 650L 软限 ~40L 余量,under 700L B-26 hard cap ~90L 余量。Next plan (v0.3.0+) 若 dashboard 继续扩张越 650L,触发 SHELL HTML (~250L) 抽到 `scripts/dashboard/shell.mjs` per D-WP-1 (c) splitting playbook。
 
 > **Resolved (T6.4)**: <PENDING — Wave 6 T6.4 fill: `git tag --list v0.2.0` pre-flight outcome (proceed create vs S3 fallback decision tree)>
 
