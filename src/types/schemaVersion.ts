@@ -10,7 +10,8 @@
 //       bucket — adapter-specific strings are legal, never throw)
 //   (c) new fields MUST be added nested (never top-level on existing surface)
 //
-// The 7 surfaces (B-32) are the schema-producing artifacts in Wave 2-4:
+// The 8 surfaces (B-32 + Phase 3.1 W1 T1.1 ADD `currentWorkflow`) are the
+// schema-producing artifacts in Wave 2-4 + Phase 3.1 (workflow state machine):
 //   - routing-snapshot      : routing engine arbitrate output snapshot
 //   - handoff-doc           : phase → phase handoff document
 //   - phases-yaml           : workflows/execute-task/phases.yaml
@@ -18,6 +19,7 @@
 //   - installer-state       : .harnessed/state/installer.json
 //   - route-decision-log    : routing decision audit log
 //   - checkpoint            : execute-task workflow checkpoint envelope
+//   - current-workflow      : workflow state machine (active / paused / complete)  ← Phase 3.1 W1 T1.1 ADD (8th surface, D-02 KARPATHY 3-state lock)
 //
 // TypeBox is the established schema lib (sister of `src/manifest/schema/spec.ts`).
 
@@ -39,6 +41,7 @@ export const SCHEMA_VERSIONS = {
   installerState: 'harnessed.installer-state.v1',
   routeDecisionLog: 'harnessed.route-decision-log.v1',
   checkpoint: 'harnessed.checkpoint.v1',
+  currentWorkflow: 'harnessed.current-workflow.v1', // ← Phase 3.1 W1 T1.1 ADD 8th surface (D-02 KARPATHY 3-state)
 } as const
 
 /** TypeBox literal union — useful as a refinement on a `schemaVersion` field
@@ -51,6 +54,7 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.installerState),
   Type.Literal(SCHEMA_VERSIONS.routeDecisionLog),
   Type.Literal(SCHEMA_VERSIONS.checkpoint),
+  Type.Literal(SCHEMA_VERSIONS.currentWorkflow), // ← Phase 3.1 W1 T1.1 ADD 8th surface
 ])
 
 export type SchemaVersionLiteralType = Static<typeof SchemaVersionLiteral>

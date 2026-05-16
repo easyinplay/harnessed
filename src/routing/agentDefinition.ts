@@ -98,6 +98,10 @@ export interface TaskContext {
   override_keywords?: string[]
   task_type?: string
   cwd?: string
+  /** Phase identifier (e.g., "3.1") for checkpoint paths. Falls back to "unknown" if not provided.
+   *  Phase 3.1 W1 T1.1 — W-04 fix path (a): eliminates `(matched?.decision as any)?.phase` cast
+   *  (Karpathy "Surgical Changes" + type safety). */
+  phaseId?: string
 }
 
 /** Caller overrides (1:1 contract § 3). */
