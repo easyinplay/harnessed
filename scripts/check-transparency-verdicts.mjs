@@ -23,7 +23,9 @@ const STATUS_MARKER = /^\s*>?\s*\*{0,2}(?:Status|状态)\*{0,2}\s*[:：]\s*(.+)$
 // 2026-05-15 → 2026-05-16 without being caught by this gate (sister review H1).
 // FRONT_MATTER_DOCS is the canonical scan list for freshness Status: markers.
 const FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md', '.planning/STATE.md']
-const ROADMAP_LATEST_RE = /^##\s+v\d+\.\d+\.\d+\s+—.*✅\s*SHIPPED/m
+// Phase 2.4 ship post-mortem sister review H2 fix: was `m`-flag `.match()` returning FIRST
+// shipped (= v0.1.0 oldest since ROADMAP order ASC), not latest. Now matchAll + capture + last.
+const ROADMAP_SHIPPED_RE = /^##\s+(v\d+\.\d+\.\d+)\s+—.*✅\s*SHIPPED/gm
 const STATE_LATEST_SUBPHASE_RE = /\*{2}Phase\s+(\d+\.\d+)\s+SHIPPED\*{2}/g
 
 function walk(dir, out = []) {
@@ -37,8 +39,8 @@ function walk(dir, out = []) {
 
 function getLatestShippedToken() {
   const roadmap = readFileSync('.planning/ROADMAP.md', 'utf8')
-  const m = roadmap.match(ROADMAP_LATEST_RE)
-  return m ? m[0].match(/v\d+\.\d+\.\d+/)[0] : null
+  const matches = [...roadmap.matchAll(ROADMAP_SHIPPED_RE)]
+  return matches.length ? matches[matches.length - 1][1] : null
 }
 
 function getLatestShippedSubphase() {
@@ -51,8 +53,7 @@ function getLatestShippedSubphase() {
 function checkFreshness(violations) {
   const milestone = getLatestShippedToken()
   const subphase = getLatestShippedSubphase()
-  const required = [milestone, subphase].filter(Boolean)
-  if (!required.length) return
+  if (!milestone && !subphase) return
   for (const file of FRONT_MATTER_DOCS) {
     let head
     try {
@@ -66,11 +67,27 @@ function checkFreshness(violations) {
       violations.push(`${file}:1  missing Status: marker in first 50 lines`)
       continue
     }
-    for (const token of required)
-      if (!match[1].includes(token))
+    // Phase 2.4 ship post-mortem sister review H2 fix: substring includes() was too weak —
+    // "Next: Phase X.Y" or "Next: vX.Y.Z" satisfied token requirement by accident, silent PASS.
+    // Now: milestone needs SHIPPED/MILESTONE/ARCHIVED context; subphase needs literal `**Phase X.Y SHIPPED`.
+    const content = match[1]
+    if (milestone) {
+      const ctx = new RegExp(
+        `${milestone.replace(/\./g, '\\.')}[^\\n]{0,80}?(SHIPPED|MILESTONE|ARCHIVED)`,
+        'i',
+      )
+      if (!ctx.test(content))
         violations.push(
-          `${file}:1  Status "${match[1].trim()}" missing latest shipped token "${token}"`,
+          `${file}:1  Status "${content.trim().slice(0, 80)}..." missing milestone "${milestone}" in SHIPPED/MILESTONE/ARCHIVED context`,
         )
+    }
+    if (subphase) {
+      const lit = `**${subphase} SHIPPED`
+      if (!content.includes(lit))
+        violations.push(
+          `${file}:1  Status "${content.trim().slice(0, 80)}..." missing subphase literal "${lit}"`,
+        )
+    }
   }
 }
 
