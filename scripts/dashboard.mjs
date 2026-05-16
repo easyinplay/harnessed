@@ -22,16 +22,50 @@
 //     }
 //   }
 import { execSync, spawn } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync, statSync, watch } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  watch,
+  writeFileSync,
+} from 'node:fs'
 import { createServer } from 'node:http'
 import { createConnection } from 'node:net'
-import { join } from 'node:path'
+import { homedir } from 'node:os'
+import { dirname, join } from 'node:path'
 
 const PORT = 47180
 const ROOT = process.cwd()
 const PLANNING = join(ROOT, '.planning')
 const ADR = join(ROOT, 'docs', 'adr')
 const NO_OPEN = process.argv.includes('--no-open')
+
+// Phase 2.4 W3 T3.3 (D-04 § 3.3 + R2.4.6 + B-25 + O7) — multi-project registry.
+// ~/.claude/harnessed-projects.json SSOT — auto-init with cwd as first project
+// on first dashboard launch (O7 MIN: zero-config; user 显式 add additional projects).
+const PROJECTS_CONFIG = join(homedir(), '.claude', 'harnessed-projects.json')
+
+function loadProjects() {
+  if (!existsSync(PROJECTS_CONFIG)) {
+    mkdirSync(dirname(PROJECTS_CONFIG), { recursive: true })
+    const init = {
+      schemaVersion: 1,
+      projects: [{ name: 'default', path: ROOT, lastAccessed: new Date().toISOString() }],
+    }
+    writeFileSync(PROJECTS_CONFIG, JSON.stringify(init, null, 2))
+    return init
+  }
+  try {
+    return JSON.parse(readFileSync(PROJECTS_CONFIG, 'utf8'))
+  } catch {
+    return {
+      schemaVersion: 1,
+      projects: [{ name: 'default', path: ROOT, lastAccessed: new Date().toISOString() }],
+    }
+  }
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Tiny markdown → HTML (headings / tables / code / lists / bold / italic / links)
@@ -390,6 +424,7 @@ body{font-family:-apple-system,Segoe UI,Roboto,"LXGW WenKai","PingFang SC","Micr
 <nav class="nav">
 <h1>harnessed</h1>
 <div class="v">STATE · read-only</div>
+<select id="proj-sel" style="margin:0 18px 14px;width:calc(100% - 36px);background:#1f2933;color:#c9d1d9;border:1px solid #30363d;border-radius:4px;padding:6px 8px;font-size:12px"></select>
 <a data-p="dashboard" class="active">📊 STATE</a>
 <a data-p="roadmap">🗺 Roadmap</a>
 <a data-p="current">📋 Current Phase</a>
@@ -423,6 +458,19 @@ async function r(){
 const es=new EventSource('/events')
 es.addEventListener('state-changed',()=>{dot.classList.add('changed');t.textContent='文件有更新, 点击 ⟳ 刷新'})
 es.onopen=()=>{const cur=document.querySelector('.nav a.active')?.dataset.p;if(cur)loadPage(cur)}
+// T3.3 (D-04 § 3.3) — multi-project selector + history.pushState routing
+function loadProject(path){
+  history.pushState({project:path},'','?project='+encodeURIComponent(path))
+  const cur=document.querySelector('.nav a.active')?.dataset.p||'dashboard'
+  loadPage(cur)
+}
+window.addEventListener('popstate',()=>{const cur=document.querySelector('.nav a.active')?.dataset.p||'dashboard';loadPage(cur)})
+fetch('/api/projects').then(r=>r.json()).then(cfg=>{
+  const sel=document.getElementById('proj-sel');if(!sel)return
+  const qs=new URLSearchParams(location.search).get('project')
+  cfg.projects.forEach((p,i)=>{const o=new Option(p.name,p.path);if(qs===p.path)o.selected=true;sel.add(o)})
+  sel.onchange=()=>loadProject(sel.value)
+}).catch(()=>{})
 loadPage('dashboard')
 </script>
 </body></html>`
@@ -486,6 +534,28 @@ const server = createServer((req, res) => {
   if (url === '/mtime') {
     res.writeHead(200, { 'content-type': 'application/json' })
     return res.end(JSON.stringify({ max: fileMtimes(watchedPaths()) }))
+  }
+  // T3.3 — /api/projects + /api/project/<id>/state per D-04 § 3.3
+  if (url === '/api/projects') {
+    res.writeHead(200, { 'content-type': 'application/json' })
+    return res.end(JSON.stringify(loadProjects()))
+  }
+  const projMatch = url.match(/^\/api\/project\/(\d+)\/state$/)
+  if (projMatch) {
+    const idx = Number(projMatch[1])
+    const cfg = loadProjects()
+    const proj = cfg.projects[idx]
+    if (!proj) {
+      res.writeHead(404, { 'content-type': 'text/plain' })
+      return res.end('project not found')
+    }
+    const statePath = join(proj.path, '.planning', 'STATE.md')
+    if (!existsSync(statePath)) {
+      res.writeHead(404, { 'content-type': 'text/plain' })
+      return res.end('STATE.md not found in project')
+    }
+    res.writeHead(200, { 'content-type': 'text/markdown; charset=utf-8' })
+    return res.end(readFileSync(statePath, 'utf8'))
   }
   const pageMatch = url.match(/^\/page\/(.+)$/)
   if (pageMatch) {
