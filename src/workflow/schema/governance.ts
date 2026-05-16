@@ -19,7 +19,14 @@ export const GovernanceV1 = Type.Object(
     schemaVersion: Type.Literal(SCHEMA_VERSIONS.governance), // 'harnessed.governance.v1'
     status: GovernanceStatus,
     reason: Type.Optional(Type.String({ maxLength: 500 })), // DOS cap per RESEARCH § 11.4
-    vetoed_at: Type.Optional(Type.String({ format: 'date-time' })),
+    // ISO-8601 date-time regex (Phase 3.2 W2 Rule 1 fix — TypeBox `format: 'date-time'`
+    // requires FormatRegistry.Set which is not registered project-wide; using
+    // `pattern` is zero-config equivalent. Sister checkpoint.v1 uses ISO pattern too.).
+    vetoed_at: Type.Optional(
+      Type.String({
+        pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$',
+      }),
+    ),
     vetoed_by: Type.Optional(Type.String({ maxLength: 100 })), // e.g. 'CEO' (gstack role)
   },
   { additionalProperties: false },
