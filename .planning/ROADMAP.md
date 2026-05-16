@@ -55,7 +55,11 @@
 
 ---
 
-## v0.2.0 — Sub-task Loop + Extension Installers（v3 重排，3-4 周）
+## v0.2.0 — Sub-task Loop + Extension Installers ✅ SHIPPED 2026-05-16
+
+> 🎯 **v0.2.0 MILESTONE 4/4 SHIPPED & ARCHIVED** (2026-05-16) — Phase 2.1 + Phase 2.2 ship 2026-05-15；Phase 2.3 + Phase 2.4 ship 2026-05-16；4 ADR (0010-0013) + 4 baseline tag + 5 milestone tag accumulate (v0.2.0-alpha.1-installers + alpha.2-execute-task + alpha.3-extension-mvp + alpha.4-doctor + 🎯 **v0.2.0** 大 tag)；543+4 tests；archive `.planning/milestones/v0.2.0-{ROADMAP,REQUIREMENTS}.md` + audit `.planning/v0.2.0-MILESTONE-AUDIT.md`。next: v0.3.0 plan-feature workflow + checkpoint discuss-phase 启动。
+
+
 
 > **phase 2.0 prereq notes（phase 1.5 ship 后 explicit 启动 prereq — T8.4）**
 > phase 2.0 plan-phase 启动**直接消费 phase 1.5 输出**，无需重做。phase 1.5 ship 后 frozen 的 **8 接口契约**（`.planning/phase-1.5/PLAN.md` § 4 1:1）：
