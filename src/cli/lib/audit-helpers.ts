@@ -9,7 +9,14 @@ import type { Manifest } from '../../manifest/schema/types.js'
 import type { AuditFinding } from '../audit.js'
 import { checkOrigin } from './origin-check.js'
 
-const COMMAND_SEPARATORS = /[;&|`$]/
+// Phase 2.4 W4 T4.1 — refined per real-world manifest survey: planner spec
+// originally COMMAND_SEPARATORS = /[;&|`$]/ flagged legitimate multi-step
+// installs (cp && cd; mkdir; etc.). Tighten to actual shell-eval injection
+// markers aligned with src/manifest/security.ts gate (Phase 1.1.1 hotfix B1):
+// $(...) command substitution / ${...} var expansion / backtick legacy substitution.
+// Bare `$` followed by non-{( (e.g. `$PATH` literal in echo) is NOT injection.
+// Rule 1 deviation per executor — see SUMMARY § Deviations.
+const SHELL_EVAL_MARKERS = /\$\(|\$\{|`/
 const NPM_PKG_RE = /npm(?:\s+install\b|\s+i\b)(?:\s+(?:-g|--global))?\s+(\S+)/
 
 const finding = (
@@ -30,13 +37,13 @@ export function auditOriginIntegrity(cwd: string): AuditFinding[] {
 export function auditInstallCmdIntegrity(m: Manifest): AuditFinding[] {
   const out: AuditFinding[] = []
   const cmd = (m.spec.install as { cmd?: string }).cmd ?? ''
-  if (COMMAND_SEPARATORS.test(cmd)) {
+  if (SHELL_EVAL_MARKERS.test(cmd)) {
     out.push(
       finding(
         m.metadata.name,
         'error',
         '/spec/install/cmd',
-        'install.cmd contains shell separator (injection risk)',
+        'install.cmd contains shell-eval marker $(/${/backtick (injection risk)',
       ),
     )
   }
