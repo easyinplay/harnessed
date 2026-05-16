@@ -178,7 +178,8 @@ jobs:
         run: |
           SHIPPED=$(grep -cE "^- \*\*Phase 2\.[1-9] shipped\*\* ✅" README.md)
           BARS=$(grep -cE "^- \*\*Acceptance bar [A-Z]1-[A-Z]8 8/8 \(Phase 2\.[1-9]\)\*\* ✅" README.md)
-          L44=$(grep -oE "Phase 2\.1\+2\.2(\+2\.3)?(\+2\.4)?/2\.4 = ([0-9])/4 完成" README.md | grep -oE "[0-9]/4" | head -1 | cut -d/ -f1)
+          # Phase 2.4 ship sister H1 absorb (commit 800e459): post-close MILESTONE 4/4 ARCHIVED 格式不带 `/2.4` 分母 (in-progress 用 "2.1+2.2+2.3/2.4 = 3/4"; close 用 "2.1+2.2+2.3+2.4 = 4/4"). 加 (/2\.4)? 兼容两种格式.
+          L44=$(grep -oE "Phase 2\.1\+2\.2(\+2\.3)?(\+2\.4)?(/2\.4)? = ([0-9])/4 完成" README.md | grep -oE "[0-9]/4" | head -1 | cut -d/ -f1)
           if [ "$SHIPPED" != "$BARS" ] || [ "$SHIPPED" != "$L44" ]; then
             echo "::error::README counter drift: shipped=$SHIPPED bars=$BARS L44=$L44 (expect 3-equal)"
             exit 1
