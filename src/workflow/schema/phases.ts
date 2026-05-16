@@ -33,6 +33,8 @@ export const PhaseEntry = Type.Object(
     model: ModelTier, // 必填 (B-08)
     skills: Type.Optional(Type.Array(Type.String())),
     max_iterations: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+    // Phase 3.2 W1 T1.7 — JINJA-templated invokes string (D-02, W-02 orchestrator fix unconditional extend).
+    invokes: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 )
@@ -41,6 +43,8 @@ export const PhasesSchema = Type.Object(
   {
     workflow: Type.String({ minLength: 1 }), // e.g. 'execute-task'
     phases: Type.Array(PhaseEntry, { minItems: 1 }),
+    // Phase 3.2 W1 T1.7 — CEO veto halt directive (D-04 PUSH, W-02 orchestrator fix unconditional extend).
+    on_veto: Type.Optional(Type.String({ pattern: '^halt_workflow$' })),
   },
   { additionalProperties: false },
 )
