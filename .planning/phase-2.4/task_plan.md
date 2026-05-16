@@ -17,7 +17,13 @@
 
 > **Resolved (T0.1)**: 实占 N = **0013** (ls docs/adr/ tail-1 = `0012-extension-mvp-karpathy-inject.md`, max+1 = `0013`); ROADMAP latest-shipped token = "Phase 2.3 shipped" (verify pass, STATE freshness consistent); sed-replace batch executed on 4 files (.planning/phase-2.4/{ASSUMPTIONS,PLAN-CHECK,PLAN,task_plan}.md); `grep -rnE "<实占N>|<实占NNNN>" .planning/phase-2.4/` exit 1 ✅ (zero literal placeholder residue; 3 narrative backtick-quoted `<实占` self-references in task_plan.md L10/L38 + PLAN-CHECK.md L92 are sed-replace discipline historical text, sister ADR 0012 L102 pattern); ADR 0012 main body untouched (A7 守恒)。执行日期 2026-05-16 Wave 0。
 
-> **Resolved (T2.0)**: <PENDING — Wave 2 T2.0 spike fill: EE-4 baseline spike outcome (phase-2.3 + phase-2.2 task_plan 4 维 score + 阈值校准决策)>
+> **Resolved (T2.0, 2026-05-16)**: EE-4 baseline spike outcome (sister Phase 2.3 T0.10 always_active spike pattern; 4 维 omo Metis+Momus 原型 per intel L74-82):
+>   - **phase-2.3/task_plan.md**: file_refs=25/28=0.893, source_refs=1/1=1.000 (+91 anchor refs), concrete_acceptance=127/134=0.948, weasel=0, **WARNING (3/4)** under DEFAULT (1.0/0.8/0.9/0)
+>   - **phase-2.2/task_plan.md**: file_refs=30/36=0.833, source_refs=N/A md_refs=0 (+84 anchor refs only) → 1.000, concrete_acceptance=129/140=0.921, weasel=0, **WARNING (3/4)** under DEFAULT
+>   - **阈值校准决策**: **RELAX** intel defaults — `file_references_verified` 1.0 → **0.80** (NEW-file 容忍：plan 写就时 NEW file 路径尚未创建，executor 后续 create — 6/36 Phase 2.2 missing = 16% NEW-file ratio, sister Phase 2.3 3/28 = 11%, 容忍 0.80 = 20% NEW headroom); `concrete_acceptance` 0.9 → **0.80** (heuristic regex 覆盖盲点：实际 plan 用 `!grep` / `命中` / `不存在` / `0 增量` 等模式 — regex 不可能 enumerate all signals,降 0.80 留 false-negative 余地)；keep `reference_sources_real` **0.8** + `business_logic_assumptions` **0** (anchor refs + weasel detection 已稳)
+>   - **T2.1 plan-review-schema.yaml 阈值 ship 数值**: `file_references_verified: 0.80` / `reference_sources_real: 0.80` / `concrete_acceptance: 0.80` / `business_logic_assumptions: 0`
+>   - **Validation**: 校准后 phase-2.3 = 4/4 PASS, phase-2.2 = 3/4 WARNING(fr=0.833 仍紧贴 0.80 阈值)；rationale 健康 shipped plan 至少 WARNING，PASS 留给 zero-NEW edge case (T2.0 spike confirm RELAX 不退化为永远 PASS rubber-stamp)
+>   - **W3 fix Walker multi-line aware**: acceptance_criteria 块跨 5-10 行 (header + indented sub-bullets) — walker 用 `m` flag + 子 bullet 级 quant 检测, sister Phase 2.3 T-W3 cross-line 修法
 
 > **Resolved (T3.4)**: <PENDING — Wave 3 T3.4 fill: dashboard.mjs wc -l 结果 + SPLIT/SKIP 决策 per B-26 + B-39 + R5>
 
