@@ -160,12 +160,14 @@
 - **Phase 3.2：gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装** ✅ SHIPPED 2026-05-17
   - 三选一探测；`invokes` 字段插值；governance 层 pause + on_veto
   - 验收：用户 gstack 装哪种前缀都能跑通
-- **Phase 3.3：aliases.yaml + deprecation marker + known-good 版本组合**
+- **Phase 3.3：aliases.yaml + deprecation marker + known-good 版本组合** ✅ SHIPPED 2026-05-17
   - manifest 重定向；doctor warning；release 流程冻结 known-good lock
-  - 验收：模拟上游改名场景 install 通过
+  - 验收：模拟上游改名场景 install 通过 ✅ (T2.1 install-aliases.test.ts 3 fixture R7.5 + T2.2 install-known-good.test.ts 2 fixture R7.6)
+  - ship 总结：3 Waves W0-W2 全 ship 16+ atomic commits；aliases.yaml RICH 5-field redirect (D-01 schema 12th surface) + DOCTOR-ONLY-WARN install 安静 (D-02 1-line resolveAlias surgical + doctor 7th check 人读 audit) + known-good YAML manifest lazy-load 版本 lock (D-03 schema 13th surface) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04 (b) LOCKED) + Wave 0 backlog 3 项一次根治；ADR 0016 9 章节 errata accepted；tests 623→659+ (+36)；16 ADR + 16 baseline tag；schemaVersion 11→13 surface；manifest-domain colocation 3rd consumer 闭环 (Phase 3.1 checkpoint-domain + Phase 3.2 workflow-domain + Phase 3.3 manifest-domain)；F1-F8 8/8
 - **Phase 3.4：路由命中率 ≥ 85% 验收 + token budget 监控**
   - 30 样本（Haiku/Sonnet/Opus 各 ≥ 8）；description 总 token 近似算法 + 阈值告警
   - 验收：实测命中率达标 + token 监控仪表落地
+  - **Phase 3.3 carry-forward prereq**: DEFERRED #AC aliases.yaml 真 deprecation entries seed + DEFERRED #AD install.ts harnessed_version 从 package.json 读 (移除 hardcoded '0.3.0' TODO) + DEFERRED #AE path traversal regex hardening for resolveAlias (若 surface real attack vector) + plan-feature dogfood seed 真 e2e-verified upstreams 进 versions/0.3.0-known-good.yaml + EE-4 BLOCKER auto-spawn rerun + userSpawn session_id capture
 
 ### 关键风险
 

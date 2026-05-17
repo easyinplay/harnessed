@@ -44,6 +44,51 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 
 ---
 
+## Phase 3.3 milestone retrospective — aliases.yaml RICH + DOCTOR-ONLY-WARN deprecation marker + known-good 版本组合 lock (2026-05-17 ship) — v0.3.0 milestone 3/4 progress
+
+### What Went Well
+
+- **W0.1 D-04 STATE dual-SSOT 5-recurrence terminus COLLAPSE 一次落地**: 4 prior recurrences identified (README L9 / README L44 / PROJECT-SPEC / STATE freshness scope) + 5th (STATE L4+L5 dual-SSOT itself) terminated via single SoT (L21-27 "当前位置" block) + STATE_POSITION_RE OR-fallback freshness gate extend +10L. Karpathy YAGNI 严守 single source of truth — 删 2 lines + 加 10 lines freshness gate extend (净 +8L) 解决 5 prior recurrences。
+- **W0.2 dashboard-sse fix path (a) 4-cell 一次性 pass cross-OS**: Phase 3.2 DEFERRED #2 carry-forward closed via RESEARCH-guided recipe verbatim — sister Node `net.createServer({port:0})` MDN std + DASHBOARD_PORT env injection + sister Phase 2.4 W4 Win 3-tier 8s waitFor reused。Fix path (a) chosen over (b) rude port-kill + (c) skip-with-stderr (quality loss)。
+- **D-01 ~ D-04 4 D-decision lock 一次活化 zero sneak-in**: aliases.v1 RICH 5-field (not FLAT or TIERED) + install 安静 (not console.warn) + YAML manifest (not JSON npm-lock style) + STATE COLLAPSE (b) (not EXTEND (a) or INVERSE (c)) — 全 4 decision 严守 LOCKED 不被 sneak-in。
+- **manifest-domain colocation 3rd consumer 闭环 pattern 已成 cross-phase reusable rule**: checkpoint-domain (Phase 3.1 currentWorkflow.v1) + workflow-domain (Phase 3.2 config + governance + planFeature) + manifest-domain (Phase 3.3 aliases + known-good) 三 domain colocation rule sister Karpathy consumer-locality discipline pattern — "schemas go where primary consumer lives" promoted 为 cross-phase standard rule。
+- **install resolveAlias 1-line surgical Karpathy exemplar**: install.ts L74-77 3-line net delta (import + resolveAlias call + null coalesce) — sister Phase 3.2 W2 governance.ts isVetoed 1-line guard pattern延袭。Karpathy surgical exemplar — 1 line not 6。
+
+### What Surprised Us
+
+- **T0.5 planFeature.v1 11th surface backfill (Phase 3.2 W2 T2.2 b875e21 latent stale claim surgical fix)**: Phase 3.3 W3 plan-checker iter 1 B-1 BLOCKER 揭露 — Phase 3.2 W2 T2.2 commit message claimed "11th surface" but planFeature.v1 was NEVER actually registered。Latent stale claim same shape as sister Phase 3.2 W2 T2.6 latent W1 c37ee29 Rule 1 pattern (governance.v1 vetoed_at format bug)。Surgical W0 T0.5 fix: +4-5L schemaVersion.ts only。
+- **W2 fixture invocation requires --system for L4 npm-cli installs**: T2.1 install-aliases.test.ts fixture 1 first attempt failed because ctx7 is L4 (global npm install — `npm install -g ctx7`); `--system` flag required to pass L4 security gate before dry-run preview reaches user-cancel abort path。Test fixture design refined: assert on semantic redirect-worked proof (clean user-cancel abort + L4 system install path reached) rather than 'ctx7' literal in stdout (npm-cli renderDiff is "(no file changes)" — PATH-only mutation not previewable as file diff)。
+- **Windows filesystem '/' restriction in test fixture filename**: T2.4 K1b shell-eval-like version test originally tried `rm -rf /-known-good.yaml` filename — Windows rejected。Refined: use valid 0.0.1-known-good.yaml filename + inject malicious YAML CONTENT (schema validates VALUE not filename) per actual threat model concern。
+
+### What We'd Change
+
+- **W2 test fixture renderDiff visibility for npm-cli L4**: T2.1 fixture 1 cannot grep 'ctx7' from stdout because npm-cli L4 renderDiff is "(no file changes)" (PATH-only mutation not previewable). Future improvement: add explicit cmd echo in renderDiff for L4 system installs (sister contract 6 audit trail principle — "see cmd above" should actually show cmd above)。
+- **Anti-stall dispatch granularity**: Phase 3.2 W3 38-tool early stall lesson + Phase 3.3 W2 SHIP wave 50-tool extended budget — confirm that 3-4 task per executor batch better than 6-8 (Phase 3.2 RETRO carry-forward 验证)。
+
+### Lessons Learned
+
+- **Lesson 1：5-recurrence terminus COLLAPSE pattern (D-04 (b) LOCKED)**。 Dual-SSOT 反模式 4 prior recurrences (README L9 / README L44 / PROJECT-SPEC / STATE freshness scope) → 5th and final at STATE L4+L5 itself。 Lesson: 4-recurrence threshold reached = pattern terminus signal, force COLLAPSE to single SoT not yet-another-extend。 Future: 任何 dual-SSOT 反模式 ≥ 3 recurrences immediately considered for COLLAPSE。
+- **Lesson 2：manifest-domain colocation 3rd consumer 闭环 = cross-phase standard rule promoted**。 Phase 3.1 + 3.2 + 3.3 = 3 domain consecutive colocation cycles validate "schemas go where primary consumer lives" 跨 phase reusable Karpathy discipline。 Future: any NEW schema 在 plan phase 必须 explicit 标 colocation domain。
+- **Lesson 3：install resolveAlias 1-line surgical exemplar**。 sister Phase 3.2 governance.ts isVetoed 1-line guard pattern延袭，Phase 3.3 install.ts resolveAlias 同 pattern continued — "1 line not 6" Karpathy surgical 跨 phase 已成熟为 standard helper integration pattern。
+- **Lesson 4：D-02 silent install sister Unix tool 习俗 (ls/cp 不 warn aliases)**。 INSTALL-WARN console.warn() 不可 sneak-in — CI 噪声 + 重复警告 + R7.5 "install 通过" 语义对齐。Doctor 是 human-readable audit surface (主动 invoke), install 是 silent capability delivery (passive)。 Sister Unix tool 习俗 cross-tool reusable convention。
+
+### Process Improvements
+
+- **Carry-forward closure tracking 模板成熟**: Phase 3.2 DEFERRED #2 dashboard-sse closed Phase 3.3 W0.2 + Phase 3.2 W3 carry-forward "DEFERRED #2 → Phase 3.3 OR dedicated patch session" 兑现 — cross-phase deferred-items closure rate signal 健康。
+- **Anti-stall extended budget for ship wave**: Phase 3.2 W3 38-tool early stall → Phase 3.3 W2 50-tool extended budget proven适用 ship wave (9 task batch)。Pattern: discovery/research wave 25-30 tool; impl wave 35-40 tool; ship wave 50 tool。
+
+### Carry-forward
+
+- **DEFERRED #AC (Phase 3.3 own carry)**: aliases.yaml 真 deprecation entries seed → Phase 3.4 dogfood (本 phase MVP empty `aliases: {}` map)
+- **DEFERRED #AD (Phase 3.3 own carry)**: install.ts harnessed_version source-of-truth — hardcoded '0.3.0' TODO marker; Phase 3.4 reads from package.json
+- **DEFERRED #AE (Phase 3.3 own carry)**: path traversal hardening regex for resolveAlias → Phase 3.4 dogfood 时若 surface 实际 attack vector 再 add
+- **userSpawn session_id capture (Phase 3.1 DEFERRED #2 + Phase 3.2 carry)** → Phase 3.4+ if real userSpawn demand
+- **EE-4 BLOCKER auto-spawn rerun** → Phase 3.4 后 evaluate
+- **plan-feature 真接外部 gsd-* spawn (D-03 WIRED MVP Phase 3.2)** → Phase 3.4 dogfood 时 transition stub → real
+- 3-wave topology pattern + 16 commit cadence + manifest-domain colocation 3rd consumer rule + 5-recurrence terminus COLLAPSE precedent 都 ready 供 Phase 3.4 + v0.4.0 复用
+
+---
+
 ## Phase 3.2 milestone retrospective — gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装 (2026-05-17 ship) — v0.3.0 milestone 2/4 progress
 
 ### What Went Well
