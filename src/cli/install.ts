@@ -23,6 +23,11 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import type { Command } from 'commander'
+// Phase 3.4 W0.2 #AD — Path A LOCKED per RESEARCH § 6.2 A1 ASSUMED LOW risk
+// (Node 22 + TypeScript 5.6+ supports `with { type: 'json' }` native ES2022
+// import attributes per ECMAScript 2025 stage 4). Replaces hardcoded '0.3.0'
+// literal at L116 with pkg.version (single source of truth = package.json L3).
+import pkg from '../../package.json' with { type: 'json' }
 import { runInstall } from '../installers/index.js'
 import type { InstallError, InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
@@ -113,7 +118,7 @@ export function registerInstall(program: Command): void {
       // when flag set per Karpathy YAGNI Discretion lock).
       if (raw.knownGood) {
         const { getPinnedVersion } = await import('../manifest/knownGood.js')
-        const harnessedVer = '0.3.0' // TODO Phase 3.4: read from package.json (DEFERRED #AD)
+        const harnessedVer = pkg.version
         const pinned = getPinnedVersion(v.manifest.metadata.name, harnessedVer)
         if (pinned && v.manifest.spec.install.method === 'npm-cli') {
           ;(v.manifest.spec.install as { npm_version?: string }).npm_version = pinned
