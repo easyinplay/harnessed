@@ -20,6 +20,16 @@ vi.mock('../../src/cli/lib/check-deprecations.js', () => ({
     message: 'no deprecated manifests',
   }),
 }))
+// Phase 3.4 W1 T1.4 — 8th check mock (same reason as 7th): global vi.mock('node:fs')
+// would crash check-token-budget.ts existsSync/readdirSync. Deprecation logic
+// covered in tests/cli/check-token-budget.test.ts (5 tmpdir fixtures).
+vi.mock('../../src/cli/lib/check-token-budget.js', () => ({
+  checkTokenBudget: () => ({
+    name: 'token budget',
+    status: 'pass',
+    message: '0 skill(s) total 0 tokens (under 1% / 2000 threshold)',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -117,7 +127,7 @@ async function runCli(): Promise<{
   }
 }
 
-describe('Phase 2.4 W5 T5.1 — doctor 7-check × 6-scenario fixture matrix (42 cells, Phase 3.3 W1 bump 6→7)', () => {
+describe('Phase 2.4 W5 T5.1 — doctor 8-check × 6-scenario fixture matrix (48 cells, Phase 3.4 W1 bump 7→8)', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -131,10 +141,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 7-check × 6-scenario fixture matrix (42 
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 7 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 8 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(7)
+      expect(parsed.checks).toHaveLength(8)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -144,6 +154,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 7-check × 6-scenario fixture matrix (42 
           'origin URL',
           'gstack prefix', // ← Phase 3.2 W1 T1.5 6th check
           'deprecated manifests', // ← Phase 3.3 W1 T1.7 7th check
+          'token budget', // ← Phase 3.4 W1 T1.2 8th check
         ]),
       )
       if (scenario.name === 'missing-jq') {

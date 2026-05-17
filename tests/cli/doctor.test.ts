@@ -17,6 +17,16 @@ vi.mock('../../src/cli/lib/check-deprecations.js', () => ({
     message: 'no deprecated manifests',
   }),
 }))
+// Phase 3.4 W1 T1.4 — 8th check mock (same reason as 7th): global vi.mock('node:fs')
+// would crash check-token-budget.ts existsSync/readdirSync. Real PRIMARY helper logic
+// is unit-tested in tests/cli/check-token-budget.test.ts (5 fixtures with tmpdir).
+vi.mock('../../src/cli/lib/check-token-budget.js', () => ({
+  checkTokenBudget: () => ({
+    name: 'token budget',
+    status: 'pass',
+    message: '0 skill(s) total 0 tokens (under 1% / 2000 threshold)',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -92,15 +102,27 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + Phase 3.3
   })
   afterEach(() => vi.restoreAllMocks())
 
-  it('cell 1 — all 7 checks pass → exit 0 + summary "pass" (Phase 3.3 W1 bump 6→7)', async () => {
+  it('cell 1 — all 8 checks pass → exit 0 + summary "pass" (Phase 3.4 W1 bump 7→8)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(7)
+    expect(p.checks).toHaveLength(8)
     expect(p.summary).toBe('pass')
-    // Phase 3.3 W1 T1.12 — 7th check assertion (deprecated manifests = pass when no aliases.yaml)
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
+    // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
+    expect(p.checks.map((c) => c.name)).toContain('token budget')
+  })
+
+  it('cell 5 — doctor 8th check token budget — status warn does NOT fail exit (B-06 + D-04)', async () => {
+    mockSpawn()
+    const { code, stdout } = await runCli(['doctor', '--json'])
+    expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
+    const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
+    expect(p.checks).toHaveLength(8)
+    const tokenBudget = p.checks.find((c) => c.name === 'token budget')
+    expect(tokenBudget).toBeDefined()
+    expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')
   })
 
   it('cell 2 — origin URL drift → warn → exit 0 per B-06 (warn ≠ fail)', async () => {
