@@ -585,3 +585,56 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 > Or read per-phase canonical sources directly: `.planning/phase-3.1/{progress,VERIFICATION,deferred-items}.md` + `.planning/phase-3.2/{progress,VERIFICATION,deferred-items}.md` + `docs/adr/0014-checkpoint-engine-resume-compact.md` + `docs/adr/0015-gstack-probe-interpolate-plan-feature.md` (ADR 0014 + 0015 main body 永久守恒 A7 — never archive these).
 
 *Phase 3.4 W0.1 STRATEGIC archive complete — 2026-05-17 first ship-time T6.N cadence implementation. D2 standing process: Plan 03 W2 T2.3 includes archive sub-step Phase 3.4+ onward. Next § ARCHIVED FROM STATE — Phase 3.1+3.2 will be created by Plan 03 W2 T2.2 ship-time (sister Phase 3.4 W0.1 D2 cadence second implementation).*
+
+---
+
+## § ARCHIVED FROM STATE — Phase 3.3+3.4 (Phase 4.1 W0.3 D2 cadence iter 2, 2026-05-18)
+
+> **Archived 2026-05-18** by Phase 4.1 W0 T0.1 (W0.3 D2 ship-time T6.N cadence 2nd-implementation per standing process — sister Phase 3.4 W2 T2.2 was 1st implementation 2026-05-17; this 2nd-iter verifies the cadence pattern is institutionalized beyond first-time effort per M2 backlog discharge sister review note). STATE.md pre-trim = 148L; post-trim target ≈ 130L (~18L delta verbatim relocation; W0.5 conditional flip evaluates FLIP vs DEFER at T0.3 per § 7.1 decision tree).
+>
+> **Cadence affirm** (D2 standing process beyond first-time effort): This § ARCHIVED FROM STATE — Phase {N-2} section is the canonical resting place for prev-prev-phase narrative trimmed from STATE.md每 phase ship. Phase 3.4 ship = 1st per-phase cadence implementation (Phase 3.1+3.2 archived); Phase 4.1 ship = 2nd per-phase cadence implementation (Phase 3.3+3.4 archived this section). Future Phase 4.2+ similarly trim Phase {N-2} narrative (e.g., Phase 4.2 ship → § ARCHIVED FROM STATE — Phase 4.1).
+>
+> **Scope archived from STATE.md current state** (Phase 3.3 + 3.4 narrative trimmed from 当前位置 GSD phase chain + 关键决策记录 7 rows + 已完成 phase ship 历史 inline narratives):
+>
+> ### Phase 3.3 SHIPPED ✅ (2026-05-17) — aliases.yaml RICH 5-field redirect + DOCTOR-ONLY-WARN install 安静 + known-good YAML manifest + STATE dual-SSOT 5-recurrence terminus COLLAPSE + ADR 0016
+>
+> - **Decisions**: aliases.yaml RICH 5-field redirect (D-01) + DOCTOR-ONLY-WARN install 安静 + doctor 7th check 人读 audit (D-02) + known-good YAML manifest lazy lock (D-03) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04) — L4 `> Status:` frontmatter + L5 `> 最后更新：` lines deleted; "当前位置" block is now sole SoT for phase ship event log; freshness gate `scripts/check-transparency-verdicts.mjs` extends with STATE_POSITION_RE OR-fallback (full-file scan) so STATE.md acceptance check still passes
+> - **W0 backlog 3 项一次根治** + ADR 0016 + manifest-domain colocation 3rd consumer 闭环 (schemaVersion 13-surface: aliases.v1 12th + known-good.v1 13th; per-version Map memoize; --known-good flag lazy consume)
+> - **Key decisions archived from STATE.md 关键决策记录**:
+>   - **Phase 3.3 D-04 (b) COLLAPSE STATE dual-SSOT 5-recurrence terminus** (Phase 3.3 W0.1): L4 frontmatter + L5 最后更新 双删; STATE_POSITION_RE OR-fallback freshness gate extend
+>   - **schemaVersion 13-surface manifest-domain colocation 3rd consumer** (Phase 3.3 D-03 + W0.3): aliases.v1 (12th) + known-good.v1 (13th); per-version Map memoize; --known-good flag lazy consume
+>
+> ### Phase 3.4 SHIPPED ✅ (2026-05-17) — routing 命中率 ≥ 85% 验收 30/30 = 100% + token budget doctor 8th check + v0.3.0 milestone close + ADR 0017
+>
+> - **Decisions** (从 STATE.md L22 当前位置 long inline 完整 verbatim relocate):
+>   - 路由命中率 ≥ 85% 验收 (30 sample REAL HISTORICAL dogfood D-01 + per-sample routing.arbitrate dispatch D-02; routing harness 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom; per-tier Sonnet 100% / Haiku 100% / Opus 100% all exceed ROADMAP R7 ≥84%/≥80% lower bounds)
+>   - token budget doctor 8th check (check-token-budget.ts 48L NEW PRIMARY helper 4th family member sister Phase 3.1 W3 engineHook.ts 49L + Phase 3.2 W1 probe-gstack.ts 49L + Phase 3.3 W1 check-deprecations.ts 43L precedent延袭 + Buffer.byteLength /4 zero-dep estimateTokens helper D-03 sister Phase 3.1 D-01 enforceBudget precedent reuse + doctor.ts 195→199L ≤200L Karpathy hard limit clean B-03 5% tolerance NOT invoked surgical 4-line delta + DOCTOR-ONLY-WARN status='warn' ≠ fail D-04 sister Phase 3.3 D-02 install path 安静 一致)
+>   - W0 backlog 5 项一次根治 (W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1+D2+D3+D4 6th STATE 类反模式 root-cause framing + W0.2 install.ts pkg.version Path A ES2022 import attributes DEFERRED #AD resolve + bonus package.json 0.1.0-alpha.1 → 0.3.0 align shipped milestone tags + W0.3 versions/0.3.0-known-good.yaml 8 real e2e-verified pinned upstream entries DEFERRED #AC resolve + W0.4 path traversal spike DEFER Phase 4.0 + 1 defense-in-depth fixture DEFERRED #AE registered + W0.5 SAMPLES.md 30-row REAL HISTORICAL mining 302 commits + .planning/phase-* task_plan)
+>   - F1-F8 8/8 acceptance bar; ADR 0017 9 章节 errata accepted; 17 ADR + 17 baseline tag iterate; tests 660→701+ (+41); 12+ atomic commits W0-W2
+>   - 🎯 **v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED**
+> - **Key decisions archived from STATE.md 关键决策记录** (5 Phase 3.4 rows verbatim):
+>   - **Phase 3.4 D-01 REAL HISTORICAL 30 sample mining ✅ ship** (Phase 3.4 W0.5 SAMPLES.md): 302 commits + .planning/phase-* task_plan mining; per-row source_commit MANDATORY
+>   - **Phase 3.4 D-02 RUN ENGINE per-sample arbitrate dispatch ✅ ship** (Phase 3.4 W1 T1.6): tests/routing/phase-3.4-routing-hit-rate.test.ts 30/30 100% per-tier
+>   - **Phase 3.4 D-03 BUFFER /4 estimateTokens zero-dep ✅ ship** (Phase 3.4 W1 T1.1): check-token-budget.ts 48L PRIMARY helper 4th family member
+>   - **Phase 3.4 D-04 DOCTOR WARN (status='warn' ≠ fail) ✅ ship** (Phase 3.4 W1 T1.2): doctor.ts 195→199L Option A inline shrink ≤200L Karpathy clean B-03 NOT invoked
+>   - **Phase 3.4 W0.1 STRATEGIC institutionalize 4 D-decisions ✅ ship** (Phase 3.4 W0.1): D1 single-SoT trim + D2 ship-time T6.N cadence + D3 3-rules gate warn-only round 1 + D4 ship-process integrate
+> - **Ship history inline** (archived from STATE.md L40-43 已完成 phase ship 历史 long inline rows):
+>   - **Phase 3.4 shipped** ✅ (2026-05-17) — routing 命中率 ≥ 85% 验收 30/30 = 100% per-tier Sonnet/Haiku/Opus 100/100/100 (D-01 REAL HISTORICAL + D-02 RUN ENGINE arbitrate) + check-token-budget.ts 48L PRIMARY helper 4th family member + doctor 8th check DOCTOR-ONLY-WARN (D-03 BUFFER /4 + D-04) + W0 backlog 5 项一次根治 (W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1-D4) + ADR 0017 9 章节 errata
+>   - **Phase 3.3 shipped** ✅ (2026-05-17) — aliases.yaml RICH 5-field redirect + DOCTOR-ONLY-WARN install 安静 + doctor 7th check + known-good YAML manifest lazy lock + STATE dual-SSOT 5-recurrence terminus COLLAPSE
+>
+> **Preserved in STATE.md** (post-trim target ≈ 130L):
+> - L1-15 项目核心引用 (constant)
+> - L17-22 当前位置 block condensed (sole SSOT marker — `**Phase 3.4 SHIPPED**` literal anchor preserved for STATE_POSITION_RE freshness gate D-04 COLLAPSE; long inline narrative archived to this section)
+> - 已完成 phase ship 历史 14-entry list (Phase 3.4 + 3.3 entries condensed to 1-line pointers; older 12 entries 1-line each unchanged)
+> - 待办 P0 (v0.4.0 dogfooding launch — Phase 4.1 execute) + P1 (DEFERRED #AF/#AG/#AH/EE-4/userSpawn carry-forward)
+> - 关键提醒 (long-term constraints only)
+> - 累积上下文 Decisions (recent phase decisions + long-term constraints only; Phase 3.4 5 D-decisions + Phase 3.3 D-04 + schemaVersion 13-surface rows archived to this section; A7 0001-0017 preserved as long-term constraint)
+> - 框架治理路由 (呼应 ~/.claude/CLAUDE.md constant)
+>
+> **Recovery instructions**: If a future maintainer needs full Phase 3.3 + 3.4 ship narrative detail (per-phase acceptance bar break-down, per-phase progress.md/VERIFICATION.md file lists, per-phase deferred items disposition table, per-phase commit hashes), retrieve from git history via:
+> ```bash
+> git show 3682f72~1:.planning/STATE.md  # pre-T0.1 STATE.md 148L baseline (Phase 4.1 plan-phase ship commit 3682f72; T0.1 trim commit is next)
+> ```
+> Or read per-phase canonical sources directly: `.planning/phase-3.3/{progress,VERIFICATION,deferred-items}.md` + `.planning/phase-3.4/{progress,VERIFICATION,SAMPLES,DOGFOOD-T2.X}.md` + `docs/adr/0016-aliases-rich-doctor-warn-known-good.md` + `docs/adr/0017-routing-hit-rate-token-budget-doctor.md` (ADR 0016 + 0017 main body 永久守恒 A7 — never archive these) + `.planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet (v0.3.0 milestone close archive).
+
+*Phase 4.1 W0 T0.1 D2 cadence iter 2 archive complete — 2026-05-18 ship-time T6.N cadence 2nd-implementation. Sister Phase 3.4 W2 T2.2 was 1st implementation (Phase 3.1+3.2 archived 2026-05-17); this 2nd-iter verifies the cadence pattern is institutionalized beyond first-time effort per M2 backlog discharge. Next § ARCHIVED FROM STATE — Phase 4.0+4.1 will be created by Phase 4.2 ship-time per D2 standing process cadence iter 3.*
