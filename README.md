@@ -62,8 +62,8 @@ harnessed/
 - **Acceptance bar F1-F8 8/8 (Phase 2.3)** ✅（A7 ADR 0001-0012 守恒 / 12 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25948298223）
 - **Acceptance bar F1-F8 8/8 (Phase 2.4)** ✅（A7 ADR 0001-0012 守恒 / 13 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25958873300）
 - **Acceptance bar F1-F8 8/8 (Phase 3.1)** ✅（A7 ADR 0001-0013 守恒 / 14 baseline tag iterate / Cross-OS CI 三平台全绿 — run TBD post-T5.6 push）
-- **Acceptance bar F1-F8 8/8 (Phase 3.4)** ✅（A7 ADR 0001-0017 守恒 / 17 baseline tag iterate / Cross-OS CI 三平台全绿 — run TBD post-T2.12 triple tag user push）
-- **Next**：v0.4.0 dogfooding benchmark + co-maintainer 招募 + ADR 全集 + 路由审计日志（🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17 — 17 ADR + 17 baseline tag + 14 milestone tag 累积 + triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 LOCAL pending user push approval；prereq：DEFERRED #AF D3 gate ENFORCE flip → Phase 3.5 OR v0.4.0 W0 first task + #AG D1 STATE.md ≤150L tighten → v0.4.0+ + #AE+#AH path traversal regex hardening → Phase 4.0 W0 if external user input arrives + EE-4 BLOCKER auto-spawn rerun → v0.4.0 后 evaluate）
+- **Acceptance bar F1-F8 8/8 (Phase 3.4)** ✅（A7 ADR 0001-0017 守恒 / 17 baseline tag iterate / Cross-OS CI 三平台全绿 — run 25992781663 post-hotfix 554b82b "build BEFORE test ordering"）
+- **Next**：v0.4.0 dogfooding benchmark + co-maintainer 招募 + ADR 全集 + 路由审计日志（🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17 — 17 ADR + 17 baseline tag + 14 milestone tag 累积 + triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 pushed to origin 2026-05-17；prereq：DEFERRED #AF D3 gate ENFORCE flip → Phase 3.5 OR v0.4.0 W0 first task + #AG D1 STATE.md ≤150L tighten → v0.4.0+ + #AE+#AH path traversal regex hardening → Phase 4.0 W0 if external user input arrives + EE-4 BLOCKER auto-spawn rerun → v0.4.0 后 evaluate）
 
 ## Install Quick Start（phase 1.2 ready）
 

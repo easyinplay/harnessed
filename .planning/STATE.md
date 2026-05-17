@@ -22,7 +22,7 @@
 - **GSD phase**：✅ **Phase 3.4 SHIPPED**（2026-05-17 — 路由命中率 ≥ 85% 验收 (30 sample REAL HISTORICAL dogfood D-01 + per-sample routing.arbitrate dispatch D-02; routing harness 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom; per-tier Sonnet 100% / Haiku 100% / Opus 100% all exceed ROADMAP R7 ≥84%/≥80% lower bounds) + token budget doctor 8th check (check-token-budget.ts 48L NEW PRIMARY helper 4th family member sister Phase 3.1 W3 engineHook.ts 49L + Phase 3.2 W1 probe-gstack.ts 49L + Phase 3.3 W1 check-deprecations.ts 43L precedent延袭 + Buffer.byteLength /4 zero-dep estimateTokens helper D-03 sister Phase 3.1 D-01 enforceBudget precedent reuse + doctor.ts 195→199L ≤200L Karpathy hard limit clean B-03 5% tolerance NOT invoked surgical 4-line delta + DOCTOR-ONLY-WARN status='warn' ≠ fail D-04 sister Phase 3.3 D-02 install path 安静 一致) + W0 backlog 5 项一次根治 (W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1+D2+D3+D4 6th STATE 类反模式 root-cause framing + W0.2 install.ts pkg.version Path A ES2022 import attributes DEFERRED #AD resolve + bonus package.json 0.1.0-alpha.1 → 0.3.0 align shipped milestone tags + W0.3 versions/0.3.0-known-good.yaml 8 real e2e-verified pinned upstream entries DEFERRED #AC resolve + W0.4 path traversal spike DEFER Phase 4.0 + 1 defense-in-depth fixture DEFERRED #AE registered + W0.5 SAMPLES.md 30-row REAL HISTORICAL mining 302 commits + .planning/phase-* task_plan); F1-F8 8/8 acceptance bar; ADR 0017 9 章节 errata accepted; 17 ADR + 17 baseline tag iterate; tests 660→701+ (+41); 12+ atomic commits W0-W2; 🎯 **v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED**）— 前置 ✅ **Phase 3.3 SHIPPED**（2026-05-17 — aliases.yaml RICH 5-field redirect D-01 + DOCTOR-ONLY-WARN install 安静 D-02 + known-good YAML manifest D-03 + STATE dual-SSOT 5-recurrence terminus COLLAPSE D-04 + ADR 0016 9 章节）；前置 ✅ Phase 3.2 + Phase 3.1 + v0.2.0 MILESTONE 4/4 SHIPPED 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.1+3.2 (W0.1 D2 ship-time T6.N first-implementation 2026-05-17)
 - **当前里程碑**：🎯 **v0.3.0 plan-feature workflow + checkpoint 4/4 SHIPPED & ARCHIVED**（Phase 3.1 + Phase 3.2 + Phase 3.3 + Phase 3.4 全 ship — 17 ADR + 14 milestone tag 累积；audit `.planning/milestones/v0.3.0-MILESTONE-AUDIT.md` PASSED）— next: v0.4.0 dogfooding benchmark + co-maintainer 招募 + ADR 全集 + 路由审计日志
 - **下一 phase**：**v0.4.0 discuss-phase 启动** (R8.1 dogfooding benchmark + R8.2 co-maintainer 招募 + R8.3 stale-bot + R8.4 公开 ADR 全集 + R8.5 GitHub Sponsors 启用; plan-feature 真接外部 gsd-* spawn dogfood per ROADMAP R8 carry; 候选启动 `/gsd-discuss-phase 4`)
-- **状态**：✅ **Phase 3.4 SHIPPED + 🎯 v0.3.0 MILESTONE CLOSE 4/4** — Wave 0+1+2 全 ship 2026-05-17；A7 守恒 ADR 0001-0016 main body 0 diff（T2.7 ship-time verify PASS）；CI 3-OS green；tests 660→701+ (+41) + 4 skipped；ADR 0017 9 章节 errata accepted；schemaVersion 13-surface unchanged (no new domain Phase 3.4 = dogfood + acceptance verify phase)；triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 (LOCAL created pending user push approval per CLAUDE.md commit safety)；DEFERRED #AC + #AD ✅ RESOLVED W0；#AE + #AF + #AG + #AH registered Phase 4.0/v0.4.0+ 触发
+- **状态**：✅ **Phase 3.4 SHIPPED + 🎯 v0.3.0 MILESTONE CLOSE 4/4** — Wave 0+1+2 全 ship 2026-05-17；A7 守恒 ADR 0001-0016 main body 0 diff（T2.7 ship-time verify PASS）；CI 3-OS green；tests 660→701+ (+41) + 4 skipped；ADR 0017 9 章节 errata accepted；schemaVersion 13-surface unchanged (no new domain Phase 3.4 = dogfood + acceptance verify phase)；triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 pushed to origin 2026-05-17 (CI run 25992781663 3-OS green post-hotfix 554b82b "build BEFORE test ordering" — pre-Phase-3.3 latent dist/cli.mjs missing root-caused)；DEFERRED #AC + #AD ✅ RESOLVED W0；#AE + #AF + #AG + #AH registered Phase 4.0/v0.4.0+ 触发
 - **进度**：14 / 17 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 82.4%（v0.1.0 里程碑 100%；v0.2.0 里程碑 100%；🎯 **v0.3.0 里程碑 100% CLOSE** — Phase 3.1 + 3.2 + 3.3 + 3.4 全 ✅）
 <!-- Phase 3.1 + 3.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.1+3.2 (2026-05-17 W0.1 D2 ship-time T6.N first-implementation per Phase 3.4 W2 T2.2 standing process — sister Phase 1.X-3.2 second-pass cadence延袭) -->
 
@@ -58,7 +58,7 @@
 
 ## 进行中（In Progress）
 
-[当前: 🎯 **v0.3.0 MILESTONE CLOSE 完成** — Phase 3.4 W2 ship 2026-05-17 + triple tag LOCAL created pending user push approval; next phase pending: v0.4.0 discuss-phase 启动 (dogfooding benchmark + co-maintainer 招募)]
+[当前: 🎯 **v0.3.0 MILESTONE CLOSE 完成** — Phase 3.4 W2 ship 2026-05-17 + triple tag pushed to origin (CI run 25992781663 3-OS green post-hotfix 554b82b); next phase pending: v0.4.0 discuss-phase 启动 (dogfooding benchmark + co-maintainer 招募)]
 
 ---
 
@@ -129,7 +129,7 @@
 
 ### Blockers
 
-[当前无 — 🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17; triple tag LOCAL created pending user push approval]
+[当前无 — 🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17; triple tag pushed to origin (CI run 25992781663 3-OS green post-hotfix 554b82b)]
 
 ---
 
