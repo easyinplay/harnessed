@@ -182,7 +182,7 @@
 
 ---
 
-## v0.4.0 — dogfooding benchmark + 稳定期（2-3 周）
+## v0.4.0 — dogfooding benchmark + 稳定期 (2-3 周) — **1/3 PROGRESS** (Phase 4.1 SHIPPED 2026-05-18; Phase 4.2 + 4.3 pending; NOT yet 3/3 ARCHIVED — reserved Phase 4.3 close per sister L38 v0.1.0 + L58 v0.2.0 + L130 v0.3.0 SHIPPED ARCHIVED literal cadence延袭)
 
 ### Goal
 
@@ -207,15 +207,18 @@
 
 ### Phase 拆分
 
-- **Phase 4.1：dogfooding benchmark 数据采集 + 公开格式定义**
-  - 30 任务执行 + 命中率统计 + 上游升级 e2e 录像/日志
-  - 验收：`docs/benchmarks/v0.4.md` review-ready
-- **Phase 4.2：co-maintainer onboarding 文档 + GitHub Sponsors + stale-bot**
+- **Phase 4.1：dogfooding benchmark 数据采集 + 公开格式定义** ✅ SHIPPED (2026-05-18)
+  - 30 任务执行 + 命中率统计 + 上游升级 e2e 录像/日志 → docs/benchmarks/v0.4.md NEW 302L D-02 FULL per-task disclosure 30/30 100% (sister Phase 3.4 SAMPLES.md § 1+2+3 frame REUSE D-01 single SoT 0-day overhead) + docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG zero-dep 4-section × 2 manifests (ctx7 npm-cli + gstack git-clone-with-setup planner Discretion #5 install_method 多样性) + docs/CONTRIBUTING-BENCHMARK.md NEW 30L D-04 MANUAL re-run instructions (sister Karpathy YAGNI > weekly cron; 0 CI infra; sister Phase 3.4 D-02 install path 安静 一致 NOT 不足)
+  - 验收: docs/benchmarks/v0.4.md review-ready ✅ (4 D-decisions activated 闭环 D-01 REUSE + D-02 FULL + D-03 TEXT LOG + D-04 MANUAL + 4 sneak blocks守门 + R8.1 acceptance "原始数据公开任何人可复现" satisfied per CONTRIBUTING-BENCHMARK + Phase 3.4 routing harness 30/30 PASS verbatim cite + 反"美化"声明 footer anchored ROADMAP L222)
+  - W0 backlog 3 项一次根治: W0.1 D3 ENFORCE flip warn-only round 1 → ENFORCE round 2 (DEFERRED #AF ✅ RESOLVED; sister Phase 2.1 → 2.2 1-phase cadence延袭) + W0.3 D2 cadence iter 2 trim Phase 3.3+3.4 narrative → RETROSPECTIVE.md (sister Phase 3.4 W2 T2.2 1st-implementation → 2nd-iter institutionalize verify M2 backlog discharge pattern stable) + W0.5 conditional D1 SIZE_LIMIT round 2 tighten 200→150 DEFERRED #BA carry-forward Phase 4.2 W0 LOW priority (post-W0.3 STATE 143L insufficient ≥10L headroom threshold per § 7.1 decision tree DEFER path active)
+  - PATTERNS § 5 risk #3 mitigation 3 NO 守门: NO ADR 0018 (pure dogfood publication NOT architectural decision) + NO ci.yml A7 iter (0 diff verified T2.6) + NO triple tag (single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE only; sister L130 v0.3.0 SHIPPED ARCHIVED literal cadence延袭 reserves milestone close tags for Phase 4.3)
+  - DEFERRED carry-forward Phase 4.2+: #BA SIZE_LIMIT tighten + #BB T3 1 phase/day cadence assessment (external dependency phase risk surface 真正 fires) + #BC v0.5+ benchmark expand evaluation + #BD regex 2-pass validation pattern lock + #AH path traversal regex hardening
+- **Phase 4.2：co-maintainer onboarding 文档 + GitHub Sponsors + stale-bot** — discuss-phase 启动 prep (R8.2-R8.5; T3 risk surface 真正 fires Phase 4.2 外部依赖 phase per sister Phase 4.1 ship retrospective; v0.4.0 节奏 evaluate explicit 调整期望)
   - MAINTAINER-ONBOARDING + Sponsors page + GH Action stale workflow
   - 验收：外部新人 30 分钟可跑通 dev 环境
 - **Phase 4.3：路由透明度日志 + ADR 全集补齐 + v1.0-RC 收尾**
   - `.harnessed/audit.log` schema + 全部历史决策回填 ADR + RELEASE NOTES
-  - 验收：路由决策 100% 可追溯；ADR 至少 5 份
+  - 验收：路由决策 100% 可追溯；ADR 至少 5 份 (含 milestone close 3-file archive triplet at `.planning/milestones/v0.4.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` sister v0.3.0 close cadence延袭 + 🎯 v0.4.0 milestone close tag)
 
 ### 关键风险
 
