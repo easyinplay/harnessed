@@ -127,7 +127,11 @@
 
 ---
 
-## v0.3.0 — plan-feature workflow + checkpoint（3-4 周）
+## v0.3.0 — plan-feature workflow + checkpoint ✅ SHIPPED 2026-05-17
+
+> 🎯 **v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED** (2026-05-17) — Phase 3.1 + Phase 3.2 ship 2026-05-16~17；Phase 3.3 + Phase 3.4 ship 2026-05-17；4 ADR (0014-0017) + 4 baseline tag + 5 milestone tag accumulate (v0.3.0-alpha.1-checkpoint + alpha.2-plan-feature + alpha.3-aliases-known-good + alpha.4-routing + 🎯 **v0.3.0** 大 tag)；660+→701+ tests (+41 W1) → 543+→701+ (+158 milestone cumulative)；archive `.planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` 3-file triplet (MILESTONE-AUDIT.md inaugurate at milestones/ subdir vs sister v0.2.0 inline)。next: v0.4.0 dogfooding benchmark + co-maintainer 招募 + ADR 全集 + 路由审计日志 discuss-phase 启动。
+
+
 
 ### Goal
 
@@ -164,10 +168,11 @@
   - manifest 重定向；doctor warning；release 流程冻结 known-good lock
   - 验收：模拟上游改名场景 install 通过 ✅ (T2.1 install-aliases.test.ts 3 fixture R7.5 + T2.2 install-known-good.test.ts 2 fixture R7.6)
   - ship 总结：3 Waves W0-W2 全 ship 16+ atomic commits；aliases.yaml RICH 5-field redirect (D-01 schema 12th surface) + DOCTOR-ONLY-WARN install 安静 (D-02 1-line resolveAlias surgical + doctor 7th check 人读 audit) + known-good YAML manifest lazy-load 版本 lock (D-03 schema 13th surface) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04 (b) LOCKED) + Wave 0 backlog 3 项一次根治；ADR 0016 9 章节 errata accepted；tests 623→659+ (+36)；16 ADR + 16 baseline tag；schemaVersion 11→13 surface；manifest-domain colocation 3rd consumer 闭环 (Phase 3.1 checkpoint-domain + Phase 3.2 workflow-domain + Phase 3.3 manifest-domain)；F1-F8 8/8
-- **Phase 3.4：路由命中率 ≥ 85% 验收 + token budget 监控**
-  - 30 样本（Haiku/Sonnet/Opus 各 ≥ 8）；description 总 token 近似算法 + 阈值告警
-  - 验收：实测命中率达标 + token 监控仪表落地
-  - **Phase 3.3 carry-forward prereq**: DEFERRED #AC aliases.yaml 真 deprecation entries seed + DEFERRED #AD install.ts harnessed_version 从 package.json 读 (移除 hardcoded '0.3.0' TODO) + DEFERRED #AE path traversal regex hardening for resolveAlias (若 surface real attack vector) + plan-feature dogfood seed 真 e2e-verified upstreams 进 versions/0.3.0-known-good.yaml + EE-4 BLOCKER auto-spawn rerun + userSpawn session_id capture
+- **Phase 3.4：路由命中率 ≥ 85% 验收 + token budget 监控** ✅ SHIPPED 2026-05-17
+  - 30 样本（Haiku/Sonnet/Opus 各 ≥ 8）；description 总 token 近似算法 + 阈值告警 ✅ DONE
+  - 验收：实测命中率达标 + token 监控仪表落地 ✅ (30/30 = 100% 远超 ≥85% bar 15% headroom; per-tier Sonnet/Haiku/Opus 100/100/100 all exceed lower bounds)
+  - ship 总结：3 Waves W0-W2 全 ship 12+ atomic commits；30 sample REAL HISTORICAL dogfood (D-01 + D-02 RUN ENGINE per-sample routing.arbitrate dispatch zero mock; tests/routing/phase-3.4-routing-hit-rate.test.ts 30/30 100%) + token budget doctor 8th check (D-03 Buffer.byteLength /4 zero-dep estimateTokens + D-04 DOCTOR-ONLY-WARN status='warn' ≠ fail; check-token-budget.ts 48L PRIMARY helper 4th family member sister Phase 3.1+3.2+3.3 precedent延袭; doctor.ts 195→199L ≤200L Karpathy clean B-03 NOT invoked) + W0.1 STRATEGIC institutionalize 4 D-decisions D1-D4 (D1 single-SoT trim + D2 ship-time T6.N cadence + D3 3-rules gate warn-only round 1 + D4 ship-process integrate) + W0 backlog 5 项一次根治 (W0.2 install.ts pkg.version Path A DEFERRED #AD resolve + W0.3 versions/0.3.0-known-good.yaml 8 real entries DEFERRED #AC resolve + W0.4 path traversal spike DEFER Phase 4.0 DEFERRED #AE registered + W0.5 SAMPLES.md 30-row REAL HISTORICAL mining)；F1-F8 8/8；ADR 0017 9 章节 errata accepted；17 ADR + 17 baseline tag；660→701+ tests (+41)；triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 (LOCAL pending user push approval)
+  - **DEFERRED carry-forward to Phase 4.0+**: #AE path traversal regex hardening + #AF D3 gate ENFORCE flip (Phase 3.5 OR v0.4.0 W0 first task) + #AG D1 STATE.md ≤150L tighten (v0.4.0+) + #AH (same as #AE)
 
 ### 关键风险
 
