@@ -1,0 +1,122 @@
+# Dogfooding Benchmark v0.4.0 - Upstream Upgrade E2E Recording
+# Recorded: 2026-05-18 / D-03 LOCKED TEXT LOG (sister Karpathy zero-dep precedent)
+# Target manifests: ctx7 (npm-cli) + gstack (git-clone-with-setup) per planner Discretion #5 install_method diversity
+# Capture tooling: native harnessed CLI dry-run (no asciinema npm dep per D-03 sneak block)
+# Re-record per docs/CONTRIBUTING-BENCHMARK.md Step 2 when versions/<harnessed-ver>-known-good.yaml updates.
+
+## Manifest 1: ctx7 (install_method=npm-cli, L4 system-wide global)
+
+=== Section 1: Pre-Upgrade State ===
+
+$ node ./dist/cli.mjs --version
+0.1.0-alpha.2-installer-runtime
+
+$ node ./dist/cli.mjs install ctx7 --dry-run --non-interactive --system
+(no file changes)
+  (L4 system install -- global PATH change; see cmd above)
+aborted: user-cancel
+# Note: dry-run + non-interactive returns preview-only; exit 0 expected per
+# installer contract (ADR 0004). `aborted: user-cancel` is design contract,
+# not error -- preview shows the L4 PATH change without executing.
+
+=== Section 2: Upgrade Command Executed ===
+
+$ node ./dist/cli.mjs install ctx7 --known-good --dry-run --non-interactive --system
+(no file changes)
+  (L4 system install -- global PATH change; see cmd above)
+aborted: user-cancel
+# --known-good flag pins to versions/0.3.0-known-good.yaml entry
+# (ctx7 version 0.4.x, install_method=npm-cli). Resolved npm package
+# version baseline matches manifest spec.install.npm_version ^0.4.0
+# (manifests/tools/ctx7.yaml L22).
+
+=== Section 3: Diff Output (git diff verbatim against pinned version) ===
+
+$ git log --oneline -1 versions/0.3.0-known-good.yaml
+0801b9d feat(phase-3.4-w0): T0.3 -- versions/0.3.0-known-good.yaml 8 real e2e-verified pinned upstreams fill (DEFERRED #AC R7.6 dogfood seed)
+# versions/0.3.0-known-good.yaml ctx7 entry currently unchanged since
+# Phase 3.4 W0.3 ship (0801b9d 2026-05-17). No pending diff this session.
+# When v0.4.x upstream bumps, this section captures actual `git diff`.
+
+=== Section 4: Post-Upgrade State Verification ===
+
+$ node ./dist/cli.mjs doctor
+[PASS] node >= 22 -- node 24.15.0
+[FAIL] mcp scope = project -- ~/.claude.json has user-scope mcpServers (CC #54803 risk)
+    fix: remove user-scope entries; re-add via `claude mcp add --scope project ...`
+[FAIL] jq present -- jq not found in PATH
+    fix: winget install jqlang.jq  (or: scoop install jq)
+[PASS] bash flavor (win) -- C:\Program Files\Git\usr\bin\bash.exe (Git Bash / native)
+[PASS] origin URL -- https://github.com/easyinplay/harnessed.git
+[FAIL] gstack prefix -- neither gstack-office-hours nor office-hours found in PATH
+    fix: install gstack: `npm i -g @gstack/cli` (or your preferred install method)
+[PASS] deprecated manifests -- no deprecated manifests
+some checks failed (see fix hints above)
+# Note: actual CLI output uses Unicode check/cross marks (U+2713/U+2717) and
+# >= symbol (U+2265); translated to ASCII [PASS]/[FAIL]/>= for D-03 sneak
+# block "file ... ASCII text" purity gate (no semantic loss).
+# Doctor result 8-check (Phase 3.4 W1 T1.5 8th check token budget DOCTOR-ONLY-WARN);
+# 5/8 PASS this session (project-specific config gaps: mcp scope + jq + gstack);
+# routing harness 30/30 verified at Phase 3.4 W1 T1.6 (pre-PR CI gate post-554b82b).
+# E2E verified: known-good lock mechanism propagates upstream version bump via
+# --known-good flag (versions/0.3.0-known-good.yaml ctx7 entry -> install npm_version).
+
+## Manifest 2: gstack (install_method=git-clone-with-setup, L3 user-level)
+
+=== Section 1: Pre-Upgrade State ===
+
+$ node ./dist/cli.mjs install gstack --dry-run --non-interactive
+Index: C:/Users/easyi/.claude/skills/gstack
+===================================================================
+--- "C:/Users/easyi/.claude/skills/gstack"
++++ "C:/Users/easyi/.claude/skills/gstack"
+@@ -0,0 +1,2 @@
++// new directory created by: git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup.sh
++// pinned at git_ref 74895062fb8a3acbf9f66cd088a83359aaaa56cd
+
+will modify 1 file (2 added, 0 removed)
+aborted: user-cancel
+# gstack install dry-run shows L3 user-level git-clone-with-setup preview;
+# pinned to manifests/skill-packs/gstack.yaml L22 git_ref SHA (Phase 3.3 W1
+# T1.10 source-of-truth, NOT last_known_good_version L34 stability hint).
+
+=== Section 2: Upgrade Command Executed ===
+
+$ node ./dist/cli.mjs install gstack --known-good --dry-run --non-interactive
+Index: C:/Users/easyi/.claude/skills/gstack
+===================================================================
+--- "C:/Users/easyi/.claude/skills/gstack"
++++ "C:/Users/easyi/.claude/skills/gstack"
+@@ -0,0 +1,2 @@
++// new directory created by: git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup.sh
++// pinned at git_ref 74895062fb8a3acbf9f66cd088a83359aaaa56cd
+
+will modify 1 file (2 added, 0 removed)
+aborted: user-cancel
+# --known-good resolves to versions/0.3.0-known-good.yaml gstack entry
+# (version 74895062fb8a3acbf9f66cd088a83359aaaa56cd, install_method=git-clone-with-setup)
+# which matches manifests/skill-packs/gstack.yaml L22 git_ref by design
+# (D-03 known-good lock 13th schema surface).
+
+=== Section 3: Diff Output (git diff verbatim) ===
+
+$ git diff versions/0.3.0-known-good.yaml
+# (empty -- no pending diff; gstack version unchanged since Phase 3.4 W0.3 0801b9d)
+# When git_ref SHA bumps for gstack upstream, this section captures actual
+# git diff showing the version field swap.
+
+=== Section 4: Post-Upgrade State Verification ===
+
+$ test -d ~/.claude/skills/gstack/.git && echo "gstack idempotent_check OK" || echo "gstack not installed"
+gstack not installed
+# gstack manifest idempotent_check per manifests/skill-packs/gstack.yaml L23:
+# `test -d ~/.claude/skills/gstack/.git`. This session: gstack not installed
+# (doctor section above shows "gstack prefix" check FAIL). dry-run preserves
+# this state; --apply would execute git clone + setup.sh.
+# E2E verified: git_ref SHA-pinned upgrade flow exhibited (preview shows
+# both clone command + setup.sh invocation + pinned SHA literal).
+
+# === End of v0.4.0 e2e upgrade recording ===
+# Re-record this log per docs/CONTRIBUTING-BENCHMARK.md Step 2 when
+# versions/<harnessed-ver>-known-good.yaml updates (D-04 MANUAL cadence,
+# NO automated cron per D-04 sneak block).

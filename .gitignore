@@ -15,6 +15,7 @@ coverage/
 
 # Logs / env
 *.log
+!docs/benchmarks/*.log
 .env
 .env.local
 
