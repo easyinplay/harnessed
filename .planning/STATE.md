@@ -19,11 +19,11 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 3.4 SHIPPED**（2026-05-17 — 路由 30/30 = 100% accuracy + token budget doctor 8th check + W0 backlog 5 项一次根治 + ADR 0017; 🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED）— 前置 ✅ Phase 3.3 SHIPPED (2026-05-17) + Phase 3.1/3.2 + v0.2.0/v0.1.0 milestones — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4 (Phase 4.1 W0.3 D2 cadence iter 2 2026-05-18) + § ARCHIVED FROM STATE — Phase 3.1+3.2 (Phase 3.4 W2 T2.2 D2 1st cadence 2026-05-17) + § ARCHIVED FROM STATE — Phase 1.X-3.2 (Phase 3.4 W0.1 STRATEGIC 2026-05-17)
-- **当前里程碑**：🎯 **v0.3.0 plan-feature workflow + checkpoint 4/4 SHIPPED & ARCHIVED**（Phase 3.1 + Phase 3.2 + Phase 3.3 + Phase 3.4 全 ship — 17 ADR + 14 milestone tag 累积；audit `.planning/milestones/v0.3.0-MILESTONE-AUDIT.md` PASSED）— next: v0.4.0 dogfooding benchmark + co-maintainer 招募 + ADR 全集 + 路由审计日志
-- **下一 phase**：**Phase 4.1 execute-phase 启动** (plan-phase shipped 2026-05-18 — Wave A R1 PATTERNS.md 386L 14 targets 100% analog ~85% reuse + R2 RESEARCH.md 1114L 18 sections HIGH confidence; Wave B planner PLAN.md 519L + task_plan.md 1116L 14 atomic tasks W0 3 + W1 6 + W2 7 (no ADR 0018 + no triple tag per PATTERNS § 5 risk #3); Wave C plan-checker iter 3 VERIFICATION PASSED (iter 1 = 1 BLOCKER + 2 WARNING → orchestrator tier-call 3 FIX iter 2 → iter 2 1 BLOCKER residual semantic synonym `L1-N`/`=N+1L` arithmetic missed by iter 1 literal regex → iter 3 6 surgical fixes + DEFERRED #BD "regex 2-pass validation" pattern lock; 14/14 atomic issue-free + EE-4 4/4); sister 5-phase 连续 cadence延袭 + 73% iter 1 burden reduction vs sister Phase 3.4; 候选启动 `/gsd-execute-phase 4.1`)
-- **状态**：✅ **Phase 3.4 SHIPPED + 🎯 v0.3.0 MILESTONE CLOSE 4/4** — Wave 0+1+2 全 ship 2026-05-17；A7 守恒 ADR 0001-0016 main body 0 diff（T2.7 ship-time verify PASS）；CI 3-OS green；tests 660→701+ (+41) + 4 skipped；ADR 0017 9 章节 errata accepted；schemaVersion 13-surface unchanged (no new domain Phase 3.4 = dogfood + acceptance verify phase)；triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 pushed to origin 2026-05-17 (CI run 25992781663 3-OS green post-hotfix 554b82b "build BEFORE test ordering" — pre-Phase-3.3 latent dist/cli.mjs missing root-caused)；DEFERRED #AC + #AD ✅ RESOLVED W0；#AE + #AF + #AG + #AH registered Phase 4.0/v0.4.0+ 触发
-- **进度**：14 / 17 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 82.4%（v0.1.0 里程碑 100%；v0.2.0 里程碑 100%；🎯 **v0.3.0 里程碑 100% CLOSE** — Phase 3.1 + 3.2 + 3.3 + 3.4 全 ✅）
+- **GSD phase**：✅ **Phase 4.1 SHIPPED**（2026-05-18 — dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor + W0 backlog 3 项一次根治 + 4 D-decisions activated 闭环）+ 前置 ✅ **Phase 3.4 SHIPPED**（2026-05-17 — 路由 30/30 = 100% + 🎯 v0.3.0 MILESTONE 4/4 CLOSE）— 前置 ✅ Phase 3.3 SHIPPED (2026-05-17) + Phase 3.1/3.2 + v0.2.0/v0.1.0 milestones — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4 (Phase 4.1 W0.3 D2 cadence iter 2 2026-05-18) + § ARCHIVED FROM STATE — Phase 3.1+3.2 (Phase 3.4 W2 T2.2 D2 1st cadence 2026-05-17) + § ARCHIVED FROM STATE — Phase 1.X-3.2 (Phase 3.4 W0.1 STRATEGIC 2026-05-17)
+- **当前里程碑**：**v0.4.0 dogfooding benchmark + 稳定期 1/3 PROGRESS**（Phase 4.1 SHIPPED 2026-05-18；Phase 4.2 + 4.3 pending — NOT yet 3/3 ARCHIVED reserved Phase 4.3 close per sister v0.3.0 close cadence延袭）— next: Phase 4.2 co-maintainer onboarding R8.2-R8.5
+- **下一 phase**：**Phase 4.2 discuss-phase 启动 prep** (R8.2 co-maintainer 招募 + R8.3 stale-bot + R8.4 公开 ADR 全集 + R8.5 GitHub Sponsors; T3 risk surface 真正 fires Phase 4.2 外部依赖 phase per sister Phase 4.1 ship retrospective; 候选启动 `/gsd-discuss-phase 4.2`)
+- **状态**：✅ **Phase 4.1 SHIPPED — Wave 0+1+2 全 ship 2026-05-18** — docs/benchmarks/v0.4.md NEW 302L D-02 FULL per-task disclosure (30/30 100% accuracy 远超 ≥85% bar 15% headroom; sister Phase 3.4 SAMPLES.md § 1+2+3 frame REUSE) + docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG zero-dep 4-section × 2 manifests (ctx7 + gstack planner Discretion #5 install_method 多样性) + docs/CONTRIBUTING-BENCHMARK.md NEW 30L D-04 MANUAL re-run instructions + W0 backlog 3 项一次根治 (W0.1 D3 ENFORCE flip DEFERRED #AF RESOLVED + W0.3 D2 cadence iter 2 institutionalize verify M2 backlog discharge + W0.5 conditional D1 SIZE_LIMIT round 2 tighten DEFERRED #BA carry-forward Phase 4.2 W0); A7 守恒 ADR 0001-0017 main body 0 diff (T2.6 ci.yml verify NO A7 iter Phase 4.1 = pure dogfood publish NOT architectural decision); tests 701→709+ (+8) / 0 fail; single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE (NO push per CLAUDE.md commit safety; user controls); NO ADR 0018 + NO triple tag per PATTERNS § 5 risk #3 mitigation; DEFERRED #AF ✅ RESOLVED + #AG ✅ partially RESOLVED (DEFER path #BA carry)
+- **进度**：15 / 17 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 88.2%（v0.1.0 里程碑 100%；v0.2.0 里程碑 100%；🎯 **v0.3.0 里程碑 100% CLOSE**；v0.4.0 里程碑 1/3 PROGRESS — Phase 4.1 ✅）
 <!-- Phase 3.1 + 3.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.1+3.2 (2026-05-17 W0.1 D2 ship-time T6.N first-implementation per Phase 3.4 W2 T2.2 standing process — sister Phase 1.X-3.2 second-pass cadence延袭) -->
 
 ### 各里程碑进度
@@ -33,13 +33,14 @@
 | v0.1.0 manifest 引擎 + research | 6/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 + 1.5 done — **v0.1.0 里程碑全部完成** | 2026-05-12 ~ 2026-05-14 |
 | v0.2.0 Sub-task Loop + Extension Installers | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 2.1 + 2.2 + 2.3 + 2.4 ship (doctor MIN 5 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel + Wave 0 backlog 5 项); 13 ADR + 13 baseline tag accumulate; archive + audit ship | 2026-05-15 ~ 2026-05-16 |
 | v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1 + 3.2 + 3.3 + 3.4 全 ship (P3.1: checkpoint 引擎 + harnessed resume + compact + T4.4 closure activation 闭环 + ADR 0014; P3.2: gstack PROBE + JINJA 插值 + plan-feature 5-phase WIRED + governance.json PUSH + ADR 0015 + T4.4 closure infra 二代消费者闭环; P3.3: aliases.yaml RICH 5-field redirect (D-01) + DOCTOR-ONLY-WARN install 安静 + doctor 7th check 人读 audit (D-02) + known-good YAML manifest lazy lock (D-03) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04) + W0 backlog 3 项一次根治 + ADR 0016 + manifest-domain colocation 3rd consumer 闭环; **P3.4: routing 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom per-tier Sonnet/Haiku/Opus 100/100/100 (D-01 + D-02) + check-token-budget.ts 48L PRIMARY helper 4th 家族成员 + doctor 8th check token budget DOCTOR-ONLY-WARN (D-03 + D-04) + W0 backlog 5 项一次根治 W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1-D4 + ADR 0017 9 章节 errata**); tests 543→701+ (+158); 17 ADR + 17 baseline tag; 14 milestone tag (含 🎯 v0.3.0); schemaVersion 7→13 surface; archive `.planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet (MILESTONE-AUDIT inaugurate milestones/ subdir upgrade); next: v0.4.0 discuss-phase 启动 | 2026-05-16 ~ 2026-05-17 |
-| v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
+| v0.4.0 dogfooding + 稳定期 | 1/3 | 🚧 **PROGRESS** — Phase 4.1 ✅ SHIPPED 2026-05-18 (dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor; docs/benchmarks/v0.4.md NEW 302L D-02 FULL + docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG + docs/CONTRIBUTING-BENCHMARK.md NEW 30L D-04 MANUAL + W0 backlog 3 项一次根治 + 4 D-decisions activated 闭环 + single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL); Phase 4.2 + 4.3 pending | 2026-05-18 ~ - |
 
 ### 已完成 phase ship 历史 (W0.2 — README sync SSOT)
 
 > 与 README.md L46-56 一一对应; grep gate `^[-*]?\s*\*?\*?Phase [1-9]\.[0-9]\*?\*?.*[Ss]hipped` 计 count 与 README 等
 
 <!-- Phase 3.3 + 3.4 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4 (2026-05-18 Phase 4.1 W0.3 D2 cadence iter 2 per standing process — M2 backlog discharge institutionalize verify 2nd-iter beyond 1st-implementation) -->
+- **Phase 4.1 shipped** ✅ (2026-05-18) — dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor (docs/benchmarks/v0.4.md NEW 302L D-02 FULL per-task disclosure 30/30 100% + docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG zero-dep 4-section × 2 manifests + docs/CONTRIBUTING-BENCHMARK.md NEW 30L D-04 MANUAL re-run + W0 backlog 3 项一次根治 W0.1 D3 ENFORCE flip DEFERRED #AF RESOLVED + W0.3 D2 cadence iter 2 institutionalize verify M2 discharge + W0.5 conditional D1 SIZE_LIMIT DEFER #BA carry); v0.4.0 milestone 1/3 PROGRESS (NOT yet 3/3 ARCHIVED reserved Phase 4.3 close); NO ADR 0018 + NO triple tag per PATTERNS § 5 risk #3; single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL (NO push)
 - **Phase 3.4 shipped** ✅ (2026-05-17) — routing 30/30 = 100% per-tier + doctor 8th check + W0 5 项一次根治 + ADR 0017 (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4)
 - **Phase 3.3 shipped** ✅ (2026-05-17) — aliases.yaml RICH + DOCTOR-ONLY-WARN install + doctor 7th check + known-good YAML + STATE dual-SSOT COLLAPSE + ADR 0016 (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4)
 - **Phase 3.2 shipped** ✅ (2026-05-17) — gstack 前缀探测 PROBE doctor 6th check + workflow JINJA 插值 + plan-feature 5-phase WIRED + governance PUSH
@@ -59,24 +60,31 @@
 
 ## 进行中（In Progress）
 
-[当前: 🎯 **v0.3.0 MILESTONE CLOSE 完成** — Phase 3.4 W2 ship 2026-05-17 + triple tag pushed to origin (CI run 25992781663 3-OS green post-hotfix 554b82b); next phase pending: v0.4.0 discuss-phase 启动 (dogfooding benchmark + co-maintainer 招募)]
+[当前: ✅ **Phase 4.1 SHIPPED** — v0.4.0 milestone 1st phase 完成 2026-05-18 + single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE (NO push pending user explicit approval); next phase pending: Phase 4.2 discuss-phase 启动 (R8.2-R8.5 co-maintainer 招募 + stale-bot + ADR 全集 + GitHub Sponsors)]
 
 ---
 
-## 待办（按优先级）— v0.4.0 启动 window
+## 待办（按优先级）— Phase 4.2 启动 window
 
-### P0 — v0.4.0 discuss-phase 启动 prep
+### P0 — Phase 4.2 discuss-phase 启动 prep
 
-1. ⏳ **v0.4.0 discuss-phase 启动** (R8.1 dogfooding benchmark + R8.2 co-maintainer 招募 + R8.3 stale-bot + R8.4 公开 ADR 全集 + R8.5 GitHub Sponsors 启用; plan-feature 真接外部 gsd-* spawn dogfood per ROADMAP R8 carry; 候选启动 `/gsd-discuss-phase 4`)
-2. ⏳ **User push approval** for triple tag created Phase 3.4 W2 T2.12 LOCAL: adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 (per CLAUDE.md commit safety: NEVER push without user explicit request)
+1. ⏳ **Phase 4.2 discuss-phase 启动** (R8.2 co-maintainer 招募 + R8.3 stale-bot + R8.4 公开 ADR 全集 + R8.5 GitHub Sponsors 启用; T3 risk surface 真正 fires Phase 4.2 外部依赖 phase — v0.4.0 节奏 evaluate explicit 调整期望 per sister Phase 4.1 ship retrospective; 候选启动 `/gsd-discuss-phase 4.2`)
+2. ⏳ **User push approval** for tags LOCAL created:
+   - Phase 3.4 W2 T2.12: adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 (already pushed 2026-05-17 per CI run 25992781663)
+   - Phase 4.1 W2 T2.7: v0.4.0-alpha.1-benchmark single baseline tag LOCAL (pending push approval per CLAUDE.md commit safety: NEVER push without user explicit request)
+3. ⏳ **User push approval** for Phase 4.1 W2 commits T2.1-T2.7 (6 atomic commits) per CLAUDE.md commit safety
 
-### P1 — DEFERRED carry-forward (Phase 3.4 ship 后)
+### P1 — DEFERRED carry-forward (Phase 4.1 ship 后)
 
-3. **DEFERRED #AF** D3 gate ENFORCE flip timing — Phase 3.5 W0 OR v0.4.0 W0 first task (sister Phase 2.1 transparency gate cadence)
-4. **DEFERRED #AG** D1 STATE.md ≤150L tighten — v0.4.0+ (round 1 target ≤200L warn-only complete; v0.4.0+ tighten SIZE_LIMIT to 150L per D3 Rule 1 future flip)
-5. **DEFERRED #AH** W0.4 path traversal regex hardening — Phase 4.0 W0 (if external user input arrives — currently sole consumer is project maintainer, real attack surface near-zero per spike outcome)
-6. **EE-4 BLOCKER auto-spawn rerun** — v0.4.0 后 evaluate (Phase 2.4 D-02 down-scope carry-forward unchanged)
-7. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand (fresh-session fallback per B-02 still acceptable)
+4. **DEFERRED #BA** D1 SIZE_LIMIT round 2 tighten 200→150 — Phase 4.2 W0 LOW priority defensive (post-W0.3 STATE 143-150L exceeded ≥10L headroom threshold per § 7.1 decision tree; W0.5 DEFER path active)
+5. **DEFERRED #BB** T3 1 phase/day cadence assessment — Phase 4.2 co-maintainer 招募 EXTERNAL DEPENDENCY phase (T3 risk surface真正 fires Phase 4.2; v0.4.0 节奏 evaluate explicit 调整期望)
+6. **DEFERRED #BC** v0.5+ benchmark expand evaluation — IF Phase 4.1 dogfood reveals miss case NOT covered by current 30 SAMPLES.md → re-evaluate D-01 REJECT EXPAND new mining; currently 30/30 100% routing PASS no signal
+7. **DEFERRED #BD** regex 2-pass validation pattern lock — plan-checker iter 2 residual semantic synonym `L1-N`/`=N+1L` arithmetic missed by iter 1 literal regex; future plan-checker iterations use 2-pass (literal + arithmetic-aware) regex validation
+8. **DEFERRED #AH** W0.4 path traversal regex hardening — Phase 4.0+ W0 (if external user input arrives — currently sole consumer is project maintainer; real attack surface near-zero per spike outcome)
+9. **EE-4 BLOCKER auto-spawn rerun** — v0.4.0 后 evaluate (Phase 2.4 D-02 down-scope carry-forward unchanged)
+10. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand (fresh-session fallback per B-02 still acceptable)
+- **DEFERRED #AF** ✅ RESOLVED Phase 4.1 W0 T0.2 (D3 gate ENFORCE flip warn-only round 1 → ENFORCE round 2)
+- **DEFERRED #AG** ✅ partially RESOLVED Phase 4.1 W0 T0.3 (W0.5 CONDITIONAL — DEFER path active → #BA carry-forward Phase 4.2 W0)
 
 ### P2 — 跨里程碑预留 (v0.4+ 议题)
 
@@ -124,7 +132,7 @@
 
 ### Blockers
 
-[当前无 — 🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17; triple tag pushed to origin (CI run 25992781663 3-OS green post-hotfix 554b82b)]
+[当前无 — ✅ Phase 4.1 SHIPPED 2026-05-18 v0.4.0 milestone 1/3 PROGRESS; single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE pending user push approval per CLAUDE.md commit safety]
 
 ---
 
