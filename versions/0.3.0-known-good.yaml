@@ -1,9 +1,50 @@
-# versions/0.3.0-known-good.yaml — Phase 3.3 R7.6 MVP seed
-# Phase 3.4 dogfood fills upstreams with actual e2e-verified pinned versions
-# (e.g., claude-agent-sdk@0.3.142, gstack@1.5.0, etc).
+# versions/0.3.0-known-good.yaml — Phase 3.4 W0.3 R7.6 dogfood seed fill
+# Phase 3.3 W1 T1.11 shipped empty MVP seed; Phase 3.4 W0.3 fills 8 e2e-verified
+# pinned entries per RESEARCH § 7.1 verbatim candidate list (planner pre-resolved
+# all 8 install_method + version from real manifest yaml at planning time).
 # Schema: src/manifest/schema/known-good.v1.ts (13th surface, D-03 YAML manifest)
 
 schemaVersion: harnessed.known-good.v1
 harnessed_version: '0.3.0'
-e2e_verified_at: '2026-05-17'  # placeholder; Phase 3.4 updates with actual e2e date
-upstreams: []  # Phase 3.4 dogfood adds: [{name: 'claude-agent-sdk', version: '...', install_method: 'npm-cli'}, ...]
+e2e_verified_at: '2026-05-17'  # Phase 3.4 W0.3 actual e2e verify date (not 'TBD' placeholder)
+upstreams:
+  - name: claude-agent-sdk
+    version: '0.3.142'
+    install_method: npm-cli
+  - name: gstack
+    # git SHA pinned per manifests/skill-packs/gstack.yaml L22 install.git_ref
+    # source-of-truth for known-good lock per R7.6 reproducible install semantics
+    # (NOT last_known_good_version L34 'main-269-commits' which is health-stability hint)
+    version: '74895062fb8a3acbf9f66cd088a83359aaaa56cd'
+    install_method: git-clone-with-setup
+  - name: gsd
+    # last-known-good per manifests/skill-packs/gsd.yaml L34
+    version: '1.41.2'
+    install_method: npm-cli
+  - name: superpowers
+    # install.git_ref per manifests/tools/superpowers.yaml L26 (NOTE actual path
+    # is manifests/tools/ NOT skill-packs/ — anti-coupling per Phase 3.3 W1 T1.3)
+    version: 'v5.1.0'
+    install_method: cc-plugin-marketplace
+  - name: planning-with-files
+    # install.git_ref per manifests/skill-packs/planning-with-files.yaml L26
+    # source-of-truth (Phase 3.3 W1 T1.10 sister precedent)
+    version: 'v2.37.0'
+    install_method: cc-plugin-marketplace
+  - name: mattpocock-skills
+    # last_known_good_version per manifests/skill-packs/mattpocock-skills.yaml L34
+    # NOTE: install.method is npx-skill-installer NOT cc-skill-pack (which is
+    # spec.type, different field per anti-coupling Phase 3.3 W1 T1.3 design)
+    version: 'main-76-commits'
+    install_method: npx-skill-installer
+  - name: karpathy-skills
+    # last-known-good per manifests/skill-packs/karpathy-skills.yaml L58 + DI-1
+    # hotfix local-copy semantic — explicitly use last_known_good_version field
+    # NOT install.git_ref L45 which is zero-hash sentinel '0000...' placeholder
+    # per DI-1 hotfix local-copy fallback semantic L29-36 verbatim
+    version: 'skill-only-v1'
+    install_method: git-clone-with-setup
+  - name: tavily-mcp
+    # last-known-good per manifests/tools/tavily-mcp.yaml L33
+    version: '0.2.19'
+    install_method: mcp-stdio-add
