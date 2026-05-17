@@ -103,6 +103,15 @@ jobs:
       # on violations); ENFORCE flag flips to true in phase 2.2.
       - name: Transparency verdict-marker gate (warn-only round 1)
         run: node scripts/check-transparency-verdicts.mjs
+      # Phase 3.4 W0.1 D3 — STATE.md archive cadence gate (3 rules, warn-only round 1).
+      # Sister scripts/check-transparency-verdicts.mjs cadence: ENFORCE=false initial →
+      # flip true Phase 3.5 OR v0.4.0 per DEFERRED #AF (sister Phase 2.1 transparency
+      # gate W3 warn-only round 1 → Phase 2.2 W0 ENFORCE=true 沿袭). 3 rules: (1)
+      # STATE.md size ≤200L round 1 (≤150 v0.4 tighten per DEFERRED #AG); (2) 关键决议
+      # ship 总结 section ≤1 occurrence (防 sister review H2 复发); (3) historical
+      # W-N errata / sister review M[1-9] 修正 literal 禁字面 (move to RETROSPECTIVE).
+      - name: Check STATE.md archive cadence (warn-only round 1)
+        run: node scripts/check-state-archive-stale.mjs
       # Phase 2.2 T4.0 — provenance gate (ADR 0011 § 8, B-33+B-34, CD-6 ⭐⭐).
       # Walks .harnessed/{sessions,checkpoints,route-logs}/** — every runtime
       # artifact must have sibling .provenance.json (4 fields per

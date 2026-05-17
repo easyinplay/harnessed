@@ -459,3 +459,33 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 ---
 
 *Phase 2.2 RETROSPECTIVE complete — 2026-05-15 ship；30+ commits / 432+3 tests / 11 ADR + 11 baseline tag iterate / 6 milestone tag 累积 / 6 install method × 4-phase chain × SDK 0.3.142 real spawn integration ship。下个 retro entry 在 Phase 2.3 ship 后续编。*
+
+---
+
+## § ARCHIVED FROM STATE — Phase 1.X-3.2 (first ship-time T6.N implementation per Phase 3.4 W0.1 D2)
+
+> **Archived 2026-05-17** by Phase 3.4 W0.1 STRATEGIC institutionalize (4 D-decisions LOCKED: D1 single-SoT trim + D2 ship-time T6.N archive cadence + D3 `scripts/check-state-archive-stale.mjs` 3-rules gate warn-only round 1 + D4 ship-process integrate Plan 03 W2 T2.3 standing process). STATE.md 723L → 146L round 1 (well under ≤200L target; future v0.4+ tighten ≤150L per DEFERRED #AG).
+>
+> **Cadence**: This § ARCHIVED FROM STATE — Phase {N-2} section is the canonical resting place for prev-prev-phase narrative trimmed from STATE.md每 phase ship. Phase 3.4 = first implementation; Plan 03 W2 T2.3 includes "trim STATE prev-prev-phase narrative → RETROSPECTIVE.md Phase N-2 § ARCHIVED FROM STATE" sub-step as standing process Phase 3.4+ onward.
+>
+> **Scope archived** (3 sections, ~400L delta):
+> 1. **L96-329 已完成 milestone narrative** — v0.2.0 MILESTONE 4/4 SHIPPED full detail (13 ADR accumulate + 9 milestone tag list + Phase 2.1+2.2+2.3+2.4 8/8 acceptance bar break-down) + Phase 1.1-1.5 all individual ship entries (47-22 atomic task per-phase + ADR 0001-0009 errata trail + 30-sample routing hit-rate evolution) + Phase 2.1 hotfix 2.1.1 (biome organizeImports CI red fix) + Phase 3.1+3.2 startup discuss-phase narrative.
+> 2. **L518-624 Phase 1.5+2.0 Prereq Notes** — 8 接口契约 frozen detail (resolveDag 142L Kahn + semanticRouter.match 81L stub + AgentDefinition 14 字段 + ManifestSpec phase+triggers TypeBox + `<promise>COMPLETE</promise>` XML wrapper) + Phase 2.0 entry execute-task workflow主线 + ralph-loop full integration + 4 placeholder installer 实装 + 8 支柱 capture roadmap (A1' engineering 5 rules / A5' mattpocock_phases 4×21×23 / A7' triggers semantic L2 INTERFACE CLOSED / CAPABILITY DEFERRED v0.2+) + Phase 1.5 sister review H3/H4/M1 + transparency verify checklist 结构性根治.
+> 3. **L625-683 Phase 2.3+2.4 Prereq Notes** — M1 schema regen drift CI gate + M2 intel `## 实施进度回填` + M3 perf gate 3-tier ADR errata + T1.2 schemaVersion consumer call site CI gate + T1.3 Win pwsh provenance sentinel + T5 deferred-items review cadence; H3+T4 README counter integrity CI gate root-cause-class 第 3 次复发根治 + M1 RETRO dashboard polish round 1 entry + M2 CD-5 schemaVersion 7 surface long-tail + T2 dashboard 进 Phase 2.4 doctor 完整版 absorb 评估 + T3 v0.3.0 backlog T4.4 Task Session 启动准备.
+>
+> **Preserved in STATE.md** (146L round 1):
+> - L1-15 项目核心引用 (constant)
+> - L17-21 当前位置 block (sole SSOT marker — `**Phase 3.3 SHIPPED**` literal anchor for STATE_POSITION_RE freshness gate)
+> - 已完成 phase ship 历史 compact list (13 entries 1-line each per Phase X.Y shipped ✅ literal — README counter integrity gate sync)
+> - 待办 P0+P1+P2 (current churn only — v0.3.0 close window + v0.4+ items)
+> - 关键提醒 (long-term constraints only — Cross-OS Day 1 + routing 30 sample tier coverage + bus factor + Karpathy ≤200L + biome preempt + STATE archive cadence + A7 守恒)
+> - 累积上下文 Decisions (recent phase decisions + long-term constraints only; full Phase 1.1-3.2 decision table archived to this § ARCHIVED FROM STATE section)
+> - 框架治理路由 (呼应 ~/.claude/CLAUDE.md constant)
+>
+> **Recovery instructions**: If a future maintainer needs full Phase 1.X-3.2 ship narrative detail (per-phase acceptance bar break-down, per-phase progress.md/VERIFICATION.md file lists, per-phase deferred items disposition table, per-phase commit hashes), retrieve from git history via:
+> ```bash
+> git show f8033e2:.planning/STATE.md  # full 723L pre-archive baseline (Phase 3.4 discuss-phase ship f8033e2)
+> ```
+> Or read per-phase canonical sources directly: `.planning/phase-{N}/{progress,VERIFICATION,deferred-items}.md` + `docs/adr/{NNNN}-*.md` (ADR 0001-0016 main body 永久守恒 A7 — never archive these).
+
+*Phase 3.4 W0.1 STRATEGIC archive complete — 2026-05-17 first ship-time T6.N cadence implementation. D2 standing process: Plan 03 W2 T2.3 includes archive sub-step Phase 3.4+ onward. Next § ARCHIVED FROM STATE — Phase 3.1+3.2 will be created by Plan 03 W2 T2.2 ship-time (sister Phase 3.4 W0.1 D2 cadence second implementation).*
