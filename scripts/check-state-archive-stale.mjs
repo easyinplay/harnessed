@@ -7,7 +7,7 @@
 // section; (3) historical W-N errata literal 禁字面 (move to RETROSPECTIVE).
 import { readFileSync } from 'node:fs'
 
-const ENFORCE = false // Phase 3.4 ship round 1 warn-only; flip Phase 3.5 OR v0.4.0 per DEFERRED #AF
+const ENFORCE = true // Phase 4.1 W0.1 flip round 2 — sister transparency gate Phase 2.2 W0 cadence延袭 (DEFERRED #AF RESOLVED 2026-05-18)
 const STATE_PATH = '.planning/STATE.md'
 const SIZE_LIMIT = 200 // round 1; tighten to 150 v0.4 per DEFERRED #AG
 const KEY_DECISIONS_SECTION_LIMIT = 1
