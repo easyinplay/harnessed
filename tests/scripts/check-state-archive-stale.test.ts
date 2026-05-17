@@ -41,18 +41,18 @@ describe('check-state-archive-stale.mjs — D3 3-rule warn-only round 1 (ENFORCE
     expect(r.stdout).toMatch(/within archive cadence limits/)
   })
 
-  it('2. Rule 1 violation — STATE.md 250L > 200L → exit 0 (warn-only) + stderr "Rule 1 (size)"', () => {
+  it('2. Rule 1 violation — STATE.md 250L > 200L → exit 1 (ENFORCE round 2) + stderr "Rule 1 (size)"', () => {
     // 250L STATE.md to trigger Rule 1 (size) violation
     const lines = ['# STATE.md', '## Current Position']
     for (let i = 0; i < 248; i++) lines.push(`- line ${i}`)
     writeStateMd(lines.join('\n'))
     const r = runScript()
-    expect(r.code).toBe(0) // warn-only round 1 per DEFERRED #AF
+    expect(r.code).toBe(1) // ENFORCE round 2 active per Phase 4.1 W0 T0.2 c83d79c (DEFERRED #AF RESOLVED)
     expect(r.stderr).toMatch(/Rule 1 \(size\)/)
     expect(r.stderr).toMatch(/250L > 200L/)
   })
 
-  it('3. Rule 3 violation — historical "W-1 errata" literal → exit 0 (warn-only) + stderr "Rule 3 (errata)"', () => {
+  it('3. Rule 3 violation — historical "W-1 errata" literal → exit 1 (ENFORCE round 2) + stderr "Rule 3 (errata)"', () => {
     writeStateMd(
       [
         '# STATE.md',
@@ -62,7 +62,7 @@ describe('check-state-archive-stale.mjs — D3 3-rule warn-only round 1 (ENFORCE
       ].join('\n'),
     )
     const r = runScript()
-    expect(r.code).toBe(0) // warn-only round 1
+    expect(r.code).toBe(1) // ENFORCE round 2 active per Phase 4.1 W0 T0.2 c83d79c
     expect(r.stderr).toMatch(/Rule 3 \(errata\)/)
   })
 })
