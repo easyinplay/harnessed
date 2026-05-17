@@ -638,3 +638,66 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 > Or read per-phase canonical sources directly: `.planning/phase-3.3/{progress,VERIFICATION,deferred-items}.md` + `.planning/phase-3.4/{progress,VERIFICATION,SAMPLES,DOGFOOD-T2.X}.md` + `docs/adr/0016-aliases-rich-doctor-warn-known-good.md` + `docs/adr/0017-routing-hit-rate-token-budget-doctor.md` (ADR 0016 + 0017 main body 永久守恒 A7 — never archive these) + `.planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet (v0.3.0 milestone close archive).
 
 *Phase 4.1 W0 T0.1 D2 cadence iter 2 archive complete — 2026-05-18 ship-time T6.N cadence 2nd-implementation. Sister Phase 3.4 W2 T2.2 was 1st implementation (Phase 3.1+3.2 archived 2026-05-17); this 2nd-iter verifies the cadence pattern is institutionalized beyond first-time effort per M2 backlog discharge. Next § ARCHIVED FROM STATE — Phase 4.0+4.1 will be created by Phase 4.2 ship-time per D2 standing process cadence iter 3.*
+
+---
+
+## Phase 4.1 milestone retrospective — dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor (2026-05-18 ship) — v0.4.0 milestone 1/3 PROGRESS
+
+### What Worked
+
+- **D-01 REUSE Phase 3.4 SAMPLES.md single SoT 0-day overhead**: 30-row REAL HISTORICAL truth table 100% reuse (NO new mining; NO fresh sample synthesis); benchmark v0.4.md cross-link SAMPLES.md ≥2 occurrences (header + § 5 attribution per D-01 sneak block守门). **经验**: single-SoT REUSE > EXPAND fresh mining when source is frozen-locked + verified-routed (sister cherry-pick 防御 + 一致性 guarantee + 0-day mining cost).
+- **D-02 FULL per-task disclosure 反"数据美化"诱惑兜底**: 30/30 100% with full 5-field schema (raw_prompt verbatim + routing_decision rule_id+tier+skill + actual_command_executed + manual_review_verdict + recovery_path); NO fake-miss-case inflation. **经验**: FULL per-task disclosure makes "美化" detection mechanical (any partial-schema row = sneak signal); 30/30 100% verbatim publish 比 "假装有 miss case" 更可信 (反 ROADMAP L222 "美化诱惑" mitigation 兜底).
+- **D-03 TEXT LOG zero-dep cross-OS portable**: docs/benchmarks/v0.4-upgrade-e2e.log 122L 4-section × 2 manifests (ctx7 npm-cli + gstack git-clone-with-setup) plain ASCII text < 100KB; NO asciinema npm dep + NO mp4/gif/png binary. **经验**: zero-dep TEXT LOG sister Karpathy precedent — grep-able cross-OS portable + 0 CI infra cost; binary asciinema rejected on principle (4 sneak block守门 vector).
+- **D-04 MANUAL re-run cadence 0 CI infra**: docs/CONTRIBUTING-BENCHMARK.md 30L manual instructions; NO .github/workflows/benchmark.yml cron file; T2.6 verify `grep -c "benchmark" .github/workflows/ci.yml = 0` PASS. **经验**: MANUAL > weekly cron sister Phase 3.4 D-02 install path 安静 一致 — 不增 CI 表面 NOT 是缺陷; 上游升级触发的 manual re-run 比 stale cron 更 ROI (sister Karpathy YAGNI).
+- **W0 backlog 3 项一次根治 STRICT path dep**: W0.3 → W0.1 → W0.5 sequential resolution per § 7.1 decision tree (NOT parallel); W0.3 D2 cadence iter 2 trim → W0.1 ENFORCE flip after archive baseline confirmed → W0.5 conditional based on post-W0.3 STATE size measurement. **经验**: path-dep STRICT > parallel optimization for cross-task verification gates (W0.1 ENFORCE pre-flip would FAIL if W0.3 archive not yet shipped).
+- **PATTERNS § 5 risk #3 NO ADR 0018 + NO triple tag + NO ci.yml A7 iter**: pure dogfood publication = NOT architectural decision = no ADR; v0.4.0 milestone 1st phase = NOT milestone close = no triple tag (sister L130 v0.3.0 SHIPPED ARCHIVED literal reserved Phase 4.3 close); ci.yml A7 守恒 verify 0 diff. **经验**: planner risk #3 mitigation 提前 lock 3 NO 守门 prevents sneak addition of ADR/tag/CI-step during W2 ship-close pressure.
+
+### What Was Inefficient
+
+- **docs/benchmarks/v0.4.md 30-task FULL section authoring ~300L manual transcription**: D-02 verbatim discipline = raw_prompt 不 sanitize / 不 paraphrase + 5-field schema per row; ~10L per task × 30 = ~300L manual work. **改进**: future benchmark expansion (v0.5+ if D-01 EXPAND triggered per #BC) consider semi-automated YAML→Markdown transformer scaffolding to reduce per-row manual cost (但 verbatim integrity ≥ automation convenience tradeoff per D-02).
+- **W0.2 ENFORCE flip downstream test regression "over-tighten brittle pattern"**: T1.6 integrity test exposed downstream consumer (`scripts/check-state-archive-stale.mjs` ENFORCE branch) brittle to upstream STATE.md format change introduced W0.1. **改进**: R-02 over-tighten brittle pattern mitigation — when ENFORCE flip downstream consumers exist, atomic test fix bundle (T1.6 W0.2 regression fix) ensures gate flip doesn't break adjacent functionality (sister Phase 3.4 R-1 D-decisions D1-D4 institutionalize包含 downstream consumer enumeration as standing process).
+
+### Patterns Established
+
+- **Pattern (Phase 4.1 新生)**:
+  - **R-1 D-01 single SoT REUSE > EXPAND when source frozen-locked + verified-routed** (0-day mining cost + 一致性 guarantee + sister cherry-pick 防御) — sister Phase 3.4 SAMPLES.md 30-row reused as Phase 4.1 benchmark.v0.4.md source-of-truth; future v0.5+ EXPAND only if D-01 REJECT signal surfaces (no miss case currently per 30/30 100% routing PASS — #BC defer)
+  - **R-2 D-02 FULL per-task disclosure 反 "美化" 诱惑兜底** — full 5-field schema makes "美化" detection mechanical (any partial-schema row = sneak signal); 30/30 100% verbatim publish 比 "假装有 miss case" 更可信
+  - **R-3 D-04 MANUAL > weekly cron sister Karpathy YAGNI** — manual cadence triggered by upstream upgrade event比 stale cron 更 ROI; sister Phase 3.4 D-02 install path 安静 一致 NOT 不足
+  - **R-4 W0 backlog STRICT path dep > parallel optimization** — cross-task verification gates require sequential resolution (W0.3 → W0.1 → W0.5 path dep STRICT per § 7.1 decision tree); parallel W0.1+W0.3 would race on STATE.md baseline measurement
+  - **R-5 PATTERNS § 5 risk #3 3 NO 守门** (NO ADR + NO triple tag + NO ci.yml A7 iter) for milestone-internal phases (NOT milestone close) — proactive risk acceptance prevents sneak addition during W2 ship-close pressure; milestone close reserves triple tag + A7 iter cadence (v0.3.0 sister precedent → v0.4.0 Phase 4.3 reserved)
+- **Pattern 沿袭 (Phase 4.1 验证)**:
+  - Pattern N (engine.ts 主流程编排 ≤ 200L) — phase 1.4 起源, Phase 4.1 docs-only ship 不涉及 但 STATE.md ≤200L ENFORCE=true round 2 sister平行
+  - Pattern P (SAMPLES.md inline truth table 30 sample × per-tier) — phase 1.4 起源, Phase 4.1 D-01 REUSE 沿袭 frozen-lock source
+  - Pattern (Phase 3.4 R-1 STATE archive cadence D-decisions D1-D4 institutionalize 2nd-iter verify) — Phase 4.1 W0.3 D2 cadence iter 2 验证 pattern stable beyond 1st-implementation (M2 backlog discharge)
+
+### Key Lessons
+
+- **Lesson 1: D-01 single SoT REUSE > EXPAND fresh mining when source frozen-locked + verified-routed (0-day overhead + 一致性 + sister cherry-pick 防御)**. Phase 3.4 SAMPLES.md 30-row 100% reuse as Phase 4.1 benchmark.v0.4.md source-of-truth; 0 new mining + 100% cross-phase 一致性 + cross-link SAMPLES.md ≥2 occurrences (D-01 sneak block守门). Sister Phase 3.4 W0.5 SAMPLES mining 1h/row precedent confirms mining cost is non-trivial — REUSE skips that entirely when source is frozen + verified.
+- **Lesson 2: D-02 FULL per-task disclosure 反 "美化" 诱惑兜底 (30/30 100% 不需 EXPAND fake-miss-cases)**. FULL 5-field schema makes "美化" detection mechanical (any partial-schema row = sneak signal); verbatim raw_prompt publish 比 "假装有 miss case" 更可信. ROADMAP L222 "数据美化诱惑" mitigation 兜底 by mechanical schema enforcement NOT by "voluntarily inject fake miss cases for credibility".
+- **Lesson 3: D-04 MANUAL > weekly cron sister Karpathy YAGNI (sister Phase 3.4 D-02 install path 安静 一致)**. Manual cadence triggered by upstream upgrade event = HIGH ROI (only run when needed); weekly cron = stale infra burden (sister Phase 3.4 D-02 install path 安静 一致 不增 CI 表面). T2.6 verify `grep -c "benchmark" .github/workflows/ci.yml = 0` confirms 0 CI infra addition; CONTRIBUTING-BENCHMARK.md 30L manual instructions is the entire surface area.
+- **Lesson 4: W0.2 ENFORCE flip downstream consumer brittle pattern (R-02 over-tighten mitigation lesson)**. T1.6 integrity test exposed downstream consumer (`scripts/check-state-archive-stale.mjs` ENFORCE branch) brittle to upstream STATE.md format change introduced W0.1; atomic test fix bundle (T1.6 W0.2 regression fix) ensures gate flip doesn't break adjacent functionality. **Take-away**: when flipping ENFORCE flags, enumerate downstream consumers as standing process step (sister Phase 3.4 R-1 D-decisions D1-D4 institutionalize包含 downstream enumeration). DEFERRED #BD "regex 2-pass validation" pattern lock related — plan-checker iter 2 residual semantic synonym (`L1-N` / `=N+1L` arithmetic) missed by iter 1 literal regex; future plan-checker iterations adopt 2-pass (literal + arithmetic-aware) validation.
+
+### Cost Patterns
+
+- **commit 数**: Phase 4.1 = 14 atomic commits W0-W2 (3 W0 + 4 W1 + 7 W2 = 14 total — W2 last task T2.6 verify-only NO commit; net commits = 13)
+- **tests 增量**: 701 → 709+ (+8 cells across W1 T1.6 integrity test 4 D-decisions + 4 sneak blocks守门 verify; W2 docs-only 0 new tests as expected)
+- **CI runs**: ~6+ runs (W0-W1 per-task CI 3-OS green; W2 final ship CI verify pre-tag)
+- **D-decisions ROI**: 4 D-decisions (D-01 REUSE + D-02 FULL + D-03 TEXT LOG + D-04 MANUAL) all activated 闭环 in single phase = single-day cadence (sister 4-phase consecutive 1-day ship cadence延袭 v0.3.0 close)
+- **W0 backlog STRICT path dep**: 3 items W0.3 → W0.1 → W0.5 sequential resolution per § 7.1 decision tree; W0.3 D2 cadence iter 2 trim 11L STATE → RETROSPECTIVE + W0.1 ENFORCE flip 1-line const change + W0.5 conditional DEFER #BA carry (post-W0.3 143L > 140L threshold) = ~30min total W0 cost (sister Phase 3.4 W0 backlog 5 项 ~3h precedent reduced to 3 项 ~30min effort by partial RESOLVE path + skip-if-CONDITIONAL gate)
+
+### Cross-milestone trends
+
+- **v0.4.0 第 1 phase 续延 v0.3.0 close 1-day cadence**: Phase 3.1 (1d) → 3.2 (1d) → 3.3 (1d) → 3.4 (1d) → 4.1 (1d) = 5-phase consecutive 1-day cadence; sister sustainability question raised at #BB (T3 1 phase/day cadence assessment Phase 4.2 — external dependency phase risk surface 真正 fires); v0.4.0 节奏 evaluate explicit 调整期望 per sister Phase 4.1 ship retrospective.
+- **W0.3 D2 cadence iter 2 institutionalize verify**: M2 backlog discharge verified 2nd-iter beyond 1st-implementation (sister Phase 3.4 W2 T2.2 1st cadence Phase 3.1+3.2 archive → Phase 4.1 W0 T0.1 2nd cadence Phase 3.3+3.4 archive); standing process robust beyond founder-effort.
+- **v0.4.0 milestone 1/3 PROGRESS (NOT yet 3/3 ARCHIVED)**: Phase 4.1 SHIPPED + Phase 4.2 + 4.3 pending; sister L38 v0.1.0 + L58 v0.2.0 + L130 v0.3.0 SHIPPED ARCHIVED literal cadence延袭 reserves milestone close marker for Phase 4.3 ship per sister v0.3.0 close pattern.
+
+### Next Phase Prep Notes
+
+- **Phase 4.2 discuss-phase 入口**: ✅ Phase 4.1 SHIPPED 2026-05-18 → Phase 4.2 co-maintainer onboarding 文档 + GitHub Sponsors + stale-bot (R8.2 + R8.3 + R8.5)
+- **DEFERRED carry-forward**: #BA D1 SIZE_LIMIT round 2 tighten 200→150 → Phase 4.2 W0 LOW priority defensive + #BB T3 1 phase/day cadence assessment → Phase 4.2 (external dependency phase risk surface fires) + #BC v0.5+ benchmark expand evaluation (currently 30/30 100% routing PASS no signal — DEFER unless miss case surfaces) + #BD regex 2-pass validation pattern lock (plan-checker future iterations adopt) + #AH path traversal regex hardening (Phase 4.0+ conditional)
+- **DEFERRED resolved**: #AF ✅ RESOLVED Phase 4.1 W0 T0.2 (D3 gate ENFORCE flip) + #AG ✅ partially RESOLVED Phase 4.1 W0 T0.3 (W0.5 CONDITIONAL DEFER path active → #BA carry)
+- **User push approval pending**: single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE Phase 4.1 W2 T2.7 + 6 atomic commits T2.1-T2.7 per CLAUDE.md commit safety NEVER push without user explicit request
+
+---
+
+*Phase 4.1 RETROSPECTIVE complete — 2026-05-18 ship；14 atomic commits / 709+ tests / 0 ADR + 0 baseline tag iter (NO ADR 0018 + NO ci.yml A7 iter per PATTERNS § 5 risk #3) / 1 single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE / 30/30 100% verbatim publish + 4 D-decisions activated 闭环 + W0 backlog 3 项一次根治 + v0.3.0→v0.4.0 milestone transition (1/3 PROGRESS reserves Phase 4.3 close). 下个 retro entry 在 v0.4.0 Phase 4.2 ship 后续编.*
