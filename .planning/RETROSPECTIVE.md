@@ -315,6 +315,20 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 - `.planning/milestones/v0.2.0-REQUIREMENTS.md` — R2.x.y + R5.3 + R6.x close + traceability
 - `.planning/v0.2.0-MILESTONE-AUDIT.md` — sister v0.1.0 audit pattern；PASS / DEFERRED 逐 req verdict
 
+### Key Decisions Shipped (archived from STATE.md L31 — 2026-05-17 sister review H2 absorb)
+
+> **Archive source**: STATE.md L31 "Phase 2.4 关键决议 ship 总结" 节 — sister review post-Phase-3.3-ship H2 finding: 历史 phase 总结占 STATE.md SSOT prime real estate; archive 纪律 institutionalize per Phase 3.3 sister cadence. Phase 3.1+3.2+3.3 各 phase 总结仍在各自 phase 目录 `{KICKOFF, CONTEXT, ADR}` 文档 + 本 RETRO 各自 section.
+
+1. **doctor MIN 5 check (D-01)** — `src/cli/doctor.ts` 4 → 5 check (+origin URL warn) + `--json` flag + 三档 status enum (pass/warn/fail) + helper `origin-check.ts` sister-share
+2. **EE-4 plan-checker 4 维 SSOT (D-02)** — `routing/plan-review-schema.yaml` 4 维 + `scripts/run-plan-checker.mjs` walker + T2.0 RELAX baseline (3 阈值 1.0 → 0.8) + BLOCKER manual rerun (auto-spawn 推 v0.3.0)
+3. **dashboard C 路径 3 子功能 FULL absorb (D-04)** — cc-hook-add 第 7 install method + SSE watcher (替 mtime polling, zero-dep) + 多项目支持 + 3 处 schema enum 同步加
+4. **audit 完整版 hard-fail (R2.4.7)** — origin URL drift hard-fail (allowFork: false) + cmd injection SHELL_EVAL_MARKERS refinement + provenance cross-check
+5. **ralph-loop Win sentinel (F5)** — 5 fixture (simple/multi-iter/max-iter/subagent-mock/structured_output) + `if: runner.os == 'Windows'` + `shell: bash`
+6. **README CI counter gate (D-03 B 路径)** — 三计数一致 grep -cE 精度匹配 (SHIPPED == BARS == L44) + line-start + bold + Phase 2.[1-9] 精度排除 1.X 历史
+7. **Wave 0 backlog 5 项一次根治** — H3+T4 README counter / M1 RETRO dashboard polish round 1 / M2 schemaVersion 3rd consumer (check-provenance.mjs) / T2 dashboard absorb 决断 / T3 v0.3.0 prereq 注记
+8. **deferred-items #3 RESOLVED** — EE-4 step reorder fix (move AFTER pnpm install) 1-line ci.yml 修
+9. **v0.2.0 MILESTONE 4/4 CLOSED** — 4 phase ship (Phase 2.1+2.2+2.3+2.4) + 13 ADR + 13 baseline tag + 9 milestone tag accumulate + archive + audit ship
+
 ---
 
 *Phase 2.4 + v0.2.0 MILESTONE 4/4 RETROSPECTIVE complete — 2026-05-16 ship；25+ commits Phase 2.4 / 111+ commits v0.2.0 cumulative / 543+4 tests / 13 ADR + 13 baseline tag iterate / 9 milestone tag 累积 + 🎯 `v0.2.0` 大 tag / 4 phase ship across 2 day back-to-back (Phase 2.3 ship 2026-05-16 → Phase 2.4 ship 2026-05-16) / doctor 完整版 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel + Wave 0 backlog 一次根治。下个 retro entry 在 v0.3.0 Phase 3.1 ship 后续编。*
