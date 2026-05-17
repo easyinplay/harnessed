@@ -488,4 +488,100 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 > ```
 > Or read per-phase canonical sources directly: `.planning/phase-{N}/{progress,VERIFICATION,deferred-items}.md` + `docs/adr/{NNNN}-*.md` (ADR 0001-0016 main body 永久守恒 A7 — never archive these).
 
+---
+
+## Phase 3.4 milestone retrospective — routing 命中率 ≥ 85% 验收 + token budget doctor 8th check + v0.3.0 milestone close (2026-05-17 ship)
+
+### What Worked
+
+- **W0.1 STRATEGIC institutionalize 4 D-decisions D1-D4 paranoid architectural framing**: 6th STATE 类反模式 root-cause framed as institutionalize (D1 single-SoT + D2 ship-time T6.N cadence + D3 3-rules gate + D4 ship-process integrate) NOT cleanup. **经验**: "cleanup" 命名 reverts to one-off mindset; "institutionalize" with explicit D1-D4 decision lock prevents recurrence — sister Phase 3.3 D-04 (b) COLLAPSE 5-recurrence terminus pattern延袭 (root-cause framing institutionalize beats one-off fix).
+- **PRIMARY helper family 4th member 100% pattern reuse**: `check-token-budget.ts` 48L NEW (Phase 3.1 W3 engineHook.ts 49L + Phase 3.2 W1 probe-gstack.ts 49L + Phase 3.3 W1 check-deprecations.ts 43L precedent延袭). 4 phase consecutive PRIMARY helper extract at ≤50L = standing pattern. **经验**: surgical helper extract (single-responsibility, ≤50L hard limit) for cross-domain primitives = consistent ROI.
+- **sister samples-30 harness 100% template reuse**: tests/routing/phase-3.4-routing-hit-rate.test.ts 100% reuse Phase 2.3 W4 samples-30 harness pattern (30 sample × routing.arbitrate dispatch + per-row PASS/FAIL output + per-tier breakdown). 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom (per-tier Sonnet 100% / Haiku 100% / Opus 100%). **经验**: production routing engine + REAL HISTORICAL sample (per-row source_commit MANDATORY) = high-confidence dogfood signal.
+- **sister v0.2.0 close 100% template reuse for v0.3.0 close discipline**: 4 phase × 8/8 acceptance bar + 4 ADR per milestone + triple tag (baseline + alpha.4 + 🎯 milestone) + 3-file archive triplet at `.planning/milestones/`. MILESTONE-AUDIT.md inaugurate at milestones/ subdir (sister v0.2.0 was inline at `.planning/v0.2.0-MILESTONE-AUDIT.md` — v0.3.0+ moves for consistency). **经验**: milestone close discipline is single-day cadence + verbatim template reuse (sister v0.1.0 + v0.2.0 close pattern → v0.3.0 close 100% reuse).
+- **A7 守恒 自动化验收**: T2.7 `git diff adr-0016-accepted..HEAD -- "docs/adr/000[1-9]-*.md" "docs/adr/001[0-6]-*.md" | wc -l = 0` 自动 verify。Phase 3.4 = 17 ADR baseline tag iterate; 从 phase 1.1.1 起步到 Phase 3.4 = 17 phase 累积 (含 1.2.5 + 2.x + 3.x), 0 false positive 0 false negative, 0 ADR main body 越权改动. **经验**: A7 守恒 + ci.yml iterate literal pattern (sed-replace 5 sites per Phase 3.3 W2 T2.7 template) = mechanical safe.
+
+### What Was Inefficient
+
+- **W-7 risk acceptance 12-task single-day Wave 2**: PLAN.md threat_model T-3.4w2-RISK accepted 12-task single-day W2 (vs typical 9-task split). Mid-wave context exhaustion risk noted; mitigation: if surfaced → return for user W2a + W2b split decision. **改进**: future v0.4.0+ phases consider proactive W2 split (12 task → 6+6 atomic Wave-splits) when documentation-only ship sequences exceed 10 tasks.
+- **doctor.ts 195→199L Option A inline shrink Karpathy hard limit ≤200L surgical pre-flight gate**: T1.2 doctor 8th check checkTokenBudget surgical 4-line delta; ≤200L hard limit RESPECTED (B-03 5% tolerance NOT invoked sister Phase 2.4 doctor 215L deviation precedent NOT repeated). Pre-flight gate process overhead (manual LoC budget tracking) acceptable for ≤200L NO tolerance ABSOLUTE discipline. **改进**: future helper extract candidate if doctor.ts approaches 200L hard ceiling (Phase 4.0+ may need split).
+- **SAMPLES.md REAL HISTORICAL mining 1h investment per-row expected_decision trace**: 30-row manual trace expected_decision against `routing/decision_rules.yaml` v2 12 rules priority hit + 5 engineering sub-rules + mattpocock_phases 23 招式 routing schema = ~1h human attention per row. **改进**: future dogfood benchmark (v0.4.0 R8.1) consider semi-automated expected_decision generation from commit metadata + manual review only edge cases.
+
+### Patterns Established
+
+- **Pattern (Phase 3.4 新生)**:
+  - **R-1 STATE archive cadence institutionalize 4 D-decisions D1-D4 standing process** (W0.1 STRATEGIC) — D1 single-SoT trim STATE 723L → ≤200L round 1 + D2 ship-time T6.N cadence prev-prev-phase narrative auto-archive RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase {N-2} section + D3 `scripts/check-state-archive-stale.mjs` 3-rules gate warn-only round 1 + D4 ship-process integrate as Plan {N} W2 T2.2 standing sub-step Phase 3.4+ onward
+  - **R-2 PRIMARY helper family 4-member延袭** (engineHook + probe-gstack + check-deprecations + check-token-budget) ≤50L single-responsibility helper extract for cross-domain primitives
+  - **R-3 sister samples-30 harness 100% template reuse** for production routing engine dogfood (Phase 2.3 W4 + Phase 3.4 W1 same pattern) — REAL HISTORICAL per-row source_commit MANDATORY + per-tier breakdown defends mean (single tier < threshold = cherry-pick warn)
+  - **R-4 milestone close 3-file archive triplet at `.planning/milestones/`** (v0.3.0+) — -ROADMAP + -REQUIREMENTS + -MILESTONE-AUDIT 3 file inaugurate location upgrade vs sister v0.2.0 inline; sibling consistency
+  - **R-5 W-N risk acceptance 12-task single-day Wave 2** (orchestrator threat_model risk accept) — surfaces mid-wave context exhaustion fallback to user split decision (W2a + W2b) NOT auto-split; risk note tracked at PLAN.md threat_model
+- **Pattern 沿袭 (Phase 3.4 验证)**:
+  - Pattern N (engine.ts 主流程编排 ≤ 200L) — phase 1.4 起源, Phase 3.4 不涉及但 doctor.ts ≤200L Karpathy hard limit RESPECTED 平行
+  - Pattern P (SAMPLES.md inline truth table 30 sample × per-tier) — phase 1.4 起源, Phase 3.4 W0.5 沿袭 + per-row source_commit MANDATORY 加强
+  - Pattern J (test fixture tmpdir + rmSync afterEach + inline) — phase 1.5 起源, Phase 3.4 W1 T1.3 + T1.5 + T1.6 复用
+
+### Key Lessons
+
+- **Lesson 1: D-04 paranoid 命名 institutionalize vs cleanup architectural framing prevents revert to one-off cleanup mindset**. 6th STATE 类反模式 root-caused at archive-cadence level (D1+D2+D3+D4 4 decision lock) — sister Phase 3.3 D-04 (b) COLLAPSE root-caused at format-pattern level (5-recurrence terminus). Naming choice (institutionalize vs cleanup) signals discipline level: institutionalize → standing process; cleanup → one-off fix.
+- **Lesson 2: Option A inline shrink Karpathy surgical 1L delta vs Option B helper extract 30L NEW file → favor surgical when single-task scope**. Phase 3.4 W1 T1.2 chose Option A (doctor.ts 195→199L +4L) over Option B (helper extract 30L NEW file) because token budget check is single-task scope (sister Phase 3.3 W1 doctor 7th check 184→195L +11L Option A same precedent延袭). Option B reserves for cross-domain primitives (PRIMARY helper family 4-member precedent).
+- **Lesson 3: BUFFER /4 heuristic acceptable variance for warn-only doctor surface**. Anthropic published ~4 chars/token English heuristic; 中文 variance (~2-3 chars/token) acceptable for warn-only DOCTOR surface (NOT install path NOT CI fail). Zero-dep ROI > tiktoken precision when downstream is human audit table not automated decision. Sister Phase 3.1 D-01 enforceBudget /4 precedent reuse.
+- **Lesson 4: v0.3.0 close pattern 100% reuses v0.2.0 close template** — sister Phase 2.4 W6 T6.1-T6.5 5-doc 续编 + 2-file archive → v0.3.0 5-doc 续编 + 3-file archive incl. NEW MILESTONE-AUDIT inaugurate at milestones/ subdir consistency upgrade. ADR cadence 13 → 17 (4 ADR per milestone steady). 3-OS CI green stable since v0.2.0 ship.
+- **Lesson 5: orchestrator W-8 publish-stream-version transparency disclosure necessary at milestone audit**. package.json version `0.1.0-alpha.1` → `0.3.0` (W0.2 bonus bump) aligns with shipped milestone tags but npm publish stream defers to v1.0 pre-v1.0 development. Disclose 9th dim row in v0.3.0-MILESTONE-AUDIT.md § 5 v0.3.0 vs v0.2.0 对比 (transparency over silent skip).
+
+### Cost Patterns
+
+- **commit 数**: Phase 3.4 = 12+ atomic commits W0-W2 (5 W0 + 6 W1 + 12 W2 = expected ~23 total post-Wave 2 ship)
+- **tests 增量**: 660 → 701+ (+41 cells across W1; check-token-budget 5 + check-state-archive-stale 3 + routing harness 30 + doctor 7→8 baseline + path-traversal fixture 1 ≈ 40-45)
+- **CI runs**: ~10+ runs (含 W0+W1 per-task 12 commit CI 3-OS green + W2 final ship CI verify)
+- **D-decisions ROI**: 4 D-decisions (D-01 + D-02 + D-03 + D-04) sister cluster 一次 ship 模式 = single milestone close 17 ADR累积 (sister 13 ADR Phase 2.4 close precedent — 4 ADR per milestone steady cadence)
+- **PRIMARY helper family 4th member cost**: check-token-budget.ts 48L NEW + 5 fixture = ~2h effort; sister Phase 3.3 check-deprecations.ts 43L + 5 fixture comparable. 4 phase consecutive PRIMARY extract = standing cadence pattern, no spike cost.
+
+### Next Phase Prep Notes
+
+- **v0.4.0 discuss-phase 入口**: 🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17 → v0.4.0 dogfooding + 稳定期 (R8.1 dogfooding benchmark + R8.2 co-maintainer 招募 + R8.3 stale-bot + R8.4 公开 ADR 全集 + R8.5 GitHub Sponsors)
+- **DEFERRED carry-forward**: #AE path traversal regex hardening → Phase 4.0 W0 (if external user input arrives) + #AF D3 gate ENFORCE flip → Phase 3.5/v0.4.0 W0 first task + #AG D1 STATE.md ≤150L tighten → v0.4.0+ + #AH (same as #AE)
+- **EE-4 BLOCKER auto-spawn rerun**: → v0.4.0 后 evaluate (carry-forward unchanged from Phase 2.4 D-02 down-scope)
+- **User push approval pending**: triple tag LOCAL created Phase 3.4 W2 T2.12 (adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0) per CLAUDE.md commit safety NEVER push without user explicit request
+- **Sister review 触发**: Phase 3.4 ship 后建议跑 sister review post-ship (gstack `/review` Paranoid Staff Engineer), 重点: (1) v0.3.0 milestone close audit verdict transparency; (2) STATE.md archive cadence D-decisions D1-D4 first-implementation verify; (3) routing harness 100% accuracy verify (vs ≥85% bar) headroom evaluation for v0.4.0 dogfood benchmark; (4) PRIMARY helper family 4-member延袭 design quality
+
+---
+
+*Phase 3.4 RETROSPECTIVE complete — 2026-05-17 ship；12+ commits / 701+ tests / 17 ADR + 17 baseline tag iterate / 14 milestone tag 累积 / 30 sample REAL HISTORICAL dogfood + token budget doctor 8th check + W0 backlog 5 项一次根治 + v0.3.0 milestone close 4/4 phases SHIPPED & ARCHIVED. 下个 retro entry 在 v0.4.0 phase ship 后续编.*
+
+---
+
+## § ARCHIVED FROM STATE — Phase 3.1+3.2 (D2 ship-time T6.N 2nd cadence implementation per Phase 3.4 W2 T2.2 standing process)
+
+> **Archived 2026-05-17** by Phase 3.4 W2 T2.2 D2 ship-time T6.N cadence (1st implementation per standing process — sister § ARCHIVED FROM STATE — Phase 1.X-3.2 above was Phase 3.4 W0.1 STRATEGIC institutionalize trim; this § is the first per-phase ship-time cadence per D2 standing process: prev-prev-phase narrative auto-archive each phase ship). STATE.md post-T2.2 = 148L (≤200L round 1 well under target; future v0.4+ tighten ≤150L per DEFERRED #AG).
+>
+> **Cadence affirm**: This § ARCHIVED FROM STATE — Phase {N-2} section is the canonical resting place for prev-prev-phase narrative trimmed from STATE.md每 phase ship. Phase 3.4 ship = D2 cadence 1st per-phase implementation; future Phase 3.5+ / v0.4.0+ phases similarly trim Phase {N-2} narrative (e.g., Phase 3.5 ship → § ARCHIVED FROM STATE — Phase 3.3; Phase 4.1 ship → § ARCHIVED FROM STATE — Phase 3.4).
+>
+> **Scope archived from STATE.md current state** (Phase 3.1 + 3.2 narrative trimmed from 当前位置 GSD phase chain):
+>
+> ### Phase 3.1 SHIPPED ✅ (2026-05-16) — checkpoint 引擎 + harnessed resume + compact + ADR 0014
+>
+> - **Decisions**: checkpoint 引擎 TEMPLATE 摘要 (zero LLM call, R7.2 验收 < 1k token 指向机械拼装) + archive 双轨 unbounded raw turn dump + `harnessed resume` 12th CLI subcommand (D-03 RELOAD + § 1.3 cwd guard + --json flag) + compact 75% threshold MVP placeholder (Phase 3.4 ships actual fold) + SIGINT trap Node native zero-dep + isShuttingDown guard + 30s timeout + T4.4 closure infra 三件套 1 milestone 闲置后**首消费者** activation 闭环 (D-04 WIRE-IN 实证 — Phase 2.2 ship `sdkSpawn.onSessionId` + `ralphLoopWrap.resumeSessionId` + `engine.wrappedSpawn capturedSessionId`)
+> - **W-01 engineHook.ts PRIMARY extract** (engine.ts ≤200L Karpathy clean restored) + 0 `as any` cast (W-04 phaseId via TaskContext typed field) + Wave 0 backlog 4 项一次根治
+> - **F1-F8 8/8 acceptance bar; ADR 0014 9 章节 errata accepted; 14 ADR + 14 baseline tag; 543→596 tests (+53); 27+ atomic commits across W0-W5; schemaVersion 7-surface → 8-surface (currentWorkflow.v1); v0.3.0 milestone 第 1 phase START**
+>
+> ### Phase 3.2 SHIPPED ✅ (2026-05-17) — gstack PROBE + workflow JINJA 插值 + plan-feature 5-phase WIRED + governance.json PUSH + ADR 0015
+>
+> - **Decisions**: gstack 命令前缀探测 PROBE (doctor 6th check + 三选一 + fallback prompt; sister Phase 2.4 doctor `--json` CI-friendly) + workflow `invokes` JINJA `{{prefix}}` 模板替换 (zero npm dep + cross-OS + Karpathy YAGNI strict) + plan-feature 5-phase WIRED reference (workflow.run.ts ≤80L + 5 SKILL.md stubs mock + plan-feature/workflow.yaml DSL + activatePhase BEFORE isVetoed B-01 fix locked) + governance.json PUSH veto halt_workflow (gstack 写 harnessed 读 file-based zero coordination + sister Phase 3.1 file-based state machine 模式 + on_veto:halt_workflow workflow-level directive) + Wave 0 backlog 3 项一次根治 (W0.1 cli-audit env-dep CI red fix 解 Phase 3.1 deferred #1 + W0.2 STATE/README format normalize + ci.yml ENFORCE flip + W0.3 schema 9th+10th surface decision doc)
+> - **W-01 sister cli-doctor.test W-04 dead var pattern复用守 + W-02 PhasesSchema unconditional extend + W-03 path divergence doc + Rule 1 governance.v1 vetoed_at format→pattern (FormatRegistry latent W1 defect surgical fix)**
+> - **F1-F8 8/8 acceptance bar; ADR 0015 9 章节 errata accepted; 15 ADR + 15 baseline tag; 611→623+ tests (+12); 24+ atomic commits across W0-W3; schemaVersion 8→11 surface (config.v1 9th + governance.v1 10th + planFeature.v1 11th); v0.3.0 milestone 第 2 phase ship**
+>
+> **Preserved in STATE.md** (148L post-T2.2):
+> - L1-15 项目核心引用 (constant)
+> - L17-22 当前位置 block (sole SSOT marker — `**Phase 3.4 SHIPPED**` literal anchor post-T2.2 update for STATE_POSITION_RE freshness gate; Phase 3.3 SHIPPED narrative compact preserved)
+> - 已完成 phase ship 历史 compact list (14 entries 1-line each per Phase X.Y shipped ✅ literal — Phase 3.4 entry append head; README counter integrity gate sync)
+> - 待办 P0 (v0.4.0 discuss-phase + user push triple tag) + P1 (DEFERRED #AF/#AG/#AH/EE-4/userSpawn carry-forward)
+> - 关键提醒 (long-term constraints only — Cross-OS Day 1 + routing 30 sample tier coverage + bus factor + Karpathy ≤200L + biome preempt + STATE archive cadence + A7 守恒)
+> - 累积上下文 Decisions (recent phase decisions + long-term constraints only; Phase 3.4 4 D-decisions D-01-D-04 + W0.1 STRATEGIC + A7 0001-0017 added)
+> - 框架治理路由 (呼应 ~/.claude/CLAUDE.md constant)
+>
+> **Recovery instructions**: If a future maintainer needs full Phase 3.1 + 3.2 ship narrative detail (per-phase acceptance bar break-down, per-phase progress.md/VERIFICATION.md file lists, per-phase deferred items disposition table, per-phase commit hashes), retrieve from git history via:
+> ```bash
+> git show 4dbe929~1:.planning/STATE.md  # pre-T2.2 STATE.md baseline (Phase 3.4 W2 T2.2 commit 4dbe929)
+> ```
+> Or read per-phase canonical sources directly: `.planning/phase-3.1/{progress,VERIFICATION,deferred-items}.md` + `.planning/phase-3.2/{progress,VERIFICATION,deferred-items}.md` + `docs/adr/0014-checkpoint-engine-resume-compact.md` + `docs/adr/0015-gstack-probe-interpolate-plan-feature.md` (ADR 0014 + 0015 main body 永久守恒 A7 — never archive these).
+
 *Phase 3.4 W0.1 STRATEGIC archive complete — 2026-05-17 first ship-time T6.N cadence implementation. D2 standing process: Plan 03 W2 T2.3 includes archive sub-step Phase 3.4+ onward. Next § ARCHIVED FROM STATE — Phase 3.1+3.2 will be created by Plan 03 W2 T2.2 ship-time (sister Phase 3.4 W0.1 D2 cadence second implementation).*
