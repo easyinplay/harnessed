@@ -162,6 +162,12 @@ jobs:
         continue-on-error: true
       - run: corepack pnpm typecheck
       - run: corepack pnpm lint
+      # Phase 3.4 CI hotfix (2026-05-17) — build BEFORE test so dist/cli.mjs
+      # exists for integration tests added at Phase 3.3 W2 T2.3 (commit 245955b):
+      # install-aliases / install-known-good / install-silent-redirect all spawn
+      # `node dist/cli.mjs`. Pre-hotfix: 3-OS test step failed `Cannot find
+      # module dist/cli.mjs` because build was sequenced AFTER test.
+      - run: corepack pnpm build
       - run: corepack pnpm test
       # Phase 2.4 W4 T4.3 — ralph-loop Win sentinel (B-30 MIN 5 fixture).
       # Sister Phase 2.3 W0 T0.6 provenance pwsh sentinel pattern (above). Verifies
@@ -177,7 +183,6 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: corepack pnpm test -- tests/routing/ralph-loop-win-sentinel.test.ts
-      - run: corepack pnpm build
       - run: corepack pnpm build:schema
       # Phase 2.3 Wave 0 T0.4 — M1 schema regen drift gate (Phase 2.2 RETROSPECTIVE
       # Lesson 6 自我建议落地). Catches spec.ts → schemas/manifest.v1.schema.json
