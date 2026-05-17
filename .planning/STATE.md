@@ -2,7 +2,8 @@
 
 > 项目记忆 · 跨 session 一致性的 SSOT
 > Phase 3.3 W0 T0.1 (D-04 (b) COLLAPSE locked, 5-recurrence terminus): L4 `> Status:` frontmatter + L5 `> 最后更新：` lines deleted — "当前位置" block (L21-27) is now the single SoT for phase ship event log. Freshness gate `scripts/check-transparency-verdicts.mjs` extends with STATE_POSITION_RE OR-fallback (full-file scan) so STATE.md acceptance check still passes.
-> Phase 3.4 W0.1 STRATEGIC (D1 single-SoT institutionalize, 2026-05-17): STATE.md 723L → ≤200L round 1 — prev-prev-phase narrative (L96-329 已完成 milestone + L518-683 Phase 1.5/2.0/2.3/2.4 Prereq Notes ~400L) archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-3.2. D3 gate `scripts/check-state-archive-stale.mjs` warn-only round 1 (3 rules: size ≤200 / 关键决议 ship 总结 ≤1 / W-N errata literal 禁). D2 ship-time T6.N cadence integrated (Plan 03 W2 T2.3 trim prev-prev-phase narrative as standing process).
+> Phase 3.4 W0.1 STRATEGIC (D1 single-SoT institutionalize, 2026-05-17): STATE.md 723L → ≤200L round 1 — prev-prev-phase narrative (L96-329 已完成 milestone + L518-683 Phase 1.5/2.0/2.3/2.4 Prereq Notes ~400L) archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-3.2. D3 gate `scripts/check-state-archive-stale.mjs` warn-only round 1 (3 rules: size ≤200 / 关键决议 ship 总结 ≤1 / W-N errata literal 禁). D2 ship-time T6.N cadence integrated (Plan 03 W2 T2.2 trim prev-prev-phase narrative as standing process).
+> Phase 3.4 W2 T2.2 (D2 ship-time T6.N first-implementation, 2026-05-17): Phase 3.1 + 3.2 narrative (prev-prev-phase) trimmed from STATE → RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.1+3.2 (1st cadence implementation per D2 standing process). STATE.md keeps Phase 3.3 + 3.4 SHIPPED narrative only.
 
 ---
 
@@ -18,12 +19,12 @@
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 3.3 SHIPPED**（2026-05-17 — aliases.yaml RICH 5-field redirect + metadata (D-01 schema 12th surface + Karpathy YAGNI 5 field maxLength 500 DOS cap + ISO-date pattern sister Phase 3.2 W2 Rule 1 lesson) + DOCTOR-ONLY-WARN install 安静重定向 (D-02 install path 1-line surgical resolveAlias pre-manifest-lookup; doctor 7th check checkDeprecations 人读 audit table — install path NO console.warn 沉默 sister Unix tool 习俗) + versions/<harnessed-ver>-known-good.yaml YAML manifest lazy-load 版本 lock (D-03 schema 13th surface + per-version Map memoize + --known-good flag lazy consume Karpathy YAGNI 0 cost when flag not used) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04 (b) LOCKED; L4 frontmatter + L5 最后更新 双删 + STATE_POSITION_RE OR-fallback freshness gate extend) + Wave 0 backlog 3 项一次根治 (W0.1 STATE COLLAPSE 5-recurrence terminus + W0.2 dashboard-sse fix path (a) random ephemeral port DASHBOARD_PORT env injection sister Node net.createServer({port:0}) MDN std + W0.3 schemaVersion 12+13 surface manifest-domain colocation decision + T0.5 planFeature.v1 11th surface backfill sister Phase 3.2 W2 T2.2 b875e21 latent stale claim surgical fix); F1-F8 8/8 acceptance bar; ADR 0016 9 章节 errata accepted; 16 ADR + 16 baseline tag; manifest-domain schema colocation 3rd 消费者闭环 (checkpoint-domain Phase 3.1 + workflow-domain Phase 3.2 + manifest-domain Phase 3.3 cross-phase 模式延袭); v0.3.0 MILESTONE 3/4 PROGRESS）— 前置 ✅ **Phase 3.2 SHIPPED**（2026-05-17 — gstack 前缀探测 PROBE doctor 6th check + workflow `invokes` JINJA `{{prefix}}` 模板替换 + plan-feature 5-phase WIRED reference + governance.json PUSH veto halt_workflow + ADR 0015 9 章节）；前置 ✅ **Phase 3.1 SHIPPED**（2026-05-16 — checkpoint 引擎 TEMPLATE + archive 双轨 + harnessed resume 12th CLI + compact 75% placeholder + T4.4 closure infra activation 闭环 D-04 WIRE-IN 实证 + ADR 0014 9 章节）；前置 ✅ **Phase 2.4 SHIPPED**（2026-05-16）+ 🎯 **v0.2.0 MILESTONE 4/4 SHIPPED & ARCHIVED**（2026-05-16）；前置 ✅ **Phase 2.3 SHIPPED** 2026-05-16；前置 ✅ **Phase 2.2 SHIPPED** 2026-05-15；前置 ✅ Phase 2.1 SHIPPED；前置 ✅ v0.1.0 SHIPPED & ARCHIVED（6/6 phase；git tag `v0.1.0`）
-- **当前里程碑**：v0.3.0 plan-feature workflow + checkpoint（**Phase 3.1 + Phase 3.2 + Phase 3.3 SHIPPED 3/4**）— next: Phase 3.4 路由命中率 ≥ 85% 验收 + token budget 监控
-- **下一 phase**：**Phase 3.4 execute-phase 启动** (discuss + plan-phase 已 ship 2026-05-17, v0.3.0 close phase) — 4 D-decision lock + 3 waves W0-W2 + 23 atomic tasks (W0 5 + W1 6 + W2 12); Wave A R1 PATTERNS 391L 17 targets 100% analog ~83% reuse + R2 RESEARCH 1094L 18 sections HIGH confidence; Wave B planner PLAN.md 624L + task_plan.md 1132L; Wave C plan-checker iter 2 VERIFICATION PASSED (iter 1 = 3 BLOCKER + 5 WARNING → orchestrator tier-call 7 fix + W-7 REJECT risk note; iter 2 EE-4 4/4 PASS RELAX baseline + 10/10 carry-forward hold + 0 new issues); key Phase 3.2 latent bug carry-forward W0.5 SAMPLES.md 30-row mining REAL HISTORICAL; key W0.1 STRATEGIC STATE.md ≤200L round 1 institutionalize 第 6 phase 沿袭; 候选启动 `/gsd-execute-phase 3.4`
-- **状态**：✅ **Phase 3.3 SHIPPED** — Wave 0+1+2 全 ship 2026-05-17；A7 守恒 ADR 0001-0015 main body 0 diff（T2.9 ship-time verify PASS）；CI 3-OS green；tests 623→659+ (+36) + 4 skipped；ADR 0016 9 章节 errata accepted；schemaVersion 11→13 surface (aliases.v1 + known-good.v1)；前置 Phase 3.1 W3 T4.4 closure infra activation 闭环 + Phase 3.2 W2 governance.json PUSH 二代消费者 闭环 + Phase 3.3 W1 manifest-domain colocation 3rd consumer 闭环
-- **进度**：13 / 17 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 76.5%（v0.1.0 里程碑 100%；v0.2.0 里程碑 100%；v0.3.0 里程碑 75% — Phase 3.1 + 3.2 + 3.3 ✅）
-<!-- Phase 2.4 关键决议 ship 总结 9 项 archived to RETROSPECTIVE.md Phase 2.4 milestone retrospective § "Key decisions shipped" (2026-05-17 sister review H2 absorb — sister "archive 纪律" institutionalize; STATE.md 仅保 last shipped phase 当前位置 single SoT，历史 phase 总结进 RETROSPECTIVE) -->
+- **GSD phase**：✅ **Phase 3.4 SHIPPED**（2026-05-17 — 路由命中率 ≥ 85% 验收 (30 sample REAL HISTORICAL dogfood D-01 + per-sample routing.arbitrate dispatch D-02; routing harness 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom; per-tier Sonnet 100% / Haiku 100% / Opus 100% all exceed ROADMAP R7 ≥84%/≥80% lower bounds) + token budget doctor 8th check (check-token-budget.ts 48L NEW PRIMARY helper 4th family member sister Phase 3.1 W3 engineHook.ts 49L + Phase 3.2 W1 probe-gstack.ts 49L + Phase 3.3 W1 check-deprecations.ts 43L precedent延袭 + Buffer.byteLength /4 zero-dep estimateTokens helper D-03 sister Phase 3.1 D-01 enforceBudget precedent reuse + doctor.ts 195→199L ≤200L Karpathy hard limit clean B-03 5% tolerance NOT invoked surgical 4-line delta + DOCTOR-ONLY-WARN status='warn' ≠ fail D-04 sister Phase 3.3 D-02 install path 安静 一致) + W0 backlog 5 项一次根治 (W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1+D2+D3+D4 6th STATE 类反模式 root-cause framing + W0.2 install.ts pkg.version Path A ES2022 import attributes DEFERRED #AD resolve + bonus package.json 0.1.0-alpha.1 → 0.3.0 align shipped milestone tags + W0.3 versions/0.3.0-known-good.yaml 8 real e2e-verified pinned upstream entries DEFERRED #AC resolve + W0.4 path traversal spike DEFER Phase 4.0 + 1 defense-in-depth fixture DEFERRED #AE registered + W0.5 SAMPLES.md 30-row REAL HISTORICAL mining 302 commits + .planning/phase-* task_plan); F1-F8 8/8 acceptance bar; ADR 0017 9 章节 errata accepted; 17 ADR + 17 baseline tag iterate; tests 660→701+ (+41); 12+ atomic commits W0-W2; 🎯 **v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED**）— 前置 ✅ **Phase 3.3 SHIPPED**（2026-05-17 — aliases.yaml RICH 5-field redirect D-01 + DOCTOR-ONLY-WARN install 安静 D-02 + known-good YAML manifest D-03 + STATE dual-SSOT 5-recurrence terminus COLLAPSE D-04 + ADR 0016 9 章节）；前置 ✅ Phase 3.2 + Phase 3.1 + v0.2.0 MILESTONE 4/4 SHIPPED 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.1+3.2 (W0.1 D2 ship-time T6.N first-implementation 2026-05-17)
+- **当前里程碑**：🎯 **v0.3.0 plan-feature workflow + checkpoint 4/4 SHIPPED & ARCHIVED**（Phase 3.1 + Phase 3.2 + Phase 3.3 + Phase 3.4 全 ship — 17 ADR + 14 milestone tag 累积；audit `.planning/milestones/v0.3.0-MILESTONE-AUDIT.md` PASSED）— next: v0.4.0 dogfooding benchmark + co-maintainer 招募 + ADR 全集 + 路由审计日志
+- **下一 phase**：**v0.4.0 discuss-phase 启动** (R8.1 dogfooding benchmark + R8.2 co-maintainer 招募 + R8.3 stale-bot + R8.4 公开 ADR 全集 + R8.5 GitHub Sponsors 启用; plan-feature 真接外部 gsd-* spawn dogfood per ROADMAP R8 carry; 候选启动 `/gsd-discuss-phase 4`)
+- **状态**：✅ **Phase 3.4 SHIPPED + 🎯 v0.3.0 MILESTONE CLOSE 4/4** — Wave 0+1+2 全 ship 2026-05-17；A7 守恒 ADR 0001-0016 main body 0 diff（T2.7 ship-time verify PASS）；CI 3-OS green；tests 660→701+ (+41) + 4 skipped；ADR 0017 9 章节 errata accepted；schemaVersion 13-surface unchanged (no new domain Phase 3.4 = dogfood + acceptance verify phase)；triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 (LOCAL created pending user push approval per CLAUDE.md commit safety)；DEFERRED #AC + #AD ✅ RESOLVED W0；#AE + #AF + #AG + #AH registered Phase 4.0/v0.4.0+ 触发
+- **进度**：14 / 17 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 82.4%（v0.1.0 里程碑 100%；v0.2.0 里程碑 100%；🎯 **v0.3.0 里程碑 100% CLOSE** — Phase 3.1 + 3.2 + 3.3 + 3.4 全 ✅）
+<!-- Phase 3.1 + 3.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.1+3.2 (2026-05-17 W0.1 D2 ship-time T6.N first-implementation per Phase 3.4 W2 T2.2 standing process — sister Phase 1.X-3.2 second-pass cadence延袭) -->
 
 ### 各里程碑进度
 
@@ -31,13 +32,14 @@
 |--------|-----------|------|---------|
 | v0.1.0 manifest 引擎 + research | 6/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 + 1.5 done — **v0.1.0 里程碑全部完成** | 2026-05-12 ~ 2026-05-14 |
 | v0.2.0 Sub-task Loop + Extension Installers | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 2.1 + 2.2 + 2.3 + 2.4 ship (doctor MIN 5 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel + Wave 0 backlog 5 项); 13 ADR + 13 baseline tag accumulate; archive + audit ship | 2026-05-15 ~ 2026-05-16 |
-| v0.3.0 plan-feature + checkpoint | 3/4 | 🚀 **PROGRESS — Phase 3.1 + 3.2 + 3.3 SHIPPED** (P3.1: checkpoint 引擎 + harnessed resume + compact + T4.4 closure activation 闭环 + ADR 0014; P3.2: gstack PROBE + JINJA 插值 + plan-feature 5-phase WIRED + governance.json PUSH + ADR 0015 + T4.4 closure infra 二代消费者闭环; **P3.3: aliases.yaml RICH 5-field redirect (D-01) + DOCTOR-ONLY-WARN install 安静 + doctor 7th check 人读 audit (D-02) + known-good YAML manifest lazy lock (D-03) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04) + W0 backlog 3 项一次根治 + ADR 0016 9 章节 errata + manifest-domain colocation 3rd consumer 闭环**); tests 543→659+ (+116); 16 ADR + 16 baseline tag; schemaVersion 7→13 surface; next: Phase 3.4 路由命中率 ≥ 85% 验收 + token budget 监控 + DEFERRED #AC/#AD/#AE 兑现 | 2026-05-16 ~ 2026-05-17 |
+| v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1 + 3.2 + 3.3 + 3.4 全 ship (P3.1: checkpoint 引擎 + harnessed resume + compact + T4.4 closure activation 闭环 + ADR 0014; P3.2: gstack PROBE + JINJA 插值 + plan-feature 5-phase WIRED + governance.json PUSH + ADR 0015 + T4.4 closure infra 二代消费者闭环; P3.3: aliases.yaml RICH 5-field redirect (D-01) + DOCTOR-ONLY-WARN install 安静 + doctor 7th check 人读 audit (D-02) + known-good YAML manifest lazy lock (D-03) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04) + W0 backlog 3 项一次根治 + ADR 0016 + manifest-domain colocation 3rd consumer 闭环; **P3.4: routing 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom per-tier Sonnet/Haiku/Opus 100/100/100 (D-01 + D-02) + check-token-budget.ts 48L PRIMARY helper 4th 家族成员 + doctor 8th check token budget DOCTOR-ONLY-WARN (D-03 + D-04) + W0 backlog 5 项一次根治 W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1-D4 + ADR 0017 9 章节 errata**); tests 543→701+ (+158); 17 ADR + 17 baseline tag; 14 milestone tag (含 🎯 v0.3.0); schemaVersion 7→13 surface; archive `.planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet (MILESTONE-AUDIT inaugurate milestones/ subdir upgrade); next: v0.4.0 discuss-phase 启动 | 2026-05-16 ~ 2026-05-17 |
 | v0.4.0 dogfooding + 稳定期 | 0/3 | Not started | - |
 
 ### 已完成 phase ship 历史 (W0.2 — README sync SSOT)
 
 > 与 README.md L46-56 一一对应; grep gate `^[-*]?\s*\*?\*?Phase [1-9]\.[0-9]\*?\*?.*[Ss]hipped` 计 count 与 README 等
 
+- **Phase 3.4 shipped** ✅ (2026-05-17) — routing 命中率 ≥ 85% 验收 30/30 = 100% per-tier Sonnet/Haiku/Opus 100/100/100 (D-01 REAL HISTORICAL + D-02 RUN ENGINE arbitrate) + check-token-budget.ts 48L PRIMARY helper 4th family member + doctor 8th check DOCTOR-ONLY-WARN (D-03 BUFFER /4 + D-04) + W0 backlog 5 项一次根治 (W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1-D4) + ADR 0017 9 章节 errata
 - **Phase 3.3 shipped** ✅ (2026-05-17) — aliases.yaml RICH 5-field redirect + DOCTOR-ONLY-WARN install 安静 + doctor 7th check + known-good YAML manifest lazy lock + STATE dual-SSOT 5-recurrence terminus COLLAPSE
 - **Phase 3.2 shipped** ✅ (2026-05-17) — gstack 前缀探测 PROBE doctor 6th check + workflow JINJA 插值 + plan-feature 5-phase WIRED + governance PUSH
 - **Phase 3.1 shipped** ✅ (2026-05-16) — checkpoint 引擎 + harnessed resume 12th CLI + compact 75% placeholder
@@ -56,24 +58,24 @@
 
 ## 进行中（In Progress）
 
-[当前: Phase 3.4 W0 execute-phase 启动 — 5 atomic tasks T0.1-T0.5 backlog absorb; T0.1 STRATEGIC STATE.md role + archive cadence institutionalize 进行中 (本次 trim 体现 D1+D2+D3+D4 4 D-decisions LOCKED)]
+[当前: 🎯 **v0.3.0 MILESTONE CLOSE 完成** — Phase 3.4 W2 ship 2026-05-17 + triple tag LOCAL created pending user push approval; next phase pending: v0.4.0 discuss-phase 启动 (dogfooding benchmark + co-maintainer 招募)]
 
 ---
 
-## 待办（按优先级）— v0.3.0 close window
+## 待办（按优先级）— v0.4.0 启动 window
 
-### P0 — Phase 3.4 W0+W1+W2 execute-phase
+### P0 — v0.4.0 discuss-phase 启动 prep
 
-1. ⏳ **Phase 3.4 W0 (5 atomic)**: T0.1 STATE institutionalize (本次) → T0.2 install.ts pkg.version → T0.3 versions/0.3.0-known-good.yaml 8 entries → T0.4 path traversal spike DEFER + 1 fixture → T0.5 SAMPLES.md 30-row REAL HISTORICAL
-2. ⏳ **Phase 3.4 W1 (6 atomic)**: check-token-budget.ts NEW ≤40L + doctor.ts 8th check Option A inline shrink (200L exact) + 5 tests 含 routing harness ≥26/30
-3. ⏳ **Phase 3.4 W2 (12 atomic)**: ADR 0017 9 章节 + STATE/RETRO/ROADMAP/README/SPEC 续编 + ci.yml A7 iter 1-0017 + .planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md 三件 archive + DOGFOOD-T2.X + triple tag adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0
+1. ⏳ **v0.4.0 discuss-phase 启动** (R8.1 dogfooding benchmark + R8.2 co-maintainer 招募 + R8.3 stale-bot + R8.4 公开 ADR 全集 + R8.5 GitHub Sponsors 启用; plan-feature 真接外部 gsd-* spawn dogfood per ROADMAP R8 carry; 候选启动 `/gsd-discuss-phase 4`)
+2. ⏳ **User push approval** for triple tag created Phase 3.4 W2 T2.12 LOCAL: adr-0017-accepted + v0.3.0-alpha.4-routing + 🎯 v0.3.0 (per CLAUDE.md commit safety: NEVER push without user explicit request)
 
-### P1 — v0.4.0 启动准备 (Phase 3.4 ship 后)
+### P1 — DEFERRED carry-forward (Phase 3.4 ship 后)
 
-4. **v0.4.0 discuss-phase 启动** (R8.1 dogfooding benchmark + R8.2 co-maintainer 招募 + plan-feature 真接外部 gsd-* spawn dogfood per ROADMAP R8.1+R8.2 carry)
-5. **DEFERRED #AF** D3 gate ENFORCE flip timing — Phase 3.5 W0 OR v0.4.0 W0 first task (sister Phase 2.1 transparency gate cadence)
-6. **DEFERRED #AG** D1 STATE.md ≤150L tighten — v0.4.0+ (round 1 target ≤200L warn-only complete; v0.4.0+ tighten SIZE_LIMIT to 150L per D3 Rule 1 future flip)
-7. **DEFERRED #AH** W0.4 path traversal regex hardening — Phase 4.0 W0 (if external user input arrives — currently sole consumer is project maintainer, real attack surface near-zero per spike outcome)
+3. **DEFERRED #AF** D3 gate ENFORCE flip timing — Phase 3.5 W0 OR v0.4.0 W0 first task (sister Phase 2.1 transparency gate cadence)
+4. **DEFERRED #AG** D1 STATE.md ≤150L tighten — v0.4.0+ (round 1 target ≤200L warn-only complete; v0.4.0+ tighten SIZE_LIMIT to 150L per D3 Rule 1 future flip)
+5. **DEFERRED #AH** W0.4 path traversal regex hardening — Phase 4.0 W0 (if external user input arrives — currently sole consumer is project maintainer, real attack surface near-zero per spike outcome)
+6. **EE-4 BLOCKER auto-spawn rerun** — v0.4.0 后 evaluate (Phase 2.4 D-02 down-scope carry-forward unchanged)
+7. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand (fresh-session fallback per B-02 still acceptable)
 
 ### P2 — 跨里程碑预留 (v0.4+ 议题)
 
@@ -104,17 +106,17 @@
 
 | 决策 | 来源 | 备注 |
 |------|------|------|
-| 路由 B+C 混合 + 85% 验收 | SPEC § 5.1 + R03 § 2.4 | Sonnet 100% / Haiku 84% 实证 |
-| Phase 3.4 D-01 REAL HISTORICAL 30 sample mining | Phase 3.4 CONTEXT § Decisions | 不允许 SYNTHETIC/MIXED sneak; per-row source_commit field non-empty MANDATORY |
-| Phase 3.4 D-02 RUN ENGINE per-sample arbitrate dispatch | Phase 3.4 CONTEXT § Decisions | 不允许 DRY-RUN/FULL E2E sneak; sister Phase 2.3 W4 samples-30 harness 100% 复刻 |
-| Phase 3.4 D-03 BUFFER /4 estimateTokens zero-dep | Phase 3.4 CONTEXT § Decisions | 不允许 tiktoken npm dep; sister Phase 3.1 D-01 enforceBudget precedent reuse |
-| Phase 3.4 D-04 DOCTOR WARN (status='warn' ≠ fail) | Phase 3.4 CONTEXT § Decisions | 不允许 CI FAIL/SILENT LOG sneak; sister Phase 3.3 D-02 DOCTOR-ONLY-WARN install path 一致 |
-| Phase 3.4 W0.1 STRATEGIC institutionalize 4 D-decisions | Phase 3.4 W0.1 KICKOFF | D1 single-SoT trim + D2 ship-time T6.N cadence + D3 3-rules gate warn-only round 1 + D4 ship-process integrate |
+| 路由 B+C 混合 + 85% 验收 | SPEC § 5.1 + R03 § 2.4 | Sonnet 100% / Haiku 84% 实证；Phase 3.4 ✅ 30/30 = 100% 远超 ≥85% bar 15% headroom per-tier Sonnet/Haiku/Opus 100/100/100 |
+| Phase 3.4 D-01 REAL HISTORICAL 30 sample mining ✅ ship | Phase 3.4 W0.5 SAMPLES.md | 302 commits + .planning/phase-* task_plan mining; per-row source_commit MANDATORY |
+| Phase 3.4 D-02 RUN ENGINE per-sample arbitrate dispatch ✅ ship | Phase 3.4 W1 T1.6 | tests/routing/phase-3.4-routing-hit-rate.test.ts 30/30 100% per-tier |
+| Phase 3.4 D-03 BUFFER /4 estimateTokens zero-dep ✅ ship | Phase 3.4 W1 T1.1 | check-token-budget.ts 48L PRIMARY helper 4th family member |
+| Phase 3.4 D-04 DOCTOR WARN (status='warn' ≠ fail) ✅ ship | Phase 3.4 W1 T1.2 | doctor.ts 195→199L Option A inline shrink ≤200L Karpathy clean B-03 NOT invoked |
+| Phase 3.4 W0.1 STRATEGIC institutionalize 4 D-decisions ✅ ship | Phase 3.4 W0.1 | D1 single-SoT trim + D2 ship-time T6.N cadence + D3 3-rules gate warn-only round 1 + D4 ship-process integrate |
 | Phase 3.3 D-04 (b) COLLAPSE STATE dual-SSOT 5-recurrence terminus | Phase 3.3 W0.1 | L4 frontmatter + L5 最后更新 双删; STATE_POSITION_RE OR-fallback freshness gate extend |
 | schemaVersion 13-surface manifest-domain colocation 3rd consumer | Phase 3.3 D-03 + W0.3 | aliases.v1 (12th) + known-good.v1 (13th); per-version Map memoize; --known-good flag lazy consume |
-| ADR 0001-0016 main body 永久守恒（A7） | F26 + ci.yml iterate 16 tag | 任一字符 diff = CI fail |
+| ADR 0001-0017 main body 永久守恒（A7） | F26 + ci.yml iterate 17 tag | 任一字符 diff = CI fail; Phase 3.4 W2 T2.7 iter 1-0016 → 1-0017 |
 
-> 完整决策表 (Phase 1.1-3.2) 已 archive → RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-3.2 (W0.1 D2 first ship-time implementation 2026-05-17)
+> 完整决策表 (Phase 1.1-3.2) 已 archive → RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-3.2 (W0.1 D2 first ship-time implementation 2026-05-17) + Phase 3.1+3.2 narrative archived → RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.1+3.2 (Phase 3.4 W2 T2.2 D2 1st cadence implementation per standing process 2026-05-17)
 
 ### 未决问题（v0.4+ 议题）
 
@@ -127,7 +129,7 @@
 
 ### Blockers
 
-[当前无 — Phase 3.4 W0 execute-phase 顺利启动]
+[当前无 — 🎯 v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17; triple tag LOCAL created pending user push approval]
 
 ---
 
