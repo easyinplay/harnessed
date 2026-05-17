@@ -142,18 +142,21 @@ async function checkGstackPrefix(): Promise<CheckResult> {
 }
 
 // Phase 3.3 W1 T1.7 — 7th check: deprecated manifests via aliases.yaml (D-02
-// DOCTOR-ONLY-WARN). Sister L138-142 checkGstackPrefix 100% reuse: dynamic
-// import + delegate to PRIMARY helper src/cli/lib/check-deprecations.ts.
+// DOCTOR-ONLY-WARN). Phase 3.4 W1 T1.2 — 8th check: skill description token
+// budget (D-03 BUFFER /4 + D-04 DOCTOR WARN). Option A inline shrink (3L each)
+// per RESEARCH § 1.3 + sister L138-142 checkGstackPrefix 100% delegate pattern.
 async function checkDeprecations(): Promise<CheckResult> {
-  const { checkDeprecations: runCheck } = await import('./lib/check-deprecations.js')
-  return runCheck()
+  return (await import('./lib/check-deprecations.js')).checkDeprecations()
+}
+async function checkTokenBudget(): Promise<CheckResult> {
+  return (await import('./lib/check-token-budget.js')).checkTokenBudget()
 }
 
 export function registerDoctor(program: Command): void {
   program
     .command('doctor')
     .description(
-      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations)',
+      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations / token budget)',
     )
     .option('--json', 'output JSON instead of human-readable')
     .action(async (opts: { json?: boolean }) => {
@@ -165,6 +168,7 @@ export function registerDoctor(program: Command): void {
         await checkOriginUrl(),
         await checkGstackPrefix(), // ← Phase 3.2 W1 T1.5 ADD 6th check (D-01 PROBE)
         await checkDeprecations(), // ← Phase 3.3 W1 T1.7 ADD 7th check (D-02 DOCTOR-ONLY-WARN)
+        await checkTokenBudget(), // ← Phase 3.4 W1 T1.2 ADD 8th check (D-03 + D-04 DOCTOR WARN)
       ]
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')
