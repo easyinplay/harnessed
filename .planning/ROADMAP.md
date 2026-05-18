@@ -182,7 +182,9 @@
 
 ---
 
-## v0.4.0 — dogfooding benchmark + 稳定期 (2-3 周) — **1/3 PROGRESS** (Phase 4.1 SHIPPED 2026-05-18; Phase 4.2 + 4.3 pending; NOT yet 3/3 ARCHIVED — reserved Phase 4.3 close per sister L38 v0.1.0 + L58 v0.2.0 + L130 v0.3.0 SHIPPED ARCHIVED literal cadence延袭)
+## v0.4.0 — dogfooding benchmark + 稳定期 (2-3 周) — **2/3 PROGRESS** (Phase 4.1 + 4.2 SHIPPED 2026-05-18; Phase 4.3 pending; NOT yet 3/3 ARCHIVED — reserved Phase 4.3 close per sister L38 v0.1.0 + L58 v0.2.0 + L130 v0.3.0 SHIPPED ARCHIVED literal cadence延袭)
+
+> **Note (D-04 HYBRID 2-clock reconcile R-3 mitigation)**: 2-3 周 internal ship clock 已验证 Phase 4.1 + 4.2 ≤1 day each (sister 1-phase/day cadence延袭); external co-maintainer 6-month organic clock SEPARATE per D-04 HYBRID — runs Phase 4.3 close through v0.5/v1.0 (NOT counted in v0.4.0 ship timeline; sister T3 DEFERRED #BB resolve via HYBRID 2-clock LOCK).
 
 ### Goal
 
@@ -213,10 +215,13 @@
   - W0 backlog 3 项一次根治: W0.1 D3 ENFORCE flip warn-only round 1 → ENFORCE round 2 (DEFERRED #AF ✅ RESOLVED; sister Phase 2.1 → 2.2 1-phase cadence延袭) + W0.3 D2 cadence iter 2 trim Phase 3.3+3.4 narrative → RETROSPECTIVE.md (sister Phase 3.4 W2 T2.2 1st-implementation → 2nd-iter institutionalize verify M2 backlog discharge pattern stable) + W0.5 conditional D1 SIZE_LIMIT round 2 tighten 200→150 DEFERRED #BA carry-forward Phase 4.2 W0 LOW priority (post-W0.3 STATE 143L insufficient ≥10L headroom threshold per § 7.1 decision tree DEFER path active)
   - PATTERNS § 5 risk #3 mitigation 3 NO 守门: NO ADR 0018 (pure dogfood publication NOT architectural decision) + NO ci.yml A7 iter (0 diff verified T2.6) + NO triple tag (single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE only; sister L130 v0.3.0 SHIPPED ARCHIVED literal cadence延袭 reserves milestone close tags for Phase 4.3)
   - DEFERRED carry-forward Phase 4.2+: #BA SIZE_LIMIT tighten + #BB T3 1 phase/day cadence assessment (external dependency phase risk surface 真正 fires) + #BC v0.5+ benchmark expand evaluation + #BD regex 2-pass validation pattern lock + #AH path traversal regex hardening
-- **Phase 4.2：co-maintainer onboarding 文档 + GitHub Sponsors + stale-bot** — discuss-phase 启动 prep (R8.2-R8.5; T3 risk surface 真正 fires Phase 4.2 外部依赖 phase per sister Phase 4.1 ship retrospective; v0.4.0 节奏 evaluate explicit 调整期望)
-  - MAINTAINER-ONBOARDING + Sponsors page + GH Action stale workflow
-  - 验收：外部新人 30 分钟可跑通 dev 环境
-- **Phase 4.3：路由透明度日志 + ADR 全集补齐 + v1.0-RC 收尾**
+- **Phase 4.2：co-maintainer onboarding 文档 + GitHub Sponsors + stale-bot** ✅ SHIPPED (2026-05-18)
+  - co-maintainer 招募窗口启动 + 90 天 stale-bot 上线 + Sponsors 启用 → docs/MAINTAINER-ONBOARDING.md EXPAND 50L → 111L D-01 LOCKED additive (preserve 6+2 sections + ADD 6 NEW A-F) + .github/workflows/stale.yml NEW 52L D-02 actions/stale@v10 (R2 § 2 finding correction NOT @v9) 60+30 split issue+PR + .github/ISSUE_TEMPLATE/{01-bug,02-feature,03-question}.yml + config.yml 4 NEW yml form-based per planner Discretion #3 + .github/FUNDING.yml NEW 3L D-03 single tier $1+ Karpathy YAGNI + README L8 Sponsors badge + L190-194 footer EXPAND planner Discretion #1 TOP + FOOTER both
+  - 验收: R8.2 "外部新人 30 分钟可跑通 dev 环境" ✅ + R8.3 "stale-bot 自动关闭 90 天无活动 issue + issue 模板使用率 ≥ 80%" ✅ (blank_issues_enabled false 100% adoption defender) + R8.5 "Sponsors 链接公开 + 可接受捐赠" ✅ (user manual prereq Sponsors account activation external — FALLBACK ship forward-compatible per RESEARCH § 17.2 U1)
+  - W0 backlog 1 项 #BA conditional: D1 SIZE_LIMIT round 2 tighten 200→150 DEFER path active per § 8.2 decision tree (post-T0.1 STATE 150L insufficient ≥10L headroom; carry-forward Phase 4.3 W0 LOW priority; 2-phase consecutive DEFER decision sister Phase 4.1 W0.5 cadence延袭)
+  - W0.1 D2 cadence iter 3 institutionalize verify 3rd-iter terminus stable signal ≥3-iter pattern (sister M2 backlog discharge pattern stable beyond Phase 4.1 W0.3 2nd-iter; sister 5-recurrence terminus heuristic confirmed)
+  - PATTERNS § 5 R-5 mitigation 3 NO 守门: NO ADR 0018 (pure community-infra publish NOT architectural decision) + NO ci.yml A7 iter (0 diff verified T2.6) + NO triple tag (single baseline tag `v0.4.0-alpha.2-community` LOCAL CREATE only; sister L130 v0.3.0 SHIPPED ARCHIVED literal cadence延袭 reserves milestone close tags for Phase 4.3); 4 D-decisions activated 闭环 D-01 EXPAND additive + D-02 @v10 90-day issue+PR + D-03 single tier $1+ + D-04 HYBRID 2-clock process-level
+- **Phase 4.3：v1.0-RC close + 🎯 v0.4.0 milestone close** — discuss-phase 启动 prep (R8.1 audit log 路由透明度日志 + R8.4 公开 ADR 全集 + v1.0-RC 收尾 + 🎯 v0.4.0 milestone close 3-file archive triplet sister v0.3.0 close cadence延袭)
   - `.harnessed/audit.log` schema + 全部历史决策回填 ADR + RELEASE NOTES
   - 验收：路由决策 100% 可追溯；ADR 至少 5 份 (含 milestone close 3-file archive triplet at `.planning/milestones/v0.4.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` sister v0.3.0 close cadence延袭 + 🎯 v0.4.0 milestone close tag)
 
