@@ -183,7 +183,7 @@ harnessed doctor   # 检测上游 stale / Windows ACL / 配置漂移
 
 - [PROJECT-SPEC.md](./PROJECT-SPEC.md) — 立项参数 spec sheet（v2.1）
 - [WORKFLOWS-MVP.md](./WORKFLOWS-MVP.md) — 3 个 MVP workflow 展开（v2.1）
-- [docs/adr/](./docs/adr/) — 架构决策记录（0001 schema / 0002 toolchain / 0003 method count errata / 0004 installer UX contract / 0005 marketplace_source errata / **0006 architecture-wedge-revision-v3** / **0007 categorization-schema-extension errata**）
+- [docs/adr/](./docs/adr/) — 架构决策记录（17 ADRs 0001-0017）｜[docs/WORKFLOW.md](./docs/WORKFLOW.md) — 项目实际 dev 工作流 mermaid + 16-phase cadence 模式表 + CLAUDE.md gap 分析
 - [.planning/ROADMAP.md](./.planning/ROADMAP.md) — 4 milestones × 3-5 phases 路线图
 - [.planning/STATE.md](./.planning/STATE.md) — 跨 session 项目记忆 SSOT
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — 贡献指南（含 Windows corepack ACL workaround）
