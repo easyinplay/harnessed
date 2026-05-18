@@ -32,9 +32,9 @@ export interface AuditFinding {
   detail: string
 }
 
-async function auditOne(yamlPath: string): Promise<AuditFinding[]> {
+async function auditOne(yamlPath: string, preReadSrc?: string): Promise<AuditFinding[]> {
   const findings: AuditFinding[] = []
-  const src = await readFile(yamlPath, 'utf8')
+  const src = preReadSrc ?? (await readFile(yamlPath, 'utf8'))
   const v = validateManifestFile(src, yamlPath)
   if (!v.ok) {
     return v.errors.map((e) => ({
@@ -117,7 +117,7 @@ export function registerAudit(program: Command): void {
         const src = await readFile(y, 'utf8')
         const v = validateManifestFile(src, y)
         if (v.ok) validManifests.push({ path: y, m: v.manifest })
-        findings.push(...(await auditOne(y)))
+        findings.push(...(await auditOne(y, src)))
       }
 
       // Phase 2.4 W4 T4.1 — runtime-layer findings per B-28 + B-29 + R2:

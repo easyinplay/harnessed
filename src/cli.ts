@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
+import pkg from '../package.json' with { type: 'json' }
 import { registerAudit } from './cli/audit.js'
 import { registerBackupList } from './cli/backup-list.js'
 import { registerDoctor } from './cli/doctor.js'
@@ -18,7 +19,7 @@ const program = new Command()
 program
   .name('harnessed')
   .description('AI coding harness package manager + composition orchestrator')
-  .version('0.1.0-alpha.2-installer-runtime')
+  .version(pkg.version)
 
 // 12 subcommands per ADR 0004 + 0007 + 0008 + 0011 + 0012 + 0014 draft
 // (execute-task added in phase 2.2 — B-28 独立子命令;

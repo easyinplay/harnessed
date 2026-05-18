@@ -37,3 +37,36 @@
 - **#BE bonus** (Phase 4.2 plan-phase Wave C orchestrator FIX institutional lesson registered as DEFERRED carry — sister Phase 4.1 #BD regex 2-pass validation pattern lock precedent延袭; future plan-checker iterations adopt R1+R2 cross-validation as standing process)
 
 *Phase 4.2 W0 deferred-items.md complete — DEFERRED #BA carry-forward Phase 4.3 W0 registered + #BE institutional lesson registered. Next-phase carry-forward inventory flows into Phase 4.2 W2 T2.2 RETROSPECTIVE.md § Cost patterns DEFERRED section at ship close.*
+
+---
+
+## Phase 4.2 ship sister review absorb (2026-05-18, post-W2 ship)
+
+Sister review surfaced 2 H + 7 M + 4 L = 13 observations (10 REAL + 3 unverified/intentional). Tiered absorb per established cadence — H inline this cycle / M+L → Phase 4.3 W0 prereq backlog.
+
+### H-tier inline absorbed (this commit cycle)
+
+- **H1 version sync drift** ✅ FIXED 2026-05-18 (3-source drift: src/index.ts L4 `0.1.0-alpha.1` / src/cli.ts L21 `0.1.0-alpha.2-installer-runtime` / package.json L3 `0.3.0`). Both files now `import pkg from '../package.json' with { type: 'json' }` reading `pkg.version` — sister Phase 3.4 W0 T0.2 #AD install.ts pattern延袭. Post-fix `node dist/cli.mjs --version` → `0.3.0` (was stuck on baked-in alpha.2 literal across all CLI invocations); typecheck PASS + 709 tests PASS.
+- **H2 audit N+1 file read** ✅ FIXED 2026-05-18 (src/cli/audit.ts L116-121: per yaml `readFile` once for validateManifests AND auditOne internally reads again at L37). Refactored `auditOne(yamlPath, preReadSrc?)` to accept optional pre-read src + `auditOne(y, src)` at call site — eliminates double-read while preserving auditOne standalone usability.
+
+### Phase 4.3 W0 prereq backlog (sister M+L tier carry-forward)
+
+| # | Severity | Item | Disposition |
+|---|----------|------|-------------|
+| #BF | M | `runArgs` 3-installer duplicate (ccPluginMarketplace L49 + mcpHttpAdd L47 + mcpStdioAdd L40) → extract `src/installers/lib/runClaudeArgs.ts` | Phase 4.3 W0 MED |
+| #BG | M | `err()` helper 8-file duplicate (7 installers + manifest/security.ts) → extract `src/installers/lib/err.ts` OR `src/manifest/lib/err.ts` | Phase 4.3 W0 MED |
+| #BH | M | H1 gate校验 duplicate in CLI files → extract `src/cli/lib/validateFlags.ts` (need verify file count first; sister review said 5) | Phase 4.3 W0 LOW (verify scope first) |
+| #BI | M | dry-run/abort/result pattern 5+ sites → abstract common result handler | Phase 4.3 W0 LOW (verify scope first) |
+| #BJ | M (cosmetic) | `process.exit() + return` unreachable code (rollback.ts L55+L68+L80 / resume.ts L19 / gc.ts L80) → remove redundant returns OR throw + top catch | Phase 4.3 W0 LOW (cosmetic, biome won't catch) |
+| #BK | M | `writeFileSync` no try-catch (manifest-add.ts L70) → wrap with friendly error | Phase 4.3 W0 LOW (rare scenario; only on permission/RO FS) |
+| #BL | L | `as unknown as` double cast (validate.ts L22+L39) → add type-safe adapter OR explicit comment for Ajv/TypeBox gap | Phase 4.3 W0 DEFER (already pattern-known gap) |
+| #BM | L | Semantic router v0.1 stub (engine.ts L117-122) — **NOT absorb**: intentional ADR 0009 errata F40-2 forward-compat lock for v0.2+ activation; removing breaks design intent | DEFER PERMANENT (annotate ADR cross-ref in code if not present) |
+| #BN | L | 中英混写注释 — **NOT absorb**: project by-design bilingual (用户 native 中文 + CLAUDE.md 全中文规则); surface only when R8.2 external contributor onboarding triggers signal | DEFER conditional (R8.2 6-month organic window + Sponsors community signal) |
+
+### Sister review WRONG path note
+
+- M7 review said `void isMap` at `src/cli/security.ts:160` — actual file is `src/manifest/security.ts:160` (no `src/cli/security.ts` exists). Pattern is intentional `void <import>` suppress-unused-warning idiom; isMap is imported but only used conditionally. Recommend keep as-is.
+
+### Sister cadence iter
+
+Phase 4.2 ship sister = 8th "deferred → next phase W0 一次根治" cadence iter (Phase 2.3 → 2.4 → 3.1 → 3.2 → 3.3 → 3.4 → 4.1 → 4.2 → next 4.3). H absorb same-cycle + M+L → next phase W0 pattern stable 6 phase 连续.
