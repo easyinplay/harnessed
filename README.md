@@ -5,6 +5,7 @@
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Status](https://img.shields.io/badge/status-pre--launch-orange)](./.planning/ROADMAP.md)
+[![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > **Status:** 🎯 **v0.2.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-16** (Phase 2.1+2.2+2.3+2.4) · 🎯 **v0.3.0 MILESTONE 4/4 SHIPPED & ARCHIVED 2026-05-17** (Phase 3.1+3.2+3.3+3.4) · **v0.4.0 MILESTONE 1/3 PROGRESS** (Phase 4.1 SHIPPED 2026-05-18; Phase 4.2 + 4.3 pending; NOT yet 3/3 ARCHIVED reserved Phase 4.3 close per sister v0.3.0 close cadence延袭) · **Phase 4.1 SHIPPED 2026-05-18** — dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor (docs/benchmarks/v0.4.md NEW 302L D-02 FULL per-task disclosure 30/30 100% verbatim + docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG zero-dep 4-section × 2 manifests ctx7 + gstack + docs/CONTRIBUTING-BENCHMARK.md NEW 30L D-04 MANUAL re-run instructions sister Karpathy YAGNI > weekly cron + W0 backlog 3 项一次根治 W0.1 D3 ENFORCE flip DEFERRED #AF RESOLVED + W0.3 D2 cadence iter 2 institutionalize verify M2 backlog discharge + W0.5 conditional D1 SIZE_LIMIT round 2 tighten DEFERRED #BA carry-forward Phase 4.2 W0 LOW priority + 4 D-decisions activated 闭环 D-01 REUSE Phase 3.4 SAMPLES.md single SoT + D-02 FULL per-task 反"美化"诱惑兜底 + D-03 TEXT LOG cross-OS portable + D-04 MANUAL 0 CI infra; PATTERNS § 5 risk #3 mitigation NO ADR 0018 + NO ci.yml A7 iter + NO triple tag single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE only; tests 701→709+ +8 / 0 fail). Next: Phase 4.2 co-maintainer onboarding + GitHub Sponsors + stale-bot R8.2-R8.5.
 
@@ -189,7 +190,9 @@ harnessed doctor   # 检测上游 stale / Windows ACL / 配置漂移
 
 ## Sponsor / Co-maintainer
 
-GitHub Sponsors 启用 + co-maintainer 招募窗口在 v0.4 开启（参考 [docs/MAINTAINER-ONBOARDING.md](./docs/MAINTAINER-ONBOARDING.md)）。
+GitHub Sponsors **已启用** (Phase 4.2 SHIPPED v0.4.0) — [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay). Co-maintainer 6 月招募窗口已开启 — 完整入门指引参考 [docs/MAINTAINER-ONBOARDING.md](./docs/MAINTAINER-ONBOARDING.md)（30 分钟可跑通 dev 环境 per R8.2 验收）.
+
+stale-bot 已上线 — 90 天无活动 issue/PR 自动关闭 (`.github/workflows/stale.yml`); issue 模板见 `.github/ISSUE_TEMPLATE/`。
 
 ## License
 
