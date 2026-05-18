@@ -110,3 +110,39 @@ Phase 4.2 ship sister = 8th "deferred → next phase W0 一次根治" cadence it
 ### 2nd-cycle cadence
 
 9 observations / 8 actionable (M3 WRONG corrected); 2 H inline same-cycle + 5 M+T → Phase 4.3 W0/discuss-phase. Sister cadence ≥3-iter terminus signal proves sister review cadence has become self-correcting (post-fix re-verify surfaces meta-issues like commit msg transparency + math-unreachable targets).
+
+---
+
+## Phase 4.2 ship sister 3rd-cycle absorb (2026-05-19, post-2nd-cycle user-initiated re-review)
+
+3rd-cycle sister review (P0/P1/P2 tiered, 9 items) surfaced 3 REAL actionable + 2 documented-gap re-discoveries + 2 wrong/inapplicable + 2 YAGNI trade-offs. Tiered absorb per established cadence — 1 low-risk inline this cycle / 2 carry-forward Phase 4.3+ W0.
+
+### Inline absorbed this cycle (low-risk, no test regression)
+
+- **#BT doctor.ts 5 async checks Promise.all** ✅ FIXED 2026-05-19 (src/cli/doctor.ts L162-184: was 8-element await-chain sequential; refactored to single `Promise.all([mcpScope, originUrl, gstackPrefix, deprecations, tokenBudget])` parallelize + sync inline preserved order). Tests 709/713 PASS no regression (doctor.test.ts cell 1 `.toHaveLength(8)` + `.toContain(name)` order-independent — Promise.all preserves array order). Biome + tsc PASS.
+
+### Phase 4.3+ W0 prereq backlog (3rd-cycle M+L tier carry-forward)
+
+| # | Severity | Item | Disposition |
+|---|----------|------|-------------|
+| #BU | M (P0 in 3rd-cycle review) | `.harnessed/` 状态目录无并发写保护 (state.ts writeCurrentWorkflow + engineHook activatePhase/completePhase) — 2 个并发 `harnessed resume` 可竞态损坏 current-workflow.json | Phase 4.3+ W0 LOW (existing readCurrentWorkflow fail-soft 已 partial mitigation; single-maintainer dogfood 阶段 real-world 触发概率极低; full fix 需 proper-lockfile dep OR manual `wx` lock + retry — 推 v0.5 多 maintainer / external user 出现时再处理) |
+| #BV | M (P1 in 3rd-cycle review) | `harnessed uninstall` / `clean` 子命令缺失 (CLI 现有 install/backup/gc/rollback, 无 install 反向) — 包管理器 UX gap | Phase 4.5+ OR v0.5 milestone — 需 per-method uninstall handler 设计 (mcp-stdio-remove / cc-plugin-uninstall / npm-uninstall / git-rm 各异), 不适合 W0 quick fix; gc + rollback 当前 partial 覆盖单条 install 撤销 |
+
+### Re-confirmed already-DEFERRED gaps (3rd-cycle re-discovery, no new action)
+
+- **#1 sdkSpawn.ts `as any` (P0 in 3rd-cycle)** = sister #BL `as unknown as` 等价 — DEFER PERMANENT documented gap, biome-ignore + ADR 0009 errata F40-2 + sdkReconcile.ts 14→5 enum drift detector (routing-agentDefinition.test.ts cell 1) 已多层 guard;package.json NOT include SDK runtime dep per F40-2 (intentional karpathy YAGNI);no action this cycle.
+- **#5 agentDefinition.ts 14 字段 SDK 耦合 (P1 in 3rd-cycle)** = ADR 0009 errata F40-2 同源 documented gap;test-layer drift detector + AGENT_DEFINITION_FIELDS 14 元 tuple guard 已设计;`satisfies` SDK type derive 路径被 F40-2 显式拒绝 (要求加 SDK runtime dep);no action this cycle.
+
+### Inapplicable / WRONG (3rd-cycle review error)
+
+- **#4 install.ts INSTALL_TYPE_METHODS 反向校验 (P1 in 3rd-cycle)** ❌ WRONG path — sister 指 install.ts,实际位置 `src/manifest/validate.ts:55-58` 是 ADR 0007 validate-layer refinement (NOT install dispatch);`installers/index.ts:39-55` levelOf switch 已穷举 7 个 method + `noFallthroughCasesInSwitch: true` (tsconfig.json L15) 编译期保证新增 method 必 case-miss 报错。不需要 default。
+- **#7 ralphLoop.ts 指数退避 (P2 in 3rd-cycle)** ❌ 语义混淆 — ralphLoopWrap (L41-54) 是 completion-detect loop (每次 iter 是完整新 agent run), NOT retry loop;429 rate limit 由 SDK `query()` 内部处理;加 sleep 反拖慢正常完成路径。
+
+### YAGNI trade-offs (3rd-cycle no action)
+
+- **#8 vitest.config.ts 80% 阈值 (P2 in 3rd-cycle)** — 当前 709 tests PASS 全过阈值, no blocking signal;YAGNI 待真实 block 时再调整 src/cli/* exclude。
+- **#9 tsconfig.json skipLibCheck:true (P2 in 3rd-cycle)** — typical Node.js TS 项目 trade-off (关闭常被第三方 .d.ts 报错爆炸);harness 通过 sdkReconcile + AGENT_DEFINITION_FIELDS 14 元 tuple + routing 测试 cell drift detector 多层等价 safety net;现 mitigation 充分。
+
+### 3rd-cycle cadence
+
+9 observations / 7 actionable assessments (#4 #7 不适用); 1 inline same-cycle (#BT) + 2 carry-forward (#BU #BV) + 2 re-DOCUMENTED (#1 #5) + 2 YAGNI rejected (#8 #9)。Sister cadence ≥3-iter terminus signal continues self-correcting: 3rd-cycle review 出现 2 项 inapplicable (#4 路径错 + #7 语义混淆) 是 sister review 准确率正常波动信号 (前 2 cycle 也各有 1 项 WRONG: M7 path / M3 stale tag); 不构成 cadence 退化。

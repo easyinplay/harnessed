@@ -35,3 +35,15 @@ Second sister review surfaced 2 H + 3 M + 4 T (post-5996ea1 fix verify cycle):
 - **H2 (this review)**: D1 round 2 target ≤150L math unreachable (156L baseline + 10L Phase 4.3 ship narrative = 166L always) → user relaxed target to ≤175L per Option AA decision; D2 cadence trim still applied; #BA disposition updated below
 
 See `deferred-items.md` for full 2nd-cycle absorb (post-5996ea1 #BO~#BS Phase 4.3 W0 carry).
+
+## Sister review 3rd-cycle (user-initiated 2026-05-19, P0/P1/P2 tiered)
+
+3rd-cycle sister review surfaced 9 items (3 P0/3 P1/3 P2), tiered absorb breakdown:
+
+- **Inline FIXED this cycle**: #BT doctor.ts 5 async checks Promise.all parallelize (P1 #3) — low-risk, tests 709 PASS no regression
+- **Carry-forward Phase 4.3+ W0**: #BU state lock (P0 #2) + #BV uninstall command (P1 #6) — too large for inline fix, registered LOW/v0.5 milestone
+- **Re-DOCUMENTED gaps**: #1 sdkSpawn `as any` (P0) = #BL equivalent + #5 AgentDef SDK 耦合 (P1) = ADR 0009 F40-2 — DEFER PERMANENT, no new action
+- **WRONG / inapplicable**: #4 install.ts dispatch path错 (P1, actual = manifest/validate.ts + tsc exhaustive guard) + #7 ralphLoop 指数退避 (P2, ralph is completion-detect NOT retry semantic)
+- **YAGNI**: #8 vitest 80% 阈值 (P2) + #9 skipLibCheck (P2) — multi-layer mitigation 已充分
+
+See `deferred-items.md` L114+ for full 3rd-cycle absorb (#BT inline + #BU #BV carry).

@@ -160,15 +160,26 @@ export function registerDoctor(program: Command): void {
     )
     .option('--json', 'output JSON instead of human-readable')
     .action(async (opts: { json?: boolean }) => {
+      // Phase 4.3 W0 sister 3rd-cycle absorb #BT — 5 async checks have no data
+      // dependencies, parallelize via Promise.all (was sequential await chain).
+      // Sync checks (Node/jq/winBash) stay inline; final array preserves the
+      // legacy ordering so doctor.test.ts cell 1 + 4 + 5 + check-order remain green.
+      const [mcpScope, originUrl, gstackPrefix, deprecations, tokenBudget] = await Promise.all([
+        checkMcpScope(),
+        checkOriginUrl(),
+        checkGstackPrefix(), // ← Phase 3.2 W1 T1.5 ADD 6th check (D-01 PROBE)
+        checkDeprecations(), // ← Phase 3.3 W1 T1.7 ADD 7th check (D-02 DOCTOR-ONLY-WARN)
+        checkTokenBudget(), // ← Phase 3.4 W1 T1.2 ADD 8th check (D-03 + D-04 DOCTOR WARN)
+      ])
       const results: CheckResult[] = [
         checkNodeVersion(),
-        await checkMcpScope(),
+        mcpScope,
         checkJq(),
         checkWinBash(),
-        await checkOriginUrl(),
-        await checkGstackPrefix(), // ← Phase 3.2 W1 T1.5 ADD 6th check (D-01 PROBE)
-        await checkDeprecations(), // ← Phase 3.3 W1 T1.7 ADD 7th check (D-02 DOCTOR-ONLY-WARN)
-        await checkTokenBudget(), // ← Phase 3.4 W1 T1.2 ADD 8th check (D-03 + D-04 DOCTOR WARN)
+        originUrl,
+        gstackPrefix,
+        deprecations,
+        tokenBudget,
       ]
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')
