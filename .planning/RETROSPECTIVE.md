@@ -747,3 +747,58 @@ git show 4c62ca1~1:.planning/STATE.md  # pre-Phase-4.2-W0-T0.1 STATE.md 151L bas
 Or read per-phase canonical sources directly: `.planning/phase-4.1/{task_plan,progress,VERIFICATION,deferred-items,SAMPLES,DOGFOOD-T2.X}.md` + `docs/benchmarks/v0.4.md` + `docs/benchmarks/v0.4-upgrade-e2e.log` + `docs/CONTRIBUTING-BENCHMARK.md` (Phase 4.1 main artifacts; no ADR 0018 per PATTERNS § 5 risk #3 — pure dogfood publish NOT architectural decision).
 
 *Phase 4.2 W0.1 T0.1 D2 cadence iter 3 archive complete — 2026-05-18 ship-time T6.N cadence 3rd-implementation. Sister Phase 4.1 W0 T0.1 was 2nd implementation (Phase 3.3+3.4 archived 2026-05-18); sister Phase 3.4 W2 T2.2 was 1st implementation (Phase 3.1+3.2 archived 2026-05-17); this 3rd-iter verifies cadence pattern stable terminus signal ≥3-iter beyond 2nd-iter institutionalize per sister 5-recurrence terminus heuristic. Next § ARCHIVED FROM STATE — Phase 4.2 will be created by Phase 4.3 ship-time per D2 standing process cadence iter 4 (continued stability verify).*
+
+---
+
+## Phase 4.2 milestone retrospective — co-maintainer onboarding + stale-bot + GitHub Sponsors R8.2 + R8.3 + R8.5 anchors (2026-05-18 ship) — v0.4.0 milestone 2/3 PROGRESS
+
+### What worked
+
+- **D-01 EXPAND 50L stub additive preserve 0-rewrite-risk**: MAINTAINER-ONBOARDING 50L stub → 111L additive expansion preserving 6+2 existing sections verbatim + ADD 6 NEW sections A-F (sister Karpathy "preserve existing v0.1 stub content acceptable baseline" minor wording polish only per R-1 mitigation). **经验**: ADDITIVE EXPAND > FULL REWRITE when stub quality acceptable (0-day rewrite cost + preserve audit history + lower regression surface).
+- **D-02 90-day issue+PR sister GitHub default convention**: actions/stale@v10 verified current per R2 § 2 finding correction (CONTEXT D-02 @v9 reference OUTDATED — Wave A R2 fresh research caught upstream drift). **经验**: institutionalize "verify upstream schema currency via [VERIFIED] tag in research phase" NOT assume CONTEXT reference current — R2 finding-correction prevented same-day CI red from deprecated v9 action.
+- **D-03 single tier $1+ Karpathy YAGNI 反"pricing-design overhead"诱惑**: FUNDING.yml 3L minimal `github: easyinplay` directive (Sponsors dashboard tier definition lives separately per § 4.3; FUNDING.yml only points to account). **经验**: 反 "pricing-design overhead 要 community signal — NOT data pre-launch" — single tier defensible reverse-default.
+- **D-04 HYBRID 2-clock reconcile pattern for external-dependency phase**: institutionalized for v0.5+ external-dependency phases (sister T3 DEFERRED #BB resolve via HYBRID 2-clock LOCK — internal infra clock vs external co-maintainer organic clock SEPARATE). **经验**: 2-clock disambiguation prevents narrative drift between "Phase 4.2 SHIPPED in 1 day" (internal) vs "6-month co-maintainer window" (external organic) — both clocks valid, never conflate.
+- **W0.1 D2 cadence iter 3 stable 3rd-iter terminus signal pattern ≥3-iter**: sister 5-recurrence terminus heuristic confirmed — pattern stable beyond 2nd-iter Phase 4.1 W0.3 (Phase 3.4 W2 T2.2 1st-implementation + Phase 4.1 W0.3 2nd-iter + Phase 4.2 W0.1 3rd-iter terminus stable signal). **经验**: 3-iter institutionalize threshold matches sister 5-recurrence terminus disambiguation — cadence pattern stable institutionalize standard.
+
+### What was inefficient
+
+- **3 NEW .github/ first-time community-infra surface ~42% weighted avg W1 reuse vs Phase 4.1 W1 ~60%**: first community-infra publication phase in project history — FUNDING.yml + stale.yml + ISSUE_TEMPLATE all NEW surface ~30-55% reuse only. **Mitigation**: planner Discretion #3 yml form-based + CITED docs.github.com recipes verbatim absorption + Wave A R2 research finding-correction recovered ~15% additional reuse via @v10 baseline correction.
+- **MAINTAINER-ONBOARDING EXPAND content quality balance judgment**: R-1 mitigation minor wording polish allowed within ADDITIVE EXPAND scope — required executor judgment call on which 6+2 existing sections needed v0.1 → v0.4 activated update vs preserve-verbatim. **Mitigation**: D-01 LOCKED additive scope explicit ADD 6 NEW sections (A-F) + preserve 8 existing — boundary clear via ordering schema § 2.2.
+
+### Patterns established
+
+- **8-phase consecutive deferred-items → next phase W0 一次根治 cadence延袭**: Phase 2.3 → 2.4 → 3.1 → 3.2 → 3.3 → 3.4 → 4.1 → 4.2 = 8 phase consecutive 一次根治 cadence (sister M2 backlog discharge institutionalize pattern stable beyond 6-phase Phase 4.1 streak).
+- **D2 cadence 3rd-iter fires institutionalize confirm ≥3-iter terminus per sister 5-recurrence terminus heuristic**: Phase 3.4 W2 T2.2 1st-implementation + Phase 4.1 W0.3 2nd-iter + Phase 4.2 W0.1 3rd-iter terminus stable signal — pattern stable beyond 2-iter institutionalize threshold.
+- **R-4 cadence consistency mitigation pattern**: section header literal preserves "Phase 4.0+4.1" per sister cadence affirm even though Phase 4.0 absent (numeric placeholder NOT real shipped phase) — disambiguated in content body footer per content-vs-header sister handling.
+- **2-phase consecutive DEFER for #BA SIZE_LIMIT round 2 tighten**: Phase 4.1 W0.5 DEFER path + Phase 4.2 W0.2 DEFER path = 2-phase consecutive carry-forward (sister cadence consistent — STATE.md within 143-156L band insufficient ≥10L headroom for safe 200→150 tighten per § 8.2 decision tree).
+
+### Cost patterns
+
+- **Phase 4.2 内部 phase 1 day cadence延袭**: T3 external dependency = co-maintainer 招募 6-month 真正 clock SEPARATE per D-04 HYBRID — DOES NOT count v0.4.0 ship timeline.
+- **Internal infra ship clock**: 1 phase/day verified Phase 4.1 + Phase 4.2 (≤1 day track record sister cadence consecutive).
+- **External co-maintainer organic clock**: 6-month organic — OPENS post-v0.4.0 close runs through v0.5/v1.0 (NOT counted v0.4.0 ship timeline per R-3 mitigation 2-clock literal phrases enforcement).
+- **First community-infra publication phase cost**: ~+15% W1 task duration over Phase 4.1 W1 (first-time NEW .github/ surface lacks sister code excerpt verbatim reuse pool) — recovered via planner Discretion #3 verbatim CITED recipes + R2 finding-correction baseline.
+
+### Key lessons
+
+- (i) **D-01 ADDITIVE EXPAND > FULL REWRITE when stub content quality acceptable** (0-day overhead + preserve audit history; sister Karpathy "preserve existing baseline" precedent).
+- (ii) **D-03 single tier $1+ Karpathy YAGNI > multi-tier pre-v1.0** (pricing-design overhead要 community signal — NOT data pre-launch; Sponsors dashboard tier definition separate per § 4.3).
+- (iii) **D-04 HYBRID 2-clock reconcile pattern用于 external-dependency phase** (sister T3 cadence resolution after Phase 4.1 raise — institutionalized for v0.5+ external-dependency phases per RETROSPECTIVE Next Phase Prep Notes carry-forward heuristic; #BB ✅ pre-RESOLVED discuss-phase).
+- (iv) **U1 Sponsors account external prereq capture lesson** (ship config forward-compatible per RESEARCH § 17.2 U1 — NOT block on bureaucracy; DOGFOOD Axis C verifies infra NOT button render; DEFERRED #BE registered IF user NOT activated by ship).
+- (v) **R2 § 2 finding correction critical** (actions/stale@v10 NOT @v9 per CONTEXT outdated reference — Wave A R2 fresh research caught upstream drift; institutionalize "verify upstream schema currency via [VERIFIED] tag in research phase NOT assume CONTEXT reference current" — recurrence #2 of similar drift after Phase 3.2 W2 Rule 1 lesson).
+
+### Cross-milestone trends
+
+- **v0.4.0 第 2 phase 续延 Phase 4.1 同日 1-day cadence延袭** (sister 5-phase consecutive 1-day ship cadence从 Phase 3.4 起 5-day streak; Phase 3.4 + 4.1 + 4.2 = 3-day window in v0.3.0→v0.4.0 transition).
+- **W0.1 D2 cadence iter 3 verify stable ≥3-iter terminus signal pattern** (sister 5-recurrence terminus heuristic — pattern stable institutionalize standard; sister D-04 (b) COLLAPSE 5-recurrence terminus precedent).
+- **8-phase consecutive deferred-items absorb cadence 一次根治 pattern stable** (Phase 2.3 → 4.2 = 8-phase streak — pattern institutionalize at ≥6-phase streak threshold met).
+- **First community-infra publication phase added to project surface** (3 NEW .github/ files + EXPAND 1 docs/ file = 4-file delta; sister 5-doc 续编 + ci.yml 0 diff verified — community infra publish NOT architectural decision per PATTERNS § 5 R-5 mitigation 3 NO 守门).
+
+### Next Phase Prep Notes (bonus 7th section sister Phase 4.1 W2 T2.2 cadence延袭)
+
+- **Phase 4.3 = v1.0-RC close phase + v0.4.0 milestone close phase** (final phase of v0.4.0 milestone — sister Phase 3.4 v0.3.0 close cadence延袭).
+- **Anchor requirements**: R8.1 audit log (路由透明度日志) + R8.4 公开 ADR 全集 + v1.0-RC 收尾.
+- **Ship cadence**: triple tag close cadence per sister v0.3.0 close (3 alpha tags + final milestone tag) — Phase 4.3 = adr-NNNN-accepted (IF new ADR) + v0.4.0-alpha.3-audit + 🎯 v0.4.0 milestone close triple-push.
+- **Milestone close**: 3-file archive triplet sister v0.3.0 close pattern (.planning/milestones/v0.4.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md inaugurate).
+- **D2 cadence iter 4**: Phase 4.3 W0 will trim Phase 4.2 narrative STATE → RETROSPECTIVE § ARCHIVED FROM STATE — Phase 4.2 per D2 standing process continued stability verify (sister 4-iter beyond 3-iter terminus stable signal — pattern continues iterating per institutionalize standard).
+- **DEFERRED carry-forward Phase 4.3 W0**: #BA D1 SIZE_LIMIT round 2 tighten 200→150 (2-phase consecutive DEFER — re-evaluate per § 8.2 decision tree post-Phase 4.3 archive iter 4) + #AH path traversal regex hardening + #BC v0.5+ benchmark expand evaluation + #BD regex 2-pass validation pattern lock + #BE Sponsors account activation external prereq (IF user NOT activated by Phase 4.2 ship) + #BF CODEOWNERS .github/** defer (IF real attack surface arrives).
