@@ -1,0 +1,52 @@
+# .github/workflows/stale.yml
+# Phase 4.2 R8.3 — stale-bot 90-day auto-close issue + PR
+# D-02 LOCKED: 90-day default, issue+PR scope, mark-stale-at-60 + close-at-90 semantic
+# actions/stale@v10 verified current (v10.2.0 Feb 2026 per R2 § 2 finding correction; NOT @v9 outdated)
+
+name: 'Close stale issues and PRs'
+
+on:
+  schedule:
+    # Daily 1:30 UTC (actions/stale recommended off-peak cron per planner Discretion #2)
+    - cron: '30 1 * * *'
+  workflow_dispatch:  # manual trigger for testing
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v10
+        with:
+          # 90-day total window per R8.3 spec verbatim
+          # Mark stale at day 60 (warning), close 30 days later at day 90
+          days-before-issue-stale: 60
+          days-before-issue-close: 30
+          days-before-pr-stale: 60
+          days-before-pr-close: 30
+
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
+
+          stale-issue-message: |
+            This issue has been automatically marked as stale because it has not had recent activity.
+            It will be closed in 30 days if no further activity occurs. Thank you for your contributions.
+            Reactivation see docs/MAINTAINER-ONBOARDING.md for revival path.
+          close-issue-message: |
+            This issue was closed because it has been stale for 90 days with no activity.
+            Reopen if still relevant — bus factor ≥ 1.5 means we welcome external triage.
+          stale-pr-message: |
+            This pull request has been automatically marked as stale because it has not had recent activity.
+            It will be closed in 30 days if no further activity occurs.
+          close-pr-message: |
+            This PR was closed because it has been stale for 90 days with no activity.
+
+          # Defensive exemptions (STRIDE D mitigation)
+          exempt-issue-labels: 'pinned,security,good first issue,help wanted'
+          exempt-pr-labels: 'pinned,security,blocked'
+
+          # Rate limit defense (STRIDE D; default 30; raise if backlog grows)
+          operations-per-run: 30
