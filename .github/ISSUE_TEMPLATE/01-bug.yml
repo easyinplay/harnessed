@@ -1,0 +1,80 @@
+# .github/ISSUE_TEMPLATE/01-bug.yml
+# Phase 4.2 R8.3 — issue template standardization (bug form)
+# Form-based YAML per docs.github.com/communities 2026 best practice
+# STRIDE I mitigation: DO NOT include API keys / credentials / secrets in bug reports
+
+name: Bug Report
+description: Report a bug in harnessed CLI, workflows, or manifests
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out a bug report.
+        **DO NOT include API keys, credentials, or secrets** in this report (STRIDE I — paste sanitized output only).
+        For questions or onboarding, see [docs/MAINTAINER-ONBOARDING.md](../../docs/MAINTAINER-ONBOARDING.md).
+
+  - type: input
+    id: harnessed-version
+    attributes:
+      label: harnessed version
+      description: Output of `harnessed --version`
+      placeholder: e.g., 0.4.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows
+        - macOS
+        - Linux (Ubuntu/Debian)
+        - Linux (other)
+        - WSL2
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js version
+      description: Output of `node --version` (must be ≥ 22)
+      placeholder: e.g., 22.11.0
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Minimal reproduction steps
+      placeholder: |
+        1. Run `harnessed install ctx7`
+        2. ...
+        3. Observe error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include error messages, stack traces, harnessed doctor output (sanitize secrets)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Routing decision context, harnessed doctor output, audit.log relevant entries (v0.4.3+)

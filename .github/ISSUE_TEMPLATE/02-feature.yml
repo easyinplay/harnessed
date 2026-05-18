@@ -1,0 +1,47 @@
+# .github/ISSUE_TEMPLATE/02-feature.yml
+# Phase 4.2 R8.3 — issue template standardization (feature request form)
+# R9.5 三问 embedded to defend 范围蔓延 per ROADMAP v1.0 拒绝清单
+
+name: Feature Request
+description: Request a new capability in harnessed
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, please check R9.5 范围蔓延防御 三问 below.
+        See [.planning/ROADMAP.md](../../.planning/ROADMAP.md) for v1.0 拒绝清单.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What user pain are you trying to solve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you evaluate?
+
+  - type: checkboxes
+    id: r95-triage
+    attributes:
+      label: R9.5 范围蔓延防御 三问 (required)
+      options:
+        - label: This is a packaging/automation problem (NOT a project management problem solvable in docs)
+          required: true
+        - label: This cannot be solved by an upstream library (NOT a wrap of upstream API)
+          required: true
+        - label: A one-time escape hatch is NOT sufficient (this requires structural support)
+          required: true

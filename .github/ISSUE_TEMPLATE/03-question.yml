@@ -1,0 +1,31 @@
+# .github/ISSUE_TEMPLATE/03-question.yml
+# Phase 4.2 R8.3 — issue template standardization (question form)
+
+name: Question
+description: Ask a question about harnessed usage
+title: "[Question]: "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For getting started, see [docs/MAINTAINER-ONBOARDING.md](../../docs/MAINTAINER-ONBOARDING.md) 30-min Quickstart first.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Commands run, docs read, error messages seen
+
+  - type: input
+    id: harnessed-version
+    attributes:
+      label: harnessed version (if applicable)
+      placeholder: e.g., 0.4.0

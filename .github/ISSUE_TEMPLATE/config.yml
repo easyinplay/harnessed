@@ -1,0 +1,14 @@
+# .github/ISSUE_TEMPLATE/config.yml
+# Phase 4.2 R8.3 — template chooser config
+# blank_issues_enabled: false enforces template usage (R8.3 80% adoption defender)
+
+blank_issues_enabled: false
+
+contact_links:
+  - name: Documentation (Onboarding + 30-min Quickstart)
+    url: https://github.com/easyinplay/harnessed/blob/main/docs/MAINTAINER-ONBOARDING.md
+    about: New contributor? Start here for dev environment setup and onboarding.
+
+  - name: Roadmap + v1.0 拒绝清单
+    url: https://github.com/easyinplay/harnessed/blob/main/.planning/ROADMAP.md
+    about: Check the roadmap and 拒绝清单 before requesting new workflow types or wrappers.
