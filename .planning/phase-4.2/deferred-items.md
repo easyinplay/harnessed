@@ -70,3 +70,43 @@ Sister review surfaced 2 H + 7 M + 4 L = 13 observations (10 REAL + 3 unverified
 ### Sister cadence iter
 
 Phase 4.2 ship sister = 8th "deferred → next phase W0 一次根治" cadence iter (Phase 2.3 → 2.4 → 3.1 → 3.2 → 3.3 → 3.4 → 4.1 → 4.2 → next 4.3). H absorb same-cycle + M+L → next phase W0 pattern stable 6 phase 连续.
+
+---
+
+## Phase 4.2 ship sister 2nd-cycle absorb (2026-05-18, post-5996ea1 re-review)
+
+2nd-cycle sister review (post-fix verify) surfaced 2 H + 3 M + 4 T = 9 observations:
+
+### H-tier 2nd cycle inline absorbed
+
+- **H1 (2nd cycle) 5996ea1 transparency** ✅ FIXED — NEW `SISTER-REVIEW-FINDINGS.md` redirect doc (Option BB) pointing to deferred-items.md L40-72 SoT; sister reviewer 习惯位置 + Karpathy minimal surface
+- **H2 (2nd cycle) D1 round 2 target relax ≤150L → ≤175L** ✅ DECIDED (Option AA) — math unreachable proof: 156L baseline + 8L D2 trim - 10L Phase 4.3 narrative = 158L always > 150L; relax target to ≤175L gives 19L headroom; D2 cadence trim still applied (no放弃); Phase 4.3 W0.1 conditional re-evaluate uses new ≤175L threshold; #BA disposition UPDATED below
+
+### #BA disposition UPDATE (post-2nd-cycle H2 AA decision)
+
+**STATUS UPDATE**: Original "round 2 tighten 200→150" target RELAXED to "round 2 tighten 200→175" per Option AA decision (2026-05-18 2nd-cycle sister review absorb).
+
+**New decision tree** (Phase 4.3 W0 conditional re-evaluate):
+- IF post-Phase-4.3-W0.1 D2 trim STATE ≤165L → FLIP `SIZE_LIMIT = 175` (10L safety headroom)
+- IF 166-175L → DEFER #BA carry Phase 4.4+ (3rd consecutive DEFER signal)
+- IF >175L → BLOCKED + escalate (insufficient even at relaxed target — D2 cadence改进 needed)
+
+**Rationale for relax (NOT 放弃)**: Karpathy YAGNI — target ≤150L was Phase 3.4 D3 design-time guess; production reality shows 156L baseline 不可达 with 2-phase narrative preservation policy; relax to ≤175L preserves "tighter than round 1 ≤200L" intent + achievable + D2 cadence still discipline.
+
+### Phase 4.3 W0/discuss-phase backlog 2nd-cycle additions
+
+| # | Severity | Item | Disposition |
+|---|----------|------|-------------|
+| #BO | M | v0.4.0-MILESTONE-AUDIT.md 加 R-5 mitigation rationale 节 explain "Phase 4.1+4.2 = publish-only NO architectural decision per R-5" (sister M1 — 避免误读 "v0.4.0 决策力下降") | Phase 4.3 W2 ship MILESTONE-AUDIT authoring |
+| #BP | M | Phase 4.3 discuss-phase explicit "R-5 NOT invoked, full ship cadence ADR 0018 + ci.yml A7 iter + triple tag" 声明 (sister M2) | Phase 4.3 discuss-phase 4.3-CONTEXT.md meta-decision lock |
+| #BQ | T | Phase 4.3 W0 backlog 14+ items 分批策略 (sister T1) — sub-batch NOT atomic; planner Wave B verify scope risk | Phase 4.3 plan-phase Wave B (planner discretion 2-3 wave 拆) |
+| #BR | T | Phase 4.3 ship 时长预估 1.5-2 day (sister T2 — R8.1 audit log 新功能 + R8.4 ADR 全集 + milestone close 同时) | Phase 4.3 discuss-phase 4.3-KICKOFF scope estimate |
+| #BS | T (info) | D2 cadence iter 4 evaluation (sister T4 — iter 3 标 "terminus stable signal") | Phase 4.3 W0.1 conditional (与 #BA re-evaluate 同一 task) |
+
+### Sister review M3 WRONG claim correction
+
+- **M3 claim**: "2 alpha tags pending push" → **WRONG** ❌ — both `v0.4.0-alpha.1-benchmark` (origin `23f417d`) + `v0.4.0-alpha.2-community` (origin `e500756`) ARE already on origin per `git ls-remote origin refs/tags/`. Reviewer info stale.
+
+### 2nd-cycle cadence
+
+9 observations / 8 actionable (M3 WRONG corrected); 2 H inline same-cycle + 5 M+T → Phase 4.3 W0/discuss-phase. Sister cadence ≥3-iter terminus signal proves sister review cadence has become self-correcting (post-fix re-verify surfaces meta-issues like commit msg transparency + math-unreachable targets).
