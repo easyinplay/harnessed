@@ -701,3 +701,49 @@ advisory — dashboard polish round 1 (commit `161621c`) + dashboard polish roun
 ---
 
 *Phase 4.1 RETROSPECTIVE complete — 2026-05-18 ship；14 atomic commits / 709+ tests / 0 ADR + 0 baseline tag iter (NO ADR 0018 + NO ci.yml A7 iter per PATTERNS § 5 risk #3) / 1 single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL CREATE / 30/30 100% verbatim publish + 4 D-decisions activated 闭环 + W0 backlog 3 项一次根治 + v0.3.0→v0.4.0 milestone transition (1/3 PROGRESS reserves Phase 4.3 close). 下个 retro entry 在 v0.4.0 Phase 4.2 ship 后续编.*
+
+---
+
+## § ARCHIVED FROM STATE — Phase 4.0+4.1 (Phase 4.2 W0.1 D2 cadence iter 3, 2026-05-18)
+
+> **Note (R-4 cadence consistency mitigation)**: Section header literal preserves "Phase 4.0+4.1" per sister Phase 4.1 W0 T0.1 cadence affirm L640 "Next § ARCHIVED FROM STATE — Phase 4.0+4.1 will be created by Phase 4.2 ship-time per D2 standing process cadence iter 3" — header literal preserved for cadence consistency even though **Phase 4.0 was a numeric placeholder NOT a real shipped phase** (v0.3.0 closed Phase 3.4 → v0.4.0 opened Phase 4.1 directly per ROADMAP L185-220). Content body reflects Phase 4.1 single-phase archive (sister single-phase iter 3 archive per R-4 cadence consistency).
+>
+> **Archived 2026-05-18** by Phase 4.2 W0.1 T0.1 (D2 ship-time T6.N cadence 3rd-implementation per standing process — sister Phase 3.4 W2 T2.2 was 1st implementation 2026-05-17; sister Phase 4.1 W0 T0.1 was 2nd implementation 2026-05-18; this 3rd-iter verifies cadence pattern stable terminus signal ≥3-iter beyond 2nd-iter institutionalize). STATE.md pre-trim = 151L; post-trim = 150L (-1L net delta; condensation of long inline narratives + redundant HTML-comment marker consolidation + ship-history bullet condense; trim under § 8.3 projection because 关键决策 area lacked Phase 4.1 D-decision rows to delete — sister Phase 4.1 trim 148→143 -5L precedent informed but Phase 4.1 had 7 ready-to-archive rows whereas Phase 4.2 baseline already condensed). DEFER PATH active for T0.2 W0.2 per § 8.2 decision tree (post-trim 150L falls in 141-150L range; #BA carry-forward Phase 4.3 W0 LOW priority defensive).
+>
+> **Cadence affirm** (D2 standing process 3rd-iter terminus stable signal ≥3-iter per sister 5-recurrence terminus heuristic): This § ARCHIVED FROM STATE — Phase {N-1 or N-2} section is the canonical resting place for prev-phase narrative trimmed from STATE.md每 phase ship. Phase 3.4 ship = 1st cadence implementation (Phase 3.1+3.2 archived); Phase 4.1 ship = 2nd cadence implementation (Phase 3.3+3.4 archived); Phase 4.2 ship = 3rd cadence implementation (Phase 4.0+4.1 archived this section — single-phase due to Phase 4.0 absence per R-4). Future Phase 4.3+ similarly trim Phase {N-1} narrative (e.g., Phase 4.3 ship → § ARCHIVED FROM STATE — Phase 4.2; pattern stable ≥3-iter beyond founder-effort).
+
+### Phase 4.1 SHIPPED ✅ (2026-05-18) — dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor + W0 backlog 3 项一次根治 + 4 D-decisions activated 闭环
+
+- **Decisions** (verbatim relocate from STATE.md L22-25 long inline 当前位置 narrative + L36 v0.4.0 table row verbose status + L43 已完成 ship history verbose entry):
+  - **D-01 REUSE Phase 3.4 SAMPLES.md single SoT 0-day overhead**: 30-row REAL HISTORICAL truth table 100% reuse (NO new mining; NO fresh sample synthesis); benchmark v0.4.md cross-link SAMPLES.md ≥2 occurrences (header + § 5 attribution per D-01 sneak block守门)
+  - **D-02 FULL per-task disclosure 反"数据美化"诱惑兜底**: 30/30 100% with full 5-field schema (raw_prompt verbatim + routing_decision rule_id+tier+skill + actual_command_executed + manual_review_verdict + recovery_path); NO fake-miss-case inflation; docs/benchmarks/v0.4.md NEW 302L
+  - **D-03 TEXT LOG zero-dep cross-OS portable**: docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG zero-dep 4-section × 2 manifests (ctx7 npm-cli + gstack git-clone-with-setup) plain ASCII text < 100KB; NO asciinema npm dep + NO mp4/gif/png binary
+  - **D-04 MANUAL re-run cadence 0 CI infra**: docs/CONTRIBUTING-BENCHMARK.md NEW 30L manual instructions; NO .github/workflows/benchmark.yml cron file; T2.6 verify `grep -c "benchmark" .github/workflows/ci.yml = 0` PASS
+- **W0 backlog 3 项一次根治 STRICT path dep** (W0.3 → W0.1 → W0.5 sequential per § 7.1 decision tree NOT parallel):
+  - W0.1 D3 ENFORCE flip warn-only round 1 → ENFORCE=true round 2 (DEFERRED #AF RESOLVED)
+  - W0.3 D2 cadence iter 2 institutionalize verify M2 backlog discharge 2nd-iter beyond 1st-implementation (Phase 3.3+3.4 archived to RETROSPECTIVE.md sister § archive section L591-640)
+  - W0.5 conditional D1 SIZE_LIMIT round 2 tighten 200→150 — post-W0.3 trim STATE 143L > 140L threshold → DEFER PATH active → DEFERRED #BA carry-forward Phase 4.2 W0 (THIS Phase 4.2 W0.2 resolves #BA per FLIP or DEFER conditional decision tree)
+- **A7 守恒** ADR 0001-0017 main body 0 diff (T2.6 ci.yml verify NO A7 iter Phase 4.1 = pure dogfood publish NOT architectural decision); NO ADR 0018 + NO triple tag per PATTERNS § 5 risk #3 mitigation
+- **Tests**: 701→709+ (+8 cells across W1 T1.6 integrity test 4 D-decisions + 4 sneak blocks守门 verify; W2 docs-only 0 new tests as expected) / 0 fail
+- **Single baseline tag** `v0.4.0-alpha.1-benchmark` LOCAL CREATE (NO push per CLAUDE.md commit safety; user controls)
+- **Ship history inline** (archived from STATE.md L43 已完成 phase ship 历史 long inline row):
+  - **Phase 4.1 shipped** ✅ (2026-05-18) — dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor (docs/benchmarks/v0.4.md NEW 302L D-02 FULL per-task disclosure 30/30 100% + docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG zero-dep 4-section × 2 manifests + docs/CONTRIBUTING-BENCHMARK.md NEW 30L D-04 MANUAL re-run + W0 backlog 3 项一次根治 W0.1 D3 ENFORCE flip DEFERRED #AF RESOLVED + W0.3 D2 cadence iter 2 institutionalize verify M2 discharge + W0.5 conditional D1 SIZE_LIMIT DEFER #BA carry); v0.4.0 milestone 1/3 PROGRESS (NOT yet 3/3 ARCHIVED reserved Phase 4.3 close); NO ADR 0018 + NO triple tag per PATTERNS § 5 risk #3; single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL (NO push)
+- **v0.4.0 table row verbose status** (archived from STATE.md L36 各里程碑进度 table row):
+  - 🚧 **PROGRESS** — Phase 4.1 ✅ SHIPPED 2026-05-18 (dogfooding benchmark 数据采集 + 公开格式定义 R8.1 anchor; docs/benchmarks/v0.4.md NEW 302L D-02 FULL + docs/benchmarks/v0.4-upgrade-e2e.log NEW 122L D-03 TEXT LOG + docs/CONTRIBUTING-BENCHMARK.md NEW 30L D-04 MANUAL + W0 backlog 3 项一次根治 + 4 D-decisions activated 闭环 + single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL); Phase 4.2 + 4.3 pending
+
+**Preserved in STATE.md** (post-trim 150L):
+- L1-15 项目核心引用 (constant)
+- L17-22 当前位置 block condensed (sole SSOT marker — `**Phase 4.1 SHIPPED**` literal anchor preserved for STATE_POSITION_RE freshness gate D-04 COLLAPSE; long inline narrative archived to this section)
+- 已完成 phase ship 历史 14-entry list (Phase 4.1 entry condensed to 1-line pointer; older 12 entries 1-line each unchanged)
+- 待办 P0 (Phase 4.2 execute-phase 启动) + P1 (DEFERRED #BA/#BB/#BC/#BD/#AH/EE-4/userSpawn carry-forward) + P2 (跨里程碑预留 v0.4+ 议题)
+- 关键提醒 (long-term constraints only)
+- 累积上下文 Decisions (2 long-term row preserved; A7 0001-0017 守恒 + 路由 B+C 混合 + 85% 验收; full table archive pointer in 完整决策表 paragraph)
+- 框架治理路由 (呼应 ~/.claude/CLAUDE.md constant)
+
+**Recovery instructions**: If a future maintainer needs full Phase 4.1 ship narrative detail (per-phase acceptance bar break-down, per-phase progress.md/VERIFICATION.md file lists, per-phase deferred items disposition table, per-phase commit hashes), retrieve from git history via:
+```bash
+git show 4c62ca1~1:.planning/STATE.md  # pre-Phase-4.2-W0-T0.1 STATE.md 151L baseline (Phase 4.2 plan-phase ship commit 4c62ca1; T0.1 trim commit is next)
+```
+Or read per-phase canonical sources directly: `.planning/phase-4.1/{task_plan,progress,VERIFICATION,deferred-items,SAMPLES,DOGFOOD-T2.X}.md` + `docs/benchmarks/v0.4.md` + `docs/benchmarks/v0.4-upgrade-e2e.log` + `docs/CONTRIBUTING-BENCHMARK.md` (Phase 4.1 main artifacts; no ADR 0018 per PATTERNS § 5 risk #3 — pure dogfood publish NOT architectural decision).
+
+*Phase 4.2 W0.1 T0.1 D2 cadence iter 3 archive complete — 2026-05-18 ship-time T6.N cadence 3rd-implementation. Sister Phase 4.1 W0 T0.1 was 2nd implementation (Phase 3.3+3.4 archived 2026-05-18); sister Phase 3.4 W2 T2.2 was 1st implementation (Phase 3.1+3.2 archived 2026-05-17); this 3rd-iter verifies cadence pattern stable terminus signal ≥3-iter beyond 2nd-iter institutionalize per sister 5-recurrence terminus heuristic. Next § ARCHIVED FROM STATE — Phase 4.2 will be created by Phase 4.3 ship-time per D2 standing process cadence iter 4 (continued stability verify).*
