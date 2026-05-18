@@ -22,7 +22,8 @@ const STATUS_MARKER = /^\s*>?\s*\*{0,2}(?:Status|状态)\*{0,2}\s*[:：]\s*(.+)$
 // Phase 2.2 T0.4 freshness gate blind spot: STATE.md L4 "最后更新" was stale
 // 2026-05-15 → 2026-05-16 without being caught by this gate (sister review H1).
 // FRONT_MATTER_DOCS is the canonical scan list for freshness Status: markers.
-const FRONT_MATTER_DOCS = ['README.md', 'PROJECT-SPEC.md', '.planning/STATE.md']
+// 2026-05-18 user feedback: README.md dropped from freshness scope (user-facing doc, dev status repositioned to .planning/ROADMAP.md + STATE.md SoT).
+const FRONT_MATTER_DOCS = ['PROJECT-SPEC.md', '.planning/STATE.md']
 // Phase 2.4 ship post-mortem sister review H2 fix: was `m`-flag `.match()` returning FIRST
 // shipped (= v0.1.0 oldest since ROADMAP order ASC), not latest. Now matchAll + capture + last.
 const ROADMAP_SHIPPED_RE = /^##\s+(v\d+\.\d+\.\d+)\s+—.*✅\s*SHIPPED/gm
