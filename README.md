@@ -84,6 +84,33 @@ harnessed doctor
 
 harnessed 是 **CLI + CC skill 混合体**——CLI 管装/检/恢复，skill 管编排：
 
+```mermaid
+flowchart LR
+    U([👤 User]) --> Setup["📦 npx harnessed@latest setup<br/>装 workflow skills + hooks"]
+    Setup --> Install["⚙️ harnessed install &lt;workflow&gt;<br/>自动解析 manifest 依赖图<br/>(默认 dry-run 预览 diff)"]
+    Install --> Apply{User 批准?}
+    Apply -- "y / --apply" --> Run["🚀 /harnessed:&lt;workflow&gt; '任务'<br/>在 Claude Code 内调度<br/>多上游协同 5-phase workflow"]
+    Apply -- "n" --> Cancel([❌ 取消])
+    Run --> Pause{暂停点?}
+    Pause -- CEO veto / task_plan lock --> Approve[👤 User approve]
+    Approve --> Run
+    Pause -- "中断" --> Resume["♻️ harnessed resume<br/>从最近 checkpoint 续跑"]
+    Resume --> Run
+    Pause -- "完成" --> Done([✅ COMPLETE])
+    Done --> Maint{维护操作}
+    Maint -- 健康检查 --> Doctor["🩺 harnessed doctor<br/>(N-check Node/MCP/jq/bash)"]
+    Maint -- 看状态 --> Status["📊 harnessed status<br/>(已装清单 + 当前 phase)"]
+    Maint -- 清备份 --> GC["🧹 harnessed gc --older-than 30d"]
+    Maint -- 出错回滚 --> Rollback["⏪ harnessed rollback &lt;ts&gt;<br/>(EOL preserve + sha1 verify)"]
+
+    classDef user fill:#cfe2ff,stroke:#0a58ca
+    classDef act fill:#d1e7dd,stroke:#0f5132
+    classDef end1 fill:#f8d7da,stroke:#842029
+    class U,Approve user
+    class Setup,Install,Run,Resume,Doctor,Status,GC,Rollback act
+    class Cancel,Done end1
+```
+
 ```bash
 # 1. 一次性 setup（装 workflow skills 到 ~/.claude/skills/、配置 hooks）
 npx harnessed@latest setup
