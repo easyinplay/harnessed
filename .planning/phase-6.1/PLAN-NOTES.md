@@ -20,3 +20,12 @@
 - Step 4 npm view harnessed: `E404 Not Found` → **PASS** (name unclaimed ✅; harnessed available for v1.0.0 first publish)
 
 **Overall verdict: 4/4 PASS** — Wave 1 R-1 mitigation cleared; bin fix required T1.2 (Rule 2 deviation noted)
+
+## T0.4 baseline gate verify (2026-05-22)
+
+- pnpm exec tsc --noEmit: clean (no output) → **PASS** ✅
+- pnpm test: 756 passed | 4 skipped (760 total) — 106 test files, 107 suites → **PASS** ✅ (zero regression baseline established)
+- check-state-archive-stale.mjs: STATE.md within archive cadence limits → **PASS** ✅
+- check-transparency-verdicts.mjs: all verdict marker lines compliant → **PASS** ✅
+
+**Wave 0 verdict: ALL GATES GREEN — Wave 1 ready to spawn**
