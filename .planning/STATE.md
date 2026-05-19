@@ -34,9 +34,9 @@ progress:
 ## 当前位置（Current Position）
 
 - **GSD phase**：✅ **Phase 6.1 SHIPPED** (2026-05-22) — 🎯 v1.0 GA PRODUCTION RELEASE FINAL phase; 21/21 phases 100% complete
-- **当前里程碑**：**🎯 v1.0.3 PARALLEL PATCH SHIPPED** 2026-05-20 — Step B serial → parallel Promise.allSettled ~75% speedup (16 manifests 30-50s → 5-10s); user feedback v1.0.2 ship; 765 tests; 6 tags LOCAL (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0 + 🎯 v1.0.1 + 🎯 v1.0.2 + 🎯 v1.0.3); push approval pending → npm publish LIVE
+- **当前里程碑**：**🎯 v1.0.4 MCP IDEMPOTENT PATCH SHIPPED** 2026-05-20 — MCP installer "already exists" → idempotent skip (not failure); 4-category classify (installed/already-installed/skipped/failed); post-setup /mcp hint; 768 tests; 7 tags LOCAL (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0 + 🎯 v1.0.1 + 🎯 v1.0.2 + 🎯 v1.0.3 + 🎯 v1.0.4); push approval pending → npm publish LIVE
 - **下一 phase**：**v1.0+ Maintenance-Only Mode** — organic clock running 2026-05-22 ~ ~2026-11; post-clock decision (a) maintenance-only or (b) continued active per ADR 0020 D-04 HYBRID
-- **状態**：✅ **v1.0.3 PARALLEL PATCH SHIPPED 2026-05-20** — Step B serial → parallel Promise.allSettled ~75% speedup (30-50s → 5-10s; 16 manifests); user feedback v1.0.2 ship; 765 tests; maintenance-only mode trigger ~2026-11
+- **状態**：✅ **v1.0.4 MCP IDEMPOTENT PATCH SHIPPED 2026-05-20** — MCP "already exists" → idempotent skip (ADR 0004 contract); 4-category classify; /mcp hint; 768 tests; maintenance-only mode trigger ~2026-11
 - **進度**：21 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ **100%**（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + v0.5.0 + 🎯 **v1.0 GA** ALL SHIPPED & ARCHIVED）
 
 ### 各里程碑进度
