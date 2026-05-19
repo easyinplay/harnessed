@@ -802,3 +802,48 @@ Or read per-phase canonical sources directly: `.planning/phase-4.1/{task_plan,pr
 - **Milestone close**: 3-file archive triplet sister v0.3.0 close pattern (.planning/milestones/v0.4.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md inaugurate).
 - **D2 cadence iter 4**: Phase 4.3 W0 will trim Phase 4.2 narrative STATE → RETROSPECTIVE § ARCHIVED FROM STATE — Phase 4.2 per D2 standing process continued stability verify (sister 4-iter beyond 3-iter terminus stable signal — pattern continues iterating per institutionalize standard).
 - **DEFERRED carry-forward Phase 4.3 W0**: #BA D1 SIZE_LIMIT round 2 tighten 200→150 (2-phase consecutive DEFER — re-evaluate per § 8.2 decision tree post-Phase 4.3 archive iter 4) + #AH path traversal regex hardening + #BC v0.5+ benchmark expand evaluation + #BD regex 2-pass validation pattern lock + #BE Sponsors account activation external prereq (IF user NOT activated by Phase 4.2 ship) + #BF CODEOWNERS .github/** defer (IF real attack surface arrives).
+
+---
+
+## § ARCHIVED FROM STATE — Phase 4.2 (Phase 4.3 W0.1 D2 cadence iter 4, 2026-05-19)
+
+> **Note (R-4 cadence consistency mitigation continuation)**: Single-phase archive consistent with Phase 4.1 solo archive precedent (Phase 4.2 narrative archived solo per single-phase iter 4 archive — same rationale as sister Phase 4.0+4.1 archive which was Phase 4.1 single-phase due to Phase 4.0 numeric placeholder absence).
+>
+> **Archived 2026-05-19** by Phase 4.3 W0.1 T0.1 (D2 ship-time T6.N cadence 4th-implementation REINFORCE per standing process — sister Phase 4.2 W0.1 was 3rd-implementation 2026-05-18 terminus stable signal ≥3-iter; this 4th-iter REINFORCE verifies pattern stable beyond terminus per sister 5-recurrence terminus heuristic confirmed). STATE.md pre-trim = 156L; post-trim = 158L (+2L net delta; multiple condense actions shortened lines but added 1 HTML archive marker + 1 banner line; STATE still ≤165L FLIP threshold per CONTEXT #BA decision tree — Branch A FLIP PATH active T0.2). Round 2 SIZE_LIMIT 200→175 RELAX (sister Phase 4.1+4.2 chain 2-iter DEFER chain resolved Phase 4.3 W0.2 FLIP per relaxed target post-2nd-cycle sister H2 AA).
+>
+> **Cadence affirm** (D2 standing process 4th-iter REINFORCE beyond terminus stable signal sister 5-recurrence terminus heuristic): Phase 3.4 ship = 1st cadence implementation (Phase 3.1+3.2 archived); Phase 4.1 ship = 2nd implementation (Phase 3.3+3.4 archived); Phase 4.2 ship = 3rd implementation (Phase 4.0+4.1 archived, terminus stable signal ≥3-iter); Phase 4.3 ship = 4th implementation REINFORCE (Phase 4.2 archived THIS section — pattern stable confirmed beyond founder-effort). Future Phase 4.4+ similarly trim per institutionalize standard.
+
+### Phase 4.2 SHIPPED ✅ (2026-05-18) — co-maintainer onboarding + stale-bot + GitHub Sponsors R8.2+R8.3+R8.5 anchors + v0.4.0 milestone 2/3 PROGRESS
+
+- **Decisions** (verbatim relocate from STATE.md L22-26 long inline 当前位置 + L36 v0.4.0 table row verbose + L44 已完成 ship history verbose entry + L65 进行中 block):
+  - **D-01 OnboardScope EXPAND additive preserve**: docs/MAINTAINER-ONBOARDING.md EXPAND 50L → 111L additive (preserve 6+2 existing sections + ADD 6 NEW A-F)
+  - **D-02 StaleBotPolicy @v10 90-day issue+PR**: .github/workflows/stale.yml NEW 52L actions/stale@v10 (R2 fresh research finding correction CONTEXT @v9 OUTDATED) 60-day mark + 90-day close on BOTH issue AND PR
+  - **D-03 SponsorsTier single tier $1+ Karpathy YAGNI**: .github/FUNDING.yml NEW 3L minimal `github: easyinplay`; defer multi-tier pricing-design v0.5+ if community signal arrives
+  - **D-04 CadenceExpect HYBRID 2-clock**: internal infra ship clock (Phase 4.2 ≤1 day verified sister cadence) SEPARATE from external co-maintainer 6-month organic clock (opens post-v0.4.0 ship, runs through v0.5/v1.0); sister T3 #BB resolve via 2-clock disambiguation
+- **W0 backlog absorb plan resolutions**:
+  - W0.1 D2 cadence iter 3 institutionalize verify M2 backlog discharge 3rd-iter terminus stable signal beyond Phase 4.1 W0.3 2nd-iter (sister 5-recurrence terminus heuristic confirmed pattern stable ≥3-iter)
+  - W0.2 conditional D1 SIZE_LIMIT 200→150 — post-W0.1 trim STATE 150L falls in 141-150L range (insufficient ≥10L headroom for round 2 tighten) → DEFER PATH active → DEFERRED #BA carry-forward Phase 4.3 W0 LOW priority (sister Phase 4.1 W0.5 + Phase 4.2 W0.2 2-iter defer chain Phase 4.3 W0.2 resolved per RELAXED target 200→175 round 2 post-2nd-cycle sister H2 AA decision)
+- **A7 守恒** ADR 0001-0017 main body 0 diff (T2.6 ci.yml verify NO A7 iter Phase 4.2 = pure community-infra publish NOT architectural decision per PATTERNS § 5 R-5 mitigation 3 NO 守门: NO ADR 0018 + NO ci.yml A7 iter + NO triple tag)
+- **Tests**: 709+ stable (Phase 4.2 docs-only no new src code = 0 new tests as expected; W2 T2.5 manifest test still PASS)
+- **Single baseline tag** `v0.4.0-alpha.2-community` LOCAL CREATE (NO push per CLAUDE.md commit safety; user controls)
+- **Ship history inline** (archived from STATE.md L44 已完成 phase ship 历史 long inline row):
+  - **Phase 4.2 shipped** ✅ (2026-05-18) — co-maintainer onboarding + stale-bot + GitHub Sponsors R8.2+R8.3+R8.5 anchors (docs/MAINTAINER-ONBOARDING.md EXPAND 50L → 111L D-01 LOCKED additive preserve 6+2 sections + ADD 6 NEW A-F + .github/workflows/stale.yml NEW 52L D-02 actions/stale@v10 R2 finding correction 60+30 split issue+PR + .github/ISSUE_TEMPLATE/{01-bug,02-feature,03-question}.yml + config.yml 4 NEW yml form-based + .github/FUNDING.yml NEW 3L D-03 single tier $1+ + README L8 Sponsors badge + L190-194 footer EXPAND planner Discretion #1 TOP + FOOTER both + W0.1 D2 cadence iter 3 institutionalize 3rd-iter terminus stable signal + W0.2 DEFER #BA carry Phase 4.3 W0); v0.4.0 milestone 2/3 PROGRESS; NO ADR 0018 + NO triple tag per PATTERNS § 5 R-5 mitigation延袭; single baseline tag `v0.4.0-alpha.2-community` LOCAL CREATE (NO push)
+- **v0.4.0 table row verbose status** (archived from STATE.md L36 各里程碑进度 table row):
+  - 🚧 **PROGRESS** — Phase 4.1 + 4.2 ✅ SHIPPED 2026-05-18 (Phase 4.1 dogfooding benchmark R8.1 anchor; Phase 4.2 co-maintainer onboarding + stale-bot + GitHub Sponsors R8.2+R8.3+R8.5 anchors); Phase 4.3 pending (R8.1 audit log + R8.4 公开 ADR 全集 + v1.0-RC 收尾 + 🎯 v0.4.0 close)
+
+**Preserved in STATE.md** (post-trim 158L):
+- L1-15 项目核心引用 (constant)
+- L17-22 当前位置 block condensed (sole SSOT marker — `**Phase 4.2 SHIPPED**` literal anchor preserved for STATE_POSITION_RE freshness gate D-04 COLLAPSE; long inline narrative archived to this section)
+- 已完成 phase ship 历史 15-entry list (Phase 4.2 entry condensed to 1-line pointer; older 14 entries 1-line each unchanged)
+- 待办 P0 (Phase 4.3 execute-phase W0 启动) + P1 (DEFERRED #BA/#BC/#BD/#BE/#BF/#AH/#BU/#BV/#1/#5 carry-forward) + P2 (跨里程碑预留 v0.4+ 议题)
+- 关键提醒 (long-term constraints only)
+- 累积上下文 Decisions (2 long-term row preserved; A7 0001-0017 守恒 + 路由 B+C 混合 + 85% 验收; full table archive pointer in 完整决策表 paragraph)
+- 框架治理路由 (呼应 ~/.claude/CLAUDE.md constant)
+
+**Recovery instructions**: If a future maintainer needs full Phase 4.2 ship narrative detail, retrieve from git history:
+```bash
+git show 22990ab~1:.planning/STATE.md  # pre-Phase-4.3-W0-T0.1 STATE.md 156L baseline (Phase 4.3 plan-phase ship commit 22990ab; T0.1 trim commit is next)
+```
+Or read per-phase canonical sources directly: `.planning/phase-4.2/{4.2-CONTEXT,4.2-DISCUSSION-LOG,4.2-KICKOFF,task_plan,PLAN,PATTERNS,RESEARCH,PLAN-CHECK,SISTER-REVIEW-FINDINGS,DOGFOOD-T2.X,deferred-items}.md` (Phase 4.2 main artifacts; no ADR 0018 per PATTERNS § 5 R-5 mitigation).
+
+*Phase 4.3 W0.1 T0.1 D2 cadence iter 4 archive complete — 2026-05-19 ship-time T6.N cadence 4th-implementation REINFORCE. Sister Phase 4.2 W0.1 T0.1 was 3rd-implementation (Phase 4.0+4.1 archived 2026-05-18 terminus stable signal ≥3-iter); this 4th-iter REINFORCE verifies pattern stable beyond terminus per sister 5-recurrence terminus heuristic confirmed (pattern stable institutionalize standard). Next § ARCHIVED FROM STATE — Phase 4.3 reserved for Phase 4.4+ ship-time per D2 standing process cadence iter 5 (continued stability iterate).*
