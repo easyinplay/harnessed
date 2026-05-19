@@ -32,8 +32,13 @@ jobs:
       # D-02 LOCKED: npm publish (NOT pnpm publish) — npm CLI more reliable for OIDC provenance.
       # --provenance: sigstore attestation backed by OIDC id-token.
       # --access public: required for scoped or first-publish packages.
-      # OIDC tokenless via Trusted Publishers — configured at npmjs.com → package/harnessed/access
-      # (publisher: GitHub Actions, org: easyinplay, repo: harnessed, workflow: publish.yml).
-      # v1.0.0 used NPM_TOKEN fallback (Trusted Publishers UI not yet configured at first publish);
-      # v1.0.1+ uses OIDC tokenless — env block + NPM_TOKEN secret removed post-Trusted-Publishers config.
+      # Hybrid mode (mixed OIDC + NPM_TOKEN):
+      #  - Provenance attestation: signed via OIDC id-token (sigstore-backed)
+      #  - Auth: NODE_AUTH_TOKEN secret NPM_TOKEN (Automation type)
+      # Rationale: v1.0.1 OIDC-only path attempted but npm registry rejected (E404 — likely
+      # internal package-owner-mapping issue between NPM_TOKEN-published v1.0.0 and OIDC
+      # identity). Hybrid path verified working at v1.0.0 ship. OIDC-only re-evaluate
+      # v1.1.0+ release when npm OIDC backend caches stale package owner mapping resolves.
       - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
