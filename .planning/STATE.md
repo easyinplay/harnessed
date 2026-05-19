@@ -33,10 +33,10 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19 — R10.1 audit-log consumer + R10.2 state lock + ADR 0021 + 733 tests); ✅ **Phase 5.2 execute-phase W0 IN PROGRESS** — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 W0 COMPLETE** (4 tasks: D2 iter 6 + #BA FLIP + #BH + #BI); **Phase 5.2 W1 next** — R10.3 7 uninstallers + cli/uninstall.ts
 - **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 IN PROGRESS** (H1 BB path LOCKED; R10.3 uninstall + R10.4 path traversal; 3-day target window; 🎯 v1.0 GA post-v0.5.0 close)
-- **下一 phase**：**Phase 5.2 execute-phase W0 → W1 → W2** (PLAN.md 23 tasks LOCKED; W0 D2 iter 6 trim + #BH validateFlags + #BI runOrPreview; W1 R10.3 7 uninstallers + cli/uninstall.ts; W2 R10.4 path-guard + ADR 0022)
-- **状态**：✅ **Phase 5.1 SHIPPED 2026-05-19** (archived → RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1); **Phase 5.2 W0 executing**
+- **下一 phase**：**Phase 5.2 W1 execute** (T1.0 PREREQ CC CLI verify → T1.1 types.ts + T1.2 7 uninstallers + T1.3 tests TDD + T1.4 DOGFOOD-T1.X.md; W2 R10.4 path-guard + ADR 0022)
+- **状态**：✅ **Phase 5.2 W0 COMPLETE 2026-05-19** — STATE 164L→150L + SIZE_LIMIT FLIP 165→150 + #BH validateFlags.ts NEW + #BI runOrPreview.ts NEW; 733 tests PASS
 - **进度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 IN PROGRESS + Phase 5.3 pending）
 
 ### 各里程碑进度
