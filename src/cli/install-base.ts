@@ -15,6 +15,7 @@ import type { Command } from 'commander'
 import { runInstall } from '../installers/index.js'
 import type { InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
+import { getPackageRoot } from './lib/packagePath.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
@@ -61,7 +62,7 @@ export function registerInstallBase(program: Command): void {
       const installed: string[] = []
       const skipped: { name: string; reason: string }[] = []
       const failed: { name: string; reason: string }[] = []
-      for (const path of await listBaseManifests(process.cwd())) {
+      for (const path of await listBaseManifests(getPackageRoot())) {
         let yamlSrc: string
         try {
           yamlSrc = await readFile(path, 'utf8')
