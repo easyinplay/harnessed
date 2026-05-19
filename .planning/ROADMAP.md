@@ -239,7 +239,9 @@
 
 ---
 
-## v0.5.0 — v1.0-RC2 minor (audit log consumer + backlog absorb) — **3-day target window 2026-05-20 ~ 2026-05-22**
+## v0.5.0 — v1.0-RC2 minor (audit log consumer + backlog absorb) — 🎯 **SHIPPED & ARCHIVED 2026-05-22** (Phase 5.1+5.2+5.3 全 ship 3/3)
+
+> 🎯 **v0.5.0 MILESTONE 3/3 SHIPPED & ARCHIVED** (2026-05-22) — Phase 5.1 + Phase 5.2 ship 2026-05-19; Phase 5.3 ship 2026-05-22; 2 ADR (0021+0022) + 3 baseline tag + 1 milestone tag accumulate; 756 tests; archive `.planning/milestones/v0.5.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`. next: v1.0 GA Phase 6.x discuss-phase.
 
 > **Note (sister 4th-cycle review H1 BB path LOCKED 2026-05-19)**: v0.4.0 SHIPPED & ARCHIVED 已到达 v1.0-RC 边界；BB path = "v0.5 minor first then v1.0 GA" 让 audit log consumer + 3 项 carry-forward backlog absorb 后 v1.0 GA 更稳。Karpathy 务实 over 一味 tighten — v0.5 minor 不增大 scope，仅完成 v0.4.0 close 后留下的 known gaps + carry-forward DEFERRED items 兑现。6-month co-maintainer organic clock (D-04 HYBRID per ADR 0020) 并行不阻塞。
 
@@ -270,17 +272,52 @@
 - **Phase 5.2: R10.3 uninstall + R10.4 path traversal hardening** ✅ SHIPPED (2026-05-19)
   - 14th subcommand `harnessed uninstall` + 7 per-method uninstallers + path-guard.ts 5-vector OWASP A1 + ADR 0022 + ci.yml A7 0021→0022 + 756 tests (+23); adr-0022-accepted + v0.5.0-alpha.2-uninstall-security LOCAL
   - 验收: 7 install method 全反向 ✅ + 5+ traversal regex hardening verify ✅
-- **Phase 5.3: v0.5.0 milestone close + 🎯 v1.0 GA prep** (1 day target)
+- **Phase 5.3: v0.5.0 milestone close + 🎯 v1.0 GA prep** ✅ SHIPPED (2026-05-22)
   - 3-file archive triplet `.planning/milestones/v0.5.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`
-  - ADR 0021+ (R10.x lock; ARCHITECTURAL phase class per M-01 LOCK延袭)
-  - CHANGELOG v0.5.0 entry + triple tag (`adr-0021-accepted` + `v0.5.0-alpha.X-<scope>` + 🎯 `v0.5.0`)
+  - CHANGELOG v0.5.0 entry + dual tag (`v0.5.0-alpha.3-close` + 🎯 `v0.5.0`) — NO triple tag per D-02 LOCKED
   - 🎯 v1.0 GA target tag prep — v1.0 stable release window 2026-05-22 ~ 2026-05-23 post-v0.5.0 close
+  - tests 756 stable (NO src/ change; close ceremony docs only); D2 cadence iter 7 REINFORCE; STATE 20/20 100%
 
 ### 关键风险
 
 - ⚠️ **scope creep** — 6 month organic clock 触发 "做更多 backlog" 诱惑 → v0.5 freeze 4 项 (R10.1+R10.2+R10.3+R10.4) only; #BC benchmark expand evaluation defer v1.0 GA 后 only if signal arrives
 - ⚠️ **uninstall handler 设计复杂度** — 7 install method 反向不对称 (npm-cli reversible / git-clone-with-setup 难撤销 backup state); R10.3 接受 best-effort cleanup + 显式 limitations doc
 - ⚠️ **v1.0 GA premature signal** — 单 maintainer 6 month organic clock 未结束就 GA 风险 → v1.0 GA 仅 unblock npm publish stream + README "stable" badge; 6 month window结束后才进 maintenance-only mode
+
+---
+
+## v1.0 — Production-ready GA + npm publish + README "stable" badge — **target window 2026-05-22~23**
+
+> **Note (D-03 v1.0ChapterTiming LOCKED Phase 5.3)**: v1.0 GA = independent Phase 6.x window post-v0.5.0 close. Phase 5.3 仅 prep doc ship — NOT execute v1.0 GA (Phase 6.x scope). 6-month organic clock 未结束 → maintenance-only mode 触发 AFTER clock ends. npm publish defers to v1.0 GA Phase.
+
+### Goal
+
+production-ready harnessed; 6-month organic clock 结束后 maintenance-only mode. 9 GA criteria 明列 + Phase 6.x outline; scope freeze guard (sister R10.x freeze延袭 Phase 5.x; 6-month organic clock 触发 backlog 诱惑 REJECT).
+
+### 必含项 (9 GA criteria)
+
+1. **R8.1-R8.5 全 SHIPPED verified** ✅ (v0.4.0 MILESTONE 3/3 CLOSE 2026-05-19)
+2. **R10.1-R10.4 全 SHIPPED verified** ✅ (v0.5.0 MILESTONE 3/3 CLOSE 2026-05-22)
+3. **6-month organic clock 结束** (post-2026-05-22 co-maintainer recruit window; D-04 HYBRID 2-clock per ADR 0020)
+4. **tests 750+ PASS + CI 三平台全绿** (756 at v0.5.0 close; Phase 6.x must sustain ≥ 750+ baseline)
+5. **benchmark public accessible** (docs/benchmarks/v0.4.md 30-task already public; Phase 6.x may add v1.0 benchmark)
+6. **security audit complete** (path-guard OWASP A1 5-vector ✅ ADR 0022; Phase 6.x review scope)
+7. **docs production-ready** (README + PROJECT-SPEC + CONTRIBUTING + MAINTAINER-ONBOARDING all current)
+8. **npm publish stream unblock** (package.json `private` flag removal + npm registry setup; Phase 6.x scope)
+9. **README "stable" badge update** (replace pre-launch badge; Phase 6.x ship time)
+
+### Phase 6.1 outline (scope freeze guard)
+
+- **Goal**: v1.0-RC2 → 🎯 v1.0 GA tag + npm publish stream unblock + README "stable" badge update
+- **Window**: 2026-05-22~23 explicit (post-v0.5.0 close independent window)
+- **Scope freeze guard**: v1.0 GA freeze to 9 criteria only; NO new R-series requirements; 6-month organic clock 触发 backlog 诱惑 → REJECT (sister R10.x freeze延袭 Phase 5.x discipline)
+- **Defer Phase 6.x discuss-phase**: full task spec deferred (ROADMAP v1.0 chapter is outline + 9 criteria + window — NOT detailed task spec per D-03 sneak-block)
+
+### 关键风险
+
+- ⚠️ **scope creep** — 6-month organic clock 触发 backlog 诱惑 → v1.0 GA freeze to 9 criteria only; feature request 三问
+- ⚠️ **npm publish stream complexity** — package.json `private` removal + npm registry account setup + 2FA = external prereq chain; Phase 6.x discuss-phase resolves
+- ⚠️ **co-maintainer organic clock** — 6-month window ends ~2026-11; if no external co-maintainer recruited → maintenance-only mode ACCEPT (Avelino 36%/year bus factor documented risk)
 
 ---
 
