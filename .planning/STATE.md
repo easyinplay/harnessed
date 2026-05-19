@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.4.0
-milestone_name: ship 前必达）
-status: unknown
-last_updated: "2026-05-19T14:02:43.240Z"
+milestone: v1.0
+milestone_name: v1.0 GA (production-ready stable release)
+status: in_progress
+last_updated: "2026-05-22T00:00:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 7
+  total_phases: 21
+  completed_phases: 20
+  total_plans: 21
+  completed_plans: 20
 ---
 
 # harnessed STATE
@@ -24,8 +24,8 @@ progress:
 ## 项目核心引用
 
 - **核心价值**：AI coding harness 生态的「装配主义包管理器 + 完整三层栈方法论的可执行 engine」——routing engine v1 已实装（main-process-driven query→arbitrate→install missing→factory→spawn→ralph-loop→verbatim COMPLETE 闭合）；6+ 虚拟角色（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师）/ 双职责治理 / 4 心法 / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化
-- **当前关注**：v0.3.0 milestone 3/4 PROGRESS (Phase 3.1+3.2+3.3 SHIPPED 2026-05-16~17) — next: Phase 3.4 路由命中率 ≥ 85% 验收 + token budget 监控 + DEFERRED #AC (aliases.yaml dogfood entries) + #AD (install.ts package.json version read) + #AE (path traversal regex 若 surface real attack vector) 兑现 + v0.3.0 close 在望 (Phase 3.4 同日 ship + milestone archive)
-- **总工期**：~10-12 周（4 milestones × 3-5 phases = 共 **17 phases** v3 重排后）
+- **当前关注**：🎯 **v1.0 GA prep** Phase 6.1 — 5 milestones SHIPPED (v0.1.0+v0.2.0+v0.3.0+v0.4.0+v0.5.0); 20/20 phases 100% (10 days 2026-05-12~22); next: Phase 6.1 production release ship (8 D-decisions LOCKED — npm provenance + OIDC + package.json `private` removal + version 1.0.0 + CHANGELOG [1.0.0] MAJOR + ROADMAP v1.0 SHIPPED + README stable badge replace + 🎯 v1.0 GA tag 25-40L annotation per D-04); window 2026-05-22~23 per ROADMAP § v1.0; post-v1.0 maintenance-only mode trigger ~2026-11 forward visibility per D-04 HYBRID 2-clock (ADR 0020)
+- **总工期**：**10 days 2026-05-12~22 实际 ship 20/20 phases** (v0.1.0+v0.2.0+v0.3.0+v0.4.0+v0.5.0 5 milestones close + v1.0 GA Phase 6.1 in progress; 原 ROADMAP v3 估 ~10-12 周 17 phases 实证显著 over-deliver per BB path Phase 5.x minor + sister D-04 HYBRID 2-clock organic clock SEPARATE) 
 - **License**：Apache-2.0（开源 / GitHub Sponsors 兜底）
 - **仓库**：`D:\GitCode\harnessed\`（Node.js + TypeScript）
 
