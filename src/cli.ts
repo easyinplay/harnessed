@@ -2,6 +2,7 @@
 import { Command } from 'commander'
 import pkg from '../package.json' with { type: 'json' }
 import { registerAudit } from './cli/audit.js'
+import { registerAuditLog } from './cli/audit-log.js'
 import { registerBackupList } from './cli/backup-list.js'
 import { registerDoctor } from './cli/doctor.js'
 import { registerExecuteTask } from './cli/execute-task.js'
@@ -32,6 +33,7 @@ registerExecuteTask(program)
 registerManifestAdd(program)
 registerDoctor(program)
 registerAudit(program)
+registerAuditLog(program) // Phase 5.1 W1 T1.3 — 13th subcommand (R10.1 D-01 jq filter consumer)
 registerRollback(program)
 registerStatus(program)
 registerBackupList(program)
