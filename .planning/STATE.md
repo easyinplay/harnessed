@@ -68,7 +68,7 @@
    - Phase 4.1 W2 T2.7: `v0.4.0-alpha.1-benchmark` LOCAL
    - Phase 4.2 W2 T2.7: `v0.4.0-alpha.2-community` LOCAL
    - Phase 4.3 W2 T2.15: `adr-0018-accepted` + `v0.4.0-alpha.3-audit` + 🎯 `v0.4.0` LOCAL CREATE pending
-   - Phase 5.1 W0 T0.4: `adr-0019-accepted` + `adr-0020-accepted` RETROACTIVE LOCAL CREATE (T0.4 BLOCKER)
+   - Phase 5.1 W0 T0.4: `adr-0019-accepted` + `adr-0020-accepted` ✅ RETROACTIVE LOCAL CREATE at e8ecb02 (T0.4 BLOCKER RESOLVED; prerequisite ci.yml A7 iter Wave 2 T2.8)
 4. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-5.1 commits per CLAUDE.md commit safety)
 5. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5 button render): activate at github.com/sponsors/easyinplay/dashboard (Pending Approval → Active state) if not yet activated per DEFERRED #BE
 
