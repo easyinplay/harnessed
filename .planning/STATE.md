@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 W0 COMPLETE** (4 tasks: D2 iter 6 + #BA FLIP + #BH + #BI); **Phase 5.2 W1 next** — R10.3 7 uninstallers + cli/uninstall.ts
-- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 IN PROGRESS** (H1 BB path LOCKED; R10.3 uninstall + R10.4 path traversal; 3-day target window; 🎯 v1.0 GA post-v0.5.0 close)
-- **下一 phase**：**Phase 5.2 W1 execute** (T1.0 PREREQ CC CLI verify → T1.1 types.ts + T1.2 7 uninstallers + T1.3 tests TDD + T1.4 DOGFOOD-T1.X.md; W2 R10.4 path-guard + ADR 0022)
-- **状态**：✅ **Phase 5.2 W0 COMPLETE 2026-05-19** — STATE 164L→150L + SIZE_LIMIT FLIP 165→150 + #BH validateFlags.ts NEW + #BI runOrPreview.ts NEW; 733 tests PASS
-- **进度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 IN PROGRESS + Phase 5.3 pending）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 W0 COMPLETE**; ✅ **Phase 5.2 W1 COMPLETE** (5 tasks: BDL + cli/uninstall.ts + 7 uninstallers + TDD 14 cells + DOGFOOD); **Phase 5.2 W2 next** — R10.4 path-guard + ADR 0022 + ship cadence
+- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 IN PROGRESS** (H1 BB path LOCKED; R10.3 ✅ DELIVERED Wave 1; R10.4 path traversal W2 pending; 🎯 v1.0 GA post-v0.5.0 close)
+- **下一 phase**：**Phase 5.2 W2 execute** (T2.1 path-guard.ts + T2.2 tests TDD + T2.3-T2.4 D-04 sites + T2.5 ADR 0022 + T2.6-T2.14 ship cadence)
+- **状态**：✅ **Phase 5.2 W1 COMPLETE 2026-05-19** — 14th subcommand + 7 uninstallers + 747 tests PASS (733→747 +14 new cells); BDL T1.0 A1/A2 resolved; DOGFOOD 3/3 PASS
+- **進度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 W1 ✅ W2 pending + Phase 5.3 pending）
 
 ### 各里程碑进度
 
