@@ -20,6 +20,7 @@ import type { Command } from 'commander'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { runUninstall } from '../uninstallers/index.js'
+import { getPackageRoot } from './lib/packagePath.js'
 
 interface RawOpts {
   apply?: boolean
@@ -54,8 +55,8 @@ export function registerUninstall(program: Command): void {
       checkPathSafe(resolvedName)
 
       // Manifest lookup (tools/ first, skill-packs/ fallback).
-      const manifestPath = resolve(process.cwd(), `manifests/tools/${resolvedName}.yaml`)
-      const skillPackPath = resolve(process.cwd(), `manifests/skill-packs/${resolvedName}.yaml`)
+      const manifestPath = resolve(getPackageRoot(), `manifests/tools/${resolvedName}.yaml`)
+      const skillPackPath = resolve(getPackageRoot(), `manifests/skill-packs/${resolvedName}.yaml`)
       let yamlSrc: string
       let chosenPath = manifestPath
       try {
