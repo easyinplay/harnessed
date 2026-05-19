@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ✅ **Phase 5.3 SHIPPED** (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep; **Phase 6.x next** — v1.0 GA discuss-phase
-- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 3/3 COMPLETE** 🎯 SHIPPED & ARCHIVED 2026-05-22
-- **下一 phase**：**Phase 6.1 plan-phase 启动** (discuss-phase ✅ SHIPPED 2026-05-22 — 8 D-decisions LOCKED: D-01 sister D-04 HYBRID precedent organic clock OPENED (NOT close prereq) Phase 6.1 ship v1.0 GA today / D-02 npm provenance + GitHub Actions OIDC / D-03 replace pre-launch → npm version badge + Status update / D-04 comprehensive 25-40L tag annotation / D-05 package.json private removal + version 1.0.0 / D-06 CHANGELOG [1.0.0] MAJOR release line / D-07 ROADMAP v1.0 SHIPPED + v1.0+ maintenance outline / D-08 MAINTAINER-ONBOARDING forward signal; M-01 PRODUCTION RELEASE phase class LOCK; 候选启动 `/gsd-plan-phase 6.1`)
-- **状態**：✅ **Phase 5.3 SHIPPED 2026-05-22** — 3-file milestone archive triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter NEW + dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL CREATE; DOGFOOD PASS 3/3
-- **進度**：20 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100%（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + 🎯 **v0.5.0 100% CLOSE** all SHIPPED & ARCHIVED）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ✅ **Phase 5.3 SHIPPED** (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep; ⚙ **Phase 6.1 Wave 0 COMPLETE** 2026-05-22 — D2 iter 8 TERMINUS + #BA retire + npm rehearsal + baseline 756 PASS; Wave 1 ready (T1.0 PREREQ blocking)
+- **当前里程碑**：**v1.0 GA** 🎯 Phase 6.1 executing — Wave 0 COMPLETE; Wave 1 blocked on T1.0 PREREQ (npm account + Trusted Publisher UI config user manual)
+- **下一 phase**：**Phase 6.1 Wave 1** (T1.0 PREREQ blocking external user setup: npm account claim `harnessed` + GitHub Trusted Publisher UI config; then T1.1 publish.yml NEW + T1.2 package.json 3 changes + T1.3 ADR 0023 NEW)
+- **状態**：⚙ **Phase 6.1 Wave 0 COMPLETE** 2026-05-22 — STATE 139L + RETROSPECTIVE Phase 5.3 archived + #BA ACCEPT terminus + npm rehearsal 4/4 PASS + 756 tests baseline; Wave 1 ready (T1.0 PREREQ gate)
+- **進度**：20 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + 🎯 **v0.5.0 100% CLOSE** all SHIPPED & ARCHIVED; Phase 6.1 executing）
 
 ### 各里程碑进度
 
@@ -59,6 +59,7 @@ progress:
 <!-- Phase 5.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.2 (2026-05-22 Phase 5.3 W0.1 D2 cadence iter 7 per standing process — implicit-standing-process graduation REINFORCE; iter 7 post-iter-6 terminus signal Phase 5.2 W0; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 
 <!-- Phase 5.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.3 (2026-05-22 Phase 6.1 W0 D2 cadence iter 8 TERMINUS per standing process — 8-iter confirms implicit graduation; sister Phase 5.1 iter 5 + Phase 5.2 iter 6 + Phase 5.3 iter 7 pattern stable beyond 6-iter graduation) -->
+
 - **Phase 5.1-5.3 shipped** ✅ (2026-05-19 ~ 2026-05-22) — R10.1-R10.4 + ADR 0021+0022 + 756 tests + 🎯 v0.5.0 CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1-5.3)
 - **Phase 1.1-4.3 shipped** ✅ (2026-05-12 ~ 2026-05-19) — 17 phases v0.1.0+v0.2.0+v0.3.0+v0.4.0 milestones all CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-4.3)
 
