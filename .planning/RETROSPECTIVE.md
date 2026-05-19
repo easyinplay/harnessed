@@ -980,3 +980,51 @@ Or read per-phase canonical sources directly: `.planning/phase-4.2/{4.2-CONTEXT,
 ---
 
 *Phase 5.1 RETROSPECTIVE complete — 2026-05-19 ship; ~11 Wave 2 atomic commits / 733 tests / 1 NEW ADR (0021 PRIMARY) + 1 baseline tag iter (adr-0021-accepted LOCAL) + 1 single baseline tag (v0.5.0-alpha.1-audit-lock LOCAL) + 8 D-decisions activated 闭環 + M-01 ARCHITECTURAL phase class + W0 backlog #BF+#BG absorbed + ci.yml A7 iter retroactive 0018→0021 + v0.4.0→v0.5.0 milestone transition (Phase 5.1 1/3 STARTING). 下个 retro entry 在 Phase 5.2 ship 后续编.*
+
+---
+
+## § ARCHIVED FROM STATE — Phase 5.1 (Phase 5.2 W0 T0.1 D2 cadence iter 6 REINFORCE, 2026-05-19)
+
+> **Note (D2 cadence iter 6 — implicit-standing-process graduation)**: Single-phase archive per R-4 cadence consistency mitigation continuation. Iter 6 REINFORCE signals D2 cadence formally institutionalized as "implicit-standing-process" — no explicit iter count tracking needed Phase 5.3+. Pattern: Phase 3.4 W2 T2.2 1st-impl → Phase 4.1 W0.3 2nd-iter → Phase 4.2 W0.1 3rd-iter terminus → Phase 4.3 W0.1 4th-iter REINFORCE → Phase 5.1 W0 T0.1 5th-iter TERMINUS → Phase 5.2 W0 T0.1 6th-iter REINFORCE = formally institutionalized implicit-standing-process.
+>
+> **Archived 2026-05-19** by Phase 5.2 W0 T0.1 (D2 ship-time cadence 6th-implementation per standing process). STATE.md pre-trim = 164L; post-trim = 150L (-14L net delta; verbose 当前位置 D-decision list condense + 待办 P0 tag list condense + resolved #BA/#BB DEFERRED removal + verbose 里程碑 table row condense + 未決问题 merge + P2 condense). Post-trim 150L falls at ≤150L threshold — #BA FLIP PATH active T0.2 per decision tree (SIZE_LIMIT 165→150 flip with 0L headroom; executor to verify T0.2 FLIP vs DEFER conditional).
+>
+> **Cadence affirm** (D2 standing process 6th-iter — implicit-standing-process graduate): iter 6 REINFORCE beyond 5-iter TERMINUS stable signal confirms cadence pattern institutionalized independent of implementer. Phase 5.3+ executes D2 trim without explicit iter annotation. D2 standing process entry in STATE.md 关键提醒 §6 updated: "D2 cadence iter 5 TERMINUS Phase 5.1 W0" → implicit going forward.
+
+### Phase 5.1 SHIPPED ✅ (2026-05-19) — R10.1 audit-log consumer + R10.2 state.ts concurrent write lock + ADR 0021 + ci.yml A7 0018→0021 + 733 tests
+
+- **Decisions** (verbatim relocate from STATE.md 当前位置 + 待办 verbose entries):
+  - **D-01 jq subprocess + D-02 dual format + D-03 MVP 3 flags + D-04 5-pattern redact**: R10.1 audit-log consumer `src/cli/audit-log.ts` 162L — jq subprocess for filtering (D-01) + `--format text|json` dual output (D-02) + `--filter/--tail/--since` 3 MVP flags (D-03) + 5 REDACT_PATTERNS pre-compiled module-level (D-04 security boundary)
+  - **D-05 proper-lockfile + D-06 bounded retry + D-07 NO --force + D-08 dir-level lock**: R10.2 `src/checkpoint/state.ts` 116L lock wrap — battle-tested proper-lockfile dep (D-05) + bounded retry 3× 500ms backoff (D-06) + NO --force flag YAGNI (D-07) + dir-level `.harnessed/` lock scope (D-08 prevents write-write races concurrent sessions)
+  - **M-01 ARCHITECTURAL**: full ship cadence ADR 0021 174L + ci.yml A7 retroactive iter 0018→0021 + dual tag LOCAL CREATE (adr-0021-accepted + v0.5.0-alpha.1-audit-lock)
+  - **W0 sub-batch #BF + #BG ABSORB**: `src/installers/lib/runClaudeArgs.ts` NEW (3-CC-CLI-installer reuse) + `src/installers/lib/err.ts` NEW (7-installer error helper reuse); Phase 5.2 uninstallers benefit from both extracts
+- **W0 backlog absorb resolutions**:
+  - W0 T0.1 D2 cadence iter 5 TERMINUS — Phase 4.3 narrative archived to RETROSPECTIVE § ARCHIVED FROM STATE — Phase 4.3; pattern stable 5-iter
+  - W0 T0.2 #BA SIZE_LIMIT round 2 165 RETAIN — post-trim STATE 163L → 151-163L range → DEFER PATH (insufficient headroom for 165→150 flip without Phase 5.2 trim)
+  - W0 T0.3 #BF + #BG ABSORB COMPLETE — both extracts committed atomic; 733+ tests PASS no regression
+- **A7 守恒** retroactive fix: ci.yml A7 iter 0018→0021 (Phase 4.3 shipped ADR 0019+0020 without A7 iter; Phase 5.1 W2 T2.8 closed gap); ADR 0001-0021 main body 0 diff verified
+- **Tests**: 720→733 tests (+13: R10.1 audit-log 8 cells + R10.2 state-lock 5 cells) / 0 fail
+- **Dual tag LOCAL CREATE** (NO push): `adr-0021-accepted` + `v0.5.0-alpha.1-audit-lock`
+- **Ship history inline** (archived from STATE.md):
+  - **Phase 5.1 shipped** ✅ (2026-05-19) — R10.1 audit-log.ts 162L + R10.2 state.ts 116L lock wrap + proper-lockfile dep + ADR 0021 174L + ci.yml A7 0018→0021 retroactive + DOGFOOD 3/3 PASS + adr-0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL (NO push)
+
+**Preserved in STATE.md** (post-trim 150L):
+- 当前位置 block condensed (Phase 5.2 W0 IN PROGRESS marker + v0.5.0 2/3 milestone update)
+- 各里程碑进度 table condensed (v0.3.0 + v0.4.0 rows tightened; v0.5.0 row updated 2/3 PROGRESS)
+- 已完成 phase ship 历史 pointer + 5 condensed bullet entries
+- 进行中 condensed 1-line block
+- 待办 P0 condensed (4 items vs prior 5; tag list merged)
+- P1 DEFERRED list (#BA+#BB removed resolved; #AH updated DELIVERING Phase 5.2)
+- P2 跨里程碑 condensed (6→5 items)
+- 关键提醒 7 items (A7 守恒 updated 0001-0021 + Phase 5.2 reference)
+- 累积上下文 Decisions 2-row table + condensed archive pointer + 未决问题 3 items
+- Blockers 1-line updated Phase 5.2 W0 executing
+- 框架治理路由 (constant)
+
+**Recovery instructions**: If a future maintainer needs full Phase 5.1 ship narrative detail, retrieve from git history:
+```bash
+git show HEAD~1:.planning/STATE.md  # pre-Phase-5.2-W0-T0.1 STATE.md 164L baseline
+```
+Or read per-phase canonical sources: `.planning/phase-5.1/{5.1-CONTEXT,PLAN,RESEARCH,PATTERNS,PLAN-CHECK,DOGFOOD-T2.X,deferred-items}.md` + `src/cli/audit-log.ts` + `src/checkpoint/state.ts` + `src/installers/lib/{runClaudeArgs,err}.ts` + `docs/adr/0021-state-lock-and-audit-consumer.md` (Phase 5.1 main artifacts).
+
+*Phase 5.2 W0 T0.1 D2 cadence iter 6 archive complete — 2026-05-19 ship-time T6.N cadence 6th-implementation REINFORCE. Sister Phase 5.1 W0 T0.1 was 5th-implementation (Phase 4.3 archived 2026-05-19 TERMINUS signal); this 6th-iter REINFORCE confirms D2 cadence formally institutionalized as implicit-standing-process (no explicit iter count annotation needed Phase 5.3+). Next § ARCHIVED FROM STATE — Phase 5.2 will be created by Phase 5.3 ship-time per D2 implicit-standing-process (continued stability; no iter counter needed).*

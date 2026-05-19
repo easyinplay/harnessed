@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19 — R10.1 audit-log.ts consumer + R10.2 state.ts concurrent write lock + ADR 0021 + ci.yml A7 iter 0018→0021 + 733 tests); 前置 ✅ Phase 4.3 + 4.2 + 4.1 + 🎯 v0.4.0 MILESTONE CLOSE + Phase 3.1-3.4 + 🎯 v0.3.0 CLOSE + v0.1/v0.2 — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 + § Phase 4.2 + § Phase 4.0+4.1 + § Phase 3.3+3.4 + § Phase 3.1+3.2 + § Phase 1.X-3.2
-- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 1/3 STARTING** (H1 BB path LOCKED; R10.3 uninstall + R10.4 path traversal hardening remain; 3-day target window; 🎯 v1.0 GA post-v0.5.0 close)
-- **下一 phase**：**Phase 5.2 plan-phase 启动** (discuss-phase ✅ SHIPPED 2026-05-19 — 8 D-decisions LOCKED: D-01 per-method 7 src/uninstallers/*.ts symmetric / D-02 ephemeral no-op + warn / D-03 5 vector minimal MVP CSO / D-04 resolveAlias + manifest path 2 点 minimal / D-05 --dry-run default ON / D-06 --yes bypass interactive / D-07 NO --keep-backup / D-08 path traversal error NOT leak path; M-01 ARCHITECTURAL phase class LOCK; 候选启动 `/gsd-plan-phase 5.2`)
-- **状态**：✅ **Phase 5.1 SHIPPED 2026-05-19** — R10.1 audit-log.ts 162L + R10.2 state.ts 116L lock wrap + proper-lockfile dep + ADR 0021 174L + ci.yml A7 0018→0021 + DOGFOOD 3/3 PASS + adr-0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL (NO push)
-- **进度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 1/3 STARTING — Phase 5.1 ✅ + Phase 5.2+5.3 pending sister H1 BB path）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19 — R10.1 audit-log consumer + R10.2 state lock + ADR 0021 + 733 tests); ✅ **Phase 5.2 execute-phase W0 IN PROGRESS** — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE
+- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 IN PROGRESS** (H1 BB path LOCKED; R10.3 uninstall + R10.4 path traversal; 3-day target window; 🎯 v1.0 GA post-v0.5.0 close)
+- **下一 phase**：**Phase 5.2 execute-phase W0 → W1 → W2** (PLAN.md 23 tasks LOCKED; W0 D2 iter 6 trim + #BH validateFlags + #BI runOrPreview; W1 R10.3 7 uninstallers + cli/uninstall.ts; W2 R10.4 path-guard + ADR 0022)
+- **状态**：✅ **Phase 5.1 SHIPPED 2026-05-19** (archived → RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1); **Phase 5.2 W0 executing**
+- **进度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 IN PROGRESS + Phase 5.3 pending）
 
 ### 各里程碑进度
 
@@ -45,18 +45,17 @@ progress:
 |--------|-----------|------|---------|
 | v0.1.0 manifest 引擎 + research | 6/6 | ✅ Phase 1.1 + 1.2 + 1.2.5 + 1.3 + 1.4 + 1.5 done — **v0.1.0 里程碑全部完成** | 2026-05-12 ~ 2026-05-14 |
 | v0.2.0 Sub-task Loop + Extension Installers | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 2.1 + 2.2 + 2.3 + 2.4 ship (doctor MIN 5 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel + Wave 0 backlog 5 项); 13 ADR + 13 baseline tag accumulate; archive + audit ship | 2026-05-15 ~ 2026-05-16 |
-| v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1 + 3.2 + 3.3 + 3.4 全 ship (P3.1: checkpoint 引擎 + harnessed resume + compact + T4.4 closure activation 闭环 + ADR 0014; P3.2: gstack PROBE + JINJA 插值 + plan-feature 5-phase WIRED + governance.json PUSH + ADR 0015 + T4.4 closure infra 二代消费者闭环; P3.3: aliases.yaml RICH 5-field redirect (D-01) + DOCTOR-ONLY-WARN install 安静 + doctor 7th check 人读 audit (D-02) + known-good YAML manifest lazy lock (D-03) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04) + W0 backlog 3 项一次根治 + ADR 0016 + manifest-domain colocation 3rd consumer 闭环; **P3.4: routing 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom per-tier Sonnet/Haiku/Opus 100/100/100 (D-01 + D-02) + check-token-budget.ts 48L PRIMARY helper 4th 家族成员 + doctor 8th check token budget DOCTOR-ONLY-WARN (D-03 + D-04) + W0 backlog 5 项一次根治 W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1-D4 + ADR 0017 9 章节 errata**); tests 543→701+ (+158); 17 ADR + 17 baseline tag; 14 milestone tag (含 🎯 v0.3.0); schemaVersion 7→13 surface; archive `.planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet (MILESTONE-AUDIT inaugurate milestones/ subdir upgrade); next: v0.4.0 discuss-phase 启动 | 2026-05-16 ~ 2026-05-17 |
-| v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1 + 4.2 + 4.3 全 ship (P4.1 dogfooding benchmark R8.1 anchor; P4.2 community infra R8.2+R8.3+R8.5; P4.3 R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→720+ (+11); 20 ADR + 18 baseline tag + 17 milestone tag accumulate; archive `.planning/milestones/v0.4.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet sister v0.3.0 close cadence延袭 | 2026-05-18 ~ 2026-05-19 |
-| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 1/3 | 🚧 **IN PROGRESS** — Phase 5.1 ✅ SHIPPED (audit log consumer + state lock); Phase 5.2 (uninstall + path traversal) + Phase 5.3 (v0.5.0 close + 🎯 v1.0 GA target prep) pending; sister H1 BB path LOCKED; 3-day target window | 2026-05-19 ~ - |
+| v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1-3.4 全 ship; tests 543→701+ (+158); 17 ADR + 14 milestone tag; archive `.planning/milestones/v0.3.0-*.md` triplet | 2026-05-16 ~ 2026-05-17 |
+| v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1+4.2+4.3 全 ship (dogfooding benchmark + community infra + R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→733 (+24); 21 ADR; archive `.planning/milestones/v0.4.0-*.md` triplet | 2026-05-18 ~ 2026-05-19 |
+| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 2/3 | 🚧 **IN PROGRESS** — Phase 5.1 ✅ SHIPPED + Phase 5.2 executing (uninstall + path traversal); Phase 5.3 (🎯 v0.5.0 close) pending | 2026-05-19 ~ - |
 
-### 已完成 phase ship 历史 (dev SoT — README L46-48 user-facing summary only)
-
-> README.md dev status section extracted 2026-05-18 per user feedback "README is for users, dev status doesn't belong"; STATE.md this section is dev SoT; CI gates `README counter integrity` + `README completeness check` dropped (in line with README user-facing repositioning). User view: README "Status" section 3-line summary + link to .planning/ROADMAP.md for full phase history.
+### 已完成 phase ship 历史 (dev SoT — README user-facing summary only)
 
 <!-- Phase 3.3 + 3.4 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4 (2026-05-18 Phase 4.1 W0.3 D2 cadence iter 2 per standing process — M2 backlog discharge institutionalize verify 2nd-iter beyond 1st-implementation) -->
 <!-- Phase 4.0 + 4.1 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.0+4.1 (2026-05-18 Phase 4.2 W0.1 D2 cadence iter 3 per standing process — M2 backlog discharge institutionalize verify 3rd-iter terminus stable ≥3-iter pattern signal beyond 2nd-iter Phase 4.1 W0.3; Phase 4.0 was numeric placeholder NOT real shipped phase — Phase 4.1 single-phase archive per R-4 cadence consistency mitigation) -->
 <!-- Phase 4.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.2 (2026-05-19 Phase 4.3 W0.1 D2 cadence iter 4 per standing process — M2 backlog discharge institutionalize REINFORCE 4th-iter stable signal beyond ≥3-iter pattern; sister 5-recurrence terminus heuristic confirmed pattern stable Phase 4.2 W0.1 3rd-iter → Phase 4.3 W0.1 4th-iter; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 <!-- Phase 4.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 (2026-05-19 Phase 5.1 W0 T0.1 D2 cadence iter 5 TERMINUS per standing process — 5-recurrence terminus heuristic confirmed pattern stable; single-phase archive per R-4 cadence consistency mitigation continuation; iter 5 = REINFORCE post-iter-4 stable terminus signal) -->
+<!-- Phase 5.1 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1 (2026-05-19 Phase 5.2 W0 T0.1 D2 cadence iter 6 REINFORCE per standing process — implicit-standing-process graduation signal; 6th-iter confirms D2 cadence formally institutionalized; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 
 - **Phase 5.1 shipped** ✅ (2026-05-19) — R10.1 audit-log consumer + R10.2 state.ts lock + ADR 0021 + ci.yml A7 0018→0021 + 733 tests
 - **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log + R8.4 ADR backfill + 🎯 v0.4.0 close (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3)
@@ -68,46 +67,36 @@ progress:
 
 ## 进行中（In Progress）
 
-[当前: ⚙ v0.5.0 v1.0-RC2 minor IN PROGRESS (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 ✅ **SHIPPED** 2026-05-19 — Wave 0+1+2 COMPLETE 24 tasks; Phase 5.2 **next** — R10.3 uninstall + R10.4 path traversal hardening]
+[当前: ⚙ v0.5.0 Phase 5.2 W0 executing — R10.3 uninstall + R10.4 path traversal; Phase 5.1 ✅ SHIPPED 2026-05-19]
 
 ---
 
 ## 待办（按优先级）— v0.5.0 v1.0-RC2 minor STARTING window
 
-### P0 — Phase 5.2 next
+### P0 — Phase 5.2 executing
 
-1. ✅ **Phase 5.1 SHIPPED** (2026-05-19) — Wave 0+1+2 COMPLETE 24 tasks; 733 tests; R10.1+R10.2 DELIVERED
-2. ⏳ **Phase 5.2** next — R10.3 uninstall + R10.4 path traversal hardening
-3. ⏳ **User push approval** for tags LOCAL created (累积 8+ tags pending push per CLAUDE.md commit safety NEVER push without user explicit request):
-   - Phase 4.1 W2 T2.7: `v0.4.0-alpha.1-benchmark` LOCAL
-   - Phase 4.2 W2 T2.7: `v0.4.0-alpha.2-community` LOCAL
-   - Phase 4.3 W2 T2.15: `adr-0018-accepted` + `v0.4.0-alpha.3-audit` + 🎯 `v0.4.0` LOCAL CREATE pending
-   - Phase 5.1 W0 T0.4: `adr-0019-accepted` + `adr-0020-accepted` ✅ RETROACTIVE LOCAL CREATE at e8ecb02
-   - Phase 5.1 W2 T2.9: `adr-0021-accepted` LOCAL CREATE pending
-   - Phase 5.1 W2 T2.14: `v0.5.0-alpha.1-audit-lock` LOCAL CREATE pending
-4. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-5.1 commits per CLAUDE.md commit safety)
-5. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5 button render): activate at github.com/sponsors/easyinplay/dashboard (Pending Approval → Active state) if not yet activated per DEFERRED #BE
+1. ✅ **Phase 5.1 SHIPPED** (2026-05-19) — R10.1+R10.2 DELIVERED; ⏳ **Phase 5.2** — R10.3 uninstall + R10.4 path traversal; ⏳ **Phase 5.3** — v0.5.0 close + 🎯 v1.0 GA prep
+2. ⏳ **User push approval** for tags LOCAL (累积 8+ pending: v0.4.0-alpha.1/2/3 + adr-0018/0019/0020/0021-accepted + 🎯 v0.4.0 + v0.5.0-alpha.1-audit-lock; Phase 5.2 will add adr-0022-accepted + v0.5.0-alpha.2-uninstall-security LOCAL)
+3. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-5.2 commits per CLAUDE.md commit safety)
+4. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5): activate at github.com/sponsors/easyinplay/dashboard if not yet activated per DEFERRED #BE
 
 ### P1 — DEFERRED carry-forward (post-v0.4.0 close)
 
-5. **DEFERRED #BA** ✅ RESOLVED Phase 4.3 W0.2 (SIZE_LIMIT 200→175 round 2 RELAX FLIP — sister Phase 4.1 W0.5 + Phase 4.2 W0.2 2-iter defer chain resolved per CONTEXT #BA post-2nd-cycle sister H2 AA decision)
-6. **DEFERRED #BB** ✅ pre-RESOLVED Phase 4.2 discuss-phase (HYBRID 2-clock LOCKED D-04 — T3 1 phase/day cadence assessment resolved via 2-clock disambiguation: internal infra clock vs external co-maintainer organic clock SEPARATE)
-7. **DEFERRED #BC** v0.5+ benchmark expand evaluation — IF Phase 4.1 dogfood reveals miss case NOT covered by current 30 SAMPLES.md → re-evaluate D-01 REJECT EXPAND new mining; currently 30/30 100% routing PASS no signal
+5. **DEFERRED #BC** v0.5+ benchmark expand evaluation — IF Phase 4.1 dogfood reveals miss case NOT covered by current 30 SAMPLES.md → re-evaluate D-01 REJECT EXPAND new mining; currently 30/30 100% routing PASS no signal
 8. **DEFERRED #BD** regex 2-pass validation pattern lock — plan-checker iter 2 residual semantic synonym `L1-N`/`=N+1L` arithmetic missed by iter 1 literal regex; future plan-checker iterations use 2-pass (literal + arithmetic-aware) regex validation
 9. **DEFERRED #BE** Sponsors account activation external prereq (Phase 4.2 own carry) — IF user NOT activated by Phase 4.2 ship time: FUNDING.yml + badge ship forward-compatible per RESEARCH § 17.2 U1; user manual activation at github.com/sponsors/easyinplay/dashboard required for button render
 10. **DEFERRED #BF** CODEOWNERS .github/** defer SR-6 preempt (Phase 4.2 own carry) — defer v0.4.3+ if real attack surface arrives
-11. **DEFERRED #AH** W0.4 path traversal regex hardening — Phase 4.3+ W0 (if external user input arrives — currently sole consumer is project maintainer; real attack surface near-zero per spike outcome)
+11. **DEFERRED #AH** ✅ DELIVERING Phase 5.2 R10.4 path traversal regex hardening (5-vector OWASP A1; src/manifest/lib/path-guard.ts NEW)
 12. **EE-4 BLOCKER auto-spawn rerun** — v0.4.0 后 evaluate (Phase 2.4 D-02 down-scope carry-forward unchanged)
-13. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand (fresh-session fallback per B-02 still acceptable)
+13. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand
 
-### P2 — 跨里程碑预留 (v0.4+ 议题)
+### P2 — 跨里程碑预留 (v0.5+ 议题)
 
-8. `mutually-exclusive skill groups` 元模型 (v0.2 设计 pack schema 时定 — 推 v0.4+)
-9. gstack-2 / GSD-2 v2 重写迁移策略 (v1.0+ 议题，schema 留迁移接口)
-10. sigstore / cosign 签名集成 (v0.4+ 议题，v0.1-0.3 先用 commit hash)
-11. `requires_secret` 字段 (API key 注入声明) — v0.2 schema 增强候选 (F14 子决策；推 v0.4+)
-12. `command_prefix_strategy` 字段 (gstack 前缀可配置) — v0.2 schema 增强候选 (F14 子决策；推 v0.4+)
-13. `--force` flag for install idempotent_check 重装语义 (phase 2.1+；当前 already-installed = exit 0 + skip；推 v0.4+)
+8. `mutually-exclusive skill groups` 元模型 — 推 v0.5+
+9. gstack-2 / GSD-2 v2 重写迁移 — v1.0+ 议题
+10. sigstore / cosign 签名集成 — v0.5+ 议题
+11. `requires_secret` + `command_prefix_strategy` schema 增强候选 — 推 v0.5+
+12. `--force` flag for install idempotent_check — 推 v0.5+
 
 ---
 
@@ -119,7 +108,7 @@ progress:
 4. **Karpathy ≤200L hard limit**——B-06 + B-26 + Phase 3.4 D-04 explicit "no B-03 5% tolerance"; doctor.ts 195L borderline (Phase 3.4 W1 Option A inline shrink locked)
 5. **biome lint preempt before commit**（project memory `feedback_biome-preempt.md` 3 CI-red recurrences Phase 2.1.1 / 2.2 / 2.3）: 任何 TS/JS commit 前必跑 `pnpm exec biome check --write`
 6. **STATE.md archive cadence institutionalize** (D2 cadence iter 5 TERMINUS Phase 5.1 W0): 每 phase ship 时 T0.1 trim prev-phase narrative → RETROSPECTIVE.md § ARCHIVED FROM STATE; D3 gate `check-state-archive-stale.mjs` SIZE_LIMIT=150 ENFORCE
-7. **A7 守恒**——ADR 0001-0020 main body 永久 0 diff; ci.yml A7 step iterate Phase N ship 时 add new ADR reference (Phase 5.1 W2 T2.8 retroactive iter 0018→0021)
+7. **A7 守恒**——ADR 0001-0021 main body 永久 0 diff; ci.yml A7 step iterate Phase N ship 时 add new ADR reference (Phase 5.2 W2 T2.7 iter 0021→0022)
 
 ---
 
@@ -132,20 +121,17 @@ progress:
 | 路由 B+C 混合 + 85% 验收 | SPEC § 5.1 + R03 § 2.4 | Sonnet 100% / Haiku 84% 实证；Phase 3.4 ✅ 30/30 = 100% 远超 ≥85% bar 15% headroom |
 | ADR 0001-0017 main body 永久守恒（A7） | F26 + ci.yml iterate 17 tag | 任一字符 diff = CI fail; Phase 3.4 W2 T2.7 iter 1-0016 → 1-0017 |
 
-> 完整决策表 (Phase 1.1-4.2) 已 archive → RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-3.2 + Phase 3.1+3.2 + Phase 3.3+3.4 + Phase 4.0+4.1 + Phase 4.2 (Phase 4.3 W0.1 D2 cadence iter 4 REINFORCE 2026-05-19); Phase 4.3 narrative reserved for Phase 4.4+ archive per D2 standing process
+> 完整决策表 archive → RETROSPECTIVE.md § ARCHIVED FROM STATE (Phase 1.X-3.2 through Phase 5.1)
 
-### 未决问题（v0.4+ 议题）
+### 未决问题（v0.5+ 议题）
 
-1. `planning-with-files` 与 `superpowers/writing-plans` 互斥语义（v0.1 dogfooding 观察 — defer v0.4+）
-2. gstack-2 / GSD-2 v2 重写迁移（v1.0+ 议题）
-3. sigstore / cosign 签名（v0.4+ 议题）
-4. `mutually-exclusive skill groups` 元模型（v0.2 设计 pack schema 时定 — 推 v0.4+）
-5. token budget 监控 UX（v0.3 设计 — Phase 3.4 W1 落地 doctor 8th check）
-6. "用户 10 秒手动覆盖路由错误" UX 量化（v0.4 benchmark 时定）
+1. `planning-with-files` 与 `superpowers/writing-plans` 互斥语义 — defer v0.5+
+2. gstack-2 / GSD-2 v2 重写迁移 — v1.0+ 议题
+3. "用户 10 秒手动覆盖路由错误" UX 量化 — v0.5 benchmark 时定
 
 ### Blockers
 
-[当前无 — Phase 5.1 ✅ SHIPPED 2026-05-19; tags adr-0019/0020/0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL CREATE pending user push per CLAUDE.md commit safety]
+[当前无 — Phase 5.2 W0 executing; tags adr-0019/0020/0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL CREATE pending user push per CLAUDE.md commit safety]
 
 ---
 
