@@ -1,3 +1,4 @@
+// v1.0.3 T1.2 — cell 6: parallel install smoke (Promise.allSettled concurrent; all 3 manifests fire).
 // v1.0.2 T1.5 — TDD: setup CLI subcommand tests (UX redesign; one-shot onboarding).
 // Covers: smoke, --dry-run preview, default immediate install (Step A + Step B chain),
 //         plan-feature SKILL.md detected, install-base chain integration smoke.
@@ -207,5 +208,32 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(stdout).toContain('1 manifest(s) installed / 1 skipped')
     expect(stdout).toContain('[B] skipped    npx-skill')
     expect(stdout).toContain('[B] installed  ctx7')
+  })
+
+  // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled
+  it('cell 6 — parallel smoke: 3 manifests all installed concurrently, [parallel Xs] in summary', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      const ps = String(p)
+      if (ps.includes('workflows')) return ['execute-task'] as never
+      if (ps.includes('tools')) return ['a.yaml', 'b.yaml', 'c.yaml'] as never
+      return [] as never
+    })
+    statMock.mockImplementation(makeStatMock(['execute-task']))
+    cpMock.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    validateManifestFileMock
+      .mockReturnValueOnce(makeValidManifest('tool-a') as never)
+      .mockReturnValueOnce(makeValidManifest('tool-b') as never)
+      .mockReturnValueOnce(makeValidManifest('tool-c') as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+
+    const { code, stdout } = await runCli(['setup'])
+    expect(code).toBe(0)
+    // All 3 manifests installed via parallel Promise.allSettled
+    expect(runInstallMock).toHaveBeenCalledTimes(3)
+    expect(stdout).toContain('Step B complete: 3 manifest(s) installed / 0 skipped / 0 failed')
+    // Parallel timing tag present in summary line
+    expect(stdout).toContain('[parallel ')
+    expect(stdout).toContain('setup complete: 1 workflow skill(s) + 3 base manifest(s)')
   })
 })
