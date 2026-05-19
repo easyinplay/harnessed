@@ -35,7 +35,7 @@ progress:
 
 - **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ✅ **Phase 5.3 SHIPPED** (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep; **Phase 6.x next** — v1.0 GA discuss-phase
 - **当前里程碑**：**v0.5.0 v1.0-RC2 minor 3/3 COMPLETE** 🎯 SHIPPED & ARCHIVED 2026-05-22
-- **下一 phase**：**Phase 6.x discuss-phase 启动** (v1.0 GA; window 2026-05-22~23 per ROADMAP § v1.0)
+- **下一 phase**：**Phase 6.1 plan-phase 启动** (discuss-phase ✅ SHIPPED 2026-05-22 — 8 D-decisions LOCKED: D-01 sister D-04 HYBRID precedent organic clock OPENED (NOT close prereq) Phase 6.1 ship v1.0 GA today / D-02 npm provenance + GitHub Actions OIDC / D-03 replace pre-launch → npm version badge + Status update / D-04 comprehensive 25-40L tag annotation / D-05 package.json private removal + version 1.0.0 / D-06 CHANGELOG [1.0.0] MAJOR release line / D-07 ROADMAP v1.0 SHIPPED + v1.0+ maintenance outline / D-08 MAINTAINER-ONBOARDING forward signal; M-01 PRODUCTION RELEASE phase class LOCK; 候选启动 `/gsd-plan-phase 6.1`)
 - **状態**：✅ **Phase 5.3 SHIPPED 2026-05-22** — 3-file milestone archive triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter NEW + dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL CREATE; DOGFOOD PASS 3/3
 - **進度**：20 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100%（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + 🎯 **v0.5.0 100% CLOSE** all SHIPPED & ARCHIVED）
 
