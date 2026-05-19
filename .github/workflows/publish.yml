@@ -29,8 +29,10 @@ jobs:
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm build
-      # D-02 LOCKED: npm publish via OIDC Trusted Publishers (tokenless;sigstore provenance).
-      # Publishing access changed to "Require 2FA OR granular access token with bypass 2fa
-      # enabled" to allow Trusted Publishers OIDC path. NPM_TOKEN fallback removed since
-      # Automation token type rejected by current publishing access policy (E403).
+      # D-02 LOCKED: npm publish via NPM_TOKEN auth (OIDC Trusted Publishers E404 with new
+      # package owner mapping issue;NPM_TOKEN granular/automation token path verified
+      # working with publishing access "Require 2FA OR granular with bypass 2fa enabled").
+      # Provenance attestation still signed via OIDC id-token (id-token: write permission).
       - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
