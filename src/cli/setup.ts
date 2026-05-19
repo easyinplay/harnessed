@@ -1,3 +1,4 @@
+// v1.0.3 T1.1 — Step B serial → parallel Promise.allSettled (~75% speedup; 16 manifests 30-50s → 5-10s).
 // v1.0.2 T1.3+T1.4 — cli subcommand `setup` full one-shot onboarding (UX redesign post-v1.0.1).
 //
 // IMPL NOTE (immediate-install default + --dry-run opt-in, non-expert UX):
@@ -113,7 +114,7 @@ export function registerSetup(program: Command): void {
         `\nStep A complete: ${skillsInstalled} workflow skill(s) installed to ${skillsBase}`,
       )
 
-      // ── Step B: install-base auto-glob chain ────────────────────────────────
+      // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
       const opts: InstallOpts = {
         apply: true,
         dryRun: false,
@@ -122,37 +123,64 @@ export function registerSetup(program: Command): void {
         fullDiff: false,
         color: 'auto',
       }
+      const manifestPaths = await listBaseManifests(pkgRoot)
+      const stepBStart = Date.now()
+
+      const settled = await Promise.allSettled(
+        manifestPaths.map(async (path) => {
+          let yamlSrc: string
+          try {
+            yamlSrc = await readFile(path, 'utf8')
+          } catch (e) {
+            return {
+              status: 'failed' as const,
+              name: path,
+              reason: `read: ${(e as Error).message}`,
+            }
+          }
+          const v = validateManifestFile(yamlSrc, path)
+          if (!v.ok) {
+            return {
+              status: 'failed' as const,
+              name: path,
+              reason: `validate: ${v.errors[0]?.message ?? 'unknown'}`,
+            }
+          }
+          const name = v.manifest.metadata.name
+          const method = v.manifest.spec.install.method
+          if (PHASE_21.has(method)) {
+            return { status: 'skipped' as const, name }
+          }
+          const r = await runInstall(v.manifest, opts)
+          if ('aborted' in r) return { status: 'skipped' as const, name }
+          if (r.ok) return { status: 'installed' as const, name }
+          return { status: 'failed' as const, name, reason: r.error.message }
+        }),
+      )
+
       const baseInstalled: string[] = []
       const baseSkipped: string[] = []
       const baseFailed: string[] = []
-
-      for (const path of await listBaseManifests(pkgRoot)) {
-        let yamlSrc: string
-        try {
-          yamlSrc = await readFile(path, 'utf8')
-        } catch (e) {
-          baseFailed.push(`${path}: read: ${(e as Error).message}`)
-          continue
-        }
-        const v = validateManifestFile(yamlSrc, path)
-        if (!v.ok) {
-          baseFailed.push(`${path}: validate: ${v.errors[0]?.message ?? 'unknown'}`)
-          continue
-        }
-        const name = v.manifest.metadata.name
-        const method = v.manifest.spec.install.method
-        if (PHASE_21.has(method)) {
-          baseSkipped.push(name)
-          continue
-        }
-        const r = await runInstall(v.manifest, opts)
-        if ('aborted' in r) baseSkipped.push(name)
-        else if (r.ok) baseInstalled.push(name)
-        else baseFailed.push(`${name}: ${r.error.message}`)
+      for (const s of settled) {
+        const v =
+          s.status === 'fulfilled'
+            ? s.value
+            : {
+                status: 'failed' as const,
+                name: '?',
+                reason: String((s as PromiseRejectedResult).reason),
+              }
+        if (v.status === 'installed') baseInstalled.push(v.name)
+        else if (v.status === 'skipped') baseSkipped.push(v.name)
+        else
+          baseFailed.push(
+            `${v.name}: ${(v as { status: 'failed'; name: string; reason: string }).reason}`,
+          )
       }
 
+      const stepBMs = ((Date.now() - stepBStart) / 1000).toFixed(1)
       console.log(
-        `Step B complete: ${baseInstalled.length} manifest(s) installed / ${baseSkipped.length} skipped / ${baseFailed.length} failed`,
+        `Step B complete: ${baseInstalled.length} manifest(s) installed / ${baseSkipped.length} skipped / ${baseFailed.length} failed [parallel ${stepBMs}s]`,
       )
       for (const n of baseInstalled) console.log(`  [B] installed  ${n}`)
       for (const n of baseSkipped) console.log(`  [B] skipped    ${n}`)
