@@ -1,10 +1,10 @@
 {
   "name": "harnessed",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "AI coding harness package manager + composition orchestrator",
   "type": "module",
   "license": "Apache-2.0",
-  "private": true,
+  "author": "easyinplay",
   "repository": {
     "type": "git",
     "url": "https://github.com/easyinplay/harnessed.git"
