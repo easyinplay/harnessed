@@ -1,22 +1,37 @@
-// v1.0.1 T1.5 — TDD: setup CLI subcommand tests.
-// Covers: smoke (command registered), dry-run default, --apply executes cp, SKILL.md skip.
-// vi.mock fs/promises to avoid touching real filesystem.
+// v1.0.2 T1.5 — TDD: setup CLI subcommand tests (UX redesign; one-shot onboarding).
+// Covers: smoke, --dry-run preview, default immediate install (Step A + Step B chain),
+//         plan-feature SKILL.md detected, install-base chain integration smoke.
+// vi.mock fs/promises + installers + validate to avoid real filesystem / network calls.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:fs/promises', () => ({
   readdir: vi.fn(),
+  readFile: vi.fn(),
   stat: vi.fn(),
   cp: vi.fn(),
 }))
 
-import { cp, readdir, stat } from 'node:fs/promises'
+vi.mock('../../src/installers/index.js', () => ({
+  runInstall: vi.fn(),
+}))
+
+vi.mock('../../src/manifest/validate.js', () => ({
+  validateManifestFile: vi.fn(),
+}))
+
+import { cp, readdir, readFile, stat } from 'node:fs/promises'
 import { Command } from 'commander'
 import { registerSetup } from '../../src/cli/setup.js'
+import { runInstall } from '../../src/installers/index.js'
+import { validateManifestFile } from '../../src/manifest/validate.js'
 
 const readdirMock = vi.mocked(readdir)
 const statMock = vi.mocked(stat)
 const cpMock = vi.mocked(cp)
+const readFileMock = vi.mocked(readFile)
+const runInstallMock = vi.mocked(runInstall)
+const validateManifestFileMock = vi.mocked(validateManifestFile)
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -47,90 +62,150 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
   }
 }
 
-describe('cli/setup — v1.0.1 T1.5 (one-time onboarding copy workflows/*/SKILL.md → ~/.claude/skills/)', () => {
+/** Stat mock that treats any path as dir, and SKILL.md as a file. */
+function makeStatMock(withSkillMd: string[]) {
+  return async (p: unknown) => {
+    const path = String(p)
+    if (path.includes('SKILL.md')) {
+      const workflow = withSkillMd.find((w) => path.includes(w))
+      if (workflow) return { isDirectory: () => false } as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    }
+    return { isDirectory: () => true } as never
+  }
+}
+
+/** Mock a successful manifest result for install-base chain */
+function makeValidManifest(name: string) {
+  return {
+    ok: true,
+    errors: [],
+    manifest: {
+      metadata: { name },
+      spec: { install: { method: 'copy-file' } },
+    },
+  }
+}
+
+describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Step B install-base)', () => {
   beforeEach(() => {
     readdirMock.mockReset()
     statMock.mockReset()
     cpMock.mockReset()
+    readFileMock.mockReset()
+    runInstallMock.mockReset()
+    validateManifestFileMock.mockReset()
   })
   afterEach(() => vi.restoreAllMocks())
 
-  // Cell 1: smoke — command registered and reachable
-  it('cell 1 — smoke: setup command registered', async () => {
-    // readdir returns empty → exit 2 (nothing to install)
-    readdirMock.mockResolvedValue([] as never)
+  // Cell 1: smoke — command registered; no workflows → exit 2
+  it('cell 1 — smoke: setup command registered; no SKILL.md workflows → exit 2', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      if (String(p).includes('workflows')) return [] as never
+      return [] as never
+    })
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(2)
     expect(stdout).toContain('nothing to install')
   })
 
-  // Cell 2: dry-run default — shows preview, does NOT call cp, exits 0
-  it('cell 2 — dry-run default: preview output, cp NOT called, exit 0', async () => {
-    readdirMock.mockResolvedValue(['execute-task', 'plan-feature'] as never)
-    statMock.mockImplementation(async (p: unknown) => {
-      const path = String(p)
-      // Both entries are directories; execute-task has SKILL.md, plan-feature does NOT
-      if (path.includes('SKILL.md') && path.includes('execute-task'))
-        return { isDirectory: () => false } as never
-      if (path.includes('SKILL.md')) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-      return { isDirectory: () => true } as never
+  // Cell 2: --dry-run → preview output, cp NOT called, exits 0
+  it('cell 2 — --dry-run: preview output, cp NOT called, exit 0', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      if (String(p).includes('workflows')) return ['execute-task', 'plan-feature'] as never
+      return [] as never
     })
-    const { code, stdout } = await runCli(['setup'])
+    statMock.mockImplementation(makeStatMock(['execute-task']))
+    const { code, stdout } = await runCli(['setup', '--dry-run'])
     expect(code).toBe(0)
     expect(stdout).toContain('[dry-run]')
     expect(stdout).toContain('execute-task')
-    expect(stdout).not.toContain('plan-feature')
+    expect(stdout).toContain('without --dry-run')
     expect(cpMock).not.toHaveBeenCalled()
+    expect(runInstallMock).not.toHaveBeenCalled()
   })
 
-  // Cell 3: --apply executes cp for SKILL.md workflows, exits 0
-  it('cell 3 — --apply: cp called for SKILL.md workflows, exit 0', async () => {
-    readdirMock.mockResolvedValue(['execute-task'] as never)
-    statMock.mockImplementation(async (p: unknown) => {
-      const path = String(p)
-      if (path.includes('SKILL.md')) return { isDirectory: () => false } as never
-      return { isDirectory: () => true } as never
+  // Cell 3: default (no flags) → immediate install; Step A cp called + Step B chain invoked
+  it('cell 3 — default mode (no flags): Step A cp + Step B install-base chain, exit 0', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      const ps = String(p)
+      if (ps.includes('workflows')) return ['execute-task'] as never
+      if (ps.includes('skill-packs')) return ['gsd.yaml'] as never
+      if (ps.includes('tools')) return ['ctx7.yaml'] as never
+      return [] as never
     })
+    statMock.mockImplementation(makeStatMock(['execute-task']))
     cpMock.mockResolvedValue(undefined)
-    const { code, stdout } = await runCli(['setup', '--apply'])
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    validateManifestFileMock
+      .mockReturnValueOnce(makeValidManifest('ctx7') as never)
+      .mockReturnValueOnce(makeValidManifest('gsd') as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+
+    const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
+    // Step A
     expect(cpMock).toHaveBeenCalledOnce()
-    const [src, dst, opts] = cpMock.mock.calls[0] as [string, string, object]
-    expect(src).toContain('execute-task')
-    expect(dst).toContain('execute-task')
-    expect(opts).toMatchObject({ recursive: true, force: true })
-    expect(stdout).toContain('setup complete')
+    expect(stdout).toContain('Step A complete: 1 workflow skill(s)')
+    // Step B
+    expect(runInstallMock).toHaveBeenCalledTimes(2)
+    expect(stdout).toContain('Step B complete: 2 manifest(s) installed')
+    expect(stdout).toContain('setup complete: 1 workflow skill(s) + 2 base manifest(s)')
   })
 
-  // Cell 4: workflows without SKILL.md are skipped
-  it('cell 4 — plan-feature (no SKILL.md) is skipped; only execute-task installed', async () => {
-    readdirMock.mockResolvedValue(['execute-task', 'plan-feature'] as never)
-    statMock.mockImplementation(async (p: unknown) => {
-      const path = String(p)
-      if (path.includes('SKILL.md') && path.includes('plan-feature'))
-        throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-      if (path.includes('SKILL.md')) return { isDirectory: () => false } as never
-      return { isDirectory: () => true } as never
+  // Cell 4: plan-feature SKILL.md detected + installed (post-T1.1)
+  it('cell 4 — plan-feature SKILL.md detected and installed', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      if (String(p).includes('workflows')) return ['execute-task', 'plan-feature'] as never
+      return [] as never
     })
+    statMock.mockImplementation(makeStatMock(['execute-task', 'plan-feature']))
     cpMock.mockResolvedValue(undefined)
-    const { code, stdout } = await runCli(['setup', '--apply'])
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    validateManifestFileMock.mockReturnValue({
+      ok: true,
+      errors: [],
+      manifest: { metadata: { name: 'x' }, spec: { install: { method: 'copy-file' } } },
+    } as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+
+    const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    expect(cpMock).toHaveBeenCalledOnce()
-    expect(stdout).toContain('1 workflow(s)')
-    expect(stdout).not.toContain('plan-feature')
+    expect(cpMock).toHaveBeenCalledTimes(2)
+    expect(stdout).toContain('plan-feature')
+    expect(stdout).toContain('execute-task')
+    expect(stdout).toContain('Step A complete: 2 workflow skill(s)')
   })
 
-  // Cell 5: no SKILL.md workflows → exit 2
-  it('cell 5 — no SKILL.md workflows found → exit 2', async () => {
-    readdirMock.mockResolvedValue(['plan-feature'] as never)
-    statMock.mockImplementation(async (p: unknown) => {
-      const path = String(p)
-      if (path.includes('SKILL.md')) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-      return { isDirectory: () => true } as never
+  // Cell 5: install-base chain smoke — skipped deferred methods not counted as failures
+  it('cell 5 — install-base chain: deferred phase-2.1 methods skipped (not failed)', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      const ps = String(p)
+      if (ps.includes('workflows')) return ['execute-task'] as never
+      if (ps.includes('tools')) return ['npx-skill.yaml', 'ctx7.yaml'] as never
+      return [] as never
     })
-    const { code, stdout } = await runCli(['setup', '--apply'])
-    expect(code).toBe(2)
-    expect(stdout).toContain('nothing to install')
-    expect(cpMock).not.toHaveBeenCalled()
+    statMock.mockImplementation(makeStatMock(['execute-task']))
+    cpMock.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    validateManifestFileMock
+      .mockReturnValueOnce({
+        ok: true,
+        errors: [],
+        manifest: {
+          metadata: { name: 'npx-skill' },
+          spec: { install: { method: 'npx-skill-installer' } },
+        },
+      } as never)
+      .mockReturnValueOnce(makeValidManifest('ctx7') as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+
+    const { code, stdout } = await runCli(['setup'])
+    expect(code).toBe(0)
+    // npx-skill-installer is deferred → skipped, ctx7 installed
+    expect(runInstallMock).toHaveBeenCalledTimes(1)
+    expect(stdout).toContain('1 manifest(s) installed / 1 skipped')
+    expect(stdout).toContain('[B] skipped    npx-skill')
+    expect(stdout).toContain('[B] installed  ctx7')
   })
 })
