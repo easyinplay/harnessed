@@ -36,7 +36,7 @@ progress:
 - **GSD phase**：✅ **Phase 4.3 SHIPPED** (2026-05-19 — R8.1 audit log NEW infra + R8.4 ADR backfill 3-pattern + CHANGELOG + 🎯 v0.4.0 milestone close); 前置 ✅ Phase 4.2 + 4.1 + 3.4 + 🎯 v0.3.0 MILESTONE CLOSE + Phase 3.1-3.3 + v0.1/v0.2 — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.2 + § Phase 4.0+4.1 + § Phase 3.3+3.4 + § Phase 3.1+3.2 + § Phase 1.X-3.2
 - **当前里程碑**：**v0.5.0 v1.0-RC2 minor 0/3 STARTING** (sister H1 BB path LOCKED 2026-05-19; R10.1 audit log consumer + R10.2 state lock + R10.3 uninstall + R10.4 path traversal hardening; 3-day target window 2026-05-20 ~ 2026-05-22; 🎯 v1.0 GA post-v0.5.0 close)
 - **Note (D-04 HYBRID 2-clock R-3 mitigation)**: 6-month external co-maintainer organic clock opens post-v0.4.0 ship 2026-05-19, SEPARATE from v0.5.0 internal ship timeline; runs through v0.5/v1.0 (NOT counted v0.5.0 ship timeline).
-- **下一 phase**：**Phase 5.1 execute-phase 启动** (plan-phase ✅ SHIPPED 2026-05-19 — PLAN.md 1047L 24 tasks 3 waves (W0 4 + W1 4 + W2 16); RESEARCH 845L + PATTERNS + PLAN-CHECK 223L PASS iter 1; 2 advisory W-01 T2.2/T2.3 lock-level inline + W-02 W2 16 tasks artifact-heavy precedent; ci.yml A7 retroactive fix 0018→0021 + dual missing baseline tag adr-0019/0020-accepted critical addressed Wave 0; 候选启动 `/gsd-execute-phase 5.1`)
+- **下一 phase**：**Phase 5.1 Wave 2 next** (Wave 0 ✅ + Wave 1 ✅ SHIPPED 2026-05-19 — T1.1 audit-log.ts 162L + T1.2 8 TDD cells + T1.3 13th subcommand + T1.4 DOGFOOD 3/3 PASS; 728 tests; Wave 2: R10.2 state.ts lock + proper-lockfile + ADR 0021 + ci.yml A7 + ship 16 tasks)
 - **状态**：✅ **Phase 4.3 SHIPPED 2026-05-19** — W0 D2 cadence iter 4 + SIZE_LIMIT 200→175 RELAX FLIP + W1 R8.1 NEW src/audit/{log,hook}.ts + engine.ts MODIFY 200L EXACT (HIGH R-1 MITIGATED) + 11 fixtures (8 log + 3 hook) + ADR 0018 PRIMARY + W2 ADR 0019/0020 backfill + README index +12 catchup + ci.yml A7 iter + CHANGELOG NEW + 3-file milestone close archive triplet + DOGFOOD PASS 3/3 + triple tag LOCAL CREATE (adr-0018-accepted + v0.4.0-alpha.3-audit + 🎯 v0.4.0 NO push per CLAUDE.md commit safety)
 - **进度**：17 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** 2026-05-19；v0.5.0 里程碑 0/3 STARTING — Phase 5.1+5.2+5.3 sister H1 BB path）
 
@@ -68,7 +68,7 @@ progress:
 
 ## 进行中（In Progress）
 
-[当前: ⚙ v0.5.0 v1.0-RC2 minor STARTING (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 **execute-phase ACTIVE** (Wave 0 ✅ COMPLETE 2026-05-19 — T0.1+T0.2+T0.3+T0.4 4/4 SHIPPED; Wave 1 next — R10.1 audit log consumer + R10.2 state lock)]
+[当前: ⚙ v0.5.0 v1.0-RC2 minor STARTING (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 **execute-phase ACTIVE** (Wave 0 ✅ + Wave 1 ✅ COMPLETE 2026-05-19 — T1.1 audit-log.ts + T1.2 8 TDD cells + T1.3 13th subcommand + T1.4 DOGFOOD 3/3 PASS; Wave 2 next — R10.2 state lock + proper-lockfile + ADR 0021 + ci.yml A7)]
 
 ---
 
@@ -77,7 +77,7 @@ progress:
 ### P0 — Phase 5.1 execute-phase ACTIVE
 
 1. ✅ **Phase 5.1 discuss-phase SHIPPED** (2026-05-19) + ✅ **plan-phase SHIPPED** (2026-05-19) — PLAN.md 1047L 24 tasks 3 waves ready
-2. ✅ **Phase 5.1 execute-phase Wave 0 SHIPPED** (2026-05-19 — T0.1+T0.2+T0.3+T0.4 4/4; prerequisite Wave 1+2 MET); ⏳ Wave 1 next (T1.1-T1.4)
+2. ✅ **Phase 5.1 execute-phase Wave 0 SHIPPED** (2026-05-19 — T0.1+T0.2+T0.3+T0.4 4/4; prerequisite Wave 1+2 MET); ✅ **Wave 1 SHIPPED** (2026-05-19 — T1.1 audit-log.ts 162L + T1.2 8 TDD cells 728 tests + T1.3 13th subcommand + T1.4 DOGFOOD 3/3 PASS; Rule 1 jq ENOENT fix); ⏳ Wave 2 next (R10.2 state lock + proper-lockfile + ADR 0021 + ci.yml A7)
 3. ⏳ **User push approval** for tags LOCAL created (累积 6+ tags pending push per CLAUDE.md commit safety NEVER push without user explicit request):
    - Phase 4.1 W2 T2.7: `v0.4.0-alpha.1-benchmark` LOCAL
    - Phase 4.2 W2 T2.7: `v0.4.0-alpha.2-community` LOCAL
