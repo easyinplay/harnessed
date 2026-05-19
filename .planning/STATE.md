@@ -93,6 +93,8 @@ progress:
 ### P1/P2 — DEFERRED post-v1.0 (maintenance-only mode; evaluate at organic clock end ~2026-11)
 
 - **#BC #BD #BE #BF #BJ #BK** carry-forward items + v1.0+ backlog → evaluate at organic clock end per ADR 0020 D-04 HYBRID outcome (a) maintenance-only or (b) Phase 7.x active
+- **#CA M1** STATE.md L17-21 4 historical lesson lines trim → RETROSPECTIVE (sister Paranoid Review 5th-cycle absorb;sister review 显式 '不阻塞';v1.0.1 OR v1.1.0 phase trim 一并;post-v1.0 maintenance freeze 推荐时机)
+- **#CB M2** ✅ DISCHARGED 2026-05-22 — `docs/METRICS.md` NEW weekly snapshot baseline (sister Paranoid Review 5th-cycle absorb;6-month organic clock co-maintainer recruit signal monitor;触发 maintenance-only mode evaluate at ~2026-11)
 
 ---
 
