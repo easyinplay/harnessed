@@ -146,5 +146,4 @@ progress:
 - **andrej-karpathy-skills**：编码心法硬约束（surgical changes / simplicity first）
 - **mattpocock-skills**：按需召唤 / `/zoom-out` / `/diagnose` / `/grill-with-docs`
 - **ralph-loop**：每子任务交付保证（COMPLETE 标记）
-- **Tavily / Exa MCP**：网络调研优先（不用 WebSearch / WebFetch）
-- **ctx7**：库 / API / SDK 文档查询（默认）
+- **Tavily / Exa MCP**：网络调研优先（不用 WebSearch / WebFetch）；**ctx7**：库 / API / SDK 文档查询（默认）
