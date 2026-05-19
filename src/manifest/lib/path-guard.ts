@@ -9,6 +9,7 @@
 const PATH_TRAVERSAL_PATTERNS: RegExp[] = [
   /\.\.\//, // (1) Unix dot-dot-slash: ../../etc/passwd
   /\.\.\\/, // (2) Windows backslash: ..\windows\system32
+  // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional null-byte injection detection (R10.4 D-03 OWASP A1 vector 3)
   /\x00/, // (3) Null byte injection: path\x00attack
   /%2[eE]%2[eE]/, // (4) URL-encoded dot-dot: %2e%2e%2fetc
   /%25[2][eE]%25[2][eE]/, // (5) Double-encoded: %252e%252e%252f

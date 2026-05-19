@@ -3,7 +3,7 @@
 // Karpathy ≤200L; 9 cells per PLAN T2.2 + RESEARCH § 3.5.
 
 import { describe, expect, it } from 'vitest'
-import { PathTraversalError, checkPathSafe } from '../../../src/manifest/lib/path-guard.js'
+import { checkPathSafe, PathTraversalError } from '../../../src/manifest/lib/path-guard.js'
 
 describe('checkPathSafe — 5 OWASP A1 attack vectors', () => {
   // Cell 1: Unix dot-dot-slash

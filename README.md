@@ -39,8 +39,8 @@ harnessed/
 
 ## Status
 
-- **Current**: 🎯 v0.4.0 SHIPPED & ARCHIVED 2026-05-19 (manifest 引擎 / installer runtime / routing engine / plan-feature workflow / checkpoint engine / dogfooding benchmark / co-maintainer onboarding / GitHub Sponsors / routing audit log 全 GA + 20 ADR + Keep-a-Changelog)
-- **Next**: v0.5/v1.0 milestone discuss-phase 启动 candidate (post-v0.4.0 close; scope TBD)
+- **Current**: v0.5.0 milestone IN PROGRESS 2/3 — **Phase 5.2 SHIPPED 2026-05-19** (R10.3 `harnessed uninstall` 14th subcommand + 7 per-method uninstallers + R10.4 path traversal 5-vector OWASP A1 guard + ADR 0022 + 756 tests); Phase 5.3 v0.5.0 close pending
+- **Next**: Phase 5.3 — v0.5.0 milestone close (3-file archive + 🎯 v0.5.0 tag) + v1.0 GA prep
 - **Full phase history + release plan + per-milestone audits**: [.planning/ROADMAP.md](./.planning/ROADMAP.md) / [.planning/milestones/](./.planning/milestones/) / [CHANGELOG.md](./CHANGELOG.md)
 
 ## Install Quick Start（phase 1.2 ready）
