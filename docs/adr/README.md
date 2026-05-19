@@ -47,6 +47,18 @@
 | [0006](./0006-three-stack-mechanization-wedge.md) | Three-Stack Methodology Mechanization Wedge (架构重定位 — 6+ 角色 / 双职责 / 4 心法 / 23 招式 / 6 category routing engine) | Accepted | 2026-05-12 |
 | [0007](./0007-categorization-schema-errata.md) | Categorization Schema Errata (manifest 加 category / install_type / decision_rules 字段) | Accepted | 2026-05-13 |
 | [0008](./0008-routing-engine-v1-errata.md) | Routing Engine v1 Errata (phase 1.3 deferred items inline — H1a perf transparency / M1 yaml path migration / D1.4-2 contract delta / phase 1.4 接口契约升级跟踪点) | Accepted | 2026-05-13 |
+| [0009](./0009-routing-l2-engineering-23-shi-errata.md) | Routing L2 + Engineering 23 招式 Errata (phase 1.5 — DAG + Semantic Router L2 + mattpocock_phases schema) | Accepted | 2026-05-14 |
+| [0010](./0010-installer-schema-extension-errata.md) | Installer Schema Extension Errata (phase 2.1 — license whitelist + bundle-install `provides` + install_type enforcement) | Accepted | 2026-05-15 |
+| [0011](./0011-execute-task-sdk-ralph.md) | execute-task workflow + ralph-loop SDK + dual-signal completion + per-phase model tier (phase 2.2) | Accepted | 2026-05-15 |
+| [0012](./0012-extension-mvp-karpathy-inject.md) | Extension category MVP + karpathy SKILL inject 引擎 + 30-sample routing ≥85% (phase 2.3) | Accepted | 2026-05-16 |
+| [0013](./0013-phase-2.4-doctor-ee4-dashboard-c-path.md) | Phase 2.4 — doctor MIN 5 check + EE-4 plan-checker 量化 + dashboard C 路径 + audit 完整版 | Accepted | 2026-05-16 |
+| [0014](./0014-checkpoint-engine-resume-compact.md) | Phase 3.1 — checkpoint 引擎 + harnessed resume + compact 协议 + T4.4 closure infra activation | Accepted | 2026-05-16 |
+| [0015](./0015-gstack-probe-interpolate-plan-feature.md) | Phase 3.2 — gstack 前缀探测 + workflow 变量插值 + plan-feature reference 实装 | Accepted | 2026-05-17 |
+| [0016](./0016-aliases-deprecation-known-good.md) | Phase 3.3 — aliases.yaml RICH redirect + DOCTOR-ONLY-WARN deprecation + known-good 版本组合 lock | Accepted | 2026-05-17 |
+| [0017](./0017-routing-hit-rate-token-budget.md) | Phase 3.4 — routing 命中率 ≥85% 验收 + token budget doctor 8th check + v0.3.0 milestone close | Accepted | 2026-05-17 |
+| [0018](./0018-routing-audit-log.md) | Phase 4.3 — Routing audit log (JSONL append-only + 12-field schema + forward-only) + R8.4 ADR backfill + v0.4.0 milestone close | Accepted | 2026-05-19 |
+| [0019](./0019-state-dual-ssot-collapse-pattern.md) | STATE dual-SoT 5-recurrence terminus COLLAPSE pattern (backfill Phase 3.3 D-04 institutional pattern lock) | Accepted | 2026-05-19 |
+| [0020](./0020-hybrid-2clock-disambiguation.md) | HYBRID 2-clock disambiguation pattern (backfill Phase 4.2 D-04 institutional pattern lock) | Accepted | 2026-05-19 |
 
 ## 参考
 
