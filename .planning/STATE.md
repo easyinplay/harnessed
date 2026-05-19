@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: ship 前必达）
 status: unknown
-last_updated: "2026-05-19T05:56:40.030Z"
+last_updated: "2026-05-19T06:26:35.690Z"
 progress:
-  total_phases: 1
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
-  completed_plans: 1
+  completed_plans: 3
 ---
 
 # harnessed STATE
@@ -99,6 +99,7 @@ progress:
 11. **DEFERRED #AH** W0.4 path traversal regex hardening — Phase 4.3+ W0 (if external user input arrives — currently sole consumer is project maintainer; real attack surface near-zero per spike outcome)
 12. **EE-4 BLOCKER auto-spawn rerun** — v0.4.0 后 evaluate (Phase 2.4 D-02 down-scope carry-forward unchanged)
 13. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand (fresh-session fallback per B-02 still acceptable)
+
 ### P2 — 跨里程碑预留 (v0.4+ 议题)
 
 8. `mutually-exclusive skill groups` 元模型 (v0.2 设计 pack schema 时定 — 推 v0.4+)
