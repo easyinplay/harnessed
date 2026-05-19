@@ -200,7 +200,7 @@ describe('cc-hook-add installer', () => {
         cwd: process.cwd(),
       })
       expect('ok' in r && r.ok === true).toBe(true)
-      if ('ok' in r && r.ok) {
+      if ('ok' in r && r.ok && !('alreadyInstalled' in r)) {
         expect(r.backupId).toBe('idempotent-skip')
         expect(r.appliedFiles).toEqual([])
       }

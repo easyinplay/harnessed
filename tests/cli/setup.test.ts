@@ -205,9 +205,43 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(code).toBe(0)
     // npx-skill-installer is deferred → skipped, ctx7 installed
     expect(runInstallMock).toHaveBeenCalledTimes(1)
-    expect(stdout).toContain('1 manifest(s) installed / 1 skipped')
-    expect(stdout).toContain('[B] skipped    npx-skill')
-    expect(stdout).toContain('[B] installed  ctx7')
+    expect(stdout).toContain('1 manifest(s) installed / 0 already-installed / 1 skipped')
+    expect(stdout).toContain('[B] skipped            npx-skill')
+    expect(stdout).toContain('[B] installed          ctx7')
+  })
+
+  // Cell 7 (v1.0.4 T1.5): already-installed MCP servers → classified separately, NOT failed
+  // Simulates runInstall returning { ok: true, alreadyInstalled: true } for an MCP server
+  // that was already registered in .mcp.json (ADR 0004 idempotent contract).
+  it('cell 7 — already-installed: MCP server already in .mcp.json → not failed, hint shown', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      const ps = String(p)
+      if (ps.includes('workflows')) return ['execute-task'] as never
+      if (ps.includes('tools')) return ['tavily-mcp.yaml', 'ctx7.yaml'] as never
+      return [] as never
+    })
+    statMock.mockImplementation(makeStatMock(['execute-task']))
+    cpMock.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    validateManifestFileMock
+      .mockReturnValueOnce(makeValidManifest('tavily-mcp') as never)
+      .mockReturnValueOnce(makeValidManifest('ctx7') as never)
+    // tavily-mcp already installed → idempotent ok; ctx7 freshly installed
+    runInstallMock
+      .mockResolvedValueOnce({ ok: true, alreadyInstalled: true, backupId: 'bk1' } as never)
+      .mockResolvedValueOnce({ ok: true, backupId: 'bk2', appliedFiles: [] } as never)
+
+    const { code, stdout } = await runCli(['setup'])
+    expect(code).toBe(0)
+    // Step B summary shows 1 installed + 1 already-installed, 0 failed
+    expect(stdout).toContain('1 manifest(s) installed / 1 already-installed')
+    expect(stdout).toContain('0 failed')
+    // already-installed line uses correct label (not "failed")
+    expect(stdout).toContain('[B] already-installed  tavily-mcp')
+    // Post-setup /mcp hint shown
+    expect(stdout).toContain('Run `/mcp` in Claude Code')
+    // Not classified as failure
+    expect(stdout).not.toContain('[B] failed')
   })
 
   // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled
@@ -231,7 +265,9 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(code).toBe(0)
     // All 3 manifests installed via parallel Promise.allSettled
     expect(runInstallMock).toHaveBeenCalledTimes(3)
-    expect(stdout).toContain('Step B complete: 3 manifest(s) installed / 0 skipped / 0 failed')
+    expect(stdout).toContain(
+      'Step B complete: 3 manifest(s) installed / 0 already-installed / 0 skipped / 0 failed',
+    )
     // Parallel timing tag present in summary line
     expect(stdout).toContain('[parallel ')
     expect(stdout).toContain('setup complete: 1 workflow skill(s) + 3 base manifest(s)')

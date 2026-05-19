@@ -237,7 +237,7 @@ describe('installNpxSkillInstaller', () => {
       accessMock.mockResolvedValueOnce(undefined) // SKILL.md exists
       const r = await installNpxSkillInstaller(ctx())
       expect(r).toMatchObject({ ok: true })
-      if ('ok' in r && r.ok === true) {
+      if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
         expect(r.appliedFiles.some((f) => f.endsWith('SKILL.md'))).toBe(true)
       }
     } finally {

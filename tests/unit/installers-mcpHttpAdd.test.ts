@@ -252,6 +252,26 @@ describe('installMcpHttpAdd', () => {
     }
   })
 
+  // v1.0.4 T1.5 — ADR 0004 idempotent contract: "already exists in .mcp.json" stderr
+  // with exit=1 must return ok:true + alreadyInstalled:true (not a failure).
+  it('install exit=1 + "already exists in .mcp.json" stderr → ok:true alreadyInstalled:true', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () =>
+          makeChild({
+            exitCode: 1,
+            stderr: 'MCP server exa-mcp already exists in .mcp.json',
+          }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpHttpAdd(ctx())
+      expect(r).toMatchObject({ ok: true, alreadyInstalled: true })
+      expect('appliedFiles' in r).toBe(false)
+    } finally {
+      s.restore()
+    }
+  })
+
   it('happy path: install ok + verify ok → appliedFiles contains .mcp.json target', async () => {
     const s = silence()
     try {
@@ -260,7 +280,7 @@ describe('installMcpHttpAdd', () => {
       )
       const r = await installMcpHttpAdd(ctx())
       expect(r).toMatchObject({ ok: true })
-      if ('ok' in r && r.ok === true) {
+      if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
         expect(r.appliedFiles.some((f) => f.endsWith('.mcp.json'))).toBe(true)
       }
     } finally {

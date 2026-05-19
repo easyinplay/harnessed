@@ -234,7 +234,7 @@ describe('installCcPluginMarketplace', () => {
       )
       const r = await installCcPluginMarketplace(ctx())
       expect(r).toMatchObject({ ok: true })
-      if ('ok' in r && r.ok === true) {
+      if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
         expect(r.appliedFiles.some((f) => f.endsWith('settings.json'))).toBe(true)
       }
     } finally {

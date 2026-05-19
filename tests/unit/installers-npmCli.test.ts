@@ -183,7 +183,7 @@ describe('installNpmCli', () => {
       )
       const r = await installNpmCli(ctx())
       expect(r).toMatchObject({ ok: true })
-      if ('ok' in r && r.ok === true) {
+      if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
         expect(typeof r.backupId).toBe('string')
         expect(Array.isArray(r.appliedFiles)).toBe(true)
       }
