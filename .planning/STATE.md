@@ -33,12 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 4.3 SHIPPED** (2026-05-19 — R8.1 audit log NEW infra + R8.4 ADR backfill 3-pattern + CHANGELOG + 🎯 v0.4.0 milestone close); 前置 ✅ Phase 4.2 + 4.1 + 3.4 + 🎯 v0.3.0 MILESTONE CLOSE + Phase 3.1-3.3 + v0.1/v0.2 — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.2 + § Phase 4.0+4.1 + § Phase 3.3+3.4 + § Phase 3.1+3.2 + § Phase 1.X-3.2
-- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 0/3 STARTING** (sister H1 BB path LOCKED 2026-05-19; R10.1 audit log consumer + R10.2 state lock + R10.3 uninstall + R10.4 path traversal hardening; 3-day target window 2026-05-20 ~ 2026-05-22; 🎯 v1.0 GA post-v0.5.0 close)
-- **Note (D-04 HYBRID 2-clock R-3 mitigation)**: 6-month external co-maintainer organic clock opens post-v0.4.0 ship 2026-05-19, SEPARATE from v0.5.0 internal ship timeline; runs through v0.5/v1.0 (NOT counted v0.5.0 ship timeline).
-- **下一 phase**：**Phase 5.1 Wave 2 next** (Wave 0 ✅ + Wave 1 ✅ SHIPPED 2026-05-19 — T1.1 audit-log.ts 162L + T1.2 8 TDD cells + T1.3 13th subcommand + T1.4 DOGFOOD 3/3 PASS; 728 tests; Wave 2: R10.2 state.ts lock + proper-lockfile + ADR 0021 + ci.yml A7 + ship 16 tasks)
-- **状态**：✅ **Phase 4.3 SHIPPED 2026-05-19** — W0 D2 cadence iter 4 + SIZE_LIMIT 200→175 RELAX FLIP + W1 R8.1 NEW src/audit/{log,hook}.ts + engine.ts MODIFY 200L EXACT (HIGH R-1 MITIGATED) + 11 fixtures (8 log + 3 hook) + ADR 0018 PRIMARY + W2 ADR 0019/0020 backfill + README index +12 catchup + ci.yml A7 iter + CHANGELOG NEW + 3-file milestone close archive triplet + DOGFOOD PASS 3/3 + triple tag LOCAL CREATE (adr-0018-accepted + v0.4.0-alpha.3-audit + 🎯 v0.4.0 NO push per CLAUDE.md commit safety)
-- **进度**：17 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** 2026-05-19；v0.5.0 里程碑 0/3 STARTING — Phase 5.1+5.2+5.3 sister H1 BB path）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19 — R10.1 audit-log.ts consumer + R10.2 state.ts concurrent write lock + ADR 0021 + ci.yml A7 iter 0018→0021 + 733 tests); 前置 ✅ Phase 4.3 + 4.2 + 4.1 + 🎯 v0.4.0 MILESTONE CLOSE + Phase 3.1-3.4 + 🎯 v0.3.0 CLOSE + v0.1/v0.2 — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 + § Phase 4.2 + § Phase 4.0+4.1 + § Phase 3.3+3.4 + § Phase 3.1+3.2 + § Phase 1.X-3.2
+- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 1/3 STARTING** (H1 BB path LOCKED; R10.3 uninstall + R10.4 path traversal hardening remain; 3-day target window; 🎯 v1.0 GA post-v0.5.0 close)
+- **下一 phase**：**Phase 5.2 next** (R10.3 uninstall command + R10.4 path traversal regex hardening)
+- **状态**：✅ **Phase 5.1 SHIPPED 2026-05-19** — R10.1 audit-log.ts 162L + R10.2 state.ts 116L lock wrap + proper-lockfile dep + ADR 0021 174L + ci.yml A7 0018→0021 + DOGFOOD 3/3 PASS + adr-0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL (NO push)
+- **进度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 1/3 STARTING — Phase 5.1 ✅ + Phase 5.2+5.3 pending sister H1 BB path）
 
 ### 各里程碑进度
 
@@ -48,7 +47,7 @@ progress:
 | v0.2.0 Sub-task Loop + Extension Installers | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 2.1 + 2.2 + 2.3 + 2.4 ship (doctor MIN 5 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel + Wave 0 backlog 5 项); 13 ADR + 13 baseline tag accumulate; archive + audit ship | 2026-05-15 ~ 2026-05-16 |
 | v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1 + 3.2 + 3.3 + 3.4 全 ship (P3.1: checkpoint 引擎 + harnessed resume + compact + T4.4 closure activation 闭环 + ADR 0014; P3.2: gstack PROBE + JINJA 插值 + plan-feature 5-phase WIRED + governance.json PUSH + ADR 0015 + T4.4 closure infra 二代消费者闭环; P3.3: aliases.yaml RICH 5-field redirect (D-01) + DOCTOR-ONLY-WARN install 安静 + doctor 7th check 人读 audit (D-02) + known-good YAML manifest lazy lock (D-03) + STATE dual-SSOT 5-recurrence terminus COLLAPSE (D-04) + W0 backlog 3 项一次根治 + ADR 0016 + manifest-domain colocation 3rd consumer 闭环; **P3.4: routing 30/30 = 100% accuracy 远超 ≥85% bar 15% headroom per-tier Sonnet/Haiku/Opus 100/100/100 (D-01 + D-02) + check-token-budget.ts 48L PRIMARY helper 4th 家族成员 + doctor 8th check token budget DOCTOR-ONLY-WARN (D-03 + D-04) + W0 backlog 5 项一次根治 W0.1 STATE STRATEGIC institutionalize 4 D-decisions D1-D4 + ADR 0017 9 章节 errata**); tests 543→701+ (+158); 17 ADR + 17 baseline tag; 14 milestone tag (含 🎯 v0.3.0); schemaVersion 7→13 surface; archive `.planning/milestones/v0.3.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet (MILESTONE-AUDIT inaugurate milestones/ subdir upgrade); next: v0.4.0 discuss-phase 启动 | 2026-05-16 ~ 2026-05-17 |
 | v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1 + 4.2 + 4.3 全 ship (P4.1 dogfooding benchmark R8.1 anchor; P4.2 community infra R8.2+R8.3+R8.5; P4.3 R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→720+ (+11); 20 ADR + 18 baseline tag + 17 milestone tag accumulate; archive `.planning/milestones/v0.4.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md` triplet sister v0.3.0 close cadence延袭 | 2026-05-18 ~ 2026-05-19 |
-| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 0/3 | 🚧 **STARTING** — Phase 5.1 (audit log consumer + state lock) + Phase 5.2 (uninstall + path traversal) + Phase 5.3 (v0.5.0 close + 🎯 v1.0 GA target prep); sister H1 BB path LOCKED post-v0.4.0 close; 3-day target window | 2026-05-20 ~ - |
+| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 1/3 | 🚧 **IN PROGRESS** — Phase 5.1 ✅ SHIPPED (audit log consumer + state lock); Phase 5.2 (uninstall + path traversal) + Phase 5.3 (v0.5.0 close + 🎯 v1.0 GA target prep) pending; sister H1 BB path LOCKED; 3-day target window | 2026-05-19 ~ - |
 
 ### 已完成 phase ship 历史 (dev SoT — README L46-48 user-facing summary only)
 
@@ -59,6 +58,7 @@ progress:
 <!-- Phase 4.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.2 (2026-05-19 Phase 4.3 W0.1 D2 cadence iter 4 per standing process — M2 backlog discharge institutionalize REINFORCE 4th-iter stable signal beyond ≥3-iter pattern; sister 5-recurrence terminus heuristic confirmed pattern stable Phase 4.2 W0.1 3rd-iter → Phase 4.3 W0.1 4th-iter; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 <!-- Phase 4.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 (2026-05-19 Phase 5.1 W0 T0.1 D2 cadence iter 5 TERMINUS per standing process — 5-recurrence terminus heuristic confirmed pattern stable; single-phase archive per R-4 cadence consistency mitigation continuation; iter 5 = REINFORCE post-iter-4 stable terminus signal) -->
 
+- **Phase 5.1 shipped** ✅ (2026-05-19) — R10.1 audit-log consumer + R10.2 state.ts lock + ADR 0021 + ci.yml A7 0018→0021 + 733 tests
 - **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log + R8.4 ADR backfill + 🎯 v0.4.0 close (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3)
 - **Phase 4.2 shipped** ✅ (2026-05-18) — co-maintainer onboarding + R8.2+R8.3+R8.5 (archived → RETROSPECTIVE.md § Phase 4.2)
 - **Phase 4.1 shipped** ✅ (2026-05-18) — dogfooding benchmark R8.1 anchor (archived → RETROSPECTIVE.md § Phase 4.0+4.1)
@@ -68,21 +68,23 @@ progress:
 
 ## 进行中（In Progress）
 
-[当前: ⚙ v0.5.0 v1.0-RC2 minor STARTING (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 **execute-phase ACTIVE** (Wave 0 ✅ + Wave 1 ✅ COMPLETE 2026-05-19 — T1.1 audit-log.ts + T1.2 8 TDD cells + T1.3 13th subcommand + T1.4 DOGFOOD 3/3 PASS; Wave 2 next — R10.2 state lock + proper-lockfile + ADR 0021 + ci.yml A7)]
+[当前: ⚙ v0.5.0 v1.0-RC2 minor IN PROGRESS (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 ✅ **SHIPPED** 2026-05-19 — Wave 0+1+2 COMPLETE 24 tasks; Phase 5.2 **next** — R10.3 uninstall + R10.4 path traversal hardening]
 
 ---
 
 ## 待办（按优先级）— v0.5.0 v1.0-RC2 minor STARTING window
 
-### P0 — Phase 5.1 execute-phase ACTIVE
+### P0 — Phase 5.2 next
 
-1. ✅ **Phase 5.1 discuss-phase SHIPPED** (2026-05-19) + ✅ **plan-phase SHIPPED** (2026-05-19) — PLAN.md 1047L 24 tasks 3 waves ready
-2. ✅ **Phase 5.1 execute-phase Wave 0 SHIPPED** (2026-05-19 — T0.1+T0.2+T0.3+T0.4 4/4; prerequisite Wave 1+2 MET); ✅ **Wave 1 SHIPPED** (2026-05-19 — T1.1 audit-log.ts 162L + T1.2 8 TDD cells 728 tests + T1.3 13th subcommand + T1.4 DOGFOOD 3/3 PASS; Rule 1 jq ENOENT fix); ⏳ Wave 2 next (R10.2 state lock + proper-lockfile + ADR 0021 + ci.yml A7)
-3. ⏳ **User push approval** for tags LOCAL created (累积 6+ tags pending push per CLAUDE.md commit safety NEVER push without user explicit request):
+1. ✅ **Phase 5.1 SHIPPED** (2026-05-19) — Wave 0+1+2 COMPLETE 24 tasks; 733 tests; R10.1+R10.2 DELIVERED
+2. ⏳ **Phase 5.2** next — R10.3 uninstall + R10.4 path traversal hardening
+3. ⏳ **User push approval** for tags LOCAL created (累积 8+ tags pending push per CLAUDE.md commit safety NEVER push without user explicit request):
    - Phase 4.1 W2 T2.7: `v0.4.0-alpha.1-benchmark` LOCAL
    - Phase 4.2 W2 T2.7: `v0.4.0-alpha.2-community` LOCAL
    - Phase 4.3 W2 T2.15: `adr-0018-accepted` + `v0.4.0-alpha.3-audit` + 🎯 `v0.4.0` LOCAL CREATE pending
-   - Phase 5.1 W0 T0.4: `adr-0019-accepted` + `adr-0020-accepted` ✅ RETROACTIVE LOCAL CREATE at e8ecb02 (T0.4 BLOCKER RESOLVED; prerequisite ci.yml A7 iter Wave 2 T2.8)
+   - Phase 5.1 W0 T0.4: `adr-0019-accepted` + `adr-0020-accepted` ✅ RETROACTIVE LOCAL CREATE at e8ecb02
+   - Phase 5.1 W2 T2.9: `adr-0021-accepted` LOCAL CREATE pending
+   - Phase 5.1 W2 T2.14: `v0.5.0-alpha.1-audit-lock` LOCAL CREATE pending
 4. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-5.1 commits per CLAUDE.md commit safety)
 5. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5 button render): activate at github.com/sponsors/easyinplay/dashboard (Pending Approval → Active state) if not yet activated per DEFERRED #BE
 
@@ -97,9 +99,6 @@ progress:
 11. **DEFERRED #AH** W0.4 path traversal regex hardening — Phase 4.3+ W0 (if external user input arrives — currently sole consumer is project maintainer; real attack surface near-zero per spike outcome)
 12. **EE-4 BLOCKER auto-spawn rerun** — v0.4.0 后 evaluate (Phase 2.4 D-02 down-scope carry-forward unchanged)
 13. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand (fresh-session fallback per B-02 still acceptable)
-- **DEFERRED #AF** ✅ RESOLVED Phase 4.1 W0 T0.2 (D3 gate ENFORCE flip warn-only round 1 → ENFORCE round 2)
-- **DEFERRED #AG** ✅ partially RESOLVED Phase 4.1 W0 T0.3 (W0.5 CONDITIONAL — DEFER path active → #BA carry-forward Phase 4.3 W0)
-
 ### P2 — 跨里程碑预留 (v0.4+ 议题)
 
 8. `mutually-exclusive skill groups` 元模型 (v0.2 设计 pack schema 时定 — 推 v0.4+)
@@ -145,7 +144,7 @@ progress:
 
 ### Blockers
 
-[当前无 — Wave 0 ✅ COMPLETE 2026-05-19; tags adr-0019/0020-accepted + v0.4.0 LOCAL CREATE pending user push per CLAUDE.md commit safety]
+[当前无 — Phase 5.1 ✅ SHIPPED 2026-05-19; tags adr-0019/0020/0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL CREATE pending user push per CLAUDE.md commit safety]
 
 ---
 
