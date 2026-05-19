@@ -31,45 +31,12 @@ import { checkCmdString } from '../manifest/security.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
+import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
+import type { ProcResult } from './lib/runClaudeArgs.js'
+import { runArgs } from './lib/runClaudeArgs.js'
 import { updateInstalled } from './lib/state.js'
-import type { DiffPlan, InstallContext, InstallError, Installer } from './lib/types.js'
-
-function err(ctx: InstallContext, path: string, message: string, keyword: string): InstallError {
-  return { file: ctx.manifest.metadata.name, path, message, line: null, column: null, keyword }
-}
-
-interface ProcResult {
-  exitCode: number
-  stderr: string
-}
-
-function runArgs(claudeArgs: string[], cwd: string, timeoutMs = 15_000): Promise<ProcResult> {
-  return new Promise((resolve) => {
-    // Win: route through cmd.exe /c because `claude` ships as a .cmd shim.
-    // Unix: spawn the binary directly (no shell) — args remain unparsed.
-    const isWin = process.platform === 'win32'
-    const child = isWin
-      ? spawn('cmd.exe', ['/c', 'claude', ...claudeArgs], { cwd, windowsHide: true })
-      : spawn('claude', claudeArgs, { cwd, shell: false })
-    let stderr = ''
-    child.stderr?.setEncoding('utf8').on('data', (c: string) => {
-      stderr += c
-    })
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL')
-      resolve({ exitCode: -1, stderr: `${stderr}[timeout after ${timeoutMs}ms]` })
-    }, timeoutMs)
-    child.on('error', (e) => {
-      clearTimeout(timer)
-      resolve({ exitCode: -1, stderr: `${stderr}${e.message}` })
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      resolve({ exitCode: code ?? -1, stderr })
-    })
-  })
-}
+import type { DiffPlan, Installer } from './lib/types.js'
 
 // D-16 — resolve ${ENV_VAR} placeholders from process.env BEFORE arg
 // construction. Returns either the resolved value or throws-style {error}.

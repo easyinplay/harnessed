@@ -29,20 +29,11 @@ import { spawn } from 'node:child_process'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
+import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
 import { spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
-import type {
-  DiffPlan,
-  InstallContext,
-  InstallError,
-  Installer,
-  InstallResult,
-} from './lib/types.js'
-
-function err(ctx: InstallContext, path: string, message: string, keyword: string): InstallError {
-  return { file: ctx.manifest.metadata.name, path, message, line: null, column: null, keyword }
-}
+import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
 
 // D-15 inline SHA-verify. Runs `git rev-parse HEAD` in the cloned dir,
 // compares against the manifest's git_ref. Only invoked after a successful

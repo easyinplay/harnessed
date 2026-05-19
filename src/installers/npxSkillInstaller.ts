@@ -35,20 +35,11 @@ import { join } from 'node:path'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
+import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
 import { spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
-import type {
-  DiffPlan,
-  InstallContext,
-  InstallError,
-  Installer,
-  InstallResult,
-} from './lib/types.js'
-
-function err(ctx: InstallContext, path: string, message: string, keyword: string): InstallError {
-  return { file: ctx.manifest.metadata.name, path, message, line: null, column: null, keyword }
-}
+import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
 
 // Extract `<owner/repo>` from `npx ... skills@<ver> add <owner/repo> ...`.
 // Used to compute the expected SKILL.md path. Falls back to manifest

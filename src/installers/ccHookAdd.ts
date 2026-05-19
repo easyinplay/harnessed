@@ -11,13 +11,10 @@ import { join } from 'node:path'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
+import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
 import { updateInstalled } from './lib/state.js'
-import type { DiffPlan, InstallContext, InstallError, Installer } from './lib/types.js'
-
-function err(ctx: InstallContext, path: string, message: string, keyword: string): InstallError {
-  return { file: ctx.manifest.metadata.name, path, message, line: null, column: null, keyword }
-}
+import type { DiffPlan, Installer } from './lib/types.js'
 
 interface Settings {
   hooks?: Record<string, { matcher?: string; command: string }[]>

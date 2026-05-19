@@ -15,25 +15,16 @@ import * as p from '@clack/prompts'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
+import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
 import { spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
-import type {
-  DiffPlan,
-  InstallContext,
-  InstallError,
-  Installer,
-  InstallResult,
-  Level,
-} from './lib/types.js'
+import type { DiffPlan, Installer, InstallResult, Level } from './lib/types.js'
 
 function detectLevel(cmd: string): Level {
   if (/\bnpm\s+install\s+-g\b/.test(cmd)) return 'L4'
   if (/\bnpx\b/.test(cmd)) return 'L1'
   return 'L4' // safest default: assume worst-case scope
-}
-function err(ctx: InstallContext, path: string, message: string, keyword: string): InstallError {
-  return { file: ctx.manifest.metadata.name, path, message, line: null, column: null, keyword }
 }
 
 export const installNpmCli: Installer = async (ctx) => {
