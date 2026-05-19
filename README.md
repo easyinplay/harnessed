@@ -39,8 +39,8 @@ harnessed/
 
 ## Status
 
-- **Current**: v0.5.0 milestone IN PROGRESS 2/3 — **Phase 5.2 SHIPPED 2026-05-19** (R10.3 `harnessed uninstall` 14th subcommand + 7 per-method uninstallers + R10.4 path traversal 5-vector OWASP A1 guard + ADR 0022 + 756 tests); Phase 5.3 v0.5.0 close pending
-- **Next**: Phase 5.3 — v0.5.0 milestone close (3-file archive + 🎯 v0.5.0 tag) + v1.0 GA prep
+- **Current**: 🎯 **v0.5.0 SHIPPED 2026-05-22** (4/4 milestones close); v1.0 GA target window 2026-05-22~23 post-close per ROADMAP § v1.0
+- **Next**: Phase 6.x — v1.0 GA (🎯 v1.0 tag + npm publish + README "stable" badge; post-close independent window)
 - **Full phase history + release plan + per-milestone audits**: [.planning/ROADMAP.md](./.planning/ROADMAP.md) / [.planning/milestones/](./.planning/milestones/) / [CHANGELOG.md](./CHANGELOG.md)
 
 ## Install Quick Start（phase 1.2 ready）
