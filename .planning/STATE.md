@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 W0 COMPLETE**; ✅ **Phase 5.2 W1 COMPLETE** (5 tasks: BDL + cli/uninstall.ts + 7 uninstallers + TDD 14 cells + DOGFOOD); **Phase 5.2 W2 next** — R10.4 path-guard + ADR 0022 + ship cadence
-- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 IN PROGRESS** (H1 BB path LOCKED; R10.3 ✅ DELIVERED Wave 1; R10.4 path traversal W2 pending; 🎯 v1.0 GA post-v0.5.0 close)
-- **下一 phase**：**Phase 5.2 W2 execute** (T2.1 path-guard.ts + T2.2 tests TDD + T2.3-T2.4 D-04 sites + T2.5 ADR 0022 + T2.6-T2.14 ship cadence)
-- **状态**：✅ **Phase 5.2 W1 COMPLETE 2026-05-19** — 14th subcommand + 7 uninstallers + 747 tests PASS (733→747 +14 new cells); BDL T1.0 A1/A2 resolved; DOGFOOD 3/3 PASS
-- **進度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 W1 ✅ W2 pending + Phase 5.3 pending）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19) — R10.3 uninstall + R10.4 path traversal; **Phase 5.3 next** — v0.5.0 milestone close + 🎯 v1.0 GA prep
+- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 PROGRESS** (H1 BB path LOCKED; R10.3 ✅ + R10.4 ✅ DELIVERED; Phase 5.3 v0.5.0 close pending; 🎯 v1.0 GA post-v0.5.0 close)
+- **下一 phase**：**Phase 5.3** — v0.5.0 milestone close (3-file archive + 🎯 v0.5.0 tag) + v1.0 GA discuss-phase prep
+- **状态**：✅ **Phase 5.2 SHIPPED 2026-05-19** — 14th subcommand + 7 uninstallers + path-guard.ts + ADR 0022 + 756 tests PASS (733→756 +23 new cells); DOGFOOD 3/3 PASS
+- **進度**：19 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 ✅ SHIPPED + Phase 5.3 pending）
 
 ### 各里程碑进度
 
@@ -47,7 +47,7 @@ progress:
 | v0.2.0 Sub-task Loop + Extension Installers | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 2.1 + 2.2 + 2.3 + 2.4 ship (doctor MIN 5 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel + Wave 0 backlog 5 项); 13 ADR + 13 baseline tag accumulate; archive + audit ship | 2026-05-15 ~ 2026-05-16 |
 | v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1-3.4 全 ship; tests 543→701+ (+158); 17 ADR + 14 milestone tag; archive `.planning/milestones/v0.3.0-*.md` triplet | 2026-05-16 ~ 2026-05-17 |
 | v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1+4.2+4.3 全 ship (dogfooding benchmark + community infra + R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→733 (+24); 21 ADR; archive `.planning/milestones/v0.4.0-*.md` triplet | 2026-05-18 ~ 2026-05-19 |
-| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 2/3 | 🚧 **IN PROGRESS** — Phase 5.1 ✅ SHIPPED + Phase 5.2 executing (uninstall + path traversal); Phase 5.3 (🎯 v0.5.0 close) pending | 2026-05-19 ~ - |
+| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 2/3 | 🚧 **IN PROGRESS** — Phase 5.1 ✅ + Phase 5.2 ✅ SHIPPED; Phase 5.3 (🎯 v0.5.0 close) pending | 2026-05-19 ~ - |
 
 ### 已完成 phase ship 历史 (dev SoT — README user-facing summary only)
 
@@ -57,6 +57,7 @@ progress:
 <!-- Phase 4.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 (2026-05-19 Phase 5.1 W0 T0.1 D2 cadence iter 5 TERMINUS per standing process — 5-recurrence terminus heuristic confirmed pattern stable; single-phase archive per R-4 cadence consistency mitigation continuation; iter 5 = REINFORCE post-iter-4 stable terminus signal) -->
 <!-- Phase 5.1 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1 (2026-05-19 Phase 5.2 W0 T0.1 D2 cadence iter 6 REINFORCE per standing process — implicit-standing-process graduation signal; 6th-iter confirms D2 cadence formally institutionalized; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 
+- **Phase 5.2 shipped** ✅ (2026-05-19) — R10.3 uninstall 14th subcommand + 7 uninstallers + R10.4 path-guard.ts + ADR 0022 + ci.yml A7 0021→0022 + 756 tests
 - **Phase 5.1 shipped** ✅ (2026-05-19) — R10.1 audit-log consumer + R10.2 state.ts lock + ADR 0021 + ci.yml A7 0018→0021 + 733 tests
 - **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log + R8.4 ADR backfill + 🎯 v0.4.0 close (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3)
 - **Phase 4.2 shipped** ✅ (2026-05-18) — co-maintainer onboarding + R8.2+R8.3+R8.5 (archived → RETROSPECTIVE.md § Phase 4.2)
@@ -67,7 +68,7 @@ progress:
 
 ## 进行中（In Progress）
 
-[当前: ⚙ v0.5.0 Phase 5.2 W0 executing — R10.3 uninstall + R10.4 path traversal; Phase 5.1 ✅ SHIPPED 2026-05-19]
+[当前: ✅ Phase 5.2 SHIPPED 2026-05-19 — R10.3 + R10.4 DELIVERED; ⚙ Phase 5.3 next — v0.5.0 milestone close + 🎯 v1.0 GA prep]
 
 ---
 
@@ -75,8 +76,8 @@ progress:
 
 ### P0 — Phase 5.2 executing
 
-1. ✅ **Phase 5.1 SHIPPED** (2026-05-19) — R10.1+R10.2 DELIVERED; ⏳ **Phase 5.2** — R10.3 uninstall + R10.4 path traversal; ⏳ **Phase 5.3** — v0.5.0 close + 🎯 v1.0 GA prep
-2. ⏳ **User push approval** for tags LOCAL (累积 8+ pending: v0.4.0-alpha.1/2/3 + adr-0018/0019/0020/0021-accepted + 🎯 v0.4.0 + v0.5.0-alpha.1-audit-lock; Phase 5.2 will add adr-0022-accepted + v0.5.0-alpha.2-uninstall-security LOCAL)
+1. ✅ **Phase 5.1 SHIPPED** (2026-05-19) + ✅ **Phase 5.2 SHIPPED** (2026-05-19) — R10.1+R10.2+R10.3+R10.4 DELIVERED; ⏳ **Phase 5.3** — v0.5.0 close + 🎯 v1.0 GA prep
+2. ⏳ **User push approval** for tags LOCAL (累积 10+ pending: v0.4.0-alpha.1/2/3 + adr-0018/0019/0020/0021/0022-accepted + 🎯 v0.4.0 + v0.5.0-alpha.1-audit-lock + v0.5.0-alpha.2-uninstall-security)
 3. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-5.2 commits per CLAUDE.md commit safety)
 4. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5): activate at github.com/sponsors/easyinplay/dashboard if not yet activated per DEFERRED #BE
 
@@ -131,19 +132,10 @@ progress:
 
 ### Blockers
 
-[当前无 — Phase 5.2 W0 executing; tags adr-0019/0020/0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL CREATE pending user push per CLAUDE.md commit safety]
+[当前无 — Phase 5.2 SHIPPED; tags adr-0019/0020/0021/0022-accepted + v0.5.0-alpha.1-audit-lock + v0.5.0-alpha.2-uninstall-security LOCAL CREATE pending user push per CLAUDE.md commit safety]
 
 ---
 
 ## 框架治理路由（呼应 ~/.claude/CLAUDE.md）
 
-本项目在 v0.1+ 的子任务执行阶段须遵循：
-
-- **gstack**：决策关卡（每新里程碑 / 关键模块 PR 前 `/review` 强制）
-- **GSD**：整体 orchestration（discuss → plan → execute → verify）
-- **planning-with-files**：每个 phase 落地 task_plan.md / progress.md / findings.md
-- **superpowers**：子任务级 brainstorming + 可选 TDD
-- **andrej-karpathy-skills**：编码心法硬约束（surgical changes / simplicity first）
-- **mattpocock-skills**：按需召唤 / `/zoom-out` / `/diagnose` / `/grill-with-docs`
-- **ralph-loop**：每子任务交付保证（COMPLETE 标记）
-- **Tavily / Exa MCP**：网络调研优先（不用 WebSearch / WebFetch）；**ctx7**：库 / API / SDK 文档查询（默认）
+本项目在 v0.1+ 的子任务执行阶段须遵循：gstack 决策关卡 + GSD orchestration + planning-with-files 持久化 + superpowers 子任务执行 + andrej-karpathy-skills 编码心法 + mattpocock-skills 按需召唤 + ralph-loop 交付保证 + Tavily/Exa MCP 网络调研 + ctx7 文档查询。详 ~/.claude/CLAUDE.md。
