@@ -104,8 +104,8 @@
 3. **bus factor 1 真实风险**——Avelino 论文实证单 maintainer 年掉队率 36%，6 个月 co-maintainer 窗口非装饰
 4. **Karpathy ≤200L hard limit**——B-06 + B-26 + Phase 3.4 D-04 explicit "no B-03 5% tolerance"; doctor.ts 195L borderline (Phase 3.4 W1 Option A inline shrink locked)
 5. **biome lint preempt before commit**（project memory `feedback_biome-preempt.md` 3 CI-red recurrences Phase 2.1.1 / 2.2 / 2.3）: 任何 TS/JS commit 前必跑 `pnpm exec biome check --write`
-6. **STATE.md archive cadence institutionalize** (Phase 3.4 W0.1 D2): 每 phase ship 时 T6.N step 必 trim prev-prev-phase narrative → RETROSPECTIVE.md Phase N-2 § ARCHIVED FROM STATE; D3 gate `scripts/check-state-archive-stale.mjs` 3 rules warn-only round 1 (ENFORCE flip Phase 3.5/v0.4.0)
-7. **A7 守恒**——ADR 0001-0016 main body 永久 0 diff; ci.yml A7 step iterate Phase N ship 时 add new ADR N+1 reference
+6. **STATE.md archive cadence institutionalize** (D2 cadence iter 5 TERMINUS Phase 5.1 W0): 每 phase ship 时 T0.1 trim prev-phase narrative → RETROSPECTIVE.md § ARCHIVED FROM STATE; D3 gate `check-state-archive-stale.mjs` SIZE_LIMIT=150 ENFORCE
+7. **A7 守恒**——ADR 0001-0020 main body 永久 0 diff; ci.yml A7 step iterate Phase N ship 时 add new ADR reference (Phase 5.1 W2 T2.8 retroactive iter 0018→0021)
 
 ---
 
