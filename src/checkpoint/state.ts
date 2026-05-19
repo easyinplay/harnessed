@@ -2,19 +2,56 @@
 // lib). Sister of `src/workflow/loadPhases.ts` (Value.Check validate-and-throw).
 // Persists singleton state to `.harnessed/current-workflow.json`. Hard limit
 // ≤ 80L per D-02 (3 transitions + read/write helpers).
+// Phase 5.1 W2 T2.2 — R10.2 concurrent write lock (D-05+D-06+D-07+D-08 LOCKED)
+// proper-lockfile dir-level lock `.harnessed/.lock` wraps writeCurrentWorkflow.
+// W-01 PLAN-CHECK Path A: state.ts self-locks; engineHook acquires transitively.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
+import lockfile from 'proper-lockfile'
 import { branchOnSchemaVersion, SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { CurrentWorkflowV1, type CurrentWorkflowV1Type } from './schema/index.js'
 
 const STATE_PATH = '.harnessed/current-workflow.json'
+const LOCK_TARGET = '.harnessed'
+const LOCK_OPTS = {
+  stale: 10_000,
+  retries: { retries: 3, factor: 2, minTimeout: 100 },
+  lockfilePath: '.harnessed/.lock',
+}
 
 export class WorkflowStateError extends Error {
   constructor(message: string) {
     super(message)
     this.name = 'WorkflowStateError'
+  }
+}
+
+/** Thrown when another harnessed process holds the .harnessed/.lock (D-06 LOCKED). */
+export class LockHeldError extends Error {
+  constructor() {
+    super(
+      'another harnessed process holds the lock at .harnessed/.lock — wait or kill stale process (try: harnessed status)',
+    )
+    this.name = 'LockHeldError'
+    Object.setPrototypeOf(this, LockHeldError.prototype)
+  }
+}
+
+/** Acquire dir-level lock then run fn(); release in finally (D-05+D-06+D-08). */
+async function withLock<T>(fn: () => Promise<T>): Promise<T> {
+  let release: (() => Promise<void>) | undefined
+  try {
+    release = await lockfile.lock(LOCK_TARGET, LOCK_OPTS)
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ELOCKED') throw new LockHeldError()
+    throw e
+  }
+  try {
+    return await fn()
+  } finally {
+    await release?.()
   }
 }
 
@@ -40,14 +77,17 @@ export async function readCurrentWorkflow(): Promise<CurrentWorkflowV1Type | nul
   })
 }
 
-/** Write state with self-validate (loadPhases.ts pattern); creates parent dir. */
+/** Write state with self-validate (loadPhases.ts pattern); creates parent dir;
+ *  acquires dir-level lock (D-05+D-08) before writeFile (R10.2 concurrent safety). */
 export async function writeCurrentWorkflow(s: CurrentWorkflowV1Type): Promise<void> {
   if (!Value.Check(CurrentWorkflowV1, s)) {
     const errs = [...Value.Errors(CurrentWorkflowV1, s)].map((e) => e.message).join('; ')
     throw new WorkflowStateError(`current-workflow schema validation failed: ${errs}`)
   }
   await mkdir(dirname(STATE_PATH), { recursive: true })
-  await writeFile(STATE_PATH, JSON.stringify(s, null, 2), 'utf8')
+  await withLock(async () => {
+    await writeFile(STATE_PATH, JSON.stringify(s, null, 2), 'utf8')
+  })
 }
 
 /** Transition 1/3 — start a new workflow for `phase`. */

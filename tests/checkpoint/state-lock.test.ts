@@ -1,15 +1,19 @@
-// Phase 5.1 W2 T2.4 — TDD RED state-lock.test.ts: 5 fixtures (R10.2 concurrent write lock)
+// Phase 5.1 W2 T2.4 — TDD RED→GREEN state-lock.test.ts: 5 fixtures (R10.2 concurrent write lock)
 // Sister tests/checkpoint/state.test.ts vi.mock fs/promises pattern延袭 + vi.mock proper-lockfile
 // W-01 PLAN-CHECK resolve Path A: lock in writeCurrentWorkflow (state.ts self-locks); engineHook
 // acquires transitively. No direct engineHook lock acquire (no double-lock deadlock per RESEARCH § 3.3)
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+// vi.hoisted() ensures mocks are defined before vi.mock() factory (hoisting safe)
+const { releaseMock, lockMock } = vi.hoisted(() => {
+  const releaseMock = vi.fn().mockResolvedValue(undefined)
+  const lockMock = vi.fn().mockResolvedValue(releaseMock)
+  return { releaseMock, lockMock }
+})
+
 const fsState = new Map<string, string>()
 const mkdirCalls: string[] = []
-
-const releaseMock = vi.fn().mockResolvedValue(undefined)
-const lockMock = vi.fn().mockResolvedValue(releaseMock)
 
 vi.mock('proper-lockfile', () => ({
   default: { lock: lockMock, check: vi.fn().mockResolvedValue(false) },
@@ -26,11 +30,7 @@ vi.mock('node:fs/promises', () => ({
   stat: vi.fn(),
 }))
 
-import {
-  activate,
-  LockHeldError,
-  writeCurrentWorkflow,
-} from '../../src/checkpoint/state.js'
+import { activate, LockHeldError, writeCurrentWorkflow } from '../../src/checkpoint/state.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const makeWorkflow = () => ({
@@ -55,10 +55,7 @@ describe('R10.2 concurrent write lock (T2.4 — 5 cells)', () => {
   it('cell 1 — serial writeCurrentWorkflow completes via lock acquire + release', async () => {
     await writeCurrentWorkflow(makeWorkflow())
     expect(lockMock).toHaveBeenCalledTimes(1)
-    expect(lockMock).toHaveBeenCalledWith(
-      '.harnessed',
-      expect.objectContaining({ stale: 10_000 }),
-    )
+    expect(lockMock).toHaveBeenCalledWith('.harnessed', expect.objectContaining({ stale: 10_000 }))
     expect(releaseMock).toHaveBeenCalledTimes(1)
   })
 
@@ -67,8 +64,14 @@ describe('R10.2 concurrent write lock (T2.4 — 5 cells)', () => {
     const release1 = vi.fn().mockResolvedValue(undefined)
     const release2 = vi.fn().mockResolvedValue(undefined)
     lockMock
-      .mockImplementationOnce(async () => { order.push(1); return release1 })
-      .mockImplementationOnce(async () => { order.push(2); return release2 })
+      .mockImplementationOnce(async () => {
+        order.push(1)
+        return release1
+      })
+      .mockImplementationOnce(async () => {
+        order.push(2)
+        return release2
+      })
     await Promise.all([writeCurrentWorkflow(makeWorkflow()), writeCurrentWorkflow(makeWorkflow())])
     expect(order).toContain(1)
     expect(order).toContain(2)
