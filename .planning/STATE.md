@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: v1.0 GA (production-ready stable release)
-status: in_progress
+status: shipped
 last_updated: "2026-05-22T00:00:00.000Z"
 progress:
   total_phases: 21
-  completed_phases: 20
+  completed_phases: 21
   total_plans: 21
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # harnessed STATE
@@ -24,7 +24,7 @@ progress:
 ## 项目核心引用
 
 - **核心价值**：AI coding harness 生态的「装配主义包管理器 + 完整三层栈方法论的可执行 engine」——routing engine v1 已实装（main-process-driven query→arbitrate→install missing→factory→spawn→ralph-loop→verbatim COMPLETE 闭合）；6+ 虚拟角色（gstack 决策层 + GSD 项目经理 + superpowers 资深工程师）/ 双职责治理 / 4 心法 / 23 招式 phase 路由 / 6 skill category，把 CLAUDE.md 协作规则机器化
-- **当前关注**：🎯 **v1.0 GA prep** Phase 6.1 — 5 milestones SHIPPED (v0.1.0+v0.2.0+v0.3.0+v0.4.0+v0.5.0); 20/20 phases 100% (10 days 2026-05-12~22); next: Phase 6.1 production release ship (8 D-decisions LOCKED — npm provenance + OIDC + package.json `private` removal + version 1.0.0 + CHANGELOG [1.0.0] MAJOR + ROADMAP v1.0 SHIPPED + README stable badge replace + 🎯 v1.0 GA tag 25-40L annotation per D-04); window 2026-05-22~23 per ROADMAP § v1.0; post-v1.0 maintenance-only mode trigger ~2026-11 forward visibility per D-04 HYBRID 2-clock (ADR 0020)
+- **当前关注**：✅ 🎯 **v1.0 GA SHIPPED** 2026-05-22 — Phase 6.1 FINAL phase COMPLETE; 6 milestones (v0.1.0+v0.2.0+v0.3.0+v0.4.0+v0.5.0+v1.0); 21/21 phases 100% (10 days 2026-05-12~22); post-v1.0 maintenance-only mode trigger ~2026-11 organic clock end per ADR 0020 D-04 HYBRID 2-clock; user push approval pending (tags + commits → npm publish LIVE)
 - **总工期**：**10 days 2026-05-12~22 实际 ship 20/20 phases** (v0.1.0+v0.2.0+v0.3.0+v0.4.0+v0.5.0 5 milestones close + v1.0 GA Phase 6.1 in progress; 原 ROADMAP v3 估 ~10-12 周 17 phases 实证显著 over-deliver per BB path Phase 5.x minor + sister D-04 HYBRID 2-clock organic clock SEPARATE) 
 - **License**：Apache-2.0（开源 / GitHub Sponsors 兜底）
 - **仓库**：`D:\GitCode\harnessed\`（Node.js + TypeScript）
@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ✅ **Phase 5.3 SHIPPED** (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep; ✅ **Phase 6.1 Wave 0 COMPLETE** 2026-05-22; ✅ **Phase 6.1 Wave 1 COMPLETE** 2026-05-20 — publish.yml NEW + package.json 1.0.0 + ADR 0023 NEW; Wave 2 ready
-- **当前里程碑**：**v1.0 GA** 🎯 Phase 6.1 executing — Wave 0 + Wave 1 COMPLETE; Wave 2 ready (T2.1-T2.11 close cadence artifacts)
-- **下一 phase**：**Phase 6.1 Wave 2** (T2.1 docs/adr/README +1 + T2.2 ci.yml A7 iter 0022→0023 + T2.3 CHANGELOG [1.0.0] + T2.4 README badge swap + T2.5 ROADMAP v1.0 SHIPPED + T2.6 MAINTAINER-ONBOARDING NOTE + T2.7 DOGFOOD verify + T2.8 RETROSPECTIVE + T2.9 STATE FINAL + T2.10 3 tags LOCAL CREATE + T2.11 final commit)
-- **状態**：✅ **Phase 6.1 Wave 1 COMPLETE** 2026-05-20 — T1.0 PREREQ doc + T1.1 publish.yml 39L OIDC + T1.2 package.json 3 changes (private removed + 1.0.0 + author) + T1.3 ADR 0023 153L; 756 tests PASS no regression; Wave 2 ready
-- **進度**：20 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + 🎯 **v0.5.0 100% CLOSE** all SHIPPED & ARCHIVED; Phase 6.1 Wave 1 COMPLETE Wave 2 executing）
+- **GSD phase**：✅ **Phase 6.1 SHIPPED** (2026-05-22) — 🎯 v1.0 GA PRODUCTION RELEASE FINAL phase; 21/21 phases 100% complete
+- **当前里程碑**：**🎯 v1.0 GA 1/1 SHIPPED & ARCHIVED** 2026-05-22 — npm publish stream live, README stable badge, CHANGELOG [1.0.0], ROADMAP v1.0 SHIPPED, ADR 0023 accepted, 3 tags LOCAL CREATE (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0)
+- **下一 phase**：**v1.0+ Maintenance-Only Mode** — organic clock running 2026-05-22 ~ ~2026-11; post-clock decision (a) maintenance-only or (b) continued active per ADR 0020 D-04 HYBRID
+- **状態**：✅ **Phase 6.1 SHIPPED 2026-05-22** — 21/21 phases 100%; FINAL phase per ROADMAP v1.0 chapter; maintenance-only mode trigger ~2026-11 post organic clock end; no R-series additions until co-maintainer recruited
+- **進度**：21 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ **100%**（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + v0.5.0 + 🎯 **v1.0 GA** ALL SHIPPED & ARCHIVED）
 
 ### 各里程碑进度
 
@@ -48,6 +48,7 @@ progress:
 | v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1-3.4 全 ship; tests 543→701+ (+158); 17 ADR + 14 milestone tag; archive `.planning/milestones/v0.3.0-*.md` triplet | 2026-05-16 ~ 2026-05-17 |
 | v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1+4.2+4.3 全 ship (dogfooding benchmark + community infra + R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→733 (+24); 21 ADR; archive `.planning/milestones/v0.4.0-*.md` triplet | 2026-05-18 ~ 2026-05-19 |
 | v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 5.1 ✅ + Phase 5.2 ✅ + Phase 5.3 ✅ SHIPPED (R10.1-R10.4 全 Done + ADR 0021+0022 + 756 tests); archive `.planning/milestones/v0.5.0-*.md` triplet + dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL | 2026-05-19 ~ 2026-05-22 |
+| v1.0 GA production release | 1/1 | 🎯 **SHIPPED & ARCHIVED** — Phase 6.1 ✅ (publish.yml NEW OIDC + package.json 1.0.0 + CHANGELOG [1.0.0] + README stable badge + ROADMAP v1.0 SHIPPED + ADR 0023 + 🎯 v1.0.0 tag LOCAL CREATE) | 2026-05-22 |
 
 ### 已完成 phase ship 历史 (dev SoT — README user-facing summary only)
 
@@ -60,45 +61,38 @@ progress:
 
 <!-- Phase 5.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.3 (2026-05-22 Phase 6.1 W0 D2 cadence iter 8 TERMINUS per standing process — 8-iter confirms implicit graduation; sister Phase 5.1 iter 5 + Phase 5.2 iter 6 + Phase 5.3 iter 7 pattern stable beyond 6-iter graduation) -->
 
+- **Phase 6.1 shipped** ✅ (2026-05-22) — 🎯 v1.0 GA PRODUCTION RELEASE; publish.yml NEW OIDC + package.json 1.0.0 + CHANGELOG [1.0.0] + ADR 0023 + 3 LOCAL tags; 21/21 phases FINAL
 - **Phase 5.1-5.3 shipped** ✅ (2026-05-19 ~ 2026-05-22) — R10.1-R10.4 + ADR 0021+0022 + 756 tests + 🎯 v0.5.0 CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1-5.3)
 - **Phase 1.1-4.3 shipped** ✅ (2026-05-12 ~ 2026-05-19) — 17 phases v0.1.0+v0.2.0+v0.3.0+v0.4.0 milestones all CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-4.3)
+
+<!-- v1.0 GA SHIPPED 2026-05-22 — Phase 6.1 W2 T2.9 STATE FINAL update + maintenance-mode forward signal recorded.
+     D2 cadence iter 8 = TERMINUS (Phase 6.1 W0 T0.1; 8-iter graduation confirmed beyond ≥6-iter implicit graduation; #BS retire signal).
+     Post-v1.0 STATE enters maintenance freeze: no more D2 iter cadence; maintenance-only mode wording per D-08 forward visibility (NOT immediate per sneak-block).
+     Next STATE update: organic clock end (~2026-11) outcome decision (a) maintenance-only or (b) Phase 7.x discuss-phase.
+     ADR 0020 D-04 HYBRID 2-clock reference: organic clock opened 2026-05-22, closes ~2026-11-18 approximate. -->
 
 ---
 
 ## 进行中（In Progress）
 
-[当前: ✅ Phase 5.3 SHIPPED 2026-05-22 — 🎯 v0.5.0 CLOSE & ARCHIVED; ⚙ Phase 6.1 executing — v1.0 GA production release Wave 0 in progress]
+[当前: ✅ Phase 6.1 SHIPPED 2026-05-22 — 🎯 v1.0 GA PRODUCTION RELEASE FINAL; 21/21 phases 100% COMPLETE; v1.0+ maintenance-only mode trigger ~2026-11 organic clock close]
 
 ---
 
-## 待办（按优先级）— Phase 6.1 v1.0 GA executing
+## 待办（按优先级）— Phase 6.1 v1.0 GA SHIPPED
 
-### P0 — Phase 6.1 Wave 0 executing
+### P0 — Phase 6.1 ALL COMPLETE ✅
 
 1. ✅ **Phase 5.1-5.3 SHIPPED** — R10.1-R10.4 DELIVERED + 🎯 v0.5.0 ARCHIVED
 2. ✅ **Phase 6.1 Wave 0 COMPLETE** — STATE 139L D2 iter 8 TERMINUS + #BA retire + npm rehearsal 4/4 PASS + 756 baseline
 3. ✅ **Phase 6.1 Wave 1 COMPLETE** — publish.yml NEW (OIDC) + package.json 1.0.0 + ADR 0023 NEW; 756 tests PASS
-4. ⏳ **User push approval** for all accumulated LOCAL tags + commits per CLAUDE.md commit safety
-5. ⏳ **Trusted Publishers UI config** (npmjs.com → package → Trusted Publishers) — complete before Wave 2 T2.10 tag push; fallback NPM_TOKEN documented
-6. ⏳ **Phase 6.1 Wave 2** (T2.1-T2.11 close cadence): docs/adr/README +1 + ci.yml A7 iter + README badge + CHANGELOG [1.0.0] + ROADMAP SHIPPED + MAINTAINER-ONBOARDING + DOGFOOD + RETROSPECTIVE + STATE FINAL + 3 tags LOCAL CREATE
+4. ✅ **Phase 6.1 Wave 2 COMPLETE** — T2.1-T2.11 all shipped; 3 LOCAL tags created (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0)
+5. ⏳ **User push approval** for all accumulated LOCAL tags + commits per CLAUDE.md commit safety (push v1.0.0 tag triggers publish.yml → npm publish LIVE)
+6. ⏳ **Trusted Publishers UI config** (npmjs.com → package → Trusted Publishers) — complete before tag push; fallback NPM_TOKEN documented in ADR 0023
 
-### P1 — DEFERRED carry-forward (post-v0.4.0 close)
+### P1/P2 — DEFERRED post-v1.0 (maintenance-only mode; evaluate at organic clock end ~2026-11)
 
-5. **DEFERRED #BC** v0.5+ benchmark expand evaluation — IF Phase 4.1 dogfood reveals miss case NOT covered by current 30 SAMPLES.md → re-evaluate D-01 REJECT EXPAND new mining; currently 30/30 100% routing PASS no signal
-8. **DEFERRED #BD** regex 2-pass validation pattern lock — plan-checker iter 2 residual semantic synonym `L1-N`/`=N+1L` arithmetic missed by iter 1 literal regex; future plan-checker iterations use 2-pass (literal + arithmetic-aware) regex validation
-9. **DEFERRED #BE** Sponsors account activation external prereq (Phase 4.2 own carry) — IF user NOT activated by Phase 4.2 ship time: FUNDING.yml + badge ship forward-compatible per RESEARCH § 17.2 U1; user manual activation at github.com/sponsors/easyinplay/dashboard required for button render
-10. **DEFERRED #BF** CODEOWNERS .github/** defer SR-6 preempt (Phase 4.2 own carry) — defer v0.4.3+ if real attack surface arrives
-11. **DEFERRED #AH** ✅ DELIVERING Phase 5.2 R10.4 path traversal regex hardening (5-vector OWASP A1; src/manifest/lib/path-guard.ts NEW)
-12. **EE-4 BLOCKER auto-spawn rerun** — v0.4.0 后 evaluate (Phase 2.4 D-02 down-scope carry-forward unchanged)
-13. **userSpawn session_id capture** (Phase 3.1 DEFERRED #2) — v0.4.0+ if real userSpawn demand
-
-### P2 — 跨里程碑预留 (v0.5+ 议题)
-
-8. `mutually-exclusive skill groups` 元模型 — 推 v0.5+
-9. gstack-2 / GSD-2 v2 重写迁移 — v1.0+ 议题
-10. sigstore / cosign 签名集成 — v0.5+ 议题
-11. `requires_secret` + `command_prefix_strategy` schema 增强候选 — 推 v0.5+
-12. `--force` flag for install idempotent_check — 推 v0.5+
+- **#BC #BD #BE #BF #BJ #BK** carry-forward items + v1.0+ backlog → evaluate at organic clock end per ADR 0020 D-04 HYBRID outcome (a) maintenance-only or (b) Phase 7.x active
 
 ---
 

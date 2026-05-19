@@ -1145,4 +1145,61 @@ Or read per-phase canonical sources: `.planning/phase-5.1/{5.1-CONTEXT,PLAN,RESE
 
 ---
 
+## Phase 6.1 — v1.0 GA Production Release (2026-05-22)
+
+### 1. Phase Summary
+
+Phase 6.1 = 🎯 v1.0 GA FINAL phase — PRODUCTION RELEASE (NOT close ceremony). Scope: npm publish stream live + README stable badge + CHANGELOG [1.0.0] MAJOR + ROADMAP v1.0 SHIPPED + ADR 0023 npm publish architecture + 3 LOCAL CREATE tags. Window: 2026-05-22 (single day post-v0.5.0 close). Key deliverables: publish.yml NEW (OIDC) + package.json 1.0.0 + ADR 0023 153L + 3 tags (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0). 21/21 phases 100% complete. 5 milestones + v1.0 GA all SHIPPED.
+
+### 2. What Worked
+
+- Wave A research SOTA — npm Trusted Publishing OIDC verified before plan-phase, eliminating NPM_TOKEN long-lived secret risk (D-02 HIGH deliberate pre-confirmed)
+- Sister cadence延袭 100% format reuse across all 14 Wave 2 artifacts (PATTERNS.md pre-mapped all formats before execution)
+- 4 HIGH deliberate + 4 MED/LOW batch按推荐 discuss-phase structure (sister Phase 5.x cadence stable — methodology drift zero on FINAL phase)
+- 3-layer stack strict adherence per `feedback_three-layer-stack-strict.md` through all waves without exception
+- Wave 0 T0.3 npm publish 4-step rehearsal (R-1 mitigation) caught tarball assembly assumptions before irreversible publish
+
+### 3. What Was Inefficient
+
+- Wave 0 T0.1 STATE D2 iter 8 conditional decision tree (FLIP/ACCEPT/BLOCKED) added complexity vs simple ACCEPT — iter 8 was always going to be ACCEPT terminus; tree overhead marginal
+- T1.0 PREREQ blocking checkpoint (npm Trusted Publisher UI) is unavoidable but adds latency; npm registry pre-publish Trusted Publisher config UI was partially unavailable requiring fallback NPM_TOKEN path
+- npm registry external prereq chain (account + Trusted Publisher + package claim) = 3 sequential external steps, only automatable after first successful publish
+
+### 4. Patterns Established
+
+- OIDC trusted publishing pattern (publish.yml format ~40L) for all future v1.x releases — no NPM_TOKEN rotation needed
+- 3 LOCAL CREATE tags ordering for MAJOR releases: ADR baseline tag → alpha.1 release-prep dual → 🎯 vN.0 comprehensive annotation
+- v1.0 tag annotation 25-40L 5-section format (intro + milestones + GA criteria + stats + forward) distinct from sister 9-line minor cadence per D-04
+- Sneak-block enforcement via grep negation patterns (`! grep -qE "frozen|abandoned"`) — scalable to future release phases
+- Production release vs close ceremony cadence distinction: production release adds npm infra + package.json changes + tag annotation weight; close ceremony is docs-only
+
+### 5. Key Lessons
+
+- npm publish is irreversible after 72h — 4-step rehearsal in Wave 0 is mandatory (R-1 mitigation proved essential; harnessed-1.0.0.tgz tarball confirmed clean before any tag)
+- Trusted Publisher UI config is the only true human-action checkpoint — everything else in the release pipeline is CLI/API automatable
+- Sister cadence延袭 + project memory dual-feedback strict adherence prevents methodology drift specifically on FINAL phases where "just ship it" temptation is highest
+- ADR 0023 is architectural even for a "publish-only" phase — NEW infrastructure (publish.yml OIDC) justifies NEW ADR regardless of phase class
+
+### 6. Cost Patterns
+
+- Plan-phase: 1 PLAN.md, 19 tasks, 3 waves — ~700-900L (sister Phase 5.3 14-task adapted +5 npm publish infra complexity)
+- Execute-phase: Wave 0 (4 tasks) + Wave 1 (4 tasks) + Wave 2 (11 tasks) = 3 wave structure proven optimal for PRODUCTION RELEASE
+- No new src/ code (no biome lint needed; no TDD needed; pure release + infra phase — Wave 2 zero TypeScript)
+- 14 files modified + 2 NEW (publish.yml + ADR 0023) + 3 tags LOCAL CREATE
+
+### 7. Cross-Milestone v0.5.0 → v1.0 Trends
+
+- Milestone cadence: v0.1.0 → v1.0 = 10 days (2026-05-12 ~ 2026-05-22) sustained 1-day-per-milestone pace to MAJOR release
+- ADR accumulation: 0001-0023 across 21 phases; ADR 0020 (HYBRID 2-clock) + 0022 (path-guard) + 0023 (npm OIDC) = governance/security/supply-chain triad
+- 9 GA criteria all ✅ first attempt (no defer; no re-scope; no criteria revision mid-flight)
+- Sister cadence延袭 ratio: 14/14 Wave 2 files 100% pattern reuse (highest in project history per PATTERNS.md)
+- Bus factor: 6-month organic clock opened 2026-05-22 per ADR 0020 — first project to formally document succession window pre-actual-need with D-04 HYBRID 2-clock institutionalized
+- 三层栈 methodology: gstack governance + GSD orchestration + superpowers execution strictly held through FINAL phase per `feedback_three-layer-stack-strict.md`
+
+**Trend insight**: harnessed achieved v1.0 GA via methodology rigor (PROJECT-SPEC + ROADMAP + REQUIREMENTS persistence; ADR 0001-0023 accumulation; sister cadence reuse) rather than speed-shortcuts. The 1-day-per-milestone pace was sustained by aggressive sister format reuse — NOT by skipping discovery/research/STRIDE/dogfood gates.
+
+---
+
+*Phase 6.1 RETROSPECTIVE complete — 2026-05-22 ship; ~19 tasks / 3 waves / 756 tests stable / ADR 0023 NEW / 3 LOCAL tags. 🎯 v1.0 GA MILESTONE 1/1 CLOSE. FINAL PHASE. Post-v1.0: organic clock running ~2026-11 close; maintenance-only mode OR continued active per ADR 0020 D-04 HYBRID 2-clock.*
+
 *Phase 5.3 RETROSPECTIVE complete — 2026-05-22 ship; ~11 commits / 756 tests stable / ADR 0021+0022 baseline (NO new ADR per D-02) / dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL CREATE (NO push per CLAUDE.md). 🎯 v0.5.0 MILESTONE 3/3 CLOSE. next: Phase 6.x v1.0 GA discuss-phase 启动 candidate (window 2026-05-22~23 post-close per ROADMAP § v1.0).*
