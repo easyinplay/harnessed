@@ -11,6 +11,7 @@
 import type { Command } from 'commander'
 import { runRouting, type TaskContext } from '../routing/index.js'
 import { loadPhases } from '../workflow/loadPhases.js'
+import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
   task?: string
@@ -36,13 +37,8 @@ export function registerExecuteTask(program: Command): void {
     .option('--model-tier <tier>', "override: 'inherit' bypasses per-phase phase.model (B-10)")
     .option('--max-iterations <n>', 'ralph-loop max iter (default 20)', (v) => parseInt(v, 10))
     .action(async (raw: RawOpts) => {
-      // H1 gate — sibling install-base.ts L51-56 + research.ts L37-43
-      if (raw.nonInteractive && !raw.apply && !raw.dryRun) {
-        console.error(
-          "error: --non-interactive requires --apply or --dry-run\n  fix:  'harnessed execute-task --task <text> --non-interactive --dry-run' or '--apply'",
-        )
-        process.exit(2)
-      }
+      // H1 gate — sibling install-base.ts pattern
+      validateNonInteractiveFlags(raw, 'execute-task --task <text>')
       if (!raw.task) {
         console.error('error: --task <text> is required')
         process.exit(2)

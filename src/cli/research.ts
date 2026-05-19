@@ -15,6 +15,7 @@
 
 import type { Command } from 'commander'
 import { runRouting, type TaskContext } from '../routing/index.js'
+import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
   query?: string
@@ -34,13 +35,8 @@ export function registerResearch(program: Command): void {
     .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .action(async (raw: RawOpts) => {
-      // H1 gate (sibling install-base.ts L51-L56)
-      if (raw.nonInteractive && !raw.apply && !raw.dryRun) {
-        console.error(
-          "error: --non-interactive requires --apply or --dry-run\n  fix:  'harnessed research --query <text> --non-interactive --dry-run' or '--apply'",
-        )
-        process.exit(2)
-      }
+      // H1 gate (sibling install-base.ts pattern)
+      validateNonInteractiveFlags(raw, 'research --query <text>')
       if (!raw.query) {
         console.error('error: --query <text> is required')
         process.exit(2)

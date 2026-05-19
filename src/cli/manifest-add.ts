@@ -5,6 +5,7 @@ import { writeFileSync } from 'node:fs'
 import { stdin, stdout } from 'node:process'
 import * as readline from 'node:readline/promises'
 import type { Command } from 'commander'
+import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 const QA: readonly { q: string; f: string }[] = [
   { q: '① 是真 reusable surface 还是临时 wrapper?', f: 'q1_reusable_surface' },
@@ -36,10 +37,7 @@ export function registerManifestAdd(program: Command): void {
     .option('--dry-run', 'force dry-run (overrides --apply if both set)')
     .option('--non-interactive', 'CI/scripts — requires --apply or --dry-run; WARN-only dry-run')
     .action(async (upstream: string, raw: RawOpts) => {
-      if (raw.nonInteractive && !raw.apply && !raw.dryRun) {
-        console.error('error: --non-interactive requires --apply or --dry-run')
-        process.exit(2)
-      }
+      validateNonInteractiveFlags(raw, 'manifest-add <upstream>')
       const name = raw.name ?? basename(upstream)
       const category = raw.category ?? 'skill-packs'
       const outPath = `manifests/${category}/${name}.ee5-answers.json`

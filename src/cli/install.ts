@@ -31,6 +31,7 @@ import pkg from '../../package.json' with { type: 'json' }
 import { runInstall } from '../installers/index.js'
 import type { InstallError, InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
+import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
   apply?: boolean
@@ -65,13 +66,7 @@ export function registerInstall(program: Command): void {
     )
     .action(async (name: string, raw: RawOpts) => {
       // H1 pre-action flag gate (see file header IMPL NOTE).
-      if (raw.nonInteractive && !raw.apply && !raw.dryRun) {
-        console.error(
-          'error: --non-interactive requires an explicit --apply or --dry-run flag\n' +
-            "  fix:  re-run as 'harnessed install <name> --non-interactive --dry-run' or '--apply'",
-        )
-        process.exit(2)
-      }
+      validateNonInteractiveFlags(raw, 'install <name>')
 
       // Phase 3.3 W1 T1.8 ADD — D-01 alias redirect (D-02 silent install,
       // NO console output per R7.5 验收 "install 通过" 语义对齐; doctor 7th

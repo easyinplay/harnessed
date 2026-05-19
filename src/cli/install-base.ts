@@ -15,6 +15,7 @@ import type { Command } from 'commander'
 import { runInstall } from '../installers/index.js'
 import type { InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
+import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
   apply?: boolean
@@ -48,12 +49,7 @@ export function registerInstallBase(program: Command): void {
     .option('--dry-run', 'force dry-run (overrides --apply if both are set)')
     .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
     .action(async (raw: RawOpts) => {
-      if (raw.nonInteractive && !raw.apply && !raw.dryRun) {
-        console.error(
-          "error: --non-interactive requires --apply or --dry-run\n  fix:  'harnessed install-base --non-interactive --dry-run' or '--apply'",
-        )
-        process.exit(2)
-      }
+      validateNonInteractiveFlags(raw, 'install-base')
       const opts: InstallOpts = {
         apply: raw.apply === true,
         dryRun: raw.dryRun === true,
