@@ -84,10 +84,10 @@ jobs:
       # Phase 5.1 加 ADR 0019 0020 0021 (retroactive adr-0019/0020-accepted Phase 5.1 W0 T0.4
       # LOCAL CREATE + adr-0021-accepted Phase 5.1 W2 T2.9 LOCAL CREATE; retroactive iter
       # 0018→0021 per RESEARCH § 5 critical finding absorbed T2.8 CRITICAL fix):
-      - name: A7 acceptance bar — ADR 0001-0021 main body 守恒
+      - name: A7 acceptance bar — ADR 0001-0022 main body 守恒
         run: |
           missing_tags=()
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021; do
+          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022; do
             if ! git fetch origin "tag" "adr-${n}-accepted" --no-tags 2>/dev/null; then
               missing_tags+=("adr-${n}-accepted")
               continue
@@ -98,7 +98,7 @@ jobs:
             exit 0
           fi
           fail=0
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021; do
+          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022; do
             diff_out=$(git diff "adr-${n}-accepted" -- "docs/adr/${n}-*.md")
             if [ -n "$diff_out" ]; then
               echo "::error::A7 acceptance bar violated — ADR ${n} main body changed since adr-${n}-accepted tag"
@@ -109,7 +109,7 @@ jobs:
           if [ "$fail" -ne 0 ]; then
             exit 1
           fi
-          echo "A7 ✅ ADR 0001-0021 main body unchanged"
+          echo "A7 ✅ ADR 0001-0022 main body unchanged"
       # Phase 2.1 T1.7 — transparency verdict-marker gate (ADR 0010, D2.1-7/8).
       # Scans .planning verdict docs for closure-marker lines missing an N/N
       # ratio + miss: declaration. W3: warn-only round 1 (script exits 0 even
