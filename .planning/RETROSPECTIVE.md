@@ -916,3 +916,11 @@ Or read per-phase canonical sources directly: `.planning/phase-4.2/{4.2-CONTEXT,
 ---
 
 *Phase 4.3 RETROSPECTIVE complete — 2026-05-19 ship；~30+ atomic commits / 720+ tests / 3 NEW ADR (0018 PRIMARY + 0019/0020 backfill) + 1 baseline tag iter (adr-0018-accepted LOCAL) + 1 single baseline tag (v0.4.0-alpha.3-audit LOCAL) + 🎯 v0.4.0 milestone tag (LOCAL) + 4 D-decisions activated 闭环 + M-01 ARCHITECTURAL phase class meta-disambiguation lock + W0 backlog 2 项一次根治 #BA RESOLVED + #BS verified + v0.4.0→v0.5/v1.0 milestone transition (3/3 CLOSE reserves v0.5+ discuss-phase 启动). 下个 retro entry 在 v0.5/v1.0 milestone discuss-phase ship 后续编.*
+
+---
+
+## ARCHIVED FROM STATE — Phase 4.3
+
+> Phase 5.1 W0 T0.1 D2 cadence iter 5 TERMINUS (2026-05-19) — 5-recurrence terminus heuristic confirmed pattern stable; single-phase archive per R-4 cadence consistency mitigation continuation; iter 5 = REINFORCE post-iter-4 stable terminus signal (sister Phase 4.3 W0.1 4th-iter → Phase 5.1 W0 T0.1 5th-iter). D2 standing process: if 6th iter Phase 5.2 continues, graduate to "implicit-standing-process" (no explicit iter count needed).
+
+- **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log NEW infra + R8.4 ADR backfill 3-pattern lock + CHANGELOG + 🎯 v0.4.0 milestone 3/3 close (src/audit/log.ts NEW 66L D-01 JSONL + 12-field schema + src/audit/hook.ts NEW 34L thin wrapper + src/routing/engine.ts MODIFY 200L EXACT HIGH R-1 MITIGATED + 4 emitAudit + tests/audit/ 11 fixtures + docs/adr/0018-0020 NEW + README index +12 catchup + ci.yml A7 iter 0017→0018 + CHANGELOG NEW Keep-a-Changelog + 3-file milestone archive triplet + DOGFOOD PASS 3/3 + triple tag LOCAL CREATE adr-0018-accepted + v0.4.0-alpha.3-audit + 🎯 v0.4.0 NO push per CLAUDE.md); 🎯 v0.4.0 milestone 3/3 SHIPPED ARCHIVED CLOSE; 17/17 100% phase ship close

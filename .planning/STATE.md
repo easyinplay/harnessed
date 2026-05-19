@@ -44,43 +44,33 @@
 <!-- Phase 3.3 + 3.4 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4 (2026-05-18 Phase 4.1 W0.3 D2 cadence iter 2 per standing process — M2 backlog discharge institutionalize verify 2nd-iter beyond 1st-implementation) -->
 <!-- Phase 4.0 + 4.1 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.0+4.1 (2026-05-18 Phase 4.2 W0.1 D2 cadence iter 3 per standing process — M2 backlog discharge institutionalize verify 3rd-iter terminus stable ≥3-iter pattern signal beyond 2nd-iter Phase 4.1 W0.3; Phase 4.0 was numeric placeholder NOT real shipped phase — Phase 4.1 single-phase archive per R-4 cadence consistency mitigation) -->
 <!-- Phase 4.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.2 (2026-05-19 Phase 4.3 W0.1 D2 cadence iter 4 per standing process — M2 backlog discharge institutionalize REINFORCE 4th-iter stable signal beyond ≥3-iter pattern; sister 5-recurrence terminus heuristic confirmed pattern stable Phase 4.2 W0.1 3rd-iter → Phase 4.3 W0.1 4th-iter; single-phase archive per R-4 cadence consistency mitigation continuation) -->
-- **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log NEW infra + R8.4 ADR backfill 3-pattern lock + CHANGELOG + 🎯 v0.4.0 milestone 3/3 close (src/audit/log.ts NEW 66L D-01 JSONL + 12-field schema + src/audit/hook.ts NEW 34L thin wrapper + src/routing/engine.ts MODIFY 200L EXACT HIGH R-1 MITIGATED + 4 emitAudit + tests/audit/ 11 fixtures + docs/adr/0018-0020 NEW + README index +12 catchup + ci.yml A7 iter 0017→0018 + CHANGELOG NEW Keep-a-Changelog + 3-file milestone archive triplet + DOGFOOD PASS 3/3 + triple tag LOCAL CREATE adr-0018-accepted + v0.4.0-alpha.3-audit + 🎯 v0.4.0 NO push per CLAUDE.md); 🎯 v0.4.0 milestone 3/3 SHIPPED ARCHIVED CLOSE; 17/17 100% phase ship close
-- **Phase 4.2 shipped** ✅ (2026-05-18) — co-maintainer onboarding + stale-bot + GitHub Sponsors R8.2+R8.3+R8.5 anchors (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.2; v0.4.0 milestone 2/3 PROGRESS; single baseline tag `v0.4.0-alpha.2-community` LOCAL NO push)
-- **Phase 4.1 shipped** ✅ (2026-05-18) — dogfooding benchmark R8.1 anchor (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.0+4.1; v0.4.0 milestone 1/3 PROGRESS; single baseline tag `v0.4.0-alpha.1-benchmark` LOCAL NO push)
-- **Phase 3.4 shipped** ✅ (2026-05-17) — routing 30/30 = 100% per-tier + doctor 8th check + W0 5 项一次根治 + ADR 0017 (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4)
-- **Phase 3.3 shipped** ✅ (2026-05-17) — aliases.yaml RICH + DOCTOR-ONLY-WARN install + doctor 7th check + known-good YAML + STATE dual-SSOT COLLAPSE + ADR 0016 (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 3.3+3.4)
-- **Phase 3.2 shipped** ✅ (2026-05-17) — gstack 前缀探测 PROBE doctor 6th check + workflow JINJA 插值 + plan-feature 5-phase WIRED + governance PUSH
-- **Phase 3.1 shipped** ✅ (2026-05-16) — checkpoint 引擎 + harnessed resume 12th CLI + compact 75% placeholder
-- **Phase 2.4 shipped** ✅ (2026-05-16) — doctor 完整版 + EE-4 4 维 SSOT + dashboard C 路径
-- **Phase 2.3 shipped** ✅ (2026-05-16) — extension MVP + karpathy SKILL-ONLY + 30/30 routing 100%
-- **Phase 2.2 shipped** ✅ (2026-05-15) — execute-task workflow + SDK 0.3.142 + per-phase model tier
-- **Phase 2.1 shipped** ✅ (2026-05-15) — 6 install method runtime-ready + transparency CI gate
-- **Phase 1.5 shipped** ✅ (2026-05-14) — DAG resolver + Semantic Router L2 stub + 23 招式 routing
-- **Phase 1.4 shipped** ✅ (2026-05-13) — routing engine v1 + AgentDefinition factory
-- **Phase 1.3 shipped** ✅ (2026-05-13) — categorization schema + decision_rules.yaml v1
-- **Phase 1.2.5 architecture revision shipped** ✅ (2026-05-12) — ADR 0006 wedge 升级
-- **Phase 1.2 shipped** ✅ (2026-05-12) — cli-npm + mcp-stdio runtime + 5 CLI subcommands
-- **Phase 1.1 + 1.1.1 hotfix shipped** ✅ (2026-05-12) — schema v1 frozen + 10 manifest + 3 ADR
+<!-- Phase 4.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 (2026-05-19 Phase 5.1 W0 T0.1 D2 cadence iter 5 TERMINUS per standing process — 5-recurrence terminus heuristic confirmed pattern stable; single-phase archive per R-4 cadence consistency mitigation continuation; iter 5 = REINFORCE post-iter-4 stable terminus signal) -->
+- **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log + R8.4 ADR backfill + 🎯 v0.4.0 close (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3)
+- **Phase 4.2 shipped** ✅ (2026-05-18) — co-maintainer onboarding + R8.2+R8.3+R8.5 (archived → RETROSPECTIVE.md § Phase 4.2)
+- **Phase 4.1 shipped** ✅ (2026-05-18) — dogfooding benchmark R8.1 anchor (archived → RETROSPECTIVE.md § Phase 4.0+4.1)
+- **Phase 1.1-3.4 shipped** ✅ (2026-05-12 ~ 2026-05-17) — 14 phases v0.1.0+v0.2.0+v0.3.0 milestones (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-3.2 + Phase 3.1+3.2 + Phase 3.3+3.4)
 
 ---
 
 ## 进行中（In Progress）
 
-[当前: 🎯 v0.4.0 SHIPPED & ARCHIVED 2026-05-19 + ⚙ v0.5.0 v1.0-RC2 minor STARTING (sister H1 BB path LOCKED); Phase 5.1 discuss-phase 启动 候选 `/gsd-discuss-phase 5.1` (R10.1 audit log consumer + R10.2 state lock)]
+[当前: ⚙ v0.5.0 v1.0-RC2 minor STARTING (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 **execute-phase ACTIVE** (Wave 0 in progress — T0.1+T0.2+T0.3+T0.4; R10.1 audit log consumer + R10.2 state lock)]
 
 ---
 
 ## 待办（按优先级）— v0.5.0 v1.0-RC2 minor STARTING window
 
-### P0 — Phase 5.1 discuss-phase 启动 prep
+### P0 — Phase 5.1 execute-phase ACTIVE
 
-1. ⏳ **Phase 5.1 discuss-phase 启动** (R10.1 audit log --filter consumer + R10.2 state.ts concurrent write lock #BU; 1-day target; 候选启动 `/gsd-discuss-phase 5.1`)
-2. ⏳ **User push approval** for tags LOCAL created (累积 6 tags pending push per CLAUDE.md commit safety NEVER push without user explicit request):
+1. ✅ **Phase 5.1 discuss-phase SHIPPED** (2026-05-19) + ✅ **plan-phase SHIPPED** (2026-05-19) — PLAN.md 1047L 24 tasks 3 waves ready
+2. ⏳ **Phase 5.1 execute-phase Wave 0 in progress** (T0.1+T0.2+T0.3+T0.4 atomic per PLAN.md; prerequisite for Wave 1+2)
+3. ⏳ **User push approval** for tags LOCAL created (累积 6+ tags pending push per CLAUDE.md commit safety NEVER push without user explicit request):
    - Phase 4.1 W2 T2.7: `v0.4.0-alpha.1-benchmark` LOCAL
    - Phase 4.2 W2 T2.7: `v0.4.0-alpha.2-community` LOCAL
    - Phase 4.3 W2 T2.15: `adr-0018-accepted` + `v0.4.0-alpha.3-audit` + 🎯 `v0.4.0` LOCAL CREATE pending
-3. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-4.3 W2 commits 12+ atomic commits per CLAUDE.md commit safety)
-4. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5 button render): activate at github.com/sponsors/easyinplay/dashboard (Pending Approval → Active state) if not yet activated per DEFERRED #BE
+   - Phase 5.1 W0 T0.4: `adr-0019-accepted` + `adr-0020-accepted` RETROACTIVE LOCAL CREATE (T0.4 BLOCKER)
+4. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-5.1 commits per CLAUDE.md commit safety)
+5. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5 button render): activate at github.com/sponsors/easyinplay/dashboard (Pending Approval → Active state) if not yet activated per DEFERRED #BE
 
 ### P1 — DEFERRED carry-forward (post-v0.4.0 close)
 
