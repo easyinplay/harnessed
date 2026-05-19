@@ -34,9 +34,9 @@ progress:
 ## 当前位置（Current Position）
 
 - **GSD phase**：✅ **Phase 6.1 SHIPPED** (2026-05-22) — 🎯 v1.0 GA PRODUCTION RELEASE FINAL phase; 21/21 phases 100% complete
-- **当前里程碑**：**🎯 v1.0 GA 1/1 SHIPPED & ARCHIVED** 2026-05-22 — npm publish stream live, README stable badge, CHANGELOG [1.0.0], ROADMAP v1.0 SHIPPED, ADR 0023 accepted, 3 tags LOCAL CREATE (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0)
+- **当前里程碑**：**🎯 v1.0.1 PATCH SHIPPED** 2026-05-22 — critical bug fix post-v1.0 GA; global install users now work; harnessed setup NEW; 4 tags LOCAL (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0 + 🎯 v1.0.1); push approval pending → npm publish LIVE
 - **下一 phase**：**v1.0+ Maintenance-Only Mode** — organic clock running 2026-05-22 ~ ~2026-11; post-clock decision (a) maintenance-only or (b) continued active per ADR 0020 D-04 HYBRID
-- **状態**：✅ **Phase 6.1 SHIPPED 2026-05-22** — 21/21 phases 100%; FINAL phase per ROADMAP v1.0 chapter; maintenance-only mode trigger ~2026-11 post organic clock end; no R-series additions until co-maintainer recruited
+- **状態**：✅ **v1.0.1 PATCH SHIPPED 2026-05-22** — critical bug fix exception per ROADMAP v1.0+ chapter; install/install-base/uninstall path resolution fixed (process.cwd → packagePath); setup command finally implemented; 764 tests (756 + 8 new); maintenance-only mode trigger ~2026-11
 - **進度**：21 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ **100%**（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + v0.5.0 + 🎯 **v1.0 GA** ALL SHIPPED & ARCHIVED）
 
 ### 各里程碑进度
