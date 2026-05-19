@@ -1137,4 +1137,12 @@ Or read per-phase canonical sources: `.planning/phase-5.1/{5.1-CONTEXT,PLAN,RESE
 
 ---
 
+## ARCHIVED FROM STATE — Phase 5.3 (archived 2026-05-22 Phase 6.1 W0 D2 iter 8 TERMINUS)
+
+> (2026-05-22 Phase 6.1 W0 T0.1 D2 cadence iter 8 TERMINUS per standing process — 8-iter confirms implicit graduation beyond ≥6-iter; sister Phase 5.1 iter 5 + Phase 5.2 iter 6 + Phase 5.3 iter 7 pattern stable; post-v1.0 STATE maintenance freeze forward signal per sister review T4)
+
+- **Phase 5.3 shipped** ✅ (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep (3-file archive triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter NEW + dual tag LOCAL; 756 tests stable)
+
+---
+
 *Phase 5.3 RETROSPECTIVE complete — 2026-05-22 ship; ~11 commits / 756 tests stable / ADR 0021+0022 baseline (NO new ADR per D-02) / dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL CREATE (NO push per CLAUDE.md). 🎯 v0.5.0 MILESTONE 3/3 CLOSE. next: Phase 6.x v1.0 GA discuss-phase 启动 candidate (window 2026-05-22~23 post-close per ROADMAP § v1.0).*

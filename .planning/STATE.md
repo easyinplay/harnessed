@@ -58,27 +58,25 @@ progress:
 <!-- Phase 5.1 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1 (2026-05-19 Phase 5.2 W0 T0.1 D2 cadence iter 6 REINFORCE per standing process — implicit-standing-process graduation signal; 6th-iter confirms D2 cadence formally institutionalized; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 <!-- Phase 5.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.2 (2026-05-22 Phase 5.3 W0.1 D2 cadence iter 7 per standing process — implicit-standing-process graduation REINFORCE; iter 7 post-iter-6 terminus signal Phase 5.2 W0; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 
-- **Phase 5.3 shipped** ✅ (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep (3-file archive triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter NEW + dual tag LOCAL; 756 tests stable)
-- **Phase 5.2 shipped** ✅ (2026-05-19) — R10.3 uninstall 14th subcommand + 7 uninstallers + R10.4 path-guard.ts + ADR 0022 (archived → RETROSPECTIVE.md § Phase 5.2)
-- **Phase 5.1 shipped** ✅ (2026-05-19) — R10.1 audit-log consumer + R10.2 state.ts lock + ADR 0021 + ci.yml A7 0018→0021 + 733 tests
+<!-- Phase 5.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.3 (2026-05-22 Phase 6.1 W0 D2 cadence iter 8 TERMINUS per standing process — 8-iter confirms implicit graduation; sister Phase 5.1 iter 5 + Phase 5.2 iter 6 + Phase 5.3 iter 7 pattern stable beyond 6-iter graduation) -->
+- **Phase 5.1-5.3 shipped** ✅ (2026-05-19 ~ 2026-05-22) — R10.1-R10.4 + ADR 0021+0022 + 756 tests + 🎯 v0.5.0 CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1-5.3)
 - **Phase 1.1-4.3 shipped** ✅ (2026-05-12 ~ 2026-05-19) — 17 phases v0.1.0+v0.2.0+v0.3.0+v0.4.0 milestones all CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-4.3)
 
 ---
 
 ## 进行中（In Progress）
 
-[当前: ✅ Phase 5.2 SHIPPED 2026-05-19 — R10.3 + R10.4 DELIVERED; ⚙ Phase 5.3 next — v0.5.0 milestone close + 🎯 v1.0 GA prep]
+[当前: ✅ Phase 5.3 SHIPPED 2026-05-22 — 🎯 v0.5.0 CLOSE & ARCHIVED; ⚙ Phase 6.1 executing — v1.0 GA production release Wave 0 in progress]
 
 ---
 
-## 待办（按优先级）— v0.5.0 v1.0-RC2 minor STARTING window
+## 待办（按优先级）— Phase 6.1 v1.0 GA executing
 
-### P0 — Phase 5.2 executing
+### P0 — Phase 6.1 Wave 0 executing
 
-1. ✅ **Phase 5.1 SHIPPED** (2026-05-19) + ✅ **Phase 5.2 SHIPPED** (2026-05-19) — R10.1+R10.2+R10.3+R10.4 DELIVERED; ⏳ **Phase 5.3** — v0.5.0 close + 🎯 v1.0 GA prep
-2. ⏳ **User push approval** for tags LOCAL (累积 10+ pending: v0.4.0-alpha.1/2/3 + adr-0018/0019/0020/0021/0022-accepted + 🎯 v0.4.0 + v0.5.0-alpha.1-audit-lock + v0.5.0-alpha.2-uninstall-security)
-3. ⏳ **User push approval** for accumulated commits ahead origin (Phase 4.1-5.2 commits per CLAUDE.md commit safety)
-4. ⏳ **User manual prerequisite — Sponsors account activation** (R8.5): activate at github.com/sponsors/easyinplay/dashboard if not yet activated per DEFERRED #BE
+1. ✅ **Phase 5.1-5.3 SHIPPED** — R10.1-R10.4 DELIVERED + 🎯 v0.5.0 ARCHIVED; ⚙ **Phase 6.1 Wave 0** executing — STATE D2 iter 8 TERMINUS + #BA round 5 + npm rehearsal + baseline gate
+2. ⏳ **User push approval** for all accumulated LOCAL tags + commits (Phase 4.1-5.3 per CLAUDE.md commit safety; Phase 6.1 Wave 0 completing now)
+3. ⏳ **T1.0 PREREQ** (Phase 6.1 Wave 1 blocking gate): npm account claim `harnessed` + GitHub Trusted Publisher UI config (manual external user prereq)
 
 ### P1 — DEFERRED carry-forward (post-v0.4.0 close)
 
@@ -107,7 +105,7 @@ progress:
 3. **bus factor 1 真实风险**——Avelino 论文实证单 maintainer 年掉队率 36%，6 个月 co-maintainer 窗口非装饰
 4. **Karpathy ≤200L hard limit**——B-06 + B-26 + Phase 3.4 D-04 explicit "no B-03 5% tolerance"; doctor.ts 195L borderline (Phase 3.4 W1 Option A inline shrink locked)
 5. **biome lint preempt before commit**（project memory `feedback_biome-preempt.md` 3 CI-red recurrences Phase 2.1.1 / 2.2 / 2.3）: 任何 TS/JS commit 前必跑 `pnpm exec biome check --write`
-6. **STATE.md archive cadence institutionalize** (D2 cadence iter 5 TERMINUS Phase 5.1 W0): 每 phase ship 时 T0.1 trim prev-phase narrative → RETROSPECTIVE.md § ARCHIVED FROM STATE; D3 gate `check-state-archive-stale.mjs` SIZE_LIMIT=150 ENFORCE
+6. **STATE.md archive cadence institutionalize** (D2 cadence iter 8 TERMINUS Phase 6.1 W0 — 8-iter pattern stable beyond ≥6-iter graduation; post-v1.0 STATE maintenance freeze forward signal per T4): 每 phase ship 时 T0.1 trim prev-phase narrative → RETROSPECTIVE.md § ARCHIVED FROM STATE; D3 gate `check-state-archive-stale.mjs` SIZE_LIMIT=150 ENFORCE
 7. **A7 守恒**——ADR 0001-0021 main body 永久 0 diff; ci.yml A7 step iterate Phase N ship 时 add new ADR reference (Phase 5.2 W2 T2.7 iter 0021→0022)
 
 ---
@@ -128,7 +126,7 @@ progress:
 1. `planning-with-files` 与 `superpowers/writing-plans` 互斥语义 — defer v0.5+
 2. gstack-2 / GSD-2 v2 重写迁移 — v1.0+ 议题
 3. "用户 10 秒手动覆盖路由错误" UX 量化 — v0.5 benchmark 时定
-4. **DEFERRED #BA SIZE_LIMIT round 4 evaluate** — Phase 5.3 W0.2 post-trim STATE 141L, stays within 150 limit but insufficient headroom for 140 flip (141-145L DEFER path per decision tree); defer Phase 6.x signal evaluate (5th consecutive evaluate signal terminus reassess)
+4. **DEFERRED #BA SIZE_LIMIT round 5 evaluate** — Phase 6.1 W0 T0.2 active: post-T0.1 trim STATE size → conditional FLIP 150→140 (≤130L) / ACCEPT terminus (131-145L) / BLOCKED (>145L); sister 5-recurrence terminus + T4 post-v1.0 STATE maintenance freeze graduation signal; #BA permanent retire pending T0.2 outcome
 
 ### Blockers
 
