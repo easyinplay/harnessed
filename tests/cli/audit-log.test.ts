@@ -92,7 +92,7 @@ const RECORD_C = JSON.stringify({
 
 function mockAuditLog(lines: string[]): void {
   existsSyncMock.mockReturnValue(true)
-  readFileSyncMock.mockReturnValue(lines.join('\n') as unknown as Buffer)
+  readFileSyncMock.mockReturnValue(lines.join('\n'))
 }
 
 describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual format + D-03 flags + D-04 redact)', () => {

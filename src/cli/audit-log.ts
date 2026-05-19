@@ -48,15 +48,25 @@ function renderHumanTable(records: AuditRecord[]): void {
 }
 
 function pipeToJq(filterExpr: string, lines: string[]): Promise<number> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     // D-01: spawn with shell:false (default) — argv-mode immune to shell injection (STRIDE T).
     const child = spawn('jq', [filterExpr], {
       stdio: ['pipe', 'inherit', 'inherit'],
       windowsHide: true,
     })
+    // Handle jq absent (ENOENT) — actionable error per doctor.ts jq check pattern.
+    child.on('error', (err) => {
+      const e = err as NodeJS.ErrnoException
+      if (e.code === 'ENOENT') {
+        console.error('✗ jq not found in PATH — run: harnessed doctor')
+        resolve(1)
+      } else {
+        reject(err)
+      }
+    })
+    child.on('close', (code) => resolve(code ?? 0))
     child.stdin.write(lines.join('\n'))
     child.stdin.end()
-    child.on('close', (code) => resolve(code ?? 0))
   })
 }
 
