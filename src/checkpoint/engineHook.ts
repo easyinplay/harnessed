@@ -18,14 +18,18 @@ export interface EngineCheckpointHookCtx {
   canonicalRefs?: string[]
 }
 
-/** Activate workflow + return projected checkpoint path on phase start. */
+/** Activate workflow + return projected checkpoint path on phase start.
+ *  Lock acquired transitively via stateActivate → writeCurrentWorkflow
+ *  (sister W-01 PLAN-CHECK resolve Path A: state.ts self-locks; no double-lock). */
 export async function activatePhase(phaseId: string): Promise<{ checkpointPath: string }> {
   const checkpointPath = `.harnessed/checkpoints/${phaseId}.json`
   await stateActivate(phaseId, checkpointPath)
   return { checkpointPath }
 }
 
-/** Write final checkpoint envelope + transition workflow status='complete' on success. */
+/** Write final checkpoint envelope + transition workflow status='complete' on success.
+ *  Lock acquired transitively via stateComplete → writeCurrentWorkflow
+ *  (sister W-01 PLAN-CHECK resolve Path A: state.ts self-locks; no double-lock). */
 export async function completePhase(ctx: EngineCheckpointHookCtx): Promise<void> {
   if (ctx.phaseId === 'unknown') {
     console.error(
