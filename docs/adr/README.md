@@ -59,6 +59,7 @@
 | [0018](./0018-routing-audit-log.md) | Phase 4.3 — Routing audit log (JSONL append-only + 12-field schema + forward-only) + R8.4 ADR backfill + v0.4.0 milestone close | Accepted | 2026-05-19 |
 | [0019](./0019-state-dual-ssot-collapse-pattern.md) | STATE dual-SoT 5-recurrence terminus COLLAPSE pattern (backfill Phase 3.3 D-04 institutional pattern lock) | Accepted | 2026-05-19 |
 | [0020](./0020-hybrid-2clock-disambiguation.md) | HYBRID 2-clock disambiguation pattern (backfill Phase 4.2 D-04 institutional pattern lock) | Accepted | 2026-05-19 |
+| [0021](./0021-state-lock-and-audit-consumer.md) | Phase 5.1 — R10.2 state.ts concurrent write lock (proper-lockfile) + R10.1 audit log --filter CLI consumer | Accepted | 2026-05-19 |
 
 ## 参考
 
