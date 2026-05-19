@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ✅ **Phase 5.3 SHIPPED** (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep; ⚙ **Phase 6.1 Wave 0 COMPLETE** 2026-05-22 — D2 iter 8 TERMINUS + #BA retire + npm rehearsal + baseline 756 PASS; Wave 1 ready (T1.0 PREREQ blocking)
-- **当前里程碑**：**v1.0 GA** 🎯 Phase 6.1 executing — Wave 0 COMPLETE; Wave 1 blocked on T1.0 PREREQ (npm account + Trusted Publisher UI config user manual)
-- **下一 phase**：**Phase 6.1 Wave 1** (T1.0 PREREQ blocking external user setup: npm account claim `harnessed` + GitHub Trusted Publisher UI config; then T1.1 publish.yml NEW + T1.2 package.json 3 changes + T1.3 ADR 0023 NEW)
-- **状態**：⚙ **Phase 6.1 Wave 0 COMPLETE** 2026-05-22 — STATE 139L + RETROSPECTIVE Phase 5.3 archived + #BA ACCEPT terminus + npm rehearsal 4/4 PASS + 756 tests baseline; Wave 1 ready (T1.0 PREREQ gate)
-- **進度**：20 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + 🎯 **v0.5.0 100% CLOSE** all SHIPPED & ARCHIVED; Phase 6.1 executing）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ✅ **Phase 5.3 SHIPPED** (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep; ✅ **Phase 6.1 Wave 0 COMPLETE** 2026-05-22; ✅ **Phase 6.1 Wave 1 COMPLETE** 2026-05-20 — publish.yml NEW + package.json 1.0.0 + ADR 0023 NEW; Wave 2 ready
+- **当前里程碑**：**v1.0 GA** 🎯 Phase 6.1 executing — Wave 0 + Wave 1 COMPLETE; Wave 2 ready (T2.1-T2.11 close cadence artifacts)
+- **下一 phase**：**Phase 6.1 Wave 2** (T2.1 docs/adr/README +1 + T2.2 ci.yml A7 iter 0022→0023 + T2.3 CHANGELOG [1.0.0] + T2.4 README badge swap + T2.5 ROADMAP v1.0 SHIPPED + T2.6 MAINTAINER-ONBOARDING NOTE + T2.7 DOGFOOD verify + T2.8 RETROSPECTIVE + T2.9 STATE FINAL + T2.10 3 tags LOCAL CREATE + T2.11 final commit)
+- **状態**：✅ **Phase 6.1 Wave 1 COMPLETE** 2026-05-20 — T1.0 PREREQ doc + T1.1 publish.yml 39L OIDC + T1.2 package.json 3 changes (private removed + 1.0.0 + author) + T1.3 ADR 0023 153L; 756 tests PASS no regression; Wave 2 ready
+- **進度**：20 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + 🎯 **v0.5.0 100% CLOSE** all SHIPPED & ARCHIVED; Phase 6.1 Wave 1 COMPLETE Wave 2 executing）
 
 ### 各里程碑进度
 
@@ -75,9 +75,12 @@ progress:
 
 ### P0 — Phase 6.1 Wave 0 executing
 
-1. ✅ **Phase 5.1-5.3 SHIPPED** — R10.1-R10.4 DELIVERED + 🎯 v0.5.0 ARCHIVED; ⚙ **Phase 6.1 Wave 0** executing — STATE D2 iter 8 TERMINUS + #BA round 5 + npm rehearsal + baseline gate
-2. ⏳ **User push approval** for all accumulated LOCAL tags + commits (Phase 4.1-5.3 per CLAUDE.md commit safety; Phase 6.1 Wave 0 completing now)
-3. ⏳ **T1.0 PREREQ** (Phase 6.1 Wave 1 blocking gate): npm account claim `harnessed` + GitHub Trusted Publisher UI config (manual external user prereq)
+1. ✅ **Phase 5.1-5.3 SHIPPED** — R10.1-R10.4 DELIVERED + 🎯 v0.5.0 ARCHIVED
+2. ✅ **Phase 6.1 Wave 0 COMPLETE** — STATE 139L D2 iter 8 TERMINUS + #BA retire + npm rehearsal 4/4 PASS + 756 baseline
+3. ✅ **Phase 6.1 Wave 1 COMPLETE** — publish.yml NEW (OIDC) + package.json 1.0.0 + ADR 0023 NEW; 756 tests PASS
+4. ⏳ **User push approval** for all accumulated LOCAL tags + commits per CLAUDE.md commit safety
+5. ⏳ **Trusted Publishers UI config** (npmjs.com → package → Trusted Publishers) — complete before Wave 2 T2.10 tag push; fallback NPM_TOKEN documented
+6. ⏳ **Phase 6.1 Wave 2** (T2.1-T2.11 close cadence): docs/adr/README +1 + ci.yml A7 iter + README badge + CHANGELOG [1.0.0] + ROADMAP SHIPPED + MAINTAINER-ONBOARDING + DOGFOOD + RETROSPECTIVE + STATE FINAL + 3 tags LOCAL CREATE
 
 ### P1 — DEFERRED carry-forward (post-v0.4.0 close)
 
