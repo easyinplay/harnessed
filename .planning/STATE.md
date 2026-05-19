@@ -35,7 +35,7 @@ progress:
 
 - **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19 — R10.1 audit-log.ts consumer + R10.2 state.ts concurrent write lock + ADR 0021 + ci.yml A7 iter 0018→0021 + 733 tests); 前置 ✅ Phase 4.3 + 4.2 + 4.1 + 🎯 v0.4.0 MILESTONE CLOSE + Phase 3.1-3.4 + 🎯 v0.3.0 CLOSE + v0.1/v0.2 — 详 RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 + § Phase 4.2 + § Phase 4.0+4.1 + § Phase 3.3+3.4 + § Phase 3.1+3.2 + § Phase 1.X-3.2
 - **当前里程碑**：**v0.5.0 v1.0-RC2 minor 1/3 STARTING** (H1 BB path LOCKED; R10.3 uninstall + R10.4 path traversal hardening remain; 3-day target window; 🎯 v1.0 GA post-v0.5.0 close)
-- **下一 phase**：**Phase 5.2 next** (R10.3 uninstall command + R10.4 path traversal regex hardening)
+- **下一 phase**：**Phase 5.2 plan-phase 启动** (discuss-phase ✅ SHIPPED 2026-05-19 — 8 D-decisions LOCKED: D-01 per-method 7 src/uninstallers/*.ts symmetric / D-02 ephemeral no-op + warn / D-03 5 vector minimal MVP CSO / D-04 resolveAlias + manifest path 2 点 minimal / D-05 --dry-run default ON / D-06 --yes bypass interactive / D-07 NO --keep-backup / D-08 path traversal error NOT leak path; M-01 ARCHITECTURAL phase class LOCK; 候选启动 `/gsd-plan-phase 5.2`)
 - **状态**：✅ **Phase 5.1 SHIPPED 2026-05-19** — R10.1 audit-log.ts 162L + R10.2 state.ts 116L lock wrap + proper-lockfile dep + ADR 0021 174L + ci.yml A7 0018→0021 + DOGFOOD 3/3 PASS + adr-0021-accepted + v0.5.0-alpha.1-audit-lock LOCAL (NO push)
 - **进度**：18 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 90%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 1/3 STARTING — Phase 5.1 ✅ + Phase 5.2+5.3 pending sister H1 BB path）
 
