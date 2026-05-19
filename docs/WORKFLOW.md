@@ -75,7 +75,7 @@ flowchart TB
 
 | Stage | CLAUDE.md prescribed | harnessed v0.4 shipped | Gap status |
 |-------|---------------------|----------------------|-----------|
-| ① Discuss governance | gstack `/office-hours` + `/plan-ceo-review` 强制 | `/harnessed:plan-feature` 5-phase 编排 phase 1 调度 gstack governance | ✅ FULL (Phase 3.2 W2 governance.json PUSH veto halt_workflow) |
+| ① Discuss governance | gstack `/office-hours` + `/plan-ceo-review` 强制 | `/plan-feature` 5-phase 编排 phase 1 调度 gstack governance | ✅ FULL (Phase 3.2 W2 governance.json PUSH veto halt_workflow) |
 | ① Discuss clarification | GSD `/gsd-discuss-phase` 灰色澄清 | 5-phase 编排 phase 2-3 调度 GSD discuss/plan | ✅ FULL (Phase 3.2 plan-feature WIRED reference) |
 | ② Plan 任务图 | GSD `/gsd-plan-phase` 高层任务 | 5-phase 编排 phase 4 调度 GSD plan | ✅ FULL |
 | ② Plan persist | planning-with-files task_plan.md | 5-phase 编排 phase 5 调度 planning-with-files persist | ✅ FULL |
@@ -92,7 +92,7 @@ flowchart TB
 | ④ Verify code-simplifier | code-simplifier 修改后简化 | 装齐 simplify skill | ⚠️ MANUAL invoke |
 | ④ Verify retro | `/retro` 里程碑复盘 | 装齐 | ⚠️ MANUAL invoke |
 
-**Verdict**: harnessed v0.4 已装齐所有 4-stage 上游 (manifest install 100% coverage), 但 `/harnessed:plan-feature` 当前自动编排范围 = Stage ① + ② 的 5-phase (gstack governance → superpowers brainstorm → GSD discuss/plan → planning-with-files persist + governance PUSH veto halt_workflow per Phase 3.2 W2 SHIPPED)。Stage ③ Execute + ④ Verify 的子任务级编排为 **reference 调用** (workflow.run.ts ≤80L mock + 5 SKILL.md stubs per Phase 3.2 W2 plan-feature 5-phase WIRED reference), 用户在 Claude Code 内手动按需 `/gsd-execute-phase` / `/gsd-verify-work` / `/code-review` / `/gstack:review` / `/code-simplifier` / `/retro` 等 — **完整 4-stage 自动化推 v0.5+ dogfood 信号触发** (per ROADMAP R8 deferred ideas)。
+**Verdict**: harnessed v0.4 已装齐所有 4-stage 上游 (manifest install 100% coverage), 但 `/plan-feature` 当前自动编排范围 = Stage ① + ② 的 5-phase (gstack governance → superpowers brainstorm → GSD discuss/plan → planning-with-files persist + governance PUSH veto halt_workflow per Phase 3.2 W2 SHIPPED)。Stage ③ Execute + ④ Verify 的子任务级编排为 **reference 调用** (workflow.run.ts ≤80L mock + 5 SKILL.md stubs per Phase 3.2 W2 plan-feature 5-phase WIRED reference), 用户在 Claude Code 内手动按需 `/gsd-execute-phase` / `/gsd-verify-work` / `/code-review` / `/gstack:review` / `/code-simplifier` / `/retro` 等 — **完整 4-stage 自动化推 v0.5+ dogfood 信号触发** (per ROADMAP R8 deferred ideas)。
 
 ---
 
@@ -120,7 +120,7 @@ CLAUDE.md prescribes additional tools for specific scenarios; harnessed manifest
 
 ## Coverage 路线图 (v0.5+ 完整自动化目标)
 
-- **v0.4 NOW**: Stage ① + ② 5-phase 自动化 `/harnessed:plan-feature`; Stage ③ + ④ reference + manual invoke
+- **v0.4 NOW**: Stage ① + ② 5-phase 自动化 `/plan-feature`; Stage ③ + ④ reference + manual invoke
 - **v0.5**: plan-feature 真接外部 gsd-* spawn dogfood, Stage ③ 子任务级自动 `gsd-* spawn`
 - **v0.6**: Stage ④ Verify 子任务级自动 (`code-review` + `gstack /review` + `code-simplifier` + `/retro` 编排进 5-phase 后置)
 - **v1.0**: 完整 4-stage 自动化, 用户只需 `/harnessed:<workflow> "task"` 一行触发 + 关键 checkpoint approval

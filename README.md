@@ -74,7 +74,7 @@ npx harnessed@latest <command>
 
 ## ⚡ 使用流程
 
-`/harnessed:plan-feature "新功能 X"` 一行触发 CLAUDE.md 4-stage 三层栈方法论:
+`/plan-feature "新功能 X"` 一行触发 CLAUDE.md 4-stage 三层栈方法论:
 
 ```
 ① Discuss  →  ② Plan  →  ③ Execute  →  ④ Verify
@@ -94,7 +94,7 @@ npx harnessed@latest <command>
 harnessed install plan-feature
 
 # 2. 在 Claude Code 内跑
-/harnessed:plan-feature "新功能 X"
+/plan-feature "新功能 X"
 
 # 3. 中断后恢复 (任何时候)
 harnessed resume
@@ -166,7 +166,7 @@ harnessed install plan-feature  # 自动装齐 gstack + GSD + superpowers + plan
 | Orchestration | GSD | 高层 phase 任务图 + 依赖分析 |
 | Persistence | planning-with-files | 持久化 `task_plan.md` / `progress.md` / `findings.md` |
 
-`/harnessed:plan-feature` 把 4 阶段串起来 — 每个阶段做不同事,输出喂给下一阶段。**没有合并**。
+`/plan-feature` 把 4 阶段串起来 — 每个阶段做不同事,输出喂给下一阶段。**没有合并**。
 
 </details>
 
