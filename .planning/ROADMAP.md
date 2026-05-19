@@ -267,9 +267,9 @@
 - **Phase 5.1: R10.1 audit log consumer + R10.2 state lock** (1 day target)
   - `harnessed audit log --filter` subcommand + lockfile 保护
   - 验收: filter + tail + since 3-flag UX + 并发 resume 不损坏 state
-- **Phase 5.2: R10.3 uninstall + R10.4 path traversal hardening** (1 day target)
-  - per-method uninstall handler + regex hardening + 5+ attack vectors test
-  - 验收: 7 install method 全反向 + 5+ traversal regex hardening verify
+- **Phase 5.2: R10.3 uninstall + R10.4 path traversal hardening** ✅ SHIPPED (2026-05-19)
+  - 14th subcommand `harnessed uninstall` + 7 per-method uninstallers + path-guard.ts 5-vector OWASP A1 + ADR 0022 + ci.yml A7 0021→0022 + 756 tests (+23); adr-0022-accepted + v0.5.0-alpha.2-uninstall-security LOCAL
+  - 验收: 7 install method 全反向 ✅ + 5+ traversal regex hardening verify ✅
 - **Phase 5.3: v0.5.0 milestone close + 🎯 v1.0 GA prep** (1 day target)
   - 3-file archive triplet `.planning/milestones/v0.5.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`
   - ADR 0021+ (R10.x lock; ARCHITECTURAL phase class per M-01 LOCK延袭)
