@@ -30,6 +30,7 @@ import type { Command } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
 import { runInstall } from '../installers/index.js'
 import type { InstallError, InstallOpts } from '../installers/lib/types.js'
+import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
@@ -73,6 +74,8 @@ export function registerInstall(program: Command): void {
       // check is the human-readable deprecation audit surface).
       const { resolveAlias } = await import('../manifest/aliases.js')
       const resolvedName = resolveAlias(name) ?? name
+      // R10.4 D-04 hardening site 2 — screen resolved alias redirect (defense-in-depth).
+      checkPathSafe(resolvedName)
 
       const manifestPath = resolve(process.cwd(), `manifests/tools/${resolvedName}.yaml`)
       const skillPackPath = resolve(process.cwd(), `manifests/skill-packs/${resolvedName}.yaml`)

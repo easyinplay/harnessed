@@ -17,6 +17,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
+import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { runUninstall } from '../uninstallers/index.js'
 
@@ -49,6 +50,8 @@ export function registerUninstall(program: Command): void {
       // Alias resolution (sister install.ts pattern).
       const { resolveAlias } = await import('../manifest/aliases.js')
       const resolvedName = resolveAlias(name) ?? name
+      // R10.4 D-04 hardening site 2 — screen resolved alias redirect (defense-in-depth).
+      checkPathSafe(resolvedName)
 
       // Manifest lookup (tools/ first, skill-packs/ fallback).
       const manifestPath = resolve(process.cwd(), `manifests/tools/${resolvedName}.yaml`)
