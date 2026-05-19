@@ -63,7 +63,6 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
 
 // Helper: make spawn resolve with given exit code
 function mockSpawnExit(code: number, stderr = ''): void {
-  // biome-ignore lint/suspicious/noExplicitAny: test mock shape
   spawnMock.mockReturnValue({
     stderr: {
       setEncoding: vi.fn().mockReturnThis(),
@@ -85,14 +84,14 @@ apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: ctx7
-  display_name: ctx7
-  description: test
+  display_name: ctx7 CLI
+  description: test npm cli manifest
   upstream:
     source: ctx7
     homepage: https://example.com
     repository: https://github.com/test/ctx7.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: cli-npm
   component_type: cli-binary
@@ -102,7 +101,7 @@ spec:
     method: npm-cli
     cmd: "npm install -g ctx7"
     npm_version: ^0.4.0
-    idempotent_check: "ctx7 --version"
+    idempotent_check: "command -v ctx7"
   verify:
     cmd: "ctx7 --version"
     timeout_ms: 5000
@@ -110,9 +109,15 @@ spec:
   uninstall:
     cmd: "npm uninstall -g ctx7"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: stable
+    last_check: "2026-01-01"
+    last_known_good_version: 0.4.x
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 const EPHEMERAL_NPM_MANIFEST_YAML = `
@@ -121,13 +126,13 @@ kind: Manifest
 metadata:
   name: ctx7-ephemeral
   display_name: ctx7 ephemeral
-  description: test ephemeral
+  description: test ephemeral npm manifest
   upstream:
     source: ctx7
     homepage: https://example.com
     repository: https://github.com/test/ctx7.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: cli-npm
   component_type: cli-binary
@@ -137,17 +142,23 @@ spec:
     method: npm-cli
     cmd: "npx --yes ctx7 --version"
     npm_version: ^0.4.0
-    idempotent_check: "ctx7 --version"
+    idempotent_check: "command -v ctx7"
   verify:
     cmd: "ctx7 --version"
     timeout_ms: 5000
     expected_exit_code: 0
   uninstall:
-    cmd: ""
+    cmd: "npx --yes ctx7 --version"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: stable
+    last_check: "2026-01-01"
+    last_known_good_version: 0.4.x
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 const MCP_STDIO_MANIFEST_YAML = `
@@ -156,33 +167,38 @@ kind: Manifest
 metadata:
   name: my-mcp-server
   display_name: My MCP Server
-  description: test mcp
+  description: test mcp stdio manifest
   upstream:
     source: my-mcp-pkg
     homepage: https://example.com
     repository: https://github.com/test/mcp.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: mcp-npm
-  component_type: mcp-server
-  category: dev-tools
-  install_type: npm
+  component_type: mcp-tool
+  category: engineering
+  install_type: mcp
   install:
     method: mcp-stdio-add
     cmd: "claude mcp add --scope project --transport stdio my-mcp-server -- npx --yes my-mcp-pkg@1.0.0"
     npm_version: "1.0.0"
-    idempotent_check: "claude mcp list"
+    idempotent_check: "claude mcp list | grep -q my-mcp-server"
   verify:
-    cmd: "claude mcp list"
+    cmd: "claude mcp list | grep -q my-mcp-server"
     timeout_ms: 5000
-    expected_exit_code: 0
   uninstall:
     cmd: "claude mcp remove my-mcp-server"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: stable
+    last_check: "2026-01-01"
+    last_known_good_version: "1.0.0"
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 const MCP_HTTP_MANIFEST_YAML = `
@@ -191,33 +207,38 @@ kind: Manifest
 metadata:
   name: my-http-mcp
   display_name: My HTTP MCP
-  description: test http mcp
+  description: test http mcp manifest
   upstream:
     source: my-http-mcp
     homepage: https://example.com
     repository: https://github.com/test/httpmcp.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: mcp-npm
-  component_type: mcp-server
-  category: dev-tools
-  install_type: npm
+  component_type: mcp-tool
+  category: engineering
+  install_type: mcp
   install:
     method: mcp-http-add
     cmd: "claude mcp add --scope project --transport http my-http-mcp https://example.com/mcp"
     npm_version: "1.0.0"
-    idempotent_check: "claude mcp list"
+    idempotent_check: "claude mcp list | grep -q my-http-mcp"
   verify:
-    cmd: "claude mcp list"
+    cmd: "claude mcp list | grep -q my-http-mcp"
     timeout_ms: 5000
-    expected_exit_code: 0
   uninstall:
     cmd: "claude mcp remove my-http-mcp"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: stable
+    last_check: "2026-01-01"
+    last_known_good_version: "1.0.0"
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 const CC_PLUGIN_MANIFEST_YAML = `
@@ -226,33 +247,38 @@ kind: Manifest
 metadata:
   name: superpowers
   display_name: Superpowers
-  description: test plugin
+  description: test cc-plugin manifest
   upstream:
     source: superpowers
     homepage: https://example.com
     repository: https://github.com/test/superpowers.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: cc-plugin
-  component_type: cc-plugin
-  category: dev-tools
-  install_type: plugin
+  component_type: command
+  category: engineering
+  install_type: skill
   install:
     method: cc-plugin-marketplace
     cmd: "claude plugin marketplace add test/mkt && claude plugin install superpowers@test-marketplace --scope project"
-    git_ref: ""
-    idempotent_check: "claude plugin list"
+    git_ref: "abc1234567890123456789012345678901234567"
+    idempotent_check: "claude plugin list | grep -q superpowers"
   verify:
-    cmd: "claude plugin list"
+    cmd: "claude plugin list | grep -q superpowers"
     timeout_ms: 5000
-    expected_exit_code: 0
   uninstall:
     cmd: "claude plugin uninstall superpowers@test-marketplace"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: beta
+    last_check: "2026-01-01"
+    last_known_good_version: main
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 const GIT_CLONE_MANIFEST_YAML = `
@@ -261,17 +287,17 @@ kind: Manifest
 metadata:
   name: my-skill
   display_name: My Skill
-  description: test git clone
+  description: test git clone manifest
   upstream:
     source: my-skill
     homepage: https://example.com
     repository: https://github.com/test/skill.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: cc-skill-pack
-  component_type: skill-pack
-  category: dev-tools
+  component_type: command
+  category: engineering
   install_type: git
   install:
     method: git-clone-with-setup
@@ -281,13 +307,18 @@ spec:
   verify:
     cmd: "test -d ~/.claude/skills/my-skill"
     timeout_ms: 5000
-    expected_exit_code: 0
   uninstall:
     cmd: "rm -rf ~/.claude/skills/my-skill"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: stable
+    last_check: "2026-01-01"
+    last_known_good_version: main
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 const NPX_SKILL_MANIFEST_YAML = `
@@ -296,18 +327,18 @@ kind: Manifest
 metadata:
   name: andrej-karpathy-skills
   display_name: Karpathy Skills
-  description: test npx skill
+  description: test npx skill manifest
   upstream:
     source: andrej-karpathy-skills
     homepage: https://example.com
     repository: https://github.com/test/skills.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: cc-skill-pack
-  component_type: skill-pack
-  category: dev-tools
-  install_type: npx
+  component_type: command
+  category: engineering
+  install_type: skill
   install:
     method: npx-skill-installer
     cmd: "npx --yes skills@1.5.7 add test/andrej-karpathy-skills --copy --global"
@@ -316,13 +347,18 @@ spec:
   verify:
     cmd: "test -f ~/.claude/skills/andrej-karpathy-skills/SKILL.md"
     timeout_ms: 5000
-    expected_exit_code: 0
   uninstall:
     cmd: "rm -rf ~/.claude/skills/andrej-karpathy-skills"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: stable
+    last_check: "2026-01-01"
+    last_known_good_version: "1.5.7"
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 const CC_HOOK_MANIFEST_YAML = `
@@ -331,40 +367,46 @@ kind: Manifest
 metadata:
   name: my-hook
   display_name: My Hook
-  description: test cc hook
+  description: test cc-hook-add manifest
   upstream:
     source: my-hook
     homepage: https://example.com
     repository: https://github.com/test/hook.git
     license: MIT
-    notice: test
+    notice: test notice
 spec:
   type: cc-hook
-  component_type: cc-hook
-  category: dev-tools
+  component_type: command
+  category: meta
   install_type: hook
   install:
     method: cc-hook-add
-    cmd: "echo hook"
+    cmd: "my-hook-cmd"
     hook_event: "PreToolUse"
     hook_command: "my-hook-cmd"
     hook_matcher: "Read"
-    idempotent_check: ""
+    idempotent_check: "grep -q my-hook-cmd ~/.claude/settings.json"
   verify:
-    cmd: "true"
+    cmd: "grep -q my-hook-cmd ~/.claude/settings.json"
     timeout_ms: 5000
     expected_exit_code: 0
   uninstall:
-    cmd: ""
+    cmd: "true"
   upstream_health:
-    status: active
-    last_checked: "2026-01-01"
-    notes: ""
+    stability: beta
+    last_check: "2026-01-01"
+    last_known_good_version: "1.0.0"
+    fallback_action: warn
+  signed_by: test
+  platforms:
+    - linux
+    - darwin
+    - win32
 `
 
 // Helper to set up readFile mock to return manifest YAML
 function mockManifestFile(yaml: string): void {
-  readFileMock.mockResolvedValueOnce(yaml as unknown as Buffer)
+  readFileMock.mockResolvedValueOnce(yaml as never)
 }
 
 describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ephemeral + D-05 dry-run + D-06 --yes)', () => {
@@ -517,19 +559,15 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
         ],
       },
     })
-    // readFile called for manifest, then for settings.json
-    readFileMock
-      .mockResolvedValueOnce(CC_HOOK_MANIFEST_YAML as unknown as Buffer)
-      .mockResolvedValueOnce(existingSettings as unknown as Buffer)
+    // readFile mock chain: manifest (tools/ path) → settings.json
+    // Use mockImplementation to route by path rather than call-order fragility.
+    readFileMock.mockImplementation(async (path: unknown) => {
+      const p = String(path)
+      if (p.includes('settings.json')) return existingSettings as never
+      // Default: return manifest YAML for tools/ or skill-packs/ paths
+      return CC_HOOK_MANIFEST_YAML as never
+    })
     writeFileMock.mockResolvedValue(undefined)
-    // After write, verify re-read shows hook removed
-    readFileMock.mockResolvedValueOnce(
-      JSON.stringify({
-        hooks: {
-          PreToolUse: [{ matcher: 'Write', command: 'other-cmd' }],
-        },
-      }) as unknown as Buffer,
-    )
     confirmMock.mockResolvedValue(true)
     const { code } = await runCli(['uninstall', 'my-hook', '--apply', '--yes'])
     expect(code).toBe(0)
