@@ -129,6 +129,7 @@ progress:
 1. `planning-with-files` 与 `superpowers/writing-plans` 互斥语义 — defer v0.5+
 2. gstack-2 / GSD-2 v2 重写迁移 — v1.0+ 议题
 3. "用户 10 秒手动覆盖路由错误" UX 量化 — v0.5 benchmark 时定
+4. **DEFERRED #BA SIZE_LIMIT round 4 evaluate** — Phase 5.3 W0.2 post-trim STATE 141L, stays within 150 limit but insufficient headroom for 140 flip (141-145L DEFER path per decision tree); defer Phase 6.x signal evaluate (5th consecutive evaluate signal terminus reassess)
 
 ### Blockers
 
