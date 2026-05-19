@@ -1,0 +1,39 @@
+name: publish
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'   # matches v1.0.0, v1.0.1, etc. — semantic version only
+permissions:
+  contents: read
+  id-token: write                   # required for npm OIDC trusted publishing (no NPM_TOKEN)
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false         # never cancel an in-flight publish
+jobs:
+  publish:
+    name: npm publish
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # Phase 1.1.1 hotfix H1 SHA-pin pattern延袭 (ci.yml supply-chain hardening):
+      # Tag refs (@v4) are mutable; SHA refs are immutable. Commit SHA below
+      # corresponds to v4.3.1 (actions/checkout) and v4.4.0 (actions/setup-node)
+      # as of 2026-05-12 — same SHAs as ci.yml.
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'  # required for OIDC .npmrc generation
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm build
+      # D-02 LOCKED: npm publish (NOT pnpm publish) — npm CLI more reliable for OIDC provenance.
+      # --provenance: sigstore attestation backed by OIDC id-token.
+      # --access public: required for scoped or first-publish packages.
+      # NODE_AUTH_TOKEN fallback: if Trusted Publishers UI not yet configured, set
+      # secrets.NPM_TOKEN in GitHub repo Settings → Secrets as a granular access token.
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
