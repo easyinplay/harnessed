@@ -983,6 +983,62 @@ Or read per-phase canonical sources directly: `.planning/phase-4.2/{4.2-CONTEXT,
 
 ---
 
+## Phase 5.2 RETROSPECTIVE — R10.3 harnessed uninstall + R10.4 path traversal hardening (2026-05-19)
+
+### What Worked Well
+
+- **Wave structure 3-wave cadence** (W0 backlog absorb → W1 R10.3 uninstall → W2 R10.4 + ship): clean separation of concerns per sister Phase 5.1 cadence. Each wave independently committable; no cross-wave blocking.
+- **7-uninstaller symmetric pattern**: per-method dispatch table sister `src/installers/` 100% reuse template. Each uninstaller ≤72L; ccHookAdd (most complex JSON mutation) implemented last per RESEARCH § Risk Matrix risk-ordering recommendation.
+- **TDD R10.4 path-guard**: RED commit (9 cells, module not found) → GREEN (36L path-guard.ts, all 9 PASS) clean cycle. No iteration needed — pure function, no mocks required (sister aliases-security.test.ts pattern).
+- **D-04 site analysis upfront**: RESEARCH § 3.3 recommendation to screen `resolvedName` (alias redirect defense-in-depth) after alias resolution was correct — implemented in both install.ts and uninstall.ts. audit-log.ts correctly SKIPped (hardcoded AUDIT_PATH not user-controlled).
+- **DOGFOOD axis B live verify**: `node ./dist/cli.mjs install '../../etc/passwd'` → `PathTraversalError: path traversal attempt detected` confirmed D-08 generic message with no path echo. Attack vector rejection works end-to-end through compiled CLI.
+
+### What Was Inefficient
+
+- **W1 uninstall.ts already had checkPathSafe import slot available** but guardPath integration was deferred to W2 T2.4c — slightly awkward two-phase integration. Future phases: integrate security at creation time.
+- **DOGFOOD-T1.X.md ephemeral smoke** required manual invocation; automated CLI integration test would be cleaner for CI.
+
+### Patterns Established
+
+- **`src/manifest/lib/` NEW directory** — first library file under manifest/lib/; pattern for future manifest-domain security/utility extracts (e.g. future schema-validation helpers).
+- **PathTraversalError D-08 pattern** — class extends Error + `Object.setPrototypeOf` + generic message + module-level pre-compiled RegExp array. Reusable for future security boundary errors.
+- **checkPathSafe call position** — call AFTER alias resolution (screen `resolvedName` not just raw `name`) for alias redirect defense-in-depth per RESEARCH § 3.3. Both install.ts and uninstall.ts follow this pattern.
+- **ADR 0022 single-extend ci.yml A7** — 4 surgical edits (step name + 2 for loops + echo); NO retroactive change needed (Phase 5.1 already handled 0019+0020+0021 retroactive). Template for future phases.
+
+### Cost patterns
+
+- **Phase 5.2 3-wave 1-day cadence**: Wave 0 (4 tasks) + Wave 1 (5 tasks) + Wave 2 (14 tasks) = 23 total tasks shipped 1 day (2026-05-19). Consistent with sister Phase 5.1 1-day cadence per #BR estimate.
+- **W2 14-task artifact-heavy composition acceptable**: W2 = 4 impl (T2.1-T2.4) + 2 ADR (T2.5-T2.6) + 1 ci.yml (T2.7) + 1 tag (T2.8) + 6 ship artifacts (T2.9-T2.14). Implementation tasks are ~28% of W2 total; artifact tasks are lightweight. Sister Phase 5.1 W2 16-task precedent validated; 14-task W2 feasible.
+- **747 → 756 tests (+9 net Wave 2)**: R10.4 path-guard adds 9 cells. Wave 1 +14 + Wave 2 +9 = +23 total Phase 5.2; 733 → 756 healthy. 0 regression streak continues.
+
+### Key lessons
+
+- (i) **Pre-compiled module-level RegExp arrays are the right security pattern** — path-guard.ts module-level `PATH_TRAVERSAL_PATTERNS` mirrors audit-log.ts `REDACT_PATTERNS`. Consistent pattern makes security boundaries easy to audit.
+- (ii) **D-08 generic error message CSO pattern** — `PathTraversalError` extends Error with fixed `super('path traversal attempt detected')` + `Object.setPrototypeOf` for correct instanceof check. Test cell 6 explicitly verifies message does NOT contain user input. Critical for preventing error-message-as-reconnaissance-channel.
+- (iii) **Alias redirect defense-in-depth** — RESEARCH § 3.3 A6 assumption was correct: alias redirect values from aliases.yaml are NOT pre-screened by `checkPathSafe(name)` (which screens input `name`). Adding `checkPathSafe(resolvedName)` after alias resolution catches crafted redirect values.
+- (iv) **W1 BDL T1.0 CC CLI verification** — A1/A2 LOW-confidence assumptions resolved via BDL: `claude mcp remove` and `claude plugin uninstall` syntax confirmed. Upfront PREREQ verify before 3 uninstaller implementations avoids mid-W1 rework.
+
+### Cross-milestone trends — v0.5.0 progress (sister v0.4.0 trends section延袭)
+
+- **19/20 phases 95% ship close** (v0.1.0 6/6 + v0.2.0 4/4 + v0.3.0 4/4 + v0.4.0 3/3 + v0.5.0 2/3 = 19 phase total; Phase 5.3 pending v0.5.0 close).
+- **22 ADR cumulative + adr-0022-accepted LOCAL tag** — 1 ADR per architectural phase steady cadence.
+- **733 → 756 tests across Phase 5.2** — +23 new cells (Wave 1 +14 R10.3 + Wave 2 +9 R10.4); 0 regression streak Phase 1.1 → Phase 5.2 continuous.
+- **v0.5.0 milestone PROGRESS (2/3)**: Phase 5.3 (v0.5.0 milestone close + 🎯 v1.0 GA target prep) is final gate. H1 BB path LOCKED 2026-05-19.
+- **R10.3 + R10.4 simultaneous delivery** — both #BV (Phase 4.2 3rd-cycle carry) + #AH (Phase 3.4 carry) delivered same phase. Sister Phase 5.1 delivered R10.1+R10.2 simultaneously; pattern of pairing related R-requirements per phase is effective.
+- **Karpathy 14-subcommand CLI grows cleanly**: 14 CLI subcommands + 7+7=14 installer+uninstaller method files all ≤200L; no file approaching limit. Architecture accommodates growth without violations.
+
+### Next Phase Prep Notes (7th section sister Phase 5.1 W2 T2.10 cadence延袭)
+
+- **Phase 5.3 primary deliverables**: v0.5.0 milestone close (3-file archive: v0.5.0-ROADMAP.md + v0.5.0-REQUIREMENTS.md + v0.5.0-MILESTONE-AUDIT.md) + 🎯 v0.5.0 tag LOCAL CREATE + v1.0 GA prep discussion
+- **Tags pending user push**: adr-0019/0020/0021-accepted + v0.5.0-alpha.1-audit-lock + adr-0022-accepted + v0.5.0-alpha.2-uninstall-security + (Phase 5.3 will add 🎯 v0.5.0)
+- **External clock**: co-maintainer organic 6-month clock continues; v0.5.0 close = Phase 5.3 primary target
+
+---
+
+*Phase 5.2 RETROSPECTIVE complete — 2026-05-19 ship; ~12 Wave 2 atomic commits / 756 tests / 1 NEW ADR (0022 PRIMARY) + 1 baseline tag iter (adr-0022-accepted LOCAL) + 1 baseline tag (v0.5.0-alpha.2-uninstall-security LOCAL) + 8 D-decisions activated 闭環 + M-01 ARCHITECTURAL phase class + W0 backlog #BH+#BI absorbed + ci.yml A7 iter single-extend 0021→0022 + v0.5.0 milestone 2/3 PROGRESS. 下个 retro entry 在 Phase 5.3 ship 后续编.*
+
+---
+
 ## § ARCHIVED FROM STATE — Phase 5.1 (Phase 5.2 W0 T0.1 D2 cadence iter 6 REINFORCE, 2026-05-19)
 
 > **Note (D2 cadence iter 6 — implicit-standing-process graduation)**: Single-phase archive per R-4 cadence consistency mitigation continuation. Iter 6 REINFORCE signals D2 cadence formally institutionalized as "implicit-standing-process" — no explicit iter count tracking needed Phase 5.3+. Pattern: Phase 3.4 W2 T2.2 1st-impl → Phase 4.1 W0.3 2nd-iter → Phase 4.2 W0.1 3rd-iter terminus → Phase 4.3 W0.1 4th-iter REINFORCE → Phase 5.1 W0 T0.1 5th-iter TERMINUS → Phase 5.2 W0 T0.1 6th-iter REINFORCE = formally institutionalized implicit-standing-process.
