@@ -223,6 +223,12 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
 
   const r = await runArgs(addArgs, install.cwd ?? ctx.cwd)
   if (r.exitCode !== 0) {
+    // ADR 0004 idempotent contract (v1.0.4): "already exists in .mcp.json" is
+    // not a failure — the server is already registered. Return ok + alreadyInstalled
+    // so the outer CLI can classify it separately from a real failure.
+    if (r.stderr.includes('already exists in .mcp.json')) {
+      return { ok: true, alreadyInstalled: true, backupId: bk.backupId }
+    }
     return {
       ok: false,
       phase: 'spawn',
