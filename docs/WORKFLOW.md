@@ -1,6 +1,6 @@
 # harnessed-Enabled User Development Workflow
 
-**Purpose**: 用户装完 harnessed 后, 用 `/harnessed:<workflow>` 启动的项目开发工作流详图 + CLAUDE.md detailed prescribed workflow 与 harnessed-shipped 实装能力的 gap 分析。
+**Purpose**: 用户装完 harnessed 后, 用 `/plan-feature` / `/execute-task` 等 slash command 启动的项目开发工作流详图 + CLAUDE.md detailed prescribed workflow 与 harnessed-shipped 实装能力的 gap 分析。
 
 **Scope**: 这是 **end user 用 harnessed 开发自己项目** 的工作流 (NOT project-internal dev cadence for shipping harnessed itself — 那是 sister review absorb 模式, 不在此 doc 范围)。
 
@@ -123,7 +123,7 @@ CLAUDE.md prescribes additional tools for specific scenarios; harnessed manifest
 - **v0.4 NOW**: Stage ① + ② 5-phase 自动化 `/plan-feature`; Stage ③ + ④ reference + manual invoke
 - **v0.5**: plan-feature 真接外部 gsd-* spawn dogfood, Stage ③ 子任务级自动 `gsd-* spawn`
 - **v0.6**: Stage ④ Verify 子任务级自动 (`code-review` + `gstack /review` + `code-simplifier` + `/retro` 编排进 5-phase 后置)
-- **v1.0**: 完整 4-stage 自动化, 用户只需 `/harnessed:<workflow> "task"` 一行触发 + 关键 checkpoint approval
+- **v1.0**: 完整 4-stage 自动化, 用户只需 `/plan-feature "task"` / `/execute-task "task"` 一行触发 + 关键 checkpoint approval
 
 ---
 

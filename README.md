@@ -23,7 +23,7 @@
 - **不 vendor 上游** — manifest describe install/check;上游升级用户 re-install 即获最新版
 - **Composition Skill** — 自家 workflow skill 当指挥棒,调度多个上游协同 (research / execute-task / plan-feature 三 MVP workflow)
 - **包管理器思维** — install dependency graph 自动解析, doctor 健康检查, install-base 一键装齐
-- **统一入口** — 用户面对 `/harnessed:*`, 不需学每家上游术语
+- **统一入口** — 用户面对 `/plan-feature` / `/execute-task` 等 slash command,不需学每家上游术语
 
 ---
 
@@ -193,7 +193,7 @@ harnessed install plan-feature  # 自动装齐 gstack + GSD + superpowers + plan
 
 - `npx harnessed@latest setup` 跑的是 **Node.js CLI** (`bin/harnessed`)
 - setup 装的 **workflow skills** (markdown) 进 `~/.claude/skills/`,由 Claude Code 运行时加载
-- `/harnessed:*` 是 CC 内的 slash command,触发 skill 执行
+- `/plan-feature` / `/execute-task` 等是 CC 内的 slash command,触发 skill 执行
 - CLI 和 CC skill 共享 `.harnessed/checkpoints/` 状态目录
 
 </details>

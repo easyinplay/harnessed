@@ -33,7 +33,7 @@
 可选写 ADR：
 
 - 关键库选型（如 yaml 解析器、JSON Schema 校验器）
-- 命名空间冲突仲裁（`/harnessed:*` 前缀策略调整）
+- 命名空间策略调整（v1.0.2 LOCKED: bare slash command per SKILL.md `name:` field;`/plan-feature` / `/execute-task` NOT `/harnessed:*` prefix;future v2.0+ 若引入 namespace 仲裁需 NEW ADR）
 
 ## 索引
 
