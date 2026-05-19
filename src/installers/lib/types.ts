@@ -46,10 +46,13 @@ export interface InstallError extends ValidationError {
 }
 
 // Pattern C: discriminated Result. `ok: true` + `appliedFiles[]` on success;
+// `ok: true; alreadyInstalled: true` for idempotent skip (ADR 0004 contract —
+//   "already-installed = exit 0 + skip"; v1.0.4 MCP idempotent install patch);
 // `ok: false` with installer phase + InstallError on failure; `aborted: true`
 // for explicit user cancel / level-flag-missing / platform-mismatch.
 export type InstallResult =
   | { ok: true; backupId: string; appliedFiles: string[] }
+  | { ok: true; alreadyInstalled: true; backupId: string }
   | {
       ok: false
       phase: 'preflight' | 'dry-run' | 'confirm' | 'spawn' | 'verify' | 'rollback'
