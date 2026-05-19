@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: ship 前必达）
 status: unknown
-last_updated: "2026-05-19T06:26:35.690Z"
+last_updated: "2026-05-19T10:34:01.315Z"
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
-  completed_plans: 3
+  completed_plans: 6
 ---
 
 # harnessed STATE
