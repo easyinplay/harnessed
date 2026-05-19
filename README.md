@@ -39,9 +39,9 @@ harnessed/
 
 ## Status
 
-- **Current**: v0.3.0 SHIPPED 2026-05-17 (manifest 引擎 / installer runtime / routing engine / plan-feature workflow / checkpoint engine 全 GA)
-- **In progress**: v0.4.0 milestone 2/3 — Phase 4.1 (dogfooding benchmark) + Phase 4.2 (co-maintainer onboarding + stale-bot + Sponsors) SHIPPED 2026-05-18; Phase 4.3 (audit log + ADR 全集 + v1.0-RC 收尾) pending
-- **Full phase history + release plan + per-milestone audits**: [.planning/ROADMAP.md](./.planning/ROADMAP.md) / [.planning/milestones/](./.planning/milestones/)
+- **Current**: 🎯 v0.4.0 SHIPPED & ARCHIVED 2026-05-19 (manifest 引擎 / installer runtime / routing engine / plan-feature workflow / checkpoint engine / dogfooding benchmark / co-maintainer onboarding / GitHub Sponsors / routing audit log 全 GA + 20 ADR + Keep-a-Changelog)
+- **Next**: v0.5/v1.0 milestone discuss-phase 启动 candidate (post-v0.4.0 close; scope TBD)
+- **Full phase history + release plan + per-milestone audits**: [.planning/ROADMAP.md](./.planning/ROADMAP.md) / [.planning/milestones/](./.planning/milestones/) / [CHANGELOG.md](./CHANGELOG.md)
 
 ## Install Quick Start（phase 1.2 ready）
 
