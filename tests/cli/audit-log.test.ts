@@ -153,7 +153,7 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
     expect(stdout).toContain('"iter_count"')
   })
 
-  it('cell 5 — redact: api_key= + token= + password= → [REDACTED] in task_excerpt', async () => {
+  it('cell 5 — redact: api_key= + token= + password= → [REDACTED] in task_excerpt (--json shows full record)', async () => {
     const sensitiveRecord = JSON.stringify({
       ts: '2026-05-19T10:00:00.000Z',
       phase: '5.1',
@@ -169,7 +169,8 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
       iter_count: 1,
     })
     mockAuditLog([sensitiveRecord])
-    const { stdout } = await runCli(['audit-log'])
+    // Use --json to see task_excerpt field in output (human table 5-col omits task_excerpt by design)
+    const { stdout } = await runCli(['audit-log', '--json'])
     expect(stdout).not.toContain('sk-secret123')
     expect(stdout).not.toContain('mytoken123')
     expect(stdout).not.toContain('hunter2')
@@ -180,7 +181,8 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
     const sensitiveRecord = JSON.stringify({
       ts: '2026-05-19T10:00:00.000Z',
       phase: '5.1',
-      task_excerpt: 'header Authorization: Bearer eyJtokenXYZ call with gh_pat123456 and AIzaSecretKey',
+      task_excerpt:
+        'header Authorization: Bearer eyJtokenXYZ call with gh_pat123456 and AIzaSecretKey',
       task_sha1: 'bbb222',
       matched_rule_id: null,
       primary_expert: 'engineering',
@@ -192,7 +194,8 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
       iter_count: 1,
     })
     mockAuditLog([sensitiveRecord])
-    const { stdout } = await runCli(['audit-log'])
+    // Use --json to see task_excerpt field in output (human table 5-col omits task_excerpt by design)
+    const { stdout } = await runCli(['audit-log', '--json'])
     expect(stdout).not.toContain('eyJtokenXYZ')
     expect(stdout).not.toContain('gh_pat123456')
     expect(stdout).not.toContain('AIzaSecretKey')
@@ -215,8 +218,7 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
     const allPrefixRecord = JSON.stringify({
       ts: '2026-05-19T10:00:00.000Z',
       phase: '5.1',
-      task_excerpt:
-        'keys: sk-abc1234567 pk-def1234567 ghp_ghi1234567 ya29.ahJFsecret AIzaSySecret',
+      task_excerpt: 'keys: sk-abc1234567 pk-def1234567 ghp_ghi1234567 ya29.ahJFsecret AIzaSySecret',
       task_sha1: 'ccc333',
       matched_rule_id: null,
       primary_expert: null,
@@ -228,7 +230,8 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
       iter_count: null,
     })
     mockAuditLog([allPrefixRecord])
-    const { stdout } = await runCli(['audit-log'])
+    // Use --json to see task_excerpt field in output (human table 5-col omits task_excerpt by design)
+    const { stdout } = await runCli(['audit-log', '--json'])
     expect(stdout).not.toContain('sk-abc1234567')
     expect(stdout).not.toContain('pk-def1234567')
     expect(stdout).not.toContain('ghp_ghi1234567')
