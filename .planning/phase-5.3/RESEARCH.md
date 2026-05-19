@@ -537,19 +537,19 @@ git tag -l "v0.5.0*" "🎯*" | sort
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **STATE.md post-W0.1 trim exact line count**
+1. **STATE.md post-W0.1 trim exact line count (RESOLVED — conditional)**
    - What we know: Currently 141L. Phase 5.2 active entry is ~1-2 lines plus context.
    - What's unclear: Whether trim brings STATE to ≤140L or stays 140-141L.
    - Recommendation: Planner must make W0.1 acceptance criteria conditional per CONTEXT #BA decision tree. Do NOT pre-decide SIZE_LIMIT flip direction.
 
-2. **v0.5.0 tag annotation exact line count**
+2. **v0.5.0 tag annotation exact line count (RESOLVED — ~9 content lines)**
    - What we know: D-06 says "9-line summary format" but also "~30-50 line annotation". Observed v0.4.0 = 1-line, v0.3.0 = 2-line.
    - What's unclear: D-06 intention — 9 content bullet lines vs 9 total lines.
    - Recommendation: Use ~9 meaningful content lines capturing top decision per phase + summary stats. Avoid padding to 30-50L (Karpathy YAGNI).
 
-3. **RETROSPECTIVE Phase 5.3 section scope**
+3. **RETROSPECTIVE Phase 5.3 section scope (RESOLVED — § 7 only no duplication)**
    - What we know: 7-section format (sister Phase 4.3 W2 T2.7 format 100% reuse). Close ceremony phases are lightweight.
    - What's unclear: Whether cross-milestone v0.5.0 trends belong in RETROSPECTIVE or only § 7.
    - Recommendation: D-07 is explicit — trends in MILESTONE-AUDIT § 7 ONLY. RETROSPECTIVE Phase 5.3 = standard 7-section (What Went Well / What Surprised / What We'd Change / Lessons / Process Improvements / Cost Patterns / Carry-forward). No trend duplication.
