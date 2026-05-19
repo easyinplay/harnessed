@@ -32,8 +32,8 @@ jobs:
       # D-02 LOCKED: npm publish (NOT pnpm publish) — npm CLI more reliable for OIDC provenance.
       # --provenance: sigstore attestation backed by OIDC id-token.
       # --access public: required for scoped or first-publish packages.
-      # NODE_AUTH_TOKEN fallback: if Trusted Publishers UI not yet configured, set
-      # secrets.NPM_TOKEN in GitHub repo Settings → Secrets as a granular access token.
+      # OIDC tokenless via Trusted Publishers — configured at npmjs.com → package/harnessed/access
+      # (publisher: GitHub Actions, org: easyinplay, repo: harnessed, workflow: publish.yml).
+      # v1.0.0 used NPM_TOKEN fallback (Trusted Publishers UI not yet configured at first publish);
+      # v1.0.1+ uses OIDC tokenless — env block + NPM_TOKEN secret removed post-Trusted-Publishers config.
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
