@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 
 const ENFORCE = true // Phase 4.1 W0.1 flip round 2 — sister transparency gate Phase 2.2 W0 cadence延袭 (DEFERRED #AF RESOLVED 2026-05-18)
 const STATE_PATH = '.planning/STATE.md'
-const SIZE_LIMIT = 200 // round 1; tighten to 150 v0.4 per DEFERRED #AG
+const SIZE_LIMIT = 175 // Phase 4.3 W0.2 round 2 tighten RELAX (sister #BA resolve; W0.1 trim STATE 158L verified ≤165L pre-flip; 17L safety headroom for ship 续编; relaxed from sister 200→150 target per CONTEXT #BA post-2nd-cycle sister H2 AA decision)
 const KEY_DECISIONS_SECTION_LIMIT = 1
 const HISTORICAL_ERRATA_RE = /W-[1-9]\s+errata|sister\s+review\s+M[1-9]\s+修正/
 
