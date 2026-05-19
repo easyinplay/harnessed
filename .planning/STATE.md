@@ -35,7 +35,7 @@ progress:
 
 - **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19) — R10.3 uninstall + R10.4 path traversal; **Phase 5.3 next** — v0.5.0 milestone close + 🎯 v1.0 GA prep
 - **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 PROGRESS** (H1 BB path LOCKED; R10.3 ✅ + R10.4 ✅ DELIVERED; Phase 5.3 v0.5.0 close pending; 🎯 v1.0 GA post-v0.5.0 close)
-- **下一 phase**：**Phase 5.3** — v0.5.0 milestone close (3-file archive + 🎯 v0.5.0 tag) + v1.0 GA discuss-phase prep
+- **下一 phase**：**Phase 5.3 plan-phase 启动** (discuss-phase ✅ SHIPPED 2026-05-19 — 8 D-decisions LOCKED: D-01 仅 v0.5.0 close NOT 🎯 v1.0 GA tag / D-02 NO new ADR (close ceremony) / D-03 write v1.0 chapter NEW in ROADMAP / D-04 README Status update + keep pre-launch / D-05 CHANGELOG v0.5.0 stable consolidate / D-06 milestone tag 9-line annotation / D-07 trends in v0.5.0-MILESTONE-AUDIT § 7 / D-08 dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0; M-01 CLOSE CEREMONY phase class LOCK; 候选启动 `/gsd-plan-phase 5.3`)
 - **状态**：✅ **Phase 5.2 SHIPPED 2026-05-19** — 14th subcommand + 7 uninstallers + path-guard.ts + ADR 0022 + 756 tests PASS (733→756 +23 new cells); DOGFOOD 3/3 PASS
 - **進度**：19 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 ✅ SHIPPED + Phase 5.3 pending）
 
