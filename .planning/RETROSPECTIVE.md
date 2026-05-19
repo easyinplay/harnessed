@@ -1090,3 +1090,51 @@ Or read per-phase canonical sources: `.planning/phase-5.1/{5.1-CONTEXT,PLAN,RESE
 > (2026-05-22 Phase 5.3 W0.1 D2 cadence iter 7 REINFORCE per standing process)
 
 - **Phase 5.2 shipped** ✅ (2026-05-19) — R10.3 uninstall 14th subcommand + 7 uninstallers + R10.4 path-guard.ts + ADR 0022 + ci.yml A7 0021→0022 + 756 tests
+
+---
+
+## Phase 5.3 milestone retrospective — v0.5.0 milestone close + v1.0 GA prep (2026-05-22 ship) — 🎯 v0.5.0 MILESTONE 3/3 CLOSE
+
+### What Went Well
+
+- **CLOSE CEREMONY phase class M-01 LOCK 严守**: NO src/ change + NO new ADR (D-02) + dual tag NOT triple (D-08). Sister Phase 3.4 v0.3.0 close NO new ADR precedent + Phase 4.3 v0.4.0 close 3-file archive triplet + § 7 trends pattern 100% reuse adapted Phase 5.3 scope. **经验**: M-01 phase class meta-disambiguation lock at discuss-phase time prevents close ceremony 误读 as ARCHITECTURAL — D-02 sneak-block "NO ADR 0023" 守门 effective.
+- **3-file archive triplet sister v0.4.0 format 100% reuse**: v0.5.0-ROADMAP.md 60L (target 55-65L) + v0.5.0-REQUIREMENTS.md 55L (target 55-75L) + v0.5.0-MILESTONE-AUDIT.md 158L (target 170-200L — under budget +20L headroom). Karpathy ≤200L hard limit RESPECTED 0 deviations. **经验**: sister cadence延袭 sustains zero-deviation discipline — sister v0.3.0 close + v0.4.0 close 0 deviation precedent stable through v0.5.0.
+- **§ 7 Cadence Patterns 4 trends per D-07 LOCKED**: D2 iter 1→6 graduation + SIZE_LIMIT 200→175→165→150 4-round + M2 backlog 10-cycle + sister review tiering 4-cycle. Exactly 4 items per Karpathy YAGNI + D-07 sneak-block "5+ items REJECT". **经验**: explicit trend item count cap + LOCKED count prevents trend scope creep at audit-time.
+- **D2 cadence iter 7 REINFORCE smooth**: Phase 5.2 narrative archived STATE → RETROSPECTIVE per implicit-standing-process; 6-iter terminus graduation Phase 5.2 W0 confirmed. **经验**: D2 cadence implicit-standing-process graduation (Phase 5.2 W0 LOCKED) successfully eliminates explicit iter counter annotation overhead Phase 5.3+.
+- **v1.0 GA chapter outline (NOT detailed spec) per D-03 sneak-block**: ROADMAP v1.0 chapter ships 9 GA criteria + Phase 6.1 outline + window + scope freeze guard; detailed Phase 6.x task spec DEFERRED Phase 6.x discuss-phase. **经验**: BB path 4th-cycle strategic prep stage = outline scope ≠ execution scope; sister Phase 4.3 v0.5 chapter outline precedent延袭.
+
+### What Surprised Us
+
+- **SIZE_LIMIT round 4 DEFER signal** at 141L (141-145L range): post-Task-0.1 trim STATE 141L was insufficient ≥10L headroom for round 4 FLIP 150→140. DEFER #BA carry Phase 6.x = 5th-consecutive evaluate signal — potential natural floor terminus reassess. **观察**: 4-round progressive tightening may have reached natural lower bound at 150L (current SIZE_LIMIT); Phase 6.x evaluate confirms.
+
+### What We'd Change
+
+- **§ 7 Cadence Patterns content density**: 158L audit file came in 12L under target 170L lower bound — could expand § 7 trend descriptions if Phase 6.x post-close trend signal arrives. Currently 4 trends each ~5-8L = lean. **改进**: future v1.0 GA milestone audit § 7 trends may grow if 5th-cycle sister review tiering pattern adds Phase 6.x cycle 5 data point.
+
+### Lessons Learned
+
+- **Lesson 1: Close ceremony phase class CLOSE CEREMONY (M-01 LOCK) is distinct from ARCHITECTURAL despite same single-day cadence**. Phase 5.3 (close) = NO src + NO ADR + dual tag; Phase 5.1+5.2 (architectural) = NEW src + NEW ADR + single baseline tag each. Sister Phase 4.3 architectural-AND-close hybrid was 1 phase; v0.5.0 splits close into independent Phase 5.3 — cleaner classification.
+- **Lesson 2: D2 cadence implicit-standing-process graduation eliminates explicit iter counter overhead**. Phase 5.2 W0 6-iter terminus → Phase 5.3 W0.1 iter 7 REINFORCE optional. **经验**: 5+ recurrence terminus heuristic (ADR 0019) extended to 6-recurrence implicit-standing-process graduation institutional pattern.
+- **Lesson 3: BB path 4th-cycle sister review strategic LOCK (2026-05-19) prevented Phase 5.x scope inflation**. v0.5 minor first then v1.0 GA path (BB) explicitly bounded R10.1-R10.4 scope; sister AA path (direct v1.0 GA) would have absorbed scope creep risk. **经验**: 4-cycle sister review tiering pattern (1st absorb + 2nd errata + 3rd reinforce + 4th strategic) institutionalized.
+
+### Process Improvements
+
+- **Phase 5.3 close ceremony cadence 100% reuse from sister Phase 4.3**: 3-file archive + CHANGELOG release line + dual tag (NOT triple per D-02) + § 7 trends. Each artifact ship matches sister v0.4.0 line budgets within ±20L tolerance. **改进**: future v1.0 GA close (Phase 6.1) can reuse Phase 5.3 close ceremony cadence + add v1.0-specific GA-criteria-verify axis.
+
+### Carry-forward
+
+- **Phase 6.x v1.0 GA discuss-phase prep**: 9 GA criteria detailed verify + npm publish stream setup (package.json `private` removal + npm registry 2FA) + README "stable" badge swap; window 2026-05-22~23 explicit
+- **DEFERRED #BA SIZE_LIMIT round 4 evaluate**: 5th-consecutive evaluate signal terminus reassess Phase 6.x — if signal still indicates DEFER, accept 150L as natural floor (terminus institutional lock)
+- **DEFERRED #BC/#BD/#BE/#BN sister conditional + #BJ/#BK Phase 4.2 LOW cosmetic**: Phase 6.x signal evaluate (most defer permanent unless external contributor feedback)
+
+### Cost Patterns
+
+- **commit 数**: Phase 5.3 = ~11 atomic commits W0+W2 (3 W0 baseline gates + 8 W2 close ceremony artifacts + 2 LOCAL tags; sister Phase 4.3 13 + close ceremony lighter scope)
+- **tests 增量**: 756 → 756 stable (NO src/ change; close ceremony docs only per M-01 LOCK)
+- **CI runs**: ~3-4 runs (W0 baseline + W2 final ship + post-tag verify)
+- **D-decisions ROI**: 8 D-decisions (4 HIGH deliberate Q1-Q4 + 4 MED/LOW batch Q5-Q8) discuss-phase = single milestone close output dual tag + 9 GA criteria + § 7 trends
+- **SIZE_LIMIT**: STATE.md 141L within ≤150L D3 gate (round 4 DEFER decision tree path active per #BA)
+
+---
+
+*Phase 5.3 RETROSPECTIVE complete — 2026-05-22 ship; ~11 commits / 756 tests stable / ADR 0021+0022 baseline (NO new ADR per D-02) / dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL CREATE (NO push per CLAUDE.md). 🎯 v0.5.0 MILESTONE 3/3 CLOSE. next: Phase 6.x v1.0 GA discuss-phase 启动 candidate (window 2026-05-22~23 post-close per ROADMAP § v1.0).*
