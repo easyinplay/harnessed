@@ -1,3 +1,16 @@
+---
+gsd_state_version: 1.0
+milestone: v0.4.0
+milestone_name: ship 前必达）
+status: unknown
+last_updated: "2026-05-19T05:56:40.030Z"
+progress:
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 1
+---
+
 # harnessed STATE
 
 > 项目记忆 · 跨 session 一致性的 SSOT
@@ -45,6 +58,7 @@
 <!-- Phase 4.0 + 4.1 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.0+4.1 (2026-05-18 Phase 4.2 W0.1 D2 cadence iter 3 per standing process — M2 backlog discharge institutionalize verify 3rd-iter terminus stable ≥3-iter pattern signal beyond 2nd-iter Phase 4.1 W0.3; Phase 4.0 was numeric placeholder NOT real shipped phase — Phase 4.1 single-phase archive per R-4 cadence consistency mitigation) -->
 <!-- Phase 4.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.2 (2026-05-19 Phase 4.3 W0.1 D2 cadence iter 4 per standing process — M2 backlog discharge institutionalize REINFORCE 4th-iter stable signal beyond ≥3-iter pattern; sister 5-recurrence terminus heuristic confirmed pattern stable Phase 4.2 W0.1 3rd-iter → Phase 4.3 W0.1 4th-iter; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 <!-- Phase 4.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3 (2026-05-19 Phase 5.1 W0 T0.1 D2 cadence iter 5 TERMINUS per standing process — 5-recurrence terminus heuristic confirmed pattern stable; single-phase archive per R-4 cadence consistency mitigation continuation; iter 5 = REINFORCE post-iter-4 stable terminus signal) -->
+
 - **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log + R8.4 ADR backfill + 🎯 v0.4.0 close (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3)
 - **Phase 4.2 shipped** ✅ (2026-05-18) — co-maintainer onboarding + R8.2+R8.3+R8.5 (archived → RETROSPECTIVE.md § Phase 4.2)
 - **Phase 4.1 shipped** ✅ (2026-05-18) — dogfooding benchmark R8.1 anchor (archived → RETROSPECTIVE.md § Phase 4.0+4.1)
@@ -54,7 +68,7 @@
 
 ## 进行中（In Progress）
 
-[当前: ⚙ v0.5.0 v1.0-RC2 minor STARTING (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 **execute-phase ACTIVE** (Wave 0 in progress — T0.1+T0.2+T0.3+T0.4; R10.1 audit log consumer + R10.2 state lock)]
+[当前: ⚙ v0.5.0 v1.0-RC2 minor STARTING (sister H1 BB path LOCKED 2026-05-19); Phase 5.1 **execute-phase ACTIVE** (Wave 0 ✅ COMPLETE 2026-05-19 — T0.1+T0.2+T0.3+T0.4 4/4 SHIPPED; Wave 1 next — R10.1 audit log consumer + R10.2 state lock)]
 
 ---
 
@@ -63,7 +77,7 @@
 ### P0 — Phase 5.1 execute-phase ACTIVE
 
 1. ✅ **Phase 5.1 discuss-phase SHIPPED** (2026-05-19) + ✅ **plan-phase SHIPPED** (2026-05-19) — PLAN.md 1047L 24 tasks 3 waves ready
-2. ⏳ **Phase 5.1 execute-phase Wave 0 in progress** (T0.1+T0.2+T0.3+T0.4 atomic per PLAN.md; prerequisite for Wave 1+2)
+2. ✅ **Phase 5.1 execute-phase Wave 0 SHIPPED** (2026-05-19 — T0.1+T0.2+T0.3+T0.4 4/4; prerequisite Wave 1+2 MET); ⏳ Wave 1 next (T1.1-T1.4)
 3. ⏳ **User push approval** for tags LOCAL created (累积 6+ tags pending push per CLAUDE.md commit safety NEVER push without user explicit request):
    - Phase 4.1 W2 T2.7: `v0.4.0-alpha.1-benchmark` LOCAL
    - Phase 4.2 W2 T2.7: `v0.4.0-alpha.2-community` LOCAL
@@ -131,7 +145,7 @@
 
 ### Blockers
 
-[当前无 — ✅ Phase 4.2 SHIPPED 2026-05-18 v0.4.0 milestone 2/3 PROGRESS; single baseline tag `v0.4.0-alpha.2-community` LOCAL CREATE pending user push approval per CLAUDE.md commit safety]
+[当前无 — Wave 0 ✅ COMPLETE 2026-05-19; tags adr-0019/0020-accepted + v0.4.0 LOCAL CREATE pending user push per CLAUDE.md commit safety]
 
 ---
 
