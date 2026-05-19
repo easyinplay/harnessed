@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
 import { parse } from 'yaml'
+import { checkPathSafe } from './lib/path-guard.js'
 import { AliasesV1, type AliasesV1Type } from './schema/aliases.v1.js'
 
 const ALIASES_PATH = join(process.cwd(), 'manifests', 'aliases.yaml')
@@ -34,6 +35,8 @@ export function loadAliases(): AliasesV1Type | null {
 
 /** Resolve old → new name redirect; returns null if no alias for the name. */
 export function resolveAlias(name: string): string | null {
+  // R10.4 D-04 hardening site 1 — guard user-controlled name before yaml lookup.
+  checkPathSafe(name)
   return loadAliases()?.aliases?.[name]?.redirect ?? null
 }
 
