@@ -153,12 +153,15 @@ export function registerSetup(program: Command): void {
           }
           const r = await runInstall(v.manifest, opts)
           if ('aborted' in r) return { status: 'skipped' as const, name }
+          if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)
+            return { status: 'already-installed' as const, name }
           if (r.ok) return { status: 'installed' as const, name }
           return { status: 'failed' as const, name, reason: r.error.message }
         }),
       )
 
       const baseInstalled: string[] = []
+      const baseAlreadyInstalled: string[] = []
       const baseSkipped: string[] = []
       const baseFailed: string[] = []
       for (const s of settled) {
@@ -171,6 +174,7 @@ export function registerSetup(program: Command): void {
                 reason: String((s as PromiseRejectedResult).reason),
               }
         if (v.status === 'installed') baseInstalled.push(v.name)
+        else if (v.status === 'already-installed') baseAlreadyInstalled.push(v.name)
         else if (v.status === 'skipped') baseSkipped.push(v.name)
         else
           baseFailed.push(
@@ -180,15 +184,24 @@ export function registerSetup(program: Command): void {
 
       const stepBMs = ((Date.now() - stepBStart) / 1000).toFixed(1)
       console.log(
-        `Step B complete: ${baseInstalled.length} manifest(s) installed / ${baseSkipped.length} skipped / ${baseFailed.length} failed [parallel ${stepBMs}s]`,
+        `Step B complete: ${baseInstalled.length} manifest(s) installed / ${baseAlreadyInstalled.length} already-installed / ${baseSkipped.length} skipped / ${baseFailed.length} failed [parallel ${stepBMs}s]`,
       )
-      for (const n of baseInstalled) console.log(`  [B] installed  ${n}`)
-      for (const n of baseSkipped) console.log(`  [B] skipped    ${n}`)
-      for (const n of baseFailed) console.error(`  [B] failed     ${n}`)
+      for (const n of baseInstalled) console.log(`  [B] installed          ${n}`)
+      for (const n of baseAlreadyInstalled)
+        console.log(
+          `  [B] already-installed  ${n} — run \`/mcp\` in Claude Code to verify connection`,
+        )
+      for (const n of baseSkipped) console.log(`  [B] skipped            ${n}`)
+      for (const n of baseFailed) console.error(`  [B] failed             ${n}`)
 
       console.log(
-        `\nsetup complete: ${skillsInstalled} workflow skill(s) + ${baseInstalled.length} base manifest(s) installed`,
+        `\nsetup complete: ${skillsInstalled} workflow skill(s) + ${baseInstalled.length + baseAlreadyInstalled.length} base manifest(s) configured`,
       )
+      if (baseAlreadyInstalled.length > 0 || baseInstalled.length > 0) {
+        console.log(
+          `\nMCP servers configured. Run \`/mcp\` in Claude Code to verify each server's connection status. If a server shows disconnected, restart Claude Code or check the MCP command spec.`,
+        )
+      }
       process.exit(0)
     })
 }

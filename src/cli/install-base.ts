@@ -60,6 +60,7 @@ export function registerInstallBase(program: Command): void {
         color: 'auto',
       }
       const installed: string[] = []
+      const alreadyInstalled: string[] = []
       const skipped: { name: string; reason: string }[] = []
       const failed: { name: string; reason: string }[] = []
       for (const path of await listBaseManifests(getPackageRoot())) {
@@ -83,17 +84,20 @@ export function registerInstallBase(program: Command): void {
         }
         const r = await runInstall(v.manifest, opts)
         if ('aborted' in r) skipped.push({ name, reason: `aborted: ${r.reason}` })
+        else if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled) alreadyInstalled.push(name)
         else if (r.ok) installed.push(name)
         else failed.push({ name, reason: r.error.message })
       }
       console.log(
-        `\n  installed: ${installed.length} / skipped (deferred phase 2.1): ${skipped.length} / failed: ${failed.length}`,
+        `\n  installed: ${installed.length} / already-installed: ${alreadyInstalled.length} / skipped (deferred phase 2.1): ${skipped.length} / failed: ${failed.length}`,
       )
-      for (const i of installed) console.log(`  installed  ${i}`)
-      for (const s of skipped) console.log(`  skipped    ${s.name} — ${s.reason}`)
-      for (const f of failed) console.error(`  failed     ${f.name} — ${f.reason}`)
+      for (const i of installed) console.log(`  installed          ${i}`)
+      for (const a of alreadyInstalled)
+        console.log(`  already-installed  ${a} — run \`/mcp\` in Claude Code to verify connection`)
+      for (const s of skipped) console.log(`  skipped            ${s.name} — ${s.reason}`)
+      for (const f of failed) console.error(`  failed             ${f.name} — ${f.reason}`)
       if (failed.length > 0) process.exit(1)
-      if (installed.length === 0) process.exit(2)
+      if (installed.length === 0 && alreadyInstalled.length === 0) process.exit(2)
       process.exit(0)
     })
 }
