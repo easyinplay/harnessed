@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: ship 前必达）
 status: unknown
-last_updated: "2026-05-19T10:34:01.315Z"
+last_updated: "2026-05-19T14:02:43.240Z"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # harnessed STATE
@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19) — R10.3 uninstall + R10.4 path traversal; **Phase 5.3 next** — v0.5.0 milestone close + 🎯 v1.0 GA prep
-- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 PROGRESS** (H1 BB path LOCKED; R10.3 ✅ + R10.4 ✅ DELIVERED; Phase 5.3 v0.5.0 close pending; 🎯 v1.0 GA post-v0.5.0 close)
-- **下一 phase**：**Phase 5.3 plan-phase 启动** (discuss-phase ✅ SHIPPED 2026-05-19 — 8 D-decisions LOCKED: D-01 仅 v0.5.0 close NOT 🎯 v1.0 GA tag / D-02 NO new ADR (close ceremony) / D-03 write v1.0 chapter NEW in ROADMAP / D-04 README Status update + keep pre-launch / D-05 CHANGELOG v0.5.0 stable consolidate / D-06 milestone tag 9-line annotation / D-07 trends in v0.5.0-MILESTONE-AUDIT § 7 / D-08 dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0; M-01 CLOSE CEREMONY phase class LOCK; 候选启动 `/gsd-plan-phase 5.3`)
-- **状态**：✅ **Phase 5.2 SHIPPED 2026-05-19** — 14th subcommand + 7 uninstallers + path-guard.ts + ADR 0022 + 756 tests PASS (733→756 +23 new cells); DOGFOOD 3/3 PASS
-- **進度**：19 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 ✅ SHIPPED + Phase 5.3 pending）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ⚙ **Phase 5.3 W0 COMPLETE** (2026-05-19) — v0.5.0 close ceremony Wave 0 cadence absorb done; Wave 2 close artifacts next
+- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 PROGRESS** (H1 BB path LOCKED; R10.3 ✅ + R10.4 ✅ DELIVERED; Phase 5.3 Wave 2 close ceremony pending)
+- **下一 phase**：**Phase 5.3 Wave 2** — close ceremony artifacts: 3-file milestone triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter + README/PROJECT-SPEC update + RETROSPECTIVE Phase 5.3 section + STATE post-close + dual LOCAL tags (v0.5.0-alpha.3-close + 🎯 v0.5.0)
+- **状態**：⚙ **Phase 5.3 W0 COMPLETE 2026-05-19** — D2 iter 7 REINFORCE (Phase 5.2 narrative → RETROSPECTIVE); #BA DEFER (141L, 141-145L range); 4 gates GREEN (756 tests PASS)
+- **進度**：19 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 ✅ SHIPPED + Phase 5.3 W0 ✅ Wave 2 pending）
 
 ### 各里程碑进度
 
