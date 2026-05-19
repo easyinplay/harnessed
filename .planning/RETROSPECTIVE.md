@@ -847,3 +847,72 @@ git show 22990ab~1:.planning/STATE.md  # pre-Phase-4.3-W0-T0.1 STATE.md 156L bas
 Or read per-phase canonical sources directly: `.planning/phase-4.2/{4.2-CONTEXT,4.2-DISCUSSION-LOG,4.2-KICKOFF,task_plan,PLAN,PATTERNS,RESEARCH,PLAN-CHECK,SISTER-REVIEW-FINDINGS,DOGFOOD-T2.X,deferred-items}.md` (Phase 4.2 main artifacts; no ADR 0018 per PATTERNS § 5 R-5 mitigation).
 
 *Phase 4.3 W0.1 T0.1 D2 cadence iter 4 archive complete — 2026-05-19 ship-time T6.N cadence 4th-implementation REINFORCE. Sister Phase 4.2 W0.1 T0.1 was 3rd-implementation (Phase 4.0+4.1 archived 2026-05-18 terminus stable signal ≥3-iter); this 4th-iter REINFORCE verifies pattern stable beyond terminus per sister 5-recurrence terminus heuristic confirmed (pattern stable institutionalize standard). Next § ARCHIVED FROM STATE — Phase 4.3 reserved for Phase 4.4+ ship-time per D2 standing process cadence iter 5 (continued stability iterate).*
+
+---
+
+## Phase 4.3 milestone retrospective — R8.1 audit log NEW infra + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 milestone close (2026-05-19 ship) — v0.4.0 milestone 3/3 SHIPPED ARCHIVED CLOSE
+
+### What worked
+
+- **4 D-decisions + M-01 ARCHITECTURAL meta-decision full ship cadence**: D-01 JSONL 12-field schema + D-02 NEW forward-only + D-03 ADR 0018 PRIMARY + 0019/0020 backfill + D-04 CHANGELOG + triple tag + M-01 PhaseClass meta-disambiguation (sister #BP discharge — institutional discipline标 ARCHITECTURAL vs R-5 publish-only tier). **经验**: 单 phase 容纳 R8.1 NEW infra (architectural) + R8.4 ADR backfill (institutional pattern lock) + v1.0-RC (CHANGELOG) + 🎯 v0.4.0 milestone close (3-file archive + triple tag) 多 anchor 同时 ship 可行 — sister #BR 1.5-2 day estimate 实际 1 day per 单 phase 多 anchor capability density.
+- **HIGH RISK R-1 engine.ts ≤200L surgical mitigation Option A.2 success**: 200L exact pre-MODIFY 通过 surgical 5L comment shrink + hook.ts signature simplification (positional outcome + sessionId? args + routeLayer derived from matched inside hook + iterCount=null hardcoded YAGNI) = 200L EXACT post-MODIFY. **经验**: HIGH RISK Karpathy hard limit constraint 可通过 hook signature consolidation 而非 helper extract (Option A.3) 满足 — 更 minimal surface + sister engineHook.ts ≤50L precedent延袭 family member.
+- **R8.4 ADR backfill 3-cohort 1-day ship sister 5-section simplified format**: ADR 0018 PRIMARY 218L 9-section (sister 0017 100% reuse) + ADR 0019 backfill 47L 5-section (Phase 3.3 STATE COLLAPSE institutional pattern) + ADR 0020 backfill 38L 5-section (Phase 4.2 HYBRID 2-clock institutional pattern) = 3 NEW ADR 1 day ship + docs/adr/README.md +12 entries 0009-0020 catchup (bonus per RESEARCH key finding #4 low-effort high-transparency value). **经验**: backfill ADR 5-section simplified format ≠ NEW ADR 9-section errata format (sister 0017) — scope-match discipline reduces backfill authoring time + scope creep prevent.
+- **D2 cadence iter 4 REINFORCE stable signal beyond ≥3-iter terminus**: sister Phase 4.2 W0.1 3rd-iter terminus → Phase 4.3 W0.1 4th-iter REINFORCE pattern stable beyond founder-effort per sister 5-recurrence terminus heuristic confirmed. **经验**: standing process pattern verification beyond 3-iter signal demonstrates institutional discipline robust independence from per-phase implementer judgement.
+- **#BA SIZE_LIMIT 200→175 round 2 RELAX FLIP DEFERRED resolution**: sister Phase 4.1 W0.5 + Phase 4.2 W0.2 2-iter defer chain resolved per CONTEXT #BA "relax target post-2nd-cycle sister H2 AA" decision. **经验**: defer chain 2-iter signal trigger condition for "relax target NOT abandon target" pivot — Karpathy YAGNI middle path discipline优于 strict tighten OR strict abandon.
+
+### What was inefficient
+
+- **Wave 0 executor spawn 失败 inline fallback**: gsd-executor agent stopped mid-execution (8 tool uses + 71s, no COMPLETE marker); fallback inline execution by orchestrator. **Mitigation**: workflow `<runtime_compatibility>` provides explicit "spot-check fallback" instruction — inline execution acceptable when subagent completion signal unreliable.
+- **engine.ts +5L budget pressure underestimated**: spec planned naive +5L emit code addition fits ≤200L assuming -2L surgical shrink first; actual budget required +6L (1 import +1L + 4 emit calls +4L + routeLayer +1L) — 4L over. Mitigation iterated through Option A.2 (hook.ts signature simplification) - successful first try; Option A.3 (installErrors extract) not needed. **经验**: HIGH RISK Karpathy hard limit constraint phase plan should include explicit budget arithmetic + alternative paths upfront (RESEARCH § 2.1 + § 7 Q1 did provide A.1-A.4 alternatives — good plan-phase discipline).
+- **docs/adr/README.md catchup scope creep tolerance**: RESEARCH key finding #4 noted "index incomplete shows only 0001-0008 despite 0017 existing"; D-03 scope strictly = 0018+0019+0020 only; bonus 0009-0017 gap catchup +9 entries undertaken Wave 2 T2.3 per "low-effort high-transparency value" RESEARCH recommendation. **经验**: scope creep tolerance OK for low-effort + high-transparency value bonus tasks (sister R-4 cadence consistency mitigation 续延延袭) but document explicit in commit msg + retrospective.
+
+### Patterns established
+
+- **M-01 ARCHITECTURAL vs R-5 publish-only phase class meta-disambiguation institutionalize**: NEW pattern Phase 4.3 establishes (sister #BP discharge) — discuss-phase time meta-decision lock for full ship cadence (ADR + ci.yml A7 iter + triple tag) vs publish-only single-baseline-only mode. Standing for future v0.5+ mixed cohorts.
+- **5-section simplified backfill ADR format** vs 9-section errata format (sister 0017): backfill institutional pattern lock targets ≠ NEW ship phase architecture decision; format scope-matched discipline.
+- **9-phase consecutive deferred-items → next phase W0 一次根治 cadence延袭**: Phase 2.3 → 4.3 = 9 phase consecutive 一次根治 cadence pattern stable beyond sister 6-phase Phase 4.1 streak + 7-phase Phase 4.2 + 8-phase Phase 4.2 = 9-phase Phase 4.3 streak.
+- **2-iter defer chain trigger condition for RELAX target pivot**: #BA SIZE_LIMIT 2-iter defer chain (Phase 4.1 W0.5 + Phase 4.2 W0.2) → Phase 4.3 RELAX FLIP 200→175 (NOT abandon target; NOT continue tight 200→150 sister 2-iter signal). Pattern: 2-iter defer signal = "relax target NOT abandon target" middle-path discipline.
+- **ADR backfill bonus catchup discipline**: D-03 strict scope + RESEARCH key finding bonus + commit msg explicit annotation = scope creep tolerance acceptable for low-effort + high-transparency value bonuses (sister R-4 cadence consistency mitigation 续延延袭).
+- **Triple tag LOCAL CREATE 待 user push 模式延袭**: sister Phase 4.1+4.2 LOCAL CREATE 模式 + Phase 4.3 ARCHITECTURAL full ship triple tag LOCAL CREATE 模式合并 — 6 tags pending push per CLAUDE.md commit safety NEVER push without user explicit request.
+
+### Cost patterns
+
+- **Phase 4.3 内部 phase 1-day cadence per CONTEXT #BR scope inflation tolerable single-phase milestone close**: sister 1-phase/day cadence延袭 Phase 4.1 + 4.2 streak; #BR 1.5-2 day estimate actual 1 day — single-phase capability density高于 estimate.
+- **External co-maintainer 6-month organic clock SEPARATE per D-04 HYBRID** (ADR 0020 backfill): runs through v0.5/v1.0 post-v0.4.0 close 2026-05-19; NOT counted v0.4.0 ship timeline; opens 6-month window organic recruitment.
+- **🎯 v0.4.0 milestone close 2-day cadence vs sister v0.3.0 close 2-day cadence**: v0.3.0 = 4 phase 2 day (1+3 split); v0.4.0 = 3 phase 2 day (2+1 split) — different phase scope per phase but same milestone duration.
+- **R8.4 ADR backfill cost vs implicit "全集" interpretation**: R8.4 spec "≥5 份" verbatim 17 existing 已远超 bar; backfill discipline targets institutional pattern lock institutional cohorted Phase 4.3 (NOT 全 50+ D-decision audit per Karpathy YAGNI middle path). 3 NEW ADR 1 day ship 满足 spec spirit + sister 5-section simplified format scope-match.
+
+### Key lessons
+
+- (i) **HIGH RISK Karpathy hard limit constraint phase plan should include explicit budget arithmetic + alternative paths upfront** (RESEARCH § 7 Q1 Option A.1-A.4 provided良好 plan-phase discipline; T1.3 executed Option A.2 hook signature simplification first try success).
+- (ii) **5-section simplified backfill ADR format ≠ 9-section errata NEW ADR format** — scope-match discipline reduces backfill authoring time + scope creep prevent (sister 0017 100% reuse only for NEW ADR; backfill 5-section sister Michael Nygard original ADR format).
+- (iii) **M-01 PhaseClass meta-disambiguation lock institutional discipline NEW pattern** — discuss-phase time meta-decision lock for full ship cadence vs publish-only mode; future v0.5+ mixed cohorts应 invoke M-01 at discuss-phase per sister #BP discharge precedent.
+- (iv) **D2 cadence iter 4 REINFORCE stable signal beyond ≥3-iter terminus** verifies institutional discipline robust independence from per-phase implementer judgement — pattern stable beyond founder-effort per sister 5-recurrence terminus heuristic confirmed.
+- (v) **2-iter defer chain trigger condition for RELAX target pivot NOT abandon** — Karpathy YAGNI middle path discipline优于 strict tighten OR strict abandon; #BA SIZE_LIMIT 200→175 RELAX FLIP institutionalize discipline pattern.
+- (vi) **Subagent completion signal reliability concerns inline fallback acceptable** per workflow `<runtime_compatibility>` spot-check — orchestrator inline execution fallback proved viable for Wave 0 atomic tasks (2 commits 58c845f + a842ae2 verified gates PASS).
+
+### Cross-milestone trends — v0.4.0 close (sister v0.3.0 close cadence延袭)
+
+- **🎯 v0.4.0 milestone close 2-day cadence** sister 🎯 v0.3.0 close 2-day cadence延袭 (Phase 4.1+4.2 ship 2026-05-18 + Phase 4.3 ship 2026-05-19).
+- **17/17 100% phase ship close** (v0.1.0 6/6 + v0.2.0 4/4 + v0.3.0 4/4 + v0.4.0 3/3 = 17 phase total; 100% milestone close discipline stable).
+- **20 ADR cumulative + 18 baseline tag + 17 milestone tag accumulate** (sister steady cadence per milestone close).
+- **Sister review cadence self-correcting ≥3 iter signal stable**: Phase 4.2 ship sister 1st cycle + 2nd-cycle redirect doc + 3rd-cycle user-initiated 9 items tiered (1 inline #BT pre-discharge + 2 carry #BU/#BV + 2 re-DOCUMENTED #1/#5 + 2 WRONG/inapplicable #4/#7 + 2 YAGNI #8/#9) — pattern stable institutionalize beyond reviewer-effort.
+- **PRIMARY helper family 5-member延袭闭环** (Phase 3.1 W3 engineHook + Phase 3.2 W1 probe-gstack + Phase 3.3 W1 check-deprecations + Phase 3.4 W1 check-token-budget + Phase 4.3 W1 audit/hook = 5 phase consecutive ≤50L single-responsibility extract pattern stable beyond 4-phase milestone bound).
+- **HYBRID 2-clock disambiguation institutionalize** (ADR 0020 backfill) for v0.5+ external-dependency phases. STATE COLLAPSE pattern institutionalize (ADR 0019 backfill) for project-wide single-SoT discipline. M-01 ARCHITECTURAL phase class meta-disambiguation lock institutionalize for future architectural phases.
+
+### Next Phase Prep Notes (bonus 7th section sister Phase 4.2 W2 T2.2 cadence延袭)
+
+- **v0.5/v1.0 milestone discuss-phase 启动 candidate** (post-v0.4.0 close 2026-05-19; scope TBD):
+  - harnessed audit log --filter CLI consumer (downstream consumer of `.harnessed/audit.log` JSONL format Phase 4.3 W1 R8.1)
+  - DEFERRED #BU `.harnessed/` state.ts concurrent write no lock fix (Phase 4.4+ W0 LOW priority — if multi-maintainer signal arrives)
+  - DEFERRED #BV harnessed uninstall command (Phase 4.5+ / v0.5 — per-method uninstall handler 设计)
+  - DEFERRED #AH path traversal regex hardening (Phase 4.4+ W0 — if external user input arrives)
+  - DEFERRED #BC v0.5+ benchmark expand evaluation (currently 30/30 100% routing PASS no signal; expand condition trigger)
+  - DEFERRED carry-forward conditional: #BD regex 2-pass validation + #BE Sponsors account activation + #BF CODEOWNERS .github/** + #BN 中英混写注释 if R8.2 external contributor signal arrives
+- **DEFERRED PERMANENT** (ADR 0009 F40-2 documented gap multi-layer test guard 充分): #1/#BL sdkSpawn `as any` + #5/#BM AgentDef SDK 耦合
+- **User push approval pending** (CLAUDE.md commit safety NEVER push without user explicit request): 6 LOCAL tags (v0.4.0-alpha.1-benchmark + alpha.2-community + alpha.3-audit + adr-0018-accepted + 🎯 v0.4.0 + sister Phase 4.1+4.2 W2 ~12+ atomic commits) ahead origin
+- **External clock prereq** (D-04 HYBRID 2-clock per ADR 0020): user manual Sponsors account activation at github.com/sponsors/easyinplay/dashboard if not yet activated (DEFERRED #BE)
+
+---
+
+*Phase 4.3 RETROSPECTIVE complete — 2026-05-19 ship；~30+ atomic commits / 720+ tests / 3 NEW ADR (0018 PRIMARY + 0019/0020 backfill) + 1 baseline tag iter (adr-0018-accepted LOCAL) + 1 single baseline tag (v0.4.0-alpha.3-audit LOCAL) + 🎯 v0.4.0 milestone tag (LOCAL) + 4 D-decisions activated 闭环 + M-01 ARCHITECTURAL phase class meta-disambiguation lock + W0 backlog 2 项一次根治 #BA RESOLVED + #BS verified + v0.4.0→v0.5/v1.0 milestone transition (3/3 CLOSE reserves v0.5+ discuss-phase 启动). 下个 retro entry 在 v0.5/v1.0 milestone discuss-phase ship 后续编.*
