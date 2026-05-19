@@ -400,7 +400,11 @@
 | R5.3 ralph Win | v0.2 | Pending | phase 2.4 |
 | R6.1-R6.5 execute-task | v0.2 | Pending | — |
 | R7.1-R7.6 plan-feature + checkpoint | v0.3 | Pending | — |
-| R8.1-R8.5 稳定期 | v0.4 | Pending | — |
+| R8.1-R8.5 稳定期 | v0.4 | ✅ Done | Phase 4.1+4.2+4.3 ship 2026-05-18~19 — benchmark public + community infra + audit log NEW infra + ADR 全集 20 ADRs + Sponsors |
+| R10.1 audit log --filter consumer | v0.5 | Pending | Phase 5.1 — `harnessed audit log --filter <jq>` CLI subcommand consume `.harnessed/audit.log` JSONL producer |
+| R10.2 state.ts concurrent write lock | v0.5 | Pending | Phase 5.1 — #BU carry — lockfile / wx exclusive create 保护 writeCurrentWorkflow + engineHook |
+| R10.3 harnessed uninstall command | v0.5 | Pending | Phase 5.2 — #BV carry — per-method uninstall handler (7 install method 反向) |
+| R10.4 path traversal regex hardening | v0.5 | Pending | Phase 5.2 — #AH carry — resolveAlias + manifest path regex extend 5+ attack vectors |
 | R9.1 单 maintainer 缓解 | v0.1 起持续 | ✅ Done (v0.1) / Ongoing | YAML 数据格式 + 9 ADR baseline-tag + CI A7 + signed_by |
 | R9.2 透明度 | v0.1 起持续 | ✅ Done (v0.1) / Ongoing | matched_rule 打印 + ADR for 非常规决策 + 无静默 skip |
 | R9.3 安全 | v0.1 起持续 | ✅ Done (v0.1) / Ongoing | install dry-run + diff + confirm + checkCmdString + license whitelist |

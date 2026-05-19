@@ -239,6 +239,51 @@
 
 ---
 
+## v0.5.0 — v1.0-RC2 minor (audit log consumer + backlog absorb) — **3-day target window 2026-05-20 ~ 2026-05-22**
+
+> **Note (sister 4th-cycle review H1 BB path LOCKED 2026-05-19)**: v0.4.0 SHIPPED & ARCHIVED 已到达 v1.0-RC 边界；BB path = "v0.5 minor first then v1.0 GA" 让 audit log consumer + 3 项 carry-forward backlog absorb 后 v1.0 GA 更稳。Karpathy 务实 over 一味 tighten — v0.5 minor 不增大 scope，仅完成 v0.4.0 close 后留下的 known gaps + carry-forward DEFERRED items 兑现。6-month co-maintainer organic clock (D-04 HYBRID per ADR 0020) 并行不阻塞。
+
+### Goal
+
+兑现 R8.1 audit log consumer + 3 项 carry-forward backlog absorb (#BU + #BV + #AH) 后达 v1.0 GA stable level。
+
+### 必含项（来自 STATE 4th-cycle review BB path 候选 scope）
+
+1. **R10.1 audit log --filter consumer**：`harnessed audit log --filter <jq-expr>` CLI subcommand 消费 `.harnessed/audit.log` JSONL → producer (Phase 4.3) 已 ship，consumer 是 R8.1 acceptance UX 补全
+2. **R10.2 state.ts concurrent write lock (#BU)**：`writeCurrentWorkflow` + `engineHook activatePhase/completePhase` 加 lockfile 或 `wx` exclusive create 保护 — single-maintainer dogfood 当前低 risk 但 multi-maintainer + co-maintainer recruit window 准备 prerequisite
+3. **R10.3 harnessed uninstall command (#BV)**：per-method uninstall handler (mcp-stdio-remove / cc-plugin-uninstall / npm-uninstall / git-rm) — 包管理器 UX gap 兑现
+4. **R10.4 path traversal regex hardening (#AH)**：`resolveAlias` + manifest yaml path regex hardening — 当前 sole consumer = project maintainer，real attack surface near-zero；v0.5 兑现 prepare external-user scenario
+
+### 验收标准
+
+1. `harnessed audit log --filter '.outcome=="complete"'` 输出最近 N 条 routing decisions JSON pretty-printed；`--tail N` flag + `--since <date>` flag basic UX
+2. 并发 `harnessed resume` × 2 不损坏 `.harnessed/current-workflow.json` (lockfile + wait-and-retry pattern verify)
+3. `harnessed uninstall <manifest-name>` 反向 install method 撤销 install artifact（npm-cli → npm uninstall + mcp-stdio → claude mcp remove + cc-plugin → marketplace unregister + git-clone → git rm）；dry-run preview 默认 + `--apply` 显式
+4. `resolveAlias` + manifest path 通过 regex hardening — `tests/manifest/path-traversal-spike.test.ts` extend 5+ attack vectors verify (`../../etc/passwd` / `..\\..\\windows\\system32` / null bytes / unicode normalization)
+5. v1.0-RC2 close + 🎯 v1.0 GA target tag prep
+
+### Phase 拆分
+
+- **Phase 5.1: R10.1 audit log consumer + R10.2 state lock** (1 day target)
+  - `harnessed audit log --filter` subcommand + lockfile 保护
+  - 验收: filter + tail + since 3-flag UX + 并发 resume 不损坏 state
+- **Phase 5.2: R10.3 uninstall + R10.4 path traversal hardening** (1 day target)
+  - per-method uninstall handler + regex hardening + 5+ attack vectors test
+  - 验收: 7 install method 全反向 + 5+ traversal regex hardening verify
+- **Phase 5.3: v0.5.0 milestone close + 🎯 v1.0 GA prep** (1 day target)
+  - 3-file archive triplet `.planning/milestones/v0.5.0-{ROADMAP,REQUIREMENTS,MILESTONE-AUDIT}.md`
+  - ADR 0021+ (R10.x lock; ARCHITECTURAL phase class per M-01 LOCK延袭)
+  - CHANGELOG v0.5.0 entry + triple tag (`adr-0021-accepted` + `v0.5.0-alpha.X-<scope>` + 🎯 `v0.5.0`)
+  - 🎯 v1.0 GA target tag prep — v1.0 stable release window 2026-05-22 ~ 2026-05-23 post-v0.5.0 close
+
+### 关键风险
+
+- ⚠️ **scope creep** — 6 month organic clock 触发 "做更多 backlog" 诱惑 → v0.5 freeze 4 项 (R10.1+R10.2+R10.3+R10.4) only; #BC benchmark expand evaluation defer v1.0 GA 后 only if signal arrives
+- ⚠️ **uninstall handler 设计复杂度** — 7 install method 反向不对称 (npm-cli reversible / git-clone-with-setup 难撤销 backup state); R10.3 接受 best-effort cleanup + 显式 limitations doc
+- ⚠️ **v1.0 GA premature signal** — 单 maintainer 6 month organic clock 未结束就 GA 风险 → v1.0 GA 仅 unblock npm publish stream + README "stable" badge; 6 month window结束后才进 maintenance-only mode
+
+---
+
 ## v1.0 前 拒绝清单（直接采纳 SUMMARY § 五 末尾 6 项）
 
 - ❌ **不在 v1.0 前加新 workflow type**（坚守 3 个：research / execute-task / plan-feature）
