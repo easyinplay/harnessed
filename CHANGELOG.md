@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-05-20
+
+### Performance
+- `harnessed setup` Step B (install-base auto-glob) serial → parallel via `Promise.allSettled` (~75% speedup; 16 manifests 30-50 sec → 5-10 sec total; user feedback v1.0.2 ship)
+
+### Changed
+- `src/cli/setup.ts` Step B — replaced serial for-loop with `Promise.allSettled` concurrent manifest install; per-manifest error isolation (allSettled never short-circuits); timing logged in summary line (`[parallel X.Xs]`)
+
 ## [1.0.2] - 2026-05-20
 
 ### Added
@@ -140,7 +148,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version sync drift across `src/index.ts` + `src/cli.ts` + `package.json` — both files now import `pkg.version` from package.json single SoT (Phase 4.2 ship sister H1 5996ea1)
 - `src/cli/audit.ts` N+1 file read in `auditOne` — refactored to accept optional pre-read src (Phase 4.2 ship sister H2 5996ea1)
 
-[Unreleased]: https://github.com/easyinplay/harnessed/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/easyinplay/harnessed/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/easyinplay/harnessed/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/easyinplay/harnessed/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/easyinplay/harnessed/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/easyinplay/harnessed/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/easyinplay/harnessed/releases/tag/v0.5.0
 [0.5.0-alpha.2]: https://github.com/easyinplay/harnessed/releases/tag/v0.5.0-alpha.2
