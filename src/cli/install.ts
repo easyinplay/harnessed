@@ -32,6 +32,7 @@ import { runInstall } from '../installers/index.js'
 import type { InstallError, InstallOpts } from '../installers/lib/types.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
+import { getPackageRoot } from './lib/packagePath.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
@@ -77,8 +78,8 @@ export function registerInstall(program: Command): void {
       // R10.4 D-04 hardening site 2 — screen resolved alias redirect (defense-in-depth).
       checkPathSafe(resolvedName)
 
-      const manifestPath = resolve(process.cwd(), `manifests/tools/${resolvedName}.yaml`)
-      const skillPackPath = resolve(process.cwd(), `manifests/skill-packs/${resolvedName}.yaml`)
+      const manifestPath = resolve(getPackageRoot(), `manifests/tools/${resolvedName}.yaml`)
+      const skillPackPath = resolve(getPackageRoot(), `manifests/skill-packs/${resolvedName}.yaml`)
       let yamlSrc: string
       let chosenPath = manifestPath
       try {
