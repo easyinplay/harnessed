@@ -1084,3 +1084,9 @@ git show HEAD~1:.planning/STATE.md  # pre-Phase-5.2-W0-T0.1 STATE.md 164L baseli
 Or read per-phase canonical sources: `.planning/phase-5.1/{5.1-CONTEXT,PLAN,RESEARCH,PATTERNS,PLAN-CHECK,DOGFOOD-T2.X,deferred-items}.md` + `src/cli/audit-log.ts` + `src/checkpoint/state.ts` + `src/installers/lib/{runClaudeArgs,err}.ts` + `docs/adr/0021-state-lock-and-audit-consumer.md` (Phase 5.1 main artifacts).
 
 *Phase 5.2 W0 T0.1 D2 cadence iter 6 archive complete — 2026-05-19 ship-time T6.N cadence 6th-implementation REINFORCE. Sister Phase 5.1 W0 T0.1 was 5th-implementation (Phase 4.3 archived 2026-05-19 TERMINUS signal); this 6th-iter REINFORCE confirms D2 cadence formally institutionalized as implicit-standing-process (no explicit iter count annotation needed Phase 5.3+). Next § ARCHIVED FROM STATE — Phase 5.2 will be created by Phase 5.3 ship-time per D2 implicit-standing-process (continued stability; no iter counter needed).*
+
+## § ARCHIVED FROM STATE — Phase 5.2
+
+> (2026-05-22 Phase 5.3 W0.1 D2 cadence iter 7 REINFORCE per standing process)
+
+- **Phase 5.2 shipped** ✅ (2026-05-19) — R10.3 uninstall 14th subcommand + 7 uninstallers + R10.4 path-guard.ts + ADR 0022 + ci.yml A7 0021→0022 + 756 tests
