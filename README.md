@@ -4,7 +4,7 @@
 > 在装配主义 base 之上：不 vendor 上游代码，用 manifest 描述 install/check，用 composition skill 编排多上游工作流（详 [ADR 0006](./docs/adr/0006-architecture-wedge-revision-v3.md)）
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
-[![Status](https://img.shields.io/badge/status-pre--launch-orange)](./.planning/ROADMAP.md)
+[![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Not affiliated with, endorsed by, or sponsored by Harness Inc.（见 [NOTICE](./NOTICE)）
@@ -39,9 +39,9 @@ harnessed/
 
 ## Status
 
-- **Current**: 🎯 **v0.5.0 SHIPPED 2026-05-22** (4/4 milestones close); v1.0 GA target window 2026-05-22~23 post-close per ROADMAP § v1.0
-- **Next**: Phase 6.x — v1.0 GA (🎯 v1.0 tag + npm publish + README "stable" badge; post-close independent window)
-- **Full phase history + release plan + per-milestone audits**: [.planning/ROADMAP.md](./.planning/ROADMAP.md) / [.planning/milestones/](./.planning/milestones/) / [CHANGELOG.md](./CHANGELOG.md)
+- **Current**: 🎯 **v1.0 GA SHIPPED 2026-05-22** (21/21 phases 100%); npm publish stream live; maintenance-only mode triggers ~2026-11 post organic clock end (per ADR 0020)
+- **Next**: v1.0+ — maintenance-only mode (~2026-11 per D-04 HYBRID 2-clock); co-maintainer organic clock running post-2026-05-22
+- **Full phase history + release plan + per-milestone audits**: [.planning/ROADMAP.md](./.planning/ROADMAP.md) / [CHANGELOG.md](./CHANGELOG.md)
 
 ## Install Quick Start（phase 1.2 ready）
 

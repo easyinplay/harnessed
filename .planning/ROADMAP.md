@@ -286,7 +286,11 @@
 
 ---
 
-## v1.0 — Production-ready GA + npm publish + README "stable" badge — **target window 2026-05-22~23**
+## v1.0 — Production-ready GA + npm publish + README "stable" badge — 🎯 **SHIPPED 2026-05-22**
+
+> 🎯 **v1.0 MILESTONE 1/1 SHIPPED** (2026-05-22) — Phase 6.1 ship; 23 ADRs (0001-0023) + 23 routing rules + 18 install methods + 756 tests; npm publish stream live; README stable badge; 🎯 v1.0.0 LOCAL CREATE.
+
+> 9/9 GA criteria all ✅ (R8.1-R8.5 + R10.1-R10.4 verified + organic clock OPENED per ADR 0020 D-04 HYBRID)
 
 > **Note (D-03 v1.0ChapterTiming LOCKED Phase 5.3)**: v1.0 GA = independent Phase 6.x window post-v0.5.0 close. Phase 5.3 仅 prep doc ship — NOT execute v1.0 GA (Phase 6.x scope). 6-month organic clock 未结束 → maintenance-only mode 触发 AFTER clock ends. npm publish defers to v1.0 GA Phase.
 
@@ -306,18 +310,56 @@ production-ready harnessed; 6-month organic clock 结束后 maintenance-only mod
 8. **npm publish stream unblock** (package.json `private` flag removal + npm registry setup; Phase 6.x scope)
 9. **README "stable" badge update** (replace pre-launch badge; Phase 6.x ship time)
 
-### Phase 6.1 outline (scope freeze guard)
+### Phase 6.1 — 🎯 SHIPPED 2026-05-22
 
-- **Goal**: v1.0-RC2 → 🎯 v1.0 GA tag + npm publish stream unblock + README "stable" badge update
-- **Window**: 2026-05-22~23 explicit (post-v0.5.0 close independent window)
-- **Scope freeze guard**: v1.0 GA freeze to 9 criteria only; NO new R-series requirements; 6-month organic clock 触发 backlog 诱惑 → REJECT (sister R10.x freeze延袭 Phase 5.x discipline)
-- **Defer Phase 6.x discuss-phase**: full task spec deferred (ROADMAP v1.0 chapter is outline + 9 criteria + window — NOT detailed task spec per D-03 sneak-block)
+- **Goal**: 🎯 v1.0 GA tag + npm publish stream live + README stable badge + CHANGELOG [1.0.0] + ADR 0023 + 21/21 phases 100%
+- **Window**: 2026-05-22 (single-day ship post-v0.5.0 close)
+- **Delivered**: publish.yml NEW (OIDC trusted publishing) + package.json 1.0.0 + ADR 0023 + 3 LOCAL tags (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0)
+- **9/9 GA criteria**: all ✅ verified (R8.1-R8.5 + R10.1-R10.4 + organic clock OPENED)
 
 ### 关键风险
 
 - ⚠️ **scope creep** — 6-month organic clock 触发 backlog 诱惑 → v1.0 GA freeze to 9 criteria only; feature request 三问
 - ⚠️ **npm publish stream complexity** — package.json `private` removal + npm registry account setup + 2FA = external prereq chain; Phase 6.x discuss-phase resolves
 - ⚠️ **co-maintainer organic clock** — 6-month window ends ~2026-11; if no external co-maintainer recruited → maintenance-only mode ACCEPT (Avelino 36%/year bus factor documented risk)
+
+---
+
+## v1.0+ — Maintenance-Only Mode (Forward Visibility)
+
+> **Note (D-04 HYBRID 2-clock per ADR 0020)**: v1.0 GA shipped 2026-05-22. External 6-month organic clock running. Post-clock decision point ~2026-11.
+
+### Goal
+
+Operate in maintenance mode after organic clock ends. Decide continuation posture based on co-maintainer recruitment outcome.
+
+### Trigger
+
+~2026-11 (± buffer): organic clock end per ADR 0020 D-04 HYBRID 2-clock. Co-maintainer recruit window opened Phase 4.2 (2026-05-18); 6 months → ~2026-11-18 approximate target.
+
+### Outcomes (two paths)
+
+**(a) Maintenance-only mode** (if no co-maintainer recruited by clock end):
+- Accept maintenance-only posture per MAINTAINER-ONBOARDING.md § Post-v1.0
+- Security patches and critical bug fixes only; no new R-series features; schema + workflow stability preserved
+- Avelino 36%/year bus factor acknowledged; honest stewardship, not negative-framing
+
+**(b) Continued active development** (if co-maintainer recruited + project healthy):
+- Discuss Phase 7.x scope via `/gsd-discuss-phase 7.x`
+- v1.1.x minor releases; community-driven feature roadmap
+- ADR 0024+ as needed for new architectural decisions
+
+### Decision Quote
+
+Avelino et al.: single-maintainer projects 36%/year dropout rate. v1.0 GA is the commitment milestone; organic clock is the succession window.
+
+### Scope Freeze Guard (v1.0+ rejects)
+
+- ❌ New workflow types beyond 3 MVP (research / execute-task / plan-feature)
+- ❌ Cloud manifest registry
+- ❌ Dashboard visualization
+- ❌ Cross-harness support (schema interface preserved, NOT implemented)
+- ❌ Detailed Phase 7.x task spec in this outline (outline only per D-07; Phase 7.x discuss-phase if (b) outcome triggers)
 
 ---
 

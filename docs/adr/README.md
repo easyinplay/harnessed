@@ -61,6 +61,7 @@
 | [0020](./0020-hybrid-2clock-disambiguation.md) | HYBRID 2-clock disambiguation pattern (backfill Phase 4.2 D-04 institutional pattern lock) | Accepted | 2026-05-19 |
 | [0021](./0021-state-lock-and-audit-consumer.md) | Phase 5.1 — R10.2 state.ts concurrent write lock (proper-lockfile) + R10.1 audit log --filter CLI consumer | Accepted | 2026-05-19 |
 | [0022](./0022-uninstall-and-path-traversal.md) | Phase 5.2 — R10.3 `harnessed uninstall` CLI (7-method dispatch) + R10.4 path traversal 5-vector regex hardening | Accepted | 2026-05-19 |
+| [0023](./0023-npm-publish-release-process.md) | Phase 6.1 — npm publish release process (GitHub Actions OIDC trusted publishing + sigstore provenance + `private` removal + v1.0 GA tag) | Accepted | 2026-05-22 |
 
 ## 参考
 

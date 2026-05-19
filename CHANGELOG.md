@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-22
+
+### Added
+- Released to npm registry — `npm install harnessed` or `npx harnessed@latest setup` now live
+- `.github/workflows/publish.yml` — tag-triggered OIDC trusted publishing + sigstore provenance (ADR 0023)
+- ADR 0023 — Phase 6.1 npm publish release process (OIDC trusted publishing + sigstore provenance architecture)
+- 21 phases complete (20/20 pre-GA + Phase 6.1 GA ship) — 23 ADRs (0001-0023)
+- 756 tests stable (CI 3-OS green: ubuntu / macOS / Windows native)
+
+### Changed
+- `package.json` — `private: true` removed + version `0.3.0` → `1.0.0` + `author` field added (D-05)
+- `README.md` badge — pre-launch status badge replaced with npm version shield (auto-tracks; D-03)
+- `README.md` Status section — v1.0 GA SHIPPED 2026-05-22; npm publish stream live; maintenance-only mode forward
+- `.planning/ROADMAP.md` — Phase 6.1 row → 🎯 SHIPPED; v1.0+ Maintenance-Only Mode forward outline added (D-07)
+- `docs/MAINTAINER-ONBOARDING.md` — post-v1.0 forward visibility NOTE added (D-08)
+- `.github/workflows/ci.yml` — A7 step iter 0022→0023 (ADR 0023 baseline tag verify)
+
+### Note
+- 6-month co-maintainer organic clock opened 2026-05-22 (closes ~2026-11 per ADR 0020 D-04 HYBRID 2-clock)
+- Post-clock decision: maintenance-only mode if no co-maintainer recruited; continued active if recruited + healthy
+- Forward visibility (not negative-framing): see ROADMAP.md § v1.0+ and MAINTAINER-ONBOARDING.md § Post-v1.0
+
 ## [0.5.0] - 2026-05-22
 
 ### Added
@@ -94,7 +116,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Version sync drift across `src/index.ts` + `src/cli.ts` + `package.json` — both files now import `pkg.version` from package.json single SoT (Phase 4.2 ship sister H1 5996ea1)
 - `src/cli/audit.ts` N+1 file read in `auditOne` — refactored to accept optional pre-read src (Phase 4.2 ship sister H2 5996ea1)
 
-[Unreleased]: https://github.com/easyinplay/harnessed/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/easyinplay/harnessed/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/easyinplay/harnessed/compare/v0.5.0...v1.0.0
 [0.5.0]: https://github.com/easyinplay/harnessed/releases/tag/v0.5.0
 [0.5.0-alpha.2]: https://github.com/easyinplay/harnessed/releases/tag/v0.5.0-alpha.2
 [0.5.0-alpha.1]: https://github.com/easyinplay/harnessed/releases/tag/v0.5.0-alpha.1
