@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-22
+
+### Fixed
+- `install.ts` — manifest path resolution via `getPackageRoot()` instead of `process.cwd()` (global install users now work)
+- `install-base.ts` — `listBaseManifests` root via `getPackageRoot()` instead of `process.cwd()`
+- `uninstall.ts` — manifest path resolution via `getPackageRoot()` instead of `process.cwd()`
+
+### Added
+- `harnessed setup` — new one-time onboarding command; copies `workflows/*/SKILL.md` directories to `~/.claude/skills/<name>/` (dry-run by default, `--apply` to execute); fixes critical gap where README documented `setup` but command was never implemented
+- `src/cli/lib/packagePath.ts` — `getPackageRoot()` helper; single source of truth for package root resolution via `import.meta.url` (bundler-safe ESM)
+- 8 new tests (764 total): `packagePath` 3 cells + `setup` 5 cells
+
 ## [1.0.0] - 2026-05-22
 
 ### Added
