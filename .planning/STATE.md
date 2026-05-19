@@ -33,11 +33,11 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ⚙ **Phase 5.3 W0 COMPLETE** (2026-05-19) — v0.5.0 close ceremony Wave 0 cadence absorb done; Wave 2 close artifacts next
-- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 2/3 PROGRESS** (H1 BB path LOCKED; R10.3 ✅ + R10.4 ✅ DELIVERED; Phase 5.3 Wave 2 close ceremony pending)
-- **下一 phase**：**Phase 5.3 Wave 2** — close ceremony artifacts: 3-file milestone triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter + README/PROJECT-SPEC update + RETROSPECTIVE Phase 5.3 section + STATE post-close + dual LOCAL tags (v0.5.0-alpha.3-close + 🎯 v0.5.0)
-- **状態**：⚙ **Phase 5.3 W0 COMPLETE 2026-05-19** — D2 iter 7 REINFORCE (Phase 5.2 narrative → RETROSPECTIVE); #BA DEFER (141L, 141-145L range); 4 gates GREEN (756 tests PASS)
-- **進度**：19 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95%（v0.1.0 100% + v0.2.0 100% + 🎯 **v0.3.0 100% CLOSE** + 🎯 **v0.4.0 100% CLOSE** + v0.5.0 里程碑 2/3 PROGRESS — Phase 5.1 ✅ + Phase 5.2 ✅ SHIPPED + Phase 5.3 W0 ✅ Wave 2 pending）
+- **GSD phase**：✅ **Phase 5.1 SHIPPED** (2026-05-19); ✅ **Phase 5.2 SHIPPED** (2026-05-19); ✅ **Phase 5.3 SHIPPED** (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep; **Phase 6.x next** — v1.0 GA discuss-phase
+- **当前里程碑**：**v0.5.0 v1.0-RC2 minor 3/3 COMPLETE** 🎯 SHIPPED & ARCHIVED 2026-05-22
+- **下一 phase**：**Phase 6.x discuss-phase 启动** (v1.0 GA; window 2026-05-22~23 per ROADMAP § v1.0)
+- **状態**：✅ **Phase 5.3 SHIPPED 2026-05-22** — 3-file milestone archive triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter NEW + dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL CREATE; DOGFOOD PASS 3/3
+- **進度**：20 / 20 phases 已完成 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ 100%（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + 🎯 **v0.5.0 100% CLOSE** all SHIPPED & ARCHIVED）
 
 ### 各里程碑进度
 
@@ -47,7 +47,7 @@ progress:
 | v0.2.0 Sub-task Loop + Extension Installers | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 2.1 + 2.2 + 2.3 + 2.4 ship (doctor MIN 5 + EE-4 SSOT + dashboard C 路径 + audit hard-fail + Win sentinel + Wave 0 backlog 5 项); 13 ADR + 13 baseline tag accumulate; archive + audit ship | 2026-05-15 ~ 2026-05-16 |
 | v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1-3.4 全 ship; tests 543→701+ (+158); 17 ADR + 14 milestone tag; archive `.planning/milestones/v0.3.0-*.md` triplet | 2026-05-16 ~ 2026-05-17 |
 | v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1+4.2+4.3 全 ship (dogfooding benchmark + community infra + R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→733 (+24); 21 ADR; archive `.planning/milestones/v0.4.0-*.md` triplet | 2026-05-18 ~ 2026-05-19 |
-| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 2/3 | 🚧 **IN PROGRESS** — Phase 5.1 ✅ + Phase 5.2 ✅ SHIPPED; Phase 5.3 (🎯 v0.5.0 close) pending | 2026-05-19 ~ - |
+| v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 5.1 ✅ + Phase 5.2 ✅ + Phase 5.3 ✅ SHIPPED (R10.1-R10.4 全 Done + ADR 0021+0022 + 756 tests); archive `.planning/milestones/v0.5.0-*.md` triplet + dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL | 2026-05-19 ~ 2026-05-22 |
 
 ### 已完成 phase ship 历史 (dev SoT — README user-facing summary only)
 
@@ -58,11 +58,10 @@ progress:
 <!-- Phase 5.1 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1 (2026-05-19 Phase 5.2 W0 T0.1 D2 cadence iter 6 REINFORCE per standing process — implicit-standing-process graduation signal; 6th-iter confirms D2 cadence formally institutionalized; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 <!-- Phase 5.2 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.2 (2026-05-22 Phase 5.3 W0.1 D2 cadence iter 7 per standing process — implicit-standing-process graduation REINFORCE; iter 7 post-iter-6 terminus signal Phase 5.2 W0; single-phase archive per R-4 cadence consistency mitigation continuation) -->
 
+- **Phase 5.3 shipped** ✅ (2026-05-22) — 🎯 v0.5.0 milestone close + v1.0 GA prep (3-file archive triplet + CHANGELOG v0.5.0 + ROADMAP v1.0 chapter NEW + dual tag LOCAL; 756 tests stable)
+- **Phase 5.2 shipped** ✅ (2026-05-19) — R10.3 uninstall 14th subcommand + 7 uninstallers + R10.4 path-guard.ts + ADR 0022 (archived → RETROSPECTIVE.md § Phase 5.2)
 - **Phase 5.1 shipped** ✅ (2026-05-19) — R10.1 audit-log consumer + R10.2 state.ts lock + ADR 0021 + ci.yml A7 0018→0021 + 733 tests
-- **Phase 4.3 shipped** ✅ (2026-05-19) — R8.1 audit log + R8.4 ADR backfill + 🎯 v0.4.0 close (archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 4.3)
-- **Phase 4.2 shipped** ✅ (2026-05-18) — co-maintainer onboarding + R8.2+R8.3+R8.5 (archived → RETROSPECTIVE.md § Phase 4.2)
-- **Phase 4.1 shipped** ✅ (2026-05-18) — dogfooding benchmark R8.1 anchor (archived → RETROSPECTIVE.md § Phase 4.0+4.1)
-- **Phase 1.1-3.4 shipped** ✅ (2026-05-12 ~ 2026-05-17) — 14 phases v0.1.0+v0.2.0+v0.3.0 milestones (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-3.2 + Phase 3.1+3.2 + Phase 3.3+3.4)
+- **Phase 1.1-4.3 shipped** ✅ (2026-05-12 ~ 2026-05-19) — 17 phases v0.1.0+v0.2.0+v0.3.0+v0.4.0 milestones all CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 1.X-4.3)
 
 ---
 
