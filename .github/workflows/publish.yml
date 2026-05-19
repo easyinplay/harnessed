@@ -29,16 +29,8 @@ jobs:
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       - run: corepack pnpm build
-      # D-02 LOCKED: npm publish (NOT pnpm publish) — npm CLI more reliable for OIDC provenance.
-      # --provenance: sigstore attestation backed by OIDC id-token.
-      # --access public: required for scoped or first-publish packages.
-      # Hybrid mode (mixed OIDC + NPM_TOKEN):
-      #  - Provenance attestation: signed via OIDC id-token (sigstore-backed)
-      #  - Auth: NODE_AUTH_TOKEN secret NPM_TOKEN (Automation type)
-      # Rationale: v1.0.1 OIDC-only path attempted but npm registry rejected (E404 — likely
-      # internal package-owner-mapping issue between NPM_TOKEN-published v1.0.0 and OIDC
-      # identity). Hybrid path verified working at v1.0.0 ship. OIDC-only re-evaluate
-      # v1.1.0+ release when npm OIDC backend caches stale package owner mapping resolves.
+      # D-02 LOCKED: npm publish via OIDC Trusted Publishers (tokenless;sigstore provenance).
+      # Publishing access changed to "Require 2FA OR granular access token with bypass 2fa
+      # enabled" to allow Trusted Publishers OIDC path. NPM_TOKEN fallback removed since
+      # Automation token type rejected by current publishing access policy (E403).
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
