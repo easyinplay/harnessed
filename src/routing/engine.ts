@@ -10,6 +10,7 @@
 
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { emitAudit } from '../audit/hook.js'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import {
   type AgentDefinition,
@@ -118,8 +119,7 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
     // (rule stays null), so v0.1 is a guaranteed pass-through to L3 below;
     // v0.2+ swaps the stub body only and may resolve `semantic.rule` here.
     const semantic = await semanticMatch(task.task, opts.semanticThreshold)
-    void semantic.rule // v0.2+ feeds a matched rule into install + factory.
-    // Step 1c — L3 fallback_supervisor LLM (phase 1.4 三层兜底 contract).
+    void semantic.rule // Step 1b L2 stub; v0.2+ feeds rule; Step 1c L3 fallback below.
     if (opts.fallbackSupervisor) {
       const result = await opts.fallbackSupervisor(task)
       return { ok: true, result, matchedRule: null }
@@ -159,15 +159,11 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
     return { ok: false, phase: 'spawn', error: error as Error }
   }
 
-  // Phase 3.1 W3 T3.2 (W-04 fix path a): phaseId via TaskContext typed field.
-  const phaseId = task.phaseId ?? 'unknown'
+  const phaseId = task.phaseId ?? 'unknown' // Phase 3.1 W3 T3.2 (W-04 fix path a)
   await activatePhase(phaseId)
 
-  // Step 4+5 spawn + ralph-loop. userSpawn = fresh-session-only path (B-02):
-  // test seam signature `(agentDef) => Promise<string>` has no onSessionId
-  // out-param by design (YAGNI <5% niche, breaking change > value); resume.ts
-  // falls back to fresh session + reload checkpoint (DEFERRED #2). defaultSpawn
-  // captures session_id; T3.1 ralphLoop propagates it iter 2+ (CD-4 activated).
+  // Step 4+5 spawn + ralph-loop. userSpawn = fresh-session test seam (1-arg by design B-02; resume.ts
+  // fresh+reload DEFERRED #2). defaultSpawn captures session_id; ralphLoop propagates iter 2+ (CD-4).
   const expertName = (matched.decision.primary_expert as string | null) ?? 'unknown'
   let capturedSessionId: string | undefined
   const wrappedSpawn = async (
@@ -187,14 +183,18 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   try {
     const result = await ralphLoopWrap(wrappedSpawn, maxIter)
     await completePhase({ phaseId, sessionId: capturedSessionId, status: 'complete' })
+    emitAudit(task, decision, matched, 'complete', capturedSessionId)
     return { ok: true, result, matchedRule: matched }
   } catch (error) {
     if (error instanceof MaxIterationsExceededError) {
+      emitAudit(task, decision, matched, 'max-iter', capturedSessionId)
       return { aborted: true, reason: error.message }
     }
     if (error instanceof VerbatimCompleteFailError) {
+      emitAudit(task, decision, matched, 'verbatim-fail', capturedSessionId)
       return { ok: false, phase: 'verbatim', error }
     }
+    emitAudit(task, decision, matched, 'spawn-err', capturedSessionId)
     return { ok: false, phase: 'spawn', error: error as Error }
   }
 }
