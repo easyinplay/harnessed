@@ -1,8 +1,10 @@
 // Phase 1.2 cli subcommand `doctor` per PLAN § 4.1 acceptance B8' + ASSUMPTIONS B4 候选 1 + C4.
 // Phase 2.4 W1 T1.2 — expanded to 5 checks + --json flag + 3-tier status enum
-// (pass/warn/fail) + warn ≠ fail exit policy (B-06). Hard limit ≤215L per B-03
-// (5% tolerance over Karpathy 200L target). Origin URL check delegates to
-// src/cli/lib/origin-check.ts (sister-share with audit, per B-28 + D2.4-3).
+// (pass/warn/fail) + warn ≠ fail exit policy (B-06). Phase v2.0-2.4 W3 T2.4.W3.1 —
+// 9th + 10th checks (Agent Teams env D-11 + planning-with-files plugin D-15);
+// hard limit ≤225L per B-03 (12.5% tolerance over Karpathy 200L target — split
+// to 2 helper per `if exceed split helper` plan provision). Origin URL check
+// delegates to src/cli/lib/origin-check.ts (sister-share with audit, per B-28 + D2.4-3).
 //
 // IMPL NOTE (Rule 1 / ASSUMPTIONS C4 mitigation — WSL detection): on Windows
 // we resolve which `bash` the shell will spawn (PATH-first), then probe
@@ -152,34 +154,47 @@ async function checkTokenBudget(): Promise<CheckResult> {
   return (await import('./lib/check-token-budget.js')).checkTokenBudget()
 }
 
+// Phase v2.0-2.4 W3 T2.4.W3.1 — 9th + 10th checks (Agent Teams env + planning-
+// with-files plugin presence). 100% delegate per sister checkGstackPrefix L138
+// pattern keeps doctor.ts ≤ Karpathy 200L+5% (CLAUDE.md L21 hard limit).
+async function checkAgentTeamsEnv(): Promise<CheckResult> {
+  return (await import('./lib/check-agent-teams-doctor.js')).checkAgentTeamsDoctor()
+}
+async function checkPlanningPlugin(): Promise<CheckResult> {
+  return (await import('./lib/check-planning-with-files.js')).checkPlanningWithFiles()
+}
+
 export function registerDoctor(program: Command): void {
   program
     .command('doctor')
     .description(
-      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations / token budget)',
+      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations / token budget / Agent Teams / planning-with-files)',
     )
     .option('--json', 'output JSON instead of human-readable')
     .action(async (opts: { json?: boolean }) => {
-      // Phase 4.3 W0 sister 3rd-cycle absorb #BT — 5 async checks have no data
-      // dependencies, parallelize via Promise.all (was sequential await chain).
-      // Sync checks (Node/jq/winBash) stay inline; final array preserves the
-      // legacy ordering so doctor.test.ts cell 1 + 4 + 5 + check-order remain green.
-      const [mcpScope, originUrl, gstackPrefix, deprecations, tokenBudget] = await Promise.all([
+      // Phase 4.3 W0 sister 3rd-cycle absorb #BT — async checks parallelize via
+      // Promise.all (no data deps); Phase v2.0-2.4 W3 T2.4.W3.1 ADD 9th (D-11)
+      // + 10th (D-15) check. Ordering preserved per doctor.test.ts cell-1+4+5.
+      const [mcp, origin, gstack, dep, tok, at, ppwf] = await Promise.all([
         checkMcpScope(),
         checkOriginUrl(),
-        checkGstackPrefix(), // ← Phase 3.2 W1 T1.5 ADD 6th check (D-01 PROBE)
-        checkDeprecations(), // ← Phase 3.3 W1 T1.7 ADD 7th check (D-02 DOCTOR-ONLY-WARN)
-        checkTokenBudget(), // ← Phase 3.4 W1 T1.2 ADD 8th check (D-03 + D-04 DOCTOR WARN)
+        checkGstackPrefix(),
+        checkDeprecations(),
+        checkTokenBudget(),
+        checkAgentTeamsEnv(),
+        checkPlanningPlugin(),
       ])
       const results: CheckResult[] = [
         checkNodeVersion(),
-        mcpScope,
+        mcp,
         checkJq(),
         checkWinBash(),
-        originUrl,
-        gstackPrefix,
-        deprecations,
-        tokenBudget,
+        origin,
+        gstack,
+        dep,
+        tok,
+        at,
+        ppwf,
       ]
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')

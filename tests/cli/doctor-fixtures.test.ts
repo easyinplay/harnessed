@@ -30,6 +30,24 @@ vi.mock('../../src/cli/lib/check-token-budget.js', () => ({
     message: '0 skill(s) total 0 tokens (under 1% / 2000 threshold)',
   }),
 }))
+// Phase v2.0-2.4 W3 T2.4.W3.1 — 9th + 10th check mocks (same reason as 7th/8th).
+// PRIMARY logic unit-tested in tests/cli/checkAgentTeams.test.ts + tests/cli/
+// check-planning-with-files.test.ts. Scenario matrix axes (jq/bash/git/mcp/node)
+// orthogonal to these 2 NEW axes — keep default pass for all 6 scenarios.
+vi.mock('../../src/cli/lib/check-agent-teams-doctor.js', () => ({
+  checkAgentTeamsDoctor: () => ({
+    name: 'Agent Teams env',
+    status: 'pass',
+    message: 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (env var)',
+  }),
+}))
+vi.mock('../../src/cli/lib/check-planning-with-files.js', () => ({
+  checkPlanningWithFiles: () => ({
+    name: 'planning-with-files plugin',
+    status: 'pass',
+    message: 'installed (version 2.34.0)',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -127,7 +145,7 @@ async function runCli(): Promise<{
   }
 }
 
-describe('Phase 2.4 W5 T5.1 — doctor 8-check × 6-scenario fixture matrix (48 cells, Phase 3.4 W1 bump 7→8)', () => {
+describe('Phase 2.4 W5 T5.1 — doctor 10-check × 6-scenario fixture matrix (60 cells, Phase v2.0-2.4 W3 bump 8→10)', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -141,10 +159,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 8-check × 6-scenario fixture matrix (48 
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 8 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 10 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(8)
+      expect(parsed.checks).toHaveLength(10)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -155,6 +173,8 @@ describe('Phase 2.4 W5 T5.1 — doctor 8-check × 6-scenario fixture matrix (48 
           'gstack prefix', // ← Phase 3.2 W1 T1.5 6th check
           'deprecated manifests', // ← Phase 3.3 W1 T1.7 7th check
           'token budget', // ← Phase 3.4 W1 T1.2 8th check
+          'Agent Teams env', // ← Phase v2.0-2.4 W3 T2.4.W3.1 9th check (D-11)
+          'planning-with-files plugin', // ← Phase v2.0-2.4 W3 T2.4.W3.1 10th check (D-15)
         ]),
       )
       if (scenario.name === 'missing-jq') {

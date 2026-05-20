@@ -27,6 +27,25 @@ vi.mock('../../src/cli/lib/check-token-budget.js', () => ({
     message: '0 skill(s) total 0 tokens (under 1% / 2000 threshold)',
   }),
 }))
+// Phase v2.0-2.4 W3 T2.4.W3.1 — 9th + 10th check mocks (same reason as 7th/8th):
+// real impls read process.env / fs which doctor.test.ts has globally mocked.
+// PRIMARY logic unit-tested in tests/cli/checkAgentTeams.test.ts + tests/cli/
+// check-planning-with-files.test.ts (sister pattern). Default = pass for cell 1
+// "all checks pass"; individual cells override status as needed.
+vi.mock('../../src/cli/lib/check-agent-teams-doctor.js', () => ({
+  checkAgentTeamsDoctor: () => ({
+    name: 'Agent Teams env',
+    status: 'pass',
+    message: 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (env var)',
+  }),
+}))
+vi.mock('../../src/cli/lib/check-planning-with-files.js', () => ({
+  checkPlanningWithFiles: () => ({
+    name: 'planning-with-files plugin',
+    status: 'pass',
+    message: 'installed (version 2.34.0)',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -94,7 +113,7 @@ function mockSpawn(
   readFileSyncMock.mockReturnValue(JSON.stringify({ repository: { url: REPO } }))
 }
 
-describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + Phase 3.3 W1 7-check + --json + exit policy', () => {
+describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 + Phase 3.4 W1 8 + Phase v2.0-2.4 W3 10-check + --json + exit policy', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -102,16 +121,19 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + Phase 3.3
   })
   afterEach(() => vi.restoreAllMocks())
 
-  it('cell 1 — all 8 checks pass → exit 0 + summary "pass" (Phase 3.4 W1 bump 7→8)', async () => {
+  it('cell 1 — all 10 checks pass → exit 0 + summary "pass" (Phase v2.0-2.4 W3 bump 8→10)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(8)
+    expect(p.checks).toHaveLength(10)
     expect(p.summary).toBe('pass')
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
     // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
     expect(p.checks.map((c) => c.name)).toContain('token budget')
+    // Phase v2.0-2.4 W3 T2.4.W3.1 — 9th + 10th check assertions (D-11 + D-15)
+    expect(p.checks.map((c) => c.name)).toContain('Agent Teams env')
+    expect(p.checks.map((c) => c.name)).toContain('planning-with-files plugin')
   })
 
   it('cell 5 — doctor 8th check token budget — status warn does NOT fail exit (B-06 + D-04)', async () => {
@@ -119,7 +141,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6-check + Phase 3.3
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
     const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
-    expect(p.checks).toHaveLength(8)
+    expect(p.checks).toHaveLength(10)
     const tokenBudget = p.checks.find((c) => c.name === 'token budget')
     expect(tokenBudget).toBeDefined()
     expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')
