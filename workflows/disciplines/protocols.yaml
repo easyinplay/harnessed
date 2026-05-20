@@ -33,9 +33,9 @@ protocols:
       场景 B — Plan-CC 离场 PLAN.md 必须 ready-to-execute (metadata 标记)
     required_fields:
       - "status: ready-to-execute"
-      - 每个 task: 精确文件路径
-      - 每个 task: acceptance criteria
-      - 每个 task: 依赖前置 task 编号
+      - "每个 task: 精确文件路径"
+      - "每个 task: acceptance criteria"
+      - "每个 task: 依赖前置 task 编号"
       - "## Open Questions 节为空"
     forbidden_phrases:
       - "TODO"
