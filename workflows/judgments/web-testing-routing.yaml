@@ -1,0 +1,50 @@
+# workflows/judgments/web-testing-routing.yaml
+# Sister: ~/.claude/rules/web-testing.md 三层职责矩阵 + 决策树机器化
+# Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11
+#
+# 三层职责矩阵 verbatim:
+#   脑 (写测试 / 跑 CI)         — @playwright/test (frontend/e2e/*.spec.ts)
+#   手 (AI 实时操作)            — playwright-cli (一行 Bash, token 最省)
+#   筋骨 (Python 后端联动)      — webapp-testing skill (tests/e2e/*.py)
+#   非功能性诊断 (性能/a11y/内存) — chrome-devtools-mcp (必用)
+#
+# expr-eval 2.0.2 case-sensitive: keyword `and` / `or` 全小写 (sister Phase 2.3 W0.2 bug)
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  playwright-test-default:
+    description: |
+      @playwright/test — 默认 CI 提交进 repo 的正式 E2E test framework,
+      前端 TypeScript / React / Vue, 只需浏览器操作 + HTTP API setup。
+      Path frontend/e2e/*.spec.ts; cmd npx playwright test。
+    fires_when: "subtask.test_type == 'ci-commit'"
+    skips_when: "subtask.test_type in ['probe', 'python-backend', 'perf-diagnostic']"
+    invokes:
+      - capability: playwright-test
+
+  playwright-cli-probe:
+    description: |
+      playwright-cli — AI 实时操作浏览器 一行 Bash, token 最省;
+      用于探查 / 调试 / 一次性确认 (非提交 repo)。
+      探查产出的 selectors 再沉淀到正式 test。
+    fires_when: "subtask.test_type == 'probe'"
+    invokes:
+      - capability: playwright-cli
+
+  webapp-testing-python-backend:
+    description: |
+      webapp-testing skill — Python 后端联动特例
+      (要 import Tortoise ORM / pandas / backend utils OR 前端是 Python 模板 Django Jinja)。
+      Path tests/e2e/*.py; with_server.py 双进程。
+    fires_when: "subtask.test_type == 'python-backend'"
+    invokes:
+      - capability: webapp-testing
+
+  chrome-devtools-mcp-diagnostic:
+    description: |
+      chrome-devtools-mcp — 非功能性诊断必须用 (NOT playwright/test/cli/webapp-testing)。
+      LCP / Core Web Vitals / ARIA / 堆快照。
+    fires_when: "subtask.test_type == 'perf-diagnostic'"
+    invokes:
+      - capability: chrome-devtools-mcp

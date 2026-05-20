@@ -1,0 +1,37 @@
+# workflows/judgments/web-design-routing.yaml
+# Sister: ~/.claude/rules/web-design.md ui-ux-pro-max 默认 + frontend-design 补充 + 仲裁
+# Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11
+#
+# 默认 ui-ux-pro-max 优先 (数据驱动 / 标准化 / 可解释);
+# 例外: 用户明示「做出风格」/「要独特」/「不要 AI 感」/「要有创意」时 frontend-design 主导;
+# 用户没明确表达就按默认走 (不脑补"用户应该想要独特")。
+#
+# expr-eval 2.0.2 case-sensitive: keyword `and` / `or` 全小写
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  ui-ux-pro-max-default:
+    description: |
+      默认主方案 — 数据驱动 / 标准化 / 可解释。
+      50+ styles, 161 color palettes, 57 font pairings, 161 product types,
+      99 UX guidelines, 10 stacks, 25 chart types。
+    fires_when: "phase.has_ui_changes == true and phase.requires_creative_polish == false"
+    invokes:
+      - capability: ui-ux-pro-max
+
+  frontend-design-creative:
+    description: |
+      创意补充 — 用户明示"做出风格 / 要独特 / 不要 AI 感 / 要有创意",
+      OR ui-ux-pro-max 决定主方案后 layout/动效/装饰性细节补充。
+    fires_when: "phase.has_ui_changes == true and phase.requires_creative_polish == true"
+    invokes:
+      - capability: frontend-design
+
+  design-review-post:
+    description: |
+      设计完成后可选 gstack /design-review — 设计系统一致性 + AI 审美问题识别。
+      常规 PR 跳过, 不强制。
+    fires_when: "phase.stage == 'verify' and phase.has_design_changes == true"
+    invokes:
+      - capability: gstack-design-review

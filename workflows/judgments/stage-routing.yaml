@@ -1,0 +1,93 @@
+# workflows/judgments/stage-routing.yaml
+# Master orchestrator sub-stage delegation per D-01
+# 4 master (/discuss /plan /task /verify) auto gate-eval 触发 sub conditional
+# Sister: 3 strategic/phase/subtask gate 已 SHIPPED 独立判断, 本 file orchestrator-level routing
+#
+# Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11 + D-01
+#
+# expr-eval 2.0.2 case-sensitive: keyword `and` / `or` 全小写
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  # /discuss master → 3 sub conditional fire
+  discuss-strategic-delegate:
+    description: |
+      /discuss master → /discuss-strategic 委派 fire 当 strategic-gate.fires
+      (任一 office-hours OR plan-ceo-review)。
+    fires_when: "phase.type in ['new_project', 'new_milestone', 'new_feature'] or phase.is_major_release == true"
+    invokes:
+      - capability: gstack-office-hours
+      - capability: gstack-plan-ceo-review
+
+  discuss-phase-delegate:
+    description: /discuss master → /discuss-phase 委派 fire per phase-gate.fires。
+    fires_when: "phase.open_decisions >= 2 or phase.has_cross_phase_data_flow == true or phase.scope_days > 1"
+    invokes:
+      - capability: gsd-discuss-phase
+
+  discuss-subtask-delegate:
+    description: /discuss master → /discuss-subtask 委派 fire per subtask-gate.fires。
+    fires_when: "subtask.approaches >= 2 or subtask.core_algorithm == true or subtask.has_api_contract == true or subtask.error_cost == 'high'"
+    invokes:
+      - capability: superpowers-brainstorming
+
+  # /plan master → 2 sub serial
+  plan-architecture-delegate:
+    description: /plan master → /plan-architecture 委派 fire 当复杂架构 (gstack /plan-eng-review)。
+    fires_when: "phase.is_complex_architecture == true"
+    invokes:
+      - capability: plan-eng-review
+
+  plan-phase-delegate:
+    description: /plan master → /plan-phase 委派总是 fire (GSD plan-phase + planning-with-files)。
+    fires_when: "phase.stage == 'plan'"
+    invokes:
+      - capability: gsd-plan-phase
+      - capability: planning-with-files
+
+  # /verify master → 5-7 sub conditional
+  verify-progress-always:
+    description: /verify master → /verify-progress 总 fire (GSD verify + progress)。
+    fires_when: "phase.stage == 'verify'"
+    invokes:
+      - capability: gsd-verify-work
+      - capability: gsd-progress
+
+  verify-paranoid-critical:
+    description: /verify master → /verify-paranoid fire 当 critical_module。
+    fires_when: "phase.stage == 'verify' and phase.is_critical_module == true"
+    invokes:
+      - capability: gstack-review
+
+  verify-qa-ui:
+    description: /verify master → /verify-qa fire 当 has_ui_changes。
+    fires_when: "phase.stage == 'verify' and phase.has_ui_changes == true"
+    invokes:
+      - capability: gstack-qa
+
+  verify-security-secrets:
+    description: /verify master → /verify-security fire 当 has_auth_or_secrets。
+    fires_when: "phase.stage == 'verify' and phase.has_auth_or_secrets == true"
+    invokes:
+      - capability: gstack-cso
+
+  verify-design-changes:
+    description: /verify master → /verify-design fire 当 has_design_changes。
+    fires_when: "phase.stage == 'verify' and phase.has_design_changes == true"
+    invokes:
+      - capability: gstack-design-review
+
+  verify-multispec-critical-release:
+    description: |
+      /verify master → /verify-multispec 4-specialist Agent Team Pattern C fire
+      当 critical release。
+    fires_when: "phase.stage == 'verify' and is_critical_release == true"
+    invokes:
+      - capability: agent-teams-create
+
+  verify-simplify-tail:
+    description: /verify master → /verify-simplify 末尾 (code-simplifier)。
+    fires_when: "phase.stage == 'verify' and phase.is_final_step == true"
+    invokes:
+      - capability: code-simplifier

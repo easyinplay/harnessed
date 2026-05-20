@@ -1,0 +1,52 @@
+# workflows/judgments/web-search-routing.yaml
+# Sister: ~/.claude/rules/web-search.md 条件式 fallback + Tavily/Exa MCP routing
+# Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11
+#
+# 路由优先级 (per rules/web-search.md):
+#   Step 1: 探测 Tavily / Exa MCP 是否安装
+#   Step 2A (MCP 不可用): 内置 WebFetch / WebSearch + gh CLI + ctx7 CLI fallback
+#   Step 2B (MCP 可用):  默认 Tavily, 描述式/学术/批量 Exa 覆盖, 整站 crawl Tavily 必用
+#
+# expr-eval 2.0.2 case-sensitive: keyword `and` / `or` 全小写
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  tavily-mcp-default:
+    description: |
+      Tavily MCP 默认 — 关键词查询 / 库 API 文档 / 新闻时效 / 生产 RAG。
+      支持 time_range / country / include_domains / exclude_domains / search_depth。
+    fires_when: "subtask.needs_web_search == true and subtask.search_type == 'keyword'"
+    invokes:
+      - capability: tavily-mcp
+
+  exa-mcp-descriptive-academic:
+    description: |
+      Exa MCP 覆盖默认 — 描述式查询 / 学术论文 / 批量抓多 URL /
+      用户明说"研究/深度调研" / Token 敏感 (Exa highlights 密度约 2× Tavily)。
+    fires_when: "subtask.needs_web_search == true and subtask.search_type in ['descriptive', 'academic']"
+    invokes:
+      - capability: exa-mcp
+
+  tavily-crawl-map-site:
+    description: |
+      Tavily 必用 — 抓整站 / 站点结构 (crawl / map), Exa 无对等工具。
+    fires_when: "subtask.needs_web_search == true and subtask.search_type == 'site-crawl'"
+    invokes:
+      - capability: tavily-mcp
+
+  ctx7-lib-docs:
+    description: |
+      ctx7 CLI — 库 / API / 框架 / SDK / CLI 工具文档抓取。
+      使用 user 完整问题作为 query, 不超过 3 命令/问。
+      Prefer over web search for library docs (per rules/context7.md)。
+    fires_when: "subtask.needs_lib_docs == true"
+    invokes:
+      - capability: ctx7
+
+  webfetch-single-url:
+    description: |
+      永远规则 — 单次轻量查询 (一个明确 URL) 直接 WebFetch, 不走 MCP / CLI。
+      WebFetch 是 Claude Code 平台内置, NOT capabilities.yaml registry entry。
+    fires_when: "subtask.search_type == 'single-url'"
+    # No capability invoke — WebFetch 是 Claude Code 平台内置
