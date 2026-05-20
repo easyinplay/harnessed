@@ -38,6 +38,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /grill-with-docs
     since: v2.0
+    category: tool-slash-cmd
     description: 规格澄清 with docs (fires when phase.spec_ambiguous == true)
     fires_when:
       - phase.spec_ambiguous == true
@@ -46,6 +47,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /zoom-out
     since: v2.0
+    category: tool-slash-cmd
     description: 陌生模块导航 (fires when subtask.unfamiliar_module == true)
     fires_when:
       - subtask.unfamiliar_module == true
@@ -54,6 +56,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /diagnose
     since: v2.0
+    category: tool-slash-cmd
     description: 系统化排错 (fires when test_fail OR debug context)
     fires_when:
       - subtask.test_fail == true
@@ -63,6 +66,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /caveman
     since: v2.0
+    category: tool-slash-cmd
     description: token 紧张时 surgical edit (fires when token_tight == true)
     fires_when:
       - subtask.token_tight == true
@@ -71,6 +75,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /grill-me
     since: v2.0
+    category: tool-slash-cmd
     description: 反向追问 (fires when spec_ambiguous AND no_docs)
     fires_when:
       - phase.spec_ambiguous == true AND phase.no_docs == true
@@ -79,6 +84,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /to-prd
     since: v2.0
+    category: tool-slash-cmd
     description: translate idea → PRD (fires when phase.translate_idea_to_prd == true)
     fires_when:
       - phase.translate_idea_to_prd == true
@@ -87,6 +93,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /to-issues
     since: v2.0
+    category: tool-slash-cmd
     description: translate PRD → issues (fires when phase.translate_prd_to_issues == true)
     fires_when:
       - phase.translate_prd_to_issues == true
@@ -95,6 +102,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /improve-codebase-architecture
     since: v2.0
+    category: tool-slash-cmd
     description: architecture health audit (fires when phase.architecture_health_audit == true)
     fires_when:
       - phase.architecture_health_audit == true
@@ -103,6 +111,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /code-review
     since: v2.0
+    category: tool-slash-cmd
     description: verify-work parallel fan-out (multi-agent high-confidence findings)
     fires_when:
       - phase.stage == 'verify'
@@ -111,6 +120,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /code-simplifier
     since: v2.0
+    category: tool-slash-cmd
     description: verify-work tail step (移除重复、多余逻辑)
     fires_when:
       - phase.stage == 'verify' AND phase.is_final_step == true
@@ -119,6 +129,7 @@ capabilities:
     impl: mattpocock-skills
     cmd: /investigate
     since: v2.0
+    category: tool-slash-cmd
     description: gstack-routed bug investigation (fires when bug_root_cause_unknown)
     fires_when:
       - subtask.bug_root_cause_unknown == true
@@ -135,6 +146,7 @@ capabilities:
     impl: gstack
     cmd: /ui-ux-pro-max
     since: v2.0
+    category: tool-slash-cmd
     description: UI/UX 默认主方案 数据驱动 (per ~/.claude/rules/web-design.md L5)
     fires_when:
       - phase.has_ui_changes == true
@@ -144,6 +156,7 @@ capabilities:
     impl: gstack
     cmd: /frontend-design
     since: v2.0
+    category: tool-slash-cmd
     description: UI 创意/装饰补充 (per ~/.claude/rules/web-design.md L11)
     fires_when:
       - phase.has_ui_changes == true AND phase.requires_creative_polish == true
@@ -152,6 +165,7 @@ capabilities:
     impl: npm-cli
     cmd: playwright
     since: v2.0
+    category: tool-bundled-skill
     description: AI 实时操作浏览器 一行 Bash (per ~/.claude/rules/web-testing.md L8 手)
     fires_when:
       - subtask.type == 'browser_probe'
@@ -160,6 +174,7 @@ capabilities:
     impl: npm-cli
     cmd: "@playwright/test"
     since: v2.0
+    category: tool-plugin
     description: E2E test framework TypeScript (per ~/.claude/rules/web-testing.md L8 脑)
     fires_when:
       - subtask.type == 'e2e_test' AND subtask.language == 'typescript'
@@ -168,6 +183,7 @@ capabilities:
     impl: gstack
     cmd: /webapp-testing
     since: v2.0
+    category: tool-bundled-skill
     description: Python 后端联动 E2E (per ~/.claude/rules/web-testing.md L11 筋骨)
     fires_when:
       - subtask.type == 'e2e_test' AND subtask.language == 'python'
@@ -176,6 +192,7 @@ capabilities:
     impl: mcp
     cmd: chrome-devtools
     since: v2.0
+    category: tool-mcp
     description: 性能/a11y/内存泄漏诊断 (per ~/.claude/rules/web-testing.md L45 非功能性)
     fires_when:
       - subtask.type in ['perf_diagnose', 'a11y_audit', 'memory_leak']
@@ -184,6 +201,7 @@ capabilities:
     impl: cli
     cmd: ctx7
     since: v2.0
+    category: tool-cli
     description: 库 API/框架/SDK 文档抓取 (per ~/.claude/rules/context7.md)
     fires_when:
       - subtask.needs_library_docs == true
@@ -192,6 +210,7 @@ capabilities:
     impl: mcp
     cmd: tavily_search
     since: v2.0
+    category: tool-mcp
     description: Web 搜索默认 (关键词/库 API/时效) per ~/.claude/rules/web-search.md L17
     fires_when:
       - subtask.needs_web_search == true
@@ -200,6 +219,7 @@ capabilities:
     impl: mcp
     cmd: web_fetch_exa
     since: v2.0
+    category: tool-mcp
     description: 描述式/学术 Web 搜索 per ~/.claude/rules/web-search.md L24
     fires_when:
       - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
@@ -208,6 +228,7 @@ capabilities:
     impl: gsd
     cmd: /gsd-discuss-phase
     since: v2.0
+    category: tool-slash-cmd
     description: GSD discuss-phase 灰色澄清 (Phase 层判据 sister judgments/phase-gate.yaml)
     fires_when:
       - phase.open_decisions >= 2 OR phase.scope_days > 1
@@ -216,6 +237,7 @@ capabilities:
     impl: gsd
     cmd: /gsd-plan-phase
     since: v2.0
+    category: tool-slash-cmd
     description: GSD plan-phase Wave A research + Wave B planner + Wave C plan-checker
     fires_when:
       - phase.stage == 'plan'
@@ -224,6 +246,7 @@ capabilities:
     impl: gsd
     cmd: /gsd-review
     since: v2.0
+    category: tool-slash-cmd
     description: GSD cross-AI peer review
     fires_when:
       - phase.stage == 'verify' AND phase.requires_peer_review == true
@@ -232,6 +255,7 @@ capabilities:
     impl: gsd
     cmd: /gsd-debug
     since: v2.0
+    category: tool-slash-cmd
     description: GSD systematic debugging (overlap with mattpocock /diagnose — alias)
     aliases:
       - { impl: mattpocock-skills, cmd: /diagnose }
@@ -242,6 +266,7 @@ capabilities:
     impl: gsd
     cmd: /gsd-progress
     since: v2.0
+    category: tool-slash-cmd
     description: GSD 状态同步 (verify-work serial after gsd-verify-work)
     fires_when:
       - phase.stage == 'verify'
@@ -250,6 +275,7 @@ capabilities:
     impl: gsd
     cmd: /gsd-verify-work
     since: v2.0
+    category: tool-slash-cmd
     description: verify-work entry (Stage ④ Verify 起点)
     fires_when:
       - phase.stage == 'verify'
@@ -262,6 +288,7 @@ capabilities:
     impl: gstack
     cmd: /office-hours
     since: v2.0
+    category: tool-slash-cmd
     description: 战略层产品理念/商业 scope 澄清 (sister CLAUDE.md "新功能启动前强制")
     fires_when:
       - phase.type in ['new_project', 'new_milestone', 'new_feature']
@@ -270,6 +297,7 @@ capabilities:
     impl: gstack
     cmd: /plan-ceo-review
     since: v2.0
+    category: tool-slash-cmd
     description: 战略评估 CEO 视角 (新功能启动前强制 sister CLAUDE.md)
     fires_when:
       - phase.type == 'new_feature' AND phase.has_business_decisions == true
@@ -278,6 +306,7 @@ capabilities:
     impl: gstack
     cmd: /review
     since: v2.0
+    category: tool-slash-cmd
     description: Paranoid Staff Engineer 视角 (关键模块 PR 前强制 sister CLAUDE.md)
     fires_when:
       - phase.is_critical_module == true
@@ -286,6 +315,7 @@ capabilities:
     impl: gstack
     cmd: /qa
     since: v2.0
+    category: tool-slash-cmd
     description: 端到端 QA 验收 (可选 conditional)
     fires_when:
       - phase.stage == 'verify' AND phase.has_ui_changes == true
@@ -294,6 +324,7 @@ capabilities:
     impl: gstack
     cmd: /cso
     since: v2.0
+    category: tool-slash-cmd
     description: 安全审查 OWASP/auth/secrets (可选 conditional)
     fires_when:
       - phase.stage == 'verify' AND phase.has_auth_or_secrets == true
@@ -302,6 +333,7 @@ capabilities:
     impl: gstack
     cmd: /design-review
     since: v2.0
+    category: tool-slash-cmd
     description: 设计系统一致性审查 + AI 审美问题识别 (可选 conditional)
     fires_when:
       - phase.stage == 'verify' AND phase.has_design_changes == true
@@ -315,6 +347,7 @@ capabilities:
     impl: superpowers
     cmd: "superpowers:test-driven-development"
     since: v2.0
+    category: tool-slash-cmd
     description: TDD red-green-refactor (gated by judgments/tdd-gate.yaml fires_when)
     aliases:
       - { impl: mattpocock-skills, cmd: /tdd }
@@ -332,6 +365,7 @@ capabilities:
     impl: claude-code-plugin
     cmd: /plan
     since: v2.0
+    category: tool-plugin
     description: Manus-style persistent markdown planning (Claude Code plugin slash cmd)
     requires:
       plugin: planning-with-files >=2.2.0
@@ -348,6 +382,7 @@ capabilities:
     impl: bundled-skill
     cmd: ralph-loop
     since: v2.0
+    category: tool-bundled-skill
     description: Sub-task completion gate (verbatim COMPLETE; max-iterations fallback)
     sdk_ref: src/routing/lib/ralphLoop.ts
     fires_when:
@@ -357,6 +392,7 @@ capabilities:
     impl: superpowers
     cmd: "superpowers:brainstorming"
     since: v2.0
+    category: tool-slash-cmd
     description: 子任务级澄清 multi-approach 探索 (gated by judgments/subtask-gate.yaml)
     fires_when:
       - subtask.approaches >= 2
@@ -383,6 +419,7 @@ capabilities:
     impl: claude-platform
     cmd: TeamCreate
     since: v2.0
+    category: agent-platform
     description: Agent Teams team 创建 (CC 2.1.133+ experimental; per agent-teams.md L7)
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
@@ -398,6 +435,7 @@ capabilities:
     impl: claude-platform
     cmd: SendMessage
     since: v2.0
+    category: agent-platform
     description: Agent Teams teammate 间通信 (round-trip 已验证 2026-05-19)
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
@@ -407,6 +445,7 @@ capabilities:
     impl: claude-platform
     cmd: TeamDelete
     since: v2.0
+    category: agent-platform
     description: Agent Teams cleanup (shutdown_request 之后 TeamDelete; sister agent-teams.md 防呆清单)
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
