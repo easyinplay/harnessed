@@ -450,3 +450,432 @@ capabilities:
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
       cc_version: ">=2.1.133"
+
+  # ============================================================================
+  # Bucket 6 — L0 Discipline Substrate behavioral ref (D-09 NEW v3, 6 entry)
+  # ============================================================================
+  #
+  # behavioral category entries 不 invoke slash cmd, 而是 ref workflows/disciplines/<basename>.yaml,
+  # workflow runtime pre-phase hook load discipline rules 应用 cross-cutting (per D-05 always-on)。
+  # Sentinel cmd value '<not-applicable-behavioral>' — runtime engine 检测 category=behavioral 时 SKIP
+  # cmd invoke, 改 load discipline_ref yaml + apply rules via hook。
+
+  karpathy-guidelines:
+    impl: harnessed-bundled
+    cmd: '<not-applicable-behavioral>'
+    since: v2.0
+    category: behavioral
+    description: 4 心法 + ≤200L hard limit + no-feature-creep + trust-internal-code + no-comments-default
+    discipline_ref: workflows/disciplines/karpathy.yaml
+
+  output-style-discipline:
+    impl: harnessed-bundled
+    cmd: '<not-applicable-behavioral>'
+    since: v3.0
+    category: behavioral
+    description: BLUF + no-sycophantic + no-emoji + no-em-dash + 量词精确 + no-end-recap + no-empty-continuation-question
+    discipline_ref: workflows/disciplines/output-style.yaml
+
+  language-convention:
+    impl: harnessed-bundled
+    cmd: '<not-applicable-behavioral>'
+    since: v3.0
+    category: behavioral
+    description: 默认简体中文 + 8 类强制保留英文原文 + 用户明示 lang_request 覆盖
+    discipline_ref: workflows/disciplines/language.yaml
+
+  operational-discipline:
+    impl: harnessed-bundled
+    cmd: '<not-applicable-behavioral>'
+    since: v3.0
+    category: behavioral
+    description: biome-preempt + A7 ADR 守恒 + no-push-without-approval + no-skip-hooks + destructive-ops-explicit + authorization-not-transitive
+    discipline_ref: workflows/disciplines/operational.yaml
+
+  priority-hierarchy:
+    impl: harnessed-bundled
+    cmd: '<not-applicable-behavioral>'
+    since: v3.0
+    category: behavioral
+    description: 7-tier priority hierarchy + multi-capability arbitration (gstack > gsd > superpowers > planning-with-files > karpathy > mattpocock > parallel)
+    discipline_ref: workflows/disciplines/priority.yaml
+
+  conceptual-protocols:
+    impl: harnessed-bundled
+    cmd: '<not-applicable-behavioral>'
+    since: v3.0
+    category: behavioral
+    description: cc-handoff Ideation→Onboarding + Plan→Execute + file-ownership-strict 跨 CC instance 协议
+    discipline_ref: workflows/disciplines/protocols.yaml
+
+  # ============================================================================
+  # Bucket 7 — gstack 33 optional registry-only (D-12 NEW v3)
+  # ============================================================================
+  #
+  # 33 gstack optional slash cmd — entry name 无 `gstack-` prefix per Pattern A E.2 LOCK
+  # (sister project CLAUDE.md gstack skill routing 直接 invoke cmd 名)。
+  # 例外 2 alias suffix `-gstack` 避免命名冲突:
+  #   - retro-gstack (alias to harnessed standalone /retro)
+  #   - investigate-gstack (alias to mattpocock investigate)
+  # carrier name 自带 `gstack` 字符串 (NOT prefix policy): open-gstack-browser, gstack-upgrade
+
+  autoplan:
+    impl: gstack
+    cmd: /autoplan
+    since: v3.0
+    category: tool-slash-cmd
+    description: 串联完整 review pipeline (office-hours + plan-ceo-review + plan-eng-review 等)
+    fires_when:
+      - phase.requires_full_review_pipeline == true
+
+  codex:
+    impl: gstack
+    cmd: /codex
+    since: v3.0
+    category: tool-slash-cmd
+    description: 第二意见 / cross-AI peer review via codex
+    fires_when:
+      - phase.stage == 'verify' AND phase.requires_second_opinion == true
+
+  design-shotgun:
+    impl: gstack
+    cmd: /design-shotgun
+    since: v3.0
+    category: tool-slash-cmd
+    description: 设计 variants 探索 (一次产出多版本 mockup)
+    fires_when:
+      - phase.has_design_changes == true AND phase.needs_variants == true
+
+  design-html:
+    impl: gstack
+    cmd: /design-html
+    since: v3.0
+    category: tool-slash-cmd
+    description: 设计 HTML mockup 生成 (throwaway 原型)
+    fires_when:
+      - phase.has_design_changes == true AND phase.needs_html_mockup == true
+
+  design-consultation:
+    impl: gstack
+    cmd: /design-consultation
+    since: v3.0
+    category: tool-slash-cmd
+    description: 设计咨询 / 品牌一致性顾问
+    fires_when:
+      - phase.has_design_changes == true AND phase.needs_brand_consult == true
+
+  plan-design-review:
+    impl: gstack
+    cmd: /plan-design-review
+    since: v3.0
+    category: tool-slash-cmd
+    description: 计划 phase 设计审查 (设计意图与可行性评估)
+    fires_when:
+      - phase.stage == 'plan' AND phase.has_design_changes == true
+
+  plan-devex-review:
+    impl: gstack
+    cmd: /plan-devex-review
+    since: v3.0
+    category: tool-slash-cmd
+    description: 计划 phase 开发体验审查 (DX/onboarding 视角)
+    fires_when:
+      - phase.stage == 'plan' AND phase.has_devex_concerns == true
+
+  plan-eng-review:
+    impl: gstack
+    cmd: /plan-eng-review
+    since: v3.0
+    category: tool-slash-cmd
+    description: 复杂架构审查 (engineering manager 视角, 锁定架构后再 plan-phase)
+    fires_when:
+      - phase.is_complex_architecture == true
+
+  plan-tune:
+    impl: gstack
+    cmd: /plan-tune
+    since: v3.0
+    category: tool-slash-cmd
+    description: 计划微调 (重新评估 plan 后细节调整)
+    fires_when:
+      - phase.stage == 'plan' AND phase.tune_required == true
+
+  context-save:
+    impl: gstack
+    cmd: /context-save
+    since: v3.0
+    category: tool-slash-cmd
+    description: 保存进度 / context handoff 准备
+    fires_when:
+      - user.explicit_signal includes 'save progress'
+
+  context-restore:
+    impl: gstack
+    cmd: /context-restore
+    since: v3.0
+    category: tool-slash-cmd
+    description: 恢复进度 / context restoration
+    fires_when:
+      - user.explicit_signal includes 'resume'
+
+  qa-only:
+    impl: gstack
+    cmd: /qa-only
+    since: v3.0
+    category: tool-slash-cmd
+    description: QA 报告 only mode (端到端测试但不修代码)
+    fires_when:
+      - phase.stage == 'verify' AND phase.has_ui_changes == true AND phase.report_only == true
+
+  devex-review:
+    impl: gstack
+    cmd: /devex-review
+    since: v3.0
+    category: tool-slash-cmd
+    description: 开发体验审查 (onboarding test / DX audit)
+    fires_when:
+      - phase.stage == 'verify' AND phase.has_devex_concerns == true
+
+  benchmark:
+    impl: gstack
+    cmd: /benchmark
+    since: v3.0
+    category: tool-slash-cmd
+    description: 性能基准 / page speed regression 检测
+    fires_when:
+      - phase.stage == 'verify' AND phase.has_perf_concerns == true
+
+  browse:
+    impl: gstack
+    cmd: /browse
+    since: v3.0
+    category: tool-slash-cmd
+    description: 浏览器自动化 / dogfooding (gstack 默认 browser cmd)
+    fires_when:
+      - subtask.needs_browser_automation == true
+
+  open-gstack-browser:
+    impl: gstack
+    cmd: /open-gstack-browser
+    since: v3.0
+    category: tool-slash-cmd
+    description: 启动 headed Chrome (gstack 集成 browser headed mode)
+    fires_when:
+      - subtask.needs_headed_browser == true
+
+  connect-chrome:
+    impl: gstack
+    cmd: /connect-chrome
+    since: v3.0
+    category: tool-slash-cmd
+    description: 连接现有 Chrome 实例 (用于 Chrome extension 测试)
+    fires_when:
+      - subtask.needs_chrome_extension == true
+
+  setup-browser-cookies:
+    impl: gstack
+    cmd: /setup-browser-cookies
+    since: v3.0
+    category: tool-slash-cmd
+    description: 导入 cookies 用于 authenticated browser 测试
+    fires_when:
+      - subtask.needs_authenticated_browser == true
+
+  ship:
+    impl: gstack
+    cmd: /ship
+    since: v3.0
+    category: tool-slash-cmd
+    description: 发版 / 创建 PR / deploy (用户 explicit 触发)
+    fires_when:
+      - user.explicit_signal includes 'ship'
+      - user.explicit_signal includes 'send it'
+
+  land-and-deploy:
+    impl: gstack
+    cmd: /land-and-deploy
+    since: v3.0
+    category: tool-slash-cmd
+    description: merge + deploy + verify 串联
+    fires_when:
+      - phase.stage == 'verify' AND phase.is_release_candidate == true
+
+  setup-deploy:
+    impl: gstack
+    cmd: /setup-deploy
+    since: v3.0
+    category: tool-slash-cmd
+    description: 配置 deployment (新项目 deploy infra setup)
+    fires_when:
+      - phase.type == 'new_project' AND phase.needs_deploy_config == true
+
+  setup-gbrain:
+    impl: gstack
+    cmd: /setup-gbrain
+    since: v3.0
+    category: tool-slash-cmd
+    description: 配置 gbrain 项目上下文 (gstack 项目知识库)
+    fires_when:
+      - phase.type == 'new_project' AND phase.needs_gbrain == true
+
+  canary:
+    impl: gstack
+    cmd: /canary
+    since: v3.0
+    category: tool-slash-cmd
+    description: post-deploy canary monitor / 错误率监控
+    fires_when:
+      - phase.stage == 'verify' AND phase.post_deploy_monitor == true
+
+  document-release:
+    impl: gstack
+    cmd: /document-release
+    since: v3.0
+    category: tool-slash-cmd
+    description: 发版后更新文档 (changelog / release notes)
+    fires_when:
+      - phase.is_release_candidate == true AND phase.needs_doc_update == true
+
+  document-generate:
+    impl: gstack
+    cmd: /document-generate
+    since: v3.0
+    category: tool-slash-cmd
+    description: 生成文档 (PDF / 报告)
+    fires_when:
+      - subtask.needs_pdf_doc == true
+
+  careful:
+    impl: gstack
+    cmd: /careful
+    since: v3.0
+    category: tool-slash-cmd
+    description: safety mode / 谨慎模式 (限制高风险操作)
+    fires_when:
+      - user.explicit_signal includes 'careful'
+      - user.explicit_signal includes 'guard mode'
+
+  guard:
+    impl: gstack
+    cmd: /guard
+    since: v3.0
+    category: tool-slash-cmd
+    description: guard mode (alias of careful, 限制 destructive ops)
+    fires_when:
+      - user.explicit_signal includes 'guard'
+
+  freeze:
+    impl: gstack
+    cmd: /freeze
+    since: v3.0
+    category: tool-slash-cmd
+    description: 限制编辑到特定目录 (防误改其他模块)
+    fires_when:
+      - user.explicit_signal includes 'freeze'
+
+  unfreeze:
+    impl: gstack
+    cmd: /unfreeze
+    since: v3.0
+    category: tool-slash-cmd
+    description: 解除 freeze 限制
+    fires_when:
+      - user.explicit_signal includes 'unfreeze'
+
+  gstack-upgrade:
+    impl: gstack
+    cmd: /gstack-upgrade
+    since: v3.0
+    category: tool-slash-cmd
+    description: 升级 gstack 自身 (carrier name 自带 gstack 字符串, NOT prefix policy)
+    fires_when:
+      - user.explicit_signal includes 'upgrade gstack'
+
+  learn:
+    impl: gstack
+    cmd: /learn
+    since: v3.0
+    category: tool-slash-cmd
+    description: 复盘 gstack 已学习到的项目 patterns
+    fires_when:
+      - user.explicit_signal includes 'what has gstack learned'
+
+  health:
+    impl: gstack
+    cmd: /health
+    since: v3.0
+    category: tool-slash-cmd
+    description: 项目健康检查 (gstack 整体诊断)
+    fires_when:
+      - user.explicit_signal includes 'health check'
+
+  make-pdf:
+    impl: gstack
+    cmd: /make-pdf
+    since: v3.0
+    category: tool-slash-cmd
+    description: 生成 PDF (文档 / 报告导出)
+    fires_when:
+      - subtask.needs_pdf_export == true
+
+  # 2 alias suffix `-gstack` (避免命名冲突 per Pattern A E.2)
+  retro-gstack:
+    impl: gstack
+    cmd: /retro
+    since: v3.0
+    category: tool-slash-cmd
+    description: gstack 复盘 (alias to harnessed standalone /retro, 解决 namespace 冲突)
+    aliases:
+      - { impl: harnessed-bundled, cmd: /retro }
+    fires_when:
+      - phase.is_milestone_close == true
+
+  investigate-gstack:
+    impl: gstack
+    cmd: /investigate
+    since: v3.0
+    category: tool-slash-cmd
+    description: gstack bug investigation (alias to mattpocock investigate, 解决 namespace 冲突)
+    aliases:
+      - { impl: mattpocock-skills, cmd: /investigate }
+    fires_when:
+      - subtask.bug_root_cause_unknown == true
+
+  # ============================================================================
+  # Bucket 8 — Supplementary v3 NEW (2 entry)
+  # ============================================================================
+
+  # K2 mitigation: parallelism-gate.yaml v2 SHIPPED 已 ref 但 capabilities.yaml v2 缺该 entry → v3 backfill 补
+  superpowers-subagent-driven-development:
+    impl: superpowers
+    cmd: "superpowers:subagent-driven-development"
+    since: v3.0
+    category: tool-slash-cmd
+    description: subagent 编排 (sister parallelism-gate.yaml v2 invokes 已 ref, v3 backfill K2)
+    fires_when:
+      - subtask.parallel_count <= 3
+      - subtask.communication_needed == false
+
+  # D-11 NEW google-workspace.yaml (gws CLI per ~/.claude/rules/google-workspace.md)
+  gws:
+    impl: cli
+    cmd: gws
+    since: v3.0
+    category: tool-cli
+    description: Google Workspace CLI (Gmail/Drive/Calendar/Sheets/Docs/Slides/Tasks/People/Chat/Forms/Keep/Meet/Classroom/Admin Reports)
+    fires_when:
+      - subtask.needs_google_workspace == true
+
+  # ============================================================================
+  # Bucket 9 — gsd-research-phase v3 NEW (W2 SHIPPED per CONTEXT D-08 + D-12)
+  # ============================================================================
+
+  gsd-research-phase:
+    impl: gsd
+    cmd: /gsd-research-phase
+    since: v3.0
+    category: tool-slash-cmd
+    description: GSD research-phase (Wave A 多 source 调研, sister D-08 cite Phase v3 W2 SHIPPED)
+    fires_when:
+      - phase.stage == 'research'
+      - phase.requires_multi_source_research == true
