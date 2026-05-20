@@ -1,6 +1,8 @@
 // Phase 2.2 Wave 2 T2.0 — unit tests for src/types/schemaVersion.ts.
-// Covers CD-5 contract: 7 surfaces named, branch helper degrades unknown
+// Covers CD-5 contract: surfaces named, branch helper degrades unknown
 // gracefully, TypeBox literal union accepts only known surfaces.
+//
+// Phase v3.0-3.3 W0 T3.3.W0.11 — 16→18 surface bump (workflow_v3 + discipline).
 
 import { Value } from '@sinclair/typebox/value'
 import { describe, expect, it } from 'vitest'
@@ -10,14 +12,14 @@ import {
   SchemaVersionLiteral,
 } from '../../src/types/schemaVersion.js'
 
-describe('SCHEMA_VERSIONS — 16 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkflow + Phase 3.2 W1 T1.1 config + governance + Phase 3.3 W0 T0.5 planFeature backfill + Phase 3.3 W1 T1.1 aliases + knownGood + Phase v2.0-2.3 W0 T2.3.W0.6 capabilities + judgment + Phase v2.0-2.4 W0 T2.4.W0.1 workflow.v2)', () => {
-  it('has exactly 16 surface entries', () => {
-    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(16)
+describe('SCHEMA_VERSIONS — 18 surfaces (Phase v3.0-3.3 W0 T3.3.W0.11 + workflow_v3 + discipline)', () => {
+  it('has exactly 18 surface entries', () => {
+    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(18)
   })
 
-  it('every value matches `harnessed.<surface>.v<N>` shape (v1 default, v2 first introduced for workflow surface in Phase v2.0-2.4)', () => {
+  it('every value matches `harnessed.<surface>.v<N>` shape (v1 default, v2 introduced in Phase v2.0-2.4, v3 introduced in Phase v3.0-3.3)', () => {
     for (const v of Object.values(SCHEMA_VERSIONS)) {
-      expect(v).toMatch(/^harnessed\.[a-z-]+\.v[12]$/)
+      expect(v).toMatch(/^harnessed\.[a-z-]+\.v[123]$/)
     }
   })
 
@@ -26,7 +28,7 @@ describe('SCHEMA_VERSIONS — 16 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkf
     expect(new Set(values).size).toBe(values.length)
   })
 
-  it('covers the 16 named surfaces (7 B-32 + currentWorkflow Phase 3.1 + config/governance Phase 3.2 + plan-feature Phase 3.3 W0 T0.5 backfill + aliases/knownGood Phase 3.3 W1 T1.1 + capabilities/judgment Phase v2.0-2.3 W0 T2.3.W0.6 + workflow Phase v2.0-2.4 W0 T2.4.W0.1)', () => {
+  it('covers the 18 named surfaces (v2.x 16 + v3.0-3.3 W0 T3.3.W0.11 workflow.v3 + discipline.v1)', () => {
     const expectedSurfaces = [
       'routing-snapshot',
       'handoff-doc',
@@ -38,22 +40,34 @@ describe('SCHEMA_VERSIONS — 16 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkf
       'current-workflow', // ← Phase 3.1 W1 T1.1 8th surface
       'config', // ← Phase 3.2 W1 T1.1 9th surface (D-01 PROBE)
       'governance', // ← Phase 3.2 W1 T1.1 10th surface (D-04 PUSH)
-      'plan-feature', // ← Phase 3.3 W0 T0.5 11th surface BACKFILL (sister Phase 3.2 W2 T2.2 b875e21 stale claim fix)
-      'aliases', // ← Phase 3.3 W1 T1.1 12th surface (D-01 RICH manifests/aliases.yaml)
-      'known-good', // ← Phase 3.3 W1 T1.1 13th surface (D-03 YAML versions/<harnessed-ver>-known-good.yaml)
-      'capabilities', // ← Phase v2.0-2.3 W0 T2.3.W0.6 14th surface (R20.2 flat yaml capabilities manifest)
-      'judgment', // ← Phase v2.0-2.3 W0 T2.3.W0.6 15th surface (R20.4 judgments triggers/rules multi-file)
-      'workflow', // ← Phase v2.0-2.4 W0 T2.4.W0.1 16th surface (R20.1/R20.2/R20.9 workflow.yaml v2)
+      'plan-feature', // ← Phase 3.3 W0 T0.5 11th surface BACKFILL
+      'aliases', // ← Phase 3.3 W1 T1.1 12th surface (D-01 RICH)
+      'known-good', // ← Phase 3.3 W1 T1.1 13th surface (D-03 YAML)
+      'capabilities', // ← Phase v2.0-2.3 W0 T2.3.W0.6 14th surface
+      'judgment', // ← Phase v2.0-2.3 W0 T2.3.W0.6 15th surface
+      'workflow', // ← Phase v2.0-2.4 W0 T2.4.W0.1 16th surface (v2 first introduced) + Phase v3.0-3.3 17th surface (v3) — share 'workflow' base name with v2/v3 suffix
     ]
     const actualSurfaces = Object.values(SCHEMA_VERSIONS).map((v) => v.split('.')[1])
     for (const s of expectedSurfaces) {
       expect(actualSurfaces).toContain(s)
     }
+    // Phase v3.0-3.3 ADD 'discipline' 18th surface
+    expect(actualSurfaces).toContain('discipline')
   })
 
-  it('workflow surface is the only .v2 entry (first non-v1 surface — Phase v2.0-2.4)', () => {
+  it('workflow.v2 + workflow.v3 both registered (Phase v2.0-2.4 + Phase v3.0-3.3)', () => {
     const v2Entries = Object.values(SCHEMA_VERSIONS).filter((v) => v.endsWith('.v2'))
     expect(v2Entries).toEqual(['harnessed.workflow.v2'])
+    const v3Entries = Object.values(SCHEMA_VERSIONS).filter((v) => v.endsWith('.v3'))
+    expect(v3Entries).toEqual(['harnessed.workflow.v3'])
+  })
+
+  it('discipline surface registered as harnessed.discipline.v1 (Phase v3.0-3.3 W0 T3.3.W0.11 18th surface — D-09 L0 Discipline Substrate)', () => {
+    expect(SCHEMA_VERSIONS.discipline).toBe('harnessed.discipline.v1')
+  })
+
+  it('workflow_v3 surface registered as harnessed.workflow.v3 (Phase v3.0-3.3 W0 T3.3.W0.11 17th surface — D-09 + D-05 + master delegates_to per Pattern A B.1 LOCK)', () => {
+    expect(SCHEMA_VERSIONS.workflow_v3).toBe('harnessed.workflow.v3')
   })
 })
 
@@ -68,18 +82,34 @@ describe('SchemaVersionLiteral — TypeBox accept/reject', () => {
     expect(Value.Check(SchemaVersionLiteral, 'harnessed.adapter-x.v1')).toBe(false)
   })
 
-  it('rejects an unregistered v2 string (future-proof — v2 must enter union explicitly, sister `workflow.v2` is registered)', () => {
+  it('rejects an unregistered v2 string (future-proof — v2 must enter union explicitly)', () => {
     expect(Value.Check(SchemaVersionLiteral, 'harnessed.routing-snapshot.v2')).toBe(false)
   })
 
   it('accepts `harnessed.workflow.v2` (first registered .v2 surface — Phase v2.0-2.4 W0 T2.4.W0.1)', () => {
     expect(Value.Check(SchemaVersionLiteral, 'harnessed.workflow.v2')).toBe(true)
   })
+
+  it('accepts `harnessed.workflow.v3` (first registered .v3 surface — Phase v3.0-3.3 W0 T3.3.W0.11)', () => {
+    expect(Value.Check(SchemaVersionLiteral, 'harnessed.workflow.v3')).toBe(true)
+  })
+
+  it('accepts `harnessed.discipline.v1` (Phase v3.0-3.3 W0 T3.3.W0.11 18th surface)', () => {
+    expect(Value.Check(SchemaVersionLiteral, 'harnessed.discipline.v1')).toBe(true)
+  })
 })
 
 describe('branchOnSchemaVersion — rule (a) branch + rule (b) graceful degrade', () => {
   it('routes a known v1 value to the v1 handler', () => {
     const result = branchOnSchemaVersion(SCHEMA_VERSIONS.routingSnapshot, {
+      v1: () => 'v1-branch',
+      unknown: () => 'unknown-branch',
+    })
+    expect(result).toBe('v1-branch')
+  })
+
+  it('routes a known v3 value to the v1 handler (rule (a) treats all registered surfaces as known)', () => {
+    const result = branchOnSchemaVersion(SCHEMA_VERSIONS.workflow_v3, {
       v1: () => 'v1-branch',
       unknown: () => 'unknown-branch',
     })
