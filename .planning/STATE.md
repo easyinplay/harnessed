@@ -6,9 +6,9 @@ status: in_progress
 last_updated: "2026-05-20T00:00:00.000Z"
 progress:
   total_phases: 27
-  completed_phases: 22
-  total_plans: 22
-  completed_plans: 22
+  completed_phases: 23
+  total_plans: 23
+  completed_plans: 23
 ---
 
 # harnessed STATE
@@ -33,10 +33,10 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：⚙ **Phase v2.0-2.1 discuss-phase SHIPPED** (2026-05-20) — v2.0 milestone 1/4; sister Phase 6.1 v1.0 GA SHIPPED (2026-05-22) 21/21 v1.0 phases 100% complete; v2.0 milestone 重启编号 (Phase 2.1~2.4 disambiguated `phase-v2.0-*` dir)
-- **当前里程碑**：**⚙ v2.0 Architecture Refactor 1/6 IN PROGRESS** 2026-05-20 — Pure bundled SoT (REFRAME 2026-05-20) + capability abstraction (flat yaml map) + gate yaml-eval (expr-eval) + judgments/ 多 file 分类 (rule-style, sister ~/.claude/rules/*.md pattern) maintainer 三层栈机器化 (NOT parse user CLAUDE.md) + research+verify-work NEW workflows + ralph-loop completion-promise 真接 (Stage ③ 铁律) + parallelism-gate + Agent Teams 路由 + env check + verify-work full 4-stage 重定 + tdd-gate + special-purpose tools routing 扩 + planning-with-files 真接 (Stage ② 铁律) + fallback 3 铁律 + release-notes-only migration; **16 R20.x** (initial 9 + Q-AUDIT amend 7 — R20.6 DROPPED); v2.0 4 phase → **6 phase** (加 2.5 4-stage 机器化 deepening); 1-2 week target window 2026-05-20~2026-06-05
-- **下一 phase**：**Phase v2.0-2.2 Wave B planner spawn** (Wave A ✅ RESEARCH.md 1058L + PLAN-ENG-REVIEW.md ship; Wave B 输入 = amended CONTEXT.md + amended REQUIREMENTS R20 + RESEARCH.md + PLAN-ENG-REVIEW.md 8 implementation tasks; ~2500L PLAN.md 25-35 tasks 覆盖 6 phase 拆包; 后 Wave C plan-checker iter max 3)
-- **状態**：⚙ **Phase v2.0-2.2 Wave A research + gstack /plan-eng-review SHIPPED 2026-05-20** — Phase v2.0-2.1 amend Q-AUDIT-5 batch (3 P1 finding fix: D-15 planning-with-files plugin reframe / D-11 Agent Teams root-level env schema fix / D-04+D-16 judgmentResolver.ts NEW); Wave A RESEARCH.md 1058L + PLAN-ENG-REVIEW.md ship (3 P1 RESOLVED + 8 implementation tasks for Wave B); v2.0 16 D-decision (initial 9 + Q-AUDIT amend 7 + Q-AUDIT-5 fix 3 schemas) + 8 implementation tasks ready for Phase v2.0-2.2 Wave B planner
+- **GSD phase**：⚙ **Phase v2.0-2.2 plan-phase SHIPPED** (2026-05-20) — v2.0 milestone 2/6; Wave A research + gstack /plan-eng-review + Wave B planner PLAN.md (835L, 32 task) + Wave C plan-check PASS (0 HIGH + 0 MEDIUM + 3 LOW advisory) 全 ship; sister Phase 6.1 v1.0 GA SHIPPED (2026-05-22) 21/21 v1.0 phases 100% complete
+- **当前里程碑**：**⚙ v2.0 Architecture Refactor 2/6 IN PROGRESS** 2026-05-20 — Pure bundled SoT (REFRAME 2026-05-20) + capability abstraction (flat yaml map) + gate yaml-eval (expr-eval) + judgments/ 多 file 分类 (rule-style, sister ~/.claude/rules/*.md pattern) maintainer 三层栈机器化 (NOT parse user CLAUDE.md) + research+verify-work NEW workflows + ralph-loop completion-promise 真接 (Stage ③ 铁律) + parallelism-gate + Agent Teams 路由 + env check + verify-work full 4-stage 重定 + tdd-gate + special-purpose tools routing 扩 + planning-with-files 真接 (Stage ② 铁律) + fallback 3 铁律 + release-notes-only migration; **16 R20.x** (initial 9 + Q-AUDIT amend 7 — R20.6 DROPPED); v2.0 4 phase → **6 phase** (加 2.5 4-stage 机器化 deepening); 1-2 week target window 2026-05-20~2026-06-05
+- **下一 phase**：**Phase v2.0-2.3 execute schema 启动** (Wave 0 schema foundation 6 task: capabilities.yaml v2.0 baseline 25+ entry + judgments/ 6 file + judgmentResolver.ts ~60L NEW + exprBuilder.ts + checkAgentTeams.ts ~30L NEW + TypeBox schema; 候选 `/gsd-execute-phase v2.0-2.3` Wave 0 并行 6 task subagent fan-out)
+- **状態**：⚙ **Phase v2.0-2.2 plan-phase SHIPPED 2026-05-20** — Wave A research (1058L) + gstack /plan-eng-review (Step 0 + 5 section, 3 P1 RESOLVED) + Wave B planner PLAN.md (835L, 32 atomic task across Phase 2.3-2.6) + Wave C plan-check PASS (10 dimension 全 PASS, 0 HIGH + 0 MEDIUM + 3 LOW advisory) 全 ship; 15 active R20.x 双覆盖 (implementation + dogfood) + 8 PLAN-ENG-REVIEW.md implementation tasks 全部纳入 + Q-AUDIT-5 3 schema fix (planning-with-files plugin / Agent Teams root-level env / judgmentResolver.ts) 全反映
 - **進度**：21 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ **100%**（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + v0.5.0 + 🎯 **v1.0 GA** ALL SHIPPED & ARCHIVED）
 
 ### 各里程碑进度
@@ -49,7 +49,7 @@ progress:
 | v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1+4.2+4.3 全 ship (dogfooding benchmark + community infra + R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→733 (+24); 21 ADR; archive `.planning/milestones/v0.4.0-*.md` triplet | 2026-05-18 ~ 2026-05-19 |
 | v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 5.1 ✅ + Phase 5.2 ✅ + Phase 5.3 ✅ SHIPPED (R10.1-R10.4 全 Done + ADR 0021+0022 + 756 tests); archive `.planning/milestones/v0.5.0-*.md` triplet + dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL | 2026-05-19 ~ 2026-05-22 |
 | v1.0 GA production release | 1/1 | 🎯 **SHIPPED & ARCHIVED** — Phase 6.1 ✅ (publish.yml NEW OIDC + package.json 1.0.0 + CHANGELOG [1.0.0] + README stable badge + ROADMAP v1.0 SHIPPED + ADR 0023 + 🎯 v1.0.0 tag LOCAL CREATE) + v1.0.1~v1.0.4 patch series shipped npm (setup NEW + path resolution + UX redesign + parallel + MCP idempotent) | 2026-05-22 |
-| v2.0 Architecture Refactor | 1/6 | 🚧 **IN PROGRESS** — Phase v2.0-2.1 discuss ✅ SHIPPED + Q-AUDIT amend 2026-05-20 (1 milestone-class M-01 + 16 D-decision LOCKED, initial 9 + Q-AUDIT amend 7 含 ralph-loop 真接 + parallelism-gate + Agent Teams env check + verify-work full 4-stage + tdd-gate + special-purpose tools + planning-with-files 真接 + judgments/ 多 file 分类 + fallback 3 铁律 + 战略层透明声明; REQUIREMENTS R20.10-R20.16 NEW 16 total; ROADMAP v2.0 4→6 phase); Phase v2.0-2.2 plan + 2.3 schema + 2.4 workflows + 2.5 4-stage 机器化 + 2.6 close pending | 2026-05-20 ~ 2026-06-05 |
+| v2.0 Architecture Refactor | 2/6 | 🚧 **IN PROGRESS** — Phase v2.0-2.1 discuss ✅ SHIPPED + Q-AUDIT amend 2026-05-20 (16 D-decision LOCKED); Phase v2.0-2.2 plan ✅ SHIPPED 2026-05-20 (Wave A RESEARCH.md 1058L + gstack /plan-eng-review 3 P1 RESOLVED + Wave B PLAN.md 835L 32 task + Wave C plan-check PASS); Phase v2.0-2.3 schema + 2.4 workflows + 2.5 4-stage 机器化 + 2.6 close pending | 2026-05-20 ~ 2026-06-05 |
 
 ### 已完成 phase ship 历史 (dev SoT — README user-facing summary only)
 
@@ -62,6 +62,7 @@ progress:
 
 <!-- Phase 5.3 narrative archived to RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.3 (2026-05-22 Phase 6.1 W0 D2 cadence iter 8 TERMINUS per standing process — 8-iter confirms implicit graduation; sister Phase 5.1 iter 5 + Phase 5.2 iter 6 + Phase 5.3 iter 7 pattern stable beyond 6-iter graduation) -->
 
+- **Phase v2.0-2.2 shipped** ⚙ (2026-05-20) — v2.0 Architecture Refactor plan-phase; Wave A research (gsd-phase-researcher subagent, RESEARCH.md 1058L 8 focus area) + gstack /plan-eng-review (Step 0 Scope Challenge + 5 section review, 3 P1 finding RESOLVED via Q-AUDIT-5 ALL Option A) + Wave B planner (gsd-planner subagent, PLAN.md 835L 32 atomic task across Phase v2.0-2.3 to v2.0-2.6) + Wave C plan-check (gsd-plan-checker subagent, PLAN-CHECK.md 308L verdict PASS — 10 dimension 0 HIGH + 0 MEDIUM + 3 LOW advisory); 15 active R20.x 双覆盖 (implementation + dogfood task) + 8 PLAN-ENG-REVIEW.md implementation tasks 全部纳入; Phase 2.1 Q-AUDIT-5 amend (D-15 planning-with-files plugin reframe + D-11 Agent Teams root-level env schema fix + D-04/D-16 judgmentResolver.ts NEW) 全反映
 - **Phase v2.0-2.1 shipped + Q-AUDIT amend** ⚙ (2026-05-20) — v2.0 Architecture Refactor discuss-phase; 1 milestone-class M-01 + **16 D-decision LOCKED** (initial 9 D-decision Q1-Q4 RESET reframe + **Q-AUDIT amend 7 D-decision** D-10 ralph-loop 真接 / D-11 parallelism-gate + Agent Teams env check / D-12 verify-work full 4-stage 重定 / D-13 tdd-gate / D-14 special-purpose tools routing 扩 / D-15 planning-with-files 真接 / D-16 judgments/ 多 file 分类 + fallback 3 铁律 + 战略层透明声明); REQUIREMENTS R20.10-R20.16 NEW (16 R20.x total; R20.6 DROPPED); ROADMAP v2.0 4→6 phase (加 2.5 4-stage 机器化 deepening); `.planning/phase-v2.0-2.1/{2.1-CONTEXT.md + 2.1-DISCUSSION-LOG.md}` disambiguated dir
 - **Phase 6.1 shipped** ✅ (2026-05-22) — 🎯 v1.0 GA PRODUCTION RELEASE; publish.yml NEW OIDC + package.json 1.0.0 + CHANGELOG [1.0.0] + ADR 0023 + 3 LOCAL tags; 21/21 phases FINAL
 - **Phase 5.1-5.3 shipped** ✅ (2026-05-19 ~ 2026-05-22) — R10.1-R10.4 + ADR 0021+0022 + 756 tests + 🎯 v0.5.0 CLOSE & ARCHIVED (full narrative archived RETROSPECTIVE.md § ARCHIVED FROM STATE — Phase 5.1-5.3)
