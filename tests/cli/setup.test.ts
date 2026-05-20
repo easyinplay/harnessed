@@ -1,7 +1,8 @@
 // v1.0.3 T1.2 — cell 6: parallel install smoke (Promise.allSettled concurrent; all 3 manifests fire).
 // v1.0.2 T1.5 — TDD: setup CLI subcommand tests (UX redesign; one-shot onboarding).
+// Phase v3.0-3.3 T3.3.W0.12 — extend to NestedWorkflow[] + v2 deprecation block.
 // Covers: smoke, --dry-run preview, default immediate install (Step A + Step B chain),
-//         plan-feature SKILL.md detected, install-base chain integration smoke.
+//         flat workflows (research/retro v3 keep), install-base chain integration smoke.
 // vi.mock fs/promises + installers + validate to avoid real filesystem / network calls.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -63,16 +64,33 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
   }
 }
 
-/** Stat mock that treats any path as dir, and SKILL.md as a file. */
-function makeStatMock(withSkillMd: string[]) {
+/** Stat mock that treats any path as dir, and SKILL.md as a file at top-level workflows. */
+function makeStatMock(withSkillMd: string[], _legacy?: string[]) {
   return async (p: unknown) => {
     const path = String(p)
     if (path.includes('SKILL.md')) {
-      const workflow = withSkillMd.find((w) => path.includes(w))
+      // Only top-level workflows/<name>/SKILL.md considered present (flat path A)
+      const workflow = withSkillMd.find(
+        (w) => path.includes(`${w}/SKILL.md`) || path.includes(`${w}\\SKILL.md`),
+      )
       if (workflow) return { isDirectory: () => false } as never
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
     }
     return { isDirectory: () => true } as never
+  }
+}
+
+/** readdir mock that only returns entries for the top-level workflows dir (not nested children). */
+function makeWorkflowsReaddir(topEntries: string[], extras: Record<string, string[]> = {}) {
+  return async (p: unknown) => {
+    const ps = String(p).replace(/\\/g, '/')
+    // Top-level workflows dir — strip trailing slash, compare basename
+    const trimmed = ps.replace(/\/+$/, '')
+    if (trimmed.endsWith('/workflows')) return topEntries as never
+    for (const [key, val] of Object.entries(extras)) {
+      if (trimmed.includes(key)) return val as never
+    }
+    return [] as never
   }
 }
 
@@ -112,15 +130,12 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
   // Cell 2: --dry-run → preview output, cp NOT called, exits 0
   it('cell 2 — --dry-run: preview output, cp NOT called, exit 0', async () => {
-    readdirMock.mockImplementation(async (p: unknown) => {
-      if (String(p).includes('workflows')) return ['execute-task', 'plan-feature'] as never
-      return [] as never
-    })
-    statMock.mockImplementation(makeStatMock(['execute-task']))
+    readdirMock.mockImplementation(makeWorkflowsReaddir(['research', 'retro']))
+    statMock.mockImplementation(makeStatMock(['research', 'retro']))
     const { code, stdout } = await runCli(['setup', '--dry-run'])
     expect(code).toBe(0)
     expect(stdout).toContain('[dry-run]')
-    expect(stdout).toContain('execute-task')
+    expect(stdout).toContain('research')
     expect(stdout).toContain('without --dry-run')
     expect(cpMock).not.toHaveBeenCalled()
     expect(runInstallMock).not.toHaveBeenCalled()
@@ -128,14 +143,10 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
   // Cell 3: default (no flags) → immediate install; Step A cp called + Step B chain invoked
   it('cell 3 — default mode (no flags): Step A cp + Step B install-base chain, exit 0', async () => {
-    readdirMock.mockImplementation(async (p: unknown) => {
-      const ps = String(p)
-      if (ps.includes('workflows')) return ['execute-task'] as never
-      if (ps.includes('skill-packs')) return ['gsd.yaml'] as never
-      if (ps.includes('tools')) return ['ctx7.yaml'] as never
-      return [] as never
-    })
-    statMock.mockImplementation(makeStatMock(['execute-task']))
+    readdirMock.mockImplementation(
+      makeWorkflowsReaddir(['research'], { 'skill-packs': ['gsd.yaml'], tools: ['ctx7.yaml'] }),
+    )
+    statMock.mockImplementation(makeStatMock(['research']))
     cpMock.mockResolvedValue(undefined)
     readFileMock.mockResolvedValue('yaml-content' as never)
     validateManifestFileMock
@@ -154,13 +165,10 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(stdout).toContain('setup complete: 1 workflow skill(s) + 2 base manifest(s)')
   })
 
-  // Cell 4: plan-feature SKILL.md detected + installed (post-T1.1)
-  it('cell 4 — plan-feature SKILL.md detected and installed', async () => {
-    readdirMock.mockImplementation(async (p: unknown) => {
-      if (String(p).includes('workflows')) return ['execute-task', 'plan-feature'] as never
-      return [] as never
-    })
-    statMock.mockImplementation(makeStatMock(['execute-task', 'plan-feature']))
+  // Cell 4 (v3.0-3.3 T3.3.W0.12): both flat keep dirs (research + retro) installed
+  it('cell 4 — flat keep dirs (research + retro) both installed', async () => {
+    readdirMock.mockImplementation(makeWorkflowsReaddir(['research', 'retro']))
+    statMock.mockImplementation(makeStatMock(['research', 'retro']))
     cpMock.mockResolvedValue(undefined)
     readFileMock.mockResolvedValue('yaml-content' as never)
     validateManifestFileMock.mockReturnValue({
@@ -173,20 +181,17 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
     expect(cpMock).toHaveBeenCalledTimes(2)
-    expect(stdout).toContain('plan-feature')
-    expect(stdout).toContain('execute-task')
+    expect(stdout).toContain('research')
+    expect(stdout).toContain('retro')
     expect(stdout).toContain('Step A complete: 2 workflow skill(s)')
   })
 
   // Cell 5: install-base chain smoke — skipped deferred methods not counted as failures
   it('cell 5 — install-base chain: deferred phase-2.1 methods skipped (not failed)', async () => {
-    readdirMock.mockImplementation(async (p: unknown) => {
-      const ps = String(p)
-      if (ps.includes('workflows')) return ['execute-task'] as never
-      if (ps.includes('tools')) return ['npx-skill.yaml', 'ctx7.yaml'] as never
-      return [] as never
-    })
-    statMock.mockImplementation(makeStatMock(['execute-task']))
+    readdirMock.mockImplementation(
+      makeWorkflowsReaddir(['research'], { tools: ['npx-skill.yaml', 'ctx7.yaml'] }),
+    )
+    statMock.mockImplementation(makeStatMock(['research']))
     cpMock.mockResolvedValue(undefined)
     readFileMock.mockResolvedValue('yaml-content' as never)
     validateManifestFileMock
@@ -214,13 +219,10 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
   // Simulates runInstall returning { ok: true, alreadyInstalled: true } for an MCP server
   // that was already registered in .mcp.json (ADR 0004 idempotent contract).
   it('cell 7 — already-installed: MCP server already in .mcp.json → not failed, hint shown', async () => {
-    readdirMock.mockImplementation(async (p: unknown) => {
-      const ps = String(p)
-      if (ps.includes('workflows')) return ['execute-task'] as never
-      if (ps.includes('tools')) return ['tavily-mcp.yaml', 'ctx7.yaml'] as never
-      return [] as never
-    })
-    statMock.mockImplementation(makeStatMock(['execute-task']))
+    readdirMock.mockImplementation(
+      makeWorkflowsReaddir(['research'], { tools: ['tavily-mcp.yaml', 'ctx7.yaml'] }),
+    )
+    statMock.mockImplementation(makeStatMock(['research']))
     cpMock.mockResolvedValue(undefined)
     readFileMock.mockResolvedValue('yaml-content' as never)
     validateManifestFileMock
@@ -246,13 +248,10 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
   // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled
   it('cell 6 — parallel smoke: 3 manifests all installed concurrently, [parallel Xs] in summary', async () => {
-    readdirMock.mockImplementation(async (p: unknown) => {
-      const ps = String(p)
-      if (ps.includes('workflows')) return ['execute-task'] as never
-      if (ps.includes('tools')) return ['a.yaml', 'b.yaml', 'c.yaml'] as never
-      return [] as never
-    })
-    statMock.mockImplementation(makeStatMock(['execute-task']))
+    readdirMock.mockImplementation(
+      makeWorkflowsReaddir(['research'], { tools: ['a.yaml', 'b.yaml', 'c.yaml'] }),
+    )
+    statMock.mockImplementation(makeStatMock(['research']))
     cpMock.mockResolvedValue(undefined)
     readFileMock.mockResolvedValue('yaml-content' as never)
     validateManifestFileMock

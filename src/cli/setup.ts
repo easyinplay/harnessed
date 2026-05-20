@@ -20,6 +20,7 @@ import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { getPackageRoot } from './lib/packagePath.js'
 import {
+  renderDeprecationBlock,
   runStepBInstall,
   scanWorkflowsWithSkill,
   warnIfAgentTeamsMissing,
@@ -65,7 +66,14 @@ export function registerSetup(program: Command): void {
         process.exit(1)
       }
 
-      const toInstall = await scanWorkflowsWithSkill(workflowsDir, entries)
+      const { workflows: toInstall, deprecated } = await scanWorkflowsWithSkill(
+        workflowsDir,
+        entries,
+      )
+
+      // Emit v2 → v3 deprecation block (Area 4 末段) BEFORE install summary.
+      const depBlock = renderDeprecationBlock(deprecated)
+      if (depBlock) console.log(depBlock)
 
       if (toInstall.length === 0) {
         console.log('setup: no workflow directories with SKILL.md found — nothing to install')
@@ -76,23 +84,25 @@ export function registerSetup(program: Command): void {
         console.log(
           `[dry-run] setup would install ${toInstall.length} workflow(s) to ${skillsBase}:`,
         )
-        for (const name of toInstall) {
-          console.log(`  ${name}  →  ${join(skillsBase, name)}`)
+        for (const wf of toInstall) {
+          const masterTag = wf.isMaster ? ' (master)' : ''
+          console.log(`  ${wf.name}  →  ${join(skillsBase, wf.name)}${masterTag}`)
         }
         console.log(`  run without --dry-run to execute`)
         process.exit(0)
       }
 
       let skillsInstalled = 0
-      for (const name of toInstall) {
-        const src = join(workflowsDir, name)
-        const dst = join(skillsBase, name)
+      for (const wf of toInstall) {
+        const src = join(workflowsDir, wf.relPath)
+        const dst = join(skillsBase, wf.name)
         try {
           await cp(src, dst, { recursive: true, force: true })
-          console.log(`  [A] installed  ${name}  →  ${dst}`)
+          const masterTag = wf.isMaster ? ' (master)' : ''
+          console.log(`  [A] installed  ${wf.name}  →  ${dst}${masterTag}`)
           skillsInstalled++
         } catch (e) {
-          console.error(`  error: failed to copy ${name}: ${(e as Error).message}`)
+          console.error(`  error: failed to copy ${wf.name}: ${(e as Error).message}`)
           process.exit(1)
         }
       }

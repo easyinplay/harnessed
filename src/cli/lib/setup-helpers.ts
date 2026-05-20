@@ -1,14 +1,22 @@
 // Phase v2.0-2.6 W0 close cleanup — Karpathy ≤200L split for src/cli/setup.ts (CK deferred).
 // Sister Phase 3.4 W1 doctor.ts inline shrink + origin-check.ts sister-share extract pattern.
 // Extracts: (1) Agent Teams warn UX, (2) workflow SKILL.md scan, (3) Step B parallel install.
-// No behavior change — pure surgical relocation; existing setup tests must pass unchanged.
+//
+// Phase v3.0-3.3 T3.3.W0.12 — nested 2-level scan + v2 deprecation warn:
+//   scanWorkflowsWithSkill now returns NestedWorkflow[] (not string[]) so callers
+//   can flatten slash-cmd name + know master vs sub-stage. Nested scan logic lives
+//   in ./scan-nested.ts (karpathy ≤200L split). Deprecated v2 flat top-level dirs
+//   (plan-feature / execute-task / verify-work) emit warn + skip install per D-04.
 
-import { readFile, stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { readFile } from 'node:fs/promises'
 import { runInstall } from '../../installers/index.js'
 import type { InstallOpts } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
+import type { ScanResult } from './scan-nested.js'
+import { renderDeprecationBlock, scanWorkflowsNested } from './scan-nested.js'
+
+export type { NestedWorkflow, ScanResult } from './scan-nested.js'
 
 /** Phase 2.1 deferred installer methods — counted as skipped, not failed (D-11). */
 const PHASE_21 = new Set([
@@ -38,25 +46,16 @@ export async function warnIfAgentTeamsMissing(): Promise<void> {
   // NOT exit — non-blocking per R20.11 acceptance a
 }
 
-/** Filter workflow entries to those containing SKILL.md (sister Step A scan). */
+/** v3.0 nested 2-level scan — returns NestedWorkflow[] with deprecation list. */
 export async function scanWorkflowsWithSkill(
   workflowsDir: string,
   entries: string[],
-): Promise<string[]> {
-  const out: string[] = []
-  for (const entry of entries.sort()) {
-    const src = join(workflowsDir, entry)
-    try {
-      const s = await stat(src)
-      if (!s.isDirectory()) continue
-      await stat(join(src, 'SKILL.md')) // throws if missing
-      out.push(entry)
-    } catch {
-      // no SKILL.md — skip
-    }
-  }
-  return out
+): Promise<ScanResult> {
+  return scanWorkflowsNested(workflowsDir, entries)
 }
+
+/** Re-export deprecation block renderer for setup.ts console output. */
+export { renderDeprecationBlock }
 
 export interface StepBResult {
   installed: string[]
