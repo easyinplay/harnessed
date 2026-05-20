@@ -34,10 +34,13 @@
 
 import { type Static, Type } from '@sinclair/typebox'
 
-/** SchemaVersion template literal — `harnessed.<surface>.v1`. Each producer
+/** SchemaVersion template literal — `harnessed.<surface>.v<N>`. Each producer
  *  declares its surface name once via `SCHEMA_VERSIONS` below and references it
- *  through this type, so a string literal drift is a compile error. */
+ *  through this type, so a string literal drift is a compile error.
+ *  Default is `.v1`; v2 entry (Phase v2.0-2.4 W0 T2.4.W0.1 `workflow.v2`) sister:
+ *  `SchemaVersionV2<S>` for explicit v2 surfaces. */
 export type SchemaVersion<S extends string> = `harnessed.${S}.v1`
+export type SchemaVersionV2<S extends string> = `harnessed.${S}.v2`
 
 /** Single source of truth for the 7 surface names (B-32 / D-16). Producers MUST
  *  import from this const — direct string literals fail the Wave 2 grep
@@ -58,6 +61,7 @@ export const SCHEMA_VERSIONS = {
   knownGood: 'harnessed.known-good.v1', // ← Phase 3.3 W1 T1.1 ADD 13th surface (D-03 YAML versions/<harnessed-ver>-known-good.yaml per-version lock)
   capabilities: 'harnessed.capabilities.v1', // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 14th surface (R20.2 flat yaml capabilities manifest validate)
   judgment: 'harnessed.judgment.v1', // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 15th surface (R20.4 multi-file judgments triggers/rules validate)
+  workflow: 'harnessed.workflow.v2', // ← Phase v2.0-2.4 W0 T2.4.W0.1 ADD 16th surface (R20.1 + R20.2 + R20.9 — workflow.yaml v2 schema: gate / on / capability / args / fallback / parallelism 字段, sister 4 workflow.yaml: plan-feature + execute-task + research + verify-work)
 } as const
 
 /** TypeBox literal union — useful as a refinement on a `schemaVersion` field
@@ -78,18 +82,26 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.knownGood), // ← Phase 3.3 W1 T1.1 ADD 13th surface
   Type.Literal(SCHEMA_VERSIONS.capabilities), // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 14th surface
   Type.Literal(SCHEMA_VERSIONS.judgment), // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 15th surface
+  Type.Literal(SCHEMA_VERSIONS.workflow), // ← Phase v2.0-2.4 W0 T2.4.W0.1 ADD 16th surface (workflow.yaml v2 schema, NOTE first .v2 surface in union)
 ])
 
 export type SchemaVersionLiteralType = Static<typeof SchemaVersionLiteral>
 
 /** Consumer branch helper — rule (a) consumer MUST branch on `schemaVersion`;
  *  rule (b) unknown values gracefully degrade to the `unknown` handler. The
- *  handler-shape encodes the contract so the type system enforces it. */
+ *  handler-shape encodes the contract so the type system enforces it.
+ *
+ *  Phase v2.0-2.4 W0 T2.4.W0.1 NOTE: `workflow.v2` is the first v2 surface in
+ *  SCHEMA_VERSIONS. The v1 handler accepts any *known* surface regardless of
+ *  version suffix — consumers of v2-only surfaces must check the literal
+ *  explicitly (the schema_version field is also Type.Literal-constrained at
+ *  schema-level, so structural drift fails earlier). */
 export function branchOnSchemaVersion<T>(
   v: string,
   handlers: { v1: () => T; unknown: () => T },
 ): T {
-  // v1 = any string matching `harnessed.<surface>.v1` for a known surface.
-  const isKnownV1 = (Object.values(SCHEMA_VERSIONS) as readonly string[]).includes(v)
-  return isKnownV1 ? handlers.v1() : handlers.unknown()
+  // Any string matching a registered SCHEMA_VERSIONS value (v1 or v2) routes
+  // to the v1 handler — the legacy name reflects rule (a) "known surface" semantics.
+  const isKnownVersion = (Object.values(SCHEMA_VERSIONS) as readonly string[]).includes(v)
+  return isKnownVersion ? handlers.v1() : handlers.unknown()
 }

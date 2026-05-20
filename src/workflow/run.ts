@@ -59,7 +59,10 @@ export async function runWorkflow(
       await statePause()
       return { status: 'paused-veto', phasesRun: i, lastPhaseId: ph.id }
     }
-    const skillName = ph.skills?.[0] ?? ph.id
+    // T2.4.W1.1: loadPhases returns v1 OR v2 union — v1 phase has `skills?`, v2
+    // does NOT (capability/on/invoke replace skills). Narrow via `'skills' in ph`
+    // — v1 path uses skills[0], v2 / no-skills path falls back to phase id.
+    const skillName = ('skills' in ph && ph.skills?.[0]) || ph.id
     const r = await dispatchSkillStub(skillName)
     if (r.status !== 'ok') {
       return { status: 'failed', phasesRun: i, lastPhaseId: ph.id }

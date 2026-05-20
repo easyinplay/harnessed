@@ -10,14 +10,14 @@ import {
   SchemaVersionLiteral,
 } from '../../src/types/schemaVersion.js'
 
-describe('SCHEMA_VERSIONS — 15 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkflow + Phase 3.2 W1 T1.1 config + governance + Phase 3.3 W0 T0.5 planFeature backfill + Phase 3.3 W1 T1.1 aliases + knownGood + Phase v2.0-2.3 W0 T2.3.W0.6 capabilities + judgment)', () => {
-  it('has exactly 15 surface entries', () => {
-    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(15)
+describe('SCHEMA_VERSIONS — 16 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkflow + Phase 3.2 W1 T1.1 config + governance + Phase 3.3 W0 T0.5 planFeature backfill + Phase 3.3 W1 T1.1 aliases + knownGood + Phase v2.0-2.3 W0 T2.3.W0.6 capabilities + judgment + Phase v2.0-2.4 W0 T2.4.W0.1 workflow.v2)', () => {
+  it('has exactly 16 surface entries', () => {
+    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(16)
   })
 
-  it('every value matches `harnessed.<surface>.v1` shape', () => {
+  it('every value matches `harnessed.<surface>.v<N>` shape (v1 default, v2 first introduced for workflow surface in Phase v2.0-2.4)', () => {
     for (const v of Object.values(SCHEMA_VERSIONS)) {
-      expect(v).toMatch(/^harnessed\.[a-z-]+\.v1$/)
+      expect(v).toMatch(/^harnessed\.[a-z-]+\.v[12]$/)
     }
   })
 
@@ -26,7 +26,7 @@ describe('SCHEMA_VERSIONS — 15 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkf
     expect(new Set(values).size).toBe(values.length)
   })
 
-  it('covers the 15 named surfaces (7 B-32 + currentWorkflow Phase 3.1 + config/governance Phase 3.2 + plan-feature Phase 3.3 W0 T0.5 backfill + aliases/knownGood Phase 3.3 W1 T1.1 + capabilities/judgment Phase v2.0-2.3 W0 T2.3.W0.6)', () => {
+  it('covers the 16 named surfaces (7 B-32 + currentWorkflow Phase 3.1 + config/governance Phase 3.2 + plan-feature Phase 3.3 W0 T0.5 backfill + aliases/knownGood Phase 3.3 W1 T1.1 + capabilities/judgment Phase v2.0-2.3 W0 T2.3.W0.6 + workflow Phase v2.0-2.4 W0 T2.4.W0.1)', () => {
     const expectedSurfaces = [
       'routing-snapshot',
       'handoff-doc',
@@ -43,11 +43,17 @@ describe('SCHEMA_VERSIONS — 15 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkf
       'known-good', // ← Phase 3.3 W1 T1.1 13th surface (D-03 YAML versions/<harnessed-ver>-known-good.yaml)
       'capabilities', // ← Phase v2.0-2.3 W0 T2.3.W0.6 14th surface (R20.2 flat yaml capabilities manifest)
       'judgment', // ← Phase v2.0-2.3 W0 T2.3.W0.6 15th surface (R20.4 judgments triggers/rules multi-file)
+      'workflow', // ← Phase v2.0-2.4 W0 T2.4.W0.1 16th surface (R20.1/R20.2/R20.9 workflow.yaml v2)
     ]
     const actualSurfaces = Object.values(SCHEMA_VERSIONS).map((v) => v.split('.')[1])
     for (const s of expectedSurfaces) {
       expect(actualSurfaces).toContain(s)
     }
+  })
+
+  it('workflow surface is the only .v2 entry (first non-v1 surface — Phase v2.0-2.4)', () => {
+    const v2Entries = Object.values(SCHEMA_VERSIONS).filter((v) => v.endsWith('.v2'))
+    expect(v2Entries).toEqual(['harnessed.workflow.v2'])
   })
 })
 
@@ -62,8 +68,12 @@ describe('SchemaVersionLiteral — TypeBox accept/reject', () => {
     expect(Value.Check(SchemaVersionLiteral, 'harnessed.adapter-x.v1')).toBe(false)
   })
 
-  it('rejects a v2 string (future-proof — v2 must enter union explicitly)', () => {
+  it('rejects an unregistered v2 string (future-proof — v2 must enter union explicitly, sister `workflow.v2` is registered)', () => {
     expect(Value.Check(SchemaVersionLiteral, 'harnessed.routing-snapshot.v2')).toBe(false)
+  })
+
+  it('accepts `harnessed.workflow.v2` (first registered .v2 surface — Phase v2.0-2.4 W0 T2.4.W0.1)', () => {
+    expect(Value.Check(SchemaVersionLiteral, 'harnessed.workflow.v2')).toBe(true)
   })
 })
 

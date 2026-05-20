@@ -10,7 +10,7 @@
 
 import type { Command } from 'commander'
 import { runRouting, type TaskContext } from '../routing/index.js'
-import { loadPhases } from '../workflow/loadPhases.js'
+import { type LoadedPhases, loadPhases } from '../workflow/loadPhases.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
@@ -56,11 +56,14 @@ export function registerExecuteTask(program: Command): void {
       }
 
       // B-10 escape hatch — `--model-tier inherit` overrides all phase.model values.
+      // T2.4.W1.1: loadPhases returns LoadedPhases union (v1 PhasesSchema OR v2
+      // WorkflowSchemaV2T). Cast assembled override to LoadedPhases to preserve
+      // v2-only fields (capability/gate/on/fallback) for downstream engine handler.
       if (raw.modelTier === 'inherit') {
         phases = {
           ...phases,
           phases: phases.phases.map((p) => ({ ...p, model: 'inherit' as const })),
-        }
+        } as LoadedPhases
       }
 
       const taskCtx: TaskContext = { task: raw.task, task_type: 'execute-task' }

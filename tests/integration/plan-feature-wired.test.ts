@@ -1,8 +1,10 @@
 // Phase 3.2 W2 T2.6 — plan-feature wired integration e2e (3 fixtures, D-03 WIRED).
 // Sister tests/integration/phase-3.1-e2e.test.ts tmpdir cwd-swap pattern.
 // Real workflow runner + real loadPhases + real engineHook + real state +
-// vi.mock'd governance fs (controlled state). PhasesSchema accepts plan-feature
-// workflow.yaml validates (W-02 happy-path proof).
+// vi.mock'd governance fs (controlled state). WorkflowSchemaV2 accepts
+// plan-feature/workflow.yaml validates (W-02 happy-path proof; Phase v2.0-2.4 W1
+// T2.4.W1.3 upgrade from PhasesSchema sister legacy v1 to v2 schema, loadPhases
+// dispatches v1/v2 per schema_version field).
 //
 // Fixture 3 = B-01 veto-at-i=0 守门: planner-revision iter 1 added to exercise
 // activate-BEFORE-veto ordering + Phase 3.1 resume.ts integration proof.
@@ -16,7 +18,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { runResume } from '../../src/checkpoint/resume.js'
 import { writeCheckpoint } from '../../src/checkpoint/template.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
-import { PhasesSchema } from '../../src/workflow/schema/phases.js'
+import { WorkflowSchemaV2 } from '../../src/workflow/schema/workflow.js'
 
 const WORKFLOW_YAML = join(process.cwd(), 'workflows/plan-feature/workflow.yaml')
 
@@ -37,11 +39,14 @@ afterEach(() => {
 
 describe('plan-feature wired e2e (D-03 WIRED + B-01 fix守门)', () => {
   it('1. 5 phase happy → status=complete + 5 checkpoint writes + PhasesSchema accepts yaml (W-02 happy-path)', async () => {
-    // W-02 happy-path validate守门: PhasesSchema extension accepts plan-feature/workflow.yaml
+    // W-02 happy-path validate守门: WorkflowSchemaV2 accepts plan-feature/workflow.yaml
+    // (Phase v2.0-2.4 W1 T2.4.W1.3 — workflow.yaml upgraded to harnessed.workflow.v2;
+    // loadPhases dispatches v1/v2 per schema_version, but L44 直接 schema check
+    // 同步用 v2 assert sister yaml current truth)
     const yaml = readFileSync(WORKFLOW_YAML, 'utf8')
     const { parse } = await import('yaml')
     const parsed = parse(yaml)
-    expect(Value.Check(PhasesSchema, parsed)).toBe(true)
+    expect(Value.Check(WorkflowSchemaV2, parsed)).toBe(true)
 
     // No governance.json → fail-soft active → 5 phase all run
     const { runWorkflow } = await import('../../src/workflow/run.js')

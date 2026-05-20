@@ -1,12 +1,6 @@
-// Phase 1.4 T3.1 → 1.5 T3.4 → 2.2 W4 T4.2 → 3.1 W3 T3.2 main-process routing
-// engine (Pattern N). ADR 0006 § 1 双层架构. Spawns subagents via query({
-// agents: { name: agentDef } }) — never recursive. F33 verbatim <promise>
-// COMPLETE</promise>. D1.4-1 fresh query() reload bypass. D1.4-3 ralphLoopWrap
-// ≤50L. ADR 0008 § 4 接口契约 8 upgrade points. T3.4 (ADR 0009) PRE-arbitrate
-// DAG cycle pre-check + POST-arbitrate L2 semanticRouter (v0.1 stub null
-// pass-through to L3). Phase 3.1 W3 T3.2 (D-04 WIRE-IN): activatePhase +
-// completePhase hooks bridge engine → checkpoint module (W-01 orchestrator
-// PRIMARY extract to engineHook.ts ≤50L; engine.ts ≤200L Karpathy clean).
+// Main-process routing engine (Pattern N). ADR 0006/0008/0009. Phase 1.4 T3.1
+// → 1.5 T3.4 → 2.2 W4 T4.2 → 3.1 W3 T3.2 → 2.4 W1 T2.4.W1.2 (fallback handlers
+// delegate, R20.10 c). Karpathy ≤200L hard limit守住.
 
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -19,12 +13,16 @@ import {
   createAgent,
   InvalidDecisionError,
   MissingSkillsError,
-  RestartRequiredError,
   SkillNotInstalledError,
   type TaskContext,
 } from './agentDefinition.js'
 import { type DagNode, resolveDag } from './dag.js'
 import { arbitrate, loadDecisionRules, type Rule } from './decisionRules.js'
+import {
+  type FallbackMaxIterationsExceededConfig,
+  handleMaxIterationsExceeded,
+  handleVerbatimCompleteFail,
+} from './lib/fallbackHandlers.js'
 import {
   MaxIterationsExceededError,
   ralphLoopWrap,
@@ -42,17 +40,19 @@ export type EngineResult =
   | { ok: false; phase: 'arbitrate' | 'install' | 'spawn' | 'verbatim'; error: Error }
   | { aborted: true; reason: string }
 
-/** Routing engine entry options. */
+/** Routing engine entry options. T2.4.W1.2: fallback* fields wire R20.10 c. */
 export interface RoutingOpts {
-  rulesPath?: string // defaults to ./routing/decision_rules.yaml
-  skillsRoot?: string // fs root for skill probes; injected by tests/e2e
-  spawn?: (agentDef: AgentDefinition) => Promise<string> // test mock seam
-  maxIterations?: number // ralph-loop limit (D1.4-3 lock 20)
-  spawnTimeoutMs?: number // per-spawn timeout in ms (Anchor 7)
-  fallbackSupervisor?: (task: TaskContext) => Promise<string> // L3 兜底
-  agentOpts?: AgentDefinitionOpts // factory overrides forwarded into createAgent
-  dagNodes?: DagNode[] // optional skill DAG (Kahn pre-check, T3.4)
-  semanticThreshold?: number // L2 semanticRouter stub threshold (v0.1 unused)
+  rulesPath?: string
+  skillsRoot?: string
+  spawn?: (agentDef: AgentDefinition) => Promise<string>
+  maxIterations?: number
+  spawnTimeoutMs?: number
+  fallbackSupervisor?: (task: TaskContext) => Promise<string>
+  agentOpts?: AgentDefinitionOpts
+  dagNodes?: DagNode[]
+  semanticThreshold?: number
+  fallbackConfig?: FallbackMaxIterationsExceededConfig
+  fallbackPhaseId?: string
 }
 
 /** Anchor 6 — production spawn = real sdkSpawn (T4.2). Replaces phase 1.4
@@ -88,8 +88,7 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   const maxIter = opts.maxIterations ?? 20
   const userSpawn = opts.spawn
 
-  // Step 0 — DAG pre-check (T3.4, ADR 0009). Resolve the optional skill
-  // dependency graph via Kahn; a cycle is rejected before arbitrate.
+  // Step 0 — DAG pre-check (T3.4, ADR 0009 § DAG Kahn cycle reject).
   if (opts.dagNodes && opts.dagNodes.length > 0) {
     const dag = resolveDag(opts.dagNodes)
     if (!dag.ok) {
@@ -115,11 +114,9 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   const decision = buildDecision(matched)
 
   if (!matched) {
-    // Step 1b — L2 Semantic Router (T3.4). v0.1 stub always returns no-match
-    // (rule stays null), so v0.1 is a guaranteed pass-through to L3 below;
-    // v0.2+ swaps the stub body only and may resolve `semantic.rule` here.
+    // Step 1b — L2 Semantic Router stub (T3.4 v0.1 always null pass-through to L3).
     const semantic = await semanticMatch(task.task, opts.semanticThreshold)
-    void semantic.rule // Step 1b L2 stub; v0.2+ feeds rule; Step 1c L3 fallback below.
+    void semantic.rule // v0.2+ feeds rule
     if (opts.fallbackSupervisor) {
       const result = await opts.fallbackSupervisor(task)
       return { ok: true, result, matchedRule: null }
@@ -131,21 +128,14 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
     }
   }
 
-  // Step 2 — install missing (Anchor 3, lib/ralphLoop.ts)
+  // Step 2 — install missing skills (Anchor 3)
   try {
     await ensureSkillsInstalled(decision.required_skills ?? [], skillsRoot)
   } catch (error) {
-    if (
-      error instanceof RestartRequiredError ||
-      error instanceof SkillNotInstalledError ||
-      error instanceof MissingSkillsError
-    ) {
-      return { ok: false, phase: 'install', error }
-    }
     return { ok: false, phase: 'install', error: error as Error }
   }
 
-  // Step 3 — factory (Anchor 1 step 3, T3.2 createAgent)
+  // Step 3 — factory (T3.2 createAgent)
   let agentDef: AgentDefinition
   try {
     agentDef = await createAgent(task, decision, { ...opts.agentOpts, skillsRoot })
@@ -162,8 +152,7 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   const phaseId = task.phaseId ?? 'unknown' // Phase 3.1 W3 T3.2 (W-04 fix path a)
   await activatePhase(phaseId)
 
-  // Step 4+5 spawn + ralph-loop. userSpawn = fresh-session test seam (1-arg by design B-02; resume.ts
-  // fresh+reload DEFERRED #2). defaultSpawn captures session_id; ralphLoop propagates iter 2+ (CD-4).
+  // Step 4+5 spawn + ralph-loop. userSpawn = test seam (B-02 1-arg); defaultSpawn captures session_id.
   const expertName = (matched.decision.primary_expert as string | null) ?? 'unknown'
   let capturedSessionId: string | undefined
   const wrappedSpawn = async (
@@ -180,6 +169,11 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
             onSessionIdInner?.(id)
           },
         })
+  const fbCtx = {
+    subtaskSummary: task.task,
+    workflowName: task.task_type ?? 'unknown',
+    phaseId: opts.fallbackPhaseId ?? task.phaseId ?? 'unknown',
+  }
   try {
     const result = await ralphLoopWrap(wrappedSpawn, maxIter)
     await completePhase({ phaseId, sessionId: capturedSessionId, status: 'complete' })
@@ -188,10 +182,16 @@ export async function runRouting(task: TaskContext, opts: RoutingOpts = {}): Pro
   } catch (error) {
     if (error instanceof MaxIterationsExceededError) {
       emitAudit(task, decision, matched, 'max-iter', capturedSessionId)
+      if (opts.fallbackConfig)
+        handleMaxIterationsExceeded(error, opts.fallbackConfig, {
+          ...fbCtx,
+          maxIterations: maxIter,
+        })
       return { aborted: true, reason: error.message }
     }
     if (error instanceof VerbatimCompleteFailError) {
       emitAudit(task, decision, matched, 'verbatim-fail', capturedSessionId)
+      if (opts.fallbackConfig) handleVerbatimCompleteFail(error, opts.fallbackConfig, fbCtx)
       return { ok: false, phase: 'verbatim', error }
     }
     emitAudit(task, decision, matched, 'spawn-err', capturedSessionId)

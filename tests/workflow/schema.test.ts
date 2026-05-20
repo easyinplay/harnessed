@@ -11,6 +11,7 @@ import { parse as parseYaml } from 'yaml'
 import { Capabilities } from '../../src/workflow/schema/capabilities.js'
 import { JudgmentRulesFile, JudgmentTriggersFile } from '../../src/workflow/schema/judgment.js'
 import { PhaseFactContext } from '../../src/workflow/schema/phaseFactContext.js'
+import { WorkflowSchemaV2 } from '../../src/workflow/schema/workflow.js'
 
 const ROOT = resolve(__dirname, '../..')
 const capRaw = readFileSync(resolve(ROOT, 'workflows/capabilities.yaml'), 'utf8')
@@ -119,6 +120,166 @@ describe('fallback.yaml rules-shape parity', () => {
 
   test('B2: every shipped judgment yaml accounted for (6 file expected)', () => {
     expect(judgmentFiles.length).toBe(6)
+  })
+})
+
+// Phase v2.0-2.4 W0 T2.4.W0.1 — 5 NEW workflow.v2 fixture (R20.1 + R20.2 + R20.9).
+// 4 valid (plan-feature v2 / execute-task v2 / research v2 / verify-work v2)
+// + 1 invalid (additionalProperties unknown key — sister Phase 2.2 STRIDE T-2.2-02).
+describe('workflow.v2 — 5 fixture (T2.4.W0.1)', () => {
+  test('W1: plan-feature v1→v2 migration synthetic fixture passes', () => {
+    const planFeatureV2 = {
+      schema_version: 'harnessed.workflow.v2',
+      workflow: 'plan-feature',
+      description: 'Phase 2.4 W1 v2 plan-feature with capability + gate + on',
+      phases: [
+        {
+          id: '01-gstack-decision',
+          name: 'gstack-decision (governance gate)',
+          upstream: 'gstack',
+          model: 'opus',
+          capability: '{{ capabilities.office-hours.cmd }}',
+          gate: 'judgments.strategic-gate.office-hours.fires',
+          max_iterations: 1,
+        },
+        {
+          id: '02-brainstorm',
+          name: 'brainstorm',
+          upstream: 'superpowers',
+          model: 'sonnet',
+          capability: '{{ capabilities.brainstorming.cmd }}',
+          on: [
+            {
+              if: 'judgments.subtask-gate.brainstorming.fires',
+              invoke: '{{ capabilities.brainstorming.cmd }}',
+            },
+            { if: 'subtask.lines < 20', action: 'skip' },
+          ],
+          max_iterations: 5,
+        },
+      ],
+    }
+    expect(Value.Check(WorkflowSchemaV2, planFeatureV2)).toBe(true)
+  })
+
+  test('W2: execute-task v1→v2 migration synthetic fixture (ralph-loop + tdd + fallback) passes', () => {
+    const executeTaskV2 = {
+      schema_version: 'harnessed.workflow.v2',
+      workflow: 'execute-task',
+      phases: [
+        {
+          id: '02-code',
+          name: 'code (karpathy always-on)',
+          upstream: 'karpathy',
+          model: 'sonnet',
+          on: [
+            {
+              if: 'judgments.tdd-gate.tdd-strongly-suggested.fires',
+              invoke: '{{ capabilities.tdd.cmd }}',
+            },
+          ],
+        },
+        {
+          id: '04-deliver',
+          name: 'deliver (ralph-loop COMPLETE)',
+          upstream: 'ralph-loop',
+          model: 'haiku',
+          capability: '{{ capabilities.ralph-loop.cmd }}',
+          args: { completion_promise: 'COMPLETE' },
+          gate: 'judgments.parallelism-gate.fires',
+          parallelism: 'judgments.parallelism-gate.ralph-loop-wrapper.fires',
+          fallback: {
+            max_iterations_exceeded: {
+              action: 'emit_warning_and_halt',
+              message: 'ralph-loop max-iterations exceeded',
+              exit_code: 1,
+            },
+          },
+          max_iterations: '{{ defaults.ralph_max_iterations.execute-task.04-deliver }}',
+        },
+      ],
+    }
+    expect(Value.Check(WorkflowSchemaV2, executeTaskV2)).toBe(true)
+  })
+
+  test('W3: research NEW v2 fixture with capability + gate + on populated', () => {
+    const researchV2 = {
+      schema_version: 'harnessed.workflow.v2',
+      workflow: 'research',
+      description: 'Phase 2.4 W2 NEW research workflow — superpowers + ctx7 + tavily',
+      phases: [
+        {
+          id: '01-search',
+          name: 'web search (tavily/exa route)',
+          upstream: 'web-search',
+          model: 'sonnet',
+          capability: '{{ capabilities.tavily-search.cmd }}',
+          gate: 'judgments.parallelism-gate.fires',
+          on: [{ if: 'phase.requires_docs == true', invoke: '{{ capabilities.ctx7.cmd }}' }],
+          artifacts_expected: ['findings.md', 'knowledge.md'],
+        },
+      ],
+    }
+    expect(Value.Check(WorkflowSchemaV2, researchV2)).toBe(true)
+  })
+
+  test('W4: verify-work NEW v2 fixture (7 phase + fallback per R20.10)', () => {
+    const verifyWorkV2 = {
+      schema_version: 'harnessed.workflow.v2',
+      workflow: 'verify-work',
+      description: 'Phase 2.4 W2 NEW verify-work — code-review + gstack/review + cso + qa',
+      phases: [
+        { id: '01-gsd-verify', name: 'GSD verify', upstream: 'gsd', model: 'sonnet' },
+        {
+          id: '02-code-review',
+          name: 'code-review multi-agent',
+          upstream: 'superpowers',
+          model: 'sonnet',
+        },
+        {
+          id: '03-gstack-review',
+          name: 'gstack /review (Paranoid Staff Engineer)',
+          upstream: 'gstack',
+          model: 'opus',
+        },
+        { id: '04-cso', name: 'gstack /cso (security)', upstream: 'gstack', model: 'opus' },
+        { id: '05-qa', name: 'gstack /qa (e2e)', upstream: 'gstack', model: 'sonnet' },
+        { id: '06-simplifier', name: 'code-simplifier', upstream: 'superpowers', model: 'sonnet' },
+        {
+          id: '07-state-update',
+          name: 'STATE.md + planning-with-files progress.md update',
+          upstream: 'gsd',
+          model: 'haiku',
+          fallback: {
+            max_iterations_exceeded: {
+              action: 'emit_warning_and_halt',
+              message: 'verify-work max-iter exceeded',
+              exit_code: 1,
+            },
+          },
+        },
+      ],
+    }
+    expect(Value.Check(WorkflowSchemaV2, verifyWorkV2)).toBe(true)
+  })
+
+  test('W5: INVALID fixture — additionalProperties unknown key rejected + Errors path printed', () => {
+    const invalid = {
+      schema_version: 'harnessed.workflow.v2',
+      workflow: 'execute-task',
+      phases: [
+        {
+          id: '04-deliver',
+          model: 'haiku',
+          unknown_phase_key: 'leak', // STRIDE T-2.2-02 strict additionalProperties:false
+        },
+      ],
+    }
+    expect(Value.Check(WorkflowSchemaV2, invalid)).toBe(false)
+    const errors = [...Value.Errors(WorkflowSchemaV2, invalid)]
+    expect(errors.length).toBeGreaterThan(0)
+    // Errors enumeration must produce a path string (sister N1 assertion pattern).
+    expect(errors.some((e) => typeof e.path === 'string')).toBe(true)
   })
 })
 

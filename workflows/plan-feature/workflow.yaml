@@ -1,40 +1,81 @@
-# workflows/plan-feature/workflow.yaml — Phase 3.2 W2 T2.4 (D-03 WIRED LOCKED)
-# 5-phase reference implementation; Phase 3.3+ dogfood 时换真 gsd-discuss/plan/execute spawn.
-# R7.1 acceptance: 30 plan-feature 场景跑通 + CEO veto halt_workflow
-# R7.4 acceptance: 用户三种前缀场景任一都跑通 (JINJA `{{ gstack_prefix }}` 插值)
+# workflows/plan-feature/workflow.yaml — Phase v2.0-2.4 W1 T2.4.W1.3 (D-15 + Q-AUDIT-5a LOCKED)
+# 5-phase 三层栈 composition: gstack governance → superpowers brainstorm → GSD discuss/plan → planning-with-files plugin /plan persist
+# v1 → v2 delta (sister L1-40):
+#   ADD `schema_version: harnessed.workflow.v2`              (T2.4.W0.1 16th surface)
+#   ADD `description` root field                              (workflow purpose)
+#   ADD `capability: '{{ capabilities.<name>.cmd }}'` 各 phase (D-10 template interpolation)
+#   ADD `gate: judgments.<file>.<trigger>.fires` 01-gstack-decision (D-04 gate reference)
+#   ADD `on: [{if, invoke}]` 02-brainstorm + 03-gsd-discuss   (D-09 conditional clause)
+#   ADD `artifacts_expected: [...]` 05-persist                (D-15 planning-with-files 3 file 持久化)
+#   ADD `max_iterations: '{{ defaults.ralph_max_iterations.plan-feature.<phase> }}'` (T2.3.W1.2 ship)
+#   KEEP `invokes: '/plan'` literal at 05-persist             (Q-AUDIT-5a Claude Code plugin slash cmd, NOT npm SDK NOT fs.writeFile)
+# Q-AUDIT-5a anti-pattern guard (verified by tests/workflow/plan-feature-v2.test.ts):
+#   - NO npm SDK call (no `import` / `require` planning-with-files — yaml syntax natively absent)
+#   - NO fs.writeFile self-impl (no `fs.writeFile` / `writeFile` reference — anti-pattern reviewer guard)
+#   - YES `invokes: '/plan'` literal at 05-persist            (plugin slash cmd 真接 path a)
+#   - YES `capability: '{{ capabilities.planning-with-files.cmd }}'` template ref (resolve to /plan via capabilities.yaml L317)
+# 04-gsd-plan phase: `gsd-plan-phase` 在 capabilities.yaml 中暂未单独 entry — 沿袭 v1 L32 literal pattern (D-08 v2.x patch followup
+# 添加 gsd-plan-phase capability entry; v2.0 baseline 不阻塞 ship per T2.4.W1.3 Implementation Tasks #4-#5 scope)
+
+schema_version: harnessed.workflow.v2
 workflow: plan-feature
-on_veto: halt_workflow  # workflow-level (NOT per-phase per RESEARCH § 5.2 DRY) — D-04 PUSH 任 1 phase 转换前 read = vetoed → 全 halt
+description: |
+  plan-feature 5-phase 三层栈 workflow — gstack governance gate (CEO/EM/Designer/Paranoid/QA/CSO)
+  → superpowers brainstorm 子任务级澄清 → GSD /gsd-discuss-phase 灰色澄清 → GSD /gsd-plan-phase
+  Wave A/B/C planning → planning-with-files Claude Code plugin slash cmd `/plan` 持久化 3 file
+  (task_plan.md + progress.md + findings.md) 在 .planning/<phase-id>/.
+  Phase 1 gstack governance veto halts the entire workflow (D-04 PUSH) — engine-level
+  on_veto wiring lives in runtime, NOT yaml v2 root schema (WorkflowSchemaV2 strict
+  additionalProperties:false per T2.4.W0.1 + STRIDE T-2.2-02).
+
 phases:
   - id: 01-gstack-decision
     name: gstack-decision (governance gate — CEO/EM/Designer/Paranoid/QA/CSO)
     upstream: gstack
-    model: opus              # 高层决策 = opus
-    invokes: '{{ gstack_prefix }}office-hours'  # D-02 JINJA 插值 (gstack-office-hours OR office-hours)
-    skills: ['plan-feature-decision']
-    max_iterations: 1
+    capability: '{{ capabilities.gstack-office-hours.cmd }}'
+    invokes: '{{ gstack_prefix }}office-hours'
+    model: opus
+    gate: judgments.strategic-gate.office-hours.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.plan-feature.01-gstack-decision }}'
+
   - id: 02-brainstorm
-    name: brainstorm (execution + ui-ux-pro-max UI 任务)
+    name: brainstorm (子任务级澄清 multi-approach)
     upstream: superpowers
-    model: sonnet            # 设计澄清 = sonnet
-    skills: ['plan-feature-brainstorm']
-    max_iterations: 5
+    capability: '{{ capabilities.superpowers-brainstorming.cmd }}'
+    model: sonnet
+    on:
+      - if: judgments.subtask-gate.brainstorming.fires
+        invoke: '{{ capabilities.superpowers-brainstorming.cmd }}'
+    max_iterations: '{{ defaults.ralph_max_iterations.plan-feature.02-brainstorm }}'
+
   - id: 03-gsd-discuss
-    name: gsd-discuss (orchestration — phase discussion)
+    name: gsd-discuss (orchestration — phase 灰色澄清 4-question batch)
     upstream: gsd
+    capability: '{{ capabilities.gsd-discuss-phase.cmd }}'
     model: sonnet
-    invokes: 'gsd-discuss-phase'  # GSD 命令固定无 prefix
-    skills: ['plan-feature-discuss']
-    max_iterations: 3
+    on:
+      - if: judgments.phase-gate.gsd-discuss-phase.fires
+        invoke: '{{ capabilities.gsd-discuss-phase.cmd }}'
+    max_iterations: '{{ defaults.ralph_max_iterations.plan-feature.03-gsd-discuss }}'
+
   - id: 04-gsd-plan
-    name: gsd-plan (orchestration — phase planning)
+    name: gsd-plan (orchestration — Wave A research + Wave B planner + Wave C checker)
     upstream: gsd
-    model: sonnet
     invokes: 'gsd-plan-phase'
-    skills: ['plan-feature-plan']
-    max_iterations: 3
+    model: sonnet
+    max_iterations: '{{ defaults.ralph_max_iterations.plan-feature.04-gsd-plan }}'
+
   - id: 05-persist
-    name: persist (planning-with-files MD persistence)
+    name: persist (planning-with-files plugin /plan — Manus-style markdown persistence)
     upstream: planning-with-files
-    model: haiku             # 文档写入 = haiku 省 token (sister Phase 2.2 CD-2 04-deliver=haiku)
-    skills: ['plan-feature-persist']
-    max_iterations: 5
+    capability: '{{ capabilities.planning-with-files.cmd }}'
+    invokes: '/plan'
+    model: haiku
+    on:
+      - if: phase.scope_days > 1 or phase.is_critical_module == true
+        action: invoke
+    artifacts_expected:
+      - task_plan.md
+      - progress.md
+      - findings.md
+    max_iterations: '{{ defaults.ralph_max_iterations.plan-feature.05-persist }}'

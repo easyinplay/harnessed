@@ -1,8 +1,11 @@
 ---
 name: execute-task
 description: |
-  execute-task workflow — 4-phase chain (brainstorming → karpathy → mattpocock → TDD → ralph-loop)
+  execute-task workflow v2 — 4-phase chain (brainstorming → karpathy + mattpocock route → TDD + diagnose → ralph-loop COMPLETE)
   triggered by harnessed CLI `harnessed execute-task --task <text>`.
+  v2 delta (Phase v2.0-2.4 W1.1): schema_version: harnessed.workflow.v2 + ralph-loop 真接 SDK wrapper +
+  tdd-gate conditional + mattpocock route by condition (grill-with-docs / zoom-out / diagnose) +
+  explicit max_iterations_exceeded fallback (R20.10 NOT silent abort).
 trigger_phrases:
   # forward-looking documentation — auto-invocation 实装推 Phase 2.3 extension category (B-28).
   # Current enforced entry surface is the CLI subcommand below; these phrases are
@@ -13,23 +16,33 @@ trigger_phrases:
   - "跑 execute-task"
 ---
 
-# execute-task workflow
+# execute-task workflow (v2)
 
 ## Overview
 
 4-phase chain mapping the user's CLAUDE.md Execute-phase discipline onto the harnessed
-runtime (ADR 0011 — SDK + ralph-loop integration):
+runtime (ADR 0011 — SDK + ralph-loop integration; v2 schema upgrade T2.4.W1.1):
 
-| phase | id | upstream | model (intel CD-2 § 第 4 条) | rationale |
+| phase | id | upstream | model (intel CD-2 § 第 4 条) | v2 wiring |
 | ----- | -- | -------- | ---------------------------- | --------- |
-| 1 | `01-clarify` | `superpowers brainstorming` | opus | 任务复杂度澄清 |
-| 2 | `02-code` | `karpathy` 心法 always-on | sonnet | small surgical changes |
-| 3 | `03-test` | `superpowers TDD` + mattpocock 招式 | sonnet | conditional TDD red-green-refactor |
-| 4 | `04-deliver` | `ralph-loop` | haiku | 迭代验收循环省 token (关键点) |
+| 1 | `01-clarify` | `superpowers brainstorming` | opus | `capability: superpowers-brainstorming` + `gate: judgments.subtask-gate.brainstorming.fires` |
+| 2 | `02-code` | `karpathy` 心法 always-on | sonnet | `on[]` route to tdd-gate / grill-with-docs / zoom-out (D-09 + D-13) |
+| 3 | `03-test` | `superpowers TDD` | sonnet | `capability: tdd` + `on[]` route to diagnose on test_fail (D-13 + D-09) |
+| 4 | `04-deliver` | `ralph-loop` | haiku | `capability: ralph-loop` + `args: {completion_promise: COMPLETE}` + `gate/parallelism: judgments.parallelism-gate.*` + `fallback.max_iterations_exceeded: emit_warning_and_halt` (R20.10) |
+
+v2 schema fields per `src/workflow/schema/workflow.ts` (T2.4.W0.1 16th surface — harnessed.workflow.v2):
+- `capability: '{{ capabilities.<name>.cmd }}'` template interpolation (D-10 capability abstraction)
+- `gate: judgments.<file>.<gate>.fires` 4-level ref (pre-resolved by T2.3.W0.4 judgmentResolver)
+- `on: [{if, invoke|action}]` conditional clause (D-09 mattpocock route by condition)
+- `args: {completion_promise, max_iterations}` ralph-loop SDK params (R20.10 verbatim COMPLETE gate)
+- `parallelism: judgments.parallelism-gate.<route>.fires` (D-11 subagent / Agent Teams / main session route)
+- `fallback.max_iterations_exceeded: {action, message, exit_code}` (R20.10 acceptance c "explicit NOT silent")
 
 Per-phase models load from `workflows/execute-task/phases.yaml`; engine.runRouting
 spawns each phase as a sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+
-(`AgentDefinition` 5-字段 unpack — ADR 0011 § 4).
+(`AgentDefinition` 5-字段 unpack — ADR 0011 § 4). ralph-loop SDK wrapper at 04-deliver
+reuses sister Phase 2.2 v0.2.0 ship: `src/routing/lib/ralphLoop.ts` (54L) + `sdkSpawn.ts` (91L)
++ 4-layer dual-signal `isComplete` (NOT 重写 — per RESEARCH § 3.1).
 
 ## CLI invocation (the only enforced entry — B-28)
 
