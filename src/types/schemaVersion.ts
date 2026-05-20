@@ -56,6 +56,8 @@ export const SCHEMA_VERSIONS = {
   planFeature: 'harnessed.plan-feature.v1', // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface (sister Phase 3.2 W2 T2.2 b875e21 commit msg claim "11th surface" was LATENT STALE — never registered; T0.5 surgical fix per sister Phase 3.2 W2 T2.6 latent W1 c37ee29 Rule 1 pattern)
   aliases: 'harnessed.aliases.v1', // ← Phase 3.3 W1 T1.1 ADD 12th surface (D-01 RICH manifests/aliases.yaml upstream rename redirect + metadata)
   knownGood: 'harnessed.known-good.v1', // ← Phase 3.3 W1 T1.1 ADD 13th surface (D-03 YAML versions/<harnessed-ver>-known-good.yaml per-version lock)
+  capabilities: 'harnessed.capabilities.v1', // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 14th surface (R20.2 flat yaml capabilities manifest validate)
+  judgment: 'harnessed.judgment.v1', // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 15th surface (R20.4 multi-file judgments triggers/rules validate)
 } as const
 
 /** TypeBox literal union — useful as a refinement on a `schemaVersion` field
@@ -74,6 +76,8 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.planFeature), // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface
   Type.Literal(SCHEMA_VERSIONS.aliases), // ← Phase 3.3 W1 T1.1 ADD 12th surface
   Type.Literal(SCHEMA_VERSIONS.knownGood), // ← Phase 3.3 W1 T1.1 ADD 13th surface
+  Type.Literal(SCHEMA_VERSIONS.capabilities), // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 14th surface
+  Type.Literal(SCHEMA_VERSIONS.judgment), // ← Phase v2.0-2.3 W0 T2.3.W0.6 ADD 15th surface
 ])
 
 export type SchemaVersionLiteralType = Static<typeof SchemaVersionLiteral>

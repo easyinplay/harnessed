@@ -1,0 +1,17 @@
+# workflows/judgments/tdd-gate.yaml
+# TDD 判据 — 机器化 ~/.claude/CLAUDE.md 「Execute 阶段 TDD 强烈建议开启」节
+# Sister: superpowers:test-driven-development skill (alias mattpocock /tdd per D-13)
+# Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-13 (6 fires + 3 skips)
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  tdd-strongly-suggested:
+    description: |
+      superpowers:test-driven-development (red-green-refactor) — 子任务为
+      核心业务逻辑 / 算法 / 数据处理, 或回归 bug 风险高, 或需要高可靠性时
+      强烈建议开启 TDD。Alias /tdd (mattpocock-skills) 可替代。
+    fires_when: "subtask.is_core_business_logic == true or subtask.is_algorithm == true or subtask.is_data_processing == true or subtask.regression_risk == 'high' or subtask.reliability_required == true"
+    skips_when: "subtask.type in ['crud', 'ui_polish', 'docs_only']"
+    invokes:
+      - capability: tdd

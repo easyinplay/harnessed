@@ -1,0 +1,47 @@
+# workflows/judgments/parallelism-gate.yaml
+# Parallelism 判据 — 机器化 ~/.claude/CLAUDE.md 「子任务并行执行机制 (subagent vs Agent Teams 路由)」节
+# Sister: ~/.claude/rules/agent-teams.md (5 升级触发完整生命周期)
+# Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-11 (parallelism-gate) + R20.10 (ralph-loop 正交 wrapper)
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  subagent-default:
+    description: |
+      Default — subagent fan-out per CLAUDE.md 子任务并行机制
+      (Task / Agent 工具 spawn, focused 任务 research / verify / review,
+      多任务并行 fan-out, context 隔离, token 敏感)。
+    fires_when: "subtask.parallel_count <= 3 and subtask.communication_needed == false"
+    invokes:
+      - capability: superpowers-subagent-driven-development
+
+  main-session-fallback:
+    description: |
+      Downgrade — main session direct execution 主 session 直接做
+      (小任务 < 20 行 / 单命令查询, 不开 subagent 节省 token)。
+    fires_when: "subtask.lines < 20 or subtask.type == 'single_command_query'"
+
+  agent-teams-upgrade:
+    description: |
+      Upgrade — Claude Code Agent Teams 升级 per ~/.claude/rules/agent-teams.md
+      5 任一触发即可 (teammate SendMessage 互通 / subagent context overflow /
+      共享 task list 自协调 / 对立假设辩论 / 全栈三路协同)。
+      开 team 前 token 成本估算 team_cost < 2 × subagent_cost 才划算。
+    fires_when: "teammate_send_message_needed == true or subagent_context_overflow == true or shared_task_list == true or opposing_hypothesis_debate == true or fullstack_three_way == true"
+    invokes:
+      - capability: agent-teams-create
+    requires:
+      capabilities:
+        - agent-teams-create
+
+  ralph-loop-wrapper:
+    description: |
+      Orthogonal — ralph-loop 正交 wrapper, 套在 subagent / team / main session
+      外层保 completion-promise verbatim "COMPLETE"。任何执行单元均可套用,
+      并非互斥触发器 (per R20.10 + D-10)。
+    wraps:
+      - subagent-default
+      - agent-teams-upgrade
+      - main-session-fallback
+    invokes:
+      - capability: ralph-loop

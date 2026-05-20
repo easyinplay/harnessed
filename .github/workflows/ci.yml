@@ -132,6 +132,14 @@ jobs:
       # NOT in scope per R8.
       - name: Provenance gate (Phase 2.2 W4 hard fail — CD-6)
         run: node scripts/check-provenance.mjs
+      # Phase v2.0-2.3 W0 T2.3.W0.6 — workflow schema validate (R20.2 + R20.4).
+      # Walks workflows/capabilities.yaml + workflows/judgments/*.yaml against
+      # TypeBox schemas (src/workflow/schema/{capabilities,judgment}.ts SSOT;
+      # inline-port pattern sister check-provenance.mjs branchOnSchemaVersion).
+      # Hard fail (NOT warn-only round 1) — W0.1/W0.2 yaml 已 ship + schema 与
+      # 实装 yaml 1:1 对齐 (15 fixture vitest + 6 shipped yaml all pass).
+      - name: Workflow schema validate (v2.0 NEW — T2.3.W0.6)
+        run: node scripts/check-workflow-schema.mjs
       # Phase 2.3 Wave 0 T0.6 — Provenance Win pwsh sentinel (T1.3).
       # Phase 1.3.1 F37 路径分隔符踩过坑; Phase 2.2 T4.0 check-provenance.mjs
       # 跑过 4-step synthetic 但 glob .harnessed/{sessions,checkpoints,route-logs}/**

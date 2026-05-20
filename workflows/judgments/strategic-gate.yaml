@@ -1,0 +1,25 @@
+# workflows/judgments/strategic-gate.yaml
+# 战略层 (Strategy tier) 判据 — 机器化 ~/.claude/CLAUDE.md 「澄清/审查触发判据」节
+# Sister: gstack /office-hours + /plan-ceo-review governance gate
+# Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-04 + D-16 multi-file 分类
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  office-hours:
+    description: |
+      gstack /office-hours — 新项目 / 新 milestone / 新产品方向时激活,
+      用户原话出现"启动 / 想做个 X / 新功能"触发商业 scope 澄清。
+    fires_when: "phase.type in ['new_project', 'new_milestone', 'new_feature']"
+    skips_when: "phase.type in ['bug_fix', 'tech_debt', 'continuing_phase'] or phase.scope_locked_in_history == true"
+    invokes:
+      - capability: gstack-office-hours
+
+  plan-ceo-review:
+    description: |
+      gstack /plan-ceo-review — 新项目启动 / 主要发布前强制治理关卡,
+      CEO 视角商业 positioning 与 scope 评审。
+    fires_when: "phase.type == 'new_project' or phase.is_major_release == true"
+    skips_when: "phase.scope_locked_in_history == true or phase.type in ['bug_fix', 'tech_debt']"
+    invokes:
+      - capability: gstack-plan-ceo-review

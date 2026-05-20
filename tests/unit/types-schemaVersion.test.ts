@@ -10,9 +10,9 @@ import {
   SchemaVersionLiteral,
 } from '../../src/types/schemaVersion.js'
 
-describe('SCHEMA_VERSIONS — 13 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkflow + Phase 3.2 W1 T1.1 config + governance + Phase 3.3 W0 T0.5 planFeature backfill + Phase 3.3 W1 T1.1 aliases + knownGood)', () => {
-  it('has exactly 13 surface entries', () => {
-    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(13)
+describe('SCHEMA_VERSIONS — 15 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkflow + Phase 3.2 W1 T1.1 config + governance + Phase 3.3 W0 T0.5 planFeature backfill + Phase 3.3 W1 T1.1 aliases + knownGood + Phase v2.0-2.3 W0 T2.3.W0.6 capabilities + judgment)', () => {
+  it('has exactly 15 surface entries', () => {
+    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(15)
   })
 
   it('every value matches `harnessed.<surface>.v1` shape', () => {
@@ -26,7 +26,7 @@ describe('SCHEMA_VERSIONS — 13 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkf
     expect(new Set(values).size).toBe(values.length)
   })
 
-  it('covers the 13 named surfaces (7 B-32 + currentWorkflow Phase 3.1 + config/governance Phase 3.2 + plan-feature Phase 3.3 W0 T0.5 backfill + aliases/knownGood Phase 3.3 W1 T1.1)', () => {
+  it('covers the 15 named surfaces (7 B-32 + currentWorkflow Phase 3.1 + config/governance Phase 3.2 + plan-feature Phase 3.3 W0 T0.5 backfill + aliases/knownGood Phase 3.3 W1 T1.1 + capabilities/judgment Phase v2.0-2.3 W0 T2.3.W0.6)', () => {
     const expectedSurfaces = [
       'routing-snapshot',
       'handoff-doc',
@@ -41,6 +41,8 @@ describe('SCHEMA_VERSIONS — 13 surfaces (B-32 + Phase 3.1 W1 T1.1 currentWorkf
       'plan-feature', // ← Phase 3.3 W0 T0.5 11th surface BACKFILL (sister Phase 3.2 W2 T2.2 b875e21 stale claim fix)
       'aliases', // ← Phase 3.3 W1 T1.1 12th surface (D-01 RICH manifests/aliases.yaml)
       'known-good', // ← Phase 3.3 W1 T1.1 13th surface (D-03 YAML versions/<harnessed-ver>-known-good.yaml)
+      'capabilities', // ← Phase v2.0-2.3 W0 T2.3.W0.6 14th surface (R20.2 flat yaml capabilities manifest)
+      'judgment', // ← Phase v2.0-2.3 W0 T2.3.W0.6 15th surface (R20.4 judgments triggers/rules multi-file)
     ]
     const actualSurfaces = Object.values(SCHEMA_VERSIONS).map((v) => v.split('.')[1])
     for (const s of expectedSurfaces) {

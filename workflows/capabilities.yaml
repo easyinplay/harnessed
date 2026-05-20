@@ -1,0 +1,397 @@
+# <packageRoot>/workflows/capabilities.yaml — harnessed v2.0 capabilities baseline
+#
+# Maintainer-curated static manifest mapping abstract capability name → concrete
+# impl + slash-cmd. Consumed by workflows/*/workflow.yaml v2 via `{{ capabilities.<name>.cmd }}`
+# template interpolation (per R20.2 flat yaml map + R20.5 static manifest + ADR per upgrade).
+#
+# Pure bundled distribution (per R20.1 + D-01): end-user 不 override; maintainer 改此文件 +
+# ADR 0024+ + npm patch release (2-3 day cycle). Schema = harnessed.capabilities.v1 (sister
+# Phase 2.2 schemaVersion 7 surface convention).
+#
+# Entry buckets (5, total 35):
+#   1. mattpocock 12 高频招式 (D-09)        — grill-with-docs / zoom-out / diagnose / caveman /
+#                                              grill-me / tdd / to-prd / to-issues /
+#                                              improve-codebase-architecture / code-review /
+#                                              code-simplifier / investigate
+#   2. special-purpose tools 13+ (D-14)     — ui-ux-pro-max / frontend-design / playwright-cli /
+#                                              playwright-test / webapp-testing /
+#                                              chrome-devtools-mcp / ctx7 / tavily-mcp /
+#                                              exa-mcp / gsd-review / gsd-debug /
+#                                              gsd-progress / gsd-verify-work
+#   3. gstack 治理关卡 6 (D-12)              — gstack-office-hours / gstack-plan-ceo-review /
+#                                              gstack-review / gstack-qa / gstack-cso /
+#                                              gstack-design-review
+#   4. 核心 capability 4                    — tdd (D-13 alias) / planning-with-files (D-15 +
+#                                              Q-AUDIT-5a claude-code-plugin reframe) /
+#                                              ralph-loop (D-10) / superpowers-brainstorming
+#   5. Agent Teams 3 (D-11 + Q-AUDIT-5b)    — agent-teams-create / agent-teams-send-message /
+#                                              agent-teams-shutdown
+schema_version: harnessed.capabilities.v1
+
+capabilities:
+
+  # ============================================================================
+  # Bucket 1 — mattpocock 12 高频招式 (per D-09 + RESEARCH § 2.1)
+  # ============================================================================
+
+  grill-with-docs:
+    impl: mattpocock-skills
+    cmd: /grill-with-docs
+    since: v2.0
+    description: 规格澄清 with docs (fires when phase.spec_ambiguous == true)
+    fires_when:
+      - phase.spec_ambiguous == true
+
+  zoom-out:
+    impl: mattpocock-skills
+    cmd: /zoom-out
+    since: v2.0
+    description: 陌生模块导航 (fires when subtask.unfamiliar_module == true)
+    fires_when:
+      - subtask.unfamiliar_module == true
+
+  diagnose:
+    impl: mattpocock-skills
+    cmd: /diagnose
+    since: v2.0
+    description: 系统化排错 (fires when test_fail OR debug context)
+    fires_when:
+      - subtask.test_fail == true
+      - subtask.type == 'debug'
+
+  caveman:
+    impl: mattpocock-skills
+    cmd: /caveman
+    since: v2.0
+    description: token 紧张时 surgical edit (fires when token_tight == true)
+    fires_when:
+      - subtask.token_tight == true
+
+  grill-me:
+    impl: mattpocock-skills
+    cmd: /grill-me
+    since: v2.0
+    description: 反向追问 (fires when spec_ambiguous AND no_docs)
+    fires_when:
+      - phase.spec_ambiguous == true AND phase.no_docs == true
+
+  to-prd:
+    impl: mattpocock-skills
+    cmd: /to-prd
+    since: v2.0
+    description: translate idea → PRD (fires when phase.translate_idea_to_prd == true)
+    fires_when:
+      - phase.translate_idea_to_prd == true
+
+  to-issues:
+    impl: mattpocock-skills
+    cmd: /to-issues
+    since: v2.0
+    description: translate PRD → issues (fires when phase.translate_prd_to_issues == true)
+    fires_when:
+      - phase.translate_prd_to_issues == true
+
+  improve-codebase-architecture:
+    impl: mattpocock-skills
+    cmd: /improve-codebase-architecture
+    since: v2.0
+    description: architecture health audit (fires when phase.architecture_health_audit == true)
+    fires_when:
+      - phase.architecture_health_audit == true
+
+  code-review:
+    impl: mattpocock-skills
+    cmd: /code-review
+    since: v2.0
+    description: verify-work parallel fan-out (multi-agent high-confidence findings)
+    fires_when:
+      - phase.stage == 'verify'
+
+  code-simplifier:
+    impl: mattpocock-skills
+    cmd: /code-simplifier
+    since: v2.0
+    description: verify-work tail step (移除重复、多余逻辑)
+    fires_when:
+      - phase.stage == 'verify' AND phase.is_final_step == true
+
+  investigate:
+    impl: mattpocock-skills
+    cmd: /investigate
+    since: v2.0
+    description: gstack-routed bug investigation (fires when bug_root_cause_unknown)
+    fires_when:
+      - subtask.bug_root_cause_unknown == true
+
+  # Note: 剩 11 mattpocock 招式 (e.g., /retro, /ship, /office-hours-alias 等) 推 v2.x patch
+  # release per D-09 (manifest-only since: v2.x — 实际未 wire 至 workflow.yaml 的 entry 不在
+  # v2.0 baseline 中)。
+
+  # ============================================================================
+  # Bucket 2 — special-purpose tools 13 (per D-14 + RESEARCH § 2.2)
+  # ============================================================================
+
+  ui-ux-pro-max:
+    impl: gstack
+    cmd: /ui-ux-pro-max
+    since: v2.0
+    description: UI/UX 默认主方案 数据驱动 (per ~/.claude/rules/web-design.md L5)
+    fires_when:
+      - phase.has_ui_changes == true
+      - subtask.type == 'ui_polish'
+
+  frontend-design:
+    impl: gstack
+    cmd: /frontend-design
+    since: v2.0
+    description: UI 创意/装饰补充 (per ~/.claude/rules/web-design.md L11)
+    fires_when:
+      - phase.has_ui_changes == true AND phase.requires_creative_polish == true
+
+  playwright-cli:
+    impl: npm-cli
+    cmd: playwright
+    since: v2.0
+    description: AI 实时操作浏览器 一行 Bash (per ~/.claude/rules/web-testing.md L8 手)
+    fires_when:
+      - subtask.type == 'browser_probe'
+
+  playwright-test:
+    impl: npm-cli
+    cmd: "@playwright/test"
+    since: v2.0
+    description: E2E test framework TypeScript (per ~/.claude/rules/web-testing.md L8 脑)
+    fires_when:
+      - subtask.type == 'e2e_test' AND subtask.language == 'typescript'
+
+  webapp-testing:
+    impl: gstack
+    cmd: /webapp-testing
+    since: v2.0
+    description: Python 后端联动 E2E (per ~/.claude/rules/web-testing.md L11 筋骨)
+    fires_when:
+      - subtask.type == 'e2e_test' AND subtask.language == 'python'
+
+  chrome-devtools-mcp:
+    impl: mcp
+    cmd: chrome-devtools
+    since: v2.0
+    description: 性能/a11y/内存泄漏诊断 (per ~/.claude/rules/web-testing.md L45 非功能性)
+    fires_when:
+      - subtask.type in ['perf_diagnose', 'a11y_audit', 'memory_leak']
+
+  ctx7:
+    impl: cli
+    cmd: ctx7
+    since: v2.0
+    description: 库 API/框架/SDK 文档抓取 (per ~/.claude/rules/context7.md)
+    fires_when:
+      - subtask.needs_library_docs == true
+
+  tavily-mcp:
+    impl: mcp
+    cmd: tavily_search
+    since: v2.0
+    description: Web 搜索默认 (关键词/库 API/时效) per ~/.claude/rules/web-search.md L17
+    fires_when:
+      - subtask.needs_web_search == true
+
+  exa-mcp:
+    impl: mcp
+    cmd: web_fetch_exa
+    since: v2.0
+    description: 描述式/学术 Web 搜索 per ~/.claude/rules/web-search.md L24
+    fires_when:
+      - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
+
+  gsd-review:
+    impl: gsd
+    cmd: /gsd-review
+    since: v2.0
+    description: GSD cross-AI peer review
+    fires_when:
+      - phase.stage == 'verify' AND phase.requires_peer_review == true
+
+  gsd-debug:
+    impl: gsd
+    cmd: /gsd-debug
+    since: v2.0
+    description: GSD systematic debugging (overlap with mattpocock /diagnose — alias)
+    aliases:
+      - { impl: mattpocock-skills, cmd: /diagnose }
+    fires_when:
+      - subtask.type == 'debug'
+
+  gsd-progress:
+    impl: gsd
+    cmd: /gsd-progress
+    since: v2.0
+    description: GSD 状态同步 (verify-work serial after gsd-verify-work)
+    fires_when:
+      - phase.stage == 'verify'
+
+  gsd-verify-work:
+    impl: gsd
+    cmd: /gsd-verify-work
+    since: v2.0
+    description: verify-work entry (Stage ④ Verify 起点)
+    fires_when:
+      - phase.stage == 'verify'
+
+  # ============================================================================
+  # Bucket 3 — gstack 治理关卡 6 (per D-12 + CLAUDE.md "gstack 治理关卡")
+  # ============================================================================
+
+  gstack-office-hours:
+    impl: gstack
+    cmd: /office-hours
+    since: v2.0
+    description: 战略层产品理念/商业 scope 澄清 (sister CLAUDE.md "新功能启动前强制")
+    fires_when:
+      - phase.type in ['new_project', 'new_milestone', 'new_feature']
+
+  gstack-plan-ceo-review:
+    impl: gstack
+    cmd: /plan-ceo-review
+    since: v2.0
+    description: 战略评估 CEO 视角 (新功能启动前强制 sister CLAUDE.md)
+    fires_when:
+      - phase.type == 'new_feature' AND phase.has_business_decisions == true
+
+  gstack-review:
+    impl: gstack
+    cmd: /review
+    since: v2.0
+    description: Paranoid Staff Engineer 视角 (关键模块 PR 前强制 sister CLAUDE.md)
+    fires_when:
+      - phase.is_critical_module == true
+
+  gstack-qa:
+    impl: gstack
+    cmd: /qa
+    since: v2.0
+    description: 端到端 QA 验收 (可选 conditional)
+    fires_when:
+      - phase.stage == 'verify' AND phase.has_ui_changes == true
+
+  gstack-cso:
+    impl: gstack
+    cmd: /cso
+    since: v2.0
+    description: 安全审查 OWASP/auth/secrets (可选 conditional)
+    fires_when:
+      - phase.stage == 'verify' AND phase.has_auth_or_secrets == true
+
+  gstack-design-review:
+    impl: gstack
+    cmd: /design-review
+    since: v2.0
+    description: 设计系统一致性审查 + AI 审美问题识别 (可选 conditional)
+    fires_when:
+      - phase.stage == 'verify' AND phase.has_design_changes == true
+
+  # ============================================================================
+  # Bucket 4 — 核心 capability 4 (per D-10 + D-13 + D-15 Q-AUDIT-5a + RESEARCH § 2.3)
+  # ============================================================================
+
+  # D-13: tdd entry 2 impl 候选 alias (superpowers 主 + mattpocock /tdd 备)
+  tdd:
+    impl: superpowers
+    cmd: "superpowers:test-driven-development"
+    since: v2.0
+    description: TDD red-green-refactor (gated by judgments/tdd-gate.yaml fires_when)
+    aliases:
+      - { impl: mattpocock-skills, cmd: /tdd }
+    fires_when:
+      - subtask.is_core_business_logic == true
+      - subtask.is_algorithm == true
+      - subtask.is_data_processing == true
+      - subtask.regression_risk == 'high'
+      - subtask.reliability_required == true
+
+  # D-15 + Q-AUDIT-5a: planning-with-files impl = claude-code-plugin (NOT npm-sdk; verified
+  # 2026-05-20 npm registry 404 reframe terminology drift). Real Claude Code plugin slash
+  # cmd `/plan` invocation → plugin 真生成 3 file 持久化, NOT fs.writeFile self-impl。
+  planning-with-files:
+    impl: claude-code-plugin
+    cmd: /plan
+    since: v2.0
+    description: Manus-style persistent markdown planning (Claude Code plugin slash cmd)
+    requires:
+      plugin: planning-with-files >=2.2.0
+    plugin_path: ~/.claude/plugins/cache/planning-with-files/planning-with-files/2.34.0
+    outputs:
+      - task_plan.md
+      - progress.md
+      - findings.md
+    fires_when:
+      - phase.stage == 'plan' AND phase.requires_persisted_plan == true
+
+  # D-10: ralph-loop 真接 SDK wrapper (NOT mock reference; sister Phase 2.2 v0.2.0 ship)
+  ralph-loop:
+    impl: bundled-skill
+    cmd: ralph-loop
+    since: v2.0
+    description: Sub-task completion gate (verbatim COMPLETE; max-iterations fallback)
+    sdk_ref: src/routing/lib/ralphLoop.ts
+    fires_when:
+      - subtask.completion_required == true
+
+  superpowers-brainstorming:
+    impl: superpowers
+    cmd: "superpowers:brainstorming"
+    since: v2.0
+    description: 子任务级澄清 multi-approach 探索 (gated by judgments/subtask-gate.yaml)
+    fires_when:
+      - subtask.approaches >= 2
+      - subtask.core_algorithm == true
+      - subtask.has_api_contract == true
+      - subtask.error_cost == 'high'
+
+  # ============================================================================
+  # Bucket 5 — Agent Teams 3 升级触发 (per D-11 + Q-AUDIT-5b schema fix +
+  #            ~/.claude/rules/agent-teams.md L7 prereq)
+  # ============================================================================
+  #
+  # Q-AUDIT-5b 2026-05-20 fix: settings_env_var root-level `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
+  # (NOT nested experimental.* — Wave A 本地 settings.json 实证修正 prior schema 错误)。
+  # Per Q-AUDIT-2 D-11: harnessed doctor + setup 检查 env var present + cc_version ≥2.1.133。
+  #
+  # 5 fires_when OR-chain (multi-select per ~/.claude/rules/agent-teams.md 升级触发):
+  #   1. teammate_send_message_needed — teammate 间需 SendMessage 互通 (NOT fire-and-forget)
+  #   2. subagent_context_overflow    — 某 subagent 撞 context 上限需分担
+  #   3. shared_task_list             — 多 teammate 共享 task list 自协调
+  #   4. opposing_hypothesis_debate   — 对立假设辩论 (两 teammate 各守一假说 + lead 裁判)
+  #   5. fullstack_three_way          — 全栈三路协同 (前端 + 后端 + 测试同步 + API contract)
+  agent-teams-create:
+    impl: claude-platform
+    cmd: TeamCreate
+    since: v2.0
+    description: Agent Teams team 创建 (CC 2.1.133+ experimental; per agent-teams.md L7)
+    requires:
+      settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
+      cc_version: ">=2.1.133"
+    fires_when:
+      - teammate_send_message_needed == true
+      - subagent_context_overflow == true
+      - shared_task_list == true
+      - opposing_hypothesis_debate == true
+      - fullstack_three_way == true
+
+  agent-teams-send-message:
+    impl: claude-platform
+    cmd: SendMessage
+    since: v2.0
+    description: Agent Teams teammate 间通信 (round-trip 已验证 2026-05-19)
+    requires:
+      settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
+      cc_version: ">=2.1.133"
+
+  agent-teams-shutdown:
+    impl: claude-platform
+    cmd: TeamDelete
+    since: v2.0
+    description: Agent Teams cleanup (shutdown_request 之后 TeamDelete; sister agent-teams.md 防呆清单)
+    requires:
+      settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
+      cc_version: ">=2.1.133"
