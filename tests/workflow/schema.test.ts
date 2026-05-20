@@ -219,6 +219,42 @@ describe('Capabilities v3 discriminated union — T3.3.W0.7', () => {
   })
 })
 
+// Phase v3.0-3.3 W0 T3.3.W0.8 — phaseFactContext extend 13 NEW field MIN scope.
+describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
+  test('PF1: full valid v3 context passes (47 field — 20 phase + 18 subtask + 1 user + 8 root-flat)', () => {
+    const ok = makeValidPhaseFactContext()
+    expect(Value.Check(PhaseFactContext, ok)).toBe(true)
+  })
+
+  test('PF2: subtask.test_type invalid literal rejected (4-literal Union strict)', () => {
+    const bad = makeValidPhaseFactContext()
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
+    ;(bad.subtask as any).test_type = 'invalid-test-type'
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+
+  test('PF3: subtask.search_type invalid literal rejected (6-literal Union strict)', () => {
+    const bad = makeValidPhaseFactContext()
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
+    ;(bad.subtask as any).search_type = 'invalid-search'
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+
+  test('PF4: phase.is_complex_architecture missing rejected (required boolean per D-01)', () => {
+    const bad = makeValidPhaseFactContext()
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
+    delete (bad.phase as any).is_complex_architecture
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+
+  test('PF5: root-flat is_critical_release missing rejected (required boolean per stage-routing)', () => {
+    const bad = makeValidPhaseFactContext()
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
+    delete (bad as any).is_critical_release
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+})
+
 // Phase v2.0-2.4 W0 T2.4.W0.1 — 5 NEW workflow.v2 fixture (R20.1 + R20.2 + R20.9).
 // 4 valid (plan-feature v2 / execute-task v2 / research v2 / verify-work v2)
 // + 1 invalid (additionalProperties unknown key — sister Phase 2.2 STRIDE T-2.2-02).
@@ -380,6 +416,7 @@ describe('workflow.v2 — 5 fixture (T2.4.W0.1)', () => {
 })
 
 // Helper — builds a valid PhaseFactContext for mutation in negative/edge tests.
+// Phase v3.0-3.3 W0 T3.3.W0.8 — 13 NEW field MIN scope (6 phase + 5 subtask + 2 root).
 function makeValidPhaseFactContext() {
   return {
     phase: {
@@ -397,6 +434,13 @@ function makeValidPhaseFactContext() {
       unfamiliar_module: false,
       has_cross_phase_data_flow: false,
       scope_locked_in_history: false,
+      // T3.3.W0.8 6 NEW core boolean
+      is_complex_architecture: false,
+      requires_creative_polish: false,
+      requires_persisted_plan: false,
+      requires_peer_review: false,
+      is_final_step: false,
+      has_business_decisions: false,
     },
     subtask: {
       type: 'crud' as const,
@@ -412,6 +456,12 @@ function makeValidPhaseFactContext() {
       error_cost: 'low' as const,
       parallel_count: 1,
       communication_needed: false,
+      // T3.3.W0.8 5 NEW (3 enum + 2 boolean)
+      test_type: 'ci-commit' as const,
+      search_type: 'keyword' as const,
+      needs_lib_docs: false,
+      needs_web_search: false,
+      needs_google_workspace: false,
     },
     user: { explicit_signal: [] },
     teammate_send_message_needed: false,
@@ -420,5 +470,8 @@ function makeValidPhaseFactContext() {
     opposing_hypothesis_debate: false,
     fullstack_three_way: false,
     test_fail: false,
+    // T3.3.W0.8 2 NEW root-flat boolean
+    needs_web_search: false,
+    is_critical_release: false,
   }
 }

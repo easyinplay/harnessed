@@ -1,18 +1,14 @@
-// src/workflow/schema/phaseFactContext.ts — Phase v2.0-2.3 W0 T2.3.W0.6 (T2.3.W1.3 union).
-// TypeBox typed shape for PhaseFactContext (RESEARCH § 1.3 verbatim).
+// src/workflow/schema/phaseFactContext.ts — Phase v3.0-3.3 W0 T3.3.W0.8 (R30.9 13 NEW field MIN scope).
+// TypeBox typed shape for PhaseFactContext.
 // Sister: src/workflow/exprBuilder.ts evalGate(expr, ctx: PhaseFactContext).
 //
-// Field source (合并 RESEARCH § 1.3 base + W0.2 judgments/*.yaml 实际引用):
-//   phase: 11 boolean + 1 enum (type) + 2 number (open_decisions, scope_days)
-//          + 2 extra boolean from strategic-gate.yaml / phase-gate.yaml
-//            (has_cross_phase_data_flow, scope_locked_in_history)
-//   subtask: 7 boolean + 1 enum (type) + 1 enum (regression_risk) + 2 number
-//            + 1 enum (error_cost) + 1 boolean (communication_needed)
-//            + 1 boolean (has_api_contract) + 1 number (parallel_count)
-//   user: explicit_signal string[]
-//   teammate_send_message_needed / subagent_context_overflow / shared_task_list /
-//     opposing_hypothesis_debate / fullstack_three_way / test_fail :
-//     6 root-level boolean (per parallelism-gate.yaml + tdd-gate.yaml flat refs)
+// v2 SHIPPED 109L → v3 ~135L (Appendix C "core MIN" 13 NEW field per K3 mitigation,
+// defer 35 gstack optional fires_when 到 v3.x patch).
+//
+// Field source (v3 additive):
+//   phase: v2 14 + 6 NEW core (D-01 + web-design + D-06 + sister v2 backfill 3) = 20
+//   subtask: v2 13 + 5 NEW (3 enum + 2 boolean) = 18
+//   root flat: v2 6 + 2 NEW boolean = 8
 
 import { type Static, Type } from '@sinclair/typebox'
 
@@ -43,6 +39,24 @@ const RegressionRisk = Type.Union([
 
 const ErrorCost = Type.Union([Type.Literal('low'), Type.Literal('medium'), Type.Literal('high')])
 
+// NEW v3 subtask enum — test_type (4 literal per Appendix C subtask shape)
+const TestType = Type.Union([
+  Type.Literal('ci-commit'),
+  Type.Literal('probe'),
+  Type.Literal('python-backend'),
+  Type.Literal('perf-diagnostic'),
+])
+
+// NEW v3 subtask enum — search_type (6 literal per Appendix C subtask shape)
+const SearchType = Type.Union([
+  Type.Literal('keyword'),
+  Type.Literal('descriptive'),
+  Type.Literal('academic'),
+  Type.Literal('lib-docs'),
+  Type.Literal('github-url'),
+  Type.Literal('single-url'),
+])
+
 const PhaseShape = Type.Object(
   {
     type: PhaseType,
@@ -59,6 +73,13 @@ const PhaseShape = Type.Object(
     unfamiliar_module: Type.Boolean(),
     has_cross_phase_data_flow: Type.Boolean(),
     scope_locked_in_history: Type.Boolean(),
+    // Phase v3.0-3.3 W0 T3.3.W0.8 — 6 NEW core boolean per Appendix C MIN scope:
+    is_complex_architecture: Type.Boolean(), // D-01 master /plan → /plan-architecture
+    requires_creative_polish: Type.Boolean(), // web-design-routing frontend-design fires
+    requires_persisted_plan: Type.Boolean(), // D-06 planning-with-files cross-stage
+    requires_peer_review: Type.Boolean(), // sister gsd-review v2 fires_when backfill
+    is_final_step: Type.Boolean(), // sister code-simplifier v2 fires_when backfill
+    has_business_decisions: Type.Boolean(), // sister gstack-plan-ceo-review v2 backfill
   },
   { additionalProperties: false },
 )
@@ -78,6 +99,12 @@ const SubtaskShape = Type.Object(
     error_cost: ErrorCost,
     parallel_count: Type.Number(),
     communication_needed: Type.Boolean(),
+    // Phase v3.0-3.3 W0 T3.3.W0.8 — 5 NEW per Appendix C MIN scope:
+    test_type: TestType, // 4-literal enum (web-testing-routing fires_when)
+    search_type: SearchType, // 6-literal enum (web-search-routing fires_when)
+    needs_lib_docs: Type.Boolean(), // ctx7 / context7 MCP routing
+    needs_web_search: Type.Boolean(), // tavily/exa MCP routing (subtask-nested + root-flat duplicate per Appendix C)
+    needs_google_workspace: Type.Boolean(), // google-workspace gws CLI routing
   },
   { additionalProperties: false },
 )
@@ -102,6 +129,9 @@ export const PhaseFactContext = Type.Object(
     fullstack_three_way: Type.Boolean(),
     // 1 TDD flag (tdd-gate.yaml subtask.test_fail flat ref via diagnose capability).
     test_fail: Type.Boolean(),
+    // Phase v3.0-3.3 W0 T3.3.W0.8 — 2 NEW root-flat boolean per Appendix C MIN scope:
+    needs_web_search: Type.Boolean(), // web-search-routing.yaml top-level ref convenience
+    is_critical_release: Type.Boolean(), // stage-routing.yaml verify-multispec-critical-release
   },
   { additionalProperties: false },
 )
