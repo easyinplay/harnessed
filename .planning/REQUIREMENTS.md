@@ -360,56 +360,137 @@
 
 ---
 
-## R20. v2.0 Architecture Refactor (workflow runtime-load + capability abstraction + gate yaml-eval)
+## R20. v2.0 Architecture Refactor (Pure bundled SoT + capability abstraction + gate yaml-eval + 三层栈判据机器化)
 
 > **Trigger**: v1.0.0~v1.0.4 ship 暴露 fundamental flaw — workflow.yaml 是 build-artifact NOT runtime config; 上游 / Claude Code 平台 / 优秀新组件升级时每次调整需 1-2 day full npm release cycle (user catch 2026-05-22 post v1.0.4 ship)
 >
-> **Decision (user authorized 2026-05-22)**: 跳 v1.0.5 incremental → 直接 v2.0 大重构;post-refactor workflow 调整 time = 5 min user edit yaml + immediate effect (NOT npm release cycle)
+> **Decision (user authorized 2026-05-22)**: 跳 v1.0.5 incremental → 直接 v2.0 大重构
+>
+> **Phase v2.0-2.1 discuss-phase REFRAME (2026-05-20)**: 项目最终目的 = **maintainer 的三层栈方法论 ship 给其他 user** via bundled defaults (NOT parse 其他 user 的 CLAUDE.md)。其他 user 装齐 harnessed → 立即享用 maintainer 三层栈流程, 无需自己写 CLAUDE.md prose。**Pure bundled 模式 LOCKED** — end-user share-only, NO user override yaml; maintainer schema iteration 走 ADR + npm patch release。Post-refactor 上游升级 cadence = ADR 0024+ + 2-3 天 patch release (NOT 1-2 周 major release)。
+>
+> **Phase v2.0-2.1 LOCKED decisions (9 + 7 = 16 D-decision)**: D-01 Pure bundled / D-02 flat yaml capabilities map / D-03 expr-eval npm dep / D-04 multi-file judgments/ shared SoT (rule-style 分类) / D-05 No migrate CLI release notes only / D-06 R20.6 DROP / D-07 static manifest + ADR per upstream upgrade / D-08 ship 2 NEW workflows research + verify-work / D-09 mattpocock capability route by condition / **Q-AUDIT (2026-05-20 audit reframe)**: D-10 ralph-loop completion-promise 真接 / D-11 parallelism-gate + Agent Teams env check / D-12 verify-work scope full 4-stage 重定 / D-13 tdd-gate / D-14 special-purpose tools routing 扩充 / D-15 planning-with-files 真接 / D-16 judgments/ 多 file 分类 + fallback 3 铁律. (详 `.planning/phase-v2.0-2.1/2.1-CONTEXT.md` + `2.1-DISCUSSION-LOG.md`)
+>
+> **Audit transparency 2026-05-20**: Phase v2.0-2.1 discuss-phase 启动前未跑战略层 gstack `/office-hours` + `/plan-ceo-review` (sister `feedback_three-layer-stack-strict.md` no short-circuit)。跳过理由: scope 已在 commit `5edc5a7` v2.0-milestone-bootstrap 锁定 (sister CLAUDE.md 「澄清/审查触发判据」节 ❌ 跳过条件命中 "scope 已在历史 .planning/ 或 design doc 定义")。Fallback 铁律: 拿不准 → 跳过 + 透明声明。User 仲裁 Q-AUDIT-1 接受 (Option A)。
 
-### R20.1 workflow.yaml runtime-load
-- **描述**：`~/.harnessed/workflows/<name>/workflow.yaml` user-editable;harnessed runtime reload on invocation;NOT bundled into binary
+### R20.1 workflows bundled SoT + Pure bundled distribution
+- **描述**：`<packageRoot>/workflows/<name>/workflow.yaml` 是 npm package 内 SoT, harnessed CLI 直接读取 packageRoot (NOT user-dir override). end-user share-only — maintainer ship 三层栈方法论给其他 user, user 不 customize yaml. Upstream / Claude Code / 新组件升级时 maintainer 走 ADR + npm patch release (2-3 day cycle) — NOT 1-2 week major cycle.
 - **版本**：v2.0
-- **验收**：用户改 ~/.harnessed/workflows/plan-feature/workflow.yaml 后 next /plan-feature slash 立即生效 NO build / NO publish
+- **验收**：(a) end-user `npm install -g harnessed@2.0` + `harnessed setup --apply` 即得 maintainer 三层栈完整流程 (b) `harnessed --help` / `--version` 不暴露 user-dir override flag (c) maintainer 改 packageRoot workflows/*.yaml + ADR 0024+ + patch release ≤ 3 day cycle. (Q1 RESET D-01)
 
-### R20.2 capability abstraction
-- **描述**：workflow.yaml uses abstract `capability: governance-gate` NOT 字面 `gstack /office-hours`;`~/.harnessed/capabilities.yaml` maps abstract → concrete (user 可改 swap upstream)
+### R20.2 capability abstraction (flat yaml map)
+- **描述**：workflow.yaml uses abstract `capability: governance-gate` NOT 字面 `gstack /office-hours`. `<packageRoot>/workflows/capabilities.yaml` 是扁平 yaml map, schema = `capability_name → {impl: <component>, cmd: <slash-cmd>, since: <semver>}`. 上游升级时 maintainer 改 capabilities.yaml entry + ADR 0024+ + patch release。end-user 不可改, 由 Pure bundled distribution 保证一致性。
 - **版本**：v2.0
-- **验收**：用户改 capabilities.yaml swap `governance-gate: <other-tool> /<other-cmd>` 后 workflow 自动消费新 upstream NO yaml edit
+- **验收**：(a) capabilities.yaml schema 通过 TypeBox validate (b) workflow.yaml 引用 `{{ capabilities.<name>.cmd }}` 模板插值 runtime 正确解析 (c) 上游 cmd rename 场景 — maintainer 改 capabilities.yaml entry 一处后 全 workflows 自动消费新 cmd NO workflow.yaml edit. (Q2 RESET D-02)
 
-### R20.3 gate yaml-eval grammar
-- **描述**：phase 可声明 conditional `gate: phase.type == 'new_feature' AND open_decisions >= 2`;lightweight expr-eval lib (jsep / expr-eval / 自写 mini-parser)
+### R20.3 gate yaml-eval grammar (expr-eval npm dep)
+- **描述**：phase 可声明 conditional `gate: phase.type == 'new_feature' AND open_decisions >= 2`. 使用 `expr-eval` npm package (~5KB MIT, 4M weekly downloads) — 不自写 mini-parser (YAGNI + 安全审计成本); 不用 jsep (无 eval, 需自己实现求值); expr-eval 解析 + 求值 一站式。
 - **版本**：v2.0
-- **验收**：simple bug fix scenario phase.type='bug_fix' → gstack 战略层 phase 自动 skip + 透明声明 (sister CLAUDE.md "拿不准 → 跳过" 铁律)
+- **验收**：(a) expr-eval npm dep 安装 + bundle size ≤ 5KB delta (b) workflow gate 表达式 phase fact context 注入 + 求值正确 (c) simple bug fix scenario phase.type='bug_fix' → gstack 战略层 phase 自动 skip + 透明声明 "gate failed: phase.type='bug_fix'" (sister CLAUDE.md "拿不准 → 跳过" 铁律). (Q3 RESET D-03)
 
-### R20.4 CLAUDE.md 判据 yaml registry
-- **描述**：harnessed startup parse user CLAUDE.md "三层判据" 节 → emit `~/.harnessed/rules/judgment.yaml`;workflow gate eval consume judgment.yaml
+### R20.4 judgments/ — maintainer 三层栈判据机器化 (bundled SoT, rule-style multi-file 分类)
+- **描述**：`<packageRoot>/workflows/judgments/` 目录 (rule-style 多 file 分类, sister `~/.claude/rules/*.md` 多 file pattern) = maintainer 三层栈触发判据 single SoT。**Audit reframe 2026-05-20** (Q-AUDIT-3 annotation "judgment 单个 → 类似 rule 分类"): 拆为多 file
+  - `judgments/strategic-gate.yaml` (gstack /office-hours + /plan-ceo-review 触发)
+  - `judgments/phase-gate.yaml` (GSD /gsd-discuss-phase 触发)
+  - `judgments/subtask-gate.yaml` (superpowers brainstorming 触发)
+  - `judgments/parallelism-gate.yaml` (subagent / Agent Teams / 主 session 路由, per R20.11)
+  - `judgments/tdd-gate.yaml` (TDD red-green-refactor 强制条件, per R20.13)
+  - `judgments/fallback.yaml` (3 铁律: 拿不准跳过+透明声明 / 用户明示覆盖 / 链式互不前置, per R20.16)
+  - workflow.yaml gate 字段 reference triggers via `gate: judgments.strategic-gate.fires` 等。**NOT** parse user CLAUDE.md。
 - **版本**：v2.0
-- **验收**：用户改 CLAUDE.md 三层判据 → harnessed setup --reload 后 workflow gate eval 反映新判据
+- **验收**：(a) judgments/ 目录 6+ yaml file, 各 file schema = `triggers.<name>: {fires_when: <expr>, skips_when: <expr>[, fallback_action]}` (b) 6 gate file 覆盖 strategic / phase / subtask / parallelism / tdd / fallback 维度 (c) workflow.yaml gate field reference `judgments.<file>.<name>.fires` runtime 解析正确 (d) end-user `/plan-feature` invoke 自动应用三层栈判据 NO user-side config. (Q4 RESET D-04 + Q-AUDIT-3 annotation D-16)
 
-### R20.5 upstream capability dynamic discovery
-- **描述**：`harnessed doctor` invokes `claude --help` / `gstack /commands` / `gsd --version` 探测上游 commands;emit `~/.harnessed/capabilities.discovered.yaml`
+### R20.5 upstream capability discovery (static manifest + ADR per upgrade)
+- **描述**：capabilities.yaml 是 maintainer-curated static yaml — 每次上游 (gstack / GSD / superpowers / karpathy / mattpocock / Claude Code) 升级走 ADR 0025+ + 调整 capability entry + npm patch release (2-3 day cycle). NOT dynamic introspection (脱位风险 + ADR audit 失效 + A7 conservation gate 失效)。预计上游升级 cadence ~ 1-2/周, patch release 成本可接受。
 - **版本**：v2.0
-- **验收**：上游升级 (gstack 改命令名) 后 doctor 自动 detect + warn user capabilities.yaml 需更新
+- **验收**：(a) capabilities.yaml 12+ entries 覆盖 v2.0 known capabilities (b) ADR 0024+ template 含 "capability entry add/change" 字段 (c) ci.yml A7 step 守恒 capabilities.yaml schema invariant (d) upstream cmd rename 案例 走 ADR + patch release 2-3 day SLA. (Q6 D-07)
 
-### R20.6 manifest user-dir hot-reload
-- **描述**：`~/.harnessed/manifests/` user-editable;`harnessed install <name>` 优先 user-dir → fallback npm package canonical;支持 add new manifest 不需 PR
-- **版本**：v2.0
-- **验收**：用户写 ~/.harnessed/manifests/tools/my-custom.yaml → harnessed install my-custom 可用
+### R20.6 ~~manifest user-dir hot-reload~~ DROPPED (Pure bundled supersede)
+- **DROPPED 2026-05-20**：Pure bundled (D-01) 模式 = end-user 不 override yaml, `~/.harnessed/` user-dir 概念不存在, R20.6 hot-reload 没有 SoT 可监听。原 R20.6 "manifest user-dir hot-reload"  从 v2.0 scope 移除. R20.x 总数 9 → 8. (Q5b D-06)
 
-### R20.7 NEW workflows ship
-- **描述**：`workflows/research/` (Tavily/Exa/ctx7 多源调研 v1.0 ROADMAP 承诺) + `workflows/verify-work/` (Stage ④ verify composition: gsd-verify-work + code-review + gstack/review + code-simplifier)
+### R20.7 NEW workflows ship — research + verify-work
+- **描述**：v2.0 + 2 NEW workflows 完整覆盖 CLAUDE.md 4-stage Discuss→Plan→Execute→Verify:
+  - `workflows/research/` — Tavily/Exa/ctx7 多源调研 + GSD discuss synth (Stage ① Discuss 独立 call)
+  - `workflows/verify-work/` — Stage ④ Verify composition: gsd-verify-work + code-review + gstack /review + code-simplifier 串接
+  - 加上原有 `plan-feature` (Stage ①②) + `execute-task` (Stage ③) = 4 workflows 完整三层栈机器化 ship
 - **版本**：v2.0
-- **验收**：harnessed setup 后 `/research` + `/verify-work` slash commands 可用
+- **验收**：(a) `/research` + `/verify-work` slash commands setup 后可用 (b) research workflow.yaml 含 multi-source fan-out + dedup 阶段 (c) verify-work workflow.yaml 含 4 子阶段 serial + 上游 audit trail (d) 4 workflows 端到端 dogfood test pass. (Q7 D-08)
 
-### R20.8 mattpocock 招式 in-workflow routing
-- **描述**：workflow.yaml phase 可声明 `mattpocock_skills: ['/zoom-out', '/diagnose']` → 运行时 trigger;sister Phase 1.5 routing engine 100% accuracy + 23 routing rules 真正消费
+### R20.8 mattpocock 招式 in-workflow capability routing
+- **描述**：workflow.yaml phase 可声明 conditional invoke mattpocock skill (`/grill-with-docs` / `/diagnose` / `/zoom-out` / `/caveman` / etc 23 招式). Pattern: phase `on: - if: <expr-eval> invoke: '{{ capabilities.<mattpocock-cap>.cmd }}'`. capabilities.yaml 为 23 招式预定 alias entry. 机器化现有 CLAUDE.md 句型判据 (spec_ambiguous → /grill-with-docs / unfamiliar_module → /zoom-out / test_fail → /diagnose / token_tight → /caveman 等)。
 - **版本**：v2.0
-- **验收**：execute-task phase 03 conditional trigger `/diagnose` if error encountered
+- **验收**：(a) capabilities.yaml 含 mattpocock 12+ 关键招式 entry (子集 = 高频使用项, 非全 23) (b) workflow.yaml `on:` 声明语法 expr-eval 兼容 (c) plan-feature phase 03-gsd-discuss + execute-task phase 02-code 各 wire 至少 1 个条件 mattpocock invoke (d) 端到端 dogfood 触发 ≥1 mattpocock skill 自动 invoke. (Q8 D-09)
 
-### R20.9 BREAKING CHANGES migration
-- **描述**：workflow.yaml schema v1 → v2;old v1.x yaml 可 work via compat shim 1 minor cycle (v2.0 + v2.1) then deprecate;`harnessed migrate v1→v2` cli helper
+### R20.9 BREAKING CHANGES migration scope — release notes only, no migrate CLI
+- **描述**：Pure bundled (D-01) 模式 下 end-user v1.x 没有 customize 任何 workflow.yaml — 所以 v2.0 升级对 end-user 实际影响 = 仅 `npm install -g harnessed@2.0 && harnessed setup --apply` 重新装 bundled defaults. NO `harnessed migrate v1→v2` CLI helper (无 user yaml 可 migrate, YAGNI). NO compat shim (Pure bundled = 单一 SoT, 无双版本共存场景). Maintainer 内部 schema v1→v2 重构走正常 ADR + commits。
 - **版本**：v2.0
-- **验收**：v1.x 用户 npm install -g harnessed@2.0 后 旧 workflow.yaml 仍 work (compat shim) + `harnessed migrate` 1-step upgrade
+- **验收**：(a) v2.0 CHANGELOG 明确 BREAKING CHANGES 节 + 升级一行指令 `npm install -g harnessed@2.0 && harnessed setup --apply` (b) v2.0 release notes 列出 schema v1→v2 字段差异 (gate / on / capability 字段 NEW) (c) end-user 升级路径单步 ≤ 10 sec (d) 不写 `harnessed migrate` CLI subcommand (Pure bundled YAGNI). (Q5 D-05)
+
+### R20.10 ralph-loop completion-promise 真接 (Stage ③ Execute 铁律机器化)
+- **描述**：execute-task workflow + plan-feature workflow phase 在子任务 ship 节点真接 `ralph-loop` SDK + verbatim `COMPLETE` gate (NOT mock reference)。CLAUDE.md Stage ③ Execute 显式铁律: "每个子任务必须使用 ralph-loop 保证最终交付 (completion-promise 'COMPLETE')"。sister Phase 2.2 v0.2.0 已 ship ralph-loop full SDK integration pattern 复用 (ADR 0011)。
+- **版本**：v2.0
+- **验收**：(a) execute-task workflow 子任务节点 wire ralph-loop SDK call + `--completion-promise COMPLETE` + `--max-iterations N` 参数 (b) 子任务输出 verbatim "COMPLETE" 字符串作 gate signal (c) max-iterations 耗尽 / abort 时 fallback path 显式定义 (d) dogfood test: execute-task 触发 ralph-loop 子任务真转一圈 ≥1 iteration 至 COMPLETE。(Q-AUDIT-2 D-10)
+
+### R20.11 parallelism-gate + Agent Teams 路由机器化 (子任务并行机制)
+- **描述**：judgments/parallelism-gate.yaml = 子任务并行机制 routing SoT (sister CLAUDE.md 「子任务并行执行机制」节 + `~/.claude/rules/agent-teams.md`)。3 路径机器化:
+  - **默认** subagent fan-out (Task / Agent 工具, multi-task fire-and-forget)
+  - **升级** Agent Teams (5 触发条件 multi-select: `teammate_send_message_needed` / `subagent_context_overflow` / `shared_task_list` / `opposing_hypothesis_debate` / `fullstack_three_way`)
+  - **降级** 主 session 直跑 (`subtask.lines < 20` 或 `subtask.type == 'single_command_query'`)
+  - **正交 wrapper** ralph-loop 外层套 (per R20.10)
+- **Agent Teams 实际可用 doctor check** (per Q-AUDIT-2 annotation): `harnessed doctor` + `harnessed setup` 检查 `~/.claude/settings.json` `experimental` 字段含 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` OR env var `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (sister `~/.claude/rules/agent-teams.md` L7 prereq "CC 2.1.133+, 完整 round-trip 已验证")。Missing → warn + 引导 user enable。
+- **版本**：v2.0
+- **验收**：(a) judgments/parallelism-gate.yaml schema 3 路径 + 5 升级触发 + 1 降级触发 (b) workflow.yaml phase 声明 `parallelism:` 字段引用 judgments (c) `harnessed doctor` Agent Teams env / settings.json check + warn (d) `harnessed setup` 提示 user enable settings 含 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` (e) dogfood test: 触发某 phase 升级 Agent Teams 路径全程 round-trip。(Q-AUDIT-2 D-11)
+
+### R20.12 verify-work workflow scope full 4-stage 重定 (Stage ④ Verify 完整覆盖)
+- **描述**：D-08 verify-work scope 从 "gsd-verify-work + code-review + gstack /review + code-simplifier 串接" 重定为 CLAUDE.md Stage ④ 完整列表:
+  - **必跑串行**: gsd-verify-work + gsd-progress (GSD 状态同步)
+  - **并行 fan-out**: code-review (多 agent 并行, 高置信度 finding)
+  - **关键模块强制**: gstack /review (Paranoid Staff Engineer 视角, conditional gate `phase.is_critical_module == true`)
+  - **可选 conditional**: /qa (E2E, `phase.has_ui_changes`), /cso (安全, `phase.has_auth_or_secrets`), /design-review (设计系统, `phase.has_design_changes`)
+  - **末尾串行**: code-simplifier (修改后简化)
+  - **4-specialist Agent Team 升级**: 关键发布 / 大重构 PR (`phase.is_major_release OR phase.is_large_refactor == true`) 触发 4-specialist team (code-review + gstack/review + /cso + /qa lead-delegate pattern, sister `~/.claude/rules/agent-teams.md` Pattern C 多维度审查)
+  - 里程碑 /retro 推 v2.x (per D-08 不阻塞)
+- **版本**：v2.0
+- **验收**：(a) workflows/verify-work/workflow.yaml ≥7 phase (必跑 2 + 并行 1 + 强制 1 + 可选 3 + 末尾 1) (b) 升级 Agent Team gate expression expr-eval 验证 (c) capabilities.yaml 含 gsd-progress / /qa / /cso / /design-review entry (d) dogfood test 关键模块场景触发 gstack /review + 4-specialist Agent Team 全 round-trip。(Q-AUDIT-2 D-12)
+
+### R20.13 tdd-gate (核心业务逻辑/算法 TDD 强制条件机器化)
+- **描述**：judgments/tdd-gate.yaml = TDD red-green-refactor 强制条件 SoT (sister CLAUDE.md Stage ③ Execute "可选使用 superpowers:test-driven-development,尤其在以下情况强烈建议开启")。机器化触发条件:
+  - `fires_when`: `subtask.is_core_business_logic == true OR subtask.is_algorithm == true OR subtask.is_data_processing == true OR subtask.regression_risk == 'high' OR subtask.reliability_required == true`
+  - `skips_when`: `subtask.type in ['crud', 'ui_polish', 'docs_only']`
+- capabilities.yaml 加 tdd entry (impl: superpowers, cmd: test-driven-development OR mattpocock /tdd 二选一 alias)
+- **版本**：v2.0
+- **验收**：(a) judgments/tdd-gate.yaml schema 6 fires + 3 skips 字段 (b) capabilities.yaml tdd entry alias 2 个 impl 候选 (c) execute-task workflow phase 02-code 引用 tdd-gate trigger conditional invoke (d) dogfood test 核心算法子任务自动 invoke TDD workflow。(Q-AUDIT-2 D-13)
+
+### R20.14 special-purpose tools routing 扩充 (~/.claude/rules/web-* 机器化)
+- **描述**：capabilities.yaml v2.0 baseline 扩 special-purpose tools 13+ entry (sister docs/WORKFLOW.md 列表 + `~/.claude/rules/web-design.md` + `web-testing.md` + `web-search.md` 子任务级 routing 规则机器化):
+  - UI/UX 主方案: ui-ux-pro-max (默认 + 数据驱动)
+  - UI 风格补充: frontend-design (创意 / 装饰)
+  - 浏览器探查: playwright-cli (Bash 一行 AI 实时)
+  - E2E 测试: @playwright/test (TS) OR webapp-testing (Python 后端联动)
+  - 性能/a11y/内存: chrome-devtools-mcp
+  - 系统化排错: mattpocock /diagnose OR gsd /gsd-debug (重叠, alias)
+  - 陌生模块导航: mattpocock /zoom-out
+  - 规格澄清: mattpocock /grill-with-docs
+  - 节省 token: mattpocock /caveman
+  - 库 API 文档: ctx7 CLI (per `~/.claude/rules/context7.md`)
+  - Web 搜索默认: Tavily MCP / Web 搜索学术: Exa MCP (per `~/.claude/rules/web-search.md`)
+  - 跨 AI peer review: gsd /gsd-review
+- workflow.yaml phase 通过 `on:` syntax conditional invoke (sister D-09 mattpocock pattern 扩展 special-purpose tools)
+- **版本**：v2.0
+- **验收**：(a) capabilities.yaml special-purpose tools 13+ entry (b) workflow.yaml execute-task phase 02-code 含 conditional invoke special tools (e.g., `phase.has_ui_changes == true → invoke ui-ux-pro-max`) (c) dogfood test UI/E2E/web search 场景触发对应 special tool。(Q-AUDIT-3 D-14)
+
+### R20.15 planning-with-files 真接 (Stage ② Plan 持久化铁律机器化)
+- **描述**：plan-feature workflow phase 05-persist 从 v1.0 mock reference 真接 `planning-with-files` SDK (sister CLAUDE.md Stage ② Plan 显式 "必须调用 planning-with-files 生成 task_plan.md + progress.md + findings.md 持久化")。capabilities.yaml 加 planning-with-files entry。phase 05-persist 真生成 3 file (task_plan.md / progress.md / findings.md) 到 `.planning/<phase-id>/` 目录。
+- **版本**：v2.0
+- **验收**：(a) capabilities.yaml planning-with-files entry (b) plan-feature phase 05-persist 真接 SDK call (NOT mock) (c) 生成 task_plan.md + progress.md + findings.md 3 file 真持久化 (d) dogfood test: /plan-feature "<feature>" 后 .planning/<phase-id>/ 目录含 3 file。(Q-AUDIT-3 D-15)
+
+### R20.16 judgments/fallback.yaml — 3 铁律字段扩充 (CLAUDE.md fallback 机器化)
+- **描述**：judgments/fallback.yaml schema 增补 3 字段编码 CLAUDE.md 「澄清/审查触发判据」节 fallback 铁律:
+  - `fallback_action: "skip_with_transparency"` — 拿不准 → 跳过 + 透明声明 (workflow runtime 输出 `"⚠️ 跳过 <gate-name>, 因为 <reason>。如认为需要请明示"` 一行)
+  - `override_signal: ["先 brainstorm", "跑 office-hours", "讨论一下"]` — 用户明示 → 覆盖判据 (sister CLAUDE.md "用户明示 → 覆盖判据"; runtime 词法匹配 user 输入)
+  - `chain_isolation: true` — 链式互不前置 (跳过战略层 ≠ 必须跳过 phase 层; 每层独立判断, 防"上层没跑下层不敢跑"死板)
+- **判据 schema 扩 single-file judgment.yaml → multi-file judgments/ 目录** (per Q-AUDIT-3 annotation): sister `~/.claude/rules/*.md` 多 file pattern 借鉴, 已在 R20.4 reframe 反映。
+- **版本**：v2.0
+- **验收**：(a) judgments/fallback.yaml schema 3 字段 (b) workflow runtime expr-eval 实装 fallback_action 输出透明声明 (c) workflow runtime 词法匹配 override_signal (d) workflow runtime chain_isolation 独立 layer eval (e) judgments/ 目录拆 6 file (per R20.4 reframe) (f) dogfood test 3 fallback 触发场景验证。(Q-AUDIT-3 D-16)
 
 ---
 

@@ -325,40 +325,60 @@ production-ready harnessed; 6-month organic clock 结束后 maintenance-only mod
 
 ---
 
-## v2.0 — Architecture Refactor (workflow runtime-load + capability abstraction + gate yaml-eval) — **target window 2026-05-22 ~ 2026-06-05 (1-2 weeks)**
+## v2.0 — Architecture Refactor (Pure bundled SoT + capability abstraction + gate yaml-eval + 三层栈完整机器化) — **target window 2026-05-20 ~ 2026-06-05 (1-2 weeks, 6 phase)**
 
-> **Trigger**: v1.0.0-v1.0.4 ship cycle 暴露 fundamental architectural flaw — workflow.yaml 是 build-artifact NOT runtime config; 上游 / Claude Code 平台 / 优秀新组件升级时,每次 workflow 调整需 1-2 day full npm release cycle。用户 catch fundamental flaw 2026-05-22 post v1.0.4 ship:"我们没 vendor 上游,但项目存在必然 frequent 调整 workflow,当前架构不合理"。
+> **Trigger**: v1.0.0-v1.0.4 ship cycle 暴露 fundamental architectural flaw — workflow.yaml 是 build-artifact NOT runtime config; 上游 / Claude Code 平台 / 优秀新组件升级时,每次 workflow 调整需 1-2 day full npm release cycle。
 >
-> **Decision (user authorized 2026-05-22)**: 跳 v1.0.5 incremental band-aid → 直接 v2.0 大重构。post-refactor workflow 调整 time = 5 min (user edit yaml + immediate effect) NOT 1-2 day (npm release cycle)。
+> **Decision (user authorized 2026-05-22)**: 跳 v1.0.5 incremental band-aid → 直接 v2.0 大重构。
+>
+> **Phase v2.0-2.1 reframe (2026-05-20)**: 项目最终目的 = maintainer 三层栈方法论 ship 给其他 user via bundled defaults (NOT parse 其他 user CLAUDE.md)。Pure bundled mode LOCKED — share-only, no user override yaml; maintainer 走 ADR + npm patch release cadence (2-3 day cycle per upstream / capability adjustment)。
+>
+> **Phase v2.0-2.1 Q-AUDIT amend (2026-05-20)**: post-LOCK audit 发现 7 gap 严重影响三层栈完整性, user 仲裁 ALL 升 v2.0 scope (R20.10-R20.16) + 拆 6 phase (加 2.5 4-stage 机器化 deepening)。
 
 ### Goal
 
-evolve harnessed from build-artifact mode → runtime-config mode。workflow.yaml + rules + capabilities + manifests 全部 user-editable + hot-reload。npm package 仅 ship engine code + canonical templates;用户 cdn 模式 own ~/.harnessed/ user dir。
+evolve harnessed from build-artifact mode → Pure bundled SoT mode + **三层栈完整机器化**。maintainer ship 三层栈方法论给其他 user via bundled workflows / capabilities / judgments — user 装齐 harnessed 后立即享用完整 4-stage 流程, 无需自己写 CLAUDE.md prose。
 
-### 9 必含项 (R20.1-R20.9 architectural refactor)
+### 16 必含项 (R20.1-R20.5/R20.7-R20.16 — R20.6 DROPPED)
 
-1. **R20.1 workflow.yaml runtime-load**: `~/.harnessed/workflows/<name>/workflow.yaml` user-editable;harnessed runtime reload (NOT bundled into binary);setup copies default templates on first install
-2. **R20.2 capability abstraction**: workflow.yaml uses abstract `capability: governance-gate` NOT 字面 `'gstack /office-hours'`;`~/.harnessed/capabilities.yaml` maps abstract → concrete commands (user 可改 swap upstream)
-3. **R20.3 gate yaml-eval grammar**: phase 可声明 conditional `gate: phase.type == 'new_feature' AND open_decisions >= 2`;lightweight expr-eval lib (jsep / expr-eval / 自写 mini-parser)
-4. **R20.4 CLAUDE.md 判据 yaml registry**: harnessed startup parse user CLAUDE.md "三层判据" 节 → emit `~/.harnessed/rules/judgment.yaml`;workflow gate eval consume judgment.yaml
-5. **R20.5 upstream capability dynamic discovery**: `harnessed doctor` invokes `claude --help` / `gstack /commands` / `gsd --version` 探测上游 commands;emit `~/.harnessed/capabilities.discovered.yaml` (auto-generated)
-6. **R20.6 manifest user-dir hot-reload**: `~/.harnessed/manifests/` user-editable;`harnessed install <name>` 优先 user-dir → fallback npm package canonical;支持 add new manifest 不需 PR 到 harnessed
-7. **R20.7 NEW workflows ship** (Gap 3+4 fix): `workflows/research/` (Tavily/Exa/ctx7 多源调研 v1.0 ROADMAP 承诺) + `workflows/verify-work/` (Stage ④ verify composition: gsd-verify-work + code-review + gstack/review + code-simplifier)
-8. **R20.8 mattpocock 招式 in-workflow routing** (Gap 5 fix): workflow.yaml phase 可声明 `mattpocock_skills: ['/zoom-out', '/diagnose']` → 运行时 trigger;sister Phase 1.5 routing engine 100% accuracy + 23 routing rules 真正消费
-9. **R20.9 BREAKING CHANGES migration**: workflow.yaml schema v1 → v2;old v1.x yaml 可 work via compat shim 1 minor cycle (v2.0 + v2.1) then deprecate;`harnessed migrate v1→v2` cli helper
+**Initial batch (R20.1-R20.9):**
 
-### v2.0 phases
+1. **R20.1 workflows bundled SoT + Pure bundled distribution**: `<packageRoot>/workflows/` readonly, end-user share-only NO override
+2. **R20.2 capability abstraction (flat yaml map)**: `<packageRoot>/workflows/capabilities.yaml`, `capability_name → {impl, cmd, since}`
+3. **R20.3 gate yaml-eval grammar**: expr-eval npm dep (~5KB MIT 4M weekly)
+4. **R20.4 judgments/ multi-file 分类** (rule-style, sister `~/.claude/rules/*.md`): `judgments/{strategic-gate, phase-gate, subtask-gate, parallelism-gate, tdd-gate, fallback}.yaml`
+5. **R20.5 upstream capability discovery (static manifest + ADR per upgrade)**: maintainer-curated static yaml, ADR 0025+ + patch release 2-3 day cycle per upstream adjustment
+6. **R20.6** ~~manifest user-dir hot-reload~~ **DROPPED** (Pure bundled supersede)
+7. **R20.7 NEW workflows ship**: `workflows/research/` (Tavily/Exa/ctx7 多源) + `workflows/verify-work/` (Stage ④ 完整 7+ phase per R20.12)
+8. **R20.8 mattpocock 招式 in-workflow capability routing**: workflow.yaml `on:` syntax + expr-eval + capabilities.yaml 12+ entry
+9. **R20.9 BREAKING CHANGES migration scope**: release notes only, NO migrate CLI (Pure bundled YAGNI)
 
-- **Phase 2.1**: Discuss + 9 architectural D-decisions LOCKED (1-2 day; gate eval grammar / capability registry schema / user-dir layout / hot-reload mechanism / breaking change scope / migration path / etc)
-- **Phase 2.2**: Plan + Schema design (1-2 day; Wave A research yaml DSL libs + capability discovery patterns + Wave B planner produces PLAN.md ~2000L 30-40 tasks + Wave C plan-checker)
-- **Phase 2.3**: Execute Wave 0+1+2 (5-8 day; atomic ship workflow.yaml schema NEW + runtime loader + gate evaluator + capability resolver + ~/.harnessed/ user dir + manifest hot-reload + setup migrate logic + tests TDD)
-- **Phase 2.4**: v2.0 close + ship (1 day; 3-file milestone triplet + CHANGELOG [2.0.0] BREAKING + ROADMAP + 🎯 v2.0.0 tag + npm publish)
+**Q-AUDIT amend batch (R20.10-R20.16):**
+
+10. **R20.10 ralph-loop completion-promise 真接** (Stage ③ 铁律): execute-task workflow 子任务节点 wire ralph-loop SDK + verbatim COMPLETE gate (NOT mock)
+11. **R20.11 parallelism-gate + Agent Teams 路由 + env check**: judgments/parallelism-gate.yaml 3 路径 (subagent default / Agent Teams 5 升级触发 / 主 session 降级) + `harnessed doctor` + `setup` 检查 `~/.claude/settings.json` `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"`
+12. **R20.12 verify-work workflow scope full 4-stage 重定**: gsd-verify-work + gsd-progress + code-review (并行) + gstack /review (强制 conditional) + 可选 /qa /cso /design-review + code-simplifier + 4-specialist Agent Team 升级 (关键发布/大重构 PR)
+13. **R20.13 tdd-gate (核心业务逻辑/算法强制)**: judgments/tdd-gate.yaml + capabilities.yaml tdd entry (superpowers:test-driven-development OR mattpocock /tdd alias)
+14. **R20.14 special-purpose tools routing 扩充** (~/.claude/rules/web-* 机器化): capabilities.yaml + 13+ entry (ui-ux-pro-max / frontend-design / playwright-cli / chrome-devtools / Tavily / Exa / ctx7 / /gsd-review / etc)
+15. **R20.15 planning-with-files 真接** (Stage ② Plan 持久化铁律): plan-feature workflow phase 05-persist 真接 SDK (NOT mock), 真生成 task_plan.md + progress.md + findings.md
+16. **R20.16 judgments/fallback.yaml — 3 铁律字段扩充**: fallback_action (skip_with_transparency) + override_signal (词法匹配) + chain_isolation (链式互不前置)
+
+### v2.0 phases (6 phase per Q-AUDIT-4)
+
+- **Phase v2.0-2.1** ✅ SHIPPED 2026-05-20: Discuss + 16 D-decision LOCKED (initial + Q-AUDIT amend)
+- **Phase v2.0-2.2**: Plan + Schema design (Wave A research + Wave B planner ~2500L 25-35 tasks + Wave C plan-checker; 复杂架构 → gstack `/plan-eng-review` 强烈建议)
+- **Phase v2.0-2.3**: Execute schema (capabilities.yaml v2.0 baseline 25+ entry + judgments/ 6 file + expr-eval + TypeBox validate + `harnessed doctor` Agent Teams settings.json check 实装)
+- **Phase v2.0-2.4**: Execute workflows (4 workflow.yaml v2: plan-feature gate/on/capability + planning-with-files 真接 / execute-task ralph-loop 真接 + tdd-gate / research NEW / verify-work NEW 7+ phase full scope)
+- **Phase v2.0-2.5**: Execute 4-stage 机器化 deepening (NEW per Q-AUDIT-4: parallelism-gate dogfood + verify-work 4-specialist Agent Team dogfood + tdd-gate dogfood + special-purpose tools routing dogfood + fallback 3 铁律 runtime dogfood + 端到端 4-stage 完整 dogfood)
+- **Phase v2.0-2.6**: v2.0 close + ship (BREAKING + ADR 0024-0029+ + CHANGELOG + ci.yml A7 iter 0023→0029 + README + 3-file milestone triplet + 🎯 v2.0.0 GA tag triple + npm publish)
 
 ### 关键风险
 
-- ⚠️ **breaking change blast radius** — v1.0.x 用户 npm install -g harnessed@2.0 后 workflow.yaml 需 migrate;mitigation: `harnessed migrate v1→v2` CLI helper + compat shim 1 minor cycle (v2.0 + v2.1) before deprecate
-- ⚠️ **yaml-eval grammar 复杂度蔓延** — gate expression 设计太 fancy 反 user friendly;mitigation: minimal viable subset (==, !=, AND, OR, comparison) + 用户实测后再扩展
-- ⚠️ **capability discovery 上游 API drift** — claude --help / gstack /commands 输出格式可能变;mitigation: 多源 fallback (cache + retry + manual override via capabilities.yaml)
+- ⚠️ **breaking change blast radius (mitigated)** — Pure bundled (D-01) 模式 end-user 无 customize yaml, 升级 = `npm install -g harnessed@2.0 && harnessed setup --apply` 一行 (R20.9 release notes only)
+- ⚠️ **yaml-eval grammar 复杂度蔓延** — gate expression 设计太 fancy 反 user friendly; mitigation: expr-eval (D-03) 标准库, minimal viable subset (==, !=, in, AND, OR, comparison) + dogfood Phase 2.5 验证
+- ⚠️ **upstream capability drift (Pure bundled 模式)** — 静态 manifest + ADR per upgrade (D-07) 模式 上游升级 cadence ~1-2/week 需 patch release follow; mitigation: ADR 0025+ template + ci.yml A7 step 守恒 capabilities.yaml schema invariant
+- ⚠️ **ralph-loop / Agent Teams round-trip 失败** — sister `~/.claude/rules/agent-teams.md` L7 prereq "CC 2.1.133+" + R20.11 doctor check; mitigation: setup 引导 user enable settings flag + 端到端 dogfood Phase 2.5
+- ⚠️ **judgments/ 多 file expr-eval 解析路径混乱** — D-16 reference path `judgments.<file>.<gate>.fires` 4 层深, parser 复杂度 ↑; mitigation: Phase 2.3 schema design 阶段 TypeBox schema + Phase 2.5 dogfood expr-eval AST builder 验证
 
 ---
 
