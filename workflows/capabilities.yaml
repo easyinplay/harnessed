@@ -204,6 +204,22 @@ capabilities:
     fires_when:
       - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
 
+  gsd-discuss-phase:
+    impl: gsd
+    cmd: /gsd-discuss-phase
+    since: v2.0
+    description: GSD discuss-phase 灰色澄清 (Phase 层判据 sister judgments/phase-gate.yaml)
+    fires_when:
+      - phase.open_decisions >= 2 OR phase.scope_days > 1
+
+  gsd-plan-phase:
+    impl: gsd
+    cmd: /gsd-plan-phase
+    since: v2.0
+    description: GSD plan-phase Wave A research + Wave B planner + Wave C plan-checker
+    fires_when:
+      - phase.stage == 'plan'
+
   gsd-review:
     impl: gsd
     cmd: /gsd-review

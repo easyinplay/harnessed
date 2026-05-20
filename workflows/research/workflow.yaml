@@ -1,0 +1,18 @@
+schema_version: harnessed.workflow.v2
+workflow: research
+description: 多源调研 workflow — Tavily MCP (默认关键词) + Exa MCP (描述式/学术) + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; sister ~/.claude/rules/web-search.md + context7.md routing 机器化 per R20.7 + D-08
+
+phases:
+  # 01-fan-out: 多源 fan-out — Tavily / Exa / ctx7 各源并行查询 (subagent fan-out per CLAUDE.md 子任务并行执行机制); generic shape — workflow engine 按 capability route 触发 3 source sequentially
+  - id: 01-fan-out
+    upstream: web-search
+    model: sonnet
+    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
+    parallelism: judgments.parallelism-gate.subagent-default.fires
+
+  # 02-synth: GSD discuss synth aggregate — 多源结果 dedup + reconcile + GSD discuss-phase format
+  - id: 02-synth
+    upstream: gsd
+    capability: '{{ capabilities.gsd-discuss-phase.cmd }}'
+    model: opus
+    max_iterations: '{{ defaults.ralph_max_iterations.research.02-synth }}'

@@ -53,19 +53,17 @@ Tracking deferred / out-of-scope items surfaced during Phase v2.0-2.3 + v2.0-2.4
 
 ---
 
-## NS — `gsd-plan-phase` capabilities.yaml entry
+## ~~NS — `gsd-plan-phase` capabilities.yaml entry~~ RESOLVED 2026-05-20 Phase 2.4 W2
 
 **Source**: plan-feature-impl T2.4.W1.3 (2026-05-20)
 
-**Defer reason**: workflows/plan-feature/workflow.yaml L32 `invokes: 'gsd-plan-phase'` legacy literal 沿袭 v1 pattern。capabilities.yaml 中 gsd-plan-phase entry 暂未 ship (sister 12 GSD entry 含 gsd-discuss-phase / gsd-progress / gsd-verify-work / gsd-review / gsd-debug 5 entry, gsd-plan-phase 漏)。
+**Status**: ✅ RESOLVED inline 2026-05-20 Phase 2.4 W2 ship — added 2 entries to capabilities.yaml:
+- `gsd-discuss-phase` (impl: gsd, cmd: /gsd-discuss-phase, fires_when phase.open_decisions >= 2 OR scope_days > 1, sister judgments/phase-gate.yaml)
+- `gsd-plan-phase` (impl: gsd, cmd: /gsd-plan-phase, fires_when phase.stage == 'plan')
 
-**Scope (when un-deferred)**:
-- Add `gsd-plan-phase` entry to `workflows/capabilities.yaml` (impl: gsd, cmd: gsd-plan-phase, since: v2.0)
-- workflows/plan-feature/workflow.yaml L32 改 `capability: '{{ capabilities.gsd-plan-phase.cmd }}'` 替代 literal `invokes`
-- Add fixture in `tests/workflow/plan-feature-v2.test.ts` capability resolve verify
+Total capabilities.yaml entries: 37 → 39。capabilities.yaml schema validate exit 0。research workflow F3 test pass + plan-feature workflow 03-gsd-discuss + 04-gsd-plan capability template interpolation runtime resolve。
 
-**Priority**: Phase 2.4 W2 or Phase 2.6 close (single-entry patch trivial)
-**Estimated effort**: ~5min
+**Out-of-scope still**: plan-feature/workflow.yaml L32 改 `capability: '{{ capabilities.gsd-plan-phase.cmd }}'` 替代 legacy `invokes:` literal (sister surgical patch 推 Phase 2.6 close cleanup, NOT blocking)。
 
 ---
 
