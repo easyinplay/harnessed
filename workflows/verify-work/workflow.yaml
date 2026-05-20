@@ -137,7 +137,7 @@ phases:
     max_iterations: 1
     parallelism: judgments.parallelism-gate.agent-teams-upgrade.fires
     on:
-      - if: 'phase.is_major_release == true OR phase.is_large_refactor == true'
+      - if: 'phase.is_major_release == true or phase.is_large_refactor == true'
         action: invoke
-      - if: 'phase.is_major_release == false AND phase.is_large_refactor == false'
+      - if: 'phase.is_major_release == false and phase.is_large_refactor == false'
         action: skip

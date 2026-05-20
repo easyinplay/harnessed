@@ -62,9 +62,9 @@ phases:
     gate: judgments.parallelism-gate.fires
     parallelism: judgments.parallelism-gate.ralph-loop-wrapper.fires
     on:
-      - if: 'subtask.lines >= 20 AND subtask.type != "single_command_query"'
+      - if: 'subtask.lines >= 20 and subtask.type != "single_command_query"'
         invoke: '{{ capabilities.ralph-loop.cmd }}'
-      - if: 'subtask.lines < 20 OR subtask.type == "single_command_query"'
+      - if: 'subtask.lines < 20 or subtask.type == "single_command_query"'
         action: skip
     fallback:
       max_iterations_exceeded:

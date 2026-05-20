@@ -130,11 +130,15 @@ describe('verify-work workflow.yaml v2 — T2.4.W2.2 (D-12 + R20.12 + R20.11 + R
     expect(phase07?.on?.[0]?.if).toMatch(/phase\.has_design_changes\s*==\s*true/)
     expect(phase07?.on?.[0]?.action).toBe('invoke')
 
-    // Phase 09 — phase.is_major_release OR phase.is_large_refactor (Pattern C trigger)
+    // Phase 09 — phase.is_major_release or phase.is_large_refactor (Pattern C trigger)
+    // (expr-eval logical operators MUST be lowercase per src/workflow/exprBuilder.ts
+    //  PARSER_OPTIONS.operators.logical=true; uppercase OR/AND throws GateEvalError
+    //  at runtime — Phase 2.5 W2 Cycle 2 dogfood surprise, fixed verify-work yaml
+    //  + execute-task phases.yaml + this expect sync 2026-05-20)
     const phase09 = parsed.phases.find((p) => p.id === '09-agent-team-multispecialist')
     expect(phase09?.on?.[0]?.if).toMatch(/phase\.is_major_release/)
     expect(phase09?.on?.[0]?.if).toMatch(/phase\.is_large_refactor/)
-    expect(phase09?.on?.[0]?.if).toMatch(/OR/)
+    expect(phase09?.on?.[0]?.if).toMatch(/\bor\b/)
     expect(phase09?.on?.[0]?.action).toBe('invoke')
   })
 
