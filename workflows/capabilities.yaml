@@ -666,9 +666,9 @@ capabilities:
   connect-chrome:
     impl: gstack
     cmd: /connect-chrome
-    since: v3.0
+    since: v3.x
     category: tool-slash-cmd
-    description: 连接现有 Chrome 实例 (用于 Chrome extension 测试)
+    description: 连接现有 Chrome 实例 (用于 Chrome extension 测试) — defer v3.x per W1.1 K1 (gstack plugin 当前未 ship connect-chrome subdir)
     fires_when:
       - subtask.needs_chrome_extension == true
 
