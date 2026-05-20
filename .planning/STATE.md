@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: v2.0 Architecture Refactor (Pure bundled SoT + capability abstraction + 三层栈完整机器化)
-status: shipped
+milestone: v3.0
+milestone_name: v3.0 4-Stage Namespace-Layered Workflow Architecture (master orchestrator + 20 workflow + cross-cutting tools 分离)
+status: in_progress
 last_updated: "2026-05-20T00:00:00.000Z"
 progress:
-  total_phases: 27
-  completed_phases: 27
-  total_plans: 27
-  completed_plans: 27
+  total_phases: 33
+  completed_phases: 28
+  total_plans: 28
+  completed_plans: 28
 ---
 
 # harnessed STATE
@@ -33,7 +33,7 @@ progress:
 
 ## 当前位置（Current Position）
 
-- **GSD phase**：🎯 **Phase v2.0-2.6 close SHIPPED** (2026-05-20) — v2.0 milestone 6/6 **COMPLETE**; W0 6 ADR backfill (0024-0029 per ADR 0011 9-section pattern, 1 hung subagent + 1 inline write fallback) + 3 deferred items resolved inline (T2.4.W1.4 cascade upgrade + T2.4.W1.5 fallback wire CLI + CK setup.ts split 235L→139L) + W1 ship artifacts (CHANGELOG [2.0.0] + ci.yml A7 0023→0029 + package.json 1.0.4→2.0.0 + README v2.0 highlight + ADR README index) + W2 milestone close (v2.0-MILESTONE-AUDIT.md NEW); 899 pass / 4 skip 0 fail full suite; biome clean; v2.0.0 GA LOCAL tag pending user push
+- **GSD phase**：⚙ **Phase v3.0-3.1 discuss-phase SHIPPED** (2026-05-20) — v3.0 milestone 1/6 STARTING; 1 milestone-class + 8 D-decision LOCKED batch 1 (Pure ship v3 + bare slash cmd + nested workflows/<stage>/<sub>/ dir + master auto gate-route + 心法招式 cross-cutting); sister Phase v2.0-2.6 v2.0.0 GA SHIPPED 6/6 phase 100% + npm publish LIVE; sister 🎯 **Phase v2.0-2.6 close SHIPPED** (2026-05-20) — v2.0 milestone 6/6 **COMPLETE**; W0 6 ADR backfill (0024-0029 per ADR 0011 9-section pattern, 1 hung subagent + 1 inline write fallback) + 3 deferred items resolved inline (T2.4.W1.4 cascade upgrade + T2.4.W1.5 fallback wire CLI + CK setup.ts split 235L→139L) + W1 ship artifacts (CHANGELOG [2.0.0] + ci.yml A7 0023→0029 + package.json 1.0.4→2.0.0 + README v2.0 highlight + ADR README index) + W2 milestone close (v2.0-MILESTONE-AUDIT.md NEW); 899 pass / 4 skip 0 fail full suite; biome clean; v2.0.0 GA LOCAL tag pending user push
 - **当前里程碑**：**🎯 v2.0 Architecture Refactor 6/6 COMPLETE** 2026-05-20 — Pure bundled SoT + 4 workflows v2 + 39 capabilities + 6 judgments + judgmentResolver + checkAgentTeams + fallbackHandlers + 46 dogfood fixture + 6 NEW ADR (0024-0029) + ci.yml A7 0023→0029 + CHANGELOG [2.0.0] + package.json 2.0.0 + 4 LOCAL tag (alpha.0-schema + alpha.1-workflows + rc.1 + 🎯 v2.0.0 GA) — Pure bundled SoT (REFRAME 2026-05-20) + capability abstraction (flat yaml map) + gate yaml-eval (expr-eval) + judgments/ 多 file 分类 (rule-style, sister ~/.claude/rules/*.md pattern) maintainer 三层栈机器化 (NOT parse user CLAUDE.md) + research+verify-work NEW workflows + ralph-loop completion-promise 真接 (Stage ③ 铁律) + parallelism-gate + Agent Teams 路由 + env check + verify-work full 4-stage 重定 + tdd-gate + special-purpose tools routing 扩 + planning-with-files 真接 (Stage ② 铁律) + fallback 3 铁律 + release-notes-only migration; **16 R20.x** (initial 9 + Q-AUDIT amend 7 — R20.6 DROPPED); v2.0 4 phase → **6 phase** (加 2.5 4-stage 机器化 deepening); 1-2 week target window 2026-05-20~2026-06-05
 - **下一 phase**：**v2.0 GA push approval + Phase v2.0-W3 publish.yml tag-trigger npm publish** (user approval gated per CLAUDE.md commit safety; sister ADR 0023 v1.0 OIDC + sigstore + NPM_TOKEN fallback pattern); post-v2.0 maintenance-only mode trigger ~2026-11 organic clock per ADR 0020 D-04 HYBRID 2-clock
 - **状態**：⚙ **Phase v2.0-2.5 4-stage 机器化 dogfood ALL 5 cycle SHIPPED 2026-05-20** — Cycle 1 parallelism-gate + Agent Teams env real probe (5 fixture, 3 route × 5 trigger matrix) + Cycle 2 verify-work + Pattern C 4-specialist 9-phase (6 fixture, caught production bug 3 处 uppercase OR/AND → fixed inline) + Cycle 3 tdd-gate + planning-with-files /plan + ralph-loop COMPLETE (20 fixture, 3 axis) + Cycle 4 mattpocock auto-invoke + special-purpose tools 13+ + fallback 3 铁律 (15 fixture, 3 scenario) + Cycle 5 aggregate DOGFOOD-T5.5-AGGREGATE.md 180L 5-axis report; **dogfood-first methodology proves R8.1 value** (sister benchmark caught real bug NOT pass-by schema-shape test); 46 NEW fixture total; 895 pass / 4 skip 0 fail; biome clean
