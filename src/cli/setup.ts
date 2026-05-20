@@ -20,6 +20,7 @@ import type { Command } from 'commander'
 import { runInstall } from '../installers/index.js'
 import type { InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
+import { checkAgentTeams } from './lib/checkAgentTeams.js'
 import { getPackageRoot } from './lib/packagePath.js'
 
 interface RawOpts {
@@ -57,6 +58,23 @@ export function registerSetup(program: Command): void {
       const pkgRoot = getPackageRoot()
       const workflowsDir = resolve(pkgRoot, 'workflows')
       const skillsBase = resolve(homedir(), '.claude', 'skills')
+
+      // ── Phase v2.0-2.3 W1.1: Agent Teams env probe (non-blocking) ──────────
+      // Per Q-AUDIT-5b + R20.11 acceptance e + PLAN-ENG-REVIEW § Section 5 [LOW]:
+      // Warn-only if missing — parallelism-gate runtime degrades to subagent fan-out
+      // (sister ~/.claude/rules/agent-teams.md L42 "Session-scoped 容忍策略").
+      const agentTeamsResult = await checkAgentTeams()
+      if (agentTeamsResult.status === 'missing') {
+        console.warn('\n⚠️  Agent Teams 未启用 — parallelism-gate 升级路径不可用')
+        console.warn('   修复: claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1')
+        console.warn(
+          '   说明: harnessed v2.0 三层栈方法论 parallelism-gate 升级路径需 CC 2.1.133+ Agent Teams enable (sister ~/.claude/rules/agent-teams.md)',
+        )
+        console.warn(
+          '   不阻塞 setup,后续 parallelism-gate workflow phase 触发时自动降级 subagent fan-out\n',
+        )
+        // NOT exit — non-blocking per R20.11 acceptance a
+      }
 
       // ── Step A: workflow SKILL.md copy ──────────────────────────────────────
       let entries: string[]
@@ -202,6 +220,16 @@ export function registerSetup(program: Command): void {
           `\nMCP servers configured. Run \`/mcp\` in Claude Code to verify each server's connection status. If a server shows disconnected, restart Claude Code or check the MCP command spec.`,
         )
       }
+
+      // ── Phase v2.0-2.3 W1.1: Pure bundled distribution highlight (D-01) ───
+      // workflows live in <packageRoot>/workflows/ — share-only readonly,
+      // NOT user-dir override (~/.harnessed/ NOT used per D-01 LOCKED).
+      console.log(
+        '\n✓ harnessed v2.0 三层栈方法论 bundled — 4 workflows + 6 judgments + 37 capabilities ready',
+      )
+      console.log(
+        '  workflows in <packageRoot>/workflows/ (Pure bundled, NOT user-dir override per D-01)',
+      )
       process.exit(0)
     })
 }

@@ -1,0 +1,36 @@
+# harnessed v2.0 workflow defaults
+# Phase v2.0-2.3 W1.2 ship — ralph_max_iterations table per R20.10 + D-10 fallback abort path
+# Sister Phase 2.2 STRIDE T-2.2-05 DoS mitigation: hard_upper_limit = 100 caps any user override
+# Phase 2.4 workflow.yaml v2 interpolation: {{ defaults.ralph_max_iterations.<workflow>.<phase> }}
+
+schema_version: harnessed.defaults.v1
+
+# Per-workflow per-phase ralph-loop iteration ceiling
+# Values balance: completion guarantee vs DoS prevention; sister ADR 0011 v0.2.0 ralph-loop SDK pattern
+ralph_max_iterations:
+  execute-task:
+    01-clarify: 5
+    02-code: 20
+    03-test: 15
+    04-deliver: 20
+
+  plan-feature:
+    01-gstack-decision: 1
+    02-brainstorm: 5
+    03-gsd-discuss: 3
+    04-gsd-plan: 3
+    05-persist: 5
+
+  research:
+    01-fan-out: 3
+    02-synth: 3
+
+  verify-work:
+    01-gsd-verify-work: 3
+    02-code-review: 5
+    03-gstack-review: 3
+    04-code-simplifier: 5
+
+# Hard upper limit — workflow engine rejects any user override > this value
+# Sister Phase 2.2 STRIDE T-2.2-05 DoS mitigation
+hard_upper_limit: 100
