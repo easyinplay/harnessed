@@ -397,7 +397,7 @@
   - `judgments/fallback.yaml` (3 铁律: 拿不准跳过+透明声明 / 用户明示覆盖 / 链式互不前置, per R20.16)
   - workflow.yaml gate 字段 reference triggers via `gate: judgments.strategic-gate.fires` 等。**NOT** parse user CLAUDE.md。
 - **版本**：v2.0
-- **验收**：(a) judgments/ 目录 6+ yaml file, 各 file schema = `triggers.<name>: {fires_when: <expr>, skips_when: <expr>[, fallback_action]}` (b) 6 gate file 覆盖 strategic / phase / subtask / parallelism / tdd / fallback 维度 (c) workflow.yaml gate field reference `judgments.<file>.<name>.fires` runtime 解析正确 (d) end-user `/plan-feature` invoke 自动应用三层栈判据 NO user-side config. (Q4 RESET D-04 + Q-AUDIT-3 annotation D-16)
+- **验收**：(a) judgments/ 目录 6+ yaml file, 各 file schema = `triggers.<name>: {fires_when: <expr>, skips_when: <expr>[, fallback_action]}` (b) 6 gate file 覆盖 strategic / phase / subtask / parallelism / tdd / fallback 维度 (c) workflow.yaml gate field reference `judgments.<file>.<name>.fires` runtime 解析正确 — **`src/workflow/judgmentResolver.ts` ~60L NEW** (Q-AUDIT-5c 2026-05-20 add): workflow engine 在 expr-eval 求值前预 resolve 4 层 ref (`judgments.<file>.<gate>.fires` → split → read `judgments/<file>.yaml` → resolve `triggers.<gate>.fires_when` → 输出 resolved expression string → pass to expr-eval Parser) + TypeBox schema validate (d) end-user `/plan-feature` invoke 自动应用三层栈判据 NO user-side config. (Q4 RESET D-04 + Q-AUDIT-3 annotation D-16 + Q-AUDIT-5c resolver NEW)
 
 ### R20.5 upstream capability discovery (static manifest + ADR per upgrade)
 - **描述**：capabilities.yaml 是 maintainer-curated static yaml — 每次上游 (gstack / GSD / superpowers / karpathy / mattpocock / Claude Code) 升级走 ADR 0025+ + 调整 capability entry + npm patch release (2-3 day cycle). NOT dynamic introspection (脱位风险 + ADR audit 失效 + A7 conservation gate 失效)。预计上游升级 cadence ~ 1-2/周, patch release 成本可接受。
@@ -436,9 +436,9 @@
   - **升级** Agent Teams (5 触发条件 multi-select: `teammate_send_message_needed` / `subagent_context_overflow` / `shared_task_list` / `opposing_hypothesis_debate` / `fullstack_three_way`)
   - **降级** 主 session 直跑 (`subtask.lines < 20` 或 `subtask.type == 'single_command_query'`)
   - **正交 wrapper** ralph-loop 外层套 (per R20.10)
-- **Agent Teams 实际可用 doctor check** (per Q-AUDIT-2 annotation): `harnessed doctor` + `harnessed setup` 检查 `~/.claude/settings.json` `experimental` 字段含 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` OR env var `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (sister `~/.claude/rules/agent-teams.md` L7 prereq "CC 2.1.133+, 完整 round-trip 已验证")。Missing → warn + 引导 user enable。
+- **Agent Teams 实际可用 doctor check** (per Q-AUDIT-2 annotation, **Q-AUDIT-5b 2026-05-20 schema fix**): `harnessed doctor` + `harnessed setup` 检查 `~/.claude/settings.json` **root-level `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"`** (NOT nested `experimental.*` — sister Wave A 本地 settings.json 实证修正 prior schema 错误) OR process.env `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (sister `~/.claude/rules/agent-teams.md` L7 prereq "CC 2.1.133+, 完整 round-trip 已验证")。Missing → warn + 引导 user `claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1`。
 - **版本**：v2.0
-- **验收**：(a) judgments/parallelism-gate.yaml schema 3 路径 + 5 升级触发 + 1 降级触发 (b) workflow.yaml phase 声明 `parallelism:` 字段引用 judgments (c) `harnessed doctor` Agent Teams env / settings.json check + warn (d) `harnessed setup` 提示 user enable settings 含 `"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"` (e) dogfood test: 触发某 phase 升级 Agent Teams 路径全程 round-trip。(Q-AUDIT-2 D-11)
+- **验收**：(a) judgments/parallelism-gate.yaml schema 3 路径 + 5 升级触发 + 1 降级触发 (b) workflow.yaml phase 声明 `parallelism:` 字段引用 judgments (c) `harnessed doctor` Agent Teams **root-level `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`** check + warn (d) `src/cli/lib/checkAgentTeams.ts` ~30L NEW + 5 fixture test, wire setup.ts (Phase 2.3) + doctor.ts (Phase 2.4 MIN 5→MIN 7 check) (e) `harnessed setup` Missing → warn + 引导 `claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1` (f) dogfood test: 触发某 phase 升级 Agent Teams 路径全程 round-trip。(Q-AUDIT-2 D-11 + Q-AUDIT-5b schema fix)
 
 ### R20.12 verify-work workflow scope full 4-stage 重定 (Stage ④ Verify 完整覆盖)
 - **描述**：D-08 verify-work scope 从 "gsd-verify-work + code-review + gstack /review + code-simplifier 串接" 重定为 CLAUDE.md Stage ④ 完整列表:
@@ -478,10 +478,10 @@
 - **版本**：v2.0
 - **验收**：(a) capabilities.yaml special-purpose tools 13+ entry (b) workflow.yaml execute-task phase 02-code 含 conditional invoke special tools (e.g., `phase.has_ui_changes == true → invoke ui-ux-pro-max`) (c) dogfood test UI/E2E/web search 场景触发对应 special tool。(Q-AUDIT-3 D-14)
 
-### R20.15 planning-with-files 真接 (Stage ② Plan 持久化铁律机器化)
-- **描述**：plan-feature workflow phase 05-persist 从 v1.0 mock reference 真接 `planning-with-files` SDK (sister CLAUDE.md Stage ② Plan 显式 "必须调用 planning-with-files 生成 task_plan.md + progress.md + findings.md 持久化")。capabilities.yaml 加 planning-with-files entry。phase 05-persist 真生成 3 file (task_plan.md / progress.md / findings.md) 到 `.planning/<phase-id>/` 目录。
+### R20.15 planning-with-files 真接 plugin slash cmd /plan (Stage ② Plan 持久化铁律机器化)
+- **描述** (**Q-AUDIT-5a 2026-05-20 reframe**: terminology drift fix — npm registry verified 404, planning-with-files **是 Claude Code plugin NOT npm SDK**)：plan-feature workflow phase 05-persist 从 v1.0 mock reference 真接 **Claude Code plugin slash cmd `/plan`** (sister CLAUDE.md Stage ② Plan 显式 "必须调用 planning-with-files 生成 task_plan.md + progress.md + findings.md 持久化")。capabilities.yaml planning-with-files entry impl 字段 = `claude-code-plugin` (NOT `npm-sdk`)。phase 05-persist via workflow.yaml `invokes: '{{ capabilities.planning-with-files.cmd }}'` 模板插值调用 `/plan` slash cmd, 由 plugin 真生成 3 file (task_plan.md / progress.md / findings.md) 到 `.planning/<phase-id>/` 目录。
 - **版本**：v2.0
-- **验收**：(a) capabilities.yaml planning-with-files entry (b) plan-feature phase 05-persist 真接 SDK call (NOT mock) (c) 生成 task_plan.md + progress.md + findings.md 3 file 真持久化 (d) dogfood test: /plan-feature "<feature>" 后 .planning/<phase-id>/ 目录含 3 file。(Q-AUDIT-3 D-15)
+- **验收**：(a) capabilities.yaml planning-with-files entry `{impl: claude-code-plugin, cmd: /plan, requires: {plugin: planning-with-files >=2.2.0}}` (b) plan-feature workflow phase 05-persist `invokes: '{{ capabilities.planning-with-files.cmd }}'` (NOT npm SDK call, NOT fs.writeFile self-impl) (c) Claude Code plugin /plan 真生成 task_plan.md + progress.md + findings.md 3 file 持久化 (d) dogfood test: `/plan-feature "<feature>"` 后 `.planning/<phase-id>/` 目录含 3 file。(Q-AUDIT-3 D-15 + Q-AUDIT-5a reframe)
 
 ### R20.16 judgments/fallback.yaml — 3 铁律字段扩充 (CLAUDE.md fallback 机器化)
 - **描述**：judgments/fallback.yaml schema 增补 3 字段编码 CLAUDE.md 「澄清/审查触发判据」节 fallback 铁律:
