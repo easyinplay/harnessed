@@ -1,38 +1,42 @@
 #!/usr/bin/env node
 // scripts/check-workflow-schema.mjs — Phase v2.0-2.3 W0 T2.3.W0.6 (R20.2 + R20.4)
-//                                    — Phase v2.0-2.4 W0 T2.4.W0.1 (R20.1 + R20.9 workflow.v2 extension).
-// CI gate validating workflows/capabilities.yaml + workflows/judgments/*.yaml
-// + workflows/{plan-feature,execute-task,research,verify-work}/workflow.yaml
-// against TypeBox schemas (src/workflow/schema/{capabilities,judgment,workflow}.ts).
+//                                    — Phase v2.0-2.4 W0 T2.4.W0.1 (R20.1 + R20.9 workflow.v2 extension)
+//                                    — Phase v3.0-3.3 W0 T3.3.W0.10 (R30.9 cross-validate + Discipline schema).
+// CI gate validating:
+//   1. workflows/capabilities.yaml against Capabilities TypeBox schema (SSOT mirror)
+//   2. workflows/judgments/*.yaml (6 file: 5 triggers + 1 rules) against Judgment schemas
+//   3. workflows/disciplines/*.yaml (6 file ship v3.0) against Discipline TypeBox schema (NEW W0.10)
+//   4. workflows/{stage}/{sub}/workflow.yaml + flat workflows/{research,retro}/workflow.yaml
+//      against WorkflowSchemaV2 / V3 (grace period v1 skip)
+// + cross-validate contracts (NEW Phase 3.3 per RESEARCH-workflows Pattern A C.2):
+//   C1. workflow.yaml `tools_available[]` ⊂ capabilities.yaml entry name set (K2 + R3 + Pitfall 4)
+//   C2. workflow.yaml `disciplines_applied[]` ⊂ 6 discipline basename set
+//   C3. judgments/*.yaml triggers.*.invokes[].capability ⊂ capabilities.yaml entry name set
+// + invariant K9: master workflow delegates_to[] serial mode 必带 order
+// + tolerance: Phase 3.3 W0 末 0 workflow yaml exist 时仍 exit 0 (仅 capabilities + disciplines + judgments validate)
 //
 // SSOT: TS schema files in src/workflow/schema/ are the source of truth; this
 // .mjs inlines equivalent schemas because Node runtime cannot import TS modules
 // directly (NodeNext + verbatimModuleSyntax + noEmit). Sister pattern:
 // scripts/check-provenance.mjs branchOnSchemaVersion inline-port (Phase 2.2 T4.0).
-// Drift between TS and .mjs schemas surfaces in tests/workflow/schema*.test.ts
-// (which import the TS modules directly — any structural delta fails fixture
-// parity).
+// Drift between TS and .mjs schemas surfaces in tests/workflow/schema*.test.ts.
 //
-// v2 grace period (Phase v2.0-2.4 W0 → W1): legacy workflow.yaml files lacking
-// `schema_version: harnessed.workflow.v2` are SKIPPED with a warning until
-// Phase 2.4 W1 upgrades them. After W1 ship, the skip branch becomes a hard fail
-// (T2.4.W1.x will tighten this gate).
-//
-// Sister CI step "Workflow schema validate (v2.0 NEW)" wires after the
-// transparency gate per .github/workflows/ci.yml (Phase 2.1 W3 warn-only round 1
-// position precedent).
+// CI wire .github/workflows/ci.yml — sister Phase 2.3 W0.6 L141 已 wire,Phase 3.3 不变。
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { basename, dirname, resolve } from 'node:path'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Type } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const ROOT = resolve(__dirname, '..')
+const DEFAULT_ROOT = resolve(__dirname, '..')
+const ROOT = process.env.HARNESSED_CHECK_ROOT
+  ? resolve(process.env.HARNESSED_CHECK_ROOT)
+  : DEFAULT_ROOT
 
-// Capabilities schema — mirrors src/workflow/schema/capabilities.ts (SSOT).
+// ── Capabilities schema — mirrors src/workflow/schema/capabilities.ts ─────────
 const RequiresShape = Type.Object(
   {
     plugin: Type.Optional(Type.String()),
@@ -46,7 +50,17 @@ const AliasShape = Type.Object(
   { impl: Type.String(), cmd: Type.String() },
   { additionalProperties: false },
 )
-const CapabilityEntry = Type.Object(
+// D-08 + Pattern A B.3 — discriminated union: behavioral has discipline_ref, tool categories
+// have no discipline_ref (mirror src/workflow/schema/capabilities.ts SSOT).
+const ToolCategoryEnum = Type.Union([
+  Type.Literal('tool-slash-cmd'),
+  Type.Literal('tool-mcp'),
+  Type.Literal('tool-cli'),
+  Type.Literal('tool-plugin'),
+  Type.Literal('tool-bundled-skill'),
+  Type.Literal('agent-platform'),
+])
+const CapabilityEntryBase = Type.Object(
   {
     impl: Type.String(),
     cmd: Type.String(),
@@ -61,6 +75,28 @@ const CapabilityEntry = Type.Object(
   },
   { additionalProperties: false },
 )
+const DisciplineCapabilityEntry = Type.Composite(
+  [
+    CapabilityEntryBase,
+    Type.Object({
+      category: Type.Literal('behavioral'),
+      discipline_ref: Type.String({ pattern: '^workflows/disciplines/[a-z-]+\\.yaml$' }),
+    }),
+  ],
+  { additionalProperties: false },
+)
+const ToolCapabilityEntry = Type.Composite(
+  [CapabilityEntryBase, Type.Object({ category: ToolCategoryEnum })],
+  { additionalProperties: false },
+)
+const LegacyCapabilityEntry = Type.Composite([CapabilityEntryBase], {
+  additionalProperties: false,
+})
+const CapabilityEntry = Type.Union([
+  DisciplineCapabilityEntry,
+  ToolCapabilityEntry,
+  LegacyCapabilityEntry,
+])
 const Capabilities = Type.Object(
   {
     schema_version: Type.Literal('harnessed.capabilities.v1'),
@@ -69,7 +105,7 @@ const Capabilities = Type.Object(
   { additionalProperties: false },
 )
 
-// Judgment schemas — mirror src/workflow/schema/judgment.ts (SSOT).
+// ── Judgment schemas ──────────────────────────────────────────────────────────
 const TriggerInvocation = Type.Object(
   { capability: Type.String() },
   { additionalProperties: false },
@@ -114,44 +150,55 @@ const JudgmentRulesFile = Type.Object(
   { additionalProperties: false },
 )
 
-let failed = 0
-function reportErrors(label, schema, parsed) {
-  console.error(`::error::FAIL ${label} — schema mismatch`)
-  for (const err of Value.Errors(schema, parsed)) {
-    console.error(`  ${err.path || '<root>'}: ${err.message}`)
-  }
-}
+// ── Discipline schema — mirrors src/workflow/schema/discipline.ts (NEW W0.10) ─
+const DEnforcementLayer = Type.Union([
+  Type.Literal('code-writing'),
+  Type.Literal('output'),
+  Type.Literal('commit'),
+  Type.Literal('workflow'),
+  Type.Literal('tool'),
+])
+const DEnforcement = Type.Union([
+  Type.Literal('halt'),
+  Type.Literal('warn'),
+  Type.Literal('auto-fix'),
+  Type.Literal('info'),
+])
+const DisciplineRule = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }),
+    description: Type.String(),
+    enforcement: DEnforcement,
+    trigger: Type.Union([Type.String(), Type.Array(Type.String())]),
+    check_method: Type.String(),
+    auto_fix_cmd: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+)
+const ProtocolShape = Type.Object(
+  {
+    description: Type.String(),
+    required_fields: Type.Optional(Type.Array(Type.String())),
+    forbidden_phrases: Type.Optional(Type.Array(Type.String())),
+    file_ownership: Type.Optional(Type.Record(Type.String(), Type.Array(Type.String()))),
+    rules: Type.Optional(Type.Array(DisciplineRule)),
+  },
+  { additionalProperties: false },
+)
+const Discipline = Type.Object(
+  {
+    schema_version: Type.Literal('harnessed.discipline.v1'),
+    discipline: Type.String({ minLength: 1 }),
+    enforcement_layer: DEnforcementLayer,
+    auto_enforce: Type.Boolean(),
+    rules: Type.Array(DisciplineRule),
+    priority_hierarchy: Type.Optional(Type.Array(Type.String(), { minItems: 1 })),
+    protocols: Type.Optional(Type.Record(Type.String(), ProtocolShape)),
+  },
+  { additionalProperties: false },
+)
 
-// Check workflows/capabilities.yaml.
-const capPath = resolve(ROOT, 'workflows/capabilities.yaml')
-if (!existsSync(capPath)) {
-  console.error(`::error::workflows/capabilities.yaml missing at ${capPath}`)
-  failed++
-} else {
-  const capParsed = parseYaml(readFileSync(capPath, 'utf8'))
-  if (!Value.Check(Capabilities, capParsed)) {
-    reportErrors('workflows/capabilities.yaml', Capabilities, capParsed)
-    failed++
-  }
-}
-
-// Check workflows/judgments/*.yaml (6 file: 5 triggers + 1 rules).
-const judgmentsDir = resolve(ROOT, 'workflows/judgments')
-if (existsSync(judgmentsDir)) {
-  const yamlFiles = readdirSync(judgmentsDir).filter((f) => f.endsWith('.yaml'))
-  for (const f of yamlFiles) {
-    const parsed = parseYaml(readFileSync(resolve(judgmentsDir, f), 'utf8'))
-    const isFallback = basename(f, '.yaml') === 'fallback'
-    const schema = isFallback ? JudgmentRulesFile : JudgmentTriggersFile
-    const label = `workflows/judgments/${f}`
-    if (!Value.Check(schema, parsed)) {
-      reportErrors(label, schema, parsed)
-      failed++
-    }
-  }
-}
-
-// Workflow v2 schema — mirrors src/workflow/schema/workflow.ts (SSOT) — Phase v2.0-2.4 W0 T2.4.W0.1.
+// ── Workflow v2 / v3 schemas ──────────────────────────────────────────────────
 const ModelTier = Type.Union([Type.Literal('haiku'), Type.Literal('sonnet'), Type.Literal('opus')])
 const OnAction = Type.Union([Type.Literal('skip'), Type.Literal('invoke')])
 const OnClause = Type.Object(
@@ -189,6 +236,7 @@ const WorkflowPhaseV2 = Type.Object(
     fallback: Type.Optional(PhaseFallback),
     max_iterations: Type.Optional(Type.Union([Type.Number(), Type.String()])),
     artifacts_expected: Type.Optional(Type.Array(Type.String())),
+    tools_available: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: false },
 )
@@ -202,34 +250,194 @@ const WorkflowSchemaV2 = Type.Object(
   { additionalProperties: false },
 )
 
-// Scan workflows/*/{workflow.yaml,phases.yaml} (Phase 2.4 W0 grace period: skip
-// legacy v1 files lacking `schema_version: harnessed.workflow.v2` — W1 will
-// upgrade them, then this gate tightens). Sister naming: plan-feature uses
-// `workflow.yaml`, execute-task uses `phases.yaml` (legacy v1 name).
-const workflowDirs = ['plan-feature', 'execute-task', 'research', 'verify-work']
-let v2Validated = 0
-let v1Skipped = 0
-for (const wfName of workflowDirs) {
-  const dir = resolve(ROOT, 'workflows', wfName)
-  if (!existsSync(dir)) continue
-  for (const candidate of ['workflow.yaml', 'phases.yaml']) {
-    const path = resolve(dir, candidate)
-    if (!existsSync(path)) continue
-    const parsed = parseYaml(readFileSync(path, 'utf8'))
-    if (parsed?.schema_version !== 'harnessed.workflow.v2') {
-      console.warn(
-        `::warning::workflows/${wfName}/${candidate} — skipped (legacy v1, no schema_version; Phase 2.4 W1 will upgrade)`,
-      )
-      v1Skipped++
+// ── Error reporting helpers ───────────────────────────────────────────────────
+let failed = 0
+function reportErrors(label, schema, parsed) {
+  console.error(`::error::FAIL ${label} — schema mismatch`)
+  for (const err of Value.Errors(schema, parsed)) {
+    console.error(`  ${err.path || '<root>'}: ${err.message}`)
+  }
+}
+
+// ── Step 1: Capabilities ──────────────────────────────────────────────────────
+const capPath = resolve(ROOT, 'workflows/capabilities.yaml')
+let capNames = new Set()
+if (!existsSync(capPath)) {
+  console.error(`::error::workflows/capabilities.yaml missing at ${capPath}`)
+  failed++
+} else {
+  const capParsed = parseYaml(readFileSync(capPath, 'utf8'))
+  if (!Value.Check(Capabilities, capParsed)) {
+    reportErrors('workflows/capabilities.yaml', Capabilities, capParsed)
+    failed++
+  } else {
+    capNames = new Set(Object.keys(capParsed.capabilities))
+  }
+}
+
+// ── Step 2: Disciplines (NEW W0.10) ───────────────────────────────────────────
+const disciplinesDir = resolve(ROOT, 'workflows/disciplines')
+const discBasenames = new Set()
+if (existsSync(disciplinesDir)) {
+  const yamlFiles = readdirSync(disciplinesDir).filter((f) => f.endsWith('.yaml'))
+  for (const f of yamlFiles) {
+    const parsed = parseYaml(readFileSync(resolve(disciplinesDir, f), 'utf8'))
+    const label = `workflows/disciplines/${f}`
+    if (!Value.Check(Discipline, parsed)) {
+      reportErrors(label, Discipline, parsed)
+      failed++
+    } else {
+      discBasenames.add(basename(f, '.yaml'))
+    }
+  }
+}
+
+// ── Step 3: Judgments + Contract 3 (invokes capability ⊂ capabilities set) ────
+const judgmentsDir = resolve(ROOT, 'workflows/judgments')
+if (existsSync(judgmentsDir)) {
+  const yamlFiles = readdirSync(judgmentsDir).filter((f) => f.endsWith('.yaml'))
+  for (const f of yamlFiles) {
+    const parsed = parseYaml(readFileSync(resolve(judgmentsDir, f), 'utf8'))
+    const isFallback = basename(f, '.yaml') === 'fallback'
+    const schema = isFallback ? JudgmentRulesFile : JudgmentTriggersFile
+    const label = `workflows/judgments/${f}`
+    if (!Value.Check(schema, parsed)) {
+      reportErrors(label, schema, parsed)
+      failed++
       continue
     }
-    const label = `workflows/${wfName}/${candidate}`
+    // C3 cross-validate (skip fallback rules — no invokes field)
+    if (isFallback) continue
+    for (const [trigName, trig] of Object.entries(parsed.triggers ?? {})) {
+      for (const inv of trig.invokes ?? []) {
+        if (capNames.size > 0 && !capNames.has(inv.capability)) {
+          console.error(
+            `::error::FAIL ${label} — triggers.${trigName}.invokes[].capability '${inv.capability}' not in capabilities.yaml`,
+          )
+          failed++
+        }
+      }
+    }
+  }
+}
+
+// ── Step 4: Workflow yaml scan (flat + nested) + Contracts C1 + C2 + K9 ───────
+const workflowsRoot = resolve(ROOT, 'workflows')
+let v2Validated = 0
+let v3Validated = 0
+let v1Skipped = 0
+
+const SKIP_DIRS = new Set(['disciplines', 'judgments', 'manifests'])
+
+function collectWorkflowYamls() {
+  const out = []
+  if (!existsSync(workflowsRoot)) return out
+  for (const entry of readdirSync(workflowsRoot)) {
+    if (SKIP_DIRS.has(entry)) continue
+    const p = join(workflowsRoot, entry)
+    let s
+    try {
+      s = statSync(p)
+    } catch {
+      continue
+    }
+    if (!s.isDirectory()) continue
+    // Path A: flat top-level workflow.yaml OR phases.yaml
+    for (const candidate of ['workflow.yaml', 'phases.yaml']) {
+      const fp = join(p, candidate)
+      if (existsSync(fp)) out.push({ relPath: `${entry}/${candidate}`, path: fp })
+    }
+    // Path B: nested 2-level workflows/<stage>/<sub>/workflow.yaml
+    let subs
+    try {
+      subs = readdirSync(p)
+    } catch {
+      continue
+    }
+    for (const sub of subs) {
+      const subDir = join(p, sub)
+      let ss
+      try {
+        ss = statSync(subDir)
+      } catch {
+        continue
+      }
+      if (!ss.isDirectory()) continue
+      const fp = join(subDir, 'workflow.yaml')
+      if (existsSync(fp)) out.push({ relPath: `${entry}/${sub}/workflow.yaml`, path: fp })
+    }
+  }
+  return out
+}
+
+for (const { relPath, path } of collectWorkflowYamls()) {
+  const parsed = parseYaml(readFileSync(path, 'utf8'))
+  const label = `workflows/${relPath}`
+  const version = parsed?.schema_version
+
+  if (version === 'harnessed.workflow.v3') {
+    // V3 — light validate fields + cross-deps + K9 invariant
+    // (Full V3 TypeBox not inlined since schema-teammate ships ST validation
+    // upstream; .mjs only does cross-validate + invariant per Wave A reconcile)
+    v3Validated++
+    // C2: disciplines_applied[] ⊂ 6 discipline basename set
+    if (Array.isArray(parsed.disciplines_applied) && discBasenames.size > 0) {
+      for (const d of parsed.disciplines_applied) {
+        if (!discBasenames.has(d)) {
+          console.error(`::error::FAIL ${label} — disciplines_applied[] '${d}' not in disciplines/`)
+          failed++
+        }
+      }
+    }
+    // C1: phases[].tools_available[] ⊂ capabilities entry name set
+    if (capNames.size > 0 && Array.isArray(parsed.phases)) {
+      for (const ph of parsed.phases) {
+        for (const tool of ph.tools_available ?? []) {
+          if (!capNames.has(tool)) {
+            console.error(
+              `::error::FAIL ${label} — phases[${ph.id}].tools_available[] '${tool}' not in capabilities.yaml`,
+            )
+            failed++
+          }
+        }
+      }
+    }
+    // K9 invariant: delegates_to[] serial mode 必带 order (master workflows only)
+    if (Array.isArray(parsed.delegates_to)) {
+      for (const [i, clause] of parsed.delegates_to.entries()) {
+        if (clause?.mode === 'serial' && clause?.order === undefined) {
+          console.error(
+            `::error::FAIL ${label} — delegates_to[${i}] serial mode requires explicit order`,
+          )
+          failed++
+        }
+      }
+    }
+  } else if (version === 'harnessed.workflow.v2') {
     if (!Value.Check(WorkflowSchemaV2, parsed)) {
       reportErrors(label, WorkflowSchemaV2, parsed)
       failed++
     } else {
       v2Validated++
+      // C1 also applies to v2 phases[].tools_available[]
+      if (capNames.size > 0) {
+        for (const ph of parsed.phases ?? []) {
+          for (const tool of ph.tools_available ?? []) {
+            if (!capNames.has(tool)) {
+              console.error(
+                `::error::FAIL ${label} — phases[${ph.id}].tools_available[] '${tool}' not in capabilities.yaml`,
+              )
+              failed++
+            }
+          }
+        }
+      }
     }
+  } else {
+    console.warn(
+      `::warning::${label} — skipped (no schema_version OR unrecognized; treat as legacy v1)`,
+    )
+    v1Skipped++
   }
 }
 
@@ -238,5 +446,5 @@ if (failed > 0) {
   process.exit(1)
 }
 console.log(
-  `Workflow schema validation passed (capabilities + judgments/ + workflow.v2 validated=${v2Validated}, legacy v1 skipped=${v1Skipped})`,
+  `Workflow schema validation passed (capabilities + ${discBasenames.size} disciplines + judgments cross-validated + workflow v2=${v2Validated} / v3=${v3Validated}, legacy v1 skipped=${v1Skipped})`,
 )
