@@ -118,8 +118,104 @@ describe('fallback.yaml rules-shape parity', () => {
     expect(Value.Check(JudgmentTriggersFile, parsed)).toBe(false)
   })
 
-  test('B2: every shipped judgment yaml accounted for (6 file expected)', () => {
-    expect(judgmentFiles.length).toBe(6)
+  test('B2: every shipped judgment yaml accounted for (10 file expected — 6 v2 base + 4 v3 NEW T3.3.W0.3)', () => {
+    expect(judgmentFiles.length).toBe(10)
+  })
+})
+
+// Phase v3.0-3.3 W0 T3.3.W0.7 — discriminated union (Pattern A B.3) fixture.
+// behavioral category MUST have discipline_ref; tool-* category MUST NOT have discipline_ref.
+describe('Capabilities v3 discriminated union — T3.3.W0.7', () => {
+  test('C1: behavioral entry with discipline_ref passes', () => {
+    const ok = {
+      schema_version: 'harnessed.capabilities.v1',
+      capabilities: {
+        'karpathy-guidelines': {
+          impl: 'harnessed-bundled',
+          cmd: '<not-applicable-behavioral>',
+          since: 'v2.0',
+          category: 'behavioral',
+          discipline_ref: 'workflows/disciplines/karpathy.yaml',
+        },
+      },
+    }
+    expect(Value.Check(Capabilities, ok)).toBe(true)
+  })
+
+  test('C2: tool entry WITHOUT discipline_ref passes', () => {
+    const ok = {
+      schema_version: 'harnessed.capabilities.v1',
+      capabilities: {
+        'grill-with-docs': {
+          impl: 'mattpocock-skills',
+          cmd: '/grill-with-docs',
+          since: 'v2.0',
+          category: 'tool-slash-cmd',
+        },
+      },
+    }
+    expect(Value.Check(Capabilities, ok)).toBe(true)
+  })
+
+  test('C3: tool entry WITH discipline_ref rejected (additionalProperties:false guards)', () => {
+    const bad = {
+      schema_version: 'harnessed.capabilities.v1',
+      capabilities: {
+        'rogue-tool': {
+          impl: 'x',
+          cmd: '/x',
+          since: 'v3.0',
+          category: 'tool-slash-cmd',
+          discipline_ref: 'workflows/disciplines/karpathy.yaml',
+        },
+      },
+    }
+    expect(Value.Check(Capabilities, bad)).toBe(false)
+  })
+
+  test('C4: behavioral entry WITHOUT discipline_ref rejected (required field on variant)', () => {
+    const bad = {
+      schema_version: 'harnessed.capabilities.v1',
+      capabilities: {
+        'orphan-behavioral': {
+          impl: 'harnessed-bundled',
+          cmd: '<not-applicable-behavioral>',
+          since: 'v3.0',
+          category: 'behavioral',
+        },
+      },
+    }
+    expect(Value.Check(Capabilities, bad)).toBe(false)
+  })
+
+  test('C5: invalid discipline_ref pattern rejected (must match workflows/disciplines/<name>.yaml)', () => {
+    const bad = {
+      schema_version: 'harnessed.capabilities.v1',
+      capabilities: {
+        'bad-ref': {
+          impl: 'harnessed-bundled',
+          cmd: '<not-applicable-behavioral>',
+          since: 'v3.0',
+          category: 'behavioral',
+          discipline_ref: 'invalid/path/karpathy.yml', // missing workflows/disciplines/ prefix, .yml not .yaml
+        },
+      },
+    }
+    expect(Value.Check(Capabilities, bad)).toBe(false)
+  })
+
+  test('C6: legacy v2 entry WITHOUT category still passes (Pattern A B.1 backward-compat)', () => {
+    const legacy = {
+      schema_version: 'harnessed.capabilities.v1',
+      capabilities: {
+        'legacy-v2-entry': {
+          impl: 'mattpocock-skills',
+          cmd: '/legacy',
+          since: 'v2.0',
+        },
+      },
+    }
+    expect(Value.Check(Capabilities, legacy)).toBe(true)
   })
 })
 

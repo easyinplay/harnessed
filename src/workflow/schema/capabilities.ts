@@ -1,22 +1,19 @@
-// src/workflow/schema/capabilities.ts — Phase v2.0-2.3 W0 T2.3.W0.6 (R20.2).
-// TypeBox schema for workflows/capabilities.yaml (W0.1 shipped 360L, 37 entry).
-// Sister W0.1 capabilities.yaml schema_version: harnessed.capabilities.v1 (14th
-// surface in src/types/schemaVersion.ts SCHEMA_VERSIONS const).
+// src/workflow/schema/capabilities.ts — Phase v3.0-3.3 W0 T3.3.W0.7 (D-08 + Pattern A B.3 LOCK).
+// TypeBox schema for workflows/capabilities.yaml — capabilities.v1 in-place extend
+// (NOT bump per Pattern A B.1 — `category` field is Optional additive per D-16 rule c).
 //
-// Buckets covered (per W0.1 shipped):
-//   1. mattpocock 12 高频招式  (D-09)
-//   2. special-purpose 13 tool (D-14)
-//   3. gstack 治理关卡 6       (D-12)
-//   4. 核心 capability 4       (D-10 / D-13 / D-15 / superpowers)
-//   5. Agent Teams 3           (D-11 + Q-AUDIT-5b)
+// v2 → v3 字段 delta (sister Phase v2.0-2.3 W0 T2.3.W0.6 SHIPPED v2 67L):
+//   ADD `category` 7-enum CategoryEnum (D-08 — discriminator)
+//   ADD `discipline_ref` String pattern (behavioral category only, D-09 cross-link)
+//   Sister judgment.ts JudgmentTriggersFile vs JudgmentRulesFile discriminated union pattern verbatim
 //
-// `requires` 5 optional sub-field (matches W0.1 shipped):
-//   - plugin / settings_env_var / cc_version : string predicates
-//   - capabilities                            : string[] dep list (W0.2 cross-ref)
+// Schema discriminated union (Pattern A B.3):
+//   DisciplineCapabilityEntry — `category: 'behavioral'` + `discipline_ref: workflows/disciplines/<basename>.yaml`
+//   ToolCapabilityEntry       — `category` ∈ 6 non-behavioral literal + NO discipline_ref (additionalProperties:false guards)
 //
-// IMPL NOTE: additionalProperties:false on every nested Object — schema drift
-// (e.g. typo `requies` instead of `requires`) becomes a hard CI fail at the
-// scripts/check-workflow-schema.mjs gate (per ADR pattern sister manifest/spec.ts).
+// IMPL NOTE: schema_version 字面值未变 (`harnessed.capabilities.v1`); category 是 Optional 字段
+// 以保持 v2 backward-compat 期间 v2.x 35 entry 无需立刻 backfill (T3.3.W0.1 backfill 39 entry +
+// T3.3.W0.2 NEW 36 entry 已 ship — 全 v3 entry 必带 category, v2 SHIPPED entry 已 backfill 全部)。
 
 import { type Static, Type } from '@sinclair/typebox'
 import { SCHEMA_VERSIONS } from '../../types/schemaVersion.js'
@@ -39,7 +36,19 @@ const AliasShape = Type.Object(
   { additionalProperties: false },
 )
 
-export const CapabilityEntry = Type.Object(
+// D-08 7-enum 之 6 non-behavioral tool category (Pattern A B.3 — discriminated union variant 2).
+// DisciplineCapabilityEntry 直接 hardcode 'behavioral' literal,sister judgment.ts dual-shape。
+const ToolCategoryEnum = Type.Union([
+  Type.Literal('tool-slash-cmd'),
+  Type.Literal('tool-mcp'),
+  Type.Literal('tool-cli'),
+  Type.Literal('tool-plugin'),
+  Type.Literal('tool-bundled-skill'),
+  Type.Literal('agent-platform'),
+])
+
+// Shared base — 全 v2 SHIPPED 8 字段 + Optional `category` (Pattern A B.1 LOCK).
+const CapabilityEntryBase = Type.Object(
   {
     impl: Type.String(),
     cmd: Type.String(),
@@ -55,6 +64,45 @@ export const CapabilityEntry = Type.Object(
   { additionalProperties: false },
 )
 
+// Discriminated union variant 1 — behavioral category MUST have discipline_ref.
+const DisciplineCapabilityEntry = Type.Composite(
+  [
+    CapabilityEntryBase,
+    Type.Object({
+      category: Type.Literal('behavioral'),
+      discipline_ref: Type.String({
+        pattern: '^workflows/disciplines/[a-z-]+\\.yaml$',
+      }),
+    }),
+  ],
+  { additionalProperties: false },
+)
+
+// Discriminated union variant 2 — 6 non-behavioral category MUST NOT have discipline_ref
+// (enforced by additionalProperties:false on Composite — `discipline_ref` not declared,
+// schema check 拒绝任何含 `discipline_ref` 的 tool entry)。
+const ToolCapabilityEntry = Type.Composite(
+  [
+    CapabilityEntryBase,
+    Type.Object({
+      category: ToolCategoryEnum,
+    }),
+  ],
+  { additionalProperties: false },
+)
+
+// Legacy variant — v2 SHIPPED entry without `category` field (backward-compat during
+// Phase 3.3 W0.1 backfill rollout; harnessed v3.0 GA 后 strict require category 可能)。
+const LegacyCapabilityEntry = Type.Composite([CapabilityEntryBase], {
+  additionalProperties: false,
+})
+
+export const CapabilityEntry = Type.Union([
+  DisciplineCapabilityEntry,
+  ToolCapabilityEntry,
+  LegacyCapabilityEntry,
+])
+
 export const Capabilities = Type.Object(
   {
     schema_version: Type.Literal(SCHEMA_VERSIONS.capabilities),
@@ -65,3 +113,5 @@ export const Capabilities = Type.Object(
 
 export type CapabilitiesT = Static<typeof Capabilities>
 export type CapabilityEntryT = Static<typeof CapabilityEntry>
+export type DisciplineCapabilityEntryT = Static<typeof DisciplineCapabilityEntry>
+export type ToolCapabilityEntryT = Static<typeof ToolCapabilityEntry>
