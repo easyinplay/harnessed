@@ -104,20 +104,157 @@ harnessed resume
 
 ---
 
-## 🗂️ 项目结构
+## 🗂️ 架构 (v3.0 — 4-stage namespace-layered)
+
+### 1. 目录结构
 
 ```
 harnessed/
-├── manifests/         # 上游描述层 (不 vendor)
-│   ├── tools/         # CLI / MCP / hooks
-│   └── skill-packs/   # Claude Code skill packs
-├── workflows/         # composition skill (指挥棒)
-├── routing/           # 路由 SSOT (B+C 混合)
-├── schemas/           # JSON Schema artifact (IDE / CI consume)
-├── src/               # TS 源码 (installer / validator / router / checkpoint / audit)
-├── tests/             # vitest 单测 + 集成 + bench
-└── docs/adr/          # 架构决策记录 (ADR 0001-0023)
+├── manifests/                  # L1: 上游描述层 (NOT vendored)
+├── workflows/                  # L6: composition skill (4-stage 指挥棒)
+│   ├── discuss/                # Stage ① 3 layer (strategic + phase + subtask)
+│   │   ├── auto/               # /discuss master gate-route
+│   │   ├── strategic/          # /discuss-strategic (gstack /office-hours + /plan-ceo-review)
+│   │   ├── phase/              # /discuss-phase (GSD /gsd-discuss-phase)
+│   │   └── subtask/            # /discuss-subtask (superpowers brainstorming)
+│   ├── plan/                   # Stage ② (architecture + phase 任务图)
+│   ├── task/                   # Stage ③ (clarify + code + test + deliver)
+│   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
+│   ├── research/               # standalone Stage ① alternate
+│   ├── retro/                  # standalone post-④ milestone close
+│   ├── capabilities.yaml       # L5a: ~70 entry, 7 category SoT
+│   ├── defaults.yaml           # ralph_max_iterations per workflow phase
+│   ├── judgments/              # L5a: 三层栈判据 + parallelism + tdd + fallback + rules-routing
+│   │   ├── strategic-gate.yaml
+│   │   ├── phase-gate.yaml
+│   │   ├── subtask-gate.yaml
+│   │   ├── parallelism-gate.yaml         # L5b execution mechanism routing
+│   │   ├── tdd-gate.yaml
+│   │   ├── fallback.yaml                 # 3 铁律: skip_with_transparency + override + chain_isolation
+│   │   ├── web-design-routing.yaml       # rules/web-design.md codify
+│   │   ├── web-testing-routing.yaml      # rules/web-testing.md codify
+│   │   ├── web-search-routing.yaml       # rules/web-search.md codify
+│   │   └── stage-routing.yaml            # master orchestrator sub-stage 路由
+│   └── disciplines/            # L0: NEW v3.0 global cross-stage behavioral norms
+│       ├── karpathy.yaml       # 4 心法 + ≤200L
+│       ├── output-style.yaml   # BLUF + no-emoji + no-em-dash
+│       ├── language.yaml       # zh-Hans default + English preserve
+│       ├── operational.yaml    # biome preempt + A7 + commit safety
+│       ├── priority.yaml       # skill conflict 仲裁
+│       └── protocols.yaml      # cc-handoff design doc 自包含
+├── routing/                    # L4: routing engine SSOT (decision_rules.yaml)
+├── schemas/                    # L3: JSON Schema (IDE / CI consume)
+├── src/                        # L4: TS engine (workflow + routing + cli + installers + checkpoint + audit + state)
+├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
+├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
+├── .planning/                  # project memory (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
+└── docs/adr/                   # 架构决策记录 (ADR 0001-0032)
 ```
+
+### 2. 逻辑分层 (8 层)
+
+```
+┌────────────────────────────────────────────────────────────┐
+│ L7 User-facing slash cmd + harnessed CLI                    │
+│   /discuss /plan /task /verify (master) + 14 sub + /research /retro
+│   + direct gstack invoke (30+ optional): /office-hours /review /qa /...
+├────────────────────────────────────────────────────────────┤
+│ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
+├────────────────────────────────────────────────────────────┤
+│ L5b Execution Mechanism (orthogonal): subagent / Agent Teams │
+│   / 主 session + ralph-loop wrapper                         │
+│   parallelism-gate.yaml: 默认 subagent → escalate 5 触发     │
+│   Pattern A 全栈三路 / B 对立假设 / C 多维度审查              │
+├────────────────────────────────────────────────────────────┤
+│ L5a Capability + Judgment + Defaults SoT                    │
+│   capabilities.yaml (7 category) + judgments/ (10 file) +    │
+│   defaults.yaml                                              │
+├────────────────────────────────────────────────────────────┤
+│ L4  Runtime engine (workflow / routing / handlers)           │
+├────────────────────────────────────────────────────────────┤
+│ L3  TypeBox schema + CI gate                                 │
+├────────────────────────────────────────────────────────────┤
+│ L2  Installer + Manifest engine                              │
+├────────────────────────────────────────────────────────────┤
+│ L1  Upstream components (NOT vendored)                       │
+├────────────────────────────────────────────────────────────┤
+│ L0  Discipline Substrate (NEW v3.0 — 全局生效)               │
+│   karpathy 心法 + output-style + language + operational +    │
+│   priority + protocols (applied universally to L1-L7)       │
+└────────────────────────────────────────────────────────────┘
+```
+
+### 3. Cross-cutting Capabilities (capabilities.yaml 7 category, ~70 entry)
+
+```
+behavioral (1):       karpathy-guidelines (4 心法 always-on)
+tool-slash-cmd (40+): gstack 30+ optional + gsd 10+ + mattpocock 12 高频
+tool-mcp (4):         chrome-devtools-mcp / tavily-mcp / exa-mcp / playwright-mcp
+tool-cli (3):         ctx7 / playwright-cli / gws
+tool-plugin (2):      planning-with-files / @playwright/test
+tool-bundled (2):     ralph-loop / webapp-testing
+agent-platform (3):   agent-teams-create / send-message / shutdown
+```
+
+### 4. 数据流示例 (用户调用 `/discuss "新功能 X"`)
+
+```
+[L7] User invokes /discuss "新功能 X"
+  ↓
+[L6] workflows/discuss/auto/workflow.yaml master orchestrator
+  ↓
+[L5a] judgments.strategic-gate.fires + phase-gate.fires + subtask-gate.fires (3-way 并行 eval)
+  ↓
+[L4] judgmentResolver.ts (4-level ref split) + exprBuilder.ts (expr-eval evaluate)
+  ↓
+[L0] discipline.priority-hierarchy 仲裁工具冲突 / output-style 格式化输出
+  ↓
+[fires=true sub] → invoke sub-workflow (/discuss-strategic / /discuss-phase / /discuss-subtask)
+  ↓ for each sub:
+      ├─ behavioral_layer: karpathy-guidelines (always-on)
+      ├─ tools_available: planning-with-files / ctx7 / mattpocock by-condition
+      ├─ parallelism: judgments.parallelism-gate.<route>.fires (L5b mechanism)
+      └─ phase invocations execute via capability template interpolation
+  ↓
+[fallback.yaml chain-isolation] 三层独立判断, 不串行依赖
+[Skip 透明声明] 不 fire 的 sub → "⚠️ 跳过 <sub>, 因为 <reason>"
+  ↓
+planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/<phase-id>/
+  ↓
+[L4] state.ts writeCurrentWorkflow (proper-lockfile) + audit.append (12-field JSONL)
+```
+
+### 5. 抉择路由矩阵 (rules-based, codified in judgments + capabilities)
+
+| 场景 | Rule source | Default → Escalate |
+|------|------------|---------------------|
+| 并行机制 | rules/agent-teams.md | subagent → Agent Teams Pattern A/B/C (5 触发) |
+| UI 设计主方案 | rules/web-design.md | ui-ux-pro-max → frontend-design (用户明示风格) |
+| E2E 浏览器探查 | rules/web-testing.md | playwright-cli (Bash 一行 token 省) |
+| E2E commit-able TS | rules/web-testing.md | @playwright/test 默认 |
+| E2E Python 后端联动 | rules/web-testing.md | webapp-testing |
+| 性能/a11y/内存 | rules/web-testing.md | chrome-devtools-mcp |
+| Web 搜索 (关键词) | rules/web-search.md | Tavily MCP 默认 |
+| Web 搜索 (描述式/学术) | rules/web-search.md | Exa MCP |
+| 库 API 文档 | rules/context7.md | ctx7 CLI |
+| GitHub URL | rules/web-search.md | gh CLI |
+| 单 URL 抓取 | rules/web-search.md | WebFetch 内置 |
+| Gmail/Drive/Calendar | rules/google-workspace.md | gws CLI |
+| 架构审查 (复杂) | CLAUDE.md Stage ② | gstack /plan-eng-review |
+| TDD 强制 (核心算法) | CLAUDE.md Stage ③ | superpowers TDD OR mattpocock /tdd |
+| 关键模块 PR | CLAUDE.md Stage ④ | gstack /review |
+| 大重构 PR multi-dim | CLAUDE.md Stage ④ + Pattern C | 4-spec Agent Team |
+| 跨 CC 协议 | rules/cc-handoff.md | discipline.protocols self-contained design doc |
+
+### v3.0 superset commitment
+
+harnessed v3.0 是 user 个人 `~/.claude/CLAUDE.md` + Obsidian doc + `~/.claude/rules/` 的 **machine-codified superset**:
+- ✅ 4-stage cadence verbatim 机器化 (20 workflows)
+- ✅ 三层栈判据 + fallback 3 铁律 (judgments/ 10 file)
+- ✅ Pattern A/B/C Agent Teams routing (L5b mechanism)
+- ✅ Rules-based tool routing (4 NEW judgments + capabilities)
+- ✅ Global discipline (L0 substrate, 6 yaml)
+- ✅ harnessed > user manual via: auto gate-route + Pure bundled + cross-session memory + ADR audit + Token cost estimation + real-time discipline enforcement
 
 ---
 
