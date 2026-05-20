@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-05-20 — backup path EPERM patch
+
+### Fixed
+- **P0 backup dir EPERM fix**: backup root migrated from `<process.cwd()>/.harnessed-backup/` → `<homedir()>/.harnessed/backups/`. User-reported v2.0.0 ship bug: `harnessed setup --apply` failed with `EPERM: operation not permitted, mkdir 'C:\Program Files\Warp\.harnessed-backup'` when user launched harness from Warp terminal (CWD = read-only `C:\Program Files\Warp\`). All MCP/plugin installs blocked because backup mkdir failure precedes idempotent skip check in `mcpStdioAdd.ts:122` (sister v1.0.4 idempotent contract bypassed at backup-fail). Fix migrates 4 file (`src/installers/lib/backup.ts` + `src/cli/{backup-list,gc,rollback}.ts`) to shared `getBackupRoot()` helper (new export from `backup.ts`).
+- Side benefit: backup snapshots now persist across project directories (no per-project `.harnessed-backup/` folder pollution); `harnessed backup list` / `gc` / `rollback` 全部跨项目 shared snapshot pool。
+
+### Changed
+- `src/installers/lib/backup.ts`: NEW `getBackupRoot()` export (sister Phase 2.6 ADR 0024 capability abstraction single-source-of-truth pattern); `backup()` writer 用 homedir-based root NOT ctx.cwd
+- `src/cli/backup-list.ts` + `src/cli/gc.ts` + `src/cli/rollback.ts`: import + 用 `getBackupRoot()` (3 file)
+
+### Tests
+- `tests/unit/installers-lib-backup.test.ts`: regex tighten `/.harnessed-backup/` → `/\.harnessed[/\\]backups/` (cross-platform path sep) + NEW v2.0.1 regression fixture (ctx.cwd = `C:\Program Files\Warp` should NOT appear in backup mkdir path)
+- `tests/integration/installer-contract.test.ts`: same regex tighten — 7 installer × 1 fixture each (npm-cli + mcp-stdio-add + mcp-http-add + git-clone-with-setup + cc-plugin-marketplace + npx-skill-installer + cc-hook-add)
+- Full suite 900 pass / 4 skip / 0 fail (was 899 baseline, +1 NEW regression fixture)
+
+### Migration note
+Existing v1.0.x / v2.0.0 users with `<project>/.harnessed-backup/` directories: new install uses `~/.harnessed/backups/` instead. Old per-project directories remain on disk (harmless artifact); manually delete if desired. No data migration needed — backup snapshots are reproducible from manifest install.
+
+### Deferred (sister deferred-items v2.x backlog)
+- **Plugin version-check + update semantic** (user feedback v2.0.0): non-MCP installer (e.g. gsd skills) currently install unconditionally OR skip-silent on existing dir; user expectation = version-check + update if newer available. Requires per-installer version-comparison logic (gstack via npm has version, GSD via git-clone has commit SHA, etc.) — defer to v2.1 minor patch (substantial UX redesign, sister ADR 0004 idempotent contract extension required).
+
 ## [2.0.0] - 2026-05-20 — v2.0 Architecture Refactor
 
 **Trigger**: v1.0.0~v1.0.4 ship cycle 暴露 fundamental architectural flaw — workflow.yaml 是 build-artifact NOT runtime config; 上游 / Claude Code 平台 / 优秀新组件升级时调整需 1-2 day full npm release cycle (user catch 2026-05-22 post v1.0.4 ship)。

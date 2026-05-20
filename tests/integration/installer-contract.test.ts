@@ -551,7 +551,7 @@ for (const method of methods) {
         )
         await runInstall(factories[method as Method](), applyOpts(method))
         const calls = mkdirMock.mock.calls.map((c) => String(c[0]))
-        const hasBackupDir = calls.some((p) => p.includes('.harnessed-backup'))
+        const hasBackupDir = calls.some((p) => /\.harnessed[/\\]backups/.test(p))
         expect(hasBackupDir).toBe(true)
       } finally {
         cap.restore()

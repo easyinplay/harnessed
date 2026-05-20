@@ -15,8 +15,9 @@
 
 import { createHash } from 'node:crypto'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import type { Command } from 'commander'
+import { getBackupRoot } from '../installers/lib/backup.js'
 
 interface BackupFileEntry {
   target: string
@@ -42,7 +43,7 @@ export function registerRollback(program: Command): void {
     .command('rollback <timestamp>')
     .description('Restore files from a backup snapshot (preserves original LF/CRLF)')
     .action(async (timestamp: string) => {
-      const dir = resolve(process.cwd(), '.harnessed-backup', timestamp)
+      const dir = join(getBackupRoot(), timestamp)
       const metaPath = join(dir, 'metadata.json')
       let meta: BackupMetadata
       try {

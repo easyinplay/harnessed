@@ -19,8 +19,19 @@
 
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 import type { DiffPlan, InstallContext, InstallError } from './types.js'
+
+// v2.0.1 fix: backup root migrated from `<ctx.cwd>/.harnessed-backup/` to
+// `~/.harnessed/backups/` to support running harnessed from read-only CWD
+// (e.g. user launched terminal from `C:\Program Files\Warp\` → mkdir EPERM).
+// `getBackupRoot()` is exported so cli/backup-list.ts + cli/gc.ts +
+// cli/rollback.ts share the same SoT (sister Phase 2.6 single-source-of-truth
+// per ADR 0024 capability abstraction pattern).
+export function getBackupRoot(): string {
+  return join(homedir(), '.harnessed', 'backups')
+}
 
 export interface BackupFileEntry {
   target: string // absolute path of original file
@@ -69,7 +80,7 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
 
   // ISO timestamp with `:` → `-` for Win filename safety.
   const backupId = new Date().toISOString().replace(/:/g, '-')
-  const backupDir = join(ctx.cwd, '.harnessed-backup', backupId)
+  const backupDir = join(getBackupRoot(), backupId)
 
   try {
     await mkdir(backupDir, { recursive: true })

@@ -115,8 +115,22 @@ describe('backup', () => {
     const plan: DiffPlan = { files: [] }
     await backup(plan, ctx())
     const firstMkdir = mkdirMock.mock.calls[0]
-    expect(firstMkdir?.[0]).toMatch(/\.harnessed-backup/)
+    expect(firstMkdir?.[0]).toMatch(/\.harnessed[/\\]backups/)
     expect(firstMkdir?.[1]).toEqual({ recursive: true })
+  })
+
+  it('v2.0.1 regression — backup root resolves under homedir NOT ctx.cwd (EPERM fix when CWD is read-only like Program Files)', async () => {
+    const plan: DiffPlan = { files: [] }
+    // ctx.cwd intentionally set to a path that should NOT appear in backup dir
+    // (sister user repro: CWD = C:\Program Files\Warp\ → EPERM on mkdir)
+    const readOnlyCtx: InstallContext = { ...ctx(), cwd: 'C:\\Program Files\\Warp' }
+    await backup(plan, readOnlyCtx)
+    const firstMkdir = mkdirMock.mock.calls[0]?.[0] as string
+    expect(firstMkdir).toBeTruthy()
+    expect(firstMkdir).not.toContain('Program Files')
+    expect(firstMkdir).not.toContain('C:\\Program')
+    // Path should reference user homedir-based location
+    expect(firstMkdir).toMatch(/\.harnessed[/\\]backups/)
   })
 
   it('writes metadata.json with installer name + timestamp + files[]', async () => {

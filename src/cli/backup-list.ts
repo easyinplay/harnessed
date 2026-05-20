@@ -6,8 +6,9 @@
 // a chosen timestamp).
 
 import { readdir, readFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import type { Command } from 'commander'
+import { getBackupRoot } from '../installers/lib/backup.js'
 
 interface BackupMetadata {
   installer: string
@@ -22,7 +23,7 @@ export function registerBackupList(program: Command): void {
     .command('list')
     .description('List backup snapshots under .harnessed-backup/')
     .action(async () => {
-      const root = resolve(process.cwd(), '.harnessed-backup')
+      const root = getBackupRoot()
       let dirs: string[]
       try {
         dirs = (await readdir(root, { withFileTypes: true }))
@@ -30,11 +31,11 @@ export function registerBackupList(program: Command): void {
           .map((e) => e.name)
           .sort()
       } catch {
-        console.log('no backups found (.harnessed-backup/ absent)')
+        console.log(`no backups found (${root} absent)`)
         return
       }
       if (dirs.length === 0) {
-        console.log('no backups found (.harnessed-backup/ empty)')
+        console.log(`no backups found (${root} empty)`)
         return
       }
       for (const ts of dirs) {

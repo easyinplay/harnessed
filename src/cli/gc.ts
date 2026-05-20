@@ -14,8 +14,9 @@
 // safety contract uniform across all destructive harnessed commands.
 
 import { readdir, readFile, rm, stat } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import type { Command } from 'commander'
+import { getBackupRoot } from '../installers/lib/backup.js'
 
 interface BackupMetadata {
   installer: string
@@ -81,7 +82,7 @@ export function registerGc(program: Command): void {
         return
       }
       const keepLast = Number.parseInt(opts.keepLast ?? '0', 10)
-      const root = resolve(process.cwd(), '.harnessed-backup')
+      const root = getBackupRoot()
       let dirs: string[]
       try {
         dirs = (await readdir(root, { withFileTypes: true }))
@@ -89,7 +90,7 @@ export function registerGc(program: Command): void {
           .map((e) => e.name)
           .sort()
       } catch {
-        console.log('no backups found (.harnessed-backup/ absent) — nothing to gc')
+        console.log(`no backups found (${root} absent) — nothing to gc`)
         return
       }
       const cutoff = Date.now() - olderMs
