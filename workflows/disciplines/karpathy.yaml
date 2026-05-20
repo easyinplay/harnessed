@@ -1,0 +1,47 @@
+# workflows/disciplines/karpathy.yaml
+# karpathy 心法 + 编码硬限 — 机器化 ~/.claude/CLAUDE.md 「andrej-karpathy-skills」 节
+# Phase v3.0-3.3 W0.4 ship per D-09 (L0 Discipline Substrate)
+# Snapshot of CLAUDE.md as of v3.0 ship date (K7 mitigation, verbatim)
+
+schema_version: harnessed.discipline.v1
+discipline: karpathy
+enforcement_layer: code-writing
+auto_enforce: true
+
+rules:
+  - id: think-before-coding
+    description: 先思考后写代码,不直接 dump 代码;每个子任务前 brainstorm 设计意图
+    enforcement: warn
+    trigger: subtask.type == 'code-write'
+    check_method: heuristic
+    # check_method='heuristic' — runtime engine 检查 subagent 输出 first 200 char 是否含设计意图 marker
+    # (e.g., 'Plan:' / 'Approach:' / '设计:' / '思路:'),若全是 code block → warn
+
+  - id: simplicity-first
+    description: 追求最小有效代码,避免不必要复杂度;YAGNI / 不为假设场景写代码
+    enforcement: warn
+    trigger: always-on
+    check_method: llm-judge
+    # check_method='llm-judge' — verify phase 调用 code-simplifier review
+
+  - id: surgical-changes
+    description: 小步原子修改,每个 commit 单一职责;不大段重写
+    enforcement: warn
+    trigger: phase.type == 'execute'
+    check_method: external-cmd
+    auto_fix_cmd: 'git diff --stat HEAD~1 | awk ''{lines+=$3} END {if (lines>300) exit 1}'''
+    # 单 commit > 300 line diff → warn (rough heuristic, override allowed via task spec)
+
+  - id: goal-driven-execution
+    description: 目标驱动,不发散 / 不无关重构;只解决当前任务 + 不夹带 cleanup
+    enforcement: warn
+    trigger: phase.type == 'execute'
+    check_method: heuristic
+
+  - id: file-length-200-hard-limit
+    description: 单文件 ≤200L 硬限 (per project CLAUDE.md karpathy 心法 reminder);超过 → split helper
+    enforcement: halt
+    trigger: phase.type == 'execute' AND file.lines > 200
+    check_method: external-cmd
+    auto_fix_cmd: 'wc -l <file> | awk ''{if ($1>200) exit 1}'''
+    # 实装 split helper pattern (sister fallbackHandlers.ts / sdkReconcile.ts ≤80L)

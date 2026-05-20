@@ -1,0 +1,61 @@
+# workflows/disciplines/operational.yaml
+# 操作纪律 — 机器化 project CLAUDE.md (biome preempt + commit safety) +
+# ~/.claude/CLAUDE.md (A7 ADR / no-skip-hooks / authorization-not-transitive)
+# Phase v3.0-3.3 W0.4 ship per D-09
+# Snapshot of CLAUDE.md as of v3.0 ship date (K7 mitigation, verbatim)
+
+schema_version: harnessed.discipline.v1
+discipline: operational
+enforcement_layer: commit
+auto_enforce: true
+
+rules:
+  - id: biome-preempt
+    description: |
+      TS/JS commit 前必跑 `pnpm exec biome check --write` (3 CI-red recurrences Phase 2.1.1/2.2/2.3 project memory)
+    enforcement: auto-fix
+    trigger: |
+      phase.type == 'commit' AND
+      changed_files matches '\\.(ts|tsx|js|mjs)$'
+    check_method: external-cmd
+    auto_fix_cmd: 'corepack pnpm exec biome check --write'
+    # NEW src/discipline/enforcement/before-commit.ts hook; exit 0 才允许 commit
+
+  - id: a7-adr-conservation
+    description: |
+      新 ADR 不动旧 ADR main body,baseline tag iterate,CI A7 step 守恒
+      (sister Phase 1.3-2.6 ADR errata 路径)
+    enforcement: warn
+    trigger: phase.type == 'commit' AND changed_files contains 'docs/adr/'
+    check_method: external-cmd
+    auto_fix_cmd: 'scripts/check-adr-conservation.sh'
+
+  - id: no-push-without-approval
+    description: |
+      NEVER push to remote without user explicit approval (project CLAUDE.md commit safety)
+    enforcement: halt
+    trigger: cmd.type == 'git-push'
+    check_method: external-cmd
+    # ralph-loop / subagent 自动调 git push → halt;user explicit `git push` 在主 session 允许
+
+  - id: no-skip-hooks
+    description: |
+      不允许 --no-verify / --no-gpg-sign 等 skip hook flag,除非用户明确要求
+    enforcement: halt
+    trigger: cmd.type == 'git-commit' AND args contains '--no-verify'
+    check_method: regex
+
+  - id: destructive-ops-explicit
+    description: |
+      Destructive ops (git reset --hard / push --force / rm -rf / drop table) 必须用户 explicit 确认
+    enforcement: halt
+    trigger: cmd.is_destructive == true
+    check_method: heuristic
+    # heuristic — 命令含 'rm -rf' / 'reset --hard' / '--force' / 'DROP TABLE' / 'delete from'
+
+  - id: authorization-not-transitive
+    description: |
+      用户 approve 一次 push ≠ 全程 approve;每个 destructive / shared-state 操作单独确认
+    enforcement: warn
+    trigger: cmd.requires_approval == true AND session.has_prior_approval == true
+    check_method: heuristic

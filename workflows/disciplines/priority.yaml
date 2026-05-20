@@ -1,0 +1,28 @@
+# workflows/disciplines/priority.yaml
+# 优先级仲裁 — 机器化 ~/.claude/CLAUDE.md 「响应规范与优先级」 节
+# Phase v3.0-3.3 W0.4 ship per D-09
+# Snapshot of CLAUDE.md as of v3.0 ship date (K7 mitigation, verbatim)
+
+schema_version: harnessed.discipline.v1
+discipline: priority
+enforcement_layer: workflow
+auto_enforce: true
+
+priority_hierarchy:
+  - gstack                       # 决策层 最高优先
+  - gsd                          # 整体 orchestration
+  - superpowers                  # 子任务执行质量
+  - planning-with-files          # 计划持久化
+  - karpathy                     # 编码行为
+  - mattpocock                   # 招式 by-demand
+  - parallel                     # subagent / Agent Teams / ralph-loop 执行机制
+
+rules:
+  - id: multi-capability-arbitration
+    description: |
+      多 capability fires_when 同时 true → 按 priority_hierarchy order 选最高
+      e.g., gstack /office-hours + GSD /gsd-discuss-phase 同 fire → gstack 先跑
+    enforcement: warn
+    trigger: capabilities.fired_count > 1
+    check_method: heuristic
+    # NEW src/discipline/enforcement/before-spawn.ts hook — sort fired capabilities by tier rank

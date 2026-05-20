@@ -1,0 +1,70 @@
+# workflows/disciplines/protocols.yaml
+# 跨 CC instance 协议 — 机器化 ~/.claude/rules/cc-handoff.md (Ideation→Onboarding +
+# Plan→Execute) + 写入边界表
+# Phase v3.0-3.3 W0.4 ship per D-09
+# Snapshot of CLAUDE.md as of v3.0 ship date (K7 mitigation, verbatim)
+
+schema_version: harnessed.discipline.v1
+discipline: protocols
+enforcement_layer: workflow
+auto_enforce: false   # 默认 NOT auto-enforce — 协议是 cross-session, harnessed 主要 validate
+
+rules: []
+
+protocols:
+  cc-handoff-ideation-to-onboarding:
+    description: |
+      场景 A — Ideation-CC 写自包含产品设计文档;Onboarding-CC 新项目目录读取并启动 GSD
+    required_fields:
+      - 业务目的
+      - 范围/边界
+      - 关键决策+决策理由
+      - 技术栈+理由
+      - 已识别风险
+      - 推荐 milestone 划分
+      - "Open questions (OPEN: <问题>, decision required by user)"
+    forbidden_phrases:
+      - "TODO"
+      - "待补充"
+      - "暂定"
+
+  plan-execute-cc-ready-metadata:
+    description: |
+      场景 B — Plan-CC 离场 PLAN.md 必须 ready-to-execute (metadata 标记)
+    required_fields:
+      - "status: ready-to-execute"
+      - 每个 task: 精确文件路径
+      - 每个 task: acceptance criteria
+      - 每个 task: 依赖前置 task 编号
+      - "## Open Questions 节为空"
+    forbidden_phrases:
+      - "TODO"
+      - "待补充"
+      - "暂定"
+
+  file-ownership-strict:
+    description: |
+      跨 CC 写入边界 — 下游 CC 不修改上游 artifact;歧义写到 PROGRESS.md ## Blocked
+    file_ownership:
+      ideation-cc:
+        - 产品设计文档
+      onboarding-cc:
+        - ".planning/* (初始化)"
+        - 项目代码
+      plan-cc:
+        - SPEC.md
+        - DISCUSS.md
+        - PLAN.md
+        - RESEARCH.md
+      execute-cc:
+        - PROGRESS.md
+        - VERIFICATION.md
+        - 代码
+        - commit
+    rules:
+      - id: no-modify-upstream-artifact
+        description: |
+          下游 CC 发现上游 artifact 模糊 → 写 PROGRESS.md ## Blocked,不修改上游
+        enforcement: halt
+        trigger: cc.role == 'execute' AND file.target matches 'PLAN.md|SPEC.md|DISCUSS.md|RESEARCH.md'
+        check_method: file-content-match

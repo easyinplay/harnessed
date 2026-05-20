@@ -1,0 +1,38 @@
+# workflows/disciplines/language.yaml
+# 语言与输出规范 — 机器化 ~/.claude/CLAUDE.md 「语言与输出规范」 节
+# Phase v3.0-3.3 W0.4 ship per D-09
+# Snapshot of CLAUDE.md as of v3.0 ship date (K7 mitigation, verbatim)
+
+schema_version: harnessed.discipline.v1
+discipline: language
+enforcement_layer: output
+auto_enforce: true
+
+rules:
+  - id: default-language-zh-hans
+    description: 默认输出语言简体中文 (zh-Hans);所有解释/分析/计划/总结/提问/状态更新一律中文
+    enforcement: warn
+    trigger: user.lang_request == null
+    check_method: heuristic
+    # heuristic — response 中文 char 占比 > 60% (排除 code block);占比 < 30% → warn
+
+  - id: preserve-english-categories
+    description: 8 类强制保留英文原文,不翻译不音译
+    enforcement: warn
+    trigger: always-on
+    check_method: heuristic
+    # 8 类 (verbatim CLAUDE.md):
+    #   1. 代码/命令/shell/配置/正则/SQL
+    #   2. 文件/目录/路径名 (src/components/Button.tsx 等)
+    #   3. 工具/框架/库/产品/公司名 (Claude Code / GSD / React 等)
+    #   4. API/函数/类/变量/字段/环境变量/配置键
+    #   5. 错误信息/stack trace/log 输出
+    #   6. URL / commit hash / issue / PR 编号 / 版本号 / git ref
+    #   7. 业内固定缩写与通用术语 (TDD / CRUD / API / MCP / token 等)
+    #   8. 引用原文 verbatim
+
+  - id: lang-request-override
+    description: 用户明确"用英文回答"/"reply in English"/"翻译成 X" → 整段切换目标语言
+    enforcement: info
+    trigger: user.lang_request != null
+    check_method: regex

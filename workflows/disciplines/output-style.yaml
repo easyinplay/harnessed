@@ -1,0 +1,62 @@
+# workflows/disciplines/output-style.yaml
+# 对话回答风格 — 机器化 ~/.claude/CLAUDE.md 「对话回答风格」 节
+# Phase v3.0-3.3 W0.4 ship per D-09
+# Snapshot of CLAUDE.md as of v3.0 ship date (K7 mitigation, verbatim)
+
+schema_version: harnessed.discipline.v1
+discipline: output-style
+enforcement_layer: output
+auto_enforce: true
+
+rules:
+  - id: bluf-conclusion-first
+    description: 结论先行 (BLUF),每段先一句给答案/判断/推荐,再展开理由
+    enforcement: warn
+    trigger: always-on
+    check_method: heuristic
+    # heuristic — 第一句长度 ≤ 100 char + 含答案动词 ('是' / '不是' / '推荐' / '应该' / 'use X')
+    # 失败 → warn 'BLUF missing: first sentence is not a conclusion'
+
+  - id: no-sycophantic-open-close
+    description: 删除"好问题/太棒了/完美/希望对你有帮助/还需要别的吗"等开场闭合套话
+    enforcement: auto-fix
+    trigger: always-on
+    check_method: regex
+    auto_fix_cmd: 'strip-sycophantic'
+    # NEW src/discipline/enforcement/strip-sycophantic.ts — regex strip 13 known phrase
+
+  - id: no-emoji-unless-requested
+    description: 禁用 emoji,除非用户明确要求 (项目 markdown 文件如 README/PR/CHANGELOG 不约束)
+    enforcement: warn
+    trigger: response.target == 'chat' AND user.requested_emoji == false
+    check_method: regex
+    # regex /\p{Emoji_Presentation}/u; 命中 + trigger fires → warn
+
+  - id: no-em-dash
+    description: 禁用 em-dash (—— / —);替代:补充用括号/冒号,并列用顿号,转折单独成句
+    enforcement: auto-fix
+    trigger: response.target == 'chat'
+    check_method: regex
+    auto_fix_cmd: 'replace-em-dash'
+    # auto-replace '——' → ',  ' (单段内逗号);'—' → ':' OR ','
+
+  - id: precise-quantifier
+    description: 量词精确,能给具体数字/文件名/行号/commit hash 就不用"一些/几个/多个"
+    enforcement: info
+    trigger: always-on
+    check_method: llm-judge
+
+  - id: no-end-recap
+    description: 不做结尾总结,除非用户明确要求"汇总/recap"
+    enforcement: warn
+    trigger: response.target == 'chat'
+    check_method: heuristic
+    # heuristic — 末尾 200 char 含 '## 总结' / '## Summary' / 'In summary' / '综上所述'
+    # → warn 'redundant end recap'
+
+  - id: no-empty-continuation-question
+    description: 禁空洞续作询问 (要不要我帮你 X?/还需要别的吗?);保留工作流必要下一步指引
+    enforcement: warn
+    trigger: response.target == 'chat'
+    check_method: regex
+    # regex /要不要|还需要别的|希望对你有帮助/  + trigger fires → warn
