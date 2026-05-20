@@ -325,6 +325,43 @@ production-ready harnessed; 6-month organic clock 结束后 maintenance-only mod
 
 ---
 
+## v2.0 — Architecture Refactor (workflow runtime-load + capability abstraction + gate yaml-eval) — **target window 2026-05-22 ~ 2026-06-05 (1-2 weeks)**
+
+> **Trigger**: v1.0.0-v1.0.4 ship cycle 暴露 fundamental architectural flaw — workflow.yaml 是 build-artifact NOT runtime config; 上游 / Claude Code 平台 / 优秀新组件升级时,每次 workflow 调整需 1-2 day full npm release cycle。用户 catch fundamental flaw 2026-05-22 post v1.0.4 ship:"我们没 vendor 上游,但项目存在必然 frequent 调整 workflow,当前架构不合理"。
+>
+> **Decision (user authorized 2026-05-22)**: 跳 v1.0.5 incremental band-aid → 直接 v2.0 大重构。post-refactor workflow 调整 time = 5 min (user edit yaml + immediate effect) NOT 1-2 day (npm release cycle)。
+
+### Goal
+
+evolve harnessed from build-artifact mode → runtime-config mode。workflow.yaml + rules + capabilities + manifests 全部 user-editable + hot-reload。npm package 仅 ship engine code + canonical templates;用户 cdn 模式 own ~/.harnessed/ user dir。
+
+### 9 必含项 (R20.1-R20.9 architectural refactor)
+
+1. **R20.1 workflow.yaml runtime-load**: `~/.harnessed/workflows/<name>/workflow.yaml` user-editable;harnessed runtime reload (NOT bundled into binary);setup copies default templates on first install
+2. **R20.2 capability abstraction**: workflow.yaml uses abstract `capability: governance-gate` NOT 字面 `'gstack /office-hours'`;`~/.harnessed/capabilities.yaml` maps abstract → concrete commands (user 可改 swap upstream)
+3. **R20.3 gate yaml-eval grammar**: phase 可声明 conditional `gate: phase.type == 'new_feature' AND open_decisions >= 2`;lightweight expr-eval lib (jsep / expr-eval / 自写 mini-parser)
+4. **R20.4 CLAUDE.md 判据 yaml registry**: harnessed startup parse user CLAUDE.md "三层判据" 节 → emit `~/.harnessed/rules/judgment.yaml`;workflow gate eval consume judgment.yaml
+5. **R20.5 upstream capability dynamic discovery**: `harnessed doctor` invokes `claude --help` / `gstack /commands` / `gsd --version` 探测上游 commands;emit `~/.harnessed/capabilities.discovered.yaml` (auto-generated)
+6. **R20.6 manifest user-dir hot-reload**: `~/.harnessed/manifests/` user-editable;`harnessed install <name>` 优先 user-dir → fallback npm package canonical;支持 add new manifest 不需 PR 到 harnessed
+7. **R20.7 NEW workflows ship** (Gap 3+4 fix): `workflows/research/` (Tavily/Exa/ctx7 多源调研 v1.0 ROADMAP 承诺) + `workflows/verify-work/` (Stage ④ verify composition: gsd-verify-work + code-review + gstack/review + code-simplifier)
+8. **R20.8 mattpocock 招式 in-workflow routing** (Gap 5 fix): workflow.yaml phase 可声明 `mattpocock_skills: ['/zoom-out', '/diagnose']` → 运行时 trigger;sister Phase 1.5 routing engine 100% accuracy + 23 routing rules 真正消费
+9. **R20.9 BREAKING CHANGES migration**: workflow.yaml schema v1 → v2;old v1.x yaml 可 work via compat shim 1 minor cycle (v2.0 + v2.1) then deprecate;`harnessed migrate v1→v2` cli helper
+
+### v2.0 phases
+
+- **Phase 2.1**: Discuss + 9 architectural D-decisions LOCKED (1-2 day; gate eval grammar / capability registry schema / user-dir layout / hot-reload mechanism / breaking change scope / migration path / etc)
+- **Phase 2.2**: Plan + Schema design (1-2 day; Wave A research yaml DSL libs + capability discovery patterns + Wave B planner produces PLAN.md ~2000L 30-40 tasks + Wave C plan-checker)
+- **Phase 2.3**: Execute Wave 0+1+2 (5-8 day; atomic ship workflow.yaml schema NEW + runtime loader + gate evaluator + capability resolver + ~/.harnessed/ user dir + manifest hot-reload + setup migrate logic + tests TDD)
+- **Phase 2.4**: v2.0 close + ship (1 day; 3-file milestone triplet + CHANGELOG [2.0.0] BREAKING + ROADMAP + 🎯 v2.0.0 tag + npm publish)
+
+### 关键风险
+
+- ⚠️ **breaking change blast radius** — v1.0.x 用户 npm install -g harnessed@2.0 后 workflow.yaml 需 migrate;mitigation: `harnessed migrate v1→v2` CLI helper + compat shim 1 minor cycle (v2.0 + v2.1) before deprecate
+- ⚠️ **yaml-eval grammar 复杂度蔓延** — gate expression 设计太 fancy 反 user friendly;mitigation: minimal viable subset (==, !=, AND, OR, comparison) + 用户实测后再扩展
+- ⚠️ **capability discovery 上游 API drift** — claude --help / gstack /commands 输出格式可能变;mitigation: 多源 fallback (cache + retry + manual override via capabilities.yaml)
+
+---
+
 ## v1.0+ — Maintenance-Only Mode (Forward Visibility)
 
 > **Note (D-04 HYBRID 2-clock per ADR 0020)**: v1.0 GA shipped 2026-05-22. External 6-month organic clock running. Post-clock decision point ~2026-11.

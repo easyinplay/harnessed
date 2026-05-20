@@ -360,6 +360,59 @@
 
 ---
 
+## R20. v2.0 Architecture Refactor (workflow runtime-load + capability abstraction + gate yaml-eval)
+
+> **Trigger**: v1.0.0~v1.0.4 ship 暴露 fundamental flaw — workflow.yaml 是 build-artifact NOT runtime config; 上游 / Claude Code 平台 / 优秀新组件升级时每次调整需 1-2 day full npm release cycle (user catch 2026-05-22 post v1.0.4 ship)
+>
+> **Decision (user authorized 2026-05-22)**: 跳 v1.0.5 incremental → 直接 v2.0 大重构;post-refactor workflow 调整 time = 5 min user edit yaml + immediate effect (NOT npm release cycle)
+
+### R20.1 workflow.yaml runtime-load
+- **描述**：`~/.harnessed/workflows/<name>/workflow.yaml` user-editable;harnessed runtime reload on invocation;NOT bundled into binary
+- **版本**：v2.0
+- **验收**：用户改 ~/.harnessed/workflows/plan-feature/workflow.yaml 后 next /plan-feature slash 立即生效 NO build / NO publish
+
+### R20.2 capability abstraction
+- **描述**：workflow.yaml uses abstract `capability: governance-gate` NOT 字面 `gstack /office-hours`;`~/.harnessed/capabilities.yaml` maps abstract → concrete (user 可改 swap upstream)
+- **版本**：v2.0
+- **验收**：用户改 capabilities.yaml swap `governance-gate: <other-tool> /<other-cmd>` 后 workflow 自动消费新 upstream NO yaml edit
+
+### R20.3 gate yaml-eval grammar
+- **描述**：phase 可声明 conditional `gate: phase.type == 'new_feature' AND open_decisions >= 2`;lightweight expr-eval lib (jsep / expr-eval / 自写 mini-parser)
+- **版本**：v2.0
+- **验收**：simple bug fix scenario phase.type='bug_fix' → gstack 战略层 phase 自动 skip + 透明声明 (sister CLAUDE.md "拿不准 → 跳过" 铁律)
+
+### R20.4 CLAUDE.md 判据 yaml registry
+- **描述**：harnessed startup parse user CLAUDE.md "三层判据" 节 → emit `~/.harnessed/rules/judgment.yaml`;workflow gate eval consume judgment.yaml
+- **版本**：v2.0
+- **验收**：用户改 CLAUDE.md 三层判据 → harnessed setup --reload 后 workflow gate eval 反映新判据
+
+### R20.5 upstream capability dynamic discovery
+- **描述**：`harnessed doctor` invokes `claude --help` / `gstack /commands` / `gsd --version` 探测上游 commands;emit `~/.harnessed/capabilities.discovered.yaml`
+- **版本**：v2.0
+- **验收**：上游升级 (gstack 改命令名) 后 doctor 自动 detect + warn user capabilities.yaml 需更新
+
+### R20.6 manifest user-dir hot-reload
+- **描述**：`~/.harnessed/manifests/` user-editable;`harnessed install <name>` 优先 user-dir → fallback npm package canonical;支持 add new manifest 不需 PR
+- **版本**：v2.0
+- **验收**：用户写 ~/.harnessed/manifests/tools/my-custom.yaml → harnessed install my-custom 可用
+
+### R20.7 NEW workflows ship
+- **描述**：`workflows/research/` (Tavily/Exa/ctx7 多源调研 v1.0 ROADMAP 承诺) + `workflows/verify-work/` (Stage ④ verify composition: gsd-verify-work + code-review + gstack/review + code-simplifier)
+- **版本**：v2.0
+- **验收**：harnessed setup 后 `/research` + `/verify-work` slash commands 可用
+
+### R20.8 mattpocock 招式 in-workflow routing
+- **描述**：workflow.yaml phase 可声明 `mattpocock_skills: ['/zoom-out', '/diagnose']` → 运行时 trigger;sister Phase 1.5 routing engine 100% accuracy + 23 routing rules 真正消费
+- **版本**：v2.0
+- **验收**：execute-task phase 03 conditional trigger `/diagnose` if error encountered
+
+### R20.9 BREAKING CHANGES migration
+- **描述**：workflow.yaml schema v1 → v2;old v1.x yaml 可 work via compat shim 1 minor cycle (v2.0 + v2.1) then deprecate;`harnessed migrate v1→v2` cli helper
+- **版本**：v2.0
+- **验收**：v1.x 用户 npm install -g harnessed@2.0 后 旧 workflow.yaml 仍 work (compat shim) + `harnessed migrate` 1-step upgrade
+
+---
+
 ## 拒绝清单（v1.0 前明确不做）
 
 | ID | 不做的事 | 来源 |

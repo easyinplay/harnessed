@@ -34,8 +34,8 @@ progress:
 ## 当前位置（Current Position）
 
 - **GSD phase**：✅ **Phase 6.1 SHIPPED** (2026-05-22) — 🎯 v1.0 GA PRODUCTION RELEASE FINAL phase; 21/21 phases 100% complete
-- **当前里程碑**：**🎯 v1.0.4 MCP IDEMPOTENT PATCH SHIPPED** 2026-05-20 — MCP installer "already exists" → idempotent skip (not failure); 4-category classify (installed/already-installed/skipped/failed); post-setup /mcp hint; 768 tests; 7 tags LOCAL (adr-0023-accepted + v1.0.0-alpha.1-release-prep + 🎯 v1.0.0 + 🎯 v1.0.1 + 🎯 v1.0.2 + 🎯 v1.0.3 + 🎯 v1.0.4); push approval pending → npm publish LIVE
-- **下一 phase**：**v1.0+ Maintenance-Only Mode** — organic clock running 2026-05-22 ~ ~2026-11; post-clock decision (a) maintenance-only or (b) continued active per ADR 0020 D-04 HYBRID
+- **当前里程碑**：**⚙ v2.0 Architecture Refactor 0/4 STARTING** 2026-05-20 — workflow runtime-load + capability abstraction + gate yaml-eval + ~/.harnessed/ user-dir hot-reload + research+verify-work workflows NEW + mattpocock 招式 in-workflow routing + BREAKING CHANGES migration; user catch fundamental flaw post v1.0.4 ship (workflow.yaml build-artifact NOT runtime config → 上游升级 1-2 day full release cycle); 跳 v1.0.5 incremental → 直接 v2.0 大重构 1-2 week target window 2026-05-22~2026-06-05
+- **下一 phase**：**Phase 2.1 discuss-phase 启动** (v2.0 architectural decisions LOCK — 9 R20.x architectural changes; 候选启动 `/gsd-discuss-phase 2.1`)
 - **状態**：✅ **v1.0.4 MCP IDEMPOTENT PATCH SHIPPED 2026-05-20** — MCP "already exists" → idempotent skip (ADR 0004 contract); 4-category classify; /mcp hint; 768 tests; maintenance-only mode trigger ~2026-11
 - **進度**：21 / 21 phases ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ **100%**（v0.1.0 + v0.2.0 + v0.3.0 + v0.4.0 + v0.5.0 + 🎯 **v1.0 GA** ALL SHIPPED & ARCHIVED）
 
@@ -48,7 +48,8 @@ progress:
 | v0.3.0 plan-feature + checkpoint | 4/4 | 🎯 **SHIPPED & ARCHIVED** — Phase 3.1-3.4 全 ship; tests 543→701+ (+158); 17 ADR + 14 milestone tag; archive `.planning/milestones/v0.3.0-*.md` triplet | 2026-05-16 ~ 2026-05-17 |
 | v0.4.0 dogfooding + 稳定期 | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 4.1+4.2+4.3 全 ship (dogfooding benchmark + community infra + R8.1 audit log + R8.4 ADR backfill + CHANGELOG + 🎯 v0.4.0 close); tests 709→733 (+24); 21 ADR; archive `.planning/milestones/v0.4.0-*.md` triplet | 2026-05-18 ~ 2026-05-19 |
 | v0.5.0 v1.0-RC2 minor + 🎯 v1.0 GA prep | 3/3 | 🎯 **SHIPPED & ARCHIVED** — Phase 5.1 ✅ + Phase 5.2 ✅ + Phase 5.3 ✅ SHIPPED (R10.1-R10.4 全 Done + ADR 0021+0022 + 756 tests); archive `.planning/milestones/v0.5.0-*.md` triplet + dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL | 2026-05-19 ~ 2026-05-22 |
-| v1.0 GA production release | 1/1 | 🎯 **SHIPPED & ARCHIVED** — Phase 6.1 ✅ (publish.yml NEW OIDC + package.json 1.0.0 + CHANGELOG [1.0.0] + README stable badge + ROADMAP v1.0 SHIPPED + ADR 0023 + 🎯 v1.0.0 tag LOCAL CREATE) | 2026-05-22 |
+| v1.0 GA production release | 1/1 | 🎯 **SHIPPED & ARCHIVED** — Phase 6.1 ✅ (publish.yml NEW OIDC + package.json 1.0.0 + CHANGELOG [1.0.0] + README stable badge + ROADMAP v1.0 SHIPPED + ADR 0023 + 🎯 v1.0.0 tag LOCAL CREATE) + v1.0.1~v1.0.4 patch series shipped npm (setup NEW + path resolution + UX redesign + parallel + MCP idempotent) | 2026-05-22 |
+| v2.0 Architecture Refactor | 0/4 | 🚧 **STARTING** — Phase 2.1 discuss + 2.2 plan + 2.3 execute + 2.4 close; workflow runtime-load + capability abstraction + gate yaml-eval + ~/.harnessed/ user-dir hot-reload + research+verify-work workflows + mattpocock routing + BREAKING migration (9 R20.x); user catch fundamental flaw post v1.0.4 ship → 跳 v1.0.5 incremental → 直接 v2.0 大重构 | 2026-05-22 ~ 2026-06-05 |
 
 ### 已完成 phase ship 历史 (dev SoT — README user-facing summary only)
 
