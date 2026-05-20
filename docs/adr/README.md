@@ -62,6 +62,12 @@
 | [0021](./0021-state-lock-and-audit-consumer.md) | Phase 5.1 — R10.2 state.ts concurrent write lock (proper-lockfile) + R10.1 audit log --filter CLI consumer | Accepted | 2026-05-19 |
 | [0022](./0022-uninstall-and-path-traversal.md) | Phase 5.2 — R10.3 `harnessed uninstall` CLI (7-method dispatch) + R10.4 path traversal 5-vector regex hardening | Accepted | 2026-05-19 |
 | [0023](./0023-npm-publish-release-process.md) | Phase 6.1 — npm publish release process (GitHub Actions OIDC trusted publishing + sigstore provenance + `private` removal + v1.0 GA tag) | Accepted | 2026-05-22 |
+| [0024](./0024-workflow-schema-v2-capability-abstraction.md) | Phase v2.0-2.4 W0 — workflow.yaml schema v2 + capability abstraction (D-01 Pure bundled SoT + D-02 flat capabilities.yaml + D-09 mattpocock capability route by condition) | Accepted | 2026-05-20 |
+| [0025](./0025-capabilities-yaml-baseline-static-manifest.md) | Phase v2.0-2.3 W0.1 — capabilities.yaml v2.0 baseline 39 entry + static manifest discipline (D-07 ADR per upstream upgrade + D-14 special-purpose tools routing) | Accepted | 2026-05-20 |
+| [0026](./0026-judgments-multi-file-expr-eval-resolver.md) | Phase v2.0-2.3 W0.2-0.4 — judgments/ 6 file multi-file 分类 + expr-eval lib + judgmentResolver 4-level ref (D-03 + D-04 + D-16 + Q-AUDIT-5c) | Accepted | 2026-05-20 |
+| [0027](./0027-research-verify-work-workflows-planning-plugin-errata.md) | Phase v2.0-2.4 W2 — research + verify-work NEW workflows ship (D-08 + D-12) + planning-with-files SDK→plugin reframe errata (Q-AUDIT-5a) | Accepted | 2026-05-20 |
+| [0028](./0028-ralph-loop-tdd-agent-teams-routing-schema-fix.md) | Phase v2.0-2.3 + 2.4 — ralph-loop completion-promise + tdd-gate + Agent Teams routing (D-10 + D-11 + D-13) + Q-AUDIT-5b settings.json env schema fix | Accepted | 2026-05-20 |
+| [0029](./0029-fallback-rules-4-stage-mechanization-dogfood.md) | Phase v2.0-2.5 — fallback 3 铁律 runtime (R20.16) + 4-stage 机器化 dogfood close (46 NEW fixture + R8.1 dogfood-first methodology proven) | Accepted | 2026-05-20 |
 
 ## 参考
 

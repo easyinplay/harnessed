@@ -10,6 +10,7 @@
 
 import type { Command } from 'commander'
 import { runRouting, type TaskContext } from '../routing/index.js'
+import type { FallbackMaxIterationsExceededConfig } from '../routing/lib/fallbackHandlers.js'
 import { type LoadedPhases, loadPhases } from '../workflow/loadPhases.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
@@ -77,11 +78,31 @@ export function registerExecuteTask(program: Command): void {
         process.exit(0)
       }
 
+      // T2.4.W1.5 — extract phase.fallback.max_iterations_exceeded from v2 phases.yaml
+      // (sister `04-deliver` ralph-loop wrapper). Narrow v1 ∪ v2 LoadedPhases via
+      // structural `'fallback' in p` check; engine.ts catch handler delegates to
+      // handleMaxIterationsExceeded (R20.10 c explicit halt, NOT silent exit).
+      let fallbackConfig: FallbackMaxIterationsExceededConfig | undefined
+      let fallbackPhaseId: string | undefined
+      for (const ph of phases.phases) {
+        if ('fallback' in ph && ph.fallback?.max_iterations_exceeded) {
+          fallbackConfig = ph.fallback.max_iterations_exceeded
+          fallbackPhaseId = ph.id
+          break
+        }
+      }
+
       // --apply path — real spawn via engine.runRouting (T4.2 sdkSpawn).
       const result = await runRouting(taskCtx, {
         maxIterations: raw.maxIterations ?? 20,
         ...(raw.model ? { agentOpts: { modelOverride: raw.model } } : {}),
+        ...(fallbackConfig ? { fallbackConfig } : {}),
+        ...(fallbackPhaseId ? { fallbackPhaseId } : {}),
       })
+      // T2.4.W1.5 — `aborted` branch reachable ONLY when `fallbackConfig` is
+      // absent (legacy caller / unit test mock without v2 yaml fallback). With
+      // wire-in: engine handleMaxIterationsExceeded calls process.exit(exit_code)
+      // directly, so control never returns here for v2 execute-task workflow.
       if ('aborted' in result) {
         console.error(`aborted: ${result.reason}`)
         process.exit(2)

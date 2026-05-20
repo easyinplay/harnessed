@@ -26,7 +26,7 @@ const ModelTier = Type.Union([Type.Literal('haiku'), Type.Literal('sonnet'), Typ
 
 const OnAction = Type.Union([Type.Literal('skip'), Type.Literal('invoke')])
 
-const OnClause = Type.Object(
+export const OnClause = Type.Object(
   {
     if: Type.String(), // expr-eval expression OR judgments.<file>.<gate>.fires ref
     invoke: Type.Optional(Type.String()), // '{{ capabilities.<name>.cmd }}' OR literal
@@ -35,7 +35,7 @@ const OnClause = Type.Object(
   { additionalProperties: false },
 )
 
-const FallbackMaxIterationsExceeded = Type.Object(
+export const FallbackMaxIterationsExceeded = Type.Object(
   {
     action: Type.Literal('emit_warning_and_halt'), // R20.10 acceptance c "explicit NOT silent"
     message: Type.String(),
@@ -44,7 +44,7 @@ const FallbackMaxIterationsExceeded = Type.Object(
   { additionalProperties: false },
 )
 
-const PhaseFallback = Type.Object(
+export const PhaseFallback = Type.Object(
   {
     max_iterations_exceeded: Type.Optional(FallbackMaxIterationsExceeded),
   },
@@ -84,3 +84,9 @@ export const WorkflowSchemaV2 = Type.Object(
 
 export type WorkflowPhaseV2T = Static<typeof WorkflowPhaseV2>
 export type WorkflowSchemaV2T = Static<typeof WorkflowSchemaV2>
+export type FallbackMaxIterationsExceededT = Static<typeof FallbackMaxIterationsExceeded>
+export type PhaseFallbackT = Static<typeof PhaseFallback>
+export type OnClauseT = Static<typeof OnClause>
+/** Alias of `WorkflowPhaseV2T` — sister deferred-items.md T2.4.W1.5 path-A naming
+ *  (CLI consumer ergonomics). */
+export type PhaseShape = WorkflowPhaseV2T

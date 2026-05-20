@@ -199,3 +199,62 @@ describe('handleMaxIterationsExceeded — hard_upper_limit clamp (T2.4.W1.2)', (
     expect(stderr).toContain('hard upper limit 100')
   })
 })
+
+describe('runRouting — fallback config wire-in via opts (T2.4.W1.5 CLI E2E)', () => {
+  it('fixture 6: opts.fallbackConfig present → handler uses phase.fallback exit_code + interpolated message', async () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation((code?: number | string | null) => {
+      throw new ExitError(typeof code === 'number' ? code : 0)
+    })
+    const errFn = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // Yaml 04-deliver fallback config — exit_code 1 + {{ args.max_iterations }} placeholder.
+    const yamlFallback = {
+      action: 'emit_warning_and_halt' as const,
+      message:
+        '⚠️ ralph-loop max-iterations ({{ args.max_iterations }}) exceeded for execute-task 04-deliver.',
+      exit_code: 1,
+    }
+    await expect(
+      runRouting(
+        { task: 'search docs', task_type: 'search' },
+        {
+          rulesPath,
+          skillsRoot,
+          maxIterations: 3,
+          spawn: async () => 'still working but no COMPLETE',
+          fallbackConfig: yamlFallback,
+          fallbackPhaseId: '04-deliver',
+        },
+      ),
+    ).rejects.toThrow(ExitError)
+    expect(exit).toHaveBeenCalledWith(1)
+    const stderr = errFn.mock.calls.map((c) => c.join(' ')).join('\n')
+    // Interpolated placeholder substituted with maxIterations (3).
+    expect(stderr).toContain('ralph-loop max-iterations (3) exceeded for execute-task 04-deliver')
+    expect(stderr).toContain('04-deliver')
+    expect(stderr).toMatch(/Exit code: 1/)
+  })
+
+  it('fixture 7: legacy caller (no opts.fallbackConfig) → engine returns {aborted:true} without process.exit', async () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation((code?: number | string | null) => {
+      throw new ExitError(typeof code === 'number' ? code : 0)
+    })
+    const errFn = vi.spyOn(console, 'error').mockImplementation(() => {})
+    // NO fallbackConfig — legacy caller path. Engine should NOT process.exit;
+    // returns { aborted: true, reason } so caller decides handling.
+    const result = await runRouting(
+      { task: 'search docs', task_type: 'search' },
+      {
+        rulesPath,
+        skillsRoot,
+        maxIterations: 2,
+        spawn: async () => 'still working but no COMPLETE',
+      },
+    )
+    expect(result).toMatchObject({ aborted: true })
+    if ('aborted' in result) expect(result.reason).toMatch(/max-iterations exceeded/i)
+    expect(exit).not.toHaveBeenCalled()
+    const stderr = errFn.mock.calls.map((c) => c.join(' ')).join('\n')
+    // No fallback UX text emitted by engine (caller responsible for UX).
+    expect(stderr).not.toMatch(/Manual options:/)
+  })
+})

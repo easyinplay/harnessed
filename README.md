@@ -21,7 +21,7 @@
 
 - **三层栈机器化** — `gstack 决策` + `GSD 项目经理` + `superpowers 资深工程师` + `karpathy 4 心法` + `mattpocock 23 招式`,5 支柱 100% capture
 - **不 vendor 上游** — manifest describe install/check;上游升级用户 re-install 即获最新版
-- **Composition Skill** — 自家 workflow skill 当指挥棒,调度多个上游协同 (research / execute-task / plan-feature 三 MVP workflow)
+- **Composition Skill** — 自家 workflow skill 当指挥棒,调度多个上游协同 (v2.0: 4 workflows 完整 4-stage 机器化 — `research` 多源调研 + `plan-feature` 5-phase 三层栈 + `execute-task` ralph-loop completion + `verify-work` 9-phase Pattern C 4-specialist)
 - **包管理器思维** — install dependency graph 自动解析, doctor 健康检查, install-base 一键装齐
 - **统一入口** — 用户面对 `/plan-feature` / `/execute-task` 等 slash command,不需学每家上游术语
 
