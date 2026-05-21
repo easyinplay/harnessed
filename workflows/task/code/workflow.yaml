@@ -1,0 +1,55 @@
+# workflows/task/code/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.7 (D-09 + D-05 + D-15)
+#
+# Stage ③.b 子任务编码 — karpathy 4 心法 always-on (Think Before Coding / Simplicity First /
+# Surgical Changes / Goal-Driven Execution) + mattpocock conditional route (zoom-out 陌生 /
+# improve-codebase-architecture 周期审查 / diagnose bug root cause unknown)。
+# 02-progress: planning-with-files Claude Code plugin /plan slash cmd 更新 progress.md
+# (per D-15 + Q-AUDIT-5a Option A — plugin 真接, NOT npm SDK NOT fs.writeFile self-impl)。
+#
+# Sister refs:
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 task/code sub yaml example
+#   - ~/.claude/CLAUDE.md "Execute 阶段" 节 karpathy 4 心法 + mattpocock 招式按需召唤
+#   - workflows/capabilities.yaml zoom-out + improve-codebase-architecture + diagnose +
+#     planning-with-files (Phase 2.3 W0.1 SHIPPED)
+#   - workflows/disciplines/karpathy.yaml (Phase 3.3 W0.4 SHIPPED, L0 substrate always-on)
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED)
+#
+# disciplines_applied: 6 default 全开 per D-09 L0 Discipline Substrate always-on
+# tools_available: 4 entry ∈ capabilities.yaml entry set (T3.3.W0.10 Contract C1 catch)
+
+schema_version: harnessed.workflow.v3
+workflow: task-code
+description: |
+  Stage ③.b 子任务编码 — karpathy 4 心法 always-on + mattpocock conditional route
+  (zoom-out 陌生模块 / improve-codebase-architecture 周期审查 / diagnose bug root cause
+  unknown)。02-progress: planning-with-files Claude Code plugin slash cmd `/plan`
+  更新 progress.md 跟踪 subtask 进度 (per D-15 + Q-AUDIT-5a Option A LOCKED)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - zoom-out
+  - improve-codebase-architecture
+  - diagnose
+  - planning-with-files
+
+phases:
+  - id: 01-code
+    name: code (karpathy 心法 always-on + mattpocock conditional route)
+    upstream: karpathy
+    model: sonnet
+    max_iterations: '{{ defaults.ralph_max_iterations.task-code.01-code }}'
+    invokes_tools:
+      - if: 'phase.unfamiliar_module == true'
+        tool: zoom-out
+      - if: 'phase.architecture_health_audit == true'
+        tool: improve-codebase-architecture
+      - if: 'subtask.bug_root_cause_unknown == true'
+        tool: diagnose
+
+  - id: 02-progress
+    name: progress (planning-with-files /plan — update progress.md)
+    upstream: planning-with-files
+    capability: '{{ capabilities.planning-with-files.cmd }}'
+    invokes: '/plan'
+    model: haiku
+    artifacts_expected: [progress.md]
