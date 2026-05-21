@@ -1,0 +1,31 @@
+# workflows/verify/security/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.13b
+#
+# Stage ④.e verify sub-workflow — gstack /cso 安全审查 OWASP/auth/secrets
+# (has_auth_or_secrets 触发, 可选 conditional, sister ~/.claude/CLAUDE.md "可选 /cso" verbatim)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /cso" 章节
+#   - workflows/judgments/stage-routing.yaml verify-security-secrets trigger (has_auth_or_secrets)
+#   - workflows/capabilities.yaml — gstack-cso (Bucket 3 治理关卡, impl: gstack, cmd: /cso)
+#   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 06-cso-conditional sister pattern
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/security example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: verify-security
+description: |
+  Stage ④.e gstack /cso 安全审查 OWASP/auth/secrets (has_auth_or_secrets 触发, 可选 conditional)。
+  Gate: judgments.stage-routing.verify-security-secrets.fires (phase.has_auth_or_secrets == true)
+  — security-critical PR fire only (auth / session / credentials / api keys / SQL / OWASP top 10);
+  普通 PR 应 skip — gstack /cso 是高成本 Paranoid CSO 视角重武器。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gstack-cso]
+
+phases:
+  - id: 01-cso
+    name: gstack-cso (安全审查 OWASP/auth/secrets — has_auth_or_secrets 触发)
+    upstream: gstack
+    capability: '{{ capabilities.gstack-cso.cmd }}'
+    model: opus
+    gate: judgments.stage-routing.verify-security-secrets.fires
+    max_iterations: 3
