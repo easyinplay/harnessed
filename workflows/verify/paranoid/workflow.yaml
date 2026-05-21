@@ -1,0 +1,30 @@
+# workflows/verify/paranoid/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.12
+#
+# Stage ④.c verify sub-workflow — gstack /review Paranoid Staff Engineer 关键模块 PR 前强制
+# (sister ~/.claude/CLAUDE.md "🔒 关键模块 PR 前强制" verbatim)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "gstack 治理关卡 🔒 关键模块 PR 前强制" verbatim
+#   - workflows/judgments/stage-routing.yaml verify-paranoid-critical trigger (phase.is_critical_module)
+#   - workflows/capabilities.yaml — gstack-review (Bucket 3 治理关卡, impl: gstack, cmd: /review)
+#   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 04-gstack-review-conditional sister pattern
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/paranoid example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: verify-paranoid
+description: |
+  Stage ④.c gstack /review Paranoid Staff Engineer 关键模块 PR 前强制 (sister CLAUDE.md
+  "🔒 关键模块 PR 前强制")。Gate: stage-routing.verify-paranoid-critical.fires (phase.is_critical_module)
+  — 默认 critical fire only; 非关键模块 skip (sister CLAUDE.md "关键模块" 限定语)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gstack-review]
+
+phases:
+  - id: 01-review
+    name: gstack-review (Paranoid Staff Engineer 视角 — 关键模块 PR 前强制 🔒)
+    upstream: gstack
+    capability: '{{ capabilities.gstack-review.cmd }}'
+    model: opus
+    gate: judgments.stage-routing.verify-paranoid-critical.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.verify-paranoid.01-review }}'
