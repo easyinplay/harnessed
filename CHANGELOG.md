@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-05-21 — Default behavior unified to apply-immediate (UX hotfix)
+
+**升级一行指令**: `npm install -g harnessed@3.0.1` (无需重跑 `setup`,纯 CLI behavior flip)
+
+**Trigger**: 2026-05-21 终端用户反馈 — "dry-run 是高级用户概念,默认应 apply"。v3.0.0 ship < 1 hour ago 全 CLI command 默认 dry-run + `--apply` opt-in 与 `setup` (v1.0.2 apply-immediate redesign 沿袭) 不一致。Sister `setup.ts` pattern (L5-7 IMPL NOTE) 验证 apply-immediate 是正确 default。
+
+### Changed
+
+- **`harnessed install` / `uninstall` / `install-base` / `gc` / `manifest-add` / `research` / `execute-task` 默认从 dry-run 改 apply (immediate write)** — sister `setup.ts` pattern verbatim,跨命令统一 setup-first UX
+- **`--dry-run` flag 仍 opt-in** 高级用户预览
+- **`--apply` 保留 backward-compat no-op alias** — 旧脚本仍 work (不破)
+- **`uninstall --yes + --dry-run` 互斥** — 新 H1 gate 替代旧 "--yes requires --apply" 检查 (semantic clearer: `--yes` skip prompt 与 `--dry-run` preview-only 互不兼容)
+- **`harnessed uninstall <name>` no-flag 仍 protect destructive op** — interactive p.confirm() default No,user 必须 y/yes 才真删
+
+### Why
+
+- 终端用户反馈 — "dry-run 是高级用户概念,默认应 apply"
+- `setup-first UX` 跨命令统一 (sister setup.ts v1.0.2 redesign 沿袭 verbatim)
+- destructive op safety contract 不变 (uninstall confirm prompt + gc keepLast + backup 机制全保留)
+
+### Migration
+
+旧脚本如 `harnessed install foo --apply` 仍 work (no-op alias);新脚本无需 `--apply`;需 preview 用 `--dry-run`:
+
+```bash
+# v3.0.0 (旧)
+harnessed install foo --apply        # 必须传 --apply 才真装
+harnessed install foo                # dry-run preview 默认
+
+# v3.0.1 (新)
+harnessed install foo                # 默认立即装 (NEW default)
+harnessed install foo --dry-run      # opt-in preview
+harnessed install foo --apply        # 仍 work (legacy no-op alias)
+```
+
+### Tests
+
+- **6 NEW regression fixture** verify flipped default behavior + backward-compat `--apply` alias:
+  - `tests/unit/cli-install.test.ts` + 2 cells (immediate default + --dry-run opt-in)
+  - `tests/cli/uninstall.test.ts` Cell 1+3 flipped + Cell 15-16 NEW (no-flag immediate + legacy --apply alias)
+  - `tests/cli/manifest-add-ee5.test.ts` + Cell 7 (no-flag immediate persist)
+  - `tests/cli/execute-task.test.ts` + Cell 9 (legacy --apply alias still wires through hook)
+
+### Files changed
+
+- `src/cli/install.ts` + `uninstall.ts` + `install-base.ts` + `gc.ts` + `manifest-add.ts` + `research.ts` + `execute-task.ts` — 7 CLI cmd flipped
+- `src/cli/lib/validateFlags.ts` — H1 gate 注释 v3.0.1 update
+- `tests/{unit,cli}/*.test.ts` — 6 NEW regression fixture
+- `package.json` — version 3.0.0 → 3.0.1
+- `CHANGELOG.md` — this entry
+
 ## [3.0.0] - 2026-05-21 — v3.0 4-Stage Namespace-Layered Workflow Architecture (BREAKING)
 
 **升级一行指令**: `npm install -g harnessed@3.0 && harnessed setup --apply`
