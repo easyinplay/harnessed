@@ -1,22 +1,8 @@
-// src/workflow/masterOrchestrator.ts — Phase v3.0-3.5 W0 T3.5.W0.1 (R30.9 D-01 NEW).
-// Sister judgmentResolver.ts (98L) + run.ts (136L) wedge pattern;Master Orchestrator
-// Hybrid Option C verbatim per RESEARCH-workflows § Area 3 — yaml `delegates_to[]`
-// 声明主体 + engine consume + judgmentResolver pre-resolve gate ref + sub spawn.
-//
-// 4 master ('discuss' | 'plan' | 'task' | 'verify') 共享同一 dispatcher,无 hard-code
-// per-master imperative code (sister D-13 declarative SoT;karpathy simplicity)。
-//
-// K8 mitigation:engine 共享 1 context snapshot per top-level invoke,passed unchanged
-// 到 spawnSubWorkflow(无 per-sub re-snapshot)。
-//
-// K14 mitigation:arbitrateBeforeSpawn (T3.5.W0.3) warn-not-halt,priority arbitration
-// 仅 reorder/emit warn,default 按 priority order 全 spawn。
-//
-// Path A vs B(T3.5.W2.1 dogfood LOCK):
-//   初版 Path A — SDK query recursive call `runWorkflow` at sub yaml(in-process)
-//   Path B fallback — sub-shell `harnessed CLI invoke` 当 SDK error catch(sister
-//   Phase 2.5 W2.3 error 降级 pattern)
-// 两路径都实现;default Path A;try/catch SDK error → Path B fallback。
+// masterOrchestrator.ts — T3.5.W0.1 Master Orchestrator Hybrid Option C per RESEARCH-workflows
+// § Area 3:yaml `delegates_to[]` 声明 + engine consume + judgmentResolver pre-resolve gate +
+// sub spawn。4 master 共享 dispatcher (D-13 declarative SoT)。K8: ctx 共享 snapshot(无 re-snapshot)。
+// K14: arbitrate warn-not-halt。Path A default = in-process recursive runWorkflow;Path B
+// fallback = try/catch SDK error → warn (sub-shell exec defer v3.x per K-mitigation)。
 
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -138,12 +124,20 @@ export async function runMasterOrchestrator(
     console.log(`  ${mark} ${g.clause.sub}${tail}`)
   }
 
-  // Phase 2: split serial vs parallel(default mode='parallel')
+  // Phase 2: split serial leading/trailing 夹住 parallel (Cycle 4 dogfood bug catch — yaml
+  // order 数字大小编码 leading/trailing 意图,simplify order=99 必跑在 parallel verify 后)。
+  // PARALLEL_MID_ANCHOR=50 split: order<50 → leading, order≥50 → trailing。
+  const PARALLEL_MID_ANCHOR = 50
   const firedClauses = gateEvalled.filter((g) => g.passes).map((g) => g.clause)
-  const serialClauses = firedClauses
-    .filter((c) => c.mode === 'serial')
+  const serialLeading = firedClauses
+    .filter((c) => c.mode === 'serial' && (c.order ?? 0) < PARALLEL_MID_ANCHOR)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+  const serialTrailing = firedClauses
+    .filter((c) => c.mode === 'serial' && (c.order ?? 0) >= PARALLEL_MID_ANCHOR)
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
   const parallelClauses = firedClauses.filter((c) => (c.mode ?? 'parallel') === 'parallel')
+  const serialN = serialLeading.length + serialTrailing.length
+  const parallelN = parallelClauses.length
 
   // Phase 2.5: arbitrate fired capabilities(T3.5.W0.3 priority hierarchy wire,K14
   // warn-not-halt mitigation per RESEARCH-disciplines § 3.2.3)。
@@ -169,20 +163,16 @@ export async function runMasterOrchestrator(
     }
   }
 
-  // Phase 3: spawn serial first(sequential await)+ Transparency Firing block
-  const serialN = serialClauses.length
-  const parallelN = parallelClauses.length
+  // Phase 3: spawn leading serial → parallel fan-out → trailing serial (yaml order intent)。
   const modeLabel =
     serialN > 0 && parallelN > 0 ? 'serial+parallel' : serialN > 0 ? 'serial' : 'parallel'
   console.log(`Firing ${firedClauses.length} sub in ${modeLabel}:`)
   const fired: string[] = []
-  for (const clause of serialClauses) {
+  for (const clause of serialLeading) {
     console.log(`  → ${clause.sub} (serial order=${clause.order ?? 0})`)
     await spawnDriver(masterName, clause.sub, context, packageRoot)
     fired.push(clause.sub)
   }
-
-  // Phase 4: parallel fan-out(Promise.allSettled — sister Phase 2.3 W1.1 pattern)
   const parallelResults = await Promise.allSettled(
     parallelClauses.map(async (clause) => {
       console.log(`  → ${clause.sub} (parallel)`)
@@ -192,6 +182,11 @@ export async function runMasterOrchestrator(
   )
   for (const r of parallelResults) {
     if (r.status === 'fulfilled') fired.push(r.value)
+  }
+  for (const clause of serialTrailing) {
+    console.log(`  → ${clause.sub} (serial order=${clause.order ?? 0})`)
+    await spawnDriver(masterName, clause.sub, context, packageRoot)
+    fired.push(clause.sub)
   }
 
   // Phase 5: skipped — 透明声明 sister fallback.yaml 铁律 1
