@@ -1,5 +1,6 @@
 # harnessed v2.0 workflow defaults
 # Phase v2.0-2.3 W1.2 ship — ralph_max_iterations table per R20.10 + D-10 fallback abort path
+# Phase v3.0-3.4 W2.2 extend — 18 v3 sub-workflow + retro standalone × phase entries
 # Sister Phase 2.2 STRIDE T-2.2-05 DoS mitigation: hard_upper_limit = 100 caps any user override
 # Phase 2.4 workflow.yaml v2 interpolation: {{ defaults.ralph_max_iterations.<workflow>.<phase> }}
 
@@ -8,6 +9,7 @@ schema_version: harnessed.defaults.v1
 # Per-workflow per-phase ralph-loop iteration ceiling
 # Values balance: completion guarantee vs DoS prevention; sister ADR 0011 v0.2.0 ralph-loop SDK pattern
 ralph_max_iterations:
+  # v2 legacy (Phase 2.3 W1.2 SHIPPED, deprecated v3.0 per D-04 release-notes-only migration)
   execute-task:
     01-clarify: 5
     02-code: 20
@@ -21,15 +23,80 @@ ralph_max_iterations:
     04-gsd-plan: 3
     05-persist: 5
 
-  research:
-    01-fan-out: 3
-    02-synth: 3
-
   verify-work:
     01-gsd-verify-work: 3
     02-code-review: 5
     03-gstack-review: 3
     04-code-simplifier: 5
+
+  # v3 standalone (research v3 schema bump + retro NEW per Phase 3.4 W1.1+W1.2)
+  research:
+    01-fan-out: 3
+    02-synth: 3
+
+  retro:
+    01-retro: 3
+    02-persist: 3
+
+  # v3 sub-workflow — discuss stage (3 sub per Phase 3.4 W0.1-W0.3)
+  discuss-strategic:
+    01-office-hours: 5
+    02-plan-ceo-review: 3
+
+  discuss-phase:
+    01-gsd-discuss-phase: 5
+
+  discuss-subtask:
+    01-brainstorm: 5
+
+  # v3 sub-workflow — plan stage (2 sub per Phase 3.4 W0.4-W0.5)
+  plan-architecture:
+    01-plan-eng-review: 3
+
+  plan-phase:
+    01-gsd-plan-phase: 5
+    02-persist: 5
+
+  # v3 sub-workflow — task stage (4 sub per Phase 3.4 W0.6-W0.9)
+  task-clarify:
+    01-clarify: 5
+
+  task-code:
+    01-code: 20
+
+  task-test:
+    01-test: 15
+
+  task-deliver:
+    01-deliver: 20
+
+  # v3 sub-workflow — verify stage (8 sub per Phase 3.4 W0.10-W0.13a-e)
+  verify-progress:
+    01-gsd-verify-work: 3
+    02-gsd-progress: 3
+    03-persist: 3
+
+  verify-code-review:
+    01-code-review: 5
+
+  verify-paranoid:
+    01-gstack-review: 3
+
+  verify-qa:
+    01-qa: 3
+
+  verify-security:
+    01-cso: 3
+
+  verify-design:
+    01-design-review: 3
+
+  verify-simplify:
+    01-code-simplifier: 5
+
+  verify-multispec:
+    01-team-create: 1
+    02-team-cleanup: 1
 
 # Hard upper limit — workflow engine rejects any user override > this value
 # Sister Phase 2.2 STRIDE T-2.2-05 DoS mitigation
