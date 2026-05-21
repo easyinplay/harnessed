@@ -1,9 +1,40 @@
-schema_version: harnessed.workflow.v2
+# workflows/research/workflow.yaml — Phase v3.0-3.4 W1 T3.4.W1.1
+# (v2 19L → v3 ~25L schema bump per RESEARCH-workflows Area 2 Standalone section)
+#
+# Standalone Stage ① alternate — 多源调研 Tavily MCP (默认关键词) + Exa MCP (描述式 / 学术)
+# + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; sister
+# ~/.claude/rules/web-search.md + context7.md routing 机器化 per R20.7 + D-08。
+#
+# v2 → v3 字段 delta (W1.1 schema bump scope):
+#   BUMP `schema_version: harnessed.workflow.v3`              (17th surface — sister Phase 3.3 W0.11)
+#   ADD  `disciplines_applied: [6 basename]`                  (D-09 L0 Discipline Substrate)
+#   ADD  `tools_available: [tavily-mcp, exa-mcp, ctx7, gsd-discuss-phase]`
+#                                                              (D-05 + Contract C1 cross-validate)
+#   KEEP phases verbatim (01-fan-out + 02-synth) — phases 内容 reuse v2 SHIPPED
+#                                                              (per PLAN L455 "phases 内容 reuse v2")
+#
+# Sister refs:
+#   - .planning/phase-v3.0-3.2/PLAN.md L450-457 (T3.4.W1.1 spec verbatim)
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 Standalone research v3 example
+#   - workflows/capabilities.yaml tavily-mcp + exa-mcp + ctx7 + gsd-discuss-phase
+#     (Phase 2.3 W0.1 SHIPPED)
+#   - workflows/disciplines/{karpathy,output-style,language,operational,priority,protocols}.yaml
+#     (Phase 3.3 W0.4 SHIPPED, L0 substrate)
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED 122L)
+
+schema_version: harnessed.workflow.v3
 workflow: research
-description: 多源调研 workflow — Tavily MCP (默认关键词) + Exa MCP (描述式/学术) + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; sister ~/.claude/rules/web-search.md + context7.md routing 机器化 per R20.7 + D-08
+description: |
+  Standalone Stage ① alternate — 多源调研 Tavily MCP (默认关键词) + Exa MCP (描述式 /
+  学术) + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; sister
+  ~/.claude/rules/web-search.md + context7.md routing 机器化 per R20.7 + D-08。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [tavily-mcp, exa-mcp, ctx7, gsd-discuss-phase]
 
 phases:
-  # 01-fan-out: 多源 fan-out — Tavily / Exa / ctx7 各源并行查询 (subagent fan-out per CLAUDE.md 子任务并行执行机制); generic shape — workflow engine 按 capability route 触发 3 source sequentially
+  # 01-fan-out: 多源 fan-out — Tavily / Exa / ctx7 各源并行查询 (subagent fan-out per CLAUDE.md
+  # 子任务并行执行机制); generic shape — workflow engine 按 capability route 触发 3 source sequentially
   - id: 01-fan-out
     upstream: web-search
     model: sonnet

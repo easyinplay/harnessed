@@ -1,12 +1,16 @@
 ---
 name: research
-description: 多源调研 workflow — Tavily/Exa/ctx7 多源 fan-out + GSD discuss synth aggregate; harnessed v2.0 NEW per R20.7 (Stage ① Discuss 独立 call). Triggered by harnessed CLI `harnessed research --topic <text>` or slash command `/research` after `harnessed setup`.
+description: 多源调研 workflow — Tavily/Exa/ctx7 多源 fan-out + GSD discuss synth aggregate; harnessed v2.0 NEW per R20.7 (Stage ① Discuss 独立 call); schema bumped to harnessed.workflow.v3 in Phase v3.0-3.4 W1.1 (T3.4.W1.1) with disciplines_applied [6] + tools_available [tavily-mcp, exa-mcp, ctx7, gsd-discuss-phase], phases reuse v2 verbatim. Triggered by harnessed CLI `harnessed research --topic <text>` or slash command `/research` after `harnessed setup`.
 preamble-tier: 2
+schema_version: harnessed.workflow.v3
 ---
 
 # research workflow
 
-Multi-source research workflow shipped with harnessed v2.0 (Stage ① Discuss).
+Multi-source research workflow shipped with harnessed v2.0 (Stage ① Discuss);
+`workflow.yaml` schema bumped to `harnessed.workflow.v3` in Phase v3.0-3.4 W1.1
+(T3.4.W1.1 — D-09 L0 Discipline Substrate + D-05 tools_available cross-validate);
+phases content (01-fan-out + 02-synth) verbatim reused from v2 SHIPPED unchanged.
 
 ## Phases (2)
 
