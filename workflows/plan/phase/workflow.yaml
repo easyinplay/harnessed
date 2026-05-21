@@ -1,0 +1,37 @@
+# workflows/plan/phase/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.5
+#
+# Stage ②.b 计划层 sub-workflow — GSD /gsd-plan-phase Wave A research + Wave B planner +
+# Wave C plan-checker + planning-with-files /plan 持久化 task_plan.md (sister
+# ~/.claude/CLAUDE.md "Plan 阶段 GSD + planning-with-files")。Stage ② 铁律: dual capability
+# (gsd-plan-phase + planning-with-files /plan invokes)。
+#
+# Sister refs:
+#   - workflows/capabilities.yaml — gsd-plan-phase / planning-with-files
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 sub-stage example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: plan-phase
+description: |
+  Stage ②.b 计划层 — GSD /gsd-plan-phase Wave A research + Wave B planner + Wave C plan-checker
+  + planning-with-files /plan 持久化 task_plan.md + progress.md (sister CLAUDE.md "Plan 阶段
+  GSD + planning-with-files")。Stage ② 铁律: dual capability (GSD orchestration + planning-with-files
+  Claude Code plugin /plan invocation)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-plan-phase, planning-with-files]
+
+phases:
+  - id: 01-gsd-plan
+    name: gsd-plan-phase (Wave A research + Wave B planner + Wave C plan-checker)
+    upstream: gsd
+    capability: '{{ capabilities.gsd-plan-phase.cmd }}'
+    model: sonnet
+    max_iterations: '{{ defaults.ralph_max_iterations.plan-phase.01-gsd-plan }}'
+
+  - id: 02-persist
+    name: planning-with-files /plan (task_plan.md + progress.md 持久化)
+    upstream: planning-with-files
+    capability: '{{ capabilities.planning-with-files.cmd }}'
+    invokes: '/plan'
+    model: haiku
+    artifacts_expected: [task_plan.md, progress.md]
