@@ -18,7 +18,6 @@ const QA: readonly { q: string; f: string }[] = [
 interface RawOpts {
   category?: string
   name?: string
-  apply?: boolean
   dryRun?: boolean
   nonInteractive?: boolean
 }
@@ -35,12 +34,8 @@ export function registerManifestAdd(program: Command): void {
     )
     .option('--category <cat>', 'manifest category (skill-packs | tools)', 'skill-packs')
     .option('--name <name>', 'short adapter name (defaults to <upstream> basename)')
-    .option(
-      '--apply',
-      '(deprecated; kept for backward compat — manifest-add persists immediately by default)',
-    )
     .option('--dry-run', 'preview only — do not write JSON (opt-in for advanced users)')
-    .option('--non-interactive', 'CI/scripts — requires --apply or --dry-run; WARN-only dry-run')
+    .option('--non-interactive', 'CI/scripts — WARN-only dry-run')
     .action(async (upstream: string, raw: RawOpts) => {
       validateNonInteractiveFlags(raw, 'manifest-add <upstream>')
       const name = raw.name ?? basename(upstream)

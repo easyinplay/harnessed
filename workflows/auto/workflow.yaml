@@ -32,7 +32,7 @@ description: |
   / well-defined feature OR hands-off use case; 关键 PR / 大重构推荐分阶段手动 (`/discuss` →
   `/plan` → `/task` → `/verify`)。AI 自动判断需求复杂度,大需求建议切 `--staged` 模式 (每 stage
   完停 review)。Fail-fast default:任一 stage fail 立即停, `harnessed resume` 续。Opt-in
-  `--staged` flag (alias `--pause-between-stages`) 重现 v3.0.x stage gate UX。
+  `--staged` flag 重现 stage gate UX (每 stage 完停 user review)。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available:

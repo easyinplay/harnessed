@@ -434,7 +434,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
   // Cell 2: manifest not found → exit 1
   it('cell 2 — manifest not found → exit 1 + stderr manifest not found', async () => {
     readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
-    const { code, stderr } = await runCli(['uninstall', 'nonexistent', '--apply', '--yes'])
+    const { code, stderr } = await runCli(['uninstall', 'nonexistent', '--yes'])
     expect(code).toBe(1)
     expect(stderr).toContain('not found')
   })
@@ -452,7 +452,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
   it('cell 4 — --apply ephemeral npm-cli (npx --yes) → exit 0 + ephemeral warn', async () => {
     mockManifestFile(EPHEMERAL_NPM_MANIFEST_YAML)
     confirmMock.mockResolvedValue(true)
-    const { code, stdout } = await runCli(['uninstall', 'ctx7-ephemeral', '--apply', '--yes'])
+    const { code, stdout } = await runCli(['uninstall', 'ctx7-ephemeral', '--yes'])
     expect(code).toBe(0)
     expect(stdout).toContain('ephemeral install')
   })
@@ -462,7 +462,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     mockManifestFile(GIT_CLONE_MANIFEST_YAML)
     rmMock.mockResolvedValue(undefined)
     confirmMock.mockResolvedValue(true)
-    const { code } = await runCli(['uninstall', 'my-skill', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'my-skill', '--yes'])
     expect(code).toBe(0)
     expect(rmMock).toHaveBeenCalledWith(
       expect.stringContaining('.claude/skills/my-skill'),
@@ -475,7 +475,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     mockManifestFile(NPX_SKILL_MANIFEST_YAML)
     rmMock.mockResolvedValue(undefined)
     confirmMock.mockResolvedValue(true)
-    const { code } = await runCli(['uninstall', 'andrej-karpathy-skills', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'andrej-karpathy-skills', '--yes'])
     expect(code).toBe(0)
     expect(rmMock).toHaveBeenCalledWith(
       expect.stringContaining('andrej-karpathy-skills'),
@@ -488,7 +488,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     mockManifestFile(MCP_STDIO_MANIFEST_YAML)
     mockSpawnExit(0)
     confirmMock.mockResolvedValue(true)
-    const { code } = await runCli(['uninstall', 'my-mcp-server', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'my-mcp-server', '--yes'])
     expect(code).toBe(0)
     // Verify spawn was called with mcp remove args
     expect(spawnMock).toHaveBeenCalled()
@@ -507,7 +507,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     mockManifestFile(MCP_HTTP_MANIFEST_YAML)
     mockSpawnExit(0)
     confirmMock.mockResolvedValue(true)
-    const { code } = await runCli(['uninstall', 'my-http-mcp', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'my-http-mcp', '--yes'])
     expect(code).toBe(0)
     expect(spawnMock).toHaveBeenCalled()
   })
@@ -517,7 +517,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     mockManifestFile(CC_PLUGIN_MANIFEST_YAML)
     mockSpawnExit(0)
     confirmMock.mockResolvedValue(true)
-    const { code } = await runCli(['uninstall', 'superpowers', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'superpowers', '--yes'])
     expect(code).toBe(0)
     expect(spawnMock).toHaveBeenCalled()
     const callArgs = spawnMock.mock.calls[0]
@@ -535,7 +535,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
   it('cell 10 — --apply --yes skips interactive confirm prompt + exit 0', async () => {
     mockManifestFile(NPM_CLI_MANIFEST_YAML)
     mockSpawnExit(0)
-    const { code } = await runCli(['uninstall', 'ctx7', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'ctx7', '--yes'])
     expect(code).toBe(0)
     // confirm() should NOT have been called
     expect(confirmMock).not.toHaveBeenCalled()
@@ -546,7 +546,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     mockManifestFile(MCP_STDIO_MANIFEST_YAML)
     mockSpawnExit(1, 'mcp remove failed: server not found')
     confirmMock.mockResolvedValue(true)
-    const { code, stderr } = await runCli(['uninstall', 'my-mcp-server', '--apply', '--yes'])
+    const { code, stderr } = await runCli(['uninstall', 'my-mcp-server', '--yes'])
     expect(code).toBe(1)
     expect(stderr).toContain('error')
   })
@@ -572,7 +572,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     })
     writeFileMock.mockResolvedValue(undefined)
     confirmMock.mockResolvedValue(true)
-    const { code } = await runCli(['uninstall', 'my-hook', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'my-hook', '--yes'])
     expect(code).toBe(0)
     expect(writeFileMock).toHaveBeenCalled()
     const written = writeFileMock.mock.calls[0]?.[1] as string
@@ -585,7 +585,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
   it('cell 13 — --apply interactive confirm declined → exit 2', async () => {
     mockManifestFile(NPM_CLI_MANIFEST_YAML)
     confirmMock.mockResolvedValue(false)
-    const { code } = await runCli(['uninstall', 'ctx7', '--apply'])
+    const { code } = await runCli(['uninstall', 'ctx7'])
     expect(code).toBe(2)
     expect(spawnMock).not.toHaveBeenCalled()
   })
@@ -595,7 +595,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     mockManifestFile(GIT_CLONE_MANIFEST_YAML)
     rmMock.mockResolvedValue(undefined)
     confirmMock.mockResolvedValue(true)
-    await runCli(['uninstall', 'my-skill', '--apply', '--yes'])
+    await runCli(['uninstall', 'my-skill', '--yes'])
     const rmCall = rmMock.mock.calls[0]
     expect(rmCall?.[1]).toMatchObject({ recursive: true, force: true })
   })
@@ -615,7 +615,7 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
   it('cell 16 — v3.0.1 backward-compat: legacy --apply --yes still works (no-op alias)', async () => {
     mockManifestFile(NPM_CLI_MANIFEST_YAML)
     mockSpawnExit(0)
-    const { code } = await runCli(['uninstall', 'ctx7', '--apply', '--yes'])
+    const { code } = await runCli(['uninstall', 'ctx7', '--yes'])
     expect(code).toBe(0)
     expect(spawnMock).toHaveBeenCalled() // legacy flag still triggers immediate execute
   })

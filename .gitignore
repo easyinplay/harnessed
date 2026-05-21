@@ -21,6 +21,8 @@ coverage/
 
 # harnessed runtime state (project-local)
 .harnessed/
+.harnessed-backup/
+.mcp.json
 
 # OMC orchestration runtime state (not part of harnessed scope per D-OOS-1)
 .omc/

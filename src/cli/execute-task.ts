@@ -9,11 +9,13 @@
 // 4th enum). Forward-looking subcommand surface; auto-invocation pushed Phase 2.3.
 //
 // Phase v3.0-3.5 W0 T3.5.W0.4 — before-commit hook wire (K5 Option A enforcement):
-// --apply path pre-flight `runBeforeCommitHook` enforce biome auto-fix on TS/JS work
+// apply path pre-flight `runBeforeCommitHook` enforce biome auto-fix on TS/JS work
 // tree changes BEFORE ralph-loop subagent spawn。subagent SDK 内部 git commit 时
 // work tree 已 biome-clean。User 主 session git commit 不走此 path(clean separation
 // per K5 Option A;主 session 用户自负 biome-preempt 责任)。
 // dry-run path NOT triggered(K5 Option A 仅 真 spawn 路径 enforce)。
+//
+// v3.3.0 cleanup — `--apply` backward-compat alias removed (was no-op since v3.0.1)。
 
 import { execSync } from 'node:child_process'
 import type { Command } from 'commander'
@@ -25,7 +27,6 @@ import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
   task?: string
-  apply?: boolean
   dryRun?: boolean
   nonInteractive?: boolean
   model?: 'haiku' | 'sonnet' | 'opus'
@@ -42,12 +43,8 @@ export function registerExecuteTask(program: Command): void {
     )
     .requiredOption('--task <text>', 'task description (required)')
     .option('--workflow <name>', 'workflow name', 'execute-task')
-    .option(
-      '--apply',
-      '(deprecated; kept for backward compat — execute-task spawns immediately by default)',
-    )
     .option('--dry-run', 'preview only — do not spawn subagent (opt-in for advanced users)')
-    .option('--non-interactive', 'CI / scripts — requires --apply or --dry-run')
+    .option('--non-interactive', 'CI / scripts')
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .option('--model-tier <tier>', "override: 'inherit' bypasses per-phase phase.model (B-10)")
     .option('--max-iterations <n>', 'ralph-loop max iter (default 20)', (v) => parseInt(v, 10))
@@ -108,9 +105,9 @@ export function registerExecuteTask(program: Command): void {
       }
 
       // T3.5.W0.4 — before-commit hook K5 Option A enforcement (ralph-loop / subagent
-      // auto-commit path ONLY)。--apply path 在 runRouting subagent spawn 前 enforce
+      // auto-commit path ONLY)。apply path 在 runRouting subagent spawn 前 enforce
       // biome auto-fix:work tree TS/JS modified files → biome --write,subagent SDK
-      // 内部 commit 时已 biome-clean。--apply 等同 user explicit approval = pass。
+      // 内部 commit 时已 biome-clean。apply-immediate default 等同 user explicit approval = pass。
       // User 主 session 直接 git commit NOT 走此 path(K5 Option A clean separation)。
       try {
         const stagedOut = execSync('git status --porcelain', { encoding: 'utf8' })
@@ -123,7 +120,7 @@ export function registerExecuteTask(program: Command): void {
           cmdArgs: [],
           packageRoot: process.cwd(),
           cmdType: 'git-commit',
-          hasUserApproval: true, // --apply explicit
+          hasUserApproval: true, // apply-immediate default
         })
       } catch (err) {
         // Fail-soft per ADR 0029:git status / biome auto-fix throw → warn + 继续
@@ -134,7 +131,7 @@ export function registerExecuteTask(program: Command): void {
         )
       }
 
-      // --apply path — real spawn via engine.runRouting (T4.2 sdkSpawn).
+      // apply path — real spawn via engine.runRouting (T4.2 sdkSpawn).
       const result = await runRouting(taskCtx, {
         maxIterations: raw.maxIterations ?? 20,
         ...(raw.model ? { agentOpts: { modelOverride: raw.model } } : {}),

@@ -71,9 +71,9 @@ export const defaultSpawnDriver: SpawnDriver = async (
   }
 }
 
-/** v3.1.0 — Default pause hook: prompt user via stdin to confirm continuation between stages
- *  (super-master `/auto --staged` opt-in, alias `--pause-between-stages`). Test DI override
- *  via opts.pauseFn。 */
+/** v3.1.0 / v3.3.0 — Default pause hook: prompt user via stdin to confirm continuation
+ *  between stages (super-master `/auto --staged` opt-in; v3.3.0 removed legacy
+ *  `--pause-between-stages` alias). Test DI override via opts.pauseFn。 */
 export const defaultPauseFn = async (stageName: string): Promise<void> => {
   const readline = await import('node:readline/promises')
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout })

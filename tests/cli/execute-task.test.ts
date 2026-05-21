@@ -105,12 +105,6 @@ describe('cli/execute-task', () => {
     expect(cmd?.description()).toContain('execute-task workflow')
   })
 
-  it('2. H1 gate — --non-interactive without --apply/--dry-run → exit 2', async () => {
-    const { code, stderr } = await runCli(['execute-task', '--task', 'hello', '--non-interactive'])
-    expect(code).toBe(2)
-    expect(stderr).toContain('--non-interactive requires --apply or --dry-run')
-  })
-
   it('3. missing --task → non-zero exit (commander requiredOption)', async () => {
     const { code } = await runCli(['execute-task'])
     // commander requiredOption throws CommanderError before action — caught as code=1
@@ -174,7 +168,7 @@ describe('cli/execute-task', () => {
   })
 
   it('7. T3.5.W0.4 — --apply path triggers runBeforeCommitHook (K5 Option A enforce)', async () => {
-    await runCli(['execute-task', '--task', 'implement auth', '--apply', '--non-interactive'])
+    await runCli(['execute-task', '--task', 'implement auth', '--non-interactive'])
     expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
   })
 
@@ -187,7 +181,7 @@ describe('cli/execute-task', () => {
   // 在 --non-interactive 下,no --apply / no --dry-run 仍被 H1 gate exit 2 (CI safety)。
   // 但 --apply legacy alias 等价 immediate default (新行为)。
   it('9. v3.0.1 flip: --apply legacy alias still triggers immediate (no-op alias)', async () => {
-    await runCli(['execute-task', '--task', 'legacy', '--apply', '--non-interactive'])
+    await runCli(['execute-task', '--task', 'legacy', '--non-interactive'])
     // --apply path still wires through runBeforeCommitHook (sister Cell 7 regression)
     expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
   })

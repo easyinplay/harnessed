@@ -3,26 +3,23 @@
 //
 // 5-site duplicate (install.ts + install-base.ts + research.ts +
 // manifest-add.ts + execute-task.ts) consolidated here.
-// uninstall.ts uses --yes/--apply variant (NOT --non-interactive) — keep inline.
+// uninstall.ts uses --yes/--dry-run variant (NOT --non-interactive) — keep inline.
+//
+// v3.3.0 cleanup — `--apply` backward-compat alias removed (v3.0.1
+// introduced, now redundant since default is apply-immediate)。H1 gate 仅
+// 检测 --dry-run opt-in 与否 — 默认即 apply,non-interactive 无需额外 flag。
 
 /**
- * H1 pre-action gate: --non-interactive requires --apply or --dry-run.
- * Exits with code 2 if --non-interactive is set without either flag.
- *
- * v3.0.1 UX flip note: CLI default is now apply-immediate, but the H1 gate
- * is kept verbatim for CI / scripts — explicit intent (`--apply` for execute
- * OR `--dry-run` for preview) is still required to avoid silent surprises
- * in automation。Interactive TTY 使用不受影响 (default apply-immediate)。
+ * H1 pre-action gate (v3.3.0 simplified): --non-interactive is always
+ * compatible with the apply-immediate default; --dry-run is opt-in preview。
+ * This function is now a no-op kept for backward-compat call-site shape;
+ * --non-interactive alone proceeds with apply-immediate semantics。
  */
 export function validateNonInteractiveFlags(
-  raw: { nonInteractive?: boolean; apply?: boolean; dryRun?: boolean },
-  cmdName: string,
+  _raw: { nonInteractive?: boolean; dryRun?: boolean },
+  _cmdName: string,
 ): void {
-  if (raw.nonInteractive && !raw.apply && !raw.dryRun) {
-    console.error(
-      `error: --non-interactive requires --apply or --dry-run\n` +
-        `  fix:  'harnessed ${cmdName} --non-interactive --dry-run' or '--apply'`,
-    )
-    process.exit(2)
-  }
+  // v3.3.0: --non-interactive default == apply-immediate (sister interactive TTY)。
+  // No flag combination is invalid; @clack/prompts confirmAt deadlock no longer
+  // a risk because confirm prompts are bypassed when nonInteractive=true。
 }

@@ -344,6 +344,42 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 
 ---
 
+## 🛠️ 维护命令 (Operational)
+
+> 这些是 harnessed 自身维护命令(setup / 健康检查 / 备份回滚 / 状态恢复等),日常 feature 开发用上面的 slash command 即可,这块通常不需要。
+
+### CLI 命令
+
+| 命令 | 说明 |
+| ---- | ---- |
+| `harnessed setup` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` + MCP 到 `~/.claude.json` |
+| `harnessed resume` | session 中断后恢复至最近 checkpoint |
+| `harnessed status` | 当前 phase + lock holder |
+| `harnessed doctor` | 8-check 健康检查 (Node / MCP / jq / Win bash / 路由 / token budget 等) |
+| `harnessed install <name>` | 装上游 manifest |
+| `harnessed uninstall <name>` | 反向卸载 |
+| `harnessed backup` | snapshot 备份管理 |
+| `harnessed rollback <timestamp>` | 一行回滚 (EOL preserve + sha1 verify) |
+| `harnessed gc` | 清理过期 backups |
+| `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
+
+### 参数 (Flags)
+
+> 所有命令默认 **apply (immediate write)**,无需加 flag。高级用户可加 `--dry-run` 预览。
+
+| Flag | 说明 |
+| ---- | ---- |
+| `--dry-run` | 预览不写盘 (高级用户 opt-in) |
+| `--non-interactive` | CI / 脚本场景 |
+| `--system` | L4 全局装允许 (否则降级 L1 npx ephemeral) |
+| `--yes` | uninstall 跳过交互 confirm |
+| `--full-diff` | 展开 > 200 行的 diff 折叠 |
+| `--no-color` | 强制 nocolor (即使 TTY) |
+
+> `--apply` flag 仍保留为向后兼容 alias (no-op, 旧脚本不破)。
+
+---
+
 ## ❓ FAQ
 
 <details>
@@ -423,41 +459,6 @@ harnessed setup --apply  # 自动装齐 gstack + GSD + superpowers + planning-wi
 
 ---
 
-## 🛠️ 维护命令 (Operational)
-
-> 这些是 harnessed 自身维护命令(setup / 健康检查 / 备份回滚 / 状态恢复等),日常 feature 开发用上面的 slash command 即可,这块通常不需要。
-
-### CLI 命令
-
-| 命令 | 说明 |
-| ---- | ---- |
-| `harnessed setup` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` + MCP 到 `~/.claude.json` |
-| `harnessed resume` | session 中断后恢复至最近 checkpoint |
-| `harnessed status` | 当前 phase + lock holder |
-| `harnessed doctor` | 8-check 健康检查 (Node / MCP / jq / Win bash / 路由 / token budget 等) |
-| `harnessed install <name>` | 装上游 manifest |
-| `harnessed uninstall <name>` | 反向卸载 |
-| `harnessed backup` | snapshot 备份管理 |
-| `harnessed rollback <timestamp>` | 一行回滚 (EOL preserve + sha1 verify) |
-| `harnessed gc` | 清理过期 backups |
-| `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
-
-### 参数 (Flags)
-
-> 所有命令默认 **apply (immediate write)**,无需加 flag。高级用户可加 `--dry-run` 预览。
-
-| Flag | 说明 |
-| ---- | ---- |
-| `--dry-run` | 预览不写盘 (高级用户 opt-in) |
-| `--non-interactive` | CI / 脚本场景 |
-| `--system` | L4 全局装允许 (否则降级 L1 npx ephemeral) |
-| `--yes` | uninstall 跳过交互 confirm |
-| `--full-diff` | 展开 > 200 行的 diff 折叠 |
-| `--no-color` | 强制 nocolor (即使 TTY) |
-
-> `--apply` flag 仍保留为向后兼容 alias (no-op, 旧脚本不破)。
-
----
 
 ## License
 

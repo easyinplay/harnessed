@@ -3,9 +3,11 @@
 // IMPL NOTE (v3.0.1 UX flip — apply-immediate default + --dry-run opt-in):
 // `harnessed uninstall <name>` executes immediately by default (sister install.ts
 // pattern verbatim). Interactive p.confirm() 仍 protect destructive op (user
-// 必须显式 y/yes 才真正删除)。`--dry-run` flag opt-in 高级用户预览, `--apply`
-// 保留 backward-compat no-op alias (旧脚本仍 work)。`--yes` skip interactive
-// confirm 仍 require user 显式 opt-in (CI / scripts)。
+// 必须显式 y/yes 才真正删除)。`--dry-run` flag opt-in 高级用户预览。`--yes` skip
+// interactive confirm 仍 require user 显式 opt-in (CI / scripts)。
+//
+// v3.3.0 cleanup — `--apply` backward-compat alias removed (was no-op since
+// v3.0.1)。Migration: `harnessed uninstall foo --apply --yes` → `harnessed uninstall foo --yes`。
 //
 // IMPL NOTE (D-07 NO --keep-backup): RawOpts explicitly omits keepBackup.
 //
@@ -24,7 +26,6 @@ import { runUninstall } from '../uninstallers/index.js'
 import { getPackageRoot } from './lib/packagePath.js'
 
 interface RawOpts {
-  apply?: boolean
   dryRun?: boolean
   yes?: boolean
   nonInteractive?: boolean
@@ -34,14 +35,13 @@ export function registerUninstall(program: Command): void {
   program
     .command('uninstall <name>')
     .description('Uninstall an upstream (immediate by default — use --dry-run for preview)')
-    .option('--apply', '(deprecated; kept for backward compat — uninstall is immediate by default)')
     .option('--dry-run', 'preview only — do not delete files (opt-in for advanced users)')
     .option('--yes', 'skip interactive confirm (CI / scripts) — fatal with --dry-run')
     .option('--non-interactive', 'alias for --yes (CI compat)')
     .action(async (name: string, raw: RawOpts) => {
       // v3.0.1 UX flip — apply-immediate default。dryRun=true → preview only。
-      // dryRun=false → immediate execute (无论 --apply 是否传入)。`--yes` 仍可
-      // skip interactive confirm prompt (用户显式 opt-in CI / scripts)。
+      // dryRun=false → immediate execute。`--yes` 仍可 skip interactive
+      // confirm prompt (用户显式 opt-in CI / scripts)。
       // H1 gate: --yes + --dry-run 互斥 (dry-run 不 mutate, --yes 无意义)。
       const yes = raw.yes === true || raw.nonInteractive === true
       if (yes && raw.dryRun) {
@@ -87,7 +87,7 @@ export function registerUninstall(program: Command): void {
 
       const method = v.manifest.spec.install.method
       // v3.0.1 UX flip — dry-run is opt-in only (raw.dryRun === true)。
-      // apply-immediate by default;legacy --apply is no-op alias。
+      // apply-immediate by default。
       const dryRun = raw.dryRun === true
 
       // Dry-run preview path (opt-in --dry-run only).

@@ -72,12 +72,6 @@ describe('cli/manifest-add (EE-5 5Q merge gate)', () => {
     expect(cmd?.description()).toContain('EE-5 5-question merge gate')
   })
 
-  it('2. H1 gate — --non-interactive without --apply/--dry-run → exit 2', async () => {
-    const { code, stderr } = await runCli(['manifest-add', 'foo', '--non-interactive'])
-    expect(code).toBe(2)
-    expect(stderr).toContain('--non-interactive requires --apply or --dry-run')
-  })
-
   it('3. --non-interactive --dry-run → exit 0 + [ee-5-gate] WARN (D-03 双闸 L2)', async () => {
     const { code, stdout, stderr } = await runCli([
       'manifest-add',
@@ -109,7 +103,7 @@ describe('cli/manifest-add (EE-5 5Q merge gate)', () => {
     const answers = ['r1', 'r2', 'r3', 'r4', 'r5']
     let i = 0
     questionMock.mockImplementation(() => Promise.resolve(answers[i++] ?? ''))
-    const { code } = await runCli(['manifest-add', 'github.com/o/upstream-bar.git', '--apply'])
+    const { code } = await runCli(['manifest-add', 'github.com/o/upstream-bar.git'])
     expect(code).toBe(0)
     const written = join(tmpRoot, 'manifests', 'skill-packs', 'upstream-bar.ee5-answers.json')
     expect(existsSync(written)).toBe(true)

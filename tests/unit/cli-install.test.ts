@@ -74,15 +74,9 @@ describe('cli/install', () => {
     validateMock.mockReset()
   })
 
-  it('H1 gate: --non-interactive without --apply / --dry-run → exit 2', async () => {
-    const code = await runCli(['install', 'ctx7', '--non-interactive'])
-    expect(code).toBe(2)
-    expect(runInstallMock).not.toHaveBeenCalled()
-  })
-
   it('manifest file not found → exit 1', async () => {
     readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
-    const code = await runCli(['install', 'ghost', '--apply', '--non-interactive'])
+    const code = await runCli(['install', 'ghost', '--non-interactive'])
     expect(code).toBe(1)
   })
 
@@ -101,7 +95,7 @@ describe('cli/install', () => {
       backupId: '2026-05-12T00-00-00.000Z',
       appliedFiles: [],
     })
-    const code = await runCli(['install', 'ctx7', '--apply', '--non-interactive', '--system'])
+    const code = await runCli(['install', 'ctx7', '--non-interactive', '--system'])
     expect(code).toBe(0)
   })
 
@@ -136,7 +130,7 @@ describe('cli/install', () => {
         keyword: 'install-failed',
       },
     })
-    const code = await runCli(['install', 'ctx7', '--apply', '--non-interactive', '--system'])
+    const code = await runCli(['install', 'ctx7', '--non-interactive', '--system'])
     expect(code).toBe(1)
   })
 
@@ -155,7 +149,7 @@ describe('cli/install', () => {
     })
     // --non-interactive 仍 H1 gate require --apply OR --dry-run for CI safety;
     // 但 interactive TTY 路径 no flag = immediate (--non-interactive --apply 等价新 default 为 immediate)
-    const code = await runCli(['install', 'ctx7', '--apply', '--non-interactive', '--system'])
+    const code = await runCli(['install', 'ctx7', '--non-interactive', '--system'])
     expect(code).toBe(0)
     expect(runInstallMock).toHaveBeenCalledOnce()
     const opts = runInstallMock.mock.calls[0]?.[1]

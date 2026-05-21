@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-05-21 — Cleanup: remove backward-compat flag aliases (BREAKING)
+
+**升级一行指令**: `npm install -g harnessed` (无需重跑 setup)
+
+**Trigger**: user 反馈 — "2 个 backward-compat alias 都是 24h 内 ship + 几乎无生产 user 在用, 清理 cost 0"。v3.0.1 `--apply` no-op alias + v3.1.0/3.2.0 `--pause-between-stages` 过渡完成, CLI surface 统一 single flag。
+
+### BREAKING
+
+- **Removed `--apply`** (v3.0.1 introduced as no-op backward-compat alias)。All CLI cmds (`install` / `uninstall` / `install-base` / `gc` / `manifest-add` / `research` / `execute-task`) 默认即 apply, 不需 flag。旧脚本 `harnessed install foo --apply` 改 `harnessed install foo`。
+- **Removed `--pause-between-stages`** (v3.1.0 introduced, v3.2.0 renamed to `--staged`)。`/auto --staged` 唯一 stage-gate flag。
+- **`validateNonInteractiveFlags` simplified to no-op** — `--non-interactive` 与 apply-immediate default 完全 compatible, 无需 `--apply` 或 `--dry-run` 显式;`--dry-run` 仍 opt-in preview。
+
+### Changed
+
+- 7 CLI cmd 删除 `--apply` flag declaration (sister setup.ts no-flag pattern 统一)
+- `workflows/auto/{workflow.yaml,SKILL.md}` 删除 4 处 `--pause-between-stages` mention
+- `masterOrchestrator.ts` + `masterOrchestrator-helpers.ts` 删除 alias parse logic + JSDoc 标 v3.3.0 cleanup
+- README sweep — 删除 25 workflow 总览表 `/auto` Brief 中 `--pause-between-stages` alias mention
+- Tests:删除 4 个 obsolete H1 gate test (gate now no-op) + 21 处 `--apply` test arg
+
+### Migration
+
+```bash
+# v3.2.x (旧) — 仍 work as backward-compat alias
+harnessed install foo --apply
+/auto "需求" --pause-between-stages
+
+# v3.3.0+ (新, 旧 flag 报 unknown option)
+harnessed install foo                # default apply, 无需 flag
+/auto "需求" --staged                 # 唯一 stage-gate flag
+```
+
+### Tests
+
+- 1115 pass / 4 skip / 2 pre-existing baseline fail (`research-v2` + `special-purpose-fallback`, 与本次 cleanup 无关)
+- biome clean + tsc 0 error
+- 21 处 `--apply` arg + 4 obsolete H1 gate test 删除 (sed sweep batch + Edit per-file)
+
 ## [3.2.0] - 2026-05-21 — /auto enhancement: complexity gate + research/retro flow + flag rename
 
 **升级一行指令**: `npm install -g harnessed` (无需重跑 setup, `--staged` 是 NEW flag alias; `--pause-between-stages` 仍 work as backward-compat alias)

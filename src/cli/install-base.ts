@@ -7,7 +7,7 @@
 //   / npx-skill-installer / mcp-http-add) 不算 failure 计入 skipped (沿袭
 //   INSTALLER-CONTRACT 契约 6 放宽 "deferred ≠ failure").
 //   exit: 0 if installed > 0 + failed === 0; 1 if failed > 0; 2 if 全 skipped.
-// - H1 gate: --non-interactive 必须配 --apply / --dry-run, 否则 exit 2.
+// - v3.3.0: `--apply` backward-compat alias removed; default is apply-immediate.
 
 import { readdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -19,7 +19,6 @@ import { getPackageRoot } from './lib/packagePath.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
-  apply?: boolean
   dryRun?: boolean
   nonInteractive?: boolean
 }
@@ -48,12 +47,8 @@ export function registerInstallBase(program: Command): void {
     .description(
       'Install the phase 1.3 base profile (immediate by default — use --dry-run for preview)',
     )
-    .option(
-      '--apply',
-      '(deprecated; kept for backward compat — install-base is immediate by default)',
-    )
     .option('--dry-run', 'preview only — do not write to disk (opt-in for advanced users)')
-    .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
+    .option('--non-interactive', 'skip all prompts (CI / scripts)')
     .action(async (raw: RawOpts) => {
       validateNonInteractiveFlags(raw, 'install-base')
       // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。

@@ -90,14 +90,6 @@ describe('cli/install-base', () => {
     validateMock.mockReset()
   })
 
-  it('cell 1 — H1 gate: --non-interactive without --apply / --dry-run → exit 2', async () => {
-    // No manifest reads should happen — gate triggers before glob.
-    const code = await runCli(['install-base', '--non-interactive'])
-    expect(code).toBe(2)
-    expect(readdirMock).not.toHaveBeenCalled()
-    expect(runInstallMock).not.toHaveBeenCalled()
-  })
-
   it('cell 2 — happy path: 2 manifest dispatcher ok → exit 0 + installed > 0', async () => {
     // tools/ has 1, skill-packs/ has 1; both with installable method.
     readdirMock.mockResolvedValueOnce(['ctx7.yaml'] as never)
@@ -144,7 +136,7 @@ describe('cli/install-base', () => {
         keyword: 'install-failed',
       },
     })
-    const code = await runCli(['install-base', '--apply', '--non-interactive'])
+    const code = await runCli(['install-base', '--non-interactive'])
     expect(code).toBe(1)
   })
 

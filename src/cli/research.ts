@@ -11,7 +11,7 @@
 //   0  → ok (verbatim COMPLETE round-trip succeeded)
 //   1  → ok:false {phase: arbitrate|install|spawn|verbatim} (typed error)
 //   2  → aborted {reason} (max-iter exceeded / user-aborted)
-// H1 gate (sibling install-base.ts): --non-interactive requires --apply or --dry-run.
+// v3.3.0: `--apply` backward-compat alias removed; default is apply-immediate.
 
 import type { Command } from 'commander'
 import { runRouting, type TaskContext } from '../routing/index.js'
@@ -19,7 +19,6 @@ import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
   query?: string
-  apply?: boolean
   dryRun?: boolean
   nonInteractive?: boolean
   model?: 'haiku' | 'sonnet' | 'opus'
@@ -32,12 +31,8 @@ export function registerResearch(program: Command): void {
       'Run research workflow (search category sub-routing → spawn → verbatim COMPLETE; immediate by default — use --dry-run for preview)',
     )
     .requiredOption('--query <text>', 'research prompt (required)')
-    .option(
-      '--apply',
-      '(deprecated; kept for backward compat — research spawns immediately by default)',
-    )
     .option('--dry-run', 'preview only — do not spawn subagent (opt-in for advanced users)')
-    .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
+    .option('--non-interactive', 'skip all prompts (CI / scripts)')
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .action(async (raw: RawOpts) => {
       // H1 gate (sibling install-base.ts pattern)
@@ -87,7 +82,7 @@ export function registerResearch(program: Command): void {
       if ('ok' in result && result.ok === false) {
         console.error(`error: ${result.phase} — ${result.error.message}`)
         if (result.phase === 'install') {
-          console.error(`  fix:  'harnessed install <skill> --apply' (see error above)`)
+          console.error(`  fix:  'harnessed install <skill>' (see error above)`)
         }
         process.exit(1)
       }

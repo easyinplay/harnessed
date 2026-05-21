@@ -3,22 +3,14 @@
 // IMPL NOTE (v3.0.1 UX flip — apply-immediate default + --dry-run opt-in):
 // `harnessed install <name>` executes immediately by default (non-expert UX;
 // v3.0.1 user feedback — dry-run 是高级用户概念,默认应 apply)。`--dry-run` flag
-// is opt-in 高级用户预览。`--apply` flag 保留 backward-compat no-op alias (旧
-// 脚本仍 work, 不破)。Sister setup.ts pattern verbatim (L5-7 IMPL NOTE).
-// For automation (CI / scripts), `--non-interactive` 仍 require `--apply` or
-// `--dry-run` (H1 gate) 以避免 @clack/prompts deadlock 当 stdin 非 TTY。
-//
-// IMPL NOTE (H1 sister review fix — pre-action flag validation): we validate
-// the flag combination BEFORE invoking the installer. `--non-interactive`
-// without an explicit apply/dry-run choice would otherwise reach
-// confirmAt() / spawnCmd() and deadlock waiting for a prompt response that
-// will never arrive. Failing fast with exit 2 + actionable hint avoids the
-// "harnessed hangs in CI" footgun.
+// is opt-in 高级用户预览。Sister setup.ts pattern verbatim (L5-7 IMPL NOTE).
+// v3.3.0 cleanup — `--apply` backward-compat alias removed (was no-op since
+// v3.0.1)。default is apply-immediate, no flag needed。
 //
 // Exit code mapping (ADR 0004 contract 6 — no silent failure):
 //   0 → install succeeded (ok: true)
 //   1 → install failed (ok: false; print error.suggest if present)
-//   2 → user-aborted / flag-missing / platform-mismatch (not an error)
+//   2 → user-aborted / platform-mismatch (not an error)
 
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -36,7 +28,6 @@ import { getPackageRoot } from './lib/packagePath.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
-  apply?: boolean
   dryRun?: boolean
   system?: boolean
   nonInteractive?: boolean
@@ -56,10 +47,9 @@ export function registerInstall(program: Command): void {
   program
     .command('install <name>')
     .description('Install an upstream (immediate by default — use --dry-run for preview)')
-    .option('--apply', '(deprecated; kept for backward compat — install is immediate by default)')
     .option('--dry-run', 'preview only — do not write to disk (opt-in for advanced users)')
     .option('--system', 'allow L4 system-wide install (e.g. global npm install)')
-    .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
+    .option('--non-interactive', 'skip all prompts (CI / scripts)')
     .option('--full-diff', 'expand diffs longer than 200 lines')
     .option('--no-color', 'disable ANSI colors (auto-detected when piped)')
     .option(
@@ -67,7 +57,6 @@ export function registerInstall(program: Command): void {
       'use known-good version lock from versions/<harnessed-ver>-known-good.yaml',
     )
     .action(async (name: string, raw: RawOpts) => {
-      // H1 pre-action flag gate (see file header IMPL NOTE).
       validateNonInteractiveFlags(raw, 'install <name>')
 
       // Phase 3.3 W1 T1.8 ADD — D-01 alias redirect (D-02 silent install,
@@ -105,8 +94,7 @@ export function registerInstall(program: Command): void {
       }
 
       // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
-      // `--apply` 旧 flag 保留 no-op alias (向后兼容)。dryRun=true → preview only。
-      // dryRun=false → immediate execute (无论 --apply 是否传入,默认 apply 为 true)。
+      // dryRun=true → preview only;dryRun=false → immediate execute。
       const dryRun = raw.dryRun === true
       const opts: InstallOpts = {
         apply: !dryRun,

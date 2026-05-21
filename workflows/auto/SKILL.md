@@ -9,8 +9,8 @@ description: |
   schema_version: harnessed.workflow.v3 with delegates_to (6 sub: research conditional order 0 +
   4 stage-master order 1-4 + retro mandatory order 5) + disciplines_applied (6 default)
   + tools_available (agent-teams-create + planning-with-files)。Fail-fast default; opt-in
-  `--staged` flag (alias `--pause-between-stages` for backward-compat) 重现 v3.0.x stage gate
-  UX。Triggered by slash command `/auto` (bare per ADR 0030 namespace policy D-02 LOCK)
+  `--staged` flag 重现 stage gate UX (每 stage 完停 user review)。
+  Triggered by slash command `/auto` (bare per ADR 0030 namespace policy D-02 LOCK)
   after `harnessed setup`.
 trigger_phrases:
   - "auto"
@@ -64,9 +64,7 @@ K8 ctx single snapshot:auto top-level invoke 1 snapshot, pass to all 6 spawn
 
 ## Optional flag
 
-- `--staged` opt-in (primary, 8 字符 ergonomic): 每 stage-master 跑完停, 等用户 review/confirm
-  后跑下 stage (重现 v3.0.x stage gate UX)
-- `--pause-between-stages` alias (backward-compat sister v3.1.0 — 仍 work for 旧脚本不破)
+- `--staged` opt-in: 每 stage-master 跑完停, 等用户 review/confirm 后跑下 stage (stage gate UX)
 
 ## When to use `/auto` vs 4 stage-master 手动
 
@@ -103,7 +101,7 @@ Sister `workflows/capabilities.yaml`:
 - Slash command: `/auto <feature description>` (bare per ADR 0030 namespace policy D-02 LOCK
   after `harnessed setup`)
 - 4 stage-master `/discuss /plan /task /verify` 仍可独立 invoke — `/auto` 是 opt-in NEW workflow
-- `--staged` (primary) or `--pause-between-stages` (alias) opt-in for stage gate UX
+- `--staged` opt-in for stage gate UX (每 stage 完停 user review)
 
 ## References
 

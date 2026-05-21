@@ -12,7 +12,7 @@
 // gc follows the unified apply-immediate default convention (sister
 // install.ts pattern verbatim). Without flags → delete candidates。
 // `--dry-run` opt-in 列出 candidates 但不真删 (高级用户预览)。
-// `--apply` 保留 backward-compat no-op alias (旧脚本仍 work)。
+// v3.3.0 cleanup — `--apply` backward-compat alias removed (was no-op since v3.0.1)。
 // keepLast + olderThan filter 仍 protect 误删近期 snapshot (safety contract)。
 
 import { readdir, readFile, rm, stat } from 'node:fs/promises'
@@ -30,7 +30,6 @@ interface BackupMetadata {
 interface GcOpts {
   olderThan?: string
   keepLast?: string
-  apply?: boolean
   dryRun?: boolean
 }
 
@@ -72,7 +71,6 @@ export function registerGc(program: Command): void {
     )
     .option('--older-than <duration>', 'delete snapshots older than (e.g. 30d / 24h / 4w)', '30d')
     .option('--keep-last <N>', 'always keep the most recent N snapshots', '0')
-    .option('--apply', '(deprecated; kept for backward compat — gc deletes immediately by default)')
     .option('--dry-run', 'preview only — do not delete (opt-in for advanced users)')
     .action(async (opts: GcOpts) => {
       // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。

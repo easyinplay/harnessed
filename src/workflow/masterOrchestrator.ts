@@ -24,9 +24,10 @@ export interface MasterRunResult {
   skipped: string[]
 }
 
-/** v3.1.0 / v3.2.0 — Opts for runMasterOrchestrator.
- *  `pauseBetweenStages` (v3.1.0): opt-in stage gate mode for super-master `/auto` (alias
- *    `--staged` v3.2.0 primary flag, `--pause-between-stages` backward-compat alias).
+/** v3.1.0 / v3.2.0 / v3.3.0 — Opts for runMasterOrchestrator.
+ *  `pauseBetweenStages` (v3.1.0 introduced as `--pause-between-stages`; renamed to
+ *    `--staged` in v3.2.0; v3.3.0 cleanup removed the legacy `--pause-between-stages`
+ *    alias — only `--staged` flag remains).
  *  v3.2.0 NEW hooks (super-master `/auto` only, pre-flight before spawn loop):
  *    `assessComplexity`: AI 1-shot judge 需求 size (small/medium/large) — large prompts
  *      user 切 `--staged` OR abort 建议手动
@@ -160,7 +161,7 @@ export async function runMasterOrchestrator(
     serialN > 0 && parallelN > 0 ? 'serial+parallel' : serialN > 0 ? 'serial' : 'parallel'
   console.log(`Firing ${firedClauses.length} sub in ${modeLabel}:`)
   const fired: string[] = []
-  // v3.1.0 / v3.2.0 — staged opt-in (super-master `/auto` UX, alias --pause-between-stages).
+  // v3.1.0 / v3.2.0 / v3.3.0 — staged opt-in (super-master `/auto` UX, `--staged` flag only).
   // pauseFn defaults to readline stdin prompt at runtime (test DI override via opts.pauseFn)。
   // effectiveOpts may have auto-flipped pauseBetweenStages=true via pre-flight large complexity。
   const pauseHook = effectiveOpts.pauseBetweenStages
