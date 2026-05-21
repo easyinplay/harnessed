@@ -1,0 +1,44 @@
+# workflows/task/test/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.8 (D-09 + D-04 + D-05 + D-13)
+#
+# Stage ③.c 子任务测试 — superpowers:test-driven-development red-green-refactor 强制
+# (核心业务逻辑 / 算法 / 数据处理 / 回归 risk high / reliability required 触发 tdd-gate),
+# 其他可选 mattpocock /tdd alias (per D-13 capabilities.yaml `tdd` entry aliases)。
+# Conditional fire: diagnose 当 test_fail == true 时 invoke (D-05 invokes_tools)。
+#
+# Sister refs:
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 task/test sub yaml example
+#   - workflows/judgments/tdd-gate.yaml triggers.tdd-strongly-suggested (Phase 2.3 W0.2 SHIPPED)
+#   - workflows/capabilities.yaml tdd + diagnose (Phase 2.3 W0.1 SHIPPED + D-13 alias)
+#   - ~/.claude/CLAUDE.md "Execute 阶段" 节 TDD 强烈建议开启 6 触发 + 3 跳过
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED)
+#
+# Brief enforcement:
+#   - W0.8 必带 tdd-gate ref: phase.gate: judgments.tdd-gate.tdd-strongly-suggested.fires
+#   - W0.8 必带 diagnose conditional invoke: invokes_tools[{if: 'test_fail == true', tool: diagnose}]
+#
+# disciplines_applied: 6 default 全开 per D-09 L0 Discipline Substrate always-on
+# tools_available: 2 entry ∈ capabilities.yaml entry set (T3.3.W0.10 Contract C1 catch)
+
+schema_version: harnessed.workflow.v3
+workflow: task-test
+description: |
+  Stage ③.c 子任务测试 — superpowers TDD red-green-refactor 强制 (核心业务 / 算法 /
+  数据处理 / 回归 risk high / reliability required, 6 fires_when OR-chain per
+  ~/.claude/CLAUDE.md), 其他可选 mattpocock /tdd alias。Conditional diagnose
+  invoke when test_fail (D-05 invokes_tools phase-level fire). Gate:
+  judgments.tdd-gate.tdd-strongly-suggested.fires (4-level ref, pre-resolved per D-04)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [tdd, diagnose]
+
+phases:
+  - id: 01-test
+    name: test (superpowers TDD red-green-refactor + diagnose conditional invoke)
+    upstream: superpowers
+    capability: '{{ capabilities.tdd.cmd }}'
+    model: sonnet
+    gate: judgments.tdd-gate.tdd-strongly-suggested.fires
+    invokes_tools:
+      - if: 'test_fail == true'
+        tool: diagnose
+    max_iterations: '{{ defaults.ralph_max_iterations.task-test.01-test }}'
