@@ -40,7 +40,7 @@ npm install -g harnessed && harnessed setup
 
 ```mermaid
 graph TD
-  RS([可选: /research 多源调研]):::optional
+  RS([⓪ /research — 前置多源调研 可选]):::optional
   subgraph Discuss[① Discuss 战略澄清]
     DM[/discuss master/]
     DS[discuss-strategic]
@@ -74,14 +74,14 @@ graph TD
     VM[verify-multispec]
     VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
   end
-  RT([可选: /retro 里程碑总结]):::optional
-  RS -.-> Discuss
+  RT([⑤ /retro — 里程碑总结 可选]):::optional
+  RS --> Discuss
   Discuss --> Plan --> Task --> Verify
-  Verify -.-> RT
+  Verify --> RT
   classDef optional stroke-dasharray:5 5,fill:#f5f5f5,color:#666
 ```
 
-> 实线 = 主流程 4-stage cadence; 虚线 = 可选 standalone (`/research` Stage ① 前调研、`/retro` Verify 后总结)。
+> 虚框 = 可选 standalone (`/research` 战略前调研 / `/retro` 里程碑后总结);实框 = 主流程 4-stage cadence。
 
 ### 24 workflow 总览表
 
