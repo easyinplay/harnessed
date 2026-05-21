@@ -45,15 +45,22 @@ async function listBaseManifests(cwd: string): Promise<string[]> {
 export function registerInstallBase(program: Command): void {
   program
     .command('install-base')
-    .description('Install the phase 1.3 base profile (auto-glob manifests; dry-run by default)')
-    .option('--apply', 'execute the install (default: dry-run preview only)')
-    .option('--dry-run', 'force dry-run (overrides --apply if both are set)')
+    .description(
+      'Install the phase 1.3 base profile (immediate by default — use --dry-run for preview)',
+    )
+    .option(
+      '--apply',
+      '(deprecated; kept for backward compat — install-base is immediate by default)',
+    )
+    .option('--dry-run', 'preview only — do not write to disk (opt-in for advanced users)')
     .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
     .action(async (raw: RawOpts) => {
       validateNonInteractiveFlags(raw, 'install-base')
+      // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
+      const dryRun = raw.dryRun === true
       const opts: InstallOpts = {
-        apply: raw.apply === true,
-        dryRun: raw.dryRun === true,
+        apply: !dryRun,
+        dryRun,
         system: false,
         nonInteractive: raw.nonInteractive === true,
         fullDiff: false,

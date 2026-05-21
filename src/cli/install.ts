@@ -1,12 +1,12 @@
 // Phase 1.2 cli subcommand `install` per ADR 0004 § 1 + § 6 + Pattern C narrow.
 //
-// IMPL NOTE (Rule 1 / ADR 0004 contract 1 — dry-run default + double flag):
-// `harnessed install <name>` defaults to dry-run preview; explicit `--apply`
-// or interactive `y/yes` is required to mutate. For automation (CI / scripts),
-// callers MUST pass BOTH `--non-interactive --apply` (or `--non-interactive
-// --dry-run`) — passing only `--apply` in non-TTY contexts is ambiguous, and
-// passing only `--non-interactive` would block on @clack/prompts forever
-// because stdin is not a TTY (Clack does not auto-decline).
+// IMPL NOTE (v3.0.1 UX flip — apply-immediate default + --dry-run opt-in):
+// `harnessed install <name>` executes immediately by default (non-expert UX;
+// v3.0.1 user feedback — dry-run 是高级用户概念,默认应 apply)。`--dry-run` flag
+// is opt-in 高级用户预览。`--apply` flag 保留 backward-compat no-op alias (旧
+// 脚本仍 work, 不破)。Sister setup.ts pattern verbatim (L5-7 IMPL NOTE).
+// For automation (CI / scripts), `--non-interactive` 仍 require `--apply` or
+// `--dry-run` (H1 gate) 以避免 @clack/prompts deadlock 当 stdin 非 TTY。
 //
 // IMPL NOTE (H1 sister review fix — pre-action flag validation): we validate
 // the flag combination BEFORE invoking the installer. `--non-interactive`
@@ -55,9 +55,9 @@ function formatError(e: InstallError): string {
 export function registerInstall(program: Command): void {
   program
     .command('install <name>')
-    .description('Install an upstream (dry-run by default — pass --apply to execute)')
-    .option('--apply', 'execute the install (default: dry-run preview only)')
-    .option('--dry-run', 'force dry-run (overrides --apply if both are set)')
+    .description('Install an upstream (immediate by default — use --dry-run for preview)')
+    .option('--apply', '(deprecated; kept for backward compat — install is immediate by default)')
+    .option('--dry-run', 'preview only — do not write to disk (opt-in for advanced users)')
     .option('--system', 'allow L4 system-wide install (e.g. global npm install)')
     .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
     .option('--full-diff', 'expand diffs longer than 200 lines')
@@ -104,9 +104,13 @@ export function registerInstall(program: Command): void {
         process.exit(1)
       }
 
+      // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
+      // `--apply` 旧 flag 保留 no-op alias (向后兼容)。dryRun=true → preview only。
+      // dryRun=false → immediate execute (无论 --apply 是否传入,默认 apply 为 true)。
+      const dryRun = raw.dryRun === true
       const opts: InstallOpts = {
-        apply: raw.apply === true,
-        dryRun: raw.dryRun === true,
+        apply: !dryRun,
+        dryRun,
         system: raw.system === true,
         nonInteractive: raw.nonInteractive === true,
         fullDiff: raw.fullDiff === true,

@@ -1,5 +1,6 @@
 // Phase 5.2 W1 T1.3 — TDD RED: uninstall CLI subcommand tests.
-// R10.3 D-01 7-method dispatch + D-02 ephemeral no-op + D-05 dry-run default + D-06 --yes bypass.
+// R10.3 D-01 7-method dispatch + D-02 ephemeral no-op + D-06 --yes bypass。
+// v3.0.1 UX flip — apply-immediate default + --dry-run opt-in (was D-05 dry-run default)。
 // Sister: tests/cli/audit-log.test.ts — ExitError + runCli helper 100% reuse.
 // vi.mock spawn/fs.rm (cross-OS; Win CI runner must pass Day 1).
 
@@ -409,7 +410,7 @@ function mockManifestFile(yaml: string): void {
   readFileMock.mockResolvedValueOnce(yaml as never)
 }
 
-describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ephemeral + D-05 dry-run + D-06 --yes)', () => {
+describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ephemeral + v3.0.1 apply-immediate flip + D-06 --yes)', () => {
   beforeEach(() => {
     spawnMock.mockReset()
     rmMock.mockReset()
@@ -421,12 +422,13 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
   })
   afterEach(() => vi.restoreAllMocks())
 
-  // Cell 1: H1 gate — --yes without --apply → exit 2
-  it('cell 1 — --yes without --apply → exit 2 + stderr --yes requires --apply', async () => {
+  // Cell 1: v3.0.1 UX flip — --yes alone (no --dry-run) is valid (apply-immediate).
+  // Sister Cell flip: H1 gate now triggers only on --yes + --dry-run (mutually exclusive).
+  it('cell 1 — v3.0.1 flip: --yes + --dry-run → exit 2 (mutually exclusive)', async () => {
     mockManifestFile(NPM_CLI_MANIFEST_YAML)
-    const { code, stderr } = await runCli(['uninstall', 'ctx7', '--yes'])
+    const { code, stderr } = await runCli(['uninstall', 'ctx7', '--yes', '--dry-run'])
     expect(code).toBe(2)
-    expect(stderr).toContain('--yes requires --apply')
+    expect(stderr).toContain('--yes is incompatible with --dry-run')
   })
 
   // Cell 2: manifest not found → exit 1
@@ -437,10 +439,11 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     expect(stderr).toContain('not found')
   })
 
-  // Cell 3: dry-run default (no --apply) → preview output + exit 2 aborted
-  it('cell 3 — dry-run default (no --apply) → preview output + exit 2', async () => {
+  // Cell 3: v3.0.1 UX flip — --dry-run opt-in → preview output + exit 2 aborted。
+  // (Was: dry-run default (no --apply) → preview; flipped to --dry-run explicit only.)
+  it('cell 3 — v3.0.1 flip: explicit --dry-run → preview output + exit 2', async () => {
     mockManifestFile(NPM_CLI_MANIFEST_YAML)
-    const { code, stdout } = await runCli(['uninstall', 'ctx7'])
+    const { code, stdout } = await runCli(['uninstall', 'ctx7', '--dry-run'])
     expect(code).toBe(2)
     expect(stdout).toMatch(/\[dry-run\]/)
   })
@@ -595,5 +598,25 @@ describe('cli/uninstall — Phase 5.2 W1 T1.3 TDD (R10.3 D-01 7-method + D-02 ep
     await runCli(['uninstall', 'my-skill', '--apply', '--yes'])
     const rmCall = rmMock.mock.calls[0]
     expect(rmCall?.[1]).toMatchObject({ recursive: true, force: true })
+  })
+
+  // Cell 15 — v3.0.1 UX flip regression: no flag + interactive confirm yes → immediate uninstall
+  it('cell 15 — v3.0.1 flip: no flag + interactive confirm → immediate uninstall + exit 0', async () => {
+    mockManifestFile(NPM_CLI_MANIFEST_YAML)
+    mockSpawnExit(0)
+    confirmMock.mockResolvedValue(true) // user confirms 'y'
+    const { code } = await runCli(['uninstall', 'ctx7'])
+    expect(code).toBe(0)
+    expect(confirmMock).toHaveBeenCalledOnce() // interactive prompt protects destructive op
+    expect(spawnMock).toHaveBeenCalled() // immediate execute after confirm
+  })
+
+  // Cell 16 — v3.0.1 backward-compat: legacy --apply flag still works as no-op alias
+  it('cell 16 — v3.0.1 backward-compat: legacy --apply --yes still works (no-op alias)', async () => {
+    mockManifestFile(NPM_CLI_MANIFEST_YAML)
+    mockSpawnExit(0)
+    const { code } = await runCli(['uninstall', 'ctx7', '--apply', '--yes'])
+    expect(code).toBe(0)
+    expect(spawnMock).toHaveBeenCalled() // legacy flag still triggers immediate execute
   })
 })

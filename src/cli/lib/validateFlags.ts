@@ -8,6 +8,11 @@
 /**
  * H1 pre-action gate: --non-interactive requires --apply or --dry-run.
  * Exits with code 2 if --non-interactive is set without either flag.
+ *
+ * v3.0.1 UX flip note: CLI default is now apply-immediate, but the H1 gate
+ * is kept verbatim for CI / scripts — explicit intent (`--apply` for execute
+ * OR `--dry-run` for preview) is still required to avoid silent surprises
+ * in automation。Interactive TTY 使用不受影响 (default apply-immediate)。
  */
 export function validateNonInteractiveFlags(
   raw: { nonInteractive?: boolean; apply?: boolean; dryRun?: boolean },

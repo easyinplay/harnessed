@@ -1,10 +1,11 @@
 // Phase 5.2 W1 T1.1 — cli subcommand `uninstall` per R10.3 + ADR 0004.
 //
-// IMPL NOTE (D-05 dry-run default): `harnessed uninstall <name>` defaults to
-// dry-run preview; explicit `--apply` required to mutate. Sister install.ts pattern.
-//
-// IMPL NOTE (D-06 --yes bypass): when --apply AND NOT --yes, interactive
-// p.confirm() default No. --yes without --apply → exit 2 H1 gate.
+// IMPL NOTE (v3.0.1 UX flip — apply-immediate default + --dry-run opt-in):
+// `harnessed uninstall <name>` executes immediately by default (sister install.ts
+// pattern verbatim). Interactive p.confirm() 仍 protect destructive op (user
+// 必须显式 y/yes 才真正删除)。`--dry-run` flag opt-in 高级用户预览, `--apply`
+// 保留 backward-compat no-op alias (旧脚本仍 work)。`--yes` skip interactive
+// confirm 仍 require user 显式 opt-in (CI / scripts)。
 //
 // IMPL NOTE (D-07 NO --keep-backup): RawOpts explicitly omits keepBackup.
 //
@@ -32,18 +33,22 @@ interface RawOpts {
 export function registerUninstall(program: Command): void {
   program
     .command('uninstall <name>')
-    .description('Uninstall an upstream (dry-run by default — pass --apply to execute)')
-    .option('--apply', 'execute the uninstall (default: dry-run preview only)')
-    .option('--dry-run', 'force dry-run (overrides --apply if both are set)')
-    .option('--yes', 'skip interactive confirm — requires --apply (CI / scripts)')
+    .description('Uninstall an upstream (immediate by default — use --dry-run for preview)')
+    .option('--apply', '(deprecated; kept for backward compat — uninstall is immediate by default)')
+    .option('--dry-run', 'preview only — do not delete files (opt-in for advanced users)')
+    .option('--yes', 'skip interactive confirm (CI / scripts) — fatal with --dry-run')
     .option('--non-interactive', 'alias for --yes (CI compat)')
     .action(async (name: string, raw: RawOpts) => {
-      // H1 pre-action gate (D-06): --yes without --apply → exit 2.
+      // v3.0.1 UX flip — apply-immediate default。dryRun=true → preview only。
+      // dryRun=false → immediate execute (无论 --apply 是否传入)。`--yes` 仍可
+      // skip interactive confirm prompt (用户显式 opt-in CI / scripts)。
+      // H1 gate: --yes + --dry-run 互斥 (dry-run 不 mutate, --yes 无意义)。
       const yes = raw.yes === true || raw.nonInteractive === true
-      if (yes && !raw.apply) {
+      if (yes && raw.dryRun) {
         console.error(
-          `error: --yes requires --apply to execute\n` +
-            `  fix:  harnessed uninstall ${name} --yes --apply`,
+          `error: --yes is incompatible with --dry-run (dry-run does not mutate)\n` +
+            `  fix:  harnessed uninstall ${name} --yes  (immediate) ` +
+            `OR harnessed uninstall ${name} --dry-run  (preview)`,
         )
         process.exit(2)
       }
@@ -81,16 +86,18 @@ export function registerUninstall(program: Command): void {
       }
 
       const method = v.manifest.spec.install.method
-      const dryRun = raw.dryRun === true || !raw.apply
+      // v3.0.1 UX flip — dry-run is opt-in only (raw.dryRun === true)。
+      // apply-immediate by default;legacy --apply is no-op alias。
+      const dryRun = raw.dryRun === true
 
-      // D-05 dry-run preview (default when no --apply).
+      // Dry-run preview path (opt-in --dry-run only).
       if (dryRun) {
         console.log(`[dry-run] would uninstall '${resolvedName}' via method '${method}'`)
-        console.log(`  run with --apply to execute`)
+        console.log(`  run without --dry-run to execute`)
         process.exit(2)
       }
 
-      // D-06 interactive confirm (--apply without --yes).
+      // Interactive confirm protects destructive op (skip only with --yes).
       if (!yes) {
         const answer = await p.confirm({
           message: `Uninstall '${resolvedName}'? This cannot be undone.`,
