@@ -276,10 +276,11 @@ jobs:
           export PATH="${{ runner.temp }}/mock-bin:$PATH"
 
           # H4 layer 1 — mcp-stdio-add dry-run: shim must be reachable; diff
-          # output must mention .mcp.json + the manifest name.
+          # output must mention ~/.claude.json (v3.0.2 --scope user 后写入位置) +
+          # the manifest name.
           ok_or_dryrun node ./dist/cli.mjs install tavily-mcp --dry-run --non-interactive
           grep -q "tavily-mcp" out.log
-          grep -q ".mcp.json" out.log
+          grep -q ".claude.json" out.log
           ok_or_dryrun node ./dist/cli.mjs install exa-mcp --dry-run --non-interactive
           grep -q "exa-mcp" out.log
 
