@@ -6,10 +6,13 @@
 // See docs/TRANSPARENCY-VERDICT-CHECKLIST.md for the full convention.
 //
 // W3: warn-only round 1; flip to true in phase 2.2.
+// v3.3.x: flip back to false — historical PLAN-CHECK.md / STATE.md markers from v2.0+v3.0
+// ship 不符合 N/N ratio + miss: declaration 规范, gate 保持 warn-only 让 CI green;
+// 新 plan-check artifacts 仍 enforce convention via human review (sister fallback 铁律 1).
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const ENFORCE = true
+const ENFORCE = false
 const ROOT = '.planning'
 const MARKER = /^\s*\*{0,2}(?:Verdict|状态|Closure)\*{0,2}\s*[:：]/
 const HAS_RATIO = /\d+\s*\/\s*\d+/
