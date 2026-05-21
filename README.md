@@ -1,7 +1,7 @@
 # harnessed
 
 > AI coding harness 包管理器 + composition orchestrator
-> 把 CLAUDE.md 三层栈协作规则机器化为可执行 engine
+> 把三层栈协作方法论 (gstack 决策 + GSD 项目经理 + superpowers 资深工程师 + karpathy 心法 + mattpocock 招式) 机器化为可执行 engine
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
@@ -17,42 +17,53 @@
 
 ---
 
-## 🎯 关键差异化 (v3.0)
+## 🎯 关键差异化
 
 - **三层栈机器化** — `gstack 决策` + `GSD 项目经理` + `superpowers 资深工程师` + `karpathy 4 心法` + `mattpocock 23 招式`,5 支柱 100% capture
 - **不 vendor 上游** — manifest describe install/check;上游升级用户 re-install 即获最新版
-- **Composition Skill (v3.0 重构)** — 自家 workflow skill 当指挥棒,调度多个上游协同。v3.0 把 v2.0 的 4 个 monolithic workflow 拆成 **4 master orchestrator + 18 sub-workflow + 2 standalone = 24 个 namespace-layered workflow**,完整 4-stage 机器化 (`/discuss /plan /task /verify` 4 master + 三层栈 18 sub + `/research /retro` 2 standalone)
-- **L0 Discipline Substrate (v3.0 NEW)** — 全局 cross-stage 行为基准 (karpathy 心法 + output-style + language + operational + priority + protocols),applied universally to L1-L7
+- **Composition Skill** — 自家 workflow skill 当指挥棒,调度多个上游协同。**4 master orchestrator + 18 sub-workflow + 2 standalone = 24 namespace-layered workflow**,完整 4-stage 机器化 (`/discuss /plan /task /verify` 4 master + 三层栈 18 sub + `/research /retro` 2 standalone)
+- **L0 Discipline Substrate** — 全局 cross-stage 行为基准 (karpathy 心法 + output-style + language + operational + priority + protocols),applied universally
 - **包管理器思维** — install dependency graph 自动解析, doctor 健康检查, install-base 一键装齐
 - **统一入口** — 用户面对 `/discuss /plan /task /verify` 等 master slash command,不需学每家上游术语;sub command 显式调用单 stage (例如 `/discuss-strategic` 只跑战略层澄清)
 
 ---
 
-## 🆕 v3.0 highlight — 4-stage namespace-layered architecture
-
-v3.0 是对 v2.0 4-workflow 的 **breaking refactor**,把 4 个 monolithic skill 重组为 **24 个 namespace-layered skill**,1:1 对位 `~/.claude/CLAUDE.md` 4-stage cadence。
-
-### 4-stage 流程图 (mermaid)
+## 📐 4-stage 流程图
 
 ```mermaid
-graph LR
-  subgraph Discuss[Discuss 战略澄清]
-    DS[discuss-strategic] & DP[discuss-phase] & DT[discuss-subtask]
+graph TD
+  subgraph Discuss[① Discuss 战略澄清]
     DM[/discuss master/]
+    DS[discuss-strategic]
+    DP[discuss-phase]
+    DT[discuss-subtask]
+    DM --> DS & DP & DT
   end
-  subgraph Plan[Plan 任务规划]
-    PA[plan-architecture] & PP[plan-phase]
+  subgraph Plan[② Plan 任务规划]
     PM[/plan master/]
+    PA[plan-architecture]
+    PP[plan-phase]
+    PM --> PA & PP
   end
-  subgraph Task[Task 执行]
-    TC[task-clarify] & TCo[task-code] & TT[task-test] & TD[task-deliver]
+  subgraph Task[③ Task 执行]
     TM[/task master/]
+    TC[task-clarify]
+    TCo[task-code]
+    TT[task-test]
+    TD[task-deliver]
+    TM --> TC --> TCo --> TT --> TD
   end
-  subgraph Verify[Verify 验证]
-    VP[verify-progress] & VC[verify-code-review] & VPa[verify-paranoid]
-    VQ[verify-qa] & VS[verify-security] & VD[verify-design]
-    VSi[verify-simplify] & VM[verify-multispec]
+  subgraph Verify[④ Verify 验证]
     VMs[/verify master/]
+    VP[verify-progress]
+    VC[verify-code-review]
+    VPa[verify-paranoid]
+    VQ[verify-qa]
+    VS[verify-security]
+    VD[verify-design]
+    VSi[verify-simplify]
+    VM[verify-multispec]
+    VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
   end
   Discuss --> Plan --> Task --> Verify
 ```
@@ -73,7 +84,7 @@ graph LR
 | `/task-code` | ③ Task | Sub | karpathy 4 心法 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | 子任务编码 + 跨 session progress.md 同步 |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | 核心逻辑 TDD 强制 (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | 至 verbatim `COMPLETE` + R20.10 max_iter fallback |
-| `/verify` | ④ Verify | Master | masterOrchestrator | 7 sub 按 CLAUDE.md verbatim conditional dispatch |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 7 sub 按场景 conditional dispatch |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | 必跑串行起点 — UAT 验收 + 状态同步 |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` 多 subagent fan-out | 高置信度 finding 并行 |
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | 关键模块 PR 前强制 |
@@ -87,35 +98,6 @@ graph LR
 
 > Master orchestrator 自动 gate-route 到合适的 sub (chain-isolation 铁律 — 不 fire 的 sub 透明声明跳过)。
 > 直接调用 sub 也可绕过 master 单跑某 stage,例如 `/discuss-strategic "新功能 X"`。
-
----
-
-## 🔄 Migrating from v2.0 to v3.0
-
-v3.0 是 **breaking refactor**。v2.0 的 3 个 monolithic slash cmd 全部 DROP,改用 v3 namespace-layered 等价物:
-
-| v2.0 (DROPPED) | v3.0 (NEW) |
-|----------------|------------|
-| `/plan-feature` | `/plan` (master, 自动 gate-route) OR `/plan-phase` (直接 sub) |
-| `/execute-task` | `/task` (master, 串行 4 sub) OR `/task-{clarify,code,test,deliver}` (单 stage) |
-| `/verify-work` | `/verify` (master, 7 sub conditional) OR `/verify-{progress,code-review,paranoid,qa,security,design,simplify,multispec}` (单维度) |
-
-`/research` (v2.0 NEW) 不变,schema bump v2 → v3 但 phases verbatim 保留。
-
-### 升级步骤
-
-```bash
-# 1. 升级 npm package
-npm install -g harnessed@3
-
-# 2. 重新 setup — v3 把 24 个 workflow skill 装到 ~/.claude/skills/
-harnessed setup --apply
-
-# 3. (可选) 手动清理 v2 残留 skill dir (per K12 mitigation)
-rm -rf ~/.claude/skills/plan-feature ~/.claude/skills/execute-task ~/.claude/skills/verify-work
-```
-
-> v2.0 SHIPPED & ARCHIVED 2026-05-19 (17/20 phases 85%);v3.0 v1.0-RC2 minor STARTING;v1.0 GA target 2026-05-22~23 — 详 [.planning/STATE.md](./.planning/STATE.md)。
 
 ---
 
@@ -166,7 +148,7 @@ npx harnessed@latest <command>
 
 ## ⚡ 使用流程
 
-v3.0 4-stage 三层栈方法论 — 推荐 4 个 master orchestrator 串行驱动:
+4-stage 三层栈方法论 — 推荐 4 个 master orchestrator 串行驱动:
 
 ```
 /discuss  →  /plan  →  /task  →  /verify
@@ -202,7 +184,7 @@ harnessed resume
 
 ---
 
-## 🗂️ 架构 (v3.0 — 4-stage namespace-layered)
+## 🗂️ 架构 (4-stage namespace-layered)
 
 ### 1. 目录结构
 
@@ -229,11 +211,11 @@ harnessed/
 │   │   ├── parallelism-gate.yaml         # L5b execution mechanism routing
 │   │   ├── tdd-gate.yaml
 │   │   ├── fallback.yaml                 # 3 铁律: skip_with_transparency + override + chain_isolation
-│   │   ├── web-design-routing.yaml       # rules/web-design.md codify
-│   │   ├── web-testing-routing.yaml      # rules/web-testing.md codify
-│   │   ├── web-search-routing.yaml       # rules/web-search.md codify
+│   │   ├── web-design-routing.yaml       # UI 设计工具路由
+│   │   ├── web-testing-routing.yaml      # E2E / 浏览器测试工具路由
+│   │   ├── web-search-routing.yaml       # 网页搜索 / 文档抓取路由
 │   │   └── stage-routing.yaml            # master orchestrator sub-stage 路由
-│   └── disciplines/            # L0: NEW v3.0 global cross-stage behavioral norms
+│   └── disciplines/            # L0: 全局 cross-stage 行为基准
 │       ├── karpathy.yaml       # 4 心法 + ≤200L
 │       ├── output-style.yaml   # BLUF + no-emoji + no-em-dash
 │       ├── language.yaml       # zh-Hans default + English preserve
@@ -246,7 +228,7 @@ harnessed/
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # project memory (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
-└── docs/adr/                   # 架构决策记录 (ADR 0001-0032)
+└── docs/adr/                   # 架构决策记录
 ```
 
 ### 2. 逻辑分层 (8 层)
@@ -276,21 +258,21 @@ harnessed/
 ├────────────────────────────────────────────────────────────┤
 │ L1  Upstream components (NOT vendored)                       │
 ├────────────────────────────────────────────────────────────┤
-│ L0  Discipline Substrate (NEW v3.0 — 全局生效)               │
+│ L0  Discipline Substrate (全局生效)                          │
 │   karpathy 心法 + output-style + language + operational +    │
 │   priority + protocols (applied universally to L1-L7)       │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Cross-cutting Capabilities (capabilities.yaml 7 category, ~70 entry)
+### 3. Cross-cutting Capabilities (capabilities.yaml 7 category, ~83 entry)
 
 ```
-behavioral (1):       karpathy-guidelines (4 心法 always-on)
-tool-slash-cmd (40+): gstack 30+ optional + gsd 10+ + mattpocock 12 高频
-tool-mcp (4):         chrome-devtools-mcp / tavily-mcp / exa-mcp / playwright-mcp
-tool-cli (3):         ctx7 / playwright-cli / gws
+behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
+tool-slash-cmd (~60): gstack 30+ optional + gsd 10+ + mattpocock 12 高频 + 等
+tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
+tool-cli (2):         ctx7 / gws
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (2):     ralph-loop / webapp-testing
+tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 
@@ -324,35 +306,25 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 
 ### 5. 抉择路由矩阵 (rules-based, codified in judgments + capabilities)
 
-| 场景 | Rule source | Default → Escalate |
-|------|------------|---------------------|
-| 并行机制 | rules/agent-teams.md | subagent → Agent Teams Pattern A/B/C (5 触发) |
-| UI 设计主方案 | rules/web-design.md | ui-ux-pro-max → frontend-design (用户明示风格) |
-| E2E 浏览器探查 | rules/web-testing.md | playwright-cli (Bash 一行 token 省) |
-| E2E commit-able TS | rules/web-testing.md | @playwright/test 默认 |
-| E2E Python 后端联动 | rules/web-testing.md | webapp-testing |
-| 性能/a11y/内存 | rules/web-testing.md | chrome-devtools-mcp |
-| Web 搜索 (关键词) | rules/web-search.md | Tavily MCP 默认 |
-| Web 搜索 (描述式/学术) | rules/web-search.md | Exa MCP |
-| 库 API 文档 | rules/context7.md | ctx7 CLI |
-| GitHub URL | rules/web-search.md | gh CLI |
-| 单 URL 抓取 | rules/web-search.md | WebFetch 内置 |
-| Gmail/Drive/Calendar | rules/google-workspace.md | gws CLI |
-| 架构审查 (复杂) | CLAUDE.md Stage ② | gstack /plan-eng-review |
-| TDD 强制 (核心算法) | CLAUDE.md Stage ③ | superpowers TDD OR mattpocock /tdd |
-| 关键模块 PR | CLAUDE.md Stage ④ | gstack /review |
-| 大重构 PR multi-dim | CLAUDE.md Stage ④ + Pattern C | 4-spec Agent Team |
-| 跨 CC 协议 | rules/cc-handoff.md | discipline.protocols self-contained design doc |
-
-### v3.0 superset commitment
-
-harnessed v3.0 是 user 个人 `~/.claude/CLAUDE.md` + Obsidian doc + `~/.claude/rules/` 的 **machine-codified superset**:
-- ✅ 4-stage cadence verbatim 机器化 (20 workflows)
-- ✅ 三层栈判据 + fallback 3 铁律 (judgments/ 10 file)
-- ✅ Pattern A/B/C Agent Teams routing (L5b mechanism)
-- ✅ Rules-based tool routing (4 NEW judgments + capabilities)
-- ✅ Global discipline (L0 substrate, 6 yaml)
-- ✅ harnessed > user manual via: auto gate-route + Pure bundled + cross-session memory + ADR audit + Token cost estimation + real-time discipline enforcement
+| 场景 | Default → Escalate |
+|------|---------------------|
+| 并行机制 | subagent → Agent Teams Pattern A/B/C (5 触发) |
+| UI 设计主方案 | ui-ux-pro-max → frontend-design (用户明示风格) |
+| E2E 浏览器探查 | playwright-cli (Bash 一行 token 省) |
+| E2E commit-able TS | @playwright/test 默认 |
+| E2E Python 后端联动 | webapp-testing |
+| 性能 / a11y / 内存诊断 | chrome-devtools-mcp |
+| Web 搜索 (关键词) | Tavily MCP 默认 |
+| Web 搜索 (描述式 / 学术) | Exa MCP |
+| 库 API 文档 | ctx7 CLI |
+| GitHub URL | gh CLI |
+| 单 URL 抓取 | WebFetch 内置 |
+| Gmail / Drive / Calendar | gws CLI |
+| 架构审查 (复杂) | gstack /plan-eng-review |
+| TDD 强制 (核心算法) | superpowers TDD OR mattpocock /tdd |
+| 关键模块 PR | gstack /review |
+| 大重构 PR 多维度审查 | 4-specialist Agent Team Pattern C |
+| 跨 session hand-off | discipline.protocols self-contained design doc |
 
 ---
 
@@ -401,7 +373,7 @@ harnessed setup --apply  # 自动装齐 gstack + GSD + superpowers + planning-wi
 | Orchestration | GSD | 高层 phase 任务图 + 依赖分析 |
 | Persistence | planning-with-files | 持久化 `task_plan.md` / `progress.md` / `findings.md` |
 
-v3.0 `/discuss /plan /task /verify` 4 个 master 把 4 阶段串起来,每个 master 内部再 delegate 到对应 sub。每个阶段做不同事,输出喂给下一阶段。**没有合并**。
+`/discuss /plan /task /verify` 4 个 master 把 4 阶段串起来,每个 master 内部再 delegate 到对应 sub。每个阶段做不同事,输出喂给下一阶段。**没有合并**。
 
 </details>
 
@@ -428,7 +400,7 @@ v3.0 `/discuss /plan /task /verify` 4 个 master 把 4 阶段串起来,每个 ma
 
 - `npx harnessed@latest setup` 跑的是 **Node.js CLI** (`bin/harnessed`)
 - setup 装的 **workflow skills** (markdown) 进 `~/.claude/skills/`,由 Claude Code 运行时加载
-- `/discuss` / `/plan` / `/task` / `/verify` (v3.0) 等是 CC 内的 slash command,触发 skill 执行
+- `/discuss` / `/plan` / `/task` / `/verify` 等是 CC 内的 slash command,触发 skill 执行
 - CLI 和 CC skill 共享 `.harnessed/checkpoints/` 状态目录
 
 </details>
@@ -440,7 +412,7 @@ v3.0 `/discuss /plan /task /verify` 4 个 master 把 4 阶段串起来,每个 ma
 - [docs/WORKFLOW.md](./docs/WORKFLOW.md) — 4-stage workflow mermaid + 各 stage 详解
 - [docs/INSTALLER-CONTRACT.md](./docs/INSTALLER-CONTRACT.md) — installer 6 条用户视角硬契约
 - [docs/MAINTAINER-ONBOARDING.md](./docs/MAINTAINER-ONBOARDING.md) — 30 分钟跑通 dev 环境
-- [docs/adr/](./docs/adr/) — 架构决策记录 (ADR 0001-0023)
+- [docs/adr/](./docs/adr/) — 架构决策记录
 - [CHANGELOG.md](./CHANGELOG.md) — 完整版本历史
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — 贡献指南
 - [SECURITY.md](./SECURITY.md) — 漏洞披露通道
