@@ -21,7 +21,7 @@
 
 - **三层栈机器化** — `gstack 决策` + `GSD 项目经理` + `superpowers 资深工程师` + `karpathy 4 心法` + `mattpocock 23 招式`,5 支柱 100% capture
 - **不 vendor 上游** — manifest describe install/check;上游升级用户 re-install 即获最新版
-- **Composition Skill** — 自家 workflow skill 当指挥棒,调度多个上游协同。**4 master orchestrator + 18 sub-workflow + 2 standalone = 24 namespace-layered workflow**,完整 4-stage 机器化 (`/discuss /plan /task /verify` 4 master + 三层栈 18 sub + `/research /retro` 2 standalone)
+- **Composition Skill** — 自家 workflow skill 当指挥棒,调度多个上游协同。**1 super-master `/auto` + 4 stage master + 18 sub-workflow + 2 standalone = 25 namespace-layered workflow**,完整 4-stage 机器化 (`/auto` 跨 stage 一键 / `/discuss /plan /task /verify` 单 stage / 三层栈 18 sub / `/research /retro` 2 standalone)
 - **L0 Discipline Substrate** — 全局 cross-stage 行为基准 (karpathy 心法 + output-style + language + operational + priority + protocols),applied universally
 - **包管理器思维** — install dependency graph 自动解析, doctor 健康检查, install-base 一键装齐
 - **统一入口** — 用户面对 `/discuss /plan /task /verify` 等 master slash command,不需学每家上游术语;sub command 显式调用单 stage (例如 `/discuss-strategic` 只跑战略层澄清)
@@ -37,6 +37,42 @@ npm install -g harnessed && harnessed setup
 > Windows PowerShell 5.x 不支持 `&&` 链接,需改 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
 
 🤖 **或让 AI 帮你装** — 复制 [INSTALL-WITH-AI.md](./INSTALL-WITH-AI.md) 整段粘贴进 Claude Code (或任何 AI 助手),AI 自动处理 OS / 权限 / PATH / corepack 等 edge case。
+
+---
+
+## 🚀 快捷使用 — 3 种选择
+
+按介入程度由低到高:
+
+### 🎯 整体自动 (推荐新手 / 不想动脑子)
+
+```
+/auto "需求 X"
+```
+
+> 不想动脑子或者刚入门 — 一切交给 harnessed。自动跑完 4 stage (discuss → plan → task → verify),中间不停。失败 fail-fast,`harnessed resume` 续。
+
+### 📂 分类自动 (推荐熟手 / 想 review 中间结果)
+
+```
+/discuss "需求 X"          # 战略 + Phase + 子任务 3 层澄清
+/plan "需求 X"             # 架构 (conditional) + 计划持久化
+/task "subtask-1"          # 4 sub 串行 (clarify → code → test → deliver)
+/verify "phase-1"          # 7 sub conditional 验证
+```
+
+> 想自己决定从哪个 stage 开始 / review 中间产出 — 4 个 master 独立调用,每个 master 内部仍自动 fan-out 该 stage 所有 sub。
+
+### 🔬 精确调用 (大神 mode / 知道自己要什么)
+
+```
+/discuss-phase "..."        # 单跑 Phase 层澄清
+/plan-architecture "..."    # 单跑架构审查
+/verify-paranoid "..."      # 单跑 Paranoid Staff Engineer 审查
+# ... 其他 18 个 sub-workflow 任选
+```
+
+> "我是大神,我自己决定" — 跳过 master,直接调某 sub-workflow。适合已知精确需要哪个 sub 的高级用户 / 复用某单一环节。
 
 ---
 
@@ -87,10 +123,11 @@ graph TD
 
 > 虚框 = 可选 standalone (`/research` 战略前调研 / `/retro` 里程碑后总结);实框 = 主流程 4-stage cadence。
 
-### 24 workflow 总览表
+### 25 workflow 总览表
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
+| `/auto` | All | **Super-master** | masterOrchestrator (跨 4 stage) | 一键自动跑 discuss → plan → task → verify (`--pause-between-stages` opt-in) |
 | `/discuss` | ① Discuss | Master | masterOrchestrator | 3 sub 并行 gate-eval (chain-isolation 铁律) |
 | `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` | 战略层 — 新功能 / 新 milestone / 产品方向强制治理 |
 | `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` | Phase 层 — ≥2 open decisions / 灰色地带澄清 |
@@ -117,40 +154,6 @@ graph TD
 
 > Master orchestrator 自动 gate-route 到合适的 sub (chain-isolation 铁律 — 不 fire 的 sub 透明声明跳过)。
 > 直接调用 sub 也可绕过 master 单跑某 stage,例如 `/discuss-strategic "新功能 X"`。
-
----
-
-## 🚩 命令一览
-
-### 主命令
-
-| 命令 | 说明 |
-| ---- | ---- |
-| `harnessed setup` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` |
-| `harnessed install <name>` | 装上游 manifest (默认 dry-run) |
-| `harnessed uninstall <name>` | 反向卸载 (默认 dry-run) |
-| `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
-| `harnessed status` | 当前 phase + lock holder |
-| `harnessed resume` | session 中断后恢复至最近 checkpoint |
-| `harnessed doctor` | 8-check 健康检查 (Node / MCP / jq / Win bash / 路由 / token budget 等) |
-| `harnessed backup` | snapshot 备份管理 |
-| `harnessed rollback <timestamp>` | 一行回滚 (EOL preserve + sha1 verify) |
-| `harnessed gc` | 清理过期 backups |
-
-### 参数 (Flags)
-
-> 所有命令默认 **apply (immediate write)**,无需加 flag。高级用户可加 `--dry-run` 预览。
-
-| Flag | 说明 |
-| ---- | ---- |
-| `--dry-run` | 预览不写盘 (高级用户 opt-in) |
-| `--non-interactive` | CI / 脚本场景 |
-| `--system` | L4 全局装允许 (否则降级 L1 npx ephemeral) |
-| `--yes` | uninstall 跳过交互 confirm |
-| `--full-diff` | 展开 > 200 行的 diff 折叠 |
-| `--no-color` | 强制 nocolor (即使 TTY) |
-
-> `--apply` flag 仍保留为向后兼容 alias (no-op, 旧脚本不破)。
 
 ---
 
@@ -412,6 +415,42 @@ harnessed setup --apply  # 自动装齐 gstack + GSD + superpowers + planning-wi
 - CLI 和 CC skill 共享 `.harnessed/checkpoints/` 状态目录
 
 </details>
+
+---
+
+## 🛠️ 维护命令 (Operational)
+
+> 这些是 harnessed 自身维护命令(setup / 健康检查 / 备份回滚 / 状态恢复等),日常 feature 开发用上面的 slash command 即可,这块通常不需要。
+
+### CLI 命令
+
+| 命令 | 说明 |
+| ---- | ---- |
+| `harnessed setup` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` + MCP 到 `~/.claude.json` |
+| `harnessed resume` | session 中断后恢复至最近 checkpoint |
+| `harnessed status` | 当前 phase + lock holder |
+| `harnessed doctor` | 8-check 健康检查 (Node / MCP / jq / Win bash / 路由 / token budget 等) |
+| `harnessed install <name>` | 装上游 manifest |
+| `harnessed uninstall <name>` | 反向卸载 |
+| `harnessed backup` | snapshot 备份管理 |
+| `harnessed rollback <timestamp>` | 一行回滚 (EOL preserve + sha1 verify) |
+| `harnessed gc` | 清理过期 backups |
+| `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
+
+### 参数 (Flags)
+
+> 所有命令默认 **apply (immediate write)**,无需加 flag。高级用户可加 `--dry-run` 预览。
+
+| Flag | 说明 |
+| ---- | ---- |
+| `--dry-run` | 预览不写盘 (高级用户 opt-in) |
+| `--non-interactive` | CI / 脚本场景 |
+| `--system` | L4 全局装允许 (否则降级 L1 npx ephemeral) |
+| `--yes` | uninstall 跳过交互 confirm |
+| `--full-diff` | 展开 > 200 行的 diff 折叠 |
+| `--no-color` | 强制 nocolor (即使 TTY) |
+
+> `--apply` flag 仍保留为向后兼容 alias (no-op, 旧脚本不破)。
 
 ---
 
