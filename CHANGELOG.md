@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.3] - 2026-05-21 — Setup hotfix part 2: `.harnessed/` → `~/.claude/harnessed/` + MCP verify fs-based
+
+**升级一行指令**: `npm install -g harnessed@3.0.3` (无需重跑 setup;v2.0.1+ 用户 `~/.harnessed/` 自动 migrate 到 `~/.claude/harnessed/`)
+
+**Trigger**: 2026-05-21 user report v3.0.2 ship 后 setup 仍 hit 2 类 fail (`PS C:\Program Files\Warp\> harnessed setup`):
+- `chrome-devtools-mcp` / `exa-mcp` / `tavily-mcp` verify timeout — `verify exit -1 or '<name>' not in mcp list stdout: [timeout]` (v3.0.2 spawn-based verify 在 Windows 上 3 个 sequential `claude mcp add` 后冷启动超 15s 预算)
+- `[B] failed  ?:` anonymous mkdir EPERM — `Error: EPERM: operation not permitted, mkdir 'C:\Program Files\Warp\.harnessed'` (state.json / checkpoints / audit.log 等仍 CWD-rooted,只有 backups v2.0.1 已 migrate)
+
+### Fixed
+
+- **Bug 1 (`.harnessed/` 主目录 EPERM in read-only CWD)** — 所有 harness-owned 状态目录从 `<cwd>/.harnessed/` 迁到 `~/.claude/harnessed/` (co-located with Claude Code state dir, sister `~/.claude/skills/` + `~/.claude.json`)。
+  - **Root cause**: pre-v3.0.3 用 literal `.harnessed/...` 拼接 cwd-relative path。`updateInstalled(ctx.cwd, ...)` 在 verify 通过后写 `<cwd>/.harnessed/state.json` → 当 user CWD 是只读 (`C:\Program Files\Warp\`) mkdir 失败 → Promise.allSettled rejection 落到 `name: '?'` fallback。
+  - **Fix**: NEW `src/installers/lib/harnessedRoot.ts` SoT helper `getHarnessedRoot()` + `harnessedSubdir(name)` + `harnessedFile(name)` 返回 `~/.claude/harnessed/...`。Sister v2.0.1 `getBackupRoot()` pattern verbatim,扩展到 8 surface (state.json + checkpoints/ + current-workflow.json + audit.log + governance.json + archive/ + .lock + backups/)。
+  - **Migration** (auto): NEW `migrateLegacyHarnessedRoot()` 在 `src/cli.ts` startup 调用,detect `~/.harnessed/` (v2.0.1~v3.0.2 用户) 后 atomic rename 到 `~/.claude/harnessed/`。若 both exist,legacy → `~/.harnessed.legacy-bak/` 保留 + stderr warn (无数据丢失)。Idempotent 跨 CLI invocation。
+- **Bug 2 (MCP verify spawn timeout)** — 3 处 `mcpStdioAdd.ts` / `mcpHttpAdd.ts` / `ccPluginMarketplace.ts` verify 步骤从 `spawn('claude', ['mcp', 'list'])` + stdout match 改用 fs-based check 直读 `~/.claude.json`。
+  - **Root cause**: v3.0.2 已 fix Windows `grep` 不可用,但用 native spawn `claude mcp list` 仍超 15s 冷启动预算 (3 个 sequential MCP installer 后 process pool 耗尽)。实际 `claude mcp add --scope user` 已成功写 `~/.claude.json`,verify 只是 timeout 误报 fail。
+  - **Fix**: NEW `src/installers/lib/readClaudeConfig.ts` — `readUserClaudeJson()` + `isMcpServerRegistered(name)` + `isPluginRegistered(name)`。fs.readFile + JSON.parse + check `mcpServers[name]` / `enabledPlugins[name]`。跨平台、即时、无 timeout 风险,ENOENT + malformed JSON 优雅返回 `{}`,EACCES 等其他错误 propagate (karpathy fail-loud)。
+
+### Changed
+
+- `src/installers/lib/harnessedRoot.ts` NEW — `getHarnessedRoot()` (返回 `~/.claude/harnessed`) + `harnessedSubdir(name)` + `harnessedFile(name)` + `migrateLegacyHarnessedRoot()` + `HARNESSED_ROOT_OVERRIDE` env var (test-only isolation)
+- `src/installers/lib/readClaudeConfig.ts` NEW — `readUserClaudeJson()` + `isMcpServerRegistered()` + `isPluginRegistered()` (sister fs-based verify pattern)
+- `src/installers/lib/backup.ts` — `getBackupRoot()` 路由通过 `harnessedSubdir('backups')` SoT (path 从 `~/.harnessed/backups/` 迁到 `~/.claude/harnessed/backups/`)
+- `src/installers/lib/state.ts` — `statePath()` 用 `harnessedFile('state.json')` (cwd param 保留 signature backward-compat,但 ignore for path 计算)
+- `src/checkpoint/state.ts` — STATE_PATH + LOCK_TARGET + lockfilePath 全部 lazy resolve 通过 `harnessedRoot` SoT (e2e test override 友好);`withLock()` 加 `mkdir(target, { recursive: true })` 确保 lock parent 存在
+- `src/checkpoint/{engineHook,sigintTrap,template,archive,resume}.ts` — 全部 checkpoint / archive path 路由 `harnessedSubdir('checkpoints' / 'archive')` SoT
+- `src/audit/log.ts` + `src/cli/audit-log.ts` — audit.log path 用 `harnessedFile('audit.log')` (lazy 函数 wrap)
+- `src/cli/status.ts` — state.json + lock 路径用 `harnessedRoot` SoT
+- `src/workflow/governance.ts` — governance.json path 用 `harnessedFile('governance.json')`
+- `src/installers/mcpStdioAdd.ts` + `mcpHttpAdd.ts` + `ccPluginMarketplace.ts` — verify spawn 移除,改用 `isMcpServerRegistered()` / `isPluginRegistered()` fs check;error message 升级到 `not found in mcpServers map of ~/.claude.json` / `not found in enabledPlugins map`
+- `src/cli.ts` — startup 显式调用 `migrateLegacyHarnessedRoot()` (legacy `~/.harnessed/` auto-migrate)
+
+### Migration (auto)
+
+v2.0.1~v3.0.2 用户已有 `~/.harnessed/` 目录 (`backups/` 等)。v3.0.3 ship 后 first `harnessed <any-cmd>` 触发 `migrateLegacyHarnessedRoot()`:
+
+- **Case 1 (常见)**: 仅 `~/.harnessed/` 存在 → `fs.renameSync(~/.harnessed, ~/.claude/harnessed)` atomic move
+- **Case 2**: 仅 `~/.claude/harnessed/` 存在 → no-op (fresh install)
+- **Case 3 (rare)**: both exist → legacy → `~/.harnessed.legacy-bak/` 保留 + stderr warn (review manually if needed)
+- **Case 4**: neither → no-op (fresh install,正常 first run 创建)
+
+Filesystem error 不 catch-swallow (karpathy fail-loud),用户立刻看到 + 可手动修复。
+
+### Tests
+
+- **6 NEW regression fixture** for v3.0.3 contract:
+  - `tests/unit/installers-lib-state.test.ts` + 1 cell — state path under `~/.claude/harnessed` NOT ctx.cwd (sister v2.0.1 backup regression)
+  - `tests/unit/installers-mcpStdioAdd.test.ts` + 3 cells — fs-based verify (default valid mcpServers map / server missing / ENOENT graceful / malformed JSON graceful)
+  - `tests/unit/installers-mcpHttpAdd.test.ts` + 2 cells — sister fs-based verify
+  - `tests/unit/installers-ccPluginMarketplace.test.ts` + 1 cell — `enabledPlugins` map check
+- **20 test fixture path updates** — assertion 全 cross-platform path regex (`\.claude[/\\]harnessed`) + `HARNESSED_ROOT_OVERRIDE` env-var isolation for e2e integration tests (`phase-3.1-e2e` / `plan-feature-wired` / `plan-feature-prefix-e2e`)
+- Full suite 1105 pass / 4 skip / 2 pre-existing fail (research-v2 + special-purpose-fallback dogfood,baseline v3.0.2 main 同 fail,与 hotfix 无关)
+- biome check: clean
+- tsc --noEmit: 0 error
+- `node scripts/check-workflow-schema.mjs`: exit 0
+
+### Files changed
+
+- `src/installers/lib/harnessedRoot.ts` NEW (149L)
+- `src/installers/lib/readClaudeConfig.ts` NEW (101L)
+- `src/installers/lib/backup.ts` — `getBackupRoot()` 路由 SoT
+- `src/installers/lib/state.ts` — `statePath()` 用 SoT
+- `src/checkpoint/{state,engineHook,sigintTrap,template,archive,resume}.ts` — 6 file path SoT 迁移
+- `src/audit/log.ts` + `src/cli/audit-log.ts` + `src/cli/status.ts` + `src/workflow/governance.ts` — 4 file SoT 迁移
+- `src/installers/{mcpStdioAdd,mcpHttpAdd,ccPluginMarketplace}.ts` — 3 file verify fs-based
+- `src/cli.ts` — startup migration trigger
+- `tests/unit/{installers-lib-state,installers-mcpStdioAdd,installers-mcpHttpAdd,installers-ccPluginMarketplace,installers-lib-backup}.test.ts` — 5 unit test fixture refresh
+- `tests/{audit,checkpoint,workflow,cli}/...` — 8 test file path update
+- `tests/integration/{installer-contract,phase-3.1-e2e,plan-feature-wired,plan-feature-prefix-e2e}.test.ts` — 4 e2e test HARNESSED_ROOT_OVERRIDE isolation
+- `package.json` — version 3.0.2 → 3.0.3
+- `CHANGELOG.md` — this entry
+
 ## [3.0.2] - 2026-05-21 — Setup hotfix: MCP scope + grep verify + install timeout + stale v2.0 strings
 
 **升级一行指令**: `npm install -g harnessed@3.0.2` (无需重跑 setup;若之前 MCP install fail 可手动重跑 `harnessed setup`)
