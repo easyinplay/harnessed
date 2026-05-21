@@ -7,6 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-05-21 — NEW /auto super-master orchestrator (4-stage continuous chain)
+
+**升级一行指令**: `npm install -g harnessed` (v3.1.0 LATEST tag, 无需重跑 setup — setup --apply re-install bundled workflow 含 /auto)
+
+**Trigger**: user 反馈 — "stage 内自动路由 + 整体 super-master 也自动"。v3.0.x 4 个 master `/discuss /plan /task /verify` 跨 stage 需手动串, 不便 trivial feature 开发场景。
+
+### Added
+
+- **NEW `/auto` super-master** (`workflows/auto/`) — 一行 `/auto` 自动 chain 4 stage (discuss → plan → task → verify serial order 1-4), 适合 trivial / well-defined feature OR hands-off use case
+- `workflows/auto/workflow.yaml` (54L) + `workflows/auto/SKILL.md` — top-level standalone (sister `workflows/research/` + `workflows/retro/` layout) per ADR 0030 namespace policy D-02 LOCK bare slash cmd `/auto`
+- `src/workflow/masterOrchestrator.ts` extend — 5th master `'auto'` literal + recursive spawn pattern (sister Phase 3.5 W0.1 verbatim); top-level invoke `/auto` spawn 4 stage-master `workflows/<sub>/auto/workflow.yaml` (一层抽象 verbatim — super-master → stage-master → sub-workflow)
+- **NEW `MasterRunOpts`** interface (`pauseBetweenStages` boolean + `pauseFn` test DI override)
+- **NEW `src/workflow/masterOrchestrator-helpers.ts`** (68L) — split per karpathy ≤200L hard limit; houses `resolveMasterYamlPath` + `resolveSubYamlPath` + `defaultSpawnDriver` + `defaultPauseFn` (readline stdin prompt)
+- `--pause-between-stages` opt-in flag — 重现 v3.0.x stage gate UX (每 stage 完成停, 等用户 review/confirm 后跑下 stage); default 缺省 fail-fast continuous chain
+- Fail-fast default — 任一 stage spawn throw 立即停 (NOT silent skip), `harnessed resume` 续
+- K8 ctx single snapshot — top-level invoke 1 snapshot, 跨 4 stage-master spawn 同 reference (NOT re-snapshot per stage) — sister Phase 3.5 W0.1 pattern verbatim
+- 6 NEW regression fixture in `tests/workflow/masterOrchestrator.test.ts` (#26-31): 4-stage serial spawn order / --pause-between-stages 4 calls / fail-fast halt / K8 ctx invariant / pause default off / top-level yaml path resolve
+- `FLAT_TOP_LEVEL_MASTERS` set in `src/cli/lib/scan-nested.ts` — `'auto'` flagged isMaster=true (cosmetic `(master)` tag in setup output); `FLAT_LEGACY_KEEP` 加 `'auto'`
+- `MASTER_NAMES` in `src/workflow/run.ts` 加 `'auto'` 让 master-detect 识别 super-master invoke
+
+### Changed
+
+- `src/workflow/masterOrchestrator.ts` — 197L → 199L (karpathy ≤200L hard limit hold)
+- `tests/dogfood/cycle-4-verify.dogfood.test.ts` F9 — Path B contract static-verify 扫源码并 concat `masterOrchestrator.ts` + `masterOrchestrator-helpers.ts` (karpathy split 是 implementation detail not contract)
+- workflow schema validation: workflow v3 count 23 → 24 (`/auto` cross-validate `delegates_to[].sub` ⊂ {discuss, plan, task, verify})
+
+### Migration
+
+无 breaking change。已有 4 master `/discuss /plan /task /verify` 不动 — 仍可独立 invoke。新增 `/auto` 是 opt-in NEW workflow。已有用户 `npm install -g harnessed@3.1.0` 即可,无需重跑 setup (re-run `harnessed setup` 才会 install `/auto` skill 到 `~/.claude/skills/auto/`)。
+
+### Tests
+
+- Full suite 1111 pass / 4 skip / 2 pre-existing fail (research-v2 + special-purpose-fallback dogfood, baseline v3.0.3 main 同 fail, 与此 NEW feature 无关)
+- biome check: clean (0 errors, 3 unrelated infos in test files)
+- tsc --noEmit: 0 error
+- `node scripts/check-workflow-schema.mjs`: exit 0 (workflow v2=3 / v3=24 cross-validated)
+- masterOrchestrator.ts 199L (karpathy ≤200L hard limit hold via helpers split)
+
+### Files changed
+
+- `workflows/auto/workflow.yaml` NEW (54L)
+- `workflows/auto/SKILL.md` NEW (~95L)
+- `src/workflow/masterOrchestrator.ts` — 5th master 'auto' literal + MasterRunOpts + pause hook fire (3 surgical edit, 199L hold)
+- `src/workflow/masterOrchestrator-helpers.ts` NEW (68L) — split per karpathy ≤200L hard limit
+- `src/workflow/run.ts` — `MASTER_NAMES` 加 `'auto'`
+- `src/cli/lib/scan-nested.ts` — `FLAT_LEGACY_KEEP` 加 `'auto'` + NEW `FLAT_TOP_LEVEL_MASTERS` set
+- `tests/workflow/masterOrchestrator.test.ts` — 6 NEW fixture (#26-31)
+- `tests/dogfood/cycle-4-verify.dogfood.test.ts` — F9 static-scan concat helpers file
+- `package.json` — version 3.0.3 → 3.1.0
+- `CHANGELOG.md` — this entry
+
 ## [3.0.3] - 2026-05-21 — Setup hotfix part 2: `.harnessed/` → `~/.claude/harnessed/` + MCP verify fs-based
 
 **升级一行指令**: `npm install -g harnessed@3.0.3` (无需重跑 setup;v2.0.1+ 用户 `~/.harnessed/` 自动 migrate 到 `~/.claude/harnessed/`)
