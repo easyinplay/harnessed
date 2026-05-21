@@ -28,10 +28,19 @@
 
 ---
 
+## 📦 快速安装
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+---
+
 ## 📐 4-stage 流程图
 
 ```mermaid
 graph TD
+  RS([可选: /research 多源调研]):::optional
   subgraph Discuss[① Discuss 战略澄清]
     DM[/discuss master/]
     DS[discuss-strategic]
@@ -65,8 +74,14 @@ graph TD
     VM[verify-multispec]
     VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
   end
+  RT([可选: /retro 里程碑总结]):::optional
+  RS -.-> Discuss
   Discuss --> Plan --> Task --> Verify
+  Verify -.-> RT
+  classDef optional stroke-dasharray:5 5,fill:#f5f5f5,color:#666
 ```
+
+> 实线 = 主流程 4-stage cadence; 虚线 = 可选 standalone (`/research` Stage ① 前调研、`/retro` Verify 后总结)。
 
 ### 24 workflow 总览表
 
@@ -101,20 +116,6 @@ graph TD
 
 ---
 
-## 📦 快速安装
-
-```bash
-npm install -g harnessed
-```
-
-或不全局安装 (ephemeral 模式):
-
-```bash
-npx harnessed@latest <command>
-```
-
----
-
 ## 🚩 命令一览
 
 ### 主命令
@@ -134,11 +135,13 @@ npx harnessed@latest <command>
 
 ### 参数 (Flags)
 
+> `harnessed setup` 默认即写入,无需加 flag。其他命令默认 dry-run,需要 `--apply` 执行。
+
 | Flag | 说明 |
 | ---- | ---- |
-| `--apply` | 显式执行 (默认 dry-run) |
-| `--dry-run` | 永不写盘 (即使加 `--apply` 也优先 dry-run) |
-| `--non-interactive` | CI / 脚本场景;必须配合 `--apply` 或 `--dry-run` |
+| `--dry-run` | 预览不写盘 (适合高级用户; setup 默认已 immediate, 用此 flag 改预览模式) |
+| `--apply` | 显式执行 (install / uninstall 等命令的写入 opt-in) |
+| `--non-interactive` | CI / 脚本场景 |
 | `--system` | L4 全局装允许 (否则降级 L1 npx ephemeral) |
 | `--yes` | uninstall 跳过交互 confirm |
 | `--full-diff` | 展开 > 200 行的 diff 折叠 |
@@ -166,7 +169,7 @@ npx harnessed@latest <command>
 
 ```bash
 # 1. 装 workflow 上游 (一行装齐 gstack + GSD + superpowers + planning-with-files)
-harnessed setup --apply
+harnessed setup
 
 # 2. 在 Claude Code 内跑 4-stage cadence
 /discuss "新功能 X"           # 战略 + Phase + 子任务 3 层澄清
@@ -404,18 +407,6 @@ harnessed setup --apply  # 自动装齐 gstack + GSD + superpowers + planning-wi
 - CLI 和 CC skill 共享 `.harnessed/checkpoints/` 状态目录
 
 </details>
-
----
-
-## 📚 文档导航
-
-- [docs/WORKFLOW.md](./docs/WORKFLOW.md) — 4-stage workflow mermaid + 各 stage 详解
-- [docs/INSTALLER-CONTRACT.md](./docs/INSTALLER-CONTRACT.md) — installer 6 条用户视角硬契约
-- [docs/MAINTAINER-ONBOARDING.md](./docs/MAINTAINER-ONBOARDING.md) — 30 分钟跑通 dev 环境
-- [docs/adr/](./docs/adr/) — 架构决策记录
-- [CHANGELOG.md](./CHANGELOG.md) — 完整版本历史
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — 贡献指南
-- [SECURITY.md](./SECURITY.md) — 漏洞披露通道
 
 ---
 
