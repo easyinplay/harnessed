@@ -1,0 +1,58 @@
+# workflows/verify/multispec/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.13e
+#
+# Stage ④.h verify sub-workflow — 4-specialist Agent Team Pattern C 多维度审查 critical-release upgrade
+# (sister ~/.claude/CLAUDE.md "Verify 阶段 — 4-specialist Agent Team Pattern C" verbatim +
+# ~/.claude/rules/agent-teams.md L42-L52 Pattern C 多维度审查 ≥3 specialist 互相质询 NOT fire-and-forget)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Verify 阶段 — 关键发布 / 大重构 PR 升级 Agent Team Pattern C" verbatim
+#   - ~/.claude/rules/agent-teams.md Pattern C 多维度审查 (≥3 specialist lead 委派 + 互相质询)
+#   - workflows/judgments/stage-routing.yaml verify-multispec-critical-release trigger
+#   - workflows/judgments/parallelism-gate.yaml agent-teams-upgrade.fires (5 OR-chain)
+#   - workflows/capabilities.yaml — agent-teams-create / agent-teams-send-message / agent-teams-shutdown
+#     + code-review / gstack-review / gstack-cso / gstack-qa (4 specialist 互相质询)
+#   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 09-agent-team-multispecialist sister pattern
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/multispec example verbatim
+#
+# Cleanup mandatory per ~/.claude/rules/agent-teams.md 防呆清单 (SendMessage shutdown_request +
+# TeamDelete) — engine-level wiring (phase 02-team-cleanup capability agent-teams-shutdown)。
+# Token estimate prereq per agent-teams.md L34: team_cost < 2 × subagent_cost (engine-level check)。
+
+schema_version: harnessed.workflow.v3
+workflow: verify-multispec
+description: |
+  Stage ④.h 4-specialist Agent Team Pattern C 多维度审查 (关键发布 / 大重构 PR 升级,
+  code-review + gstack-review + gstack-cso + gstack-qa 4 teammate 互相 SendMessage 质询,
+  NOT fire-and-forget subagent fan-out)。Cleanup mandatory: shutdown_request + TeamDelete
+  (sister ~/.claude/rules/agent-teams.md 防呆清单)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - agent-teams-create
+  - agent-teams-send-message
+  - agent-teams-shutdown
+  - code-review
+  - gstack-review
+  - gstack-cso
+  - gstack-qa
+
+phases:
+  - id: 01-team-create
+    name: 4-specialist Agent Team create (Pattern C 多维度审查 critical-release upgrade)
+    upstream: claude-platform
+    capability: '{{ capabilities.agent-teams-create.cmd }}'
+    model: opus
+    parallelism: judgments.parallelism-gate.agent-teams-upgrade.fires
+    on:
+      - if: 'phase.is_major_release == true or phase.is_large_refactor == true'
+        action: invoke
+      - if: 'phase.is_major_release == false and phase.is_large_refactor == false'
+        action: skip
+    max_iterations: 1
+
+  - id: 02-team-cleanup
+    name: Agent Team cleanup (shutdown_request + TeamDelete 防呆清单)
+    upstream: claude-platform
+    capability: '{{ capabilities.agent-teams-shutdown.cmd }}'
+    model: haiku
+    max_iterations: 1
