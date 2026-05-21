@@ -1,0 +1,33 @@
+# workflows/plan/architecture/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.4
+#
+# Stage ②.a 架构层 sub-workflow — gstack /plan-eng-review (复杂架构强制,
+# sister ~/.claude/CLAUDE.md "⚠️ 复杂架构前 plan-eng-review")。
+#
+# Sister refs:
+#   - workflows/capabilities.yaml — plan-eng-review (Bucket 7 gstack 33 optional registry)
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 sub-stage example verbatim
+#
+# Note: capabilities.yaml v3 entry name = `plan-eng-review` (NO `gstack-` prefix per
+# Pattern A E.2 — Bucket 7 gstack 33 optional 命名 strip prefix per 用户 CLAUDE.md
+# gstack skill routing 直接 invoke cmd 名)。判 gate 用 literal expr (judgments
+# phase-gate.yaml 暂无 is-complex-architecture trigger; v3 schema gate is Type.String
+# 接受任意 expr; W2.2 backfill 可加 judgment trigger)。
+
+schema_version: harnessed.workflow.v3
+workflow: plan-architecture
+description: |
+  Stage ②.a 架构层 — gstack /plan-eng-review (复杂架构强制, sister CLAUDE.md "⚠️ 复杂架构前")。
+  Gate: phase.is_complex_architecture == true literal expr (W2.2 backfill 可加 phase-gate
+  judgment trigger 重构 ref)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [plan-eng-review]
+
+phases:
+  - id: 01-plan-eng-review
+    name: plan-eng-review (复杂架构审查 — engineering manager 视角, 锁定架构再 plan-phase)
+    upstream: gstack
+    capability: '{{ capabilities.plan-eng-review.cmd }}'
+    model: opus
+    gate: 'phase.is_complex_architecture == true'
+    max_iterations: '{{ defaults.ralph_max_iterations.plan-architecture.01-plan-eng-review }}'
