@@ -17,13 +17,105 @@
 
 ---
 
-## 🎯 关键差异化
+## 🎯 关键差异化 (v3.0)
 
 - **三层栈机器化** — `gstack 决策` + `GSD 项目经理` + `superpowers 资深工程师` + `karpathy 4 心法` + `mattpocock 23 招式`,5 支柱 100% capture
 - **不 vendor 上游** — manifest describe install/check;上游升级用户 re-install 即获最新版
-- **Composition Skill** — 自家 workflow skill 当指挥棒,调度多个上游协同 (v2.0: 4 workflows 完整 4-stage 机器化 — `research` 多源调研 + `plan-feature` 5-phase 三层栈 + `execute-task` ralph-loop completion + `verify-work` 9-phase Pattern C 4-specialist)
+- **Composition Skill (v3.0 重构)** — 自家 workflow skill 当指挥棒,调度多个上游协同。v3.0 把 v2.0 的 4 个 monolithic workflow 拆成 **4 master orchestrator + 18 sub-workflow + 2 standalone = 24 个 namespace-layered workflow**,完整 4-stage 机器化 (`/discuss /plan /task /verify` 4 master + 三层栈 18 sub + `/research /retro` 2 standalone)
+- **L0 Discipline Substrate (v3.0 NEW)** — 全局 cross-stage 行为基准 (karpathy 心法 + output-style + language + operational + priority + protocols),applied universally to L1-L7
 - **包管理器思维** — install dependency graph 自动解析, doctor 健康检查, install-base 一键装齐
-- **统一入口** — 用户面对 `/plan-feature` / `/execute-task` 等 slash command,不需学每家上游术语
+- **统一入口** — 用户面对 `/discuss /plan /task /verify` 等 master slash command,不需学每家上游术语;sub command 显式调用单 stage (例如 `/discuss-strategic` 只跑战略层澄清)
+
+---
+
+## 🆕 v3.0 highlight — 4-stage namespace-layered architecture
+
+v3.0 是对 v2.0 4-workflow 的 **breaking refactor**,把 4 个 monolithic skill 重组为 **24 个 namespace-layered skill**,1:1 对位 `~/.claude/CLAUDE.md` 4-stage cadence。
+
+### 4-stage 流程图 (mermaid)
+
+```mermaid
+graph LR
+  subgraph Discuss[Discuss 战略澄清]
+    DS[discuss-strategic] & DP[discuss-phase] & DT[discuss-subtask]
+    DM[/discuss master/]
+  end
+  subgraph Plan[Plan 任务规划]
+    PA[plan-architecture] & PP[plan-phase]
+    PM[/plan master/]
+  end
+  subgraph Task[Task 执行]
+    TC[task-clarify] & TCo[task-code] & TT[task-test] & TD[task-deliver]
+    TM[/task master/]
+  end
+  subgraph Verify[Verify 验证]
+    VP[verify-progress] & VC[verify-code-review] & VPa[verify-paranoid]
+    VQ[verify-qa] & VS[verify-security] & VD[verify-design]
+    VSi[verify-simplify] & VM[verify-multispec]
+    VMs[/verify master/]
+  end
+  Discuss --> Plan --> Task --> Verify
+```
+
+### 24 workflow 总览表
+
+| Slash cmd | Stage | Type | Capability / Upstream | Brief |
+|-----------|-------|------|----------------------|-------|
+| `/discuss` | ① Discuss | Master | masterOrchestrator | 3 sub 并行 gate-eval (chain-isolation 铁律) |
+| `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` | 战略层 — 新功能 / 新 milestone / 产品方向强制治理 |
+| `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` | Phase 层 — ≥2 open decisions / 灰色地带澄清 |
+| `/discuss-subtask` | ① Discuss | Sub | superpowers brainstorming + `/grill-with-docs` | 子任务层 — ≥2 approach / 核心算法 / API contract |
+| `/plan` | ② Plan | Master | masterOrchestrator | 串行 invoke 2 sub (architecture conditional → phase always) |
+| `/plan-architecture` | ② Plan | Sub | gstack `/plan-eng-review` | 架构层 — 复杂架构强制治理关卡 |
+| `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | 计划层 — 持久化 `task_plan.md` + `progress.md` |
+| `/task` | ③ Task | Master | masterOrchestrator | 串行 invoke 4 sub per subtask (clarify → code → test → deliver) |
+| `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | 子任务起步澄清 gate |
+| `/task-code` | ③ Task | Sub | karpathy 4 心法 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | 子任务编码 + 跨 session progress.md 同步 |
+| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | 核心逻辑 TDD 强制 (alias mattpocock `/tdd`) |
+| `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | 至 verbatim `COMPLETE` + R20.10 max_iter fallback |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 7 sub 按 CLAUDE.md verbatim conditional dispatch |
+| `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | 必跑串行起点 — UAT 验收 + 状态同步 |
+| `/verify-code-review` | ④ Verify | Sub | `code-review` 多 subagent fan-out | 高置信度 finding 并行 |
+| `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | 关键模块 PR 前强制 |
+| `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | 端到端 QA (has_ui_changes conditional) |
+| `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (has_auth_or_secrets conditional) |
+| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | 设计系统一致性 (has_design_changes conditional) |
+| `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | 末尾串行简化 |
+| `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | 关键发布 / 大重构 PR 升级 (互相 SendMessage 质询) |
+| `/research` | Standalone | Standalone | Tavily / Exa MCP + ctx7 + GSD `/gsd-discuss-phase` | 多源调研 (Stage ① alternate) |
+| `/retro` | Standalone | Standalone | gstack `/retro` + planning-with-files RETROSPECTIVE.md | 项目 / 里程碑结束总结 |
+
+> Master orchestrator 自动 gate-route 到合适的 sub (chain-isolation 铁律 — 不 fire 的 sub 透明声明跳过)。
+> 直接调用 sub 也可绕过 master 单跑某 stage,例如 `/discuss-strategic "新功能 X"`。
+
+---
+
+## 🔄 Migrating from v2.0 to v3.0
+
+v3.0 是 **breaking refactor**。v2.0 的 3 个 monolithic slash cmd 全部 DROP,改用 v3 namespace-layered 等价物:
+
+| v2.0 (DROPPED) | v3.0 (NEW) |
+|----------------|------------|
+| `/plan-feature` | `/plan` (master, 自动 gate-route) OR `/plan-phase` (直接 sub) |
+| `/execute-task` | `/task` (master, 串行 4 sub) OR `/task-{clarify,code,test,deliver}` (单 stage) |
+| `/verify-work` | `/verify` (master, 7 sub conditional) OR `/verify-{progress,code-review,paranoid,qa,security,design,simplify,multispec}` (单维度) |
+
+`/research` (v2.0 NEW) 不变,schema bump v2 → v3 但 phases verbatim 保留。
+
+### 升级步骤
+
+```bash
+# 1. 升级 npm package
+npm install -g harnessed@3
+
+# 2. 重新 setup — v3 把 24 个 workflow skill 装到 ~/.claude/skills/
+harnessed setup --apply
+
+# 3. (可选) 手动清理 v2 残留 skill dir (per K12 mitigation)
+rm -rf ~/.claude/skills/plan-feature ~/.claude/skills/execute-task ~/.claude/skills/verify-work
+```
+
+> v2.0 SHIPPED & ARCHIVED 2026-05-19 (17/20 phases 85%);v3.0 v1.0-RC2 minor STARTING;v1.0 GA target 2026-05-22~23 — 详 [.planning/STATE.md](./.planning/STATE.md)。
 
 ---
 
@@ -74,31 +166,37 @@ npx harnessed@latest <command>
 
 ## ⚡ 使用流程
 
-`/plan-feature "新功能 X"` 一行触发 CLAUDE.md 4-stage 三层栈方法论:
+v3.0 4-stage 三层栈方法论 — 推荐 4 个 master orchestrator 串行驱动:
 
 ```
-① Discuss  →  ② Plan  →  ③ Execute  →  ④ Verify
+/discuss  →  /plan  →  /task  →  /verify
+   ①         ②        ③         ④
 ```
 
-| Stage | 上游协同 | 职责 |
-| ---- | ---- | ---- |
-| ① **Discuss** | gstack `/office-hours` + GSD `/gsd-discuss-phase` | 多角色决策 + 灰色澄清 |
-| ② **Plan** | GSD `/gsd-plan-phase` + planning-with-files | 任务拆解 + 持久化 `task_plan.md` |
-| ③ **Execute** | superpowers brainstorm + karpathy 心法 + mattpocock 招式 + ralph-loop | 子任务至 verbatim `COMPLETE` |
-| ④ **Verify** | GSD `/gsd-verify-work` + code-review + gstack `/review` + code-simplifier | 多角度审查 + 简化 |
+| Stage | Master | 主要 sub-workflow | 上游协同 |
+| ---- | ---- | ---- | ---- |
+| ① **Discuss** | `/discuss` | strategic / phase / subtask (3 并行) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
+| ② **Plan** | `/plan` | architecture (conditional) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
+| ③ **Task** | `/task` | clarify → code → test → deliver (4 串行 per subtask) | karpathy 心法 + mattpocock 招式 + superpowers TDD + `ralph-loop` |
+| ④ **Verify** | `/verify` | progress → 5 parallel conditional → simplify (+ multispec critical) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 
 实操示例:
 
 ```bash
 # 1. 装 workflow 上游 (一行装齐 gstack + GSD + superpowers + planning-with-files)
-harnessed install plan-feature
+harnessed setup --apply
 
-# 2. 在 Claude Code 内跑
-/plan-feature "新功能 X"
+# 2. 在 Claude Code 内跑 4-stage cadence
+/discuss "新功能 X"           # 战略 + Phase + 子任务 3 层澄清
+/plan "新功能 X"              # 架构 (conditional) + 计划 (任务图持久化)
+/task "subtask-1: API contract"  # 4 sub 串行 per subtask
+/verify "phase-1"             # 7 sub conditional
 
 # 3. 中断后恢复 (任何时候)
 harnessed resume
 ```
+
+> 也可直接调 sub 绕过 master 单跑某一层,例如 `/verify-paranoid` 只跑 Paranoid Staff Engineer 审查。
 
 📊 详细 mermaid + 各 stage 完整说明:[docs/WORKFLOW.md](./docs/WORKFLOW.md)
 
@@ -268,7 +366,7 @@ harnessed v3.0 是 user 个人 `~/.claude/CLAUDE.md` + Obsidian doc + `~/.claude
 需要,但**用户感知 = 一行命令**:
 
 ```bash
-harnessed install plan-feature  # 自动装齐 gstack + GSD + superpowers + planning-with-files
+harnessed setup --apply  # 自动装齐 gstack + GSD + superpowers + planning-with-files,24 workflow skill 一并落到 ~/.claude/skills/
 ```
 
 类比 `brew install <formula>` 装全套依赖 — 你不需要单独 `brew install` 每个依赖项。
@@ -303,7 +401,7 @@ harnessed install plan-feature  # 自动装齐 gstack + GSD + superpowers + plan
 | Orchestration | GSD | 高层 phase 任务图 + 依赖分析 |
 | Persistence | planning-with-files | 持久化 `task_plan.md` / `progress.md` / `findings.md` |
 
-`/plan-feature` 把 4 阶段串起来 — 每个阶段做不同事,输出喂给下一阶段。**没有合并**。
+v3.0 `/discuss /plan /task /verify` 4 个 master 把 4 阶段串起来,每个 master 内部再 delegate 到对应 sub。每个阶段做不同事,输出喂给下一阶段。**没有合并**。
 
 </details>
 
@@ -314,7 +412,7 @@ harnessed install plan-feature  # 自动装齐 gstack + GSD + superpowers + plan
 
 看 `workflows/<name>/SKILL.md` frontmatter 的 `pause` 字段:
 
-- `pause: human_review` → 阻塞等用户 approve (governance gate / final lock,如 `plan-feature` 的 phase 01 + 05)
+- `pause: human_review` → 阻塞等用户 approve (governance gate / final lock,如 `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` `/plan-eng-review` 锁定关卡)
 - 无 `pause` → 自动 chain 到下一 phase
 
 每个 phase 输出写到 `.harnessed/checkpoints/`,session 中断后 `harnessed resume` 从最近 checkpoint 继续。
@@ -330,7 +428,7 @@ harnessed install plan-feature  # 自动装齐 gstack + GSD + superpowers + plan
 
 - `npx harnessed@latest setup` 跑的是 **Node.js CLI** (`bin/harnessed`)
 - setup 装的 **workflow skills** (markdown) 进 `~/.claude/skills/`,由 Claude Code 运行时加载
-- `/plan-feature` / `/execute-task` 等是 CC 内的 slash command,触发 skill 执行
+- `/discuss` / `/plan` / `/task` / `/verify` (v3.0) 等是 CC 内的 slash command,触发 skill 执行
 - CLI 和 CC skill 共享 `.harnessed/checkpoints/` 状态目录
 
 </details>
