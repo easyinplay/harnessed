@@ -37,6 +37,8 @@ harnessed setup
 
 > Windows PowerShell 5.x 不支持 `&&` 链接,需分两行执行。bash / zsh / PowerShell 7+ 可合并为 `npm install -g harnessed && harnessed setup`。
 
+🤖 **或让 AI 帮你装** — 复制 [INSTALL-WITH-AI.md](./INSTALL-WITH-AI.md) 整段粘贴进 Claude Code (或任何 AI 助手),AI 自动处理 OS / 权限 / PATH / corepack 等 edge case。
+
 ---
 
 ## 📐 4-stage 流程图
