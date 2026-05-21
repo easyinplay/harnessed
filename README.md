@@ -48,9 +48,12 @@ npm install -g harnessed && harnessed setup
 
 ```
 /auto "需求 X"
+
+# 大需求可显式分阶段 (一般 AI 自动判断;若自认大需求可强制):
+/auto "需求 X" --staged
 ```
 
-> 不想动脑子或者刚入门 — 一切交给 harnessed。自动跑完 4 stage (discuss → plan → task → verify),中间不停。失败 fail-fast,`harnessed resume` 续。
+> 不想动脑子或者刚入门 — 一切交给 harnessed。自动跑完 6 stage (research conditional → discuss → plan → task → verify → retro mandatory),中间不停。v3.2.0 NEW:AI 1-shot 自动判断需求复杂度,大需求建议切 `--staged` 模式 (每 stage 完停 review);开始前 prompt "对需求清晰认知吗?" n → 自动加跑 `/research` 多源调研;末尾 `/retro` 强制总结。失败 fail-fast,`harnessed resume` 续。`--pause-between-stages` 保留为 backward-compat alias。
 
 ### 📂 分类自动 (推荐熟手 / 想 review 中间结果)
 
@@ -127,7 +130,7 @@ graph TD
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
-| `/auto` | All | **Super-master** | masterOrchestrator (跨 4 stage) | 一键自动跑 discuss → plan → task → verify (`--pause-between-stages` opt-in) |
+| `/auto` | All | **Super-master** | masterOrchestrator (跨 6 stage) | 一键自动跑 6 stage (research conditional → discuss → plan → task → verify → retro mandatory); v3.2.0 NEW:AI 复杂度 1-shot judge + 理解度 check + retro mandatory; `--staged` (primary, alias `--pause-between-stages` backward-compat) opt-in |
 | `/discuss` | ① Discuss | Master | masterOrchestrator | 3 sub 并行 gate-eval (chain-isolation 铁律) |
 | `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` + planning-with-files | 战略层 — 新功能 / 新 milestone / 产品方向强制治理 (findings.md 持久化) |
 | `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` + planning-with-files | Phase 层 — ≥2 open decisions / 灰色地带澄清 (findings.md + knowledge.md 持久化) |
@@ -336,6 +339,8 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | 关键模块 PR | gstack /review |
 | 大重构 PR 多维度审查 | 4-specialist Agent Team Pattern C |
 | 跨 session hand-off | discipline.protocols self-contained design doc |
+| `/auto` 复杂度大需求 | AI 1-shot judge → 自动建议 `--staged` (v3.2.0 NEW;n abort 建议手动 `/discuss`) |
+| `/auto` 需求理解度 | 开始前 prompt → n 自动加 `/research` 多源调研 (v3.2.0 NEW) |
 
 ---
 

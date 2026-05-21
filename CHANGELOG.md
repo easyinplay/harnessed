@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-05-21 — /auto enhancement: complexity gate + research/retro flow + flag rename
+
+**升级一行指令**: `npm install -g harnessed` (无需重跑 setup, `--staged` 是 NEW flag alias; `--pause-between-stages` 仍 work as backward-compat alias)
+
+**Trigger**: user 测试 v3.1.0 `/auto` 反馈 — 大需求自动 bail 进 discuss 但 UX 不够 explicit; auto mode user hands-off 没明示理解度 / 结束总结。v3.2.0 强化 super-master:complexity gate 1-shot judge + understanding check 强制 prompt + retro mandatory 强制总结。
+
+### Added
+
+- **`/auto` Phase 0 complexity assessment** — AI 1-shot judge 需求 size (small / medium / large)。large → prompt user 切换 `--staged` 模式 (每 stage 完停 review) or abort 建议手动 `/discuss`; small/medium 自动 continue default 模式
+- **`/auto` Phase 0.5 understanding check** — complexity gate 后 prompt "对需求有清晰认知吗? [Y/n]"。n → 强制 spawn `/research` 多源调研 先,再 chain 进 `/discuss`; y → skip research 直接 `/discuss`
+- **`/auto` Phase 5 `/retro` mandatory** — `/verify` 完成后 auto mode 末尾强制 spawn `/retro` (sister CLAUDE.md "项目 / 里程碑结束:可选跑 /retro" 但 auto hands-off scenario mandatory — 无 opt-out flag)
+- **`--staged` flag** — short alias for `--pause-between-stages` (sister "staged rollout" 工程界熟概念,8 字符 ergonomic); `--pause-between-stages` 保留 backward-compat alias 不破旧脚本
+- **6-stage cadence**: research (conditional gate) → discuss → plan → task → verify → retro (mandatory)
+- **NEW `MasterRunOpts.assessComplexity` + `promptUserUnderstanding` + `prompter`** hooks — DI override 友好 (test fixture pattern verbatim); default impls in `masterOrchestrator-helpers.ts`
+- **NEW `workflows/judgments/stage-routing.yaml` trigger** `auto-research-unclear` — gate ref for research conditional spawn (`fires_when: user_understanding_unclear == true`)
+- 8 NEW regression fixture in `tests/workflow/masterOrchestrator.test.ts` (#32-39): complexity small/medium no-prompt / complexity large → staged switch on y / complexity large → abort on n / understanding y skip research / understanding n spawn research / retro mandatory 末尾 spawn / `--staged` flag alias works / `--pause-between-stages` alias backward-compat
+
+### Changed
+
+- `workflows/auto/workflow.yaml` delegates_to 加 2 row (research order 0 conditional gate + retro order 5 unconditional mandatory); 6-stage 总规模
+- `workflows/auto/SKILL.md` — 反映 6-stage cadence + complexity gate + understanding check + retro mandatory + `--staged` rename
+- `src/workflow/masterOrchestrator.ts` — extend `MasterRunOpts` 加 3 hook (assessComplexity + promptUserUnderstanding + prompter alias); pre-flight invoke `runAutoPreFlight()` before spawn loop (super-master `/auto` only); karpathy ≤200L hard limit hold via helpers.ts split
+- `src/workflow/masterOrchestrator-helpers.ts` — 加 `defaultAssessComplexity` + `defaultPromptUserUnderstanding` + `runAutoPreFlight` (super-master pre-spawn hook)
+- README.md — `/auto` 行 Brief 反映 6-stage; 🚀 快捷使用 加 `--staged` example; complexity gate 行加进抉择路由矩阵
+
+### Migration
+
+无 breaking — `--pause-between-stages` 仍 work as alias for `--staged`; default `/auto` 加 prompt 是 NEW interactive behavior 但不破 existing yaml/test。`--staged` 是 NEW shorter alias,8 字符 ergonomic。
+
+### Tests
+
+- Full suite 1119 pass / 4 skip / 2 pre-existing fail (research-v2 + special-purpose-fallback dogfood, baseline 与 NEW feature 无关)
+- biome check: clean
+- tsc --noEmit: 0 error
+- `node scripts/check-workflow-schema.mjs`: exit 0
+- masterOrchestrator.ts ≤200L hard limit hold via helpers split
+
+### Files changed
+
+- `workflows/auto/workflow.yaml` — delegates_to 4 → 6 row (research conditional + retro mandatory)
+- `workflows/auto/SKILL.md` — 6-stage + complexity gate + understanding check + retro mandatory + `--staged` rename
+- `workflows/judgments/stage-routing.yaml` — 加 `auto-research-unclear` trigger
+- `src/workflow/masterOrchestrator.ts` — `MasterRunOpts` extend + pre-flight hook invoke
+- `src/workflow/masterOrchestrator-helpers.ts` — defaults + runAutoPreFlight
+- `tests/workflow/masterOrchestrator.test.ts` — 8 NEW fixture (#32-39)
+- `README.md` — `/auto` Brief update + `--staged` example + complexity gate row
+- `package.json` — version 3.1.0 → 3.2.0
+- `CHANGELOG.md` — this entry
+
 ## [3.1.0] - 2026-05-21 — NEW /auto super-master orchestrator (4-stage continuous chain)
 
 **升级一行指令**: `npm install -g harnessed` (v3.1.0 LATEST tag, 无需重跑 setup — setup --apply re-install bundled workflow 含 /auto)
