@@ -437,3 +437,178 @@ describe('runMasterOrchestrator — v3.1.0 NEW /auto super-master (6 fixtures)',
     )
   })
 })
+
+// ── v3.2.0 NEW /auto enhancement fixtures ───────────────────────────────────
+// 8 fixture per CHANGELOG [3.2.0] regression coverage: complexity small/medium no-prompt /
+// complexity large → staged switch on y / complexity large → abort on n / understanding y skip
+// research / understanding n spawn research / retro mandatory 末尾 spawn / `--staged` flag alias
+// works / `--pause-between-stages` alias backward-compat。
+
+/** Build v3.2.0 /auto super-master yaml with 6-stage delegates (research conditional + 4 stage +
+ *  retro mandatory). The research clause carries gate ref to auto-research-unclear trigger. */
+function autoSuperMasterYamlV32(): string {
+  return masterYaml(
+    'auto',
+    [
+      clauseLine('research', {
+        mode: 'serial',
+        order: 0,
+        gate: 'judgments.stage-routing.auto-research-unclear.fires',
+      }),
+      clauseLine('discuss', { mode: 'serial', order: 1 }),
+      clauseLine('plan', { mode: 'serial', order: 2 }),
+      clauseLine('task', { mode: 'serial', order: 3 }),
+      clauseLine('verify', { mode: 'serial', order: 4 }),
+      clauseLine('retro', { mode: 'serial', order: 5 }),
+    ].join('\n'),
+  )
+}
+
+describe('runMasterOrchestrator — v3.2.0 NEW /auto enhancement (8 fixtures)', () => {
+  it('32. complexity small → no large-prompt + continue default mode', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    resolveJudgmentGateMock.mockResolvedValue(false) // research gate skipped
+    const prompter = vi.fn(async () => 'y')
+    const assessComplexity = vi.fn(async () => 'small' as const)
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, async () => {}, {
+      assessComplexity,
+      prompter,
+    })
+    expect(assessComplexity).toHaveBeenCalledTimes(1)
+    // Only Phase 0.5 understanding prompt called (NO Phase 0 large-prompt for small)
+    expect(prompter).toHaveBeenCalledTimes(1)
+    const firstCall = prompter.mock.calls[0] as unknown as [string]
+    expect(firstCall[0]).toMatch(/Phase 0.5.*清晰认知/)
+    expect(r.fired).toEqual(['discuss', 'plan', 'task', 'verify', 'retro'])
+  })
+
+  it('33. complexity large + user y → auto-switch to --staged + pauseFn fires', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    resolveJudgmentGateMock.mockResolvedValue(false)
+    // prompter answers: 1st (Phase 0 large) = 'y' switch, 2nd (Phase 0.5 understanding) = 'y' clear
+    const prompter = vi.fn().mockResolvedValueOnce('y').mockResolvedValueOnce('y')
+    const assessComplexity = vi.fn(async () => 'large' as const)
+    const pauseFn = vi.fn(async () => {})
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, async () => {}, {
+      assessComplexity,
+      prompter,
+      pauseFn,
+    })
+    // Phase 0 large-prompt fired + Phase 0.5 understanding fired
+    expect(prompter).toHaveBeenCalledTimes(2)
+    const firstCall = prompter.mock.calls[0] as unknown as [string]
+    expect(firstCall[0]).toMatch(/Phase 0.*复杂度较大/)
+    // pauseBetweenStages auto-flipped → pauseFn called for each fired stage (5 = discuss + plan + task + verify + retro)
+    expect(pauseFn).toHaveBeenCalledTimes(5)
+    expect(r.fired).toEqual(['discuss', 'plan', 'task', 'verify', 'retro'])
+  })
+
+  it('34. complexity large + user n → abort + 0 fired + 6 skipped', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    const prompter = vi.fn().mockResolvedValueOnce('n')
+    const assessComplexity = vi.fn(async () => 'large' as const)
+    const spawn = vi.fn(async () => {})
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, spawn, {
+      assessComplexity,
+      prompter,
+    })
+    // Only Phase 0 large-prompt fired (NO Phase 0.5 — aborted earlier)
+    expect(prompter).toHaveBeenCalledTimes(1)
+    expect(spawn).not.toHaveBeenCalled()
+    expect(r.fired).toEqual([])
+    // All 6 stages declared as skipped (research + 4 stage + retro)
+    expect(r.skipped.sort()).toEqual(
+      ['discuss', 'plan', 'research', 'retro', 'task', 'verify'].sort(),
+    )
+  })
+
+  it('35. understanding y → research skipped + 5 stages fired (no /research spawn)', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    // research gate evaluates ctx.user_understanding_unclear == true; with y answer = false → skip
+    resolveJudgmentGateMock.mockImplementation(async () => false)
+    const prompter = vi.fn().mockResolvedValueOnce('y')
+    const assessComplexity = vi.fn(async () => 'small' as const)
+    const ctx: Record<string, unknown> = {}
+    const r = await runMasterOrchestrator('auto', ctx, PACKAGE_ROOT, async () => {}, {
+      assessComplexity,
+      prompter,
+    })
+    expect(ctx.user_understanding_unclear).toBe(false)
+    expect(r.fired).toEqual(['discuss', 'plan', 'task', 'verify', 'retro'])
+    expect(r.skipped).toContain('research')
+  })
+
+  it('36. understanding n → /research spawn first + 6 stages fired', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    resolveJudgmentGateMock.mockImplementation(async () => true) // research gate fires
+    const prompter = vi.fn().mockResolvedValueOnce('n')
+    const assessComplexity = vi.fn(async () => 'small' as const)
+    const spawnSeq: string[] = []
+    const spawn: SpawnDriver = async (_m, sub) => {
+      spawnSeq.push(sub)
+    }
+    const ctx: Record<string, unknown> = {}
+    const r = await runMasterOrchestrator('auto', ctx, PACKAGE_ROOT, spawn, {
+      assessComplexity,
+      prompter,
+    })
+    expect(ctx.user_understanding_unclear).toBe(true)
+    expect(spawnSeq[0]).toBe('research') // research order=0 spawn first
+    expect(r.fired).toEqual(['research', 'discuss', 'plan', 'task', 'verify', 'retro'])
+  })
+
+  it('37. retro mandatory — last stage fired (no opt-out flag honored)', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    resolveJudgmentGateMock.mockResolvedValue(false)
+    const prompter = vi.fn().mockResolvedValueOnce('y')
+    const assessComplexity = vi.fn(async () => 'small' as const)
+    const spawnSeq: string[] = []
+    const spawn: SpawnDriver = async (_m, sub) => {
+      spawnSeq.push(sub)
+    }
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, spawn, {
+      assessComplexity,
+      prompter,
+    })
+    // retro is last + always fires (no gate)
+    expect(spawnSeq[spawnSeq.length - 1]).toBe('retro')
+    expect(r.fired).toContain('retro')
+  })
+
+  it('38. --staged flag (primary) works — opts.pauseBetweenStages=true triggers pauseFn', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    resolveJudgmentGateMock.mockResolvedValue(false)
+    const prompter = vi.fn().mockResolvedValueOnce('y')
+    const assessComplexity = vi.fn(async () => 'small' as const)
+    const pauseFn = vi.fn(async () => {})
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, async () => {}, {
+      assessComplexity,
+      prompter,
+      pauseBetweenStages: true, // --staged flag sets this (v3.2.0 primary)
+      pauseFn,
+    })
+    // pauseFn called per spawned stage (5 = discuss + plan + task + verify + retro)
+    expect(pauseFn).toHaveBeenCalledTimes(5)
+    expect(r.fired).toHaveLength(5)
+  })
+
+  it('39. --pause-between-stages backward-compat alias — MasterRunOpts shape unchanged', async () => {
+    // Sister --staged fixture verbatim; v3.2.0 invariant: --pause-between-stages flag still
+    // routes to opts.pauseBetweenStages (NO opts shape change). API-level alias is
+    // documented in MasterRunOpts JSDoc per CHANGELOG [3.2.0]。
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYamlV32())
+    resolveJudgmentGateMock.mockResolvedValue(false)
+    const prompter = vi.fn().mockResolvedValueOnce('y')
+    const assessComplexity = vi.fn(async () => 'small' as const)
+    const pauseFn = vi.fn(async () => {})
+    // Same opts.pauseBetweenStages route as --staged → backward-compat invariant proven
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, async () => {}, {
+      assessComplexity,
+      prompter,
+      pauseBetweenStages: true,
+      pauseFn,
+    })
+    expect(pauseFn).toHaveBeenCalledTimes(5)
+    expect(r.fired).toEqual(['discuss', 'plan', 'task', 'verify', 'retro'])
+  })
+})

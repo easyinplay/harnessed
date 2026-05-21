@@ -1,31 +1,38 @@
-# workflows/auto/workflow.yaml — v3.1.0 NEW super-master orchestrator
+# workflows/auto/workflow.yaml — v3.2.0 enhanced super-master orchestrator
 #
 # Top-level standalone (sister workflows/research/ + workflows/retro/ layout) —
-# 5th master 跨 4 stage chain (discuss → plan → task → verify) one-shot auto orchestrate。
-# 适合 trivial / well-defined feature 一行命令跑完整开发流; 关键 PR / 大重构推荐
-# 分阶段手动 (`/discuss` → `/plan` → `/task` → `/verify`)。
+# 6-stage chain (research conditional → discuss → plan → task → verify → retro
+# mandatory) one-shot auto orchestrate。
+#
+# v3.2.0 delta (sister v3.1.0 ship):
+#   ADD research order 0 (gate auto-research-unclear — fires when user_understanding_unclear)
+#   ADD retro order 5 (unconditional — mandatory in auto mode per CLAUDE.md hands-off scenario)
+#   NOTE complexity gate + understanding check 是 runtime pre-flight hook (NOT yaml decl)
+#        sister masterOrchestrator.ts runAutoPreFlight invoke
 #
 # Sister refs:
 #   - workflows/discuss/auto/workflow.yaml (stage-master sister fan-out delegates_to pattern)
 #   - workflows/research/workflow.yaml + workflows/retro/workflow.yaml (top-level standalone sister)
-#   - src/workflow/masterOrchestrator.ts ('auto' literal + recursive spawn — spawn stage-master /auto)
+#   - workflows/judgments/stage-routing.yaml auto-research-unclear trigger (v3.2.0 NEW)
+#   - src/workflow/masterOrchestrator.ts ('auto' literal + recursive spawn + runAutoPreFlight hook)
 #   - src/workflow/schema/workflow.ts WorkflowSchemaV3 + DelegationClause (Phase 3.3 W0.5 SHIPPED)
 #
 # Super-master invariant (per WorkflowSchemaV3 runtime + check-workflow-schema.mjs K9):
 #   - phases 缺省 (master only has delegates_to[])
-#   - 4 delegates_to mode serial — 必带 explicit order (K9 invariant T3.3.W0.10)
-#   - delegates_to[].sub ∈ {discuss, plan, task, verify} (4 stage-master cross-validate)
-#   - K8 ctx single snapshot: top-level invoke 1 snapshot, pass to all 4 stage-master spawn
-#     (sister Phase 3.5 W0.1 pattern verbatim, 1 snapshot per top-level invoke 跨整个 cycle)
+#   - 6 delegates_to mode serial — 必带 explicit order (K9 invariant T3.3.W0.10)
+#   - delegates_to[].sub ∈ {research, discuss, plan, task, verify, retro}
+#     (research + retro are top-level standalone; discuss/plan/task/verify are 4 stage-master)
+#   - K8 ctx single snapshot: top-level invoke 1 snapshot, pass to all 6 spawn
 
 schema_version: harnessed.workflow.v3
 workflow: auto
 description: |
-  Super-master orchestrator — 自动 chain 4 stage (discuss → plan → task → verify serial
-  order 1-4)。一行命令跑完整 feature 开发流, 适合 trivial / well-defined feature OR hands-off
-  use case; 关键 PR / 大重构推荐分阶段手动 (`/discuss` → `/plan` → `/task` → `/verify`)。
-  Fail-fast default: 任一 stage fail 立即停, `harnessed resume` 续。Opt-in `--pause-between-stages`
-  flag 重现 v3.0.x stage gate UX (每 master 跑完停, 等用户 review/confirm 后跑下 stage)。
+  Super-master orchestrator (v3.2.0 enhanced) — 自动 chain 6 stage (research conditional →
+  discuss → plan → task → verify → retro mandatory)。一行命令跑完整 feature 开发流, 适合 trivial
+  / well-defined feature OR hands-off use case; 关键 PR / 大重构推荐分阶段手动 (`/discuss` →
+  `/plan` → `/task` → `/verify`)。AI 自动判断需求复杂度,大需求建议切 `--staged` 模式 (每 stage
+  完停 review)。Fail-fast default:任一 stage fail 立即停, `harnessed resume` 续。Opt-in
+  `--staged` flag (alias `--pause-between-stages`) 重现 v3.0.x stage gate UX。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available:
@@ -33,6 +40,10 @@ tools_available:
   - planning-with-files
 
 delegates_to:
+  - sub: research
+    mode: serial
+    order: 0
+    gate: judgments.stage-routing.auto-research-unclear.fires
   - sub: discuss
     mode: serial
     order: 1
@@ -45,3 +56,6 @@ delegates_to:
   - sub: verify
     mode: serial
     order: 4
+  - sub: retro
+    mode: serial
+    order: 5

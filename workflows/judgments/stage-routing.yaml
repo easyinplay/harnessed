@@ -91,3 +91,14 @@ triggers:
     fires_when: "phase.stage == 'verify' and phase.is_final_step == true"
     invokes:
       - capability: code-simplifier
+
+  # v3.2.0 NEW — /auto super-master Phase 0.5 understanding check gate
+  auto-research-unclear:
+    description: |
+      /auto super-master → /research conditional spawn 当 user_understanding_unclear == true
+      (Phase 0.5 understanding check prompt n → ctx fact set)。sister CLAUDE.md research routing。
+    fires_when: "user_understanding_unclear == true"
+    invokes:
+      - capability: tavily-mcp
+      - capability: exa-mcp
+      - capability: ctx7
