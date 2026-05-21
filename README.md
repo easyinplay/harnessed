@@ -31,8 +31,11 @@
 ## 📦 快速安装
 
 ```bash
-npm install -g harnessed && harnessed setup
+npm install -g harnessed
+harnessed setup
 ```
+
+> Windows PowerShell 5.x 不支持 `&&` 链接,需分两行执行。bash / zsh / PowerShell 7+ 可合并为 `npm install -g harnessed && harnessed setup`。
 
 ---
 
