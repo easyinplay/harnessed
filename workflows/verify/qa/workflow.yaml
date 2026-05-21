@@ -1,0 +1,31 @@
+# workflows/verify/qa/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.13a
+#
+# Stage ④.d verify sub-workflow — gstack /qa 端到端 QA 验收 (has_ui_changes 触发, 可选 conditional)
+# (sister ~/.claude/CLAUDE.md "Verify 阶段" "可选 /qa" verbatim)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /qa" 章节
+#   - workflows/judgments/stage-routing.yaml verify-qa-ui trigger (has_ui_changes)
+#   - workflows/capabilities.yaml — gstack-qa (Bucket 3 治理关卡, impl: gstack, cmd: /qa)
+#   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 05-qa-conditional sister pattern
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/qa example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: verify-qa
+description: |
+  Stage ④.d gstack /qa 端到端 QA 验收 (has_ui_changes 触发, 可选 conditional)。
+  Gate: judgments.stage-routing.verify-qa-ui.fires (phase.has_ui_changes == true) —
+  frontend / E2E module fire only; 后端 / docs PR skip。tools_available 包含
+  playwright-cli / playwright-test / webapp-testing 配套 E2E test 工具链。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gstack-qa, playwright-cli, playwright-test, webapp-testing]
+
+phases:
+  - id: 01-qa
+    name: gstack-qa (端到端 QA 验收 — has_ui_changes 触发)
+    upstream: gstack
+    capability: '{{ capabilities.gstack-qa.cmd }}'
+    model: sonnet
+    gate: judgments.stage-routing.verify-qa-ui.fires
+    max_iterations: 3
