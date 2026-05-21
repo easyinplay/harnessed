@@ -18,12 +18,25 @@
 // expected paths (timeout, non-zero exit, security gate). Unexpected errors
 // (e.g. cmd binary not found / EACCES) bubble out as throws — the caller
 // (installer dispatch) catches and wraps.
+//
+// v3.0.2 hotfix (Windows cold-install timeout): npm-cli installers running
+// `npx --yes <pkg>@<ver> install` need >15s on Windows cold cache (user
+// reported gsd install timing out at 10s/15s). spawnCmd now accepts an
+// explicit `timeoutMs` arg from the caller — installers pass 60_000ms for
+// the install step; verify continues to honor spec.verify.timeout_ms (default
+// 15s) so manifest authors retain control. The pre-v3.0.2 bug: install spawn
+// was reading verify.timeout_ms (cross-purpose; verify-only field) which
+// shortened install timeout to whatever manifest authors set for verify.
 
 import { type ChildProcess, spawn } from 'node:child_process'
 import { checkCmdString } from '../../manifest/security.js'
 import type { InstallContext, InstallResult } from './types.js'
 
-const DEFAULT_TIMEOUT_MS = 15_000
+export const DEFAULT_VERIFY_TIMEOUT_MS = 15_000
+/** v3.0.2: explicit install-step timeout — Windows cold npm/npx cache can
+ *  exceed 30-45s on first install. 60s default keeps fast-path zippy while
+ *  not failing legitimate cold installs. */
+export const DEFAULT_INSTALL_TIMEOUT_MS = 60_000
 
 export interface SpawnOk {
   ok: true
@@ -34,8 +47,15 @@ export interface SpawnOk {
 
 /**
  * Spawn `cmd args...` under the platform's default shell with B1 defense-
- * in-depth, env injection, cwd from manifest, and timeout (default 15s,
- * overridable via spec.verify.timeout_ms).
+ * in-depth, env injection, cwd from manifest, and timeout.
+ *
+ * v3.0.2: `timeoutMs` is now an explicit caller-supplied arg. Pre-v3.0.2
+ * read `spec.verify.timeout_ms` for BOTH install and verify spawns — a bug
+ * because verify.timeout_ms is verify-only (e.g. gsd manifest sets 10000ms
+ * for fast `--version` verify, but install needs >30s on Windows cold cache).
+ * Callers now pass the timeout explicitly: installers use
+ * DEFAULT_INSTALL_TIMEOUT_MS (60s), verify callers pass
+ * `verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS` (15s).
  *
  * Returns:
  *   - `SpawnOk` on completion (any exit code; caller decides if non-zero
@@ -46,6 +66,7 @@ export async function spawnCmd(
   ctx: InstallContext,
   cmd: string,
   args: string[],
+  timeoutMs?: number,
 ): Promise<SpawnOk | InstallResult> {
   // 1. B1 defense-in-depth — re-check the literal cmd string for shell escapes.
   const violation = checkCmdString(cmd)
@@ -66,8 +87,8 @@ export async function spawnCmd(
 
   // 2. Platform branch — Win cmd.exe vs POSIX /bin/sh.
   const installCfg = ctx.manifest.spec.install
-  const verifyCfg = ctx.manifest.spec.verify
-  const timeoutMs = verifyCfg.timeout_ms ?? DEFAULT_TIMEOUT_MS
+  // v3.0.2: timeoutMs MUST be explicit (back-compat: undefined → 60s install default).
+  const effectiveTimeoutMs = timeoutMs ?? DEFAULT_INSTALL_TIMEOUT_MS
   const env = { ...process.env, ...(installCfg.env ?? {}) }
   const cwd = installCfg.cwd ?? ctx.cwd
 
@@ -98,13 +119,13 @@ export async function spawnCmd(
         error: {
           file: ctx.manifest.metadata.name,
           path: '/spec/install/cmd',
-          message: `spawn timed out after ${timeoutMs}ms (cmd: ${cmd}); partial stderr: ${stderr.slice(0, 200)}`,
+          message: `spawn timed out after ${effectiveTimeoutMs}ms (cmd: ${cmd}); partial stderr: ${stderr.slice(0, 200)}`,
           line: null,
           column: null,
           keyword: 'spawn-timeout',
         },
       })
-    }, timeoutMs)
+    }, effectiveTimeoutMs)
 
     child.on('error', (err) => {
       clearTimeout(timer)

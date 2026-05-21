@@ -250,6 +250,45 @@ describe('spawnCmd', () => {
       expect(r.error.message).toContain('ENOENT')
     }
   })
+
+  // v3.0.2 regression fixture (Bug 3): caller-supplied timeoutMs must override
+  // any manifest-side default. Pre-v3.0.2 spawnCmd read verify.timeout_ms for
+  // BOTH install + verify spawns — meaning gsd manifest's 10000ms verify timeout
+  // was incorrectly applied to the install step (npx cold cache > 30s on
+  // Windows). The 4-arg signature now lets installers pass DEFAULT_INSTALL_TIMEOUT_MS
+  // (60s) for install while verify keeps verify.timeout_ms.
+  it('v3.0.2 — caller-supplied timeoutMs is honored over manifest verify.timeout_ms', async () => {
+    // Spawn child that never closes; allow the timer in spawnCmd to fire.
+    const child = makeChild({ delayMs: 100 }) // close after 100ms (we cap at 50ms)
+    spawnMock.mockReturnValueOnce(child as unknown as ReturnType<typeof spawn>)
+    const c = ctx((m) => {
+      // Manifest verify.timeout_ms = 5000 (from baseManifest). Pass explicit
+      // 50ms via 4th arg — must fire BEFORE child's 100ms close.
+      ;(m.spec.verify as { timeout_ms: number }).timeout_ms = 5000
+    })
+    const r = await spawnCmd(c, 'sleep 1', [], 50)
+    expect(isInstallFailure(r)).toBe(true)
+    if (isInstallFailure(r)) {
+      expect(r.phase).toBe('spawn')
+      expect(r.error.keyword).toBe('spawn-timeout')
+      expect(r.error.message).toContain('50ms') // not 5000ms
+    }
+  })
+
+  // v3.0.2 regression: when no timeoutMs is passed, default falls back to
+  // DEFAULT_INSTALL_TIMEOUT_MS (60s) — NOT verify.timeout_ms anymore.
+  // Sanity check: a fast-completing spawn should NOT time out at 15s either.
+  it('v3.0.2 — timeoutMs default is 60s install (not 15s verify) — fast call still OK', async () => {
+    spawnMock.mockReturnValueOnce(
+      makeChild({ exitCode: 0, stdout: 'ok' }) as unknown as ReturnType<typeof spawn>,
+    )
+    const c = ctx((m) => {
+      ;(m.spec.verify as { timeout_ms: number }).timeout_ms = 5000
+    })
+    // No 4th arg → effective timeout 60s install default.
+    const r = await spawnCmd(c, 'echo ok', [])
+    expect(isSpawnOk(r)).toBe(true)
+  })
 })
 
 afterEach(() => {

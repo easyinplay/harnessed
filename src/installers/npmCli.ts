@@ -17,7 +17,7 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
-import { spawnCmd } from './lib/spawn.js'
+import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult, Level } from './lib/types.js'
 
@@ -88,7 +88,8 @@ export const installNpmCli: Installer = async (ctx) => {
   if (ctx.opts.dryRun) return { aborted: true, reason: 'user-cancel' }
   const bk = await backup(plan, ctx)
   if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
-  const sp = await spawnCmd(ctx, cmd, [])
+  // v3.0.2: explicit install timeout (60s default — Windows cold npm/npx cache friendly).
+  const sp = await spawnCmd(ctx, cmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
     return {
@@ -103,7 +104,9 @@ export const installNpmCli: Installer = async (ctx) => {
       ),
     }
   }
-  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [])
+  // v3.0.2: verify honors spec.verify.timeout_ms (default 15s) — manifest authors retain control.
+  const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
+  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs)
   if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
   const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0
   if (vr.exitCode !== expected) {
