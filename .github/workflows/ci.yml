@@ -137,11 +137,9 @@ jobs:
       # Phase v2.0-2.3 W0 T2.3.W0.6 — workflow schema validate (R20.2 + R20.4).
       # Walks workflows/capabilities.yaml + workflows/judgments/*.yaml against
       # TypeBox schemas (src/workflow/schema/{capabilities,judgment}.ts SSOT;
-      # inline-port pattern sister check-provenance.mjs branchOnSchemaVersion).
-      # Hard fail (NOT warn-only round 1) — W0.1/W0.2 yaml 已 ship + schema 与
-      # 实装 yaml 1:1 对齐 (15 fixture vitest + 6 shipped yaml all pass).
-      - name: Workflow schema validate (v2.0 NEW — T2.3.W0.6)
-        run: node scripts/check-workflow-schema.mjs
+      # Workflow schema validate moved AFTER pnpm install (v3.3.1 CI hotfix
+      # 2026-05-21) — script imports @sinclair/typebox which needs node_modules,
+      # sister pattern "EE-4 plan-checker quant gate" L173-177 verbatim。
       # Phase 2.3 Wave 0 T0.6 — Provenance Win pwsh sentinel (T1.3).
       # Phase 1.3.1 F37 路径分隔符踩过坑; Phase 2.2 T4.0 check-provenance.mjs
       # 跑过 4-step synthetic 但 glob .harnessed/{sessions,checkpoints,route-logs}/**
@@ -159,6 +157,11 @@ jobs:
         continue-on-error: true
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
+      # Workflow schema validate — moved here AFTER pnpm install (v3.3.1 CI hotfix
+      # 2026-05-21) so @sinclair/typebox import resolves。Hard fail (NOT warn-only) —
+      # schema 与 shipped yaml 1:1 对齐 (sister Phase 2.3 W0.6 + Phase 3.3 W0.10 ship).
+      - name: Workflow schema validate (v2.0 NEW — T2.3.W0.6)
+        run: node scripts/check-workflow-schema.mjs
       # Phase 2.4 W6 T6.2 — EE-4 plan-checker quantitative gate (B-11 + B-12 + D-02).
       # Walker scripts/run-plan-checker.mjs (T2.2 f986d42) consumes T2.1 schema
       # routing/plan-review-schema.yaml; BLOCKER (<=2/4 dims) -> exit 1 + ::error::
