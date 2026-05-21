@@ -1,0 +1,47 @@
+# workflows/discuss/strategic/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.1
+#
+# Stage ①.a 战略层 sub-workflow — gstack 治理关卡 /office-hours + /plan-ceo-review
+# 新功能 / 新 milestone / 新产品方向启动前强制 (sister ~/.claude/CLAUDE.md
+# "gstack 治理关卡 🔒 新功能启动前强制" verbatim)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "澄清/审查触发判据 — 战略层" 章节
+#   - workflows/judgments/strategic-gate.yaml — office-hours / plan-ceo-review triggers
+#   - workflows/capabilities.yaml — gstack-office-hours / gstack-plan-ceo-review / planning-with-files
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED)
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 sub-stage example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: discuss-strategic
+description: |
+  Stage ①.a 战略层 — gstack /office-hours + /plan-ceo-review 新功能 / 新 milestone 启动前强制
+  (sister CLAUDE.md "🔒 新功能启动前强制")。Gate: judgments.strategic-gate.office-hours.fires
+  + judgments.strategic-gate.plan-ceo-review.fires (各 phase 独立 gate)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gstack-office-hours, gstack-plan-ceo-review, planning-with-files]
+
+phases:
+  - id: 01-office-hours
+    name: gstack-office-hours (YC-style pressure test + reframe + Design Doc)
+    upstream: gstack
+    capability: '{{ capabilities.gstack-office-hours.cmd }}'
+    model: opus
+    gate: judgments.strategic-gate.office-hours.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.discuss-strategic.01-office-hours }}'
+
+  - id: 02-plan-ceo-review
+    name: gstack-plan-ceo-review (CEO 视角 商业价值 + 10-star 潜力 + scope)
+    upstream: gstack
+    capability: '{{ capabilities.gstack-plan-ceo-review.cmd }}'
+    model: opus
+    gate: judgments.strategic-gate.plan-ceo-review.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.discuss-strategic.02-plan-ceo-review }}'
+
+  - id: 03-persist
+    name: planning-with-files findings.md (战略层决策 + 理由持久化)
+    upstream: planning-with-files
+    capability: '{{ capabilities.planning-with-files.cmd }}'
+    invokes: '/plan'
+    model: haiku
+    artifacts_expected: [findings.md]
