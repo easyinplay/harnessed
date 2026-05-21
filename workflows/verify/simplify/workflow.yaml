@@ -1,0 +1,31 @@
+# workflows/verify/simplify/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.13d
+#
+# Stage ④.g verify sub-workflow — code-simplifier 末尾串行 (移除重复 / 多余逻辑)
+# (sister ~/.claude/CLAUDE.md "Verify 阶段 — 末尾 code-simplifier" verbatim)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Verify 阶段 — code-simplifier 末尾串行" 章节
+#   - workflows/judgments/stage-routing.yaml verify-simplify-tail trigger (is_final_step)
+#   - workflows/capabilities.yaml — code-simplifier (Bucket 1 mattpocock, fires_when stage=='verify' AND is_final_step)
+#   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 08-code-simplifier sister pattern
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/simplify example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: verify-simplify
+description: |
+  Stage ④.g code-simplifier 末尾串行 (移除重复 / 多余逻辑, sister CLAUDE.md "Verify 阶段
+  — 末尾 code-simplifier" verbatim)。fires_when phase.stage == 'verify' AND phase.is_final_step
+  == true (sister capabilities.yaml code-simplifier entry + stage-routing.verify-simplify-tail
+  trigger)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [code-simplifier]
+
+phases:
+  - id: 01-simplify
+    name: code-simplifier (末尾串行 — 移除重复 / 多余逻辑)
+    upstream: mattpocock-skills
+    capability: '{{ capabilities.code-simplifier.cmd }}'
+    model: sonnet
+    gate: judgments.stage-routing.verify-simplify-tail.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.verify-simplify.01-simplify }}'
