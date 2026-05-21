@@ -3,7 +3,7 @@
 [English](./README-en.md) | **中文**
 
 > AI coding harness 包管理器 + composition orchestrator
-> 把三层栈协作方法论 (gstack 决策 + GSD 项目经理 + superpowers 资深工程师 + karpathy 心法 + mattpocock 招式) 机器化为可执行 engine
+> 把三层栈协作方法论 (gstack 决策 + GSD 项目经理 + superpowers 资深工程师 + karpathy 心法 + mattpocock 招式) 编排化为可执行 engine
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
@@ -16,6 +16,13 @@
 ## ✨ 一句话定位
 
 装配市面上最优秀的开源 Claude Code 生态组件,用强意见 composition skill 织成统一工作流;不 vendor 上游代码,通过 manifest 描述 install/check + composition skill 编排多上游协作。
+
+---
+
+> 等等 — harnessed 真能跟 superpowers / gstack / GSD 这种上游 PK?
+> 当然 —— 我们**站在巨人的肩膀上**,看得更远嘛。(牛顿同款 quote,没收版权费就先用着了 🧐)
+> ……(小声) 不过仔细看更像肩上那只鹦鹉。
+> 算了,鹦鹉学舌,我们至少**会编排**。🦜
 
 ---
 
