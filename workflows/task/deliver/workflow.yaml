@@ -1,0 +1,77 @@
+# workflows/task/deliver/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.9
+# (D-09 + D-10 + D-11 + R20.10 + ADR 0011 ralph-loop 真接 SDK wrapper)
+#
+# Stage ③.d 子任务交付 — ralph-loop COMPLETE wrapper 保 completion-promise verbatim
+# "COMPLETE" (R20.10 + D-10 v0.2.0 ralph-loop SDK pattern)。Parallelism: subagent
+# default fan-out OR Agent Teams 升级 (5 触发 OR-chain per ~/.claude/rules/agent-teams.md
+# + D-11)。02-progress-mark: planning-with-files /plan 更新 progress.md 标记完成。
+#
+# Brief enforcement (W0.9 spec MUST include):
+#   - ralph-loop completion_promise = COMPLETE (R20.10 verbatim acceptance string)
+#   - parallelism-gate ref: judgments.parallelism-gate.ralph-loop-wrapper.fires
+#     (R20.10 ralph-loop 正交 wraps subagent-default / agent-teams-upgrade / main-session-fallback)
+#   - Agent Teams route conditional via on[] clause when 5 escalation triggers fire
+#   - R20.10 explicit max_iterations_exceeded handler:
+#     {action: emit_warning_and_halt, message, exit_code: 1} — NOT silent abort
+#     (sister Phase 2.4 W1.2 fallbackHandlers.ts engine.ts wire pattern)
+#
+# Sister refs:
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 task/deliver sub yaml example
+#   - workflows/judgments/parallelism-gate.yaml triggers.ralph-loop-wrapper (Phase 2.3 W0.2 SHIPPED)
+#   - workflows/capabilities.yaml ralph-loop + agent-teams-{create,send-message,shutdown} +
+#     planning-with-files (Phase 2.3 W0.1 + 3.3 W0.2 SHIPPED)
+#   - ~/.claude/rules/agent-teams.md 5 升级触发 OR-chain (teammate_send_message_needed /
+#     subagent_context_overflow / shared_task_list / opposing_hypothesis_debate / fullstack_three_way)
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 FallbackMaxIterationsExceeded
+#     Type.Literal('emit_warning_and_halt') (Phase 3.3 W0.5 SHIPPED)
+#
+# disciplines_applied: 6 default 全开 per D-09 L0 Discipline Substrate always-on
+# tools_available: 5 entry ∈ capabilities.yaml entry set (T3.3.W0.10 Contract C1 catch)
+
+schema_version: harnessed.workflow.v3
+workflow: task-deliver
+description: |
+  Stage ③.d 子任务交付 — ralph-loop COMPLETE wrapper 保 completion-promise verbatim
+  "COMPLETE" (R20.10 + D-10 v0.2.0 ralph-loop SDK pattern)。Parallelism subagent
+  default fan-out OR Agent Teams 升级 (5 触发 OR-chain per ~/.claude/rules/agent-teams.md
+  + D-11)。R20.10 explicit max_iterations_exceeded handler: emit_warning_and_halt
+  exit_code 1 (NOT silent abort, sister Phase 2.4 W1.2 fallbackHandlers.ts engine.ts
+  wire pattern)。Cleanup mandatory when Agent Teams escalation path fires (shutdown_request
+  + TeamDelete per agent-teams.md 防呆清单)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - ralph-loop
+  - agent-teams-create
+  - agent-teams-send-message
+  - agent-teams-shutdown
+  - planning-with-files
+
+phases:
+  - id: 01-deliver
+    name: deliver (ralph-loop COMPLETE wrapper + Agent Teams conditional escalation)
+    upstream: ralph-loop
+    capability: '{{ capabilities.ralph-loop.cmd }}'
+    model: haiku
+    args:
+      completion_promise: COMPLETE
+      max_iterations: '{{ defaults.ralph_max_iterations.task-deliver.01-deliver }}'
+    parallelism: judgments.parallelism-gate.ralph-loop-wrapper.fires
+    on:
+      - if: 'subtask.lines >= 20 and subtask.type != "single_command_query"'
+        invoke: '{{ capabilities.ralph-loop.cmd }}'
+      - if: 'subtask.lines < 20 or subtask.type == "single_command_query"'
+        action: skip
+    fallback:
+      max_iterations_exceeded:
+        action: emit_warning_and_halt
+        message: 'ralph-loop max-iterations exceeded for task-deliver. Sub-task likely incomplete — explicit halt per R20.10 (NOT silent abort).'
+        exit_code: 1
+
+  - id: 02-progress-mark
+    name: progress-mark (planning-with-files /plan — mark subtask complete in progress.md)
+    upstream: planning-with-files
+    capability: '{{ capabilities.planning-with-files.cmd }}'
+    invokes: '/plan'
+    model: haiku
+    artifacts_expected: [progress.md]
