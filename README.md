@@ -1,5 +1,7 @@
 # harnessed
 
+[English](./README-en.md) | **中文**
+
 > AI coding harness 包管理器 + composition orchestrator
 > 把三层栈协作方法论 (gstack 决策 + GSD 项目经理 + superpowers 资深工程师 + karpathy 心法 + mattpocock 招式) 机器化为可执行 engine
 
