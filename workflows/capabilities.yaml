@@ -1,4 +1,4 @@
-# <packageRoot>/workflows/capabilities.yaml — harnessed v2.0 capabilities baseline
+# <packageRoot>/workflows/capabilities.yaml — harnessed v3.0 capabilities baseline
 #
 # Maintainer-curated static manifest mapping abstract capability name → concrete
 # impl + slash-cmd. Consumed by workflows/*/workflow.yaml v2 via `{{ capabilities.<name>.cmd }}`

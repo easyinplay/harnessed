@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-05-21 — Setup hotfix: MCP scope + grep verify + install timeout + stale v2.0 strings
+
+**升级一行指令**: `npm install -g harnessed@3.0.2` (无需重跑 setup;若之前 MCP install fail 可手动重跑 `harnessed setup`)
+
+**Trigger**: 2026-05-21 user-reported `harnessed setup` 4 失败 (`PS C:\Windows\System32> npm install -g harnessed && harnessed setup`):
+- `chrome-devtools-mcp` / `exa-mcp` failed: `claude mcp add exited 1: EPERM rename 'C:\Windows\System32\.mcp.json.tmp...' -> 'C:\Windows\System32\.mcp.json'`
+- `tavily-mcp` failed: `verify exit 255 'grep' is not recognized as an internal or external command`
+- `gsd` failed: `spawn timed out after 10000ms (cmd: npx --yes get-shit-done-cc@^1.41.0 install)`
+- 末尾输出 STALE `harnessed v2.0 三层栈方法论 bundled — 4 workflows + 6 judgments + 37 capabilities ready` (v3.0 已 ship 23 workflows / 6 disciplines / 10 judgments / 83 capabilities)
+
+### Fixed
+
+- **Bug 1 (MCP EPERM in read-only CWD)** — `mcpStdioAdd.ts` / `mcpHttpAdd.ts` / `ccPluginMarketplace.ts` 3 处 `claude mcp add` / `claude plugin install` 从 `--scope project` flip 到 `--scope user`。
+  - **Root cause**: `--scope project` 写 `<cwd>/.mcp.json` 到 spawn cwd;user 在 `C:\Windows\System32` 跑 `harnessed setup` → EPERM。pre-v3.0.2 `CC #54803` "user scope broken" 注释假设已过时 (CC team 已修复 user scope read-back;verified via `claude mcp add --help` 2026-05-21)。
+  - **Fix**: `--scope user` 写 `~/.claude.json` user-global config — CWD-independent + cross-project shared (harnessed setup 是 onboarding 命令,MCP 应该跨项目可用,不该 scope 到 ephemeral CWD)。
+- **Bug 2 (Windows `grep` not found)** — 3 处 installer verify step 从 `claude mcp list | grep -q <name>` shell pipe 改用 `spawn('claude', ['mcp', 'list'])` + Node `stdout.includes(name)`。
+  - **Root cause**: `grep` 在 Windows cmd.exe / PowerShell 默认不可用 (只 Git-Bash/WSL/MSYS2 有);verify exit 255 `'grep' is not recognized`。
+  - **Fix**: Node 内置 string-contains,跨平台,无 extra shell fork。`ccPluginMarketplace` verify 改用 `claude plugin list --json` + `stdout.includes(pluginName)`。
+- **Bug 3 (install spawn 10s timeout)** — `src/installers/lib/spawn.ts` `spawnCmd` 新增 explicit `timeoutMs` 参数;3 个 installer (`npmCli` / `gitCloneWithSetup` / `npxSkillInstaller`) 显式传 `DEFAULT_INSTALL_TIMEOUT_MS = 60_000ms` (install) 和 `verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS = 15_000ms` (verify)。
+  - **Root cause**: pre-v3.0.2 `spawnCmd` 用 `spec.verify.timeout_ms ?? 15000ms` for BOTH install + verify。gsd manifest verify.timeout_ms=10000ms 是 `npx --version` fast verify 用,但被 install spawn 错读 → 10s 不够 Windows cold npm/npx 装 `get-shit-done-cc` (实测 30-45s)。
+  - **Fix**: install + verify 用 separate timeout default (install 60s / verify 15s);manifest authors 仍可 override verify.timeout_ms。
+- **Bug 4 (STALE v2.0 strings + private rules ref)** — 4 处 user-visible message:
+  - `src/cli/setup.ts:142` `harnessed v2.0 三层栈方法论 bundled — 4 workflows + 6 judgments + 37 capabilities ready` → `harnessed v3.0 ... — 23 workflows (4 master + 18 sub + 1 standalone) + 6 disciplines + 10 judgments + ~83 capabilities ready`
+  - `src/cli/lib/setup-helpers.ts:41` `harnessed v2.0 ... (sister ~/.claude/rules/agent-teams.md)` → `harnessed v3.0 ...` 删除 maintainer-private rules ref (用户不知道作者 `~/.claude/rules/` 内容)
+  - `workflows/defaults.yaml:1` + `workflows/capabilities.yaml:1` yaml header `harnessed v2.0` → `harnessed v3.0`
+
+### Changed
+
+- `src/installers/lib/spawn.ts` — `spawnCmd(ctx, cmd, args, timeoutMs?)` 新 4th 参数;`DEFAULT_INSTALL_TIMEOUT_MS = 60_000` + `DEFAULT_VERIFY_TIMEOUT_MS = 15_000` exported
+- `src/installers/lib/safeCwd.ts` NEW — `getMcpSpawnCwd()` returns `homedir()` (sister v2.0.1 `getBackupRoot()` 单一 SoT pattern);MCP installer spawn cwd 用它避免 read-only CWD EPERM
+- `src/installers/mcpStdioAdd.ts` / `mcpHttpAdd.ts` / `ccPluginMarketplace.ts` — 3 处 `--scope project` → `--scope user`;diff plan target 从 `<cwd>/.mcp.json` (PROJECT) / `<cwd>/.claude/settings.json` 改成 `<homedir>/.claude.json` (HOME);verify shell-grep-pipe 改用 native spawn + Node stdout match;idempotent error string check 从 `'already exists in .mcp.json'` 放宽到 `'already exists'`
+- `src/installers/npmCli.ts` / `gitCloneWithSetup.ts` / `npxSkillInstaller.ts` — spawnCmd 调用显式传 install timeout 60s + verify timeout 15s
+- `tests/unit/installers-mcpStdioAdd.test.ts` / `installers-mcpHttpAdd.test.ts` / `installers-ccPluginMarketplace.test.ts` — assertion flip `'project'` → `'user'` + explicit `not.toContain('--scope project')` + `appliedFiles endsWith '.claude.json'` + `not.toContain('grep')` regression fixture
+- `tests/unit/installers-lib-spawn.test.ts` — 2 NEW regression fixture (timeoutMs override honored + default 60s not 15s)
+
+### Migration
+
+旧用户升级仅 `npm install -g harnessed@3.0.2` 即可,无 schema 变更。若之前 `harnessed setup` Step B fail,可手动重跑;`harnessed install <name>` 单 manifest 重装也可。MCP 注册位置从 project-local `.mcp.json` 迁到 user-global `~/.claude.json` — Claude Code 跨项目自动读到 (不需手动迁移 .mcp.json)。
+
+### Files changed
+
+- `src/installers/lib/spawn.ts` — explicit `timeoutMs` 4th arg + 2 exported default const
+- `src/installers/lib/safeCwd.ts` NEW — `getMcpSpawnCwd()` (sister `backup.ts` `getBackupRoot()` pattern)
+- `src/installers/mcpStdioAdd.ts` / `mcpHttpAdd.ts` / `ccPluginMarketplace.ts` — `--scope user` + native verify + homedir spawn cwd
+- `src/installers/npmCli.ts` / `gitCloneWithSetup.ts` / `npxSkillInstaller.ts` — explicit timeout caller args
+- `src/cli/setup.ts` + `src/cli/lib/setup-helpers.ts` — v2.0 → v3.0 string update + remove private rules ref
+- `workflows/defaults.yaml` + `workflows/capabilities.yaml` — yaml header v2.0 → v3.0
+- `tests/unit/installers-{mcpStdioAdd,mcpHttpAdd,ccPluginMarketplace,lib-spawn}.test.ts` — fixture flip + NEW regression cells
+- `package.json` — version 3.0.1 → 3.0.2
+
 ## [3.0.1] - 2026-05-21 — Default behavior unified to apply-immediate (UX hotfix)
 
 **升级一行指令**: `npm install -g harnessed@3.0.1` (无需重跑 `setup`,纯 CLI behavior flip)

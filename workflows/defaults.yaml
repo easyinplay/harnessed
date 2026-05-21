@@ -1,4 +1,4 @@
-# harnessed v2.0 workflow defaults
+# harnessed v3.0 workflow defaults
 # Phase v2.0-2.3 W1.2 ship — ralph_max_iterations table per R20.10 + D-10 fallback abort path
 # Phase v3.0-3.4 W2.2 extend — 18 v3 sub-workflow + retro standalone × phase entries
 # Sister Phase 2.2 STRIDE T-2.2-05 DoS mitigation: hard_upper_limit = 100 caps any user override

@@ -30,7 +30,7 @@ const PHASE_21 = new Set([
  * Phase v2.0-2.3 W1.1: Agent Teams env probe (non-blocking warn).
  * Per Q-AUDIT-5b + R20.11 acceptance e + PLAN-ENG-REVIEW § Section 5 [LOW]:
  * Warn-only if missing — parallelism-gate runtime degrades to subagent fan-out
- * (sister ~/.claude/rules/agent-teams.md L42 "Session-scoped 容忍策略").
+ * when Agent Teams CC env flag is off (session-scoped tolerance policy).
  */
 export async function warnIfAgentTeamsMissing(): Promise<void> {
   const r = await checkAgentTeams()
@@ -38,7 +38,7 @@ export async function warnIfAgentTeamsMissing(): Promise<void> {
   console.warn('\n⚠️  Agent Teams 未启用 — parallelism-gate 升级路径不可用')
   console.warn('   修复: claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1')
   console.warn(
-    '   说明: harnessed v2.0 三层栈方法论 parallelism-gate 升级路径需 CC 2.1.133+ Agent Teams enable (sister ~/.claude/rules/agent-teams.md)',
+    '   说明: harnessed v3.0 三层栈方法论 parallelism-gate 升级路径需 CC 2.1.133+ Agent Teams enable',
   )
   console.warn(
     '   不阻塞 setup,后续 parallelism-gate workflow phase 触发时自动降级 subagent fan-out\n',

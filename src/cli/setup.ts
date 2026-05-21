@@ -139,7 +139,7 @@ export function registerSetup(program: Command): void {
       // workflows live in <packageRoot>/workflows/ — share-only readonly,
       // NOT user-dir override (~/.harnessed/ NOT used per D-01 LOCKED).
       console.log(
-        '\n✓ harnessed v2.0 三层栈方法论 bundled — 4 workflows + 6 judgments + 37 capabilities ready',
+        '\n✓ harnessed v3.0 三层栈方法论 bundled — 23 workflows (4 master + 18 sub + 1 standalone) + 6 disciplines + 10 judgments + ~83 capabilities ready',
       )
       console.log(
         '  workflows in <packageRoot>/workflows/ (Pure bundled, NOT user-dir override per D-01)',
