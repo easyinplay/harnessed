@@ -30,15 +30,18 @@
 // because our args[] is constructed locally; instead, we re-run
 // checkCmdString on EVERY args[i] right before spawn. Same posture as
 // mcpStdioAdd.
+//
+// IMPL NOTE (v3.0.3 hotfix — verify reads ~/.claude.json directly): mirrors
+// mcpStdioAdd v3.0.3 — drop spawn-based verify in favor of fs-based check
+// against the authoritative `mcpServers` map.
 
-import { spawn } from 'node:child_process'
 import { checkCmdString } from '../manifest/security.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
-import type { ProcResult } from './lib/runClaudeArgs.js'
+import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
 import { runArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
@@ -242,37 +245,11 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
     }
   }
 
-  // v3.0.2 hotfix: verify uses `claude mcp list` + Node stdout match instead
-  // of shell `grep -q <name>` pipe (grep unavailable on Windows cmd/PS).
-  // Sister mcpStdioAdd v3.0.2 verify reasoning verbatim.
-  const vr = await new Promise<ProcResult & { stdout: string }>((resolve) => {
-    const child = spawn('claude', ['mcp', 'list'], {
-      cwd: spawnCwd,
-      shell: process.platform === 'win32',
-      windowsHide: true,
-    })
-    let stdout = ''
-    let stderr = ''
-    child.stdout?.setEncoding('utf8').on('data', (c: string) => {
-      stdout += c
-    })
-    child.stderr?.setEncoding('utf8').on('data', (c: string) => {
-      stderr += c
-    })
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL')
-      resolve({ exitCode: -1, stderr: `${stderr}[timeout]`, stdout })
-    }, 15_000)
-    child.on('error', (e) => {
-      clearTimeout(timer)
-      resolve({ exitCode: -1, stderr: e.message, stdout })
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      resolve({ exitCode: code ?? -1, stderr, stdout })
-    })
-  })
-  if (vr.exitCode !== 0 || !vr.stdout.includes(name)) {
+  // v3.0.3 hotfix: verify reads ~/.claude.json directly via fs (no spawn).
+  // Sister mcpStdioAdd v3.0.3 verify rationale verbatim — cross-platform,
+  // instant, immune to cold-start timeout.
+  const registered = await isMcpServerRegistered(name)
+  if (!registered) {
     return {
       ok: false,
       phase: 'verify',
@@ -280,7 +257,7 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify exit ${vr.exitCode} or '${name}' not in mcp list stdout: ${vr.stderr.slice(0, 200)}`,
+        `verify: '${name}' not found in mcpServers map of ~/.claude.json after install spawn exit 0 (file may have been overwritten, or claude mcp add wrote to a non-default location)`,
         'verify-failed',
       ),
     }

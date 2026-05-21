@@ -16,13 +16,13 @@ import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
+// v3.0.3 — verify reads ~/.claude.json via fs; default mock returns
+// enabledPlugins map with the fixture plugin (`superpowers@<mkt>`).
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(async () => undefined),
-  readFile: vi.fn(async () => {
-    const e = new Error('ENOENT') as NodeJS.ErrnoException
-    e.code = 'ENOENT'
-    throw e
-  }),
+  readFile: vi.fn(async () =>
+    JSON.stringify({ enabledPlugins: { 'superpowers@superpowers-marketplace': true } }),
+  ),
   writeFile: vi.fn(async () => undefined),
   rename: vi.fn(async () => undefined),
 }))
@@ -34,10 +34,12 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
 import { installCcPluginMarketplace } from '../../src/installers/ccPluginMarketplace.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
 const spawnMock = vi.mocked(spawn)
+const readFileMock = vi.mocked(readFile)
 
 interface FakeChild extends EventEmitter {
   stdout: EventEmitter & { setEncoding: (e: string) => unknown }
@@ -141,6 +143,11 @@ function ctx(over?: Partial<InstallOpts>, modify?: (m: Manifest) => void): Insta
 describe('installCcPluginMarketplace', () => {
   beforeEach(() => {
     spawnMock.mockReset()
+    // v3.0.3 — restore default fs mock: enabledPlugins contains the fixture.
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue(
+      JSON.stringify({ enabledPlugins: { 'superpowers@superpowers-marketplace': true } }),
+    )
   })
 
   it('dispatch-mismatch: non-cc-plugin-marketplace method → ok:false preflight', async () => {
@@ -197,19 +204,19 @@ describe('installCcPluginMarketplace', () => {
     }
   })
 
-  // v3.0.2 regression: verify must not use shell `grep` (Bug 2 — grep not on Windows).
-  it('v3.0.2 — verify spawns claude plugin list --json (no grep)', async () => {
+  // v3.0.3 regression: verify must NOT spawn `claude plugin list` — fs-only.
+  it('v3.0.3 — verify reads ~/.claude.json directly (no plugin list spawn)', async () => {
     const s = silence()
     try {
-      spawnMock.mockImplementation(
-        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }, { exitCode: 0, stdout: '"superpowers"' }]),
-      )
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
       await installCcPluginMarketplace(ctx())
       const flat = spawnMock.mock.calls
         .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
         .join('\n')
       expect(flat).not.toContain('grep')
-      expect(flat).toContain('plugin list')
+      expect(flat).not.toContain('plugin list')
+      const readPaths = readFileMock.mock.calls.map((c) => String(c[0]))
+      expect(readPaths.some((p) => p.endsWith('.claude.json'))).toBe(true)
     } finally {
       s.restore()
     }
@@ -222,7 +229,6 @@ describe('installCcPluginMarketplace', () => {
         scriptedSpawn([
           { exitCode: 1, stderr: 'marketplace already registered' }, // step 1 fail
           { exitCode: 0 }, // step 2 ok
-          { exitCode: 0, stdout: '"superpowers"' }, // verify (Node stdout match)
         ]),
       )
       const r = await installCcPluginMarketplace(ctx())
@@ -251,19 +257,36 @@ describe('installCcPluginMarketplace', () => {
     }
   })
 
-  // v3.0.2: appliedFiles is ~/.claude.json (user-global) instead of
-  // <cwd>/.claude/settings.json (project-local). Mock verify stdout includes
-  // plugin name for the new Node-stdout-match verify path.
-  it('happy path: both steps + verify all exit 0 → ok:true with appliedFiles (.claude.json v3.0.2)', async () => {
+  // v3.0.3: appliedFiles is ~/.claude.json (user-global). Verify reads file.
+  it('happy path: both steps ok + plugin registered in ~/.claude.json → ok:true (v3.0.3)', async () => {
     const s = silence()
     try {
-      spawnMock.mockImplementation(
-        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }, { exitCode: 0, stdout: '"superpowers"' }]),
-      )
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
       const r = await installCcPluginMarketplace(ctx())
       expect(r).toMatchObject({ ok: true })
       if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
         expect(r.appliedFiles.some((f) => f.endsWith('.claude.json'))).toBe(true)
+      }
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v3.0.3 regression: install ok but enabledPlugins does not list the plugin
+  // (file written elsewhere or overwritten) → verify-failed.
+  it('v3.0.3 — install ok but plugin missing from enabledPlugins → verify-failed', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
+      readFileMock.mockReset()
+      readFileMock.mockResolvedValue(
+        JSON.stringify({ enabledPlugins: { 'other-plugin@some-mkt': true } }),
+      )
+      const r = await installCcPluginMarketplace(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'verify' })
+      if ('error' in r && r.error) {
+        expect(r.error.keyword).toBe('verify-failed')
+        expect(r.error.message).toContain('not found in enabledPlugins map')
       }
     } finally {
       s.restore()

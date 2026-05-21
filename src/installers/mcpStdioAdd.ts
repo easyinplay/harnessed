@@ -25,23 +25,24 @@
 // contains shell escapes — the schema-level B1 gate did not screen these
 // non-cmd fields, so the runtime gate must.
 //
-// IMPL NOTE (v3.0.2 hotfix — Windows `grep` not available): verify spawns
-// `claude mcp list` directly and matches `<name>` against stdout using Node
-// string-contains. Pre-v3.0.2 used `claude mcp list | grep -q <name>` shell
-// pipe which failed on Windows cmd.exe/PowerShell (no grep). Per ASSUMPTIONS
-// C2 the original intent was "exit-code is the stable contract, not stdout
-// parsing" — but `mcp list` CLI output IS stable enough across CC versions
-// to match by entry name, and string-contains is more portable than asking
-// users to install Git-Bash. Both exit-code-zero AND name-in-stdout required.
+// IMPL NOTE (v3.0.3 hotfix — verify reads ~/.claude.json directly): pre-v3.0.3
+// verify spawned `claude mcp list` and string-matched the server name in
+// stdout. User reports on Windows the spawn-based verify still times out 15s
+// after 3 sequential `claude mcp add` calls (warm process pool exhausted),
+// surfacing as `verify exit -1 ... [timeout]`. The underlying `claude mcp add
+// --scope user` did succeed — `~/.claude.json` was written — but the verify
+// spawn could not complete in budget. v3.0.3 reads `~/.claude.json` directly
+// via `fs.readFile` + `JSON.parse` + `mcpServers[name]` check (sister
+// `readClaudeConfig.ts`). Same authority (the file IS the contract; CC reads
+// it on startup), zero spawn, zero timeout risk, cross-platform.
 
-import { spawn } from 'node:child_process'
 import { checkCmdString } from '../manifest/security.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
-import type { ProcResult } from './lib/runClaudeArgs.js'
+import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
 import { runArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
@@ -170,40 +171,13 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
     }
   }
 
-  // v3.0.2 hotfix: verify uses `claude mcp list` + Node stdout match instead
-  // of shell `grep -q <name>` pipe. Reasoning: `grep` is not installed on
-  // Windows cmd.exe / PowerShell (only available via Git-Bash/WSL/MSYS2),
-  // causing user-reported `'grep' is not recognized` on default Windows
-  // shells. Node string-contains is cross-platform, faster (no extra shell
-  // fork), and exit-code-equivalent to the old pipe.
-  const vr = await new Promise<ProcResult & { stdout: string }>((resolve) => {
-    const child = spawn('claude', ['mcp', 'list'], {
-      cwd: spawnCwd,
-      shell: process.platform === 'win32',
-      windowsHide: true,
-    })
-    let stdout = ''
-    let stderr = ''
-    child.stdout?.setEncoding('utf8').on('data', (c: string) => {
-      stdout += c
-    })
-    child.stderr?.setEncoding('utf8').on('data', (c: string) => {
-      stderr += c
-    })
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL')
-      resolve({ exitCode: -1, stderr: `${stderr}[timeout]`, stdout })
-    }, 15_000)
-    child.on('error', (e) => {
-      clearTimeout(timer)
-      resolve({ exitCode: -1, stderr: e.message, stdout })
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      resolve({ exitCode: code ?? -1, stderr, stdout })
-    })
-  })
-  if (vr.exitCode !== 0 || !vr.stdout.includes(name)) {
+  // v3.0.3 hotfix: verify reads ~/.claude.json directly via fs (no spawn).
+  // `~/.claude.json` is the authoritative file CC reads on startup; `claude
+  // mcp list` is just a pretty-printer over the same data. Reading the file
+  // is cross-platform, instantaneous, and immune to the v3.0.2 cold-start
+  // timeout that surfaced when 3 MCP installers ran sequentially in setup.
+  const registered = await isMcpServerRegistered(name)
+  if (!registered) {
     return {
       ok: false,
       phase: 'verify',
@@ -211,7 +185,7 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify exit ${vr.exitCode} or '${name}' not in mcp list stdout: ${vr.stderr.slice(0, 200)}`,
+        `verify: '${name}' not found in mcpServers map of ~/.claude.json after install spawn exit 0 (file may have been overwritten, or claude mcp add wrote to a non-default location)`,
         'verify-failed',
       ),
     }

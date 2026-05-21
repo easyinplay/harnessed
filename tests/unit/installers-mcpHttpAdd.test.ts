@@ -18,13 +18,11 @@ import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
+// v3.0.3 — verify reads ~/.claude.json via fs; default mock returns a valid
+// mcpServers map containing the fixture name. Tests override per-case.
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(async () => undefined),
-  readFile: vi.fn(async () => {
-    const e = new Error('ENOENT') as NodeJS.ErrnoException
-    e.code = 'ENOENT'
-    throw e
-  }),
+  readFile: vi.fn(async () => JSON.stringify({ mcpServers: { 'exa-mcp-http': { type: 'http' } } })),
   writeFile: vi.fn(async () => undefined),
   rename: vi.fn(async () => undefined),
 }))
@@ -36,10 +34,12 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { installMcpHttpAdd } from '../../src/installers/mcpHttpAdd.js'
 
 const spawnMock = vi.mocked(spawn)
+const readFileMock = vi.mocked(readFile)
 
 interface FakeChild extends EventEmitter {
   stdout: EventEmitter & { setEncoding: (e: string) => unknown }
@@ -131,6 +131,11 @@ function ctx(over?: Partial<InstallOpts>, modify?: (m: Manifest) => void): Insta
 describe('installMcpHttpAdd', () => {
   beforeEach(() => {
     spawnMock.mockReset()
+    // v3.0.3 — restore default readFile mock to valid mcpServers map.
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue(
+      JSON.stringify({ mcpServers: { 'exa-mcp-http': { type: 'http' } } }),
+    )
   })
   afterEach(() => {
     delete process.env.HTTP_TEST_KEY
@@ -278,15 +283,12 @@ describe('installMcpHttpAdd', () => {
     }
   })
 
-  // v3.0.2: appliedFiles now ~/.claude.json (user-global) — flipped from .mcp.json.
-  it('happy path: install ok + verify ok → appliedFiles contains .claude.json (v3.0.2)', async () => {
+  // v3.0.3: appliedFiles ~/.claude.json (user-global). Verify reads file via fs.
+  it('happy path: install ok + verify ok → appliedFiles contains .claude.json (v3.0.3)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        () =>
-          makeChild({ exitCode: 0, stdout: 'exa-mcp-http\n' }) as unknown as ReturnType<
-            typeof spawn
-          >,
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
       )
       const r = await installMcpHttpAdd(ctx())
       expect(r).toMatchObject({ ok: true })
@@ -298,22 +300,61 @@ describe('installMcpHttpAdd', () => {
     }
   })
 
-  // v3.0.2 regression: verify must not invoke shell `grep` (Bug 2 fix).
-  it('v3.0.2 — verify uses claude mcp list directly (no grep)', async () => {
+  // v3.0.3 regression: verify must NOT spawn `claude mcp list` — fs-only.
+  it('v3.0.3 — verify reads ~/.claude.json directly (no claude mcp list spawn)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        () =>
-          makeChild({ exitCode: 0, stdout: 'exa-mcp-http\n' }) as unknown as ReturnType<
-            typeof spawn
-          >,
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
       )
       await installMcpHttpAdd(ctx())
       const flat = spawnMock.mock.calls
         .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
         .join('\n')
       expect(flat).not.toContain('grep')
-      expect(flat).toContain('mcp list')
+      expect(flat).not.toContain('mcp list')
+      const readPaths = readFileMock.mock.calls.map((c) => String(c[0]))
+      expect(readPaths.some((p) => p.endsWith('.claude.json'))).toBe(true)
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v3.0.3 regression: install ok but server not in mcpServers → verify-failed.
+  it('v3.0.3 — install ok but server missing from ~/.claude.json → verify-failed', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      readFileMock.mockReset()
+      readFileMock.mockResolvedValue(
+        JSON.stringify({ mcpServers: { 'other-mcp': { type: 'http' } } }),
+      )
+      const r = await installMcpHttpAdd(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'verify' })
+      if ('error' in r && r.error) {
+        expect(r.error.keyword).toBe('verify-failed')
+        expect(r.error.message).toContain('not found in mcpServers map')
+      }
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v3.0.3 regression: ~/.claude.json ENOENT → graceful verify-failed.
+  it('v3.0.3 — ~/.claude.json ENOENT → graceful verify-failed (no throw)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      readFileMock.mockReset()
+      const enoent = new Error('ENOENT') as NodeJS.ErrnoException
+      enoent.code = 'ENOENT'
+      readFileMock.mockRejectedValue(enoent)
+      const r = await installMcpHttpAdd(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'verify' })
     } finally {
       s.restore()
     }

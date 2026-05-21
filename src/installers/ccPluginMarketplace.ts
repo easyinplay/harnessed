@@ -28,18 +28,19 @@
 // IMPL NOTE (Rule 1 / H2 sister review fix): re-screen each constructed arg
 // before spawn — same defense-in-depth posture as mcpStdioAdd/mcpHttpAdd.
 //
-// IMPL NOTE (Rule 1 / C6): verify uses `claude plugin list` exit code via
-// `grep -q <plugin>`; we do NOT parse stdout. CLI output format is not a
-// stable contract; exit code is. Mirrors mcpStdioAdd verify discipline.
+// IMPL NOTE (v3.0.3 hotfix — verify reads ~/.claude.json directly): pre-v3.0.3
+// verify spawned `claude plugin list --json` and stdout-matched the plugin
+// name. Same timeout symptom as mcpStdioAdd v3.0.3 (cold-start exceeds 15s
+// after sequential MCP adds). v3.0.3 reads `enabledPlugins` from
+// `~/.claude.json` directly. Sister `readClaudeConfig.isPluginRegistered()`.
 
-import { spawn } from 'node:child_process'
 import { checkCmdString } from '../manifest/security.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
-import type { ProcResult } from './lib/runClaudeArgs.js'
+import { isPluginRegistered } from './lib/readClaudeConfig.js'
 import { runArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
@@ -198,37 +199,10 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
     }
   }
 
-  // v3.0.2 hotfix: verify uses `claude plugin list --json` + Node stdout
-  // match instead of shell `grep -q <pluginName>` pipe (grep unavailable on
-  // Windows cmd/PS). Sister mcpStdioAdd v3.0.2 verify reasoning verbatim.
-  const vr = await new Promise<ProcResult & { stdout: string }>((resolve) => {
-    const child = spawn('claude', ['plugin', 'list', '--json'], {
-      cwd: spawnCwd,
-      shell: process.platform === 'win32',
-      windowsHide: true,
-    })
-    let stdout = ''
-    let stderr = ''
-    child.stdout?.setEncoding('utf8').on('data', (c: string) => {
-      stdout += c
-    })
-    child.stderr?.setEncoding('utf8').on('data', (c: string) => {
-      stderr += c
-    })
-    const timer = setTimeout(() => {
-      child.kill('SIGKILL')
-      resolve({ exitCode: -1, stderr: `${stderr}[timeout]`, stdout })
-    }, 15_000)
-    child.on('error', (e) => {
-      clearTimeout(timer)
-      resolve({ exitCode: -1, stderr: e.message, stdout })
-    })
-    child.on('close', (code) => {
-      clearTimeout(timer)
-      resolve({ exitCode: code ?? -1, stderr, stdout })
-    })
-  })
-  if (vr.exitCode !== 0 || !vr.stdout.includes(pluginName)) {
+  // v3.0.3 hotfix: verify reads ~/.claude.json directly via fs (no spawn).
+  // Sister mcpStdioAdd v3.0.3 verify rationale.
+  const registered = await isPluginRegistered(pluginName)
+  if (!registered) {
     return {
       ok: false,
       phase: 'verify',
@@ -236,7 +210,7 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify exit ${vr.exitCode} or '${pluginName}' not in plugin list stdout: ${vr.stderr.slice(0, 200)}`,
+        `verify: plugin '${pluginName}' not found in enabledPlugins map of ~/.claude.json after install spawn exit 0 (file may have been overwritten, or claude plugin install wrote to a non-default location)`,
         'verify-failed',
       ),
     }
