@@ -17,6 +17,7 @@ import { createHash } from 'node:crypto'
 import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
 
 interface BackupFileEntry {
@@ -50,8 +51,7 @@ export function registerRollback(program: Command): void {
         meta = JSON.parse(await readFile(metaPath, 'utf8')) as BackupMetadata
       } catch (err) {
         console.error(
-          `error: cannot read ${metaPath}: ${(err as Error).message}\n` +
-            `  fix:  run 'harnessed backup list' to see available timestamps`,
+          `${t('rollback.metadata_unreadable', { path: metaPath, message: (err as Error).message })}\n${t('rollback.metadata_unreadable.fix')}`,
         )
         process.exit(1)
         return
@@ -76,13 +76,17 @@ export function registerRollback(program: Command): void {
         const sha1 = createHash('sha1').update(buf).digest('hex')
         if (sha1 !== entry.sha1) {
           console.error(
-            `error: backup checksum mismatch for ${entry.target} (expected ${entry.sha1.slice(0, 12)}, got ${sha1.slice(0, 12)})`,
+            t('rollback.checksum_mismatch', {
+              target: entry.target,
+              expected: entry.sha1.slice(0, 12),
+              actual: sha1.slice(0, 12),
+            }),
           )
           process.exit(1)
           return
         }
         await writeFile(entry.target, normalizeEol(buf, entry.eol))
       }
-      console.log(`restored ${meta.files.length} file(s) from ${timestamp}`)
+      console.log(t('rollback.restored', { count: meta.files.length, timestamp }))
     })
 }

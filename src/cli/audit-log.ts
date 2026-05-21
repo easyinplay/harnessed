@@ -10,6 +10,7 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import type { Command } from 'commander'
 import type { AuditRecord } from '../audit/log.js'
+import { t } from '../i18n/index.js'
 import { harnessedFile } from '../installers/lib/harnessedRoot.js'
 
 // v3.0.3 — homedir-rooted via harnessedRoot SoT (sister src/audit/log.ts).
@@ -62,7 +63,7 @@ function pipeToJq(filterExpr: string, lines: string[]): Promise<number> {
     child.on('error', (err) => {
       const e = err as NodeJS.ErrnoException
       if (e.code === 'ENOENT') {
-        console.error('✗ jq not found in PATH — run: harnessed doctor')
+        console.error(t('audit_log.jq_missing'))
         resolve(1)
       } else {
         reject(err)
@@ -96,19 +97,19 @@ export function registerAuditLog(program: Command): void {
         // H1 gate: validate pagination flags before any I/O (sister doctor.ts pattern).
         const tailN = opts.tail !== undefined ? Number(opts.tail) : 50
         if (Number.isNaN(tailN) || tailN < 1) {
-          console.error('✗ --tail must be a positive integer')
+          console.error(t('audit_log.tail_invalid'))
           process.exit(2)
         }
         const headN = opts.head !== undefined ? Number(opts.head) : undefined
         if (headN !== undefined && (Number.isNaN(headN) || headN < 1)) {
-          console.error('✗ --head must be a positive integer')
+          console.error(t('audit_log.head_invalid'))
           process.exit(2)
         }
 
         // Read audit.log — SoT-derived path (STRIDE T: no derivation from user input).
         const path = auditPath()
         if (!existsSync(path)) {
-          console.log(`no audit records found (${path} does not exist)`)
+          console.log(t('audit_log.no_records_file', { path }))
           process.exit(0)
         }
 
@@ -119,7 +120,7 @@ export function registerAuditLog(program: Command): void {
           .filter((l) => l.length > 0)
 
         if (lines.length === 0) {
-          console.log('no audit records found (audit.log is empty)')
+          console.log(t('audit_log.no_records_empty'))
           process.exit(0)
         }
 

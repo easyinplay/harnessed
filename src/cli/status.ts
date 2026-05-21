@@ -14,6 +14,7 @@
 import { stat } from 'node:fs/promises'
 import type { Command } from 'commander'
 import lockfile from 'proper-lockfile'
+import { t } from '../i18n/index.js'
 import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { readState } from '../installers/lib/state.js'
 
@@ -25,14 +26,14 @@ export function registerStatus(program: Command): void {
       const state = await readState(process.cwd())
       const names = Object.keys(state.installed).sort()
       if (names.length === 0) {
-        console.log(`no installs recorded (${harnessedFile('state.json')} absent or empty)`)
+        console.log(t('status.no_installs', { path: harnessedFile('state.json') }))
       } else {
         for (const n of names) {
           const e = state.installed[n]
           if (!e) continue
           console.log(`${n} @ ${e.version}  (installed ${e.installedAt})`)
         }
-        console.log(`\n${names.length} install${names.length === 1 ? '' : 's'} recorded`)
+        console.log(t('status.summary_installs', { count: names.length }))
       }
 
       // D-07 LOCKED — display lock holder pid + mtime + stale indicator
@@ -47,10 +48,15 @@ export function registerStatus(program: Command): void {
           const s = await stat(lockPath)
           const ageMs = Date.now() - s.mtime.getTime()
           const stale = ageMs > 10_000
-          console.log(`\nlock: held (since ${s.mtime.toISOString()})${stale ? ' — STALE' : ''}`)
-          console.log(`  to release: wait for process to finish or delete ${lockPath}`)
+          console.log(
+            t('status.lock_held', {
+              since: s.mtime.toISOString(),
+              staleSuffix: stale ? t('status.lock_held.stale_suffix') : '',
+            }),
+          )
+          console.log(t('status.lock_release_hint', { path: lockPath }))
         } else {
-          console.log('\nlock: free')
+          console.log(t('status.lock_free'))
         }
       } catch {
         // harnessed root absent or inaccessible = no lock; silent per D-07

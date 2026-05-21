@@ -42,11 +42,11 @@ describe('disciplineLoader — load each of 6 LOCKED disciplines', () => {
     expect(d.rules.length).toBe(7)
   })
 
-  it('3. loadDiscipline language → enforcement_layer=output, 3 rules', async () => {
+  it('3. loadDiscipline language → enforcement_layer=output, 4 rules (v3.4.0 NEW cross-cultural-humor)', async () => {
     const d = await loadDiscipline('language', PACKAGE_ROOT)
     expect(d.discipline).toBe('language')
     expect(d.enforcement_layer).toBe('output')
-    expect(d.rules.length).toBe(3)
+    expect(d.rules.length).toBe(4)
   })
 
   it('4. loadDiscipline operational → enforcement_layer=commit, 6 rules', async () => {

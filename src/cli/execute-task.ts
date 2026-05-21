@@ -20,6 +20,7 @@
 import { execSync } from 'node:child_process'
 import type { Command } from 'commander'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
+import { t } from '../i18n/index.js'
 import { runRouting, type TaskContext } from '../routing/index.js'
 import type { FallbackMaxIterationsExceededConfig } from '../routing/lib/fallbackHandlers.js'
 import { type LoadedPhases, loadPhases } from '../workflow/loadPhases.js'
@@ -52,7 +53,7 @@ export function registerExecuteTask(program: Command): void {
       // H1 gate — sibling install-base.ts pattern
       validateNonInteractiveFlags(raw, 'execute-task --task <text>')
       if (!raw.task) {
-        console.error('error: --task <text> is required')
+        console.error(t('execute_task.require_task'))
         process.exit(2)
       }
 
@@ -62,7 +63,10 @@ export function registerExecuteTask(program: Command): void {
         phases = loadPhases(`workflows/${workflowName}/phases.yaml`)
       } catch (error) {
         console.error(
-          `error: failed to load workflows/${workflowName}/phases.yaml — ${(error as Error).message}`,
+          t('execute_task.load_phases_failed', {
+            workflow: workflowName,
+            message: (error as Error).message,
+          }),
         )
         process.exit(2)
       }
@@ -125,10 +129,7 @@ export function registerExecuteTask(program: Command): void {
       } catch (err) {
         // Fail-soft per ADR 0029:git status / biome auto-fix throw → warn + 继续
         // (subagent 内部 commit 时还会有第二道 biome --write check via SDK Bash tool)。
-        console.warn(
-          `⚠️ before-commit pre-flight skipped (${(err as Error).message}); ` +
-            'subagent will biome-check at commit time.',
-        )
+        console.warn(t('execute_task.precommit_skipped', { message: (err as Error).message }))
       }
 
       // apply path — real spawn via engine.runRouting (T4.2 sdkSpawn).
@@ -143,7 +144,7 @@ export function registerExecuteTask(program: Command): void {
       // wire-in: engine handleMaxIterationsExceeded calls process.exit(exit_code)
       // directly, so control never returns here for v2 execute-task workflow.
       if ('aborted' in result) {
-        console.error(`aborted: ${result.reason}`)
+        console.error(t('install.aborted', { reason: result.reason }))
         process.exit(2)
       }
       if ('ok' in result && result.ok === false) {

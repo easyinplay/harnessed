@@ -18,6 +18,7 @@
 import { readdir, readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
 
 interface BackupMetadata {
@@ -78,8 +79,7 @@ export function registerGc(program: Command): void {
       const olderMs = parseDuration(opts.olderThan ?? '30d')
       if (olderMs == null) {
         console.error(
-          `error: invalid --older-than '${opts.olderThan}'\n` +
-            `  fix:  use format <N>{d|h|m|w} e.g. 30d / 24h / 60m / 4w`,
+          `${t('gc.invalid_duration', { value: opts.olderThan ?? '' })}\n${t('gc.invalid_duration.fix')}`,
         )
         process.exit(1)
         return
@@ -93,7 +93,7 @@ export function registerGc(program: Command): void {
           .map((e) => e.name)
           .sort()
       } catch {
-        console.log(`no backups found (${root} absent) — nothing to gc`)
+        console.log(t('gc.no_backups', { root }))
         return
       }
       const cutoff = Date.now() - olderMs
@@ -120,16 +120,18 @@ export function registerGc(program: Command): void {
         candidates.push({ ts, path, manifest, sizeKb })
       }
       if (candidates.length === 0) {
-        console.log(`no snapshots older than ${opts.olderThan} (kept ${kept.size} most-recent)`)
+        console.log(
+          t('gc.no_old_snapshots', { cutoff: opts.olderThan ?? '', keptCount: kept.size }),
+        )
         return
       }
       const totalKb = candidates.reduce((a, c) => a + c.sizeKb, 0)
-      const verb = dryRun ? 'would delete' : 'deleting'
-      console.log(`${verb} ${candidates.length} snapshot(s), ~${totalKb} KB total:`)
+      const key = dryRun ? 'gc.summary_will_delete' : 'gc.summary_deleting'
+      console.log(t(key, { count: candidates.length, sizeKb: totalKb }))
       for (const c of candidates) {
         console.log(`  ${c.ts}  ${c.manifest}  (${c.sizeKb} KB)`)
         if (!dryRun) await rm(c.path, { recursive: true, force: true })
       }
-      if (dryRun) console.log('\n(dry-run — re-run without --dry-run to actually delete)')
+      if (dryRun) console.log(t('gc.dry_run_rerun_hint'))
     })
 }

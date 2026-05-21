@@ -14,6 +14,7 @@
 // v3.3.0: `--apply` backward-compat alias removed; default is apply-immediate.
 
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 import { runRouting, type TaskContext } from '../routing/index.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
@@ -38,7 +39,7 @@ export function registerResearch(program: Command): void {
       // H1 gate (sibling install-base.ts pattern)
       validateNonInteractiveFlags(raw, 'research --query <text>')
       if (!raw.query) {
-        console.error('error: --query <text> is required')
+        console.error(t('research.require_query'))
         process.exit(2)
       }
 
@@ -55,18 +56,20 @@ export function registerResearch(program: Command): void {
           ...(raw.model ? { agentOpts: { modelOverride: raw.model } } : {}),
         })
         if ('aborted' in preview) {
-          console.error(`aborted: ${preview.reason}`)
+          console.error(t('install.aborted', { reason: preview.reason }))
           process.exit(2)
         }
         if ('ok' in preview && preview.ok === false) {
           console.error(`error: ${preview.phase} — ${preview.error.message}`)
           process.exit(1)
         }
-        console.log(`[dry-run] matched_rule: ${preview.matchedRule?.id ?? '(fallback supervisor)'}`)
-        console.log(`[dry-run] query: ${raw.query}`)
         console.log(
-          '  (run without --dry-run to spawn the subagent and emit verbatim COMPLETE round-trip)',
+          t('research.dry_run.matched_rule', {
+            rule: preview.matchedRule?.id ?? '(fallback supervisor)',
+          }),
         )
+        console.log(t('research.dry_run.query', { query: raw.query }))
+        console.log(t('research.dry_run.run_hint'))
         process.exit(0)
       }
 
@@ -76,13 +79,13 @@ export function registerResearch(program: Command): void {
         ...(raw.model ? { agentOpts: { modelOverride: raw.model } } : {}),
       })
       if ('aborted' in result) {
-        console.error(`aborted: ${result.reason}`)
+        console.error(t('install.aborted', { reason: result.reason }))
         process.exit(2)
       }
       if ('ok' in result && result.ok === false) {
         console.error(`error: ${result.phase} — ${result.error.message}`)
         if (result.phase === 'install') {
-          console.error(`  fix:  'harnessed install <skill>' (see error above)`)
+          console.error(t('research.install_fix_hint'))
         }
         process.exit(1)
       }

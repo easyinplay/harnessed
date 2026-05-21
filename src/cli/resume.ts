@@ -3,6 +3,7 @@
 // Dynamic import of runResume matches doctor.ts L131 lazy-load pattern (CI-friendly + smaller cold-start).
 
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 
 export function registerResume(program: Command): void {
   program
@@ -20,11 +21,11 @@ export function registerResume(program: Command): void {
         return
       }
       if (r.status === 'no-paused-phase') {
-        console.error(`✗ ${r.error}`)
+        console.error(t('resume.fail', { error: r.error }))
         process.exit(1)
       }
       if (r.status === 'corrupt') {
-        console.error(`✗ ${r.error}\n    path: ${r.path}`)
+        console.error(t('resume.corrupt', { error: r.error, path: r.path }))
         process.exit(1)
       }
       if (r.cwdWarn) console.error(r.cwdWarn)

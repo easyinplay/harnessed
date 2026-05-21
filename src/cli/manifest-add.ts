@@ -5,6 +5,7 @@ import { writeFileSync } from 'node:fs'
 import { stdin, stdout } from 'node:process'
 import * as readline from 'node:readline/promises'
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 const QA: readonly { q: string; f: string }[] = [
@@ -42,10 +43,8 @@ export function registerManifestAdd(program: Command): void {
       const category = raw.category ?? 'skill-packs'
       const outPath = `manifests/${category}/${name}.ee5-answers.json`
       if (raw.nonInteractive) {
-        console.warn(
-          '[ee-5-gate] WARN: --non-interactive skips 5-question prompt (D-03 dry-run-only). plan-phase hard reject still applies.',
-        )
-        console.log(`[manifest-add] dry-run preview for upstream: ${upstream} → ${outPath}`)
+        console.warn(t('manifest_add.non_interactive_warn'))
+        console.log(t('manifest_add.dry_run_preview', { upstream, path: outPath }))
         process.exit(0)
       }
       const rl = readline.createInterface({ input: stdin, output: stdout })
@@ -57,7 +56,7 @@ export function registerManifestAdd(program: Command): void {
       for (const { q, f } of QA) {
         const a = (await rl.question(`${q}\n> `)).trim()
         if (!a) {
-          console.error('error: EE-5 gate requires non-empty answer')
+          console.error(t('manifest_add.empty_answer'))
           rl.close()
           process.exit(1)
         }
@@ -68,9 +67,9 @@ export function registerManifestAdd(program: Command): void {
       const dryRun = raw.dryRun === true
       if (!dryRun) {
         writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
-        console.log(`[manifest-add] EE-5 gate passed; wrote ${outPath}`)
+        console.log(t('manifest_add.gate_passed_wrote', { path: outPath }))
       } else {
-        console.log(`[manifest-add] EE-5 gate passed (dry-run); would write ${outPath}`)
+        console.log(t('manifest_add.gate_passed_dry_run', { path: outPath }))
         console.log(JSON.stringify(payload, null, 2))
       }
       process.exit(0)

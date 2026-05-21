@@ -16,11 +16,30 @@ import { registerRollback } from './cli/rollback.js'
 import { registerSetup } from './cli/setup.js'
 import { registerStatus } from './cli/status.js'
 import { registerUninstall } from './cli/uninstall.js'
+import { setLocale } from './i18n/index.js'
 import { migrateLegacyHarnessedRoot } from './installers/lib/harnessedRoot.js'
 
 // v3.0.3 — migrate any pre-v3.0.3 `~/.harnessed/` to `~/.claude/harnessed/`
 // before any subcommand runs. Idempotent on subsequent invocations.
 migrateLegacyHarnessedRoot()
+
+// v3.4.0 — pre-parse `--lang` flag so subcommand action handlers see the
+// correct locale before they emit any t()-wrapped strings. Commander parses
+// global flags eagerly via `program.parse`, but the lazy detect inside
+// `getLocale()` would otherwise resolve to env/Intl on first t() call before
+// the flag handler ran. Scanning argv here mirrors gnu getopt convention.
+const argv = process.argv
+for (let i = 2; i < argv.length; i++) {
+  const a = argv[i]
+  if (a === '--lang' && i + 1 < argv.length) {
+    setLocale(argv[i + 1])
+    break
+  }
+  if (a?.startsWith('--lang=')) {
+    setLocale(a.slice('--lang='.length))
+    break
+  }
+}
 
 const program = new Command()
 
@@ -28,6 +47,7 @@ program
   .name('harnessed')
   .description('AI coding harness package manager + composition orchestrator')
   .version(pkg.version)
+  .option('--lang <code>', 'output language: en | zh (auto-detect from $LANG / Intl if absent)')
 
 // 12 subcommands per ADR 0004 + 0007 + 0008 + 0011 + 0012 + 0014 draft
 // (execute-task added in phase 2.2 — B-28 独立子命令;

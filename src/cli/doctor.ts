@@ -18,6 +18,7 @@ import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 
 interface CheckResult {
   name: string
@@ -214,10 +215,10 @@ export function registerDoctor(program: Command): void {
         }
         console.log(
           hasFail
-            ? '\nsome checks failed (see fix hints above)'
+            ? t('doctor.summary.fail')
             : hasWarn
-              ? '\nall checks ok (with warnings — see hints above)'
-              : '\nall checks passed',
+              ? t('doctor.summary.warn')
+              : t('doctor.summary.pass'),
         )
       }
       process.exit(hasFail ? 1 : 0) // B-06: warn ≠ fail (advisory only)

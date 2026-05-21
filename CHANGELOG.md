@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-05-21 — NEW CLI i18n (en + zh-Hans) + setup writes user lang + universal language discipline
+
+**升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup auto-write user lang config)
+
+**Trigger**: user 反馈 — "harnessed CLI 应该跨语言友好;workflow artifacts 也应根据 user 系统语言"。v3.0+ 一直是 zh-first,英文 user 终端 experience 弱。
+
+### Added
+
+- **CLI i18n stage 1** — harnessed setup/install/uninstall/doctor/backup/rollback/audit-log/research/execute-task/manifest-add/gc/status/resume 等 user-facing strings 双语 (en + zh-Hans);auto-detect via `process.env.LANG` / `Intl.DateTimeFormat`;`--lang en|zh-Hans` flag override;**未来加 ko / ja / fr 等只需 NEW `messages/<code>.json` + `detectLocale()` 加 1 行**
+- **locale matching policy**: `zh-*` → `zh-Hans` (CN / TW / Hans 等);其他 (en / ko / ja / fr / 等) → `en` universal default
+- NEW `src/i18n/index.ts` lightweight loader (~50L) + `messages/{en,zh-Hans}.json` string table (~80+ keys)
+- NEW `src/cli/lib/enableUserLangInSettings.ts` (~80L) — setup 阶段写 `env.HARNESSED_USER_LANG` 到 `~/.claude/settings.json` (sister Q-AUDIT-5b root-level env.* schema + sister v3.3.1 Agent Teams enable pattern)
+- `harnessed setup --user-lang en|zh-Hans` flag — 显式 override OS locale detect
+- **NEW `README.md` = English default** (英文受众广), `README-cn.md` = 中文版本;两 README 顶部 language switcher (`English | 中文` toggle)
+- ≥7 NEW regression fixture (zh-CN / zh-TW / ko / ja / fr / en / undefined locale detect + enableUserLang idempotent / backup / malformed JSON)
+
+### Changed
+
+- `workflows/disciplines/language.yaml` — "zh-Hans default" → **"follow `env.HARNESSED_USER_LANG`, fallback to user's current conversation language"** (universal, Claude Code naturally mirrors user input lang);technical jargon English-preserve sub-rule 保留;NEW cross-cultural humor adaptation sub-rule
+- Sweep 13 CLI cmd + installer module console.log/error → `t(key, params)` 调用
+- `setup` 加 Step D "User language preference detection + write env.HARNESSED_USER_LANG" (sister Step C Agent Teams enable pattern)
+
+### Architecture: 加新语言扩展成本
+
+- 加 Korean / Japanese / French / etc. 翻译只需:
+  1. NEW `messages/<code>.json` (~80 key 翻译, ~2-3h)
+  2. `detectLocale()` 加 1 行 regex (e.g., `if (/^ko\b/i.test(raw)) return 'ko'`)
+  3. TS union type extend
+  4. Tests fixture
+  Total ~3-4h per language
+- Workflow artifacts (findings.md / task_plan.md 等) 自动适配 — Claude polyglot 看 `env.HARNESSED_USER_LANG` 生成对应语言,**不需翻译 25 个 SKILL.md**
+
+### Tests
+
+- 1153 pass / 4 skip / 2 pre-existing baseline fail (research-v2 + special-purpose-fallback)
+- baseline 1122 → +31 NEW i18n + enableUserLang fixture
+- biome clean + tsc 0 error
+
+### Migration
+
+无 breaking — 旧 user 不带 flag → auto-detect OS locale 仍 work;CLI 输出可能从 zh 变 en (en 受众广 default),user 可:
+1. 接受 default (en if non-zh locale)
+2. 重跑 `harnessed setup` 让 detect locale 写 config
+3. 手动 `--lang zh-Hans` 或改 settings.json 显式指定
+
 ## [3.3.1] - 2026-05-21 — Setup hotfix: auto-enable Agent Teams in ~/.claude/settings.json
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup auto-apply Agent Teams config)

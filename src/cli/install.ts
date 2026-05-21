@@ -20,6 +20,7 @@ import type { Command } from 'commander'
 // import attributes per ECMAScript 2025 stage 4). Replaces hardcoded '0.3.0'
 // literal at L116 with pkg.version (single source of truth = package.json L3).
 import pkg from '../../package.json' with { type: 'json' }
+import { t } from '../i18n/index.js'
 import { runInstall } from '../installers/index.js'
 import type { InstallError, InstallOpts } from '../installers/lib/types.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
@@ -79,8 +80,7 @@ export function registerInstall(program: Command): void {
           chosenPath = skillPackPath
         } catch {
           console.error(
-            `error: manifest '${resolvedName}' not found\n` +
-              `  fix:  ensure manifests/tools/${resolvedName}.yaml or manifests/skill-packs/${resolvedName}.yaml exists`,
+            `${t('install.manifest_not_found', { name: resolvedName })}\n${t('install.manifest_not_found.fix', { name: resolvedName })}`,
           )
           process.exit(1)
         }
@@ -89,7 +89,7 @@ export function registerInstall(program: Command): void {
       const v = validateManifestFile(yamlSrc, chosenPath)
       if (!v.ok) {
         for (const e of v.errors) console.error(`error: ${e.message} at ${e.path}`)
-        console.error(`  fix:  run 'harnessed audit' to inspect manifest issues`)
+        console.error(t('install.audit_hint'))
         process.exit(1)
       }
 
@@ -119,7 +119,7 @@ export function registerInstall(program: Command): void {
       const result = await runInstall(v.manifest, opts)
 
       if ('aborted' in result) {
-        console.error(`aborted: ${result.reason}`)
+        console.error(t('install.aborted', { reason: result.reason }))
         process.exit(2)
       }
       if (result.ok) {
@@ -127,7 +127,11 @@ export function registerInstall(program: Command): void {
           v.manifest.spec.install.method === 'npm-cli' && 'npm_version' in v.manifest.spec.install
             ? v.manifest.spec.install.npm_version
             : ''
-        console.log(`installed ${v.manifest.metadata.name}${version ? `@${version}` : ''}`)
+        console.log(
+          version
+            ? t('install.success_with_version', { name: v.manifest.metadata.name, version })
+            : t('install.success', { name: v.manifest.metadata.name }),
+        )
         process.exit(0)
       }
       console.error(formatError(result.error))

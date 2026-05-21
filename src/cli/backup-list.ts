@@ -8,6 +8,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
 
 interface BackupMetadata {
@@ -31,11 +32,11 @@ export function registerBackupList(program: Command): void {
           .map((e) => e.name)
           .sort()
       } catch {
-        console.log(`no backups found (${root} absent)`)
+        console.log(t('backup.no_backups', { root }))
         return
       }
       if (dirs.length === 0) {
-        console.log(`no backups found (${root} empty)`)
+        console.log(t('backup.no_backups_empty', { root }))
         return
       }
       for (const ts of dirs) {
@@ -50,6 +51,6 @@ export function registerBackupList(program: Command): void {
           console.log(`${ts}  (metadata.json missing or unreadable)`)
         }
       }
-      console.log(`\n${dirs.length} snapshot${dirs.length === 1 ? '' : 's'} total`)
+      console.log(t('backup.total_snapshots', { count: dirs.length }))
     })
 }

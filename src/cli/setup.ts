@@ -18,7 +18,9 @@ import { cp, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
+import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
 import { getPackageRoot } from './lib/packagePath.js'
 import {
   renderDeprecationBlock,
@@ -29,6 +31,7 @@ import {
 
 interface RawOpts {
   dryRun?: boolean
+  userLang?: string
 }
 
 async function listBaseManifests(pkgRoot: string): Promise<string[]> {
@@ -49,6 +52,10 @@ export function registerSetup(program: Command): void {
       'One-shot onboarding: install workflow skills + base manifests to ~/.claude/ (immediate by default — use --dry-run for preview)',
     )
     .option('--dry-run', 'preview only — do not write to disk (opt-in for advanced users)')
+    .option(
+      '--user-lang <code>',
+      'override detected OS locale for env.HARNESSED_USER_LANG (en | zh-Hans / zh-CN / zh-TW)',
+    )
     .action(async (raw: RawOpts) => {
       const dryRun = raw.dryRun === true
       const pkgRoot = getPackageRoot()
@@ -63,7 +70,7 @@ export function registerSetup(program: Command): void {
       try {
         entries = await readdir(workflowsDir)
       } catch {
-        console.error(`error: workflows directory not found at ${workflowsDir}`)
+        console.error(t('setup.workflows_not_found', { path: workflowsDir }))
         process.exit(1)
       }
 
@@ -77,19 +84,17 @@ export function registerSetup(program: Command): void {
       if (depBlock) console.log(depBlock)
 
       if (toInstall.length === 0) {
-        console.log('setup: no workflow directories with SKILL.md found — nothing to install')
+        console.log(t('setup.nothing_to_install'))
         process.exit(2)
       }
 
       if (dryRun) {
-        console.log(
-          `[dry-run] setup would install ${toInstall.length} workflow(s) to ${skillsBase}:`,
-        )
+        console.log(t('setup.dry_run.header', { count: toInstall.length, path: skillsBase }))
         for (const wf of toInstall) {
           const masterTag = wf.isMaster ? ' (master)' : ''
           console.log(`  ${wf.name}  →  ${join(skillsBase, wf.name)}${masterTag}`)
         }
-        console.log(`  run without --dry-run to execute`)
+        console.log(t('setup.dry_run.run_hint'))
         process.exit(0)
       }
 
@@ -103,14 +108,12 @@ export function registerSetup(program: Command): void {
           console.log(`  [A] installed  ${wf.name}  →  ${dst}${masterTag}`)
           skillsInstalled++
         } catch (e) {
-          console.error(`  error: failed to copy ${wf.name}: ${(e as Error).message}`)
+          console.error(t('setup.copy_failed', { name: wf.name, message: (e as Error).message }))
           process.exit(1)
         }
       }
 
-      console.log(
-        `\nStep A complete: ${skillsInstalled} workflow skill(s) installed to ${skillsBase}`,
-      )
+      console.log(t('setup.step_a_complete', { count: skillsInstalled, path: skillsBase }))
 
       // ── Step C: Agent Teams auto-enable in ~/.claude/settings.json ──────────
       // v3.3.1 hotfix — Q-AUDIT-5b LOCKED root-level env.* schema. Pattern A
@@ -119,15 +122,39 @@ export function registerSetup(program: Command): void {
       // backup; warn + skip on any error (sister fallback 铁律 1).
       const cResult = await enableAgentTeamsInSettings()
       if (cResult.status === 'created') {
-        console.log(`  [C] created ${cResult.path} + enabled Agent Teams`)
+        console.log(t('setup.step_c.created', { path: cResult.path }))
       } else if (cResult.status === 'already-enabled') {
-        console.log(`  [C] Agent Teams already enabled (${cResult.path})`)
+        console.log(t('setup.step_c.already_enabled', { path: cResult.path }))
       } else if (cResult.status === 'enabled') {
         console.log(
-          `  [C] enabled Agent Teams in ${cResult.path} (backup saved → ${cResult.backupPath})`,
+          t('setup.step_c.enabled_backup', {
+            path: cResult.path,
+            backupPath: cResult.backupPath,
+          }),
         )
       } else {
-        console.warn(`  [C] Agent Teams enable skipped: ${cResult.message}`)
+        console.warn(t('setup.step_c.skipped', { message: cResult.message }))
+      }
+
+      // ── Step D: User language preference write (v3.4.0) ─────────────────────
+      // Detect OS locale → write env.HARNESSED_USER_LANG ('en' | 'zh-Hans').
+      // Honors `--user-lang` override + existing setting respect (idempotent).
+      // Sister Step C non-destructive merge + warn-skip pattern.
+      const dResult = await enableUserLangInSettings(raw.userLang)
+      if (dResult.status === 'created') {
+        console.log(t('setup.step_d.created', { path: dResult.path, lang: dResult.detected }))
+      } else if (dResult.status === 'already-set') {
+        console.log(t('setup.step_d.already_set', { path: dResult.path, lang: dResult.existing }))
+      } else if (dResult.status === 'enabled') {
+        console.log(
+          t('setup.step_d.enabled_backup', {
+            path: dResult.path,
+            lang: dResult.detected,
+            backupPath: dResult.backupPath,
+          }),
+        )
+      } else {
+        console.warn(t('setup.step_d.skipped', { message: dResult.message }))
       }
 
       // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
@@ -135,7 +162,13 @@ export function registerSetup(program: Command): void {
       const b = await runStepBInstall(manifestPaths)
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
-        `Step B complete: ${b.installed.length} manifest(s) installed / ${b.alreadyInstalled.length} already-installed / ${b.skipped.length} skipped / ${b.failed.length} failed [parallel ${stepBMs}s]`,
+        t('setup.step_b_complete', {
+          installed: b.installed.length,
+          already: b.alreadyInstalled.length,
+          skipped: b.skipped.length,
+          failed: b.failed.length,
+          seconds: stepBMs,
+        }),
       )
       for (const n of b.installed) console.log(`  [B] installed          ${n}`)
       for (const n of b.alreadyInstalled)
@@ -146,23 +179,20 @@ export function registerSetup(program: Command): void {
       for (const n of b.failed) console.error(`  [B] failed             ${n}`)
 
       console.log(
-        `\nsetup complete: ${skillsInstalled} workflow skill(s) + ${b.installed.length + b.alreadyInstalled.length} base manifest(s) configured`,
+        t('setup.complete', {
+          skills: skillsInstalled,
+          manifests: b.installed.length + b.alreadyInstalled.length,
+        }),
       )
       if (b.alreadyInstalled.length > 0 || b.installed.length > 0) {
-        console.log(
-          `\nMCP servers configured. Run \`/mcp\` in Claude Code to verify each server's connection status. If a server shows disconnected, restart Claude Code or check the MCP command spec.`,
-        )
+        console.log(t('setup.mcp_hint'))
       }
 
       // ── Phase v2.0-2.3 W1.1: Pure bundled distribution highlight (D-01) ───
       // workflows live in <packageRoot>/workflows/ — share-only readonly,
       // NOT user-dir override (~/.harnessed/ NOT used per D-01 LOCKED).
-      console.log(
-        '\n✓ harnessed v3.0 三层栈方法论 bundled — 23 workflows (4 master + 18 sub + 1 standalone) + 6 disciplines + 10 judgments + ~83 capabilities ready',
-      )
-      console.log(
-        '  workflows in <packageRoot>/workflows/ (Pure bundled, NOT user-dir override per D-01)',
-      )
+      console.log(t('setup.bundled_summary'))
+      console.log(t('setup.bundled_location'))
       process.exit(0)
     })
 }

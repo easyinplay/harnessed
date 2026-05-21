@@ -20,6 +20,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
+import { t } from '../i18n/index.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { runUninstall } from '../uninstallers/index.js'
@@ -46,9 +47,7 @@ export function registerUninstall(program: Command): void {
       const yes = raw.yes === true || raw.nonInteractive === true
       if (yes && raw.dryRun) {
         console.error(
-          `error: --yes is incompatible with --dry-run (dry-run does not mutate)\n` +
-            `  fix:  harnessed uninstall ${name} --yes  (immediate) ` +
-            `OR harnessed uninstall ${name} --dry-run  (preview)`,
+          `${t('uninstall.yes_dryrun_conflict')}\n${t('uninstall.yes_dryrun_conflict.fix', { name })}`,
         )
         process.exit(2)
       }
@@ -72,8 +71,7 @@ export function registerUninstall(program: Command): void {
           chosenPath = skillPackPath
         } catch {
           console.error(
-            `error: manifest '${resolvedName}' not found\n` +
-              `  fix:  ensure manifests/tools/${resolvedName}.yaml or manifests/skill-packs/${resolvedName}.yaml exists`,
+            `${t('install.manifest_not_found', { name: resolvedName })}\n${t('install.manifest_not_found.fix', { name: resolvedName })}`,
           )
           process.exit(1)
         }
@@ -92,19 +90,19 @@ export function registerUninstall(program: Command): void {
 
       // Dry-run preview path (opt-in --dry-run only).
       if (dryRun) {
-        console.log(`[dry-run] would uninstall '${resolvedName}' via method '${method}'`)
-        console.log(`  run without --dry-run to execute`)
+        console.log(t('uninstall.dry_run.preview', { name: resolvedName, method }))
+        console.log(t('uninstall.dry_run.run_hint'))
         process.exit(2)
       }
 
       // Interactive confirm protects destructive op (skip only with --yes).
       if (!yes) {
         const answer = await p.confirm({
-          message: `Uninstall '${resolvedName}'? This cannot be undone.`,
+          message: t('uninstall.confirm.prompt', { name: resolvedName }),
           initialValue: false,
         })
         if (p.isCancel(answer) || answer === false) {
-          console.error(`aborted: user cancelled`)
+          console.error(t('uninstall.cancelled'))
           process.exit(2)
         }
       }
@@ -113,11 +111,11 @@ export function registerUninstall(program: Command): void {
       const result = await runUninstall(v.manifest, opts)
 
       if ('aborted' in result) {
-        console.error(`aborted: ${result.reason}`)
+        console.error(t('install.aborted', { reason: result.reason }))
         process.exit(2)
       }
       if (result.ok) {
-        console.log(`uninstalled ${resolvedName}`)
+        console.log(t('uninstall.completed', { name: resolvedName }))
         process.exit(0)
       }
       console.error(`error: ${result.error}`)
