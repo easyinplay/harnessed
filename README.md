@@ -15,7 +15,7 @@
 
 ## ✨ TL;DR
 
-Assembles the best open-source Claude Code ecosystem components, weaving them into a unified workflow via opinionated composition skills; does not vendor upstream code — manifests describe install/check, and composition skills orchestrate multi-upstream collaboration.
+**Best-practice orchestration for Harness Engineering on Claude Code** — assembles the best open-source Claude Code ecosystem components, weaving them into a unified workflow via opinionated composition skills; does not vendor upstream code — manifests describe install/check, and composition skills orchestrate multi-upstream collaboration.
 
 ---
 

@@ -15,7 +15,7 @@
 
 ## ✨ 一句话定位
 
-装配市面上最优秀的开源 Claude Code 生态组件,用强意见 composition skill 织成统一工作流;不 vendor 上游代码,通过 manifest 描述 install/check + composition skill 编排多上游协作。
+**做 Claude Code 上 Harness Engineering 的最佳编排实践** —— 装配市面上最优秀的开源 Claude Code 生态组件,用强意见 composition skill 织成统一工作流;不 vendor 上游代码,通过 manifest 描述 install/check + composition skill 编排多上游协作。
 
 ---
 
