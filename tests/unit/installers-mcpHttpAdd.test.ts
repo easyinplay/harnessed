@@ -46,7 +46,7 @@ interface FakeChild extends EventEmitter {
   stderr: EventEmitter & { setEncoding: (e: string) => unknown }
   kill: (sig: NodeJS.Signals) => void
 }
-function makeChild(opts: { exitCode?: number; stderr?: string }): FakeChild {
+function makeChild(opts: { exitCode?: number; stderr?: string; stdout?: string }): FakeChild {
   const child = new EventEmitter() as FakeChild
   const stdout = new EventEmitter() as FakeChild['stdout']
   stdout.setEncoding = () => stdout
@@ -56,6 +56,7 @@ function makeChild(opts: { exitCode?: number; stderr?: string }): FakeChild {
   child.stderr = stderr
   child.kill = vi.fn() as unknown as FakeChild['kill']
   setImmediate(() => {
+    if (opts.stdout) stdout.emit('data', opts.stdout)
     if (opts.stderr) stderr.emit('data', opts.stderr)
     child.emit('close', opts.exitCode ?? 0)
   })
@@ -142,11 +143,15 @@ describe('installMcpHttpAdd', () => {
     expect(r).toMatchObject({ ok: false, phase: 'preflight' })
   })
 
-  it('L3 + --apply: spawn invoked with --scope project --transport http + URL', async () => {
+  // v3.0.2 hotfix: assert --scope user (was --scope project pre-v3.0.2).
+  it('L3 + --apply: spawn invoked with --scope user --transport http + URL (v3.0.2)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+        () =>
+          makeChild({ exitCode: 0, stdout: 'exa-mcp-http\n' }) as unknown as ReturnType<
+            typeof spawn
+          >,
       )
       await installMcpHttpAdd(ctx())
       expect(spawnMock).toHaveBeenCalled()
@@ -156,7 +161,8 @@ describe('installMcpHttpAdd', () => {
       expect(flat).toContain('mcp')
       expect(flat).toContain('add')
       expect(flat).toContain('--scope')
-      expect(flat).toContain('project')
+      expect(flat).toContain('user') // v3.0.2 — was 'project'
+      expect(flat).not.toContain('--scope project')
       expect(flat).toContain('--transport')
       expect(flat).toContain('http')
       expect(flat).toContain('exa-mcp-http')
@@ -252,16 +258,16 @@ describe('installMcpHttpAdd', () => {
     }
   })
 
-  // v1.0.4 T1.5 — ADR 0004 idempotent contract: "already exists in .mcp.json" stderr
-  // with exit=1 must return ok:true + alreadyInstalled:true (not a failure).
-  it('install exit=1 + "already exists in .mcp.json" stderr → ok:true alreadyInstalled:true', async () => {
+  // v1.0.4 T1.5 + v3.0.2 — ADR 0004 idempotent contract: "already exists"
+  // stderr (substring) with exit=1 → ok:true + alreadyInstalled:true.
+  it('install exit=1 + "already exists" stderr → ok:true alreadyInstalled:true', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
         () =>
           makeChild({
             exitCode: 1,
-            stderr: 'MCP server exa-mcp already exists in .mcp.json',
+            stderr: 'MCP server exa-mcp already exists',
           }) as unknown as ReturnType<typeof spawn>,
       )
       const r = await installMcpHttpAdd(ctx())
@@ -272,17 +278,42 @@ describe('installMcpHttpAdd', () => {
     }
   })
 
-  it('happy path: install ok + verify ok → appliedFiles contains .mcp.json target', async () => {
+  // v3.0.2: appliedFiles now ~/.claude.json (user-global) — flipped from .mcp.json.
+  it('happy path: install ok + verify ok → appliedFiles contains .claude.json (v3.0.2)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+        () =>
+          makeChild({ exitCode: 0, stdout: 'exa-mcp-http\n' }) as unknown as ReturnType<
+            typeof spawn
+          >,
       )
       const r = await installMcpHttpAdd(ctx())
       expect(r).toMatchObject({ ok: true })
       if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
-        expect(r.appliedFiles.some((f) => f.endsWith('.mcp.json'))).toBe(true)
+        expect(r.appliedFiles.some((f) => f.endsWith('.claude.json'))).toBe(true)
       }
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v3.0.2 regression: verify must not invoke shell `grep` (Bug 2 fix).
+  it('v3.0.2 — verify uses claude mcp list directly (no grep)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () =>
+          makeChild({ exitCode: 0, stdout: 'exa-mcp-http\n' }) as unknown as ReturnType<
+            typeof spawn
+          >,
+      )
+      await installMcpHttpAdd(ctx())
+      const flat = spawnMock.mock.calls
+        .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
+        .join('\n')
+      expect(flat).not.toContain('grep')
+      expect(flat).toContain('mcp list')
     } finally {
       s.restore()
     }

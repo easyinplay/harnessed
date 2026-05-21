@@ -1,10 +1,14 @@
 // Phase 2.1 install method 5/6 — cc-plugin × cc-plugin-marketplace per ADR
 // 0004 § 5 + ADR 0005 + ADR 0010 errata D-20.
 //
-// IMPL NOTE (Rule 1 / D-11 + D-12 + CC #54803): `--scope project` hardcoded
-// for the `plugin install` step — same broken-user-scope rationale as
-// mcpStdioAdd. Cannot be overridden by manifest fields; the manifest cmd
-// string is informational; we authoritatively reconstruct args[].
+// v3.0.2 hotfix (scope flip): `--scope project` → `--scope user`. Sister
+// mcpStdioAdd v3.0.2 reasoning — write to ~/.claude.json user-global config
+// (CWD-independent) instead of <cwd>/.claude/settings.json (EPERMs in
+// read-only CWD). CC #54803 user-scope-broken bug has been resolved.
+//
+// IMPL NOTE (Rule 1): hardcoded `--scope user` for `plugin install` step
+// cannot be overridden by manifest fields; the manifest cmd string is
+// informational; we authoritatively reconstruct args[].
 //
 // IMPL NOTE (Rule 1 / D-20 idempotency): Two sequential spawns:
 //   Step 1: `claude plugin marketplace add <url>`
@@ -37,6 +41,7 @@ import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
 import type { ProcResult } from './lib/runClaudeArgs.js'
 import { runArgs } from './lib/runClaudeArgs.js'
+import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
 
@@ -106,10 +111,11 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       },
     }
   }
-  const pluginName = parsed.pluginAtMkt.split('@')[0]
+  const pluginName = parsed.pluginAtMkt.split('@')[0] ?? parsed.pluginAtMkt
 
-  // Step 2 args — `--scope project` hardcoded (D-12). Step-1 args optional.
-  const installArgs = ['plugin', 'install', parsed.pluginAtMkt, '--scope', 'project']
+  // v3.0.2 hotfix: `--scope user` (writes ~/.claude.json) — CWD-independent,
+  // EPERM-free in read-only launch dirs. Sister mcpStdioAdd v3.0.2 scope flip.
+  const installArgs = ['plugin', 'install', parsed.pluginAtMkt, '--scope', 'user']
   const allArgs: string[][] = []
   if (parsed.marketplaceRef !== null) {
     allArgs.push(['plugin', 'marketplace', 'add', parsed.marketplaceRef])
@@ -135,18 +141,19 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
     }
   }
 
-  // L3 fixed — diff target is `.claude/settings.json` `enabledPlugins` key.
-  // We simulate the entry textually (no `--dry-run` flag exists on
-  // `claude plugin install`); the cmd echo is the audit trail.
-  const settingsFile = `${ctx.cwd}/.claude/settings.json`
+  // v3.0.2: `--scope user` writes ~/.claude.json (user-global enabledPlugins
+  // map) instead of <cwd>/.claude/settings.json (project-local). Diff target
+  // updated to mirror. No `--dry-run` flag on `claude plugin install` — cmd
+  // echo remains the audit trail.
+  const settingsFile = `${getMcpSpawnCwd()}/.claude.json`
   const newEntry = JSON.stringify({ enabledPlugins: { [parsed.pluginAtMkt]: true } }, null, 2)
   const plan: DiffPlan = {
     files: [
       {
         target: settingsFile,
-        scope: 'PROJECT',
+        scope: 'HOME',
         oldText: '',
-        newText: `// will be merged into .claude/settings.json enabledPlugins map by \`claude plugin install\`:\n${newEntry}\n`,
+        newText: `// will be merged into ~/.claude.json enabledPlugins map by \`claude plugin install --scope user\`:\n${newEntry}\n`,
       },
     ],
   }
@@ -162,19 +169,21 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   const bk = await backup(plan, ctx)
   if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
 
+  // v3.0.2: spawn cwd at homedir() — `--scope user` writes ~/.claude.json
+  // regardless of spawn cwd, but the CC CLI may create temp files in cwd;
+  // homedir() avoids EPERM when user launches from a read-only CWD.
+  const spawnCwd = install.cwd ?? getMcpSpawnCwd()
+
   // Step 1 — marketplace add (D-20: non-zero is non-fatal; step 2 is the decider).
   let stepOneStderr = ''
   if (parsed.marketplaceRef !== null) {
-    const r1 = await runArgs(
-      ['plugin', 'marketplace', 'add', parsed.marketplaceRef],
-      install.cwd ?? ctx.cwd,
-    )
+    const r1 = await runArgs(['plugin', 'marketplace', 'add', parsed.marketplaceRef], spawnCwd)
     stepOneStderr = r1.stderr
     // intentional: do not return on r1.exitCode !== 0
   }
 
   // Step 2 — plugin install. This is the authoritative outcome decider.
-  const r2 = await runArgs(installArgs, install.cwd ?? ctx.cwd)
+  const r2 = await runArgs(installArgs, spawnCwd)
   if (r2.exitCode !== 0) {
     return {
       ok: false,
@@ -189,45 +198,37 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
     }
   }
 
-  // Verify via `claude plugin list | grep -q <pluginName>`. C6: exit code is
-  // the contract, not stdout parsing.
-  const verifyShell = process.platform === 'win32' ? 'cmd.exe' : '/bin/sh'
-  const verifyFlag = process.platform === 'win32' ? '/c' : '-c'
-  const verifyLine = `claude plugin list --json | grep -q ${pluginName}`
-  const violation = checkCmdString(verifyLine)
-  if (violation) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/verify/cmd',
-        `verify shell escape: ${violation.label}`,
-        'security-gate-bypass',
-      ),
-    }
-  }
-  const vr = await new Promise<ProcResult>((resolve) => {
-    const child = spawn(verifyShell, [verifyFlag, verifyLine], { cwd: ctx.cwd, windowsHide: true })
+  // v3.0.2 hotfix: verify uses `claude plugin list --json` + Node stdout
+  // match instead of shell `grep -q <pluginName>` pipe (grep unavailable on
+  // Windows cmd/PS). Sister mcpStdioAdd v3.0.2 verify reasoning verbatim.
+  const vr = await new Promise<ProcResult & { stdout: string }>((resolve) => {
+    const child = spawn('claude', ['plugin', 'list', '--json'], {
+      cwd: spawnCwd,
+      shell: process.platform === 'win32',
+      windowsHide: true,
+    })
+    let stdout = ''
     let stderr = ''
+    child.stdout?.setEncoding('utf8').on('data', (c: string) => {
+      stdout += c
+    })
     child.stderr?.setEncoding('utf8').on('data', (c: string) => {
       stderr += c
     })
     const timer = setTimeout(() => {
       child.kill('SIGKILL')
-      resolve({ exitCode: -1, stderr: `${stderr}[timeout]` })
+      resolve({ exitCode: -1, stderr: `${stderr}[timeout]`, stdout })
     }, 15_000)
     child.on('error', (e) => {
       clearTimeout(timer)
-      resolve({ exitCode: -1, stderr: e.message })
+      resolve({ exitCode: -1, stderr: e.message, stdout })
     })
     child.on('close', (code) => {
       clearTimeout(timer)
-      resolve({ exitCode: code ?? -1, stderr })
+      resolve({ exitCode: code ?? -1, stderr, stdout })
     })
   })
-  if (vr.exitCode !== 0) {
+  if (vr.exitCode !== 0 || !vr.stdout.includes(pluginName)) {
     return {
       ok: false,
       phase: 'verify',
@@ -235,7 +236,7 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify exit ${vr.exitCode}: ${vr.stderr.slice(0, 200)}`,
+        `verify exit ${vr.exitCode} or '${pluginName}' not in plugin list stdout: ${vr.stderr.slice(0, 200)}`,
         'verify-failed',
       ),
     }

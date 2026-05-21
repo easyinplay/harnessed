@@ -46,7 +46,7 @@ interface FakeChild extends EventEmitter {
   stderr: EventEmitter & { setEncoding: (e: string) => unknown }
   kill: (sig: NodeJS.Signals) => void
 }
-function makeChild(opts: { exitCode?: number; stderr?: string }): FakeChild {
+function makeChild(opts: { exitCode?: number; stderr?: string; stdout?: string }): FakeChild {
   const child = new EventEmitter() as FakeChild
   const stdout = new EventEmitter() as FakeChild['stdout']
   stdout.setEncoding = () => stdout
@@ -56,6 +56,7 @@ function makeChild(opts: { exitCode?: number; stderr?: string }): FakeChild {
   child.stderr = stderr
   child.kill = vi.fn() as unknown as FakeChild['kill']
   setImmediate(() => {
+    if (opts.stdout) stdout.emit('data', opts.stdout)
     if (opts.stderr) stderr.emit('data', opts.stderr)
     child.emit('close', opts.exitCode ?? 0)
   })
@@ -139,11 +140,15 @@ describe('installMcpStdioAdd', () => {
     expect(r).toMatchObject({ ok: false, phase: 'preflight' })
   })
 
-  it('L3 + --apply: spawn invoked with hardcoded --scope project --transport stdio args', async () => {
+  // v3.0.2 hotfix: assert --scope user (was --scope project pre-v3.0.2 EPERM
+  // in read-only CWD). MCP server should be available cross-project per
+  // user-global ~/.claude.json registration.
+  it('L3 + --apply: spawn invoked with hardcoded --scope user --transport stdio args (v3.0.2)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+        () =>
+          makeChild({ exitCode: 0, stdout: 'tavily-mcp\n' }) as unknown as ReturnType<typeof spawn>,
       )
       await installMcpStdioAdd(ctx())
       expect(spawnMock).toHaveBeenCalled()
@@ -154,10 +159,34 @@ describe('installMcpStdioAdd', () => {
       expect(flat).toContain('mcp')
       expect(flat).toContain('add')
       expect(flat).toContain('--scope')
-      expect(flat).toContain('project')
+      expect(flat).toContain('user') // v3.0.2 — was 'project' pre-v3.0.2
+      expect(flat).not.toContain('--scope project') // explicit negative: ensure flip is real
       expect(flat).toContain('--transport')
       expect(flat).toContain('stdio')
       expect(flat).toContain('tavily-mcp')
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v3.0.2 hotfix regression fixture: verify must not invoke shell `grep` —
+  // it must use `claude mcp list` + Node stdout match (grep unavailable on
+  // Windows cmd.exe / PowerShell, user-reported "'grep' is not recognized").
+  it('v3.0.2 — verify spawns claude mcp list directly (no grep shell pipe)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () =>
+          makeChild({ exitCode: 0, stdout: 'tavily-mcp\n' }) as unknown as ReturnType<typeof spawn>,
+      )
+      await installMcpStdioAdd(ctx())
+      const flat = spawnMock.mock.calls
+        .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
+        .join('\n')
+      // No grep invocation anywhere
+      expect(flat).not.toContain('grep')
+      // verify step issued `claude mcp list` (the new native verify path)
+      expect(flat).toContain('mcp list')
     } finally {
       s.restore()
     }
@@ -198,16 +227,19 @@ describe('installMcpStdioAdd', () => {
     }
   })
 
-  // v1.0.4 T1.5 — ADR 0004 idempotent contract: "already exists in .mcp.json" stderr
-  // with exit=1 must return ok:true + alreadyInstalled:true (not a failure).
-  it('install exit=1 + "already exists in .mcp.json" stderr → ok:true alreadyInstalled:true', async () => {
+  // v1.0.4 T1.5 + v3.0.2 — ADR 0004 idempotent contract: "already exists"
+  // stderr with exit=1 must return ok:true + alreadyInstalled:true. v3.0.2
+  // loosens substring match (was '.mcp.json', now 'already exists') since
+  // `--scope user` writes ~/.claude.json (CC CLI message no longer mentions
+  // .mcp.json specifically).
+  it('install exit=1 + "already exists" stderr → ok:true alreadyInstalled:true', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
         () =>
           makeChild({
             exitCode: 1,
-            stderr: 'MCP server tavily-mcp already exists in .mcp.json',
+            stderr: 'MCP server tavily-mcp already exists',
           }) as unknown as ReturnType<typeof spawn>,
       )
       const r = await installMcpStdioAdd(ctx())
@@ -218,16 +250,48 @@ describe('installMcpStdioAdd', () => {
     }
   })
 
-  it('happy path: install ok + verify ok → appliedFiles contains .mcp.json target', async () => {
+  // v3.0.2: appliedFiles now contains ~/.claude.json (user-global) instead
+  // of <cwd>/.mcp.json (project-local). Mock stdout includes the MCP name
+  // so the new Node-stdout-match verify path passes.
+  it('happy path: install ok + verify ok → appliedFiles contains .claude.json (v3.0.2)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+        () =>
+          makeChild({ exitCode: 0, stdout: 'tavily-mcp\n' }) as unknown as ReturnType<typeof spawn>,
       )
       const r = await installMcpStdioAdd(ctx())
       expect(r).toMatchObject({ ok: true })
       if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
-        expect(r.appliedFiles.some((f) => f.endsWith('.mcp.json'))).toBe(true)
+        expect(r.appliedFiles.some((f) => f.endsWith('.claude.json'))).toBe(true)
+      }
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v3.0.2 regression fixture: install spawn fails when stdout does not
+  // contain the MCP name (catches Bug 2 grep regression — pre-v3.0.2 used
+  // shell pipe + grep -q which failed silently on Windows; new code asserts
+  // stdout.includes(name) and reports verify-failed with clear message).
+  it('v3.0.2 — verify ok exit but name absent from stdout → verify-failed', async () => {
+    const s = silence()
+    try {
+      // First spawn = install (exit 0); second spawn = verify (exit 0 + empty stdout)
+      let call = 0
+      spawnMock.mockImplementation(() => {
+        const child =
+          call === 0
+            ? makeChild({ exitCode: 0 })
+            : makeChild({ exitCode: 0, stdout: 'other-mcp\n' })
+        call++
+        return child as unknown as ReturnType<typeof spawn>
+      })
+      const r = await installMcpStdioAdd(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'verify' })
+      if ('error' in r && r.error) {
+        expect(r.error.keyword).toBe('verify-failed')
+        expect(r.error.message).toContain('not in mcp list stdout')
       }
     } finally {
       s.restore()

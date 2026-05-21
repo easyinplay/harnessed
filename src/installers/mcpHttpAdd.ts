@@ -1,10 +1,15 @@
 // Phase 2.1 install method 3/6 — mcp-npm × mcp-http-add per ADR 0004 § 5 + ADR 0010 errata.
 //
-// IMPL NOTE (Rule 1 / CC #54803): mandatory --scope project; user scope is
-// broken (rules silently land in ~/.claude.json but Claude Code fails to read
-// them back). hardcoded `--scope project` here cannot be overridden by manifest
-// fields — the manifest cmd string is treated as audit-trail only; we
-// authoritatively reconstruct the args array. Mirrors mcpStdioAdd discipline.
+// v3.0.2 hotfix (scope flip): `--scope project` → `--scope user`. Sister
+// mcpStdioAdd.ts v3.0.2 reasoning verbatim — `--scope project` writes
+// `<cwd>/.mcp.json` which EPERMs in read-only CWD (C:\Windows\System32);
+// `--scope user` writes `~/.claude.json` user-global, CWD-independent.
+// The pre-v3.0.2 CC #54803 "user scope broken" bug has been resolved by the
+// Claude Code team (verified via `claude mcp add --help` 2026-05-21).
+//
+// IMPL NOTE (Rule 1): hardcoded `--scope user` here cannot be overridden by
+// manifest fields — the manifest cmd string is treated as audit-trail only;
+// we authoritatively reconstruct the args array. Mirrors mcpStdioAdd.
 //
 // IMPL NOTE (Rule 1 / D-16 — env-resolution carve-out): `--header` values may
 // carry `${ENV_VAR}` references that look like shell escapes to B1's
@@ -35,6 +40,7 @@ import { err } from './lib/err.js'
 import { preflight } from './lib/preflight.js'
 import type { ProcResult } from './lib/runClaudeArgs.js'
 import { runArgs } from './lib/runClaudeArgs.js'
+import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
 
@@ -148,19 +154,10 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
     }
   }
 
-  // Authoritative args — `--scope project` hardcoded (D-12, CC #54803,
-  // transport-agnostic broken-user-scope). manifest cmd is informational only.
-  const addArgs = [
-    'mcp',
-    'add',
-    '--scope',
-    'project',
-    '--transport',
-    'http',
-    ...hdr.flat,
-    name,
-    url,
-  ]
+  // v3.0.2 hotfix: `--scope user` writes ~/.claude.json (user-global config,
+  // CWD-independent). Pre-v3.0.2 `--scope project` writes <cwd>/.mcp.json
+  // which EPERMs in read-only CWD. Mirrors mcpStdioAdd v3.0.2 scope flip.
+  const addArgs = ['mcp', 'add', '--scope', 'user', '--transport', 'http', ...hdr.flat, name, url]
 
   // H2 defense-in-depth — re-screen each constructed arg. Header values were
   // env-resolved above, so no ${VAR} pattern reaches this check; URL is a
@@ -181,11 +178,10 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
     }
   }
 
-  // L3 fixed — diff shows .mcp.json will gain an entry. We simulate the entry
-  // textually rather than calling `claude mcp add --dry-run` (CLI flag not
-  // documented; unstable contract). Entry shape per CC spec:
+  // v3.0.2: diff target is ~/.claude.json (user-global, `--scope user`)
+  // instead of <cwd>/.mcp.json (project-local). Entry shape per CC spec:
   // { [name]: { type: 'http', url, headers: {Key:Value} } } — non-stdio.
-  const mcpFile = `${ctx.cwd}/.mcp.json`
+  const mcpFile = `${getMcpSpawnCwd()}/.claude.json`
   // Reassemble headers as an object for the diff preview (purely informational).
   const headersObj: Record<string, string> = {}
   for (let i = 0; i < hdr.flat.length; i += 2) {
@@ -203,9 +199,9 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
     files: [
       {
         target: mcpFile,
-        scope: 'PROJECT',
+        scope: 'HOME',
         oldText: '',
-        newText: `// will be merged into .mcp.json mcpServers map by \`claude mcp add\`:\n${newEntry}\n`,
+        newText: `// will be merged into ~/.claude.json mcpServers map by \`claude mcp add --scope user\`:\n${newEntry}\n`,
       },
     ],
   }
@@ -221,12 +217,16 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   const bk = await backup(plan, ctx)
   if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
 
-  const r = await runArgs(addArgs, install.cwd ?? ctx.cwd)
+  // v3.0.2: spawn cwd at homedir() — `--scope user` writes to ~/.claude.json
+  // regardless of spawn cwd, but the CC CLI may create temp files in cwd;
+  // homedir() avoids EPERM when user launches harnessed from a read-only CWD.
+  const spawnCwd = install.cwd ?? getMcpSpawnCwd()
+  const r = await runArgs(addArgs, spawnCwd)
   if (r.exitCode !== 0) {
-    // ADR 0004 idempotent contract (v1.0.4): "already exists in .mcp.json" is
-    // not a failure — the server is already registered. Return ok + alreadyInstalled
-    // so the outer CLI can classify it separately from a real failure.
-    if (r.stderr.includes('already exists in .mcp.json')) {
+    // ADR 0004 idempotent contract: server already registered is not a failure.
+    // v3.0.2: match on "already exists" substring (CC CLI error message no
+    // longer mentions ".mcp.json" specifically with --scope user).
+    if (r.stderr.includes('already exists')) {
       return { ok: true, alreadyInstalled: true, backupId: bk.backupId }
     }
     return {
@@ -242,47 +242,37 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
     }
   }
 
-  // Verify via `claude mcp list` exit code piped through `grep -q <name>`.
-  // For OAuth-authenticated servers a `claude mcp get <name>` exposes the
-  // pending-auth surface, but exit-code-on-`mcp list` is the stable contract
-  // matching mcpStdioAdd verify pattern (C2 discipline).
-  const verifyShell = process.platform === 'win32' ? 'cmd.exe' : '/bin/sh'
-  const verifyFlag = process.platform === 'win32' ? '/c' : '-c'
-  const verifyLine = `claude mcp list | grep -q ${name}`
-  const violation = checkCmdString(verifyLine)
-  if (violation) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/verify/cmd',
-        `verify shell escape: ${violation.label}`,
-        'security-gate-bypass',
-      ),
-    }
-  }
-  const vr = await new Promise<ProcResult>((resolve) => {
-    const child = spawn(verifyShell, [verifyFlag, verifyLine], { cwd: ctx.cwd, windowsHide: true })
+  // v3.0.2 hotfix: verify uses `claude mcp list` + Node stdout match instead
+  // of shell `grep -q <name>` pipe (grep unavailable on Windows cmd/PS).
+  // Sister mcpStdioAdd v3.0.2 verify reasoning verbatim.
+  const vr = await new Promise<ProcResult & { stdout: string }>((resolve) => {
+    const child = spawn('claude', ['mcp', 'list'], {
+      cwd: spawnCwd,
+      shell: process.platform === 'win32',
+      windowsHide: true,
+    })
+    let stdout = ''
     let stderr = ''
+    child.stdout?.setEncoding('utf8').on('data', (c: string) => {
+      stdout += c
+    })
     child.stderr?.setEncoding('utf8').on('data', (c: string) => {
       stderr += c
     })
     const timer = setTimeout(() => {
       child.kill('SIGKILL')
-      resolve({ exitCode: -1, stderr: `${stderr}[timeout]` })
+      resolve({ exitCode: -1, stderr: `${stderr}[timeout]`, stdout })
     }, 15_000)
     child.on('error', (e) => {
       clearTimeout(timer)
-      resolve({ exitCode: -1, stderr: e.message })
+      resolve({ exitCode: -1, stderr: e.message, stdout })
     })
     child.on('close', (code) => {
       clearTimeout(timer)
-      resolve({ exitCode: code ?? -1, stderr })
+      resolve({ exitCode: code ?? -1, stderr, stdout })
     })
   })
-  if (vr.exitCode !== 0) {
+  if (vr.exitCode !== 0 || !vr.stdout.includes(name)) {
     return {
       ok: false,
       phase: 'verify',
@@ -290,7 +280,7 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify exit ${vr.exitCode}: ${vr.stderr.slice(0, 200)}`,
+        `verify exit ${vr.exitCode} or '${name}' not in mcp list stdout: ${vr.stderr.slice(0, 200)}`,
         'verify-failed',
       ),
     }

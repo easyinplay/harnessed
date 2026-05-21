@@ -44,7 +44,7 @@ interface FakeChild extends EventEmitter {
   stderr: EventEmitter & { setEncoding: (e: string) => unknown }
   kill: (sig: NodeJS.Signals) => void
 }
-function makeChild(opts: { exitCode?: number; stderr?: string }): FakeChild {
+function makeChild(opts: { exitCode?: number; stderr?: string; stdout?: string }): FakeChild {
   const child = new EventEmitter() as FakeChild
   const stdout = new EventEmitter() as FakeChild['stdout']
   stdout.setEncoding = () => stdout
@@ -54,12 +54,13 @@ function makeChild(opts: { exitCode?: number; stderr?: string }): FakeChild {
   child.stderr = stderr
   child.kill = vi.fn() as unknown as FakeChild['kill']
   setImmediate(() => {
+    if (opts.stdout) stdout.emit('data', opts.stdout)
     if (opts.stderr) stderr.emit('data', opts.stderr)
     child.emit('close', opts.exitCode ?? 0)
   })
   return child
 }
-function scriptedSpawn(script: Array<{ exitCode?: number; stderr?: string }>) {
+function scriptedSpawn(script: Array<{ exitCode?: number; stderr?: string; stdout?: string }>) {
   let i = 0
   return () => {
     const step = script[Math.min(i, script.length - 1)] ?? { exitCode: 0 }
@@ -166,11 +167,16 @@ describe('installCcPluginMarketplace', () => {
     }
   })
 
-  it('L3 + --apply: two spawns issued (marketplace add THEN plugin install), --scope project hardcoded', async () => {
+  // v3.0.2: assert --scope user (was --scope project pre-v3.0.2 EPERM fix).
+  it('L3 + --apply: two spawns + --scope user hardcoded (v3.0.2)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }, { exitCode: 0 }]),
+        scriptedSpawn([
+          { exitCode: 0 }, // step 1 marketplace add
+          { exitCode: 0 }, // step 2 plugin install
+          { exitCode: 0, stdout: '"superpowers"' }, // verify (claude plugin list --json)
+        ]),
       )
       await installCcPluginMarketplace(ctx())
       expect(spawnMock).toHaveBeenCalled()
@@ -184,7 +190,26 @@ describe('installCcPluginMarketplace', () => {
       expect(flat).toContain('install')
       expect(flat).toContain('superpowers@superpowers-marketplace')
       expect(flat).toContain('--scope')
-      expect(flat).toContain('project')
+      expect(flat).toContain('user') // v3.0.2 — was 'project'
+      expect(flat).not.toContain('--scope project')
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v3.0.2 regression: verify must not use shell `grep` (Bug 2 — grep not on Windows).
+  it('v3.0.2 — verify spawns claude plugin list --json (no grep)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }, { exitCode: 0, stdout: '"superpowers"' }]),
+      )
+      await installCcPluginMarketplace(ctx())
+      const flat = spawnMock.mock.calls
+        .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
+        .join('\n')
+      expect(flat).not.toContain('grep')
+      expect(flat).toContain('plugin list')
     } finally {
       s.restore()
     }
@@ -197,7 +222,7 @@ describe('installCcPluginMarketplace', () => {
         scriptedSpawn([
           { exitCode: 1, stderr: 'marketplace already registered' }, // step 1 fail
           { exitCode: 0 }, // step 2 ok
-          { exitCode: 0 }, // verify
+          { exitCode: 0, stdout: '"superpowers"' }, // verify (Node stdout match)
         ]),
       )
       const r = await installCcPluginMarketplace(ctx())
@@ -226,16 +251,19 @@ describe('installCcPluginMarketplace', () => {
     }
   })
 
-  it('happy path: both steps + verify all exit 0 → ok:true with appliedFiles', async () => {
+  // v3.0.2: appliedFiles is ~/.claude.json (user-global) instead of
+  // <cwd>/.claude/settings.json (project-local). Mock verify stdout includes
+  // plugin name for the new Node-stdout-match verify path.
+  it('happy path: both steps + verify all exit 0 → ok:true with appliedFiles (.claude.json v3.0.2)', async () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(
-        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }, { exitCode: 0 }]),
+        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }, { exitCode: 0, stdout: '"superpowers"' }]),
       )
       const r = await installCcPluginMarketplace(ctx())
       expect(r).toMatchObject({ ok: true })
       if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
-        expect(r.appliedFiles.some((f) => f.endsWith('settings.json'))).toBe(true)
+        expect(r.appliedFiles.some((f) => f.endsWith('.claude.json'))).toBe(true)
       }
     } finally {
       s.restore()
