@@ -1,0 +1,41 @@
+# workflows/plan/auto/workflow.yaml — Phase v3.0-3.5 W1 T3.5.W1.2
+#
+# Stage ② Plan master orchestrator — 串行 invoke 2 sub (architecture conditional → phase always)
+# per ~/.claude/CLAUDE.md "Plan 阶段" 节 + RESEARCH-workflows § Area 2。
+# planning-with-files /plan 是 D-06 cross-cutting tool (NOT 独立 sub-workflow per user clarification 2)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Plan 阶段 (GSD + planning-with-files, 可选 gstack 架构审查)" 节
+#   - workflows/judgments/stage-routing.yaml — plan-{architecture,phase}-delegate triggers
+#   - workflows/plan/{architecture,phase}/workflow.yaml — 2 sub-workflow Phase 3.4 SHIPPED
+#   - workflows/capabilities.yaml — planning-with-files + plan-eng-review + gsd-plan-phase
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 Master Orchestrator yaml Examples
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 + DelegationClause (Phase 3.3 W0.5 SHIPPED)
+#
+# Master invariant (per WorkflowSchemaV3 runtime + check-workflow-schema.mjs K9):
+#   - phases 缺省 (master only has delegates_to[])
+#   - 2 delegates_to mode serial — 必带 explicit order (K9 invariant T3.3.W0.10)
+#   - architecture conditional (gate phase.is_complex_architecture) + phase unconditional
+
+schema_version: harnessed.workflow.v3
+workflow: plan
+description: |
+  Stage ② Plan master orchestrator — 串行 invoke 2 sub (architecture conditional → phase always);
+  planning-with-files /plan 自动 sink task_plan.md + progress.md (D-06 cross-cutting tool, NOT
+  独立 sub-workflow per user clarification 2)。复杂架构 gstack /plan-eng-review 强制 (sister
+  CLAUDE.md "⚠️ 复杂架构前 plan-eng-review"), 普通 phase skip architecture sub。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - planning-with-files
+  - plan-eng-review
+  - gsd-plan-phase
+
+delegates_to:
+  - sub: architecture
+    gate: judgments.stage-routing.plan-architecture-delegate.fires
+    mode: serial
+    order: 1
+  - sub: phase
+    mode: serial
+    order: 2
