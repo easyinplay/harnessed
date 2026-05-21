@@ -1,136 +1,425 @@
-# harnessed-Enabled User Development Workflow
+# harnessed v3.0 — 4-Stage Namespace-Layered Workflow Architecture
 
-**Purpose**: 用户装完 harnessed 后, 用 `/plan-feature` / `/execute-task` 等 slash command 启动的项目开发工作流详图 + CLAUDE.md detailed prescribed workflow 与 harnessed-shipped 实装能力的 gap 分析。
+**Purpose**: harnessed v3.0 用户开发工作流详图 — 4-stage cadence + 8-layer architecture + 20 workflow + L0 Discipline Substrate + L5b Execution Mechanism + 10 judgments yaml routing + ~75 capabilities 7-category 分布。
 
-**Scope**: 这是 **end user 用 harnessed 开发自己项目** 的工作流 (NOT project-internal dev cadence for shipping harnessed itself — 那是 sister review absorb 模式, 不在此 doc 范围)。
+**Scope**: 这是 **end user 用 harnessed 开发自己项目** 的工作流 (NOT project-internal dev cadence for shipping harnessed itself)。v3.0 完全替换 v2.0 `/plan-feature` + `/execute-task` + `/verify-work` 3-workflow prose。
+
+**Status**: v3.0 namespace-layered MAJOR refactor — BREAKING per CHANGELOG [3.0.0]。Sister Obsidian doc 4-stage cadence verbatim 机器化 + ~/.claude/CLAUDE.md 全 codify。
 
 ---
 
-## 4-stage 工作流总览 (CLAUDE.md prescribed cadence)
+## 1. 4-stage cadence (CLAUDE.md prescribed verbatim)
 
 ```mermaid
 flowchart TB
-    Start([👤 User: 新功能 X]) --> S1
+    Start([User: 新功能 X]) --> S1
 
-    subgraph S1["① Discuss / Research — 治理 + 澄清"]
+    subgraph S1["Stage 1 Discuss — 治理 + 澄清 (3 layer 独立判断)"]
         direction LR
-        G1["🎯 gstack /office-hours<br/>+ /plan-ceo-review<br/>(CEO/EM/Designer/Paranoid Eng<br/>关卡 强制)"] --> G2["🗣️ GSD /gsd-discuss-phase<br/>(灰色地带澄清 4-question batch)"]
-        G2 --> G3[决策锁定 + scope frozen]
+        D1["/discuss master<br/>gate-route 3 sub"]
+        D1 --> Ds["/discuss-strategic<br/>gstack /office-hours +<br/>/plan-ceo-review<br/>(strategic-gate.fires)"]
+        D1 --> Dp["/discuss-phase<br/>GSD /gsd-discuss-phase +<br/>planning-with-files findings.md<br/>(phase-gate.fires)"]
+        D1 --> Dt["/discuss-subtask<br/>superpowers brainstorming<br/>(subtask-gate.fires)"]
     end
 
     S1 --> S2
 
-    subgraph S2["② Plan — 高层任务图 + 持久化"]
+    subgraph S2["Stage 2 Plan — 任务图 + 持久化"]
         direction LR
-        P1["📋 GSD /gsd-plan-phase<br/>(Wave A research + Wave B planner<br/>+ Wave C plan-checker iter max 3)"] --> P2["📝 planning-with-files<br/>task_plan.md + progress.md + findings.md"]
-        P2 --> P3{复杂架构?}
-        P3 -- Yes --> P4["🎯 gstack /plan-eng-review<br/>(强烈建议)"]
-        P3 -- No --> Lock[plan locked + ROADMAP 同步]
-        P4 --> Lock
+        P1["/plan master<br/>串行 invoke"]
+        P1 --> Pa["/plan-architecture<br/>gstack /plan-eng-review<br/>(phase.is_complex_architecture)"]
+        P1 --> Pp["/plan-phase<br/>GSD /gsd-plan-phase +<br/>planning-with-files task_plan.md"]
     end
 
     S2 --> S3
 
-    subgraph S3["③ Execute — 每子任务: 心法 + 招式 + (TDD) + ralph-loop"]
+    subgraph S3["Stage 3 Execute — per subtask"]
         direction LR
-        E1["⚙️ GSD /gsd-execute-phase"] --> E2["💡 superpowers:brainstorming<br/>(子任务方案澄清 + 设计文档)"]
-        E2 --> E3["🧠 andrej-karpathy-skills<br/>(4 心法 always-on:<br/>Think Before Coding /<br/>Simplicity First /<br/>Surgical Changes /<br/>Goal-Driven)"]
-        E3 --> E4["⚡ mattpocock-skills<br/>(23 招式 by-phase routing:<br/>/diagnose / /zoom-out /<br/>/grill-with-docs / etc.)"]
-        E4 --> E5{核心逻辑 /<br/>算法 / 高可靠?}
-        E5 -- TDD 强制 --> E6["🔴🟢🔵 superpowers:tdd<br/>red-green-refactor"]
-        E5 -- 其他 可选 --> E7
-        E6 --> E7["🔁 ralph-loop<br/>--max-iterations N<br/>--completion-promise COMPLETE<br/>(直到 verbatim COMPLETE)"]
+        T1["/task master<br/>串行 invoke 4 sub"]
+        T1 --> Tc["/task-clarify<br/>superpowers brainstorm +<br/>mattpocock /grill-with-docs<br/>(gate: 不熟 OR ≥2 approach)"]
+        T1 --> Tcode["/task-code<br/>karpathy 心法 +<br/>mattpocock /zoom-out /improve-arch +<br/>planning-with-files progress.md"]
+        T1 --> Tt["/task-test<br/>superpowers TDD OR<br/>mattpocock /tdd<br/>(tdd-gate.fires)"]
+        T1 --> Td["/task-deliver<br/>ralph-loop COMPLETE wrapper<br/>(parallelism-gate.fires)"]
     end
 
     S3 --> S4
 
-    subgraph S4["④ Verify — 多 agent code-review + 简化 + 复盘"]
+    subgraph S4["Stage 4 Verify — multi-agent 审查 + 简化"]
         direction LR
-        V1["✅ GSD /gsd-verify-work<br/>+ /gsd-progress"] --> V2["🔍 code-review<br/>(多 agent 并行<br/>高置信度问题)"]
-        V2 --> V3["🎯 gstack /review<br/>(Paranoid Staff Eng 视角<br/>关键模块强制)"]
-        V3 --> V4["⭐ 可选: /qa /cso /design-review"]
-        V4 --> V5["✨ code-simplifier<br/>(简化最近修改 / 移除重复)"]
-        V5 --> V6{里程碑结束?}
-        V6 -- Yes --> V7["📝 /retro"]
-        V6 -- No --> Done
-        V7 --> Done([✅ 功能 ship])
+        V1["/verify master<br/>5-7 sub conditional"]
+        V1 --> Vp["/verify-progress<br/>GSD /gsd-verify-work +<br/>/gsd-progress (必跑串行)"]
+        V1 --> Vcr["/verify-code-review<br/>multi-agent parallel"]
+        V1 --> Vpr["/verify-paranoid<br/>gstack /review<br/>(关键模块强制)"]
+        V1 --> Vqa["/verify-qa<br/>(conditional has_ui_changes)"]
+        V1 --> Vs["/verify-security<br/>(conditional has_auth_or_secrets)"]
+        V1 --> Vd["/verify-design<br/>(conditional has_design_changes)"]
+        V1 --> Vsi["/verify-simplify<br/>code-simplifier (末尾)"]
+        V1 --> Vmu["/verify-multispec<br/>4-specialist Agent Team Pattern C<br/>(关键发布)"]
     end
 
+    S4 --> S5([Done OR milestone close → /retro])
+
     classDef user fill:#cfe2ff,stroke:#0a58ca,color:#000
-    classDef gstack fill:#fff3cd,stroke:#856404,color:#000
-    classDef gsd fill:#d4edda,stroke:#155724,color:#000
-    classDef super fill:#f8d7da,stroke:#721c24,color:#000
-    classDef done fill:#cce5ff,stroke:#004085,color:#000
-    class Start,Done user
-    class G1,P4,V3 gstack
-    class G2,P1,P2,E1,V1 gsd
-    class E2,E3,E4,E6,E7,V2,V5,V7 super
+    classDef master fill:#ffe5b4,stroke:#cc6600,color:#000
+    classDef sub fill:#d4edda,stroke:#155724,color:#000
+    class Start,S5 user
+    class D1,P1,T1,V1 master
+    class Ds,Dp,Dt,Pa,Pp,Tc,Tcode,Tt,Td,Vp,Vcr,Vpr,Vqa,Vs,Vd,Vsi,Vmu sub
 ```
 
-**Legend**: 🟦 User input / 🟨 gstack 治理层 / 🟩 GSD 项目经理 / 🟥 superpowers 资深工程师 + karpathy 心法 + mattpocock 招式 / 🟦 Done
+**Legend**:
+- 🟧 Master orchestrator (auto gate-route per `judgments.*-gate.fires` 独立判断)
+- 🟩 Sub workflow (独立 slash cmd 可单独 invoke)
+- 🟦 User input / milestone marker
 
 ---
 
-## CLAUDE.md prescribed vs harnessed-shipped (v0.4) gap analysis
+## 2. 8-layer architecture (L0-L7)
 
-| Stage | CLAUDE.md prescribed | harnessed v0.4 shipped | Gap status |
-|-------|---------------------|----------------------|-----------|
-| ① Discuss governance | gstack `/office-hours` + `/plan-ceo-review` 强制 | `/plan-feature` 5-phase 编排 phase 1 调度 gstack governance | ✅ FULL (Phase 3.2 W2 governance.json PUSH veto halt_workflow) |
-| ① Discuss clarification | GSD `/gsd-discuss-phase` 灰色澄清 | 5-phase 编排 phase 2-3 调度 GSD discuss/plan | ✅ FULL (Phase 3.2 plan-feature WIRED reference) |
-| ② Plan 任务图 | GSD `/gsd-plan-phase` 高层任务 | 5-phase 编排 phase 4 调度 GSD plan | ✅ FULL |
-| ② Plan persist | planning-with-files task_plan.md | 5-phase 编排 phase 5 调度 planning-with-files persist | ✅ FULL |
-| ② Plan eng-review | gstack `/plan-eng-review` (复杂架构强制) | 装齐 gstack 上游 (manifest install) 但 5-phase workflow NOT 编排进 | ⚠️ MANUAL invoke (用户自行 `/plan-eng-review`) |
-| ③ Execute orchestration | GSD `/gsd-execute-phase` 高层调度 | 装齐 GSD 上游 + checkpoint 引擎 (Phase 3.1 SHIPPED) | ⚠️ MANUAL invoke (5-phase plan-feature ends at planning-with-files persist; 用户手动 `/gsd-execute-phase` 续跑) |
-| ③ Execute brainstorming | superpowers `brainstorming` 每子任务 | 装齐 superpowers 上游 | ⚠️ MANUAL invoke (子任务级编排推 v0.5+) |
-| ③ Execute karpathy | 4 心法 always-on baseline | 装齐 karpathy-skills 上游 (Phase 2.3 W3 注入引擎) | ✅ FULL (always-on per ADR 0012) |
-| ③ Execute mattpocock | 23 招式 by-phase routing | 装齐 mattpocock-skills 上游 + routing 30/30 100% (Phase 3.4) | ✅ FULL (Phase 1.5 + 3.4 SHIPPED) |
-| ③ Execute TDD | superpowers `tdd` (核心逻辑强制) | 装齐 superpowers 上游 | ⚠️ MANUAL invoke (用户自行 `/tdd`) |
-| ③ Execute ralph-loop | `/ralph-loop --completion-promise COMPLETE` per task | 装齐 ralph-loop 上游 + execute-task workflow (Phase 2.2 SHIPPED) | ✅ FULL (Phase 2.2 ralph-loop full SDK integration) |
-| ④ Verify GSD | GSD `/gsd-verify-work` + `/gsd-progress` | 装齐 GSD 上游 | ⚠️ MANUAL invoke |
-| ④ Verify code-review | code-review 多 agent | 装齐 code-review skill | ⚠️ MANUAL invoke |
-| ④ Verify gstack /review | gstack `/review` (Paranoid Staff Eng 关键模块强制) | 装齐 gstack 上游 | ⚠️ MANUAL invoke |
-| ④ Verify code-simplifier | code-simplifier 修改后简化 | 装齐 simplify skill | ⚠️ MANUAL invoke |
-| ④ Verify retro | `/retro` 里程碑复盘 | 装齐 | ⚠️ MANUAL invoke |
+v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一职责, 上层 references 下层 by name:
 
-**Verdict**: harnessed v0.4 已装齐所有 4-stage 上游 (manifest install 100% coverage), 但 `/plan-feature` 当前自动编排范围 = Stage ① + ② 的 5-phase (gstack governance → superpowers brainstorm → GSD discuss/plan → planning-with-files persist + governance PUSH veto halt_workflow per Phase 3.2 W2 SHIPPED)。Stage ③ Execute + ④ Verify 的子任务级编排为 **reference 调用** (workflow.run.ts ≤80L mock + 5 SKILL.md stubs per Phase 3.2 W2 plan-feature 5-phase WIRED reference), 用户在 Claude Code 内手动按需 `/gsd-execute-phase` / `/gsd-verify-work` / `/code-review` / `/gstack:review` / `/code-simplifier` / `/retro` 等 — **完整 4-stage 自动化推 v0.5+ dogfood 信号触发** (per ROADMAP R8 deferred ideas)。
+```
+┌─────────────────────────────────────────────────────────────┐
+│ L7  User Entry         /discuss /plan /task /verify (master) │
+│                        + 16 sub slash cmd + /research /retro │
+├─────────────────────────────────────────────────────────────┤
+│ L6  Workflow           20 workflow.yaml (4 master + 14 sub + │
+│                        2 standalone) — phases[] orchestration │
+├─────────────────────────────────────────────────────────────┤
+│ L5b Execution          subagent (default) / Agent Teams      │
+│     Mechanism          (Pattern A/B/C escalate) / 主 session  │
+│                        / ralph-loop (orthogonal wrapper)     │
+├─────────────────────────────────────────────────────────────┤
+│ L5a Workflow SoT       workflows/capabilities.yaml (~75) +   │
+│                        workflows/judgments/ (10 yaml routing)│
+├─────────────────────────────────────────────────────────────┤
+│ L4  Runtime            judgmentResolver + exprBuilder +      │
+│                        phaseFactContext (47 field v3) +      │
+│                        sdkReconcile + fallbackHandlers       │
+├─────────────────────────────────────────────────────────────┤
+│ L3  TypeBox Schema     workflow.v3 + capability.v3 +         │
+│                        discipline.v1 + judgment.v1 (16+1     │
+│                        SCHEMA_VERSIONS surface)              │
+├─────────────────────────────────────────────────────────────┤
+│ L2  Installer          MCP / Plugin / NPM / Skill installer  │
+│                        idempotent contract per ADR 0004      │
+├─────────────────────────────────────────────────────────────┤
+│ L1  Upstream Component gstack / GSD / superpowers /          │
+│                        planning-with-files / mattpocock /    │
+│                        karpathy / ralph-loop / etc.          │
+├─────────────────────────────────────────────────────────────┤
+│ L0  Discipline         workflows/disciplines/ 6 yaml          │
+│     Substrate          (karpathy / output-style / language /  │
+│                        operational / priority / protocols)   │
+│                        — universal applies L1-L7             │
+└─────────────────────────────────────────────────────────────┘
+```
 
----
-
-## Special-purpose tools (按需召唤)
-
-CLAUDE.md prescribes additional tools for specific scenarios; harnessed manifests support all:
-
-| 场景 | 工具 | harnessed manifest |
-|------|------|---------------------|
-| UI/UX 主方案 | `ui-ux-pro-max` (数据驱动 / 标准化) | ✅ ui-ux-pro-max |
-| UI 风格补充 | `frontend-design` (创意 / 装饰) | ✅ frontend-design |
-| 浏览器探查 / 调试 | `playwright-cli` (Bash 一行) | ✅ playwright |
-| E2E 功能测试 commit | `@playwright/test` (TS) OR `webapp-testing` (Python) | ✅ playwright |
-| 性能 / a11y / 内存 | `chrome-devtools-mcp` (LCP/Core Web Vitals/ARIA) | ✅ chrome-devtools |
-| 系统化排错 | mattpocock `/diagnose` OR GSD `/gsd-debug` | ✅ |
-| 陌生模块导航 | mattpocock `/zoom-out` | ✅ |
-| 规格澄清 | mattpocock `/grill-with-docs` | ✅ |
-| 架构健康 | mattpocock `/improve-codebase-architecture` | ✅ |
-| 节省 token | mattpocock `/caveman` | ✅ |
-| 库 / API 文档 | `/find-docs` (ctx7 routing) | ✅ |
-| Web 搜索 | Tavily MCP (默认) OR Exa MCP (描述式 / 学术) | ✅ |
-| 跨 AI peer review | GSD `/gsd-review` (外部 AI consultation) | ✅ |
-
----
-
-## Coverage 路线图 (v0.5+ 完整自动化目标)
-
-- **v0.4 NOW**: Stage ① + ② 5-phase 自动化 `/plan-feature`; Stage ③ + ④ reference + manual invoke
-- **v0.5**: plan-feature 真接外部 gsd-* spawn dogfood, Stage ③ 子任务级自动 `gsd-* spawn`
-- **v0.6**: Stage ④ Verify 子任务级自动 (`code-review` + `gstack /review` + `code-simplifier` + `/retro` 编排进 5-phase 后置)
-- **v1.0**: 完整 4-stage 自动化, 用户只需 `/plan-feature "task"` / `/execute-task "task"` 一行触发 + 关键 checkpoint approval
+**关键 layer 说明**:
+- **L0 Discipline** — global cross-stage behavioral norms (auto-enforce via hook); 详 § 3
+- **L5a SoT** — capabilities + judgments yaml = single source of truth, NO code 内 hardcode
+- **L5b Execution Mechanism** — orthogonal to L6 workflow; 详 § 4
+- **L6 Workflow** — 20 workflow.yaml phases[] 编排 capabilities; 详 § 5
 
 ---
 
-## 引用
+## 3. L0 Discipline Substrate (6 yaml universal-apply)
 
-- [CLAUDE.md (user global)](../CLAUDE.md) — 详细 prescribed workflow 来源
-- [PROJECT-SPEC.md](../PROJECT-SPEC.md) — § 10 phases schema 显式编排
-- [WORKFLOWS-MVP.md](../WORKFLOWS-MVP.md) — 3 MVP workflow (research / execute-task / plan-feature) 设计
-- [.planning/ROADMAP.md](../.planning/ROADMAP.md) — v0.5/v0.6/v1.0 完整自动化目标
-- [docs/MAINTAINER-ONBOARDING.md](./MAINTAINER-ONBOARDING.md) — 外部 contributor 30 分钟入门指南
+**位置**: `workflows/disciplines/*.yaml` (D-09 Phase v3.0-3.3 W0.4 SHIPPED)
+
+**机制**: 6 yaml = global cross-stage behavioral norms。Runtime engine pre-phase loads + 通过 4 hook helper enforce:
+- `before-phase-execute` — pre-load discipline rules for current phase
+- `before-spawn` — sort fired capabilities by `priority.priority_hierarchy` rank
+- `before-commit` — biome preempt auto-fix + A7 ADR conservation check
+- `after-output` — BLUF / strip-sycophantic / em-dash / emoji validation
+
+**Auto-enforce vs warn semantics**:
+| Enforcement | 行为 |
+|---|---|
+| `halt` | 阻断 (e.g., file > 200L / `git push` 无 approval / `--no-verify` flag) |
+| `auto-fix` | 自动修复 (e.g., biome `--write` / strip-sycophantic / replace em-dash) |
+| `warn` | 提示 (e.g., BLUF missing / single commit > 300 lines diff) |
+| `info` | 记录 only (e.g., 量词精确 llm-judge) |
+
+### 6 Disciplines 详表
+
+| # | Discipline | enforcement_layer | auto_enforce | 核心 rules (verbatim CLAUDE.md) | Sister source |
+|---|---|---|---|---|---|
+| 1 | `karpathy.yaml` | `code-writing` | true | think-before-coding (warn) / simplicity-first (warn) / surgical-changes (warn) / goal-driven (warn) / **file-length-200-hard-limit (halt)** | `~/.claude/CLAUDE.md` andrej-karpathy-skills 心法 |
+| 2 | `output-style.yaml` | `output` | true | bluf-conclusion-first (warn) / **no-sycophantic-open-close (auto-fix)** / no-emoji-unless-requested (warn) / **no-em-dash (auto-fix)** / precise-quantifier (info) / no-end-recap (warn) / no-empty-continuation-question (warn) | CLAUDE.md 对话回答风格 |
+| 3 | `language.yaml` | `output` | true | default-language-zh-hans (warn) / preserve-english-categories 8 类 (warn) / lang-request-override (info) | CLAUDE.md 语言与输出规范 |
+| 4 | `operational.yaml` | `commit` | true | **biome-preempt (auto-fix)** / a7-adr-conservation (warn) / **no-push-without-approval (halt)** / **no-skip-hooks (halt)** / **destructive-ops-explicit (halt)** / authorization-not-transitive (warn) | project CLAUDE.md commit safety + `~/.claude/CLAUDE.md` |
+| 5 | `priority.yaml` | `workflow` | true | multi-capability-arbitration (warn) — priority_hierarchy: gstack > gsd > superpowers > planning-with-files > karpathy > mattpocock > parallel | CLAUDE.md 响应规范与优先级 |
+| 6 | `protocols.yaml` | `workflow` | false | cc-handoff-ideation-to-onboarding / plan-execute-cc-ready-metadata / **file-ownership-strict (halt)** | `~/.claude/rules/cc-handoff.md` |
+
+**snapshot policy** (K7 mitigation): 6 yaml = snapshot of CLAUDE.md as of v3.0 ship date, NOT live-load。CLAUDE.md update → harnessed patch release iterate snapshot。
+
+---
+
+## 4. L5b Execution Mechanism (orthogonal to L6 workflow)
+
+**位置**: routing SoT = `workflows/judgments/parallelism-gate.yaml` (D-10 Phase 2.3 W0.2 SHIPPED, v3.0 extend)
+
+**核心原则** (per `~/.claude/rules/agent-teams.md` verbatim):
+
+```
+任 phase 执行 = 选 1 mechanism (subagent OR Teams OR 主 session) + 可选 ralph-loop wrapper
+
+每 phase yaml: parallelism: judgments.parallelism-gate.<route>.fires
+```
+
+### 4.1 Mechanism 路由表
+
+| Mechanism | Default? | 触发条件 (any-OR-chain) | 用例 |
+|---|---|---|---|
+| **主 session 直跑** | downgrade | `lines < 20` OR `single_command_query` | 单 grep / 单 read / trivial edit |
+| **subagent fan-out** | ✅ default | `file_independent` AND `parallel_count ≤ 3` AND `NO communication` | research / verify 单文件 / 跑测试 / 抓 doc |
+| **Agent Teams escalate** | upgrade | `teammate_send_message_needed` OR `subagent_context_overflow` OR `shared_task_list` OR `opposing_hypothesis_debate` OR `fullstack_three_way` | 见下方 Pattern A/B/C |
+| **ralph-loop wrapper** | orthogonal | 任 mechanism 外层套 `--completion-promise COMPLETE` | 完成 promise 保证 (sister Phase 2.4 W1.1 wire) |
+
+### 4.2 Agent Teams 3 Pattern (verbatim from `~/.claude/rules/agent-teams.md`)
+
+| Pattern | 用例 | Teammates | 通信 | harnessed wire 点 |
+|---|---|---|---|---|
+| **Pattern A** 全栈三路 | 前端 + 后端 + 测试同步推进 + API contract 对齐 | 3 (frontend / backend / test) | SendMessage cross-deps | Phase 2.4 W1 first-use validated |
+| **Pattern B** 对立假设辩论 | root cause 调试 / 架构决策对立 | 2 teammate + 1 lead 裁判 | lead 给 evidence, 2 teammate 互怼 | task-clarify / verify-paranoid (option) |
+| **Pattern C** 多维度审查 | 关键发布 / 大重构 PR (≥3 specialist 互相质询) | ≥3 specialist + 1 lead 委派 | lead 分发, specialist 互怼 finding 真伪 | `/verify-multispec` (W2.2 wire, gate `is_critical_release`) |
+
+### 4.3 Cleanup 防呆铁律
+
+- Session-scoped — Team 只活在当前 session, `/resume` 会丢 teammates
+- 必须 `SendMessage shutdown_request` + `TeamDelete` cleanup
+- Token cost estimation: `doctor check` + workflow runtime warn 当 `estimated team_cost > 2 × subagent fan-out cost`
+- Brief 自包含 — teammate 启动时无主 session 上下文
+
+---
+
+## 5. 20 Workflow 全表 (4 master + 14 sub + 2 standalone)
+
+**位置**: `workflows/<stage>/<sub>/{workflow.yaml + SKILL.md}` (D-03 nested 2-level)
+
+| # | Slash cmd | Stage | Type | Capability / upstream | Brief description |
+|---|---|---|---|---|---|
+| 1 | `/discuss` | ① Discuss | **master** | (gate-route 3 sub via `judgments.{strategic,phase,subtask}-gate.fires`) | Auto orchestrator — 3 layer 独立判断激活 |
+| 2 | `/discuss-strategic` | ① Discuss | sub | gstack `/office-hours` + `/plan-ceo-review` | 战略层澄清 (new project / milestone / 产品方向) |
+| 3 | `/discuss-phase` | ① Discuss | sub | GSD `/gsd-discuss-phase` + planning-with-files findings.md | Phase 层澄清 (≥2 open decisions / 跨 phase 数据流) |
+| 4 | `/discuss-subtask` | ① Discuss | sub | superpowers `brainstorming` | 子任务层澄清 (≥2 approach / 核心算法 / API contract) |
+| 5 | `/plan` | ② Plan | **master** | (串行: architecture conditional → phase always) | Auto orchestrator — 持久化任务图 |
+| 6 | `/plan-architecture` | ② Plan | sub | gstack `/plan-eng-review` | 复杂架构强烈建议 (fires when `phase.is_complex_architecture`) |
+| 7 | `/plan-phase` | ② Plan | sub | GSD `/gsd-plan-phase` + planning-with-files `task_plan.md` | 高层任务拆分 + 持久化 (always) |
+| 8 | `/task` | ③ Execute | **master** | (串行 invoke 4 sub per subtask) | Auto orchestrator — per subtask 全链路 |
+| 9 | `/task-clarify` | ③ Execute | sub | superpowers `brainstorming` + mattpocock `/grill-with-docs` | 子任务澄清 (fires when 不熟 OR ≥2 approach) |
+| 10 | `/task-code` | ③ Execute | sub | karpathy 心法 + mattpocock `/zoom-out` `/improve-arch` + planning-with-files `progress.md` | 编码执行 (心法 always-on + 招式 by-condition) |
+| 11 | `/task-test` | ③ Execute | sub | superpowers TDD OR mattpocock `/tdd` | 测试 (fires when `tdd-gate.fires` 核心逻辑强制) |
+| 12 | `/task-deliver` | ③ Execute | sub | ralph-loop COMPLETE wrapper | Completion-promise (`parallelism-gate.fires` mechanism 外层) |
+| 13 | `/verify` | ④ Verify | **master** | (5-7 sub conditional per `judgments.stage-routing`) | Auto orchestrator — multi-agent + 简化 |
+| 14 | `/verify-progress` | ④ Verify | sub | GSD `/gsd-verify-work` + `/gsd-progress` + planning-with-files `progress.md` | 必跑串行 (always) |
+| 15 | `/verify-code-review` | ④ Verify | sub | code-review skill multi-agent parallel | 多 agent 高置信度问题 |
+| 16 | `/verify-paranoid` | ④ Verify | sub | gstack `/review` (Paranoid Staff Engineer) | 关键模块强制 |
+| 17 | `/verify-qa` | ④ Verify | sub | gstack `/qa` | Conditional `has_ui_changes` |
+| 18 | `/verify-security` | ④ Verify | sub | gstack `/cso` | Conditional `has_auth_or_secrets` |
+| 19 | `/verify-design` | ④ Verify | sub | gstack `/design-review` | Conditional `has_design_changes` |
+| 20 | `/verify-simplify` | ④ Verify | sub | code-simplifier skill | 末尾简化 (`is_final_step` fires) |
+| 21 | `/verify-multispec` | ④ Verify | sub | 4-specialist Agent Team Pattern C | 关键发布大重构 PR (`is_critical_release` fires) |
+| 22 | `/research` | ① alternate | **standalone** | Tavily/Exa/ctx7 多源 + GSD synth | 多源调研 (v2.0 carry-over reuse) |
+| 23 | `/retro` | post-④ | **standalone** | milestone close + lessons learned | Milestone retro (`is_milestone_close` fires) |
+
+(实际 ship 20 workflow.yaml file — master 4 + sub 14 + standalone 2; 表中 23 row 含 master overview row 编号方便引用。)
+
+**Master orchestrator behavior** (per D-01 auto gate-route):
+- Master invoke → 并行 gate-eval per sub via `judgments.<sub>.fires`
+- 满足 condition 的 sub → 激活
+- 不 fire 的 sub → **透明声明跳过** (sister `fallback.yaml` 铁律 1 `skip_with_transparency`)
+- User 仍可独立 invoke 任 sub (sub 本身是独立 slash cmd)
+
+---
+
+## 6. 10 Judgments yaml routing map (verbatim Appendix B)
+
+**位置**: `workflows/judgments/*.yaml` (D-11 ship; 6 v2 + 4 NEW v3)
+
+| # | File | Root key | Status | Sister source |
+|---|---|---|---|---|
+| 1 | `strategic-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md 战略层 (3 ✅ + 4 ❌) |
+| 2 | `phase-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md Phase 层 |
+| 3 | `subtask-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md 子任务层 |
+| 4 | `parallelism-gate.yaml` | triggers | v2 SHIPPED, v3 no change (4 route + ralph wrapper 已含) | `~/.claude/rules/agent-teams.md` |
+| 5 | `tdd-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md TDD 强烈建议节 |
+| 6 | `fallback.yaml` | rules | v2 SHIPPED, v3 no change (3 铁律) | CLAUDE.md fallback 3 铁律 |
+| 7 | `web-design-routing.yaml` | triggers | **NEW v3** (3 trigger: ui-ux-pro-max-default + frontend-design-creative + design-review-post) | `~/.claude/rules/web-design.md` |
+| 8 | `web-testing-routing.yaml` | triggers | **NEW v3** (4 trigger: playwright-test-default + playwright-cli-probe + webapp-testing-python-backend + chrome-devtools-mcp-diagnostic) | `~/.claude/rules/web-testing.md` |
+| 9 | `web-search-routing.yaml` | triggers | **NEW v3** (5 trigger: tavily-default + exa-descriptive + tavily-crawl + ctx7-lib-docs + webfetch-single-url) | `~/.claude/rules/web-search.md` + `context7.md` + `google-workspace.md` |
+| 10 | `stage-routing.yaml` | triggers | **NEW v3** (12+ trigger: master orchestrator sub delegation per D-01) | CLAUDE.md 4-stage + D-07 20 workflow |
+
+**Schema confirm**: 全 10 file 沿用 `judgment.ts` v1 schema (`JudgmentTriggersFile` 或 `JudgmentRulesFile`), schema_version 不 bump。
+
+**3 铁律** (fallback.yaml, verbatim CLAUDE.md):
+1. **拿不准 → 倾向跳过**, 但 transparent declare 跳过原因
+2. **用户明示 → 覆盖判据** (用户说 "先 brainstorm" / "跑 office-hours" → 无条件激活)
+3. **链式互不前置** (跳过战略层 ≠ 必须跳过 phase 层; 每层独立判断)
+
+---
+
+## 7. ~75 Capabilities 7-category 分布表 (Appendix A verbatim)
+
+**位置**: `workflows/capabilities.yaml` (v2 39 entry → v3 ~75 entry; D-08 + D-12 ship Phase 3.3 + 3.4)
+
+| Category | Count | v2 SHIPPED | NEW v3 | 范围 |
+|---|---|---|---|---|
+| `behavioral` | **6** | 1 (karpathy-guidelines reclass) | 5 NEW | L0 discipline-ref (NOT slash cmd invoke) |
+| `tool-slash-cmd` | **56** | 21 (11 matt + 6 gstack-core + 4 supp) | 35 (33 gstack optional + 2 gsd-W2 + 1 superpowers-subagent backfill) | mattpocock 11 / gstack 6 core + 33 optional / gsd 7 / superpowers 3 / design 2 |
+| `tool-mcp` | **3** | 3 | 0 | chrome-devtools / tavily / exa |
+| `tool-cli` | **2** | 1 (ctx7) | 1 (gws) | ctx7 / gws |
+| `tool-plugin` | **2** | 1 (planning-with-files) | 1 (@playwright/test reclass) | Claude Code plugin / npm-cli |
+| `tool-bundled-skill` | **3** | 2 (ralph-loop + webapp-testing reclass) | 1 (playwright-cli reclass) | sdk_ref bundled |
+| `agent-platform` | **3** | 3 | 0 | TeamCreate / SendMessage / TeamDelete |
+| **TOTAL** | **75** | **32** | **43** | (含 reclass 调整) |
+
+### 7.1 category=behavioral (6 entry — D-09 L0 discipline-ref)
+
+| # | Entry name | impl | cmd | discipline_ref |
+|---|---|---|---|---|
+| 1 | `karpathy-guidelines` | harnessed-bundled | `<virtual>` | `workflows/disciplines/karpathy.yaml` |
+| 2 | `output-style-discipline` | harnessed-bundled | `<virtual>` | `workflows/disciplines/output-style.yaml` |
+| 3 | `language-convention` | harnessed-bundled | `<virtual>` | `workflows/disciplines/language.yaml` |
+| 4 | `operational-discipline` | harnessed-bundled | `<virtual>` | `workflows/disciplines/operational.yaml` |
+| 5 | `priority-hierarchy` | harnessed-bundled | `<virtual>` | `workflows/disciplines/priority.yaml` |
+| 6 | `conceptual-protocols` | harnessed-bundled | `<virtual>` | `workflows/disciplines/protocols.yaml` |
+
+### 7.2 category=tool-slash-cmd (56 entry — 5 sub-bucket)
+
+**mattpocock 11** (v2 SHIPPED):
+`grill-with-docs` / `zoom-out` / `diagnose` / `caveman` / `grill-me` / `to-prd` / `to-issues` / `improve-codebase-architecture` / `code-review` / `code-simplifier` / `investigate`
+
+**gstack 6 core wrapped** (v2 SHIPPED — wrapped in 6 sub-workflow):
+`gstack-office-hours` (discuss-strategic) / `gstack-plan-ceo-review` (discuss-strategic) / `gstack-review` (verify-paranoid) / `gstack-qa` (verify-qa) / `gstack-cso` (verify-security) / `gstack-design-review` (verify-design)
+
+**gstack 33 optional** (NEW v3 D-12 register-only): 33 entry (e.g., `gstack-plan-eng-review` `gstack-design-consultation` `gstack-autoplan` `gstack-investigate` `gstack-codex` `gstack-benchmark` `gstack-design-shotgun` `gstack-design-html` `gstack-browse` `gstack-ship` `gstack-land-and-deploy` `gstack-canary` `gstack-document-release` `gstack-retro` `gstack-careful` `gstack-freeze` `gstack-gstack-upgrade` `gstack-learn` `gstack-plan-tune` `gstack-health` `gstack-make-pdf` ... 全集 33) — fires_when conditional per phase context
+
+**gsd 7** (v2 5 SHIPPED + 2 W2 NEW):
+`gsd-discuss-phase` / `gsd-plan-phase` / `gsd-review` / `gsd-debug` / `gsd-progress` / `gsd-verify-work` / `gsd-research-phase`
+
+**superpowers 3**: `tdd` (alias `/tdd`) / `superpowers-brainstorming` / `superpowers-subagent-driven-development`
+
+**special-purpose design 2**: `ui-ux-pro-max` / `frontend-design`
+
+### 7.3 category=tool-mcp (3)
+
+| Entry | impl | cmd |
+|---|---|---|
+| `chrome-devtools-mcp` | mcp | chrome-devtools |
+| `tavily-mcp` | mcp | `tavily_search` |
+| `exa-mcp` | mcp | `web_fetch_exa` |
+
+### 7.4 category=tool-cli (2)
+
+| Entry | impl | cmd | sister |
+|---|---|---|---|
+| `ctx7` | cli | `ctx7` | `~/.claude/rules/context7.md` SOP |
+| `gws` | cli | `gws` | `~/.claude/rules/google-workspace.md` (cond fires `subtask.needs_google_workspace`) |
+
+### 7.5 category=tool-plugin (2)
+
+| Entry | impl | cmd | requires |
+|---|---|---|---|
+| `planning-with-files` | claude-code-plugin | `/plan` | plugin `planning-with-files >=2.2.0` |
+| `playwright-test` | npm-cli | `@playwright/test` | v3 reclassify from special-purpose |
+
+### 7.6 category=tool-bundled-skill (3)
+
+| Entry | impl | cmd | sdk_ref / plugin |
+|---|---|---|---|
+| `ralph-loop` | bundled-skill | `ralph-loop` | `src/routing/lib/ralphLoop.ts` |
+| `webapp-testing` | gstack | `/webapp-testing` | v3 reclass (sister gstack 起源, paradigm 非 plugin) |
+| `playwright-cli` | npm-cli | `playwright` | v3 reclass (AI-probe paradigm 非 plugin 非 CLI 标准) |
+
+### 7.7 category=agent-platform (3 — L5b Execution Mechanism backbone)
+
+`agent-teams-create` (TeamCreate) / `agent-teams-send-message` (SendMessage) / `agent-teams-shutdown` (TeamDelete)
+
+---
+
+## 8. CLAUDE.md / Obsidian doc / rules/ 全 codify 映射 (D-13 superset commitment)
+
+harnessed v3.0 = **superset of user manual**:
+
+| Source | harnessed codify 位置 |
+|---|---|
+| CLAUDE.md 4-stage cadence | 20 workflow (4 master + 14 sub + 2 standalone) |
+| CLAUDE.md 三层栈判据 | `judgments/{strategic,phase,subtask}-gate.yaml` |
+| CLAUDE.md 子任务并行机制 | `judgments/parallelism-gate.yaml` + L5b execution mechanism |
+| CLAUDE.md fallback 3 铁律 | `judgments/fallback.yaml` |
+| CLAUDE.md 语言/风格/priority/纪律 | L0 `disciplines/*.yaml` 6 file |
+| CLAUDE.md mattpocock 23 招式 | `capabilities` category=tool-slash-cmd (v3 ship 11 高频, 23 全集 v3.x patch defer) |
+| CLAUDE.md ralph-loop completion | `capabilities.ralph-loop` + workflow `/task-deliver` wrapper |
+| Obsidian doc gstack 介入节点 | 6 core workflow + 33 optional capabilities |
+| Obsidian doc 测试 3-layer + Pattern A/B/C | `judgments/web-testing-routing.yaml` + L5b 3 pattern |
+| `rules/agent-teams.md` | `judgments/parallelism-gate.yaml` + L5b + doctor token cost check |
+| `rules/web-design.md` | `judgments/web-design-routing.yaml` + capabilities entries |
+| `rules/web-testing.md` | `judgments/web-testing-routing.yaml` + capabilities entries |
+| `rules/web-search.md` | `judgments/web-search-routing.yaml` + capabilities entries |
+| `rules/context7.md` | `judgments/web-search-routing.yaml` (lib-docs trigger 合并) + `capabilities.ctx7` |
+| `rules/google-workspace.md` | `capabilities.gws` (cond fires_when) |
+| `rules/cc-handoff.md` | `disciplines/protocols.yaml` (conceptual, NOT slash cmd) |
+
+**harnessed > user manual via**:
+- Auto gate-route (mechanized judgments eval, NOT user 手动判断 every layer)
+- Pure bundled (1-command install vs user 手动 setup CLAUDE.md + rules)
+- Cross-session memory (state.ts + `.planning/` persistence)
+- ADR audit trail (vs user manual decision tracking)
+- Token cost estimation built-in (vs user 心算)
+- Real-time discipline enforcement (biome preempt auto-fire / BLUF auto-format / etc.)
+
+---
+
+## 9. v2.0 → v3.0 migration (BREAKING)
+
+**DROP** (v2 slash cmd removed):
+- `/plan-feature` (5-phase conflated; → use `/plan` master OR `/plan-phase` sub)
+- `/execute-task` (单体; → use `/task` master OR `/task-{clarify,code,test,deliver}` sub)
+- `/verify-work` (单体; → use `/verify` master OR `/verify-{paranoid,code-review,qa,...}` sub)
+
+**KEEP** (carry-over):
+- `/research` standalone (名字不变)
+
+**NEW** (v3 added):
+- `/retro` standalone (milestone close)
+- 4 master orchestrator + 14 sub workflow + 4 NEW judgments yaml + 6 disciplines yaml
+
+**User 升级**:
+```bash
+npm install -g harnessed@3.0
+harnessed setup --apply
+# 手动 remove ~/.claude/skills/{plan-feature,execute-task,verify-work}/ (K12 mitigation per Phase 3.6 W1.4 README block)
+```
+
+**Alias map** (CHANGELOG [3.0.0] BREAKING section):
+| v2 cmd | v3 replacement | Note |
+|---|---|---|
+| `/plan-feature` | `/plan` OR `/plan-phase` | master auto-route OR sub direct |
+| `/execute-task` | `/task` OR `/task-{clarify,code,test,deliver}` | master 串行 4 sub OR sub direct |
+| `/verify-work` | `/verify` OR `/verify-{paranoid,code-review,qa,security,design,simplify,multispec,progress}` | master conditional 5-7 sub OR sub direct |
+| `/research` | `/research` | unchanged |
+| (NEW) | `/retro` | NEW standalone |
+
+---
+
+## 10. References
+
+- **`~/.claude/CLAUDE.md`** — 4-stage cadence prose 原型 (Discuss / Plan / Execute / Verify) + 三层栈判据
+- **Obsidian Vault doc** `我的 Claude Code 开发方案（gstack + GSD + Superpowers 三层栈式组合，结合 Planning with Files、andrej-karpathy-skills、Ralph Loop 等顶级技能）.md` — 176L 完整开发方案 (user authored)
+- **`~/.claude/rules/`** — agent-teams.md / web-design.md / web-testing.md / web-search.md / context7.md / google-workspace.md / cc-handoff.md (special-purpose tools routing)
+- **`.planning/phase-v3.0-3.1/3.1-CONTEXT.md`** — 1 milestone + 13 D-decision LOCKED batch
+- **`.planning/phase-v3.0-3.2/RESEARCH-capabilities.md`** — ~75 entry final registry + 10 judgments map + 47-field phaseFactContext.ts v3 delta
+- **`.planning/phase-v3.0-3.2/PLAN.md`** — 6-phase wave plan + ~80 task
+- **`docs/adr/0030-namespace-policy-bare-slash-cmd-lock.md`** (v3.0 NEW)
+- **`docs/adr/0031-v3-4-stage-namespace-layered-architecture.md`** (v3.0 NEW)
+- **`docs/adr/0032-cross-cutting-discipline-substrate-l0.md`** (v3.0 NEW)
+- **`README.md`** — v3.0 highlight 节 (20 workflows + 4-stage diagram)
+- **`CHANGELOG.md`** [3.0.0] BREAKING section + alias map
+
+---
+
+*Document: harnessed v3.0 4-Stage Namespace-Layered Workflow Architecture*
+*Rewrite date: 2026-05-21 (Phase v3.0-3.6 T3.6.W1.5)*
+*Sister: v2.0 SHIPPED docs/WORKFLOW.md prose REPLACED — v3.0 major refactor per D-04 pure ship deprecate v2*
