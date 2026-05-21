@@ -1,0 +1,44 @@
+# workflows/verify/progress/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.10
+#
+# Stage ④.a verify sub-workflow — gsd-verify-work + gsd-progress 必跑串行 (verify-work 起点)
+# + planning-with-files persist (progress.md sink, sister CLAUDE.md "Verify 阶段" verbatim)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Verify 阶段" 章节 verbatim (gsd-verify-work + gsd-progress 必跑串行)
+#   - workflows/judgments/stage-routing.yaml verify-progress-always trigger (总 fire 当 stage=='verify')
+#   - workflows/capabilities.yaml — gsd-verify-work / gsd-progress / planning-with-files
+#   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 01-02 verbatim pattern
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/progress example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: verify-progress
+description: |
+  Stage ④.a GSD /gsd-verify-work + /gsd-progress 必跑串行 (verify-work 起点) + planning-with-files
+  progress.md persist。Sister CLAUDE.md "Verify 阶段" 必跑串行 verbatim — gsd-verify-work UAT-driven
+  conversational acceptance + gsd-progress 状态同步 (ROADMAP/STATE/REQUIREMENTS) 顺序不可调换。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-verify-work, gsd-progress, planning-with-files]
+
+phases:
+  - id: 01-gsd-verify-work
+    name: gsd-verify-work (UAT-driven conversational verification + acceptance criteria check)
+    upstream: gsd
+    capability: '{{ capabilities.gsd-verify-work.cmd }}'
+    model: sonnet
+    max_iterations: '{{ defaults.ralph_max_iterations.verify-progress.01-gsd-verify-work }}'
+
+  - id: 02-gsd-progress
+    name: gsd-progress (状态同步 — ROADMAP/STATE/REQUIREMENTS 更新)
+    upstream: gsd
+    capability: '{{ capabilities.gsd-progress.cmd }}'
+    model: haiku
+    max_iterations: 2
+
+  - id: 03-progress-update
+    name: planning-with-files progress.md (verify 进度持久化)
+    upstream: planning-with-files
+    capability: '{{ capabilities.planning-with-files.cmd }}'
+    invokes: '/plan'
+    model: haiku
+    artifacts_expected: [progress.md]
