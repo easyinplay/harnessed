@@ -130,4 +130,21 @@ describe('cli/manifest-add (EE-5 5Q merge gate)', () => {
     expect(stderr).toContain('EE-5 gate requires non-empty answer')
     expect(closeMock).toHaveBeenCalled()
   })
+
+  // v3.0.1 UX flip — apply-immediate default regression fixture.
+  // No flag = immediate persist (sister Cell 5 但不传 --apply,验证 default behavior)。
+  it('7. v3.0.1 flip: no flag → persists EE-5 JSON immediately (apply-immediate default)', async () => {
+    process.chdir(tmpRoot)
+    mkdirSync(join(tmpRoot, 'manifests', 'skill-packs'), { recursive: true })
+    const answers = ['n1', 'n2', 'n3', 'n4', 'n5']
+    let i = 0
+    questionMock.mockImplementation(() => Promise.resolve(answers[i++] ?? ''))
+    const { code } = await runCli(['manifest-add', 'github.com/o/upstream-baz.git'])
+    expect(code).toBe(0)
+    const written = join(tmpRoot, 'manifests', 'skill-packs', 'upstream-baz.ee5-answers.json')
+    expect(existsSync(written)).toBe(true)
+    const p = JSON.parse(readFileSync(written, 'utf8')) as Record<string, string>
+    expect(p.q1_reusable_surface).toBe('n1')
+    expect(p.q5_user_understanding).toBe('n5')
+  })
 })

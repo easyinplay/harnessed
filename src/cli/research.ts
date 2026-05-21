@@ -28,10 +28,15 @@ interface RawOpts {
 export function registerResearch(program: Command): void {
   program
     .command('research')
-    .description('Run research workflow (search category sub-routing → spawn → verbatim COMPLETE)')
+    .description(
+      'Run research workflow (search category sub-routing → spawn → verbatim COMPLETE; immediate by default — use --dry-run for preview)',
+    )
     .requiredOption('--query <text>', 'research prompt (required)')
-    .option('--apply', 'execute the spawn (default: dry-run preview only)')
-    .option('--dry-run', 'force dry-run (overrides --apply if both are set)')
+    .option(
+      '--apply',
+      '(deprecated; kept for backward compat — research spawns immediately by default)',
+    )
+    .option('--dry-run', 'preview only — do not spawn subagent (opt-in for advanced users)')
     .option('--non-interactive', 'skip all prompts (CI / scripts) — requires --apply or --dry-run')
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .action(async (raw: RawOpts) => {
@@ -44,8 +49,9 @@ export function registerResearch(program: Command): void {
 
       const taskCtx: TaskContext = { task: raw.query, task_type: 'search' }
 
+      // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
       // Dry-run path: arbitrate-only preview, never spawn (mirrors install --dry-run).
-      if (raw.dryRun === true || (!raw.apply && !raw.nonInteractive)) {
+      if (raw.dryRun === true) {
         const preview = await runRouting(taskCtx, {
           skillsRoot: undefined,
           // Stub spawn — dry-run never reaches it; explicit COMPLETE keeps shape happy.
@@ -63,11 +69,13 @@ export function registerResearch(program: Command): void {
         }
         console.log(`[dry-run] matched_rule: ${preview.matchedRule?.id ?? '(fallback supervisor)'}`)
         console.log(`[dry-run] query: ${raw.query}`)
-        console.log('  (use --apply to spawn the subagent and emit verbatim COMPLETE round-trip)')
+        console.log(
+          '  (run without --dry-run to spawn the subagent and emit verbatim COMPLETE round-trip)',
+        )
         process.exit(0)
       }
 
-      // --apply path: real spawn requires SDK runtime dep (F40-2 deferred to phase 1.5).
+      // Immediate-execute path: real spawn requires SDK runtime dep (F40-2 deferred to phase 1.5).
       // Until then, runRouting.defaultSpawn throws a friendly placeholder error.
       const result = await runRouting(taskCtx, {
         ...(raw.model ? { agentOpts: { modelOverride: raw.model } } : {}),

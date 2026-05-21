@@ -30,11 +30,16 @@ function basename(upstream: string): string {
 export function registerManifestAdd(program: Command): void {
   program
     .command('manifest-add <upstream>')
-    .description('Add a new upstream adapter (EE-5 5-question merge gate, D-03 BOTH dry-run/apply)')
+    .description(
+      'Add a new upstream adapter (EE-5 5-question merge gate; immediate by default — use --dry-run for preview)',
+    )
     .option('--category <cat>', 'manifest category (skill-packs | tools)', 'skill-packs')
     .option('--name <name>', 'short adapter name (defaults to <upstream> basename)')
-    .option('--apply', 'persist EE-5 answers (default: dry-run preview)')
-    .option('--dry-run', 'force dry-run (overrides --apply if both set)')
+    .option(
+      '--apply',
+      '(deprecated; kept for backward compat — manifest-add persists immediately by default)',
+    )
+    .option('--dry-run', 'preview only — do not write JSON (opt-in for advanced users)')
     .option('--non-interactive', 'CI/scripts — requires --apply or --dry-run; WARN-only dry-run')
     .action(async (upstream: string, raw: RawOpts) => {
       validateNonInteractiveFlags(raw, 'manifest-add <upstream>')
@@ -64,7 +69,9 @@ export function registerManifestAdd(program: Command): void {
         payload[f] = a
       }
       rl.close()
-      if (raw.apply) {
+      // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
+      const dryRun = raw.dryRun === true
+      if (!dryRun) {
         writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8')
         console.log(`[manifest-add] EE-5 gate passed; wrote ${outPath}`)
       } else {

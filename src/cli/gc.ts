@@ -8,10 +8,12 @@
 // only notice when df -h is red), and ADR 0004 § Consequences explicitly
 // names this as the chosen mitigation.
 //
-// IMPL NOTE (Rule 1 / ADR 0004 contract 1 — dry-run default): gc follows
-// the same dry-run-default-with-explicit-apply convention as install.
-// Without --apply we list candidates but do not delete; this keeps the
-// safety contract uniform across all destructive harnessed commands.
+// IMPL NOTE (v3.0.1 UX flip — apply-immediate default + --dry-run opt-in):
+// gc follows the unified apply-immediate default convention (sister
+// install.ts pattern verbatim). Without flags → delete candidates。
+// `--dry-run` opt-in 列出 candidates 但不真删 (高级用户预览)。
+// `--apply` 保留 backward-compat no-op alias (旧脚本仍 work)。
+// keepLast + olderThan filter 仍 protect 误删近期 snapshot (safety contract)。
 
 import { readdir, readFile, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -65,13 +67,16 @@ async function dirSizeKb(dir: string): Promise<number> {
 export function registerGc(program: Command): void {
   program
     .command('gc')
-    .description('Garbage-collect old backup snapshots (dry-run by default)')
+    .description(
+      'Garbage-collect old backup snapshots (immediate by default — use --dry-run for preview)',
+    )
     .option('--older-than <duration>', 'delete snapshots older than (e.g. 30d / 24h / 4w)', '30d')
     .option('--keep-last <N>', 'always keep the most recent N snapshots', '0')
-    .option('--apply', 'actually delete (default: dry-run preview only)')
-    .option('--dry-run', 'force dry-run (overrides --apply)')
+    .option('--apply', '(deprecated; kept for backward compat — gc deletes immediately by default)')
+    .option('--dry-run', 'preview only — do not delete (opt-in for advanced users)')
     .action(async (opts: GcOpts) => {
-      const dryRun = opts.dryRun === true || opts.apply !== true
+      // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
+      const dryRun = opts.dryRun === true
       const olderMs = parseDuration(opts.olderThan ?? '30d')
       if (olderMs == null) {
         console.error(
@@ -127,6 +132,6 @@ export function registerGc(program: Command): void {
         console.log(`  ${c.ts}  ${c.manifest}  (${c.sizeKb} KB)`)
         if (!dryRun) await rm(c.path, { recursive: true, force: true })
       }
-      if (dryRun) console.log('\n(dry-run — re-run with --apply to actually delete)')
+      if (dryRun) console.log('\n(dry-run — re-run without --dry-run to actually delete)')
     })
 }

@@ -182,4 +182,13 @@ describe('cli/execute-task', () => {
     await runCli(['execute-task', '--task', 'preview', '--dry-run', '--non-interactive'])
     expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
   })
+
+  // v3.0.1 UX flip — apply-immediate default regression fixture.
+  // 在 --non-interactive 下,no --apply / no --dry-run 仍被 H1 gate exit 2 (CI safety)。
+  // 但 --apply legacy alias 等价 immediate default (新行为)。
+  it('9. v3.0.1 flip: --apply legacy alias still triggers immediate (no-op alias)', async () => {
+    await runCli(['execute-task', '--task', 'legacy', '--apply', '--non-interactive'])
+    // --apply path still wires through runBeforeCommitHook (sister Cell 7 regression)
+    expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
+  })
 })

@@ -37,11 +37,16 @@ interface RawOpts {
 export function registerExecuteTask(program: Command): void {
   program
     .command('execute-task')
-    .description('Run execute-task workflow (4-phase chain → ralph-loop COMPLETE)')
+    .description(
+      'Run execute-task workflow (4-phase chain → ralph-loop COMPLETE; immediate by default — use --dry-run for preview)',
+    )
     .requiredOption('--task <text>', 'task description (required)')
     .option('--workflow <name>', 'workflow name', 'execute-task')
-    .option('--apply', 'execute the spawn (default: dry-run preview)')
-    .option('--dry-run', 'force dry-run (overrides --apply if both set)')
+    .option(
+      '--apply',
+      '(deprecated; kept for backward compat — execute-task spawns immediately by default)',
+    )
+    .option('--dry-run', 'preview only — do not spawn subagent (opt-in for advanced users)')
     .option('--non-interactive', 'CI / scripts — requires --apply or --dry-run')
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .option('--model-tier <tier>', "override: 'inherit' bypasses per-phase phase.model (B-10)")
@@ -77,7 +82,8 @@ export function registerExecuteTask(program: Command): void {
       }
 
       const taskCtx: TaskContext = { task: raw.task, task_type: 'execute-task' }
-      const isDryRun = raw.dryRun === true || (!raw.apply && !raw.nonInteractive)
+      // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
+      const isDryRun = raw.dryRun === true
 
       // Dry-run path — arbitrate-only preview (mirrors research.ts L52-72).
       if (isDryRun) {
