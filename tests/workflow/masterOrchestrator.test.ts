@@ -223,7 +223,7 @@ describe('runMasterOrchestrator — extra fixtures (transparency / arbitration /
     const r = await runMasterOrchestrator('plan', {}, PACKAGE_ROOT, async () => {})
     expect(arbitrateBeforeSpawnMock).toHaveBeenCalledTimes(1)
     const warnMsgs = consoleWarnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
-    expect(warnMsgs).toMatch(/multi-capability fires \(2\), arbitrating by priority/)
+    expect(warnMsgs).toMatch(/multi-capability fires \(2 sub\), arbitrating by priority/)
     expect(r.fired.length).toBe(2) // NOT halt
   })
 
@@ -281,5 +281,54 @@ delegates_to:
     await expect(runMasterOrchestrator('plan', {}, PACKAGE_ROOT, async () => {})).rejects.toThrow(
       /Invalid master workflow.yaml/,
     )
+  })
+
+  it('23. T3.5.W0.3 — single sub fire → arbitrate NOT called (K14 skip path)', async () => {
+    yamlFileMap.set(
+      pathFor('discuss'),
+      masterYaml(
+        'discuss',
+        [
+          clauseLine('sub-a', { gate: 'judgments.x.a.fires' }),
+          clauseLine('sub-b', { gate: 'judgments.x.b.fires' }),
+        ].join('\n'),
+      ),
+    )
+    resolveJudgmentGateMock.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+    const r = await runMasterOrchestrator('discuss', {}, PACKAGE_ROOT, async () => {})
+    expect(r.fired).toEqual(['sub-a'])
+    expect(arbitrateBeforeSpawnMock).not.toHaveBeenCalled()
+  })
+
+  it('24. T3.5.W0.3 — arbitrate throw → console.warn + 继续 default order (K14 fail-soft)', async () => {
+    yamlFileMap.set(
+      pathFor('task'),
+      masterYaml(
+        'task',
+        [clauseLine('sub-a'), clauseLine('sub-b'), clauseLine('sub-c')].join('\n'),
+      ),
+    )
+    arbitrateBeforeSpawnMock.mockRejectedValueOnce(new Error('priority.yaml ENOENT'))
+    const spawnSeq: string[] = []
+    const r = await runMasterOrchestrator('task', {}, PACKAGE_ROOT, async (_m, sub) => {
+      spawnSeq.push(sub)
+    })
+    const warnMsgs = consoleWarnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
+    expect(warnMsgs).toMatch(/arbitrate failed.*proceeding default order/)
+    expect(r.fired.length).toBe(3) // NOT halt — all 3 still spawned
+    expect(spawnSeq).toHaveLength(3)
+  })
+
+  it('25. T3.5.W0.3 — multi-sub warn emit contains K14 "warn-not-halt" + tier placeholder note', async () => {
+    yamlFileMap.set(
+      pathFor('verify'),
+      masterYaml('verify', [clauseLine('sub-a'), clauseLine('sub-b')].join('\n')),
+    )
+    const r = await runMasterOrchestrator('verify', {}, PACKAGE_ROOT, async () => {})
+    expect(arbitrateBeforeSpawnMock).toHaveBeenCalledTimes(1)
+    const warnMsgs = consoleWarnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
+    expect(warnMsgs).toMatch(/multi-capability fires \(2 sub\)/)
+    expect(warnMsgs).toMatch(/K14 warn-not-halt/)
+    expect(r.fired.length).toBe(2)
   })
 })

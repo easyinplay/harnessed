@@ -145,14 +145,24 @@ export async function runMasterOrchestrator(
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
   const parallelClauses = firedClauses.filter((c) => (c.mode ?? 'parallel') === 'parallel')
 
-  // Phase 2.5: arbitrate fired capabilities(T3.5.W0.3 priority hierarchy,K14 warn-not-halt)
-  // — arbitrate Total fired list,sub name 作 tier(downstream 改 tier resolver 时延展)。
+  // Phase 2.5: arbitrate fired capabilities(T3.5.W0.3 priority hierarchy wire,K14
+  // warn-not-halt mitigation per RESEARCH-disciplines § 3.2.3)。
+  //
+  // v3.0 sub-name 用作 tier placeholder(未天然属 priority_hierarchy 7-tier);因 master sub
+  // 是 stage segment 而非 capability tier name,real cross-tier reorder 实际不发生
+  // (arbitrate fall-back unknown-tier MAX_SAFE_INTEGER rank → preserved order)。
+  // 真 priority sort 在下游 sub workflow phase-execute capability fire 层做 — defer v3.x
+  // 当 sub yaml 显式 declared `tier` 字段 or capabilities.yaml 加 `tier` field 时。
+  //
+  // K14 essence: fired.length > 1 → emit warn 透明声明 + arbitrate sort callable + NOT halt。
+  // sub yaml 元数据驱动 真 priority sort 的 schema extension defer。
   if (firedClauses.length > 1) {
     const firedCaps: FiredCapability[] = firedClauses.map((c) => ({ name: c.sub, tier: c.sub }))
     try {
       await arbitrateBeforeSpawn(firedCaps, packageRoot)
       console.warn(
-        `⚠️ multi-capability fires (${firedClauses.length}), arbitrating by priority hierarchy`,
+        `⚠️ multi-capability fires (${firedClauses.length} sub), arbitrating by priority hierarchy ` +
+          '(K14 warn-not-halt; v3.0 sub-as-tier placeholder, real cross-tier sort defer v3.x)',
       )
     } catch (e) {
       console.warn(`⚠️ arbitrate failed (${(e as Error).message}) — proceeding default order`)
