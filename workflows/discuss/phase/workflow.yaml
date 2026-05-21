@@ -1,0 +1,35 @@
+# workflows/discuss/phase/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.2
+#
+# Stage ①.b Phase 层 sub-workflow — GSD /gsd-discuss-phase 灰色澄清
+# (sister ~/.claude/CLAUDE.md "澄清/审查触发判据 — Phase 层")。
+#
+# Sister refs:
+#   - workflows/judgments/phase-gate.yaml — gsd-discuss-phase trigger
+#   - workflows/capabilities.yaml — gsd-discuss-phase / planning-with-files
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 sub-stage example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: discuss-phase
+description: |
+  Stage ①.b Phase 层 — GSD /gsd-discuss-phase 灰色澄清 (≥2 open decisions / phase scope > 1 day /
+  跨 phase API contract 不清)。Gate: judgments.phase-gate.gsd-discuss-phase.fires。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-discuss-phase, planning-with-files]
+
+phases:
+  - id: 01-gsd-discuss
+    name: gsd-discuss-phase (Phase 层灰色澄清 + open decisions resolve)
+    upstream: gsd
+    capability: '{{ capabilities.gsd-discuss-phase.cmd }}'
+    model: sonnet
+    gate: judgments.phase-gate.gsd-discuss-phase.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.discuss-phase.01-gsd-discuss }}'
+
+  - id: 02-persist
+    name: planning-with-files findings.md + knowledge.md (phase decision 持久化)
+    upstream: planning-with-files
+    capability: '{{ capabilities.planning-with-files.cmd }}'
+    invokes: '/plan'
+    model: haiku
+    artifacts_expected: [findings.md, knowledge.md]
