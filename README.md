@@ -135,17 +135,18 @@ graph TD
 
 ### 参数 (Flags)
 
-> `harnessed setup` 默认即写入,无需加 flag。其他命令默认 dry-run,需要 `--apply` 执行。
+> 所有命令默认 **apply (immediate write)**,无需加 flag。高级用户可加 `--dry-run` 预览。
 
 | Flag | 说明 |
 | ---- | ---- |
-| `--dry-run` | 预览不写盘 (适合高级用户; setup 默认已 immediate, 用此 flag 改预览模式) |
-| `--apply` | 显式执行 (install / uninstall 等命令的写入 opt-in) |
+| `--dry-run` | 预览不写盘 (高级用户 opt-in) |
 | `--non-interactive` | CI / 脚本场景 |
 | `--system` | L4 全局装允许 (否则降级 L1 npx ephemeral) |
 | `--yes` | uninstall 跳过交互 confirm |
 | `--full-diff` | 展开 > 200 行的 diff 折叠 |
 | `--no-color` | 强制 nocolor (即使 TTY) |
+
+> `--apply` flag 仍保留为向后兼容 alias (no-op, 旧脚本不破)。
 
 ---
 
