@@ -1,0 +1,39 @@
+# workflows/task/clarify/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.6 (D-09 + D-05 + D-04)
+#
+# Stage ③.a 子任务澄清 — superpowers brainstorm + mattpocock /grill-with-docs conditional invoke
+# (子任务 ≥2 approach OR core_algorithm OR has_api_contract OR error_cost=high)。
+# Sister gate: judgments.subtask-gate.brainstorming.fires (与 discuss/subtask 同 gate;
+# 但 Stage ③.a 是 per-subtask repeat invoke — execute-task 每个 subtask 入口走一次)。
+#
+# Sister refs:
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 task/clarify sub yaml example
+#   - workflows/judgments/subtask-gate.yaml triggers.brainstorming (Phase 2.3 W0.2 SHIPPED)
+#   - workflows/capabilities.yaml superpowers-brainstorming + grill-with-docs (Phase 2.3 W0.1 SHIPPED)
+#   - workflows/defaults.yaml ralph_max_iterations.task-clarify.* (T3.4.W2.2 followup wire)
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED 122L)
+#
+# disciplines_applied: 6 default 全开 per D-09 L0 Discipline Substrate always-on
+# tools_available: 2 entry ∈ capabilities.yaml entry set (T3.3.W0.10 Contract C1 catch)
+
+schema_version: harnessed.workflow.v3
+workflow: task-clarify
+description: |
+  Stage ③.a 子任务澄清 — superpowers brainstorm + mattpocock /grill-with-docs (子任务
+  ≥2 approach 或核心算法 / API contract / 错误成本高 时激活)。Gate: judgments.subtask-gate
+  .brainstorming.fires (与 discuss-subtask 同 gate, 但 Stage ③.a 是 per-subtask repeat
+  invoke — execute-task 每个 subtask 入口走一次)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [superpowers-brainstorming, grill-with-docs]
+
+phases:
+  - id: 01-brainstorm
+    name: brainstorm (子任务级澄清 multi-approach 探索)
+    upstream: superpowers
+    capability: '{{ capabilities.superpowers-brainstorming.cmd }}'
+    model: sonnet
+    gate: judgments.subtask-gate.brainstorming.fires
+    invokes_tools:
+      - if: 'phase.spec_ambiguous == true'
+        tool: grill-with-docs
+    max_iterations: '{{ defaults.ralph_max_iterations.task-clarify.01-brainstorm }}'
