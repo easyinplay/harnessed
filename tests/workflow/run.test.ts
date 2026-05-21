@@ -2,11 +2,9 @@
 // T2.4.W1.4 — 2 NEW fixture verify v2 真接 `phase.gate` pre-flight consume
 // (D-04 + D-11 strategic-gate / phase-gate skip path).
 // T3.5.W0.2 — 5 NEW fixture verify master vs sub detect + loadDisciplinesForPhase wedge.
+// T3.5.W1.5 — 6 NEW fixture verify 3 phase-level hook fire point per RESEARCH-disciplines § 4.4
+// (before-spawn invokes_tools.length>1 / after-output r.target=chat / before-commit r.triggers_commit)。
 // Sister Phase 3.1 W1 state.test.ts vi.mock pattern.
-// Mocks: governance.isVetoed + engineHook.activatePhase/completePhase + state.pause
-//       + judgmentResolver.resolveJudgmentGate (T2.4.W1.4 v2 gate consume)
-//       + masterOrchestrator.runMasterOrchestrator (T3.5.W0.2 master path)
-//       + before-phase-execute.loadDisciplinesForPhase (T3.5.W0.2 disciplines wedge).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -24,6 +22,14 @@ const resolveJudgmentGateMock = vi.fn<() => Promise<boolean>>()
 const runMasterOrchestratorMock =
   vi.fn<() => Promise<{ master: string; fired: string[]; skipped: string[] }>>()
 const loadDisciplinesForPhaseMock = vi.fn<() => Promise<Map<string, unknown>>>()
+// T3.5.W1.5 — 3 phase-level hook mock。
+interface FiredCapShape {
+  name: string
+  tier: string
+}
+const arbitrateBeforeSpawnMock = vi.fn<(fired: FiredCapShape[]) => Promise<FiredCapShape[]>>()
+const runAfterOutputHookMock = vi.fn<() => Promise<string[]>>()
+const runBeforeCommitHookMock = vi.fn<() => Promise<void>>()
 
 vi.mock('../../src/workflow/governance.js', () => ({
   isVetoed: () => isVetoedMock(),
@@ -58,8 +64,18 @@ vi.mock('../../src/discipline/enforcement/before-phase-execute.js', () => ({
     _root: string,
   ): Promise<Map<string, unknown>> => loadDisciplinesForPhaseMock(),
 }))
+vi.mock('../../src/discipline/enforcement/before-spawn.js', () => ({
+  arbitrateBeforeSpawn: (fired: FiredCapShape[], _root: string): Promise<FiredCapShape[]> =>
+    arbitrateBeforeSpawnMock(fired),
+}))
+vi.mock('../../src/discipline/enforcement/after-output.js', () => ({
+  runAfterOutputHook: (_ctx: unknown): Promise<string[]> => runAfterOutputHookMock(),
+}))
+vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
+  runBeforeCommitHook: (_ctx: unknown): Promise<void> => runBeforeCommitHookMock(),
+}))
 
-import { runWorkflow } from '../../src/workflow/run.js'
+import { _dispatchSkillStub, runWorkflow } from '../../src/workflow/run.js'
 
 const fivePhases = [
   { id: '01-gstack-decision', skills: ['plan-feature-decision'] },
@@ -68,6 +84,9 @@ const fivePhases = [
   { id: '04-gsd-plan', skills: ['plan-feature-plan'] },
   { id: '05-persist', skills: ['plan-feature-persist'] },
 ]
+
+// T3.5.W1.5 — preserve original stub fn so fixture override can restore in afterEach。
+const _origStubFn = _dispatchSkillStub.fn
 
 beforeEach(() => {
   isVetoedMock.mockReset()
@@ -78,14 +97,22 @@ beforeEach(() => {
   resolveJudgmentGateMock.mockReset()
   runMasterOrchestratorMock.mockReset()
   loadDisciplinesForPhaseMock.mockReset()
+  arbitrateBeforeSpawnMock.mockReset()
+  runAfterOutputHookMock.mockReset()
+  runBeforeCommitHookMock.mockReset()
   loadPhasesMock.mockReturnValue({ workflow: 'plan-feature', phases: fivePhases })
-  // Default — gate evaluates true (NOT skip). Per-test override for skip path.
   resolveJudgmentGateMock.mockResolvedValue(true)
-  // T3.5.W0.2 — default disciplines map (6 entries) for existing v1 / v2 fixture path
-  // 不破坏 backwards-compat;NEW fixture per-test override 验 wedge 行为。
   loadDisciplinesForPhaseMock.mockResolvedValue(new Map())
+  arbitrateBeforeSpawnMock.mockImplementation(async (fired) => fired)
+  runAfterOutputHookMock.mockResolvedValue([])
+  runBeforeCommitHookMock.mockResolvedValue(undefined)
+  // Reset stub fn to default (per-test override 后 restore)。
+  _dispatchSkillStub.fn = _origStubFn
 })
-afterEach(() => vi.clearAllMocks())
+afterEach(() => {
+  vi.clearAllMocks()
+  _dispatchSkillStub.fn = _origStubFn
+})
 
 describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
   it('1. 5 phase happy path → status=complete + phasesRun=5 + activate/complete called 5x each', async () => {
@@ -239,5 +266,100 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     const warnMsg = warnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
     expect(warnMsg).toMatch(/loadDisciplinesForPhase failed/)
     warnSpy.mockRestore()
+  })
+
+  it('11. T3.5.W1.5 — before-spawn fires: phase.invokes_tools.length=2 → arbitrate called', async () => {
+    // v3 phase 含 invokes_tools array length=2 → arbitrate fires once per phase
+    isVetoedMock.mockResolvedValue(false)
+    const v3Phases = [
+      {
+        id: 'p1',
+        invokes_tools: [{ tool: 'zoom-out' }, { tool: 'diagnose' }],
+      },
+    ]
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(r.phasesRun).toBe(1)
+    expect(arbitrateBeforeSpawnMock).toHaveBeenCalledTimes(1)
+    const calledFired = arbitrateBeforeSpawnMock.mock.calls[0]?.[0] ?? []
+    expect(calledFired).toEqual([
+      { name: 'zoom-out', tier: 'zoom-out' },
+      { name: 'diagnose', tier: 'diagnose' },
+    ])
+  })
+
+  it('12. T3.5.W1.5 — before-spawn NOT fire: invokes_tools.length=1 (single tool) → arbitrate NOT called', async () => {
+    // Single-tool phase 不需 arbitrate (RESEARCH-disciplines § 4.4 verbatim: length > 1 trigger)。
+    isVetoedMock.mockResolvedValue(false)
+    const v3Phases = [{ id: 'p1', invokes_tools: [{ tool: 'zoom-out' }] }]
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(arbitrateBeforeSpawnMock).not.toHaveBeenCalled()
+  })
+
+  it('13. T3.5.W1.5 — before-spawn fail-soft: arbitrate throw → console.warn + 继续 phase (K14)', async () => {
+    // K14 mitigation:arbitrate throw → warn + 不阻塞;phase 仍 complete。
+    isVetoedMock.mockResolvedValue(false)
+    arbitrateBeforeSpawnMock.mockRejectedValueOnce(new Error('priority.yaml malformed'))
+    const v3Phases = [{ id: 'p1', invokes_tools: [{ tool: 'zoom-out' }, { tool: 'diagnose' }] }]
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(r.phasesRun).toBe(1)
+    expect(warnSpy).toHaveBeenCalled()
+    const warnMsg = warnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
+    expect(warnMsg).toMatch(/before-spawn arbitrate failed/)
+    warnSpy.mockRestore()
+  })
+
+  it('14. T3.5.W1.5 — after-output fires: stub r.target=chat → runAfterOutputHook called', async () => {
+    // Stub override return shape with target='chat' → after-output validate fires。
+    isVetoedMock.mockResolvedValue(false)
+    _dispatchSkillStub.fn = async (skillName) => ({
+      status: 'ok',
+      output: `chat response from ${skillName}`,
+      target: 'chat',
+    })
+    const v2Phases = [{ id: 'p1' }]
+    loadPhasesMock.mockReturnValue({ workflow: 'task', phases: v2Phases })
+    const r = await runWorkflow('workflows/task/clarify/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(runAfterOutputHookMock).toHaveBeenCalledTimes(1)
+    // KEY: file/commit-message target NOT trigger after-output;default undefined NOT trigger 也证实。
+    expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
+  })
+
+  it('15. T3.5.W1.5 — before-commit fires: stub r.triggers_commit=true → runBeforeCommitHook called', async () => {
+    // Stub override triggers_commit=true → before-commit hook fires before completePhase。
+    isVetoedMock.mockResolvedValue(false)
+    _dispatchSkillStub.fn = async (skillName) => ({
+      status: 'ok',
+      output: `<stub for ${skillName}>`,
+      triggers_commit: true,
+    })
+    const v2Phases = [{ id: 'p1' }]
+    loadPhasesMock.mockReturnValue({ workflow: 'task', phases: v2Phases })
+    const r = await runWorkflow('workflows/task/deliver/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
+    // KEY: after-output NOT trigger (target undefined ≠ 'chat')。
+    expect(runAfterOutputHookMock).not.toHaveBeenCalled()
+  })
+
+  it('16. T3.5.W1.5 — default stub (target=undefined, triggers_commit=undefined) → both hook NOT called', async () => {
+    // Default WIRED stub return NO target NO triggers_commit → backwards-compat existing fixture
+    // 不破:after-output + before-commit both 跳过(negative gating proof)。
+    isVetoedMock.mockResolvedValue(false)
+    const r = await runWorkflow('workflows/plan-feature/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(r.phasesRun).toBe(5)
+    // Default stub 不带 target / triggers_commit → 两 hook 全 NOT fire。
+    expect(runAfterOutputHookMock).not.toHaveBeenCalled()
+    expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
+    // Default fivePhases 不带 invokes_tools → before-spawn 也 NOT fire。
+    expect(arbitrateBeforeSpawnMock).not.toHaveBeenCalled()
   })
 })
