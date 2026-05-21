@@ -1,0 +1,57 @@
+# workflows/task/auto/workflow.yaml — Phase v3.0-3.5 W1 T3.5.W1.3
+#
+# Stage ③ Task master orchestrator — 串行 invoke 4 sub per subtask (clarify → code → test → deliver)
+# per ~/.claude/CLAUDE.md "Execute 阶段" 节 + RESEARCH-workflows § Area 2。
+# ralph-loop COMPLETE wrapper 在 deliver phase 内 (D-10 orthogonal wrapper not master concern)。
+# tdd-gate conditional fire on test sub (sister task/test/workflow.yaml gate
+# judgments.tdd-gate.tdd-strongly-suggested.fires)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Execute 阶段 (GSD orchestration + superpowers 子任务执行)" 节
+#   - workflows/judgments/subtask-gate.yaml — brainstorming trigger (clarify)
+#   - workflows/judgments/tdd-gate.yaml — tdd-strongly-suggested trigger (test conditional)
+#   - workflows/task/{clarify,code,test,deliver}/workflow.yaml — 4 sub-workflow Phase 3.4 SHIPPED
+#   - workflows/capabilities.yaml — superpowers-brainstorming + tdd + grill-with-docs + zoom-out +
+#     improve-codebase-architecture + diagnose + ralph-loop + planning-with-files
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 Master Orchestrator yaml Examples
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 + DelegationClause (Phase 3.3 W0.5 SHIPPED)
+#
+# Master invariant (per WorkflowSchemaV3 runtime + check-workflow-schema.mjs K9):
+#   - phases 缺省 (master only has delegates_to[])
+#   - 4 delegates_to mode serial — 必带 explicit order (K9 invariant T3.3.W0.10)
+#   - clarify conditional (subtask-gate brainstorming) + code/deliver unconditional + test conditional (tdd-gate)
+
+schema_version: harnessed.workflow.v3
+workflow: task
+description: |
+  Stage ③ Task master orchestrator — 串行 invoke 4 sub per subtask (clarify → code → test → deliver);
+  ralph-loop COMPLETE wrapper 在 deliver phase 内 (D-10 orthogonal wrapper not master concern)。
+  tdd-gate conditional fire on test sub (核心业务 / 算法 / 数据处理 / 回归 risk high / reliability
+  required, 6 fires_when OR-chain per ~/.claude/CLAUDE.md)。execute-task 每个 subtask 入口走一次。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - superpowers-brainstorming
+  - tdd
+  - grill-with-docs
+  - zoom-out
+  - improve-codebase-architecture
+  - diagnose
+  - ralph-loop
+  - planning-with-files
+
+delegates_to:
+  - sub: clarify
+    gate: judgments.subtask-gate.brainstorming.fires
+    mode: serial
+    order: 1
+  - sub: code
+    mode: serial
+    order: 2
+  - sub: test
+    gate: judgments.tdd-gate.tdd-strongly-suggested.fires
+    mode: serial
+    order: 3
+  - sub: deliver
+    mode: serial
+    order: 4
