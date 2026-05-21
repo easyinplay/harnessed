@@ -7,6 +7,9 @@
 //   4. --dry-run --non-interactive → exit 0 + stdout contains workflow JSON
 //   5. --model-tier inherit → all phases.model === 'inherit' in dry-run JSON
 //   6. invalid workflow path → exit 2 (loadPhases throw caught)
+// T3.5.W0.4 — 2 NEW fixture verify before-commit K5 Option A wire:
+//   7. --apply path → runBeforeCommitHook triggered (subagent enforce biome-preempt)
+//   8. --dry-run path → runBeforeCommitHook NOT triggered (clean K5 separation)
 //
 // Pattern J — mock @anthropic-ai/claude-agent-sdk + runRouting (apply path);
 // dry-run path uses real loadPhases reading workflows/execute-task/phases.yaml.
@@ -25,6 +28,16 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
         structured_output: { status: 'COMPLETE' },
       }
     })(),
+}))
+
+// T3.5.W0.4 — mock before-commit hook + execSync (apply path verify);
+// dry-run path NOT triggers — proves K5 Option A clean separation.
+const runBeforeCommitHookMock = vi.fn<() => Promise<void>>()
+vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
+  runBeforeCommitHook: (_ctx: unknown): Promise<void> => runBeforeCommitHookMock(),
+}))
+vi.mock('node:child_process', () => ({
+  execSync: vi.fn(() => 'M  src/foo.ts\n'),
 }))
 
 import { registerExecuteTask } from '../../src/cli/execute-task.js'
@@ -77,6 +90,8 @@ async function runCli(argv: string[]): Promise<CliResult> {
 describe('cli/execute-task', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    runBeforeCommitHookMock.mockReset()
+    runBeforeCommitHookMock.mockResolvedValue(undefined)
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -156,5 +171,15 @@ describe('cli/execute-task', () => {
     ])
     expect(code).toBe(2)
     expect(stderr).toMatch(/failed to load/i)
+  })
+
+  it('7. T3.5.W0.4 — --apply path triggers runBeforeCommitHook (K5 Option A enforce)', async () => {
+    await runCli(['execute-task', '--task', 'implement auth', '--apply', '--non-interactive'])
+    expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('8. T3.5.W0.4 — --dry-run path NOT triggers runBeforeCommitHook (K5 separation)', async () => {
+    await runCli(['execute-task', '--task', 'preview', '--dry-run', '--non-interactive'])
+    expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
   })
 })

@@ -7,8 +7,17 @@
 // (T4.2 sdkSpawn-backed). `--model-tier inherit` flag = B-10 escape hatch — overrides
 // per-phase phase.model with 'inherit' for SDK parent-resolve semantics (W3 ModelTier
 // 4th enum). Forward-looking subcommand surface; auto-invocation pushed Phase 2.3.
+//
+// Phase v3.0-3.5 W0 T3.5.W0.4 — before-commit hook wire (K5 Option A enforcement):
+// --apply path pre-flight `runBeforeCommitHook` enforce biome auto-fix on TS/JS work
+// tree changes BEFORE ralph-loop subagent spawn。subagent SDK 内部 git commit 时
+// work tree 已 biome-clean。User 主 session git commit 不走此 path(clean separation
+// per K5 Option A;主 session 用户自负 biome-preempt 责任)。
+// dry-run path NOT triggered(K5 Option A 仅 真 spawn 路径 enforce)。
 
+import { execSync } from 'node:child_process'
 import type { Command } from 'commander'
+import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { runRouting, type TaskContext } from '../routing/index.js'
 import type { FallbackMaxIterationsExceededConfig } from '../routing/lib/fallbackHandlers.js'
 import { type LoadedPhases, loadPhases } from '../workflow/loadPhases.js'
@@ -90,6 +99,33 @@ export function registerExecuteTask(program: Command): void {
           fallbackPhaseId = ph.id
           break
         }
+      }
+
+      // T3.5.W0.4 — before-commit hook K5 Option A enforcement (ralph-loop / subagent
+      // auto-commit path ONLY)。--apply path 在 runRouting subagent spawn 前 enforce
+      // biome auto-fix:work tree TS/JS modified files → biome --write,subagent SDK
+      // 内部 commit 时已 biome-clean。--apply 等同 user explicit approval = pass。
+      // User 主 session 直接 git commit NOT 走此 path(K5 Option A clean separation)。
+      try {
+        const stagedOut = execSync('git status --porcelain', { encoding: 'utf8' })
+        const changedFiles = stagedOut
+          .split('\n')
+          .filter((l) => l.trim().length > 0)
+          .map((l) => l.slice(3).trim())
+        await runBeforeCommitHook({
+          changedFiles,
+          cmdArgs: [],
+          packageRoot: process.cwd(),
+          cmdType: 'git-commit',
+          hasUserApproval: true, // --apply explicit
+        })
+      } catch (err) {
+        // Fail-soft per ADR 0029:git status / biome auto-fix throw → warn + 继续
+        // (subagent 内部 commit 时还会有第二道 biome --write check via SDK Bash tool)。
+        console.warn(
+          `⚠️ before-commit pre-flight skipped (${(err as Error).message}); ` +
+            'subagent will biome-check at commit time.',
+        )
       }
 
       // --apply path — real spawn via engine.runRouting (T4.2 sdkSpawn).
