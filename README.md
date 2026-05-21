@@ -129,9 +129,9 @@ graph TD
 |-----------|-------|------|----------------------|-------|
 | `/auto` | All | **Super-master** | masterOrchestrator (跨 4 stage) | 一键自动跑 discuss → plan → task → verify (`--pause-between-stages` opt-in) |
 | `/discuss` | ① Discuss | Master | masterOrchestrator | 3 sub 并行 gate-eval (chain-isolation 铁律) |
-| `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` | 战略层 — 新功能 / 新 milestone / 产品方向强制治理 |
-| `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` | Phase 层 — ≥2 open decisions / 灰色地带澄清 |
-| `/discuss-subtask` | ① Discuss | Sub | superpowers brainstorming + `/grill-with-docs` | 子任务层 — ≥2 approach / 核心算法 / API contract |
+| `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` + planning-with-files | 战略层 — 新功能 / 新 milestone / 产品方向强制治理 (findings.md 持久化) |
+| `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` + planning-with-files | Phase 层 — ≥2 open decisions / 灰色地带澄清 (findings.md + knowledge.md 持久化) |
+| `/discuss-subtask` | ① Discuss | Sub | superpowers brainstorming + `/grill-with-docs` | 子任务层 — ≥2 approach / 核心算法 / API contract (ephemeral 短讨论, 不持久化) |
 | `/plan` | ② Plan | Master | masterOrchestrator | 串行 invoke 2 sub (architecture conditional → phase always) |
 | `/plan-architecture` | ② Plan | Sub | gstack `/plan-eng-review` | 架构层 — 复杂架构强制治理关卡 |
 | `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | 计划层 — 持久化 `task_plan.md` + `progress.md` |
