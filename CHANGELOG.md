@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-05-21 — Setup hotfix: auto-enable Agent Teams in ~/.claude/settings.json
+
+**升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup auto-apply Agent Teams config)
+
+**Trigger**: user 反馈 — "setup 检查 ~/.claude/settings.json 吗? 没有 CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 需要添加或启用"。Agent Teams 是 Pattern A 3-teammate (Phase 3.3/3.4/3.5 ship 7 次用) + `/verify-multispec` 4-specialist Agent Teams Pattern C + masterOrchestrator delegates_to recursive 等关键 workflow 的前提, setup 不 auto-configure 导致 user 跑这些 workflow 时哑火 (TeamCreate / Agent Teams API 不可用)。
+
+### Fixed
+
+- **`harnessed setup` 自动 enable Agent Teams** — NEW Step C 在 Step A (workflow skills install) 之后 Step B (manifest install) 之前, 在 `~/.claude/settings.json` 写入 `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"` (sister Q-AUDIT-5b root-level env.* schema LOCKED Phase 2.3 W0.5)
+- 3 case 处理: (a) file 不存在 → create with key (b) file exists + key=1 → idempotent no-op (c) file exists 缺 key OR key !== "1" → backup original + merge add/update key
+- backup 走 `~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak` (sister v3.0.3 `getHarnessedRoot()` + `harnessedSubdir('backups')` SoT, `:` → `-` for Win filename safety verbatim sister backup.ts)
+- atomic write 通过 `writeFile(tmpPath) + rename(tmpPath, realPath)` 防 partial write
+- Non-destructive merge — 不动 file 其他 env / hooks / 其他 top-level key (sister 现有 config preserve)
+- 任何 error (read/parse/write/backup fail) → warn + skip,**不阻断 setup** (sister fallback 铁律 1 透明声明)
+
+### Why
+
+Agent Teams Pattern A / Pattern C workflow (Phase 3.3/3.4/3.5 大量使用, masterOrchestrator delegates_to recursive + verify-multispec 4-specialist) 需 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`。v3.3.0 ship 的 setup 仅 detect + warn (sister `warnIfAgentTeamsMissing`) 不 auto-enable, user 手动配置门槛过高。
+
+### Changed
+
+- `src/cli/lib/enableAgentTeamsInSettings.ts` NEW (≤80L per karpathy hard limit) — `enableAgentTeamsInSettings()` helper + 3 case branch + atomic write + backup
+- `src/cli/setup.ts` — Step C invoke `enableAgentTeamsInSettings()` 在 Step A 后 Step B 前; 4 status log line (created / already-enabled / enabled+backup / warn skipped)
+- `tests/unit/cli-lib-enableAgentTeams.test.ts` NEW (6 fixture): file-missing create / idempotent no-op / key=0 backup+flip / missing-key non-destructive merge / malformed JSON warn / write fail warn
+- `tests/cli/setup.test.ts` — vi.mock fs/promises 加 `writeFile` / `rename` / `mkdir`; NEW cell 8 — Step C log line + A→C→B sequence assertion
+
+### Migration
+
+旧 v3.x user 重跑 `harnessed setup` 即可:
+
+```bash
+npm install -g harnessed && harnessed setup
+# 输出含: [C] enabled Agent Teams in ~/.claude/settings.json (backup saved → ...)
+# 或      [C] Agent Teams already enabled (~/.claude/settings.json) — 若已手动配置 idempotent no-op
+# 或      [C] created ~/.claude/settings.json + enabled Agent Teams — 若 settings.json 不存在
+```
+
+如果你已手动配置 → idempotent no-op,不会重复写。如果 settings.json 已有其他 env key → non-destructive merge 不破坏。
+
+### Tests
+
+- 1122 pass / 5 skip / 2 pre-existing baseline fail (`research-v2` + `special-purpose-fallback` dogfood, baseline 同 v3.3.0 main, 与本 hotfix 无关)
+- biome check: clean (3 pre-existing infos, capabilities literal key — 与本 hotfix 无关)
+- tsc --noEmit: 0 error
+- `node scripts/check-workflow-schema.mjs`: exit 0
+- 新增 7 test (6 unit + 1 cell 8): baseline v3.3.0 1115 → v3.3.1 1122
+
+### Files changed
+
+- `src/cli/lib/enableAgentTeamsInSettings.ts` NEW
+- `src/cli/setup.ts` — Step C wired
+- `tests/unit/cli-lib-enableAgentTeams.test.ts` NEW
+- `tests/cli/setup.test.ts` — vi.mock extend + cell 8
+- `package.json` — version 3.3.0 → 3.3.1
+- `CHANGELOG.md` — this entry
+
 ## [3.3.0] - 2026-05-21 — Cleanup: remove backward-compat flag aliases (BREAKING)
 
 **升级一行指令**: `npm install -g harnessed` (无需重跑 setup)

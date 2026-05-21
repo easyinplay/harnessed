@@ -36,7 +36,15 @@ npm install -g harnessed && harnessed setup
 
 > Windows PowerShell 5.x 不支持 `&&` 链接,需改 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
 
-🤖 **或让 AI 帮你装** — 复制 [INSTALL-WITH-AI.md](./INSTALL-WITH-AI.md) 整段粘贴进 Claude Code (或任何 AI 助手),AI 自动处理 OS / 权限 / PATH / corepack 等 edge case。
+🤖 **或让 AI 帮你装** — 把下面这句话发给 Claude Code (或任何 AI 助手):
+
+> 按 `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md` 的指导帮我装 harnessed
+
+AI 会自动 fetch 文档 + 跑安装,处理 OS / 权限 / PATH / corepack 等 edge case,无需复制大段文字。
+
+> [!TIP]
+> 🚀 **很多人关心的 Agent Teams 和 Subagent 功能,在 harnessed 中会根据任务自动启用!**
+> 无需手动配置 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`,`harnessed setup` v3.3.1+ 会自动写入 `~/.claude/settings.json`;Pattern A 全栈三路 / Pattern C 4-specialist 等 multi-agent workflow 即开即用。
 
 ---
 
