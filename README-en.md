@@ -64,7 +64,7 @@ In order of increasing user intervention:
 /auto "requirement X" --staged
 ```
 
-> Don't want to think hard, or just getting started — let harnessed handle everything. Runs the full 6 stages (research conditional → discuss → plan → task → verify → retro mandatory) without stopping. v3.2.0 NEW: AI 1-shot auto-judges requirement complexity, suggests switching to `--staged` mode for large requirements (stops after each stage for review); before starting prompts "Do you have a clear understanding of the requirement?" — if no → auto-runs `/research` multi-source investigation; ends with mandatory `/retro` summary. Fail-fast on failure, resume via `harnessed resume`. `--pause-between-stages` retained as a backward-compat alias.
+> Don't want to think hard, or just getting started — let harnessed handle everything. Runs the full 6 stages (research conditional → discuss → plan → task → verify → retro mandatory) without stopping. AI 1-shot auto-judges requirement complexity, suggests switching to `--staged` mode for large requirements (stops after each stage for review); before starting prompts "Do you have a clear understanding of the requirement?" — if no → auto-runs `/research` multi-source investigation; ends with mandatory `/retro` summary. Fail-fast on failure, resume via `harnessed resume`.
 
 ### 📂 Stage Mode (Recommended for power users / want to review intermediate results)
 
@@ -141,7 +141,7 @@ graph TD
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
-| `/auto` | All | **Super-master** | masterOrchestrator (across 6 stages) | One-shot full 6-stage run (research conditional → discuss → plan → task → verify → retro mandatory); v3.2.0 NEW: AI 1-shot complexity judge + understanding check + mandatory retro; `--staged` (primary, alias `--pause-between-stages` backward-compat) opt-in |
+| `/auto` | All | **Super-master** | masterOrchestrator (across 6 stages) | One-shot full 6-stage run (research conditional → discuss → plan → task → verify → retro mandatory); AI 1-shot complexity judge + understanding check + mandatory retro; `--staged` opt-in stage gate |
 | `/discuss` | ① Discuss | Master | masterOrchestrator | 3 subs parallel gate-eval (chain-isolation rule) |
 | `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` + planning-with-files | Strategic layer — mandatory governance for new features / new milestones / product direction (findings.md persisted) |
 | `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` + planning-with-files | Phase layer — ≥2 open decisions / gray-area clarification (findings.md + knowledge.md persisted) |
@@ -261,7 +261,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 User-facing slash cmd + harnessed CLI                    │
-│   /discuss /plan /task /verify (master) + 14 sub + /research /retro
+│   /discuss /plan /task /verify (master) + 18 sub + /research /retro + /auto super-master
 │   + direct gstack invoke (30+ optional): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
@@ -350,8 +350,8 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | Critical module PR | gstack /review |
 | Large refactor PR multi-dim review | 4-specialist Agent Team Pattern C |
 | Cross-session hand-off | discipline.protocols self-contained design doc |
-| `/auto` complexity for large requirements | AI 1-shot judge → auto-suggest `--staged` (v3.2.0 NEW; n abort suggests manual `/discuss`) |
-| `/auto` requirement understanding | prompt before start → n auto-adds `/research` multi-source investigation (v3.2.0 NEW) |
+| `/auto` complexity for large requirements | AI 1-shot judge → auto-suggest `--staged` (n abort suggests manual `/discuss`) |
+| `/auto` requirement understanding | prompt before start → n auto-adds `/research` multi-source investigation |
 
 ---
 
@@ -387,7 +387,6 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `--full-diff` | Expand diffs folded above 200 lines |
 | `--no-color` | Force nocolor (even on TTY) |
 
-> The `--apply` flag is retained as a backward-compat alias (no-op, won't break old scripts).
 
 ---
 
@@ -401,7 +400,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 Yes, but **the user experience = one command**:
 
 ```bash
-harnessed setup --apply  # Auto-installs gstack + GSD + superpowers + planning-with-files; 24 workflow skills land in ~/.claude/skills/ together
+harnessed setup  # Auto-installs gstack + GSD + superpowers + planning-with-files; 25 workflow skills land in ~/.claude/skills/ + Agent Teams env var auto-written to ~/.claude.json
 ```
 
 Think `brew install <formula>` pulling the full dependency set — you don't need to `brew install` each dependency separately.

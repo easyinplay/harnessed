@@ -63,7 +63,7 @@ AI 会自动 fetch 文档 + 跑安装,处理 OS / 权限 / PATH / corepack 等 e
 /auto "需求 X" --staged
 ```
 
-> 不想动脑子或者刚入门 — 一切交给 harnessed。自动跑完 6 stage (research conditional → discuss → plan → task → verify → retro mandatory),中间不停。v3.2.0 NEW:AI 1-shot 自动判断需求复杂度,大需求建议切 `--staged` 模式 (每 stage 完停 review);开始前 prompt "对需求清晰认知吗?" n → 自动加跑 `/research` 多源调研;末尾 `/retro` 强制总结。失败 fail-fast,`harnessed resume` 续。`--pause-between-stages` 保留为 backward-compat alias。
+> 不想动脑子或者刚入门 — 一切交给 harnessed。自动跑完 6 stage (research conditional → discuss → plan → task → verify → retro mandatory),中间不停。AI 1-shot 自动判断需求复杂度,大需求建议切 `--staged` 模式 (每 stage 完停 review);开始前 prompt "对需求清晰认知吗?" n → 自动加跑 `/research` 多源调研;末尾 `/retro` 强制总结。失败 fail-fast,`harnessed resume` 续。
 
 ### 📂 分类自动 (推荐熟手 / 想 review 中间结果)
 
@@ -140,7 +140,7 @@ graph TD
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
-| `/auto` | All | **Super-master** | masterOrchestrator (跨 6 stage) | 一键自动跑 6 stage (research conditional → discuss → plan → task → verify → retro mandatory); v3.2.0 NEW:AI 复杂度 1-shot judge + 理解度 check + retro mandatory; `--staged` (primary, alias `--pause-between-stages` backward-compat) opt-in |
+| `/auto` | All | **Super-master** | masterOrchestrator (跨 6 stage) | 一键自动跑 6 stage (research conditional → discuss → plan → task → verify → retro mandatory); AI 复杂度 1-shot judge + 理解度 check + retro mandatory; `--staged` opt-in stage gate |
 | `/discuss` | ① Discuss | Master | masterOrchestrator | 3 sub 并行 gate-eval (chain-isolation 铁律) |
 | `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` + planning-with-files | 战略层 — 新功能 / 新 milestone / 产品方向强制治理 (findings.md 持久化) |
 | `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` + planning-with-files | Phase 层 — ≥2 open decisions / 灰色地带澄清 (findings.md + knowledge.md 持久化) |
@@ -260,7 +260,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 User-facing slash cmd + harnessed CLI                    │
-│   /discuss /plan /task /verify (master) + 14 sub + /research /retro
+│   /discuss /plan /task /verify (master) + 18 sub + /research /retro + /auto super-master
 │   + direct gstack invoke (30+ optional): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
@@ -349,8 +349,8 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | 关键模块 PR | gstack /review |
 | 大重构 PR 多维度审查 | 4-specialist Agent Team Pattern C |
 | 跨 session hand-off | discipline.protocols self-contained design doc |
-| `/auto` 复杂度大需求 | AI 1-shot judge → 自动建议 `--staged` (v3.2.0 NEW;n abort 建议手动 `/discuss`) |
-| `/auto` 需求理解度 | 开始前 prompt → n 自动加 `/research` 多源调研 (v3.2.0 NEW) |
+| `/auto` 复杂度大需求 | AI 1-shot judge → 自动建议 `--staged` (n abort 建议手动 `/discuss`) |
+| `/auto` 需求理解度 | 开始前 prompt → n 自动加 `/research` 多源调研 |
 
 ---
 
@@ -386,8 +386,6 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `--full-diff` | 展开 > 200 行的 diff 折叠 |
 | `--no-color` | 强制 nocolor (即使 TTY) |
 
-> `--apply` flag 仍保留为向后兼容 alias (no-op, 旧脚本不破)。
-
 ---
 
 ## ❓ FAQ
@@ -400,7 +398,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 需要,但**用户感知 = 一行命令**:
 
 ```bash
-harnessed setup --apply  # 自动装齐 gstack + GSD + superpowers + planning-with-files,24 workflow skill 一并落到 ~/.claude/skills/
+harnessed setup  # 自动装齐 gstack + GSD + superpowers + planning-with-files,25 workflow skill 一并落到 ~/.claude/skills/ + Agent Teams env var 自动写 ~/.claude.json
 ```
 
 类比 `brew install <formula>` 装全套依赖 — 你不需要单独 `brew install` 每个依赖项。
