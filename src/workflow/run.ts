@@ -10,12 +10,23 @@
 //  - W-01 fix: sessionId dead variable removed (dispatchSkillStub returns no
 //    sessionId per D-03 WIRED stub; sister Phase 3.1 W-04 dead-var lesson
 //    [BLOCKER]); sessionId propagation deferred to Phase 3.3+ dogfood true spawn.
+//
+// Phase v3.0-3.5 W0 T3.5.W0.2 — extend per RESEARCH-disciplines § 4.4:
+//  - master vs sub detect: parsed yaml `delegates_to` present + workflow ∈ 4 master
+//    name → delegate runMasterOrchestrator; 否则 existing 桩 spawn 5-phase 路径。
+//  - loadDisciplinesForPhase wedge at for-loop start: v3 yaml `disciplines_applied`
+//    field consumed (default all 6 fallback)。disciplines map merged 到 gateContext
+//    as `disciplines` key, available to expr-eval downstream。
 import { dirname, resolve as pathResolve } from 'node:path'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
+import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
 import { isVetoed } from './governance.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
 import { loadPhases } from './loadPhases.js'
+import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
+
+const MASTER_NAMES: readonly MasterName[] = ['discuss', 'plan', 'task', 'verify']
 
 export interface WorkflowRunResult {
   status: 'complete' | 'paused-veto' | 'failed'
@@ -69,10 +80,54 @@ export async function runWorkflow(
   const yamlDir = dirname(pathResolve(yamlPath))
   const inferredRoot = pathResolve(yamlDir, '..', '..') // <name>/ → workflows/ → root
   const packageRoot = opts.packageRoot ?? inferredRoot
-  const gateContext = opts.gateContext ?? {}
+  // T3.5.W0.2 — shallow-clone gateContext 避免 mutate caller object (W0.2 wedge
+  // 加 disciplines 字段)。caller pass {} 时不影响;test fixture share gateContext
+  // across runs 时守住隔离。
+  const gateContext: Record<string, unknown> = { ...(opts.gateContext ?? {}) }
+
+  // T3.5.W0.2 — master vs sub detect (sister RESEARCH-disciplines § 4.4 + RESEARCH-
+  // workflows § Area 3)。delegates_to present + workflow ∈ 4 master name → delegate
+  // runMasterOrchestrator;否则 existing 桩 spawn 5-phase 路径(v1/v2/v3 sub OR standalone)。
+  const workflowName = parsed.workflow
+  const isMaster =
+    'delegates_to' in parsed &&
+    Array.isArray(parsed.delegates_to) &&
+    parsed.delegates_to.length > 0 &&
+    MASTER_NAMES.includes(workflowName as MasterName)
+  if (isMaster) {
+    const r = await runMasterOrchestrator(workflowName as MasterName, gateContext, packageRoot)
+    return {
+      status: 'complete',
+      phasesRun: r.fired.length,
+      ...(r.skipped.length > 0 ? { skippedPhases: r.skipped } : {}),
+    }
+  }
+
+  // T3.5.W0.2 — loadDisciplinesForPhase wedge at for-loop start (sister § 4.4 verbatim)。
+  // v3 yaml `disciplines_applied` field consumed (default all 6 fallback);v1/v2 yaml
+  // 无 field 时 narrow via `'disciplines_applied' in parsed` 守住 backwards-compat。
+  const disciplinesApplied =
+    'disciplines_applied' in parsed && Array.isArray(parsed.disciplines_applied)
+      ? (parsed.disciplines_applied as readonly string[])
+      : undefined
+  // Disciplines map merged 到 gateContext.disciplines for downstream expr-eval。
+  // Fail-soft: ENOENT or schema err → console.warn + 不阻塞 for-loop。
+  try {
+    const disciplines = await loadDisciplinesForPhase(disciplinesApplied, packageRoot)
+    gateContext.disciplines = disciplines
+  } catch (err) {
+    console.warn(
+      `⚠️ loadDisciplinesForPhase failed (${(err as Error).message}); ` +
+        'proceeding without disciplines map (sister ADR 0029 fail-soft).',
+    )
+  }
+
   const skippedPhases: string[] = []
-  for (let i = 0; i < parsed.phases.length; i++) {
-    const ph = parsed.phases[i]
+  // T3.5.W0.2 — v3 master path 在上面 isMaster branch return;v1/v2 yaml `phases` 必
+  // 存在(loadPhases validate)。v3 sub/standalone yaml `phases` Optional → 守护 fallback。
+  const phases = parsed.phases ?? []
+  for (let i = 0; i < phases.length; i++) {
+    const ph = phases[i]
     if (!ph) continue
     // B-01 fix: activatePhase BEFORE isVetoed — guarantees current-workflow.json
     // 'active' state exists for statePause() to transition; covers veto-at-i=0
@@ -130,7 +185,7 @@ export async function runWorkflow(
   }
   return {
     status: 'complete',
-    phasesRun: parsed.phases.length,
+    phasesRun: phases.length,
     ...(skippedPhases.length > 0 ? { skippedPhases } : {}),
   }
 }

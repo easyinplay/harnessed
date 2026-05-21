@@ -1,9 +1,12 @@
 // Phase 3.2 W2 T2.6 — runWorkflow() unit test (3 fixtures, D-03 WIRED + B-01 fix).
 // T2.4.W1.4 — 2 NEW fixture verify v2 真接 `phase.gate` pre-flight consume
 // (D-04 + D-11 strategic-gate / phase-gate skip path).
+// T3.5.W0.2 — 5 NEW fixture verify master vs sub detect + loadDisciplinesForPhase wedge.
 // Sister Phase 3.1 W1 state.test.ts vi.mock pattern.
 // Mocks: governance.isVetoed + engineHook.activatePhase/completePhase + state.pause
-//       + judgmentResolver.resolveJudgmentGate (T2.4.W1.4 v2 gate consume).
+//       + judgmentResolver.resolveJudgmentGate (T2.4.W1.4 v2 gate consume)
+//       + masterOrchestrator.runMasterOrchestrator (T3.5.W0.2 master path)
+//       + before-phase-execute.loadDisciplinesForPhase (T3.5.W0.2 disciplines wedge).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,6 +21,9 @@ const completePhaseMock = vi.fn(
 const pauseMock = vi.fn(async () => {})
 const loadPhasesMock = vi.fn()
 const resolveJudgmentGateMock = vi.fn<() => Promise<boolean>>()
+const runMasterOrchestratorMock =
+  vi.fn<() => Promise<{ master: string; fired: string[]; skipped: string[] }>>()
+const loadDisciplinesForPhaseMock = vi.fn<() => Promise<Map<string, unknown>>>()
 
 vi.mock('../../src/workflow/governance.js', () => ({
   isVetoed: () => isVetoedMock(),
@@ -39,6 +45,19 @@ vi.mock('../../src/workflow/judgmentResolver.js', () => ({
     _root: string,
   ): Promise<boolean> => resolveJudgmentGateMock(),
 }))
+vi.mock('../../src/workflow/masterOrchestrator.js', () => ({
+  runMasterOrchestrator: (
+    _master: string,
+    _ctx: Record<string, unknown>,
+    _root: string,
+  ): Promise<{ master: string; fired: string[]; skipped: string[] }> => runMasterOrchestratorMock(),
+}))
+vi.mock('../../src/discipline/enforcement/before-phase-execute.js', () => ({
+  loadDisciplinesForPhase: (
+    _applied: readonly string[] | undefined,
+    _root: string,
+  ): Promise<Map<string, unknown>> => loadDisciplinesForPhaseMock(),
+}))
 
 import { runWorkflow } from '../../src/workflow/run.js'
 
@@ -57,9 +76,14 @@ beforeEach(() => {
   pauseMock.mockClear()
   loadPhasesMock.mockReset()
   resolveJudgmentGateMock.mockReset()
+  runMasterOrchestratorMock.mockReset()
+  loadDisciplinesForPhaseMock.mockReset()
   loadPhasesMock.mockReturnValue({ workflow: 'plan-feature', phases: fivePhases })
   // Default — gate evaluates true (NOT skip). Per-test override for skip path.
   resolveJudgmentGateMock.mockResolvedValue(true)
+  // T3.5.W0.2 — default disciplines map (6 entries) for existing v1 / v2 fixture path
+  // 不破坏 backwards-compat;NEW fixture per-test override 验 wedge 行为。
+  loadDisciplinesForPhaseMock.mockResolvedValue(new Map())
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -144,5 +168,76 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     expect(resolveJudgmentGateMock).not.toHaveBeenCalled()
     expect(activatePhaseMock).toHaveBeenCalledTimes(5)
     expect(completePhaseMock).toHaveBeenCalledTimes(5)
+  })
+
+  it('6. T3.5.W0.2 — master detect: workflow=discuss + delegates_to → runMasterOrchestrator', async () => {
+    // v3 master yaml — delegates_to present + workflow ∈ 4 master name → delegate path
+    loadPhasesMock.mockReturnValue({
+      workflow: 'discuss',
+      delegates_to: [{ sub: 'strategic' }, { sub: 'phase' }],
+      phases: undefined,
+    })
+    runMasterOrchestratorMock.mockResolvedValue({
+      master: 'discuss',
+      fired: ['strategic', 'phase'],
+      skipped: [],
+    })
+    const r = await runWorkflow('workflows/discuss/auto/workflow.yaml', {})
+    expect(runMasterOrchestratorMock).toHaveBeenCalledTimes(1)
+    expect(r).toEqual({ status: 'complete', phasesRun: 2 })
+    // KEY: master path 不走 5-phase 桩 spawn
+    expect(activatePhaseMock).not.toHaveBeenCalled()
+    expect(completePhaseMock).not.toHaveBeenCalled()
+  })
+
+  it('7. T3.5.W0.2 — master detect: workflow ∉ 4 master name → fall through to phase path', async () => {
+    // workflow=plan-feature (legacy v2) + delegates_to absent → NOT master
+    isVetoedMock.mockResolvedValue(false)
+    const r = await runWorkflow('workflows/plan-feature/workflow.yaml', {})
+    expect(runMasterOrchestratorMock).not.toHaveBeenCalled()
+    expect(r.status).toBe('complete')
+    expect(r.phasesRun).toBe(5)
+  })
+
+  it('8. T3.5.W0.2 — master detect: delegates_to empty array → NOT master (phase path)', async () => {
+    // edge case — delegates_to: [] + workflow=discuss → engine 不 dispatch master
+    loadPhasesMock.mockReturnValue({
+      workflow: 'discuss',
+      delegates_to: [],
+      phases: [{ id: 'p1', skills: ['x'] }],
+    })
+    isVetoedMock.mockResolvedValue(false)
+    const r = await runWorkflow('workflows/discuss/somewhere/workflow.yaml', {})
+    expect(runMasterOrchestratorMock).not.toHaveBeenCalled()
+    expect(r.status).toBe('complete')
+    expect(r.phasesRun).toBe(1)
+  })
+
+  it('9. T3.5.W0.2 — disciplines wedge: v3 sub yaml disciplines_applied loaded into gateContext', async () => {
+    // v3 sub yaml with disciplines_applied → loadDisciplinesForPhase called w/ that list
+    loadPhasesMock.mockReturnValue({
+      workflow: 'discuss-strategic',
+      disciplines_applied: ['karpathy', 'output-style'],
+      phases: [{ id: 'p1', skills: ['x'] }],
+    })
+    loadDisciplinesForPhaseMock.mockResolvedValue(new Map([['karpathy', { x: 1 }]]))
+    isVetoedMock.mockResolvedValue(false)
+    const r = await runWorkflow('workflows/discuss/strategic/workflow.yaml', {})
+    expect(loadDisciplinesForPhaseMock).toHaveBeenCalledTimes(1)
+    expect(r.status).toBe('complete')
+  })
+
+  it('10. T3.5.W0.2 — disciplines wedge fail-soft: ENOENT throw → console.warn + 不阻塞', async () => {
+    // disciplines load throw → warn emit + continue phases (sister ADR 0029 fail-soft)
+    loadDisciplinesForPhaseMock.mockRejectedValueOnce(new Error('ENOENT disciplines/x.yaml'))
+    isVetoedMock.mockResolvedValue(false)
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const r = await runWorkflow('workflows/plan-feature/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(r.phasesRun).toBe(5) // 5 phase 仍 run, wedge fail 不影响
+    expect(warnSpy).toHaveBeenCalled()
+    const warnMsg = warnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
+    expect(warnMsg).toMatch(/loadDisciplinesForPhase failed/)
+    warnSpy.mockRestore()
   })
 })
