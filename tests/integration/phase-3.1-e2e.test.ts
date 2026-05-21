@@ -32,9 +32,13 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
   },
 }))
 
-// ---- tmpdir cwd swap (sister tests/cli/resume.test.ts pattern) -------------
+// ---- tmpdir + HARNESSED_ROOT_OVERRIDE isolation -----------------------------
+// v3.0.3 — harness state root is now homedir-rooted (`~/.claude/harnessed/`)
+// not cwd-rooted. e2e tests redirect it to a per-test tmpdir via the supported
+// `HARNESSED_ROOT_OVERRIDE` env var so they don't pollute the real user home.
 let tmp: string
 let originalCwd: string
+let originalOverride: string | undefined
 
 beforeEach(async () => {
   calls.length = 0
@@ -42,14 +46,25 @@ beforeEach(async () => {
   originalCwd = process.cwd()
   tmp = mkdtempSync(join(tmpdir(), 'phase-3.1-e2e-'))
   process.chdir(tmp)
-  await mkdir('.harnessed/checkpoints', { recursive: true })
+  originalOverride = process.env.HARNESSED_ROOT_OVERRIDE
+  process.env.HARNESSED_ROOT_OVERRIDE = join(tmp, '.claude', 'harnessed')
+  await mkdir(join(tmp, '.claude', 'harnessed', 'checkpoints'), { recursive: true })
 })
 
 afterEach(() => {
   process.chdir(originalCwd)
+  if (originalOverride === undefined) delete process.env.HARNESSED_ROOT_OVERRIDE
+  else process.env.HARNESSED_ROOT_OVERRIDE = originalOverride
   rmSync(tmp, { recursive: true, force: true })
   vi.clearAllMocks()
 })
+
+function harnessedFilePath(name: string): string {
+  return join(tmp, '.claude', 'harnessed', name)
+}
+function harnessedSubdirPath(...segments: string[]): string {
+  return join(tmp, '.claude', 'harnessed', ...segments)
+}
 
 describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', () => {
   it('1. SIGINT-equivalent state → current-workflow paused + checkpoint session_id captured', async () => {
@@ -57,7 +72,8 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
     // We invoke the underlying state + template ops directly because actually firing process.on
     // ('SIGINT', ...) inside vitest would exit the test runner. The handler body is unit-covered
     // in tests/checkpoint/sigint.test.ts; here we verify the *output artifacts* compose correctly.
-    await stateActivate('3.1-e2e', '.harnessed/checkpoints/3.1-e2e.json')
+    const cpPath = harnessedSubdirPath('checkpoints', '3.1-e2e.json')
+    await stateActivate('3.1-e2e', cpPath)
     const captured = 'sess-trap-1'
     writeCheckpoint({
       schemaVersion: SCHEMA_VERSIONS.checkpoint,
@@ -69,23 +85,24 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
       session_id: captured,
       cwd: process.cwd(),
       timestamp: new Date().toISOString(),
-      archive_path: '.harnessed/archive/phase-3.1-e2e/',
+      archive_path: `${harnessedSubdirPath('archive', 'phase-3.1-e2e')}/`,
     })
     await statePause()
 
-    const wf = JSON.parse(readFileSync('.harnessed/current-workflow.json', 'utf8'))
+    const wf = JSON.parse(readFileSync(harnessedFilePath('current-workflow.json'), 'utf8'))
     expect(wf.status).toBe('paused')
     expect(wf.paused_at).toBeTruthy()
-    expect(wf.last_checkpoint_path).toBe('.harnessed/checkpoints/3.1-e2e.json')
+    expect(wf.last_checkpoint_path).toBe(cpPath)
 
-    const cp = JSON.parse(readFileSync('.harnessed/checkpoints/3.1-e2e.json', 'utf8'))
+    const cp = JSON.parse(readFileSync(cpPath, 'utf8'))
     expect(cp.session_id).toBe(captured)
     expect(cp.status).toBe('paused')
   })
 
   it('2. harnessed resume → outputs session_id hint + ok status', async () => {
     // Setup: state from previous cycle pattern (paused + session_id captured).
-    await stateActivate('3.1-e2e', '.harnessed/checkpoints/3.1-e2e.json')
+    const cpPath = harnessedSubdirPath('checkpoints', '3.1-e2e.json')
+    await stateActivate('3.1-e2e', cpPath)
     writeCheckpoint({
       schemaVersion: SCHEMA_VERSIONS.checkpoint,
       phase: '3.1-e2e',
@@ -96,7 +113,7 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
       session_id: 'sess-trap-1',
       cwd: process.cwd(),
       timestamp: new Date().toISOString(),
-      archive_path: '.harnessed/archive/phase-3.1-e2e/',
+      archive_path: `${harnessedSubdirPath('archive', 'phase-3.1-e2e')}/`,
     })
     await statePause()
 

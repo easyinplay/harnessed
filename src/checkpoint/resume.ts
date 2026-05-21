@@ -17,7 +17,10 @@ export type ResumeResult =
 export async function runResume(): Promise<ResumeResult> {
   const current = await readCurrentWorkflow()
   if (!current) {
-    return { status: 'no-paused-phase', error: 'no .harnessed/current-workflow.json found' }
+    return {
+      status: 'no-paused-phase',
+      error: 'no current-workflow.json found under <harnessed-root>',
+    }
   }
   if (current.status !== 'paused') {
     return {

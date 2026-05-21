@@ -1,23 +1,27 @@
 // src/workflow/governance.ts — Phase 3.2 W1 T1.7 (D-04 PUSH LOCKED).
 // Sister src/checkpoint/state.ts L23-41 readCurrentWorkflow fail-soft pattern
-// (direct analog). gstack writes .harnessed/governance.json (NOT in harnessed
-// scope per D-04); harnessed reads lazy-once per workflow phase boundary
-// (NOT polling per Phase 2.4 SSE anti-pattern lesson + D-04 anti-pattern guard).
+// (direct analog). gstack writes <harnessed-root>/governance.json (NOT in
+// harnessed scope per D-04); harnessed reads lazy-once per workflow phase
+// boundary (NOT polling per Phase 2.4 SSE anti-pattern lesson + D-04 guard).
+// v3.0.3 — GOV_PATH routed through harnessedRoot SoT (homedir-rooted).
 
 import { readFile } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
+import { harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { branchOnSchemaVersion } from '../types/schemaVersion.js'
 import { GovernanceV1, type GovernanceV1Type } from './schema/governance.js'
 
-const GOV_PATH = '.harnessed/governance.json'
+function govPath(): string {
+  return harnessedFile('governance.json')
+}
 
-/** Read .harnessed/governance.json with fail-soft null on missing/corrupt/drift.
+/** Read <harnessed-root>/governance.json with fail-soft null on missing/corrupt/drift.
  *  Sister state.ts:23-41. Missing file = active (no veto) by design — D-04 PUSH
  *  default is active unless gstack explicitly writes vetoed state. */
 export async function readGovernance(): Promise<GovernanceV1Type | null> {
   let raw: string
   try {
-    raw = await readFile(GOV_PATH, 'utf8')
+    raw = await readFile(govPath(), 'utf8')
   } catch {
     return null
   }

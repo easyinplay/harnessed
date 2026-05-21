@@ -2,15 +2,21 @@
 // JSONL append-only writer + 11-field schema per D-01 LOCKED (CONTEXT.md L34-50).
 // Sync (NOT async sister state.ts): logging path no-await + atomic O_APPEND per RESEARCH § 2.3.
 // Single SoT for routing-decision dimension forward-only per D-02 LOCKED (cross-ref ADR 0019).
+// v3.0.3 — AUDIT_PATH routed through harnessedRoot SoT (homedir-rooted; EPERM-free).
 
 import { createHash } from 'node:crypto'
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { type Static, Type } from '@sinclair/typebox'
+import { harnessedFile } from '../installers/lib/harnessedRoot.js'
 import type { ArbitrateResult, TaskContext } from '../routing/agentDefinition.js'
 import type { Rule } from '../routing/decisionRules.js'
 
-const AUDIT_PATH = '.harnessed/audit.log'
+// Computed lazily on first emit so harnessedRoot migration (if any) lands
+// before path composition.
+function auditPath(): string {
+  return harnessedFile('audit.log')
+}
 
 export const AuditRecordSchema = Type.Object(
   {
@@ -61,6 +67,7 @@ export function buildAuditRecord(
 }
 
 export function emitAuditRecord(record: AuditRecord): void {
-  mkdirSync(dirname(AUDIT_PATH), { recursive: true })
-  appendFileSync(AUDIT_PATH, `${JSON.stringify(record)}\n`)
+  const path = auditPath()
+  mkdirSync(dirname(path), { recursive: true })
+  appendFileSync(path, `${JSON.stringify(record)}\n`)
 }

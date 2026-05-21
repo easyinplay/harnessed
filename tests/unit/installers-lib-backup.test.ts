@@ -115,11 +115,12 @@ describe('backup', () => {
     const plan: DiffPlan = { files: [] }
     await backup(plan, ctx())
     const firstMkdir = mkdirMock.mock.calls[0]
-    expect(firstMkdir?.[0]).toMatch(/\.harnessed[/\\]backups/)
+    // v3.0.3: backup root under ~/.claude/harnessed/backups (was ~/.harnessed/backups in v2.0.1).
+    expect(String(firstMkdir?.[0])).toMatch(/\.claude[/\\]harnessed[/\\]backups/)
     expect(firstMkdir?.[1]).toEqual({ recursive: true })
   })
 
-  it('v2.0.1 regression — backup root resolves under homedir NOT ctx.cwd (EPERM fix when CWD is read-only like Program Files)', async () => {
+  it('v3.0.3 regression — backup root resolves under ~/.claude/harnessed NOT ctx.cwd (EPERM fix when CWD is read-only like Program Files)', async () => {
     const plan: DiffPlan = { files: [] }
     // ctx.cwd intentionally set to a path that should NOT appear in backup dir
     // (sister user repro: CWD = C:\Program Files\Warp\ → EPERM on mkdir)
@@ -129,8 +130,8 @@ describe('backup', () => {
     expect(firstMkdir).toBeTruthy()
     expect(firstMkdir).not.toContain('Program Files')
     expect(firstMkdir).not.toContain('C:\\Program')
-    // Path should reference user homedir-based location
-    expect(firstMkdir).toMatch(/\.harnessed[/\\]backups/)
+    // Path should reference ~/.claude/harnessed/backups (v3.0.3 path migration).
+    expect(firstMkdir).toMatch(/\.claude[/\\]harnessed[/\\]backups/)
   })
 
   it('writes metadata.json with installer name + timestamp + files[]', async () => {

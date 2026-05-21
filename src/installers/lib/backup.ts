@@ -19,8 +19,8 @@
 
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
+import { harnessedSubdir } from './harnessedRoot.js'
 import type { DiffPlan, InstallContext, InstallError } from './types.js'
 
 // v2.0.1 fix: backup root migrated from `<ctx.cwd>/.harnessed-backup/` to
@@ -29,8 +29,12 @@ import type { DiffPlan, InstallContext, InstallError } from './types.js'
 // `getBackupRoot()` is exported so cli/backup-list.ts + cli/gc.ts +
 // cli/rollback.ts share the same SoT (sister Phase 2.6 single-source-of-truth
 // per ADR 0024 capability abstraction pattern).
+//
+// v3.0.3: routed through the shared `getHarnessedRoot()` SoT (sister
+// `harnessedRoot.ts`) so all harness-owned roots compose from a single helper.
+// Path remains `<homedir>/.harnessed/backups` — no behavioral change.
 export function getBackupRoot(): string {
-  return join(homedir(), '.harnessed', 'backups')
+  return harnessedSubdir('backups')
 }
 
 export interface BackupFileEntry {

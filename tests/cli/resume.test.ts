@@ -15,13 +15,16 @@ vi.mock('node:fs/promises', () => ({
   mkdir: async () => undefined,
 }))
 
+import { join as pathJoin } from 'node:path'
 import { Command } from 'commander'
 import { runResume } from '../../src/checkpoint/resume.js'
 import { registerResume } from '../../src/cli/resume.js'
+import { harnessedFile, harnessedSubdir } from '../../src/installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
-const STATE_PATH = '.harnessed/current-workflow.json'
-const CP_PATH = '.harnessed/checkpoints/3.1.json'
+// v3.0.3 — paths under ~/.claude/harnessed/ via harnessedRoot SoT.
+const STATE_PATH = harnessedFile('current-workflow.json')
+const CP_PATH = pathJoin(harnessedSubdir('checkpoints'), '3.1.json')
 
 function seedPausedWorkflow(cpPath: string = CP_PATH) {
   fsState.set(
@@ -94,7 +97,8 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
     expect(r.status).toBe('no-paused-phase')
     const cli = await runCli(['resume'])
     expect(cli.code).toBe(1)
-    expect(cli.stderr).toMatch(/no .harnessed\/current-workflow.json/)
+    // v3.0.3 — message references the harness root (no longer ".harnessed/...").
+    expect(cli.stderr).toMatch(/no current-workflow.json found under <harnessed-root>/)
   })
 
   it('25. workflow status="active" → "no-paused-phase" + CLI exit 1 (D-03 fail-loud)', async () => {
@@ -144,7 +148,7 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
   })
 
   it('28. paused but checkpoint file missing → "corrupt" + CLI exit 1', async () => {
-    seedPausedWorkflow('.harnessed/checkpoints/does-not-exist.json')
+    seedPausedWorkflow(pathJoin(harnessedSubdir('checkpoints'), 'does-not-exist.json'))
     const r = await runResume()
     expect(r.status).toBe('corrupt')
     if (r.status === 'corrupt') expect(r.error).toMatch(/checkpoint missing/)

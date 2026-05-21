@@ -12,6 +12,7 @@ vi.mock('node:fs', () => ({
   mkdirSync: (p: string) => void mkdirCalls.push(p),
 }))
 
+import { join as pathJoin } from 'node:path'
 import type { CheckpointV1Type } from '../../src/checkpoint/schema/index.js'
 import {
   CheckpointTooLargeError,
@@ -20,6 +21,7 @@ import {
   estimateTokens,
   writeCheckpoint,
 } from '../../src/checkpoint/template.js'
+import { harnessedSubdir } from '../../src/installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const makeCheckpoint = (overrides: Partial<CheckpointV1Type> = {}): CheckpointV1Type => ({
@@ -45,9 +47,11 @@ describe('template — writeCheckpoint + enforceBudget (T2.4 fixtures 14-18)', (
   it('14. happy path: valid CheckpointV1 → writes to default path + content matches', () => {
     const cp = makeCheckpoint()
     const p = writeCheckpoint(cp)
-    expect(p).toBe('.harnessed/checkpoints/3.1.json')
+    // v3.0.3 — default path is under the homedir-rooted harness root.
+    const expected = pathJoin(harnessedSubdir('checkpoints'), '3.1.json')
+    expect(p).toBe(expected)
     expect(fsState.get(p)).toBe(JSON.stringify(cp, null, 2))
-    expect(mkdirCalls).toContain('.harnessed/checkpoints')
+    expect(mkdirCalls).toContain(harnessedSubdir('checkpoints'))
   })
 
   it('15. budget within: 500-token checkpoint → no truncation, JSON content === input', () => {

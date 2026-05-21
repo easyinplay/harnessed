@@ -10,8 +10,12 @@ import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import type { Command } from 'commander'
 import type { AuditRecord } from '../audit/log.js'
+import { harnessedFile } from '../installers/lib/harnessedRoot.js'
 
-const AUDIT_PATH = '.harnessed/audit.log'
+// v3.0.3 — homedir-rooted via harnessedRoot SoT (sister src/audit/log.ts).
+function auditPath(): string {
+  return harnessedFile('audit.log')
+}
 
 // D-04: pre-compile at module load (NOT inside loop per PLAN sneak-block).
 // Apply to task_excerpt field only (other fields are structured IDs/enums/timestamps).
@@ -73,7 +77,9 @@ function pipeToJq(filterExpr: string, lines: string[]): Promise<number> {
 export function registerAuditLog(program: Command): void {
   program
     .command('audit-log')
-    .description('Query routing audit log (.harnessed/audit.log) with optional jq filter (R10.1)')
+    .description(
+      'Query routing audit log (<harnessed-root>/audit.log) with optional jq filter (R10.1)',
+    )
     .option('--filter <expr>', 'jq filter expression (e.g. \'.category=="engineering"\')')
     .option('--tail <n>', 'show N most recent records (default 50)', '50')
     .option('--head <n>', 'show N oldest records (--head takes priority over --tail)')
@@ -99,13 +105,14 @@ export function registerAuditLog(program: Command): void {
           process.exit(2)
         }
 
-        // Read audit.log — hardcoded path (STRIDE T: no derivation from user input).
-        if (!existsSync(AUDIT_PATH)) {
-          console.log('no audit records found (.harnessed/audit.log does not exist)')
+        // Read audit.log — SoT-derived path (STRIDE T: no derivation from user input).
+        const path = auditPath()
+        if (!existsSync(path)) {
+          console.log(`no audit records found (${path} does not exist)`)
           process.exit(0)
         }
 
-        const raw = readFileSync(AUDIT_PATH, 'utf8')
+        const raw = readFileSync(path, 'utf8')
         const lines = raw
           .split('\n')
           .map((l) => l.trim())

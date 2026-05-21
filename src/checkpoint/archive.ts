@@ -9,7 +9,8 @@
 // inspection); hence no token budget — only checkpoint.json is enforced.
 
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
+import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
 
 export class ArchiveWriteError extends Error {
   constructor(message: string) {
@@ -19,7 +20,7 @@ export class ArchiveWriteError extends Error {
 }
 
 /** Write raw turn history archive (NOT for context reload — for retrospective only).
- *  Path: .harnessed/archive/phase-<X.Y>/raw-<ISO-ts>.json
+ *  Path: `<harnessed-root>/archive/phase-<X.Y>/raw-<ISO-ts>.json` (v3.0.3 homedir-rooted).
  *  Unbounded size — only checkpoint.json is budget-enforced (template.ts). */
 export function writeArchive(phase: string, rawTurns: unknown[]): string {
   if (!phase || typeof phase !== 'string') {
@@ -29,7 +30,7 @@ export function writeArchive(phase: string, rawTurns: unknown[]): string {
     throw new ArchiveWriteError('rawTurns must be an array')
   }
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const path = `.harnessed/archive/phase-${phase}/raw-${timestamp}.json`
+  const path = join(harnessedSubdir('archive'), `phase-${phase}`, `raw-${timestamp}.json`)
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, JSON.stringify(rawTurns, null, 2), 'utf8')
   return path

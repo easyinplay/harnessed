@@ -18,6 +18,7 @@ import {
   buildAuditRecord,
   emitAuditRecord,
 } from '../../src/audit/log.js'
+import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
 import type { ArbitrateResult, TaskContext } from '../../src/routing/agentDefinition.js'
 import type { Rule } from '../../src/routing/decisionRules.js'
 
@@ -112,10 +113,10 @@ describe('audit/log — JSONL append-only (Phase 4.3 W1 T1.4)', () => {
     expect(rec2.outcome).toBe('spawn-err')
   })
 
-  it('7. mkdirSync called with dirname(.harnessed/audit.log)', () => {
+  it('7. mkdirSync called with the harnessed root (v3.0.3: ~/.claude/harnessed)', () => {
     const f = makeFixture()
     emitAuditRecord(buildAuditRecord(f.task, f.decision, f.matched, f.ctx))
-    expect(mkdirSyncCalls).toContain('.harnessed')
+    expect(mkdirSyncCalls).toContain(getHarnessedRoot())
   })
 
   it('8. log injection — raw newline in task encoded as \\n NOT literal newline (STRIDE T-4.3-05 mitigation)', () => {

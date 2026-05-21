@@ -9,8 +9,9 @@
 // Token estimation: 1 char ≈ 0.25 token via Buffer.byteLength (R § 3 heuristic).
 
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
+import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
 import { CheckpointV1, type CheckpointV1Type } from './schema/index.js'
 
 const BUDGET_TOKEN = 1000
@@ -55,7 +56,8 @@ export function enforceBudget(c: CheckpointV1Type, budget = BUDGET_TOKEN): Check
   )
 }
 
-/** Write checkpoint envelope to `.harnessed/checkpoints/<phase>.json` (or customPath).
+/** Write checkpoint envelope to `<harnessed-root>/checkpoints/<phase>.json` (or customPath).
+ *  v3.0.3: default path routed through `getHarnessedRoot()` SoT (homedir-rooted).
  *  Throws CheckpointWriteError on schema violation; CheckpointTooLargeError on budget. */
 export function writeCheckpoint(c: CheckpointV1Type, customPath?: string): string {
   if (!Value.Check(CheckpointV1, c)) {
@@ -63,7 +65,7 @@ export function writeCheckpoint(c: CheckpointV1Type, customPath?: string): strin
     throw new CheckpointWriteError(`Schema validation failed: ${errs}`)
   }
   const enforced = enforceBudget(c)
-  const path = customPath ?? `.harnessed/checkpoints/${enforced.phase}.json`
+  const path = customPath ?? join(harnessedSubdir('checkpoints'), `${enforced.phase}.json`)
   mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, JSON.stringify(enforced, null, 2), 'utf8')
   return path

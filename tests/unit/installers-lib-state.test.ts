@@ -102,10 +102,11 @@ describe('state.writeState', () => {
     const state: HarnessedState = { version: '1', installed: {} }
     await writeState(CWD, state)
 
-    // First, mkdir for .harnessed/
+    // v3.0.3: mkdir parent of state.json — path is the harness root
+    // (`~/.claude/harnessed`), not the legacy cwd-rooted `.harnessed`.
     expect(mkdirMock).toHaveBeenCalledTimes(1)
     const mkdirArgs = mkdirMock.mock.calls[0]
-    expect(mkdirArgs?.[0]).toMatch(/\.harnessed$/)
+    expect(String(mkdirArgs?.[0])).toMatch(/[\\/]\.claude[\\/]harnessed$/)
     expect(mkdirArgs?.[1]).toEqual({ recursive: true })
 
     // Then writeFile to .tmp
@@ -118,6 +119,18 @@ describe('state.writeState', () => {
     const renameArgs = renameMock.mock.calls[0]
     expect(renameArgs?.[0]).toMatch(/state\.json\.tmp$/)
     expect(renameArgs?.[1]).toMatch(/state\.json$/)
+  })
+
+  // v3.0.3 regression — state path resolves under homedir/.claude/harnessed,
+  // NOT under ctx.cwd (which may be read-only, like Warp default
+  // `C:\Program Files\Warp\`). Sister v2.0.1 backup-root fixture.
+  it('v3.0.3 regression — state path under ~/.claude/harnessed NOT ctx.cwd (EPERM-fix when CWD is read-only)', async () => {
+    const state: HarnessedState = { version: '1', installed: {} }
+    await writeState('C:\\Program Files\\Warp', state)
+    const mkdirArgs = mkdirMock.mock.calls[0]
+    const p = String(mkdirArgs?.[0])
+    expect(p).not.toContain('Program Files')
+    expect(p).toMatch(/[\\/]\.claude[\\/]harnessed$/)
   })
 
   it('serialises with trailing newline (POSIX-friendly)', async () => {

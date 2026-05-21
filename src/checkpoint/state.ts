@@ -1,24 +1,38 @@
 // Phase 3.1 W1 T1.3 — workflow state machine (D-02 KARPATHY 3-state, no FSM
 // lib). Sister of `src/workflow/loadPhases.ts` (Value.Check validate-and-throw).
-// Persists singleton state to `.harnessed/current-workflow.json`. Hard limit
+// Persists singleton state to `<harnessed-root>/current-workflow.json`. Hard limit
 // ≤ 80L per D-02 (3 transitions + read/write helpers).
 // Phase 5.1 W2 T2.2 — R10.2 concurrent write lock (D-05+D-06+D-07+D-08 LOCKED)
-// proper-lockfile dir-level lock `.harnessed/.lock` wraps writeCurrentWorkflow.
+// proper-lockfile dir-level lock `<harnessed-root>/.lock` wraps writeCurrentWorkflow.
 // W-01 PLAN-CHECK Path A: state.ts self-locks; engineHook acquires transitively.
+//
+// v3.0.3 hotfix — state + lock path migrated from `<cwd>/.harnessed/...` to
+// `<homedir>/.harnessed/...` via `getHarnessedRoot()` SoT. Sister v2.0.1
+// backup-root migration verbatim — EPERM-free when user CWD is read-only.
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
 import lockfile from 'proper-lockfile'
+import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { branchOnSchemaVersion, SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { CurrentWorkflowV1, type CurrentWorkflowV1Type } from './schema/index.js'
 
-const STATE_PATH = '.harnessed/current-workflow.json'
-const LOCK_TARGET = '.harnessed'
-const LOCK_OPTS = {
-  stale: 10_000,
-  retries: { retries: 3, factor: 2, minTimeout: 100 },
-  lockfilePath: '.harnessed/.lock',
+// v3.0.3 — lazy path resolution so HARNESSED_ROOT_OVERRIDE in e2e tests
+// applies before the first write (module-level const captured the path
+// at import time, before the test set the env var).
+function statePath(): string {
+  return harnessedFile('current-workflow.json')
+}
+function lockTarget(): string {
+  return getHarnessedRoot()
+}
+function lockOpts() {
+  return {
+    stale: 10_000,
+    retries: { retries: 3, factor: 2, minTimeout: 100 },
+    lockfilePath: harnessedFile('.lock'),
+  }
 }
 
 export class WorkflowStateError extends Error {
@@ -28,22 +42,28 @@ export class WorkflowStateError extends Error {
   }
 }
 
-/** Thrown when another harnessed process holds the .harnessed/.lock (D-06 LOCKED). */
+/** Thrown when another harnessed process holds the harness-root `.lock` (D-06 LOCKED). */
 export class LockHeldError extends Error {
   constructor() {
     super(
-      'another harnessed process holds the lock at .harnessed/.lock — wait or kill stale process (try: harnessed status)',
+      `another harnessed process holds the lock at ${harnessedFile('.lock')} — wait or kill stale process (try: harnessed status)`,
     )
     this.name = 'LockHeldError'
     Object.setPrototypeOf(this, LockHeldError.prototype)
   }
 }
 
-/** Acquire dir-level lock then run fn(); release in finally (D-05+D-06+D-08). */
+/** Acquire dir-level lock then run fn(); release in finally (D-05+D-06+D-08).
+ *  v3.0.3: lock target is the homedir-rooted harness root (ensures the lock
+ *  directory exists before proper-lockfile tries to write `.lock` into it —
+ *  proper-lockfile will fail if the lockfilePath parent does not exist). */
 async function withLock<T>(fn: () => Promise<T>): Promise<T> {
+  const target = lockTarget()
+  // Ensure the harness root exists before proper-lockfile tries to write.
+  await mkdir(target, { recursive: true })
   let release: (() => Promise<void>) | undefined
   try {
-    release = await lockfile.lock(LOCK_TARGET, LOCK_OPTS)
+    release = await lockfile.lock(target, lockOpts())
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ELOCKED') throw new LockHeldError()
     throw e
@@ -60,7 +80,7 @@ async function withLock<T>(fn: () => Promise<T>): Promise<T> {
 export async function readCurrentWorkflow(): Promise<CurrentWorkflowV1Type | null> {
   let raw: string
   try {
-    raw = await readFile(STATE_PATH, 'utf8')
+    raw = await readFile(statePath(), 'utf8')
   } catch {
     return null
   }
@@ -84,9 +104,10 @@ export async function writeCurrentWorkflow(s: CurrentWorkflowV1Type): Promise<vo
     const errs = [...Value.Errors(CurrentWorkflowV1, s)].map((e) => e.message).join('; ')
     throw new WorkflowStateError(`current-workflow schema validation failed: ${errs}`)
   }
-  await mkdir(dirname(STATE_PATH), { recursive: true })
+  const path = statePath()
+  await mkdir(dirname(path), { recursive: true })
   await withLock(async () => {
-    await writeFile(STATE_PATH, JSON.stringify(s, null, 2), 'utf8')
+    await writeFile(path, JSON.stringify(s, null, 2), 'utf8')
   })
 }
 

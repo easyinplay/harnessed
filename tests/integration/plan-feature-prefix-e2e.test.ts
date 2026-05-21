@@ -18,22 +18,32 @@ vi.mock('node:child_process', async () => {
 
 const WORKFLOW_YAML = join(process.cwd(), 'workflows/plan-feature/workflow.yaml')
 
+// v3.0.3 — HARNESSED_ROOT_OVERRIDE isolation (sister plan-feature-wired).
 let tmp: string
 let originalCwd: string
+let originalOverride: string | undefined
 
 beforeEach(async () => {
   originalCwd = process.cwd()
   tmp = mkdtempSync(join(tmpdir(), 'plan-feature-prefix-e2e-'))
   process.chdir(tmp)
-  await mkdir('.harnessed/checkpoints', { recursive: true })
+  originalOverride = process.env.HARNESSED_ROOT_OVERRIDE
+  process.env.HARNESSED_ROOT_OVERRIDE = join(tmp, '.claude', 'harnessed')
+  await mkdir(join(tmp, '.claude', 'harnessed', 'checkpoints'), { recursive: true })
   vi.resetModules()
 })
 
 afterEach(() => {
   process.chdir(originalCwd)
+  if (originalOverride === undefined) delete process.env.HARNESSED_ROOT_OVERRIDE
+  else process.env.HARNESSED_ROOT_OVERRIDE = originalOverride
   rmSync(tmp, { recursive: true, force: true })
   vi.restoreAllMocks()
 })
+
+function harnessedSubdirPath(...segments: string[]): string {
+  return join(tmp, '.claude', 'harnessed', ...segments)
+}
 
 describe('plan-feature prefix matrix e2e (R7.4 acceptance — 三选一 + WIRED)', () => {
   it('1. gstack- mode end-to-end (R7.4 case 1 prefixed) — probe pass + runWorkflow complete + invokes interpolated', async () => {
@@ -68,8 +78,8 @@ describe('plan-feature prefix matrix e2e (R7.4 acceptance — 三选一 + WIRED)
     expect(r.status).toBe('complete')
     expect(r.phasesRun).toBe(5)
     // engineHook 二代消费 — 5 checkpoint files written by completePhase chain
-    expect(existsSync('.harnessed/checkpoints/01-gstack-decision.json')).toBe(true)
-    expect(existsSync('.harnessed/checkpoints/05-persist.json')).toBe(true)
+    expect(existsSync(harnessedSubdirPath('checkpoints', '01-gstack-decision.json'))).toBe(true)
+    expect(existsSync(harnessedSubdirPath('checkpoints', '05-persist.json'))).toBe(true)
   })
 
   it("2. bare '' mode end-to-end (R7.4 case 2 --no-prefix) — probe pass + interp '' empty concat + runWorkflow complete", async () => {
@@ -100,7 +110,7 @@ describe('plan-feature prefix matrix e2e (R7.4 acceptance — 三选一 + WIRED)
     const r = await runWorkflow(WORKFLOW_YAML, { gstack_prefix: '' })
     expect(r.status).toBe('complete')
     expect(r.phasesRun).toBe(5)
-    expect(existsSync('.harnessed/checkpoints/01-gstack-decision.json')).toBe(true)
+    expect(existsSync(harnessedSubdirPath('checkpoints', '01-gstack-decision.json'))).toBe(true)
   })
 
   it('3. both/neither ambiguous fail-loud (R7.4 case 3) — probe fail+fix hint; manual config workaround unblocks runWorkflow', async () => {

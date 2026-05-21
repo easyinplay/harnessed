@@ -31,7 +31,10 @@ vi.mock('node:fs/promises', () => ({
 }))
 
 import { activate, LockHeldError, writeCurrentWorkflow } from '../../src/checkpoint/state.js'
+import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
+
+const HARNESSED_ROOT = getHarnessedRoot()
 
 const makeWorkflow = () => ({
   schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
@@ -55,7 +58,10 @@ describe('R10.2 concurrent write lock (T2.4 — 5 cells)', () => {
   it('cell 1 — serial writeCurrentWorkflow completes via lock acquire + release', async () => {
     await writeCurrentWorkflow(makeWorkflow())
     expect(lockMock).toHaveBeenCalledTimes(1)
-    expect(lockMock).toHaveBeenCalledWith('.harnessed', expect.objectContaining({ stale: 10_000 }))
+    expect(lockMock).toHaveBeenCalledWith(
+      HARNESSED_ROOT,
+      expect.objectContaining({ stale: 10_000 }),
+    )
     expect(releaseMock).toHaveBeenCalledTimes(1)
   })
 
@@ -98,16 +104,16 @@ describe('R10.2 concurrent write lock (T2.4 — 5 cells)', () => {
     expect(releaseMock).not.toHaveBeenCalled()
   })
 
-  it('cell 5 — mkdir(.harnessed) called and lock acquired on activate()', async () => {
+  it('cell 5 — mkdir(<harnessed-root>) called and lock acquired on activate()', async () => {
     await activate('5.1', null)
     // After T2.2 implementation: lock must have been called via writeCurrentWorkflow
     expect(lockMock).toHaveBeenCalledTimes(1)
     expect(lockMock).toHaveBeenCalledWith(
-      '.harnessed',
+      HARNESSED_ROOT,
       expect.objectContaining({ retries: expect.objectContaining({ retries: 3 }) }),
     )
-    // mkdir should have been called for parent dir before lock
-    expect(mkdirCalls).toContain('.harnessed')
+    // mkdir should have been called for the harness root before lock
+    expect(mkdirCalls).toContain(HARNESSED_ROOT)
     expect(releaseMock).toHaveBeenCalledTimes(1)
   })
 })

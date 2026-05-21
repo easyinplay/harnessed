@@ -22,7 +22,10 @@ afterEach(() => vi.clearAllMocks())
 describe('archive — writeArchive raw dump (T2.4 fixtures 21-24)', () => {
   it('21. happy path: writeArchive(phase, turns) → file at phase-<X.Y>/raw-<ISO-ts>.json', () => {
     const p = writeArchive('3.1', [{ role: 'user', content: 'hi' }])
-    expect(p).toMatch(/^\.harnessed\/archive\/phase-3\.1\/raw-\d{4}-\d{2}-\d{2}T.+\.json$/)
+    // v3.0.3 — archive path now under ~/.claude/harnessed/archive/phase-<X.Y>/
+    // (homedir-rooted via getHarnessedRoot SoT). Match cross-platform.
+    expect(p).toMatch(/\.claude[\\/]harnessed[\\/]archive[\\/]phase-3\.1[\\/]raw-/)
+    expect(p.endsWith('.json')).toBe(true)
     expect(fsState.get(p)).toBeDefined()
     expect(mkdirCalls.some((d) => d.includes('phase-3.1'))).toBe(true)
   })

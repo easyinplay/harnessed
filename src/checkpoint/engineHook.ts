@@ -4,7 +4,12 @@
 // checkpoint.json double-write. Analog: src/routing/lib/sdkReconcile.ts ≤56L
 // (Phase 2.2 helper extract pattern for testability).
 // D-04 WIRE-IN LOCKED + W-04 mitigation (phaseId="unknown" warn-only fail-loud).
+//
+// v3.0.3 — checkpoint + archive path routed through `getHarnessedRoot()` SoT
+// (homedir-rooted; EPERM-free in read-only CWD). Sister v2.0.1 backup pattern.
 
+import { join } from 'node:path'
+import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { activate as stateActivate, complete as stateComplete } from './state.js'
 import { writeCheckpoint } from './template.js'
@@ -22,7 +27,7 @@ export interface EngineCheckpointHookCtx {
  *  Lock acquired transitively via stateActivate → writeCurrentWorkflow
  *  (sister W-01 PLAN-CHECK resolve Path A: state.ts self-locks; no double-lock). */
 export async function activatePhase(phaseId: string): Promise<{ checkpointPath: string }> {
-  const checkpointPath = `.harnessed/checkpoints/${phaseId}.json`
+  const checkpointPath = join(harnessedSubdir('checkpoints'), `${phaseId}.json`)
   await stateActivate(phaseId, checkpointPath)
   return { checkpointPath }
 }
@@ -33,7 +38,7 @@ export async function activatePhase(phaseId: string): Promise<{ checkpointPath: 
 export async function completePhase(ctx: EngineCheckpointHookCtx): Promise<void> {
   if (ctx.phaseId === 'unknown') {
     console.error(
-      '[harnessed] WARN engineHook: phaseId="unknown" — checkpoint paths fall back to .harnessed/checkpoints/unknown.json (Karpathy fail-loud non-blocking; W-04 mitigation)',
+      `[harnessed] WARN engineHook: phaseId="unknown" — checkpoint paths fall back to ${join(harnessedSubdir('checkpoints'), 'unknown.json')} (Karpathy fail-loud non-blocking; W-04 mitigation)`,
     )
   }
   writeCheckpoint({
@@ -46,7 +51,7 @@ export async function completePhase(ctx: EngineCheckpointHookCtx): Promise<void>
     ...(ctx.sessionId ? { session_id: ctx.sessionId } : {}),
     cwd: process.cwd(),
     timestamp: new Date().toISOString(),
-    archive_path: `.harnessed/archive/phase-${ctx.phaseId}/`,
+    archive_path: `${join(harnessedSubdir('archive'), `phase-${ctx.phaseId}`)}/`,
   })
   await stateComplete()
 }

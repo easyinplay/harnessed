@@ -22,20 +22,35 @@ import { WorkflowSchemaV2 } from '../../src/workflow/schema/workflow.js'
 
 const WORKFLOW_YAML = join(process.cwd(), 'workflows/plan-feature/workflow.yaml')
 
+// v3.0.3 — e2e isolation uses HARNESSED_ROOT_OVERRIDE so harnessedRoot SoT
+// redirects to per-test tmpdir (real ~/.claude/harnessed/ would be polluted
+// by the real workflow runner otherwise).
 let tmp: string
 let originalCwd: string
+let originalOverride: string | undefined
 
 beforeEach(async () => {
   originalCwd = process.cwd()
   tmp = mkdtempSync(join(tmpdir(), 'plan-feature-wired-'))
   process.chdir(tmp)
-  await mkdir('.harnessed/checkpoints', { recursive: true })
+  originalOverride = process.env.HARNESSED_ROOT_OVERRIDE
+  process.env.HARNESSED_ROOT_OVERRIDE = join(tmp, '.claude', 'harnessed')
+  await mkdir(join(tmp, '.claude', 'harnessed', 'checkpoints'), { recursive: true })
 })
 
 afterEach(() => {
   process.chdir(originalCwd)
+  if (originalOverride === undefined) delete process.env.HARNESSED_ROOT_OVERRIDE
+  else process.env.HARNESSED_ROOT_OVERRIDE = originalOverride
   rmSync(tmp, { recursive: true, force: true })
 })
+
+function harnessedFilePath(name: string): string {
+  return join(tmp, '.claude', 'harnessed', name)
+}
+function harnessedSubdirPath(...segments: string[]): string {
+  return join(tmp, '.claude', 'harnessed', ...segments)
+}
 
 describe('plan-feature wired e2e (D-03 WIRED + B-01 fix守门)', () => {
   it('1. 5 phase happy → status=complete + 5 checkpoint writes + PhasesSchema accepts yaml (W-02 happy-path)', async () => {
@@ -61,7 +76,7 @@ describe('plan-feature wired e2e (D-03 WIRED + B-01 fix守门)', () => {
       '04-gsd-plan',
       '05-persist',
     ]) {
-      expect(existsSync(`.harnessed/checkpoints/${id}.json`)).toBe(true)
+      expect(existsSync(harnessedSubdirPath('checkpoints', `${id}.json`))).toBe(true)
     }
   })
 
@@ -84,7 +99,7 @@ describe('plan-feature wired e2e (D-03 WIRED + B-01 fix守门)', () => {
     // tests the halt-on-veto path semantically equivalent to fixture 3 but documents
     // the lastPhaseId behavior at phase 1. Fixture 3 then proves resume integration.
     await writeFile(
-      '.harnessed/governance.json',
+      harnessedFilePath('governance.json'),
       JSON.stringify({
         schemaVersion: SCHEMA_VERSIONS.governance,
         status: 'vetoed',
@@ -101,17 +116,17 @@ describe('plan-feature wired e2e (D-03 WIRED + B-01 fix守门)', () => {
     expect(r.status).toBe('paused-veto')
     expect(r.phasesRun).toBe(0)
     // No completePhase calls → no checkpoint files written by run.ts on veto path
-    expect(existsSync('.harnessed/checkpoints/02-brainstorm.json')).toBe(false)
-    expect(existsSync('.harnessed/checkpoints/03-gsd-discuss.json')).toBe(false)
-    expect(existsSync('.harnessed/checkpoints/04-gsd-plan.json')).toBe(false)
-    expect(existsSync('.harnessed/checkpoints/05-persist.json')).toBe(false)
+    expect(existsSync(harnessedSubdirPath('checkpoints', '02-brainstorm.json'))).toBe(false)
+    expect(existsSync(harnessedSubdirPath('checkpoints', '03-gsd-discuss.json'))).toBe(false)
+    expect(existsSync(harnessedSubdirPath('checkpoints', '04-gsd-plan.json'))).toBe(false)
+    expect(existsSync(harnessedSubdirPath('checkpoints', '05-persist.json'))).toBe(false)
   })
 
   it('3. B-01 veto-at-i=0 守门 → paused state written + Phase 3.1 runResume consumes paused state', async () => {
     // PLANNER-REVISION ITER 1 fixture: exercises activate-BEFORE-veto reorder.
     // Pre-write governance.json vetoed; no prior workflow state seeded.
     await writeFile(
-      '.harnessed/governance.json',
+      harnessedFilePath('governance.json'),
       JSON.stringify({
         schemaVersion: SCHEMA_VERSIONS.governance,
         status: 'vetoed',
@@ -133,8 +148,8 @@ describe('plan-feature wired e2e (D-03 WIRED + B-01 fix守门)', () => {
     })
 
     // Assert (b) — current-workflow.json paused state written (B-01 proof)
-    expect(existsSync('.harnessed/current-workflow.json')).toBe(true)
-    const wf = JSON.parse(readFileSync('.harnessed/current-workflow.json', 'utf8'))
+    expect(existsSync(harnessedFilePath('current-workflow.json'))).toBe(true)
+    const wf = JSON.parse(readFileSync(harnessedFilePath('current-workflow.json'), 'utf8'))
     expect(wf.status).toBe('paused')
     expect(wf.phase).toBe('01-gstack-decision')
     expect(wf.paused_at).toMatch(/^\d{4}-\d{2}-\d{2}T/)
@@ -154,7 +169,7 @@ describe('plan-feature wired e2e (D-03 WIRED + B-01 fix守门)', () => {
       canonical_refs: ['workflows/plan-feature/workflow.yaml'],
       cwd: process.cwd(),
       timestamp: new Date().toISOString(),
-      archive_path: '.harnessed/archive/phase-01-gstack-decision/',
+      archive_path: `${harnessedSubdirPath('archive', 'phase-01-gstack-decision')}/`,
     })
 
     const resumeCtx = await runResume()

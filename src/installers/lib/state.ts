@@ -25,7 +25,8 @@
 // expected initial condition.
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
+import { harnessedFile } from './harnessedRoot.js'
 
 export interface HarnessedStateEntry {
   version: string
@@ -40,8 +41,14 @@ export interface HarnessedState {
 
 const DEFAULT_STATE: HarnessedState = { version: '1', installed: {} }
 
-function statePath(cwd: string): string {
-  return join(cwd, '.harnessed', 'state.json')
+// v3.0.3 hotfix — state.json path now homedir-rooted (sister `getBackupRoot()`
+// v2.0.1 + `getHarnessedRoot()` v3.0.3). Pre-v3.0.3 used `<cwd>/.harnessed/`
+// which EPERMs when the user launches harnessed from a read-only directory
+// (Warp default `C:\Program Files\Warp\`). The `cwd` parameter is now ignored
+// for path composition (signature kept for backward-compat with callers like
+// `cli/status.ts` and `npmCli.ts` that still pass `ctx.cwd` or `process.cwd()`).
+function statePath(_cwd: string): string {
+  return harnessedFile('state.json')
 }
 
 export async function readState(cwd: string): Promise<HarnessedState> {

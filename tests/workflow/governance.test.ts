@@ -14,10 +14,12 @@ vi.mock('node:fs/promises', () => ({
   },
 }))
 
+import { harnessedFile } from '../../src/installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 import { isVetoed, readGovernance } from '../../src/workflow/governance.js'
 
-const GOV_PATH = '.harnessed/governance.json'
+// v3.0.3 — governance.json now homedir-rooted (sister harnessedRoot SoT).
+const GOV_PATH = harnessedFile('governance.json')
 
 beforeEach(() => fsState.clear())
 afterEach(() => vi.clearAllMocks())

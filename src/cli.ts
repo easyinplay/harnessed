@@ -16,6 +16,11 @@ import { registerRollback } from './cli/rollback.js'
 import { registerSetup } from './cli/setup.js'
 import { registerStatus } from './cli/status.js'
 import { registerUninstall } from './cli/uninstall.js'
+import { migrateLegacyHarnessedRoot } from './installers/lib/harnessedRoot.js'
+
+// v3.0.3 — migrate any pre-v3.0.3 `~/.harnessed/` to `~/.claude/harnessed/`
+// before any subcommand runs. Idempotent on subsequent invocations.
+migrateLegacyHarnessedRoot()
 
 const program = new Command()
 

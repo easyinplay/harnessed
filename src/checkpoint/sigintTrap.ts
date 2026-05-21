@@ -1,6 +1,9 @@
 // Phase 3.1 W4 T4.1 — SIGINT trap (D-02 Karpathy YAGNI — Node native zero-dep per RESEARCH § 2.1-2.3).
 // isShuttingDown guard prevents double-fire; 2nd Ctrl+C force quits (OS behavior Node cannot override).
 // 30s timeout fallback for async checkpoint hangs. Standard SIGINT exit code 128+2 = 130.
+// v3.0.3 — archive path routed through `getHarnessedRoot()` SoT (sister engineHook).
+import { join } from 'node:path'
+import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { pause } from './state.js'
 import { writeCheckpoint } from './template.js'
@@ -51,7 +54,7 @@ function buildPausedCheckpoint(ctx: ActiveCtx) {
     ...(ctx.sessionId ? { session_id: ctx.sessionId } : {}),
     cwd: process.cwd(),
     timestamp: new Date().toISOString(),
-    archive_path: `.harnessed/archive/phase-${ctx.phase}/`,
+    archive_path: `${join(harnessedSubdir('archive'), `phase-${ctx.phase}`)}/`,
   }
 }
 

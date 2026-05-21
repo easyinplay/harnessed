@@ -536,9 +536,10 @@ for (const method of methods) {
       }
     })
 
-    // C3 — backups land under .harnessed-backup/<ts>/. backup.ts always
-    // mkdir's the timestamp dir even for empty plans. We exercise the `apply`
-    // path so backup() is reached on every method.
+    // C3 — backups land under <harnessed-root>/backups/<ts>/. v3.0.3 path:
+    // `~/.claude/harnessed/backups/<ts>/` (sister v2.0.1 `~/.harnessed/backups/`
+    // root migration generalised to co-located Claude Code dir). backup.ts
+    // always mkdir's the timestamp dir even for empty plans.
     it('contract: backup-location', async () => {
       const cap = captureStdout()
       try {
@@ -551,7 +552,7 @@ for (const method of methods) {
         )
         await runInstall(factories[method as Method](), applyOpts(method))
         const calls = mkdirMock.mock.calls.map((c) => String(c[0]))
-        const hasBackupDir = calls.some((p) => /\.harnessed[/\\]backups/.test(p))
+        const hasBackupDir = calls.some((p) => /\.claude[/\\]harnessed[/\\]backups/.test(p))
         expect(hasBackupDir).toBe(true)
       } finally {
         cap.restore()
