@@ -1,0 +1,63 @@
+---
+name: discuss
+description: |
+  Stage ① Discuss master orchestrator — 3 sub-workflow parallel gate-eval (chain-isolation 铁律)。
+  战略层 / Phase 层 / 子任务层独立判断 gate, 可能 3 个全跑 / 1-2 个 / 全跳 + 透明声明。
+  schema_version: harnessed.workflow.v3 with delegates_to (3 sub: strategic + phase + subtask, mode parallel)
+  + disciplines_applied (6 default) + tools_available (planning-with-files)。
+  Triggered by harnessed CLI `harnessed discuss --topic <text>` or slash command `/discuss`
+  (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
+trigger_phrases:
+  - "discuss"
+  - "讨论澄清"
+  - "新功能澄清"
+  - "stage 1 discuss"
+  - "三层澄清"
+---
+
+# discuss master orchestrator (v3)
+
+## Overview
+
+4-stage cadence Stage ① master orchestrator delegating to 3 independent sub-workflows
+(per ~/.claude/CLAUDE.md "澄清/审查触发判据" 节 三层独立判断):
+
+| sub | gate ref | mode | when fires |
+| --- | -------- | ---- | ---------- |
+| `strategic` | `judgments.stage-routing.discuss-strategic-delegate.fires` | parallel | new_project / new_milestone / new_feature / is_major_release |
+| `phase` | `judgments.stage-routing.discuss-phase-delegate.fires` | parallel | open_decisions ≥ 2 / cross_phase_data_flow / scope_days > 1 |
+| `subtask` | `judgments.stage-routing.discuss-subtask-delegate.fires` | parallel | approaches ≥ 2 / core_algorithm / has_api_contract / error_cost=high |
+
+Engine runtime spawns 3 sub-workflow phases via `runMasterOrchestrator` per
+T3.5.W0.1 (sister sub-workflow `runWorkflow` SDK pattern, parallel fan-out via
+subagent default — Path A `query()` parallel OR Path B sub-shell fallback per
+T3.5.W2.1 dogfood cycle decision LOCK)。
+
+## Chain-isolation 铁律 (sister CLAUDE.md "Fallback 三条铁律")
+
+- 拿不准 → 倾向跳过, 但在响应里**透明声明**: "这次跳过了 X, 因为 Y。如果你认为需要请明说"
+- 用户明示 → 覆盖判据 (用户说 "先 brainstorm" / "跑 office-hours" / "讨论一下" 时无条件激活)
+- **链式互不前置**: 跳过战略层 ≠ 必须跳过 phase 层; 每层独立判断 (防止 "上层没跑下层不敢跑" 的死板)
+
+## Capability refs
+
+Sister `workflows/capabilities.yaml`:
+- `planning-with-files` — Bucket 4 核心 capability (impl: claude-code-plugin, cmd: /plan, discuss sink findings.md)
+- sub `strategic` upstream → `gstack-office-hours` + `gstack-plan-ceo-review`
+- sub `phase` upstream → `gsd-discuss-phase`
+- sub `subtask` upstream → `superpowers-brainstorming` + `grill-with-docs` + `grill-me`
+
+## Invocation
+
+- CLI: `harnessed discuss --topic "<text>"`
+- Slash command: `/discuss <text>` (bare per ADR 0030 namespace policy D-02 LOCK after `harnessed setup`)
+
+## References
+
+- D-01 master orchestrator delegation pattern
+- D-02 bare slash cmd convention (ADR 0030 namespace policy LOCK)
+- D-04 Stage ① Discuss 三层独立判
+- ~/.claude/CLAUDE.md "澄清/审查触发判据" 节 verbatim
+- workflows/judgments/stage-routing.yaml — discuss-{strategic,phase,subtask}-delegate triggers
+- workflows/discuss/{strategic,phase,subtask}/workflow.yaml — 3 sub-workflow Phase 3.4 SHIPPED
+- workflows/judgments/fallback.yaml — 链式互不前置 chain-isolation 铁律
