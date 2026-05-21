@@ -1,0 +1,33 @@
+# workflows/discuss/subtask/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.3
+#
+# Stage ①.c 子任务层 sub-workflow — superpowers brainstorming (≥2 approach / 核心算法 /
+# API contract / 错误成本高)。Sister ~/.claude/CLAUDE.md "澄清/审查触发判据 — 子任务层"。
+#
+# Sister refs:
+#   - workflows/judgments/subtask-gate.yaml — brainstorming trigger
+#   - workflows/capabilities.yaml — superpowers-brainstorming / grill-with-docs / grill-me
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 sub-stage example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: discuss-subtask
+description: |
+  Stage ①.c 子任务层 — superpowers brainstorming (≥2 approach / 核心算法 / API contract / 错误成本高)。
+  Gate: judgments.subtask-gate.brainstorming.fires。conditional invokes_tools for
+  /grill-with-docs (spec_ambiguous) + /grill-me (spec_ambiguous AND no_docs)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [superpowers-brainstorming, grill-with-docs, grill-me]
+
+phases:
+  - id: 01-brainstorm
+    name: superpowers-brainstorming (multi-approach explore + 选定 winning approach)
+    upstream: superpowers
+    capability: '{{ capabilities.superpowers-brainstorming.cmd }}'
+    model: opus
+    gate: judgments.subtask-gate.brainstorming.fires
+    invokes_tools:
+      - if: 'phase.spec_ambiguous == true'
+        tool: grill-with-docs
+      - if: 'phase.spec_ambiguous == true and phase.no_docs == true'
+        tool: grill-me
+    max_iterations: '{{ defaults.ralph_max_iterations.discuss-subtask.01-brainstorm }}'
