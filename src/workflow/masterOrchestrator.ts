@@ -5,7 +5,6 @@
 // fallback = try/catch SDK error → warn (sub-shell exec defer v3.x per K-mitigation)。
 
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
 import {
@@ -13,14 +12,13 @@ import {
   type FiredCapability,
 } from '../discipline/enforcement/before-spawn.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
-import { runWorkflow } from './run.js'
 import {
   type DelegationClauseT,
   WorkflowSchemaV3,
   type WorkflowSchemaV3T,
 } from './schema/workflow.js'
 
-export type MasterName = 'discuss' | 'plan' | 'task' | 'verify'
+export type MasterName = 'discuss' | 'plan' | 'task' | 'verify' | 'auto'
 
 export interface MasterRunResult {
   master: MasterName
@@ -28,6 +26,14 @@ export interface MasterRunResult {
   fired: string[]
   /** Sub names that gate-evaluated to skip (透明声明 per fallback.yaml 铁律 1). */
   skipped: string[]
+}
+
+/** v3.1.0 — Opts for runMasterOrchestrator. `pauseBetweenStages` opt-in stage gate
+ *  mode (super-master `/auto` only — prompt user between each stage spawn,重现
+ *  v3.0.x UX 每 stage 完成停)。pauseFn 默认 noop (test-friendly DI)。 */
+export interface MasterRunOpts {
+  pauseBetweenStages?: boolean
+  pauseFn?: (stageName: string) => Promise<void>
 }
 
 interface GateEvaluation {
@@ -45,23 +51,11 @@ export type SpawnDriver = (
   packageRoot: string,
 ) => Promise<void>
 
-const defaultSpawnDriver: SpawnDriver = async (masterName, subName, _context, packageRoot) => {
-  const subYamlPath = resolve(packageRoot, 'workflows', masterName, subName, 'workflow.yaml')
-  // Path A — SDK query recursive call runWorkflow at sub yaml(in-process)。
-  // K8:engine 共享 1 context snapshot,passed unchanged(`gateContext`)。
-  // Path B fallback hook:try/catch SDK error → sub-shell `harnessed` CLI invoke。
-  try {
-    await runWorkflow(subYamlPath, {}, { packageRoot, gateContext: _context })
-  } catch (err) {
-    // Path B sub-shell fallback(sister Phase 2.5 W2.3 error 降级 pattern)
-    // — T3.5.W2.1 dogfood LOCK 时收紧 cmd surface;v3.0 default 仅记 warn 不真 exec
-    // sub-shell(避免 spawn 调用栈 unintended side-effect)。
-    console.warn(
-      `⚠️ master spawnSubWorkflow Path A failed for ${masterName}/${subName} ` +
-        `(${(err as Error).message});Path B sub-shell fallback deferred T3.5.W2.1.`,
-    )
-  }
-}
+import {
+  defaultPauseFn,
+  defaultSpawnDriver,
+  resolveMasterYamlPath,
+} from './masterOrchestrator-helpers.js'
 
 /** Run a master orchestrator yaml — load `workflows/<masterName>/auto/workflow.yaml`,
  *  evaluate delegates_to[] gates,split serial/parallel,arbitrate(K14 warn-not-halt),
@@ -73,8 +67,11 @@ export async function runMasterOrchestrator(
   context: Record<string, unknown>,
   packageRoot: string,
   spawnDriver: SpawnDriver = defaultSpawnDriver,
+  opts: MasterRunOpts = {},
 ): Promise<MasterRunResult> {
-  const yamlPath = resolve(packageRoot, 'workflows', masterName, 'auto', 'workflow.yaml')
+  // v3.1.0 — super-master `/auto` 走 top-level standalone `workflows/auto/workflow.yaml`
+  // (sister research/retro layout); 4 stage-master 仍 走 `workflows/<name>/auto/workflow.yaml`。
+  const yamlPath = resolveMasterYamlPath(masterName, packageRoot)
   const raw = await readFile(yamlPath, 'utf8')
   const parsed = parseYaml(raw) as unknown
   if (!Value.Check(WorkflowSchemaV3, parsed)) {
@@ -168,10 +165,14 @@ export async function runMasterOrchestrator(
     serialN > 0 && parallelN > 0 ? 'serial+parallel' : serialN > 0 ? 'serial' : 'parallel'
   console.log(`Firing ${firedClauses.length} sub in ${modeLabel}:`)
   const fired: string[] = []
+  // v3.1.0 — pause-between-stages opt-in (super-master `/auto` UX). pauseFn defaults to
+  // readline stdin prompt at runtime (test DI override via opts.pauseFn)。
+  const pauseHook = opts.pauseBetweenStages ? (opts.pauseFn ?? defaultPauseFn) : undefined
   for (const clause of serialLeading) {
     console.log(`  → ${clause.sub} (serial order=${clause.order ?? 0})`)
     await spawnDriver(masterName, clause.sub, context, packageRoot)
     fired.push(clause.sub)
+    if (pauseHook) await pauseHook(clause.sub)
   }
   const parallelResults = await Promise.allSettled(
     parallelClauses.map(async (clause) => {
@@ -187,6 +188,7 @@ export async function runMasterOrchestrator(
     console.log(`  → ${clause.sub} (serial order=${clause.order ?? 0})`)
     await spawnDriver(masterName, clause.sub, context, packageRoot)
     fired.push(clause.sub)
+    if (pauseHook) await pauseHook(clause.sub)
   }
 
   // Phase 5: skipped — 透明声明 sister fallback.yaml 铁律 1

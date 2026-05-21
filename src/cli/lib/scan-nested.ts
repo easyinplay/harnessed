@@ -26,8 +26,16 @@ export interface NestedWorkflow {
  *  be skipped install but emit warn; CHANGELOG [3.0.0] documents migration. */
 export const FLAT_LEGACY_DEPRECATED = new Set(['plan-feature', 'execute-task', 'verify-work'])
 
-/** Flat top-level dirs that remain valid as standalone v3 workflows (KEEP). */
-export const FLAT_LEGACY_KEEP = new Set(['research', 'retro'])
+/** Flat top-level dirs that remain valid as standalone v3 workflows (KEEP).
+ *  v3.1.0 — `auto` added as 5th master (super-master, top-level standalone layout per
+ *  sister research/retro pattern; 4 stage-master discuss/plan/task/verify nested per
+ *  Path B). `auto` slash-cmd → /auto bare per D-02 ADR 0030 namespace policy LOCK. */
+export const FLAT_LEGACY_KEEP = new Set(['research', 'retro', 'auto'])
+
+/** v3.1.0 — Top-level standalone dirs that are super-masters (isMaster=true flag
+ *  for setup.ts `(master)` tag rendering). Currently only `auto`; sister research /
+ *  retro remain non-master standalone workflows. */
+export const FLAT_TOP_LEVEL_MASTERS = new Set(['auto'])
 
 /** Non-workflow manifest dirs to skip during nested scan (K10 mitigation). */
 export const NON_WORKFLOW_DIRS = new Set(['disciplines', 'judgments'])
@@ -74,7 +82,7 @@ export async function scanWorkflowsNested(
         continue
       }
       if (FLAT_LEGACY_KEEP.has(entry)) {
-        workflows.push({ name: entry, relPath: entry, isMaster: false })
+        workflows.push({ name: entry, relPath: entry, isMaster: FLAT_TOP_LEVEL_MASTERS.has(entry) })
         continue
       }
       // Unknown flat top-level with SKILL.md — install as-is (forward compat).

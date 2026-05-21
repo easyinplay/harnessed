@@ -332,3 +332,108 @@ delegates_to:
     expect(r.fired.length).toBe(2)
   })
 })
+
+// ── v3.1.0 NEW /auto super-master fixtures ──────────────────────────────────
+// 6 fixture per CHANGELOG [3.1.0] regression coverage: top-level path resolve +
+// 4-stage serial spawn + correct order + pause flag + fail-fast + K8 ctx single snapshot。
+
+/** Path resolver for super-master `/auto` top-level standalone yaml. */
+function pathForAuto(): string {
+  return require('node:path').resolve(PACKAGE_ROOT, 'workflows', 'auto', 'workflow.yaml')
+}
+
+/** Build /auto super-master yaml — 4 stage serial delegates_to discuss/plan/task/verify。 */
+function autoSuperMasterYaml(): string {
+  return masterYaml(
+    'auto',
+    [
+      clauseLine('discuss', { mode: 'serial', order: 1 }),
+      clauseLine('plan', { mode: 'serial', order: 2 }),
+      clauseLine('task', { mode: 'serial', order: 3 }),
+      clauseLine('verify', { mode: 'serial', order: 4 }),
+    ].join('\n'),
+  )
+}
+
+describe('runMasterOrchestrator — v3.1.0 NEW /auto super-master (6 fixtures)', () => {
+  it('26. /auto invoke → 4 stage-master serial spawn in correct order (discuss → plan → task → verify)', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYaml())
+    const spawnSeq: string[] = []
+    const spawn: SpawnDriver = async (masterName, sub) => {
+      expect(masterName).toBe('auto') // K1 — super-master passes own name to driver
+      spawnSeq.push(sub)
+    }
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, spawn)
+    expect(r.master).toBe('auto')
+    expect(r.fired).toEqual(['discuss', 'plan', 'task', 'verify'])
+    expect(r.skipped).toEqual([])
+    expect(spawnSeq).toEqual(['discuss', 'plan', 'task', 'verify'])
+  })
+
+  it('27. /auto --pause-between-stages → pauseFn called 4 times (one per stage)', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYaml())
+    const pausedStages: string[] = []
+    const pauseFn = vi.fn(async (stage: string) => {
+      pausedStages.push(stage)
+    })
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, async () => {}, {
+      pauseBetweenStages: true,
+      pauseFn,
+    })
+    expect(r.fired).toEqual(['discuss', 'plan', 'task', 'verify'])
+    expect(pauseFn).toHaveBeenCalledTimes(4)
+    expect(pausedStages).toEqual(['discuss', 'plan', 'task', 'verify'])
+  })
+
+  it('28. /auto fail-fast — stage 2 throw halts spawn of stage 3/4', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYaml())
+    const spawnSeq: string[] = []
+    const spawn: SpawnDriver = async (_master, sub) => {
+      spawnSeq.push(sub)
+      if (sub === 'plan') throw new Error('plan stage failed')
+    }
+    await expect(runMasterOrchestrator('auto', {}, PACKAGE_ROOT, spawn)).rejects.toThrow(
+      /plan stage failed/,
+    )
+    // stage 1 + 2 spawned (stage 2 throws before fired.push); stage 3 / 4 never spawn
+    expect(spawnSeq).toEqual(['discuss', 'plan'])
+    expect(spawnSeq).not.toContain('task')
+    expect(spawnSeq).not.toContain('verify')
+  })
+
+  it('29. K8 ctx single snapshot — same context object passed to all 4 stage spawn', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYaml())
+    const ctxSnapshot = { phase: 'auto-test', topLevel: true }
+    const seenCtxs: unknown[] = []
+    const spawn: SpawnDriver = async (_master, _sub, ctx) => {
+      seenCtxs.push(ctx)
+    }
+    await runMasterOrchestrator('auto', ctxSnapshot, PACKAGE_ROOT, spawn)
+    expect(seenCtxs).toHaveLength(4)
+    // K8 invariant — same reference (NOT re-snapshot per stage)
+    for (const c of seenCtxs) expect(c).toBe(ctxSnapshot)
+  })
+
+  it('30. /auto without --pause-between-stages → pauseFn NOT called (default fail-fast continuous)', async () => {
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYaml())
+    const pauseFn = vi.fn(async () => {})
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, async () => {}, { pauseFn })
+    expect(r.fired).toEqual(['discuss', 'plan', 'task', 'verify'])
+    expect(pauseFn).not.toHaveBeenCalled() // pauseBetweenStages=false default → noop
+  })
+
+  it('31. /auto yaml loads from top-level workflows/auto/workflow.yaml (NOT workflows/auto/auto/)', async () => {
+    // K-design — super-master走 sister research/retro top-level standalone layout,
+    // NOT nested workflows/<master>/auto/workflow.yaml stage-master layout
+    yamlFileMap.set(pathForAuto(), autoSuperMasterYaml())
+    const spawn: SpawnDriver = vi.fn(async () => {})
+    const r = await runMasterOrchestrator('auto', {}, PACKAGE_ROOT, spawn)
+    expect(r.fired).toHaveLength(4)
+    // Verify yaml was read from top-level path (NOT nested auto/auto path)
+    const readPaths = readFileMock.mock.calls.map((c) => String(c[0]))
+    expect(readPaths).toContain(pathForAuto())
+    expect(readPaths).not.toContain(
+      require('node:path').resolve(PACKAGE_ROOT, 'workflows', 'auto', 'auto', 'workflow.yaml'),
+    )
+  })
+})

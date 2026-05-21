@@ -12,7 +12,7 @@ import { resolveJudgmentGate } from './judgmentResolver.js'
 import { loadPhases } from './loadPhases.js'
 import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
 
-const MASTER_NAMES: readonly MasterName[] = ['discuss', 'plan', 'task', 'verify']
+const MASTER_NAMES: readonly MasterName[] = ['discuss', 'plan', 'task', 'verify', 'auto']
 
 export interface WorkflowRunResult {
   status: 'complete' | 'paused-veto' | 'failed'

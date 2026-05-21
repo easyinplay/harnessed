@@ -215,11 +215,12 @@ describe('Cycle 4 — /verify master orchestrator dogfood + Path A vs Path B LOC
     expect(r.fired).toContain('code-review')
     expect(r.fired).toContain('simplify')
 
-    // Path B contract static-verify — defaultSpawnDriver L62-78 source-level check
-    const orchSrc = readFileSync(
-      resolve(PACKAGE_ROOT, 'src/workflow/masterOrchestrator.ts'),
-      'utf8',
-    )
+    // Path B contract static-verify — defaultSpawnDriver source-level check (v3.1.0 split:
+    // defaultSpawnDriver moved to masterOrchestrator-helpers.ts per karpathy ≤200L hard limit;
+    // scan both files concatenated since karpathy split is implementation detail not contract)。
+    const orchSrc =
+      readFileSync(resolve(PACKAGE_ROOT, 'src/workflow/masterOrchestrator.ts'), 'utf8') +
+      readFileSync(resolve(PACKAGE_ROOT, 'src/workflow/masterOrchestrator-helpers.ts'), 'utf8')
     // Path A primary call
     expect(orchSrc).toMatch(/await runWorkflow\(subYamlPath/)
     // Path B catch + warn note (sub-shell exec defer v3.x per K-mitigation cmd surface 收紧)

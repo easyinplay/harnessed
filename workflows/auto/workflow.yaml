@@ -1,0 +1,47 @@
+# workflows/auto/workflow.yaml — v3.1.0 NEW super-master orchestrator
+#
+# Top-level standalone (sister workflows/research/ + workflows/retro/ layout) —
+# 5th master 跨 4 stage chain (discuss → plan → task → verify) one-shot auto orchestrate。
+# 适合 trivial / well-defined feature 一行命令跑完整开发流; 关键 PR / 大重构推荐
+# 分阶段手动 (`/discuss` → `/plan` → `/task` → `/verify`)。
+#
+# Sister refs:
+#   - workflows/discuss/auto/workflow.yaml (stage-master sister fan-out delegates_to pattern)
+#   - workflows/research/workflow.yaml + workflows/retro/workflow.yaml (top-level standalone sister)
+#   - src/workflow/masterOrchestrator.ts ('auto' literal + recursive spawn — spawn stage-master /auto)
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 + DelegationClause (Phase 3.3 W0.5 SHIPPED)
+#
+# Super-master invariant (per WorkflowSchemaV3 runtime + check-workflow-schema.mjs K9):
+#   - phases 缺省 (master only has delegates_to[])
+#   - 4 delegates_to mode serial — 必带 explicit order (K9 invariant T3.3.W0.10)
+#   - delegates_to[].sub ∈ {discuss, plan, task, verify} (4 stage-master cross-validate)
+#   - K8 ctx single snapshot: top-level invoke 1 snapshot, pass to all 4 stage-master spawn
+#     (sister Phase 3.5 W0.1 pattern verbatim, 1 snapshot per top-level invoke 跨整个 cycle)
+
+schema_version: harnessed.workflow.v3
+workflow: auto
+description: |
+  Super-master orchestrator — 自动 chain 4 stage (discuss → plan → task → verify serial
+  order 1-4)。一行命令跑完整 feature 开发流, 适合 trivial / well-defined feature OR hands-off
+  use case; 关键 PR / 大重构推荐分阶段手动 (`/discuss` → `/plan` → `/task` → `/verify`)。
+  Fail-fast default: 任一 stage fail 立即停, `harnessed resume` 续。Opt-in `--pause-between-stages`
+  flag 重现 v3.0.x stage gate UX (每 master 跑完停, 等用户 review/confirm 后跑下 stage)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - agent-teams-create
+  - planning-with-files
+
+delegates_to:
+  - sub: discuss
+    mode: serial
+    order: 1
+  - sub: plan
+    mode: serial
+    order: 2
+  - sub: task
+    mode: serial
+    order: 3
+  - sub: verify
+    mode: serial
+    order: 4
