@@ -18,6 +18,7 @@ import { cp, readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
+import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { getPackageRoot } from './lib/packagePath.js'
 import {
   renderDeprecationBlock,
@@ -110,6 +111,24 @@ export function registerSetup(program: Command): void {
       console.log(
         `\nStep A complete: ${skillsInstalled} workflow skill(s) installed to ${skillsBase}`,
       )
+
+      // ── Step C: Agent Teams auto-enable in ~/.claude/settings.json ──────────
+      // v3.3.1 hotfix — Q-AUDIT-5b LOCKED root-level env.* schema. Pattern A
+      // 3-teammate + /verify-multispec 4-specialist + masterOrchestrator
+      // delegates_to recursive workflow 的前提。Non-destructive merge with
+      // backup; warn + skip on any error (sister fallback 铁律 1).
+      const cResult = await enableAgentTeamsInSettings()
+      if (cResult.status === 'created') {
+        console.log(`  [C] created ${cResult.path} + enabled Agent Teams`)
+      } else if (cResult.status === 'already-enabled') {
+        console.log(`  [C] Agent Teams already enabled (${cResult.path})`)
+      } else if (cResult.status === 'enabled') {
+        console.log(
+          `  [C] enabled Agent Teams in ${cResult.path} (backup saved → ${cResult.backupPath})`,
+        )
+      } else {
+        console.warn(`  [C] Agent Teams enable skipped: ${cResult.message}`)
+      }
 
       // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
       const manifestPaths = await listBaseManifests(pkgRoot)

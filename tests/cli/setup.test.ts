@@ -12,6 +12,9 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
   stat: vi.fn(),
   cp: vi.fn(),
+  writeFile: vi.fn(),
+  rename: vi.fn(),
+  mkdir: vi.fn(),
 }))
 
 vi.mock('../../src/installers/index.js', () => ({
@@ -244,6 +247,34 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(stdout).toContain('Run `/mcp` in Claude Code')
     // Not classified as failure
     expect(stdout).not.toContain('[B] failed')
+  })
+
+  // Cell 8 (v3.3.1 hotfix): Step C — Agent Teams auto-enable wired in setup
+  it('cell 8 — Step C: Agent Teams settings.json log line appears in stdout', async () => {
+    readdirMock.mockImplementation(makeWorkflowsReaddir(['research']))
+    statMock.mockImplementation(makeStatMock(['research']))
+    cpMock.mockResolvedValue(undefined)
+    // Path-conditional readFile mock: settings.json returns already-enabled JSON,
+    // manifests return 'yaml-content' string. This routes Step C through the
+    // 'already-enabled' branch which writes a deterministic log line to stdout.
+    readFileMock.mockImplementation(async (p: unknown) => {
+      const path = String(p)
+      if (path.includes('settings.json')) {
+        return JSON.stringify({ env: { CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1' } }) as never
+      }
+      return 'yaml-content' as never
+    })
+    validateManifestFileMock.mockReturnValue(makeValidManifest('ctx7') as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+
+    const { code, stdout } = await runCli(['setup'])
+    expect(code).toBe(0)
+    // Step C log line — already-enabled path emits to stdout
+    expect(stdout).toContain('[C] Agent Teams already enabled')
+    // Step A still ran before Step C
+    expect(stdout).toContain('Step A complete:')
+    // Step B still ran after Step C (sequence: A → C → B)
+    expect(stdout).toContain('Step B complete:')
   })
 
   // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled
