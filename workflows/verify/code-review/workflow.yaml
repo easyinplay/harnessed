@@ -1,0 +1,32 @@
+# workflows/verify/code-review/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.11
+#
+# Stage ④.b verify sub-workflow — code-review 多 agent 并行 fan-out 高置信度 finding
+# (subagent default per CLAUDE.md 子任务并行机制 — Task / Agent 工具 spawn 多任务 fan-out,
+# context 隔离, token 敏感)。
+#
+# Sister refs:
+#   - ~/.claude/CLAUDE.md "Verify 阶段" — "code-review 多 agent 并行" 章节
+#   - ~/.claude/CLAUDE.md "子任务并行执行机制 — subagent vs Agent Teams 路由" subagent default
+#   - workflows/judgments/parallelism-gate.yaml — subagent-default.fires 默认 fan-out
+#   - workflows/capabilities.yaml — code-review (Bucket 1 mattpocock 高频招式)
+#   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 03-code-review-parallel sister pattern
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/code-review example verbatim
+
+schema_version: harnessed.workflow.v3
+workflow: verify-code-review
+description: |
+  Stage ④.b code-review 多 agent 并行 fan-out 高置信度 finding (subagent default per
+  CLAUDE.md 子任务并行机制)。parallelism ref judgments.parallelism-gate.subagent-default.fires
+  机器化 — Task / Agent 工具 spawn 多 subagent 并行 fan-out, context 隔离, token 敏感场景默认。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [code-review]
+
+phases:
+  - id: 01-code-review
+    name: code-review (multi-agent 并行 fan-out 高置信度 finding)
+    upstream: mattpocock-skills
+    capability: '{{ capabilities.code-review.cmd }}'
+    model: sonnet
+    parallelism: judgments.parallelism-gate.subagent-default.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.verify-code-review.01-code-review }}'
