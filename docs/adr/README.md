@@ -68,6 +68,9 @@
 | [0027](./0027-research-verify-work-workflows-planning-plugin-errata.md) | Phase v2.0-2.4 W2 — research + verify-work NEW workflows ship (D-08 + D-12) + planning-with-files SDK→plugin reframe errata (Q-AUDIT-5a) | Accepted | 2026-05-20 |
 | [0028](./0028-ralph-loop-tdd-agent-teams-routing-schema-fix.md) | Phase v2.0-2.3 + 2.4 — ralph-loop completion-promise + tdd-gate + Agent Teams routing (D-10 + D-11 + D-13) + Q-AUDIT-5b settings.json env schema fix | Accepted | 2026-05-20 |
 | [0029](./0029-fallback-rules-4-stage-mechanization-dogfood.md) | Phase v2.0-2.5 — fallback 3 铁律 runtime (R20.16) + 4-stage 机器化 dogfood close (46 NEW fixture + R8.1 dogfood-first methodology proven) | Accepted | 2026-05-20 |
+| [0030](./0030-namespace-policy-bare-slash-cmd.md) | Phase v3.0-3.6 — namespace policy bare slash cmd LOCK (D-02 codify, sister ADR 0009 v1.0.2 precedent; flatten rule per scan-nested.ts) | Accepted | 2026-05-21 |
+| [0031](./0031-4-stage-namespace-layered-architecture.md) | Phase v3.0-3.6 — 4-stage namespace-layered architecture (M-01 + D-03 + D-07 codify; 23 v3 workflow = 4 master + 18 sub + 2 standalone + 3 v2 legacy keep release-notes-only) | Accepted | 2026-05-21 |
+| [0032](./0032-cross-cutting-disciplines-and-execution-mechanism.md) | Phase v3.0-3.6 — cross-cutting disciplines L0 substrate + L5b execution mechanism (D-05 + D-09 + D-10 + D-11 codify) + D-13 superset 1:1 mapping | Accepted | 2026-05-21 |
 
 ## 参考
 

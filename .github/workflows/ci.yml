@@ -85,10 +85,11 @@ jobs:
       # LOCAL CREATE + adr-0021-accepted Phase 5.1 W2 T2.9 LOCAL CREATE; retroactive iter
       # 0018→0021 per RESEARCH § 5 critical finding absorbed T2.8 CRITICAL fix):
       # Phase v2.0-2.6 W1 ADR 0024-0029 backfill — iter 0023→0029 (6 ADR: workflow schema v2 + capabilities baseline + judgments multi-file + research/verify-work workflows + ralph-loop+TDD+Agent Teams + fallback 3 铁律 + 4-stage 机器化 close).
-      - name: A7 acceptance bar — ADR 0001-0029 main body 守恒
+      # Phase v3.0-3.6 W1 ADR 0030-0032 backfill — iter 0029→0032 (3 ADR: namespace policy bare slash cmd + 4-stage namespace-layered architecture + cross-cutting disciplines + execution mechanism).
+      - name: A7 acceptance bar — ADR 0001-0032 main body 守恒
         run: |
           missing_tags=()
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029; do
+          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029 0030 0031 0032; do
             if ! git fetch origin "tag" "adr-${n}-accepted" --no-tags 2>/dev/null; then
               missing_tags+=("adr-${n}-accepted")
               continue
@@ -99,7 +100,7 @@ jobs:
             exit 0
           fi
           fail=0
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029; do
+          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029 0030 0031 0032; do
             diff_out=$(git diff "adr-${n}-accepted" -- "docs/adr/${n}-*.md")
             if [ -n "$diff_out" ]; then
               echo "::error::A7 acceptance bar violated — ADR ${n} main body changed since adr-${n}-accepted tag"
@@ -110,7 +111,7 @@ jobs:
           if [ "$fail" -ne 0 ]; then
             exit 1
           fi
-          echo "A7 ✅ ADR 0001-0029 main body unchanged"
+          echo "A7 ✅ ADR 0001-0032 main body unchanged"
       # Phase 2.1 T1.7 — transparency verdict-marker gate (ADR 0010, D2.1-7/8).
       # Scans .planning verdict docs for closure-marker lines missing an N/N
       # ratio + miss: declaration. W3: warn-only round 1 (script exits 0 even
