@@ -1,6 +1,6 @@
 # harnessed
 
-[English](./README.md) | **中文**
+[English](./README.md) | **简体中文** | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > AI coding harness 包管理器 + composition orchestrator
 > 把三层栈协作方法论 (gstack 决策 + GSD 项目经理 + superpowers 资深工程师 + karpathy 心法 + mattpocock 招式) 编排化为可执行 engine

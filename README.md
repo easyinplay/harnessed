@@ -1,6 +1,6 @@
 # harnessed
 
-**English** | [中文](./README-cn.md)
+**English** | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > AI coding harness package manager + composition orchestrator
 > Machine-executes the three-layer-stack collaboration methodology (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) as a runnable engine
