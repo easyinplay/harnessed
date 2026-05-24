@@ -71,15 +71,26 @@ export function registerExecuteTask(program: Command): void {
         process.exit(2)
       }
 
+      // v3.4.4 — narrow LoadedPhases.phases (Optional in v3 master shape).
+      // execute-task only handles v2 sub-workflow yamls; master shape is a usage error.
+      if (!phases.phases) {
+        console.error(
+          `error: workflows/${workflowName}/phases.yaml has no phases (master shape unsupported by execute-task — use a sub workflow yaml)`,
+        )
+        process.exit(2)
+      }
+      let phaseList = phases.phases
+
       // B-10 escape hatch — `--model-tier inherit` overrides all phase.model values.
       // T2.4.W1.1: loadPhases returns LoadedPhases union (v1 PhasesSchema OR v2
-      // WorkflowSchemaV2T). Cast assembled override to LoadedPhases to preserve
-      // v2-only fields (capability/gate/on/fallback) for downstream engine handler.
+      // WorkflowSchemaV2T OR v3 WorkflowSchemaV3T). Cast assembled override to LoadedPhases
+      // to preserve schema-specific fields (capability/gate/on/fallback) for downstream engine.
       if (raw.modelTier === 'inherit') {
-        phases = {
-          ...phases,
-          phases: phases.phases.map((p) => ({ ...p, model: 'inherit' as const })),
-        } as LoadedPhases
+        // Cast mirrors original inline-map pattern; the union-of-mapped-elements type
+        // narrows to the source array type since runtime shape is preserved (only
+        // model field overridden). Outer `as LoadedPhases` retains schema-specific fields.
+        phaseList = phaseList.map((p) => ({ ...p, model: 'inherit' as const })) as typeof phaseList
+        phases = { ...phases, phases: phaseList } as LoadedPhases
       }
 
       const taskCtx: TaskContext = { task: raw.task, task_type: 'execute-task' }
@@ -89,7 +100,7 @@ export function registerExecuteTask(program: Command): void {
       // Dry-run path — arbitrate-only preview (mirrors research.ts L52-72).
       if (isDryRun) {
         console.log(
-          JSON.stringify({ workflow: phases.workflow, phases: phases.phases, taskCtx }, null, 2),
+          JSON.stringify({ workflow: phases.workflow, phases: phaseList, taskCtx }, null, 2),
         )
         process.exit(0)
       }
@@ -100,7 +111,7 @@ export function registerExecuteTask(program: Command): void {
       // handleMaxIterationsExceeded (R20.10 c explicit halt, NOT silent exit).
       let fallbackConfig: FallbackMaxIterationsExceededConfig | undefined
       let fallbackPhaseId: string | undefined
-      for (const ph of phases.phases) {
+      for (const ph of phaseList) {
         if ('fallback' in ph && ph.fallback?.max_iterations_exceeded) {
           fallbackConfig = ph.fallback.max_iterations_exceeded
           fallbackPhaseId = ph.id

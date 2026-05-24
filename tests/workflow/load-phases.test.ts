@@ -37,13 +37,13 @@ describe('loadPhases', () => {
     const result = loadPhases(REAL_YAML)
     expect(result.workflow).toBe('execute-task')
     expect(result.phases).toHaveLength(4)
-    expect(result.phases.map((p) => p.id)).toEqual([
+    expect(result.phases?.map((p) => p.id) ?? []).toEqual([
       '01-clarify',
       '02-code',
       '03-test',
       '04-deliver',
     ])
-    expect(result.phases.map((p) => p.model)).toEqual(['opus', 'sonnet', 'sonnet', 'haiku'])
+    expect(result.phases?.map((p) => p.model) ?? []).toEqual(['opus', 'sonnet', 'sonnet', 'haiku'])
   })
 
   it('2. throws PhasesValidationError when `model:` field is missing on a phase', () => {
@@ -101,6 +101,6 @@ phases:
 `,
     )
     const result = loadPhases(path)
-    expect(result.phases[0]?.model).toBe('inherit')
+    expect(result.phases?.[0]?.model).toBe('inherit')
   })
 })

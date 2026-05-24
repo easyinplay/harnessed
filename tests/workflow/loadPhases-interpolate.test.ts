@@ -36,7 +36,7 @@ phases:
 `,
     )
     const result = loadPhases(path, { gstack_prefix: 'gstack-' })
-    expect(result.phases[0]?.invokes).toBe('gstack-office-hours')
+    expect(result.phases?.[0]?.invokes).toBe('gstack-office-hours')
   })
 
   it('2. undefined var → throws InterpolationError (fail-loud per RESEARCH § 3)', () => {
@@ -68,6 +68,6 @@ phases:
     )
     // No vars arg → literal {{ ... }} string preserved (no throw)
     const result = loadPhases(path)
-    expect(result.phases[0]?.invokes).toBe('{{ gstack_prefix }}office-hours')
+    expect(result.phases?.[0]?.invokes).toBe('{{ gstack_prefix }}office-hours')
   })
 })
