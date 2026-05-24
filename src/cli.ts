@@ -13,6 +13,7 @@ import { registerManifestAdd } from './cli/manifest-add.js'
 import { registerResearch } from './cli/research.js'
 import { registerResume } from './cli/resume.js'
 import { registerRollback } from './cli/rollback.js'
+import { registerRun } from './cli/run.js'
 import { registerSetup } from './cli/setup.js'
 import { registerStatus } from './cli/status.js'
 import { registerUninstall } from './cli/uninstall.js'
@@ -68,5 +69,6 @@ registerGc(program)
 registerResume(program) // Phase 3.1 W4 T4.4 — 12th subcommand (R7.3 D-03 RELOAD)
 registerUninstall(program) // Phase 5.2 W1 T1.1 — 14th subcommand (R10.3 D-01 7-method dispatch)
 registerSetup(program) // v1.0.1 T1.5 — 15th subcommand (one-time onboarding workflows/*/SKILL.md → ~/.claude/skills/)
+registerRun(program) // v3.4.4 T1 — 16th subcommand (α CLI wire; replaces dead SlashCommand vapor in commands/<x>.md)
 
 program.parse(process.argv)
