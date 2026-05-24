@@ -1,3 +1,5 @@
+// v3.4.4 Phase 6 — hoisted from src/routing/completionSchema.ts (sister Phase 2 sdkSpawn + Phase 3 ralphLoop relocation pattern).
+//
 // Phase 2.2 Wave 2 T2.2 — Unified COMPLETION_SCHEMA (D2.2-1 / RESEARCH § 1.4).
 // ADR 0011 errata — dual-signal completion 4-layer (phase 2.2 W2 — F4).
 //

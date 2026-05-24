@@ -1,3 +1,5 @@
+// v3.4.4 Phase 6 — hoisted from src/routing/lib/promiseExtract.ts (sister Phase 2 sdkSpawn + Phase 3 ralphLoop relocation pattern).
+//
 // Phase 1.5 T5.2 — `<promise>...</promise>` XML wrapper extract (hard split).
 //
 // IMPL NOTE — implements ADR 0009 § Decision Errata 3 + D1.5-4 sub-item 3 +

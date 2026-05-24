@@ -1,3 +1,5 @@
+// v3.4.4 Phase 6 — hoisted from src/routing/lib/sdkReconcile.ts (sister Phase 2 sdkSpawn + Phase 3 ralphLoop relocation pattern).
+//
 // Phase 2.2 Wave 2 T2.1 — agentFactory contract v1.2 reconcile (ADR 0011 errata).
 //
 // IMPL NOTE — splits 2 helper fn out of agentDefinition.ts so the latter holds
@@ -17,7 +19,7 @@
 // Contract v1.2 reconcile chapter (ADR 0011 § 4) finalizes this at Wave 6 T6.1.
 
 import type { AgentDefinition as SdkAgentDef } from '@anthropic-ai/claude-agent-sdk'
-import type { AgentDefinition } from '../agentDefinition.js'
+import type { AgentDefinition } from './agentDefinition.js'
 
 /** Unpack factory-internal 14-字段 AgentDefinition → SDK 5-字段 input shape (B-01).
  *  Optional fields are stripped when absent so the SDK call site stays clean. */

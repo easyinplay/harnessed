@@ -1,3 +1,5 @@
+// v3.4.4 Phase 6 — hoisted from src/routing/lib/fallbackHandlers.ts (sister Phase 2 sdkSpawn + Phase 3 ralphLoop relocation pattern).
+//
 // Phase v2.0-2.4 W1 T2.4.W1.2 — ralph-loop fallback UX handlers (R20.10 acceptance c).
 // Sister Phase 2.2 sdkReconcile.ts split pattern (≤80L helper from engine.ts ≤200L
 // Karpathy hard limit). PLAN.md L339-368 verbatim UX text per RESEARCH § 7.2.
@@ -7,10 +9,7 @@
 // catch block delegates here — handler emits full UX text to stderr (PLAN L342-358)
 // then process.exit(exit_code). Return type `never` — process.exit unreachable after.
 
-import type {
-  MaxIterationsExceededError,
-  VerbatimCompleteFailError,
-} from '../../workflow/lib/ralphLoop.js'
+import type { MaxIterationsExceededError, VerbatimCompleteFailError } from './ralphLoop.js'
 
 export interface FallbackMaxIterationsExceededConfig {
   action: 'emit_warning_and_halt'
