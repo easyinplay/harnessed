@@ -70,9 +70,9 @@ capabilities:
 
   caveman:
     # v3.4.2: dual-install ("互为补充") — caveman ships BOTH as user-skill
-    # (git clone caveman repo into ~/.claude/skills/caveman/) AND as Claude Code
-    # plugin (`caveman@caveman` in installed_plugins.json). Resolver detects
-    # either; emits combined warning only if BOTH are missing.
+    # (git clone caveman repo into <claude-home>/skills/caveman/) AND as Claude
+    # Code plugin (`caveman@caveman` in installed_plugins.json). Resolver
+    # detects either; emits combined warning only if BOTH are missing.
     impl: caveman
     install_type: [user-skill, plugin]
     skill_dir: caveman
@@ -179,7 +179,7 @@ capabilities:
     cmd: /ui-ux-pro-max
     since: v2.0
     category: tool-slash-cmd
-    description: UI/UX 默认主方案 数据驱动 (per ~/.claude/rules/web-design.md L5)
+    description: UI/UX 默认主方案 数据驱动
     fires_when:
       - phase.has_ui_changes == true
       - subtask.type == 'ui_polish'
@@ -192,7 +192,7 @@ capabilities:
     cmd: /frontend-design
     since: v2.0
     category: tool-slash-cmd
-    description: UI 创意/装饰补充 (per ~/.claude/rules/web-design.md L11)
+    description: UI 创意/装饰补充
     fires_when:
       - phase.has_ui_changes == true AND phase.requires_creative_polish == true
 
@@ -201,7 +201,7 @@ capabilities:
     cmd: playwright
     since: v2.0
     category: tool-bundled-skill
-    description: AI 实时操作浏览器 一行 Bash (per ~/.claude/rules/web-testing.md L8 手)
+    description: AI 实时操作浏览器 一行 Bash (手层: 探查 / 调试 / 一次性交互)
     fires_when:
       - subtask.type == 'browser_probe'
 
@@ -210,7 +210,7 @@ capabilities:
     cmd: "@playwright/test"
     since: v2.0
     category: tool-plugin
-    description: E2E test framework TypeScript (per ~/.claude/rules/web-testing.md L8 脑)
+    description: E2E test framework TypeScript (脑层: 写测试 / 跑 CI / 断言 / fixtures / reporter)
     fires_when:
       - subtask.type == 'e2e_test' AND subtask.language == 'typescript'
 
@@ -221,7 +221,7 @@ capabilities:
     cmd: /webapp-testing
     since: v2.0
     category: tool-bundled-skill
-    description: Python 后端联动 E2E (per ~/.claude/rules/web-testing.md L11 筋骨)
+    description: Python 后端联动 E2E (筋骨层: Python Playwright + with_server.py)
     fires_when:
       - subtask.type == 'e2e_test' AND subtask.language == 'python'
 
@@ -230,7 +230,7 @@ capabilities:
     cmd: chrome-devtools
     since: v2.0
     category: tool-mcp
-    description: 性能/a11y/内存泄漏诊断 (per ~/.claude/rules/web-testing.md L45 非功能性)
+    description: 性能/a11y/内存泄漏诊断 (非功能性 only; NOT for E2E test)
     fires_when:
       - subtask.type in ['perf_diagnose', 'a11y_audit', 'memory_leak']
 
@@ -239,7 +239,7 @@ capabilities:
     cmd: ctx7
     since: v2.0
     category: tool-cli
-    description: 库 API/框架/SDK 文档抓取 (per ~/.claude/rules/context7.md)
+    description: 库 API/框架/SDK 文档抓取
     fires_when:
       - subtask.needs_library_docs == true
 
@@ -248,7 +248,7 @@ capabilities:
     cmd: tavily_search
     since: v2.0
     category: tool-mcp
-    description: Web 搜索默认 (关键词/库 API/时效) per ~/.claude/rules/web-search.md L17
+    description: Web 搜索默认 (关键词/库 API/时效)
     fires_when:
       - subtask.needs_web_search == true
 
@@ -257,7 +257,7 @@ capabilities:
     cmd: web_fetch_exa
     since: v2.0
     category: tool-mcp
-    description: 描述式/学术 Web 搜索 per ~/.claude/rules/web-search.md L24
+    description: 描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景: 描述式查询 / 学术 / 批量抓多 URL)
     fires_when:
       - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
 
@@ -432,7 +432,6 @@ capabilities:
     description: Manus-style persistent markdown planning (Claude Code plugin slash cmd)
     requires:
       plugin: planning-with-files >=2.2.0
-    plugin_path: ~/.claude/plugins/cache/planning-with-files/planning-with-files/2.34.0
     outputs:
       - task_plan.md
       - progress.md
@@ -469,14 +468,14 @@ capabilities:
 
   # ============================================================================
   # Bucket 5 — Agent Teams 3 升级触发 (per D-11 + Q-AUDIT-5b schema fix +
-  #            ~/.claude/rules/agent-teams.md L7 prereq)
+  #            bundled Agent Teams prerequisite: CC 2.1.133+ + env var)
   # ============================================================================
   #
   # Q-AUDIT-5b 2026-05-20 fix: settings_env_var root-level `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
   # (NOT nested experimental.* — Wave A 本地 settings.json 实证修正 prior schema 错误)。
   # Per Q-AUDIT-2 D-11: harnessed doctor + setup 检查 env var present + cc_version ≥2.1.133。
   #
-  # 5 fires_when OR-chain (multi-select per ~/.claude/rules/agent-teams.md 升级触发):
+  # 5 fires_when OR-chain (multi-select; Agent Teams upgrade triggers):
   #   1. teammate_send_message_needed — teammate 间需 SendMessage 互通 (NOT fire-and-forget)
   #   2. subagent_context_overflow    — 某 subagent 撞 context 上限需分担
   #   3. shared_task_list             — 多 teammate 共享 task list 自协调
@@ -487,7 +486,7 @@ capabilities:
     cmd: TeamCreate
     since: v2.0
     category: agent-platform
-    description: Agent Teams team 创建 (CC 2.1.133+ experimental; per agent-teams.md L7)
+    description: Agent Teams team 创建 (CC 2.1.133+ experimental)
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
       cc_version: ">=2.1.133"
@@ -513,7 +512,7 @@ capabilities:
     cmd: TeamDelete
     since: v2.0
     category: agent-platform
-    description: Agent Teams cleanup (shutdown_request 之后 TeamDelete; sister agent-teams.md 防呆清单)
+    description: Agent Teams cleanup (shutdown_request 之后 TeamDelete; mandatory cleanup discipline)
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
       cc_version: ">=2.1.133"
@@ -993,7 +992,7 @@ capabilities:
       - subtask.parallel_count <= 3
       - subtask.communication_needed == false
 
-  # D-11 NEW google-workspace.yaml (gws CLI per ~/.claude/rules/google-workspace.md)
+  # D-11 NEW google-workspace.yaml (gws CLI — Google Workspace OAuth2 keyring auth)
   gws:
     impl: cli
     cmd: gws
