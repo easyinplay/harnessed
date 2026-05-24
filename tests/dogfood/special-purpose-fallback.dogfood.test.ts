@@ -30,7 +30,12 @@ import {
 } from '../../src/workflow/judgmentResolver.js'
 import type { CapabilitiesT } from '../../src/workflow/schema/capabilities.js'
 import { JudgmentRulesFile, type JudgmentRulesFileT } from '../../src/workflow/schema/judgment.js'
-import { WorkflowSchemaV2, type WorkflowSchemaV2T } from '../../src/workflow/schema/workflow.js'
+import {
+  WorkflowSchemaV2,
+  type WorkflowSchemaV2T,
+  WorkflowSchemaV3,
+  type WorkflowSchemaV3T,
+} from '../../src/workflow/schema/workflow.js'
 
 const PACKAGE_ROOT = process.cwd()
 const CAPABILITIES_YAML = resolve(PACKAGE_ROOT, 'workflows', 'capabilities.yaml')
@@ -62,9 +67,10 @@ async function loadVerifyWorkWorkflow(): Promise<WorkflowSchemaV2T> {
   return parseYaml(raw) as WorkflowSchemaV2T
 }
 
-async function loadResearchWorkflow(): Promise<WorkflowSchemaV2T> {
+// v3.4.4 Cat B: research/workflow.yaml bumped to harnessed.workflow.v3 in Phase v3.0-3.4 W1.
+async function loadResearchWorkflow(): Promise<WorkflowSchemaV3T> {
   const raw = await readFile(RESEARCH_YAML, 'utf8')
-  return parseYaml(raw) as WorkflowSchemaV2T
+  return parseYaml(raw) as WorkflowSchemaV3T
 }
 
 async function loadFallback(): Promise<JudgmentRulesFileT> {
@@ -257,16 +263,17 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario B: special-purpose tools 13+ ro
   })
 
   it('F9. research workflow.yaml 2-phase shape + 02-synth gsd-discuss-phase capability ref', async () => {
+    // v3.4.4 Cat B: yaml bumped to harnessed.workflow.v3 — assert against WorkflowSchemaV3.
     const wf = await loadResearchWorkflow()
-    expect(Value.Check(WorkflowSchemaV2, wf)).toBe(true)
+    expect(Value.Check(WorkflowSchemaV3, wf)).toBe(true)
     expect(wf.workflow).toBe('research')
     expect(wf.phases).toHaveLength(2)
 
     // 01-fan-out — generic web-search upstream (Tavily/Exa/ctx7 routed via capabilities)
-    const fanOut = wf.phases.find((p) => p.id === '01-fan-out')
+    const fanOut = wf.phases?.find((p) => p.id === '01-fan-out')
     expect(fanOut?.upstream).toBe('web-search')
     // 02-synth — gsd-discuss-phase capability template (GSD discuss synth aggregate)
-    const synth = wf.phases.find((p) => p.id === '02-synth')
+    const synth = wf.phases?.find((p) => p.id === '02-synth')
     expect(synth?.capability).toBe('{{ capabilities.gsd-discuss-phase.cmd }}')
 
     // capabilities.yaml 含 3 web 搜索 source entry (Tavily/Exa/ctx7) — research workflow runtime

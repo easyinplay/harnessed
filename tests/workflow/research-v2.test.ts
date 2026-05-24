@@ -1,8 +1,15 @@
 // tests/workflow/research-v2.test.ts — Phase v2.0-2.4 W2 T2.4.W2.1
 // (D-08 R20.7 NEW workflow research multi-source fan-out)
 //
-// 4 fixture per teammate brief acceptance verbatim:
-//   F1: yaml parse + TypeBox Value.Check(WorkflowSchemaV2) pass + schema_version=workflow.v2 + 2 phase count
+// HISTORICAL NOTE: file name retains "research-v2" (written for workflow.v2
+// schema in Phase v2.0-2.4). Post Phase v3.0-3.4 W1 T3.4.W1.1, the underlying
+// workflows/research/workflow.yaml was bumped to schema_version
+// 'harnessed.workflow.v3'; assertions below were updated v2 → v3 accordingly
+// (v3.4.4 Cat B hotfix). Filename kept as historical artifact — rename adds
+// git churn for low value.
+//
+// 4 fixture per teammate brief acceptance verbatim (now v3-aware):
+//   F1: yaml parse + TypeBox Value.Check(WorkflowSchemaV3) pass + schema_version=workflow.v3 + 2 phase count
 //   F2: 3 source capability refs (tavily-mcp / exa-mcp / ctx7) resolve from capabilities.yaml
 //   F3: GSD discuss-phase synth capability ref at 02-synth resolves
 //   F4: defaults.yaml ralph_max_iterations.research.{01-fan-out,02-synth} numeric value 1-100 range
@@ -13,7 +20,7 @@ import { Value } from '@sinclair/typebox/value'
 import { describe, expect, test } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 import { Capabilities } from '../../src/workflow/schema/capabilities.js'
-import { WorkflowSchemaV2 } from '../../src/workflow/schema/workflow.js'
+import { WorkflowSchemaV3 } from '../../src/workflow/schema/workflow.js'
 
 const ROOT = resolve(__dirname, '../..')
 const WORKFLOW_PATH = resolve(ROOT, 'workflows/research/workflow.yaml')
@@ -35,17 +42,17 @@ const parsed = parseYaml(rawYaml) as {
   }>
 }
 
-describe('research workflow.yaml v2 — T2.4.W2.1 (D-08 + R20.7)', () => {
-  test('F1: yaml parse + Value.Check(WorkflowSchemaV2) pass + schema_version=workflow.v2 + 2 phase', () => {
-    expect(parsed.schema_version).toBe('harnessed.workflow.v2')
+describe('research workflow.yaml v3 — T2.4.W2.1 (D-08 + R20.7; v3.4.4 v2→v3 bump)', () => {
+  test('F1: yaml parse + Value.Check(WorkflowSchemaV3) pass + schema_version=workflow.v3 + 2 phase', () => {
+    expect(parsed.schema_version).toBe('harnessed.workflow.v3')
     expect(parsed.workflow).toBe('research')
     expect(parsed.phases).toHaveLength(2)
 
-    if (!Value.Check(WorkflowSchemaV2, parsed)) {
-      const errors = [...Value.Errors(WorkflowSchemaV2, parsed)].slice(0, 3)
+    if (!Value.Check(WorkflowSchemaV3, parsed)) {
+      const errors = [...Value.Errors(WorkflowSchemaV3, parsed)].slice(0, 3)
       throw new Error(`Schema mismatch: ${errors.map((e) => `${e.path}: ${e.message}`).join('; ')}`)
     }
-    expect(Value.Check(WorkflowSchemaV2, parsed)).toBe(true)
+    expect(Value.Check(WorkflowSchemaV3, parsed)).toBe(true)
   })
 
   test('F2: 3 source capability refs (tavily-mcp / exa-mcp / ctx7) exist in capabilities.yaml', () => {
