@@ -201,7 +201,7 @@ capabilities:
     cmd: playwright
     since: v2.0
     category: tool-bundled-skill
-    description: AI 实时操作浏览器 一行 Bash (手层: 探查 / 调试 / 一次性交互)
+    description: "AI 实时操作浏览器 一行 Bash (手层 — 探查 / 调试 / 一次性交互)"
     fires_when:
       - subtask.type == 'browser_probe'
 
@@ -210,7 +210,7 @@ capabilities:
     cmd: "@playwright/test"
     since: v2.0
     category: tool-plugin
-    description: E2E test framework TypeScript (脑层: 写测试 / 跑 CI / 断言 / fixtures / reporter)
+    description: "E2E test framework TypeScript (脑层 — 写测试 / 跑 CI / 断言 / fixtures / reporter)"
     fires_when:
       - subtask.type == 'e2e_test' AND subtask.language == 'typescript'
 
@@ -221,7 +221,7 @@ capabilities:
     cmd: /webapp-testing
     since: v2.0
     category: tool-bundled-skill
-    description: Python 后端联动 E2E (筋骨层: Python Playwright + with_server.py)
+    description: "Python 后端联动 E2E (筋骨层 — Python Playwright + with_server.py)"
     fires_when:
       - subtask.type == 'e2e_test' AND subtask.language == 'python'
 
@@ -257,7 +257,7 @@ capabilities:
     cmd: web_fetch_exa
     since: v2.0
     category: tool-mcp
-    description: 描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景: 描述式查询 / 学术 / 批量抓多 URL)
+    description: "描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景 — 描述式查询 / 学术 / 批量抓多 URL)"
     fires_when:
       - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
 
