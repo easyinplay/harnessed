@@ -392,4 +392,19 @@ describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)
     ).toBe(true)
     expect(shouldOverwriteFile('# my custom\nnothing harnessed here')).toBe(false)
   })
+
+  it('cell 20c — shouldOverwriteFile detects v3.4.3 master/standalone dispatcher variant', () => {
+    // Verbatim sample from v3.4.3-generated ~/.claude/commands/auto.md L10
+    // (was misclassified as user-authored pre-fix because SUB_RX required
+    // "use the SlashCommand tool" which master variant lacks).
+    const masterBody =
+      '## How to invoke\n\n**Preferred path** (master orchestrator): dispatch to the per-sub-workflow slash commands in the order this stage prescribes.\n\n**Fallback path** (when no slash command from the sub-list resolves): run each missing sub-workflow inline.'
+    expect(shouldOverwriteFile(masterBody)).toBe(true)
+    // Hybrid /research variant: master-preferred + sub-fallback wording
+    const researchBody =
+      '**Preferred path** (master orchestrator): dispatch to the per-sub-workflow slash commands\n**Fallback path**: use the Task tool to spawn'
+    expect(shouldOverwriteFile(researchBody)).toBe(true)
+    // Negative: user file mentioning "Preferred path" but no dispatcher signature
+    expect(shouldOverwriteFile('**Preferred path**: read the docs first')).toBe(false)
+  })
 })
