@@ -1,0 +1,93 @@
+# workflows/execute-task/workflow.yaml — v3.4.4 Phase 4 Commit 1 NEW (Path A)
+# Sister v2 `phases.yaml` (74L) preserved through Phase 5; Phase 6 deletes both
+# alongside src/routing/. Authored fresh per HANDOFF-v3.4.4 L745 Path A decision
+# + PHASE-4-SPEC L101-180 verbatim.
+#
+# 4-phase chain mirrors v2 verbatim:
+#   01-clarify  superpowers-brainstorming  opus    gate: subtask-gate.brainstorming.fires
+#   02-code     karpathy 心法 + on[]       sonnet  conditional: tdd / grill-with-docs / zoom-out
+#   03-test     superpowers TDD            sonnet  on: test_fail → diagnose
+#   04-deliver  ralph-loop                 haiku   args.completion_promise=COMPLETE + fallback
+#
+# v2 → v3 字段 delta (PHASE-4-SPEC L13 + L116-178):
+#   BUMP `schema_version: harnessed.workflow.v3` (sister Phase 3.3 W0.5 WorkflowSchemaV3)
+#   ADD  `disciplines_applied: [6 basename]` (D-09 L0 Discipline Substrate, Pattern A A.1 strict Literal Union)
+#   ADD  `tools_available: [7 capabilities.yaml entry name]` (D-05 Contract C1 cross-validate)
+#   KEEP phases verbatim from v2 phases.yaml (Path A1 — both files coexist through Phase 5)
+#
+# Per-phase model tier (intel CD-2 § 第 4 条) preserved verbatim from v2:
+#   opus / sonnet / sonnet / haiku
+# Override via CLI: `--model-tier inherit` (B-10 escape hatch).
+#
+# Sister refs:
+#   - .planning/v3.4.4/PHASE-4-SPEC.md L101-180 (NEW yaml shape verbatim)
+#   - workflows/execute-task/phases.yaml (v2 SoT preserved Path A1)
+#   - workflows/research/workflow.yaml (v3 standalone shape reference)
+#   - workflows/verify/simplify/workflow.yaml (v3 sub-workflow shape reference)
+#   - workflows/capabilities.yaml (7 capability refs: superpowers-brainstorming/tdd/grill-with-docs/zoom-out/diagnose/ralph-loop/planning-with-files)
+#   - workflows/defaults.yaml ralph_max_iterations.execute-task.{01..04}
+#   - workflows/disciplines/{karpathy,output-style,language,operational,priority,protocols}.yaml (L0 substrate)
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED 122L)
+
+schema_version: harnessed.workflow.v3
+workflow: execute-task
+description: |
+  子任务执行 workflow — 4-phase chain (brainstorming → karpathy + mattpocock route by
+  condition → TDD + diagnose → ralph-loop COMPLETE) triggered by harnessed CLI
+  `harnessed execute-task --task <text>` OR universal `harnessed run execute-task`.
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [superpowers-brainstorming, tdd, grill-with-docs, zoom-out, diagnose, ralph-loop, planning-with-files]
+
+phases:
+  - id: 01-clarify
+    name: brainstorming
+    upstream: superpowers brainstorming
+    capability: '{{ capabilities.superpowers-brainstorming.cmd }}'
+    model: opus
+    max_iterations: '{{ defaults.ralph_max_iterations.execute-task.01-clarify }}'
+    gate: judgments.subtask-gate.brainstorming.fires
+
+  - id: 02-code
+    name: code (karpathy 心法 always-on + mattpocock conditional route)
+    upstream: karpathy
+    model: sonnet
+    max_iterations: '{{ defaults.ralph_max_iterations.execute-task.02-code }}'
+    on:
+      - if: 'judgments.tdd-gate.tdd-strongly-suggested.fires'
+        invoke: '{{ capabilities.tdd.cmd }}'
+      - if: 'phase.spec_ambiguous == true'
+        invoke: '{{ capabilities.grill-with-docs.cmd }}'
+      - if: 'phase.unfamiliar_module == true'
+        invoke: '{{ capabilities.zoom-out.cmd }}'
+
+  - id: 03-test
+    name: test (conditional TDD + diagnose on fail)
+    upstream: superpowers TDD
+    capability: '{{ capabilities.tdd.cmd }}'
+    model: sonnet
+    max_iterations: '{{ defaults.ralph_max_iterations.execute-task.03-test }}'
+    on:
+      - if: 'test_fail == true'
+        invoke: '{{ capabilities.diagnose.cmd }}'
+
+  - id: 04-deliver
+    name: deliver (ralph-loop COMPLETE gate + max-iter fallback)
+    upstream: ralph-loop
+    capability: '{{ capabilities.ralph-loop.cmd }}'
+    model: haiku
+    args:
+      completion_promise: COMPLETE
+      max_iterations: '{{ defaults.ralph_max_iterations.execute-task.04-deliver }}'
+    gate: judgments.parallelism-gate.fires
+    parallelism: judgments.parallelism-gate.ralph-loop-wrapper.fires
+    on:
+      - if: 'subtask.lines >= 20 and subtask.type != "single_command_query"'
+        invoke: '{{ capabilities.ralph-loop.cmd }}'
+      - if: 'subtask.lines < 20 or subtask.type == "single_command_query"'
+        action: skip
+    fallback:
+      max_iterations_exceeded:
+        action: emit_warning_and_halt
+        message: '⚠️ ralph-loop max-iterations ({{ args.max_iterations }}) exceeded for execute-task 04-deliver. Sub-task likely incomplete — see workflow engine catch handler for manual options.'
+        exit_code: 1
