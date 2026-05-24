@@ -31,6 +31,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **cli**: Stderr emits 3-line stage-complete envelope after every `harnessed run <name>` apply-path invocation: `[stage <name> complete]` + `Next stage: harnessed run <next>` + `(In Claude Code: /<next>)`. `--dry-run` path unchanged (exits before hint per Phase 1 behavior — keeps stdout JSON envelope machine-parseable).
 - **runtime**: ADR 0029 fail-soft preserved — yaml read / parse error returns null + 1-line stderr warn `⚠️ getNextHint failed (...); skipping hint.`, never crashes the run loop.
 
+### Phase 6 — FINAL cleanup (delete `src/routing/` + hoist 5 deps + i18n & doc-path cleanup)
+
+- **refactor**: Hoisted 5 cross-package dependency files from `src/routing/` to `src/workflow/lib/` (single SoT for workflow runtime extras): `agentDefinition.ts` (195L → 92L after zombie trim of `createAgent` + 4 error classes + 2 dead consts) + `completionSchema.ts` (33L) + `sdkReconcile.ts` (56L) + `promiseExtract.ts` (32L) + `fallbackHandlers.ts` (92L). `COMPLETE_INSTRUCTION` const + minimal `Rule` interface inlined into hoisted `agentDefinition.ts`.
+- **cleanup**: Deleted `src/routing/` (9 remaining files, 839 LOC) + `src/routing-engine/` (empty `.gitkeep`) + 4 `tests/routing/` engine-coupled tests + 6 `tests/unit/routing-*.test.ts` + 2 `tests/integration/routing-*.test.ts` + 2 legacy v2-specific test files (`load-phases.test.ts` + `execute-task-v2.test.ts`, superseded by Phase 2 + 4 v3 equivalents). Net **~3500 LOC dead-code removal**.
+- **tests**: Relocated 4 `tests/routing/` workflow-tier tests to `tests/workflow/` (`isComplete` + `ralph-loop-win-sentinel` + `sdk-spawn` + `sdk-reconcile`) with import path updates. 2 dogfood tests pivoted from v2 `phases.yaml` to v3 `workflow.yaml` (surgical cell-level).
+- **workflows**: Deleted `workflows/execute-task/phases.yaml` (v2 legacy SoT — Phase 4 v3 `workflow.yaml` is single dispatcher). Updated `workflows/execute-task/SKILL.md` + `workflows/execute-task/workflow.yaml` narrative + fixed 4 stale `src/routing/lib/` doc-path references in shipped yaml/md (post-Phase-2 doc-rot).
+- **i18n**: Removed 4 stale keys (`research.dry_run.matched_rule` + `research.dry_run.query` + `research.dry_run.run_hint` + `research.install_fix_hint`) from `messages/{en,zh-Hans}.json`. `install.aborted` PRESERVED (still live in `install.ts` + `uninstall.ts`).
+- **regression**: Zero user-facing — `harnessed run` / `harnessed research` / `harnessed execute-task` CLI surface + exit-code semantics + Phase 5 stage-complete envelope all preserved. Phase 4 alias migration leaves no `runRouting` consumer in production CLI.
+
 ## [3.4.3] - 2026-05-24 — Dual-source slash commands: `~/.claude/commands/<x>.md` + `~/.claude/skills/<x>/SKILL.md` (Option I); vapor CLI subcommand claims removed
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 commands/ 生成 + SKILL.md 重新渲染)
