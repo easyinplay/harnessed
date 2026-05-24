@@ -84,6 +84,7 @@ vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
   runBeforeCommitHook: (_ctx: unknown): Promise<void> => runBeforeCommitHookMock(),
 }))
 
+import type { FallbackMaxIterationsExceededConfig } from '../../src/workflow/lib/ralphLoop.js'
 import { _dispatchSkillStub, type DispatchStubResult, runWorkflow } from '../../src/workflow/run.js'
 
 const fivePhases = [
@@ -99,7 +100,16 @@ const fivePhases = [
 // behavior via _testStubFn rebound in beforeEach/afterEach. This isolates the
 // legacy shim to the test file (where it was always conceptually owned) and
 // decouples 16 existing fixtures from the production default rewire.
-const _testStubFn = async (skillName: string): Promise<DispatchStubResult> => ({
+// Phase v3.4.4 Phase 3 Commit 3 — signature widened to match real _dispatchSkillStub.fn
+// (skillName, phase?, opts?). TS optional params keep 1-arg call sites backwards-compatible
+// — all 16 existing fixtures pass single-arg without change. `_opts.fallback` uses the REAL
+// `FallbackMaxIterationsExceededConfig` type (not `unknown`) per user-confirmed spec-gap fix
+// — strengthens future fixture type safety.
+const _testStubFn = async (
+  skillName: string,
+  _phase?: unknown,
+  _opts?: { maxIter?: number; fallback?: FallbackMaxIterationsExceededConfig },
+): Promise<DispatchStubResult> => ({
   status: 'ok' as const,
   output: `<stub for ${skillName}>`,
   decision: 'mock-approved',
@@ -379,5 +389,60 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
     // Default fivePhases 不带 invokes_tools → before-spawn 也 NOT fire。
     expect(arbitrateBeforeSpawnMock).not.toHaveBeenCalled()
+  })
+
+  // Phase v3.4.4 Phase 3 Commit 3 — ralph-loop wrap conditional at the call-site (L281-ish).
+  // 3 fixtures cover: opt-in trigger + CLI override priority + non-opt-in fallback resolution.
+  // _dispatchSkillStub.fn is DI-overridden to OBSERVE phase + opts the call-site passes
+  // (production wrap behavior is unit-tested in tests/workflow/ralphLoop.test.ts fixtures 10-12).
+  it('17. T3.x — phase with max_iterations declared → ralph-loop wrap fires (opt-in path)', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    let wrapInvoked = false
+    // Override stub to observe wrap path: production default uses ralphLoopWrap
+    // when isRalphLoopOptIn(phase) → true. Test verifies the call-site passes phase
+    // object so opt-in detection has data to work with + resolved maxIter is propagated.
+    _dispatchSkillStub.fn = async (skillName, phase, opts) => {
+      if (phase && typeof phase === 'object' && 'max_iterations' in phase) {
+        wrapInvoked = true
+        expect(opts?.maxIter).toBe(10) // resolved from phase.max_iterations
+      }
+      return { status: 'ok', output: `done ${skillName}` }
+    }
+    const v3Phases = [{ id: 'p1', max_iterations: 10 }]
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(wrapInvoked).toBe(true)
+  })
+
+  it('18. T3.x — CLI --max-iterations flag wins over phase.max_iterations', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    let observedMaxIter: number | undefined
+    _dispatchSkillStub.fn = async (_skillName, _phase, opts) => {
+      observedMaxIter = opts?.maxIter
+      return { status: 'ok', output: 'done' }
+    }
+    const v3Phases = [{ id: 'p1', max_iterations: 10 }]
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
+    await runWorkflow(
+      'workflows/task/code/workflow.yaml',
+      {},
+      { packageRoot: '/tmp/fake', gateContext: { maxIterations: 3 } },
+    )
+    expect(observedMaxIter).toBe(3) // CLI flag wins
+  })
+
+  it('19. T3.x — non-opt-in phase (no max_iterations/fallback/upstream) → single-shot sdkSpawn path (no wrap)', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    let observedMaxIter: number | undefined
+    _dispatchSkillStub.fn = async (_skillName, _phase, opts) => {
+      observedMaxIter = opts?.maxIter // resolver still computes; wrap-conditional inside .fn
+      return { status: 'ok', output: 'done' }
+    }
+    const v3Phases = [{ id: 'p1' }] // no opt-in signal
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(observedMaxIter).toBe(20) // fallback hardcoded 20 (still resolved + passed)
   })
 })

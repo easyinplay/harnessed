@@ -2,6 +2,10 @@
 // (3 phase-level hook: before-spawn / after-output / before-commit per RESEARCH-disciplines § 4.4)。
 // Phase v3.4.4 — _dispatchSkillStub.fn production default rewired to real sdkSpawn
 // (was literal '<stub for X>'). DI seam preserved for tests.
+// Phase v3.4.4 (Phase 3) — _dispatchSkillStub.fn now conditionally wraps sdkSpawn
+// in ralphLoopWrap when phase opt-in (max_iterations / fallback / upstream='ralph-loop'
+// signal); else single-shot per Phase 2. max-iter resolved via gateContext.maxIterations
+// (CLI flag) → phase.max_iterations → 20, clamped 100.
 import { dirname, resolve as pathResolve } from 'node:path'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
@@ -12,9 +16,17 @@ import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
 import type { AgentDefinition } from '../routing/agentDefinition.js'
 import { isVetoed } from './governance.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
+import {
+  type FallbackMaxIterationsExceededConfig,
+  handleMaxIterationsExceeded,
+  MaxIterationsExceededError,
+  ralphLoopWrap,
+} from './lib/ralphLoop.js'
 import { sdkSpawn } from './lib/sdkSpawn.js'
 import { loadPhases } from './loadPhases.js'
 import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
+
+export type { FallbackMaxIterationsExceededConfig } from './lib/ralphLoop.js'
 
 const MASTER_NAMES: readonly MasterName[] = ['discuss', 'plan', 'task', 'verify', 'auto']
 
@@ -100,30 +112,63 @@ export function resolveMaxIterations(phase: unknown, gateContext: Record<string,
 }
 
 export const _dispatchSkillStub = {
-  fn: async (skillName: string): Promise<DispatchStubResult> => {
-    try {
-      const envelopeJson = await sdkSpawn(buildAgentDef(skillName), {
+  fn: async (
+    skillName: string,
+    phase?: unknown,
+    opts?: { maxIter?: number; fallback?: FallbackMaxIterationsExceededConfig },
+  ): Promise<DispatchStubResult> => {
+    const optIn = isRalphLoopOptIn(phase)
+    const spawnOnce = async (
+      resumeSessionId?: string,
+      onSessionId?: (id: string) => void,
+    ): Promise<string> =>
+      sdkSpawn(buildAgentDef(skillName), {
         expertName: skillName,
+        ...(resumeSessionId ? { resumeSessionId } : {}),
+        ...(onSessionId ? { onSessionId } : {}),
       })
-      const env = JSON.parse(envelopeJson) as {
-        structured_output?: { status?: string }
-        text?: string
-        result?: string
-        subtype?: string
-      }
-      const status: 'ok' | 'fail' =
-        env.structured_output?.status === 'COMPLETE' || env.subtype === 'success' ? 'ok' : 'fail'
-      return {
-        status,
-        output: env.text ?? env.result ?? '',
-        ...(env.structured_output?.status ? { decision: env.structured_output.status } : {}),
+
+    let envelopeJson: string
+    try {
+      if (optIn) {
+        const maxIter = opts?.maxIter ?? RALPH_DEFAULT_MAX_ITER
+        envelopeJson = await ralphLoopWrap(spawnOnce, maxIter)
+      } else {
+        envelopeJson = await spawnOnce()
       }
     } catch (err) {
+      // R20.10 c — explicit halt path: phase fallback config present → UX text + process.exit
+      if (err instanceof MaxIterationsExceededError && opts?.fallback) {
+        // handleMaxIterationsExceeded calls process.exit(exit_code) — never returns
+        handleMaxIterationsExceeded(err, opts.fallback, {
+          subtaskSummary: `phase ${skillName}`,
+          workflowName: 'harnessed-run', // Phase 4 will plumb actual workflow name
+          phaseId: skillName,
+          maxIterations: opts?.maxIter ?? RALPH_DEFAULT_MAX_ITER,
+        })
+      }
       // Fail-soft per ADR 0029 — runtime emits failure but doesn't crash run loop.
       return {
         status: 'fail',
-        output: `sdkSpawn failed for ${skillName}: ${(err as Error).message}`,
+        output:
+          err instanceof MaxIterationsExceededError
+            ? `ralph-loop max-iterations exceeded (${err.iterations}) for ${skillName}`
+            : `sdkSpawn failed for ${skillName}: ${(err as Error).message}`,
       }
+    }
+
+    const env = JSON.parse(envelopeJson) as {
+      structured_output?: { status?: string }
+      text?: string
+      result?: string
+      subtype?: string
+    }
+    const status: 'ok' | 'fail' =
+      env.structured_output?.status === 'COMPLETE' || env.subtype === 'success' ? 'ok' : 'fail'
+    return {
+      status,
+      output: env.text ?? env.result ?? '',
+      ...(env.structured_output?.status ? { decision: env.structured_output.status } : {}),
     }
   },
 }
@@ -234,7 +279,17 @@ export async function runWorkflow(
 
     // v1 skills[0] OR v2/v3 phase id 作 skill name dispatch (narrow 'skills' in ph)。
     const skillName = ('skills' in ph && ph.skills?.[0]) || ph.id
-    const r = await _dispatchSkillStub.fn(skillName)
+    // Phase v3.4.4 (Phase 3) — resolve max-iter + extract fallback config from phase yaml
+    // before dispatch; both consumed by _dispatchSkillStub.fn opts to gate ralph-loop wrap.
+    const maxIter = resolveMaxIterations(ph, gateContext)
+    const fallback =
+      'fallback' in ph && ph.fallback?.max_iterations_exceeded
+        ? (ph.fallback.max_iterations_exceeded as FallbackMaxIterationsExceededConfig)
+        : undefined
+    const r = await _dispatchSkillStub.fn(skillName, ph, {
+      maxIter,
+      ...(fallback ? { fallback } : {}),
+    })
     if (r.status !== 'ok') {
       return { status: 'failed', phasesRun: i, lastPhaseId: ph.id }
     }
