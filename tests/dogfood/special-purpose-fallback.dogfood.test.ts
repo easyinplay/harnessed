@@ -7,8 +7,11 @@
 //
 // NOT a unit test (mock-based) — this is dogfood:
 //   - real fs.readFile workflows/capabilities.yaml + workflows/judgments/fallback.yaml
-//     + workflows/execute-task/phases.yaml + workflows/verify-work/workflow.yaml
+//     + workflows/execute-task/workflow.yaml + workflows/verify-work/workflow.yaml
 //     + workflows/research/workflow.yaml
+//     (v3.4.4 Phase 6 Wave 3c — pivoted from v2 phases.yaml to v3 workflow.yaml
+//     after v2 SoT deletion; phase content verbatim sister v2 per workflow.yaml
+//     header L16 "KEEP phases verbatim from v2 phases.yaml")
 //   - real parseYaml + real Value.Check + real evalGate + real resolveJudgmentGate
 //   - real TriggerNotFoundError error path for 铁律 1 skip-with-transparency semantics
 //
@@ -39,7 +42,7 @@ import {
 
 const PACKAGE_ROOT = process.cwd()
 const CAPABILITIES_YAML = resolve(PACKAGE_ROOT, 'workflows', 'capabilities.yaml')
-const EXECUTE_TASK_YAML = resolve(PACKAGE_ROOT, 'workflows', 'execute-task', 'phases.yaml')
+const EXECUTE_TASK_YAML = resolve(PACKAGE_ROOT, 'workflows', 'execute-task', 'workflow.yaml')
 const VERIFY_WORK_YAML = resolve(PACKAGE_ROOT, 'workflows', 'verify-work', 'workflow.yaml')
 const RESEARCH_YAML = resolve(PACKAGE_ROOT, 'workflows', 'research', 'workflow.yaml')
 const FALLBACK_YAML = resolve(PACKAGE_ROOT, 'workflows', 'judgments', 'fallback.yaml')
@@ -57,9 +60,11 @@ async function loadCapabilities(): Promise<CapabilitiesT> {
   return parseYaml(raw) as CapabilitiesT
 }
 
-async function loadExecuteTaskPhases(): Promise<WorkflowSchemaV2T> {
+// v3.4.4 Phase 6 Wave 3c — pivoted from v2 phases.yaml (deleted) to v3 workflow.yaml.
+// Helper name preserved for blast-radius minimization; return type now WorkflowSchemaV3T.
+async function loadExecuteTaskPhases(): Promise<WorkflowSchemaV3T> {
   const raw = await readFile(EXECUTE_TASK_YAML, 'utf8')
-  return parseYaml(raw) as WorkflowSchemaV2T
+  return parseYaml(raw) as WorkflowSchemaV3T
 }
 
 async function loadVerifyWorkWorkflow(): Promise<WorkflowSchemaV2T> {
@@ -84,7 +89,7 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario A: mattpocock auto-invoke (R20.
 
   it('F1. spec_ambiguous=true → execute-task 02-code on[1] route invokes {{ capabilities.grill-with-docs.cmd }}', async () => {
     const wf = await loadExecuteTaskPhases()
-    const phase02 = wf.phases.find((p) => p.id === '02-code')
+    const phase02 = wf.phases?.find((p) => p.id === '02-code')
     expect(phase02?.on).toBeDefined()
     const grillClause = phase02?.on?.find((c) => c.if === 'phase.spec_ambiguous == true')
     expect(grillClause, '02-code has grill-with-docs conditional clause').toBeDefined()
@@ -99,7 +104,7 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario A: mattpocock auto-invoke (R20.
 
   it('F2. unfamiliar_module=true → execute-task 02-code on[2] route invokes {{ capabilities.zoom-out.cmd }}', async () => {
     const wf = await loadExecuteTaskPhases()
-    const phase02 = wf.phases.find((p) => p.id === '02-code')
+    const phase02 = wf.phases?.find((p) => p.id === '02-code')
     const zoomClause = phase02?.on?.find((c) => c.if === 'phase.unfamiliar_module == true')
     expect(zoomClause, '02-code has zoom-out conditional clause').toBeDefined()
     expect(zoomClause?.invoke).toBe('{{ capabilities.zoom-out.cmd }}')
@@ -111,7 +116,7 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario A: mattpocock auto-invoke (R20.
 
   it('F3. test_fail=true → execute-task 03-test on[] route invokes {{ capabilities.diagnose.cmd }}', async () => {
     const wf = await loadExecuteTaskPhases()
-    const phase03 = wf.phases.find((p) => p.id === '03-test')
+    const phase03 = wf.phases?.find((p) => p.id === '03-test')
     expect(phase03?.on).toBeDefined()
     const diagnoseClause = phase03?.on?.find((c) => c.if === 'test_fail == true')
     expect(diagnoseClause, '03-test has diagnose conditional clause').toBeDefined()

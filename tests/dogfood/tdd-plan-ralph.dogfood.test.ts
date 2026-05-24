@@ -7,7 +7,10 @@
 //
 // NOT a unit test (mock-based) — this is dogfood:
 //   - real fs.readFile workflows/judgments/tdd-gate.yaml + capabilities.yaml +
-//     plan-feature/workflow.yaml + execute-task/phases.yaml + defaults.yaml
+//     plan-feature/workflow.yaml + execute-task/workflow.yaml + defaults.yaml
+//     (v3.4.4 Phase 6 Wave 3c — pivoted from v2 phases.yaml to v3 workflow.yaml
+//     after v2 SoT deletion; phases content verbatim sister sister v2 per
+//     workflow.yaml header L16 "KEEP phases verbatim from v2 phases.yaml")
 //   - real parseYaml + real Value.Check + real resolveJudgmentGate + real evalGate
 //   - real checkPlanningWithFiles probe — Q-AUDIT-5a Claude Code plugin path
 //   - real fs.readFile src/workflow/lib/fallbackHandlers.ts + grep export verify (v3.4.4 Phase 6 hoist)
@@ -26,12 +29,17 @@ import { checkPlanningWithFiles } from '../../src/cli/lib/check-planning-with-fi
 import { evalGate } from '../../src/workflow/exprBuilder.js'
 import { _clearJudgmentCache, resolveJudgmentGate } from '../../src/workflow/judgmentResolver.js'
 import { Capabilities, type CapabilitiesT } from '../../src/workflow/schema/capabilities.js'
-import { WorkflowSchemaV2, type WorkflowSchemaV2T } from '../../src/workflow/schema/workflow.js'
+import {
+  WorkflowSchemaV2,
+  type WorkflowSchemaV2T,
+  WorkflowSchemaV3,
+  type WorkflowSchemaV3T,
+} from '../../src/workflow/schema/workflow.js'
 
 const PACKAGE_ROOT = process.cwd()
 const CAPABILITIES_YAML = resolve(PACKAGE_ROOT, 'workflows', 'capabilities.yaml')
 const PLAN_FEATURE_YAML = resolve(PACKAGE_ROOT, 'workflows', 'plan-feature', 'workflow.yaml')
-const EXECUTE_TASK_YAML = resolve(PACKAGE_ROOT, 'workflows', 'execute-task', 'phases.yaml')
+const EXECUTE_TASK_YAML = resolve(PACKAGE_ROOT, 'workflows', 'execute-task', 'workflow.yaml')
 const DEFAULTS_YAML = resolve(PACKAGE_ROOT, 'workflows', 'defaults.yaml')
 const FALLBACK_HANDLERS_TS = resolve(PACKAGE_ROOT, 'src', 'workflow', 'lib', 'fallbackHandlers.ts')
 
@@ -53,9 +61,11 @@ async function loadPlanFeatureWorkflow(): Promise<WorkflowSchemaV2T> {
   return parseYaml(raw) as WorkflowSchemaV2T
 }
 
-async function loadExecuteTaskPhases(): Promise<WorkflowSchemaV2T> {
+// v3.4.4 Phase 6 Wave 3c — pivoted from v2 phases.yaml (deleted) to v3 workflow.yaml.
+// Helper name preserved for blast-radius minimization; return type now WorkflowSchemaV3T.
+async function loadExecuteTaskPhases(): Promise<WorkflowSchemaV3T> {
   const raw = await readFile(EXECUTE_TASK_YAML, 'utf8')
-  return parseYaml(raw) as WorkflowSchemaV2T
+  return parseYaml(raw) as WorkflowSchemaV3T
 }
 
 describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario A: TDD-gate auto-invoke (R20.13)', () => {
@@ -130,9 +140,9 @@ describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario A: TDD-gate auto-invoke (R20.13
     expect(mattpocockAlias?.cmd).toBe('/tdd')
   })
 
-  it('F7. execute-task phases.yaml 02-code on[] references tdd-gate.tdd-strongly-suggested.fires + invokes tdd.cmd', async () => {
+  it('F7. execute-task workflow.yaml v3 02-code on[] references tdd-gate.tdd-strongly-suggested.fires + invokes tdd.cmd', async () => {
     const wf = await loadExecuteTaskPhases()
-    const phase02 = wf.phases.find((p) => p.id === '02-code')
+    const phase02 = wf.phases?.find((p) => p.id === '02-code')
     expect(phase02?.on).toBeDefined()
     const tddClause = phase02?.on?.find(
       (c) => c.if === 'judgments.tdd-gate.tdd-strongly-suggested.fires',
@@ -204,12 +214,13 @@ describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario B: planning-with-files /plan (R
 })
 
 describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario C: ralph-loop COMPLETE (R20.10)', () => {
-  // execute-task phases.yaml 04-deliver capability + completion_promise + max_iterations +
+  // execute-task workflow.yaml v3 04-deliver capability + completion_promise + max_iterations +
   // fallback schema + sdk_ref reuse (sister Phase 2.2 v0.2.0 SHIPPED NOT 重写)。
+  // v3.4.4 Phase 6 Wave 3c — pivoted from v2 phases.yaml to v3 workflow.yaml (v2 deleted)。
 
   it('F14. execute-task 04-deliver capability === ralph-loop.cmd template + args.completion_promise === COMPLETE literal', async () => {
     const wf = await loadExecuteTaskPhases()
-    const deliver = wf.phases.find((p) => p.id === '04-deliver')
+    const deliver = wf.phases?.find((p) => p.id === '04-deliver')
     expect(deliver, '04-deliver phase present').toBeDefined()
     expect(deliver?.capability).toBe('{{ capabilities.ralph-loop.cmd }}')
     expect(deliver?.args?.completion_promise).toBe('COMPLETE')
@@ -238,7 +249,7 @@ describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario C: ralph-loop COMPLETE (R20.10)
 
   it('F16. 04-deliver fallback.max_iterations_exceeded schema — action + message placeholder + exit_code (R20.10 explicit NOT silent)', async () => {
     const wf = await loadExecuteTaskPhases()
-    const deliver = wf.phases.find((p) => p.id === '04-deliver')
+    const deliver = wf.phases?.find((p) => p.id === '04-deliver')
     const fb = deliver?.fallback?.max_iterations_exceeded
     expect(fb, '04-deliver fallback.max_iterations_exceeded present').toBeDefined()
     expect(fb?.action).toBe('emit_warning_and_halt')
@@ -274,7 +285,7 @@ describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario C: ralph-loop COMPLETE (R20.10)
 
   it('F19. 04-deliver on[] dual branch — ralph-loop wrapper (lines>=20) + skip (lines<20) per parallelism-gate orthogonal wrapper', async () => {
     const wf = await loadExecuteTaskPhases()
-    const deliver = wf.phases.find((p) => p.id === '04-deliver')
+    const deliver = wf.phases?.find((p) => p.id === '04-deliver')
     expect(deliver?.on).toHaveLength(2)
 
     // Branch 1 — invoke ralph-loop wrapper
@@ -300,10 +311,12 @@ describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario C: ralph-loop COMPLETE (R20.10)
     ).toBe(true)
   })
 
-  it('F20. execute-task phases.yaml — TypeBox WorkflowSchemaV2 Value.Check pass + capabilities.yaml Capabilities Value.Check pass', async () => {
+  it('F20. execute-task workflow.yaml v3 — TypeBox WorkflowSchemaV3 Value.Check pass + capabilities.yaml Capabilities Value.Check pass', async () => {
+    // v3.4.4 Phase 6 Wave 3c — pivoted from WorkflowSchemaV2 (v2 phases.yaml deleted)
+    // to WorkflowSchemaV3 (v3 workflow.yaml is the single SoT post-Phase 6).
     const rawExec = await readFile(EXECUTE_TASK_YAML, 'utf8')
     const parsedExec = parseYaml(rawExec) as unknown
-    expect(Value.Check(WorkflowSchemaV2, parsedExec)).toBe(true)
+    expect(Value.Check(WorkflowSchemaV3, parsedExec)).toBe(true)
 
     const rawCaps = await readFile(CAPABILITIES_YAML, 'utf8')
     const parsedCaps = parseYaml(rawCaps) as unknown

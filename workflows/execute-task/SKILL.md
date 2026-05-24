@@ -38,8 +38,9 @@ v2 schema fields per `src/workflow/schema/workflow.ts` (T2.4.W0.1 16th surface �
 - `parallelism: judgments.parallelism-gate.<route>.fires` (D-11 subagent / Agent Teams / main session route)
 - `fallback.max_iterations_exceeded: {action, message, exit_code}` (R20.10 acceptance c "explicit NOT silent")
 
-Per-phase models load from `workflows/execute-task/phases.yaml`; engine.runRouting
-spawns each phase as a sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+
+Per-phase models load from `workflows/execute-task/workflow.yaml` (v3 SoT post
+v3.4.4 Phase 6 — v2 phases.yaml deleted); runWorkflow spawns each phase as a
+sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+
 (`AgentDefinition` 5-字段 unpack — ADR 0011 § 4). ralph-loop SDK wrapper at 04-deliver
 reuses sister Phase 2.2 v0.2.0 ship: `src/workflow/lib/ralphLoop.ts` (54L) + `sdkSpawn.ts` (91L)
 + 4-layer dual-signal `isComplete` (NOT 重写 — per RESEARCH § 3.1).
@@ -78,6 +79,6 @@ the CLI subcommand above (B-28 single-entry contract).
 - ADR 0011 — execute-task SDK + ralph-loop integration (phase 2.2 W6 — finalize)
 - `.planning/intel/omc-comparison.md` § CD-2 — per-phase model tier defaults
 - `src/cli/execute-task.ts` — CLI implementation (T5.1)
-- `workflows/execute-task/phases.yaml` — 4-phase config (T3.3)
+- `workflows/execute-task/workflow.yaml` — 4-phase config (v3 SoT; v3.4.4 Phase 6 ship — v2 phases.yaml deleted)
 - `src/workflow/lib/sdkSpawn.ts` — SDK query() consumer (T4.1)
 - `src/workflow/lib/ralphLoop.ts` — verbatim COMPLETE round-trip
