@@ -10,7 +10,7 @@
 //     plan-feature/workflow.yaml + execute-task/phases.yaml + defaults.yaml
 //   - real parseYaml + real Value.Check + real resolveJudgmentGate + real evalGate
 //   - real checkPlanningWithFiles probe — Q-AUDIT-5a Claude Code plugin path
-//   - real fs.readFile src/routing/lib/fallbackHandlers.ts + grep export verify
+//   - real fs.readFile src/workflow/lib/fallbackHandlers.ts + grep export verify (v3.4.4 Phase 6 hoist)
 //
 // Sister Phase 2.5 W1/W2 dogfood format 沿袭 (parallelism-gate.dogfood +
 // verify-work-pattern-c.dogfood)。3 Scenario × ~5 fixture each = ~15 fixture。
@@ -33,7 +33,7 @@ const CAPABILITIES_YAML = resolve(PACKAGE_ROOT, 'workflows', 'capabilities.yaml'
 const PLAN_FEATURE_YAML = resolve(PACKAGE_ROOT, 'workflows', 'plan-feature', 'workflow.yaml')
 const EXECUTE_TASK_YAML = resolve(PACKAGE_ROOT, 'workflows', 'execute-task', 'phases.yaml')
 const DEFAULTS_YAML = resolve(PACKAGE_ROOT, 'workflows', 'defaults.yaml')
-const FALLBACK_HANDLERS_TS = resolve(PACKAGE_ROOT, 'src', 'routing', 'lib', 'fallbackHandlers.ts')
+const FALLBACK_HANDLERS_TS = resolve(PACKAGE_ROOT, 'src', 'workflow', 'lib', 'fallbackHandlers.ts')
 
 beforeEach(() => {
   _clearJudgmentCache()

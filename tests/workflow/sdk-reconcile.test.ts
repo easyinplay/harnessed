@@ -3,11 +3,11 @@
 // prompt-inject 9 字段. PATTERNS § 2.3 inline correction (T1.1 evidence).
 
 import { describe, expect, it } from 'vitest'
-import type { AgentDefinition } from '../../src/routing/agentDefinition.js'
+import type { AgentDefinition } from '../../src/workflow/lib/agentDefinition.js'
 import {
   injectFactoryInternalFields,
   toSdkAgentDefinition,
-} from '../../src/routing/lib/sdkReconcile.js'
+} from '../../src/workflow/lib/sdkReconcile.js'
 
 const fullDef: AgentDefinition = {
   description: 'test agent',

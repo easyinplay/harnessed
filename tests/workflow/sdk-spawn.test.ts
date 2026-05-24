@@ -33,7 +33,7 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
   },
 }))
 
-import type { AgentDefinition } from '../../src/routing/agentDefinition.js'
+import type { AgentDefinition } from '../../src/workflow/lib/agentDefinition.js'
 // Import AFTER vi.mock so the mocked symbol is picked up.
 import { SpawnFailError, sdkSpawn } from '../../src/workflow/lib/sdkSpawn.js'
 

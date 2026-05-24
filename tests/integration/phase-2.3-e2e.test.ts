@@ -1,18 +1,24 @@
 // Phase 2.3 Wave 5 T5.3 — end-to-end 全链路 smoke test.
 //
-// task_plan.md L1199-1209 — verifies 5 链路 全 ship + import-resolves + minimal
-// API contract smoke. Each of the 5 links has its own dedicated test file:
+// v3.4.4 Phase 6 Wave 3b — trimmed from 5-link to 4-link smoke after
+// src/routing/ deletion (Link 3 + Link 4 cells removed; their target modules
+// loadDecisionRules + arbitrateWithRedirect died with the routing engine).
+// Surviving cells (4 routing-agnostic): manifest install / EE-5 CLI / karpathy
+// SKILL-ONLY / Cross-link compose. Phase 2.3 archeology: original 5-link list
+// was — (1) manifest install dry-run, (2) EE-5 CLI gate, (3) routing 30-sample
+// loadDecisionRules [DELETED v3.4.4 P6], (4) arbitrate-redirect [DELETED v3.4.4
+// P6], (5) karpathy SKILL-ONLY ship.
+//
+// task_plan.md L1199-1209 — verifies remaining 4 链路 全 ship + import-resolves
+// + minimal API contract smoke. Each link has its own dedicated test file:
 //   1. manifest install dry-run — tests/integration/manifest-install-dry-run.test.ts
 //   2. EE-5 CLI gate           — tests/cli/manifest-add-ee5.test.ts
-//   3. routing 30-sample       — tests/routing/samples-30.test.ts (30/30 hit)
-//   4. arbitrate-redirect unit — tests/unit/routing-arbitrateRedirect.test.ts (9 cells)
 //   5. karpathy SKILL.md ship  — skills/karpathy-baseline/SKILL.md (50L D-02)
 //
 // T5.3 is the CROSS-LINK smoke verify: each artifact loadable + minimal compose
-// (e.g. EE-5 CLI registers in same Command tree as install CLI, arbitrateWith
-// Redirect consumes real decision_rules.yaml that ships alongside karpathy
-// SKILL-ONLY manifest, etc.). karpathy YAGNI: 1 test per link verifying artifact
-// presence + contract surface, NOT re-running per-link unit/integration suites.
+// (e.g. EE-5 CLI registers in same Command tree as install CLI). karpathy
+// YAGNI: 1 test per link verifying artifact presence + contract surface, NOT
+// re-running per-link unit/integration suites.
 
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -21,7 +27,7 @@ import { describe, expect, it } from 'vitest'
 
 const ROOT = process.cwd()
 
-describe('Phase 2.3 e2e 5-link smoke (Wave 5 T5.3)', () => {
+describe('Phase 2.3 e2e 4-link smoke (Wave 5 T5.3; Link 3+4 deleted v3.4.4 P6)', () => {
   it('Link 1 — manifest install dry-run: 5 NEW Wave 1 manifests on disk + schema-valid loadable', async () => {
     const { validateManifestFile } = await import('../../src/manifest/validate.js')
     const wave1 = [
@@ -48,26 +54,10 @@ describe('Phase 2.3 e2e 5-link smoke (Wave 5 T5.3)', () => {
     expect(cmd?.description()).toContain('EE-5')
   })
 
-  it('Link 3 — routing 30-sample: SAMPLES.md + decision_rules.yaml co-shipped + parseable', async () => {
-    const samples = join(ROOT, '.planning', 'phase-2.3', 'SAMPLES.md')
-    const rules = join(ROOT, 'routing', 'decision_rules.yaml')
-    expect(existsSync(samples), 'SAMPLES.md ship (T4.1 1d7d5aa)').toBe(true)
-    expect(existsSync(rules), 'decision_rules.yaml ship (T2.1 4ac1677)').toBe(true)
-    const { loadDecisionRules } = await import('../../src/routing/decisionRules.js')
-    const loaded = loadDecisionRules(rules)
-    expect(loaded.rules.length).toBeGreaterThan(0)
-    // SAMPLES.md must contain the 30-row 8-col truth table (T4.1 frozen)
-    const md = readFileSync(samples, 'utf8')
-    const rowCount = (md.match(/^\|\s*(0[1-9]|[12][0-9]|30)\s*\|/gm) ?? []).length
-    expect(rowCount).toBe(30)
-  })
-
-  it('Link 4 — arbitrate-redirect: arbitrateWithRedirect imports + discriminated union surface', async () => {
-    const { arbitrateWithRedirect } = await import('../../src/routing/lib/arbitrateRedirect.js')
-    // Smoke: empty rules + any task → kind=none (no rules to match)
-    const r = arbitrateWithRedirect([], { task_type: 'smoke', prompt: 'noop' })
-    expect(r.kind).toBe('none')
-  })
+  // Link 3 (routing 30-sample loadDecisionRules) + Link 4 (arbitrate-redirect
+  // arbitrateWithRedirect) DELETED v3.4.4 Phase 6 Wave 3b — both modules died
+  // with src/routing/ deletion. Archeology preserved in git history; resurrect
+  // via git revert of Phase 6 Wave 3a commit + this cell deletion if needed.
 
   it('Link 5 — karpathy SKILL-ONLY: SKILL.md + manifest co-shipped + D-02 SKILL-ONLY surface', () => {
     // T5.3 verifies ship-artifact reality of all 5 links. Phase 2.3 W6 DI-1
