@@ -56,6 +56,11 @@ export interface DispatchStubResult {
   decision?: string
   target?: 'chat' | 'file' | 'commit-message'
   triggers_commit?: boolean
+  /** v3.5.0 Phase 2 — Option 1-Lite escalation signal from spawned subagent.
+   *  When true, runWorkflow emits stderr hint suggesting user open Agent Teams
+   *  in main Claude Code session (D3). */
+  needsTeamsEscalation?: boolean
+  escalationReason?: string
 }
 /** v3.5.0 Phase 2 — Option 1-Lite escalation rules injected via
  *  criticalSystemReminder_EXPERIMENTAL (already piped through sdkReconcile.ts
@@ -244,17 +249,31 @@ export const _dispatchSkillStub = {
     }
 
     const env = JSON.parse(envelopeJson) as {
-      structured_output?: { status?: string }
+      structured_output?: {
+        status?: string
+        // v3.5.0 Phase 2 — Option 1-Lite escalation signal fields (D3).
+        needs_teams_escalation?: boolean
+        escalation_reason?: string
+      }
       text?: string
       result?: string
       subtype?: string
     }
     const status: 'ok' | 'fail' =
       env.structured_output?.status === 'COMPLETE' || env.subtype === 'success' ? 'ok' : 'fail'
+    const escalation = env.structured_output?.needs_teams_escalation === true
     return {
       status,
       output: env.text ?? env.result ?? '',
       ...(env.structured_output?.status ? { decision: env.structured_output.status } : {}),
+      ...(escalation
+        ? {
+            needsTeamsEscalation: true,
+            ...(env.structured_output?.escalation_reason
+              ? { escalationReason: env.structured_output.escalation_reason }
+              : {}),
+          }
+        : {}),
     }
   },
 }
@@ -396,6 +415,21 @@ export async function runWorkflow(
     })
     if (r.status !== 'ok') {
       return { status: 'failed', phasesRun: i, lastPhaseId: ph.id }
+    }
+
+    // v3.5.0 Phase 2 — Option 1-Lite escalation hint to user (D4). spawned subagent
+    // signaled one of 5 parallelism-gate.yaml agent-teams-upgrade triggers fired.
+    // User in main Claude Code session decides whether to open Agent Teams
+    // (TeamCreate not available to spawned subagents via SDK v0.3.142). Non-blocking;
+    // English-only per D5 default (i18n deferred to v3.6 if user requests).
+    if (r.needsTeamsEscalation === true) {
+      const reason = r.escalationReason ?? 'unspecified trigger'
+      console.error(
+        `⚠️ phase ${ph.id} suggests Agent Teams escalation — ${reason}. ` +
+          'Consider opening a team in your main Claude Code session (TeamCreate) ' +
+          'if continuing this work benefits from teammate coordination. ' +
+          'See workflows/judgments/parallelism-gate.yaml for the 5 upgrade triggers.',
+      )
     }
 
     // W1.5 — after-output validate if r.target==='chat' (commit/file target 不应用 output-style)。
