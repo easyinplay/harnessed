@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **refactor**: `ralphLoop` driver moved from `src/routing/lib/` to `src/workflow/lib/` (single SoT, sister Phase 2 sdkSpawn pattern; `promiseExtract` + `fallbackHandlers` deferred to Phase 6 hoist).
 - **runtime**: on `MaxIterationsExceededError`, phases with `fallback.max_iterations_exceeded` config dispatch `handleMaxIterationsExceeded` (R20.10 c — `process.exit(exit_code)` + UX text), NOT silent abort.
 
+### Phase 4 — research + execute-task migrate to harnessed run (Path A)
+
+- **cli**: `harnessed research` + `harnessed execute-task` subcommands are now thin aliases that invoke `runWorkflow` (the Phase 1-3 universal runtime); `src/routing/runRouting` is no longer called from the CLI surface (Phase 6 will delete `src/routing/` + v2 `workflows/execute-task/phases.yaml`). Subcommand flags + exit codes + K5 before-commit hook unchanged → zero user-visible regression.
+- **workflow**: NEW `workflows/execute-task/workflow.yaml` v3 (mirrors v2 `phases.yaml` 4-phase chain: brainstorming → karpathy + mattpocock route → TDD + diagnose → ralph-loop COMPLETE; per-phase models opus/sonnet/sonnet/haiku per intel CD-2 § 第 4 条). V2 `phases.yaml` preserved through Phase 5.
+- **runtime**: `buildAgentDef` enriched with `workflows/role-prompts.yaml` lookup chain (`rolePrompts[skillName]` → `rolePrompts[workflowName]` → conservative 2-field stub). Resolved entries splice `responsibility` + `checklist` + `severity` + `specialist` into the AgentDefinition prompt. `gateContext.modelTierOverride` (`--model-tier inherit` B-10 escape hatch) consumed.
+- **runtime**: `MaxIterFallbackCtx.workflowName` plumbed end-to-end (`parsed.workflow` → `_dispatchSkillStub.fn` opts → `handleMaxIterationsExceeded`). Stderr UX text on max-iter halt now shows actual workflow name (e.g. `execute-task`, `verify-paranoid`) instead of hardcoded `'harnessed-run'`.
+
 ## [3.4.3] - 2026-05-24 — Dual-source slash commands: `~/.claude/commands/<x>.md` + `~/.claude/skills/<x>/SKILL.md` (Option I); vapor CLI subcommand claims removed
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 commands/ 生成 + SKILL.md 重新渲染)
