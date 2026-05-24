@@ -203,3 +203,36 @@ describe('sdkSpawn — failure modes', () => {
     await expect(sdkSpawn(baseDef, { expertName: 'e' })).rejects.toBeInstanceOf(SpawnFailError)
   })
 })
+
+// v3.5.0 Phase 2 Wave 3 — Option 1-Lite escalation envelope round-trip (D1 / D6).
+// Asserts the SDK envelope JSON verbatim preserves `needs_teams_escalation` +
+// `escalation_reason` when the spawned subagent populates them via the extended
+// COMPLETION_SCHEMA. This is the foundation cell for the propagation chain
+// (Wave 2 _dispatchSkillStub.fn parse → runWorkflow stderr emit).
+describe('sdkSpawn — v3.5.0 Phase 2 escalation envelope round-trip', () => {
+  it('9. structured_output.needs_teams_escalation + escalation_reason → preserved in envelope JSON', async () => {
+    nextMessages = [
+      {
+        type: 'result',
+        subtype: 'success',
+        result: 'design API contract across frontend+backend+tests',
+        structured_output: {
+          status: 'COMPLETE',
+          phase: '04-deliver',
+          summary: 'three-way alignment required',
+          needs_teams_escalation: true,
+          escalation_reason: 'fullstack_three_way: API contract spans 3 roles',
+        },
+        session_id: 'sess-escalate-1',
+      },
+    ]
+    const out = await sdkSpawn(baseDef, { expertName: 'e' })
+    const env = JSON.parse(out)
+    expect(env.subtype).toBe('success')
+    expect(env.structured_output.status).toBe('COMPLETE')
+    expect(env.structured_output.needs_teams_escalation).toBe(true)
+    expect(env.structured_output.escalation_reason).toBe(
+      'fullstack_three_way: API contract spans 3 roles',
+    )
+  })
+})

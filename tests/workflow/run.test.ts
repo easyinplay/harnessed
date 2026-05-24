@@ -85,7 +85,20 @@ vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
 }))
 
 import type { FallbackMaxIterationsExceededConfig } from '../../src/workflow/lib/ralphLoop.js'
-import { _dispatchSkillStub, type DispatchStubResult, runWorkflow } from '../../src/workflow/run.js'
+import {
+  _dispatchSkillStub,
+  buildAgentDef,
+  type DispatchStubResult,
+  ESCALATION_RULES,
+  runWorkflow,
+} from '../../src/workflow/run.js'
+
+// v3.5.0 Phase 2 Wave 3 — capture the production `_dispatchSkillStub.fn` at
+// module-load time (BEFORE beforeEach rebinds it to the legacy `<stub for X>`
+// test shim). Cells 21-22 invoke this original to drive the real envelope
+// parse logic (src/workflow/run.ts L217-244) against a mocked SDK envelope,
+// without re-implementing the parse logic (which would weaken the test).
+const _productionDispatchFn = _dispatchSkillStub.fn
 
 const fivePhases = [
   { id: '01-gstack-decision', skills: ['plan-feature-decision'] },
@@ -444,5 +457,132 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
     expect(r.status).toBe('complete')
     expect(observedMaxIter).toBe(20) // fallback hardcoded 20 (still resolved + passed)
+  })
+
+  // v3.5.0 Phase 2 Wave 3 — Option 1-Lite escalation rule injection + propagation
+  // + stderr hint coverage. Sister cell pattern: 17-19 ralph-loop opt-in.
+  it('20. v3.5.0 Phase 2 — buildAgentDef injects ESCALATION_RULES with all 5 trigger names', () => {
+    // Both code paths (rolePrompt-found + fallback stub) MUST carry
+    // criticalSystemReminder_EXPERIMENTAL containing the 5 trigger names verbatim.
+    const fallbackDef = buildAgentDef('unknown-skill-not-in-role-prompts')
+    expect(fallbackDef.criticalSystemReminder_EXPERIMENTAL).toBe(ESCALATION_RULES)
+    // String contains check on 5 trigger names per spec D2 / Wave 3 cell 2 design.
+    const rules = ESCALATION_RULES
+    expect(rules).toContain('teammate_send_message_needed')
+    expect(rules).toContain('subagent_context_overflow')
+    expect(rules).toContain('shared_task_list')
+    expect(rules).toContain('opposing_hypothesis_debate')
+    expect(rules).toContain('fullstack_three_way')
+    // Anti-hallucination disclaimer per spec D2 — must explicitly tell spawned
+    // subagent NOT to attempt calling Team APIs itself.
+    expect(rules).toContain('do NOT attempt to call TeamCreate')
+
+    // rolePrompt-found path: provide a synthetic rolePrompts map keyed by
+    // workflowName so the second code branch (L94+ in run.ts) runs.
+    const enrichedDef = buildAgentDef(
+      'phase-id-not-keyed',
+      {
+        'enriched-workflow': {
+          primary_cap: 'test-cap',
+          specialist: 'test-specialist',
+          description: 'test',
+          responsibility: 'test resp',
+          checklist: ['c1'],
+          severity: 'low',
+        },
+      },
+      'enriched-workflow',
+    )
+    expect(enrichedDef.criticalSystemReminder_EXPERIMENTAL).toBe(ESCALATION_RULES)
+  })
+
+  it('21. v3.5.0 Phase 2 — _dispatchSkillStub.fn propagates needsTeamsEscalation when envelope sets needs_teams_escalation:true', async () => {
+    // Drive the production parse path: SDK mock yields a result with escalation
+    // fields, sdkSpawn passes them through SdkResultEnvelope (Wave 1 schema
+    // extension), then production run.ts L217+ parse propagates as camel-renamed
+    // DispatchStubResult fields. _productionDispatchFn is captured at module-load
+    // time before beforeEach rebinds .fn to the legacy `<stub for X>` shim.
+    const sdkMod = await import('@anthropic-ai/claude-agent-sdk')
+    const querySpy = vi.spyOn(sdkMod, 'query').mockImplementation(
+      () =>
+        (async function* () {
+          yield {
+            type: 'result',
+            subtype: 'success',
+            result: 'fullstack push detected',
+            structured_output: {
+              status: 'COMPLETE',
+              phase: '02-code',
+              needs_teams_escalation: true,
+              escalation_reason: 'fullstack_three_way: 3-role API contract',
+            },
+            session_id: 's',
+          }
+          // biome-ignore lint/suspicious/noExplicitAny: SDK mock iterable typed loosely
+        })() as any,
+    )
+    try {
+      const result = await _productionDispatchFn('test-skill')
+      expect(result.status).toBe('ok')
+      expect(result.needsTeamsEscalation).toBe(true)
+      expect(result.escalationReason).toBe('fullstack_three_way: 3-role API contract')
+    } finally {
+      querySpy.mockRestore()
+    }
+  })
+
+  it('22. v3.5.0 Phase 2 — _dispatchSkillStub.fn omits needsTeamsEscalation when envelope lacks field (default off)', async () => {
+    const sdkMod = await import('@anthropic-ai/claude-agent-sdk')
+    const querySpy = vi.spyOn(sdkMod, 'query').mockImplementation(
+      () =>
+        (async function* () {
+          yield {
+            type: 'result',
+            subtype: 'success',
+            result: 'normal task no escalation',
+            structured_output: { status: 'COMPLETE', phase: '02-code' },
+            session_id: 's',
+          }
+          // biome-ignore lint/suspicious/noExplicitAny: SDK mock iterable typed loosely
+        })() as any,
+    )
+    try {
+      const result = await _productionDispatchFn('test-skill')
+      expect(result.status).toBe('ok')
+      // KEY: field is undefined (omitted via conditional spread) when escalation absent.
+      expect(result.needsTeamsEscalation).toBeUndefined()
+      expect(result.escalationReason).toBeUndefined()
+    } finally {
+      querySpy.mockRestore()
+    }
+  })
+
+  it('23. v3.5.0 Phase 2 — runWorkflow emits stderr escalation hint containing escalation_reason when stub returns needsTeamsEscalation:true', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    // DI-override stub to return escalation signal — exercises runWorkflow's
+    // console.error emit (D4) without needing SDK plumbing.
+    _dispatchSkillStub.fn = async () => ({
+      status: 'ok',
+      output: 'completed with escalation',
+      needsTeamsEscalation: true,
+      escalationReason: 'fullstack_three_way: 3-role API contract spans frontend+backend+tests',
+    })
+    const oneShotPhases = [{ id: 'p1' }]
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: oneShotPhases })
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+      expect(r.status).toBe('complete')
+      expect(errSpy).toHaveBeenCalled()
+      const allErrCalls = errSpy.mock.calls.map((c) => c.join(' ')).join('\n')
+      expect(allErrCalls).toContain('phase p1 suggests Agent Teams escalation')
+      expect(allErrCalls).toContain(
+        'fullstack_three_way: 3-role API contract spans frontend+backend+tests',
+      )
+      expect(allErrCalls).toContain('TeamCreate')
+      expect(allErrCalls).toContain('parallelism-gate.yaml')
+    } finally {
+      errSpy.mockRestore()
+    }
   })
 })
