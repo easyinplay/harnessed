@@ -6,9 +6,13 @@
 // in ralphLoopWrap when phase opt-in (max_iterations / fallback / upstream='ralph-loop'
 // signal); else single-shot per Phase 2. max-iter resolved via gateContext.maxIterations
 // (CLI flag) → phase.max_iterations → 20, clamped 100.
-import { dirname, resolve as pathResolve } from 'node:path'
+// Phase v3.4.4 (Phase 4) — buildAgentDef enriched with role-prompts.yaml lookup
+// + workflowName plumbed through MaxIterFallbackCtx (replaces hardcoded
+// 'harnessed-run' literal at fallback site).
+import { dirname, join, resolve as pathResolve } from 'node:path'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
+import { loadRolePrompts, type RolePrompt } from '../cli/lib/generateCommands.js'
 import { runAfterOutputHook } from '../discipline/enforcement/after-output.js'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
@@ -53,13 +57,54 @@ export interface DispatchStubResult {
   target?: 'chat' | 'file' | 'commit-message'
   triggers_commit?: boolean
 }
-/** Phase v3.4.4 — build a minimal AgentDefinition for a workflow phase skill.
- *  Conservative default (description + prompt only); Phase 4 will enrich with
- *  role-prompts.yaml lookup + capabilities.yaml model tier. */
-function buildAgentDef(skillName: string): AgentDefinition {
+/** Phase v3.4.4 (Phase 4) — build an AgentDefinition for a workflow phase skill,
+ *  enriched via `workflows/role-prompts.yaml` when a matching entry exists.
+ *
+ *  Lookup chain (D-3):
+ *    1. rolePrompts[skillName] — phase id direct hit (e.g. '01-fan-out' on the
+ *       rare case the phase id IS keyed in role-prompts.yaml).
+ *    2. rolePrompts[workflowName] — sub-workflow name hit (e.g. phase id
+ *       '01-review' inside `verify-paranoid/workflow.yaml` → 'verify-paranoid'
+ *       keyed in role-prompts.yaml). This is the common path.
+ *    3. Conservative 2-field stub fallback (Phase 2 behavior) — applies for
+ *       standalone non-master phases that lack any role-prompt entry.
+ *
+ *  When found, splices `responsibility` + `checklist` + `severity` + `specialist`
+ *  into the prompt body. `modelTierOverride` (B-10 escape hatch from execute-task
+ *  `--model-tier inherit`) is applied to the AgentDefinition `model` field when
+ *  set (sourced from `gateContext.modelTierOverride`). */
+function buildAgentDef(
+  skillName: string,
+  rolePrompts?: Record<string, RolePrompt>,
+  workflowName?: string,
+  modelTierOverride?: string,
+): AgentDefinition {
+  const rp = rolePrompts?.[skillName] ?? (workflowName ? rolePrompts?.[workflowName] : undefined)
+  if (!rp) {
+    // Conservative fallback (Phase 2 behavior) for phase ids not in role-prompts.yaml.
+    return {
+      description: `harnessed workflow phase: ${skillName}`,
+      prompt: `You are executing the '${skillName}' workflow phase. Follow the phase intent and emit a structured COMPLETE signal when done.`,
+      ...(modelTierOverride ? { model: modelTierOverride } : {}),
+    } as AgentDefinition
+  }
+  const checklist = rp.checklist.length
+    ? `\n\nChecklist:\n${rp.checklist.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}`
+    : ''
+  const prompt = [
+    `You are a ${rp.specialist}.`,
+    ``,
+    rp.responsibility.trim(),
+    checklist,
+    ``,
+    `Severity scale: ${rp.severity}`,
+    ``,
+    `Emit a structured COMPLETE signal when done.`,
+  ].join('\n')
   return {
-    description: `harnessed workflow phase: ${skillName}`,
-    prompt: `You are executing the '${skillName}' workflow phase. Follow the phase intent and emit a structured COMPLETE signal when done.`,
+    description: rp.description,
+    prompt,
+    ...(modelTierOverride ? { model: modelTierOverride } : {}),
   } as AgentDefinition
 }
 
@@ -115,18 +160,27 @@ export const _dispatchSkillStub = {
   fn: async (
     skillName: string,
     phase?: unknown,
-    opts?: { maxIter?: number; fallback?: FallbackMaxIterationsExceededConfig },
+    opts?: {
+      maxIter?: number
+      fallback?: FallbackMaxIterationsExceededConfig
+      workflowName?: string
+      rolePrompts?: Record<string, RolePrompt>
+      modelTierOverride?: string
+    },
   ): Promise<DispatchStubResult> => {
     const optIn = isRalphLoopOptIn(phase)
     const spawnOnce = async (
       resumeSessionId?: string,
       onSessionId?: (id: string) => void,
     ): Promise<string> =>
-      sdkSpawn(buildAgentDef(skillName), {
-        expertName: skillName,
-        ...(resumeSessionId ? { resumeSessionId } : {}),
-        ...(onSessionId ? { onSessionId } : {}),
-      })
+      sdkSpawn(
+        buildAgentDef(skillName, opts?.rolePrompts, opts?.workflowName, opts?.modelTierOverride),
+        {
+          expertName: skillName,
+          ...(resumeSessionId ? { resumeSessionId } : {}),
+          ...(onSessionId ? { onSessionId } : {}),
+        },
+      )
 
     let envelopeJson: string
     try {
@@ -142,7 +196,10 @@ export const _dispatchSkillStub = {
         // handleMaxIterationsExceeded calls process.exit(exit_code) — never returns
         handleMaxIterationsExceeded(err, opts.fallback, {
           subtaskSummary: `phase ${skillName}`,
-          workflowName: 'harnessed-run', // Phase 4 will plumb actual workflow name
+          // Phase 4 — plumbed actual workflow name (was hardcoded 'harnessed-run'
+          // pre-Phase 4); falls back to literal when opts.workflowName absent
+          // (preserves Phase 3 behavior for callers that don't pass workflowName).
+          workflowName: opts.workflowName ?? 'harnessed-run',
           phaseId: skillName,
           maxIterations: opts?.maxIter ?? RALPH_DEFAULT_MAX_ITER,
         })
@@ -193,6 +250,19 @@ export async function runWorkflow(
   const packageRoot = opts.packageRoot ?? inferredRoot
   // shallow-clone gateContext 避免 mutate caller object (W0.2 加 disciplines)。
   const gateContext: Record<string, unknown> = { ...(opts.gateContext ?? {}) }
+
+  // Phase 4 — load role-prompts.yaml ONCE per workflow run (cached map for all
+  // phases — NOT per-phase). Fail-soft per ADR 0029: missing yaml or parse error
+  // → empty map (buildAgentDef falls back to conservative 2-field stub).
+  let rolePrompts: Record<string, RolePrompt> = {}
+  try {
+    rolePrompts = await loadRolePrompts(join(packageRoot, 'workflows'))
+  } catch (err) {
+    console.warn(
+      `⚠️ loadRolePrompts failed (${(err as Error).message}); ` +
+        'proceeding without role-prompt enrichment (ADR 0029 fail-soft).',
+    )
+  }
 
   // W0.2 — master vs sub detect: workflow ∈ 4 master + delegates_to non-empty → delegate。
   const workflowName = parsed.workflow
@@ -289,6 +359,11 @@ export async function runWorkflow(
     const r = await _dispatchSkillStub.fn(skillName, ph, {
       maxIter,
       ...(fallback ? { fallback } : {}),
+      workflowName,
+      rolePrompts,
+      ...(typeof gateContext.modelTierOverride === 'string'
+        ? { modelTierOverride: gateContext.modelTierOverride }
+        : {}),
     })
     if (r.status !== 'ok') {
       return { status: 'failed', phasesRun: i, lastPhaseId: ph.id }
