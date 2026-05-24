@@ -8,6 +8,15 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+// Phase v3.4.4 — production default in run.ts:_dispatchSkillStub.fn now calls
+// real sdkSpawn → @anthropic-ai/claude-agent-sdk query(). Mock the SDK at the
+// module boundary so any fixture that does NOT DI-override _dispatchSkillStub.fn
+// (none currently — all 16 fixtures override via _testStubFn rebind below)
+// would still not hit the real SDK. Sister tests/routing/sdk-spawn.test.ts:27-34.
+vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
+  query: () => (async function* () {})(),
+}))
+
 // vi.mock hoisting — declare mocks BEFORE importing src under test.
 const isVetoedMock = vi.fn<() => Promise<boolean>>()
 const activatePhaseMock = vi.fn(async (_phaseId: string) => ({
@@ -75,7 +84,7 @@ vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
   runBeforeCommitHook: (_ctx: unknown): Promise<void> => runBeforeCommitHookMock(),
 }))
 
-import { _dispatchSkillStub, runWorkflow } from '../../src/workflow/run.js'
+import { _dispatchSkillStub, type DispatchStubResult, runWorkflow } from '../../src/workflow/run.js'
 
 const fivePhases = [
   { id: '01-gstack-decision', skills: ['plan-feature-decision'] },
@@ -85,8 +94,16 @@ const fivePhases = [
   { id: '05-persist', skills: ['plan-feature-persist'] },
 ]
 
-// T3.5.W1.5 — preserve original stub fn so fixture override can restore in afterEach。
-const _origStubFn = _dispatchSkillStub.fn
+// Phase v3.4.4 — production default of _dispatchSkillStub.fn now calls real
+// sdkSpawn (was literal '<stub for X>' shim). Tests own the legacy stub-string
+// behavior via _testStubFn rebound in beforeEach/afterEach. This isolates the
+// legacy shim to the test file (where it was always conceptually owned) and
+// decouples 16 existing fixtures from the production default rewire.
+const _testStubFn = async (skillName: string): Promise<DispatchStubResult> => ({
+  status: 'ok' as const,
+  output: `<stub for ${skillName}>`,
+  decision: 'mock-approved',
+})
 
 beforeEach(() => {
   isVetoedMock.mockReset()
@@ -106,12 +123,13 @@ beforeEach(() => {
   arbitrateBeforeSpawnMock.mockImplementation(async (fired) => fired)
   runAfterOutputHookMock.mockResolvedValue([])
   runBeforeCommitHookMock.mockResolvedValue(undefined)
-  // Reset stub fn to default (per-test override 后 restore)。
-  _dispatchSkillStub.fn = _origStubFn
+  // Reset stub fn to test shim (per-test override 后 restore;Phase v3.4.4 production
+  // default 现 call real sdkSpawn — tests own legacy '<stub for X>' shim via _testStubFn)。
+  _dispatchSkillStub.fn = _testStubFn
 })
 afterEach(() => {
   vi.clearAllMocks()
-  _dispatchSkillStub.fn = _origStubFn
+  _dispatchSkillStub.fn = _testStubFn
 })
 
 describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {

@@ -16,6 +16,25 @@ vi.mock('node:child_process', async () => {
   return { ...actual, spawnSync: vi.fn() }
 })
 
+// Phase v3.4.4 — runWorkflow's production default of _dispatchSkillStub.fn now
+// calls real sdkSpawn → @anthropic-ai/claude-agent-sdk query(). Without this
+// mock the workflow-level fixtures would hang waiting on the real SDK. Yield
+// a synthetic success result message so sdkSpawn returns a COMPLETE envelope
+// and _dispatchSkillStub maps to {status:'ok'} — preserves pre-flip workflow
+// semantic. Sister tests/routing/sdk-spawn.test.ts:122-129 success-message shape.
+vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
+  query: () =>
+    (async function* () {
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: '<stub for plan-feature-phase>',
+        structured_output: { status: 'COMPLETE' },
+        session_id: 'mock-session',
+      }
+    })(),
+}))
+
 const WORKFLOW_YAML = join(process.cwd(), 'workflows/plan-feature/workflow.yaml')
 
 // v3.0.3 — HARNESSED_ROOT_OVERRIDE isolation (sister plan-feature-wired).

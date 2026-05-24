@@ -14,11 +14,30 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runResume } from '../../src/checkpoint/resume.js'
 import { writeCheckpoint } from '../../src/checkpoint/template.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 import { WorkflowSchemaV2 } from '../../src/workflow/schema/workflow.js'
+
+// Phase v3.4.4 — runWorkflow's production default of _dispatchSkillStub.fn now
+// calls real sdkSpawn → @anthropic-ai/claude-agent-sdk query(). Without this
+// mock the workflow-level fixtures would hang waiting on the real SDK. Yield
+// a synthetic success result message so sdkSpawn returns a COMPLETE envelope
+// and _dispatchSkillStub maps to {status:'ok'} — preserves pre-flip workflow
+// semantic. Sister tests/routing/sdk-spawn.test.ts:122-129 success-message shape.
+vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
+  query: () =>
+    (async function* () {
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: '<stub for plan-feature-phase>',
+        structured_output: { status: 'COMPLETE' },
+        session_id: 'mock-session',
+      }
+    })(),
+}))
 
 const WORKFLOW_YAML = join(process.cwd(), 'workflows/plan-feature/workflow.yaml')
 

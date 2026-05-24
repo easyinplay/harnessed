@@ -1,5 +1,7 @@
 // run.ts — D-03 WIRED + D-04 PUSH + W0.2 (master detect + disciplines wedge) + W1.5
 // (3 phase-level hook: before-spawn / after-output / before-commit per RESEARCH-disciplines § 4.4)。
+// Phase v3.4.4 — _dispatchSkillStub.fn production default rewired to real sdkSpawn
+// (was literal '<stub for X>'). DI seam preserved for tests.
 import { dirname, resolve as pathResolve } from 'node:path'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
@@ -7,8 +9,10 @@ import { runAfterOutputHook } from '../discipline/enforcement/after-output.js'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
 import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
+import type { AgentDefinition } from '../routing/agentDefinition.js'
 import { isVetoed } from './governance.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
+import { sdkSpawn } from './lib/sdkSpawn.js'
 import { loadPhases } from './loadPhases.js'
 import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
 
@@ -31,12 +35,43 @@ export interface DispatchStubResult {
   target?: 'chat' | 'file' | 'commit-message'
   triggers_commit?: boolean
 }
+/** Phase v3.4.4 — build a minimal AgentDefinition for a workflow phase skill.
+ *  Conservative default (description + prompt only); Phase 4 will enrich with
+ *  role-prompts.yaml lookup + capabilities.yaml model tier. */
+function buildAgentDef(skillName: string): AgentDefinition {
+  return {
+    description: `harnessed workflow phase: ${skillName}`,
+    prompt: `You are executing the '${skillName}' workflow phase. Follow the phase intent and emit a structured COMPLETE signal when done.`,
+  } as AgentDefinition
+}
+
 export const _dispatchSkillStub = {
-  fn: async (skillName: string): Promise<DispatchStubResult> => ({
-    status: 'ok',
-    output: `<stub for ${skillName}>`,
-    decision: 'mock-approved',
-  }),
+  fn: async (skillName: string): Promise<DispatchStubResult> => {
+    try {
+      const envelopeJson = await sdkSpawn(buildAgentDef(skillName), {
+        expertName: skillName,
+      })
+      const env = JSON.parse(envelopeJson) as {
+        structured_output?: { status?: string }
+        text?: string
+        result?: string
+        subtype?: string
+      }
+      const status: 'ok' | 'fail' =
+        env.structured_output?.status === 'COMPLETE' || env.subtype === 'success' ? 'ok' : 'fail'
+      return {
+        status,
+        output: env.text ?? env.result ?? '',
+        ...(env.structured_output?.status ? { decision: env.structured_output.status } : {}),
+      }
+    } catch (err) {
+      // Fail-soft per ADR 0029 — runtime emits failure but doesn't crash run loop.
+      return {
+        status: 'fail',
+        output: `sdkSpawn failed for ${skillName}: ${(err as Error).message}`,
+      }
+    }
+  },
 }
 
 export interface RunWorkflowOpts {
