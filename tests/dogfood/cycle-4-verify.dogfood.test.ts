@@ -25,6 +25,28 @@ import { parse as parseYaml } from 'yaml'
 import { runMasterOrchestrator } from '../../src/workflow/masterOrchestrator.js'
 import { WorkflowSchemaV3, type WorkflowSchemaV3T } from '../../src/workflow/schema/workflow.js'
 
+// Phase v3.4.4 — Phase 2 Commit 2738c07 replaced _dispatchSkillStub.fn literal
+// stub with real sdkSpawn → @anthropic-ai/claude-agent-sdk query() call. F8
+// exercises default spawnDriver (Path A LOCK in-process recursive spawn) which
+// transitively hits sdkSpawn → real SDK. Without this mock F8 hangs on the
+// real SDK and times out at 5000ms. Yield a synthetic success result so
+// sdkSpawn returns a COMPLETE envelope and _dispatchSkillStub maps to
+// {status:'ok'} per src/workflow/run.ts D-1 envelope mapping. Sister mock at
+// tests/integration/plan-feature-wired.test.ts L29-40 + plan-feature-prefix-
+// e2e.test.ts + tests/workflow/run.test.ts (all Phase 2 Commit 2738c07).
+vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
+  query: () =>
+    (async function* () {
+      yield {
+        type: 'result',
+        subtype: 'success',
+        result: '<stub for cycle-4-verify dogfood>',
+        structured_output: { status: 'COMPLETE' },
+        session_id: 'mock-session',
+      }
+    })(),
+}))
+
 const PACKAGE_ROOT = resolve(__dirname, '../..')
 const VERIFY_YAML = resolve(PACKAGE_ROOT, 'workflows/verify/auto/workflow.yaml')
 
@@ -254,6 +276,3 @@ describe('Cycle 4 — /verify master orchestrator dogfood + Path A vs Path B LOC
     }
   })
 })
-
-// Suppress unused-vi-import lint (vi 仅在 F9 间接通过 vitest import 走);keep clean
-void vi
