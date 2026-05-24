@@ -371,6 +371,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | Command | Description |
 | ---- | ---- |
 | `harnessed setup` | One-time setup; installs workflow skills to `~/.claude/skills/` + MCP to `~/.claude.json` |
+| `harnessed run <name>` | Run a workflow (master orchestrator or sub). Slash commands invoke via this subcommand. |
 | `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
 | `harnessed status` | Current phase + lock holder |
 | `harnessed doctor` | 8-check health check (Node / MCP / jq / Win bash / routing / token budget, etc.) |
@@ -393,6 +394,8 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `--yes` | Skip interactive confirm on uninstall |
 | `--full-diff` | Expand diffs folded above 200 lines |
 | `--no-color` | Force nocolor (even on TTY) |
+| `--task <text>` | `run` — task description (passed as workflow `gateContext.task`) |
+| `--task-stdin` | `run` — read task description from stdin until EOF (avoids shell-escape on quotes/$/`) |
 
 
 ---

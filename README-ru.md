@@ -371,6 +371,7 @@ planning-with-files /plan (сквозной инструмент) → запис
 | Команда | Описание |
 | ------- | -------- |
 | `harnessed setup` | Единоразовая настройка; устанавливает Workflow-скиллы в `~/.claude/skills/` + MCP в `~/.claude.json` |
+| `harnessed run <name>` | Запустить workflow (master orchestrator или sub). slash-команды вызываются через эту подкоманду. |
 | `harnessed resume` | Продолжить с последней контрольной точки после прерывания сессии |
 | `harnessed status` | Текущая фаза + владелец блокировки |
 | `harnessed doctor` | Health check с 8 проверками (Node / MCP / jq / Win bash / routing / token budget и т.д.) |
@@ -393,6 +394,8 @@ planning-with-files /plan (сквозной инструмент) → запис
 | `--yes` | Пропустить интерактивное подтверждение при деинсталляции |
 | `--full-diff` | Развернуть diff-ы, свёрнутые выше 200 строк |
 | `--no-color` | Принудительно отключить цвет (даже на TTY) |
+| `--task <text>` | Подкоманда `run` — описание задачи (передаётся как `gateContext.task` workflow) |
+| `--task-stdin` | Подкоманда `run` — читает описание задачи из stdin до EOF (избегает shell-escape для кавычек/$/`) |
 
 
 ---

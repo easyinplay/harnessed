@@ -371,6 +371,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | 指令 | 說明 |
 | ---- | ---- |
 | `harnessed setup` | 一次性設定；將 Workflow Skills 安裝至 `~/.claude/skills/` + MCP 安裝至 `~/.claude.json` |
+| `harnessed run <name>` | 執行某個 workflow（master orchestrator 或 sub）。slash command 透過此子命令呼叫 |
 | `harnessed resume` | session 中斷後從最近的 checkpoint 繼續 |
 | `harnessed status` | 目前 Phase + 鎖定持有者 |
 | `harnessed doctor` | 8 項健康檢查（Node / MCP / jq / Win bash / routing / token budget 等） |
@@ -393,6 +394,8 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `--yes` | 解除安裝時跳過互動式確認 |
 | `--full-diff` | 展開超過 200 行的折疊差異 |
 | `--no-color` | 強制無色彩輸出（即使在 TTY 中） |
+| `--task <text>` | `run` 子命令 — 任務描述（傳入 workflow `gateContext.task`） |
+| `--task-stdin` | `run` 子命令 — 從 stdin 讀取任務描述直到 EOF（避免 shell 轉義引號/$/`） |
 
 
 ---

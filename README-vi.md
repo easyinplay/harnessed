@@ -371,6 +371,7 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | Lệnh | Mô tả |
 | ---- | ---- |
 | `harnessed setup` | Cài đặt một lần; cài workflow skill vào `~/.claude/skills/` + MCP vào `~/.claude.json` |
+| `harnessed run <name>` | Chạy một workflow (master orchestrator hoặc sub). Slash command gọi thông qua subcommand này. |
 | `harnessed resume` | Tiếp tục từ checkpoint gần nhất sau khi session bị gián đoạn |
 | `harnessed status` | Phase hiện tại + lock holder |
 | `harnessed doctor` | Health check 8 mục (Node / MCP / jq / Win bash / routing / token budget, v.v.) |
@@ -393,6 +394,8 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `--yes` | Bỏ qua xác nhận tương tác khi gỡ cài đặt |
 | `--full-diff` | Mở rộng diff bị gấp khi vượt quá 200 dòng |
 | `--no-color` | Buộc không màu (kể cả trên TTY) |
+| `--task <text>` | Subcommand `run` — mô tả task (truyền vào `gateContext.task` của workflow) |
+| `--task-stdin` | Subcommand `run` — đọc mô tả task từ stdin tới EOF (tránh shell-escape cho dấu ngoặc/$/`) |
 
 
 ---

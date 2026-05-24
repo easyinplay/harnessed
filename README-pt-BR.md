@@ -371,6 +371,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | Comando | Descrição |
 | ---- | ---- |
 | `harnessed setup` | Setup inicial; instala Skills de Workflow em `~/.claude/skills/` + MCP em `~/.claude.json` |
+| `harnessed run <name>` | Executa um workflow (master orchestrator ou sub). Slash commands invocam via este subcomando. |
 | `harnessed resume` | Retoma a partir do checkpoint mais recente após interrupção de sessão |
 | `harnessed status` | Phase atual + detentor do lock |
 | `harnessed doctor` | Health check com 8 verificações (Node / MCP / jq / Win bash / routing / token budget, etc.) |
@@ -393,6 +394,8 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `--yes` | Pula confirmação interativa na desinstalação |
 | `--full-diff` | Expande diffs recolhidos acima de 200 linhas |
 | `--no-color` | Força sem cor (mesmo em TTY) |
+| `--task <text>` | Subcomando `run` — descrição da tarefa (passada como `gateContext.task` do workflow) |
+| `--task-stdin` | Subcomando `run` — lê a descrição da tarefa do stdin até EOF (evita escape de shell em aspas/$/`) |
 
 
 ---

@@ -371,6 +371,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | コマンド | 説明 |
 | ---- | ---- |
 | `harnessed setup` | 初回セットアップ。`~/.claude/skills/` に Workflow Skill をインストール + `~/.claude.json` に MCP を設定 |
+| `harnessed run <name>` | workflow を実行（master orchestrator または sub）。slash コマンドはこのサブコマンド経由で呼び出される |
 | `harnessed resume` | セッション中断後に最新チェックポイントから再開 |
 | `harnessed status` | 現在の Phase + ロックホルダー |
 | `harnessed doctor` | 8 項目のヘルスチェック（Node / MCP / jq / Win bash / ルーティング / トークンバジェットなど） |
@@ -393,6 +394,8 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `--yes` | アンインストール時のインタラクティブ確認をスキップ |
 | `--full-diff` | 200 行以上で折り畳まれた diff を展開 |
 | `--no-color` | TTY であっても強制的に色なし |
+| `--task <text>` | `run` サブコマンド — タスク記述（workflow `gateContext.task` に渡される） |
+| `--task-stdin` | `run` サブコマンド — stdin から EOF までタスク記述を読み込む（引用符/$/`のシェルエスケープを回避） |
 
 
 ---

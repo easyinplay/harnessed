@@ -371,6 +371,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | Komut | Açıklama |
 | ---- | ---- |
 | `harnessed setup` | Tek seferlik kurulum; workflow skills'i `~/.claude/skills/`'e + MCP'yi `~/.claude.json`'a kurar |
+| `harnessed run <name>` | Bir workflow çalıştırır (master orchestrator veya sub). Slash command'lar bu subcommand üzerinden çağrılır. |
 | `harnessed resume` | Oturum kesintisinden sonra en son checkpoint'ten devam eder |
 | `harnessed status` | Mevcut phase + kilit sahibi |
 | `harnessed doctor` | 8 kontrollü sağlık denetimi (Node / MCP / jq / Win bash / routing / token bütçesi vb.) |
@@ -393,6 +394,8 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `--yes` | Kaldırma işleminde etkileşimli onayı atla |
 | `--full-diff` | 200 satırın üzerinde katlanan farkları genişlet |
 | `--no-color` | Rengi zorla kapat (TTY'de bile) |
+| `--task <text>` | `run` alt komutu — görev açıklaması (workflow `gateContext.task` olarak iletilir) |
+| `--task-stdin` | `run` alt komutu — görev açıklamasını stdin'den EOF'a kadar oku (tırnak/$/` shell escape'inden kaçınır) |
 
 
 ---

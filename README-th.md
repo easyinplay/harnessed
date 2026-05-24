@@ -371,6 +371,7 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | คำสั่ง | คำอธิบาย |
 | ---- | ---- |
 | `harnessed setup` | Setup ครั้งเดียว; ติดตั้ง workflow skills ไปที่ `~/.claude/skills/` + MCP ไปที่ `~/.claude.json` |
+| `harnessed run <name>` | รัน workflow (master orchestrator หรือ sub) — slash command เรียกใช้ผ่าน subcommand นี้ |
 | `harnessed resume` | ดำเนินการต่อจาก checkpoint ล่าสุดหลัง session ถูกขัดจังหวะ |
 | `harnessed status` | Phase ปัจจุบัน + lock holder |
 | `harnessed doctor` | Health check 8 รายการ (Node / MCP / jq / Win bash / routing / token budget ฯลฯ) |
@@ -393,6 +394,8 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `--yes` | ข้าม interactive confirm เมื่อ uninstall |
 | `--full-diff` | ขยาย diff ที่ถูกพับไว้เกิน 200 บรรทัด |
 | `--no-color` | บังคับ nocolor (แม้บน TTY) |
+| `--task <text>` | Subcommand `run` — task description (ส่งเข้า workflow `gateContext.task`) |
+| `--task-stdin` | Subcommand `run` — อ่าน task description จาก stdin จนถึง EOF (หลีกเลี่ยง shell-escape สำหรับ quotes/$/`) |
 
 
 ---

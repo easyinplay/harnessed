@@ -370,6 +370,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | 命令 | 说明 |
 | ---- | ---- |
 | `harnessed setup` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` + MCP 到 `~/.claude.json` |
+| `harnessed run <name>` | 运行某个 workflow (master orchestrator 或 sub)。slash command 通过此子命令调用 |
 | `harnessed resume` | session 中断后恢复至最近 checkpoint |
 | `harnessed status` | 当前 phase + lock holder |
 | `harnessed doctor` | 8-check 健康检查 (Node / MCP / jq / Win bash / 路由 / token budget 等) |
@@ -392,6 +393,8 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `--yes` | uninstall 跳过交互 confirm |
 | `--full-diff` | 展开 > 200 行的 diff 折叠 |
 | `--no-color` | 强制 nocolor (即使 TTY) |
+| `--task <text>` | `run` 子命令 — 任务描述 (传入 workflow `gateContext.task`) |
+| `--task-stdin` | `run` 子命令 — 从 stdin 读任务描述直到 EOF (避免 shell 转义引号/$/`) |
 
 ---
 
