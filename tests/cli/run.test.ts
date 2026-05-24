@@ -12,7 +12,7 @@ vi.mock('../../src/workflow/run.js', () => ({
   runWorkflow: vi.fn(async () => ({ status: 'complete', phasesRun: 0 })),
 }))
 
-import { registerRun } from '../../src/cli/run.js'
+import { _resetAutoChainCache, getNextHint, registerRun } from '../../src/cli/run.js'
 import { runWorkflow } from '../../src/workflow/run.js'
 
 class ExitError extends Error {
@@ -209,11 +209,16 @@ describe('cli/run — 15 cells per v3.4.4 PHASE-1-SPEC.md', () => {
     expect(code).toBe(1)
   })
 
-  it('cell 14 — runWorkflow returns { status: "complete" } → exit 0 + stderr `[stage X complete]`', async () => {
+  it('cell 14 — runWorkflow returns { status: "complete" } → exit 0 + stderr `[stage X complete]` + Phase 5 next-stage envelope', async () => {
     vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 1 })
+    _resetAutoChainCache() // cold cache so cell loads chain fresh
     const { code, stderr } = await runCli(['run', 'verify-paranoid'])
     expect(code).toBe(0)
     expect(stderr).toContain('[stage verify-paranoid complete]')
+    // Phase 5 — parent-stage fallback emits next-stage envelope for 'verify-paranoid'
+    // (parent 'verify' → next 'retro').
+    expect(stderr).toContain('Next stage: harnessed run retro')
+    expect(stderr).toContain('(In Claude Code: /retro)')
   })
 
   it('cell 15 — runWorkflow throws → exit 1 + stderr "runtime failed"', async () => {
@@ -222,5 +227,67 @@ describe('cli/run — 15 cells per v3.4.4 PHASE-1-SPEC.md', () => {
     expect(code).toBe(1)
     expect(stderr).toMatch(/runtime failed/)
     expect(stderr).toContain('boom')
+  })
+})
+
+describe('getNextHint — Phase 5 real impl', () => {
+  beforeEach(() => {
+    _resetAutoChainCache() // cold cache each fixture
+  })
+
+  it('cell 16 — direct hit: getNextHint("discuss") → "plan"', async () => {
+    expect(await getNextHint('discuss')).toBe('plan')
+  })
+
+  it('cell 17 — direct hit chain coverage (research→discuss, plan→task, task→verify, verify→retro)', async () => {
+    expect(await getNextHint('research')).toBe('discuss')
+    expect(await getNextHint('plan')).toBe('task')
+    expect(await getNextHint('task')).toBe('verify')
+    expect(await getNextHint('verify')).toBe('retro')
+  })
+
+  it('cell 18 — last stage: getNextHint("retro") → null', async () => {
+    expect(await getNextHint('retro')).toBe(null)
+  })
+
+  it('cell 19 — super-master: getNextHint("auto") → null', async () => {
+    expect(await getNextHint('auto')).toBe(null)
+  })
+
+  it('cell 20 — parent-stage fallback: verify-paranoid → retro, discuss-strategic → plan, task-clarify → verify, plan-architecture → task', async () => {
+    expect(await getNextHint('verify-paranoid')).toBe('retro')
+    expect(await getNextHint('discuss-strategic')).toBe('plan')
+    expect(await getNextHint('task-clarify')).toBe('verify')
+    expect(await getNextHint('plan-architecture')).toBe('task')
+  })
+
+  it('cell 21 — unresolvable name → null', async () => {
+    expect(await getNextHint('totally-unknown-name')).toBe(null)
+    expect(await getNextHint('xyz')).toBe(null) // no dash, not in chain
+  })
+
+  it('cell 22 — cache verify: loadPhases called exactly once across 3 hint calls', async () => {
+    const loadPhasesMod = await import('../../src/workflow/loadPhases.js')
+    const spy = vi.spyOn(loadPhasesMod, 'loadPhases')
+    await getNextHint('discuss')
+    await getNextHint('verify')
+    await getNextHint('task-clarify')
+    expect(spy).toHaveBeenCalledTimes(1)
+    spy.mockRestore()
+  })
+
+  it('cell 23 — fail-soft: yaml read fail → null + stderr warn', async () => {
+    const loadPhasesMod = await import('../../src/workflow/loadPhases.js')
+    const spy = vi.spyOn(loadPhasesMod, 'loadPhases').mockImplementation(() => {
+      throw new Error('ENOENT: yaml missing')
+    })
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const result = await getNextHint('discuss')
+    expect(result).toBe(null)
+    expect(stderrWrite).toHaveBeenCalledWith(
+      expect.stringMatching(/⚠️ getNextHint failed \(ENOENT: yaml missing\); skipping hint/),
+    )
+    spy.mockRestore()
+    stderrWrite.mockRestore()
   })
 })

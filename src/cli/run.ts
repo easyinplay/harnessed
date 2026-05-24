@@ -10,11 +10,17 @@
 // lib/sdkSpawn.ts). `--dry-run` here means "validate the yaml + walk the
 // workflow runtime + exit 0 without invoking the stub" so users can verify
 // wiring before Phase 2 lands.
+//
+// Phase v3.4.4 (Phase 5) — real getNextHint implementation: reads
+// workflows/auto/workflow.yaml delegates_to[] (lazy module-level cache),
+// resolves direct + parent-stage fallback per D-1 Option C, fail-soft per
+// ADR 0029 (stderr warn + null on yaml read/parse error).
 
 import { existsSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
+import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { runWorkflow } from '../workflow/run.js'
 import { getPackageRoot } from './lib/packagePath.js'
 
@@ -30,6 +36,15 @@ interface RawOpts {
 
 const PACKAGE_ROOT = getPackageRoot()
 const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')
+
+/** Phase 5 — module-level lazy cache for the 6-stage chain extracted from
+ *  workflows/auto/workflow.yaml delegates_to[]. Loaded ONCE per process at
+ *  first getNextHint call; `harnessed run` exits after each invocation so
+ *  per-process cache lifetime is correct (no invalidation needed). null = not
+ *  yet loaded; empty array [] = load attempted but failed (fail-soft —
+ *  don't retry). */
+let _autoChainCache: string[] | null = null
+let _autoChainLoadFailed = false
 
 export function registerRun(program: Command): void {
   program
@@ -184,9 +199,65 @@ async function readStdinToEnd(): Promise<string> {
   return Buffer.concat(chunks).toString('utf8').trim()
 }
 
-/** Phase 1 stub — Phase 5 reads workflows/auto/workflow.yaml delegates_to[]
- *  and returns the next sub name in order. Returns null when no `auto`
- *  context applies (e.g. sub invoked directly, not via /auto). */
-export async function getNextHint(_workflowName: string): Promise<string | null> {
+/** Phase 5 — load workflows/auto/workflow.yaml delegates_to[] sorted by
+ *  `order`, return the 6-stage chain as a string[]. Lazy cached at module
+ *  level. Fail-soft per ADR 0029: read/parse error → set
+ *  _autoChainLoadFailed + emit 1-line stderr warn + return []. */
+function loadAutoChain(): string[] {
+  if (_autoChainCache !== null) return _autoChainCache
+  if (_autoChainLoadFailed) return []
+  try {
+    const yamlPath = join(WORKFLOWS_DIR, 'auto', 'workflow.yaml')
+    const parsed = loadPhasesMod.loadPhases(yamlPath)
+    const delegates =
+      'delegates_to' in parsed && Array.isArray(parsed.delegates_to) ? parsed.delegates_to : []
+    const sorted = [...delegates].sort((a, b) => {
+      const ao = typeof a.order === 'number' ? a.order : Number.MAX_SAFE_INTEGER
+      const bo = typeof b.order === 'number' ? b.order : Number.MAX_SAFE_INTEGER
+      return ao - bo
+    })
+    _autoChainCache = sorted.map((d) => d.sub).filter((s): s is string => typeof s === 'string')
+    return _autoChainCache
+  } catch (err) {
+    _autoChainLoadFailed = true
+    process.stderr.write(`⚠️ getNextHint failed (${(err as Error).message}); skipping hint.\n`)
+    return []
+  }
+}
+
+/** Phase 5 — return the next stage name in the 6-stage auto chain for the
+ *  passed workflowName. Resolution chain (D-1 Option C):
+ *    1. Direct: `workflowName` ∈ chain → return next-in-order (or null if last).
+ *    2. Parent-stage fallback: split on FIRST dash → parent stage (e.g.
+ *       'verify-paranoid' → 'verify') → if parent in chain, return
+ *       next-after-parent (or null if parent is last).
+ *    3. 'auto' super-master OR unresolvable → null (whole chain runs / no hint).
+ *
+ *  Cache: loadAutoChain() is lazy (1 load per process). Fail-soft per ADR 0029. */
+export async function getNextHint(workflowName: string): Promise<string | null> {
+  if (workflowName === 'auto') return null
+  const chain = loadAutoChain()
+  if (chain.length === 0) return null // load failed or empty delegates
+  // Direct lookup
+  const directIdx = chain.indexOf(workflowName)
+  if (directIdx >= 0) {
+    return directIdx + 1 < chain.length ? (chain[directIdx + 1] ?? null) : null
+  }
+  // Parent-stage fallback (D-1 Option C): split on FIRST dash
+  const dashIdx = workflowName.indexOf('-')
+  if (dashIdx > 0) {
+    const parentStage = workflowName.slice(0, dashIdx)
+    const parentIdx = chain.indexOf(parentStage)
+    if (parentIdx >= 0) {
+      return parentIdx + 1 < chain.length ? (chain[parentIdx + 1] ?? null) : null
+    }
+  }
   return null
+}
+
+/** Phase 5 — test hook: reset module cache so unit tests can verify lazy-load
+ *  + fail-soft + re-load paths in isolation. NOT for production use. */
+export function _resetAutoChainCache(): void {
+  _autoChainCache = null
+  _autoChainLoadFailed = false
 }
