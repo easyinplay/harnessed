@@ -80,9 +80,12 @@ command `/task-code` automatically (Gap B fix — sister v1.0.2 mechanism).
 
 Use the SlashCommand tool to run: `{{ capabilities.planning-with-files.cmd }}`
 
-(If the rendered cmd above is the bare `/planning-with-files` accompanied by a `⚠️ ... not installed`
-warning from `harnessed setup`, install the missing plugin first then re-run
-`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+(If a `⚠️ ... not installed` warning was printed by `harnessed setup`, the backing
+capability is missing on disk. Install it (`claude plugin install <name>` for
+plugins, or follow the official install instructions for user-skills — e.g. for
+gstack: `git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack` then
+`cd ~/.claude/skills/gstack && ./setup`), then re-run `harnessed setup` to re-render
+this SKILL.md and clear the warning.)
 
 ## References
 

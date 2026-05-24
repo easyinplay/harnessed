@@ -1,36 +1,61 @@
-// v3.4.1 hotfix — Capability namespace resolver for SKILL.md template rendering.
+// v3.4.2 redesign — Capability presence resolver for SKILL.md template rendering.
 //
-// Problem (v3.4.0 ship bug):
-//   Sub-workflow SKILL.md sources contain `{{ capabilities.<name>.cmd }}` Jinja-style
-//   placeholders that were never rendered at install time. End users see literal
-//   template strings in their installed `~/.claude/skills/<x>/SKILL.md`, so the
-//   "actual gstack /review" intent never reaches Claude Code as an invocable slash
-//   command. Worse, gstack ships as a Claude Code plugin under namespace `gstack:`,
-//   so even the bare `/review` would not resolve — the real cmd is `/gstack:review`.
+// Background (why v3.4.1 was wrong):
+//   v3.4.1 assumed every external slash command came from a Claude Code marketplace
+//   plugin and rendered as `/<plugin-name>:<bare>` (e.g. `/gstack:review`). User
+//   dogfood install verified this is false on TWO fronts:
+//     (a) gstack / mattpocock / gsd are user-skills (git clone into
+//         ~/.claude/skills/<x>/), NOT plugins. They never appear in
+//         installed_plugins.json.
+//     (b) Claude Code plugin slash-commands themselves are bare too — a plugin's
+//         `commands/<x>.md` file becomes `/<x>` directly with NO `<plugin>:`
+//         prefix. (Verified against the real `code-review` plugin layout:
+//         `~/.claude/plugins/cache/.../code-review/.../commands/code-review.md`
+//         → slash `/code-review`, not `/code-review:code-review`.)
+//   So v3.4.1's whole `/<ns>:<bare>` mutation was misguided. The cmd field in
+//   capabilities.yaml already holds the actual invocable slash command verbatim.
 //
-// Fix (option 3 high-delivery, LOCKED by user 2026-05-24):
-//   1. Setup-time resolver reads `~/.claude/plugins/installed_plugins.json`,
-//      derives plugin → namespace map (e.g. `gstack` → `gstack:` prefix).
-//   2. capabilities.yaml entries gain optional `plugin_namespace: <name>` field
-//      (additive — old consumers ignore unknown key).
-//   3. SKILL.md install pipeline (setup-helpers.ts) regex-replaces
-//      `{{ capabilities.<name>.cmd }}` with the resolved namespaced cmd
-//      (`/gstack:review`) when plugin installed, OR with a `⚠️ not installed`
-//      placeholder + warning when plugin absent.
-//   4. Warnings collected and emitted as summary block at end of setup with
-//      actionable install hints.
+// Design (v3.4.2):
+//   The resolver no longer mutates cmd. It only PRESENCE-CHECKS the backing
+//   capability and emits a warning when declared but missing. Two install paths:
 //
-// Karpathy simplicity: ≤200 LOC, zero new npm deps (regex template replace inline).
+//     install_type: plugin    → look up `plugin_id` in
+//                                ~/.claude/plugins/installed_plugins.json
+//                                (key prefix before `@`).
+//     install_type: user-skill → look up `skill_dir` directory under
+//                                ~/.claude/skills/<skill_dir>/.
+//     install_type omitted    → no check (built-in / cli / mcp / sentinel /
+//                                pre-namespaced superpowers cmds).
+//
+// Both `plugin_id` and `skill_dir` are explicit (no auto-derivation from capability
+// key). Explicit > implicit when one capability key (e.g. `gstack-review`) maps to
+// a different lookup id (`gstack` skill_dir). Karpathy simplicity: explicit fields
+// avoid magic, schema stays additive, future capabilities are obvious.
 
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-/** Minimal shape needed from capabilities.yaml — keep flexible for additive yaml evolution. */
+/** Minimal shape needed from capabilities.yaml — additive yaml-tolerant. */
 export interface CapabilityEntry {
   cmd: string
   impl?: string
-  plugin_namespace?: string
+  /**
+   * v3.4.2: which presence-check path(s) to run. Omit for no check.
+   *
+   * Single value (e.g. `'plugin'` or `'user-skill'`) → check that one path only.
+   *
+   * Array (e.g. `['plugin', 'user-skill']`) → "互为补充" dual-install support:
+   * resolver tries each declared path; **any one detected = OK no warning**.
+   * Only if ALL declared paths are missing does it emit a combined warning
+   * listing every install method. Both `plugin_id` and `skill_dir` should be
+   * populated when the array form is used so each path has a concrete lookup.
+   */
+  install_type?: 'plugin' | 'user-skill' | ReadonlyArray<'plugin' | 'user-skill'>
+  /** v3.4.2: lookup key in installed_plugins.json (left side of `<name>@<marketplace>`). */
+  plugin_id?: string
+  /** v3.4.2: lookup directory under ~/.claude/skills/. */
+  skill_dir?: string
 }
 
 /** Capabilities map keyed by capability name (e.g. `gstack-review` → entry). */
@@ -38,24 +63,21 @@ export type CapabilityMap = Record<string, CapabilityEntry>
 
 /** Resolver result for a single capability cmd render. */
 export interface ResolvedCmd {
-  /** Fully rendered cmd string to splice into SKILL.md (e.g. `/gstack:review`). */
+  /** ALWAYS = cmd unchanged. Resolver never mutates the cmd. */
   renderedCmd: string
-  /** Warning when plugin_namespace declared but plugin not installed. */
+  /** Populated when install_type declared but capability not detected on disk. */
   warning?: string
 }
 
 /**
- * Read `~/.claude/plugins/installed_plugins.json` and derive plugin → namespace map.
+ * Parse `~/.claude/plugins/installed_plugins.json` → Set of installed plugin names.
  *
- * installed_plugins.json structure (verified 2026-05-24):
+ * File shape (verified 2026-05-24 on user's machine):
  *   { version: 2, plugins: { "<pluginName>@<marketplaceId>": [{ ... }], ... } }
  *
- * The `<pluginName>` (left of `@`) is the Claude Code plugin slash-cmd namespace
- * prefix. e.g. `gstack@gstack-dev/marketplace` → namespace `gstack` →
- * slash-cmd form `/gstack:<bareCmd>`. Returns a Set<string> of installed plugin
- * names for O(1) presence checks. Tolerant of missing/malformed file (returns
- * empty Set) — Setup remains non-blocking on plugin-discovery failure (sister
- * fallback 铁律 1: warn + skip, never abort).
+ * The `<pluginName>` portion (left of `@`) is what we match against
+ * `capability.plugin_id`. Tolerant of missing/malformed file — returns empty Set
+ * so setup remains non-blocking on discovery failure (sister fallback 铁律 1).
  */
 export function readInstalledPlugins(homedirOverride?: string): Set<string> {
   const home = homedirOverride ?? homedir()
@@ -77,59 +99,110 @@ export function readInstalledPlugins(homedirOverride?: string): Set<string> {
   if (!plugins || typeof plugins !== 'object') return new Set()
   const out = new Set<string>()
   for (const key of Object.keys(plugins)) {
-    // `<pluginName>@<marketplaceId>` — split on first `@`. Defensive: skip keys
-    // missing `@` (forward-compat with any future format change).
     const at = key.indexOf('@')
-    if (at <= 0) continue
+    if (at <= 0) continue // defensive: skip malformed keys without `@` separator
     out.add(key.slice(0, at))
   }
   return out
 }
 
 /**
- * Resolve a single capability cmd to its rendered form.
+ * List directories under `~/.claude/skills/` → Set of installed user-skill dir
+ * names. Each directory represents one user-skill (whether single-skill flat
+ * dir like `diagnose/SKILL.md`, or umbrella dir like `gstack/<sub>/SKILL.md`).
  *
- * Rules:
- *   1. No `plugin_namespace` field → return cmd unchanged (works for `superpowers:*`
- *      cmds already pre-namespaced, behavioral sentinels, CLI tool names, etc).
- *   2. `plugin_namespace` declared AND plugin installed → strip leading `/` from
- *      cmd, prepend `/<namespace>:`. e.g. `/review` + ns=`gstack` → `/gstack:review`.
- *   3. `plugin_namespace` declared AND plugin NOT installed → return original cmd
- *      + warning (so SKILL.md still has SOMETHING resolvable, with `⚠️` flag).
+ * Tolerant of missing skills dir (returns empty Set) — first-time users with no
+ * user-skills installed simply see warnings for any user-skill capabilities.
+ */
+export function readInstalledUserSkills(homedirOverride?: string): Set<string> {
+  const home = homedirOverride ?? homedir()
+  const skillsRoot = join(home, '.claude', 'skills')
+  try {
+    const entries = readdirSync(skillsRoot, { withFileTypes: true })
+    const out = new Set<string>()
+    for (const e of entries) if (e.isDirectory()) out.add(e.name)
+    return out
+  } catch {
+    return new Set()
+  }
+}
+
+/**
+ * Resolve a single capability presence + return cmd UNCHANGED + optional warning.
  *
- * Edge cases handled:
- *   - cmd that already contains `:` (already namespaced e.g. `superpowers:tdd`):
- *     pass-through unchanged regardless of plugin_namespace (avoid double-prefix).
- *   - cmd without leading `/` (rare bare cmd / sentinel `<not-applicable-behavioral>`):
- *     leave as-is.
+ * - install_type omitted → return cmd unchanged, no check, no warning.
+ * - install_type: plugin AND plugin_id present in installedPlugins → cmd
+ *   unchanged, no warning.
+ * - install_type: plugin AND plugin_id MISSING → cmd unchanged, warning with
+ *   plugin install hint.
+ * - install_type: user-skill AND skill_dir present in installedUserSkills →
+ *   cmd unchanged, no warning.
+ * - install_type: user-skill AND skill_dir MISSING → cmd unchanged, warning
+ *   with git-clone install hint.
+ *
+ * Missing `plugin_id` / `skill_dir` for the corresponding install_type emits
+ * a schema-level warning (config bug — capability misdeclared).
  */
 export function resolveCapabilityCmd(
   capability: CapabilityEntry,
   installedPlugins: Set<string>,
+  installedUserSkills: Set<string>,
 ): ResolvedCmd {
-  const { cmd, plugin_namespace } = capability
+  const { cmd, install_type, plugin_id, skill_dir } = capability
 
-  // Rule 1 — no namespace declared: unchanged
-  if (!plugin_namespace) return { renderedCmd: cmd }
+  if (!install_type) return { renderedCmd: cmd }
 
-  // Edge — cmd already contains `:` (pre-namespaced e.g. `superpowers:tdd`):
-  // do not double-prefix; trust the cmd field source-of-truth.
-  if (cmd.includes(':')) return { renderedCmd: cmd }
+  // Normalize single string → array. Array form ("互为补充" dual-install):
+  // any one path detected = OK no warning; ALL missing = combined warning.
+  const types = Array.isArray(install_type) ? install_type : [install_type]
 
-  // Edge — sentinel / bare non-slash cmd (behavioral / cli tool name): pass-through.
-  if (!cmd.startsWith('/')) return { renderedCmd: cmd }
+  // De-dupe + preserve declared order (stable for consistent warning text).
+  const uniqueTypes = [...new Set(types)]
 
-  // Rule 3 — namespace declared but plugin not installed: warn + return bare cmd.
-  if (!installedPlugins.has(plugin_namespace)) {
-    return {
-      renderedCmd: cmd,
-      warning: `plugin '${plugin_namespace}' not installed — '${cmd}' will not resolve via Claude Code. install: 'claude plugin install ${plugin_namespace}' or see plugin docs.`,
+  // Per-path probe; collect missing hints + detect any hit.
+  const missingHints: string[] = []
+  let anyDetected = false
+
+  for (const t of uniqueTypes) {
+    if (t === 'plugin') {
+      if (!plugin_id) {
+        missingHints.push(
+          `install_type=plugin declared but no plugin_id (capabilities.yaml schema bug)`,
+        )
+        continue
+      }
+      if (installedPlugins.has(plugin_id)) {
+        anyDetected = true
+        break // short-circuit on first hit
+      }
+      missingHints.push(`plugin '${plugin_id}' (\`claude plugin install ${plugin_id}\`)`)
+    } else {
+      // 'user-skill'
+      if (!skill_dir) {
+        missingHints.push(
+          `install_type=user-skill declared but no skill_dir (capabilities.yaml schema bug)`,
+        )
+        continue
+      }
+      if (installedUserSkills.has(skill_dir)) {
+        anyDetected = true
+        break
+      }
+      missingHints.push(
+        `user-skill '${skill_dir}' under ~/.claude/skills/ (git clone the official repo; e.g. gstack: \`git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup\`)`,
+      )
     }
   }
 
-  // Rule 2 — namespace declared AND installed: render full namespaced form.
-  const bare = cmd.slice(1) // strip leading `/`
-  return { renderedCmd: `/${plugin_namespace}:${bare}` }
+  if (anyDetected) return { renderedCmd: cmd }
+
+  // All declared paths missing. Combined warning lists every install method.
+  const prefix = uniqueTypes.length > 1 ? '[multi]' : `[${uniqueTypes[0]}]`
+  const joined = missingHints.join(' OR ')
+  return {
+    renderedCmd: cmd,
+    warning: `${prefix} '${cmd}' backing missing — install either: ${joined}.`,
+  }
 }
 
 /** Regex matches `{{ capabilities.<name>.cmd }}` allowing flexible whitespace. */
@@ -147,13 +220,15 @@ export interface RenderedSkill {
  * Render all `{{ capabilities.<name>.cmd }}` placeholders in a SKILL.md body.
  *
  * - Unknown capability name → leave placeholder verbatim + emit warning (so
- *   broken refs are visible in output AND surfaced in setup summary).
- * - Resolver warnings (plugin missing) deduplicated across multiple references.
+ *   broken refs are visible in the rendered file AND in the setup summary).
+ * - Per-capability resolver warnings (plugin/user-skill missing) deduplicated
+ *   across multiple references within and across files.
  */
 export function renderSkillBody(
   body: string,
   capabilities: CapabilityMap,
   installedPlugins: Set<string>,
+  installedUserSkills: Set<string>,
 ): RenderedSkill {
   const warningsSet = new Set<string>()
   const out = body.replace(CAPABILITY_CMD_TEMPLATE, (match, name: string) => {
@@ -164,7 +239,11 @@ export function renderSkillBody(
       )
       return match // preserve literal so issue is visible to skill consumer
     }
-    const { renderedCmd, warning } = resolveCapabilityCmd(cap, installedPlugins)
+    const { renderedCmd, warning } = resolveCapabilityCmd(
+      cap,
+      installedPlugins,
+      installedUserSkills,
+    )
     if (warning) warningsSet.add(warning)
     return renderedCmd
   })

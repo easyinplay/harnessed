@@ -114,22 +114,26 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario A: mattpocock auto-invoke (R20.
     expect(evalGate('test_fail == true', { test_fail: true })).toBe(true)
   })
 
-  it('F4. capabilities.yaml mattpocock 12 高频招式 entry exist with impl=mattpocock-skills + cmd literal', async () => {
+  it('F4. capabilities.yaml mattpocock 8 高频招式 entry + caveman 独立 (v3.4.2: code-review/code-simplifier reclassified to plugin; caveman dual-install)', async () => {
     const caps = await loadCapabilities()
-    const mattpocock12 = [
+    // v3.4.2 corrections:
+    //   - `code-review` and `code-simplifier` are claude-plugins-official PLUGINS
+    //     (not mattpocock) — presence-checked via install_type=plugin.
+    //   - `caveman` is an INDEPENDENT capability ("互为补充" dual install) —
+    //     ships as both user-skill (~/.claude/skills/caveman/) AND plugin
+    //     (caveman@caveman). Its impl=`caveman`, install_type=[user-skill, plugin].
+    //   - Kept here only as cmd-literal smoke checks (any-impl OK for outliers).
+    const mattpocock8 = [
       { name: 'grill-with-docs', cmd: '/grill-with-docs' },
       { name: 'zoom-out', cmd: '/zoom-out' },
       { name: 'diagnose', cmd: '/diagnose' },
-      { name: 'caveman', cmd: '/caveman' },
       { name: 'grill-me', cmd: '/grill-me' },
       { name: 'to-prd', cmd: '/to-prd' },
       { name: 'to-issues', cmd: '/to-issues' },
       { name: 'improve-codebase-architecture', cmd: '/improve-codebase-architecture' },
-      { name: 'code-review', cmd: '/code-review' },
-      { name: 'code-simplifier', cmd: '/code-simplifier' },
       { name: 'investigate', cmd: '/investigate' },
     ]
-    for (const { name, cmd } of mattpocock12) {
+    for (const { name, cmd } of mattpocock8) {
       const entry = caps.capabilities[name]
       expect(entry, `capabilities.${name} exists`).toBeDefined()
       if (!entry) throw new Error(`${name} entry missing`)
@@ -137,7 +141,23 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario A: mattpocock auto-invoke (R20.
       expect(entry.cmd, `${name}.cmd === ${cmd}`).toBe(cmd)
       expect(entry.since, `${name}.since === v2.0`).toBe('v2.0')
     }
-    expect(mattpocock12.length, 'mattpocock 高频 ≥ 11 招式').toBeGreaterThanOrEqual(11)
+    // v3.4.2 mapping correction smoke check — code-review / code-simplifier are PLUGINS
+    expect(caps.capabilities['code-review']?.cmd).toBe('/code-review')
+    expect(caps.capabilities['code-review']?.impl).toBe('plugin')
+    expect(caps.capabilities['code-simplifier']?.cmd).toBe('/code-simplifier')
+    // v3.4.2 caveman dual-install ("互为补充") — impl=caveman (own identity, not
+    // mattpocock), install_type is an array ['user-skill', 'plugin'], both ids set.
+    const caveman = caps.capabilities['caveman']
+    expect(caveman?.cmd).toBe('/caveman')
+    expect(caveman?.impl).toBe('caveman')
+    expect(Array.isArray(caveman?.install_type)).toBe(true)
+    const cavemanTypes = (caveman?.install_type as unknown as string[]) ?? []
+    expect(cavemanTypes).toContain('user-skill')
+    expect(cavemanTypes).toContain('plugin')
+    expect(caveman?.plugin_id).toBe('caveman')
+    expect(caveman?.skill_dir).toBe('caveman')
+    expect(caps.capabilities['code-simplifier']?.impl).toBe('plugin')
+    expect(mattpocock8.length, 'mattpocock 高频 ≥ 8 招式 (caveman 独立计)').toBeGreaterThanOrEqual(8)
   })
 
   it('F5. capabilities.yaml mattpocock fires_when 句型与 CLAUDE.md verbatim 对齐 (grill-with-docs / zoom-out / diagnose)', async () => {
@@ -189,11 +209,12 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario B: special-purpose tools 13+ ro
     expect(specialPurpose13.length, '13 special-purpose tool ≥ 13').toBe(13)
   })
 
-  it('F7. capabilities.yaml special-purpose impl 分类正确 — gstack/npm-cli/mcp/cli/gsd 5 bucket', async () => {
+  it('F7. capabilities.yaml special-purpose impl 分类正确 — plugin/gstack/npm-cli/mcp/cli/gsd 6 bucket (v3.4.2 mapping correction)', async () => {
     const caps = await loadCapabilities()
-    // gstack-impl: ui-ux-pro-max / frontend-design / webapp-testing
-    expect(caps.capabilities['ui-ux-pro-max']?.impl).toBe('gstack')
-    expect(caps.capabilities['frontend-design']?.impl).toBe('gstack')
+    // v3.4.2 mapping correction: ui-ux-pro-max + frontend-design are marketplace
+    // PLUGINS (not gstack user-skill). webapp-testing stays gstack (gstack subdir).
+    expect(caps.capabilities['ui-ux-pro-max']?.impl).toBe('plugin')
+    expect(caps.capabilities['frontend-design']?.impl).toBe('plugin')
     expect(caps.capabilities['webapp-testing']?.impl).toBe('gstack')
     // npm-cli: playwright-cli / playwright-test
     expect(caps.capabilities['playwright-cli']?.impl).toBe('npm-cli')

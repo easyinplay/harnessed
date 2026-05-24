@@ -7,6 +7,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.2] - 2026-05-24 — Resolver redesign: drop namespace prefix mutation; presence-check via install_type (plugin | user-skill)
+
+**升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 SKILL.md 模板重新渲染)
+
+**Trigger**: 用户 dogfood 安装 v3.4.1 后纠正,v3.4.1 的两条核心假设全错:
+
+1. v3.4.1 假设 gstack / mattpocock / gsd 都是 Claude Code **plugin** (marketplace 安装),实际是 **user-skill** (git clone 进 `~/.claude/skills/<x>/`),从不出现在 `installed_plugins.json`。
+2. v3.4.1 假设 Claude Code plugin 的 slash command 形式是 `/<plugin>:<bare>`,实际是裸 `/x` —— plugin 的 `commands/<x>.md` 直接映射到 `/x`,无 `<plugin>:` 前缀 (实证: `code-review` plugin 的 `commands/code-review.md` → `/code-review`)。
+
+因此 v3.4.1 整套 `/<ns>:<bare>` 渲染逻辑全错向。v3.4.2 重新设计 resolver: **不再 mutate cmd**,改成对 capability 做 presence-check,缺装就 emit warning。同时修 v3.4.1 引入的 5 个 mapping 错误 (`code-review` / `code-simplifier` / `frontend-design` / `ui-ux-pro-max` / `ralph-loop` 标错 impl)。
+
+### Fixed
+
+- **Resolver 不再 mutate cmd** — `resolveCapabilityCmd()` 返回 `{ renderedCmd: cmd 不变, warning?: 缺装提示 }`。capabilities.yaml 里 `cmd` 字段就是 verbatim 可调 slash command。
+- **NEW `install_type` 字段** (`'plugin' | 'user-skill'`) — 与 `plugin_id` (plugin lookup) 或 `skill_dir` (user-skill lookup) 配对。omit `install_type` 跳过检查 (built-in / cli / mcp / sentinel)。
+- **NEW `readInstalledUserSkills()`** — 扫 `~/.claude/skills/` 下 dir 名,返回 Set 用于 user-skill 检查。
+- **`workflows/capabilities.yaml` 全面更正**:
+  - 移除所有 `plugin_namespace` 字段 (60+ entry)。
+  - mattpocock-skills 系列 (`grill-with-docs` / `zoom-out` / `diagnose` / `caveman` / `grill-me` / `to-prd` / `to-issues` / `improve-codebase-architecture` / `investigate`) → `install_type: user-skill, skill_dir: <bare cmd>` (每个是独立 dir)。
+  - gstack 治理系列 (35+ entry) → `install_type: user-skill, skill_dir: gstack` (gstack 一个 umbrella skill,内部 subdir 提供各 slash command)。
+  - gsd-* 系列 → `install_type: user-skill, skill_dir: gsd-<x>` (每个是独立 dir)。
+  - **mapping 错误修正** (5 处 v3.4.1 写错):
+    - `code-review` impl 改 `mattpocock-skills` → `plugin` (实际 `code-review@claude-plugins-official`)
+    - `code-simplifier` impl 改 `mattpocock-skills` → `plugin` (实际 `code-simplifier@claude-plugins-official`)
+    - `frontend-design` impl 改 `gstack` → `plugin` (实际 `frontend-design@claude-plugins-official`)
+    - `ui-ux-pro-max` impl 改 `gstack` → `plugin` (实际 `ui-ux-pro-max@ui-ux-pro-max-skill`)
+    - `ralph-loop` impl 改 `bundled-skill` → `plugin` + cmd 改 `ralph-loop` → `/ralph-loop` (实际 `ralph-loop@claude-plugins-official`)
+- **18 sub-workflow SKILL.md `## How to invoke` 段重写** — 老 v3.4.1 段说 "install missing plugin... namespaced cmd" 全错。新版讲清两种 install path (`claude plugin install <name>` for plugins / git clone for user-skills)。
+- **`src/workflow/schema/capabilities.ts`** — 新增 Optional `install_type` (Union literal) + `plugin_id` + `skill_dir`;`plugin_namespace` 保留为 deprecated Optional (向后兼容,resolver 已不读)。
+
+### Why
+
+v3.4.1 用户实际 dogfood 测试发现两条核心架构假设错误。装 gstack 的官方方式是 `git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack`,产生 user-skill 而非 plugin,故 v3.4.1 看不到 gstack 装了,把可正常调用的 `/review` 误写成不存在的 `/gstack:review`。同样错误也影响 mattpocock skills (`/diagnose` / `/zoom-out` 等)。
+
+### Changed
+
+- `src/cli/lib/capabilityResolver.ts` — 完全重写;新 API `resolveCapabilityCmd(cap, plugins, userSkills)` 三参,`readInstalledUserSkills()` 新增。
+- `src/cli/lib/renderSkillTemplates.ts` — `renderSkillFile()` 和 `renderAllSkills()` 都接 user-skill set 透传。
+- `tests/unit/capability-resolver.test.ts` — 重写 (21 cell,涵盖 plugin/user-skill 检测 + cmd 不变断言 + dedup warning + mixed install types)。
+
+### Dual-install support ("互为补充" — same-release increment)
+
+- **`install_type` 字段接受 string 或 array**(schema + resolver + 5 新 test cell)。
+  - 单值(原行为):`install_type: plugin` 或 `install_type: user-skill` — 只检查那一条 path。
+  - 数组形式:`install_type: [user-skill, plugin]` + 同时填 `plugin_id` 和 `skill_dir`。Resolver 探测每条 declared path,**任一 detected 即 OK 无 warning**;**仅当 ALL declared paths 全 miss 时 emit 合并 warning**,以 `[multi]` 前缀 + ` OR ` 连接每条 install hint。
+  - 同一 capability 重复 type 自动 dedup(防 `['plugin','plugin']` 生成重复 hint)。
+- **首个示范 entry**: `caveman`(`workflows/capabilities.yaml:71`)— caveman 同时以 user-skill (git clone repo 到 `~/.claude/skills/caveman/`) 和 plugin (`caveman@caveman`) 两种方式发布,resolver 任一 detected 即 OK。
+- **未来扩展**:其他同时支持 plugin + user-skill 两种安装的 capability(如可能的 superpowers / planning-with-files / ralph-loop)由 future PR 按需添加 array `install_type`。Schema 已 ready。
+- **Schema change**:`install_type` 类型从 `Type.Union([plugin, user-skill])` 扩展为 `Type.Union([plugin, user-skill, Type.Array(...)])`,additive、backward-compat(老 single-value entry 行为零变化)。
+
+### Migration
+
+旧 v3.4.1 用户重跑:
+
+```bash
+npm install -g harnessed@3.4.2 && harnessed setup
+# 输出含: [A.5] rendered capability placeholders in 18/25 SKILL.md file(s)
+# 若 gstack / mattpocock skills / gsd / 各 plugin 未装会输出 [plugin]/[user-skill] warning + 对应 install 提示
+# 已装的会渲染裸 cmd (e.g. /review for gstack), 无 warning
+```
+
+### Verification snippet for users
+
+After re-running `harnessed setup` post-v3.4.2:
+
+- **若 gstack user-skill 已装** (`ls ~/.claude/skills/gstack/` exists) → SKILL.md 内 `## How to invoke` 渲染裸 `/review` (NOT `/gstack:review`),无 warning。
+- **若 code-review plugin 已装** (`installed_plugins.json` 有 `code-review@*`) → 渲染裸 `/code-review`,无 warning。
+- **若都未装** → 渲染裸 cmd + warning prefix `[plugin]` 或 `[user-skill]` 提示对应 install 方式。
+
+### Files changed
+
+- `src/cli/lib/capabilityResolver.ts` — REWRITTEN (presence-check, no cmd mutation)
+- `src/cli/lib/renderSkillTemplates.ts` — signature accepts user-skill set
+- `src/workflow/schema/capabilities.ts` — add `install_type` / `plugin_id` / `skill_dir` Optional
+- `workflows/capabilities.yaml` — remove `plugin_namespace`, add `install_type` discriminator, fix 5 mapping errors
+- 18 `workflows/<stage>/<sub>/SKILL.md` — `## How to invoke` section rewritten
+- `tests/unit/capability-resolver.test.ts` — REWRITTEN (21 cell coverage)
+- `package.json` — version 3.4.1 → 3.4.2
+- `CHANGELOG.md` — this entry
+
 ## [3.4.1] - 2026-05-24 — Setup hotfix: capability namespace resolver + sub-workflow SKILL.md imperative invoke step
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 SKILL.md 模板渲染)

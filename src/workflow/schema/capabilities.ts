@@ -48,9 +48,19 @@ const ToolCategoryEnum = Type.Union([
 ])
 
 // Shared base — 全 v2 SHIPPED 8 字段 + Optional `category` (Pattern A B.1 LOCK) +
-// v3.4.1 Optional `plugin_namespace` (Claude Code plugin slash-cmd namespace prefix,
-// e.g. `gstack` → `/gstack:review`; setup-time resolver at src/cli/lib/capabilityResolver.ts
-// reads ~/.claude/plugins/installed_plugins.json + this field to render SKILL.md templates).
+// v3.4.2 Optional `install_type` / `plugin_id` / `skill_dir` (presence-check fields
+// for setup-time SKILL.md template render). v3.4.1 `plugin_namespace` is kept as a
+// dead Optional to preserve backward-compat for any third-party consumer parsing
+// older capabilities.yaml shapes; the resolver no longer reads it.
+//
+// Presence-check semantics (src/cli/lib/capabilityResolver.ts):
+//   install_type=plugin    + plugin_id  → match left of `@` in installed_plugins.json
+//   install_type=user-skill + skill_dir → match dir name under ~/.claude/skills/
+//   install_type omitted              → no check (built-in / cli / mcp / sentinel)
+//
+// The resolver NEVER mutates `cmd` — capabilities.yaml `cmd` field is the verbatim
+// invocable slash command (e.g. `/review` for gstack, `/code-review` for the
+// code-review plugin; bare, no `<namespace>:` prefix).
 const CapabilityEntryBase = Type.Object(
   {
     impl: Type.String(),
@@ -60,7 +70,18 @@ const CapabilityEntryBase = Type.Object(
     fires_when: Type.Optional(Type.Array(Type.String())),
     requires: Type.Optional(RequiresShape),
     plugin_path: Type.Optional(Type.String()),
-    plugin_namespace: Type.Optional(Type.String()),
+    plugin_namespace: Type.Optional(Type.String()), // v3.4.1 legacy — unused by resolver
+    install_type: Type.Optional(
+      Type.Union([
+        Type.Literal('plugin'),
+        Type.Literal('user-skill'),
+        Type.Array(Type.Union([Type.Literal('plugin'), Type.Literal('user-skill')]), {
+          minItems: 1,
+        }),
+      ]),
+    ),
+    plugin_id: Type.Optional(Type.String()),
+    skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
     sdk_ref: Type.Optional(Type.String()),

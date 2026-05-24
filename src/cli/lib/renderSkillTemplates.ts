@@ -1,4 +1,4 @@
-// v3.4.1 hotfix — Render capability template placeholders in installed SKILL.md.
+// v3.4.2 redesign — Render capability template placeholders in installed SKILL.md.
 //
 // Setup pipeline:
 //   1. `cp` recursively copies workflows/<x>/ → ~/.claude/skills/<x>/ (existing).
@@ -6,12 +6,22 @@
 //      `{{ capabilities.<name>.cmd }}` placeholders with resolver output.
 //   3. Warnings collected per skill, returned to setup.ts for end-of-run summary.
 //
+// v3.4.2 change vs v3.4.1: resolver now receives BOTH installed plugin set AND
+// installed user-skill set, so it can presence-check capabilities backed by either
+// install path. The resolver never mutates cmd — it only emits warnings when
+// install_type is declared and the backing capability is absent on disk.
+//
 // Karpathy simplicity: file ≤ 200 LOC; no new deps; reads capabilities.yaml once.
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
-import { type CapabilityMap, readInstalledPlugins, renderSkillBody } from './capabilityResolver.js'
+import {
+  type CapabilityMap,
+  readInstalledPlugins,
+  readInstalledUserSkills,
+  renderSkillBody,
+} from './capabilityResolver.js'
 
 /** Per-skill render outcome — passed back to setup.ts for log emission. */
 export interface SkillRenderResult {
@@ -21,7 +31,7 @@ export interface SkillRenderResult {
   skillPath: string
   /** True when at least one placeholder was substituted. */
   rendered: boolean
-  /** Resolver warnings (plugin missing, unknown capability ref, etc). */
+  /** Resolver warnings (plugin / user-skill missing, unknown capability ref). */
   warnings: string[]
   /** Hard error (read/parse/write failure) — caller emits warn and continues. */
   error?: string
@@ -47,6 +57,7 @@ export async function renderSkillFile(
   skillsBase: string,
   capabilities: CapabilityMap,
   installedPlugins: Set<string>,
+  installedUserSkills: Set<string>,
 ): Promise<SkillRenderResult> {
   const skillPath = join(skillsBase, skillName, 'SKILL.md')
   const result: SkillRenderResult = {
@@ -62,7 +73,7 @@ export async function renderSkillFile(
     result.error = `read failed: ${(e as Error).message}`
     return result
   }
-  const rendered = renderSkillBody(body, capabilities, installedPlugins)
+  const rendered = renderSkillBody(body, capabilities, installedPlugins, installedUserSkills)
   if (rendered.body === body) {
     // No placeholders found — no-op (e.g. research/SKILL.md has none).
     result.warnings = rendered.warnings
@@ -108,10 +119,17 @@ export async function renderAllSkills(
     }
   }
   const installedPlugins = readInstalledPlugins(homedirOverride)
+  const installedUserSkills = readInstalledUserSkills(homedirOverride)
   const results: SkillRenderResult[] = []
   const warningSet = new Set<string>()
   for (const name of skillNames) {
-    const r = await renderSkillFile(name, skillsBase, capabilities, installedPlugins)
+    const r = await renderSkillFile(
+      name,
+      skillsBase,
+      capabilities,
+      installedPlugins,
+      installedUserSkills,
+    )
     results.push(r)
     for (const w of r.warnings) warningSet.add(w)
     if (r.error) warningSet.add(`${name}: ${r.error}`)

@@ -247,14 +247,20 @@ describe('Phase v2.0-2.5 W3 Cycle 3 — Scenario C: ralph-loop COMPLETE (R20.10)
     expect(fb?.exit_code).toBe(1)
   })
 
-  it('F17. capabilities.yaml ralph-loop entry sdk_ref === src/routing/lib/ralphLoop.ts (Phase 2.2 sister 复用 NOT 重写)', async () => {
+  it('F17. capabilities.yaml ralph-loop entry — v3.4.2 reclassified as claude-plugins-official PLUGIN (cmd /ralph-loop)', async () => {
     const caps = await loadCapabilities()
     const rl = caps.capabilities['ralph-loop']
     expect(rl, 'ralph-loop entry exists').toBeDefined()
     if (!rl) throw new Error('ralph-loop entry missing')
-    expect(rl.impl).toBe('bundled-skill')
-    expect(rl.cmd).toBe('ralph-loop')
-    expect(rl.sdk_ref).toBe('src/routing/lib/ralphLoop.ts')
+    // v3.4.2: ralph-loop is `ralph-loop@claude-plugins-official` (verified in
+    // installed_plugins.json). cmd changed `ralph-loop` → `/ralph-loop` to match the
+    // plugin's commands/ralph-loop.md → slash `/ralph-loop`. impl changed
+    // `bundled-skill` → `plugin` and install_type=plugin / plugin_id=ralph-loop added.
+    expect(rl.impl).toBe('plugin')
+    expect(rl.cmd).toBe('/ralph-loop')
+    // install_type and plugin_id are the v3.4.2 presence-check discriminator fields.
+    expect((rl as { install_type?: string }).install_type).toBe('plugin')
+    expect((rl as { plugin_id?: string }).plugin_id).toBe('ralph-loop')
   })
 
   it('F18. fallbackHandlers.ts (Phase 2.4 W1.2 SHIPPED) exports handleMaxIterationsExceeded + handleVerbatimCompleteFail', async () => {

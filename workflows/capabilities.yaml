@@ -36,7 +36,8 @@ capabilities:
 
   grill-with-docs:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: grill-with-docs
     cmd: /grill-with-docs
     since: v2.0
     category: tool-slash-cmd
@@ -46,7 +47,8 @@ capabilities:
 
   zoom-out:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: zoom-out
     cmd: /zoom-out
     since: v2.0
     category: tool-slash-cmd
@@ -56,7 +58,8 @@ capabilities:
 
   diagnose:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: diagnose
     cmd: /diagnose
     since: v2.0
     category: tool-slash-cmd
@@ -66,8 +69,14 @@ capabilities:
       - subtask.type == 'debug'
 
   caveman:
-    impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    # v3.4.2: dual-install ("互为补充") — caveman ships BOTH as user-skill
+    # (git clone caveman repo into ~/.claude/skills/caveman/) AND as Claude Code
+    # plugin (`caveman@caveman` in installed_plugins.json). Resolver detects
+    # either; emits combined warning only if BOTH are missing.
+    impl: caveman
+    install_type: [user-skill, plugin]
+    skill_dir: caveman
+    plugin_id: caveman
     cmd: /caveman
     since: v2.0
     category: tool-slash-cmd
@@ -77,7 +86,8 @@ capabilities:
 
   grill-me:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: grill-me
     cmd: /grill-me
     since: v2.0
     category: tool-slash-cmd
@@ -87,7 +97,8 @@ capabilities:
 
   to-prd:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: to-prd
     cmd: /to-prd
     since: v2.0
     category: tool-slash-cmd
@@ -97,7 +108,8 @@ capabilities:
 
   to-issues:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: to-issues
     cmd: /to-issues
     since: v2.0
     category: tool-slash-cmd
@@ -107,7 +119,8 @@ capabilities:
 
   improve-codebase-architecture:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: improve-codebase-architecture
     cmd: /improve-codebase-architecture
     since: v2.0
     category: tool-slash-cmd
@@ -115,9 +128,11 @@ capabilities:
     fires_when:
       - phase.architecture_health_audit == true
 
+  # v3.4.2 fix: code-review is a claude-plugins-official PLUGIN (not mattpocock).
   code-review:
-    impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    impl: plugin
+    install_type: plugin
+    plugin_id: code-review
     cmd: /code-review
     since: v2.0
     category: tool-slash-cmd
@@ -125,9 +140,11 @@ capabilities:
     fires_when:
       - phase.stage == 'verify'
 
+  # v3.4.2 fix: code-simplifier is a claude-plugins-official PLUGIN (not mattpocock).
   code-simplifier:
-    impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    impl: plugin
+    install_type: plugin
+    plugin_id: code-simplifier
     cmd: /code-simplifier
     since: v2.0
     category: tool-slash-cmd
@@ -137,7 +154,8 @@ capabilities:
 
   investigate:
     impl: mattpocock-skills
-    plugin_namespace: mattpocock-skills
+    install_type: user-skill
+    skill_dir: investigate
     cmd: /investigate
     since: v2.0
     category: tool-slash-cmd
@@ -153,9 +171,11 @@ capabilities:
   # Bucket 2 — special-purpose tools 13 (per D-14 + RESEARCH § 2.2)
   # ============================================================================
 
+  # v3.4.2 fix: ui-ux-pro-max is a marketplace PLUGIN (ui-ux-pro-max-skill), not gstack.
   ui-ux-pro-max:
-    impl: gstack
-    plugin_namespace: gstack
+    impl: plugin
+    install_type: plugin
+    plugin_id: ui-ux-pro-max
     cmd: /ui-ux-pro-max
     since: v2.0
     category: tool-slash-cmd
@@ -164,9 +184,11 @@ capabilities:
       - phase.has_ui_changes == true
       - subtask.type == 'ui_polish'
 
+  # v3.4.2 fix: frontend-design is a claude-plugins-official PLUGIN, not gstack.
   frontend-design:
-    impl: gstack
-    plugin_namespace: gstack
+    impl: plugin
+    install_type: plugin
+    plugin_id: frontend-design
     cmd: /frontend-design
     since: v2.0
     category: tool-slash-cmd
@@ -194,7 +216,8 @@ capabilities:
 
   webapp-testing:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /webapp-testing
     since: v2.0
     category: tool-bundled-skill
@@ -240,7 +263,8 @@ capabilities:
 
   gsd-discuss-phase:
     impl: gsd
-    plugin_namespace: gsd
+    install_type: user-skill
+    skill_dir: gsd-discuss-phase
     cmd: /gsd-discuss-phase
     since: v2.0
     category: tool-slash-cmd
@@ -250,7 +274,8 @@ capabilities:
 
   gsd-plan-phase:
     impl: gsd
-    plugin_namespace: gsd
+    install_type: user-skill
+    skill_dir: gsd-plan-phase
     cmd: /gsd-plan-phase
     since: v2.0
     category: tool-slash-cmd
@@ -260,7 +285,8 @@ capabilities:
 
   gsd-review:
     impl: gsd
-    plugin_namespace: gsd
+    install_type: user-skill
+    skill_dir: gsd-review
     cmd: /gsd-review
     since: v2.0
     category: tool-slash-cmd
@@ -270,7 +296,8 @@ capabilities:
 
   gsd-debug:
     impl: gsd
-    plugin_namespace: gsd
+    install_type: user-skill
+    skill_dir: gsd-debug
     cmd: /gsd-debug
     since: v2.0
     category: tool-slash-cmd
@@ -282,7 +309,8 @@ capabilities:
 
   gsd-progress:
     impl: gsd
-    plugin_namespace: gsd
+    install_type: user-skill
+    skill_dir: gsd-progress
     cmd: /gsd-progress
     since: v2.0
     category: tool-slash-cmd
@@ -292,7 +320,8 @@ capabilities:
 
   gsd-verify-work:
     impl: gsd
-    plugin_namespace: gsd
+    install_type: user-skill
+    skill_dir: gsd-verify-work
     cmd: /gsd-verify-work
     since: v2.0
     category: tool-slash-cmd
@@ -306,7 +335,8 @@ capabilities:
 
   gstack-office-hours:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /office-hours
     since: v2.0
     category: tool-slash-cmd
@@ -316,7 +346,8 @@ capabilities:
 
   gstack-plan-ceo-review:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /plan-ceo-review
     since: v2.0
     category: tool-slash-cmd
@@ -326,7 +357,8 @@ capabilities:
 
   gstack-review:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /review
     since: v2.0
     category: tool-slash-cmd
@@ -336,7 +368,8 @@ capabilities:
 
   gstack-qa:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /qa
     since: v2.0
     category: tool-slash-cmd
@@ -346,7 +379,8 @@ capabilities:
 
   gstack-cso:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /cso
     since: v2.0
     category: tool-slash-cmd
@@ -356,7 +390,8 @@ capabilities:
 
   gstack-design-review:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /design-review
     since: v2.0
     category: tool-slash-cmd
@@ -389,7 +424,8 @@ capabilities:
   # cmd `/plan` invocation → plugin 真生成 3 file 持久化, NOT fs.writeFile self-impl。
   planning-with-files:
     impl: claude-code-plugin
-    plugin_namespace: planning-with-files
+    install_type: plugin
+    plugin_id: planning-with-files
     cmd: /plan
     since: v2.0
     category: tool-plugin
@@ -405,10 +441,13 @@ capabilities:
       - phase.stage == 'plan' AND phase.requires_persisted_plan == true
 
   # D-10: ralph-loop 真接 SDK wrapper (NOT mock reference; sister Phase 2.2 v0.2.0 ship)
+  # v3.4.2: ralph-loop is a claude-plugins-official plugin; cmd is the bare `/ralph-loop`
+  # (verified: ralph-loop@claude-plugins-official in installed_plugins.json).
   ralph-loop:
-    impl: bundled-skill
-    plugin_namespace: ralph-loop
-    cmd: ralph-loop
+    impl: plugin
+    install_type: plugin
+    plugin_id: ralph-loop
+    cmd: /ralph-loop
     since: v2.0
     category: tool-bundled-skill
     description: Sub-task completion gate (verbatim COMPLETE; max-iterations fallback)
@@ -549,7 +588,8 @@ capabilities:
 
   autoplan:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /autoplan
     since: v3.0
     category: tool-slash-cmd
@@ -559,7 +599,8 @@ capabilities:
 
   codex:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /codex
     since: v3.0
     category: tool-slash-cmd
@@ -569,7 +610,8 @@ capabilities:
 
   design-shotgun:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /design-shotgun
     since: v3.0
     category: tool-slash-cmd
@@ -579,7 +621,8 @@ capabilities:
 
   design-html:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /design-html
     since: v3.0
     category: tool-slash-cmd
@@ -589,7 +632,8 @@ capabilities:
 
   design-consultation:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /design-consultation
     since: v3.0
     category: tool-slash-cmd
@@ -599,7 +643,8 @@ capabilities:
 
   plan-design-review:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /plan-design-review
     since: v3.0
     category: tool-slash-cmd
@@ -609,7 +654,8 @@ capabilities:
 
   plan-devex-review:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /plan-devex-review
     since: v3.0
     category: tool-slash-cmd
@@ -619,7 +665,8 @@ capabilities:
 
   plan-eng-review:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /plan-eng-review
     since: v3.0
     category: tool-slash-cmd
@@ -629,7 +676,8 @@ capabilities:
 
   plan-tune:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /plan-tune
     since: v3.0
     category: tool-slash-cmd
@@ -639,7 +687,8 @@ capabilities:
 
   context-save:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /context-save
     since: v3.0
     category: tool-slash-cmd
@@ -649,7 +698,8 @@ capabilities:
 
   context-restore:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /context-restore
     since: v3.0
     category: tool-slash-cmd
@@ -659,7 +709,8 @@ capabilities:
 
   qa-only:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /qa-only
     since: v3.0
     category: tool-slash-cmd
@@ -669,7 +720,8 @@ capabilities:
 
   devex-review:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /devex-review
     since: v3.0
     category: tool-slash-cmd
@@ -679,7 +731,8 @@ capabilities:
 
   benchmark:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /benchmark
     since: v3.0
     category: tool-slash-cmd
@@ -689,7 +742,8 @@ capabilities:
 
   browse:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /browse
     since: v3.0
     category: tool-slash-cmd
@@ -699,7 +753,8 @@ capabilities:
 
   open-gstack-browser:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /open-gstack-browser
     since: v3.0
     category: tool-slash-cmd
@@ -709,7 +764,8 @@ capabilities:
 
   connect-chrome:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /connect-chrome
     since: v3.x
     category: tool-slash-cmd
@@ -719,7 +775,8 @@ capabilities:
 
   setup-browser-cookies:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /setup-browser-cookies
     since: v3.0
     category: tool-slash-cmd
@@ -729,7 +786,8 @@ capabilities:
 
   ship:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /ship
     since: v3.0
     category: tool-slash-cmd
@@ -740,7 +798,8 @@ capabilities:
 
   land-and-deploy:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /land-and-deploy
     since: v3.0
     category: tool-slash-cmd
@@ -750,7 +809,8 @@ capabilities:
 
   setup-deploy:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /setup-deploy
     since: v3.0
     category: tool-slash-cmd
@@ -760,7 +820,8 @@ capabilities:
 
   setup-gbrain:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /setup-gbrain
     since: v3.0
     category: tool-slash-cmd
@@ -770,7 +831,8 @@ capabilities:
 
   canary:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /canary
     since: v3.0
     category: tool-slash-cmd
@@ -780,7 +842,8 @@ capabilities:
 
   document-release:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /document-release
     since: v3.0
     category: tool-slash-cmd
@@ -790,7 +853,8 @@ capabilities:
 
   document-generate:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /document-generate
     since: v3.0
     category: tool-slash-cmd
@@ -800,7 +864,8 @@ capabilities:
 
   careful:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /careful
     since: v3.0
     category: tool-slash-cmd
@@ -811,7 +876,8 @@ capabilities:
 
   guard:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /guard
     since: v3.0
     category: tool-slash-cmd
@@ -821,7 +887,8 @@ capabilities:
 
   freeze:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /freeze
     since: v3.0
     category: tool-slash-cmd
@@ -831,7 +898,8 @@ capabilities:
 
   unfreeze:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /unfreeze
     since: v3.0
     category: tool-slash-cmd
@@ -841,7 +909,8 @@ capabilities:
 
   gstack-upgrade:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /gstack-upgrade
     since: v3.0
     category: tool-slash-cmd
@@ -851,7 +920,8 @@ capabilities:
 
   learn:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /learn
     since: v3.0
     category: tool-slash-cmd
@@ -861,7 +931,8 @@ capabilities:
 
   health:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /health
     since: v3.0
     category: tool-slash-cmd
@@ -871,7 +942,8 @@ capabilities:
 
   make-pdf:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /make-pdf
     since: v3.0
     category: tool-slash-cmd
@@ -882,7 +954,8 @@ capabilities:
   # 2 alias suffix `-gstack` (避免命名冲突 per Pattern A E.2)
   retro-gstack:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /retro
     since: v3.0
     category: tool-slash-cmd
@@ -894,7 +967,8 @@ capabilities:
 
   investigate-gstack:
     impl: gstack
-    plugin_namespace: gstack
+    install_type: user-skill
+    skill_dir: gstack
     cmd: /investigate
     since: v3.0
     category: tool-slash-cmd
@@ -935,7 +1009,8 @@ capabilities:
 
   gsd-research-phase:
     impl: gsd
-    plugin_namespace: gsd
+    install_type: user-skill
+    skill_dir: gsd-research-phase
     cmd: /gsd-research-phase
     since: v3.0
     category: tool-slash-cmd
