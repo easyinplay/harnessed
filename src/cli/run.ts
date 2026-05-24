@@ -40,8 +40,10 @@ export function registerRun(program: Command): void {
     .argument('[name]', 'workflow name (e.g. discuss, verify-paranoid, research, auto)')
     .option('--task <text>', 'task description (passed as workflow gateContext.task)')
     .option('--task-stdin', 'read task description from stdin until EOF (avoids shell-escape)')
-    .option('--max-iterations <n>', 'ralph-loop max iter (default 20; honored Phase 3+)', (v) =>
-      parseInt(v, 10),
+    .option(
+      '--max-iterations <n>',
+      'ralph-loop max iter (default 20; honored Phase 3 onward)',
+      (v) => parseInt(v, 10),
     )
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .option(

@@ -18,6 +18,12 @@ import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
 
 const MASTER_NAMES: readonly MasterName[] = ['discuss', 'plan', 'task', 'verify', 'auto']
 
+/** Phase v3.4.4 (Phase 3) — ralph-loop default cap (sister src/routing/engine.ts:88). */
+const RALPH_DEFAULT_MAX_ITER = 20
+/** Phase v3.4.4 (Phase 3) — ralph-loop hard upper bound (sister workflows/defaults.yaml:103
+ *  + Phase 2.2 STRIDE T-2.2-05 DoS mitigation). */
+const RALPH_HARD_UPPER_LIMIT = 100
+
 export interface WorkflowRunResult {
   status: 'complete' | 'paused-veto' | 'failed'
   phasesRun: number
@@ -43,6 +49,54 @@ function buildAgentDef(skillName: string): AgentDefinition {
     description: `harnessed workflow phase: ${skillName}`,
     prompt: `You are executing the '${skillName}' workflow phase. Follow the phase intent and emit a structured COMPLETE signal when done.`,
   } as AgentDefinition
+}
+
+/** Phase v3.4.4 (Phase 3) — ralph-loop opt-in detection per phase. Returns true when
+ *  any of: phase.max_iterations declared, phase.fallback.max_iterations_exceeded
+ *  declared, phase.upstream === 'ralph-loop'. Default OFF (single-shot sdkSpawn)
+ *  for phases without any ralph-loop yaml signal — preserves Phase 2 behavior for
+ *  the 7 phases that lack the signal (e.g. task-code/02-progress, verify-design/01).
+ *
+ *  Exported for unit-testability + so Phase 3 Commit 3's wrap-conditional inside
+ *  `_dispatchSkillStub.fn` can reuse the same predicate (single source of truth). */
+export function isRalphLoopOptIn(phase: unknown): boolean {
+  if (!phase || typeof phase !== 'object') return false
+  const p = phase as Record<string, unknown>
+  if (p.max_iterations !== undefined && p.max_iterations !== null) return true
+  if (p.upstream === 'ralph-loop') return true
+  const fb = p.fallback as Record<string, unknown> | undefined
+  if (fb?.max_iterations_exceeded !== undefined) return true
+  return false
+}
+
+/** Phase v3.4.4 (Phase 3) — max-iter resolution chain (CLI flag → phase yaml → 20),
+ *  clamped at hard_upper_limit 100. Reads gateContext.maxIterations (Number, set
+ *  by src/cli/run.ts:84 from `--max-iterations <n>`) + phase.max_iterations (yaml
+ *  Number OR pre-resolved JINJA String → coerce via parseInt).
+ *
+ *  Priority (high → low):
+ *    1. gateContext.maxIterations (CLI flag)
+ *    2. phase.max_iterations (yaml Number OR coerced String)
+ *    3. RALPH_DEFAULT_MAX_ITER (hardcoded 20)
+ *
+ *  Result clamped to [1, RALPH_HARD_UPPER_LIMIT (100)] regardless of source.
+ *
+ *  Exported for unit-testability + so Phase 3 Commit 3's call-site at L183 can
+ *  pass the resolved value down to `_dispatchSkillStub.fn` opts.maxIter. */
+export function resolveMaxIterations(phase: unknown, gateContext: Record<string, unknown>): number {
+  const fromCli =
+    typeof gateContext.maxIterations === 'number' ? gateContext.maxIterations : undefined
+  let fromYaml: number | undefined
+  if (phase && typeof phase === 'object') {
+    const raw = (phase as Record<string, unknown>).max_iterations
+    if (typeof raw === 'number') fromYaml = raw
+    else if (typeof raw === 'string') {
+      const n = Number.parseInt(raw, 10)
+      if (Number.isFinite(n) && n > 0) fromYaml = n
+    }
+  }
+  const chosen = fromCli ?? fromYaml ?? RALPH_DEFAULT_MAX_ITER
+  return Math.min(Math.max(1, chosen), RALPH_HARD_UPPER_LIMIT)
 }
 
 export const _dispatchSkillStub = {
