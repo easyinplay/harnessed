@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 3.5.0 (Unreleased)
 
+### Phase 1 — P0 private-file reference sweep
+
+- **workflows**: stripped all `~/.claude/CLAUDE.md` / `~/.claude/rules/*.md` / `~/.claude/plugins/cache/.../X.Y.Z` / `~/.claude/settings.json` references from `workflows/` (65 files, ~150 hits across `capabilities.yaml` + 7 disciplines yaml + 8 judgments yaml + 25 sub-workflow `SKILL.md` + `workflow.yaml` + `role-prompts.yaml`). `npm install harnessed` now ships a self-contained package with zero references to maintainer's private home-directory files. **Net delta**: -48 LOC (mainly References-bullet deletions in `SKILL.md`). **Hard gate verified**: `grep -r "~/.claude" workflows/` = 0 hits.
+- **capabilities**: dropped `planning-with-files.plugin_path` field (runtime not consumed; environment-specific). Description fields cleaned of `(per ~/.claude/rules/X.md L*)` source-citation tails (maintainer index belongs in ADRs, not shipped yaml).
+- **disciplines + judgments**: yaml header comments rewritten to self-contained descriptions (no `~/.claude/CLAUDE.md` 节 references). `language.yaml` `check_method` field switched from `~/.claude/settings.json` path to `env.HARNESSED_USER_LANG` (env-var consistency).
+- **SKILL.md**: References sections stripped of `~/.claude/*` bullets (~30 occurrences across 25 sub-workflows). Plugin-path mentions replaced with install guidance ("Requires X plugin via Claude Code plugin marketplace"). `harnessed setup` slash-command sister references rewritten with `<claude-home>/commands/<x>.md` placeholders.
+- **regression**: Zero user-facing — yaml schema unchanged, runtime dispatcher unchanged, all 1087 tests pass. v3.4.4 capability cmd resolution paths preserved verbatim (only descriptive metadata stripped).
+
 ### Phase 2 — Option 1-Lite signal-driven Agent Teams escalation
 
 - **runtime**: spawned-via-SDK subagents now identify Agent Teams upgrade triggers and signal back through `structured_output.needs_teams_escalation` (+ `escalation_reason`); `harnessed` runtime emits a one-line stderr hint after the phase completes so the user can decide whether to open a team in their main Claude Code session (`TeamCreate` is not exposed to spawned subagents via SDK v0.3.142 — this is a deliberate signal-only design). The 5 trigger names are transcribed verbatim from `workflows/judgments/parallelism-gate.yaml` (`teammate_send_message_needed` / `subagent_context_overflow` / `shared_task_list` / `opposing_hypothesis_debate` / `fullstack_three_way`).
@@ -16,7 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **runtime**: `buildAgentDef` now injects `criticalSystemReminder_EXPERIMENTAL = ESCALATION_RULES` on both code paths (rolePrompt-found + fallback stub), so escalation rules reach every spawned subagent uniformly via the existing `sdkReconcile` injection pipeline. ESCALATION_RULES (~1300 chars / ~320 tokens) explicitly tells the spawned subagent NOT to attempt calling Team APIs itself.
 - **runtime**: `DispatchStubResult` extended with `needsTeamsEscalation?` + `escalationReason?` (camel-renamed from envelope snake_case); `_dispatchSkillStub.fn` parses the new fields when present and `runWorkflow` emits `console.error` hint with trigger name + `parallelism-gate.yaml` reference. Non-blocking — phase still proceeds normally.
 
+### Phase 3 — Verify + ship
 
+- **release**: Tag `v3.5.0` pushed; GitHub Actions `publish.yml` auto-triggered npm publish with `--provenance` (sigstore rekor TLOG attestation per supply-chain hardening pattern延袭 since v3.4.x).
+- **package**: tarball verified `~/.claude` 0 hits in `workflows/` after pack; net package size delta ~-2 KB from Phase 1 deletions.
+- **CHANGELOG**: this entry + retroactive `## [3.4.4] - 2026-05-24` header backfill (release-time omission fixed; v3.4.4 release commit `650b7f6` only bumped `package.json` and left CHANGELOG header as `(Unreleased)`).
+
+## [3.4.4] - 2026-05-24
 
 - **runtime**: `harnessed run <name>` now drives real Claude subagent spawns (was placeholder `<stub for X>` in v3.4.3). 24 v3 workflow yamls load + execute through `loadPhases` + `runWorkflow` + `runMasterOrchestrator` end-to-end. `--dry-run` still bypasses spawn (Phase 1 behavior preserved).
 - **schema**: v3 dispatch arm added to `loadPhases` — yamls with `schema_version: harnessed.workflow.v3` validate against `WorkflowSchemaV3` (master shape with `delegates_to` + no phases supported).
