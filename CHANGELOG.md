@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **runtime**: `buildAgentDef` enriched with `workflows/role-prompts.yaml` lookup chain (`rolePrompts[skillName]` → `rolePrompts[workflowName]` → conservative 2-field stub). Resolved entries splice `responsibility` + `checklist` + `severity` + `specialist` into the AgentDefinition prompt. `gateContext.modelTierOverride` (`--model-tier inherit` B-10 escape hatch) consumed.
 - **runtime**: `MaxIterFallbackCtx.workflowName` plumbed end-to-end (`parsed.workflow` → `_dispatchSkillStub.fn` opts → `handleMaxIterationsExceeded`). Stderr UX text on max-iter halt now shows actual workflow name (e.g. `execute-task`, `verify-paranoid`) instead of hardcoded `'harnessed-run'`.
 
+### Phase 5 — real getNextHint + formatted stderr stage hint
+
+- **cli**: `getNextHint(workflowName)` replaced the Phase 1 stub: reads `workflows/auto/workflow.yaml` `delegates_to[]` (6 stages: research → discuss → plan → task → verify → retro) with lazy module-level cache (1 load per process).
+- **cli**: Sub-workflow parent-stage fallback (D-1 Option C): `verify-paranoid` → parent `verify` → hints `retro`; sister for `discuss-strategic` (→ plan) / `task-clarify` (→ verify) / `plan-architecture` (→ task).
+- **cli**: Stderr emits 3-line stage-complete envelope after every `harnessed run <name>` apply-path invocation: `[stage <name> complete]` + `Next stage: harnessed run <next>` + `(In Claude Code: /<next>)`. `--dry-run` path unchanged (exits before hint per Phase 1 behavior — keeps stdout JSON envelope machine-parseable).
+- **runtime**: ADR 0029 fail-soft preserved — yaml read / parse error returns null + 1-line stderr warn `⚠️ getNextHint failed (...); skipping hint.`, never crashes the run loop.
+
 ## [3.4.3] - 2026-05-24 — Dual-source slash commands: `~/.claude/commands/<x>.md` + `~/.claude/skills/<x>/SKILL.md` (Option I); vapor CLI subcommand claims removed
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 commands/ 生成 + SKILL.md 重新渲染)
