@@ -58,7 +58,7 @@ function runInstall(
   const r = spawnSync(process.execPath, args, {
     cwd,
     encoding: 'utf8',
-    env: { ...process.env, NO_COLOR: '1' },
+    env: { ...process.env, NO_COLOR: '1', HARNESSED_LANG: 'en' },
   })
   return { code: r.status ?? -1, stdout: r.stdout ?? '', stderr: r.stderr ?? '' }
 }

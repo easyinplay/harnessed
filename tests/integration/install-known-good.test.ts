@@ -48,7 +48,7 @@ function runInstallKnownGood(
   const r = spawnSync(
     process.execPath,
     [CLI, 'install', name, '--known-good', '--dry-run', '--non-interactive', '--system'],
-    { cwd, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' } },
+    { cwd, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1', HARNESSED_LANG: 'en' } },
   )
   return { code: r.status ?? -1, stdout: r.stdout ?? '', stderr: r.stderr ?? '' }
 }
