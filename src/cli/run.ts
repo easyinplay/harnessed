@@ -13,10 +13,10 @@
 
 import { existsSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
-import { dirname, join, resolve as pathResolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 import type { Command } from 'commander'
 import { runWorkflow } from '../workflow/run.js'
+import { getPackageRoot } from './lib/packagePath.js'
 
 interface RawOpts {
   task?: string
@@ -28,8 +28,7 @@ interface RawOpts {
   list?: boolean
 }
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const PACKAGE_ROOT = pathResolve(__dirname, '..', '..')
+const PACKAGE_ROOT = getPackageRoot()
 const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')
 
 export function registerRun(program: Command): void {
