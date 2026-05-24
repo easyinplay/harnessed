@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## 3.4.4 (Unreleased)
+## 3.5.0 (Unreleased)
+
+### Phase 2 — Option 1-Lite signal-driven Agent Teams escalation
+
+- **runtime**: spawned-via-SDK subagents now identify Agent Teams upgrade triggers and signal back through `structured_output.needs_teams_escalation` (+ `escalation_reason`); `harnessed` runtime emits a one-line stderr hint after the phase completes so the user can decide whether to open a team in their main Claude Code session (`TeamCreate` is not exposed to spawned subagents via SDK v0.3.142 — this is a deliberate signal-only design). The 5 trigger names are transcribed verbatim from `workflows/judgments/parallelism-gate.yaml` (`teammate_send_message_needed` / `subagent_context_overflow` / `shared_task_list` / `opposing_hypothesis_debate` / `fullstack_three_way`).
+- **schema**: `COMPLETION_SCHEMA` extended with optional `needs_teams_escalation` (boolean) + `escalation_reason` (string) fields; absent fields default to no-op so existing phases are unaffected.
+- **runtime**: `buildAgentDef` now injects `criticalSystemReminder_EXPERIMENTAL = ESCALATION_RULES` on both code paths (rolePrompt-found + fallback stub), so escalation rules reach every spawned subagent uniformly via the existing `sdkReconcile` injection pipeline. ESCALATION_RULES (~1300 chars / ~320 tokens) explicitly tells the spawned subagent NOT to attempt calling Team APIs itself.
+- **runtime**: `DispatchStubResult` extended with `needsTeamsEscalation?` + `escalationReason?` (camel-renamed from envelope snake_case); `_dispatchSkillStub.fn` parses the new fields when present and `runWorkflow` emits `console.error` hint with trigger name + `parallelism-gate.yaml` reference. Non-blocking — phase still proceeds normally.
+
+
 
 - **runtime**: `harnessed run <name>` now drives real Claude subagent spawns (was placeholder `<stub for X>` in v3.4.3). 24 v3 workflow yamls load + execute through `loadPhases` + `runWorkflow` + `runMasterOrchestrator` end-to-end. `--dry-run` still bypasses spawn (Phase 1 behavior preserved).
 - **schema**: v3 dispatch arm added to `loadPhases` — yamls with `schema_version: harnessed.workflow.v3` validate against `WorkflowSchemaV3` (master shape with `delegates_to` + no phases supported).
