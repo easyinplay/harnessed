@@ -80,10 +80,6 @@
   "execute_task.precommit_skipped": "⚠️ before-commit pre-flight skipped ({{message}}); subagent will biome-check at commit time.",
 
   "research.require_query": "error: --query <text> is required",
-  "research.dry_run.matched_rule": "[dry-run] matched_rule: {{rule}}",
-  "research.dry_run.query": "[dry-run] query: {{query}}",
-  "research.dry_run.run_hint": "  (run without --dry-run to spawn the subagent and emit verbatim COMPLETE round-trip)",
-  "research.install_fix_hint": "  fix:  'harnessed install <skill>' (see error above)",
 
   "manifest_add.non_interactive_warn": "[ee-5-gate] WARN: --non-interactive skips 5-question prompt (D-03 dry-run-only). plan-phase hard reject still applies.",
   "manifest_add.dry_run_preview": "[manifest-add] dry-run preview for upstream: {{upstream}} → {{path}}",

@@ -41,7 +41,7 @@ spawns each phase as a sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+.
 ralph-loop SDK wrapper 保 completion-promise verbatim string `"COMPLETE"` — sub-task
 被认为完成的判据是子任务输出包含 verbatim "COMPLETE" string (NOT 启发式 / NOT
 LLM-as-judge). Sister capabilities.yaml `ralph-loop` entry impl `bundled-skill` +
-`sdk_ref: src/routing/lib/ralphLoop.ts` (Phase 2.2 v0.2.0 ship)。
+`sdk_ref: src/workflow/lib/ralphLoop.ts` (Phase 2.2 v0.2.0 ship)。
 
 ### Parallelism — ralph-loop 正交 wrapper
 

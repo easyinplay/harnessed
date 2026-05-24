@@ -41,7 +41,7 @@ v2 schema fields per `src/workflow/schema/workflow.ts` (T2.4.W0.1 16th surface �
 Per-phase models load from `workflows/execute-task/phases.yaml`; engine.runRouting
 spawns each phase as a sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+
 (`AgentDefinition` 5-字段 unpack — ADR 0011 § 4). ralph-loop SDK wrapper at 04-deliver
-reuses sister Phase 2.2 v0.2.0 ship: `src/routing/lib/ralphLoop.ts` (54L) + `sdkSpawn.ts` (91L)
+reuses sister Phase 2.2 v0.2.0 ship: `src/workflow/lib/ralphLoop.ts` (54L) + `sdkSpawn.ts` (91L)
 + 4-layer dual-signal `isComplete` (NOT 重写 — per RESEARCH § 3.1).
 
 ## CLI invocation (the only enforced entry — B-28)
@@ -79,5 +79,5 @@ the CLI subcommand above (B-28 single-entry contract).
 - `.planning/intel/omc-comparison.md` § CD-2 — per-phase model tier defaults
 - `src/cli/execute-task.ts` — CLI implementation (T5.1)
 - `workflows/execute-task/phases.yaml` — 4-phase config (T3.3)
-- `src/routing/lib/sdkSpawn.ts` — SDK query() consumer (T4.1)
-- `src/routing/lib/ralphLoop.ts` — verbatim COMPLETE round-trip
+- `src/workflow/lib/sdkSpawn.ts` — SDK query() consumer (T4.1)
+- `src/workflow/lib/ralphLoop.ts` — verbatim COMPLETE round-trip

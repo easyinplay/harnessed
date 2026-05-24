@@ -80,10 +80,6 @@
   "execute_task.precommit_skipped": "⚠️ before-commit 预检跳过 ({{message}}); subagent 会在 commit 时再跑一次 biome-check。",
 
   "research.require_query": "错误: --query <text> 必填",
-  "research.dry_run.matched_rule": "[dry-run] matched_rule: {{rule}}",
-  "research.dry_run.query": "[dry-run] query: {{query}}",
-  "research.dry_run.run_hint": "  (去掉 --dry-run 以 spawn subagent 并触发 verbatim COMPLETE round-trip)",
-  "research.install_fix_hint": "  修复: 'harnessed install <skill>' (见上方 error)",
 
   "manifest_add.non_interactive_warn": "[ee-5-gate] WARN: --non-interactive 会跳过 5 问 prompt (D-03 dry-run-only)。plan-phase hard reject 仍生效。",
   "manifest_add.dry_run_preview": "[manifest-add] dry-run 预览 — upstream: {{upstream}} → {{path}}",

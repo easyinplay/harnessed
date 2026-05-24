@@ -451,7 +451,7 @@ capabilities:
     since: v2.0
     category: tool-bundled-skill
     description: Sub-task completion gate (verbatim COMPLETE; max-iterations fallback)
-    sdk_ref: src/routing/lib/ralphLoop.ts
+    sdk_ref: src/workflow/lib/ralphLoop.ts
     fires_when:
       - subtask.completion_required == true
 
