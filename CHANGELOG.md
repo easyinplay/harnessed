@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-05-24 — Setup hotfix: capability namespace resolver + sub-workflow SKILL.md imperative invoke step
+
+**升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 SKILL.md 模板渲染)
+
+**Trigger**: user 反馈 v3.4.0 ship 后两个 bug — (1) `/verify-paranoid` 等 sub-workflow SKILL.md 加载后不真正 invoke gstack `/review`,源文件 `{{ capabilities.gstack-review.cmd }}` 字面模板从未在 install 时渲染。(2) gstack 实际以 Claude Code plugin 形式安装 (`gstack@<marketplace>`),真正可调 slash-cmd 是 `/gstack:review` 而非裸 `/review`,所以即便没模板 bug 静态 `/review` 也 resolve 不了。
+
+### Fixed
+
+- **`harnessed setup` 渲染 SKILL.md capability 占位符** — NEW Step A.5 在 Step A (cp workflow skills) 之后 Step C (Agent Teams enable) 之前,扫描每个安装好的 `~/.claude/skills/<x>/SKILL.md`, 正则替换 `{{ capabilities.<name>.cmd }}` 为 resolver 输出 (e.g. `/gstack:review` 当 plugin 已装, `/review` + warning 当未装)
+- **NEW `src/cli/lib/capabilityResolver.ts`** (≤ 200L per karpathy hard limit) — `readInstalledPlugins()` 读 `~/.claude/plugins/installed_plugins.json` 解析 `<pluginName>@<marketplaceId>` 提取 namespace prefix Set; `resolveCapabilityCmd()` 5-rule 单 capability 渲染 (no_namespace / installed → namespaced / not_installed → bare + warn / already_namespaced / sentinel); `renderSkillBody()` 全 body 多 placeholder 渲染 + 警告去重
+- **NEW `src/cli/lib/renderSkillTemplates.ts`** (~120L) — `loadCapabilities()` 解析 `workflows/capabilities.yaml` → CapabilityMap; `renderSkillFile()` 单文件 in-place 替换 + non-fatal error 处理; `renderAllSkills()` 顺序处理 25 skills + warning 聚合
+- **`workflows/capabilities.yaml` Optional `plugin_namespace` 字段** (additive — 旧 consumer 忽略未知 key, schema v1 in-place extend NOT bump per Pattern A B.1) — 64 entry 加 field (impl=gstack / gsd / mattpocock-skills / claude-code-plugin / bundled-skill); 19 entry 不加 (impl=mcp / cli / npm-cli / claude-platform / harnessed-bundled / superpowers 已 pre-namespaced)
+- **17 sub-workflow SKILL.md 加 `## How to invoke` section** — 模板 `Use the SlashCommand tool to run: \`{{ capabilities.<X>.cmd }}\`` 配 install-time 渲染,LLM 看到具体可执行 slash cmd 不再只看 declarative description
+- `src/workflow/schema/capabilities.ts` — Optional `plugin_namespace` 字段加入 `CapabilityEntryBase` shape, 沿用 Pattern A B.1 in-place extend 不 bump schema version
+
+### Why
+
+v3.4.0 ship 时 setup 仅 `cp -r` 拷贝 workflow 目录到 `~/.claude/skills/`, 完全没渲染 SKILL.md 内的 Jinja-style 模板。LLM 加载 `verify-paranoid/SKILL.md` 看到 `{{ capabilities.gstack-review.cmd }}` 字面字符串,无法识别为 invocable slash cmd。即便修了模板渲染, gstack 是 Claude Code plugin 真正 cmd 是 `/<namespace>:<cmd>` 形式 (`gstack:review` 而非 `review`),所以需要双修。
+
+### Changed
+
+- `src/cli/setup.ts` — NEW Step A.5 `renderAllSkills()` invoke + i18n log line (`setup.step_a_render.complete` + `.warnings_header`); 17 sub-workflow SKILL.md (verify/{paranoid,code-review,qa,security,design,simplify,multispec,progress} + discuss/{strategic,phase,subtask} + plan/{architecture,phase} + task/{clarify,code,test,deliver} + retro) 加 `## How to invoke` section
+- `messages/en.json` + `messages/zh-Hans.json` — 2 NEW key (`setup.step_a_render.complete` / `.warnings_header`)
+- `tests/unit/capability-resolver.test.ts` NEW (16 cell): plugin file parsing (5 cell) + single resolve (5 cell) + body render (6 cell)
+
+### Migration
+
+旧 v3.4.0 user 重跑 `harnessed setup`:
+
+```bash
+npm install -g harnessed@3.4.1 && harnessed setup
+# 输出含: [A.5] rendered capability placeholders in 17/25 SKILL.md file(s)
+# 若 plugin 未装会输出 warnings + suggested install cmd
+```
+
+### Tests
+
+- 1180 pass / 4 skip / 2 pre-existing baseline fail (research-v2 + special-purpose-fallback, 与本 hotfix 无关 — 早于 v3.4.0)
+- baseline v3.4.0 1153 → +16 NEW capability-resolver + 11 modified existing SKILL.md fixture re-validate
+- biome clean (3 pre-existing infos, capabilities literal key — 与本 hotfix 无关)
+- tsc --noEmit: 0 error
+- build success (cli.mjs 200KB)
+
+### Files changed
+
+- `src/cli/lib/capabilityResolver.ts` NEW
+- `src/cli/lib/renderSkillTemplates.ts` NEW
+- `src/cli/setup.ts` — Step A.5 wired
+- `src/workflow/schema/capabilities.ts` — `plugin_namespace` optional field
+- `workflows/capabilities.yaml` — 64 entry 加 `plugin_namespace`
+- 17 `workflows/<stage>/<sub>/SKILL.md` — `## How to invoke` section
+- `messages/en.json` + `messages/zh-Hans.json` — 2 NEW key
+- `tests/unit/capability-resolver.test.ts` NEW (16 cell)
+- `package.json` — version 3.4.0 → 3.4.1
+- `CHANGELOG.md` — this entry
+
 ## [3.4.0] - 2026-05-21 — NEW CLI i18n (en + zh-Hans) + setup writes user lang + universal language discipline
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup auto-write user lang config)

@@ -5,6 +5,8 @@
   "setup.dry_run.run_hint": "  run without --dry-run to execute",
   "setup.copy_failed": "  error: failed to copy {{name}}: {{message}}",
   "setup.step_a_complete": "\nStep A complete: {{count}} workflow skill(s) installed to {{path}}",
+  "setup.step_a_render.complete": "  [A.5] rendered capability placeholders in {{count}}/{{total}} SKILL.md file(s)",
+  "setup.step_a_render.warnings_header": "  [A.5] warnings — some capability cmds could not be fully resolved:",
   "setup.step_c.created": "  [C] created {{path}} + enabled Agent Teams",
   "setup.step_c.already_enabled": "  [C] Agent Teams already enabled ({{path}})",
   "setup.step_c.enabled_backup": "  [C] enabled Agent Teams in {{path}} (backup saved → {{backupPath}})",

@@ -57,6 +57,14 @@ harnessed verify-security --phase <num> --dry-run --non-interactive
 harnessed verify-security --phase <num> --apply
 ```
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.gstack-cso.cmd }}`
+
+(If the rendered cmd above is the bare `/gstack-cso` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ④ Verify 7 sub 分解

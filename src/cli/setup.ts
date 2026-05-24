@@ -22,6 +22,7 @@ import { t } from '../i18n/index.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
 import { getPackageRoot } from './lib/packagePath.js'
+import { renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   renderDeprecationBlock,
   runStepBInstall,
@@ -114,6 +115,32 @@ export function registerSetup(program: Command): void {
       }
 
       console.log(t('setup.step_a_complete', { count: skillsInstalled, path: skillsBase }))
+
+      // ── Step A.5: Render `{{ capabilities.<name>.cmd }}` placeholders ───────
+      // v3.4.1 hotfix — sub-workflow SKILL.md files contain Jinja-style template
+      // refs that were never substituted at install time; end users saw literal
+      // `{{ capabilities.gstack-review.cmd }}` strings in installed skills so
+      // `/verify-paranoid` (and 20+ siblings) never invoked the real plugin cmd.
+      // Resolver reads ~/.claude/plugins/installed_plugins.json + capabilities.yaml,
+      // renders to namespaced form (`/gstack:review`) when plugin installed, OR
+      // leaves bare cmd + emits warning when plugin missing. Non-blocking — any
+      // unexpected error reduces to per-skill warn-and-continue (sister fallback
+      // 铁律 1).
+      const skillNames = toInstall.map((wf) => wf.name)
+      const rendered = await renderAllSkills(skillNames, skillsBase, workflowsDir)
+      const renderedCount = rendered.results.filter((r) => r.rendered).length
+      console.log(
+        t('setup.step_a_render.complete', {
+          count: renderedCount,
+          total: skillsInstalled,
+        }),
+      )
+      if (rendered.aggregatedWarnings.length > 0) {
+        console.warn(t('setup.step_a_render.warnings_header'))
+        for (const w of rendered.aggregatedWarnings) {
+          console.warn(`    - ${w}`)
+        }
+      }
 
       // ── Step C: Agent Teams auto-enable in ~/.claude/settings.json ──────────
       // v3.3.1 hotfix — Q-AUDIT-5b LOCKED root-level env.* schema. Pattern A

@@ -36,6 +36,7 @@ capabilities:
 
   grill-with-docs:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /grill-with-docs
     since: v2.0
     category: tool-slash-cmd
@@ -45,6 +46,7 @@ capabilities:
 
   zoom-out:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /zoom-out
     since: v2.0
     category: tool-slash-cmd
@@ -54,6 +56,7 @@ capabilities:
 
   diagnose:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /diagnose
     since: v2.0
     category: tool-slash-cmd
@@ -64,6 +67,7 @@ capabilities:
 
   caveman:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /caveman
     since: v2.0
     category: tool-slash-cmd
@@ -73,6 +77,7 @@ capabilities:
 
   grill-me:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /grill-me
     since: v2.0
     category: tool-slash-cmd
@@ -82,6 +87,7 @@ capabilities:
 
   to-prd:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /to-prd
     since: v2.0
     category: tool-slash-cmd
@@ -91,6 +97,7 @@ capabilities:
 
   to-issues:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /to-issues
     since: v2.0
     category: tool-slash-cmd
@@ -100,6 +107,7 @@ capabilities:
 
   improve-codebase-architecture:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /improve-codebase-architecture
     since: v2.0
     category: tool-slash-cmd
@@ -109,6 +117,7 @@ capabilities:
 
   code-review:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /code-review
     since: v2.0
     category: tool-slash-cmd
@@ -118,6 +127,7 @@ capabilities:
 
   code-simplifier:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /code-simplifier
     since: v2.0
     category: tool-slash-cmd
@@ -127,6 +137,7 @@ capabilities:
 
   investigate:
     impl: mattpocock-skills
+    plugin_namespace: mattpocock-skills
     cmd: /investigate
     since: v2.0
     category: tool-slash-cmd
@@ -144,6 +155,7 @@ capabilities:
 
   ui-ux-pro-max:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /ui-ux-pro-max
     since: v2.0
     category: tool-slash-cmd
@@ -154,6 +166,7 @@ capabilities:
 
   frontend-design:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /frontend-design
     since: v2.0
     category: tool-slash-cmd
@@ -181,6 +194,7 @@ capabilities:
 
   webapp-testing:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /webapp-testing
     since: v2.0
     category: tool-bundled-skill
@@ -226,6 +240,7 @@ capabilities:
 
   gsd-discuss-phase:
     impl: gsd
+    plugin_namespace: gsd
     cmd: /gsd-discuss-phase
     since: v2.0
     category: tool-slash-cmd
@@ -235,6 +250,7 @@ capabilities:
 
   gsd-plan-phase:
     impl: gsd
+    plugin_namespace: gsd
     cmd: /gsd-plan-phase
     since: v2.0
     category: tool-slash-cmd
@@ -244,6 +260,7 @@ capabilities:
 
   gsd-review:
     impl: gsd
+    plugin_namespace: gsd
     cmd: /gsd-review
     since: v2.0
     category: tool-slash-cmd
@@ -253,6 +270,7 @@ capabilities:
 
   gsd-debug:
     impl: gsd
+    plugin_namespace: gsd
     cmd: /gsd-debug
     since: v2.0
     category: tool-slash-cmd
@@ -264,6 +282,7 @@ capabilities:
 
   gsd-progress:
     impl: gsd
+    plugin_namespace: gsd
     cmd: /gsd-progress
     since: v2.0
     category: tool-slash-cmd
@@ -273,6 +292,7 @@ capabilities:
 
   gsd-verify-work:
     impl: gsd
+    plugin_namespace: gsd
     cmd: /gsd-verify-work
     since: v2.0
     category: tool-slash-cmd
@@ -286,6 +306,7 @@ capabilities:
 
   gstack-office-hours:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /office-hours
     since: v2.0
     category: tool-slash-cmd
@@ -295,6 +316,7 @@ capabilities:
 
   gstack-plan-ceo-review:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /plan-ceo-review
     since: v2.0
     category: tool-slash-cmd
@@ -304,6 +326,7 @@ capabilities:
 
   gstack-review:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /review
     since: v2.0
     category: tool-slash-cmd
@@ -313,6 +336,7 @@ capabilities:
 
   gstack-qa:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /qa
     since: v2.0
     category: tool-slash-cmd
@@ -322,6 +346,7 @@ capabilities:
 
   gstack-cso:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /cso
     since: v2.0
     category: tool-slash-cmd
@@ -331,6 +356,7 @@ capabilities:
 
   gstack-design-review:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /design-review
     since: v2.0
     category: tool-slash-cmd
@@ -363,6 +389,7 @@ capabilities:
   # cmd `/plan` invocation → plugin 真生成 3 file 持久化, NOT fs.writeFile self-impl。
   planning-with-files:
     impl: claude-code-plugin
+    plugin_namespace: planning-with-files
     cmd: /plan
     since: v2.0
     category: tool-plugin
@@ -380,6 +407,7 @@ capabilities:
   # D-10: ralph-loop 真接 SDK wrapper (NOT mock reference; sister Phase 2.2 v0.2.0 ship)
   ralph-loop:
     impl: bundled-skill
+    plugin_namespace: ralph-loop
     cmd: ralph-loop
     since: v2.0
     category: tool-bundled-skill
@@ -521,6 +549,7 @@ capabilities:
 
   autoplan:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /autoplan
     since: v3.0
     category: tool-slash-cmd
@@ -530,6 +559,7 @@ capabilities:
 
   codex:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /codex
     since: v3.0
     category: tool-slash-cmd
@@ -539,6 +569,7 @@ capabilities:
 
   design-shotgun:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /design-shotgun
     since: v3.0
     category: tool-slash-cmd
@@ -548,6 +579,7 @@ capabilities:
 
   design-html:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /design-html
     since: v3.0
     category: tool-slash-cmd
@@ -557,6 +589,7 @@ capabilities:
 
   design-consultation:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /design-consultation
     since: v3.0
     category: tool-slash-cmd
@@ -566,6 +599,7 @@ capabilities:
 
   plan-design-review:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /plan-design-review
     since: v3.0
     category: tool-slash-cmd
@@ -575,6 +609,7 @@ capabilities:
 
   plan-devex-review:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /plan-devex-review
     since: v3.0
     category: tool-slash-cmd
@@ -584,6 +619,7 @@ capabilities:
 
   plan-eng-review:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /plan-eng-review
     since: v3.0
     category: tool-slash-cmd
@@ -593,6 +629,7 @@ capabilities:
 
   plan-tune:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /plan-tune
     since: v3.0
     category: tool-slash-cmd
@@ -602,6 +639,7 @@ capabilities:
 
   context-save:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /context-save
     since: v3.0
     category: tool-slash-cmd
@@ -611,6 +649,7 @@ capabilities:
 
   context-restore:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /context-restore
     since: v3.0
     category: tool-slash-cmd
@@ -620,6 +659,7 @@ capabilities:
 
   qa-only:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /qa-only
     since: v3.0
     category: tool-slash-cmd
@@ -629,6 +669,7 @@ capabilities:
 
   devex-review:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /devex-review
     since: v3.0
     category: tool-slash-cmd
@@ -638,6 +679,7 @@ capabilities:
 
   benchmark:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /benchmark
     since: v3.0
     category: tool-slash-cmd
@@ -647,6 +689,7 @@ capabilities:
 
   browse:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /browse
     since: v3.0
     category: tool-slash-cmd
@@ -656,6 +699,7 @@ capabilities:
 
   open-gstack-browser:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /open-gstack-browser
     since: v3.0
     category: tool-slash-cmd
@@ -665,6 +709,7 @@ capabilities:
 
   connect-chrome:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /connect-chrome
     since: v3.x
     category: tool-slash-cmd
@@ -674,6 +719,7 @@ capabilities:
 
   setup-browser-cookies:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /setup-browser-cookies
     since: v3.0
     category: tool-slash-cmd
@@ -683,6 +729,7 @@ capabilities:
 
   ship:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /ship
     since: v3.0
     category: tool-slash-cmd
@@ -693,6 +740,7 @@ capabilities:
 
   land-and-deploy:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /land-and-deploy
     since: v3.0
     category: tool-slash-cmd
@@ -702,6 +750,7 @@ capabilities:
 
   setup-deploy:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /setup-deploy
     since: v3.0
     category: tool-slash-cmd
@@ -711,6 +760,7 @@ capabilities:
 
   setup-gbrain:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /setup-gbrain
     since: v3.0
     category: tool-slash-cmd
@@ -720,6 +770,7 @@ capabilities:
 
   canary:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /canary
     since: v3.0
     category: tool-slash-cmd
@@ -729,6 +780,7 @@ capabilities:
 
   document-release:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /document-release
     since: v3.0
     category: tool-slash-cmd
@@ -738,6 +790,7 @@ capabilities:
 
   document-generate:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /document-generate
     since: v3.0
     category: tool-slash-cmd
@@ -747,6 +800,7 @@ capabilities:
 
   careful:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /careful
     since: v3.0
     category: tool-slash-cmd
@@ -757,6 +811,7 @@ capabilities:
 
   guard:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /guard
     since: v3.0
     category: tool-slash-cmd
@@ -766,6 +821,7 @@ capabilities:
 
   freeze:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /freeze
     since: v3.0
     category: tool-slash-cmd
@@ -775,6 +831,7 @@ capabilities:
 
   unfreeze:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /unfreeze
     since: v3.0
     category: tool-slash-cmd
@@ -784,6 +841,7 @@ capabilities:
 
   gstack-upgrade:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /gstack-upgrade
     since: v3.0
     category: tool-slash-cmd
@@ -793,6 +851,7 @@ capabilities:
 
   learn:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /learn
     since: v3.0
     category: tool-slash-cmd
@@ -802,6 +861,7 @@ capabilities:
 
   health:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /health
     since: v3.0
     category: tool-slash-cmd
@@ -811,6 +871,7 @@ capabilities:
 
   make-pdf:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /make-pdf
     since: v3.0
     category: tool-slash-cmd
@@ -821,6 +882,7 @@ capabilities:
   # 2 alias suffix `-gstack` (避免命名冲突 per Pattern A E.2)
   retro-gstack:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /retro
     since: v3.0
     category: tool-slash-cmd
@@ -832,6 +894,7 @@ capabilities:
 
   investigate-gstack:
     impl: gstack
+    plugin_namespace: gstack
     cmd: /investigate
     since: v3.0
     category: tool-slash-cmd
@@ -872,6 +935,7 @@ capabilities:
 
   gsd-research-phase:
     impl: gsd
+    plugin_namespace: gsd
     cmd: /gsd-research-phase
     since: v3.0
     category: tool-slash-cmd

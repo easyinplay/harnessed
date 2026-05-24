@@ -79,6 +79,14 @@ The `trigger_phrases:` frontmatter is active after `harnessed setup` copies this
 SKILL.md to `~/.claude/skills/task-test/` — Claude Code then loads the slash
 command `/task-test` automatically (Gap B fix — sister v1.0.2 mechanism).
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.tdd.cmd }}`
+
+(If the rendered cmd above is the bare `/tdd` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-09 — L0 Discipline Substrate always-on

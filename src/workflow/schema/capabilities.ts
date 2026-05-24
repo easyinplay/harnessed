@@ -47,7 +47,10 @@ const ToolCategoryEnum = Type.Union([
   Type.Literal('agent-platform'),
 ])
 
-// Shared base — 全 v2 SHIPPED 8 字段 + Optional `category` (Pattern A B.1 LOCK).
+// Shared base — 全 v2 SHIPPED 8 字段 + Optional `category` (Pattern A B.1 LOCK) +
+// v3.4.1 Optional `plugin_namespace` (Claude Code plugin slash-cmd namespace prefix,
+// e.g. `gstack` → `/gstack:review`; setup-time resolver at src/cli/lib/capabilityResolver.ts
+// reads ~/.claude/plugins/installed_plugins.json + this field to render SKILL.md templates).
 const CapabilityEntryBase = Type.Object(
   {
     impl: Type.String(),
@@ -57,6 +60,7 @@ const CapabilityEntryBase = Type.Object(
     fires_when: Type.Optional(Type.Array(Type.String())),
     requires: Type.Optional(RequiresShape),
     plugin_path: Type.Optional(Type.String()),
+    plugin_namespace: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
     sdk_ref: Type.Optional(Type.String()),

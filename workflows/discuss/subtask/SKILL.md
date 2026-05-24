@@ -57,6 +57,14 @@ Sister `workflows/judgments/subtask-gate.yaml`:
 - 标准库直接调用
 - bug 修复且已知根因
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.superpowers-brainstorming.cmd }}`
+
+(If the rendered cmd above is the bare `/superpowers-brainstorming` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ① Discuss 三层 (战略 / phase / 子任务)

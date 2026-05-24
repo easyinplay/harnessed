@@ -76,6 +76,14 @@ The `trigger_phrases:` frontmatter is active after `harnessed setup` copies this
 SKILL.md to `~/.claude/skills/task-code/` — Claude Code then loads the slash
 command `/task-code` automatically (Gap B fix — sister v1.0.2 mechanism).
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.planning-with-files.cmd }}`
+
+(If the rendered cmd above is the bare `/planning-with-files` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-09 — L0 Discipline Substrate always-on (karpathy 心法 4 条 cross-cutting)

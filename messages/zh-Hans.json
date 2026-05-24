@@ -5,6 +5,8 @@
   "setup.dry_run.run_hint": "  去掉 --dry-run 以真正执行",
   "setup.copy_failed": "  错误: 复制 {{name}} 失败: {{message}}",
   "setup.step_a_complete": "\nStep A 完成: {{count}} 个 workflow skill 已安装到 {{path}}",
+  "setup.step_a_render.complete": "  [A.5] 已在 {{count}}/{{total}} 个 SKILL.md 中渲染 capability 占位符",
+  "setup.step_a_render.warnings_header": "  [A.5] 警告 — 部分 capability cmd 未完全 resolve:",
   "setup.step_c.created": "  [C] 已创建 {{path}} 并启用 Agent Teams",
   "setup.step_c.already_enabled": "  [C] Agent Teams 已启用 ({{path}})",
   "setup.step_c.enabled_backup": "  [C] 已在 {{path}} 启用 Agent Teams (备份保存到 → {{backupPath}})",

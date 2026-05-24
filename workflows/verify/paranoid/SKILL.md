@@ -60,6 +60,14 @@ harnessed verify-paranoid --phase <num> --dry-run --non-interactive
 harnessed verify-paranoid --phase <num> --apply
 ```
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.gstack-review.cmd }}`
+
+(If the rendered cmd above is the bare `/review` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ④ Verify 7 sub 分解

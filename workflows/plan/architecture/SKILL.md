@@ -53,6 +53,14 @@ trigger `is-complex-architecture` 重构 ref。
 - 性能 / scaling 关键路径
 - 引入显著技术债 / migration 风险
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.plan-eng-review.cmd }}`
+
+(If the rendered cmd above is the bare `/plan-eng-review` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ② Plan 二层 (架构 / 计划)

@@ -55,6 +55,14 @@ reframe)。
 - `progress.md` — phase 进度跟踪 + cross-session 恢复
 - (`findings.md` 由 discuss-* sub-workflow 产出, 此处不重复)
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.gsd-plan-phase.cmd }}`
+
+(If the rendered cmd above is the bare `/gsd-plan-phase` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ② Plan 二层 (架构 / 计划)

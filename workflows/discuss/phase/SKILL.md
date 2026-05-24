@@ -52,6 +52,14 @@ Sister `workflows/judgments/phase-gate.yaml`:
 - < 1 天工作量
 - bug 修复且已有最小复现
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.gsd-discuss-phase.cmd }}`
+
+(If the rendered cmd above is the bare `/gsd-discuss-phase` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ① Discuss 三层 (战略 / phase / 子任务)

@@ -62,6 +62,14 @@ harnessed verify-qa --phase <num> --dry-run --non-interactive
 harnessed verify-qa --phase <num> --apply
 ```
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.gstack-qa.cmd }}`
+
+(If the rendered cmd above is the bare `/gstack-qa` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ④ Verify 7 sub 分解

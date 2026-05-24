@@ -56,6 +56,14 @@ Sister `workflows/judgments/strategic-gate.yaml`:
 - continuing 已有 phase 的执行
 - 用户已给明确 ticket / spec
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.gstack-office-hours.cmd }}`
+
+(If the rendered cmd above is the bare `/gstack-office-hours` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 Stage ① Discuss 三层 (战略 / phase / 子任务)

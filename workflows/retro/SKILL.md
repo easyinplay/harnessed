@@ -57,6 +57,14 @@ harnessed retro --milestone <name> --dry-run --non-interactive
 harnessed retro --milestone <name> --apply
 ```
 
+## How to invoke
+
+Use the SlashCommand tool to run: `{{ capabilities.retro-gstack.cmd }}`
+
+(If the rendered cmd above is the bare `/retro-gstack` accompanied by a `⚠️ ... not installed`
+warning from `harnessed setup`, install the missing plugin first then re-run
+`harnessed setup` to re-render this SKILL.md with the full namespaced cmd.)
+
 ## References
 
 - D-04 NEW v3 standalone workflow (research v3 bump + retro NEW)
