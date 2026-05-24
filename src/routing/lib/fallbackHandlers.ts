@@ -7,7 +7,10 @@
 // catch block delegates here — handler emits full UX text to stderr (PLAN L342-358)
 // then process.exit(exit_code). Return type `never` — process.exit unreachable after.
 
-import type { MaxIterationsExceededError, VerbatimCompleteFailError } from '../../workflow/lib/ralphLoop.js'
+import type {
+  MaxIterationsExceededError,
+  VerbatimCompleteFailError,
+} from '../../workflow/lib/ralphLoop.js'
 
 export interface FallbackMaxIterationsExceededConfig {
   action: 'emit_warning_and_halt'

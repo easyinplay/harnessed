@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **runtime**: `harnessed run <name>` now drives real Claude subagent spawns (was placeholder `<stub for X>` in v3.4.3). 24 v3 workflow yamls load + execute through `loadPhases` + `runWorkflow` + `runMasterOrchestrator` end-to-end. `--dry-run` still bypasses spawn (Phase 1 behavior preserved).
 - **schema**: v3 dispatch arm added to `loadPhases` — yamls with `schema_version: harnessed.workflow.v3` validate against `WorkflowSchemaV3` (master shape with `delegates_to` + no phases supported).
 - **refactor**: `sdkSpawn` driver moved from `src/routing/lib/` to `src/workflow/lib/` (single SoT, prep for Phase 6 routing deletion).
+- **runtime**: `harnessed run <name>` now honors `--max-iterations <n>` end-to-end (Phase 1 stub fully wired). Resolution chain: CLI flag → `phase.max_iterations` → hardcoded 20, clamped at `hard_upper_limit = 100`.
+- **runtime**: phases with `max_iterations` / `fallback.max_iterations_exceeded` / `upstream: ralph-loop` yaml signals now spawn under `ralphLoopWrap` (retry until verbatim `COMPLETE` signal OR max-iter hit). Phases without these signals continue single-shot per Phase 2 (no behavior change).
+- **refactor**: `ralphLoop` driver moved from `src/routing/lib/` to `src/workflow/lib/` (single SoT, sister Phase 2 sdkSpawn pattern; `promiseExtract` + `fallbackHandlers` deferred to Phase 6 hoist).
+- **runtime**: on `MaxIterationsExceededError`, phases with `fallback.max_iterations_exceeded` config dispatch `handleMaxIterationsExceeded` (R20.10 c — `process.exit(exit_code)` + UX text), NOT silent abort.
 
 ## [3.4.3] - 2026-05-24 — Dual-source slash commands: `~/.claude/commands/<x>.md` + `~/.claude/skills/<x>/SKILL.md` (Option I); vapor CLI subcommand claims removed
 
