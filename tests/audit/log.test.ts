@@ -19,8 +19,7 @@ import {
   emitAuditRecord,
 } from '../../src/audit/log.js'
 import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
-import type { ArbitrateResult, TaskContext } from '../../src/routing/agentDefinition.js'
-import type { Rule } from '../../src/routing/decisionRules.js'
+import type { ArbitrateResult, Rule, TaskContext } from '../../src/workflow/lib/agentDefinition.js'
 
 const makeFixture = (taskText = 'test task content') => ({
   task: { task: taskText, task_type: 'engineering', phaseId: 'phase-4.3' } as TaskContext,

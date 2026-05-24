@@ -13,7 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RolePrompt } from '../../src/cli/lib/generateCommands.js'
-import type { AgentDefinition } from '../../src/routing/agentDefinition.js'
+import type { AgentDefinition } from '../../src/workflow/lib/agentDefinition.js'
 
 // Capture every AgentDefinition that flows into sdkSpawn so each fixture can
 // inspect the def built by buildAgentDef (private to run.ts).

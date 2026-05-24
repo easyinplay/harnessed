@@ -9,8 +9,7 @@ import { appendFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { type Static, Type } from '@sinclair/typebox'
 import { harnessedFile } from '../installers/lib/harnessedRoot.js'
-import type { ArbitrateResult, TaskContext } from '../routing/agentDefinition.js'
-import type { Rule } from '../routing/decisionRules.js'
+import type { ArbitrateResult, Rule, TaskContext } from '../workflow/lib/agentDefinition.js'
 
 // Computed lazily on first emit so harnessedRoot migration (if any) lands
 // before path composition.

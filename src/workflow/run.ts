@@ -17,9 +17,9 @@ import { runAfterOutputHook } from '../discipline/enforcement/after-output.js'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
 import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
-import type { AgentDefinition } from '../routing/agentDefinition.js'
 import { isVetoed } from './governance.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
+import type { AgentDefinition } from './lib/agentDefinition.js'
 import {
   type FallbackMaxIterationsExceededConfig,
   handleMaxIterationsExceeded,

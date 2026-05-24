@@ -19,12 +19,9 @@
 // real query() consumer here keeps engine orchestration thin.
 
 import { query, type SDKMessage, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk'
-import type { AgentDefinition } from '../../routing/agentDefinition.js'
-import { COMPLETION_SCHEMA, type SdkResultEnvelope } from '../../routing/completionSchema.js'
-import {
-  injectFactoryInternalFields,
-  toSdkAgentDefinition,
-} from '../../routing/lib/sdkReconcile.js'
+import type { AgentDefinition } from './agentDefinition.js'
+import { COMPLETION_SCHEMA, type SdkResultEnvelope } from './completionSchema.js'
+import { injectFactoryInternalFields, toSdkAgentDefinition } from './sdkReconcile.js'
 
 export interface SdkSpawnOpts {
   /** Subagent name registered in `agents` map; e.g. 'tavily-mcp', 'ui-ux-pro-max'. */

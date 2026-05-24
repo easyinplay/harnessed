@@ -14,8 +14,7 @@ vi.mock('node:fs', () => ({
 }))
 
 import { type AuditOutcome, emitAudit } from '../../src/audit/hook.js'
-import type { ArbitrateResult, TaskContext } from '../../src/routing/agentDefinition.js'
-import type { Rule } from '../../src/routing/decisionRules.js'
+import type { ArbitrateResult, Rule, TaskContext } from '../../src/workflow/lib/agentDefinition.js'
 
 const makeFixture = (
   matched: Rule | null = {

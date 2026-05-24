@@ -4,8 +4,7 @@
 // W1 T1.3 follow-up: signature derives routeLayer from `matched` + defaults iterCount=null inside
 // hook to keep engine.ts call sites single-line (≤200L budget headroom mitigation).
 
-import type { ArbitrateResult, TaskContext } from '../routing/agentDefinition.js'
-import type { Rule } from '../routing/decisionRules.js'
+import type { ArbitrateResult, Rule, TaskContext } from '../workflow/lib/agentDefinition.js'
 import { buildAuditRecord, emitAuditRecord } from './log.js'
 
 export type AuditOutcome =

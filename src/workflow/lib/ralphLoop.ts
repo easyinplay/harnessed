@@ -3,8 +3,8 @@
 // closure (ADR 0011 errata / B-02 B-26 / PATTERNS § 2.2 § 2.4 / RESEARCH § 1.3).
 // Phase v3.4.4 — moved from src/routing/lib/ to src/workflow/lib/ (single SoT, sister Phase 2 sdkSpawn pattern). promiseExtract + completionSchema + fallbackHandlers remain in src/routing/ pending Phase 6 hoist.
 
-import type { SdkResultEnvelope } from '../../routing/completionSchema.js'
-import { extractPromise } from '../../routing/lib/promiseExtract.js'
+import type { SdkResultEnvelope } from './completionSchema.js'
+import { extractPromise } from './promiseExtract.js'
 
 /** 4-layer dual-signal completion detect: (1) outer PRIMARY structured_output,
  *  (2) outer FALLBACK <promise> in result text, (3) inner FALLBACK on raw
@@ -58,8 +58,5 @@ export type {
   FallbackMaxIterationsExceededConfig,
   MaxIterFallbackCtx,
   VerbatimFallbackCtx,
-} from '../../routing/lib/fallbackHandlers.js'
-export {
-  handleMaxIterationsExceeded,
-  handleVerbatimCompleteFail,
-} from '../../routing/lib/fallbackHandlers.js'
+} from './fallbackHandlers.js'
+export { handleMaxIterationsExceeded, handleVerbatimCompleteFail } from './fallbackHandlers.js'
