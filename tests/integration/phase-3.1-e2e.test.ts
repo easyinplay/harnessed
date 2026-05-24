@@ -140,7 +140,7 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
         session_id: 'sess-trap-1',
       },
     ]
-    const { sdkSpawn } = await import('../../src/routing/lib/sdkSpawn.js')
+    const { sdkSpawn } = await import('../../src/workflow/lib/sdkSpawn.js')
     const baseDef = {
       description: 'e2e expert',
       prompt: 'BASE',
