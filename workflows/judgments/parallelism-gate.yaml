@@ -1,6 +1,7 @@
 # workflows/judgments/parallelism-gate.yaml
-# Parallelism 判据 — 机器化 ~/.claude/CLAUDE.md 「子任务并行执行机制 (subagent vs Agent Teams 路由)」节
-# Sister: ~/.claude/rules/agent-teams.md (5 升级触发完整生命周期)
+# Parallelism 判据 — bundled subagent vs Agent Teams routing rules
+# (4 triggers: subagent-default / main-session-fallback / agent-teams-upgrade / ralph-loop-wrapper)
+# Bundled Agent Teams lifecycle: 5 upgrade triggers + cleanup discipline
 # Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-11 (parallelism-gate) + R20.10 (ralph-loop 正交 wrapper)
 
 schema_version: harnessed.judgment.v1
@@ -23,7 +24,7 @@ triggers:
 
   agent-teams-upgrade:
     description: |
-      Upgrade — Claude Code Agent Teams 升级 per ~/.claude/rules/agent-teams.md
+      Upgrade — Claude Code Agent Teams 升级 (bundled rule):
       5 任一触发即可 (teammate SendMessage 互通 / subagent context overflow /
       共享 task list 自协调 / 对立假设辩论 / 全栈三路协同)。
       开 team 前 token 成本估算 team_cost < 2 × subagent_cost 才划算。

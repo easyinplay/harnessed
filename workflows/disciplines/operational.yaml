@@ -1,6 +1,6 @@
 # workflows/disciplines/operational.yaml
-# 操作纪律 — 机器化 project CLAUDE.md (biome preempt + commit safety) +
-# ~/.claude/CLAUDE.md (A7 ADR / no-skip-hooks / authorization-not-transitive)
+# 操作纪律 — bundled discipline (biome preempt + commit safety +
+# A7 ADR + no-skip-hooks + authorization-not-transitive + destructive-ops-explicit)
 # Phase v3.0-3.3 W0.4 ship per D-09
 # Snapshot of CLAUDE.md as of v3.0 ship date (K7 mitigation, verbatim)
 

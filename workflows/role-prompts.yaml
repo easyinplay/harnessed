@@ -1,7 +1,8 @@
 # <packageRoot>/workflows/role-prompts.yaml — harnessed v3.4.3 role-prompt registry.
 #
 # Per-sub-workflow metadata consumed by `src/cli/lib/generateCommands.ts` to
-# emit `~/.claude/commands/<slash-name>.md` files at `harnessed setup` time.
+# emit `<claude-home>/commands/<slash-name>.md` files at `harnessed setup`
+# time (Claude Code slash command install path).
 #
 # Each entry describes:
 #   primary_cap:    Which capability key the "preferred path" invokes (the
@@ -13,7 +14,7 @@
 #                   upstream gstack expert prompts where available (cited inline).
 #                   Self-contained — works even when upstream user-skill missing.
 #   severity:       Severity scale label used in the report format.
-#   description:    YAML frontmatter `description` for ~/.claude/commands/<x>.md.
+#   description:    YAML frontmatter `description` for <claude-home>/commands/<x>.md.
 #
 # Karpathy simplicity: 1 small yaml beats 23 hardcoded strings in TS.
 
@@ -45,7 +46,7 @@ prompts:
     specialist: "Stage 1 discuss dispatcher"
     responsibility: |
       Independently evaluate three clarification layers (strategic / phase /
-      subtask) per ~/.claude/CLAUDE.md "澄清/审查触发判据" and run only the
+      subtask) per the bundled 3-tier clarification gate and run only the
       layers whose gate fires. Each layer's command is `/discuss-strategic`,
       `/discuss-phase`, `/discuss-subtask`.
     checklist: []

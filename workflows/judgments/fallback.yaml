@@ -1,5 +1,5 @@
 # workflows/judgments/fallback.yaml
-# Fallback 三条铁律 — 机器化 ~/.claude/CLAUDE.md 「Fallback 三条铁律」 verbatim
+# Fallback 三条铁律 — bundled judgment (unsure → tend to skip with transparent disclosure / explicit user signal overrides / tiers independent)
 # Sister: 不同于 triggers (fires_when/skips_when 模式), 本 file 使用 'rules' 顶级 key
 # Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per R20.16 + D-16
 

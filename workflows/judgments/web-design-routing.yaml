@@ -1,5 +1,5 @@
 # workflows/judgments/web-design-routing.yaml
-# Sister: ~/.claude/rules/web-design.md ui-ux-pro-max 默认 + frontend-design 补充 + 仲裁
+# Bundled routing rule: ui-ux-pro-max 默认主方案 (数据驱动) + frontend-design 创意补充 + arbitration
 # Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11
 #
 # 默认 ui-ux-pro-max 优先 (数据驱动 / 标准化 / 可解释);

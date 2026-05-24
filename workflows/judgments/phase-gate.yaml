@@ -1,6 +1,6 @@
 # workflows/judgments/phase-gate.yaml
-# Phase 层 (Phase tier) 判据 — 机器化 ~/.claude/CLAUDE.md 「澄清/审查触发判据」节
-# Sister: GSD /gsd-discuss-phase orchestration gate (also /gsd-new-project, /gsd-next)
+# Phase 层 (Phase tier) 判据 — bundled judgment (3-tier independent clarification: strategic / phase / subtask)
+# Pairs with: GSD /gsd-discuss-phase orchestration gate (also /gsd-new-project, /gsd-next; when capability available)
 # Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-04 + D-16 multi-file 分类
 
 schema_version: harnessed.judgment.v1

@@ -20,7 +20,7 @@ rules:
       stay consistent with CLI tone.
     enforcement: info
     trigger: every Claude response
-    check_method: read ~/.claude/settings.json env.HARNESSED_USER_LANG, validate output lang matches
+    check_method: read env.HARNESSED_USER_LANG, validate output lang matches
 
   - id: preserve-english-categories
     description: 8 类强制保留英文原文,不翻译不音译 (语言无关 — 任何 user_lang 都适用)

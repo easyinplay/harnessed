@@ -1,5 +1,5 @@
 # workflows/judgments/web-testing-routing.yaml
-# Sister: ~/.claude/rules/web-testing.md 三层职责矩阵 + 决策树机器化
+# Bundled routing rule: 三层职责矩阵 (脑 @playwright/test / 手 playwright-cli / 筋骨 webapp-testing) + 决策树
 # Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11
 #
 # 三层职责矩阵 verbatim:

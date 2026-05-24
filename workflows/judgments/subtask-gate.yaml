@@ -1,6 +1,6 @@
 # workflows/judgments/subtask-gate.yaml
-# 子任务层 (Subtask tier) 判据 — 机器化 ~/.claude/CLAUDE.md 「澄清/审查触发判据」节
-# Sister: superpowers:brainstorming skill (与 superpowers TDD red-green-refactor 并行评估)
+# 子任务层 (Subtask tier) 判据 — bundled judgment (3-tier independent clarification: strategic / phase / subtask)
+# Pairs with: superpowers:brainstorming skill (与 superpowers TDD red-green-refactor 并行评估; when capability available)
 # Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-04 + D-16 multi-file 分类
 
 schema_version: harnessed.judgment.v1

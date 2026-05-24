@@ -1,6 +1,6 @@
 # workflows/judgments/tdd-gate.yaml
-# TDD 判据 — 机器化 ~/.claude/CLAUDE.md 「Execute 阶段 TDD 强烈建议开启」节
-# Sister: superpowers:test-driven-development skill (alias mattpocock /tdd per D-13)
+# TDD 判据 — bundled judgment (Execute-stage TDD: red-green-refactor strongly recommended for core logic / algorithms / high-reliability)
+# Pairs with: superpowers:test-driven-development skill (alias mattpocock /tdd per D-13; when capability available)
 # Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-13 (6 fires + 3 skips)
 
 schema_version: harnessed.judgment.v1
