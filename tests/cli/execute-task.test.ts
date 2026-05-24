@@ -1,33 +1,36 @@
 // Phase 2.2 W5 T5.5 — cli/execute-task.ts unit tests (B-28 + F7 + KICKOFF § 1.2).
 //
-// 6+ test cells per task_plan.md L919-926 acceptance:
-//   1. registers `execute-task` subcommand
-//   2. H1 gate — --non-interactive without --apply/--dry-run → exit 2
-//   3. missing --task → exit 2 (commander requiredOption)
-//   4. --dry-run --non-interactive → exit 0 + stdout contains workflow JSON
-//   5. --model-tier inherit → all phases.model === 'inherit' in dry-run JSON
-//   6. invalid workflow path → exit 2 (loadPhases throw caught)
-// T3.5.W0.4 — 2 NEW fixture verify before-commit K5 Option A wire:
-//   7. --apply path → runBeforeCommitHook triggered (subagent enforce biome-preempt)
-//   8. --dry-run path → runBeforeCommitHook NOT triggered (clean K5 separation)
+// v3.4.4 Phase 4 Commit 4 — REFACTORED per PHASE-4-SPEC.md L404-411 to mock
+// `runWorkflow` at module boundary (sister tests/cli/run.test.ts L11-13 +
+// tests/cli/research.test.ts L24-26 pattern) instead of the legacy
+// @anthropic-ai/claude-agent-sdk + engine mock chain. K5 Option A
+// `runBeforeCommitHook` + `node:child_process.execSync` mocks PRESERVED (cells
+// 7+8+9 still exercise the pre-flight enforcement).
 //
-// Pattern J — mock @anthropic-ai/claude-agent-sdk + runRouting (apply path);
-// dry-run path uses real loadPhases reading workflows/execute-task/phases.yaml.
+// 11 cells:
+//   1. registers `execute-task` subcommand
+//   3. missing --task → non-zero exit (commander requiredOption)
+//   4. --dry-run --non-interactive → exit 0 + new JSON envelope shape
+//      (workflow:string, yamlPath, gateContext.task) — replaces v2
+//      {workflow, phases, taskCtx} shape
+//   5. --model-tier inherit → gateContext.modelTierOverride === 'inherit'
+//   6. invalid workflow path → exit 2 + stderr matches /workflow.yaml not found/
+//   7. T3.5.W0.4 — apply path triggers runBeforeCommitHook (K5 Option A enforce)
+//   8. T3.5.W0.4 — dry-run path NOT triggers runBeforeCommitHook (K5 separation)
+//   9. v3.0.1 flip: apply-immediate default still wires through runBeforeCommitHook
+//  10. Phase 4 NEW — runWorkflow called with yamlPath ending execute-task/workflow.yaml
+//      (NOT phases.yaml — proves v3 yaml dispatch)
+//  11. Phase 4 NEW — --max-iterations 5 forwards to gateContext.maxIterations === 5
+//
+// Pattern J — mock runWorkflow (Phase 4) + mock node:child_process.execSync +
+// runBeforeCommitHook (K5 Option A regression preserved).
 
 import { Command } from 'commander'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-// Mock SDK BEFORE engine import (Pattern J — Wave 4 sdk-spawn.test.ts L22-30).
-vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
-  query: () =>
-    (async function* () {
-      yield {
-        type: 'result',
-        subtype: 'success',
-        result: 'COMPLETE',
-        structured_output: { status: 'COMPLETE' },
-      }
-    })(),
+// Mock workflow runtime BEFORE registerExecuteTask import — captures runWorkflow calls.
+vi.mock('../../src/workflow/run.js', () => ({
+  runWorkflow: vi.fn(async () => ({ status: 'complete', phasesRun: 0 })),
 }))
 
 // T3.5.W0.4 — mock before-commit hook + execSync (apply path verify);
@@ -41,6 +44,7 @@ vi.mock('node:child_process', () => ({
 }))
 
 import { registerExecuteTask } from '../../src/cli/execute-task.js'
+import { runWorkflow } from '../../src/workflow/run.js'
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -92,6 +96,7 @@ describe('cli/execute-task', () => {
     vi.clearAllMocks()
     runBeforeCommitHookMock.mockReset()
     runBeforeCommitHookMock.mockResolvedValue(undefined)
+    vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 0 })
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -111,7 +116,7 @@ describe('cli/execute-task', () => {
     expect(code).not.toBe(0)
   })
 
-  it('4. --dry-run --non-interactive → exit 0 + stdout JSON contains workflow + 4 phases', async () => {
+  it('4. --dry-run --non-interactive → exit 0 + JSON envelope (workflow, yamlPath, gateContext)', async () => {
     const { code, stdout } = await runCli([
       'execute-task',
       '--task',
@@ -120,20 +125,20 @@ describe('cli/execute-task', () => {
       '--non-interactive',
     ])
     expect(code).toBe(0)
+    expect(runWorkflow).not.toHaveBeenCalled()
     const parsed = JSON.parse(stdout)
+    // Phase 4 — new dry-run shape per PHASE-4-SPEC.md L227 / L406:
+    //   workflow is the subcommand-resolved string (not yaml-parsed object)
+    //   yamlPath ends with workflows/execute-task/workflow.yaml
+    //   gateContext.task === '--task' value
     expect(parsed.workflow).toBe('execute-task')
-    expect(parsed.phases).toHaveLength(4)
-    expect(parsed.taskCtx).toEqual({ task: 'implement auth', task_type: 'execute-task' })
-    // intel CD-2 § 第 4 条 defaults
-    expect(parsed.phases.map((p: { model: string }) => p.model)).toEqual([
-      'opus',
-      'sonnet',
-      'sonnet',
-      'haiku',
-    ])
+    expect(parsed.yamlPath).toBeDefined()
+    expect(parsed.yamlPath.replace(/\\/g, '/')).toMatch(/workflows\/execute-task\/workflow\.yaml$/)
+    expect(parsed.gateContext).toBeDefined()
+    expect(parsed.gateContext.task).toBe('implement auth')
   })
 
-  it('5. --model-tier inherit → all phases.model === "inherit" (B-10 escape hatch)', async () => {
+  it('5. --model-tier inherit → gateContext.modelTierOverride === "inherit" (B-10 escape hatch)', async () => {
     const { code, stdout } = await runCli([
       'execute-task',
       '--task',
@@ -145,15 +150,10 @@ describe('cli/execute-task', () => {
     ])
     expect(code).toBe(0)
     const parsed = JSON.parse(stdout)
-    expect(parsed.phases.map((p: { model: string }) => p.model)).toEqual([
-      'inherit',
-      'inherit',
-      'inherit',
-      'inherit',
-    ])
+    expect(parsed.gateContext.modelTierOverride).toBe('inherit')
   })
 
-  it('6. invalid workflow path → exit 2 (loadPhases throws caught)', async () => {
+  it('6. invalid workflow path → exit 2 + stderr matches /workflow.yaml not found/', async () => {
     const { code, stderr } = await runCli([
       'execute-task',
       '--task',
@@ -164,10 +164,10 @@ describe('cli/execute-task', () => {
       'nonexistent-workflow-xyz',
     ])
     expect(code).toBe(2)
-    expect(stderr).toMatch(/failed to load/i)
+    expect(stderr).toMatch(/workflow\.yaml not found/)
   })
 
-  it('7. T3.5.W0.4 — --apply path triggers runBeforeCommitHook (K5 Option A enforce)', async () => {
+  it('7. T3.5.W0.4 — apply path triggers runBeforeCommitHook (K5 Option A enforce)', async () => {
     await runCli(['execute-task', '--task', 'implement auth', '--non-interactive'])
     expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
   })
@@ -178,11 +178,41 @@ describe('cli/execute-task', () => {
   })
 
   // v3.0.1 UX flip — apply-immediate default regression fixture.
-  // 在 --non-interactive 下,no --apply / no --dry-run 仍被 H1 gate exit 2 (CI safety)。
-  // 但 --apply legacy alias 等价 immediate default (新行为)。
-  it('9. v3.0.1 flip: --apply legacy alias still triggers immediate (no-op alias)', async () => {
+  // 在 --non-interactive 下,no --apply / no --dry-run 仍走 apply-immediate path
+  // (--apply legacy alias removed in v3.3.0;default 已是 apply-immediate)。
+  it('9. v3.0.1 flip: apply-immediate default still triggers runBeforeCommitHook', async () => {
     await runCli(['execute-task', '--task', 'legacy', '--non-interactive'])
-    // --apply path still wires through runBeforeCommitHook (sister Cell 7 regression)
     expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('10. Phase 4 — runWorkflow called with yamlPath ending execute-task/workflow.yaml (NOT phases.yaml)', async () => {
+    await runCli(['execute-task', '--task', 'verify v3 dispatch', '--non-interactive'])
+    expect(runWorkflow).toHaveBeenCalledTimes(1)
+    const calls = vi.mocked(runWorkflow).mock.calls
+    const [yamlPath, vars, opts] = calls[0] ?? []
+    expect(typeof yamlPath).toBe('string')
+    expect((yamlPath as string).replace(/\\/g, '/')).toMatch(
+      /workflows\/execute-task\/workflow\.yaml$/,
+    )
+    // Negative assertion — proves v2 phases.yaml is NOT the dispatched yaml.
+    expect((yamlPath as string).replace(/\\/g, '/')).not.toMatch(/phases\.yaml$/)
+    expect(vars).toEqual({})
+    expect(opts?.packageRoot).toBeDefined()
+    expect((opts?.gateContext as Record<string, unknown>)?.task).toBe('verify v3 dispatch')
+  })
+
+  it('11. Phase 4 — --max-iterations 5 forwards to gateContext.maxIterations === 5 (Phase 3 plumb path preserved)', async () => {
+    const { code, stdout } = await runCli([
+      'execute-task',
+      '--task',
+      'x',
+      '--dry-run',
+      '--non-interactive',
+      '--max-iterations',
+      '5',
+    ])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.gateContext.maxIterations).toBe(5)
   })
 })
