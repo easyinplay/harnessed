@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 3.4.4 (Unreleased)
+
+- **runtime**: `harnessed run <name>` now drives real Claude subagent spawns (was placeholder `<stub for X>` in v3.4.3). 24 v3 workflow yamls load + execute through `loadPhases` + `runWorkflow` + `runMasterOrchestrator` end-to-end. `--dry-run` still bypasses spawn (Phase 1 behavior preserved).
+- **schema**: v3 dispatch arm added to `loadPhases` — yamls with `schema_version: harnessed.workflow.v3` validate against `WorkflowSchemaV3` (master shape with `delegates_to` + no phases supported).
+- **refactor**: `sdkSpawn` driver moved from `src/routing/lib/` to `src/workflow/lib/` (single SoT, prep for Phase 6 routing deletion).
+
 ## [3.4.3] - 2026-05-24 — Dual-source slash commands: `~/.claude/commands/<x>.md` + `~/.claude/skills/<x>/SKILL.md` (Option I); vapor CLI subcommand claims removed
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 commands/ 生成 + SKILL.md 重新渲染)
