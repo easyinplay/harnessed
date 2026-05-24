@@ -5,6 +5,11 @@
 // Semantic Router L2 → phase 2.0 execute-task workflow). Adding new subsystems
 // = add export here.
 
+export {
+  isComplete,
+  MaxIterationsExceededError,
+  VerbatimCompleteFailError,
+} from '../workflow/lib/ralphLoop.js'
 export type {
   AgentDefinition,
   AgentDefinitionOpts,
@@ -26,11 +31,6 @@ export { arbitrate, loadDecisionRules } from './decisionRules.js'
 export type { EngineResult, RoutingOpts } from './engine.js'
 export { runRouting } from './engine.js'
 export { extractPromise, PROMISE_PATTERN } from './lib/promiseExtract.js'
-export {
-  isComplete,
-  MaxIterationsExceededError,
-  VerbatimCompleteFailError,
-} from './lib/ralphLoop.js'
 export type { SemanticMatchResult } from './semanticRouter.js'
 export {
   createSemanticRouter,

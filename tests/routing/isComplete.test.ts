@@ -1,4 +1,4 @@
-// Phase 2.2 Wave 2 T2.5 — unit tests for src/routing/lib/ralphLoop.ts
+// Phase 2.2 Wave 2 T2.5 — unit tests for src/workflow/lib/ralphLoop.ts (moved Phase v3.4.4)
 // `isComplete` 4-layer dual-signal (RESEARCH § 1.3 / SC3 PRIMARY + B-07 FALLBACK).
 //
 // 4-layer table (RESEARCH § 1.3):
@@ -8,7 +8,7 @@
 //   layer 4 — all-signals-fail : neither structured_output nor <promise> present → false
 
 import { describe, expect, it } from 'vitest'
-import { isComplete } from '../../src/routing/lib/ralphLoop.js'
+import { isComplete } from '../../src/workflow/lib/ralphLoop.js'
 
 describe('isComplete — layer 1: outer PRIMARY (structured_output.status=COMPLETE)', () => {
   it('returns true for {subtype:success, structured_output:{status:COMPLETE}}', () => {

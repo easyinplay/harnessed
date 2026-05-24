@@ -35,7 +35,7 @@ import {
 import {
   MaxIterationsExceededError,
   VerbatimCompleteFailError,
-} from '../../src/routing/lib/ralphLoop.js'
+} from '../../src/workflow/lib/ralphLoop.js'
 
 class ExitError extends Error {
   constructor(public code: number) {

@@ -6,6 +6,11 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { emitAudit } from '../audit/hook.js'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
+import {
+  MaxIterationsExceededError,
+  ralphLoopWrap,
+  VerbatimCompleteFailError,
+} from '../workflow/lib/ralphLoop.js'
 import { sdkSpawn } from '../workflow/lib/sdkSpawn.js'
 import {
   type AgentDefinition,
@@ -24,15 +29,10 @@ import {
   handleMaxIterationsExceeded,
   handleVerbatimCompleteFail,
 } from './lib/fallbackHandlers.js'
-import {
-  MaxIterationsExceededError,
-  ralphLoopWrap,
-  VerbatimCompleteFailError,
-} from './lib/ralphLoop.js'
 import { ensureSkillsInstalled } from './lib/skillInstall.js'
 import { match as semanticMatch } from './semanticRouter.js'
 
-export { MaxIterationsExceededError, VerbatimCompleteFailError } from './lib/ralphLoop.js'
+export { MaxIterationsExceededError, VerbatimCompleteFailError } from '../workflow/lib/ralphLoop.js'
 
 /** Engine three-state discriminated union (PLAN.md § 4 接口契约 1+2). */
 export type EngineResult =

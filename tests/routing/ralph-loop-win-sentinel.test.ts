@@ -12,7 +12,7 @@
 //   5. structured_output     — PRIMARY path (envelope w/ structured_output.status=COMPLETE)
 
 import { describe, expect, it } from 'vitest'
-import { MaxIterationsExceededError, ralphLoopWrap } from '../../src/routing/lib/ralphLoop.js'
+import { MaxIterationsExceededError, ralphLoopWrap } from '../../src/workflow/lib/ralphLoop.js'
 
 const skipIfNotWin = process.platform !== 'win32'
 
