@@ -54,9 +54,9 @@ to brainstorm or planning (D-04 PUSH 任 1 phase 转换前 read = vetoed → 全
 
 ### Phase 5 planning-with-files plugin 真接 (Q-AUDIT-5a LOCKED Option A)
 
-05-persist invokes the **Claude Code plugin** slash command `/plan` via plugin
-cache at `~/.claude/plugins/cache/planning-with-files/planning-with-files/2.34.0/`
-(verified 2026-05-20). The plugin generates 3 markdown files in
+05-persist invokes the **Claude Code plugin** slash command `/plan`. Requires
+the `planning-with-files` Claude Code plugin to be installed via the Claude Code
+plugin marketplace. The plugin generates 3 markdown files in
 `.planning/<phase-id>/`:
 
 - `task_plan.md` — 主计划 (task 列表 + 文件路径 + 依赖顺序 + 验收标准)
@@ -84,7 +84,7 @@ harnessed plan-feature --task "<text>" --apply
 ## Forward-looking note
 
 The `trigger_phrases:` frontmatter is active after `harnessed setup` copies this
-SKILL.md to `~/.claude/skills/plan-feature/` — Claude Code then loads the slash
+SKILL.md to `<claude-home>/skills/plan-feature/` — Claude Code then loads the slash
 command `/plan-feature` automatically (Gap B fix — v1.0.2).
 
 ## References

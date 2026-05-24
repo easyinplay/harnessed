@@ -1,8 +1,8 @@
 ---
 name: verify-simplify
 description: |
-  Stage ④.g verify sub-workflow — code-simplifier 末尾串行 (移除重复 / 多余逻辑,
-  sister ~/.claude/CLAUDE.md "Verify 阶段 — 末尾 code-simplifier" verbatim)。
+  Stage ④.g verify sub-workflow — code-simplifier 末尾串行 (移除重复 / 多余逻辑;
+  bundled verify-stage cadence — tail-step code-simplifier).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (code-simplifier) + 1 phase (gate ref is_final_step 末尾串行)。
   Triggered by slash command
@@ -64,7 +64,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 ## References
 
 - D-04 Stage ④ Verify 7 sub 分解
-- ~/.claude/CLAUDE.md "Verify 阶段 — 末尾 code-simplifier" verbatim
 - workflows/capabilities.yaml — code-simplifier
 - workflows/judgments/stage-routing.yaml — verify-simplify-tail trigger
 - workflows/defaults.yaml — ralph_max_iterations.verify-simplify.* values (W2.2 backfill)

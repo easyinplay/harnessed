@@ -74,7 +74,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-05 — phase-level `invokes_tools` conditional tool fire
 - D-04 — `gate` 4-level ref pre-resolved by `judgmentResolver`
 - D-02 — SKILL.md `name:` bare slash cmd (`task-clarify` NOT `task/clarify`) per ADR 0030
-- ~/.claude/CLAUDE.md "Execute 阶段" 节 brainstorming 子任务层判据
 - `workflows/judgments/subtask-gate.yaml` triggers.brainstorming
 - `workflows/capabilities.yaml` — superpowers-brainstorming + grill-with-docs entries
 - `workflows/defaults.yaml` — ralph_max_iterations.task-clarify.* values (T3.4.W2.2 followup)

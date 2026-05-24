@@ -2,7 +2,7 @@
 name: verify-code-review
 description: |
   Stage ④.b verify sub-workflow — code-review 多 agent 并行 fan-out 高置信度 finding
-  (subagent default per ~/.claude/CLAUDE.md 子任务并行机制 — Task / Agent 工具 spawn
+  (subagent default per bundled parallelism gate — Task / Agent 工具 spawn
   多 subagent fan-out, context 隔离, token 敏感)。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (code-review) + 1 phase (parallelism ref judgments.parallelism-gate.subagent-default.fires)。
@@ -29,8 +29,8 @@ onto harnessed runtime (Phase v3.0-3.4 W0.11 — D-04 Stage ④ Verify 7 sub + �
 | 1 | `01-code-review` | mattpocock-skills | sonnet | `{{ capabilities.code-review.cmd }}` | `judgments.parallelism-gate.subagent-default.fires` |
 
 Per-phase config loads from `workflows/verify/code-review/workflow.yaml`; engine spawns
-multiple subagent in parallel fan-out (sister `~/.claude/CLAUDE.md` 子任务并行机制 默认 —
-Task / Agent 工具 spawn 多任务并发, context 隔离, summary 折叠回主 context)。
+multiple subagent in parallel fan-out (bundled subagent-default rule — Task / Agent
+工具 spawn 多任务并发, context 隔离, summary 折叠回主 context)。
 
 ## Capability refs
 
@@ -65,8 +65,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 ## References
 
 - D-04 Stage ④ Verify 7 sub 分解
-- ~/.claude/CLAUDE.md "Verify 阶段 — code-review 多 agent 并行" verbatim
-- ~/.claude/CLAUDE.md "子任务并行执行机制 — subagent vs Agent Teams 路由" subagent default
 - workflows/capabilities.yaml — code-review
 - workflows/judgments/parallelism-gate.yaml — subagent-default.fires
 - workflows/defaults.yaml — ralph_max_iterations.verify-code-review.* values (W2.2 backfill)

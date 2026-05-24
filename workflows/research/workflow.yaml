@@ -2,8 +2,8 @@
 # (v2 19L → v3 ~25L schema bump per RESEARCH-workflows Area 2 Standalone section)
 #
 # Standalone Stage ① alternate — 多源调研 Tavily MCP (默认关键词) + Exa MCP (描述式 / 学术)
-# + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; sister
-# ~/.claude/rules/web-search.md + context7.md routing 机器化 per R20.7 + D-08。
+# + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; bundled web-search +
+# context7 routing rules (workflows/judgments/web-search-routing.yaml) 机器化 per R20.7 + D-08。
 #
 # v2 → v3 字段 delta (W1.1 schema bump scope):
 #   BUMP `schema_version: harnessed.workflow.v3`              (17th surface — sister Phase 3.3 W0.11)
@@ -26,8 +26,8 @@ schema_version: harnessed.workflow.v3
 workflow: research
 description: |
   Standalone Stage ① alternate — 多源调研 Tavily MCP (默认关键词) + Exa MCP (描述式 /
-  学术) + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; sister
-  ~/.claude/rules/web-search.md + context7.md routing 机器化 per R20.7 + D-08。
+  学术) + ctx7 CLI (库 API 文档) fan-out + GSD discuss synth aggregate; bundled
+  web-search + context7 routing rules 机器化 per R20.7 + D-08。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available: [tavily-mcp, exa-mcp, ctx7, gsd-discuss-phase]

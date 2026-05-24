@@ -1,11 +1,10 @@
 # workflows/retro/workflow.yaml — Phase v3.0-3.4 W1 T3.4.W1.2 NEW
 #
 # Standalone post-④ Verify — gstack /retro 经验教训总结 (项目 / 里程碑结束可选,
-# sister ~/.claude/CLAUDE.md "项目 / 里程碑结束: 可选跑 /retro 总结" verbatim)。
+# bundled milestone-close retrospective cadence).
 # Sink RETROSPECTIVE.md (sister Phase v2.0-2.5 RETROSPECTIVE pattern)。
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "项目 / 里程碑结束: 可选跑 /retro 总结" verbatim
 #   - workflows/capabilities.yaml — retro-gstack (Bucket 7 gstack optional alias suffix per
 #     Pattern A E.2 LOCK, 解决 namespace 冲突 — retro carrier 自带 gstack 字符串 NOT prefix policy)
 #   - workflows/capabilities.yaml — planning-with-files (Bucket 4 核心 capability /plan)

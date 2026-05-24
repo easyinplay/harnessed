@@ -1,7 +1,7 @@
 # workflows/plan/architecture/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.4
 #
-# Stage ②.a 架构层 sub-workflow — gstack /plan-eng-review (复杂架构强制,
-# sister ~/.claude/CLAUDE.md "⚠️ 复杂架构前 plan-eng-review")。
+# Stage ②.a 架构层 sub-workflow — gstack /plan-eng-review (mandatory before
+# complex-architecture phases per bundled plan-stage cadence).
 #
 # Sister refs:
 #   - workflows/capabilities.yaml — plan-eng-review (Bucket 7 gstack 33 optional registry)

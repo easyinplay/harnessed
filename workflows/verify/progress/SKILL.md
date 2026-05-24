@@ -2,8 +2,8 @@
 name: verify-progress
 description: |
   Stage ④.a verify sub-workflow — gsd-verify-work + gsd-progress 必跑串行 (verify-work 起点)
-  + planning-with-files progress.md 持久化 (sister ~/.claude/CLAUDE.md "Verify 阶段" verbatim
-  必跑串行 — gsd-verify-work UAT-driven acceptance + gsd-progress 状态同步 顺序不可调换)。
+  + planning-with-files progress.md 持久化 (bundled verify-stage cadence — mandatory serial:
+  gsd-verify-work UAT-driven acceptance + gsd-progress 状态同步 顺序不可调换)。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gsd-verify-work + gsd-progress + planning-with-files) + 3 phases (serial 01→02 + persist
   progress.md sink)。Triggered by harnessed CLI `harnessed verify-progress --phase <num>` or
@@ -64,7 +64,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ④ Verify 7 sub 分解
 - D-12 gstack 治理关卡 ref (verify-paranoid 后续 sub)
-- ~/.claude/CLAUDE.md "Verify 阶段 — gsd-verify-work + gsd-progress 必跑串行" verbatim
 - workflows/capabilities.yaml — gsd-verify-work / gsd-progress / planning-with-files
 - workflows/judgments/stage-routing.yaml — verify-progress-always trigger
 - workflows/defaults.yaml — ralph_max_iterations.verify-progress.* values (W2.2 backfill)

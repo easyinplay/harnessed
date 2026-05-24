@@ -1,10 +1,9 @@
 # workflows/verify/security/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.13b
 #
 # Stage ④.e verify sub-workflow — gstack /cso 安全审查 OWASP/auth/secrets
-# (has_auth_or_secrets 触发, 可选 conditional, sister ~/.claude/CLAUDE.md "可选 /cso" verbatim)。
+# (has_auth_or_secrets 触发, 可选 conditional; bundled verify-stage optional /cso step).
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /cso" 章节
 #   - workflows/judgments/stage-routing.yaml verify-security-secrets trigger (has_auth_or_secrets)
 #   - workflows/capabilities.yaml — gstack-cso (Bucket 3 治理关卡, impl: gstack, cmd: /cso)
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 06-cso-conditional sister pattern

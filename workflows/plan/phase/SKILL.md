@@ -3,7 +3,7 @@ name: plan-phase
 description: |
   Stage ②.b 计划层 plan sub-workflow — GSD /gsd-plan-phase Wave A research + Wave B planner +
   Wave C plan-checker + planning-with-files Claude Code plugin /plan 持久化 task_plan.md +
-  progress.md (sister ~/.claude/CLAUDE.md "Plan 阶段 GSD + planning-with-files")。Stage ② 铁律:
+  progress.md (bundled Plan-stage cadence: GSD + planning-with-files)。Stage ② 铁律:
   dual capability (GSD orchestration + planning-with-files plugin)。schema_version:
   harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available [gsd-plan-phase,
   planning-with-files] + 2 phases (01-gsd-plan + 02-persist)。Triggered by harnessed CLI
@@ -34,8 +34,8 @@ claude-code-plugin /plan + Pattern A sub-workflow ship)。
 Sister `workflows/capabilities.yaml` entries:
 - `gsd-plan-phase` — Bucket 2 (impl: gsd, cmd: /gsd-plan-phase)
 - `planning-with-files` — Bucket 4 (impl: claude-code-plugin, cmd: /plan;
-  plugin_path: ~/.claude/plugins/cache/planning-with-files/...; outputs:
-  task_plan.md + progress.md + findings.md)
+  requires the `planning-with-files` Claude Code plugin to be installed via the
+  Claude Code plugin marketplace; outputs: task_plan.md + progress.md + findings.md)
 
 ## Stage ② 铁律 — dual capability
 
@@ -72,6 +72,5 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ② Plan 二层 (架构 / 计划)
 - D-15 Q-AUDIT-5a planning-with-files claude-code-plugin reframe (NOT npm-sdk)
-- ~/.claude/CLAUDE.md "Plan 阶段 GSD + planning-with-files"
 - workflows/capabilities.yaml — gsd-plan-phase / planning-with-files (Bucket 4)
 - workflows/defaults.yaml — ralph_max_iterations.plan-phase.* values (W2.2 backfill)

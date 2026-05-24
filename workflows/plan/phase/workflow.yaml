@@ -1,9 +1,9 @@
 # workflows/plan/phase/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.5
 #
 # Stage ②.b 计划层 sub-workflow — GSD /gsd-plan-phase Wave A research + Wave B planner +
-# Wave C plan-checker + planning-with-files /plan 持久化 task_plan.md (sister
-# ~/.claude/CLAUDE.md "Plan 阶段 GSD + planning-with-files")。Stage ② 铁律: dual capability
-# (gsd-plan-phase + planning-with-files /plan invokes)。
+# Wave C plan-checker + planning-with-files /plan 持久化 task_plan.md
+# (bundled Plan-stage cadence: GSD + planning-with-files).
+# Stage ② 铁律: dual capability (gsd-plan-phase + planning-with-files /plan invokes)。
 #
 # Sister refs:
 #   - workflows/capabilities.yaml — gsd-plan-phase / planning-with-files

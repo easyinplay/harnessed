@@ -1,10 +1,9 @@
 # workflows/verify/paranoid/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.12
 #
 # Stage ④.c verify sub-workflow — gstack /review Paranoid Staff Engineer 关键模块 PR 前强制
-# (sister ~/.claude/CLAUDE.md "🔒 关键模块 PR 前强制" verbatim)。
+# (bundled gstack governance gate — mandatory before critical-module PR).
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "gstack 治理关卡 🔒 关键模块 PR 前强制" verbatim
 #   - workflows/judgments/stage-routing.yaml verify-paranoid-critical trigger (phase.is_critical_module)
 #   - workflows/capabilities.yaml — gstack-review (Bucket 3 治理关卡, impl: gstack, cmd: /review)
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 04-gstack-review-conditional sister pattern

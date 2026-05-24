@@ -1,7 +1,7 @@
 # workflows/discuss/phase/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.2
 #
 # Stage ①.b Phase 层 sub-workflow — GSD /gsd-discuss-phase 灰色澄清
-# (sister ~/.claude/CLAUDE.md "澄清/审查触发判据 — Phase 层")。
+# (bundled 3-tier clarification — phase layer).
 #
 # Sister refs:
 #   - workflows/judgments/phase-gate.yaml — gsd-discuss-phase trigger

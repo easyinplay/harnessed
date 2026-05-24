@@ -1,8 +1,8 @@
 ---
 name: plan-architecture
 description: |
-  Stage ②.a 架构层 plan sub-workflow — gstack /plan-eng-review (复杂架构强制治理关卡,
-  sister ~/.claude/CLAUDE.md "⚠️ 复杂架构前 plan-eng-review")。schema_version:
+  Stage ②.a 架构层 plan sub-workflow — gstack /plan-eng-review (复杂架构强制治理关卡;
+  bundled plan-stage cadence: mandatory before complex-architecture phases)。schema_version:
   harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   [plan-eng-review] + 1 phase (01-plan-eng-review) + gate literal expr
   `phase.is_complex_architecture == true`。Triggered by harnessed CLI `harnessed
@@ -70,6 +70,5 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ② Plan 二层 (架构 / 计划)
 - D-12 gstack 治理关卡 (复杂架构强制)
-- ~/.claude/CLAUDE.md "⚠️ 复杂架构前: /plan-eng-review"
 - workflows/capabilities.yaml — plan-eng-review (Bucket 7)
 - workflows/defaults.yaml — ralph_max_iterations.plan-architecture.* values (W2.2 backfill)

@@ -20,7 +20,7 @@ trigger_phrases:
 ## Overview
 
 4-stage cadence Stage ① master orchestrator delegating to 3 independent sub-workflows
-(per ~/.claude/CLAUDE.md "澄清/审查触发判据" 节 三层独立判断):
+(bundled 3-tier independent clarification: strategic / phase / subtask):
 
 | sub | gate ref | mode | when fires |
 | --- | -------- | ---- | ---------- |
@@ -70,7 +70,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-01 master orchestrator delegation pattern
 - D-02 bare slash cmd convention (ADR 0030 namespace policy LOCK)
 - D-04 Stage ① Discuss 三层独立判
-- ~/.claude/CLAUDE.md "澄清/审查触发判据" 节 verbatim
 - workflows/judgments/stage-routing.yaml — discuss-{strategic,phase,subtask}-delegate triggers
 - workflows/discuss/{strategic,phase,subtask}/workflow.yaml — 3 sub-workflow Phase 3.4 SHIPPED
 - workflows/judgments/fallback.yaml — 链式互不前置 chain-isolation 铁律

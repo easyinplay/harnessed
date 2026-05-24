@@ -21,7 +21,7 @@ trigger_phrases:
 ## Overview
 
 4-stage cadence Stage ② master orchestrator delegating to 2 sequential sub-workflows
-(per ~/.claude/CLAUDE.md "Plan 阶段" 节 + D-06 planning-with-files cross-cutting tool):
+(bundled Plan-stage cadence + D-06 planning-with-files cross-cutting tool):
 
 | order | sub | gate ref | mode | when fires |
 | ----- | --- | -------- | ---- | ---------- |
@@ -71,6 +71,5 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-01 master orchestrator delegation pattern
 - D-02 bare slash cmd convention (ADR 0030 namespace policy LOCK)
 - D-06 planning-with-files cross-cutting tool (NOT 独立 sub-workflow)
-- ~/.claude/CLAUDE.md "Plan 阶段" 节 verbatim
 - workflows/judgments/stage-routing.yaml — plan-{architecture,phase}-delegate triggers
 - workflows/plan/{architecture,phase}/workflow.yaml — 2 sub-workflow Phase 3.4 SHIPPED

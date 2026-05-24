@@ -1,11 +1,10 @@
 # workflows/plan/auto/workflow.yaml — Phase v3.0-3.5 W1 T3.5.W1.2
 #
 # Stage ② Plan master orchestrator — 串行 invoke 2 sub (architecture conditional → phase always)
-# per ~/.claude/CLAUDE.md "Plan 阶段" 节 + RESEARCH-workflows § Area 2。
+# per bundled Plan-stage cadence + RESEARCH-workflows § Area 2。
 # planning-with-files /plan 是 D-06 cross-cutting tool (NOT 独立 sub-workflow per user clarification 2)。
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Plan 阶段 (GSD + planning-with-files, 可选 gstack 架构审查)" 节
 #   - workflows/judgments/stage-routing.yaml — plan-{architecture,phase}-delegate triggers
 #   - workflows/plan/{architecture,phase}/workflow.yaml — 2 sub-workflow Phase 3.4 SHIPPED
 #   - workflows/capabilities.yaml — planning-with-files + plan-eng-review + gsd-plan-phase

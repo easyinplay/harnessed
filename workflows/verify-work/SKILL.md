@@ -40,13 +40,13 @@ spawns each phase as a sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+.
 
 ## Phase 9 Pattern C 4-specialist Agent Team (D-11 + R20.11)
 
-The Agent Team upgrade phase (`09-agent-team-multispecialist`) follows
-`~/.claude/rules/agent-teams.md` Pattern C 多维度审查 verbatim — 4 teammate
+The Agent Team upgrade phase (`09-agent-team-multispecialist`) follows the
+bundled Agent Teams Pattern C 多维度审查 — 4 teammate
 (code-review + gstack-review + gstack-cso + gstack-qa) 互相 SendMessage 质询
 findings 是否真问题 (NOT fire-and-forget subagent fan-out)。Token estimate
-`team_cost < 2 × subagent_cost` is a prereq per agent-teams.md L34 (engine-level
+`team_cost < 2 × subagent_cost` is a prereq (bundled cost guideline; engine-level
 check, NOT yaml schema scope). Cleanup mandatory: `SendMessage shutdown_request`
-+ `TeamDelete` after round-trip complete (防呆清单 per agent-teams.md L46-L48).
++ `TeamDelete` after round-trip complete (bundled cleanup discipline).
 
 Trigger condition: `phase.is_major_release == true OR phase.is_large_refactor
 == true`. 常规 PR / 单点任务**不触发** Pattern C — code-review fan-out (phase 3)
@@ -73,7 +73,7 @@ harnessed verify-work --phase <num> --apply
 ## Forward-looking note
 
 The `trigger_phrases:` frontmatter is active after `harnessed setup` copies this
-SKILL.md to `~/.claude/skills/verify-work/` — Claude Code then loads the slash
+SKILL.md to `<claude-home>/skills/verify-work/` — Claude Code then loads the slash
 command `/verify-work` automatically (Gap B fix — v1.0.2 sister mechanism).
 
 ## References
@@ -84,8 +84,6 @@ command `/verify-work` automatically (Gap B fix — v1.0.2 sister mechanism).
 - R20.14 — special-purpose /qa /cso /design-review conditional
 - R20.7 — D-08 verify-work NEW 2 之一
 - R20.16 — fallback 3 铁律 chain_isolation
-- ~/.claude/CLAUDE.md "Verify 阶段" 7-step verbatim
-- ~/.claude/rules/agent-teams.md Pattern C 多维度审查
 - `workflows/capabilities.yaml` — gsd-verify-work / gsd-progress / code-review / gstack-{review,qa,cso,design-review} / code-simplifier / agent-teams-create entries
 - `workflows/judgments/parallelism-gate.yaml` — subagent-default + agent-teams-upgrade.fires
 - `workflows/defaults.yaml` — ralph_max_iterations.verify-work.* values

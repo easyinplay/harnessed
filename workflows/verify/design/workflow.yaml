@@ -1,11 +1,10 @@
 # workflows/verify/design/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.13c
 #
 # Stage ④.f verify sub-workflow — gstack /design-review 设计系统一致性 + AI 审美问题
-# (has_design_changes 触发, 可选 conditional, sister ~/.claude/CLAUDE.md "可选 /design-review" verbatim)。
+# (has_design_changes 触发, 可选 conditional; bundled verify-stage optional /design-review step).
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /design-review" 章节
-#   - ~/.claude/rules/web-design.md — ui-ux-pro-max 默认 + frontend-design 补充
+#   - workflows/judgments/web-design-routing.yaml — ui-ux-pro-max 默认 + frontend-design 补充
 #   - workflows/judgments/stage-routing.yaml verify-design-changes trigger (has_design_changes)
 #   - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / frontend-design
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister pattern
@@ -17,8 +16,8 @@ description: |
   Stage ④.f gstack /design-review 设计系统一致性 + AI 审美问题识别 (has_design_changes 触发,
   可选 conditional)。Gate: judgments.stage-routing.verify-design-changes.fires
   (phase.has_design_changes == true) — UI module fire only; 后端 / docs PR skip。
-  tools_available 含 ui-ux-pro-max (默认主方案) + frontend-design (创意补充) sister
-  ~/.claude/rules/web-design.md routing。
+  tools_available 含 ui-ux-pro-max (默认主方案) + frontend-design (创意补充) per bundled
+  web-design routing (workflows/judgments/web-design-routing.yaml).
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available: [gstack-design-review, ui-ux-pro-max, frontend-design]

@@ -8,7 +8,6 @@
 #
 # Sister refs:
 #   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 task/code sub yaml example
-#   - ~/.claude/CLAUDE.md "Execute 阶段" 节 karpathy 4 心法 + mattpocock 招式按需召唤
 #   - workflows/capabilities.yaml zoom-out + improve-codebase-architecture + diagnose +
 #     planning-with-files (Phase 2.3 W0.1 SHIPPED)
 #   - workflows/disciplines/karpathy.yaml (Phase 3.3 W0.4 SHIPPED, L0 substrate always-on)

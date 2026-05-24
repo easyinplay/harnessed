@@ -2,9 +2,9 @@
 name: verify-paranoid
 description: |
   Stage ④.c verify sub-workflow — gstack /review Paranoid Staff Engineer 关键模块 PR 前强制
-  (sister ~/.claude/CLAUDE.md "🔒 关键模块 PR 前强制" verbatim)。Gate:
+  (bundled gstack governance gate — mandatory before critical-module PR)。Gate:
   judgments.stage-routing.verify-paranoid-critical.fires (phase.is_critical_module == true) —
-  默认 critical fire only; 非关键模块 skip (sister CLAUDE.md "关键模块" 限定语)。
+  默认 critical fire only; 非关键模块 skip。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gstack-review) + 1 phase (gate ref is_critical_module conditional)。
   Triggered by slash command
@@ -68,7 +68,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ④ Verify 7 sub 分解
 - D-12 gstack 治理关卡强制
-- ~/.claude/CLAUDE.md "gstack 治理关卡 🔒 关键模块 PR 前强制" verbatim
 - workflows/capabilities.yaml — gstack-review
 - workflows/judgments/stage-routing.yaml — verify-paranoid-critical trigger
 - workflows/defaults.yaml — ralph_max_iterations.verify-paranoid.* values (W2.2 backfill)

@@ -1,8 +1,8 @@
 ---
 name: verify-qa
 description: |
-  Stage ④.d verify sub-workflow — gstack /qa 端到端 QA 验收 (has_ui_changes 触发, 可选 conditional,
-  sister ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /qa" verbatim)。
+  Stage ④.d verify sub-workflow — gstack /qa 端到端 QA 验收 (has_ui_changes 触发, 可选 conditional;
+  bundled verify-stage optional /qa step).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gstack-qa + playwright-cli + playwright-test + webapp-testing) + 1 phase (gate ref
   has_ui_changes conditional)。
@@ -45,7 +45,7 @@ Sister `workflows/capabilities.yaml` entries:
 Sister `workflows/judgments/stage-routing.yaml`:
 - `verify-qa-ui.fires` — `phase.stage == 'verify' and phase.has_ui_changes == true`
 
-## Routing rules (sister ~/.claude/rules/web-testing.md)
+## Routing rules (bundled web-testing routing — `workflows/judgments/web-testing-routing.yaml`)
 
 - 写测试 提交 repo / CI 跑 → `@playwright/test` (默认 frontend/e2e/*.spec.ts)
 - 探查 / 调试 / 一次性确认 → `playwright-cli` (token 最省)
@@ -70,8 +70,7 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ④ Verify 7 sub 分解
 - D-12 gstack 治理关卡可选
-- ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /qa" verbatim
-- ~/.claude/rules/web-testing.md — 三层职责矩阵 (脑 / 手 / 筋骨)
+- workflows/judgments/web-testing-routing.yaml — 三层职责矩阵 (脑 / 手 / 筋骨)
 - workflows/capabilities.yaml — gstack-qa / playwright-cli / playwright-test / webapp-testing
 - workflows/judgments/stage-routing.yaml — verify-qa-ui trigger
 - workflows/verify-work/workflow.yaml v2 SHIPPED phase 05-qa-conditional sister verbatim

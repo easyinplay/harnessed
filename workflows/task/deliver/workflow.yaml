@@ -3,8 +3,8 @@
 #
 # Stage ③.d 子任务交付 — ralph-loop COMPLETE wrapper 保 completion-promise verbatim
 # "COMPLETE" (R20.10 + D-10 v0.2.0 ralph-loop SDK pattern)。Parallelism: subagent
-# default fan-out OR Agent Teams 升级 (5 触发 OR-chain per ~/.claude/rules/agent-teams.md
-# + D-11)。02-progress-mark: planning-with-files /plan 更新 progress.md 标记完成。
+# default fan-out OR Agent Teams 升级 (5 触发 OR-chain per bundled Agent Teams
+# routing + D-11)。02-progress-mark: planning-with-files /plan 更新 progress.md 标记完成。
 #
 # Brief enforcement (W0.9 spec MUST include):
 #   - ralph-loop completion_promise = COMPLETE (R20.10 verbatim acceptance string)
@@ -20,8 +20,9 @@
 #   - workflows/judgments/parallelism-gate.yaml triggers.ralph-loop-wrapper (Phase 2.3 W0.2 SHIPPED)
 #   - workflows/capabilities.yaml ralph-loop + agent-teams-{create,send-message,shutdown} +
 #     planning-with-files (Phase 2.3 W0.1 + 3.3 W0.2 SHIPPED)
-#   - ~/.claude/rules/agent-teams.md 5 升级触发 OR-chain (teammate_send_message_needed /
-#     subagent_context_overflow / shared_task_list / opposing_hypothesis_debate / fullstack_three_way)
+#   - workflows/judgments/parallelism-gate.yaml — 5 升级触发 OR-chain
+#     (teammate_send_message_needed / subagent_context_overflow / shared_task_list /
+#     opposing_hypothesis_debate / fullstack_three_way)
 #   - src/workflow/schema/workflow.ts WorkflowSchemaV3 FallbackMaxIterationsExceeded
 #     Type.Literal('emit_warning_and_halt') (Phase 3.3 W0.5 SHIPPED)
 #
@@ -33,11 +34,11 @@ workflow: task-deliver
 description: |
   Stage ③.d 子任务交付 — ralph-loop COMPLETE wrapper 保 completion-promise verbatim
   "COMPLETE" (R20.10 + D-10 v0.2.0 ralph-loop SDK pattern)。Parallelism subagent
-  default fan-out OR Agent Teams 升级 (5 触发 OR-chain per ~/.claude/rules/agent-teams.md
+  default fan-out OR Agent Teams 升级 (5 触发 OR-chain per bundled Agent Teams routing
   + D-11)。R20.10 explicit max_iterations_exceeded handler: emit_warning_and_halt
   exit_code 1 (NOT silent abort, sister Phase 2.4 W1.2 fallbackHandlers.ts engine.ts
   wire pattern)。Cleanup mandatory when Agent Teams escalation path fires (shutdown_request
-  + TeamDelete per agent-teams.md 防呆清单)。
+  + TeamDelete per bundled Agent Teams cleanup discipline)。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available:

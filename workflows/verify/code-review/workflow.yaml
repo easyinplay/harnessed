@@ -1,12 +1,10 @@
 # workflows/verify/code-review/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.11
 #
 # Stage ④.b verify sub-workflow — code-review 多 agent 并行 fan-out 高置信度 finding
-# (subagent default per CLAUDE.md 子任务并行机制 — Task / Agent 工具 spawn 多任务 fan-out,
+# (subagent default per bundled parallelism gate — Task / Agent 工具 spawn 多任务 fan-out,
 # context 隔离, token 敏感)。
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Verify 阶段" — "code-review 多 agent 并行" 章节
-#   - ~/.claude/CLAUDE.md "子任务并行执行机制 — subagent vs Agent Teams 路由" subagent default
 #   - workflows/judgments/parallelism-gate.yaml — subagent-default.fires 默认 fan-out
 #   - workflows/capabilities.yaml — code-review (Bucket 1 mattpocock 高频招式)
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 03-code-review-parallel sister pattern

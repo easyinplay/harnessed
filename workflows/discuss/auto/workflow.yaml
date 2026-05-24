@@ -1,11 +1,10 @@
 # workflows/discuss/auto/workflow.yaml — Phase v3.0-3.5 W1 T3.5.W1.1
 #
 # Stage ① Discuss master orchestrator — 3 sub-workflow parallel gate-eval (chain-isolation 铁律
-# per ~/.claude/CLAUDE.md "澄清/审查触发判据" 节 + fallback.yaml "链式互不前置")。
+# per bundled 3-tier clarification gate + fallback.yaml "链式互不前置")。
 # 3 sub 独立判 gate, 可能全跑 / 1-2 个 / 全跳 + 透明声明。
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "澄清/审查触发判据" 节 (战略 / Phase / 子任务三层独立判)
 #   - workflows/judgments/stage-routing.yaml — discuss-{strategic,phase,subtask}-delegate triggers
 #   - workflows/discuss/{strategic,phase,subtask}/workflow.yaml — 3 sub-workflow Phase 3.4 SHIPPED
 #   - workflows/capabilities.yaml — planning-with-files (discuss sink findings.md)

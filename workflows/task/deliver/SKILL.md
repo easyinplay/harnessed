@@ -79,8 +79,8 @@ ref / ✅ R20.10 explicit max_iterations_exceeded handler。
 
 02-progress-mark invokes Claude Code plugin slash cmd `/plan` to mark subtask complete
 in `progress.md` — sister Phase 01-code progress update pattern, last call in Stage
-③ task chain。Plugin path `~/.claude/plugins/cache/planning-with-files/
-planning-with-files/2.34.0/` verified (2026-05-20)。
+③ task chain. Requires `planning-with-files` Claude Code plugin (install via
+Claude Code plugin marketplace).
 
 ## How to invoke
 
@@ -100,14 +100,11 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-09 — L0 Discipline Substrate always-on (6 disciplines)
 - D-10 — ralph-loop 真接 SDK wrapper (NOT mock reference; v0.2.0 ship)
-- D-11 — Agent Teams 升级 5 触发 OR-chain per ~/.claude/rules/agent-teams.md
+- D-11 — Agent Teams 升级 5 触发 OR-chain per bundled parallelism-gate rules
 - R20.10 — ralph-loop max_iterations_exceeded explicit emit_warning_and_halt
   (acceptance c "NOT silent abort"); ralph-loop 正交 wrapper wraps 3 mode
 - D-02 — SKILL.md `name:` bare slash cmd (`task-deliver` NOT `task/deliver`) per ADR 0030
 - ADR 0011 — SDK + ralph-loop integration v0.2.0 baseline
-- ~/.claude/CLAUDE.md "Execute 阶段" 节 ralph-loop 至 verbatim COMPLETE +
-  `子任务并行执行机制` Agent Teams 升级路由
-- ~/.claude/rules/agent-teams.md — Pattern A/B/C + 防呆清单 cleanup mandatory
 - `workflows/judgments/parallelism-gate.yaml` triggers.ralph-loop-wrapper +
   agent-teams-upgrade + subagent-default + main-session-fallback
 - `workflows/capabilities.yaml` — ralph-loop + agent-teams-{create,send-message,shutdown}

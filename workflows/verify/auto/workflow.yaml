@@ -1,7 +1,7 @@
 # workflows/verify/auto/workflow.yaml — Phase v3.0-3.5 W1 T3.5.W1.4
 #
-# Stage ④ Verify master orchestrator — 7 sub conditional per ~/.claude/CLAUDE.md "Verify 阶段"
-# verbatim + RESEARCH-workflows § Area 2 verify master:
+# Stage ④ Verify master orchestrator — 7 sub conditional per bundled Verify-stage cadence
+# + RESEARCH-workflows § Area 2 verify master:
 #   progress 必跑 (serial order 1) →
 #   code-review 并行 (parallel) +
 #   paranoid 关键模块 (parallel + gate is-critical-module) +
@@ -10,7 +10,6 @@
 #   multispec 关键发布 Pattern C (parallel + gate critical-release-upgrade)
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Verify 阶段 (GSD + gstack)" 节 verbatim
 #   - workflows/judgments/stage-routing.yaml — verify-* triggers (7 sub delegation)
 #   - workflows/judgments/parallelism-gate.yaml — agent-teams-upgrade trigger (multispec gate)
 #   - workflows/verify/{progress,code-review,paranoid,qa,security,design,simplify,multispec}/workflow.yaml
@@ -30,8 +29,8 @@
 schema_version: harnessed.workflow.v3
 workflow: verify
 description: |
-  Stage ④ Verify master orchestrator — 7 sub conditional per ~/.claude/CLAUDE.md "Verify 阶段"
-  verbatim: progress 必跑串行 → code-review 并行 → paranoid 关键模块强制 → qa/security/design
+  Stage ④ Verify master orchestrator — 7 sub conditional per bundled Verify-stage cadence:
+  progress 必跑串行 → code-review 并行 → paranoid 关键模块强制 → qa/security/design
   可选 conditional 并行 → simplify 末尾串行 → multispec 关键发布 Pattern C 4-specialist Agent Team。
   serial mode 必带 explicit order (K9 invariant); progress order 1 起点, simplify order 99 末尾。
 

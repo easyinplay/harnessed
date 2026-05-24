@@ -74,7 +74,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ① Discuss 三层 (战略 / phase / 子任务)
 - D-05 phase.invokes_tools conditional fire (NEW v3)
-- ~/.claude/CLAUDE.md "子任务层: superpowers:brainstorming"
 - workflows/capabilities.yaml — superpowers-brainstorming / grill-with-docs / grill-me
 - workflows/judgments/subtask-gate.yaml — brainstorming trigger
 - workflows/defaults.yaml — ralph_max_iterations.discuss-subtask.* values (W2.2 backfill)

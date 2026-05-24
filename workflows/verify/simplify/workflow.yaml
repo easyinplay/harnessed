@@ -1,10 +1,9 @@
 # workflows/verify/simplify/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.13d
 #
 # Stage ④.g verify sub-workflow — code-simplifier 末尾串行 (移除重复 / 多余逻辑)
-# (sister ~/.claude/CLAUDE.md "Verify 阶段 — 末尾 code-simplifier" verbatim)。
+# (bundled verify-stage cadence — tail-step code-simplifier).
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Verify 阶段 — code-simplifier 末尾串行" 章节
 #   - workflows/judgments/stage-routing.yaml verify-simplify-tail trigger (is_final_step)
 #   - workflows/capabilities.yaml — code-simplifier (Bucket 1 mattpocock, fires_when stage=='verify' AND is_final_step)
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 08-code-simplifier sister pattern

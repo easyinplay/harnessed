@@ -4,7 +4,6 @@
 # + planning-with-files persist (progress.md sink, sister CLAUDE.md "Verify 阶段" verbatim)。
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Verify 阶段" 章节 verbatim (gsd-verify-work + gsd-progress 必跑串行)
 #   - workflows/judgments/stage-routing.yaml verify-progress-always trigger (总 fire 当 stage=='verify')
 #   - workflows/capabilities.yaml — gsd-verify-work / gsd-progress / planning-with-files
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 01-02 verbatim pattern

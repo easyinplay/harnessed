@@ -4,8 +4,6 @@
 #   必跑串行 (01-02) → 并行 fan-out (03) → 强制 conditional (04) → 可选 conditional (05-07) → 末尾串行 (08) → Agent Team 升级 (09)
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "Verify 阶段" 章节 verbatim 7-step 列表 (gsd-verify-work + gsd-progress + code-review 多 agent + 关键模块 gstack /review 强制 + 可选 /qa /cso /design-review + code-simplifier + 4-specialist Agent Team 升级)
-#   - ~/.claude/rules/agent-teams.md Pattern C 多维度审查 (4-specialist 互相质询, NOT fire-and-forget; lead 委派 + cleanup mandatory)
 #   - workflows/capabilities.yaml — gsd-verify-work / gsd-progress / code-review / gstack-review / gstack-qa / gstack-cso / gstack-design-review / code-simplifier / agent-teams-create 9 entry (Phase 2.3 W0.1 SHIPPED)
 #   - workflows/judgments/parallelism-gate.yaml — subagent-default.fires (default fan-out) + agent-teams-upgrade.fires (5 触发 OR-chain; Phase 2.3 W0.2 SHIPPED)
 #   - workflows/defaults.yaml — ralph_max_iterations.verify-work.{01-gsd-verify-work=3, 02-code-review=5, 03-gstack-review=3, 04-code-simplifier=5} (Phase 2.3 W1.2 SHIPPED)
@@ -26,8 +24,8 @@ description: |
   → gstack /review Paranoid Staff Eng 关键模块强制 → 可选 /qa /cso /design-review conditional
   → code-simplifier 末尾串行 → 关键发布/大重构 PR 升级 4-specialist Agent Team Pattern C
   多维度审查 (code-review + gstack-review + gstack-cso + gstack-qa 互相质询, NOT fire-and-forget)。
-  Cleanup mandatory per ~/.claude/rules/agent-teams.md 防呆清单 (SendMessage shutdown_request +
-  TeamDelete) — engine-level wiring, NOT yaml v2 schema scope.
+  Cleanup mandatory (bundled Agent Teams discipline): SendMessage shutdown_request +
+  TeamDelete — engine-level wiring, NOT yaml v2 schema scope.
 
 phases:
   # ============================================================================
@@ -125,9 +123,9 @@ phases:
   # ============================================================================
   # Agent Team 升级 (1 phase) — 关键发布 / 大重构 PR 4-specialist Pattern C
   # ============================================================================
-  # sister ~/.claude/rules/agent-teams.md L42-L52 Pattern C 多维度审查 (≥3 specialist
-  # 需要互相质询而非 fire-and-forget): code-review + gstack-review + gstack-cso + gstack-qa
-  # team_cost < 2 × subagent_cost 估算前置 (开 team 前必估算 per agent-teams.md L34)
+  # Bundled Agent Teams Pattern C — 多维度审查 (≥3 specialist 需要互相质询而非
+  # fire-and-forget): code-review + gstack-review + gstack-cso + gstack-qa
+  # team_cost < 2 × subagent_cost 估算前置 (开 team 前必估算; bundled cost guideline)
   # cleanup mandatory: SendMessage shutdown_request + TeamDelete (engine-level wiring)
   - id: 09-agent-team-multispecialist
     name: agent-team-upgrade (4-specialist Pattern C — 关键发布/大重构 多维度审查 互相质询)

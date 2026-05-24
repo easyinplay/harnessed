@@ -2,8 +2,7 @@
 name: verify-design
 description: |
   Stage ④.f verify sub-workflow — gstack /design-review 设计系统一致性 + AI 审美问题识别
-  (has_design_changes 触发, 可选 conditional, sister ~/.claude/CLAUDE.md "Verify 阶段 — 可选
-  /design-review" verbatim)。
+  (has_design_changes 触发, 可选 conditional; bundled verify-stage optional /design-review step).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gstack-design-review + ui-ux-pro-max + frontend-design) + 1 phase (gate ref has_design_changes
   conditional)。Triggered by harnessed CLI `harnessed verify-design --phase <num>` or slash
@@ -45,7 +44,7 @@ Sister `workflows/capabilities.yaml` entries:
 Sister `workflows/judgments/stage-routing.yaml`:
 - `verify-design-changes.fires` — `phase.stage == 'verify' and phase.has_design_changes == true`
 
-## Routing rules (sister ~/.claude/rules/web-design.md)
+## Routing rules (bundled web-design routing — `workflows/judgments/web-design-routing.yaml`)
 
 - 默认主方案 → `ui-ux-pro-max` (数据驱动、标准化、可解释)
 - 创意补充 / 不要 AI 味 → `frontend-design`
@@ -69,8 +68,7 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ④ Verify 7 sub 分解
 - D-12 gstack 治理关卡可选
-- ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /design-review" verbatim
-- ~/.claude/rules/web-design.md — ui-ux-pro-max 默认 + frontend-design 补充
+- workflows/judgments/web-design-routing.yaml — ui-ux-pro-max 默认 + frontend-design 补充
 - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / frontend-design
 - workflows/judgments/stage-routing.yaml — verify-design-changes trigger
 - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister verbatim

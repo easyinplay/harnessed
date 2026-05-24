@@ -2,8 +2,8 @@
 name: retro
 description: |
   Standalone post-④ Verify retrospective workflow — gstack /retro 经验教训 / 决策 / lessons
-  系统总结 (项目 / 里程碑结束可选, sister ~/.claude/CLAUDE.md "项目 / 里程碑结束: 可选跑
-  /retro 总结" verbatim) + planning-with-files RETROSPECTIVE.md 持久化 (sister Phase
+  系统总结 (项目 / 里程碑结束可选, bundled milestone-close retrospective cadence)
+  + planning-with-files RETROSPECTIVE.md 持久化 (sister Phase
   v2.0-2.5 RETROSPECTIVE pattern)。Capability ref retro-gstack alias suffix per Pattern A
   E.2 LOCK (NOT bare retro 避免 standalone workflow / capability namespace 冲突)。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
@@ -66,7 +66,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-04 NEW v3 standalone workflow (research v3 bump + retro NEW)
 - Pattern A E.2 LOCK — 2 alias suffix `-gstack` 解决 namespace 冲突 (retro-gstack + investigate-gstack)
 - Pattern A reconcile D.2 — gstack 30 optional naming bare 例外
-- ~/.claude/CLAUDE.md "项目 / 里程碑结束: 可选跑 /retro 总结" verbatim
 - workflows/capabilities.yaml — retro-gstack (alias suffix) + planning-with-files
 - workflows/defaults.yaml — ralph_max_iterations.retro.* values (W2.2 backfill)
 - sister Phase v2.0-2.5 RETROSPECTIVE.md sink pattern

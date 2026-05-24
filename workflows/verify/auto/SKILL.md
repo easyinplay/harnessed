@@ -1,8 +1,8 @@
 ---
 name: verify
 description: |
-  Stage ④ Verify master orchestrator — 7 sub conditional per ~/.claude/CLAUDE.md "Verify 阶段"
-  verbatim: progress 必跑 → code-review 并行 → paranoid 关键模块强制 → qa/security/design 可选
+  Stage ④ Verify master orchestrator — 7 sub conditional per bundled Verify-stage cadence:
+  progress 必跑 → code-review 并行 → paranoid 关键模块强制 → qa/security/design 可选
   并行 conditional → simplify 末尾 → multispec 关键发布 Pattern C 4-specialist Agent Team。
   schema_version: harnessed.workflow.v3 with delegates_to (7 sub: progress serial order 1 +
   5 parallel conditional + simplify serial order 99) + disciplines_applied (6 default) +
@@ -21,8 +21,8 @@ trigger_phrases:
 ## Overview
 
 4-stage cadence Stage ④ master orchestrator delegating to 7 sub-workflows
-(per ~/.claude/CLAUDE.md "Verify 阶段" 节 verbatim — 9-phase composition compressed
-into 7 sub delegation via stage-routing.yaml):
+(bundled Verify-stage cadence — 9-phase composition compressed into 7 sub delegation
+via stage-routing.yaml):
 
 | order/mode | sub | gate ref | mode | when fires |
 | ---------- | --- | -------- | ---- | ---------- |
@@ -83,8 +83,7 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-01 master orchestrator delegation pattern
 - D-02 bare slash cmd convention (ADR 0030 namespace policy LOCK)
 - D-12 gstack 治理关卡 ref (paranoid / qa / security / design subs)
-- ~/.claude/CLAUDE.md "Verify 阶段" 节 verbatim
-- ~/.claude/rules/agent-teams.md Pattern C 多维度审查 (multispec sub 4-specialist 互相质询)
+- workflows/judgments/parallelism-gate.yaml — Pattern C 多维度审查 (multispec sub 4-specialist 互相质询)
 - workflows/judgments/stage-routing.yaml — verify-* 6 triggers (7 sub delegation)
 - workflows/verify/{progress,code-review,paranoid,qa,security,design,simplify,multispec}/workflow.yaml
   — 8 sub-workflow Phase 3.4 SHIPPED

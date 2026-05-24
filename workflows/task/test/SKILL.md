@@ -84,7 +84,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-05 — phase-level `invokes_tools` conditional tool fire
 - D-13 — tdd capability 2 impl 候选 alias (superpowers 主 + mattpocock /tdd 备)
 - D-02 — SKILL.md `name:` bare slash cmd (`task-test` NOT `task/test`) per ADR 0030
-- ~/.claude/CLAUDE.md "Execute 阶段" TDD 强烈建议开启 6 触发 + 3 跳过
 - `workflows/judgments/tdd-gate.yaml` triggers.tdd-strongly-suggested
 - `workflows/capabilities.yaml` — tdd (superpowers + mattpocock alias) + diagnose entries
 - `workflows/defaults.yaml` — ralph_max_iterations.task-test.* values (T3.4.W2.2 followup)

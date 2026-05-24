@@ -1,11 +1,10 @@
 # workflows/discuss/strategic/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.1
 #
 # Stage ①.a 战略层 sub-workflow — gstack 治理关卡 /office-hours + /plan-ceo-review
-# 新功能 / 新 milestone / 新产品方向启动前强制 (sister ~/.claude/CLAUDE.md
-# "gstack 治理关卡 🔒 新功能启动前强制" verbatim)。
+# 新功能 / 新 milestone / 新产品方向启动前强制 (bundled gstack governance gate —
+# mandatory before new-project / new-milestone / new-feature phases).
 #
 # Sister refs:
-#   - ~/.claude/CLAUDE.md "澄清/审查触发判据 — 战略层" 章节
 #   - workflows/judgments/strategic-gate.yaml — office-hours / plan-ceo-review triggers
 #   - workflows/capabilities.yaml — gstack-office-hours / gstack-plan-ceo-review / planning-with-files
 #   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED)

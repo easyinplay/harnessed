@@ -68,7 +68,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 ## References
 
 - D-04 Stage ① Discuss 三层 (战略 / phase / 子任务)
-- ~/.claude/CLAUDE.md "Phase 层: GSD /gsd-discuss-phase"
 - workflows/capabilities.yaml — gsd-discuss-phase / planning-with-files
 - workflows/judgments/phase-gate.yaml — gsd-discuss-phase trigger
 - workflows/defaults.yaml — ralph_max_iterations.discuss-phase.* values (W2.2 backfill)

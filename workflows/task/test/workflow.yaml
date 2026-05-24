@@ -9,7 +9,6 @@
 #   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 task/test sub yaml example
 #   - workflows/judgments/tdd-gate.yaml triggers.tdd-strongly-suggested (Phase 2.3 W0.2 SHIPPED)
 #   - workflows/capabilities.yaml tdd + diagnose (Phase 2.3 W0.1 SHIPPED + D-13 alias)
-#   - ~/.claude/CLAUDE.md "Execute 阶段" 节 TDD 强烈建议开启 6 触发 + 3 跳过
 #   - src/workflow/schema/workflow.ts WorkflowSchemaV3 (Phase 3.3 W0.5 SHIPPED)
 #
 # Brief enforcement:
@@ -24,7 +23,7 @@ workflow: task-test
 description: |
   Stage ③.c 子任务测试 — superpowers TDD red-green-refactor 强制 (核心业务 / 算法 /
   数据处理 / 回归 risk high / reliability required, 6 fires_when OR-chain per
-  ~/.claude/CLAUDE.md), 其他可选 mattpocock /tdd alias。Conditional diagnose
+  bundled tdd-gate judgment), 其他可选 mattpocock /tdd alias。Conditional diagnose
   invoke when test_fail (D-05 invokes_tools phase-level fire). Gate:
   judgments.tdd-gate.tdd-strongly-suggested.fires (4-level ref, pre-resolved per D-04)。
 

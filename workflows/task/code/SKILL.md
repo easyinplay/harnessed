@@ -56,9 +56,9 @@ Phase 01-code 按 phase fact context 条件性 fire 3 mattpocock 招式:
 
 02-progress invokes the **Claude Code plugin** slash command `/plan` to update
 `progress.md` in `.planning/<phase-id>/` — 跟踪 subtask 完成 / blocked / next step
-per CLAUDE.md "跨 session 恢复" 模式 + R20.6 Manus-style 持久化。Plugin path
-verified at `~/.claude/plugins/cache/planning-with-files/planning-with-files/2.34.0/`
-(2026-05-20).
+per bundled "跨 session 恢复" 模式 + R20.6 Manus-style 持久化. Requires the
+`planning-with-files` Claude Code plugin (install via Claude Code plugin
+marketplace).
 
 ## How to invoke
 
@@ -80,7 +80,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-05 — phase-level `invokes_tools` conditional tool fire
 - D-15 + Q-AUDIT-5a — planning-with-files = Claude Code plugin slash cmd `/plan`
 - D-02 — SKILL.md `name:` bare slash cmd (`task-code` NOT `task/code`) per ADR 0030
-- ~/.claude/CLAUDE.md "Execute 阶段" 节 karpathy 心法 + mattpocock 招式按需召唤
 - `workflows/disciplines/karpathy.yaml` — 4 心法 + ≤200L hard limit 等 rules (L0 substrate)
 - `workflows/capabilities.yaml` — zoom-out / improve-codebase-architecture / diagnose / planning-with-files entries
 - `workflows/defaults.yaml` — ralph_max_iterations.task-code.* values (T3.4.W2.2 followup)

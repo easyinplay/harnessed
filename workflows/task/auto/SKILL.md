@@ -22,7 +22,7 @@ trigger_phrases:
 ## Overview
 
 4-stage cadence Stage ③ master orchestrator delegating to 4 sequential sub-workflows
-per subtask (per ~/.claude/CLAUDE.md "Execute 阶段" 节 + karpathy 心法 always-on):
+per subtask (bundled Execute-stage cadence + karpathy 心法 always-on):
 
 | order | sub | gate ref | mode | when fires |
 | ----- | --- | -------- | ---- | ---------- |
@@ -39,7 +39,7 @@ mode delegate carries explicit `order`。Each subtask 入口走一次此 master 
 
 ralph-loop 是正交 wrapper, 套在 deliver sub 的 01-deliver phase 外层保 completion-promise
 verbatim "COMPLETE" (R20.10)。任何执行单元 (subagent / team / 主 session) 都可外层套 ralph-loop
-保 completion-promise (sister ~/.claude/CLAUDE.md 子任务并行执行机制 "正交 wrapper")。
+保 completion-promise (bundled subagent vs Agent Teams routing — orthogonal wrapper rule).
 
 ## Capability refs
 
@@ -76,6 +76,5 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 - D-01 master orchestrator delegation pattern
 - D-02 bare slash cmd convention (ADR 0030 namespace policy LOCK)
 - D-10 ralph-loop orthogonal wrapper
-- ~/.claude/CLAUDE.md "Execute 阶段" 节 verbatim (karpathy 心法 + mattpocock 招式 + ralph-loop COMPLETE)
 - workflows/judgments/{subtask-gate,tdd-gate}.yaml — brainstorming + tdd-strongly-suggested triggers
 - workflows/task/{clarify,code,test,deliver}/workflow.yaml — 4 sub-workflow Phase 3.4 SHIPPED

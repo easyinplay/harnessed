@@ -1,7 +1,7 @@
 # workflows/discuss/subtask/workflow.yaml — Phase v3.0-3.4 W0 T3.4.W0.3
 #
 # Stage ①.c 子任务层 sub-workflow — superpowers brainstorming (≥2 approach / 核心算法 /
-# API contract / 错误成本高)。Sister ~/.claude/CLAUDE.md "澄清/审查触发判据 — 子任务层"。
+# API contract / 错误成本高). Bundled 3-tier clarification — subtask layer.
 #
 # Sister refs:
 #   - workflows/judgments/subtask-gate.yaml — brainstorming trigger

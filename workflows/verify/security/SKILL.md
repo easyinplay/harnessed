@@ -2,7 +2,7 @@
 name: verify-security
 description: |
   Stage ④.e verify sub-workflow — gstack /cso 安全审查 OWASP/auth/secrets (has_auth_or_secrets
-  触发, 可选 conditional, sister ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /cso" verbatim)。
+  触发, 可选 conditional; bundled verify-stage optional /cso step).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gstack-cso) + 1 phase (gate ref has_auth_or_secrets conditional)。
   Triggered by slash command
@@ -65,7 +65,6 @@ After completion, the Bash output prints a `Next:` hint on stderr suggesting the
 
 - D-04 Stage ④ Verify 7 sub 分解
 - D-12 gstack 治理关卡可选
-- ~/.claude/CLAUDE.md "Verify 阶段 — 可选 /cso" verbatim
 - workflows/capabilities.yaml — gstack-cso
 - workflows/judgments/stage-routing.yaml — verify-security-secrets trigger
 - workflows/verify-work/workflow.yaml v2 SHIPPED phase 06-cso-conditional sister verbatim
