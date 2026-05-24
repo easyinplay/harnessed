@@ -1,28 +1,28 @@
-// v3.4.3 — Generate ~/.claude/commands/<x>.md from workflows/role-prompts.yaml.
+// v3.4.4 — Generate ~/.claude/commands/<x>.md from workflows/role-prompts.yaml.
 //
-// Background (why v3.4.2 left `/verify-paranoid` etc. non-invocable as a slash
-// command): a sub-workflow SKILL.md at `~/.claude/skills/verify-paranoid/SKILL.md`
-// is Skill-tool loadable, NOT SlashCommand-tool registered. To actually expose
-// `/verify-paranoid` as a real Claude Code slash command the platform requires a
-// file at `~/.claude/commands/<x>.md` (filename = slash name, optional YAML
-// frontmatter, body = prompt). This module is the writer for those files.
+// SCHEMA EVOLUTION:
+//   v3.4.3 — dual-path body (SlashCommand "Preferred path" + Task-spawn
+//     "Fallback path"). Both paths sidestepped the workflow runtime entirely;
+//     the disciplines + judgments + master orchestration in src/workflow/ never
+//     fired. SlashCommand path was also vapor when no upstream was installed.
+//   v3.4.4 — single-path body that ALWAYS invokes the workflow runtime via
+//     `harnessed run <name>` (Bash). This wires `~/.claude/commands/<x>.md`
+//     to src/workflow/run.ts (the real orchestrator) instead of bypassing it.
 //
-// Each command file embeds:
-//   - Preferred path: invoke the resolved primary capability slash cmd
-//     (`{{ capabilities.<x>.cmd }}` → e.g. `/review`). When the upstream is
-//     installed, the platform routes there; when missing, the fallback runs.
-//   - Fallback path: self-contained role-prompt for a Task-spawned subagent.
-//     Adapted from gstack expert prompts where available. Works even when no
-//     upstream is on disk.
+// MARKER-BASED OVERWRITE (Option 2):
+//   Each generated file emits `<!-- harnessed-generated:v3.4.x -->` as its
+//   trailing marker. `writeAllCommands` overwrites files containing either
+//   that marker OR the v3.4.3 dual-path signature; truly user-authored files
+//   (with neither) are preserved with a warning. This lets `harnessed setup`
+//   upgrade stale v3.4.3-generated files in place without clobbering customs.
 //
-// Karpathy simplicity: pure functions, single yaml load, ≤200 LOC, no new deps.
+// Karpathy simplicity: pure functions, single yaml load, ≤250 LOC, no new deps.
 
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync as nodeReadFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import type { CapabilityMap } from './capabilityResolver.js'
-import { renderSkillBody } from './capabilityResolver.js'
 
 /** Per-sub-workflow metadata from `workflows/role-prompts.yaml`. */
 export interface RolePrompt {
@@ -81,93 +81,113 @@ export async function loadRolePrompts(workflowsDir: string): Promise<Record<stri
 }
 
 /**
- * Build `~/.claude/commands/<name>.md` content for a single sub-workflow.
+ * Build `~/.claude/commands/<name>.md` content for a single workflow.
  *
- * The body is rendered through {@link renderSkillBody} so the `{{ capabilities
- * .<x>.cmd }}` placeholder for `primary_cap` resolves to the live slash command
- * (or stays verbatim if the resolver wants to emit a missing-backing warning,
- * sister SKILL.md rendering behavior).
+ * v3.4.4 — Single-path body: ALWAYS invoke `harnessed run <name>` via the Bash
+ * tool. The shell pipe `echo "$ARGUMENTS" | harnessed run <name> --task-stdin`
+ * avoids shell-escape pain on user-supplied requirements containing quotes /
+ * `$` / backticks; if `$ARGUMENTS` is empty the no-stdin variant runs.
+ *
+ * The 5-arg signature (capabilities + installedPlugins + installedUserSkills)
+ * is preserved for forward compatibility but no longer renders `{{ capabilities
+ * .<x>.cmd }}` placeholders — the v3.4.4 body has no placeholders.
  */
 export function generateCommandFile(
   name: string,
   prompt: RolePrompt,
-  capabilities: CapabilityMap,
-  installedPlugins: Set<string>,
-  installedUserSkills: Set<string>,
+  _capabilities: CapabilityMap,
+  _installedPlugins: Set<string>,
+  _installedUserSkills: Set<string>,
 ): { content: string; warnings: string[] } {
   const isMaster = prompt.is_master === true
-  const primaryCmdLine =
-    prompt.primary_cap && capabilities[prompt.primary_cap]
-      ? `{{ capabilities.${prompt.primary_cap}.cmd }}`
+  const argHint = isMaster ? '[task description]' : '[requirement text or omit]'
+  const stagedNote =
+    name === 'auto'
+      ? '\n- For stage-by-stage review, append `--staged` (pauses between stages for user review).'
       : ''
 
-  const checklistBlock = prompt.checklist.length
-    ? prompt.checklist.map((item, i) => `> ${i + 1}. ${item}`).join('\n>\n')
-    : '> (Master orchestrator — dispatches to per-sub-workflow slash commands listed below.)'
-
-  const fallbackPath = isMaster
-    ? `**Fallback path** (when no slash command from the sub-list resolves): run each missing sub-workflow inline using its own role prompt (see \`~/.claude/skills/<sub-name>/SKILL.md\` for the per-sub fallback prompt). Do NOT skip stages silently — each sub either runs or is logged as "skipped: <reason>".`
-    : [
-        `**Fallback path** (when the upstream isn't installed or returns no result): use the Task tool to spawn a general-purpose subagent with this prompt:`,
-        ``,
-        `> You are a **${prompt.specialist}**.`,
-        `>`,
-        `> **Mission**: ${prompt.responsibility.trim().replace(/\n/g, ' ')}`,
-        `>`,
-        `> **Default-suspect mode**: assume the change is broken / risky / incomplete until proven otherwise. Cite \`file:line\` for every finding; do not generalize.`,
-        `>`,
-        `> **Review checklist**:`,
-        checklistBlock,
-        `>`,
-        `> **Output format**: structured report with severity-classified findings (${prompt.severity}). One finding per line: \`[severity] file:line — problem (one sentence); fix: suggested change\`. If no findings, say so explicitly. No preamble, no end-of-report summary.`,
-        ``,
-        `(The role prompt is self-contained — works even when the upstream \`${prompt.primary_cap || 'specialist'}\` user-skill / plugin isn't installed.)`,
-      ].join('\n')
-
-  const preferredPath = primaryCmdLine
-    ? `**Preferred path** (when the upstream specialist is installed): use the SlashCommand tool to run \`${primaryCmdLine}\` — the upstream specialist takes over.`
-    : `**Preferred path** (master orchestrator): dispatch to the per-sub-workflow slash commands in the order this stage prescribes. Each sub command is its own \`~/.claude/commands/<sub-name>.md\` and has its own dual-path fallback.`
-
-  const rawBody = [
+  const body = [
     `# /${name}`,
     ``,
     prompt.description,
     ``,
     `## How to invoke`,
     ``,
-    preferredPath,
+    `Use the Bash tool to run:`,
     ``,
-    fallbackPath,
+    '```bash',
+    `echo "$ARGUMENTS" | harnessed run ${name} --task-stdin`,
+    '```',
+    ``,
+    `If \`$ARGUMENTS\` is empty (slash command invoked with no args), run \`harnessed run ${name}\` (no stdin pipe).`,
+    ``,
+    `After completion, the Bash output prints a \`Next:\` hint on stderr suggesting the next stage. Decide whether to invoke based on conversation context — the hint is informational, not prescriptive.`,
     ``,
     `## Notes`,
     ``,
-    `- This file (\`~/.claude/commands/${name}.md\`) is generated by \`harnessed setup\` from \`workflows/role-prompts.yaml\` + \`workflows/<stage>/<sub>/SKILL.md\`. To regenerate after a harnessed upgrade, re-run \`harnessed setup\`.`,
-    `- The companion \`~/.claude/skills/${name}/SKILL.md\` is the Skill-tool entry point (Claude loads it when triggers match \`trigger_phrases:\`). Both files carry the same dual-path instruction.`,
-    `- If your shell shows a \`⚠️ ... not installed\` warning from \`harnessed setup\` for this command, the upstream is missing on disk — install per the warning, OR rely on the fallback Task-spawn role prompt above (it does not require the upstream).`,
+    `- This file is generated by \`harnessed setup\` v3.4.4+. Re-run \`harnessed setup\` after a harnessed upgrade to refresh.`,
+    `- The sister \`~/.claude/skills/${name}/SKILL.md\` is the Skill-tool entry point (Claude loads it when triggers match \`trigger_phrases:\`). Both files invoke the same \`harnessed run ${name}\` Bash command.${stagedNote}`,
+    `- Workflow runtime: \`src/workflow/run.ts\` walks \`workflows/${nameToYamlHintPath(name)}\` with disciplines + judgments + master orchestration applied per the yaml \`delegates_to[]\` + \`gate\` clauses.`,
+    ``,
+    `<!-- harnessed-generated:v3.4.4 -->`,
     ``,
   ].join('\n')
 
-  // Render `{{ capabilities.<x>.cmd }}` placeholder via sister resolver.
-  const { body, warnings } = renderSkillBody(
-    rawBody,
-    capabilities,
-    installedPlugins,
-    installedUserSkills,
-  )
+  // v3.4.4 — no `{{ capabilities.<x>.cmd }}` placeholder in body, so renderSkillBody
+  // is not invoked and warnings are always empty (signature retained for back-compat).
+  const warnings: string[] = []
 
-  // Frontmatter — `description` only (no allowed-tools restriction so the
-  // command can spawn Task / SlashCommand / Read freely).
-  const frontmatter = ['---', `description: ${JSON.stringify(prompt.description)}`, '---', ''].join(
-    '\n',
-  )
+  const frontmatter = [
+    '---',
+    `description: ${JSON.stringify(prompt.description)}`,
+    `argument-hint: ${JSON.stringify(argHint)}`,
+    '---',
+    '',
+  ].join('\n')
 
   return { content: frontmatter + body, warnings }
 }
 
+/** Returns the relative `workflows/...` path matching the 3-tier
+ *  resolveWorkflowYaml lookup in src/cli/run.ts. Used in the Notes section
+ *  to hint where the runtime yaml lives. */
+function nameToYamlHintPath(name: string): string {
+  if (['auto', 'research', 'retro'].includes(name)) return `${name}/workflow.yaml`
+  if (['discuss', 'plan', 'task', 'verify'].includes(name)) return `${name}/auto/workflow.yaml`
+  const dashIdx = name.indexOf('-')
+  if (dashIdx > 0) {
+    return `${name.slice(0, dashIdx)}/${name.slice(dashIdx + 1)}/workflow.yaml`
+  }
+  return `${name}/workflow.yaml`
+}
+
+/** v3.4.4 marker — every command file generated by this tool emits this trailing
+ *  comment as the last non-blank body line. `harnessed setup` overwrites any file
+ *  containing this marker (or the older v3.4.3 dual-path signature) and preserves
+ *  files with neither (true user-authored). Pattern is digit-loose so future
+ *  v3.4.5+ patches can re-overwrite without losing the property. */
+const HARNESSED_MARKER_RX = /<!--\s*harnessed-generated:v3\.4\.\d+\s*-->/
+
+/** Detect the v3.4.3 dual-path body shape — overwrite even though it has no
+ *  marker because it shipped before markers existed. Two-signal AND so we don't
+ *  false-positive on user files that happen to mention "SlashCommand". */
+const V3_4_3_SIGNATURE_RX =
+  /\*\*Preferred path\*\*[\s\S]*use the SlashCommand tool[\s\S]*\*\*Fallback path\*\*[\s\S]*use the Task tool to spawn/
+
+/** Returns true when the file is harnessed-generated (any version) and may be
+ *  safely overwritten by `harnessed setup`. User-authored files (neither marker
+ *  nor v3.4.3 signature present) are skipped with a warning. */
+export function shouldOverwriteFile(content: string): boolean {
+  return HARNESSED_MARKER_RX.test(content) || V3_4_3_SIGNATURE_RX.test(content)
+}
+
 /**
- * Write all sub-workflow commands files to `<commandsDir>`. Skips per-file when
- * a same-named user file already exists (additive only — never overwrite a
- * user-authored command). Returns per-file outcomes for setup.ts log emission.
+ * Write all sub-workflow commands files to `<commandsDir>`. v3.4.4 marker-based
+ * overwrite: a file is overwritten when it carries the harnessed marker OR
+ * matches the v3.4.3 dual-path signature; truly user-authored files (with
+ * neither) are skipped with a warning. The 9-arg signature stays backwards-
+ * compatible because `fileExists` and `readFileSync` have default values —
+ * existing 7-arg callers in setup.ts continue to work.
  */
 export async function writeAllCommands(
   slashNames: string[],
@@ -178,6 +198,7 @@ export async function writeAllCommands(
   installedUserSkills: Set<string>,
   writer: (path: string, content: string) => Promise<void>,
   fileExists: (path: string) => boolean = existsSync,
+  readFileSync: (path: string) => string = (p) => nodeReadFileSync(p, 'utf8'),
 ): Promise<{ results: CommandWriteResult[]; warnings: string[] }> {
   const results: CommandWriteResult[] = []
   const aggregatedWarnings = new Set<string>()
@@ -195,15 +216,30 @@ export async function writeAllCommands(
       aggregatedWarnings.add(`role-prompts.yaml missing entry for '${name}'`)
       continue
     }
+
+    // v3.4.4 — marker-based overwrite. Skip ONLY when file exists AND is
+    // user-authored (neither harnessed marker nor v3.4.3 dual-path signature
+    // present). Harnessed-generated files get re-rendered (in case role-prompts
+    // .yaml changed) — that's the upgrade path from v3.4.3 → v3.4.4.
     if (fileExists(path)) {
-      results.push({
-        name,
-        path,
-        written: false,
-        warning: `commands/${name}.md already exists — leaving user file unchanged`,
-      })
-      continue
+      let existing = ''
+      try {
+        existing = readFileSync(path)
+      } catch {
+        existing = ''
+      }
+      if (!shouldOverwriteFile(existing)) {
+        results.push({
+          name,
+          path,
+          written: false,
+          warning: `commands/${name}.md is user-authored (no harnessed marker) — leaving unchanged. Delete the file to force regenerate.`,
+        })
+        continue
+      }
+      // Else: harnessed-generated (v3.4.3 or older v3.4.4) → overwrite below.
     }
+
     const { content, warnings } = generateCommandFile(
       name,
       prompt,
