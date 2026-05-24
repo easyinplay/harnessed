@@ -1,0 +1,477 @@
+# <packageRoot>/workflows/role-prompts.yaml — harnessed v3.4.3 role-prompt registry.
+#
+# Per-sub-workflow metadata consumed by `src/cli/lib/generateCommands.ts` to
+# emit `~/.claude/commands/<slash-name>.md` files at `harnessed setup` time.
+#
+# Each entry describes:
+#   primary_cap:    Which capability key the "preferred path" invokes (the
+#                   {{ capabilities.<x>.cmd }} that should resolve in body).
+#                   For master orchestrators, this is empty (they dispatch).
+#   specialist:     Title of the expert persona used in fallback Task-spawn prompt.
+#   responsibility: One-line job description (the agent's job).
+#   checklist:      5-10 items the specialist should evaluate. Adapted from
+#                   upstream gstack expert prompts where available (cited inline).
+#                   Self-contained — works even when upstream user-skill missing.
+#   severity:       Severity scale label used in the report format.
+#   description:    YAML frontmatter `description` for ~/.claude/commands/<x>.md.
+#
+# Karpathy simplicity: 1 small yaml beats 23 hardcoded strings in TS.
+
+schema_version: harnessed.role-prompts.v1
+
+prompts:
+
+  # ============================================================================
+  # Super-master + 4 stage-master (orchestrators — short dispatcher prompts)
+  # ============================================================================
+
+  auto:
+    primary_cap: ""  # dispatcher only
+    is_master: true
+    specialist: "Full-cycle workflow orchestrator"
+    responsibility: |
+      Drive a complete 6-stage feature cycle (research conditional → discuss →
+      plan → task → verify → retro mandatory) one stage after another, using
+      the corresponding `/discuss /plan /task /verify /retro` slash commands as
+      preferred entry points and the per-sub-workflow fallback role prompts
+      when an upstream is missing.
+    checklist: []
+    severity: "stage-pass / stage-fail / stage-skipped (with reason)"
+    description: "Run a complete harnessed 6-stage feature cycle end-to-end (research → discuss → plan → task → verify → retro)."
+
+  discuss:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 1 discuss dispatcher"
+    responsibility: |
+      Independently evaluate three clarification layers (strategic / phase /
+      subtask) per ~/.claude/CLAUDE.md "澄清/审查触发判据" and run only the
+      layers whose gate fires. Each layer's command is `/discuss-strategic`,
+      `/discuss-phase`, `/discuss-subtask`.
+    checklist: []
+    severity: "per-layer fired/skipped (with reason)"
+    description: "Stage 1 Discuss master — three-layer clarification dispatcher (strategic / phase / subtask)."
+
+  plan:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 2 plan dispatcher"
+    responsibility: |
+      Drive the 2-step plan stage: architecture review first (`/plan-architecture`
+      — only if `phase.is_complex_architecture == true`), then unconditional
+      phase planning (`/plan-phase` — GSD plan-phase + planning-with-files
+      persistence).
+    checklist: []
+    severity: "ordered serial — architecture (conditional) → phase (always)"
+    description: "Stage 2 Plan master — architecture review (conditional) then phase planning (always, persisted)."
+
+  task:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 3 task dispatcher"
+    responsibility: |
+      Per-subtask serial chain: `/task-clarify` (conditional brainstorming) →
+      `/task-code` (karpathy 4 心法 + mattpocock conditional招式) →
+      `/task-test` (TDD strongly suggested gate) → `/task-deliver` (ralph-loop
+      COMPLETE wrapper). Re-enter for each subtask.
+    checklist: []
+    severity: "per-subtask 4-step serial gate"
+    description: "Stage 3 Task master — per-subtask clarify→code→test→deliver chain (ralph-loop COMPLETE at deliver)."
+
+  verify:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 4 verify dispatcher"
+    responsibility: |
+      Order: `/verify-progress` (always, serial 1) → parallel fan-out of
+      `/verify-code-review`, `/verify-paranoid` (critical module),
+      `/verify-qa` (UI changes), `/verify-security` (auth/secrets),
+      `/verify-design` (design changes), `/verify-multispec` (critical release
+      Pattern C) → `/verify-simplify` (always, serial 99, tail).
+    checklist: []
+    severity: "per-sub fire/skip (with reason); paranoid is mandatory on critical modules"
+    description: "Stage 4 Verify master — progress → parallel reviewers → simplify tail (paranoid mandatory on critical modules)."
+
+  # ============================================================================
+  # Standalone
+  # ============================================================================
+
+  research:
+    primary_cap: ""
+    specialist: "Research analyst"
+    responsibility: |
+      Multi-source investigation (docs / web search / codebase grep / library
+      probe) producing a `findings.md` with citations, NOT speculation. Use
+      `ctx7` for library docs, `tavily-mcp` / `exa-mcp` for web, `gh` CLI for
+      GitHub artifacts, and codebase `Grep` for internal references.
+    checklist:
+      - "Resolve each unknown claim to a citable source (URL, file:line, or `ctx7` doc id)"
+      - "Cite version explicitly when discussing library / framework APIs (training cutoff may be stale)"
+      - "Capture conflicting sources side-by-side; do not silently pick one"
+      - "Flag `OPEN: <question>` for items the user must decide; never paper over"
+      - "Persist results to `.planning/<phase>/findings.md` for cross-session handoff"
+    severity: "verified / unverified / conflicting / open"
+    description: "Multi-source research producing a citation-backed findings.md (no speculation)."
+
+  retro:
+    primary_cap: "retro-gstack"
+    specialist: "Retrospective facilitator"
+    responsibility: |
+      Run a Lessons / Decisions / Surprises retrospective for the closed
+      milestone, then persist to `RETROSPECTIVE.md`. Adapt the gstack `/retro`
+      method when available; otherwise structure the conversation yourself.
+    checklist:
+      - "What did we set out to do, vs. what actually shipped?"
+      - "Top 3 surprises (positive or negative) — root cause each"
+      - "Decisions that paid off; decisions we would reverse"
+      - "Process changes for next milestone (concrete, not vague)"
+      - "What deserves a permanent rule entry (CLAUDE.md / docs/adr/)?"
+      - "Persist verbatim to `.planning/RETROSPECTIVE.md` — append, do not overwrite"
+    severity: "lesson / decision / surprise / process-change"
+    description: "Run a milestone retrospective (lessons / decisions / surprises) and persist to RETROSPECTIVE.md."
+
+  # ============================================================================
+  # discuss-* (3 subs)
+  # ============================================================================
+
+  discuss-strategic:
+    primary_cap: "gstack-office-hours"
+    specialist: "Strategic Office-Hours advisor (CEO + Product lens)"
+    responsibility: |
+      Stress-test the product / scope / business value of a new feature,
+      milestone, or project BEFORE engineering investment. Adapted from gstack
+      `/office-hours` + `/plan-ceo-review`.
+    checklist:
+      - "What user problem does this solve? Who specifically experiences it today?"
+      - "Why this, why now? (alternative cost of working on something else)"
+      - "What does success look like — measurable, not vibes (1 metric, not 5)?"
+      - "Is the scope MVP-able? What's the smallest cut that still proves the bet?"
+      - "What assumptions are load-bearing? Which would kill the feature if wrong?"
+      - "Who pays the maintenance cost after ship — same team, or a hand-off?"
+      - "Decision: ship / iterate / kill / table — with one-line reason"
+    severity: "ship / iterate / kill / table (each with reason)"
+    description: "CEO-lens strategic review: pressure-test scope, user value, and assumptions before engineering invests."
+
+  discuss-phase:
+    primary_cap: "gsd-discuss-phase"
+    specialist: "Phase clarification analyst"
+    responsibility: |
+      Surface and resolve gray-area implementation decisions BEFORE a phase
+      enters planning. Fires when ≥2 open decisions, cross-phase data flow is
+      unclear, or scope spans >1 day. Adapted from GSD `/gsd-discuss-phase`.
+    checklist:
+      - "List every open decision as a single question (1 line each)"
+      - "For each, list 2-4 candidate answers with one-line tradeoffs"
+      - "Identify cross-phase contracts (data flow / API shape / migration order)"
+      - "Flag decisions blocking start (must answer before plan) vs. deferrable"
+      - "Persist to `.planning/<phase>/findings.md` + `knowledge.md` for hand-off"
+      - "If the layer is genuinely clear, say 'no clarification needed' and exit"
+    severity: "blocking / deferrable / resolved"
+    description: "Surface gray-area phase decisions, list candidate answers, mark blocking vs. deferrable."
+
+  discuss-subtask:
+    primary_cap: "superpowers-brainstorming"
+    specialist: "Subtask brainstormer"
+    responsibility: |
+      Generate ≥2 implementation approaches for a single subtask and compare
+      tradeoffs. Fires when core algorithm / data structure / API contract /
+      high error-cost. Skip pure CRUD or single-obvious-path tasks.
+    checklist:
+      - "State the subtask in one sentence; confirm scope with user if ambiguous"
+      - "Produce 2-4 distinct approaches (not just '2 flavors of the same idea')"
+      - "For each: complexity, perf, failure modes, test surface, future change cost"
+      - "Recommend one with 1-2 line reason; flag risks of the chosen path"
+      - "Output a `findings.md` block the implementer can paste into the task"
+      - "If options collapse to one (others clearly bad), say so and exit fast"
+    severity: "recommended / acceptable / rejected"
+    description: "Generate 2-4 subtask approaches with tradeoffs and recommend one (brainstorming)."
+
+  # ============================================================================
+  # plan-* (2 subs)
+  # ============================================================================
+
+  plan-architecture:
+    primary_cap: "plan-eng-review"
+    specialist: "Staff Engineer architect"
+    responsibility: |
+      Lock down system architecture BEFORE phase planning when complex
+      (≥3 modules / new framework / new data model / scaling-critical /
+      large migration). Adapted from gstack `/plan-eng-review`.
+    checklist:
+      - "Identify the smallest architecture change that satisfies all requirements"
+      - "Diagram component boundaries (data flow / call direction / ownership)"
+      - "List interfaces / contracts between components (function signatures, API shapes)"
+      - "Failure modes: what happens when each component is slow / down / inconsistent?"
+      - "Migration / rollback path — can we ship in slices, or all-at-once?"
+      - "Choose mechanisms with the lowest blast radius and lowest unique vocabulary"
+      - "Document tradeoffs of the rejected alternatives (so reviewers see the road not taken)"
+    severity: "approved / approved-with-changes / blocked"
+    description: "Staff Engineer architecture review for complex changes (lock design before plan-phase)."
+
+  plan-phase:
+    primary_cap: "gsd-plan-phase"
+    specialist: "Phase planner"
+    responsibility: |
+      Break a phase into ordered, dependency-aware tasks with explicit file
+      paths and acceptance criteria, then persist via planning-with-files
+      plugin. Adapted from GSD `/gsd-plan-phase` (Wave A research → Wave B
+      planner → Wave C plan-checker).
+    checklist:
+      - "Each task names the exact files it touches (NOT just 'auth module')"
+      - "Each task has acceptance criteria a third party can verify"
+      - "Dependencies are explicit (task N requires task M output)"
+      - "Tasks are ≤1 day each; split if larger"
+      - "Identify the verification step (test / lint / typecheck) for each task"
+      - "Persist as `task_plan.md` + `progress.md` via planning-with-files `/plan`"
+      - "Final pass: a fresh agent should be able to execute from these files alone"
+    severity: "ready-to-execute / needs-revision / blocked"
+    description: "Break a phase into ordered tasks with file paths + acceptance criteria; persist via planning-with-files."
+
+  # ============================================================================
+  # task-* (4 subs)
+  # ============================================================================
+
+  task-clarify:
+    primary_cap: "superpowers-brainstorming"
+    specialist: "Subtask spec clarifier"
+    responsibility: |
+      Surface ambiguity in a single subtask spec by asking ONE focused
+      question at a time. Fires when ≥2 approaches / core algorithm / API
+      contract / high error-cost. Skip if subtask is CRUD or already obvious.
+    checklist:
+      - "Read the subtask description; restate it in your own words to confirm"
+      - "List every assumption you would make; flag the ones the user must confirm"
+      - "Ask ONE question at a time, lowest-cost-to-answer first"
+      - "Stop asking when you have enough to write 80% of the code without guessing"
+      - "Record the resolved spec at the top of the subtask file before implementing"
+      - "If `phase.spec_ambiguous == true AND phase.no_docs == true`, request grill-me"
+    severity: "blocking-question / nice-to-know / resolved"
+    description: "Clarify subtask spec one question at a time (brainstorming + grill-with-docs on ambiguity)."
+
+  task-code:
+    primary_cap: "planning-with-files"
+    specialist: "Karpathy-discipline implementer"
+    responsibility: |
+      Implement a single subtask under karpathy 4 心法 (Think Before Coding /
+      Simplicity First / Surgical Changes / Goal-Driven Execution) with
+      ≤200 LOC per file. Conditionally invoke `/zoom-out` for unfamiliar
+      modules, `/improve-codebase-architecture` for periodic health audits,
+      `/diagnose` for unknown bug root causes. Update `progress.md` via
+      planning-with-files `/plan` when done.
+    checklist:
+      - "Before any edit: read the file you intend to change end-to-end"
+      - "Smallest change that satisfies the acceptance criteria — no scope creep"
+      - "≤200 LOC per file (split modules if growing past it)"
+      - "Trust internal code: don't re-validate already-checked inputs at every layer"
+      - "No speculative abstractions (no 'just in case' generics)"
+      - "Edit with surgical precision: full path, exact selectors, no broad rewrites"
+      - "Update progress.md before declaring done (planning-with-files `/plan`)"
+    severity: "needs-fix / done / blocked"
+    description: "Implement a subtask under karpathy 4 心法 (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven); ≤200 LOC per file."
+
+  task-test:
+    primary_cap: "tdd"
+    specialist: "TDD enforcer (red-green-refactor)"
+    responsibility: |
+      Drive red-green-refactor for core business logic / algorithms / data
+      processing / regression-risk / reliability-required subtasks. Skip
+      pure CRUD / UI polish / docs-only. On test failure, hand off to
+      `/diagnose` for systematic root-cause.
+    checklist:
+      - "Red: write ONE failing test for the smallest behavior increment; run, watch it fail"
+      - "Green: write the minimum code that makes it pass — nothing more"
+      - "Refactor: clean up duplication / clarify names — keep tests green"
+      - "Loop. Each cycle ≤10 min; if longer, the increment is too big — split"
+      - "Negative cases matter: at least 1 test per error / edge / boundary"
+      - "Test name = expected behavior, not 'test1', not 'should work'"
+      - "On unexpected failure: stop adding tests; route to `/diagnose` for root cause"
+    severity: "red / green / refactored / blocked"
+    description: "Enforce red-green-refactor TDD for core logic; `/diagnose` handoff on test failures."
+
+  task-deliver:
+    primary_cap: "ralph-loop"
+    specialist: "Completion-promise enforcer (ralph-loop COMPLETE)"
+    responsibility: |
+      Wrap the subtask in ralph-loop with `completion_promise: "COMPLETE"`
+      and `max_iterations: <N>`. The subtask is considered done ONLY when
+      the agent emits verbatim string `COMPLETE` — not heuristic, not
+      LLM-as-judge. On max_iterations exceeded, emit explicit warning +
+      halt (NOT silent abort). Then mark progress.md complete.
+    checklist:
+      - "Confirm subtask acceptance criteria are explicit and verifiable BEFORE looping"
+      - "Set `max_iterations` based on subtask size; default 20"
+      - "On loop entry, give the agent the full spec + acceptance criteria + completion promise"
+      - "If agent emits 'COMPLETE' verbatim, mark progress.md done via `/plan`"
+      - "If max_iterations exceeded, emit warning + halt; do NOT silent-continue"
+      - "If teammate communication needed / context overflow → escalate to Agent Teams"
+      - "Cleanup: SendMessage shutdown_request + TeamDelete (防呆清单 mandatory)"
+    severity: "complete / max-iter-exceeded / escalated-to-teams"
+    description: "Wrap subtask in ralph-loop with verbatim COMPLETE promise; escalate to Agent Teams when needed."
+
+  # ============================================================================
+  # verify-* (8 subs)
+  # ============================================================================
+
+  verify-progress:
+    primary_cap: "gsd-verify-work"
+    specialist: "Progress / UAT verifier"
+    responsibility: |
+      Mandatory serial start of the verify stage. Run UAT-driven acceptance
+      via GSD `/gsd-verify-work` then sync state via `/gsd-progress` and
+      persist updates to `progress.md`. Order is locked: verify-work → progress.
+    checklist:
+      - "Read the phase's acceptance criteria from PLAN.md / task_plan.md"
+      - "For each criterion, demonstrate it passes (test result, manual UAT log, screenshot)"
+      - "Flag any criterion that is partial / stubbed / TODO — do NOT mark complete"
+      - "Sync ROADMAP.md / STATE.md / REQUIREMENTS.md via gsd-progress"
+      - "Append `progress.md` with completed subtask hash + verification artifact"
+      - "If acceptance is incomplete, route to bug-fix and re-verify; do not advance"
+    severity: "accepted / partial / blocked / failed"
+    description: "Mandatory verify entrypoint — UAT acceptance + ROADMAP/STATE sync + progress.md update."
+
+  verify-code-review:
+    primary_cap: "code-review"
+    specialist: "Code Reviewer (multi-agent fan-out)"
+    responsibility: |
+      Spawn parallel sonnet agents that each review the diff from a different
+      angle (CLAUDE.md compliance / obvious bugs / git history / PR history /
+      code-comment guidance). Filter findings by confidence ≥80. Adapted from
+      claude-plugins-official `code-review` plugin pattern.
+    checklist:
+      - "Read the diff against the base branch — full diff, not just summaries"
+      - "Audit against CLAUDE.md (root + any directory-level CLAUDE.md)"
+      - "Shallow scan for obvious bugs in changed lines (avoid context expansion)"
+      - "Git blame on modified regions — bugs visible only in historical context"
+      - "Previous PRs touching same files — recurring patterns / past comments"
+      - "Inline code comments / docstrings — does the change violate stated invariants?"
+      - "Score each finding 0-100; drop <80; cite file:line for kept findings"
+      - "Avoid: pre-existing issues, linter-catchable nits, lines user did not modify"
+    severity: "critical / high / medium (only findings ≥80 confidence are reported)"
+    description: "Multi-agent code review fan-out — diff vs base branch with confidence-filtered findings."
+
+  verify-paranoid:
+    primary_cap: "gstack-review"
+    specialist: "Paranoid Staff Engineer (pre-landing review)"
+    responsibility: |
+      Mandatory on critical modules (auth / payment / data migration / core
+      algorithm). Default-suspect mode — assume the change is broken until
+      proven otherwise. Adapted from gstack `/review` Pass 1 CRITICAL +
+      Pass 2 INFORMATIONAL checklist.
+    checklist:
+      - "SQL & Data Safety — string interpolation, TOCTOU races, validation bypass, N+1"
+      - "Race conditions & concurrency — read-check-write without unique constraint, missing atomic UPDATE"
+      - "LLM output trust boundary — unvalidated LLM-generated values to DB / SSRF / stored prompt injection"
+      - "Shell injection — subprocess shell=True with interpolation, os.system, eval/exec on LLM output"
+      - "Enum & value completeness — new enum/status/tier value reached every consumer (case/if-chains/allowlists)"
+      - "Async/sync mixing — sync I/O inside async def, time.sleep in async"
+      - "Column/field name safety — ORM .select/.eq columns match schema"
+      - "Type coercion at boundaries — hash/digest inputs normalized before serialize"
+      - "Time window safety — date-key lookups assuming 24h coverage; mismatched buckets between features"
+    severity: "CRITICAL / INFORMATIONAL (Fix-First Heuristic — critical → ASK, informational → AUTO-FIX)"
+    description: "Paranoid Staff Engineer pre-landing review (default-suspect mode, critical+informational two-pass)."
+
+  verify-qa:
+    primary_cap: "gstack-qa"
+    specialist: "QA Engineer (end-to-end)"
+    responsibility: |
+      Hands-on UAT for the changed surface — orient → explore → exercise
+      forms / nav / states / console / responsive. Use `playwright-cli` for
+      probes, `@playwright/test` for committed tests, `webapp-testing` for
+      Python-backend setups. Adapted from gstack `/qa`.
+    checklist:
+      - "Orient: map the application (links, framework detection, initial console errors)"
+      - "Per page: visual scan, interactive elements work, console clean, responsive check"
+      - "Forms: empty / invalid / edge cases — error messages clear and actionable"
+      - "Navigation: every path in and out works, no dead-ends"
+      - "States: empty, loading, error, overflow — none look like AI placeholder"
+      - "Mobile: 375x812 viewport — real layout, not stacked desktop"
+      - "Authenticated paths if creds / cookies provided; depth > breadth on core flows"
+    severity: "blocker / major / minor / nit"
+    description: "End-to-end QA pass — orient / explore / forms / states / responsive (depth > breadth on core flows)."
+
+  verify-security:
+    primary_cap: "gstack-cso"
+    specialist: "Chief Security Officer (CSO audit)"
+    responsibility: |
+      Conditional on `phase.has_auth_or_secrets == true`. Audit auth flows,
+      credentials, OWASP Top 10 surface, secrets, infrastructure security
+      (CI/CD, Docker, IaC). Adapted from gstack `/cso`.
+    checklist:
+      - "OWASP Top 10: injection / broken auth / sensitive data exposure / XXE / broken access control / misconfig / XSS / insecure deserialize / known-vuln deps / insufficient logging"
+      - "Secrets archaeology: git history scan for leaked credentials, .env tracked files, CI inline secrets"
+      - "Auth boundaries: every protected route enforces auth (not just CSR check); authorization not transitive across requests"
+      - "CSRF / SSRF / stored prompt injection where LLM output enters knowledge bases"
+      - "CI/CD: pull_request_target + checkout PR code, script injection via github.event.*, unpinned third-party actions"
+      - "Dockerfiles: missing USER (root), secrets as ARG, .env in image, exposed ports without purpose"
+      - "IaC: wildcard IAM, hardcoded secrets in .tfvars, privileged containers, hostNetwork in K8s"
+      - "Dependency audit (npm audit / pip-audit / bundler-audit) — note SKIPPED tools rather than fail audit"
+    severity: "CRITICAL / HIGH / MEDIUM / LOW / INFO"
+    description: "CSO security audit — OWASP Top 10 + secrets archaeology + CI/CD / Docker / IaC hardening."
+
+  verify-design:
+    primary_cap: "gstack-design-review"
+    specialist: "Design Reviewer (AI-Slop detector + design discipline)"
+    responsibility: |
+      Conditional on `phase.has_design_changes == true`. Evaluate rendered
+      output (not source), with annotated screenshots as evidence. Adapted
+      from gstack `/design-review` — think like a designer, not a QA engineer.
+    checklist:
+      - "Classifier: marketing/landing vs app UI vs hybrid — apply matching rule set"
+      - "Hard rejection: generic SaaS card grid / beautiful image weak brand / busy imagery behind text / carousel without narrative"
+      - "Litmus: brand unmistakable first screen / one strong visual anchor / scannable by headlines / one job per section"
+      - "Typography: expressive, not default stacks (Inter / Roboto / Arial / system)"
+      - "Hero: full-bleed edge-to-edge / one composition / no cards in hero"
+      - "Responsive ≠ stacked desktop on mobile — evaluate whether mobile layout makes design sense"
+      - "Quick Wins section: 3-5 highest-impact fixes <30 min each"
+      - "Every finding has a screenshot — annotated where possible (Read the file inline so user sees it)"
+    severity: "hard-reject / quick-win / nice-to-have"
+    description: "Design review — AI-Slop detection + landing/app classifier + screenshot-evidence findings."
+
+  verify-simplify:
+    primary_cap: "code-simplifier"
+    specialist: "Code Simplifier (tail step)"
+    responsibility: |
+      Last step of verify chain (`phase.is_final_step == true`) after all
+      reviews ship. Remove duplication / multi-purpose helpers / unused code
+      / over-abstraction from the diff. Keep tests passing.
+    checklist:
+      - "Look only at files changed in this phase — don't simplify unrelated code"
+      - "Duplication: same logic in 2+ places → extract once, but only if both sites benefit"
+      - "Dead code: unused exports / unreachable branches / commented-out blocks"
+      - "Magic numbers used in >1 place → named constant"
+      - "Over-abstraction: generics / interfaces with 1 implementer → inline"
+      - "Comments that lie or duplicate the code → delete (no-comments-default karpathy rule)"
+      - "Run tests after each simplification; revert if anything fails"
+    severity: "applied / candidate-flagged / skipped (too risky for final step)"
+    description: "Final-step code simplification on the phase diff (remove duplication / dead code / over-abstraction)."
+
+  verify-multispec:
+    primary_cap: "agent-teams-create"
+    specialist: "Multi-specialist Agent Team orchestrator (Pattern C)"
+    responsibility: |
+      Critical release / large refactor only. Spawn 4 teammates
+      (code-review + gstack-review + gstack-cso + gstack-qa) via TeamCreate,
+      let them cross-question findings via SendMessage (NOT fire-and-forget),
+      lead arbitrates final report. Cleanup mandatory.
+    checklist:
+      - "Token-cost gate: estimate team_cost vs 2 × subagent_cost; only escalate when team wins"
+      - "TeamCreate with 4 teammates: code-review / gstack-review / gstack-cso / gstack-qa"
+      - "Each teammate's brief is self-contained (no shared session context to lean on)"
+      - "Round-trip findings: each teammate sends top-3 findings; others rate (real / false-positive / nit)"
+      - "Lead arbitrates conflicts; produces final report ordered CRITICAL → HIGH → MEDIUM"
+      - "Cleanup MANDATORY: SendMessage shutdown_request to each teammate, then TeamDelete"
+      - "If the gate doesn't fire (regular PR), DO NOT escalate — fall back to single-agent fan-out"
+    severity: "ship-blocker / ship-with-action / informational"
+    description: "Pattern C 4-specialist Agent Team — critical-release multi-dimensional review with SendMessage cross-questioning."
+
+  # ============================================================================
+  # Multi-cap workflow notes
+  # ============================================================================
+  # discuss-strategic ships 2 capabilities (office-hours + plan-ceo-review)
+  #   — primary_cap is office-hours (the entry); the role prompt covers both
+  #     CEO + product lenses so a single Task spawn can do either.
+  # verify-progress ships 2 (gsd-verify-work + gsd-progress) — primary = the
+  #   first one; role prompt covers both since they're sequential.
+  # task-code primary = planning-with-files (the persistent update); the role
+  #   prompt is karpathy-discipline focused since the code phase has no single
+  #   cmd — discipline is behavioral.

@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.3] - 2026-05-24 — Dual-source slash commands: `~/.claude/commands/<x>.md` + `~/.claude/skills/<x>/SKILL.md` (Option I); vapor CLI subcommand claims removed
+
+**升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 commands/ 生成 + SKILL.md 重新渲染)
+
+**Trigger**: 用户 dogfood v3.4.2 后 cross-session 反复报告 `/verify-paranoid` 仍不可用。另一 CC 实例诊断 (verbatim) 给出 root cause:
+
+1. SKILL.md 里 `harnessed verify-paranoid --apply` **是 vapor** — `harnessed --help` 实际只有 `install / install-base / research / execute-task / manifest-add / doctor / audit / audit-log / rollback / status / backup`,**13+ sub-workflow CLI 子命令完全没实现**。
+2. SKILL.md 让 Claude 用 `SlashCommand /review` 来路由,但 gstack `/review` 是 user-skill subdir (`~/.claude/skills/gstack/review/SKILL.md`),**Claude Code 不 register subdir SKILL.md 为顶层 slash command** — 仅通过 CLAUDE.md 描述的 model-driven 路由间接调用。
+3. 同样 `/verify-paranoid` 本身的 `~/.claude/skills/verify-paranoid/SKILL.md` 只是 Skill 工具可加载入口,**不是 SlashCommand 工具可触发** 的真 slash command — 平台层 slash command 必须在 `~/.claude/commands/<x>.md` 才注册。
+
+### Fixed
+
+- **NEW `~/.claude/commands/<x>.md` generation (Step A.6)** — `harnessed setup` 现在 dual-source 输出:每个 sub-workflow 同时写两个文件,语义同源:
+  - `~/.claude/skills/<x>/SKILL.md` — Skill 工具加载入口 (Claude 主动判断 `trigger_phrases:` 匹配时加载),既有路径。
+  - `~/.claude/commands/<x>.md` — 平台 user-defined slash command 真注册 (filename = `/x`),用户输入 `/verify-paranoid` 时 SlashCommand 工具直接找到。Filename = bare slash name (e.g. `verify-paranoid.md` → `/verify-paranoid`,无 `harnessed-` 前缀,符合 D-02 bare cmd 政策)。
+- **Dual-path 内容同源**:两文件 body 都含同一段 `## How to invoke`:
+  - **Preferred path** — `Use the SlashCommand tool to run \`{{ capabilities.<x>.cmd }}\`` — 通过 capabilityResolver 渲染成真 cmd (e.g. `/review` 当 gstack 已装)。
+  - **Fallback path** — `Use the Task tool to spawn a general-purpose subagent with this prompt: ...` — self-contained role-prompt,从 gstack 上游专家提示词移植 (如 verify-paranoid 的 Pass 1 CRITICAL 9-item 清单,源 `~/.claude/skills/gstack/review/checklist.md`)。装了 plugin 走 preferred,没装走 fallback,**互不依赖**。
+- **NEW `workflows/role-prompts.yaml`** (~480 LOC) — 24 sub-workflow 的 role-prompt registry:`specialist` (专家头衔) + `responsibility` (一句话使命) + `checklist` (5-10 项审查清单) + `severity` (报告 severity 标签) + `description` (commands/ frontmatter)。Karpathy: 一个 yaml 比 24 处硬编码 TS 强。
+- **NEW `src/cli/lib/generateCommands.ts`** (~205 LOC,karpathy ≤200L 边界) — `loadRolePrompts` / `generateCommandFile` / `writeAllCommands`。复用 `renderSkillBody` 渲染 capability cmd 占位符;**`fileExists` 守门:已存在 user 写的 `~/.claude/commands/<x>.md` 则 skip + warn,绝不 overwrite** (additive only)。
+- **24 个 SKILL.md `## How to invoke` 段全重写** — `workflows/<stage>/<sub>/SKILL.md` (含 `auto` / `discuss/auto` / `plan/auto` / `task/auto` / `verify/auto` / `research` / `retro` 等 master + standalone) 通过 `scripts/rewrite-skill-invoke-sections.mjs` 一次性 idempotent 重写。
+- **Vapor CLI 字样全部清除** — 删除每个 SKILL.md 里的 `## CLI invocation` shell block (claim `harnessed verify-paranoid --apply` 等),以及 `## Invocation` bullet list 里的 `- CLI: \`harnessed ...\`` 行,以及 frontmatter `description:` 里的 `Triggered by harnessed CLI \`harnessed <x> ...\` or slash command` 字样改成 `Triggered by slash command`。**CLI 没动** — 那些 subcommand 至始至终不存在,这次只删除虚假广告,未来 v3.5+ 如要实装可走另一个 PR。
+
+### Why
+
+v3.4.0 / v3.4.1 / v3.4.2 反复 patch 都没解决问题,因为它们都假设 SKILL.md 改一下就能让 `/verify-paranoid` 出现。这次定位 root cause:**Claude Code 平台层 slash command 必须有 `~/.claude/commands/<x>.md` 文件才 register**,SKILL.md 只是 Skill 工具加载入口。两类文件性质不同,缺一不可。
+
+### Added
+
+- `src/cli/lib/generateCommands.ts` — NEW (~205 LOC)
+- `workflows/role-prompts.yaml` — NEW (~480 LOC, 24 entry)
+- `tests/unit/generate-commands.test.ts` — NEW (12 cell:loadRolePrompts 解析 / generateCommandFile body shape 含 master vs sub variant / writeAllCommands skip+warn 路径 / bare filename 验证)
+- `scripts/rewrite-skill-invoke-sections.mjs` — NEW (一次性 idempotent 重写器,标记 `<!-- v3.4.3-dual-path-invocation -->` 防重跑;后续可删,留作 audit trail)
+
+### Changed
+
+- `src/cli/setup.ts` — NEW Step A.6 between A.5 render placeholders 和 C Agent Teams enable;读 capabilities.yaml + role-prompts.yaml + installed plugins/user-skills,把 24 个 commands/<x>.md 写到 `~/.claude/commands/`。文件名 collision 时 skip + warn,绝不覆盖 user 文件。
+- `package.json` — version 3.4.2 → 3.4.3
+
+### Files changed
+
+- `src/cli/lib/generateCommands.ts` — ADDED
+- `src/cli/setup.ts` — Step A.6 wiring
+- `workflows/role-prompts.yaml` — ADDED
+- `workflows/<stage>/<sub>/SKILL.md` × 24 — `## How to invoke` 段 + vapor CLI claims 全重写
+- `tests/unit/generate-commands.test.ts` — ADDED (12 cell)
+- `scripts/rewrite-skill-invoke-sections.mjs` — ADDED (one-shot rewriter)
+- `package.json` — version bump 3.4.2 → 3.4.3
+- `CHANGELOG.md` — this entry
+
+### Verification snippet for users
+
+After `npm install -g harnessed@3.4.3 && harnessed setup`:
+
+```bash
+# 1. 24 commands/<x>.md 已写入
+ls ~/.claude/commands/verify-paranoid.md ~/.claude/commands/verify.md ~/.claude/commands/auto.md
+
+# 2. 在 Claude Code session 里直接试
+/verify-paranoid     # SlashCommand 工具直接找到 (NOT model-driven 间接路由)
+/discuss             # 同上
+/auto                # 同上
+
+# 3. 文件内容含双路径:
+head -50 ~/.claude/commands/verify-paranoid.md
+#   ---
+#   description: "Paranoid Staff Engineer pre-landing review ..."
+#   ---
+#   # /verify-paranoid
+#   ## How to invoke
+#   **Preferred path**: use the SlashCommand tool to run `/review` ...
+#   **Fallback path**: use the Task tool to spawn ... You are a **Paranoid Staff Engineer** ...
+```
+
+如已有 `~/.claude/commands/<x>.md` (e.g. 用户自己写过 `/verify-paranoid`),`harnessed setup` skip 并 warn,不会 overwrite。
+
+### Plugin path future-proofing
+
+每个 commands/<x>.md 的 body 都已 self-contained:**preferred path 调用上游 plugin / user-skill (若装了),fallback path 直接 spawn Task with role prompt (永远 work)**。这意味着用户:
+
+- 装了 gstack / mattpocock / 其他 plugin → 走 preferred,gstack `/review` 等专家工具接管。
+- 没装 → 走 fallback,role prompt 是从 gstack 上游 checklist 移植的 self-contained 版本。
+- 未来 plugin API 变更或某 plugin 失效 → fallback 保护,workflow 永远不会因 plugin 失效而完全无法运行。
+
 ## [3.4.2] - 2026-05-24 — Resolver redesign: drop namespace prefix mutation; presence-check via install_type (plugin | user-skill)
 
 **升级一行指令**: `npm install -g harnessed && harnessed setup` (重跑 setup 触发 SKILL.md 模板重新渲染)

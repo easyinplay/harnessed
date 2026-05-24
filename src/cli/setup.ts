@@ -14,15 +14,17 @@
 //   1 → fs.cp failed
 //   2 → no SKILL.md workflows found (nothing to install)
 
-import { cp, readdir } from 'node:fs/promises'
+import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
+import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
+import { loadRolePrompts, writeAllCommands } from './lib/generateCommands.js'
 import { getPackageRoot } from './lib/packagePath.js'
-import { renderAllSkills } from './lib/renderSkillTemplates.js'
+import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   renderDeprecationBlock,
   runStepBInstall,
@@ -139,6 +141,55 @@ export function registerSetup(program: Command): void {
         console.warn(t('setup.step_a_render.warnings_header'))
         for (const w of rendered.aggregatedWarnings) {
           console.warn(`    - ${w}`)
+        }
+      }
+
+      // ── Step A.6: Generate ~/.claude/commands/<x>.md (v3.4.3) ───────────────
+      // v3.4.3 — SKILL.md alone does NOT register a slash command. Claude Code
+      // platform-level slash commands require `~/.claude/commands/<x>.md`
+      // (filename = slash name; YAML frontmatter + body = prompt). This step
+      // writes one per installed sub-workflow, with a dual-path body: preferred
+      // (upstream slash cmd) + fallback (Task-spawn self-contained role prompt
+      // adapted from gstack expert prompts). Skip + warn if user already has
+      // a same-named commands/ file (additive only — never overwrite).
+      const commandsBase = resolve(homedir(), '.claude', 'commands')
+      try {
+        await mkdir(commandsBase, { recursive: true })
+      } catch (e) {
+        console.warn(
+          `  [A.6] could not create ${commandsBase} — skipping commands/ generation (${(e as Error).message})`,
+        )
+      }
+      let capabilitiesMap = {}
+      try {
+        capabilitiesMap = await loadCapabilities(workflowsDir)
+      } catch (e) {
+        console.warn(
+          `  [A.6] capabilities.yaml unreadable — skipping commands/ generation (${(e as Error).message})`,
+        )
+      }
+      const rolePrompts = await loadRolePrompts(workflowsDir)
+      const installedPlugins = readInstalledPlugins()
+      const installedUserSkills = readInstalledUserSkills()
+      const cmdResult = await writeAllCommands(
+        skillNames,
+        commandsBase,
+        rolePrompts,
+        capabilitiesMap,
+        installedPlugins,
+        installedUserSkills,
+        async (p, c) => writeFile(p, c, 'utf8'),
+      )
+      const writtenCount = cmdResult.results.filter((r) => r.written).length
+      const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
+      console.log(
+        `  [A.6] generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped — existing user file or schema warn)`,
+      )
+      for (const r of cmdResult.results) {
+        if (r.written) {
+          console.log(`  [A.6] wrote /${r.name}  →  ${r.path}`)
+        } else if (r.warning) {
+          console.warn(`  [A.6] skipped /${r.name}: ${r.warning}`)
         }
       }
 

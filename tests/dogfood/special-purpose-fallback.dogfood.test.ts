@@ -157,7 +157,9 @@ describe('Phase v2.0-2.5 W4 Cycle 4 — Scenario A: mattpocock auto-invoke (R20.
     expect(caveman?.plugin_id).toBe('caveman')
     expect(caveman?.skill_dir).toBe('caveman')
     expect(caps.capabilities['code-simplifier']?.impl).toBe('plugin')
-    expect(mattpocock8.length, 'mattpocock 高频 ≥ 8 招式 (caveman 独立计)').toBeGreaterThanOrEqual(8)
+    expect(mattpocock8.length, 'mattpocock 高频 ≥ 8 招式 (caveman 独立计)').toBeGreaterThanOrEqual(
+      8,
+    )
   })
 
   it('F5. capabilities.yaml mattpocock fires_when 句型与 CLAUDE.md verbatim 对齐 (grill-with-docs / zoom-out / diagnose)', async () => {
