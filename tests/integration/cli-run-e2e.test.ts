@@ -62,15 +62,21 @@ describe.skipIf(!DIST_BUILT)('cli/run E2E — v3.4.4 Phase 1 T5 (spawnSync dist/
     expect(names).toContain('retro')
   })
 
-  it('scenario 3 — stdin pipe via `echo`-spawn-spawn chain → gateContext.task carries piped text', () => {
-    // Spawn `bash -c 'echo "test requirement" | node dist/cli.mjs run X --task-stdin --dry-run'`
-    // so the pipe semantics are exercised by the real shell (sister to manual
-    // verification done during impl on Windows Git Bash MSYS2).
-    const shellCmd = `echo "test requirement" | "${process.execPath}" "${CLI}" run verify-simplify --task-stdin --dry-run`
-    const r = spawnSync(process.platform === 'win32' ? 'bash' : 'sh', ['-c', shellCmd], {
-      encoding: 'utf8',
-      env: { ...process.env, NO_COLOR: '1' },
-    })
+  it('scenario 3 — stdin pipe via `--task-stdin` → gateContext.task carries piped text', () => {
+    // v3.4.4 hotfix: spawnSync `input` option pipes stdin directly into the child
+    // process — bypasses shell entirely so the test does not depend on `bash` being
+    // on PATH. Original impl spawned `bash -c 'echo X | node ...'` which exited 127
+    // on Windows shells (PowerShell / cmd) lacking bash.exe; Git Bash MSYS2
+    // environments passed only because bash happened to resolve.
+    const r = spawnSync(
+      process.execPath,
+      [CLI, 'run', 'verify-simplify', '--task-stdin', '--dry-run'],
+      {
+        encoding: 'utf8',
+        input: 'test requirement',
+        env: { ...process.env, NO_COLOR: '1' },
+      },
+    )
     expect(r.status).toBe(0)
     const parsed = JSON.parse(r.stdout ?? '')
     expect(parsed.gateContext.task).toBe('test requirement')
