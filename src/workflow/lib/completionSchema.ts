@@ -18,6 +18,13 @@ export const COMPLETION_SCHEMA = {
     phase: { type: 'string', enum: ['01-clarify', '02-code', '03-test', '04-deliver'] },
     summary: { type: 'string' },
     blockers: { type: 'array', items: { type: 'string' } },
+    // v3.5.0 Phase 2 — Option 1-Lite signal-driven Agent Teams escalation.
+    // spawned subagent SHOULD set this when any of parallelism-gate.yaml 5
+    // upgrade triggers fire. harnessed runtime propagates to stderr hint;
+    // user opens team in main Claude Code session (TeamCreate not exposed to
+    // spawned subagents via SDK v0.3.142 — see PHASE-2-SPEC.md § Why).
+    needs_teams_escalation: { type: 'boolean' },
+    escalation_reason: { type: 'string' },
   },
   required: ['status', 'phase'],
 } as const
@@ -29,7 +36,12 @@ export type CompletionPhase = '01-clarify' | '02-code' | '03-test' | '04-deliver
  *  detect. Mirrors `SDKResultMessage` (sdk.d.ts) — only the fields we read. */
 export interface SdkResultEnvelope {
   subtype?: string
-  structured_output?: { status?: CompletionStatus }
+  structured_output?: {
+    status?: CompletionStatus
+    // v3.5.0 Phase 2 — Option 1-Lite escalation fields (D1).
+    needs_teams_escalation?: boolean
+    escalation_reason?: string
+  }
   text?: string
   result?: string
 }

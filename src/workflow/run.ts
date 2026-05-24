@@ -57,6 +57,29 @@ export interface DispatchStubResult {
   target?: 'chat' | 'file' | 'commit-message'
   triggers_commit?: boolean
 }
+/** v3.5.0 Phase 2 — Option 1-Lite escalation rules injected via
+ *  criticalSystemReminder_EXPERIMENTAL (already piped through sdkReconcile.ts
+ *  L54-56 into spawned subagent prompt). Self-contained natural-language
+ *  transcription of workflows/judgments/parallelism-gate.yaml agent-teams-upgrade
+ *  fires_when. Spawned subagent CANNOT itself call TeamCreate (SDK v0.3.142 does
+ *  not expose Team APIs); it ONLY signals via structured_output.needs_teams_escalation.
+ *  See PHASE-2-SPEC.md § D2 for design rationale + spike result. */
+export const ESCALATION_RULES = `If during this task you detect ANY of the following 5 conditions, set \`needs_teams_escalation: true\` in your structured output and fill \`escalation_reason\` with the trigger name + one-sentence specifics. These are signals to the human user in the main Claude Code session — do NOT attempt to call TeamCreate/SendMessage/TeamDelete yourself (those tools are not available to you).
+
+Five triggers (any one suffices):
+
+1. **teammate_send_message_needed** — the task requires two or more subagents to exchange messages mid-task (e.g., reconciling API contract proposals across frontend and backend), not just fan-out + report.
+
+2. **subagent_context_overflow** — your context budget is filling and a separate subagent is needed to take over a portion of the work.
+
+3. **shared_task_list** — multiple subagents need to coordinate self-assignment from a shared task list (not pre-partitioned work).
+
+4. **opposing_hypothesis_debate** — the task requires two subagents to defend opposing hypotheses to a lead arbiter (e.g., root-cause debugging where two competing theories need separate evidence-gathering).
+
+5. **fullstack_three_way** — the task is a synchronized fullstack push (frontend + backend + tests) requiring API contract alignment across three roles simultaneously.
+
+If none of the five apply, omit \`needs_teams_escalation\` (defaults to false) and proceed normally.`
+
 /** Phase v3.4.4 (Phase 4) — build an AgentDefinition for a workflow phase skill,
  *  enriched via `workflows/role-prompts.yaml` when a matching entry exists.
  *
@@ -72,8 +95,12 @@ export interface DispatchStubResult {
  *  When found, splices `responsibility` + `checklist` + `severity` + `specialist`
  *  into the prompt body. `modelTierOverride` (B-10 escape hatch from execute-task
  *  `--model-tier inherit`) is applied to the AgentDefinition `model` field when
- *  set (sourced from `gateContext.modelTierOverride`). */
-function buildAgentDef(
+ *  set (sourced from `gateContext.modelTierOverride`).
+ *
+ *  v3.5.0 Phase 2 Wave 1 — BOTH code paths (rolePrompt found OR fallback stub)
+ *  now also inject `criticalSystemReminder_EXPERIMENTAL: ESCALATION_RULES` so
+ *  spawned subagents uniformly know when to signal Agent Teams escalation. */
+export function buildAgentDef(
   skillName: string,
   rolePrompts?: Record<string, RolePrompt>,
   workflowName?: string,
@@ -85,6 +112,7 @@ function buildAgentDef(
     return {
       description: `harnessed workflow phase: ${skillName}`,
       prompt: `You are executing the '${skillName}' workflow phase. Follow the phase intent and emit a structured COMPLETE signal when done.`,
+      criticalSystemReminder_EXPERIMENTAL: ESCALATION_RULES,
       ...(modelTierOverride ? { model: modelTierOverride } : {}),
     } as AgentDefinition
   }
@@ -104,6 +132,7 @@ function buildAgentDef(
   return {
     description: rp.description,
     prompt,
+    criticalSystemReminder_EXPERIMENTAL: ESCALATION_RULES,
     ...(modelTierOverride ? { model: modelTierOverride } : {}),
   } as AgentDefinition
 }
