@@ -19,13 +19,22 @@
 // of v1 — legacy v1 readers safely access the v1 subset; engine catch handler
 // reads `phase.fallback.max_iterations_exceeded.*` for R20.10 explicit halt).
 // Legacy yaml without `schema_version` falls back to PhasesSchema v1 path.
+//
+// Phase v3.4.4 — add v3 dispatch arm mirroring v2 pattern; master yamls (no
+// phases) validate via WorkflowSchemaV3 Optional phases field. JINJA loop now
+// guards `validated.phases` (master shape has phases === undefined).
 
 import { readFileSync } from 'node:fs'
 import { Value, type ValueError } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
 import { interpolate } from './interpolate.js'
 import { PhasesSchema, type PhasesSchemaType } from './schema/phases.js'
-import { WorkflowSchemaV2, type WorkflowSchemaV2T } from './schema/workflow.js'
+import {
+  WorkflowSchemaV2,
+  type WorkflowSchemaV2T,
+  WorkflowSchemaV3,
+  type WorkflowSchemaV3T,
+} from './schema/workflow.js'
 
 export class PhasesValidationError extends Error {
   constructor(public errors: ValueError[]) {
@@ -34,7 +43,7 @@ export class PhasesValidationError extends Error {
   }
 }
 
-export type LoadedPhases = PhasesSchemaType | WorkflowSchemaV2T
+export type LoadedPhases = PhasesSchemaType | WorkflowSchemaV2T | WorkflowSchemaV3T
 
 /** Load + validate a phases.yaml file. Throws `PhasesValidationError` on schema
  *  violation. If `vars` provided, interpolates {{ var }} in each phase's
@@ -49,8 +58,12 @@ export function loadPhases(yamlPath: string, vars?: Record<string, string>): Loa
   const raw = readFileSync(yamlPath, 'utf8')
   const parsed = parseYaml(raw) as { schema_version?: string } | null
 
-  const isV2 = parsed?.schema_version === 'harnessed.workflow.v2'
-  if (isV2) {
+  const version = parsed?.schema_version
+  if (version === 'harnessed.workflow.v3') {
+    if (!Value.Check(WorkflowSchemaV3, parsed)) {
+      throw new PhasesValidationError([...Value.Errors(WorkflowSchemaV3, parsed)])
+    }
+  } else if (version === 'harnessed.workflow.v2') {
     if (!Value.Check(WorkflowSchemaV2, parsed)) {
       throw new PhasesValidationError([...Value.Errors(WorkflowSchemaV2, parsed)])
     }
@@ -63,7 +76,8 @@ export function loadPhases(yamlPath: string, vars?: Record<string, string>): Loa
 
   // Phase 3.2 W2 T2.1 — JINJA interpolate invokes field (D-02 LOCKED).
   // Backward-compat: vars omitted → no interpolate (existing callers unchanged).
-  if (vars) {
+  // Phase v3.4.4 — guard `validated.phases` (v3 master shape has phases === undefined).
+  if (vars && validated.phases) {
     for (const ph of validated.phases) {
       if (ph.invokes) ph.invokes = interpolate(ph.invokes, vars)
     }
