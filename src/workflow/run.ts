@@ -85,6 +85,30 @@ Five triggers (any one suffices):
 
 If none of the five apply, omit \`needs_teams_escalation\` (defaults to false) and proceed normally.`
 
+/** v3.6.0 Phase 3 — Transparent-skip rule injection (P0b 下半, Audit §
+ *  fallback 三条铁律 "拿不准 → 倾向跳过 + 透明声明"). Sister to ESCALATION_RULES
+ *  above, appended to the same `criticalSystemReminder_EXPERIMENTAL` field via
+ *  `${ESCALATION_RULES}\n\n${TRANSPARENT_SKIP_RULES}` in buildAgentDef. Spawned
+ *  subagent reads the rule + emits the verbatim skip message when gate context
+ *  is ambiguous instead of silent execution.
+ *  See workflows/disciplines/operational.yaml `transparent-skip-on-low-confidence`
+ *  rule (check_method: prompt-inject) for the discipline-layer declaration. */
+export const TRANSPARENT_SKIP_RULES = `When you encounter a phase gate or routing decision where the input context is missing key fields, default-valued, or contradictory, do NOT proceed silently. Instead, skip the phase and emit a one-line transparent explanation:
+
+  "Skipped <phase>, because <reason>. Tell me if you actually need it."
+  (中文: "这次跳过了 <phase>, 因为 <reason>. 如果你认为需要请明说.")
+
+This applies to: strategic-layer review skip / phase-layer clarification skip / subtask-brainstorming skip / TDD enforcement skip / Agent Teams escalation skip. Chain-isolation rule: skipping one layer does NOT mandate skipping subsequent layers — each layer is independently evaluated.`
+
+/** v3.6.0 Phase 3 — Combined critical-system-reminder string injected into
+ *  spawned subagent prompt. Composition order:
+ *    1. ESCALATION_RULES (v3.5.0 Phase 2) — 5 Agent Teams escalation triggers
+ *    2. TRANSPARENT_SKIP_RULES (v3.6.0 Phase 3) — fallback 三条铁律 transparent
+ *       skip discipline (skip + explanation > silent execution on low-confidence)
+ *  Both paths in buildAgentDef (rolePrompt found + conservative fallback) inject
+ *  this combined string into criticalSystemReminder_EXPERIMENTAL. */
+const CRITICAL_SYSTEM_REMINDER = `${ESCALATION_RULES}\n\n${TRANSPARENT_SKIP_RULES}`
+
 /** Phase v3.4.4 (Phase 4) — build an AgentDefinition for a workflow phase skill,
  *  enriched via `workflows/role-prompts.yaml` when a matching entry exists.
  *
@@ -104,7 +128,11 @@ If none of the five apply, omit \`needs_teams_escalation\` (defaults to false) a
  *
  *  v3.5.0 Phase 2 Wave 1 — BOTH code paths (rolePrompt found OR fallback stub)
  *  now also inject `criticalSystemReminder_EXPERIMENTAL: ESCALATION_RULES` so
- *  spawned subagents uniformly know when to signal Agent Teams escalation. */
+ *  spawned subagents uniformly know when to signal Agent Teams escalation.
+ *
+ *  v3.6.0 Phase 3 Wave 3 — both code paths now inject CRITICAL_SYSTEM_REMINDER
+ *  (= ESCALATION_RULES + TRANSPARENT_SKIP_RULES appended) so spawned subagents
+ *  ALSO follow the fallback 三条铁律 "拿不准 → 倾向跳过 + 透明声明" discipline. */
 export function buildAgentDef(
   skillName: string,
   rolePrompts?: Record<string, RolePrompt>,
@@ -117,7 +145,7 @@ export function buildAgentDef(
     return {
       description: `harnessed workflow phase: ${skillName}`,
       prompt: `You are executing the '${skillName}' workflow phase. Follow the phase intent and emit a structured COMPLETE signal when done.`,
-      criticalSystemReminder_EXPERIMENTAL: ESCALATION_RULES,
+      criticalSystemReminder_EXPERIMENTAL: CRITICAL_SYSTEM_REMINDER,
       ...(modelTierOverride ? { model: modelTierOverride } : {}),
     } as AgentDefinition
   }
@@ -137,7 +165,7 @@ export function buildAgentDef(
   return {
     description: rp.description,
     prompt,
-    criticalSystemReminder_EXPERIMENTAL: ESCALATION_RULES,
+    criticalSystemReminder_EXPERIMENTAL: CRITICAL_SYSTEM_REMINDER,
     ...(modelTierOverride ? { model: modelTierOverride } : {}),
   } as AgentDefinition
 }

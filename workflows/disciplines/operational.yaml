@@ -59,3 +59,21 @@ rules:
     enforcement: warn
     trigger: cmd.requires_approval == true AND session.has_prior_approval == true
     check_method: heuristic
+
+  # v3.6.0 Phase 3 — transparent-skip discipline (P0b 下半,Audit § fallback
+  # 三条铁律 "拿不准 → 倾向跳过 + 透明声明"). prompt-inject method delivered
+  # via src/workflow/run.ts TRANSPARENT_SKIP_RULES const appended to
+  # criticalSystemReminder_EXPERIMENTAL alongside ESCALATION_RULES (v3.5.0
+  # Phase 2 sister). Spawned subagent reads the rule + emits the verbatim
+  # skip message when gate context is ambiguous instead of silent execution.
+  - id: transparent-skip-on-low-confidence
+    description: |
+      When a phase gate condition cannot be confidently evaluated (e.g.
+      expected context fields missing, default-valued, or contradictory),
+      prefer skip + transparent explanation over silent execution.
+      Verbatim format: "这次跳过了 <phase>, 因为 <reason>. 如果你认为
+      需要请明说" / English: "Skipped <phase> because <reason>. Tell me
+      if you actually need it."
+    enforcement: warn
+    trigger: gate_evaluation_low_confidence
+    check_method: prompt-inject
