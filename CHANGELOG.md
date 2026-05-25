@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.4] - 2026-05-25
+
+### Fixed
+
+- **auto-install best-effort continue on per-command failure**: v3.9.1 SPEC abort-on-fail was over-protection. In practice a check's `install_commands` chain often represents **independent** installs (e.g. 3 MCP servers — tavily / exa / chrome-devtools — each its own `claude mcp add`), not a marketplace-add → plugin-install dependency. One failure should not block the others.
+- **Behavior change** (`src/cli/lib/auto-install.ts`):
+  - Run ALL commands in `install_commands`; record per-command failures but do NOT abort the chain
+  - Outcome reporting:
+    - All succeeded → `installed` (was: same)
+    - All failed → `failed` with reason "all commands failed (N)"
+    - Mixed → `failed` with reason "partial: X/Y commands failed" + warning emoji (⚠) to distinguish from total failure
+- **User benefit**: when tavily fails (e.g. "already exists" from prior install), exa + chrome-devtools still proceed. User re-runs setup to retry the failed ones (idempotent — `claude mcp add` re-fails cleanly without side effect).
+
 ## [3.9.3] - 2026-05-25
 
 ### Fixed

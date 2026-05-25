@@ -85,17 +85,22 @@ export async function runAutoInstall(opts: AutoInstallOpts): Promise<AutoInstall
       continue
     }
 
-    // Run commands sequentially; abort chain on first non-zero exit.
-    let chainOk = true
+    // v3.9.4 — Best-effort: run all commands; record per-command failures but
+    // do NOT abort the chain. Reverses v3.9.1 SPEC "abort on first non-zero
+    // exit" — that was over-protection for the assumed marketplace-add +
+    // plugin-install dependency case, but in practice the multi-command
+    // chain often represents independent installs (e.g. 3 MCP servers in
+    // one check) where one failure should not block the others. User sees
+    // ALL failures + ALL successes within a check.
+    const failureReasons: string[] = []
     for (const cmd of commands) {
       const tokens = cmd.split(/\s+/).filter((t) => t.length > 0)
       const exe = tokens[0]
       const args = tokens.slice(1)
       if (exe === undefined) {
         // Defensive — should never happen given install_commands non-empty entries.
-        out.failed.push({ name: check.name, reason: `empty command in install_commands` })
-        chainOk = false
-        break
+        failureReasons.push(`empty command in install_commands`)
+        continue
       }
       const r = spawnSync(exe, args, {
         encoding: 'utf8',
@@ -108,17 +113,33 @@ export async function runAutoInstall(opts: AutoInstallOpts): Promise<AutoInstall
       if (r.status !== 0) {
         const reason =
           r.error !== undefined
-            ? `spawn error: ${r.error.message}`
-            : `exit code ${r.status ?? '<unknown>'} on \`${cmd}\``
-        out.failed.push({ name: check.name, reason })
-        console.error(`  ✗ failed ${check.name} — ${reason}`)
-        chainOk = false
-        break
+            ? `spawn error on \`${cmd}\`: ${r.error.message}`
+            : `exit ${r.status ?? '<unknown>'} on \`${cmd}\``
+        failureReasons.push(reason)
+        console.error(`    ✗ ${cmd} — ${reason}`)
       }
     }
-    if (chainOk) {
+    if (failureReasons.length === 0) {
       out.installed.push(check.name)
       console.log(`  ✓ installed ${check.name}`)
+    } else if (failureReasons.length === commands.length) {
+      out.failed.push({
+        name: check.name,
+        reason: `all commands failed (${failureReasons.length})`,
+      })
+      console.error(`  ✗ failed ${check.name} — all ${commands.length} commands failed`)
+    } else {
+      // Partial: some commands succeeded, some failed. Recorded as failed for
+      // the summary count (user re-runs setup to retry; success-installed
+      // commands are idempotent — `claude mcp add` errors "already exists"
+      // which is fine on retry).
+      out.failed.push({
+        name: check.name,
+        reason: `partial: ${failureReasons.length}/${commands.length} commands failed`,
+      })
+      console.error(
+        `  ⚠ ${check.name} — partial: ${failureReasons.length}/${commands.length} commands failed (others succeeded)`,
+      )
     }
   }
 
