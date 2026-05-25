@@ -1,0 +1,19 @@
+Source: https://github.com/mattpocock/skills
+Commit SHA: b8be62ffacb0118fa3eaa29a0923c87c8c11985c
+Fetched: 2026-05-25
+License: MIT (see ./LICENSE)
+
+Files vendored for paraphrase audit trail (Phase 1 v3.6.0):
+- grill-with-docs.md        (skills/engineering/grill-with-docs/SKILL.md, 3639 bytes)
+- zoom-out.md               (skills/engineering/zoom-out/SKILL.md, 430 bytes)
+- improve-codebase-architecture.md (skills/engineering/improve-codebase-architecture/SKILL.md, 6518 bytes)
+- grill-me.md               (skills/productivity/grill-me/SKILL.md, 635 bytes)
+- LICENSE                   (mattpocock/skills LICENSE, 1068 bytes)
+
+These vendored copies are NOT shipped in the npm package (only in
+`.planning/`). They exist so that any future maintainer rebuilding the
+`workflows/role-prompts.yaml` paraphrased excerpts can diff the source
+against the result without git archaeology.
+
+To re-fetch at a new SHA:
+  gh api repos/mattpocock/skills/commits/main --jq .sha
