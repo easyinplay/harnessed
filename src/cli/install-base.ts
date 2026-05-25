@@ -91,7 +91,7 @@ export function registerInstallBase(program: Command): void {
         else failed.push({ name, reason: r.error.message })
       }
       console.log(
-        `\n  installed: ${installed.length} / already-installed: ${alreadyInstalled.length} / skipped (deferred phase 2.1): ${skipped.length} / failed: ${failed.length}`,
+        `\n  installed: ${installed.length} / already-installed: ${alreadyInstalled.length} / skipped (deferred installer methods awaiting phase 2.1): ${skipped.length} / failed: ${failed.length}`,
       )
       for (const i of installed) console.log(`  installed          ${i}`)
       for (const a of alreadyInstalled)

@@ -296,7 +296,7 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // All 3 manifests installed via parallel Promise.allSettled
     expect(runInstallMock).toHaveBeenCalledTimes(3)
     expect(stdout).toContain(
-      'Step B complete: 3 manifest(s) installed / 0 already-installed / 0 skipped / 0 failed',
+      'Step B complete: 3 manifest(s) installed / 0 already-installed / 0 skipped (deferred installer methods awaiting phase 2.1) / 0 failed',
     )
     // Parallel timing tag present in summary line
     expect(stdout).toContain('[parallel ')
