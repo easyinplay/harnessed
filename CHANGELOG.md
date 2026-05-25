@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-05-25
+
+### Added
+
+- **setup (P4 plugin auto-install)**: reverses v3.6.0 Phase 2 SPEC NO-auto-install decision per empirical sample-1 signal — `harnessed setup` now runs `doctor` checks at the end, filters `warn` entries whose `fix:` contains `claude plugin install <X>`, and prompts user via Clack `confirm()` per plugin. On consent, spawns `spawnSync('claude', ['plugin', 'install', plugin])` directly. Default opt-in. Three escape hatches: `--no-auto-install` (advisory-only, v3.8.x parity); `--non-interactive` (skip prompts for CI / scripts); non-TTY stdin/stdout auto-detected → fall back to advisory. New `src/cli/lib/auto-install.ts` (~110 LOC) reuses `@clack/prompts` v0.10 + `isCancel` guard pattern from `src/installers/lib/confirm.ts`. Real spawn integration deferred to manual dogfood post-ship.
+
+### Tests
+
+- 3 new cells in `tests/cli/lib/auto-install.test.ts`: extractPluginName parsing (plain / `@marketplace` suffix / embedded in REMEDIATION sentence / edge cases) + autoInstall:false opt-out + nonInteractive:true skip-without-spawn.
+- 2 cells in `tests/cli/setup-agent-teams.test.ts` get `--no-auto-install` flag (avoids double-counting agent-teams check when auto-install re-runs the doctor registry).
+- Total: 1125 pass (was 1122; +3 new, no regressions).
+
 ## [3.8.0] - 2026-05-25
 
 ### Added
