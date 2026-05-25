@@ -50,7 +50,8 @@
     "schemas",
     "README.md",
     "LICENSE",
-    "NOTICE"
+    "NOTICE",
+    "THIRD-PARTY-NOTICES.md"
   ],
   "scripts": {
     "dev": "tsup --watch",
