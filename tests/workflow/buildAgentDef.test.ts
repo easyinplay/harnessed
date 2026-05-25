@@ -232,6 +232,73 @@ describe('buildAgentDef — Phase 4 role-prompts enrichment (4 fixtures)', () =>
     expect(idxTransparentSkip).toBeLessThan(idxPrevention)
   })
 
+  // v3.8.0 P1 — conditional RULES inject (F9-F13).
+  // Default (no injects_rules) = ['escalation', 'transparent-skip'] (~470 tokens).
+  // Opt-in 3rd rule 'agent-teams-prevention' (~+200 tokens) only on phases that
+  // genuinely involve Team escalation (task-deliver / task-test / verify-multispec).
+  it('F9 (v3.8.0 P1). default injects_rules → 2 RULES present, agent-teams-prevention ABSENT', async () => {
+    const r = await _dispatchSkillStub.fn('fake-phase-id', undefined, {})
+    expect(r.status).toBe('ok')
+    expect(capturedDefs).toHaveLength(1)
+    const reminder = capturedDefs[0]?.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // ESCALATION + TRANSPARENT_SKIP anchors present
+    expect(reminder).toContain('teammate_send_message_needed')
+    expect(reminder).toContain('Chain-isolation rule')
+    // AGENT_TEAMS_PREVENTION anchor ABSENT (default opt-out)
+    expect(reminder).not.toContain('Session-scoped')
+  })
+
+  it('F10 (v3.8.0 P1). explicit 3-rule list → all 3 RULES present', async () => {
+    const r = await _dispatchSkillStub.fn(
+      'fake-phase-id',
+      { injects_rules: ['escalation', 'transparent-skip', 'agent-teams-prevention'] },
+      {},
+    )
+    expect(r.status).toBe('ok')
+    const reminder = capturedDefs[0]?.criticalSystemReminder_EXPERIMENTAL ?? ''
+    expect(reminder).toContain('teammate_send_message_needed')
+    expect(reminder).toContain('Chain-isolation rule')
+    expect(reminder).toContain('Session-scoped')
+  })
+
+  it('F11 (v3.8.0 P1). single rule [escalation] → only ESCALATION present', async () => {
+    const r = await _dispatchSkillStub.fn('fake-phase-id', { injects_rules: ['escalation'] }, {})
+    expect(r.status).toBe('ok')
+    const reminder = capturedDefs[0]?.criticalSystemReminder_EXPERIMENTAL ?? ''
+    expect(reminder).toContain('teammate_send_message_needed')
+    expect(reminder).not.toContain('Chain-isolation rule')
+    expect(reminder).not.toContain('Session-scoped')
+  })
+
+  it('F12 (v3.8.0 P1). unknown rule names silently filtered (forward-compat)', async () => {
+    const r = await _dispatchSkillStub.fn(
+      'fake-phase-id',
+      { injects_rules: ['unknown-future-rule', 'escalation', 'another-unknown'] },
+      {},
+    )
+    expect(r.status).toBe('ok')
+    const reminder = capturedDefs[0]?.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // Only known 'escalation' survives the filter.
+    expect(reminder).toContain('teammate_send_message_needed')
+    expect(reminder).not.toContain('Chain-isolation rule')
+    expect(reminder).not.toContain('Session-scoped')
+  })
+
+  it('F13 (v3.8.0 P1). _dispatchSkillStub passes phase.injects_rules through to buildAgentDef', async () => {
+    // Same as F10 but emphasizes the dispatchSkillStub plumbing layer specifically.
+    const r = await _dispatchSkillStub.fn(
+      'verify-paranoid',
+      { injects_rules: ['escalation', 'transparent-skip', 'agent-teams-prevention'] },
+      { rolePrompts: ROLE_PROMPTS },
+    )
+    expect(r.status).toBe('ok')
+    const def = capturedDefs[0] as AgentDefinition
+    const reminder = def.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // Plumbing assertion: rolePrompt path + injects_rules opt-in both applied.
+    expect(def.description).toBe(VERIFY_PARANOID_ROLE.description)
+    expect(reminder).toContain('Session-scoped')
+  })
+
   it("F4. modelTierOverride === 'inherit' → def.model === 'inherit' (B-10 escape hatch)", async () => {
     // Case A: with enrichment (known skill).
     const rA = await _dispatchSkillStub.fn('verify-paranoid', undefined, {

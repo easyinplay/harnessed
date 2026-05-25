@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-05-25
+
+### Added
+
+- **workflow (P1 conditional RULES inject)**: `WorkflowPhaseV3` schema adds optional `injects_rules: Array(string)` field; `buildAgentDef` gains 5th param `injectsRules?: readonly string[]` and constructs `criticalSystemReminder_EXPERIMENTAL` dynamically via new `buildCriticalReminder()` function. Default (omitted / undefined) inject 2 RULES: `escalation` + `transparent-skip` (~470 tokens/spawn). Phases opting into Agent Teams escalation context — `task/deliver`, `task/test`, `verify/multispec` (both phases) — declare `injects_rules: [escalation, transparent-skip, agent-teams-prevention]` in their workflow.yaml to keep the full 670-token chain. Unknown rule names silently filtered (forward-compat). Weighted-avg across 24 sub-workflows: ~512 tokens/spawn (~24% reduction from v3.6.0 Phase 4 unconditional 670 tokens).
+- **setup (P3 doctor advisory)**: `harnessed setup` now prints a final-line advisory hint pointing user to `harnessed doctor` (12 preflight checks). NOT auto-invoke per v3.6.0 Phase 2 NO-auto-install design; user opts in. New i18n key `setup.doctor_hint` in en.json + zh-Hans.json.
+- **CLAUDE.md (P2 spec writing checklist)**: project-level discipline addendum capturing v3.6.0 cycle lessons — verify file paths / yaml entry names / TS function names / capability refs / plugin paths via grep before writing into a SPEC. Optional `verified_refs:` frontmatter field documents pre-commit verifications. Pure documentation; no runtime impact.
+
+### Refactor
+
+- **workflow**: removed `CRITICAL_SYSTEM_REMINDER` const (replaced by `RULES_MAP` lookup + `buildCriticalReminder(injects)` function). Existing callers continue to receive the same combined string when explicitly passing all 3 rule names.
+
+### Tests
+
+- 5 new cells in `tests/workflow/buildAgentDef.test.ts` (F9-F13): default 2-RULES / opt-in 3-RULES / single-rule / unknown-rule silent-skip / dispatchSkillStub passthrough.
+- F7/F8 (v3.6.0 Phase 4 chain-order) updated to explicitly opt phase into 3 RULES, preserving original assertion semantics.
+- Total: 1122 pass (was 1117; +5 cells, no regressions).
+
 ## [3.7.0] - 2026-05-25
 
 ### Refactor
