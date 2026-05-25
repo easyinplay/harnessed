@@ -22,6 +22,7 @@ import { join } from 'node:path'
 import type { Command } from 'commander'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { runWorkflow } from '../workflow/run.js'
+import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
 import { getPackageRoot } from './lib/packagePath.js'
 
 interface RawOpts {
@@ -95,11 +96,28 @@ export function registerRun(program: Command): void {
         process.exit(2)
       }
 
+      // v3.6.0 Phase 3 Wave 2 — user-override keyword extraction (P0b 上半).
+      // Substring match against workflows/judgments/user-overrides.yaml keywords[].
+      // Matched trigger gate refs injected into gateContext.user_overrides[]
+      // → judgmentResolver bypass (Wave 1 src/workflow/judgmentResolver.ts) →
+      // gate fires=true regardless of expr eval. Fail-soft per ADR 0029:
+      // loadUserOverrides returns [] on any error; extract returns [] on no
+      // matches → no stderr emit, preserves existing behavior.
+      const overrides = await loadUserOverrides(PACKAGE_ROOT)
+      const matchedTriggers = extractMatchedTriggers(task, overrides)
+      if (matchedTriggers.length > 0) {
+        console.error(
+          `ℹ user-override detected: ${matchedTriggers.length} trigger(s) ` +
+            `forced fires=true via keyword match (${matchedTriggers.join(', ')})`,
+        )
+      }
+
       const gateContext: Record<string, unknown> = {
         task,
         ...(raw.model ? { modelOverride: raw.model } : {}),
         ...(raw.maxIterations ? { maxIterations: raw.maxIterations } : {}),
         ...(raw.staged ? { staged: true } : {}),
+        ...(matchedTriggers.length > 0 ? { user_overrides: matchedTriggers } : {}),
       }
 
       if (raw.dryRun) {
