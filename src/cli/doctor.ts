@@ -170,23 +170,30 @@ async function checkPlanningPlugin(): Promise<CheckResult> {
 // accepts targeted exception over B-03 ≤225L hard limit (PHASE-2-SPEC.md D3
 // option A justify: thin dispatcher unchanged; refactor to check-registry.ts
 // deferred to v3.7+ when checks reach ~14+).
+// v3.6.0 Phase 2 Wave 2 — 12th check (MCP servers availability per audit P1a:
+// tavily / exa / chrome-devtools settings.json declarations; distinct from
+// checkMcpScope scope-hygiene concern).
 async function checkMattpocockSkillsInstall(): Promise<CheckResult> {
   return (await import('./lib/check-mattpocock-skills.js')).checkMattpocockSkills()
+}
+async function checkMcpAvailabilityCheck(): Promise<CheckResult> {
+  return (await import('./lib/check-mcp-availability.js')).checkMcpAvailability()
 }
 
 export function registerDoctor(program: Command): void {
   program
     .command('doctor')
     .description(
-      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations / token budget / Agent Teams / planning-with-files / mattpocock-skills)',
+      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations / token budget / Agent Teams / planning-with-files / mattpocock-skills / MCP availability)',
     )
     .option('--json', 'output JSON instead of human-readable')
     .action(async (opts: { json?: boolean }) => {
       // Phase 4.3 W0 sister 3rd-cycle absorb #BT — async checks parallelize via
       // Promise.all (no data deps); Phase v2.0-2.4 W3 T2.4.W3.1 ADD 9th (D-11)
-      // + 10th (D-15); v3.6.0 Phase 2 Wave 1 ADD 11th (mattpocock install probe).
+      // + 10th (D-15); v3.6.0 Phase 2 Wave 1 ADD 11th (mattpocock install probe);
+      // Wave 2 ADD 12th (MCP availability — tavily/exa/chrome-devtools).
       // Ordering preserved per doctor.test.ts cell-1+4+5.
-      const [mcp, origin, gstack, dep, tok, at, ppwf, matt] = await Promise.all([
+      const [mcp, origin, gstack, dep, tok, at, ppwf, matt, mcpAvail] = await Promise.all([
         checkMcpScope(),
         checkOriginUrl(),
         checkGstackPrefix(),
@@ -195,6 +202,7 @@ export function registerDoctor(program: Command): void {
         checkAgentTeamsEnv(),
         checkPlanningPlugin(),
         checkMattpocockSkillsInstall(),
+        checkMcpAvailabilityCheck(),
       ])
       const results: CheckResult[] = [
         checkNodeVersion(),
@@ -208,6 +216,7 @@ export function registerDoctor(program: Command): void {
         at,
         ppwf,
         matt,
+        mcpAvail,
       ]
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')
