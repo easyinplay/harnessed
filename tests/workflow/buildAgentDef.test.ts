@@ -172,6 +172,57 @@ describe('buildAgentDef — Phase 4 role-prompts enrichment (4 fixtures)', () =>
     expect(reminder).toContain('Chain-isolation rule')
   })
 
+  // v3.6.0 Phase 4 Wave 2 — verify AGENT_TEAMS_PREVENTION_RULES inject (P1b).
+  // Sister Phase 3 F5/F6 pattern: assert all 4 防呆 phrases present verbatim
+  // across both buildAgentDef code paths (fallback + rolePrompt-found).
+  it('F7 (Phase 4). criticalSystemReminder contains all 4 AGENT_TEAMS_PREVENTION verbatim phrases', async () => {
+    // Use fallback path (no rolePrompts) — Phase 4 inject is variable-driven
+    // so both paths receive the same string; one fixture exercises it.
+    const r = await _dispatchSkillStub.fn('fake-phase-id', undefined, {})
+    expect(r.status).toBe('ok')
+    expect(capturedDefs).toHaveLength(1)
+    const def = capturedDefs[0] as AgentDefinition
+    const reminder = def.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // 4 prevention-rule key phrases (one per item, verbatim from D1):
+    //   1. Session-scoped (teams die at session end)
+    expect(reminder).toContain('Session-scoped')
+    //   2. Cleanup mandatory — shutdown_request literal
+    expect(reminder).toContain('shutdown_request')
+    expect(reminder).toContain('TeamDelete')
+    //   3. Token cost estimation — team_cost formula identifier
+    expect(reminder).toContain('team_cost')
+    expect(reminder).toContain('subagent_cost')
+    //   4. Brief must be self-contained
+    expect(reminder).toContain('self-contained')
+    // Section heading anchor for the Phase 4 block (escalation_reason hint).
+    expect(reminder).toContain('needs_teams_escalation=true')
+  })
+
+  it('F8 (Phase 4). chain order: ESCALATION_RULES → TRANSPARENT_SKIP_RULES → AGENT_TEAMS_PREVENTION_RULES', async () => {
+    const r = await _dispatchSkillStub.fn('verify-paranoid', undefined, {
+      rolePrompts: ROLE_PROMPTS,
+    })
+    expect(r.status).toBe('ok')
+    expect(capturedDefs).toHaveLength(1)
+    const def = capturedDefs[0] as AgentDefinition
+    const reminder = def.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // Pick a unique anchor phrase from each rules block, then assert
+    // their substring indexes are strictly increasing.
+    // Phase 2 ESCALATION_RULES anchor: 'teammate_send_message_needed' (trigger #1)
+    const idxEscalation = reminder.indexOf('teammate_send_message_needed')
+    // Phase 3 TRANSPARENT_SKIP_RULES anchor: 'Chain-isolation rule'
+    const idxTransparentSkip = reminder.indexOf('Chain-isolation rule')
+    // Phase 4 AGENT_TEAMS_PREVENTION_RULES anchor: 'Session-scoped'
+    const idxPrevention = reminder.indexOf('Session-scoped')
+    // All three anchors present (sanity precheck).
+    expect(idxEscalation).toBeGreaterThanOrEqual(0)
+    expect(idxTransparentSkip).toBeGreaterThanOrEqual(0)
+    expect(idxPrevention).toBeGreaterThanOrEqual(0)
+    // Strict chain order assertion.
+    expect(idxEscalation).toBeLessThan(idxTransparentSkip)
+    expect(idxTransparentSkip).toBeLessThan(idxPrevention)
+  })
+
   it("F4. modelTierOverride === 'inherit' → def.model === 'inherit' (B-10 escape hatch)", async () => {
     // Case A: with enrichment (known skill).
     const rA = await _dispatchSkillStub.fn('verify-paranoid', undefined, {
