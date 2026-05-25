@@ -48,6 +48,23 @@ vi.mock('../../src/cli/lib/check-planning-with-files.js', () => ({
     message: 'installed (version 2.34.0)',
   }),
 }))
+// v3.6.0 Phase 2 Wave 3 — 11th + 12th check mocks (same reason as 9th/10th).
+// PRIMARY logic unit-tested in tests/cli/check-mattpocock-skills.test.ts +
+// tests/cli/check-mcp-availability.test.ts. Scenario matrix axes orthogonal.
+vi.mock('../../src/cli/lib/check-mattpocock-skills.js', () => ({
+  checkMattpocockSkills: () => ({
+    name: 'mattpocock-skills',
+    status: 'pass',
+    message: 'installed as plugin (version 1.2.0)',
+  }),
+}))
+vi.mock('../../src/cli/lib/check-mcp-availability.js', () => ({
+  checkMcpAvailability: () => ({
+    name: 'MCP servers (tavily/exa/chrome-devtools)',
+    status: 'pass',
+    message: 'all 3 installed: tavily-mcp, exa-mcp, chrome-devtools',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -145,7 +162,7 @@ async function runCli(): Promise<{
   }
 }
 
-describe('Phase 2.4 W5 T5.1 — doctor 10-check × 6-scenario fixture matrix (60 cells, Phase v2.0-2.4 W3 bump 8→10)', () => {
+describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72 cells, v3.6.0 Phase 2 bump 10→12)', () => {
   beforeEach(() => {
     spawnSyncMock.mockReset()
     readFileMock.mockReset()
@@ -159,10 +176,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 10-check × 6-scenario fixture matrix (60
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 10 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 12 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(10)
+      expect(parsed.checks).toHaveLength(12)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -175,6 +192,8 @@ describe('Phase 2.4 W5 T5.1 — doctor 10-check × 6-scenario fixture matrix (60
           'token budget', // ← Phase 3.4 W1 T1.2 8th check
           'Agent Teams env', // ← Phase v2.0-2.4 W3 T2.4.W3.1 9th check (D-11)
           'planning-with-files plugin', // ← Phase v2.0-2.4 W3 T2.4.W3.1 10th check (D-15)
+          'mattpocock-skills', // ← v3.6.0 Phase 2 Wave 1 11th check (user reframe)
+          'MCP servers (tavily/exa/chrome-devtools)', // ← v3.6.0 Phase 2 Wave 2 12th check (audit P1a)
         ]),
       )
       if (scenario.name === 'missing-jq') {
