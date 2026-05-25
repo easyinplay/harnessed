@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## 3.6.0 (Unreleased)
+## [3.6.0] - 2026-05-25
 
 ### Phase 1 — mattpocock methodology inline (sub-workflow role-prompt enrichment)
 
