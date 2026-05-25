@@ -119,7 +119,9 @@ describe('cli/setup — Phase v2.0-2.3 W1.1 (Agent Teams probe + Pure bundled hi
     })
     setupHappyPathMocks()
 
-    const { code, stderr } = await runCli(['setup'])
+    // v3.9.0 P4 — pass --no-auto-install to keep checkAgentTeams call count == 1
+    // (auto-install path otherwise re-runs the doctor registry → double-count).
+    const { code, stderr } = await runCli(['setup', '--no-auto-install'])
     expect(code).toBe(0) // acceptance (a): non-blocking
     // acceptance (b): warn text grep both CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS + 2.1.133+
     expect(stderr).toContain('Agent Teams 未启用')
@@ -139,7 +141,9 @@ describe('cli/setup — Phase v2.0-2.3 W1.1 (Agent Teams probe + Pure bundled hi
     })
     setupHappyPathMocks()
 
-    const { code, stderr } = await runCli(['setup'])
+    // v3.9.0 P4 — pass --no-auto-install to keep checkAgentTeams call count == 1
+    // (auto-install path otherwise re-runs the doctor registry → double-count).
+    const { code, stderr } = await runCli(['setup', '--no-auto-install'])
     expect(code).toBe(0)
     expect(stderr).not.toContain('Agent Teams 未启用')
     expect(stderr).not.toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS')

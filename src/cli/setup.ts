@@ -34,6 +34,8 @@ import {
 interface RawOpts {
   dryRun?: boolean
   userLang?: string
+  nonInteractive?: boolean
+  autoInstall?: boolean // v3.9.0 P4 — commander `--no-auto-install` flag flips this to false
 }
 
 async function listBaseManifests(pkgRoot: string): Promise<string[]> {
@@ -58,6 +60,11 @@ export function registerSetup(program: Command): void {
       '--user-lang <code>',
       'override detected OS locale for env.HARNESSED_USER_LANG (en | zh-Hans / zh-CN / zh-TW)',
     )
+    // v3.9.0 P4 — auto-install third-party plugins via Clack confirm prompt
+    // (default opt-in). `--non-interactive` skips prompts for CI/scripts;
+    // `--no-auto-install` keeps v3.8.x advisory-only behavior.
+    .option('--non-interactive', 'skip all confirm prompts (CI / scripted setup)')
+    .option('--no-auto-install', 'do not prompt to auto-install missing plugins (advisory only)')
     .action(async (raw: RawOpts) => {
       const dryRun = raw.dryRun === true
       const pkgRoot = getPackageRoot()
@@ -266,6 +273,19 @@ export function registerSetup(program: Command): void {
       // v3.8.0 P3 — advisory doctor hint (NO auto-invoke to avoid CLI subprocess
       // complexity + scope creep; user opts in by running `harnessed doctor`).
       console.log(t('setup.doctor_hint'))
+
+      // v3.9.0 P4 — auto-install missing third-party plugins (default opt-in,
+      // confirm prompt per plugin). Skips on --non-interactive, --no-auto-install,
+      // dry-run path (no side effects per Phase 1 dry-run contract), or non-TTY
+      // stdin (CI / piped invocation — can't prompt anyway, fall back to advisory).
+      if (!dryRun) {
+        const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
+        const { runAutoInstall } = await import('./lib/auto-install.js')
+        await runAutoInstall({
+          nonInteractive: raw.nonInteractive === true || !isTty,
+          autoInstall: raw.autoInstall !== false, // commander default = true; --no-auto-install flips
+        })
+      }
       process.exit(0)
     })
 }
