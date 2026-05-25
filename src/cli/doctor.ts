@@ -165,18 +165,28 @@ async function checkPlanningPlugin(): Promise<CheckResult> {
   return (await import('./lib/check-planning-with-files.js')).checkPlanningWithFiles()
 }
 
+// v3.6.0 Phase 2 Wave 1 — 11th check (mattpocock-skills install probe per user
+// reframe "setup 时检测"). 100% delegate per sister L161-166 pattern. doctor.ts
+// accepts targeted exception over B-03 ≤225L hard limit (PHASE-2-SPEC.md D3
+// option A justify: thin dispatcher unchanged; refactor to check-registry.ts
+// deferred to v3.7+ when checks reach ~14+).
+async function checkMattpocockSkillsInstall(): Promise<CheckResult> {
+  return (await import('./lib/check-mattpocock-skills.js')).checkMattpocockSkills()
+}
+
 export function registerDoctor(program: Command): void {
   program
     .command('doctor')
     .description(
-      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations / token budget / Agent Teams / planning-with-files)',
+      'Preflight checks (Node / MCP scope / jq / Win bash / origin URL / gstack prefix / deprecations / token budget / Agent Teams / planning-with-files / mattpocock-skills)',
     )
     .option('--json', 'output JSON instead of human-readable')
     .action(async (opts: { json?: boolean }) => {
       // Phase 4.3 W0 sister 3rd-cycle absorb #BT — async checks parallelize via
       // Promise.all (no data deps); Phase v2.0-2.4 W3 T2.4.W3.1 ADD 9th (D-11)
-      // + 10th (D-15) check. Ordering preserved per doctor.test.ts cell-1+4+5.
-      const [mcp, origin, gstack, dep, tok, at, ppwf] = await Promise.all([
+      // + 10th (D-15); v3.6.0 Phase 2 Wave 1 ADD 11th (mattpocock install probe).
+      // Ordering preserved per doctor.test.ts cell-1+4+5.
+      const [mcp, origin, gstack, dep, tok, at, ppwf, matt] = await Promise.all([
         checkMcpScope(),
         checkOriginUrl(),
         checkGstackPrefix(),
@@ -184,6 +194,7 @@ export function registerDoctor(program: Command): void {
         checkTokenBudget(),
         checkAgentTeamsEnv(),
         checkPlanningPlugin(),
+        checkMattpocockSkillsInstall(),
       ])
       const results: CheckResult[] = [
         checkNodeVersion(),
@@ -196,6 +207,7 @@ export function registerDoctor(program: Command): void {
         tok,
         at,
         ppwf,
+        matt,
       ]
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')
