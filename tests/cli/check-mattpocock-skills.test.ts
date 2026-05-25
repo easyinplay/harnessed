@@ -64,7 +64,10 @@ describe('checkMattpocockSkills — v3.6.0 Phase 2 Wave 3 (plugin / user-skill /
     const r = await checkMattpocockSkills()
     expect(r.status).toBe('warn')
     expect(r.message).toMatch(/not installed/)
-    expect(r.fix).toMatch(/claude plugin install mattpocock-skills/)
+    // v3.9.1 — switched from `claude plugin install` (default marketplace miss)
+    // to upstream `skills` CLI per dogfood discovery.
+    expect(r.fix).toMatch(/npx skills@latest add mattpocock\/skills/)
     expect(r.fix).toMatch(/role-prompts\.yaml/)
+    expect(r.install_commands).toEqual(['npx skills@latest add mattpocock/skills'])
   })
 })

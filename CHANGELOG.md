@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.1] - 2026-05-25
+
+### Fixed
+
+- **setup (P4 auto-install command heterogeneity)**: v3.9.0 P4 hardcoded `claude plugin install <X>` for every missing plugin, but real install commands are heterogeneous across 4 patterns (default marketplace direct / 3rd-party marketplace 2-step / `claude mcp add --transport ...` per-server / upstream skill CLI like `npx skills@latest add owner/repo`). Discovered via dogfood: `claude plugin install mattpocock-skills` fails with "Plugin not found in any configured marketplace" because mattpocock lives in upstream `skills` npm package, not Claude marketplace.
+- **Schema**: `CheckResult` interface (`src/cli/lib/check-builtin.ts`) adds optional `install_commands?: readonly string[]` field — structured machine-executable install sequence (distinct from free-text `fix` hint). Each entry is a single shell command; multiple entries run sequentially, any non-zero exit aborts the chain.
+- **auto-install dispatcher** (`src/cli/lib/auto-install.ts`): rewritten to consume `install_commands` verbatim. Removed `extractPluginName` parser (no longer needed). UI now shows the full command list as `$ <cmd>` preview before the Clack confirm prompt (informed consent). `spawnSync` runs with `shell: true` for Windows `.cmd` shim resolution (`npx.cmd` / `claude.cmd`).
+- **Per-check install_commands**:
+  - `mattpocock-skills`: `['npx skills@latest add mattpocock/skills']`
+  - `planning-with-files`: `['claude plugin marketplace add OthmanAdi/planning-with-files', 'claude plugin install planning-with-files']`
+  - MCP availability (per missing server): `tavily-mcp` → `claude mcp add tavily-remote-mcp --transport http https://mcp.tavily.com/mcp/` / `exa-mcp` → `claude mcp add --transport http exa https://mcp.exa.ai/mcp` / `chrome-devtools` → `npx chrome-devtools-mcp@latest` (empirical-pending, awaiting dogfood verification)
+
+### Tests
+
+- `tests/cli/lib/auto-install.test.ts` rewritten — 3 cells (opt-out / nonInteractive skip / warn-without-install_commands filtered out).
+- `tests/cli/check-mattpocock-skills.test.ts` cell 3 updated to assert `npx skills@latest add` wording + `install_commands` field.
+- `tests/cli/check-mcp-availability.test.ts` cells 2+3 updated to assert per-server `install_commands` array (tavily / exa / chrome-devtools URLs / npx commands).
+- Total: 1125 pass (unchanged from v3.9.0 baseline; refactor + 3 assertion updates).
+
 ## [3.9.0] - 2026-05-25
 
 ### Added

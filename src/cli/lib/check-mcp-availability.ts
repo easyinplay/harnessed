@@ -23,14 +23,27 @@ interface CheckResult {
   status: 'pass' | 'warn' | 'fail'
   message: string
   fix?: string
+  install_commands?: readonly string[]
 }
 
 const TARGET_SERVERS = ['tavily-mcp', 'exa-mcp', 'chrome-devtools'] as const
 
+// v3.9.1 — per-server install command (different transport / source per server).
+// Map key = TARGET_SERVERS entry; value = single-step install (each entry runs
+// independently in install chain — order does not matter for MCP add).
+const SERVER_INSTALL_COMMANDS: Record<(typeof TARGET_SERVERS)[number], string> = {
+  'tavily-mcp': 'claude mcp add tavily-remote-mcp --transport http https://mcp.tavily.com/mcp/',
+  'exa-mcp': 'claude mcp add --transport http exa https://mcp.exa.ai/mcp',
+  // chrome-devtools: empirical-pending — assumed npx until dogfood confirmation.
+  'chrome-devtools': 'npx chrome-devtools-mcp@latest',
+}
+
+type TargetServer = (typeof TARGET_SERVERS)[number]
+
 export async function checkMcpAvailability(): Promise<CheckResult> {
   const settingsPath = join(homedir(), '.claude', 'settings.json')
-  let installed: string[] = []
-  let missing: string[] = [...TARGET_SERVERS]
+  let installed: TargetServer[] = []
+  let missing: TargetServer[] = [...TARGET_SERVERS]
 
   try {
     const raw = await readFile(settingsPath, 'utf8')
@@ -54,15 +67,20 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
     }
   }
 
+  // Build per-server install command list for the missing subset (covers both
+  // none-installed and partial-installed cases — sister single source of truth).
+  const installCommands = missing.map((s) => SERVER_INSTALL_COMMANDS[s])
+
   if (installed.length === 0) {
     return {
       name: 'MCP servers (tavily/exa/chrome-devtools)',
       status: 'warn',
       message: 'none of 3 target MCP servers installed in ~/.claude/settings.json',
       fix:
-        'install via `claude mcp add <server-name>`; harnessed routes web-search to ' +
-        'tavily/exa per workflows/judgments/web-search-routing.yaml — without them, ' +
-        'falls back to WebFetch/WebSearch built-in (degraded but functional)',
+        'install via per-server transport-specific command (see install_commands); ' +
+        'harnessed routes web-search to tavily/exa per workflows/judgments/web-search-routing.yaml — ' +
+        'without them, falls back to WebFetch/WebSearch built-in (degraded but functional)',
+      install_commands: installCommands,
     }
   }
 
@@ -70,6 +88,7 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
     name: 'MCP servers (tavily/exa/chrome-devtools)',
     status: 'warn',
     message: `${installed.length}/3 installed: ${installed.join(', ')}; missing: ${missing.join(', ')}`,
-    fix: `install missing via \`claude mcp add ${missing.join(' && claude mcp add ')}\``,
+    fix: `install missing via per-server command (see install_commands): ${missing.join(', ')}`,
+    install_commands: installCommands,
   }
 }

@@ -19,6 +19,12 @@ export interface CheckResult {
   status: 'pass' | 'warn' | 'fail'
   message: string
   fix?: string
+  /** v3.9.1 — structured install command sequence consumed by auto-install
+   *  dispatcher. Each entry is a single shell command tokenized for spawnSync
+   *  (first token = exe, rest = argv). Multiple entries run sequentially;
+   *  any non-zero exit aborts the chain. Distinct from `fix` (free-text
+   *  human-readable hint) — `install_commands` is machine-executable. */
+  install_commands?: readonly string[]
 }
 
 export function checkNodeVersion(): CheckResult {

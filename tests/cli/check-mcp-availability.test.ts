@@ -59,7 +59,13 @@ describe('checkMcpAvailability — v3.6.0 Phase 2 Wave 3 (all-3 / partial / none
     expect(r.message).toMatch(/missing:/)
     expect(r.message).toMatch(/exa-mcp/)
     expect(r.message).toMatch(/chrome-devtools/)
-    expect(r.fix).toMatch(/claude mcp add/)
+    // v3.9.1 — fix string now points to install_commands array (per-server
+    // transport-specific commands moved to structured field). Verify
+    // install_commands contains the per-server commands for the missing subset.
+    expect(r.fix).toMatch(/per-server/)
+    expect(r.install_commands).toBeDefined()
+    expect(r.install_commands?.some((c) => c.includes('exa.ai'))).toBe(true)
+    expect(r.install_commands?.some((c) => c.includes('chrome-devtools-mcp'))).toBe(true)
   })
 
   it('3. none of 3 present (settings.json missing entirely) → status=warn + REMEDIATION', async () => {
@@ -68,7 +74,12 @@ describe('checkMcpAvailability — v3.6.0 Phase 2 Wave 3 (all-3 / partial / none
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
     expect(r.message).toMatch(/none of 3 target MCP servers/)
-    expect(r.fix).toMatch(/claude mcp add/)
+    // v3.9.1 — fix points to install_commands; verify the array has all 3 servers.
+    expect(r.fix).toMatch(/per-server transport-specific/)
     expect(r.fix).toMatch(/web-search-routing\.yaml/)
+    expect(r.install_commands).toBeDefined()
+    expect(r.install_commands?.length).toBe(3)
+    expect(r.install_commands?.some((c) => c.includes('tavily.com'))).toBe(true)
+    expect(r.install_commands?.some((c) => c.includes('exa.ai'))).toBe(true)
   })
 })

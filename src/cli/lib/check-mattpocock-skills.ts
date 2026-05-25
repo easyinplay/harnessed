@@ -20,13 +20,22 @@ interface CheckResult {
   status: 'pass' | 'warn' | 'fail'
   message: string
   fix?: string
+  install_commands?: readonly string[]
 }
 
+// v3.9.1 — mattpocock-skills is NOT in any default Claude Code plugin marketplace
+// (v3.9.0 P4 dogfood discovery: `claude plugin install mattpocock-skills` fails
+// with "Plugin not found in any configured marketplace"). Correct install path
+// is the upstream `skills` CLI:
+//   npx skills@latest add mattpocock/skills
+// which clones into ~/.claude/skills/mattpocock-skills (user-skill form).
 const REMEDIATION =
-  'install via Claude Code plugin marketplace: `claude plugin install mattpocock-skills` ' +
+  'install via `npx skills@latest add mattpocock/skills` ' +
   '(or git clone https://github.com/mattpocock/skills ~/.claude/skills/mattpocock-skills); ' +
   'methodology fallback already inline in role-prompts.yaml per v3.6.0 Phase 1 — install ' +
   'is optional but enables /grill-with-docs /zoom-out etc. SlashCommand acceleration'
+
+const INSTALL_COMMANDS = ['npx skills@latest add mattpocock/skills'] as const
 
 export async function checkMattpocockSkills(): Promise<CheckResult> {
   const pluginRoot = join(
@@ -71,5 +80,6 @@ export async function checkMattpocockSkills(): Promise<CheckResult> {
     status: 'warn',
     message: 'not installed (plugin cache + user-skill paths both missing)',
     fix: REMEDIATION,
+    install_commands: INSTALL_COMMANDS,
   }
 }

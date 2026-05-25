@@ -16,10 +16,21 @@ interface CheckResult {
   status: 'pass' | 'warn' | 'fail'
   message: string
   fix?: string
+  install_commands?: readonly string[]
 }
 
+// v3.9.1 — planning-with-files lives in OthmanAdi/planning-with-files
+// marketplace (NOT default claude marketplace). Two-step install:
+//   1. claude plugin marketplace add OthmanAdi/planning-with-files
+//   2. claude plugin install planning-with-files
 const REMEDIATION =
-  'install via Claude Code plugin marketplace: `claude plugin install planning-with-files` (requires >=2.2.0 per R20.15 + D-15)'
+  'install via `claude plugin marketplace add OthmanAdi/planning-with-files && ' +
+  'claude plugin install planning-with-files` (requires >=2.2.0 per R20.15 + D-15)'
+
+const INSTALL_COMMANDS = [
+  'claude plugin marketplace add OthmanAdi/planning-with-files',
+  'claude plugin install planning-with-files',
+] as const
 
 export async function checkPlanningWithFiles(): Promise<CheckResult> {
   const root = join(
@@ -46,6 +57,7 @@ export async function checkPlanningWithFiles(): Promise<CheckResult> {
       status: 'warn',
       message: 'plugin directory exists but no version subdir found',
       fix: REMEDIATION,
+      install_commands: INSTALL_COMMANDS,
     }
   } catch {
     return {
@@ -53,6 +65,7 @@ export async function checkPlanningWithFiles(): Promise<CheckResult> {
       status: 'warn',
       message: 'not installed (plugin cache path missing)',
       fix: REMEDIATION,
+      install_commands: INSTALL_COMMANDS,
     }
   }
 }
