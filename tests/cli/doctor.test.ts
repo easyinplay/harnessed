@@ -138,6 +138,13 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
   })
   afterEach(() => vi.restoreAllMocks())
 
+  // v3.7.0 Phase 1 — registry future-proof: CHECKS array is single source of truth.
+  // Bump assertion when adding a check (sister doctor.ts --description string update).
+  it('cell 0 — CHECKS registry has 12 entries (v3.7.0 Phase 1 registry refactor)', async () => {
+    const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
+    expect(CHECKS.length).toBe(12)
+  })
+
   it('cell 1 — all 12 checks pass → exit 0 + summary "pass" (v3.6.0 Phase 2 bump 10→12)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
