@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-05-25
+
+### Refactor
+
+- **doctor**: hoisted 12 preflight checks into `src/cli/lib/doctor-registry.ts` (single `CHECKS` array source of truth) + 4 built-in checks (Node ≥22 / MCP scope / jq presence / Win bash flavor) into `src/cli/lib/check-builtin.ts`. `src/cli/doctor.ts` shrunk from **247L → 47L** — now a thin dispatcher running `Promise.all(CHECKS.map(c => c()))` and rendering output. Resolves the v3.6.0 Phase 2 B-03 ≤225L hard limit exception accepted at ship time. Adding a new check is now one line in the CHECKS array + one assertion bump in `tests/cli/doctor.test.ts` cell 0 (`CHECKS.length === N`). Zero behavioral change: all 12 checks still fire in the same order, `--json` output shape identical, exit code policy unchanged. Tests: 1117 pass (+1 future-proof cell 0).
+
 ## [3.6.1] - 2026-05-25
 
 ### Fixed
