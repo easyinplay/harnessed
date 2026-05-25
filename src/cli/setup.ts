@@ -263,6 +263,9 @@ export function registerSetup(program: Command): void {
       // NOT user-dir override (~/.harnessed/ NOT used per D-01 LOCKED).
       console.log(t('setup.bundled_summary'))
       console.log(t('setup.bundled_location'))
+      // v3.8.0 P3 — advisory doctor hint (NO auto-invoke to avoid CLI subprocess
+      // complexity + scope creep; user opts in by running `harnessed doctor`).
+      console.log(t('setup.doctor_hint'))
       process.exit(0)
     })
 }

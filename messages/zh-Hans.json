@@ -20,6 +20,7 @@
   "setup.mcp_hint": "\nMCP server 已配置。在 Claude Code 里跑 `/mcp` 验证各 server 连接状态。如显示 disconnected,重启 Claude Code 或检查 MCP 命令规范。",
   "setup.bundled_summary": "\n✓ harnessed v3.0 三层栈方法论 bundled — 23 workflows (4 master + 18 sub + 1 standalone) + 6 disciplines + 10 judgments + ~83 capabilities 就绪",
   "setup.bundled_location": "  workflows 位于 <packageRoot>/workflows/ (Pure bundled, 不走 user-dir override per D-01)",
+  "setup.doctor_hint": "\n💡 跑 `harnessed doctor` 验证环境配置 (12 项预检: Node 版本 / MCP scope / jq / bash flavor / origin URL / gstack 前缀 / deprecations / token budget / Agent Teams env / planning-with-files plugin / mattpocock-skills / MCP availability)。",
 
   "agent_teams.missing_header": "\n⚠️  Agent Teams 未启用 — parallelism-gate 升级路径不可用",
   "agent_teams.missing_fix": "   修复: claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1",
