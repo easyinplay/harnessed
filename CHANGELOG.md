@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.1] - 2026-05-25
+
+### Fixed
+
+- **setup**: dropped stale "⚠️ v3.0 BREAKING — v2 legacy slash cmd deprecated" block from `harnessed setup` output. `execute-task` / `plan-feature` / `verify-work` are active CLI subcommand aliases (`harnessed execute-task --task X` thin-shims into `runWorkflow`), not deprecated workflows. The v3.0 deprecation warning was a release-time misjudgement which emitted on every setup for 6 minor versions. Promoted to `FLAT_LEGACY_KEEP`; `harnessed setup` now installs them as standalone flat workflows alongside `research` / `retro` / `auto`. Dead code (`FLAT_LEGACY_DEPRECATED` set + `renderDeprecationBlock` function + `ScanResult.deprecated` field) removed.
+- **i18n**: clarified meaning of `Step B 完成: ... {{skipped}} 跳过` count. Now reads `{{skipped}} 跳过 (待 phase 2.1 实装的安装方式)` / English `{{skipped}} skipped (deferred installer methods awaiting phase 2.1)`. The old wording made users suspect manifests were silently broken when in fact they declared `npx-skill-installer` / `mcp-http-add` / `cc-plugin-marketplace` / `git-clone-with-setup` installer methods that are deferred to phase 2.1 (D-11 policy: deferred ≠ failed).
+
 ## [3.6.0] - 2026-05-25
 
 ### Phase 1 — mattpocock methodology inline (sub-workflow role-prompt enrichment)
