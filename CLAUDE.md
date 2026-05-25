@@ -108,5 +108,46 @@ When in doubt, invoke the gstack skill. The skill has multi-step workflows + che
 
 ---
 
+## Spec writing pre-commit checklist (v3.8.0 P2)
+
+写 SPEC 前必须 verify 所有 cross-reference 实际存在;否则实施 subagent 被迫触发灰区协议 STATUS: NEEDS_CLARIFICATION 中途阻塞,主 session 必须裁决再 SendMessage resume,浪费 cycle。
+
+历史教训(v3.6.0 Phase 2/3 灰区):
+- Phase 2 SPEC 假设 mattpocock plugin cache path 是 `~/.claude/plugins/cache/mattpocock-skills/mattpocock-skills/<version>/` — 我未 verify,subagent 实施时遇到真实路径不符触发灰区
+- Phase 3 SPEC D1 写了 2 个 trigger ref (`judgments.architecture-gate.plan-eng-review.fires` / `judgments.phase-gate.gray-areas.fires`) — 实际 yaml 不存在,subagent cross-validate 揪出灰区
+
+### Checklist (写 SPEC 前必跑)
+
+对 SPEC 中提到的每个:
+
+1. **File path** (e.g. `src/cli/lib/check-X.ts`, `workflows/judgments/Y.yaml`) — 跑 `ls` / `Read` verify file exists OR explicit 标 "NEW"
+2. **Yaml entry name** (e.g. `judgments.subtask-gate.brainstorming.fires`) — `grep -n` 实际 yaml `triggers.<name>` entry 是否真存在
+3. **TS function name** (e.g. `buildAgentDef`, `loadCapabilities`) — `grep -n "^export function <name>"` verify
+4. **Capability ref** (e.g. `superpowers-brainstorming`) — verify in `workflows/capabilities.yaml`
+5. **Plugin path** (e.g. `~/.claude/plugins/cache/<plugin>/<id>/<version>/`) — verify with `ls` on host machine OR conservatively use generic install hint instead of hard path
+
+### SPEC 顶部 `verified_refs:` field
+
+每个 SPEC frontmatter 加 (optional, recommended):
+
+```yaml
+verified_refs:
+  - "src/cli/doctor.ts (exists)"
+  - "judgments.subtask-gate.brainstorming.fires (yaml verified)"
+  - "buildAgentDef function in src/workflow/run.ts:L76 (exists)"
+```
+
+这是 audit trail — 让 reviewer / implementing subagent 知道哪些已 verify、哪些是 NEW (期望被创建)。
+
+### 落实
+
+主 session 写 SPEC 时,在每 D1-DN design 节内的 file/yaml/function reference 旁,标:
+- ✓ existing — 已 grep 验过
+- NEW — 期望 Wave N 创建
+
+养成 grep 优先于 assume 的习惯。
+
+---
+
 *Project: harnessed*
 *CLAUDE.md created: 2026-05-19 (gstack v1.40.0.0 install onboarding)*
