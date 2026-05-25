@@ -1,10 +1,11 @@
 // Phase v3.0-3.3 T3.3.W0.12 — Nested workflows/<stage>/<sub>/ 2-level scan helper.
-// Split from setup-helpers.ts to keep both files within karpathy ≤200L limit
-// (sister src/routing/lib/fallbackHandlers.ts ≤80L split pattern).
+// v3.6.1 — removed FLAT_LEGACY_DEPRECATED + renderDeprecationBlock dead code;
+// execute-task / plan-feature / verify-work are active CLI subcommand aliases
+// (thin shims invoking runWorkflow against their v2/v3 workflow.yaml — see
+// src/cli/execute-task.ts and sister), NOT deprecated. Promoted to FLAT_LEGACY_KEEP.
 //
-// Contract per RESEARCH-workflows § Area 4 (verbatim transcription):
-//   Path A: flat top-level SKILL.md (research / retro keep; v2 legacy 3 cmd emit
-//           deprecation warn + skip install per D-04).
+// Contract:
+//   Path A: flat top-level SKILL.md (research / retro / auto + 3 v2-schema active aliases keep).
 //   Path B: nested 2-level workflows/<stage>/<sub>/SKILL.md
 //           - sub === 'auto'  → master, slash-cmd flatten to bare `<stage>`
 //           - sub !== 'auto'  → sub-stage, slash-cmd flatten to `<stage>-<sub>`
@@ -22,15 +23,20 @@ export interface NestedWorkflow {
   isMaster: boolean
 }
 
-/** v2 → v3 deprecation map per D-04 (alias map). Flat top-level dirs that should
- *  be skipped install but emit warn; CHANGELOG [3.0.0] documents migration. */
-export const FLAT_LEGACY_DEPRECATED = new Set(['plan-feature', 'execute-task', 'verify-work'])
-
 /** Flat top-level dirs that remain valid as standalone v3 workflows (KEEP).
- *  v3.1.0 — `auto` added as 5th master (super-master, top-level standalone layout per
- *  sister research/retro pattern; 4 stage-master discuss/plan/task/verify nested per
- *  Path B). `auto` slash-cmd → /auto bare per D-02 ADR 0030 namespace policy LOCK. */
-export const FLAT_LEGACY_KEEP = new Set(['research', 'retro', 'auto'])
+ *  - research / retro / auto: native standalone v3 workflows.
+ *  - execute-task / plan-feature / verify-work: active CLI subcommand aliases
+ *    (v3.6.1 — promoted from FLAT_LEGACY_DEPRECATED after recognising the
+ *    `harnessed execute-task` / `plan-feature` / `verify-work` subcommands are
+ *    thin shims invoking runWorkflow; workflow.yaml still required at runtime). */
+export const FLAT_LEGACY_KEEP = new Set([
+  'research',
+  'retro',
+  'auto',
+  'execute-task',
+  'plan-feature',
+  'verify-work',
+])
 
 /** v3.1.0 — Top-level standalone dirs that are super-masters (isMaster=true flag
  *  for setup.ts `(master)` tag rendering). Currently only `auto`; sister research /
@@ -40,11 +46,8 @@ export const FLAT_TOP_LEVEL_MASTERS = new Set(['auto'])
 /** Non-workflow manifest dirs to skip during nested scan (K10 mitigation). */
 export const NON_WORKFLOW_DIRS = new Set(['disciplines', 'judgments'])
 
-/** Collected deprecation warn lines — caller emits as a single block at end of scan
- *  per RESEARCH-workflows § Area 4 末段 (5L console block + CHANGELOG ref). */
 export interface ScanResult {
   workflows: NestedWorkflow[]
-  deprecated: string[]
 }
 
 /** Nested 2-level scan: top-level + 1 nested depth. */
@@ -53,7 +56,6 @@ export async function scanWorkflowsNested(
   entries: string[],
 ): Promise<ScanResult> {
   const workflows: NestedWorkflow[] = []
-  const deprecated: string[] = []
 
   for (const entry of entries.sort()) {
     if (NON_WORKFLOW_DIRS.has(entry)) continue // K10 — skip disciplines/ + judgments/
@@ -77,10 +79,6 @@ export async function scanWorkflowsNested(
     }
 
     if (hasFlatSkill) {
-      if (FLAT_LEGACY_DEPRECATED.has(entry)) {
-        deprecated.push(entry) // skip install — pure deprecate per D-04
-        continue
-      }
       if (FLAT_LEGACY_KEEP.has(entry)) {
         workflows.push({ name: entry, relPath: entry, isMaster: FLAT_TOP_LEVEL_MASTERS.has(entry) })
         continue
@@ -119,20 +117,5 @@ export async function scanWorkflowsNested(
     }
   }
 
-  return { workflows, deprecated }
-}
-
-/** Render deprecation block per RESEARCH-workflows § Area 4 末段 verbatim text. */
-export function renderDeprecationBlock(deprecated: string[]): string {
-  if (deprecated.length === 0) return ''
-  return [
-    '⚠️ v3.0 BREAKING — v2 legacy slash cmd deprecated:',
-    '  /plan-feature   → /plan (master) | /plan-phase (sub)',
-    '  /execute-task   → /task (master) | /task-{clarify,code,test,deliver} (sub)',
-    '  /verify-work    → /verify (master) | /verify-{progress,paranoid,qa,security,design,simplify,multispec} (sub)',
-    '  /research, /retro 不变',
-    '  详见 CHANGELOG [3.0.0]',
-    `  skipped install: ${deprecated.sort().join(', ')}`,
-    '',
-  ].join('\n')
+  return { workflows }
 }

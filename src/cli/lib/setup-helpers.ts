@@ -2,11 +2,13 @@
 // Sister Phase 3.4 W1 doctor.ts inline shrink + origin-check.ts sister-share extract pattern.
 // Extracts: (1) Agent Teams warn UX, (2) workflow SKILL.md scan, (3) Step B parallel install.
 //
-// Phase v3.0-3.3 T3.3.W0.12 — nested 2-level scan + v2 deprecation warn:
-//   scanWorkflowsWithSkill now returns NestedWorkflow[] (not string[]) so callers
-//   can flatten slash-cmd name + know master vs sub-stage. Nested scan logic lives
-//   in ./scan-nested.ts (karpathy ≤200L split). Deprecated v2 flat top-level dirs
-//   (plan-feature / execute-task / verify-work) emit warn + skip install per D-04.
+// Phase v3.0-3.3 T3.3.W0.12 — nested 2-level scan returning NestedWorkflow[] so
+// callers can flatten slash-cmd name + know master vs sub-stage. Scan logic lives
+// in ./scan-nested.ts (karpathy ≤200L split).
+//
+// v3.6.1 — removed renderDeprecationBlock re-export + ScanResult.deprecated
+// field; execute-task / plan-feature / verify-work promoted to FLAT_LEGACY_KEEP
+// (active CLI subcommand aliases, not deprecated).
 
 import { readFile } from 'node:fs/promises'
 import { runInstall } from '../../installers/index.js'
@@ -14,7 +16,7 @@ import type { InstallOpts } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
 import type { ScanResult } from './scan-nested.js'
-import { renderDeprecationBlock, scanWorkflowsNested } from './scan-nested.js'
+import { scanWorkflowsNested } from './scan-nested.js'
 
 export type { NestedWorkflow, ScanResult } from './scan-nested.js'
 
@@ -46,16 +48,13 @@ export async function warnIfAgentTeamsMissing(): Promise<void> {
   // NOT exit — non-blocking per R20.11 acceptance a
 }
 
-/** v3.0 nested 2-level scan — returns NestedWorkflow[] with deprecation list. */
+/** v3.0 nested 2-level scan — returns NestedWorkflow[]. */
 export async function scanWorkflowsWithSkill(
   workflowsDir: string,
   entries: string[],
 ): Promise<ScanResult> {
   return scanWorkflowsNested(workflowsDir, entries)
 }
-
-/** Re-export deprecation block renderer for setup.ts console output. */
-export { renderDeprecationBlock }
 
 export interface StepBResult {
   installed: string[]

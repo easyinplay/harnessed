@@ -26,7 +26,6 @@ import { loadRolePrompts, writeAllCommands } from './lib/generateCommands.js'
 import { getPackageRoot } from './lib/packagePath.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
-  renderDeprecationBlock,
   runStepBInstall,
   scanWorkflowsWithSkill,
   warnIfAgentTeamsMissing,
@@ -77,14 +76,7 @@ export function registerSetup(program: Command): void {
         process.exit(1)
       }
 
-      const { workflows: toInstall, deprecated } = await scanWorkflowsWithSkill(
-        workflowsDir,
-        entries,
-      )
-
-      // Emit v2 → v3 deprecation block (Area 4 末段) BEFORE install summary.
-      const depBlock = renderDeprecationBlock(deprecated)
-      if (depBlock) console.log(depBlock)
+      const { workflows: toInstall } = await scanWorkflowsWithSkill(workflowsDir, entries)
 
       if (toInstall.length === 0) {
         console.log(t('setup.nothing_to_install'))
