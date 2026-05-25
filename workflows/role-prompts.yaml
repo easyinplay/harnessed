@@ -17,6 +17,14 @@
 #   description:    YAML frontmatter `description` for <claude-home>/commands/<x>.md.
 #
 # Karpathy simplicity: 1 small yaml beats 23 hardcoded strings in TS.
+#
+# Upstream attributions (v3.6.0 Phase 1):
+#   Portions of the `task-clarify` / `task-code` / `discuss-subtask` entries
+#   below are paraphrased from https://github.com/mattpocock/skills
+#   (MIT License, commit b8be62ffacb0118fa3eaa29a0923c87c8c11985c). The full
+#   upstream license is preserved at
+#   .planning/v3.6.0/mattpocock-source/LICENSE and a project-wide attribution
+#   summary is in THIRD-PARTY-NOTICES.md at the repo root.
 
 schema_version: harnessed.role-prompts.v1
 
@@ -177,6 +185,16 @@ prompts:
       Generate ≥2 implementation approaches for a single subtask and compare
       tradeoffs. Fires when core algorithm / data structure / API contract /
       high error-cost. Skip pure CRUD or single-obvious-path tasks.
+
+      # grill-me methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/productivity/grill-me/SKILL.md
+      # When the user wants to stress-test a plan or asks to be grilled,
+      # interview them relentlessly about every aspect until shared
+      # understanding is reached. Walk down each branch of the decision tree,
+      # resolving dependencies between decisions one at a time. For each
+      # question, provide your recommended answer. Ask questions ONE at a
+      # time. If a question can be answered by exploring the codebase,
+      # explore the codebase instead of asking.
     checklist:
       - "State the subtask in one sentence; confirm scope with user if ambiguous"
       - "Produce 2-4 distinct approaches (not just '2 flavors of the same idea')"
@@ -184,8 +202,11 @@ prompts:
       - "Recommend one with 1-2 line reason; flag risks of the chosen path"
       - "Output a `findings.md` block the implementer can paste into the task"
       - "If options collapse to one (others clearly bad), say so and exit fast"
+      # grill-me additional checklist (paraphrased from mattpocock/skills)
+      - "Grill mode: walk the decision tree branch-by-branch, ONE question at a time, with your recommended answer"
+      - "Prefer codebase exploration over asking when a question can be answered from code"
     severity: "recommended / acceptable / rejected"
-    description: "Generate 2-4 subtask approaches with tradeoffs and recommend one (brainstorming)."
+    description: "Generate 2-4 subtask approaches with tradeoffs and recommend one (brainstorming + grill-me on stress-test requests)."
 
   # ============================================================================
   # plan-* (2 subs)
@@ -239,6 +260,16 @@ prompts:
       Surface ambiguity in a single subtask spec by asking ONE focused
       question at a time. Fires when ≥2 approaches / core algorithm / API
       contract / high error-cost. Skip if subtask is CRUD or already obvious.
+
+      # grill-with-docs methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/engineering/grill-with-docs/SKILL.md
+      # When ambiguity overlaps with existing project docs / ADRs, run a
+      # grill-with-docs cycle: pressure-test the plan against the project's
+      # domain language (CONTEXT.md), sharpen terminology mismatches inline,
+      # and update ADRs as decisions crystallise. Challenge term conflicts
+      # immediately; sharpen vague/overloaded terms by proposing a canonical
+      # name; cross-reference user claims with code and surface contradictions.
+      # Output is BOTH a refined spec AND a doc-diff (CONTEXT.md / docs/adr/*.md).
     checklist:
       - "Read the subtask description; restate it in your own words to confirm"
       - "List every assumption you would make; flag the ones the user must confirm"
@@ -246,6 +277,11 @@ prompts:
       - "Stop asking when you have enough to write 80% of the code without guessing"
       - "Record the resolved spec at the top of the subtask file before implementing"
       - "If `phase.spec_ambiguous == true AND phase.no_docs == true`, request grill-me"
+      # grill-with-docs additional checklist (paraphrased from mattpocock/skills)
+      - "Cross-reference each assumption against CONTEXT.md domain language; flag terminology drift immediately"
+      - "Sharpen vague/overloaded terms (e.g. 'account' → Customer vs User) by proposing a canonical name"
+      - "If a decision crystallises mid-grill, draft the ADR delta inline (don't defer)"
+      - "Output BOTH the refined spec AND any doc-diff (CONTEXT.md / docs/adr/*.md)"
     severity: "blocking-question / nice-to-know / resolved"
     description: "Clarify subtask spec one question at a time (brainstorming + grill-with-docs on ambiguity)."
 
@@ -267,8 +303,17 @@ prompts:
       - "No speculative abstractions (no 'just in case' generics)"
       - "Edit with surgical precision: full path, exact selectors, no broad rewrites"
       - "Update progress.md before declaring done (planning-with-files `/plan`)"
+      # zoom-out methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/engineering/zoom-out/SKILL.md
+      - "zoom-out: when unfamiliar with an area, go up a layer of abstraction and map the relevant modules and callers using the project's CONTEXT.md domain glossary vocabulary"
+      # improve-codebase-architecture methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/engineering/improve-codebase-architecture/SKILL.md
+      - "improve-arch: hunt deepening opportunities — modules whose interface is nearly as complex as their implementation are shallow; deep modules hide a lot of behaviour behind a small interface"
+      - "improve-arch deletion test: imagine deleting the module — if complexity vanishes it was a pass-through (delete it); if complexity reappears across N callers it was earning its keep (keep / deepen)"
+      - "improve-arch: name candidates using CONTEXT.md domain vocabulary (e.g. 'the Order intake module', not 'FooBarHandler'); if a candidate contradicts an existing ADR, only surface it when the friction is real enough to revisit the ADR"
+      - "improve-arch: present candidates as a before/after report and let the user pick which to explore before designing interfaces"
     severity: "needs-fix / done / blocked"
-    description: "Implement a subtask under karpathy 4 心法 (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven); ≤200 LOC per file."
+    description: "Implement a subtask under karpathy 4 心法 (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven); ≤200 LOC per file. zoom-out for unfamiliar areas; improve-codebase-architecture for shallow-module deepening audits."
 
   task-test:
     primary_cap: "tdd"
