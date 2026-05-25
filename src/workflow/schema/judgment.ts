@@ -78,8 +78,33 @@ export const JudgmentRulesFile = Type.Object(
 // Discriminated union — resolver consumes either shape.
 export const JudgmentFile = Type.Union([JudgmentTriggersFile, JudgmentRulesFile])
 
+// v3.6.0 Phase 3 — user-overrides.yaml schema (P0b 上半, R20.4 sister extension).
+// Separate top-level shape (NOT in JudgmentFile union — additive only per Phase 3
+// 灰区 #1-3 protocol + Risk 3 mitigation). Consumed by
+// src/cli/lib/extract-user-overrides.ts (Wave 2). schema_version literal
+// `harnessed.user-overrides.v1` (15th surface; NOT yet wired into
+// types/schemaVersion.ts SCHEMA_VERSIONS — single-file consumer per Phase 3).
+const UserOverrideEntry = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }), // kebab-case (e.g. 'brainstorm', 'arch-review')
+    keywords: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
+    triggers: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
+  },
+  { additionalProperties: false },
+)
+
+export const UserOverridesFile = Type.Object(
+  {
+    schema_version: Type.Literal('harnessed.user-overrides.v1'),
+    overrides: Type.Array(UserOverrideEntry, { minItems: 1 }),
+  },
+  { additionalProperties: false },
+)
+
 export type JudgmentTriggerT = Static<typeof JudgmentTrigger>
 export type FallbackRuleT = Static<typeof FallbackRule>
 export type JudgmentTriggersFileT = Static<typeof JudgmentTriggersFile>
 export type JudgmentRulesFileT = Static<typeof JudgmentRulesFile>
 export type JudgmentFileT = Static<typeof JudgmentFile>
+export type UserOverrideEntryT = Static<typeof UserOverrideEntry>
+export type UserOverridesFileT = Static<typeof UserOverridesFile>

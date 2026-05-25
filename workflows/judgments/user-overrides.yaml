@@ -1,0 +1,82 @@
+# workflows/judgments/user-overrides.yaml
+# v3.6.0 Phase 3 — user-override keyword → trigger gate refs lookup
+# (P0b 上半,Audit § fallback 三条铁律 "用户明示 → 覆盖判据" mechanism)
+#
+# Runtime: CLI extracts keywords from user task description, matches against
+# `keywords` substring patterns, collects matched `triggers[]` into
+# gateContext.user_overrides[]. judgmentResolver pre-checks user_overrides[]
+# before expression evaluation — if gateRef in user_overrides → fires=true bypass.
+#
+# Cross-validation status (Wave 1 灰区 #1/#2/#3 resolved per user ack 2026-05-25):
+#   - arch-review.triggers[0] points to stage-routing.plan-architecture-delegate
+#     (no architecture-gate.yaml exists; semantically nearest existing entry per
+#     灰区 #2 Option C — no scope creep)
+#   - phase-discuss.triggers[0] points to phase-gate.gsd-discuss-phase (no
+#     `gray-areas` entry exists in phase-gate.yaml; renamed per 灰区 #1/#3
+#     Option A — naming drift fix, semantic equivalent)
+
+schema_version: harnessed.user-overrides.v1
+
+overrides:
+  - id: brainstorm
+    keywords:
+      - "先 brainstorm"
+      - "brainstorm 一下"
+      - "讨论一下"
+      - "先想想"
+      - "先讨论"
+      - "brainstorm first"
+      - "let's brainstorm"
+    triggers:
+      - judgments.subtask-gate.brainstorming.fires
+      - judgments.stage-routing.discuss-subtask-delegate.fires
+
+  - id: strategic-review
+    keywords:
+      - "跑 office-hours"
+      - "office-hours"
+      - "找 CEO"
+      - "战略层"
+      - "战略评估"
+      - "plan-ceo-review"
+    triggers:
+      - judgments.strategic-gate.office-hours.fires
+      - judgments.strategic-gate.plan-ceo-review.fires
+      - judgments.stage-routing.discuss-strategic-delegate.fires
+
+  - id: arch-review
+    keywords:
+      - "架构审查"
+      - "plan-eng-review"
+      - "复杂架构"
+      - "engineering review"
+    triggers:
+      - judgments.stage-routing.plan-architecture-delegate.fires
+
+  - id: phase-discuss
+    keywords:
+      - "phase 澄清"
+      - "灰色澄清"
+      - "discuss-phase"
+      - "gsd-discuss-phase"
+    triggers:
+      - judgments.phase-gate.gsd-discuss-phase.fires
+      - judgments.stage-routing.discuss-phase-delegate.fires
+
+  - id: paranoid-review
+    keywords:
+      - "关键模块"
+      - "paranoid review"
+      - "/review"
+      - "staff engineer review"
+    triggers:
+      - judgments.stage-routing.verify-paranoid-critical.fires
+
+  - id: tdd
+    keywords:
+      - "强制 TDD"
+      - "TDD first"
+      - "red-green-refactor"
+      - "test first"
+    triggers:
+      - judgments.tdd-gate.tdd-strongly-suggested.fires

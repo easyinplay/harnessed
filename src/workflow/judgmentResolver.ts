@@ -44,6 +44,18 @@ export async function resolveJudgmentGate(
   context: Record<string, unknown>,
   packageRoot: string,
 ): Promise<boolean> {
+  // v3.6.0 Phase 3 — user-override bypass (P0b 上半, Audit § fallback 三条铁律
+  // "用户明示 → 覆盖判据"). CLI (src/cli/run.ts) fills gateContext.user_overrides[]
+  // from task description keyword match against workflows/judgments/user-overrides.yaml
+  // (loaded by src/cli/lib/extract-user-overrides.ts). When gateRef present in the
+  // array → fires=true bypass; expression evaluation skipped. Only the `.fires`
+  // field honors the override; `.skips` falls through to normal eval (user
+  // override forces fire, not skip).
+  const userOverrides = context.user_overrides as string[] | undefined
+  if (Array.isArray(userOverrides) && userOverrides.includes(gateRef)) {
+    return true
+  }
+
   const parts = gateRef.split('.')
   if (parts.length !== 4 || parts[0] !== 'judgments') {
     throw new Error(`Invalid gate ref: ${gateRef}`)
