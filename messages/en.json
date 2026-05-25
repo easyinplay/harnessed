@@ -15,7 +15,7 @@
   "setup.step_d.already_set": "  [D] env.HARNESSED_USER_LANG={{lang}} already set in {{path}} — respecting user override",
   "setup.step_d.enabled_backup": "  [D] wrote env.HARNESSED_USER_LANG={{lang}} in {{path}} (backup saved → {{backupPath}})",
   "setup.step_d.skipped": "  [D] User language write skipped: {{message}}",
-  "setup.step_b_complete": "Step B complete: {{installed}} manifest(s) installed / {{already}} already-installed / {{skipped}} skipped (deferred installer methods awaiting phase 2.1) / {{failed}} failed [parallel {{seconds}}s]",
+  "setup.step_b_complete": "Step B complete: {{installed}} manifest(s) installed / {{already}} already-installed / {{skipped}} skipped (user-aborted prompt) / {{failed}} failed [parallel {{seconds}}s]",
   "setup.complete": "\nsetup complete: {{skills}} workflow skill(s) + {{manifests}} base manifest(s) configured",
   "setup.mcp_hint": "\nMCP servers configured. Run `/mcp` in Claude Code to verify each server's connection status. If a server shows disconnected, restart Claude Code or check the MCP command spec.",
   "setup.bundled_summary": "\n✓ harnessed v3.0 三层栈方法论 bundled — 23 workflows (4 master + 18 sub + 1 standalone) + 6 disciplines + 10 judgments + ~83 capabilities ready",

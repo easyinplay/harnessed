@@ -189,8 +189,9 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(stdout).toContain('Step A complete: 2 workflow skill(s)')
   })
 
-  // Cell 5: install-base chain smoke — skipped deferred methods not counted as failures
-  it('cell 5 — install-base chain: deferred phase-2.1 methods skipped (not failed)', async () => {
+  // Cell 5 (v3.9.5): install-base chain — all install methods now dispatch through
+  // runInstall (PHASE_21 deferred set removed). Sister cli-install-base.test cell 5.
+  it('cell 5 — install-base chain: all install methods now dispatch through runInstall (v3.9.5)', async () => {
     readdirMock.mockImplementation(
       makeWorkflowsReaddir(['research'], { tools: ['npx-skill.yaml', 'ctx7.yaml'] }),
     )
@@ -209,12 +210,13 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
       .mockReturnValueOnce(makeValidManifest('ctx7') as never)
     runInstallMock.mockResolvedValue({ ok: true } as never)
 
-    const { code, stdout } = await runCli(['setup'])
+    const { code, stdout } = await runCli(['setup', '--no-auto-install'])
     expect(code).toBe(0)
-    // npx-skill-installer is deferred → skipped, ctx7 installed
-    expect(runInstallMock).toHaveBeenCalledTimes(1)
-    expect(stdout).toContain('1 manifest(s) installed / 0 already-installed / 1 skipped')
-    expect(stdout).toContain('[B] skipped            npx-skill')
+    // v3.9.5 — both manifests dispatch (was 1 only when npx-skill-installer
+    // short-circuited as deferred phase 2.1).
+    expect(runInstallMock).toHaveBeenCalledTimes(2)
+    expect(stdout).toContain('2 manifest(s) installed / 0 already-installed / 0 skipped')
+    expect(stdout).toContain('[B] installed          npx-skill')
     expect(stdout).toContain('[B] installed          ctx7')
   })
 
@@ -296,7 +298,7 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // All 3 manifests installed via parallel Promise.allSettled
     expect(runInstallMock).toHaveBeenCalledTimes(3)
     expect(stdout).toContain(
-      'Step B complete: 3 manifest(s) installed / 0 already-installed / 0 skipped (deferred installer methods awaiting phase 2.1) / 0 failed',
+      'Step B complete: 3 manifest(s) installed / 0 already-installed / 0 skipped (user-aborted prompt) / 0 failed',
     )
     // Parallel timing tag present in summary line
     expect(stdout).toContain('[parallel ')

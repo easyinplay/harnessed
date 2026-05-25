@@ -20,13 +20,15 @@ import { scanWorkflowsNested } from './scan-nested.js'
 
 export type { NestedWorkflow, ScanResult } from './scan-nested.js'
 
-/** Phase 2.1 deferred installer methods — counted as skipped, not failed (D-11). */
-const PHASE_21 = new Set([
-  'cc-plugin-marketplace',
-  'git-clone-with-setup',
-  'npx-skill-installer',
-  'mcp-http-add',
-])
+// v3.9.5 — removed stale PHASE_21 deferred-method set. Per src/installers/index.ts
+// L1-2 ("All 6 methods are now runtime-ready"), all installer dispatchers
+// (ccPluginMarketplace / gitCloneWithSetup / npxSkillInstaller / mcpHttpAdd /
+// mcpStdioAdd / npmCli) are fully implemented. The PHASE_21 short-circuit was
+// v1.0.2 placeholder code never cleaned up; in v3.9.0 dogfood it caused 12+
+// manifests to be reported as "skipped (deferred phase 2.1)" when in fact
+// users either already had them installed or could install via the live
+// dispatcher. Now manifests run through runInstall verbatim — installer's
+// own idempotent_check decides already-installed vs install-now.
 
 /**
  * Phase v2.0-2.3 W1.1: Agent Teams env probe (non-blocking warn).
@@ -92,8 +94,6 @@ export async function runStepBInstall(manifestPaths: string[]): Promise<StepBRes
         }
       }
       const name = v.manifest.metadata.name
-      const method = v.manifest.spec.install.method
-      if (PHASE_21.has(method)) return { status: 'skipped' as const, name }
       const r = await runInstall(v.manifest, opts)
       if ('aborted' in r) return { status: 'skipped' as const, name }
       if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)

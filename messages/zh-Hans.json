@@ -15,7 +15,7 @@
   "setup.step_d.already_set": "  [D] {{path}} 中 env.HARNESSED_USER_LANG={{lang}} 已存在 — 保留 user 覆盖值",
   "setup.step_d.enabled_backup": "  [D] 已在 {{path}} 写入 env.HARNESSED_USER_LANG={{lang}} (备份保存到 → {{backupPath}})",
   "setup.step_d.skipped": "  [D] 用户语言写入跳过: {{message}}",
-  "setup.step_b_complete": "Step B 完成: {{installed}} 个 manifest 已安装 / {{already}} 已存在 / {{skipped}} 跳过 (待 phase 2.1 实装的安装方式) / {{failed}} 失败 [parallel {{seconds}}s]",
+  "setup.step_b_complete": "Step B 完成: {{installed}} 个 manifest 已安装 / {{already}} 已存在 / {{skipped}} 跳过 (用户取消 prompt) / {{failed}} 失败 [parallel {{seconds}}s]",
   "setup.complete": "\nsetup 完成: {{skills}} 个 workflow skill + {{manifests}} 个 base manifest 已配置",
   "setup.mcp_hint": "\nMCP server 已配置。在 Claude Code 里跑 `/mcp` 验证各 server 连接状态。如显示 disconnected,重启 Claude Code 或检查 MCP 命令规范。",
   "setup.bundled_summary": "\n✓ harnessed v3.0 三层栈方法论 bundled — 23 workflows (4 master + 18 sub + 1 standalone) + 6 disciplines + 10 judgments + ~83 capabilities 就绪",

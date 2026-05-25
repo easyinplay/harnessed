@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.5] - 2026-05-25
+
+### Fixed
+
+3 inter-related bugs surfaced during v3.9.4 dogfood:
+
+- **Bug A: Step B falsely reports 12+ manifests as "skipped"**. `install-base.ts:26-31` + `setup-helpers.ts:22-27` carried a hardcoded `PHASE_21` set marking 4 install methods (`cc-plugin-marketplace` / `git-clone-with-setup` / `npx-skill-installer` / `mcp-http-add`) as "deferred phase 2.1" — short-circuiting them as skipped before any installer ran. But `src/installers/index.ts:L1-2` notes "All 6 methods are now runtime-ready" — the deferred set was v1.0.2 placeholder code that was never cleaned up. User dogfood: `ralph-loop` / `superpowers` / `gstack` / `karpathy-skills` / `ui-ux-pro-max` / `frontend-design` / `mattpocock-skills` / `planning-with-files` / `anthropics-skills-*` / `playwright-test` all reported as "skipped" when in fact they were either already installed (most cases) or perfectly installable through the runtime-ready dispatchers.
+- **Fix A**: removed `PHASE_21` set from both `install-base.ts` and `setup-helpers.ts`. All manifests now run through `runInstall(manifest, opts)` which dispatches by method; each installer's own `idempotent_check` (declared verbatim in each manifest yaml) decides already-installed vs install-now. i18n `step_b_complete` wording updated: `"skipped (deferred installer methods awaiting phase 2.1)"` → `"skipped (user-aborted prompt)"` — accurate semantics of what skipped now means.
+
+- **Bug B: auto-install prompts only mattpocock-skills, ignores other missing plugins**. Side effect of Bug A — Step B was reporting most plugins as skipped, doctor checks didn't cover them, so auto-install dispatcher had nothing to prompt. With Bug A fixed, Step B now installs (or detects already-installed) all manifests directly; auto-install dispatcher no longer needs to re-prompt for the same items.
+
+- **Bug C: 3 MCP servers reported already-installed by Step B, but doctor still prompts to install**. `check-mcp-availability.ts` was reading `~/.claude/settings.json` mcpServers — wrong file. Step B `mcpStdioAdd` writes to `~/.claude.json` (user-scope, sister `--scope user` per src/installers/ccPluginMarketplace.ts L4-5). Additionally, `TARGET_SERVERS` names were drifting across releases (v3.6.0 `tavily-mcp`/`exa-mcp`/`chrome-devtools` → v3.9.3 `tavily-remote-mcp`/`exa`/`chrome-devtools`) — none matched the manifest install.cmd actual register name.
+- **Fix C**: `check-mcp-availability.ts` rewritten to use `isMcpServerRegistered` helper (sister `src/installers/lib/readClaudeConfig.ts:88` — reads `~/.claude.json` directly). `TARGET_SERVERS` aligned with manifest `install.cmd` register name verbatim: `['tavily-mcp', 'exa-mcp', 'chrome-devtools-mcp']` (the token immediately after `claude mcp add ... --transport stdio <name> --`). `install_commands` field removed from this check — Step B now owns MCP install path; doctor is detection-only.
+
+### Tests
+
+- 3 cells in `tests/cli/check-mcp-availability.test.ts` rewritten: mock now writes `~/.claude.json` (not `settings.json`); server names use manifest-cmd targets; assertions check that `install_commands` is undefined (Step B owns install).
+- `tests/unit/cli-install-base.test.ts` cell 3 + cell 5: previously verified PHASE_21 short-circuit (skip without runInstall call); now verify runInstall IS called for all 6 methods.
+- `tests/cli/setup.test.ts` cell 5 + cell 6: same — `npx-skill-installer` / `cc-plugin-marketplace` etc. now dispatch through runInstall; assertion counts + wording updated.
+- Total: 1125 pass (unchanged baseline; behavior change + assertion refactor).
+
+### Behavior change summary
+
+Before v3.9.5 (dogfood report):
+```
+[B] installed          gsd
+[B] already-installed  chrome-devtools-mcp / exa-mcp / tavily-mcp
+[B] skipped            ctx7 / playwright-test / ralph-loop / superpowers / ...
+                       (12+ items, all "deferred phase 2.1")
+🔔 doctor still warns 3 MCP servers missing
+🔔 auto-install prompts only mattpocock-skills
+```
+
+After v3.9.5:
+```
+[B] installed          gsd / (any genuinely missing manifests)
+[B] already-installed  chrome-devtools-mcp / exa-mcp / tavily-mcp /
+                       (anything detected via idempotent_check)
+[B] skipped            (only items where user actively aborted a confirm prompt)
+✓ doctor MCP check passes (reads same ~/.claude.json as installer writes)
+✓ auto-install no longer re-prompts items Step B already handled
+```
+
 ## [3.9.4] - 2026-05-25
 
 ### Fixed

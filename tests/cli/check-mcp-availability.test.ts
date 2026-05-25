@@ -29,17 +29,21 @@ afterEach(() => {
   rmSync(tmpRoot, { recursive: true, force: true })
 })
 
-function writeSettings(mcpServers: Record<string, unknown>): void {
-  writeFileSync(join(tmpRoot, '.claude', 'settings.json'), JSON.stringify({ mcpServers }), 'utf8')
+// v3.9.5 — write to `~/.claude.json` (user-scope, sister mcpStdioAdd `--scope user`).
+// Previous version (v3.6.0 Phase 2) wrote to `~/.claude/settings.json` — wrong file;
+// fixed in v3.9.5 to align with isMcpServerRegistered helper read path.
+function writeClaudeConfig(mcpServers: Record<string, unknown>): void {
+  writeFileSync(join(tmpRoot, '.claude.json'), JSON.stringify({ mcpServers }), 'utf8')
 }
 
 describe('checkMcpAvailability — v3.6.0 Phase 2 Wave 3 (all-3 / partial / none)', () => {
   it('1. all 3 target MCP servers present → status=pass + all-3 message', async () => {
-    // v3.9.3 — server names match install command targets (exact match).
-    writeSettings({
-      'tavily-remote-mcp': { type: 'http', url: 'https://mcp.tavily.com/mcp/' },
-      exa: { type: 'http', url: 'https://mcp.exa.ai/mcp' },
-      'chrome-devtools': { type: 'stdio', command: 'npx' },
+    // v3.9.5 — server names match manifest install.cmd register names (stdio
+    // + npx → `tavily-mcp` / `exa-mcp` / `chrome-devtools-mcp`).
+    writeClaudeConfig({
+      'tavily-mcp': { type: 'stdio', command: 'npx' },
+      'exa-mcp': { type: 'stdio', command: 'npx' },
+      'chrome-devtools-mcp': { type: 'stdio', command: 'npx' },
     })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
@@ -47,40 +51,31 @@ describe('checkMcpAvailability — v3.6.0 Phase 2 Wave 3 (all-3 / partial / none
     expect(r.message).toMatch(/all 3 installed/)
   })
 
-  it('2. partial: 1-2 of 3 present → status=warn + lists missing + per-server fix', async () => {
-    writeSettings({
-      'tavily-remote-mcp': { type: 'http', url: 'https://mcp.tavily.com/mcp/' },
-      // exa + chrome-devtools missing
+  it('2. partial: 1-2 of 3 present → status=warn + lists missing', async () => {
+    writeClaudeConfig({
+      'tavily-mcp': { type: 'stdio', command: 'npx' },
+      // exa-mcp + chrome-devtools-mcp missing
     })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
     expect(r.message).toMatch(/1\/3 installed/)
-    expect(r.message).toMatch(/tavily-remote-mcp/)
+    expect(r.message).toMatch(/tavily-mcp/)
     expect(r.message).toMatch(/missing:/)
-    expect(r.message).toMatch(/exa/)
-    expect(r.message).toMatch(/chrome-devtools/)
-    // v3.9.1 — fix string now points to install_commands array (per-server
-    // transport-specific commands moved to structured field). Verify
-    // install_commands contains the per-server commands for the missing subset.
-    expect(r.fix).toMatch(/per-server/)
-    expect(r.install_commands).toBeDefined()
-    expect(r.install_commands?.some((c) => c.includes('exa.ai'))).toBe(true)
-    expect(r.install_commands?.some((c) => c.includes('chrome-devtools-mcp'))).toBe(true)
+    expect(r.message).toMatch(/exa-mcp/)
+    expect(r.message).toMatch(/chrome-devtools-mcp/)
+    // v3.9.5 — install_commands removed (Step B owns install). fix points to setup.
+    expect(r.fix).toMatch(/harnessed setup/)
+    expect(r.install_commands).toBeUndefined()
   })
 
-  it('3. none of 3 present (settings.json missing entirely) → status=warn + REMEDIATION', async () => {
-    // No settings.json written — readFile will ENOENT, catch path triggers
+  it('3. none of 3 present (~/.claude.json missing entirely) → status=warn', async () => {
+    // No ~/.claude.json written — isMcpServerRegistered returns false for all
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
     expect(r.message).toMatch(/none of 3 target MCP servers/)
-    // v3.9.1 — fix points to install_commands; verify the array has all 3 servers.
-    expect(r.fix).toMatch(/per-server transport-specific/)
-    expect(r.fix).toMatch(/web-search-routing\.yaml/)
-    expect(r.install_commands).toBeDefined()
-    expect(r.install_commands?.length).toBe(3)
-    expect(r.install_commands?.some((c) => c.includes('tavily.com'))).toBe(true)
-    expect(r.install_commands?.some((c) => c.includes('exa.ai'))).toBe(true)
+    expect(r.fix).toMatch(/harnessed setup/)
+    expect(r.install_commands).toBeUndefined()
   })
 })

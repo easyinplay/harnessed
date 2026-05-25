@@ -23,12 +23,8 @@ interface RawOpts {
   nonInteractive?: boolean
 }
 
-const PHASE_21 = new Set([
-  'cc-plugin-marketplace',
-  'git-clone-with-setup',
-  'npx-skill-installer',
-  'mcp-http-add',
-])
+// v3.9.5 — removed stale PHASE_21 deferred-method set (sister setup-helpers.ts
+// cleanup). All 6 installer methods are runtime-ready; let runInstall dispatch.
 
 async function listBaseManifests(cwd: string): Promise<string[]> {
   const out: string[] = []
@@ -79,11 +75,6 @@ export function registerInstallBase(program: Command): void {
           continue
         }
         const name = v.manifest.metadata.name
-        const method = v.manifest.spec.install.method
-        if (PHASE_21.has(method)) {
-          skipped.push({ name, reason: `deferred phase 2.1 (${method})` })
-          continue
-        }
         const r = await runInstall(v.manifest, opts)
         if ('aborted' in r) skipped.push({ name, reason: `aborted: ${r.reason}` })
         else if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled) alreadyInstalled.push(name)
@@ -91,7 +82,7 @@ export function registerInstallBase(program: Command): void {
         else failed.push({ name, reason: r.error.message })
       }
       console.log(
-        `\n  installed: ${installed.length} / already-installed: ${alreadyInstalled.length} / skipped (deferred installer methods awaiting phase 2.1): ${skipped.length} / failed: ${failed.length}`,
+        `\n  installed: ${installed.length} / already-installed: ${alreadyInstalled.length} / skipped (user-aborted): ${skipped.length} / failed: ${failed.length}`,
       )
       for (const i of installed) console.log(`  installed          ${i}`)
       for (const a of alreadyInstalled)

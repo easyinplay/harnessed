@@ -107,16 +107,19 @@ describe('cli/install-base', () => {
     expect(runInstallMock).toHaveBeenCalledTimes(2)
   })
 
-  it('cell 3 — phase 2.1 placeholder method → skipped (D-11 三态)', async () => {
+  it('cell 3 — v3.9.5: previously-deferred methods now dispatch through runInstall', async () => {
+    // v3.9.5 — PHASE_21 deferred set removed. cc-plugin-marketplace (and the
+    // other 3 previously-deferred methods) now dispatch through runInstall
+    // like any other method. Sister cell 5 + setup-helpers.ts equivalent.
     readdirMock.mockResolvedValueOnce(['superpowers.yaml'] as never)
     readdirMock.mockResolvedValueOnce([] as never)
     readFileMock.mockResolvedValue('apiVersion: harnessed/v1')
     mockManifest('superpowers', 'cc-plugin-marketplace')
-    // dispatcher should NOT be called for placeholder method.
+    runInstallMock.mockResolvedValue({ ok: true })
     const code = await runCli(['install-base', '--dry-run', '--non-interactive'])
-    // 0 installed + 0 failed + 1 skipped → degenerate exit 2
-    expect(code).toBe(2)
-    expect(runInstallMock).not.toHaveBeenCalled()
+    // 1 installed → exit 0 (was exit 2 when PHASE_21 short-circuited).
+    expect(code).toBe(0)
+    expect(runInstallMock).toHaveBeenCalledTimes(1)
   })
 
   it('cell 4 — dispatcher returns ok:false → failed → exit 1', async () => {
@@ -140,15 +143,21 @@ describe('cli/install-base', () => {
     expect(code).toBe(1)
   })
 
-  it('cell 5 — all phase-2.1 placeholder → 0 installed + 0 failed → exit 2', async () => {
+  it('cell 5 — v3.9.5: all 6 methods now dispatch through runInstall (PHASE_21 set removed)', async () => {
+    // v3.9.5 — installer dispatchers are runtime-ready (src/installers/index.ts
+    // L1-2 "All 6 methods are now runtime-ready"). Previously these 3 manifests
+    // would short-circuit as "skipped (deferred phase 2.1)". Now they go
+    // through runInstall like any other method.
     readdirMock.mockResolvedValueOnce(['superpowers.yaml', 'ralph-loop.yaml'] as never)
     readdirMock.mockResolvedValueOnce(['gstack.yaml'] as never)
     readFileMock.mockResolvedValue('apiVersion: harnessed/v1')
     mockManifest('superpowers', 'cc-plugin-marketplace')
     mockManifest('ralph-loop', 'cc-plugin-marketplace')
     mockManifest('gstack', 'git-clone-with-setup')
+    runInstallMock.mockResolvedValue({ ok: true })
     const code = await runCli(['install-base', '--dry-run', '--non-interactive'])
-    expect(code).toBe(2)
-    expect(runInstallMock).not.toHaveBeenCalled()
+    // All 3 install — exit 0 (was exit 2 when PHASE_21 short-circuited).
+    expect(code).toBe(0)
+    expect(runInstallMock).toHaveBeenCalledTimes(3)
   })
 })
