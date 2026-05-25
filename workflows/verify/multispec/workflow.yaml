@@ -46,6 +46,8 @@ phases:
       - if: 'phase.is_major_release == false and phase.is_large_refactor == false'
         action: skip
     max_iterations: 1
+    # v3.8.0 P1 — Pattern C team create is THE archetypical Agent Teams phase; full 3-RULES inject.
+    injects_rules: [escalation, transparent-skip, agent-teams-prevention]
 
   - id: 02-team-cleanup
     name: Agent Team cleanup (shutdown_request + TeamDelete 防呆清单)
@@ -53,3 +55,5 @@ phases:
     capability: '{{ capabilities.agent-teams-shutdown.cmd }}'
     model: haiku
     max_iterations: 1
+    # v3.8.0 P1 — cleanup phase also operates within Agent Teams context; full 3-RULES inject.
+    injects_rules: [escalation, transparent-skip, agent-teams-prevention]

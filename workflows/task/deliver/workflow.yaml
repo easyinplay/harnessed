@@ -68,6 +68,8 @@ phases:
         action: emit_warning_and_halt
         message: 'ralph-loop max-iterations exceeded for task-deliver. Sub-task likely incomplete — explicit halt per R20.10 (NOT silent abort).'
         exit_code: 1
+    # v3.8.0 P1 — ralph-loop COMPLETE + Agent Teams escalation phase, full 3-RULES inject.
+    injects_rules: [escalation, transparent-skip, agent-teams-prevention]
 
   - id: 02-progress-mark
     name: progress-mark (planning-with-files /plan — mark subtask complete in progress.md)
