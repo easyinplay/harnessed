@@ -100,14 +100,40 @@ export const TRANSPARENT_SKIP_RULES = `When you encounter a phase gate or routin
 
 This applies to: strategic-layer review skip / phase-layer clarification skip / subtask-brainstorming skip / TDD enforcement skip / Agent Teams escalation skip. Chain-isolation rule: skipping one layer does NOT mandate skipping subsequent layers — each layer is independently evaluated.`
 
-/** v3.6.0 Phase 3 — Combined critical-system-reminder string injected into
- *  spawned subagent prompt. Composition order:
+/** v3.6.0 Phase 4 — Agent Teams prevention checklist injection (P1b). Spawned
+ *  subagent doesn't have Team APIs (SDK v0.3.142 doesn't expose them), so this
+ *  is signal/discipline only — when subagent signals escalation via
+ *  needs_teams_escalation, the user/main-session opens the team, and this
+ *  checklist reminds spawned subagent (and by signal propagation, the user)
+ *  of the 4 防呆 rules.
+ *
+ *  Source: ~/.claude/rules/agent-teams.md "防呆清单" (4 items) — paraphrased
+ *  for prompt injection (NOT verbatim user-private file).
+ *
+ *  See PHASE-4-SPEC.md § D1 for design rationale + prompt-budget impact (~200
+ *  tokens, total criticalSystemReminder_EXPERIMENTAL ~670 tokens). */
+export const AGENT_TEAMS_PREVENTION_RULES = `If you signal needs_teams_escalation=true, ALSO advise the user on these 4 Agent Teams prevention rules in your escalation_reason or summary (the user will be the one calling TeamCreate / SendMessage / TeamDelete; remind them upfront):
+
+1. **Session-scoped**: Teams live only in the current Claude Code session. \`/resume\` loses all teammates. Do not treat teams as persistent state — finish team work within one session.
+
+2. **Cleanup mandatory**: Before session ends, send \`SendMessage(to=<teammate>, content="shutdown_request")\` to each teammate, then call \`TeamDelete\`. Orphan teammates consume resources. This is a hard rule, not advisory.
+
+3. **Token cost estimation**: Before creating a team, estimate \`team_cost ≈ N_teammates × N_rounds × avg_tokens_per_round + N_teammates × initial_brief_tokens\`. Compare to subagent fan-out cost (\`≈ N_subagents × (initial_brief + summary_tokens)\`). Only open a team when \`team_cost < 2 × subagent_cost\` — otherwise prefer fan-out.
+
+4. **Brief must be self-contained**: Each teammate launches WITHOUT main-session context. The Agent() prompt must include enough background, file paths, success criteria, and counter-positions so the teammate can work independently. Generic prompts produce shallow output.`
+
+/** v3.6.0 Phase 4 — Combined critical-system-reminder string injected into
+ *  spawned subagent prompt. Composition order (sister Phase 3 chain extended):
  *    1. ESCALATION_RULES (v3.5.0 Phase 2) — 5 Agent Teams escalation triggers
  *    2. TRANSPARENT_SKIP_RULES (v3.6.0 Phase 3) — fallback 三条铁律 transparent
  *       skip discipline (skip + explanation > silent execution on low-confidence)
+ *    3. AGENT_TEAMS_PREVENTION_RULES (v3.6.0 Phase 4) — Agent Teams 防呆 4 项
+ *       (session-scoped / cleanup mandatory / token-cost / self-contained brief)
  *  Both paths in buildAgentDef (rolePrompt found + conservative fallback) inject
- *  this combined string into criticalSystemReminder_EXPERIMENTAL. */
-const CRITICAL_SYSTEM_REMINDER = `${ESCALATION_RULES}\n\n${TRANSPARENT_SKIP_RULES}`
+ *  this combined string into criticalSystemReminder_EXPERIMENTAL.
+ *  Logical order: 识别 (ESCALATION) → confidence judge (TRANSPARENT_SKIP) →
+ *  prevention discipline (AGENT_TEAMS_PREVENTION). */
+const CRITICAL_SYSTEM_REMINDER = `${ESCALATION_RULES}\n\n${TRANSPARENT_SKIP_RULES}\n\n${AGENT_TEAMS_PREVENTION_RULES}`
 
 /** Phase v3.4.4 (Phase 4) — build an AgentDefinition for a workflow phase skill,
  *  enriched via `workflows/role-prompts.yaml` when a matching entry exists.
@@ -132,7 +158,14 @@ const CRITICAL_SYSTEM_REMINDER = `${ESCALATION_RULES}\n\n${TRANSPARENT_SKIP_RULE
  *
  *  v3.6.0 Phase 3 Wave 3 — both code paths now inject CRITICAL_SYSTEM_REMINDER
  *  (= ESCALATION_RULES + TRANSPARENT_SKIP_RULES appended) so spawned subagents
- *  ALSO follow the fallback 三条铁律 "拿不准 → 倾向跳过 + 透明声明" discipline. */
+ *  ALSO follow the fallback 三条铁律 "拿不准 → 倾向跳过 + 透明声明" discipline.
+ *
+ *  v3.6.0 Phase 4 Wave 1 — CRITICAL_SYSTEM_REMINDER extended with
+ *  AGENT_TEAMS_PREVENTION_RULES (P1b) so spawned subagents, when signaling
+ *  needs_teams_escalation=true, ALSO remind the user (via escalation_reason /
+ *  summary) of the 4 Agent Teams 防呆 rules (session-scoped / cleanup mandatory
+ *  / token-cost estimation / self-contained brief). buildAgentDef code paths
+ *  unchanged — they reference CRITICAL_SYSTEM_REMINDER variable directly. */
 export function buildAgentDef(
   skillName: string,
   rolePrompts?: Record<string, RolePrompt>,
