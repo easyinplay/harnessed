@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 3.6.0 (Unreleased)
+
+### Phase 1 — mattpocock methodology inline (sub-workflow role-prompt enrichment)
+
+- **role-prompts**: inlined paraphrased methodology excerpts from [mattpocock/skills](https://github.com/mattpocock/skills) (MIT, commit `b8be62ffacb0118fa3eaa29a0923c87c8c11985c`) into 3 sub-workflow entries in `workflows/role-prompts.yaml`, so spawned subagents inherit the methodology even when the upstream mattpocock plugin is absent. Pattern matches v3.5.0 Phase 2 `ESCALATION_RULES` inject (reuses the existing `buildAgentDef` splice pipeline in `src/workflow/run.ts` L94-103; **zero `src/` change** for Phase 1).
+  - `task-clarify` (primary_cap `superpowers-brainstorming`): `+grill-with-docs` in `responsibility` (CONTEXT.md pressure-test, sharpen terminology, update ADRs inline) + 4 checklist items (cross-ref CONTEXT.md, sharpen vague terms, draft ADR inline, output doc-diff). Checklist count 6→10.
+  - `task-code` (primary_cap `planning-with-files`): `+zoom-out` + `+improve-codebase-architecture` in checklist (5 new items — abstraction-layer mapping; shallow→deep deepening; deletion test; CONTEXT.md naming; before/after report). Checklist count 7→12.
+  - `discuss-subtask` (primary_cap `superpowers-brainstorming`): `+grill-me` in `responsibility` (relentless branch-by-branch interview, ONE at a time, prefer codebase exploration over asking) + 2 checklist items. Checklist count 6→8.
+- **attribution**: 3-layer MIT compliance — (a) yaml header block in `workflows/role-prompts.yaml` naming source URL + pinned SHA + license + cross-ref to `THIRD-PARTY-NOTICES.md`; (b) inline `# … paraphrased from mattpocock/skills (MIT, b8be62f)` comment block above each enriched `responsibility` / `checklist` group with source SKILL.md path; (c) new `THIRD-PARTY-NOTICES.md` at repo root with per-source attribution table + scope-of-redistribution disclosure. Full upstream LICENSE text + vendored SKILL.md sources + provenance metadata preserved at `.planning/v3.6.0/mattpocock-source/` (audit trail; **not shipped** in the npm tarball).
+- **tests**: 5 new cells in `tests/workflow/rolePromptsMattpocock.test.ts` (regression guard for license + methodology integrity). Cells read the shipped `workflows/role-prompts.yaml` via `loadRolePrompts` (sister pattern to `tests/workflow/disciplineLoader.test.ts`) and assert: (1-2) task-clarify grill-with-docs methodology + checklist items; (3) task-code zoom-out + improve-arch checklist items; (4) discuss-subtask grill-me methodology; (5) yaml header carries the attribution comment block with pinned SHA (raw-file regex check, since `loadRolePrompts` strips comments). Total suite: 1092 → 1097 pass.
+- **regression**: Zero runtime behavior change — yaml schema unchanged, `loadRolePrompts` consumer unchanged, all v3.5.0 cells preserved. `pnpm build` 0 errors, `pnpm test` 1097 pass / 5 skipped / 1 todo, `pnpm pack` tarball 362 KB (was ~360 KB pre-Phase-1).
+- **deferred to Phase 5 Wave 0**: shipping `THIRD-PARTY-NOTICES.md` inside the npm tarball requires adding it to `package.json` `"files"` array (currently `dist / manifests / workflows / routing / config-templates / schemas / README.md / LICENSE / NOTICE` only). MIT-compliance shipped attribution is already satisfied through `workflows/role-prompts.yaml` (header block + 3 inline comment groups with pinned SHA — all in the tarball). The repo-root `THIRD-PARTY-NOTICES.md` aggregator file currently ships only via Git, not npm. Per Phase 1 `NEEDS_CLARIFICATION` resolution, this packaging fix is deferred to **Phase 5 Wave 0 "Packaging fix"** (no scope drift into Phase 1; `package.json` is out of Phase 1's scope per spec).
+
 ## 3.5.0 (Unreleased)
 
 ### Phase 1 — P0 private-file reference sweep
