@@ -9,7 +9,11 @@ import { Value } from '@sinclair/typebox/value'
 import { describe, expect, test } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 import { Capabilities } from '../../src/workflow/schema/capabilities.js'
-import { JudgmentRulesFile, JudgmentTriggersFile } from '../../src/workflow/schema/judgment.js'
+import {
+  JudgmentRulesFile,
+  JudgmentTriggersFile,
+  UserOverridesFile,
+} from '../../src/workflow/schema/judgment.js'
 import { PhaseFactContext } from '../../src/workflow/schema/phaseFactContext.js'
 import { WorkflowSchemaV2 } from '../../src/workflow/schema/workflow.js'
 
@@ -118,8 +122,20 @@ describe('fallback.yaml rules-shape parity', () => {
     expect(Value.Check(JudgmentTriggersFile, parsed)).toBe(false)
   })
 
-  test('B2: every shipped judgment yaml accounted for (10 file expected — 6 v2 base + 4 v3 NEW T3.3.W0.3)', () => {
-    expect(judgmentFiles.length).toBe(10)
+  test('B2: every shipped judgment yaml accounted for (11 file — 6 v2 base + 4 v3 NEW T3.3.W0.3 + 1 v3.6.0 Phase 3 user-overrides)', () => {
+    // v3.6.0 Phase 3 Wave 1 — added workflows/judgments/user-overrides.yaml
+    // (P0b 上半 mechanism, validated via separate UserOverridesFile schema —
+    // additive only, NOT in JudgmentFile union per Risk 3 mitigation).
+    expect(judgmentFiles.length).toBe(11)
+  })
+
+  test('B3: user-overrides.yaml passes UserOverridesFile schema (v3.6.0 Phase 3)', () => {
+    const parsed = parseYaml(readFileSync(resolve(judgmentsDir, 'user-overrides.yaml'), 'utf8'))
+    expect(Value.Check(UserOverridesFile, parsed)).toBe(true)
+    // Sanity — must NOT validate against either JudgmentTriggersFile OR
+    // JudgmentRulesFile (separate top-level shape per Phase 3 灰区 protocol).
+    expect(Value.Check(JudgmentTriggersFile, parsed)).toBe(false)
+    expect(Value.Check(JudgmentRulesFile, parsed)).toBe(false)
   })
 })
 

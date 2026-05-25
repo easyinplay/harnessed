@@ -49,11 +49,13 @@ describe('disciplineLoader — load each of 6 LOCKED disciplines', () => {
     expect(d.rules.length).toBe(4)
   })
 
-  it('4. loadDiscipline operational → enforcement_layer=commit, 6 rules', async () => {
+  it('4. loadDiscipline operational → enforcement_layer=commit, 7 rules', async () => {
+    // v3.6.0 Phase 3 Wave 3 — added `transparent-skip-on-low-confidence`
+    // rule (P0b 下半, check_method: prompt-inject); count 6 → 7.
     const d = await loadDiscipline('operational', PACKAGE_ROOT)
     expect(d.discipline).toBe('operational')
     expect(d.enforcement_layer).toBe('commit')
-    expect(d.rules.length).toBe(6)
+    expect(d.rules.length).toBe(7)
   })
 
   it('5. loadDiscipline priority → enforcement_layer=workflow, priority_hierarchy 7-tier', async () => {

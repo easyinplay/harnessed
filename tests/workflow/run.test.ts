@@ -91,6 +91,7 @@ import {
   type DispatchStubResult,
   ESCALATION_RULES,
   runWorkflow,
+  TRANSPARENT_SKIP_RULES,
 } from '../../src/workflow/run.js'
 
 // v3.5.0 Phase 2 Wave 3 — capture the production `_dispatchSkillStub.fn` at
@@ -461,21 +462,34 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
 
   // v3.5.0 Phase 2 Wave 3 — Option 1-Lite escalation rule injection + propagation
   // + stderr hint coverage. Sister cell pattern: 17-19 ralph-loop opt-in.
-  it('20. v3.5.0 Phase 2 — buildAgentDef injects ESCALATION_RULES with all 5 trigger names', () => {
+  // v3.6.0 Phase 3 Wave 4 update — criticalSystemReminder_EXPERIMENTAL is now
+  // CRITICAL_SYSTEM_REMINDER (= ESCALATION_RULES + '\n\n' + TRANSPARENT_SKIP_RULES).
+  // Strict `.toBe(ESCALATION_RULES)` replaced with substring assertions on BOTH
+  // Phase 2 escalation triggers AND Phase 3 transparent-skip rule, sister
+  // Phase 4 ship pattern (substring instead of full-equality on enriched prompts).
+  it('20. v3.5.0/3.6.0 — buildAgentDef injects ESCALATION_RULES + TRANSPARENT_SKIP_RULES (both paths)', () => {
     // Both code paths (rolePrompt-found + fallback stub) MUST carry
-    // criticalSystemReminder_EXPERIMENTAL containing the 5 trigger names verbatim.
+    // criticalSystemReminder_EXPERIMENTAL containing the 5 escalation triggers
+    // verbatim PLUS the Phase 3 transparent-skip rule.
     const fallbackDef = buildAgentDef('unknown-skill-not-in-role-prompts')
-    expect(fallbackDef.criticalSystemReminder_EXPERIMENTAL).toBe(ESCALATION_RULES)
-    // String contains check on 5 trigger names per spec D2 / Wave 3 cell 2 design.
-    const rules = ESCALATION_RULES
-    expect(rules).toContain('teammate_send_message_needed')
-    expect(rules).toContain('subagent_context_overflow')
-    expect(rules).toContain('shared_task_list')
-    expect(rules).toContain('opposing_hypothesis_debate')
-    expect(rules).toContain('fullstack_three_way')
-    // Anti-hallucination disclaimer per spec D2 — must explicitly tell spawned
-    // subagent NOT to attempt calling Team APIs itself.
-    expect(rules).toContain('do NOT attempt to call TeamCreate')
+    const fallbackReminder = fallbackDef.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // Phase 2 ESCALATION_RULES contents preserved
+    expect(fallbackReminder).toContain('teammate_send_message_needed')
+    expect(fallbackReminder).toContain('subagent_context_overflow')
+    expect(fallbackReminder).toContain('shared_task_list')
+    expect(fallbackReminder).toContain('opposing_hypothesis_debate')
+    expect(fallbackReminder).toContain('fullstack_three_way')
+    expect(fallbackReminder).toContain('do NOT attempt to call TeamCreate')
+    // Phase 3 TRANSPARENT_SKIP_RULES appended
+    expect(fallbackReminder).toContain('Skipped <phase>, because <reason>')
+    expect(fallbackReminder).toContain('Tell me if you actually need it')
+    expect(fallbackReminder).toContain('Chain-isolation rule')
+    expect(fallbackReminder).toContain('这次跳过了')
+    // Composition order: ESCALATION_RULES first, TRANSPARENT_SKIP_RULES after.
+    const escIdx = fallbackReminder.indexOf('teammate_send_message_needed')
+    const skipIdx = fallbackReminder.indexOf('Skipped <phase>')
+    expect(escIdx).toBeGreaterThan(-1)
+    expect(skipIdx).toBeGreaterThan(escIdx)
 
     // rolePrompt-found path: provide a synthetic rolePrompts map keyed by
     // workflowName so the second code branch (L94+ in run.ts) runs.
@@ -493,7 +507,15 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
       },
       'enriched-workflow',
     )
-    expect(enrichedDef.criticalSystemReminder_EXPERIMENTAL).toBe(ESCALATION_RULES)
+    const enrichedReminder = enrichedDef.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // Same combined string in enriched path (sister verbatim Phase 2 ship pattern)
+    expect(enrichedReminder).toContain('teammate_send_message_needed')
+    expect(enrichedReminder).toContain('Skipped <phase>, because <reason>')
+    // Sanity — verify both exports still distinct + non-empty
+    expect(ESCALATION_RULES.length).toBeGreaterThan(0)
+    expect(TRANSPARENT_SKIP_RULES.length).toBeGreaterThan(0)
+    expect(ESCALATION_RULES).not.toContain('Skipped <phase>')
+    expect(TRANSPARENT_SKIP_RULES).not.toContain('teammate_send_message_needed')
   })
 
   it('21. v3.5.0 Phase 2 — _dispatchSkillStub.fn propagates needsTeamsEscalation when envelope sets needs_teams_escalation:true', async () => {

@@ -139,6 +139,39 @@ describe('buildAgentDef — Phase 4 role-prompts enrichment (4 fixtures)', () =>
     }
   })
 
+  // v3.6.0 Phase 3 Wave 4 — verify both code paths inject CRITICAL_SYSTEM_REMINDER
+  // (= ESCALATION_RULES + TRANSPARENT_SKIP_RULES) instead of bare ESCALATION_RULES.
+  it('F5 (Phase 3). conservative fallback path → criticalSystemReminder contains BOTH escalation + transparent-skip', async () => {
+    const r = await _dispatchSkillStub.fn('fake-phase-id', undefined, {})
+    expect(r.status).toBe('ok')
+    expect(capturedDefs).toHaveLength(1)
+    const def = capturedDefs[0] as AgentDefinition
+    const reminder = def.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // Phase 2 ESCALATION_RULES preserved
+    expect(reminder).toContain('needs_teams_escalation')
+    expect(reminder).toContain('teammate_send_message_needed')
+    expect(reminder).toContain('fullstack_three_way')
+    // Phase 3 TRANSPARENT_SKIP_RULES appended
+    expect(reminder).toContain('Skipped <phase>, because <reason>')
+    expect(reminder).toContain('Tell me if you actually need it')
+    expect(reminder).toContain('Chain-isolation rule')
+    expect(reminder).toContain('这次跳过了')
+  })
+
+  it('F6 (Phase 3). rolePrompt-found path → criticalSystemReminder also contains BOTH', async () => {
+    const r = await _dispatchSkillStub.fn('verify-paranoid', undefined, {
+      rolePrompts: ROLE_PROMPTS,
+    })
+    expect(r.status).toBe('ok')
+    expect(capturedDefs).toHaveLength(1)
+    const def = capturedDefs[0] as AgentDefinition
+    const reminder = def.criticalSystemReminder_EXPERIMENTAL ?? ''
+    // Verify same combined string applied to enriched path (sister verbatim Phase 2 ship)
+    expect(reminder).toContain('needs_teams_escalation')
+    expect(reminder).toContain('Skipped <phase>, because <reason>')
+    expect(reminder).toContain('Chain-isolation rule')
+  })
+
   it("F4. modelTierOverride === 'inherit' → def.model === 'inherit' (B-10 escape hatch)", async () => {
     // Case A: with enrichment (known skill).
     const rA = await _dispatchSkillStub.fn('verify-paranoid', undefined, {

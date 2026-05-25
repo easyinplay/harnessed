@@ -31,10 +31,12 @@ describe('discipline/enforcement/before-phase-execute', () => {
   })
 
   it('4. loadDisciplinesForPhase returns DisciplineT with rules populated', async () => {
+    // v3.6.0 Phase 3 Wave 3 — operational.yaml rules 6 → 7 (added
+    // transparent-skip-on-low-confidence rule, P0b 下半).
     const m = await loadDisciplinesForPhase(['operational'], PACKAGE_ROOT)
     const op = m.get('operational')
     expect(op?.discipline).toBe('operational')
-    expect(op?.rules.length).toBe(6)
+    expect(op?.rules.length).toBe(7)
   })
 
   it('5. unknown basename throws — fail-loud not silent skip', async () => {
