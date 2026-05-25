@@ -35,9 +35,10 @@ function writeSettings(mcpServers: Record<string, unknown>): void {
 
 describe('checkMcpAvailability — v3.6.0 Phase 2 Wave 3 (all-3 / partial / none)', () => {
   it('1. all 3 target MCP servers present → status=pass + all-3 message', async () => {
+    // v3.9.3 — server names match install command targets (exact match).
     writeSettings({
-      'tavily-mcp': { type: 'stdio', command: 'npx' },
-      'exa-mcp': { type: 'stdio', command: 'npx' },
+      'tavily-remote-mcp': { type: 'http', url: 'https://mcp.tavily.com/mcp/' },
+      exa: { type: 'http', url: 'https://mcp.exa.ai/mcp' },
       'chrome-devtools': { type: 'stdio', command: 'npx' },
     })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
@@ -48,16 +49,16 @@ describe('checkMcpAvailability — v3.6.0 Phase 2 Wave 3 (all-3 / partial / none
 
   it('2. partial: 1-2 of 3 present → status=warn + lists missing + per-server fix', async () => {
     writeSettings({
-      'tavily-mcp': { type: 'stdio', command: 'npx' },
-      // exa-mcp + chrome-devtools missing
+      'tavily-remote-mcp': { type: 'http', url: 'https://mcp.tavily.com/mcp/' },
+      // exa + chrome-devtools missing
     })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
     expect(r.message).toMatch(/1\/3 installed/)
-    expect(r.message).toMatch(/tavily-mcp/)
+    expect(r.message).toMatch(/tavily-remote-mcp/)
     expect(r.message).toMatch(/missing:/)
-    expect(r.message).toMatch(/exa-mcp/)
+    expect(r.message).toMatch(/exa/)
     expect(r.message).toMatch(/chrome-devtools/)
     // v3.9.1 — fix string now points to install_commands array (per-server
     // transport-specific commands moved to structured field). Verify

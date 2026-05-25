@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.3] - 2026-05-25
+
+### Fixed
+
+- **MCP doctor check false-missing detection**: `TARGET_SERVERS` in `src/cli/lib/check-mcp-availability.ts` used names that didn't match the actual server names registered by their install commands (e.g. `tavily-mcp` vs actual `tavily-remote-mcp` registered by `claude mcp add tavily-remote-mcp ...`). After install, doctor still reported the server missing → auto-install retried → `claude mcp add` exited 1 with "MCP server already exists in local config". Dogfood symptom:
+  ```
+  MCP server tavily-remote-mcp already exists in local config
+  ✗ failed MCP servers (tavily/exa/chrome-devtools) — exit code 1
+  ```
+- **Fix**: align `TARGET_SERVERS` with install-command target names (`tavily-remote-mcp` / `exa` / `chrome-devtools`); switch substring-match to exact-match (was forgiving but caused false negatives when registered name diverged from target name). `SERVER_INSTALL_COMMANDS` map keys updated to match. Test fixtures updated to use the corrected names.
+- **Note**: `tavily-mcp` / `exa-mcp` remain as `workflows/capabilities.yaml` capability entry names — those are harnessed-internal capability identifiers (consumed by workflow templates / routing yaml), independent of MCP server runtime names. No `capabilities.yaml` changes.
+
 ## [3.9.2] - 2026-05-25
 
 ### Fixed

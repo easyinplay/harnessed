@@ -26,14 +26,19 @@ interface CheckResult {
   install_commands?: readonly string[]
 }
 
-const TARGET_SERVERS = ['tavily-mcp', 'exa-mcp', 'chrome-devtools'] as const
+// v3.9.3 — TARGET_SERVERS names MUST match the server names registered by their
+// install commands (verified via `~/.claude/settings.json` mcpServers keys after
+// install). Mismatch in v3.9.0-3.9.2 (e.g. `tavily-mcp` vs actual `tavily-remote-mcp`)
+// caused false-missing detection → auto-install retry → exit 1 ("already exists").
+const TARGET_SERVERS = ['tavily-remote-mcp', 'exa', 'chrome-devtools'] as const
 
 // v3.9.1 — per-server install command (different transport / source per server).
 // Map key = TARGET_SERVERS entry; value = single-step install (each entry runs
 // independently in install chain — order does not matter for MCP add).
 const SERVER_INSTALL_COMMANDS: Record<(typeof TARGET_SERVERS)[number], string> = {
-  'tavily-mcp': 'claude mcp add tavily-remote-mcp --transport http https://mcp.tavily.com/mcp/',
-  'exa-mcp': 'claude mcp add --transport http exa https://mcp.exa.ai/mcp',
+  'tavily-remote-mcp':
+    'claude mcp add tavily-remote-mcp --transport http https://mcp.tavily.com/mcp/',
+  exa: 'claude mcp add --transport http exa https://mcp.exa.ai/mcp',
   // chrome-devtools: official Claude marketplace direct install (v3.9.2 dogfood
   // confirmed — was assumed npx in v3.9.1 SPEC, corrected to official marketplace).
   'chrome-devtools': 'claude plugin install chrome-devtools-mcp',
@@ -51,9 +56,9 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
     const parsed = JSON.parse(raw) as { mcpServers?: Record<string, unknown> }
     const servers = parsed.mcpServers ?? {}
     const serverNames = Object.keys(servers)
-    installed = TARGET_SERVERS.filter((s) =>
-      serverNames.some((n) => n.includes(s) || s.includes(n)),
-    )
+    // v3.9.3 — exact-match server name (was substring match in v3.6.0 Phase 2;
+    // caused false negatives when registered name differed from target name).
+    installed = TARGET_SERVERS.filter((s) => serverNames.includes(s))
     missing = TARGET_SERVERS.filter((s) => !installed.includes(s))
   } catch {
     // settings.json missing or malformed — all 3 effectively missing.
