@@ -34,8 +34,9 @@ const TARGET_SERVERS = ['tavily-mcp', 'exa-mcp', 'chrome-devtools'] as const
 const SERVER_INSTALL_COMMANDS: Record<(typeof TARGET_SERVERS)[number], string> = {
   'tavily-mcp': 'claude mcp add tavily-remote-mcp --transport http https://mcp.tavily.com/mcp/',
   'exa-mcp': 'claude mcp add --transport http exa https://mcp.exa.ai/mcp',
-  // chrome-devtools: empirical-pending — assumed npx until dogfood confirmation.
-  'chrome-devtools': 'npx chrome-devtools-mcp@latest',
+  // chrome-devtools: official Claude marketplace direct install (v3.9.2 dogfood
+  // confirmed — was assumed npx in v3.9.1 SPEC, corrected to official marketplace).
+  'chrome-devtools': 'claude plugin install chrome-devtools-mcp',
 }
 
 type TargetServer = (typeof TARGET_SERVERS)[number]

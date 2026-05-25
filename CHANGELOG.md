@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.2] - 2026-05-25
+
+### Fixed
+
+- **chrome-devtools install command**: v3.9.1 SPEC assumed `npx chrome-devtools-mcp@latest` (empirical-pending). Dogfood confirmed actual install is official Claude marketplace direct: `claude plugin install chrome-devtools-mcp`. Updated `SERVER_INSTALL_COMMANDS['chrome-devtools']` in `src/cli/lib/check-mcp-availability.ts`. Test assertion unchanged (substring `chrome-devtools-mcp` still present in new command).
+
 ## [3.9.1] - 2026-05-25
 
 ### Fixed
