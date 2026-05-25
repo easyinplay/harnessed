@@ -178,7 +178,13 @@ describe('buildAgentDef — Phase 4 role-prompts enrichment (4 fixtures)', () =>
   it('F7 (Phase 4). criticalSystemReminder contains all 4 AGENT_TEAMS_PREVENTION verbatim phrases', async () => {
     // Use fallback path (no rolePrompts) — Phase 4 inject is variable-driven
     // so both paths receive the same string; one fixture exercises it.
-    const r = await _dispatchSkillStub.fn('fake-phase-id', undefined, {})
+    // v3.8.0 P1 — phase must opt-in to agent-teams-prevention RULES inject
+    // (default chain is escalation + transparent-skip only).
+    const r = await _dispatchSkillStub.fn(
+      'fake-phase-id',
+      { injects_rules: ['escalation', 'transparent-skip', 'agent-teams-prevention'] },
+      {},
+    )
     expect(r.status).toBe('ok')
     expect(capturedDefs).toHaveLength(1)
     const def = capturedDefs[0] as AgentDefinition
@@ -199,9 +205,12 @@ describe('buildAgentDef — Phase 4 role-prompts enrichment (4 fixtures)', () =>
   })
 
   it('F8 (Phase 4). chain order: ESCALATION_RULES → TRANSPARENT_SKIP_RULES → AGENT_TEAMS_PREVENTION_RULES', async () => {
-    const r = await _dispatchSkillStub.fn('verify-paranoid', undefined, {
-      rolePrompts: ROLE_PROMPTS,
-    })
+    // v3.8.0 P1 — phase opts in to all 3 RULES to preserve original chain-order assertion semantics.
+    const r = await _dispatchSkillStub.fn(
+      'verify-paranoid',
+      { injects_rules: ['escalation', 'transparent-skip', 'agent-teams-prevention'] },
+      { rolePrompts: ROLE_PROMPTS },
+    )
     expect(r.status).toBe('ok')
     expect(capturedDefs).toHaveLength(1)
     const def = capturedDefs[0] as AgentDefinition

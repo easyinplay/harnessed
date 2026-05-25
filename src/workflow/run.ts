@@ -133,7 +133,34 @@ export const AGENT_TEAMS_PREVENTION_RULES = `If you signal needs_teams_escalatio
  *  this combined string into criticalSystemReminder_EXPERIMENTAL.
  *  Logical order: 识别 (ESCALATION) → confidence judge (TRANSPARENT_SKIP) →
  *  prevention discipline (AGENT_TEAMS_PREVENTION). */
-const CRITICAL_SYSTEM_REMINDER = `${ESCALATION_RULES}\n\n${TRANSPARENT_SKIP_RULES}\n\n${AGENT_TEAMS_PREVENTION_RULES}`
+/** v3.8.0 P1 — Conditional RULES inject. Map rule name → RULES const for
+ *  per-phase dynamic chain construction. Adding a new rule: add const above +
+ *  entry here + (optional) default-list. Unknown names silently skipped at
+ *  runtime for forward compatibility. */
+const RULES_MAP: Record<string, string> = {
+  escalation: ESCALATION_RULES,
+  'transparent-skip': TRANSPARENT_SKIP_RULES,
+  'agent-teams-prevention': AGENT_TEAMS_PREVENTION_RULES,
+}
+
+/** v3.8.0 P1 — Default RULES injected when phase yaml omits `injects_rules`.
+ *  ~470 tokens (escalation ~320 + transparent-skip ~150). Agent Teams
+ *  prevention (~200 tokens) opt-in for phases that genuinely involve Team
+ *  escalation (task-deliver / task-test / verify-multispec — see their
+ *  workflow.yaml). Weighted-avg across 24 sub-workflows ≈ 512 tokens/spawn
+ *  vs v3.6.0 Phase 4 全 670 → ~24% reduction. */
+const DEFAULT_INJECTS_RULES = ['escalation', 'transparent-skip'] as const
+
+/** v3.8.0 P1 — Build `criticalSystemReminder_EXPERIMENTAL` string from rule
+ *  name list. Empty/undefined list → DEFAULT_INJECTS_RULES. Unknown rule
+ *  names silently filtered (forward-compat). */
+function buildCriticalReminder(injectsRules?: readonly string[]): string {
+  const rules = injectsRules ?? DEFAULT_INJECTS_RULES
+  return rules
+    .map((name) => RULES_MAP[name])
+    .filter((rule): rule is string => rule !== undefined)
+    .join('\n\n')
+}
 
 /** Phase v3.4.4 (Phase 4) — build an AgentDefinition for a workflow phase skill,
  *  enriched via `workflows/role-prompts.yaml` when a matching entry exists.
@@ -160,25 +187,31 @@ const CRITICAL_SYSTEM_REMINDER = `${ESCALATION_RULES}\n\n${TRANSPARENT_SKIP_RULE
  *  (= ESCALATION_RULES + TRANSPARENT_SKIP_RULES appended) so spawned subagents
  *  ALSO follow the fallback 三条铁律 "拿不准 → 倾向跳过 + 透明声明" discipline.
  *
- *  v3.6.0 Phase 4 Wave 1 — CRITICAL_SYSTEM_REMINDER extended with
- *  AGENT_TEAMS_PREVENTION_RULES (P1b) so spawned subagents, when signaling
- *  needs_teams_escalation=true, ALSO remind the user (via escalation_reason /
- *  summary) of the 4 Agent Teams 防呆 rules (session-scoped / cleanup mandatory
- *  / token-cost estimation / self-contained brief). buildAgentDef code paths
- *  unchanged — they reference CRITICAL_SYSTEM_REMINDER variable directly. */
+ *  v3.6.0 Phase 4 Wave 1 — added AGENT_TEAMS_PREVENTION_RULES (P1b) so spawned
+ *  subagents, when signaling needs_teams_escalation=true, ALSO remind the user
+ *  of the 4 Agent Teams 防呆 rules.
+ *
+ *  v3.8.0 P1 — `criticalSystemReminder_EXPERIMENTAL` is now built dynamically via
+ *  `buildCriticalReminder(injectsRules)`. Callers can pass phase-specific rule
+ *  list; absent → DEFAULT_INJECTS_RULES (escalation + transparent-skip, ~470
+ *  tokens). Phases declaring `injects_rules: [escalation, transparent-skip,
+ *  agent-teams-prevention]` in workflow.yaml get the 670-token full chain.
+ *  ~24% weighted-avg token reduction vs unconditional v3.6.0 Phase 4 behavior. */
 export function buildAgentDef(
   skillName: string,
   rolePrompts?: Record<string, RolePrompt>,
   workflowName?: string,
   modelTierOverride?: string,
+  injectsRules?: readonly string[],
 ): AgentDefinition {
   const rp = rolePrompts?.[skillName] ?? (workflowName ? rolePrompts?.[workflowName] : undefined)
+  const criticalReminder = buildCriticalReminder(injectsRules)
   if (!rp) {
     // Conservative fallback (Phase 2 behavior) for phase ids not in role-prompts.yaml.
     return {
       description: `harnessed workflow phase: ${skillName}`,
       prompt: `You are executing the '${skillName}' workflow phase. Follow the phase intent and emit a structured COMPLETE signal when done.`,
-      criticalSystemReminder_EXPERIMENTAL: CRITICAL_SYSTEM_REMINDER,
+      criticalSystemReminder_EXPERIMENTAL: criticalReminder,
       ...(modelTierOverride ? { model: modelTierOverride } : {}),
     } as AgentDefinition
   }
@@ -198,7 +231,7 @@ export function buildAgentDef(
   return {
     description: rp.description,
     prompt,
-    criticalSystemReminder_EXPERIMENTAL: CRITICAL_SYSTEM_REMINDER,
+    criticalSystemReminder_EXPERIMENTAL: criticalReminder,
     ...(modelTierOverride ? { model: modelTierOverride } : {}),
   } as AgentDefinition
 }
@@ -267,15 +300,31 @@ export const _dispatchSkillStub = {
     const spawnOnce = async (
       resumeSessionId?: string,
       onSessionId?: (id: string) => void,
-    ): Promise<string> =>
-      sdkSpawn(
-        buildAgentDef(skillName, opts?.rolePrompts, opts?.workflowName, opts?.modelTierOverride),
+    ): Promise<string> => {
+      // v3.8.0 P1 — read optional phase.injects_rules (string[]) for conditional
+      // RULES inject; absent → buildAgentDef applies DEFAULT_INJECTS_RULES.
+      const injectsRules =
+        phase &&
+        typeof phase === 'object' &&
+        'injects_rules' in phase &&
+        Array.isArray((phase as Record<string, unknown>).injects_rules)
+          ? ((phase as Record<string, unknown>).injects_rules as string[])
+          : undefined
+      return sdkSpawn(
+        buildAgentDef(
+          skillName,
+          opts?.rolePrompts,
+          opts?.workflowName,
+          opts?.modelTierOverride,
+          injectsRules,
+        ),
         {
           expertName: skillName,
           ...(resumeSessionId ? { resumeSessionId } : {}),
           ...(onSessionId ? { onSessionId } : {}),
         },
       )
+    }
 
     let envelopeJson: string
     try {

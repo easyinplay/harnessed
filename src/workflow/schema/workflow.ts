@@ -100,6 +100,13 @@ export const WorkflowPhaseV3 = Type.Object(
     ),
     artifacts_expected: Type.Optional(Type.Array(Type.String())),
     invokes_tools: Type.Optional(Type.Array(InvokeToolClause)), // NEW v3 D-05 phase-level conditional fire
+    // v3.8.0 P1 — Conditional RULES inject. Empty/absent → DEFAULT_INJECTS_RULES
+    // (escalation + transparent-skip, ~470 tokens). Declare full list
+    // ['escalation', 'transparent-skip', 'agent-teams-prevention'] on phases
+    // that genuinely involve Agent Teams escalation (task-deliver / task-test /
+    // verify-multispec). Unknown rule names silently filtered at runtime
+    // (forward-compat for future RULES additions).
+    injects_rules: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: false },
 )
