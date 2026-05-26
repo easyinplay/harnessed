@@ -3,6 +3,7 @@
 // gracefully, TypeBox literal union accepts only known surfaces.
 //
 // Phase v3.0-3.3 W0 T3.3.W0.11 — 16→18 surface bump (workflow_v3 + discipline).
+// v3.9.15 — 18→17 (removed plan-feature legacy surface).
 
 import { Value } from '@sinclair/typebox/value'
 import { describe, expect, it } from 'vitest'
@@ -12,9 +13,9 @@ import {
   SchemaVersionLiteral,
 } from '../../src/types/schemaVersion.js'
 
-describe('SCHEMA_VERSIONS — 18 surfaces (Phase v3.0-3.3 W0 T3.3.W0.11 + workflow_v3 + discipline)', () => {
-  it('has exactly 18 surface entries', () => {
-    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(18)
+describe('SCHEMA_VERSIONS — 17 surfaces', () => {
+  it('has exactly 17 surface entries', () => {
+    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(17)
   })
 
   it('every value matches `harnessed.<surface>.v<N>` shape (v1 default, v2 introduced in Phase v2.0-2.4, v3 introduced in Phase v3.0-3.3)', () => {
@@ -28,7 +29,7 @@ describe('SCHEMA_VERSIONS — 18 surfaces (Phase v3.0-3.3 W0 T3.3.W0.11 + workfl
     expect(new Set(values).size).toBe(values.length)
   })
 
-  it('covers the 18 named surfaces (v2.x 16 + v3.0-3.3 W0 T3.3.W0.11 workflow.v3 + discipline.v1)', () => {
+  it('covers the 17 named surfaces', () => {
     const expectedSurfaces = [
       'routing-snapshot',
       'handoff-doc',
@@ -37,15 +38,14 @@ describe('SCHEMA_VERSIONS — 18 surfaces (Phase v3.0-3.3 W0 T3.3.W0.11 + workfl
       'installer-state',
       'route-decision-log',
       'checkpoint',
-      'current-workflow', // ← Phase 3.1 W1 T1.1 8th surface
-      'config', // ← Phase 3.2 W1 T1.1 9th surface (D-01 PROBE)
-      'governance', // ← Phase 3.2 W1 T1.1 10th surface (D-04 PUSH)
-      'plan-feature', // ← Phase 3.3 W0 T0.5 11th surface BACKFILL
-      'aliases', // ← Phase 3.3 W1 T1.1 12th surface (D-01 RICH)
-      'known-good', // ← Phase 3.3 W1 T1.1 13th surface (D-03 YAML)
-      'capabilities', // ← Phase v2.0-2.3 W0 T2.3.W0.6 14th surface
-      'judgment', // ← Phase v2.0-2.3 W0 T2.3.W0.6 15th surface
-      'workflow', // ← Phase v2.0-2.4 W0 T2.4.W0.1 16th surface (v2 first introduced) + Phase v3.0-3.3 17th surface (v3) — share 'workflow' base name with v2/v3 suffix
+      'current-workflow',
+      'config',
+      'governance',
+      'aliases',
+      'known-good',
+      'capabilities',
+      'judgment',
+      'workflow',
     ]
     const actualSurfaces = Object.values(SCHEMA_VERSIONS).map((v) => v.split('.')[1])
     for (const s of expectedSurfaces) {

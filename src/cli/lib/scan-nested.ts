@@ -1,11 +1,7 @@
 // Phase v3.0-3.3 T3.3.W0.12 — Nested workflows/<stage>/<sub>/ 2-level scan helper.
-// v3.6.1 — removed FLAT_LEGACY_DEPRECATED + renderDeprecationBlock dead code;
-// execute-task / plan-feature / verify-work are active CLI subcommand aliases
-// (thin shims invoking runWorkflow against their v2/v3 workflow.yaml — see
-// src/cli/execute-task.ts and sister), NOT deprecated. Promoted to FLAT_LEGACY_KEEP.
 //
 // Contract:
-//   Path A: flat top-level SKILL.md (research / retro / auto + 3 v2-schema active aliases keep).
+//   Path A: flat top-level SKILL.md (research / retro / auto — standalone v3 workflows).
 //   Path B: nested 2-level workflows/<stage>/<sub>/SKILL.md
 //           - sub === 'auto'  → master, slash-cmd flatten to bare `<stage>`
 //           - sub !== 'auto'  → sub-stage, slash-cmd flatten to `<stage>-<sub>`
@@ -23,19 +19,12 @@ export interface NestedWorkflow {
   isMaster: boolean
 }
 
-/** Flat top-level dirs that remain valid as standalone v3 workflows (KEEP).
- *  - research / retro / auto: native standalone v3 workflows.
- *  - execute-task / plan-feature / verify-work: active CLI subcommand aliases
- *    (v3.6.1 — promoted from FLAT_LEGACY_DEPRECATED after recognising the
- *    `harnessed execute-task` / `plan-feature` / `verify-work` subcommands are
- *    thin shims invoking runWorkflow; workflow.yaml still required at runtime). */
+/** Flat top-level dirs that remain valid as standalone v3 workflows.
+ *  research / retro / auto: native standalone v3 workflows. */
 export const FLAT_LEGACY_KEEP = new Set([
   'research',
   'retro',
   'auto',
-  'execute-task',
-  'plan-feature',
-  'verify-work',
 ])
 
 /** v3.1.0 — Top-level standalone dirs that are super-masters (isMaster=true flag

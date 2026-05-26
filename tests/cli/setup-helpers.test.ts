@@ -193,15 +193,11 @@ describe('cli/lib/scan-nested — Phase v3.0-3.3 T3.3.W0.12 nested 2-level scan'
     ])
   })
 
-  it('fixture 14 — v3.6.1 exported sets: 6 KEEP entries (3 standalone + 3 CLI alias) + NON_WORKFLOW_DIRS skip list', () => {
-    // v3.6.1 — execute-task / plan-feature / verify-work promoted from
-    // FLAT_LEGACY_DEPRECATED to FLAT_LEGACY_KEEP (active CLI subcommand aliases).
+  it('fixture 14 — exported sets: 3 KEEP entries (standalone workflows) + NON_WORKFLOW_DIRS', () => {
     expect(FLAT_LEGACY_KEEP.has('research')).toBe(true)
     expect(FLAT_LEGACY_KEEP.has('retro')).toBe(true)
     expect(FLAT_LEGACY_KEEP.has('auto')).toBe(true)
-    expect(FLAT_LEGACY_KEEP.has('execute-task')).toBe(true)
-    expect(FLAT_LEGACY_KEEP.has('plan-feature')).toBe(true)
-    expect(FLAT_LEGACY_KEEP.has('verify-work')).toBe(true)
+    expect(FLAT_LEGACY_KEEP.size).toBe(3)
     expect(NON_WORKFLOW_DIRS.has('disciplines')).toBe(true)
     expect(NON_WORKFLOW_DIRS.has('judgments')).toBe(true)
   })

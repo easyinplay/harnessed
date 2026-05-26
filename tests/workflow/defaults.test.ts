@@ -16,12 +16,10 @@ describe('workflows/defaults.yaml', () => {
     expect(defaults.schema_version).toBe('harnessed.defaults.v1')
   })
 
-  it('ralph_max_iterations 4 workflow buckets present', () => {
+  it('ralph_max_iterations workflow buckets present', () => {
     const workflows = Object.keys(defaults.ralph_max_iterations)
-    expect(workflows).toContain('execute-task')
-    expect(workflows).toContain('plan-feature')
     expect(workflows).toContain('research')
-    expect(workflows).toContain('verify-work')
+    expect(workflows).toContain('retro')
   })
 
   it('all values within 1-100 hard upper limit', () => {

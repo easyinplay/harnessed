@@ -21,7 +21,6 @@
 //   - current-workflow      : workflow state machine (active / paused / complete)  ← Phase 3.1 W1 T1.1 ADD (8th surface, D-02 KARPATHY 3-state lock)
 //   - config                : .harnessed/config.json (gstack_prefix store)        ← Phase 3.2 W1 T1.1 ADD (9th surface, D-01 PROBE)
 //   - governance            : .harnessed/governance.json (gstack veto status)     ← Phase 3.2 W1 T1.1 ADD (10th surface, D-04 PUSH)
-//   - plan-feature          : src/workflow/schema/planFeature.ts                  ← Phase 3.3 W0 T0.5 BACKFILL (11th surface)
 //   - aliases               : manifests/aliases.yaml                              ← Phase 3.3 W1 T1.1 ADD (12th surface, D-01 RICH)
 //   - known-good            : versions/<harnessed-ver>-known-good.yaml            ← Phase 3.3 W1 T1.1 ADD (13th surface, D-03 YAML manifest)
 //   - capabilities          : workflows/capabilities.yaml                         ← Phase v2.0-2.3 W0 ADD 14th surface (R20.2 flat yaml capabilities manifest validate)
@@ -57,7 +56,6 @@ export const SCHEMA_VERSIONS = {
   currentWorkflow: 'harnessed.current-workflow.v1', // ← Phase 3.1 W1 T1.1 ADD 8th surface (D-02 KARPATHY 3-state)
   config: 'harnessed.config.v1', // ← Phase 3.2 W1 T1.1 ADD 9th surface (D-01 PROBE gstack_prefix store)
   governance: 'harnessed.governance.v1', // ← Phase 3.2 W1 T1.1 ADD 10th surface (D-04 PUSH veto status)
-  planFeature: 'harnessed.plan-feature.v1', // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface
   aliases: 'harnessed.aliases.v1', // ← Phase 3.3 W1 T1.1 ADD 12th surface (D-01 RICH)
   knownGood: 'harnessed.known-good.v1', // ← Phase 3.3 W1 T1.1 ADD 13th surface (D-03 YAML manifest)
   capabilities: 'harnessed.capabilities.v1', // ← Phase v2.0-2.3 W0 ADD 14th surface (R20.2 flat yaml capabilities manifest validate)
@@ -80,7 +78,6 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.currentWorkflow), // ← Phase 3.1 W1 T1.1 ADD 8th surface
   Type.Literal(SCHEMA_VERSIONS.config), // ← Phase 3.2 W1 T1.1 ADD 9th surface
   Type.Literal(SCHEMA_VERSIONS.governance), // ← Phase 3.2 W1 T1.1 ADD 10th surface
-  Type.Literal(SCHEMA_VERSIONS.planFeature), // ← Phase 3.3 W0 T0.5 BACKFILL 11th surface
   Type.Literal(SCHEMA_VERSIONS.aliases), // ← Phase 3.3 W1 T1.1 ADD 12th surface
   Type.Literal(SCHEMA_VERSIONS.knownGood), // ← Phase 3.3 W1 T1.1 ADD 13th surface
   Type.Literal(SCHEMA_VERSIONS.capabilities), // ← Phase v2.0-2.3 W0 ADD 14th surface
