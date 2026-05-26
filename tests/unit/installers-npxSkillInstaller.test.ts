@@ -92,6 +92,7 @@ const BASE_OPTS: InstallOpts = {
   system: false,
   nonInteractive: true,
   fullDiff: false,
+  updateInstalled: true,
   color: false,
 }
 function withOpts(over: Partial<InstallOpts>): InstallOpts {

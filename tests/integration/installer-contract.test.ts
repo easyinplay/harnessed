@@ -117,6 +117,7 @@ const baseOpts = (over: Partial<InstallOpts> = {}): InstallOpts => ({
   system: false,
   nonInteractive: true,
   fullDiff: false,
+  updateInstalled: true,
   color: false,
   ...over,
 })

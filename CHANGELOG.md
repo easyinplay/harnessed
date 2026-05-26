@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.6] - 2026-05-25
+
+### Fixed
+
+- **gsd (npm-cli installer) reinstalled every `harnessed setup` run**: Only `mcpStdioAdd` implemented idempotent handling (via stderr `"already exists"` string match). The other 5 installers — `npmCli` / `npxSkillInstaller` / `gitCloneWithSetup` / `ccPluginMarketplace` / `mcpHttpAdd` — ran their install commands unconditionally, ignoring the `spec.install.idempotent_check` field declared in every manifest. gsd dogfood symptom: `[B] installed gsd` every run, even when `~/.claude/skills/gsd` was already present.
+- **Fix**: new shared helper `src/installers/lib/idempotent.ts` (`isAlreadyInstalled(ctx)`) runs the manifest's `idempotent_check` shell command as a pre-install probe; exit 0 → return `{ ok: true, alreadyInstalled: true }`. Wired into 4 non-MCP installers (`npmCli` / `npxSkillInstaller` / `gitCloneWithSetup` / `ccPluginMarketplace`) immediately after `preflight`. MCP installers (`mcpStdioAdd` / `mcpHttpAdd`) keep their existing stderr-match idempotent path — they also avoid re-running `claude mcp add` to prevent overwriting user-tuned config.
+
+### Added
+
+- **`--update-installed` flag + interactive prompt**: opt-in force re-install for already-installed third-party plugins. CLI flag `harnessed setup --update-installed` (non-interactive / CI use); when TTY interactive and flag absent, a Clack `confirm()` prompt asks "Update already-installed third-party plugins? (excludes MCP servers)" — default No. User dogfood request: "对已安装的执行一遍正常的安装操作 ... mcp 不知道要不要这么做，因为修改配置可能造成用户已配置好的mcp不可用". MCP scope honored unconditionally — `updateInstalled` bypass is ignored by `mcpStdioAdd` / `mcpHttpAdd`; existing mcpServers entries are never overwritten by force-update.
+- **`InstallOpts.updateInstalled?: boolean`** field added to `src/installers/lib/types.ts` — plumbed through `runStepBInstall(paths, { updateInstalled })` to all installers via `InstallContext.opts`.
+
+### Tests
+
+- All 13 installer test files updated to include `updateInstalled: true` in their `InstallOpts` literals — preserves pre-v3.9.6 test semantics (verify install spawn behavior on the install path; idempotent skip behavior tested separately via the new fixture is left as v3.10+ follow-up).
+- Total: 1125 pass (unchanged baseline; idempotent helper additive).
+
+### Behavior change summary
+
+Before v3.9.6:
+```
+[B] installed   gsd         # every run, even if already at ~/.claude/skills/gsd
+[B] already-installed   chrome-devtools-mcp / exa-mcp / tavily-mcp   # only via mcpStdioAdd stderr match
+```
+
+After v3.9.6:
+```
+[B] already-installed   gsd                                          # idempotent_check pre-probe
+[B] already-installed   chrome-devtools-mcp / exa-mcp / tavily-mcp
+prompt: Update already-installed third-party plugins? [y/N]          # interactive default No
+```
+
 ## [3.9.5] - 2026-05-25
 
 ### Fixed

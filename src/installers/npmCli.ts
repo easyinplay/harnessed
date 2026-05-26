@@ -16,6 +16,7 @@ import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
+import { isAlreadyInstalled } from './lib/idempotent.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
@@ -48,6 +49,10 @@ export const installNpmCli: Installer = async (ctx) => {
       return { aborted: true, reason: 'platform-mismatch' }
     const e = pre.errors[0] ?? err(ctx, '/', 'preflight failed (no detail)', 'preflight')
     return { ok: false, phase: 'preflight', error: e }
+  }
+  // v3.9.6 — idempotent_check probe (skip install if already-installed).
+  if (await isAlreadyInstalled(ctx)) {
+    return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
   let level = detectLevel(install.cmd)
   let cmd = install.cmd

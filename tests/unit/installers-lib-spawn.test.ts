@@ -46,6 +46,7 @@ const BASE_OPTS: InstallOpts = {
   system: false,
   nonInteractive: true,
   fullDiff: false,
+  updateInstalled: true,
   color: 'auto',
 }
 

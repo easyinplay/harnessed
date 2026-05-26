@@ -39,6 +39,7 @@ import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
+import { isAlreadyInstalled } from './lib/idempotent.js'
 import { preflight } from './lib/preflight.js'
 import { isPluginRegistered } from './lib/readClaudeConfig.js'
 import { runArgs } from './lib/runClaudeArgs.js'
@@ -93,6 +94,10 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       return { aborted: true, reason: 'platform-mismatch' }
     const e = pre.errors[0] ?? err(ctx, '/', 'preflight failed (no detail)', 'preflight')
     return { ok: false, phase: 'preflight', error: e }
+  }
+  // v3.9.6 — idempotent_check probe (skip install if already-installed).
+  if (await isAlreadyInstalled(ctx)) {
+    return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
   const parsed = parseCmd(install.cmd)

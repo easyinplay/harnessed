@@ -115,7 +115,7 @@ describe('cli/install-base', () => {
     readdirMock.mockResolvedValueOnce([] as never)
     readFileMock.mockResolvedValue('apiVersion: harnessed/v1')
     mockManifest('superpowers', 'cc-plugin-marketplace')
-    runInstallMock.mockResolvedValue({ ok: true })
+    runInstallMock.mockResolvedValue({ ok: true, backupId: 'noop', appliedFiles: [] })
     const code = await runCli(['install-base', '--dry-run', '--non-interactive'])
     // 1 installed → exit 0 (was exit 2 when PHASE_21 short-circuited).
     expect(code).toBe(0)
@@ -154,7 +154,7 @@ describe('cli/install-base', () => {
     mockManifest('superpowers', 'cc-plugin-marketplace')
     mockManifest('ralph-loop', 'cc-plugin-marketplace')
     mockManifest('gstack', 'git-clone-with-setup')
-    runInstallMock.mockResolvedValue({ ok: true })
+    runInstallMock.mockResolvedValue({ ok: true, backupId: 'noop', appliedFiles: [] })
     const code = await runCli(['install-base', '--dry-run', '--non-interactive'])
     // All 3 install — exit 0 (was exit 2 when PHASE_21 short-circuited).
     expect(code).toBe(0)

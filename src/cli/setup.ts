@@ -36,6 +36,7 @@ interface RawOpts {
   userLang?: string
   nonInteractive?: boolean
   autoInstall?: boolean // v3.9.0 P4 — commander `--no-auto-install` flag flips this to false
+  updateInstalled?: boolean // v3.9.6 — force re-install for already-installed plugins (excludes MCP)
 }
 
 async function listBaseManifests(pkgRoot: string): Promise<string[]> {
@@ -65,6 +66,13 @@ export function registerSetup(program: Command): void {
     // `--no-auto-install` keeps v3.8.x advisory-only behavior.
     .option('--non-interactive', 'skip all confirm prompts (CI / scripted setup)')
     .option('--no-auto-install', 'do not prompt to auto-install missing plugins (advisory only)')
+    // v3.9.6 — force re-install for already-installed third-party plugins
+    // (skip idempotent_check probe). MCP installers ignore this flag —
+    // existing mcpServers config is never overwritten unconditionally.
+    .option(
+      '--update-installed',
+      'force re-install already-installed plugins (excludes MCP servers); default: skip if installed',
+    )
     .action(async (raw: RawOpts) => {
       const dryRun = raw.dryRun === true
       const pkgRoot = getPackageRoot()
@@ -235,8 +243,25 @@ export function registerSetup(program: Command): void {
       }
 
       // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
+      // v3.9.6 — opt-in `--update-installed` flag (or interactive prompt) forces
+      // re-install of already-installed third-party plugins. MCP installers
+      // ignore this flag (mcpStdioAdd / mcpHttpAdd respect existing config
+      // unconditionally — per user dogfood concern about overwriting tuned
+      // mcpServers entries).
+      let updateInstalled = raw.updateInstalled === true
+      if (!updateInstalled && !dryRun && raw.nonInteractive !== true) {
+        const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
+        if (isTty) {
+          const { confirm, isCancel } = await import('@clack/prompts')
+          const ans = await confirm({
+            message: 'Update already-installed third-party plugins? (excludes MCP servers)',
+            initialValue: false,
+          })
+          if (!isCancel(ans) && ans === true) updateInstalled = true
+        }
+      }
       const manifestPaths = await listBaseManifests(pkgRoot)
-      const b = await runStepBInstall(manifestPaths)
+      const b = await runStepBInstall(manifestPaths, { updateInstalled })
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
         t('setup.step_b_complete', {

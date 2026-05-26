@@ -66,8 +66,14 @@ export interface StepBResult {
   elapsedMs: number
 }
 
-/** Step B: parallel install-base auto-glob chain via Promise.allSettled (v1.0.3 T1.1). */
-export async function runStepBInstall(manifestPaths: string[]): Promise<StepBResult> {
+/** Step B: parallel install-base auto-glob chain via Promise.allSettled (v1.0.3 T1.1).
+ *  v3.9.6 — `runOpts.updateInstalled` (optional) forces re-install for plugins
+ *  whose idempotent_check would otherwise short-circuit; MCP installers ignore
+ *  the flag (sister mcpStdioAdd / mcpHttpAdd — config never overwritten). */
+export async function runStepBInstall(
+  manifestPaths: string[],
+  runOpts: { updateInstalled?: boolean } = {},
+): Promise<StepBResult> {
   const opts: InstallOpts = {
     apply: true,
     dryRun: false,
@@ -75,6 +81,7 @@ export async function runStepBInstall(manifestPaths: string[]): Promise<StepBRes
     nonInteractive: true,
     fullDiff: false,
     color: 'auto',
+    updateInstalled: runOpts.updateInstalled === true,
   }
   const start = Date.now()
   const settled = await Promise.allSettled(

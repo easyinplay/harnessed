@@ -24,6 +24,11 @@ export interface InstallOpts {
   nonInteractive: boolean // CI / scripts: skip prompts
   fullDiff: boolean // expand diffs longer than 200 lines
   color: boolean | 'auto' // 'auto' = picocolors.isColorSupported
+  // v3.9.6 — force re-install for already-installed plugins (skip idempotent_check
+  // short-circuit). MCP installers ignore this flag — they always respect existing
+  // mcpServers config (per user dogfood concern: re-running `claude mcp add` could
+  // overwrite user-tuned MCP entries). Default false.
+  updateInstalled?: boolean
 }
 
 export interface InstallContext {
