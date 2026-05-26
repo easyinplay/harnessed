@@ -51,7 +51,7 @@ describe('SCHEMA_VERSIONS — 17 surfaces', () => {
     for (const s of expectedSurfaces) {
       expect(actualSurfaces).toContain(s)
     }
-    // Phase v3.0-3.3 ADD 'discipline' 18th surface
+    // Phase v3.0-3.3 ADD 'discipline' 17th surface
     expect(actualSurfaces).toContain('discipline')
   })
 
@@ -62,11 +62,11 @@ describe('SCHEMA_VERSIONS — 17 surfaces', () => {
     expect(v3Entries).toEqual(['harnessed.workflow.v3'])
   })
 
-  it('discipline surface registered as harnessed.discipline.v1 (Phase v3.0-3.3 W0 T3.3.W0.11 18th surface — D-09 L0 Discipline Substrate)', () => {
+  it('discipline surface registered as harnessed.discipline.v1 (Phase v3.0-3.3 W0 T3.3.W0.11 — D-09 L0 Discipline Substrate)', () => {
     expect(SCHEMA_VERSIONS.discipline).toBe('harnessed.discipline.v1')
   })
 
-  it('workflow_v3 surface registered as harnessed.workflow.v3 (Phase v3.0-3.3 W0 T3.3.W0.11 17th surface — D-09 + D-05 + master delegates_to per Pattern A B.1 LOCK)', () => {
+  it('workflow_v3 surface registered as harnessed.workflow.v3 (Phase v3.0-3.3 W0 T3.3.W0.11 — D-09 + D-05 + master delegates_to per Pattern A B.1 LOCK)', () => {
     expect(SCHEMA_VERSIONS.workflow_v3).toBe('harnessed.workflow.v3')
   })
 })
@@ -94,7 +94,7 @@ describe('SchemaVersionLiteral — TypeBox accept/reject', () => {
     expect(Value.Check(SchemaVersionLiteral, 'harnessed.workflow.v3')).toBe(true)
   })
 
-  it('accepts `harnessed.discipline.v1` (Phase v3.0-3.3 W0 T3.3.W0.11 18th surface)', () => {
+  it('accepts `harnessed.discipline.v1` (Phase v3.0-3.3 W0 T3.3.W0.11)', () => {
     expect(Value.Check(SchemaVersionLiteral, 'harnessed.discipline.v1')).toBe(true)
   })
 })

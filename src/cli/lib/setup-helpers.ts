@@ -6,9 +6,7 @@
 // callers can flatten slash-cmd name + know master vs sub-stage. Scan logic lives
 // in ./scan-nested.ts (karpathy ≤200L split).
 //
-// v3.6.1 — removed renderDeprecationBlock re-export + ScanResult.deprecated
-// field; execute-task / plan-feature / verify-work promoted to FLAT_LEGACY_KEEP
-// (active CLI subcommand aliases, not deprecated).
+// v3.6.1 — removed renderDeprecationBlock re-export + ScanResult.deprecated field.
 
 import { readFile } from 'node:fs/promises'
 import { runInstall } from '../../installers/index.js'

@@ -112,8 +112,13 @@ export function registerRun(program: Command): void {
         )
       }
 
+      // Derive phase context from workflow name so gate expressions
+      // (e.g. phase.stage == 'verify') evaluate correctly when a sub-workflow
+      // is invoked directly rather than through a master orchestrator.
+      const stage = name.includes('-') ? (name.split('-')[0] ?? '') : name
       const gateContext: Record<string, unknown> = {
         task,
+        phase: { stage, is_critical_module: true },
         ...(raw.model ? { modelOverride: raw.model } : {}),
         ...(raw.maxIterations ? { maxIterations: raw.maxIterations } : {}),
         ...(raw.staged ? { staged: true } : {}),

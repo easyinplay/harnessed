@@ -3,21 +3,19 @@
 //
 // IMPL NOTE — implements `.planning/intel/omc-comparison.md` § CD-5 (single
 // 兼容门 ⭐⭐⭐ ECC pattern, 纯学不 vendor). Naming convention
-// `harnessed.<surface>.v<N>` covers 18 schema-producing surfaces. Three consumer
+// `harnessed.<surface>.v<N>` covers 17 schema-producing surfaces. Three consumer
 // rules (documented as JSDoc on each export below):
 //   (a) consumers MUST branch on `schemaVersion` (use `branchOnSchemaVersion`)
 //   (b) unknown `schemaVersion` values gracefully degrade (treated as `unknown`
 //       bucket — adapter-specific strings are legal, never throw)
 //   (c) new fields MUST be added nested (never top-level on existing surface)
 //
-// The 18 surfaces are the schema-producing artifacts:
+// The 17 surfaces are the schema-producing artifacts:
 //   - routing-snapshot      : routing engine arbitrate output snapshot
 //   - handoff-doc           : phase → phase handoff document
-//   - phases-yaml           : workflows/execute-task/phases.yaml
 //   - manifest-state        : .harnessed/state/manifest.json
 //   - installer-state       : .harnessed/state/installer.json
 //   - route-decision-log    : routing decision audit log
-//   - checkpoint            : execute-task workflow checkpoint envelope
 //   - current-workflow      : workflow state machine (active / paused / complete)  ← Phase 3.1 W1 T1.1 ADD (8th surface, D-02 KARPATHY 3-state lock)
 //   - config                : .harnessed/config.json (gstack_prefix store)        ← Phase 3.2 W1 T1.1 ADD (9th surface, D-01 PROBE)
 //   - governance            : .harnessed/governance.json (gstack veto status)     ← Phase 3.2 W1 T1.1 ADD (10th surface, D-04 PUSH)
@@ -28,6 +26,8 @@
 //   - workflow              : workflows/<sub>/workflow.yaml v2                    ← Phase v2.0-2.4 W0 ADD 16th surface (R20.1+R20.2+R20.9)
 //   - workflow_v3           : workflows/<stage>/<sub>/workflow.yaml v3            ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD 17th surface (D-09 disciplines_applied + D-05 tools_available + master delegates_to)
 //   - discipline            : workflows/disciplines/*.yaml                        ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD 18th surface (D-09 L0 Discipline Substrate)
+//
+// NOTE: planFeature surface removed in v3.9.16 (execute-task/plan-feature/verify-work retirement).
 //
 // TypeBox is the established schema lib (sister of `src/manifest/schema/spec.ts`).
 
@@ -42,9 +42,9 @@ export type SchemaVersion<S extends string> = `harnessed.${S}.v1`
 export type SchemaVersionV2<S extends string> = `harnessed.${S}.v2`
 export type SchemaVersionV3<S extends string> = `harnessed.${S}.v3`
 
-/** Single source of truth for the 18 surface names (B-32 / D-16). Producers MUST
+/** Single source of truth for the 17 surface names (B-32 / D-16). Producers MUST
  *  import from this const — direct string literals fail the Wave 2 grep
- *  acceptance (≥ 18 `harnessed.\w+.v\d` references in src/types/*.ts). */
+ *  acceptance (≥ 17 `harnessed.\w+.v\d` references in src/types/*.ts). */
 export const SCHEMA_VERSIONS = {
   routingSnapshot: 'harnessed.routing-snapshot.v1',
   handoffDoc: 'harnessed.handoff-doc.v1',
@@ -53,16 +53,16 @@ export const SCHEMA_VERSIONS = {
   installerState: 'harnessed.installer-state.v1',
   routeDecisionLog: 'harnessed.route-decision-log.v1',
   checkpoint: 'harnessed.checkpoint.v1',
-  currentWorkflow: 'harnessed.current-workflow.v1', // ← Phase 3.1 W1 T1.1 ADD 8th surface (D-02 KARPATHY 3-state)
-  config: 'harnessed.config.v1', // ← Phase 3.2 W1 T1.1 ADD 9th surface (D-01 PROBE gstack_prefix store)
-  governance: 'harnessed.governance.v1', // ← Phase 3.2 W1 T1.1 ADD 10th surface (D-04 PUSH veto status)
-  aliases: 'harnessed.aliases.v1', // ← Phase 3.3 W1 T1.1 ADD 12th surface (D-01 RICH)
-  knownGood: 'harnessed.known-good.v1', // ← Phase 3.3 W1 T1.1 ADD 13th surface (D-03 YAML manifest)
-  capabilities: 'harnessed.capabilities.v1', // ← Phase v2.0-2.3 W0 ADD 14th surface (R20.2 flat yaml capabilities manifest validate)
-  judgment: 'harnessed.judgment.v1', // ← Phase v2.0-2.3 W0 ADD 15th surface (R20.4 multi-file judgments validate)
-  workflow: 'harnessed.workflow.v2', // ← Phase v2.0-2.4 W0 T2.4.W0.1 ADD 16th surface (R20.1+R20.2+R20.9 workflow.yaml v2)
-  workflow_v3: 'harnessed.workflow.v3', // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD 17th surface (D-09 disciplines_applied + D-05 tools_available + master delegates_to per Pattern A B.1 LOCK)
-  discipline: 'harnessed.discipline.v1', // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD 18th surface (D-09 L0 Discipline Substrate, sister judgment.v1 multi-file pattern)
+  currentWorkflow: 'harnessed.current-workflow.v1', // ← Phase 3.1 W1 T1.1 ADD (D-02 KARPATHY 3-state)
+  config: 'harnessed.config.v1', // ← Phase 3.2 W1 T1.1 ADD (D-01 PROBE gstack_prefix store)
+  governance: 'harnessed.governance.v1', // ← Phase 3.2 W1 T1.1 ADD (D-04 PUSH veto status)
+  aliases: 'harnessed.aliases.v1', // ← Phase 3.3 W1 T1.1 ADD (D-01 RICH)
+  knownGood: 'harnessed.known-good.v1', // ← Phase 3.3 W1 T1.1 ADD (D-03 YAML manifest)
+  capabilities: 'harnessed.capabilities.v1', // ← Phase v2.0-2.3 W0 ADD (R20.2 flat yaml capabilities manifest validate)
+  judgment: 'harnessed.judgment.v1', // ← Phase v2.0-2.3 W0 ADD (R20.4 multi-file judgments validate)
+  workflow: 'harnessed.workflow.v2', // ← Phase v2.0-2.4 W0 T2.4.W0.1 ADD (R20.1+R20.2+R20.9 workflow.yaml v2)
+  workflow_v3: 'harnessed.workflow.v3', // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD (D-09 disciplines_applied + D-05 tools_available + master delegates_to per Pattern A B.1 LOCK)
+  discipline: 'harnessed.discipline.v1', // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD (D-09 L0 Discipline Substrate, sister judgment.v1 multi-file pattern)
 } as const
 
 /** TypeBox literal union — useful as a refinement on a `schemaVersion` field
@@ -75,16 +75,16 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.installerState),
   Type.Literal(SCHEMA_VERSIONS.routeDecisionLog),
   Type.Literal(SCHEMA_VERSIONS.checkpoint),
-  Type.Literal(SCHEMA_VERSIONS.currentWorkflow), // ← Phase 3.1 W1 T1.1 ADD 8th surface
-  Type.Literal(SCHEMA_VERSIONS.config), // ← Phase 3.2 W1 T1.1 ADD 9th surface
-  Type.Literal(SCHEMA_VERSIONS.governance), // ← Phase 3.2 W1 T1.1 ADD 10th surface
-  Type.Literal(SCHEMA_VERSIONS.aliases), // ← Phase 3.3 W1 T1.1 ADD 12th surface
-  Type.Literal(SCHEMA_VERSIONS.knownGood), // ← Phase 3.3 W1 T1.1 ADD 13th surface
-  Type.Literal(SCHEMA_VERSIONS.capabilities), // ← Phase v2.0-2.3 W0 ADD 14th surface
-  Type.Literal(SCHEMA_VERSIONS.judgment), // ← Phase v2.0-2.3 W0 ADD 15th surface
-  Type.Literal(SCHEMA_VERSIONS.workflow), // ← Phase v2.0-2.4 W0 T2.4.W0.1 ADD 16th surface (first .v2 in union)
-  Type.Literal(SCHEMA_VERSIONS.workflow_v3), // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD 17th surface (first .v3 in union)
-  Type.Literal(SCHEMA_VERSIONS.discipline), // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD 18th surface
+  Type.Literal(SCHEMA_VERSIONS.currentWorkflow), // ← Phase 3.1 W1 T1.1 ADD
+  Type.Literal(SCHEMA_VERSIONS.config), // ← Phase 3.2 W1 T1.1 ADD
+  Type.Literal(SCHEMA_VERSIONS.governance), // ← Phase 3.2 W1 T1.1 ADD
+  Type.Literal(SCHEMA_VERSIONS.aliases), // ← Phase 3.3 W1 T1.1 ADD
+  Type.Literal(SCHEMA_VERSIONS.knownGood), // ← Phase 3.3 W1 T1.1 ADD
+  Type.Literal(SCHEMA_VERSIONS.capabilities), // ← Phase v2.0-2.3 W0 ADD
+  Type.Literal(SCHEMA_VERSIONS.judgment), // ← Phase v2.0-2.3 W0 ADD
+  Type.Literal(SCHEMA_VERSIONS.workflow), // ← Phase v2.0-2.4 W0 T2.4.W0.1 ADD (first .v2 in union)
+  Type.Literal(SCHEMA_VERSIONS.workflow_v3), // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD (first .v3 in union)
+  Type.Literal(SCHEMA_VERSIONS.discipline), // ← Phase v3.0-3.3 W0 T3.3.W0.11 ADD
 ])
 
 export type SchemaVersionLiteralType = Static<typeof SchemaVersionLiteral>

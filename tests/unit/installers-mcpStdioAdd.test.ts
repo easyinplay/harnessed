@@ -33,9 +33,12 @@ vi.mock('node:fs/promises', () => ({
 }))
 // v3.9.8 — mock isAlreadyInstalled probe so tests exercise install path
 // (probe would otherwise short-circuit via mocked spawn returning exit 0).
-vi.mock('../../src/installers/lib/idempotent.js', () => ({
-  isAlreadyInstalled: vi.fn(async () => false),
-}))
+vi.mock('../../src/installers/lib/idempotent.js', async () => {
+  const actual = await vi.importActual<typeof import('../../src/installers/lib/idempotent.js')>(
+    '../../src/installers/lib/idempotent.js',
+  )
+  return { ...actual, isAlreadyInstalled: vi.fn(async () => false) }
+})
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),
   select: vi.fn(async () => 'abort'),

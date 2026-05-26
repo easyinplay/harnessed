@@ -11,7 +11,7 @@
 // Phase 3.2 W2 T2.1 — sig extend `vars?: Record<string, string>`; if provided,
 // interpolate {{ var }} placeholders in `invokes` field per phase (D-02 JINJA
 // LOCKED). Backward-compat: vars omitted → no interpolate (existing callers
-// unchanged; sister `workflows/execute-task/phases.yaml` has no invokes).
+// unchanged; v3 task workflow phases have no invokes).
 //
 // Phase v2.0-2.4 W1.1 T2.4.W1.1 (Option A++ team-lead arbitration) — schema
 // dispatch on root `schema_version` field. v2 yaml validates against

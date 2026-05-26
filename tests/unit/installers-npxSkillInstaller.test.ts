@@ -164,9 +164,7 @@ describe('installNpxSkillInstaller', () => {
   it('D2.1-5 @latest allowed → proceeds past preflight (v3.9.9)', async () => {
     const s = silence()
     try {
-      spawnMock.mockImplementation(
-        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]),
-      )
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
       const c = ctx({}, (m) => {
         ;(m.spec.install as { cmd: string }).cmd =
           'npx --yes skills@latest add mattpocock/skills --copy --global'

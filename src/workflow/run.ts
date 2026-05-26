@@ -175,7 +175,7 @@ function buildCriticalReminder(injectsRules?: readonly string[]): string {
  *       standalone non-master phases that lack any role-prompt entry.
  *
  *  When found, splices `responsibility` + `checklist` + `severity` + `specialist`
- *  into the prompt body. `modelTierOverride` (B-10 escape hatch from execute-task
+ *  into the prompt body. `modelTierOverride` (B-10 escape hatch from
  *  `--model-tier inherit`) is applied to the AgentDefinition `model` field when
  *  set (sourced from `gateContext.modelTierOverride`).
  *

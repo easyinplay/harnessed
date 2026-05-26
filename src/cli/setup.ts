@@ -182,15 +182,12 @@ export function registerSetup(program: Command): void {
       const writtenCount = cmdResult.results.filter((r) => r.written).length
       const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
       if (writtenCount > 0 || skippedCount > 0) {
-        console.log(
-          `  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`,
-        )
+        console.log(`  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`)
       }
 
       // ── Step C: Agent Teams auto-enable ────────────────────────────────
-      const cResult = await enableAgentTeamsInSettings()
-      // (Step C/D output suppressed — technical detail)
-      const dResult = await enableUserLangInSettings(raw.userLang)
+      await enableAgentTeamsInSettings()
+      await enableUserLangInSettings(raw.userLang)
 
       // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
       // v3.9.7 — flow corrected per user UX feedback. First pass: default
@@ -201,7 +198,10 @@ export function registerSetup(program: Command): void {
       // first pass (CI / scripted use).
       const manifestPaths = await listBaseManifests(pkgRoot)
       const forceFirstPass = raw.updateInstalled === true
-      const b = await runStepBInstall(manifestPaths, { updateInstalled: forceFirstPass, quiet: true })
+      const b = await runStepBInstall(manifestPaths, {
+        updateInstalled: forceFirstPass,
+        quiet: true,
+      })
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
         t('setup.step_b_complete', {
@@ -213,8 +213,7 @@ export function registerSetup(program: Command): void {
         }),
       )
       for (const n of b.installed) console.log(`  [B] installed          ${n}`)
-      for (const n of b.alreadyInstalled)
-        console.log(`  [B] already-installed  ${n}`)
+      for (const n of b.alreadyInstalled) console.log(`  [B] already-installed  ${n}`)
       for (const s of b.skipped) console.log(`  [B] skipped            ${s.name} — ${s.reason}`)
       for (const n of b.failed) console.error(`  [B] failed             ${n}`)
 

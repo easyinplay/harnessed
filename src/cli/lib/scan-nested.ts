@@ -21,11 +21,7 @@ export interface NestedWorkflow {
 
 /** Flat top-level dirs that remain valid as standalone v3 workflows.
  *  research / retro / auto: native standalone v3 workflows. */
-export const FLAT_LEGACY_KEEP = new Set([
-  'research',
-  'retro',
-  'auto',
-])
+export const FLAT_LEGACY_KEEP = new Set(['research', 'retro', 'auto'])
 
 /** v3.1.0 — Top-level standalone dirs that are super-masters (isMaster=true flag
  *  for setup.ts `(master)` tag rendering). Currently only `auto`; sister research /

@@ -25,7 +25,6 @@ import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
 import { runWorkflow } from '../workflow/run.js'
 import { getPackageRoot } from './lib/packagePath.js'
-import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 import { resolveWorkflowYaml } from './run.js'
 
 interface RawOpts {
@@ -49,8 +48,6 @@ export function registerResearch(program: Command): void {
     .option('--non-interactive', 'skip all prompts (CI / scripts)')
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .action(async (raw: RawOpts) => {
-      // H1 gate (sibling install-base.ts pattern)
-      validateNonInteractiveFlags(raw, 'research --query <text>')
       if (!raw.query) {
         console.error(t('research.require_query'))
         process.exit(2)

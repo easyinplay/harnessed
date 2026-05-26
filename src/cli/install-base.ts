@@ -16,7 +16,6 @@ import { runInstall } from '../installers/index.js'
 import type { InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { getPackageRoot } from './lib/packagePath.js'
-import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 interface RawOpts {
   dryRun?: boolean
@@ -46,7 +45,6 @@ export function registerInstallBase(program: Command): void {
     .option('--dry-run', 'preview only — do not write to disk (opt-in for advanced users)')
     .option('--non-interactive', 'skip all prompts (CI / scripts)')
     .action(async (raw: RawOpts) => {
-      validateNonInteractiveFlags(raw, 'install-base')
       // v3.0.1 UX flip — apply-immediate default + --dry-run opt-in。
       const dryRun = raw.dryRun === true
       const opts: InstallOpts = {

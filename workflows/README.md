@@ -5,8 +5,8 @@
 ## v0.1 MVP Workflows
 
 - `research/` — 多源调研路由（Tavily / Exa / ctx7） — v0.1.0
-- `execute-task/` — 子任务执行（superpowers + karpathy + mattpocock + ralph-loop） — v0.2.0
-- `plan-feature/` — 三层栈编排（gstack + GSD + planning-with-files） — v0.3.0（**phases schema reference implementation**）
+- `task/` — 子任务执行（superpowers + karpathy + mattpocock + ralph-loop） — v3.0.0
+- `plan/` — 三层栈编排（gstack + GSD + planning-with-files） — v3.0.0
 
 ## Phases Schema
 

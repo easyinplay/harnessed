@@ -34,7 +34,7 @@ import type { InstallContext } from './types.js'
 const IDEMPOTENT_CHECK_TIMEOUT_MS = 10_000
 
 // Extract `<owner/repo>` from `npx ... skills add <owner/repo> ...`.
-function extractSkillName(cmd: string, fallback: string): string {
+export function extractSkillName(cmd: string, fallback: string): string {
   const m = cmd.match(/\bskills(?:@\S+)?\s+add\s+(\S+)/i)
   if (!m?.[1]) return fallback
   const seg = m[1].split('/')
@@ -77,7 +77,11 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   if (method === 'cc-plugin-marketplace') {
     const m = cmd.match(/(?:claude\s+)?plugin\s+install\s+(\S+)/i)
     const pluginName = m?.[1]?.split('@')[0] ?? name
-    try { return await isPluginRegistered(pluginName) } catch { return false }
+    try {
+      return await isPluginRegistered(pluginName)
+    } catch {
+      return false
+    }
   }
 
   if (method === 'npx-skill-installer') {
@@ -86,20 +90,35 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
     // default (with symlinks to CC). Check both paths.
     for (const base of ['.claude', '.agents']) {
       const skillMd = join(homedir(), base, 'skills', skillName, 'SKILL.md')
-      try { await access(skillMd); return true } catch { /* try next */ }
+      try {
+        await access(skillMd)
+        return true
+      } catch {
+        /* try next */
+      }
     }
   }
 
   if (method === 'git-clone-with-setup') {
     const target = extractGitCloneTarget(cmd)
     if (target) {
-      try { await access(target); return true } catch { /* fall through to supplementary */ }
+      try {
+        await access(target)
+        return true
+      } catch {
+        /* fall through to supplementary */
+      }
     }
   }
 
   if (method === 'npm-cli') {
     const skillDir = join(homedir(), '.claude', 'skills', name)
-    try { await access(skillDir); return true } catch { /* fall through to supplementary */ }
+    try {
+      await access(skillDir)
+      return true
+    } catch {
+      /* fall through to supplementary */
+    }
   }
 
   // v3.9.10 — supplementary: always check CC plugin registry. Many components
@@ -109,7 +128,11 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   const pluginNames = [name]
   if (name === 'ctx7') pluginNames.push('context7')
   for (const pn of pluginNames) {
-    try { if (await isPluginRegistered(pn)) return true } catch { /* continue */ }
+    try {
+      if (await isPluginRegistered(pn)) return true
+    } catch {
+      /* continue */
+    }
   }
 
   return false

@@ -1,12 +1,11 @@
 // Phase 2.3 W3 T3.1 — `harnessed manifest-add` EE-5 5Q merge gate (D-03 BOTH).
-// Sister: execute-task.ts + research.ts; H1 gate. Storage: Path A sibling
+// Sister: research.ts; H1 gate. Storage: Path A sibling
 // manifests/<category>/<name>.ee5-answers.json (S2 fix — no provenance schema bump).
 import { writeFileSync } from 'node:fs'
 import { stdin, stdout } from 'node:process'
 import * as readline from 'node:readline/promises'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
-import { validateNonInteractiveFlags } from './lib/validateFlags.js'
 
 const QA: readonly { q: string; f: string }[] = [
   { q: '① 是真 reusable surface 还是临时 wrapper?', f: 'q1_reusable_surface' },
@@ -38,7 +37,6 @@ export function registerManifestAdd(program: Command): void {
     .option('--dry-run', 'preview only — do not write JSON (opt-in for advanced users)')
     .option('--non-interactive', 'CI/scripts — WARN-only dry-run')
     .action(async (upstream: string, raw: RawOpts) => {
-      validateNonInteractiveFlags(raw, 'manifest-add <upstream>')
       const name = raw.name ?? basename(upstream)
       const category = raw.category ?? 'skill-packs'
       const outPath = `manifests/${category}/${name}.ee5-answers.json`

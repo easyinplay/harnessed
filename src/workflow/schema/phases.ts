@@ -1,10 +1,10 @@
 // Per-phase model tier schema — ADR 0011 errata (phase 2.2 W3 — F5 / CD-2 D-04).
 //
-// Intel `omc-comparison.md` § CD-2 (per-phase model tier — execute-task 省 token):
+// Intel `omc-comparison.md` § CD-2 (per-phase model tier — task workflow 省 token):
 //   每个 workflow phase 静态标 `model:` 字段,agentFactory 读 `phase.model` 填进
 //   `AgentDefinition.model`(SDK 5 字段里本就有 `model`,零新引擎)。
 //
-// 默认表 (workflows/execute-task/phases.yaml T3.3):
+// 默认表 (v3 task workflow phases):
 //   01-clarify = opus    (任务复杂度澄清)
 //   02-code    = sonnet  (心法 always-on)
 //   03-test    = sonnet  (conditional TDD)

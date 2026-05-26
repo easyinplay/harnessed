@@ -23,7 +23,7 @@ export const CheckpointStatus = Type.Union([
   Type.Literal('complete'),
 ])
 
-/** Checkpoint envelope — execute-task workflow snapshot persisted to
+/** Checkpoint envelope — workflow snapshot persisted to
  *  `.harnessed/checkpoints/<phase>.json`. Consumers MUST branch on
  *  `schemaVersion` via `branchOnSchemaVersion` (CD-5 rule (a)). */
 export const CheckpointV1 = Type.Object(

@@ -36,23 +36,11 @@ import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
-import { isAlreadyInstalled } from './lib/idempotent.js'
+import { extractSkillName, isAlreadyInstalled } from './lib/idempotent.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
-
-// Extract `<owner/repo>` from `npx ... skills@<ver> add <owner/repo> ...`.
-// Used to compute the expected SKILL.md path. Falls back to manifest
-// metadata.name when the `add <ref>` token is absent.
-function extractSkillName(cmd: string, fallback: string): string {
-  const m = cmd.match(/\bskills(?:@\S+)?\s+add\s+(\S+)/i)
-  if (!m || m[1] === undefined) return fallback
-  const ref = m[1]
-  // If owner/repo, take repo (last segment). If single name, use as-is.
-  const seg = ref.split('/')
-  return seg[seg.length - 1] ?? fallback
-}
 
 export const installNpxSkillInstaller: Installer = async (ctx) => {
   const install = ctx.manifest.spec.install

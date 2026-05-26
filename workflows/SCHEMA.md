@@ -69,64 +69,29 @@ phases:                       # 必填，至少 1 个 phase
 
 ---
 
-## 4. plan-feature reference implementation
+## 4. Reference implementation
 
-完整 5-phase 示例（摘录自 `WORKFLOWS-MVP.md` Workflow 3 + `PROJECT-SPEC.md` § 10）。所有其他 workflow 套此范式。
+v3 workflow yaml 示例（摘录自 `workflows/verify/paranoid/workflow.yaml`）。所有 v3 sub-workflow 套此范式。
 
 ```yaml
-# workflows/plan-feature/SKILL.md
----
-name: plan-feature
-namespace: /harnessed:plan-feature
+# workflows/verify/paranoid/workflow.yaml
+schema_version: harnessed.workflow.v3
+workflow: verify-paranoid
+description: |
+  Stage ④.c gstack /review Paranoid Staff Engineer 
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gstack-review]
+
 phases:
-  - id: 01-gstack-decision
-    layer: governance
+  - id: 01-review
+    name: gstack-review
     upstream: gstack
-    invokes: [/office-hours, /plan-ceo-review, /plan-eng-review]
-    inputs: [user_request]
-    outputs: .harnessed/checkpoints/01-decision.md
-    pause: human_review
-    on_veto: halt_workflow
-
-  - id: 02-brainstorm
-    layer: execution
-    upstream: superpowers
-    invokes: [brainstorming]
-    inputs: [user_request, $01.outputs]
-    outputs: .harnessed/checkpoints/02-design-memo.md
-    conditional:
-      if: ui_task_detected            # 来自 routing/ui.md
-      then_also_invoke: [ui-ux-pro-max]
-
-  - id: 03-gsd-discuss
-    layer: orchestration
-    upstream: GSD
-    invokes: [/gsd-discuss-phase]
-    inputs: [$01.outputs, $02.outputs]
-    outputs: gsd_phase_doc
-
-  - id: 04-gsd-plan
-    layer: orchestration
-    upstream: GSD
-    invokes: [/gsd-plan-phase]
-    inputs: [$03.outputs]
-    outputs: [PLAN.md, ROADMAP.md, REQUIREMENTS.md]
-
-  - id: 05-persist
-    layer: execution
-    upstream: planning-with-files
-    inputs: [$04.outputs]
-    outputs: [task_plan.md, progress.md, findings.md]
-    pause: human_review
----
+    capability: '{{ capabilities.gstack-review.cmd }}'
+    model: opus
+    gate: judgments.stage-routing.verify-paranoid-critical.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.verify-paranoid.01-review }}'
 ```
-
-**关键设计点**（决策已敲定，见 WORKFLOWS-MVP § Workflow 3）：
-
-- gstack 命令前缀通过变量插值 `{{gstack.command_prefix}}/office-hours`，**禁止硬编码** — `harnessed doctor` 探测 plugin 化路径与 git-clone-with-setup 路径，写 `.harnessed/config.json` 供 workflow 引擎读取
-- `01` 阶段 veto → `halt_workflow`，不自动回滚；用户决定是否重新构思
-- `02` 阶段 UI 任务识别完全走 `routing/ui.md` 的 `trigger.keywords` + `file_globs` 规则（B+C 混合）
-- `pause: human_review` 强制 checkpoint compact —— 写 `.harnessed/checkpoints/<id>.md`（≤ 1k token），原文留 `.harnessed/archive/<id>-full.md` 不进后续 context（PROJECT-SPEC § 12）
 
 ---
 
@@ -137,14 +102,15 @@ schema 校验保证 `upstream` 引用在 manifests/ 真实存在（防"引用一
 
 ---
 
-## 6. 当前 status（v0.1 phase 1.1）
+## 6. 当前 status（v3.9.16）
 
 - ✅ 字段定义已锁定（本文件 + SPEC § 10）
-- ❌ JSON Schema artifact `schemas/workflow.v1.schema.json` **未生成** — 由 v0.3 phase 1.4+ 配 plan-feature 落地时一并实装
-- ❌ workflow yaml fixtures **未起草** — v0.1 phase 1.4 起草 `research`，v0.2 phase 起草 `execute-task`，v0.3 phase 起草 `plan-feature`
-- ❌ workflow validator **未实装** — TypeBox + Ajv 同样模式（参考 `src/manifest/schema/`），落入 `src/workflow/schema.ts` + `src/workflow/validate.ts`
+- ✅ workflow yaml v3 schema 已实装 (`src/workflow/schema/workflow.ts`)
+- ✅ 24 sub-workflow 已 SHIPPED (discuss/plan/task/verify stages)
+- ✅ workflow validator 已实装 (TypeBox, `src/workflow/schema/`)
+- ❌ JSON Schema artifact `schemas/workflow.v1.schema.json` **未生成** — deferred
 
-任何字段语义冲突以本文件 + SPEC § 10 为准；机器层级冲突时（v0.3+）以 `schemas/workflow.v1.schema.json` 为准。
+任何字段语义冲突以本文件 + SPEC § 10 为准；机器层级冲突时（v3.0+）以 TypeBox schema 为准。
 
 ---
 
@@ -154,4 +120,4 @@ schema 校验保证 `upstream` 引用在 manifests/ 真实存在（防"引用一
 - **三层栈职责**：用户全局 `CLAUDE.md` § "角色与框架定位"
 - **路由 yaml frontmatter SSOT**：`routing/SCHEMA.md`（B+C 共享同一 frontmatter 块）
 - **manifest 上游引用目标**：`manifests/SCHEMA.md`
-- **ROADMAP 落地节奏**：v0.1 = `research` workflow / v0.2 = `execute-task` / v0.3 = `plan-feature`（reference）
+- **ROADMAP 落地节奏**：v0.1 = `research` / v0.2 = `task` / v0.3 = `plan` / v3.0 = full stage-based workflow system
