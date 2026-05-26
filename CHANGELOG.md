@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.9] - 2026-05-26
+
+### Fixed
+
+Dogfood regression caught in v3.9.8 `harnessed setup` output: 10 of 15 Step B components showed wrong status (5 "installed" that were already installed, 4 "failed" that were already installed, 1 "skipped" that was already installed).
+
+- **idempotent detection broken on Windows** — `isAlreadyInstalled()` spawned the manifest's `idempotent_check` shell command via `spawnCmd`, which on Windows routes through `cmd.exe /c`. `cmd.exe` does NOT understand `/plugin list` (CC slash command), `test`, `grep -q`, etc. — causing ALL idempotent probes to silently fail (exit 1), the installer to run the full install flow, and already-installed components to report as "[B] installed" or "[B] failed". **Fix**: `isAlreadyInstalled()` now uses native Node.js detection per install method BEFORE falling back to shell spawn:
+  - `cc-plugin-marketplace` → `isPluginRegistered()` (reads `installed_plugins.json`)
+  - `npx-skill-installer` → `fs.access()` on `~/.claude/skills/<name>/SKILL.md`
+  - `git-clone-with-setup` → `fs.access()` on cloned target directory
+  - `npm-cli` → `fs.access()` on `~/.claude/skills/<name>/`
+  - Shell `idempotent_check` spawn retained as fallback for edge cases
+
+- **superpowers timeout (15s)** — `ccPluginMarketplace.ts` called `runArgs()` with default 15s timeout for `claude plugin install`. Cold-start exceeds 15s on Windows (sister mcpStdioAdd v3.0.3 same fix was never ported). **Fix**: install step now passes explicit 60s timeout.
+
+- **mattpocock-skills manifest** — `cmd` was missing `--copy` and `--global` flags required by `npxSkillInstaller` D2.1-5 (Windows symlink-safe + user-scope install). **Fix**: added `--copy --global` to manifest cmd.
+
+- **`skills@latest` prohibition removed** — `npxSkillInstaller` preflight forbade `@latest` in `skills@<version>` per ADR 0001 reproducibility, but user instruction: "写死版本是不对的". Version pinning belongs in ADR/lockfile layer, not per-manifest cmd strings. **Fix**: removed the `skills-pin-required` preflight check. `@latest` is now accepted; `@1.5.7` and other pinned versions continue to work.
+
+- **mattpocock-skills doctor hint** — `check-mattpocock-skills.ts` used `skills@latest` (no change needed — already matched manifest after `@latest` restoration).
+
+### Tests
+
+- Updated `D2.1-5 @latest forbidden` test → `@latest allowed` (verifies installer proceeds past preflight with `skills@latest`)
+- 1125 pass / 5 skipped / 1 todo (unchanged baseline)
+
 ## [3.9.8] - 2026-05-26
 
 ### Fixed

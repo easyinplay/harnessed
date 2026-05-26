@@ -80,27 +80,6 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
-  // D2.1-5 — assert pinned `skills@1.5.7` is referenced in the cmd. We require
-  // an explicit pin (not @latest) for reproducibility (ADR 0001). Research
-  // pinned 1.5.7 (RESEARCH.md § 2); we don't hardcode "1.5.7" here because a
-  // future minor bump (1.5.8) should be allowed via manifest update. We only
-  // enforce shape: skills@<version-spec>, not @latest.
-  if (!/\bskills@(?!latest\b)\S+/.test(install.cmd)) {
-    return {
-      ok: false,
-      phase: 'preflight',
-      error: {
-        ...err(
-          ctx,
-          '/spec/install/cmd',
-          `npx-skill-installer cmd must reference a pinned skills@<version> (got: '${install.cmd.slice(0, 100)}'); @latest is forbidden for reproducibility (ADR 0001)`,
-          'skills-pin-required',
-        ),
-        suggest: 'change `skills@latest` → `skills@1.5.7` (current research-pinned stable)',
-      },
-    }
-  }
-
   // D2.1-5 — assert --copy and --global flags are present. Either order, but
   // both are mandatory (research § 2). Silent omission would result in
   // broken-on-Windows symlinks (no --copy) or cwd-scope skills (no --global).

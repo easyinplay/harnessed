@@ -189,7 +189,9 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   }
 
   // Step 2 — plugin install. This is the authoritative outcome decider.
-  const r2 = await runArgs(installArgs, spawnCwd)
+  // v3.9.9: 60s timeout (claude plugin install cold-start can exceed 15s;
+  // sister mcpStdioAdd v3.0.3 same fix).
+  const r2 = await runArgs(installArgs, spawnCwd, 60_000)
   if (r2.exitCode !== 0) {
     return {
       ok: false,

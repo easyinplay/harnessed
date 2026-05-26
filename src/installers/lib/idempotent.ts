@@ -8,31 +8,96 @@
 // time even for already-installed packages (user dogfood: gsd reinstalled
 // every run).
 //
-// This helper runs `idempotent_check` as a pre-install probe; exit 0 → return
-// `{ alreadyInstalled: true }`, caller short-circuits with `{ ok: true,
-// alreadyInstalled: true }`. Exit non-zero or check missing → return
-// `{ alreadyInstalled: false }`, caller proceeds with full install.
+// v3.9.9 — native detection per install method (Windows compat):
+// Pre-v3.9.9 `isAlreadyInstalled` spawned the manifest's `idempotent_check`
+// shell command via `spawnCmd`, which on Windows routes through `cmd.exe /c`.
+// `cmd.exe` does NOT understand `/plugin list` (CC slash command), `test`,
+// `grep -q`, or `cp`/`rm` — causing ALL idempotent probes to silently fail
+// (exit 1), the installer to run the full install flow, and already-installed
+// components to appear as "[B] installed" or "[B] failed" (dogfood v3.9.8).
+// Fix: detect installed state natively by install method BEFORE falling back
+// to shell spawn. Native detection uses fs.access / isPluginRegistered — pure
+// Node.js, cross-OS, no shell dependency.
 //
 // `opts.updateInstalled` bypass: when true, skip idempotent probe entirely
 // (force re-install). Setup prompts user for this flag before Step B; MCP
 // installers (mcpStdioAdd / mcpHttpAdd) do NOT consume this helper — their
 // existing stderr "already exists" path respects user MCP config unconditionally.
 
+import { access } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+import { isPluginRegistered } from './readClaudeConfig.js'
 import { spawnCmd } from './spawn.js'
 import type { InstallContext } from './types.js'
 
 const IDEMPOTENT_CHECK_TIMEOUT_MS = 10_000
 
-/** Probe whether the manifest is already installed via `idempotent_check`.
- *  Returns true when the check exits 0 AND (for non-MCP installers)
- *  `opts.updateInstalled` is not set.
- *
- *  `opts.honorUpdateFlag` (default true): when false, the
- *  `ctx.opts.updateInstalled` bypass is IGNORED — i.e. the probe always
- *  short-circuits if the check passes. MCP installers (mcpStdioAdd /
- *  mcpHttpAdd) call with `honorUpdateFlag: false` per Cat G design — user
- *  config (`~/.claude.json.mcpServers`) is never re-modified by force-update
- *  to avoid overwriting hand-tuned MCP entries (v3.9.6 dogfood concern). */
+// Extract `<owner/repo>` from `npx ... skills add <owner/repo> ...`.
+function extractSkillName(cmd: string, fallback: string): string {
+  const m = cmd.match(/\bskills(?:@\S+)?\s+add\s+(\S+)/i)
+  if (!m?.[1]) return fallback
+  const seg = m[1].split('/')
+  return seg[seg.length - 1] ?? fallback
+}
+
+// Extract clone target directory from a git-clone-with-setup cmd.
+// Pattern: `git clone [flags] <url> <dest>`. Returns expanded absolute path.
+function extractGitCloneTarget(cmd: string): string | null {
+  const idx = cmd.indexOf('git clone')
+  if (idx < 0) return null
+  const tail = cmd.slice(idx + 'git clone'.length).trim()
+  const tokens = tail.split(/\s+/)
+  let i = 0
+  while (i < tokens.length && tokens[i]?.startsWith('-')) {
+    i += tokens[i]?.includes('=') ? 1 : 2
+  }
+  const dest = tokens[i + 1]
+  if (!dest || dest === '&&' || dest === ';' || dest === '|') return null
+  if (dest.startsWith('~/')) return join(homedir(), dest.slice(2))
+  if (dest.startsWith('/') || /^[A-Z]:[\\/]/i.test(dest)) return dest
+  // relative path — ambiguous, skip native detection
+  return null
+}
+
+/** Native installed-state detection per install method. Returns true only when
+ *  we can confirm the component IS installed via fs or config read. Returns
+ *  false when not-installed OR when the method/cmd shape is unparseable
+ *  (caller falls back to shell `idempotent_check` spawn). */
+async function detectNative(ctx: InstallContext): Promise<boolean> {
+  const method = ctx.manifest.spec.install.method
+  const cmd = ctx.manifest.spec.install.cmd
+  const name = ctx.manifest.metadata.name
+
+  if (method === 'cc-plugin-marketplace') {
+    const m = cmd.match(/(?:claude\s+)?plugin\s+install\s+(\S+)/i)
+    const pluginName = m?.[1]?.split('@')[0] ?? name
+    try { return await isPluginRegistered(pluginName) } catch { return false }
+  }
+
+  if (method === 'npx-skill-installer') {
+    const skillName = extractSkillName(cmd, name)
+    const skillMd = join(homedir(), '.claude', 'skills', skillName, 'SKILL.md')
+    try { await access(skillMd); return true } catch { return false }
+  }
+
+  if (method === 'git-clone-with-setup') {
+    const target = extractGitCloneTarget(cmd)
+    if (!target) return false
+    try { await access(target); return true } catch { return false }
+  }
+
+  if (method === 'npm-cli') {
+    const skillDir = join(homedir(), '.claude', 'skills', name)
+    try { await access(skillDir); return true } catch { return false }
+  }
+
+  return false
+}
+
+/** Probe whether the manifest is already installed.
+ *  v3.9.9: native Node.js detection first (per install method), shell
+ *  `idempotent_check` spawn as fallback for edge cases. */
 export async function isAlreadyInstalled(
   ctx: InstallContext,
   opts: { honorUpdateFlag?: boolean } = {},
@@ -45,19 +110,18 @@ export async function isAlreadyInstalled(
   // `--dry-run`. Real install behavior unchanged (probe runs when apply:true).
   if (ctx.opts.dryRun) return false
 
+  // v3.9.9 — native detection first (Windows compat: cmd.exe /c can't run
+  // `/plugin list`, `test`, `grep -q`, etc. that appear in idempotent_checks).
+  const native = await detectNative(ctx)
+  if (native) return true
+
+  // Fallback: shell spawn (legacy idempotent_check manifest field).
   const idempotentCmd = ctx.manifest.spec.install.idempotent_check
   if (typeof idempotentCmd !== 'string' || idempotentCmd.length === 0) {
-    // Manifest didn't declare an idempotent_check — fall through to install
-    // (sister pre-v3.9.6 behavior; only manifests with the field benefit).
     return false
   }
 
   const r = await spawnCmd(ctx, idempotentCmd, [], IDEMPOTENT_CHECK_TIMEOUT_MS)
-  if (!('exitCode' in r)) {
-    // spawn error / timeout — treat as not-installed (run install) per ADR 0029
-    // fail-soft (install path has its own error handling; probe should not
-    // block the install attempt).
-    return false
-  }
+  if (!('exitCode' in r)) return false
   return r.exitCode === 0
 }

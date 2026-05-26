@@ -2,7 +2,7 @@
 //
 // Covers (ADR 0004 § 4-5 + D2.1-4/5/6):
 //   - dispatch-mismatch: non-npx-skill-installer method → ok:false preflight
-//   - D2.1-5 cmd @latest forbidden → keyword:'skills-pin-required'
+//   - D2.1-5 @latest allowed (v3.9.9 removed prohibition per user instruction)
 //   - D2.1-5 cmd missing --copy or --global → keyword:'skills-flags-required'
 //   - L2 + --apply: spawnCmd called with the manifest cmd (skills@<ver> + flags)
 //   - D2.1-6 npx exit 0 but SKILL.md missing → keyword:'verify-failed'
@@ -161,19 +161,18 @@ describe('installNpxSkillInstaller', () => {
     expect(r).toMatchObject({ ok: false, phase: 'preflight' })
   })
 
-  it('D2.1-5 @latest forbidden → keyword:skills-pin-required', async () => {
+  it('D2.1-5 @latest allowed → proceeds past preflight (v3.9.9)', async () => {
     const s = silence()
     try {
+      spawnMock.mockImplementation(
+        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]),
+      )
       const c = ctx({}, (m) => {
         ;(m.spec.install as { cmd: string }).cmd =
           'npx --yes skills@latest add mattpocock/skills --copy --global'
       })
       const r = await installNpxSkillInstaller(c)
-      expect(r).toMatchObject({ ok: false, phase: 'preflight' })
-      if ('error' in r && r.error) {
-        expect(r.error.keyword).toBe('skills-pin-required')
-      }
-      expect(spawnMock).not.toHaveBeenCalled()
+      expect(r.ok).toBe(true)
     } finally {
       s.restore()
     }
