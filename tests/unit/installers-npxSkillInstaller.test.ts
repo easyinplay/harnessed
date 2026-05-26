@@ -172,7 +172,7 @@ describe('installNpxSkillInstaller', () => {
           'npx --yes skills@latest add mattpocock/skills --copy --global'
       })
       const r = await installNpxSkillInstaller(c)
-      expect(r.ok).toBe(true)
+      expect(r).toMatchObject({ ok: true })
     } finally {
       s.restore()
     }
