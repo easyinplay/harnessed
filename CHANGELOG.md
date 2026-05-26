@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.10] - 2026-05-26
+
+### Changed
+
+- **Removed anthropics-skills-pptx / anthropics-skills-slide-deck manifests** — these are unrelated to harnessed (user has them installed separately). Removed manifest files + test references + routing rules.
+
+- **idempotent detection improvements**:
+  - `npx-skill-installer` now checks both `~/.claude/skills/` and `~/.agents/skills/` (skills CLI `--copy --global` default path)
+  - Supplementary `isPluginRegistered()` check for ALL install methods (catches components installed both as plugins AND via other methods, e.g. ctx7 = context7@claude-plugins-official)
+  - Name alias: ctx7 manifest also probes `context7` in plugin registry
+
+- **Simplified setup output** — English-only, shorter messages, less verbose summary. Removed Chinese text, emoji, and unnecessary detail from setup output strings.
+
+- **mattpocock-skills manifest** — updated `idempotent_check` to cover both `~/.claude/skills/` and `~/.agents/skills/` paths.
+
+- **decision_rules.yaml** — removed pptx-file-task rule (dead reference after manifest deletion).
+
+### Tests
+
+- Updated assertions to match new i18n strings
+- Removed anthropics-skills references from test fixtures
+- 1123 pass / 0 fail
+
 ## [3.9.9] - 2026-05-26
 
 ### Fixed

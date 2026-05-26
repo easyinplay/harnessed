@@ -72,16 +72,7 @@ rules:
         - design-led
       if_rejected_use: frontend-design
 
-  # ─── content (2 rules) ───────────────────────────────────────
-  - id: pptx-file-task
-    priority: 80
-    domain: content
-    when:
-      task_type: pptx-file-operation
-    decision:
-      primary_expert: anthropics-skills-pptx
-      rationale: PowerPoint 文件操作 — anthropics 官方 skill
-
+  # ─── content (1 rule) ───────────────────────────────────────
   - id: chinese-content-deck
     priority: 70
     domain: content

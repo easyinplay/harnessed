@@ -161,11 +161,11 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(code).toBe(0)
     // Step A
     expect(cpMock).toHaveBeenCalledOnce()
-    expect(stdout).toContain('Step A complete: 1 workflow skill(s)')
+    expect(stdout).toContain('Step A: 1 workflow')
     // Step B
     expect(runInstallMock).toHaveBeenCalledTimes(2)
-    expect(stdout).toContain('Step B complete: 2 manifest(s) installed')
-    expect(stdout).toContain('setup complete: 1 workflow skill(s) + 2 base manifest(s)')
+    expect(stdout).toContain('Upstream components: 2 installed')
+    expect(stdout).toContain('setup complete — 1 workflows + 2 base manifests')
   })
 
   // Cell 4 (v3.0-3.3 T3.3.W0.12): both flat keep dirs (research + retro) installed
@@ -186,7 +186,7 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(cpMock).toHaveBeenCalledTimes(2)
     expect(stdout).toContain('research')
     expect(stdout).toContain('retro')
-    expect(stdout).toContain('Step A complete: 2 workflow skill(s)')
+    expect(stdout).toContain('Step A: 2 workflow')
   })
 
   // Cell 5 (v3.9.5): install-base chain — all install methods now dispatch through
@@ -215,7 +215,7 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // v3.9.5 — both manifests dispatch (was 1 only when npx-skill-installer
     // short-circuited as deferred phase 2.1).
     expect(runInstallMock).toHaveBeenCalledTimes(2)
-    expect(stdout).toContain('2 manifest(s) installed / 0 already-installed / 0 skipped')
+    expect(stdout).toContain('2 installed / 0 already-installed / 0 skipped')
     expect(stdout).toContain('[B] installed          npx-skill')
     expect(stdout).toContain('[B] installed          ctx7')
   })
@@ -241,12 +241,12 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
     // Step B summary shows 1 installed + 1 already-installed, 0 failed
-    expect(stdout).toContain('1 manifest(s) installed / 1 already-installed')
+    expect(stdout).toContain('1 installed / 1 already-installed')
     expect(stdout).toContain('0 failed')
     // already-installed line uses correct label (not "failed")
     expect(stdout).toContain('[B] already-installed  tavily-mcp')
     // Post-setup /mcp hint shown
-    expect(stdout).toContain('Run `/mcp` in Claude Code')
+    expect(stdout).toContain('Run /mcp in Claude Code')
     // Not classified as failure
     expect(stdout).not.toContain('[B] failed')
   })
@@ -274,9 +274,9 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // Step C log line — already-enabled path emits to stdout
     expect(stdout).toContain('[C] Agent Teams already enabled')
     // Step A still ran before Step C
-    expect(stdout).toContain('Step A complete:')
+    expect(stdout).toContain('Step A:')
     // Step B still ran after Step C (sequence: A → C → B)
-    expect(stdout).toContain('Step B complete:')
+    expect(stdout).toContain('Upstream components:')
   })
 
   // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled
@@ -298,10 +298,10 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // All 3 manifests installed via parallel Promise.allSettled
     expect(runInstallMock).toHaveBeenCalledTimes(3)
     expect(stdout).toContain(
-      'Step B complete: 3 manifest(s) installed / 0 already-installed / 0 skipped (user-aborted prompt) / 0 failed',
+      'Upstream components: 3 installed / 0 already-installed / 0 skipped / 0 failed',
     )
     // Parallel timing tag present in summary line
-    expect(stdout).toContain('[parallel ')
-    expect(stdout).toContain('setup complete: 1 workflow skill(s) + 3 base manifest(s)')
+    expect(stdout).toContain('[0.0s]')
+    expect(stdout).toContain('setup complete — 1 workflows + 3 base manifests')
   })
 })

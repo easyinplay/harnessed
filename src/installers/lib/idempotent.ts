@@ -63,7 +63,12 @@ function extractGitCloneTarget(cmd: string): string | null {
 /** Native installed-state detection per install method. Returns true only when
  *  we can confirm the component IS installed via fs or config read. Returns
  *  false when not-installed OR when the method/cmd shape is unparseable
- *  (caller falls back to shell `idempotent_check` spawn). */
+ *  (caller falls back to shell `idempotent_check` spawn).
+ *
+ *  v3.9.10: always supplement with `isPluginRegistered()` — many components
+ *  are installed both as CC plugins AND via other methods (e.g. ctx7 is also
+ *  context7@claude-plugins-official). npx-skill-installer now checks both
+ *  ~/.claude/skills/ and ~/.agents/skills/ (skills CLI global path). */
 async function detectNative(ctx: InstallContext): Promise<boolean> {
   const method = ctx.manifest.spec.install.method
   const cmd = ctx.manifest.spec.install.cmd
@@ -77,8 +82,12 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
 
   if (method === 'npx-skill-installer') {
     const skillName = extractSkillName(cmd, name)
-    const skillMd = join(homedir(), '.claude', 'skills', skillName, 'SKILL.md')
-    try { await access(skillMd); return true } catch { return false }
+    // v3.9.10: skills CLI --copy --global installs to ~/.agents/skills/ by
+    // default (with symlinks to CC). Check both paths.
+    for (const base of ['.claude', '.agents']) {
+      const skillMd = join(homedir(), base, 'skills', skillName, 'SKILL.md')
+      try { await access(skillMd); return true } catch { /* try next */ }
+    }
   }
 
   if (method === 'git-clone-with-setup') {
@@ -90,6 +99,16 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   if (method === 'npm-cli') {
     const skillDir = join(homedir(), '.claude', 'skills', name)
     try { await access(skillDir); return true } catch { return false }
+  }
+
+  // v3.9.10 — supplementary: always check CC plugin registry. Many components
+  // exist both as plugins AND via other install methods (e.g. ctx7 is also
+  // context7@claude-plugins-official; mattpocock-skills may have a plugin form).
+  // Name aliases for manifests whose plugin name differs from metadata.name.
+  const pluginNames = [name]
+  if (name === 'ctx7') pluginNames.push('context7')
+  for (const pn of pluginNames) {
+    try { if (await isPluginRegistered(pn)) return true } catch { /* continue */ }
   }
 
   return false

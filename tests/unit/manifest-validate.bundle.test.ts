@@ -58,7 +58,7 @@ function build(providesBlock: string | null): string {
 }
 
 const TWO_UNITS = `  provides:
-    - id: anthropics-skills-pptx
+    - id: example-skill-pptx
       component_type: behavior-rule
     - id: anthropics-skills-docx
       component_type: behavior-rule`
@@ -72,7 +72,7 @@ describe('validateManifestFile — bundle-install provides field (ADR 0010)', ()
 
   it('rejects provides with only 1 unit (minItems: 2)', () => {
     const oneUnit = `  provides:
-    - id: anthropics-skills-pptx
+    - id: example-skill-pptx
       component_type: behavior-rule`
     const result = validateManifestFile(build(oneUnit), 'bundle-1unit.yaml')
     expect(result.ok).toBe(false)
@@ -84,9 +84,9 @@ describe('validateManifestFile — bundle-install provides field (ADR 0010)', ()
 
   it('rejects provides with duplicate units (uniqueItems)', () => {
     const dup = `  provides:
-    - id: anthropics-skills-pptx
+    - id: example-skill-pptx
       component_type: behavior-rule
-    - id: anthropics-skills-pptx
+    - id: example-skill-pptx
       component_type: behavior-rule`
     const result = validateManifestFile(build(dup), 'bundle-dup.yaml')
     expect(result.ok).toBe(false)
@@ -104,7 +104,7 @@ describe('validateManifestFile — bundle-install provides field (ADR 0010)', ()
 
   it('rejects ProvidedUnit with extra property (additionalProperties: false)', () => {
     const extra = `  provides:
-    - id: anthropics-skills-pptx
+    - id: example-skill-pptx
       component_type: behavior-rule
       extra_field: nope
     - id: anthropics-skills-docx

@@ -49,16 +49,6 @@ const CASES: DryRunCase[] = [
     expectedMethod: 'git-clone-with-setup',
   },
   {
-    name: 'anthropics-skills-pptx',
-    yamlPath: 'manifests/skill-packs/anthropics-skills-pptx.yaml',
-    expectedMethod: 'npx-skill-installer',
-  },
-  {
-    name: 'anthropics-skills-slide-deck',
-    yamlPath: 'manifests/skill-packs/anthropics-skills-slide-deck.yaml',
-    expectedMethod: 'npx-skill-installer',
-  },
-  {
     name: 'playwright-test',
     yamlPath: 'manifests/tools/playwright-test.yaml',
     expectedMethod: 'npx-skill-installer',
@@ -146,11 +136,10 @@ describe('Phase 2.3 Wave 1 — 5 NEW adapter manifest install dry-run e2e', () =
       ).toBe(true)
     }
 
-    // Distribution sanity: design ≥ 1, content ≥ 2 (pptx + slide-deck), testing ≥ 2 (playwright + chrome-devtools).
+    // Distribution sanity: design >= 1, testing >= 2 (playwright + chrome-devtools).
     const dist: Record<string, number> = {}
     for (const c of categories) dist[c.category] = (dist[c.category] ?? 0) + 1
     expect(dist.design ?? 0).toBeGreaterThanOrEqual(1)
-    expect(dist.content ?? 0).toBeGreaterThanOrEqual(2)
     expect(dist.testing ?? 0).toBeGreaterThanOrEqual(2)
   })
 

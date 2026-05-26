@@ -161,10 +161,8 @@ describe('cli/setup — Phase v2.0-2.3 W1.1 (Agent Teams probe + Pure bundled hi
 
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    expect(stdout).toContain('harnessed v3.0 三层栈方法论 bundled')
-    expect(stdout).toContain('23 workflows (4 master + 18 sub + 1 standalone)')
-    expect(stdout).toContain('6 disciplines + 10 judgments + ~83 capabilities ready')
-    expect(stdout).toContain('Pure bundled, NOT user-dir override per D-01')
+    expect(stdout).toContain('harnessed v3.0')
+    expect(stdout).toContain('23 workflows bundled')
     expect(stdout).toContain('<packageRoot>/workflows/')
     // Pure bundled verify: NO ~/.harnessed/ user-dir reference
     expect(stdout).not.toContain('~/.harnessed/')
