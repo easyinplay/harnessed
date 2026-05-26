@@ -2,13 +2,19 @@ name: publish
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'   # matches v1.0.0, v1.0.1, etc. — semantic version only
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to re-publish (e.g. v3.9.8)'
+        required: true
+        type: string
 permissions:
   contents: read
-  id-token: write                   # required for npm OIDC trusted publishing (no NPM_TOKEN)
+  id-token: write
 concurrency:
-  group: publish-${{ github.ref }}
-  cancel-in-progress: false         # never cancel an in-flight publish
+  group: publish
+  cancel-in-progress: false
 jobs:
   publish:
     name: npm publish
@@ -22,6 +28,8 @@ jobs:
       # corresponds to v4.3.1 (actions/checkout) and v4.4.0 (actions/setup-node)
       # as of 2026-05-12 — same SHAs as ci.yml.
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
