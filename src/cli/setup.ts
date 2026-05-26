@@ -168,14 +168,10 @@ export function registerSetup(program: Command): void {
         )
       }
       const rolePrompts = await loadRolePrompts(workflowsDir)
-      // Only generate commands for skills that have role prompt entries.
-      // Legacy workflows (execute-task/plan-feature/verify-work) replaced by
-      // /task /plan /verify exist as SKILL.md but should NOT produce commands.
-      const cmdSkillNames = skillNames.filter((n) => n in rolePrompts)
       const installedPlugins = readInstalledPlugins()
       const installedUserSkills = readInstalledUserSkills()
       const cmdResult = await writeAllCommands(
-        cmdSkillNames,
+        skillNames,
         commandsBase,
         rolePrompts,
         capabilitiesMap,
