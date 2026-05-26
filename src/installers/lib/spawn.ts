@@ -29,8 +29,22 @@
 // shortened install timeout to whatever manifest authors set for verify.
 
 import { type ChildProcess, spawn } from 'node:child_process'
+import { homedir } from 'node:os'
 import { checkCmdString } from '../../manifest/security.js'
 import type { InstallContext, InstallResult } from './types.js'
+
+/** v3.9.8 — pre-expand `~/` to OS home dir before passing cmd to cmd.exe.
+ *  Windows cmd.exe does NOT expand `~` as POSIX shells do, causing
+ *  `mkdir ~/.claude/skills/.cache/X` to fail with "could not create leading
+ *  directories" (frontend-design dogfood failure). POSIX /bin/sh expands
+ *  `~` natively — this helper is win32-only.
+ *  Uses forward slashes in the replaced home path (Windows tools accept both). */
+function expandTildeForWindows(cmd: string): string {
+  const home = homedir().replace(/\\/g, '/')
+  // Match `~/` only at start of string OR after whitespace / shell-quote /
+  // glob-safe boundary chars — avoid replacing `something~/x`.
+  return cmd.replace(/(^|[\s"'`(])~\//g, `$1${home}/`)
+}
 
 export const DEFAULT_VERIFY_TIMEOUT_MS = 15_000
 /** v3.0.2: explicit install-step timeout — Windows cold npm/npx cache can
@@ -94,7 +108,14 @@ export async function spawnCmd(
 
   let child: ChildProcess
   if (process.platform === 'win32') {
-    child = spawn('cmd.exe', ['/c', cmd, ...args], { cwd, env, windowsHide: true })
+    // v3.9.8 — expand `~/` because cmd.exe doesn't (POSIX-only convention).
+    const expandedCmd = expandTildeForWindows(cmd)
+    const expandedArgs = args.map(expandTildeForWindows)
+    child = spawn('cmd.exe', ['/c', expandedCmd, ...expandedArgs], {
+      cwd,
+      env,
+      windowsHide: true,
+    })
   } else {
     const joined = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
     child = spawn('/bin/sh', ['-c', joined], { cwd, env })

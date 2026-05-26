@@ -26,6 +26,10 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(async () => undefined),
   rename: vi.fn(async () => undefined),
 }))
+// v3.9.8 — mock isAlreadyInstalled probe so tests exercise install path.
+vi.mock('../../src/installers/lib/idempotent.js', () => ({
+  isAlreadyInstalled: vi.fn(async () => false),
+}))
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),
   select: vi.fn(async () => 'abort'),

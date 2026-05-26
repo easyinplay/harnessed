@@ -61,7 +61,10 @@ export async function scanWorkflowsWithSkill(
 export interface StepBResult {
   installed: string[]
   alreadyInstalled: string[]
-  skipped: string[]
+  // v3.9.8 — skipped now carries reason (e.g. "level-flag-missing: ctx7 npm-cli L4
+  // requires --system flag"). Previously skipped was `string[]` and the print
+  // line read "[B] skipped <name>" with no explanation.
+  skipped: { name: string; reason: string }[]
   failed: string[]
   elapsedMs: number
 }
@@ -102,7 +105,7 @@ export async function runStepBInstall(
       }
       const name = v.manifest.metadata.name
       const r = await runInstall(v.manifest, opts)
-      if ('aborted' in r) return { status: 'skipped' as const, name }
+      if ('aborted' in r) return { status: 'skipped' as const, name, reason: r.reason }
       if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)
         return { status: 'already-installed' as const, name }
       if (r.ok) return { status: 'installed' as const, name }
@@ -112,7 +115,7 @@ export async function runStepBInstall(
 
   const installed: string[] = []
   const alreadyInstalled: string[] = []
-  const skipped: string[] = []
+  const skipped: { name: string; reason: string }[] = []
   const failed: string[] = []
   for (const s of settled) {
     const v =
@@ -125,8 +128,11 @@ export async function runStepBInstall(
           }
     if (v.status === 'installed') installed.push(v.name)
     else if (v.status === 'already-installed') alreadyInstalled.push(v.name)
-    else if (v.status === 'skipped') skipped.push(v.name)
-    else
+    else if (v.status === 'skipped') {
+      const skipReason =
+        (v as { status: 'skipped'; name: string; reason?: string }).reason ?? 'unknown'
+      skipped.push({ name: v.name, reason: skipReason })
+    } else
       failed.push(`${v.name}: ${(v as { status: 'failed'; name: string; reason: string }).reason}`)
   }
   return { installed, alreadyInstalled, skipped, failed, elapsedMs: Date.now() - start }

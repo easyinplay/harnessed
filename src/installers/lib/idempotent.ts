@@ -24,13 +24,26 @@ import type { InstallContext } from './types.js'
 const IDEMPOTENT_CHECK_TIMEOUT_MS = 10_000
 
 /** Probe whether the manifest is already installed via `idempotent_check`.
- *  Returns true when the check exits 0 AND `opts.updateInstalled` is not set.
- *  Returns false when: check missing / check non-zero / `updateInstalled=true`
- *  (force re-install). */
-export async function isAlreadyInstalled(ctx: InstallContext): Promise<boolean> {
-  // Force re-install bypass — user opted into update via setup prompt or
-  // `--update-installed` flag. Skip the probe, fall through to real install.
-  if (ctx.opts.updateInstalled === true) return false
+ *  Returns true when the check exits 0 AND (for non-MCP installers)
+ *  `opts.updateInstalled` is not set.
+ *
+ *  `opts.honorUpdateFlag` (default true): when false, the
+ *  `ctx.opts.updateInstalled` bypass is IGNORED — i.e. the probe always
+ *  short-circuits if the check passes. MCP installers (mcpStdioAdd /
+ *  mcpHttpAdd) call with `honorUpdateFlag: false` per Cat G design — user
+ *  config (`~/.claude.json.mcpServers`) is never re-modified by force-update
+ *  to avoid overwriting hand-tuned MCP entries (v3.9.6 dogfood concern). */
+export async function isAlreadyInstalled(
+  ctx: InstallContext,
+  opts: { honorUpdateFlag?: boolean } = {},
+): Promise<boolean> {
+  const honorUpdateFlag = opts.honorUpdateFlag !== false
+  if (honorUpdateFlag && ctx.opts.updateInstalled === true) return false
+
+  // v3.9.8 — dry-run bypasses the probe so the install-path preview (diff
+  // render + spawn-args contract) is exercisable by tests / users running
+  // `--dry-run`. Real install behavior unchanged (probe runs when apply:true).
+  if (ctx.opts.dryRun) return false
 
   const idempotentCmd = ctx.manifest.spec.install.idempotent_check
   if (typeof idempotentCmd !== 'string' || idempotentCmd.length === 0) {

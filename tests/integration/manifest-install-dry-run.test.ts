@@ -154,27 +154,27 @@ describe('Phase 2.3 Wave 1 — 5 NEW adapter manifest install dry-run e2e', () =
     expect(dist.testing ?? 0).toBeGreaterThanOrEqual(2)
   })
 
-  // Phase 2.3 W6 DI-1 hotfix verify — schema-only sentinel for karpathy-skills.yaml.
-  // Detects future regression on (a) git_ref pattern (40-hex SHA / SemVer required;
-  // "HEAD" rejected per Phase 1.1.1 hotfix M1 GIT_REF_PATTERN), (b) install_type ↔
-  // install.method 1:N closure (ADR 0007). karpathy is excluded from the dispatch
-  // dry-run above because its install.cmd uses local `cp -R` (no git clone),
-  // which gitCloneWithSetup installer's preflight rejects — full installer-level
-  // support deferred to v0.2.4+ via a new `local-copy` install method.
-  it('karpathy-skills — schema-only regression sentinel (DI-1 hotfix Phase 2.3 W6)', () => {
+  // v3.9.8 — schema-only sentinel for karpathy-skills.yaml.
+  // Manifest migrated from local `cp -R skills/karpathy-baseline` (DI-1 hotfix
+  // legacy path with `git-clone-with-setup` method) to `cc-plugin-marketplace`
+  // matching the actual install path (`claude plugin install
+  // andrej-karpathy-skills@karpathy-skills`); the pre-v3.9.8 manifest was
+  // broken — gitCloneWithSetup installer rejected its cmd shape every Step B run.
+  // Sister: dogfood report 2026-05-26 + audit Cat D fix.
+  it('karpathy-skills — schema-only regression sentinel (v3.9.8 cc-plugin-marketplace)', () => {
     const yamlSrc = readFileSync(
       resolve(process.cwd(), 'manifests/skill-packs/karpathy-skills.yaml'),
       'utf8',
     )
     const v = validateManifestFile(yamlSrc, 'manifests/skill-packs/karpathy-skills.yaml')
-    expect(v.ok, 'karpathy-skills schema must validate (DI-1 hotfix verify)').toBe(true)
+    expect(v.ok, 'karpathy-skills schema must validate').toBe(true)
     if (!v.ok) return
-    // git_ref must match GIT_REF_PATTERN (40-hex SHA / SemVer). Future regression
-    // to literal "HEAD" / "main" / "master" would re-trigger DI-1.
     const install = v.manifest.spec.install as { git_ref?: string; method?: string }
+    // git_ref must match GIT_REF_PATTERN (40-hex SHA / SemVer) regardless of method.
     expect(install.git_ref).toMatch(/^([a-f0-9]{7,40}|v?\d+\.\d+\.\d+([.-][\w.-]+)?)$/)
-    // install_type ↔ method 1:N closure — `git` ∈ {git-clone-with-setup}.
-    expect(v.manifest.spec.install_type).toBe('git')
-    expect(install.method).toBe('git-clone-with-setup')
+    // v3.9.8 — install_type ↔ method closure now `skill` ∈ {cc-plugin-marketplace,
+    // npx-skill-installer} (karpathy is plugin-marketplace-distributed).
+    expect(v.manifest.spec.install_type).toBe('skill')
+    expect(install.method).toBe('cc-plugin-marketplace')
   })
 })

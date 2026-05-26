@@ -18,8 +18,10 @@ spec:
   install_type: skill
   install:
     method: npx-skill-installer
-    cmd: "npx --yes skills@latest add mattpocock/skills"
-    npm_version: ^1.0.0
+    # v3.9.8 — pinned skills@1.5.7 per ADR 0001 reproducibility (was @latest;
+    # npxSkillInstaller rejects @latest for cross-install determinism).
+    cmd: "npx --yes skills@1.5.7 add mattpocock/skills"
+    npm_version: ^1.5.7
     idempotent_check: "test -d ~/.claude/skills/mattpocock-skills"
   verify:
     cmd: "test -f ~/.claude/skills/mattpocock-skills/diagnose.md"

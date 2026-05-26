@@ -41,6 +41,7 @@ import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
+import { isAlreadyInstalled } from './lib/idempotent.js'
 import { preflight } from './lib/preflight.js'
 import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
 import { runArgs } from './lib/runClaudeArgs.js'
@@ -68,6 +69,13 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
       return { aborted: true, reason: 'platform-mismatch' }
     const e = pre.errors[0] ?? err(ctx, '/', 'preflight failed (no detail)', 'preflight')
     return { ok: false, phase: 'preflight', error: e }
+  }
+  // v3.9.8 Cat G — pre-probe idempotent_check (read-only; e.g. `claude mcp list
+  // | grep -q tavily`). MCP installer ALWAYS honors user config — ignores
+  // ctx.opts.updateInstalled so force-update never re-modifies ~/.claude.json
+  // mcpServers (v3.9.6 dogfood concern: avoid overwriting hand-tuned MCP entries).
+  if (await isAlreadyInstalled(ctx, { honorUpdateFlag: false })) {
+    return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
   const name = ctx.manifest.metadata.name

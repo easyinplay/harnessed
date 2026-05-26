@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.8] - 2026-05-26
+
+### Fixed
+
+Systematic root-cause audit of 5 dogfood failure categories surfaced in `harnessed setup` Step B output (`fix(setup): v3.9.7` dogfood):
+
+- **Cat A** — Plugin verify false-negative (ralph-loop / superpowers / planning-with-files). `isPluginRegistered` read `~/.claude.json.enabledPlugins` but Claude Code v2.1.133+ writes to `~/.claude/plugins/installed_plugins.json` (v2 schema `{ plugins: { "<name>@<marketplace>": [...] } }`). Three plugins reported failed verify despite `claude plugin list` showing them registered. **Fix**: `isPluginRegistered` now reads 3 sources in order: `installed_plugins.json` (primary, v2 schema) → `~/.claude/settings.json.enabledPlugins` → `~/.claude.json.enabledPlugins` (legacy/test compat).
+
+- **Cat C** — Windows tilde `~` not expanded by `cmd.exe` (frontend-design "Permission denied" creating `~/.claude/skills/.cache/anthropics-skills-fe`). POSIX `/bin/sh` expands `~` natively; `cmd.exe /c <cmd>` treats `~` as a literal character → `mkdir` writes to relative-path `~/.claude/...` and fails. Affects all first-time installs of manifests using `~/` in install.cmd on Windows. **Fix**: `spawn.ts` pre-expands `~/` token (at start of string OR after whitespace/quote/paren) → `os.homedir()/` before `spawn('cmd.exe', ['/c', cmd, ...])`. Forward-slash homedir form (Windows tools accept both `/` and `\`).
+
+- **Cat D** — 2 manifest content bugs that caused Step B to fail every run:
+  - **karpathy-skills**: `install.method: git-clone-with-setup` but `install.cmd` was a migration script (`if [ -f ~/.claude/CLAUDE.md ]; then ...`) — gitCloneWithSetup installer rejected it as unparseable. Actual install path is `claude plugin install andrej-karpathy-skills@karpathy-skills` (verified via `claude plugin list`). **Fix**: manifest rewritten to `method: cc-plugin-marketplace` + sister ralph-loop / planning-with-files pattern.
+  - **mattpocock-skills**: `cmd: "npx --yes skills@latest add mattpocock/skills"` — `@latest` rejected by `npxSkillInstaller` per ADR 0001 reproducibility (pinned version required). **Fix**: pinned to `skills@1.5.7` (current latest per npm registry).
+
+- **Cat E** — `[B] skipped <name>` line had no reason (ctx7 skipped, user couldn't tell if expected). `StepBResult.skipped: string[]` → `{ name, reason }[]`; setup print now reads `[B] skipped <name> — <reason>` (e.g. `level-flag-missing: npm-cli L4 requires --system`). i18n wording also clarified.
+
+- **Cat G** — MCP installers (mcpStdioAdd / mcpHttpAdd) rendered diff preview + ran `spawn('claude', ['mcp', 'add', ...])` even when server was already registered. User dogfood: "如果都已经安装了，为什么要修改". Pre-v3.9.8 relied on `claude mcp add` self-detecting "already exists" via stderr — but the diff render + spawn ran first, confusing users into thinking config would be overwritten. **Fix**: MCP installers now pre-probe `idempotent_check` (read-only, e.g. `claude mcp list | grep -q tavily-mcp`) AFTER preflight; if probe exits 0 → return `alreadyInstalled` immediately, skipping diff + spawn entirely. MCP variant ALWAYS honors user config (ignores `opts.updateInstalled` via new `isAlreadyInstalled(ctx, { honorUpdateFlag: false })` overload) — force-update flag never re-modifies `~/.claude.json.mcpServers` (sister v3.9.6 user concern: protect hand-tuned entries).
+
+### Deferred (Cat B + Cat F)
+
+- **Cat B** — `anthropics-skills-pptx` / `anthropics-skills-slide-deck` exit 1 with empty stderr. `npx skills@1.5.7 add anthropics/skills/pptx` sub-path syntax unverified upstream; may require git-clone fallback instead of skills CLI. Investigate empirically; manifests left as-is for now.
+- **Cat F** — `auto-install` dispatcher (v3.9.0 P4) redundancy with Step B. With Cat A + Cat G fixes, doctor checks now report `pass` correctly for installed items → dispatcher auto-skips. Keep dispatcher (harmless no-op when Step B covers).
+
+### Tests
+
+- 3 test files gained `vi.mock('../../src/installers/lib/idempotent.js')` returning `isAlreadyInstalled: false` so install-path is exercised end-to-end (probe would otherwise short-circuit via mocked spawn returning exit 0).
+- 2 karpathy assertion sentinels updated to reflect new `cc-plugin-marketplace` method.
+- 1125 pass / 5 skipped / 1 todo (unchanged baseline).
+
 ## [3.9.7] - 2026-05-26
 
 ### Fixed

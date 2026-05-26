@@ -76,12 +76,13 @@ describe('Phase 2.3 e2e 4-link smoke (Wave 5 T5.3; Link 3+4 deleted v3.4.4 P6)',
     const manifestYaml = join(ROOT, 'manifests', 'skill-packs', 'karpathy-skills.yaml')
     expect(existsSync(skillMd), 'karpathy-baseline/SKILL.md ship (T2.3 0ccb58d)').toBe(true)
     expect(existsSync(manifestYaml), 'karpathy-skills.yaml REWRITE (T2.4 b97677d)').toBe(true)
-    // D-02 SKILL-ONLY surface verify (raw yaml string contains markers — preserves
-    // the SKILL-ONLY ship-artifact reality check; install_type post-DI-1 = `git`):
+    // v3.9.8 — manifest migrated to cc-plugin-marketplace method (was a broken
+    // git-clone-with-setup + local cp -R hybrid that Step B rejected every run).
+    // Sister: manifest-install-dry-run.test.ts schema-only sentinel.
     const yaml = readFileSync(manifestYaml, 'utf8')
-    expect(yaml).toMatch(/install_type:\s*git/) // DI-1 hotfix Phase 2.3 W6
-    expect(yaml).toMatch(/skills\/karpathy-baseline/)
-    expect(yaml).toMatch(/strip-claude-md-section\.mjs/) // D-02 migration cleanup step
+    expect(yaml).toMatch(/install_type:\s*skill/)
+    expect(yaml).toMatch(/method:\s*cc-plugin-marketplace/)
+    expect(yaml).toMatch(/andrej-karpathy-skills@karpathy-skills/)
   })
 
   it('Cross-link compose: EE-5 + install CLI register on same Command tree without collision', async () => {

@@ -1,4 +1,13 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# v3.9.8 — install method changed from `git-clone-with-setup` (broken: cmd was
+# a local `cp -R` migration script that didn't match the installer's required
+# `git clone <url> <dest>` cmd shape, causing Step B to fail every run) to
+# `cc-plugin-marketplace` matching the actual user install path (`claude
+# plugin install andrej-karpathy-skills@karpathy-skills`). The plugin is
+# distributed via forrestchang/andrej-karpathy-skills marketplace; the
+# pre-v3.9.8 yaml intended local-copy from harnessed repo but never worked
+# headlessly.
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:
@@ -11,51 +20,30 @@ metadata:
     repository: https://github.com/forrestchang/andrej-karpathy-skills.git
     license: MIT
     notice: |
-      rules attributed to Andrej Karpathy; distilled to ~/.claude/skills/karpathy-baseline/SKILL.md
-      from source-of-truth skills/karpathy-baseline/SKILL.md in this repository. D-02 SKILL-ONLY
-      injection — CLAUDE.md untouched (replaces prior CLAUDE.md sed-injection path).
+      Andrej Karpathy heuristics distilled into a Claude Code plugin by
+      forrestchang. Distributed via the karpathy-skills marketplace.
 spec:
-  type: cc-skill-pack
+  type: cc-plugin
   component_type: command
   category: meta
-  # Phase 2.3 W6 DI-1 hotfix — install_type: git (not skill) per ADR 0007 1:N
-  # closure (skill ∈ {cc-plugin-marketplace, npx-skill-installer}; git ∈ {git-clone-with-setup}).
-  # Semantic: karpathy-baseline IS a skill in nature (placed at ~/.claude/skills/),
-  # but its install method is local-copy from a git-origin upstream (forrestchang/
-  # andrej-karpathy-skills) — install_type tracks the install method semantics
-  # (file-system shape), not the runtime artifact placement.
-  install_type: git
+  install_type: skill
   install:
-    # Phase 2.3 W6 DI-1 hotfix — git_ref schema pin (Phase 1.1.1 hotfix M1 GIT_REF_PATTERN
-    # requires 7-40 hex SHA or SemVer tag; "HEAD" is rejected by the manifest schema).
-    # NOTE: cmd uses local `cp -R skills/karpathy-baseline ~/.claude/skills/` —
-    # git_ref is semantically UNUSED by this local-copy install path. The all-zeros
-    # SHA below is a 40-hex schema-compliant placeholder. The canonical upstream
-    # this SKILL.md derives from is forrestchang/andrej-karpathy-skills (see
-    # metadata.upstream.repository) — pin to a real SHA when the local-copy path
-    # is migrated to a true `git clone` install method (deferred to v0.2.4+).
-    method: git-clone-with-setup
-    cmd: |
-      if [ -f ~/.claude/CLAUDE.md ]; then
-        node scripts/strip-claude-md-section.mjs "<!-- karpathy-skills:start -->" "<!-- karpathy-skills:end -->" ~/.claude/CLAUDE.md \
-          && echo "[migration] cleaned legacy karpathy-skills CLAUDE.md block (D-02 SKILL-ONLY transition; cross-platform via node script)"
-      fi
-      mkdir -p ~/.claude/skills
-      cp -R skills/karpathy-baseline ~/.claude/skills/
-    git_ref: "0000000000000000000000000000000000000000"
-    idempotent_check: "test -f ~/.claude/skills/karpathy-baseline/SKILL.md"
+    method: cc-plugin-marketplace
+    cmd: "claude plugin marketplace add forrestchang/andrej-karpathy-skills && claude plugin install andrej-karpathy-skills@karpathy-skills"
+    git_ref: fb8fdb0aa74ccf587d2b666da7160e0d0eb94e6a
+    idempotent_check: "claude plugin list 2>&1 | grep -q andrej-karpathy-skills"
+    marketplace_source:
+      source: github
+      repo: forrestchang/andrej-karpathy-skills
   verify:
-    cmd: "test -f ~/.claude/skills/karpathy-baseline/SKILL.md"
-    timeout_ms: 5000
-    expected_exit_code: 0
+    cmd: "claude plugin list 2>&1 | grep -q andrej-karpathy-skills"
+    timeout_ms: 10000
   uninstall:
-    cmd: "rm -rf ~/.claude/skills/karpathy-baseline"
-    cleanup_paths:
-      - ~/.claude/skills/karpathy-baseline
+    cmd: "claude plugin uninstall andrej-karpathy-skills@karpathy-skills"
   upstream_health:
     stability: stable
-    last_check: "2026-05-16"
-    last_known_good_version: skill-only-v1
+    last_check: "2026-05-26"
+    last_known_good_version: 1.0.0
     fallback_action: warn
   signed_by: easyinplay
   platforms:

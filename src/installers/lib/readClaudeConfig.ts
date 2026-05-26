@@ -93,21 +93,54 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
 }
 
 /**
- * Check whether a Claude Code plugin is registered in `~/.claude.json`.
+ * Check whether a Claude Code plugin is registered.
  *
- * Used by `ccPluginMarketplace.ts` v3.0.3 verify step in place of
- * `spawn('claude', ['plugin', 'list', '--json'])` + stdout match.
+ * v3.9.8 — primary source is `~/.claude/plugins/installed_plugins.json`
+ * (Claude Code v2.1.133+ authoritative plugin registry). Schema:
+ *   { version: 2, plugins: { "<plugin>@<marketplace>": [ { scope, installPath, version, ... } ] } }
  *
- * Plugins live under `enabledPlugins` with keys of the form `<plugin>@<marketplace>`;
- * we check by the plain plugin name (left side of the `@`) since the marketplace
- * suffix is install-time metadata and the caller passes only the bare plugin name.
+ * Fallback to `~/.claude/settings.json.enabledPlugins` (legacy) for older
+ * installs / cross-version compat. Pre-v3.9.8 code read
+ * `~/.claude.json.enabledPlugins` — but that field does NOT exist there
+ * (verified empirically; the field is in settings.json, not claude.json).
+ *
+ * Returns `true` if any registry key's left-of-`@` prefix matches `pluginName`.
  */
 export async function isPluginRegistered(pluginName: string): Promise<boolean> {
-  const config = await readUserClaudeJson()
-  const plugins = config.enabledPlugins
-  if (!plugins || typeof plugins !== 'object') return false
-  // Try exact key first (defensive — some manifests pass full <name>@<mkt>).
-  if (Object.hasOwn(plugins, pluginName)) return true
-  // Otherwise scan for any key whose `<name>@<mkt>` prefix matches.
-  return Object.keys(plugins).some((k) => k.split('@')[0] === pluginName)
+  // Primary: ~/.claude/plugins/installed_plugins.json (v2 schema, Claude Code 2.1.133+)
+  try {
+    const path = join(homedir(), '.claude', 'plugins', 'installed_plugins.json')
+    const raw = await readFile(path, 'utf8')
+    const parsed = JSON.parse(raw) as { version?: number; plugins?: Record<string, unknown> }
+    const plugins = parsed.plugins
+    if (plugins && typeof plugins === 'object') {
+      if (Object.hasOwn(plugins, pluginName)) return true
+      if (Object.keys(plugins).some((k) => k.split('@')[0] === pluginName)) return true
+    }
+  } catch {
+    // ENOENT / malformed → fall through to legacy probe
+  }
+
+  // Legacy fallback 1: ~/.claude/settings.json.enabledPlugins
+  // Legacy fallback 2: ~/.claude.json.enabledPlugins (pre-v3.9.8 read path;
+  //                    kept for test mock compatibility — production v2.1.133+
+  //                    doesn't actually write here, verified empirically)
+  for (const path of [
+    join(homedir(), '.claude', 'settings.json'),
+    join(homedir(), '.claude.json'),
+  ]) {
+    try {
+      const raw = await readFile(path, 'utf8')
+      const parsed = JSON.parse(raw) as { enabledPlugins?: Record<string, unknown> }
+      const plugins = parsed.enabledPlugins
+      if (plugins && typeof plugins === 'object') {
+        if (Object.hasOwn(plugins, pluginName)) return true
+        if (Object.keys(plugins).some((k) => k.split('@')[0] === pluginName)) return true
+      }
+    } catch {
+      // ENOENT / malformed → try next source
+    }
+  }
+
+  return false
 }

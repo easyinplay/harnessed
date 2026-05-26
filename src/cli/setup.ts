@@ -267,7 +267,7 @@ export function registerSetup(program: Command): void {
         console.log(
           `  [B] already-installed  ${n} — run \`/mcp\` in Claude Code to verify connection`,
         )
-      for (const n of b.skipped) console.log(`  [B] skipped            ${n}`)
+      for (const s of b.skipped) console.log(`  [B] skipped            ${s.name} — ${s.reason}`)
       for (const n of b.failed) console.error(`  [B] failed             ${n}`)
 
       // v3.9.7 — Post-summary force-update prompt. Shows concrete list of
@@ -300,7 +300,8 @@ export function registerSetup(program: Command): void {
             for (const n of b2.installed) console.log(`  [B*] installed          ${n}`)
             for (const n of b2.alreadyInstalled)
               console.log(`  [B*] already-installed  ${n} (MCP / no force-update)`)
-            for (const n of b2.skipped) console.log(`  [B*] skipped            ${n}`)
+            for (const s of b2.skipped)
+              console.log(`  [B*] skipped            ${s.name} — ${s.reason}`)
             for (const n of b2.failed) console.error(`  [B*] failed             ${n}`)
           }
         }
