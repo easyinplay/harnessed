@@ -75,7 +75,7 @@ export interface StepBResult {
  *  the flag (sister mcpStdioAdd / mcpHttpAdd — config never overwritten). */
 export async function runStepBInstall(
   manifestPaths: string[],
-  runOpts: { updateInstalled?: boolean } = {},
+  runOpts: { updateInstalled?: boolean; quiet?: boolean } = {},
 ): Promise<StepBResult> {
   const opts: InstallOpts = {
     apply: true,
@@ -85,6 +85,7 @@ export async function runStepBInstall(
     fullDiff: false,
     color: 'auto',
     updateInstalled: runOpts.updateInstalled === true,
+    quiet: runOpts.quiet === true,
   }
   const start = Date.now()
   const settled = await Promise.allSettled(

@@ -114,8 +114,6 @@ export function registerSetup(program: Command): void {
         const dst = join(skillsBase, wf.name)
         try {
           await cp(src, dst, { recursive: true, force: true })
-          const masterTag = wf.isMaster ? ' (master)' : ''
-          console.log(`  [A] installed  ${wf.name}  →  ${dst}${masterTag}`)
           skillsInstalled++
         } catch (e) {
           console.error(t('setup.copy_failed', { name: wf.name, message: (e as Error).message }))
@@ -189,58 +187,16 @@ export function registerSetup(program: Command): void {
       )
       const writtenCount = cmdResult.results.filter((r) => r.written).length
       const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
-      console.log(
-        `  [A.6] generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped — existing user file or schema warn)`,
-      )
-      for (const r of cmdResult.results) {
-        if (r.written) {
-          console.log(`  [A.6] wrote /${r.name}  →  ${r.path}`)
-        } else if (r.warning) {
-          console.warn(`  [A.6] skipped /${r.name}: ${r.warning}`)
-        }
+      if (writtenCount > 0 || skippedCount > 0) {
+        console.log(
+          `  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`,
+        )
       }
 
-      // ── Step C: Agent Teams auto-enable in ~/.claude/settings.json ──────────
-      // v3.3.1 hotfix — Q-AUDIT-5b LOCKED root-level env.* schema. Pattern A
-      // 3-teammate + /verify-multispec 4-specialist + masterOrchestrator
-      // delegates_to recursive workflow 的前提。Non-destructive merge with
-      // backup; warn + skip on any error (sister fallback 铁律 1).
+      // ── Step C: Agent Teams auto-enable ────────────────────────────────
       const cResult = await enableAgentTeamsInSettings()
-      if (cResult.status === 'created') {
-        console.log(t('setup.step_c.created', { path: cResult.path }))
-      } else if (cResult.status === 'already-enabled') {
-        console.log(t('setup.step_c.already_enabled', { path: cResult.path }))
-      } else if (cResult.status === 'enabled') {
-        console.log(
-          t('setup.step_c.enabled_backup', {
-            path: cResult.path,
-            backupPath: cResult.backupPath,
-          }),
-        )
-      } else {
-        console.warn(t('setup.step_c.skipped', { message: cResult.message }))
-      }
-
-      // ── Step D: User language preference write (v3.4.0) ─────────────────────
-      // Detect OS locale → write env.HARNESSED_USER_LANG ('en' | 'zh-Hans').
-      // Honors `--user-lang` override + existing setting respect (idempotent).
-      // Sister Step C non-destructive merge + warn-skip pattern.
+      // (Step C/D output suppressed — technical detail)
       const dResult = await enableUserLangInSettings(raw.userLang)
-      if (dResult.status === 'created') {
-        console.log(t('setup.step_d.created', { path: dResult.path, lang: dResult.detected }))
-      } else if (dResult.status === 'already-set') {
-        console.log(t('setup.step_d.already_set', { path: dResult.path, lang: dResult.existing }))
-      } else if (dResult.status === 'enabled') {
-        console.log(
-          t('setup.step_d.enabled_backup', {
-            path: dResult.path,
-            lang: dResult.detected,
-            backupPath: dResult.backupPath,
-          }),
-        )
-      } else {
-        console.warn(t('setup.step_d.skipped', { message: dResult.message }))
-      }
 
       // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
       // v3.9.7 — flow corrected per user UX feedback. First pass: default
@@ -251,7 +207,7 @@ export function registerSetup(program: Command): void {
       // first pass (CI / scripted use).
       const manifestPaths = await listBaseManifests(pkgRoot)
       const forceFirstPass = raw.updateInstalled === true
-      const b = await runStepBInstall(manifestPaths, { updateInstalled: forceFirstPass })
+      const b = await runStepBInstall(manifestPaths, { updateInstalled: forceFirstPass, quiet: true })
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
         t('setup.step_b_complete', {
@@ -290,7 +246,7 @@ export function registerSetup(program: Command): void {
             // Second pass: force-update path. runInstall sees
             // opts.updateInstalled=true → bypasses idempotent_check probe →
             // runs install command. MCP installers ignore the flag per design.
-            const b2 = await runStepBInstall(manifestPaths, { updateInstalled: true })
+            const b2 = await runStepBInstall(manifestPaths, { updateInstalled: true, quiet: true })
             const stepB2Ms = (b2.elapsedMs / 1000).toFixed(1)
             console.log(
               `\nForce-update pass complete: ${b2.installed.length} installed / ${b2.alreadyInstalled.length} still-already-installed (MCP) / ${b2.skipped.length} skipped / ${b2.failed.length} failed [parallel ${stepB2Ms}s]`,

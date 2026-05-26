@@ -29,6 +29,7 @@ export interface InstallOpts {
   // mcpServers config (per user dogfood concern: re-running `claude mcp add` could
   // overwrite user-tuned MCP entries). Default false.
   updateInstalled?: boolean
+  quiet?: boolean
 }
 
 export interface InstallContext {

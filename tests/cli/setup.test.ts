@@ -184,8 +184,6 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
     expect(cpMock).toHaveBeenCalledTimes(2)
-    expect(stdout).toContain('research')
-    expect(stdout).toContain('retro')
     expect(stdout).toContain('Step A: 2 workflow')
   })
 
@@ -252,13 +250,13 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
   })
 
   // Cell 8 (v3.3.1 hotfix): Step C — Agent Teams auto-enable wired in setup
-  it('cell 8 — Step C: Agent Teams settings.json log line appears in stdout', async () => {
+  it('cell 8 — Step C: Agent Teams auto-enable runs silently (v3.9.12 output suppressed)', async () => {
     readdirMock.mockImplementation(makeWorkflowsReaddir(['research']))
     statMock.mockImplementation(makeStatMock(['research']))
     cpMock.mockResolvedValue(undefined)
     // Path-conditional readFile mock: settings.json returns already-enabled JSON,
-    // manifests return 'yaml-content' string. This routes Step C through the
-    // 'already-enabled' branch which writes a deterministic log line to stdout.
+    // manifests return 'yaml-content' string. Step C/D run internally but output
+    // is suppressed — verify setup still completes and Step A/B emit normally.
     readFileMock.mockImplementation(async (p: unknown) => {
       const path = String(p)
       if (path.includes('settings.json')) {
@@ -271,8 +269,6 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    // Step C log line — already-enabled path emits to stdout
-    expect(stdout).toContain('[C] Agent Teams already enabled')
     // Step A still ran before Step C
     expect(stdout).toContain('Step A:')
     // Step B still ran after Step C (sequence: A → C → B)

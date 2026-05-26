@@ -139,7 +139,7 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
       },
     ],
   }
-  process.stdout.write(renderDiff(plan, ctx))
+  if (!ctx.opts.quiet) process.stdout.write(renderDiff(plan, ctx))
 
   const conf = await confirmAt('L3', { ...ctx, level: 'L3' })
   if (!conf.proceed) {

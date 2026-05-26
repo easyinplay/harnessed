@@ -117,7 +117,7 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
       },
     ],
   }
-  process.stdout.write(renderDiff(plan, ctx))
+  if (!ctx.opts.quiet) process.stdout.write(renderDiff(plan, ctx))
 
   const conf = await confirmAt('L2', { ...ctx, level: 'L2' })
   if (!conf.proceed) {

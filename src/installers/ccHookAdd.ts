@@ -79,7 +79,7 @@ export const installCcHookAdd: Installer = async (ctx) => {
   const plan: DiffPlan = {
     files: [{ target: settingsPath, scope: 'HOME', oldText: existing ?? '', newText }],
   }
-  process.stdout.write(renderDiff(plan, ctx))
+  if (!ctx.opts.quiet) process.stdout.write(renderDiff(plan, ctx))
 
   const conf = await confirmAt('L3', { ...ctx, level: 'L3' })
   if (!conf.proceed) {

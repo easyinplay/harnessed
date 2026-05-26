@@ -59,7 +59,7 @@ export const installNpmCli: Installer = async (ctx) => {
   const plan: DiffPlan = { files: [] }
   // L1 npx & L4 global both produce "(no file changes)" diff — L4 PATH mod is
   // not previewable as a unified diff; the cmd echo is the audit trail.
-  process.stdout.write(renderDiff(plan, ctx))
+  if (!ctx.opts.quiet) process.stdout.write(renderDiff(plan, ctx))
   if (level === 'L4')
     process.stdout.write('  (L4 system install — global PATH change; see cmd above)\n')
   const conf = await confirmAt(level, { ...ctx, level })

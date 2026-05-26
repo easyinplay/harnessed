@@ -92,13 +92,14 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
 
   if (method === 'git-clone-with-setup') {
     const target = extractGitCloneTarget(cmd)
-    if (!target) return false
-    try { await access(target); return true } catch { return false }
+    if (target) {
+      try { await access(target); return true } catch { /* fall through to supplementary */ }
+    }
   }
 
   if (method === 'npm-cli') {
     const skillDir = join(homedir(), '.claude', 'skills', name)
-    try { await access(skillDir); return true } catch { return false }
+    try { await access(skillDir); return true } catch { /* fall through to supplementary */ }
   }
 
   // v3.9.10 — supplementary: always check CC plugin registry. Many components
