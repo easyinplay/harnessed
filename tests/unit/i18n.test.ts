@@ -119,10 +119,10 @@ describe('i18n — t() translation + fallback', () => {
     expect(result).toContain('nothing to install')
   })
 
-  it('cell 16 — zh-Hans locale returns zh string', () => {
+  it('cell 16 — zh-Hans returns English (v3.9.13 unified)', () => {
     setLocale('zh-Hans')
     const result = t('setup.nothing_to_install')
-    expect(result).toContain('无内容可安装')
+    expect(result).toContain('nothing to install')
   })
 
   it('cell 17 — missing key returns raw key (defensive)', () => {
@@ -137,10 +137,10 @@ describe('i18n — t() translation + fallback', () => {
     expect(result).toBe('installed foo@1.2.3')
   })
 
-  it('cell 19 — {{param}} interpolation works in zh-Hans', () => {
+  it('cell 19 — interpolation works in zh-Hans (English)', () => {
     setLocale('zh-Hans')
     const result = t('install.success_with_version', { name: 'foo', version: '1.2.3' })
-    expect(result).toBe('已安装 foo@1.2.3')
+    expect(result).toBe('installed foo@1.2.3')
   })
 
   it('cell 20 — missing param leaves placeholder verbatim', () => {

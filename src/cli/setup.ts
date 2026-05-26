@@ -135,13 +135,7 @@ export function registerSetup(program: Command): void {
       // 铁律 1).
       const skillNames = toInstall.map((wf) => wf.name)
       const rendered = await renderAllSkills(skillNames, skillsBase, workflowsDir)
-      const renderedCount = rendered.results.filter((r) => r.rendered).length
-      console.log(
-        t('setup.step_a_render.complete', {
-          count: renderedCount,
-          total: skillsInstalled,
-        }),
-      )
+      // (Step A.5 render count suppressed — internal detail)
       if (rendered.aggregatedWarnings.length > 0) {
         console.warn(t('setup.step_a_render.warnings_header'))
         for (const w of rendered.aggregatedWarnings) {
