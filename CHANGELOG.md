@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.9.7] - 2026-05-26
+
+### Fixed
+
+- **`--update-installed` prompt UX — wrong position in setup flow**: v3.9.6 placed the "Update already-installed third-party plugins?" Clack prompt **before** Step B ran, so the user was asked to commit to force-update without seeing the concrete already-installed list. User dogfood feedback: "force update的流程位置错了, 他应该在我们目前setup出汇总结果的最后一步, 你现在在前面客户根本不之道你要强制更新哪些".
+- **Fix**: prompt moved to AFTER Step B summary (`src/cli/setup.ts`). Flow now:
+  1. Step B first pass with default `updateInstalled=false` (idempotent_check probes short-circuit already-installed entries)
+  2. Summary line + `[B] already-installed <name>` list printed
+  3. If `alreadyInstalled.length > 0` AND TTY interactive AND `--update-installed` flag absent → prompt: `"Update N already-installed plugin(s) listed above?"` — user sees concrete list before deciding
+  4. If user confirms → second pass with `updateInstalled=true` (forces re-install). Output uses `[B*]` prefix to distinguish from first pass.
+- **CLI flag preserved**: `harnessed setup --update-installed` still works for non-interactive / CI use — forces from first pass, skips prompt entirely.
+
+### Behavior change
+
+Before v3.9.7:
+```
+$ harnessed setup
+... (Steps A / A.5 / A.6 / C / D) ...
+? Update already-installed third-party plugins? [y/N]   ← prompt BEFORE Step B (user blind)
+... (Step B runs) ...
+Step B complete: 1 installed / 13 already-installed / 0 skipped / 0 failed
+  [B] already-installed  gsd / chrome-devtools-mcp / ... 13 lines
+```
+
+After v3.9.7:
+```
+$ harnessed setup
+... (Steps A / A.5 / A.6 / C / D) ...
+... (Step B first pass runs) ...
+Step B complete: 1 installed / 13 already-installed / 0 skipped / 0 failed
+  [B] already-installed  gsd / chrome-devtools-mcp / ... 13 lines
+? Update 13 already-installed plugin(s) listed above? (MCP servers excluded) [y/N]   ← prompt AFTER summary
+  → No (default): setup continues
+  → Yes: second pass with force-update
+    Force-update pass complete: N installed / M still-already-installed (MCP) / ...
+      [B*] installed          gsd / ralph-loop / ... (non-MCP forced)
+      [B*] already-installed  chrome-devtools-mcp / exa-mcp / tavily-mcp (MCP / no force-update)
+```
+
+### Tests
+
+No test changes — flow change is interactive UX only. Total: 1125 pass (unchanged).
+
 ## [3.9.6] - 2026-05-25
 
 ### Fixed

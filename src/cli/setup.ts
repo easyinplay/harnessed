@@ -243,25 +243,15 @@ export function registerSetup(program: Command): void {
       }
 
       // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
-      // v3.9.6 — opt-in `--update-installed` flag (or interactive prompt) forces
-      // re-install of already-installed third-party plugins. MCP installers
-      // ignore this flag (mcpStdioAdd / mcpHttpAdd respect existing config
-      // unconditionally — per user dogfood concern about overwriting tuned
-      // mcpServers entries).
-      let updateInstalled = raw.updateInstalled === true
-      if (!updateInstalled && !dryRun && raw.nonInteractive !== true) {
-        const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
-        if (isTty) {
-          const { confirm, isCancel } = await import('@clack/prompts')
-          const ans = await confirm({
-            message: 'Update already-installed third-party plugins? (excludes MCP servers)',
-            initialValue: false,
-          })
-          if (!isCancel(ans) && ans === true) updateInstalled = true
-        }
-      }
+      // v3.9.7 — flow corrected per user UX feedback. First pass: default
+      // (updateInstalled=false) — idempotent_check probes short-circuit
+      // already-installed entries. AFTER summary prints, prompt user with
+      // the concrete already-installed list so they can decide informed.
+      // CLI flag `--update-installed` skips the prompt and forces from the
+      // first pass (CI / scripted use).
       const manifestPaths = await listBaseManifests(pkgRoot)
-      const b = await runStepBInstall(manifestPaths, { updateInstalled })
+      const forceFirstPass = raw.updateInstalled === true
+      const b = await runStepBInstall(manifestPaths, { updateInstalled: forceFirstPass })
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
         t('setup.step_b_complete', {
@@ -279,6 +269,42 @@ export function registerSetup(program: Command): void {
         )
       for (const n of b.skipped) console.log(`  [B] skipped            ${n}`)
       for (const n of b.failed) console.error(`  [B] failed             ${n}`)
+
+      // v3.9.7 — Post-summary force-update prompt. Shows concrete list of
+      // already-installed third-party plugins so user can make informed
+      // decision. MCP installers (mcpStdioAdd / mcpHttpAdd) ignore the
+      // updateInstalled flag — existing mcpServers config is never
+      // overwritten by force-update.
+      if (
+        !forceFirstPass &&
+        !dryRun &&
+        raw.nonInteractive !== true &&
+        b.alreadyInstalled.length > 0
+      ) {
+        const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
+        if (isTty) {
+          const { confirm, isCancel } = await import('@clack/prompts')
+          const ans = await confirm({
+            message: `Update ${b.alreadyInstalled.length} already-installed plugin(s) listed above? (MCP servers excluded — they ignore force-update)`,
+            initialValue: false,
+          })
+          if (!isCancel(ans) && ans === true) {
+            // Second pass: force-update path. runInstall sees
+            // opts.updateInstalled=true → bypasses idempotent_check probe →
+            // runs install command. MCP installers ignore the flag per design.
+            const b2 = await runStepBInstall(manifestPaths, { updateInstalled: true })
+            const stepB2Ms = (b2.elapsedMs / 1000).toFixed(1)
+            console.log(
+              `\nForce-update pass complete: ${b2.installed.length} installed / ${b2.alreadyInstalled.length} still-already-installed (MCP) / ${b2.skipped.length} skipped / ${b2.failed.length} failed [parallel ${stepB2Ms}s]`,
+            )
+            for (const n of b2.installed) console.log(`  [B*] installed          ${n}`)
+            for (const n of b2.alreadyInstalled)
+              console.log(`  [B*] already-installed  ${n} (MCP / no force-update)`)
+            for (const n of b2.skipped) console.log(`  [B*] skipped            ${n}`)
+            for (const n of b2.failed) console.error(`  [B*] failed             ${n}`)
+          }
+        }
+      }
 
       console.log(
         t('setup.complete', {
