@@ -72,7 +72,25 @@ export async function checkMattpocockSkills(): Promise<CheckResult> {
       message: `installed as user-skill (${skillRoot})`,
     }
   } catch {
-    // fall through to warn
+    // fall through to indicator-skill check
+  }
+
+  // v3.9.20 — npx skills CLI installs individual skill dirs (diagnose / tdd /
+  // zoom-out / etc.) without a parent `mattpocock-skills/` folder. Sister
+  // INSTALLED_INDICATORS pattern in src/installers/lib/idempotent.ts v3.9.19.
+  const indicators = ['diagnose', 'tdd', 'zoom-out']
+  for (const ind of indicators) {
+    const indPath = join(homedir(), '.claude', 'skills', ind)
+    try {
+      await stat(indPath)
+      return {
+        name: 'mattpocock-skills',
+        status: 'pass',
+        message: `installed as individual skills (found ${ind}/)`,
+      }
+    } catch {
+      // try next indicator
+    }
   }
 
   return {
