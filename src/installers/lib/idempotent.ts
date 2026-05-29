@@ -69,10 +69,39 @@ function extractGitCloneTarget(cmd: string): string | null {
  *  are installed both as CC plugins AND via other methods (e.g. ctx7 is also
  *  context7@claude-plugins-official). npx-skill-installer now checks both
  *  ~/.claude/skills/ and ~/.agents/skills/ (skills CLI global path). */
+/** v3.9.18 — Indicator sub-skill map for skill packs that install multiple
+ *  individual skill dirs instead of one folder matching the manifest name.
+ *  When ANY listed indicator exists under `~/.claude/skills/`, consider the
+ *  pack installed. Sister `ctx7→context7` plugin-name aliasing pattern.
+ *  - `gsd` installs 70+ `gsd-<name>/` skill dirs (no single `gsd/` folder)
+ *  - `mattpocock-skills` installs `diagnose/`, `tdd/`, `zoom-out/`, etc.
+ *    (extractSkillName from `npx ... skills add mattpocock/skills` yields
+ *    `skills` which never exists)
+ */
+const INSTALLED_INDICATORS: Record<string, string[]> = {
+  gsd: ['gsd-progress', 'gsd-plan-phase'],
+  'mattpocock-skills': ['diagnose', 'tdd', 'zoom-out'],
+}
+
 async function detectNative(ctx: InstallContext): Promise<boolean> {
   const method = ctx.manifest.spec.install.method
   const cmd = ctx.manifest.spec.install.cmd
   const name = ctx.manifest.metadata.name
+
+  // v3.9.18 — check indicator sub-skills first (skill packs that don't install
+  // a single dir matching `name`). Cross-method since the pack format varies.
+  const indicators = INSTALLED_INDICATORS[name]
+  if (indicators) {
+    for (const ind of indicators) {
+      const dir = join(homedir(), '.claude', 'skills', ind)
+      try {
+        await access(dir)
+        return true
+      } catch {
+        /* try next indicator */
+      }
+    }
+  }
 
   if (method === 'cc-plugin-marketplace') {
     const m = cmd.match(/(?:claude\s+)?plugin\s+install\s+(\S+)/i)
