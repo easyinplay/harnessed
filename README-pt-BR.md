@@ -45,6 +45,13 @@ npm install -g harnessed && harnessed setup
 
 > O Windows PowerShell 5.x não suporta encadeamento com `&&` — use `;` ou duas linhas (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe funcionam normalmente.
 
+**Para desinstalar:**
+```bash
+harnessed uninstall    # Remove os arquivos próprios do harnessed (componentes upstream NÃO são afetados)
+```
+
+> `harnessed uninstall` limpa commands, workflow skills, variáveis de ambiente de settings e o diretório de estado. Componentes upstream (pacotes npm, servidores MCP, plugins CC, repositórios git-clonados, npx skills) permanecem intactos. Execute `harnessed uninstall <name>` para remover um upstream individual. Adicione `--dry-run` para pré-visualizar.
+
 🤖 **Ou peça para uma IA instalar por você** — cole esta frase no Claude Code (ou em qualquer assistente de IA):
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -376,7 +383,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `harnessed status` | Phase atual + detentor do lock |
 | `harnessed doctor` | Health check com 8 verificações (Node / MCP / jq / Win bash / routing / token budget, etc.) |
 | `harnessed install <name>` | Instala um Manifest upstream |
-| `harnessed uninstall <name>` | Desinstala (operação reversa) |
+| `harnessed uninstall [name]` | Desinstalação unificada — sem nome: remove os arquivos próprios do harnessed (upstreams intactos); com nome: remove um único upstream |
 | `harnessed backup` | Gerenciamento de snapshots de backup |
 | `harnessed rollback <timestamp>` | Rollback em um único comando (preservação de EOL + verificação sha1) |
 | `harnessed gc` | Limpa backups expirados |
@@ -391,7 +398,6 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `--dry-run` | Visualiza sem gravar em disco (opt-in para usuários avançados) |
 | `--non-interactive` | Cenários CI / scripted |
 | `--system` | Permite instalação global L4 (caso contrário, faz downgrade para npx efêmero L1) |
-| `--yes` | Pula confirmação interativa na desinstalação |
 | `--full-diff` | Expande diffs recolhidos acima de 200 linhas |
 | `--no-color` | Força sem cor (mesmo em TTY) |
 | `--task <text>` | Subcomando `run` — descrição da tarefa (passada como `gateContext.task` do workflow) |

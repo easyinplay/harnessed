@@ -45,6 +45,13 @@ npm install -g harnessed && harnessed setup
 
 > Windows PowerShell 5.x не поддерживает цепочку `&&` — используйте `;` или две строки (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe работают нормально.
 
+**Для удаления:**
+```bash
+harnessed uninstall    # Удаляет собственные файлы harnessed (апстрим-компоненты НЕ затрагиваются)
+```
+
+> `harnessed uninstall` очищает commands, workflow skills, переменные окружения settings и каталог состояния. Апстрим-компоненты (npm-пакеты, MCP-серверы, CC-плагины, git-клонированные репозитории, npx skills) остаются нетронутыми. Для удаления отдельного апстрима выполните `harnessed uninstall <name>`. Добавьте `--dry-run` для предварительного просмотра.
+
 🤖 **Или пусть AI установит за вас** — вставьте это предложение в Claude Code (или любой AI-ассистент):
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -376,7 +383,7 @@ planning-with-files /plan (сквозной инструмент) → запис
 | `harnessed status` | Текущая фаза + владелец блокировки |
 | `harnessed doctor` | Health check с 8 проверками (Node / MCP / jq / Win bash / routing / token budget и т.д.) |
 | `harnessed install <name>` | Установить Manifest апстрима |
-| `harnessed uninstall <name>` | Обратная деинсталляция |
+| `harnessed uninstall [name]` | Единое удаление — без имени: удаляет собственные файлы harnessed (апстримы не затрагиваются); с именем: удаляет один апстрим |
 | `harnessed backup` | Управление резервными копиями (снимки состояния) |
 | `harnessed rollback <timestamp>` | Откат одной командой (сохранение EOL + проверка sha1) |
 | `harnessed gc` | Очистить устаревшие резервные копии |
@@ -391,7 +398,6 @@ planning-with-files /plan (сквозной инструмент) → запис
 | `--dry-run` | Предварительный просмотр без записи на диск (opt-in для опытных) |
 | `--non-interactive` | Сценарии CI / скриптового запуска |
 | `--system` | Разрешить глобальную установку L4 (иначе понизить до L1 npx ephemeral) |
-| `--yes` | Пропустить интерактивное подтверждение при деинсталляции |
 | `--full-diff` | Развернуть diff-ы, свёрнутые выше 200 строк |
 | `--no-color` | Принудительно отключить цвет (даже на TTY) |
 | `--task <text>` | Подкоманда `run` — описание задачи (передаётся как `gateContext.task` workflow) |

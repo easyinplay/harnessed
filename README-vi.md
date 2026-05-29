@@ -45,6 +45,13 @@ npm install -g harnessed && harnessed setup
 
 > Windows PowerShell 5.x không hỗ trợ chuỗi `&&` — dùng `;` hoặc hai dòng riêng (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe đều hoạt động bình thường.
 
+**Để gỡ cài đặt:**
+```bash
+harnessed uninstall    # Xóa các file của harnessed (không ảnh hưởng đến upstream components)
+```
+
+> `harnessed uninstall` dọn dẹp commands, workflow skills, biến môi trường settings và thư mục trạng thái. Các upstream component (npm packages, MCP servers, CC plugins, git-cloned repos, npx skills) được giữ nguyên. Chạy `harnessed uninstall <name>` để gỡ một upstream riêng lẻ. Thêm `--dry-run` để xem trước.
+
 🤖 **Hoặc nhờ AI cài giúp** — dán câu này vào Claude Code (hoặc bất kỳ AI assistant nào):
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -376,7 +383,7 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `harnessed status` | Phase hiện tại + lock holder |
 | `harnessed doctor` | Health check 8 mục (Node / MCP / jq / Win bash / routing / token budget, v.v.) |
 | `harnessed install <name>` | Cài một upstream manifest |
-| `harnessed uninstall <name>` | Gỡ cài đặt ngược lại |
+| `harnessed uninstall [name]` | Gỡ cài đặt thống nhất — không tên: xóa file của harnessed (upstream được giữ nguyên); có tên: gỡ một upstream riêng lẻ |
 | `harnessed backup` | Quản lý backup snapshot |
 | `harnessed rollback <timestamp>` | Rollback một dòng lệnh (giữ EOL + xác minh sha1) |
 | `harnessed gc` | Dọn dẹp backup đã hết hạn |
@@ -391,7 +398,6 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `--dry-run` | Xem trước mà không ghi vào disk (opt-in cho advanced user) |
 | `--non-interactive` | CI / kịch bản scripted |
 | `--system` | Cho phép cài L4 toàn cục (nếu không sẽ hạ xuống L1 npx ephemeral) |
-| `--yes` | Bỏ qua xác nhận tương tác khi gỡ cài đặt |
 | `--full-diff` | Mở rộng diff bị gấp khi vượt quá 200 dòng |
 | `--no-color` | Buộc không màu (kể cả trên TTY) |
 | `--task <text>` | Subcommand `run` — mô tả task (truyền vào `gateContext.task` của workflow) |

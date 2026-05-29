@@ -45,6 +45,13 @@ npm install -g harnessed && harnessed setup
 
 > Windows PowerShell 5.x ไม่รองรับการเชื่อมคำสั่งด้วย `&&` — ใช้ `;` หรือแยกเป็นสองบรรทัด (`npm install -g harnessed; harnessed setup`) แทน ส่วน bash / zsh / PowerShell 7+ / cmd.exe ใช้งานได้ปกติ
 
+**การถอนการติดตั้ง:**
+```bash
+harnessed uninstall    # ลบไฟล์ของ harnessed เอง (ไม่กระทบ upstream components)
+```
+
+> `harnessed uninstall` จะล้าง commands, workflow skills, settings environment variables และ state directory ส่วน upstream components (npm packages, MCP servers, CC plugins, git-cloned repos, npx skills) จะคงอยู่เหมือนเดิม ใช้ `harnessed uninstall <name>` เพื่อลบ upstream รายตัว เพิ่ม `--dry-run` เพื่อดูตัวอย่าง
+
 🤖 **หรือจะให้ AI ติดตั้งให้แทนก็ได้** — วางประโยคนี้ใน Claude Code (หรือ AI assistant ตัวไหนก็ได้):
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -376,7 +383,7 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `harnessed status` | Phase ปัจจุบัน + lock holder |
 | `harnessed doctor` | Health check 8 รายการ (Node / MCP / jq / Win bash / routing / token budget ฯลฯ) |
 | `harnessed install <name>` | ติดตั้ง upstream manifest |
-| `harnessed uninstall <name>` | ถอนการติดตั้งแบบย้อนกลับ |
+| `harnessed uninstall [name]` | การถอนการติดตั้งแบบรวม — ไม่ระบุชื่อ: ลบไฟล์ของ harnessed เอง (upstream คงอยู่); ระบุชื่อ: ลบ upstream รายตัว |
 | `harnessed backup` | จัดการ snapshot backup |
 | `harnessed rollback <timestamp>` | Rollback หนึ่งบรรทัด (EOL preserve + sha1 verify) |
 | `harnessed gc` | ล้าง backup ที่หมดอายุ |
@@ -391,7 +398,6 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `--dry-run` | Preview โดยไม่เขียนลงดิสก์ (advanced opt-in) |
 | `--non-interactive` | สำหรับ CI / scripted scenarios |
 | `--system` | อนุญาต L4 global install (ไม่เช่นนั้น downgrade เป็น L1 npx ephemeral) |
-| `--yes` | ข้าม interactive confirm เมื่อ uninstall |
 | `--full-diff` | ขยาย diff ที่ถูกพับไว้เกิน 200 บรรทัด |
 | `--no-color` | บังคับ nocolor (แม้บน TTY) |
 | `--task <text>` | Subcommand `run` — task description (ส่งเข้า workflow `gateContext.task`) |

@@ -45,6 +45,13 @@ npm install -g harnessed && harnessed setup
 
 > Windows PowerShell 5.x は `&&` チェーンに対応していません — `;` を使うか 2 行に分けてください（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe はすべて正常に動作します。
 
+**harnessed のアンインストール：**
+```bash
+harnessed uninstall    # harnessed 自身のファイルを削除（上流コンポーネントは影響なし）
+```
+
+> `harnessed uninstall` は commands、workflow skills、settings 環境変数、および状態ディレクトリをクリーンアップします。上流コンポーネント（npm パッケージ、MCP サーバー、CC プラグイン、git clone リポジトリ、npx skills）はそのまま残ります。`harnessed uninstall <name>` で単一の上流を削除できます。`--dry-run` でプレビュー可能です。
+
 🤖 **または AI にインストールさせる** — Claude Code（または任意の AI アシスタント）に以下の文を貼り付けてください:
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -376,7 +383,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `harnessed status` | 現在の Phase + ロックホルダー |
 | `harnessed doctor` | 8 項目のヘルスチェック（Node / MCP / jq / Win bash / ルーティング / トークンバジェットなど） |
 | `harnessed install <name>` | 上流 Manifest をインストール |
-| `harnessed uninstall <name>` | 逆順アンインストール |
+| `harnessed uninstall [name]` | 統合アンインストール — 名前なし：harnessed 自身のファイルを削除（上流はそのまま）；名前あり：単一の上流を削除 |
 | `harnessed backup` | スナップショットバックアップ管理 |
 | `harnessed rollback <timestamp>` | ワンラインロールバック（EOL 保持 + sha1 検証） |
 | `harnessed gc` | 期限切れバックアップのクリーンアップ |
@@ -391,7 +398,6 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `--dry-run` | ディスクへの書き込みなしでプレビュー（上級オプトイン） |
 | `--non-interactive` | CI / スクリプトシナリオ |
 | `--system` | L4 グローバルインストールを許可（指定がない場合は L1 npx エフェメラルにダウングレード） |
-| `--yes` | アンインストール時のインタラクティブ確認をスキップ |
 | `--full-diff` | 200 行以上で折り畳まれた diff を展開 |
 | `--no-color` | TTY であっても強制的に色なし |
 | `--task <text>` | `run` サブコマンド — タスク記述（workflow `gateContext.task` に渡される） |

@@ -45,6 +45,13 @@ npm install -g harnessed && harnessed setup
 
 > Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
 
+**Kaldırmak için:**
+```bash
+harnessed uninstall    # harnessed'ın kendi dosyalarını kaldırır (upstream bileşenler ETKİLENMEZ)
+```
+
+> `harnessed uninstall` komutları, workflow skill'leri, settings ortam değişkenlerini ve durum dizinini temizler. Upstream bileşenler (npm paketleri, MCP sunucuları, CC eklentileri, git-klonlanmış depolar, npx skill'leri) olduğu gibi kalır. Tek bir upstream'i kaldırmak için `harnessed uninstall <name>` komutunu çalıştırın. Önizleme için `--dry-run` ekleyin.
+
 🤖 **Veya bir yapay zekaya kurdurun** — bu cümleyi Claude Code'a (ya da herhangi bir yapay zeka asistanına) yapıştırın:
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -376,7 +383,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `harnessed status` | Mevcut phase + kilit sahibi |
 | `harnessed doctor` | 8 kontrollü sağlık denetimi (Node / MCP / jq / Win bash / routing / token bütçesi vb.) |
 | `harnessed install <isim>` | Upstream manifest'i kurar |
-| `harnessed uninstall <isim>` | Tersine kurulum kaldırma |
+| `harnessed uninstall [isim]` | Birleşik kaldırma — isim yok: harnessed'ın kendi dosyalarını kaldırır (upstream'ler korunur); isimle: tek bir upstream'i kaldırır |
 | `harnessed backup` | Anlık görüntü yedek yönetimi |
 | `harnessed rollback <zaman_damgası>` | Tek satır geri alma (EOL koruma + sha1 doğrulama) |
 | `harnessed gc` | Süresi dolmuş yedekleri temizler |
@@ -391,7 +398,6 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `--dry-run` | Diske yazmadan önizle (ileri kullanıcı isteğe bağlı) |
 | `--non-interactive` | CI / betiklenmiş senaryolar |
 | `--system` | L4 global kuruluma izin ver (aksi takdirde L1 npx geçici olarak düşürülür) |
-| `--yes` | Kaldırma işleminde etkileşimli onayı atla |
 | `--full-diff` | 200 satırın üzerinde katlanan farkları genişlet |
 | `--no-color` | Rengi zorla kapat (TTY'de bile) |
 | `--task <text>` | `run` alt komutu — görev açıklaması (workflow `gateContext.task` olarak iletilir) |

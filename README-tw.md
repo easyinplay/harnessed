@@ -45,6 +45,13 @@ npm install -g harnessed && harnessed setup
 
 > Windows PowerShell 5.x 不支援 `&&` 串連 — 請改用 `;` 或分兩行執行（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe 皆可正常使用。
 
+**解除安裝 harnessed：**
+```bash
+harnessed uninstall    # 移除 harnessed 自身檔案（上游元件不受影響）
+```
+
+> `harnessed uninstall` 會清理 commands、workflow skills、settings 環境變數和狀態目錄。上游元件（npm 套件、MCP 伺服器、CC 插件、git clone 倉庫、npx skills）保持完整。執行 `harnessed uninstall <name>` 可單獨移除某個上游。加 `--dry-run` 可預覽。
+
 🤖 **或者讓 AI 幫你安裝** — 將這句話貼給 Claude Code（或任何 AI 助理）：
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -376,7 +383,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `harnessed status` | 目前 Phase + 鎖定持有者 |
 | `harnessed doctor` | 8 項健康檢查（Node / MCP / jq / Win bash / routing / token budget 等） |
 | `harnessed install <name>` | 安裝上游 Manifest |
-| `harnessed uninstall <name>` | 反向解除安裝 |
+| `harnessed uninstall [name]` | 統一解除安裝 — 不加名稱：移除 harnessed 自身檔案（上游完整保留）；加名稱：移除單一上游元件 |
 | `harnessed backup` | 快照備份管理 |
 | `harnessed rollback <timestamp>` | 一行還原（EOL 保留 + sha1 驗證） |
 | `harnessed gc` | 清除過期備份 |
@@ -391,7 +398,6 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `--dry-run` | 預覽而不寫入磁碟（進階選用） |
 | `--non-interactive` | CI / 腳本化場景 |
 | `--system` | 允許 L4 全域安裝（否則降級為 L1 npx 短暫執行） |
-| `--yes` | 解除安裝時跳過互動式確認 |
 | `--full-diff` | 展開超過 200 行的折疊差異 |
 | `--no-color` | 強制無色彩輸出（即使在 TTY 中） |
 | `--task <text>` | `run` 子命令 — 任務描述（傳入 workflow `gateContext.task`） |

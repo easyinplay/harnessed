@@ -1203,3 +1203,46 @@ Phase 6.1 = 🎯 v1.0 GA FINAL phase — PRODUCTION RELEASE (NOT close ceremony)
 *Phase 6.1 RETROSPECTIVE complete — 2026-05-22 ship; ~19 tasks / 3 waves / 756 tests stable / ADR 0023 NEW / 3 LOCAL tags. 🎯 v1.0 GA MILESTONE 1/1 CLOSE. FINAL PHASE. Post-v1.0: organic clock running ~2026-11 close; maintenance-only mode OR continued active per ADR 0020 D-04 HYBRID 2-clock.*
 
 *Phase 5.3 RETROSPECTIVE complete — 2026-05-22 ship; ~11 commits / 756 tests stable / ADR 0021+0022 baseline (NO new ADR per D-02) / dual tag v0.5.0-alpha.3-close + 🎯 v0.5.0 LOCAL CREATE (NO push per CLAUDE.md). 🎯 v0.5.0 MILESTONE 3/3 CLOSE. next: Phase 6.x v1.0 GA discuss-phase 启动 candidate (window 2026-05-22~23 post-close per ROADMAP § v1.0).*
+
+---
+
+## v3.9.x 维护系列 RETROSPECTIVE (2026-05-24 → 2026-05-27)
+
+> Post-v3.0 maintenance mode — dogfood 驱动的快速迭代, 非 phase-driven 开发。
+> 11 releases (v3.9.7 → v3.9.17)。详见 `.planning/v3.9.x/MAINTENANCE-LOG.md`。
+
+### 1. What Worked
+
+- **Dogfood 作为主要质量门** — 用户反复跑 `npm install -g harnessed && harnessed setup`, 每个版本发布后立即验证 already-installed 分类。发现 Windows shell probe 失效、i18n 未生效、输出格式等问题, 单元测试无法覆盖这些集成场景。
+- **Native Node.js idempotent 检测替代 shell spawn** — `isPluginRegistered()` (读 installed_plugins.json) + `fs.access()` 路径检查在 Windows 上替代 `test -f` / `grep -q` 等 POSIX 命令, 根本上解决了 cross-OS idempotent 检测问题。
+- **`quiet` flag 传播模式** — `InstallOpts.quiet` 从 setup.ts → setup-helpers.ts → 7 个 installer 的 renderDiff guard, 单一 boolean 字段干净地控制了输出精简。
+- **gstack `/review` 在维护模式仍有效** — v3.9.17 的 code review 发现了 extractSkillName 重复定义、validateNonInteractiveFlags 死代码、SCHEMA_VERSIONS 注释不准确等问题, 证明即使维护系列也应保持 verify cadence。
+- **小步发布 + 即时验证** — 每个版本 1-3 个 atomic commit, 发布后立即 dogfood, 问题在下一版本修复。v3.9.7→v3.9.17 共 11 个版本在 3 天内完成。
+
+### 2. What Was Inefficient
+
+- **vitest mock 隔离问题** — 3 个测试文件的 `vi.mock('idempotent.js')` 不 spread `...actual`, 当 `extractSkillName` 被导出后, npxSkillInstaller 测试在全量 suite 中失败但隔离运行时通过。需要在 mock 中使用 `vi.importActual` spread 模式。
+- **mattpocock-skills install timeout 未解决** — `npx skills@latest add mattpocock/skills --copy --global` 在 60s timeout 内无输出, 疑似 CLI 交互式 prompt。deferred, 需要实际探查 skills CLI 行为。
+- **文档追赶滞后** — v3.9.7→v3.9.16 的变更未实时更新 STATE.md / RETROSPECTIVE.md, 直到 v3.9.17 用户要求后才补文档。维护模式容易跳过文档步骤。
+
+### 3. Patterns Established
+
+- **维护系列不要求完整 GSD cadence** — 不需要 discuss → plan → execute → verify 全流程。bug fix 直接: 用户报告 → 分析根因 → 修复 → 测试 → 发布 → dogfood 验证。gstack `/review` + `/code-simplifier` 在适当节点运行 (每 5-10 个版本一次)。
+- **`vi.importActual` spread 模式** — 测试 mock 应始终 spread actual module: `vi.mock('...', async () => ({ ...await vi.importActual('...'), ...overrides }))`, 防止丢失未显式列出的导出。
+- **STATE.md 维护系列条目格式** — 简短 ship history entry + 指向详细 MAINTENANCE-LOG.md 的指针, 避免 STATE.md 膨胀。
+
+### 4. Key Lessons
+
+- Windows `cmd.exe /c` 不支持 POSIX shell 命令 (`test`, `grep -q`), 且静默失败 (exit 1, 非 "command not found")。任何依赖 shell 的 idempotent 检测必须在 Windows 上走 Node.js 原生 API。
+- `npx skills add` 可能写入 `~/.claude/skills/` 或 `~/.agents/skills/`, 检测时必须检查两个路径。
+- 维护模式下文档更新是强制性 gate (不是 "nice to have") — 用户可能在任何时候要求回顾已完成的变更。
+
+### 5. Cost Patterns
+
+- 平均每版本: 1-3 files changed, 1 atomic commit, ~15 min 总周期 (分析 + 修复 + 测试 + 发布)
+- 累计: 11 releases, ~60 files modified, ~550 lines added, ~3650 lines deleted (大部分是 v3.9.16 删除旧代码)
+- 测试基线: 1123 tests (v3.9.6) → 1046 tests (v3.9.17), 减少来自删除旧 workflow 测试文件
+
+---
+
+*v3.9.x RETROSPECTIVE complete — 2026-05-27; 11 releases / 3 days / 1040 tests stable. 维护系列 active, 下次 gstack review 节点: v3.9.22 附近 (每 5 releases).*
