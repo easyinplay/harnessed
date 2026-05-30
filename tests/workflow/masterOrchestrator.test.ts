@@ -162,7 +162,7 @@ describe('runMasterOrchestrator — 4 master × 4 gate scenario + 5 extra', () =
       expect(spawn).not.toHaveBeenCalled()
     })
 
-    it(`${master} — gate error treated as skip (fail-soft per ADR 0029)`, async () => {
+    it(`${master} — gate eval error fail-soft to fires=true (ADR 0029, v3.9.23)`, async () => {
       yamlFileMap.set(
         pathFor(master),
         masterYaml(
@@ -178,8 +178,10 @@ describe('runMasterOrchestrator — 4 master × 4 gate scenario + 5 extra', () =
         .mockResolvedValueOnce(true)
       const spawn: SpawnDriver = vi.fn(async () => {})
       const r = await runMasterOrchestrator(master, {}, PACKAGE_ROOT, spawn)
-      expect(r.fired).toEqual(['sub-b'])
-      expect(r.skipped).toEqual(['sub-a'])
+      // v3.9.23 — sister src/workflow/run.ts:486 fail-soft: eval error → fires=true.
+      // Previously eval error treated as skip (silently dropping the sub-workflow).
+      expect(r.fired.sort()).toEqual(['sub-a', 'sub-b'])
+      expect(r.skipped).toEqual([])
     })
   }
 })

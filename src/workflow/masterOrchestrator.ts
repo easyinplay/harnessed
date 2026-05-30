@@ -133,10 +133,18 @@ export async function runMasterOrchestrator(
         reason: passes ? undefined : `gate ${clause.gate} = false`,
       })
     } catch (e) {
+      // v3.9.23 — fail-soft per ADR 0029 (sister src/workflow/run.ts:486 phase
+      // gate eval). Previously set passes=false on eval error → silently skipped
+      // the sub-workflow whenever a gate expression referenced an undeclared
+      // variable. The correct semantic: eval error is operational fault, NOT a
+      // judgment to skip — proceed with sub as if gate fired=true and emit warn.
+      console.warn(
+        `⚠️ master ${masterName} sub ${clause.sub} gate ${clause.gate} eval failed (${(e as Error).message}); proceeding with sub as if gate fired=true (ADR 0029 fail-soft).`,
+      )
       gateEvalled.push({
         clause,
-        passes: false,
-        reason: `gate eval error: ${(e as Error).message}`,
+        passes: true,
+        reason: `gate eval error (fail-soft fires=true): ${(e as Error).message}`,
       })
     }
   }
