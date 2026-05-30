@@ -120,6 +120,10 @@ export function registerRun(program: Command): void {
       const stage = name.includes('-') ? (name.split('-')[0] ?? '') : name
       const gateContext: Record<string, unknown> = {
         task,
+        // v3.9.24 — top-level fact set by runAutoPreFlight() when /auto super-master
+        // Phase 0.5 understanding-check prompt fires. CLI path skips preflight
+        // (no readline hooks), so default to false → research sub skips by default.
+        user_understanding_unclear: false,
         phase: {
           stage,
           // verify-stage gates
