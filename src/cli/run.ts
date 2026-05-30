@@ -112,13 +112,56 @@ export function registerRun(program: Command): void {
         )
       }
 
-      // Derive phase context from workflow name so gate expressions
-      // (e.g. phase.stage == 'verify') evaluate correctly when a sub-workflow
-      // is invoked directly rather than through a master orchestrator.
+      // v3.9.22 — full default phase + subtask context. CLI can't infer real
+      // context from a free-form task string, so defaults bias toward "treat as
+      // important" → safety-net gates (brainstorming / tdd / paranoid) fire by
+      // default. Sub-workflow gate expressions (workflows/judgments/*.yaml) all
+      // reference phase.* or subtask.* — undefined variable would throw.
       const stage = name.includes('-') ? (name.split('-')[0] ?? '') : name
       const gateContext: Record<string, unknown> = {
         task,
-        phase: { stage, is_critical_module: true },
+        phase: {
+          stage,
+          // verify-stage gates
+          is_critical_module: true, // verify-paranoid fires
+          is_final_step: true, // verify-simplify fires
+          is_major_release: false, // verify-multispec only for major
+          has_auth_or_secrets: false,
+          has_design_changes: false,
+          has_ui_changes: false,
+          requires_creative_polish: false,
+          // plan-stage gates
+          is_complex_architecture: true, // plan-architecture fires
+          // discuss-stage gates
+          has_cross_phase_data_flow: true, // discuss-phase fires
+          open_decisions: 2, // ≥2 fires phase-gate
+          scope_days: 2, // >1 day fires phase-gate
+          scope_locked_in_history: false,
+          single_task: false,
+          type: 'general',
+        },
+        subtask: {
+          // subtask brainstorming gate
+          approaches: 2, // ≥2 fires
+          core_algorithm: true,
+          has_api_contract: true,
+          error_cost: 'high',
+          lines: 50, // ≥20 → no skip
+          type: 'general', // not crud/standard_lib_call → no skip
+          // tdd gate
+          is_core_business_logic: true,
+          is_algorithm: true,
+          is_data_processing: true,
+          regression_risk: 'high',
+          reliability_required: true,
+          // misc
+          communication_needed: false,
+          needs_lib_docs: false,
+          needs_web_search: false,
+          parallel_count: 1,
+          search_type: 'general',
+          test_type: 'general',
+        },
         ...(raw.model ? { modelOverride: raw.model } : {}),
         ...(raw.maxIterations ? { maxIterations: raw.maxIterations } : {}),
         ...(raw.staged ? { staged: true } : {}),
