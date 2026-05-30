@@ -65,6 +65,9 @@ export interface StepBResult {
   skipped: { name: string; reason: string }[]
   failed: string[]
   elapsedMs: number
+  // v3.9.21 — per-manifest component_type for grouped output in setup display.
+  // Map<name, 'mcp-tool' | 'cli-binary' | 'command'>; missing entries display as 'other'.
+  componentTypes: Record<string, string>
 }
 
 /** Step B: parallel install-base auto-glob chain via Promise.allSettled (v1.0.3 T1.1).
@@ -86,6 +89,7 @@ export async function runStepBInstall(
     quiet: runOpts.quiet === true,
   }
   const start = Date.now()
+  const componentTypes: Record<string, string> = {}
   const settled = await Promise.allSettled(
     manifestPaths.map(async (path) => {
       let yamlSrc: string
@@ -103,6 +107,7 @@ export async function runStepBInstall(
         }
       }
       const name = v.manifest.metadata.name
+      componentTypes[name] = v.manifest.spec.component_type
       const r = await runInstall(v.manifest, opts)
       if ('aborted' in r) return { status: 'skipped' as const, name, reason: r.reason }
       if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)
@@ -134,5 +139,12 @@ export async function runStepBInstall(
     } else
       failed.push(`${v.name}: ${(v as { status: 'failed'; name: string; reason: string }).reason}`)
   }
-  return { installed, alreadyInstalled, skipped, failed, elapsedMs: Date.now() - start }
+  return {
+    installed,
+    alreadyInstalled,
+    skipped,
+    failed,
+    elapsedMs: Date.now() - start,
+    componentTypes,
+  }
 }

@@ -27,6 +27,7 @@ import { getPackageRoot } from './lib/packagePath.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   runStepBInstall,
+  type StepBResult,
   scanWorkflowsWithSkill,
   warnIfAgentTeamsMissing,
 } from './lib/setup-helpers.js'
@@ -48,6 +49,46 @@ async function listBaseManifests(pkgRoot: string): Promise<string[]> {
     } catch {}
   }
   return out
+}
+
+/** v3.9.21 — grouped output by component_type. Order: MCP servers →
+ *  Commands & Skills → CLI Tools → Other. Within each group, status order
+ *  is: failed → installed → skipped → already-installed (highlight changes). */
+function printGrouped(b: StepBResult, prefix = ''): void {
+  const GROUP_LABELS: Record<string, string> = {
+    'mcp-tool': 'MCP servers',
+    command: 'Commands & Skills',
+    'cli-binary': 'CLI tools',
+    other: 'Other',
+  }
+  const GROUP_ORDER = ['mcp-tool', 'command', 'cli-binary', 'other']
+  const groupOf = (n: string): string => b.componentTypes[n] ?? 'other'
+  const buckets: Record<string, Array<{ status: string; name: string; suffix?: string }>> = {}
+  for (const n of b.failed) {
+    const m = n.match(/^([^:]+):/)
+    const baseName = m?.[1] ?? n
+    ;(buckets[groupOf(baseName)] ??= []).push({ status: 'failed', name: n })
+  }
+  for (const n of b.installed) (buckets[groupOf(n)] ??= []).push({ status: 'installed', name: n })
+  for (const s of b.skipped)
+    (buckets[groupOf(s.name)] ??= []).push({
+      status: 'skipped',
+      name: s.name,
+      suffix: ` — ${s.reason}`,
+    })
+  for (const n of b.alreadyInstalled)
+    (buckets[groupOf(n)] ??= []).push({ status: 'already-installed', name: n })
+
+  for (const g of GROUP_ORDER) {
+    const entries = buckets[g]
+    if (!entries || entries.length === 0) continue
+    console.log(`\n  ${prefix}${GROUP_LABELS[g] ?? g} (${entries.length})`)
+    for (const e of entries) {
+      const line = `    ${e.status.padEnd(18)} ${e.name}${e.suffix ?? ''}`
+      if (e.status === 'failed') console.error(line)
+      else console.log(line)
+    }
+  }
 }
 
 export function registerSetup(program: Command): void {
@@ -212,10 +253,7 @@ export function registerSetup(program: Command): void {
           seconds: stepBMs,
         }),
       )
-      for (const n of b.installed) console.log(`  [B] installed          ${n}`)
-      for (const n of b.alreadyInstalled) console.log(`  [B] already-installed  ${n}`)
-      for (const s of b.skipped) console.log(`  [B] skipped            ${s.name} — ${s.reason}`)
-      for (const n of b.failed) console.error(`  [B] failed             ${n}`)
+      printGrouped(b)
 
       // v3.9.7 — Post-summary force-update prompt. Shows concrete list of
       // already-installed third-party plugins so user can make informed
@@ -244,12 +282,7 @@ export function registerSetup(program: Command): void {
             console.log(
               `\nForce-update pass complete: ${b2.installed.length} installed / ${b2.alreadyInstalled.length} still-already-installed (MCP) / ${b2.skipped.length} skipped / ${b2.failed.length} failed [parallel ${stepB2Ms}s]`,
             )
-            for (const n of b2.installed) console.log(`  [B*] installed          ${n}`)
-            for (const n of b2.alreadyInstalled)
-              console.log(`  [B*] already-installed  ${n} (MCP / no force-update)`)
-            for (const s of b2.skipped)
-              console.log(`  [B*] skipped            ${s.name} — ${s.reason}`)
-            for (const n of b2.failed) console.error(`  [B*] failed             ${n}`)
+            printGrouped(b2, '[force-update] ')
           }
         }
       }

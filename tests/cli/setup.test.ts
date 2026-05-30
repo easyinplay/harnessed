@@ -214,8 +214,10 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // short-circuited as deferred phase 2.1).
     expect(runInstallMock).toHaveBeenCalledTimes(2)
     expect(stdout).toContain('2 installed / 0 already-installed / 0 skipped')
-    expect(stdout).toContain('[B] installed          npx-skill')
-    expect(stdout).toContain('[B] installed          ctx7')
+    // v3.9.21 — grouped output by component_type. Names appear without [B] prefix.
+    expect(stdout).toContain('installed')
+    expect(stdout).toContain('npx-skill')
+    expect(stdout).toContain('ctx7')
   })
 
   // Cell 7 (v1.0.4 T1.5): already-installed MCP servers → classified separately, NOT failed
@@ -241,12 +243,13 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // Step B summary shows 1 installed + 1 already-installed, 0 failed
     expect(stdout).toContain('1 installed / 1 already-installed')
     expect(stdout).toContain('0 failed')
-    // already-installed line uses correct label (not "failed")
-    expect(stdout).toContain('[B] already-installed  tavily-mcp')
+    // v3.9.21 — grouped output. already-installed status line includes the name.
+    expect(stdout).toContain('already-installed')
+    expect(stdout).toContain('tavily-mcp')
     // Post-setup /mcp hint shown
     expect(stdout).toContain('Run /mcp in Claude Code')
-    // Not classified as failure
-    expect(stdout).not.toContain('[B] failed')
+    // Not classified as failure (no "failed" status line for any name)
+    expect(stdout).not.toMatch(/^\s*failed\s+/m)
   })
 
   // Cell 8 (v3.3.1 hotfix): Step C — Agent Teams auto-enable wired in setup
