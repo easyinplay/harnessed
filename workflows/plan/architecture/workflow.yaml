@@ -9,16 +9,17 @@
 #
 # Note: capabilities.yaml v3 entry name = `plan-eng-review` (NO `gstack-` prefix per
 # Pattern A E.2 — Bucket 7 gstack 33 optional 命名 strip prefix per 用户 CLAUDE.md
-# gstack skill routing 直接 invoke cmd 名)。判 gate 用 literal expr (judgments
-# phase-gate.yaml 暂无 is-complex-architecture trigger; v3 schema gate is Type.String
-# 接受任意 expr; W2.2 backfill 可加 judgment trigger)。
+# gstack skill routing 直接 invoke cmd 名)。
+# v3.9.25 — gate 重构为 judgments.stage-routing.plan-architecture-delegate.fires
+# (sister trigger 早已存在; literal expr 被 judgmentResolver 拒绝 → fail-soft
+# fires=true 隐藏意图 → 用 ref 让 gate eval 走正常路径)。
 
 schema_version: harnessed.workflow.v3
 workflow: plan-architecture
 description: |
   Stage ②.a 架构层 — gstack /plan-eng-review (复杂架构强制, sister CLAUDE.md "⚠️ 复杂架构前")。
-  Gate: phase.is_complex_architecture == true literal expr (W2.2 backfill 可加 phase-gate
-  judgment trigger 重构 ref)。
+  Gate: judgments.stage-routing.plan-architecture-delegate.fires
+  (fires_when: phase.is_complex_architecture == true)。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available: [plan-eng-review]
@@ -29,5 +30,5 @@ phases:
     upstream: gstack
     capability: '{{ capabilities.plan-eng-review.cmd }}'
     model: opus
-    gate: 'phase.is_complex_architecture == true'
+    gate: judgments.stage-routing.plan-architecture-delegate.fires
     max_iterations: '{{ defaults.ralph_max_iterations.plan-architecture.01-plan-eng-review }}'
