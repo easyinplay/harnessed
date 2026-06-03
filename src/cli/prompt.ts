@@ -74,6 +74,50 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
   }
 }
 
+/** v4.1.1 — Disciplines section. Reads the sub's workflow.yaml
+ *  `disciplines_applied[]`, then each `disciplines/<name>.yaml` rule list, and
+ *  emits a compact always-on directive block. Same flatten bug as tools: the 6
+ *  L0 disciplines (karpathy 心法 / output-style / operational / priority /
+ *  protocols / language) are declared in the yaml SoT but v4.0 never injected
+ *  them into the spawn prompt, so subagents ignored ≤200 LOC / surgical /
+ *  biome-preempt / BLUF / commit-safety. `language` is skipped here (handled by
+ *  buildLanguageSection from env.HARNESSED_USER_LANG). Fail-soft → empty. */
+async function buildDisciplinesSection(sub: string, packageRoot: string): Promise<string> {
+  try {
+    const workflowsDir = resolve(packageRoot, 'workflows')
+    const subYaml = await resolveWorkflowYaml(sub, workflowsDir)
+    if (!subYaml) return ''
+    const wfRaw = await readFile(subYaml, 'utf8')
+    const wf = parseYaml(wfRaw) as { disciplines_applied?: unknown } | null
+    const applied = Array.isArray(wf?.disciplines_applied)
+      ? (wf.disciplines_applied as string[])
+      : []
+    // language handled separately; skip to avoid duplicate directive.
+    const names = applied.filter((d) => d !== 'language')
+    if (names.length === 0) return ''
+
+    const blocks: string[] = []
+    for (const name of names) {
+      try {
+        const dRaw = await readFile(resolve(workflowsDir, 'disciplines', `${name}.yaml`), 'utf8')
+        const dDoc = parseYaml(dRaw) as { rules?: { description?: string }[] } | null
+        const rules = Array.isArray(dDoc?.rules) ? dDoc.rules : []
+        const descs = rules
+          .map((r) => (typeof r.description === 'string' ? r.description.trim() : ''))
+          .filter((s) => s.length > 0)
+          .map((s) => `  - ${s.replace(/\s+/g, ' ')}`)
+        if (descs.length > 0) blocks.push(`- **${name}**:\n${descs.join('\n')}`)
+      } catch {
+        /* skip unreadable discipline */
+      }
+    }
+    if (blocks.length === 0) return ''
+    return `\n## Disciplines (always-on — L0 substrate)\nFollow these behavioral disciplines while doing the work:\n${blocks.join('\n')}\n`
+  } catch {
+    return ''
+  }
+}
+
 /** Build the `## Language` section from env.HARNESSED_USER_LANG. Empty string
  *  when unset (subagent then mirrors the user's conversation language naturally). */
 function buildLanguageSection(): string {
@@ -151,7 +195,8 @@ export function registerPrompt(program: Command): void {
         typeof raw.task === 'string' && raw.task.length > 0 ? `## Task\n${raw.task}\n\n` : ''
 
       const toolsSection = await buildToolsSection(sub, packageRoot)
-      const fullPrompt = `${taskSection}${body}\n${toolsSection}${PROTOCOLS}${buildLanguageSection()}`
+      const disciplinesSection = await buildDisciplinesSection(sub, packageRoot)
+      const fullPrompt = `${taskSection}${body}\n${toolsSection}${disciplinesSection}${PROTOCOLS}${buildLanguageSection()}`
 
       if (raw.json) {
         const maxIterations = await resolveMaxIterations(sub, packageRoot)

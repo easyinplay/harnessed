@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.1] - 2026-05-30
+
+### Fixed
+
+- **Same flatten bug as v4.1.0 tools, second dimension: `disciplines_applied` was never injected into the spawn prompt.** Every `workflow.yaml` declares `disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]`, but v4.0 `harnessed prompt` dropped all of them — so spawned subagents ignored ≤200 LOC / surgical changes / simplicity-first (karpathy), BLUF / no-emoji / no-em-dash (output-style), biome-preempt / commit-safety / A7 (operational), skill-conflict arbitration (priority), and cc-handoff self-contained (protocols).
+  - `harnessed prompt` now reads `disciplines_applied[]` → each `disciplines/<name>.yaml` rule list → emits a compact `## Disciplines (always-on — L0 substrate)` block. `language` is skipped (handled by the env-driven `## Language` section). Fail-soft → empty. (4 tests)
+
+### Audit
+
+Full SoT-injection audit confirmed the remaining dimensions are covered: per-phase conditional `invokes_tools` (zoom-out / improve-arch / diagnose) are already in the role-prompt checklists; `injects_rules` flows via `buildAgentDef` criticalReminder; `model` / `max_iterations` flow via `--json`. tools_available (v4.1.0) + disciplines_applied (v4.1.1) were the two flatten misses.
+
+Re-run `harnessed setup`. 1099 tests pass / biome clean / tsc 0 errors.
+
 ## [4.1.0] - 2026-05-30
 
 ### Fixed

@@ -233,3 +233,41 @@ describe('cli/prompt — v4.1 tools_available injection', () => {
     expect(parsed.prompt).toContain('/gsd-plan-phase')
   })
 })
+
+describe('cli/prompt — v4.1.1 disciplines_applied injection', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete process.env.HARNESSED_USER_LANG
+  })
+
+  it('cell 14 — task-code prompt injects ## Disciplines with karpathy + output-style + operational', async () => {
+    const { code, stdout } = await runCli(['prompt', 'task-code', '--task', 'x'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Disciplines')
+    expect(stdout).toContain('**karpathy**')
+    expect(stdout).toContain('**output-style**')
+    expect(stdout).toContain('**operational**')
+    // actual rule content present (not just headers)
+    expect(stdout).toContain('BLUF')
+    expect(stdout).toMatch(/biome/)
+  })
+
+  it('cell 15 — disciplines section skips language (handled by env section)', async () => {
+    const { stdout } = await runCli(['prompt', 'task-code'])
+    // language must NOT appear as a discipline bullet header (it is env-driven)
+    expect(stdout).not.toContain('**language**')
+  })
+
+  it('cell 16 — --json prompt carries the disciplines section', async () => {
+    const { stdout } = await runCli(['prompt', 'task-code', '--json'])
+    const parsed = JSON.parse(stdout)
+    expect(parsed.prompt).toContain('## Disciplines')
+    expect(parsed.prompt).toContain('**karpathy**')
+  })
+
+  it('cell 17 — unknown sub → no disciplines section (fail-soft)', async () => {
+    const { code, stdout } = await runCli(['prompt', 'nonexistent-xyz'])
+    expect(code).toBe(0)
+    expect(stdout).not.toContain('## Disciplines')
+  })
+})
