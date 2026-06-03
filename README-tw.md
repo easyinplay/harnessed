@@ -373,12 +373,17 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 
 > 以下是 harnessed 自身的維護指令（設定 / 健康檢查 / 備份還原 / 狀態回復等）。日常功能開發直接使用上方的指令即可，通常不需要這些指令。
 
+**v4.0 — 編排大腦。** slash command 在 Claude Code 主 session 內執行澄清（讓問題能觸達你），再 spawn CC-native subagent（啟用 Agent Teams + 澄清 round-trip）。harnessed 負責 gate 評估（`harnessed gates`）與 spawn-ready prompt（`harnessed prompt`），由主 session 完成 spawn。`harnessed run` 保留供 CI/headless 使用。
+
 ### CLI 指令
 
 | 指令 | 說明 |
 | ---- | ---- |
 | `harnessed setup` | 一次性設定；將 Workflow Skills 安裝至 `~/.claude/skills/` + MCP 安裝至 `~/.claude.json` |
-| `harnessed run <name>` | 執行某個 workflow（master orchestrator 或 sub）。slash command 透過此子命令呼叫 |
+| `harnessed gates <master>` | 評估某 master stage 下哪些 sub-workflow 會觸發（JSON: fire/skip/parallelism）。供 slash command 編排 native spawn |
+| `harnessed prompt <sub>` | 輸出某 sub-workflow 的 spawn-ready prompt（role + checklist + disciplines + completion/clarification 協議） |
+| `harnessed checkpoint <action> <sub>` | 記錄 sub-workflow 的 start/complete/fail 至 `~/.claude/harnessed/checkpoints/` |
+| `harnessed run <name>` | 透過 in-process SDK spawn 執行 workflow（CI/headless 模式）。slash command 改用 CC-native spawn |
 | `harnessed resume` | session 中斷後從最近的 checkpoint 繼續 |
 | `harnessed status` | 目前 Phase + 鎖定持有者 |
 | `harnessed doctor` | 8 項健康檢查（Node / MCP / jq / Win bash / routing / token budget 等） |

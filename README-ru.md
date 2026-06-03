@@ -373,12 +373,17 @@ planning-with-files /plan (сквозной инструмент) → запис
 
 > Это собственные команды обслуживания harnessed (установка / health check / резервное копирование и откат / восстановление состояния и т.д.). Для повседневной разработки функций используйте slash-команды выше — обычно эти команды не нужны.
 
+**v4.0 — мозг оркестрации.** Slash-команды выполняют уточнение в основной session Claude Code (чтобы вопросы дошли до вас), затем spawn'ят CC-native subagent'ы (включая Agent Teams + round-trip'ы уточнения). harnessed предоставляет оценку gate (`harnessed gates`) и готовые к spawn промпты (`harnessed prompt`); сам spawn выполняет основная session. `harnessed run` сохранён для использования в CI/headless.
+
 ### CLI-команды
 
 | Команда | Описание |
 | ------- | -------- |
 | `harnessed setup` | Единоразовая настройка; устанавливает Workflow-скиллы в `~/.claude/skills/` + MCP в `~/.claude.json` |
-| `harnessed run <name>` | Запустить workflow (master orchestrator или sub). slash-команды вызываются через эту подкоманду. |
+| `harnessed gates <master>` | Оценивает, какие sub-workflow срабатывают для master stage (JSON: fire/skip/parallelism). Используется slash-командами для оркестрации нативных spawn'ов. |
+| `harnessed prompt <sub>` | Выводит готовый к spawn промпт (role + checklist + disciplines + протоколы completion/clarification) для sub-workflow. |
+| `harnessed checkpoint <action> <sub>` | Записывает start/complete/fail sub-workflow в `~/.claude/harnessed/checkpoints/`. |
+| `harnessed run <name>` | Запускает workflow через in-process SDK spawn (режим CI/headless). slash-команды вместо этого используют CC-native spawn. |
 | `harnessed resume` | Продолжить с последней контрольной точки после прерывания сессии |
 | `harnessed status` | Текущая фаза + владелец блокировки |
 | `harnessed doctor` | Health check с 8 проверками (Node / MCP / jq / Win bash / routing / token budget и т.д.) |

@@ -373,12 +373,17 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 
 > คำสั่งเหล่านี้เป็นคำสั่ง maintenance ของ harnessed เอง (setup / health check / backup-rollback / state recovery ฯลฯ) สำหรับการพัฒนา feature ประจำวันให้ใช้ slash commands ข้างต้นก็พอ — ปกติไม่จำเป็นต้องใช้คำสั่งเหล่านี้
 
+**v4.0 — สมองสำหรับ orchestration** slash command จะรันการ clarification ใน main session ของ Claude Code (เพื่อให้คำถามไปถึงคุณ) จากนั้น spawn subagent แบบ CC-native (เปิดใช้ Agent Teams + การ round-trip เพื่อ clarification) harnessed ทำหน้าที่ประเมิน gate (`harnessed gates`) และให้ prompt ที่พร้อม spawn (`harnessed prompt`); main session เป็นผู้ทำการ spawn ส่วน `harnessed run` ยังคงไว้สำหรับใช้งานแบบ CI/headless
+
 ### CLI Commands
 
 | คำสั่ง | คำอธิบาย |
 | ---- | ---- |
 | `harnessed setup` | Setup ครั้งเดียว; ติดตั้ง workflow skills ไปที่ `~/.claude/skills/` + MCP ไปที่ `~/.claude.json` |
-| `harnessed run <name>` | รัน workflow (master orchestrator หรือ sub) — slash command เรียกใช้ผ่าน subcommand นี้ |
+| `harnessed gates <master>` | ประเมินว่า sub-workflow ใดจะ fire สำหรับ master stage หนึ่ง (JSON: fire/skip/parallelism) ใช้โดย slash command เพื่อ orchestrate การ spawn แบบ native |
+| `harnessed prompt <sub>` | แสดง prompt ที่พร้อม spawn (role + checklist + disciplines + โปรโตคอล completion/clarification) สำหรับ sub-workflow หนึ่ง |
+| `harnessed checkpoint <action> <sub>` | บันทึก start/complete/fail ของ sub-workflow ไปที่ `~/.claude/harnessed/checkpoints/` |
+| `harnessed run <name>` | รัน workflow ผ่าน in-process SDK spawn (โหมด CI/headless) — slash command ใช้ CC-native spawn แทน |
 | `harnessed resume` | ดำเนินการต่อจาก checkpoint ล่าสุดหลัง session ถูกขัดจังหวะ |
 | `harnessed status` | Phase ปัจจุบัน + lock holder |
 | `harnessed doctor` | Health check 8 รายการ (Node / MCP / jq / Win bash / routing / token budget ฯลฯ) |

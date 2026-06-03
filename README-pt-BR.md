@@ -373,12 +373,17 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 
 > Estes são os comandos de manutenção próprios do harnessed (setup / health check / backup-rollback / recuperação de estado, etc.). Para o desenvolvimento diário de recursos, use apenas os slash commands acima — normalmente você não precisará destes.
 
+**v4.0 — cérebro de orquestração.** Slash commands executam a clarificação na sessão principal do Claude Code (para que as perguntas cheguem até você), depois fazem spawn de subagents CC-native (habilitando Agent Teams + round-trips de clarificação). O harnessed fornece a avaliação de gates (`harnessed gates`) e prompts prontos para spawn (`harnessed prompt`); a sessão principal faz o spawn. `harnessed run` permanece para uso em CI/headless.
+
 ### Comandos CLI
 
 | Comando | Descrição |
 | ---- | ---- |
 | `harnessed setup` | Setup inicial; instala Skills de Workflow em `~/.claude/skills/` + MCP em `~/.claude.json` |
-| `harnessed run <name>` | Executa um workflow (master orchestrator ou sub). Slash commands invocam via este subcomando. |
+| `harnessed gates <master>` | Avalia quais sub-workflows disparam para um master stage (JSON: fire/skip/parallelism). Usado por slash commands para orquestrar spawns nativos. |
+| `harnessed prompt <sub>` | Gera um prompt pronto para spawn (role + checklist + disciplines + protocolos de completion/clarification) para um sub-workflow. |
+| `harnessed checkpoint <action> <sub>` | Registra start/complete/fail de um sub-workflow em `~/.claude/harnessed/checkpoints/`. |
+| `harnessed run <name>` | Executa um workflow via spawn SDK in-process (modo CI/headless). Slash commands usam spawn CC-native em vez disso. |
 | `harnessed resume` | Retoma a partir do checkpoint mais recente após interrupção de sessão |
 | `harnessed status` | Phase atual + detentor do lock |
 | `harnessed doctor` | Health check com 8 verificações (Node / MCP / jq / Win bash / routing / token budget, etc.) |

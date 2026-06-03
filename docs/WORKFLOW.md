@@ -1,10 +1,10 @@
-# harnessed v3.0 — 4-Stage Namespace-Layered Workflow Architecture
+# harnessed v4.0 — 4-Stage Namespace-Layered Workflow Architecture (orchestration-brain architecture)
 
-**Purpose**: harnessed v3.0 用户开发工作流详图 — 4-stage cadence + 8-layer architecture + 20 workflow + L0 Discipline Substrate + L5b Execution Mechanism + 10 judgments yaml routing + ~75 capabilities 7-category 分布。
+**Purpose**: harnessed v4.0 用户开发工作流详图 — 4-stage cadence + 8-layer architecture + 20 workflow + L0 Discipline Substrate + L5b Execution Mechanism + 10 judgments yaml routing + ~75 capabilities 7-category 分布。**v4.0 核心转向**: harnessed 从 "execution engine"(in-process SDK spawn 整条 workflow)转为 "orchestration brain + prompt library" — slash command 指挥 CC main session 编排 **CC-native subagent spawn**,详 § 1.5。
 
-**Scope**: 这是 **end user 用 harnessed 开发自己项目** 的工作流 (NOT project-internal dev cadence for shipping harnessed itself)。v3.0 完全替换 v2.0 `/plan-feature` + `/execute-task` + `/verify-work` 3-workflow prose。
+**Scope**: 这是 **end user 用 harnessed 开发自己项目** 的工作流 (NOT project-internal dev cadence for shipping harnessed itself)。v3.0 完全替换 v2.0 `/plan-feature` + `/execute-task` + `/verify-work` 3-workflow prose;v4.0 在 v3.0 8-layer architecture 之上**仅替换 EXECUTION mechanism**(命令如何 spawn),yaml SoT(disciplines / judgments / capabilities)不变。
 
-**Status**: v3.0 namespace-layered MAJOR refactor — BREAKING per CHANGELOG [3.0.0]。Sister Obsidian doc 4-stage cadence verbatim 机器化 + ~/.claude/CLAUDE.md 全 codify。
+**Status**: v4.0 orchestration-brain refactor — slash command body 由 `harnessed setup` 生成为 3 种 type(INTERACTIVE / ORCHESTRATOR / EXECUTION),通过 `harnessed gates` + `harnessed prompt` + `harnessed checkpoint` 三个秒级 CLI 驱动 CC-native spawn;`harnessed run` 保留为 CI/headless ONLY。底座沿 v3.0 namespace-layered architecture(BREAKING per CHANGELOG [3.0.0]),Sister Obsidian doc 4-stage cadence verbatim 机器化 + ~/.claude/CLAUDE.md 全 codify。
 
 ---
 
@@ -74,6 +74,83 @@ flowchart TB
 
 ---
 
+## 1.5 v4.0 Execution Model — orchestration brain + CC-native spawn
+
+**v3.x 旧机制 (superseded)**: slash command (`~/.claude/commands/<x>.md`) pipe 到 `harnessed run` → **in-process SDK spawn 整条 workflow**。问题: (a) 阻塞当前 session(整个 workflow 在 harnessed 进程内跑); (b) bypass CC-native Agent Teams(harnessed 自己的 SDK spawn 无法用 CC 平台层编队); (c) **无法做 clarification round-trip**(headless subagent 不能向 user 提问)。
+
+**v4.0 新机制**: slash command 不再直接 `run`,而是**指挥 CC main session 编排 CC-NATIVE subagent spawn**。harnessed 退居为 "决策大脑 + prompt 库",由三个秒级 CLI 暴露纯函数式查询(gate 路由 / prompt 生成 / checkpoint 记录),实际 spawn / Agent Teams / ralph-loop / AskUserQuestion 全部由 CC main session 用 **CC 原生工具**执行。流程:
+
+1. **Clarify interactively** — main session 用 `AskUserQuestion` 当面澄清(subagent 不能向 user 提问的根因解)。
+2. **Gate route** — `harnessed gates <master> --task "<spec>" --skip-sub clarify` → JSON `{fire:[{sub,order,mode}], skip, parallelism:{escalate_to_teams}}`。
+3. **Teams 分支** — 若 `escalate_to_teams` 为 true → CC-native Agent Teams(`TeamCreate` / `SendMessage` / `TeamDelete`,per `~/.claude/rules/agent-teams.md`)。
+4. **per fired sub** — else 对每个 fired sub:`harnessed prompt <sub> --json` → `{prompt, max_iterations, model}` → **CC-native `Task` spawn** 外层套 ralph-loop plugin → 若 output 含 `STATUS: NEEDS_CLARIFICATION` → `AskUserQuestion` relay 给 user → re-spawn → 直到 output 含 `<promise>COMPLETE</promise>` → `harnessed checkpoint complete <sub>` 记录。
+5. **`harnessed run` 保留** — 仅 CI / headless 场景(无 interactive main session 可编排时)。
+
+### 1.5.1 v4.0 orchestration flow (mermaid)
+
+```mermaid
+flowchart TB
+    Start([User: /task &lt;spec&gt;]) --> Clarify
+
+    subgraph MainSession["CC main session (orchestration brain)"]
+        Clarify["1. Clarify interactive<br/>AskUserQuestion"]
+        Clarify --> Gates["2. harnessed gates &lt;master&gt;<br/>--task --skip-sub clarify<br/>→ JSON {fire[], skip, parallelism}"]
+        Gates --> Branch{escalate_to_teams?}
+
+        Branch -->|yes| Teams["3. CC-native Agent Teams<br/>TeamCreate / SendMessage / TeamDelete<br/>(rules/agent-teams.md)"]
+
+        Branch -->|no| Loop
+
+        subgraph Loop["4. per fired sub (loop)"]
+            direction TB
+            Prompt["harnessed prompt &lt;sub&gt; --json<br/>→ {prompt, max_iterations, model}"]
+            Prompt --> Spawn["CC-native Task spawn<br/>(ralph-loop plugin wrapper)"]
+            Spawn --> Check{output has<br/>NEEDS_CLARIFICATION?}
+            Check -->|yes| Relay["AskUserQuestion relay<br/>→ re-spawn"]
+            Relay --> Spawn
+            Check -->|"&lt;promise&gt;COMPLETE&lt;/promise&gt;"| Ckpt["harnessed checkpoint<br/>complete &lt;sub&gt;"]
+        end
+
+        Teams --> Report
+        Loop --> Report["Report 折叠回 main context"]
+    end
+
+    Report --> Done([Done])
+
+    classDef cli fill:#ffe5b4,stroke:#cc6600,color:#000
+    classDef native fill:#d4edda,stroke:#155724,color:#000
+    classDef user fill:#cfe2ff,stroke:#0a58ca,color:#000
+    class Gates,Prompt,Ckpt cli
+    class Clarify,Spawn,Relay,Teams,Check native
+    class Start,Done user
+```
+
+### 1.5.2 三个新秒级 CLI (v4.0)
+
+| CLI | Purpose | Output shape |
+|---|---|---|
+| `harnessed gates <master> --task "<spec>" --skip-sub <s>` | 对 master orchestrator 跑 gate-eval,返回应激活 / 跳过的 sub 列表 + parallelism 路由 | JSON `{fire:[{sub,order,mode}], skip:[...], parallelism:{escalate_to_teams:bool, ...}}` |
+| `harnessed prompt <sub> --json` | 为单个 fired sub 生成自包含 spawn prompt + 执行参数(供 CC-native `Task` 用) | JSON `{prompt:string, max_iterations:number, model:string}` |
+| `harnessed checkpoint complete <sub>` | 记录某 sub 收到 `<promise>COMPLETE</promise>` 后的完成状态(cross-session 持久化) | text 确认行(写 `.planning/` checkpoint 状态) |
+
+三者皆纯查询 / 记录,秒级返回,**不 spawn 任何 subagent**(spawn 由 CC main session 用原生 `Task` / Agent Teams 执行)。
+
+### 1.5.3 三种 command body type (由 `harnessed setup` 生成)
+
+| Body type | Workflows | Behavior |
+|---|---|---|
+| **INTERACTIVE** | discuss family (`/discuss*`) + `/task-clarify` | main-session dialogue — `AskUserQuestion` 当面澄清,不 spawn |
+| **ORCHESTRATOR** | `/auto` + `/plan` + `/task` + `/verify` (4 master) | `harnessed gates` → CC-native spawn(loop per fired sub OR Agent Teams 分支) |
+| **EXECUTION** | 其余 sub workflow(`/task-code` `/verify-paranoid` 等) | `harnessed prompt <sub>` → 单次 CC-native `Task` spawn(ralph-loop wrapper) |
+
+### 1.5.4 Why (v4.0 转向动机)
+
+- **Keeps session responsive** — workflow 不再在 harnessed 进程内阻塞跑;main session 持续可交互,spawn 由 CC 原生异步执行。
+- **Enables Agent Teams** — 编排权回到 CC main session 后,可直接用 CC 平台层 `TeamCreate` / `SendMessage`(v3.x in-process SDK spawn 做不到)。
+- **Enables clarification round-trips** — subagent 遇 gray area 返回 `STATUS: NEEDS_CLARIFICATION`,main session `AskUserQuestion` relay 给 user 再 re-spawn — subagent 借 main session 之手"够到" user(headless 模式根本不可能)。
+
+---
+
 ## 2. 8-layer architecture (L0-L7)
 
 v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一职责, 上层 references 下层 by name:
@@ -96,6 +173,9 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 │ L4  Runtime            judgmentResolver + exprBuilder +      │
 │                        phaseFactContext (47 field v3) +      │
 │                        sdkReconcile + fallbackHandlers       │
+│                        (v4.0: sdkReconcile/in-process spawn  │
+│                         path 仅 CI/headless `harnessed run`; │
+│                         interactive 走 gates+native spawn)   │
 ├─────────────────────────────────────────────────────────────┤
 │ L3  TypeBox Schema     workflow.v3 + capability.v3 +         │
 │                        discipline.v1 + judgment.v1 (16+1     │
@@ -227,7 +307,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 (实际 ship 20 workflow.yaml file — master 4 + sub 14 + standalone 2; 表中 23 row 含 master overview row 编号方便引用。)
 
 **Master orchestrator behavior** (per D-01 auto gate-route):
-- Master invoke → 并行 gate-eval per sub via `judgments.<sub>.fires`
+- Master invoke → 并行 gate-eval per sub via `judgments.<sub>.fires` *(v3.0 描述的是 `harnessed run` in-process gate-eval+spawn 路径; v4.0: 现由 `harnessed gates` 返回 fire/skip JSON,再由 CC main session native spawn — `harnessed run` 仅 CI/headless,详 § 1.5)*
 - 满足 condition 的 sub → 激活
 - 不 fire 的 sub → **透明声明跳过** (sister `fallback.yaml` 铁律 1 `skip_with_transparency`)
 - User 仍可独立 invoke 任 sub (sub 本身是独立 slash cmd)

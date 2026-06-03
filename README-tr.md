@@ -373,12 +373,17 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 
 > Bunlar harnessed'ın kendi bakım komutlarıdır (kurulum / sağlık kontrolü / yedek-geri alma / durum kurtarma vb.). Günlük özellik geliştirme için yukarıdaki slash komutlarını kullanın — bunlara genellikle ihtiyaç duymazsınız.
 
+**v4.0 — orkestrasyon beyni.** Slash command'lar açıklama (clarification) işlemini Claude Code ana session'ında çalıştırır (böylece sorular size ulaşır), ardından CC-native subagent'lar spawn eder (Agent Teams + açıklama round-trip'lerini etkinleştirir). harnessed gate değerlendirmesi (`harnessed gates`) ve spawn'a hazır prompt'lar (`harnessed prompt`) sağlar; spawn işlemini ana session yapar. `harnessed run` CI/headless kullanımı için korunur.
+
 ### CLI Komutları
 
 | Komut | Açıklama |
 | ---- | ---- |
 | `harnessed setup` | Tek seferlik kurulum; workflow skills'i `~/.claude/skills/`'e + MCP'yi `~/.claude.json`'a kurar |
-| `harnessed run <name>` | Bir workflow çalıştırır (master orchestrator veya sub). Slash command'lar bu subcommand üzerinden çağrılır. |
+| `harnessed gates <master>` | Bir master stage için hangi sub-workflow'ların tetiklendiğini değerlendirir (JSON: fire/skip/parallelism). Slash command'lar tarafından native spawn'ları orkestre etmek için kullanılır. |
+| `harnessed prompt <sub>` | Bir sub-workflow için spawn'a hazır bir prompt (role + checklist + disciplines + completion/clarification protokolleri) üretir. |
+| `harnessed checkpoint <action> <sub>` | Bir sub-workflow'un start/complete/fail durumunu `~/.claude/harnessed/checkpoints/`'e kaydeder. |
+| `harnessed run <name>` | Bir workflow'u in-process SDK spawn ile çalıştırır (CI/headless modu). Slash command'lar bunun yerine CC-native spawn kullanır. |
 | `harnessed resume` | Oturum kesintisinden sonra en son checkpoint'ten devam eder |
 | `harnessed status` | Mevcut phase + kilit sahibi |
 | `harnessed doctor` | 8 kontrollü sağlık denetimi (Node / MCP / jq / Win bash / routing / token bütçesi vb.) |

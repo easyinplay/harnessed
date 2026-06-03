@@ -1,7 +1,17 @@
 // src/cli/run.ts — v3.4.4 Phase 1 α CLI wire
 //
+// v4.0 STATUS — CI/HEADLESS MODE ONLY. `harnessed run` does an in-process SDK
+// spawn of the whole workflow (masters recurse into sub spawns). It blocks the
+// caller for the full run, bypasses CC-native Agent Teams, and cannot do
+// clarification round-trips (subagents can't ask the user). Therefore the
+// `~/.claude/commands/<name>.md` slash commands NO LONGER call `harnessed run` —
+// they orchestrate CC-native subagent spawns via `harnessed gates` + `harnessed
+// prompt` + `harnessed checkpoint` (see src/cli/lib/generateCommands.ts v4.0).
+// `harnessed run` is retained for CI / scripted / headless contexts where there
+// is no user to ask and blocking is fine.
+//
 // Wires src/workflow/run.ts (the 4 master + 24 sub workflow runtime) into a
-// real subcommand so `~/.claude/commands/<name>.md` can invoke it via Bash.
+// real subcommand so CI scripts can invoke it via Bash.
 // Replaces the v3.4.3 dual-path body (SlashCommand vapor + Task-spawn fallback
 // that bypassed disciplines + judgments + master orchestration).
 //
@@ -55,7 +65,7 @@ export function registerRun(program: Command): void {
   program
     .command('run')
     .description(
-      'Run a harnessed workflow (master orchestrator or sub-workflow). Slash commands invoke via this subcommand.',
+      'Run a harnessed workflow via in-process SDK spawn (CI/headless mode — blocks, no Agent Teams, no clarification round-trip). Slash commands use CC-native spawn via gates/prompt/checkpoint instead.',
     )
     .argument('[name]', 'workflow name (e.g. discuss, verify-paranoid, research, auto)')
     .option('--task <text>', 'task description (passed as workflow gateContext.task)')

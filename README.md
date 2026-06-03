@@ -366,17 +366,22 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 
 > These are harnessed's own maintenance commands (setup / health check / backup-rollback / state recovery, etc.). For day-to-day feature development just use the slash commands above — you usually don't need these.
 
+**v4.0 — orchestration brain.** Slash commands run clarification in the main Claude Code session (so questions reach you), then spawn CC-native subagents (enabling Agent Teams + clarification round-trips). harnessed provides the gate evaluation (`harnessed gates`) and spawn-ready prompts (`harnessed prompt`); the main session does the spawning. `harnessed run` remains for CI/headless use.
+
 ### CLI Commands
 
 | Command | Description |
 | ---- | ---- |
 | `harnessed setup` | One-time setup; installs workflow skills to `~/.claude/skills/` + MCP to `~/.claude.json` |
-| `harnessed run <name>` | Run a workflow (master orchestrator or sub). Slash commands invoke via this subcommand. |
+| `harnessed gates <master>` | Evaluate which sub-workflows fire for a master stage (JSON: fire/skip/parallelism). Used by slash commands to orchestrate native spawns. |
+| `harnessed prompt <sub>` | Output a spawn-ready prompt (role + checklist + disciplines + completion/clarification protocols) for a sub-workflow. |
+| `harnessed checkpoint <action> <sub>` | Record sub-workflow start/complete/fail to `~/.claude/harnessed/checkpoints/`. |
+| `harnessed run <name>` | Run a workflow via in-process SDK spawn (CI/headless mode). Slash commands use CC-native spawn instead. |
 | `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
 | `harnessed status` | Current phase + lock holder |
 | `harnessed doctor` | 8-check health check (Node / MCP / jq / Win bash / routing / token budget, etc.) |
 | `harnessed install <name>` | Install an upstream manifest |
-| `harnessed uninstall <name>` | Reverse uninstall |
+| `harnessed uninstall [name]` | Reverse uninstall |
 | `harnessed backup` | Snapshot backup management |
 | `harnessed rollback <timestamp>` | One-line rollback (EOL preserve + sha1 verify) |
 | `harnessed gc` | Clean up expired backups |

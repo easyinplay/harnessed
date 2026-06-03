@@ -373,12 +373,17 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 
 > Đây là các lệnh bảo trì riêng của harnessed (setup / health check / backup-rollback / state recovery, v.v.). Để phát triển tính năng hàng ngày chỉ cần dùng các slash command ở trên — thường bạn không cần những lệnh này.
 
+**v4.0 — bộ não điều phối.** Slash command chạy việc làm rõ trong session chính của Claude Code (để câu hỏi đến được với bạn), sau đó spawn các subagent CC-native (kích hoạt Agent Teams + round-trip làm rõ). harnessed cung cấp đánh giá gate (`harnessed gates`) và prompt sẵn sàng spawn (`harnessed prompt`); session chính thực hiện việc spawn. `harnessed run` được giữ lại cho mục đích CI/headless.
+
 ### Lệnh CLI
 
 | Lệnh | Mô tả |
 | ---- | ---- |
 | `harnessed setup` | Cài đặt một lần; cài workflow skill vào `~/.claude/skills/` + MCP vào `~/.claude.json` |
-| `harnessed run <name>` | Chạy một workflow (master orchestrator hoặc sub). Slash command gọi thông qua subcommand này. |
+| `harnessed gates <master>` | Đánh giá sub-workflow nào kích hoạt cho một master stage (JSON: fire/skip/parallelism). Được slash command dùng để điều phối các native spawn. |
+| `harnessed prompt <sub>` | Xuất ra prompt sẵn sàng spawn (role + checklist + disciplines + giao thức completion/clarification) cho một sub-workflow. |
+| `harnessed checkpoint <action> <sub>` | Ghi lại start/complete/fail của sub-workflow vào `~/.claude/harnessed/checkpoints/`. |
+| `harnessed run <name>` | Chạy một workflow qua in-process SDK spawn (chế độ CI/headless). Slash command dùng CC-native spawn thay thế. |
 | `harnessed resume` | Tiếp tục từ checkpoint gần nhất sau khi session bị gián đoạn |
 | `harnessed status` | Phase hiện tại + lock holder |
 | `harnessed doctor` | Health check 8 mục (Node / MCP / jq / Win bash / routing / token budget, v.v.) |

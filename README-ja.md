@@ -373,12 +373,17 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 
 > これらは harnessed 自身のメンテナンスコマンドです（setup / ヘルスチェック / バックアップロールバック / 状態回復など）。日常の機能開発には上のスラッシュコマンドを使うだけで、通常これらは必要ありません。
 
+**v4.0 — オーケストレーションの頭脳。** slash コマンドは Claude Code のメイン session 内で明確化を実行し（質問があなたに届く）、続いて CC-native subagent を spawn する（Agent Teams + 明確化の round-trip を可能にする）。harnessed は gate 評価（`harnessed gates`）と spawn-ready prompt（`harnessed prompt`）を提供し、spawn はメイン session が行う。`harnessed run` は CI/headless 用途のために残されている。
+
 ### CLI コマンド
 
 | コマンド | 説明 |
 | ---- | ---- |
 | `harnessed setup` | 初回セットアップ。`~/.claude/skills/` に Workflow Skill をインストール + `~/.claude.json` に MCP を設定 |
-| `harnessed run <name>` | workflow を実行（master orchestrator または sub）。slash コマンドはこのサブコマンド経由で呼び出される |
+| `harnessed gates <master>` | ある master stage でどの sub-workflow が fire するかを評価（JSON: fire/skip/parallelism）。slash コマンドが native spawn をオーケストレーションするために使用 |
+| `harnessed prompt <sub>` | ある sub-workflow の spawn-ready prompt（role + checklist + disciplines + completion/clarification プロトコル）を出力 |
+| `harnessed checkpoint <action> <sub>` | sub-workflow の start/complete/fail を `~/.claude/harnessed/checkpoints/` に記録 |
+| `harnessed run <name>` | in-process SDK spawn で workflow を実行（CI/headless モード）。slash コマンドは代わりに CC-native spawn を使用 |
 | `harnessed resume` | セッション中断後に最新チェックポイントから再開 |
 | `harnessed status` | 現在の Phase + ロックホルダー |
 | `harnessed doctor` | 8 項目のヘルスチェック（Node / MCP / jq / Win bash / ルーティング / トークンバジェットなど） |
