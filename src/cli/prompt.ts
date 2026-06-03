@@ -46,14 +46,25 @@ const LANG_NAMES: Record<string, string> = {
  *  ("persist via planning-with-files") and improvises — skipping the actual
  *  /gsd-plan-phase + /plan slash commands + GSD doc artifacts. Fail-soft: any
  *  read/parse miss → empty string (prompt still works, just without the block). */
+/** v4.1.2 — shared preamble for the tools + disciplines sections: resolve the
+ *  sub's workflow.yaml, read+parse it, return one declared array field (or []).
+ *  Fail-soft → [] (caller emits no section). */
+async function loadSubArrayField(
+  sub: string,
+  packageRoot: string,
+  field: string,
+): Promise<string[]> {
+  const subYaml = await resolveWorkflowYaml(sub, resolve(packageRoot, 'workflows'))
+  if (!subYaml) return []
+  const wf = parseYaml(await readFile(subYaml, 'utf8')) as Record<string, unknown> | null
+  const v = wf?.[field]
+  return Array.isArray(v) ? (v as string[]) : []
+}
+
 async function buildToolsSection(sub: string, packageRoot: string): Promise<string> {
   try {
     const workflowsDir = resolve(packageRoot, 'workflows')
-    const subYaml = await resolveWorkflowYaml(sub, workflowsDir)
-    if (!subYaml) return ''
-    const wfRaw = await readFile(subYaml, 'utf8')
-    const wf = parseYaml(wfRaw) as { tools_available?: unknown } | null
-    const tools = Array.isArray(wf?.tools_available) ? (wf.tools_available as string[]) : []
+    const tools = await loadSubArrayField(sub, packageRoot, 'tools_available')
     if (tools.length === 0) return ''
 
     const capRaw = await readFile(resolve(workflowsDir, 'capabilities.yaml'), 'utf8')
@@ -85,13 +96,7 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
 async function buildDisciplinesSection(sub: string, packageRoot: string): Promise<string> {
   try {
     const workflowsDir = resolve(packageRoot, 'workflows')
-    const subYaml = await resolveWorkflowYaml(sub, workflowsDir)
-    if (!subYaml) return ''
-    const wfRaw = await readFile(subYaml, 'utf8')
-    const wf = parseYaml(wfRaw) as { disciplines_applied?: unknown } | null
-    const applied = Array.isArray(wf?.disciplines_applied)
-      ? (wf.disciplines_applied as string[])
-      : []
+    const applied = await loadSubArrayField(sub, packageRoot, 'disciplines_applied')
     // language handled separately; skip to avoid duplicate directive.
     const names = applied.filter((d) => d !== 'language')
     if (names.length === 0) return ''
@@ -188,7 +193,7 @@ export function registerPrompt(program: Command): void {
       // is non-fatal → loadRolePrompts returns {} → buildAgentDef fallback path).
       const rolePrompts = await loadRolePrompts(workflowsDir)
 
-      const def = buildAgentDef(sub, rolePrompts, undefined, undefined, undefined)
+      const def = buildAgentDef(sub, rolePrompts)
       const body = def.prompt
 
       const taskSection =
@@ -212,7 +217,6 @@ export function registerPrompt(program: Command): void {
           }),
         )
         process.exit(0)
-        return
       }
 
       console.log(fullPrompt)

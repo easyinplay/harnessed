@@ -1,22 +1,23 @@
-// v3.4.4 — Generate ~/.claude/commands/<x>.md from workflows/role-prompts.yaml.
+// Generate ~/.claude/commands/<x>.md from workflows/role-prompts.yaml.
 //
 // SCHEMA EVOLUTION:
-//   v3.4.3 — dual-path body (SlashCommand "Preferred path" + Task-spawn
-//     "Fallback path"). Both paths sidestepped the workflow runtime entirely;
-//     the disciplines + judgments + master orchestration in src/workflow/ never
-//     fired. SlashCommand path was also vapor when no upstream was installed.
-//   v3.4.4 — single-path body that ALWAYS invokes the workflow runtime via
-//     `harnessed run <name>` (Bash). This wires `~/.claude/commands/<x>.md`
-//     to src/workflow/run.ts (the real orchestrator) instead of bypassing it.
+//   v3.4.3 — dual-path body (SlashCommand "Preferred path" + Task-spawn fallback).
+//   v3.4.4 — single-path body that piped to `harnessed run <name>` (SDK spawn).
+//   v4.0   — orchestration-brain bodies (3 types: INTERACTIVE / ORCHESTRATOR /
+//     EXECUTION). Bodies tell the CC main session to drive CC-native subagent
+//     spawns via `harnessed gates` + `harnessed prompt` + `harnessed checkpoint`,
+//     and explicitly NOT to pipe to `harnessed run` (which is now CI/headless).
+//   v4.1   — `harnessed prompt` injects tools_available + disciplines_applied
+//     from the yaml SoT; ORCHESTRATOR bodies recurse on `is_master` fired subs.
 //
-// MARKER-BASED OVERWRITE (Option 2):
-//   Each generated file emits `<!-- harnessed-generated:v3.4.x -->` as its
-//   trailing marker. `writeAllCommands` overwrites files containing either
-//   that marker OR the v3.4.3 dual-path signature; truly user-authored files
-//   (with neither) are preserved with a warning. This lets `harnessed setup`
-//   upgrade stale v3.4.3-generated files in place without clobbering customs.
+// MARKER-BASED OVERWRITE:
+//   Each generated file emits a `<!-- harnessed-generated:vX.Y.Z -->` trailing
+//   marker. `writeAllCommands` overwrites files carrying that marker OR the
+//   legacy v3.4.3 dual-path signature; truly user-authored files (with neither)
+//   are preserved with a warning, so `harnessed setup` re-renders its own files
+//   in place without clobbering customs.
 //
-// Karpathy simplicity: pure functions, single yaml load, ≤250 LOC, no new deps.
+// Karpathy simplicity: pure functions, single yaml load, no new deps.
 
 import { existsSync, readFileSync as nodeReadFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -292,7 +293,9 @@ function nameToYamlHintPath(name: string): string {
  *  containing this marker (or the older v3.4.3 dual-path signature) and preserves
  *  files with neither (true user-authored). Pattern is digit-loose so future
  *  v3.4.5+ patches can re-overwrite without losing the property. */
-const HARNESSED_MARKER_RX = /<!--\s*harnessed-generated:v3\.4\.\d+\s*-->/
+// v4.1.2 — digit-loose across majors so a future marker bump (e.g. v4.x) stays
+// self-overwriting instead of being misread as user-authored + skipped on upgrade.
+const HARNESSED_MARKER_RX = /<!--\s*harnessed-generated:v\d+\.\d+\.\d+\s*-->/
 
 /** Detect the v3.4.3 dual-path body shape — overwrite even though it has no
  *  marker because it shipped before markers existed. Two-signal AND so we don't

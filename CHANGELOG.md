@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.2] - 2026-06-04
+
+Code-review + code-simplifier pass on the v4.0/v4.1 orchestration-brain CLIs.
+
+### Fixed
+
+- **BLOCKER — gates→prompt name handoff was broken for every stage master.** `harnessed gates <stage>` emitted *bare* `delegates_to[].sub` names (`code`, `strategic`), but `role-prompts.yaml` / `resolveWorkflowYaml` tier-3 / `defaults.yaml` are keyed by the *flattened* `<stage>-<sub>` name (`task-code`, `discuss-strategic`). So `harnessed prompt code` missed the role prompt → generic fallback body with **no tools, no disciplines, wrong max-iterations** — silently defeating the entire v4.1 SoT-injection. `gates` now emits the flattened name for stage-master leaf subs (`auto`'s top-level delegates stay bare). (4 tests + e2e)
+- **MEDIUM — `--context` shallow-merge clobbered nested defaults.** `Object.assign(ctx, extra)` wiped all 15 `phase.*` / 17 `subtask.*` defaults when a caller passed a partial `{phase:{x:true}}` → undefined vars → every gate threw → fail-soft fired ALL subs. Now deep-merges `phase`/`subtask`. (unit + cli tests)
+- **MEDIUM — parallelism gate was un-evaluable.** `agent-teams-upgrade.fires` references 5 team-routing facts (`teammate_send_message_needed`, etc.) absent from the default context → expr-eval threw on every eval → `escalate_to_teams` hard-false. Added the 5 facts (default false) so the gate is reachable.
+
+### Changed (simplification)
+
+- Extracted the duplicated ~40-line default gate context (verbatim copy across `gates.ts` + `run.ts`) into `src/cli/lib/gateContext.ts` (`buildDefaultGateContext` + `mergeGateContext`) — single SoT, kills drift.
+- Extracted the shared `resolve→read→parse` preamble of `buildToolsSection`/`buildDisciplinesSection` into `loadSubArrayField`.
+- Widened `HARNESSED_MARKER_RX` to digit-loose `v\d+\.\d+\.\d+` so a future major marker bump stays self-overwriting (was pinned to `v3.4.x`).
+- Refreshed stale v3.4.4 / `harnessed run` comments in `generateCommands.ts` to v4.0/v4.1 semantics; dropped dead `return` + redundant `undefined` args in `prompt.ts`.
+
+### Deferred
+
+5-arg `generateCommandFile` unused params (`_capabilities` / `_installedPlugins` / `_installedUserSkills`) — removal is a breaking signature change across ~30 test cells + setup.ts; left for a dedicated cleanup.
+
+Re-run `harnessed setup`. 1107 tests pass / biome clean / tsc 0 errors.
+
 ## [4.1.1] - 2026-05-30
 
 ### Fixed

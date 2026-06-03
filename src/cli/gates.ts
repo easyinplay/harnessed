@@ -14,6 +14,7 @@ import { resolve } from 'node:path'
 import type { Command } from 'commander'
 import { parse as parseYaml } from 'yaml'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
+import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
 import { getPackageRoot } from './lib/packagePath.js'
 
 const VALID_MASTERS = new Set(['auto', 'discuss', 'plan', 'task', 'verify'])
@@ -59,54 +60,6 @@ interface GatesPlan {
   fire: FireEntry[]
   skip: SkipEntry[]
   parallelism: { escalate_to_teams: boolean; reason: string | null }
-}
-
-/** v3.9.22 / v3.9.24 — full default phase + subtask context (verbatim copy of
- *  src/cli/run.ts gateContext defaults). CLI can't infer real context from a
- *  free-form task string, so defaults bias toward "treat as important" →
- *  safety-net gates fire by default. Sub-workflow gate expressions reference
- *  phase.* / subtask.* — undefined variable would throw at eval. */
-function defaultContext(task: string, stage: string): Record<string, unknown> {
-  return {
-    task,
-    user_understanding_unclear: false,
-    phase: {
-      stage,
-      is_critical_module: true,
-      is_final_step: true,
-      is_major_release: false,
-      has_auth_or_secrets: false,
-      has_design_changes: false,
-      has_ui_changes: false,
-      requires_creative_polish: false,
-      is_complex_architecture: true,
-      has_cross_phase_data_flow: true,
-      open_decisions: 2,
-      scope_days: 2,
-      scope_locked_in_history: false,
-      single_task: false,
-      type: 'general',
-    },
-    subtask: {
-      approaches: 2,
-      core_algorithm: true,
-      has_api_contract: true,
-      error_cost: 'high',
-      lines: 50,
-      type: 'general',
-      is_core_business_logic: true,
-      is_algorithm: true,
-      is_data_processing: true,
-      regression_risk: 'high',
-      reliability_required: true,
-      communication_needed: false,
-      needs_lib_docs: false,
-      needs_web_search: false,
-      parallel_count: 1,
-      search_type: 'general',
-      test_type: 'general',
-    },
-  }
 }
 
 function resolveMasterYamlPath(master: string, packageRoot: string): string {
@@ -168,8 +121,8 @@ export function registerGates(program: Command): void {
       const task = typeof raw.task === 'string' ? raw.task : ''
       const stage = master
 
-      // Build gate context: default object → merge --context → add skip_subs + task.
-      const ctx = defaultContext(task, stage)
+      // Build gate context: shared defaults → deep-merge --context → add skip_subs.
+      let ctx = buildDefaultGateContext(task, stage)
       if (typeof raw.context === 'string' && raw.context.length > 0) {
         let extra: unknown
         try {
@@ -179,8 +132,9 @@ export function registerGates(program: Command): void {
           process.exit(1)
           return
         }
-        if (extra && typeof extra === 'object') {
-          Object.assign(ctx, extra as Record<string, unknown>)
+        if (extra && typeof extra === 'object' && !Array.isArray(extra)) {
+          // deep-merge so a partial {phase:{x:true}} doesn't wipe the other phase.* defaults.
+          ctx = mergeGateContext(ctx, extra as Record<string, unknown>)
         }
       }
       const skipSubs = new Set(
@@ -192,7 +146,6 @@ export function registerGates(program: Command): void {
           : [],
       )
       ctx.skip_subs = [...skipSubs]
-      ctx.task = task
 
       const fire: FireEntry[] = []
       const skip: SkipEntry[] = []
@@ -207,13 +160,13 @@ export function registerGates(program: Command): void {
           continue
         }
         if (!clause.gate) {
-          fire.push(fireEntry(clause))
+          fire.push(fireEntry(clause, master))
           continue
         }
         try {
           const passes = await resolveJudgmentGate(clause.gate, ctx, packageRoot)
           if (passes) {
-            fire.push(fireEntry(clause))
+            fire.push(fireEntry(clause, master))
           } else {
             skip.push({ sub: clause.sub, reason: `gate ${clause.gate} = false` })
           }
@@ -224,7 +177,7 @@ export function registerGates(program: Command): void {
             `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} eval failed ` +
               `(${(e as Error).message}); firing sub as if gate=true (ADR 0029 fail-soft).`,
           )
-          fire.push(fireEntry(clause))
+          fire.push(fireEntry(clause, master))
         }
       }
 
@@ -245,14 +198,23 @@ export function registerGates(program: Command): void {
     })
 }
 
-function fireEntry(clause: DelegationClause): FireEntry {
-  const entry: FireEntry = { sub: clause.sub }
+function fireEntry(clause: DelegationClause, master: string): FireEntry {
+  // v4.1.2 BLOCKER fix — stage-master delegates_to[].sub are BARE names
+  // (task → code/test/clarify/deliver; discuss → strategic/phase/subtask). But
+  // role-prompts.yaml / resolveWorkflowYaml tier-3 / defaults.yaml are keyed by
+  // the FLATTENED `<master>-<sub>` name (task-code, discuss-strategic). Emit the
+  // flattened name so the command body's `harnessed prompt <sub>` resolves the
+  // real role prompt + tools + disciplines instead of the generic fallback.
+  //
+  // The `auto` super-master is exempt: its delegates are already top-level names
+  // (discuss/plan/task/verify masters → recursed; research/retro standalone) that
+  // resolve as-is, so no prefix.
+  const isMaster = STAGE_MASTERS.has(clause.sub)
+  const sub = master !== 'auto' && !isMaster ? `${master}-${clause.sub}` : clause.sub
+  const entry: FireEntry = { sub }
   if (clause.order !== undefined) entry.order = clause.order
   if (clause.mode !== undefined) entry.mode = clause.mode
   if (clause.gate !== undefined) entry.gate = clause.gate
-  // v4.1 — stage master detection (recurse instead of prompt+spawn).
-  if (STAGE_MASTERS.has(clause.sub)) {
-    entry.is_master = true
-  }
+  if (isMaster) entry.is_master = true
   return entry
 }

@@ -33,6 +33,7 @@ import type { Command } from 'commander'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { runWorkflow } from '../workflow/run.js'
 import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
+import { buildDefaultGateContext } from './lib/gateContext.js'
 import { getPackageRoot } from './lib/packagePath.js'
 
 interface RawOpts {
@@ -136,54 +137,12 @@ export function registerRun(program: Command): void {
       // default. Sub-workflow gate expressions (workflows/judgments/*.yaml) all
       // reference phase.* or subtask.* — undefined variable would throw.
       const stage = name.includes('-') ? (name.split('-')[0] ?? '') : name
+      // v4.1.2 — shared default gate context (single SoT with src/cli/gates.ts;
+      // includes phase.* / subtask.* / user_understanding_unclear + parallelism
+      // team-routing facts). Sub-workflow gate exprs reference these — an
+      // undefined variable would throw at eval.
       const gateContext: Record<string, unknown> = {
-        task,
-        // v3.9.24 — top-level fact set by runAutoPreFlight() when /auto super-master
-        // Phase 0.5 understanding-check prompt fires. CLI path skips preflight
-        // (no readline hooks), so default to false → research sub skips by default.
-        user_understanding_unclear: false,
-        phase: {
-          stage,
-          // verify-stage gates
-          is_critical_module: true, // verify-paranoid fires
-          is_final_step: true, // verify-simplify fires
-          is_major_release: false, // verify-multispec only for major
-          has_auth_or_secrets: false,
-          has_design_changes: false,
-          has_ui_changes: false,
-          requires_creative_polish: false,
-          // plan-stage gates
-          is_complex_architecture: true, // plan-architecture fires
-          // discuss-stage gates
-          has_cross_phase_data_flow: true, // discuss-phase fires
-          open_decisions: 2, // ≥2 fires phase-gate
-          scope_days: 2, // >1 day fires phase-gate
-          scope_locked_in_history: false,
-          single_task: false,
-          type: 'general',
-        },
-        subtask: {
-          // subtask brainstorming gate
-          approaches: 2, // ≥2 fires
-          core_algorithm: true,
-          has_api_contract: true,
-          error_cost: 'high',
-          lines: 50, // ≥20 → no skip
-          type: 'general', // not crud/standard_lib_call → no skip
-          // tdd gate
-          is_core_business_logic: true,
-          is_algorithm: true,
-          is_data_processing: true,
-          regression_risk: 'high',
-          reliability_required: true,
-          // misc
-          communication_needed: false,
-          needs_lib_docs: false,
-          needs_web_search: false,
-          parallel_count: 1,
-          search_type: 'general',
-          test_type: 'general',
-        },
+        ...buildDefaultGateContext(task, stage),
         ...(raw.model ? { modelOverride: raw.model } : {}),
         ...(raw.maxIterations ? { maxIterations: raw.maxIterations } : {}),
         ...(raw.staged ? { staged: true } : {}),

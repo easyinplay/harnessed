@@ -147,11 +147,12 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     expect(parsed).toHaveProperty('fire')
     expect(parsed).toHaveProperty('skip')
     expect(parsed).toHaveProperty('parallelism')
+    // v4.1.2 — fire[].sub for a stage master's leaf subs is the FLATTENED
+    // `<master>-<sub>` name (task-clarify, task-code) so `harnessed prompt` resolves.
     const fireSubs = parsed.fire.map((f: { sub: string }) => f.sub)
-    expect(fireSubs).toContain('clarify')
-    expect(fireSubs).toContain('code')
-    // gated clause carries its gate ref
-    const clarify = parsed.fire.find((f: { sub: string }) => f.sub === 'clarify')
+    expect(fireSubs).toContain('task-clarify')
+    expect(fireSubs).toContain('task-code')
+    const clarify = parsed.fire.find((f: { sub: string }) => f.sub === 'task-clarify')
     expect(clarify.gate).toBe('judgments.subtask-gate.brainstorming.fires')
     expect(clarify.order).toBe(1)
   })
@@ -206,8 +207,8 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     expect(code).toBe(0)
     const parsed = JSON.parse(stdout)
     const fireSubs = parsed.fire.map((f: { sub: string }) => f.sub)
-    expect(fireSubs).toContain('clarify')
-    expect(parsed.skip.map((s: { sub: string }) => s.sub)).not.toContain('clarify')
+    expect(fireSubs).toContain('task-clarify')
+    expect(parsed.skip.map((s: { sub: string }) => s.sub)).not.toContain('task-clarify')
   })
 
   it('cell 5 — unknown master → exit 1', async () => {
@@ -285,7 +286,7 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     resolveJudgmentGateMock.mockResolvedValue(true)
     const { stdout } = await runCli(['gates', 'task'])
     const parsed = JSON.parse(stdout)
-    const code = parsed.fire.find((f: { sub: string }) => f.sub === 'code')
+    const code = parsed.fire.find((f: { sub: string }) => f.sub === 'task-code')
     expect(code).toBeDefined()
     expect(code.gate).toBeUndefined()
     expect(code.order).toBe(5)
@@ -326,5 +327,51 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     for (const f of parsed.fire) {
       expect(f.is_master).toBeUndefined()
     }
+  })
+
+  // v4.1.2 review fixes
+  it('cell 13 — BLOCKER fix: stage-master leaf subs emit flattened <master>-<sub> names', async () => {
+    setMaster(
+      'discuss',
+      [clauseLine('strategic'), clauseLine('phase'), clauseLine('subtask')].join('\n'),
+    )
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { stdout } = await runCli(['gates', 'discuss'])
+    const subs = JSON.parse(stdout).fire.map((f: { sub: string }) => f.sub)
+    expect(subs).toEqual(['discuss-strategic', 'discuss-phase', 'discuss-subtask'])
+  })
+
+  it('cell 14 — auto super-master keeps bare names (research/retro standalone, plan/task master)', async () => {
+    setMaster('auto', [clauseLine('research'), clauseLine('plan'), clauseLine('retro')].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { stdout } = await runCli(['gates', 'auto'])
+    const subs = JSON.parse(stdout).fire.map((f: { sub: string }) => f.sub)
+    expect(subs).toEqual(['research', 'plan', 'retro']) // NOT auto-research etc
+  })
+
+  it('cell 15 — parallelism gate evaluable: --context flips team fact → escalate_to_teams true', async () => {
+    setMaster('task', [clauseLine('code')].join('\n'))
+    // every gate (incl. parallelism) returns true → with team vars now in default
+    // context, the parallelism gate is reachable (no undefined-var throw).
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { stdout } = await runCli(['gates', 'task', '--task', 'x'])
+    const parsed = JSON.parse(stdout)
+    expect(parsed.parallelism.escalate_to_teams).toBe(true)
+    expect(parsed.parallelism.reason).toMatch(/agent-teams-upgrade/)
+  })
+
+  it('cell 16 — --context partial phase override does not crash (deep-merge keeps defaults)', async () => {
+    setMaster('verify', [clauseLine('paranoid', { gate: 'judgments.x.y.fires' })].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    // Partial {phase:{is_major_release:true}} — under the old shallow Object.assign
+    // this wiped all other phase.* defaults; deep-merge preserves them → no throw.
+    const { code, stdout } = await runCli([
+      'gates',
+      'verify',
+      '--context',
+      JSON.stringify({ phase: { is_major_release: true } }),
+    ])
+    expect(code).toBe(0)
+    expect(JSON.parse(stdout).fire.map((f: { sub: string }) => f.sub)).toContain('verify-paranoid')
   })
 })

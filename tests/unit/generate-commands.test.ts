@@ -386,6 +386,9 @@ describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)
   it('cell 20b — shouldOverwriteFile detects both marker variants + rejects user-authored', () => {
     expect(shouldOverwriteFile('foo\n<!-- harnessed-generated:v3.4.4 -->\nbar')).toBe(true)
     expect(shouldOverwriteFile('foo\n<!-- harnessed-generated:v3.4.5 -->\nbar')).toBe(true)
+    // v4.1.2 — digit-loose regex: future major markers stay self-overwriting.
+    expect(shouldOverwriteFile('foo\n<!-- harnessed-generated:v4.2.0 -->\nbar')).toBe(true)
+    expect(shouldOverwriteFile('foo\n<!-- harnessed-generated:v10.0.0 -->\nbar')).toBe(true)
     expect(
       shouldOverwriteFile(
         '**Preferred path** use the SlashCommand tool to run /x\n**Fallback path** use the Task tool to spawn',
