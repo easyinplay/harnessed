@@ -1,6 +1,6 @@
 # PLAN: Option A — 交互式澄清在主 session, 执行阶段 spawn
 
-> Phase: v3.9.x 维护系列 | 日期: 2026-05-30 | 状态: ready-to-execute
+> Phase: v3.9.x 维护系列 | 日期: 2026-05-30 | 状态: ✅ SHIPPED v3.9.26 (commit fdcbcfa)
 > Discuss 阶段已完成（用户对话中选定 Option A, 2026-05-30）
 
 ## 问题
