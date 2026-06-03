@@ -297,4 +297,34 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     const { code } = await runCli(['gates', 'task'])
     expect(code).toBe(1)
   })
+
+  it('cell 11 — v4.1 auto firing stage masters → is_master:true on plan/task/verify, absent on research/retro', async () => {
+    setMaster(
+      'auto',
+      [
+        clauseLine('research', { order: 0 }),
+        clauseLine('plan', { order: 2 }),
+        clauseLine('task', { order: 3 }),
+        clauseLine('retro', { order: 5 }),
+      ].join('\n'),
+    )
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { stdout } = await runCli(['gates', 'auto'])
+    const parsed = JSON.parse(stdout)
+    const byName = (n: string) => parsed.fire.find((f: { sub: string }) => f.sub === n)
+    expect(byName('plan').is_master).toBe(true)
+    expect(byName('task').is_master).toBe(true)
+    expect(byName('research').is_master).toBeUndefined()
+    expect(byName('retro').is_master).toBeUndefined()
+  })
+
+  it('cell 12 — leaf-only master (task) → no is_master on its execution subs', async () => {
+    setMaster('task', [clauseLine('code'), clauseLine('test')].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { stdout } = await runCli(['gates', 'task'])
+    const parsed = JSON.parse(stdout)
+    for (const f of parsed.fire) {
+      expect(f.is_master).toBeUndefined()
+    }
+  })
 })

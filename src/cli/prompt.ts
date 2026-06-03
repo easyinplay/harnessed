@@ -20,6 +20,7 @@ import { parse as parseYaml } from 'yaml'
 import { buildAgentDef } from '../workflow/run.js'
 import { loadRolePrompts } from './lib/generateCommands.js'
 import { getPackageRoot } from './lib/packagePath.js'
+import { resolveWorkflowYaml } from './run.js'
 
 const DEFAULT_MAX_ITERATIONS = 20
 const DEFAULT_MODEL = 'sonnet'
@@ -37,6 +38,40 @@ const LANG_NAMES: Record<string, string> = {
   'zh-CN': '简体中文 (Simplified Chinese)',
   'zh-Hant': '繁體中文 (Traditional Chinese)',
   'zh-TW': '繁體中文 (Traditional Chinese)',
+}
+
+/** v4.1 — Tools section. Reads the sub's workflow.yaml `tools_available[]`, maps
+ *  each to its capabilities.yaml `cmd`, and emits a MANDATORY invocation block.
+ *  Without this, the spawned subagent only sees the role-prompt's soft prose
+ *  ("persist via planning-with-files") and improvises — skipping the actual
+ *  /gsd-plan-phase + /plan slash commands + GSD doc artifacts. Fail-soft: any
+ *  read/parse miss → empty string (prompt still works, just without the block). */
+async function buildToolsSection(sub: string, packageRoot: string): Promise<string> {
+  try {
+    const workflowsDir = resolve(packageRoot, 'workflows')
+    const subYaml = await resolveWorkflowYaml(sub, workflowsDir)
+    if (!subYaml) return ''
+    const wfRaw = await readFile(subYaml, 'utf8')
+    const wf = parseYaml(wfRaw) as { tools_available?: unknown } | null
+    const tools = Array.isArray(wf?.tools_available) ? (wf.tools_available as string[]) : []
+    if (tools.length === 0) return ''
+
+    const capRaw = await readFile(resolve(workflowsDir, 'capabilities.yaml'), 'utf8')
+    const capDoc = parseYaml(capRaw) as {
+      capabilities?: Record<string, { cmd?: string; impl?: string }>
+    } | null
+    const caps = capDoc?.capabilities ?? {}
+    const lines: string[] = []
+    for (const tool of tools) {
+      const cmd = caps[tool]?.cmd
+      const impl = caps[tool]?.impl
+      lines.push(cmd ? `- Invoke \`${cmd}\` (${tool}${impl ? `, ${impl}` : ''})` : `- ${tool}`)
+    }
+    if (lines.length === 0) return ''
+    return `\n## Tools — invoke these (not optional)\nThis workflow's SoT declares the following upstream tools. Actually invoke them as part of your work — do NOT improvise a lightweight substitute. Persist artifacts in the upstream's native format (e.g. planning-with-files → \`task_plan.md\` / \`progress.md\` / \`findings.md\`; GSD → \`PLAN.md\` / \`STATE.md\`).\n${lines.join('\n')}\n`
+  } catch {
+    return ''
+  }
 }
 
 /** Build the `## Language` section from env.HARNESSED_USER_LANG. Empty string
@@ -115,7 +150,8 @@ export function registerPrompt(program: Command): void {
       const taskSection =
         typeof raw.task === 'string' && raw.task.length > 0 ? `## Task\n${raw.task}\n\n` : ''
 
-      const fullPrompt = `${taskSection}${body}\n${PROTOCOLS}${buildLanguageSection()}`
+      const toolsSection = await buildToolsSection(sub, packageRoot)
+      const fullPrompt = `${taskSection}${body}\n${toolsSection}${PROTOCOLS}${buildLanguageSection()}`
 
       if (raw.json) {
         const maxIterations = await resolveMaxIterations(sub, packageRoot)

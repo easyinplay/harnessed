@@ -195,3 +195,41 @@ describe('cli/prompt — v4.0.1 language discipline injection', () => {
     expect(parsed.prompt).toContain('简体中文')
   })
 })
+
+describe('cli/prompt — v4.1 tools_available injection', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete process.env.HARNESSED_USER_LANG
+  })
+
+  it('cell 10 — plan-phase prompt injects ## Tools with /gsd-plan-phase + /plan (planning-with-files)', async () => {
+    const { code, stdout } = await runCli(['prompt', 'plan-phase', '--task', 'x'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Tools')
+    expect(stdout).toContain('/gsd-plan-phase')
+    expect(stdout).toContain('/plan')
+    expect(stdout).toMatch(/planning-with-files/)
+    expect(stdout).toMatch(/not optional|do NOT improvise/i)
+  })
+
+  it('cell 11 — task-code prompt injects ## Tools section', async () => {
+    const { code, stdout } = await runCli(['prompt', 'task-code'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Tools')
+  })
+
+  it('cell 12 — unknown sub → no ## Tools section (fail-soft, prompt still works)', async () => {
+    const { code, stdout } = await runCli(['prompt', 'nonexistent-xyz'])
+    expect(code).toBe(0)
+    expect(stdout).not.toContain('## Tools')
+    expect(stdout).toContain('NEEDS_CLARIFICATION')
+  })
+
+  it('cell 13 — --json prompt also carries the tools section', async () => {
+    const { code, stdout } = await runCli(['prompt', 'plan-phase', '--json'])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.prompt).toContain('## Tools')
+    expect(parsed.prompt).toContain('/gsd-plan-phase')
+  })
+})

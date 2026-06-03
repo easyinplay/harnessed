@@ -550,4 +550,14 @@ describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 
       expect(content, `${name} must mention zh-Hans mapping`).toContain('zh-Hans')
     }
   })
+
+  it('cell 31 — ORCHESTRATOR body carries v4.1 is_master recursion branch', () => {
+    const { content } = generateCommandFile('auto', AUTO_PROMPT, CAPS, new Set(), new Set())
+    expect(content).toContain('is_master')
+    expect(content).toMatch(/RECURSE/)
+    // recursion re-runs harnessed gates on the fired master sub
+    expect(content).toContain('harnessed gates <sub>')
+    // leaf branch still spawns
+    expect(content).toMatch(/leaf sub/i)
+  })
 })

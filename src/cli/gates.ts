@@ -18,6 +18,11 @@ import { getPackageRoot } from './lib/packagePath.js'
 
 const VALID_MASTERS = new Set(['auto', 'discuss', 'plan', 'task', 'verify'])
 
+// v4.1 — stage masters (recursable). `auto` is the super-master; its fired subs
+// that are themselves stage masters must be recursed (harnessed gates <sub>),
+// not prompt+spawned. research/retro are standalone leaves (not masters).
+const STAGE_MASTERS = new Set(['discuss', 'plan', 'task', 'verify'])
+
 const PARALLELISM_GATE = 'judgments.parallelism-gate.agent-teams-upgrade.fires'
 
 interface RawOpts {
@@ -38,6 +43,10 @@ interface FireEntry {
   order?: number
   mode?: string
   gate?: string
+  // v4.1 — true when this sub is itself a stage master (has its own auto/workflow.yaml).
+  // The CC main session must RECURSE (harnessed gates <sub>) instead of prompt+spawn,
+  // since `harnessed prompt <master>` returns a dispatcher prompt, not leaf work.
+  is_master?: boolean
 }
 
 interface SkipEntry {
@@ -241,5 +250,9 @@ function fireEntry(clause: DelegationClause): FireEntry {
   if (clause.order !== undefined) entry.order = clause.order
   if (clause.mode !== undefined) entry.mode = clause.mode
   if (clause.gate !== undefined) entry.gate = clause.gate
+  // v4.1 — stage master detection (recurse instead of prompt+spawn).
+  if (STAGE_MASTERS.has(clause.sub)) {
+    entry.is_master = true
+  }
   return entry
 }

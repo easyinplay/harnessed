@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.0] - 2026-05-30
+
+### Fixed
+
+- **v4.0 flattened the yaml SoT — spawned subagents skipped GSD docs + planning-with-files.** `harnessed prompt` only emitted the role-prompt's soft prose ("persist via planning-with-files"), never the actual upstream tools, so CC improvised a lightweight `task_plan.md` instead of invoking `/gsd-plan-phase` + `/plan` and producing GSD-format artifacts.
+  - **`harnessed prompt` (Part A)** now reads the sub's `workflow.yaml` `tools_available[]`, maps each to its `capabilities.yaml` `cmd`, and injects a mandatory `## Tools — invoke these (not optional)` block (e.g. `Invoke /gsd-plan-phase`, `Invoke /plan` → persist `PLAN.md` / `task_plan.md`). Fail-soft: unknown sub → no block. (4 tests)
+  - **`/auto` master-recursion gap (Part B)** — `/auto`'s fired subs are stage **masters** (plan/task/verify), but the command body did `harnessed prompt plan` → a vague dispatcher prompt. `harnessed gates` now tags each fire entry with `is_master: true` for stage masters; the ORCHESTRATOR command body recurses (`harnessed gates <sub>` → orchestrate ITS subs) instead of prompt+spawning a master. Leaf subs still spawn. (2 gates + 1 body test)
+
+### Migration
+
+Re-run `harnessed setup` to regenerate `~/.claude/commands/*.md` with the recursion branch. 1095 tests pass / biome clean / tsc 0 errors.
+
 ## [4.0.1] - 2026-05-30
 
 ### Fixed
