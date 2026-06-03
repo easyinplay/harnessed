@@ -108,8 +108,8 @@ prompts:
   })
 })
 
-describe('generateCommandFile — v3.4.4 single-path body shape', () => {
-  it('cell 4 — sub-workflow body has frontmatter + heading + description', () => {
+describe('generateCommandFile — v4.0 body shape', () => {
+  it('cell 4 — EXECUTION sub body has frontmatter + heading + description', () => {
     const { content } = generateCommandFile(
       'verify-paranoid',
       SUB_PROMPT,
@@ -120,10 +120,10 @@ describe('generateCommandFile — v3.4.4 single-path body shape', () => {
     expect(content).toMatch(/^---\ndescription: .+\nargument-hint: .+\n---\n/)
     expect(content).toMatch(/# \/verify-paranoid/)
     expect(content).toContain(SUB_PROMPT.description)
-    expect(content).toMatch(/## How to invoke/)
+    expect(content).toMatch(/## How to run/)
   })
 
-  it('cell 5 — v3.4.4 body contains the single `harnessed run <name> --task-stdin` Bash invocation', () => {
+  it('cell 5 — EXECUTION body uses `harnessed prompt <name>` + native spawn (NOT harnessed run)', () => {
     const { content, warnings } = generateCommandFile(
       'verify-paranoid',
       SUB_PROMPT,
@@ -131,28 +131,28 @@ describe('generateCommandFile — v3.4.4 single-path body shape', () => {
       new Set(),
       new Set(['gstack']),
     )
-    expect(content).toContain('harnessed run verify-paranoid --task-stdin')
-    expect(content).toContain('Use the Bash tool to run')
+    expect(content).toContain('harnessed prompt verify-paranoid')
+    expect(content).not.toContain('harnessed run verify-paranoid --task-stdin')
     expect(warnings).toEqual([])
   })
 
-  it('cell 6 — no warnings emitted even when upstream user-skill backing is absent (v3.4.4 body has no placeholders)', () => {
+  it('cell 6 — no warnings emitted even when upstream user-skill backing is absent (v4.0 body has no placeholders)', () => {
     const { content, warnings } = generateCommandFile(
       'verify-paranoid',
       SUB_PROMPT,
       CAPS,
       new Set(),
-      new Set(), // gstack user-skill NOT installed — but v3.4.4 body doesn't render {{ cap }} so no warning
+      new Set(),
     )
     expect(warnings).toEqual([])
-    expect(content).toContain('harnessed run verify-paranoid --task-stdin')
+    expect(content).toContain('harnessed prompt verify-paranoid')
   })
 
-  it('cell 7 — master prompt body has same single-path shape (no special master variant)', () => {
+  it('cell 7 — ORCHESTRATOR master body uses `harnessed gates` (not harnessed run)', () => {
     const { content } = generateCommandFile('verify', MASTER_PROMPT, CAPS, new Set(), new Set())
     expect(content).toMatch(/# \/verify/)
-    expect(content).toContain('harnessed run verify --task-stdin')
-    // No dispatcher-only fallback section in v3.4.4 — runtime dispatches.
+    expect(content).toContain('harnessed gates verify')
+    expect(content).not.toContain('harnessed run verify --task-stdin')
     expect(content).not.toMatch(/SlashCommand tool/)
     expect(content).not.toMatch(/Task tool to spawn/)
   })
@@ -174,7 +174,7 @@ describe('writeAllCommands — directory integration', () => {
     expect(r.results[0]?.written).toBe(true)
     expect(existsSync(join(commandsDir, 'verify-paranoid.md'))).toBe(true)
     const body = readFileSync(join(commandsDir, 'verify-paranoid.md'), 'utf8')
-    expect(body).toContain('harnessed run verify-paranoid --task-stdin')
+    expect(body).toContain('harnessed prompt verify-paranoid')
   })
 
   it('cell 9 — preserves user-authored file (no harnessed marker, no v3.4.3 signature)', async () => {
@@ -257,7 +257,7 @@ describe('writeAllCommands — directory integration', () => {
 })
 
 describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)', () => {
-  it('cell 13 — new body contains `harnessed run <name> --task-stdin` Bash invocation', () => {
+  it('cell 13 — EXECUTION body uses `harnessed prompt <name>` (v4.0, not harnessed run)', () => {
     const { content } = generateCommandFile(
       'verify-paranoid',
       SUB_PROMPT,
@@ -265,7 +265,8 @@ describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)
       new Set(),
       new Set(),
     )
-    expect(content).toContain('harnessed run verify-paranoid --task-stdin')
+    expect(content).toContain('harnessed prompt verify-paranoid')
+    expect(content).not.toContain('harnessed run verify-paranoid --task-stdin')
   })
 
   it('cell 14 — new body contains v3.4.4 marker as trailing comment', () => {
@@ -325,7 +326,7 @@ describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)
     )
     expect(r.results[0]?.written).toBe(true)
     const body = readFileSync(targetPath, 'utf8')
-    expect(body).toContain('harnessed run verify-paranoid --task-stdin')
+    expect(body).toContain('harnessed prompt verify-paranoid')
     expect(body).not.toContain('stale content')
   })
 
@@ -351,7 +352,7 @@ describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)
     )
     expect(r.results[0]?.written).toBe(true)
     const body = readFileSync(targetPath, 'utf8')
-    expect(body).toContain('harnessed run verify-paranoid --task-stdin')
+    expect(body).toContain('harnessed prompt verify-paranoid')
     expect(body).not.toContain('SlashCommand tool')
   })
 
@@ -409,7 +410,7 @@ describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)
   })
 })
 
-describe('v3.9.26 Option A — interactive vs hybrid vs spawn command bodies (cells 21-26)', () => {
+describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 21-29)', () => {
   const DISCUSS_MASTER_PROMPT: RolePrompt = {
     primary_cap: '',
     specialist: 'Stage 1 discuss dispatcher',
@@ -438,7 +439,7 @@ describe('v3.9.26 Option A — interactive vs hybrid vs spawn command bodies (ce
     is_master: true,
   }
 
-  it('cell 21 — interactive command (discuss) → body instructs main-session dialogue, NO harnessed run spawn', () => {
+  it('cell 21 — INTERACTIVE (discuss) → main-session dialogue, no run/gates spawn of itself', () => {
     const { content } = generateCommandFile(
       'discuss',
       DISCUSS_MASTER_PROMPT,
@@ -446,39 +447,44 @@ describe('v3.9.26 Option A — interactive vs hybrid vs spawn command bodies (ce
       new Set(),
       new Set(),
     )
-    // Must instruct interactive clarification in THIS session
-    expect(content).toMatch(/in (THIS|this) session/i)
-    expect(content).toMatch(/AskUserQuestion|ask the user|dialogue/i)
-    // Must NOT contain the spawn invocation for itself
-    expect(content).not.toContain('harnessed run discuss --task-stdin')
+    expect(content).toMatch(/in THIS session/)
+    expect(content).toMatch(/AskUserQuestion/)
+    expect(content).not.toContain('harnessed run discuss')
+    expect(content).not.toContain('harnessed gates discuss')
   })
 
-  it('cell 22 — interactive command (task-clarify) → same main-session instruction', () => {
+  it('cell 22 — INTERACTIVE (task-clarify) → main-session instruction', () => {
     const { content } = generateCommandFile('task-clarify', SUB_PROMPT, CAPS, new Set(), new Set())
-    expect(content).toMatch(/in (THIS|this) session/i)
-    expect(content).not.toContain('harnessed run task-clarify --task-stdin')
+    expect(content).toMatch(/in THIS session/)
+    expect(content).not.toContain('harnessed run task-clarify')
   })
 
-  it('cell 23 — hybrid command (auto) → interactive discuss FIRST + harnessed run chain with --skip-sub', () => {
+  it('cell 23 — ORCHESTRATOR (auto) → interactive discuss FIRST + harnessed gates + native spawn + Agent Teams', () => {
     const { content } = generateCommandFile('auto', AUTO_PROMPT, CAPS, new Set(), new Set())
-    // Step 1: interactive clarification
-    expect(content).toMatch(/in (THIS|this) session/i)
-    // Step 2: chain of harnessed run per execution stage with --skip-sub on task
-    expect(content).toContain('harnessed run plan --task-stdin')
-    expect(content).toContain('harnessed run task --task-stdin --skip-sub clarify')
-    expect(content).toContain('harnessed run verify --task-stdin')
-    expect(content).toContain('harnessed run retro --task-stdin')
-    // Must NOT spawn the auto super-master itself (that would re-spawn headless discuss)
+    // Interactive discuss inline
+    expect(content).toMatch(/discuss stage interactively in THIS session/)
+    // Uses the v4.0 brain CLIs, not harnessed run
+    expect(content).toContain('harnessed gates auto')
+    expect(content).toContain('harnessed prompt <sub>')
+    expect(content).toContain('harnessed checkpoint complete')
+    // Agent Teams escalation + ralph-loop + clarification round-trip
+    expect(content).toContain('escalate_to_teams')
+    expect(content).toMatch(/ralph-loop/)
+    expect(content).toContain('NEEDS_CLARIFICATION')
+    // Must NOT use the old SDK-spawn path for itself
     expect(content).not.toContain('harnessed run auto --task-stdin')
   })
 
-  it('cell 24 — hybrid command (task) → interactive clarify first + --skip-sub clarify spawn', () => {
+  it('cell 24 — ORCHESTRATOR (task) → harnessed gates task + --skip-sub clarify', () => {
     const { content } = generateCommandFile('task', TASK_MASTER_PROMPT, CAPS, new Set(), new Set())
-    expect(content).toMatch(/in (THIS|this) session/i)
-    expect(content).toContain('harnessed run task --task-stdin --skip-sub clarify')
+    expect(content).toMatch(/in THIS session/)
+    expect(content).toContain('harnessed gates task')
+    expect(content).toContain('--skip-sub clarify')
+    expect(content).toContain('NEEDS_CLARIFICATION')
+    expect(content).not.toContain('harnessed run task --task-stdin')
   })
 
-  it('cell 25 — spawn command (verify-paranoid) → unchanged v3.4.4 single-path body', () => {
+  it('cell 25 — EXECUTION (verify-paranoid) → harnessed prompt + native spawn, no orchestration', () => {
     const { content } = generateCommandFile(
       'verify-paranoid',
       SUB_PROMPT,
@@ -486,13 +492,19 @@ describe('v3.9.26 Option A — interactive vs hybrid vs spawn command bodies (ce
       new Set(),
       new Set(),
     )
-    expect(content).toContain('harnessed run verify-paranoid --task-stdin')
-    expect(content).not.toMatch(/in THIS session/)
+    expect(content).toContain('harnessed prompt verify-paranoid')
+    expect(content).toContain('NEEDS_CLARIFICATION')
+    expect(content).toContain('harnessed checkpoint complete')
+    // EXECUTION is single-sub: no gates orchestration
+    expect(content).not.toContain('harnessed gates')
+    // Not the old SDK-spawn path
+    expect(content).not.toContain('harnessed run verify-paranoid --task-stdin')
   })
 
-  it('cell 26 — spawn command (research) → unchanged', () => {
+  it('cell 26 — EXECUTION (research) → harnessed prompt research', () => {
     const { content } = generateCommandFile('research', SUB_PROMPT, CAPS, new Set(), new Set())
-    expect(content).toContain('harnessed run research --task-stdin')
+    expect(content).toContain('harnessed prompt research')
+    expect(content).not.toContain('harnessed run research --task-stdin')
   })
 
   it('cell 27 — all three body types carry the harnessed-generated marker (overwrite-safe)', () => {
@@ -504,5 +516,26 @@ describe('v3.9.26 Option A — interactive vs hybrid vs spawn command bodies (ce
       const { content } = generateCommandFile(name, prompt, CAPS, new Set(), new Set())
       expect(shouldOverwriteFile(content), `${name} body must carry marker`).toBe(true)
     }
+  })
+
+  it('cell 28 — EXECUTION body substitutes the sub name into spawnLoop (no literal <sub>)', () => {
+    const { content } = generateCommandFile('task-code', SUB_PROMPT, CAPS, new Set(), new Set())
+    expect(content).toContain('harnessed prompt task-code')
+    // EXECUTION replaces <sub> placeholder with the actual name
+    expect(content).not.toContain('harnessed prompt <sub>')
+    expect(content).toContain('--task "$ARGUMENTS"')
+  })
+
+  it('cell 29 — ORCHESTRATOR keeps <sub> placeholder (CC loops over gates fire[])', () => {
+    const { content } = generateCommandFile(
+      'verify',
+      TASK_MASTER_PROMPT,
+      CAPS,
+      new Set(),
+      new Set(),
+    )
+    // ORCHESTRATOR iterates subs from gates output → keeps the <sub> placeholder
+    expect(content).toContain('harnessed prompt <sub>')
+    expect(content).toContain('harnessed gates verify')
   })
 })
