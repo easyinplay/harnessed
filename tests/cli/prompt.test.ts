@@ -155,3 +155,43 @@ describe('cli/prompt — fallback', () => {
     expect(parsed.model).toBe('sonnet')
   })
 })
+
+describe('cli/prompt — v4.0.1 language discipline injection', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete process.env.HARNESSED_USER_LANG
+  })
+
+  it('cell 6 — HARNESSED_USER_LANG=zh-Hans → ## Language section with 简体中文 + preserve note', async () => {
+    process.env.HARNESSED_USER_LANG = 'zh-Hans'
+    const { code, stdout } = await runCli(['prompt', 'task-code', '--task', 'x'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Language')
+    expect(stdout).toContain('简体中文')
+    expect(stdout).toMatch(/do not translate/i)
+  })
+
+  it('cell 7 — HARNESSED_USER_LANG unset → no ## Language section', async () => {
+    delete process.env.HARNESSED_USER_LANG
+    const { code, stdout } = await runCli(['prompt', 'task-code', '--task', 'x'])
+    expect(code).toBe(0)
+    expect(stdout).not.toContain('## Language')
+  })
+
+  it('cell 8 — HARNESSED_USER_LANG=en → English language section', async () => {
+    process.env.HARNESSED_USER_LANG = 'en'
+    const { code, stdout } = await runCli(['prompt', 'task-code'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Language')
+    expect(stdout).toContain('English')
+  })
+
+  it('cell 9 — --json prompt also carries the language section', async () => {
+    process.env.HARNESSED_USER_LANG = 'zh-Hans'
+    const { code, stdout } = await runCli(['prompt', 'task-code', '--json'])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.prompt).toContain('## Language')
+    expect(parsed.prompt).toContain('简体中文')
+  })
+})

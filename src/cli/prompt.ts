@@ -25,6 +25,29 @@ const DEFAULT_MAX_ITERATIONS = 20
 const DEFAULT_MODEL = 'sonnet'
 const DEFAULT_SPECIALIST = 'Implementation Engineer'
 
+/** v4.0.1 — language discipline injection. The `language` discipline
+ *  (workflows/disciplines/language.yaml) says output follows env.HARNESSED_USER_LANG
+ *  (set by `harnessed setup` Step D). v4.0 spawns CC-native subagents via this
+ *  prompt, so the language directive must be IN the prompt — nothing else wires
+ *  it in. Without it, spawned subagents (and the prompt's own tone) default to
+ *  English even when the user configured zh-Hans. */
+const LANG_NAMES: Record<string, string> = {
+  en: 'English',
+  'zh-Hans': '简体中文 (Simplified Chinese)',
+  'zh-CN': '简体中文 (Simplified Chinese)',
+  'zh-Hant': '繁體中文 (Traditional Chinese)',
+  'zh-TW': '繁體中文 (Traditional Chinese)',
+}
+
+/** Build the `## Language` section from env.HARNESSED_USER_LANG. Empty string
+ *  when unset (subagent then mirrors the user's conversation language naturally). */
+function buildLanguageSection(): string {
+  const code = process.env.HARNESSED_USER_LANG
+  if (!code) return ''
+  const name = LANG_NAMES[code] ?? code
+  return `\n## Language\nRespond in ${name}. Keep code, commands, file/identifier/API names, error messages, stack traces, URLs, commit hashes, and version numbers in their original form (do not translate or transliterate them).\n`
+}
+
 const PROTOCOLS = `
 ## Completion protocol
 When done emit: <promise>COMPLETE</promise>
@@ -92,7 +115,7 @@ export function registerPrompt(program: Command): void {
       const taskSection =
         typeof raw.task === 'string' && raw.task.length > 0 ? `## Task\n${raw.task}\n\n` : ''
 
-      const fullPrompt = `${taskSection}${body}\n${PROTOCOLS}`
+      const fullPrompt = `${taskSection}${body}\n${PROTOCOLS}${buildLanguageSection()}`
 
       if (raw.json) {
         const maxIterations = await resolveMaxIterations(sub, packageRoot)

@@ -99,6 +99,13 @@ const ORCHESTRATOR_COMMANDS = new Set(['auto', 'plan', 'task', 'verify'])
 
 const MARKER = `<!-- harnessed-generated:v3.4.4 -->`
 
+/** v4.0.1 — language directive for the CC main session's own narration +
+ *  clarification dialogue. The `language` discipline says output follows
+ *  env.HARNESSED_USER_LANG (set by `harnessed setup`). Spawned subagents get
+ *  this via `harnessed prompt`; the main session reading this command file needs
+ *  it stated here. */
+const LANG_DIRECTIVE = `> **Language**: respond to the user in the language set by \`env.HARNESSED_USER_LANG\` (e.g. \`zh-Hans\` → 简体中文, \`en\` → English). If unset, mirror the user's input language. Keep code / commands / identifiers / error messages / URLs verbatim.`
+
 /** Shared spawn-loop snippet (v4.0) — how CC executes ONE sub via native spawn
  *  with prompt from `harnessed prompt`, ralph-loop completion, NEEDS_CLARIFICATION
  *  round-trip, and checkpoint. Reused by ORCHESTRATOR (per-sub) + EXECUTION. */
@@ -120,6 +127,8 @@ function buildInteractiveBody(name: string, prompt: RolePrompt): string {
     `# /${name}`,
     ``,
     prompt.description,
+    ``,
+    LANG_DIRECTIVE,
     ``,
     `## How to run (interactive — in THIS session)`,
     ``,
@@ -160,6 +169,8 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
     ``,
     prompt.description,
     ``,
+    LANG_DIRECTIVE,
+    ``,
     `## How to run (orchestrator — clarify in THIS session, then drive native subagent spawns)`,
     ``,
     `harnessed is the orchestration brain: \`harnessed gates\` tells you which subs fire, \`harnessed prompt\` gives you each sub's spawn-ready prompt. YOU (the main session) do the spawning with CC-native Task / Agent tools — keeping the session responsive, enabling Agent Teams, and letting clarification round-trips reach the user.`,
@@ -189,6 +200,8 @@ function buildExecutionBody(name: string, prompt: RolePrompt): string {
     `# /${name}`,
     ``,
     prompt.description,
+    ``,
+    LANG_DIRECTIVE,
     ``,
     `## How to run (execution — native subagent spawn)`,
     ``,

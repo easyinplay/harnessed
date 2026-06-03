@@ -538,4 +538,16 @@ describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 
     expect(content).toContain('harnessed prompt <sub>')
     expect(content).toContain('harnessed gates verify')
   })
+
+  it('cell 30 — all 3 body types carry the HARNESSED_USER_LANG language directive (v4.0.1)', () => {
+    for (const [name, prompt] of [
+      ['discuss', DISCUSS_MASTER_PROMPT], // INTERACTIVE
+      ['auto', AUTO_PROMPT], // ORCHESTRATOR
+      ['verify-paranoid', SUB_PROMPT], // EXECUTION
+    ] as const) {
+      const { content } = generateCommandFile(name, prompt, CAPS, new Set(), new Set())
+      expect(content, `${name} must carry language directive`).toContain('HARNESSED_USER_LANG')
+      expect(content, `${name} must mention zh-Hans mapping`).toContain('zh-Hans')
+    }
+  })
 })

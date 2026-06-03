@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.1] - 2026-05-30
+
+### Fixed
+
+- **Language discipline lost in v4.0** — `HARNESSED_USER_LANG` (set by setup) was only written to settings.json, never injected into the v4.0 spawn path, so CC-native subagents (and the main session) defaulted to English even when the user configured `zh-Hans`.
+  - `harnessed prompt` now appends a `## Language` section read from `env.HARNESSED_USER_LANG` (zh-Hans → 简体中文, etc.) with the 8-category English-preserve note. Unset → no section (mirror user input). (4 tests)
+  - Generated command bodies (INTERACTIVE / ORCHESTRATOR / EXECUTION) now carry a `HARNESSED_USER_LANG` language directive so the CC main session narrates + clarifies in the configured language. (1 test)
+  - Re-run `harnessed setup` to regenerate command files with the directive.
+
 ## [4.0.0] - 2026-05-30
 
 ### BREAKING
