@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-05-30
+
+### BREAKING
+
+harnessed shifts from **execution engine** to **orchestration brain + prompt library**. Slash commands no longer pipe to `harnessed run` (in-process SDK spawn that blocked the session, bypassed CC-native Agent Teams, and could not do clarification round-trips). The CC main session now orchestrates CC-native subagent spawns using three new秒级 CLIs.
+
+**Migration**: re-run `harnessed setup` after upgrading — it regenerates `~/.claude/commands/*.md` with the new orchestration bodies. User-authored command files (no harnessed marker) are preserved.
+
+### Added
+
+- `harnessed gates <master> [--task] [--skip-sub] [--context]` — evaluates which sub-workflows fire for a master stage. Outputs JSON `{fire, skip, parallelism}`. Reuses `resolveJudgmentGate` + master gate-eval loop, no spawn. Fail-soft fires=true on eval error (ADR 0029). `parallelism.escalate_to_teams` from `judgments.parallelism-gate.agent-teams-upgrade.fires`.
+- `harnessed prompt <sub> [--task] [--json]` — outputs a spawn-ready prompt (role + checklist + disciplines + task) with **COMPLETE** and **NEEDS_CLARIFICATION** protocols appended. Reuses `buildAgentDef` + `loadRolePrompts`.
+- `harnessed checkpoint <start|complete|fail> <sub> [--summary]` — records sub progress to `~/.claude/harnessed/checkpoints/`. Reuses `activatePhase`/`completePhase`.
+- `harnessed run --skip-sub <names>` flag (CI-mode parity with the orchestration path).
+
+### Changed
+
+- **Command body templates** (`generateCommands.ts`) rewritten into 3 types:
+  - **INTERACTIVE** (discuss + discuss-* + task-clarify): main-session dialogue via AskUserQuestion, never spawn.
+  - **ORCHESTRATOR** (auto / plan / task / verify): clarify in main session → `harnessed gates` → per fired sub `harnessed prompt` → CC-native Task spawn wrapped in ralph-loop → NEEDS_CLARIFICATION round-trip (AskUserQuestion → re-spawn) → `harnessed checkpoint`. `parallelism.escalate_to_teams` → CC-native Agent Teams.
+  - **EXECUTION** (other subs): single `harnessed prompt` → native spawn → round-trip → checkpoint.
+- `harnessed run` retained but documented as **CI/headless-only** (header + `--description` + README ×10 + WORKFLOW.md).
+- `masterOrchestrator.ts` gate eval: `skip_subs` pre-gate filter (subs done interactively in main session skip without eval).
+
+### Docs
+
+- README ×10 (en + 9 langs): v4.0 orchestration-brain note + 3 new CLI rows.
+- `docs/WORKFLOW.md`: new §1.5 Execution Model (mermaid flow + CLI/body-type tables + Why); old run-based prose annotated superseded; yaml SoT (§2-8) unchanged. 425→505 lines.
+
+### Tests
+
+- W1 new CLIs: gates (11) + prompt (8) + checkpoint (7) = 26 tests.
+- W2 generate-commands cells 4-7/13/21-29 rewritten for v4.0 bodies.
+- 1083 tests pass / biome clean / tsc 0 errors.
+
 ## [3.9.10] - 2026-05-26
 
 ### Changed
