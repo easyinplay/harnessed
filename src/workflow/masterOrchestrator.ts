@@ -118,9 +118,24 @@ export async function runMasterOrchestrator(
     effectiveOpts = pre.opts
   }
 
+  // v3.9.26 Option A — pre-gate skip filter. gateContext.skip_subs lists subs
+  // whose work was ALREADY done interactively in the main CC session (e.g.
+  // clarify / discuss brainstorming, which require user dialogue that headless
+  // SDK subagents cannot do). Skip them without gate eval — the clarification
+  // outcome is embedded in the task text passed downstream.
+  const skipSubs = new Set(Array.isArray(context.skip_subs) ? (context.skip_subs as string[]) : [])
+
   // Phase 1: gate eval per delegation clause(unconditional fire 当 clause.gate undefined)
   const gateEvalled: GateEvaluation[] = []
   for (const clause of master.delegates_to) {
+    if (skipSubs.has(clause.sub)) {
+      gateEvalled.push({
+        clause,
+        passes: false,
+        reason: `skipped via skip_subs (done interactively in main session)`,
+      })
+      continue
+    }
     if (!clause.gate) {
       gateEvalled.push({ clause, passes: true })
       continue

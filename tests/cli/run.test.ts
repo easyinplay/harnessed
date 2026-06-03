@@ -203,6 +203,20 @@ describe('cli/run — 15 cells per v3.4.4 PHASE-1-SPEC.md', () => {
     expect(opts?.gateContext?.staged).toBe(true)
   })
 
+  it('cell 12b — --skip-sub clarify,test → gateContext.skip_subs array (v3.9.26 Option A)', async () => {
+    await runCli(['run', 'task', '--task', 'do X', '--skip-sub', 'clarify,test'])
+    const calls = vi.mocked(runWorkflow).mock.calls
+    const [, , opts] = calls[0] ?? []
+    expect(opts?.gateContext?.skip_subs).toEqual(['clarify', 'test'])
+  })
+
+  it('cell 12c — no --skip-sub → gateContext.skip_subs absent', async () => {
+    await runCli(['run', 'task', '--task', 'do X'])
+    const calls = vi.mocked(runWorkflow).mock.calls
+    const [, , opts] = calls[0] ?? []
+    expect(opts?.gateContext?.skip_subs).toBeUndefined()
+  })
+
   it('cell 13 — runWorkflow returns { status: "failed" } → exit 1', async () => {
     vi.mocked(runWorkflow).mockResolvedValue({ status: 'failed', phasesRun: 1 })
     const { code } = await runCli(['run', 'verify-paranoid'])

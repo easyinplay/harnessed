@@ -1,6 +1,6 @@
 {
   "name": "harnessed",
-  "version": "3.9.25",
+  "version": "3.9.26",
   "description": "AI coding harness package manager + composition orchestrator",
   "type": "module",
   "license": "Apache-2.0",

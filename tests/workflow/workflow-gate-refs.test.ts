@@ -16,8 +16,7 @@ const GATE_REF_PATTERN = /^judgments\.[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*\.fires$/
 async function findWorkflowYamls(dir: string, acc: string[] = []): Promise<string[]> {
   const entries = await readdir(dir)
   for (const e of entries) {
-    if (e === 'disciplines' || e === 'judgments' || e === 'capabilities.yaml')
-      continue
+    if (e === 'disciplines' || e === 'judgments' || e === 'capabilities.yaml') continue
     const p = join(dir, e)
     const s = await stat(p).catch(() => null)
     if (s?.isDirectory()) {
@@ -64,9 +63,7 @@ describe('workflow yaml gate refs — must be judgments.<file>.<trigger>.fires',
       }
     }
     if (offenders.length > 0) {
-      const msg = offenders
-        .map((o) => `  ${o.file} ${o.location}: '${o.gate}'`)
-        .join('\n')
+      const msg = offenders.map((o) => `  ${o.file} ${o.location}: '${o.gate}'`).join('\n')
       throw new Error(
         `${offenders.length} malformed gate ref(s) — must match judgments.<file>.<trigger>.fires:\n${msg}`,
       )

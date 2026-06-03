@@ -91,7 +91,7 @@ async function removeSettingsEnv(settingsPath: string): Promise<boolean> {
   if (!changed) return false
   if (Object.keys(env).length === 0) delete data.env
   else data.env = env
-  await writeFile(settingsPath, JSON.stringify(data, null, 2) + '\n', 'utf8')
+  await writeFile(settingsPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8')
   return true
 }
 

@@ -33,6 +33,10 @@ interface RawOpts {
   dryRun?: boolean
   staged?: boolean
   list?: boolean
+  // v3.9.26 Option A — comma-separated sub names whose work was already done
+  // interactively in the main CC session (e.g. clarify). Master orchestrator
+  // skips them without gate eval.
+  skipSub?: string
 }
 
 const PACKAGE_ROOT = getPackageRoot()
@@ -67,6 +71,10 @@ export function registerRun(program: Command): void {
       'validate yaml load + walk runtime without spawning (Phase 1 default for verification)',
     )
     .option('--staged', '/auto super-master: pause between stages for user review')
+    .option(
+      '--skip-sub <names>',
+      'comma-separated sub names to skip (work already done interactively in main session, e.g. clarify)',
+    )
     .option('--list', 'print all known workflow names and exit')
     .action(async (name: string | undefined, raw: RawOpts) => {
       if (raw.list) {
@@ -169,6 +177,15 @@ export function registerRun(program: Command): void {
         ...(raw.model ? { modelOverride: raw.model } : {}),
         ...(raw.maxIterations ? { maxIterations: raw.maxIterations } : {}),
         ...(raw.staged ? { staged: true } : {}),
+        // v3.9.26 Option A — skip subs done interactively in main session.
+        ...(typeof raw.skipSub === 'string' && raw.skipSub.length > 0
+          ? {
+              skip_subs: raw.skipSub
+                .split(',')
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0),
+            }
+          : {}),
         ...(matchedTriggers.length > 0 ? { user_overrides: matchedTriggers } : {}),
       }
 

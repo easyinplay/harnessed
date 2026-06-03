@@ -183,6 +183,31 @@ describe('runMasterOrchestrator — 4 master × 4 gate scenario + 5 extra', () =
       expect(r.fired.sort()).toEqual(['sub-a', 'sub-b'])
       expect(r.skipped).toEqual([])
     })
+
+    it(`${master} — skip_subs context filter bypasses gate eval (v3.9.26 Option A)`, async () => {
+      yamlFileMap.set(
+        pathFor(master),
+        masterYaml(
+          master,
+          [
+            clauseLine('clarify', { gate: 'judgments.subtask-gate.brainstorming.fires' }),
+            clauseLine('code', {}),
+          ].join('\n'),
+        ),
+      )
+      resolveJudgmentGateMock.mockResolvedValue(true)
+      const spawn: SpawnDriver = vi.fn(async () => {})
+      // gateContext.skip_subs lists subs already done interactively in main session
+      const r = await runMasterOrchestrator(master, { skip_subs: ['clarify'] }, PACKAGE_ROOT, spawn)
+      // clarify skipped WITHOUT gate eval; code fires unconditionally
+      expect(r.fired).toEqual(['code'])
+      expect(r.skipped).toEqual(['clarify'])
+      // gate for clarify must NOT have been evaluated (skip filter runs pre-gate)
+      expect(resolveJudgmentGateMock).not.toHaveBeenCalled()
+      // spawn only called for code
+      expect(spawn).toHaveBeenCalledTimes(1)
+      expect(spawn).toHaveBeenCalledWith(master, 'code', expect.anything(), PACKAGE_ROOT)
+    })
   }
 })
 

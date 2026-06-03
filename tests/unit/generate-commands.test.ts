@@ -408,3 +408,101 @@ describe('v3.4.4 NEW — single-path body + marker-based overwrite (cells 13-20)
     expect(shouldOverwriteFile('**Preferred path**: read the docs first')).toBe(false)
   })
 })
+
+describe('v3.9.26 Option A — interactive vs hybrid vs spawn command bodies (cells 21-26)', () => {
+  const DISCUSS_MASTER_PROMPT: RolePrompt = {
+    primary_cap: '',
+    specialist: 'Stage 1 discuss dispatcher',
+    responsibility: 'Run 3-layer clarification.',
+    checklist: [],
+    severity: 'per-sub fire/skip',
+    description: 'Stage 1 discuss master.',
+    is_master: true,
+  }
+  const AUTO_PROMPT: RolePrompt = {
+    primary_cap: '',
+    specialist: 'Super-master dispatcher',
+    responsibility: 'Run 6-stage chain.',
+    checklist: [],
+    severity: 'per-stage',
+    description: 'Super-master auto.',
+    is_master: true,
+  }
+  const TASK_MASTER_PROMPT: RolePrompt = {
+    primary_cap: '',
+    specialist: 'Stage 3 task dispatcher',
+    responsibility: 'Run 4-sub task chain.',
+    checklist: [],
+    severity: 'per-sub',
+    description: 'Stage 3 task master.',
+    is_master: true,
+  }
+
+  it('cell 21 — interactive command (discuss) → body instructs main-session dialogue, NO harnessed run spawn', () => {
+    const { content } = generateCommandFile(
+      'discuss',
+      DISCUSS_MASTER_PROMPT,
+      CAPS,
+      new Set(),
+      new Set(),
+    )
+    // Must instruct interactive clarification in THIS session
+    expect(content).toMatch(/in (THIS|this) session/i)
+    expect(content).toMatch(/AskUserQuestion|ask the user|dialogue/i)
+    // Must NOT contain the spawn invocation for itself
+    expect(content).not.toContain('harnessed run discuss --task-stdin')
+  })
+
+  it('cell 22 — interactive command (task-clarify) → same main-session instruction', () => {
+    const { content } = generateCommandFile('task-clarify', SUB_PROMPT, CAPS, new Set(), new Set())
+    expect(content).toMatch(/in (THIS|this) session/i)
+    expect(content).not.toContain('harnessed run task-clarify --task-stdin')
+  })
+
+  it('cell 23 — hybrid command (auto) → interactive discuss FIRST + harnessed run chain with --skip-sub', () => {
+    const { content } = generateCommandFile('auto', AUTO_PROMPT, CAPS, new Set(), new Set())
+    // Step 1: interactive clarification
+    expect(content).toMatch(/in (THIS|this) session/i)
+    // Step 2: chain of harnessed run per execution stage with --skip-sub on task
+    expect(content).toContain('harnessed run plan --task-stdin')
+    expect(content).toContain('harnessed run task --task-stdin --skip-sub clarify')
+    expect(content).toContain('harnessed run verify --task-stdin')
+    expect(content).toContain('harnessed run retro --task-stdin')
+    // Must NOT spawn the auto super-master itself (that would re-spawn headless discuss)
+    expect(content).not.toContain('harnessed run auto --task-stdin')
+  })
+
+  it('cell 24 — hybrid command (task) → interactive clarify first + --skip-sub clarify spawn', () => {
+    const { content } = generateCommandFile('task', TASK_MASTER_PROMPT, CAPS, new Set(), new Set())
+    expect(content).toMatch(/in (THIS|this) session/i)
+    expect(content).toContain('harnessed run task --task-stdin --skip-sub clarify')
+  })
+
+  it('cell 25 — spawn command (verify-paranoid) → unchanged v3.4.4 single-path body', () => {
+    const { content } = generateCommandFile(
+      'verify-paranoid',
+      SUB_PROMPT,
+      CAPS,
+      new Set(),
+      new Set(),
+    )
+    expect(content).toContain('harnessed run verify-paranoid --task-stdin')
+    expect(content).not.toMatch(/in THIS session/)
+  })
+
+  it('cell 26 — spawn command (research) → unchanged', () => {
+    const { content } = generateCommandFile('research', SUB_PROMPT, CAPS, new Set(), new Set())
+    expect(content).toContain('harnessed run research --task-stdin')
+  })
+
+  it('cell 27 — all three body types carry the harnessed-generated marker (overwrite-safe)', () => {
+    for (const [name, prompt] of [
+      ['discuss', DISCUSS_MASTER_PROMPT],
+      ['auto', AUTO_PROMPT],
+      ['verify-paranoid', SUB_PROMPT],
+    ] as const) {
+      const { content } = generateCommandFile(name, prompt, CAPS, new Set(), new Set())
+      expect(shouldOverwriteFile(content), `${name} body must carry marker`).toBe(true)
+    }
+  })
+})

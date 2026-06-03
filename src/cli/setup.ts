@@ -64,20 +64,19 @@ function printGrouped(b: StepBResult, prefix = ''): void {
   const GROUP_ORDER = ['mcp-tool', 'command', 'cli-binary', 'other']
   const groupOf = (n: string): string => b.componentTypes[n] ?? 'other'
   const buckets: Record<string, Array<{ status: string; name: string; suffix?: string }>> = {}
+  const push = (group: string, entry: { status: string; name: string; suffix?: string }): void => {
+    if (!buckets[group]) buckets[group] = []
+    buckets[group].push(entry)
+  }
   for (const n of b.failed) {
     const m = n.match(/^([^:]+):/)
     const baseName = m?.[1] ?? n
-    ;(buckets[groupOf(baseName)] ??= []).push({ status: 'failed', name: n })
+    push(groupOf(baseName), { status: 'failed', name: n })
   }
-  for (const n of b.installed) (buckets[groupOf(n)] ??= []).push({ status: 'installed', name: n })
+  for (const n of b.installed) push(groupOf(n), { status: 'installed', name: n })
   for (const s of b.skipped)
-    (buckets[groupOf(s.name)] ??= []).push({
-      status: 'skipped',
-      name: s.name,
-      suffix: ` — ${s.reason}`,
-    })
-  for (const n of b.alreadyInstalled)
-    (buckets[groupOf(n)] ??= []).push({ status: 'already-installed', name: n })
+    push(groupOf(s.name), { status: 'skipped', name: s.name, suffix: ` — ${s.reason}` })
+  for (const n of b.alreadyInstalled) push(groupOf(n), { status: 'already-installed', name: n })
 
   for (const g of GROUP_ORDER) {
     const entries = buckets[g]
