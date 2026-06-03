@@ -8,10 +8,11 @@
 //   Level 3 — throw CheckpointTooLargeError (fail-loud, do NOT silently drop data)
 // Token estimation: 1 char ≈ 0.25 token via Buffer.byteLength (R § 3 heuristic).
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
 import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
+import { writeFileSyncAtomic } from './atomicWrite.js'
 import { CheckpointV1, type CheckpointV1Type } from './schema/index.js'
 
 const BUDGET_TOKEN = 1000
@@ -67,6 +68,6 @@ export function writeCheckpoint(c: CheckpointV1Type, customPath?: string): strin
   const enforced = enforceBudget(c)
   const path = customPath ?? join(harnessedSubdir('checkpoints'), `${enforced.phase}.json`)
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, JSON.stringify(enforced, null, 2), 'utf8')
+  writeFileSyncAtomic(path, JSON.stringify(enforced, null, 2))
   return path
 }

@@ -10,6 +10,10 @@ const mkdirCalls: string[] = []
 vi.mock('node:fs', () => ({
   writeFileSync: (p: string, data: string) => void fsState.set(p, data),
   mkdirSync: (p: string) => void mkdirCalls.push(p),
+  renameSync: (src: string, dst: string) => {
+    fsState.set(dst, fsState.get(src) as string)
+    fsState.delete(src)
+  },
 }))
 
 import { join as pathJoin } from 'node:path'

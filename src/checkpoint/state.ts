@@ -10,12 +10,13 @@
 // `<homedir>/.harnessed/...` via `getHarnessedRoot()` SoT. Sister v2.0.1
 // backup-root migration verbatim — EPERM-free when user CWD is read-only.
 
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
 import lockfile from 'proper-lockfile'
 import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { branchOnSchemaVersion, SCHEMA_VERSIONS } from '../types/schemaVersion.js'
+import { writeFileAtomic } from './atomicWrite.js'
 import { CurrentWorkflowV1, type CurrentWorkflowV1Type } from './schema/index.js'
 
 // v3.0.3 — lazy path resolution so HARNESSED_ROOT_OVERRIDE in e2e tests
@@ -107,7 +108,7 @@ export async function writeCurrentWorkflow(s: CurrentWorkflowV1Type): Promise<vo
   const path = statePath()
   await mkdir(dirname(path), { recursive: true })
   await withLock(async () => {
-    await writeFile(path, JSON.stringify(s, null, 2), 'utf8')
+    await writeFileAtomic(path, JSON.stringify(s, null, 2))
   })
 }
 

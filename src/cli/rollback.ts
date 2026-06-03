@@ -56,23 +56,27 @@ export function registerRollback(program: Command): void {
         process.exit(1)
         return
       }
-      // Reverse iteration so files restored later (higher in dependency chain) come first.
-      for (const entry of [...meta.files].reverse()) {
+      // v4.1.3 — two-pass restore to avoid half-restored data loss. Pass 1:
+      // read + sha1-verify EVERY backup into memory and abort before touching
+      // any target. Pass 2: write/unlink only after all verifications pass.
+      // Reverse order so files restored later (higher in dependency chain) come first.
+      const ordered = [...meta.files].reverse()
+      const planned: Array<
+        { target: string; action: 'unlink' } | { target: string; action: 'write'; data: Buffer }
+      > = []
+      for (const entry of ordered) {
         if (entry.backup === '') {
-          // Pure-create sentinel — original file did not exist; rollback = unlink.
-          try {
-            await unlink(entry.target)
-          } catch (err) {
-            const code = (err as NodeJS.ErrnoException).code
-            if (code !== 'ENOENT') {
-              console.error(`error: cannot unlink ${entry.target}: ${(err as Error).message}`)
-              process.exit(1)
-              return
-            }
-          }
+          planned.push({ target: entry.target, action: 'unlink' })
           continue
         }
-        const buf = await readFile(entry.backup)
+        let buf: Buffer
+        try {
+          buf = await readFile(entry.backup)
+        } catch (err) {
+          console.error(`error: cannot read backup ${entry.backup}: ${(err as Error).message}`)
+          process.exit(1)
+          return
+        }
         const sha1 = createHash('sha1').update(buf).digest('hex')
         if (sha1 !== entry.sha1) {
           console.error(
@@ -85,7 +89,24 @@ export function registerRollback(program: Command): void {
           process.exit(1)
           return
         }
-        await writeFile(entry.target, normalizeEol(buf, entry.eol))
+        planned.push({ target: entry.target, action: 'write', data: normalizeEol(buf, entry.eol) })
+      }
+      // Pass 2 — all verified; apply.
+      for (const op of planned) {
+        if (op.action === 'unlink') {
+          try {
+            await unlink(op.target)
+          } catch (err) {
+            const code = (err as NodeJS.ErrnoException).code
+            if (code !== 'ENOENT') {
+              console.error(`error: cannot unlink ${op.target}: ${(err as Error).message}`)
+              process.exit(1)
+              return
+            }
+          }
+        } else {
+          await writeFile(op.target, op.data)
+        }
       }
       console.log(t('rollback.restored', { count: meta.files.length, timestamp }))
     })

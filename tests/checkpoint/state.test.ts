@@ -18,6 +18,10 @@ vi.mock('node:fs/promises', () => ({
   },
   writeFile: async (p: string, data: string) => void fsState.set(p, data),
   mkdir: async (p: string) => void mkdirCalls.push(p),
+  rename: async (src: string, dst: string) => {
+    fsState.set(dst, fsState.get(src) as string)
+    fsState.delete(src)
+  },
 }))
 // proper-lockfile is mocked away — these tests target the state-machine
 // transitions in isolation, not the concurrent-write lock (covered by

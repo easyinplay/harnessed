@@ -27,6 +27,10 @@ vi.mock('node:fs/promises', () => ({
   },
   writeFile: async (p: string, data: string) => void fsState.set(p, data),
   mkdir: async (p: string) => void mkdirCalls.push(p),
+  rename: async (src: string, dst: string) => {
+    fsState.set(dst, fsState.get(src) as string)
+    fsState.delete(src)
+  },
   stat: vi.fn(),
 }))
 

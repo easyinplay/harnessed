@@ -11,6 +11,10 @@ vi.mock('node:fs', () => ({
   writeFileSync: (p: string, data: string) => void fsState.set(p, data),
   mkdirSync: (_p: string) => undefined,
   existsSync: (_p: string) => true,
+  renameSync: (src: string, dst: string) => {
+    fsState.set(dst, fsState.get(src) as string)
+    fsState.delete(src)
+  },
 }))
 vi.mock('node:fs/promises', () => ({
   readFile: async (p: string) => {
@@ -20,6 +24,10 @@ vi.mock('node:fs/promises', () => ({
   },
   writeFile: async (p: string, data: string) => void promisesFsState.set(p, data),
   mkdir: async (_p: string) => undefined,
+  rename: async (src: string, dst: string) => {
+    promisesFsState.set(dst, promisesFsState.get(src) as string)
+    promisesFsState.delete(src)
+  },
 }))
 
 // Imports AFTER mocks

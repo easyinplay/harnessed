@@ -9,6 +9,11 @@ const mkdirCalls: string[] = []
 vi.mock('node:fs', () => ({
   writeFileSync: (p: string, data: string) => void fsState.set(p, data),
   mkdirSync: (p: string) => void mkdirCalls.push(p),
+  // v4.1.3 — atomic write does writeFileSync(tmp) + renameSync(tmp, path).
+  renameSync: (src: string, dst: string) => {
+    fsState.set(dst, fsState.get(src) as string)
+    fsState.delete(src)
+  },
 }))
 
 import { ArchiveWriteError, writeArchive } from '../../src/checkpoint/archive.js'

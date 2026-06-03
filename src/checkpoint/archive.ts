@@ -8,9 +8,10 @@
 // Archive is NEVER fed back into context (no consumer path beyond manual
 // inspection); hence no token budget — only checkpoint.json is enforced.
 
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
+import { writeFileSyncAtomic } from './atomicWrite.js'
 
 export class ArchiveWriteError extends Error {
   constructor(message: string) {
@@ -32,6 +33,6 @@ export function writeArchive(phase: string, rawTurns: unknown[]): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
   const path = join(harnessedSubdir('archive'), `phase-${phase}`, `raw-${timestamp}.json`)
   mkdirSync(dirname(path), { recursive: true })
-  writeFileSync(path, JSON.stringify(rawTurns, null, 2), 'utf8')
+  writeFileSyncAtomic(path, JSON.stringify(rawTurns, null, 2))
   return path
 }

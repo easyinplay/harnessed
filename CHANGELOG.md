@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.1.3] - 2026-06-04
+
+P0 data-loss fixes from the pre-v4.0 code review (6 parallel reviewers over ~120 src files).
+
+### Fixed
+
+- **`harnessed gc` default deleted nothing.** `dirs.slice(-keepLast)` with the default `keepLast=0` → `slice(-0)` returns the WHOLE array (JS `-0===0`), protecting every snapshot, so the advertised disk-fill mitigation was a silent no-op. Guarded: `keepLast > 0 ? dirs.slice(-keepLast) : []`. (e2e verified: default gc now deletes aged snapshots)
+- **`harnessed rollback` half-restore data loss.** The restore loop verified+wrote one file at a time; a sha1 mismatch or unreadable backup at file N left files 1..N-1 already overwritten with no rollback-of-rollback. Now two-pass: read + sha1-verify EVERY backup into memory first, abort before touching any target, then apply all.
+- **Checkpoint / state / archive writes were non-atomic.** `writeFile`/`writeFileSync` directly over the live file → a crash mid-write corrupts `current-workflow.json` (the resume-critical SoT singleton) or a checkpoint envelope. New `src/checkpoint/atomicWrite.ts` (`writeFileAtomic` + `writeFileSyncAtomic`) writes to `<path>.tmp` then `rename` (atomic on same fs); wired into `state.ts`, `template.ts`, `archive.ts`. (unit tests + 5 fs-mock test files updated for the rename step)
+
+### Review findings deferred (not data-loss; threat-model-gated)
+
+The review also surfaced shell-injection/security findings in `security.ts`/`spawn.ts`/`path-guard.ts` (incomplete shell-metachar blocklist, unscreened `install.env` + `cc-hook-add hook_command`) and concurrency hazards in `sigintTrap.ts`/`before-commit.ts`. These are gated by the trust model (manifests are repo-controlled, not end-user input) — not active exploits — and are tracked for a dedicated hardening pass. See `.planning/` review notes.
+
+1107 tests pass / biome clean / tsc 0 errors.
+
 ## [4.1.2] - 2026-06-04
 
 Code-review + code-simplifier pass on the v4.0/v4.1 orchestration-brain CLIs.

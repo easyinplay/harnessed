@@ -97,8 +97,10 @@ export function registerGc(program: Command): void {
         return
       }
       const cutoff = Date.now() - olderMs
-      // Reverse so most-recent come first; first `keepLast` are protected.
-      const kept = new Set(dirs.slice(-keepLast))
+      // Most-recent `keepLast` are protected. NOTE: slice(-0) === slice(0) returns
+      // the WHOLE array (JS -0===0), so a guard is required or default keepLast=0
+      // would protect everything → gc deletes nothing (v4.1.3 fix).
+      const kept = new Set(keepLast > 0 ? dirs.slice(-keepLast) : [])
       const candidates: Array<{ ts: string; path: string; manifest: string; sizeKb: number }> = []
       for (const ts of dirs) {
         if (kept.has(ts)) continue
