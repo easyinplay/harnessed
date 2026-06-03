@@ -4,11 +4,14 @@ import pkg from '../package.json' with { type: 'json' }
 import { registerAudit } from './cli/audit.js'
 import { registerAuditLog } from './cli/audit-log.js'
 import { registerBackupList } from './cli/backup-list.js'
+import { registerCheckpoint } from './cli/checkpoint.js'
 import { registerDoctor } from './cli/doctor.js'
+import { registerGates } from './cli/gates.js'
 import { registerGc } from './cli/gc.js'
 import { registerInstall } from './cli/install.js'
 import { registerInstallBase } from './cli/install-base.js'
 import { registerManifestAdd } from './cli/manifest-add.js'
+import { registerPrompt } from './cli/prompt.js'
 import { registerResearch } from './cli/research.js'
 import { registerResume } from './cli/resume.js'
 import { registerRollback } from './cli/rollback.js'
@@ -67,5 +70,9 @@ registerResume(program) // Phase 3.1 W4 T4.4 — 12th subcommand (R7.3 D-03 RELO
 registerUninstall(program) // Phase 5.2 W1 T1.1 — 14th subcommand (R10.3 D-01 7-method dispatch)
 registerSetup(program) // v1.0.1 T1.5 — 15th subcommand (one-time onboarding workflows/*/SKILL.md → ~/.claude/skills/)
 registerRun(program) // v3.4.4 T1 — 16th subcommand (α CLI wire; replaces dead SlashCommand vapor in commands/<x>.md)
+// v4.0 W1 — orchestration-brain CLIs (CC main session calls these; no spawn):
+registerGates(program) // 17th — gate eval JSON (which subs fire for a master)
+registerPrompt(program) // 18th — spawn-ready prompt text/json for a sub
+registerCheckpoint(program) // 19th — record sub start/complete/fail to checkpoints/
 
 program.parse(process.argv)
