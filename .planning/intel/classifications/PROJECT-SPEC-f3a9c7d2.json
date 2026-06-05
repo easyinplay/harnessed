@@ -1,0 +1,35 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\PROJECT-SPEC.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "harnessed — 立项参数 Spec Sheet (v3)",
+  "summary": "Locked project spec defining harnessed's positioning, upstream dependency contracts, manifest schema, routing SSOT schema, and workflow phases schema as an executable three-layer-stack composition engine.",
+  "scope": [
+    "harnessed package manager",
+    "composition orchestrator",
+    "manifest schema (type/install_type/category/decision_rules fields)",
+    "B+C hybrid routing engine",
+    "routing SSOT schema (routing/*.md frontmatter)",
+    "workflow phases schema (workflows/*/SKILL.md)",
+    "checkpoint-based execution",
+    "manifest.lock.yaml upstream version locking",
+    "base + extension dual-layer architecture",
+    "6 skill categories (meta/engineering/design/content/testing/search)"
+  ],
+  "cross_refs": [
+    "RESEARCH-2-skill-ecosystem.md",
+    "GRAY-AREA-1-routing-engine.md",
+    "vendor/ENTRY-CRITERIA.md",
+    "workflows/SCHEMA.md",
+    "routing/SCHEMA.md",
+    "manifest.lock.yaml",
+    "docs/adr/0001",
+    "docs/adr/0003",
+    "docs/adr/0006",
+    "docs/adr/0007"
+  ],
+  "locked": false,
+  "precedence": 1,
+  "notes": "Type taken from MANIFEST_TYPE (SPEC, authoritative). Content strongly corroborates: defines manifest field schemas, routing yaml schema, workflow phases schema with field tables, version-lock contracts, and CI-gated engineering constraints — implementation contracts the system must honor. Doc is self-described 'Locked v3' but locked field reserved for Accepted ADRs only, so set false."
+}

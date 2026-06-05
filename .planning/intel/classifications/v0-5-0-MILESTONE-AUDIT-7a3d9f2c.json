@@ -1,0 +1,27 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\milestones\\v0.5.0-MILESTONE-AUDIT.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "v0.5.0 Milestone Audit — PASSED",
+  "summary": "Post-ship audit report for the v0.5.0 milestone covering 3 phases, requirements coverage, cross-phase integration, E2E flows, and cadence patterns.",
+  "scope": [
+    "v0.5.0 milestone",
+    "Phase 5.1 audit-log consumer + state lock",
+    "Phase 5.2 uninstall + path-traversal guard",
+    "Phase 5.3 milestone close + v1.0 GA prep",
+    "requirements R10.1-R10.4",
+    "cadence patterns (D2 graduation, SIZE_LIMIT tightening, M2 backlog, sister review tiering)"
+  ],
+  "cross_refs": [
+    ".planning/milestones/v0.5.0-REQUIREMENTS.md",
+    ".planning/milestones/v0.5.0-ROADMAP.md",
+    ".planning/STATE.md",
+    ".planning/ROADMAP.md",
+    "docs/adr/0021-audit-log-consumer-state-lock.md",
+    "docs/adr/0022-uninstall-path-traversal-hardening.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

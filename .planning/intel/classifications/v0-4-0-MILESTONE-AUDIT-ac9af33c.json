@@ -1,0 +1,32 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\milestones\\v0.4.0-MILESTONE-AUDIT.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "v0.4.0 Milestone Audit — PASSED",
+  "summary": "Post-ship audit verifying v0.4.0 milestone (phases 4.1/4.2/4.3) passed all acceptance bars, requirements, integration seams, and E2E flows.",
+  "scope": [
+    "v0.4.0 milestone",
+    "phases 4.1/4.2/4.3",
+    "dogfooding benchmark",
+    "routing audit log (src/audit)",
+    "co-maintainer onboarding",
+    "GitHub Sponsors",
+    "stale-bot",
+    "ADR backfill (0018/0019/0020)",
+    "CHANGELOG",
+    "requirements R8.1-R8.5"
+  ],
+  "cross_refs": [
+    ".planning/milestones/v0.4.0-REQUIREMENTS.md",
+    ".planning/milestones/v0.4.0-ROADMAP.md",
+    ".planning/STATE.md",
+    ".planning/ROADMAP.md",
+    "docs/adr/0018-routing-audit-log.md",
+    "docs/adr/0019-state-dual-ssot-collapse-pattern.md",
+    "docs/adr/0020-hybrid-2clock-disambiguation.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

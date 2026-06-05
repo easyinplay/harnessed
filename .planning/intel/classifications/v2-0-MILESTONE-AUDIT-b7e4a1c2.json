@@ -1,0 +1,31 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\milestones\\v2.0-MILESTONE-AUDIT.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "v2.0 Milestone Audit — Architecture Refactor",
+  "summary": "Post-ship audit of the v2.0 Architecture Refactor milestone recording phase delivery, R20.x acceptance verification, metrics, and lessons learned.",
+  "scope": [
+    "v2.0 Architecture Refactor milestone",
+    "Pure bundled SoT distribution model",
+    "capabilities.yaml",
+    "judgments/ multi-file rules",
+    "4 workflows (research / plan-feature / execute-task / verify-work)",
+    "ADR 0024-0029",
+    "dogfood fixtures",
+    "Agent Teams Pattern A"
+  ],
+  "cross_refs": [
+    ".planning/phase-v2.0-2.2/deferred-items.md",
+    "ADR 0020",
+    "ADR 0023",
+    "ADR 0024",
+    "ADR 0026",
+    "ADR 0028",
+    "ci.yml",
+    "publish.yml"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

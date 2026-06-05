@@ -1,0 +1,43 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\docs\\adr\\0031-4-stage-namespace-layered-architecture.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "ADR-0031: 4-Stage Namespace-Layered Workflow Architecture (M-01 + D-03 + D-07)",
+  "summary": "Locks v3.0 refactor of the v2 5-phase plan-feature workflow into 4 master orchestrators + 16 sub-workflows + 2 standalone, with nested workflows/<stage>/<sub>/ dirs and release-notes-only migration.",
+  "scope": [
+    "workflow architecture",
+    "4-stage namespace layering (discuss/plan/task/verify)",
+    "master orchestrator (delegates_to gate-route)",
+    "sub-workflow yaml structure",
+    "nested workflows/<stage>/<sub>/ directory layout",
+    "schema_version harnessed.workflow.v3",
+    "v2 to v3 BREAKING migration",
+    "masterOrchestrator.ts"
+  ],
+  "cross_refs": [
+    "docs/adr/0024-workflow-schema-v2-capability-abstraction.md",
+    "docs/adr/0030-namespace-policy-bare-slash-cmd.md",
+    "docs/adr/0028-ralph-loop-tdd-agent-teams-routing-schema-fix.md",
+    "docs/adr/0029-fallback-rules-4-stage-mechanization-dogfood.md",
+    "docs/adr/0011-execute-task-sdk-ralph.md",
+    "docs/adr/0032",
+    "docs/AGENT-DEFINITION-FACTORY-CONTRACT.md",
+    ".planning/phase-v3.0-3.1/3.1-CONTEXT.md",
+    ".planning/phase-v3.0-3.1/3.1-DISCUSSION-LOG.md",
+    ".planning/phase-v3.0-3.2/PLAN.md",
+    "CLAUDE.md",
+    "~/.claude/CLAUDE.md",
+    "docs/WORKFLOW.md",
+    "src/workflow/masterOrchestrator.ts",
+    "src/workflow/run.ts",
+    "workflows/discuss/auto/workflow.yaml",
+    "workflows/plan/auto/workflow.yaml",
+    "workflows/task/auto/workflow.yaml",
+    "workflows/verify/auto/workflow.yaml",
+    ".planning/REQUIREMENTS.md"
+  ],
+  "locked": true,
+  "precedence": null,
+  "notes": ""
+}

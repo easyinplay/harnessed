@@ -1,0 +1,34 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\milestones\\v0.3.0-MILESTONE-AUDIT.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "v0.3.0 Milestone Audit — PASSED",
+  "summary": "Post-ship audit verdict for the v0.3.0 milestone covering 4 phases, requirement coverage, integration seams, e2e flows, and accepted line-budget deviations.",
+  "scope": [
+    "v0.3.0 milestone",
+    "phases 3.1-3.4",
+    "checkpoint engine",
+    "plan-feature workflow",
+    "gstack prefix probe",
+    "aliases/deprecation markers",
+    "known-good version lock",
+    "routing hit-rate",
+    "token budget doctor check",
+    "requirements R4.2/R7.1-R7.6"
+  ],
+  "cross_refs": [
+    ".planning/milestones/v0.3.0-REQUIREMENTS.md",
+    ".planning/milestones/v0.3.0-ROADMAP.md",
+    ".planning/STATE.md",
+    ".planning/ROADMAP.md",
+    "src/cli/doctor.ts",
+    "src/cli/lib/check-token-budget.ts",
+    "docs/adr/0017-routing-hit-rate-token-budget.md",
+    "tests/routing/phase-3.4-routing-hit-rate.test.ts",
+    "scripts/dashboard.mjs"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "Type set from MANIFEST_TYPE=DOC (authoritative); content confirms it is an audit/status report (prose + tables, no decision or requirement definition), consistent with DOC."
+}

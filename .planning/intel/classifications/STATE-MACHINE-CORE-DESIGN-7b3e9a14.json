@@ -1,0 +1,34 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\v5.0\\STATE-MACHINE-CORE-DESIGN.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "harnessed v5.0 — Workflow State Machine Core (Spec 1: A/B/C/E/F)",
+  "summary": "Technical spec for harnessed v5.0 state-machine core: structured progress ledger, status --recover, fail-closed evidence guard, and sha256 handoff drift detection.",
+  "scope": [
+    "current-workflow.json ledger schema",
+    "currentWorkflow.v1.ts (sub_progress, EvidenceRef, SubProgressEntry)",
+    "checkpoint complete evidence guard",
+    "harnessed status --recover CLI",
+    "src/checkpoint/ledger.ts",
+    "src/checkpoint/evidence.ts",
+    "handoff sha256 drift detection",
+    "additive schema migration strategy"
+  ],
+  "cross_refs": [
+    "docs/adr/0033-state-machine-ledger-evidence-guard.md",
+    "docs/adr/0033-*.md",
+    "ADR-0029",
+    "ADR-0033",
+    "cc-handoff.md",
+    "src/checkpoint/schema/currentWorkflow.v1.ts",
+    "src/checkpoint/schema/checkpoint.v1.ts",
+    "src/checkpoint/ledger.ts",
+    "src/checkpoint/evidence.ts",
+    "src/cli/status.ts",
+    "workflows/verify/*/workflow.yaml"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "Manifest-declared SPEC (authoritative). Document self-labels 'DESIGN LOCKED' and contains a locked-decisions table (Q2-Q7) plus eng-review decisions (D1-D3), but the locking authority is delegated to sister ADR-0033/ADR-0029; this artifact is the implementation contract (schemas, CLI surface, component isolation), hence SPEC not ADR. locked=false per rule (only Accepted ADRs are locked)."
+}

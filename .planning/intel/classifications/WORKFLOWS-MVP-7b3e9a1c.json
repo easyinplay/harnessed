@@ -1,0 +1,39 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\WORKFLOWS-MVP.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "harnessed — MVP Workflows 设计 (v2)",
+  "summary": "Technical design spec for harnessed's 3 MVP composition workflows (research, execute-task, plan-feature) with phases schema, routing rules, and shared persistence contracts.",
+  "scope": [
+    "research workflow",
+    "execute-task workflow",
+    "plan-feature workflow",
+    "phases schema (frontmatter)",
+    "routing SSOT (routing/*.md)",
+    "checkpoint persistence (.harnessed/)",
+    "upstream dependency declaration",
+    "session resume",
+    "error degradation / fallback"
+  ],
+  "cross_refs": [
+    "PROJECT-SPEC § 10",
+    "PROJECT-SPEC § 9",
+    "PROJECT-SPEC § 12",
+    "PROJECT-SPEC § 8.5",
+    "PROJECT-SPEC § 3",
+    "workflows/SCHEMA.md",
+    "workflows/research/SKILL.md",
+    "routing/search.md",
+    "routing/execute.md",
+    "routing/ui.md",
+    "routing/governance.md",
+    "installers/cli-npm.ts",
+    "manifests/conflicts.yaml",
+    "manifests/aliases.yaml",
+    "templates/ralph-criteria/{ui,backend,algorithm}.md"
+  ],
+  "locked": false,
+  "precedence": 2,
+  "notes": "Type set from MANIFEST_TYPE=SPEC (authoritative); content strongly corroborates SPEC — phases schema definitions, routing yaml contracts, persistence directory layout, and locked design decisions. precedence=2 from MANIFEST_PRECEDENCE."
+}

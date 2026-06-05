@@ -1,0 +1,39 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\CHANGELOG.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "Changelog",
+  "summary": "Keep-a-Changelog version history for harnessed across 46 releases (v0.4.0 through v4.1.3), documenting fixes, features, breaking changes, and migrations.",
+  "scope": [
+    "harnessed CLI",
+    "harnessed setup",
+    "harnessed prompt",
+    "harnessed gates",
+    "harnessed run",
+    "harnessed gc",
+    "harnessed rollback",
+    "checkpoint / atomicWrite",
+    "/auto orchestrator",
+    "4-stage namespace-layered workflow",
+    "yaml SoT injection (tools_available / disciplines_applied)",
+    "GSD / planning-with-files integration",
+    "CLI i18n (en + zh-Hans)",
+    "Agent Teams enablement",
+    "MCP scope / verify"
+  ],
+  "cross_refs": [
+    "https://keepachangelog.com/en/1.0.0/",
+    "https://semver.org/spec/v2.0.0.html",
+    "src/checkpoint/atomicWrite.ts",
+    "src/cli/lib/gateContext.ts",
+    "role-prompts.yaml",
+    "defaults.yaml",
+    "capabilities.yaml",
+    "workflow.yaml",
+    ".planning/"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

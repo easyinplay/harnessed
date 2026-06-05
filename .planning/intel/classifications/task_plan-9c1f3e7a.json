@@ -1,0 +1,38 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\v5.0\\task_plan.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "task_plan — harnessed v5.0 State Machine Core (Spec 1: A/B/C/E/F)",
+  "summary": "Eight-phase TDD implementation plan adding a progress ledger, fail-closed evidence guard, and status --recover to harnessed's workflow state machine.",
+  "scope": [
+    "currentWorkflow.v1 schema",
+    "ledger.ts pure functions",
+    "evidence.ts artifact/drift checks",
+    "checkpoint.ts CLI wiring",
+    "status --recover",
+    "resume drift detection",
+    "generateCommands ORCHESTRATOR body",
+    "verify/* artifacts_expected backfill",
+    "v5.0 release gate"
+  ],
+  "cross_refs": [
+    ".planning/v5.0/STATE-MACHINE-CORE-DESIGN.md",
+    "docs/adr/0033-*.md",
+    "src/checkpoint/schema/currentWorkflow.v1.ts",
+    "src/checkpoint/ledger.ts",
+    "src/checkpoint/evidence.ts",
+    "src/cli/checkpoint.ts",
+    "src/checkpoint/state.ts",
+    "src/cli/status.ts",
+    "src/checkpoint/resume.ts",
+    "src/cli/lib/generateCommands.ts",
+    "workflows/verify/{paranoid,security,code-review,qa,simplify,design,multispec,progress}/workflow.yaml",
+    "tests/checkpoint/ledger.test.ts",
+    "tests/checkpoint/evidence.test.ts",
+    "tests/cli/status-recover.test.ts"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "Manifest declared DOC (authoritative). Filename task_plan.md and content (phased build plan with acceptance criteria, dependency order, no API/schema contract intended as a spec product) align with DOC. References ADR-0033 for locked decisions but is itself an implementation plan / context doc."
+}

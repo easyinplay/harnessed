@@ -1,0 +1,40 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\v4.0\\ARCHITECTURE-SPEC.md",
+  "type": "SPEC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "v4.0 ARCHITECTURE SPEC — harnessed as 编排大脑 + Prompt 库",
+  "summary": "Technical spec redefining harnessed as an orchestration brain + prompt library, replacing v3.x SDK-spawn with CC-native subagent/Agent Teams execution via 3 new CLI subcommands.",
+  "scope": [
+    "harnessed CLI",
+    "harnessed gates subcommand",
+    "harnessed prompt subcommand",
+    "harnessed checkpoint subcommand",
+    "CC command-body templates (INTERACTIVE/ORCHESTRATOR/EXECUTION)",
+    "NEEDS_CLARIFICATION protocol",
+    "ralph-loop plugin integration",
+    "Agent Teams escalation",
+    "judgmentResolver gate eval",
+    "buildAgentDef prompt assembly"
+  ],
+  "cross_refs": [
+    "../v3.9.x/PLAN-interactive-clarification.md",
+    "../STATE.md",
+    "src/workflow/lib/sdkSpawn.ts",
+    "src/workflow/lib/ralphLoop.ts",
+    "src/workflow/judgmentResolver.ts",
+    "src/workflow/masterOrchestrator-helpers.ts",
+    "src/cli/lib/generateCommands.ts",
+    "src/workflow/run.ts",
+    "src/workflow/masterOrchestrator.ts",
+    "src/checkpoint/engineHook.ts",
+    "src/cli/run.ts",
+    "workflows/role-prompts.yaml",
+    "workflows/judgments/parallelism-gate.yaml",
+    "workflows/defaults.yaml",
+    "~/.claude/rules/agent-teams.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

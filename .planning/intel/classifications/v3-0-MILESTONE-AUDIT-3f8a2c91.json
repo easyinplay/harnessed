@@ -1,0 +1,43 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\milestones\\v3.0-MILESTONE-AUDIT.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "v3.0 Milestone Audit — 4-Stage Namespace-Layered Workflow Architecture",
+  "summary": "Shipped-milestone audit recording v3.0 4-stage namespace-layered workflow refactor: 6 phases, 13 requirements, traceability and risk-mitigation tables.",
+  "scope": [
+    "v3.0 4-stage namespace-layered workflow architecture",
+    "master orchestrator (masterOrchestrator.ts)",
+    "22 v3 workflows (4 master + 16 sub + 2 standalone)",
+    "L0 discipline substrate (6 disciplines + 4 hook helpers)",
+    "L5b execution mechanism layer (subagent / Agent Teams / ralph-loop)",
+    "capabilities.yaml v3 + judgments + rules-based routing",
+    "4-cycle end-to-end dogfood",
+    "D-13 superset commitment (CLAUDE.md / Obsidian / rules mapping)"
+  ],
+  "cross_refs": [
+    "docs/adr/0030-namespace-policy.md",
+    "docs/adr/0031-4-stage-architecture.md",
+    "docs/adr/0032-disciplines.md",
+    "ADR 0009",
+    "ADR 0011",
+    "ADR 0020",
+    "ADR 0023",
+    "ADR 0026",
+    "ADR 0028",
+    "docs/adr/README.md",
+    "docs/WORKFLOW.md",
+    "CHANGELOG.md",
+    "README.md",
+    ".planning/STATE.md",
+    ".planning/phase-v3.0-3.1/3.1-CONTEXT.md",
+    "workflows/capabilities.yaml",
+    "workflows/judgments/parallelism-gate.yaml",
+    "workflows/judgments/stage-routing.yaml",
+    "src/cli/lib/scan-nested.ts",
+    "src/workflow/masterOrchestrator.ts"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "Type DOC taken from MANIFEST_TYPE (authoritative). Content corroborates: prose-heavy shipped-milestone audit/retrospective with traceability, risk, and acceptance tables; no new decisions or requirements being established here (it records already-locked ADR decisions and R30.x requirements). Context-only precedence is correct."
+}

@@ -1,0 +1,27 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\.planning\\v3.9.x\\MAINTENANCE-LOG.md",
+  "type": "DOC",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "v3.9.x 维护系列 — MAINTENANCE LOG",
+  "summary": "Maintenance-series log of dogfood-driven bug fixes, Windows compatibility patches, and code simplification across v3.9.7 to v3.9.26.",
+  "scope": [
+    "Windows idempotent detection",
+    "spawn.ts tilde expansion",
+    "idempotent.ts detectNative",
+    "plugin registry check",
+    "uninstall command",
+    "gate context injection",
+    "interactive clarification (Option A)",
+    "legacy execute-task/plan-feature/verify-work removal",
+    "code review / simplifier fixes"
+  ],
+  "cross_refs": [
+    "../STATE.md",
+    "../RETROSPECTIVE.md",
+    "./PLAN-interactive-clarification.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": ""
+}

@@ -1,0 +1,28 @@
+{
+  "source_path": "D:\\GitCode\\harnessed\\docs\\adr\\0033-state-machine-ledger-evidence-guard.md",
+  "type": "ADR",
+  "confidence": "high",
+  "manifest_override": true,
+  "title": "ADR 0033 — Workflow State Machine: Progress Ledger + Fail-Closed Evidence Guard",
+  "summary": "Adds an optional per-sub progress ledger and a fail-closed evidence guard to harnessed's workflow state machine for precise crash recovery and blocking fake verification.",
+  "scope": [
+    "workflow state machine",
+    "current-workflow.json sub_progress ledger",
+    "checkpoint complete/start commands",
+    "fail-closed evidence guard (sha256 artifact existence)",
+    "gates.ts pre-condition eval",
+    "status --recover / resume",
+    "cross-CC handoff drift detection",
+    "additive schema evolution"
+  ],
+  "cross_refs": [
+    "ADR-0029",
+    "ADR-0031",
+    "ADR-0032",
+    ".planning/v5.0/STATE-MACHINE-CORE-DESIGN.md",
+    "cc-handoff.md"
+  ],
+  "locked": false,
+  "precedence": null,
+  "notes": "MANIFEST_TYPE=ADR authoritative. Status is 'Proposed' (not 'Accepted'), so locked=false despite ADR type."
+}
