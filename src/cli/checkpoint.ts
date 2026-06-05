@@ -162,10 +162,21 @@ export function registerCheckpoint(program: Command): void {
             )
           }
 
+          // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must
+          // not flip the whole workflow to 'complete'. Read back the ledger AFTER
+          // the mark (mutateSubProgress already persisted) and use nextPending to
+          // decide: null (all subs resolved, incl. empty/unseeded ledger where
+          // nextPending([])===null) → transition workflow complete (legacy single-
+          // sub behavior); non-null (pending subs remain) → keep workflow active.
+          const { readCurrentWorkflow } = await import('../checkpoint/state.js')
+          const { nextPending } = await import('../checkpoint/ledger.js')
+          const latest = await readCurrentWorkflow()
+          const allResolved = nextPending(latest?.sub_progress ?? []) === null
           await completePhase({
             phaseId: sub,
             status: 'complete',
             lastTask: opts.summary ?? `phase ${sub} complete`,
+            transitionWorkflowComplete: allResolved,
           })
           console.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${result.status})`)
           process.exit(0)
@@ -177,10 +188,14 @@ export function registerCheckpoint(program: Command): void {
         // status union has no 'fail').
         const { mutateSubProgress } = await import('../checkpoint/state.js')
         await mutateSubProgress((e) => markIfSeeded(e, sub, 'failed'))
+        // v5.0 Spec 1 — a failed sub must NOT flip the workflow to 'complete'. The
+        // failed entry lives in the ledger; the orchestrator/user reads it and
+        // decides STOP. Workflow stays 'active'.
         await completePhase({
           phaseId: sub,
           status: 'complete',
           lastTask: `FAILED: ${opts.summary ?? ''}`,
+          transitionWorkflowComplete: false,
         })
         console.error(
           `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,

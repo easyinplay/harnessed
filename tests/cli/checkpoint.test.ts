@@ -21,12 +21,18 @@ vi.mock('../../src/checkpoint/engineHook.js', () => ({
 vi.mock('../../src/checkpoint/evidence.js', () => ({
   checkArtifacts: vi.fn(async () => ({ status: 'none_declared', found: [], missing: [] })),
 }))
+// v5.0 Spec 1 — the `complete` branch reads the ledger back (readCurrentWorkflow)
+// after the mark to decide whether this completion finishes the master chain.
+// Default: no active record (null) → nextPending([])===null → workflow completes
+// (legacy single-sub behavior). Cells override to seed a multi-sub ledger.
 vi.mock('../../src/checkpoint/state.js', () => ({
   mutateSubProgress: vi.fn(async () => undefined),
+  readCurrentWorkflow: vi.fn(async () => null),
 }))
 
 import { activatePhase, completePhase } from '../../src/checkpoint/engineHook.js'
 import { checkArtifacts } from '../../src/checkpoint/evidence.js'
+import { readCurrentWorkflow } from '../../src/checkpoint/state.js'
 import { registerCheckpoint } from '../../src/cli/checkpoint.js'
 
 class ExitError extends Error {
@@ -80,6 +86,9 @@ describe('cli/checkpoint — start/complete/fail', () => {
     vi.mocked(completePhase).mockResolvedValue(undefined)
     // Default evidence posture: none_declared (guard N/A) → `complete` exits 0.
     vi.mocked(checkArtifacts).mockResolvedValue({ status: 'none_declared', found: [], missing: [] })
+    // Default: no active workflow record → nextPending([])===null → completion
+    // transitions the workflow to 'complete' (empty-ledger / single-sub legacy).
+    vi.mocked(readCurrentWorkflow).mockResolvedValue(null)
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -105,10 +114,12 @@ describe('cli/checkpoint — start/complete/fail', () => {
     const { code } = await runCli(['checkpoint', 'complete', 'task-code', '--summary', 'done X'])
     expect(code).toBe(0)
     expect(completePhase).toHaveBeenCalledTimes(1)
+    // empty ledger (readCurrentWorkflow→null) → nextPending null → workflow completes.
     expect(completePhase).toHaveBeenCalledWith({
       phaseId: 'task-code',
       status: 'complete',
       lastTask: 'done X',
+      transitionWorkflowComplete: true,
     })
     expect(activatePhase).not.toHaveBeenCalled()
   })
@@ -121,6 +132,7 @@ describe('cli/checkpoint — start/complete/fail', () => {
       phaseId: 'task-code',
       status: 'complete',
       lastTask: 'phase task-code complete',
+      transitionWorkflowComplete: true,
     })
   })
 
@@ -133,6 +145,8 @@ describe('cli/checkpoint — start/complete/fail', () => {
     expect(arg?.status).toBe('complete')
     expect(arg?.lastTask).toContain('FAILED')
     expect(arg?.lastTask).toContain('boom')
+    // v5.0 Spec 1 — a failed sub never flips the workflow to 'complete'.
+    expect(arg?.transitionWorkflowComplete).toBe(false)
     expect(stderr.length).toBeGreaterThan(0)
   })
 
@@ -187,5 +201,56 @@ describe('cli/checkpoint — start/complete/fail', () => {
     expect(code).toBe(0)
     expect(completePhase).toHaveBeenCalledTimes(1)
     expect(stdout).toContain('verified')
+  })
+
+  // v5.0 Spec 1 — workflow-status × ledger consistency. Completing ONE sub of a
+  // master chain that still has pending subs must NOT flip the whole workflow to
+  // 'complete' (e2e dogfood: seed 4 subs → complete 1 → status showed `complete`
+  // while 3 stayed pending + `→ next`).
+  const ledger = (
+    entries: Array<{ sub: string; status: 'pending' | 'done' | 'failed' | 'skipped' }>,
+  ) =>
+    ({
+      schemaVersion: '1.0.0',
+      phase: 'task',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-06-05T00:00:00.000Z',
+      sub_progress: entries.map((e) => ({ ...e, gate_fired: true })),
+      // biome-ignore lint/suspicious/noExplicitAny: schema literal narrowing in test fixture.
+    }) as any
+
+  it('cell 10 — complete one sub while others pending → workflow NOT completed (transitionWorkflowComplete:false)', async () => {
+    // After the mark, the ledger reflects task-code done but 3 subs still pending.
+    vi.mocked(readCurrentWorkflow).mockResolvedValue(
+      ledger([
+        { sub: 'task-code', status: 'done' },
+        { sub: 'task-clarify', status: 'pending' },
+        { sub: 'task-review', status: 'pending' },
+        { sub: 'task-verify', status: 'pending' },
+      ]),
+    )
+    const { code } = await runCli(['checkpoint', 'complete', 'task-code'])
+    expect(code).toBe(0)
+    expect(completePhase).toHaveBeenCalledTimes(1)
+    const arg = vi.mocked(completePhase).mock.calls[0]?.[0]
+    expect(arg?.transitionWorkflowComplete).toBe(false)
+  })
+
+  it('cell 11 — complete the LAST pending sub (none remain) → workflow completed (transitionWorkflowComplete:true)', async () => {
+    // After the mark, every sub is resolved (done/skipped) → nextPending null.
+    vi.mocked(readCurrentWorkflow).mockResolvedValue(
+      ledger([
+        { sub: 'task-code', status: 'done' },
+        { sub: 'task-clarify', status: 'skipped' },
+        { sub: 'task-review', status: 'done' },
+        { sub: 'task-verify', status: 'done' },
+      ]),
+    )
+    const { code } = await runCli(['checkpoint', 'complete', 'task-verify'])
+    expect(code).toBe(0)
+    expect(completePhase).toHaveBeenCalledTimes(1)
+    const arg = vi.mocked(completePhase).mock.calls[0]?.[0]
+    expect(arg?.transitionWorkflowComplete).toBe(true)
   })
 })

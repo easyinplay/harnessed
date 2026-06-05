@@ -21,6 +21,11 @@ export interface EngineCheckpointHookCtx {
   lastTask?: string
   keyDecisions?: string[]
   canonicalRefs?: string[]
+  /** v5.0 Spec 1 — when false, write the per-sub checkpoint envelope but DO NOT
+   *  transition the workflow status to 'complete' (the master chain still has
+   *  pending subs; completing one sub must not flip the whole chain). Default true
+   *  preserves engine.ts runRouting behavior (one phase = whole workflow done). */
+  transitionWorkflowComplete?: boolean
 }
 
 /** Activate workflow + return projected checkpoint path on phase start.
@@ -53,5 +58,11 @@ export async function completePhase(ctx: EngineCheckpointHookCtx): Promise<void>
     timestamp: new Date().toISOString(),
     archive_path: `${join(harnessedSubdir('archive'), `phase-${ctx.phaseId}`)}/`,
   })
-  await stateComplete()
+  // v5.0 Spec 1 — only flip workflow status when this completion finishes the
+  // whole chain. transitionWorkflowComplete defaults to true (engine.ts path);
+  // checkpoint.ts passes false while the ledger still has pending subs (and on
+  // fail) so the workflow stays 'active'.
+  if (ctx.transitionWorkflowComplete !== false) {
+    await stateComplete()
+  }
 }
