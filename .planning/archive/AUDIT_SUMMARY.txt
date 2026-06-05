@@ -1,0 +1,58 @@
+audit complete
+
+MACHINED: 64 rules
+- CLAUDE.md: 12 major rule sections
+- agent-teams.md: 5/6 sections (missing failure diagnostics)
+- cc-handoff.md: 5/5 sections complete
+- context7.md: 2/3 sections (missing error handling automation)
+- google-workspace.md: 1/5 sections (missing auth workaround, gws error mapping)
+- web-design.md: 4/4 sections complete
+- web-search.md: 5/5 sections complete
+- web-testing.md: 4/4 sections complete
+- Disciplines: 6/6 (karpathy, language, output-style, operational, priority, protocols)
+- Judgments: 9/9 (strategic-gate, phase-gate, subtask-gate, tdd-gate, parallelism-gate, fallback, web-design-routing, web-search-routing, web-testing-routing)
+
+PARTIAL: 8 rules
+- Clarification fallback runtime detection (拿不准倾向跳过 + 用户明示覆盖)
+- Agent Teams prevention checklist automation (cleanup, brief validation)
+- gws special error handling rules
+- ctx7 2-step automation (library resolve → docs fetch)
+- Pattern A/B/C Agent Teams variants
+- MCP automatic detection (tavily/exa/chrome-devtools)
+- gws OAuth configuration automatic check
+
+MISSING: 4 rules
+- Agent Teams failure scenario diagnostics (teammate timeout, unknown recipient, context overflow)
+- gws browser auth Windows workaround universalization
+- cc-handoff protocol automatic validation script
+- Main session clarification priority mixed strategy (a/b/c) workflow dynamic routing
+
+OUT-OF-SCOPE: 6 items
+1. easyinplay@gmail.com / GCP project gen-lang-client-0043163520 (user-specific account)
+2. C:\Users\easyi\.config\gws\client_secret.json (Windows local path)
+3. Obsidian Vault path (user-specific tool choice)
+4. PowerShell auth workaround (Windows-specific script)
+5. Project relative paths (project-specific directory structure)
+6. GCP OAuth Testing mode + test-user-list (user project configuration)
+
+P0/P1 BACKLOG (6-7 items for v3.6+):
+1. mattpocock-skills 6-entry fallback completion (grill-with-docs, zoom-out, grill-me, to-prd, to-issues, improve-codebase-architecture)
+2. Clarification runtime detection (confidence score + user intent evaluation)
+3. MCP automatic detection + fallback hints (tavily, exa, chrome-devtools)
+4. gws OAuth setup doctor check + auth validation
+5. Agent Teams prevention checklist auto-enforcement (session-scoped, cleanup, token estimate, brief validation)
+6. Main session clarification priority workflow dynamic routing (affects subagent downward delegation)
+7. Pattern A/B/C Agent Teams variants role-prompt implementation
+
+CORE FINDINGS:
+- capabilities.yaml: 35 entries, 6/35 (17%) lack fallback → 26% capability coverage gap
+- 3/35 MCP entries need automatic detection (tavily, exa, chrome-devtools)
+- 1/35 gws CLI needs OAuth configuration validation
+- 4 alias fallbacks already implemented (caveman dual, diagnose→gsd-debug, investigate→investigate-gstack, tdd→mattpocock)
+- All 6 discipline rules fully shipped and enforced
+- All 9 judgment gates fully implemented with correct fires_when conditions
+
+v3.5.0 Coverage: 85% of user's private rule framework is mechanized
+Remaining 15%: runtime execution logic, fallback handling automation, cross-platform workarounds, cross-CC protocol validation
+
+See full report: D:\GitCode\harnessed\.planning\audit-harnessed-vs-user-rules-2026-05-25.md
