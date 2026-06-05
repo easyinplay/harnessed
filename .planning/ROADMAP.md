@@ -36,13 +36,13 @@
 ### Phases
 
 - [x] **Phase 1: Schema extension** - Add EvidenceRef + SubProgressEntry + sub_progress to currentWorkflow.v1 (additive, no bump).
-- [ ] **Phase 2: ledger.ts pure functions** - seedLedger / markSub / nextPending (TDD, no I/O).
-- [ ] **Phase 3: evidence.ts** - hashFile / checkArtifacts / detectDrift (TDD, fs+crypto isolated).
-- [ ] **Phase 4: checkpoint CLI wiring** - start --plan (seed) / complete (fail-closed guard) / fail.
-- [ ] **Phase 5: status --recover + resume drift** - structured recovery render + evidence re-hash drift warns.
-- [ ] **Phase 6: generateCommands ORCHESTRATOR body** - deterministic gates→start→complete/fail sequence.
+- [x] **Phase 2: ledger.ts pure functions** - seedLedger / markSub / nextPending (TDD, no I/O).
+- [x] **Phase 3: evidence.ts** - hashFile / checkArtifacts / detectDrift (TDD, fs+crypto isolated).
+- [x] **Phase 4: checkpoint CLI wiring** - start --plan (seed) / complete (fail-closed guard) / fail.
+- [x] **Phase 5: status --recover + resume drift** - structured recovery render + evidence re-hash drift warns.
+- [x] **Phase 6: generateCommands ORCHESTRATOR body** - deterministic gates→start→complete/fail sequence.
 - [x] **Phase 7: verify/* artifacts_expected backfill** - every verify leaf declares ≥1 artifact.
-- [ ] **Phase 8: Release gate** - e2e + biome + tsc + vitest green; bump 5.0.0; STOP before push.
+- [x] **Phase 8: Release gate** - e2e ✅ + verify (2 reviewers, 2 P0 + 5 P1 fixed) + simplifier; 1166 tests / tsc 0 / biome clean; **bumped 4.2.0** (semver minor, additive — not 5.0.0); STOP before push (pending user approval).
 
 ---
 

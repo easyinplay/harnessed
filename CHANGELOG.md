@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.2.0] - 2026-06-05
+
+Workflow State Machine Core (v5.0 milestone, Spec 1) — absorbs structured-state
+patterns from Trellis + comet. Additive/non-breaking (semver minor).
+
+### Added
+
+- **Structured progress ledger** — `current-workflow.json` carries an optional
+  `sub_progress[]` recording each sub in a master chain (`pending`/`done`/`failed`/
+  `skipped` + `gate_fired` + `evidence`). Seeded from the `gates` plan at
+  `checkpoint start <master> --plan <json>`. Closes the resume-granularity gap (a
+  crash mid-chain now has a structured position, not just a free-text `last_task`).
+- **`harnessed status --recover`** — structured recovery output after compaction:
+  per-sub status markers, three-state evidence posture, the next pending sub
+  (`→ next: harnessed prompt <sub>`), and sha256 drift warnings. Degrades gracefully
+  on an empty ledger.
+- **Fail-closed evidence guard** — `checkpoint complete <sub>` verifies the leaf's
+  declared `artifacts_expected` exist (relative to the project cwd) before marking
+  done; a missing artifact blocks completion (exit 1) unless `--force` (recorded as
+  `evidence_status: overridden`). Three-state posture (`verified` / `missing` /
+  `none_declared`) so "nothing declared" never reads as a verified pass. This is a
+  deliberate fail-CLOSED exception to the ADR-0029 gate fail-soft posture (ADR-0033).
+- **Handoff drift detection** — evidence entries store `{path, sha256}`; `resume`
+  and `status --recover` re-hash and warn on drift (scriptizes the cc-handoff
+  integrity check). Verify-stage leafs backfilled with `artifacts_expected`.
+- **Deterministic ORCHESTRATOR command body** — generated master command bodies
+  emit the `gates → checkpoint start --plan → per-sub prompt+spawn+complete/fail →
+  status --recover` sequence so the main session drives the state machine without
+  relying on memory.
+
+### Fixed
+
+- Workflow status now follows the ledger — `checkpoint complete <sub>` only
+  transitions the whole workflow to `complete` when no sub remains pending
+  (`nextPending === null`); a failed sub never flips it. (Caught by e2e dogfood.)
+- Path-traversal hardening — `sub`/`name`/`master` CLI args are now `checkPathSafe`
+  guarded before path resolution (`checkpoint`/`run`/`gates`).
+- Global `unhandledRejection`/`uncaughtException` handler in the CLI entry converts
+  escaped async errors into a clean `error: …` + exit 1 instead of a v8 stack dump.
+
+### Schema
+
+- `currentWorkflow.v1` gains optional `sub_progress` / `EvidenceRef` — additive,
+  no `schemaVersion` bump; pre-v4.2 state files validate unchanged. `checkpoint.v1`
+  is unchanged (ledger is single-SoT in `current-workflow.json`).
+
 ## [4.1.3] - 2026-06-04
 
 P0 data-loss fixes from the pre-v4.0 code review (6 parallel reviewers over ~120 src files).

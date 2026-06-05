@@ -3,7 +3,8 @@ gsd_state_version: 1.0
 milestone: v5.0
 status: in_progress
 latest_shipped: 4.1.3
-current_phase: 2
+release_prepared: 4.2.0
+current_phase: 8
 updated: 2026-06-05
 ---
 
@@ -21,12 +22,16 @@ updated: 2026-06-05
 ## Current Position
 
 - **Milestone**: v5.0 State Machine Core (Spec 1: A/B/C/E/F)
-- **Status**: in_progress
-- **Current phase**: Phase 2 — ledger.ts pure functions (TDD)
-- **Done in working tree (uncommitted)**: Phase 1 (schema extension), Phase 7 (verify/* artifacts_expected backfill)
-- **Pending**: Phases 2, 3, 4, 5, 6, 8
+- **Status**: Spec 1 CODE-COMPLETE — v4.2.0 release prepared, **pending user push approval**
+- **Current phase**: Phase 8 release gate (version+CHANGELOG done; STOP before push)
+- **Shipped (committed)**: Phases 1-7 + e2e-caught workflow-status fix + verify P0/P1 fixes + code-simplifier
+- **Verify**: 2 reviewers (5-dim + ts/security) → 2 P0 + 5 P1 fixed (.planning/v5.0/REVIEW-FINDINGS.md); e2e dogfood double-confirmed; code-simplifier 2 safe dedup. 1166 tests pass / tsc 0 / biome clean.
 
-Progress: `[##--------]` 2/8 phases (Phase 1 + Phase 7 done uncommitted)
+Progress: `[########]` 8/8 phases (Spec 1 done; release pending push)
+
+Commits (this milestone): a4d1a5e reconcile · fc19318 W0 · 2a03c77 W1 · 00d2725 W2 · 94bd29e W3 · 8e4df17 status-fix · 13c8e1f verify-fix · 1788d0f archive · c9323fc simplify
+
+Next milestone work (deferred): **Spec 2** session-scoped state + single-session fallback; **Spec 3** per-turn injection hook + scale-adaptive verify.
 
 ## Design Baseline (locked)
 
