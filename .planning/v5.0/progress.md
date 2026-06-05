@@ -9,14 +9,20 @@
 - **Next:** Phase 1 schema extension → Phase 2 ledger TDD.
 
 ## Status
-- [ ] Phase 1 schema
-- [ ] Phase 2 ledger.ts (TDD)
-- [ ] Phase 3 evidence.ts (TDD)
+- [x] Phase 1 schema (committed fc19318)
+- [x] Phase 2 ledger.ts (TDD, 14 tests)
+- [x] Phase 3 evidence.ts (TDD, 8 tests)
 - [ ] Phase 4 checkpoint.ts wiring
 - [ ] Phase 5 status --recover + resume drift
 - [ ] Phase 6 generateCommands ORCHESTRATOR body
-- [ ] Phase 7 verify/* artifacts_expected backfill
+- [x] Phase 7 verify/* artifacts_expected backfill (committed fc19318; simplify left none_declared, pending decision)
 - [ ] Phase 8 release gate (e2e + biome + tsc + vitest + v5.0.0 bump) — STOP before push
 
+## Session 2 — 2026-06-05 (GSD reconcile + Wave 0/1)
+- GSD .planning reconciliation: regenerated PROJECT/STATE/ROADMAP/REQUIREMENTS via gsd-ingest-docs (commit a4d1a5e). Archived stale version-dir clutter to .planning/archive/.
+- Wave 0 committed (fc19318): Phase 1 schema + Phase 7 verify backfill.
+- Wave 1 done: Phase 2 ledger.ts (14 tests RED→GREEN) + Phase 3 evidence.ts (8 tests, reuses resolveWorkflowYaml).
+- **Next:** Wave 2 = Phase 4 checkpoint.ts CLI wiring (depends on ledger + evidence).
+
 ## Test results
-(none yet)
+- Full suite after Wave 1: 1137 passed | 5 skipped | 1 todo (139 files). tsc 0, biome clean.

@@ -196,7 +196,7 @@ One command after compaction answers: where am I, what's missing, what's next.
 | File | Responsibility | Depends on |
 |------|----------------|------------|
 | `src/checkpoint/ledger.ts` | pure fns `seedLedger(plan)`, `markSub(state, sub, status, evidence)` over `CurrentWorkflowV1Type` | schema types only |
-| `src/checkpoint/evidence.ts` | `checkArtifacts(sub, packageRoot)` → `{ ok, found:[{path,sha256}], missing:[] }`; `hashFile(path)` | node:fs, node:crypto, leaf yaml loader |
+| `src/checkpoint/evidence.ts` | `checkArtifacts(sub, packageRoot)` → `{ status:'verified'\|'none_declared', found:[{path,sha256}], missing:[] }`; `hashFile(path)`; `detectDrift(evidence)` | node:fs, node:crypto, leaf yaml loader (`resolveWorkflowYaml`) |
 | `src/cli/status.ts` (`--recover` branch) | recover formatter + drift compute + empty-ledger graceful degrade (D3) | ledger.ts, evidence.ts |
 | schema: `currentWorkflow.v1.ts` + `checkpoint.v1.ts` | additive optional fields | — |
 
