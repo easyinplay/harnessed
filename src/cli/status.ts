@@ -69,12 +69,16 @@ export async function buildRecoverLines(
   const next = nextPending(ledger)
   for (const e of ledger) {
     const marker = statusMarker(e.status)
-    const suffix =
-      e.status === 'skipped'
-        ? e.reason
-          ? `  (skipped: ${e.reason})`
-          : ''
-        : `  ${evidenceLabel(e)}`
+    // P1-4 — evidence posture is only meaningful for a COMPLETED sub. A `pending`
+    // or `failed` sub asserts no evidence; rendering `evidence: none_declared`
+    // there reads as a misleading "✗ failed … none_declared". `skipped` shows its
+    // reason; `done` shows the posture; `pending`/`failed` show neither.
+    let suffix = ''
+    if (e.status === 'skipped') {
+      suffix = e.reason ? `  (skipped: ${e.reason})` : ''
+    } else if (e.status === 'done') {
+      suffix = `  ${evidenceLabel(e)}`
+    }
     const arrow = e.sub === next ? '   ← next' : ''
     lines.push(`  ${e.sub}  ${marker}${suffix}${arrow}`)
   }

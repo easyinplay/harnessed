@@ -16,7 +16,8 @@
 - [x] Phase 5 status --recover + resume drift (status-recover 8 tests + resume drift 4)
 - [x] Phase 6 generateCommands ORCHESTRATOR body (确定性 gates→start→complete/fail+recover 序列, generate-commands +5 cells)
 - [x] Phase 7 verify/* artifacts_expected backfill (committed fc19318; simplify left none_declared, pending decision)
-- [ ] Phase 8 release gate (e2e + biome + tsc + vitest + v5.0.0 bump) — STOP before push
+- [~] Phase 8 release gate — e2e ✅ + verify ✅ (2 reviewers, 2 P0 + 5 P1 全修, 见 REVIEW-FINDINGS.md); 待: version bump 4.2.0 + CHANGELOG + STATE
+- Verify (2026-06-05): code-reviewer 5-dim + ts-reviewer 并行 → P0-A evidence base 错位(用 cwd + 绝对路径修) / P0-B path traversal(checkPathSafe) / 5 P1 全修 + 回归测试; e2e 双证两 P0; 1166 passed
 
 ## Session 2 — 2026-06-05 (GSD reconcile + Wave 0/1)
 - GSD .planning reconciliation: regenerated PROJECT/STATE/ROADMAP/REQUIREMENTS via gsd-ingest-docs (commit a4d1a5e). Archived stale version-dir clutter to .planning/archive/.

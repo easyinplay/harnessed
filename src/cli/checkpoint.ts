@@ -24,6 +24,7 @@
 //   fail <sub> [--summary]       → markSub failed + completePhase w/ FAILED: prefix, exit 1.
 
 import type { Command } from 'commander'
+import { checkPathSafe } from '../manifest/lib/path-guard.js'
 
 const ACTIONS = ['start', 'complete', 'fail'] as const
 type Action = (typeof ACTIONS)[number]
@@ -63,13 +64,29 @@ async function parsePlan(
   }
   // Minimal shape guard — `fire`/`skip` arrays. seedLedger tolerates absent arrays
   // via the local interface defaults, but we normalize here for safety.
-  const p = parsed as { fire?: unknown; skip?: unknown }
+  // P1-1 — explicit pick of the known GatesPlan keys ONLY. The `--plan` JSON is
+  // untrusted CLI input; spreading `...(parsed as object)` would carry arbitrary
+  // attacker-controlled keys (proto/injection surface) into the persisted ledger.
+  const p = parsed as {
+    master?: unknown
+    fire?: unknown
+    skip?: unknown
+    parallelism?: unknown
+  }
   if (!Array.isArray(p.fire) && !Array.isArray(p.skip)) return null
-  return {
-    ...(parsed as object),
-    fire: Array.isArray(p.fire) ? p.fire : [],
-    skip: Array.isArray(p.skip) ? p.skip : [],
-  } as import('../checkpoint/ledger.js').GatesPlan
+  const plan: import('../checkpoint/ledger.js').GatesPlan = {
+    fire: Array.isArray(p.fire)
+      ? (p.fire as import('../checkpoint/ledger.js').GatesPlan['fire'])
+      : [],
+    skip: Array.isArray(p.skip)
+      ? (p.skip as import('../checkpoint/ledger.js').GatesPlan['skip'])
+      : [],
+  }
+  if (typeof p.master === 'string') plan.master = p.master
+  if (p.parallelism && typeof p.parallelism === 'object' && !Array.isArray(p.parallelism)) {
+    plan.parallelism = p.parallelism as import('../checkpoint/ledger.js').GatesPlan['parallelism']
+  }
+  return plan
 }
 
 export function registerCheckpoint(program: Command): void {
@@ -94,6 +111,19 @@ export function registerCheckpoint(program: Command): void {
           console.error(
             `[harnessed] checkpoint: unknown action "${action}" — expected one of ${ACTIONS.join(', ')}`,
           )
+          process.exit(1)
+          return
+        }
+
+        // P0-B — `sub` is a user-controlled positional that flows into
+        // activatePhase / resolveWorkflowYaml path joins (e.g. `complete
+        // ../../../etc/passwd`). Screen it before any path use. checkPathSafe
+        // throws PathTraversalError; convert to a clean exit 1 (generic message
+        // per D-08 — do not echo the input).
+        try {
+          checkPathSafe(sub)
+        } catch {
+          console.error('[harnessed] checkpoint: invalid sub name (path traversal rejected)')
           process.exit(1)
           return
         }
@@ -140,8 +170,13 @@ export function registerCheckpoint(program: Command): void {
           // the ledger was never seeded (empty/absent --plan at start), the sub is
           // not present → `markIfSeeded` no-ops (the checkpoint envelope below is
           // the baseline; the ledger is an additive overlay, never a hard gate).
+          // P1-5 — capture the ACTUAL posture written to the ledger so the success
+          // log reports it (not `result.status`, which would print 'missing' on a
+          // --force override and hide the override).
+          let evidenceStatus: 'overridden' | 'verified' | 'none_declared'
           if (result.missing.length > 0 && opts.force) {
             // Override: record present artifacts as evidence, flag overridden.
+            evidenceStatus = 'overridden'
             await mutateSubProgress((e) =>
               markIfSeeded(e, sub, 'done', {
                 evidence: result.found,
@@ -149,6 +184,7 @@ export function registerCheckpoint(program: Command): void {
               }),
             )
           } else if (result.status === 'verified') {
+            evidenceStatus = 'verified'
             await mutateSubProgress((e) =>
               markIfSeeded(e, sub, 'done', {
                 evidence: result.found,
@@ -157,6 +193,7 @@ export function registerCheckpoint(program: Command): void {
             )
           } else {
             // none_declared — guard had nothing to check (NOT a verified pass).
+            evidenceStatus = 'none_declared'
             await mutateSubProgress((e) =>
               markIfSeeded(e, sub, 'done', { evidence_status: 'none_declared' }),
             )
@@ -178,7 +215,7 @@ export function registerCheckpoint(program: Command): void {
             lastTask: opts.summary ?? `phase ${sub} complete`,
             transitionWorkflowComplete: allResolved,
           })
-          console.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${result.status})`)
+          console.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${evidenceStatus})`)
           process.exit(0)
           return
         }

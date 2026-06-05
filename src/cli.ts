@@ -44,6 +44,24 @@ for (let i = 2; i < argv.length; i++) {
   }
 }
 
+// P1-2 (v5.0 Spec 1) — commander async `.action()` handlers (checkpoint / status /
+// resume / run / gates) have no top-level try/catch, so a rejected promise
+// (LockHeldError, fs faults, …) would surface as an unhandled rejection and crash
+// with a v8 stack dump + non-deterministic exit code. A single global handler at the
+// process root converts any escaped rejection/exception into a clean `error: …` line
+// + exit 1. This is preferred over per-action try/catch (which would entangle with
+// the `process.exit`-mocked CLI unit tests that import each `register*` in isolation
+// against their own Command instance — this file is never imported by those tests).
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason)
+  console.error(`error: ${msg}`)
+  process.exit(1)
+})
+process.on('uncaughtException', (err) => {
+  console.error(`error: ${err instanceof Error ? err.message : String(err)}`)
+  process.exit(1)
+})
+
 const program = new Command()
 
 program

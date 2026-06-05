@@ -30,6 +30,7 @@ import { existsSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
+import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { runWorkflow } from '../workflow/run.js'
 import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
@@ -96,6 +97,16 @@ export function registerRun(program: Command): void {
       if (!name) {
         console.error('error: workflow name required (or pass --list to enumerate)')
         process.exit(2)
+      }
+
+      // P0-B — `name` is a user-controlled positional that flows into
+      // resolveWorkflowYaml path joins; screen for traversal before any path use.
+      try {
+        checkPathSafe(name)
+      } catch {
+        console.error('error: invalid workflow name (path traversal rejected)')
+        process.exit(2)
+        return
       }
 
       // Resolve task input — flag > stdin > empty

@@ -3,9 +3,11 @@
 // The only fs/crypto touch of the state-machine core (design §9 component isolation).
 // Three pure-ish functions, no state-file I/O (the caller in checkpoint.ts owns that):
 //   - hashFile         : sha256 hex of a file's bytes.
-//   - checkArtifacts   : locate a sub's leaf workflow.yaml, read declared
-//                        `phases[].artifacts_expected`, stat + hash each. Three-state
-//                        outcome (none_declared / verified / partial-with-missing).
+//   - checkArtifacts   : locate a sub's leaf workflow.yaml (under packageRoot), read
+//                        declared `phases[].artifacts_expected`, stat + hash each
+//                        relative to process.cwd() (artifacts live in the user
+//                        project). Three-state outcome (none_declared / verified /
+//                        missing). `found[].path` is absolute (drift re-hash base).
 //   - detectDrift      : re-hash stored evidence refs, list path/was/now mismatches
 //                        (cross-CC handoff drift — warn, not block, per ADR-0033 D4).
 
@@ -23,9 +25,10 @@ export async function hashFile(path: string): Promise<string> {
 }
 
 export interface CheckArtifactsResult {
-  /** 'verified' — all declared artifacts present (sha256 recorded).
+  /** 'verified'      — declared artifacts present (sha256 recorded).
+   *  'missing'       — some declared artifact is absent (caller blocks on `missing`).
    *  'none_declared' — leaf declares no artifacts_expected → guard N/A (NOT a pass). */
-  status: 'verified' | 'none_declared'
+  status: 'verified' | 'missing' | 'none_declared'
   found: EvidenceRefType[]
   missing: string[]
 }
@@ -49,10 +52,16 @@ function collectDeclared(parsed: unknown): string[] {
  *  - no declared artifacts → `{ status: 'none_declared', found: [], missing: [] }`
  *    (guard N/A — NOT a pass; the three-state ledger marks it distinctly).
  *  - all present → `{ status: 'verified', found: [{path, sha256}], missing: [] }`.
- *  - some missing → `{ status: 'none_declared'-NO; missing populated }`: the caller
- *    blocks on `missing.length > 0`. `found` still carries the present artifacts.
+ *  - some missing → `{ status: 'missing', missing populated }`: the caller blocks on
+ *    `missing.length > 0`. `found` still carries the present artifacts.
  *
- *  Artifact paths are resolved relative to `packageRoot` (cwd-independent). */
+ *  TWO BASES (P0-A): the leaf workflow.yaml is located under `packageRoot`
+ *  (harnessed install dir — `resolveWorkflowYaml` resolves against it, unchanged),
+ *  but the declared ARTIFACTS are produced by the agent in the user PROJECT cwd, so
+ *  they are stat'd/hashed relative to `process.cwd()`. `found[].path` stores the
+ *  ABSOLUTE artifact path so `detectDrift` re-hashes the same file regardless of the
+ *  later cwd (complete and drift share one base — no cwd漂移). `missing[]` keeps the
+ *  declared relative path (human-readable in the block message). */
 export async function checkArtifacts(
   sub: string,
   packageRoot: string,
@@ -64,18 +73,21 @@ export async function checkArtifacts(
   const declared = collectDeclared(parsed)
   if (declared.length === 0) return { status: 'none_declared', found: [], missing: [] }
 
+  const cwd = process.cwd()
   const found: EvidenceRefType[] = []
   const missing: string[] = []
   for (const rel of declared) {
-    const abs = resolve(packageRoot, rel)
+    const abs = resolve(cwd, rel)
     const present = await stat(abs)
       .then((s) => s.isFile())
       .catch(() => false)
-    if (present) found.push({ path: rel, sha256: await hashFile(abs) })
+    // Store the ABSOLUTE path so detectDrift re-hashes the same file later (P0-A).
+    if (present) found.push({ path: abs, sha256: await hashFile(abs) })
     else missing.push(rel)
   }
-  // 'verified' only when nothing is missing; otherwise the caller blocks on `missing`.
-  return { status: missing.length === 0 ? 'verified' : 'none_declared', found, missing }
+  // P1-3 three-state honesty: 'verified' when nothing missing; 'missing' when a
+  // declared artifact is absent (caller still gates on `missing.length`).
+  return { status: missing.length === 0 ? 'verified' : 'missing', found, missing }
 }
 
 export interface DriftEntry {

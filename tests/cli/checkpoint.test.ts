@@ -169,7 +169,7 @@ describe('cli/checkpoint — start/complete/fail', () => {
   // v5.0 Spec 1 (ADR-0033) — fail-closed evidence guard branches.
   it('cell 7 — complete with declared-but-missing artifact → fail-closed exit 1, completePhase NOT called', async () => {
     vi.mocked(checkArtifacts).mockResolvedValueOnce({
-      status: 'none_declared',
+      status: 'missing',
       found: [],
       missing: ['progress.md'],
     })
@@ -182,7 +182,7 @@ describe('cli/checkpoint — start/complete/fail', () => {
 
   it('cell 8 — complete --force with missing artifact → override, exit 0, completePhase called', async () => {
     vi.mocked(checkArtifacts).mockResolvedValueOnce({
-      status: 'none_declared',
+      status: 'missing',
       found: [{ path: 'progress.md', sha256: 'abc123' }],
       missing: ['other.md'],
     })

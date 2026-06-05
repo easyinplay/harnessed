@@ -14,11 +14,19 @@ import { checkArtifacts, detectDrift, hashFile } from '../../src/checkpoint/evid
 import type { EvidenceRefType } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
 
 let root: string
+let prevCwd: string
 
 beforeEach(() => {
   root = mkdtempSync(join(tmpdir(), 'harnessed-evidence-'))
+  // P0-A — checkArtifacts now resolves declared ARTIFACTS relative to process.cwd()
+  // (artifacts are produced in the user project, not the harnessed install dir).
+  // chdir into `root` so the convenience cases keep cwd == packageRoot == root; the
+  // dedicated cwd≠packageRoot case below overrides this to prove the two bases split.
+  prevCwd = process.cwd()
+  process.chdir(root)
 })
 afterEach(() => {
+  process.chdir(prevCwd)
   rmSync(root, { recursive: true, force: true })
 })
 
@@ -75,7 +83,8 @@ describe('checkArtifacts', () => {
     const r = await checkArtifacts('verify-code-review', root)
     expect(r.status).toBe('verified')
     expect(r.missing).toEqual([])
-    expect(r.found).toEqual([{ path: 'report.md', sha256: sha256('the report') }])
+    // P0-A — found[].path is now ABSOLUTE (drift re-hash base). cwd==root here.
+    expect(r.found).toEqual([{ path: join(root, 'report.md'), sha256: sha256('the report') }])
   })
 
   it('flattens artifacts_expected across multiple phases', async () => {
@@ -84,16 +93,57 @@ describe('checkArtifacts', () => {
     writeArtifact('b.md', 'B')
     const r = await checkArtifacts('task-code', root)
     expect(r.status).toBe('verified')
-    expect(r.found.map((e) => e.path).sort()).toEqual(['a.md', 'b.md'])
+    expect(r.found.map((e) => e.path).sort()).toEqual([join(root, 'a.md'), join(root, 'b.md')])
   })
 
-  it('lists missing artifacts and still records found ones', async () => {
+  it('lists missing artifacts (relative) and still records found ones (absolute)', async () => {
     writeLeaf('task-code', [['present.md', 'gone.md']])
     writeArtifact('present.md', 'here')
     const r = await checkArtifacts('task-code', root)
+    // missing[] keeps the declared relative path (human-readable block message).
     expect(r.missing).toEqual(['gone.md'])
-    expect(r.found).toEqual([{ path: 'present.md', sha256: sha256('here') }])
-    expect(r.status).not.toBe('verified')
+    expect(r.found).toEqual([{ path: join(root, 'present.md'), sha256: sha256('here') }])
+    // P1-3 — distinct 'missing' status (not 'none_declared' overload).
+    expect(r.status).toBe('missing')
+  })
+
+  // P0-A regression (the bug the original packageRoot==cwd tests masked): the leaf
+  // workflow.yaml lives under packageRoot, but the ARTIFACT lives under the user
+  // project cwd. Resolving the artifact against packageRoot would fail-closed-BLOCK
+  // every real `complete`. Here packageRoot ≠ cwd, the artifact is only in cwd, and
+  // the round-trip (verified → mutate → detectDrift) must hold off the stored
+  // absolute path.
+  it('resolves artifacts against cwd, NOT packageRoot (cwd ≠ packageRoot round-trip)', async () => {
+    // packageRoot: a SEPARATE tmpdir holding only the leaf workflow.yaml.
+    const pkgRoot = mkdtempSync(join(tmpdir(), 'harnessed-pkgroot-'))
+    try {
+      const dir = join(pkgRoot, 'workflows', 'task', 'code')
+      mkdirSync(dir, { recursive: true })
+      writeFileSync(
+        join(dir, 'workflow.yaml'),
+        'schema_version: harnessed.workflow.v3\nworkflow: task-code\nphases:\n  - id: 01-x\n    name: phase 0\n    artifacts_expected: [progress.md]\n',
+        'utf8',
+      )
+      // artifact ONLY in cwd (== root), absent from pkgRoot.
+      const artAbs = writeArtifact('progress.md', 'agent output')
+
+      const r = await checkArtifacts('task-code', pkgRoot)
+      // Found via cwd despite pkgRoot not containing it → no false fail-closed block.
+      expect(r.status).toBe('verified')
+      expect(r.missing).toEqual([])
+      expect(r.found).toEqual([{ path: artAbs, sha256: sha256('agent output') }])
+
+      // detectDrift uses the stored ABSOLUTE path → same base, no cwd drift. Clean now…
+      expect(await detectDrift(r.found)).toEqual([])
+      // …then mutate the artifact → drift IS detected off the absolute ref.
+      writeFileSync(artAbs, 'tampered', 'utf8')
+      const drift = await detectDrift(r.found)
+      expect(drift).toHaveLength(1)
+      expect(drift[0]?.path).toBe(artAbs)
+      expect(drift[0]?.now).toBe(sha256('tampered'))
+    } finally {
+      rmSync(pkgRoot, { recursive: true, force: true })
+    }
   })
 })
 

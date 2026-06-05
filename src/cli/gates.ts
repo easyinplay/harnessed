@@ -13,6 +13,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import type { Command } from 'commander'
 import { parse as parseYaml } from 'yaml'
+import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
 import { getPackageRoot } from './lib/packagePath.js'
@@ -83,6 +84,17 @@ export function registerGates(program: Command): void {
         console.error(
           `error: unknown master '${master}'. Expected one of: auto, discuss, plan, task, verify.`,
         )
+        process.exit(1)
+        return
+      }
+
+      // P0-B — defense-in-depth: `master` feeds resolveMasterYamlPath path joins.
+      // VALID_MASTERS already whitelists it, but guard for consistency with the
+      // other CLI entry points.
+      try {
+        checkPathSafe(master)
+      } catch {
+        console.error('error: invalid master name (path traversal rejected)')
         process.exit(1)
         return
       }
