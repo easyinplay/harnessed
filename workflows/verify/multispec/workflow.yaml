@@ -48,6 +48,10 @@ phases:
     max_iterations: 1
     # v3.8.0 P1 — Pattern C team create is THE archetypical Agent Teams phase; full 3-RULES inject.
     injects_rules: [escalation, transparent-skip, agent-teams-prevention]
+    # D2-followup (ADR-0033): declare report artifact so the evidence guard is real
+    # (verified, not none_declared) — the 4-specialist team's cross-questioned findings
+    # land in one aggregated multi-dimensional review report (proves the team review ran).
+    artifacts_expected: [multispec-review-report.md]
 
   - id: 02-team-cleanup
     name: Agent Team cleanup (shutdown_request + TeamDelete 防呆清单)

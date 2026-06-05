@@ -76,3 +76,49 @@ describe('schema — CheckpointV1 + CurrentWorkflowV1 (T1.4 fixtures 1-6)', () =
     expect(Value.Check(CurrentWorkflowV1, noSv)).toBe(false)
   })
 })
+
+describe('schema — sub_progress ledger (v5.0 Spec 1, ADR-0033 additive optional)', () => {
+  it('a. old shape WITHOUT sub_progress still passes (additive optional, no version bump)', () => {
+    // `validCurrentWorkflow` carries no sub_progress → backward-compatible.
+    expect('sub_progress' in validCurrentWorkflow).toBe(false)
+    expect(Value.Check(CurrentWorkflowV1, validCurrentWorkflow)).toBe(true)
+  })
+
+  it('b. new shape with three-state sub_progress entries passes', () => {
+    const withLedger = {
+      ...validCurrentWorkflow,
+      sub_progress: [
+        {
+          sub: 'task-clarify',
+          status: 'done' as const,
+          gate_fired: true,
+          evidence_status: 'verified' as const,
+          evidence: [{ path: '.planning/DISCUSS.md', sha256: 'abc1234' }],
+        },
+        {
+          sub: 'task-test',
+          status: 'pending' as const,
+          gate_fired: true,
+          evidence_status: 'none_declared' as const,
+        },
+        {
+          sub: 'task-deliver',
+          status: 'skipped' as const,
+          gate_fired: false,
+          reason: 'gate skipped: trivial change',
+        },
+      ],
+    }
+    expect(Value.Check(CurrentWorkflowV1, withLedger)).toBe(true)
+  })
+
+  it('c. illegal evidence_status value is rejected', () => {
+    const bad = {
+      ...validCurrentWorkflow,
+      sub_progress: [
+        { sub: 'task-code', status: 'done' as const, gate_fired: true, evidence_status: 'passed' },
+      ],
+    }
+    expect(Value.Check(CurrentWorkflowV1, bad)).toBe(false)
+  })
+})

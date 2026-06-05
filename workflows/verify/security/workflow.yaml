@@ -28,3 +28,6 @@ phases:
     model: opus
     gate: judgments.stage-routing.verify-security-secrets.fires
     max_iterations: 3
+    # D2-followup (ADR-0033): declare report artifact so the evidence guard is real
+    # (verified, not none_declared) — proves the CSO OWASP/secrets audit actually ran.
+    artifacts_expected: [security-audit-report.md]

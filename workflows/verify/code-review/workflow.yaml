@@ -28,3 +28,6 @@ phases:
     model: sonnet
     parallelism: judgments.parallelism-gate.subagent-default.fires
     max_iterations: '{{ defaults.ralph_max_iterations.verify-code-review.01-code-review }}'
+    # D2-followup (ADR-0033): declare report artifact so the evidence guard is real
+    # (verified, not none_declared) — proves the multi-agent code-review actually ran.
+    artifacts_expected: [code-review-report.md]

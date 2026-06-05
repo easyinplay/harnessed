@@ -27,3 +27,6 @@ phases:
     model: opus
     gate: judgments.stage-routing.verify-paranoid-critical.fires
     max_iterations: '{{ defaults.ralph_max_iterations.verify-paranoid.01-review }}'
+    # D2-followup (ADR-0033): declare report artifact so the evidence guard is real
+    # (verified, not none_declared) — proves the Paranoid Staff Engineer review actually ran.
+    artifacts_expected: [paranoid-review-report.md]

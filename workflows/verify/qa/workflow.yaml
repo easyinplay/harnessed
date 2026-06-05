@@ -28,3 +28,6 @@ phases:
     model: sonnet
     gate: judgments.stage-routing.verify-qa-ui.fires
     max_iterations: 3
+    # D2-followup (ADR-0033): declare report artifact so the evidence guard is real
+    # (verified, not none_declared) — proves the end-to-end QA pass actually ran.
+    artifacts_expected: [qa-report.md]

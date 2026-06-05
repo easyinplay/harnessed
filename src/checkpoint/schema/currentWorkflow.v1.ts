@@ -16,6 +16,46 @@ export const WorkflowStatus = Type.Union([
   Type.Literal('complete'),
 ])
 
+/** v5.0 Spec 1 (ADR-0033 D4) — handoff/existence evidence ref. `evidence:
+ *  [{path, sha256}]` serves both the fail-closed existence guard (C) and
+ *  cross-CC handoff sha256 drift detection (F). */
+export const EvidenceRef = Type.Object(
+  { path: Type.String({ minLength: 1 }), sha256: Type.String({ minLength: 1 }) },
+  { additionalProperties: false },
+)
+
+/** v5.0 Spec 1 (ADR-0033 D1) — per-sub progress ledger entry. Seeded upfront
+ *  from the `gates` plan (fire→pending, skip→skipped+reason); flipped to
+ *  done/failed by `checkpoint complete`/`fail`. */
+export const SubProgressEntry = Type.Object(
+  {
+    // flattened sub name, e.g. "task-code".
+    sub: Type.String({ minLength: 1 }),
+    status: Type.Union([
+      Type.Literal('pending'),
+      Type.Literal('done'),
+      Type.Literal('failed'),
+      Type.Literal('skipped'),
+    ]),
+    gate_fired: Type.Boolean(),
+    // skip reason (from gates plan skip[].reason).
+    reason: Type.Optional(Type.String()),
+    // D2 (eng-review) — three-state evidence posture, NOT a boolean:
+    //   'verified'      — artifacts_expected declared AND all present (sha256 recorded)
+    //   'none_declared' — leaf declares no artifacts_expected → guard N/A (NOT a pass)
+    //   'overridden'    — --force used to bypass a missing-artifact block
+    evidence_status: Type.Optional(
+      Type.Union([
+        Type.Literal('verified'),
+        Type.Literal('none_declared'),
+        Type.Literal('overridden'),
+      ]),
+    ),
+    evidence: Type.Optional(Type.Array(EvidenceRef)),
+  },
+  { additionalProperties: false },
+)
+
 /** Current-workflow envelope — singleton state file pointing at the last
  *  checkpoint path. `last_checkpoint_path` is nullable on `activate()`
  *  before the first checkpoint write. */
@@ -29,8 +69,14 @@ export const CurrentWorkflowV1 = Type.Object(
     started_at: Type.String({ minLength: 1 }),
     paused_at: Type.Optional(Type.String({ minLength: 1 })),
     completed_at: Type.Optional(Type.String({ minLength: 1 })),
+    // v5.0 Spec 1 (ADR-0033 D1/D3) — additive optional ledger (sole SoT; the
+    // checkpoint envelope does NOT carry a copy). Old files without this field
+    // still `Value.Check`-pass → no schema version bump; readers use `?? []`.
+    sub_progress: Type.Optional(Type.Array(SubProgressEntry)),
   },
   { additionalProperties: false },
 )
 
 export type CurrentWorkflowV1Type = Static<typeof CurrentWorkflowV1>
+export type SubProgressEntryType = Static<typeof SubProgressEntry>
+export type EvidenceRefType = Static<typeof EvidenceRef>
