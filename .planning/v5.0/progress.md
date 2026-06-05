@@ -12,7 +12,7 @@
 - [x] Phase 1 schema (committed fc19318)
 - [x] Phase 2 ledger.ts (TDD, 14 tests)
 - [x] Phase 3 evidence.ts (TDD, 8 tests)
-- [ ] Phase 4 checkpoint.ts wiring
+- [x] Phase 4 checkpoint.ts wiring (mutateSubProgress 单锁 RMW + 三态守卫; ledger-state 6 tests + checkpoint CLI 10 tests)
 - [ ] Phase 5 status --recover + resume drift
 - [ ] Phase 6 generateCommands ORCHESTRATOR body
 - [x] Phase 7 verify/* artifacts_expected backfill (committed fc19318; simplify left none_declared, pending decision)

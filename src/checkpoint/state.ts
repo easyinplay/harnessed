@@ -17,7 +17,11 @@ import lockfile from 'proper-lockfile'
 import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { branchOnSchemaVersion, SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { writeFileAtomic } from './atomicWrite.js'
-import { CurrentWorkflowV1, type CurrentWorkflowV1Type } from './schema/index.js'
+import {
+  CurrentWorkflowV1,
+  type CurrentWorkflowV1Type,
+  type SubProgressEntryType,
+} from './schema/index.js'
 
 // v3.0.3 — lazy path resolution so HARNESSED_ROOT_OVERRIDE in e2e tests
 // applies before the first write (module-level const captured the path
@@ -98,17 +102,46 @@ export async function readCurrentWorkflow(): Promise<CurrentWorkflowV1Type | nul
   })
 }
 
-/** Write state with self-validate (loadPhases.ts pattern); creates parent dir;
- *  acquires dir-level lock (D-05+D-08) before writeFile (R10.2 concurrent safety). */
-export async function writeCurrentWorkflow(s: CurrentWorkflowV1Type): Promise<void> {
+/** Lock-FREE write kernel: self-validate (loadPhases.ts pattern) + create parent
+ *  dir + atomic write. The caller MUST already hold the dir-level lock — this is
+ *  the shared inner body of `writeCurrentWorkflow` (lock → kernel) and
+ *  `mutateSubProgress` (lock → read → fn → kernel). Keeping it lock-free is what
+ *  lets `mutateSubProgress` do a single-lock read-modify-write without the
+ *  double-lock deadlock that proper-lockfile (non-reentrant) would otherwise
+ *  cause (pre-v4 review C5 lost-update fix). */
+async function writeCurrentWorkflowUnlocked(s: CurrentWorkflowV1Type): Promise<void> {
   if (!Value.Check(CurrentWorkflowV1, s)) {
     const errs = [...Value.Errors(CurrentWorkflowV1, s)].map((e) => e.message).join('; ')
     throw new WorkflowStateError(`current-workflow schema validation failed: ${errs}`)
   }
   const path = statePath()
   await mkdir(dirname(path), { recursive: true })
+  await writeFileAtomic(path, JSON.stringify(s, null, 2))
+}
+
+/** Write state with self-validate (loadPhases.ts pattern); creates parent dir;
+ *  acquires dir-level lock (D-05+D-08) before writeFile (R10.2 concurrent safety). */
+export async function writeCurrentWorkflow(s: CurrentWorkflowV1Type): Promise<void> {
+  await withLock(() => writeCurrentWorkflowUnlocked(s))
+}
+
+/** v5.0 Spec 1 (ADR-0033) — atomic read-modify-write of the sub-progress ledger.
+ *  The read + transform + write happen inside a SINGLE `withLock` so concurrent
+ *  `checkpoint complete`/`fail` calls cannot lost-update each other (pre-v4 review
+ *  C5: locking only the write, not the read, drops the loser's update).
+ *
+ *  `fn` receives the current ledger array (`sub_progress ?? []`) and returns the
+ *  next array (e.g. a `markSub(...)` result). No-ops if there is no active
+ *  workflow record (nothing seeded yet) — returns silently, sister to
+ *  `pause()`/`complete()` graceful no-op. */
+export async function mutateSubProgress(
+  fn: (entries: SubProgressEntryType[]) => SubProgressEntryType[],
+): Promise<void> {
   await withLock(async () => {
-    await writeFileAtomic(path, JSON.stringify(s, null, 2))
+    const s = await readCurrentWorkflow()
+    if (!s) return
+    const next = fn(s.sub_progress ?? [])
+    await writeCurrentWorkflowUnlocked({ ...s, sub_progress: next })
   })
 }
 

@@ -5,11 +5,23 @@
 // Reuses src/checkpoint/engineHook.ts (activatePhase / completePhase) — no direct
 // filesystem or Date access here (sister: src/cli/resume.ts lazy-import pattern).
 //
+// v5.0 Spec 1 (ADR-0033 / STATE-MACHINE-CORE-DESIGN.md §8) — the checkpoint CLI is
+// the sole write path for the sub-progress ledger (agents never touch state files
+// directly). It wires:
+//   start <master> --plan <json> → activate + seed ledger from the `gates` plan
+//   complete <sub> [--force]     → fail-CLOSED evidence guard + ledger mark 'done'
+//   fail <sub>                   → ledger mark 'failed'
+//
 // Semantics:
-//   start <sub>               → activatePhase(sub)        — status=active + checkpoint path
-//   complete <sub> [--summary]→ completePhase(complete)   — terminal checkpoint, exit 0
-//   fail <sub> [--summary]    → completePhase(complete)   — terminal checkpoint w/ FAILED:
-//                                prefix in lastTask, exit 1 (engineHook has no 'fail' status).
+//   start <master> --plan <json> → activatePhase(master) + seedLedger(plan)
+//                                  (D3: missing/empty --plan → empty ledger, no error)
+//   complete <sub> [--force]     → checkArtifacts(sub) evidence guard:
+//                                    missing && !force → exit 1 (fail-CLOSED), stay pending
+//                                    missing && force  → markSub done, evidence_status 'overridden'
+//                                    verified          → markSub done, evidence + 'verified'
+//                                    none_declared     → markSub done, 'none_declared'
+//                                  + completePhase(complete) terminal checkpoint, exit 0
+//   fail <sub> [--summary]       → markSub failed + completePhase w/ FAILED: prefix, exit 1.
 
 import type { Command } from 'commander'
 
@@ -20,6 +32,46 @@ function isAction(a: string): a is Action {
   return (ACTIONS as readonly string[]).includes(a)
 }
 
+/** Mark a sub in the ledger ONLY when it was seeded. `markSub` throws when the
+ *  sub is absent (D3 empty-ledger / no `--plan`); here we degrade to a no-op so a
+ *  completion/fail with an unseeded ledger still records its checkpoint envelope.
+ *  The ledger is an additive overlay, never a hard gate on the checkpoint write. */
+function markIfSeeded(
+  entries: import('../checkpoint/schema/currentWorkflow.v1.js').SubProgressEntryType[],
+  sub: string,
+  status: import('../checkpoint/ledger.js').SubStatus,
+  opts?: import('../checkpoint/ledger.js').MarkSubOpts,
+): import('../checkpoint/schema/currentWorkflow.v1.js').SubProgressEntryType[] {
+  return entries.some((e) => e.sub === sub) ? markSubImpl(entries, sub, status, opts) : entries
+}
+
+// markSub is loaded lazily at the module top once (pure fn, no I/O) so markIfSeeded
+// can call it synchronously inside the mutateSubProgress closure.
+import { markSub as markSubImpl } from '../checkpoint/ledger.js'
+
+/** Parse the `--plan` gates JSON. Returns null on missing/empty/invalid input so
+ *  the caller can degrade to an empty ledger (D3) instead of throwing. */
+async function parsePlan(
+  raw: string | undefined,
+): Promise<import('../checkpoint/ledger.js').GatesPlan | null> {
+  if (!raw || raw.trim() === '') return null
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    return null
+  }
+  // Minimal shape guard — `fire`/`skip` arrays. seedLedger tolerates absent arrays
+  // via the local interface defaults, but we normalize here for safety.
+  const p = parsed as { fire?: unknown; skip?: unknown }
+  if (!Array.isArray(p.fire) && !Array.isArray(p.skip)) return null
+  return {
+    ...(parsed as object),
+    fire: Array.isArray(p.fire) ? p.fire : [],
+    skip: Array.isArray(p.skip) ? p.skip : [],
+  } as import('../checkpoint/ledger.js').GatesPlan
+}
+
 export function registerCheckpoint(program: Command): void {
   program
     .command('checkpoint <action> <sub>')
@@ -27,45 +79,113 @@ export function registerCheckpoint(program: Command): void {
       'Record workflow progress: start | complete | fail <sub-workflow> (writes to ~/.claude/harnessed/checkpoints/)',
     )
     .option('--summary <text>', 'short summary stored as the checkpoint lastTask')
-    .action(async (action: string, sub: string, opts: { summary?: string }) => {
-      if (!isAction(action)) {
-        console.error(
-          `[harnessed] checkpoint: unknown action "${action}" — expected one of ${ACTIONS.join(', ')}`,
-        )
-        process.exit(1)
-        return
-      }
+    .option('--plan <json>', 'gates plan JSON (start only) — seeds the sub-progress ledger')
+    .option(
+      '--force',
+      'complete only — override a missing-artifact evidence block (records overridden)',
+    )
+    .action(
+      async (
+        action: string,
+        sub: string,
+        opts: { summary?: string; plan?: string; force?: boolean },
+      ) => {
+        if (!isAction(action)) {
+          console.error(
+            `[harnessed] checkpoint: unknown action "${action}" — expected one of ${ACTIONS.join(', ')}`,
+          )
+          process.exit(1)
+          return
+        }
 
-      const { activatePhase, completePhase } = await import('../checkpoint/engineHook.js')
+        const { activatePhase, completePhase } = await import('../checkpoint/engineHook.js')
 
-      if (action === 'start') {
-        const { checkpointPath } = await activatePhase(sub)
-        console.log(`[harnessed] checkpoint started: ${sub} → ${checkpointPath}`)
-        process.exit(0)
-        return
-      }
+        if (action === 'start') {
+          const { checkpointPath } = await activatePhase(sub)
+          // D3 graceful degrade — seed the ledger only when a plan is supplied; a
+          // missing/empty/invalid --plan leaves an empty ledger, no error.
+          const plan = await parsePlan(opts.plan)
+          if (plan) {
+            const { seedLedger } = await import('../checkpoint/ledger.js')
+            const { mutateSubProgress } = await import('../checkpoint/state.js')
+            await mutateSubProgress(() => seedLedger(plan))
+          }
+          console.log(`[harnessed] checkpoint started: ${sub} → ${checkpointPath}`)
+          process.exit(0)
+          return
+        }
 
-      if (action === 'complete') {
+        if (action === 'complete') {
+          const { checkArtifacts } = await import('../checkpoint/evidence.js')
+          const { mutateSubProgress } = await import('../checkpoint/state.js')
+          const { getPackageRoot } = await import('./lib/packagePath.js')
+
+          const result = await checkArtifacts(sub, getPackageRoot())
+
+          // Fail-CLOSED (ADR-0033 D2): a declared-but-missing artifact blocks the
+          // completion. The ledger entry stays 'pending'; no done flip; exit 1.
+          if (result.missing.length > 0 && !opts.force) {
+            console.error(
+              `[harnessed] checkpoint complete BLOCKED: ${sub} — ${result.missing.length} declared artifact(s) missing (evidence guard, fail-closed):`,
+            )
+            for (const m of result.missing) console.error(`  - ${m}`)
+            console.error(
+              '  (re-run with --force to override and record evidence_status=overridden)',
+            )
+            process.exit(1)
+            return
+          }
+
+          // Resolve the three-state evidence posture for the ledger mark. D3: if
+          // the ledger was never seeded (empty/absent --plan at start), the sub is
+          // not present → `markIfSeeded` no-ops (the checkpoint envelope below is
+          // the baseline; the ledger is an additive overlay, never a hard gate).
+          if (result.missing.length > 0 && opts.force) {
+            // Override: record present artifacts as evidence, flag overridden.
+            await mutateSubProgress((e) =>
+              markIfSeeded(e, sub, 'done', {
+                evidence: result.found,
+                evidence_status: 'overridden',
+              }),
+            )
+          } else if (result.status === 'verified') {
+            await mutateSubProgress((e) =>
+              markIfSeeded(e, sub, 'done', {
+                evidence: result.found,
+                evidence_status: 'verified',
+              }),
+            )
+          } else {
+            // none_declared — guard had nothing to check (NOT a verified pass).
+            await mutateSubProgress((e) =>
+              markIfSeeded(e, sub, 'done', { evidence_status: 'none_declared' }),
+            )
+          }
+
+          await completePhase({
+            phaseId: sub,
+            status: 'complete',
+            lastTask: opts.summary ?? `phase ${sub} complete`,
+          })
+          console.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${result.status})`)
+          process.exit(0)
+          return
+        }
+
+        // action === 'fail' — flip the ledger entry → 'failed', record a terminal
+        // checkpoint with FAILED: prefix, signal failure via exit code (engineHook
+        // status union has no 'fail').
+        const { mutateSubProgress } = await import('../checkpoint/state.js')
+        await mutateSubProgress((e) => markIfSeeded(e, sub, 'failed'))
         await completePhase({
           phaseId: sub,
           status: 'complete',
-          lastTask: opts.summary ?? `phase ${sub} complete`,
+          lastTask: `FAILED: ${opts.summary ?? ''}`,
         })
-        console.log(`[harnessed] checkpoint complete: ${sub}`)
-        process.exit(0)
-        return
-      }
-
-      // action === 'fail' — record a terminal checkpoint with FAILED: prefix,
-      // signal failure via exit code (engineHook status union has no 'fail').
-      await completePhase({
-        phaseId: sub,
-        status: 'complete',
-        lastTask: `FAILED: ${opts.summary ?? ''}`,
-      })
-      console.error(
-        `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,
-      )
-      process.exit(1)
-    })
+        console.error(
+          `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,
+        )
+        process.exit(1)
+      },
+    )
 }

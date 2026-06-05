@@ -13,7 +13,20 @@ vi.mock('../../src/checkpoint/engineHook.js', () => ({
   completePhase: vi.fn(async () => undefined),
 }))
 
+// v5.0 Spec 1 — the `complete` action now runs the fail-closed evidence guard
+// (checkArtifacts) and the ledger RMW (mutateSubProgress). Mock both so these
+// stay pure CLI-wiring unit tests (hook calls + exit codes) without real fs/yaml.
+// Default checkArtifacts → none_declared (guard N/A) so a bare `complete` still
+// exits 0; individual cells override the return to exercise the guard branches.
+vi.mock('../../src/checkpoint/evidence.js', () => ({
+  checkArtifacts: vi.fn(async () => ({ status: 'none_declared', found: [], missing: [] })),
+}))
+vi.mock('../../src/checkpoint/state.js', () => ({
+  mutateSubProgress: vi.fn(async () => undefined),
+}))
+
 import { activatePhase, completePhase } from '../../src/checkpoint/engineHook.js'
+import { checkArtifacts } from '../../src/checkpoint/evidence.js'
 import { registerCheckpoint } from '../../src/cli/checkpoint.js'
 
 class ExitError extends Error {
@@ -65,6 +78,8 @@ describe('cli/checkpoint — start/complete/fail', () => {
     vi.clearAllMocks()
     vi.mocked(activatePhase).mockResolvedValue({ checkpointPath: '/fake/path/task-code.json' })
     vi.mocked(completePhase).mockResolvedValue(undefined)
+    // Default evidence posture: none_declared (guard N/A) → `complete` exits 0.
+    vi.mocked(checkArtifacts).mockResolvedValue({ status: 'none_declared', found: [], missing: [] })
   })
   afterEach(() => {
     vi.restoreAllMocks()
@@ -135,5 +150,42 @@ describe('cli/checkpoint — start/complete/fail', () => {
     const r2 = await runCli(['checkpoint', 'complete', 'task-code', '--summary', 'done'])
     expect(r2.code).toBe(0)
     expect(completePhase).toHaveBeenCalledTimes(1)
+  })
+
+  // v5.0 Spec 1 (ADR-0033) — fail-closed evidence guard branches.
+  it('cell 7 — complete with declared-but-missing artifact → fail-closed exit 1, completePhase NOT called', async () => {
+    vi.mocked(checkArtifacts).mockResolvedValueOnce({
+      status: 'none_declared',
+      found: [],
+      missing: ['progress.md'],
+    })
+    const { code, stderr } = await runCli(['checkpoint', 'complete', 'task-code'])
+    expect(code).toBe(1)
+    expect(completePhase).not.toHaveBeenCalled()
+    expect(stderr).toContain('BLOCKED')
+    expect(stderr).toContain('progress.md')
+  })
+
+  it('cell 8 — complete --force with missing artifact → override, exit 0, completePhase called', async () => {
+    vi.mocked(checkArtifacts).mockResolvedValueOnce({
+      status: 'none_declared',
+      found: [{ path: 'progress.md', sha256: 'abc123' }],
+      missing: ['other.md'],
+    })
+    const { code } = await runCli(['checkpoint', 'complete', 'task-code', '--force'])
+    expect(code).toBe(0)
+    expect(completePhase).toHaveBeenCalledTimes(1)
+  })
+
+  it('cell 9 — complete with verified artifacts → exit 0, completePhase called, stdout notes verified', async () => {
+    vi.mocked(checkArtifacts).mockResolvedValueOnce({
+      status: 'verified',
+      found: [{ path: 'progress.md', sha256: 'deadbeef' }],
+      missing: [],
+    })
+    const { code, stdout } = await runCli(['checkpoint', 'complete', 'task-code'])
+    expect(code).toBe(0)
+    expect(completePhase).toHaveBeenCalledTimes(1)
+    expect(stdout).toContain('verified')
   })
 })
