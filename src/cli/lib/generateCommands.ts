@@ -179,17 +179,17 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
         ]
   // v5.0 — the deterministic state-machine spawn loop for ONE leaf sub: prompt →
   // spawn → ralph-loop → NEEDS_CLARIFICATION round-trip → checkpoint complete (on
-  // COMPLETE) OR checkpoint fail (on unrecoverable failure). The evidence guard runs
-  // inside `checkpoint complete` (fail-CLOSED: a missing declared artifact blocks the
-  // mark and exits 1 — re-run with `--force` only to deliberately override).
+  // COMPLETE) OR checkpoint fail (on unrecoverable failure). Steps a-c are the
+  // shared `spawnLoopSteps` (indented 5sp); the leaf variant overrides step d with
+  // the evidence-guard (fail-CLOSED) detail and appends step e (checkpoint fail on
+  // unrecoverable failure) — both absent from the simpler EXECUTION body.
+  const leafIndent = '     '
+  // spawnLoopSteps emits steps a-d as 6 lines (b spans 3: the `b.` line + 2
+  // continuations); the first 5 are a + b(×3) + c, which the leaf reuses verbatim.
   const leafSpawnLoop = [
-    `${'     '}a. Bash: \`harnessed prompt <sub> --task "<spec>" --json\` → parse \`{prompt, max_iterations, model}\`.`,
-    `${'     '}b. Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`. Wrap in the ralph-loop plugin for completion-promise enforcement:`,
-    `${'     '}   \`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"\``,
-    `${'     '}   If the ralph-loop plugin is not installed, self-loop: spawn → check output for \`<promise>COMPLETE</promise>\` → if absent, re-spawn with the prior output appended (up to max_iterations).`,
-    `${'     '}c. If the subagent output contains \`STATUS: NEEDS_CLARIFICATION\` + a question list: STOP. Use AskUserQuestion to relay those exact questions to the user. Append the user's answers to the spec, then re-spawn the same sub. (This is the round-trip headless spawn cannot do.)`,
-    `${'     '}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED): if it exits non-zero because a declared \`artifacts_expected\` file is missing, the sub is NOT done — re-spawn to produce the artifact, or pass \`--force\` only to deliberately override (records \`evidence_status: overridden\`).`,
-    `${'     '}e. If the sub cannot reach COMPLETE (max_iterations exhausted, unrecoverable error): Bash \`harnessed checkpoint fail <sub> --summary "<why>"\` to flip the ledger entry to \`failed\`, then STOP and report to the user.`,
+    ...spawnLoopSteps(leafIndent).slice(0, 5),
+    `${leafIndent}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED): if it exits non-zero because a declared \`artifacts_expected\` file is missing, the sub is NOT done — re-spawn to produce the artifact, or pass \`--force\` only to deliberately override (records \`evidence_status: overridden\`).`,
+    `${leafIndent}e. If the sub cannot reach COMPLETE (max_iterations exhausted, unrecoverable error): Bash \`harnessed checkpoint fail <sub> --summary "<why>"\` to flip the ledger entry to \`failed\`, then STOP and report to the user.`,
   ]
   return [
     `# /${name}`,

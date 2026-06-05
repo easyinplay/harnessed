@@ -166,38 +166,28 @@ export function registerCheckpoint(program: Command): void {
             return
           }
 
-          // Resolve the three-state evidence posture for the ledger mark. D3: if
-          // the ledger was never seeded (empty/absent --plan at start), the sub is
-          // not present → `markIfSeeded` no-ops (the checkpoint envelope below is
-          // the baseline; the ledger is an additive overlay, never a hard gate).
-          // P1-5 — capture the ACTUAL posture written to the ledger so the success
-          // log reports it (not `result.status`, which would print 'missing' on a
-          // --force override and hide the override).
+          // Resolve the three-state evidence posture for the ledger mark, then do a
+          // SINGLE mark. D3: if the ledger was never seeded (empty/absent --plan at
+          // start), the sub is not present → `markIfSeeded` no-ops (the checkpoint
+          // envelope below is the baseline; the ledger is an additive overlay, never
+          // a hard gate). P1-5 — `evidenceStatus` captures the ACTUAL posture written
+          // (not `result.status`, which would print 'missing' on a --force override
+          // and hide the override).
+          //   missing && force → 'overridden' (record present artifacts as evidence)
+          //   verified         → 'verified'   (record found artifacts as evidence)
+          //   none_declared    → 'none_declared' (guard had nothing to check; NOT a pass)
           let evidenceStatus: 'overridden' | 'verified' | 'none_declared'
-          if (result.missing.length > 0 && opts.force) {
-            // Override: record present artifacts as evidence, flag overridden.
-            evidenceStatus = 'overridden'
-            await mutateSubProgress((e) =>
-              markIfSeeded(e, sub, 'done', {
-                evidence: result.found,
-                evidence_status: 'overridden',
-              }),
-            )
-          } else if (result.status === 'verified') {
-            evidenceStatus = 'verified'
-            await mutateSubProgress((e) =>
-              markIfSeeded(e, sub, 'done', {
-                evidence: result.found,
-                evidence_status: 'verified',
-              }),
-            )
-          } else {
-            // none_declared — guard had nothing to check (NOT a verified pass).
-            evidenceStatus = 'none_declared'
-            await mutateSubProgress((e) =>
-              markIfSeeded(e, sub, 'done', { evidence_status: 'none_declared' }),
-            )
-          }
+          if (result.missing.length > 0 && opts.force) evidenceStatus = 'overridden'
+          else if (result.status === 'verified') evidenceStatus = 'verified'
+          else evidenceStatus = 'none_declared'
+
+          // none_declared records no evidence refs (nothing was checked); the other
+          // two postures attach the present artifacts as evidence.
+          const markOpts =
+            evidenceStatus === 'none_declared'
+              ? { evidence_status: evidenceStatus }
+              : { evidence: result.found, evidence_status: evidenceStatus }
+          await mutateSubProgress((e) => markIfSeeded(e, sub, 'done', markOpts))
 
           // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must
           // not flip the whole workflow to 'complete'. Read back the ledger AFTER
