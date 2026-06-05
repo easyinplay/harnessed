@@ -14,15 +14,103 @@
 import { stat } from 'node:fs/promises'
 import type { Command } from 'commander'
 import lockfile from 'proper-lockfile'
+import { detectDrift } from '../checkpoint/evidence.js'
+import { nextPending } from '../checkpoint/ledger.js'
+import type { SubProgressEntryType } from '../checkpoint/schema/index.js'
+import { readCurrentWorkflow } from '../checkpoint/state.js'
 import { t } from '../i18n/index.js'
 import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { readState } from '../installers/lib/state.js'
+
+/** v5.0 Spec 1 (B) — status marker per sub `status` (design §7 sample). */
+function statusMarker(status: SubProgressEntryType['status']): string {
+  switch (status) {
+    case 'done':
+      return '✅ done'
+    case 'pending':
+      return '⏳ pending'
+    case 'failed':
+      return '✗ failed'
+    case 'skipped':
+      return '⬜ skipped'
+  }
+}
+
+/** v5.0 Spec 1 (D2) — evidence posture, rendered DISTINCTLY. `none_declared`
+ *  must never read as a verified pass; an entry with no posture recorded yet
+ *  also reads as none_declared (no evidence asserted). */
+function evidenceLabel(entry: SubProgressEntryType): string {
+  switch (entry.evidence_status) {
+    case 'verified':
+      return 'evidence: verified'
+    case 'overridden':
+      return 'evidence: overridden (--force)'
+    default:
+      return 'evidence: none_declared'
+  }
+}
+
+/** v5.0 Spec 1 (B + F) — build the `status --recover` output lines from a ledger.
+ *  Pure over the supplied ledger except for the drift re-hash (detectDrift does the
+ *  fs touch). Empty ledger degrades gracefully (D3). Returns the lines to print so
+ *  the formatting is testable without capturing stdout. */
+export async function buildRecoverLines(
+  workflow: { phase: string; status: string; started_at: string } | null,
+  ledger: SubProgressEntryType[],
+): Promise<string[]> {
+  const lines: string[] = []
+  if (!workflow || ledger.length === 0) {
+    lines.push('no ledger — run gates + start')
+    return lines
+  }
+
+  lines.push(`workflow: ${workflow.phase} (${workflow.status})  started ${workflow.started_at}`)
+
+  const next = nextPending(ledger)
+  for (const e of ledger) {
+    const marker = statusMarker(e.status)
+    const suffix =
+      e.status === 'skipped'
+        ? e.reason
+          ? `  (skipped: ${e.reason})`
+          : ''
+        : `  ${evidenceLabel(e)}`
+    const arrow = e.sub === next ? '   ← next' : ''
+    lines.push(`  ${e.sub}  ${marker}${suffix}${arrow}`)
+  }
+
+  if (next) {
+    lines.push(`→ next: harnessed prompt ${next}`)
+  } else {
+    lines.push('→ all subs resolved (no pending work)')
+  }
+
+  // F — re-hash each entry's evidence; emit drift warnings (warn, never block).
+  for (const e of ledger) {
+    if (!e.evidence || e.evidence.length === 0) continue
+    const drift = await detectDrift(e.evidence)
+    for (const d of drift) {
+      const now = d.now === '' ? 'missing' : `${d.now.slice(0, 7)}…`
+      lines.push(`⚠ drift: ${d.path} sha256 changed (was ${d.was.slice(0, 7)}…, now ${now})`)
+    }
+  }
+
+  return lines
+}
 
 export function registerStatus(program: Command): void {
   program
     .command('status')
     .description('Show installed upstreams (from <harnessed-root>/state.json)')
-    .action(async () => {
+    .option('--recover', 'structured recovery view of the active workflow ledger (v5.0 Spec 1 B)')
+    .action(async (opts: { recover?: boolean }) => {
+      if (opts.recover) {
+        const wf = await readCurrentWorkflow()
+        const ledger = wf?.sub_progress ?? []
+        const lines = await buildRecoverLines(wf, ledger)
+        for (const l of lines) console.log(l)
+        return
+      }
       const state = await readState(process.cwd())
       const names = Object.keys(state.installed).sort()
       if (names.length === 0) {

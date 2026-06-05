@@ -29,6 +29,7 @@ export function registerResume(program: Command): void {
         process.exit(1)
       }
       if (r.cwdWarn) console.error(r.cwdWarn)
+      if (r.driftWarn) for (const w of r.driftWarn) console.error(w)
       console.log(`phase: ${r.checkpoint.phase}`)
       console.log(`last_task: ${r.checkpoint.last_task}`)
       if (r.checkpoint.key_decisions.length) {

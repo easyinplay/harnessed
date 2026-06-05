@@ -6,13 +6,23 @@
 import { readFile } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
 import { branchOnSchemaVersion } from '../types/schemaVersion.js'
-import { CheckpointV1, type CheckpointV1Type } from './schema/index.js'
+import { detectDrift } from './evidence.js'
+import { CheckpointV1, type CheckpointV1Type, type EvidenceRefType } from './schema/index.js'
 import { readCurrentWorkflow } from './state.js'
 
 export type ResumeResult =
   | { status: 'no-paused-phase'; error: string }
   | { status: 'corrupt'; error: string; path: string }
-  | { status: 'ok'; checkpoint: CheckpointV1Type; cwdWarn?: string; resumeHint: string }
+  | {
+      status: 'ok'
+      checkpoint: CheckpointV1Type
+      cwdWarn?: string
+      resumeHint: string
+      // v5.0 Spec 1 (F) — handoff sha256 drift across the resumed ledger's
+      // evidence refs. WARN, not block (cc-handoff.md — user adjudicates).
+      // Absent when no evidence drifted.
+      driftWarn?: string[]
+    }
 
 export async function runResume(): Promise<ResumeResult> {
   const current = await readCurrentWorkflow()
@@ -66,5 +76,27 @@ export async function runResume(): Promise<ResumeResult> {
     ? ` (session_id: ${validated.session_id} — SDK will redirect to original session)`
     : ' (fresh session — context reloaded from checkpoint)'
   const resumeHint = `→ in Claude Code: /gsd-execute-phase ${validated.phase}${sidHint}`
-  return { status: 'ok', checkpoint: validated, ...(cwdWarn ? { cwdWarn } : {}), resumeHint }
+
+  // v5.0 Spec 1 (F) — re-hash the live ledger's evidence refs; surface sha256
+  // drift as a warning (not a block). Reads from the singleton ledger (sole SoT,
+  // eng-review D1 — the checkpoint snapshot carries no ledger copy).
+  const allEvidence: EvidenceRefType[] = (current.sub_progress ?? []).flatMap(
+    (e) => e.evidence ?? [],
+  )
+  const drift = allEvidence.length > 0 ? await detectDrift(allEvidence) : []
+  const driftWarn =
+    drift.length > 0
+      ? drift.map((d) => {
+          const now = d.now === '' ? 'missing' : `${d.now.slice(0, 7)}…`
+          return `⚠ drift: ${d.path} sha256 changed since complete (was ${d.was.slice(0, 7)}…, now ${now})`
+        })
+      : undefined
+
+  return {
+    status: 'ok',
+    checkpoint: validated,
+    ...(cwdWarn ? { cwdWarn } : {}),
+    resumeHint,
+    ...(driftWarn ? { driftWarn } : {}),
+  }
 }

@@ -13,8 +13,8 @@
 - [x] Phase 2 ledger.ts (TDD, 14 tests)
 - [x] Phase 3 evidence.ts (TDD, 8 tests)
 - [x] Phase 4 checkpoint.ts wiring (mutateSubProgress 单锁 RMW + 三态守卫; ledger-state 6 tests + checkpoint CLI 10 tests)
-- [ ] Phase 5 status --recover + resume drift
-- [ ] Phase 6 generateCommands ORCHESTRATOR body
+- [x] Phase 5 status --recover + resume drift (status-recover 8 tests + resume drift 4)
+- [x] Phase 6 generateCommands ORCHESTRATOR body (确定性 gates→start→complete/fail+recover 序列, generate-commands +5 cells)
 - [x] Phase 7 verify/* artifacts_expected backfill (committed fc19318; simplify left none_declared, pending decision)
 - [ ] Phase 8 release gate (e2e + biome + tsc + vitest + v5.0.0 bump) — STOP before push
 

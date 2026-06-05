@@ -563,4 +563,81 @@ describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 
     // leaf branch still spawns
     expect(content).toMatch(/leaf sub/i)
   })
+
+  // v5.0 Spec 1 (STATE-MACHINE-CORE-DESIGN.md §2/§4, D3) — the ORCHESTRATOR body
+  // must deterministically emit the state-machine sequence: gates → checkpoint
+  // start --plan (seed ledger) → per-sub complete/fail → status --recover.
+  it('cell 32 — ORCHESTRATOR body emits gates → checkpoint start --plan (ledger seed)', () => {
+    for (const [name, prompt] of [
+      ['auto', AUTO_PROMPT],
+      ['task', TASK_MASTER_PROMPT],
+      ['verify', TASK_MASTER_PROMPT],
+    ] as const) {
+      const { content } = generateCommandFile(name, prompt, CAPS, new Set(), new Set())
+      // gates produces the plan JSON
+      expect(content, `${name} must call gates`).toContain(`harnessed gates ${name}`)
+      // checkpoint start --plan seeds the ledger from the verbatim gates JSON
+      expect(content, `${name} must seed ledger`).toContain(
+        `harnessed checkpoint start ${name} --plan`,
+      )
+      // the start step must reference piping the gates JSON into --plan
+      expect(content, `${name} must pipe gates JSON into --plan`).toMatch(
+        /--plan '<the verbatim gates JSON/,
+      )
+    }
+  })
+
+  it('cell 33 — ORCHESTRATOR leaf loop emits both checkpoint complete AND checkpoint fail', () => {
+    const { content } = generateCommandFile('task', TASK_MASTER_PROMPT, CAPS, new Set(), new Set())
+    // success path → complete (evidence guard runs here)
+    expect(content).toContain('harnessed checkpoint complete <sub>')
+    expect(content).toMatch(/evidence guard runs here/i)
+    // failure path → fail (flip ledger entry to failed)
+    expect(content).toContain('harnessed checkpoint fail <sub>')
+  })
+
+  it('cell 34 — ORCHESTRATOR body references status --recover for re-orientation', () => {
+    const { content } = generateCommandFile(
+      'verify',
+      TASK_MASTER_PROMPT,
+      CAPS,
+      new Set(),
+      new Set(),
+    )
+    expect(content).toContain('harnessed status --recover')
+    // recovery guidance: empty ledger → re-run gates+start
+    expect(content).toMatch(/compaction|resume|lose context/i)
+  })
+
+  it('cell 35 — is_master recursion also seeds its own ledger (checkpoint start <sub>)', () => {
+    const { content } = generateCommandFile('auto', AUTO_PROMPT, CAPS, new Set(), new Set())
+    // recursion re-runs gates AND seeds the sub-master's ledger
+    expect(content).toContain('harnessed gates <sub>')
+    expect(content).toContain('harnessed checkpoint start <sub> --plan')
+  })
+
+  it('cell 36 — EXECUTION + INTERACTIVE bodies are NOT touched by the v5.0 orchestrator sequence (regression)', () => {
+    // EXECUTION (single-sub) never seeds a ledger or recovers — no orchestration.
+    const exec = generateCommandFile('verify-paranoid', SUB_PROMPT, CAPS, new Set(), new Set())
+    expect(exec.content).not.toContain('harnessed checkpoint start')
+    expect(exec.content).not.toContain('harnessed checkpoint fail')
+    expect(exec.content).not.toContain('harnessed status --recover')
+    expect(exec.content).not.toContain('harnessed gates')
+    // still has its single-sub prompt + complete
+    expect(exec.content).toContain('harnessed prompt verify-paranoid')
+    expect(exec.content).toContain('harnessed checkpoint complete')
+
+    // INTERACTIVE (discuss) is pure main-session dialogue — no checkpoint/gates at all.
+    const interactive = generateCommandFile(
+      'discuss',
+      DISCUSS_MASTER_PROMPT,
+      CAPS,
+      new Set(),
+      new Set(),
+    )
+    expect(interactive.content).not.toContain('harnessed checkpoint start')
+    expect(interactive.content).not.toContain('harnessed checkpoint fail')
+    expect(interactive.content).not.toContain('harnessed status --recover')
+    expect(interactive.content).not.toContain('harnessed gates')
+  })
 })

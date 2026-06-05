@@ -15,12 +15,19 @@ vi.mock('node:fs/promises', () => ({
   mkdir: async () => undefined,
 }))
 
+// v5.0 Spec 1 (F) — mock detectDrift so resume drift tests are deterministic and
+// don't depend on real sha256 of in-memory fixtures.
+vi.mock('../../src/checkpoint/evidence.js', () => ({ detectDrift: vi.fn(async () => []) }))
+
 import { join as pathJoin } from 'node:path'
 import { Command } from 'commander'
+import { detectDrift } from '../../src/checkpoint/evidence.js'
 import { runResume } from '../../src/checkpoint/resume.js'
 import { registerResume } from '../../src/cli/resume.js'
 import { harnessedFile, harnessedSubdir } from '../../src/installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
+
+const detectDriftMock = vi.mocked(detectDrift)
 
 // v3.0.3 — paths under ~/.claude/harnessed/ via harnessedRoot SoT.
 const STATE_PATH = harnessedFile('current-workflow.json')
@@ -180,5 +187,81 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
     const payload = JSON.parse(cli.stdout) as { status: string; cwdWarn?: string }
     expect(payload.status).toBe('ok')
     expect(payload.cwdWarn).toBeDefined()
+  })
+})
+
+// v5.0 Spec 1 (F) — resume evidence drift warn (warn, never block).
+function seedPausedWithEvidence() {
+  fsState.set(
+    STATE_PATH,
+    JSON.stringify({
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: '3.1',
+      status: 'paused',
+      last_checkpoint_path: CP_PATH,
+      started_at: '2026-05-16T10:00:00.000Z',
+      paused_at: '2026-05-16T11:00:00.000Z',
+      sub_progress: [
+        {
+          sub: 'code',
+          status: 'done',
+          gate_fired: true,
+          evidence_status: 'verified',
+          evidence: [{ path: 'progress.md', sha256: 'abc1234deadbeef' }],
+        },
+        { sub: 'test', status: 'pending', gate_fired: true },
+      ],
+    }),
+  )
+}
+
+describe('resume evidence drift (v5.0 Spec 1 F)', () => {
+  beforeEach(() => detectDriftMock.mockReset())
+
+  it('31. ledger evidence drift → runResume.ok carries driftWarn (warn, not block)', async () => {
+    seedPausedWithEvidence()
+    seedCheckpoint()
+    detectDriftMock.mockResolvedValue([
+      { path: 'progress.md', was: 'abc1234deadbeef', now: 'def5678cafef00d' },
+    ])
+    const r = await runResume()
+    expect(r.status).toBe('ok') // drift never blocks
+    if (r.status === 'ok') {
+      expect(r.driftWarn).toBeDefined()
+      expect(r.driftWarn?.join('\n')).toMatch(/⚠ drift: progress\.md sha256 changed/)
+    }
+    // detectDrift received the flattened evidence refs from the ledger.
+    expect(detectDriftMock).toHaveBeenCalledWith([
+      { path: 'progress.md', sha256: 'abc1234deadbeef' },
+    ])
+  })
+
+  it('32. no drift → driftWarn absent', async () => {
+    seedPausedWithEvidence()
+    seedCheckpoint()
+    detectDriftMock.mockResolvedValue([])
+    const r = await runResume()
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(r.driftWarn).toBeUndefined()
+  })
+
+  it('33. no ledger evidence → detectDrift not called, driftWarn absent', async () => {
+    seedPausedWorkflow() // ledger-less paused workflow
+    seedCheckpoint()
+    const r = await runResume()
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') expect(r.driftWarn).toBeUndefined()
+    expect(detectDriftMock).not.toHaveBeenCalled()
+  })
+
+  it('34. CLI prints drift warning to stderr', async () => {
+    seedPausedWithEvidence()
+    seedCheckpoint()
+    detectDriftMock.mockResolvedValue([
+      { path: 'progress.md', was: 'abc1234deadbeef', now: 'def5678cafef00d' },
+    ])
+    const cli = await runCli(['resume'])
+    expect(cli.code).toBe(0)
+    expect(cli.stderr).toMatch(/⚠ drift: progress\.md sha256 changed/)
   })
 })

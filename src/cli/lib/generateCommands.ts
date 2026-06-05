@@ -154,8 +154,20 @@ function buildInteractiveBody(name: string, prompt: RolePrompt): string {
   ].join('\n')
 }
 
-/** ORCHESTRATOR body (v4.0) — gate-eval via `harnessed gates`, then drive
- *  CC-native subagent spawns per fired sub (or escalate to Agent Teams). */
+/** ORCHESTRATOR body (v4.0; v5.0 state-machine sequence) — gate-eval via
+ *  `harnessed gates`, seed the sub-progress ledger via `checkpoint start --plan`,
+ *  then drive CC-native subagent spawns per fired sub (or escalate to Agent
+ *  Teams), checkpointing each outcome (complete on success / fail on error).
+ *
+ *  v5.0 Spec 1 (STATE-MACHINE-CORE-DESIGN.md §2/§4, D3) — the body deterministically
+ *  emits the orchestration sequence so the main CC session drives the state machine
+ *  by following the file, not from memory:
+ *    1. `harnessed gates <master> --task` → plan JSON (SoT, no spawn)
+ *    2. `harnessed checkpoint start <master> --plan '<gates-json>'` → seed ledger
+ *    3. per fired sub: `harnessed prompt` → spawn → `checkpoint complete` (evidence
+ *       guard auto-runs) on success / `checkpoint fail` on failure
+ *    4. is_master fired subs RECURSE (`harnessed gates <sub>`) instead of spawning
+ *    5. `harnessed status --recover` to re-orient after compaction. */
 function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
   const autoDiscussStep =
     name === 'auto'
@@ -165,6 +177,20 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
       : [
           `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first (AskUserQuestion) and lock decisions. Otherwise transparent-skip. Produce a locked spec.`,
         ]
+  // v5.0 — the deterministic state-machine spawn loop for ONE leaf sub: prompt →
+  // spawn → ralph-loop → NEEDS_CLARIFICATION round-trip → checkpoint complete (on
+  // COMPLETE) OR checkpoint fail (on unrecoverable failure). The evidence guard runs
+  // inside `checkpoint complete` (fail-CLOSED: a missing declared artifact blocks the
+  // mark and exits 1 — re-run with `--force` only to deliberately override).
+  const leafSpawnLoop = [
+    `${'     '}a. Bash: \`harnessed prompt <sub> --task "<spec>" --json\` → parse \`{prompt, max_iterations, model}\`.`,
+    `${'     '}b. Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`. Wrap in the ralph-loop plugin for completion-promise enforcement:`,
+    `${'     '}   \`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"\``,
+    `${'     '}   If the ralph-loop plugin is not installed, self-loop: spawn → check output for \`<promise>COMPLETE</promise>\` → if absent, re-spawn with the prior output appended (up to max_iterations).`,
+    `${'     '}c. If the subagent output contains \`STATUS: NEEDS_CLARIFICATION\` + a question list: STOP. Use AskUserQuestion to relay those exact questions to the user. Append the user's answers to the spec, then re-spawn the same sub. (This is the round-trip headless spawn cannot do.)`,
+    `${'     '}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED): if it exits non-zero because a declared \`artifacts_expected\` file is missing, the sub is NOT done — re-spawn to produce the artifact, or pass \`--force\` only to deliberately override (records \`evidence_status: overridden\`).`,
+    `${'     '}e. If the sub cannot reach COMPLETE (max_iterations exhausted, unrecoverable error): Bash \`harnessed checkpoint fail <sub> --summary "<why>"\` to flip the ledger entry to \`failed\`, then STOP and report to the user.`,
+  ]
   return [
     `# /${name}`,
     ``,
@@ -174,16 +200,21 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
     ``,
     `## How to run (orchestrator — clarify in THIS session, then drive native subagent spawns)`,
     ``,
-    `harnessed is the orchestration brain: \`harnessed gates\` tells you which subs fire, \`harnessed prompt\` gives you each sub's spawn-ready prompt. YOU (the main session) do the spawning with CC-native Task / Agent tools — keeping the session responsive, enabling Agent Teams, and letting clarification round-trips reach the user.`,
+    `harnessed is the orchestration brain: \`harnessed gates\` tells you which subs fire, \`harnessed prompt\` gives you each sub's spawn-ready prompt, and \`harnessed checkpoint\` records the per-sub state-machine ledger. YOU (the main session) do the spawning with CC-native Task / Agent tools — keeping the session responsive, enabling Agent Teams, and letting clarification round-trips reach the user.`,
+    ``,
+    `Drive this exact sequence (it is the state machine — follow the file, don't improvise from memory):`,
     ``,
     ...autoDiscussStep,
-    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub clarify\` → parse the JSON \`{fire: [{sub, order, mode}], skip, parallelism: {escalate_to_teams}}\`.`,
-    `3. If \`parallelism.escalate_to_teams === true\`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read \`~/.claude/rules/agent-teams.md\`, then \`TeamCreate\` → \`Agent(name, team_name, ...)\` per fired sub (prompt from \`harnessed prompt <sub>\`) → coordinate via SendMessage → \`SendMessage shutdown_request\` + \`TeamDelete\`.`,
-    `4. Otherwise, for each fired sub in \`order\` (serial subs sequentially, parallel subs concurrently via parallel Task calls):`,
-    `   - **If the fired entry has \`is_master: true\`** (it is itself a stage master, e.g. \`/auto\` firing \`plan\`/\`task\`/\`verify\`): do NOT prompt+spawn it directly — that would yield a vague dispatcher. RECURSE: run that master's orchestration — \`harnessed gates <sub> --task "<spec>" --skip-sub clarify\` → repeat this whole step-4 loop for ITS fired subs. Only leaf subs (no \`is_master\`) reach the spawn loop below.`,
-    `   - **Else (leaf sub)** — spawn it:`,
-    ...spawnLoopSteps('     '),
-    `5. Report a per-sub fired/skipped summary to the user. ${name === 'auto' ? 'Then run the `retro` stage to capture lessons.' : ''}`,
+    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub clarify\` → parse the JSON \`{fire: [{sub, order, mode, is_master}], skip: [{sub, reason}], parallelism: {escalate_to_teams}}\`. This is the plan SoT (no spawn). Keep the verbatim JSON for the next step.`,
+    `3. Bash: \`harnessed checkpoint start ${name} --plan '<the verbatim gates JSON from step 2>'\` → seeds the sub-progress ledger in \`current-workflow.json\` (fired subs → \`pending\`, skipped subs → \`skipped\` + reason). This makes \`harnessed status --recover\` able to tell you where you are after compaction.`,
+    `4. If \`parallelism.escalate_to_teams === true\`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read \`~/.claude/rules/agent-teams.md\`, then \`TeamCreate\` → \`Agent(name, team_name, ...)\` per fired sub (prompt from \`harnessed prompt <sub>\`) → coordinate via SendMessage → \`SendMessage shutdown_request\` + \`TeamDelete\`. Still checkpoint each sub (\`complete\` / \`fail\`) as below.`,
+    `5. Otherwise, for each fired sub in \`order\` (serial subs sequentially, parallel subs concurrently via parallel Task calls):`,
+    `   - **If the fired entry has \`is_master: true\`** (it is itself a stage master, e.g. \`/auto\` firing \`plan\`/\`task\`/\`verify\`): do NOT prompt+spawn it directly — that would yield a vague dispatcher. RECURSE: run that master's orchestration — \`harnessed gates <sub> --task "<spec>" --skip-sub clarify\` → \`harnessed checkpoint start <sub> --plan '<that JSON>'\` → repeat this whole loop for ITS fired subs. Only leaf subs (no \`is_master\`) reach the spawn loop below.`,
+    `   - **Else (leaf sub)** — spawn it, then checkpoint the outcome:`,
+    ...leafSpawnLoop,
+    `6. After all fired subs are \`done\` (or recorded \`failed\`), Bash \`harnessed status --recover\` to confirm the ledger position (what's done, what's still pending, any evidence drift). Report a per-sub fired/skipped/done/failed summary to the user. ${name === 'auto' ? 'Then run the `retro` stage to capture lessons.' : ''}`,
+    ``,
+    `**If you lose context (compaction / resume):** run \`harnessed status --recover\` first — it reads the ledger and prints "you are here, this is next" so you can resume the loop at the first \`pending\` sub instead of restarting. If the ledger is empty (no \`--plan\` was seeded), re-run steps 2-3.`,
     ``,
     `Do NOT pipe to \`harnessed run ${name}\` — that is the CI/headless path (SDK spawn, blocks the session, no Agent Teams, no clarification round-trip).`,
     ``,
@@ -191,6 +222,7 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
     ``,
     `- Generated by \`harnessed setup\`. Re-run after a harnessed upgrade to refresh.`,
     `- gate/discipline SoT: \`workflows/${nameToYamlHintPath(name)}\` + \`workflows/judgments/\` — consumed by \`harnessed gates\` + \`harnessed prompt\`.`,
+    `- The per-sub ledger + evidence guard live in \`current-workflow.json\` (sole SoT) — written only by \`harnessed checkpoint\`; never edit state files directly.`,
     ``,
     MARKER,
     ``,
