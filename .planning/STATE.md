@@ -26,10 +26,10 @@ progress:
 
 ## Current Position
 
-Phase: 9 — GSD Core re-wire (✅ COMPLETE 2026-06-09)
-Plan: 09-01 done — 详: phases/09-gsd-core-rewire/09-01-SUMMARY.md
-Status: Phase 9 executed & verified green; next → Phase 10 (gstack/mattpocock bump + 6 skills)
-Last activity: 2026-06-09 — Phase 9 shipped: 12 GSD Core 1.4.1 capabilities + 4 stage-phase-gate triggers (additive, keystone intact, 1159 tests pass)
+Phase: 10 — gstack/mattpocock bump + 6 skills (✅ COMPLETE 2026-06-09)
+Plan: 10 done — 详: phases/10-gstack-bump-skills/10-SUMMARY.md
+Status: Phase 10 executed & verified green; v5.1 milestone capability/manifest scope complete
+Last activity: 2026-06-09 — Phase 10 shipped: gstack manifest → main HEAD 1626d485/1.52.1.0, mattpocock last_check refresh, 6 new gstack capabilities wired (Bucket 7 additive), green gate 167 tests pass
 
 ## Milestone Scope (v5.1)
 
@@ -56,7 +56,7 @@ Last activity: 2026-06-09 — Phase 9 shipped: 12 GSD Core 1.4.1 capabilities + 
 
 ### Open todos / blockers
 
-- None blocking. Next action: `/gsd-plan-phase 10`.
+- None blocking. v5.1 Phase 9 + 10 complete; next action: milestone verify / close.
 
 ### Deferred (Backlog)
 

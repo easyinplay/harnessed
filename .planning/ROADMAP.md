@@ -36,7 +36,7 @@
 ### Phases
 
 - [x] **Phase 9: GSD Core re-wire** ✅ 2026-06-09 - Added 12 GSD Core 1.4.1 capabilities + 4 stage-phase-gate triggers (additive, keystone intact). 详: phases/09-gsd-core-rewire/09-01-SUMMARY.md
-- [ ] **Phase 10: gstack/mattpocock bump + 6 skills** - Bump 2 manifests, wire 6 new non-iOS gstack capabilities, final green gate.
+- [x] **Phase 10: gstack/mattpocock bump + 6 skills** ✅ 2026-06-09 - Bumped gstack manifest to main HEAD (`1626d485…` / `1.52.1.0`) + mattpocock last_check refresh, wired 6 new non-iOS gstack capabilities (spec/skillify/pair-agent/scrape/benchmark-models/landing-report) into Bucket 7, full green gate. 详: phases/10-gstack-bump-skills/10-SUMMARY.md
 
 ---
 
