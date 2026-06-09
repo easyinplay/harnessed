@@ -1,0 +1,42 @@
+# workflows/judgments/stage-phase-gate.yaml
+# Stage/condition-gated design-contract 判据 — GSD Core 1.4.1 (v5.1 Upstream Re-sync)
+# Pairs with: GSD design-contract phase skills (spec / ui / secure / ai-integration)
+#
+# Parallel to phase-gate.yaml (gsd-discuss-phase). The 4 design-contract phase skills
+# fire on stage/condition predicates and invoke their sister capabilities.yaml entries
+# (fires_when string matches the capabilities.yaml expression verbatim).
+
+schema_version: harnessed.judgment.v1
+
+triggers:
+  gsd-spec-phase:
+    description: |
+      GSD /gsd-spec-phase — SDD spec lock. Fires at plan stage when the phase
+      requires a spec design contract before execution.
+    fires_when: "phase.stage == 'plan' and phase.requires_spec == true"
+    invokes:
+      - capability: gsd-spec-phase
+
+  gsd-ui-phase:
+    description: |
+      GSD /gsd-ui-phase — UI design contract. Fires when the phase introduces
+      UI changes needing a design system / layout contract.
+    fires_when: "phase.has_ui_changes == true"
+    invokes:
+      - capability: gsd-ui-phase
+
+  gsd-secure-phase:
+    description: |
+      GSD /gsd-secure-phase — security threat-model gate. Fires when the phase
+      touches auth or secrets and needs a threat-model design contract.
+    fires_when: "phase.has_auth_or_secrets == true"
+    invokes:
+      - capability: gsd-secure-phase
+
+  gsd-ai-integration-phase:
+    description: |
+      GSD /gsd-ai-integration-phase — AI-SPEC design contract. Fires when the
+      phase builds an AI system needing an AI-SPEC.md design contract.
+    fires_when: "phase.builds_ai_system == true"
+    invokes:
+      - capability: gsd-ai-integration-phase

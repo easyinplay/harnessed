@@ -1022,3 +1022,152 @@ capabilities:
     fires_when:
       - phase.stage == 'research'
       - phase.requires_multi_source_research == true
+
+  # ============================================================================
+  # Bucket 10 — GSD Core 1.4.1 additive rewire (v5.1 Upstream Re-sync)
+  # ============================================================================
+  #
+  # @opengsd/gsd-core 1.4.1 (get-shit-done-cc → @opengsd/gsd-core rename) reorganized
+  # its skill surface. These 12 additive entries describe the new upstream entry points
+  # so workflow.yaml templates + judgments gates can reference them. All mirror the
+  # gsd-discuss-phase shape verbatim (impl: gsd / install_type: user-skill /
+  # category: tool-slash-cmd / skill_dir == cmd basename). skill_dir verified on disk
+  # at ~/.claude/skills/<skill_dir>/ (2026-06-09).
+  #
+  # KEYSTONE: gsd-execute-phase is deliberately NOT wired — the execute mechanism stays
+  # harnessed self-owned (CC-native spawn + ralph-loop + v4.2 checkpoint ledger).
+  #
+  # 4 design-contract phase skills (spec/ui/secure/ai-integration) pair with sister
+  # judgments triggers in workflows/judgments/stage-phase-gate.yaml.
+
+  gsd-spec-phase:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-spec-phase
+    cmd: /gsd-spec-phase
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD spec-phase SDD spec lock (sister judgments/stage-phase-gate.yaml)
+    fires_when:
+      - phase.stage == 'plan' and phase.requires_spec == true
+
+  gsd-ui-phase:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-ui-phase
+    cmd: /gsd-ui-phase
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD ui-phase UI design contract (sister judgments/stage-phase-gate.yaml)
+    fires_when:
+      - phase.has_ui_changes == true
+
+  gsd-secure-phase:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-secure-phase
+    cmd: /gsd-secure-phase
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD secure-phase security threat-model gate (sister judgments/stage-phase-gate.yaml)
+    fires_when:
+      - phase.has_auth_or_secrets == true
+
+  gsd-ai-integration-phase:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-ai-integration-phase
+    cmd: /gsd-ai-integration-phase
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD ai-integration-phase AI-SPEC design contract (sister judgments/stage-phase-gate.yaml)
+    fires_when:
+      - phase.builds_ai_system == true
+
+  gsd-ingest-docs:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-ingest-docs
+    cmd: /gsd-ingest-docs
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD ingest-docs bootstrap .planning from existing docs (cc-handoff Ideation→Onboarding)
+    fires_when:
+      - phase.type == 'onboarding'
+
+  gsd-new-project:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-new-project
+    cmd: /gsd-new-project
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD new-project greenfield project init
+    fires_when:
+      - phase.type == 'new_project'
+
+  gsd-new-milestone:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-new-milestone
+    cmd: /gsd-new-milestone
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD new-milestone brownfield milestone start
+    fires_when:
+      - phase.type == 'new_milestone'
+
+  gsd-extract-learnings:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-extract-learnings
+    cmd: /gsd-extract-learnings
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD extract-learnings 提取 decisions/lessons from completed phase
+    fires_when:
+      - phase.is_milestone_close == true
+
+  gsd-audit-milestone:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-audit-milestone
+    cmd: /gsd-audit-milestone
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD audit-milestone milestone completion audit
+    fires_when:
+      - phase.is_milestone_close == true
+
+  gsd-complete-milestone:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-complete-milestone
+    cmd: /gsd-complete-milestone
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD complete-milestone archive completed milestone
+    fires_when:
+      - phase.is_milestone_close == true
+
+  gsd-milestone-summary:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-milestone-summary
+    cmd: /gsd-milestone-summary
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD milestone-summary milestone summary
+    fires_when:
+      - phase.is_milestone_close == true
+
+  gsd-docs-update:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-docs-update
+    cmd: /gsd-docs-update
+    since: v5.1
+    category: tool-slash-cmd
+    description: GSD docs-update post-ship doc update
+    fires_when:
+      - phase.needs_doc_update == true

@@ -33,6 +33,7 @@ describe('positive — 6 shipped yaml files validate', () => {
     'subtask-gate.yaml',
     'parallelism-gate.yaml',
     'tdd-gate.yaml',
+    'stage-phase-gate.yaml',
   ]) {
     test(`P2-P6 triggers shape — workflows/judgments/${f}`, () => {
       const parsed = parseYaml(readFileSync(resolve(judgmentsDir, f), 'utf8'))
@@ -122,11 +123,13 @@ describe('fallback.yaml rules-shape parity', () => {
     expect(Value.Check(JudgmentTriggersFile, parsed)).toBe(false)
   })
 
-  test('B2: every shipped judgment yaml accounted for (11 file — 6 v2 base + 4 v3 NEW T3.3.W0.3 + 1 v3.6.0 Phase 3 user-overrides)', () => {
+  test('B2: every shipped judgment yaml accounted for (12 file — 6 v2 base + 4 v3 NEW T3.3.W0.3 + 1 v3.6.0 Phase 3 user-overrides + 1 v5.1 Phase 9 stage-phase-gate)', () => {
     // v3.6.0 Phase 3 Wave 1 — added workflows/judgments/user-overrides.yaml
     // (P0b 上半 mechanism, validated via separate UserOverridesFile schema —
     // additive only, NOT in JudgmentFile union per Risk 3 mitigation).
-    expect(judgmentFiles.length).toBe(11)
+    // v5.1 Phase 9 (GSD Core re-wire) — added workflows/judgments/stage-phase-gate.yaml
+    // (4 design-contract phase triggers; triggers-shape, validated in P2-P6 loop above).
+    expect(judgmentFiles.length).toBe(12)
   })
 
   test('B3: user-overrides.yaml passes UserOverridesFile schema (v3.6.0 Phase 3)', () => {
