@@ -1,8 +1,8 @@
 # REQUIREMENTS — harnessed
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation.
-> Shipped families = delivered baseline (do NOT re-plan). Active forward scope = v5.0 Spec 1.
-> Current published version: **v4.1.3**. Active milestone: **v5.0 State Machine Core**.
+> Shipped families = delivered baseline (do NOT re-plan). Active forward scope = v5.1 Upstream Re-sync.
+> Current published version: **v4.2.0**. Active milestone: **v5.1 Upstream Re-sync**.
 
 ---
 
@@ -22,74 +22,54 @@
 | REQ-v3.9.x-maintenance | v3.9.3→v3.9.26 | ✅ Done | dogfood bug fixes + Windows compat + Option A architecture fix (interactive clarify → main session). |
 | REQ-v4.0-orchestration-brain | v4.0.0 | ✅ Done | gates/prompt/checkpoint CLIs; CC-native spawn replaces in-process SDK spawn. Implements ARCHITECTURE-SPEC v4.0. |
 | REQ-v4.1-yaml-sot-richness | v4.1.0→v4.1.3 | ✅ Done | tools injection + master recursion + disciplines_applied injection + gates→prompt handoff fix + P0 data-loss fixes (atomic write / gc no-op / rollback two-pass). 1107 tests. |
+| REQ-v5.0-state-machine-core | v4.2.0 (Spec 1) | ✅ Done (8/8) | structured progress ledger + fail-closed evidence guard + `status --recover` + handoff sha256 drift + verify artifacts_expected backfill + generated ORCHESTRATOR body. Additive schema, single SoT, no FSM lib. ADR-0033. 1158 tests. Spec 2/3 deferred (see Backlog). |
 
 ---
 
-## Active forward scope — v5.0 State Machine Core (Spec 1)
+## Active forward scope — v5.1 Upstream Re-sync
 
-> Source: `.planning/v5.0/STATE-MACHINE-CORE-DESIGN.md` + `task_plan.md` + ADR-0033 (Proposed).
-> Status: DESIGN LOCKED, pending plan-phase → execute → verify. Schema (Phase 1) + verify-backfill (Phase 7) already done in working tree (uncommitted).
+> Source: GSD Core 1.4.1 rename (`open-gsd/gsd-core`) + gstack v1.52.1.0 drift.
+> Additive-only; execute mechanism unchanged (`gsd-execute-phase` NOT wired, per keystone decision — harnessed keeps self-owned CC-native spawn + ralph-loop + v4.2 checkpoint ledger).
+> Preamble already delivered: GSD Core manifest rename (commit 0ab8c52) + `.planning/` GSD-layout migration (f61e443).
 
-### REQ-v5-additive-schema (E) — additive ledger schema, no version bump
-- **Source**: STATE-MACHINE-CORE-DESIGN §3, ADR-0033 D3.
-- **Description**: Add optional `EvidenceRef {path, sha256}` + `SubProgressEntry` + `sub_progress: Optional(Array(...))` to `currentWorkflow.v1`. `checkpoint.v1.ts` NOT modified (single SoT).
-- **Acceptance**: additive optional fields only; no `SCHEMA_VERSIONS` bump; no migrator; old `current-workflow.json` (no sub_progress) still `Value.Check`-passes; readers use `?? []`; zero data-loss; no FSM library.
+### REQ-v51-gsd-rewire — wire GSD Core phase + lifecycle skills into capabilities
+- **Description**: add ~12 new GSD Core capability entries to `workflows/capabilities.yaml` — stage-gap phase skills (`gsd-spec-phase` / `gsd-ui-phase` / `gsd-secure-phase` / `gsd-ai-integration-phase`) + bootstrap (`gsd-ingest-docs` / `gsd-new-project` / `gsd-new-milestone`) + milestone lifecycle (`gsd-extract-learnings` / `gsd-audit-milestone` / `gsd-complete-milestone` / `gsd-milestone-summary`) + `gsd-docs-update`.
+- **Acceptance**: each entry follows existing `impl:gsd / skill_dir / cmd / fires_when` pattern; every `skill_dir` verified to exist on disk (GSD Core 1.4.1); `gsd-execute-phase` NOT wired (self-owned execute); capability-resolver + schema tests pass.
 
-### REQ-v5-ledger (A) — structured progress ledger, ledger-only progression
-- **Source**: STATE-MACHINE-CORE-DESIGN §1-4, ADR-0033 D1.
-- **Description**: per-sub progress ledger in `current-workflow.json` (sole SoT), seeded upfront from gates plan.
-- **Acceptance**: `seedLedger(plan)` maps fire→{pending, gate_fired:true} / skip→{skipped, gate_fired:false, reason}; `markSub` pure transitions (new array, throws on unknown sub, input not mutated); `nextPending` returns first pending; ledger NOT copied into checkpoint snapshot.
+### REQ-v51-gsd-judgments — stage-gate triggers for new phase skills
+- **Description**: stage-phase capabilities (spec/ui/secure/ai-integration) referenced from `workflows/judgments/*.yaml` triggers where stage-gated, consistent with existing `gsd-plan-phase` / `gsd-discuss-phase` routing.
+- **Acceptance**: trigger refs resolve to real capability names; `check-workflow-schema` passes; no orphan capability or dangling trigger.
 
-### REQ-v5-evidence-guard (C) — fail-closed evidence exit guard
-- **Source**: STATE-MACHINE-CORE-DESIGN §5, ADR-0033 D2.
-- **Description**: `checkpoint complete <sub>` verifies declared `artifacts_expected` exist before flipping to done. Deliberate fail-CLOSED exception to ADR-0029 fail-soft.
-- **Acceptance**: missing artifact & !force → block (exit 1, entry stays pending, print missing); present → sha256 recorded, `evidence_status:'verified'`, evidence=found; none declared → `'none_declared'` (rendered distinctly, NOT a pass); `--force` → `'overridden'` (audit-flagged). Three-state posture, never collapse to boolean.
+### REQ-v51-gstack-bump — gstack + mattpocock manifest version sync
+- **Description**: `gstack.yaml` git_ref `74895062` → current main HEAD (`1626d485…`) + last_known_good `main-269-commits` → `1.52.1.0` + last_check; `mattpocock-skills.yaml` last_check + last_known_good bump (`skills@1.5.10` installer).
+- **Acceptance**: manifest-validate passes; gstack repo unchanged (version drift only, no repo rename); known-good lock consistent; fixture sync.
 
-### REQ-v5-recover (B) — `harnessed status --recover`
-- **Source**: STATE-MACHINE-CORE-DESIGN §7, task_plan Phase 5.
-- **Description**: structured post-compaction recovery output (done/pending/skipped + next command + drift warns).
-- **Acceptance**: full ledger render with markers + evidence_status + `→ next: harnessed prompt <sub>`; empty-ledger graceful degrade ("no ledger — run gates + start"); `none_declared` rendered distinctly; drift line on sha256 mismatch.
+### REQ-v51-gstack-skills — 6 new non-iOS gstack capabilities
+- **Description**: wire `spec` / `skillify` / `pair-agent` / `scrape` / `benchmark-models` / `landing-report` into `capabilities.yaml` (skip iOS suite per scope decision).
+- **Acceptance**: 6 entries follow `skill_dir: gstack` pattern; each subdir verified on disk (`~/.claude/skills/gstack/<name>/`); capability-resolver passes.
 
-### REQ-v5-handoff-drift (F) — evidence sha256 drift detection
-- **Source**: STATE-MACHINE-CORE-DESIGN §6, ADR-0033 D4.
-- **Description**: `resume` / `status --recover` re-hash evidence paths; mismatch → drift warn (not block).
-- **Acceptance**: cross-CC source drift detected mechanically; warn-only (user adjudicates per cc-handoff.md); complete-missing blocks while resume-drift warns (not contradictory).
-
-### REQ-v5-verify-backfill (D2-followup) — verify/* artifacts_expected backfill
-- **Source**: STATE-MACHINE-CORE-DESIGN §12, task_plan Phase 7.
-- **Description**: audit + backfill `artifacts_expected` on all `workflows/verify/*/workflow.yaml` leafs so the evidence guard is real where it matters most.
-- **Acceptance**: every verify leaf declares ≥1 artifact; check-workflow-schema passes; no `none_declared` for verify subs in e2e run.
-
-### REQ-v5-orchestrator-body — generated ORCHESTRATOR command body
-- **Source**: STATE-MACHINE-CORE-DESIGN, task_plan Phase 6, ADR-0033 D3.
-- **Description**: `generateCommands` deterministically emits the `gates → checkpoint start --plan` → per-sub `prompt`+spawn+`checkpoint complete` → `checkpoint fail` on error sequence.
-- **Acceptance**: generated body contains gates→start→complete/fail sequence (harnessed-generated marker); snapshot updated; biome + tsc clean.
-
-### REQ-v5-release — v5.0 release gate
-- **Source**: task_plan Phase 8.
-- **Description**: e2e validation + full quality gate + version bump.
-- **Acceptance**: e2e PowerShell (gates → start --plan → complete missing⇒exit1 / --force⇒pass / none_declared → status --recover → mutate⇒drift warn); biome + tsc + full vitest green; package.json → 5.0.0; CHANGELOG v5.0.0 entry; STOP before push (await user approval).
+### REQ-v51-validation — additive, backward-compatible, green
+- **Description**: all additions additive (no existing entry mutated except gstack/mattpocock version fields); full quality gate green.
+- **Acceptance**: manifest-validate + capability-resolver + check-workflow-schema pass; biome + tsc clean; full vitest green; no regression in the 1158-test baseline.
 
 ---
 
-## Deferred (out of Spec 1 scope, same v5.0 milestone)
+## Backlog (deferred, future milestones)
 
-- **Spec 2** — D: session-scoped state (`sessions/<CLAUDE_SESSION_ID>.json`) + single-session fallback.
-- **Spec 3** — G: per-turn injection hook + H: scale-adaptive verify strength.
+- **v5.0 Spec 2** — D: session-scoped state (`sessions/<CLAUDE_SESSION_ID>.json`) + single-session fallback.
+- **v5.0 Spec 3** — G: per-turn injection hook + H: scale-adaptive verify strength.
+- Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency `sigintTrap.ts`/`before-commit.ts`.
 
 ---
 
-## Traceability (v5.0 forward scope)
+## Traceability (v5.1 forward scope)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v5-additive-schema (E) | Phase 1 | ✅ Done (working tree) |
-| REQ-v5-ledger (A) | Phase 2 | Pending |
-| REQ-v5-evidence-guard (C) | Phase 3 + Phase 4 | Pending |
-| REQ-v5-recover (B) | Phase 5 | Pending |
-| REQ-v5-handoff-drift (F) | Phase 5 | Pending |
-| REQ-v5-orchestrator-body | Phase 6 | Pending |
-| REQ-v5-verify-backfill (D2-followup) | Phase 7 | ✅ Done (working tree) |
-| REQ-v5-release | Phase 8 | Pending |
+| REQ-v51-gsd-rewire | (roadmap pending) | Pending |
+| REQ-v51-gsd-judgments | (roadmap pending) | Pending |
+| REQ-v51-gstack-bump | (roadmap pending) | Pending |
+| REQ-v51-gstack-skills | (roadmap pending) | Pending |
+| REQ-v51-validation | (roadmap pending) | Pending |
 
-Coverage: 8/8 forward requirements mapped ✓ · No orphans.
+Coverage: filled by roadmapper (gsd-plan-phase) · 5 requirements.
