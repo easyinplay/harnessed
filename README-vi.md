@@ -241,7 +241,7 @@ harnessed/
 │   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
 │   ├── research/               # standalone phương án thay thế Stage ①
 │   ├── retro/                  # standalone đóng milestone sau ④
-│   ├── capabilities.yaml       # L5a: ~70 mục, 7 danh mục SoT
+│   ├── capabilities.yaml       # L5a: ~100 mục, 7 danh mục SoT
 │   ├── defaults.yaml           # ralph_max_iterations theo workflow phase
 │   ├── judgments/              # L5a: tiêu chí three-layer-stack + parallelism + tdd + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
@@ -303,7 +303,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Khả Năng Xuyên Suốt (capabilities.yaml — 7 danh mục, ~83 mục)
+### 3. Khả Năng Xuyên Suốt (capabilities.yaml — 7 danh mục, ~100 mục)
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols

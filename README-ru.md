@@ -241,7 +241,7 @@ harnessed/
 │   ├── verify/                 # Стадия ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
 │   ├── research/               # standalone — альтернатива стадии ①
 │   ├── retro/                  # standalone — подведение итогов после стадии ④
-│   ├── capabilities.yaml       # L5a: ~70 записей, 7 категорий SoT
+│   ├── capabilities.yaml       # L5a: ~100 записей, 7 категорий SoT
 │   ├── defaults.yaml           # ralph_max_iterations на каждую фазу Workflow
 │   ├── judgments/              # L5a: критерии трёхуровневого стека + параллелизм + tdd + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
@@ -303,7 +303,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Сквозные возможности (capabilities.yaml — 7 категорий, ~83 записи)
+### 3. Сквозные возможности (capabilities.yaml — 7 категорий, ~100 записи)
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols

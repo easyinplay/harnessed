@@ -241,7 +241,7 @@ harnessed/
 │   ├── verify/                 # Stage ④（progress + code-review + paranoid + qa + cso + design + simplify + multispec）
 │   ├── research/               # スタンドアロン Stage ① 代替
 │   ├── retro/                  # スタンドアロン ④ 後のマイルストーンクローズ
-│   ├── capabilities.yaml       # L5a: ~70 エントリー、7 カテゴリーの SoT
+│   ├── capabilities.yaml       # L5a: ~100 エントリー、7 カテゴリーの SoT
 │   ├── defaults.yaml           # Workflow フェーズごとの ralph_max_iterations
 │   ├── judgments/              # L5a: 三層スタック基準 + 並列化 + tdd + フォールバック + ルールルーティング
 │   │   ├── strategic-gate.yaml
@@ -303,7 +303,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. クロスカッティング機能（capabilities.yaml — 7 カテゴリー、~83 エントリー）
+### 3. クロスカッティング機能（capabilities.yaml — 7 カテゴリー、~100 エントリー）
 
 ```
 behavioral（6）:       karpathy-guidelines + output-style + language + operational + priority + protocols

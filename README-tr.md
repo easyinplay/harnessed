@@ -241,7 +241,7 @@ harnessed/
 │   ├── verify/                 # Aşama ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
 │   ├── research/               # bağımsız Aşama ① alternatifi
 │   ├── retro/                  # bağımsız ④ sonrası milestone kapanışı
-│   ├── capabilities.yaml       # L5a: ~70 giriş, 7 kategori SoT
+│   ├── capabilities.yaml       # L5a: ~100 giriş, 7 kategori SoT
 │   ├── defaults.yaml           # workflow phase başına ralph_max_iterations
 │   ├── judgments/              # L5a: üç katmanlı yığın kriterleri + paralellik + tdd + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
@@ -303,7 +303,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Çapraz-Kesim Yetenekleri (capabilities.yaml — 7 kategori, ~83 giriş)
+### 3. Çapraz-Kesim Yetenekleri (capabilities.yaml — 7 kategori, ~100 giriş)
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols

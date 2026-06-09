@@ -241,7 +241,7 @@ harnessed/
 │   ├── verify/                 # 階段 ④（progress + code-review + paranoid + qa + cso + design + simplify + multispec）
 │   ├── research/               # 獨立 階段 ① 替代方案
 │   ├── retro/                  # 獨立 階段 ④ 後里程碑結束
-│   ├── capabilities.yaml       # L5a：~70 條目，7 個分類 SoT
+│   ├── capabilities.yaml       # L5a：~100 條目，7 個分類 SoT
 │   ├── defaults.yaml           # 每個 Workflow Phase 的 ralph_max_iterations
 │   ├── judgments/              # L5a：三層架構判據 + 平行機制 + TDD + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
@@ -303,7 +303,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. 橫切能力（capabilities.yaml — 7 個分類，~83 條目）
+### 3. 橫切能力（capabilities.yaml — 7 個分類，~100 條目）
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols

@@ -240,7 +240,7 @@ harnessed/
 │   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
 │   ├── research/               # standalone Stage ① alternate
 │   ├── retro/                  # standalone post-④ milestone close
-│   ├── capabilities.yaml       # L5a: ~70 entry, 7 category SoT
+│   ├── capabilities.yaml       # L5a: ~100 entry, 7 category SoT
 │   ├── defaults.yaml           # ralph_max_iterations per workflow phase
 │   ├── judgments/              # L5a: 三层栈判据 + parallelism + tdd + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
@@ -302,7 +302,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Cross-cutting Capabilities (capabilities.yaml 7 category, ~83 entry)
+### 3. Cross-cutting Capabilities (capabilities.yaml 7 category, ~100 entry)
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols

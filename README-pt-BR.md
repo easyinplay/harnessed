@@ -241,7 +241,7 @@ harnessed/
 │   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
 │   ├── research/               # Stage ① alternativo standalone
 │   ├── retro/                  # encerramento de milestone standalone pós-④
-│   ├── capabilities.yaml       # L5a: ~70 entradas, 7 categorias SoT
+│   ├── capabilities.yaml       # L5a: ~100 entradas, 7 categorias SoT
 │   ├── defaults.yaml           # ralph_max_iterations por fase de workflow
 │   ├── judgments/              # L5a: critérios three-layer-stack + paralelismo + tdd + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
@@ -303,7 +303,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Capacidades Transversais (capabilities.yaml — 7 categorias, ~83 entradas)
+### 3. Capacidades Transversais (capabilities.yaml — 7 categorias, ~100 entradas)
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols

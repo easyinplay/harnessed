@@ -241,7 +241,7 @@ harnessed/
 │   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
 │   ├── research/               # 독립 실행형 Stage ① 대안
 │   ├── retro/                  # 독립 실행형 Stage ④ 이후 마일스톤 마무리
-│   ├── capabilities.yaml       # L5a: ~70개 항목, 7개 카테고리 SoT
+│   ├── capabilities.yaml       # L5a: ~100개 항목, 7개 카테고리 SoT
 │   ├── defaults.yaml           # Workflow Phase별 ralph_max_iterations
 │   ├── judgments/              # L5a: 3계층 스택 기준 + 병렬성 + tdd + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
@@ -303,7 +303,7 @@ harnessed/
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Cross-cutting 기능 (capabilities.yaml — 7 카테고리, ~83개 항목)
+### 3. Cross-cutting 기능 (capabilities.yaml — 7 카테고리, ~100개 항목)
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
