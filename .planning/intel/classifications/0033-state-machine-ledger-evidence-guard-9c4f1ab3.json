@@ -19,7 +19,7 @@
     "ADR-0029",
     "ADR-0031",
     "ADR-0032",
-    ".planning/v5.0/STATE-MACHINE-CORE-DESIGN.md",
+    ".planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md",
     "cc-handoff.md"
   ],
   "locked": false,

@@ -17,7 +17,7 @@
     "v5.0 release gate"
   ],
   "cross_refs": [
-    ".planning/v5.0/STATE-MACHINE-CORE-DESIGN.md",
+    ".planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md",
     "docs/adr/0033-*.md",
     "src/checkpoint/schema/currentWorkflow.v1.ts",
     "src/checkpoint/ledger.ts",

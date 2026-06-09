@@ -42,7 +42,7 @@
 
 ## Active forward-scope requirements — v5.0 State Machine Core (Spec 1: A/B/C/E/F)
 
-> source: `.planning/v5.0/STATE-MACHINE-CORE-DESIGN.md` (SPEC) + `.planning/v5.0/task_plan.md` (DOC) + ADR-0033 (Proposed)
+> source: `.planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` (SPEC) + `.planning/milestones/v5.0-phases/task_plan.md` (DOC) + ADR-0033 (Proposed)
 > Status: DESIGN LOCKED, pending plan-phase → execute → verify. NOT yet shipped.
 
 ### REQ-v5-ledger (A — structured progress ledger)

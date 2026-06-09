@@ -41,7 +41,7 @@
 
 ## Topic: v5.0 forward-scope implementation plan
 
-- **source**: `.planning/v5.0/task_plan.md` (8-phase TDD plan, DESIGN LOCKED, not shipped)
+- **source**: `.planning/milestones/v5.0-phases/task_plan.md` (8-phase TDD plan, DESIGN LOCKED, not shipped)
 - Dependency order: schema → ledger/evidence (pure, TDD) → checkpoint CLI wiring → status/resume → generateCommands body → verify backfill → release gate.
 - Phases: (1) schema extension currentWorkflow.v1, (2) ledger.ts pure fns TDD, (3) evidence.ts TDD, (4) checkpoint.ts CLI wiring, (5) status --recover + resume drift, (6) generateCommands ORCHESTRATOR body, (7) verify/* artifacts_expected backfill, (8) release gate → bump 5.0.0.
 - Invariants: ADR-0029 fail-soft unchanged; atomic write + dir lock reuse; KARPATHY-minimal (no FSM); Windows CI green.

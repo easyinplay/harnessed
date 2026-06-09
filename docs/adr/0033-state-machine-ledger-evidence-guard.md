@@ -5,7 +5,7 @@
 - **Supersedes**: none
 - **Relates to**: ADR-0029 (fail-soft gate eval), ADR-0031/0032 (4-stage namespace + cross-cutting disciplines)
 - **Milestone**: v5.0 (Spec 1 of 3 — state machine core)
-- **Design doc**: `.planning/v5.0/STATE-MACHINE-CORE-DESIGN.md`
+- **Design doc**: `.planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md`
 
 ## Context
 

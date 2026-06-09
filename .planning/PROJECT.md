@@ -61,6 +61,6 @@ Auto-resolutions honored: (1) bare slash cmd > `/harnessed:*` prefix; (2) v4.0 C
 ## Architecture references
 
 - `PROJECT-SPEC.md` — project parameter spec (manifest schema, routing SSOT, workflow phases, checkpoint execution).
-- `.planning/v4.0/ARCHITECTURE-SPEC.md` — orchestration brain + 3 CLIs (gates/prompt/checkpoint) — SHIPPED v4.0.0.
-- `.planning/v5.0/STATE-MACHINE-CORE-DESIGN.md` — active forward implementation contract.
+- `.planning/milestones/v4.0-phases/v4.0/ARCHITECTURE-SPEC.md` — orchestration brain + 3 CLIs (gates/prompt/checkpoint) — SHIPPED v4.0.0.
+- `.planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` — v5.0 State Machine Core implementation contract (SHIPPED v4.2.0).
 - `docs/adr/` — 33 ADRs. `.planning/milestones/` — shipped milestone audits (clean archive). `.planning/RETROSPECTIVE.md` — historical narrative.

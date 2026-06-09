@@ -76,9 +76,9 @@ harnessed = orchestration brain + prompt library; execution = CC-native subagent
 
 ---
 
-## .planning/v5.0/STATE-MACHINE-CORE-DESIGN.md — State Machine Core (Spec 1)
+## .planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md — State Machine Core (Spec 1)
 
-- **source**: `.planning/v5.0/STATE-MACHINE-CORE-DESIGN.md`
+- **source**: `.planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md`
 - **type**: implementation-contract (DESIGN LOCKED, forward-scope, NOT shipped). Locking authority delegated to ADR-0033.
 
 ### C-V5-1 — Data structures (schema)

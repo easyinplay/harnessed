@@ -72,4 +72,4 @@ D-13 superset commitment: harnessed 1:1 covers CLAUDE.md 13 sections + `~/.claud
 3. **D3 — Additive schema evolution, no version bump**: `sub_progress` + `evidence` optional on v1 schemas; old files pass `Value.Check`; readers use `?? []`.
 4. **D4 — Unified evidence = handoff integrity**: `evidence:[{path,sha256}]` serves existence (D2 block) + cross-CC handoff drift (resume re-hash → warn, not block, per cc-handoff.md).
 
-**Note for downstream**: Proposed status → roadmapper treats as forward-scope (v5.0), not a locked baseline. Companion spec `.planning/v5.0/STATE-MACHINE-CORE-DESIGN.md` carries the implementation contract.
+**Note for downstream**: Proposed status → roadmapper treats as forward-scope (v5.0), not a locked baseline. Companion spec `.planning/milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` carries the implementation contract.
