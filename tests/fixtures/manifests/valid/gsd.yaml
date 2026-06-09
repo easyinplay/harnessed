@@ -3,14 +3,14 @@ apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: gsd
-  display_name: GSD (Get Shit Done)
+  display_name: GSD Core (Git. Ship. Done.)
   description: Project-manager orchestrator providing /gsd-* discuss-plan-execute-verify workflow.
   upstream:
-    source: get-shit-done-cc
-    homepage: https://github.com/gsd-build/get-shit-done
-    repository: https://github.com/gsd-build/get-shit-done.git
+    source: "@opengsd/gsd-core"
+    homepage: https://github.com/open-gsd/gsd-core
+    repository: https://github.com/open-gsd/gsd-core.git
     license: MIT
-    notice: GSD by gsd-build (TACHES), used as orchestration layer in harnessed plan-feature workflow.
+    notice: GSD Core (Git. Ship. Done.) by open-gsd, used as orchestration layer in harnessed plan-feature workflow.
 spec:
   type: cli-npm
   component_type: command
@@ -18,20 +18,20 @@ spec:
   install_type: npm
   install:
     method: npm-cli
-    cmd: "npx --yes get-shit-done-cc@^1.41.0 install"
-    npm_version: ^1.41.0
-    idempotent_check: "test -d ~/.claude/skills/gsd"
+    cmd: "npx --yes @opengsd/gsd-core@latest --claude --global"
+    npm_version: ^1.4.1
+    idempotent_check: "test -d ~/.claude/skills/gsd-plan-phase"
   verify:
-    cmd: "npx --yes get-shit-done-cc@^1.41.0 --version"
+    cmd: "test -f ~/.claude/skills/gsd-plan-phase/SKILL.md"
     timeout_ms: 10000
   uninstall:
-    cmd: "rm -rf ~/.claude/skills/gsd"
+    cmd: "npx --yes @opengsd/gsd-core@latest --uninstall --claude"
     cleanup_paths:
-      - ~/.claude/skills/gsd
+      - ~/.claude/skills/gsd-plan-phase
   upstream_health:
-    stability: beta
-    last_check: "2026-05-11"
-    last_known_good_version: 1.41.2
+    stability: stable
+    last_check: "2026-06-09"
+    last_known_good_version: 1.4.1
     fallback_action: warn
   signed_by: easyinplay
   platforms:

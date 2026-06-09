@@ -47,7 +47,7 @@
 | 上游 | 类型 | workflow 引用 | 安装方式 | 锁版本策略 |
 |------|------|--------------|---------|-----------|
 | **gstack** | CC skill-pack（开源 93.5k★）| plan-feature | `git clone + ./setup` | git commit hash |
-| **GSD** | CLI npm（开源 61.4k★）| plan-feature, execute-task | `npx get-shit-done-cc@latest` | git commit hash |
+| **GSD Core** | CLI npm（开源 3.3k★ `@opengsd/gsd-core`）| plan-feature, execute-task | `npx @opengsd/gsd-core@latest --claude` | npm `^minor` |
 | **superpowers** | CC plugin（开源 186k★）| plan-feature, execute-task | `claude plugin install`（marketplace）| git commit hash |
 | **planning-with-files** | skill 包 | plan-feature | `claude plugin install` 或 `npx skills@latest add` | git commit hash |
 | **mattpocock-skills** | skills 集合（开源 70.6k★）| execute-task | `npx skills@latest add mattpocock/skills` | git commit hash |

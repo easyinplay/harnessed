@@ -1003,17 +1003,22 @@ capabilities:
       - subtask.needs_google_workspace == true
 
   # ============================================================================
-  # Bucket 9 — gsd-research-phase v3 NEW (W2 SHIPPED per CONTEXT D-08 + D-12)
+  # Bucket 9 — GSD research/explore (v3 gsd-research-phase → v4.2 gsd-explore remap)
   # ============================================================================
+  #
+  # GSD Core 1.4.1 (open-gsd/gsd-core rename) dropped the standalone
+  # `gsd-research-phase` skill; closest surviving analog is `gsd-explore`
+  # (codebase + multi-source exploration). Entry is orphan (no workflow.yaml
+  # template interpolates it), so remap is a pure skill_dir/cmd swap.
 
-  gsd-research-phase:
+  gsd-explore:
     impl: gsd
     install_type: user-skill
-    skill_dir: gsd-research-phase
-    cmd: /gsd-research-phase
+    skill_dir: gsd-explore
+    cmd: /gsd-explore
     since: v3.0
     category: tool-slash-cmd
-    description: GSD research-phase (Wave A 多 source 调研, sister D-08 cite Phase v3 W2 SHIPPED)
+    description: GSD explore (codebase + 多 source 调研, GSD Core 1.4.1 successor to dropped gsd-research-phase)
     fires_when:
       - phase.stage == 'research'
       - phase.requires_multi_source_research == true
