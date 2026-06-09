@@ -35,7 +35,7 @@
 
 ### Phases
 
-- [ ] **Phase 9: GSD Core re-wire** - Add ~12 GSD Core phase + lifecycle + bootstrap capabilities and their stage-gate triggers.
+- [x] **Phase 9: GSD Core re-wire** ✅ 2026-06-09 - Added 12 GSD Core 1.4.1 capabilities + 4 stage-phase-gate triggers (additive, keystone intact). 详: phases/09-gsd-core-rewire/09-01-SUMMARY.md
 - [ ] **Phase 10: gstack/mattpocock bump + 6 skills** - Bump 2 manifests, wire 6 new non-iOS gstack capabilities, final green gate.
 
 ---

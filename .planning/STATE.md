@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: Upstream Re-sync
-status: planning
-last_updated: "2026-06-09T13:51:21.234Z"
+status: executing
+last_updated: "2026-06-09T14:43:00.000Z"
 last_activity: 2026-06-09
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 50
 ---
 
 # STATE — harnessed
@@ -26,10 +26,10 @@ progress:
 
 ## Current Position
 
-Phase: 9 — GSD Core re-wire (Not started, roadmap just created)
-Plan: —
-Status: Roadmap created — ready to plan Phase 9
-Last activity: 2026-06-09 — v5.1 roadmap created (2 phases, 5/5 reqs mapped)
+Phase: 9 — GSD Core re-wire (✅ COMPLETE 2026-06-09)
+Plan: 09-01 done — 详: phases/09-gsd-core-rewire/09-01-SUMMARY.md
+Status: Phase 9 executed & verified green; next → Phase 10 (gstack/mattpocock bump + 6 skills)
+Last activity: 2026-06-09 — Phase 9 shipped: 12 GSD Core 1.4.1 capabilities + 4 stage-phase-gate triggers (additive, keystone intact, 1159 tests pass)
 
 ## Milestone Scope (v5.1)
 
@@ -56,7 +56,7 @@ Last activity: 2026-06-09 — v5.1 roadmap created (2 phases, 5/5 reqs mapped)
 
 ### Open todos / blockers
 
-- None blocking. Next action: `/gsd-plan-phase 9`.
+- None blocking. Next action: `/gsd-plan-phase 10`.
 
 ### Deferred (Backlog)
 
@@ -66,6 +66,6 @@ Last activity: 2026-06-09 — v5.1 roadmap created (2 phases, 5/5 reqs mapped)
 
 ## Session Continuity
 
-- **Next command**: `/gsd-plan-phase 9`.
+- **Next command**: `/gsd-plan-phase 10`.
 - **Phase dirs**: `.planning/phases/09-gsd-core-rewire/` + `.planning/phases/10-gstack-bump-skills/` (created, empty — ready for PLAN).
 - **Methodology**: additive config work — no TDD on pure fns needed; verification = capability-resolver + check-workflow-schema + manifest-validate + full vitest green. 三层栈 verify cadence at Phase 10 final gate.
