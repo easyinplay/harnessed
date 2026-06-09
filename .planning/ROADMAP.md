@@ -1,7 +1,7 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). Active milestone = **v5.1 Upstream Re-sync**.
-> Current published npm: **4.2.0** · milestone codenames (v5.1) are spec/era names, NOT npm versions.
+> Shipped history = indexed archive (do NOT re-plan). Latest milestone = **v5.1 Upstream Re-sync** (✅ shipped v4.3.0 2026-06-10).
+> Current published npm: **4.3.0** · milestone codenames (v5.1) are spec/era names, NOT npm versions.
 
 ---
 
@@ -72,8 +72,8 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 9. GSD Core re-wire | 0/0 | Not started | - |
-| 10. gstack/mattpocock bump + 6 skills | 0/0 | Not started | - |
+| 9. GSD Core re-wire | 1/1 | ✅ Complete (shipped v4.3.0) | 2026-06-09 |
+| 10. gstack/mattpocock bump + 6 skills | 1/1 | ✅ Complete (shipped v4.3.0) | 2026-06-09 |
 
 ---
 

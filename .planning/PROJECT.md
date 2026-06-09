@@ -34,7 +34,7 @@ harnessed 是 the executable engine of the full three-layer-stack methodology �
 
 ## Success metric (developer-facing)
 
-Shipped to npm + dogfooded across maintainer machines. v1.0 GA + v2.0 + v3.0 all shipped (current published **v4.2.0**, 2026-06-05 — v5.0 State Machine Core Spec 1). 1150+ tests passing (1158 at v4.2.0), CI green on 3 platforms.
+Shipped to npm + dogfooded across maintainer machines. v1.0 GA + v2.0 + v3.0 all shipped (current published **v4.3.0**, 2026-06-10 — v5.1 Upstream Re-sync; prior v4.2.0 = v5.0 State Machine Core Spec 1). 1160+ tests passing (1167 at v4.3.0), CI green on 3 platforms.
 
 ## Locked decisions (ADRs)
 

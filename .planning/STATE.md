@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.1
 milestone_name: Upstream Re-sync
-status: executing
-last_updated: "2026-06-09T14:43:00.000Z"
-last_activity: 2026-06-09
+status: complete
+last_updated: "2026-06-10T00:00:00.000Z"
+last_activity: 2026-06-10
 progress:
   total_phases: 2
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 50
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 100
 ---
 
 # STATE — harnessed
@@ -21,15 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v5.1 Upstream Re-sync — additive sync of composition manifest + capability registry to upstream drift (GSD Core 1.4.1 + gstack v1.52.1.0). No runtime/architecture change.
-- **Latest shipped**: v4.2.0 (2026-06-05, v5.0 State Machine Core Spec 1, 1158 tests, CI green 3 platforms).
+- **Current focus**: v5.1 Upstream Re-sync — COMPLETE + shipped as npm 4.3.0. Next: optional milestone close or pull from Backlog.
+- **Latest shipped**: v4.3.0 (2026-06-10, v5.1 Upstream Re-sync, 1167 tests, CI green 3 platforms, npm latest=4.3.0).
 
 ## Current Position
 
-Phase: 10 — gstack/mattpocock bump + 6 skills (✅ COMPLETE 2026-06-09)
-Plan: 10 done — 详: phases/10-gstack-bump-skills/10-SUMMARY.md
-Status: Phase 10 executed & verified green; v5.1 milestone capability/manifest scope complete
-Last activity: 2026-06-09 — Phase 10 shipped: gstack manifest → main HEAD 1626d485/1.52.1.0, mattpocock last_check refresh, 6 new gstack capabilities wired (Bucket 7 additive), green gate 167 tests pass
+Phase: v5.1 COMPLETE — Phase 9 + Phase 10 both done & shipped (2/2)
+Plan: 09 + 10 done — 详: phases/09-gsd-core-rewire/09-01-SUMMARY.md + phases/10-gstack-bump-skills/10-SUMMARY.md
+Status: v5.1 implementation complete, released as v4.3.0 (npm latest=4.3.0). Milestone NOT formally archived (complete-milestone ceremony skipped — friction with harnessed custom layout/tagging).
+Last activity: 2026-06-10 — shipped v4.3.0: 18 new capabilities (12 GSD Core + 6 gstack) + stage-phase-gate triggers + gstack/mattpocock manifest bump. 1167 tests green.
 
 ## Milestone Scope (v5.1)
 
@@ -56,7 +56,7 @@ Last activity: 2026-06-09 — Phase 10 shipped: gstack manifest → main HEAD 16
 
 ### Open todos / blockers
 
-- None blocking. v5.1 Phase 9 + 10 complete; next action: milestone verify / close.
+- None blocking. v5.1 complete + shipped (v4.3.0). Optional follow-ups: (1) formally close v5.1 milestone; (2) npm-readme drift — published 4.3.0 tarball README shows old ~70/~83 capability count (repo README fixed post-tag; only matters if a 4.3.1 re-publish is wanted); (3) CI Node-20 deprecation (actions/checkout + setup-node forced to Node 24 by 2026-06-16).
 
 ### Deferred (Backlog)
 
@@ -66,6 +66,7 @@ Last activity: 2026-06-09 — Phase 10 shipped: gstack manifest → main HEAD 16
 
 ## Session Continuity
 
-- **Next command**: `/gsd-plan-phase 10`.
-- **Phase dirs**: `.planning/phases/09-gsd-core-rewire/` + `.planning/phases/10-gstack-bump-skills/` (created, empty — ready for PLAN).
-- **Methodology**: additive config work — no TDD on pure fns needed; verification = capability-resolver + check-workflow-schema + manifest-validate + full vitest green. 三层栈 verify cadence at Phase 10 final gate.
+- **Next command**: none pending — v5.1 done + shipped. To start new work: `/gsd-new-milestone` (or pull a Backlog item).
+- **Phase dirs**: `.planning/phases/09-gsd-core-rewire/` (09-PLAN.md + 09-01-SUMMARY.md) + `.planning/phases/10-gstack-bump-skills/` (10-SUMMARY.md) — both executed & verified.
+- **Release**: v4.3.0 commits `0ab8c52`…`2a5fb29` on main (pushed); tag `v4.3.0` → GitHub Actions publish success → npm latest=4.3.0.
+- **Methodology note**: GSD `context: fork` skills (`/gsd-plan-phase`, `/gsd-execute-phase`) fire-and-die as slash commands — drive them via `gsd-planner` / `gsd-executor` Agent-tool spawns instead.

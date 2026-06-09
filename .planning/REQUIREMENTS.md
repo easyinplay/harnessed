@@ -1,8 +1,8 @@
 # REQUIREMENTS — harnessed
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation.
-> Shipped families = delivered baseline (do NOT re-plan). Active forward scope = v5.1 Upstream Re-sync.
-> Current published version: **v4.2.0**. Active milestone: **v5.1 Upstream Re-sync**.
+> Shipped families = delivered baseline (do NOT re-plan). Latest scope = v5.1 Upstream Re-sync (✅ shipped v4.3.0).
+> Current published version: **v4.3.0**. Latest milestone: **v5.1 Upstream Re-sync** (shipped 2026-06-10). No active forward scope — next via `/gsd-new-milestone`.
 
 ---
 
@@ -66,10 +66,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v51-gsd-rewire | Phase 9 | Pending |
-| REQ-v51-gsd-judgments | Phase 9 | Pending |
-| REQ-v51-gstack-bump | Phase 10 | Pending |
-| REQ-v51-gstack-skills | Phase 10 | Pending |
-| REQ-v51-validation | Phase 9 + Phase 10 (final gate) | Pending |
+| REQ-v51-gsd-rewire | Phase 9 | ✅ Done (v4.3.0) |
+| REQ-v51-gsd-judgments | Phase 9 | ✅ Done (v4.3.0) |
+| REQ-v51-gstack-bump | Phase 10 | ✅ Done (v4.3.0) |
+| REQ-v51-gstack-skills | Phase 10 | ✅ Done (v4.3.0) |
+| REQ-v51-validation | Phase 9 + Phase 10 (final gate) | ✅ Done (1167 tests green) |
 
-Coverage: 5/5 requirements mapped · Phase 9 (2 reqs + validation-partial) · Phase 10 (2 reqs + validation final gate). No orphans.
+Coverage: 5/5 requirements ✅ shipped v4.3.0 (2026-06-10) · Phase 9 + Phase 10 complete. No orphans.
