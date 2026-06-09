@@ -66,10 +66,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v51-gsd-rewire | (roadmap pending) | Pending |
-| REQ-v51-gsd-judgments | (roadmap pending) | Pending |
-| REQ-v51-gstack-bump | (roadmap pending) | Pending |
-| REQ-v51-gstack-skills | (roadmap pending) | Pending |
-| REQ-v51-validation | (roadmap pending) | Pending |
+| REQ-v51-gsd-rewire | Phase 9 | Pending |
+| REQ-v51-gsd-judgments | Phase 9 | Pending |
+| REQ-v51-gstack-bump | Phase 10 | Pending |
+| REQ-v51-gstack-skills | Phase 10 | Pending |
+| REQ-v51-validation | Phase 9 + Phase 10 (final gate) | Pending |
 
-Coverage: filled by roadmapper (gsd-plan-phase) · 5 requirements.
+Coverage: 5/5 requirements mapped · Phase 9 (2 reqs + validation-partial) · Phase 10 (2 reqs + validation final gate). No orphans.

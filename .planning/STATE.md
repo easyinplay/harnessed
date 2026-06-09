@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-06-09T13:51:21.234Z"
 last_activity: 2026-06-09
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -16,56 +16,56 @@ progress:
 # STATE — harnessed
 
 > Project memory / single source of truth for current position.
-> Regenerated 2026-06-05 (reconciliation). Stale v2.0/v3.9.x narrative stripped.
+> Digest only (<100 lines) — history lives in CHANGELOG / RETROSPECTIVE / milestone audits, not here.
 
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v5.0 State Machine Core (Spec 1) — structured progress ledger + fail-closed evidence guard + `status --recover`.
-- **Latest shipped**: v4.1.3 (2026-06-04, 1107 tests, CI green 3 platforms).
+- **Current focus**: v5.1 Upstream Re-sync — additive sync of composition manifest + capability registry to upstream drift (GSD Core 1.4.1 + gstack v1.52.1.0). No runtime/architecture change.
+- **Latest shipped**: v4.2.0 (2026-06-05, v5.0 State Machine Core Spec 1, 1158 tests, CI green 3 platforms).
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 9 — GSD Core re-wire (Not started, roadmap just created)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-09 — Milestone v5.1 started
+Status: Roadmap created — ready to plan Phase 9
+Last activity: 2026-06-09 — v5.1 roadmap created (2 phases, 5/5 reqs mapped)
 
-## Design Baseline (locked)
+## Milestone Scope (v5.1)
 
-- ADR-0033 (Proposed) + `.planning/v5.0/STATE-MACHINE-CORE-DESIGN.md` — full implementation contract. 7 brainstorm + 3 eng-review decisions locked. No open gray areas.
-- task_plan: `.planning/v5.0/task_plan.md` (8-phase TDD plan, dependency order: schema → ledger/evidence → checkpoint wiring → status/resume → generated body → verify backfill → release gate).
+- **Keystone**: execute mechanism stays self-owned — `gsd-execute-phase` NOT wired (harnessed keeps CC-native spawn + ralph-loop + v4.2 checkpoint ledger).
+- **Additive-only**: ~18 new `capabilities.yaml` entries + 2 manifest version bumps + test-fixture sync. No existing capability mutated except gstack/mattpocock version fields.
+- **Preamble delivered**: GSD Core manifest rename `get-shit-done-cc` → `@opengsd/gsd-core` 1.4.1 (commit `0ab8c52`) + `.planning/` GSD-layout migration (`f61e443`).
 
 ## Accumulated Context
 
-### Decisions (v5.0)
+### Decisions (v5.1)
 
-- **D1** — single SoT: ledger lives only in `current-workflow.json`; checkpoint envelope carries NO ledger copy (dual-SoT + 1000-token budget risk).
-- **D2** — three-state evidence_status (`verified` / `none_declared` / `overridden`), never collapse to boolean.
-- **D3** — two-step gates→start; generated ORCHESTRATOR body enforces sequence; recover degrades gracefully on empty ledger.
-- **Ledger-only progression** — no transition-event FSM (linear topology); progression = field writes. Additive optional schema, no version bump.
+- **Grouping** — 2 phases: Phase 9 = GSD Core re-wire (rewire + judgments), Phase 10 = gstack/mattpocock bump + 6 skills. Validation (REQ-v51-validation) folds into each phase's acceptance + Phase 10 final gate (not its own phase).
+- **Verify-on-disk** — every new `skill_dir` must be confirmed to exist on disk before wiring (grep-over-assume; see CLAUDE.md SPEC cross-ref checklist).
+- **iOS skipped** — gstack iOS suite intentionally out of scope; 6 non-iOS skills only.
 
 ### Invariants (must not break)
 
-- ADR-0029 gate fail-soft UNCHANGED — evidence guard is a SEPARATE fail-CLOSED posture (a future "unify error handling" refactor must not collapse them).
-- atomic write (`writeFileAtomic`/`writeFileSyncAtomic`) + proper-lockfile dir lock — reuse existing.
-- KARPATHY-minimal: no FSM lib, surgical changes.
-- Windows CI must stay green.
+- ADR-0029 gate fail-soft + ADR-0033 evidence guard fail-closed — both UNCHANGED (no architecture touch this milestone).
+- Only gstack/mattpocock version fields mutated; all capability additions are new entries.
+- KARPATHY-minimal: smallest effective config diff, surgical.
+- Windows CI must stay green; no regression vs the 1158-test baseline.
 - Biome preempt before every TS/JS commit (`pnpm exec biome check --write`).
 - NEVER push to remote without explicit user approval.
 
 ### Open todos / blockers
 
-- None blocking. Next action: Phase 2 ledger.ts TDD (RED first).
+- None blocking. Next action: `/gsd-plan-phase 9`.
 
-### Deferred (out of Spec 1)
+### Deferred (Backlog)
 
-- Spec 2 — session-scoped state + single-session fallback.
-- Spec 3 — per-turn injection hook + scale-adaptive verify strength.
-- Security hardening pass (threat-model-gated): shell-injection in `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency hazards in `sigintTrap.ts`/`before-commit.ts`.
+- v5.0 Spec 2 — session-scoped state + single-session fallback.
+- v5.0 Spec 3 — per-turn injection hook + scale-adaptive verify strength.
+- Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency `sigintTrap.ts`/`before-commit.ts`.
 
 ## Session Continuity
 
-- **Next command**: `/gsd-plan-phase 2` (or continue `.planning/v5.0/task_plan.md` Phase 2).
-- **Working-tree note**: Phase 1 schema + Phase 7 verify backfill done but uncommitted. Confirm `git status` before committing — biome preempt + Windows-green check first.
-- **Methodology**: TDD on pure fns (ledger/evidence); `superpowers:test-driven-development` for Phase 2/3 (RED→GREEN); 三层栈 verify cadence at Phase 8 release gate.
+- **Next command**: `/gsd-plan-phase 9`.
+- **Phase dirs**: `.planning/phases/09-gsd-core-rewire/` + `.planning/phases/10-gstack-bump-skills/` (created, empty — ready for PLAN).
+- **Methodology**: additive config work — no TDD on pure fns needed; verification = capability-resolver + check-workflow-schema + manifest-validate + full vitest green. 三层栈 verify cadence at Phase 10 final gate.
