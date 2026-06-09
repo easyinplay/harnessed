@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.3.0] - 2026-06-10
+
+Upstream Re-sync (v5.1 milestone) — track upstream drift in the composition registry. Additive config only; no runtime/architecture change.
+
+### Changed
+
+- **GSD upstream rename** — `get-shit-done-cc` → `@opengsd/gsd-core` 1.4.1 (repo `open-gsd/gsd-core`, "Get Shit Done" → "Git. Ship. Done."). `manifests/skill-packs/gsd.yaml` install (`npx --yes @opengsd/gsd-core@latest --claude --global`, non-interactive), `npm_version ^1.4.1`, per-skill idempotent path (old single `~/.claude/skills/gsd` dir gone → `gsd-*` per-skill dirs), file-existence verify, official `--uninstall`.
+- **gstack manifest bump** — `git_ref` → `1626d485` (current `garrytan/gstack` main), `last_known_good_version` `main-269-commits` → `1.52.1.0`. mattpocock manifest `last_check` refresh.
+- **`gsd-research-phase` → `gsd-explore`** — GSD Core 1.4.1 removed the standalone research-phase skill; remapped the orphan capability to the surviving `gsd-explore`.
+
+### Added
+
+- **12 GSD Core capabilities** wired into `workflows/capabilities.yaml` — `gsd-spec-phase` / `gsd-ui-phase` / `gsd-secure-phase` / `gsd-ai-integration-phase` (stage-gap phase skills) + `gsd-ingest-docs` / `gsd-new-project` / `gsd-new-milestone` (bootstrap) + `gsd-extract-learnings` / `gsd-audit-milestone` / `gsd-complete-milestone` / `gsd-milestone-summary` / `gsd-docs-update` (milestone lifecycle).
+- **`workflows/judgments/stage-phase-gate.yaml`** — 4 stage-gate triggers for the spec/ui/secure/ai-integration design-contract phase skills.
+- **6 gstack capabilities** — `spec` / `skillify` / `pair-agent` / `scrape` / `benchmark-models` / `landing-report` (non-iOS).
+
+### Notes
+
+- **Keystone decision:** execute mechanism stays harnessed self-owned (CC-native spawn + ralph-loop + v4.2 checkpoint ledger). `gsd-execute-phase` deliberately NOT wired (enforced by an automated guard in the capabilities schema check).
+- `.planning/` migrated to GSD-standard layout (completed-milestone phase dirs → `milestones/<version>-phases/`; active milestone → `.planning/phases/`; `MILESTONES.md` generated).
+- 1167 tests pass / biome clean / tsc 0.
+
 ## [4.2.0] - 2026-06-05
 
 Workflow State Machine Core (v5.0 milestone, Spec 1) — absorbs structured-state
