@@ -18,7 +18,14 @@ import { describe, expect, it } from 'vitest'
 
 const REPO_ROOT = process.cwd()
 const BENCHMARK_PATH = join(REPO_ROOT, 'docs', 'benchmarks', 'v0.4.md')
-const SAMPLES_PATH = join(REPO_ROOT, '.planning', 'phase-3.4', 'SAMPLES.md')
+const SAMPLES_PATH = join(
+  REPO_ROOT,
+  '.planning',
+  'milestones',
+  'v0.3.0-phases',
+  'phase-3.4',
+  'SAMPLES.md',
+)
 const CI_YML_PATH = join(REPO_ROOT, '.github', 'workflows', 'ci.yml')
 const WORKFLOWS_DIR = join(REPO_ROOT, '.github', 'workflows')
 
