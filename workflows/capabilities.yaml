@@ -977,6 +977,72 @@ capabilities:
     fires_when:
       - subtask.bug_root_cause_unknown == true
 
+  spec:
+    impl: gstack
+    install_type: user-skill
+    skill_dir: gstack
+    cmd: /spec
+    since: v5.1
+    category: tool-slash-cmd
+    description: 5-stage spec → GitHub issue → 可选 agent 生成
+    fires_when:
+      - phase.stage == 'plan' AND phase.needs_spec_to_issues == true
+
+  skillify:
+    impl: gstack
+    install_type: user-skill
+    skill_dir: gstack
+    cmd: /skillify
+    since: v5.1
+    category: tool-slash-cmd
+    description: 把现有流程蒸馏成新 gstack skill
+    fires_when:
+      - user.explicit_signal includes 'skillify'
+
+  pair-agent:
+    impl: gstack
+    install_type: user-skill
+    skill_dir: gstack
+    cmd: /pair-agent
+    since: v5.1
+    category: tool-slash-cmd
+    description: 远程 agent 配对 + ngrok tunnel
+    fires_when:
+      - user.explicit_signal includes 'pair agent'
+
+  scrape:
+    impl: gstack
+    install_type: user-skill
+    skill_dir: gstack
+    cmd: /scrape
+    since: v5.1
+    category: tool-slash-cmd
+    description: 批量页面抓取
+    fires_when:
+      - user.explicit_signal includes 'scrape'
+
+  benchmark-models:
+    impl: gstack
+    install_type: user-skill
+    skill_dir: gstack
+    cmd: /benchmark-models
+    since: v5.1
+    category: tool-slash-cmd
+    description: 跨模型基准对比 (Claude/GPT/Gemini)
+    fires_when:
+      - user.explicit_signal includes 'benchmark models'
+
+  landing-report:
+    impl: gstack
+    install_type: user-skill
+    skill_dir: gstack
+    cmd: /landing-report
+    since: v5.1
+    category: tool-slash-cmd
+    description: post-landing 落地报告
+    fires_when:
+      - phase.stage == 'verify' AND phase.needs_landing_report == true
+
   # ============================================================================
   # Bucket 8 — Supplementary v3 NEW (2 entry)
   # ============================================================================

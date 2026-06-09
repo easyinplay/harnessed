@@ -33,7 +33,7 @@ spec:
       - ~/.claude/skills/mattpocock-skills
   upstream_health:
     stability: stable
-    last_check: "2026-05-11"
+    last_check: "2026-06-09"
     last_known_good_version: main-76-commits
     fallback_action: warn
   signed_by: easyinplay
