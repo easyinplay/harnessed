@@ -56,7 +56,7 @@ Last activity: 2026-06-11 — executed Phase 12 (single TDD wave, self-owned spa
 
 ### Open todos / blockers
 
-- None blocking. Carry-over (non-blocking): npm-readme drift on older tarballs. v5.1 milestone never formally archived (ceremony skipped). [CI Node-20 deprecation RESOLVED 2026-06-11 — checkout/setup-node bumped to v5.]
+- None blocking. **ci.yml GREEN on all 3 OS 2026-06-11** (first green in months) — Node-20 actions bumped to v5 + 4 pre-existing reds fixed (check-workflow-schema SSOT drift, biome intel-JSON, macOS realpath test, proper-lockfile test mock). Carry-over (non-blocking): npm-readme drift on older tarballs; v5.1 milestone never formally archived.
 
 ### Deferred (Backlog)
 
