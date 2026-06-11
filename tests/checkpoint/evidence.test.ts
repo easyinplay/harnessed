@@ -6,7 +6,7 @@
 // never depend on the real `workflows/` tree (isolation per design §11).
 
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -22,7 +22,10 @@ let root: string
 let prevCwd: string
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'harnessed-evidence-'))
+  // realpathSync: macOS tmpdir() is /var/... but process.cwd() after chdir returns
+  // the /private/var/... realpath; checkArtifacts resolves against cwd, so expected
+  // paths must use the realpath to match (no-op on Linux/Windows).
+  root = realpathSync(mkdtempSync(join(tmpdir(), 'harnessed-evidence-')))
   // P0-A — checkArtifacts now resolves declared ARTIFACTS relative to process.cwd()
   // (artifacts are produced in the user project, not the harnessed install dir).
   // chdir into `root` so the convenience cases keep cwd == packageRoot == root; the

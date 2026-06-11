@@ -29,6 +29,14 @@ vi.mock('node:fs/promises', () => ({
     promisesFsState.delete(src)
   },
 }))
+// state.ts withLock uses proper-lockfile, which calls REAL fs.lstat on
+// getHarnessedRoot() (~/.claude/harnessed). On a fresh CI runner ~/.claude does
+// not exist → ENOENT (passed locally only because ~/.claude is present). Mock the
+// lock to a no-op release so the in-memory fs mock above is the only fs surface.
+vi.mock('proper-lockfile', () => ({
+  default: { lock: async () => async () => {} },
+  lock: async () => async () => {},
+}))
 
 // Imports AFTER mocks
 import { join as pathJoin } from 'node:path'
