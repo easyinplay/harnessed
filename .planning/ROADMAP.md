@@ -37,7 +37,7 @@
 ### Phases
 
 - [x] **Phase 11: doc-discipline substrate (G1)** ✅ 2026-06-11 — `disciplines/doc-discipline.yaml` (6 rules) + `doc-discipline` capability (7th L0) + before-commit STATE-line halt/override. vitest 1179 green. 详: `phases/11-doc-discipline/`.
-- [ ] **Phase 12: sentinel gate (G2)** — new `before-complete.ts` checkpoint-sync gate (refuse COMPLETE when `.planning/` unsynced). Depends on Phase 11. Reqs: REQ-v60-sentinel-gate, REQ-v60-validation (final gate). 详: `phases/12-sentinel-gate/`.
+- [x] **Phase 12: sentinel gate (G2)** ✅ 2026-06-11 — `checkPlanningSync` guard wired into `checkpoint complete` (refuse COMPLETE when `.planning/` present + STATE.md unsynced, halt + --force). Reuses evidence guard, no new store. vitest 1188 green. 详: `phases/12-sentinel-gate/`.
 
 ---
 
@@ -45,8 +45,8 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 11. doc-discipline substrate | 1/1 | ✅ Complete (vitest 1179 green) | 2026-06-11 |
-| 12. sentinel gate | 0/1 | ⏳ Planned | — |
+| 11. doc-discipline substrate | 1/1 | ✅ Complete | 2026-06-11 |
+| 12. sentinel gate | 1/1 | ✅ Complete (vitest 1188 green) | 2026-06-11 |
 
 ---
 

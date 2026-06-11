@@ -10,7 +10,12 @@ import { mkdirSync, mkdtempSync, rmSync, unlinkSync, writeFileSync } from 'node:
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { checkArtifacts, detectDrift, hashFile } from '../../src/checkpoint/evidence.js'
+import {
+  checkArtifacts,
+  checkPlanningSync,
+  detectDrift,
+  hashFile,
+} from '../../src/checkpoint/evidence.js'
 import type { EvidenceRefType } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
 
 let root: string
@@ -144,6 +149,34 @@ describe('checkArtifacts', () => {
     } finally {
       rmSync(pkgRoot, { recursive: true, force: true })
     }
+  })
+})
+
+describe('checkPlanningSync', () => {
+  // Uses the same mkdtempSync/chdir pattern as the outer beforeEach/afterEach.
+  // The outer beforeEach already chdir'd into `root`, so each case just creates
+  // or omits `.planning/` relative to root (== process.cwd()).
+
+  it('none_declared — no .planning/ dir exists → status none_declared, missing []', async () => {
+    const r = await checkPlanningSync(process.cwd(), null)
+    expect(r.status).toBe('none_declared')
+    expect(r.missing).toEqual([])
+  })
+
+  it('missing — .planning/ dir exists but STATE.md absent → status missing, missing includes .planning/STATE.md', async () => {
+    mkdirSync(join(process.cwd(), '.planning'), { recursive: true })
+    const r = await checkPlanningSync(process.cwd(), null)
+    expect(r.status).toBe('missing')
+    expect(r.missing).toEqual(['.planning/STATE.md'])
+  })
+
+  it('verified — .planning/STATE.md present → status verified, missing []', async () => {
+    const planningDir = join(process.cwd(), '.planning')
+    mkdirSync(planningDir, { recursive: true })
+    writeFileSync(join(planningDir, 'STATE.md'), '# state\n', 'utf8')
+    const r = await checkPlanningSync(process.cwd(), null)
+    expect(r.status).toBe('verified')
+    expect(r.missing).toEqual([])
   })
 })
 

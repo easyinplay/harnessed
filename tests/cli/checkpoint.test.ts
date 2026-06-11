@@ -20,6 +20,9 @@ vi.mock('../../src/checkpoint/engineHook.js', () => ({
 // exits 0; individual cells override the return to exercise the guard branches.
 vi.mock('../../src/checkpoint/evidence.js', () => ({
   checkArtifacts: vi.fn(async () => ({ status: 'none_declared', found: [], missing: [] })),
+  // Phase 12: also mock checkPlanningSync so complete tests stay hermetic.
+  // Default: verified (no planning block) so bare `complete` still exits 0.
+  checkPlanningSync: vi.fn(async () => ({ status: 'verified', missing: [] })),
 }))
 // v5.0 Spec 1 — the `complete` branch reads the ledger back (readCurrentWorkflow)
 // after the mark to decide whether this completion finishes the master chain.

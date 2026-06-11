@@ -37,9 +37,9 @@
 - **Description**: new `workflows/disciplines/doc-discipline.yaml` (schema `harnessed.discipline.v1`, discipline `doc`) with rules: `state-digest-line-limit` (halt, override-allowed — STATE.md >100 lines), `one-fact-per-file` (warn, heuristic), `overview-pointer-no-inline-narrative` (warn, heuristic — ROADMAP/overview no closing narrative), `transient-consume-then-archive` (warn), `status-derived-from-artifacts` (warn), `responsibility-matrix-one-home` (info). Register `doc-discipline` capability (category=behavioral, discipline_ref). Wire enforcement into `before-commit.ts` (STATE line halt + ROADMAP inline-narrative warn on `.planning/` doc commits).
 - **Acceptance**: yaml validates `harnessed.discipline.v1`; capability registered + resolver passes; `before-commit` halts on >100-line STATE without override env, passes with it; per-rule unit tests; biome + tsc + vitest green vs the 1167-test baseline.
 
-### REQ-v60-sentinel-gate — checkpoint-sync gate before COMPLETE (Phase 12)
-- **Description**: new `src/discipline/enforcement/before-complete.ts` — refuse `<promise>COMPLETE</promise>` emission / phase-advance when `.planning/` is unsynced. Unsynced predicate (final form locked in plan): STATE/checkpoint ledger missing the current phase OR stale vs latest `.planning/` phase-artifact change. Reuses v4.2 checkpoint ledger + `state.ts`. Halt with transparent message + explicit override.
-- **Acceptance**: gate fires on unsynced state, passes when synced; reuses checkpoint ledger (no new state store); transparent skip message on low confidence; unit tests for fire/pass/override; green gate.
+### REQ-v60-sentinel-gate — `.planning/` sync guard layered on checkpoint complete (Phase 12)
+- **Description**: extend the existing fail-closed evidence guard (ADR-0033) at the `harnessed checkpoint complete <sub>` path with a `.planning/` sync check. New pure fn `checkPlanningSync(cwd, workflowState)` (sister to `checkArtifacts` in `src/checkpoint/evidence.ts`): when `.planning/` exists but the active workflow's progress/STATE artifact is missing or unsynced → contributes to the `missing` set → `complete` BLOCKED exit 1 unless `--force` (records `evidence_status: overridden`). When no `.planning/` dir exists → `none_declared` (no block — non-GSD users unaffected). Folds into the `checkpoint.ts` complete path alongside `checkArtifacts`; NO standalone `before-complete.ts` (one-fact, reuse `mutateSubProgress` + the existing complete flow). Discuss decision (2026-06-11): extend evidence guard (halt + --force), not timestamp-staleness, not warn-only.
+- **Acceptance**: `complete` blocks when `.planning/` present + progress unsynced and no `--force`; passes with `--force` (overridden), when synced, or when no `.planning/` (none_declared); transparent block message naming the unsynced doc; unit tests for fire/pass/override/na; reuses checkpoint ledger (no new state store); green gate.
 
 ### REQ-v60-validation — additive, backward-compatible, green
 - **Description**: all additions additive (new yaml + new hook + new tests; no existing discipline/capability mutated); full quality gate green; Windows CI green.
@@ -59,8 +59,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v60-doc-discipline | Phase 11 | ✅ Done (vitest 1179 green) |
-| REQ-v60-sentinel-gate | Phase 12 | ⏳ Planned |
-| REQ-v60-validation | Phase 11 (partial) + Phase 12 (final gate) | ◑ Partial (Phase 11 gate green) |
+| REQ-v60-doc-discipline | Phase 11 | ✅ Done |
+| REQ-v60-sentinel-gate | Phase 12 | ✅ Done (vitest 1188 green) |
+| REQ-v60-validation | Phase 11 + Phase 12 (final gate) | ✅ Done |
 
-Coverage: 1/3 done (Phase 11) · v5.1 (5/5) shipped v4.3.0. No orphans.
+Coverage: 3/3 done · v6.0 complete (2/2 phases). v5.1 (5/5) shipped v4.3.0. No orphans.

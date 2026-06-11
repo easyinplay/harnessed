@@ -151,14 +151,18 @@ export function registerCheckpoint(program: Command): void {
           const { getPackageRoot } = await import('./lib/packagePath.js')
 
           const result = await checkArtifacts(sub, getPackageRoot())
+          const { checkPlanningSync } = await import('../checkpoint/evidence.js')
+          const syncResult = await checkPlanningSync(process.cwd(), null)
 
-          // Fail-CLOSED (ADR-0033 D2): a declared-but-missing artifact blocks the
-          // completion. The ledger entry stays 'pending'; no done flip; exit 1.
-          if (result.missing.length > 0 && !opts.force) {
+          // Fail-CLOSED (ADR-0033 D2 + Phase 12 G2): merge artifact missing set with
+          // planning sync missing set. Any missing item blocks completion unless --force.
+          // The ledger entry stays 'pending'; no done flip; exit 1.
+          const allMissing = [...result.missing, ...syncResult.missing]
+          if (allMissing.length > 0 && !opts.force) {
             console.error(
-              `[harnessed] checkpoint complete BLOCKED: ${sub} — ${result.missing.length} declared artifact(s) missing (evidence guard, fail-closed):`,
+              `[harnessed] checkpoint complete BLOCKED: ${sub} — ${allMissing.length} item(s) missing (evidence guard + .planning/ sync, fail-closed):`,
             )
-            for (const m of result.missing) console.error(`  - ${m}`)
+            for (const m of allMissing) console.error(`  - ${m}`)
             console.error(
               '  (re-run with --force to override and record evidence_status=overridden)',
             )
@@ -177,7 +181,7 @@ export function registerCheckpoint(program: Command): void {
           //   verified         → 'verified'   (record found artifacts as evidence)
           //   none_declared    → 'none_declared' (guard had nothing to check; NOT a pass)
           let evidenceStatus: 'overridden' | 'verified' | 'none_declared'
-          if (result.missing.length > 0 && opts.force) evidenceStatus = 'overridden'
+          if (allMissing.length > 0 && opts.force) evidenceStatus = 'overridden'
           else if (result.status === 'verified') evidenceStatus = 'verified'
           else evidenceStatus = 'none_declared'
 

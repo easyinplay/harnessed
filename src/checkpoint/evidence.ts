@@ -16,7 +16,7 @@ import { readFile, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { resolveWorkflowYaml } from '../cli/run.js'
-import type { EvidenceRefType } from './schema/currentWorkflow.v1.js'
+import type { CurrentWorkflowV1Type, EvidenceRefType } from './schema/currentWorkflow.v1.js'
 
 /** sha256 hex digest of a file's bytes. */
 export async function hashFile(path: string): Promise<string> {
@@ -88,6 +88,42 @@ export async function checkArtifacts(
   // P1-3 three-state honesty: 'verified' when nothing missing; 'missing' when a
   // declared artifact is absent (caller still gates on `missing.length`).
   return { status: missing.length === 0 ? 'verified' : 'missing', found, missing }
+}
+
+export interface CheckPlanningSyncResult {
+  /** 'verified'      — .planning/STATE.md is present (hard gate satisfied).
+   *  'missing'       — .planning/ dir exists but STATE.md is absent (caller blocks).
+   *  'none_declared' — no .planning/ dir in cwd → non-GSD user; guard N/A (NOT a pass). */
+  status: 'verified' | 'missing' | 'none_declared'
+  missing: string[]
+}
+
+/** Check whether the GSD .planning/ progress doc is in sync (Phase 12 强制执行哨兵 G2).
+ *  Hard gate: .planning/STATE.md existence only. workflowState is accepted for future
+ *  mtime-warn extension (locked decision D5) but unused in the predicate.
+ *
+ *  Three-state outcome:
+ *  - no .planning/ dir → none_declared (non-GSD user; no block)
+ *  - .planning/ present, STATE.md absent → missing (caller blocks on missing[])
+ *  - .planning/STATE.md present → verified */
+export async function checkPlanningSync(
+  cwd: string,
+  // Reserved for future mtime-warn extension (D5); unused in the hard-gate predicate.
+  _workflowState: CurrentWorkflowV1Type | null,
+): Promise<CheckPlanningSyncResult> {
+  const planningDir = resolve(cwd, '.planning')
+  const hasPlanningDir = await stat(planningDir)
+    .then((s) => s.isDirectory())
+    .catch(() => false)
+  if (!hasPlanningDir) return { status: 'none_declared', missing: [] }
+
+  const stateFile = resolve(cwd, '.planning', 'STATE.md')
+  const hasStateFile = await stat(stateFile)
+    .then((s) => s.isFile())
+    .catch(() => false)
+  if (!hasStateFile) return { status: 'missing', missing: ['.planning/STATE.md'] }
+
+  return { status: 'verified', missing: [] }
 }
 
 export interface DriftEntry {

@@ -30,4 +30,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v6.0 Doc-Discipline Substrate | ⏳ Planning | G1 文档纪律 codify (`disciplines/doc-discipline.yaml`) + G2 哨兵 gating (`before-complete.ts`). 2 phases (11→12). 详: ROADMAP.md + REQUIREMENTS.md. |
+| v6.0 Doc-Discipline Substrate | ◑ Implemented (2/2), pending release | G1 = 7th L0 discipline `doc-discipline.yaml` + STATE-line halt. G2 = `checkPlanningSync` guard in checkpoint complete. vitest 1188. Phase 11 `a5bd03c`; Phase 12 pending commit. Next: release (npm bump from 4.3.0). |
