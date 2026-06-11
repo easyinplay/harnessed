@@ -69,6 +69,21 @@ const CapabilityEntryBase = Type.Object(
     fires_when: Type.Optional(Type.Array(Type.String())),
     requires: Type.Optional(RequiresShape),
     plugin_path: Type.Optional(Type.String()),
+    // v3.4.1/v3.4.2 presence-check fields — mirror src/workflow/schema/capabilities.ts
+    // SSOT (was missing here; their absence made additionalProperties:false reject
+    // every entry carrying skill_dir/install_type/plugin_id since v5.1).
+    plugin_namespace: Type.Optional(Type.String()),
+    install_type: Type.Optional(
+      Type.Union([
+        Type.Literal('plugin'),
+        Type.Literal('user-skill'),
+        Type.Array(Type.Union([Type.Literal('plugin'), Type.Literal('user-skill')]), {
+          minItems: 1,
+        }),
+      ]),
+    ),
+    plugin_id: Type.Optional(Type.String()),
+    skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
     sdk_ref: Type.Optional(Type.String()),
@@ -146,6 +161,24 @@ const JudgmentRulesFile = Type.Object(
   {
     schema_version: Type.Literal('harnessed.judgment.v1'),
     rules: Type.Record(Type.String(), FallbackRule),
+  },
+  { additionalProperties: false },
+)
+// user-overrides.yaml — distinct schema (harnessed.user-overrides.v1); mirror
+// src/workflow/schema/judgment.ts SSOT. Was validated as a triggers file before
+// (wrong) → schema mismatch since v3.6.0.
+const UserOverrideEntry = Type.Object(
+  {
+    id: Type.String({ minLength: 1 }),
+    keywords: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
+    triggers: Type.Array(Type.String({ minLength: 1 }), { minItems: 1 }),
+  },
+  { additionalProperties: false },
+)
+const UserOverridesFile = Type.Object(
+  {
+    schema_version: Type.Literal('harnessed.user-overrides.v1'),
+    overrides: Type.Array(UserOverrideEntry, { minItems: 1 }),
   },
   { additionalProperties: false },
 )
@@ -298,16 +331,22 @@ if (existsSync(judgmentsDir)) {
   const yamlFiles = readdirSync(judgmentsDir).filter((f) => f.endsWith('.yaml'))
   for (const f of yamlFiles) {
     const parsed = parseYaml(readFileSync(resolve(judgmentsDir, f), 'utf8'))
-    const isFallback = basename(f, '.yaml') === 'fallback'
-    const schema = isFallback ? JudgmentRulesFile : JudgmentTriggersFile
+    const base = basename(f, '.yaml')
+    const isFallback = base === 'fallback'
+    const isUserOverrides = base === 'user-overrides'
+    const schema = isFallback
+      ? JudgmentRulesFile
+      : isUserOverrides
+        ? UserOverridesFile
+        : JudgmentTriggersFile
     const label = `workflows/judgments/${f}`
     if (!Value.Check(schema, parsed)) {
       reportErrors(label, schema, parsed)
       failed++
       continue
     }
-    // C3 cross-validate (skip fallback rules — no invokes field)
-    if (isFallback) continue
+    // C3 cross-validate (skip fallback rules + user-overrides — no triggers[].invokes)
+    if (isFallback || isUserOverrides) continue
     for (const [trigName, trig] of Object.entries(parsed.triggers ?? {})) {
       for (const inv of trig.invokes ?? []) {
         if (capNames.size > 0 && !capNames.has(inv.capability)) {
