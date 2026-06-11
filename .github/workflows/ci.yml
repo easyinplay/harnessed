@@ -28,6 +28,10 @@ jobs:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           fetch-depth: 0  # H2: full history + tags needed for ADR 0001/0002 守恒 check below
+      # corepack enable BEFORE setup-node: v5 reads package.json `packageManager`
+      # (pnpm@...) and fails "Unable to locate executable file: pnpm" when the
+      # corepack shim is not yet on PATH (regression vs v4). Re-enabled post-setup below.
+      - run: corepack enable
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ matrix.node }}
