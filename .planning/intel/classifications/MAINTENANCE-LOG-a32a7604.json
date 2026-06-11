@@ -16,11 +16,7 @@
     "legacy execute-task/plan-feature/verify-work removal",
     "code review / simplifier fixes"
   ],
-  "cross_refs": [
-    "../STATE.md",
-    "../RETROSPECTIVE.md",
-    "./PLAN-interactive-clarification.md"
-  ],
+  "cross_refs": ["../STATE.md", "../RETROSPECTIVE.md", "./PLAN-interactive-clarification.md"],
   "locked": false,
   "precedence": null,
   "notes": ""
