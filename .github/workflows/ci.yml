@@ -23,12 +23,12 @@ jobs:
     steps:
       # Phase 1.1.1 hotfix H1: pin actions to SHA (supply-chain hardening).
       # Tag refs (@v4) are mutable; SHA refs are immutable. Commit SHA below
-      # corresponds to v4.3.1 (actions/checkout) and v4.4.0 (actions/setup-node)
-      # as of 2026-05-12.
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      # corresponds to v5.0.1 (actions/checkout) and v5.0.0 (actions/setup-node)
+      # as of 2026-06-11 (bumped from v4 — Node 20 deprecation, runners force Node 24 by 2026-06-16).
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
         with:
           fetch-depth: 0  # H2: full history + tags needed for ADR 0001/0002 守恒 check below
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: ${{ matrix.node }}
       # Phase 1.1.1 hotfix H2 + Phase 1.2 H5 + Phase 1.2.5 wedge + Phase 1.3 ADR 0007 errata + Phase 1.4 ADR 0008 errata + Phase 1.5 ADR 0009 errata + Phase 2.1 ADR 0010 errata + Phase 2.2 ADR 0011 errata + Phase 2.3 ADR 0012 errata + Phase 2.4 ADR 0013 errata + Phase 3.1 ADR 0014 errata + Phase 3.2 ADR 0015 errata + Phase 3.3 ADR 0016 errata + Phase 3.4 ADR 0017 errata:

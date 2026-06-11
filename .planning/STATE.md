@@ -56,7 +56,7 @@ Last activity: 2026-06-11 — executed Phase 12 (single TDD wave, self-owned spa
 
 ### Open todos / blockers
 
-- None blocking. Carry-over (non-blocking): npm-readme drift on 4.3.0 tarball; CI Node-20 deprecation (forced to Node 24 by 2026-06-16). v5.1 milestone never formally archived (ceremony skipped).
+- None blocking. Carry-over (non-blocking): npm-readme drift on older tarballs. v5.1 milestone never formally archived (ceremony skipped). [CI Node-20 deprecation RESOLVED 2026-06-11 — checkout/setup-node bumped to v5.]
 
 ### Deferred (Backlog)
 
