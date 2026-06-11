@@ -12,16 +12,17 @@ beforeEach(() => {
 })
 
 describe('discipline/enforcement/before-phase-execute', () => {
-  it('1. loadDisciplinesForPhase(undefined) loads all 6 DEFAULT_APPLIED', async () => {
+  it('1. loadDisciplinesForPhase(undefined) loads all 7 DEFAULT_APPLIED', async () => {
     const m = await loadDisciplinesForPhase(undefined, PACKAGE_ROOT)
-    expect(m.size).toBe(6)
+    expect(m.size).toBe(7)
     expect(m.has('karpathy')).toBe(true)
     expect(m.has('protocols')).toBe(true)
+    expect(m.has('doc-discipline')).toBe(true)
   })
 
-  it('2. loadDisciplinesForPhase([]) defaults to all 6 (empty array)', async () => {
+  it('2. loadDisciplinesForPhase([]) defaults to all 7 (empty array)', async () => {
     const m = await loadDisciplinesForPhase([], PACKAGE_ROOT)
-    expect(m.size).toBe(6)
+    expect(m.size).toBe(7)
   })
 
   it('3. loadDisciplinesForPhase(["karpathy"]) loads only requested', async () => {

@@ -5,13 +5,13 @@
 
 ## Tasks (7, 3 waves) — detail in 11-PLAN.md
 
-- [ ] **T11.1** [W1] NEW `workflows/disciplines/doc-discipline.yaml` (6 rules, schema harnessed.discipline.v1)
-- [ ] **T11.2** [W1] MODIFY `workflows/capabilities.yaml` — register `doc-discipline` behavioral entry
-- [ ] **T11.3** [W2] MODIFY discipline.test.ts + disciplineLoader.test.ts (7 assertions; TDD)
-- [ ] **T11.4** [W2] MODIFY `before-commit.ts` — STATE >100-line halt + override (TDD core)
-- [ ] **T11.5** [W2] MODIFY before-commit.test.ts (5 cases; TDD pair with T11.4)
-- [ ] **T11.6** [W2] MODIFY `disciplineLoader.ts` — append `doc` to DEFAULT_APPLIED (revise D6)
-- [ ] **T11.7** [W3] Validation gate: biome + tsc + full vitest (≥1179) + Windows `\r?\n` check
+- [x] **T11.1** [W1] NEW `workflows/disciplines/doc-discipline.yaml` (6 rules, schema harnessed.discipline.v1)
+- [x] **T11.2** [W1] MODIFY `workflows/capabilities.yaml` — register `doc-discipline` behavioral entry
+- [x] **T11.3** [W2] MODIFY discipline.test.ts + disciplineLoader.test.ts (7 assertions; TDD)
+- [x] **T11.4** [W2] MODIFY `before-commit.ts` — STATE >100-line halt + override (TDD core)
+- [x] **T11.5** [W2] MODIFY before-commit.test.ts (5 cases; TDD pair with T11.4)
+- [x] **T11.6** [W2] MODIFY `disciplineLoader.ts` — append `doc` to DEFAULT_APPLIED (revise D6)
+- [x] **T11.7** [W3] Validation gate: biome + tsc + full vitest (≥1179) + Windows `\r?\n` check
 
 ## Acceptance (phase done = TRUE)
 

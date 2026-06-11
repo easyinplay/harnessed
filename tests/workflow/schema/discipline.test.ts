@@ -200,6 +200,100 @@ describe('Discipline — 5 negative', () => {
   })
 })
 
+describe('Discipline — doc-discipline yaml shape', () => {
+  const docDiscipline = {
+    schema_version: 'harnessed.discipline.v1',
+    discipline: 'doc',
+    enforcement_layer: 'commit',
+    auto_enforce: true,
+    rules: [
+      {
+        id: 'state-digest-line-limit',
+        description: 'STATE.md >100 lines triggers halt; override via HARNESSED_ALLOW_LONG_STATE=1',
+        enforcement: 'halt',
+        trigger: "phase.type == 'commit' AND changed_files contains '.planning/STATE.md'",
+        check_method: 'external-cmd',
+      },
+      {
+        id: 'one-fact-per-file',
+        description:
+          'Decision docs must be single-topic; duplicate fact spread across files violates one-fact-per-file',
+        enforcement: 'warn',
+        trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'",
+        check_method: 'heuristic',
+      },
+      {
+        id: 'overview-pointer-no-inline-narrative',
+        description:
+          'ROADMAP/overview docs must not inline closing narrative (叙事进 SUMMARY, not ROADMAP)',
+        enforcement: 'warn',
+        trigger: "phase.type == 'commit' AND changed_files matches 'ROADMAP\\.md|STATE\\.md'",
+        check_method: 'heuristic',
+      },
+      {
+        id: 'transient-consume-then-archive',
+        description:
+          'HANDOFF and other transient artifacts must be archived after consumption, not accumulated at .planning/ root',
+        enforcement: 'warn',
+        trigger: "phase.type == 'commit' AND changed_files matches 'HANDOFF'",
+        check_method: 'heuristic',
+      },
+      {
+        id: 'status-derived-from-artifacts',
+        description:
+          'Phase status must derive from VERIFICATION artifacts + test results, not hand-maintained booleans in STATE/ROADMAP',
+        enforcement: 'warn',
+        trigger: "phase.type == 'commit' AND changed_files contains '.planning/STATE.md'",
+        check_method: 'heuristic',
+      },
+      {
+        id: 'responsibility-matrix-one-home',
+        description:
+          'Each fact has exactly one home per responsibility matrix (decision→ADR, requirement→REQUIREMENTS, etc.); cross-file duplication is a violation',
+        enforcement: 'info',
+        trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'",
+        check_method: 'heuristic',
+      },
+    ],
+  }
+
+  test('D1: doc-discipline inline shape (all 6 rules, correct enforcement literals) passes Value.Check', () => {
+    expect(Value.Check(Discipline, docDiscipline)).toBe(true)
+  })
+
+  test('D2: state-digest-line-limit has enforcement=halt and check_method=external-cmd', () => {
+    const rule = docDiscipline.rules.find((r) => r.id === 'state-digest-line-limit')
+    expect(rule).toBeDefined()
+    // biome-ignore lint/style/noNonNullAssertion: guarded by toBeDefined above
+    expect(rule!.enforcement).toBe('halt')
+    // biome-ignore lint/style/noNonNullAssertion: guarded by toBeDefined above
+    expect(rule!.check_method).toBe('external-cmd')
+  })
+
+  test('D3: responsibility-matrix-one-home has enforcement=info (accepted by schema)', () => {
+    const shape = {
+      ...docDiscipline,
+      rules: [
+        {
+          id: 'responsibility-matrix-one-home',
+          description: 'Each fact has exactly one home per responsibility matrix',
+          enforcement: 'info',
+          trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'",
+          check_method: 'heuristic',
+        },
+      ],
+    }
+    expect(Value.Check(Discipline, shape)).toBe(true)
+    // biome-ignore lint/style/noNonNullAssertion: rules array is non-empty (1 element defined above)
+    expect(shape.rules[0]!.enforcement).toBe('info')
+  })
+
+  test('D4: extra root key on doc-discipline shape → Value.Check returns false (additionalProperties guard)', () => {
+    const bad = { ...docDiscipline, unexpected_extra_key: 'leak' }
+    expect(Value.Check(Discipline, bad)).toBe(false)
+  })
+})
+
 describe('Discipline — 5 edge', () => {
   test('E1: empty rules array passes', () => {
     const ok = {

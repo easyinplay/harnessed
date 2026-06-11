@@ -17,7 +17,7 @@ import { Value } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
 import { Discipline, type DisciplineRuleT, type DisciplineT } from './schema/discipline.js'
 
-/** All 6 LOCKED basenames per D-09 — sister DisciplineName Literal Union. */
+/** All 7 LOCKED basenames per D-09 (v6.0 adds doc-discipline). */
 export const DEFAULT_APPLIED: readonly string[] = [
   'karpathy',
   'output-style',
@@ -25,6 +25,7 @@ export const DEFAULT_APPLIED: readonly string[] = [
   'operational',
   'priority',
   'protocols',
+  'doc-discipline',
 ]
 
 const _cache = new Map<string, DisciplineT>()

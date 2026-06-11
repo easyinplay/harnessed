@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Doc-Discipline Substrate
-status: planning
+status: executing
 last_updated: "2026-06-11T00:00:00.000Z"
 last_activity: 2026-06-11
 progress:
   total_phases: 2
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 1
+  percent: 50
 ---
 
 # STATE — harnessed
@@ -21,15 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v6.0 Doc-Discipline Substrate — close G1 (文档纪律 un-codified) + G2 (哨兵 half-done) vs CLAUDE.md. Planning Phase 11.
+- **Current focus**: v6.0 Doc-Discipline Substrate — Phase 11 (G1 doc-discipline) DONE + verified. Next: Phase 12 (G2 sentinel gate).
 - **Latest shipped**: v4.3.0 (2026-06-10, v5.1 Upstream Re-sync, 1167 tests, CI green 3 platforms, npm latest=4.3.0).
 
 ## Current Position
 
-Phase: v6.0 Phase 11 (doc-discipline substrate) — discuss done, planning next
-Plan: TBD — gsd-planner to author `phases/11-doc-discipline/11-PLAN.md`
-Status: New milestone opened 2026-06-11 from gap analysis. Discuss locked 3 decisions (see below). Strategic + architecture review skipped (scope locked, reuses existing L0 pattern).
-Last activity: 2026-06-11 — opened v6.0; reconciled REQUIREMENTS/ROADMAP/MILESTONES/STATE (v5.1 → shipped index).
+Phase: v6.0 Phase 11 DONE (1/2) — Phase 12 (sentinel gate) planning next
+Plan: 11 done — 详: phases/11-doc-discipline/11-PLAN.md + progress.md
+Status: Phase 11 shipped to working tree (not yet committed/released). 7th L0 discipline `doc-discipline` + before-commit STATE-line halt. Self-verify caught + fixed a cross-agent basename mismatch + a DEFAULT_APPLIED 6→7 regression. vitest 1179 green.
+Last activity: 2026-06-11 — executed Phase 11 (3 waves, self-owned CC-native spawn + adversarial self-verify).
 
 ## Milestone Scope (v6.0)
 
@@ -66,7 +66,7 @@ Last activity: 2026-06-11 — opened v6.0; reconciled REQUIREMENTS/ROADMAP/MILES
 
 ## Session Continuity
 
-- **Next command**: author `phases/11-doc-discipline/11-PLAN.md` via `gsd-planner` Agent spawn (discuss locked; requirements in REQUIREMENTS.md REQ-v60-*).
-- **Phase dirs**: v6.0 active = `phases/11-doc-discipline/` + `phases/12-sentinel-gate/` (to be created). v5.1 archived in shipped index (ROADMAP/MILESTONES).
+- **Next command**: commit Phase 11, then plan Phase 12 (G2 sentinel gate — `before-complete.ts` checkpoint-sync) via `gsd-planner` Agent spawn.
+- **Phase dirs**: `phases/11-doc-discipline/` DONE (PLAN + triplet + verified). `phases/12-sentinel-gate/` to be created. v5.1 archived in shipped index.
 - **Reference impl**: 7th discipline mirrors `workflows/disciplines/karpathy.yaml` + `operational.yaml`; G2 hook mirrors `src/discipline/enforcement/before-commit.ts`; checkpoint ledger = v4.2 `state.ts`.
 - **Methodology note**: GSD `context: fork` skills (`/gsd-plan-phase`, `/gsd-execute-phase`) fire-and-die as slash commands — drive them via `gsd-planner` / `gsd-executor` Agent-tool spawns instead.

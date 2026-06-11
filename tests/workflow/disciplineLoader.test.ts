@@ -114,17 +114,17 @@ describe('disciplineLoader — cache + error paths', () => {
 })
 
 describe('disciplineLoader — loadAllApplied default + explicit', () => {
-  it('11. loadAllApplied(undefined) defaults to all 6 DEFAULT_APPLIED', async () => {
+  it('11. loadAllApplied(undefined) defaults to all 7 DEFAULT_APPLIED', async () => {
     const m = await loadAllApplied(undefined, PACKAGE_ROOT)
-    expect(m.size).toBe(6)
+    expect(m.size).toBe(7)
     for (const basename of DEFAULT_APPLIED) {
       expect(m.has(basename)).toBe(true)
     }
   })
 
-  it('12. loadAllApplied([]) defaults to all 6 (empty array == undefined)', async () => {
+  it('12. loadAllApplied([]) defaults to all 7 (empty array == undefined)', async () => {
     const m = await loadAllApplied([], PACKAGE_ROOT)
-    expect(m.size).toBe(6)
+    expect(m.size).toBe(7)
   })
 
   it('13. loadAllApplied(["karpathy", "operational"]) loads only requested subset', async () => {
@@ -135,7 +135,7 @@ describe('disciplineLoader — loadAllApplied default + explicit', () => {
     expect(m.has('language')).toBe(false)
   })
 
-  it('14. DEFAULT_APPLIED constant exposes all 6 in expected order', () => {
+  it('14. DEFAULT_APPLIED constant exposes all 7 in expected order (v6.0 adds doc-discipline)', () => {
     expect(DEFAULT_APPLIED).toEqual([
       'karpathy',
       'output-style',
@@ -143,6 +143,7 @@ describe('disciplineLoader — loadAllApplied default + explicit', () => {
       'operational',
       'priority',
       'protocols',
+      'doc-discipline',
     ])
   })
 })
@@ -162,5 +163,26 @@ describe('disciplineLoader — getRule sync lookup', () => {
   it('17. getRule unknown id returns undefined', async () => {
     await loadDiscipline('karpathy', PACKAGE_ROOT)
     expect(getRule('karpathy', 'nonexistent-rule')).toBeUndefined()
+  })
+})
+
+describe('disciplineLoader — 7th discipline: doc-discipline', () => {
+  it('D5. loadDiscipline doc-discipline → discipline=doc, enforcement_layer=commit, rules.length=6', async () => {
+    const d = await loadDiscipline('doc-discipline', PACKAGE_ROOT)
+    expect(d.discipline).toBe('doc')
+    expect(d.enforcement_layer).toBe('commit')
+    expect(d.rules.length).toBe(6)
+  })
+
+  it('D6. DEFAULT_APPLIED includes doc-discipline and has length 7 (v6.0 final state)', () => {
+    expect(DEFAULT_APPLIED.includes('doc-discipline')).toBe(true)
+    expect(DEFAULT_APPLIED.length).toBe(7)
+  })
+
+  it('D7. after loading doc-discipline, state-digest-line-limit rule has enforcement=halt', async () => {
+    await loadDiscipline('doc-discipline', PACKAGE_ROOT)
+    const r = getRule('doc-discipline', 'state-digest-line-limit')
+    expect(r).toBeDefined()
+    expect(r?.enforcement).toBe('halt')
   })
 })

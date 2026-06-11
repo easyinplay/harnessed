@@ -59,8 +59,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v60-doc-discipline | Phase 11 | ⏳ Planned |
+| REQ-v60-doc-discipline | Phase 11 | ✅ Done (vitest 1179 green) |
 | REQ-v60-sentinel-gate | Phase 12 | ⏳ Planned |
-| REQ-v60-validation | Phase 11 + Phase 12 (final gate) | ⏳ Planned |
+| REQ-v60-validation | Phase 11 (partial) + Phase 12 (final gate) | ◑ Partial (Phase 11 gate green) |
 
-Coverage: 0/3 planned · v5.1 (5/5) shipped v4.3.0. No orphans.
+Coverage: 1/3 done (Phase 11) · v5.1 (5/5) shipped v4.3.0. No orphans.

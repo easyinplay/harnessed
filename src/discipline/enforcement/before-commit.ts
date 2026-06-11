@@ -6,6 +6,8 @@
 // Sister src/routing/lib/fallbackHandlers.ts ≤80L split pattern.
 
 import { execSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { loadDiscipline } from '../../workflow/disciplineLoader.js'
 
 export interface CommitHookCtx {
@@ -42,5 +44,30 @@ export async function runBeforeCommitHook(ctx: CommitHookCtx): Promise<void> {
   if (ctx.cmdType === 'git-push' && !ctx.hasUserApproval) {
     console.error('❌ no-push-without-approval: user explicit approval required')
     process.exit(2)
+  }
+
+  // doc-discipline: state-digest-line-limit — halt if STATE.md exceeds 100-line digest limit.
+  // Lazy-load: only load the doc-discipline yaml when STATE.md is in the commit (avoids
+  // loading on non-doc commits). Basename 'doc-discipline' → workflows/disciplines/doc-discipline.yaml.
+  if (ctx.changedFiles.some((f) => f.includes('.planning/STATE.md'))) {
+    const docD = await loadDiscipline('doc-discipline', ctx.packageRoot)
+    const rule = docD.rules.find((r) => r.id === 'state-digest-line-limit')
+    if (rule?.enforcement === 'halt') {
+      if (process.env.HARNESSED_ALLOW_LONG_STATE) {
+        console.warn(
+          '⚠️ doc-discipline: state-digest-line-limit override active (HARNESSED_ALLOW_LONG_STATE)',
+        )
+      } else {
+        const content = readFileSync(resolve(ctx.packageRoot, '.planning/STATE.md'), 'utf8')
+        const lines = content.split(/\r?\n/)
+        const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length
+        if (lineCount > 100) {
+          console.error(
+            `❌ doc-discipline: STATE.md exceeds 100-line digest limit (current: ${lineCount} lines). Set HARNESSED_ALLOW_LONG_STATE=1 to override.`,
+          )
+          process.exit(2)
+        }
+      }
+    }
   }
 }

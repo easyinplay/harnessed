@@ -574,6 +574,14 @@ capabilities:
     description: cc-handoff Ideation→Onboarding + Plan→Execute + file-ownership-strict 跨 CC instance 协议
     discipline_ref: workflows/disciplines/protocols.yaml
 
+  doc-discipline:
+    impl: harnessed-bundled
+    cmd: '<not-applicable-behavioral>'
+    since: v6.0
+    category: behavioral
+    description: STATE digest <100L halt + one-fact-per-file + overview-pointer-no-inline-narrative + transient-archive + status-from-artifacts + responsibility-one-home (6 rules)
+    discipline_ref: workflows/disciplines/doc-discipline.yaml
+
   # ============================================================================
   # Bucket 7 — gstack 33 optional registry-only (D-12 NEW v3)
   # ============================================================================
