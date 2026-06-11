@@ -30,4 +30,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| (none) | between milestones | v5.1 shipped (4.3.0). Backlog: v5.0 Spec 2 (session-scoped state) / Spec 3 (per-turn hook + scale verify) / security hardening. Start next via `/gsd-new-milestone`. |
+| v6.0 Doc-Discipline Substrate | ⏳ Planning | G1 文档纪律 codify (`disciplines/doc-discipline.yaml`) + G2 哨兵 gating (`before-complete.ts`). 2 phases (11→12). 详: ROADMAP.md + REQUIREMENTS.md. |

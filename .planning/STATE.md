@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.1
-milestone_name: Upstream Re-sync
-status: complete
-last_updated: "2026-06-10T00:00:00.000Z"
-last_activity: 2026-06-10
+milestone: v6.0
+milestone_name: Doc-Discipline Substrate
+status: planning
+last_updated: "2026-06-11T00:00:00.000Z"
+last_activity: 2026-06-11
 progress:
   total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -21,42 +21,42 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v5.1 Upstream Re-sync — COMPLETE + shipped as npm 4.3.0. Next: optional milestone close or pull from Backlog.
+- **Current focus**: v6.0 Doc-Discipline Substrate — close G1 (文档纪律 un-codified) + G2 (哨兵 half-done) vs CLAUDE.md. Planning Phase 11.
 - **Latest shipped**: v4.3.0 (2026-06-10, v5.1 Upstream Re-sync, 1167 tests, CI green 3 platforms, npm latest=4.3.0).
 
 ## Current Position
 
-Phase: v5.1 COMPLETE — Phase 9 + Phase 10 both done & shipped (2/2)
-Plan: 09 + 10 done — 详: phases/09-gsd-core-rewire/09-01-SUMMARY.md + phases/10-gstack-bump-skills/10-SUMMARY.md
-Status: v5.1 implementation complete, released as v4.3.0 (npm latest=4.3.0). Milestone NOT formally archived (complete-milestone ceremony skipped — friction with harnessed custom layout/tagging).
-Last activity: 2026-06-10 — shipped v4.3.0: 18 new capabilities (12 GSD Core + 6 gstack) + stage-phase-gate triggers + gstack/mattpocock manifest bump. 1167 tests green.
+Phase: v6.0 Phase 11 (doc-discipline substrate) — discuss done, planning next
+Plan: TBD — gsd-planner to author `phases/11-doc-discipline/11-PLAN.md`
+Status: New milestone opened 2026-06-11 from gap analysis. Discuss locked 3 decisions (see below). Strategic + architecture review skipped (scope locked, reuses existing L0 pattern).
+Last activity: 2026-06-11 — opened v6.0; reconciled REQUIREMENTS/ROADMAP/MILESTONES/STATE (v5.1 → shipped index).
 
-## Milestone Scope (v5.1)
+## Milestone Scope (v6.0)
 
-- **Keystone**: execute mechanism stays self-owned — `gsd-execute-phase` NOT wired (harnessed keeps CC-native spawn + ralph-loop + v4.2 checkpoint ledger).
-- **Additive-only**: ~18 new `capabilities.yaml` entries + 2 manifest version bumps + test-fixture sync. No existing capability mutated except gstack/mattpocock version fields.
-- **Preamble delivered**: GSD Core manifest rename `get-shit-done-cc` → `@opengsd/gsd-core` 1.4.1 (commit `0ab8c52`) + `.planning/` GSD-layout migration (`f61e443`).
+- **G1 (Phase 11)**: codify CLAUDE.md 文档纪律 as 7th L0 discipline (`disciplines/doc-discipline.yaml`, 6 rules) + capability + before-commit enforcement.
+- **G2 (Phase 12)**: finish 强制执行哨兵 — `before-complete.ts` checkpoint-sync gate (refuse COMPLETE when `.planning/` unsynced). Reuses v4.2 checkpoint ledger.
+- **Additive-only**: 1 new discipline yaml + 1 new hook + tests. No existing discipline/capability mutated. No architecture change.
 
 ## Accumulated Context
 
-### Decisions (v5.1)
+### Decisions (v6.0 discuss, 2026-06-11)
 
-- **Grouping** — 2 phases: Phase 9 = GSD Core re-wire (rewire + judgments), Phase 10 = gstack/mattpocock bump + 6 skills. Validation (REQ-v51-validation) folds into each phase's acceptance + Phase 10 final gate (not its own phase).
-- **Verify-on-disk** — every new `skill_dir` must be confirmed to exist on disk before wiring (grep-over-assume; see CLAUDE.md SPEC cross-ref checklist).
-- **iOS skipped** — gstack iOS suite intentionally out of scope; 6 non-iOS skills only.
+- **Scope** — 1 milestone, 2 phases (G1 Phase 11 → G2 Phase 12). G2 depends on G1's state-check capability.
+- **G1 shape** — `disciplines/doc-discipline.yaml` (L0 substrate, 7th discipline), NOT a judgment gate. Always-on, hook-enforced.
+- **Enforcement hardness** — warn-majority + STATE.md >100-line `halt`-with-override (karpathy philosophy); one-fact / overview-pointer = heuristic warn; responsibility-matrix = info.
 
 ### Invariants (must not break)
 
-- ADR-0029 gate fail-soft + ADR-0033 evidence guard fail-closed — both UNCHANGED (no architecture touch this milestone).
-- Only gstack/mattpocock version fields mutated; all capability additions are new entries.
-- KARPATHY-minimal: smallest effective config diff, surgical.
-- Windows CI must stay green; no regression vs the 1158-test baseline.
+- 7th discipline follows existing `harnessed.discipline.v1` shape (sister karpathy/operational); reuse before-commit + v4.2 checkpoint ledger (no new state store).
+- Additive-only: new yaml + new hook + new tests; no existing discipline/capability/architecture mutated.
+- KARPATHY-minimal: smallest effective diff, surgical; doc-discipline self-exemplified in this very `.planning/` edit.
+- Windows CI must stay green; no regression vs the 1167-test baseline.
 - Biome preempt before every TS/JS commit (`pnpm exec biome check --write`).
 - NEVER push to remote without explicit user approval.
 
 ### Open todos / blockers
 
-- None blocking. v5.1 complete + shipped (v4.3.0). Optional follow-ups: (1) formally close v5.1 milestone; (2) npm-readme drift — published 4.3.0 tarball README shows old ~70/~83 capability count (repo README fixed post-tag; only matters if a 4.3.1 re-publish is wanted); (3) CI Node-20 deprecation (actions/checkout + setup-node forced to Node 24 by 2026-06-16).
+- None blocking. Carry-over (non-blocking): npm-readme drift on 4.3.0 tarball; CI Node-20 deprecation (forced to Node 24 by 2026-06-16). v5.1 milestone never formally archived (ceremony skipped).
 
 ### Deferred (Backlog)
 
@@ -66,7 +66,7 @@ Last activity: 2026-06-10 — shipped v4.3.0: 18 new capabilities (12 GSD Core +
 
 ## Session Continuity
 
-- **Next command**: none pending — v5.1 done + shipped. To start new work: `/gsd-new-milestone` (or pull a Backlog item).
-- **Phase dirs**: `.planning/phases/09-gsd-core-rewire/` (09-PLAN.md + 09-01-SUMMARY.md) + `.planning/phases/10-gstack-bump-skills/` (10-SUMMARY.md) — both executed & verified.
-- **Release**: v4.3.0 commits `0ab8c52`…`2a5fb29` on main (pushed); tag `v4.3.0` → GitHub Actions publish success → npm latest=4.3.0.
+- **Next command**: author `phases/11-doc-discipline/11-PLAN.md` via `gsd-planner` Agent spawn (discuss locked; requirements in REQUIREMENTS.md REQ-v60-*).
+- **Phase dirs**: v6.0 active = `phases/11-doc-discipline/` + `phases/12-sentinel-gate/` (to be created). v5.1 archived in shipped index (ROADMAP/MILESTONES).
+- **Reference impl**: 7th discipline mirrors `workflows/disciplines/karpathy.yaml` + `operational.yaml`; G2 hook mirrors `src/discipline/enforcement/before-commit.ts`; checkpoint ledger = v4.2 `state.ts`.
 - **Methodology note**: GSD `context: fork` skills (`/gsd-plan-phase`, `/gsd-execute-phase`) fire-and-die as slash commands — drive them via `gsd-planner` / `gsd-executor` Agent-tool spawns instead.

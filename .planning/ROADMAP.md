@@ -1,7 +1,7 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). Latest milestone = **v5.1 Upstream Re-sync** (✅ shipped v4.3.0 2026-06-10).
-> Current published npm: **4.3.0** · milestone codenames (v5.1) are spec/era names, NOT npm versions.
+> Shipped history = indexed archive (do NOT re-plan). Active milestone = **v6.0 Doc-Discipline Substrate** (G1 文档纪律 + G2 哨兵 gating).
+> Current published npm: **4.3.0** · milestone codenames (v6.0) are spec/era names, NOT npm versions.
 
 ---
 
@@ -22,49 +22,22 @@
 | v4.0.0 | 2026-05-30 | orchestration-brain redesign — gates/prompt/checkpoint CLIs, CC-native spawn. |
 | v4.1.0→v4.1.3 | 2026-05-30~06-04 | yaml SoT richness + code-review fixes + P0 data-loss fixes. 1107 tests. |
 | v5.0 State Machine Core (Spec 1) | shipped as **v4.2.0** 2026-06-05 | structured progress ledger + fail-closed evidence guard + `status --recover` + handoff sha256 drift. 8/8 phases. ADR-0033. 1158 tests. Spec 2/3 deferred (see Backlog). Phase archive: `.planning/milestones/v5.0-phases/`. |
+| v5.1 Upstream Re-sync | shipped as **v4.3.0** 2026-06-10 | GSD Core rename `@opengsd/gsd-core` 1.4.1 + gstack/mattpocock bump + 18 new capabilities + stage-phase-gate triggers. Keystone: execute self-owned. 1167 tests. 详: `phases/09-gsd-core-rewire/` + `phases/10-gstack-bump-skills/`. |
 
 ---
 
-## Active milestone: v5.1 Upstream Re-sync
+## Active milestone: v6.0 Doc-Discipline Substrate
 
-**Goal**: Sync harnessed's composition manifest + capability registry to upstream drift — GSD Core rename (`@opengsd/gsd-core` 1.4.1) + gstack/mattpocock version bumps + new upstream skills. **Additive-only config**: ~18 new `capabilities.yaml` entries + 2 manifest version bumps + test-fixture sync. **No runtime/architecture change.**
+**Goal**: Close the two highest-value gaps vs `~/.claude/CLAUDE.md` — codify the 文档纪律 section (entirely un-mechanized) as a 7th L0 discipline, and finish the 强制执行哨兵 (half-done) with a checkpoint-sync gate before COMPLETE. **Additive-only**: 1 new discipline yaml + 1 new enforcement hook + tests. Reuses existing L0 substrate + v4.2 checkpoint ledger. **No architecture change.**
 
-**Keystone decision**: execute mechanism stays self-owned (`gsd-execute-phase` NOT wired — harnessed keeps CC-native spawn + ralph-loop + v4.2 checkpoint ledger). Preamble already delivered: GSD Core manifest rename (commit `0ab8c52`) + `.planning/` GSD-layout migration (`f61e443`).
+**Discuss decisions** (2026-06-11): 1 milestone / 2 phases (G1→G2); G1 lives in `disciplines/doc-discipline.yaml`; enforcement is warn-majority with STATE line-count `halt`-with-override (karpathy philosophy). Strategic + architecture review skipped (scope locked, reuses existing pattern).
 
-**Invariants**: every new entry follows existing `impl / skill_dir / cmd / fires_when` pattern; every `skill_dir` verified on disk before wiring; only gstack/mattpocock version fields mutated (no existing capability rewritten); KARPATHY-minimal; full quality gate green vs the 1158-test baseline; Windows CI green.
+**Invariants**: 7th discipline follows the existing 6-discipline `harnessed.discipline.v1` shape; reuse before-commit / checkpoint ledger (no new state store); KARPATHY-minimal; full gate green vs the 1167-test baseline; Windows CI green; NEVER push without approval.
 
 ### Phases
 
-- [x] **Phase 9: GSD Core re-wire** ✅ 2026-06-09 - Added 12 GSD Core 1.4.1 capabilities + 4 stage-phase-gate triggers (additive, keystone intact). 详: phases/09-gsd-core-rewire/09-01-SUMMARY.md
-- [x] **Phase 10: gstack/mattpocock bump + 6 skills** ✅ 2026-06-09 - Bumped gstack manifest to main HEAD (`1626d485…` / `1.52.1.0`) + mattpocock last_check refresh, wired 6 new non-iOS gstack capabilities (spec/skillify/pair-agent/scrape/benchmark-models/landing-report) into Bucket 7, full green gate. 详: phases/10-gstack-bump-skills/10-SUMMARY.md
-
----
-
-## Phase Details
-
-### Phase 9: GSD Core re-wire
-**Goal**: harnessed's capability registry exposes the GSD Core 1.4.1 phase-stage, bootstrap, and milestone-lifecycle skills, and the judgments router can fire the stage-gated ones — without wiring `gsd-execute-phase`.
-**Depends on**: Nothing (first phase of v5.1; preamble rename already landed)
-**Requirements**: REQ-v51-gsd-rewire, REQ-v51-gsd-judgments, REQ-v51-validation (partial — additive + green for GSD scope)
-**Success Criteria** (what must be TRUE):
-  1. `workflows/capabilities.yaml` carries ~12 new `impl: gsd` entries — stage-gap (`gsd-spec-phase` / `gsd-ui-phase` / `gsd-secure-phase` / `gsd-ai-integration-phase`), bootstrap (`gsd-ingest-docs` / `gsd-new-project` / `gsd-new-milestone`), milestone lifecycle (`gsd-extract-learnings` / `gsd-audit-milestone` / `gsd-complete-milestone` / `gsd-milestone-summary`), and `gsd-docs-update` — each matching the existing `skill_dir / cmd / since / category / fires_when` shape.
-  2. Every new entry's `skill_dir` resolves to a real directory in the installed GSD Core 1.4.1 skill set (verified on disk, not assumed).
-  3. `gsd-execute-phase` is NOT present as a capability (self-owned execute preserved).
-  4. The stage-phase capabilities (spec/ui/secure/ai-integration) are referenced from `workflows/judgments/*.yaml` triggers consistent with `gsd-plan-phase` / `gsd-discuss-phase` routing; every trigger ref resolves to a real capability name with no orphan capability or dangling trigger.
-  5. `capability-resolver` + `check-workflow-schema` pass; biome + tsc clean; vitest green for this scope.
-**Plans**: TBD
-
-### Phase 10: gstack/mattpocock bump + 6 skills
-**Goal**: harnessed's manifests track current gstack/mattpocock HEAD and its registry exposes the 6 new non-iOS gstack skills, with the full additive change verified green against the 1158-test baseline.
-**Depends on**: Phase 9
-**Requirements**: REQ-v51-gstack-bump, REQ-v51-gstack-skills, REQ-v51-validation (final gate)
-**Success Criteria** (what must be TRUE):
-  1. `manifests/gstack.yaml` `git_ref` advances `74895062` → current main HEAD (`1626d485…`), `last_known_good` `main-269-commits` → `1.52.1.0`, plus `last_check` refresh — repo unchanged (version drift only, no rename); `mattpocock-skills.yaml` `last_check` + `last_known_good` bump (`skills@1.5.10` installer).
-  2. `workflows/capabilities.yaml` carries 6 new `skill_dir: gstack` entries — `spec` / `skillify` / `pair-agent` / `scrape` / `benchmark-models` / `landing-report` (iOS suite intentionally skipped).
-  3. Each of the 6 gstack subdirs is verified to exist on disk (`~/.claude/skills/gstack/<name>/`).
-  4. `manifest-validate` + `capability-resolver` + `check-workflow-schema` all pass; known-good locks consistent; test fixtures synced.
-  5. Final green gate: every change is additive (no existing capability mutated except gstack/mattpocock version fields); biome + tsc clean; full `vitest run` green with no regression vs the 1158-test baseline.
-**Plans**: TBD
+- [ ] **Phase 11: doc-discipline substrate (G1)** — new `disciplines/doc-discipline.yaml` (6 rules) + `doc-discipline` capability + before-commit enforcement. Reqs: REQ-v60-doc-discipline, REQ-v60-validation (partial). 详: REQUIREMENTS.md + `phases/11-doc-discipline/`.
+- [ ] **Phase 12: sentinel gate (G2)** — new `before-complete.ts` checkpoint-sync gate (refuse COMPLETE when `.planning/` unsynced). Depends on Phase 11. Reqs: REQ-v60-sentinel-gate, REQ-v60-validation (final gate). 详: `phases/12-sentinel-gate/`.
 
 ---
 
@@ -72,8 +45,8 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 9. GSD Core re-wire | 1/1 | ✅ Complete (shipped v4.3.0) | 2026-06-09 |
-| 10. gstack/mattpocock bump + 6 skills | 1/1 | ✅ Complete (shipped v4.3.0) | 2026-06-09 |
+| 11. doc-discipline substrate | 0/1 | ⏳ Planned | — |
+| 12. sentinel gate | 0/1 | ⏳ Planned | — |
 
 ---
 
