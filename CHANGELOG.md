@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.4.0] - 2026-06-11
+
+Doc-Discipline Substrate (v6.0 milestone) — close the two highest-value gaps vs the three-layer-stack methodology: codify the documentation-discipline rules and finish the completion sentinel. Additive only; reuses the existing L0 discipline substrate and the v4.2 checkpoint ledger. No architecture change.
+
+### Added
+
+- **`doc-discipline` — 7th L0 discipline** (`workflows/disciplines/doc-discipline.yaml`). Six rules mechanizing the documentation-hygiene norms: `state-digest-line-limit` (**halt** — STATE.md over 100 lines, override via `HARNESSED_ALLOW_LONG_STATE`), `one-fact-per-file`, `overview-pointer-no-inline-narrative`, `transient-consume-then-archive`, `status-derived-from-artifacts` (warn), `responsibility-matrix-one-home` (info). Registered as a behavioral capability; `DEFAULT_APPLIED` now loads 7 disciplines.
+- **`.planning/` sync sentinel** at `harnessed checkpoint complete`. New pure `checkPlanningSync` (sibling to `checkArtifacts`) layered on the fail-closed evidence guard (ADR-0033): when `.planning/` exists but `STATE.md` is unsynced → completion is **BLOCKED** (exit 1) unless `--force` (records `evidence_status: overridden`). No `.planning/` dir → `none_declared` (non-GSD users unaffected). Reuses the checkpoint ledger; no new state store.
+
+### Changed
+
+- `before-commit` enforcement extended with the doc-discipline STATE-line halt (Windows-safe line counting).
+- `docs/WORKFLOW.md` counts refreshed to current: 24 workflows / 12 judgments / 102 capabilities / 7 L0 disciplines.
+- CI `publish.yml` now creates a GitHub release (notes from the matching CHANGELOG section) alongside the npm publish.
+
 ## [4.3.0] - 2026-06-10
 
 Upstream Re-sync (v5.1 milestone) — track upstream drift in the composition registry. Additive config only; no runtime/architecture change.

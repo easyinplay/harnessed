@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v6.0 Doc-Discipline Substrate COMPLETE (2/2) in working tree — not yet committed-as-milestone / released. Next: milestone close + release decision.
+- **Current focus**: v6.0 COMPLETE (2/2) + release 4.4.0 PREPPED (package.json bump + CHANGELOG [4.4.0] + publish.yml GH-release step + G6 doc drift fix). Awaiting tag `v4.4.0` + push (needs user approval).
 - **Latest shipped**: v4.3.0 (2026-06-10, v5.1 Upstream Re-sync, 1167 tests, CI green 3 platforms, npm latest=4.3.0).
 
 ## Current Position
@@ -66,7 +66,7 @@ Last activity: 2026-06-11 — executed Phase 12 (single TDD wave, self-owned spa
 
 ## Session Continuity
 
-- **Next command**: commit Phase 12, then decide milestone close + release (npm version bump from 4.3.0). Optional `/gsd-complete-milestone`.
+- **Next command**: tag `v4.4.0` + push main + tag → CI publishes npm + GitHub release (per publish.yml). User approval required before any push.
 - **Phase dirs**: `phases/11-doc-discipline/` + `phases/12-sentinel-gate/` both DONE (PLAN + triplet + verified). v5.1 archived in shipped index.
 - **Reference impl**: 7th discipline mirrors `workflows/disciplines/karpathy.yaml` + `operational.yaml`; G2 hook mirrors `src/discipline/enforcement/before-commit.ts`; checkpoint ledger = v4.2 `state.ts`.
 - **Methodology note**: GSD `context: fork` skills (`/gsd-plan-phase`, `/gsd-execute-phase`) fire-and-die as slash commands — drive them via `gsd-planner` / `gsd-executor` Agent-tool spawns instead.

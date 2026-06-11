@@ -1,6 +1,8 @@
 # harnessed v4.0 — 4-Stage Namespace-Layered Workflow Architecture (orchestration-brain architecture)
 
-**Purpose**: harnessed v4.0 用户开发工作流详图 — 4-stage cadence + 8-layer architecture + 20 workflow + L0 Discipline Substrate + L5b Execution Mechanism + 10 judgments yaml routing + ~75 capabilities 7-category 分布。**v4.0 核心转向**: harnessed 从 "execution engine"(in-process SDK spawn 整条 workflow)转为 "orchestration brain + prompt library" — slash command 指挥 CC main session 编排 **CC-native subagent spawn**,详 § 1.5。
+**Purpose**: harnessed v4.0 用户开发工作流详图 — 4-stage cadence + 8-layer architecture + 24 workflow + L0 Discipline Substrate + L5b Execution Mechanism + 12 judgments yaml routing + 102 capabilities 7-category 分布。**v4.0 核心转向**: harnessed 从 "execution engine"(in-process SDK spawn 整条 workflow)转为 "orchestration brain + prompt library" — slash command 指挥 CC main session 编排 **CC-native subagent spawn**,详 § 1.5。
+
+> **Count note** (2026-06-11): 本 doc v4.0 撰写,计数已刷新至 v6.0 实测 — **24 workflow.yaml / 12 judgments yaml / 102 capabilities / 7 L0 disciplines**(v6.0 加 `doc-discipline` 第 7 个 discipline + Phase 12 哨兵 `checkPlanningSync`)。下方明细表多为 v3.0 era 结构,headline 计数以本 note 为准。
 
 **Scope**: 这是 **end user 用 harnessed 开发自己项目** 的工作流 (NOT project-internal dev cadence for shipping harnessed itself)。v3.0 完全替换 v2.0 `/plan-feature` + `/execute-task` + `/verify-work` 3-workflow prose;v4.0 在 v3.0 8-layer architecture 之上**仅替换 EXECUTION mechanism**(命令如何 spawn),yaml SoT(disciplines / judgments / capabilities)不变。
 
@@ -160,14 +162,14 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 │ L7  User Entry         /discuss /plan /task /verify (master) │
 │                        + 16 sub slash cmd + /research /retro │
 ├─────────────────────────────────────────────────────────────┤
-│ L6  Workflow           20 workflow.yaml (4 master + 14 sub + │
+│ L6  Workflow           24 workflow.yaml (4 master + sub +    │
 │                        2 standalone) — phases[] orchestration │
 ├─────────────────────────────────────────────────────────────┤
 │ L5b Execution          subagent (default) / Agent Teams      │
 │     Mechanism          (Pattern A/B/C escalate) / 主 session  │
 │                        / ralph-loop (orthogonal wrapper)     │
 ├─────────────────────────────────────────────────────────────┤
-│ L5a Workflow SoT       workflows/capabilities.yaml (~75) +   │
+│ L5a Workflow SoT       workflows/capabilities.yaml (102) +   │
 │                        workflows/judgments/ (10 yaml routing)│
 ├─────────────────────────────────────────────────────────────┤
 │ L4  Runtime            judgmentResolver + exprBuilder +      │
@@ -188,7 +190,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 │                        planning-with-files / mattpocock /    │
 │                        karpathy / ralph-loop / etc.          │
 ├─────────────────────────────────────────────────────────────┤
-│ L0  Discipline         workflows/disciplines/ 6 yaml          │
+│ L0  Discipline         workflows/disciplines/ 7 yaml          │
 │     Substrate          (karpathy / output-style / language /  │
 │                        operational / priority / protocols)   │
 │                        — universal applies L1-L7             │
@@ -221,7 +223,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | `warn` | 提示 (e.g., BLUF missing / single commit > 300 lines diff) |
 | `info` | 记录 only (e.g., 量词精确 llm-judge) |
 
-### 6 Disciplines 详表
+### 7 Disciplines 详表
 
 | # | Discipline | enforcement_layer | auto_enforce | 核心 rules (verbatim CLAUDE.md) | Sister source |
 |---|---|---|---|---|---|
@@ -231,6 +233,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | 4 | `operational.yaml` | `commit` | true | **biome-preempt (auto-fix)** / a7-adr-conservation (warn) / **no-push-without-approval (halt)** / **no-skip-hooks (halt)** / **destructive-ops-explicit (halt)** / authorization-not-transitive (warn) | project CLAUDE.md commit safety + `~/.claude/CLAUDE.md` |
 | 5 | `priority.yaml` | `workflow` | true | multi-capability-arbitration (warn) — priority_hierarchy: gstack > gsd > superpowers > planning-with-files > karpathy > mattpocock > parallel | CLAUDE.md 响应规范与优先级 |
 | 6 | `protocols.yaml` | `workflow` | false | cc-handoff-ideation-to-onboarding / plan-execute-cc-ready-metadata / **file-ownership-strict (halt)** | `~/.claude/rules/cc-handoff.md` |
+| 7 | `doc-discipline.yaml` (v6.0) | `commit` | true | **state-digest-line-limit (halt + `HARNESSED_ALLOW_LONG_STATE` override)** / one-fact-per-file (warn) / overview-pointer-no-inline-narrative (warn) / transient-consume-then-archive (warn) / status-derived-from-artifacts (warn) / responsibility-matrix-one-home (info) | CLAUDE.md 文档纪律节 |
 
 **snapshot policy** (K7 mitigation): 6 yaml = snapshot of CLAUDE.md as of v3.0 ship date, NOT live-load。CLAUDE.md update → harnessed patch release iterate snapshot。
 
@@ -314,7 +317,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 ---
 
-## 6. 10 Judgments yaml routing map (verbatim Appendix B)
+## 6. 12 Judgments yaml routing map (verbatim Appendix B)
 
 **位置**: `workflows/judgments/*.yaml` (D-11 ship; 6 v2 + 4 NEW v3)
 
@@ -330,6 +333,8 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | 8 | `web-testing-routing.yaml` | triggers | **NEW v3** (4 trigger: playwright-test-default + playwright-cli-probe + webapp-testing-python-backend + chrome-devtools-mcp-diagnostic) | `~/.claude/rules/web-testing.md` |
 | 9 | `web-search-routing.yaml` | triggers | **NEW v3** (5 trigger: tavily-default + exa-descriptive + tavily-crawl + ctx7-lib-docs + webfetch-single-url) | `~/.claude/rules/web-search.md` + `context7.md` + `google-workspace.md` |
 | 10 | `stage-routing.yaml` | triggers | **NEW v3** (12+ trigger: master orchestrator sub delegation per D-01) | CLAUDE.md 4-stage + D-07 20 workflow |
+| 11 | `user-overrides.yaml` | overrides | **v3.6.0** (keyword → trigger ref 覆盖, fallback 铁律 2 "用户明示 → 覆盖判据") | CLAUDE.md fallback 三铁律 |
+| 12 | `stage-phase-gate.yaml` | triggers | **v5.1** (4 design-contract phase: spec / ui / secure / ai-integration, GSD Core 1.4.1) | GSD design-contract phase skills |
 
 **Schema confirm**: 全 10 file 沿用 `judgment.ts` v1 schema (`JudgmentTriggersFile` 或 `JudgmentRulesFile`), schema_version 不 bump。
 
@@ -340,7 +345,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 ---
 
-## 7. ~75 Capabilities 7-category 分布表 (Appendix A verbatim)
+## 7. 102 Capabilities 7-category 分布表 (Appendix A verbatim)
 
 **位置**: `workflows/capabilities.yaml` (v2 39 entry → v3 ~75 entry; D-08 + D-12 ship Phase 3.3 + 3.4)
 

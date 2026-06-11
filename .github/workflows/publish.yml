@@ -18,7 +18,7 @@ on:
           - publish
           - dist-tag-fix
 permissions:
-  contents: read
+  contents: write # write: create the GitHub release (read was npm-only)
   id-token: write
 concurrency:
   group: publish
@@ -52,3 +52,20 @@ jobs:
         run: npm dist-tag add harnessed@${{ inputs.tag }} latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # GitHub release — runs on a real publish (not dist-tag-fix). Notes are the
+      # matching CHANGELOG.md section; falls back to a one-liner if absent.
+      - if: inputs.mode != 'dist-tag-fix'
+        name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          VER="${TAG#v}"
+          # index()-based literal match (no regex escaping — robust across awk variants)
+          awk -v ver="$VER" '
+            index($0, "## [" ver "]") == 1 {f=1; print; next}
+            f && index($0, "## [") == 1 {exit}
+            f {print}
+          ' CHANGELOG.md > /tmp/notes.md
+          [ -s /tmp/notes.md ] || echo "Release $TAG" > /tmp/notes.md
+          gh release create "$TAG" --title "$TAG" --notes-file /tmp/notes.md --verify-tag
