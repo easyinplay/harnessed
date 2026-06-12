@@ -87,6 +87,9 @@ export function markSub(
   }
   const current = entries[idx] as SubProgressEntryType
   const updated: SubProgressEntryType = { ...current, status }
+  // G6 — count repeated failures of the same sub (drives detectLoop). Only the
+  // ->failed transition bumps the counter; other transitions carry it forward.
+  if (status === 'failed') updated.fail_count = (current.fail_count ?? 0) + 1
   if (opts?.evidence !== undefined) updated.evidence = opts.evidence
   if (opts?.evidence_status !== undefined) updated.evidence_status = opts.evidence_status
 

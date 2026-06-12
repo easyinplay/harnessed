@@ -106,7 +106,7 @@ describe('markSub', () => {
 
   it('flips pending → failed (no evidence opts)', () => {
     const out = markSub(base, 'task-test', 'failed')
-    expect(out[1]).toEqual({ sub: 'task-test', status: 'failed', gate_fired: true })
+    expect(out[1]).toEqual({ sub: 'task-test', status: 'failed', gate_fired: true, fail_count: 1 })
   })
 
   it('does NOT mutate the input array or its entries', () => {
@@ -123,6 +123,35 @@ describe('markSub', () => {
 
   it('throws a descriptive Error for an unknown sub', () => {
     expect(() => markSub(base, 'task-nope', 'done')).toThrow(/task-nope/)
+  })
+})
+
+// ── markSub fail_count + rejected (G6/G7-lite) ───────────────────────────
+
+describe('markSub fail_count + rejected (G6/G7-lite)', () => {
+  const base: SubProgressEntryType[] = [{ sub: 'a', status: 'pending', gate_fired: true }]
+
+  it('sets fail_count=1 on first ->failed', () => {
+    const next = markSub(base, 'a', 'failed')
+    expect(next[0]).toMatchObject({ status: 'failed', fail_count: 1 })
+  })
+
+  it('increments fail_count on repeated ->failed', () => {
+    let led = markSub(base, 'a', 'failed')
+    led = markSub(led, 'a', 'failed')
+    led = markSub(led, 'a', 'failed')
+    expect(led[0]).toMatchObject({ status: 'failed', fail_count: 3 })
+  })
+
+  it('does NOT touch fail_count on ->done', () => {
+    const failed = markSub(base, 'a', 'failed')
+    const done = markSub(failed, 'a', 'done')
+    expect(done[0]).toMatchObject({ status: 'done', fail_count: 1 })
+  })
+
+  it('accepts the rejected status', () => {
+    const next = markSub(base, 'a', 'rejected')
+    expect(next[0].status).toBe('rejected')
   })
 })
 
