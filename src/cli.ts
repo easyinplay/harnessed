@@ -13,6 +13,7 @@ import { registerInstallBase } from './cli/install-base.js'
 import { registerManifestAdd } from './cli/manifest-add.js'
 import { registerNext } from './cli/next.js'
 import { registerPrompt } from './cli/prompt.js'
+import { registerReject } from './cli/reject.js'
 import { registerResearch } from './cli/research.js'
 import { registerResume } from './cli/resume.js'
 import { registerRollback } from './cli/rollback.js'
@@ -94,5 +95,6 @@ registerGates(program) // 17th — gate eval JSON (which subs fire for a master)
 registerPrompt(program) // 18th — spawn-ready prompt text/json for a sub
 registerCheckpoint(program) // 19th — record sub start/complete/fail to checkpoints/
 registerNext(program) // 20th — G2 deterministic next-step contract (NEXT: auto|manual|done)
+registerReject(program) // 21st — G7-lite user-rejected terminal sub status
 
 program.parse(process.argv)
