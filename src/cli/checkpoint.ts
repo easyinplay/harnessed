@@ -193,16 +193,27 @@ export function registerCheckpoint(program: Command): void {
               : { evidence: result.found, evidence_status: evidenceStatus }
           await mutateSubProgress((e) => markIfSeeded(e, sub, 'done', markOpts))
 
-          // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must
-          // not flip the whole workflow to 'complete'. Read back the ledger AFTER
-          // the mark (mutateSubProgress already persisted) and use nextPending to
-          // decide: null (all subs resolved, incl. empty/unseeded ledger where
-          // nextPending([])===null) → transition workflow complete (legacy single-
-          // sub behavior); non-null (pending subs remain) → keep workflow active.
-          const { readCurrentWorkflow } = await import('../checkpoint/state.js')
+          // G1 — recompute scale from the post-mark ledger + working-tree size and
+          // record verify_mode on the envelope (advisory; consumed by the verify skill).
+          const { collectScaleMetrics, assessScale } = await import('../checkpoint/scale.js')
+          const { readCurrentWorkflow, writeCurrentWorkflow } = await import(
+            '../checkpoint/state.js'
+          )
+          const afterMark = await readCurrentWorkflow()
+          if (afterMark) {
+            const metrics = await collectScaleMetrics(process.cwd(), afterMark.sub_progress ?? [])
+            await writeCurrentWorkflow({ ...afterMark, verify_mode: assessScale(metrics) })
+          }
+
+          // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must not
+          // flip the whole workflow to 'complete'. Reuse the post-mark ledger read
+          // above (the verify_mode write does not touch sub_progress, so afterMark's
+          // ledger is current) and use nextPending: null (all subs resolved, incl. the
+          // empty/unseeded ledger where nextPending([])===null) → transition workflow
+          // complete (legacy single-sub behavior); non-null (pending subs remain) →
+          // keep workflow active.
           const { nextPending } = await import('../checkpoint/ledger.js')
-          const latest = await readCurrentWorkflow()
-          const allResolved = nextPending(latest?.sub_progress ?? []) === null
+          const allResolved = nextPending(afterMark?.sub_progress ?? []) === null
           await completePhase({
             phaseId: sub,
             status: 'complete',
@@ -228,6 +239,19 @@ export function registerCheckpoint(program: Command): void {
           lastTask: `FAILED: ${opts.summary ?? ''}`,
           transitionWorkflowComplete: false,
         })
+        // G6 — after recording the failure, detect a fix-forget-repeat loop and
+        // surface a break-loop directive (the skill doc carries the 5-dim analysis).
+        const { readCurrentWorkflow } = await import('../checkpoint/state.js')
+        const { detectLoop, LOOP_THRESHOLD } = await import('../checkpoint/breakLoop.js')
+        const latest = await readCurrentWorkflow()
+        const loops = detectLoop(latest?.sub_progress ?? [])
+        const looped = loops.find((l) => l.sub === sub)
+        if (looped) {
+          console.error(
+            `[harnessed] BREAK-LOOP: sub '${sub}' failed ${looped.count}x (>= ${LOOP_THRESHOLD}). ` +
+              'Stop retrying — run the break-loop skill for root-cause analysis and capture the lesson to .planning/.',
+          )
+        }
         console.error(
           `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,
         )

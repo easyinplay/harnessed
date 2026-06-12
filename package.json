@@ -25,7 +25,8 @@
   },
   "packageManager": "pnpm@10.12.0",
   "bin": {
-    "harnessed": "./dist/cli.mjs"
+    "harnessed": "./dist/cli.mjs",
+    "harnessed-inject-state": "./bin/harnessed-inject-state.mjs"
   },
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -43,6 +44,7 @@
   },
   "files": [
     "dist",
+    "bin",
     "manifests",
     "messages",
     "workflows",

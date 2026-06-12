@@ -23,7 +23,7 @@ import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot
 import { readState } from '../installers/lib/state.js'
 
 /** v5.0 Spec 1 (B) — status marker per sub `status` (design §7 sample). */
-function statusMarker(status: SubProgressEntryType['status']): string {
+export function statusMarker(status: SubProgressEntryType['status']): string {
   switch (status) {
     case 'done':
       return '✅ done'
@@ -33,6 +33,8 @@ function statusMarker(status: SubProgressEntryType['status']): string {
       return '✗ failed'
     case 'skipped':
       return '⬜ skipped'
+    case 'rejected':
+      return '🚫 rejected'
   }
 }
 

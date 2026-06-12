@@ -265,3 +265,31 @@ describe('resume evidence drift (v5.0 Spec 1 F)', () => {
     expect(cli.stderr).toMatch(/⚠ drift: progress\.md sha256 changed/)
   })
 })
+
+// G3 — recoveryActions wired into runResume ok result.
+describe('resume recoveryActions (G3)', () => {
+  beforeEach(() => detectDriftMock.mockReset())
+
+  it('35. paused workflow with a pending sub → ok result carries recoveryActions with "run sub <name>"', async () => {
+    // Seed a paused workflow whose ledger has one pending sub ('test').
+    fsState.set(
+      STATE_PATH,
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+        phase: '3.1',
+        status: 'paused',
+        last_checkpoint_path: CP_PATH,
+        started_at: '2026-05-16T10:00:00.000Z',
+        paused_at: '2026-05-16T11:00:00.000Z',
+        sub_progress: [{ sub: 'test', status: 'pending', gate_fired: true }],
+      }),
+    )
+    seedCheckpoint()
+    detectDriftMock.mockResolvedValue([])
+    const r = await runResume()
+    expect(r.status).toBe('ok')
+    if (r.status === 'ok') {
+      expect(r.recoveryActions).toContain('run sub test')
+    }
+  })
+})

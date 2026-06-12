@@ -27,9 +27,16 @@ coverage/
 # OMC orchestration runtime state (not part of harnessed scope per D-OOS-1)
 .omc/
 
+# Local tooling runtime state (untracked working-tree litter; not harnessed scope)
+.bg-shell/
+.gsd/
+.cate/
+.codegraph/
+
 # IDE / OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 *.swp
+.gstack/

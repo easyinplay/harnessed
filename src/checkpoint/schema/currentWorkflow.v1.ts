@@ -36,6 +36,7 @@ export const SubProgressEntry = Type.Object(
       Type.Literal('done'),
       Type.Literal('failed'),
       Type.Literal('skipped'),
+      Type.Literal('rejected'),
     ]),
     gate_fired: Type.Boolean(),
     // skip reason (from gates plan skip[].reason).
@@ -52,6 +53,9 @@ export const SubProgressEntry = Type.Object(
       ]),
     ),
     evidence: Type.Optional(Type.Array(EvidenceRef)),
+    // G6 — failure counter; incremented only on each ->failed transition (drives
+    // breakLoop detection). 'rejected' is terminal and does NOT increment it.
+    fail_count: Type.Optional(Type.Integer({ minimum: 0 })),
   },
   { additionalProperties: false },
 )
@@ -73,6 +77,11 @@ export const CurrentWorkflowV1 = Type.Object(
     // checkpoint envelope does NOT carry a copy). Old files without this field
     // still `Value.Check`-pass → no schema version bump; readers use `?? []`.
     sub_progress: Type.Optional(Type.Array(SubProgressEntry)),
+    // G1 — verification depth used during the verify phase ('light' | 'full').
+    verify_mode: Type.Optional(Type.Union([Type.Literal('light'), Type.Literal('full')])),
+    // G2 — when true the next-step contract reports NEXT:auto (skill auto-advances);
+    // when false NEXT:manual (pause for the operator). Precedence env > this > default.
+    auto_transition: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 )

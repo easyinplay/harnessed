@@ -31,6 +31,14 @@ vi.mock('../../src/checkpoint/evidence.js', () => ({
 vi.mock('../../src/checkpoint/state.js', () => ({
   mutateSubProgress: vi.fn(async () => undefined),
   readCurrentWorkflow: vi.fn(async () => null),
+  writeCurrentWorkflow: vi.fn(async () => undefined),
+}))
+
+// G1 — mock scale.js so the complete branch doesn't spawn real git commands
+// in these pure CLI-wiring unit tests.
+vi.mock('../../src/checkpoint/scale.js', () => ({
+  collectScaleMetrics: vi.fn(async () => ({ changedFiles: 0, firedSubs: 0, requirements: 0 })),
+  assessScale: vi.fn(() => 'light' as const),
 }))
 
 import { activatePhase, completePhase } from '../../src/checkpoint/engineHook.js'
@@ -238,6 +246,47 @@ describe('cli/checkpoint — start/complete/fail', () => {
     expect(completePhase).toHaveBeenCalledTimes(1)
     const arg = vi.mocked(completePhase).mock.calls[0]?.[0]
     expect(arg?.transitionWorkflowComplete).toBe(false)
+  })
+
+  it('cell 12 — fail sub 3× → third invocation stderr contains BREAK-LOOP', async () => {
+    // Simulate fail_count incrementing across 3 fail calls. mutateSubProgress is a
+    // no-op mock, so we drive the counter via readCurrentWorkflow return values.
+    const makeWorkflow = (failCount: number) =>
+      ledger([{ sub: 'task-loop', status: 'failed' }]).sub_progress
+        ? {
+            schemaVersion: 'harnessed.current-workflow.v1' as const,
+            phase: 'master',
+            status: 'active' as const,
+            last_checkpoint_path: null,
+            started_at: '2026-06-12T00:00:00.000Z',
+            sub_progress: [
+              {
+                sub: 'task-loop',
+                status: 'failed' as const,
+                gate_fired: true,
+                fail_count: failCount,
+              },
+            ],
+          }
+        : null
+
+    // First two fails: fail_count < 3, no BREAK-LOOP.
+    vi.mocked(readCurrentWorkflow)
+      .mockResolvedValueOnce(makeWorkflow(1))
+      .mockResolvedValueOnce(makeWorkflow(2))
+      .mockResolvedValueOnce(makeWorkflow(3))
+
+    const r1 = await runCli(['checkpoint', 'fail', 'task-loop'])
+    expect(r1.code).toBe(1)
+    expect(r1.stderr).not.toContain('BREAK-LOOP')
+
+    const r2 = await runCli(['checkpoint', 'fail', 'task-loop'])
+    expect(r2.code).toBe(1)
+    expect(r2.stderr).not.toContain('BREAK-LOOP')
+
+    const r3 = await runCli(['checkpoint', 'fail', 'task-loop'])
+    expect(r3.code).toBe(1)
+    expect(r3.stderr).toContain('BREAK-LOOP')
   })
 
   it('cell 11 — complete the LAST pending sub (none remain) → workflow completed (transitionWorkflowComplete:true)', async () => {

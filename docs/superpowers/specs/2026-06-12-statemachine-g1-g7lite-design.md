@@ -1,7 +1,7 @@
 ---
 title: State machine gap-fill — G1-G4 + G6 + G7-lite
 date: 2026-06-12
-status: ready-to-plan
+status: shipped (branch feat/statemachine-g1-g7lite, 2026-06-13)
 milestone: v0.5.0 (state-machine borrow from comet/Trellis)
 deferred: G5 (singleton -> multi-workflow) -> next milestone (breaking schema migration)
 verified_refs:
@@ -11,12 +11,16 @@ verified_refs:
   - "src/checkpoint/evidence.ts detectDrift L139 / checkArtifacts L65 (exists)"
   - "src/checkpoint/schema/currentWorkflow.v1.ts CurrentWorkflowV1 / SubProgressEntry / WorkflowStatus (exists)"
   - "src/checkpoint/schema/checkpoint.v1.ts CheckpointV1 / CheckpointStatus (exists)"
-  - "src/checkpoint/scale.ts (NEW)"
-  - "src/checkpoint/nextStep.ts (NEW)"
-  - "src/checkpoint/recovery.ts (NEW)"
-  - "src/checkpoint/injectState.ts (NEW)"
-  - "src/checkpoint/breakLoop.ts (NEW)"
-  - "harnessed next / harnessed reject CLI subcommands (NEW)"
+  - "src/checkpoint/scale.ts (created — 8171a25)"
+  - "src/checkpoint/nextStep.ts (created — a3c61d7)"
+  - "src/checkpoint/recovery.ts (created — 24f7c5c)"
+  - "src/checkpoint/injectState.ts (created — 2408d5d)"
+  - "src/checkpoint/breakLoop.ts (created — 7314aa1)"
+  - "harnessed next / harnessed reject CLI subcommands (created — a3c61d7 / 5c13165)"
+delivery_deviations:
+  - "G4 wiring: the planned src/installers/injectHookAdd.ts was DROPPED — the installers registry is keyed by upstream-component manifest install methods (wrong layer for a harnessed self-hook). Instead the hook ships as bin/harnessed-inject-state.mjs via a package.json `bin` entry + `files: [bin]` (2408d5d). settings.json UserPromptSubmit wiring is documented (docs/hooks/workflow-state-injection.md), NOT auto-installed — auto-install via `harnessed setup` is a deferred follow-up."
+  - "G7-lite consumer: adding 'rejected' to the SubProgressEntry status union broke the exhaustive switch in src/cli/status.ts statusMarker (TS2366). Fixed by adding a 'rejected' marker + a unit test (16f5a13) — legitimate G7-lite display work the plan did not anticipate."
+  - "G6 doc: 5-dimension framework shipped as docs/skills/break-loop.md (391fd8d)."
 ---
 
 # State machine gap-fill — G1-G4 + G6 + G7-lite
