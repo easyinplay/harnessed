@@ -228,6 +228,19 @@ export function registerCheckpoint(program: Command): void {
           lastTask: `FAILED: ${opts.summary ?? ''}`,
           transitionWorkflowComplete: false,
         })
+        // G6 — after recording the failure, detect a fix-forget-repeat loop and
+        // surface a break-loop directive (the skill doc carries the 5-dim analysis).
+        const { readCurrentWorkflow } = await import('../checkpoint/state.js')
+        const { detectLoop, LOOP_THRESHOLD } = await import('../checkpoint/breakLoop.js')
+        const latest = await readCurrentWorkflow()
+        const loops = detectLoop(latest?.sub_progress ?? [])
+        const looped = loops.find((l) => l.sub === sub)
+        if (looped) {
+          console.error(
+            `[harnessed] BREAK-LOOP: sub '${sub}' failed ${looped.count}x (>= ${LOOP_THRESHOLD}). ` +
+              'Stop retrying — run the break-loop skill for root-cause analysis and capture the lesson to .planning/.',
+          )
+        }
         console.error(
           `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,
         )
