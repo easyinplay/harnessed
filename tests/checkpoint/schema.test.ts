@@ -4,6 +4,8 @@
 
 import { Value } from '@sinclair/typebox/value'
 import { describe, expect, it } from 'vitest'
+import { CheckpointStatus } from '../../src/checkpoint/schema/checkpoint.v1.js'
+import { SubProgressEntry, WorkflowStatus } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
 import { CheckpointV1, CurrentWorkflowV1 } from '../../src/checkpoint/schema/index.js'
 import { branchOnSchemaVersion, SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
@@ -120,5 +122,61 @@ describe('schema — sub_progress ledger (v5.0 Spec 1, ADR-0033 additive optiona
       ],
     }
     expect(Value.Check(CurrentWorkflowV1, bad)).toBe(false)
+  })
+})
+
+describe('additive G1/G6/G7 schema fields', () => {
+  it('accepts an envelope WITHOUT the new optional fields (back-compat)', () => {
+    const old = {
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'task',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-06-12T00:00:00.000Z',
+    }
+    expect(Value.Check(CurrentWorkflowV1, old)).toBe(true)
+  })
+
+  it('accepts verify_mode and auto_transition on the envelope', () => {
+    const next = {
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'task',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-06-12T00:00:00.000Z',
+      verify_mode: 'full',
+      auto_transition: false,
+    }
+    expect(Value.Check(CurrentWorkflowV1, next)).toBe(true)
+  })
+
+  it('accepts fail_count and rejected status on a sub entry', () => {
+    const entry = { sub: 's', status: 'rejected', gate_fired: true, fail_count: 3 }
+    expect(Value.Check(SubProgressEntry, entry)).toBe(true)
+  })
+
+  it('rejects an invalid verify_mode value', () => {
+    const bad = {
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'task',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-06-12T00:00:00.000Z',
+      verify_mode: 'medium',
+    }
+    expect(Value.Check(CurrentWorkflowV1, bad)).toBe(false)
+  })
+
+  it('D-02 lock: top-level WorkflowStatus/CheckpointStatus stay 3-state', () => {
+    expect(WorkflowStatus.anyOf.map((s: { const: string }) => s.const)).toEqual([
+      'active',
+      'paused',
+      'complete',
+    ])
+    expect(CheckpointStatus.anyOf.map((s: { const: string }) => s.const)).toEqual([
+      'active',
+      'paused',
+      'complete',
+    ])
   })
 })
