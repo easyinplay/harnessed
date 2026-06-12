@@ -151,7 +151,7 @@ describe('markSub fail_count + rejected (G6/G7-lite)', () => {
 
   it('accepts the rejected status', () => {
     const next = markSub(base, 'a', 'rejected')
-    expect(next[0].status).toBe('rejected')
+    expect(next[0]?.status).toBe('rejected')
   })
 })
 

@@ -246,7 +246,7 @@ describe('cli/checkpoint — start/complete/fail', () => {
     const makeWorkflow = (failCount: number) =>
       ledger([{ sub: 'task-loop', status: 'failed' }]).sub_progress
         ? {
-            schemaVersion: '1.0.0' as const,
+            schemaVersion: 'harnessed.current-workflow.v1' as const,
             phase: 'master',
             status: 'active' as const,
             last_checkpoint_path: null,
