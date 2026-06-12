@@ -193,6 +193,17 @@ export function registerCheckpoint(program: Command): void {
               : { evidence: result.found, evidence_status: evidenceStatus }
           await mutateSubProgress((e) => markIfSeeded(e, sub, 'done', markOpts))
 
+          // G1 — recompute scale from the post-mark ledger + working-tree size and
+          // record verify_mode on the envelope (advisory; consumed by the verify skill).
+          const { collectScaleMetrics, assessScale } = await import('../checkpoint/scale.js')
+          const { readCurrentWorkflow: readWfForScale } = await import('../checkpoint/state.js')
+          const { writeCurrentWorkflow } = await import('../checkpoint/state.js')
+          const afterMark = await readWfForScale()
+          if (afterMark) {
+            const metrics = await collectScaleMetrics(process.cwd(), afterMark.sub_progress ?? [])
+            await writeCurrentWorkflow({ ...afterMark, verify_mode: assessScale(metrics) })
+          }
+
           // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must
           // not flip the whole workflow to 'complete'. Read back the ledger AFTER
           // the mark (mutateSubProgress already persisted) and use nextPending to

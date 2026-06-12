@@ -31,6 +31,14 @@ vi.mock('../../src/checkpoint/evidence.js', () => ({
 vi.mock('../../src/checkpoint/state.js', () => ({
   mutateSubProgress: vi.fn(async () => undefined),
   readCurrentWorkflow: vi.fn(async () => null),
+  writeCurrentWorkflow: vi.fn(async () => undefined),
+}))
+
+// G1 — mock scale.js so the complete branch doesn't spawn real git commands
+// in these pure CLI-wiring unit tests.
+vi.mock('../../src/checkpoint/scale.js', () => ({
+  collectScaleMetrics: vi.fn(async () => ({ changedFiles: 0, firedSubs: 0, requirements: 0 })),
+  assessScale: vi.fn(() => 'light' as const),
 }))
 
 import { activatePhase, completePhase } from '../../src/checkpoint/engineHook.js'
