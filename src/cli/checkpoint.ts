@@ -196,24 +196,24 @@ export function registerCheckpoint(program: Command): void {
           // G1 — recompute scale from the post-mark ledger + working-tree size and
           // record verify_mode on the envelope (advisory; consumed by the verify skill).
           const { collectScaleMetrics, assessScale } = await import('../checkpoint/scale.js')
-          const { readCurrentWorkflow: readWfForScale } = await import('../checkpoint/state.js')
-          const { writeCurrentWorkflow } = await import('../checkpoint/state.js')
-          const afterMark = await readWfForScale()
+          const { readCurrentWorkflow, writeCurrentWorkflow } = await import(
+            '../checkpoint/state.js'
+          )
+          const afterMark = await readCurrentWorkflow()
           if (afterMark) {
             const metrics = await collectScaleMetrics(process.cwd(), afterMark.sub_progress ?? [])
             await writeCurrentWorkflow({ ...afterMark, verify_mode: assessScale(metrics) })
           }
 
-          // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must
-          // not flip the whole workflow to 'complete'. Read back the ledger AFTER
-          // the mark (mutateSubProgress already persisted) and use nextPending to
-          // decide: null (all subs resolved, incl. empty/unseeded ledger where
-          // nextPending([])===null) → transition workflow complete (legacy single-
-          // sub behavior); non-null (pending subs remain) → keep workflow active.
-          const { readCurrentWorkflow } = await import('../checkpoint/state.js')
+          // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must not
+          // flip the whole workflow to 'complete'. Reuse the post-mark ledger read
+          // above (the verify_mode write does not touch sub_progress, so afterMark's
+          // ledger is current) and use nextPending: null (all subs resolved, incl. the
+          // empty/unseeded ledger where nextPending([])===null) → transition workflow
+          // complete (legacy single-sub behavior); non-null (pending subs remain) →
+          // keep workflow active.
           const { nextPending } = await import('../checkpoint/ledger.js')
-          const latest = await readCurrentWorkflow()
-          const allResolved = nextPending(latest?.sub_progress ?? []) === null
+          const allResolved = nextPending(afterMark?.sub_progress ?? []) === null
           await completePhase({
             phaseId: sub,
             status: 'complete',
