@@ -53,7 +53,8 @@ export const SubProgressEntry = Type.Object(
       ]),
     ),
     evidence: Type.Optional(Type.Array(EvidenceRef)),
-    // G6/G7-lite — retry counter; incremented on each failed/rejected cycle.
+    // G6 — failure counter; incremented only on each ->failed transition (drives
+    // breakLoop detection). 'rejected' is terminal and does NOT increment it.
     fail_count: Type.Optional(Type.Integer({ minimum: 0 })),
   },
   { additionalProperties: false },
@@ -78,7 +79,8 @@ export const CurrentWorkflowV1 = Type.Object(
     sub_progress: Type.Optional(Type.Array(SubProgressEntry)),
     // G1 — verification depth used during the verify phase ('light' | 'full').
     verify_mode: Type.Optional(Type.Union([Type.Literal('light'), Type.Literal('full')])),
-    // G7-lite — when true the state machine may auto-advance after verify passes.
+    // G2 — when true the next-step contract reports NEXT:auto (skill auto-advances);
+    // when false NEXT:manual (pause for the operator). Precedence env > this > default.
     auto_transition: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
