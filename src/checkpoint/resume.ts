@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
 import { branchOnSchemaVersion } from '../types/schemaVersion.js'
 import { detectDrift } from './evidence.js'
+import { recoveryActions } from './recovery.js'
 import { CheckpointV1, type CheckpointV1Type, type EvidenceRefType } from './schema/index.js'
 import { readCurrentWorkflow } from './state.js'
 
@@ -22,6 +23,10 @@ export type ResumeResult =
       // evidence refs. WARN, not block (cc-handoff.md — user adjudicates).
       // Absent when no evidence drifted.
       driftWarn?: string[]
+      // G3 — structured recovery actions: maps ledger sub-states → human
+      // next-actions ("run sub X" / "sub X failed Nx — investigate" /
+      // all-resolved sentinel). Always present on the ok variant.
+      recoveryActions: string[]
     }
 
 export async function runResume(): Promise<ResumeResult> {
@@ -92,11 +97,14 @@ export async function runResume(): Promise<ResumeResult> {
         })
       : undefined
 
+  const recovery = recoveryActions(current.sub_progress ?? [])
+
   return {
     status: 'ok',
     checkpoint: validated,
     ...(cwdWarn ? { cwdWarn } : {}),
     resumeHint,
     ...(driftWarn ? { driftWarn } : {}),
+    recoveryActions: recovery,
   }
 }
