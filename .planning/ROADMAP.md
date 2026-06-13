@@ -44,7 +44,7 @@
 - [x] **Phase 16: learning 回灌闭环 (C)** ✅ 2026-06-13 — workflow completion appends ledger failure/loop/reject signals to repo `.planning/LEARNINGS.md` (append-only, git-shareable) + `harnessed learn` prose; hybrid, D4 no-empty-write. TDD, 1265 tests. Consumption via standard `.planning/` read + Phase 17 injection. 详: `phases/16-learning-loop/`.
 - [x] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** ✅ 2026-06-13 — G4 hook emits relevance-filtered `<project-context>` (repo learnings + phase CONTEXT excerpt, token-bounded) + bin made repo-aware (`workflows.json[repoKey]`, fixes Phase-15 gap), parity-tested. Closes 16→17 loop. TDD, 1280 tests. 详: `phases/17-spec-injection/`.
 - [x] **Phase 18: CodeGraph semantic index (F)** ✅ 2026-06-14 — CodeGraph (MIT) cataloged opt-in: `manifests/optional/codegraph.yaml` (never base) + always-pass `checkCodeGraph` doctor (13th) + capabilities entry. No install run, no code vendored (self-installs). TDD, 1285 tests. 详: `phases/18-codegraph/`.
-- [ ] **Phase 19: minimal adoption (G)** — README quickstart polish + 1 honest harnessed-vs-comet-vs-Trellis comparison post. Last (announce after features land). 详: `phases/19-*` (NEW).
+- [x] **Phase 19: minimal adoption (G)** ✅ 2026-06-14 — `docs/comparison.md` (honest 3-way, snapshot-dated, downloads-are-noise caveat) + README How-it-compares link. Docs-only. **v7.0 COMPLETE 7/7.** 详: `phases/19-adoption/`.
 
 ### Phase 13: planning doc-debloat (A)
 
@@ -100,6 +100,7 @@
 **Scope**: README quickstart polish (install → first workflow in <5 min); 1 honest harnessed-vs-comet-vs-Trellis comparison post (reuse the 2026-06-13 analysis, no vanity-metric spin). Docs/markdown only.
 **Depends on**: Phases 13–18 (announce after features land).
 **Acceptance**: a new user can reach first successful workflow from README alone; comparison post is factually accurate (downloads-are-noise caveat included); no code change.
+**Plans** (2026-06-14): 1 plan — 19-01-PLAN.md (docs-only, 3 tasks: docs/comparison.md honest 3-way → README How-it-compares link → verify). Reuses the 2026-06-13 comparison analysis; downloads-are-noise + 2-stars caveats explicit, snapshot-dated, no over-claim. LAST phase of v7.0. Main session.
 
 ---
 

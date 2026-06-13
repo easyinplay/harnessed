@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v7.0
 milestone_name: Gap-Close & Memory Loop
-status: in_progress
-last_updated: "2026-06-13T00:00:00.000Z"
-last_activity: 2026-06-13
+status: complete
+last_updated: "2026-06-14T00:00:00.000Z"
+last_activity: 2026-06-14
 progress:
   total_phases: 7
-  completed_phases: 6
-  total_plans: 6
-  completed_plans: 6
-  percent: 86
+  completed_phases: 7
+  total_plans: 7
+  completed_plans: 7
+  percent: 100
 ---
 
 # STATE — harnessed
@@ -21,15 +21,16 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13–18 DONE (6/7). Next = Phase 19 (minimal adoption; LAST — README quickstart + 1 comparison post). Closes comet/Trellis competitive gaps.
-- **Latest shipped**: npm latest=4.4.0 (verified live). v6.0 implemented 2026-06-11, pending tag/release.
+- **Current focus**: v7.0 Gap-Close & Memory Loop ✅ COMPLETE 7/7 (Phases 13–19). Next = Phase 20 `harnessed update` command (follow-on; closes the `comet update` gap surfaced by the comet install-mechanism comparison).
+- **Latest shipped**: npm latest=4.4.0 (verified live). v7.0 phases 13–19 committed locally; npm still 4.4.0 (4.5.0 release + milestone archive pending).
 
 ## Current Position
 
-Phase: 18 (CodeGraph semantic index) ✅ DONE 2026-06-13/14 — CodeGraph (`@colbymchenry/codegraph`, MIT) cataloged as OPT-IN: `manifests/optional/codegraph.yaml` (NEW dir, never globbed by install-base → never base) + always-pass `checkCodeGraph` doctor detect (13th check, `.codegraph/` fs detect) + `capabilities.yaml` codegraph entry. harnessed runs NO install + vendors NO code (CodeGraph self-installs). no-vendor thesis to its end. TDD, 1285 tests, tsc 0, biome clean.
-Plan: 18-01-PLAN.md executed + 18-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 19 (last).
-Status: ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host (it auto-committed a defective 14/15 during the Phase-13 run → reverted); drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick). RTK note: a `git status | grep` pollution check gives false positives (RTK git wrapper prints an `ok` marker) — verify file presence with `ls`/`test -f`.
-Last activity: 2026-06-14 — Phase 18 executed (catalog + doctor-detect, no-vendor opt-in manifest).
+Phase: 19 (minimal adoption) ✅ DONE 2026-06-14 — `docs/comparison.md` (honest harnessed-vs-comet-vs-Trellis, snapshot-dated, downloads-are-noise caveat) + README How-it-compares link. Docs-only, 1285 tests unchanged. **v7.0 COMPLETE 7/7.** NOTE: comparison.md's "comet vendors upstreams" claim was corrected — comet ALSO installs upstreams from official channels (no vendoring); the real difference is declarative-manifest + supply-chain layer (harnessed) vs imperative bespoke installer (comet).
+Plan: 19-01-PLAN.md executed + 19-01-SUMMARY.md. Next = plan Phase 20 (`harnessed update`).
+Phase 20 decisions (2026-06-14 discuss): self+upstreams flagged (`update` = self via `npm i -g harnessed@latest`; `--upstreams`/`--all` re-runs base manifests); version-check surfaced via a doctor check; placement = follow-on after v7.0 close. harnessed currently has NO `update` command (a real gap vs comet's `comet update`).
+Status: ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked). RTK note: `git status | grep` pollution checks false-positive (RTK prints `ok`) — verify with `ls`/`test -f`.
+Last activity: 2026-06-14 — Phase 19 shipped + comparison.md vendor-claim corrected; v7.0 7/7 complete.
 
 ## Milestone Scope (v7.0) — 7 phases
 

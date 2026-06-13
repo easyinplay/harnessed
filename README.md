@@ -11,6 +11,8 @@
 
 > Not affiliated with, endorsed by, or sponsored by Harness Inc. (see [NOTICE](./NOTICE))
 
+> **How it compares** to [comet](https://github.com/rpamis/comet) and [Trellis](https://github.com/mindfold-ai/Trellis) — an honest, snapshot-dated comparison (including where harnessed lags): [`docs/comparison.md`](./docs/comparison.md).
+
 ---
 
 ## ✨ TL;DR
