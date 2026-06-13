@@ -19,6 +19,22 @@
 
 **Best-practice orchestration for Harness Engineering on Claude Code** — assembles the best open-source Claude Code ecosystem components, weaving them into a unified workflow via opinionated composition skills; does not vendor upstream code — manifests describe install/check, and composition skills orchestrate multi-upstream collaboration.
 
+### 🔁 The operating loop
+
+> **Discuss → Plan → Build → Verify → Learn** — one repeatable loop, machine-executed across the three-layer stack (gstack governance · GSD orchestration · superpowers TDD · checkpoint evidence). Raw agent work drifts; harnessed turns it into a source-of-truth path where progress, evidence, and learnings persist instead of living in chat.
+
+```mermaid
+flowchart LR
+  R(["⓪ Research<br/>multi-source investigate<br/>(optional)"]):::opt --> D
+  D(["① Discuss<br/>3-layer clarify"]) --> P(["② Plan<br/>persist spec + tasks"])
+  P --> T(["③ Task<br/>TDD build + checkpoint"])
+  T --> V(["④ Verify<br/>independent review + evidence gate"])
+  V --> L(["⑤ Retro<br/>capture learnings → next session smarter"])
+  V -. "fail / gap" .-> T
+  L -. "next requirement" .-> D
+  classDef opt stroke-dasharray:5,opacity:0.8
+```
+
 ---
 
 > Wait — can harnessed really go toe-to-toe with upstream giants like superpowers / gstack / GSD?
