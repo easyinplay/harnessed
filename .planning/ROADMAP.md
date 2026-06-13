@@ -39,7 +39,7 @@
 ### Phases
 
 - [x] **Phase 13: planning doc-debloat (A)** ✅ 2026-06-13 — PROJECT-SPEC status blockquote folded 6265→1196 chars (digest PASS) + 8 non-English README best-effort headers; docs-only. Committed 933441d. 详: `phases/13-planning-doc-debloat-a/`.
-- [ ] **Phase 14: compact 做实 (B)** — `src/checkpoint/compact.ts` placeholder → real context compression with measured token reduction. Runtime foundation for long tasks (comet ships 25–30%). 详: `phases/14-*` (NEW).
+- [x] **Phase 14: compact 做实 (B)** ✅ 2026-06-13 — `compact.ts` placeholder → real summarize+evict ledger compaction (G6-safe), `compacted_summary` additive schema, `harnessed compact` CLI + `checkpoint complete --tokens` auto-trigger. TDD, 1242 tests. 详: `phases/14-compact-real/`.
 - [ ] **Phase 15: multi-workflow migration (D / un-defer G5)** — singleton `current-workflow.json` → multiple active workflows + compat-read migration. Closes the parallel-project gap (comet multi-Spec, Trellis multi-task). BREAKING schema. Subsumes Backlog "v5.0 Spec 2". 详: `phases/15-*` (NEW).
 - [ ] **Phase 16: learning 回灌闭环 (C)** — extract decisions/lessons from completed workflows → promote into persistent knowledge so the next session starts smarter (Trellis `update-spec` analog, no-vendor). Biggest increment; builds on Phase 15 state base. 详: `phases/16-*` (NEW).
 - [ ] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** — extend the G4 inject hook to inject relevant project specs/conventions per turn, not just workflow state. Subsumes Backlog "v5.0 Spec 3". 详: `phases/17-*` (NEW).
@@ -60,6 +60,7 @@
 **Scope**: `src/checkpoint/compact.ts` placeholder → real compaction (summarize/evict resolved sub-progress + spec/brainstorm context); measured token-reduction assertion in tests. Reuses existing checkpoint ledger; additive to `compact` CLI.
 **Depends on**: none (independent).
 **Acceptance**: compact produces a measurable input-token reduction on a fixture workflow; no data loss of unresolved state; TDD red→green; full gate green.
+**Plans**: 1 plan — 14-01-PLAN.md (TDD, 5 tasks: schema additive field → compactLedger pure → compactWorkflow impure → manual CLI + auto-trigger → verify gate). Decisions: summarize+evict resolved, preserve fail_count/G6, manual+auto trigger, real token measure (14-CONTEXT.md D1–D7). Planned in main session (no autonomous planner chain). Ready-to-execute, NOT yet executed.
 
 ### Phase 15: multi-workflow migration (D / un-defer G5)
 

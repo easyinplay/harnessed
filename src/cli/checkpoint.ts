@@ -101,11 +101,15 @@ export function registerCheckpoint(program: Command): void {
       '--force',
       'complete only — override a missing-artifact evidence block (records overridden)',
     )
+    .option(
+      '--tokens <n>',
+      'complete only — conversation token count; auto-compacts the ledger when >= the shouldCompact threshold (Phase 14)',
+    )
     .action(
       async (
         action: string,
         sub: string,
-        opts: { summary?: string; plan?: string; force?: boolean },
+        opts: { summary?: string; plan?: string; force?: boolean; tokens?: string },
       ) => {
         if (!isAction(action)) {
           console.error(
@@ -220,6 +224,21 @@ export function registerCheckpoint(program: Command): void {
             lastTask: opts.summary ?? `phase ${sub} complete`,
             transitionWorkflowComplete: allResolved,
           })
+
+          // Phase 14 — auto-compact: when the caller passes a conversation token
+          // count that crosses the shouldCompact threshold, evict resolved ledger
+          // entries (G6-safe: fail_count>0 entries are never evicted). Silent no-op
+          // without --tokens (manual `harnessed compact` is the other path).
+          const { shouldAutoCompact, compactWorkflow } = await import('../checkpoint/compact.js')
+          if (shouldAutoCompact(opts.tokens != null ? Number(opts.tokens) : undefined)) {
+            const c = await compactWorkflow()
+            if (c.evicted > 0) {
+              console.log(
+                `[harnessed] auto-compact: evicted ${c.evicted} resolved entries (-${c.pct_saved}% tokens)`,
+              )
+            }
+          }
+
           console.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${evidenceStatus})`)
           process.exit(0)
           return

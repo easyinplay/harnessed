@@ -82,6 +82,21 @@ export const CurrentWorkflowV1 = Type.Object(
     // G2 — when true the next-step contract reports NEXT:auto (skill auto-advances);
     // when false NEXT:manual (pause for the operator). Precedence env > this > default.
     auto_transition: Type.Optional(Type.Boolean()),
+    // Phase 14 — compaction digest: cumulative summary of resolved sub-progress
+    // entries evicted by `compact`. Additive-optional (NO schemaVersion bump; old
+    // files without it still Value.Check-pass). Keeps a readable trace after
+    // eviction. G6 invariant: entries with fail_count>0 are never evicted, so the
+    // breakLoop signal is never summarized away.
+    compacted_summary: Type.Optional(
+      Type.Object(
+        {
+          evicted: Type.Integer({ minimum: 0 }),
+          by_status: Type.Record(Type.String(), Type.Integer({ minimum: 0 })),
+          last_at: Type.String({ minLength: 1 }),
+        },
+        { additionalProperties: false },
+      ),
+    ),
   },
   { additionalProperties: false },
 )

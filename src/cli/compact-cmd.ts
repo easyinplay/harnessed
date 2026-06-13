@@ -1,20 +1,26 @@
-// harnessed compact — evict resolved sub-progress ledger entries to reduce context size.
-// Phase 14.
+// `harnessed compact` — manually evict resolved sub-progress ledger entries to
+// shrink the checkpoint state (and the per-turn injected state block). Phase 14.
+// The other trigger is auto: `checkpoint complete --tokens <n>` (see checkpoint.ts).
 import type { Command } from 'commander'
-import { compactWorkflow } from '../checkpoint/compact.js'
 
 export function registerCompact(program: Command): void {
   program
     .command('compact')
-    .description('Evict resolved checkpoint ledger entries to reduce context size')
+    .description(
+      'Evict resolved (done/skipped/rejected, no fail_count) ledger entries; reports token reduction',
+    )
     .action(async () => {
-      const result = await compactWorkflow()
-      if (result.evicted === 0) {
-        console.log('[compact] nothing to evict (all pending or empty ledger)')
+      const { compactWorkflow } = await import('../checkpoint/compact.js')
+      const r = await compactWorkflow()
+      if (r.evicted === 0) {
+        console.log('[harnessed] compact: nothing to evict (all pending/failed or empty ledger)')
+        process.exit(0)
         return
       }
       console.log(
-        `[compact] phase=${result.phase} evicted=${result.evicted} pct_saved=${result.pct_saved}% kept=${result.kept.length}`,
+        `[harnessed] compact: phase=${r.phase} evicted=${r.evicted} ` +
+          `tokens ${r.before_tokens}->${r.after_tokens} (-${r.pct_saved}%) — ${r.digest}`,
       )
+      process.exit(0)
     })
 }
