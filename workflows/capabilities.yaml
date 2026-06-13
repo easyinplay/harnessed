@@ -243,6 +243,15 @@ capabilities:
     fires_when:
       - subtask.needs_library_docs == true
 
+  codegraph:
+    impl: mcp
+    cmd: codegraph_explore
+    since: v7.0
+    category: tool-mcp
+    description: 语义代码索引 (symbol/call-graph query; opt-in self-installed, fewer tool-calls)
+    fires_when:
+      - subtask.type in ['code_navigation', 'symbol_lookup', 'call_graph']
+
   tavily-mcp:
     impl: mcp
     cmd: tavily_search

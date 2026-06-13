@@ -45,4 +45,7 @@ export const CHECKS: readonly CheckFn[] = [
   async () => (await import('./check-planning-with-files.js')).checkPlanningWithFiles(),
   async () => (await import('./check-mattpocock-skills.js')).checkMattpocockSkills(),
   async () => (await import('./check-mcp-availability.js')).checkMcpAvailability(),
+  // Phase 18 — opt-in CodeGraph semantic-index detect (always 'pass'; absence of an
+  // optional tool is not a health failure).
+  async () => (await import('./check-codegraph.js')).checkCodeGraph(process.cwd()),
 ]

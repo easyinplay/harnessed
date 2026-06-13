@@ -63,6 +63,16 @@ vi.mock('../../src/cli/lib/check-mcp-availability.js', () => ({
     message: 'all 3 installed: tavily-mcp, exa-mcp, chrome-devtools',
   }),
 }))
+// Phase 18 — 13th check mock (same reason: check-codegraph.ts uses fs existsSync
+// which the global node:fs mock doesn't export). Real logic unit-tested in
+// tests/cli/check-codegraph.test.ts. Always-pass opt-in detector.
+vi.mock('../../src/cli/lib/check-codegraph.js', () => ({
+  checkCodeGraph: () => ({
+    name: 'codegraph',
+    status: 'pass',
+    message: 'CodeGraph not configured (optional semantic index)',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -140,17 +150,17 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
 
   // v3.7.0 Phase 1 — registry future-proof: CHECKS array is single source of truth.
   // Bump assertion when adding a check (sister doctor.ts --description string update).
-  it('cell 0 — CHECKS registry has 12 entries (v3.7.0 Phase 1 registry refactor)', async () => {
+  it('cell 0 — CHECKS registry has 13 entries (Phase 18 +codegraph)', async () => {
     const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
-    expect(CHECKS.length).toBe(12)
+    expect(CHECKS.length).toBe(13)
   })
 
-  it('cell 1 — all 12 checks pass → exit 0 + summary "pass" (v3.6.0 Phase 2 bump 10→12)', async () => {
+  it('cell 1 — all 13 checks pass → exit 0 + summary "pass" (Phase 18 bump 12→13)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(12)
+    expect(p.checks).toHaveLength(13)
     expect(p.summary).toBe('pass')
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
     // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
@@ -161,6 +171,8 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     // v3.6.0 Phase 2 Wave 3 — 11th + 12th check assertions (mattpocock + MCP avail)
     expect(p.checks.map((c) => c.name)).toContain('mattpocock-skills')
     expect(p.checks.map((c) => c.name)).toContain('MCP servers (tavily/exa/chrome-devtools)')
+    // Phase 18 — 13th check (opt-in codegraph detect, always pass)
+    expect(p.checks.map((c) => c.name)).toContain('codegraph')
   })
 
   it('cell 5 — doctor 8th check token budget — status warn does NOT fail exit (B-06 + D-04)', async () => {
@@ -168,7 +180,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
     const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
-    expect(p.checks).toHaveLength(12)
+    expect(p.checks).toHaveLength(13)
     const tokenBudget = p.checks.find((c) => c.name === 'token budget')
     expect(tokenBudget).toBeDefined()
     expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')

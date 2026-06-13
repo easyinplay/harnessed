@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+# OPT-IN catalog manifest — lives in manifests/optional/ so `install-base` (which
+# globs only manifests/tools + manifests/skill-packs) never pulls it into the base
+# profile, and `harnessed install <name>` (tools + skill-packs only) never installs
+# it. CodeGraph ships its own installer; harnessed catalogs + detects only.
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: codegraph
+  display_name: CodeGraph
+  description: Pre-indexed code knowledge graph (semantic index) for Claude Code — fewer tokens/tool-calls. Opt-in, self-installed.
+  upstream:
+    source: codegraph
+    homepage: https://colbymchenry.github.io/codegraph/
+    repository: https://github.com/colbymchenry/codegraph.git
+    license: MIT
+    notice: |
+      CodeGraph by colbymchenry (MIT, 100% local). Optional semantic code index —
+      harnessed catalogs + detects only; CodeGraph self-installs via its own CLI
+      (`codegraph install` wires its MCP server into Claude Code). Not vendored.
+spec:
+  type: cli-npm
+  component_type: cli-binary
+  category: search
+  install_type: npm
+  install:
+    method: npm-cli
+    cmd: "npm i -g @colbymchenry/codegraph && codegraph install --yes"
+    npm_version: ^1.0.0
+    idempotent_check: "command -v codegraph"
+  verify:
+    cmd: "codegraph status"
+    timeout_ms: 10000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "codegraph uninstall --yes"
+  upstream_health:
+    stability: stable
+    last_check: "2026-06-13"
+    last_known_good_version: "1.0.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

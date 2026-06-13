@@ -43,7 +43,7 @@
 - [x] **Phase 15: multi-workflow migration (D / un-defer G5)** ✅ 2026-06-13 — global singleton → per-repo store `workflows.json` (arch A behind-API; 17 consumers + envelope unchanged); repoKey fs walk-up; compat-read + dual-write; `harnessed workflows` CLI. TDD, 1256 tests. 详: `phases/15-multi-workflow/`.
 - [x] **Phase 16: learning 回灌闭环 (C)** ✅ 2026-06-13 — workflow completion appends ledger failure/loop/reject signals to repo `.planning/LEARNINGS.md` (append-only, git-shareable) + `harnessed learn` prose; hybrid, D4 no-empty-write. TDD, 1265 tests. Consumption via standard `.planning/` read + Phase 17 injection. 详: `phases/16-learning-loop/`.
 - [x] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** ✅ 2026-06-13 — G4 hook emits relevance-filtered `<project-context>` (repo learnings + phase CONTEXT excerpt, token-bounded) + bin made repo-aware (`workflows.json[repoKey]`, fixes Phase-15 gap), parity-tested. Closes 16→17 loop. TDD, 1280 tests. 详: `phases/17-spec-injection/`.
-- [ ] **Phase 18: CodeGraph semantic index (F)** — integrate semantic code indexing as an optional capability/manifest (comet reports tool-calls ↓58%). Parallelizable (no dep on 14–17). 详: `phases/18-*` (NEW).
+- [x] **Phase 18: CodeGraph semantic index (F)** ✅ 2026-06-14 — CodeGraph (MIT) cataloged opt-in: `manifests/optional/codegraph.yaml` (never base) + always-pass `checkCodeGraph` doctor (13th) + capabilities entry. No install run, no code vendored (self-installs). TDD, 1285 tests. 详: `phases/18-codegraph/`.
 - [ ] **Phase 19: minimal adoption (G)** — README quickstart polish + 1 honest harnessed-vs-comet-vs-Trellis comparison post. Last (announce after features land). 详: `phases/19-*` (NEW).
 
 ### Phase 13: planning doc-debloat (A)
@@ -92,6 +92,7 @@
 **Scope**: integrate a semantic code index as an optional manifest/capability (install + check + invoke), gated behind an opt-in; no hard dependency added to base. Parallelizable.
 **Depends on**: none (no dep on 14–17; can run anytime).
 **Acceptance**: capability installs + checks via manifest; opt-in only (base unaffected when absent); doctor reports presence; no base-install regression.
+**Plans** (design locked 2026-06-13): 1 plan — 18-01-PLAN.md (TDD, 4 tasks: checkCodeGraph doctor → manifests/optional/codegraph.yaml → register doctor 12→13 + capabilities entry → verify). Decision: **catalog + doctor-detect only** — CodeGraph (`@colbymchenry/codegraph`, MIT) ships its own installer, so harnessed catalogs (opt-in manifest in NEW `manifests/optional/`, never base) + detects (`.codegraph/`, always-pass doctor) + a capability entry; harnessed runs NO install and vendors NO code (18-CONTEXT.md D1–D6). Main session.
 
 ### Phase 19: minimal adoption (G)
 

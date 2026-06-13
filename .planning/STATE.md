@@ -7,10 +7,10 @@ last_updated: "2026-06-13T00:00:00.000Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 71
+  completed_phases: 6
+  total_plans: 6
+  completed_plans: 6
+  percent: 86
 ---
 
 # STATE — harnessed
@@ -21,15 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13–17 DONE (5/7). Next = Phase 18 (CodeGraph semantic index; parallelizable, no dep on 14–17). Closes comet/Trellis competitive gaps.
+- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13–18 DONE (6/7). Next = Phase 19 (minimal adoption; LAST — README quickstart + 1 comparison post). Closes comet/Trellis competitive gaps.
 - **Latest shipped**: npm latest=4.4.0 (verified live). v6.0 implemented 2026-06-11, pending tag/release.
 
 ## Current Position
 
-Phase: 17 (spec/convention auto-injection) ✅ DONE 2026-06-13 — G4 per-turn hook now emits `<project-context>` (relevance-filtered repo learnings + current-phase CONTEXT excerpt, token-bounded 1500/`HARNESSED_INJECT_BUDGET`) in addition to `<workflow-state>`. Deterministic filter (phase|sub match + recency, no LLM). `bin/harnessed-inject-state.mjs` made repo-aware (`workflows.json[repoKey(cwd)]` + legacy fallback — fixes the Phase-15 bin gap); self-contained plain JS, parity-tested vs TS `buildInjection`. Closes the 16→17 learning loop. TDD, 1280 tests, tsc 0, biome clean. Honest: CONTEXT-excerpt rarely fires in real dogfood (workflow `phase` field usually carries no phase number) — learnings are the reliable half.
-Plan: 17-01-PLAN.md executed + 17-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 18.
+Phase: 18 (CodeGraph semantic index) ✅ DONE 2026-06-13/14 — CodeGraph (`@colbymchenry/codegraph`, MIT) cataloged as OPT-IN: `manifests/optional/codegraph.yaml` (NEW dir, never globbed by install-base → never base) + always-pass `checkCodeGraph` doctor detect (13th check, `.codegraph/` fs detect) + `capabilities.yaml` codegraph entry. harnessed runs NO install + vendors NO code (CodeGraph self-installs). no-vendor thesis to its end. TDD, 1285 tests, tsc 0, biome clean.
+Plan: 18-01-PLAN.md executed + 18-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 19 (last).
 Status: ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host (it auto-committed a defective 14/15 during the Phase-13 run → reverted); drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick). RTK note: a `git status | grep` pollution check gives false positives (RTK git wrapper prints an `ok` marker) — verify file presence with `ls`/`test -f`.
-Last activity: 2026-06-13 — Phase 17 executed (TDD, relevance-filtered injection, repo-aware bin).
+Last activity: 2026-06-14 — Phase 18 executed (catalog + doctor-detect, no-vendor opt-in manifest).
 
 ## Milestone Scope (v7.0) — 7 phases
 
