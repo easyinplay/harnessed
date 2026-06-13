@@ -38,7 +38,7 @@
 
 ### Phases
 
-- [ ] **Phase 13: planning doc-debloat (A)** — PROJECT-SPEC ~4000-word status blockquote → <100-line digest; history stays in CHANGELOG/RETROSPECTIVE/git; 11 README translations → on-demand generation, not hand-maintained. Self-exemplifies v6.0 doc-discipline. Independent, first (clean house before adding). 详: `phases/13-*` (NEW).
+- [x] **Phase 13: planning doc-debloat (A)** ✅ 2026-06-13 — PROJECT-SPEC status blockquote folded 6265→1196 chars (digest PASS) + 8 non-English README best-effort headers; docs-only. Committed 933441d. 详: `phases/13-planning-doc-debloat-a/`.
 - [ ] **Phase 14: compact 做实 (B)** — `src/checkpoint/compact.ts` placeholder → real context compression with measured token reduction. Runtime foundation for long tasks (comet ships 25–30%). 详: `phases/14-*` (NEW).
 - [ ] **Phase 15: multi-workflow migration (D / un-defer G5)** — singleton `current-workflow.json` → multiple active workflows + compat-read migration. Closes the parallel-project gap (comet multi-Spec, Trellis multi-task). BREAKING schema. Subsumes Backlog "v5.0 Spec 2". 详: `phases/15-*` (NEW).
 - [ ] **Phase 16: learning 回灌闭环 (C)** — extract decisions/lessons from completed workflows → promote into persistent knowledge so the next session starts smarter (Trellis `update-spec` analog, no-vendor). Biggest increment; builds on Phase 15 state base. 详: `phases/16-*` (NEW).

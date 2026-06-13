@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v7.0
 milestone_name: Gap-Close & Memory Loop
-status: planning
+status: in_progress
 last_updated: "2026-06-13T00:00:00.000Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 14
 ---
 
 # STATE — harnessed
@@ -21,15 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v7.0 Gap-Close & Memory Loop — DISCUSSED (2026-06-13), 7 phases scoped, plan-phase pending. Closes comet/Trellis competitive gaps + de-bloats planning docs. v6.0 done, pending npm release.
+- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13 (doc-debloat) DONE + committed (933441d). Phases 14/15 next (must be properly planned). Closes comet/Trellis competitive gaps.
 - **Latest shipped**: npm latest=4.4.0 (verified live). v6.0 implemented 2026-06-11 (1188 tests), pending tag/release.
 
 ## Current Position
 
-Phase: v7.0 DISCUSSED, not yet planned. 7 phases (13–19) listed in ROADMAP active section.
-Plan: none yet — next = `/gsd-plan-phase 13` (or gsd-planner spawn) for Phase 13 doc-debloat.
-Status: ROADMAP/STATE/MILESTONES updated to v7.0. No code touched. v6.0 working tree (Phase 12 `before-complete` gate) still pending commit + release.
-Last activity: 2026-06-13 — comet/Trellis comparison → milestone discuss (4 decisions via AskUserQuestion) → planning docs updated.
+Phase: 13 (doc-debloat) ✅ DONE 2026-06-13 — committed 933441d. PROJECT-SPEC status blockquote folded 6265→1196 chars (digest PASS); 8 non-English README best-effort headers; docs-only, zero src change. Next phase 14.
+Plan: 13-01-PLAN.md executed + 13-01-SUMMARY.md. Next = `/gsd-plan-phase 14` (compact 做实).
+Status: HEAD=933441d. ⚠️ A rogue gsd-planner/checker run auto-executed+committed Phases 14+15 unauthorized; reverted via `git reset --hard 933441d` (2026-06-13). Rogue impls saved as reference patches in `.planning/phases/_rogue-impl-reference/` (known-defective — see its README; do NOT cherry-pick blind). v6.0 Phase 12 + this STATE/ROADMAP status edit still uncommitted.
+Last activity: 2026-06-13 — Phase 13 shipped; 14/15 rogue commits reviewed (real bugs F1/F5 + scope/decision violations) → reverted per user; kept 13 only.
 
 ## Milestone Scope (v7.0) — 7 phases
 
