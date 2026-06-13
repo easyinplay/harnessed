@@ -40,7 +40,7 @@
 
 - [x] **Phase 13: planning doc-debloat (A)** ✅ 2026-06-13 — PROJECT-SPEC status blockquote folded 6265→1196 chars (digest PASS) + 8 non-English README best-effort headers; docs-only. Committed 933441d. 详: `phases/13-planning-doc-debloat-a/`.
 - [x] **Phase 14: compact 做实 (B)** ✅ 2026-06-13 — `compact.ts` placeholder → real summarize+evict ledger compaction (G6-safe), `compacted_summary` additive schema, `harnessed compact` CLI + `checkpoint complete --tokens` auto-trigger. TDD, 1242 tests. 详: `phases/14-compact-real/`.
-- [ ] **Phase 15: multi-workflow migration (D / un-defer G5)** — singleton `current-workflow.json` → multiple active workflows + compat-read migration. Closes the parallel-project gap (comet multi-Spec, Trellis multi-task). BREAKING schema. Subsumes Backlog "v5.0 Spec 2". 详: `phases/15-*` (NEW).
+- [x] **Phase 15: multi-workflow migration (D / un-defer G5)** ✅ 2026-06-13 — global singleton → per-repo store `workflows.json` (arch A behind-API; 17 consumers + envelope unchanged); repoKey fs walk-up; compat-read + dual-write; `harnessed workflows` CLI. TDD, 1256 tests. 详: `phases/15-multi-workflow/`.
 - [ ] **Phase 16: learning 回灌闭环 (C)** — extract decisions/lessons from completed workflows → promote into persistent knowledge so the next session starts smarter (Trellis `update-spec` analog, no-vendor). Biggest increment; builds on Phase 15 state base. 详: `phases/16-*` (NEW).
 - [ ] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** — extend the G4 inject hook to inject relevant project specs/conventions per turn, not just workflow state. Subsumes Backlog "v5.0 Spec 3". 详: `phases/17-*` (NEW).
 - [ ] **Phase 18: CodeGraph semantic index (F)** — integrate semantic code indexing as an optional capability/manifest (comet reports tool-calls ↓58%). Parallelizable (no dep on 14–17). 详: `phases/18-*` (NEW).
@@ -65,9 +65,10 @@
 ### Phase 15: multi-workflow migration (D / un-defer G5)
 
 **Goal**: Replace the singleton current-workflow with multiple concurrently-active workflows, closing the parallel-project gap, without losing existing singleton state.
-**Scope**: singleton `current-workflow.json` → keyed multi-workflow store; `currentWorkflow.v1.ts` schema migration (schemaVersion bump) + compat-read of the old singleton; `state.ts`/`ledger.ts`/CLIs (`status`/`next`/`resume`/`reject`) updated to select active workflow. BREAKING. Subsumes ex-Spec-2.
+**Scope** (design locked 2026-06-13, arch A): singleton `current-workflow.json` → per-repo multi-store `workflows.json` keyed by repo-root (nearest `.git`, fallback cwd; pure fs walk-up, no git subprocess). Behind-API: `readCurrentWorkflow`/`writeCurrentWorkflow`/`mutateSubProgress` internals rewired to the active repo's slot — the **17 call sites and the `CurrentWorkflowV1` envelope schema are NOT changed** (only a NEW store schemaVersion). Active is implicit by cwd (`cd` auto-switches; no explicit `active` pointer / no `resume --switch`). compat-read migrates the legacy singleton (zero loss, kept as anchor) + dual-write rollback window. BREAKING on-disk format. Subsumes ex-Spec-2. Fixes rogue F4/F5 by construction.
 **Depends on**: Phase 14 (compaction operates per-workflow; settle compact first).
-**Acceptance**: old singleton `current-workflow.json` auto-migrates with zero data loss (tested); two workflows active + independently resumable; all existing checkpoint tests green post-migration.
+**Acceptance**: per-repo isolation (two repos' workflows coexist, neither clobbers); legacy singleton auto-migrates verbatim (tested, legacy retained); `mutateSubProgress` single-lock RMW preserved; `harnessed workflows` lists slots; all 17 existing consumers green (no signature change).
+**Plans**: 1 plan — 15-01-PLAN.md (TDD, 5 tasks: schema+repoKey → store kernels+migration → state.ts rewire+isolation+dual-write [CORE] → workflows CLI → verify gate). Decisions: arch A behind-API, key=repo-root, single-file store, implicit-active-by-cwd, dual-write rollback (15-CONTEXT.md D1–D8). Planned in main session. Ready-to-execute, NOT yet executed.
 
 ### Phase 16: learning 回灌闭环 (C)
 

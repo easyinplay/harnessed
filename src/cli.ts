@@ -22,6 +22,7 @@ import { registerRun } from './cli/run.js'
 import { registerSetup } from './cli/setup.js'
 import { registerStatus } from './cli/status.js'
 import { registerUninstall } from './cli/uninstall.js'
+import { registerWorkflows } from './cli/workflows.js'
 import { setLocale } from './i18n/index.js'
 import { migrateLegacyHarnessedRoot } from './installers/lib/harnessedRoot.js'
 
@@ -98,5 +99,6 @@ registerCheckpoint(program) // 19th — record sub start/complete/fail to checkp
 registerNext(program) // 20th — G2 deterministic next-step contract (NEXT: auto|manual|done)
 registerReject(program) // 21st — G7-lite user-rejected terminal sub status
 registerCompact(program) // 22nd — Phase 14 compact: summarize+evict resolved ledger entries
+registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight workflows (one per repo)
 
 program.parse(process.argv)

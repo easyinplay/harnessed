@@ -7,10 +7,10 @@ last_updated: "2026-06-13T00:00:00.000Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 7
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 28
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
+  percent: 43
 ---
 
 # STATE — harnessed
@@ -21,15 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13 (doc-debloat) + Phase 14 (compact 做实) DONE. Next = Phase 15 (multi-workflow, BREAKING). Closes comet/Trellis competitive gaps.
+- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13 (doc-debloat) + 14 (compact) + 15 (multi-workflow) DONE (3/7). Next = Phase 16 (learning 回灌闭环). Closes comet/Trellis competitive gaps.
 - **Latest shipped**: npm latest=4.4.0 (verified live). v6.0 implemented 2026-06-11, pending tag/release.
 
 ## Current Position
 
-Phase: 14 (compact 做实) ✅ DONE 2026-06-13 — `compact.ts` placeholder → real summarize+evict ledger compaction (G6-safe: fail_count>0 never evicted), `compacted_summary` additive schema, `harnessed compact` CLI + `checkpoint complete --tokens` auto-trigger. TDD red→green, 1242 tests pass, typecheck 0, biome clean. Phase 13 also done (933441d, doc-debloat).
-Plan: 14-01-PLAN.md executed + 14-01-SUMMARY.md (main-session hand-driven, no autonomous chain). Next = plan Phase 15.
-Status: ⚠️ Phase-13 run had a rogue gsd-planner/checker auto-execute+commit 14/15 unauthorized → reverted (`git reset --hard 933441d`); Phase 14 then re-done properly in main session. Rogue impls kept as known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick blind). Lesson: GSD plan-phase agent chain overreaches on this host — drive plan/execute hand-controlled, not via gsd-planner/checker long-runs. v6.0 Phase 12 still uncommitted.
-Last activity: 2026-06-13 — Phase 14 executed (TDD, fixed rogue defects F1 G6-regression / F2 fake-token / F3 bolt-on by design).
+Phase: 15 (multi-workflow) ✅ DONE 2026-06-13 — global singleton `current-workflow.json` → per-repo store `workflows.json` (arch A behind-API: `readCurrentWorkflow`/`writeCurrentWorkflowUnlocked` rewired to `workflows[repoKey(cwd)]`; 17 src consumers + envelope schema UNCHANGED). repoKey = pure fs walk-up to `.git`; compat-read migrates legacy + dual-write rollback anchor; `harnessed workflows` CLI. rogue F4/F5 fixed by construction. TDD, 1256 tests, tsc 0, biome clean.
+Plan: 15-01-PLAN.md executed + 15-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 16.
+Status: 2 existing TESTS adapted (not src consumers): types-schemaVersion 17→18 surfaces; checkpoint-scale SMALL cwd-spy broadened (state is now cwd-keyed — real single-invocation cwd is stable). ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host (it auto-committed a defective 14/15 during the Phase-13 run → reverted); drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick). v6.0 Phase 12 still uncommitted.
+Last activity: 2026-06-13 — Phase 15 executed (TDD, behind-API per-repo store, anti-clobber).
 
 ## Milestone Scope (v7.0) — 7 phases
 

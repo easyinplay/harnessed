@@ -154,31 +154,28 @@ describe('checkpoint complete — G1 verify_mode wire-in', () => {
   }, 15_000)
 
   it('SMALL ledger (1 fired sub, no git in cwd) → verify_mode === "light" after completing the sub', async () => {
-    // Seed exactly 1 fired sub.
-    const plan = planWithNFired(1)
-    await activate('master')
-    await mutateSubProgress(() => seedLedger(plan))
-
-    // Point process.cwd() at the temp dir which has no git repo and no
-    // .planning/ directory.  countChangedFiles() will fail-soft to 0
-    // (git merge-base fails on a non-repo); countRequirements() will
-    // fail-soft to 0 (no .planning/REQUIREMENTS.md).  firedSubs=1,
-    // changedFiles=0, requirements=0 → assessScale → 'light'.
-    //
-    // NOTE: the spy covers the *entire* complete path including the call
-    // inside collectScaleMetrics(process.cwd(), ...) in checkpoint.ts.
+    // Point process.cwd() at the temp dir (no git repo, no .planning/) for the
+    // ENTIRE flow. Two reasons: (1) collectScaleMetrics(process.cwd(), ...) sees
+    // no-git → changedFiles=0, requirements=0; firedSubs=1 → assessScale 'light'.
+    // (2) Phase 15 — state is keyed by repo-root(cwd); spying cwd only during
+    // `complete` (as before) would split activate/seed (real cwd) from
+    // complete/read (tmp cwd) into two slots. A real single CLI invocation runs
+    // under one stable cwd, so the spy must wrap the whole sequence to match.
     const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmp)
-
     try {
+      const plan = planWithNFired(1)
+      await activate('master')
+      await mutateSubProgress(() => seedLedger(plan))
+
       const { code } = await runCli(['checkpoint', 'complete', 'sub-0'])
       expect(code).toBe(0)
+
+      const envelope = await readCurrentWorkflow()
+      expect(envelope).not.toBeNull()
+      // G1 wire-in assertion: verify_mode must be 'light'.
+      expect(envelope?.verify_mode).toBe('light')
     } finally {
       cwdSpy.mockRestore()
     }
-
-    const envelope = await readCurrentWorkflow()
-    expect(envelope).not.toBeNull()
-    // G1 wire-in assertion: verify_mode must be 'light'.
-    expect(envelope?.verify_mode).toBe('light')
   }, 15_000)
 })

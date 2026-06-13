@@ -54,6 +54,7 @@ export const SCHEMA_VERSIONS = {
   routeDecisionLog: 'harnessed.route-decision-log.v1',
   checkpoint: 'harnessed.checkpoint.v1',
   currentWorkflow: 'harnessed.current-workflow.v1', // ← Phase 3.1 W1 T1.1 ADD (D-02 KARPATHY 3-state)
+  workflowStore: 'harnessed.workflow-store.v1', // ← Phase 15 ADD (per-repo multi-workflow store)
   config: 'harnessed.config.v1', // ← Phase 3.2 W1 T1.1 ADD (D-01 PROBE gstack_prefix store)
   governance: 'harnessed.governance.v1', // ← Phase 3.2 W1 T1.1 ADD (D-04 PUSH veto status)
   aliases: 'harnessed.aliases.v1', // ← Phase 3.3 W1 T1.1 ADD (D-01 RICH)
@@ -76,6 +77,7 @@ export const SchemaVersionLiteral = Type.Union([
   Type.Literal(SCHEMA_VERSIONS.routeDecisionLog),
   Type.Literal(SCHEMA_VERSIONS.checkpoint),
   Type.Literal(SCHEMA_VERSIONS.currentWorkflow), // ← Phase 3.1 W1 T1.1 ADD
+  Type.Literal(SCHEMA_VERSIONS.workflowStore), // ← Phase 15 ADD
   Type.Literal(SCHEMA_VERSIONS.config), // ← Phase 3.2 W1 T1.1 ADD
   Type.Literal(SCHEMA_VERSIONS.governance), // ← Phase 3.2 W1 T1.1 ADD
   Type.Literal(SCHEMA_VERSIONS.aliases), // ← Phase 3.3 W1 T1.1 ADD

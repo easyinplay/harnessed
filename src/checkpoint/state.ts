@@ -10,18 +10,18 @@
 // `<homedir>/.harnessed/...` via `getHarnessedRoot()` SoT. Sister v2.0.1
 // backup-root migration verbatim — EPERM-free when user CWD is read-only.
 
-import { mkdir, readFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { mkdir } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
 import lockfile from 'proper-lockfile'
 import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
-import { branchOnSchemaVersion, SCHEMA_VERSIONS } from '../types/schemaVersion.js'
+import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { writeFileAtomic } from './atomicWrite.js'
 import {
   CurrentWorkflowV1,
   type CurrentWorkflowV1Type,
   type SubProgressEntryType,
 } from './schema/index.js'
+import { readStoreRaw, repoKey, writeStoreRaw } from './workflowStore.js'
 
 // v3.0.3 — lazy path resolution so HARNESSED_ROOT_OVERRIDE in e2e tests
 // applies before the first write (module-level const captured the path
@@ -83,23 +83,12 @@ async function withLock<T>(fn: () => Promise<T>): Promise<T> {
 /** Read state; returns null on missing/corrupt/unknown-version (CD-5 rule (b)
  *  fail-soft). Throws only via writeCurrentWorkflow on known-version drift. */
 export async function readCurrentWorkflow(): Promise<CurrentWorkflowV1Type | null> {
-  let raw: string
-  try {
-    raw = await readFile(statePath(), 'utf8')
-  } catch {
-    return null
-  }
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(raw)
-  } catch {
-    return null
-  }
-  const v = (parsed as { schemaVersion?: string }).schemaVersion ?? ''
-  return branchOnSchemaVersion(v, {
-    v1: () => (Value.Check(CurrentWorkflowV1, parsed) ? (parsed as CurrentWorkflowV1Type) : null),
-    unknown: () => null,
-  })
+  // Phase 15 — resolve the active repo's slot from the per-repo multi-workflow
+  // store. readStoreRaw validates the store (each slot is a CurrentWorkflowV1)
+  // and transparently surfaces a legacy singleton in-memory (compat-read, D5),
+  // so the CD-5 fail-soft null behavior is preserved.
+  const store = await readStoreRaw()
+  return store.workflows[repoKey()] ?? null
 }
 
 /** Lock-FREE write kernel: self-validate (loadPhases.ts pattern) + create parent
@@ -114,9 +103,15 @@ async function writeCurrentWorkflowUnlocked(s: CurrentWorkflowV1Type): Promise<v
     const errs = [...Value.Errors(CurrentWorkflowV1, s)].map((e) => e.message).join('; ')
     throw new WorkflowStateError(`current-workflow schema validation failed: ${errs}`)
   }
-  const path = statePath()
-  await mkdir(dirname(path), { recursive: true })
-  await writeFileAtomic(path, JSON.stringify(s, null, 2))
+  // Phase 15 — write into the active repo's slot in the per-repo store. The
+  // store IS the SoT (one write path → no stale-index drift; fixes rogue F4/F5).
+  const store = await readStoreRaw()
+  store.workflows[repoKey()] = s
+  await writeStoreRaw(store)
+  // D7 dual-write — mirror the active repo's envelope to the legacy singleton
+  // as a one-release rollback anchor (a code revert still finds current data).
+  // The harness-root dir already exists (withLock mkdir + writeStoreRaw mkdir).
+  await writeFileAtomic(statePath(), JSON.stringify(s, null, 2))
 }
 
 /** Write state with self-validate (loadPhases.ts pattern); creates parent dir;

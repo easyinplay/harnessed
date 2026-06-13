@@ -13,9 +13,9 @@ import {
   SchemaVersionLiteral,
 } from '../../src/types/schemaVersion.js'
 
-describe('SCHEMA_VERSIONS — 17 surfaces', () => {
-  it('has exactly 17 surface entries', () => {
-    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(17)
+describe('SCHEMA_VERSIONS — 18 surfaces', () => {
+  it('has exactly 18 surface entries', () => {
+    expect(Object.keys(SCHEMA_VERSIONS)).toHaveLength(18)
   })
 
   it('every value matches `harnessed.<surface>.v<N>` shape (v1 default, v2 introduced in Phase v2.0-2.4, v3 introduced in Phase v3.0-3.3)', () => {
@@ -46,6 +46,7 @@ describe('SCHEMA_VERSIONS — 17 surfaces', () => {
       'capabilities',
       'judgment',
       'workflow',
+      'workflow-store',
     ]
     const actualSurfaces = Object.values(SCHEMA_VERSIONS).map((v) => v.split('.')[1])
     for (const s of expectedSurfaces) {
