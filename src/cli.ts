@@ -5,6 +5,7 @@ import { registerAudit } from './cli/audit.js'
 import { registerAuditLog } from './cli/audit-log.js'
 import { registerBackupList } from './cli/backup-list.js'
 import { registerCheckpoint } from './cli/checkpoint.js'
+import { registerCompact } from './cli/compact-cmd.js'
 import { registerDoctor } from './cli/doctor.js'
 import { registerGates } from './cli/gates.js'
 import { registerGc } from './cli/gc.js'
@@ -96,5 +97,6 @@ registerPrompt(program) // 18th — spawn-ready prompt text/json for a sub
 registerCheckpoint(program) // 19th — record sub start/complete/fail to checkpoints/
 registerNext(program) // 20th — G2 deterministic next-step contract (NEXT: auto|manual|done)
 registerReject(program) // 21st — G7-lite user-rejected terminal sub status
+registerCompact(program) // 22nd — Phase 14 compact: evict resolved ledger entries
 
 program.parse(process.argv)
