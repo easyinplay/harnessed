@@ -42,7 +42,7 @@
 - [x] **Phase 14: compact 做实 (B)** ✅ 2026-06-13 — `compact.ts` placeholder → real summarize+evict ledger compaction (G6-safe), `compacted_summary` additive schema, `harnessed compact` CLI + `checkpoint complete --tokens` auto-trigger. TDD, 1242 tests. 详: `phases/14-compact-real/`.
 - [x] **Phase 15: multi-workflow migration (D / un-defer G5)** ✅ 2026-06-13 — global singleton → per-repo store `workflows.json` (arch A behind-API; 17 consumers + envelope unchanged); repoKey fs walk-up; compat-read + dual-write; `harnessed workflows` CLI. TDD, 1256 tests. 详: `phases/15-multi-workflow/`.
 - [x] **Phase 16: learning 回灌闭环 (C)** ✅ 2026-06-13 — workflow completion appends ledger failure/loop/reject signals to repo `.planning/LEARNINGS.md` (append-only, git-shareable) + `harnessed learn` prose; hybrid, D4 no-empty-write. TDD, 1265 tests. Consumption via standard `.planning/` read + Phase 17 injection. 详: `phases/16-learning-loop/`.
-- [ ] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** — extend the G4 inject hook to inject relevant project specs/conventions per turn, not just workflow state. Subsumes Backlog "v5.0 Spec 3". 详: `phases/17-*` (NEW).
+- [x] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** ✅ 2026-06-13 — G4 hook emits relevance-filtered `<project-context>` (repo learnings + phase CONTEXT excerpt, token-bounded) + bin made repo-aware (`workflows.json[repoKey]`, fixes Phase-15 gap), parity-tested. Closes 16→17 loop. TDD, 1280 tests. 详: `phases/17-spec-injection/`.
 - [ ] **Phase 18: CodeGraph semantic index (F)** — integrate semantic code indexing as an optional capability/manifest (comet reports tool-calls ↓58%). Parallelizable (no dep on 14–17). 详: `phases/18-*` (NEW).
 - [ ] **Phase 19: minimal adoption (G)** — README quickstart polish + 1 honest harnessed-vs-comet-vs-Trellis comparison post. Last (announce after features land). 详: `phases/19-*` (NEW).
 
@@ -84,6 +84,7 @@
 **Scope**: extend `src/checkpoint/injectState.ts` + `bin/harnessed-inject-state.mjs` to select + inject relevant project conventions/specs per turn (size-bounded). Subsumes ex-Spec-3. Reuses Phase 16 knowledge store where available.
 **Depends on**: Phase 16 (injects the promoted knowledge).
 **Acceptance**: inject hook emits relevant convention context bounded by a token budget; no injection when none relevant (silent); tested for selection + budget cap.
+**Plans** (design locked 2026-06-13): 1 plan — 17-01-PLAN.md (TDD, 4 tasks: parse/filter/select pure → buildProjectContextBlock/findPhaseContextExcerpt/buildInjection → repo-aware bin rewrite + parity → verify). Decisions: relevance-FILTERED (deterministic phase/sub match + recency, no LLM), sources = LEARNINGS.md + current-phase CONTEXT excerpt (static files/CLAUDE.md excluded), token-bounded (1500 default, `HARNESSED_INJECT_BUDGET` override), repo-aware (fixes Phase-15 bin gap), bin self-contained + parity-tested (17-CONTEXT.md D1–D8). Consumption half — closes the 16→17 learning loop. Main session.
 
 ### Phase 18: CodeGraph semantic index (F)
 
