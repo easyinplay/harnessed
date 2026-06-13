@@ -11,6 +11,7 @@ import { registerGates } from './cli/gates.js'
 import { registerGc } from './cli/gc.js'
 import { registerInstall } from './cli/install.js'
 import { registerInstallBase } from './cli/install-base.js'
+import { registerLearn } from './cli/learn.js'
 import { registerManifestAdd } from './cli/manifest-add.js'
 import { registerNext } from './cli/next.js'
 import { registerPrompt } from './cli/prompt.js'
@@ -100,5 +101,6 @@ registerNext(program) // 20th — G2 deterministic next-step contract (NEXT: aut
 registerReject(program) // 21st — G7-lite user-rejected terminal sub status
 registerCompact(program) // 22nd — Phase 14 compact: summarize+evict resolved ledger entries
 registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight workflows (one per repo)
+registerLearn(program) // 24th — Phase 16 learning loop: append a prose learning to .planning/LEARNINGS.md
 
 program.parse(process.argv)

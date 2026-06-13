@@ -225,6 +225,19 @@ export function registerCheckpoint(program: Command): void {
             transitionWorkflowComplete: allResolved,
           })
 
+          // Phase 16 — auto-capture learnings: when the workflow completes
+          // (allResolved), append the final ledger's failure/loop/reject signals
+          // to the repo's .planning/LEARNINGS.md. Uses the pre-compact `afterMark`
+          // snapshot so rejected entries (which the auto-compact below would evict)
+          // are not lost. No-op for a clean ledger (D4).
+          if (allResolved && afterMark) {
+            const { captureWorkflowLearnings } = await import('../checkpoint/learnings.js')
+            const captured = await captureWorkflowLearnings(afterMark.sub_progress ?? [], sub)
+            if (captured > 0) {
+              console.log(`[harnessed] captured ${captured} learning(s) → .planning/LEARNINGS.md`)
+            }
+          }
+
           // Phase 14 — auto-compact: when the caller passes a conversation token
           // count that crosses the shouldCompact threshold, evict resolved ledger
           // entries (G6-safe: fail_count>0 entries are never evicted). Silent no-op

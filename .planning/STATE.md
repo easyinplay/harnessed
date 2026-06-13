@@ -7,10 +7,10 @@ last_updated: "2026-06-13T00:00:00.000Z"
 last_activity: 2026-06-13
 progress:
   total_phases: 7
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 43
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
+  percent: 57
 ---
 
 # STATE — harnessed
@@ -21,15 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13 (doc-debloat) + 14 (compact) + 15 (multi-workflow) DONE (3/7). Next = Phase 16 (learning 回灌闭环). Closes comet/Trellis competitive gaps.
+- **Current focus**: v7.0 Gap-Close & Memory Loop — Phase 13–16 DONE (4/7). Next = Phase 17 (spec auto-injection / ex-Spec3). Closes comet/Trellis competitive gaps.
 - **Latest shipped**: npm latest=4.4.0 (verified live). v6.0 implemented 2026-06-11, pending tag/release.
 
 ## Current Position
 
-Phase: 15 (multi-workflow) ✅ DONE 2026-06-13 — global singleton `current-workflow.json` → per-repo store `workflows.json` (arch A behind-API: `readCurrentWorkflow`/`writeCurrentWorkflowUnlocked` rewired to `workflows[repoKey(cwd)]`; 17 src consumers + envelope schema UNCHANGED). repoKey = pure fs walk-up to `.git`; compat-read migrates legacy + dual-write rollback anchor; `harnessed workflows` CLI. rogue F4/F5 fixed by construction. TDD, 1256 tests, tsc 0, biome clean.
-Plan: 15-01-PLAN.md executed + 15-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 16.
-Status: 2 existing TESTS adapted (not src consumers): types-schemaVersion 17→18 surfaces; checkpoint-scale SMALL cwd-spy broadened (state is now cwd-keyed — real single-invocation cwd is stable). ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host (it auto-committed a defective 14/15 during the Phase-13 run → reverted); drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick).
-Last activity: 2026-06-13 — Phase 15 executed (TDD, behind-API per-repo store, anti-clobber).
+Phase: 16 (learning 回灌闭环) ✅ DONE 2026-06-13 — workflow completion appends ledger failure/loop/reject signals to the repo's git-shareable `.planning/LEARNINGS.md` (append-only, in-repo, repoKey(cwd)-targeted); `harnessed learn "<lesson>"` (24th CLI) appends agent prose. Hybrid (auto mechanical + manual prose); D4 no-empty-write (clean completions + test suite never pollute). Auto-capture reads the pre-compact `afterMark` snapshot so Phase-14 compact can't evict reject signals. TDD, 1265 tests, tsc 0, biome clean. Consumption = standard `.planning/` read now + Phase 17 injection.
+Plan: 16-01-PLAN.md executed + 16-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 17.
+Status: ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host (it auto-committed a defective 14/15 during the Phase-13 run → reverted); drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick). RTK note: a `git status | grep` pollution check gives false positives (RTK git wrapper prints an `ok` marker) — verify file presence with `ls`/`test -f`.
+Last activity: 2026-06-13 — Phase 16 executed (TDD, in-repo append-only learnings, hybrid capture).
 
 ## Milestone Scope (v7.0) — 7 phases
 

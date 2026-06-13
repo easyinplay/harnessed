@@ -41,7 +41,7 @@
 - [x] **Phase 13: planning doc-debloat (A)** ✅ 2026-06-13 — PROJECT-SPEC status blockquote folded 6265→1196 chars (digest PASS) + 8 non-English README best-effort headers; docs-only. Committed 933441d. 详: `phases/13-planning-doc-debloat-a/`.
 - [x] **Phase 14: compact 做实 (B)** ✅ 2026-06-13 — `compact.ts` placeholder → real summarize+evict ledger compaction (G6-safe), `compacted_summary` additive schema, `harnessed compact` CLI + `checkpoint complete --tokens` auto-trigger. TDD, 1242 tests. 详: `phases/14-compact-real/`.
 - [x] **Phase 15: multi-workflow migration (D / un-defer G5)** ✅ 2026-06-13 — global singleton → per-repo store `workflows.json` (arch A behind-API; 17 consumers + envelope unchanged); repoKey fs walk-up; compat-read + dual-write; `harnessed workflows` CLI. TDD, 1256 tests. 详: `phases/15-multi-workflow/`.
-- [ ] **Phase 16: learning 回灌闭环 (C)** — extract decisions/lessons from completed workflows → promote into persistent knowledge so the next session starts smarter (Trellis `update-spec` analog, no-vendor). Biggest increment; builds on Phase 15 state base. 详: `phases/16-*` (NEW).
+- [x] **Phase 16: learning 回灌闭环 (C)** ✅ 2026-06-13 — workflow completion appends ledger failure/loop/reject signals to repo `.planning/LEARNINGS.md` (append-only, git-shareable) + `harnessed learn` prose; hybrid, D4 no-empty-write. TDD, 1265 tests. Consumption via standard `.planning/` read + Phase 17 injection. 详: `phases/16-learning-loop/`.
 - [ ] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** — extend the G4 inject hook to inject relevant project specs/conventions per turn, not just workflow state. Subsumes Backlog "v5.0 Spec 3". 详: `phases/17-*` (NEW).
 - [ ] **Phase 18: CodeGraph semantic index (F)** — integrate semantic code indexing as an optional capability/manifest (comet reports tool-calls ↓58%). Parallelizable (no dep on 14–17). 详: `phases/18-*` (NEW).
 - [ ] **Phase 19: minimal adoption (G)** — README quickstart polish + 1 honest harnessed-vs-comet-vs-Trellis comparison post. Last (announce after features land). 详: `phases/19-*` (NEW).
@@ -76,6 +76,7 @@
 **Scope**: extract decisions/lessons/patterns from a completed workflow ledger → write to a persistent knowledge store (`.planning/`-resident or capability-driven); wire into `checkpoint complete`. No upstream vendoring (compose, don't copy).
 **Depends on**: Phase 15 (per-workflow learnings keyed off the multi-workflow store).
 **Acceptance**: completing a workflow emits a structured learnings artifact; a subsequent workflow can read it; round-trip covered by tests; KARPATHY-minimal surface.
+**Plans** (design locked 2026-06-13): 1 plan — 16-01-PLAN.md (TDD, 4 tasks: pure extract/format → append+no-empty-write → checkpoint auto-capture + `harnessed learn` CLI → verify gate). Decisions: append-only record (NOT auto-promote), in-repo `.planning/LEARNINGS.md` (git-shareable, repoKey-targeted), hybrid extraction (auto mechanical signals + `harnessed learn` prose), no-empty-write D4 anti-pollution (16-CONTEXT.md D1–D6). Capture half now; consumption via standard `.planning/` read + Phase 17 injection. Main session.
 
 ### Phase 17: spec/convention auto-injection (E / ex-Spec3)
 
