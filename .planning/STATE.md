@@ -28,7 +28,7 @@ progress:
 
 Phase: 15 (multi-workflow) ✅ DONE 2026-06-13 — global singleton `current-workflow.json` → per-repo store `workflows.json` (arch A behind-API: `readCurrentWorkflow`/`writeCurrentWorkflowUnlocked` rewired to `workflows[repoKey(cwd)]`; 17 src consumers + envelope schema UNCHANGED). repoKey = pure fs walk-up to `.git`; compat-read migrates legacy + dual-write rollback anchor; `harnessed workflows` CLI. rogue F4/F5 fixed by construction. TDD, 1256 tests, tsc 0, biome clean.
 Plan: 15-01-PLAN.md executed + 15-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 16.
-Status: 2 existing TESTS adapted (not src consumers): types-schemaVersion 17→18 surfaces; checkpoint-scale SMALL cwd-spy broadened (state is now cwd-keyed — real single-invocation cwd is stable). ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host (it auto-committed a defective 14/15 during the Phase-13 run → reverted); drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick). v6.0 Phase 12 still uncommitted.
+Status: 2 existing TESTS adapted (not src consumers): types-schemaVersion 17→18 surfaces; checkpoint-scale SMALL cwd-spy broadened (state is now cwd-keyed — real single-invocation cwd is stable). ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host (it auto-committed a defective 14/15 during the Phase-13 run → reverted); drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked; do NOT cherry-pick).
 Last activity: 2026-06-13 — Phase 15 executed (TDD, behind-API per-repo store, anti-clobber).
 
 ## Milestone Scope (v7.0) — 7 phases
@@ -61,7 +61,8 @@ Last activity: 2026-06-13 — Phase 15 executed (TDD, behind-API per-repo store,
 
 ### Open todos / blockers
 
-- v6.0 Phase 12 (`before-complete` gate) still uncommitted + v4.4.0 release pending (needs user approval to tag/push).
+- v6.0 (Phase 11 + 12 G2 sentinel) FULLY committed + shipped in npm 4.4.0 (Phase 12 = commit `1d4dffe`; the earlier "uncommitted" note was stale — verified 2026-06-13). No leftover.
+- v7.0 phases 13–15 committed locally; npm still 4.4.0 (a new release for v7.0 work is a future decision, not pending now).
 - Phase sequencing: 13→14→15→16→17→18→19 (15 before 16/17 = state base; 18 parallelizable).
 
 ## Session Continuity
