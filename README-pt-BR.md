@@ -2,6 +2,8 @@
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | **Português (Brasil)** | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+
 > Gerenciador de pacotes para harness de codificação com AI + orquestrador de Composition
 > Executa mecanicamente a metodologia de colaboração em três camadas (governança gstack + gerente de projetos GSD + engenheiro sênior superpowers + princípios karpathy + movimentos mattpocock) como um motor executável
 

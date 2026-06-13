@@ -2,6 +2,8 @@
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | **日本語** | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+
 > AI coding harness パッケージマネージャー + Composition Orchestrator
 > 三層スタック協働メソドロジー（gstack ガバナンス + GSD プロジェクトマネージャー + superpowers シニアエンジニア + karpathy 原則 + mattpocock ムーブ）を実行可能エンジンとして機械実行する
 

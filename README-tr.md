@@ -2,6 +2,8 @@
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | **Türkçe** | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+
 > AI coding harness paket yöneticisi + Composition Orchestrator
 > Üç katmanlı yığın iş birliği metodolojisini (gstack governance + GSD proje yöneticisi + superpowers kıdemli mühendis + karpathy ilkeleri + mattpocock hamleleri) çalıştırılabilir bir motora dönüştürüp makine düzeyinde uygular
 

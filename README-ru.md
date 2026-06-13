@@ -2,6 +2,8 @@
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | **Русский** | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+
 > AI coding harness — пакетный менеджер + composition orchestrator
 > Машинно-исполняемая трёхуровневая методология совместной работы (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) в виде работающего движка
 

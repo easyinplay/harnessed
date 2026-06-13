@@ -2,6 +2,8 @@
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | **한국어** | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+
 > AI coding harness 패키지 매니저 + composition orchestrator
 > 3계층 스택 협업 방법론(gstack governance + GSD 프로젝트 매니저 + superpowers 시니어 엔지니어 + karpathy 원칙 + mattpocock 기법)을 실행 가능한 엔진으로 기계 실행합니다
 

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v6.0
-milestone_name: Doc-Discipline Substrate
-status: complete
-last_updated: "2026-06-11T00:00:00.000Z"
-last_activity: 2026-06-11
+milestone: v7.0
+milestone_name: Gap-Close & Memory Loop
+status: planning
+last_updated: "2026-06-13T00:00:00.000Z"
+last_activity: 2026-06-13
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 100
+  total_phases: 7
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -21,52 +21,51 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v6.0 COMPLETE (2/2) + release 4.4.0 PREPPED (package.json bump + CHANGELOG [4.4.0] + publish.yml GH-release step + G6 doc drift fix). Awaiting tag `v4.4.0` + push (needs user approval).
-- **Latest shipped**: v4.3.0 (2026-06-10, v5.1 Upstream Re-sync, 1167 tests, CI green 3 platforms, npm latest=4.3.0).
+- **Current focus**: v7.0 Gap-Close & Memory Loop — DISCUSSED (2026-06-13), 7 phases scoped, plan-phase pending. Closes comet/Trellis competitive gaps + de-bloats planning docs. v6.0 done, pending npm release.
+- **Latest shipped**: npm latest=4.4.0 (verified live). v6.0 implemented 2026-06-11 (1188 tests), pending tag/release.
 
 ## Current Position
 
-Phase: v6.0 COMPLETE (2/2) — Phase 11 (doc-discipline) + Phase 12 (sentinel gate) both done
-Plan: 11 + 12 done — 详: phases/11-doc-discipline/ + phases/12-sentinel-gate/
-Status: Both phases in working tree (11 committed a5bd03c; 12 not yet committed). G1 = 7th L0 discipline + STATE-line halt. G2 = `checkPlanningSync` guard wired into checkpoint complete (halt + --force). vitest 1188 green.
-Last activity: 2026-06-11 — executed Phase 12 (single TDD wave, self-owned spawn + main-session impl-body verify).
+Phase: v7.0 DISCUSSED, not yet planned. 7 phases (13–19) listed in ROADMAP active section.
+Plan: none yet — next = `/gsd-plan-phase 13` (or gsd-planner spawn) for Phase 13 doc-debloat.
+Status: ROADMAP/STATE/MILESTONES updated to v7.0. No code touched. v6.0 working tree (Phase 12 `before-complete` gate) still pending commit + release.
+Last activity: 2026-06-13 — comet/Trellis comparison → milestone discuss (4 decisions via AskUserQuestion) → planning docs updated.
 
-## Milestone Scope (v6.0)
+## Milestone Scope (v7.0) — 7 phases
 
-- **G1 (Phase 11)**: codify CLAUDE.md 文档纪律 as 7th L0 discipline (`disciplines/doc-discipline.yaml`, 6 rules) + capability + before-commit enforcement.
-- **G2 (Phase 12)**: finish 强制执行哨兵 — `before-complete.ts` checkpoint-sync gate (refuse COMPLETE when `.planning/` unsynced). Reuses v4.2 checkpoint ledger.
-- **Additive-only**: 1 new discipline yaml + 1 new hook + tests. No existing discipline/capability mutated. No architecture change.
+- **Phase 13 doc-debloat (A)**: PROJECT-SPEC ~4000-word status line → <100-line digest; README ×11 translations → on-demand. Self-exemplifies doc-discipline. First (independent).
+- **Phase 14 compact 做实 (B)**: `src/checkpoint/compact.ts` placeholder → real measured compression.
+- **Phase 15 multi-workflow (D / un-defer G5)**: singleton `current-workflow.json` → multi-active + compat-read migration. BREAKING. Subsumes ex-Spec-2.
+- **Phase 16 learning 回灌 (C)**: completed-workflow learnings → persistent knowledge (Trellis update-spec analog). Biggest increment; needs Phase 15 base.
+- **Phase 17 spec auto-injection (E)**: extend G4 inject hook to project specs/conventions per turn. Subsumes ex-Spec-3.
+- **Phase 18 CodeGraph (F)**: optional semantic-index capability/manifest. Parallelizable (no dep on 14–17).
+- **Phase 19 adoption (G)**: README quickstart + 1 honest comparison post. Last.
 
 ## Accumulated Context
 
-### Decisions (v6.0 discuss, 2026-06-11)
+### Decisions (v7.0 discuss, 2026-06-13)
 
-- **Scope** — 1 milestone, 2 phases (G1 Phase 11 → G2 Phase 12). G2 depends on G1's state-check capability.
-- **G1 shape** — `disciplines/doc-discipline.yaml` (L0 substrate, 7th discipline), NOT a judgment gate. Always-on, hook-enforced.
-- **Enforcement hardness** — warn-majority + STATE.md >100-line `halt`-with-override (karpathy philosophy); one-fact / overview-pointer = heuristic warn; responsibility-matrix = info.
+- **Scope** — full 6-item, phased (not subset). Source: comet/Trellis comparison analysis.
+- **Doc-debloat** — full (status-line digest + ADR/README archive), not status-line-only.
+- **Multi-workflow** — complete breaking migration (un-defers G5), NOT schema-only-prep. Must ship compat-read for existing singleton (no data loss).
+- **Adoption** — minimal (README quickstart + 1 comparison post), not full go-to-market.
+- **Non-goals (trimmed)** — cross-harness breadth + routing L2-supervisor over-generalization; both YAGNI at 1 harness + ~0 real users (2 stars, downloads are CI/dogfood noise).
 
 ### Invariants (must not break)
 
-- 7th discipline follows existing `harnessed.discipline.v1` shape (sister karpathy/operational); reuse before-commit + v4.2 checkpoint ledger (no new state store).
-- Additive-only: new yaml + new hook + new tests; no existing discipline/capability/architecture mutated.
-- KARPATHY-minimal: smallest effective diff, surgical; doc-discipline self-exemplified in this very `.planning/` edit.
-- Windows CI must stay green; no regression vs the 1167-test baseline.
+- Additive-where-possible; Phase 15 migration ships compat-read for singleton `current-workflow.json` (zero data loss).
+- KARPATHY-minimal surgical diffs; full gate green vs 1188-test baseline; Windows CI green.
 - Biome preempt before every TS/JS commit (`pnpm exec biome check --write`).
+- Every `.planning/` edit self-exemplifies v6.0 doc-discipline (this edit included).
 - NEVER push to remote without explicit user approval.
 
 ### Open todos / blockers
 
-- None blocking. **ci.yml GREEN on all 3 OS 2026-06-11** (first green in months) — Node-20 actions bumped to v5 + 4 pre-existing reds fixed (check-workflow-schema SSOT drift, biome intel-JSON, macOS realpath test, proper-lockfile test mock). Carry-over (non-blocking): npm-readme drift on older tarballs; v5.1 milestone never formally archived.
-
-### Deferred (Backlog)
-
-- v5.0 Spec 2 — session-scoped state + single-session fallback.
-- v5.0 Spec 3 — per-turn injection hook + scale-adaptive verify strength.
-- Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency `sigintTrap.ts`/`before-commit.ts`.
+- v6.0 Phase 12 (`before-complete` gate) still uncommitted + v4.4.0 release pending (needs user approval to tag/push).
+- Phase sequencing: 13→14→15→16→17→18→19 (15 before 16/17 = state base; 18 parallelizable).
 
 ## Session Continuity
 
-- **Next command**: tag `v4.4.0` + push main + tag → CI publishes npm + GitHub release (per publish.yml). User approval required before any push.
-- **Phase dirs**: `phases/11-doc-discipline/` + `phases/12-sentinel-gate/` both DONE (PLAN + triplet + verified). v5.1 archived in shipped index.
-- **Reference impl**: 7th discipline mirrors `workflows/disciplines/karpathy.yaml` + `operational.yaml`; G2 hook mirrors `src/discipline/enforcement/before-commit.ts`; checkpoint ledger = v4.2 `state.ts`.
-- **Methodology note**: GSD `context: fork` skills (`/gsd-plan-phase`, `/gsd-execute-phase`) fire-and-die as slash commands — drive them via `gsd-planner` / `gsd-executor` Agent-tool spawns instead.
+- **Next command**: `/gsd-plan-phase 13` (doc-debloat) or commit v6.0 + release 4.4.0 first. User picks order.
+- **Reference impl**: Phase 14 = `src/checkpoint/compact.ts`; Phase 15 = `src/checkpoint/schema/currentWorkflow.v1.ts` + `state.ts` (singleton → multi); Phase 17 = `src/checkpoint/injectState.ts` + `bin/harnessed-inject-state.mjs` (G4 hook).
+- **Methodology note**: GSD `context: fork` skills (`/gsd-plan-phase`, `/gsd-execute-phase`) fire-and-die as slash commands — drive via `gsd-planner` / `gsd-executor` Agent-tool spawns instead.

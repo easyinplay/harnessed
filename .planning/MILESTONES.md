@@ -30,4 +30,5 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v6.0 Doc-Discipline Substrate | ◑ Implemented (2/2), pending release | G1 = 7th L0 discipline `doc-discipline.yaml` + STATE-line halt. G2 = `checkPlanningSync` guard in checkpoint complete. vitest 1188. Phase 11 `a5bd03c`; Phase 12 pending commit. Next: release (npm bump from 4.3.0). |
+| v6.0 Doc-Discipline Substrate | ◑ Implemented (2/2), pending release | G1 = 7th L0 discipline `doc-discipline.yaml` + STATE-line halt. G2 = `checkPlanningSync` guard in checkpoint complete. vitest 1188. Phase 11 `a5bd03c`; Phase 12 pending commit. Next: release (npm bump from 4.4.0). |
+| v7.0 Gap-Close & Memory Loop | ○ Discussed (2026-06-13), plan pending | 7 phases (13–19) closing comet/Trellis gaps: doc-debloat, compact-real, multi-workflow (un-defer G5), learning-loop, spec-injection, CodeGraph, minimal adoption. Discuss decisions in ROADMAP active + STATE. Next: `/gsd-plan-phase 13`. |

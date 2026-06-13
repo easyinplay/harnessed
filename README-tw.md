@@ -2,6 +2,8 @@
 
 [English](./README.md) | [简体中文](./README-cn.md) | **繁體中文** | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+
 > AI coding harness 套件管理器 + Composition Orchestrator
 > 將三層架構協作方法論（gstack 治理 + GSD 專案管理 + superpowers 資深工程師 + karpathy 原則 + mattpocock 招式）機器化執行為可運行的引擎
 
