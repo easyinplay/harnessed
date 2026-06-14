@@ -92,6 +92,13 @@ triggers:
     invokes:
       - capability: code-simplifier
 
+  # Phase 21 NEW — Stage ⑤ Ship master → ship-preflight always (release-readiness gate)
+  ship-preflight-always:
+    description: /ship master → /ship-preflight 总 fire (read-only release-readiness gate)。
+    fires_when: "phase.stage == 'ship'"
+    invokes:
+      - capability: release-preflight
+
   # v3.2.0 NEW — /auto super-master Phase 0.5 understanding check gate
   auto-research-unclear:
     description: |

@@ -16,6 +16,7 @@ import { registerManifestAdd } from './cli/manifest-add.js'
 import { registerNext } from './cli/next.js'
 import { registerPrompt } from './cli/prompt.js'
 import { registerReject } from './cli/reject.js'
+import { registerReleasePreflight } from './cli/release-preflight.js'
 import { registerResearch } from './cli/research.js'
 import { registerResume } from './cli/resume.js'
 import { registerRollback } from './cli/rollback.js'
@@ -104,5 +105,6 @@ registerCompact(program) // 22nd — Phase 14 compact: summarize+evict resolved 
 registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight workflows (one per repo)
 registerLearn(program) // 24th — Phase 16 learning loop: append a prose learning to .planning/LEARNINGS.md
 registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams + --migration-report
+registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate
 
 program.parse(process.argv)

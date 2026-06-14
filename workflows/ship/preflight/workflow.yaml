@@ -1,0 +1,29 @@
+# workflows/ship/preflight/workflow.yaml — Phase 21 (v7.0 follow-on)
+#
+# Stage ⑤.a Ship sub-workflow — release-preflight gate ("PR ready != release ready").
+# Read-only: checks CHANGELOG [Unreleased] / version / git-clean / tag-absence via
+# `harnessed release-preflight`. Mutates nothing — publish stays in publish.yml CI.
+#
+# Sister refs:
+#   - workflows/judgments/stage-routing.yaml ship-preflight-always trigger
+#   - workflows/capabilities.yaml — release-preflight (harnessed-bundled CLI gate)
+#   - src/cli/lib/release-preflight.ts collectPreflight
+
+schema_version: harnessed.workflow.v3
+workflow: ship-preflight
+description: |
+  Stage ⑤.a release-preflight gate — runs `harnessed release-preflight` (read-only:
+  CHANGELOG [Unreleased] non-empty + package.json version + git working tree clean +
+  v<version> tag absent). A failing gate BLOCKS shipping until the release is documented
+  and the tree is clean. Nothing is pushed, published, or tagged here.
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [release-preflight]
+
+phases:
+  - id: 01-release-preflight
+    name: release-preflight (read-only release-readiness gate; blocks on any failure)
+    upstream: harnessed
+    capability: '{{ capabilities.release-preflight.cmd }}'
+    model: haiku
+    max_iterations: 1

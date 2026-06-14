@@ -1,0 +1,37 @@
+# workflows/ship/auto/workflow.yaml — Phase 21 (v7.0 follow-on)
+#
+# Stage ⑤ Ship master orchestrator — the release stage after Verify. Closes the
+# ship-stage gap vs comet (archive) / Trellis (finish-work) / Claude-Harness
+# (/harness-release). Composition, not reimplementation:
+#   ship-preflight (serial, always) → delegate PR/deploy to gstack /ship → publish
+#   stays in publish.yml CI on tag push.
+#
+# Deploy boundary = TAG-READY. This stage never pushes, publishes, or creates a tag.
+#
+# Master invariant (WorkflowSchemaV3 + check-workflow-schema K9):
+#   - phases 缺省 (master only has delegates_to[])
+#   - serial mode 必带 explicit order
+#
+# Sister refs:
+#   - workflows/ship/preflight/workflow.yaml — the preflight sub
+#   - workflows/judgments/stage-routing.yaml — ship-preflight-always trigger
+#   - workflows/capabilities.yaml — release-preflight + ship (gstack) + planning-with-files
+
+schema_version: harnessed.workflow.v3
+workflow: ship
+description: |
+  Stage ⑤ Ship master orchestrator — release stage after Verify. ship-preflight 必跑串行
+  (release-readiness gate) → 委派 PR/deploy 给 gstack /ship → publish 留 publish.yml CI
+  (tag push 触发)。Deploy 边界 = tag-ready;本 stage 不 push/publish/创建 tag。
+  Triggered by `/ship` (bare per ADR 0030 namespace policy) after `harnessed verify`.
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - release-preflight
+  - ship
+  - planning-with-files
+
+delegates_to:
+  - sub: preflight
+    mode: serial
+    order: 1

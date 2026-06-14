@@ -823,6 +823,15 @@ capabilities:
     fires_when:
       - phase.stage == 'verify' AND phase.is_release_candidate == true
 
+  release-preflight:
+    impl: harnessed-bundled
+    cmd: harnessed release-preflight
+    since: v7.0
+    category: tool-cli
+    description: 只读发布就绪门 (CHANGELOG/version/git-clean/tag; PR ready != release ready)
+    fires_when:
+      - phase.stage == 'ship'
+
   setup-deploy:
     impl: gstack
     install_type: user-skill

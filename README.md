@@ -21,7 +21,7 @@
 
 ### 🔁 The operating loop
 
-> **Discuss → Plan → Build → Verify → Learn** — one repeatable loop, machine-executed across the three-layer stack (gstack governance · GSD orchestration · superpowers TDD · checkpoint evidence). Raw agent work drifts; harnessed turns it into a source-of-truth path where progress, evidence, and learnings persist instead of living in chat.
+> **Discuss → Plan → Build → Verify → Ship → Learn** — one repeatable loop, machine-executed across the three-layer stack (gstack governance · GSD orchestration · superpowers TDD · checkpoint evidence). Raw agent work drifts; harnessed turns it into a source-of-truth path where progress, evidence, and learnings persist instead of living in chat.
 
 ```mermaid
 flowchart LR
@@ -29,7 +29,8 @@ flowchart LR
   D(["① Discuss<br/>3-layer clarify"]) --> P(["② Plan<br/>persist spec + tasks"])
   P --> T(["③ Task<br/>TDD build + checkpoint"])
   T --> V(["④ Verify<br/>independent review + evidence gate"])
-  V --> L(["⑤ Retro<br/>capture learnings → next session smarter"])
+  V --> S(["⑤ Ship<br/>release-preflight → tag-ready (publish via CI)"])
+  S --> L(["⑥ Retro<br/>capture learnings → next session smarter"])
   V -. "fail / gap" .-> T
   L -. "next requirement" .-> D
   classDef opt stroke-dasharray:5,opacity:0.8

@@ -49,6 +49,7 @@
 ### Follow-on (post-v7.0-close)
 
 - [x] **Phase 20: `harnessed update` command** ✅ 2026-06-14 — GSD-style `update` (self `npm i -g harnessed@latest` + `--check` + `--upstreams` re-runs base manifests via extracted `installBaseProfile` + `--migration-report` read-only inventory) + 14th doctor check `checkUpdate` surfacing "update available X→Y" (fail-soft). Closes the `comet update` gap. TDD +17, 1302 tests, zero real installs (mocked). 详: `phases/20-update-command/`.
+- [x] **Phase 21: ship/release stage (5th stage)** ✅ 2026-06-14 — first-class Ship after Verify (4→5 stage). `harnessed release-preflight` (26th CLI) read-only gate (CHANGELOG `[Unreleased]`/version/git-clean/tag-absent, exit 1, zero mutation) + `/ship` workflow master + `ship/preflight` sub + capability + routing + README 5-stage (real check-workflow-schema v3=26). Tag-ready boundary (publish in CI). Closes the ship-stage gap. TDD +5, 1307 tests. 详: `phases/21-ship-stage/`.
 
 ### Phase 13: planning doc-debloat (A)
 
