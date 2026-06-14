@@ -35,15 +35,24 @@ function unreleasedSection(changelog: string): string {
 export function collectPreflight(deps: PreflightDeps): PreflightCheck[] {
   const checks: PreflightCheck[] = []
 
+  // Documented if [Unreleased] has entries (pre-cut) OR a section for the current
+  // version already exists (post-cut, the form publish.yml reads for release notes).
   const unreleased = unreleasedSection(deps.changelog)
+  const hasVersionSection = deps.changelog.includes(`## [${deps.version}]`)
   checks.push(
-    unreleased.length > 0
-      ? { name: 'changelog', status: 'pass', message: 'CHANGELOG [Unreleased] has entries' }
+    unreleased.length > 0 || hasVersionSection
+      ? {
+          name: 'changelog',
+          status: 'pass',
+          message: hasVersionSection
+            ? `CHANGELOG has a [${deps.version}] section`
+            : 'CHANGELOG [Unreleased] has entries',
+        }
       : {
           name: 'changelog',
           status: 'fail',
-          message: 'CHANGELOG [Unreleased] is empty',
-          fix: 'document this release under ## [Unreleased] before shipping',
+          message: 'CHANGELOG [Unreleased] is empty and no version section exists',
+          fix: 'document this release under ## [Unreleased] (or ## [<version>]) before shipping',
         },
   )
 

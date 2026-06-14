@@ -27,13 +27,22 @@ describe('collectPreflight', () => {
     expect(anyFailed(checks)).toBe(false)
   })
 
-  it('empty [Unreleased] → changelog check fails', () => {
+  it('empty [Unreleased] and no version section → changelog check fails', () => {
     const checks = collectPreflight({
       ...ready,
       changelog: '# Changelog\n\n## [Unreleased]\n\n## [4.4.0] - 2026-06-11\n\n### Added\n- old\n',
     })
     expect(check(checks, 'changelog')?.status).toBe('fail')
     expect(anyFailed(checks)).toBe(true)
+  })
+
+  it('empty [Unreleased] but a [<version>] section exists (post-cut) → changelog passes', () => {
+    const checks = collectPreflight({
+      ...ready,
+      version: '4.5.0',
+      changelog: '# Changelog\n\n## [Unreleased]\n\n## [4.5.0] - 2026-06-14\n\n### Added\n- v7.0\n',
+    })
+    expect(check(checks, 'changelog')?.status).toBe('pass')
   })
 
   it('dirty working tree → git-clean check fails', () => {
