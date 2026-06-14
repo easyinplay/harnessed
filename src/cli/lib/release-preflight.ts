@@ -111,7 +111,13 @@ export function defaultDeps(cwd: string): PreflightDeps {
   let gitStatus = ''
   let gitTags: string[] = []
   try {
-    gitStatus = execFileSync('git', ['status', '--porcelain'], { cwd, encoding: 'utf8' })
+    // --untracked-files=no: a release gate cares about uncommitted *tracked*
+    // changes (those would land in the tag); untracked local scratch does not
+    // affect a tag-based release and should not block it.
+    gitStatus = execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], {
+      cwd,
+      encoding: 'utf8',
+    })
   } catch {}
   try {
     gitTags = execFileSync('git', ['tag', '-l'], { cwd, encoding: 'utf8' })
