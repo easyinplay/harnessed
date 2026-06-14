@@ -50,7 +50,7 @@ export const DEFAULT_VERIFY_TIMEOUT_MS = 15_000
 /** v3.0.2: explicit install-step timeout — Windows cold npm/npx cache can
  *  exceed 30-45s on first install. 60s default keeps fast-path zippy while
  *  not failing legitimate cold installs. */
-export const DEFAULT_INSTALL_TIMEOUT_MS = 60_000
+export const DEFAULT_INSTALL_TIMEOUT_MS = 120_000
 
 export interface SpawnOk {
   ok: true
@@ -81,6 +81,7 @@ export async function spawnCmd(
   cmd: string,
   args: string[],
   timeoutMs?: number,
+  opts?: { posixShell?: boolean },
 ): Promise<SpawnOk | InstallResult> {
   // 1. B1 defense-in-depth — re-check the literal cmd string for shell escapes.
   const violation = checkCmdString(cmd)
@@ -107,15 +108,27 @@ export async function spawnCmd(
   const cwd = installCfg.cwd ?? ctx.cwd
 
   let child: ChildProcess
+  // v23 (4.5.1) — POSIX-shell cmds (git-clone-with-setup install + all verify cmds
+  // use rm/cp/test/grep/| which cmd.exe can't run) route through Git Bash on Windows.
+  // bash expands `~` natively (no pre-expand). npm/npx/claude/mcp install cmds keep
+  // cmd.exe (they are .cmd shims). `triedBash` lets the error handler emit a clear
+  // "Git Bash required" message on ENOENT.
+  let triedBash = false
   if (process.platform === 'win32') {
-    // v3.9.8 — expand `~/` because cmd.exe doesn't (POSIX-only convention).
-    const expandedCmd = expandTildeForWindows(cmd)
-    const expandedArgs = args.map(expandTildeForWindows)
-    child = spawn('cmd.exe', ['/c', expandedCmd, ...expandedArgs], {
-      cwd,
-      env,
-      windowsHide: true,
-    })
+    if (opts?.posixShell) {
+      const joined = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
+      triedBash = true
+      child = spawn('bash', ['-c', joined], { cwd, env, windowsHide: true })
+    } else {
+      // v3.9.8 — expand `~/` because cmd.exe doesn't (POSIX-only convention).
+      const expandedCmd = expandTildeForWindows(cmd)
+      const expandedArgs = args.map(expandTildeForWindows)
+      child = spawn('cmd.exe', ['/c', expandedCmd, ...expandedArgs], {
+        cwd,
+        env,
+        windowsHide: true,
+      })
+    }
   } else {
     const joined = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
     child = spawn('/bin/sh', ['-c', joined], { cwd, env })
@@ -150,16 +163,19 @@ export async function spawnCmd(
 
     child.on('error', (err) => {
       clearTimeout(timer)
+      const bashMissing = triedBash && (err as NodeJS.ErrnoException).code === 'ENOENT'
       resolve({
         ok: false,
         phase: 'spawn',
         error: {
           file: ctx.manifest.metadata.name,
           path: '/spec/install/cmd',
-          message: `spawn failed: ${err.message}`,
+          message: bashMissing
+            ? 'Git Bash is required for this component on Windows, but `bash` was not found on PATH. Install Git for Windows (https://git-scm.com/download/win) and re-run `harnessed setup`.'
+            : `spawn failed: ${err.message}`,
           line: null,
           column: null,
-          keyword: 'spawn-error',
+          keyword: bashMissing ? 'bash-missing' : 'spawn-error',
         },
       })
     })

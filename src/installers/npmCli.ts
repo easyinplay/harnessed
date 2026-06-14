@@ -111,7 +111,10 @@ export const installNpmCli: Installer = async (ctx) => {
   }
   // v3.0.2: verify honors spec.verify.timeout_ms (default 15s) — manifest authors retain control.
   const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
-  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs)
+  // v23 (4.5.1) — verify cmds use POSIX builtins (test/grep/|); route through Git Bash on Windows.
+  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs, {
+    posixShell: true,
+  })
   if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
   const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0
   if (vr.exitCode !== expected) {

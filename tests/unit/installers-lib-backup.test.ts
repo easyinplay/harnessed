@@ -207,6 +207,26 @@ describe('backup', () => {
     expect(meta.files[0].sha1).toBe('')
   })
 
+  it('v23 — records sentinel entry (backup="") on EISDIR (target is a dir, force-update overwrite) without aborting', async () => {
+    const eisdir = new Error(
+      'EISDIR: illegal operation on a directory, read',
+    ) as NodeJS.ErrnoException
+    eisdir.code = 'EISDIR'
+    readFileMock.mockRejectedValueOnce(eisdir)
+    const plan: DiffPlan = {
+      files: [
+        // git-clone-with-setup pure-create: target skill dir already exists as a dir.
+        { target: '/tmp/proj/.claude/skills/foo', scope: 'HOME', oldText: '', newText: 'x' },
+      ],
+    }
+    const r = await backup(plan, ctx())
+    expect(r.ok).toBe(true)
+    const metaCall = writeCallMatching(/metadata\.json$/)
+    const meta = JSON.parse(metaCall?.[1] as string)
+    expect(meta.files[0].backup).toBe('')
+    expect(meta.files[0].sha1).toBe('')
+  })
+
   it('returns ok=false with backup-mkdir-failed when mkdir throws', async () => {
     mkdirMock.mockRejectedValueOnce(new Error('disk full'))
     const plan: DiffPlan = { files: [] }

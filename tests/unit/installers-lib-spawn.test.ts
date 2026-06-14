@@ -290,6 +290,70 @@ describe('spawnCmd', () => {
     const r = await spawnCmd(c, 'echo ok', [])
     expect(isSpawnOk(r)).toBe(true)
   })
+
+  // v23 (4.5.1) — POSIX-shell routing. git-clone-with-setup + all verify cmds use
+  // rm/cp/test/grep/| which cmd.exe cannot run; on Windows they MUST route through
+  // Git Bash. These two tests force process.platform deterministically so they
+  // assert the same behavior regardless of CI host OS.
+  describe('v23 posixShell routing (Git Bash on Windows)', () => {
+    const realPlatform = process.platform
+    function forcePlatform(value: NodeJS.Platform): void {
+      Object.defineProperty(process, 'platform', { value, configurable: true })
+    }
+    afterEach(() => {
+      Object.defineProperty(process, 'platform', { value: realPlatform, configurable: true })
+    })
+
+    it('on win32 with posixShell routes through bash -c (not cmd.exe)', async () => {
+      forcePlatform('win32')
+      spawnMock.mockReturnValueOnce(
+        makeChild({ exitCode: 0, stdout: 'ok' }) as unknown as ReturnType<typeof spawn>,
+      )
+      await spawnCmd(ctx(), 'test -f ~/.claude/skills/x/SKILL.md', [], 5000, { posixShell: true })
+      const callArgs = spawnMock.mock.calls[0] as [string, string[], unknown]
+      expect(callArgs[0]).toBe('bash')
+      expect(callArgs[1]).toEqual(['-c', 'test -f ~/.claude/skills/x/SKILL.md'])
+    })
+
+    it('on win32 WITHOUT posixShell still uses cmd.exe /c', async () => {
+      forcePlatform('win32')
+      spawnMock.mockReturnValueOnce(
+        makeChild({ exitCode: 0, stdout: 'ok' }) as unknown as ReturnType<typeof spawn>,
+      )
+      await spawnCmd(ctx(), 'npm install -g sp-test', [], 5000)
+      const callArgs = spawnMock.mock.calls[0] as [string, string[], unknown]
+      expect(callArgs[0]).toBe('cmd.exe')
+      expect(callArgs[1]?.[0]).toBe('/c')
+    })
+
+    it('on POSIX, posixShell is a no-op — still /bin/sh -c', async () => {
+      forcePlatform('linux')
+      spawnMock.mockReturnValueOnce(
+        makeChild({ exitCode: 0, stdout: 'ok' }) as unknown as ReturnType<typeof spawn>,
+      )
+      await spawnCmd(ctx(), 'grep -q foo bar', [], 5000, { posixShell: true })
+      const callArgs = spawnMock.mock.calls[0] as [string, string[], unknown]
+      expect(callArgs[0]).toBe('/bin/sh')
+      expect(callArgs[1]).toEqual(['-c', 'grep -q foo bar'])
+    })
+
+    it('bash ENOENT on win32 → clear "Git Bash required" error (keyword bash-missing)', async () => {
+      forcePlatform('win32')
+      const enoent = new Error('spawn bash ENOENT') as NodeJS.ErrnoException
+      enoent.code = 'ENOENT'
+      spawnMock.mockReturnValueOnce(
+        makeChild({ emitError: enoent }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await spawnCmd(ctx(), 'test -f /x', [], 5000, { posixShell: true })
+      expect(isInstallFailure(r)).toBe(true)
+      if (isInstallFailure(r)) {
+        expect(r.phase).toBe('spawn')
+        expect(r.error.keyword).toBe('bash-missing')
+        expect(r.error.message).toContain('Git Bash')
+        expect(r.error.message).toContain('git-scm.com')
+      }
+    })
+  })
 })
 
 afterEach(() => {

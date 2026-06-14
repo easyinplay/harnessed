@@ -122,6 +122,15 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
         })
         continue
       }
+      // v23 (4.5.1) — EISDIR: the target is a directory (e.g. git-clone-with-setup
+      // overwriting an existing skill dir on force-update). A byte-backup isn't
+      // applicable; record a sentinel so the install proceeds rather than crash with
+      // "illegal operation on a directory, read". (git-clone-with-setup is pure-create;
+      // directory rollback is out of scope by its own contract.)
+      if (code === 'EISDIR') {
+        entries.push({ target: file.target, backup: '', sha1: '', eol: 'lf' })
+        continue
+      }
       return {
         ok: false,
         error: {

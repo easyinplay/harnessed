@@ -161,8 +161,9 @@ describe('cli/setup — Phase v2.0-2.3 W1.1 (Agent Teams probe + Pure bundled hi
 
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    expect(stdout).toContain('harnessed v3.0')
-    expect(stdout).toContain('23 workflows bundled')
+    // v23 (4.5.1) — bundled_summary de-staled: dropped hardcoded `v3.0` + the
+    // stale `23 workflows` count; now generic share-only line.
+    expect(stdout).toContain('harnessed workflows bundled')
     expect(stdout).toContain('<packageRoot>/workflows/')
     // Pure bundled verify: NO ~/.harnessed/ user-dir reference
     expect(stdout).not.toContain('~/.harnessed/')

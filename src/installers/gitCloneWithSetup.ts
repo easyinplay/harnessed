@@ -190,7 +190,8 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   // Run the manifest cmd as-is (rm + git clone + cp + cleanup pipeline).
   // spawnCmd handles cross-OS shell + B1 re-screen. cmd is single string.
   // v3.0.2: explicit install timeout (60s — git clone over network can exceed 15s).
-  const sp = await spawnCmd(ctx, install.cmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
+  // v23 (4.5.1) — posixShell: this cmd uses rm/cp/mkdir; route through Git Bash on Windows.
+  const sp = await spawnCmd(ctx, install.cmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { posixShell: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
     return {
@@ -240,7 +241,9 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   // verify cmd (e.g. `test -f ~/.claude/skills/<name>/SKILL.md`).
   // v3.0.2: verify honors spec.verify.timeout_ms (default 15s).
   const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
-  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs)
+  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs, {
+    posixShell: true,
+  })
   if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
   const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0
   if (vr.exitCode !== expected) {
