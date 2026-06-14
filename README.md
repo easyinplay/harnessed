@@ -49,10 +49,10 @@ flowchart LR
 
 - **Three-layer stack machine-executed** — `gstack governance` + `GSD project manager` + `superpowers senior engineer` + `karpathy 4 principles` + `mattpocock 23 moves`, 5 pillars at 100% capture
 - **No vendoring of upstream** — manifests describe install/check; on upstream upgrade users just re-install to get the latest version
-- **Composition Skill** — in-house workflow skills act as the conductor's baton, orchestrating multiple upstreams in concert. **1 super-master `/auto` + 4 stage masters + 18 sub-workflows + 2 standalones = 25 namespace-layered workflows**, full 4-stage machine-execution (`/auto` one-shot across stages / `/discuss /plan /task /verify` single stage / 18 three-layer-stack subs / `/research /retro` 2 standalones)
+- **Composition Skill** — in-house workflow skills act as the conductor's baton, orchestrating multiple upstreams in concert. **1 super-master `/auto` + 5 stage masters + 19 sub-workflows + 2 standalones = 27 namespace-layered workflows**, full 5-stage machine-execution (`/auto` one-shot across stages / `/discuss /plan /task /verify /ship` single stage / 19 three-layer-stack subs / `/research /retro` 2 standalones)
 - **L0 Discipline Substrate** — global cross-stage behavior baseline (karpathy principles + output-style + language + operational + priority + protocols), applied universally
 - **Package manager mindset** — install dependency graph auto-resolves, doctor health check, install-base one-shot full install
-- **Unified entry point** — users face `/discuss /plan /task /verify` master slash commands without learning each upstream's terminology; sub commands explicitly invoke a single stage (e.g. `/discuss-strategic` runs only the strategic-layer clarification)
+- **Unified entry point** — users face `/discuss /plan /task /verify /ship` master slash commands without learning each upstream's terminology; sub commands explicitly invoke a single stage (e.g. `/discuss-strategic` runs only the strategic-layer clarification)
 
 ---
 
@@ -109,14 +109,14 @@ In order of increasing user intervention:
 /discuss-phase "..."        # Run only Phase-layer clarification
 /plan-architecture "..."    # Run only architecture review
 /verify-paranoid "..."      # Run only the Paranoid Staff Engineer review
-# ... pick any of the other 18 sub-workflows
+# ... pick any of the other 19 sub-workflows
 ```
 
 > "I'm an expert, I'll decide myself" — skip the master, invoke a sub-workflow directly. Suits advanced users who know exactly which sub they need, or reuse of a single step.
 
 ---
 
-## 📐 4-Stage Flow Diagram
+## 📐 5-Stage Flow Diagram
 
 ```mermaid
 graph TD
@@ -154,16 +154,21 @@ graph TD
     VM[verify-multispec]
     VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
   end
-  RT([⑤ /retro — milestone summary, optional]):::optional
+  subgraph Ship[⑤ Ship — Release]
+    SMs[/ship master/]
+    SP[ship-preflight]
+    SMs --> SP
+  end
+  RT([⑥ /retro — milestone summary, optional]):::optional
   RS --> Discuss
-  Discuss --> Plan --> Task --> Verify
-  Verify --> RT
+  Discuss --> Plan --> Task --> Verify --> Ship
+  Ship --> RT
   classDef optional stroke-dasharray:5 5,fill:#f5f5f5,color:#666
 ```
 
-> Dashed boxes = optional standalones (`/research` pre-strategic investigation / `/retro` post-milestone summary); solid boxes = main 4-stage cadence.
+> Dashed boxes = optional standalones (`/research` pre-strategic investigation / `/retro` post-milestone summary); solid boxes = main 5-stage cadence (Ship stops at tag-ready; `publish.yml` CI does the actual publish).
 
-### 25-Workflow Overview Table
+### 27-Workflow Overview Table
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
@@ -189,6 +194,8 @@ graph TD
 | `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | Design system consistency (has_design_changes conditional) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Final serial simplification |
 | `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | Critical release / large refactor PR escalation (mutual SendMessage cross-examination) |
+| `/ship` | ⑤ Ship | Master | masterOrchestrator | Release stage after Verify — preflight → delegate PR/deploy to gstack `/ship` → publish via CI (tag-ready boundary) |
+| `/ship-preflight` | ⑤ Ship | Sub | `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); blocks on failure |
 | `/research` | Standalone | Standalone | Tavily / Exa MCP + ctx7 + GSD `/gsd-discuss-phase` | Multi-source investigation (Stage ① alternate) |
 | `/retro` | Standalone | Standalone | gstack `/retro` + planning-with-files RETROSPECTIVE.md | Project / milestone close-out summary |
 
@@ -199,11 +206,11 @@ graph TD
 
 ## ⚡ Usage Flow
 
-4-stage three-layer-stack methodology — recommended driving via the 4 master orchestrators in series:
+5-stage three-layer-stack methodology — recommended driving via the 5 master orchestrators in series:
 
 ```
-/discuss  →  /plan  →  /task  →  /verify
-   ①         ②        ③         ④
+/discuss  →  /plan  →  /task  →  /verify  →  /ship
+   ①         ②        ③         ④           ⑤
 ```
 
 | Stage | Master | Main sub-workflows | Upstream collaboration |
@@ -212,6 +219,7 @@ graph TD
 | ② **Plan** | `/plan` | architecture (conditional) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
 | ③ **Task** | `/task` | clarify → code → test → deliver (4 serial per subtask) | karpathy principles + mattpocock moves + superpowers TDD + `ralph-loop` |
 | ④ **Verify** | `/verify` | progress → 5 parallel conditional → simplify (+ multispec critical) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
+| ⑤ **Ship** | `/ship` | preflight (release-readiness gate) → delegate PR/deploy | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI (tag-ready boundary) |
 
 Practical example:
 
@@ -219,11 +227,12 @@ Practical example:
 # 1. Install workflow upstreams (one line installs gstack + GSD + superpowers + planning-with-files)
 harnessed setup
 
-# 2. Run the 4-stage cadence inside Claude Code
+# 2. Run the 5-stage cadence inside Claude Code
 /discuss "new feature X"          # Strategic + Phase + Subtask 3-layer clarification
 /plan "new feature X"             # Architecture (conditional) + plan (task graph persisted)
 /task "subtask-1: API contract"   # 4 subs serial per subtask
 /verify "phase-1"                 # 7 subs conditional
+/ship                             # release-preflight gate → PR/deploy (tag-ready; publish via CI)
 
 # 3. Resume after interruption (any time)
 harnessed resume
@@ -235,14 +244,14 @@ harnessed resume
 
 ---
 
-## 🗂️ Architecture (4-stage namespace-layered)
+## 🗂️ Architecture (5-stage namespace-layered)
 
 ### 1. Directory Structure
 
 ```
 harnessed/
 ├── manifests/                  # L1: upstream description layer (NOT vendored)
-├── workflows/                  # L6: composition skills (4-stage conductor's baton)
+├── workflows/                  # L6: composition skills (5-stage conductor's baton)
 │   ├── discuss/                # Stage ① 3 layers (strategic + phase + subtask)
 │   │   ├── auto/               # /discuss master gate-route
 │   │   ├── strategic/          # /discuss-strategic (gstack /office-hours + /plan-ceo-review)
@@ -251,8 +260,9 @@ harnessed/
 │   ├── plan/                   # Stage ② (architecture + phase task graph)
 │   ├── task/                   # Stage ③ (clarify + code + test + deliver)
 │   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
+│   ├── ship/                   # Stage ⑤ (preflight release-readiness gate → delegate PR/deploy to gstack /ship; tag-ready)
 │   ├── research/               # standalone Stage ① alternate
-│   ├── retro/                  # standalone post-④ milestone close
+│   ├── retro/                  # standalone post-⑤ milestone close
 │   ├── capabilities.yaml       # L5a: ~100 entries, 7 categories SoT
 │   ├── defaults.yaml           # ralph_max_iterations per workflow phase
 │   ├── judgments/              # L5a: three-layer-stack criteria + parallelism + tdd + fallback + rules-routing
@@ -287,7 +297,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 User-facing slash cmd + harnessed CLI                    │
-│   /discuss /plan /task /verify (master) + 18 sub + /research /retro + /auto super-master
+│   /discuss /plan /task /verify /ship (master) + 19 sub + /research /retro + /auto super-master
 │   + direct gstack invoke (30+ optional): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
@@ -469,7 +479,7 @@ Think `brew install <formula>` pulling the full dependency set — you don't nee
 | Orchestration | GSD | High-level phase task graph + dependency analysis |
 | Persistence | planning-with-files | Persists `task_plan.md` / `progress.md` / `findings.md` |
 
-`/discuss /plan /task /verify` — the 4 masters string the 4 stages together; each master internally delegates to its sub. Each stage does a different thing and feeds the next. **No merging**.
+`/discuss /plan /task /verify /ship` — the 5 masters string the 5 stages together; each master internally delegates to its sub. Each stage does a different thing and feeds the next. **No merging**.
 
 </details>
 
