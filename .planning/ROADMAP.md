@@ -1,7 +1,7 @@
 # ROADMAP — harnessed
 
 > Shipped history = indexed archive (do NOT re-plan). Active milestone = **v7.0 Gap-Close & Memory Loop** (close comet/Trellis competitive gaps + de-bloat planning docs).
-> Current published npm: **4.4.0** · milestone codenames (v6.0/v7.0) are spec/era names, NOT npm versions. v6.0 implemented 2026-06-11, pending npm release.
+> Current published npm: **4.5.0** (tagged + pushed 2026-06-14; publish.yml CI publishing) · milestone codenames (v6.0/v7.0) are spec/era names, NOT npm versions. v6.0 shipped in 4.4.0; v7.0 + follow-ons (20/21) shipped in 4.5.0.
 
 ---
 
