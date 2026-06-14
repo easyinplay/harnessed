@@ -21,7 +21,7 @@
 
 ### 🔁 The operating loop
 
-> **Discuss → Plan → Build → Verify → Ship → Learn** — one repeatable loop, machine-executed across the three-layer stack (gstack governance · GSD orchestration · superpowers TDD · checkpoint evidence). Raw agent work drifts; harnessed turns it into a source-of-truth path where progress, evidence, and learnings persist instead of living in chat.
+> **Discuss → Plan → Build → Verify → Ship**, closed by a **Learn** loop — machine-executed across the three-layer stack (gstack governance · GSD orchestration · superpowers TDD · checkpoint evidence). Raw agent work drifts; harnessed turns it into a source-of-truth path where progress and evidence persist instead of living in chat. **Learning is automatic**: every completed workflow appends its failure/loop/reject signals to `.planning/LEARNINGS.md`, which are injected into the next cycle — this is always-on, **not** gated on the optional Retro. Retro (`/retro`) is a separate, optional milestone summary.
 
 ```mermaid
 flowchart LR
@@ -30,9 +30,9 @@ flowchart LR
   P --> T(["③ Task<br/>TDD build + checkpoint"])
   T --> V(["④ Verify<br/>independent review + evidence gate"])
   V --> S(["⑤ Ship<br/>release-preflight → tag-ready (publish via CI)"])
-  S --> L(["⑥ Retro<br/>capture learnings → next session smarter"])
+  S -. "milestone summary" .-> RT(["Retro<br/>(optional)"]):::opt
   V -. "fail / gap" .-> T
-  L -. "next requirement" .-> D
+  S == "🔁 Learn — learnings captured on every workflow completion → injected next cycle" ==> D
   classDef opt stroke-dasharray:5,opacity:0.8
 ```
 
@@ -405,10 +405,17 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed gates <master>` | Evaluate which sub-workflows fire for a master stage (JSON: fire/skip/parallelism). Used by slash commands to orchestrate native spawns. |
 | `harnessed prompt <sub>` | Output a spawn-ready prompt (role + checklist + disciplines + completion/clarification protocols) for a sub-workflow. |
 | `harnessed checkpoint <action> <sub>` | Record sub-workflow start/complete/fail to `~/.claude/harnessed/checkpoints/`. |
+| `harnessed next` | Deterministic next-step contract (`NEXT: auto\|manual\|done`) for the active workflow. |
+| `harnessed reject <sub>` | Mark a sub as user-rejected (terminal, distinct from `failed`). |
+| `harnessed compact [--tokens <n>]` | Summarize+evict resolved ledger entries (G6-safe: `fail_count>0` never evicted); auto-triggers on `checkpoint complete --tokens`. |
+| `harnessed workflows` | List in-flight workflows (one per repo). |
+| `harnessed learn "<lesson>"` | Append a prose learning to this repo's `.planning/LEARNINGS.md`. |
 | `harnessed run <name>` | Run a workflow via in-process SDK spawn (CI/headless mode). Slash commands use CC-native spawn instead. |
 | `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
 | `harnessed status` | Current phase + lock holder |
-| `harnessed doctor` | 8-check health check (Node / MCP / jq / Win bash / routing / token budget, etc.) |
+| `harnessed doctor` | 14-check health check (Node / MCP / jq / Win bash / routing / token budget / mattpocock / CodeGraph / update-available, etc.) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | Self-update (`npm i -g harnessed@latest`); `--check` reports the latest version; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
+| `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exits 1 if not ready. The Ship-stage gate. |
 | `harnessed install <name>` | Install an upstream manifest |
 | `harnessed uninstall [name]` | Reverse uninstall |
 | `harnessed backup` | Snapshot backup management |
