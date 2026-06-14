@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.0] - 2026-06-14
+
+v7.0 Gap-Close & Memory Loop (phases 13–19) + follow-ons (update command, ship stage). Closes the highest-value gaps vs comet / Trellis / Claude-Code-Harness: a cross-session learning loop, per-repo workflow isolation, a release stage, and an update flow. Additive except the on-disk workflow store (compat-read migrated). The operating loop is now 5-stage: Discuss → Plan → Build → Verify → Ship → Learn.
+
+### Added
+
+- **Learning loop (Phase 16–17)** — completed workflows append failure/loop/reject signals to a git-shareable `.planning/LEARNINGS.md` (`harnessed learn "<lesson>"` for prose); the per-turn G4 hook injects relevance-filtered learnings + the current phase's CONTEXT excerpt (`HARNESSED_INJECT_BUDGET`, default 1500 tokens).
+- **`harnessed update` (Phase 20)** — self-update (`npm i -g harnessed@latest`) + `--check` + `--upstreams` (re-run base manifests) + `--migration-report` (read-only stale-state inventory). A 14th doctor check surfaces "update available X→Y" (fail-soft).
+- **Ship stage (Phase 21)** — a 5th workflow stage after Verify. `harnessed release-preflight` is a read-only release-readiness gate (CHANGELOG `[Unreleased]`/version/git-clean/tag-absent); the `/ship` master delegates PR/deploy to gstack `/ship`. Deploy boundary = tag-ready (publish stays in `publish.yml` CI).
+- **CodeGraph catalog (Phase 18)** — opt-in `manifests/optional/codegraph.yaml` (never in the base profile) + an always-pass doctor detect; CodeGraph self-installs, harnessed only catalogs + detects.
+- **`harnessed compact` (Phase 14)** — real summarize+evict ledger compaction (G6-safe) + auto-trigger on `checkpoint complete --tokens`.
+- **`harnessed workflows` (Phase 15)** — list in-flight workflows (one per repo).
+- **`docs/comparison.md` (Phase 19)** — an honest, snapshot-dated harnessed-vs-comet-vs-Trellis comparison.
+
+### Changed
+
+- **Per-repo workflow store (Phase 15, BREAKING on-disk)** — the global singleton `current-workflow.json` is replaced by a per-repo multi-store `workflows.json` keyed by repo-root, so concurrent projects no longer clobber each other's checkpoint state. The 17 call sites and the envelope schema are unchanged (behind-API); a legacy singleton is compat-read migrated with a dual-write rollback window.
+- **Planning-doc debloat (Phase 13)** — trimmed the metastasized status blockquote and folded PROJECT-SPEC status into STATE.
+
+### Fixed
+
+- `release-preflight` recognizes a versioned CHANGELOG section (post-cut), not only `[Unreleased]`.
+- The G4 inject hook is repo-aware (reads `workflows.json[repoKey(cwd)]`, legacy fallback), fixing the Phase-15 gap where it blindly read the global singleton.
+
 ## [4.4.0] - 2026-06-11
 
 Doc-Discipline Substrate (v6.0 milestone) — close the two highest-value gaps vs the three-layer-stack methodology: codify the documentation-discipline rules and finish the completion sentinel. Additive only; reuses the existing L0 discipline substrate and the v4.2 checkpoint ledger. No architecture change.
