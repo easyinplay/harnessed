@@ -21,17 +21,17 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v7.0 Gap-Close & Memory Loop ✅ COMPLETE 7/7 + follow-ons (20 update, 21 ship) — **all SHIPPED in v4.5.0** (tagged + pushed 2026-06-14). Next = Phase 22 (smart ship-reminder).
-- **Latest shipped**: **v4.5.0 tagged + pushed 2026-06-14** (publish.yml CI running `npm publish --provenance` + GitHub release; npm flips 4.4.0→4.5.0 on completion). Contains v7.0 phases 13–19 + `harnessed update` (20) + Ship stage (21).
+- **Current focus**: v4.5.1 SHIPPED (Phase 23). Phase 22 (smart reminders: ship + retro) implemented + gate-green 2026-06-14, AWAITING COMMIT — next release after commit.
+- **Latest shipped**: **v4.5.1 tagged + pushed + published 2026-06-14** (publish.yml run 27499629833 SUCCESS — npm `harnessed@4.5.1` live + GitHub release). Phase 23 POSIX-shell routing via Git Bash + backup EISDIR + msg de-stale + install timeout 120s. (v4.5.0 = v7.0 13–19 + update 20 + ship 21.)
 
 ## Current Position
 
 Phase: 21 (ship/release stage, v7.0 follow-on) ✅ DONE 2026-06-14 — first-class Ship stage after Verify (4-stage → 5-stage). Wave 1: `harnessed release-preflight` (26th CLI) read-only gate — `collectPreflight` over CHANGELOG `[Unreleased]`/version/git-clean/`v<version>`-tag-absent, exit 1 on any fail, zero git/remote mutation. Wave 2: `/ship` workflow master + `ship/preflight` sub + `release-preflight` capability + `ship-preflight-always` routing + README 5-stage; real `check-workflow-schema.mjs` passes (v3 workflow 24→26). Deploy boundary = tag-ready (publish stays in publish.yml CI). Closes the ship-stage gap (comet archive / Trellis finish-work / Claude-Harness `/harness-release`). TDD +5, 1307 tests, tsc 0, biome clean. Dogfood: preflight on this repo exits 1 with the 3 real 4.5.0 blockers.
 Plan: 21-01-PLAN.md executed + 21-01-SUMMARY.md. **v4.5.0 SHIPPED 2026-06-14** — release-preflight (its own dogfood) green, tag `v4.5.0` pushed, publish.yml CI triggered.
 RELEASE divergence resolved: origin/main had a parallel user-pushed `4b3510e` (a G6-UNSAFE Phase-14 compact — evicted failed entries). Rebased the local v7.0 chain onto it (option A) and kept the G6-safe `261e36f` compact (fail_count>0 never evicted) on the 4 conflicting files; rebased tree 1308 tests green. Pushed `4b3510e..0d29054`.
-Phase 22 (decided 2026-06-14, NOT started): SMART ship-reminder. When a verify/auto workflow completes (allResolved), `checkpoint complete` does a git-aware check (commits since the last `vX.Y.Z` tag) → sets `ship_ready` on the envelope (additive schema); the inject hook reads the flag (no git, hot-path) and emits a `SHIP-READY:` line each turn; the AI judges whether it's a real release milestone. Surface = checkpoint-detect + per-turn inject hook (both). Reuses Phase 21 release-preflight as the downstream gate.
+Phase 22 (smart reminders: ship + retro) ✅ DONE 2026-06-14 — gate-green, AWAITING COMMIT. Two AI-judged inject nudges on one envelope-flag mechanism: `ship_ready` (git-derived, commits since last `vX.Y.Z` tag) + `retro_due` (per-repo phase-count counter ≥ N, default 5 via `HARNESSED_RETRO_PHASE_THRESHOLD`, sidecar-persisted since `activate()` wipes the envelope). +`harnessed retro --done` (27th CLI) reset. Bin stays git/threshold-free (reads booleans). Additive-optional schema (no bump). TDD +24, 1335 tests, tsc 0, biome clean. 详: `.planning/phases/22-smart-reminders/` (CONTEXT D1–D8 + SUMMARY).
 Status: ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked). RTK note: `git status | grep` pollution checks false-positive (RTK prints `ok`) — verify with `ls`/`test -f`.
-Last activity: 2026-06-14 — Phase 21 (ship/release 5th stage: release-preflight gate + /ship master) shipped (TDD Wave 1 + schema-valid Wave 2).
+Last activity: 2026-06-14 — Phase 22 (smart reminders: ship + retro) implemented gate-green, awaiting commit (after v4.5.1 Phase 23 shipped).
 
 ## Milestone Scope (v7.0) — 7 phases
 

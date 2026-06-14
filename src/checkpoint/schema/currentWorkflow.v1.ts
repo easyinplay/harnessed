@@ -97,6 +97,18 @@ export const CurrentWorkflowV1 = Type.Object(
         { additionalProperties: false },
       ),
     ),
+    // Phase 22 — smart reminders. Additive-optional flags set by `checkpoint
+    // complete` (allResolved) and read by the G4 inject twins (booleans only; the
+    // bin computes neither git nor thresholds). Old files without them Value.Check-pass
+    // → NO schemaVersion bump.
+    //   ship_ready  — there are unshipped commits since the last vX.Y.Z tag (git-derived,
+    //                 recomputed each completion; self-heals to false after a release).
+    //   ship_commits — commit count since that tag (feeds the SHIP-READY hint text).
+    //   retro_due   — phases_since_retro (store sidecar) has crossed the threshold;
+    //                 cleared by `harnessed retro --done`.
+    ship_ready: Type.Optional(Type.Boolean()),
+    ship_commits: Type.Optional(Type.Integer({ minimum: 0 })),
+    retro_due: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 )

@@ -65,6 +65,17 @@ function workflowStateBlock(wf) {
         `BREAK-LOOP: sub '${e.sub}' failed ${e.fail_count}x — stop retrying, run break-loop skill`,
       )
   }
+  // Phase 22 — smart-reminder lines from envelope flags (parity with injectState.ts).
+  if (wf.ship_ready) {
+    lines.push(
+      `SHIP-READY: ${wf.ship_commits ?? 0} commit(s) since the last release tag — consider shipping (harnessed release-preflight, then /ship)`,
+    )
+  }
+  if (wf.retro_due) {
+    lines.push(
+      'RETRO-DUE: enough phases completed since the last retro — run /retro, then `harnessed retro --done`',
+    )
+  }
   lines.push('</workflow-state>')
   return lines.join('\n')
 }

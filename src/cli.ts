@@ -19,6 +19,7 @@ import { registerReject } from './cli/reject.js'
 import { registerReleasePreflight } from './cli/release-preflight.js'
 import { registerResearch } from './cli/research.js'
 import { registerResume } from './cli/resume.js'
+import { registerRetro } from './cli/retro.js'
 import { registerRollback } from './cli/rollback.js'
 import { registerRun } from './cli/run.js'
 import { registerSetup } from './cli/setup.js'
@@ -106,5 +107,6 @@ registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight w
 registerLearn(program) // 24th — Phase 16 learning loop: append a prose learning to .planning/LEARNINGS.md
 registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams + --migration-report
 registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate
+registerRetro(program) // 27th — Phase 22 retro-reminder reset (--done zeroes the phase counter)
 
 program.parse(process.argv)

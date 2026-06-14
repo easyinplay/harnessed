@@ -416,6 +416,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed doctor` | 14-check health check (Node / MCP / jq / Win bash / routing / token budget / mattpocock / CodeGraph / update-available, etc.) |
 | `harnessed update [--check\|--upstreams\|--migration-report]` | Self-update (`npm i -g harnessed@latest`); `--check` reports the latest version; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
 | `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exits 1 if not ready. The Ship-stage gate. |
+| `harnessed retro --done` | Reset the retro-reminder phase counter after running `/retro` (clears the per-turn RETRO-DUE nudge). |
 | `harnessed install <name>` | Install an upstream manifest |
 | `harnessed uninstall [name]` | Reverse uninstall |
 | `harnessed backup` | Snapshot backup management |

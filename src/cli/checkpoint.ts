@@ -252,6 +252,50 @@ export function registerCheckpoint(program: Command): void {
             }
           }
 
+          // Phase 22 — smart reminders: only when this completion finishes the whole
+          // chain (allResolved = a completed phase/cycle). Set AFTER auto-compact so
+          // the flags survive the compact envelope rewrite. Fail-soft (a reminder must
+          // never block a checkpoint): any error here is swallowed, no flags set.
+          if (allResolved) {
+            try {
+              const { defaultShipReady } = await import('../checkpoint/shipReady.js')
+              const { incrementPhases, isRetroDue, retroThreshold } = await import(
+                '../checkpoint/retroMeta.js'
+              )
+              const { mutateStore, readCurrentWorkflow, writeCurrentWorkflow } = await import(
+                '../checkpoint/state.js'
+              )
+              const { repoKey } = await import('../checkpoint/workflowStore.js')
+
+              const ship = defaultShipReady(process.cwd())
+              const key = repoKey()
+              const threshold = retroThreshold(process.env)
+
+              // Bump the per-repo retro counter (store sidecar; survives activate()).
+              let retroDue = false
+              await mutateStore((store) => {
+                const meta = { ...(store.retro_meta ?? {}) }
+                const next = incrementPhases(meta[key])
+                meta[key] = next
+                retroDue = isRetroDue(next.phases_since_retro, threshold)
+                return { ...store, retro_meta: meta }
+              })
+
+              // Merge the flags onto the latest envelope (read by the G4 inject twins).
+              const latest = await readCurrentWorkflow()
+              if (latest) {
+                await writeCurrentWorkflow({
+                  ...latest,
+                  ship_ready: ship.ready,
+                  ship_commits: ship.commits,
+                  retro_due: retroDue,
+                })
+              }
+            } catch {
+              // fail-soft — never let a reminder break the checkpoint
+            }
+          }
+
           console.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${evidenceStatus})`)
           process.exit(0)
           return

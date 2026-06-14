@@ -63,6 +63,35 @@ describe('buildWorkflowStateBlock', () => {
     }
     expect(buildWorkflowStateBlock(wf)).toContain('BREAK-LOOP')
   })
+
+  // Phase 22 — smart-reminder lines, emitted from envelope flags.
+  const reminderWf = (extra: Partial<CurrentWorkflowV1Type>): CurrentWorkflowV1Type => ({
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: 'task',
+    status: 'complete',
+    last_checkpoint_path: null,
+    started_at: '2026-06-12T00:00:00.000Z',
+    sub_progress: [{ sub: 'b', status: 'done', gate_fired: true }],
+    ...extra,
+  })
+
+  it('emits a SHIP-READY line with the commit count when ship_ready is set', () => {
+    const out = buildWorkflowStateBlock(reminderWf({ ship_ready: true, ship_commits: 4 }))
+    expect(out).toContain('SHIP-READY: 4 commit(s) since the last release tag')
+    expect(out).toContain('release-preflight')
+  })
+
+  it('emits a RETRO-DUE line when retro_due is set', () => {
+    const out = buildWorkflowStateBlock(reminderWf({ retro_due: true }))
+    expect(out).toContain('RETRO-DUE:')
+    expect(out).toContain('harnessed retro --done')
+  })
+
+  it('emits neither reminder line when the flags are unset', () => {
+    const out = buildWorkflowStateBlock(reminderWf({}))
+    expect(out).not.toContain('SHIP-READY')
+    expect(out).not.toContain('RETRO-DUE')
+  })
 })
 
 // ── Phase 17: parseLearnings / filterRelevantLearnings / selectWithinBudget ──
@@ -235,5 +264,27 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     const stdout = runBin().trim()
     expect(stdout).toContain('<workflow-state>')
     expect(stdout).toContain('phase: task')
+  })
+
+  it('Phase 22 — emits SHIP-READY / RETRO-DUE from envelope flags; matches buildInjection', () => {
+    const repoRoot = resolve(join(tmp, 'repo'))
+    const flagged: CurrentWorkflowV1Type = {
+      ...wf,
+      status: 'complete',
+      ship_ready: true,
+      ship_commits: 2,
+      retro_due: true,
+    }
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: { [repoRoot]: flagged },
+      }),
+    )
+    const stdout = runBin().trim()
+    expect(stdout).toContain('SHIP-READY: 2 commit(s) since the last release tag')
+    expect(stdout).toContain('RETRO-DUE:')
+    expect(stdout).toBe(buildInjection(repoRoot, flagged, '', DEFAULT_INJECT_BUDGET).trim())
   })
 })

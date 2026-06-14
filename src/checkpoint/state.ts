@@ -21,7 +21,7 @@ import {
   type CurrentWorkflowV1Type,
   type SubProgressEntryType,
 } from './schema/index.js'
-import { readStoreRaw, repoKey, writeStoreRaw } from './workflowStore.js'
+import { readStoreRaw, repoKey, type WorkflowStoreV1Type, writeStoreRaw } from './workflowStore.js'
 
 // v3.0.3 — lazy path resolution so HARNESSED_ROOT_OVERRIDE in e2e tests
 // applies before the first write (module-level const captured the path
@@ -137,6 +137,20 @@ export async function mutateSubProgress(
     if (!s) return
     const next = fn(s.sub_progress ?? [])
     await writeCurrentWorkflowUnlocked({ ...s, sub_progress: next })
+  })
+}
+
+/** Phase 22 — locked read-modify-write of the WHOLE per-repo store (used for the
+ *  `retro_meta` sidecar, which lives at the store level so it survives the fresh
+ *  envelope `activate()` writes each phase). Single `withLock` read→fn→write so it
+ *  cannot lost-update a concurrent envelope write. No-op-safe: `fn` gets the parsed
+ *  store (empty when none) and returns the next store. */
+export async function mutateStore(
+  fn: (store: WorkflowStoreV1Type) => WorkflowStoreV1Type,
+): Promise<void> {
+  await withLock(async () => {
+    const store = await readStoreRaw()
+    await writeStoreRaw(fn(store))
   })
 }
 

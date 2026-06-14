@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Smart reminders (Phase 22)** — two AI-judged nudges surfaced by the G4 per-turn inject hook when a workflow completes. **SHIP-READY**: there are unshipped commits since the last `vX.Y.Z` tag (git-derived, self-heals after a release). **RETRO-DUE**: enough phases have completed since the last retro (per-repo counter; threshold `HARNESSED_RETRO_PHASE_THRESHOLD`, default 5). Both are hints, not gates. New `harnessed retro --done` (27th CLI) resets the retro counter after running `/retro`. Additive-optional schema (no version bump); the inject bin stays git-free + threshold-free (reads booleans only).
+
 ## [4.5.1] - 2026-06-14
 
 Windows install reliability hotfix (Phase 23). Dogfooding the fresh v4.5.0 `harnessed setup` on Windows surfaced 6 force-update failures: manifests use POSIX shell builtins (`rm`/`cp`/`mkdir`/`test`/`grep`/`|`) but `spawnCmd` routed through `cmd.exe` on Windows. Surgical fix — route only the shell-dependent spawns through Git Bash; npm/npx install paths stay on `cmd.exe`. No behavior change on POSIX.

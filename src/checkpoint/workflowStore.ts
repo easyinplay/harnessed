@@ -18,10 +18,26 @@ import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { writeFileAtomic } from './atomicWrite.js'
 import { CurrentWorkflowV1, type CurrentWorkflowV1Type } from './schema/currentWorkflow.v1.js'
 
+/** Phase 22 — per-repo retro cadence sidecar. Lives at the STORE level (NOT the
+ *  envelope) because `activate()` writes a fresh envelope each phase and would
+ *  reset an envelope-stored counter. Keyed by repoKey, mirroring `workflows`.
+ *  `phases_since_retro` increments on each allResolved `checkpoint complete`;
+ *  `harnessed retro --done` zeroes it + stamps `last_retro_at`. */
+export const RetroMetaEntry = Type.Object(
+  {
+    phases_since_retro: Type.Integer({ minimum: 0 }),
+    last_retro_at: Type.Optional(Type.String({ minLength: 1 })),
+  },
+  { additionalProperties: false },
+)
+export type RetroMetaEntryType = Static<typeof RetroMetaEntry>
+
 export const WorkflowStoreV1 = Type.Object(
   {
     schemaVersion: Type.Literal(SCHEMA_VERSIONS.workflowStore),
     workflows: Type.Record(Type.String(), CurrentWorkflowV1),
+    // Additive-optional (no schemaVersion bump — old stores Value.Check-pass).
+    retro_meta: Type.Optional(Type.Record(Type.String(), RetroMetaEntry)),
   },
   { additionalProperties: false },
 )
