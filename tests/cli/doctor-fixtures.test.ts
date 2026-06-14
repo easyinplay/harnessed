@@ -74,6 +74,11 @@ vi.mock('../../src/cli/lib/check-codegraph.js', () => ({
     message: 'CodeGraph not configured (optional semantic index)',
   }),
 }))
+// Phase 20 — 14th check mock (check-update.ts spawns `npm view`). Real logic in
+// tests/cli/check-update.test.ts. Default pass.
+vi.mock('../../src/cli/lib/check-update.js', () => ({
+  checkUpdate: () => ({ name: 'update', status: 'pass', message: 'up to date (test)' }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -185,10 +190,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 13 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 14 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(13)
+      expect(parsed.checks).toHaveLength(14)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -204,6 +209,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
           'mattpocock-skills', // ← v3.6.0 Phase 2 Wave 1 11th check (user reframe)
           'MCP servers (tavily/exa/chrome-devtools)', // ← v3.6.0 Phase 2 Wave 2 12th check (audit P1a)
           'codegraph', // ← Phase 18 13th check (opt-in semantic index, always pass)
+          'update', // ← Phase 20 14th check (update available, fail-soft pass)
         ]),
       )
       if (scenario.name === 'missing-jq') {

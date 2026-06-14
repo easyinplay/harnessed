@@ -46,6 +46,10 @@
 - [x] **Phase 18: CodeGraph semantic index (F)** ✅ 2026-06-14 — CodeGraph (MIT) cataloged opt-in: `manifests/optional/codegraph.yaml` (never base) + always-pass `checkCodeGraph` doctor (13th) + capabilities entry. No install run, no code vendored (self-installs). TDD, 1285 tests. 详: `phases/18-codegraph/`.
 - [x] **Phase 19: minimal adoption (G)** ✅ 2026-06-14 — `docs/comparison.md` (honest 3-way, snapshot-dated, downloads-are-noise caveat) + README How-it-compares link. Docs-only. **v7.0 COMPLETE 7/7.** 详: `phases/19-adoption/`.
 
+### Follow-on (post-v7.0-close)
+
+- [x] **Phase 20: `harnessed update` command** ✅ 2026-06-14 — GSD-style `update` (self `npm i -g harnessed@latest` + `--check` + `--upstreams` re-runs base manifests via extracted `installBaseProfile` + `--migration-report` read-only inventory) + 14th doctor check `checkUpdate` surfacing "update available X→Y" (fail-soft). Closes the `comet update` gap. TDD +17, 1302 tests, zero real installs (mocked). 详: `phases/20-update-command/`.
+
 ### Phase 13: planning doc-debloat (A)
 
 **Goal**: Cut the planning-doc bloat that violates our own v6.0 doc-discipline, so the overview/status tier is a real digest and history lives in archives.

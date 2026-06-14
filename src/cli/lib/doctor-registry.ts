@@ -48,4 +48,7 @@ export const CHECKS: readonly CheckFn[] = [
   // Phase 18 — opt-in CodeGraph semantic-index detect (always 'pass'; absence of an
   // optional tool is not a health failure).
   async () => (await import('./check-codegraph.js')).checkCodeGraph(process.cwd()),
+  // Phase 20 — "update available" version check ('warn' only when behind; 'pass'
+  // when current/ahead/npm-unreachable — fail-soft, never flips the summary).
+  async () => (await import('./check-update.js')).checkUpdate(),
 ]

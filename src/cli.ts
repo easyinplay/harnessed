@@ -23,6 +23,7 @@ import { registerRun } from './cli/run.js'
 import { registerSetup } from './cli/setup.js'
 import { registerStatus } from './cli/status.js'
 import { registerUninstall } from './cli/uninstall.js'
+import { registerUpdate } from './cli/update.js'
 import { registerWorkflows } from './cli/workflows.js'
 import { setLocale } from './i18n/index.js'
 import { migrateLegacyHarnessedRoot } from './installers/lib/harnessedRoot.js'
@@ -102,5 +103,6 @@ registerReject(program) // 21st — G7-lite user-rejected terminal sub status
 registerCompact(program) // 22nd — Phase 14 compact: summarize+evict resolved ledger entries
 registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight workflows (one per repo)
 registerLearn(program) // 24th — Phase 16 learning loop: append a prose learning to .planning/LEARNINGS.md
+registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams + --migration-report
 
 program.parse(process.argv)

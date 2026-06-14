@@ -36,6 +36,44 @@ async function listBaseManifests(cwd: string): Promise<string[]> {
   return out
 }
 
+export interface InstallProfileResult {
+  installed: string[]
+  alreadyInstalled: string[]
+  skipped: { name: string; reason: string }[]
+  failed: { name: string; reason: string }[]
+}
+
+/** Phase 20 — the pure install loop, extracted so both `install-base` and
+ *  `harnessed update --upstreams` can run the base profile. Returns the tally;
+ *  does NOT print or `process.exit` (the caller owns I/O + exit policy). */
+export async function installBaseProfile(opts: InstallOpts): Promise<InstallProfileResult> {
+  const installed: string[] = []
+  const alreadyInstalled: string[] = []
+  const skipped: { name: string; reason: string }[] = []
+  const failed: { name: string; reason: string }[] = []
+  for (const path of await listBaseManifests(getPackageRoot())) {
+    let yamlSrc: string
+    try {
+      yamlSrc = await readFile(path, 'utf8')
+    } catch (e) {
+      failed.push({ name: path, reason: `read: ${(e as Error).message}` })
+      continue
+    }
+    const v = validateManifestFile(yamlSrc, path)
+    if (!v.ok) {
+      failed.push({ name: path, reason: `validate: ${v.errors[0]?.message ?? 'unknown'}` })
+      continue
+    }
+    const name = v.manifest.metadata.name
+    const r = await runInstall(v.manifest, opts)
+    if ('aborted' in r) skipped.push({ name, reason: `aborted: ${r.reason}` })
+    else if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled) alreadyInstalled.push(name)
+    else if (r.ok) installed.push(name)
+    else failed.push({ name, reason: r.error.message })
+  }
+  return { installed, alreadyInstalled, skipped, failed }
+}
+
 export function registerInstallBase(program: Command): void {
   program
     .command('install-base')
@@ -55,30 +93,7 @@ export function registerInstallBase(program: Command): void {
         fullDiff: false,
         color: 'auto',
       }
-      const installed: string[] = []
-      const alreadyInstalled: string[] = []
-      const skipped: { name: string; reason: string }[] = []
-      const failed: { name: string; reason: string }[] = []
-      for (const path of await listBaseManifests(getPackageRoot())) {
-        let yamlSrc: string
-        try {
-          yamlSrc = await readFile(path, 'utf8')
-        } catch (e) {
-          failed.push({ name: path, reason: `read: ${(e as Error).message}` })
-          continue
-        }
-        const v = validateManifestFile(yamlSrc, path)
-        if (!v.ok) {
-          failed.push({ name: path, reason: `validate: ${v.errors[0]?.message ?? 'unknown'}` })
-          continue
-        }
-        const name = v.manifest.metadata.name
-        const r = await runInstall(v.manifest, opts)
-        if ('aborted' in r) skipped.push({ name, reason: `aborted: ${r.reason}` })
-        else if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled) alreadyInstalled.push(name)
-        else if (r.ok) installed.push(name)
-        else failed.push({ name, reason: r.error.message })
-      }
+      const { installed, alreadyInstalled, skipped, failed } = await installBaseProfile(opts)
       console.log(
         `\n  installed: ${installed.length} / already-installed: ${alreadyInstalled.length} / skipped (user-aborted): ${skipped.length} / failed: ${failed.length}`,
       )

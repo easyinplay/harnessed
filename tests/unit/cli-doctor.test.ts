@@ -12,6 +12,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawnSync: vi.fn() }))
 vi.mock('node:fs/promises', () => ({ readFile: vi.fn() }))
+// Phase 20 — checkUpdate spawns `npm view` (via version-check's promisified
+// execFile, which this file's child_process mock does not provide). Mock it to a
+// fixed pass; real logic is unit-tested in tests/cli/check-update.test.ts.
+vi.mock('../../src/cli/lib/check-update.js', () => ({
+  checkUpdate: () => ({ name: 'update', status: 'pass', message: 'up to date (test)' }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'

@@ -26,11 +26,11 @@ progress:
 
 ## Current Position
 
-Phase: 19 (minimal adoption) ✅ DONE 2026-06-14 — `docs/comparison.md` (honest harnessed-vs-comet-vs-Trellis, snapshot-dated, downloads-are-noise caveat) + README How-it-compares link. Docs-only, 1285 tests unchanged. **v7.0 COMPLETE 7/7.** NOTE: comparison.md's "comet vendors upstreams" claim was corrected — comet ALSO installs upstreams from official channels (no vendoring); the real difference is declarative-manifest + supply-chain layer (harnessed) vs imperative bespoke installer (comet).
-Plan: 19-01-PLAN.md executed + 19-01-SUMMARY.md. Next = plan Phase 20 (`harnessed update`).
-Phase 20 decisions (2026-06-14 discuss): self+upstreams flagged (`update` = self via `npm i -g harnessed@latest`; `--upstreams`/`--all` re-runs base manifests); version-check surfaced via a doctor check; placement = follow-on after v7.0 close. harnessed currently has NO `update` command (a real gap vs comet's `comet update`).
+Phase: 20 (`harnessed update`, v7.0 follow-on) ✅ DONE 2026-06-14 — GSD-style `update` command (self via `npm i -g harnessed@latest` + CHANGELOG + restart hint; `--check` report-only; `--upstreams`/`--all` re-runs base manifests via extracted `installBaseProfile`; `--migration-report` read-only stale-state inventory borrowed from Claude-Harness). 14th doctor check `checkUpdate` surfaces "update available X→Y" (warn only when behind, fail-soft pass otherwise). Closes the `comet update` gap. TDD +17, 1302 tests, tsc 0, biome clean. Zero real installs (mocked). Survived a mid-execution terminal crash (state reassembled from disk).
+Plan: 20-01-PLAN.md executed + 20-01-SUMMARY.md (main-session hand-driven). Next = plan Phase 21 (ship/release stage) when ready.
+Phase 21 candidate (discussed 2026-06-14, NOT started): a first-class ship/release stage — `verify` is harnessed's terminal stage with NO ship/release after it, while comet (archive), Trellis (finish-work), and Claude-Harness (`/harness-release`, "PR ready ≠ release ready") all have one. harnessed has the pieces (gstack `/ship`, checkpoint evidence, publish.yml) but no stage that orchestrates PR + release-preflight + evidence-pack. Also pending: npm 4.5.0 release of v7.0 + Phase 20.
 Status: ⚠️ Methodology lesson (still active): GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. Rogue impls = known-defective reference in `.planning/phases/_rogue-impl-reference/` (untracked). RTK note: `git status | grep` pollution checks false-positive (RTK prints `ok`) — verify with `ls`/`test -f`.
-Last activity: 2026-06-14 — Phase 19 shipped + comparison.md vendor-claim corrected; v7.0 7/7 complete.
+Last activity: 2026-06-14 — Phase 20 (`harnessed update` + migration-report) shipped (TDD, crash-recovered).
 
 ## Milestone Scope (v7.0) — 7 phases
 
