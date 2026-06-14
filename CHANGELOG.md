@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.5.1] - 2026-06-14
+
+Windows install reliability hotfix (Phase 23). Dogfooding the fresh v4.5.0 `harnessed setup` on Windows surfaced 6 force-update failures: manifests use POSIX shell builtins (`rm`/`cp`/`mkdir`/`test`/`grep`/`|`) but `spawnCmd` routed through `cmd.exe` on Windows. Surgical fix — route only the shell-dependent spawns through Git Bash; npm/npx install paths stay on `cmd.exe`. No behavior change on POSIX.
+
+### Fixed
+
+- **POSIX-shell routing on Windows** — `spawnCmd` gains a `posixShell` opt; on win32 it routes `git-clone-with-setup` install + every spawn-based verify cmd through `bash -c` (Git Bash, PATH-resolved). npm/npx/claude/mcp install spawns stay on `cmd.exe` (`.cmd` shims). If `bash` is absent on Windows, a clear `bash-missing` error names Git Bash + git-scm.com instead of an opaque "'rm' is not recognized". POSIX path unchanged (`/bin/sh -c`); the B1 shell-escape gate still runs before every spawn.
+- **backup EISDIR** — `backup()` records a sentinel entry instead of crashing "illegal operation on a directory, read" when a force-update overwrites an existing skill directory.
+- **stale setup message** — `setup.bundled_summary` dropped a hardcoded `v3.0` + stale `23 workflows` count (en + zh-Hans); `agent_teams.missing_explanation` dropped `v3.0`.
+
+### Changed
+
+- **install timeout 60s → 120s** — `DEFAULT_INSTALL_TIMEOUT_MS` raised for Windows cold npm/npx cache (`npx skills add …`). Verify timeout unchanged.
+
 ## [4.5.0] - 2026-06-14
 
 v7.0 Gap-Close & Memory Loop (phases 13–19) + follow-ons (update command, ship stage). Closes the highest-value gaps vs comet / Trellis / Claude-Code-Harness: a cross-session learning loop, per-repo workflow isolation, a release stage, and an update flow. Additive except the on-disk workflow store (compat-read migrated). The operating loop is now 5-stage: Discuss → Plan → Build → Verify → Ship → Learn.
