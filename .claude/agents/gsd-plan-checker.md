@@ -1,5 +1,6 @@
 ---
 name: gsd-plan-checker
+description: Verifies plans will achieve the phase goal before execution (goal-backward analysis). Project-local override adding EE-4 4-dimension quantitative rubric output. Spawned by /gsd-plan-phase orchestrator.
 ---
 
 # gsd-plan-checker (project-local override — Phase 2.4 W2 D-02 ABSORB)
