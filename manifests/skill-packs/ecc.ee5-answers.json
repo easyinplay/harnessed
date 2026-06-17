@@ -1,0 +1,13 @@
+{
+  "upstream": "github.com/affaan-m/ECC",
+  "created_at": "2026-06-17T00:00:00.000Z",
+  "author": "easyinplay",
+  "q1_reusable_surface": "真 reusable surface。ECC 是稳定分发的 CC plugin 上游 (marketplace ecc@ecc),提供 ~55 个 dev domain-pattern 知识库 + 28 个 per-language reviewer/build-resolver — 长期可复用的能力源,非临时 wrapper。A posture 只收能力片 (Bucket 11 加性 + verify alias),不收 ECC 的 orchestration loop。",
+  "q2_name_fit": "名字 fit (已是 plugin id ecc@ecc)。命名冲突: 存在且已在 ADR-0034 §3 de-confliction 矩阵处理 — ECC 的 review/orchestration/learn/checkpoint 与 gstack/gsd/superpowers/harnessed checkpoint 引擎重名。Bucket 11 加性 entry 走 domain/cost/hook 正交 fires_when 轴 (零命名冲突);per-language reviewer 走 alias-收编挂到现有 verify capability。",
+  "q3_overlap": "大量 overlap — ECC 是与 GSD/superpowers/gstack 平行的完整栈。已在 ADR-0034 逐 family 处理: 加性区 (domain/cost/hook, 零 overlap) / alias-收编区 (verify 维度, priority.yaml 仲裁单一 fire) / 碰撞区 (orchestration/review/learning/multi-agent/token, 默认 NOT wire) / 硬排除区 (checkpoint/ledger/compact/learning keystone 引擎)。枚举 (246 skills/61 agents) 已核对 partition 站得住。",
+  "q4_concept_vs_identity": "import 概念。收的是 domain-pattern 知识 + per-language review 能力, NOT import ECC 的产品身份/orchestration/做事方式。不 vendor 代码 (装配主义)。A posture 明确边界: 能力片可控同化, ECC 的 plan/execute/learn/checkpoint loop 一律不接。",
+  "q5_user_understanding": "能。Bucket 11 capability 以 harnessed 自己的 fires_when 语义暴露 (subtask.domain == 'postgres' → postgres pattern), 用户看到的是 harnessed 路由, 无需知道 ECC 存在。per-language reviewer 走现有 verify capability 的 alias 同理。ECC 仅作为 impl 来源, 对用户透明。",
+  "ee5_gate": "PASSED",
+  "deconfliction_adr": "docs/adr/0034-ecc-assimilation-deconfliction.md",
+  "posture": "A (additive-first: domain-pattern starter-set ≤8 + cost/hook + per-language reviewer alias)"
+}

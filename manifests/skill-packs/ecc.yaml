@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# ECC (Affaan Mustafa) selective assimilation — A posture per ADR-0034.
+# ECC is a near-complete PARALLEL stack (its own plan/execute/review/learn/
+# checkpoint/multi-agent). harnessed does NOT wire that; it assimilates ONLY the
+# additive zones (domain-pattern starter-set ≤8 + cost-report/model-route +
+# hookify) and收编s per-language reviewers/build-resolvers as verify-dimension
+# aliases. checkpoint/ledger/compact/learning families are HARD-EXCLUDED (keystone
+# engine collision, same rationale as gsd-execute-phase).
+#
+# De-confliction matrix SoT: docs/adr/0034-ecc-assimilation-deconfliction.md
+# EE-5 gate record:           manifests/skill-packs/ecc.ee5-answers.json
+#
+# Install method = cc-plugin-marketplace (sister karpathy-skills.yaml): ECC ships
+# via the `ecc` marketplace at github affaan-m/ECC. install_type=skill (plugin
+# materializes skills/agents into the CC plugin cache; harnessed only catalogs +
+# routes a curated subset via workflows/capabilities.yaml Bucket 11 + verify alias).
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: ecc
+  display_name: ECC (selective domain + verify-alias assimilation, A posture)
+  description: ECC selective assimilation per ADR-0034 (A posture) — additive domain-pattern + cost/hook + per-language reviewer alias.
+  upstream:
+    source: github.com/affaan-m/ECC
+    homepage: https://ecc.tools
+    repository: https://github.com/affaan-m/ECC.git
+    license: MIT
+    notice: |
+      ECC (Engineering Claude Code) by Affaan Mustafa, distributed via the `ecc`
+      Claude Code marketplace. harnessed assimilates a curated subset selectively
+      (A posture, de-confliction per ADR-0034) — NOT vendored, NOT wired as a
+      parallel stack. Upstream is pre-release (2.0.0-rc.1); stability=unstable.
+spec:
+  type: cc-plugin
+  component_type: command
+  category: engineering
+  install_type: skill
+  install:
+    method: cc-plugin-marketplace
+    cmd: "claude plugin marketplace add affaan-m/ECC && claude plugin install ecc@ecc"
+    git_ref: ec92b528471df708c2384ebbcc82b390b60f535a
+    idempotent_check: "claude plugin list 2>&1 | grep -qw ecc"
+    marketplace_source:
+      source: github
+      repo: affaan-m/ECC
+  verify:
+    cmd: "claude plugin list 2>&1 | grep -qw ecc"
+    timeout_ms: 10000
+  uninstall:
+    cmd: "claude plugin uninstall ecc@ecc"
+  upstream_health:
+    stability: unstable
+    last_check: "2026-06-17"
+    last_known_good_version: 2.0.0-rc.1
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
