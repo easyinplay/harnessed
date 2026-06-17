@@ -21,8 +21,8 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code.
-- **Current focus**: v4.5.1 SHIPPED (Phase 23). Phase 22 (smart reminders: ship + retro) implemented + gate-green 2026-06-14, AWAITING COMMIT — next release after commit.
-- **Latest shipped**: **v4.5.1 tagged + pushed + published 2026-06-14** (publish.yml run 27499629833 SUCCESS — npm `harnessed@4.5.1` live + GitHub release). Phase 23 POSIX-shell routing via Git Bash + backup EISDIR + msg de-stale + install timeout 120s. (v4.5.0 = v7.0 13–19 + update 20 + ship 21.)
+- **Current focus**: Phase 22 (smart reminders: ship + retro) **SHIPPED v4.6.0** 2026-06-14. No active phase — awaiting next direction.
+- **Latest shipped**: **v4.6.0 tagged + pushed + published 2026-06-14** (publish.yml run 27501194552 SUCCESS — npm `harnessed@4.6.0` live + GitHub release). Phase 22 smart reminders (ship + retro inject nudges + `harnessed retro --done`). (v4.5.1 = Phase 23 Windows install fix; v4.5.0 = v7.0 13–19 + update 20 + ship 21.)
 
 ## Current Position
 
