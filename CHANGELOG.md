@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **ECC selective assimilation (ADR-0034)** — ECC (`affaan-m/ECC`) joins as an optional upstream via harnessed's assembly model, A posture (additive-first). New `manifests/skill-packs/ecc.yaml` (cc-plugin-marketplace, pinned, stability=unstable). `workflows/capabilities.yaml` gains Bucket 11: 10 additive entries (domain-pattern starter-set + cost-tracking + hookify-rules) on orthogonal `subtask.domain`/`needs_cost_report`/`needs_hook_authoring` axes. ECC per-language reviewers/build-resolvers fold as verify-dimension aliases under `code-review`/`gsd-debug` (single-fire). ECC's parallel orchestration/review/learning/multi-agent is NOT wired; checkpoint/ledger/compact/learning families are HARD-EXCLUDED (keystone engine collision). Governance: `/plan-eng-review` (5 findings absorbed) + inventory enumeration (246 skills/61 agents) + EE-5 gate. Opt-in: no-op for users without ECC installed.
+
 ## [4.6.0] - 2026-06-14
 
 Smart reminders (Phase 22): the operating loop now nudges you to ship and to retro at the right moments, surfaced through the existing per-turn inject hook and judged by the AI.

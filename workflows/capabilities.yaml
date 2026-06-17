@@ -137,6 +137,13 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: verify-work parallel fan-out (multi-agent high-confidence findings)
+    # ADR-0034 Finding 1 — ECC per-language reviewers收编 as verify-dimension aliases
+    # (NOT a parallel Bucket 11 entry; runtime/priority.yaml picks the language-matching
+    # one → single fire, no triple-review). Opt-in: no-op when ECC absent.
+    aliases:
+      - { impl: ecc, cmd: "ecc:python-review" }
+      - { impl: ecc, cmd: "ecc:rust-review" }
+      - { impl: ecc, cmd: "ecc:go-review" }
     fires_when:
       - phase.stage == 'verify'
 
@@ -311,8 +318,14 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: GSD systematic debugging (overlap with mattpocock /diagnose — alias)
+    # ADR-0034 Finding 1 — ECC per-language build-resolvers收编 as debug/verify-dimension
+    # aliases (build-failure fix; runtime picks language-matching one). Opt-in: no-op
+    # when ECC absent.
     aliases:
       - { impl: mattpocock-skills, cmd: /diagnose }
+      - { impl: ecc, cmd: "ecc:rust-build" }
+      - { impl: ecc, cmd: "ecc:go-build" }
+      - { impl: ecc, cmd: "ecc:build-fix" }
     fires_when:
       - subtask.type == 'debug'
 
@@ -1263,3 +1276,110 @@ capabilities:
     description: GSD docs-update post-ship doc update
     fires_when:
       - phase.needs_doc_update == true
+
+  # ============================================================================
+  # Bucket 11 — ECC selective assimilation, A posture (ADR-0034)
+  # ============================================================================
+  #
+  # ECC is a near-complete PARALLEL stack; per ADR-0034 de-confliction matrix
+  # harnessed wires ONLY the additive zones here (domain-pattern starter-set ≤8 +
+  # cost-report + hookify) on ORTHOGONAL fires_when axes (subtask.domain /
+  # needs_cost_report / needs_hook_authoring — no existing entry fires on these).
+  # per-language reviewers/build-resolvers are NOT here — they收编 as verify-
+  # dimension aliases under code-review / gsd-debug (Finding 1). orchestration/
+  # review/learning/multi-agent/checkpoint families are NOT wired / HARD-EXCLUDED.
+  #
+  # Opt-in pattern (sister `codegraph`): NO install_type/plugin_id presence-check —
+  # ECC is an optional upstream; absent ECC just means these cmds no-op (no warn
+  # for non-ECC users). cmd = plugin-namespaced `ecc:<skill>` (sister superpowers).
+  # impl: ecc is a provenance label (open-string per capabilities schema).
+
+  ecc-mcp-server-patterns:
+    impl: ecc
+    cmd: "ecc:mcp-server-patterns"
+    since: v7.1
+    category: tool-slash-cmd
+    description: MCP server design patterns (ECC domain library — CC-harness-builder core)
+    fires_when:
+      - subtask.domain == 'mcp_server'
+
+  ecc-python-patterns:
+    impl: ecc
+    cmd: "ecc:python-patterns"
+    since: v7.1
+    category: tool-slash-cmd
+    description: Python idiom/structure patterns (ECC domain library)
+    fires_when:
+      - subtask.domain == 'python'
+
+  ecc-rust-patterns:
+    impl: ecc
+    cmd: "ecc:rust-patterns"
+    since: v7.1
+    category: tool-slash-cmd
+    description: Rust ownership/idiom patterns (ECC domain library)
+    fires_when:
+      - subtask.domain == 'rust'
+
+  ecc-golang-patterns:
+    impl: ecc
+    cmd: "ecc:golang-patterns"
+    since: v7.1
+    category: tool-slash-cmd
+    description: Go idiom/concurrency patterns (ECC domain library)
+    fires_when:
+      - subtask.domain == 'golang'
+
+  ecc-postgres-patterns:
+    impl: ecc
+    cmd: "ecc:postgres-patterns"
+    since: v7.1
+    category: tool-slash-cmd
+    description: PostgreSQL schema/query/perf patterns (ECC domain library)
+    fires_when:
+      - subtask.domain == 'postgres'
+
+  ecc-docker-patterns:
+    impl: ecc
+    cmd: "ecc:docker-patterns"
+    since: v7.1
+    category: tool-slash-cmd
+    description: Docker/container build patterns (ECC domain library)
+    fires_when:
+      - subtask.domain == 'docker'
+
+  ecc-nextjs-turbopack:
+    impl: ecc
+    cmd: "ecc:nextjs-turbopack"
+    since: v7.1
+    category: tool-slash-cmd
+    description: Next.js + Turbopack frontend patterns (ECC domain library)
+    fires_when:
+      - subtask.domain == 'nextjs'
+
+  ecc-api-design:
+    impl: ecc
+    cmd: "ecc:api-design"
+    since: v7.1
+    category: tool-slash-cmd
+    description: API contract/versioning design patterns (ECC domain library)
+    fires_when:
+      - subtask.domain == 'api_design'
+
+  ecc-cost-tracking:
+    impl: ecc
+    cmd: "ecc:cost-tracking"
+    since: v7.1
+    category: tool-slash-cmd
+    description: LLM cost/token spend reporting (ECC additive — harnessed has no cost report)
+    fires_when:
+      - subtask.needs_cost_report == true
+
+  ecc-hookify-rules:
+    impl: ecc
+    cmd: "ecc:hookify-rules"
+    since: v7.1
+    category: tool-slash-cmd
+    description: Author CC hooks from observed behavior (ECC additive — no harnessed equivalent)
+    fires_when:
+      - subtask.needs_hook_authoring == true
