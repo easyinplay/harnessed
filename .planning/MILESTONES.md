@@ -27,9 +27,10 @@
 | v5.1 Upstream Re-sync | 2026-06-10 (npm 4.3.0) | GSD Core rename `@opengsd/gsd-core` 1.4.1 + gstack/mattpocock manifest bump + 18 new capabilities (12 GSD Core + 6 gstack) + stage-phase-gate triggers. Keystone: execute self-owned (gsd-execute-phase NOT wired). 1167 tests. | `phases/09-gsd-core-rewire/` + `phases/10-gstack-bump-skills/` |
 | v6.0 Doc-Discipline Substrate | 2026-06-11 (npm 4.4.0) | G1 = 7th L0 discipline `doc-discipline.yaml` + STATE-line halt; G2 = `checkPlanningSync` guard in checkpoint complete. 1188 tests. | `phases/11-doc-discipline/` + `phases/12-sentinel-gate/` |
 | v7.0 Gap-Close & Memory Loop | 2026-06-14 (npm 4.5.0→4.6.0) | 7 phases (13–19) closing the 1st comet/Trellis comparison + follow-ons 20 (`update`) / 21 (ship-stage) / 22 (smart reminders) / 23 (Windows install fix). 1335 tests. | `phases/13-…/` … `phases/23-…/` |
+| v8.0 Frictionless Entry | 2026-06-23 | 2 phases: 24 single-command resume entry (zero-arg `harnessed` you-are-here + `NEXT` + `--json`, comet `/comet` analog) + 25 value-prop/quickstart legibility (结果导向定位主句 + First 5 Minutes quickstart). 1352 tests. Audit passed 2/2 (`milestones/v8.0-MILESTONE-AUDIT.md`). | `phases/24-resume-entry/` + `phases/25-quickstart/` |
 
 ## Active
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v8.0 Frictionless Entry | ○ Discussed (2026-06-23), plan pending | 1st of 3 competitive-gap milestones from the 2026-06-23 re-comparison. Posture 守宽做深. 2 phases: 24 single-command resume entry (comet `/comet` analog) + 25 value-prop/quickstart. Big bets deferred to v9.0 cross-harness + v10.0 i18n. Discuss decisions in ROADMAP active + STATE. Next: plan Phase 24 (hand-controlled). |
+| v9.0 Cross-Harness | ○ Backlog (not started) | Big bet ① — abstract harnessed's hardcoded `~/.claude/` (`setup.ts:120/194` + state + inject) → platform descriptor + auto-detect installed harness + `.agents/` per-platform convention. Upstreams already portable (no generator). Opens with `/plan-eng-review`. Sketch in ROADMAP Backlog. |

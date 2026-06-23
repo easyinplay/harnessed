@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Frictionless Entry
-status: executing
+status: shipped
 last_updated: "2026-06-23T00:00:00.000Z"
 last_activity: 2026-06-23
 progress:
@@ -21,28 +21,25 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **v8.0 Frictionless Entry** — Phase 24 (single-command resume entry) SHIPPED 2026-06-23 (`c988bc8`); Phase 25 (value-prop/quickstart) EXECUTED 2026-06-23 (awaiting commit gate). **v8.0 milestone 2/2 phases 完成**.
+- **Current focus**: **v8.0 Frictionless Entry SHIPPED + closed 2026-06-23** (Phase 24 `c988bc8` + Phase 25 `58a6900`; audit passed 2/2 → `milestones/v8.0-MILESTONE-AUDIT.md`). **Next milestone: v9.0 Cross-Harness** (not started — opens with `/plan-eng-review`).
 - **Latest shipped**: **v4.6.0** 2026-06-14 (npm `harnessed@4.6.0` + GitHub release). v7.0 + follow-ons (Phase 13–23) all shipped.
 
 ## Current Position
 
-- **v8.0 both phases done (awaiting Phase 25 commit)** — posture 守宽做深 (B); 3-milestone split (quick-wins v8.0 → cross-harness v9.0 → i18n v10.0). **Phase 24 SHIPPED** (`c988bc8` — zero-arg `harnessed` dashboard + NEXT + `--json`; 1352 tests). **Phase 25 EXECUTED 2026-06-23** (EN README 结果导向主句上提 + First 5 Minutes linear quickstart with zero-arg `harnessed` spine + bare-cmd CLI 行; README-cn 主句同步; docs-only, diff 仅 README.md + README-cn.md; 详 `phases/25-quickstart/25-01-SUMMARY.md`).
-- **Next**: commit Phase 25 (user gate), then v8.0 milestone close (`/gsd-audit-milestone` + ship 可选).
+- **v8.0 SHIPPED + closed 2026-06-23** — posture 守宽做深 (B); 3-milestone split (v8.0 quick-wins ✓ → v9.0 cross-harness → v10.0 i18n). Phase 24 (`c988bc8`) + Phase 25 (`58a6900`) committed; audit passed 2/2; ROADMAP + MILESTONES indexed. Lightweight close (v5.1–v7.0 precedent: no git tag — codename≠npm; phase dirs stay in `phases/NN/`; REQUIREMENTS.md untouched).
+- **Next**: **v9.0 Cross-Harness** — opens with `/plan-eng-review` (structural) → discuss/plan/execute. Sketch in ROADMAP Backlog.
 
-## Milestone Scope (v8.0) — 2 phases
+## Next Milestone Sketch (v9.0 Cross-Harness)
 
-- **Phase 24 single-command resume entry**: `harnessed` zero-arg = auto-detect active workflow (`workflows.json[repoKey]`) + report phase + continue (comet `/comet` analog). Mechanism exists (`resume.ts`/`nextStep.ts`/`workflows.json`); gap = zero-arg dispatch + ergonomics. Independent.
-- **Phase 25 value-prop + quickstart**: README one-line positioning + <5min quickstart (comet legibility). Docs-only. Depends on 24.
+- Big bet ①: abstract harnessed's OWN hardcoded `~/.claude/` (`setup.ts:120/194` + state + inject) → platform descriptor + auto-detect installed harness + industry `.agents/` per-platform convention. Upstreams (gstack/ECC/superpowers/codegraph) already portable → no generator / no upstream-mapping. Sketch only (anti-stale — refine at start). 详: ROADMAP Backlog + `milestones/v8.0-MILESTONE-AUDIT.md` (discuss decisions).
 
 ## Accumulated Context
 
-### Decisions (v8.0 discuss, 2026-06-23)
+### Decisions (carry-forward for v9.0)
 
-- **Posture** — 守宽做深 (B): keep the heterogeneous-upstream-arbitration moat; do NOT narrow to a single pairing.
-- **Fact correction** — earlier "守宽 vs cross-platform conflict" premise was WRONG. gstack/ECC are already cross-harness (verified: ECC README cross-harness list; gstack deploys `.agents/.cursor/.factory/.hermes/.kiro/.omc/.openclaw/`). Cross-platform = abstract harnessed's OWN hardcoded `~/.claude/` (`setup.ts:120/194`) onto `.agents/` + per-platform + auto-detect. No generator; no CC-degrade. → v9.0.
-- **State-machine + evidence-guard are NOT gaps** — harnessed has a two-tier state machine + fail-closed evidence guard already; earlier compare drafts mis-attributed them to comet (corrected).
-- **Remaining real gaps** — cross-harness reach [v9.0], single-command resume [v8.0 Phase 24], i18n skill surface [v10.0], adoption/legibility [v8.0 Phase 25].
-- **Competitive basis** — reuse `.planning/research/01–04` + `SUMMARY.md` + `docs/comparison.md` (do NOT re-create). 2026-06-23 increment: comet 1,562 ★ / Trellis 10,949 ★.
+- **Posture = 守宽做深 (B)** — keep the heterogeneous-upstream-arbitration moat; do NOT narrow to a single pairing.
+- **Cross-harness feasibility (verified 2026-06-23, → v9.0)** — gstack/ECC already cross-harness; v9.0 work = abstract harnessed's OWN `~/.claude/` (`setup.ts:120/194`) onto `.agents/` + per-platform + auto-detect. No generator; no CC-degrade.
+- Full v8.0 discuss decisions (state-machine-not-gap, gap map, competitive basis) → `milestones/v8.0-MILESTONE-AUDIT.md`. Competitive basis: `.planning/research/01–04` + `docs/comparison.md` (do NOT re-create).
 
 ### Invariants (must not break)
 
@@ -53,10 +50,11 @@ progress:
 
 ### Open todos / blockers
 
-- **Phase 25 EXECUTED awaiting commit gate** — 7 files: `README.md` (M) + `README-cn.md` (M) + `phases/25-quickstart/{25-CONTEXT,25-01-PLAN,25-01-SUMMARY}.md` (new) + this STATE + ROADMAP checkbox. docs-only (no TS/JS → biome N/A); diff 仅 2 README + planning; 7 翻译版未动. NOT committed.
+- **v8.0 fully committed** — Phase 24 `c988bc8`, Phase 25 `58a6900`, audit `4d106ad`; milestone-close docs (ROADMAP/MILESTONES/STATE/PROJECT/audit) pending this commit. No open blockers.
+- **Doc-hygiene backlog** (non-blocking, from v8.0 audit): REQUIREMENTS.md + PROJECT.md are frozen ~2026-06-05 v5.1/v6.0-era snapshots (not reconciled past v6.0); shipped v5.1–v8.0 phase dirs (09–25) live in active `phases/` not `milestones/<ver>-phases/` (de-facto v5.1+ lightweight convention). Reconcile if/when a fuller archive pass is wanted.
 - **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`.
 
 ## Session Continuity
 
-- **Next command**: commit Phase 25 (7 files; user gate per 逐-gate), then v8.0 milestone close.
+- **Next command**: v9.0 Cross-Harness kickoff — `/plan-eng-review` (structural architecture gate) then discuss/plan/execute (hand-controlled). `/clear` first recommended.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed. Rogue impls in `.planning/phases/_rogue-impl-reference/` (untracked). RTK note: `git status | grep` false-positives (RTK prints `ok`) — verify with `ls`/`test -f`.

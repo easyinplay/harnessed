@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). Active milestone = **v8.0 Frictionless Entry** (first of three competitive-gap milestones from the 2026-06-23 comet/Trellis re-comparison).
+> Shipped history = indexed archive (do NOT re-plan). No active milestone — **v8.0 Frictionless Entry shipped 2026-06-23**; next = **v9.0 Cross-Harness** (see Backlog, opens with `/plan-eng-review`).
 > Current published npm: **4.6.0** (2026-06-14) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
@@ -25,32 +25,15 @@
 | v5.1 Upstream Re-sync | 2026-06-10 (npm 4.3.0) | GSD Core `@opengsd/gsd-core` 1.4.1 + gstack/mattpocock bump + 18 capabilities + stage-phase-gate. execute self-owned. 1167 tests. 详: `phases/09-gsd-core-rewire/` + `phases/10-gstack-bump-skills/`. |
 | v6.0 Doc-Discipline Substrate | 2026-06-11 (npm 4.4.0) | Phase 11 doc-discipline (7th L0) + Phase 12 G2 sentinel `checkPlanningSync` guard. 1188 tests. 详: `phases/11-doc-discipline/` + `phases/12-sentinel-gate/`. |
 | v7.0 Gap-Close & Memory Loop | 2026-06-14 (npm 4.5.0→4.6.0) | 7 phases (13–19) closing the first comet/Trellis comparison: doc-debloat, compact-real, multi-workflow (un-defer G5), learning-loop, spec-injection, CodeGraph opt-in, minimal adoption. + follow-ons: Phase 20 `update` (comet-update gap), Phase 21 ship-stage (4→5 stage), Phase 22 smart reminders (ship+retro), Phase 23 Windows install fix. 1335 tests. 详: `phases/13-…/` … `phases/23-…/` SUMMARYs. |
+| v8.0 Frictionless Entry | 2026-06-23 | 2 phases: 24 single-command resume entry (zero-arg `harnessed` you-are-here + `NEXT: auto\|manual\|done` + `--json`, comet `/comet` analog) + 25 value-prop/quickstart legibility (结果导向定位主句 + First 5 Minutes quickstart). 1352 tests. Audit passed 2/2. 详: `phases/24-resume-entry/` + `phases/25-quickstart/` SUMMARYs + `milestones/v8.0-MILESTONE-AUDIT.md`. |
 
 ---
 
-## Active milestone: v8.0 Frictionless Entry
+## Active milestone
 
-**Goal**: Turn the 2026-06-23 three-way re-comparison into the first of three competitive-gap milestones. v8.0 = the low-risk "quick wins" tier — a single-command resume entry (comet `/comet` analog; the mechanism already exists, only the zero-arg entry + ergonomics are missing) and a legible value-prop + <5min quickstart (comet's instantly-graspable positioning). The two big bets — **cross-harness reach (→ v9.0)** and **i18n surface (→ v10.0)** — are deferred to their own milestones per the scope decision below.
+**None** — v8.0 Frictionless Entry shipped 2026-06-23 (audit passed 2/2; detail in `milestones/v8.0-MILESTONE-AUDIT.md` incl. the carried-forward discuss decisions). Next = **v9.0 Cross-Harness** (see Backlog) — opens with `/plan-eng-review`.
 
-**Discuss decisions** (2026-06-23, via 3-way re-comparison + AskUserQuestion):
-- **Posture = 守宽做深 (B)** — keep the heterogeneous-upstream-arbitration moat (capabilities.yaml + priority.yaml + ADR de-confliction); do NOT narrow to a single pairing like comet's OpenSpec×Superpowers.
-- **Fact correction (verified 2026-06-23)** — the earlier "守宽 conflicts with cross-platform" premise was WRONG. gstack and ECC are already cross-harness (ECC README: "Works across Codex, Claude Code, Cursor, OpenCode, Gemini, Zed, GitHub Copilot"; gstack deploys to `.agents/.cursor/.factory/.hermes/.kiro/.omc/.openclaw/`). 守宽 and cross-platform are **synergistic** — upstreams already solved upstream-side portability. Cross-platform work collapses to abstracting harnessed's OWN hardcoded `~/.claude/` (`setup.ts:120/194` + state + inject) onto the industry `.agents/` + per-platform convention with auto-detect. No generator needed; no CC-degrade.
-- **State-machine + evidence-guard are NOT gaps** (verified 2026-06-23) — harnessed already has a two-tier state machine (envelope 3-state activate/pause/complete in `state.ts` + ledger 5-state; `currentWorkflow.v1.ts:1` "state machine schema"; `nextStep.ts` mirrors `comet-state next`) and a fail-closed evidence guard (`checkpoint complete` → `checkArtifacts` + `checkPlanningSync`, BLOCKED unless `--force`). Earlier compare drafts mis-attributed these to comet; corrected.
-- **Remaining real comet/Trellis gaps** = (1) cross-harness reach [→ v9.0], (2) single-command resume ergonomics [v8.0], (3) i18n skill surface [→ v10.0], (4) adoption/legibility [v8.0].
-- **Milestone split** — quick-wins first (this v8.0), then cross-harness (v9.0) + i18n (v10.0) each as a dedicated milestone.
-
-**Competitive basis** (do NOT re-create — one-fact-one-home): `.planning/research/01-competitive-landscape.md` … `04-failure-modes.md` + `SUMMARY.md` + `docs/comparison.md`. 2026-06-23 increment: comet 1,562 ★ / Trellis 10,949 ★; ECC v2.0.0 "Agent Harness Operating System" cross-harness; gstack 10-agent auto-detect.
-
-**Invariants**: 守宽 moat preserved; KARPATHY-minimal surgical diffs; full gate green vs the 1335-test baseline; Windows CI green; biome preempt before every TS/JS commit; NEVER push without approval; every `.planning/` edit self-exemplifies v6.0 doc-discipline.
-
-### Phases (sketch — refine at execution per anti-stale; do NOT pre-detail downstream)
-
-- [x] **Phase 24: single-command resume entry** ✅ 2026-06-23 — zero-arg `harnessed` you-are-here dashboard + `NEXT: auto|manual|done` contract + `--json` (comet `/comet` analog); pure aggregation of shipped pieces (`readCurrentWorkflow` + `buildRecoverLines` + `resolveNext`), read-only, explicit bare-dispatch (no misfire). 1352 tests. 详: `phases/24-resume-entry/24-01-SUMMARY.md`.
-- [x] **Phase 25: value-prop + quickstart legibility** ✅ 2026-06-23 — EN README 结果导向定位主句上提 + First 5 Minutes linear quickstart (zero-arg `harnessed` spine) + bare-cmd CLI 行; README-cn 主句同步 (ZH 正文整体刷新 → v10.0). Docs-only, diff 仅 README.md + README-cn.md (7 翻译版未动). 详: `phases/25-quickstart/25-01-SUMMARY.md`.
-
-### Adoption (non-phase follow-on)
-
-Stars / demo gif / DeepWiki are marketing, not code-deliverables — tracked as a milestone follow-on, NOT a phase. ~0 ★ today vs comet 1.5k / Trellis 10.9k.
+> Adoption (stars / demo gif / DeepWiki) remains a non-phase marketing follow-on — ~0 ★ today vs comet 1.5k / Trellis 10.9k.
 
 ---
 
