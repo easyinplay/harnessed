@@ -1,13 +1,13 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). Active milestone = **v7.0 Gap-Close & Memory Loop** (close comet/Trellis competitive gaps + de-bloat planning docs).
-> Current published npm: **4.5.0** (tagged + pushed 2026-06-14; publish.yml CI publishing) · milestone codenames (v6.0/v7.0) are spec/era names, NOT npm versions. v6.0 shipped in 4.4.0; v7.0 + follow-ons (20/21) shipped in 4.5.0.
+> Shipped history = indexed archive (do NOT re-plan). Active milestone = **v8.0 Frictionless Entry** (first of three competitive-gap milestones from the 2026-06-23 comet/Trellis re-comparison).
+> Current published npm: **4.6.0** (2026-06-14) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
 
 ## Shipped milestones (archived index)
 
-> Delivered baseline. Detail in `.planning/milestones/*-MILESTONE-AUDIT.md` + `CHANGELOG.md` (46 releases) + `.planning/RETROSPECTIVE.md`.
+> Delivered baseline. Detail in `.planning/milestones/*-MILESTONE-AUDIT.md` + `phases/<NN>/` SUMMARY + `CHANGELOG.md` (46 releases) + `.planning/RETROSPECTIVE.md`. Overview tier holds one line + pointer per milestone — narrative lives in the archives, never inlined here.
 
 | Milestone | Shipped | Summary |
 |-----------|---------|---------|
@@ -21,97 +21,42 @@
 | v3.9.x | 2026-05-24~30 | maintenance series (v3.9.3→v3.9.26), dogfood bug fixes. |
 | v4.0.0 | 2026-05-30 | orchestration-brain redesign — gates/prompt/checkpoint CLIs, CC-native spawn. |
 | v4.1.0→v4.1.3 | 2026-05-30~06-04 | yaml SoT richness + code-review fixes + P0 data-loss fixes. 1107 tests. |
-| v5.0 State Machine Core (Spec 1) | shipped as **v4.2.0** 2026-06-05 | structured progress ledger + fail-closed evidence guard + `status --recover` + handoff sha256 drift. 8/8 phases. ADR-0033. 1158 tests. Spec 2/3 deferred (see Backlog). Phase archive: `.planning/milestones/v5.0-phases/`. |
-| v5.1 Upstream Re-sync | shipped as **v4.3.0** 2026-06-10 | GSD Core rename `@opengsd/gsd-core` 1.4.1 + gstack/mattpocock bump + 18 new capabilities + stage-phase-gate triggers. Keystone: execute self-owned. 1167 tests. 详: `phases/09-gsd-core-rewire/` + `phases/10-gstack-bump-skills/`. |
+| v5.0 State Machine Core | 2026-06-05 (npm 4.2.0) | structured progress ledger + fail-closed evidence guard + `status --recover` + handoff drift. ADR-0033. 1158 tests. Archive: `milestones/v5.0-phases/`. |
+| v5.1 Upstream Re-sync | 2026-06-10 (npm 4.3.0) | GSD Core `@opengsd/gsd-core` 1.4.1 + gstack/mattpocock bump + 18 capabilities + stage-phase-gate. execute self-owned. 1167 tests. 详: `phases/09-gsd-core-rewire/` + `phases/10-gstack-bump-skills/`. |
+| v6.0 Doc-Discipline Substrate | 2026-06-11 (npm 4.4.0) | Phase 11 doc-discipline (7th L0) + Phase 12 G2 sentinel `checkPlanningSync` guard. 1188 tests. 详: `phases/11-doc-discipline/` + `phases/12-sentinel-gate/`. |
+| v7.0 Gap-Close & Memory Loop | 2026-06-14 (npm 4.5.0→4.6.0) | 7 phases (13–19) closing the first comet/Trellis comparison: doc-debloat, compact-real, multi-workflow (un-defer G5), learning-loop, spec-injection, CodeGraph opt-in, minimal adoption. + follow-ons: Phase 20 `update` (comet-update gap), Phase 21 ship-stage (4→5 stage), Phase 22 smart reminders (ship+retro), Phase 23 Windows install fix. 1335 tests. 详: `phases/13-…/` … `phases/23-…/` SUMMARYs. |
 
 ---
 
-> **v6.0 Doc-Discipline Substrate** — ✅ implemented 2026-06-11 (Phase 11 doc-discipline + Phase 12 sentinel gate, vitest 1188). Pending npm release (bump from 4.4.0). 详: `phases/11-doc-discipline/` + `phases/12-sentinel-gate/`.
+## Active milestone: v8.0 Frictionless Entry
 
-## Active milestone: v7.0 Gap-Close & Memory Loop
+**Goal**: Turn the 2026-06-23 three-way re-comparison into the first of three competitive-gap milestones. v8.0 = the low-risk "quick wins" tier — a single-command resume entry (comet `/comet` analog; the mechanism already exists, only the zero-arg entry + ergonomics are missing) and a legible value-prop + <5min quickstart (comet's instantly-graspable positioning). The two big bets — **cross-harness reach (→ v9.0)** and **i18n surface (→ v10.0)** — are deferred to their own milestones per the scope decision below.
 
-**Goal**: Close the competitive gaps surfaced by the comet/Trellis comparison (2026-06-13) — make the runtime actually run (compact real, multi-workflow), add the cross-session learning loop Trellis builds its moat on, and trim the planning-doc bloat that violates our own v6.0 doc-discipline. Plus a minimal adoption motion (2 GitHub stars today vs comet 1.2k / Trellis 10.2k).
+**Discuss decisions** (2026-06-23, via 3-way re-comparison + AskUserQuestion):
+- **Posture = 守宽做深 (B)** — keep the heterogeneous-upstream-arbitration moat (capabilities.yaml + priority.yaml + ADR de-confliction); do NOT narrow to a single pairing like comet's OpenSpec×Superpowers.
+- **Fact correction (verified 2026-06-23)** — the earlier "守宽 conflicts with cross-platform" premise was WRONG. gstack and ECC are already cross-harness (ECC README: "Works across Codex, Claude Code, Cursor, OpenCode, Gemini, Zed, GitHub Copilot"; gstack deploys to `.agents/.cursor/.factory/.hermes/.kiro/.omc/.openclaw/`). 守宽 and cross-platform are **synergistic** — upstreams already solved upstream-side portability. Cross-platform work collapses to abstracting harnessed's OWN hardcoded `~/.claude/` (`setup.ts:120/194` + state + inject) onto the industry `.agents/` + per-platform convention with auto-detect. No generator needed; no CC-degrade.
+- **State-machine + evidence-guard are NOT gaps** (verified 2026-06-23) — harnessed already has a two-tier state machine (envelope 3-state activate/pause/complete in `state.ts` + ledger 5-state; `currentWorkflow.v1.ts:1` "state machine schema"; `nextStep.ts` mirrors `comet-state next`) and a fail-closed evidence guard (`checkpoint complete` → `checkArtifacts` + `checkPlanningSync`, BLOCKED unless `--force`). Earlier compare drafts mis-attributed these to comet; corrected.
+- **Remaining real comet/Trellis gaps** = (1) cross-harness reach [→ v9.0], (2) single-command resume ergonomics [v8.0], (3) i18n skill surface [→ v10.0], (4) adoption/legibility [v8.0].
+- **Milestone split** — quick-wins first (this v8.0), then cross-harness (v9.0) + i18n (v10.0) each as a dedicated milestone.
 
-**Discuss decisions** (2026-06-13, via comparison analysis + AskUserQuestion): full 6-item scope, phased; doc-debloat full (status-line digest + archive); multi-workflow = complete breaking migration (un-defers G5); adoption = minimal (README quickstart + 1 honest comparison post). **Non-goals** (actively trimmed, NOT YAGNI-justified at 1 harness + ~0 users): cross-harness breadth, routing L2-supervisor over-generalization.
+**Competitive basis** (do NOT re-create — one-fact-one-home): `.planning/research/01-competitive-landscape.md` … `04-failure-modes.md` + `SUMMARY.md` + `docs/comparison.md`. 2026-06-23 increment: comet 1,562 ★ / Trellis 10,949 ★; ECC v2.0.0 "Agent Harness Operating System" cross-harness; gstack 10-agent auto-detect.
 
-**Invariants**: additive-where-possible; multi-workflow migration ships a compat-read for the existing singleton `current-workflow.json` (no data loss); KARPATHY-minimal surgical diffs; full gate green vs the 1188-test baseline; Windows CI green; biome preempt before every TS/JS commit; NEVER push without approval; every `.planning/` edit self-exemplifies doc-discipline.
+**Invariants**: 守宽 moat preserved; KARPATHY-minimal surgical diffs; full gate green vs the 1335-test baseline; Windows CI green; biome preempt before every TS/JS commit; NEVER push without approval; every `.planning/` edit self-exemplifies v6.0 doc-discipline.
 
-### Phases
+### Phases (sketch — refine at execution per anti-stale; do NOT pre-detail downstream)
 
-- [x] **Phase 13: planning doc-debloat (A)** ✅ 2026-06-13 — PROJECT-SPEC status blockquote folded 6265→1196 chars (digest PASS) + 8 non-English README best-effort headers; docs-only. Committed 933441d. 详: `phases/13-planning-doc-debloat-a/`.
-- [x] **Phase 14: compact 做实 (B)** ✅ 2026-06-13 — `compact.ts` placeholder → real summarize+evict ledger compaction (G6-safe), `compacted_summary` additive schema, `harnessed compact` CLI + `checkpoint complete --tokens` auto-trigger. TDD, 1242 tests. 详: `phases/14-compact-real/`.
-- [x] **Phase 15: multi-workflow migration (D / un-defer G5)** ✅ 2026-06-13 — global singleton → per-repo store `workflows.json` (arch A behind-API; 17 consumers + envelope unchanged); repoKey fs walk-up; compat-read + dual-write; `harnessed workflows` CLI. TDD, 1256 tests. 详: `phases/15-multi-workflow/`.
-- [x] **Phase 16: learning 回灌闭环 (C)** ✅ 2026-06-13 — workflow completion appends ledger failure/loop/reject signals to repo `.planning/LEARNINGS.md` (append-only, git-shareable) + `harnessed learn` prose; hybrid, D4 no-empty-write. TDD, 1265 tests. Consumption via standard `.planning/` read + Phase 17 injection. 详: `phases/16-learning-loop/`.
-- [x] **Phase 17: spec/convention auto-injection (E / ex-Spec3)** ✅ 2026-06-13 — G4 hook emits relevance-filtered `<project-context>` (repo learnings + phase CONTEXT excerpt, token-bounded) + bin made repo-aware (`workflows.json[repoKey]`, fixes Phase-15 gap), parity-tested. Closes 16→17 loop. TDD, 1280 tests. 详: `phases/17-spec-injection/`.
-- [x] **Phase 18: CodeGraph semantic index (F)** ✅ 2026-06-14 — CodeGraph (MIT) cataloged opt-in: `manifests/optional/codegraph.yaml` (never base) + always-pass `checkCodeGraph` doctor (13th) + capabilities entry. No install run, no code vendored (self-installs). TDD, 1285 tests. 详: `phases/18-codegraph/`.
-- [x] **Phase 19: minimal adoption (G)** ✅ 2026-06-14 — `docs/comparison.md` (honest 3-way, snapshot-dated, downloads-are-noise caveat) + README How-it-compares link. Docs-only. **v7.0 COMPLETE 7/7.** 详: `phases/19-adoption/`.
+- [ ] **Phase 24: single-command resume entry** — `harnessed` (zero-arg) = auto-detect the active workflow for cwd (`workflows.json[repoKey]`) + report current phase + continue (comet `/comet` analog). Mechanism exists (`resume.ts` + `nextStep.ts` + `workflows.json`); the gap is the zero-arg dispatch + ergonomics. Small, clear-value. Depends on: none.
+- [ ] **Phase 25: value-prop + quickstart legibility** — README one-line positioning + install→first-workflow <5min quickstart, matching comet's graspable narrative. Docs-only. Depends on: Phase 24 (quickstart demos the resume entry).
 
-### Follow-on (post-v7.0-close)
+### Adoption (non-phase follow-on)
 
-- [x] **Phase 20: `harnessed update` command** ✅ 2026-06-14 — GSD-style `update` (self `npm i -g harnessed@latest` + `--check` + `--upstreams` re-runs base manifests via extracted `installBaseProfile` + `--migration-report` read-only inventory) + 14th doctor check `checkUpdate` surfacing "update available X→Y" (fail-soft). Closes the `comet update` gap. TDD +17, 1302 tests, zero real installs (mocked). 详: `phases/20-update-command/`.
-- [x] **Phase 21: ship/release stage (5th stage)** ✅ 2026-06-14 — first-class Ship after Verify (4→5 stage). `harnessed release-preflight` (26th CLI) read-only gate (CHANGELOG `[Unreleased]`/version/git-clean/tag-absent, exit 1, zero mutation) + `/ship` workflow master + `ship/preflight` sub + capability + routing + README 5-stage (real check-workflow-schema v3=26). Tag-ready boundary (publish in CI). Closes the ship-stage gap. TDD +5, 1307 tests. 详: `phases/21-ship-stage/`.
-
-### Phase 13: planning doc-debloat (A)
-
-**Goal**: Cut the planning-doc bloat that violates our own v6.0 doc-discipline, so the overview/status tier is a real digest and history lives in archives.
-**Scope**: PROJECT-SPEC.md ~4000-word status blockquote → <100-line digest (current pointer + per-milestone one-liners + pointers); collapse milestone narrative into CHANGELOG/RETROSPECTIVE/git; decide policy for the 11 hand-maintained README translations (on-demand generation or drop-to-N). Self-exemplifies doc-discipline. No `src/` code change.
-**Depends on**: none (independent, first).
-**Acceptance**: PROJECT-SPEC status section <100 lines; no history inlined in overview tier; doc-discipline `before-commit` check passes clean on the edited docs; zero behavior/code change.
-**Plans**: 1 plan — 13-01-PLAN.md (PROJECT-SPEC status digest + 8 non-English README best-effort headers + verify gate). Wave 1, autonomous, docs-only.
-
-### Phase 14: compact 做实 (B)
-
-**Goal**: Turn the stubbed checkpoint compaction into real, measured context compression so long tasks survive context pressure.
-**Scope**: `src/checkpoint/compact.ts` placeholder → real compaction (summarize/evict resolved sub-progress + spec/brainstorm context); measured token-reduction assertion in tests. Reuses existing checkpoint ledger; additive to `compact` CLI.
-**Depends on**: none (independent).
-**Acceptance**: compact produces a measurable input-token reduction on a fixture workflow; no data loss of unresolved state; TDD red→green; full gate green.
-**Plans**: 1 plan — 14-01-PLAN.md (TDD, 5 tasks: schema additive field → compactLedger pure → compactWorkflow impure → manual CLI + auto-trigger → verify gate). Decisions: summarize+evict resolved, preserve fail_count/G6, manual+auto trigger, real token measure (14-CONTEXT.md D1–D7). Planned in main session (no autonomous planner chain). Ready-to-execute, NOT yet executed.
-
-### Phase 15: multi-workflow migration (D / un-defer G5)
-
-**Goal**: Replace the singleton current-workflow with multiple concurrently-active workflows, closing the parallel-project gap, without losing existing singleton state.
-**Scope** (design locked 2026-06-13, arch A): singleton `current-workflow.json` → per-repo multi-store `workflows.json` keyed by repo-root (nearest `.git`, fallback cwd; pure fs walk-up, no git subprocess). Behind-API: `readCurrentWorkflow`/`writeCurrentWorkflow`/`mutateSubProgress` internals rewired to the active repo's slot — the **17 call sites and the `CurrentWorkflowV1` envelope schema are NOT changed** (only a NEW store schemaVersion). Active is implicit by cwd (`cd` auto-switches; no explicit `active` pointer / no `resume --switch`). compat-read migrates the legacy singleton (zero loss, kept as anchor) + dual-write rollback window. BREAKING on-disk format. Subsumes ex-Spec-2. Fixes rogue F4/F5 by construction.
-**Depends on**: Phase 14 (compaction operates per-workflow; settle compact first).
-**Acceptance**: per-repo isolation (two repos' workflows coexist, neither clobbers); legacy singleton auto-migrates verbatim (tested, legacy retained); `mutateSubProgress` single-lock RMW preserved; `harnessed workflows` lists slots; all 17 existing consumers green (no signature change).
-**Plans**: 1 plan — 15-01-PLAN.md (TDD, 5 tasks: schema+repoKey → store kernels+migration → state.ts rewire+isolation+dual-write [CORE] → workflows CLI → verify gate). Decisions: arch A behind-API, key=repo-root, single-file store, implicit-active-by-cwd, dual-write rollback (15-CONTEXT.md D1–D8). Planned in main session. Ready-to-execute, NOT yet executed.
-
-### Phase 16: learning 回灌闭环 (C)
-
-**Goal**: Add the cross-session learning loop — completed workflows promote durable learnings into persistent project knowledge so the next session starts smarter (Trellis `update-spec` analog, no-vendor).
-**Scope**: extract decisions/lessons/patterns from a completed workflow ledger → write to a persistent knowledge store (`.planning/`-resident or capability-driven); wire into `checkpoint complete`. No upstream vendoring (compose, don't copy).
-**Depends on**: Phase 15 (per-workflow learnings keyed off the multi-workflow store).
-**Acceptance**: completing a workflow emits a structured learnings artifact; a subsequent workflow can read it; round-trip covered by tests; KARPATHY-minimal surface.
-**Plans** (design locked 2026-06-13): 1 plan — 16-01-PLAN.md (TDD, 4 tasks: pure extract/format → append+no-empty-write → checkpoint auto-capture + `harnessed learn` CLI → verify gate). Decisions: append-only record (NOT auto-promote), in-repo `.planning/LEARNINGS.md` (git-shareable, repoKey-targeted), hybrid extraction (auto mechanical signals + `harnessed learn` prose), no-empty-write D4 anti-pollution (16-CONTEXT.md D1–D6). Capture half now; consumption via standard `.planning/` read + Phase 17 injection. Main session.
-
-### Phase 17: spec/convention auto-injection (E / ex-Spec3)
-
-**Goal**: Inject relevant project specs/conventions into each turn, not just workflow state — deepen the G4 hook from state-only to knowledge-aware.
-**Scope**: extend `src/checkpoint/injectState.ts` + `bin/harnessed-inject-state.mjs` to select + inject relevant project conventions/specs per turn (size-bounded). Subsumes ex-Spec-3. Reuses Phase 16 knowledge store where available.
-**Depends on**: Phase 16 (injects the promoted knowledge).
-**Acceptance**: inject hook emits relevant convention context bounded by a token budget; no injection when none relevant (silent); tested for selection + budget cap.
-**Plans** (design locked 2026-06-13): 1 plan — 17-01-PLAN.md (TDD, 4 tasks: parse/filter/select pure → buildProjectContextBlock/findPhaseContextExcerpt/buildInjection → repo-aware bin rewrite + parity → verify). Decisions: relevance-FILTERED (deterministic phase/sub match + recency, no LLM), sources = LEARNINGS.md + current-phase CONTEXT excerpt (static files/CLAUDE.md excluded), token-bounded (1500 default, `HARNESSED_INJECT_BUDGET` override), repo-aware (fixes Phase-15 bin gap), bin self-contained + parity-tested (17-CONTEXT.md D1–D8). Consumption half — closes the 16→17 learning loop. Main session.
-
-### Phase 18: CodeGraph semantic index (F)
-
-**Goal**: Offer semantic code indexing as an optional capability to cut tool-call/token cost on code navigation (comet reports tool-calls ↓58%).
-**Scope**: integrate a semantic code index as an optional manifest/capability (install + check + invoke), gated behind an opt-in; no hard dependency added to base. Parallelizable.
-**Depends on**: none (no dep on 14–17; can run anytime).
-**Acceptance**: capability installs + checks via manifest; opt-in only (base unaffected when absent); doctor reports presence; no base-install regression.
-**Plans** (design locked 2026-06-13): 1 plan — 18-01-PLAN.md (TDD, 4 tasks: checkCodeGraph doctor → manifests/optional/codegraph.yaml → register doctor 12→13 + capabilities entry → verify). Decision: **catalog + doctor-detect only** — CodeGraph (`@colbymchenry/codegraph`, MIT) ships its own installer, so harnessed catalogs (opt-in manifest in NEW `manifests/optional/`, never base) + detects (`.codegraph/`, always-pass doctor) + a capability entry; harnessed runs NO install and vendors NO code (18-CONTEXT.md D1–D6). Main session.
-
-### Phase 19: minimal adoption (G)
-
-**Goal**: Make the project legible to a first real user and publish one honest positioning artifact (2 stars today).
-**Scope**: README quickstart polish (install → first workflow in <5 min); 1 honest harnessed-vs-comet-vs-Trellis comparison post (reuse the 2026-06-13 analysis, no vanity-metric spin). Docs/markdown only.
-**Depends on**: Phases 13–18 (announce after features land).
-**Acceptance**: a new user can reach first successful workflow from README alone; comparison post is factually accurate (downloads-are-noise caveat included); no code change.
-**Plans** (2026-06-14): 1 plan — 19-01-PLAN.md (docs-only, 3 tasks: docs/comparison.md honest 3-way → README How-it-compares link → verify). Reuses the 2026-06-13 comparison analysis; downloads-are-noise + 2-stars caveats explicit, snapshot-dated, no over-claim. LAST phase of v7.0. Main session.
+Stars / demo gif / DeepWiki are marketing, not code-deliverables — tracked as a milestone follow-on, NOT a phase. ~0 ★ today vs comet 1.5k / Trellis 10.9k.
 
 ---
 
 ## Backlog / Deferred (future milestones)
 
-- ~~v5.0 Spec 2 (session-scoped state)~~ → folded into v7.0 Phase 15 (multi-workflow migration).
-- ~~v5.0 Spec 3 (per-turn injection)~~ → folded into v7.0 Phase 17 (spec auto-injection).
+- **v9.0 Cross-Harness** (big bet ①, un-defers the ex-v7.0 non-goal) — platform adapter: abstract harnessed's hardcoded `~/.claude/` (setup/state/inject) → platform descriptor; auto-detect installed harness; align the industry `.agents/` + per-platform dirs. Upstreams (gstack/ECC/superpowers/codegraph) already portable, so no generator / no upstream-mapping work. Opens with `/plan-eng-review` (structural). Sketch only — refine when started.
+- **v10.0 i18n Surface** (big bet ②) — extend i18n from the CLI message layer (en/zh-Hans, already shipped) to the skill/workflow surface bilingual (comet model: ship EN+中文 skills). Parallelizable with v9.0. Sketch only.
+- ~~Deferred non-goal (v7.0 discuss): cross-harness breadth~~ → **un-deferred 2026-06-23** (→ v9.0): demand changed (user direction 守宽做深 + cross-platform) AND feasibility changed (upstreams gstack/ECC verified already cross-harness). routing L2-LLM-supervisor simplification still deferred.
 - Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency hazards `sigintTrap.ts`/`before-commit.ts`.
-- Deferred non-goals (v7.0 discuss): cross-harness breadth (only CC implemented; revisit when a 2nd harness has real demand); routing L2-LLM-supervisor simplification.

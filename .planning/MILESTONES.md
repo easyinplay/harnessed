@@ -6,7 +6,7 @@
 > Full narrative: `CHANGELOG.md` (46 releases) + `.planning/RETROSPECTIVE.md`.
 >
 > Note: milestone codenames are NOT npm release versions. harnessed publishes by npm semver
-> (latest published: 4.3.0); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
+> (latest published: 4.6.0); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
 > Shipped order below is chronological, not version-monotonic.
 
 ## Shipped
@@ -25,10 +25,11 @@
 | v4.1.0→v4.1.3 | 2026-05-30~06-04 | yaml SoT richness + code-review fixes + P0 data-loss fixes. 1107 tests. | (in `v4.0-phases/` / CHANGELOG) |
 | v5.0 State Machine Core (Spec 1) | 2026-06-05 (npm 4.2.0) | structured progress ledger + fail-closed evidence guard + `status --recover` + handoff drift + verify backfill + generated ORCHESTRATOR body. ADR-0033. 1158 tests. Spec 2/3 deferred (Backlog). Working dir `.planning/milestones/v5.0-phases/`. | `.planning/milestones/v5.0-phases/` |
 | v5.1 Upstream Re-sync | 2026-06-10 (npm 4.3.0) | GSD Core rename `@opengsd/gsd-core` 1.4.1 + gstack/mattpocock manifest bump + 18 new capabilities (12 GSD Core + 6 gstack) + stage-phase-gate triggers. Keystone: execute self-owned (gsd-execute-phase NOT wired). 1167 tests. | `phases/09-gsd-core-rewire/` + `phases/10-gstack-bump-skills/` |
+| v6.0 Doc-Discipline Substrate | 2026-06-11 (npm 4.4.0) | G1 = 7th L0 discipline `doc-discipline.yaml` + STATE-line halt; G2 = `checkPlanningSync` guard in checkpoint complete. 1188 tests. | `phases/11-doc-discipline/` + `phases/12-sentinel-gate/` |
+| v7.0 Gap-Close & Memory Loop | 2026-06-14 (npm 4.5.0→4.6.0) | 7 phases (13–19) closing the 1st comet/Trellis comparison + follow-ons 20 (`update`) / 21 (ship-stage) / 22 (smart reminders) / 23 (Windows install fix). 1335 tests. | `phases/13-…/` … `phases/23-…/` |
 
 ## Active
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v6.0 Doc-Discipline Substrate | ◑ Implemented (2/2), pending release | G1 = 7th L0 discipline `doc-discipline.yaml` + STATE-line halt. G2 = `checkPlanningSync` guard in checkpoint complete. vitest 1188. Phase 11 `a5bd03c`; Phase 12 pending commit. Next: release (npm bump from 4.4.0). |
-| v7.0 Gap-Close & Memory Loop | ○ Discussed (2026-06-13), plan pending | 7 phases (13–19) closing comet/Trellis gaps: doc-debloat, compact-real, multi-workflow (un-defer G5), learning-loop, spec-injection, CodeGraph, minimal adoption. Discuss decisions in ROADMAP active + STATE. Next: `/gsd-plan-phase 13`. |
+| v8.0 Frictionless Entry | ○ Discussed (2026-06-23), plan pending | 1st of 3 competitive-gap milestones from the 2026-06-23 re-comparison. Posture 守宽做深. 2 phases: 24 single-command resume entry (comet `/comet` analog) + 25 value-prop/quickstart. Big bets deferred to v9.0 cross-harness + v10.0 i18n. Discuss decisions in ROADMAP active + STATE. Next: plan Phase 24 (hand-controlled). |
