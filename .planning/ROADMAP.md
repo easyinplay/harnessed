@@ -35,7 +35,7 @@
 
 ### Phases (sketch — refine at execution per anti-stale; A detailed, B/C sketch)
 
-- [ ] **Phase 26 (A): PlatformDescriptor seam** — descriptor type + `detectPlatform()` (override + claude-default only) + route `getHarnessedRoot()` through it. Zero behavior change (refactor-first). TDD. PLANNED 2026-06-23. 详: `phases/26-platform-descriptor-seam/26-CONTEXT.md`.
+- [x] **Phase 26 (A): PlatformDescriptor seam** ✅ 2026-06-24 — descriptor type + `detectPlatform()` (override + claude-default) + `getHarnessedRoot()` routed through it. Zero behavior change (1357 tests, seam transparent). TDD. 详: `phases/26-platform-descriptor-seam/26-01-SUMMARY.md`.
 - [ ] **Phase 27 (B): central config resolvers** — `getSettingsPath/getSkillsDir/getCommandsDir/getPluginsRegistry/getMcpConfigPath`; swap ~7 scattered call sites; fold 3 settings.json writers → 1 path + deep-merge atomic writer (D-C). Sketch.
 - [ ] **Phase 28 (C): `.agents/` proof** — agents descriptor + auto-probe detection + `HARNESSED_PLATFORM`/`.platform` pin + `setup --platform` + dual-platform tests + fixture parameterization. Verify `.agents/` layout + mcpConfigPath (D-A/D-B) at start. Sketch.
 

@@ -38,6 +38,7 @@
 import { existsSync, mkdirSync, renameSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { detectPlatform } from './platform.js'
 
 /**
  * Return the homedir-rooted harness state root, co-located under Claude Code's
@@ -61,11 +62,15 @@ import { join } from 'node:path'
  * harness root into a per-test tmpdir without polluting the real user home
  * directory. Production code never sets this env var; the override has no
  * effect on real CLI invocations.
+ *
+ * v9.0 Phase A: routed through the `detectPlatform()` seam — the state root is
+ * now `detectPlatform().stateRoot` rather than a literal here. Behavior is
+ * UNCHANGED: the claude descriptor returns `~/.claude/harnessed`, and the
+ * `HARNESSED_ROOT_OVERRIDE` precedence moved into `detectPlatform()` verbatim.
+ * The seam lets Phase C target a second harness without touching this SoT.
  */
 export function getHarnessedRoot(): string {
-  const override = process.env.HARNESSED_ROOT_OVERRIDE
-  if (override !== undefined && override !== '') return override
-  return join(homedir(), '.claude', 'harnessed')
+  return detectPlatform().stateRoot
 }
 
 /**
