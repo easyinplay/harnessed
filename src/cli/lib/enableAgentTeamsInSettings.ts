@@ -3,19 +3,23 @@
 // Q-AUDIT-5b LOCKED: schema is root-level `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
 // NOT nested `experimental.*`.
 //
+// Phase 27 (D3 fold): the read/parse/3-case/atomicWrite/backup mechanics moved to
+// the shared `settingsWriter.mergeSettingsEnvKey()`. This file is now a thin caller
+// that fixes the env key + idempotency policy (key === '1' → no-op) and maps the
+// shared MergeOutcome back to the public EnableResult union. Behavior + result type
+// unchanged (byte-identical writes, same statuses).
+//
 // Behavior (3 case + non-destructive merge):
 //   (a) file 不存在 → create with `{env: {CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: "1"}}`
 //   (b) file 存在 + env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === "1" → idempotent no-op
 //   (c) file 存在 + 缺 key OR key !== "1" → backup original + merge add/update key
 //
-// Backup goes to `~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak` (sister v3.0.3
-// getHarnessedRoot pattern via harnessedSubdir). Atomic write via tmpPath + rename.
+// Backup → `~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak`; atomic tmp+rename.
 // Any error → warn + skip (sister fallback 铁律 1 透明声明), NOT throw — non-blocking setup.
 
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join, resolve } from 'node:path'
-import { harnessedSubdir } from '../../installers/lib/harnessedRoot.js'
+import { mergeSettingsEnvKey } from './settingsWriter.js'
+
+const ENV_KEY = 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS'
 
 export type EnableResult =
   | { status: 'created'; path: string }
@@ -23,85 +27,18 @@ export type EnableResult =
   | { status: 'enabled'; path: string; backupPath: string }
   | { status: 'warn'; message: string }
 
-function settingsPath(): string {
-  return resolve(homedir(), '.claude', 'settings.json')
-}
-
 export async function enableAgentTeamsInSettings(): Promise<EnableResult> {
-  const path = settingsPath()
-  let raw: string | undefined
-  try {
-    raw = await readFile(path, 'utf8')
-  } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code
-    if (code !== 'ENOENT') {
-      return { status: 'warn', message: `read ${path} failed: ${(err as Error).message}` }
-    }
-    // Case (a): file does not exist → create fresh.
-    return createFreshSettings(path)
-  }
-
-  let data: Record<string, unknown>
-  try {
-    const parsed = JSON.parse(raw) as unknown
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { status: 'warn', message: `${path} is not a JSON object` }
-    }
-    data = parsed as Record<string, unknown>
-  } catch (err) {
-    return { status: 'warn', message: `${path} malformed JSON: ${(err as Error).message}` }
-  }
-
-  const env = (data.env ?? {}) as Record<string, unknown>
-  if (env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS === '1') {
-    return { status: 'already-enabled', path } // Case (b): idempotent.
-  }
-
-  // Case (c): backup original + merge add/update key (non-destructive).
-  const backupPath = await backupOriginal(raw)
-  if (backupPath.status === 'warn') return backupPath
-
-  data.env = { ...env, CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1' }
-  const writeErr = await atomicWrite(path, `${JSON.stringify(data, null, 2)}\n`)
-  if (writeErr) return { status: 'warn', message: writeErr }
-
-  return { status: 'enabled', path, backupPath: backupPath.path }
-}
-
-async function createFreshSettings(path: string): Promise<EnableResult> {
-  const data = { env: { CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1' } }
-  try {
-    await mkdir(join(homedir(), '.claude'), { recursive: true })
-  } catch (err) {
-    return { status: 'warn', message: `mkdir ~/.claude failed: ${(err as Error).message}` }
-  }
-  const writeErr = await atomicWrite(path, `${JSON.stringify(data, null, 2)}\n`)
-  if (writeErr) return { status: 'warn', message: writeErr }
-  return { status: 'created', path }
-}
-
-async function backupOriginal(
-  raw: string,
-): Promise<{ status: 'ok'; path: string } | { status: 'warn'; message: string }> {
-  const backupRoot = harnessedSubdir('backups')
-  const ts = new Date().toISOString().replace(/:/g, '-')
-  const backupPath = join(backupRoot, `settings.json.${ts}.bak`)
-  try {
-    await mkdir(backupRoot, { recursive: true })
-    await writeFile(backupPath, raw, 'utf8')
-    return { status: 'ok', path: backupPath }
-  } catch (err) {
-    return { status: 'warn', message: `backup ${backupPath} failed: ${(err as Error).message}` }
-  }
-}
-
-async function atomicWrite(path: string, content: string): Promise<string | undefined> {
-  const tmpPath = `${path}.tmp-${process.pid}-${Date.now()}`
-  try {
-    await writeFile(tmpPath, content, 'utf8')
-    await rename(tmpPath, path)
-    return undefined
-  } catch (err) {
-    return `write ${path} failed: ${(err as Error).message}`
+  const r = await mergeSettingsEnvKey(ENV_KEY, '1', {
+    skipIfPresent: (existing) => existing === '1',
+  })
+  switch (r.outcome) {
+    case 'created':
+      return { status: 'created', path: r.path }
+    case 'already':
+      return { status: 'already-enabled', path: r.path }
+    case 'merged':
+      return { status: 'enabled', path: r.path, backupPath: r.backupPath }
+    case 'warn':
+      return { status: 'warn', message: r.message }
   }
 }

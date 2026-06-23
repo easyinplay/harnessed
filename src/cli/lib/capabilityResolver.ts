@@ -33,8 +33,7 @@
 // avoid magic, schema stays additive, future capabilities are obvious.
 
 import { readdirSync, readFileSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { getPluginsRegistry, getSkillsDir } from '../../installers/lib/platform.js'
 
 /** Minimal shape needed from capabilities.yaml — additive yaml-tolerant. */
 export interface CapabilityEntry {
@@ -80,8 +79,9 @@ export interface ResolvedCmd {
  * so setup remains non-blocking on discovery failure (sister fallback 铁律 1).
  */
 export function readInstalledPlugins(homedirOverride?: string): Set<string> {
-  const home = homedirOverride ?? homedir()
-  const path = join(home, '.claude', 'plugins', 'installed_plugins.json')
+  // D2: thread the test/override home through the resolver instead of
+  // re-hardcoding `.claude`. `undefined` → resolver defaults to homedir().
+  const path = getPluginsRegistry(homedirOverride)
   let raw: string
   try {
     raw = readFileSync(path, 'utf8')
@@ -115,8 +115,8 @@ export function readInstalledPlugins(homedirOverride?: string): Set<string> {
  * user-skills installed simply see warnings for any user-skill capabilities.
  */
 export function readInstalledUserSkills(homedirOverride?: string): Set<string> {
-  const home = homedirOverride ?? homedir()
-  const skillsRoot = join(home, '.claude', 'skills')
+  // D2: resolver threads the optional home; default → homedir().
+  const skillsRoot = getSkillsDir(homedirOverride)
   try {
     const entries = readdirSync(skillsRoot, { withFileTypes: true })
     const out = new Set<string>()

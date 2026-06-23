@@ -15,10 +15,10 @@
 //   2 → no SKILL.md workflows found (nothing to install)
 
 import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
+import { getCommandsDir, getSkillsDir } from '../installers/lib/platform.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
@@ -117,7 +117,7 @@ export function registerSetup(program: Command): void {
       const dryRun = raw.dryRun === true
       const pkgRoot = getPackageRoot()
       const workflowsDir = resolve(pkgRoot, 'workflows')
-      const skillsBase = resolve(homedir(), '.claude', 'skills')
+      const skillsBase = getSkillsDir()
 
       // Agent Teams env probe (non-blocking warn) — sister R20.11 acceptance e.
       await warnIfAgentTeamsMissing()
@@ -191,7 +191,7 @@ export function registerSetup(program: Command): void {
       // (upstream slash cmd) + fallback (Task-spawn self-contained role prompt
       // adapted from gstack expert prompts). Skip + warn if user already has
       // a same-named commands/ file (additive only — never overwrite).
-      const commandsBase = resolve(homedir(), '.claude', 'commands')
+      const commandsBase = getCommandsDir()
       try {
         await mkdir(commandsBase, { recursive: true })
       } catch (e) {

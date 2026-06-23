@@ -24,16 +24,18 @@
 // Robust: malformed JSON → return false (graceful), don't crash the installer.
 
 import { readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { getMcpConfigPath, getPluginsRegistry, getSettingsPath } from './platform.js'
 
 /**
  * Path to the user-global Claude Code config file written by `claude mcp add
  * --scope user` and `claude plugin install --scope user`. CC reads this on
  * startup to load the `mcpServers` map + `enabledPlugins` map.
+ *
+ * Delegates to the `mcpConfigPath` descriptor resolver (Phase B / D1) — `~/.claude.json`
+ * IS the MCP config file. Export name preserved for existing callers/tests.
  */
 export function getUserClaudeJsonPath(): string {
-  return join(homedir(), '.claude.json')
+  return getMcpConfigPath()
 }
 
 interface UserClaudeJsonShape {
@@ -109,7 +111,7 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
 export async function isPluginRegistered(pluginName: string): Promise<boolean> {
   // Primary: ~/.claude/plugins/installed_plugins.json (v2 schema, Claude Code 2.1.133+)
   try {
-    const path = join(homedir(), '.claude', 'plugins', 'installed_plugins.json')
+    const path = getPluginsRegistry()
     const raw = await readFile(path, 'utf8')
     const parsed = JSON.parse(raw) as { version?: number; plugins?: Record<string, unknown> }
     const plugins = parsed.plugins
@@ -125,10 +127,7 @@ export async function isPluginRegistered(pluginName: string): Promise<boolean> {
   // Legacy fallback 2: ~/.claude.json.enabledPlugins (pre-v3.9.8 read path;
   //                    kept for test mock compatibility — production v2.1.133+
   //                    doesn't actually write here, verified empirically)
-  for (const path of [
-    join(homedir(), '.claude', 'settings.json'),
-    join(homedir(), '.claude.json'),
-  ]) {
+  for (const path of [getSettingsPath(), getMcpConfigPath()]) {
     try {
       const raw = await readFile(path, 'utf8')
       const parsed = JSON.parse(raw) as { enabledPlugins?: Record<string, unknown> }

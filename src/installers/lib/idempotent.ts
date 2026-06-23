@@ -27,6 +27,7 @@
 import { access } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { getSkillsDir } from './platform.js'
 import { isPluginRegistered } from './readClaudeConfig.js'
 import { spawnCmd } from './spawn.js'
 import type { InstallContext } from './types.js'
@@ -93,7 +94,7 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   const indicators = INSTALLED_INDICATORS[name]
   if (indicators) {
     for (const ind of indicators) {
-      const dir = join(homedir(), '.claude', 'skills', ind)
+      const dir = join(getSkillsDir(), ind)
       try {
         await access(dir)
         return true
@@ -141,7 +142,7 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   }
 
   if (method === 'npm-cli') {
-    const skillDir = join(homedir(), '.claude', 'skills', name)
+    const skillDir = join(getSkillsDir(), name)
     try {
       await access(skillDir)
       return true

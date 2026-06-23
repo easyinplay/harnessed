@@ -13,7 +13,15 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
-import { claudeDescriptor, detectPlatform } from '../../src/installers/lib/platform.js'
+import {
+  claudeDescriptor,
+  detectPlatform,
+  getCommandsDir,
+  getMcpConfigPath,
+  getPluginsRegistry,
+  getSettingsPath,
+  getSkillsDir,
+} from '../../src/installers/lib/platform.js'
 
 const ENV_KEY = 'HARNESSED_ROOT_OVERRIDE'
 
@@ -77,5 +85,82 @@ describe('platform — PlatformDescriptor seam (Phase A)', () => {
     process.env[ENV_KEY] = '/tmp/x'
     expect(getHarnessedRoot()).toBe('/tmp/x')
     expect(getHarnessedRoot()).toBe(detectPlatform().stateRoot)
+  })
+})
+
+// Phase 27 W1 T1 — optional home base (D2) + 5 config resolvers (D1).
+//
+// TDD red-first. The descriptor gains an optional `home` base param (additive,
+// default homedir()) so capabilityResolver's homedirOverride can thread through
+// WITHOUT re-hardcoding `.claude`. Resolvers are thin `detectPlatform(home).<field>`
+// accessors. Zero behavior change: no-arg callers (Phase 26) byte-identical.
+describe('platform — optional home base + config resolvers (Phase B)', () => {
+  let savedOverride: string | undefined
+
+  beforeEach(() => {
+    savedOverride = process.env[ENV_KEY]
+    delete process.env[ENV_KEY]
+  })
+
+  afterEach(() => {
+    if (savedOverride === undefined) delete process.env[ENV_KEY]
+    else process.env[ENV_KEY] = savedOverride
+  })
+
+  it('claudeDescriptor(home) bases every field on the supplied home; no-arg unchanged', () => {
+    const d = claudeDescriptor('/home/x')
+    expect(d.homeDir).toBe(join('/home/x', '.claude'))
+    expect(d.stateRoot).toBe(join('/home/x', '.claude', 'harnessed'))
+    expect(d.settingsPath).toBe(join('/home/x', '.claude', 'settings.json'))
+    expect(d.skillsDir).toBe(join('/home/x', '.claude', 'skills'))
+    expect(d.commandsDir).toBe(join('/home/x', '.claude', 'commands'))
+    expect(d.pluginsRegistry).toBe(join('/home/x', '.claude', 'plugins', 'installed_plugins.json'))
+    // mcpConfigPath is a sibling of homeDir, now based on the supplied home.
+    expect(d.mcpConfigPath).toBe(join('/home/x', '.claude.json'))
+    // no-arg default still resolves to homedir()
+    expect(claudeDescriptor()).toEqual(claudeDescriptor(homedir()))
+  })
+
+  it('detectPlatform(home) honors the optional base; no-arg unchanged', () => {
+    expect(detectPlatform('/home/x').skillsDir).toBe(join('/home/x', '.claude', 'skills'))
+    expect(detectPlatform('/home/x')).toEqual(claudeDescriptor('/home/x'))
+    expect(detectPlatform()).toEqual(claudeDescriptor())
+  })
+
+  it('5 resolvers each equal the corresponding descriptor field (default home)', () => {
+    const base = detectPlatform()
+    expect(getSettingsPath()).toBe(base.settingsPath)
+    expect(getSkillsDir()).toBe(base.skillsDir)
+    expect(getCommandsDir()).toBe(base.commandsDir)
+    expect(getPluginsRegistry()).toBe(base.pluginsRegistry)
+    expect(getMcpConfigPath()).toBe(base.mcpConfigPath)
+  })
+
+  it('resolvers thread the optional home through to detectPlatform(home)', () => {
+    expect(getSettingsPath('/home/x')).toBe(detectPlatform('/home/x').settingsPath)
+    expect(getSkillsDir('/home/x')).toBe(join('/home/x', '.claude', 'skills'))
+    expect(getCommandsDir('/home/x')).toBe(join('/home/x', '.claude', 'commands'))
+    expect(getPluginsRegistry('/home/x')).toBe(
+      join('/home/x', '.claude', 'plugins', 'installed_plugins.json'),
+    )
+    expect(getMcpConfigPath('/home/x')).toBe(join('/home/x', '.claude.json'))
+  })
+
+  it('HARNESSED_ROOT_OVERRIDE affects only stateRoot, NOT the config resolvers (orthogonal)', () => {
+    const before = {
+      settings: getSettingsPath(),
+      skills: getSkillsDir(),
+      commands: getCommandsDir(),
+      plugins: getPluginsRegistry(),
+      mcp: getMcpConfigPath(),
+    }
+    process.env[ENV_KEY] = '/tmp/override-root'
+    expect(detectPlatform().stateRoot).toBe('/tmp/override-root')
+    // resolvers stay claude-default — the override is stateRoot-only.
+    expect(getSettingsPath()).toBe(before.settings)
+    expect(getSkillsDir()).toBe(before.skills)
+    expect(getCommandsDir()).toBe(before.commands)
+    expect(getPluginsRegistry()).toBe(before.plugins)
+    expect(getMcpConfigPath()).toBe(before.mcp)
   })
 })

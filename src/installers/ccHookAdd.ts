@@ -6,12 +6,11 @@
 // .some() grep (writeFile exit ≠ filesystem truth — sister npx-skill-installer C6).
 
 import { readFile, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
+import { getSettingsPath } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
@@ -43,7 +42,7 @@ export const installCcHookAdd: Installer = async (ctx) => {
     return { ok: false, phase: 'preflight', error: e }
   }
 
-  const settingsPath = join(homedir(), '.claude', 'settings.json')
+  const settingsPath = getSettingsPath()
   // Sentinel `null` ⇒ file does not exist (oldText='' so backup() emits pure-create).
   let existing: string | null
   try {
