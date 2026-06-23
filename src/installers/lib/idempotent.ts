@@ -27,7 +27,7 @@
 import { access } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { getSkillsDir } from './platform.js'
+import { getSkillsDir, harnessSkillsDirs } from './platform.js'
 import { isPluginRegistered } from './readClaudeConfig.js'
 import { spawnCmd } from './spawn.js'
 import type { InstallContext } from './types.js'
@@ -118,8 +118,10 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
     const skillName = extractSkillName(cmd, name)
     // v3.9.10: skills CLI --copy --global installs to ~/.agents/skills/ by
     // default (with symlinks to CC). Check both paths.
-    for (const base of ['.claude', '.agents']) {
-      const skillMd = join(homedir(), base, 'skills', skillName, 'SKILL.md')
+    // Phase C / D6: the probe set is now descriptor-derived (harnessSkillsDirs =
+    // ~/.claude/skills + ~/.agents/skills) — same paths, single source of truth.
+    for (const skillsDir of harnessSkillsDirs()) {
+      const skillMd = join(skillsDir, skillName, 'SKILL.md')
       try {
         await access(skillMd)
         return true

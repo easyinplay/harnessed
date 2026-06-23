@@ -25,6 +25,7 @@
 // Backup → ~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak.
 // Any error → warn + skip (sister fallback 铁律 1), NOT throw — non-blocking setup.
 
+import { detectPlatform } from '../../installers/lib/platform.js'
 import { mergeSettingsEnvKey } from './settingsWriter.js'
 
 const ENV_KEY = 'HARNESSED_USER_LANG'
@@ -68,6 +69,15 @@ function safeIntlLocale(): string | undefined {
 }
 
 export async function enableUserLangInSettings(override?: string): Promise<EnableUserLangResult> {
+  // Phase C / D4: capability gate (sister enableAgentTeamsInSettings). codex's
+  // TOML config.toml is not a JSON env-key store — skip + inform, never write.
+  const platform = detectPlatform()
+  if (!platform.supportsEnvKeyWrite) {
+    return {
+      status: 'warn',
+      message: `platform '${platform.id}' does not support env-key settings writes (capability-absent) — ${ENV_KEY} skipped`,
+    }
+  }
   const detected = detectUserLang(override)
 
   // Case (b) respects an existing user-managed value ONLY when no explicit

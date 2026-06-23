@@ -109,18 +109,22 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
  * Returns `true` if any registry key's left-of-`@` prefix matches `pluginName`.
  */
 export async function isPluginRegistered(pluginName: string): Promise<boolean> {
-  // Primary: ~/.claude/plugins/installed_plugins.json (v2 schema, Claude Code 2.1.133+)
-  try {
-    const path = getPluginsRegistry()
-    const raw = await readFile(path, 'utf8')
-    const parsed = JSON.parse(raw) as { version?: number; plugins?: Record<string, unknown> }
-    const plugins = parsed.plugins
-    if (plugins && typeof plugins === 'object') {
-      if (Object.hasOwn(plugins, pluginName)) return true
-      if (Object.keys(plugins).some((k) => k.split('@')[0] === pluginName)) return true
+  // Primary: ~/.claude/plugins/installed_plugins.json (v2 schema, Claude Code 2.1.133+).
+  // Phase C / D4: codex has no plugin registry (getPluginsRegistry → null) — skip
+  // this probe; the legacy settings/mcp sources below are still consulted.
+  const registryPath = getPluginsRegistry()
+  if (registryPath !== null) {
+    try {
+      const raw = await readFile(registryPath, 'utf8')
+      const parsed = JSON.parse(raw) as { version?: number; plugins?: Record<string, unknown> }
+      const plugins = parsed.plugins
+      if (plugins && typeof plugins === 'object') {
+        if (Object.hasOwn(plugins, pluginName)) return true
+        if (Object.keys(plugins).some((k) => k.split('@')[0] === pluginName)) return true
+      }
+    } catch {
+      // ENOENT / malformed → fall through to legacy probe
     }
-  } catch {
-    // ENOENT / malformed → fall through to legacy probe
   }
 
   // Legacy fallback 1: ~/.claude/settings.json.enabledPlugins

@@ -18,7 +18,7 @@ import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
-import { getCommandsDir, getSkillsDir } from '../installers/lib/platform.js'
+import { detectPlatform, getCommandsDir, getSkillsDir } from '../installers/lib/platform.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
@@ -35,9 +35,40 @@ import {
 interface RawOpts {
   dryRun?: boolean
   userLang?: string
+  platform?: string // Phase C / D5 — target harness platform (claude | codex)
   nonInteractive?: boolean
   autoInstall?: boolean // v3.9.0 P4 — commander `--no-auto-install` flag flips this to false
   updateInstalled?: boolean // v3.9.6 — force re-install for already-installed plugins (excludes MCP)
+}
+
+/** Known platform ids accepted by `setup --platform <id>`. */
+const KNOWN_PLATFORMS = ['claude', 'codex'] as const
+
+/**
+ * Phase C / D5: apply `setup --platform <id>`. Validates the id, sets
+ * `process.env.HARNESSED_PLATFORM` for the run (so the resolver-backed
+ * getSkillsDir/getCommandsDir/getHarnessedRoot route to the chosen platform),
+ * and persists a `.platform` pin at the now-resolved stateRoot. Invalid id →
+ * error + exit(1). Pin-write failure is non-blocking (warn) — env is already set
+ * so the run still routes correctly.
+ */
+async function applyPlatformOption(platform: string): Promise<void> {
+  if (!(KNOWN_PLATFORMS as readonly string[]).includes(platform)) {
+    console.error(
+      `--platform: unknown id '${platform}' (expected one of: ${KNOWN_PLATFORMS.join(' | ')})`,
+    )
+    process.exit(1)
+  }
+  process.env.HARNESSED_PLATFORM = platform
+  // detectPlatform now resolves to the chosen platform → its stateRoot is the
+  // pin's home (codex pin lives in ~/.codex/harnessed, claude in ~/.claude/harnessed).
+  const stateRoot = detectPlatform().stateRoot
+  try {
+    await mkdir(stateRoot, { recursive: true })
+    await writeFile(join(stateRoot, '.platform'), platform, 'utf8')
+  } catch (e) {
+    console.warn(`  [--platform] could not persist .platform pin (${(e as Error).message})`)
+  }
 }
 
 async function listBaseManifests(pkgRoot: string): Promise<string[]> {
@@ -101,6 +132,10 @@ export function registerSetup(program: Command): void {
       '--user-lang <code>',
       'override detected OS locale for env.HARNESSED_USER_LANG (en | zh-Hans / zh-CN / zh-TW)',
     )
+    // Phase C / D5 — target a specific harness platform (claude | codex). Sets
+    // HARNESSED_PLATFORM for the run + persists a `.platform` pin so subsequent
+    // runs resolve the same platform. Default: auto-detect (claude-first).
+    .option('--platform <id>', 'target harness platform (claude | codex); default: auto-detect')
     // v3.9.0 P4 — auto-install third-party plugins via Clack confirm prompt
     // (default opt-in). `--non-interactive` skips prompts for CI/scripts;
     // `--no-auto-install` keeps v3.8.x advisory-only behavior.
@@ -115,6 +150,9 @@ export function registerSetup(program: Command): void {
     )
     .action(async (raw: RawOpts) => {
       const dryRun = raw.dryRun === true
+      // Phase C / D5 — apply --platform FIRST so all resolver-backed paths below
+      // (skills/commands/state) route to the chosen platform for this run.
+      if (raw.platform !== undefined) await applyPlatformOption(raw.platform)
       const pkgRoot = getPackageRoot()
       const workflowsDir = resolve(pkgRoot, 'workflows')
       const skillsBase = getSkillsDir()

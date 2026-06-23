@@ -17,6 +17,7 @@
 // Backup → `~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak`; atomic tmp+rename.
 // Any error → warn + skip (sister fallback 铁律 1 透明声明), NOT throw — non-blocking setup.
 
+import { detectPlatform } from '../../installers/lib/platform.js'
 import { mergeSettingsEnvKey } from './settingsWriter.js'
 
 const ENV_KEY = 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS'
@@ -28,6 +29,17 @@ export type EnableResult =
   | { status: 'warn'; message: string }
 
 export async function enableAgentTeamsInSettings(): Promise<EnableResult> {
+  // Phase C / D4: capability gate. A platform whose settings file is not a JSON
+  // env-key store (e.g. codex's TOML config.toml) must NOT be written to — the
+  // CC env key is meaningless there and a JSON merge would corrupt the TOML.
+  // Short-circuit BEFORE any fs read; inform via the existing 'warn' variant.
+  const platform = detectPlatform()
+  if (!platform.supportsEnvKeyWrite) {
+    return {
+      status: 'warn',
+      message: `platform '${platform.id}' does not support env-key settings writes (capability-absent) — ${ENV_KEY} skipped`,
+    }
+  }
   const r = await mergeSettingsEnvKey(ENV_KEY, '1', {
     skipIfPresent: (existing) => existing === '1',
   })

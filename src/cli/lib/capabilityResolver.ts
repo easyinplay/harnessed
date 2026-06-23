@@ -82,6 +82,9 @@ export function readInstalledPlugins(homedirOverride?: string): Set<string> {
   // D2: thread the test/override home through the resolver instead of
   // re-hardcoding `.claude`. `undefined` → resolver defaults to homedir().
   const path = getPluginsRegistry(homedirOverride)
+  // Phase C / D4: a platform without a plugin registry (codex) returns null →
+  // no plugins to enumerate. Return empty Set (no fs read).
+  if (path === null) return new Set()
   let raw: string
   try {
     raw = readFileSync(path, 'utf8')
