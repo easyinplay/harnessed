@@ -12,6 +12,7 @@ import { registerGc } from './cli/gc.js'
 import { registerInstall } from './cli/install.js'
 import { registerInstallBase } from './cli/install-base.js'
 import { registerLearn } from './cli/learn.js'
+import { parseBareInvocation, runHere } from './cli/lib/here.js'
 import { registerManifestAdd } from './cli/manifest-add.js'
 import { registerNext } from './cli/next.js'
 import { registerPrompt } from './cli/prompt.js'
@@ -109,4 +110,15 @@ registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams +
 registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate
 registerRetro(program) // 27th — Phase 22 retro-reminder reset (--done zeroes the phase counter)
 
-program.parse(process.argv)
+// v8.0 Phase 24 — zero-arg `harnessed` you-are-here entry (comet `/comet` analog).
+// D3 explicit bare-invocation detection BEFORE program.parse: ONLY `[]` / `['--json']`
+// (after the pre-parsed `--lang` pair) dispatch the dashboard; everything else
+// (subcommand / --help / --version / unknown) falls through to commander unchanged,
+// so `harnessed bogus` still errors. runHere is read-only + exits 0; any rejection
+// surfaces via the global unhandledRejection handler above.
+const bare = parseBareInvocation(process.argv.slice(2))
+if (bare.here) {
+  void runHere({ json: bare.json })
+} else {
+  program.parse(process.argv)
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveNext } from '../../src/checkpoint/nextStep.js'
+import { resolveAutoTransition, resolveNext } from '../../src/checkpoint/nextStep.js'
 import type { SubProgressEntryType } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
 
 const pending: SubProgressEntryType[] = [
@@ -20,5 +20,19 @@ describe('resolveNext', () => {
   })
   it('done when no pending remain', () => {
     expect(resolveNext(allDone, true)).toEqual({ next: 'done' })
+  })
+})
+
+describe('resolveAutoTransition (migrated from cli/next.ts)', () => {
+  it('env unset → falls to envelope value, default true', () => {
+    expect(resolveAutoTransition(undefined, undefined)).toBe(true)
+    expect(resolveAutoTransition(false, undefined)).toBe(false)
+    expect(resolveAutoTransition(true, undefined)).toBe(true)
+  })
+  it('env overrides the envelope value', () => {
+    // env 'false' overrides envelope true
+    expect(resolveAutoTransition(true, 'false')).toBe(false)
+    // env 'true' overrides envelope false
+    expect(resolveAutoTransition(false, 'true')).toBe(true)
   })
 })

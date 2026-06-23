@@ -70,6 +70,9 @@
   "status.lock_release_hint": "  to release: wait for process to finish or delete {{path}}",
   "status.lock_free": "\nlock: free",
 
+  "here.no_workflow": "当前 repo 无 active workflow（{{path}} 中没有 cwd 对应条目）",
+  "here.no_workflow.hint": "  开始：运行一个 stage（如 `harnessed gates discuss`）或 `harnessed run <workflow>`",
+
   "audit_log.no_records_file": "no audit records found ({{path}} does not exist)",
   "audit_log.no_records_empty": "no audit records found (audit.log is empty)",
   "audit_log.jq_missing": "✗ jq not found in PATH — run: harnessed doctor",

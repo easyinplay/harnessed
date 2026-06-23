@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Frictionless Entry
-status: planning
+status: executing
 last_updated: "2026-06-23T00:00:00.000Z"
 last_activity: 2026-06-23
 progress:
   total_phases: 2
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 50
 ---
 
 # STATE — harnessed
@@ -21,13 +21,13 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **v8.0 Frictionless Entry** — Phase 24 (single-command resume entry) PLANNED 2026-06-23; next is execute.
+- **Current focus**: **v8.0 Frictionless Entry** — Phase 24 (single-command resume entry) EXECUTED + verified 2026-06-23 (awaiting commit gate); next is Phase 25 (value-prop/quickstart).
 - **Latest shipped**: **v4.6.0** 2026-06-14 (npm `harnessed@4.6.0` + GitHub release). v7.0 + follow-ons (Phase 13–23) all shipped.
 
 ## Current Position
 
-- **v8.0 discussed** 2026-06-23 — posture 守宽做深 (B); 3-milestone split (quick-wins v8.0 → cross-harness v9.0 → i18n v10.0). Phase 24 PLANNED (`phases/24-resume-entry/24-CONTEXT.md` + `24-01-PLAN.md`, AskUserQuestion output-contract = human dashboard + `--json` + NEXT hint); Phase 25 still sketch-only.
-- **Next**: execute Phase 24 (main-session hand-controlled — GSD plan/execute agent chain overreaches on this host).
+- **v8.0 in progress** — posture 守宽做深 (B); 3-milestone split (quick-wins v8.0 → cross-harness v9.0 → i18n v10.0). **Phase 24 EXECUTED + verified 2026-06-23** (zero-arg `harnessed` dashboard + NEXT + `--json`; 1352 tests; 详 `phases/24-resume-entry/24-01-SUMMARY.md`); Phase 25 still sketch-only.
+- **Next**: commit Phase 24 (user gate), then plan Phase 25.
 
 ## Milestone Scope (v8.0) — 2 phases
 
@@ -54,7 +54,7 @@ progress:
 ### Open todos / blockers
 
 - **ECC optional-tier batch SHIPPED** 2026-06-23 (39e8a5f code + 5b81371 planning docs). 1342 tests green, tsc/biome clean. Working tree clean (only untracked noise: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`).
-- **Phase 24 PLAN ready** (not executed) — `phases/24-resume-entry/24-01-PLAN.md` (tdd, 8 files, all refs verified). Awaiting execute gate.
+- **Phase 24 impl awaiting commit gate** — 8 files (6 tracked M + `src/cli/lib/here.ts` + `tests/cli/here.test.ts` new) + `24-01-SUMMARY.md` + this STATE + ROADMAP checkbox. Verified (tsc=0, 1352 green, dogfood 4 forms incl. T-24-01 anti-misfire, no mutation). NOT committed.
 
 ## Session Continuity
 

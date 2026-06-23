@@ -4,13 +4,6 @@
 
 import type { Command } from 'commander'
 
-function resolveAutoTransition(envelopeValue: boolean | undefined): boolean {
-  const env = process.env.HARNESSED_AUTO_TRANSITION
-  if (env === 'true') return true
-  if (env === 'false') return false
-  return envelopeValue ?? true
-}
-
 export function registerNext(program: Command): void {
   program
     .command('next')
@@ -19,7 +12,7 @@ export function registerNext(program: Command): void {
     )
     .action(async () => {
       const { readCurrentWorkflow } = await import('../checkpoint/state.js')
-      const { resolveNext } = await import('../checkpoint/nextStep.js')
+      const { resolveNext, resolveAutoTransition } = await import('../checkpoint/nextStep.js')
       const current = await readCurrentWorkflow()
       const ledger = current?.sub_progress ?? []
       const auto = resolveAutoTransition(current?.auto_transition)

@@ -12,6 +12,21 @@ export interface NextStep {
   hint?: string
 }
 
+/**
+ * Resolve the auto-transition flag. Precedence (v8.0 Phase 24 — migrated from
+ * cli/next.ts so the bare `harnessed` entry can reuse it): the
+ * `HARNESSED_AUTO_TRANSITION` env var wins ('true'/'false'), else the per-workflow
+ * envelope value, else default `true`. `env` is injectable for unit tests.
+ */
+export function resolveAutoTransition(
+  envelopeValue?: boolean,
+  env = process.env.HARNESSED_AUTO_TRANSITION,
+): boolean {
+  if (env === 'true') return true
+  if (env === 'false') return false
+  return envelopeValue ?? true
+}
+
 export function resolveNext(ledger: SubProgressEntryType[], autoTransition: boolean): NextStep {
   const sub = nextPending(ledger)
   if (sub === null) return { next: 'done' }

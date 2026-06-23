@@ -45,7 +45,7 @@
 
 ### Phases (sketch — refine at execution per anti-stale; do NOT pre-detail downstream)
 
-- [ ] **Phase 24: single-command resume entry** — `harnessed` (zero-arg) = auto-detect the active workflow for cwd (`workflows.json[repoKey]`) + report current phase + continue (comet `/comet` analog). Mechanism exists (`resume.ts` + `nextStep.ts` + `workflows.json`); the gap is the zero-arg dispatch + ergonomics. Small, clear-value. Depends on: none.
+- [x] **Phase 24: single-command resume entry** ✅ 2026-06-23 — zero-arg `harnessed` you-are-here dashboard + `NEXT: auto|manual|done` contract + `--json` (comet `/comet` analog); pure aggregation of shipped pieces (`readCurrentWorkflow` + `buildRecoverLines` + `resolveNext`), read-only, explicit bare-dispatch (no misfire). 1352 tests. 详: `phases/24-resume-entry/24-01-SUMMARY.md`.
 - [ ] **Phase 25: value-prop + quickstart legibility** — README one-line positioning + install→first-workflow <5min quickstart, matching comet's graspable narrative. Docs-only. Depends on: Phase 24 (quickstart demos the resume entry).
 
 ### Adoption (non-phase follow-on)
