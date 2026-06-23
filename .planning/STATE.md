@@ -8,7 +8,7 @@ last_activity: 2026-06-23
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 1
+  total_plans: 2
   completed_plans: 1
   percent: 33
 ---
@@ -21,13 +21,13 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **v9.0 Cross-Harness** (scope B, SoT `v9.0-cross-harness-ARCHITECTURE.md`). **Phase 26 (A) PlatformDescriptor seam DONE 2026-06-24** (zero behavior change, 1357 tests). **Next: Phase 27 (B) central config resolvers** — to plan. Prior: v8.0 shipped (`milestones/v8.0-MILESTONE-AUDIT.md`).
+- **Current focus**: **v9.0 Cross-Harness** (scope B, SoT `v9.0-cross-harness-ARCHITECTURE.md`). **Phase 26 (A) seam DONE 2026-06-24** (1357 tests). **Phase 27 (B) central config resolvers PLANNED + ready-to-execute** (TDD, ~9 files + settingsWriter fold). Prior: v8.0 shipped (`milestones/v8.0-MILESTONE-AUDIT.md`).
 - **Latest shipped**: **v4.6.0** 2026-06-14 (npm `harnessed@4.6.0` + GitHub release). v7.0 + follow-ons (Phase 13–23) all shipped.
 
 ## Current Position
 
-- **v9.0 Cross-Harness ACTIVE** — posture 守宽做深 (B); 3-milestone split (v8.0 quick-wins ✓ → v9.0 cross-harness ◐ → v10.0 i18n). Architecture locked 2026-06-23 (inline design + `/plan-eng-review`, scope B, APPROVED): `PlatformDescriptor` + `detectPlatform()` (claude-first, zero blast) + central config resolvers + `.agents/` 2nd-platform proof; no generator/matrix (upstreams portable). 3 phases: **26 (A seam) ✅ DONE 2026-06-24** (PlatformDescriptor + detectPlatform seam, getHarnessedRoot routed, zero behavior change, 1357 tests; 详 `phases/26-platform-descriptor-seam/26-01-SUMMARY.md`) / 27 (B resolvers, sketch) / 28 (C `.agents/` proof, sketch). harnessed already ~70% abstracted (`getHarnessedRoot` SoT). Design SoT: `v9.0-cross-harness-ARCHITECTURE.md`.
-- **Next**: plan + execute Phase 27 (B) — central config resolvers (settings/skills/commands/plugins/mcp) + 3-writer fold (D-C); hand-controlled.
+- **v9.0 Cross-Harness ACTIVE** — posture 守宽做深 (B); 3-milestone split (v8.0 quick-wins ✓ → v9.0 cross-harness ◐ → v10.0 i18n). Architecture locked 2026-06-23 (inline design + `/plan-eng-review`, scope B, APPROVED): `PlatformDescriptor` + `detectPlatform()` (claude-first, zero blast) + central config resolvers + `.agents/` 2nd-platform proof; no generator/matrix (upstreams portable). 3 phases: **26 (A seam) ✅ DONE 2026-06-24** (PlatformDescriptor + detectPlatform seam, getHarnessedRoot routed, zero behavior change, 1357 tests; 详 `phases/26-platform-descriptor-seam/26-01-SUMMARY.md`) / 27 (B resolvers, **PLANNED** `phases/27-config-resolvers/`) / 28 (C `.agents/` proof, sketch). harnessed already ~70% abstracted (`getHarnessedRoot` SoT). Design SoT: `v9.0-cross-harness-ARCHITECTURE.md`.
+- **Next**: execute Phase 27 (B) — 5 config resolvers + optional home (D2) + settingsWriter fold of the 2 env-key writers (D-C, ccHookAdd not folded); ~9 files, TDD, zero behavior change; via gsd-executor.
 
 ## Open architecture decisions (v9.0, from ARCHITECTURE doc §7)
 
@@ -51,12 +51,13 @@ progress:
 
 ### Open todos / blockers
 
-- **Phase 26 (A) DONE + this commit** — `platform.ts` (new) + `harnessedRoot.ts` (M seam) + `platform.test.ts` (new, 5) + SUMMARY + STATE/ROADMAP. 1357 tests green (zero behavior change), biome clean, tsc 0. **Phase 27 (B) to plan next.**
+- **Phase 26 (A) DONE** — committed `88dc872` (platform.ts seam + harnessedRoot route + 5 tests; 1357 green, zero behavior change).
+- **Phase 27 (B) PLANNED + this commit** — `phases/27-config-resolvers/{27-CONTEXT,27-01-PLAN}.md`. 11 files target (platform.ts +5 resolvers + optional home / settingsWriter.ts new / 2 env-key writers refactor / ccHookAdd/readClaudeConfig/setup/capabilityResolver/idempotent swaps / 2 test files). Ready-to-execute via gsd-executor. NOT executed.
 - **Doc-hygiene backlog** (non-blocking, from v8.0 audit): REQUIREMENTS.md + PROJECT.md are frozen ~2026-06-05 v5.1/v6.0-era snapshots (not reconciled past v6.0); shipped v5.1–v8.0 phase dirs (09–25) live in active `phases/` not `milestones/<ver>-phases/` (de-facto v5.1+ lightweight convention). Reconcile if/when a fuller archive pass is wanted.
 - **Uncommitted (not Phase 26)**: `README.md` — pre-existing intentional 2-line removal (comparison-doc pointer); leave for user to commit/decide.
 - **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`.
 
 ## Session Continuity
 
-- **Next command**: plan Phase 27 (B) — central config resolvers + settings 3-writer fold (D-C); hand-controlled (or spawn gsd-planner), then execute via gsd-executor.
+- **Next command**: execute Phase 27 (B) via spawned `gsd-executor` (3 tasks: resolvers+swaps / settingsWriter fold / regression gate; TDD; user gate per 逐-gate). Main session independently re-verifies + commits.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed. Rogue impls in `.planning/phases/_rogue-impl-reference/` (untracked). RTK note: `git status | grep` false-positives (RTK prints `ok`) — verify with `ls`/`test -f`.

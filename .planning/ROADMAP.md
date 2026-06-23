@@ -36,7 +36,7 @@
 ### Phases (sketch — refine at execution per anti-stale; A detailed, B/C sketch)
 
 - [x] **Phase 26 (A): PlatformDescriptor seam** ✅ 2026-06-24 — descriptor type + `detectPlatform()` (override + claude-default) + `getHarnessedRoot()` routed through it. Zero behavior change (1357 tests, seam transparent). TDD. 详: `phases/26-platform-descriptor-seam/26-01-SUMMARY.md`.
-- [ ] **Phase 27 (B): central config resolvers** — `getSettingsPath/getSkillsDir/getCommandsDir/getPluginsRegistry/getMcpConfigPath`; swap ~7 scattered call sites; fold 3 settings.json writers → 1 path + deep-merge atomic writer (D-C). Sketch.
+- [ ] **Phase 27 (B): central config resolvers** — 5 resolvers (`getSettingsPath/Skills/Commands/PluginsRegistry/McpConfig`) + optional home base (D2 preserves capabilityResolver test param); fold the 2 near-duplicate env-key settings writers (D-C refined — ccHookAdd NOT folded, Installer pipeline; only swaps path); swap ~7 scattered call sites; idempotent `['.claude','.agents']` dual-probe left for Phase 28. PLANNED 2026-06-24. 详: `phases/27-config-resolvers/27-CONTEXT.md`.
 - [ ] **Phase 28 (C): `.agents/` proof** — agents descriptor + auto-probe detection + `HARNESSED_PLATFORM`/`.platform` pin + `setup --platform` + dual-platform tests + fixture parameterization. Verify `.agents/` layout + mcpConfigPath (D-A/D-B) at start. Sketch.
 
 > Open decisions D-A (`.agents/` mcpConfigPath) + D-B (`.agents/` layout) = Phase-C-time verification (architecture doc §7). D-C bundled into Phase 27. Adoption (stars/gif/DeepWiki) remains a non-phase marketing follow-on (~0 ★ vs comet 1.5k / Trellis 10.9k).
