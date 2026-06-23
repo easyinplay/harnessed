@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). No active milestone — **v8.0 Frictionless Entry shipped 2026-06-23**; next = **v9.0 Cross-Harness** (see Backlog, opens with `/plan-eng-review`).
+> Shipped history = indexed archive (do NOT re-plan). Active milestone = **v9.0 Cross-Harness** (architecture locked 2026-06-23, scope B — see Active section). Prior: v8.0 Frictionless Entry shipped 2026-06-23.
 > Current published npm: **4.6.0** (2026-06-14) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
@@ -29,17 +29,22 @@
 
 ---
 
-## Active milestone
+## Active milestone: v9.0 Cross-Harness
 
-**None** — v8.0 Frictionless Entry shipped 2026-06-23 (audit passed 2/2; detail in `milestones/v8.0-MILESTONE-AUDIT.md` incl. the carried-forward discuss decisions). Next = **v9.0 Cross-Harness** (see Backlog) — opens with `/plan-eng-review`.
+**Goal** (architecture locked 2026-06-23 via inline design + `/plan-eng-review`, scope B): abstract harnessed's OWN hardcoded `~/.claude/` layout onto a `PlatformDescriptor` + `detectPlatform()` (claude-first, zero blast) + central config resolvers, proving portability by wiring the industry `.agents/` convention as a real second platform. No generator / no per-platform matrix (upstreams already portable, v8.0 verified). Design SoT: `v9.0-cross-harness-ARCHITECTURE.md`.
 
-> Adoption (stars / demo gif / DeepWiki) remains a non-phase marketing follow-on — ~0 ★ today vs comet 1.5k / Trellis 10.9k.
+### Phases (sketch — refine at execution per anti-stale; A detailed, B/C sketch)
+
+- [ ] **Phase 26 (A): PlatformDescriptor seam** — descriptor type + `detectPlatform()` (override + claude-default only) + route `getHarnessedRoot()` through it. Zero behavior change (refactor-first). TDD. PLANNED 2026-06-23. 详: `phases/26-platform-descriptor-seam/26-CONTEXT.md`.
+- [ ] **Phase 27 (B): central config resolvers** — `getSettingsPath/getSkillsDir/getCommandsDir/getPluginsRegistry/getMcpConfigPath`; swap ~7 scattered call sites; fold 3 settings.json writers → 1 path + deep-merge atomic writer (D-C). Sketch.
+- [ ] **Phase 28 (C): `.agents/` proof** — agents descriptor + auto-probe detection + `HARNESSED_PLATFORM`/`.platform` pin + `setup --platform` + dual-platform tests + fixture parameterization. Verify `.agents/` layout + mcpConfigPath (D-A/D-B) at start. Sketch.
+
+> Open decisions D-A (`.agents/` mcpConfigPath) + D-B (`.agents/` layout) = Phase-C-time verification (architecture doc §7). D-C bundled into Phase 27. Adoption (stars/gif/DeepWiki) remains a non-phase marketing follow-on (~0 ★ vs comet 1.5k / Trellis 10.9k).
 
 ---
 
 ## Backlog / Deferred (future milestones)
 
-- **v9.0 Cross-Harness** (big bet ①, un-defers the ex-v7.0 non-goal) — platform adapter: abstract harnessed's hardcoded `~/.claude/` (setup/state/inject) → platform descriptor; auto-detect installed harness; align the industry `.agents/` + per-platform dirs. Upstreams (gstack/ECC/superpowers/codegraph) already portable, so no generator / no upstream-mapping work. Opens with `/plan-eng-review` (structural). Sketch only — refine when started.
 - **v10.0 i18n Surface** (big bet ②) — extend i18n from the CLI message layer (en/zh-Hans, already shipped) to the skill/workflow surface bilingual (comet model: ship EN+中文 skills). Parallelizable with v9.0. Sketch only.
 - ~~Deferred non-goal (v7.0 discuss): cross-harness breadth~~ → **un-deferred 2026-06-23** (→ v9.0): demand changed (user direction 守宽做深 + cross-platform) AND feasibility changed (upstreams gstack/ECC verified already cross-harness). routing L2-LLM-supervisor simplification still deferred.
 - Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency hazards `sigintTrap.ts`/`before-commit.ts`.

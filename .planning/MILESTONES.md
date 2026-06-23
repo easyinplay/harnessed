@@ -33,4 +33,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v9.0 Cross-Harness | ○ Backlog (not started) | Big bet ① — abstract harnessed's hardcoded `~/.claude/` (`setup.ts:120/194` + state + inject) → platform descriptor + auto-detect installed harness + `.agents/` per-platform convention. Upstreams already portable (no generator). Opens with `/plan-eng-review`. Sketch in ROADMAP Backlog. |
+| v9.0 Cross-Harness | ◐ Architecture locked 2026-06-23 (scope B), Phase 26 (A) planned | Big bet ① — `PlatformDescriptor` + `detectPlatform()` (claude-first) + central config resolvers + `.agents/` 2nd-platform proof. Upstreams already portable (no generator / no matrix). eng-review APPROVED. 3 phases: 26 (A seam, TDD) / 27 (B resolvers) / 28 (C `.agents/` proof). Design SoT: `v9.0-cross-harness-ARCHITECTURE.md`. Next: execute Phase 26. |
