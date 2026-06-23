@@ -7,10 +7,10 @@ last_updated: "2026-06-23T00:00:00.000Z"
 last_activity: 2026-06-23
 progress:
   total_phases: 2
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 50
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 100
 ---
 
 # STATE — harnessed
@@ -21,13 +21,13 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **v8.0 Frictionless Entry** — Phase 24 (single-command resume entry) EXECUTED + verified 2026-06-23 (awaiting commit gate); next is Phase 25 (value-prop/quickstart).
+- **Current focus**: **v8.0 Frictionless Entry** — Phase 24 (single-command resume entry) SHIPPED 2026-06-23 (`c988bc8`); Phase 25 (value-prop/quickstart) EXECUTED 2026-06-23 (awaiting commit gate). **v8.0 milestone 2/2 phases 完成**.
 - **Latest shipped**: **v4.6.0** 2026-06-14 (npm `harnessed@4.6.0` + GitHub release). v7.0 + follow-ons (Phase 13–23) all shipped.
 
 ## Current Position
 
-- **v8.0 in progress** — posture 守宽做深 (B); 3-milestone split (quick-wins v8.0 → cross-harness v9.0 → i18n v10.0). **Phase 24 EXECUTED + verified 2026-06-23** (zero-arg `harnessed` dashboard + NEXT + `--json`; 1352 tests; 详 `phases/24-resume-entry/24-01-SUMMARY.md`); Phase 25 still sketch-only.
-- **Next**: commit Phase 24 (user gate), then plan Phase 25.
+- **v8.0 both phases done (awaiting Phase 25 commit)** — posture 守宽做深 (B); 3-milestone split (quick-wins v8.0 → cross-harness v9.0 → i18n v10.0). **Phase 24 SHIPPED** (`c988bc8` — zero-arg `harnessed` dashboard + NEXT + `--json`; 1352 tests). **Phase 25 EXECUTED 2026-06-23** (EN README 结果导向主句上提 + First 5 Minutes linear quickstart with zero-arg `harnessed` spine + bare-cmd CLI 行; README-cn 主句同步; docs-only, diff 仅 README.md + README-cn.md; 详 `phases/25-quickstart/25-01-SUMMARY.md`).
+- **Next**: commit Phase 25 (user gate), then v8.0 milestone close (`/gsd-audit-milestone` + ship 可选).
 
 ## Milestone Scope (v8.0) — 2 phases
 
@@ -53,10 +53,10 @@ progress:
 
 ### Open todos / blockers
 
-- **ECC optional-tier batch SHIPPED** 2026-06-23 (39e8a5f code + 5b81371 planning docs). 1342 tests green, tsc/biome clean. Working tree clean (only untracked noise: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`).
-- **Phase 24 impl awaiting commit gate** — 8 files (6 tracked M + `src/cli/lib/here.ts` + `tests/cli/here.test.ts` new) + `24-01-SUMMARY.md` + this STATE + ROADMAP checkbox. Verified (tsc=0, 1352 green, dogfood 4 forms incl. T-24-01 anti-misfire, no mutation). NOT committed.
+- **Phase 25 EXECUTED awaiting commit gate** — 7 files: `README.md` (M) + `README-cn.md` (M) + `phases/25-quickstart/{25-CONTEXT,25-01-PLAN,25-01-SUMMARY}.md` (new) + this STATE + ROADMAP checkbox. docs-only (no TS/JS → biome N/A); diff 仅 2 README + planning; 7 翻译版未动. NOT committed.
+- **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`.
 
 ## Session Continuity
 
-- **Next command**: commit the uncommitted ECC optional-tier batch (user gate), then plan Phase 24.
+- **Next command**: commit Phase 25 (7 files; user gate per 逐-gate), then v8.0 milestone close.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed. Rogue impls in `.planning/phases/_rogue-impl-reference/` (untracked). RTK note: `git status | grep` false-positives (RTK prints `ok`) — verify with `ls`/`test -f`.

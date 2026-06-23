@@ -15,7 +15,9 @@
 
 ## ✨ 一句话定位
 
-**做 Claude Code 上 Harness Engineering 的最佳编排实践** —— 装配市面上最优秀的开源 Claude Code 生态组件,用强意见 composition skill 织成统一工作流;不 vendor 上游代码,通过 manifest 描述 install/check + composition skill 编排多上游协作。
+**把原始的 Claude Code 变成一支纪律严明的资深工程团队。** 一次安装,就把治理 (governance)、规划 (planning)、TDD、审查 (review) 织进一条 Discuss→Ship 工作流 —— 进度和证据落在磁盘上,不消散在对话里。
+
+> _AI coding harness 包管理器 + composition orchestrator_ —— 装配市面上最优秀的开源 Claude Code 生态组件,用强意见 composition skill 织成统一工作流;不 vendor 上游代码,通过 manifest 描述 install/check + composition skill 编排多上游协作。
 
 ---
 

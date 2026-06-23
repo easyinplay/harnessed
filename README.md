@@ -2,8 +2,9 @@
 
 **English** | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> AI coding harness package manager + composition orchestrator
-> Machine-executes the three-layer-stack collaboration methodology (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) as a runnable engine
+> **Turn raw Claude Code into a disciplined senior engineering team.** One install wires governance, planning, TDD, and review into a single Discuss→Ship workflow where progress and evidence persist on disk, not in chat.
+
+> _AI coding harness package manager + composition orchestrator_ — machine-executes the three-layer-stack collaboration methodology (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) as a runnable engine
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
@@ -17,7 +18,7 @@
 
 ## ✨ TL;DR
 
-**Best-practice orchestration for Harness Engineering on Claude Code** — assembles the best open-source Claude Code ecosystem components, weaving them into a unified workflow via opinionated composition skills; does not vendor upstream code — manifests describe install/check, and composition skills orchestrate multi-upstream collaboration.
+**How it works**: harnessed **assembles** the best open-source Claude Code agents (gstack, GSD, superpowers, planning-with-files) and **orchestrates** them into one workflow via opinionated composition skills. It does **not** vendor upstream code — manifests describe install/check, and composition skills conduct the multi-upstream collaboration (so an upstream upgrade is just a re-install, never a manual code sync).
 
 ### 🔁 The operating loop
 
@@ -73,6 +74,38 @@ The AI will auto-fetch the doc + run the install, handling OS / permissions / PA
 > [!TIP]
 > 🚀 **The much-loved Agent Teams and Subagent features are auto-enabled in harnessed based on the task!**
 > No need to manually configure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` writes it to `~/.claude/settings.json` automatically. Pattern A full-stack three-way / Pattern C 4-specialist and other multi-agent workflows work out of the box.
+
+---
+
+## ⏱️ First 5 Minutes
+
+The shortest path from zero to a running workflow:
+
+```bash
+# 1. Install (one line)
+npm install -g harnessed && harnessed setup
+```
+
+```
+# 2. Inside Claude Code — kick off your first workflow
+/auto "your first requirement"        # newcomer default: runs all stages end-to-end
+```
+
+```bash
+# 3. Lost? Run harnessed with no arguments — it tells you where you are + what's next
+harnessed
+#   → you-are-here dashboard (active phase + per-step status) + a NEXT: auto|manual|done line
+#   no need to remember status / next / resume — one command (comet `/comet` analog, read-only)
+#   add --json for machine-readable output
+```
+
+```bash
+# 4. Resume any time after an interruption
+harnessed            # same you-are-here view
+harnessed resume     # continue from the latest checkpoint
+```
+
+> Want finer control over which stage runs and when? See the 3 modes below.
 
 ---
 
@@ -405,6 +438,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed gates <master>` | Evaluate which sub-workflows fire for a master stage (JSON: fire/skip/parallelism). Used by slash commands to orchestrate native spawns. |
 | `harnessed prompt <sub>` | Output a spawn-ready prompt (role + checklist + disciplines + completion/clarification protocols) for a sub-workflow. |
 | `harnessed checkpoint <action> <sub>` | Record sub-workflow start/complete/fail to `~/.claude/harnessed/checkpoints/`. |
+| `harnessed` (no args) | Zero-arg you-are-here: active-workflow dashboard + `NEXT: auto\|manual\|done` + run hint; `--json` machine-readable; no active workflow → onboarding hint (comet `/comet` analog, read-only). |
 | `harnessed next` | Deterministic next-step contract (`NEXT: auto\|manual\|done`) for the active workflow. |
 | `harnessed reject <sub>` | Mark a sub as user-rejected (terminal, distinct from `failed`). |
 | `harnessed compact [--tokens <n>]` | Summarize+evict resolved ledger entries (G6-safe: `fail_count>0` never evicted); auto-triggers on `checkpoint complete --tokens`. |

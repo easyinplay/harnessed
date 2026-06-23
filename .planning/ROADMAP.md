@@ -46,7 +46,7 @@
 ### Phases (sketch — refine at execution per anti-stale; do NOT pre-detail downstream)
 
 - [x] **Phase 24: single-command resume entry** ✅ 2026-06-23 — zero-arg `harnessed` you-are-here dashboard + `NEXT: auto|manual|done` contract + `--json` (comet `/comet` analog); pure aggregation of shipped pieces (`readCurrentWorkflow` + `buildRecoverLines` + `resolveNext`), read-only, explicit bare-dispatch (no misfire). 1352 tests. 详: `phases/24-resume-entry/24-01-SUMMARY.md`.
-- [ ] **Phase 25: value-prop + quickstart legibility** — README one-line positioning + install→first-workflow <5min quickstart, matching comet's graspable narrative. Docs-only. Depends on: Phase 24 (quickstart demos the resume entry).
+- [x] **Phase 25: value-prop + quickstart legibility** ✅ 2026-06-23 — EN README 结果导向定位主句上提 + First 5 Minutes linear quickstart (zero-arg `harnessed` spine) + bare-cmd CLI 行; README-cn 主句同步 (ZH 正文整体刷新 → v10.0). Docs-only, diff 仅 README.md + README-cn.md (7 翻译版未动). 详: `phases/25-quickstart/25-01-SUMMARY.md`.
 
 ### Adoption (non-phase follow-on)
 
