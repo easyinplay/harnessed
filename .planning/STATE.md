@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v8.0
 milestone_name: Frictionless Entry
-status: discussed
+status: planning
 last_updated: "2026-06-23T00:00:00.000Z"
 last_activity: 2026-06-23
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
+  total_plans: 1
   completed_plans: 0
   percent: 0
 ---
@@ -21,13 +21,13 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **v8.0 Frictionless Entry discussed 2026-06-23** (first of 3 competitive-gap milestones). No phase started — Phase 24 (single-command resume entry) is next to plan.
+- **Current focus**: **v8.0 Frictionless Entry** — Phase 24 (single-command resume entry) PLANNED 2026-06-23; next is execute.
 - **Latest shipped**: **v4.6.0** 2026-06-14 (npm `harnessed@4.6.0` + GitHub release). v7.0 + follow-ons (Phase 13–23) all shipped.
 
 ## Current Position
 
-- **v8.0 discussed** 2026-06-23 — posture 守宽做深 (B); 3-milestone split (quick-wins v8.0 → cross-harness v9.0 → i18n v10.0). Phases 24 (resume entry) + 25 (value-prop/quickstart) sketched in ROADMAP; neither planned nor executed.
-- **Next**: plan Phase 24 (main session, hand-controlled).
+- **v8.0 discussed** 2026-06-23 — posture 守宽做深 (B); 3-milestone split (quick-wins v8.0 → cross-harness v9.0 → i18n v10.0). Phase 24 PLANNED (`phases/24-resume-entry/24-CONTEXT.md` + `24-01-PLAN.md`, AskUserQuestion output-contract = human dashboard + `--json` + NEXT hint); Phase 25 still sketch-only.
+- **Next**: execute Phase 24 (main-session hand-controlled — GSD plan/execute agent chain overreaches on this host).
 
 ## Milestone Scope (v8.0) — 2 phases
 
@@ -53,7 +53,8 @@ progress:
 
 ### Open todos / blockers
 
-- **Uncommitted (awaiting commit gate)**: ECC `optional/` install-tier (`install.ts` 3rd tier tools→skill-packs→optional) + setup-compat fix (ecc.yaml/ee5-answers.json `git mv` skill-packs→optional) + ADR-0034 Errata E-1/E-2 + codegraph.yaml comment + 3-tier not-found msg + `cli-install.test.ts` optional-tier case + `ecc-wiring.test.ts` strict-TS fix. Code-review APPROVE + code-simplify no-change (2026-06-23). 1342 tests green, tsc/biome clean.
+- **ECC optional-tier batch SHIPPED** 2026-06-23 (39e8a5f code + 5b81371 planning docs). 1342 tests green, tsc/biome clean. Working tree clean (only untracked noise: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`).
+- **Phase 24 PLAN ready** (not executed) — `phases/24-resume-entry/24-01-PLAN.md` (tdd, 8 files, all refs verified). Awaiting execute gate.
 
 ## Session Continuity
 
