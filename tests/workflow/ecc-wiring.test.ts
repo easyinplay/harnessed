@@ -46,6 +46,7 @@ describe('ECC Bucket 11 wiring (ADR-0034)', () => {
     for (const name of BUCKET_11) {
       const e = entries[name]
       expect(e, `${name} missing`).toBeDefined()
+      if (!e) continue
       expect(e.impl).toBe('ecc')
       expect(e.cmd).toMatch(/^ecc:/)
     }
@@ -54,7 +55,9 @@ describe('ECC Bucket 11 wiring (ADR-0034)', () => {
   it('Bucket 11 fires_when uses ONLY orthogonal axes (domain/cost/hook) — zero collision', () => {
     const ORTHOGONAL = /^subtask\.(domain ==|needs_cost_report|needs_hook_authoring)/
     for (const name of BUCKET_11) {
-      for (const fw of entries[name].fires_when ?? []) {
+      const e = entries[name]
+      if (!e) continue
+      for (const fw of e.fires_when ?? []) {
         expect(fw, `${name} fires_when off-axis: ${fw}`).toMatch(ORTHOGONAL)
       }
     }

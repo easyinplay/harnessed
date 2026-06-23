@@ -157,6 +157,36 @@ describe('cli/install', () => {
     expect(opts?.dryRun).toBe(false)
   })
 
+  // optional/ tier — `harnessed install ecc` resolves manifests/optional/ as the
+  // third resolution tier (after tools + skill-packs). Proves the opt-in catalog
+  // (ecc / codegraph) is installable on demand even though setup never auto-globs it.
+  it('optional tier: manifest only in manifests/optional/ → resolved + exit 0', async () => {
+    // tools + skill-packs miss; optional/ hits.
+    readFileMock.mockImplementation(async (p) => {
+      const path = String(p).replaceAll('\\', '/')
+      if (path.includes('/manifests/optional/')) return 'apiVersion: harnessed/v1'
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    validateMock.mockReturnValue({
+      ok: true,
+      manifest: {
+        metadata: { name: 'ecc' },
+        spec: { install: { method: 'cc-plugin-marketplace' } },
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: see above
+    } as any)
+    runInstallMock.mockResolvedValue({ aborted: true, reason: 'user-cancel' })
+    const code = await runCli(['install', 'ecc', '--dry-run', '--non-interactive'])
+    // Resolved (not exit 1 manifest-not-found); dry-run user-cancel → exit 2.
+    expect(code).toBe(2)
+    // The three tiers were tried in order; optional/ was the one that resolved.
+    const triedPaths = readFileMock.mock.calls.map((c) => String(c[0]).replaceAll('\\', '/'))
+    expect(triedPaths.some((p) => p.endsWith('/manifests/tools/ecc.yaml'))).toBe(true)
+    expect(triedPaths.some((p) => p.endsWith('/manifests/skill-packs/ecc.yaml'))).toBe(true)
+    expect(triedPaths.some((p) => p.endsWith('/manifests/optional/ecc.yaml'))).toBe(true)
+    expect(validateMock).toHaveBeenCalledOnce()
+  })
+
   // v3.0.1 UX flip — backward-compat alias regression fixture.
   it('v3.0.1 flip: --dry-run opt-in → runInstall called with opts.dryRun=true', async () => {
     readFileMock.mockResolvedValue('apiVersion: harnessed/v1')

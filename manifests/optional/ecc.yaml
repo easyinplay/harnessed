@@ -1,5 +1,13 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
 #
+# OPT-IN catalog manifest — lives in manifests/optional/ so `harnessed setup` /
+# install-base (which globs ONLY manifests/tools + manifests/skill-packs) NEVER
+# auto-installs ECC into the base profile. ECC is an optional upstream AND a
+# pre-release (stability=unstable) — users opt in explicitly. harnessed catalogs
+# this manifest + routes a curated subset (capabilities.yaml Bucket 11 + verify
+# aliases, opt-in no-op when ECC absent); the install cmd below is the user-run
+# path (`claude plugin install ecc@ecc`). Sister: manifests/optional/codegraph.yaml.
+#
 # ECC (Affaan Mustafa) selective assimilation — A posture per ADR-0034.
 # ECC is a near-complete PARALLEL stack (its own plan/execute/review/learn/
 # checkpoint/multi-agent). harnessed does NOT wire that; it assimilates ONLY the
@@ -9,12 +17,7 @@
 # engine collision, same rationale as gsd-execute-phase).
 #
 # De-confliction matrix SoT: docs/adr/0034-ecc-assimilation-deconfliction.md
-# EE-5 gate record:           manifests/skill-packs/ecc.ee5-answers.json
-#
-# Install method = cc-plugin-marketplace (sister karpathy-skills.yaml): ECC ships
-# via the `ecc` marketplace at github affaan-m/ECC. install_type=skill (plugin
-# materializes skills/agents into the CC plugin cache; harnessed only catalogs +
-# routes a curated subset via workflows/capabilities.yaml Bucket 11 + verify alias).
+# EE-5 gate record:           manifests/optional/ecc.ee5-answers.json
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:

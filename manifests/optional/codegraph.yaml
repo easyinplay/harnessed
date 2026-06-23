@@ -1,8 +1,10 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
-# OPT-IN catalog manifest — lives in manifests/optional/ so `install-base` (which
-# globs only manifests/tools + manifests/skill-packs) never pulls it into the base
-# profile, and `harnessed install <name>` (tools + skill-packs only) never installs
-# it. CodeGraph ships its own installer; harnessed catalogs + detects only.
+# OPT-IN catalog manifest — lives in manifests/optional/ so `harnessed setup`
+# Step B (which globs only manifests/tools + manifests/skill-packs) never pulls it
+# into the base profile (no auto-install). It IS installable on demand: explicit
+# `harnessed install codegraph` resolves manifests/optional/ as the third tier and
+# runs the npm-cli method below. CodeGraph ships its own installer; harnessed
+# catalogs + detects only.
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:

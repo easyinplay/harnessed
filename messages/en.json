@@ -28,7 +28,7 @@
   "agent_teams.missing_nonblocking": "   non-blocking — auto-degrades to subagent fan-out\n",
 
   "install.manifest_not_found": "error: manifest '{{name}}' not found",
-  "install.manifest_not_found.fix": "  fix:  ensure manifests/tools/{{name}}.yaml or manifests/skill-packs/{{name}}.yaml exists",
+  "install.manifest_not_found.fix": "  fix:  ensure manifests/tools/{{name}}.yaml, manifests/skill-packs/{{name}}.yaml, or manifests/optional/{{name}}.yaml exists",
   "install.audit_hint": "  fix:  run 'harnessed audit' to inspect manifest issues",
   "install.success": "installed {{name}}",
   "install.success_with_version": "installed {{name}}@{{version}}",

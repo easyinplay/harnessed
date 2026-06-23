@@ -65,22 +65,29 @@ export function registerInstall(program: Command): void {
       // R10.4 D-04 hardening site 2 — screen resolved alias redirect (defense-in-depth).
       checkPathSafe(resolvedName)
 
-      const manifestPath = resolve(getPackageRoot(), `manifests/tools/${resolvedName}.yaml`)
-      const skillPackPath = resolve(getPackageRoot(), `manifests/skill-packs/${resolvedName}.yaml`)
-      let yamlSrc: string
-      let chosenPath = manifestPath
-      try {
-        yamlSrc = await readFile(manifestPath, 'utf8')
-      } catch {
+      // Manifest resolution order — tools (CLI/MCP) → skill-packs (slash-cmd
+      // bundles) → optional (opt-in catalog: ecc / codegraph). `optional/` is the
+      // on-demand tier: `harnessed setup` Step B never globs it (no auto-install),
+      // but explicit `harnessed install <name>` resolves it here.
+      const candidatePaths = ['tools', 'skill-packs', 'optional'].map((dir) =>
+        resolve(getPackageRoot(), `manifests/${dir}/${resolvedName}.yaml`),
+      )
+      let yamlSrc: string | undefined
+      let chosenPath: string | undefined
+      for (const p of candidatePaths) {
         try {
-          yamlSrc = await readFile(skillPackPath, 'utf8')
-          chosenPath = skillPackPath
+          yamlSrc = await readFile(p, 'utf8')
+          chosenPath = p
+          break
         } catch {
-          console.error(
-            `${t('install.manifest_not_found', { name: resolvedName })}\n${t('install.manifest_not_found.fix', { name: resolvedName })}`,
-          )
-          process.exit(1)
+          // try next tier
         }
+      }
+      if (yamlSrc === undefined || chosenPath === undefined) {
+        console.error(
+          `${t('install.manifest_not_found', { name: resolvedName })}\n${t('install.manifest_not_found.fix', { name: resolvedName })}`,
+        )
+        process.exit(1)
       }
 
       const v = validateManifestFile(yamlSrc, chosenPath)
