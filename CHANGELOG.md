@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.8.0] - 2026-06-25
+
+**v10.0 i18n Surface** — extends internationalization from the shipped CLI message layer (`messages/{en,zh-Hans}.json`) to the full skill / workflow / user-facing yaml surface, so Chinese-locale users get 中文 skills, slash-command descriptions, and subagent prompts. Five phases (29–33), all additive: the English default path is byte-identical and the claude default install is unchanged. Notably, Phase 33 also **fixes a pre-existing en-default bug** — English-locale users were receiving Chinese discipline text in spawned-subagent prompts because several discipline yaml were Chinese-authored. 1394 tests at v9.0 → 1446 at v10.0.
+
+### Added
+
+- **Locale-aware skill resolve layer (Phase 29)** — the skill render step selects `SKILL.md` vs `SKILL.zh-Hans.md` by resolved locale (reusing the `HARNESSED_LANG` → POSIX → Intl → en chain + `mapToSupported` zh*→zh-Hans), writing a single locale-correct `SKILL.md` to the destination. English default is byte-identical.
+- **en↔zh-Hans skill sync-guard (Phase 30)** — `scripts/check-skill-i18n-parity.mjs`, a dep-free CI hard-gate enforcing structural parity between every `SKILL.md` and its `SKILL.zh-Hans.md` sibling (frontmatter keys / `{{ capabilities.X }}` placeholders / heading-level shape). drift-only (a missing sibling is OK); runs before `pnpm install`.
+- **26 translated `SKILL.zh-Hans.md` siblings (Phase 31)** — the skill prompt bodies (~10,132 words) rendered in 简体中文 via parallel translation, structurally parity-checked by the Phase 30 guard. English bodies untouched.
+- **User-facing yaml i18n (Phase 33)** — `src/i18n/localeYaml.ts` `resolveLocaleYaml(dir, baseName, locale)` serves `<base>.zh-Hans.yaml` siblings under a zh locale (English base otherwise), wired into `loadRolePrompts` (→ `commands/*.md` descriptions + subagent prompts) and `buildDisciplinesSection` (→ `## Disciplines` prompt injection). Ships `role-prompts.zh-Hans.yaml` (24 roles) + 5 discipline zh siblings.
+- **en↔zh-Hans yaml sync-guard (Phase 33)** — `scripts/check-yaml-i18n-parity.mjs`, a CI hard-gate (post-`pnpm install`, sister to the workflow schema validate) enforcing structural parity of role-prompts + disciplines yaml pairs (top-level keys / role-key + rule-id sets / per-entry field presence). drift-only.
+
+### Changed
+
+- **CLI message table at full parity (Phase 32)** — `messages/zh-Hans.json` brought to 94/94 key parity with `en.json`, pinned both-direction by `tests/unit/i18n-parity.test.ts` (16 `uninstall.unified.*` keys added, 2 dead keys removed). English source unchanged.
+
+### Fixed
+
+- **en-default discipline language bug (Phase 33)** — English-locale users were receiving Chinese discipline text in spawned-subagent `## Disciplines` prompts because `karpathy` / `output-style` / `priority` / `operational` discipline yaml were Chinese-authored. Their bases are now English; the original Chinese is preserved byte-identically in `<name>.zh-Hans.yaml` siblings (zh users unchanged). `language.yaml` is deliberately untouched — it is never surfaced (filtered from the disciplines section; enforcement hooks read no description text).
+
 ## [4.7.0] - 2026-06-24
 
 Three bundled milestones reach users in one release: **v8.0 Frictionless Entry** (single-command resume entry + value-prop legibility), **v9.0 Cross-Harness** (platform abstraction + a real Codex second-platform proof), and the **ECC selective assimilation** optional upstream. All additive and backward-compatible — the claude default path is byte-identical (proven by full suites green with existing tests unchanged: 1352 at v8.0 → 1394 at v9.0).
