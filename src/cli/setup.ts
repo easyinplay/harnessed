@@ -17,7 +17,7 @@
 import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
-import { t } from '../i18n/index.js'
+import { getLocale, t } from '../i18n/index.js'
 import { detectPlatform, getCommandsDir, getSkillsDir } from '../installers/lib/platform.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
@@ -212,7 +212,17 @@ export function registerSetup(program: Command): void {
       // unexpected error reduces to per-skill warn-and-continue (sister fallback
       // 铁律 1).
       const skillNames = toInstall.map((wf) => wf.name)
-      const rendered = await renderAllSkills(skillNames, skillsBase, workflowsDir)
+      // Phase 29 — resolve locale ONCE and thread it into the render loop so the
+      // dest SKILL.md carries the locale-correct body. `--lang` is a global flag
+      // pre-parsed in src/cli.ts (→ setLocale) BEFORE this action runs, so
+      // getLocale() already reflects it; en → byte-identical to pre-29 behavior.
+      const rendered = await renderAllSkills(
+        skillNames,
+        skillsBase,
+        workflowsDir,
+        undefined,
+        getLocale(),
+      )
       // (Step A.5 render count suppressed — internal detail)
       if (rendered.aggregatedWarnings.length > 0) {
         console.warn(t('setup.step_a_render.warnings_header'))
