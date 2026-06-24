@@ -13,15 +13,22 @@
 //
 // Karpathy simplicity: file ≤ 200 LOC; no new deps; reads capabilities.yaml once.
 
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
+import { getLocale, type SupportedLocale } from '../../i18n/index.js'
 import {
   type CapabilityMap,
   readInstalledPlugins,
   readInstalledUserSkills,
   renderSkillBody,
 } from './capabilityResolver.js'
+import { resolveSkillBodyFilename, skillBodyFilename } from './resolveSkillBody.js'
+
+/** Locale body siblings to strip from the dest dir after the locale pick, so the
+ *  install dir holds a single locale-correct SKILL.md (the exact name CC reads).
+ *  Today only zh-Hans ships; extend when ja/ko/etc. tables land. */
+const LOCALE_SIBLINGS: readonly SupportedLocale[] = ['zh-Hans']
 
 /** Per-skill render outcome — passed back to setup.ts for log emission. */
 export interface SkillRenderResult {
@@ -58,33 +65,62 @@ export async function renderSkillFile(
   capabilities: CapabilityMap,
   installedPlugins: Set<string>,
   installedUserSkills: Set<string>,
+  locale?: SupportedLocale,
 ): Promise<SkillRenderResult> {
-  const skillPath = join(skillsBase, skillName, 'SKILL.md')
+  const dir = join(skillsBase, skillName)
+  // Phase 29: dest holds a single SKILL.md (the exact name CC reads). The SOURCE
+  // body is locale-picked (zh-Hans sibling when present + locale=zh), but the
+  // rendered result is ALWAYS written to dest SKILL.md. en (or no sibling) →
+  // srcName === 'SKILL.md' → byte-identical to pre-29 behavior (landmine 3).
+  const resolved = locale ?? getLocale()
+  const srcName = resolveSkillBodyFilename(dir, resolved)
+  const srcPath = join(dir, srcName)
+  const destPath = join(dir, 'SKILL.md')
   const result: SkillRenderResult = {
     name: skillName,
-    skillPath,
+    skillPath: destPath,
     rendered: false,
     warnings: [],
   }
   let body: string
   try {
-    body = await readFile(skillPath, 'utf8')
+    body = await readFile(srcPath, 'utf8')
   } catch (e) {
     result.error = `read failed: ${(e as Error).message}`
     return result
   }
   const rendered = renderSkillBody(body, capabilities, installedPlugins, installedUserSkills)
-  if (rendered.body === body) {
-    // No placeholders found — no-op (e.g. research/SKILL.md has none).
+  // Did the source differ from the dest SKILL.md? (Always true when a zh sibling
+  // was selected — even if no placeholders changed — because the dest currently
+  // carries the en body and must be overwritten with the zh body.)
+  const localeBodySelected = srcName !== 'SKILL.md'
+  const needsWrite = localeBodySelected || rendered.body !== body
+  if (!needsWrite) {
+    // No placeholders AND no locale switch — no-op (e.g. research/SKILL.md has none).
     result.warnings = rendered.warnings
     return result
   }
   try {
-    await writeFile(skillPath, rendered.body, 'utf8')
-    result.rendered = true
+    await writeFile(destPath, rendered.body, 'utf8')
+    result.rendered = rendered.body !== body
     result.warnings = rendered.warnings
   } catch (e) {
     result.error = `write failed: ${(e as Error).message}`
+    return result
+  }
+  // Strip any locale-body siblings from the dest so the install dir holds a single
+  // SKILL.md. ONLY runs when a locale body was actually selected — en path performs
+  // no deletes, keeping the en install byte-for-byte identical (landmine 3).
+  if (localeBodySelected) {
+    for (const loc of LOCALE_SIBLINGS) {
+      const sibling = skillBodyFilename(loc)
+      if (sibling === 'SKILL.md') continue
+      try {
+        await rm(join(dir, sibling), { force: true })
+      } catch {
+        // non-fatal: leftover sibling is harmless (CC reads SKILL.md only).
+      }
+    }
   }
   return result
 }
@@ -98,7 +134,11 @@ export async function renderAllSkills(
   skillsBase: string,
   workflowsDir: string,
   homedirOverride?: string,
+  locale?: SupportedLocale,
 ): Promise<{ results: SkillRenderResult[]; aggregatedWarnings: string[] }> {
+  // Resolve locale ONCE for the whole loop (don't make each renderSkillFile
+  // re-detect — landmine 6 robust path). Caller (setup.ts) may also pass it.
+  const resolvedLocale = locale ?? getLocale()
   let capabilities: CapabilityMap = {}
   try {
     capabilities = await loadCapabilities(workflowsDir)
@@ -129,6 +169,7 @@ export async function renderAllSkills(
       capabilities,
       installedPlugins,
       installedUserSkills,
+      resolvedLocale,
     )
     results.push(r)
     for (const w of r.warnings) warningSet.add(w)
