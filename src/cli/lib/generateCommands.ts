@@ -23,6 +23,8 @@ import { existsSync, readFileSync as nodeReadFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
+import { getLocale, type SupportedLocale } from '../../i18n/index.js'
+import { resolveLocaleYaml } from '../../i18n/localeYaml.js'
 import type { CapabilityMap } from './capabilityResolver.js'
 
 /** Per-sub-workflow metadata from `workflows/role-prompts.yaml`. */
@@ -68,9 +70,14 @@ export interface CommandWriteResult {
   warning?: string
 }
 
-/** Load and parse `<workflowsDir>/role-prompts.yaml`. Tolerant of missing file. */
-export async function loadRolePrompts(workflowsDir: string): Promise<Record<string, RolePrompt>> {
-  const path = join(workflowsDir, 'role-prompts.yaml')
+/** Load and parse `<workflowsDir>/role-prompts.yaml` (or its locale sibling).
+ *  Tolerant of missing file. Phase 33: `locale` (default `getLocale()`) selects
+ *  `role-prompts.<locale>.yaml` when present — en serves the byte-identical base. */
+export async function loadRolePrompts(
+  workflowsDir: string,
+  locale: SupportedLocale = getLocale(),
+): Promise<Record<string, RolePrompt>> {
+  const path = resolveLocaleYaml(workflowsDir, 'role-prompts', locale)
   let raw: string
   try {
     raw = await readFile(path, 'utf8')

@@ -17,6 +17,8 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import type { Command } from 'commander'
 import { parse as parseYaml } from 'yaml'
+import { getLocale, type SupportedLocale } from '../i18n/index.js'
+import { resolveLocaleYaml } from '../i18n/localeYaml.js'
 import { buildAgentDef } from '../workflow/run.js'
 import { loadRolePrompts } from './lib/generateCommands.js'
 import { getPackageRoot } from './lib/packagePath.js'
@@ -93,9 +95,14 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
  *  them into the spawn prompt, so subagents ignored ≤200 LOC / surgical /
  *  biome-preempt / BLUF / commit-safety. `language` is skipped here (handled by
  *  buildLanguageSection from env.HARNESSED_USER_LANG). Fail-soft → empty. */
-async function buildDisciplinesSection(sub: string, packageRoot: string): Promise<string> {
+export async function buildDisciplinesSection(
+  sub: string,
+  packageRoot: string,
+  locale: SupportedLocale = getLocale(),
+): Promise<string> {
   try {
     const workflowsDir = resolve(packageRoot, 'workflows')
+    const disciplinesDir = resolve(workflowsDir, 'disciplines')
     const applied = await loadSubArrayField(sub, packageRoot, 'disciplines_applied')
     // language handled separately; skip to avoid duplicate directive.
     const names = applied.filter((d) => d !== 'language')
@@ -104,7 +111,7 @@ async function buildDisciplinesSection(sub: string, packageRoot: string): Promis
     const blocks: string[] = []
     for (const name of names) {
       try {
-        const dRaw = await readFile(resolve(workflowsDir, 'disciplines', `${name}.yaml`), 'utf8')
+        const dRaw = await readFile(resolveLocaleYaml(disciplinesDir, name, locale), 'utf8')
         const dDoc = parseYaml(dRaw) as { rules?: { description?: string }[] } | null
         const rules = Array.isArray(dDoc?.rules) ? dDoc.rules : []
         const descs = rules

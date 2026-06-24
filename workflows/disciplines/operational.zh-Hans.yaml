@@ -12,7 +12,7 @@ auto_enforce: true
 rules:
   - id: biome-preempt
     description: |
-      Before any TS/JS commit you must run `pnpm exec biome check --write` (3 CI-red recurrences Phase 2.1.1/2.2/2.3 project memory)
+      TS/JS commit 前必跑 `pnpm exec biome check --write` (3 CI-red recurrences Phase 2.1.1/2.2/2.3 project memory)
     enforcement: auto-fix
     trigger: |
       phase.type == 'commit' AND
@@ -23,8 +23,8 @@ rules:
 
   - id: a7-adr-conservation
     description: |
-      A new ADR does not touch the main body of old ADRs; iterate via baseline tag, conserved by the CI A7 step
-      (sister Phase 1.3-2.6 ADR errata path)
+      新 ADR 不动旧 ADR main body,baseline tag iterate,CI A7 step 守恒
+      (sister Phase 1.3-2.6 ADR errata 路径)
     enforcement: warn
     trigger: phase.type == 'commit' AND changed_files contains 'docs/adr/'
     check_method: external-cmd
@@ -40,14 +40,14 @@ rules:
 
   - id: no-skip-hooks
     description: |
-      Skip-hook flags such as --no-verify / --no-gpg-sign are not allowed, unless the user explicitly requests them
+      不允许 --no-verify / --no-gpg-sign 等 skip hook flag,除非用户明确要求
     enforcement: halt
     trigger: cmd.type == 'git-commit' AND args contains '--no-verify'
     check_method: regex
 
   - id: destructive-ops-explicit
     description: |
-      Destructive ops (git reset --hard / push --force / rm -rf / drop table) require explicit user confirmation
+      Destructive ops (git reset --hard / push --force / rm -rf / drop table) 必须用户 explicit 确认
     enforcement: halt
     trigger: cmd.is_destructive == true
     check_method: heuristic
@@ -55,7 +55,7 @@ rules:
 
   - id: authorization-not-transitive
     description: |
-      A user approving one push ≠ approval for the whole session; each destructive / shared-state operation needs separate confirmation
+      用户 approve 一次 push ≠ 全程 approve;每个 destructive / shared-state 操作单独确认
     enforcement: warn
     trigger: cmd.requires_approval == true AND session.has_prior_approval == true
     check_method: heuristic

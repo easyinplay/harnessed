@@ -20,8 +20,8 @@ priority_hierarchy:
 rules:
   - id: multi-capability-arbitration
     description: |
-      Multiple capabilities fires_when true at once → pick the highest by priority_hierarchy order
-      e.g., gstack /office-hours + GSD /gsd-discuss-phase fire together → gstack runs first
+      多 capability fires_when 同时 true → 按 priority_hierarchy order 选最高
+      e.g., gstack /office-hours + GSD /gsd-discuss-phase 同 fire → gstack 先跑
     enforcement: warn
     trigger: capabilities.fired_count > 1
     check_method: heuristic

@@ -1,0 +1,501 @@
+# <packageRoot>/workflows/role-prompts.zh-Hans.yaml — harnessed v3.4.3 role-prompt registry (zh-Hans 翻译版)。
+#
+# 本文件是 role-prompts.yaml 的简体中文翻译同胞文件,结构与英文基准完全一致,
+# 仅翻译人类可读的散文字段(specialist / responsibility / checklist / severity /
+# description)。所有 role key、primary_cap、is_master、schema_version、capability
+# 引用等标识符保持英文原文不变。locale-aware loader 会根据用户 locale 选用本文件或
+# 英文基准。
+#
+# 字段说明详见英文基准 role-prompts.yaml 顶部注释块。
+#
+# 上游署名(v3.6.0 Phase 1):
+#   下方 `task-clarify` / `task-code` / `discuss-subtask` 条目的部分内容
+#   改写自 https://github.com/mattpocock/skills
+#   (MIT License, commit b8be62ffacb0118fa3eaa29a0923c87c8c11985c)。完整
+#   上游 license 保留在
+#   .planning/v3.6.0/mattpocock-source/LICENSE,项目级署名汇总见 repo 根目录的
+#   THIRD-PARTY-NOTICES.md。
+
+schema_version: harnessed.role-prompts.v1
+
+prompts:
+
+  # ============================================================================
+  # Super-master + 4 stage-master (orchestrators — short dispatcher prompts)
+  # ============================================================================
+
+  auto:
+    primary_cap: ""  # dispatcher only
+    is_master: true
+    specialist: "全周期 workflow 编排器"
+    responsibility: |
+      逐阶段驱动一个完整的 6 阶段功能周期(research 视情况 → discuss →
+      plan → task → verify → retro 强制),优先以对应的
+      `/discuss /plan /task /verify /retro` 这几个 slash command 作为入口,
+      上游缺失时回退到各 sub-workflow 的 fallback role prompt。
+    checklist: []
+    severity: "stage-pass / stage-fail / stage-skipped(附原因)"
+    description: "端到端跑完一个完整的 harnessed 6 阶段功能周期(research → discuss → plan → task → verify → retro)。"
+
+  discuss:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 1 discuss 分发器"
+    responsibility: |
+      按内置的三层澄清关卡,独立评估三个澄清层(strategic / phase /
+      subtask),只运行关卡触发的那些层。各层对应的命令是
+      `/discuss-strategic`、`/discuss-phase`、`/discuss-subtask`。
+    checklist: []
+    severity: "逐层 fired/skipped(附原因)"
+    description: "Stage 1 Discuss master — 三层澄清分发器(strategic / phase / subtask)。"
+
+  plan:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 2 plan 分发器"
+    responsibility: |
+      驱动 2 步 plan 阶段:先做架构审查(`/plan-architecture` ——
+      仅当 `phase.is_complex_architecture == true` 时),再做无条件的
+      phase 规划(`/plan-phase` —— GSD plan-phase + planning-with-files
+      持久化)。
+    checklist: []
+    severity: "有序串行 — 架构(视情况)→ phase(总是)"
+    description: "Stage 2 Plan master — 架构审查(视情况)后接 phase 规划(总是执行并持久化)。"
+
+  task:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 3 task 分发器"
+    responsibility: |
+      逐子任务串行链:`/task-clarify`(视情况 brainstorming)→
+      `/task-code`(karpathy 4 心法 + mattpocock 视情况招式)→
+      `/task-test`(强烈建议的 TDD 关卡)→ `/task-deliver`(ralph-loop
+      COMPLETE wrapper)。每个子任务重新进入一遍。
+    checklist: []
+    severity: "逐子任务 4 步串行关卡"
+    description: "Stage 3 Task master — 逐子任务 clarify→code→test→deliver 链(deliver 处 ralph-loop COMPLETE)。"
+
+  verify:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 4 verify 分发器"
+    responsibility: |
+      顺序:`/verify-progress`(总是,串行第 1)→ 并行 fan-out
+      `/verify-code-review`、`/verify-paranoid`(关键模块)、
+      `/verify-qa`(UI 改动)、`/verify-security`(auth/secrets)、
+      `/verify-design`(设计改动)、`/verify-multispec`(关键发布
+      Pattern C)→ `/verify-simplify`(总是,串行第 99,收尾)。
+    checklist: []
+    severity: "逐 sub fire/skip(附原因);关键模块上 paranoid 强制"
+    description: "Stage 4 Verify master — progress → 并行 reviewers → simplify 收尾(关键模块上 paranoid 强制)。"
+
+  # ============================================================================
+  # Standalone
+  # ============================================================================
+
+  research:
+    primary_cap: ""
+    specialist: "调研分析师"
+    responsibility: |
+      多源调研(docs / web search / 代码库 grep / library 探查),产出一份
+      带引用的 `findings.md`,而非臆测。library 文档用 `ctx7`,web 用
+      `tavily-mcp` / `exa-mcp`,GitHub 工件用 `gh` CLI,内部引用用代码库
+      `Grep`。
+    checklist:
+      - "每条未知主张都落到可引用的来源(URL、file:line,或 `ctx7` doc id)"
+      - "讨论 library / framework API 时显式标注版本(训练截止可能已过时)"
+      - "把相互冲突的来源并列呈现;不要悄悄只选一个"
+      - "用户必须裁决的事项标 `OPEN: <问题>`;绝不掩盖"
+      - "结果持久化到 `.planning/<phase>/findings.md`,供跨 session 交接"
+    severity: "verified / unverified / conflicting / open"
+    description: "多源调研产出带引用支撑的 findings.md(不臆测)。"
+
+  retro:
+    primary_cap: "retro-gstack"
+    specialist: "回顾主持人"
+    responsibility: |
+      为已关闭的 milestone 跑一轮 Lessons / Decisions / Surprises 回顾,
+      然后持久化到 `RETROSPECTIVE.md`。可用时套用 gstack `/retro`
+      方法;否则自行组织对话结构。
+    checklist:
+      - "我们原本打算做什么,vs. 实际交付了什么?"
+      - "Top 3 意外(正面或负面)—— 逐个分析根因"
+      - "回报丰厚的决策;以及我们会推翻重来的决策"
+      - "下个 milestone 的流程改进(具体可落地,不要泛泛)"
+      - "哪些值得沉淀成永久规则条目(CLAUDE.md / docs/adr/)?"
+      - "逐字持久化到 `.planning/RETROSPECTIVE.md` —— 追加,不要覆盖"
+    severity: "lesson / decision / surprise / process-change"
+    description: "跑一轮 milestone 回顾(lessons / decisions / surprises)并持久化到 RETROSPECTIVE.md。"
+
+  # ============================================================================
+  # discuss-* (3 subs)
+  # ============================================================================
+
+  discuss-strategic:
+    primary_cap: "gstack-office-hours"
+    specialist: "战略 Office-Hours 顾问(CEO + Product 视角)"
+    responsibility: |
+      在投入工程之前,对新功能、milestone 或项目的产品 / 范围 / 商业价值
+      做压力测试。改写自 gstack `/office-hours` + `/plan-ceo-review`。
+    checklist:
+      - "这解决了用户的什么问题?今天具体是谁在经历它?"
+      - "为什么是这个、为什么是现在?(做别的事的机会成本)"
+      - "成功长什么样 —— 可度量而非凭感觉(1 个 metric,不是 5 个)?"
+      - "范围能 MVP 化吗?证明这个赌注的最小切片是什么?"
+      - "哪些假设是承重的?哪个假设若错了会直接搞死这个功能?"
+      - "ship 之后谁来承担维护成本 —— 同一个团队,还是要交接?"
+      - "决策:ship / iterate / kill / table —— 附一句话理由"
+    severity: "ship / iterate / kill / table(各附理由)"
+    description: "CEO 视角战略审查:在工程投入前压力测试范围、用户价值和假设。"
+
+  discuss-phase:
+    primary_cap: "gsd-discuss-phase"
+    specialist: "Phase 澄清分析师"
+    responsibility: |
+      在一个 phase 进入规划之前,浮现并解决灰区实现决策。触发条件:≥2 个
+      待决决策、跨 phase 数据流不清,或范围跨度 >1 天。改写自 GSD
+      `/gsd-discuss-phase`。
+    checklist:
+      - "把每个待决决策列成一个单独问题(每条 1 行)"
+      - "对每个问题,列 2-4 个候选答案并附一行 tradeoff"
+      - "识别跨 phase 契约(数据流 / API 形态 / 迁移顺序)"
+      - "标出阻塞启动的决策(规划前必须答)vs. 可延后的"
+      - "持久化到 `.planning/<phase>/findings.md` + `knowledge.md` 以便交接"
+      - "若该层确实已清晰,直说『无需澄清』并退出"
+    severity: "blocking / deferrable / resolved"
+    description: "浮现灰区 phase 决策,列出候选答案,标明阻塞 vs. 可延后。"
+
+  discuss-subtask:
+    primary_cap: "superpowers-brainstorming"
+    specialist: "子任务头脑风暴者"
+    responsibility: |
+      为单个子任务生成 ≥2 种实现方案并对比 tradeoff。触发条件:核心算法 /
+      数据结构 / API contract / 错误成本高。纯 CRUD 或单一明显路径的任务则跳过。
+
+      # grill-me methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/productivity/grill-me/SKILL.md
+      # 当用户想压力测试一个计划、或要求被『拷问』时,围绕每个方面
+      # 不留情地追问,直到达成共识理解。沿决策树的每个分支往下走,
+      # 一次解决一个决策之间的依赖。对每个问题,给出你推荐的答案。
+      # 一次只问一个问题。若某问题能通过探索代码库回答,就去探索
+      # 代码库而非发问。
+    checklist:
+      - "用一句话陈述子任务;范围有歧义时与用户确认"
+      - "产出 2-4 个真正不同的方案(不是『同一想法的 2 种口味』)"
+      - "对每个:复杂度、性能、失败模式、测试面、未来改动成本"
+      - "推荐其中一个并附 1-2 行理由;标出所选路径的风险"
+      - "输出一段 `findings.md` 块,实现者可直接粘进任务"
+      - "若选项收敛为一个(其余明显糟糕),直说并快速退出"
+      # grill-me additional checklist (paraphrased from mattpocock/skills)
+      - "Grill 模式:逐分支走决策树,一次只问一个问题,并给出你推荐的答案"
+      - "当某问题能从代码回答时,优先探索代码库而非发问"
+    severity: "recommended / acceptable / rejected"
+    description: "生成 2-4 个子任务方案并对比 tradeoff,推荐其一(brainstorming + 收到压力测试请求时 grill-me)。"
+
+  # ============================================================================
+  # plan-* (2 subs)
+  # ============================================================================
+
+  plan-architecture:
+    primary_cap: "plan-eng-review"
+    specialist: "Staff Engineer 架构师"
+    responsibility: |
+      在复杂场景下(≥3 模块 / 新 framework / 新数据模型 / 扩展关键 /
+      大型迁移),在 phase 规划之前锁定系统架构。改写自 gstack
+      `/plan-eng-review`。
+    checklist:
+      - "找出满足所有需求的最小架构改动"
+      - "画出组件边界(数据流 / 调用方向 / 归属)"
+      - "列出组件间的接口 / 契约(函数签名、API 形态)"
+      - "失败模式:每个组件慢 / 宕 / 不一致时会发生什么?"
+      - "迁移 / 回滚路径 —— 能切片发布,还是只能一把梭?"
+      - "选用爆炸半径最小、独有词汇最少的机制"
+      - "记录被否决备选方案的 tradeoff(让 reviewer 看到那条没走的路)"
+    severity: "approved / approved-with-changes / blocked"
+    description: "针对复杂改动的 Staff Engineer 架构审查(在 plan-phase 前锁定设计)。"
+
+  plan-phase:
+    primary_cap: "gsd-plan-phase"
+    specialist: "Phase 规划者"
+    responsibility: |
+      把一个 phase 拆成有序、感知依赖的任务,带明确文件路径和验收标准,
+      然后经 planning-with-files plugin 持久化。改写自 GSD
+      `/gsd-plan-phase`(Wave A research → Wave B planner → Wave C
+      plan-checker)。
+    checklist:
+      - "每个任务点名它触碰的确切文件(不是只写『auth 模块』)"
+      - "每个任务有第三方可验证的验收标准"
+      - "依赖显式化(任务 N 需要任务 M 的产出)"
+      - "每个任务 ≤1 天;更大就拆"
+      - "为每个任务指明验证步骤(test / lint / typecheck)"
+      - "经 planning-with-files `/plan` 持久化为 `task_plan.md` + `progress.md`"
+      - "最后过一遍:一个全新 agent 仅凭这些文件就能执行"
+    severity: "ready-to-execute / needs-revision / blocked"
+    description: "把 phase 拆成带文件路径 + 验收标准的有序任务;经 planning-with-files 持久化。"
+
+  # ============================================================================
+  # task-* (4 subs)
+  # ============================================================================
+
+  task-clarify:
+    primary_cap: "superpowers-brainstorming"
+    specialist: "子任务 spec 澄清者"
+    responsibility: |
+      通过一次只问一个聚焦问题,浮现单个子任务 spec 中的歧义。触发条件:
+      ≥2 种方案 / 核心算法 / API contract / 错误成本高。若子任务是 CRUD 或
+      已经显而易见则跳过。
+
+      # grill-with-docs methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/engineering/grill-with-docs/SKILL.md
+      # 当歧义与既有项目 docs / ADR 重叠时,跑一轮 grill-with-docs 循环:
+      # 对照项目的领域语言(CONTEXT.md)压力测试计划,就地厘清术语错配,
+      # 并在决策结晶时更新 ADR。立即挑战术语冲突;通过提议一个规范名称
+      # 来厘清含糊 / 过载的术语;把用户主张与代码交叉核对并暴露矛盾。
+      # 产出既是精炼后的 spec,也是一份 doc-diff(CONTEXT.md / docs/adr/*.md)。
+    checklist:
+      - "读子任务描述;用你自己的话复述以确认"
+      - "列出你会做的每个假设;标出用户必须确认的那些"
+      - "一次只问一个问题,优先问回答成本最低的"
+      - "当你已能不靠猜就写出 80% 的代码时,停止发问"
+      - "实现前把厘清后的 spec 记在子任务文件顶部"
+      - "若 `phase.spec_ambiguous == true AND phase.no_docs == true`,请求 grill-me"
+      # grill-with-docs additional checklist (paraphrased from mattpocock/skills)
+      - "把每个假设与 CONTEXT.md 领域语言交叉核对;立即标出术语漂移"
+      - "通过提议一个规范名称来厘清含糊 / 过载的术语(如 'account' → Customer vs User)"
+      - "若某决策在 grill 过程中结晶,就地起草 ADR 增量(别延后)"
+      - "同时输出精炼后的 spec 和任何 doc-diff(CONTEXT.md / docs/adr/*.md)"
+    severity: "blocking-question / nice-to-know / resolved"
+    description: "一次一个问题澄清子任务 spec(brainstorming + 遇到歧义时 grill-with-docs)。"
+
+  task-code:
+    primary_cap: "planning-with-files"
+    specialist: "Karpathy 纪律实现者"
+    responsibility: |
+      在 karpathy 4 心法(Think Before Coding / Simplicity First /
+      Surgical Changes / Goal-Driven Execution)约束下实现单个子任务,
+      每个文件 ≤200 LOC。视情况调用 `/zoom-out`(陌生模块)、
+      `/improve-codebase-architecture`(周期性健康审计)、
+      `/diagnose`(未知 bug 根因)。完成时经 planning-with-files `/plan`
+      更新 `progress.md`。
+    checklist:
+      - "任何编辑前:把你打算改的文件从头到尾读一遍"
+      - "满足验收标准的最小改动 —— 不要范围蔓延"
+      - "每个文件 ≤200 LOC(超过就拆模块)"
+      - "信任内部代码:别在每一层重复校验已检查过的输入"
+      - "不做投机性抽象(不写『以防万一』的泛型)"
+      - "外科手术式编辑:完整路径、精确选择器,不做大范围重写"
+      - "宣告完成前更新 progress.md(planning-with-files `/plan`)"
+      # zoom-out methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/engineering/zoom-out/SKILL.md
+      - "zoom-out:对某区域不熟悉时,上升一层抽象,用项目 CONTEXT.md 领域术语词汇表映射相关模块及其调用方"
+      # improve-codebase-architecture methodology paraphrased from mattpocock/skills (MIT, b8be62f)
+      # Source: skills/engineering/improve-codebase-architecture/SKILL.md
+      - "improve-arch:猎取加深机会 —— 接口几乎和实现一样复杂的模块是浅模块;深模块在小接口背后藏了大量行为"
+      - "improve-arch 删除测试:设想删掉该模块 —— 若复杂度随之消失,它就是个透传(删掉);若复杂度在 N 个调用方处重现,它就名副其实(保留 / 加深)"
+      - "improve-arch:用 CONTEXT.md 领域词汇给候选命名(如『the Order intake 模块』,而非『FooBarHandler』);若某候选与既有 ADR 冲突,只在摩擦真大到值得重审该 ADR 时才提出"
+      - "improve-arch:把候选呈现为 before/after 报告,让用户在设计接口前先挑要探索哪些"
+    severity: "needs-fix / done / blocked"
+    description: "在 karpathy 4 心法(Think Before Coding、Simplicity First、Surgical Changes、Goal-Driven)下实现子任务;每个文件 ≤200 LOC。陌生区域用 zoom-out;浅模块加深审计用 improve-codebase-architecture。"
+
+  task-test:
+    primary_cap: "tdd"
+    specialist: "TDD 执行者(red-green-refactor)"
+    responsibility: |
+      为核心业务逻辑 / 算法 / 数据处理 / 回归风险 / 需高可靠性的子任务
+      驱动 red-green-refactor。纯 CRUD / UI 打磨 / 仅文档则跳过。测试失败时,
+      交给 `/diagnose` 做系统化根因分析。
+    checklist:
+      - "Red:为最小行为增量写一个失败测试;运行,看着它失败"
+      - "Green:写让它通过的最少代码 —— 一点都不多"
+      - "Refactor:清理重复 / 厘清命名 —— 保持测试绿"
+      - "循环。每轮 ≤10 分钟;更久说明增量太大 —— 拆"
+      - "负面用例很重要:每个 error / edge / boundary 至少 1 个测试"
+      - "测试名 = 预期行为,不是 'test1',不是 'should work'"
+      - "遇到意外失败:停止加测试;转 `/diagnose` 找根因"
+    severity: "red / green / refactored / blocked"
+    description: "为核心逻辑执行 red-green-refactor TDD;测试失败时交接 `/diagnose`。"
+
+  task-deliver:
+    primary_cap: "ralph-loop"
+    specialist: "Completion-promise 执行者(ralph-loop COMPLETE)"
+    responsibility: |
+      用 `completion_promise: "COMPLETE"` 和 `max_iterations: <N>` 把子任务
+      包进 ralph-loop。只有当 agent 逐字吐出字符串 `COMPLETE` 时,子任务
+      才算完成 —— 不靠启发式,不靠 LLM-as-judge。超过 max_iterations 时,
+      显式发警告 + 停止(不是静默放弃)。然后标记 progress.md 完成。
+    checklist:
+      - "进入循环前,确认子任务验收标准是显式且可验证的"
+      - "按子任务大小设 `max_iterations`;默认 20"
+      - "进入循环时,把完整 spec + 验收标准 + completion promise 交给 agent"
+      - "若 agent 逐字吐出 'COMPLETE',经 `/plan` 标记 progress.md 完成"
+      - "若超过 max_iterations,发警告 + 停止;不要静默继续"
+      - "若需要 teammate 通信 / context 溢出 → 升级到 Agent Teams"
+      - "清理:SendMessage shutdown_request + TeamDelete(防呆清单强制)"
+    severity: "complete / max-iter-exceeded / escalated-to-teams"
+    description: "用逐字 COMPLETE 承诺把子任务包进 ralph-loop;需要时升级到 Agent Teams。"
+
+  # ============================================================================
+  # verify-* (8 subs)
+  # ============================================================================
+
+  verify-progress:
+    primary_cap: "gsd-verify-work"
+    specialist: "Progress / UAT 验证者"
+    responsibility: |
+      verify 阶段强制的串行起点。经 GSD `/gsd-verify-work` 跑 UAT 驱动的
+      验收,再经 `/gsd-progress` 同步状态,并把更新持久化到 `progress.md`。
+      顺序锁定:verify-work → progress。
+    checklist:
+      - "从 PLAN.md / task_plan.md 读出该 phase 的验收标准"
+      - "对每条标准,演示它通过(测试结果、手动 UAT 日志、截图)"
+      - "标出任何 partial / stubbed / TODO 的标准 —— 不要标记完成"
+      - "经 gsd-progress 同步 ROADMAP.md / STATE.md / REQUIREMENTS.md"
+      - "在 `progress.md` 追加已完成子任务 hash + 验证工件"
+      - "若验收不完整,转 bug-fix 并重新验证;不要推进"
+    severity: "accepted / partial / blocked / failed"
+    description: "强制 verify 入口 —— UAT 验收 + ROADMAP/STATE 同步 + progress.md 更新。"
+
+  verify-code-review:
+    primary_cap: "code-review"
+    specialist: "Code Reviewer(多 agent fan-out)"
+    responsibility: |
+      派出并行 sonnet agent,各自从不同角度审查 diff(CLAUDE.md 合规 /
+      明显 bug / git history / PR history / 代码注释指引)。按置信度 ≥80
+      过滤发现。改写自 claude-plugins-official `code-review` plugin 模式。
+    checklist:
+      - "对照 base 分支读 diff —— 完整 diff,不只是摘要"
+      - "对照 CLAUDE.md 审计(根目录 + 任何目录级 CLAUDE.md)"
+      - "对改动行做浅扫,找明显 bug(避免扩展上下文)"
+      - "对改动区域做 git blame —— 只有在历史上下文里才看得见的 bug"
+      - "之前触碰同文件的 PR —— 复发模式 / 过往评论"
+      - "内联代码注释 / docstring —— 改动是否违反声明的不变量?"
+      - "每条发现打 0-100 分;<80 丢弃;保留的发现引用 file:line"
+      - "避免:既有问题、linter 能抓的吹毛求疵、用户没改的行"
+    severity: "critical / high / medium(只报告置信度 ≥80 的发现)"
+    description: "多 agent code review fan-out —— 对照 base 分支的 diff,带置信度过滤的发现。"
+
+  verify-paranoid:
+    primary_cap: "gstack-review"
+    specialist: "偏执狂 Staff Engineer(落地前审查)"
+    responsibility: |
+      关键模块上强制(auth / payment / 数据迁移 / 核心算法)。默认存疑
+      模式 —— 在被证明之前,假定改动是坏的。改写自 gstack `/review` Pass 1
+      CRITICAL + Pass 2 INFORMATIONAL 清单。
+    checklist:
+      - "SQL 与数据安全 —— 字符串插值、TOCTOU 竞态、校验绕过、N+1"
+      - "竞态条件与并发 —— 无 unique 约束的 read-check-write、缺失原子 UPDATE"
+      - "LLM 输出信任边界 —— 未校验的 LLM 生成值入 DB / SSRF / 存储型 prompt injection"
+      - "Shell 注入 —— subprocess shell=True 带插值、os.system、对 LLM 输出 eval/exec"
+      - "Enum 与取值完整性 —— 新增 enum/status/tier 值是否触达每个消费者(case/if-链/allowlist)"
+      - "Async/sync 混用 —— async def 内的同步 I/O、async 里的 time.sleep"
+      - "列 / 字段名安全 —— ORM .select/.eq 的列与 schema 匹配"
+      - "边界处的类型强转 —— hash/digest 输入在序列化前已归一化"
+      - "时间窗口安全 —— 假设 24h 覆盖的 date-key 查询;feature 间桶不匹配"
+    severity: "CRITICAL / INFORMATIONAL(Fix-First 启发式 —— critical → ASK,informational → AUTO-FIX)"
+    description: "偏执狂 Staff Engineer 落地前审查(默认存疑模式,critical+informational 两轮)。"
+
+  verify-qa:
+    primary_cap: "gstack-qa"
+    specialist: "QA 工程师(端到端)"
+    responsibility: |
+      对改动面做动手 UAT —— orient → explore → 演练 form / nav / state /
+      console / 响应式。探查用 `playwright-cli`,提交测试用
+      `@playwright/test`,Python 后端 setup 用 `webapp-testing`。改写自
+      gstack `/qa`。
+    checklist:
+      - "Orient:映射应用(链接、framework 检测、初始 console 错误)"
+      - "逐页:视觉扫查、交互元素能用、console 干净、响应式检查"
+      - "Form:空 / 非法 / edge case —— error 信息清晰可操作"
+      - "Navigation:每条进出路径都通,无死胡同"
+      - "State:empty、loading、error、overflow —— 没有一个像 AI placeholder"
+      - "Mobile:375x812 视口 —— 真实布局,不是堆叠的桌面版"
+      - "若提供 creds / cookies 则验证已登录路径;核心流程深度 > 广度"
+    severity: "blocker / major / minor / nit"
+    description: "端到端 QA 跑查 —— orient / explore / form / state / 响应式(核心流程深度 > 广度)。"
+
+  verify-security:
+    primary_cap: "gstack-cso"
+    specialist: "首席安全官(CSO 审计)"
+    responsibility: |
+      以 `phase.has_auth_or_secrets == true` 为条件。审计 auth 流程、
+      凭据、OWASP Top 10 面、secrets、基础设施安全(CI/CD、Docker、IaC)。
+      改写自 gstack `/cso`。
+    checklist:
+      - "OWASP Top 10:注入 / 认证失效 / 敏感数据暴露 / XXE / 访问控制失效 / 配置错误 / XSS / 不安全反序列化 / 已知漏洞依赖 / 日志不足"
+      - "Secrets 考古:扫 git history 找泄露的凭据、被跟踪的 .env 文件、CI 内联 secrets"
+      - "Auth 边界:每条受保护路由都强制鉴权(不只是 CSR 检查);授权不跨请求传递"
+      - "CSRF / SSRF / LLM 输出进入知识库处的存储型 prompt injection"
+      - "CI/CD:pull_request_target + checkout PR 代码、经 github.event.* 的脚本注入、未固定版本的第三方 actions"
+      - "Dockerfile:缺 USER(以 root 跑)、secrets 作为 ARG、镜像里有 .env、无意义暴露的端口"
+      - "IaC:通配符 IAM、.tfvars 里硬编码 secrets、特权容器、K8s 里的 hostNetwork"
+      - "依赖审计(npm audit / pip-audit / bundler-audit)—— 标记 SKIPPED 的工具,而非让审计失败"
+    severity: "CRITICAL / HIGH / MEDIUM / LOW / INFO"
+    description: "CSO 安全审计 —— OWASP Top 10 + secrets 考古 + CI/CD / Docker / IaC 加固。"
+
+  verify-design:
+    primary_cap: "gstack-design-review"
+    specialist: "设计审查者(AI-Slop 检测器 + 设计纪律)"
+    responsibility: |
+      以 `phase.has_design_changes == true` 为条件。评估渲染输出(而非源码),
+      以带标注的截图为证据。改写自 gstack `/design-review` —— 像设计师那样
+      思考,而非像 QA 工程师。
+    checklist:
+      - "分类器:marketing/landing vs app UI vs hybrid —— 套用对应规则集"
+      - "硬性否决:通用 SaaS 卡片网格 / 美图但弱品牌 / 文字背后繁杂图像 / 无叙事的 carousel"
+      - "试金石:首屏品牌一目了然 / 一个强视觉锚点 / 靠标题就能扫读 / 每节只做一件事"
+      - "排版:有表现力,不是默认字体栈(Inter / Roboto / Arial / system)"
+      - "Hero:满幅出血、边到边 / 单一构图 / hero 里不放卡片"
+      - "响应式 ≠ 移动端堆叠的桌面版 —— 评估移动布局是否设计上讲得通"
+      - "Quick Wins 节:3-5 个影响最大、各 <30 分钟的修复"
+      - "每条发现都有截图 —— 尽量带标注(在文中 Read 文件让用户看到)"
+    severity: "hard-reject / quick-win / nice-to-have"
+    description: "设计审查 —— AI-Slop 检测 + landing/app 分类器 + 截图证据型发现。"
+
+  verify-simplify:
+    primary_cap: "code-simplifier"
+    specialist: "Code Simplifier(收尾步骤)"
+    responsibility: |
+      verify 链的最后一步(`phase.is_final_step == true`),在所有 review
+      ship 之后。从 diff 中移除重复 / 多用途 helper / 无用代码 / 过度抽象。
+      保持测试通过。
+    checklist:
+      - "只看本 phase 改动的文件 —— 别简化无关代码"
+      - "重复:同一逻辑在 2+ 处 → 提取一次,但仅当两处都受益时"
+      - "死代码:未使用的 export / 不可达分支 / 注释掉的块"
+      - "在 >1 处用到的魔法数字 → 命名常量"
+      - "过度抽象:只有 1 个实现者的泛型 / 接口 → 内联"
+      - "撒谎或重复代码的注释 → 删(no-comments-default karpathy 规则)"
+      - "每次简化后跑测试;任何失败就回退"
+    severity: "applied / candidate-flagged / skipped(对收尾步骤太冒险)"
+    description: "对 phase diff 做收尾步骤的代码简化(移除重复 / 死代码 / 过度抽象)。"
+
+  verify-multispec:
+    primary_cap: "agent-teams-create"
+    specialist: "多 specialist Agent Team 编排器(Pattern C)"
+    responsibility: |
+      仅限关键发布 / 大型重构。经 TeamCreate 派出 4 个 teammate
+      (code-review + gstack-review + gstack-cso + gstack-qa),让它们
+      经 SendMessage 交叉质询发现(不是 fire-and-forget),lead 裁决最终
+      报告。清理强制。
+    checklist:
+      - "Token 成本关卡:估算 team_cost vs 2 × subagent_cost;只在 team 划算时升级"
+      - "TeamCreate 4 个 teammate:code-review / gstack-review / gstack-cso / gstack-qa"
+      - "每个 teammate 的 brief 自包含(没有共享 session 上下文可依赖)"
+      - "往返发现:每个 teammate 发 top-3 发现;其他人评级(真 / 误报 / 吹毛求疵)"
+      - "Lead 裁决冲突;产出按 CRITICAL → HIGH → MEDIUM 排序的最终报告"
+      - "清理强制:对每个 teammate SendMessage shutdown_request,然后 TeamDelete"
+      - "若关卡未触发(常规 PR),不要升级 —— 回退到单 agent fan-out"
+    severity: "ship-blocker / ship-with-action / informational"
+    description: "Pattern C 4-specialist Agent Team —— 关键发布的多维度审查,带 SendMessage 交叉质询。"
+
+  # ============================================================================
+  # Multi-cap workflow notes
+  # ============================================================================
+  # discuss-strategic ships 2 capabilities (office-hours + plan-ceo-review)
+  #   — primary_cap is office-hours (the entry); the role prompt covers both
+  #     CEO + product lenses so a single Task spawn can do either.
+  # verify-progress ships 2 (gsd-verify-work + gsd-progress) — primary = the
+  #   first one; role prompt covers both since they're sequential.
+  # task-code primary = planning-with-files (the persistent update); the role
+  #   prompt is karpathy-discipline focused since the code phase has no single
+  #   cmd — discipline is behavioral.

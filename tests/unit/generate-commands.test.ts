@@ -108,6 +108,49 @@ prompts:
   })
 })
 
+// Phase 33 T33.1 — loadRolePrompts(workflowsDir, locale?) sibling selection.
+describe('loadRolePrompts — locale sibling selection', () => {
+  const BASE = `prompts:
+  verify-paranoid:
+    primary_cap: gstack-review
+    specialist: Paranoid Staff Engineer
+    responsibility: Review the diff.
+    checklist: []
+    severity: CRITICAL / INFO
+    description: Pre-landing review.
+`
+  const ZH = `prompts:
+  verify-paranoid:
+    primary_cap: gstack-review
+    specialist: 偏执狂资深工程师
+    responsibility: 审查 diff。
+    checklist: []
+    severity: 严重 / 提示
+    description: 落地前审查。
+`
+
+  it('cell 33a — zh-Hans + sibling present → reads the zh-Hans sibling', async () => {
+    writeFileSync(join(tmpRoot, 'role-prompts.yaml'), BASE, 'utf8')
+    writeFileSync(join(tmpRoot, 'role-prompts.zh-Hans.yaml'), ZH, 'utf8')
+    const prompts = await loadRolePrompts(tmpRoot, 'zh-Hans')
+    expect(prompts['verify-paranoid']?.specialist).toBe('偏执狂资深工程师')
+    expect(prompts['verify-paranoid']?.description).toBe('落地前审查。')
+  })
+
+  it('cell 33b — zh-Hans + NO sibling → falls back to base', async () => {
+    writeFileSync(join(tmpRoot, 'role-prompts.yaml'), BASE, 'utf8')
+    const prompts = await loadRolePrompts(tmpRoot, 'zh-Hans')
+    expect(prompts['verify-paranoid']?.specialist).toBe('Paranoid Staff Engineer')
+  })
+
+  it('cell 33c — en → base even when a zh-Hans sibling exists', async () => {
+    writeFileSync(join(tmpRoot, 'role-prompts.yaml'), BASE, 'utf8')
+    writeFileSync(join(tmpRoot, 'role-prompts.zh-Hans.yaml'), ZH, 'utf8')
+    const prompts = await loadRolePrompts(tmpRoot, 'en')
+    expect(prompts['verify-paranoid']?.specialist).toBe('Paranoid Staff Engineer')
+  })
+})
+
 describe('generateCommandFile — v4.0 body shape', () => {
   it('cell 4 — EXECUTION sub body has frontmatter + heading + description', () => {
     const { content } = generateCommandFile(

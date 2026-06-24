@@ -10,7 +10,7 @@ auto_enforce: true
 
 rules:
   - id: think-before-coding
-    description: Think before coding; do not dump code directly; brainstorm the design intent before each subtask
+    description: 先思考后写代码,不直接 dump 代码;每个子任务前 brainstorm 设计意图
     enforcement: warn
     trigger: subtask.type == 'code-write'
     check_method: heuristic
@@ -18,14 +18,14 @@ rules:
     # (e.g., 'Plan:' / 'Approach:' / '设计:' / '思路:'),若全是 code block → warn
 
   - id: simplicity-first
-    description: Pursue the minimal effective code, avoid unnecessary complexity; YAGNI / do not write code for hypothetical scenarios
+    description: 追求最小有效代码,避免不必要复杂度;YAGNI / 不为假设场景写代码
     enforcement: warn
     trigger: always-on
     check_method: llm-judge
     # check_method='llm-judge' — verify phase 调用 code-simplifier review
 
   - id: surgical-changes
-    description: Small atomic changes, single responsibility per commit; no large-scale rewrites
+    description: 小步原子修改,每个 commit 单一职责;不大段重写
     enforcement: warn
     trigger: phase.type == 'execute'
     check_method: external-cmd
@@ -33,13 +33,13 @@ rules:
     # 单 commit > 300 line diff → warn (rough heuristic, override allowed via task spec)
 
   - id: goal-driven-execution
-    description: Goal-driven, do not diverge / do no unrelated refactoring; solve only the current task and do not smuggle in cleanup
+    description: 目标驱动,不发散 / 不无关重构;只解决当前任务 + 不夹带 cleanup
     enforcement: warn
     trigger: phase.type == 'execute'
     check_method: heuristic
 
   - id: file-length-200-hard-limit
-    description: Single-file ≤200L hard limit (per project CLAUDE.md karpathy guideline reminder); over the limit → split into a helper
+    description: 单文件 ≤200L 硬限 (per project CLAUDE.md karpathy 心法 reminder);超过 → split helper
     enforcement: halt
     trigger: phase.type == 'execute' AND file.lines > 200
     check_method: external-cmd

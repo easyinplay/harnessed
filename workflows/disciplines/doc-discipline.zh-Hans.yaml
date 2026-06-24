@@ -1,0 +1,49 @@
+# workflows/disciplines/doc-discipline.yaml
+# 文档纪律 — bundled discipline (STATE digest line-limit + one-fact-per-file +
+# overview-pointer-no-inline-narrative + transient-consume-then-archive +
+# status-derived-from-artifacts + responsibility-matrix-one-home)
+# Phase v6.0 T11.1 — 7th L0 Discipline Substrate per D-09
+# Codifies CLAUDE.md 文档纪律 section (三层渐进式结构 + 反腐防膨胀铁律)
+
+schema_version: harnessed.discipline.v1
+discipline: doc
+enforcement_layer: commit
+auto_enforce: true
+
+rules:
+  - id: state-digest-line-limit
+    description: STATE.md 超过 100 行触发 halt；通过 `HARNESSED_ALLOW_LONG_STATE=1` override
+    enforcement: halt
+    trigger: "phase.type == 'commit' AND changed_files contains '.planning/STATE.md'"
+    check_method: external-cmd
+    # No auto_fix_cmd — halt rules do not auto-fix; override is env-based in TS
+
+  - id: one-fact-per-file
+    description: 决策类文档必须单一主题；同一事实跨文件重复散布违反 one-fact-per-file
+    enforcement: warn
+    trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'"
+    check_method: heuristic
+
+  - id: overview-pointer-no-inline-narrative
+    description: ROADMAP/概览类文档不得内联收尾叙事（叙事进 SUMMARY，而非 ROADMAP）
+    enforcement: warn
+    trigger: "phase.type == 'commit' AND changed_files matches 'ROADMAP\\.md|STATE\\.md'"
+    check_method: heuristic
+
+  - id: transient-consume-then-archive
+    description: HANDOFF 及其他 transient 产物必须在消费后归档，不得堆积在 .planning/ 根目录
+    enforcement: warn
+    trigger: "phase.type == 'commit' AND changed_files matches 'HANDOFF'"
+    check_method: heuristic
+
+  - id: status-derived-from-artifacts
+    description: Phase 状态必须从 VERIFICATION 产物 + 测试结果派生，而非在 STATE/ROADMAP 里手动维护布尔值
+    enforcement: warn
+    trigger: "phase.type == 'commit' AND changed_files contains '.planning/STATE.md'"
+    check_method: heuristic
+
+  - id: responsibility-matrix-one-home
+    description: 每个事实按责任矩阵只有唯一归处（决策→ADR，需求→REQUIREMENTS 等）；跨文件重复即违规
+    enforcement: info
+    trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'"
+    check_method: heuristic

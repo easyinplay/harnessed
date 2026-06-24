@@ -12,12 +12,12 @@ T33.4 fix Chinese disciplines ┘   (guard needs the siblings to exist)
 T33.2/3/4 (translation) are independent of each other → parallel subagent fan-out. T33.1 (loader) independent. T33.5 needs the siblings present.
 
 ## Checklist
-- [ ] **T33.1** MODIFY `generateCommands.ts` `loadRolePrompts` + `prompt.ts` `buildDisciplinesSection` — locale-aware sibling load (try `X.${locale}.yaml`, fallback base; default `getLocale()`). TDD. en→base byte-identical.
-- [ ] **T33.2** NEW `workflows/role-prompts.zh-Hans.yaml` — 24 roles translated; base unchanged.
-- [ ] **T33.3** NEW `workflows/disciplines/doc-discipline.zh-Hans.yaml` — 6 rules translated; base unchanged.
-- [ ] **T33.4** FIX 5 Chinese-source disciplines — `<name>.zh-Hans.yaml` = today's Chinese verbatim; base `<name>.yaml` rewritten to English. (karpathy/output-style/priority/operational/language)
-- [ ] **T33.5** NEW `scripts/check-yaml-i18n-parity.mjs` + ci.yml hard-fail step — structural parity (role keys / rule ids / fields), drift-only. TDD.
-- [ ] **T33.6** GATE — biome+tsc+vitest green vs 1426; e2e `harnessed prompt <sub>` en→English / zh→Chinese; guard exit 0 on real workflows.
+- [x] **T33.1** `resolveLocaleYaml` helper (src/i18n/localeYaml.ts NEW) + locale-aware `loadRolePrompts` + `buildDisciplinesSection` (exported). TDD red→green. en→base byte-identical.
+- [x] **T33.2** NEW `workflows/role-prompts.zh-Hans.yaml` — 24 roles translated; base unchanged.
+- [x] **T33.3** NEW `workflows/disciplines/doc-discipline.zh-Hans.yaml` — 6 rules translated; base unchanged.
+- [x] **T33.4** FIX **4** Chinese-source disciplines (karpathy/output-style/priority/operational) — `<name>.zh-Hans.yaml` = today's Chinese verbatim (HEAD-identical); base rewritten to English. `language` EXCLUDED (never surfaced — see findings).
+- [x] **T33.5** NEW `scripts/check-yaml-i18n-parity.mjs` (+ `.d.mts`) + ci.yml post-install hard-fail step — structural parity (top-keys / role keys / rule ids / fields), drift-only. TDD (9 cells).
+- [x] **T33.6** GATE — biome+tsc clean; vitest **1446**/0 (baseline 1426 +20); e2e `prompt task-code` en→English / zh→Chinese; guard exit 0 on real workflows.
 
 ## TDD scope
 - **Mechanism (TDD red-green)**: T33.1 loader, T33.5 parity guard.
