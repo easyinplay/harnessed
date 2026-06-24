@@ -37,7 +37,7 @@
 > Additive-only; reuses v9.0 platform-aware resolve layer (`detectPlatform`/resolvers) + the messages/{en,zh} file-level pattern. No architecture change.
 > Decisions locked: **full bilingual scope** (28 SKILL.md + 48 surfacing yaml + 14 CLI keys); **Approach A parallel sibling files** (`SKILL.md` + `SKILL.zh-Hans.md`). 2 open design questions (sync-guard granularity; resolve-vs-bundle) deferred to per-phase plan.
 
-### REQ-v100-resolve-layer — locale-aware skill/workflow file selection (Phase 29)
+### REQ-v100-resolve-layer — locale-aware skill/workflow file selection (Phase 29) ✅ Done 2026-06-24
 - **Description**: extend the v9.0 resolve layer so the skill/workflow surface selects `SKILL.md` vs `SKILL.zh-Hans.md` by resolved locale (reuse the existing `HARNESSED_LANG`→POSIX→Intl→en chain + `mapToSupported` zh*→zh-Hans). OPEN-2 (resolve-vs-bundle: install both siblings alongside vs select-exclusively-by-locale at install time) resolves at this phase's plan (main-session brainstorm before executor spawn).
 - **Acceptance**: resolver returns the zh-Hans sibling under a zh locale and the en file otherwise / when no sibling exists (en-default never breaks); claude default install byte-identical when locale=en; per-case unit tests; biome + tsc + vitest green vs the 1394-test baseline.
 

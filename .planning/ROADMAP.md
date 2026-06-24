@@ -36,7 +36,7 @@
 
 | Phase | Goal | Notes |
 |-------|------|-------|
-| 29 | locale-aware skill/workflow resolve layer | extend v9.0 resolvers to select `SKILL.md` vs `SKILL.zh-Hans.md` by locale. Mechanism (TDD). OPEN-2 (resolve-vs-bundle: install both vs select-by-locale) resolves at this phase's plan. |
+| 29 ✅ | locale-aware skill/workflow resolve layer | ✅ Done 2026-06-24 — render-step locale select, dest single `SKILL.md`, en byte-identical. 1416 tests (+22). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`. |
 | 30 | en↔zh-Hans CI sync-guard | hard CI gate enforcing en/zh-Hans pair parity (presence + structural drift) — turns dual-maintenance tax into a checkable constraint. Mechanism (TDD). OPEN-1 (granularity: presence-only vs structural) resolves at this phase's plan. |
 | 31 | skill/workflow surface translation | 28 `SKILL.md` (~12,332 words) → `.zh-Hans.md` siblings + user-facing strings in the 48 surfacing yaml. Prose translation; TDD only where mechanism, not prose. Depends on 29+30. |
 | 32 | CLI message table gap close | `messages/zh-Hans.json` 80→94 (14 untranslated keys). Independent small item. |

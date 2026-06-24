@@ -42,5 +42,24 @@ Mirrors `messages/{en,zh-Hans}.json` file-level pattern.
 6. **`--lang` ordering**: confirm `--lang`→`setLocale` runs before the render loop in CLI dispatch (grep first). Robust path: setup calls `getLocale()` once and passes the value into `renderAllSkills` (don't rely on each renderSkillFile re-detecting).
 7. **Non-fatal posture**: keep `renderSkillFile`'s warn-and-continue error handling (sister fallback 铁律 1) — read/write failures set `result.error`, never throw.
 
+## Execution-time confirmations (2026-06-24, Phase 29 executor)
+
+- **Landmine 6 resolved — `--lang` wiring point**: `--lang` is a GLOBAL flag pre-parsed in
+  `src/cli.ts:46-51` → calls `setLocale()` BEFORE any subcommand action runs (verified by grep).
+  So `getLocale()` inside setup's render loop already reflects `--lang`. setup.ts change = pass
+  `getLocale()` once into `renderAllSkills` (the PLAN "no setup change beyond passing the locale"
+  branch). `renderAllSkills` ALSO falls back to `getLocale()` internally when locale arg is
+  undefined → the explicit pass + internal fallback are behaviorally equivalent (robust path).
+  `--user-lang` (setup.ts:132) is a SEPARATE flag feeding `enableUserLangInSettings` (settings
+  write) — unrelated to locale render; left untouched.
+- **No pre-existing renderSkillFile/renderAllSkills unit tests** existed (only indirect setup
+  coverage) — Phase 29 added the first direct unit suite (`tests/cli/renderSkillTemplates.test.ts`).
+- **`renderAllSkills` capabilities-load gate**: short-circuits to all-skipped if
+  `<workflowsDir>/capabilities.yaml` is unreadable — tests must provide a minimal one to exercise
+  the render loop (caught during T29.2 green).
+- **biome local noise**: `.understand-anything/` is untracked + NOT gitignored, so local
+  `biome check` flags its JSON (18 warnings). All 18 are noise; zero from phase files; the dir is
+  absent on CI (untracked → never pushed). Left untouched per execution constraints.
+
 ## Deferred (not this phase)
 OPEN-1 (sync-guard granularity) → Phase 30. Translation content → Phase 31. CLI 14-key gap → Phase 32.
