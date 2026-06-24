@@ -37,7 +37,7 @@
 | Phase | Goal | Notes |
 |-------|------|-------|
 | 29 ✅ | locale-aware skill/workflow resolve layer | ✅ Done 2026-06-24 — render-step locale select, dest single `SKILL.md`, en byte-identical. 1416 tests (+22). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`. |
-| 30 | en↔zh-Hans CI sync-guard | hard CI gate enforcing en/zh-Hans pair parity (presence + structural drift) — turns dual-maintenance tax into a checkable constraint. Mechanism (TDD). OPEN-1 (granularity: presence-only vs structural) resolves at this phase's plan. |
+| 30 ✅ | en↔zh-Hans CI sync-guard | ✅ Done 2026-06-24 — OPEN-1: structural parity (frontmatter keys / `{{capabilities}}` placeholders / heading-level shape). drift-only hard-fail CI gate `scripts/check-skill-i18n-parity.mjs` (sibling exists → must parity; absence OK → green until Phase 31). 1423 tests. 详: `phases/30-skill-i18n-sync-guard/30-01-SUMMARY.md`. |
 | 31 | skill/workflow surface translation | 28 `SKILL.md` (~12,332 words) → `.zh-Hans.md` siblings + user-facing strings in the 48 surfacing yaml. Prose translation; TDD only where mechanism, not prose. Depends on 29+30. |
 | 32 | CLI message table gap close | `messages/zh-Hans.json` 80→94 (14 untranslated keys). Independent small item. |
 

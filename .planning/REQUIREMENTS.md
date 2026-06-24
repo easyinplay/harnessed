@@ -71,10 +71,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v100-resolve-layer | Phase 29 | ⬜ Not started |
-| REQ-v100-sync-guard | Phase 30 | ⬜ Not started |
+| REQ-v100-resolve-layer | Phase 29 | ✅ Done (1416 tests, en byte-identical) |
+| REQ-v100-sync-guard | Phase 30 | ✅ Done (1423 tests, drift-only hard gate) |
 | REQ-v100-translation | Phase 31 | ⬜ Not started |
 | REQ-v100-cli-gap | Phase 32 | ⬜ Not started |
 | REQ-v100-validation | Phases 29–32 (final gate) | ⬜ Not started |
 
-Coverage: 0/5 (milestone opened 2026-06-24). v9.0 (3/3) shipped v4.7.0. No orphans.
+Coverage: 2/5 (Phase 29 + 30 done 2026-06-24). v9.0 (3/3) shipped v4.7.0. No orphans.

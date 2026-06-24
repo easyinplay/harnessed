@@ -54,5 +54,29 @@ concern after all 26 are translated — NOT Phase 30.
   have nothing to check. Extend the guard (or add a sibling check) when Phase 31 decides how the 48
   surfacing yaml carry both locales.
 
+## Execution-time confirmations (2026-06-24)
+
+- **`.d.mts` is NECESSARY, not noise** — probed: `tsc --noEmit` with the `.d.mts` removed raises
+  `TS7016` (no declaration for the imported `.mjs`) + a TS7006 cascade in the test. `scripts/**` is
+  in tsconfig `include` with `allowJs` off, and the `.ts` test imports the `.mjs` directly. The
+  hand-written `.d.mts` (16 lines, stable signature) is the minimal fix. Alternatives rejected:
+  `allowJs:true` (blast-radius onto all scripts), precompile-to-TS (CLI runs pre-install, no dist),
+  spawn-as-subprocess test (coarser, can't assert violation `kind`).
+- **Dead-precedent comment corrected** — the first executor's comment claimed
+  `tests/checkpoint/injectState.test.ts` "imports a sibling .mjs" as precedent; grep proves it does
+  NOT (it spawns the bin as a subprocess). No in-repo precedent for importing a `.mjs` from a `.ts`
+  test exists — this phase is the first. Comments in the `.mjs` + test rewritten to the real reason.
+- **guard verified green on real tree** — `node scripts/check-skill-i18n-parity.mjs` exits 0
+  against the real `workflows/` (26 SKILL.md, 0 siblings) — confirms drift-only semantics.
+- **Environment incident (not a defect)** — a terminal crash killed the executor mid-run and
+  orphaned a DUPLICATE MCP-server set (~50 node procs); the session re-spawned a second set →
+  resource starvation made the full vitest run pathologically slow (import ~1000s+ vs normal ~6s)
+  and nondeterministically flaky (57→47→13→3→1→0 failures across runs, all in unrelated
+  Verdict/plan-checker/dispatch meta-tests). Isolated neighborhood was deterministically 29/29
+  green throughout. A `--no-file-parallelism` run once load drained = **1423/0 clean**. Lesson: after
+  a crash, suspect orphaned MCP procs starving the runner before suspecting a code regression;
+  nondeterministic + decreasing-with-load failure counts = environmental, not the diff.
+
 ## Deferred (not this phase)
 Translation content → Phase 31. CLI 14-key gap → Phase 32. must-exist flip → Phase 31 close.
+yaml string parity → Phase 31 (when the yaml i18n mechanism is decided).

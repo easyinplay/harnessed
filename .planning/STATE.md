@@ -7,10 +7,10 @@ last_updated: "2026-06-24T00:00:00.000Z"
 last_activity: 2026-06-24
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 25
+  completed_phases: 2
+  total_plans: 2
+  completed_plans: 2
+  percent: 50
 ---
 
 # STATE — harnessed
@@ -26,9 +26,9 @@ progress:
 
 ## Current Position
 
-- **v10.0 i18n Surface — executing (1/4 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24. Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
-  - **Phase 29** ✅ locale-aware skill/workflow resolve layer — DONE 2026-06-24 (OPEN-2 resolved: render-step, dest single SKILL.md; 1416 tests, en byte-identical). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`.
-  - **Phase 30** en↔zh-Hans CI sync-guard (pair-parity hard gate) — OPEN-1 (granularity) resolves at this phase's plan.
+- **v10.0 i18n Surface — executing (2/4 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24. Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
+  - **Phase 29** ✅ locale-aware skill/workflow resolve layer — DONE 2026-06-24 (OPEN-2: render-step, dest single SKILL.md; en byte-identical). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`.
+  - **Phase 30** ✅ en↔zh-Hans CI sync-guard — DONE 2026-06-24 (OPEN-1: structural parity; drift-only hard-fail gate, `scripts/check-skill-i18n-parity.mjs`; 1423 tests). 详: `phases/30-skill-i18n-sync-guard/30-01-SUMMARY.md`.
   - **Phase 31** skill/workflow surface translation (28 SKILL.md → zh-Hans siblings + 48 surfacing yaml). Depends 29+30.
   - **Phase 32** CLI message table gap close (zh-Hans 80→94). Independent.
 - **Design SoT**: `.planning/v10.0-i18n-surface-DESIGN.md` (scope boundary / Approach A rationale / risks / 2 deferred opens). REQUIREMENTS: `REQ-v100-*` (5 reqs).
@@ -57,5 +57,5 @@ progress:
 
 ## Session Continuity
 
-- **Next command**: `/gsd-plan-phase 30` (en↔zh-Hans CI sync-guard) when ready. Per 逐-gate, await explicit user word before planning the next phase.
+- **Next command**: `/gsd-plan-phase 31` (skill/workflow surface translation — 26 SKILL.md → zh-Hans siblings + 48 surfacing yaml strings; depends 29+30) when ready. Per 逐-gate, await explicit user word before planning the next phase.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.
