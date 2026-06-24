@@ -159,6 +159,14 @@ jobs:
       - name: Deferred items review (Phase 2.3 Wave 0 T5, warn-only round 1)
         run: node scripts/check-deferred-items.mjs
         continue-on-error: true
+      # Phase 30 (v10.0) — en↔zh-Hans skill sync-guard (REQ-v100-sync-guard).
+      # HARD-FAIL (no continue-on-error) per design doc "hard gate, not advisory".
+      # Dep-free pure-node → runs BEFORE pnpm install (sister check-provenance above).
+      # drift-only: a SKILL.zh-Hans.md sibling MUST structurally match its SKILL.md
+      # (frontmatter keys / {{ capabilities.X }} placeholders / heading-level shape);
+      # absence of a sibling is OK — green now (0 siblings until Phase 31 lands them).
+      - name: Skill i18n parity gate (Phase 30 — en↔zh-Hans structural parity, hard-fail)
+        run: node scripts/check-skill-i18n-parity.mjs
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       # Workflow schema validate — moved here AFTER pnpm install (v3.3.1 CI hotfix
