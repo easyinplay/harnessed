@@ -1,0 +1,70 @@
+---
+name: verify-simplify
+description: |
+  Stage ④.g 验证子工作流 — code-simplifier 末尾串行 (移除重复 / 多余逻辑;
+  捆绑 verify 阶段节奏 — tail-step code-simplifier).
+  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
+  (code-simplifier) + 1 phase (gate ref is_final_step 末尾串行)。
+  Triggered by slash command
+  `/verify-simplify` after `harnessed setup`.
+trigger_phrases:
+  - "verify simplify"
+  - "code simplify"
+  - "代码简化"
+  - "移除重复逻辑"
+  - "跑 verify-simplify"
+---
+
+# verify-simplify workflow (v3)
+
+## 概览
+
+1-phase 子工作流，将 CLAUDE.md "Verify 阶段 — 末尾 code-simplifier" 映射到 harnessed
+运行时 (Phase v3.0-3.4 W0.13d — D-04 Stage ④ Verify 7 sub + Pattern A sub-workflow ship)。
+
+| phase | id | upstream | model | capability | gate |
+| ----- | -- | -------- | ----- | ---------- | ---- |
+| 1 | `01-simplify` | mattpocock-skills | sonnet | `{{ capabilities.code-simplifier.cmd }}` | `judgments.stage-routing.verify-simplify-tail.fires` |
+
+Per-phase 配置从 `workflows/verify/simplify/workflow.yaml` 加载；引擎 4-level gate
+resolver 通过 expr-eval 计算 `phase.is_final_step == true` — true 则调用
+`/code-simplifier` (移除重复 / 多余逻辑)，false 则跳过。verify 链末尾步骤，
+sister verify-work v2 phase 08-code-simplifier verbatim 位置。
+
+## Capability refs
+
+Sister `workflows/capabilities.yaml` 条目：
+- `code-simplifier` — Bucket 1 mattpocock 高频招式 (impl: mattpocock-skills,
+  cmd: /code-simplifier, fires_when: stage=='verify' AND is_final_step)
+
+## Gate ref
+
+Sister `workflows/judgments/stage-routing.yaml`：
+- `verify-simplify-tail.fires` — `phase.stage == 'verify' and phase.is_final_step == true`
+
+## 路由规则
+
+- ✅ **触发**: verify chain 末尾步骤 (所有其他 verify sub 已 ship，准备 code 简化收尾)
+- ❌ **跳过**: verify chain 中间步骤 (避免过早简化干扰后续 review)
+
+## 调用方式
+
+使用 Bash 工具运行：
+
+```bash
+echo "$ARGUMENTS" | harnessed run verify-simplify --task-stdin
+```
+
+若 `$ARGUMENTS` 为空，则运行 `harnessed run verify-simplify`（不接管道输入）。
+
+完成后，Bash 输出会在 stderr 打印 `Next:` 提示，建议下一阶段。是否调用取决于对话上下文 — 该提示仅供参考，非强制指令。
+
+<!-- harnessed-generated:v3.4.4 -->
+
+## 参考资料
+
+- D-04 Stage ④ Verify 7 sub 分解
+- workflows/capabilities.yaml — code-simplifier
+- workflows/judgments/stage-routing.yaml — verify-simplify-tail trigger
+- workflows/defaults.yaml — ralph_max_iterations.verify-simplify.* values (W2.2 backfill)
+- workflows/verify-work/workflow.yaml v2 SHIPPED phase 08-code-simplifier sister verbatim
