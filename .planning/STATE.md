@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v9.0
-milestone_name: Cross-Harness
-status: shipped
+milestone: v10.0
+milestone_name: i18n Surface
+status: planning
 last_updated: "2026-06-24T00:00:00.000Z"
 last_activity: 2026-06-24
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -21,44 +21,41 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **between milestones** — v9.0 Cross-Harness shipped + closed LIGHTWEIGHT ✅ 2026-06-24 (audit passed 3/3; ROADMAP + MILESTONES index rows; phase dirs 26/27/28 stay in `phases/`; no git-tag). Next candidate: **v10.0 i18n Surface** (backlog, sketch only — not yet started). Prior audits: `milestones/v9.0-MILESTONE-AUDIT.md` + `v8.0-MILESTONE-AUDIT.md`.
-- **Latest shipped**: **v4.7.0** 2026-06-24 (npm `harnessed@4.7.0` dist-tag latest + GitHub release `v4.7.0`, publish.yml run 28074836757 green). Bundles **v8.0 Frictionless Entry + v9.0 Cross-Harness + ECC assimilation** (3 milestones' built value released in one minor; all additive backward-compat, claude default byte-identical). CI fully green incl. macos (fixed a pre-existing macos-only injectState repo-key symlink test bug, `2ac1585`).
+- **Current focus**: **v10.0 i18n Surface** opened 2026-06-24 — extend i18n from the shipped CLI message layer to the skill/workflow surface (comet model: ship EN+中文 skills). Full bilingual scope (user override) + Approach A parallel sibling files. 4 phases 29–32. Strategy gate DONE (`v10.0-i18n-surface-DESIGN.md`: office-hours + ceo-review). Next action: `/gsd-plan-phase 29`.
+- **Latest shipped**: **v4.7.0** 2026-06-24 (npm `harnessed@4.7.0` dist-tag latest + GitHub release `v4.7.0`). Bundles **v8.0 Frictionless Entry + v9.0 Cross-Harness + ECC assimilation** (all additive backward-compat, claude default byte-identical). Detail: ROADMAP shipped rows + `milestones/v8.0-` / `v9.0-MILESTONE-AUDIT.md`.
 
 ## Current Position
 
-- **No active milestone.** v9.0 Cross-Harness shipped 2026-06-24 (3/3 phases, 1394 tests, claude default byte-identical): **26 (A seam)** PlatformDescriptor + detectPlatform / **27 (B resolvers)** 5 resolvers + settingsWriter fold 262→133L / **28 (C Codex proof)** capability-aware descriptor + codexDescriptor + claude-first 5-level detection + `setup --platform codex`. Seam admits a real divergent second harness (Codex: TOML config / shared skills / no registry / settings===mcp / capability-absent writes), zero-blast on claude. Detail: ROADMAP shipped row + `milestones/v9.0-MILESTONE-AUDIT.md` + phase SUMMARYs. Design SoT: `v9.0-cross-harness-ARCHITECTURE.md`.
-- **Next**: **release pass DONE** (v4.7.0 published 2026-06-24, re-sequenced by `/office-hours` + `/plan-ceo-review` strategy gate — realize built value before building more). Now **open v10.0 i18n Surface** via `/gsd-new-milestone` when ready: full scope + Approach A parallel sibling files locked via office-hours; design `.planning/v10.0-i18n-surface-DESIGN.md` (un-PARK it). Strategy-gate caveat carried forward: full bilingual surface was judged premature for a 0-user base (user override); now that v8.0/v9.0 are in users' hands, watch for a real i18n-demand signal to validate the bet. Carry-forward non-blockers below (perf follow-on, residual `~/.claude` hardcodes, doc-hygiene).
-
-## Resolved architecture decisions (v9.0 — archived)
-
-- All v9.0 decisions resolved + closed (D-A/D-B `.agents/`-not-a-harness pivot → Codex; D-28a Codex target; D-28b capability-absent writes; D-C settingsWriter fold; D-D phases 26/27/28). Full narrative: `milestones/v9.0-MILESTONE-AUDIT.md` + Phase 28 `28-CONTEXT.md`. Do NOT re-litigate.
+- **v10.0 i18n Surface — planning (0/4 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24. Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
+  - **Phase 29** locale-aware skill/workflow resolve layer (extend v9.0 resolvers) — OPEN-2 (resolve-vs-bundle) resolves at this phase's plan.
+  - **Phase 30** en↔zh-Hans CI sync-guard (pair-parity hard gate) — OPEN-1 (granularity) resolves at this phase's plan.
+  - **Phase 31** skill/workflow surface translation (28 SKILL.md → zh-Hans siblings + 48 surfacing yaml). Depends 29+30.
+  - **Phase 32** CLI message table gap close (zh-Hans 80→94). Independent.
+- **Design SoT**: `.planning/v10.0-i18n-surface-DESIGN.md` (scope boundary / Approach A rationale / risks / 2 deferred opens). REQUIREMENTS: `REQ-v100-*` (5 reqs).
 
 ## Accumulated Context
 
-### Decisions (carry-forward for v9.0)
+### Decisions (locked for v10.0)
 
-- **Posture = 守宽做深 (B)** — keep the heterogeneous-upstream-arbitration moat; do NOT narrow to a single pairing.
-- **Cross-harness feasibility (verified 2026-06-23, → v9.0)** — gstack/ECC already cross-harness; v9.0 work = abstract harnessed's OWN `~/.claude/` (`setup.ts:120/194`) onto `.agents/` + per-platform + auto-detect. No generator; no CC-degrade.
-- Full v8.0 discuss decisions (state-machine-not-gap, gap map, competitive basis) → `milestones/v8.0-MILESTONE-AUDIT.md`. Competitive basis: `.planning/research/01–04` + `docs/comparison.md` (do NOT re-create).
+- **Full bilingual scope** — user override of office-hours narrow recommendation (finish-14-CLI-keys-only). Logged as defended-premise founder signal; not re-litigated. Bet is forward-looking (Chinese-audience intent), not observed-demand-driven.
+- **Approach A parallel sibling files** (`SKILL.md` + `SKILL.zh-Hans.md`) over B (string-table extend `t()`, anti-karpathy for 12k words of prose) and C (build-time split). Reuses v9.0 resolve layer + messages/{en,zh} file pattern. CI sync-guard makes dual-maintenance a checkable hard constraint.
+- 2 OPEN design questions deferred to per-phase plan (sync-guard granularity → Phase 30; resolve-vs-bundle → Phase 29). Main-session brainstorm before executor spawn.
 
 ### Invariants (must not break)
 
-- 守宽 moat preserved; KARPATHY-minimal surgical diffs; full gate green vs 1335-test baseline; Windows CI green.
+- en-default byte-identical; claude default install byte-identical; additive-only (no en-behavior mutation).
+- KARPATHY-minimal surgical diffs; full gate green vs the 1394-test baseline; Windows CI green on 3 platforms.
 - Biome preempt before every TS/JS commit (`pnpm exec biome check --write`).
-- Every `.planning/` edit self-exemplifies v6.0 doc-discipline (this edit included).
+- Every `.planning/` edit self-exemplifies doc-discipline (STATE digest <100 lines; overview pointers not inlined narrative).
 - NEVER push to remote without explicit user approval.
 
-### Open todos / blockers
+### Open todos / carry-forward (non-blocking, from v9.0)
 
-- **v9.0 phases 26/27/28 SHIPPED + CLOSED** — detail in ROADMAP shipped row + `milestones/v9.0-MILESTONE-AUDIT.md` + phase SUMMARYs. Commits (NOT pushed): `88dc872` (26) + `b76674b` (27) + `3076b25` (28) + `3a13acd` (28 plan) + `5b861c6` (audit). Push is a separate user-gated pass.
-- **v9.0 perf follow-on** (non-blocking carry-forward): `detectPlatform` step-3 `.platform` pin uses `readFileSync` in try/catch → for pin-less users every `getHarnessedRoot()` throw-catches once on the hot path (architecture wanted memoization; memo conflicts with env-based test injection so executor skipped it). Guard pin read with `existsSync`, or env-keyed memo, to remove the per-call throw.
-- **migrateLegacyHarnessedRoot not descriptor-routed** (non-blocking, int-v9 finding): `harnessedRoot.ts` L119-149 hardcodes `~/.claude/harnessed`, bypasses `detectPlatform` — latent if a codex-first user ever needs legacy migration. Route through descriptor when touched.
-- **Out-of-scope residual `~/.claude` hardcodes** (follow-on, non-blocking): `check-mattpocock-skills.ts`, `check-token-budget.ts`, `checkAgentTeams.ts`, `npxSkillInstaller.ts`, `uninstallers/*`, `harnessedRoot.ts` legacy-migration still hardcode `.claude` — mostly CC-specific (e.g. `checkAgentTeams` reads CC env key = capability-absent for codex). Phase 28 generalizes idempotent dual-probe; the rest stay unless they block codex install correctness.
-- **Doc-hygiene backlog** (non-blocking, from v8.0 audit): REQUIREMENTS.md + PROJECT.md are frozen ~2026-06-05 v5.1/v6.0-era snapshots (not reconciled past v6.0); shipped v5.1–v8.0 phase dirs (09–25) live in active `phases/` not `milestones/<ver>-phases/` (de-facto v5.1+ lightweight convention). Reconcile if/when a fuller archive pass is wanted.
-- **Uncommitted (not Phase 27)**: `README.md` — pre-existing intentional 2-line removal (comparison-doc pointer); leave for user to commit/decide.
+- v9.0 perf follow-on (`detectPlatform` step-3 pin `readFileSync` per-call throw-catch), `migrateLegacyHarnessedRoot` not descriptor-routed, residual `~/.claude` hardcodes (check-*/uninstallers/harnessedRoot legacy-migration), doc-hygiene (shipped phase dirs 09–28 stay in active `phases/`). Detail: prior STATE git history + `milestones/v9.0-MILESTONE-AUDIT.md`. Address when touched / a fuller archive pass is wanted.
+- **Uncommitted (pre-existing, not this milestone)**: `README.md` — intentional 2-line removal (comparison-doc pointer); leave for user.
 - **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`.
 
 ## Session Continuity
 
-- **Next command**: `/gsd-new-milestone` for v10.0 i18n Surface (backlog big-bet ②, sketch only) when the user is ready — OR a maintenance/npm-publish pass for v9.0. No active milestone right now. Per 逐-gate, await explicit user word before opening the next milestone.
-- **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed. Rogue impls in `.planning/phases/_rogue-impl-reference/` (untracked). RTK note: `git status | grep` false-positives (RTK prints `ok`) — verify with `ls`/`test -f`.
+- **Next command**: `/gsd-plan-phase 29` (locale-aware resolve layer) when ready. Per 逐-gate, await explicit user word before planning the next phase.
+- **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.

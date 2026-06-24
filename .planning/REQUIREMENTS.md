@@ -1,8 +1,8 @@
 # REQUIREMENTS — harnessed
 
-> Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation.
-> Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v5.1 Upstream Re-sync (✅ v4.3.0).
-> Current published version: **v4.3.0**. Active milestone: **v6.0 Doc-Discipline Substrate** (G1 文档纪律 codify + G2 哨兵 gating).
+> Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
+> Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v9.0 Cross-Harness (✅ npm v4.7.0).
+> Current published version: **v4.7.0** (bundles v8.0+v9.0+ECC). Active milestone: **v10.0 i18n Surface** (bilingual skill/workflow surface, phases 29–32).
 
 ---
 
@@ -24,26 +24,38 @@
 | REQ-v4.1-yaml-sot-richness | v4.1.0→v4.1.3 | ✅ Done | tools injection + master recursion + disciplines_applied injection + gates→prompt handoff fix + P0 data-loss fixes (atomic write / gc no-op / rollback two-pass). 1107 tests. |
 | REQ-v5.0-state-machine-core | v4.2.0 (Spec 1) | ✅ Done (8/8) | structured progress ledger + fail-closed evidence guard + `status --recover` + handoff sha256 drift + verify artifacts_expected backfill + generated ORCHESTRATOR body. Additive schema, single SoT, no FSM lib. ADR-0033. 1158 tests. Spec 2/3 deferred (see Backlog). |
 | REQ-v5.1-upstream-resync | v4.3.0 | ✅ Done (5/5) | GSD Core rename `@opengsd/gsd-core` 1.4.1 + gstack/mattpocock bump + 18 new capabilities (12 GSD + 6 gstack) + stage-phase-gate triggers. Keystone: execute self-owned (`gsd-execute-phase` NOT wired). 1167 tests. |
+| REQ-v6.0-doc-discipline | v4.4.0 | ✅ Done (3/3) | 7th L0 `doc-discipline.yaml` + `before-commit` STATE line-halt/ROADMAP inline-warn (Phase 11) + `checkPlanningSync` evidence guard on checkpoint complete (Phase 12). 1188 tests. 详: `phases/11-…/` + `phases/12-…/`. |
+| REQ-v7.0-gapclose-memory | v4.5.0→4.6.0 | ✅ Done | 7+4 phases (13–23) closing comet/Trellis comparison: doc-debloat, compact-real, multi-workflow, learning-loop, spec-injection, CodeGraph opt-in, minimal adoption + `update`/ship-stage/smart-reminders/Windows-install. 1335 tests. |
+| REQ-v8.0-frictionless-entry | (4.7.0 bundle) | ✅ Done (2/2) | Phase 24 single-command resume entry (zero-arg `harnessed` + `NEXT` + `--json`) + Phase 25 value-prop/quickstart legibility. 1352 tests. Audit `milestones/v8.0-MILESTONE-AUDIT.md`. |
+| REQ-v9.0-cross-harness | v4.7.0 | ✅ Done (3/3) | Phase 26 PlatformDescriptor seam + Phase 27 central config resolvers + settingsWriter fold + Phase 28 Codex second-platform proof. Capability-aware descriptor; claude default byte-identical. 1394 tests. Audit `milestones/v9.0-MILESTONE-AUDIT.md`. |
 
 ---
 
-## Active forward scope — v6.0 Doc-Discipline Substrate
+## Active forward scope — v10.0 i18n Surface
 
-> Source: gap analysis vs `~/.claude/CLAUDE.md` (G1 文档纪律 entirely un-codified; G2 强制执行哨兵 only half-done).
-> Additive-only; reuses existing L0 discipline substrate pattern (7th discipline) + v4.2 checkpoint ledger. No architecture change.
-> Discuss decisions (2026-06-11): 1 milestone / 2 phases; G1 = `disciplines/doc-discipline.yaml`; warn-majority + STATE line-count halt-with-override.
+> Source: ROADMAP big-bet ② + strategy gate `v10.0-i18n-surface-DESIGN.md` (office-hours full-scope user override + ceo-review release-before-v10.0 re-sequence, released as v4.7.0).
+> Additive-only; reuses v9.0 platform-aware resolve layer (`detectPlatform`/resolvers) + the messages/{en,zh} file-level pattern. No architecture change.
+> Decisions locked: **full bilingual scope** (28 SKILL.md + 48 surfacing yaml + 14 CLI keys); **Approach A parallel sibling files** (`SKILL.md` + `SKILL.zh-Hans.md`). 2 open design questions (sync-guard granularity; resolve-vs-bundle) deferred to per-phase plan.
 
-### REQ-v60-doc-discipline — codify CLAUDE.md 文档纪律 as 7th L0 discipline (Phase 11)
-- **Description**: new `workflows/disciplines/doc-discipline.yaml` (schema `harnessed.discipline.v1`, discipline `doc`) with rules: `state-digest-line-limit` (halt, override-allowed — STATE.md >100 lines), `one-fact-per-file` (warn, heuristic), `overview-pointer-no-inline-narrative` (warn, heuristic — ROADMAP/overview no closing narrative), `transient-consume-then-archive` (warn), `status-derived-from-artifacts` (warn), `responsibility-matrix-one-home` (info). Register `doc-discipline` capability (category=behavioral, discipline_ref). Wire enforcement into `before-commit.ts` (STATE line halt + ROADMAP inline-narrative warn on `.planning/` doc commits).
-- **Acceptance**: yaml validates `harnessed.discipline.v1`; capability registered + resolver passes; `before-commit` halts on >100-line STATE without override env, passes with it; per-rule unit tests; biome + tsc + vitest green vs the 1167-test baseline.
+### REQ-v100-resolve-layer — locale-aware skill/workflow file selection (Phase 29)
+- **Description**: extend the v9.0 resolve layer so the skill/workflow surface selects `SKILL.md` vs `SKILL.zh-Hans.md` by resolved locale (reuse the existing `HARNESSED_LANG`→POSIX→Intl→en chain + `mapToSupported` zh*→zh-Hans). OPEN-2 (resolve-vs-bundle: install both siblings alongside vs select-exclusively-by-locale at install time) resolves at this phase's plan (main-session brainstorm before executor spawn).
+- **Acceptance**: resolver returns the zh-Hans sibling under a zh locale and the en file otherwise / when no sibling exists (en-default never breaks); claude default install byte-identical when locale=en; per-case unit tests; biome + tsc + vitest green vs the 1394-test baseline.
 
-### REQ-v60-sentinel-gate — `.planning/` sync guard layered on checkpoint complete (Phase 12)
-- **Description**: extend the existing fail-closed evidence guard (ADR-0033) at the `harnessed checkpoint complete <sub>` path with a `.planning/` sync check. New pure fn `checkPlanningSync(cwd, workflowState)` (sister to `checkArtifacts` in `src/checkpoint/evidence.ts`): when `.planning/` exists but the active workflow's progress/STATE artifact is missing or unsynced → contributes to the `missing` set → `complete` BLOCKED exit 1 unless `--force` (records `evidence_status: overridden`). When no `.planning/` dir exists → `none_declared` (no block — non-GSD users unaffected). Folds into the `checkpoint.ts` complete path alongside `checkArtifacts`; NO standalone `before-complete.ts` (one-fact, reuse `mutateSubProgress` + the existing complete flow). Discuss decision (2026-06-11): extend evidence guard (halt + --force), not timestamp-staleness, not warn-only.
-- **Acceptance**: `complete` blocks when `.planning/` present + progress unsynced and no `--force`; passes with `--force` (overridden), when synced, or when no `.planning/` (none_declared); transparent block message naming the unsynced doc; unit tests for fire/pass/override/na; reuses checkpoint ledger (no new state store); green gate.
+### REQ-v100-sync-guard — en↔zh-Hans CI pair-parity hard gate (Phase 30)
+- **Description**: CI check enforcing that every `SKILL.md` has a non-drifting `SKILL.zh-Hans.md` sibling (and the surfacing yaml carry both locales) — turning the dual-maintenance tax into a checkable hard constraint, not silent drift. OPEN-1 (granularity: presence-only vs structural heading/section parity) resolves at this phase's plan.
+- **Acceptance**: guard fails CI when a sibling is missing or drifts past the chosen granularity, passes when the pair is in parity; transparent failure message naming the offending file; runs in existing CI on all 3 OS; unit tests for fire/pass; green gate.
 
-### REQ-v60-validation — additive, backward-compatible, green
-- **Description**: all additions additive (new yaml + new hook + new tests; no existing discipline/capability mutated); full quality gate green; Windows CI green.
-- **Acceptance**: schema-check + capability-resolver pass; biome + tsc clean; full vitest green; no regression vs the 1167-test baseline.
+### REQ-v100-translation — skill/workflow surface bilingual content (Phase 31)
+- **Description**: translate the 28 `SKILL.md` prompt bodies (~12,332 words) into `.zh-Hans.md` siblings + the user-facing `description`/prompt strings in the 48 surfacing yaml. Whole-file translation preserves prompt semantics (per Approach-A rationale). TDD only where mechanism (resolve wiring), not prose. Depends on Phase 29 (resolve) + Phase 30 (guard).
+- **Acceptance**: all 28 siblings present + sync-guard green; resolve layer surfaces the zh-Hans body under a zh locale end-to-end; en bodies unchanged (byte-identical default); surfacing yaml carry both locales; green gate.
+
+### REQ-v100-cli-gap — close the CLI message table gap (Phase 32)
+- **Description**: translate the 14 untranslated keys so `messages/zh-Hans.json` reaches parity with `messages/en.json` (80→94). Independent of the skill-surface phases.
+- **Acceptance**: `zh-Hans.json` key-set == `en.json` key-set (94/94); en-default byte-identical; existing i18n `t()` tests green + a parity assertion; green gate.
+
+### REQ-v100-validation — additive, backward-compatible, green
+- **Description**: all additions additive (new sibling files + new CI guard + new tests; no en-default behavior mutated; claude default byte-identical); full quality gate green; Windows CI green.
+- **Acceptance**: biome + tsc clean; full vitest green; no regression vs the 1394-test baseline; CI green on 3 platforms.
 
 ---
 
@@ -55,12 +67,14 @@
 
 ---
 
-## Traceability (v6.0 forward scope)
+## Traceability (v10.0 forward scope)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v60-doc-discipline | Phase 11 | ✅ Done |
-| REQ-v60-sentinel-gate | Phase 12 | ✅ Done (vitest 1188 green) |
-| REQ-v60-validation | Phase 11 + Phase 12 (final gate) | ✅ Done |
+| REQ-v100-resolve-layer | Phase 29 | ⬜ Not started |
+| REQ-v100-sync-guard | Phase 30 | ⬜ Not started |
+| REQ-v100-translation | Phase 31 | ⬜ Not started |
+| REQ-v100-cli-gap | Phase 32 | ⬜ Not started |
+| REQ-v100-validation | Phases 29–32 (final gate) | ⬜ Not started |
 
-Coverage: 3/3 done · v6.0 complete (2/2 phases). v5.1 (5/5) shipped v4.3.0. No orphans.
+Coverage: 0/5 (milestone opened 2026-06-24). v9.0 (3/3) shipped v4.7.0. No orphans.

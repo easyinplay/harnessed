@@ -1,7 +1,7 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). No active milestone — v9.0 Cross-Harness shipped 2026-06-24 (audit passed 3/3). Next candidate: **v10.0 i18n Surface** (backlog, sketch only).
-> Current published npm: **4.6.0** (2026-06-14) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
+> Shipped history = indexed archive (do NOT re-plan). Active milestone: **v10.0 i18n Surface** (opened 2026-06-24, phases 29–32 sketch — refine per-phase at plan time).
+> Current published npm: **4.7.0** (2026-06-24, bundles v8.0+v9.0+ECC) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
 
@@ -30,8 +30,22 @@
 
 ---
 
+## Active milestone — v10.0 i18n Surface (opened 2026-06-24)
+
+> Extend i18n from the shipped CLI message layer (`src/i18n/`, en/zh-Hans) to the **skill/workflow surface** — comet model: ship EN+中文 skills. Full bilingual scope (user override of office-hours narrow recommendation) + **Approach A parallel sibling files** (`SKILL.md` + `SKILL.zh-Hans.md`, locale-aware resolve, CI sync-guard). Strategy gate: `v10.0-i18n-surface-DESIGN.md` (office-hours + ceo-review). Sketch-then-refine — phase one-liners below, full PLAN per-phase at `/gsd-plan-phase`. 2 open design questions resolve at their phase's plan (not now).
+
+| Phase | Goal | Notes |
+|-------|------|-------|
+| 29 | locale-aware skill/workflow resolve layer | extend v9.0 resolvers to select `SKILL.md` vs `SKILL.zh-Hans.md` by locale. Mechanism (TDD). OPEN-2 (resolve-vs-bundle: install both vs select-by-locale) resolves at this phase's plan. |
+| 30 | en↔zh-Hans CI sync-guard | hard CI gate enforcing en/zh-Hans pair parity (presence + structural drift) — turns dual-maintenance tax into a checkable constraint. Mechanism (TDD). OPEN-1 (granularity: presence-only vs structural) resolves at this phase's plan. |
+| 31 | skill/workflow surface translation | 28 `SKILL.md` (~12,332 words) → `.zh-Hans.md` siblings + user-facing strings in the 48 surfacing yaml. Prose translation; TDD only where mechanism, not prose. Depends on 29+30. |
+| 32 | CLI message table gap close | `messages/zh-Hans.json` 80→94 (14 untranslated keys). Independent small item. |
+
+**Out / deferred** (per design doc): 3rd language beyond en+zh-Hans (forward-compat hook only via `mapToSupported`); internal-only never-surfaced yaml; runtime LLM auto-translation (static files only).
+
+---
+
 ## Backlog / Deferred (future milestones)
 
-- **v10.0 i18n Surface** (big bet ②) — extend i18n from the CLI message layer (en/zh-Hans, already shipped) to the skill/workflow surface bilingual (comet model: ship EN+中文 skills). Parallelizable with v9.0. Sketch only.
 - ~~Deferred non-goal (v7.0 discuss): cross-harness breadth~~ → **un-deferred 2026-06-23** (→ v9.0): demand changed (user direction 守宽做深 + cross-platform) AND feasibility changed (upstreams gstack/ECC verified already cross-harness). routing L2-LLM-supervisor simplification still deferred.
 - Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency hazards `sigintTrap.ts`/`before-commit.ts`.
