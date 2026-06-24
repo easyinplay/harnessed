@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). Active milestone = **v9.0 Cross-Harness** (architecture locked 2026-06-23, scope B — see Active section). Prior: v8.0 Frictionless Entry shipped 2026-06-23.
+> Shipped history = indexed archive (do NOT re-plan). No active milestone — v9.0 Cross-Harness shipped 2026-06-24 (audit passed 3/3). Next candidate: **v10.0 i18n Surface** (backlog, sketch only).
 > Current published npm: **4.6.0** (2026-06-14) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
@@ -26,22 +26,7 @@
 | v6.0 Doc-Discipline Substrate | 2026-06-11 (npm 4.4.0) | Phase 11 doc-discipline (7th L0) + Phase 12 G2 sentinel `checkPlanningSync` guard. 1188 tests. 详: `phases/11-doc-discipline/` + `phases/12-sentinel-gate/`. |
 | v7.0 Gap-Close & Memory Loop | 2026-06-14 (npm 4.5.0→4.6.0) | 7 phases (13–19) closing the first comet/Trellis comparison: doc-debloat, compact-real, multi-workflow (un-defer G5), learning-loop, spec-injection, CodeGraph opt-in, minimal adoption. + follow-ons: Phase 20 `update` (comet-update gap), Phase 21 ship-stage (4→5 stage), Phase 22 smart reminders (ship+retro), Phase 23 Windows install fix. 1335 tests. 详: `phases/13-…/` … `phases/23-…/` SUMMARYs. |
 | v8.0 Frictionless Entry | 2026-06-23 | 2 phases: 24 single-command resume entry (zero-arg `harnessed` you-are-here + `NEXT: auto\|manual\|done` + `--json`, comet `/comet` analog) + 25 value-prop/quickstart legibility (结果导向定位主句 + First 5 Minutes quickstart). 1352 tests. Audit passed 2/2. 详: `phases/24-resume-entry/` + `phases/25-quickstart/` SUMMARYs + `milestones/v8.0-MILESTONE-AUDIT.md`. |
-
----
-
-## Active milestone: v9.0 Cross-Harness
-
-**Goal** (architecture locked 2026-06-23 via inline design + `/plan-eng-review`, scope B; second-platform target pivoted `.agents/`→**Codex** at Phase 28 discuss 2026-06-24 after anti-stale verification): abstract harnessed's OWN hardcoded `~/.claude/` layout onto a `PlatformDescriptor` + `detectPlatform()` (claude-first, zero blast) + central config resolvers, proving portability by wiring a real second harness (**Codex `~/.codex/`**) as a capability-aware platform. No generator / no per-platform matrix (upstreams already portable, v8.0 verified). Design SoT: `v9.0-cross-harness-ARCHITECTURE.md` + Phase 28 pivot in `phases/28-codex-platform/28-CONTEXT.md`.
-
-### Phases (sketch — refine at execution per anti-stale; A detailed, B/C sketch)
-
-- [x] **Phase 26 (A): PlatformDescriptor seam** ✅ 2026-06-24 — descriptor type + `detectPlatform()` (override + claude-default) + `getHarnessedRoot()` routed through it. Zero behavior change (1357 tests, seam transparent). TDD. 详: `phases/26-platform-descriptor-seam/26-01-SUMMARY.md`.
-- [x] **Phase 27 (B): central config resolvers** ✅ 2026-06-24 — 5 resolvers (`getSettingsPath/Skills/Commands/PluginsRegistry/McpConfig`) + optional home base (D2 preserves capabilityResolver test param); folded the 2 near-duplicate env-key settings writers behind `settingsWriter.mergeSettingsEnvKey` (262→133L, D-C; ccHookAdd path-only swap, Installer pipeline untouched); 8 swap sites + 2 idempotent sites routed; `['.claude','.agents']` dual-probe left for Phase 28. Zero behavior change (1369 tests, +12 new, existing UNCHANGED). TDD. 详: `phases/27-config-resolvers/27-01-SUMMARY.md`.
-- [x] **Phase 28 (C): Codex second-platform proof** ✅ 2026-06-24 (pivoted from `.agents/`). Anti-stale verification (2 research subagents, host + docs) found `~/.agents/` is a skills-ONLY convention (no settings/commands/plugins/mcp), not a harness home → can't be a full second platform. User re-pointed target to **Codex** (`~/.codex/`, a real full harness; Cursor rejected — uninstalled + opaque app-DB surface). Scope: capability-aware `PlatformDescriptor` (`pluginsRegistry: string|null` + `supportsEnvKeyWrite`) + verified `codexDescriptor` (settings===mcp at `config.toml` TOML; skills at shared `~/.agents/skills`; commands at `~/.codex/prompts`; no registry) + `detectPlatform` precedence (`HARNESSED_PLATFORM`/`.platform` pin/claude-first probe) + `setup --platform codex` + dual-platform tests + idempotent dual-probe generalized via descriptor set. Writes = **capability-absent** (no TOML writer — CC env keys are CC-specific). claude default byte-identical (1394 tests, +25, 0 existing modified = regression-clean). TDD. 详: `phases/28-codex-platform/28-01-SUMMARY.md`.
-
-> **v9.0 Cross-Harness COMPLETE 3/3** (26 seam + 27 resolvers + 28 Codex proof). Seam admits a real divergent second harness (TOML config / shared skills / no plugin registry / settings===mcp / capability-absent writes) zero-blast on the claude incumbent. Next: `/gsd-audit-milestone` v9.0 → LIGHTWEIGHT close (ROADMAP+MILESTONES index rows + audit; no git-tag; phase dirs stay in `phases/`).
-
-> **D-A/D-B RESOLVED** (Phase 28 discuss, 2026-06-24): `.agents/` is partial skills-only — NOT the second platform. Pivoted to Codex (D-28a) with capability-absent writes (D-28b). D-C resolved in Phase 27. Adoption (stars/gif/DeepWiki) remains a non-phase marketing follow-on (~0 ★ vs comet 1.5k / Trellis 10.9k).
+| v9.0 Cross-Harness | 2026-06-24 | 3 phases: 26 PlatformDescriptor seam (A) + 27 central config resolvers + settingsWriter fold 262→133L (B) + 28 Codex second-platform proof (C, pivoted from `.agents/` after anti-stale verification). Capability-aware descriptor (`pluginsRegistry: string\|null` + `supportsEnvKeyWrite`); `detectPlatform` claude-first 5-level precedence; `setup --platform codex`; claude default byte-identical. 1394 tests (+42 over v8.0). Audit passed 3/3. 详: `phases/26-…/` + `phases/27-…/` + `phases/28-codex-platform/` SUMMARYs + `milestones/v9.0-MILESTONE-AUDIT.md`. |
 
 ---
 

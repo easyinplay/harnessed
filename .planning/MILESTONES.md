@@ -28,9 +28,10 @@
 | v6.0 Doc-Discipline Substrate | 2026-06-11 (npm 4.4.0) | G1 = 7th L0 discipline `doc-discipline.yaml` + STATE-line halt; G2 = `checkPlanningSync` guard in checkpoint complete. 1188 tests. | `phases/11-doc-discipline/` + `phases/12-sentinel-gate/` |
 | v7.0 Gap-Close & Memory Loop | 2026-06-14 (npm 4.5.0→4.6.0) | 7 phases (13–19) closing the 1st comet/Trellis comparison + follow-ons 20 (`update`) / 21 (ship-stage) / 22 (smart reminders) / 23 (Windows install fix). 1335 tests. | `phases/13-…/` … `phases/23-…/` |
 | v8.0 Frictionless Entry | 2026-06-23 | 2 phases: 24 single-command resume entry (zero-arg `harnessed` you-are-here + `NEXT` + `--json`, comet `/comet` analog) + 25 value-prop/quickstart legibility (结果导向定位主句 + First 5 Minutes quickstart). 1352 tests. Audit passed 2/2 (`milestones/v8.0-MILESTONE-AUDIT.md`). | `phases/24-resume-entry/` + `phases/25-quickstart/` |
+| v9.0 Cross-Harness | 2026-06-24 | 3 phases: 26 PlatformDescriptor seam (A) + 27 central config resolvers + settingsWriter fold (B) + 28 Codex second-platform proof (C, pivoted from `.agents/` after anti-stale verification — `~/.agents/` is skills-only, not a full harness home). Capability-aware descriptor + claude-first `detectPlatform` + `setup --platform codex`; claude default byte-identical. 1394 tests. Audit passed 3/3 (`milestones/v9.0-MILESTONE-AUDIT.md`). | `phases/26-platform-descriptor-seam/` + `phases/27-config-resolvers/` + `phases/28-codex-platform/` |
 
 ## Active
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v9.0 Cross-Harness | ◐ Architecture locked 2026-06-23 (scope B), Phase 26 (A) planned | Big bet ① — `PlatformDescriptor` + `detectPlatform()` (claude-first) + central config resolvers + `.agents/` 2nd-platform proof. Upstreams already portable (no generator / no matrix). eng-review APPROVED. 3 phases: 26 (A seam, TDD) / 27 (B resolvers) / 28 (C `.agents/` proof). Design SoT: `v9.0-cross-harness-ARCHITECTURE.md`. Next: execute Phase 26. |
+| _(none)_ | — | v9.0 shipped 2026-06-24. Next candidate: v10.0 i18n Surface (backlog, sketch only). |
