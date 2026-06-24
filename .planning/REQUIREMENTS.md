@@ -77,9 +77,9 @@
 |-------------|-------|--------|
 | REQ-v100-resolve-layer | Phase 29 | ✅ Done (1416 tests, en byte-identical) |
 | REQ-v100-sync-guard | Phase 30 | ✅ Done (1423 tests, drift-only hard gate) |
-| REQ-v100-translation | Phase 31 | ⬜ Not started |
+| REQ-v100-translation | Phase 31 | ✅ Done (26 zh-Hans siblings, guard exit 0) |
 | REQ-v100-cli-gap | Phase 32 | ⬜ Not started |
 | REQ-v100-yaml-i18n | Phase 33 | ⬜ Not started |
 | REQ-v100-validation | Phases 29–33 (final gate) | ⬜ Not started |
 
-Coverage: 2/6 (Phase 29 + 30 done 2026-06-24; Phase 33 added from Phase-31 research). v9.0 (3/3) shipped v4.7.0. No orphans.
+Coverage: 3/6 (Phase 29 + 30 + 31 done 2026-06-24; Phase 33 added from Phase-31 research). v9.0 (3/3) shipped v4.7.0. No orphans.

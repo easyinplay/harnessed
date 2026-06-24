@@ -7,10 +7,10 @@ last_updated: "2026-06-24T00:00:00.000Z"
 last_activity: 2026-06-24
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 40
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
+  percent: 60
 ---
 
 # STATE — harnessed
@@ -26,10 +26,10 @@ progress:
 
 ## Current Position
 
-- **v10.0 i18n Surface — executing (2/5 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24 (4→5 phases: Phase 33 added at Phase-31 plan when research split yaml from SKILL.md). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
+- **v10.0 i18n Surface — executing (3/5 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24 (4→5 phases: Phase 33 added at Phase-31 plan when research split yaml from SKILL.md). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
   - **Phase 29** ✅ locale-aware skill/workflow resolve layer — DONE 2026-06-24 (OPEN-2: render-step, dest single SKILL.md; en byte-identical). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`.
   - **Phase 30** ✅ en↔zh-Hans CI sync-guard — DONE 2026-06-24 (OPEN-1: structural parity; drift-only hard-fail gate, `scripts/check-skill-i18n-parity.mjs`; 1423 tests). 详: `phases/30-skill-i18n-sync-guard/30-01-SUMMARY.md`.
-  - **Phase 31** SKILL.md surface translation — **26** SKILL.md → zh-Hans siblings (~10,132 words, guard-validated; prose TDD-skip). yaml split to Phase 33. Depends 29+30.
+  - **Phase 31** ✅ SKILL.md surface translation — DONE 2026-06-24 (**26** zh-Hans siblings via 7 parallel subagents; guard exit 0, en byte-identical, vitest 1423/0; prose TDD-skip). 详: `phases/31-skill-translation/31-01-SUMMARY.md`.
   - **Phase 32** CLI message table gap close (zh-Hans 80→94). Independent.
   - **Phase 33** user-facing yaml i18n — locale-aware loader + zh-Hans siblings for `role-prompts.yaml` + `disciplines/*.yaml` (mechanism + translation; excludes internal capabilities/judgments). Added from Phase-31 research.
 - **Design SoT**: `.planning/v10.0-i18n-surface-DESIGN.md` (scope boundary / Approach A rationale / risks). REQUIREMENTS: `REQ-v100-*` (6 reqs).
@@ -58,5 +58,5 @@ progress:
 
 ## Session Continuity
 
-- **Next command**: `/gsd-plan-phase 31` (skill/workflow surface translation — 26 SKILL.md → zh-Hans siblings + 48 surfacing yaml strings; depends 29+30) when ready. Per 逐-gate, await explicit user word before planning the next phase.
+- **Next command**: `/gsd-plan-phase 32` (CLI message table gap close — `messages/zh-Hans.json` 80→94, 14 untranslated keys; independent small item) when ready. Per 逐-gate, await explicit user word before planning the next phase.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.

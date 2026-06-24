@@ -1,27 +1,20 @@
 # Phase 31 progress (PWF) — SKILL.md surface translation
 
-> Status + commits. Checklist: [task_plan.md](./task_plan.md). Spec: [PLAN.md](./PLAN.md).
+> Status + commits. Checklist: [task_plan.md](./task_plan.md). Spec: [PLAN.md](./PLAN.md). Summary: [31-01-SUMMARY.md](./31-01-SUMMARY.md).
 
-## Status: PLANNED (ready-to-execute) — not yet started
+## Status: COMPLETE (2026-06-24)
 
-Plan written 2026-06-24 (main-session hand-controlled). yaml-scope gray area resolved (SKILL.md-only;
-yaml → new Phase 33). Research: Explore subagent af427bcf2187e3408 (26-file inventory + batching +
-landmines + yaml classification). Next: spawn 7 translation subagents (B1–B7), then T31.V guard+gate.
+26 SKILL.md → zh-Hans siblings via 7 parallel translation subagents (B1–B7). Main-session
+T31.V verify: guard exit 0 (26 pairs parity) + en byte-identical + vitest 1423/0 + quality spot-check.
 
 ## Task status
 | Task | Status | Commit |
 |------|--------|--------|
-| T31.B1 Standalone (3) | ⬜ not started | — |
-| T31.B2 discuss (4) | ⬜ not started | — |
-| T31.B3 plan+ship masters (4) | ⬜ not started | — |
-| T31.B4 ship-preflight+task (5) | ⬜ not started | — |
-| T31.B5 task/test+verify masters (3) | ⬜ not started | — |
-| T31.B6 verify subs A (4) | ⬜ not started | — |
-| T31.B7 verify subs B (3) | ⬜ not started | — |
-| T31.V guard + gate | ⬜ not started | — |
+| T31.B1–B7 (26 siblings, 7 batches) | ✅ done | d1d2834 |
+| T31.V guard + gate verify | ✅ done (guard exit 0; vitest 1423/0; en byte-identical) | — |
 
 ## Baseline
-- Test baseline: **1423** (Phase 30). No new tests expected (prose); guard validates 26 real pairs.
+- Test baseline: **1423** (unchanged — prose, no new tests). Guard validates 26 real pairs (exit 0).
 
 ## Blocked
 - _(none)_
