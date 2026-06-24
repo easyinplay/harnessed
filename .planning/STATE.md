@@ -21,13 +21,13 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **_(no active milestone)_** — v10.0 i18n Surface CLOSED lightweight 2026-06-25 (5/5 phases, local-only, NOT npm-published). Next: release-pass decision (v10.0 → npm 4.8.0?) OR open a new milestone. Strategy/durable rationale: `milestones/v10.0-MILESTONE-AUDIT.md`.
-- **Latest shipped (npm)**: **v4.7.0** 2026-06-24 (npm `harnessed@4.7.0` dist-tag latest + GitHub release `v4.7.0`). Bundles **v8.0 + v9.0 + ECC** (additive, claude default byte-identical). **v10.0 built but UNPUBLISHED** (release-pass pending). Detail: ROADMAP shipped rows + `milestones/*-MILESTONE-AUDIT.md`.
+- **Current focus**: **_(no active milestone)_** — v10.0 i18n Surface SHIPPED + PUBLISHED (npm `harnessed@4.8.0` 2026-06-25). Next: open a new milestone OR maintenance. Strategy/durable rationale: `milestones/v10.0-MILESTONE-AUDIT.md`.
+- **Latest shipped (npm)**: **v4.8.0** 2026-06-25 (npm `harnessed@4.8.0` dist-tag latest + GitHub release `v4.8.0`, CI green 3-OS, provenance). Ships **v10.0 i18n Surface** (skill + yaml bilingual surface + en-default bug fix). Prior 4.7.0 bundled v8.0+v9.0+ECC. Detail: ROADMAP shipped rows + `milestones/*-MILESTONE-AUDIT.md`.
 
 ## Current Position
 
-- **v10.0 i18n Surface — SHIPPED (closed lightweight 2026-06-25, 5/5 phases, local-only).** Skill+workflow+yaml bilingual surface (en+zh-Hans) via Approach A parallel sibling files + 2 CI structural-parity hard-gates; en byte-identical; fixed a pre-existing en-default bug (English users were getting Chinese discipline text). 1446 tests. Per-phase evidence: `phases/29-…/` … `phases/33-yaml-i18n/`-`SUMMARY.md`. Audit (passed 6/6) + durable decisions: `milestones/v10.0-MILESTONE-AUDIT.md`. REQUIREMENTS `REQ-v100-*` 6/6.
-- **Local commits (NOT pushed)**: implementation + close per phase (29–33); latest `52ba1de`. npm still 4.7.0.
+- **v10.0 i18n Surface — SHIPPED + PUBLISHED as npm 4.8.0 (2026-06-25, 5/5 phases).** Skill+workflow+yaml bilingual surface (en+zh-Hans) via Approach A parallel sibling files + 2 CI structural-parity hard-gates; en byte-identical; fixed a pre-existing en-default bug (English users were getting Chinese discipline text). 1446 tests; CI green 3-OS. Per-phase evidence: `phases/29-…/` … `phases/33-yaml-i18n/`-`SUMMARY.md`. Audit (passed 6/6) + durable decisions: `milestones/v10.0-MILESTONE-AUDIT.md`. REQUIREMENTS `REQ-v100-*` 6/6.
+- **Released**: pushed `origin/main` + tag `v4.8.0` → `publish.yml` `npm publish --provenance` (latest) + `gh release create`. npm latest = 4.8.0.
 
 ## Accumulated Context
 
@@ -47,5 +47,5 @@ progress:
 
 ## Session Continuity
 
-- **Next: v10.0 RELEASE-PASS — PUSH GATE (awaiting user approval).** Release prep DONE: package.json 4.7.0→**4.8.0** + CHANGELOG `## [4.8.0] - 2026-06-25` (v10.0 i18n surface: Added/Changed/Fixed). Remaining (user-gated): **push main** → CI green 3-OS → tag `v4.8.0` → publish.yml fires `npm publish --provenance` + `gh release create` (notes = CHANGELOG `## [4.8.0]` section, [[github-release-on-publish]]). 4 local commits unpushed (`5e0b2de`/`52ba1de`/`d3a466c` + release-bump). NEVER push without explicit user word.
+- **v10.0 RELEASE COMPLETE 2026-06-25** — npm `harnessed@4.8.0` published (latest, provenance) + GitHub release `v4.8.0`; pushed main + tag; CI green 3-OS. No active milestone. **Next**: open a new milestone (backlog: v5.0 Spec 2/3, security hardening pass) OR maintenance. This commit = post-release doc sync.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.

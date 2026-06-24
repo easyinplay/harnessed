@@ -1,8 +1,8 @@
 # REQUIREMENTS — harnessed
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
-> Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v9.0 Cross-Harness (✅ npm v4.7.0).
-> Current published version: **v4.7.0** (bundles v8.0+v9.0+ECC). Active milestone: **v10.0 i18n Surface** — all 5 phases (29–33) DONE 2026-06-24, milestone-close pending.
+> Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v10.0 i18n Surface (✅ npm v4.8.0).
+> Current published version: **v4.8.0** (v10.0 i18n surface; prior 4.7.0 bundled v8.0+v9.0+ECC). Active milestone: **_(none)_** — v10.0 shipped + published 2026-06-25.
 
 ---
 
