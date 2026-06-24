@@ -29,9 +29,10 @@
 | v7.0 Gap-Close & Memory Loop | 2026-06-14 (npm 4.5.0→4.6.0) | 7 phases (13–19) closing the 1st comet/Trellis comparison + follow-ons 20 (`update`) / 21 (ship-stage) / 22 (smart reminders) / 23 (Windows install fix). 1335 tests. | `phases/13-…/` … `phases/23-…/` |
 | v8.0 Frictionless Entry | 2026-06-23 | 2 phases: 24 single-command resume entry (zero-arg `harnessed` you-are-here + `NEXT` + `--json`, comet `/comet` analog) + 25 value-prop/quickstart legibility (结果导向定位主句 + First 5 Minutes quickstart). 1352 tests. Audit passed 2/2 (`milestones/v8.0-MILESTONE-AUDIT.md`). | `phases/24-resume-entry/` + `phases/25-quickstart/` |
 | v9.0 Cross-Harness | 2026-06-24 | 3 phases: 26 PlatformDescriptor seam (A) + 27 central config resolvers + settingsWriter fold (B) + 28 Codex second-platform proof (C, pivoted from `.agents/` after anti-stale verification — `~/.agents/` is skills-only, not a full harness home). Capability-aware descriptor + claude-first `detectPlatform` + `setup --platform codex`; claude default byte-identical. 1394 tests. Audit passed 3/3 (`milestones/v9.0-MILESTONE-AUDIT.md`). | `phases/26-platform-descriptor-seam/` + `phases/27-config-resolvers/` + `phases/28-codex-platform/` |
+| v10.0 i18n Surface | 2026-06-25 | 5 phases: 29 locale-resolve-layer + 30 skill-i18n sync-guard + 31 SKILL.md translation (26 zh siblings) + 32 CLI message gap (zh 94/94) + 33 user-facing yaml i18n (locale loader + role-prompts/disciplines zh siblings + **fixed pre-existing en-default bug**; `language` excluded never-surfaced). Approach A parallel sibling files; 2 CI structural parity hard-gates. en byte-identical. 1446 tests. Audit passed 6/6 (`milestones/v10.0-MILESTONE-AUDIT.md`). **Local-only, NOT npm-published** (release-pass pending). | `phases/29-locale-resolve-layer/` … `phases/33-yaml-i18n/` |
 
 ## Active
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| _(none)_ | — | v9.0 shipped 2026-06-24. Next candidate: v10.0 i18n Surface (backlog, sketch only). |
+| _(none)_ | — | v10.0 closed 2026-06-25 (local, unpublished). Next: release-pass decision (v10.0 as npm 4.8.0?) OR a new milestone. |

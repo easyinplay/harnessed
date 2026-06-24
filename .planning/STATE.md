@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v10.0
 milestone_name: i18n Surface
-status: executing
-last_updated: "2026-06-24T00:00:00.000Z"
-last_activity: 2026-06-24
+status: shipped
+last_updated: "2026-06-25T00:00:00.000Z"
+last_activity: 2026-06-25
 progress:
   total_phases: 5
   completed_phases: 5
@@ -21,26 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **v10.0 i18n Surface** opened 2026-06-24 — extend i18n from the shipped CLI message layer to the skill/workflow surface (comet model: ship EN+中文 skills). Full bilingual scope (user override) + Approach A parallel sibling files. 4 phases 29–32. Strategy gate DONE (`v10.0-i18n-surface-DESIGN.md`: office-hours + ceo-review). Next action: `/gsd-plan-phase 29`.
-- **Latest shipped**: **v4.7.0** 2026-06-24 (npm `harnessed@4.7.0` dist-tag latest + GitHub release `v4.7.0`). Bundles **v8.0 Frictionless Entry + v9.0 Cross-Harness + ECC assimilation** (all additive backward-compat, claude default byte-identical). Detail: ROADMAP shipped rows + `milestones/v8.0-` / `v9.0-MILESTONE-AUDIT.md`.
+- **Current focus**: **_(no active milestone)_** — v10.0 i18n Surface CLOSED lightweight 2026-06-25 (5/5 phases, local-only, NOT npm-published). Next: release-pass decision (v10.0 → npm 4.8.0?) OR open a new milestone. Strategy/durable rationale: `milestones/v10.0-MILESTONE-AUDIT.md`.
+- **Latest shipped (npm)**: **v4.7.0** 2026-06-24 (npm `harnessed@4.7.0` dist-tag latest + GitHub release `v4.7.0`). Bundles **v8.0 + v9.0 + ECC** (additive, claude default byte-identical). **v10.0 built but UNPUBLISHED** (release-pass pending). Detail: ROADMAP shipped rows + `milestones/*-MILESTONE-AUDIT.md`.
 
 ## Current Position
 
-- **v10.0 i18n Surface — all 5 phases DONE (5/5), milestone-close pending.** Scope + approach locked at strategy gate; phase structure approved 2026-06-24 (4→5 phases: Phase 33 added at Phase-31 plan when research split yaml from SKILL.md). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase.
-  - **Phase 29** ✅ locale-aware skill/workflow resolve layer — DONE 2026-06-24 (OPEN-2: render-step, dest single SKILL.md; en byte-identical). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`.
-  - **Phase 30** ✅ en↔zh-Hans CI sync-guard — DONE 2026-06-24 (OPEN-1: structural parity; drift-only hard-fail gate, `scripts/check-skill-i18n-parity.mjs`; 1423 tests). 详: `phases/30-skill-i18n-sync-guard/30-01-SUMMARY.md`.
-  - **Phase 31** ✅ SKILL.md surface translation — DONE 2026-06-24 (**26** zh-Hans siblings via 7 parallel subagents; guard exit 0, en byte-identical, vitest 1423/0; prose TDD-skip). 详: `phases/31-skill-translation/31-01-SUMMARY.md`.
-  - **Phase 32** ✅ CLI message table gap close — DONE 2026-06-24 (zh-Hans 80→94 full parity + `i18n-parity.test.ts`; 16 keys added, 2 dead removed; vitest 1426/0). 详: `phases/32-cli-message-gap/32-01-SUMMARY.md`.
-  - **Phase 33** ✅ user-facing yaml i18n — DONE 2026-06-24 (`resolveLocaleYaml` loader + `role-prompts.zh-Hans.yaml` 24 roles + 5 discipline zh siblings; **fixed pre-existing en-default bug**: 4 Chinese-source bases→English, zh siblings HEAD-identical; `language` excluded never-surfaced; guard `check-yaml-i18n-parity.mjs` + ci; vitest 1446/0). 详: `phases/33-yaml-i18n/33-01-SUMMARY.md`.
-- **Design SoT**: `.planning/v10.0-i18n-surface-DESIGN.md` (scope boundary / Approach A rationale / risks). REQUIREMENTS: `REQ-v100-*` (6 reqs).
+- **v10.0 i18n Surface — SHIPPED (closed lightweight 2026-06-25, 5/5 phases, local-only).** Skill+workflow+yaml bilingual surface (en+zh-Hans) via Approach A parallel sibling files + 2 CI structural-parity hard-gates; en byte-identical; fixed a pre-existing en-default bug (English users were getting Chinese discipline text). 1446 tests. Per-phase evidence: `phases/29-…/` … `phases/33-yaml-i18n/`-`SUMMARY.md`. Audit (passed 6/6) + durable decisions: `milestones/v10.0-MILESTONE-AUDIT.md`. REQUIREMENTS `REQ-v100-*` 6/6.
+- **Local commits (NOT pushed)**: implementation + close per phase (29–33); latest `52ba1de`. npm still 4.7.0.
 
 ## Accumulated Context
-
-### Decisions (locked for v10.0)
-
-- **Full bilingual scope** — user override of office-hours narrow recommendation (finish-14-CLI-keys-only). Logged as defended-premise founder signal; not re-litigated. Bet is forward-looking (Chinese-audience intent), not observed-demand-driven.
-- **Approach A parallel sibling files** (`SKILL.md` + `SKILL.zh-Hans.md`) over B (string-table extend `t()`, anti-karpathy for 12k words of prose) and C (build-time split). Reuses v9.0 resolve layer + messages/{en,zh} file pattern. CI sync-guard makes dual-maintenance a checkable hard constraint.
-- 2 OPEN design questions deferred to per-phase plan (sync-guard granularity → Phase 30; resolve-vs-bundle → Phase 29). Main-session brainstorm before executor spawn.
 
 ### Invariants (must not break)
 
@@ -58,5 +47,5 @@ progress:
 
 ## Session Continuity
 
-- **Next: v10.0 MILESTONE-CLOSE + release-pass decision.** All 5 phases done (29–33), implementation committed (`5e0b2de`) + phase-33 digest. Milestone-close = LIGHTWEIGHT complete-milestone (per gsd-planning-reconciled-v5): move v10.0 row to ROADMAP shipped-index + add `milestones/v10.0-MILESTONE-AUDIT.md` + MILESTONES.md row; phase dirs stay in `phases/`; NO git-tag of vN.0. Then release-pass: decide whether v10.0 (skill+yaml i18n surface) ships as a new npm semver (e.g. 4.8.0) bundling since 4.7.0 — CHANGELOG `## [X.Y.Z]` header required before tagging (publish.yml auto gh-release). Per 逐-gate, await user word before each commit/advance.
+- **Next: v10.0 RELEASE-PASS decision** (milestone-close DONE 2026-06-25 — ROADMAP/MILESTONES shipped-index rows + `milestones/v10.0-MILESTONE-AUDIT.md` + STATE flip). Decide whether v10.0 (skill+yaml i18n surface) ships as a new npm semver (e.g. **4.8.0**) since 4.7.0. Release mechanics (per gsd-planning-reconciled-v5 + [[github-release-on-publish]]): bump package.json → CHANGELOG `## [4.8.0]` header → commit → **push main (user-gated)** → CI green 3-OS → tag `v4.8.0` → publish.yml fires npm publish --provenance + `gh release create`. Release lesson: don't let closed milestones pile up unreleased. OR open a new milestone instead. Per 逐-gate, await user word.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.
