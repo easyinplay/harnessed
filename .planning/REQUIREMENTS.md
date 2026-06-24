@@ -2,7 +2,7 @@
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
 > Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v9.0 Cross-Harness (✅ npm v4.7.0).
-> Current published version: **v4.7.0** (bundles v8.0+v9.0+ECC). Active milestone: **v10.0 i18n Surface** (bilingual skill/workflow surface, phases 29–32).
+> Current published version: **v4.7.0** (bundles v8.0+v9.0+ECC). Active milestone: **v10.0 i18n Surface** — all 5 phases (29–33) DONE 2026-06-24, milestone-close pending.
 
 ---
 
@@ -49,9 +49,10 @@
 - **Description**: translate the **26** `SKILL.md` prompt bodies (~10,132 words) into `.zh-Hans.md` siblings. Whole-file translation preserves prompt semantics (Approach-A). Prose translation (TDD-skip — mechanism already built in 29+30); the Phase 30 guard validates structural parity. yaml SPLIT to REQ-v100-yaml-i18n (Phase 33) per Phase-31 research (capabilities/judgments descriptions never surfaced; user-facing role-prompts/disciplines need a locale-aware loader = separate mechanism). Depends Phase 29 (resolve) + Phase 30 (guard).
 - **Acceptance**: all 26 `.zh-Hans.md` siblings present + sync-guard green (frontmatter keys / `{{capabilities.X}}` placeholders / heading-level shape parity); resolve layer surfaces the zh-Hans body under a zh locale end-to-end; en `SKILL.md` bodies byte-identical (untouched); green gate.
 
-### REQ-v100-yaml-i18n — user-facing yaml bilingual via locale loader (Phase 33)
+### REQ-v100-yaml-i18n — user-facing yaml bilingual via locale loader (Phase 33) ✅ Done 2026-06-24
 - **Description**: make the genuinely user-facing yaml strings bilingual via a locale-aware loader + `.zh-Hans.yaml` siblings: `role-prompts.yaml` (→ `commands/*.md` frontmatter + slash picker + subagent prompts via `buildAgentDef`) + `disciplines/*.yaml` `rule.description` (→ subagent prompt injection via `buildDisciplinesSection`). Mechanism (TDD: locale-aware loader) + translation. EXCLUDES internal `capabilities.yaml` + `judgments/*.yaml` `description` (runtime never reads them — see Out-of-scope). Added 2026-06-24 from Phase-31 research evidence.
 - **Acceptance**: locale loader selects the zh-Hans yaml under a zh locale, en default byte-identical; `harnessed prompt`/`commands` generation surface the zh strings under zh locale; sync-guard (or an analog) covers the yaml pairs; green gate.
+- **Delivered**: `resolveLocaleYaml` loader + `role-prompts.zh-Hans.yaml` (24 roles) + 5 discipline zh siblings; **fixed pre-existing en-default bug** (4 Chinese-source bases→English, zh siblings HEAD byte-identical); `language` excluded (never surfaced); guard `check-yaml-i18n-parity.mjs` + ci. e2e en→English / zh→Chinese. vitest 1446/0. `5e0b2de`.
 
 ### REQ-v100-cli-gap — close the CLI message table gap (Phase 32)
 - **Description**: translate the 14 untranslated keys so `messages/zh-Hans.json` reaches parity with `messages/en.json` (80→94). Independent of the skill-surface phases.
@@ -79,7 +80,7 @@
 | REQ-v100-sync-guard | Phase 30 | ✅ Done (1423 tests, drift-only hard gate) |
 | REQ-v100-translation | Phase 31 | ✅ Done (26 zh-Hans siblings, guard exit 0) |
 | REQ-v100-cli-gap | Phase 32 | ✅ Done (zh 94/94 parity + parity test) |
-| REQ-v100-yaml-i18n | Phase 33 | ⬜ Not started |
-| REQ-v100-validation | Phases 29–33 (final gate) | ⬜ Not started |
+| REQ-v100-yaml-i18n | Phase 33 | ✅ Done (1446 tests +20, en bug fixed, guard + ci) |
+| REQ-v100-validation | Phases 29–33 (final gate) | ✅ Done (biome+tsc clean, vitest 1446/0, additive, en byte-identical) |
 
-Coverage: 4/6 (Phase 29 + 30 + 31 + 32 done 2026-06-24; Phase 33 last). v9.0 (3/3) shipped v4.7.0. No orphans.
+Coverage: **6/6** (all v10.0 phases done 2026-06-24). v9.0 (3/3) shipped v4.7.0. No orphans. Next: milestone-close + release-pass decision (3-OS CI verifies on push).

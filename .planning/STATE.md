@@ -7,10 +7,10 @@ last_updated: "2026-06-24T00:00:00.000Z"
 last_activity: 2026-06-24
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-  percent: 80
+  completed_phases: 5
+  total_plans: 5
+  completed_plans: 5
+  percent: 100
 ---
 
 # STATE — harnessed
@@ -26,12 +26,12 @@ progress:
 
 ## Current Position
 
-- **v10.0 i18n Surface — executing (4/5 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24 (4→5 phases: Phase 33 added at Phase-31 plan when research split yaml from SKILL.md). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
+- **v10.0 i18n Surface — all 5 phases DONE (5/5), milestone-close pending.** Scope + approach locked at strategy gate; phase structure approved 2026-06-24 (4→5 phases: Phase 33 added at Phase-31 plan when research split yaml from SKILL.md). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase.
   - **Phase 29** ✅ locale-aware skill/workflow resolve layer — DONE 2026-06-24 (OPEN-2: render-step, dest single SKILL.md; en byte-identical). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`.
   - **Phase 30** ✅ en↔zh-Hans CI sync-guard — DONE 2026-06-24 (OPEN-1: structural parity; drift-only hard-fail gate, `scripts/check-skill-i18n-parity.mjs`; 1423 tests). 详: `phases/30-skill-i18n-sync-guard/30-01-SUMMARY.md`.
   - **Phase 31** ✅ SKILL.md surface translation — DONE 2026-06-24 (**26** zh-Hans siblings via 7 parallel subagents; guard exit 0, en byte-identical, vitest 1423/0; prose TDD-skip). 详: `phases/31-skill-translation/31-01-SUMMARY.md`.
   - **Phase 32** ✅ CLI message table gap close — DONE 2026-06-24 (zh-Hans 80→94 full parity + `i18n-parity.test.ts`; 16 keys added, 2 dead removed; vitest 1426/0). 详: `phases/32-cli-message-gap/32-01-SUMMARY.md`.
-  - **Phase 33** user-facing yaml i18n — locale-aware loader + zh-Hans siblings for `role-prompts.yaml` + `disciplines/*.yaml` (mechanism + translation; excludes internal capabilities/judgments). Added from Phase-31 research.
+  - **Phase 33** ✅ user-facing yaml i18n — DONE 2026-06-24 (`resolveLocaleYaml` loader + `role-prompts.zh-Hans.yaml` 24 roles + 5 discipline zh siblings; **fixed pre-existing en-default bug**: 4 Chinese-source bases→English, zh siblings HEAD-identical; `language` excluded never-surfaced; guard `check-yaml-i18n-parity.mjs` + ci; vitest 1446/0). 详: `phases/33-yaml-i18n/33-01-SUMMARY.md`.
 - **Design SoT**: `.planning/v10.0-i18n-surface-DESIGN.md` (scope boundary / Approach A rationale / risks). REQUIREMENTS: `REQ-v100-*` (6 reqs).
 
 ## Accumulated Context
@@ -58,5 +58,5 @@ progress:
 
 ## Session Continuity
 
-- **Next: EXECUTE Phase 33** (PLANNED ready-to-execute, `phases/33-yaml-i18n/PLAN.md` + findings.md self-contained; scope = Full, approved 2026-06-24). Resume: T33.1 locale loader (TDD, main-session) + parallel translation subagents (T33.2 role-prompts / T33.3 doc-discipline / T33.4 fix 5 Chinese-source disciplines: Chinese→`.zh-Hans.yaml` verbatim + base→English) + T33.5 `check-yaml-i18n-parity.mjs` guard (TDD) + ci wire + T33.6 gate+e2e. Baseline 1426. Then v10.0 milestone close (5/5) + release-pass consideration. Per 逐-gate, await user word before each commit/phase-advance.
+- **Next: v10.0 MILESTONE-CLOSE + release-pass decision.** All 5 phases done (29–33), implementation committed (`5e0b2de`) + phase-33 digest. Milestone-close = LIGHTWEIGHT complete-milestone (per gsd-planning-reconciled-v5): move v10.0 row to ROADMAP shipped-index + add `milestones/v10.0-MILESTONE-AUDIT.md` + MILESTONES.md row; phase dirs stay in `phases/`; NO git-tag of vN.0. Then release-pass: decide whether v10.0 (skill+yaml i18n surface) ships as a new npm semver (e.g. 4.8.0) bundling since 4.7.0 — CHANGELOG `## [X.Y.Z]` header required before tagging (publish.yml auto gh-release). Per 逐-gate, await user word before each commit/advance.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.
