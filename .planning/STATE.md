@@ -58,5 +58,5 @@ progress:
 
 ## Session Continuity
 
-- **Next command**: `/gsd-plan-phase 33` (user-facing yaml i18n — locale-aware loader + zh-Hans siblings for `role-prompts.yaml` + `disciplines/*.yaml`; mechanism + translation; the LAST v10.0 phase) when ready. Per 逐-gate, await explicit user word before planning the next phase.
+- **Next: EXECUTE Phase 33** (PLANNED ready-to-execute, `phases/33-yaml-i18n/PLAN.md` + findings.md self-contained; scope = Full, approved 2026-06-24). Resume: T33.1 locale loader (TDD, main-session) + parallel translation subagents (T33.2 role-prompts / T33.3 doc-discipline / T33.4 fix 5 Chinese-source disciplines: Chinese→`.zh-Hans.yaml` verbatim + base→English) + T33.5 `check-yaml-i18n-parity.mjs` guard (TDD) + ci wire + T33.6 gate+e2e. Baseline 1426. Then v10.0 milestone close (5/5) + release-pass consideration. Per 逐-gate, await user word before each commit/phase-advance.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.
