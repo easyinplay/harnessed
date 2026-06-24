@@ -1,21 +1,20 @@
 # Phase 32 progress (PWF) — CLI message gap close
 
-> Status + commits. Checklist: [task_plan.md](./task_plan.md). Spec: [PLAN.md](./PLAN.md).
+> Status + commits. Checklist: [task_plan.md](./task_plan.md). Spec: [PLAN.md](./PLAN.md). Summary: [32-01-SUMMARY.md](./32-01-SUMMARY.md).
 
-## Status: PLANNED (ready-to-execute) — not yet started
+## Status: COMPLETE (2026-06-24)
 
-Plan written 2026-06-24 (main-session hand-controlled). Research inline (key-diff: 16 missing all
-`uninstall.unified.*`, live; 2 dead `yes_dryrun_conflict` keys to remove). Next: T32.1 (TDD red).
+TDD red→green main-session. zh-Hans.json 80→94 (full parity), pinned by `i18n-parity.test.ts`.
 
 ## Task status
 | Task | Status | Commit |
 |------|--------|--------|
-| T32.1 parity test (red) | ⬜ not started | — |
-| T32.2 add 16 + remove 2 dead | ⬜ not started | — |
-| T32.3 gate | ⬜ not started | — |
+| T32.1 parity test (red→green) | ✅ done | f2f58af |
+| T32.2 add 16 + remove 2 dead | ✅ done | f2f58af |
+| T32.3 gate | ✅ done (biome+tsc clean; vitest 1426/0; en byte-identical) | — |
 
 ## Baseline
-- Test baseline: **1423**. +1 new parity test expected. 0 regressions.
+- Before: **1423**. After: **1426** (+3 parity cases). 0 regression.
 
 ## Blocked
 - _(none)_
