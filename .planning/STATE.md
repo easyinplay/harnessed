@@ -6,11 +6,11 @@ status: executing
 last_updated: "2026-06-24T00:00:00.000Z"
 last_activity: 2026-06-24
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 2
   total_plans: 2
   completed_plans: 2
-  percent: 50
+  percent: 40
 ---
 
 # STATE — harnessed
@@ -26,12 +26,13 @@ progress:
 
 ## Current Position
 
-- **v10.0 i18n Surface — executing (2/4 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24. Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
+- **v10.0 i18n Surface — executing (2/5 phases).** Scope + approach locked at strategy gate; phase structure approved 2026-06-24 (4→5 phases: Phase 33 added at Phase-31 plan when research split yaml from SKILL.md). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
   - **Phase 29** ✅ locale-aware skill/workflow resolve layer — DONE 2026-06-24 (OPEN-2: render-step, dest single SKILL.md; en byte-identical). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`.
   - **Phase 30** ✅ en↔zh-Hans CI sync-guard — DONE 2026-06-24 (OPEN-1: structural parity; drift-only hard-fail gate, `scripts/check-skill-i18n-parity.mjs`; 1423 tests). 详: `phases/30-skill-i18n-sync-guard/30-01-SUMMARY.md`.
-  - **Phase 31** skill/workflow surface translation (28 SKILL.md → zh-Hans siblings + 48 surfacing yaml). Depends 29+30.
+  - **Phase 31** SKILL.md surface translation — **26** SKILL.md → zh-Hans siblings (~10,132 words, guard-validated; prose TDD-skip). yaml split to Phase 33. Depends 29+30.
   - **Phase 32** CLI message table gap close (zh-Hans 80→94). Independent.
-- **Design SoT**: `.planning/v10.0-i18n-surface-DESIGN.md` (scope boundary / Approach A rationale / risks / 2 deferred opens). REQUIREMENTS: `REQ-v100-*` (5 reqs).
+  - **Phase 33** user-facing yaml i18n — locale-aware loader + zh-Hans siblings for `role-prompts.yaml` + `disciplines/*.yaml` (mechanism + translation; excludes internal capabilities/judgments). Added from Phase-31 research.
+- **Design SoT**: `.planning/v10.0-i18n-surface-DESIGN.md` (scope boundary / Approach A rationale / risks). REQUIREMENTS: `REQ-v100-*` (6 reqs).
 
 ## Accumulated Context
 

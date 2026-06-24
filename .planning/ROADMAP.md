@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). Active milestone: **v10.0 i18n Surface** (opened 2026-06-24, phases 29–32 sketch — refine per-phase at plan time).
+> Shipped history = indexed archive (do NOT re-plan). Active milestone: **v10.0 i18n Surface** (opened 2026-06-24, phases 29–33 — refine per-phase at plan time; Phase 33 added at Phase-31 plan when research split yaml from SKILL.md).
 > Current published npm: **4.7.0** (2026-06-24, bundles v8.0+v9.0+ECC) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
@@ -38,10 +38,11 @@
 |-------|------|-------|
 | 29 ✅ | locale-aware skill/workflow resolve layer | ✅ Done 2026-06-24 — render-step locale select, dest single `SKILL.md`, en byte-identical. 1416 tests (+22). 详: `phases/29-locale-resolve-layer/29-01-SUMMARY.md`. |
 | 30 ✅ | en↔zh-Hans CI sync-guard | ✅ Done 2026-06-24 — OPEN-1: structural parity (frontmatter keys / `{{capabilities}}` placeholders / heading-level shape). drift-only hard-fail CI gate `scripts/check-skill-i18n-parity.mjs` (sibling exists → must parity; absence OK → green until Phase 31). 1423 tests. 详: `phases/30-skill-i18n-sync-guard/30-01-SUMMARY.md`. |
-| 31 | skill/workflow surface translation | 28 `SKILL.md` (~12,332 words) → `.zh-Hans.md` siblings + user-facing strings in the 48 surfacing yaml. Prose translation; TDD only where mechanism, not prose. Depends on 29+30. |
+| 31 | SKILL.md surface translation | **26** `SKILL.md` (~10,132 words) → `.zh-Hans.md` siblings, guard-validated (Phase 30). Prose translation (TDD-skip; mechanism already built in 29+30). yaml SPLIT OUT → Phase 33 (Phase-31 research: capabilities/judgments descriptions never surfaced; user-facing role-prompts/disciplines need a locale-aware loader = separate mechanism). Depends 29+30. |
 | 32 | CLI message table gap close | `messages/zh-Hans.json` 80→94 (14 untranslated keys). Independent small item. |
+| 33 | user-facing yaml i18n | locale-aware loader + zh-Hans siblings for `role-prompts.yaml` (→ `commands/*.md` + subagent prompts) + `disciplines/*.yaml` (`rule.description` → subagent prompt injection). Mechanism (TDD) + translation. Excludes internal capabilities/judgments descriptions (never surfaced). Added 2026-06-24 from Phase-31 research. |
 
-**Out / deferred** (per design doc): 3rd language beyond en+zh-Hans (forward-compat hook only via `mapToSupported`); internal-only never-surfaced yaml; runtime LLM auto-translation (static files only).
+**Out / deferred** (per design doc + Phase-31 research): 3rd language beyond en+zh-Hans (forward-compat hook only via `mapToSupported`); **internal-only never-surfaced yaml** (`capabilities.yaml` + `judgments/*.yaml` `description` — runtime never reads them); runtime LLM auto-translation (static files only).
 
 ---
 

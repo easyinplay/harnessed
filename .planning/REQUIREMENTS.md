@@ -45,9 +45,13 @@
 - **Description**: CI check enforcing that every `SKILL.md` has a non-drifting `SKILL.zh-Hans.md` sibling (and the surfacing yaml carry both locales) — turning the dual-maintenance tax into a checkable hard constraint, not silent drift. OPEN-1 (granularity: presence-only vs structural heading/section parity) resolves at this phase's plan.
 - **Acceptance**: guard fails CI when a sibling is missing or drifts past the chosen granularity, passes when the pair is in parity; transparent failure message naming the offending file; runs in existing CI on all 3 OS; unit tests for fire/pass; green gate.
 
-### REQ-v100-translation — skill/workflow surface bilingual content (Phase 31)
-- **Description**: translate the 28 `SKILL.md` prompt bodies (~12,332 words) into `.zh-Hans.md` siblings + the user-facing `description`/prompt strings in the 48 surfacing yaml. Whole-file translation preserves prompt semantics (per Approach-A rationale). TDD only where mechanism (resolve wiring), not prose. Depends on Phase 29 (resolve) + Phase 30 (guard).
-- **Acceptance**: all 28 siblings present + sync-guard green; resolve layer surfaces the zh-Hans body under a zh locale end-to-end; en bodies unchanged (byte-identical default); surfacing yaml carry both locales; green gate.
+### REQ-v100-translation — SKILL.md surface bilingual content (Phase 31)
+- **Description**: translate the **26** `SKILL.md` prompt bodies (~10,132 words) into `.zh-Hans.md` siblings. Whole-file translation preserves prompt semantics (Approach-A). Prose translation (TDD-skip — mechanism already built in 29+30); the Phase 30 guard validates structural parity. yaml SPLIT to REQ-v100-yaml-i18n (Phase 33) per Phase-31 research (capabilities/judgments descriptions never surfaced; user-facing role-prompts/disciplines need a locale-aware loader = separate mechanism). Depends Phase 29 (resolve) + Phase 30 (guard).
+- **Acceptance**: all 26 `.zh-Hans.md` siblings present + sync-guard green (frontmatter keys / `{{capabilities.X}}` placeholders / heading-level shape parity); resolve layer surfaces the zh-Hans body under a zh locale end-to-end; en `SKILL.md` bodies byte-identical (untouched); green gate.
+
+### REQ-v100-yaml-i18n — user-facing yaml bilingual via locale loader (Phase 33)
+- **Description**: make the genuinely user-facing yaml strings bilingual via a locale-aware loader + `.zh-Hans.yaml` siblings: `role-prompts.yaml` (→ `commands/*.md` frontmatter + slash picker + subagent prompts via `buildAgentDef`) + `disciplines/*.yaml` `rule.description` (→ subagent prompt injection via `buildDisciplinesSection`). Mechanism (TDD: locale-aware loader) + translation. EXCLUDES internal `capabilities.yaml` + `judgments/*.yaml` `description` (runtime never reads them — see Out-of-scope). Added 2026-06-24 from Phase-31 research evidence.
+- **Acceptance**: locale loader selects the zh-Hans yaml under a zh locale, en default byte-identical; `harnessed prompt`/`commands` generation surface the zh strings under zh locale; sync-guard (or an analog) covers the yaml pairs; green gate.
 
 ### REQ-v100-cli-gap — close the CLI message table gap (Phase 32)
 - **Description**: translate the 14 untranslated keys so `messages/zh-Hans.json` reaches parity with `messages/en.json` (80→94). Independent of the skill-surface phases.
@@ -75,6 +79,7 @@
 | REQ-v100-sync-guard | Phase 30 | ✅ Done (1423 tests, drift-only hard gate) |
 | REQ-v100-translation | Phase 31 | ⬜ Not started |
 | REQ-v100-cli-gap | Phase 32 | ⬜ Not started |
-| REQ-v100-validation | Phases 29–32 (final gate) | ⬜ Not started |
+| REQ-v100-yaml-i18n | Phase 33 | ⬜ Not started |
+| REQ-v100-validation | Phases 29–33 (final gate) | ⬜ Not started |
 
-Coverage: 2/5 (Phase 29 + 30 done 2026-06-24). v9.0 (3/3) shipped v4.7.0. No orphans.
+Coverage: 2/6 (Phase 29 + 30 done 2026-06-24; Phase 33 added from Phase-31 research). v9.0 (3/3) shipped v4.7.0. No orphans.
