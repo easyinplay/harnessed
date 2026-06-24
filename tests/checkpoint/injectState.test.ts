@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   buildInjection,
@@ -237,7 +237,10 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     })
 
   it('reads workflows.json[repoKey] + repo LEARNINGS.md and emits both blocks; matches buildInjection', () => {
-    const repoRoot = resolve(join(tmp, 'repo'))
+    // realpathSync (not resolve): the child bin sees process.cwd() with symlinks
+    // resolved (macOS /var → /private/var), so the workflows.json key must match
+    // that canonical form, else repoKey(cwd) lookup misses. No-op on Linux/Windows.
+    const repoRoot = realpathSync(join(tmp, 'repo'))
     writeFileSync(
       join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
       JSON.stringify({
@@ -267,7 +270,10 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
   })
 
   it('Phase 22 — emits SHIP-READY / RETRO-DUE from envelope flags; matches buildInjection', () => {
-    const repoRoot = resolve(join(tmp, 'repo'))
+    // realpathSync (not resolve): the child bin sees process.cwd() with symlinks
+    // resolved (macOS /var → /private/var), so the workflows.json key must match
+    // that canonical form, else repoKey(cwd) lookup misses. No-op on Linux/Windows.
+    const repoRoot = realpathSync(join(tmp, 'repo'))
     const flagged: CurrentWorkflowV1Type = {
       ...wf,
       status: 'complete',
