@@ -7,8 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.7.0] - 2026-06-24
+
+Three bundled milestones reach users in one release: **v8.0 Frictionless Entry** (single-command resume entry + value-prop legibility), **v9.0 Cross-Harness** (platform abstraction + a real Codex second-platform proof), and the **ECC selective assimilation** optional upstream. All additive and backward-compatible — the claude default path is byte-identical (proven by full suites green with existing tests unchanged: 1352 at v8.0 → 1394 at v9.0).
+
 ### Added
 
+- **Single-command resume entry (v8.0 Phase 24)** — zero-arg `harnessed` now prints a "you-are-here" status digest (current milestone / phase / next action), a comet `/comet` analog. `NEXT: auto|manual|done` surfaces the recommended next step; `--json` emits the machine-readable form for tooling.
+- **Value-prop & quickstart legibility (v8.0 Phase 25)** — README leads with a 结果导向 (outcome-first) positioning sentence + a "First 5 Minutes" quickstart, so a new reader can tell what harnessed does and get running without spelunking the docs.
+- **`PlatformDescriptor` + `detectPlatform()` (v9.0 Phase 26/A)** — harnessed's own hardcoded `~/.claude/` layout is abstracted onto an 8-field descriptor + a claude-first detector (override → env → `.platform` pin → auto-probe → claude fallback). `getHarnessedRoot()` routes through it. Zero behavior change — the seam is transparent on the claude incumbent.
+- **Central config resolvers (v9.0 Phase 27/B)** — 5 resolvers (`getSettingsPath` / `getSkillsDir` / `getCommandsDir` / `getPluginsRegistry` / `getMcpConfigPath`) replace scattered path literals; the 2 near-duplicate env-key settings writers fold behind `settingsWriter.mergeSettingsEnvKey` (262→133 lines). 8 swap sites + 2 idempotent sites routed. Zero behavior change.
+- **Codex second-platform proof (v9.0 Phase 28/C)** — a real divergent second harness wired as a capability-aware platform: `PlatformDescriptor` gains `pluginsRegistry: string | null` + `supportsEnvKeyWrite`; a verified `codexDescriptor` (settings===mcp at `~/.codex/config.toml` TOML; skills at shared `~/.agents/skills`; commands at `~/.codex/prompts`; no plugin registry); `detectPlatform` 5-level precedence; `harnessed setup --platform codex`. Codex write surfaces are capability-absent (no TOML writer — the CC env keys are CC-specific). claude default byte-identical.
 - **ECC selective assimilation (ADR-0034)** — ECC (`affaan-m/ECC`) joins as an optional upstream via harnessed's assembly model, A posture (additive-first). New `manifests/optional/ecc.yaml` (cc-plugin-marketplace, pinned, stability=unstable) — opt-in: `harnessed setup` does NOT auto-install ECC (optional/ is not in the base glob; sister codegraph). `workflows/capabilities.yaml` gains Bucket 11: 10 additive entries (domain-pattern starter-set + cost-tracking + hookify-rules) on orthogonal `subtask.domain`/`needs_cost_report`/`needs_hook_authoring` axes. ECC per-language reviewers/build-resolvers fold as verify-dimension aliases under `code-review`/`gsd-debug` (single-fire). ECC's parallel orchestration/review/learning/multi-agent is NOT wired; checkpoint/ledger/compact/learning families are HARD-EXCLUDED (keystone engine collision). Governance: `/plan-eng-review` (5 findings absorbed) + inventory enumeration (246 skills/61 agents) + EE-5 gate. Opt-in: no-op for users without ECC installed.
 
 ## [4.6.0] - 2026-06-14
