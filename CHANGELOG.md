@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.9.0] - 2026-06-26
+
+**v11.0 State Machine Completion** — closes the v5.0 state-machine's deferred Spec 2 + Spec 3 (the only un-shipped tail of the State Machine Core era; Spec 1 shipped in 4.2.0). Three phases (34–36), all additive: no schema bump, the claude default install and the English default path are byte-identical, and a single-session (no session id) run behaves exactly as before. 1446 tests at v10.0 → 1470 at v11.0.
+
+### Added
+
+- **Session-scoped workflow state (Phase 34, Spec 2/D)** — two concurrent Claude Code sessions in the same repo now hold independent active-task pointers. The per-repo `workflows.json` store gains a composite key `<repoKey>::<sessionId>` (`activeKey()` in `src/checkpoint/workflowStore.ts`); reads fall back session-key → bare `repoKey` → null so an in-flight single-session workflow stays visible. With no session id the key is the bare `repoKey` (byte-identical to before). `retro_meta` / `learnings` stay repo-keyed.
+- **Opt-in per-turn injection hook (Phase 35, Spec 3/G)** — `manifests/optional/perturn-inject.yaml` registers a `UserPromptSubmit` hook that runs `bin/harnessed-inject-state.mjs` each turn, injecting the active session's `<workflow-state>` breadcrumb + relevance-filtered `<project-context>`. Opt-in (`harnessed install perturn-inject`); the bin exits 0 silently when there is no workflow.
+- **Cross-harness session seam (Phase 35)** — new `PlatformDescriptor.sessionIdEnv` field (claude → `CLAUDE_CODE_SESSION_ID`, codex → `null`) resolves the session-id env through the platform descriptor instead of a hardcoded Claude-Code variable. The inject bin is session-aware via the same model (3-tier session → bare → legacy read).
+- **Scale-adaptive verify strength (Phase 36, Spec 3/H)** — the per-turn breadcrumb now surfaces a `VERIFY-MODE: <light|full> — <directive>` line from the `verify_mode` already computed by `assessScale` and stored on the envelope, mirroring the existing `SHIP-READY` / `RETRO-DUE` advisory lines. Absent `verify_mode` → no line (byte-identical).
+
 ## [4.8.0] - 2026-06-25
 
 **v10.0 i18n Surface** — extends internationalization from the shipped CLI message layer (`messages/{en,zh-Hans}.json`) to the full skill / workflow / user-facing yaml surface, so Chinese-locale users get 中文 skills, slash-command descriptions, and subagent prompts. Five phases (29–33), all additive: the English default path is byte-identical and the claude default install is unchanged. Notably, Phase 33 also **fixes a pre-existing en-default bug** — English-locale users were receiving Chinese discipline text in spawned-subagent prompts because several discipline yaml were Chinese-authored. 1394 tests at v9.0 → 1446 at v10.0.
