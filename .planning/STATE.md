@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v11.0
-milestone_name: State Machine Completion
-status: planning
-last_updated: "2026-06-25T00:00:00.000Z"
-last_activity: 2026-06-25
+milestone: none
+milestone_name: (no active milestone — v11.0 closed lightweight)
+status: no-active-milestone
+last_updated: "2026-06-26T00:00:00.000Z"
+last_activity: 2026-06-26
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -21,18 +21,13 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **v11.0 State Machine Completion** opened 2026-06-25 — finish the v5.0 state-machine's deferred Spec 2 + Spec 3 (D session-scoped state / G per-turn injection hook / H scale-adaptive verify strength). Scope SoT = `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1 (Spec 2/3 lines 43-44). Strategy gate SKIPPED (scope pre-defined in the v5.0 design — transparent). Additive backward-compat. **Phase 34 + 35 + 36 DONE (local, green) — v11.0 ALL PHASES COMPLETE (3/3).** Next action: v11.0 milestone-close (LIGHTWEIGHT, sister to v10.0) + release decision — a separate gate.
+- **Current focus**: **No active milestone.** **v11.0 State Machine Completion CLOSED lightweight 2026-06-26** (3 phases 34–36, closed the v5.0 deferred Spec 2/3; audit passed 4/4 — `milestones/v11.0-MILESTONE-AUDIT.md`). Built local, npm UNPUBLISHED. Next action: a **v11.0 release-pass decision** (npm bump 4.8.0→4.9.0? — lean release per the v9.0 "don't pile up unpublished" lesson; a release pass is the natural place for `/office-hours` + `/plan-ceo-review` re-sequencing) and/or the next milestone direction.
 - **Latest shipped (npm)**: **v4.8.0** 2026-06-25 (npm `harnessed@4.8.0` latest + GitHub release `v4.8.0`, CI green 3-OS, provenance). Ships **v10.0 i18n Surface**. Prior 4.7.0 = v8.0+v9.0+ECC. Detail: ROADMAP shipped rows + `milestones/*-MILESTONE-AUDIT.md`.
 
 ## Current Position
 
-- **v11.0 State Machine Completion — in progress (1/3 phases; Phase 34 done).** Opened 2026-06-25 to close the v5.0 deferred specs. Full scope D+G+H (user-chosen). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at plan time.
-  - **Phase 34 — DONE (local, green) 2026-06-25.** session-scoped state (Spec 2/D). **composite key `<repoKey>::<sessionId>`** on the Phase 15 `workflows.json` store (sid = `process.env.CLAUDE_CODE_SESSION_ID`; no sid → bare repoKey, byte-identical). `activeKey()` + state.ts:91/109 rewire; retro_meta/learnings stay repoKey. No schema bump. 24/24 isolated + full serialized vitest exit 0 + PowerShell e2e PASS. Detail: `phases/34-session-scoped-state/34-01-SUMMARY.md`.
-  - **Phase 35 — DONE (local, green) 2026-06-25.** per-turn injection hook (Spec 3/G). Opt-in **UserPromptSubmit** manifest (`manifests/optional/perturn-inject.yaml`) wires the existing inject bin; bin made session-aware (3-tier session→bare→legacy). **Cross-harness session seam**: NEW `PlatformDescriptor.sessionIdEnv` (claude→`CLAUDE_CODE_SESSION_ID`, codex→null), which also **de-hardcoded Phase 34's activeKey**. vitest serialized 1466/0 + 2-session PowerShell e2e PASS. No schema bump. Detail: `phases/35-perturn-inject/35-01-SUMMARY.md`.
-  - **Phase 36 — DONE (local, green) 2026-06-26.** scale-adaptive verify strength (Spec 3/H). Surfaced the already-stored `verify_mode` as a `VERIFY-MODE: <mode> — <directive>` breadcrumb line (`buildWorkflowStateBlock` + bin parity), mirroring SHIP-READY/RETRO-DUE. No assessScale/threshold/schema change. vitest serialized 1470/0 + PowerShell e2e PASS. Detail: `phases/36-adaptive-verify/36-01-SUMMARY.md`.
-  - **Phase 35** per-turn injection hook (Spec 3/G) — render ledger state into the prompt each turn (Trellis per-turn-hook analog). Feasibility (CC session-level hook) → `/plan-eng-review` at this phase's plan.
-  - **Phase 36** scale-adaptive verify strength (Spec 3/H) — verify rigor scales with change size/risk.
-- **Scope SoT**: `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` (Spec 1 shipped v4.2.0; Spec 2/3 the deferred tail this milestone delivers). REQUIREMENTS: `REQ-v110-*` (4 reqs).
+- **No active milestone.** v11.0 (Phases 34–36) closed lightweight 2026-06-26 — collapsed to the ROADMAP/MILESTONES shipped-index + `milestones/v11.0-MILESTONE-AUDIT.md` (passed 4/4). Phase dirs 34–36 stay in `phases/`. Local commits `42273d5`/`03ddaf6`/`a489745`; built local, npm UNPUBLISHED.
+- **Open decisions (next gate)**: (1) **v11.0 release pass** — bump npm 4.8.0→4.9.0 + CHANGELOG `## [4.9.0]` header → tag → publish.yml auto npm-publish + gh-release (lean release; natural place for `/office-hours` + `/plan-ceo-review`). (2) next milestone direction (TBD). The v5.0 state-machine arc (Spec 1 v4.2.0 + Spec 2/3 v11.0) is now fully delivered.
 
 ## Accumulated Context
 
@@ -52,5 +47,5 @@ progress:
 
 ## Session Continuity
 
-- **v11.0 ALL 3 PHASES DONE 2026-06-26** (34 session-state + 35 per-turn hook + 36 adaptive-verify; v10.0 shipped+published npm 4.8.0 prior). Strategy gate skipped (scope in v5.0 design, declared). **Next: v11.0 milestone-close** (LIGHTWEIGHT, sister to v10.0: ROADMAP/MILESTONES shipped-index + `milestones/v11.0-MILESTONE-AUDIT.md` + collapse active block; phase dirs stay in `phases/`; NO git-tag vN.0) + release decision (npm bump? — office-hours/ceo-review re-sequence per v9.0 lesson). Baseline 1470 tests. Per 逐-gate, await user word before each commit/phase-advance.
+- **v11.0 CLOSED lightweight 2026-06-26** (34 session-state + 35 per-turn hook + 36 adaptive-verify; audit 4/4; ROADMAP/MILESTONES collapsed to shipped-index; phase dirs stay in `phases/`; NO git-tag vN.0). Built local, npm UNPUBLISHED (latest 4.8.0). **No active milestone. Next: v11.0 release-pass decision** (npm 4.8.0→4.9.0 + CHANGELOG `## [4.9.0]` → tag → publish.yml auto npm-publish + gh-release; lean release per v9.0 "don't pile up unpublished" lesson — natural place for `/office-hours` + `/plan-ceo-review`) and/or next milestone direction. Baseline 1470 tests. Per 逐-gate, await user word before each commit/release/phase-advance.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.
