@@ -35,4 +35,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v11.0 State Machine Completion | planning (0/3) | Opened 2026-06-25 — close the v5.0 deferred Spec 2 (session-scoped state) + Spec 3 (per-turn injection hook + scale-adaptive verify). Scope SoT `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1. Strategy gate skipped (pre-defined scope). Phases 34/35/36. |
+| v11.0 State Machine Completion | in progress (1/3) | Opened 2026-06-25 — close the v5.0 deferred Spec 2 (session-scoped state) + Spec 3 (per-turn injection hook + scale-adaptive verify). Scope SoT `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1. Strategy gate skipped (pre-defined scope). Phase 34 ✅ done (composite-key session state); 35/36 next. |

@@ -14,6 +14,7 @@ import {
   readCurrentWorkflow,
   writeCurrentWorkflow,
 } from '../../src/checkpoint/state.js'
+import { repoKey } from '../../src/checkpoint/workflowStore.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const env = (
@@ -111,5 +112,75 @@ describe('state.ts per-repo store (Phase 15)', () => {
     await writeCurrentWorkflow(env('anchored'))
     const legacy = JSON.parse(await readFile(legacyFile(), 'utf8'))
     expect(legacy.phase).toBe('anchored')
+  })
+})
+
+describe('state.ts session-scoped slot (Phase 34 — composite key)', () => {
+  let originalSid: string | undefined
+  beforeEach(() => {
+    originalSid = process.env.CLAUDE_CODE_SESSION_ID
+  })
+  afterEach(() => {
+    if (originalSid === undefined) delete process.env.CLAUDE_CODE_SESSION_ID
+    else process.env.CLAUDE_CODE_SESSION_ID = originalSid
+  })
+
+  const readKeys = async () => {
+    const store = JSON.parse(await readFile(storeFile(), 'utf8')) as {
+      workflows: Record<string, unknown>
+    }
+    return Object.keys(store.workflows)
+  }
+
+  it('with a session id, read/write land in the <repoKey>::<sid> slot', async () => {
+    process.chdir(join(tmp, 'repoA'))
+    process.env.CLAUDE_CODE_SESSION_ID = 's1'
+    await writeCurrentWorkflow(env('p-s1'))
+    expect((await readCurrentWorkflow())?.phase).toBe('p-s1')
+    expect(await readKeys()).toContain(`${repoKey()}::s1`)
+  })
+
+  it('without a session id, uses the bare repoKey slot (single-session path unchanged)', async () => {
+    process.chdir(join(tmp, 'repoA'))
+    delete process.env.CLAUDE_CODE_SESSION_ID
+    await writeCurrentWorkflow(env('bare'))
+    expect((await readCurrentWorkflow())?.phase).toBe('bare')
+    expect(await readKeys()).toEqual([repoKey()]) // exactly the bare key, no composite
+  })
+
+  it('read fallback — an in-flight bare-repoKey workflow stays visible once the session gets an id', async () => {
+    process.chdir(join(tmp, 'repoA'))
+    delete process.env.CLAUDE_CODE_SESSION_ID
+    await writeCurrentWorkflow(env('inflight'))
+    // session acquires an id mid-flight; no session-keyed slot exists yet → bare fallback
+    process.env.CLAUDE_CODE_SESSION_ID = 'late'
+    expect((await readCurrentWorkflow())?.phase).toBe('inflight')
+  })
+
+  it('two concurrent sessions in one repo hold independent slots (no collision)', async () => {
+    process.chdir(join(tmp, 'repoA'))
+    process.env.CLAUDE_CODE_SESSION_ID = 'sX'
+    await writeCurrentWorkflow(env('px'))
+    process.env.CLAUDE_CODE_SESSION_ID = 'sY'
+    await writeCurrentWorkflow(env('py'))
+
+    process.env.CLAUDE_CODE_SESSION_ID = 'sX'
+    expect((await readCurrentWorkflow())?.phase).toBe('px')
+    process.env.CLAUDE_CODE_SESSION_ID = 'sY'
+    expect((await readCurrentWorkflow())?.phase).toBe('py')
+
+    const keys = await readKeys()
+    expect(keys).toContain(`${repoKey()}::sX`)
+    expect(keys).toContain(`${repoKey()}::sY`)
+  })
+
+  it('a session-keyed slot shadows the bare slot (read prefers the session match)', async () => {
+    process.chdir(join(tmp, 'repoA'))
+    delete process.env.CLAUDE_CODE_SESSION_ID
+    await writeCurrentWorkflow(env('bare-old'))
+    process.env.CLAUDE_CODE_SESSION_ID = 'sNew'
+    await writeCurrentWorkflow(env('session-new'))
+    // read under sNew prefers the session slot, not the bare fallback
+    expect((await readCurrentWorkflow())?.phase).toBe('session-new')
   })
 })

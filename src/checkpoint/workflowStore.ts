@@ -69,6 +69,20 @@ export function repoKey(cwd: string = process.cwd()): string {
   return resolve(cwd)
 }
 
+/** Phase 34 (Spec 2/D) — session-scoped composite key. Overlays the CC session
+ *  dimension onto the per-repo store key so two concurrent sessions in one repo
+ *  hold independent workflow slots. `<repoKey>::<sessionId>` when
+ *  `CLAUDE_CODE_SESSION_ID` is set; the bare `repoKey` (byte-identical
+ *  single-session path) when it is absent/empty. The store value type is
+ *  unchanged — a composite key is just a legal `Record<string,…>` map-key, so no
+ *  schema bump. (CC exposes the session id to Bash-invoked CLI as
+ *  `CLAUDE_CODE_SESSION_ID`; subagents inherit the parent's id → same slot.) */
+export function activeKey(cwd: string = process.cwd()): string {
+  const base = repoKey(cwd)
+  const sid = process.env.CLAUDE_CODE_SESSION_ID?.trim()
+  return sid ? `${base}::${sid}` : base
+}
+
 /** Lock-FREE read. Returns the parsed store when `workflows.json` exists+valid.
  *  Otherwise, when a legacy singleton `current-workflow.json` exists+valid,
  *  surfaces it IN MEMORY under repoKey(cwd) (compat-read, D5) WITHOUT writing —

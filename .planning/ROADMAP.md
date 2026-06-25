@@ -37,11 +37,11 @@
 
 | Phase | Goal | Notes |
 |-------|------|-------|
-| 34 | session-scoped state (Spec 2/D) | `sessions/<CLAUDE_SESSION_ID>.json` ledger pointer + single-session fallback (no session id → today's `current-workflow.json` behavior). Additive, backward-compat. Trellis session-scoped-pointer analog. |
+| 34 | session-scoped state (Spec 2/D) | ✅ done (local) 2026-06-25 — **composite key `<repoKey>::<sessionId>`** on the Phase 15 `workflows.json` store (refined from the v5.0 `sessions/<id>.json` sketch, which predated Phase 15's repo-keyed store); `process.env.CLAUDE_CODE_SESSION_ID`, no sid → bare repoKey byte-identical. No schema bump. 详: `phases/34-session-scoped-state/34-01-SUMMARY.md` |
 | 35 | per-turn injection hook (Spec 3/G) | render the ledger state into the prompt each turn (today: generated command body calls `status --recover`; G = automatic per-turn). Feasibility of a CC session-level hook → `/plan-eng-review` at this phase's plan. |
 | 36 | scale-adaptive verify strength (Spec 3/H) | verify rigor scales with change size / risk (lighter for small diffs, stricter for large/risky). |
 
-**v11.0 Invariants**: additive optional (no schema bump — Spec 1 data structures were additive optional); single SoT (`current-workflow.json` / session file); KARPATHY-minimal; en + claude default byte-identical; full gate green vs the 1446 baseline; 3-OS CI green.
+**v11.0 Invariants**: additive optional (no schema bump — Spec 1 data structures were additive optional); single SoT (`workflows.json` store, composite-keyed); KARPATHY-minimal; en + claude default byte-identical; full gate green vs the 1456 baseline (1446 + 10 Phase 34 cells); 3-OS CI green.
 
 ---
 

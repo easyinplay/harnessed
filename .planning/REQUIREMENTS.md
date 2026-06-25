@@ -66,9 +66,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v110-session-state | Phase 34 | ⬜ Not started |
+| REQ-v110-session-state | Phase 34 | ✅ Done (local 2026-06-25) |
 | REQ-v110-perturn-inject | Phase 35 | ⬜ Not started |
 | REQ-v110-adaptive-verify | Phase 36 | ⬜ Not started |
 | REQ-v110-validation | Phases 34–36 (final gate) | ⬜ Not started |
 
-Coverage: 0/4 (v11.0 opened 2026-06-25, planning). v10.0 (6/6) shipped npm 4.8.0. No orphans. Next: `/gsd-plan-phase 34`.
+Coverage: 1/4 (v11.0 in progress 2026-06-25; Phase 34 green local). v10.0 (6/6) shipped npm 4.8.0. No orphans. Next: plan Phase 35 (per-turn injection hook, Spec 3/G).

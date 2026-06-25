@@ -21,7 +21,13 @@ import {
   type CurrentWorkflowV1Type,
   type SubProgressEntryType,
 } from './schema/index.js'
-import { readStoreRaw, repoKey, type WorkflowStoreV1Type, writeStoreRaw } from './workflowStore.js'
+import {
+  activeKey,
+  readStoreRaw,
+  repoKey,
+  type WorkflowStoreV1Type,
+  writeStoreRaw,
+} from './workflowStore.js'
 
 // v3.0.3 — lazy path resolution so HARNESSED_ROOT_OVERRIDE in e2e tests
 // applies before the first write (module-level const captured the path
@@ -88,7 +94,12 @@ export async function readCurrentWorkflow(): Promise<CurrentWorkflowV1Type | nul
   // and transparently surfaces a legacy singleton in-memory (compat-read, D5),
   // so the CD-5 fail-soft null behavior is preserved.
   const store = await readStoreRaw()
-  return store.workflows[repoKey()] ?? null
+  // Phase 34 (Spec 2/D) — prefer this session's composite slot; fall back to the
+  // bare repoKey slot so an in-flight workflow started without session-scoping
+  // (or surfaced by readStoreRaw's legacy compat-read under repoKey) stays
+  // visible. With no session id, activeKey()===repoKey() → the fallback branch is
+  // redundant and the path is byte-identical to the pre-Phase-34 single slot.
+  return store.workflows[activeKey()] ?? store.workflows[repoKey()] ?? null
 }
 
 /** Lock-FREE write kernel: self-validate (loadPhases.ts pattern) + create parent
@@ -106,7 +117,10 @@ async function writeCurrentWorkflowUnlocked(s: CurrentWorkflowV1Type): Promise<v
   // Phase 15 — write into the active repo's slot in the per-repo store. The
   // store IS the SoT (one write path → no stale-index drift; fixes rogue F4/F5).
   const store = await readStoreRaw()
-  store.workflows[repoKey()] = s
+  // Phase 34 — write into this session's composite slot (bare repoKey when no
+  // session id). No migration of a pre-existing bare slot: the read-fallback
+  // covers it until this session-keyed slot exists, then shadows it.
+  store.workflows[activeKey()] = s
   await writeStoreRaw(store)
   // D7 dual-write — mirror the active repo's envelope to the legacy singleton
   // as a one-release rollback anchor (a code revert still finds current data).

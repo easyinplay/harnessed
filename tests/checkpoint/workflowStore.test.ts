@@ -11,6 +11,7 @@ import { Value } from '@sinclair/typebox/value'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CurrentWorkflowV1Type } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
 import {
+  activeKey,
   listWorkflows,
   readStoreRaw,
   repoKey,
@@ -51,6 +52,53 @@ describe('repoKey', () => {
     const k = repoKey(deep)
     expect(resolve(deep).startsWith(k)).toBe(true) // ancestor-or-self of deep
     expect(existsSync(join(k, '.git')) || k === resolve(deep)).toBe(true)
+  })
+})
+
+// ── activeKey (Phase 34 — session-scoped composite key) ──
+
+describe('activeKey', () => {
+  let tmp: string
+  let originalSid: string | undefined
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), 'activekey-'))
+    mkdirSync(join(tmp, '.git'))
+    originalSid = process.env.CLAUDE_CODE_SESSION_ID
+  })
+  afterEach(() => {
+    if (originalSid === undefined) delete process.env.CLAUDE_CODE_SESSION_ID
+    else process.env.CLAUDE_CODE_SESSION_ID = originalSid
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  it('appends ::<sid> when CLAUDE_CODE_SESSION_ID is set', () => {
+    process.env.CLAUDE_CODE_SESSION_ID = 'sess-abc'
+    expect(activeKey(tmp)).toBe(`${resolve(tmp)}::sess-abc`)
+  })
+
+  it('is the bare repoKey when no session id (byte-identical single-session path)', () => {
+    delete process.env.CLAUDE_CODE_SESSION_ID
+    expect(activeKey(tmp)).toBe(repoKey(tmp))
+    expect(activeKey(tmp)).toBe(resolve(tmp))
+  })
+
+  it('is the bare repoKey when session id is empty or whitespace', () => {
+    process.env.CLAUDE_CODE_SESSION_ID = '   '
+    expect(activeKey(tmp)).toBe(repoKey(tmp))
+    process.env.CLAUDE_CODE_SESSION_ID = ''
+    expect(activeKey(tmp)).toBe(repoKey(tmp))
+  })
+
+  it('trims surrounding whitespace from the session id', () => {
+    process.env.CLAUDE_CODE_SESSION_ID = '  sess-xyz  '
+    expect(activeKey(tmp)).toBe(`${resolve(tmp)}::sess-xyz`)
+  })
+
+  it('threads cwd through to repoKey (composite built on the resolved repo root)', () => {
+    process.env.CLAUDE_CODE_SESSION_ID = 'sess-deep'
+    const deep = join(tmp, 'a', 'b')
+    mkdirSync(deep, { recursive: true })
+    expect(activeKey(deep)).toBe(`${resolve(tmp)}::sess-deep`)
   })
 })
 
