@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v10.0
-milestone_name: i18n Surface
-status: shipped
+milestone: v11.0
+milestone_name: State Machine Completion
+status: planning
 last_updated: "2026-06-25T00:00:00.000Z"
 last_activity: 2026-06-25
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 100
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -21,13 +21,16 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **_(no active milestone)_** — v10.0 i18n Surface SHIPPED + PUBLISHED (npm `harnessed@4.8.0` 2026-06-25). Next: open a new milestone OR maintenance. Strategy/durable rationale: `milestones/v10.0-MILESTONE-AUDIT.md`.
-- **Latest shipped (npm)**: **v4.8.0** 2026-06-25 (npm `harnessed@4.8.0` dist-tag latest + GitHub release `v4.8.0`, CI green 3-OS, provenance). Ships **v10.0 i18n Surface** (skill + yaml bilingual surface + en-default bug fix). Prior 4.7.0 bundled v8.0+v9.0+ECC. Detail: ROADMAP shipped rows + `milestones/*-MILESTONE-AUDIT.md`.
+- **Current focus**: **v11.0 State Machine Completion** opened 2026-06-25 — finish the v5.0 state-machine's deferred Spec 2 + Spec 3 (D session-scoped state / G per-turn injection hook / H scale-adaptive verify strength). Scope SoT = `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1 (Spec 2/3 lines 43-44). Strategy gate SKIPPED (scope pre-defined in the v5.0 design — transparent). Additive backward-compat. Next action: `/gsd-plan-phase 34`.
+- **Latest shipped (npm)**: **v4.8.0** 2026-06-25 (npm `harnessed@4.8.0` latest + GitHub release `v4.8.0`, CI green 3-OS, provenance). Ships **v10.0 i18n Surface**. Prior 4.7.0 = v8.0+v9.0+ECC. Detail: ROADMAP shipped rows + `milestones/*-MILESTONE-AUDIT.md`.
 
 ## Current Position
 
-- **v10.0 i18n Surface — SHIPPED + PUBLISHED as npm 4.8.0 (2026-06-25, 5/5 phases).** Skill+workflow+yaml bilingual surface (en+zh-Hans) via Approach A parallel sibling files + 2 CI structural-parity hard-gates; en byte-identical; fixed a pre-existing en-default bug (English users were getting Chinese discipline text). 1446 tests; CI green 3-OS. Per-phase evidence: `phases/29-…/` … `phases/33-yaml-i18n/`-`SUMMARY.md`. Audit (passed 6/6) + durable decisions: `milestones/v10.0-MILESTONE-AUDIT.md`. REQUIREMENTS `REQ-v100-*` 6/6.
-- **Released**: pushed `origin/main` + tag `v4.8.0` → `publish.yml` `npm publish --provenance` (latest) + `gh release create`. npm latest = 4.8.0.
+- **v11.0 State Machine Completion — planning (0/3 phases).** Opened 2026-06-25 to close the v5.0 deferred specs. Full scope D+G+H (user-chosen). Sketch-then-refine: ROADMAP carries phase one-liners; full PLAN per-phase at `/gsd-plan-phase`.
+  - **Phase 34** session-scoped state (Spec 2/D) — `sessions/<CLAUDE_SESSION_ID>.json` ledger pointer + single-session fallback (no session id → today's `current-workflow.json` behavior). Additive.
+  - **Phase 35** per-turn injection hook (Spec 3/G) — render ledger state into the prompt each turn (Trellis per-turn-hook analog). Feasibility (CC session-level hook) → `/plan-eng-review` at this phase's plan.
+  - **Phase 36** scale-adaptive verify strength (Spec 3/H) — verify rigor scales with change size/risk.
+- **Scope SoT**: `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` (Spec 1 shipped v4.2.0; Spec 2/3 the deferred tail this milestone delivers). REQUIREMENTS: `REQ-v110-*` (4 reqs).
 
 ## Accumulated Context
 
@@ -47,5 +50,5 @@ progress:
 
 ## Session Continuity
 
-- **v10.0 RELEASE COMPLETE 2026-06-25** — npm `harnessed@4.8.0` published (latest, provenance) + GitHub release `v4.8.0`; pushed main + tag; CI green 3-OS. No active milestone. **Next**: open a new milestone (backlog: v5.0 Spec 2/3, security hardening pass) OR maintenance. This commit = post-release doc sync.
+- **v11.0 State Machine Completion OPENED 2026-06-25** (v10.0 shipped+published npm 4.8.0 prior). Strategy gate skipped (scope in v5.0 design, declared). Full scope D+G+H. **Next: `/gsd-plan-phase 34`** (session-scoped state, Spec 2/D) — main-session hand-driven plan (GSD fork-skills fire-and-die). Baseline 1446 tests. Per 逐-gate, await user word before each commit/phase-advance.
 - **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.

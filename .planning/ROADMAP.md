@@ -31,13 +31,17 @@
 
 ---
 
-## Active milestone — _(none)_
+## Active milestone — v11.0 State Machine Completion (opened 2026-06-25)
 
-> v10.0 i18n Surface closed **lightweight** + **PUBLISHED as npm 4.8.0** 2026-06-25 (5/5 phases, → shipped-index above). Phase dirs 29–33 stay in `phases/NN/`. Durable rationale + per-phase evidence: `milestones/v10.0-MILESTONE-AUDIT.md` (passed 6/6) + each `phases/<NN>/`-`SUMMARY.md`.
->
-> **Next**: open a new milestone from the backlog (v5.0 Spec 2/3; security hardening pass) OR maintenance.
+> Close the v5.0 state-machine's **deferred Spec 2 + Spec 3** (the only un-shipped tail of the State Machine Core era). Scope SoT = `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1 (Spec 2 = D session-scoped state; Spec 3 = G per-turn injection hook + H scale-adaptive verify). Strategy gate (office-hours + ceo-review) **skipped** — scope is pre-defined in the v5.0 design doc (transparent declaration, not a fresh product direction). Full scope D+G+H (user-chosen). Additive backward-compat. Sketch-then-refine — phase one-liners below, full PLAN per-phase at `/gsd-plan-phase`.
 
-**v10.0 Out / deferred** (recorded in the audit): 3rd language beyond en+zh-Hans (forward-compat hook only via `mapToSupported`); internal-only never-surfaced yaml (`capabilities.yaml` + `judgments/*.yaml` `description`); `language.yaml` left mixed-but-never-surfaced; runtime LLM auto-translation (static files only).
+| Phase | Goal | Notes |
+|-------|------|-------|
+| 34 | session-scoped state (Spec 2/D) | `sessions/<CLAUDE_SESSION_ID>.json` ledger pointer + single-session fallback (no session id → today's `current-workflow.json` behavior). Additive, backward-compat. Trellis session-scoped-pointer analog. |
+| 35 | per-turn injection hook (Spec 3/G) | render the ledger state into the prompt each turn (today: generated command body calls `status --recover`; G = automatic per-turn). Feasibility of a CC session-level hook → `/plan-eng-review` at this phase's plan. |
+| 36 | scale-adaptive verify strength (Spec 3/H) | verify rigor scales with change size / risk (lighter for small diffs, stricter for large/risky). |
+
+**v11.0 Invariants**: additive optional (no schema bump — Spec 1 data structures were additive optional); single SoT (`current-workflow.json` / session file); KARPATHY-minimal; en + claude default byte-identical; full gate green vs the 1446 baseline; 3-OS CI green.
 
 ---
 

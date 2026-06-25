@@ -28,59 +28,47 @@
 | REQ-v7.0-gapclose-memory | v4.5.0→4.6.0 | ✅ Done | 7+4 phases (13–23) closing comet/Trellis comparison: doc-debloat, compact-real, multi-workflow, learning-loop, spec-injection, CodeGraph opt-in, minimal adoption + `update`/ship-stage/smart-reminders/Windows-install. 1335 tests. |
 | REQ-v8.0-frictionless-entry | (4.7.0 bundle) | ✅ Done (2/2) | Phase 24 single-command resume entry (zero-arg `harnessed` + `NEXT` + `--json`) + Phase 25 value-prop/quickstart legibility. 1352 tests. Audit `milestones/v8.0-MILESTONE-AUDIT.md`. |
 | REQ-v9.0-cross-harness | v4.7.0 | ✅ Done (3/3) | Phase 26 PlatformDescriptor seam + Phase 27 central config resolvers + settingsWriter fold + Phase 28 Codex second-platform proof. Capability-aware descriptor; claude default byte-identical. 1394 tests. Audit `milestones/v9.0-MILESTONE-AUDIT.md`. |
+| REQ-v100-i18n-surface | v4.8.0 | ✅ Done (6/6) | Phases 29–33: locale-aware skill resolve + 2 CI structural-parity sync-guards + 26 SKILL.zh-Hans.md + CLI message 94/94 + user-facing yaml i18n (role-prompts/disciplines zh siblings) + en-default discipline-language bug fix. en byte-identical. 1446 tests. Audit `milestones/v10.0-MILESTONE-AUDIT.md`. |
 
 ---
 
-## Active forward scope — v10.0 i18n Surface
+## Active forward scope — v11.0 State Machine Completion
 
-> Source: ROADMAP big-bet ② + strategy gate `v10.0-i18n-surface-DESIGN.md` (office-hours full-scope user override + ceo-review release-before-v10.0 re-sequence, released as v4.7.0).
-> Additive-only; reuses v9.0 platform-aware resolve layer (`detectPlatform`/resolvers) + the messages/{en,zh} file-level pattern. No architecture change.
-> Decisions locked: **full bilingual scope** (28 SKILL.md + 48 surfacing yaml + 14 CLI keys); **Approach A parallel sibling files** (`SKILL.md` + `SKILL.zh-Hans.md`). 2 open design questions (sync-guard granularity; resolve-vs-bundle) deferred to per-phase plan.
+> Source: ROADMAP active milestone + scope SoT `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1 (Spec 1 shipped v4.2.0; Spec 2/3 the deferred tail). Strategy gate (office-hours + ceo-review) skipped — scope pre-defined in the v5.0 design, not a fresh direction (transparent).
+> Additive optional (Spec 1's data structures were additive optional — no schema bump); single SoT (`current-workflow.json` / session file); KARPATHY-minimal. No architecture change beyond the locked v5.0 design.
+> Full scope D+G+H (user-chosen 2026-06-25). Phase 35 (per-turn hook) feasibility → `/plan-eng-review` at its plan.
 
-### REQ-v100-resolve-layer — locale-aware skill/workflow file selection (Phase 29) ✅ Done 2026-06-24
-- **Description**: extend the v9.0 resolve layer so the skill/workflow surface selects `SKILL.md` vs `SKILL.zh-Hans.md` by resolved locale (reuse the existing `HARNESSED_LANG`→POSIX→Intl→en chain + `mapToSupported` zh*→zh-Hans). OPEN-2 (resolve-vs-bundle: install both siblings alongside vs select-exclusively-by-locale at install time) resolves at this phase's plan (main-session brainstorm before executor spawn).
-- **Acceptance**: resolver returns the zh-Hans sibling under a zh locale and the en file otherwise / when no sibling exists (en-default never breaks); claude default install byte-identical when locale=en; per-case unit tests; biome + tsc + vitest green vs the 1394-test baseline.
+### REQ-v110-session-state — session-scoped ledger pointer (Phase 34, Spec 2/D)
+- **Description**: key the workflow ledger pointer by `CLAUDE_SESSION_ID` (`sessions/<CLAUDE_SESSION_ID>.json`) with a single-session fallback — when no session id is present, behavior is byte-identical to today's global `current-workflow.json` singleton. Lets concurrent sessions hold independent active-task pointers (Trellis session-scoped-pointer analog; the v5.0 design's deferred D).
+- **Acceptance**: with a session id, the ledger reads/writes the session-scoped file; without one, the global `current-workflow.json` path is used unchanged (existing tests green); `status --recover` resolves the correct ledger per session; additive (no schema bump); biome + tsc + vitest green vs the 1446 baseline.
 
-### REQ-v100-sync-guard — en↔zh-Hans CI pair-parity hard gate (Phase 30)
-- **Description**: CI check enforcing that every `SKILL.md` has a non-drifting `SKILL.zh-Hans.md` sibling (and the surfacing yaml carry both locales) — turning the dual-maintenance tax into a checkable hard constraint, not silent drift. OPEN-1 (granularity: presence-only vs structural heading/section parity) resolves at this phase's plan.
-- **Acceptance**: guard fails CI when a sibling is missing or drifts past the chosen granularity, passes when the pair is in parity; transparent failure message naming the offending file; runs in existing CI on all 3 OS; unit tests for fire/pass; green gate.
+### REQ-v110-perturn-inject — per-turn state injection hook (Phase 35, Spec 3/G)
+- **Description**: render the ledger "you are here / next" state into the prompt automatically each turn (today this is manual via the generated ORCHESTRATOR command body calling `status --recover`). Trellis per-turn-hook analog. Approach + CC session-level hook feasibility resolved at this phase's plan via `/plan-eng-review`.
+- **Acceptance**: a per-turn mechanism surfaces the current ledger position without an explicit `status --recover` call; opt-in / non-breaking when absent; claude default unaffected when no active workflow; unit tests for fire/skip; green gate.
 
-### REQ-v100-translation — SKILL.md surface bilingual content (Phase 31)
-- **Description**: translate the **26** `SKILL.md` prompt bodies (~10,132 words) into `.zh-Hans.md` siblings. Whole-file translation preserves prompt semantics (Approach-A). Prose translation (TDD-skip — mechanism already built in 29+30); the Phase 30 guard validates structural parity. yaml SPLIT to REQ-v100-yaml-i18n (Phase 33) per Phase-31 research (capabilities/judgments descriptions never surfaced; user-facing role-prompts/disciplines need a locale-aware loader = separate mechanism). Depends Phase 29 (resolve) + Phase 30 (guard).
-- **Acceptance**: all 26 `.zh-Hans.md` siblings present + sync-guard green (frontmatter keys / `{{capabilities.X}}` placeholders / heading-level shape parity); resolve layer surfaces the zh-Hans body under a zh locale end-to-end; en `SKILL.md` bodies byte-identical (untouched); green gate.
+### REQ-v110-adaptive-verify — scale-adaptive verify strength (Phase 36, Spec 3/H)
+- **Description**: scale verify rigor to change size / risk — lighter verification for small surgical diffs, stricter (more evidence / checks) for large or risky changes. The v5.0 design's deferred H.
+- **Acceptance**: verify strength is selected from a change-scale signal (e.g. diff size / declared risk); small-change path stays fast, large-change path enforces stricter evidence; deterministic + testable thresholds; unit tests; green gate.
 
-### REQ-v100-yaml-i18n — user-facing yaml bilingual via locale loader (Phase 33) ✅ Done 2026-06-24
-- **Description**: make the genuinely user-facing yaml strings bilingual via a locale-aware loader + `.zh-Hans.yaml` siblings: `role-prompts.yaml` (→ `commands/*.md` frontmatter + slash picker + subagent prompts via `buildAgentDef`) + `disciplines/*.yaml` `rule.description` (→ subagent prompt injection via `buildDisciplinesSection`). Mechanism (TDD: locale-aware loader) + translation. EXCLUDES internal `capabilities.yaml` + `judgments/*.yaml` `description` (runtime never reads them — see Out-of-scope). Added 2026-06-24 from Phase-31 research evidence.
-- **Acceptance**: locale loader selects the zh-Hans yaml under a zh locale, en default byte-identical; `harnessed prompt`/`commands` generation surface the zh strings under zh locale; sync-guard (or an analog) covers the yaml pairs; green gate.
-- **Delivered**: `resolveLocaleYaml` loader + `role-prompts.zh-Hans.yaml` (24 roles) + 5 discipline zh siblings; **fixed pre-existing en-default bug** (4 Chinese-source bases→English, zh siblings HEAD byte-identical); `language` excluded (never surfaced); guard `check-yaml-i18n-parity.mjs` + ci. e2e en→English / zh→Chinese. vitest 1446/0. `5e0b2de`.
-
-### REQ-v100-cli-gap — close the CLI message table gap (Phase 32)
-- **Description**: translate the 14 untranslated keys so `messages/zh-Hans.json` reaches parity with `messages/en.json` (80→94). Independent of the skill-surface phases.
-- **Acceptance**: `zh-Hans.json` key-set == `en.json` key-set (94/94); en-default byte-identical; existing i18n `t()` tests green + a parity assertion; green gate.
-
-### REQ-v100-validation — additive, backward-compatible, green
-- **Description**: all additions additive (new sibling files + new CI guard + new tests; no en-default behavior mutated; claude default byte-identical); full quality gate green; Windows CI green.
-- **Acceptance**: biome + tsc clean; full vitest green; no regression vs the 1394-test baseline; CI green on 3 platforms.
+### REQ-v110-validation — additive, backward-compatible, green
+- **Description**: all additions additive optional (session file + per-turn hook + adaptive thresholds; no existing behavior mutated when the new signals are absent; claude + single-session default byte-identical); full quality gate green; 3-OS CI green.
+- **Acceptance**: biome + tsc clean; full vitest green; no regression vs the 1446 baseline; CI green on 3 platforms.
 
 ---
 
 ## Backlog (deferred, future milestones)
 
-- **v5.0 Spec 2** — D: session-scoped state (`sessions/<CLAUDE_SESSION_ID>.json`) + single-session fallback.
-- **v5.0 Spec 3** — G: per-turn injection hook + H: scale-adaptive verify strength.
 - Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency `sigintTrap.ts`/`before-commit.ts`.
 
 ---
 
-## Traceability (v10.0 forward scope)
+## Traceability (v11.0 forward scope)
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| REQ-v100-resolve-layer | Phase 29 | ✅ Done (1416 tests, en byte-identical) |
-| REQ-v100-sync-guard | Phase 30 | ✅ Done (1423 tests, drift-only hard gate) |
-| REQ-v100-translation | Phase 31 | ✅ Done (26 zh-Hans siblings, guard exit 0) |
-| REQ-v100-cli-gap | Phase 32 | ✅ Done (zh 94/94 parity + parity test) |
-| REQ-v100-yaml-i18n | Phase 33 | ✅ Done (1446 tests +20, en bug fixed, guard + ci) |
-| REQ-v100-validation | Phases 29–33 (final gate) | ✅ Done (biome+tsc clean, vitest 1446/0, additive, en byte-identical) |
+| REQ-v110-session-state | Phase 34 | ⬜ Not started |
+| REQ-v110-perturn-inject | Phase 35 | ⬜ Not started |
+| REQ-v110-adaptive-verify | Phase 36 | ⬜ Not started |
+| REQ-v110-validation | Phases 34–36 (final gate) | ⬜ Not started |
 
-Coverage: **6/6** (all v10.0 phases done 2026-06-24). v9.0 (3/3) shipped v4.7.0. No orphans. Next: milestone-close + release-pass decision (3-OS CI verifies on push).
+Coverage: 0/4 (v11.0 opened 2026-06-25, planning). v10.0 (6/6) shipped npm 4.8.0. No orphans. Next: `/gsd-plan-phase 34`.

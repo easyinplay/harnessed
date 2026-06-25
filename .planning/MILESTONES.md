@@ -35,4 +35,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| _(none)_ | — | v10.0 shipped + published npm 4.8.0 (2026-06-25). Next: open a new milestone (backlog) OR maintenance. |
+| v11.0 State Machine Completion | planning (0/3) | Opened 2026-06-25 — close the v5.0 deferred Spec 2 (session-scoped state) + Spec 3 (per-turn injection hook + scale-adaptive verify). Scope SoT `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1. Strategy gate skipped (pre-defined scope). Phases 34/35/36. |
