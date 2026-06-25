@@ -35,4 +35,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v11.0 State Machine Completion | in progress (2/3) | Opened 2026-06-25 — close the v5.0 deferred Spec 2 (session-scoped state) + Spec 3 (per-turn injection hook + scale-adaptive verify). Scope SoT `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1. Strategy gate skipped (pre-defined scope). Phase 34 ✅ (composite-key session state) + Phase 35 ✅ (per-turn UserPromptSubmit hook + cross-harness session seam); Phase 36 (scale-adaptive verify) last. |
+| v11.0 State Machine Completion | all phases done (3/3) — pending close | Opened 2026-06-25; all phases green local 2026-06-26 — closed the v5.0 deferred Spec 2 (session-scoped state) + Spec 3 (per-turn injection hook + scale-adaptive verify). Phase 34 ✅ (composite-key session state) + 35 ✅ (per-turn UserPromptSubmit hook + cross-harness session seam) + 36 ✅ (VERIFY-MODE breadcrumb). vitest serialized 1470/0. Next: LIGHTWEIGHT milestone-close + release decision. |

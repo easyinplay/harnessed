@@ -8,14 +8,14 @@ Surface the already-computed `verify_mode` ('light'|'full') as an advisory line 
 
 ## Tasks
 
-- [ ] **T36.1** surface verify_mode in the breadcrumb (TDD red→green)
-  - `src/checkpoint/injectState.ts` `buildWorkflowStateBlock`: add `VERIFY-MODE: <mode> — <directive>` line when `wf.verify_mode` set (after RETRO-DUE, before `</workflow-state>`)
-  - `bin/harnessed-inject-state.mjs` `workflowStateBlock`: parity replica
-  - tests `tests/checkpoint/injectState.test.ts`: full → `VERIFY-MODE: full`; light → `VERIFY-MODE: light`; absent → no line; bin parity
-  - directive: full → "run full verification (large/risky change: >5 files / >4 subs / >3 reqs)"; light → "scope verification to the changed surface (small change)"
-- [ ] **T36.2** gate + e2e
-  - biome --write clean; tsc exit 0; full vitest **serialized** exit 0 vs 1466 baseline + new cells
-  - PowerShell e2e: envelope verify_mode='full' → bin emits VERIFY-MODE: full; 'light' → light; absent → none
+- [x] **T36.1** surface verify_mode in the breadcrumb — DONE 29/29
+  - `src/checkpoint/injectState.ts` `buildWorkflowStateBlock`: `VERIFY-MODE: <mode> — <directive>` when `wf.verify_mode` set (after RETRO-DUE, before `</workflow-state>`) ✓
+  - `bin/harnessed-inject-state.mjs` `workflowStateBlock`: parity replica ✓
+  - tests: full → `VERIFY-MODE: full`; light → `VERIFY-MODE: light`; absent → no line; bin-parity cell ✓
+  - directives byte-identical TS+bin ✓
+- [x] **T36.2** gate + e2e — DONE
+  - biome clean ✓; tsc exit 0 ✓; full vitest **serialized 1470/0** ✓ (1466 + 4 cells)
+  - PowerShell e2e PASS ✓: verify_mode='full' → `VERIFY-MODE: full`; 'light' → light directive; absent → no line
 
 ## Constraints
 - TDD mandatory (advisory surfaced to agent; low blast radius but state-rendering parity matters).

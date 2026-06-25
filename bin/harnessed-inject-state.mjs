@@ -93,6 +93,14 @@ function workflowStateBlock(wf) {
       'RETRO-DUE: enough phases completed since the last retro — run /retro, then `harnessed retro --done`',
     )
   }
+  // Phase 36 — scale-adaptive verify_mode directive (parity with injectState.ts).
+  if (wf.verify_mode === 'full') {
+    lines.push(
+      'VERIFY-MODE: full — run full verification (large/risky change: >5 files / >4 subs / >3 reqs)',
+    )
+  } else if (wf.verify_mode === 'light') {
+    lines.push('VERIFY-MODE: light — scope verification to the changed surface (small change)')
+  }
   lines.push('</workflow-state>')
   return lines.join('\n')
 }

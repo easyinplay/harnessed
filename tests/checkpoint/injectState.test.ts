@@ -92,6 +92,23 @@ describe('buildWorkflowStateBlock', () => {
     expect(out).not.toContain('SHIP-READY')
     expect(out).not.toContain('RETRO-DUE')
   })
+
+  // Phase 36 (Spec 3/H) — surface the scale-adaptive verify_mode as a directive.
+  it('emits a VERIFY-MODE: full directive when verify_mode is full', () => {
+    const out = buildWorkflowStateBlock(reminderWf({ verify_mode: 'full' }))
+    expect(out).toContain('VERIFY-MODE: full')
+    expect(out).toContain('run full verification')
+  })
+
+  it('emits a VERIFY-MODE: light directive when verify_mode is light', () => {
+    const out = buildWorkflowStateBlock(reminderWf({ verify_mode: 'light' }))
+    expect(out).toContain('VERIFY-MODE: light')
+    expect(out).toContain('scope verification to the changed surface')
+  })
+
+  it('emits no VERIFY-MODE line when verify_mode is unset (byte-identical to today)', () => {
+    expect(buildWorkflowStateBlock(reminderWf({}))).not.toContain('VERIFY-MODE')
+  })
 })
 
 // ── Phase 17: parseLearnings / filterRelevantLearnings / selectWithinBudget ──
@@ -331,5 +348,21 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     const stdout = runBin({ HARNESSED_PLATFORM: 'codex', CLAUDE_CODE_SESSION_ID: 'ignored' }).trim()
     expect(stdout).toContain('phase: task') // bare slot — codex has no session env
     expect(stdout).toBe(buildInjection(repoRoot, bareWf, '', DEFAULT_INJECT_BUDGET).trim())
+  })
+
+  it('Phase 36 — the bin emits the VERIFY-MODE directive from verify_mode; matches buildInjection', () => {
+    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const scaled: CurrentWorkflowV1Type = { ...wf, status: 'complete', verify_mode: 'full' }
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: { [repoRoot]: scaled },
+      }),
+    )
+    const stdout = runBin().trim()
+    expect(stdout).toContain('VERIFY-MODE: full')
+    expect(stdout).toContain('run full verification')
+    expect(stdout).toBe(buildInjection(repoRoot, scaled, '', DEFAULT_INJECT_BUDGET).trim())
   })
 })

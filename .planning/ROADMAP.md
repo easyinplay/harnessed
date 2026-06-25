@@ -39,9 +39,9 @@
 |-------|------|-------|
 | 34 | session-scoped state (Spec 2/D) | ✅ done (local) 2026-06-25 — **composite key `<repoKey>::<sessionId>`** on the Phase 15 `workflows.json` store (refined from the v5.0 `sessions/<id>.json` sketch, which predated Phase 15's repo-keyed store); `process.env.CLAUDE_CODE_SESSION_ID`, no sid → bare repoKey byte-identical. No schema bump. 详: `phases/34-session-scoped-state/34-01-SUMMARY.md` |
 | 35 | per-turn injection hook (Spec 3/G) | ✅ done (local) 2026-06-25 — opt-in **UserPromptSubmit** manifest (`manifests/optional/perturn-inject.yaml`) wires the existing inject bin; bin made session-aware (3-tier session→bare→legacy). **Cross-harness session seam** (NEW `PlatformDescriptor.sessionIdEnv`: claude→`CLAUDE_CODE_SESSION_ID`, codex→null) also de-hardcoded Phase 34's activeKey. Feasibility self-resolved (no eng-review). No schema bump. 详: `phases/35-perturn-inject/35-01-SUMMARY.md` |
-| 36 | scale-adaptive verify strength (Spec 3/H) | verify rigor scales with change size / risk (lighter for small diffs, stricter for large/risky). |
+| 36 | scale-adaptive verify strength (Spec 3/H) | ✅ done (local) 2026-06-26 — surfaced the already-stored `verify_mode` as a `VERIFY-MODE: <mode> — <directive>` breadcrumb line (`buildWorkflowStateBlock` + bin parity), mirroring SHIP-READY/RETRO-DUE. No assessScale/threshold/schema change. 详: `phases/36-adaptive-verify/36-01-SUMMARY.md` |
 
-**v11.0 Invariants**: additive optional (no schema bump — Spec 1 data structures were additive optional); single SoT (`workflows.json` store, composite-keyed); KARPATHY-minimal; en + claude default byte-identical; full gate green vs the 1466 baseline (1446 + 10 Phase 34 + 10 Phase 35 cells); 3-OS CI green.
+**v11.0 Invariants**: additive optional (no schema bump — Spec 1 data structures were additive optional); single SoT (`workflows.json` store, composite-keyed); KARPATHY-minimal; en + claude default byte-identical; full gate green vs the 1470 baseline (1446 + 10 Phase 34 + 10 Phase 35 + 4 Phase 36 cells); 3-OS CI green.
 
 ---
 
