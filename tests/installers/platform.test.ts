@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
 import {
   claudeDescriptor,
+  codexDescriptor,
   detectPlatform,
   getCommandsDir,
   getMcpConfigPath,
@@ -85,6 +86,37 @@ describe('platform — PlatformDescriptor seam (Phase A)', () => {
     process.env[ENV_KEY] = '/tmp/x'
     expect(getHarnessedRoot()).toBe('/tmp/x')
     expect(getHarnessedRoot()).toBe(detectPlatform().stateRoot)
+  })
+})
+
+// Phase 35 T35.1 — sessionIdEnv on PlatformDescriptor (cross-harness session seam).
+// TDD red-first. The session-id env name is platform-specific (claude has one,
+// codex does not yet) → it belongs on the descriptor, not hardcoded in activeKey.
+describe('platform — sessionIdEnv (Phase 35)', () => {
+  let savedOverride: string | undefined
+  beforeEach(() => {
+    savedOverride = process.env[ENV_KEY]
+    delete process.env[ENV_KEY]
+  })
+  afterEach(() => {
+    if (savedOverride === undefined) delete process.env[ENV_KEY]
+    else process.env[ENV_KEY] = savedOverride
+  })
+
+  it('claudeDescriptor() exposes the CC session-id env name', () => {
+    expect(claudeDescriptor().sessionIdEnv).toBe('CLAUDE_CODE_SESSION_ID')
+  })
+
+  it('codexDescriptor() has no session-id env (null → single-session fallback)', () => {
+    expect(codexDescriptor().sessionIdEnv).toBeNull()
+  })
+
+  it('detectPlatform() default (claude) exposes the claude session-id env name', () => {
+    expect(detectPlatform().sessionIdEnv).toBe('CLAUDE_CODE_SESSION_ID')
+  })
+
+  it('claudeDescriptor(home) keeps sessionIdEnv home-independent', () => {
+    expect(claudeDescriptor('/home/x').sessionIdEnv).toBe('CLAUDE_CODE_SESSION_ID')
   })
 })
 

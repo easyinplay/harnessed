@@ -9,21 +9,20 @@ injection read the current session's slot (Phase 34) via the cross-harness Platf
 
 ## Tasks (dependency order)
 
-- [ ] **T35.1** `sessionIdEnv: string | null` on PlatformDescriptor (TDD red→green)
-  - `src/installers/lib/platform.ts`: interface field + claude→`'CLAUDE_CODE_SESSION_ID'` / codex→`null`
-  - tests `tests/installers/platform.test.ts`: claude / codex / detectPlatform default
-- [ ] **T35.2** `activeKey()` via the seam (TDD red→green) — de-hardcode Phase 34
-  - `src/checkpoint/workflowStore.ts`: `detectPlatform().sessionIdEnv` → read that env (null → bare)
-  - tests `tests/checkpoint/workflowStore.test.ts`: claude+sid → composite; HARNESSED_PLATFORM=codex → bare even with CLAUDE_CODE_SESSION_ID set; no env → bare
-- [ ] **T35.3** bin session-aware slot read (TDD red→green via parity)
-  - `bin/harnessed-inject-state.mjs`: session env (HARNESSED_PLATFORM→map, default claude) → 3-tier read session→bare→legacy
-  - tests `tests/checkpoint/injectState.test.ts`: deterministic session env in existing parity cells + NEW session-keyed read cell; stdout still byte-matches buildInjection
-- [ ] **T35.4** opt-in UserPromptSubmit manifest (NEW)
-  - `manifests/optional/perturn-inject.yaml` (mirror dashboard-autospawn): cc-hook-add / UserPromptSubmit / `node bin/harnessed-inject-state.mjs`
-  - test: validate vs `schemas/manifest.v1.schema.json`; install resolves optional path; setup auto-glob excludes
-- [ ] **T35.5** gate + e2e
-  - biome --write clean; tsc exit 0; full vitest **serialized** exit 0 vs 1456 baseline + new cells
-  - PowerShell e2e: session-scoped inject reads the right session's state; codex platform → bare; manifest installs a UserPromptSubmit entry idempotently
+- [x] **T35.1** `sessionIdEnv: string | null` on PlatformDescriptor — DONE 32/32
+  - `src/installers/lib/platform.ts`: field + claude→`'CLAUDE_CODE_SESSION_ID'` / codex→`null` ✓
+  - tests `tests/installers/platform.test.ts`: claude / codex / detectPlatform default / home-independent ✓
+- [x] **T35.2** `activeKey()` via the seam — DONE 25/25 (de-hardcode Phase 34)
+  - `src/checkpoint/workflowStore.ts`: `detectPlatform().sessionIdEnv` → read that env (null → bare) ✓
+  - tests: claude+sid → composite; `HARNESSED_PLATFORM=codex` → bare even with CLAUDE_CODE_SESSION_ID set ✓
+- [x] **T35.3** bin session-aware slot read — DONE 25/25 (parity preserved)
+  - `bin/harnessed-inject-state.mjs`: `sessionIdEnvName()` (HARNESSED_PLATFORM→map) → 3-tier session→bare→legacy; `.planning` fs paths stay on bare repoKey ✓
+  - tests: deterministic session env in existing cells + session-keyed read cell + codex bare cell; stdout byte-matches buildInjection ✓
+- [x] **T35.4** opt-in UserPromptSubmit manifest — DONE 3/3
+  - `manifests/optional/perturn-inject.yaml` (mirror dashboard-autospawn) ✓; `tests/installers/perturn-inject-manifest.test.ts` (schema-valid + UserPromptSubmit + optional/ path) ✓
+- [x] **T35.5** gate + e2e — DONE
+  - biome clean ✓; tsc exit 0 ✓; full vitest **serialized 1466/0** ✓ (1456 + 10 cells)
+  - PowerShell e2e PASS ✓: two sessions (A=task, B=verify) → coexisting composite slots, session-aware bin injects each session's OWN workflow
 
 ## Constraints
 - TDD mandatory (state read seam + cross-harness abstraction — error cost high).

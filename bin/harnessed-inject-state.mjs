@@ -38,11 +38,28 @@ function harnessedRoot() {
     : join(homedir(), '.claude', 'harnessed')
 }
 
-// workflows.json[repoKey] first, then the legacy singleton (dual-write anchor).
-function readWorkflow(root, key) {
+// Phase 35 — mirror PlatformDescriptor.sessionIdEnv (src/installers/lib/platform.ts)
+// for the hot path: which env var carries the active session id. Minimal replica —
+// HARNESSED_PLATFORM selects (default claude); codex has none. State-root selection
+// (.platform pin / auto-probe) is orthogonal and already handled via
+// HARNESSED_ROOT_OVERRIDE, so it is not re-derived here. The TS `activeKey` uses the
+// full descriptor; the parity test sets matching signals.
+function sessionIdEnvName() {
+  const platform = (process.env.HARNESSED_PLATFORM || 'claude').trim()
+  if (platform === 'codex') return null
+  return 'CLAUDE_CODE_SESSION_ID' // claude (default)
+}
+
+// Phase 35 — try the session-scoped slot first, then the bare repoKey slot, then
+// the legacy singleton (dual-write anchor). `keys` is ordered most→least specific.
+function readWorkflow(root, keys) {
   try {
     const store = JSON.parse(readFileSync(join(root, 'workflows.json'), 'utf8'))
-    if (store && store.workflows && store.workflows[key]) return store.workflows[key]
+    if (store?.workflows) {
+      for (const k of keys) {
+        if (store.workflows[k]) return store.workflows[k]
+      }
+    }
   } catch {}
   try {
     return JSON.parse(readFileSync(join(root, 'current-workflow.json'), 'utf8'))
@@ -140,8 +157,14 @@ function projectContextBlock(learnings, contextExcerpt) {
 
 try {
   const root = harnessedRoot()
+  // `key` is the repo ROOT directory (used for .planning/ fs paths below). The
+  // workflow LOOKUP uses the session-scoped composite key first (Phase 34/35),
+  // falling back to the bare repoKey, then the legacy singleton. The composite
+  // key is NOT a real directory — only the bare repoKey is.
   const key = repoKey(process.cwd())
-  const wf = readWorkflow(root, key)
+  const envName = sessionIdEnvName()
+  const sid = envName ? process.env[envName]?.trim() : undefined
+  const wf = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
   if (!wf) process.exit(0)
 
   const budget = Number(process.env.HARNESSED_INJECT_BUDGET) || DEFAULT_INJECT_BUDGET

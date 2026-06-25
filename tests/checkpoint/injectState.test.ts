@@ -224,17 +224,24 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
   }
 
   const binPath = join(__dirname, '..', '..', 'bin', 'harnessed-inject-state.mjs')
-  const runBin = () =>
-    execFileSync('node', [binPath], {
-      env: {
-        ...process.env,
-        HOME: join(tmp, 'root'),
-        USERPROFILE: join(tmp, 'root'),
-        HARNESSED_ROOT_OVERRIDE: join(tmp, 'root', '.claude', 'harnessed'),
-      },
+  // Phase 35 — clear the session-env signals the parent process may carry (the
+  // real CLAUDE_CODE_SESSION_ID / HARNESSED_PLATFORM) so the bare-key cells are
+  // deterministic; `extraEnv` lets a cell opt into a session id explicitly.
+  const runBin = (extraEnv: NodeJS.ProcessEnv = {}) => {
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      HOME: join(tmp, 'root'),
+      USERPROFILE: join(tmp, 'root'),
+      HARNESSED_ROOT_OVERRIDE: join(tmp, 'root', '.claude', 'harnessed'),
+    }
+    delete env.CLAUDE_CODE_SESSION_ID
+    delete env.HARNESSED_PLATFORM
+    return execFileSync('node', [binPath], {
+      env: { ...env, ...extraEnv },
       encoding: 'utf8',
       cwd: join(tmp, 'repo'),
     })
+  }
 
   it('reads workflows.json[repoKey] + repo LEARNINGS.md and emits both blocks; matches buildInjection', () => {
     // realpathSync (not resolve): the child bin sees process.cwd() with symlinks
@@ -292,5 +299,37 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     expect(stdout).toContain('SHIP-READY: 2 commit(s) since the last release tag')
     expect(stdout).toContain('RETRO-DUE:')
     expect(stdout).toBe(buildInjection(repoRoot, flagged, '', DEFAULT_INJECT_BUDGET).trim())
+  })
+
+  it('Phase 35 — reads the session-scoped slot <repoKey>::<sid> over the bare slot when CLAUDE_CODE_SESSION_ID is set', () => {
+    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const sid = 'sessBIN'
+    const sessionWf: CurrentWorkflowV1Type = { ...wf, phase: 'verify' }
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        // both slots present — the bin must prefer the session-scoped one.
+        workflows: { [`${repoRoot}::${sid}`]: sessionWf, [repoRoot]: wf },
+      }),
+    )
+    const stdout = runBin({ CLAUDE_CODE_SESSION_ID: sid }).trim()
+    expect(stdout).toContain('phase: verify') // session slot, NOT the bare 'phase: task'
+    expect(stdout).toBe(buildInjection(repoRoot, sessionWf, '', DEFAULT_INJECT_BUDGET).trim())
+  })
+
+  it('Phase 35 — HARNESSED_PLATFORM=codex (sessionIdEnv=null) reads the bare slot even with CLAUDE_CODE_SESSION_ID set', () => {
+    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const bareWf: CurrentWorkflowV1Type = { ...wf, phase: 'task' }
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: { [`${repoRoot}::ignored`]: { ...wf, phase: 'verify' }, [repoRoot]: bareWf },
+      }),
+    )
+    const stdout = runBin({ HARNESSED_PLATFORM: 'codex', CLAUDE_CODE_SESSION_ID: 'ignored' }).trim()
+    expect(stdout).toContain('phase: task') // bare slot — codex has no session env
+    expect(stdout).toBe(buildInjection(repoRoot, bareWf, '', DEFAULT_INJECT_BUDGET).trim())
   })
 })

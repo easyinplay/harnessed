@@ -60,6 +60,15 @@ export interface PlatformDescriptor {
    * capability-absent (no-op + inform, never a TOML write).
    */
   supportsEnvKeyWrite: boolean
+  /**
+   * Phase 35 / Spec 3-G: the env var this harness exposes carrying the active
+   * session id, or `null` when it has none. Consumed by `activeKey` (and the
+   * inject bin) to scope the workflow ledger pointer per session. `null` →
+   * single-session fallback (bare repoKey), byte-identical to no session
+   * scoping. claude → `CLAUDE_CODE_SESSION_ID`; codex → `null` (no verified
+   * session env — anti-stale, do not invent one before it exists).
+   */
+  sessionIdEnv: string | null
 }
 
 /**
@@ -82,6 +91,8 @@ export function claudeDescriptor(home: string = homedir()): PlatformDescriptor {
     mcpConfigPath: join(home, '.claude.json'),
     // claude writes its env keys into JSON settings.json (capability present).
     supportsEnvKeyWrite: true,
+    // Claude Code exposes the active session id to Bash-invoked CLI + hooks.
+    sessionIdEnv: 'CLAUDE_CODE_SESSION_ID',
   }
 }
 
@@ -115,6 +126,8 @@ export function codexDescriptor(home: string = homedir()): PlatformDescriptor {
     pluginsRegistry: null,
     mcpConfigPath: configToml,
     supportsEnvKeyWrite: false,
+    // No verified codex session-id env → single-session fallback (anti-stale).
+    sessionIdEnv: null,
   }
 }
 

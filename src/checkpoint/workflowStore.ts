@@ -14,6 +14,7 @@ import { dirname, join, resolve } from 'node:path'
 import { type Static, Type } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import { harnessedFile } from '../installers/lib/harnessedRoot.js'
+import { detectPlatform } from '../installers/lib/platform.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { writeFileAtomic } from './atomicWrite.js'
 import { CurrentWorkflowV1, type CurrentWorkflowV1Type } from './schema/currentWorkflow.v1.js'
@@ -69,17 +70,23 @@ export function repoKey(cwd: string = process.cwd()): string {
   return resolve(cwd)
 }
 
-/** Phase 34 (Spec 2/D) — session-scoped composite key. Overlays the CC session
- *  dimension onto the per-repo store key so two concurrent sessions in one repo
- *  hold independent workflow slots. `<repoKey>::<sessionId>` when
- *  `CLAUDE_CODE_SESSION_ID` is set; the bare `repoKey` (byte-identical
- *  single-session path) when it is absent/empty. The store value type is
- *  unchanged — a composite key is just a legal `Record<string,…>` map-key, so no
- *  schema bump. (CC exposes the session id to Bash-invoked CLI as
- *  `CLAUDE_CODE_SESSION_ID`; subagents inherit the parent's id → same slot.) */
+/** Phase 34 (Spec 2/D) — session-scoped composite key. Overlays the active
+ *  harness's session dimension onto the per-repo store key so two concurrent
+ *  sessions in one repo hold independent workflow slots. `<repoKey>::<sessionId>`
+ *  when the active platform exposes a session-id env (and it is set); the bare
+ *  `repoKey` (byte-identical single-session path) otherwise. The store value type
+ *  is unchanged — a composite key is just a legal `Record<string,…>` map-key, so
+ *  no schema bump.
+ *
+ *  Phase 35 — the session-id env NAME is resolved through the PlatformDescriptor
+ *  seam (`detectPlatform().sessionIdEnv`), NOT hardcoded, so the harness stays
+ *  cross-harness (claude → `CLAUDE_CODE_SESSION_ID`; codex → `null` →
+ *  single-session). (CC exposes the id to Bash-invoked CLI + hooks; subagents
+ *  inherit the parent's id → same slot.) */
 export function activeKey(cwd: string = process.cwd()): string {
   const base = repoKey(cwd)
-  const sid = process.env.CLAUDE_CODE_SESSION_ID?.trim()
+  const envName = detectPlatform().sessionIdEnv
+  const sid = envName ? process.env[envName]?.trim() : undefined
   return sid ? `${base}::${sid}` : base
 }
 

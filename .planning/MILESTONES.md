@@ -35,4 +35,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| v11.0 State Machine Completion | in progress (1/3) | Opened 2026-06-25 — close the v5.0 deferred Spec 2 (session-scoped state) + Spec 3 (per-turn injection hook + scale-adaptive verify). Scope SoT `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1. Strategy gate skipped (pre-defined scope). Phase 34 ✅ done (composite-key session state); 35/36 next. |
+| v11.0 State Machine Completion | in progress (2/3) | Opened 2026-06-25 — close the v5.0 deferred Spec 2 (session-scoped state) + Spec 3 (per-turn injection hook + scale-adaptive verify). Scope SoT `milestones/v5.0-phases/STATE-MACHINE-CORE-DESIGN.md` §1. Strategy gate skipped (pre-defined scope). Phase 34 ✅ (composite-key session state) + Phase 35 ✅ (per-turn UserPromptSubmit hook + cross-harness session seam); Phase 36 (scale-adaptive verify) last. |

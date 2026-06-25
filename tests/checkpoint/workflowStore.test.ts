@@ -59,15 +59,24 @@ describe('repoKey', () => {
 
 describe('activeKey', () => {
   let tmp: string
-  let originalSid: string | undefined
+  const saved: Record<string, string | undefined> = {}
+  const ENVS = ['CLAUDE_CODE_SESSION_ID', 'HARNESSED_PLATFORM', 'HARNESSED_ROOT_OVERRIDE']
   beforeEach(() => {
     tmp = mkdtempSync(join(tmpdir(), 'activekey-'))
     mkdirSync(join(tmp, '.git'))
-    originalSid = process.env.CLAUDE_CODE_SESSION_ID
+    // Deterministic platform resolution: clear the env signals so detectPlatform
+    // resolves to the claude default (sessionIdEnv='CLAUDE_CODE_SESSION_ID') unless
+    // a cell sets HARNESSED_PLATFORM explicitly.
+    for (const k of ENVS) {
+      saved[k] = process.env[k]
+      delete process.env[k]
+    }
   })
   afterEach(() => {
-    if (originalSid === undefined) delete process.env.CLAUDE_CODE_SESSION_ID
-    else process.env.CLAUDE_CODE_SESSION_ID = originalSid
+    for (const k of ENVS) {
+      if (saved[k] === undefined) delete process.env[k]
+      else process.env[k] = saved[k]
+    }
     rmSync(tmp, { recursive: true, force: true })
   })
 
@@ -99,6 +108,16 @@ describe('activeKey', () => {
     const deep = join(tmp, 'a', 'b')
     mkdirSync(deep, { recursive: true })
     expect(activeKey(deep)).toBe(`${resolve(tmp)}::sess-deep`)
+  })
+
+  // Phase 35 — session env resolved via PlatformDescriptor.sessionIdEnv, NOT a
+  // hardcoded CLAUDE_CODE_SESSION_ID. A platform with no session env (codex →
+  // null) stays single-session even when CC's env happens to be set.
+  it('on a platform with sessionIdEnv=null (codex), is the bare repoKey even if CLAUDE_CODE_SESSION_ID is set', () => {
+    process.env.HARNESSED_PLATFORM = 'codex'
+    process.env.CLAUDE_CODE_SESSION_ID = 'sess-should-be-ignored'
+    expect(activeKey(tmp)).toBe(repoKey(tmp))
+    expect(activeKey(tmp)).toBe(resolve(tmp))
   })
 })
 

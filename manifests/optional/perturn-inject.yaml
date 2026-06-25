@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+# Phase 35 (v5.0 Spec 3/G) — opt-in per-turn injection hook.
+# Registers a UserPromptSubmit hook that runs bin/harnessed-inject-state.mjs each
+# turn: the bin prints a <workflow-state> breadcrumb (you-are-here / next sub) +
+# a relevance-filtered <project-context> block for the ACTIVE session's workflow
+# (session-scoped via the composite ledger key — Phase 34/35). The bin exits 0
+# silently when there is no active workflow, so an enabled hook in a non-workflow
+# repo is a cheap no-op. Opt-in (manifests/optional/) because per-turn injection
+# has a token cost (~1500 budget) and only matters in a harnessed-workflow repo.
+# Idempotent — re-install on an existing matching entry → skip.
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: perturn-inject
+  display_name: Per-Turn State Injection (UserPromptSubmit)
+  description: Opt-in UserPromptSubmit hook injecting the active session's workflow-state + project-context each turn (Spec 3/G).
+  upstream:
+    source: perturn-inject
+    homepage: https://github.com/easyinplay/harnessed
+    repository: https://github.com/easyinplay/harnessed.git
+    license: MIT
+    notice: First-party harnessed hook (Phase 35, v5.0 Spec 3/G).
+spec:
+  type: cc-hook
+  component_type: command
+  category: meta
+  install_type: hook
+  install:
+    method: cc-hook-add
+    cmd: "node bin/harnessed-inject-state.mjs"
+    hook_event: UserPromptSubmit
+    hook_command: "node bin/harnessed-inject-state.mjs"
+    idempotent_check: "grep -q harnessed-inject-state ~/.claude/settings.json"
+  verify:
+    cmd: "grep -q harnessed-inject-state ~/.claude/settings.json"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "true"
+  upstream_health:
+    stability: beta
+    last_check: "2026-06-25"
+    last_known_good_version: "0.1.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
