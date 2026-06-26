@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.9.1] - 2026-06-26
+
+**Fix (issue #1): `/auto` via SKILL.md drove the deprecated `harnessed run` and hung.** When triggered through a `SKILL.md` "How to invoke" section, `/auto` (and the sister stage skills) instructed the agent to Bash-run `harnessed run <name> --task-stdin`. Inside a Claude Code session that path does an in-process nested SDK spawn that cannot acquire an execution/auth context — it silently no-ops then hangs until timeout (the reported `EXIT=124` / 108s). Root cause: the v4.0 migration rewrote the sibling `~/.claude/commands/<name>.md` generator to CC-native orchestration but left all 48 `SKILL.md` invoke sections on the now-CI/headless-only `harnessed run`.
+
+### Fixed
+
+- **SKILL.md invoke drift → CC-native.** All 48 `SKILL.md` / `SKILL.zh-Hans.md` "How to invoke" sections now point to the CC-native `/<name>` slash command (`harnessed gates` → `harnessed prompt` → CC-native subagent spawn → `harnessed checkpoint`) instead of `harnessed run`. The rewrite script (`scripts/rewrite-skill-invoke-sections.mjs`) is footgun-anchored, bilingual (en + zh-Hans), heading-variant agnostic, and idempotent. A new `skill-invoke-parity` test is the durable anti-drift guard.
+- **`harnessed run` runtime hardening** (the retained CI/headless path):
+  - **Fail-fast:** `defaultSpawnDriver` now throws when a sub-workflow returns `failed` / `paused-veto` (was silently discarded → master reported `Complete` with zero work). Parallel sub failures are surfaced instead of swallowed by `allSettled`. This matches the documented "Fail-fast default".
+  - **Nested-CC guard:** invoked from inside an AI-harness session (session-id env set) without a TTY, `harnessed run` now exits non-zero with a pointer to the CC-native `/<name>` command instead of hanging (reuses the `PlatformDescriptor.sessionIdEnv` seam; `HARNESSED_ALLOW_NESTED=1` overrides for CI/e2e).
+  - **Non-interactive guard:** the `--staged` / pre-flight readline prompts return their safe default when there is no TTY, instead of blocking forever.
+
+Additive + behavior-preserving for the CI/headless path with `HARNESSED_ALLOW_NESTED=1`. 1470 tests at v11.0 → 1535 at this release.
+
 ## [4.9.0] - 2026-06-26
 
 **v11.0 State Machine Completion** — closes the v5.0 state-machine's deferred Spec 2 + Spec 3 (the only un-shipped tail of the State Machine Core era; Spec 1 shipped in 4.2.0). Three phases (34–36), all additive: no schema bump, the claude default install and the English default path are byte-identical, and a single-session (no session id) run behaves exactly as before. 1446 tests at v10.0 → 1470 at v11.0.
