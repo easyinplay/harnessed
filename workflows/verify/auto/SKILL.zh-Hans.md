@@ -76,3 +76,13 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考资料
+
+- D-01 主控编排器委托模式
+- D-02 裸斜杠命令约定（ADR 0030 命名空间规范 LOCK）
+- D-12 gstack 治理关卡引用（paranoid / qa / security / design subs）
+- workflows/judgments/parallelism-gate.yaml — Pattern C 多维度审查（multispec sub 4-specialist 互相质询）
+- workflows/judgments/stage-routing.yaml — verify-* 6 触发器（7 sub 委托）
+- workflows/verify/{progress,code-review,paranoid,qa,security,design,simplify,multispec}/workflow.yaml
+  — 8 个子工作流 Phase 3.4 SHIPPED

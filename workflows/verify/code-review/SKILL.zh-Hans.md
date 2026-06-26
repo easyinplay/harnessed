@@ -60,3 +60,11 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考资料
+
+- D-04 Stage ④ Verify 7 sub 分解
+- workflows/capabilities.yaml — code-review
+- workflows/judgments/parallelism-gate.yaml — subagent-default.fires
+- workflows/defaults.yaml — ralph_max_iterations.verify-code-review.* 值（W2.2 backfill）
+- workflows/verify-work/workflow.yaml v2 SHIPPED phase 03-code-review-parallel sister verbatim

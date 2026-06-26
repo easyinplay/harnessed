@@ -64,3 +64,11 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考文档
+
+- D-01 主控编排器委派模式
+- D-02 bare slash cmd 约定（ADR 0030 namespace policy LOCK）
+- D-06 planning-with-files 横切工具（NOT 独立 sub-workflow）
+- workflows/judgments/stage-routing.yaml — plan-{architecture,phase}-delegate triggers
+- workflows/plan/{architecture,phase}/workflow.yaml — 2 sub-workflow Phase 3.4 SHIPPED

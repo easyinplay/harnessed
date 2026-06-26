@@ -114,3 +114,14 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考文档
+
+- D-01 master orchestrator 委托模式
+- D-02 bare slash cmd 约定 (ADR 0030 namespace policy LOCK)
+- D-13 declarative SoT (delegates_to[] 声明 + engine 消费)
+- workflows/{research,retro}/workflow.yaml — 2 个 standalone (research conditional + retro mandatory)
+- workflows/{discuss,plan,task,verify}/auto/workflow.yaml — 4 个 stage-master Phase 3.5 SHIPPED
+- workflows/judgments/stage-routing.yaml — auto-research-unclear trigger (v3.2.0 新增)
+- src/workflow/masterOrchestrator.ts — 'auto' literal + recursive spawn + runAutoPreFlight hook
+- CHANGELOG [3.2.0] — complexity gate + research/retro flow + `--staged` rename

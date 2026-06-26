@@ -59,3 +59,12 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考文档
+
+- D-04 新增 v3 standalone 工作流 (research v3 bump + retro 新增)
+- Pattern A E.2 LOCK — 2 个 alias suffix `-gstack` 解决 namespace 冲突 (retro-gstack + investigate-gstack)
+- Pattern A reconcile D.2 — gstack 30 optional naming bare 例外
+- workflows/capabilities.yaml — retro-gstack (alias suffix) + planning-with-files
+- workflows/defaults.yaml — ralph_max_iterations.retro.* values (W2.2 backfill)
+- sister Phase v2.0-2.5 RETROSPECTIVE.md sink pattern

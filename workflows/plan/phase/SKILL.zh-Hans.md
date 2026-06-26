@@ -66,3 +66,10 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考文档
+
+- D-04 Stage ② Plan 二层（架构 / 计划）
+- D-15 Q-AUDIT-5a planning-with-files claude-code-plugin reframe (NOT npm-sdk)
+- workflows/capabilities.yaml — gsd-plan-phase / planning-with-files (Bucket 4)
+- workflows/defaults.yaml — ralph_max_iterations.plan-phase.* values (W2.2 backfill)

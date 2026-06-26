@@ -63,3 +63,10 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考资料
+
+- D-04 Stage ① Discuss 三层（战略层 / phase 层 / 子任务层）
+- workflows/capabilities.yaml — gsd-discuss-phase / planning-with-files
+- workflows/judgments/phase-gate.yaml — gsd-discuss-phase trigger
+- workflows/defaults.yaml — ralph_max_iterations.discuss-phase.* values (W2.2 backfill)

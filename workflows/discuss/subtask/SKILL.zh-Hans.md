@@ -68,3 +68,11 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考资料
+
+- D-04 Stage ① Discuss 三层（战略层 / phase 层 / 子任务层）
+- D-05 phase.invokes_tools 条件触发（NEW v3）
+- workflows/capabilities.yaml — superpowers-brainstorming / grill-with-docs / grill-me
+- workflows/judgments/subtask-gate.yaml — brainstorming trigger
+- workflows/defaults.yaml — ralph_max_iterations.discuss-subtask.* values (W2.2 backfill)

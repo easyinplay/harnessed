@@ -63,3 +63,12 @@ spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn
 若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
 <!-- harnessed-generated:v4.9.1 -->
+
+## 参考资料
+
+- D-01 主控编排器委托模式
+- D-02 bare slash cmd 约定（ADR 0030 namespace policy LOCK）
+- D-04 Stage ① Discuss 三层独立判
+- workflows/judgments/stage-routing.yaml — discuss-{strategic,phase,subtask}-delegate triggers
+- workflows/discuss/{strategic,phase,subtask}/workflow.yaml — 3 个子工作流 Phase 3.4 已发布
+- workflows/judgments/fallback.yaml — 链式互不前置 chain-isolation 铁律
