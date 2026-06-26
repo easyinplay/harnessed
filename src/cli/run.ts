@@ -30,6 +30,7 @@ import { existsSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
+import { detectPlatform } from '../installers/lib/platform.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { runWorkflow } from '../workflow/run.js'
@@ -174,6 +175,25 @@ export function registerRun(program: Command): void {
         process.exit(0)
       }
 
+      // issue #1 — nested-CC guard. `harnessed run` does an in-process SDK spawn
+      // (query()) of the whole workflow; invoked from INSIDE a Claude Code session
+      // (e.g. via the Bash tool, non-interactive) the nested spawn cannot acquire
+      // an execution/auth context and HANGS until timeout, or silently no-ops.
+      // The CC-native `/${name}` slash command is the correct path there. Fail-fast
+      // with a pointer instead of reproducing the issue's 108s hang. Override with
+      // HARNESSED_ALLOW_NESTED=1 (CI / e2e legitimately spawn `harnessed run`).
+      if (isNestedHarnessContext()) {
+        console.error(
+          `error: \`harnessed run\` is the CI/headless path (in-process SDK spawn) and hangs ` +
+            `when invoked from inside a Claude Code session. Use the CC-native \`/${name}\` slash ` +
+            `command instead — it drives subagent spawns via harnessed gates / prompt / checkpoint ` +
+            `(keeps the session responsive, enables Agent Teams, allows clarification round-trips). ` +
+            `Set HARNESSED_ALLOW_NESTED=1 to override (CI / testing only).`,
+        )
+        process.exit(1)
+        return
+      }
+
       let result: Awaited<ReturnType<typeof runWorkflow>>
       try {
         result = await runWorkflow(yamlPath, {}, { packageRoot: PACKAGE_ROOT, gateContext })
@@ -193,6 +213,21 @@ export function registerRun(program: Command): void {
       }
       process.exit(result.status === 'failed' ? 1 : 0)
     })
+}
+
+/** issue #1 — detect that `harnessed run` is being invoked from inside an AI
+ *  harness session subprocess (the footgun: nested in-process SDK spawn hangs).
+ *  True ONLY when: no explicit override AND the active platform exposes a session
+ *  id env (Phase 35 seam) AND it is set AND stdin is not an interactive TTY (the
+ *  Bash-tool / piped case). A human at a real terminal (TTY) or CI (no session
+ *  env) is left alone. */
+function isNestedHarnessContext(): boolean {
+  if (process.env.HARNESSED_ALLOW_NESTED === '1') return false
+  const sessEnv = detectPlatform().sessionIdEnv
+  if (!sessEnv) return false
+  const sid = process.env[sessEnv]?.trim()
+  if (!sid) return false
+  return !process.stdin.isTTY
 }
 
 /** 3-tier lookup matches workflows/ layout:

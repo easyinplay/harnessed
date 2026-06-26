@@ -360,6 +360,26 @@ delegates_to:
   })
 })
 
+describe('runMasterOrchestrator — issue #1 parallel fail-fast (surface rejected sub)', () => {
+  it('40. parallel sub throws → runMasterOrchestrator rejects (NOT silently swallowed by allSettled)', async () => {
+    // discuss fires phase + subtask in parallel (no order < anchor → parallel mode).
+    yamlFileMap.set(
+      pathFor('discuss'),
+      masterYaml('discuss', [clauseLine('phase'), clauseLine('subtask')].join('\n')),
+    )
+    const seen: string[] = []
+    const spawn: SpawnDriver = async (_m, sub) => {
+      seen.push(sub)
+      if (sub === 'subtask') throw new Error('subtask leaf failed')
+    }
+    await expect(runMasterOrchestrator('discuss', {}, PACKAGE_ROOT, spawn)).rejects.toThrow(
+      /subtask/,
+    )
+    // sibling still attempted (allSettled waits) — both spawned before surfacing failure
+    expect(seen.sort()).toEqual(['phase', 'subtask'])
+  })
+})
+
 // ── v3.1.0 NEW /auto super-master fixtures ──────────────────────────────────
 // 6 fixture per CHANGELOG [3.1.0] regression coverage: top-level path resolve +
 // 4-stage serial spawn + correct order + pause flag + fail-fast + K8 ctx single snapshot。

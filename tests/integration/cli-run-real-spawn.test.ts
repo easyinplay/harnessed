@@ -27,6 +27,10 @@ describe.skipIf(!REAL)('harnessed run real-spawn (HARNESSED_REAL_SPAWN=1)', () =
     const r = spawnSync('node', [CLI, 'run', 'verify-simplify', '--task', 'noop test task'], {
       encoding: 'utf8',
       timeout: 120_000,
+      // issue #1 — this test intentionally exercises the real in-process spawn,
+      // so bypass the nested-CC guard (a dev running HARNESSED_REAL_SPAWN=1 is
+      // typically inside a CC session, which would otherwise exit 1).
+      env: { ...process.env, HARNESSED_ALLOW_NESTED: '1' },
     })
     expect(r.status).toBe(0)
     expect(r.stderr).toMatch(/\[stage verify-simplify complete\]/)

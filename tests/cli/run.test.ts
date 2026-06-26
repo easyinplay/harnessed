@@ -72,8 +72,13 @@ describe('cli/run — 15 cells per v3.4.4 PHASE-1-SPEC.md', () => {
     vi.clearAllMocks()
     // Default mock — completed workflow.
     vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 0 })
+    // issue #1 — bypass the nested-CC guard for the existing cells (they assert
+    // runWorkflow is called). The suite itself may run inside a CC session
+    // (CLAUDE_CODE_SESSION_ID set) + non-TTY, which would otherwise trip the guard.
+    process.env.HARNESSED_ALLOW_NESTED = '1'
   })
   afterEach(() => {
+    delete process.env.HARNESSED_ALLOW_NESTED
     vi.restoreAllMocks()
   })
 
@@ -303,5 +308,70 @@ describe('getNextHint — Phase 5 real impl', () => {
     )
     spy.mockRestore()
     stderrWrite.mockRestore()
+  })
+})
+
+// issue #1 B2 — nested-CC guard. `harnessed run` does an in-process SDK spawn
+// (query()) that hangs / no-ops when invoked from inside a Claude Code session
+// subprocess (no TTY, nested SDK). Detect that context (sessionIdEnv set +
+// non-TTY) and fail-fast with a pointer to the CC-native /<name> slash command,
+// instead of the 108s timeout the issue reports. HARNESSED_ALLOW_NESTED=1
+// overrides (CI / tests legitimately spawn it with --dry-run).
+describe('cli/run — issue #1 nested-CC guard', () => {
+  let savedSid: string | undefined
+  let savedAllow: string | undefined
+  let isTTYDescriptor: PropertyDescriptor | undefined
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 0 })
+    savedSid = process.env.CLAUDE_CODE_SESSION_ID
+    savedAllow = process.env.HARNESSED_ALLOW_NESTED
+    isTTYDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    // Simulate the nested footgun: session id present, no override.
+    process.env.CLAUDE_CODE_SESSION_ID = 'sess-test-123'
+    delete process.env.HARNESSED_ALLOW_NESTED
+    Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true })
+  })
+  afterEach(() => {
+    if (savedSid === undefined) delete process.env.CLAUDE_CODE_SESSION_ID
+    else process.env.CLAUDE_CODE_SESSION_ID = savedSid
+    if (savedAllow === undefined) delete process.env.HARNESSED_ALLOW_NESTED
+    else process.env.HARNESSED_ALLOW_NESTED = savedAllow
+    if (isTTYDescriptor) Object.defineProperty(process.stdin, 'isTTY', isTTYDescriptor)
+    else Object.defineProperty(process.stdin, 'isTTY', { value: undefined, configurable: true })
+    vi.restoreAllMocks()
+  })
+
+  it('cell 24 — nested + non-TTY + no override → exit 1 + pointer to /<name>, runWorkflow NOT called', async () => {
+    const { code, stderr } = await runCli(['run', 'auto'])
+    expect(code).toBe(1)
+    expect(stderr).toMatch(/\/auto/)
+    expect(stderr).toMatch(/CI\/headless|nested|Claude Code/i)
+    expect(runWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('cell 25 — HARNESSED_ALLOW_NESTED=1 overrides → runWorkflow IS called', async () => {
+    process.env.HARNESSED_ALLOW_NESTED = '1'
+    await runCli(['run', 'auto'])
+    expect(runWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it('cell 26 — --dry-run is never blocked by the guard (CI e2e path)', async () => {
+    const { code } = await runCli(['run', 'auto', '--dry-run'])
+    expect(code).toBe(0)
+    expect(runWorkflow).not.toHaveBeenCalled() // dry-run short-circuits before runWorkflow
+  })
+
+  it('cell 27 — no session id → guard inert, runWorkflow called', async () => {
+    delete process.env.CLAUDE_CODE_SESSION_ID
+    await runCli(['run', 'auto'])
+    expect(runWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it('cell 28 — interactive TTY → guard inert (human at a real terminal), runWorkflow called', async () => {
+    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true })
+    await runCli(['run', 'auto'])
+    expect(runWorkflow).toHaveBeenCalledTimes(1)
   })
 })

@@ -47,19 +47,18 @@ Sister `workflows/judgments/stage-routing.yaml`：
 - ✅ **触发**: verify chain 末尾步骤 (所有其他 verify sub 已 ship，准备 code 简化收尾)
 - ❌ **跳过**: verify chain 中间步骤 (避免过早简化干扰后续 review)
 
-## 调用方式
+## 如何调用
 
-使用 Bash 工具运行：
+CC-native 编排。**不要** pipe 到 `harnessed run verify-simplify` —— 那是 CI/headless 路径(in-process
+SDK spawn,会阻塞 session、绕过 Agent Teams,在 Claude Code 内部调用时还会挂死)。
 
-```bash
-echo "$ARGUMENTS" | harnessed run verify-simplify --task-stdin
-```
+改用 `/verify-simplify` slash command(由 `harnessed setup` 生成于 `~/.claude/commands/verify-simplify.md`)。
+它以 CC-native 方式驱动:`harnessed gates` 决定哪些 sub fire,`harnessed prompt <sub>` 给出每个
+spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn 已 fire 的 sub,
+每个结果用 `harnessed checkpoint` 记录。完整 state-machine 步骤见 `~/.claude/commands/verify-simplify.md`;
+若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
-若 `$ARGUMENTS` 为空，则运行 `harnessed run verify-simplify`（不接管道输入）。
-
-完成后，Bash 输出会在 stderr 打印 `Next:` 提示，建议下一阶段。是否调用取决于对话上下文 — 该提示仅供参考，非强制指令。
-
-<!-- harnessed-generated:v3.4.4 -->
+<!-- harnessed-generated:v4.9.1 -->
 
 ## 参考资料
 

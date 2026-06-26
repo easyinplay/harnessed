@@ -39,43 +39,13 @@ Sister `workflows/capabilities.yaml` 条目：
 
 ## 如何调用
 
-**优先路径**（master orchestrator）：按当前 stage 规定的顺序依次调用各子工作流的 slash command。每个子命令安装在 `<claude-home>/commands/<sub-name>.md`（由 `harnessed setup` 安装），自带双路径兜底。
+CC-native 编排。**不要** pipe 到 `harnessed run research` —— 那是 CI/headless 路径(in-process
+SDK spawn,会阻塞 session、绕过 Agent Teams,在 Claude Code 内部调用时还会挂死)。
 
-**兜底路径**（当上游未安装或无返回结果时）：使用 Task 工具 spawn 一个通用 subagent，prompt 如下：
+改用 `/research` slash command(由 `harnessed setup` 生成于 `~/.claude/commands/research.md`)。
+它以 CC-native 方式驱动:`harnessed gates` 决定哪些 sub fire,`harnessed prompt <sub>` 给出每个
+spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn 已 fire 的 sub,
+每个结果用 `harnessed checkpoint` 记录。完整 state-machine 步骤见 `~/.claude/commands/research.md`;
+若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
-> You are a **Research analyst**.
->
-> **Mission**: Multi-source investigation (docs / web search / codebase grep / library probe) producing a `findings.md` with citations, NOT speculation. Use `ctx7` for library docs, `tavily-mcp` / `exa-mcp` for web, `gh` CLI for GitHub artifacts, and codebase `Grep` for internal references.
->
-> **Default-suspect mode**: assume the change is broken / risky / incomplete until proven otherwise. Cite `file:line` for every finding; do not generalize.
->
-> **Review checklist**:
-> 1. Resolve each unknown claim to a citable source (URL, file:line, or `ctx7` doc id)
->
-> 2. Cite version explicitly when discussing library / framework APIs (training cutoff may be stale)
->
-> 3. Capture conflicting sources side-by-side; do not silently pick one
->
-> 4. Flag `OPEN: <question>` for items the user must decide; never paper over
->
-> 5. Persist results to `.planning/<phase>/findings.md` for cross-session handoff
->
-> **Output format**: structured report with severity-classified findings (verified / unverified / conflicting / open). One finding per line: `[severity] file:line — problem (one sentence); fix: suggested change`. If no findings, say so explicitly. No preamble, no end-of-report summary.
-
-（Role prompt 自包含 — 即使上游 `specialist` user-skill / plugin 未安装也可正常运行。）
-
-（`harnessed setup` 同时会在 `<claude-home>/commands/research.md` 安装一个 `research` Claude Code slash command，使 `/research` 成为真正的平台 slash command — 两个文件携带相同的双路径指令。之前 v3.4.x 中 `harnessed research --apply` CLI 的相关说明已移除；该子命令从未被实现。）
-
-## 如何调用
-
-使用 Bash 工具运行：
-
-```bash
-echo "$ARGUMENTS" | harnessed run research --task-stdin
-```
-
-如果 `$ARGUMENTS` 为空，运行 `harnessed run research`（不带 stdin pipe）。
-
-完成后，Bash 输出会在 stderr 打印 `Next:` 提示，建议下一个阶段。根据对话上下文决定是否调用 — 该提示仅供参考，不作强制指引。
-
-<!-- harnessed-generated:v3.4.4 -->
+<!-- harnessed-generated:v4.9.1 -->

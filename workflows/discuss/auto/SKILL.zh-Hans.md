@@ -53,23 +53,13 @@ Sister `workflows/capabilities.yaml`:
 
 ## 如何调用
 
-使用 Bash 工具运行：
+CC-native 编排。**不要** pipe 到 `harnessed run discuss` —— 那是 CI/headless 路径(in-process
+SDK spawn,会阻塞 session、绕过 Agent Teams,在 Claude Code 内部调用时还会挂死)。
 
-```bash
-echo "$ARGUMENTS" | harnessed run discuss --task-stdin
-```
+改用 `/discuss` slash command(由 `harnessed setup` 生成于 `~/.claude/commands/discuss.md`)。
+它以 CC-native 方式驱动:`harnessed gates` 决定哪些 sub fire,`harnessed prompt <sub>` 给出每个
+spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn 已 fire 的 sub,
+每个结果用 `harnessed checkpoint` 记录。完整 state-machine 步骤见 `~/.claude/commands/discuss.md`;
+若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
-若 `$ARGUMENTS` 为空，运行 `harnessed run discuss`（不带 stdin pipe）。
-
-执行完成后，Bash 输出会在 stderr 打印 `Next:` 提示，建议下一个阶段。请根据对话上下文决定是否调用——该提示仅供参考，非强制指令。
-
-<!-- harnessed-generated:v3.4.4 -->
-
-## 参考资料
-
-- D-01 主控编排器委托模式
-- D-02 bare slash cmd 约定（ADR 0030 namespace policy LOCK）
-- D-04 Stage ① Discuss 三层独立判
-- workflows/judgments/stage-routing.yaml — discuss-{strategic,phase,subtask}-delegate triggers
-- workflows/discuss/{strategic,phase,subtask}/workflow.yaml — 3 个子工作流 Phase 3.4 已发布
-- workflows/judgments/fallback.yaml — 链式互不前置 chain-isolation 铁律
+<!-- harnessed-generated:v4.9.1 -->

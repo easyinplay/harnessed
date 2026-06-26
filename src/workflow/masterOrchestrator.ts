@@ -206,6 +206,25 @@ export async function runMasterOrchestrator(
   for (const r of parallelResults) {
     if (r.status === 'fulfilled') fired.push(r.value)
   }
+  // issue #1 — surface parallel sub failures (fail-fast). allSettled waits for
+  // every sibling (so in-flight work finishes), but a rejected parallel sub used
+  // to be silently dropped — the master reported `Complete` minus that sub with
+  // no error. Mirror the serial loop's throw-propagation: if any parallel sub
+  // rejected, throw an aggregate so the master fails-fast (trailing serial subs
+  // do not run) and the failure reaches the CLI exit code.
+  const parallelFailures = parallelResults
+    .map((r, i) =>
+      r.status === 'rejected' ? { sub: parallelClauses[i]?.sub, reason: r.reason } : null,
+    )
+    .filter((x): x is { sub: string | undefined; reason: unknown } => x !== null)
+  if (parallelFailures.length > 0) {
+    const detail = parallelFailures
+      .map((f) => `${f.sub}: ${f.reason instanceof Error ? f.reason.message : String(f.reason)}`)
+      .join('; ')
+    throw new Error(
+      `[${masterName} master] ${parallelFailures.length} parallel sub(s) failed — ${detail}`,
+    )
+  }
   for (const clause of serialTrailing) {
     console.log(`  → ${clause.sub} (serial order=${clause.order ?? 0})`)
     await spawnDriver(masterName, clause.sub, context, packageRoot)

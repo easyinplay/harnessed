@@ -50,19 +50,18 @@ Sister `workflows/judgments/stage-routing.yaml`：
 - 创意补充 / 不要 AI 味 → `frontend-design`
 - 用户明示「独特 / 不要 AI 感」→ frontend-design 主导，否则 ui-ux-pro-max 优先
 
-## 调用方式
+## 如何调用
 
-使用 Bash 工具运行：
+CC-native 编排。**不要** pipe 到 `harnessed run verify-design` —— 那是 CI/headless 路径(in-process
+SDK spawn,会阻塞 session、绕过 Agent Teams,在 Claude Code 内部调用时还会挂死)。
 
-```bash
-echo "$ARGUMENTS" | harnessed run verify-design --task-stdin
-```
+改用 `/verify-design` slash command(由 `harnessed setup` 生成于 `~/.claude/commands/verify-design.md`)。
+它以 CC-native 方式驱动:`harnessed gates` 决定哪些 sub fire,`harnessed prompt <sub>` 给出每个
+spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn 已 fire 的 sub,
+每个结果用 `harnessed checkpoint` 记录。完整 state-machine 步骤见 `~/.claude/commands/verify-design.md`;
+若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
 
-若 `$ARGUMENTS` 为空，运行 `harnessed run verify-design`（不带 stdin pipe）。
-
-执行完成后，Bash 输出会在 stderr 打印 `Next:` 提示，建议下一阶段操作。是否继续调用，请根据对话上下文自行判断——该提示仅供参考，并非强制指令。
-
-<!-- harnessed-generated:v3.4.4 -->
+<!-- harnessed-generated:v4.9.1 -->
 
 ## 参考资料
 

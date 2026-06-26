@@ -55,18 +55,30 @@ export const defaultSpawnDriver: SpawnDriver = async (
   packageRoot,
 ) => {
   const subYamlPath = resolveSubYamlPath(masterName, subName, packageRoot)
-  // Path A — SDK query recursive call runWorkflow at sub yaml(in-process)。
-  // K8:engine 共享 1 context snapshot,passed unchanged(`gateContext`)。
-  // Path B fallback hook:try/catch SDK error → sub-shell `harnessed` CLI invoke。
-  try {
-    await runWorkflow(subYamlPath, {}, { packageRoot, gateContext: _context })
-  } catch (err) {
-    // Path B sub-shell fallback(sister Phase 2.5 W2.3 error 降级 pattern)
-    // — T3.5.W2.1 dogfood LOCK 时收紧 cmd surface;v3.0 default 仅记 warn 不真 exec
-    // sub-shell(避免 spawn 调用栈 unintended side-effect)。
-    console.warn(
-      `⚠️ master spawnSubWorkflow Path A failed for ${masterName}/${subName} ` +
-        `(${(err as Error).message});Path B sub-shell fallback deferred T3.5.W2.1.`,
+  // Path A — recursive runWorkflow at sub yaml (in-process). K8: engine shares 1
+  // context snapshot, passed unchanged (`gateContext`).
+  //
+  // issue #1 — fail-fast (NOT silent swallow). The previous body wrapped this in
+  // a try/catch that only `console.warn`ed on a runWorkflow THROW, AND discarded
+  // the non-throwing `{status:'failed'}` return entirely. Net effect: a sub whose
+  // leaf spawn failed (or hung-then-failed) was reported by the master as
+  // `Complete: N fired` with zero work done. The master already halts later
+  // stages when the driver throws (masterOrchestrator serial loop has no
+  // try/catch), so the correct fix is to make THIS driver throw on a failed /
+  // veto-paused sub and let real throws propagate. This honors the documented
+  // "Fail-fast default" (workflows/auto/SKILL.md). `harnessed run` is the
+  // CI/headless path; surfacing failure with a non-zero exit is the right UX.
+  const result = await runWorkflow(subYamlPath, {}, { packageRoot, gateContext: _context })
+  if (result.status === 'failed') {
+    throw new Error(
+      `sub-workflow ${masterName}/${subName} failed` +
+        (result.lastPhaseId ? ` at phase ${result.lastPhaseId}` : ''),
+    )
+  }
+  if (result.status === 'paused-veto') {
+    throw new Error(
+      `sub-workflow ${masterName}/${subName} paused (governance veto)` +
+        (result.lastPhaseId ? ` at phase ${result.lastPhaseId}` : ''),
     )
   }
 }
@@ -75,6 +87,9 @@ export const defaultSpawnDriver: SpawnDriver = async (
  *  between stages (super-master `/auto --staged` opt-in; v3.3.0 removed legacy
  *  `--pause-between-stages` alias). Test DI override via opts.pauseFn。 */
 export const defaultPauseFn = async (stageName: string): Promise<void> => {
+  // issue #1 — non-interactive guard: with no TTY there is no human to press
+  // Enter, so opening readline would hang forever. Resolve immediately (continue).
+  if (!process.stdin.isTTY) return
   const readline = await import('node:readline/promises')
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
   try {
@@ -112,6 +127,10 @@ export const defaultPromptUserUnderstanding = async (
 
 /** v3.2.0 — readline stdin prompter (DI-friendly, sister defaultPauseFn pattern)。 */
 export const defaultPrompter = async (question: string): Promise<string> => {
+  // issue #1 — non-interactive guard: no TTY → return the safe default ('') instead
+  // of hanging on rl.question. Callers treat '' as the conservative default
+  // (understanding=clear → skip research; large-complexity → stay continuous).
+  if (!process.stdin.isTTY) return ''
   const readline = await import('node:readline/promises')
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
   try {

@@ -29,7 +29,8 @@ describe.skipIf(!REAL)('harnessed run --max-iterations (HARNESSED_REAL_SPAWN=1)'
     const r = spawnSync(
       'node',
       [CLI, 'run', 'task-deliver', '--task', 'force-incomplete', '--max-iterations', '3'],
-      { encoding: 'utf8', timeout: 180_000 },
+      // issue #1 — real in-process spawn path: bypass the nested-CC guard.
+      { encoding: 'utf8', timeout: 180_000, env: { ...process.env, HARNESSED_ALLOW_NESTED: '1' } },
     )
     // R20.10 explicit halt → exit code 1 (sister handleMaxIterationsExceeded)
     expect(r.status).toBe(1)
