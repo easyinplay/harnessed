@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { NextUnit } from '../../src/checkpoint/deriveNext.js'
 import {
   buildInjection,
   buildProjectContextBlock,
@@ -131,6 +132,52 @@ describe('buildWorkflowStateBlock', () => {
 
   it('emits no ENGINE line when all subs are resolved (next is null)', () => {
     expect(buildWorkflowStateBlock(reminderWf({}))).not.toContain('ENGINE:')
+  })
+
+  // Phase 39 (D6 / AC7) — per-turn current→next pointer. When the workflow's subs
+  // are ALL resolved (no ENGINE) and a cross-unit next exists, point at it so the
+  // agent continues forward instead of stalling. Mutually exclusive with ENGINE.
+  it('AC7 — emits a NEXT-UNIT line naming the next phase when subs resolved + a next exists', () => {
+    const phaseUnit: NextUnit = { kind: 'phase', phase: '17', name: 'forward-cont' }
+    const out = buildWorkflowStateBlock(reminderWf({}), { unit: phaseUnit, remainingPhases: 3 })
+    expect(out).toContain('NEXT-UNIT: current workflow complete')
+    expect(out).toContain("next is phase 17 'forward-cont'")
+    expect(out).toContain('harnessed advance')
+    expect(out).toContain('3 phases remain')
+    expect(out).not.toContain('ENGINE:')
+  })
+
+  it('AC7 — singularizes "1 phase remain"', () => {
+    const phaseUnit: NextUnit = { kind: 'phase', phase: '17', name: 'x' }
+    const out = buildWorkflowStateBlock(reminderWf({}), { unit: phaseUnit, remainingPhases: 1 })
+    expect(out).toContain('1 phase remain')
+    expect(out).not.toContain('1 phases remain')
+  })
+
+  it('AC7 — describes a task next as "task ... in phase N"', () => {
+    const taskUnit: NextUnit = { kind: 'task', phase: '16', task: 'wire middleware' }
+    const out = buildWorkflowStateBlock(reminderWf({}), { unit: taskUnit, remainingPhases: 2 })
+    expect(out).toContain("next is task 'wire middleware' in phase 16")
+  })
+
+  it('emits NO NEXT-UNIT while a sub is still pending (ENGINE owns the mid-flight case)', () => {
+    const pendingWf: CurrentWorkflowV1Type = {
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'task',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-06-12T00:00:00.000Z',
+      sub_progress: [{ sub: 'b', status: 'pending', gate_fired: true }],
+    }
+    const phaseUnit: NextUnit = { kind: 'phase', phase: '17', name: 'x' }
+    const out = buildWorkflowStateBlock(pendingWf, { unit: phaseUnit, remainingPhases: 1 })
+    expect(out).toContain('ENGINE:')
+    expect(out).not.toContain('NEXT-UNIT:')
+  })
+
+  it('emits no NEXT-UNIT when the forward pointer is null (done/blocked / no .planning)', () => {
+    expect(buildWorkflowStateBlock(reminderWf({}), null)).not.toContain('NEXT-UNIT:')
+    expect(buildWorkflowStateBlock(reminderWf({}))).not.toContain('NEXT-UNIT:')
   })
 })
 
@@ -387,5 +434,36 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     expect(stdout).toContain('VERIFY-MODE: full')
     expect(stdout).toContain('run full verification')
     expect(stdout).toBe(buildInjection(repoRoot, scaled, '', DEFAULT_INJECT_BUDGET).trim())
+  })
+
+  it('Phase 39 — emits NEXT-UNIT (current→next phase) when subs resolved + an incomplete next phase; matches buildInjection', () => {
+    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const resolvedWf: CurrentWorkflowV1Type = {
+      ...wf,
+      phase: '16',
+      status: 'complete',
+      sub_progress: [{ sub: 'a', status: 'done', gate_fired: true }],
+    }
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: { [repoRoot]: resolvedWf },
+      }),
+    )
+    // phase 16 complete (PLAN+SUMMARY) ; phase 17 incomplete (PLAN, no SUMMARY).
+    const phases = join(tmp, 'repo', '.planning', 'phases')
+    mkdirSync(join(phases, '16-done'), { recursive: true })
+    writeFileSync(join(phases, '16-done', '16-01-PLAN.md'), '# plan', 'utf8')
+    writeFileSync(join(phases, '16-done', '16-01-SUMMARY.md'), '# summary', 'utf8')
+    mkdirSync(join(phases, '17-forward'), { recursive: true })
+    writeFileSync(join(phases, '17-forward', '17-01-PLAN.md'), '# plan', 'utf8')
+
+    const stdout = runBin().trim()
+    expect(stdout).toContain("NEXT-UNIT: current workflow complete → next is phase 17 'forward'")
+    expect(stdout).toContain('1 phase remain')
+    expect(stdout).not.toContain('ENGINE:')
+    // parity: byte-identical to the TS builder on the same disk inputs
+    expect(stdout).toBe(buildInjection(repoRoot, resolvedWf, '', DEFAULT_INJECT_BUDGET).trim())
   })
 })

@@ -67,7 +67,91 @@ function readWorkflow(root, keys) {
   return null
 }
 
-function workflowStateBlock(wf) {
+// Phase 39 (D6) — plain-JS replicas of planningScan/deriveNext/describeUnit for the
+// hot path. MUST stay byte-equivalent to src/checkpoint/{planningScan,deriveNext,
+// forwardStep}.ts — the parity test compares this file's stdout to buildInjection.
+// includeTasks:false (the per-turn phase-level floor) → tasks are never scanned, so
+// the derived next is always phase-level here.
+const PHASE_DIR = /^(\d+(?:\.\d+)?)-(.*)$/
+
+function scanPhases(repoRoot) {
+  try {
+    const phasesDir = join(repoRoot, '.planning', 'phases')
+    if (!existsSync(phasesDir)) return []
+    const out = []
+    for (const dir of readdirSync(phasesDir)) {
+      const m = PHASE_DIR.exec(dir)
+      const num = m?.[1]
+      if (!num) continue
+      const dirPath = join(phasesDir, dir)
+      let entries
+      try {
+        entries = readdirSync(dirPath)
+      } catch {
+        continue
+      }
+      let plans = 0
+      let summaries = 0
+      const prefix = `${num}-`
+      for (const f of entries) {
+        if (!f.startsWith(prefix)) continue
+        if (f.endsWith('-PLAN.md')) plans++
+        else if (f.endsWith('-SUMMARY.md')) summaries++
+      }
+      const complete = plans > 0 && summaries >= plans
+      out.push({
+        phase: num,
+        name: m?.[2] ?? '',
+        plans,
+        summaries,
+        complete,
+        order: Number.parseFloat(num),
+      })
+    }
+    out.sort((a, b) => a.order - b.order)
+    return out
+  } catch {
+    return []
+  }
+}
+
+function describeUnit(unit) {
+  switch (unit.kind) {
+    case 'phase':
+      return `phase ${unit.phase} '${unit.name}'`
+    case 'task':
+      return `task '${unit.task}' in phase ${unit.phase}`
+    case 'sub':
+      return `sub '${unit.sub}'`
+    default:
+      return null
+  }
+}
+
+/** Mirror deriveNext for the per-turn path (ledger already resolved when called).
+ *  includeTasks:false → no task branch; first-incomplete phase is the floor. */
+function deriveNextUnit(wf, phases) {
+  const ledger = wf.sub_progress ?? []
+  const pendingSub = ledger.find((e) => e.status === 'pending')?.sub ?? null
+  if (pendingSub !== null) return { kind: 'sub', sub: pendingSub }
+  const failed = ledger.find((e) => e.status === 'failed' && (e.fail_count ?? 0) > 0)
+  if (failed) return { kind: 'blocked', unit: failed.sub, reason: '' }
+  const firstIncomplete = phases.find((p) => !p.complete)
+  if (firstIncomplete)
+    return { kind: 'phase', phase: firstIncomplete.phase, name: firstIncomplete.name }
+  return { kind: 'done' }
+}
+
+/** Impure forward pointer (parity with injectState.ts:forwardPointer). null unless
+ *  the next is a concrete phase|task. */
+function forwardPointer(repoRoot, wf) {
+  const phases = scanPhases(repoRoot)
+  const unit = deriveNextUnit(wf, phases)
+  if (unit.kind !== 'phase' && unit.kind !== 'task') return null
+  return { unit, remainingPhases: phases.filter((p) => !p.complete).length }
+}
+
+function workflowStateBlock(wf, forward) {
   const ledger = wf.sub_progress ?? []
   const next = ledger.find((e) => e.status === 'pending')?.sub ?? null
   const lines = [
@@ -80,6 +164,13 @@ function workflowStateBlock(wf) {
   if (next) {
     lines.push(
       `ENGINE: mid state-machine — drive sub '${next}' via \`harnessed prompt ${next}\` → spawn → \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
+    )
+  }
+  // Phase 39 (D6) — per-turn current→next pointer (parity with injectState.ts).
+  if (!next && forward && (forward.unit.kind === 'phase' || forward.unit.kind === 'task')) {
+    const n = forward.remainingPhases
+    lines.push(
+      `NEXT-UNIT: current workflow complete → next is ${describeUnit(forward.unit)} (run /auto or \`harnessed advance\`); ${n} phase${n === 1 ? '' : 's'} remain`,
     )
   }
   for (const e of ledger) {
@@ -182,7 +273,11 @@ try {
   if (!wf) process.exit(0)
 
   const budget = Number(process.env.HARNESSED_INJECT_BUDGET) || DEFAULT_INJECT_BUDGET
-  const ws = workflowStateBlock(wf)
+  // Phase 39 (D6) — derive the forward pointer only when the subs are all resolved
+  // (parity with buildInjection). `key` is the repo root holding .planning/.
+  const pending = (wf.sub_progress ?? []).find((e) => e.status === 'pending')?.sub ?? null
+  const forward = pending === null ? forwardPointer(key, wf) : null
+  const ws = workflowStateBlock(wf, forward)
 
   let learningsMd = ''
   try {

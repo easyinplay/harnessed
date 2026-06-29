@@ -5,10 +5,24 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { detectLoop } from './breakLoop.js'
+import { deriveNext, type NextUnit } from './deriveNext.js'
+import { describeUnit } from './forwardStep.js'
 import { nextPending } from './ledger.js'
+import { scanPlanning } from './planningScan.js'
 import type { CurrentWorkflowV1Type } from './schema/currentWorkflow.v1.js'
 
-export function buildWorkflowStateBlock(wf: CurrentWorkflowV1Type | null): string {
+/** Phase 39 (D6) — the per-turn forward pointer passed into the (pure) state-block
+ *  builder. Computed by the impure caller (buildInjection) so the builder stays
+ *  testable without fs: the next cross-unit work + how many phases still remain. */
+export interface NextPointer {
+  unit: NextUnit
+  remainingPhases: number
+}
+
+export function buildWorkflowStateBlock(
+  wf: CurrentWorkflowV1Type | null,
+  forward?: NextPointer | null,
+): string {
   if (!wf) return ''
   const ledger = wf.sub_progress ?? []
   const next = nextPending(ledger)
@@ -25,6 +39,16 @@ export function buildWorkflowStateBlock(wf: CurrentWorkflowV1Type | null): strin
   if (next) {
     lines.push(
       `ENGINE: mid state-machine — drive sub '${next}' via \`harnessed prompt ${next}\` → spawn → \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
+    )
+  }
+  // Phase 39 (D6) — per-turn current→next pointer. Emitted ONLY when this workflow
+  // is done (no pending sub → no ENGINE line) AND a concrete cross-unit next exists
+  // (phase|task; done/blocked yield no pointer). Keeps the agent moving forward
+  // across the task/phase boundary instead of stalling. Advisory, like ENGINE.
+  if (!next && forward && (forward.unit.kind === 'phase' || forward.unit.kind === 'task')) {
+    const n = forward.remainingPhases
+    lines.push(
+      `NEXT-UNIT: current workflow complete → next is ${describeUnit(forward.unit)} (run /auto or \`harnessed advance\`); ${n} phase${n === 1 ? '' : 's'} remain`,
     )
   }
   for (const l of loops) {
@@ -169,7 +193,11 @@ export function buildInjection(
   budget: number = DEFAULT_INJECT_BUDGET,
 ): string {
   if (!wf) return ''
-  const ws = buildWorkflowStateBlock(wf)
+  // Phase 39 (D6) — only when this workflow's subs are all resolved do we derive
+  // the cross-unit next from disk (the bin mirrors this exactly). includeTasks:false
+  // keeps it the phase-level floor (OQ-2 lean); disk I/O stays in this impure layer.
+  const forward = nextPending(wf.sub_progress ?? []) === null ? forwardPointer(repoRoot, wf) : null
+  const ws = buildWorkflowStateBlock(wf, forward)
   const ledgerSubs = (wf.sub_progress ?? []).map((e) => e.sub)
   const rel = selectWithinBudget(
     filterRelevantLearnings(parseLearnings(learningsMd), { phase: wf.phase, ledgerSubs }),
@@ -179,4 +207,15 @@ export function buildInjection(
   const ctx = findPhaseContextExcerpt(repoRoot, wf.phase, Math.max(0, budget - usedTokens))
   const pc = buildProjectContextBlock({ learnings: rel, contextExcerpt: ctx ?? undefined })
   return pc ? `${ws}\n${pc}` : ws
+}
+
+/** Impure — derive the per-turn forward pointer (Phase 39 / D6). Scans .planning/
+ *  (phase-level only: includeTasks:false → the high-value floor, OQ-2 lean) and
+ *  resolves the next cross-unit work. Returns null when the next is not a concrete
+ *  phase|task (done/blocked) or .planning is unreadable — caller emits no NEXT-UNIT. */
+function forwardPointer(repoRoot: string, wf: CurrentWorkflowV1Type): NextPointer | null {
+  const snapshot = scanPlanning({ repoRoot, currentWorkflow: wf, includeTasks: false })
+  const unit = deriveNext(snapshot)
+  if (unit.kind !== 'phase' && unit.kind !== 'task') return null
+  return { unit, remainingPhases: snapshot.phases.filter((p) => !p.complete).length }
 }
