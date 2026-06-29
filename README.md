@@ -474,7 +474,8 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed prompt <sub>` | Output a spawn-ready prompt (role + checklist + disciplines + completion/clarification protocols) for a sub-workflow. |
 | `harnessed checkpoint <action> <sub>` | Record sub-workflow start/complete/fail to `~/.claude/harnessed/checkpoints/`. |
 | `harnessed` (no args) | Zero-arg you-are-here: active-workflow dashboard + `NEXT: auto\|manual\|done` + run hint; `--json` machine-readable; no active workflow → onboarding hint (comet `/comet` analog, read-only). |
-| `harnessed next` | Deterministic next-step contract (`NEXT: auto\|manual\|done`) for the active workflow. |
+| `harnessed next` | Deterministic next-step contract. Within a workflow: `NEXT: auto\|manual\|done`. When the workflow's subs are all resolved it falls through to the next **cross-unit** (next phase/task derived from `.planning/` disk state) with an exit-code contract (`0` advance · `2` done · `10` blocked). |
+| `harnessed advance` | Forward continuation — print the next work unit (next phase/task) across the milestone and the command to run it. Print-only (the main session runs the next `/auto`); refuses to step past an incomplete earlier phase (`--force` overrides); `--json` drives a `while harnessed advance --json; do :; done` loop. |
 | `harnessed reject <sub>` | Mark a sub as user-rejected (terminal, distinct from `failed`). |
 | `harnessed compact [--tokens <n>]` | Summarize+evict resolved ledger entries (G6-safe: `fail_count>0` never evicted); auto-triggers on `checkpoint complete --tokens`. |
 | `harnessed workflows` | List in-flight workflows (one per repo). |

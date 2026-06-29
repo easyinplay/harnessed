@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.10.0] - 2026-06-30
+
 ### Added
 
 - **Forward continuation — cross-task / cross-phase advance (v12.0).** harnessed's runtime ledger tracked only one workflow invocation's sub-workflows; after a task/phase finished, nothing advanced to the next — continuation was manual re-invocation. New engine, derived (not queued) from `.planning/` disk state:
