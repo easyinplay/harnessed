@@ -1,8 +1,8 @@
 ---
 gsd_state_version: 1.0
-milestone: v12.0
-milestone_name: Forward Continuation
-status: active
+milestone: none
+milestone_name: (v12.0 Forward Continuation SHIPPED + PUBLISHED npm 4.10.0 2026-06-30)
+status: no-active-milestone
 last_updated: "2026-06-30T00:00:00.000Z"
 last_activity: 2026-06-30
 progress:
@@ -21,12 +21,13 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **ACTIVE v12.0 Forward Continuation** (see Current Position). Prior: v11.0 SHIPPED + PUBLISHED npm 4.9.0 2026-06-26; issue #1 patch 4.9.1; issue #2 fix + 三层栈 messaging pushed-not-released (npm still 4.9.1). The v5.0 state-machine arc (Spec 1 v4.2.0 + Spec 2/3 v11.0/4.9.0) fully delivered + published.
-- **Latest shipped (npm)**: **v4.9.1** 2026-06-26 (npm `harnessed@4.9.1` latest + GitHub release `v4.9.1` non-draft, CI green 3-OS, provenance) — patch: issue #1 fix (SKILL.md drift → CC-native + `harnessed run` hardening). Prior 4.9.0 = v11.0 State Machine Completion; 4.8.0 = v10.0 i18n; 4.7.0 = v8.0+v9.0+ECC. Detail: CHANGELOG `## [4.9.1]` + ROADMAP shipped rows.
+- **Current focus**: **No active milestone. v12.0 Forward Continuation SHIPPED + PUBLISHED npm 4.10.0 2026-06-30** (see Current Position). Prior: v11.0 npm 4.9.0; issue #1 patch 4.9.1.
+- **Latest shipped (npm)**: **v4.10.0** 2026-06-30 (npm `harnessed@4.10.0` latest + GitHub release `v4.10.0` non-draft, CI green 3-OS, provenance) — minor: v12.0 Forward Continuation (cross-task/phase advance) + issue #2 fix (SKILL inline state-machine + ship orchestrator). Prior 4.9.1 = issue #1; 4.9.0 = v11.0; 4.8.0 = v10.0 i18n. Detail: CHANGELOG `## [4.10.0]` + ROADMAP shipped rows.
 
 ## Current Position
 
-- **ACTIVE: v12.0 Forward Continuation** (started 2026-06-30). Closes the horizontal-advance gap: after a task/phase finishes, derive + advance to the next (cross-task / cross-phase), vs today's manual re-invocation. Design = 5-repo fusion, spec `.planning/specs/2026-06-30-forward-continuation-design.md` (DESIGN-LOCKED). `/office-hours` transparent-skipped (direction locked by the 5-repo research + user decision; not a "should we build" question). Target npm 4.10.0 (minor).
+- **v12.0 Forward Continuation SHIPPED + PUBLISHED npm 4.10.0 2026-06-30** (minor; bundled the issue #2 fix). Closes the horizontal-advance gap: after a task/phase finishes, derive + advance to the next (cross-task/phase), vs manual re-invocation. Full release flow: push main → 3-OS CI green (`28406331261`) → tag `v4.10.0` → publish.yml `npm publish --provenance` + `gh release` (`28406547619` success). Verified npm latest=**4.10.0** + gh release `v4.10.0` non-draft. Design = 5-repo fusion (gsd-pi/gsd-core/Trellis/comet/oh-my-pi), spec `.planning/specs/2026-06-30-forward-continuation-design.md`. `/office-hours` transparent-skipped (direction pre-locked). **Installed users re-run `harnessed setup`.** **Next: no active milestone.**
+- **Post-release follow-ups (deferred, non-blocking)**: harnessed-site `reference/cli.md` next/advance docs (en+zh) · 9 localized READMEs backfill (vs-native + three-layer-stack) · optional D5 `gsd_run` reuse · task-level CLI surface (resolver-ready). v12.0 milestone can be lightweight-closed (ROADMAP row added; phase dirs 37–40 stay in `phases/`).
 - **Phases (waves, spec §7)**: P37 W1 `deriveNext.ts` + `planningScan.ts` (pure core + TDD) · P38 W2 `harnessed next` exit-codes + `harnessed advance` + advance-gate · P39 W3 per-turn current→next pointer + optional `gsd_run` reuse · P40 W4 docs + verify. **P37 ✅ deriveNext.ts + planningScan.ts (13 tests) · P38 ✅ forwardStep.ts + `harnessed next` exit-codes + `harnessed advance` + gate · P39 ✅ per-turn NEXT-UNIT (ts↔bin parity, D5 gsd_run deferred) · P40 ✅ verify (full gate green) + CHANGELOG Unreleased; site CLI docs + README marketing ride the release.** **v12.0 core BUILT + GREEN local, npm UNPUBLISHED** — full gate: vitest 1673/0 · tsc 0 · biome · skill+yaml-i18n-parity · workflow-schema. Phase-level advance is the shipped floor (OQ-2); task-level resolver-ready, CLI-unwired. Target npm 4.10.0 (minor) — release pending user decision (would bundle issue #2 fix too, currently pushed-not-released at npm 4.9.1).
 - **OQ locks (2026-06-30, discuss-phase)**: OQ-1 = `advance` **print-only** (no auto-seed; main session runs the next `/auto`). OQ-2 = **phase-level advance is the floor**; task-level checkbox iteration is optional stretch. OQ-3 = **`phases/NN-*/` dir scan is the primary active-phase SoT** (completion = PLAN has matching SUMMARY, artifact-derived, naturally skips shipped) + a lightweight ROADMAP active-phases section for not-yet-created phases.
 - **Pushed-not-released**: issue #2 fix + 三层栈 messaging (commits `eaab2b4`..`5f31366`) on remote, 3-OS CI green (`28387027720`), but **npm still 4.9.1** (no tag). Release 4.9.2 deferred (user choosing forward-continuation first). Localization (9 README vs-native + three-layer-stack) deferred.
