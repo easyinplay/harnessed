@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander'
 import pkg from '../package.json' with { type: 'json' }
+import { registerAdvance } from './cli/advance.js'
 import { registerAudit } from './cli/audit.js'
 import { registerAuditLog } from './cli/audit-log.js'
 import { registerBackupList } from './cli/backup-list.js'
@@ -101,7 +102,8 @@ registerRun(program) // v3.4.4 T1 — 16th subcommand (α CLI wire; replaces dea
 registerGates(program) // 17th — gate eval JSON (which subs fire for a master)
 registerPrompt(program) // 18th — spawn-ready prompt text/json for a sub
 registerCheckpoint(program) // 19th — record sub start/complete/fail to checkpoints/
-registerNext(program) // 20th — G2 deterministic next-step contract (NEXT: auto|manual|done)
+registerNext(program) // 20th — G2 deterministic next-step contract (NEXT: auto|manual|done) + v12.0 D3 cross-unit forward continuation
+registerAdvance(program) // v12.0 Phase 38 D4 — `harnessed advance` cross-phase act (gated, print-only)
 registerReject(program) // 21st — G7-lite user-rejected terminal sub status
 registerCompact(program) // 22nd — Phase 14 compact: summarize+evict resolved ledger entries
 registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight workflows (one per repo)
