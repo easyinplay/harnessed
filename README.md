@@ -39,7 +39,7 @@ flowchart LR
 
 ## 🧱 What is the three-layer stack?
 
-A recognized software-engineering loop, not a harness invention: three nested feedback loops — **BDD → SDD → TDD** — each answering a different question. The **three layers are the loops** (the stable theory); harnessed **composes** the open-source ecosystem into each loop — and the components **overlap**, which is exactly what a composition orchestrator arbitrates.
+harnessed's three-layer stack is a software-engineering implementation of the established **BDD → SDD → TDD** nesting: three nested feedback loops, each answering a different question. The **three layers are the loops** (the stable theory); harnessed **composes** the open-source ecosystem into each loop — and the components **overlap**, which is exactly what a composition orchestrator arbitrates.
 
 | Layer | Loop | Question it answers | Composed from (overlapping) |
 |---|---|---|---|
