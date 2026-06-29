@@ -12,8 +12,6 @@
 
 > Not affiliated with, endorsed by, or sponsored by Harness Inc. (see [NOTICE](./NOTICE))
 
-> **How it compares** to [comet](https://github.com/rpamis/comet) and [Trellis](https://github.com/mindfold-ai/Trellis) — an honest, snapshot-dated comparison (including where harnessed lags): [`docs/comparison.md`](./docs/comparison.md).
-
 ---
 
 ## ✨ TL;DR
@@ -54,6 +52,25 @@ flowchart LR
 - **L0 Discipline Substrate** — global cross-stage behavior baseline (karpathy principles + output-style + language + operational + priority + protocols), applied universally
 - **Package manager mindset** — install dependency graph auto-resolves, doctor health check, install-base one-shot full install
 - **Unified entry point** — users face `/discuss /plan /task /verify /ship` master slash commands without learning each upstream's terminology; sub commands explicitly invoke a single stage (e.g. `/discuss-strategic` runs only the strategic-layer clarification)
+
+---
+
+## 🆚 vs Native Claude Code / Codex
+
+Native agents give you primitives; harnessed wires them into a methodology. Where a native cell says a primitive "exists," you still design, wire, and maintain it yourself per project — harnessed ships it pre-composed and engine-driven.
+
+| Dimension | Native Claude Code | Native Codex | harnessed |
+|---|---|---|---|
+| **Workflow / methodology** | Primitives only — you design the flow each time | Fewer primitives — freestyle per prompt | Codified **Discuss→Ship** 5-stage three-layer-stack engine (gstack + GSD + superpowers TDD) |
+| **Instruction injection** | `CLAUDE.md` + skills + hooks exist, but static & wired by hand | `AGENTS.md` only — no skills/hooks | Per-turn breadcrumb hook + task-scoped routing + learnings injected each cycle |
+| **State / progress** | Chat context — lost on `/clear` / compaction | Chat context — no persistence layer | On-disk `.planning/` + `current-workflow.json` ledger + checkpoint evidence |
+| **Cross-session recovery** | Re-explain the context by hand | Re-explain the context by hand | `harnessed status --recover`: you-are-here + next step |
+| **Verification / "done"** | Agent self-reports "done" | Agent self-reports "done" | Independent review subagents + **fail-CLOSED evidence guard** (missing artifact = not done) |
+| **Subagent orchestration** | Subagents + Agent Teams available, but orchestrated by hand | No subagent/team primitive | `gates → prompt → spawn → checkpoint`; Agent Teams auto-enabled per task |
+| **Learning loop** | None | None | `LEARNINGS.md` auto-captured + injected into the next cycle |
+| **Platform reach** | Claude Code only | Codex only | **Cross-harness** — Claude Code primary, Codex via platform layer |
+
+> Native agents win on zero-setup, zero-overhead for trivial one-off edits. harnessed earns its keep the moment work spans multiple steps, sessions, or subagents — where freestyle drift and lost-in-chat state start costing you.
 
 ---
 
