@@ -47,7 +47,7 @@ A recognized software-engineering loop, not a harness invention: three nested fe
 | **② Spec** | SDD | *How* it's structured | GSD plan-phase → requirements / design / tasks · contracts (Spec Kit / ECC patterns) |
 | **③ Implementation** | TDD | Does it actually *work* | superpowers TDD red-green · subagent execution · GSD verify-work · ralph-loop completion |
 
-The loops are **nested lenses, not phases** — the classic Cucumber BDD-outer + TDD-inner double-loop, extended with a GenAI-era SDD spec ring into a triple-loop. Flow is outer→inner, but any inner loop **loops back** the moment it exposes a gap (a contract contradiction kicks back to Spec; an ambiguous requirement kicks back to Behavior).
+The loops are **nested lenses, not phases** — the classic Cucumber BDD-outer + TDD-inner double-loop, extended with a GenAI-era SDD spec ring into a triple-loop. harnessed runs the default outer→inner traversal as its 5-stage cadence, plus the **back-edges it ships today**: Verify kicks failing work back to Task, a subagent that hits a gray area round-trips to clarification before continuing, and every shipped cycle feeds learnings back into the next Discuss. (Finer-grained structured back-edges — e.g. a contract contradiction routing straight to Spec, an ambiguous requirement to Behavior — are on the roadmap, not shipped. harnessed is the linear-cadence realization of the triple-loop; the full routed graph is its evolution path.)
 
 **The components overlap — that's the point.** **GSD** threads through all three loops as the orchestration backbone, **gstack** spans Behavior + Review, **superpowers** spans Behavior (brainstorm) + Implementation (TDD). harnessed wires them — and arbitrates the overlap — into one engine. Two **cross-cutting disciplines** run through every layer: **karpathy principles** (*how* to code — simplicity-first, surgical diffs) + **mattpocock moves** (on-demand tactical tools like `/diagnose`, `/zoom-out`).
 
@@ -79,7 +79,7 @@ Native agents give you primitives; harnessed wires them into a methodology. Wher
 
 | Dimension | Native Claude Code | Native Codex | harnessed |
 |---|---|---|---|
-| **Workflow / methodology** | Primitives only — you design the flow each time | Fewer primitives — freestyle per prompt | Codified **Discuss→Ship** 5-stage three-layer-stack engine (gstack + GSD + superpowers TDD) |
+| **Workflow / methodology** | Primitives only — you design the flow each time | Fewer primitives — freestyle per prompt | Codified **Discuss→Ship** 5-stage three-layer-stack engine — BDD + SDD + TDD loops + 2 cross-cutting (Review + Ship) |
 | **Instruction injection** | `CLAUDE.md` + skills + hooks exist, but static & wired by hand | `AGENTS.md` only — no skills/hooks | Per-turn breadcrumb hook + task-scoped routing + learnings injected each cycle |
 | **State / progress** | Chat context — lost on `/clear` / compaction | Chat context — no persistence layer | On-disk `.planning/` + `current-workflow.json` ledger + checkpoint evidence |
 | **Cross-session recovery** | Re-explain the context by hand | Re-explain the context by hand | `harnessed status --recover`: you-are-here + next step |
