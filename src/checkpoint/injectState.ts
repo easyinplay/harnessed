@@ -19,6 +19,14 @@ export function buildWorkflowStateBlock(wf: CurrentWorkflowV1Type | null): strin
     `status: ${wf.status}`,
     next ? `next: ${next}` : 'next: (none — all subs resolved)',
   ]
+  // issue #2 (T2) — anti-freestyle enforcement. While a sub is still pending, pull
+  // a drifting agent back to the engine/ledger instead of letting it freestyle the
+  // orchestration. Advisory tone like SHIP-READY/VERIFY-MODE; absent when resolved.
+  if (next) {
+    lines.push(
+      `ENGINE: mid state-machine — drive sub '${next}' via \`harnessed prompt ${next}\` → spawn → \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
+    )
+  }
   for (const l of loops) {
     lines.push(
       `BREAK-LOOP: sub '${l.sub}' failed ${l.count}x — stop retrying, run break-loop skill`,

@@ -76,6 +76,12 @@ function workflowStateBlock(wf) {
     `status: ${wf.status}`,
     next ? `next: ${next}` : 'next: (none — all subs resolved)',
   ]
+  // issue #2 (T2) — anti-freestyle enforcement (parity with injectState.ts).
+  if (next) {
+    lines.push(
+      `ENGINE: mid state-machine — drive sub '${next}' via \`harnessed prompt ${next}\` → spawn → \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
+    )
+  }
   for (const e of ledger) {
     if ((e.fail_count ?? 0) >= 3)
       lines.push(

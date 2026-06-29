@@ -109,6 +109,29 @@ describe('buildWorkflowStateBlock', () => {
   it('emits no VERIFY-MODE line when verify_mode is unset (byte-identical to today)', () => {
     expect(buildWorkflowStateBlock(reminderWf({}))).not.toContain('VERIFY-MODE')
   })
+
+  // issue #2 (T2) — anti-freestyle ENGINE enforcement line, emitted only while a
+  // sub is still pending (mid state-machine). Pulls a drifting agent back to the
+  // ledger/engine instead of letting it freestyle the orchestration.
+  it('emits an ENGINE line naming the next sub when a sub is pending', () => {
+    const wf: CurrentWorkflowV1Type = {
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'task',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-06-12T00:00:00.000Z',
+      sub_progress: [{ sub: 'b', status: 'pending', gate_fired: true }],
+    }
+    const out = buildWorkflowStateBlock(wf)
+    expect(out).toContain('ENGINE:')
+    expect(out).toContain("sub 'b'")
+    expect(out).toContain('harnessed checkpoint')
+    expect(out).toContain('Do NOT freestyle')
+  })
+
+  it('emits no ENGINE line when all subs are resolved (next is null)', () => {
+    expect(buildWorkflowStateBlock(reminderWf({}))).not.toContain('ENGINE:')
+  })
 })
 
 // ── Phase 17: parseLearnings / filterRelevantLearnings / selectWithinBudget ──
