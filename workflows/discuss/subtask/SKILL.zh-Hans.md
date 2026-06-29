@@ -58,16 +58,20 @@ Sister `workflows/judgments/subtask-gate.yaml`:
 
 ## 如何调用
 
-CC-native 编排。**不要** pipe 到 `harnessed run discuss-subtask` —— 那是 CI/headless 路径(in-process
-SDK spawn,会阻塞 session、绕过 Agent Teams,在 Claude Code 内部调用时还会挂死)。
+澄清需要真实用户对话,所以本阶段直接在**本 session** 跑 —— **不要** spawn,也**不要**自行演绎:
+按以下步骤走,把 locked spec 持久化给执行阶段。
 
-改用 `/discuss-subtask` slash command(由 `harnessed setup` 生成于 `~/.claude/commands/discuss-subtask.md`)。
-它以 CC-native 方式驱动:`harnessed gates` 决定哪些 sub fire,`harnessed prompt <sub>` 给出每个
-spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn 已 fire 的 sub,
-每个结果用 `harnessed checkpoint` 记录。完整 state-machine 步骤见 `~/.claude/commands/discuss-subtask.md`;
-若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
+1. 对 "$ARGUMENTS" 评估澄清判据:
+   - **战略层** —— 新功能 / 新 milestone / 商业 scope 不清 → gstack `/office-hours` + `/plan-ceo-review`
+   - **Phase 层** —— ≥2 个 open implementation decision / 跨 phase API contract 不清 → GSD `/gsd-discuss-phase`
+   - **子任务层** —— ≥2 个不同方案 / 核心算法 / API contract 设计 / 高错误成本 → superpowers brainstorming
+2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。
+3. 不 fire 的层透明 skip —— 说明哪些被 skip 及原因。
+4. 把 locked 决策持久化到 `.planning/`(planning-with-files 的 `findings.md` / `task_plan.md`)。
 
-<!-- harnessed-generated:v4.9.1 -->
+产出:一份 locked spec,执行阶段(`/plan` → `/task` → `/verify`)无需再问用户即可消费。
+
+<!-- harnessed-generated:v4.9.3 -->
 
 ## 参考资料
 

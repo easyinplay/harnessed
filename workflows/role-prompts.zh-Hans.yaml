@@ -89,6 +89,19 @@ prompts:
     severity: "逐 sub fire/skip(附原因);关键模块上 paranoid 强制"
     description: "Stage 4 Verify master — progress → 并行 reviewers → simplify 收尾(关键模块上 paranoid 强制)。"
 
+  ship:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 5 ship 分发器"
+    responsibility: |
+      verify 之后的 release 阶段。顺序:`/ship-preflight`(总是,串行第 1 ——
+      只读发布就绪门)→ 把 PR / deploy 委派给 gstack `/ship`(组合,不重新实现)
+      → 经 `publish.yml` CI 在 tag push 时 publish。Deploy 边界 = TAG-READY:
+      本 stage 绝不 push 到 remote、绝不 publish 到 npm、绝不自行创建 git tag。
+    checklist: []
+    severity: "preflight pass/fail → tag-ready(委派 PR/deploy;publish 留在 CI)"
+    description: "Verify 之后的 release 阶段 —— preflight → 把 PR/deploy 委派给 gstack /ship → 经 CI publish(tag-ready 边界)。"
+
   # ============================================================================
   # Standalone
   # ============================================================================
@@ -487,6 +500,26 @@ prompts:
       - "若关卡未触发(常规 PR),不要升级 —— 回退到单 agent fan-out"
     severity: "ship-blocker / ship-with-action / informational"
     description: "Pattern C 4-specialist Agent Team —— 关键发布的多维度审查,带 SendMessage 交叉质询。"
+
+  # ============================================================================
+  # ship-* (1 sub)
+  # ============================================================================
+
+  ship-preflight:
+    primary_cap: "release-preflight"
+    specialist: "发布就绪门"
+    responsibility: |
+      只读发布就绪门,在 ship 阶段最先(串行第 1)运行。跑
+      `harnessed release-preflight` 确认 repo 是否 tag-ready;任一检查失败即
+      阻塞 shipping。此处不 push / publish / 创建 tag。
+    checklist:
+      - "CHANGELOG `## [Unreleased]` 非空(本次 release 已记录文档)"
+      - "`package.json` 带合法 semver 版本"
+      - "工作树 git-clean(无未提交改动)"
+      - "`v<version>` git tag 尚不存在(tag-absent)"
+      - "任一失败:STOP,给出 `fix:` 提示,不要推进到 PR / tag"
+    severity: "pass / fail(fail 阻塞 ship 阶段 —— 只读,绝不 push / publish / tag)"
+    description: "只读发布就绪门(CHANGELOG `[Unreleased]` / version / git-clean / tag-absent);失败即阻塞。"
 
   # ============================================================================
   # Multi-cap workflow notes

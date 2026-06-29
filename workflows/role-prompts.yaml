@@ -101,6 +101,20 @@ prompts:
     severity: "per-sub fire/skip (with reason); paranoid is mandatory on critical modules"
     description: "Stage 4 Verify master — progress → parallel reviewers → simplify tail (paranoid mandatory on critical modules)."
 
+  ship:
+    primary_cap: ""
+    is_master: true
+    specialist: "Stage 5 ship dispatcher"
+    responsibility: |
+      Release stage after verify. Order: `/ship-preflight` (always, serial 1 —
+      read-only release-readiness gate) → delegate PR / deploy to gstack `/ship`
+      (composition, not reimplementation) → publish via `publish.yml` CI on tag
+      push. Deploy boundary = TAG-READY: this stage never pushes to the remote,
+      never publishes to npm, and never creates a git tag on its own.
+    checklist: []
+    severity: "preflight pass/fail → tag-ready (delegate PR/deploy; publish stays in CI)"
+    description: "Release stage after Verify — preflight → delegate PR/deploy to gstack /ship → publish via CI (tag-ready boundary)."
+
   # ============================================================================
   # Standalone
   # ============================================================================
@@ -509,6 +523,26 @@ prompts:
       - "If the gate doesn't fire (regular PR), DO NOT escalate — fall back to single-agent fan-out"
     severity: "ship-blocker / ship-with-action / informational"
     description: "Pattern C 4-specialist Agent Team — critical-release multi-dimensional review with SendMessage cross-questioning."
+
+  # ============================================================================
+  # ship-* (1 sub)
+  # ============================================================================
+
+  ship-preflight:
+    primary_cap: "release-preflight"
+    specialist: "Release-readiness gate"
+    responsibility: |
+      Read-only release-readiness gate, run first (serial 1) in the ship stage.
+      Runs `harnessed release-preflight` to confirm the repo is tag-ready; a
+      failing check blocks shipping. Nothing is pushed / published / tagged here.
+    checklist:
+      - "CHANGELOG `## [Unreleased]` is non-empty (this release is documented)"
+      - "`package.json` carries a valid semver version"
+      - "Working tree is git-clean (no uncommitted changes)"
+      - "A `v<version>` git tag does NOT already exist (tag-absent)"
+      - "On any failure: STOP, surface the `fix:` hint, do not proceed to PR / tag"
+    severity: "pass / fail (fail blocks the ship stage — read-only, never pushes / publishes / tags)"
+    description: "Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); blocks on failure."
 
   # ============================================================================
   # Multi-cap workflow notes

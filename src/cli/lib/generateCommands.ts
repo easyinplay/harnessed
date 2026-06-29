@@ -103,7 +103,7 @@ const INTERACTIVE_COMMANDS = new Set([
 /** v4.0 — ORCHESTRATOR: master stages that gate-eval which subs fire, then
  *  drive CC-native subagent spawns (NOT harnessed-run SDK spawn). `auto` also
  *  runs interactive discuss inline first. */
-const ORCHESTRATOR_COMMANDS = new Set(['auto', 'plan', 'task', 'verify'])
+const ORCHESTRATOR_COMMANDS = new Set(['auto', 'plan', 'task', 'verify', 'ship'])
 
 const MARKER = `<!-- harnessed-generated:v3.4.4 -->`
 
@@ -319,7 +319,8 @@ export function generateCommandFile(
  *  to hint where the runtime yaml lives. */
 function nameToYamlHintPath(name: string): string {
   if (['auto', 'research', 'retro'].includes(name)) return `${name}/workflow.yaml`
-  if (['discuss', 'plan', 'task', 'verify'].includes(name)) return `${name}/auto/workflow.yaml`
+  if (['discuss', 'plan', 'task', 'verify', 'ship'].includes(name))
+    return `${name}/auto/workflow.yaml`
   const dashIdx = name.indexOf('-')
   if (dashIdx > 0) {
     return `${name.slice(0, dashIdx)}/${name.slice(dashIdx + 1)}/workflow.yaml`

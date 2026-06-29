@@ -39,13 +39,16 @@ Sister `workflows/capabilities.yaml` 条目：
 
 ## 如何调用
 
-CC-native 编排。**不要** pipe 到 `harnessed run research` —— 那是 CI/headless 路径(in-process
-SDK spawn,会阻塞 session、绕过 Agent Teams,在 Claude Code 内部调用时还会挂死)。
+下面这套编号序列**就是** state machine —— 用 Bash 执行。**不要**从上方 Overview 自行演绎等价流程:
+freestyle 会旁路引擎(无 ledger、无 evidence guard)。harnessed 给你 spawn-ready prompt;**你**用
+CC-native Task / Agent 工具 spawn subagent(保持 session 响应 + 让澄清 round-trip 能回到用户)。
 
-改用 `/research` slash command(由 `harnessed setup` 生成于 `~/.claude/commands/research.md`)。
-它以 CC-native 方式驱动:`harnessed gates` 决定哪些 sub fire,`harnessed prompt <sub>` 给出每个
-spawn-ready prompt,然后用 CC-native subagent(Task / Agent 工具)逐个 spawn 已 fire 的 sub,
-每个结果用 `harnessed checkpoint` 记录。完整 state-machine 步骤见 `~/.claude/commands/research.md`;
-若该文件不存在,自行按 gates → prompt → spawn → checkpoint 同序执行。
+**不要** pipe 到 `harnessed run research` —— 那是 CI/headless 路径(in-process SDK spawn,在 Claude
+Code 内部会阻塞 session)。
 
-<!-- harnessed-generated:v4.9.1 -->
+1. Bash: `harnessed prompt research --task "$ARGUMENTS" --json` → 解析 `{prompt, max_iterations, model}`。
+2. 用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,用 ralph-loop plugin 包裹:`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`。若 plugin 未装,自循环:spawn → 检查 `<promise>COMPLETE</promise>` → 把上轮输出 append 后重 spawn(至多 max_iterations)。
+3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn。
+4. 命中 `<promise>COMPLETE</promise>`:Bash `harnessed checkpoint complete research --summary "<one-line>"`。evidence guard 在此运行(fail-CLOSED):若声明的 `artifacts_expected` 文件缺失会 exit 非零 —— 重 spawn 产出它再算 done。
+
+<!-- harnessed-generated:v4.9.3 -->
