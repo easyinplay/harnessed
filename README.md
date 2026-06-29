@@ -70,6 +70,7 @@ Mapped to the runtime loop above: **Discuss = Behavior (BDD) · Plan = Spec (SDD
 - **L0 Discipline Substrate** — global cross-stage behavior baseline (karpathy principles + output-style + language + operational + priority + protocols), applied universally
 - **Package manager mindset** — install dependency graph auto-resolves, doctor health check, install-base one-shot full install
 - **Unified entry point** — users face `/discuss /plan /task /verify /ship` master slash commands without learning each upstream's terminology; sub commands explicitly invoke a single stage (e.g. `/discuss-strategic` runs only the strategic-layer clarification)
+- **Forward continuation** — `harnessed next` / `harnessed advance` carry you across tasks and phases: when one finishes, the next is **derived from `.planning/` disk state** (a phase is done when its `PLAN` has a matching `SUMMARY`) — no queue to maintain, so a mid-stream new phase is picked up automatically, and resume re-derives from disk. A per-turn `NEXT-UNIT` breadcrumb points at what's next
 
 ---
 
