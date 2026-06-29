@@ -37,6 +37,24 @@ flowchart LR
 
 ---
 
+## 🧱 What is the three-layer stack?
+
+A recognized software-engineering loop, not a harness invention: three nested feedback loops — **BDD → SDD → TDD** — each answering a different question. The **three layers are the loops** (the stable theory); harnessed **composes** the open-source ecosystem into each loop — and the components **overlap**, which is exactly what a composition orchestrator arbitrates.
+
+| Layer | Loop | Question it answers | Composed from (overlapping) |
+|---|---|---|---|
+| **① Behavior** | BDD | *What* to build + how we know it's done | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → acceptance criteria |
+| **② Spec** | SDD | *How* it's structured | GSD plan-phase → requirements / design / tasks · contracts (Spec Kit / ECC patterns) |
+| **③ Implementation** | TDD | Does it actually *work* | superpowers TDD red-green · subagent execution · GSD verify-work · ralph-loop completion |
+
+The loops are **nested lenses, not phases** — the classic Cucumber BDD-outer + TDD-inner double-loop, extended with a GenAI-era SDD spec ring into a triple-loop. Flow is outer→inner, but any inner loop **loops back** the moment it exposes a gap (a contract contradiction kicks back to Spec; an ambiguous requirement kicks back to Behavior).
+
+**The components overlap — that's the point.** **GSD** threads through all three loops as the orchestration backbone, **gstack** spans Behavior + Review, **superpowers** spans Behavior (brainstorm) + Implementation (TDD). harnessed wires them — and arbitrates the overlap — into one engine. Two **cross-cutting disciplines** run through every layer: **karpathy principles** (*how* to code — simplicity-first, surgical diffs) + **mattpocock moves** (on-demand tactical tools like `/diagnose`, `/zoom-out`).
+
+Mapped to the runtime loop above: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, then **Verify + Ship** close it with evidence gates.
+
+---
+
 > Wait — can harnessed really go toe-to-toe with upstream giants like superpowers / gstack / GSD?
 > Of course — we **stand on the shoulders of giants**. See further, Newton said. 🧐
 > ... *(whispers)* Though on closer look, more like the parrot perched on said shoulder.
@@ -46,7 +64,7 @@ flowchart LR
 
 ## 🎯 Key Differentiators
 
-- **Three-layer stack machine-executed** — `gstack governance` + `GSD project manager` + `superpowers senior engineer` + `karpathy 4 principles` + `mattpocock 23 moves`, 5 pillars at 100% capture
+- **Three-layer stack machine-executed** — the **BDD→SDD→TDD nested triple-loop** ([what's that?](#-what-is-the-three-layer-stack)), composed from `gstack` + `GSD` + `superpowers` (overlapping, GSD as the backbone) with `karpathy 4 principles` + `mattpocock 23 moves` as cross-cutting disciplines
 - **No vendoring of upstream** — manifests describe install/check; on upstream upgrade users just re-install to get the latest version
 - **Composition Skill** — in-house workflow skills act as the conductor's baton, orchestrating multiple upstreams in concert. **1 super-master `/auto` + 5 stage masters + 19 sub-workflows + 2 standalones = 27 namespace-layered workflows**, full 5-stage machine-execution (`/auto` one-shot across stages / `/discuss /plan /task /verify /ship` single stage / 19 three-layer-stack subs / `/research /retro` 2 standalones)
 - **L0 Discipline Substrate** — global cross-stage behavior baseline (karpathy principles + output-style + language + operational + priority + protocols), applied universally
