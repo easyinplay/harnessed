@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Forward continuation — cross-task / cross-phase advance (v12.0).** harnessed's runtime ledger tracked only one workflow invocation's sub-workflows; after a task/phase finished, nothing advanced to the next — continuation was manual re-invocation. New engine, derived (not queued) from `.planning/` disk state:
+  - `deriveNext()` (`src/checkpoint/deriveNext.ts`) + `scanPlanning()` (`src/checkpoint/planningScan.ts`) — a pure resolver over a disk snapshot returns the next unit (`sub` / `task` / `phase` / `blocked` / `done`). Stateless "first-incomplete" pointer: phase complete ⇔ every `NN-*-PLAN.md` has a matching `NN-*-SUMMARY.md` (artifact-derived, naturally skips shipped). Mid-inserted phases (incl. decimals like `16.1`) and resume are picked up automatically — no queue to sync.
+  - `harnessed next` extended (`src/cli/next.ts`) — when the active workflow's subs are all resolved it falls through to the next cross-unit with an exit-code contract (`0` advance · `2` done · `10` blocked · `1` error). Mid-flight sub semantics (`auto|manual|done`) unchanged.
+  - `harnessed advance` (NEW, `src/cli/advance.ts`) — print-only (does not auto-seed or spawn; the main session runs the next `/auto`), with an advance-gate that refuses to step past an incomplete earlier phase (`--force` overrides, recorded), and `--json` for a `while harnessed advance --json; do :; done` driver loop. Gate-reject exits `11`.
+  - Per-turn `NEXT-UNIT:` breadcrumb (`injectState.ts` + `bin/harnessed-inject-state.mjs`, ts↔bin parity) — when a workflow completes, the next-turn injection points at the next phase ("current workflow complete → next is phase N …"), the cross-unit pointer the per-turn channel lacked.
+
+  Design = a 5-repo comparative study (gsd-pi · gsd-core · Trellis · comet · oh-my-pi) — all converge on "derive next from disk SoT, never maintain a queue". harnessed-native scan is the floor; optional `gsd_run query` reuse deferred to a follow-on. Spec: `.planning/specs/2026-06-30-forward-continuation-design.md`. Phase-level advance is the shipped floor; task-level checkbox iteration is supported in the resolver but not yet wired to the CLI surface.
+
+### Fixed
+
+- **SKILL.md injected philosophy, not the executable state-machine (issue #2).** Triggering `/auto` (and the other workflows) injected the philosophy-layer `SKILL.md`, whose "How to invoke" was a cross-file pointer to `commands/<name>.md` — so the agent read the philosophy and freestyled, bypassing the engine (no `gates`/`checkpoint`/ledger/evidence-guard). Fix: all 52 SKILL invoke sections now **inline** the deterministic engine sequence (per body type) + an anti-freestyle directive (a Trellis-style positive-invariant test guards drift); and the per-turn breadcrumb gained an `ENGINE:` enforcement line that pulls a started-but-drifting agent back to the state machine. Also **promoted `ship` to an orchestrator** (a documented stage-master that was missing its `role-prompts.yaml` entry, so `commands/ship.md` never generated and its SKILL rendered as a leaf execution body).
+
 ## [4.9.1] - 2026-06-26
 
 **Fix (issue #1): `/auto` via SKILL.md drove the deprecated `harnessed run` and hung.** When triggered through a `SKILL.md` "How to invoke" section, `/auto` (and the sister stage skills) instructed the agent to Bash-run `harnessed run <name> --task-stdin`. Inside a Claude Code session that path does an in-process nested SDK spawn that cannot acquire an execution/auth context — it silently no-ops then hangs until timeout (the reported `EXIT=124` / 108s). Root cause: the v4.0 migration rewrote the sibling `~/.claude/commands/<name>.md` generator to CC-native orchestration but left all 48 `SKILL.md` invoke sections on the now-CI/headless-only `harnessed run`.
