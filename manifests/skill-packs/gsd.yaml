@@ -19,7 +19,7 @@ spec:
   install:
     method: npm-cli
     cmd: "npx --yes @opengsd/gsd-core@latest --claude --global"
-    npm_version: ^1.4.1
+    npm_version: ^1.6.0
     idempotent_check: "test -d ~/.claude/skills/gsd-plan-phase"
   verify:
     cmd: "test -f ~/.claude/skills/gsd-plan-phase/SKILL.md"
@@ -30,8 +30,8 @@ spec:
       - ~/.claude/skills/gsd-plan-phase
   upstream_health:
     stability: stable
-    last_check: "2026-06-09"
-    last_known_good_version: 1.4.1
+    last_check: "2026-06-30"
+    last_known_good_version: 1.6.0
     fallback_action: warn
   signed_by: easyinplay
   platforms:

@@ -37,4 +37,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| (none) | — | No active milestone. v12.0 Forward Continuation SHIPPED + PUBLISHED npm 4.10.0 2026-06-30 (closed lightweight, audit 9/9+4/4); next direction TBD. |
+| v13.0 Upstream Re-sync | active (P41/4) | gstack 1.52→1.58 · gsd ^1.4.1→^1.6.0 · superpowers v5.1→v6.0.3 pin bump + 5 selective wire (verification-before-completion · gsd-eval-review · /diagram · gsd-validate-phase · systematic-debugging). Spec `specs/2026-06-30-upstream-resync-v13.md`. Started 2026-06-30. |

@@ -23,7 +23,7 @@ spec:
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin marketplace add obra/superpowers-marketplace && /plugin install superpowers@superpowers-marketplace"
-    git_ref: v5.1.0
+    git_ref: v6.0.3
     idempotent_check: "/plugin list | grep -q superpowers"
   verify:
     cmd: "/plugin list | grep -q superpowers"
@@ -32,8 +32,8 @@ spec:
     cmd: "/plugin uninstall superpowers@superpowers-marketplace"
   upstream_health:
     stability: stable
-    last_check: "2026-05-11"
-    last_known_good_version: 5.1.0
+    last_check: "2026-06-30"
+    last_known_good_version: 6.0.3
     fallback_action: warn
   signed_by: easyinplay
   platforms:

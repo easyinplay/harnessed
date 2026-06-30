@@ -19,7 +19,7 @@ spec:
   install:
     method: git-clone-with-setup
     cmd: "rm -rf ~/.claude/skills/gstack && git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup.sh"
-    git_ref: 1626d4857bfe30da2690dd6a3217961934aa3192
+    git_ref: 14fc0866d9ac9d09d25adcac7b4437c0a235902b
     idempotent_check: "test -d ~/.claude/skills/gstack/.git"
   verify:
     cmd: "test -f ~/.claude/skills/gstack/skills/office-hours.md"
@@ -30,8 +30,8 @@ spec:
       - ~/.claude/skills/gstack
   upstream_health:
     stability: stable
-    last_check: "2026-06-09"
-    last_known_good_version: 1.52.1.0
+    last_check: "2026-06-30"
+    last_known_good_version: 1.58.0.0
     fallback_action: warn
   signed_by: easyinplay
   platforms:

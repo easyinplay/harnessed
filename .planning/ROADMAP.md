@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v12.0 Forward Continuation shipped npm 4.10.0 2026-06-30 (closed lightweight, audit 9/9+4/4); next direction TBD.
+> Shipped history = indexed archive (do NOT re-plan). **Active milestone: v13.0 Upstream Re-sync** (gstack/gsd/superpowers pin bump + 5 selective wire) — spec `specs/2026-06-30-upstream-resync-v13.md`, started 2026-06-30.
 > Current published npm: **4.11.3** (2026-06-30; v12.0 shipped at 4.10.0, 4.10.1→4.11.3 are post-milestone patches) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
