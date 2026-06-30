@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.10.1] - 2026-06-30
+
+### Fixed
+
+- **`harnessed setup` force-update robustness** (a real install surfaced 6 of 14 already-installed components failing on the optional force-update pass; the core install — 26 workflows + commands — was unaffected). Learned from comet's idempotent + fail-soft installer:
+  - **Re-runnable git-clone manifests (Fix A).** `gstack` / `frontend-design` / `ui-ux-pro-max` cloned/copied into their final skill dir without removing it first, so a force-update re-run hit `git clone`/`cp` into an existing directory and exited 1. Each manifest now `rm -rf <final-dest>` immediately before writing it.
+  - **Longer install timeout (Fix B).** `DEFAULT_INSTALL_TIMEOUT_MS` 120s → 300s — `npx skills add …` cold-fetch + clone routinely exceeded 120s (the `playwright-test` / `mattpocock-skills` timeouts), matching comet's 300s for npx-based installs.
+  - **Fail-soft "kept-existing" (Fix C).** When a force-update *refresh* of an already-installed component fails but the component is still present (its `idempotent_check` still passes), it is now reported as **`kept-existing`** (warning — prior version retained, re-run later to retry) instead of a red **`failed`**. A genuinely-removed component still reports `failed` (honest, via the presence probe). This turns the alarming "6 failed" into "6 kept existing — still usable", and absorbs upstream drift (e.g. a stale `verify` path) without going red.
+
+  Additive, no schema change. The optional force-update is now idempotent + degrades gracefully; installed users re-run `harnessed setup` to pick it up.
+
 ## [4.10.0] - 2026-06-30
 
 ### Added
