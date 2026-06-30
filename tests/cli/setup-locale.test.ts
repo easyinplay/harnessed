@@ -33,6 +33,8 @@ vi.mock('../../src/cli/lib/setup-helpers.js', () => ({
   warnIfAgentTeamsMissing: vi.fn(),
 }))
 vi.mock('../../src/cli/lib/auto-install.js', () => ({ runAutoInstall: vi.fn() }))
+// Patch 4.11.1 — stub the version banner (no npm subprocess / no output in test).
+vi.mock('../../src/cli/lib/version-banner.js', () => ({ printSetupVersionBanner: vi.fn() }))
 vi.mock('../../src/cli/lib/generateCommands.js', () => ({
   loadRolePrompts: vi.fn(async () => ({})),
   writeAllCommands: vi.fn(async () => ({ results: [] })),

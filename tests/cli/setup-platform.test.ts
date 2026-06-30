@@ -25,6 +25,8 @@ vi.mock('../../src/installers/index.js', () => ({ runInstall: vi.fn() }))
 vi.mock('../../src/manifest/validate.js', () => ({ validateManifestFile: vi.fn() }))
 // Keep the run short + side-effect free past the platform-apply step.
 vi.mock('../../src/cli/lib/auto-install.js', () => ({ runAutoInstall: vi.fn() }))
+// Patch 4.11.1 — stub the version banner (no npm subprocess / no output in test).
+vi.mock('../../src/cli/lib/version-banner.js', () => ({ printSetupVersionBanner: vi.fn() }))
 vi.mock('../../src/cli/lib/setup-helpers.js', () => ({
   runStepBInstall: vi.fn(async () => ({
     installed: [],

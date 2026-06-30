@@ -16,7 +16,6 @@ import { validateManifestFile } from '../../manifest/validate.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
 import type { ScanResult } from './scan-nested.js'
 import { scanWorkflowsNested } from './scan-nested.js'
-import { compareVersions } from './version-check.js'
 
 export type { NestedWorkflow, ScanResult } from './scan-nested.js'
 
@@ -246,36 +245,4 @@ export async function makeIdempotentProbe(
       return false
     }
   }
-}
-
-// ── Patch 4.11.1 — setup version banner ───────────────────────────────────────
-//
-// `harnessed setup` prints its own version + an npm-latest comparison at the very
-// top of the run so users (and bug reports) unambiguously know which build ran —
-// a stale log was mistaken for a new-version regression. `latest` is whatever
-// fetchLatestVersion() resolved (string | null, fail-soft/timeout-bounded — never
-// throws, offline → null). This is pure so the unit test needs no network.
-
-/** Build the banner lines for `harnessed setup`. Line 1 is always the installed
- *  version; line 2 (when determinable) is the npm-latest verdict:
- *    behind  → `⚠ update available: <installed> → <latest> — npm install -g harnessed@latest`
- *    current → `✓ latest (v<latest>)`
- *    ahead   → `✓ latest (v<installed>)` (local/dev build newer than npm)
- *    offline → `  could not check latest version`
- *    unknown (malformed version) → no verdict line (no false claim). */
-export function versionBannerLines(installed: string, latest: string | null): string[] {
-  const lines = [`harnessed setup v${installed}`]
-  if (latest === null) {
-    lines.push('  could not check latest version')
-    return lines
-  }
-  const cmp = compareVersions(installed, latest)
-  if (cmp === 'behind') {
-    lines.push(`⚠ update available: ${installed} → ${latest} — npm install -g harnessed@latest`)
-  } else if (cmp === 'current') {
-    lines.push(`✓ latest (v${latest})`)
-  } else if (cmp === 'ahead') {
-    lines.push(`✓ latest (v${installed})`)
-  }
-  return lines
 }

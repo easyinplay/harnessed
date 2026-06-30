@@ -2,7 +2,7 @@
 // already-resolved npm-latest in → printable lines out), so no network here.
 
 import { describe, expect, it } from 'vitest'
-import { versionBannerLines } from '../../src/cli/lib/setup-helpers.js'
+import { versionBannerLines } from '../../src/cli/lib/version-banner.js'
 
 describe('versionBannerLines', () => {
   it('always prints the installed version as line 1', () => {

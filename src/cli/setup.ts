@@ -17,7 +17,6 @@
 import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
-import pkg from '../../package.json' with { type: 'json' }
 import { getLocale, t } from '../i18n/index.js'
 import { detectPlatform, getCommandsDir, getSkillsDir } from '../installers/lib/platform.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
@@ -32,10 +31,9 @@ import {
   runStepBInstall,
   type StepBResult,
   scanWorkflowsWithSkill,
-  versionBannerLines,
   warnIfAgentTeamsMissing,
 } from './lib/setup-helpers.js'
-import { fetchLatestVersion } from './lib/version-check.js'
+import { printSetupVersionBanner } from './lib/version-banner.js'
 
 interface RawOpts {
   dryRun?: boolean
@@ -165,11 +163,11 @@ export function registerSetup(program: Command): void {
     .action(async (raw: RawOpts) => {
       // Version banner FIRST — print this build's version + an npm-latest check so
       // users know exactly which harnessed ran (a stale log was mistaken for a
-      // new-version regression). fetchLatestVersion is fail-soft + timeout-bounded
-      // (offline → null, never blocks). Printed in --dry-run too — version is
-      // wanted regardless of mode.
-      const latest = await fetchLatestVersion()
-      for (const line of versionBannerLines(pkg.version, latest)) console.log(line)
+      // new-version regression). Fail-soft + timeout-bounded (offline → null,
+      // never blocks). Printed in --dry-run too — version is wanted regardless of
+      // mode. Extracted to ./lib/version-banner.js so the setup-helpers mock in
+      // setup-locale/setup-platform tests needn't carry this export.
+      await printSetupVersionBanner()
 
       const dryRun = raw.dryRun === true
       // Phase C / D5 — apply --platform FIRST so all resolver-backed paths below
