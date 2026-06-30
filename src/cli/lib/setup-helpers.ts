@@ -10,7 +10,8 @@
 
 import { readFile } from 'node:fs/promises'
 import { runInstall } from '../../installers/index.js'
-import type { InstallOpts } from '../../installers/lib/types.js'
+import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
+import type { InstallContext, InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
 import type { ScanResult } from './scan-nested.js'
@@ -68,6 +69,11 @@ export interface StepBResult {
   // v3.9.21 — per-manifest component_type for grouped output in setup display.
   // Map<name, 'mcp-tool' | 'cli-binary' | 'command'>; missing entries display as 'other'.
   componentTypes: Record<string, string>
+  // Patch 4.10.1 Fix C — force-update refresh failures whose component is still
+  // present on disk (prior version retained). Rendered as a WARN bucket, not an
+  // error: "kept existing — refresh failed, prior version retained". Only ever
+  // populated by the force-update second pass after reclassifyForceUpdateFailures.
+  keptExisting?: string[]
 }
 
 /** Step B: parallel install-base auto-glob chain via Promise.allSettled (v1.0.3 T1.1).
@@ -146,5 +152,97 @@ export async function runStepBInstall(
     failed,
     elapsedMs: Date.now() - start,
     componentTypes,
+  }
+}
+
+// ── Patch 4.10.1 Fix C — force-update fail-soft (comet ensureOpenSpecCli) ──────
+//
+// A force-update second pass re-runs install for already-installed plugins. If a
+// refresh fails BUT the component is still present on disk, reporting it as
+// `failed` is misleading — the prior working version is retained. comet's
+// `ensureOpenSpecCli` principle: an UPGRADE failure is not fatal; fall back to
+// the existing install + warn. We reclassify such entries `failed → keptExisting`.
+//
+// `failed` entries are verbatim `"<name>: <reason>"` strings (runStepBInstall
+// format); `alreadyInstalled` entries are bare names from the FIRST pass (the
+// set of components that existed before force-update touched them).
+
+export interface ForceUpdateReclassification {
+  /** Remaining genuine failures, verbatim `"<name>: <reason>"` form. */
+  failed: string[]
+  /** Bare component names whose refresh failed but whose prior install survives. */
+  keptExisting: string[]
+}
+
+/** Pure (probe-injected) reclassification. For each force-pass failure that was
+ *  already-installed before the pass, run `probe(name)`: still present → move to
+ *  keptExisting; absent (or probe throws) → keep as failed (honest). Failures
+ *  for components NOT previously installed (fresh-install failures) are never
+ *  probed — they stay failed. */
+export async function reclassifyForceUpdateFailures(
+  firstPass: StepBResult,
+  forcePass: StepBResult,
+  probe: (name: string) => Promise<boolean>,
+): Promise<ForceUpdateReclassification> {
+  const priorlyInstalled = new Set(firstPass.alreadyInstalled)
+  const failed: string[] = []
+  const keptExisting: string[] = []
+  for (const entry of forcePass.failed) {
+    const name = (entry.match(/^([^:]+):/)?.[1] ?? entry).trim()
+    if (priorlyInstalled.has(name)) {
+      let present = false
+      try {
+        present = await probe(name)
+      } catch {
+        present = false
+      }
+      if (present) {
+        keptExisting.push(name)
+        continue
+      }
+    }
+    failed.push(entry)
+  }
+  return { failed, keptExisting }
+}
+
+/** Build the real idempotent_check probe used by setup's force-update fail-soft.
+ *  Pre-validates the manifest set into a name→Manifest map, then returns a probe
+ *  that runs the shared `isAlreadyInstalled` detector (native fs / plugin-registry
+ *  first, shell idempotent_check fallback). `honorUpdateFlag` is left default —
+ *  opts.updateInstalled is false here, so detection runs for real. Unknown names
+ *  or read/validate failures resolve to `false` (treated as absent → stays failed). */
+export async function makeIdempotentProbe(
+  manifestPaths: string[],
+): Promise<(name: string) => Promise<boolean>> {
+  const byName = new Map<string, Manifest>()
+  for (const path of manifestPaths) {
+    try {
+      const yamlSrc = await readFile(path, 'utf8')
+      const v = validateManifestFile(yamlSrc, path)
+      if (v.ok) byName.set(v.manifest.metadata.name, v.manifest)
+    } catch {
+      /* unreadable manifest → name simply absent from map → probe false */
+    }
+  }
+  return async (name: string): Promise<boolean> => {
+    const manifest = byName.get(name)
+    if (!manifest) return false
+    const opts: InstallOpts = {
+      apply: false,
+      dryRun: false,
+      system: false,
+      nonInteractive: true,
+      fullDiff: false,
+      color: 'auto',
+      updateInstalled: false,
+      quiet: true,
+    }
+    const ctx: InstallContext = { manifest, opts, level: 'L2', cwd: process.cwd() }
+    try {
+      return await isAlreadyInstalled(ctx)
+    } catch {
+      return false
+    }
   }
 }

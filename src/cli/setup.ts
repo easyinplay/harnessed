@@ -26,6 +26,8 @@ import { loadRolePrompts, writeAllCommands } from './lib/generateCommands.js'
 import { getPackageRoot } from './lib/packagePath.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
+  makeIdempotentProbe,
+  reclassifyForceUpdateFailures,
   runStepBInstall,
   type StepBResult,
   scanWorkflowsWithSkill,
@@ -108,6 +110,14 @@ function printGrouped(b: StepBResult, prefix = ''): void {
   for (const s of b.skipped)
     push(groupOf(s.name), { status: 'skipped', name: s.name, suffix: ` — ${s.reason}` })
   for (const n of b.alreadyInstalled) push(groupOf(n), { status: 'already-installed', name: n })
+  // Patch 4.10.1 Fix C — kept-existing: refresh failed but prior version retained.
+  // Rendered as a WARN row (not error red) — component is still usable.
+  for (const n of b.keptExisting ?? [])
+    push(groupOf(n), {
+      status: 'kept-existing',
+      name: n,
+      suffix: ' — refresh failed, prior version retained',
+    })
 
   for (const g of GROUP_ORDER) {
     const entries = buckets[g]
@@ -116,6 +126,7 @@ function printGrouped(b: StepBResult, prefix = ''): void {
     for (const e of entries) {
       const line = `    ${e.status.padEnd(18)} ${e.name}${e.suffix ?? ''}`
       if (e.status === 'failed') console.error(line)
+      else if (e.status === 'kept-existing') console.warn(line)
       else console.log(line)
     }
   }
@@ -325,11 +336,24 @@ export function registerSetup(program: Command): void {
             // opts.updateInstalled=true → bypasses idempotent_check probe →
             // runs install command. MCP installers ignore the flag per design.
             const b2 = await runStepBInstall(manifestPaths, { updateInstalled: true, quiet: true })
+            // Patch 4.10.1 Fix C — fail-soft reclassification (comet ensureOpenSpecCli):
+            // a refresh that failed but whose component is still on disk is NOT a
+            // failure — the prior version is retained. Move failed→keptExisting when
+            // the idempotent_check probe still passes for a previously-installed comp.
+            const probe = await makeIdempotentProbe(manifestPaths)
+            const reclass = await reclassifyForceUpdateFailures(b, b2, probe)
+            b2.failed = reclass.failed
+            b2.keptExisting = reclass.keptExisting
             const stepB2Ms = (b2.elapsedMs / 1000).toFixed(1)
             console.log(
-              `\nForce-update pass complete: ${b2.installed.length} installed / ${b2.alreadyInstalled.length} still-already-installed (MCP) / ${b2.skipped.length} skipped / ${b2.failed.length} failed [parallel ${stepB2Ms}s]`,
+              `\nForce-update pass complete: ${b2.installed.length} installed / ${b2.keptExisting.length} kept-existing / ${b2.alreadyInstalled.length} still-already-installed (MCP) / ${b2.skipped.length} skipped / ${b2.failed.length} failed [parallel ${stepB2Ms}s]`,
             )
             printGrouped(b2, '[force-update] ')
+            if (b2.keptExisting.length > 0) {
+              console.warn(
+                `\n  ${b2.keptExisting.length} plugin(s) kept their existing version — refresh failed but the prior install is still usable. Re-run \`harnessed setup\` later to retry the update.`,
+              )
+            }
           }
         }
       }

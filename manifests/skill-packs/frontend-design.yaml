@@ -21,7 +21,7 @@ spec:
   install_type: git
   install:
     method: git-clone-with-setup
-    cmd: "rm -rf ~/.claude/skills/.cache/anthropics-skills-fe && git clone https://github.com/anthropics/skills.git ~/.claude/skills/.cache/anthropics-skills-fe && (cd ~/.claude/skills/.cache/anthropics-skills-fe && git checkout f458cee31a7577a47ba0c9a101976fa599385174) && mkdir -p ~/.claude/skills && cp -R ~/.claude/skills/.cache/anthropics-skills-fe/skills/frontend-design ~/.claude/skills/frontend-design && rm -rf ~/.claude/skills/.cache/anthropics-skills-fe"
+    cmd: "rm -rf ~/.claude/skills/.cache/anthropics-skills-fe && git clone https://github.com/anthropics/skills.git ~/.claude/skills/.cache/anthropics-skills-fe && (cd ~/.claude/skills/.cache/anthropics-skills-fe && git checkout f458cee31a7577a47ba0c9a101976fa599385174) && mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/frontend-design && cp -R ~/.claude/skills/.cache/anthropics-skills-fe/skills/frontend-design ~/.claude/skills/frontend-design && rm -rf ~/.claude/skills/.cache/anthropics-skills-fe"
     git_ref: f458cee31a7577a47ba0c9a101976fa599385174
     idempotent_check: "test -f ~/.claude/skills/frontend-design/SKILL.md"
   verify:

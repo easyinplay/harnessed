@@ -18,7 +18,7 @@ spec:
   install_type: git
   install:
     method: git-clone-with-setup
-    cmd: "git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup.sh"
+    cmd: "rm -rf ~/.claude/skills/gstack && git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup.sh"
     git_ref: 1626d4857bfe30da2690dd6a3217961934aa3192
     idempotent_check: "test -d ~/.claude/skills/gstack/.git"
   verify:

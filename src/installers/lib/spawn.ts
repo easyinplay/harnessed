@@ -48,9 +48,13 @@ function expandTildeForWindows(cmd: string): string {
 
 export const DEFAULT_VERIFY_TIMEOUT_MS = 15_000
 /** v3.0.2: explicit install-step timeout — Windows cold npm/npx cache can
- *  exceed 30-45s on first install. 60s default keeps fast-path zippy while
- *  not failing legitimate cold installs. */
-export const DEFAULT_INSTALL_TIMEOUT_MS = 120_000
+ *  exceed 30-45s on first install.
+ *  Patch 4.10.1: raised 120s → 300s. Real dogfood showed `npx skills add`
+ *  (playwright-test / mattpocock-skills) + cold `git clone` exceeding 120s on a
+ *  warm-but-not-cached machine, surfacing as spurious spawn-timeout failures in
+ *  force-update. comet allots npx skills installers 300s; we match that ceiling
+ *  so legitimate cold pulls finish instead of being killed mid-fetch. */
+export const DEFAULT_INSTALL_TIMEOUT_MS = 300_000
 
 export interface SpawnOk {
   ok: true

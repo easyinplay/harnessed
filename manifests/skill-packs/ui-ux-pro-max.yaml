@@ -20,7 +20,7 @@ spec:
   install_type: git
   install:
     method: git-clone-with-setup
-    cmd: "rm -rf ~/.claude/skills/.cache/midway-uiux && git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.claude/skills/.cache/midway-uiux && mkdir -p ~/.claude/skills && cp -R ~/.claude/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.claude/skills/ui-ux-pro-max && rm -rf ~/.claude/skills/.cache/midway-uiux"
+    cmd: "rm -rf ~/.claude/skills/.cache/midway-uiux && git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.claude/skills/.cache/midway-uiux && mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/ui-ux-pro-max && cp -R ~/.claude/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.claude/skills/ui-ux-pro-max && rm -rf ~/.claude/skills/.cache/midway-uiux"
     git_ref: e89d70e4bcd0ae04709a773db549cf61fcf813ac
     idempotent_check: "test -f ~/.claude/skills/ui-ux-pro-max/SKILL.md"
   verify:
