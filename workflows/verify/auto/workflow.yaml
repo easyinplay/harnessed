@@ -43,6 +43,7 @@ tools_available:
   - gstack-qa
   - gstack-cso
   - gstack-design-review
+  - gsd-eval-review
   - code-simplifier
   - agent-teams-create
   - planning-with-files
@@ -64,6 +65,9 @@ delegates_to:
     mode: parallel
   - sub: design
     gate: judgments.stage-routing.verify-design-changes.fires
+    mode: parallel
+  - sub: eval-review
+    gate: judgments.stage-routing.verify-eval-review-aiphase.fires
     mode: parallel
   - sub: multispec
     gate: judgments.stage-routing.verify-multispec-critical-release.fires

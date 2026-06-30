@@ -78,6 +78,12 @@ triggers:
     invokes:
       - capability: gstack-design-review
 
+  verify-eval-review-aiphase:
+    description: /verify master → /verify-eval-review fire 当 has_ai_phase (AI phase eval 覆盖审计)。
+    fires_when: "phase.stage == 'verify' and phase.has_ai_phase == true"
+    invokes:
+      - capability: gsd-eval-review
+
   verify-multispec-critical-release:
     description: |
       /verify master → /verify-multispec 4-specialist Agent Team Pattern C fire

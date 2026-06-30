@@ -8,7 +8,7 @@
 # ADR 0024+ + npm patch release (2-3 day cycle). Schema = harnessed.capabilities.v1 (sister
 # Phase 2.2 schemaVersion 7 surface convention).
 #
-# Entry buckets (5, total 35):
+# Entry buckets (5, total 37 — v13.0 P42 +gsd-eval-review[B2] +verification-before-completion[B4]):
 #   1. mattpocock 12 高频招式 (D-09)        — grill-with-docs / zoom-out / diagnose / caveman /
 #                                              grill-me / tdd / to-prd / to-issues /
 #                                              improve-codebase-architecture / code-review /
@@ -352,6 +352,20 @@ capabilities:
     fires_when:
       - phase.stage == 'verify'
 
+  # v13.0 P42 (upstream re-sync) — GSD AI phase eval 覆盖审计 (conditional has_ai_phase;
+  # sister verify-qa/security/design 模式). Pairs with plan 侧 gsd-ai-integration-phase
+  # (AI-SPEC eval strategy): verify 侧回查实现是否真覆盖规划的 eval 维度。
+  gsd-eval-review:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-eval-review
+    cmd: /gsd-eval-review
+    since: v13.0
+    category: tool-slash-cmd
+    description: AI phase eval 覆盖审计 (verify 回查 AI-SPEC eval 是否真覆盖)
+    fires_when:
+      - phase.stage == 'verify' AND phase.has_ai_phase == true
+
   # ============================================================================
   # Bucket 3 — gstack 治理关卡 6 (per D-12 + CLAUDE.md "gstack 治理关卡")
   # ============================================================================
@@ -488,6 +502,18 @@ capabilities:
       - subtask.core_algorithm == true
       - subtask.has_api_contract == true
       - subtask.error_cost == 'high'
+
+  # v13.0 P42 (upstream re-sync) — superpowers task 级 per-claim 证据门 (evidence before
+  # claims): 子任务声明 done/fixed/passing 前强制跑验证命令并贴 output。Pairs with
+  # ralph-loop COMPLETE + karpathy 完成=验收通过 (sister CLAUDE.md 子任务交付铁律)。
+  verification-before-completion:
+    impl: superpowers
+    cmd: "superpowers:verification-before-completion"
+    since: v13.0
+    category: tool-slash-cmd
+    description: 子任务声明 done/fixed/passing 前强制跑验证命令并贴 output (evidence before claims)
+    fires_when:
+      - subtask.completion_required == true
 
   # ============================================================================
   # Bucket 5 — Agent Teams 3 升级触发 (per D-11 + Q-AUDIT-5b schema fix +

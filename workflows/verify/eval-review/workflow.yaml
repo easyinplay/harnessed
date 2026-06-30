@@ -1,0 +1,34 @@
+# workflows/verify/eval-review/workflow.yaml — v13.0 P42 (upstream re-sync wire)
+#
+# Stage ④ verify sub-workflow — GSD /gsd-eval-review AI phase eval 覆盖审计
+# (has_ai_phase 触发, 可选 conditional). Pairs with plan 侧 gsd-ai-integration-phase
+# (AI-SPEC.md eval strategy): verify 侧回查实现是否真覆盖规划的 eval 维度。
+#
+# Sister refs:
+#   - workflows/judgments/stage-routing.yaml verify-eval-review-aiphase trigger (has_ai_phase)
+#   - workflows/capabilities.yaml — gsd-eval-review (Bucket 2, impl: gsd, cmd: /gsd-eval-review)
+#   - workflows/verify/qa/workflow.yaml — sister conditional-sub pattern (has_ui_changes gate)
+#   - workflows/verify/auto/workflow.yaml — master delegates_to eval-review (parallel + gate)
+
+schema_version: harnessed.workflow.v3
+workflow: verify-eval-review
+description: |
+  Stage ④ GSD /gsd-eval-review AI phase eval 覆盖审计 (has_ai_phase 触发, 可选 conditional)。
+  Gate: judgments.stage-routing.verify-eval-review-aiphase.fires (phase.has_ai_phase == true) —
+  仅含 AI/LLM phase 的项目 fire; 无 AI phase 的 PR skip。回查 plan 侧 AI-SPEC.md 规划的
+  eval 维度是否真被实现覆盖, 产出 EVAL-REVIEW.md (逐维度 COVERED/PARTIAL/MISSING)。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-eval-review]
+
+phases:
+  - id: 01-eval-review
+    name: gsd-eval-review (AI phase eval 覆盖审计 — has_ai_phase 触发)
+    upstream: gsd
+    capability: '{{ capabilities.gsd-eval-review.cmd }}'
+    model: sonnet
+    gate: judgments.stage-routing.verify-eval-review-aiphase.fires
+    max_iterations: 3
+    # ADR-0033 evidence guard — declare report artifact so the evidence guard is real
+    # (verified, not none_declared) — proves the eval coverage audit actually ran.
+    artifacts_expected: [EVAL-REVIEW.md]

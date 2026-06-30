@@ -43,6 +43,7 @@ description: |
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available:
   - ralph-loop
+  - verification-before-completion
   - agent-teams-create
   - agent-teams-send-message
   - agent-teams-shutdown
@@ -70,6 +71,15 @@ phases:
         exit_code: 1
     # v3.8.0 P1 — ralph-loop COMPLETE + Agent Teams escalation phase, full 3-RULES inject.
     injects_rules: [escalation, transparent-skip, agent-teams-prevention]
+
+  - id: 01b-verify-evidence
+    name: verification-before-completion (子任务标 done 前贴验证证据 — evidence before claims)
+    upstream: superpowers
+    capability: '{{ capabilities.verification-before-completion.cmd }}'
+    model: haiku
+    # v13.0 P42 — superpowers-native per-claim 证据门; 在 ralph-loop COMPLETE (01-deliver)
+    # 之后、progress-mark 标记完成之前强制贴验证 output (evidence before claims)。
+    artifacts_expected: [verification-evidence.md]
 
   - id: 02-progress-mark
     name: progress-mark (planning-with-files /plan — mark subtask complete in progress.md)
