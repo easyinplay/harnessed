@@ -1,16 +1,20 @@
 // Phase 2.1 install method 6/6 — cc-skill-pack × npx-skill-installer per ADR
 // 0004 § 5 + ADR 0007 install_type=npx + ADR 0010 errata D2.1-4/5/6.
 //
-// IMPL NOTE (Rule 1 / D2.1-4 + D2.1-5 — pinned skills@1.5.7 + --copy --global):
+// IMPL NOTE (Rule 1 / D2.1-4 + D2.1-5 — pinned skills@1.5.7 + --copy [--global]):
 // the npx tool is `skills` (vercel-labs/skills). v1.5.7 is the research-pinned
-// stable version (RESEARCH.md § 2). `--copy --global` is mandatory:
+// stable version (RESEARCH.md § 2). `--copy` is MANDATORY; `--global` is OPTIONAL:
 //   - `--copy` materializes SKILL.md files into ~/.claude/skills/<name>/ instead
 //     of symlinks (default symlinks break on Windows + on systems with
-//     ~/.claude on a different volume than the npx cache)
-//   - `--global` writes to ~/.claude/skills/ (user-scope) instead of cwd
+//     ~/.claude on a different volume than the npx cache). `--copy` ALONE already
+//     installs into ~/.claude/skills/ (home/user-scope) — the path verify checks.
+//   - `--global` only ADDITIONALLY suppresses the cwd copy. It is NOT required,
+//     and some skill types (e.g. PromptScript) reject it outright
+//     (`PromptScript does not support global skill installation`) — forcing it
+//     would 300s-hang or fail those packs. So we make it opt-in per manifest.
 // These flags are encoded by the manifest cmd string; we PRESERVE the user's
-// cmd verbatim through spawnCmd, AND we assert the required flags are present
-// (preflight) to prevent silent mis-install via a typo'd manifest.
+// cmd verbatim through spawnCmd, AND we assert `--copy` is present (preflight)
+// to prevent silent mis-install (broken symlinks) via a typo'd manifest.
 //
 // IMPL NOTE (Rule 1 / D2.1-6 CRITICAL — real-path verify, NOT npx exit code):
 // `npx skills add ... --copy --global` can exit 0 without actually writing
@@ -68,10 +72,14 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
-  // D2.1-5 — assert --copy and --global flags are present. Either order, but
-  // both are mandatory (research § 2). Silent omission would result in
-  // broken-on-Windows symlinks (no --copy) or cwd-scope skills (no --global).
-  if (!/\B--copy\b/.test(install.cmd) || !/\B--global\b/.test(install.cmd)) {
+  // D2.1-5 (relaxed) — assert --copy is present. `--global` is OPTIONAL.
+  // `--copy` alone already materializes SKILL.md into ~/.claude/skills/<name>/
+  // (Windows symlink-safe); `--global` only additionally suppresses the cwd
+  // copy. Some skill types (e.g. PromptScript) DO NOT support --global at all
+  // (`PromptScript does not support global skill installation`), so forcing it
+  // would make those packs uninstallable. We still fail-loud on missing --copy
+  // (without it the default symlinks break on Windows + cross-volume ~/.claude).
+  if (!/\B--copy\b/.test(install.cmd)) {
     return {
       ok: false,
       phase: 'preflight',
@@ -79,11 +87,11 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
         ...err(
           ctx,
           '/spec/install/cmd',
-          `npx-skill-installer cmd must include both \`--copy\` and \`--global\` flags (D2.1-5)`,
+          `npx-skill-installer cmd must include the \`--copy\` flag (D2.1-5)`,
           'skills-flags-required',
         ),
         suggest:
-          '`--copy` materializes files (Windows symlink-safe); `--global` targets ~/.claude/skills/ (user scope)',
+          '`--copy` materializes files into ~/.claude/skills/ (Windows symlink-safe); `--global` is optional and unsupported by some skill types (e.g. PromptScript)',
       },
     }
   }

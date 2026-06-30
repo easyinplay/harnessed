@@ -416,8 +416,8 @@ function npxSkillManifest(): Manifest {
       install_type: 'npx',
       install: {
         method: 'npx-skill-installer',
-        // npxSkillInstaller preflight requires `skills@<pinned>` (not @latest)
-        // + `--copy` + `--global`. D2.1-5 enforcement.
+        // npxSkillInstaller preflight requires `--copy`. `--global` is optional
+        // (some skill types like PromptScript reject it). D2.1-5 enforcement.
         cmd: 'npx --yes skills@1.5.7 add example/my-npx-skill --skill my-npx-skill --agent claude-code --copy --global --yes',
         npm_version: '1.5.7',
         idempotent_check: 'test -f ~/.claude/skills/my-npx-skill/SKILL.md',

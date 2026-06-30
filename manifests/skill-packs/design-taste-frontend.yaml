@@ -4,7 +4,7 @@ kind: Manifest
 metadata:
   name: design-taste-frontend
   display_name: design-taste-frontend (Leonxlnx/taste-skill)
-  description: Cross-agent anti-slop frontend visual-polish skill; Stage-2 overlay atop ui-ux-pro-max structure.
+  description: Cross-agent anti-slop frontend visual-polish skill (taste-skill v2); Stage-2 overlay atop ui-ux-pro-max structure.
   upstream:
     source: leonxlnx/taste-skill
     homepage: https://tasteskill.dev
@@ -21,9 +21,12 @@ spec:
   install_type: skill
   install:
     method: npx-skill-installer
-    # 对齐 harnessed 的 --copy --global 约定 (Windows symlink-safe + user-scope install);
-    # taste-skill README 形 + harnessed global flag。v2 默认变体,单 skill。
-    cmd: "npx --yes skills@latest add https://github.com/Leonxlnx/taste-skill --skill design-taste-frontend --copy --global"
+    # 只装路由用到的 design-taste-frontend(v2 默认)。它是 PromptScript 类型,不支持
+    # --global(`PromptScript does not support global skill installation`;full-URL +
+    # --global 实测 300s hang),且整 pack 批量 add 会跳过 v2(只装 v1 + 其余 symlink)——
+    # 只有 --skill design-taste-frontend 才装得上 v2。简写 + 仅 --copy:把 SKILL.md 真文件
+    # 装到 ~/.claude/skills/design-taste-frontend/(verify 位置),实测 4s 成功。
+    cmd: "npx --yes skills@latest add Leonxlnx/taste-skill --skill design-taste-frontend --copy"
     npm_version: ^1.5.7
     idempotent_check: "test -d ~/.claude/skills/design-taste-frontend || test -d ~/.agents/skills/design-taste-frontend"
   verify:

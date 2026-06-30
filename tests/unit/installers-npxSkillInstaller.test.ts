@@ -3,7 +3,8 @@
 // Covers (ADR 0004 § 4-5 + D2.1-4/5/6):
 //   - dispatch-mismatch: non-npx-skill-installer method → ok:false preflight
 //   - D2.1-5 @latest allowed (v3.9.9 removed prohibition per user instruction)
-//   - D2.1-5 cmd missing --copy or --global → keyword:'skills-flags-required'
+//   - D2.1-5 cmd missing --copy → keyword:'skills-flags-required' (--global optional)
+//   - D2.1-5 cmd with --copy but no --global → ok:true (PromptScript packs need this)
 //   - L2 + --apply: spawnCmd called with the manifest cmd (skills@<ver> + flags)
 //   - D2.1-6 npx exit 0 but SKILL.md missing → keyword:'verify-failed'
 //     (real-path verify is NOT npx exit code — fs.access is the authority)
@@ -176,7 +177,7 @@ describe('installNpxSkillInstaller', () => {
     }
   })
 
-  it('D2.1-5 missing --copy/--global → keyword:skills-flags-required', async () => {
+  it('D2.1-5 missing --copy → keyword:skills-flags-required (fail-loud)', async () => {
     const s = silence()
     try {
       const c = ctx({}, (m) => {
@@ -188,6 +189,23 @@ describe('installNpxSkillInstaller', () => {
         expect(r.error.keyword).toBe('skills-flags-required')
       }
       expect(spawnMock).not.toHaveBeenCalled()
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('D2.1-5 --copy without --global → ok:true (PromptScript packs, e.g. design-taste-frontend)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
+      accessMock.mockResolvedValue(undefined) // SKILL.md exists
+      const c = ctx({}, (m) => {
+        ;(m.spec.install as { cmd: string }).cmd =
+          'npx --yes skills@latest add Leonxlnx/taste-skill --skill design-taste-frontend --copy'
+      })
+      const r = await installNpxSkillInstaller(c)
+      expect(r).toMatchObject({ ok: true })
+      expect(spawnMock).toHaveBeenCalled()
     } finally {
       s.restore()
     }
