@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.11.0] - 2026-06-30
+
+### Changed
+
+- **Design capability: anthropic `frontend-design` → cross-agent `design-taste-frontend` (Leonxlnx/taste-skill), as a two-stage overlay.** The "creative / visual polish" design role was filled by Anthropic's `frontend-design` skill (git-cloned from `anthropics/skills`, a Claude-ecosystem `SKILL.md` install) — at odds with harnessed's cross-harness identity. It is replaced by `design-taste-frontend` from [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill), an MIT, **cross-agent** (Claude Code + Codex, vercel-labs/agent-skills standard) anti-slop frontend framework installed via `npx skills add`.
+  - **Role re-defined from XOR arbitration → two-stage pipeline** (`workflows/judgments/web-design-routing.yaml`). Previously it was "ui-ux-pro-max **or** frontend-design (when the user wants a creative style)". Now: **Stage 1 `ui-ux-pro-max`** clarifies audience / interaction logic / design axis (the data-driven structural backbone), then **Stage 2 `design-taste-frontend`** overlays detail + visual polish on top — turning a "usable page" into a premium, eye-catching result. Both fire whenever a phase has UI changes.
+  - Removed `manifests/skill-packs/frontend-design.yaml`; added `manifests/skill-packs/design-taste-frontend.yaml` (`npx-skill-installer`, cross-agent). Swapped the `frontend-design` capability → `design-taste-frontend` in `capabilities.yaml`, `verify/design` (workflow + SKILL en/zh), README (en + 9 localized), and routing docs. `ui-ux-pro-max` (default structural plan) and `gstack-design-review` are unchanged.
+
+  Installed users re-run `harnessed setup` to pick up the new skill (the old `frontend-design` skill is no longer installed/refreshed by harnessed).
+
 ## [4.10.1] - 2026-06-30
 
 ### Fixed
