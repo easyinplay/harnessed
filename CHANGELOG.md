@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.12.0] - 2026-07-01
+
 ### Changed
 
 - **v13.0 Upstream Re-sync — gstack / gsd-core / superpowers pin bump.** 三核心上游 pin 自 v5.1 (2026-06-10) 起 stale,bump 继承上游对已编排能力的硬化(零新 wire 也受益): gstack 1.52.1.0→1.58.0.0 (commit `14fc0866`; token carving `/ship` -59% + redaction/staging/codex-auth guard + AskUserQuestion 文本 fallback) · gsd-core ^1.4.1→^1.6.0 (verify-work deterministic UAT routing + `plan:pre` 漂移预检 + gsd-review 强制源码核验) · superpowers v5.1.0→v6.0.3 (6.0 `subagent-driven-development` 重写对 harnessed 透明,cmd 名 + parallelism-gate wiring 不变)。2 spike 验证安装面/worktree 兼容。详 ADR-0035。
