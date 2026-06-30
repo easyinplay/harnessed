@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v13.0
-milestone_name: v13.0 Upstream Re-sync (gstack/gsd/superpowers pin bump + 5 selective wire)
-status: active
-last_updated: "2026-06-30T00:00:00.000Z"
-last_activity: 2026-06-30
+milestone: none
+milestone_name: (none — v13.0 Upstream Re-sync SHIPPED + PUBLISHED npm 4.12.0 2026-07-01)
+status: no-active-milestone
+last_updated: "2026-07-01T00:00:00.000Z"
+last_activity: 2026-07-01
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 4
   total_plans: 0
   completed_plans: 0
-  percent: 0
+  percent: 100
 ---
 
 # STATE — harnessed
@@ -26,7 +26,7 @@ progress:
 
 ## Current Position
 
-- **v13.0 Upstream Re-sync ACTIVE (started 2026-06-30)** — 完整档 scope (user-locked): gstack 1.52.1.0→1.58.0.0 (commit `14fc0866`) · gsd-core ^1.4.1→^1.6.0 · superpowers v5.1.0→v6.0.3 pin bump + 5 selective wire (verification-before-completion · gsd-eval-review · /diagram · gsd-validate-phase · systematic-debugging). 2 spike PASS (gsd 1.6.0 安装面兼容 / superpowers 6.0 worktree 无影响). Skip: gsd-mempalace (记忆双 home 违反一事实一个家) · sync-gbrain (不依赖 gbrain) · ios-*. Spec `specs/2026-06-30-upstream-resync-v13.md`. Phases: **P41 ✅ pin bumps (`e3ee1b7`)** · **P42 ✅ 高价值 wire (`855f68f`)**: verification-before-completion(task/deliver 01b 证据门) + gsd-eval-review(verify/eval-review conditional sub, has_ai_phase); 全 gate 绿(schema v3 26→27 / skill-i18n / invoke-parity 178). · **P43 ✅ 可选 wire (`bc9bd5c`)**: /diagram(gstack B7) + gsd-validate-phase(verify/validate-phase conditional sub) + systematic-debugging(gsd-debug superpowers alias); 全 gate 绿(schema v3 27→28 / invoke-parity 210). · **P44 ✅ verify+docs**: 全 7 CI hard-gate PASS + targeted vitest 绿(全量留 CI, setup family 本地 hang) + CHANGELOG [Unreleased] + ADR-0035 + adr index 补 0033-0035. **v13.0 CODE-COMPLETE 全 gate 绿, npm UNPUBLISHED — release 决策待用户 (minor 4.12.0, wire 了新能力)**; ROADMAP/MILESTONES shipped 行待 release 后写带最终 version. 未 push: P41-44 共 10 commits.
+- **v13.0 Upstream Re-sync SHIPPED + PUBLISHED npm 4.12.0 2026-07-01** (minor; closed lightweight). gstack 1.52.1.0→1.58.0.0 · gsd-core ^1.4.1→^1.6.0 · superpowers v5.1.0→v6.0.3 pin bump (继承上游硬化, 窗口 0 新 user-facing skill 但白拿 token carving/安全 guard/UAT routing) + 5 selective wire (verification-before-completion task/deliver 证据门 · gsd-eval-review + gsd-validate-phase verify conditional sub · /diagram gstack B7 · systematic-debugging gsd-debug alias)。capabilities 35→39, verify sub 5→7 (4 phase 41–44, spec 统领无 phase dir)。3-subagent delta 调研 + 2 spike (gsd 安装面/superpowers worktree 兼容); skip MemPalace(记忆双 home)/gbrain/ios。Full flow: push→CI 3-OS green→tag `v4.12.0`→publish.yml (npm publish --provenance + gh release); npm latest=4.12.0 + gh release non-draft 验证。**Installed users re-run `harnessed setup`.** 详 ADR-0035 + spec `specs/2026-06-30-upstream-resync-v13.md`.
 - **v12.0 Forward Continuation SHIPPED + PUBLISHED npm 4.10.0 2026-06-30**, closed lightweight (ROADMAP + MILESTONES index rows + audit 9/9+4/4; phase dirs 37–40 stay in `phases/`). Closes the horizontal-advance gap: after a task/phase finishes, derive + advance to the next from `.planning` disk SoT (no queue), vs manual re-invocation. Design = 5-repo fusion (gsd-pi/gsd-core/Trellis/comet/oh-my-pi); spec `specs/2026-06-30-forward-continuation-design.md`. Bundled the issue #2 fix. Phase-level advance is the shipped floor (OQ-2); task-level resolver-ready, CLI-unwired.
 - **harnessed-site CLI docs DONE**: `reference/cli.md` next/advance (en+zh) written + pushed (commit `0f3b24d`, site repo).
 - **Deferred (non-blocking)**: 9 localized READMEs design-routing two-stage deeper reword still old XOR wording (cosmetic i18n) · optional D5 `gsd_run` reuse · task-level CLI surface (resolver-ready, CLI-unwired).
