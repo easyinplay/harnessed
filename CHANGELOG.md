@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.11.3] - 2026-06-30
+
+### Added
+
+- **ASCII wordmark atop `harnessed setup`.** The setup run now opens with a box-drawing `HARNESSED` wordmark + a parrot tagline ("parrots mimic — we orchestrate", nodding to the README), above the version banner. Cosmetic only.
+
 ## [4.11.2] - 2026-06-30
 
 ### Fixed

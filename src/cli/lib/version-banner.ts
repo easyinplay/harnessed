@@ -32,10 +32,21 @@ export function versionBannerLines(installed: string, latest: string | null): st
   return lines
 }
 
-/** Impure — resolve this build's version + npm-latest (fail-soft, timeout-bounded
- *  via fetchLatestVersion; offline → null, never blocks) and print the banner.
- *  Printed in --dry-run too — the version is wanted regardless of mode. */
+/** ASCII wordmark printed atop `harnessed setup` (Calvin S box-drawing font) +
+ *  a parrot tagline nodding to the README joke ("parrots mimic — we orchestrate"). */
+const BANNER_ART = [
+  '╦ ╦╔═╗╦═╗╔╗╔╔═╗╔═╗╔═╗╔═╗╔╦╗',
+  '╠═╣╠═╣╠╦╝║║║║╣ ╚═╗╚═╗║╣  ║║',
+  '╩ ╩╩ ╩╩╚═╝╚╝╚═╝╚═╝╚═╝╚═╝═╩╝',
+  '🦜 parrots mimic — we orchestrate',
+]
+
+/** Impure — print the ASCII wordmark, then resolve this build's version +
+ *  npm-latest (fail-soft, timeout-bounded via fetchLatestVersion; offline → null,
+ *  never blocks) and print the version banner. Printed in --dry-run too — the
+ *  version is wanted regardless of mode. */
 export async function printSetupVersionBanner(): Promise<void> {
+  for (const line of BANNER_ART) console.log(line)
   const latest = await fetchLatestVersion()
   for (const line of versionBannerLines(pkg.version, latest)) console.log(line)
 }
