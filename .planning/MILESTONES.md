@@ -6,7 +6,7 @@
 > Full narrative: `CHANGELOG.md` (46 releases) + `.planning/RETROSPECTIVE.md`.
 >
 > Note: milestone codenames are NOT npm release versions. harnessed publishes by npm semver
-> (latest published: 4.6.0); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
+> (latest published: 4.11.3); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
 > Shipped order below is chronological, not version-monotonic.
 
 ## Shipped

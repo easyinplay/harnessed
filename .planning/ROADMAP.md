@@ -1,7 +1,7 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v11.0 State Machine Completion all phases done (local, green) 2026-06-26; next direction TBD (+ a release-pass decision for v11.0).
-> Current published npm: **4.8.0** (2026-06-25, ships v10.0) · milestone codenames (vN.0) are spec/era names, NOT npm versions. **v11.0 built local, npm unpublished.**
+> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v12.0 Forward Continuation shipped npm 4.10.0 2026-06-30 (closed lightweight, audit 9/9+4/4); next direction TBD.
+> Current published npm: **4.11.3** (2026-06-30; v12.0 shipped at 4.10.0, 4.10.1→4.11.3 are post-milestone patches) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
 
