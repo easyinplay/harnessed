@@ -439,7 +439,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | 场景 | Default → Escalate |
 |------|---------------------|
 | 并行机制 | subagent → Agent Teams Pattern A/B/C (5 触发) |
-| UI 设计主方案 | ui-ux-pro-max → design-taste-frontend (用户明示风格) |
+| UI 设计主方案 | **两段式**:ui-ux-pro-max(受众 / 交互逻辑 / 设计主轴 — 结构骨架)→ design-taste-frontend(anti-slop 视觉打磨 overlay,跨 agent taste-skill) |
 | E2E 浏览器探查 | playwright-cli (Bash 一行, token 省) |
 | E2E commit-able TS | @playwright/test 默认 |
 | E2E Python 后端联动 | webapp-testing |

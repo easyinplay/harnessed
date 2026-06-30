@@ -441,7 +441,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | Senaryo | Varsayılan → Tırmanma |
 |------|---------------------|
 | Paralellik mekanizması | subagent → Agent Teams Pattern A/B/C (5 tetikleyici) |
-| UI tasarımı birincil plan | ui-ux-pro-max → design-taste-frontend (kullanıcı açıkça stil isterse) |
+| UI tasarımı birincil plan | **iki aşamalı**: ui-ux-pro-max (hedef kitle / etkileşim mantığı / tasarım ekseni — yapı) → design-taste-frontend (anti-slop görsel cila overlay, çapraz-agent taste-skill) |
 | E2E tarayıcı keşfi | playwright-cli (tek satır Bash, token-verimli) |
 | E2E commit edilebilir TS | @playwright/test varsayılan |
 | E2E Python backend bağlantısı | webapp-testing |

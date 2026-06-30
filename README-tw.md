@@ -441,7 +441,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | 情境 | 預設 → 升級 |
 |------|---------------------|
 | 平行機制 | subagent → Agent Teams Pattern A/B/C（5 個觸發條件） |
-| UI 設計主方案 | ui-ux-pro-max → design-taste-frontend（使用者明確要求風格） |
+| UI 設計主方案 | **兩段式**:ui-ux-pro-max（受眾 / 互動邏輯 / 設計主軸 — 結構骨架）→ design-taste-frontend（anti-slop 視覺打磨 overlay，跨 agent taste-skill） |
 | E2E 瀏覽器探查 | playwright-cli（單行 Bash，token 效率高） |
 | E2E 可提交 TS 測試 | @playwright/test 預設 |
 | E2E Python 後端串接 | webapp-testing |

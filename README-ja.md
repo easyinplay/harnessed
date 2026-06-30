@@ -441,7 +441,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | シナリオ | デフォルト → エスカレート |
 |------|---------------------|
 | 並列化メカニズム | subagent → Agent Teams Pattern A/B/C（5 トリガー） |
-| UI デザインのプライマリプラン | ui-ux-pro-max → design-taste-frontend（ユーザーがスタイルを明示要求） |
+| UI デザインのプライマリプラン | **2段階**:ui-ux-pro-max（オーディエンス / インタラクションロジック / デザイン軸 — 構造）→ design-taste-frontend（anti-slop ビジュアル磨き overlay、クロスエージェント taste-skill） |
 | E2E ブラウザ探索 | playwright-cli（1 行 Bash、トークン効率） |
 | E2E コミット可能 TS | @playwright/test デフォルト |
 | E2E Python バックエンド連携 | webapp-testing |

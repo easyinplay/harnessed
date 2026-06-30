@@ -441,7 +441,7 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | Scenario | Mặc định → Leo thang |
 |------|---------------------|
 | Cơ chế parallelism | subagent → Agent Teams Pattern A/B/C (5 trigger) |
-| Kế hoạch chính UI design | ui-ux-pro-max → design-taste-frontend (người dùng yêu cầu rõ phong cách) |
+| Kế hoạch chính UI design | **hai giai đoạn**: ui-ux-pro-max (đối tượng / logic tương tác / trục thiết kế — cấu trúc) → design-taste-frontend (lớp phủ tinh chỉnh hình ảnh anti-slop, taste-skill đa agent) |
 | Khám phá browser E2E | playwright-cli (một dòng Bash, tiết kiệm token) |
 | E2E TS có thể commit | @playwright/test mặc định |
 | E2E liên kết Python backend | webapp-testing |

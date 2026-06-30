@@ -441,7 +441,7 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | สถานการณ์ | Default → Escalate |
 |------|---------------------|
 | Parallelism mechanism | subagent → Agent Teams Pattern A/B/C (5 triggers) |
-| UI design primary plan | ui-ux-pro-max → design-taste-frontend (ผู้ใช้ขอ style ชัดเจน) |
+| UI design primary plan | **สองขั้นตอน**: ui-ux-pro-max (กลุ่มเป้าหมาย / ตรรกะการโต้ตอบ / แกนการออกแบบ — โครงสร้าง) → design-taste-frontend (overlay ขัดเกลาภาพแบบ anti-slop, taste-skill ข้ามเอเจนต์) |
 | E2E browser exploration | playwright-cli (one-line Bash, token-efficient) |
 | E2E commit-able TS | @playwright/test default |
 | E2E Python backend linkage | webapp-testing |

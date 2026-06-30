@@ -441,7 +441,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | Cenário | Padrão → Escalada |
 |------|---------------------|
 | Mecanismo de paralelismo | subagent → Agent Teams Pattern A/B/C (5 gatilhos) |
-| Plano primário de design UI | ui-ux-pro-max → design-taste-frontend (usuário pede estilo explicitamente) |
+| Plano primário de design UI | **duas etapas**: ui-ux-pro-max (público / lógica de interação / eixo de design — estrutura) → design-taste-frontend (overlay de polimento visual anti-slop, taste-skill cross-agent) |
 | Exploração E2E no browser | playwright-cli (uma linha Bash, eficiente em Token) |
 | E2E commitável em TS | @playwright/test padrão |
 | E2E com linkage de backend Python | webapp-testing |
