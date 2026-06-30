@@ -170,7 +170,7 @@ In order of increasing user intervention:
 /verify "phase-1"                 # 7 subs conditional verification
 ```
 
-> Want to decide which stage to start from / review intermediate outputs — 4 masters callable independently, and each master still auto-fans-out all of that stage's subs internally.
+> Want to decide which stage to start from / review intermediate outputs — 5 masters callable independently, and each master still auto-fans-out all of that stage's subs internally.
 
 ### 🔬 Surgical Mode (Expert mode / you know what you want)
 
@@ -523,7 +523,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 Yes, but **the user experience = one command**:
 
 ```bash
-harnessed setup  # Auto-installs gstack + GSD + superpowers + planning-with-files; 25 workflow skills land in ~/.claude/skills/ + Agent Teams env var auto-written to ~/.claude.json
+harnessed setup  # Auto-installs gstack + GSD + superpowers + planning-with-files; 26 workflow skills land in ~/.claude/skills/ + Agent Teams env var auto-written to ~/.claude.json
 ```
 
 Think `brew install <formula>` pulling the full dependency set — you don't need to `brew install` each dependency separately.

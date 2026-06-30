@@ -4,8 +4,9 @@
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> Gerenciador de pacotes para harness de codificação com AI + orquestrador de Composition
-> Executa mecanicamente a metodologia de colaboração em três camadas (governança gstack + gerente de projetos GSD + engenheiro sênior superpowers + princípios karpathy + movimentos mattpocock) como um motor executável
+> **Transforme o Claude Code cru em uma equipe de engenharia sênior disciplinada.** Uma única instalação conecta governança, planejamento, TDD e revisão em um único workflow Discuss→Ship, no qual o progresso e as evidências persistem em disco, e não no chat.
+
+> _AI coding harness package manager + composition orchestrator_ — executa mecanicamente a metodologia de colaboração em três camadas (governança gstack + gerente de projetos GSD + engenheiro sênior superpowers + princípios karpathy + movimentos mattpocock) como um motor executável
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
@@ -17,7 +18,42 @@
 
 ## ✨ TL;DR
 
-**Orquestração de melhores práticas para Harness Engineering no Claude Code** — reúne os melhores componentes open-source do ecossistema Claude Code, integrando-os em um Workflow unificado por meio de Skills de Composition opinativas; não faz Vendor do código upstream — os Manifests descrevem install/check, e as Skills de Composition orquestram a colaboração entre múltiplos upstreams.
+**Como funciona**: o harnessed **monta** os melhores agentes open-source do Claude Code (gstack, GSD, superpowers, planning-with-files) e os **orquestra** em um único workflow por meio de skills de composition opinativas. Ele **não** faz vendor do código upstream — os manifests descrevem install/check, e as skills de composition conduzem a colaboração entre múltiplos upstreams (então um upgrade de upstream é apenas uma reinstalação, nunca uma sincronização manual de código).
+
+### 🔁 O loop operacional
+
+> **Discuss → Plan → Build → Verify → Ship**, fechado por um loop de **Learn** — executado mecanicamente através da stack de três camadas (governança gstack · orquestração GSD · TDD superpowers · evidências de checkpoint). O trabalho cru de um agente deriva; o harnessed o transforma em um caminho com fonte da verdade onde o progresso e as evidências persistem em vez de viverem no chat. **O aprendizado é automático**: cada workflow concluído anexa seus sinais de falha/loop/reject ao `.planning/LEARNINGS.md`, que são injetados no próximo ciclo — isso é sempre ativo, **não** está condicionado ao Retro opcional. O Retro (`/retro`) é um resumo de milestone separado e opcional.
+
+```mermaid
+flowchart LR
+  R(["⓪ Research<br/>investigação multi-fonte<br/>(opcional)"]):::opt --> D
+  D(["① Discuss<br/>clarificação em 3 camadas"]) --> P(["② Plan<br/>persiste spec + tarefas"])
+  P --> T(["③ Task<br/>build TDD + checkpoint"])
+  T --> V(["④ Verify<br/>revisão independente + gate de evidências"])
+  V --> S(["⑤ Ship<br/>release-preflight → tag-ready (publish via CI)"])
+  S -. "resumo do milestone" .-> RT(["Retro<br/>(opcional)"]):::opt
+  V -. "falha / gap" .-> T
+  S == "🔁 Learn — learnings capturados a cada conclusão de workflow → injetados no próximo ciclo" ==> D
+  classDef opt stroke-dasharray:5,opacity:0.8
+```
+
+---
+
+## 🧱 O que é a stack de três camadas?
+
+A stack de três camadas do harnessed é uma implementação de engenharia de software do aninhamento estabelecido **BDD → SDD → TDD**: três loops de feedback aninhados, cada um respondendo a uma pergunta diferente. As **três camadas são os loops** (a teoria estável); o harnessed **compõe** o ecossistema open-source dentro de cada loop — e os componentes **se sobrepõem**, que é exatamente o que um composition orchestrator arbitra.
+
+| Camada | Loop | Pergunta que responde | Composto a partir de (com sobreposição) |
+|---|---|---|---|
+| **① Behavior** | BDD | *O que* construir + como sabemos que está pronto | governança gstack `/office-hours` · GSD discuss · superpowers brainstorming → critérios de aceitação |
+| **② Spec** | SDD | *Como* está estruturado | GSD plan-phase → requirements / design / tasks · contracts (padrões Spec Kit / ECC) |
+| **③ Implementation** | TDD | Será que *funciona* de verdade | superpowers TDD red-green · execução de subagent · GSD verify-work · conclusão ralph-loop |
+
+Os loops são **lentes aninhadas, não fases** — o clássico duplo-loop Cucumber BDD-externo + TDD-interno, estendido com um anel de spec SDD da era GenAI em um triplo-loop. O harnessed roda a travessia padrão externo→interno como sua cadência de 5 stages, mais as **back-edges que ele já entrega hoje**: o Verify chuta o trabalho que falhou de volta ao Task, um subagent que atinge uma área cinzenta faz round-trip até a clarificação antes de continuar, e cada ciclo entregue realimenta os learnings no próximo Discuss. (Back-edges estruturadas mais granulares — por exemplo, uma contradição de contract roteando direto para o Spec, um requisito ambíguo para o Behavior — estão no roadmap, não foram entregues. O harnessed é a realização de cadência linear do triplo-loop; o grafo roteado completo é o seu caminho de evolução.)
+
+**Os componentes se sobrepõem — esse é o ponto.** O **GSD** atravessa todos os três loops como a espinha dorsal de orquestração, o **gstack** abrange Behavior + Review, o **superpowers** abrange Behavior (brainstorm) + Implementation (TDD). O harnessed os conecta — e arbitra a sobreposição — em um único motor. Duas **disciplinas transversais** percorrem cada camada: **princípios karpathy** (*como* codificar — simplicity-first, diffs cirúrgicos) + **movimentos mattpocock** (ferramentas táticas sob demanda como `/diagnose`, `/zoom-out`).
+
+Mapeado ao loop de runtime acima: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, e então **Verify + Ship** o fecham com gates de evidência.
 
 ---
 
@@ -30,12 +66,32 @@
 
 ## 🎯 Key Differentiators
 
-- **Stack de três camadas executada mecanicamente** — `gstack governance` + `GSD project manager` + `superpowers senior engineer` + `karpathy 4 principles` + `mattpocock 23 moves`, 5 pilares com 100% de cobertura
+- **Stack de três camadas executada mecanicamente** — o **triplo-loop aninhado BDD→SDD→TDD** ([o que é isso?](#-o-que-é-a-stack-de-três-camadas)), composto a partir de `gstack` + `GSD` + `superpowers` (com sobreposição, GSD como espinha dorsal) com `karpathy 4 principles` + `mattpocock 23 moves` como disciplinas transversais
 - **Sem Vendor do upstream** — Manifests descrevem install/check; quando o upstream é atualizado, os usuários simplesmente reinstalam para obter a versão mais recente
-- **Composition Skill** — Skills de Workflow internas funcionam como a batuta do maestro, orquestrando múltiplos upstreams em conjunto. **1 super-master `/auto` + 4 masters de stage + 18 sub-workflows + 2 standalone = 25 Workflows em namespace hierárquico**, execução mecânica completa de 4 stages (`/auto` one-shot entre stages / `/discuss /plan /task /verify` por stage individual / 18 subs da three-layer-stack / `/research /retro` 2 standalones)
+- **Composition Skill** — Skills de Workflow internas funcionam como a batuta do maestro, orquestrando múltiplos upstreams em conjunto. **1 super-master `/auto` + 5 masters de stage + 19 sub-workflows + 2 standalone = 27 Workflows em namespace hierárquico**, execução mecânica completa de 5 stages (`/auto` one-shot entre stages / `/discuss /plan /task /verify /ship` por stage individual / 19 subs da three-layer-stack / `/research /retro` 2 standalones)
 - **L0 Discipline Substrate** — linha de base de comportamento global entre stages (princípios karpathy + estilo de output + linguagem + operacional + prioridade + protocolos), aplicada universalmente
 - **Mentalidade de gerenciador de pacotes** — grafo de dependências de instalação com resolução automática, health check com doctor, instalação base completa em um comando
-- **Ponto de entrada unificado** — os usuários interagem com os master slash commands `/discuss /plan /task /verify` sem precisar aprender a terminologia de cada upstream; sub-commands invocam explicitamente um único stage (por exemplo, `/discuss-strategic` executa apenas a clarificação da camada estratégica)
+- **Ponto de entrada unificado** — os usuários interagem com os master slash commands `/discuss /plan /task /verify /ship` sem precisar aprender a terminologia de cada upstream; sub-commands invocam explicitamente um único stage (por exemplo, `/discuss-strategic` executa apenas a clarificação da camada estratégica)
+- **Forward continuation** — `harnessed next` / `harnessed advance` te carregam através de tarefas e phases: quando uma termina, a próxima é **derivada do estado em disco do `.planning/`** (uma phase está concluída quando seu `PLAN` tem um `SUMMARY` correspondente) — sem fila para manter, então uma nova phase no meio do caminho é capturada automaticamente, e o resume re-deriva do disco. Um breadcrumb `NEXT-UNIT` por turno aponta para o que vem a seguir
+
+---
+
+## 🆚 vs Claude Code / Codex nativos
+
+Os agentes nativos te dão primitivos; o harnessed os conecta em uma metodologia. Onde uma célula nativa diz que um primitivo "existe", você ainda precisa projetá-lo, conectá-lo e mantê-lo você mesmo em cada projeto — o harnessed o entrega pré-composto e movido a motor.
+
+| Dimensão | Claude Code nativo | Codex nativo | harnessed |
+|---|---|---|---|
+| **Workflow / metodologia** | Apenas primitivos — você projeta o fluxo toda vez | Menos primitivos — freestyle por prompt | Motor three-layer-stack codificado de 5 stages **Discuss→Ship** — loops BDD + SDD + TDD + 2 transversais (Review + Ship) |
+| **Injeção de instrução** | `CLAUDE.md` + skills + hooks existem, mas estáticos e conectados à mão | Apenas `AGENTS.md` — sem skills/hooks | Hook de breadcrumb por turno + roteamento task-scoped + learnings injetados a cada ciclo |
+| **Estado / progresso** | Contexto do chat — perdido em `/clear` / compaction | Contexto do chat — sem camada de persistência | `.planning/` em disco + ledger `current-workflow.json` + evidências de checkpoint |
+| **Recuperação entre sessões** | Re-explicar o contexto à mão | Re-explicar o contexto à mão | `harnessed status --recover`: você-está-aqui + próximo passo |
+| **Verificação / "concluído"** | O agente se auto-reporta "concluído" | O agente se auto-reporta "concluído" | Subagents de revisão independentes + **guard de evidências fail-CLOSED** (artifact ausente = não concluído) |
+| **Orquestração de subagents** | Subagents + Agent Teams disponíveis, mas orquestrados à mão | Sem primitivo de subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams auto-habilitados por tarefa |
+| **Loop de aprendizado** | Nenhum | Nenhum | `LEARNINGS.md` auto-capturado + injetado no próximo ciclo |
+| **Alcance de plataforma** | Apenas Claude Code | Apenas Codex | **Cross-harness** — Claude Code primário, Codex via platform layer |
+
+> Os agentes nativos vencem em zero-setup, zero-overhead para edições triviais e pontuais. O harnessed se paga no momento em que o trabalho abrange múltiplos passos, sessões ou subagents — onde a deriva do freestyle e o estado perdido no chat começam a te custar caro.
 
 ---
 
@@ -47,13 +103,6 @@ npm install -g harnessed && harnessed setup
 
 > O Windows PowerShell 5.x não suporta encadeamento com `&&` — use `;` ou duas linhas (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe funcionam normalmente.
 
-**Para desinstalar:**
-```bash
-harnessed uninstall    # Remove os arquivos próprios do harnessed (componentes upstream NÃO são afetados)
-```
-
-> `harnessed uninstall` limpa commands, workflow skills, variáveis de ambiente de settings e o diretório de estado. Componentes upstream (pacotes npm, servidores MCP, plugins CC, repositórios git-clonados, npx skills) permanecem intactos. Execute `harnessed uninstall <name>` para remover um upstream individual. Adicione `--dry-run` para pré-visualizar.
-
 🤖 **Ou peça para uma IA instalar por você** — cole esta frase no Claude Code (ou em qualquer assistente de IA):
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
@@ -63,6 +112,38 @@ A IA vai buscar automaticamente o documento + executar a instalação, lidando c
 > [!TIP]
 > 🚀 **Os adorados recursos Agent Teams e Subagents são habilitados automaticamente no harnessed com base na tarefa!**
 > Não é necessário configurar manualmente `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` grava o valor em `~/.claude/settings.json` automaticamente. O Pattern A de três vias full-stack / Pattern C de 4 especialistas e outros Workflows multi-agente funcionam imediatamente.
+
+---
+
+## ⏱️ Primeiros 5 Minutos
+
+O caminho mais curto do zero a um workflow em execução:
+
+```bash
+# 1. Instale (uma linha)
+npm install -g harnessed && harnessed setup
+```
+
+```
+# 2. Dentro do Claude Code — dispare seu primeiro workflow
+/auto "seu primeiro requisito"        # padrão para iniciantes: roda todos os stages de ponta a ponta
+```
+
+```bash
+# 3. Perdido? Execute harnessed sem argumentos — ele te diz onde você está + o que vem a seguir
+harnessed
+#   → dashboard você-está-aqui (phase ativa + status por step) + uma linha NEXT: auto|manual|done
+#   sem precisar lembrar status / next / resume — um único comando (análogo ao comet `/comet`, somente leitura)
+#   adicione --json para output legível por máquina
+```
+
+```bash
+# 4. Retome a qualquer momento após uma interrupção
+harnessed            # mesma visão você-está-aqui
+harnessed resume     # continua a partir do checkpoint mais recente
+```
+
+> Quer um controle mais fino sobre qual stage roda e quando? Veja os 3 modos abaixo.
 
 ---
 
@@ -91,7 +172,7 @@ Em ordem crescente de intervenção do usuário:
 /verify "phase-1"               # 7 subs com verificação condicional
 ```
 
-> Quer decidir de qual stage partir / revisar outputs intermediários — os 4 masters podem ser chamados de forma independente, e cada master ainda expande automaticamente todos os subs daquele stage internamente.
+> Quer decidir de qual stage partir / revisar outputs intermediários — os 5 masters podem ser chamados de forma independente, e cada master ainda expande automaticamente todos os subs daquele stage internamente.
 
 ### 🔬 Modo Cirúrgico (Modo expert / você sabe o que quer)
 
@@ -99,14 +180,14 @@ Em ordem crescente de intervenção do usuário:
 /discuss-phase "..."        # Executa apenas a clarificação da camada Phase
 /plan-architecture "..."    # Executa apenas a revisão de arquitetura
 /verify-paranoid "..."      # Executa apenas a revisão do Paranoid Staff Engineer
-# ... escolha qualquer um dos outros 18 sub-workflows
+# ... escolha qualquer um dos outros 19 sub-workflows
 ```
 
 > "Sou expert, vou decidir eu mesmo" — pule o master e invoque um sub-workflow diretamente. Adequado para usuários avançados que sabem exatamente qual sub precisam, ou para reutilização de um único step.
 
 ---
 
-## 📐 Diagrama do Fluxo de 4 Stages
+## 📐 Diagrama do Fluxo de 5 Stages
 
 ```mermaid
 graph TD
@@ -144,16 +225,21 @@ graph TD
     VM[verify-multispec]
     VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
   end
-  RT([⑤ /retro — resumo do milestone, opcional]):::optional
+  subgraph Ship[⑤ Ship — Release]
+    SMs[/ship master/]
+    SP[ship-preflight]
+    SMs --> SP
+  end
+  RT([⑥ /retro — resumo do milestone, opcional]):::optional
   RS --> Discuss
-  Discuss --> Plan --> Task --> Verify
-  Verify --> RT
+  Discuss --> Plan --> Task --> Verify --> Ship
+  Ship --> RT
   classDef optional stroke-dasharray:5 5,fill:#f5f5f5,color:#666
 ```
 
-> Caixas tracejadas = standalones opcionais (`/research` investigação pré-estratégica / `/retro` resumo pós-milestone); caixas sólidas = cadência principal dos 4 stages.
+> Caixas tracejadas = standalones opcionais (`/research` investigação pré-estratégica / `/retro` resumo pós-milestone); caixas sólidas = cadência principal dos 5 stages (Ship para em tag-ready; o CI `publish.yml` faz a publicação real).
 
-### Tabela de Visão Geral dos 25 Workflows
+### Tabela de Visão Geral dos 27 Workflows
 
 | Slash cmd | Stage | Tipo | Capacidade / Upstream | Resumo |
 |-----------|-------|------|----------------------|-------|
@@ -179,6 +265,8 @@ graph TD
 | `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | Consistência do sistema de design (condicional has_design_changes) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Simplificação serial final |
 | `/verify-multispec` | ④ Verify | Sub | Agent Team Pattern C com 4 especialistas | Escalada para PR de release crítico / grande refatoração (cross-examination mútuo via SendMessage) |
+| `/ship` | ⑤ Ship | Master | masterOrchestrator | Stage de release após o Verify — preflight → delega PR/deploy ao gstack `/ship` → publica via CI (fronteira tag-ready) |
+| `/ship-preflight` | ⑤ Ship | Sub | `harnessed release-preflight` | Gate de prontidão para release somente leitura (CHANGELOG `[Unreleased]` / versão / git-clean / tag-absent); bloqueia em caso de falha |
 | `/research` | Standalone | Standalone | Tavily / Exa MCP + ctx7 + GSD `/gsd-discuss-phase` | Investigação multi-fonte (alternativa ao Stage ①) |
 | `/retro` | Standalone | Standalone | gstack `/retro` + planning-with-files RETROSPECTIVE.md | Resumo de encerramento de projeto / milestone |
 
@@ -189,11 +277,11 @@ graph TD
 
 ## ⚡ Fluxo de Uso
 
-Metodologia three-layer-stack de 4 stages — recomendado conduzir pelos 4 master orchestrators em série:
+Metodologia three-layer-stack de 5 stages — recomendado conduzir pelos 5 master orchestrators em série:
 
 ```
-/discuss  →  /plan  →  /task  →  /verify
-   ①         ②        ③         ④
+/discuss  →  /plan  →  /task  →  /verify  →  /ship
+   ①         ②        ③         ④           ⑤
 ```
 
 | Stage | Master | Principais sub-workflows | Colaboração com upstreams |
@@ -202,6 +290,7 @@ Metodologia three-layer-stack de 4 stages — recomendado conduzir pelos 4 maste
 | ② **Plan** | `/plan` | architecture (condicional) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
 | ③ **Task** | `/task` | clarify → code → test → deliver (4 em série por subtask) | karpathy principles + mattpocock moves + superpowers TDD + `ralph-loop` |
 | ④ **Verify** | `/verify` | progress → 5 paralelos condicionais → simplify (+ multispec crítico) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
+| ⑤ **Ship** | `/ship` | preflight (gate de prontidão para release) → delega PR/deploy | `harnessed release-preflight` + gstack `/ship` + CI `publish.yml` (fronteira tag-ready) |
 
 Exemplo prático:
 
@@ -209,11 +298,12 @@ Exemplo prático:
 # 1. Instala os upstreams do Workflow (uma linha instala gstack + GSD + superpowers + planning-with-files)
 harnessed setup
 
-# 2. Executa a cadência de 4 stages dentro do Claude Code
+# 2. Executa a cadência de 5 stages dentro do Claude Code
 /discuss "novo recurso X"          # Clarificação em 3 camadas: Strategic + Phase + Subtask
 /plan "novo recurso X"             # Architecture (condicional) + plano (grafo de tarefas persistido)
 /task "subtask-1: API contract"    # 4 subs em série por subtask
 /verify "phase-1"                  # 7 subs condicionais
+/ship                              # gate release-preflight → PR/deploy (tag-ready; publica via CI)
 
 # 3. Retomar após interrupção (a qualquer momento)
 harnessed resume
@@ -225,14 +315,14 @@ harnessed resume
 
 ---
 
-## 🗂️ Arquitetura (4 stages em namespace hierárquico)
+## 🗂️ Arquitetura (5 stages em namespace hierárquico)
 
 ### 1. Estrutura de Diretórios
 
 ```
 harnessed/
 ├── manifests/                  # L1: camada de descrição upstream (NÃO vendored)
-├── workflows/                  # L6: Skills de Composition (batuta do maestro dos 4 stages)
+├── workflows/                  # L6: Skills de Composition (batuta do maestro dos 5 stages)
 │   ├── discuss/                # Stage ① 3 camadas (strategic + phase + subtask)
 │   │   ├── auto/               # gate-route do master /discuss
 │   │   ├── strategic/          # /discuss-strategic (gstack /office-hours + /plan-ceo-review)
@@ -241,8 +331,9 @@ harnessed/
 │   ├── plan/                   # Stage ② (architecture + grafo de tarefas da phase)
 │   ├── task/                   # Stage ③ (clarify + code + test + deliver)
 │   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
+│   ├── ship/                   # Stage ⑤ (gate de prontidão para release preflight → delega PR/deploy ao gstack /ship; tag-ready)
 │   ├── research/               # Stage ① alternativo standalone
-│   ├── retro/                  # encerramento de milestone standalone pós-④
+│   ├── retro/                  # encerramento de milestone standalone pós-⑤
 │   ├── capabilities.yaml       # L5a: ~100 entradas, 7 categorias SoT
 │   ├── defaults.yaml           # ralph_max_iterations por fase de workflow
 │   ├── judgments/              # L5a: critérios three-layer-stack + paralelismo + tdd + fallback + rules-routing
@@ -277,7 +368,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 Slash cmd voltado ao usuário + harnessed CLI             │
-│   /discuss /plan /task /verify (master) + 18 sub + /research /retro + /auto super-master
+│   /discuss /plan /task /verify /ship (master) + 19 sub + /research /retro + /auto super-master
 │   + invocação direta gstack (30+ opcionais): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Orquestração de Workflow (workflows/<stage>/<sub>/)       │
@@ -385,12 +476,22 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `harnessed gates <master>` | Avalia quais sub-workflows disparam para um master stage (JSON: fire/skip/parallelism). Usado por slash commands para orquestrar spawns nativos. |
 | `harnessed prompt <sub>` | Gera um prompt pronto para spawn (role + checklist + disciplines + protocolos de completion/clarification) para um sub-workflow. |
 | `harnessed checkpoint <action> <sub>` | Registra start/complete/fail de um sub-workflow em `~/.claude/harnessed/checkpoints/`. |
+| `harnessed` (sem args) | Você-está-aqui com zero argumentos: dashboard de workflow ativo + `NEXT: auto\|manual\|done` + hint de execução; `--json` legível por máquina; sem workflow ativo → hint de onboarding (análogo ao comet `/comet`, somente leitura). |
+| `harnessed next` | Contrato determinístico de próximo-passo. Dentro de um workflow: `NEXT: auto\|manual\|done`. Quando todos os subs do workflow estão resolvidos, ele cai para a próxima **cross-unit** (próxima phase/task derivada do estado em disco do `.planning/`) com um contrato de exit-code (`0` avança · `2` concluído · `10` bloqueado). |
+| `harnessed advance` | Forward continuation — imprime a próxima unidade de trabalho (próxima phase/task) ao longo do milestone e o comando para executá-la. Apenas imprime (a sessão principal roda o próximo `/auto`); recusa-se a pular uma phase anterior incompleta (`--force` sobrescreve); `--json` aciona um loop `while harnessed advance --json; do :; done`. |
+| `harnessed reject <sub>` | Marca um sub como rejeitado pelo usuário (terminal, distinto de `failed`). |
+| `harnessed compact [--tokens <n>]` | Resume+despeja entradas de ledger resolvidas (G6-safe: `fail_count>0` nunca é despejado); auto-dispara em `checkpoint complete --tokens`. |
+| `harnessed workflows` | Lista os workflows em andamento (um por repo). |
+| `harnessed learn "<lesson>"` | Anexa um aprendizado em prosa ao `.planning/LEARNINGS.md` deste repo. |
 | `harnessed run <name>` | Executa um workflow via spawn SDK in-process (modo CI/headless). Slash commands usam spawn CC-native em vez disso. |
 | `harnessed resume` | Retoma a partir do checkpoint mais recente após interrupção de sessão |
 | `harnessed status` | Phase atual + detentor do lock |
-| `harnessed doctor` | Health check com 8 verificações (Node / MCP / jq / Win bash / routing / token budget, etc.) |
+| `harnessed doctor` | Health check com 14 verificações (Node / MCP / jq / Win bash / routing / token budget / mattpocock / CodeGraph / update-available, etc.) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | Auto-atualização (`npm i -g harnessed@latest`); `--check` reporta a versão mais recente; `--upstreams` re-executa os manifests base; `--migration-report` é um inventário de estado obsoleto somente leitura |
+| `harnessed release-preflight` | Gate de prontidão para release somente leitura (CHANGELOG `[Unreleased]` / versão / git-clean / tag-absent); sai com 1 se não estiver pronto. O gate do stage Ship. |
+| `harnessed retro --done` | Reseta o contador de phases do lembrete de retro após rodar `/retro` (limpa o nudge RETRO-DUE por turno). |
 | `harnessed install <name>` | Instala um Manifest upstream |
-| `harnessed uninstall [name]` | Desinstalação unificada — sem nome: remove os arquivos próprios do harnessed (upstreams intactos); com nome: remove um único upstream |
+| `harnessed uninstall [name]` | Desinstalação reversa |
 | `harnessed backup` | Gerenciamento de snapshots de backup |
 | `harnessed rollback <timestamp>` | Rollback em um único comando (preservação de EOL + verificação sha1) |
 | `harnessed gc` | Limpa backups expirados |
@@ -405,6 +506,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `--dry-run` | Visualiza sem gravar em disco (opt-in para usuários avançados) |
 | `--non-interactive` | Cenários CI / scripted |
 | `--system` | Permite instalação global L4 (caso contrário, faz downgrade para npx efêmero L1) |
+| `--yes` | Pula a confirmação interativa na desinstalação |
 | `--full-diff` | Expande diffs recolhidos acima de 200 linhas |
 | `--no-color` | Força sem cor (mesmo em TTY) |
 | `--task <text>` | Subcomando `run` — descrição da tarefa (passada como `gateContext.task` do workflow) |
@@ -423,7 +525,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 Sim, mas **a experiência do usuário = um único comando**:
 
 ```bash
-harnessed setup  # Instala automaticamente gstack + GSD + superpowers + planning-with-files; 25 Skills de Workflow vão para ~/.claude/skills/ + variável de ambiente Agent Teams gravada automaticamente em ~/.claude.json
+harnessed setup  # Instala automaticamente gstack + GSD + superpowers + planning-with-files; 26 Skills de Workflow vão para ~/.claude/skills/ + variável de ambiente Agent Teams gravada automaticamente em ~/.claude.json
 ```
 
 Pense no `brew install <formula>` puxando o conjunto completo de dependências — você não precisa fazer `brew install` de cada dependência separadamente.
@@ -458,7 +560,7 @@ Pense no `brew install <formula>` puxando o conjunto completo de dependências �
 | Orchestration | GSD | Grafo de tarefas de alto nível por Phase + análise de dependências |
 | Persistência | planning-with-files | Persiste `task_plan.md` / `progress.md` / `findings.md` |
 
-`/discuss /plan /task /verify` — os 4 masters encadeiam os 4 stages; cada master delega internamente ao seu sub. Cada stage faz uma coisa diferente e alimenta o próximo. **Sem fusão**.
+`/discuss /plan /task /verify /ship` — os 5 masters encadeiam os 5 stages; cada master delega internamente ao seu sub. Cada stage faz uma coisa diferente e alimenta o próximo. **Sem fusão**.
 
 </details>
 

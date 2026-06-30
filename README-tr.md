@@ -4,8 +4,9 @@
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> AI coding harness paket yöneticisi + Composition Orchestrator
-> Üç katmanlı yığın iş birliği metodolojisini (gstack governance + GSD proje yöneticisi + superpowers kıdemli mühendis + karpathy ilkeleri + mattpocock hamleleri) çalıştırılabilir bir motora dönüştürüp makine düzeyinde uygular
+> **Ham Claude Code'u disiplinli, kıdemli bir mühendislik ekibine dönüştürün.** Tek bir kurulum; governance, planlama, TDD ve incelemeyi tek bir Discuss→Ship Workflow'una bağlar; burada ilerleme ve kanıtlar sohbette değil, diskte kalıcı olur.
+
+> _AI coding harness paket yöneticisi + Composition Orchestrator_ — üç katmanlı yığın iş birliği metodolojisini (gstack governance + GSD proje yöneticisi + superpowers kıdemli mühendis + karpathy ilkeleri + mattpocock hamleleri) çalıştırılabilir bir motor olarak makine düzeyinde uygular
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
@@ -17,7 +18,42 @@
 
 ## ✨ TL;DR
 
-**Claude Code üzerinde Harness Mühendisliği için en iyi uygulama Orchestration'ı** — açık kaynak Claude Code ekosisteminin en iyi bileşenlerini bir araya getirir; görüşlü Composition Skills aracılığıyla bunları birleşik bir Workflow'a dokur. Upstream kodu vendor etmez; Manifest'ler kurulum/kontrol adımlarını tanımlar, Composition Skills ise çok-upstream iş birliğini orkestrale eder.
+**Nasıl çalışır**: harnessed, en iyi açık kaynak Claude Code ajanlarını (gstack, GSD, superpowers, planning-with-files) **bir araya getirir** ve görüşlü Composition Skills aracılığıyla bunları tek bir Workflow'a **orkestrale eder**. Upstream kodu vendor **etmez** — manifest'ler kurulum/kontrol adımlarını tanımlar, Composition Skills ise çok-upstream iş birliğini yönetir (böylece bir upstream yükseltmesi yalnızca yeniden kurulumdan ibarettir, asla elle kod senkronizasyonu değil).
+
+### 🔁 İşletim döngüsü
+
+> **Discuss → Plan → Build → Verify → Ship**, bir **Learn** döngüsüyle kapanır — üç katmanlı yığın boyunca makine düzeyinde yürütülür (gstack governance · GSD orkestrasyonu · superpowers TDD · checkpoint kanıtı). Ham ajan çalışması savrulur; harnessed bunu, ilerleme ve kanıtın sohbette yaşamak yerine kalıcı olduğu bir tek-doğru-kaynak (source-of-truth) yoluna dönüştürür. **Öğrenme otomatiktir**: tamamlanan her Workflow, başarısızlık/döngü/ret sinyallerini `.planning/LEARNINGS.md`'ye ekler ve bunlar bir sonraki döngüye enjekte edilir — bu her zaman açıktır, isteğe bağlı Retro'ya **bağlı değildir**. Retro (`/retro`) ayrı, isteğe bağlı bir milestone özetidir.
+
+```mermaid
+flowchart LR
+  R(["⓪ Research<br/>çok-kaynaklı araştırma<br/>(isteğe bağlı)"]):::opt --> D
+  D(["① Discuss<br/>3-katman açıklama"]) --> P(["② Plan<br/>spec + görev kalıcılaştırma"])
+  P --> T(["③ Task<br/>TDD inşa + checkpoint"])
+  T --> V(["④ Verify<br/>bağımsız inceleme + kanıt kapısı"])
+  V --> S(["⑤ Ship<br/>release-preflight → tag'e hazır (yayın CI ile)"])
+  S -. "milestone özeti" .-> RT(["Retro<br/>(isteğe bağlı)"]):::opt
+  V -. "başarısız / boşluk" .-> T
+  S == "🔁 Learn — her Workflow tamamlandığında öğrenimler yakalanır → sonraki döngüye enjekte edilir" ==> D
+  classDef opt stroke-dasharray:5,opacity:0.8
+```
+
+---
+
+## 🧱 Üç katmanlı yığın nedir?
+
+harnessed'ın üç katmanlı yığını, yerleşik **BDD → SDD → TDD** iç içe yapısının bir yazılım mühendisliği uygulamasıdır: her biri farklı bir soruyu yanıtlayan üç iç içe geri besleme döngüsü. **Üç katman, döngülerin kendisidir** (kararlı teori); harnessed, açık kaynak ekosistemini her döngünün içine **birleştirir** (compose) — ve bileşenler **örtüşür**, ki bir Composition Orchestrator'ın tahkim ettiği tam da budur.
+
+| Katman | Döngü | Yanıtladığı soru | Birleştirildiği bileşenler (örtüşen) |
+|---|---|---|---|
+| **① Behavior** | BDD | *Ne* inşa edilecek + bittiğini nasıl bileceğiz | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → kabul kriterleri |
+| **② Spec** | SDD | *Nasıl* yapılandırılır | GSD plan-phase → gereksinimler / tasarım / görevler · contract'lar (Spec Kit / ECC desenleri) |
+| **③ Implementation** | TDD | Gerçekten *çalışıyor* mu | superpowers TDD red-green · subagent yürütme · GSD verify-work · ralph-loop tamamlama |
+
+Döngüler, aşama değil **iç içe geçmiş merceklerdir** — klasik Cucumber BDD-dış + TDD-iç çift döngüsü, GenAI çağı SDD spec halkasıyla genişletilerek üçlü döngüye dönüştürülmüştür. harnessed, varsayılan dış→iç geçişi 5-aşamalı cadence'ı olarak çalıştırır ve buna **bugün sevk ettiği geri-kenarları (back-edges)** ekler: Verify, başarısız işi Task'a geri gönderir; gri bir alana çarpan bir subagent, devam etmeden önce açıklamaya gidip geri döner; ve sevk edilen her döngü, öğrenimleri bir sonraki Discuss'a geri besler. (Daha ince taneli yapılandırılmış geri-kenarlar — örn. bir contract çelişkisini doğrudan Spec'e, belirsiz bir gereksinimi Behavior'a yönlendirmek — yol haritasındadır, henüz sevk edilmemiştir. harnessed, üçlü döngünün doğrusal-cadence gerçeklemesidir; tam yönlendirilmiş graf onun evrim yoludur.)
+
+**Bileşenler örtüşür — mesele tam da bu.** **GSD**, orkestrasyon omurgası olarak üç döngünün hepsinden geçer; **gstack**, Behavior + Review'ı kapsar; **superpowers**, Behavior (brainstorm) + Implementation (TDD)'i kapsar. harnessed bunları bağlar — ve örtüşmeyi tahkim eder — tek bir motorda. Her katmandan geçen iki **çapraz-kesim disiplini** vardır: **karpathy ilkeleri** (*nasıl* kodlanır — basitlik-önce, cerrahi diff'ler) + **mattpocock hamleleri** (`/diagnose`, `/zoom-out` gibi talep üzerine taktiksel araçlar).
+
+Yukarıdaki çalışma zamanı döngüsüyle eşlenir: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, ardından **Verify + Ship** bunu kanıt kapılarıyla kapatır.
 
 ---
 
@@ -30,12 +66,32 @@
 
 ## 🎯 Temel Farklılaştırıcılar
 
-- **Üç katmanlı yığın makine düzeyinde uygulanır** — `gstack governance` + `GSD proje yöneticisi` + `superpowers kıdemli mühendis` + `karpathy 4 ilkesi` + `mattpocock 23 hamlesi`, 5 sütun %100 kapsama ile
-- **Upstream'lerin vendor edilmemesi** — Manifest'ler kurulum/kontrolü tanımlar; upstream yükseltildiğinde kullanıcılar en son sürümü almak için yalnızca yeniden kurulum yapar
-- **Composition Skill** — dahili Workflow Skills, şef sopası gibi birden fazla upstream'i uyum içinde orkestrale eder. **1 süper-ana `/auto` + 4 aşama-ana + 18 alt-workflow + 2 bağımsız = 25 namespace katmanlı Workflow**, tam 4-aşama makine uygulaması (`/auto` aşamalar arası tek atışta / `/discuss /plan /task /verify` tek aşama / 18 adet üç katmanlı yığın alt-workflow / `/research /retro` 2 bağımsız)
+- **Üç katmanlı yığın makine düzeyinde uygulanır** — **BDD→SDD→TDD iç içe üçlü döngüsü** ([bu da ne?](#-üç-katmanlı-yığın-nedir)), `gstack` + `GSD` + `superpowers`'tan birleştirilmiş (örtüşen, omurga olarak GSD) artı çapraz-kesim disiplinleri olarak `karpathy 4 ilkesi` + `mattpocock 23 hamlesi`
+- **Upstream'lerin vendor edilmemesi** — manifest'ler kurulum/kontrolü tanımlar; upstream yükseltildiğinde kullanıcılar en son sürümü almak için yalnızca yeniden kurulum yapar
+- **Composition Skill** — dahili Workflow Skills, şef sopası gibi davranıp birden fazla upstream'i uyum içinde orkestrale eder. **1 süper-ana `/auto` + 5 aşama-ana + 19 alt-workflow + 2 bağımsız = 27 namespace katmanlı Workflow**, tam 5-aşama makine uygulaması (`/auto` aşamalar arası tek atışta / `/discuss /plan /task /verify /ship` tek aşama / 19 adet üç katmanlı yığın alt-workflow / `/research /retro` 2 bağımsız)
 - **L0 Discipline Substrate** — global çapraz-aşama davranış temeli (karpathy ilkeleri + çıktı stili + dil + operasyonel + öncelik + protokoller), evrensel olarak uygulanır
-- **Paket yöneticisi zihniyeti** — bağımlılık grafiği otomatik çözümlenir, `doctor` sağlık kontrolü, tek seferlik tam kurulum
-- **Birleşik giriş noktası** — kullanıcılar her upstream'in terminolojisini öğrenmek zorunda kalmadan `/discuss /plan /task /verify` ana slash komutlarını kullanır; alt komutlar tek bir aşamayı açıkça çağırır (örn. `/discuss-strategic` yalnızca stratejik katman açıklamasını çalıştırır)
+- **Paket yöneticisi zihniyeti** — kurulum bağımlılık grafiği otomatik çözümlenir, `doctor` sağlık kontrolü, install-base tek seferlik tam kurulum
+- **Birleşik giriş noktası** — kullanıcılar her upstream'in terminolojisini öğrenmek zorunda kalmadan `/discuss /plan /task /verify /ship` ana slash komutlarını kullanır; alt komutlar tek bir aşamayı açıkça çağırır (örn. `/discuss-strategic` yalnızca stratejik katman açıklamasını çalıştırır)
+- **İleri taşıma (forward continuation)** — `harnessed next` / `harnessed advance` sizi görevler ve phase'ler arasında taşır: biri bittiğinde, sonraki **`.planning/` disk durumundan türetilir** (bir phase, `PLAN`'ının eşleşen bir `SUMMARY`'si olduğunda tamamlanmıştır) — bakımı gereken bir kuyruk yoktur, dolayısıyla akış ortasında eklenen yeni bir phase otomatik olarak alınır ve devam, diskten yeniden türetir. Tur başına bir `NEXT-UNIT` izi (breadcrumb), bir sonrakinin ne olduğunu işaret eder
+
+---
+
+## 🆚 Native Claude Code / Codex'e karşı
+
+Native ajanlar size ilkeller (primitives) verir; harnessed onları bir metodolojiye dokur. Native bir hücrede bir ilkelin "var olduğu" söylendiğinde, onu yine de her proje için kendiniz tasarlar, bağlar ve bakımını yaparsınız — harnessed bunu önceden-birleştirilmiş ve motor-güdümlü olarak sevk eder.
+
+| Boyut | Native Claude Code | Native Codex | harnessed |
+|---|---|---|---|
+| **Workflow / metodoloji** | Yalnızca ilkeller — akışı her seferinde siz tasarlarsınız | Daha az ilkel — prompt başına serbest stil | Kodlanmış **Discuss→Ship** 5-aşama üç katmanlı yığın motoru — BDD + SDD + TDD döngüleri + 2 çapraz-kesim (Review + Ship) |
+| **Talimat enjeksiyonu** | `CLAUDE.md` + skill'ler + hook'lar var, ama statik ve elle bağlanmış | Yalnızca `AGENTS.md` — skill/hook yok | Tur başına breadcrumb hook + görev kapsamlı yönlendirme + her döngüde enjekte edilen öğrenimler |
+| **Durum / ilerleme** | Sohbet bağlamı — `/clear` / compaction'da kaybolur | Sohbet bağlamı — kalıcılık katmanı yok | Diskte `.planning/` + `current-workflow.json` defteri + checkpoint kanıtı |
+| **Oturumlar arası kurtarma** | Bağlamı elle yeniden açıklayın | Bağlamı elle yeniden açıklayın | `harnessed status --recover`: buradasınız + sonraki adım |
+| **Doğrulama / "bitti"** | Ajan kendini "bitti" diye bildirir | Ajan kendini "bitti" diye bildirir | Bağımsız inceleme subagent'ları + **fail-CLOSED kanıt koruması** (eksik artifact = bitmemiş) |
+| **Subagent orkestrasyonu** | Subagent + Agent Teams mevcut, ama elle orkestre edilir | Subagent/team ilkeli yok | `gates → prompt → spawn → checkpoint`; Agent Teams göreve göre otomatik etkin |
+| **Öğrenme döngüsü** | Yok | Yok | `LEARNINGS.md` otomatik yakalanır + bir sonraki döngüye enjekte edilir |
+| **Platform erişimi** | Yalnızca Claude Code | Yalnızca Codex | **Çapraz-harness** — birincil Claude Code, platform katmanı üzerinden Codex |
+
+> Native ajanlar, önemsiz tek seferlik düzenlemeler için sıfır-kurulum, sıfır-ek yük ile kazanır. harnessed ise iş birden fazla adıma, oturuma ya da subagent'a yayıldığı an hakkını verir — serbest stil savrulması ve sohbette-kaybolan durumun size maliyet çıkarmaya başladığı yerde.
 
 ---
 
@@ -46,13 +102,6 @@ npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
-
-**Kaldırmak için:**
-```bash
-harnessed uninstall    # harnessed'ın kendi dosyalarını kaldırır (upstream bileşenler ETKİLENMEZ)
-```
-
-> `harnessed uninstall` komutları, workflow skill'leri, settings ortam değişkenlerini ve durum dizinini temizler. Upstream bileşenler (npm paketleri, MCP sunucuları, CC eklentileri, git-klonlanmış depolar, npx skill'leri) olduğu gibi kalır. Tek bir upstream'i kaldırmak için `harnessed uninstall <name>` komutunu çalıştırın. Önizleme için `--dry-run` ekleyin.
 
 🤖 **Veya bir yapay zekaya kurdurun** — bu cümleyi Claude Code'a (ya da herhangi bir yapay zeka asistanına) yapıştırın:
 
@@ -66,6 +115,38 @@ Yapay zeka dokümanı otomatik olarak çeker ve kurulumu gerçekleştirir; işle
 
 ---
 
+## ⏱️ İlk 5 Dakika
+
+Sıfırdan çalışan bir Workflow'a en kısa yol:
+
+```bash
+# 1. Kurulum (tek satır)
+npm install -g harnessed && harnessed setup
+```
+
+```
+# 2. Claude Code içinde — ilk Workflow'unuzu başlatın
+/auto "ilk gereksiniminiz"        # yeni başlayan varsayılanı: tüm aşamaları uçtan uca çalıştırır
+```
+
+```bash
+# 3. Kaybolduysanız? harnessed'ı argümansız çalıştırın — nerede olduğunuzu + sırada ne olduğunu söyler
+harnessed
+#   → buradasınız panosu (aktif phase + adım başına durum) + bir NEXT: auto|manual|done satırı
+#   status / next / resume hatırlamaya gerek yok — tek komut (comet `/comet` benzeri, salt-okunur)
+#   makine okunabilir çıktı için --json ekleyin
+```
+
+```bash
+# 4. Bir kesintiden sonra istediğiniz zaman devam edin
+harnessed            # aynı buradasınız görünümü
+harnessed resume     # en son checkpoint'ten devam edin
+```
+
+> Hangi aşamanın ne zaman çalışacağı üzerinde daha ince denetim mi istiyorsunuz? Aşağıdaki 3 moda bakın.
+
+---
+
 ## 🚀 Hızlı Başlangıç — 3 Seçenek
 
 Artan kullanıcı müdahalesi sırasıyla:
@@ -76,11 +157,11 @@ Artan kullanıcı müdahalesi sırasıyla:
 /auto "gereksinim X"
 
 # Büyük gereksinimler için aşamaları açıkça belirtebilirsiniz (genellikle gerekmez — yapay zeka
-# otomatik değerlendirir ve yönlendirir; büyük gereksinim olduğuna inanıyorsanız zorla kullanın):
+# otomatik değerlendirip yönlendirir; büyük bir gereksinim olduğuna inanıyorsanız zorla kullanın):
 /auto "gereksinim X" --staged
 ```
 
-> Fazla düşünmek istemiyorsanız ya da yeni başlıyorsanız — her şeyi harnessed'a bırakın. Durmaksızın tam 6 aşama çalışır (araştırma koşullu → discuss → plan → task → verify → retro zorunlu). Yapay zeka tek atışta gereksinim karmaşıklığını değerlendirir, büyük gereksinimler için `--staged` moduna geçmeyi önerir (her aşama sonrası inceleme için durur); başlamadan önce "Gereksinimi açıkça anlıyor musunuz?" sorusunu sorar — hayır → `/research` çok-kaynaklı araştırmayı otomatik çalıştırır; zorunlu `/retro` özetiyle biter. Hata durumunda hızlı kesilir, `harnessed resume` ile devam edilir.
+> Fazla düşünmek istemiyorsanız ya da yeni başlıyorsanız — her şeyi harnessed'a bırakın. Durmaksızın tam 6 aşama çalışır (araştırma koşullu → discuss → plan → task → verify → retro zorunlu). Yapay zeka tek atışta gereksinim karmaşıklığını değerlendirir, büyük gereksinimler için `--staged` moduna geçmeyi önerir (her aşamadan sonra inceleme için durur); başlamadan önce "Gereksinimi açıkça anlıyor musunuz?" sorusunu sorar — hayır → `/research` çok-kaynaklı araştırmayı otomatik çalıştırır; zorunlu `/retro` özetiyle biter. Hata durumunda hızlı kesilir, `harnessed resume` ile devam edilir.
 
 ### 📂 Aşama Modu (İleri kullanıcılar / ara sonuçları incelemek isteyenler için önerilir)
 
@@ -91,7 +172,7 @@ Artan kullanıcı müdahalesi sırasıyla:
 /verify "phase-1"                # 7 alt-workflow koşullu doğrulama
 ```
 
-> Hangi aşamadan başlayacağınıza karar vermek / ara çıktıları incelemek istiyorsanız — 4 ana bağımsız olarak çağrılabilir ve her ana, dahili olarak o aşamanın tüm alt-workflow'larını otomatik olarak dağıtır.
+> Hangi aşamadan başlayacağınıza karar vermek / ara çıktıları incelemek istiyorsanız — 5 ana bağımsız olarak çağrılabilir ve her ana, dahili olarak o aşamanın tüm alt-workflow'larını yine de otomatik olarak dağıtır.
 
 ### 🔬 Cerrahi Mod (Uzman modu / ne istediğinizi biliyorsunuz)
 
@@ -99,14 +180,14 @@ Artan kullanıcı müdahalesi sırasıyla:
 /discuss-phase "..."        # Yalnızca Phase katmanı açıklamasını çalıştır
 /plan-architecture "..."    # Yalnızca mimari incelemeyi çalıştır
 /verify-paranoid "..."      # Yalnızca Paranoid Staff Engineer incelemesini çalıştır
-# ... diğer 18 alt-workflow'dan birini seçin
+# ... diğer 19 alt-workflow'dan birini seçin
 ```
 
-> "Ben uzmanum, kendim karar veririm" — ana orchestrator'ı atlayıp doğrudan bir alt-workflow'u çağırın. Tam olarak hangi alt-workflow'a ihtiyaç duyduğunu bilen ileri kullanıcılar için ya da tek adımın yeniden kullanımı için uygundur.
+> "Ben uzmanım, kendim karar veririm" — ana orchestrator'ı atlayıp doğrudan bir alt-workflow'u çağırın. Tam olarak hangi alt-workflow'a ihtiyaç duyduğunu bilen ileri kullanıcılar için ya da tek adımın yeniden kullanımı için uygundur.
 
 ---
 
-## 📐 4-Aşama Akış Diyagramı
+## 📐 5-Aşama Akış Diyagramı
 
 ```mermaid
 graph TD
@@ -144,16 +225,21 @@ graph TD
     VM[verify-multispec]
     VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
   end
-  RT([⑤ /retro — milestone özeti, isteğe bağlı]):::optional
+  subgraph Ship[⑤ Ship — Sürüm]
+    SMs[/ship master/]
+    SP[ship-preflight]
+    SMs --> SP
+  end
+  RT([⑥ /retro — milestone özeti, isteğe bağlı]):::optional
   RS --> Discuss
-  Discuss --> Plan --> Task --> Verify
-  Verify --> RT
+  Discuss --> Plan --> Task --> Verify --> Ship
+  Ship --> RT
   classDef optional stroke-dasharray:5 5,fill:#f5f5f5,color:#666
 ```
 
-> Kesik çizgili kutular = isteğe bağlı bağımsız araçlar (`/research` stratejik öncesi araştırma / `/retro` milestone sonrası özet); düz kutular = ana 4-aşama cadence.
+> Kesik çizgili kutular = isteğe bağlı bağımsız araçlar (`/research` stratejik öncesi araştırma / `/retro` milestone sonrası özet); düz kutular = ana 5-aşama cadence (Ship, tag'e hazır noktada durur; gerçek yayını `publish.yml` CI yapar).
 
-### 25-Workflow Genel Bakış Tablosu
+### 27-Workflow Genel Bakış Tablosu
 
 | Slash komutu | Aşama | Tür | Yetenek / Upstream | Kısa açıklama |
 |-----------|-------|------|----------------------|-------|
@@ -179,6 +265,8 @@ graph TD
 | `/verify-design` | ④ Verify | Alt | gstack `/design-review` + ui-ux-pro-max + frontend-design | Tasarım sistemi tutarlılığı (has_design_changes koşullu) |
 | `/verify-simplify` | ④ Verify | Alt | `code-simplifier` | Son seri sadeleştirme |
 | `/verify-multispec` | ④ Verify | Alt | 4-uzman Agent Team Pattern C | Kritik sürüm / büyük refactor PR tırmanması (karşılıklı SendMessage çapraz sorgulama) |
+| `/ship` | ⑤ Ship | Ana | masterOrchestrator | Verify sonrası sürüm aşaması — preflight → PR/deploy'u gstack `/ship`'e devret → yayını CI ile yap (tag'e hazır sınırı) |
+| `/ship-preflight` | ⑤ Ship | Alt | `harnessed release-preflight` | Salt-okunur sürüm-hazırlık kapısı (CHANGELOG `[Unreleased]` / sürüm / git-clean / tag-yokluğu); başarısızlıkta bloklar |
 | `/research` | Bağımsız | Bağımsız | Tavily / Exa MCP + ctx7 + GSD `/gsd-discuss-phase` | Çok-kaynaklı araştırma (Aşama ① alternatifi) |
 | `/retro` | Bağımsız | Bağımsız | gstack `/retro` + planning-with-files RETROSPECTIVE.md | Proje / milestone kapanış özeti |
 
@@ -189,11 +277,11 @@ graph TD
 
 ## ⚡ Kullanım Akışı
 
-4-aşama üç katmanlı yığın metodolojisi — 4 ana orchestrator'ı seri olarak kullanmanız önerilir:
+5-aşama üç katmanlı yığın metodolojisi — 5 ana orchestrator'ı seri olarak kullanarak sürmeniz önerilir:
 
 ```
-/discuss  →  /plan  →  /task  →  /verify
-   ①         ②        ③         ④
+/discuss  →  /plan  →  /task  →  /verify  →  /ship
+   ①         ②        ③         ④           ⑤
 ```
 
 | Aşama | Ana | Ana alt-workflow'lar | Upstream iş birliği |
@@ -202,6 +290,7 @@ graph TD
 | ② **Plan** | `/plan` | architecture (koşullu) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
 | ③ **Task** | `/task` | clarify → code → test → deliver (her alt görev için 4 seri) | karpathy ilkeleri + mattpocock hamleleri + superpowers TDD + `ralph-loop` |
 | ④ **Verify** | `/verify` | progress → 5 paralel koşullu → simplify (+ multispec kritik) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
+| ⑤ **Ship** | `/ship` | preflight (sürüm-hazırlık kapısı) → PR/deploy devri | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI (tag'e hazır sınırı) |
 
 Pratik örnek:
 
@@ -209,11 +298,12 @@ Pratik örnek:
 # 1. Workflow upstream'lerini kurun (tek satır gstack + GSD + superpowers + planning-with-files'ı kurar)
 harnessed setup
 
-# 2. Claude Code içinde 4-aşama cadence'ı çalıştırın
+# 2. Claude Code içinde 5-aşama cadence'ı çalıştırın
 /discuss "yeni özellik X"          # Stratejik + Phase + Subtask 3 katmanlı açıklama
 /plan "yeni özellik X"             # Mimari (koşullu) + plan (görev grafiği kalıcılaştırılır)
 /task "alt görev-1: API contract"  # Her alt görev için 4 seri alt-workflow
 /verify "phase-1"                  # 7 koşullu alt-workflow
+/ship                              # release-preflight kapısı → PR/deploy (tag'e hazır; yayın CI ile)
 
 # 3. Kesintiden sonra devam edin (herhangi bir zamanda)
 harnessed resume
@@ -225,14 +315,14 @@ harnessed resume
 
 ---
 
-## 🗂️ Mimari (4-aşama namespace katmanlı)
+## 🗂️ Mimari (5-aşama namespace katmanlı)
 
 ### 1. Dizin Yapısı
 
 ```
 harnessed/
-├── manifests/                  # L1: upstream tanımlama katmanı (vendor edilmez)
-├── workflows/                  # L6: composition skills (4-aşama şef sopası)
+├── manifests/                  # L1: upstream tanımlama katmanı (vendor EDİLMEZ)
+├── workflows/                  # L6: composition skills (5-aşama şef sopası)
 │   ├── discuss/                # Aşama ① 3 katman (strategic + phase + subtask)
 │   │   ├── auto/               # /discuss master kapı-yönlendirmesi
 │   │   ├── strategic/          # /discuss-strategic (gstack /office-hours + /plan-ceo-review)
@@ -241,8 +331,9 @@ harnessed/
 │   ├── plan/                   # Aşama ② (mimari + phase görev grafiği)
 │   ├── task/                   # Aşama ③ (clarify + code + test + deliver)
 │   ├── verify/                 # Aşama ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
+│   ├── ship/                   # Aşama ⑤ (preflight sürüm-hazırlık kapısı → PR/deploy'u gstack /ship'e devret; tag'e hazır)
 │   ├── research/               # bağımsız Aşama ① alternatifi
-│   ├── retro/                  # bağımsız ④ sonrası milestone kapanışı
+│   ├── retro/                  # bağımsız ⑤ sonrası milestone kapanışı
 │   ├── capabilities.yaml       # L5a: ~100 giriş, 7 kategori SoT
 │   ├── defaults.yaml           # workflow phase başına ralph_max_iterations
 │   ├── judgments/              # L5a: üç katmanlı yığın kriterleri + paralellik + tdd + fallback + rules-routing
@@ -277,7 +368,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 Kullanıcıya yönelik slash komutu + harnessed CLI          │
-│   /discuss /plan /task /verify (master) + 18 alt + /research /retro + /auto süper-master
+│   /discuss /plan /task /verify /ship (master) + 19 alt + /research /retro + /auto süper-master
 │   + doğrudan gstack çağrısı (30+ isteğe bağlı): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orkestrasyonu (workflows/<aşama>/<alt>/)         │
@@ -375,7 +466,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 
 > Bunlar harnessed'ın kendi bakım komutlarıdır (kurulum / sağlık kontrolü / yedek-geri alma / durum kurtarma vb.). Günlük özellik geliştirme için yukarıdaki slash komutlarını kullanın — bunlara genellikle ihtiyaç duymazsınız.
 
-**v4.0 — orkestrasyon beyni.** Slash command'lar açıklama (clarification) işlemini Claude Code ana session'ında çalıştırır (böylece sorular size ulaşır), ardından CC-native subagent'lar spawn eder (Agent Teams + açıklama round-trip'lerini etkinleştirir). harnessed gate değerlendirmesi (`harnessed gates`) ve spawn'a hazır prompt'lar (`harnessed prompt`) sağlar; spawn işlemini ana session yapar. `harnessed run` CI/headless kullanımı için korunur.
+**v4.0 — orkestrasyon beyni.** Slash command'lar açıklama (clarification) işlemini Claude Code ana session'ında çalıştırır (böylece sorular size ulaşır), ardından CC-native subagent'lar spawn eder (Agent Teams + açıklama round-trip'lerini etkinleştirir). harnessed gate değerlendirmesi (`harnessed gates`) ve spawn'a hazır prompt'lar (`harnessed prompt`) sağlar; spawn işlemini ana session yapar. `harnessed run`, CI/headless kullanım için korunur.
 
 ### CLI Komutları
 
@@ -385,12 +476,22 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `harnessed gates <master>` | Bir master stage için hangi sub-workflow'ların tetiklendiğini değerlendirir (JSON: fire/skip/parallelism). Slash command'lar tarafından native spawn'ları orkestre etmek için kullanılır. |
 | `harnessed prompt <sub>` | Bir sub-workflow için spawn'a hazır bir prompt (role + checklist + disciplines + completion/clarification protokolleri) üretir. |
 | `harnessed checkpoint <action> <sub>` | Bir sub-workflow'un start/complete/fail durumunu `~/.claude/harnessed/checkpoints/`'e kaydeder. |
+| `harnessed` (argümansız) | Sıfır-argüman buradasınız: aktif-workflow panosu + `NEXT: auto\|manual\|done` + çalıştırma ipucu; `--json` makine okunabilir; aktif workflow yoksa → onboarding ipucu (comet `/comet` benzeri, salt-okunur). |
+| `harnessed next` | Deterministik sonraki-adım contract'ı. Bir workflow içinde: `NEXT: auto\|manual\|done`. Workflow'un alt'larının tümü çözüldüğünde, bir sonraki **çapraz-birime** (`.planning/` disk durumundan türetilen sonraki phase/task) düşer; exit-code contract'ı ile (`0` ilerle · `2` bitti · `10` bloklanmış). |
+| `harnessed advance` | İleri taşıma — milestone boyunca sonraki iş birimini (sonraki phase/task) ve onu çalıştıracak komutu yazdırır. Yalnızca-yazdırır (sonraki `/auto`'yu ana session çalıştırır); tamamlanmamış daha önceki bir phase'i geçmeyi reddeder (`--force` geçersiz kılar); `--json`, bir `while harnessed advance --json; do :; done` döngüsünü sürer. |
+| `harnessed reject <sub>` | Bir alt'ı kullanıcı-reddetti olarak işaretler (terminal, `failed`'den farklı). |
+| `harnessed compact [--tokens <n>]` | Çözülmüş defter girişlerini özetler+tahliye eder (G6-güvenli: `fail_count>0` asla tahliye edilmez); `checkpoint complete --tokens` üzerinde otomatik tetiklenir. |
+| `harnessed workflows` | Devam eden workflow'ları listeler (repo başına bir tane). |
+| `harnessed learn "<lesson>"` | Bu repo'nun `.planning/LEARNINGS.md`'sine düz metin bir öğrenim ekler. |
 | `harnessed run <name>` | Bir workflow'u in-process SDK spawn ile çalıştırır (CI/headless modu). Slash command'lar bunun yerine CC-native spawn kullanır. |
 | `harnessed resume` | Oturum kesintisinden sonra en son checkpoint'ten devam eder |
 | `harnessed status` | Mevcut phase + kilit sahibi |
-| `harnessed doctor` | 8 kontrollü sağlık denetimi (Node / MCP / jq / Win bash / routing / token bütçesi vb.) |
+| `harnessed doctor` | 14-kontrollü sağlık denetimi (Node / MCP / jq / Win bash / routing / token bütçesi / mattpocock / CodeGraph / güncelleme-mevcut vb.) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | Kendini güncelle (`npm i -g harnessed@latest`); `--check` en son sürümü bildirir; `--upstreams` temel manifest'leri yeniden çalıştırır; `--migration-report` salt-okunur bir bayat-durum envanteridir |
+| `harnessed release-preflight` | Salt-okunur sürüm-hazırlık kapısı (CHANGELOG `[Unreleased]` / sürüm / git-clean / tag-yokluğu); hazır değilse 1 ile çıkar. Ship-aşaması kapısı. |
+| `harnessed retro --done` | `/retro` çalıştırdıktan sonra retro-hatırlatıcı phase sayacını sıfırlar (tur başına RETRO-DUE dürtmesini temizler). |
 | `harnessed install <isim>` | Upstream manifest'i kurar |
-| `harnessed uninstall [isim]` | Birleşik kaldırma — isim yok: harnessed'ın kendi dosyalarını kaldırır (upstream'ler korunur); isimle: tek bir upstream'i kaldırır |
+| `harnessed uninstall [isim]` | Ters kaldırma |
 | `harnessed backup` | Anlık görüntü yedek yönetimi |
 | `harnessed rollback <zaman_damgası>` | Tek satır geri alma (EOL koruma + sha1 doğrulama) |
 | `harnessed gc` | Süresi dolmuş yedekleri temizler |
@@ -405,10 +506,11 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `--dry-run` | Diske yazmadan önizle (ileri kullanıcı isteğe bağlı) |
 | `--non-interactive` | CI / betiklenmiş senaryolar |
 | `--system` | L4 global kuruluma izin ver (aksi takdirde L1 npx geçici olarak düşürülür) |
+| `--yes` | Kaldırmada (uninstall) etkileşimli onayı atla |
 | `--full-diff` | 200 satırın üzerinde katlanan farkları genişlet |
 | `--no-color` | Rengi zorla kapat (TTY'de bile) |
-| `--task <text>` | `run` alt komutu — görev açıklaması (workflow `gateContext.task` olarak iletilir) |
-| `--task-stdin` | `run` alt komutu — görev açıklamasını stdin'den EOF'a kadar oku (tırnak/$/` shell escape'inden kaçınır) |
+| `--task <text>` | `run` — görev açıklaması (workflow `gateContext.task` olarak iletilir) |
+| `--task-stdin` | `run` — görev açıklamasını stdin'den EOF'a kadar oku (tırnak/$/` shell escape'inden kaçınır) |
 
 
 ---
@@ -423,7 +525,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 Evet, ancak **kullanıcı deneyimi = tek komut**:
 
 ```bash
-harnessed setup  # gstack + GSD + superpowers + planning-with-files'ı otomatik kurar; 25 workflow skill ~/.claude/skills/'e iner + Agent Teams ortam değişkeni ~/.claude.json'a otomatik yazılır
+harnessed setup  # gstack + GSD + superpowers + planning-with-files'ı otomatik kurar; 26 workflow skill ~/.claude/skills/'e iner + Agent Teams ortam değişkeni ~/.claude.json'a otomatik yazılır
 ```
 
 `brew install <formula>`'nın tam bağımlılık kümesini çektiğini düşünün — her bağımlılık için ayrı ayrı `brew install` yapmanıza gerek yoktur.
@@ -440,7 +542,7 @@ harnessed setup  # gstack + GSD + superpowers + planning-with-files'ı otomatik 
 1. **Farklılaşma felsefesi** — harnessed, "hepsi bir arada kendi yapımı" kampına karşı konumlandırılmış "assembly-ist paket yöneticisi"dir. Vendor etmek = kaldıraç noktasını kaybetmek → bir plugin paketi daha olmak
 2. **Lisans + atıf kabusu** — aktif olarak geliştirilen 4-5 upstream'i vendor etmek = karmaşık bir lisans yaması
 3. **Upstream yükseltmeleri yön tersine çevirir** — mevcut manifest tanımı, upstream yükseltildiğinde kullanıcıların yeniden kurarak en son sürümü almasını sağlar; vendor etmek manuel kod senkronizasyonunu zorlar ve sürekli geride kalır
-4. **Tek kişi riski** — 4-5 vendor edilmiş upstream'i senkronize tutan tek bir geliştirici = hızlanmış tükenmişlik
+4. **Tek kişi riski (bus factor 1)** — 4-5 vendor edilmiş upstream'i senkronize tutan tek bir geliştirici = hızlanmış tükenmişlik
 
 </details>
 
@@ -458,7 +560,7 @@ harnessed setup  # gstack + GSD + superpowers + planning-with-files'ı otomatik 
 | Orchestration | GSD | Üst düzey phase görev grafiği + bağımlılık analizi |
 | Kalıcılaştırma | planning-with-files | `task_plan.md` / `progress.md` / `findings.md` kalıcılaştırır |
 
-`/discuss /plan /task /verify` — 4 ana, 4 aşamayı birbirine bağlar; her ana dahili olarak kendi alt-workflow'una devreder. Her aşama farklı bir şey yapar ve bir sonrakini besler. **Birleştirme yok**.
+`/discuss /plan /task /verify /ship` — 5 ana, 5 aşamayı birbirine bağlar; her ana dahili olarak kendi alt-workflow'una devreder. Her aşama farklı bir şey yapar ve bir sonrakini besler. **Birleştirme yok**.
 
 </details>
 
