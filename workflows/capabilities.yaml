@@ -8,7 +8,7 @@
 # ADR 0024+ + npm patch release (2-3 day cycle). Schema = harnessed.capabilities.v1 (sister
 # Phase 2.2 schemaVersion 7 surface convention).
 #
-# Entry buckets (5, total 37 — v13.0 P42 +gsd-eval-review[B2] +verification-before-completion[B4]):
+# Entry buckets (5, total 39 — v13.0 P42 +gsd-eval-review[B2] +verification-before-completion[B4]; P43 +diagram[B7] +gsd-validate-phase[B2], +systematic-debugging alias on gsd-debug):
 #   1. mattpocock 12 高频招式 (D-09)        — grill-with-docs / zoom-out / diagnose / caveman /
 #                                              grill-me / tdd / to-prd / to-issues /
 #                                              improve-codebase-architecture / code-review /
@@ -318,12 +318,14 @@ capabilities:
     cmd: /gsd-debug
     since: v2.0
     category: tool-slash-cmd
-    description: GSD systematic debugging (overlap with mattpocock /diagnose — alias)
+    description: GSD systematic debugging (overlap with mattpocock /diagnose + superpowers systematic-debugging — alias)
     # ADR-0034 Finding 1 — ECC per-language build-resolvers收编 as debug/verify-dimension
     # aliases (build-failure fix; runtime picks language-matching one). Opt-in: no-op
     # when ECC absent.
     aliases:
       - { impl: mattpocock-skills, cmd: /diagnose }
+      # v13.0 P43 — superpowers-native debug alias (双 impl 备选, sister tdd superpowers主/mattpocock备)
+      - { impl: superpowers, cmd: "superpowers:systematic-debugging" }
       - { impl: ecc, cmd: "ecc:rust-build" }
       - { impl: ecc, cmd: "ecc:go-build" }
       - { impl: ecc, cmd: "ecc:build-fix" }
@@ -365,6 +367,19 @@ capabilities:
     description: AI phase eval 覆盖审计 (verify 回查 AI-SPEC eval 是否真覆盖)
     fires_when:
       - phase.stage == 'verify' AND phase.has_ai_phase == true
+
+  # v13.0 P43 (upstream re-sync) — GSD Nyquist 覆盖审计 (verify 回溯查 requirement→test
+  # 覆盖缺口, 补 TDD 前向之外的后向查漏; conditional requires_coverage_audit)。
+  gsd-validate-phase:
+    impl: gsd
+    install_type: user-skill
+    skill_dir: gsd-validate-phase
+    cmd: /gsd-validate-phase
+    since: v13.0
+    category: tool-slash-cmd
+    description: GSD Nyquist 覆盖审计 (verify 回溯查 requirement→test 缺口并补测)
+    fires_when:
+      - phase.stage == 'verify' AND phase.requires_coverage_audit == true
 
   # ============================================================================
   # Bucket 3 — gstack 治理关卡 6 (per D-12 + CLAUDE.md "gstack 治理关卡")
@@ -632,10 +647,10 @@ capabilities:
     discipline_ref: workflows/disciplines/doc-discipline.yaml
 
   # ============================================================================
-  # Bucket 7 — gstack 33 optional registry-only (D-12 NEW v3)
+  # Bucket 7 — gstack 34 optional registry-only (D-12 NEW v3; +diagram v13.0 P43)
   # ============================================================================
   #
-  # 33 gstack optional slash cmd — entry name 无 `gstack-` prefix per Pattern A E.2 LOCK
+  # 34 gstack optional slash cmd — entry name 无 `gstack-` prefix per Pattern A E.2 LOCK
   # (sister project CLAUDE.md gstack skill routing 直接 invoke cmd 名)。
   # 例外 2 alias suffix `-gstack` 避免命名冲突:
   #   - retro-gstack (alias to harnessed standalone /retro)
@@ -1015,6 +1030,19 @@ capabilities:
     description: 生成 PDF (文档 / 报告导出)
     fires_when:
       - subtask.needs_pdf_export == true
+
+  # v13.0 P43 (upstream re-sync) — gstack 1.58.0.0 NEW skill (commit 14fc0866
+  # "diagram + multi-format document")。英文/mermaid → 可编辑架构图; mirror make-pdf on-demand。
+  diagram:
+    impl: gstack
+    install_type: user-skill
+    skill_dir: gstack
+    cmd: /diagram
+    since: v13.0
+    category: tool-slash-cmd
+    description: 英文描述/mermaid → 可编辑架构图 (.mmd + .excalidraw + SVG; gstack 1.58 NEW)
+    fires_when:
+      - subtask.needs_diagram == true
 
   # 2 alias suffix `-gstack` (避免命名冲突 per Pattern A E.2)
   retro-gstack:

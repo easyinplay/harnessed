@@ -1,0 +1,33 @@
+# workflows/verify/validate-phase/workflow.yaml — v13.0 P43 (upstream re-sync wire)
+#
+# Stage ④ verify sub-workflow — GSD /gsd-validate-phase Nyquist 覆盖审计
+# (requires_coverage_audit 触发, 可选 conditional). 回溯审计 phase 完成后的
+# requirement→test 覆盖缺口, 为未覆盖 requirement 生成测试 (gsd-nyquist-auditor agent)。
+# 补 TDD 前向写测试之外的后向查漏。
+#
+# Sister refs:
+#   - workflows/judgments/stage-routing.yaml verify-validate-phase-coverage trigger
+#   - workflows/capabilities.yaml — gsd-validate-phase (Bucket 2, impl: gsd, cmd: /gsd-validate-phase)
+#   - workflows/verify/eval-review/workflow.yaml — sister conditional-sub pattern (v13.0 P42)
+
+schema_version: harnessed.workflow.v3
+workflow: verify-validate-phase
+description: |
+  Stage ④ GSD /gsd-validate-phase Nyquist 覆盖审计 (requires_coverage_audit 触发, 可选 conditional)。
+  Gate: judgments.stage-routing.verify-validate-phase-coverage.fires (phase.requires_coverage_audit
+  == true) — 高可靠性/合规 phase fire; 普通 PR skip。回溯查 requirement→test 覆盖缺口,
+  为未覆盖项生成测试, 产出 VALIDATION.md。补 TDD 前向之外的后向查漏。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-validate-phase]
+
+phases:
+  - id: 01-validate-phase
+    name: gsd-validate-phase (Nyquist 覆盖审计 — requires_coverage_audit 触发)
+    upstream: gsd
+    capability: '{{ capabilities.gsd-validate-phase.cmd }}'
+    model: sonnet
+    gate: judgments.stage-routing.verify-validate-phase-coverage.fires
+    max_iterations: 3
+    # ADR-0033 evidence guard — declare report artifact so the evidence guard is real.
+    artifacts_expected: [VALIDATION.md]

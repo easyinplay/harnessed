@@ -84,6 +84,12 @@ triggers:
     invokes:
       - capability: gsd-eval-review
 
+  verify-validate-phase-coverage:
+    description: /verify master → /verify-validate-phase fire 当 requires_coverage_audit (Nyquist 覆盖查漏)。
+    fires_when: "phase.stage == 'verify' and phase.requires_coverage_audit == true"
+    invokes:
+      - capability: gsd-validate-phase
+
   verify-multispec-critical-release:
     description: |
       /verify master → /verify-multispec 4-specialist Agent Team Pattern C fire
