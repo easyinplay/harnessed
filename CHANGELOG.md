@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.11.2] - 2026-06-30
+
+### Fixed
+
+- **`design-taste-frontend` failed to install (4.11.0 regression).** The manifest installed it with `npx skills add https://github.com/Leonxlnx/taste-skill --skill design-taste-frontend --copy --global` — but `design-taste-frontend` (taste-skill's v2 default) is a **PromptScript** skill that rejects `--global` (`PromptScript does not support global skill installation`), and via the full GitHub URL the call hung to the full timeout (the reported `spawn timed out after 300000ms`). Fixes:
+  - Manifest now uses the `owner/repo` shorthand + drops `--global`: `npx --yes skills@latest add Leonxlnx/taste-skill --skill design-taste-frontend --copy` — `--copy` alone materializes `SKILL.md` into `~/.claude/skills/design-taste-frontend/` (the verify path), installing in ~4s instead of timing out.
+  - The `npx-skill-installer` flag guard now requires `--copy` (still fail-loud — it prevents Windows-broken symlink installs) but treats `--global` as **optional** (some skill types, e.g. PromptScript, don't support it; `--copy` already targets `~/.claude/skills/`). Manifests that already pass `--global` are unaffected.
+
+  The rest of the taste-skill pack (brandkit / minimalist / brutalist / imagegen / image-to-code / redesign / …) is intentionally not installed by harnessed — `design-taste-frontend` is the only routed capability; install the full pack yourself with `npx skills add Leonxlnx/taste-skill` if you want the others.
+
 ## [4.11.1] - 2026-06-30
 
 ### Added
