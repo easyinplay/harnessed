@@ -21,8 +21,8 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **No active milestone. v12.0 Forward Continuation SHIPPED + PUBLISHED npm 4.10.0 2026-06-30** (see Current Position). Prior: v11.0 npm 4.9.0; issue #1 patch 4.9.1.
-- **Latest shipped (npm)**: **v4.10.0** 2026-06-30 (npm `harnessed@4.10.0` latest + GitHub release `v4.10.0` non-draft, CI green 3-OS, provenance) — minor: v12.0 Forward Continuation (cross-task/phase advance) + issue #2 fix (SKILL inline state-machine + ship orchestrator). Prior 4.9.1 = issue #1; 4.9.0 = v11.0; 4.8.0 = v10.0 i18n. Detail: CHANGELOG `## [4.10.0]` + ROADMAP shipped rows.
+- **Current focus**: **No active milestone. Latest npm 4.10.1** (installer force-update robustness patch, learned from comet). Prior: v12.0 Forward Continuation 4.10.0; v11.0 4.9.0; issue #1 4.9.1. Comet-init study + this patch closed the install-UX follow-up.
+- **Latest shipped (npm)**: **v4.10.1** 2026-06-30 (npm `harnessed@4.10.1` latest + GitHub release `v4.10.1` non-draft, CI `074baa1` 3-OS green, provenance) — patch: `harnessed setup` force-update robustness (a real install surfaced 6/14 already-installed components failing the optional force-update). Learned comet's idempotent + fail-soft installer: **Fix A** 3 git-clone manifests `rm -rf <dest>` before write (re-runnable) · **Fix B** install timeout 120→300s (npx cold-fetch) · **Fix C** force-update refresh-failure of a still-present component → `kept-existing` warn (presence-probed), not red `failed` — absorbs upstream drift (gsd verify). 9 TDD tests. Prior 4.10.0 = v12.0 Forward Continuation + issue #2; 4.9.1 = issue #1; 4.9.0 = v11.0. Detail: CHANGELOG `## [4.10.1]`.
 
 ## Current Position
 
