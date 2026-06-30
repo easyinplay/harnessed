@@ -1,32 +1,32 @@
 # workflows/judgments/web-design-routing.yaml
-# Bundled routing rule: ui-ux-pro-max 默认主方案 (数据驱动) + frontend-design 创意补充 + arbitration
-# Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11
+# Bundled routing rule: 两段式叠加 — Stage 1 ui-ux-pro-max 结构骨架 → Stage 2 design-taste-frontend 视觉打磨
+# Phase v3.0-3.2 Wave A RESEARCH → 3.3 W0.3 ship per D-11; v4.11 XOR→两段式 swap (taste-skill)
 #
-# 默认 ui-ux-pro-max 优先 (数据驱动 / 标准化 / 可解释);
-# 例外: 用户明示「做出风格」/「要独特」/「不要 AI 感」/「要有创意」时 frontend-design 主导;
-# 用户没明确表达就按默认走 (不脑补"用户应该想要独特")。
+# 非仲裁: 不再「二选一」。Stage 1 = ui-ux-pro-max 理清受众/交互逻辑/设计主轴 (数据驱动结构骨架, 始终先跑);
+# Stage 2 = design-taste-frontend 叠加细节 + 视觉打磨 → 高级感 (anti-slop, cross-agent)。
+# 默认凡 UI 改动两段都 fire, 顺序上 polish 在结构之后。
 #
 # expr-eval 2.0.2 case-sensitive: keyword `and` / `or` 全小写
 
 schema_version: harnessed.judgment.v1
 
 triggers:
-  ui-ux-pro-max-default:
+  ui-ux-pro-max-structure:
     description: |
-      默认主方案 — 数据驱动 / 标准化 / 可解释。
+      Stage 1 — 受众 / 交互逻辑 / 设计主轴, 数据驱动结构骨架 (始终先跑)。
       50+ styles, 161 color palettes, 57 font pairings, 161 product types,
       99 UX guidelines, 10 stacks, 25 chart types。
-    fires_when: "phase.has_ui_changes == true and phase.requires_creative_polish == false"
+    fires_when: "phase.has_ui_changes == true"
     invokes:
       - capability: ui-ux-pro-max
 
-  frontend-design-creative:
+  design-taste-polish:
     description: |
-      创意补充 — 用户明示"做出风格 / 要独特 / 不要 AI 感 / 要有创意",
-      OR ui-ux-pro-max 决定主方案后 layout/动效/装饰性细节补充。
-    fires_when: "phase.has_ui_changes == true and phase.requires_creative_polish == true"
+      Stage 2 — 叠加细节 + 视觉打磨 → 高级感, anti-slop (cross-agent, taste-skill);
+      在 ui-ux-pro-max 结构骨架之上叠加 (顺序在结构之后)。默认凡 UI 改动都叠加。
+    fires_when: "phase.has_ui_changes == true"
     invokes:
-      - capability: frontend-design
+      - capability: design-taste-frontend
 
   design-review-post:
     description: |

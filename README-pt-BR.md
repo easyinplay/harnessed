@@ -262,7 +262,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | Obrigatório para módulos críticos antes de PR |
 | `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | QA end-to-end (condicional has_ui_changes) |
 | `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (condicional has_auth_or_secrets) |
-| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | Consistência do sistema de design (condicional has_design_changes) |
+| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Consistência do sistema de design (condicional has_design_changes) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Simplificação serial final |
 | `/verify-multispec` | ④ Verify | Sub | Agent Team Pattern C com 4 especialistas | Escalada para PR de release crítico / grande refatoração (cross-examination mútuo via SendMessage) |
 | `/ship` | ⑤ Ship | Master | masterOrchestrator | Stage de release após o Verify — preflight → delega PR/deploy ao gstack `/ship` → publica via CI (fronteira tag-ready) |
@@ -441,7 +441,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | Cenário | Padrão → Escalada |
 |------|---------------------|
 | Mecanismo de paralelismo | subagent → Agent Teams Pattern A/B/C (5 gatilhos) |
-| Plano primário de design UI | ui-ux-pro-max → frontend-design (usuário pede estilo explicitamente) |
+| Plano primário de design UI | ui-ux-pro-max → design-taste-frontend (usuário pede estilo explicitamente) |
 | Exploração E2E no browser | playwright-cli (uma linha Bash, eficiente em Token) |
 | E2E commitável em TS | @playwright/test padrão |
 | E2E com linkage de backend Python | webapp-testing |

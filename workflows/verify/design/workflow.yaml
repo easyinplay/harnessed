@@ -4,9 +4,9 @@
 # (has_design_changes 触发, 可选 conditional; bundled verify-stage optional /design-review step).
 #
 # Sister refs:
-#   - workflows/judgments/web-design-routing.yaml — ui-ux-pro-max 默认 + frontend-design 补充
+#   - workflows/judgments/web-design-routing.yaml — 两段式 ui-ux-pro-max 结构 → design-taste-frontend 打磨
 #   - workflows/judgments/stage-routing.yaml verify-design-changes trigger (has_design_changes)
-#   - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / frontend-design
+#   - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / design-taste-frontend
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister pattern
 #   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/design example verbatim
 
@@ -16,11 +16,11 @@ description: |
   Stage ④.f gstack /design-review 设计系统一致性 + AI 审美问题识别 (has_design_changes 触发,
   可选 conditional)。Gate: judgments.stage-routing.verify-design-changes.fires
   (phase.has_design_changes == true) — UI module fire only; 后端 / docs PR skip。
-  tools_available 含 ui-ux-pro-max (默认主方案) + frontend-design (创意补充) per bundled
-  web-design routing (workflows/judgments/web-design-routing.yaml).
+  tools_available 含 ui-ux-pro-max (Stage 1 结构骨架) + design-taste-frontend (Stage 2 视觉打磨叠加)
+  per bundled 两段式 web-design routing (workflows/judgments/web-design-routing.yaml).
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
-tools_available: [gstack-design-review, ui-ux-pro-max, frontend-design]
+tools_available: [gstack-design-review, ui-ux-pro-max, design-taste-frontend]
 
 phases:
   - id: 01-design-review

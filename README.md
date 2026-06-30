@@ -260,7 +260,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | Mandatory for critical-module pre-PR |
 | `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | End-to-end QA (has_ui_changes conditional) |
 | `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (has_auth_or_secrets conditional) |
-| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | Design system consistency (has_design_changes conditional) |
+| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Design system consistency (has_design_changes conditional) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Final serial simplification |
 | `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | Critical release / large refactor PR escalation (mutual SendMessage cross-examination) |
 | `/ship` | ⑤ Ship | Master | masterOrchestrator | Release stage after Verify — preflight → delegate PR/deploy to gstack `/ship` → publish via CI (tag-ready boundary) |
@@ -439,7 +439,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | Scenario | Default → Escalate |
 |------|---------------------|
 | Parallelism mechanism | subagent → Agent Teams Pattern A/B/C (5 triggers) |
-| UI design primary plan | ui-ux-pro-max → frontend-design (user explicitly asks for style) |
+| UI design primary plan | **two-stage**: ui-ux-pro-max (audience / interaction logic / design axis — structure) → design-taste-frontend (anti-slop visual polish overlay, cross-agent taste-skill) |
 | E2E browser exploration | playwright-cli (one-line Bash, token-efficient) |
 | E2E commit-able TS | @playwright/test default |
 | E2E Python backend linkage | webapp-testing |

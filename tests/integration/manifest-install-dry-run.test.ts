@@ -44,9 +44,11 @@ interface DryRunCase {
 // (c) dry-run path returns ok/aborted (no spawn, no side-effects).
 const CASES: DryRunCase[] = [
   {
-    name: 'frontend-design',
-    yamlPath: 'manifests/skill-packs/frontend-design.yaml',
-    expectedMethod: 'git-clone-with-setup',
+    // v4.11 — anthropic frontend-design (git-clone) swapped for design-taste-frontend
+    // (Leonxlnx/taste-skill, npx-skill-installer cross-agent anti-slop).
+    name: 'design-taste-frontend',
+    yamlPath: 'manifests/skill-packs/design-taste-frontend.yaml',
+    expectedMethod: 'npx-skill-installer',
   },
   {
     name: 'playwright-test',

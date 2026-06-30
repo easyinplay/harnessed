@@ -262,7 +262,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | Alt | gstack `/review` (Paranoid Staff Engineer) | Kritik modül PR öncesi zorunlu |
 | `/verify-qa` | ④ Verify | Alt | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | Uçtan uca QA (has_ui_changes koşullu) |
 | `/verify-security` | ④ Verify | Alt | gstack `/cso` | OWASP / auth / secrets (has_auth_or_secrets koşullu) |
-| `/verify-design` | ④ Verify | Alt | gstack `/design-review` + ui-ux-pro-max + frontend-design | Tasarım sistemi tutarlılığı (has_design_changes koşullu) |
+| `/verify-design` | ④ Verify | Alt | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Tasarım sistemi tutarlılığı (has_design_changes koşullu) |
 | `/verify-simplify` | ④ Verify | Alt | `code-simplifier` | Son seri sadeleştirme |
 | `/verify-multispec` | ④ Verify | Alt | 4-uzman Agent Team Pattern C | Kritik sürüm / büyük refactor PR tırmanması (karşılıklı SendMessage çapraz sorgulama) |
 | `/ship` | ⑤ Ship | Ana | masterOrchestrator | Verify sonrası sürüm aşaması — preflight → PR/deploy'u gstack `/ship`'e devret → yayını CI ile yap (tag'e hazır sınırı) |
@@ -441,7 +441,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | Senaryo | Varsayılan → Tırmanma |
 |------|---------------------|
 | Paralellik mekanizması | subagent → Agent Teams Pattern A/B/C (5 tetikleyici) |
-| UI tasarımı birincil plan | ui-ux-pro-max → frontend-design (kullanıcı açıkça stil isterse) |
+| UI tasarımı birincil plan | ui-ux-pro-max → design-taste-frontend (kullanıcı açıkça stil isterse) |
 | E2E tarayıcı keşfi | playwright-cli (tek satır Bash, token-verimli) |
 | E2E commit edilebilir TS | @playwright/test varsayılan |
 | E2E Python backend bağlantısı | webapp-testing |

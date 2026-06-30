@@ -44,11 +44,11 @@ spec:
   decision_rules:
     trigger: "user 请求 UI/UX 设计 / 前端组件 / design system / 数据驱动可视化"
     default_expert: ui-ux-pro-max
-    arbitration_rule: "ui-ux-pro-max 出主方案 (数据驱动 / 标准化); frontend-design 补 layout / 动效 / 装饰细节"
+    arbitration_rule: "两段式: Stage 1 ui-ux-pro-max 结构骨架 (数据驱动 / 标准化) → Stage 2 design-taste-frontend 叠加视觉打磨"
     override_signals:
       - phrase: "做出风格"
-        use: frontend-design
+        use: design-taste-frontend
       - phrase: "experimental"
-        use: frontend-design
+        use: design-taste-frontend
       - phrase: "design-led"
-        use: frontend-design
+        use: design-taste-frontend

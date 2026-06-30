@@ -329,7 +329,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | 4 | `parallelism-gate.yaml` | triggers | v2 SHIPPED, v3 no change (4 route + ralph wrapper 已含) | `~/.claude/rules/agent-teams.md` |
 | 5 | `tdd-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md TDD 强烈建议节 |
 | 6 | `fallback.yaml` | rules | v2 SHIPPED, v3 no change (3 铁律) | CLAUDE.md fallback 3 铁律 |
-| 7 | `web-design-routing.yaml` | triggers | **NEW v3** (3 trigger: ui-ux-pro-max-default + frontend-design-creative + design-review-post) | `~/.claude/rules/web-design.md` |
+| 7 | `web-design-routing.yaml` | triggers | **NEW v3** (两段式 3 trigger: ui-ux-pro-max-structure + design-taste-polish + design-review-post) | `~/.claude/rules/web-design.md` |
 | 8 | `web-testing-routing.yaml` | triggers | **NEW v3** (4 trigger: playwright-test-default + playwright-cli-probe + webapp-testing-python-backend + chrome-devtools-mcp-diagnostic) | `~/.claude/rules/web-testing.md` |
 | 9 | `web-search-routing.yaml` | triggers | **NEW v3** (5 trigger: tavily-default + exa-descriptive + tavily-crawl + ctx7-lib-docs + webfetch-single-url) | `~/.claude/rules/web-search.md` + `context7.md` + `google-workspace.md` |
 | 10 | `stage-routing.yaml` | triggers | **NEW v3** (12+ trigger: master orchestrator sub delegation per D-01) | CLAUDE.md 4-stage + D-07 20 workflow |
@@ -386,7 +386,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 **superpowers 3**: `tdd` (alias `/tdd`) / `superpowers-brainstorming` / `superpowers-subagent-driven-development`
 
-**special-purpose design 2**: `ui-ux-pro-max` / `frontend-design`
+**special-purpose design 2**: `ui-ux-pro-max` / `design-taste-frontend`
 
 ### 7.3 category=tool-mcp (3)
 

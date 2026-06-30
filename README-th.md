@@ -262,7 +262,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | บังคับสำหรับ critical-module ก่อน PR |
 | `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | End-to-end QA (has_ui_changes conditional) |
 | `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (has_auth_or_secrets conditional) |
-| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | ความสอดคล้องของ design system (has_design_changes conditional) |
+| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | ความสอดคล้องของ design system (has_design_changes conditional) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Simplification serial ขั้นสุดท้าย |
 | `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | Escalation สำหรับ critical release / large refactor PR (cross-examination ผ่าน SendMessage) |
 | `/ship` | ⑤ Ship | Master | masterOrchestrator | Release stage หลัง Verify — preflight → delegate PR/deploy ไปยัง gstack `/ship` → publish ผ่าน CI (ขอบเขต tag-ready) |
@@ -441,7 +441,7 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | สถานการณ์ | Default → Escalate |
 |------|---------------------|
 | Parallelism mechanism | subagent → Agent Teams Pattern A/B/C (5 triggers) |
-| UI design primary plan | ui-ux-pro-max → frontend-design (ผู้ใช้ขอ style ชัดเจน) |
+| UI design primary plan | ui-ux-pro-max → design-taste-frontend (ผู้ใช้ขอ style ชัดเจน) |
 | E2E browser exploration | playwright-cli (one-line Bash, token-efficient) |
 | E2E commit-able TS | @playwright/test default |
 | E2E Python backend linkage | webapp-testing |

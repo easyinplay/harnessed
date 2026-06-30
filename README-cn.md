@@ -260,7 +260,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | 关键模块 PR 前强制 |
 | `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | 端到端 QA (has_ui_changes conditional) |
 | `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (has_auth_or_secrets conditional) |
-| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | 设计系统一致性 (has_design_changes conditional) |
+| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | 设计系统一致性 (has_design_changes conditional) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | 末尾串行简化 |
 | `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | 关键发布 / 大重构 PR 升级 (互相 SendMessage 质询) |
 | `/ship` | ⑤ Ship | Master | masterOrchestrator | Verify 之后的发布 stage —— preflight → 委派 PR/deploy 给 gstack `/ship` → 经 CI publish (tag-ready 边界) |
@@ -439,7 +439,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | 场景 | Default → Escalate |
 |------|---------------------|
 | 并行机制 | subagent → Agent Teams Pattern A/B/C (5 触发) |
-| UI 设计主方案 | ui-ux-pro-max → frontend-design (用户明示风格) |
+| UI 设计主方案 | ui-ux-pro-max → design-taste-frontend (用户明示风格) |
 | E2E 浏览器探查 | playwright-cli (Bash 一行, token 省) |
 | E2E commit-able TS | @playwright/test 默认 |
 | E2E Python 后端联动 | webapp-testing |

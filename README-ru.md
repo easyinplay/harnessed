@@ -262,7 +262,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | Суб | gstack `/review` (Paranoid Staff Engineer) | Обязателен для критических модулей перед PR |
 | `/verify-qa` | ④ Verify | Суб | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | End-to-end QA (условно при has_ui_changes) |
 | `/verify-security` | ④ Verify | Суб | gstack `/cso` | OWASP / auth / secrets (условно при has_auth_or_secrets) |
-| `/verify-design` | ④ Verify | Суб | gstack `/design-review` + ui-ux-pro-max + frontend-design | Консистентность дизайн-системы (условно при has_design_changes) |
+| `/verify-design` | ④ Verify | Суб | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Консистентность дизайн-системы (условно при has_design_changes) |
 | `/verify-simplify` | ④ Verify | Суб | `code-simplifier` | Финальное последовательное упрощение |
 | `/verify-multispec` | ④ Verify | Суб | 4-специалиста Agent Team Pattern C | Эскалация критического релиза / крупного рефакторинга PR (взаимный перекрёстный допрос через SendMessage) |
 | `/ship` | ⑤ Ship | Мастер | masterOrchestrator | Стадия релиза после Verify — preflight → делегирование PR/deploy в gstack `/ship` → публикация через CI (граница tag-ready) |
@@ -441,7 +441,7 @@ planning-with-files /plan (сквозной инструмент) → запис
 | Сценарий | По умолчанию → Эскалация |
 |----------|--------------------------|
 | Механизм параллелизма | subagent → Agent Teams Pattern A/B/C (5 триггеров) |
-| Основной план UI-дизайна | ui-ux-pro-max → frontend-design (пользователь явно просит стиль) |
+| Основной план UI-дизайна | ui-ux-pro-max → design-taste-frontend (пользователь явно просит стиль) |
 | E2E браузерное исследование | playwright-cli (однострочный Bash, экономия token) |
 | E2E коммитируемый TS | @playwright/test по умолчанию |
 | E2E привязка к Python-бэкенду | webapp-testing |

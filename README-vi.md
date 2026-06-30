@@ -262,7 +262,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | Bắt buộc cho critical-module trước PR |
 | `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | QA end-to-end (điều kiện has_ui_changes) |
 | `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (điều kiện has_auth_or_secrets) |
-| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + frontend-design | Tính nhất quán design system (điều kiện has_design_changes) |
+| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Tính nhất quán design system (điều kiện has_design_changes) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Bước đơn giản hóa nối tiếp cuối cùng |
 | `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | Leo thang cho critical release / large refactor PR (cross-examination qua SendMessage lẫn nhau) |
 | `/ship` | ⑤ Ship | Master | masterOrchestrator | Stage release sau Verify — preflight → ủy quyền PR/deploy cho gstack `/ship` → publish qua CI (ranh giới tag-ready) |
@@ -441,7 +441,7 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | Scenario | Mặc định → Leo thang |
 |------|---------------------|
 | Cơ chế parallelism | subagent → Agent Teams Pattern A/B/C (5 trigger) |
-| Kế hoạch chính UI design | ui-ux-pro-max → frontend-design (người dùng yêu cầu rõ phong cách) |
+| Kế hoạch chính UI design | ui-ux-pro-max → design-taste-frontend (người dùng yêu cầu rõ phong cách) |
 | Khám phá browser E2E | playwright-cli (một dòng Bash, tiết kiệm token) |
 | E2E TS có thể commit | @playwright/test mặc định |
 | E2E liên kết Python backend | webapp-testing |

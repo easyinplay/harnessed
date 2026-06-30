@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: design-taste-frontend
+  display_name: design-taste-frontend (Leonxlnx/taste-skill)
+  description: Cross-agent anti-slop frontend visual-polish skill; Stage-2 overlay atop ui-ux-pro-max structure.
+  upstream:
+    source: leonxlnx/taste-skill
+    homepage: https://tasteskill.dev
+    repository: https://github.com/Leonxlnx/taste-skill.git
+    license: MIT
+    notice: |
+      design-taste-frontend (v2 default variant) from Leonxlnx/taste-skill — Anti-Slop Frontend Framework
+      (premium 视觉打磨, 防 AI 生成 boring/generic slop). Cross-agent (claude-code + codex),
+      遵循 vercel-labs/agent-skills 标准。两段式 Stage 2: 在 ui-ux-pro-max 结构骨架之上叠加细节 + 视觉打磨 → 高级感。
+spec:
+  type: cc-skill-pack
+  component_type: command
+  category: design
+  install_type: skill
+  install:
+    method: npx-skill-installer
+    # 对齐 harnessed 的 --copy --global 约定 (Windows symlink-safe + user-scope install);
+    # taste-skill README 形 + harnessed global flag。v2 默认变体,单 skill。
+    cmd: "npx --yes skills@latest add https://github.com/Leonxlnx/taste-skill --skill design-taste-frontend --copy --global"
+    npm_version: ^1.5.7
+    idempotent_check: "test -d ~/.claude/skills/design-taste-frontend || test -d ~/.agents/skills/design-taste-frontend"
+  verify:
+    cmd: "test -f ~/.claude/skills/design-taste-frontend/SKILL.md"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/design-taste-frontend"
+    cleanup_paths:
+      - ~/.claude/skills/design-taste-frontend
+  upstream_health:
+    stability: stable
+    last_check: "2026-06-30"
+    last_known_good_version: v2-default
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

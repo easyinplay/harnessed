@@ -5,7 +5,7 @@
 ## 结构（v0.1 MVP）
 
 - `search.md` — research workflow 路由（ctx7 / tavily / exa / parallel） — v0.1.0
-- `ui.md` — UI/UX 任务路由（ui-ux-pro-max + frontend-design） — v0.3.0
+- `ui.md` — UI/UX 任务路由（两段式 ui-ux-pro-max 结构 + design-taste-frontend 打磨） — v0.3.0
 - `testing.md` — 测试工具路由（playwright / vitest / webapp-testing） — v0.3.0
 - `execute.md` — execute-task 内部路由（mattpocock 招式触发） — v0.2.0
 

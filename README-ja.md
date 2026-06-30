@@ -262,7 +262,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | サブ | gstack `/review`（Paranoid Staff Engineer） | クリティカルモジュールの PR 前に必須 |
 | `/verify-qa` | ④ Verify | サブ | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | エンドツーエンド QA（has_ui_changes 条件付き） |
 | `/verify-security` | ④ Verify | サブ | gstack `/cso` | OWASP / 認証 / シークレット（has_auth_or_secrets 条件付き） |
-| `/verify-design` | ④ Verify | サブ | gstack `/design-review` + ui-ux-pro-max + frontend-design | デザインシステムの一貫性（has_design_changes 条件付き） |
+| `/verify-design` | ④ Verify | サブ | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | デザインシステムの一貫性（has_design_changes 条件付き） |
 | `/verify-simplify` | ④ Verify | サブ | `code-simplifier` | 最終直列シンプリファイ |
 | `/verify-multispec` | ④ Verify | サブ | 4-specialist Agent Team Pattern C | クリティカルリリース / 大規模リファクタ PR のエスカレーション（相互 SendMessage クロス検証） |
 | `/ship` | ⑤ Ship | マスター | masterOrchestrator | Verify 後のリリースステージ —— preflight → PR/deploy を gstack `/ship` に委譲 → CI で publish（tag-ready 境界） |
@@ -441,7 +441,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | シナリオ | デフォルト → エスカレート |
 |------|---------------------|
 | 並列化メカニズム | subagent → Agent Teams Pattern A/B/C（5 トリガー） |
-| UI デザインのプライマリプラン | ui-ux-pro-max → frontend-design（ユーザーがスタイルを明示要求） |
+| UI デザインのプライマリプラン | ui-ux-pro-max → design-taste-frontend（ユーザーがスタイルを明示要求） |
 | E2E ブラウザ探索 | playwright-cli（1 行 Bash、トークン効率） |
 | E2E コミット可能 TS | @playwright/test デフォルト |
 | E2E Python バックエンド連携 | webapp-testing |

@@ -31,7 +31,7 @@ describe('Phase 2.3 e2e 4-link smoke (Wave 5 T5.3; Link 3+4 deleted v3.4.4 P6)',
   it('Link 1 — manifest install dry-run: 5 NEW Wave 1 manifests on disk + schema-valid loadable', async () => {
     const { validateManifestFile } = await import('../../src/manifest/validate.js')
     const wave1 = [
-      'manifests/skill-packs/frontend-design.yaml',
+      'manifests/skill-packs/design-taste-frontend.yaml',
       'manifests/tools/playwright-test.yaml',
       'manifests/tools/chrome-devtools-mcp.yaml',
     ]

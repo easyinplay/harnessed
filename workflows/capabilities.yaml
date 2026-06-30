@@ -13,7 +13,7 @@
 #                                              grill-me / tdd / to-prd / to-issues /
 #                                              improve-codebase-architecture / code-review /
 #                                              code-simplifier / investigate
-#   2. special-purpose tools 13+ (D-14)     — ui-ux-pro-max / frontend-design / playwright-cli /
+#   2. special-purpose tools 13+ (D-14)     — ui-ux-pro-max / design-taste-frontend / playwright-cli /
 #                                              playwright-test / webapp-testing /
 #                                              chrome-devtools-mcp / ctx7 / tavily-mcp /
 #                                              exa-mcp / gsd-review / gsd-debug /
@@ -191,17 +191,18 @@ capabilities:
       - phase.has_ui_changes == true
       - subtask.type == 'ui_polish'
 
-  # v3.4.2 fix: frontend-design is a claude-plugins-official PLUGIN, not gstack.
-  frontend-design:
-    impl: plugin
-    install_type: plugin
-    plugin_id: frontend-design
-    cmd: /frontend-design
-    since: v2.0
+  # v4.11: design-taste-frontend (Leonxlnx/taste-skill, cross-agent anti-slop) replaces
+  # anthropic frontend-design. Stage 2 两段式 — 默认凡 UI 改动都在 ui-ux-pro-max 结构之上叠加打磨。
+  design-taste-frontend:
+    impl: design-taste-frontend
+    install_type: user-skill
+    skill_dir: design-taste-frontend
+    cmd: /design-taste-frontend
+    since: v4.11
     category: tool-slash-cmd
-    description: UI 创意/装饰补充
+    description: 视觉打磨 / anti-slop 高级感 (cross-agent, taste-skill)
     fires_when:
-      - phase.has_ui_changes == true AND phase.requires_creative_polish == true
+      - phase.has_ui_changes == true
 
   playwright-cli:
     impl: npm-cli

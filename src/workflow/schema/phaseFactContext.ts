@@ -75,7 +75,7 @@ const PhaseShape = Type.Object(
     scope_locked_in_history: Type.Boolean(),
     // Phase v3.0-3.3 W0 T3.3.W0.8 — 6 NEW core boolean per Appendix C MIN scope:
     is_complex_architecture: Type.Boolean(), // D-01 master /plan → /plan-architecture
-    requires_creative_polish: Type.Boolean(), // web-design-routing frontend-design fires
+    requires_creative_polish: Type.Boolean(), // legacy XOR-era flag; v4.11 two-stage no longer gates on it
     requires_persisted_plan: Type.Boolean(), // D-06 planning-with-files cross-stage
     requires_peer_review: Type.Boolean(), // sister gsd-review v2 fires_when backfill
     is_final_step: Type.Boolean(), // sister code-simplifier v2 fires_when backfill

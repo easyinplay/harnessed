@@ -4,7 +4,7 @@ description: |
   Stage ④.f verify 子工作流 — gstack /design-review 设计系统一致性 + AI 审美问题识别
   (has_design_changes 触发, 可选 conditional; bundled verify-stage optional /design-review step).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gstack-design-review + ui-ux-pro-max + frontend-design) + 1 phase (gate ref has_design_changes
+  (gstack-design-review + ui-ux-pro-max + design-taste-frontend) + 1 phase (gate ref has_design_changes
   conditional)。Triggered by harnessed CLI `harnessed verify-design --phase <num>` or slash
   command `/verify-design` after `harnessed setup`.
 trigger_phrases:
@@ -36,8 +36,8 @@ resolver 通过 expr-eval 计算 `phase.has_design_changes == true` — 为 true
 Sister `workflows/capabilities.yaml` 条目：
 - `gstack-design-review` — Bucket 3 治理关卡 (impl: gstack, cmd: /design-review,
   fires_when: has_design_changes)
-- `ui-ux-pro-max` — Bucket 2 special-purpose (impl: gstack, 默认主方案 数据驱动)
-- `frontend-design` — Bucket 2 special-purpose (impl: gstack, UI 创意 / 装饰补充)
+- `ui-ux-pro-max` — Bucket 2 special-purpose (Stage 1 结构骨架, 数据驱动)
+- `design-taste-frontend` — Bucket 2 special-purpose (Stage 2 视觉打磨叠加, anti-slop cross-agent)
 
 ## Gate ref
 
@@ -46,9 +46,9 @@ Sister `workflows/judgments/stage-routing.yaml`：
 
 ## 路由规则（bundled web-design routing — `workflows/judgments/web-design-routing.yaml`）
 
-- 默认主方案 → `ui-ux-pro-max`（数据驱动、标准化、可解释）
-- 创意补充 / 不要 AI 味 → `frontend-design`
-- 用户明示「独特 / 不要 AI 感」→ frontend-design 主导，否则 ui-ux-pro-max 优先
+- 两段式叠加（非仲裁）：Stage 1 `ui-ux-pro-max` 理清受众/交互逻辑/设计主轴（结构骨架，始终先跑）
+- Stage 2 `design-taste-frontend` 在结构之上叠加细节 + 视觉打磨 → 高级感（anti-slop，默认凡 UI 改动都叠加）
+- 设计完成后可选 gstack `/design-review` 一致性 + AI 审美问题识别
 
 ## 如何调用
 
@@ -70,7 +70,7 @@ Code 内部会阻塞 session)。
 
 - D-04 Stage ④ Verify 7 sub 分解
 - D-12 gstack 治理关卡可选
-- workflows/judgments/web-design-routing.yaml — ui-ux-pro-max 默认 + frontend-design 补充
-- workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / frontend-design
+- workflows/judgments/web-design-routing.yaml — 两段式 ui-ux-pro-max 结构 → design-taste-frontend 打磨
+- workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / design-taste-frontend
 - workflows/judgments/stage-routing.yaml — verify-design-changes trigger
 - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister verbatim

@@ -110,7 +110,7 @@ export type AgentFactory = (
 
 ## § 4 `skills` field semantics (normative)
 
-`skills: string[]` carries **skill name references** (e.g., `["ui-ux-pro-max", "frontend-design"]`). The Claude Code runtime contract:
+`skills: string[]` carries **skill name references** (e.g., `["ui-ux-pro-max", "design-taste-frontend"]`). The Claude Code runtime contract:
 
 1. **Pre-install responsibility**: main process (orchestrator) MUST install all skills in `~/.claude/skills/<name>/SKILL.md` BEFORE the `query()` call that spawns this agent. Reference: phase 1.3 `harnessed install-base` 子命令 + per-manifest `install` block.
 2. **Startup injection**: at agent spawn time, Claude Code reads each `~/.claude/skills/<name>/SKILL.md` and injects content into the agent's startup context — same as main agent's auto-loaded skills. Unlisted skills remain invocable via the `Skill` tool but are not preloaded.

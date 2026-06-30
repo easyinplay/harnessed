@@ -1,7 +1,7 @@
 // Patch 4.10.1 installer-robustness Fix A + Fix B regression guards.
 //
-// Fix A — the 3 git-clone skill-packs (gstack / frontend-design / ui-ux-pro-max)
-// must `rm -rf <final-dest>` BEFORE writing that dest, so a force-update re-run
+// Fix A — the git-clone skill-packs (gstack / ui-ux-pro-max) must `rm -rf
+// <final-dest>` BEFORE writing that dest, so a force-update re-run
 // is idempotent (prior dogfood: clone/cp into an existing dir exited 1). The
 // `git clone <url> <dest>` shape MUST stay intact (extractCloneTarget + D-15
 // SHA-verify depend on it).
@@ -36,20 +36,6 @@ describe('Fix A — git-clone skill-packs rm final dest before write (idempotent
     // git clone <url> <dest> shape preserved (extractCloneTarget dependency)
     expect(cmd).toContain(
       'git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack',
-    )
-  })
-
-  it('frontend-design: rm -rf final dest precedes cp into it; clone shape intact', async () => {
-    const cmd = await loadCmd('frontend-design.yaml')
-    const rmFinalIdx = cmd.indexOf('rm -rf ~/.claude/skills/frontend-design ')
-    const cpIdx = cmd.indexOf(
-      'cp -R ~/.claude/skills/.cache/anthropics-skills-fe/skills/frontend-design ~/.claude/skills/frontend-design',
-    )
-    expect(rmFinalIdx).toBeGreaterThanOrEqual(0)
-    expect(cpIdx).toBeGreaterThan(rmFinalIdx) // rm final dest BEFORE cp
-    // git clone into cache dir unchanged
-    expect(cmd).toContain(
-      'git clone https://github.com/anthropics/skills.git ~/.claude/skills/.cache/anthropics-skills-fe',
     )
   })
 

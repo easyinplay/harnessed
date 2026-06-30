@@ -262,7 +262,7 @@ graph TD
 | `/verify-paranoid` | ④ Verify | 子項 | gstack `/review`（Paranoid Staff Engineer） | 關鍵模組 pre-PR 強制執行 |
 | `/verify-qa` | ④ Verify | 子項 | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | 端對端 QA（has_ui_changes conditional） |
 | `/verify-security` | ④ Verify | 子項 | gstack `/cso` | OWASP / 身份驗證 / 機密（has_auth_or_secrets conditional） |
-| `/verify-design` | ④ Verify | 子項 | gstack `/design-review` + ui-ux-pro-max + frontend-design | 設計系統一致性（has_design_changes conditional） |
+| `/verify-design` | ④ Verify | 子項 | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | 設計系統一致性（has_design_changes conditional） |
 | `/verify-simplify` | ④ Verify | 子項 | `code-simplifier` | 最終串行簡化 |
 | `/verify-multispec` | ④ Verify | 子項 | 四專家 Agent Team Pattern C | 關鍵發布 / 大型重構 PR 升級（相互 SendMessage 交叉審查） |
 | `/ship` | ⑤ Ship | 主控 | masterOrchestrator | Verify 之後的發布階段 —— preflight → 委派 PR/deploy 給 gstack `/ship` → 經 CI publish（tag-ready 邊界） |
@@ -441,7 +441,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | 情境 | 預設 → 升級 |
 |------|---------------------|
 | 平行機制 | subagent → Agent Teams Pattern A/B/C（5 個觸發條件） |
-| UI 設計主方案 | ui-ux-pro-max → frontend-design（使用者明確要求風格） |
+| UI 設計主方案 | ui-ux-pro-max → design-taste-frontend（使用者明確要求風格） |
 | E2E 瀏覽器探查 | playwright-cli（單行 Bash，token 效率高） |
 | E2E 可提交 TS 測試 | @playwright/test 預設 |
 | E2E Python 後端串接 | webapp-testing |

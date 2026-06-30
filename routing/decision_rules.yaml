@@ -48,10 +48,10 @@ rules:
         - creative
         - experimental
     decision:
-      primary_expert: frontend-design
+      primary_expert: design-taste-frontend
       secondary_expert: ui-ux-pro-max
       conflict_policy: primary_wins
-      rationale: 用户明示 style-driven, 由 frontend-design 主导剩余维度
+      rationale: 用户明示 style-driven, design-taste-frontend 视觉打磨叠加为主 (Stage 2 anti-slop), ui-ux-pro-max 提供结构骨架
 
   - id: ui-task-default
     priority: 50
@@ -60,17 +60,17 @@ rules:
       task_type: ui-design
     decision:
       primary_expert: ui-ux-pro-max
-      secondary_expert: frontend-design
+      secondary_expert: design-taste-frontend
       conflict_policy: primary_wins
-      rationale: 数据驱动 + 标准化 + 可解释 优先 (CLAUDE.md UI 路由默认)
+      rationale: 两段式 Stage 1 — ui-ux-pro-max 结构骨架 (数据驱动 / 标准化), design-taste-frontend 在其上叠加 Stage 2 打磨
       # Phase 2.3 W2 T2.1 — D-04 CD-3 negative-space + redirect (NEW optional fields).
-      # 若 task 含 style-led 信号则 reject 本规则,redirect 到 frontend-design (D-08 双向 redirect 一致性).
+      # 若 task 含 style-led 信号则 reject 本规则,redirect 到 design-taste-frontend 主导打磨.
       do_not_use_when:
         - 做出风格
         - 独创
         - 风格化
         - design-led
-      if_rejected_use: frontend-design
+      if_rejected_use: design-taste-frontend
 
   # ─── content (1 rule) ───────────────────────────────────────
   - id: chinese-content-deck

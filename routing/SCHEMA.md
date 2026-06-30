@@ -12,7 +12,7 @@
 
 | 层 | 读 frontmatter 哪块 | 干什么 |
 |---|---|---|
-| **B 层（skill description）** | `soft_hint.description_template` | 生成 skill 的 1 行描述，让 LLM 在 skill 路由时能读到"标准化、数据驱动的 UI 设计；优先于 frontend-design"这种 hint |
+| **B 层（skill description）** | `soft_hint.description_template` | 生成 skill 的 1 行描述，让 LLM 在 skill 路由时能读到"标准化、数据驱动的 UI 设计；结构骨架先于 design-taste-frontend 打磨"这种 hint |
 | **C 层（hook script）** | `trigger.keywords` + `trigger.file_globs` + `hard_route.*` | hook 在用户输入触发关键词或匹配文件 glob 时强制路由到 `hard_route.primary` skill；override 条件支持差异化 |
 
 **好处**：
@@ -100,7 +100,7 @@ fallback:
 | `description_template` | ✅ | string | 1 行 hint，≤ 500 char；写入 skill 的 description metadata，让 LLM 在 skill 路由时读到 |
 
 **好的 description 示例**：
-- `"标准化、数据驱动的 UI 设计；优先于 frontend-design 用于布局/规范类任务"`
+- `"标准化、数据驱动的 UI 设计；提供结构骨架，先于 design-taste-frontend 视觉打磨"`
 - `"通用 web 搜索（关键词、库文档、新闻）；性能、过滤器最丰富；默认选 Tavily"`
 
 **不好的示例**：
@@ -131,14 +131,14 @@ trigger:
 
 hard_route:                       # C 层 hook 读这块
   primary: ui-ux-pro-max
-  secondary: frontend-design
+  secondary: design-taste-frontend
   override:
     condition: "用户明确说'做出风格'/'要风格'/'独特设计'"
-    primary: frontend-design
+    primary: design-taste-frontend
     secondary: ui-ux-pro-max
 
 soft_hint:                        # B 层 skill description 自动生成
-  description_template: "标准化、数据驱动的 UI 设计；优先于 frontend-design 用于布局/规范类任务"
+  description_template: "标准化、数据驱动的 UI 设计；提供结构骨架，先于 design-taste-frontend 视觉打磨"
 
 fallback:
   on_hook_fail: degrade_to_soft_hint     # hook 失败时降级回 B 层
@@ -146,8 +146,8 @@ fallback:
 ---
 
 # 路由说明
-ui-ux-pro-max 主导（数据驱动、可解释），frontend-design 在剩余维度补充。冲突时 ui-ux-pro-max 优先。
-**除非用户明确要求"做出风格"** —— 此时 frontend-design 主导。
+两段式：Stage 1 ui-ux-pro-max 理清结构骨架（数据驱动、可解释），Stage 2 design-taste-frontend 在其上叠加视觉打磨（anti-slop，默认凡 UI 改动都叠加）。
+**用户明确要求"做出风格"时** —— design-taste-frontend 主导打磨维度。
 ```
 
 ---
