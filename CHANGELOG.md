@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.11.1] - 2026-06-30
+
+### Added
+
+- **`harnessed setup` prints its version + an update check.** Setup now opens with `harnessed setup v<version>`, then fetches the latest published version and shows `✓ latest (vX)` or `⚠ update available: X → Y — npm install -g harnessed@latest` (fail-soft + timeout-bounded; offline just notes it couldn't check). Removes the "which version am I actually running?" ambiguity when a stale global install is in play.
+
+### Fixed
+
+- **`state.json` write crash under parallel `setup` force-update.** The atomic write (`writeFileAtomic` / `writeFileSyncAtomic`) used a shared `<path>.tmp`, so concurrent force-update installers all writing `state.json` raced — the first rename moved the temp, the second hit `ENOENT` (surfaced as a `failed … rename 'state.json.tmp' -> 'state.json'` line). Two-part fix: each write now uses a **unique** temp name (pid + monotonic counter), and the rename **retries** on transient same-target contention (Windows `MoveFileEx` `EPERM`/`EACCES`/`EBUSY`). Concurrent writers now all succeed (last-writer-wins on content, which is acceptable for the best-effort `state.json`); no crash, no leftover temp.
+
 ## [4.11.0] - 2026-06-30
 
 ### Changed
