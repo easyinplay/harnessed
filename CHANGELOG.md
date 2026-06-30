@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **v13.0 Upstream Re-sync — gstack / gsd-core / superpowers pin bump.** 三核心上游 pin 自 v5.1 (2026-06-10) 起 stale,bump 继承上游对已编排能力的硬化(零新 wire 也受益): gstack 1.52.1.0→1.58.0.0 (commit `14fc0866`; token carving `/ship` -59% + redaction/staging/codex-auth guard + AskUserQuestion 文本 fallback) · gsd-core ^1.4.1→^1.6.0 (verify-work deterministic UAT routing + `plan:pre` 漂移预检 + gsd-review 强制源码核验) · superpowers v5.1.0→v6.0.3 (6.0 `subagent-driven-development` 重写对 harnessed 透明,cmd 名 + parallelism-gate wiring 不变)。2 spike 验证安装面/worktree 兼容。详 ADR-0035。
+
+### Added
+
+- **5 个上游能力引进编排 (v13.0 selective wire).** `verification-before-completion` (superpowers — task 级 per-claim 证据门,挂 `task/deliver` phase `01b-verify-evidence`,配 ralph-loop COMPLETE + karpathy 完成=验收通过) · `gsd-eval-review` (GSD — verify 侧 AI phase eval 覆盖审计 conditional sub `has_ai_phase`,配 plan 侧 `gsd-ai-integration-phase`) · `/diagram` (gstack 1.58 NEW — 英文/mermaid → 可编辑架构图 `.mmd`+`.excalidraw`+SVG, Bucket 7 optional) · `gsd-validate-phase` (GSD — Nyquist 覆盖后向查漏 conditional sub `requires_coverage_audit`) · `systematic-debugging` (superpowers — `gsd-debug` 双 impl alias,sister tdd superpowers主/mattpocock备)。`capabilities.yaml` 35→39 entry; verify conditional sub 5→7。**Installed users 需 re-run `harnessed setup`** 获取新 pin + 新 SKILL。
+- **Skipped (ADR-0035 D3):** gsd-mempalace (记忆双 home 违反一事实一个家) · sync-gbrain (不依赖 gbrain) · gstack ios-\* (stack 不匹配) · gsd ship/code-review/ns-router/autonomous (跨层重叠/与自有 execute keystone 冲突) · superpowers writing-plans/using-git-worktrees/finishing-branch (已禁/native 覆盖/与 ship 重叠)。
+
 ## [4.11.3] - 2026-06-30
 
 ### Added

@@ -71,6 +71,9 @@
 | [0030](./0030-namespace-policy-bare-slash-cmd.md) | Phase v3.0-3.6 — namespace policy bare slash cmd LOCK (D-02 codify, sister ADR 0009 v1.0.2 precedent; flatten rule per scan-nested.ts) | Accepted | 2026-05-21 |
 | [0031](./0031-4-stage-namespace-layered-architecture.md) | Phase v3.0-3.6 — 4-stage namespace-layered architecture (M-01 + D-03 + D-07 codify; 23 v3 workflow = 4 master + 18 sub + 2 standalone + 3 v2 legacy keep release-notes-only) | Accepted | 2026-05-21 |
 | [0032](./0032-cross-cutting-disciplines-and-execution-mechanism.md) | Phase v3.0-3.6 — cross-cutting disciplines L0 substrate + L5b execution mechanism (D-05 + D-09 + D-10 + D-11 codify) + D-13 superset 1:1 mapping | Accepted | 2026-05-21 |
+| [0033](./0033-state-machine-ledger-evidence-guard.md) | v5.0 — workflow state machine: progress ledger + fail-closed evidence guard (D1 ledger-only progression, no FSM lib; KARPATHY-minimal per Trellis/comet absorption) | Accepted | 2026-06-05 |
+| [0034](./0034-ecc-assimilation-deconfliction.md) | ECC 选择性同化 + de-confliction 矩阵 (additive-first A→B posture; 246 skills/61 agents partition 核对) | Accepted | 2026-06-17 |
+| [0035](./0035-v13-upstream-resync.md) | v13.0 Upstream Re-sync — gstack/gsd-core/superpowers pin bump (D1) + 5 selective wire (D2: verification-before-completion·gsd-eval-review·/diagram·gsd-validate-phase·systematic-debugging) + skip MemPalace/gbrain/ios (D3 一事实一个家) | Accepted | 2026-07-01 |
 
 ## 参考
 
