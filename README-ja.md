@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | **日本語** | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> **生の Claude Code を、規律ある一流のエンジニアリングチームに変える。** 一度のインストールで、ガバナンス (governance)、プランニング (planning)、TDD、レビュー (review) を一本の Discuss→Ship ワークフローに織り込む。進捗と証拠はチャットではなくディスク上に残る。
+> _AI coding harness パッケージマネージャー + composition orchestrator_ —— オープンソースエコシステムの最良のコンポーネントを 1 つの実行可能な engine に組み立て、三層の **BDD → SDD → TDD** メソドロジーで配線する。
 
-> _AI coding harness パッケージマネージャー + composition orchestrator_ —— 三層スタック協働メソドロジー（gstack ガバナンス + GSD プロジェクトマネージャー + superpowers シニアエンジニア + karpathy 原則 + mattpocock ムーブ）を実行可能な engine として機械実行する
+> **harnessed は orchestration brain + prompt library**。3 つの高速な純関数 CLI を通じて native subagent spawn を駆動する —— `harnessed gates`（どの sub-workflow が発火するか）、`harnessed prompt`（sub のための spawn-ready prompt）、`harnessed checkpoint`（進捗を記録）。
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

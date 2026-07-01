@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | **繁體中文** | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> **將原始的 Claude Code 變成一支紀律嚴明的資深工程團隊。** 一次安裝，就把治理 (governance)、規劃 (planning)、TDD、審查 (review) 織進一條 Discuss→Ship 工作流 —— 進度與證據落在磁碟上，而非消散在對話裡。
+> _AI coding harness 套件管理器 + composition orchestrator_ —— 它將開源生態最優秀的元件裝配成一個可執行的 engine，由三層 **BDD → SDD → TDD** 方法論接線。
 
-> _AI coding harness 套件管理器 + composition orchestrator_ —— 將三層架構協作方法論 (gstack 治理 + GSD 專案管理 + superpowers 資深工程師 + karpathy 原則 + mattpocock 招式) 作為可運行的 engine 機器化執行
+> **harnessed 是 orchestration brain + prompt library**，透過三個秒級純函式 CLI 驅動 native subagent spawn —— `harnessed gates`（哪些 sub-workflow 觸發）、`harnessed prompt`（sub-workflow 的 spawn-ready prompt）、`harnessed checkpoint`（記錄進度）。
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

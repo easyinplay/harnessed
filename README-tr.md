@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | **Türkçe** | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> **Ham Claude Code'u disiplinli, kıdemli bir mühendislik ekibine dönüştürün.** Tek bir kurulum; governance, planlama, TDD ve incelemeyi tek bir Discuss→Ship Workflow'una bağlar; burada ilerleme ve kanıtlar sohbette değil, diskte kalıcı olur.
+> _AI coding harness paket yöneticisi + composition orchestrator_ — açık kaynak ekosisteminin en iyi bileşenlerini tek bir çalıştırılabilir engine içinde bir araya getirir; üç katmanlı **BDD → SDD → TDD** metodolojisiyle bağlanır.
 
-> _AI coding harness paket yöneticisi + Composition Orchestrator_ — üç katmanlı yığın iş birliği metodolojisini (gstack governance + GSD proje yöneticisi + superpowers kıdemli mühendis + karpathy ilkeleri + mattpocock hamleleri) çalıştırılabilir bir motor olarak makine düzeyinde uygular
+> **harnessed bir orchestration brain + prompt library'dir**; native subagent spawn'ı üç hızlı, saf fonksiyonlu CLI aracılığıyla yönlendirir — `harnessed gates` (hangi sub-workflow'ların tetiklendiği), `harnessed prompt` (bir sub için spawn-ready prompt) ve `harnessed checkpoint` (ilerlemeyi kaydetme).
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

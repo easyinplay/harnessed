@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | **ไทย**
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> **เปลี่ยน Claude Code ดิบ ๆ ให้กลายเป็นทีมวิศวกรรมระดับ senior ที่มีวินัย** ติดตั้งครั้งเดียวก็ร้อยเรียง governance, planning, TDD และ review เข้าเป็น workflow เดียวแบบ Discuss→Ship ที่ความคืบหน้าและหลักฐานคงอยู่บนดิสก์ ไม่ใช่ในแชท
+> _AI coding harness package manager + composition orchestrator_ — ประกอบส่วนประกอบที่ดีที่สุดของระบบนิเวศ open-source ให้เป็น engine ที่รันได้หนึ่งเดียว ต่อสายด้วยเมธดวิทยาสามชั้น **BDD → SDD → TDD**
 
-> _AI coding harness package manager + composition orchestrator_ — รันเมธดวิทยาความร่วมมือแบบ three-layer-stack (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) ในรูปแบบ engine ที่ machine-execute ได้จริง
+> **harnessed คือ orchestration brain + prompt library** ขับเคลื่อน native subagent spawn ผ่าน CLI ฟังก์ชันบริสุทธิ์ที่รวดเร็วสามตัว — `harnessed gates` (sub-workflow ใดที่จะทำงาน), `harnessed prompt` (spawn-ready prompt สำหรับ sub) และ `harnessed checkpoint` (บันทึกความคืบหน้า)
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

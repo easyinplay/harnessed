@@ -1,10 +1,12 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | **简体中文** | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **把原始的 Claude Code 变成一支纪律严明的资深工程团队。** 一次安装,就把治理 (governance)、规划 (planning)、TDD、审查 (review) 织进一条 Discuss→Ship 工作流 —— 进度和证据落在磁盘上,而不是消散在对话里。
+> _AI coding harness 包管理器 + composition orchestrator_ —— 它把开源生态最优秀的组件装配成一个可执行的 engine，由三层 **BDD → SDD → TDD** 方法论接线。
 
-> _AI coding harness 包管理器 + composition orchestrator_ —— 把三层栈协作方法论 (gstack 治理 + GSD 项目经理 + superpowers 资深工程师 + karpathy 心法 + mattpocock 招式) 作为可运行 engine 机器化执行
+> **harnessed 是 orchestration brain + prompt library**，通过三个秒级纯函数 CLI 驱动 native subagent spawn —— `harnessed gates`（哪些子工作流触发）、`harnessed prompt`（子工作流的 spawn-ready prompt）、`harnessed checkpoint`（记录进度）。
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

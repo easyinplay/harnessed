@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | **한국어** | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> **순수한 Claude Code를 규율 있는 시니어 엔지니어링 팀으로 바꿉니다.** 한 번의 설치로 governance, 계획, TDD, 검토가 하나의 Discuss→Ship Workflow로 엮이며, 진행 상황과 증거가 채팅이 아니라 디스크에 영속됩니다.
+> _AI coding harness 패키지 매니저 + composition orchestrator_ — 오픈소스 생태계의 최고의 컴포넌트를 하나의 실행 가능한 engine으로 조립하고, 3계층 **BDD → SDD → TDD** 방법론으로 연결합니다.
 
-> _AI coding harness 패키지 매니저 + composition orchestrator_ — 3계층 스택 협업 방법론(gstack governance + GSD 프로젝트 매니저 + superpowers 시니어 엔지니어 + karpathy 원칙 + mattpocock 기법)을 실행 가능한 엔진으로 기계 실행합니다
+> **harnessed는 orchestration brain + prompt library입니다.** 세 개의 빠른 순수 함수 CLI를 통해 native subagent spawn을 구동합니다 — `harnessed gates`(어떤 sub-workflow가 실행되는지), `harnessed prompt`(sub를 위한 spawn-ready prompt), `harnessed checkpoint`(진행 상황 기록).
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

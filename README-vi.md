@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | **Tiếng Việt** | [ไทย](./README-th.md)
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> **Biến Claude Code thô thành một đội kỹ sư senior có kỷ luật.** Một lần cài đặt sẽ kết nối governance, planning, TDD và review thành một workflow Discuss→Ship duy nhất, nơi tiến độ và bằng chứng được lưu giữ trên disk, không phải trong chat.
+> _AI coding harness package manager + composition orchestrator_ — nó lắp ráp những thành phần tốt nhất của hệ sinh thái open-source thành một engine thực thi được duy nhất, được đấu nối bởi phương pháp luận ba tầng **BDD → SDD → TDD**.
 
-> _AI coding harness package manager + composition orchestrator_ — thực thi máy phương pháp cộng tác three-layer-stack (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) như một engine có thể chạy được
+> **harnessed là một orchestration brain + prompt library**, điều khiển native subagent spawn thông qua ba CLI hàm thuần nhanh — `harnessed gates` (những sub-workflow nào kích hoạt), `harnessed prompt` (prompt spawn-ready cho một sub), và `harnessed checkpoint` (ghi lại tiến độ).
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

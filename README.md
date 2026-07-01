@@ -1,10 +1,12 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 **English** | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Turn raw Claude Code into a disciplined senior engineering team.** One install wires governance, planning, TDD, and review into a single Discuss→Ship workflow where progress and evidence persist on disk, not in chat.
+> _AI coding harness package manager + composition orchestrator_ — it assembles the best of the open-source ecosystem into one executable engine, wired by the three-layer **BDD → SDD → TDD** methodology.
 
-> _AI coding harness package manager + composition orchestrator_ — machine-executes the three-layer-stack collaboration methodology (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) as a runnable engine
+> **harnessed is an orchestration brain + prompt library**, driving native subagent spawn through three fast, pure-function CLIs — `harnessed gates` (which sub-workflows fire), `harnessed prompt` (spawn-ready prompt for a sub), and `harnessed checkpoint` (record progress).
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

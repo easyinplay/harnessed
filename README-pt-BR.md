@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | **Português (Brasil)** | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
-> **Transforme o Claude Code cru em uma equipe de engenharia sênior disciplinada.** Uma única instalação conecta governança, planejamento, TDD e revisão em um único workflow Discuss→Ship, no qual o progresso e as evidências persistem em disco, e não no chat.
+> _Gerenciador de pacotes de AI coding harness + composition orchestrator_ — ele monta os melhores componentes do ecossistema open-source em um único engine executável, conectado pela metodologia de três camadas **BDD → SDD → TDD**.
 
-> _AI coding harness package manager + composition orchestrator_ — executa mecanicamente a metodologia de colaboração em três camadas (governança gstack + gerente de projetos GSD + engenheiro sênior superpowers + princípios karpathy + movimentos mattpocock) como um motor executável
+> **harnessed é um orchestration brain + prompt library**, orquestrando o native subagent spawn por meio de três CLIs rápidas e de função pura — `harnessed gates` (quais sub-workflows disparam), `harnessed prompt` (prompt spawn-ready para um sub) e `harnessed checkpoint` (registrar o progresso).
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)

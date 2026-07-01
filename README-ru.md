@@ -1,12 +1,14 @@
-# harnessed
+<p align="center">
+  <img src="./assets/logo.svg" alt="harnessed" width="440">
+</p>
 
 [English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | **Русский** | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > **Примечание (best-effort перевод):** Этот перевод сгенерирован / выполнен по принципу best-effort и может отставать от английского [README.md](./README.md). Для самой свежей и авторитетной версии обращайтесь к английскому README.
 
-> **Превратите «сырой» Claude Code в дисциплинированную команду senior-инженеров.** Одна установка связывает governance, планирование, TDD и review в единый workflow Discuss→Ship, где прогресс и доказательства сохраняются на диске, а не в чате.
+> _Менеджер пакетов AI coding harness + composition orchestrator_ — собирает лучшие компоненты open-source-экосистемы в единый исполняемый engine, связанный трёхслойной методологией **BDD → SDD → TDD**.
 
-> _AI coding harness package manager + composition orchestrator_ — машинно исполняет методологию совместной работы three-layer-stack (gstack governance + GSD project manager + superpowers senior engineer + karpathy principles + mattpocock moves) в виде работающего движка
+> **harnessed — это orchestration brain + prompt library**, управляющий native subagent spawn через три быстрых CLI на чистых функциях — `harnessed gates` (какие sub-workflow срабатывают), `harnessed prompt` (spawn-ready prompt для sub) и `harnessed checkpoint` (запись прогресса).
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
