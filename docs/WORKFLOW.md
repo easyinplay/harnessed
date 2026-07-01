@@ -2,7 +2,7 @@
 
 **Purpose**: harnessed v4.0 用户开发工作流详图 — 4-stage cadence + 8-layer architecture + 24 workflow + L0 Discipline Substrate + L5b Execution Mechanism + 12 judgments yaml routing + 102 capabilities 7-category 分布。**v4.0 核心转向**: harnessed 从 "execution engine"(in-process SDK spawn 整条 workflow)转为 "orchestration brain + prompt library" — slash command 指挥 CC main session 编排 **CC-native subagent spawn**,详 § 1.5。
 
-> **Count note** (2026-06-11): 本 doc v4.0 撰写,计数已刷新至 v6.0 实测 — **24 workflow.yaml / 12 judgments yaml / 102 capabilities / 7 L0 disciplines**(v6.0 加 `doc-discipline` 第 7 个 discipline + Phase 12 哨兵 `checkPlanningSync`)。下方明细表多为 v3.0 era 结构,headline 计数以本 note 为准。
+> **Count note** (2026-06-11): 本 doc v4.0 撰写,计数已刷新至 v6.0 实测 — **24 workflow.yaml / 12 judgments yaml / 102 capabilities / 7 L0 disciplines**(v6.0 加 `doc-discipline` 第 7 个 discipline + Phase 12 哨兵 `checkPlanningSync`)。下方明细表多为 v3.0 era 结构,headline 计数以本 note 为准。**v13.0 update (2026-07-01)**: +2 verify conditional sub(`/verify-eval-review` GSD gsd-eval-review has_ai_phase + `/verify-validate-phase` GSD gsd-validate-phase requires_coverage_audit)→ workflow.yaml 现 **28**(check-workflow-schema v3=28); capabilities +4(buckets 1-5+7 total 35→39, +verification-before-completion/gsd-eval-review/diagram/gsd-validate-phase, +systematic-debugging alias); 详 ADR-0035。
 
 **Scope**: 这是 **end user 用 harnessed 开发自己项目** 的工作流 (NOT project-internal dev cadence for shipping harnessed itself)。v3.0 完全替换 v2.0 `/plan-feature` + `/execute-task` + `/verify-work` 3-workflow prose;v4.0 在 v3.0 8-layer architecture 之上**仅替换 EXECUTION mechanism**(命令如何 spawn),yaml SoT(disciplines / judgments / capabilities)不变。
 
@@ -48,13 +48,15 @@ flowchart TB
 
     subgraph S4["Stage 4 Verify — multi-agent 审查 + 简化"]
         direction LR
-        V1["/verify master<br/>5-7 sub conditional"]
+        V1["/verify master<br/>5-9 sub conditional"]
         V1 --> Vp["/verify-progress<br/>GSD /gsd-verify-work +<br/>/gsd-progress (必跑串行)"]
         V1 --> Vcr["/verify-code-review<br/>multi-agent parallel"]
         V1 --> Vpr["/verify-paranoid<br/>gstack /review<br/>(关键模块强制)"]
         V1 --> Vqa["/verify-qa<br/>(conditional has_ui_changes)"]
         V1 --> Vs["/verify-security<br/>(conditional has_auth_or_secrets)"]
         V1 --> Vd["/verify-design<br/>(conditional has_design_changes)"]
+        V1 --> Ve["/verify-eval-review<br/>GSD /gsd-eval-review<br/>(conditional has_ai_phase)"]
+        V1 --> Vv["/verify-validate-phase<br/>GSD /gsd-validate-phase<br/>(conditional requires_coverage_audit)"]
         V1 --> Vsi["/verify-simplify<br/>code-simplifier (末尾)"]
         V1 --> Vmu["/verify-multispec<br/>4-specialist Agent Team Pattern C<br/>(关键发布)"]
     end
@@ -295,7 +297,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | 10 | `/task-code` | ③ Execute | sub | karpathy 心法 + mattpocock `/zoom-out` `/improve-arch` + planning-with-files `progress.md` | 编码执行 (心法 always-on + 招式 by-condition) |
 | 11 | `/task-test` | ③ Execute | sub | superpowers TDD OR mattpocock `/tdd` | 测试 (fires when `tdd-gate.fires` 核心逻辑强制) |
 | 12 | `/task-deliver` | ③ Execute | sub | ralph-loop COMPLETE wrapper | Completion-promise (`parallelism-gate.fires` mechanism 外层) |
-| 13 | `/verify` | ④ Verify | **master** | (5-7 sub conditional per `judgments.stage-routing`) | Auto orchestrator — multi-agent + 简化 |
+| 13 | `/verify` | ④ Verify | **master** | (5-9 sub conditional per `judgments.stage-routing`) | Auto orchestrator — multi-agent + 简化 |
 | 14 | `/verify-progress` | ④ Verify | sub | GSD `/gsd-verify-work` + `/gsd-progress` + planning-with-files `progress.md` | 必跑串行 (always) |
 | 15 | `/verify-code-review` | ④ Verify | sub | code-review skill multi-agent parallel | 多 agent 高置信度问题 |
 | 16 | `/verify-paranoid` | ④ Verify | sub | gstack `/review` (Paranoid Staff Engineer) | 关键模块强制 |
@@ -483,7 +485,7 @@ harnessed setup --apply
 |---|---|---|
 | `/plan-feature` | `/plan` OR `/plan-phase` | master auto-route OR sub direct |
 | `/execute-task` | `/task` OR `/task-{clarify,code,test,deliver}` | master 串行 4 sub OR sub direct |
-| `/verify-work` | `/verify` OR `/verify-{paranoid,code-review,qa,security,design,simplify,multispec,progress}` | master conditional 5-7 sub OR sub direct |
+| `/verify-work` | `/verify` OR `/verify-{paranoid,code-review,qa,security,design,eval-review,validate-phase,simplify,multispec,progress}` | master conditional 5-9 sub OR sub direct |
 | `/research` | `/research` | unchanged |
 | (NEW) | `/retro` | NEW standalone |
 

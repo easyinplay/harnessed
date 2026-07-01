@@ -68,7 +68,7 @@ harnessed 的三層架構方案是軟體工程上既有的 **BDD → SDD → TDD
 
 - **三層架構機器化執行** —— 即 **BDD→SDD→TDD 巢狀三環**（[那是什麼？](#-什麼是三層架構)），組合自 `gstack` + `GSD` + `superpowers`（彼此重疊，GSD 作骨幹），並以 `karpathy 4 原則` + `mattpocock 23 招式` 作為橫切紀律
 - **不 vendor 上游** —— manifest 描述 install/check；上游升級時，使用者只需 re-install 即可取得最新版本
-- **Composition Skill** —— 自製 workflow skill 作為指揮棒，協調多個上游協同演奏。**1 個超級主控 `/auto` + 5 個階段主控 + 19 個 sub-workflow + 2 個獨立工具 = 27 個命名空間分層 workflow**，完整 5-stage 機器化執行（`/auto` 跨階段一鍵完成 / `/discuss /plan /task /verify /ship` 單一階段 / 19 個三層架構 sub / `/research /retro` 2 個獨立工具）
+- **Composition Skill** —— 自製 workflow skill 作為指揮棒，協調多個上游協同演奏。**1 個超級主控 `/auto` + 5 個階段主控 + 21 個 sub-workflow + 2 個獨立工具 = 29 個命名空間分層 workflow**，完整 5-stage 機器化執行（`/auto` 跨階段一鍵完成 / `/discuss /plan /task /verify /ship` 單一階段 / 21 個三層架構 sub / `/research /retro` 2 個獨立工具）
 - **L0 Discipline Substrate** —— 全域跨階段行為基準（karpathy 原則 + output-style + language + operational + priority + protocols），普遍套用
 - **套件管理思維** —— 安裝相依圖自動解析、doctor 健康檢查、install-base 一鍵完整安裝
 - **統一進入點** —— 使用者只需面對 `/discuss /plan /task /verify /ship` 主指令，無需學習各上游的術語；子指令可明確呼叫單一階段（例如 `/discuss-strategic` 只執行策略層澄清）
@@ -169,7 +169,7 @@ harnessed resume     # 從最近 checkpoint 繼續
 /discuss "需求 X"          # 策略 + Phase + 子任務三層澄清
 /plan "需求 X"             # 架構（conditional）+ 計畫持久化
 /task "子任務-1"           # 4 個子項串行執行（clarify → code → test → deliver）
-/verify "phase-1"          # 7 個子項條件驗證
+/verify "phase-1"          # 9 個子項條件驗證
 ```
 
 > 想自行決定從哪個階段開始 / 審查中間輸出 —— 5 個主控可獨立呼叫，每個主控內部仍會自動展開該階段的所有子項。
@@ -180,7 +180,7 @@ harnessed resume     # 從最近 checkpoint 繼續
 /discuss-phase "..."        # 僅執行 Phase 層澄清
 /plan-architecture "..."    # 僅執行架構審查
 /verify-paranoid "..."      # 僅執行 Paranoid Staff Engineer 審查
-# ... 從其他 19 個 sub-workflow 中任選
+# ... 從其他 21 個 sub-workflow 中任選
 ```
 
 > 「我是專家，我自己決定」—— 跳過主控，直接呼叫 sub-workflow。適合知道自己需要哪個子項的進階使用者，或單步驟的複用場景。
@@ -221,9 +221,11 @@ graph TD
     VQ[verify-qa]
     VS[verify-security]
     VD[verify-design]
+    VE[verify-eval-review]
+    VV[verify-validate-phase]
     VSi[verify-simplify]
     VM[verify-multispec]
-    VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
+    VMs --> VP & VC & VPa & VQ & VS & VD & VE & VV & VSi & VM
   end
   subgraph Ship[⑤ Ship — 發布]
     SMs[/ship master/]
@@ -239,7 +241,7 @@ graph TD
 
 > 虛線框 = 選用獨立工具（`/research` 前置策略調查 / `/retro` 里程碑後摘要）；實線框 = 主要 5-stage 流程（Ship 停在 tag-ready；由 `publish.yml` CI 完成真正的 publish）。
 
-### 27 個 Workflow 總覽表
+### 29 個 Workflow 總覽表
 
 | 指令 | 階段 | 類型 | 能力 / 上游 | 簡介 |
 |-----------|-------|------|----------------------|-------|
@@ -256,13 +258,15 @@ graph TD
 | `/task-code` | ③ Task | 子項 | karpathy 4 原則 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | 子任務編碼 + 跨 session 的 progress.md 同步 |
 | `/task-test` | ③ Task | 子項 | superpowers TDD red-green-refactor + `/diagnose` conditional | 核心邏輯 TDD 強制執行（別名 mattpocock `/tdd`） |
 | `/task-deliver` | ③ Task | 子項 | `ralph-loop` SDK 包裝器 + Agent Teams conditional | 直到逐字輸出 `COMPLETE` + R20.10 max_iter 退路 |
-| `/verify` | ④ Verify | 主控 | masterOrchestrator | 7 個子項依情境條件分派 |
+| `/verify` | ④ Verify | 主控 | masterOrchestrator | 9 個子項依情境條件分派 |
 | `/verify-progress` | ④ Verify | 子項 | GSD `/gsd-verify-work` + `/gsd-progress` | 強制串行起點 —— UAT 驗收 + 狀態同步 |
 | `/verify-code-review` | ④ Verify | 子項 | `code-review` 多 subagent 展開 | 平行高置信度發現 |
 | `/verify-paranoid` | ④ Verify | 子項 | gstack `/review`（Paranoid Staff Engineer） | 關鍵模組 pre-PR 強制執行 |
 | `/verify-qa` | ④ Verify | 子項 | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | 端對端 QA（has_ui_changes conditional） |
 | `/verify-security` | ④ Verify | 子項 | gstack `/cso` | OWASP / 身份驗證 / 機密（has_auth_or_secrets conditional） |
 | `/verify-design` | ④ Verify | 子項 | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | 設計系統一致性（has_design_changes conditional） |
+| `/verify-eval-review` | ④ Verify | 子項 | GSD `/gsd-eval-review` | AI phase eval 覆蓋審計（has_ai_phase conditional；搭配 plan 側 gsd-ai-integration-phase） |
+| `/verify-validate-phase` | ④ Verify | 子項 | GSD `/gsd-validate-phase` | Nyquist requirement→test 覆蓋補漏（requires_coverage_audit conditional） |
 | `/verify-simplify` | ④ Verify | 子項 | `code-simplifier` | 最終串行簡化 |
 | `/verify-multispec` | ④ Verify | 子項 | 四專家 Agent Team Pattern C | 關鍵發布 / 大型重構 PR 升級（相互 SendMessage 交叉審查） |
 | `/ship` | ⑤ Ship | 主控 | masterOrchestrator | Verify 之後的發布階段 —— preflight → 委派 PR/deploy 給 gstack `/ship` → 經 CI publish（tag-ready 邊界） |
@@ -302,7 +306,7 @@ harnessed setup
 /discuss "新功能 X"               # 策略 + Phase + 子任務三層澄清
 /plan "新功能 X"                  # 架構（conditional）+ 計畫（任務圖持久化）
 /task "子任務-1: API contract"    # 每個子任務 4 個子項串行執行
-/verify "phase-1"                 # 7 個子項條件觸發
+/verify "phase-1"                 # 9 個子項條件觸發
 /ship                             # release-preflight 關卡 → PR/deploy（tag-ready；經 CI publish）
 
 # 3. 中斷後繼續（任何時候）
@@ -368,7 +372,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 使用者面向指令 + harnessed CLI                            │
-│   /discuss /plan /task /verify /ship（主控）+ 19 個子項 + /research /retro + /auto 超級主控
+│   /discuss /plan /task /verify /ship（主控）+ 21 個子項 + /research /retro + /auto 超級主控
 │   + 直接呼叫 gstack（30+ 個選用）: /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow 編排（workflows/<stage>/<sub>/）                  │

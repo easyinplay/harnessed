@@ -68,7 +68,7 @@ Các vòng lặp là **những lăng kính lồng nhau, không phải các phase
 
 - **Three-layer stack được thực thi máy** — **triple-loop lồng nhau BDD→SDD→TDD** ([đó là gì?](#-three-layer-stack-là-gì)), kết hợp từ `gstack` + `GSD` + `superpowers` (chồng chéo, GSD làm xương sống) với `karpathy 4 principles` + `mattpocock 23 moves` như các kỷ luật xuyên suốt
 - **Không vendor upstream** — manifest mô tả install/check; khi upstream nâng cấp, người dùng chỉ cần re-install để lấy phiên bản mới nhất
-- **Composition Skill** — workflow skill nội bộ đóng vai trò cây đũa chỉ huy, điều phối nhiều upstream hoạt động cùng nhau. **1 super-master `/auto` + 5 stage masters + 19 sub-workflows + 2 standalones = 27 workflow phân tầng namespace**, thực thi máy đầy đủ 5-stage (`/auto` one-shot qua các stage / `/discuss /plan /task /verify /ship` từng stage / 19 three-layer-stack subs / `/research /retro` 2 standalones)
+- **Composition Skill** — workflow skill nội bộ đóng vai trò cây đũa chỉ huy, điều phối nhiều upstream hoạt động cùng nhau. **1 super-master `/auto` + 5 stage masters + 21 sub-workflows + 2 standalones = 29 workflow phân tầng namespace**, thực thi máy đầy đủ 5-stage (`/auto` one-shot qua các stage / `/discuss /plan /task /verify /ship` từng stage / 21 three-layer-stack subs / `/research /retro` 2 standalones)
 - **L0 Discipline Substrate** — baseline hành vi toàn cục xuyên suốt các stage (karpathy principles + output-style + language + operational + priority + protocols), áp dụng cho tất cả
 - **Tư duy package manager** — đồ thị phụ thuộc install tự phân giải, doctor health check, install-base cài toàn bộ một lần
 - **Điểm vào thống nhất** — người dùng chỉ cần đối mặt với các master slash command `/discuss /plan /task /verify /ship` mà không phải học thuật ngữ riêng của từng upstream; sub command gọi rõ ràng một stage cụ thể (ví dụ `/discuss-strategic` chỉ chạy phần clarification ở tầng strategic)
@@ -169,7 +169,7 @@ Theo thứ tự can thiệp của người dùng tăng dần:
 /discuss "yêu cầu X"          # Làm rõ 3 tầng: Strategic + Phase + Subtask
 /plan "yêu cầu X"             # Architecture (có điều kiện) + plan persistence
 /task "subtask-1"             # 4 sub nối tiếp (clarify → code → test → deliver)
-/verify "phase-1"             # 7 sub verification có điều kiện
+/verify "phase-1"             # 9 sub verification có điều kiện
 ```
 
 > Muốn tự quyết định bắt đầu từ stage nào / review output trung gian — 5 master có thể gọi độc lập, và mỗi master vẫn tự động fan-out tất cả sub của stage đó.
@@ -180,7 +180,7 @@ Theo thứ tự can thiệp của người dùng tăng dần:
 /discuss-phase "..."        # Chỉ chạy clarification tầng Phase
 /plan-architecture "..."    # Chỉ chạy architecture review
 /verify-paranoid "..."      # Chỉ chạy review của Paranoid Staff Engineer
-# ... chọn bất kỳ sub-workflow nào trong số 19 cái còn lại
+# ... chọn bất kỳ sub-workflow nào trong số 21 cái còn lại
 ```
 
 > "Tôi là chuyên gia, tôi tự quyết" — bỏ qua master, gọi thẳng sub-workflow. Phù hợp với advanced user biết chính xác sub nào mình cần, hoặc tái sử dụng một bước duy nhất.
@@ -221,9 +221,11 @@ graph TD
     VQ[verify-qa]
     VS[verify-security]
     VD[verify-design]
+    VE[verify-eval-review]
+    VV[verify-validate-phase]
     VSi[verify-simplify]
     VM[verify-multispec]
-    VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
+    VMs --> VP & VC & VPa & VQ & VS & VD & VE & VV & VSi & VM
   end
   subgraph Ship[⑤ Ship — Release]
     SMs[/ship master/]
@@ -239,7 +241,7 @@ graph TD
 
 > Ô nét đứt = standalone tùy chọn (`/research` điều tra trước strategic / `/retro` tổng kết sau milestone); ô nét liền = cadence 5 stage chính (Ship dừng ở tag-ready; CI `publish.yml` thực hiện publish thực sự).
 
-### Bảng Tổng Quan 27 Workflow
+### Bảng Tổng Quan 29 Workflow
 
 | Slash cmd | Stage | Loại | Khả năng / Upstream | Mô tả ngắn |
 |-----------|-------|------|----------------------|-------|
@@ -256,13 +258,15 @@ graph TD
 | `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` có điều kiện | Coding subtask + đồng bộ progress.md xuyên session |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` có điều kiện | TDD bắt buộc cho logic cốt lõi (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams có điều kiện | Đến khi verbatim `COMPLETE` + R20.10 max_iter fallback |
-| `/verify` | ④ Verify | Master | masterOrchestrator | 7 sub dispatch có điều kiện theo scenario |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 9 sub dispatch có điều kiện theo scenario |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Điểm bắt đầu nối tiếp bắt buộc — chấp nhận UAT + đồng bộ state |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | Các phát hiện độ tin cậy cao theo song song |
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | Bắt buộc cho critical-module trước PR |
 | `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | QA end-to-end (điều kiện has_ui_changes) |
 | `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (điều kiện has_auth_or_secrets) |
 | `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Tính nhất quán design system (điều kiện has_design_changes) |
+| `/verify-eval-review` | ④ Verify | Sub | GSD `/gsd-eval-review` | Kiểm toán độ phủ AI phase eval (điều kiện has_ai_phase; ghép với gsd-ai-integration-phase phía plan) |
+| `/verify-validate-phase` | ④ Verify | Sub | GSD `/gsd-validate-phase` | Bổ sung độ phủ Nyquist requirement→test (điều kiện requires_coverage_audit) |
 | `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Bước đơn giản hóa nối tiếp cuối cùng |
 | `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | Leo thang cho critical release / large refactor PR (cross-examination qua SendMessage lẫn nhau) |
 | `/ship` | ⑤ Ship | Master | masterOrchestrator | Stage release sau Verify — preflight → ủy quyền PR/deploy cho gstack `/ship` → publish qua CI (ranh giới tag-ready) |
@@ -302,7 +306,7 @@ harnessed setup
 /discuss "tính năng mới X"        # Làm rõ 3 tầng: Strategic + Phase + Subtask
 /plan "tính năng mới X"           # Architecture (có điều kiện) + plan (task graph được lưu)
 /task "subtask-1: API contract"   # 4 sub nối tiếp mỗi subtask
-/verify "phase-1"                 # 7 sub có điều kiện
+/verify "phase-1"                 # 9 sub có điều kiện
 /ship                             # gate release-preflight → PR/deploy (tag-ready; publish qua CI)
 
 # 3. Tiếp tục sau khi bị gián đoạn (bất cứ lúc nào)
@@ -368,7 +372,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 Slash cmd và harnessed CLI hướng người dùng              │
-│   /discuss /plan /task /verify /ship (master) + 19 sub + /research /retro + /auto super-master
+│   /discuss /plan /task /verify /ship (master) + 21 sub + /research /retro + /auto super-master
 │   + gọi gstack trực tiếp (30+ tùy chọn): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │

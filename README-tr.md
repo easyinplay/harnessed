@@ -68,7 +68,7 @@ Yukarıdaki çalışma zamanı döngüsüyle eşlenir: **Discuss = Behavior (BDD
 
 - **Üç katmanlı yığın makine düzeyinde uygulanır** — **BDD→SDD→TDD iç içe üçlü döngüsü** ([bu da ne?](#-üç-katmanlı-yığın-nedir)), `gstack` + `GSD` + `superpowers`'tan birleştirilmiş (örtüşen, omurga olarak GSD) artı çapraz-kesim disiplinleri olarak `karpathy 4 ilkesi` + `mattpocock 23 hamlesi`
 - **Upstream'lerin vendor edilmemesi** — manifest'ler kurulum/kontrolü tanımlar; upstream yükseltildiğinde kullanıcılar en son sürümü almak için yalnızca yeniden kurulum yapar
-- **Composition Skill** — dahili Workflow Skills, şef sopası gibi davranıp birden fazla upstream'i uyum içinde orkestrale eder. **1 süper-ana `/auto` + 5 aşama-ana + 19 alt-workflow + 2 bağımsız = 27 namespace katmanlı Workflow**, tam 5-aşama makine uygulaması (`/auto` aşamalar arası tek atışta / `/discuss /plan /task /verify /ship` tek aşama / 19 adet üç katmanlı yığın alt-workflow / `/research /retro` 2 bağımsız)
+- **Composition Skill** — dahili Workflow Skills, şef sopası gibi davranıp birden fazla upstream'i uyum içinde orkestrale eder. **1 süper-ana `/auto` + 5 aşama-ana + 21 alt-workflow + 2 bağımsız = 29 namespace katmanlı Workflow**, tam 5-aşama makine uygulaması (`/auto` aşamalar arası tek atışta / `/discuss /plan /task /verify /ship` tek aşama / 21 adet üç katmanlı yığın alt-workflow / `/research /retro` 2 bağımsız)
 - **L0 Discipline Substrate** — global çapraz-aşama davranış temeli (karpathy ilkeleri + çıktı stili + dil + operasyonel + öncelik + protokoller), evrensel olarak uygulanır
 - **Paket yöneticisi zihniyeti** — kurulum bağımlılık grafiği otomatik çözümlenir, `doctor` sağlık kontrolü, install-base tek seferlik tam kurulum
 - **Birleşik giriş noktası** — kullanıcılar her upstream'in terminolojisini öğrenmek zorunda kalmadan `/discuss /plan /task /verify /ship` ana slash komutlarını kullanır; alt komutlar tek bir aşamayı açıkça çağırır (örn. `/discuss-strategic` yalnızca stratejik katman açıklamasını çalıştırır)
@@ -169,7 +169,7 @@ Artan kullanıcı müdahalesi sırasıyla:
 /discuss "gereksinim X"          # Stratejik + Phase + Subtask 3 katmanlı açıklama
 /plan "gereksinim X"             # Mimari (koşullu) + plan kalıcılaştırma
 /task "alt görev-1"              # 4 alt-workflow seri (clarify → code → test → deliver)
-/verify "phase-1"                # 7 alt-workflow koşullu doğrulama
+/verify "phase-1"                # 9 alt-workflow koşullu doğrulama
 ```
 
 > Hangi aşamadan başlayacağınıza karar vermek / ara çıktıları incelemek istiyorsanız — 5 ana bağımsız olarak çağrılabilir ve her ana, dahili olarak o aşamanın tüm alt-workflow'larını yine de otomatik olarak dağıtır.
@@ -180,7 +180,7 @@ Artan kullanıcı müdahalesi sırasıyla:
 /discuss-phase "..."        # Yalnızca Phase katmanı açıklamasını çalıştır
 /plan-architecture "..."    # Yalnızca mimari incelemeyi çalıştır
 /verify-paranoid "..."      # Yalnızca Paranoid Staff Engineer incelemesini çalıştır
-# ... diğer 19 alt-workflow'dan birini seçin
+# ... diğer 21 alt-workflow'dan birini seçin
 ```
 
 > "Ben uzmanım, kendim karar veririm" — ana orchestrator'ı atlayıp doğrudan bir alt-workflow'u çağırın. Tam olarak hangi alt-workflow'a ihtiyaç duyduğunu bilen ileri kullanıcılar için ya da tek adımın yeniden kullanımı için uygundur.
@@ -221,9 +221,11 @@ graph TD
     VQ[verify-qa]
     VS[verify-security]
     VD[verify-design]
+    VE[verify-eval-review]
+    VV[verify-validate-phase]
     VSi[verify-simplify]
     VM[verify-multispec]
-    VMs --> VP & VC & VPa & VQ & VS & VD & VSi & VM
+    VMs --> VP & VC & VPa & VQ & VS & VD & VE & VV & VSi & VM
   end
   subgraph Ship[⑤ Ship — Sürüm]
     SMs[/ship master/]
@@ -239,7 +241,7 @@ graph TD
 
 > Kesik çizgili kutular = isteğe bağlı bağımsız araçlar (`/research` stratejik öncesi araştırma / `/retro` milestone sonrası özet); düz kutular = ana 5-aşama cadence (Ship, tag'e hazır noktada durur; gerçek yayını `publish.yml` CI yapar).
 
-### 27-Workflow Genel Bakış Tablosu
+### 29-Workflow Genel Bakış Tablosu
 
 | Slash komutu | Aşama | Tür | Yetenek / Upstream | Kısa açıklama |
 |-----------|-------|------|----------------------|-------|
@@ -256,13 +258,15 @@ graph TD
 | `/task-code` | ③ Task | Alt | karpathy 4 ilkesi + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` koşullu | Alt görev kodlama + çapraz oturum progress.md senkronizasyonu |
 | `/task-test` | ③ Task | Alt | superpowers TDD red-green-refactor + `/diagnose` koşullu | Temel mantık için TDD zorunlu (mattpocock `/tdd` takma adı) |
 | `/task-deliver` | ③ Task | Alt | `ralph-loop` SDK sarmalayıcı + Agent Teams koşullu | Verbatim `COMPLETE` alınana kadar + R20.10 max_iter fallback |
-| `/verify` | ④ Verify | Ana | masterOrchestrator | 7 alt-workflow senaryoya göre koşullu dağıtım |
+| `/verify` | ④ Verify | Ana | masterOrchestrator | 9 alt-workflow senaryoya göre koşullu dağıtım |
 | `/verify-progress` | ④ Verify | Alt | GSD `/gsd-verify-work` + `/gsd-progress` | Zorunlu seri başlangıç noktası — UAT kabulü + durum senkronizasyonu |
 | `/verify-code-review` | ④ Verify | Alt | `code-review` çok-subagent fan-out | Paralel yüksek-güvenilirlik bulguları |
 | `/verify-paranoid` | ④ Verify | Alt | gstack `/review` (Paranoid Staff Engineer) | Kritik modül PR öncesi zorunlu |
 | `/verify-qa` | ④ Verify | Alt | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | Uçtan uca QA (has_ui_changes koşullu) |
 | `/verify-security` | ④ Verify | Alt | gstack `/cso` | OWASP / auth / secrets (has_auth_or_secrets koşullu) |
 | `/verify-design` | ④ Verify | Alt | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Tasarım sistemi tutarlılığı (has_design_changes koşullu) |
+| `/verify-eval-review` | ④ Verify | Alt | GSD `/gsd-eval-review` | AI phase eval kapsam denetimi (has_ai_phase koşullu; plan tarafındaki gsd-ai-integration-phase ile eşleşir) |
+| `/verify-validate-phase` | ④ Verify | Alt | GSD `/gsd-validate-phase` | Nyquist requirement→test kapsam boşluğu doldurma (requires_coverage_audit koşullu) |
 | `/verify-simplify` | ④ Verify | Alt | `code-simplifier` | Son seri sadeleştirme |
 | `/verify-multispec` | ④ Verify | Alt | 4-uzman Agent Team Pattern C | Kritik sürüm / büyük refactor PR tırmanması (karşılıklı SendMessage çapraz sorgulama) |
 | `/ship` | ⑤ Ship | Ana | masterOrchestrator | Verify sonrası sürüm aşaması — preflight → PR/deploy'u gstack `/ship`'e devret → yayını CI ile yap (tag'e hazır sınırı) |
@@ -302,7 +306,7 @@ harnessed setup
 /discuss "yeni özellik X"          # Stratejik + Phase + Subtask 3 katmanlı açıklama
 /plan "yeni özellik X"             # Mimari (koşullu) + plan (görev grafiği kalıcılaştırılır)
 /task "alt görev-1: API contract"  # Her alt görev için 4 seri alt-workflow
-/verify "phase-1"                  # 7 koşullu alt-workflow
+/verify "phase-1"                  # 9 koşullu alt-workflow
 /ship                              # release-preflight kapısı → PR/deploy (tag'e hazır; yayın CI ile)
 
 # 3. Kesintiden sonra devam edin (herhangi bir zamanda)
@@ -368,7 +372,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 Kullanıcıya yönelik slash komutu + harnessed CLI          │
-│   /discuss /plan /task /verify /ship (master) + 19 alt + /research /retro + /auto süper-master
+│   /discuss /plan /task /verify /ship (master) + 21 alt + /research /retro + /auto süper-master
 │   + doğrudan gstack çağrısı (30+ isteğe bağlı): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orkestrasyonu (workflows/<aşama>/<alt>/)         │
