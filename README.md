@@ -66,7 +66,7 @@ Mapped to the runtime loop above: **Discuss = Behavior (BDD) · Plan = Spec (SDD
 
 - **Three-layer stack machine-executed** — the **BDD→SDD→TDD nested triple-loop** ([what's that?](#-what-is-the-three-layer-stack)), composed from `gstack` + `GSD` + `superpowers` (overlapping, GSD as the backbone) with `karpathy 4 principles` + `mattpocock 23 moves` as cross-cutting disciplines
 - **No vendoring of upstream** — manifests describe install/check; on upstream upgrade users just re-install to get the latest version
-- **Composition Skill** — in-house workflow skills act as the conductor's baton, orchestrating multiple upstreams in concert. **1 super-master `/auto` + 5 stage masters + 21 sub-workflows + 2 standalones = 29 namespace-layered workflows**, full 5-stage machine-execution (`/auto` one-shot across stages / `/discuss /plan /task /verify /ship` single stage / 21 three-layer-stack subs / `/research /retro` 2 standalones)
+- **Composition Skill** — in-house workflow skills act as the conductor's baton, orchestrating multiple upstreams in concert. **1 super-master `/auto` + 5 stage masters + 20 sub-workflows + 2 standalones = 28 namespace-layered workflows**, full 5-stage machine-execution (`/auto` one-shot across stages / `/discuss /plan /task /verify /ship` single stage / 20 three-layer-stack subs / `/research /retro` 2 standalones)
 - **L0 Discipline Substrate** — global cross-stage behavior baseline (karpathy principles + output-style + language + operational + priority + protocols), applied universally
 - **Package manager mindset** — install dependency graph auto-resolves, doctor health check, install-base one-shot full install
 - **Unified entry point** — users face `/discuss /plan /task /verify /ship` master slash commands without learning each upstream's terminology; sub commands explicitly invoke a single stage (e.g. `/discuss-strategic` runs only the strategic-layer clarification)
@@ -167,7 +167,7 @@ In order of increasing user intervention:
 /discuss "requirement X"          # Strategic + Phase + Subtask 3-layer clarification
 /plan "requirement X"             # Architecture (conditional) + plan persistence
 /task "subtask-1"                 # 4 subs serial (clarify → code → test → deliver)
-/verify "phase-1"                 # 9 subs conditional verification
+/verify "phase-1"                 # 10 subs conditional verification
 ```
 
 > Want to decide which stage to start from / review intermediate outputs — 5 masters callable independently, and each master still auto-fans-out all of that stage's subs internally.
@@ -178,7 +178,7 @@ In order of increasing user intervention:
 /discuss-phase "..."        # Run only Phase-layer clarification
 /plan-architecture "..."    # Run only architecture review
 /verify-paranoid "..."      # Run only the Paranoid Staff Engineer review
-# ... pick any of the other 21 sub-workflows
+# ... pick any of the other 20 sub-workflows
 ```
 
 > "I'm an expert, I'll decide myself" — skip the master, invoke a sub-workflow directly. Suits advanced users who know exactly which sub they need, or reuse of a single step.
@@ -239,7 +239,7 @@ graph TD
 
 > Dashed boxes = optional standalones (`/research` pre-strategic investigation / `/retro` post-milestone summary); solid boxes = main 5-stage cadence (Ship stops at tag-ready; `publish.yml` CI does the actual publish).
 
-### 29-Workflow Overview Table
+### 28-Workflow Overview Table
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
@@ -256,7 +256,7 @@ graph TD
 | `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | Subtask coding + cross-session progress.md sync |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | TDD mandatory for core logic (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | Until verbatim `COMPLETE` + R20.10 max_iter fallback |
-| `/verify` | ④ Verify | Master | masterOrchestrator | 9 subs conditional dispatch by scenario |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs conditional dispatch by scenario |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Mandatory serial starting point — UAT acceptance + state sync |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | High-confidence findings in parallel |
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | Mandatory for critical-module pre-PR |
@@ -304,7 +304,7 @@ harnessed setup
 /discuss "new feature X"          # Strategic + Phase + Subtask 3-layer clarification
 /plan "new feature X"             # Architecture (conditional) + plan (task graph persisted)
 /task "subtask-1: API contract"   # 4 subs serial per subtask
-/verify "phase-1"                 # 9 subs conditional
+/verify "phase-1"                 # 10 subs conditional
 /ship                             # release-preflight gate → PR/deploy (tag-ready; publish via CI)
 
 # 3. Resume after interruption (any time)
@@ -370,7 +370,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 User-facing slash cmd + harnessed CLI                    │
-│   /discuss /plan /task /verify /ship (master) + 21 sub + /research /retro + /auto super-master
+│   /discuss /plan /task /verify /ship (master) + 20 sub + /research /retro + /auto super-master
 │   + direct gstack invoke (30+ optional): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │

@@ -68,7 +68,7 @@ three-layer stack ของ harnessed คือการ implement แบบ sof
 
 - **Three-layer stack แบบ machine-executed** — **triple-loop ที่ซ้อนกันแบบ BDD→SDD→TDD** ([นั่นคืออะไร?](#-three-layer-stack-คืออะไร)) ประกอบจาก `gstack` + `GSD` + `superpowers` (ทับซ้อนกัน โดยมี GSD เป็น backbone) บวก `karpathy 4 principles` + `mattpocock 23 moves` ในฐานะวินัยข้ามชั้น (cross-cutting disciplines)
 - **ไม่ vendor upstream** — manifests อธิบาย install/check เมื่อ upstream อัปเกรด ผู้ใช้แค่ re-install ก็ได้เวอร์ชันล่าสุดทันที
-- **Composition Skill** — workflow skills ภายในทำหน้าที่เหมือนไม้บาตองของวาทยกร ประสาน upstream หลายตัวให้บรรเลงพร้อมกัน **1 super-master `/auto` + 5 stage masters + 21 sub-workflows + 2 standalones = 29 workflows แบบ namespace-layered** machine-execute ครบ 5 stage (`/auto` one-shot ข้ามทุก stage / `/discuss /plan /task /verify /ship` ทีละ stage / 21 three-layer-stack subs / `/research /retro` 2 standalones)
+- **Composition Skill** — workflow skills ภายในทำหน้าที่เหมือนไม้บาตองของวาทยกร ประสาน upstream หลายตัวให้บรรเลงพร้อมกัน **1 super-master `/auto` + 5 stage masters + 20 sub-workflows + 2 standalones = 28 workflows แบบ namespace-layered** machine-execute ครบ 5 stage (`/auto` one-shot ข้ามทุก stage / `/discuss /plan /task /verify /ship` ทีละ stage / 20 three-layer-stack subs / `/research /retro` 2 standalones)
 - **L0 Discipline Substrate** — baseline พฤติกรรมข้ามทุก stage ระดับ global (karpathy principles + output-style + language + operational + priority + protocols) ใช้งานแบบ universal
 - **แนวคิด package manager** — dependency graph ของการติดตั้ง auto-resolve, doctor health check, install-base one-shot full install ครั้งเดียวจบ
 - **จุดเข้าเดียว** — ผู้ใช้เห็นแค่ `/discuss /plan /task /verify /ship` master slash commands โดยไม่ต้องเรียนรู้คำศัพท์ของแต่ละ upstream; sub commands เรียกใช้แต่ละ stage โดยตรง (เช่น `/discuss-strategic` รันเฉพาะ strategic-layer clarification)
@@ -169,7 +169,7 @@ harnessed resume     # continue from the latest checkpoint
 /discuss "requirement X"          # Strategic + Phase + Subtask 3-layer clarification
 /plan "requirement X"             # Architecture (conditional) + plan persistence
 /task "subtask-1"                 # 4 subs serial (clarify → code → test → deliver)
-/verify "phase-1"                 # 9 subs conditional verification
+/verify "phase-1"                 # 10 subs conditional verification
 ```
 
 > อยากเลือกเองว่าจะเริ่มจาก stage ไหน / รีวิว output กลางทาง — เรียก 5 masters ได้อิสระ และแต่ละ master ก็ยัง auto fan-out subs ทั้งหมดของ stage นั้นภายในตัวเอง
@@ -180,7 +180,7 @@ harnessed resume     # continue from the latest checkpoint
 /discuss-phase "..."        # รันเฉพาะ Phase-layer clarification
 /plan-architecture "..."    # รันเฉพาะ architecture review
 /verify-paranoid "..."      # รันเฉพาะ Paranoid Staff Engineer review
-# ... หรือเลือก sub-workflow อื่น ๆ จาก 21 ตัว
+# ... หรือเลือก sub-workflow อื่น ๆ จาก 20 ตัว
 ```
 
 > "ฉันเชี่ยวชาญพอ จะตัดสินใจเอง" — ข้าม master แล้ว invoke sub-workflow ตรง เหมาะสำหรับ advanced users ที่รู้แน่ว่าต้องการ sub ไหน หรือต้องการใช้ขั้นตอนเดียวซ้ำ
@@ -241,7 +241,7 @@ graph TD
 
 > กล่องเส้นประ = standalones แบบ optional (`/research` สืบค้นก่อน strategic / `/retro` สรุปหลัง milestone); กล่องเส้นทึบ = cadence หลัก 5 stage (Ship หยุดที่ tag-ready; CI `publish.yml` เป็นผู้ทำการ publish จริง)
 
-### ตารางภาพรวม 29 Workflows
+### ตารางภาพรวม 28 Workflows
 
 | Slash cmd | Stage | ประเภท | ความสามารถ / Upstream | สรุป |
 |-----------|-------|--------|----------------------|------|
@@ -258,7 +258,7 @@ graph TD
 | `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | Subtask coding + sync progress.md ข้าม session |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | TDD บังคับสำหรับ core logic (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | จนกว่าจะได้ `COMPLETE` ตรงตัว + R20.10 max_iter fallback |
-| `/verify` | ④ Verify | Master | masterOrchestrator | 9 subs conditional dispatch ตามสถานการณ์ |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs conditional dispatch ตามสถานการณ์ |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | จุดเริ่มต้น serial บังคับ — UAT acceptance + state sync |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | ค้นพบปัญหา high-confidence แบบ parallel |
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | บังคับสำหรับ critical-module ก่อน PR |
@@ -306,7 +306,7 @@ harnessed setup
 /discuss "new feature X"          # Strategic + Phase + Subtask 3-layer clarification
 /plan "new feature X"             # Architecture (conditional) + plan (task graph ถูกบันทึก)
 /task "subtask-1: API contract"   # 4 subs serial ต่อ subtask
-/verify "phase-1"                 # 9 subs conditional
+/verify "phase-1"                 # 10 subs conditional
 /ship                             # release-preflight gate → PR/deploy (tag-ready; publish ผ่าน CI)
 
 # 3. ดำเนินการต่อหลังจากถูกขัดจังหวะ (ทำได้ทุกเมื่อ)
@@ -372,7 +372,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 User-facing slash cmd + harnessed CLI                    │
-│   /discuss /plan /task /verify /ship (master) + 21 sub + /research /retro + /auto super-master
+│   /discuss /plan /task /verify /ship (master) + 20 sub + /research /retro + /auto super-master
 │   + direct gstack invoke (30+ optional): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │

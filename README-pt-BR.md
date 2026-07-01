@@ -68,7 +68,7 @@ Mapeado ao loop de runtime acima: **Discuss = Behavior (BDD) · Plan = Spec (SDD
 
 - **Stack de três camadas executada mecanicamente** — o **triplo-loop aninhado BDD→SDD→TDD** ([o que é isso?](#-o-que-é-a-stack-de-três-camadas)), composto a partir de `gstack` + `GSD` + `superpowers` (com sobreposição, GSD como espinha dorsal) com `karpathy 4 principles` + `mattpocock 23 moves` como disciplinas transversais
 - **Sem Vendor do upstream** — Manifests descrevem install/check; quando o upstream é atualizado, os usuários simplesmente reinstalam para obter a versão mais recente
-- **Composition Skill** — Skills de Workflow internas funcionam como a batuta do maestro, orquestrando múltiplos upstreams em conjunto. **1 super-master `/auto` + 5 masters de stage + 21 sub-workflows + 2 standalone = 29 Workflows em namespace hierárquico**, execução mecânica completa de 5 stages (`/auto` one-shot entre stages / `/discuss /plan /task /verify /ship` por stage individual / 21 subs da three-layer-stack / `/research /retro` 2 standalones)
+- **Composition Skill** — Skills de Workflow internas funcionam como a batuta do maestro, orquestrando múltiplos upstreams em conjunto. **1 super-master `/auto` + 5 masters de stage + 20 sub-workflows + 2 standalone = 28 Workflows em namespace hierárquico**, execução mecânica completa de 5 stages (`/auto` one-shot entre stages / `/discuss /plan /task /verify /ship` por stage individual / 20 subs da three-layer-stack / `/research /retro` 2 standalones)
 - **L0 Discipline Substrate** — linha de base de comportamento global entre stages (princípios karpathy + estilo de output + linguagem + operacional + prioridade + protocolos), aplicada universalmente
 - **Mentalidade de gerenciador de pacotes** — grafo de dependências de instalação com resolução automática, health check com doctor, instalação base completa em um comando
 - **Ponto de entrada unificado** — os usuários interagem com os master slash commands `/discuss /plan /task /verify /ship` sem precisar aprender a terminologia de cada upstream; sub-commands invocam explicitamente um único stage (por exemplo, `/discuss-strategic` executa apenas a clarificação da camada estratégica)
@@ -169,7 +169,7 @@ Em ordem crescente de intervenção do usuário:
 /discuss "requisito X"          # Clarificação em 3 camadas: Strategic + Phase + Subtask
 /plan "requisito X"             # Architecture (condicional) + persistência do plano
 /task "subtask-1"               # 4 subs em série (clarify → code → test → deliver)
-/verify "phase-1"               # 9 subs com verificação condicional
+/verify "phase-1"               # 10 subs com verificação condicional
 ```
 
 > Quer decidir de qual stage partir / revisar outputs intermediários — os 5 masters podem ser chamados de forma independente, e cada master ainda expande automaticamente todos os subs daquele stage internamente.
@@ -180,7 +180,7 @@ Em ordem crescente de intervenção do usuário:
 /discuss-phase "..."        # Executa apenas a clarificação da camada Phase
 /plan-architecture "..."    # Executa apenas a revisão de arquitetura
 /verify-paranoid "..."      # Executa apenas a revisão do Paranoid Staff Engineer
-# ... escolha qualquer um dos outros 21 sub-workflows
+# ... escolha qualquer um dos outros 20 sub-workflows
 ```
 
 > "Sou expert, vou decidir eu mesmo" — pule o master e invoque um sub-workflow diretamente. Adequado para usuários avançados que sabem exatamente qual sub precisam, ou para reutilização de um único step.
@@ -241,7 +241,7 @@ graph TD
 
 > Caixas tracejadas = standalones opcionais (`/research` investigação pré-estratégica / `/retro` resumo pós-milestone); caixas sólidas = cadência principal dos 5 stages (Ship para em tag-ready; o CI `publish.yml` faz a publicação real).
 
-### Tabela de Visão Geral dos 29 Workflows
+### Tabela de Visão Geral dos 28 Workflows
 
 | Slash cmd | Stage | Tipo | Capacidade / Upstream | Resumo |
 |-----------|-------|------|----------------------|-------|
@@ -258,7 +258,7 @@ graph TD
 | `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` condicional | Codificação da subtask + sincronização cross-session de progress.md |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` condicional | TDD obrigatório para lógica central (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | wrapper SDK `ralph-loop` + Agent Teams condicional | Até `COMPLETE` verbatim + fallback max_iter R20.10 |
-| `/verify` | ④ Verify | Master | masterOrchestrator | 9 subs com Dispatcher condicional por cenário |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs com Dispatcher condicional por cenário |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Ponto de partida serial obrigatório — aceitação UAT + sincronização de estado |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | Descobertas de alta confiança em paralelo |
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | Obrigatório para módulos críticos antes de PR |
@@ -306,7 +306,7 @@ harnessed setup
 /discuss "novo recurso X"          # Clarificação em 3 camadas: Strategic + Phase + Subtask
 /plan "novo recurso X"             # Architecture (condicional) + plano (grafo de tarefas persistido)
 /task "subtask-1: API contract"    # 4 subs em série por subtask
-/verify "phase-1"                  # 9 subs condicionais
+/verify "phase-1"                  # 10 subs condicionais
 /ship                              # gate release-preflight → PR/deploy (tag-ready; publica via CI)
 
 # 3. Retomar após interrupção (a qualquer momento)
@@ -372,7 +372,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 Slash cmd voltado ao usuário + harnessed CLI             │
-│   /discuss /plan /task /verify /ship (master) + 21 sub + /research /retro + /auto super-master
+│   /discuss /plan /task /verify /ship (master) + 20 sub + /research /retro + /auto super-master
 │   + invocação direta gstack (30+ opcionais): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Orquestração de Workflow (workflows/<stage>/<sub>/)       │

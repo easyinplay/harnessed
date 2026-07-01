@@ -66,7 +66,7 @@ harnessed 的三层栈方案是软件工程上既有的 **BDD → SDD → TDD** 
 
 - **三层栈机器化执行** —— 即 **BDD→SDD→TDD 嵌套三环** ([那是什么?](#-什么是三层栈)),组合自 `gstack` + `GSD` + `superpowers` (彼此重叠,GSD 作骨干),并以 `karpathy 4 心法` + `mattpocock 23 招式` 作为横切纪律
 - **不 vendor 上游** —— manifest 描述 install/check;上游升级时用户只需 re-install 即获最新版
-- **Composition Skill** —— 自家 workflow skill 当指挥棒,调度多个上游协同演奏。**1 个 super-master `/auto` + 5 个 stage master + 21 个 sub-workflow + 2 个 standalone = 29 个 namespace-layered workflow**,完整 5-stage 机器化 (`/auto` 跨 stage 一键 / `/discuss /plan /task /verify /ship` 单 stage / 21 个三层栈 sub / `/research /retro` 2 个 standalone)
+- **Composition Skill** —— 自家 workflow skill 当指挥棒,调度多个上游协同演奏。**1 个 super-master `/auto` + 5 个 stage master + 20 个 sub-workflow + 2 个 standalone = 28 个 namespace-layered workflow**,完整 5-stage 机器化 (`/auto` 跨 stage 一键 / `/discuss /plan /task /verify /ship` 单 stage / 20 个三层栈 sub / `/research /retro` 2 个 standalone)
 - **L0 Discipline Substrate** —— 全局 cross-stage 行为基准 (karpathy 心法 + output-style + language + operational + priority + protocols),applied universally
 - **包管理器思维** —— install dependency graph 自动解析、doctor 健康检查、install-base 一键装齐
 - **统一入口** —— 用户面对 `/discuss /plan /task /verify /ship` 等 master slash command,不需学每家上游术语;sub command 显式调用单 stage (例如 `/discuss-strategic` 只跑战略层澄清)
@@ -167,7 +167,7 @@ harnessed resume     # 从最近 checkpoint 继续
 /discuss "需求 X"          # 战略 + Phase + 子任务 3 层澄清
 /plan "需求 X"             # 架构 (conditional) + 计划持久化
 /task "subtask-1"          # 4 sub 串行 (clarify → code → test → deliver)
-/verify "phase-1"          # 9 sub conditional 验证
+/verify "phase-1"          # 10 sub conditional 验证
 ```
 
 > 想自己决定从哪个 stage 开始 / review 中间产出 —— 5 个 master 可独立调用,每个 master 内部仍自动 fan-out 该 stage 所有 sub。
@@ -178,7 +178,7 @@ harnessed resume     # 从最近 checkpoint 继续
 /discuss-phase "..."        # 单跑 Phase 层澄清
 /plan-architecture "..."    # 单跑架构审查
 /verify-paranoid "..."      # 单跑 Paranoid Staff Engineer 审查
-# ... 其他 21 个 sub-workflow 任选
+# ... 其他 20 个 sub-workflow 任选
 ```
 
 > 「我是专家,我自己决定」—— 跳过 master,直接调某 sub-workflow。适合已知精确需要哪个 sub 的高级用户 / 复用某单一环节。
@@ -239,7 +239,7 @@ graph TD
 
 > 虚框 = 可选 standalone (`/research` 战略前调研 / `/retro` 里程碑后总结);实框 = 主流程 5-stage cadence (Ship 停在 tag-ready;由 `publish.yml` CI 完成真正的 publish)。
 
-### 29-Workflow 总览表
+### 28-Workflow 总览表
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
@@ -256,7 +256,7 @@ graph TD
 | `/task-code` | ③ Task | Sub | karpathy 4 心法 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | 子任务编码 + 跨 session progress.md 同步 |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | 核心逻辑 TDD 强制 (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | 至 verbatim `COMPLETE` + R20.10 max_iter fallback |
-| `/verify` | ④ Verify | Master | masterOrchestrator | 9 sub 按场景 conditional dispatch |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 10 sub 按场景 conditional dispatch |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | 必跑串行起点 —— UAT 验收 + 状态同步 |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` 多 subagent fan-out | 高置信度 finding 并行 |
 | `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | 关键模块 PR 前强制 |
@@ -304,7 +304,7 @@ harnessed setup
 /discuss "新功能 X"               # 战略 + Phase + 子任务 3 层澄清
 /plan "新功能 X"                  # 架构 (conditional) + 计划 (任务图持久化)
 /task "subtask-1: API contract"   # 每子任务 4 sub 串行
-/verify "phase-1"                 # 9 sub conditional
+/verify "phase-1"                 # 10 sub conditional
 /ship                             # release-preflight 关卡 → PR/deploy (tag-ready;经 CI publish)
 
 # 3. 中断后恢复 (任何时候)
@@ -370,7 +370,7 @@ harnessed/
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ L7 User-facing slash cmd + harnessed CLI                    │
-│   /discuss /plan /task /verify /ship (master) + 21 sub + /research /retro + /auto super-master
+│   /discuss /plan /task /verify /ship (master) + 20 sub + /research /retro + /auto super-master
 │   + direct gstack invoke (30+ optional): /office-hours /review /qa /...
 ├────────────────────────────────────────────────────────────┤
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
