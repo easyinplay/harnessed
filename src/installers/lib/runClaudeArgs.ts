@@ -22,9 +22,12 @@ export function runArgs(
     // Win: route through cmd.exe /c because `claude` ships as a .cmd shim.
     // Unix: spawn the binary directly (no shell) — args remain unparsed.
     const isWin = process.platform === 'win32'
+    // v4.13.0 — stdin 'ignore' (sister lib/spawn.ts): `claude` subcommands must
+    // never wait on interactive input during setup.
+    const stdio: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
     const child = isWin
-      ? spawn('cmd.exe', ['/c', 'claude', ...claudeArgs], { cwd, windowsHide: true })
-      : spawn('claude', claudeArgs, { cwd, shell: false })
+      ? spawn('cmd.exe', ['/c', 'claude', ...claudeArgs], { cwd, windowsHide: true, stdio })
+      : spawn('claude', claudeArgs, { cwd, shell: false, stdio })
     let stderr = ''
     child.stderr?.setEncoding('utf8').on('data', (c: string) => {
       stderr += c

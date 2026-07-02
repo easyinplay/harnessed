@@ -87,8 +87,11 @@ async function listBaseManifests(pkgRoot: string): Promise<string[]> {
 
 /** v3.9.21 — grouped output by component_type. Order: MCP servers →
  *  Commands & Skills → CLI Tools → Other. Within each group, status order
- *  is: failed → installed → skipped → already-installed (highlight changes). */
-function printGrouped(b: StepBResult, prefix = ''): void {
+ *  is: failed → installed → skipped → already-installed (highlight changes).
+ *  v4.13.0 — table rendering: glyph + status | component | note columns, name
+ *  column width computed per group, notes truncated (user UX feedback:
+ *  "检查结果类的能否用表格或者列表输出"). Exported for direct unit testing. */
+export function printGrouped(b: StepBResult, prefix = ''): void {
   const GROUP_LABELS: Record<string, string> = {
     'mcp-tool': 'MCP servers',
     command: 'Commands & Skills',
@@ -96,20 +99,28 @@ function printGrouped(b: StepBResult, prefix = ''): void {
     other: 'Other',
   }
   const GROUP_ORDER = ['mcp-tool', 'command', 'cli-binary', 'other']
+  const NOTE_MAX = 100
+  const GLYPHS: Record<string, string> = {
+    failed: '✗',
+    installed: '✓',
+    skipped: '↷',
+    'already-installed': '○',
+    'kept-existing': '⚠',
+  }
   const groupOf = (n: string): string => b.componentTypes[n] ?? 'other'
-  const buckets: Record<string, Array<{ status: string; name: string; suffix?: string }>> = {}
-  const push = (group: string, entry: { status: string; name: string; suffix?: string }): void => {
+  const buckets: Record<string, Array<{ status: string; name: string; note?: string }>> = {}
+  const push = (group: string, entry: { status: string; name: string; note?: string }): void => {
     if (!buckets[group]) buckets[group] = []
     buckets[group].push(entry)
   }
   for (const n of b.failed) {
-    const m = n.match(/^([^:]+):/)
-    const baseName = m?.[1] ?? n
-    push(groupOf(baseName), { status: 'failed', name: n })
+    // failed entries arrive verbatim as "<name>: <reason>" — split into columns.
+    const m = n.match(/^([^:]+):\s*(.*)$/s)
+    push(groupOf(m?.[1] ?? n), { status: 'failed', name: m?.[1] ?? n, note: m?.[2] })
   }
   for (const n of b.installed) push(groupOf(n), { status: 'installed', name: n })
   for (const s of b.skipped)
-    push(groupOf(s.name), { status: 'skipped', name: s.name, suffix: ` — ${s.reason}` })
+    push(groupOf(s.name), { status: 'skipped', name: s.name, note: s.reason })
   for (const n of b.alreadyInstalled) push(groupOf(n), { status: 'already-installed', name: n })
   // Patch 4.10.1 Fix C — kept-existing: refresh failed but prior version retained.
   // Rendered as a WARN row (not error red) — component is still usable.
@@ -117,15 +128,18 @@ function printGrouped(b: StepBResult, prefix = ''): void {
     push(groupOf(n), {
       status: 'kept-existing',
       name: n,
-      suffix: ' — refresh failed, prior version retained',
+      note: 'refresh failed, prior version retained',
     })
 
   for (const g of GROUP_ORDER) {
     const entries = buckets[g]
     if (!entries || entries.length === 0) continue
     console.log(`\n  ${prefix}${GROUP_LABELS[g] ?? g} (${entries.length})`)
+    const nameW = Math.max(...entries.map((e) => e.name.length), 'component'.length)
+    console.log(`    ${'—'.repeat(2 + 18 + 1 + nameW + 2 + 24)}`)
     for (const e of entries) {
-      const line = `    ${e.status.padEnd(18)} ${e.name}${e.suffix ?? ''}`
+      const note = e.note && e.note.length > NOTE_MAX ? `${e.note.slice(0, NOTE_MAX)}…` : e.note
+      const line = `    ${GLYPHS[e.status] ?? ' '} ${e.status.padEnd(18)} ${e.name.padEnd(nameW)}${note ? `  ${note}` : ''}`
       if (e.status === 'failed') console.error(line)
       else if (e.status === 'kept-existing') console.warn(line)
       else console.log(line)
@@ -306,9 +320,24 @@ export function registerSetup(program: Command): void {
       // first pass (CI / scripted use).
       const manifestPaths = await listBaseManifests(pkgRoot)
       const forceFirstPass = raw.updateInstalled === true
+      // v4.13.0 — live progress lines (user UX feedback: Step B was silent for
+      // its whole runtime and read as a hang). One line per finished component;
+      // works on non-TTY too (plain console.log, no spinner dependency).
+      const progressPrinter = (ev: {
+        done: number
+        total: number
+        name: string
+        status: string
+      }): void => {
+        console.log(`  [${ev.done}/${ev.total}] ${ev.status} ${ev.name}`)
+      }
+      console.log(
+        `\ninstalling ${manifestPaths.length} upstream components (MCP serialized, rest parallel)...`,
+      )
       const b = await runStepBInstall(manifestPaths, {
         updateInstalled: forceFirstPass,
         quiet: true,
+        onProgress: progressPrinter,
       })
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
@@ -344,7 +373,11 @@ export function registerSetup(program: Command): void {
             // Second pass: force-update path. runInstall sees
             // opts.updateInstalled=true → bypasses idempotent_check probe →
             // runs install command. MCP installers ignore the flag per design.
-            const b2 = await runStepBInstall(manifestPaths, { updateInstalled: true, quiet: true })
+            const b2 = await runStepBInstall(manifestPaths, {
+              updateInstalled: true,
+              quiet: true,
+              onProgress: progressPrinter,
+            })
             // Patch 4.10.1 Fix C — fail-soft reclassification (comet ensureOpenSpecCli):
             // a refresh that failed but whose component is still on disk is NOT a
             // failure — the prior version is retained. Move failed→keptExisting when
@@ -364,6 +397,22 @@ export function registerSetup(program: Command): void {
               )
             }
           }
+        }
+      }
+
+      // v4.13.0 — L4 rescue: Step B is nonInteractive so L4 manifests (global
+      // npm installs, e.g. ctx7) skip with level-flag-missing every run. Offer
+      // an interactive opt-in here (TTY only; dynamic import mirrors the
+      // runAutoInstall pattern so setup tests need no new mock exports).
+      if (
+        !dryRun &&
+        raw.nonInteractive !== true &&
+        b.skipped.some((s) => s.reason === 'level-flag-missing')
+      ) {
+        const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
+        if (isTty) {
+          const { runL4Rescue } = await import('./lib/l4-rescue.js')
+          await runL4Rescue(manifestPaths, b.skipped)
         }
       }
 

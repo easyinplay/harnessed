@@ -26,11 +26,14 @@ spec:
     # --global 实测 300s hang),且整 pack 批量 add 会跳过 v2(只装 v1 + 其余 symlink)——
     # 只有 --skill design-taste-frontend 才装得上 v2。简写 + 仅 --copy:把 SKILL.md 真文件
     # 装到 ~/.claude/skills/design-taste-frontend/(verify 位置),实测 4s 成功。
-    cmd: "npx --yes skills@latest add Leonxlnx/taste-skill --skill design-taste-frontend --copy"
+    # v4.13.0 — added `-y --agent claude-code` (skills CLI prompts hang the
+    # non-interactive spawn to 300s without -y; user dogfood).
+    cmd: "npx --yes skills@latest add Leonxlnx/taste-skill --skill design-taste-frontend --copy -y --agent claude-code"
     npm_version: ^1.5.7
     idempotent_check: "test -d ~/.claude/skills/design-taste-frontend || test -d ~/.agents/skills/design-taste-frontend"
   verify:
-    cmd: "test -f ~/.claude/skills/design-taste-frontend/SKILL.md"
+    # v4.13.0 — dual-path: --copy installs can land in ~/.agents/skills too.
+    cmd: "test -f ~/.claude/skills/design-taste-frontend/SKILL.md || test -f ~/.agents/skills/design-taste-frontend/SKILL.md"
     timeout_ms: 5000
     expected_exit_code: 0
   uninstall:

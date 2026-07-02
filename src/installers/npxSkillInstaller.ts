@@ -33,14 +33,13 @@
 // — direct fs is faster, doesn't depend on /bin/test or cmd.exe behavior,
 // and produces a clean Promise without process plumbing.
 
-import { access } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
-import { extractSkillName, isAlreadyInstalled } from './lib/idempotent.js'
+import { detectSkillPresence, extractSkillName, isAlreadyInstalled } from './lib/idempotent.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
@@ -144,10 +143,13 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   }
 
   // D2.1-6 CRITICAL — real-path verify. npx exit 0 ≠ files actually written.
-  // Use fs.access (faster, deterministic, cross-OS) instead of spawning `test`.
-  try {
-    await access(skillMdPath)
-  } catch {
+  // v4.13.0 — probe via detectSkillPresence (shared with the idempotent_check
+  // detector): indicator sub-skills + `--skill` name across ~/.claude/skills AND
+  // ~/.agents/skills. Pre-4.13.0 this checked ONE hardcoded ~/.claude/skills
+  // path built from the repo segment — multi-skill packs (mattpocock) and
+  // --skill installs (design-taste-frontend) failed verify even on success.
+  const present = await detectSkillPresence(install.cmd, name)
+  if (!present) {
     return {
       ok: false,
       phase: 'verify',

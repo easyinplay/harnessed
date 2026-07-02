@@ -21,11 +21,13 @@ spec:
   install_type: skill
   install:
     method: npx-skill-installer
-    cmd: "npx --yes skills@1.5.7 add microsoft/playwright-cli --copy --global"
+    # v4.13.0 — added `-y --agent claude-code` (defensive: skills CLI prompts
+    # hang the non-interactive spawn without -y; sister mattpocock-skills).
+    cmd: "npx --yes skills@1.5.7 add microsoft/playwright-cli --copy --global -y --agent claude-code"
     npm_version: ^1.5.7
-    idempotent_check: "test -f ~/.claude/skills/playwright-cli/SKILL.md"
+    idempotent_check: "test -f ~/.claude/skills/playwright-cli/SKILL.md || test -f ~/.agents/skills/playwright-cli/SKILL.md"
   verify:
-    cmd: "test -f ~/.claude/skills/playwright-cli/SKILL.md"
+    cmd: "test -f ~/.claude/skills/playwright-cli/SKILL.md || test -f ~/.agents/skills/playwright-cli/SKILL.md"
     timeout_ms: 5000
     expected_exit_code: 0
   uninstall:

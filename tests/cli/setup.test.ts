@@ -27,7 +27,7 @@ vi.mock('../../src/manifest/validate.js', () => ({
 
 import { cp, readdir, readFile, stat } from 'node:fs/promises'
 import { Command } from 'commander'
-import { registerSetup } from '../../src/cli/setup.js'
+import { printGrouped, registerSetup } from '../../src/cli/setup.js'
 import { runInstall } from '../../src/installers/index.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
@@ -276,6 +276,43 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(stdout).toContain('Step A:')
     // Step B still ran after Step C (sequence: A → C → B)
     expect(stdout).toContain('Upstream components:')
+  })
+
+  // Cell 9 (v4.13.0): printGrouped table rendering — glyph + aligned columns +
+  // failed reason split into the note column (user UX feedback: 表格输出).
+  it('cell 9 — printGrouped renders aligned table columns with glyphs + notes', () => {
+    let stdout = ''
+    let stderr = ''
+    vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
+      stdout += `${a.map(String).join(' ')}\n`
+    })
+    vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      stderr += `${a.map(String).join(' ')}\n`
+    })
+    printGrouped({
+      installed: ['tavily-mcp'],
+      alreadyInstalled: ['superpowers'],
+      skipped: [{ name: 'ctx7', reason: 'level-flag-missing' }],
+      failed: ['exa-mcp: verify: not found in mcpServers map'],
+      elapsedMs: 0,
+      componentTypes: {
+        'tavily-mcp': 'mcp-tool',
+        'exa-mcp': 'mcp-tool',
+        superpowers: 'command',
+        ctx7: 'cli-binary',
+      },
+    })
+    // Group headers with counts
+    expect(stdout).toContain('MCP servers (2)')
+    expect(stdout).toContain('Commands & Skills (1)')
+    expect(stdout).toContain('CLI tools (1)')
+    // Glyph + status + name columns
+    expect(stdout).toMatch(/✓ installed\s+tavily-mcp/)
+    expect(stdout).toMatch(/○ already-installed\s+superpowers/)
+    // Skip reason lands in the note column
+    expect(stdout).toMatch(/↷ skipped\s+ctx7\s+level-flag-missing/)
+    // Failed rows go to stderr with reason split out of the name
+    expect(stderr).toMatch(/✗ failed\s+exa-mcp\s+verify: not found/)
   })
 
   // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled

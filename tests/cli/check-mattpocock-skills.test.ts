@@ -68,6 +68,9 @@ describe('checkMattpocockSkills — v3.6.0 Phase 2 Wave 3 (plugin / user-skill /
     // to upstream `skills` CLI per dogfood discovery.
     expect(r.fix).toMatch(/npx skills@latest add mattpocock\/skills/)
     expect(r.fix).toMatch(/role-prompts\.yaml/)
-    expect(r.install_commands).toEqual(['npx skills@latest add mattpocock/skills'])
+    // v4.13.0 — --copy + -y --agent claude-code (non-interactive skills CLI).
+    expect(r.install_commands).toEqual([
+      'npx skills@latest add mattpocock/skills --copy -y --agent claude-code',
+    ])
   })
 })

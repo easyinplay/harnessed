@@ -76,13 +76,41 @@ export interface StepBResult {
   keptExisting?: string[]
 }
 
+/** v4.13.0 — per-manifest completion event for live setup progress output.
+ *  `done` is the count of finished manifests (1-based) at emission time. */
+export interface StepBProgressEvent {
+  done: number
+  total: number
+  name: string
+  status: 'installed' | 'already-installed' | 'skipped' | 'failed'
+}
+
+type StepBEntry =
+  | { status: 'installed' | 'already-installed'; name: string }
+  | { status: 'skipped' | 'failed'; name: string; reason: string }
+
+/** MCP installers spawn `claude mcp add --scope user`, which read-modify-writes
+ *  the WHOLE ~/.claude.json. Running them concurrently is a lost-update race:
+ *  the last writer wins and clobbers the other servers' entries (v4.13.0 user
+ *  dogfood: tavily survived, chrome-devtools-mcp + exa-mcp verify-failed with
+ *  "file may have been overwritten"). These methods must be serialized. */
+const MCP_METHODS = new Set(['mcp-stdio-add', 'mcp-http-add'])
+
 /** Step B: parallel install-base auto-glob chain via Promise.allSettled (v1.0.3 T1.1).
  *  v3.9.6 — `runOpts.updateInstalled` (optional) forces re-install for plugins
  *  whose idempotent_check would otherwise short-circuit; MCP installers ignore
- *  the flag (sister mcpStdioAdd / mcpHttpAdd — config never overwritten). */
+ *  the flag (sister mcpStdioAdd / mcpHttpAdd — config never overwritten).
+ *  v4.13.0 — MCP manifests (MCP_METHODS) run SEQUENTIALLY in their own chain
+ *  (shared ~/.claude.json writer race); all other manifests keep full
+ *  Promise.allSettled parallelism. The two groups run concurrently with each
+ *  other. `runOpts.onProgress` fires once per finished manifest. */
 export async function runStepBInstall(
   manifestPaths: string[],
-  runOpts: { updateInstalled?: boolean; quiet?: boolean } = {},
+  runOpts: {
+    updateInstalled?: boolean
+    quiet?: boolean
+    onProgress?: (ev: StepBProgressEvent) => void
+  } = {},
 ): Promise<StepBResult> {
   const opts: InstallOpts = {
     apply: true,
@@ -96,54 +124,85 @@ export async function runStepBInstall(
   }
   const start = Date.now()
   const componentTypes: Record<string, string> = {}
-  const settled = await Promise.allSettled(
-    manifestPaths.map(async (path) => {
-      let yamlSrc: string
-      try {
-        yamlSrc = await readFile(path, 'utf8')
-      } catch (e) {
-        return { status: 'failed' as const, name: path, reason: `read: ${(e as Error).message}` }
-      }
-      const v = validateManifestFile(yamlSrc, path)
-      if (!v.ok) {
-        return {
-          status: 'failed' as const,
+  const total = manifestPaths.length
+  let done = 0
+  const emit = (entry: StepBEntry): StepBEntry => {
+    done += 1
+    try {
+      runOpts.onProgress?.({ done, total, name: entry.name, status: entry.status })
+    } catch {
+      /* progress printer must never break the install chain */
+    }
+    return entry
+  }
+
+  // Pre-read + validate ALL manifests first (fast, local I/O) so we can
+  // partition by install method before any installer spawns.
+  const invalid: StepBEntry[] = []
+  const valid: Array<{ manifest: Manifest }> = []
+  for (const path of manifestPaths) {
+    let yamlSrc: string
+    try {
+      yamlSrc = await readFile(path, 'utf8')
+    } catch (e) {
+      invalid.push(emit({ status: 'failed', name: path, reason: `read: ${(e as Error).message}` }))
+      continue
+    }
+    const v = validateManifestFile(yamlSrc, path)
+    if (!v.ok) {
+      invalid.push(
+        emit({
+          status: 'failed',
           name: path,
           reason: `validate: ${v.errors[0]?.message ?? 'unknown'}`,
-        }
-      }
-      const name = v.manifest.metadata.name
-      componentTypes[name] = v.manifest.spec.component_type
-      const r = await runInstall(v.manifest, opts)
-      if ('aborted' in r) return { status: 'skipped' as const, name, reason: r.reason }
+        }),
+      )
+      continue
+    }
+    componentTypes[v.manifest.metadata.name] = v.manifest.spec.component_type
+    valid.push({ manifest: v.manifest })
+  }
+
+  const runOne = async (manifest: Manifest): Promise<StepBEntry> => {
+    const name = manifest.metadata.name
+    try {
+      const r = await runInstall(manifest, opts)
+      if ('aborted' in r) return emit({ status: 'skipped', name, reason: r.reason })
       if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)
-        return { status: 'already-installed' as const, name }
-      if (r.ok) return { status: 'installed' as const, name }
-      return { status: 'failed' as const, name, reason: r.error.message }
-    }),
+        return emit({ status: 'already-installed', name })
+      if (r.ok) return emit({ status: 'installed', name })
+      return emit({ status: 'failed', name, reason: r.error.message })
+    } catch (e) {
+      return emit({ status: 'failed', name, reason: String(e) })
+    }
+  }
+
+  const mcp = valid.filter((v) => MCP_METHODS.has(v.manifest.spec.install.method))
+  const rest = valid.filter((v) => !MCP_METHODS.has(v.manifest.spec.install.method))
+  const runMcpSerial = async (): Promise<StepBEntry[]> => {
+    const out: StepBEntry[] = []
+    for (const { manifest } of mcp) out.push(await runOne(manifest))
+    return out
+  }
+  const [mcpEntries, restSettled] = await Promise.all([
+    runMcpSerial(),
+    Promise.allSettled(rest.map(({ manifest }) => runOne(manifest))),
+  ])
+  const restEntries: StepBEntry[] = restSettled.map((s) =>
+    s.status === 'fulfilled'
+      ? s.value
+      : { status: 'failed', name: '?', reason: String((s as PromiseRejectedResult).reason) },
   )
 
   const installed: string[] = []
   const alreadyInstalled: string[] = []
   const skipped: { name: string; reason: string }[] = []
   const failed: string[] = []
-  for (const s of settled) {
-    const v =
-      s.status === 'fulfilled'
-        ? s.value
-        : {
-            status: 'failed' as const,
-            name: '?',
-            reason: String((s as PromiseRejectedResult).reason),
-          }
+  for (const v of [...invalid, ...mcpEntries, ...restEntries]) {
     if (v.status === 'installed') installed.push(v.name)
     else if (v.status === 'already-installed') alreadyInstalled.push(v.name)
-    else if (v.status === 'skipped') {
-      const skipReason =
-        (v as { status: 'skipped'; name: string; reason?: string }).reason ?? 'unknown'
-      skipped.push({ name: v.name, reason: skipReason })
-    } else
-      failed.push(`${v.name}: ${(v as { status: 'failed'; name: string; reason: string }).reason}`)
+    else if (v.status === 'skipped') skipped.push({ name: v.name, reason: v.reason })
+    else if (v.status === 'failed') failed.push(`${v.name}: ${v.reason}`)
   }
   return {
     installed,

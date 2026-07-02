@@ -215,7 +215,9 @@ describe('installNpxSkillInstaller', () => {
     const s = silence()
     try {
       spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }])) // install ok
-      accessMock.mockRejectedValueOnce(new Error('ENOENT')) // SKILL.md missing
+      // v4.13.0 — verify probes indicators + SKILL.md across BOTH harness skills
+      // dirs; reject ALL access calls to simulate nothing-on-disk.
+      accessMock.mockRejectedValue(new Error('ENOENT')) // SKILL.md missing everywhere
       const r = await installNpxSkillInstaller(ctx())
       expect(r).toMatchObject({ ok: false, phase: 'verify' })
       if ('error' in r && r.error) {

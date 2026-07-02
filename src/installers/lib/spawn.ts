@@ -118,11 +118,17 @@ export async function spawnCmd(
   // cmd.exe (they are .cmd shims). `triedBash` lets the error handler emit a clear
   // "Git Bash required" message on ENOENT.
   let triedBash = false
+  // v4.13.0 — stdin CLOSED ('ignore'): install/verify cmds must be non-interactive.
+  // With the default 'pipe' stdin (open, never fed), an upstream CLI that decides
+  // to prompt (e.g. `npx skills add` confirmation) blocks forever and surfaces as
+  // a 300s spawn-timeout (user dogfood: mattpocock-skills / design-taste-frontend).
+  // Closed stdin makes prompt-happy CLIs fail fast or take their non-TTY default.
+  const stdio: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
   if (process.platform === 'win32') {
     if (opts?.posixShell) {
       const joined = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
       triedBash = true
-      child = spawn('bash', ['-c', joined], { cwd, env, windowsHide: true })
+      child = spawn('bash', ['-c', joined], { cwd, env, windowsHide: true, stdio })
     } else {
       // v3.9.8 — expand `~/` because cmd.exe doesn't (POSIX-only convention).
       const expandedCmd = expandTildeForWindows(cmd)
@@ -131,11 +137,12 @@ export async function spawnCmd(
         cwd,
         env,
         windowsHide: true,
+        stdio,
       })
     }
   } else {
     const joined = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
-    child = spawn('/bin/sh', ['-c', joined], { cwd, env })
+    child = spawn('/bin/sh', ['-c', joined], { cwd, env, stdio })
   }
 
   // 3. Collect stdout/stderr + race against timeout.

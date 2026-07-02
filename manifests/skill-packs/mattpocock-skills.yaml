@@ -21,11 +21,16 @@ spec:
     # v3.9.9 — restored skills@latest per user instruction (version pinning belongs
     # in ADR/lockfile layer, not in per-manifest cmd strings). Added --copy --global
     # per D2.1-5 (Windows symlink-safe + user-scope install).
-    cmd: "npx --yes skills@latest add mattpocock/skills --copy --global"
+    # v4.13.0 — added `-y --agent claude-code`: without -y the skills CLI prompts
+    # interactively on fresh machines and the spawn hangs to the 300s timeout
+    # (user dogfood); --agent pins the install target deterministically.
+    cmd: "npx --yes skills@latest add mattpocock/skills --copy --global -y --agent claude-code"
     npm_version: ^1.5.7
-    idempotent_check: "test -d ~/.claude/skills/mattpocock-skills || test -d ~/.agents/skills/mattpocock-skills"
+    # v4.13.0 — the skills CLI installs INDIVIDUAL skill dirs (diagnose/ tdd/
+    # zoom-out/ ...), never a mattpocock-skills/ parent folder; probe indicators.
+    idempotent_check: "test -d ~/.claude/skills/diagnose || test -d ~/.agents/skills/diagnose"
   verify:
-    cmd: "test -f ~/.claude/skills/mattpocock-skills/diagnose.md"
+    cmd: "test -f ~/.claude/skills/diagnose/SKILL.md || test -f ~/.agents/skills/diagnose/SKILL.md"
     timeout_ms: 5000
   uninstall:
     cmd: "rm -rf ~/.claude/skills/mattpocock-skills"

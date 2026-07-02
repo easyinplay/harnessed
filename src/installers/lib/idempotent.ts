@@ -34,8 +34,15 @@ import type { InstallContext } from './types.js'
 
 const IDEMPOTENT_CHECK_TIMEOUT_MS = 10_000
 
-// Extract `<owner/repo>` from `npx ... skills add <owner/repo> ...`.
+// Extract the installed skill dir name from `npx ... skills add <owner/repo> ...`.
+// v4.13.0 — an explicit `--skill <name>` / `-s <name>` flag wins over the repo
+// segment: the skills CLI installs into `~/.../skills/<skill-name>/`, NOT
+// `<repo>/` (design-taste-frontend regression: repo segment `taste-skill` made
+// idempotent probe + real-path verify look at a dir that never exists).
+// `--skill '*'` wildcard is ignored (multi-skill pack → repo-segment fallback).
 export function extractSkillName(cmd: string, fallback: string): string {
+  const flag = cmd.match(/(?:^|\s)(?:--skill|-s)\s+['"]?([^\s'"]+)['"]?/)
+  if (flag?.[1] && flag[1] !== '*') return flag[1]
   const m = cmd.match(/\bskills(?:@\S+)?\s+add\s+(\S+)/i)
   if (!m?.[1]) return fallback
   const seg = m[1].split('/')
@@ -84,6 +91,45 @@ const INSTALLED_INDICATORS: Record<string, string[]> = {
   'mattpocock-skills': ['diagnose', 'tdd', 'zoom-out'],
 }
 
+/** v4.13.0 — indicator sub-skill probe across ALL harness skills dirs.
+ *  Pre-4.13.0 only getSkillsDir() (~/.claude/skills) was checked; the skills
+ *  CLI's --global installs land in ~/.agents/skills, so already-installed packs
+ *  were re-installed every setup run ("总是检测不到" user dogfood). */
+async function indicatorPresent(name: string): Promise<boolean> {
+  const indicators = INSTALLED_INDICATORS[name]
+  if (!indicators) return false
+  for (const skillsDir of harnessSkillsDirs()) {
+    for (const ind of indicators) {
+      try {
+        await access(join(skillsDir, ind))
+        return true
+      } catch {
+        /* try next indicator */
+      }
+    }
+  }
+  return false
+}
+
+/** v4.13.0 — shared npx-skill presence probe: indicator sub-skills first, then
+ *  `<skillsDir>/<extractSkillName(cmd)>/SKILL.md` across both harness dirs.
+ *  Consumed by detectNative AND npxSkillInstaller's post-install real-path
+ *  verify (single source of truth — pre-4.13.0 the installer probed one
+ *  hardcoded ~/.claude/skills path and failed packs that install elsewhere). */
+export async function detectSkillPresence(cmd: string, name: string): Promise<boolean> {
+  if (await indicatorPresent(name)) return true
+  const skillName = extractSkillName(cmd, name)
+  for (const skillsDir of harnessSkillsDirs()) {
+    try {
+      await access(join(skillsDir, skillName, 'SKILL.md'))
+      return true
+    } catch {
+      /* try next */
+    }
+  }
+  return false
+}
+
 async function detectNative(ctx: InstallContext): Promise<boolean> {
   const method = ctx.manifest.spec.install.method
   const cmd = ctx.manifest.spec.install.cmd
@@ -91,18 +137,8 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
 
   // v3.9.18 — check indicator sub-skills first (skill packs that don't install
   // a single dir matching `name`). Cross-method since the pack format varies.
-  const indicators = INSTALLED_INDICATORS[name]
-  if (indicators) {
-    for (const ind of indicators) {
-      const dir = join(getSkillsDir(), ind)
-      try {
-        await access(dir)
-        return true
-      } catch {
-        /* try next indicator */
-      }
-    }
-  }
+  // v4.13.0 — probes all harness skills dirs (see indicatorPresent).
+  if (await indicatorPresent(name)) return true
 
   if (method === 'cc-plugin-marketplace') {
     const m = cmd.match(/(?:claude\s+)?plugin\s+install\s+(\S+)/i)

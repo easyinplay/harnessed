@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.13.0] - 2026-07-02
+
+### Fixed
+
+- **MCP 并行安装 race — chrome-devtools-mcp / exa-mcp "verify: not found in mcpServers map" (findings 根因 1).** Step B 此前对全部 manifest `Promise.allSettled` 并行,3 个 `claude mcp add --scope user` 进程各自读-改-写整个 `~/.claude.json` → lost update,只有最后写入者幸存(用户 dogfood: tavily 存活,chrome-devtools + exa 被 clobber)。`runStepBInstall` 现按 install method 分区:`mcp-stdio-add` / `mcp-http-add` 严格串行(共享 writer),其余 manifest 保持全并行;两组彼此并发。
+- **`npx skills add` 交互提示挂死 300s — mattpocock-skills / design-taste-frontend spawn-timeout (根因 2).** 双修:(a) `spawnCmd` / `runArgs` 全部 spawn 改 `stdio: ['ignore','pipe','pipe']`,stdin 关闭后 prompt 型 CLI 快速失败而非死等;(b) 三个 npx-skill manifest cmd 追加 `-y --agent claude-code`(skills CLI 实测支持 `-y, --yes` Skip confirmation prompts),doctor `check-mattpocock-skills` 的 install_commands 同步。
+- **skill 检测/verify 与真实布局不符 — "总是检测不到" (根因 3).** `extractSkillName` 现优先解析 `--skill <name>` / `-s <name>`(design-taste-frontend 此前解析成 repo 段 `taste-skill`,永远查错目录);`INSTALLED_INDICATORS` 探测遍历 `~/.claude/skills` + `~/.agents/skills` 双目录;`npxSkillInstaller` 装后 real-path verify 改用与 idempotent 探测同源的 `detectSkillPresence`(indicators-aware + 双目录),多 skill pack(mattpocock 散装 `diagnose/` 等)不再必然 verify-failed;mattpocock / design-taste / playwright manifest 的 verify + idempotent_check 改为双路径真实布局。
+- **ctx7 永久 "skipped — level-flag-missing" (根因 4).** Step B 硬编码 nonInteractive 使 L4(`npm install -g`)manifest 无任何可交互安装路径。新增 L4 post-pass rescue(`src/cli/lib/l4-rescue.ts`):汇总输出后对每个 level-flag-missing 项展示 install cmd + Clack confirm,同意则以 `system: true` 单独重跑该 manifest(TTY-only;`--non-interactive` / `--dry-run` 不触发)。
+
+### Added
+
+- **Step B 实时进度输出 (根因 5 / 用户反馈 1).** `runStepBInstall` 新增 `onProgress` 回调,setup 打印起始行 `installing N upstream components (MCP serialized, rest parallel)...` + 每完成一个组件输出 `[done/total] <status> <name>`,非 TTY 同样生效——5 分钟静默假死感消除(叠加根因 2 修复后,最长等待回落到真实安装时长)。
+- **检查结果表格化输出 (用户反馈 3).** `printGrouped` 重写为对齐表格:glyph(✓ ✗ ↷ ○ ⚠)+ status + component + note 列,name 列宽按组计算,failed 的 reason 拆入 note 列并截断 100 字符;分组/流向(failed→stderr、kept-existing→warn)保持不变。
+
 ## [4.12.0] - 2026-07-01
 
 ### Changed

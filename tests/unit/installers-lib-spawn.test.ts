@@ -183,6 +183,19 @@ describe('spawnCmd', () => {
     }
   })
 
+  // v4.13.0 — stdin MUST be closed ('ignore'). Interactive upstream CLIs (e.g.
+  // `npx skills add` confirmation prompts) otherwise block forever on an open
+  // pipe that never receives input, surfacing as 300s spawn-timeouts in setup
+  // (user dogfood: mattpocock-skills / design-taste-frontend hang).
+  it('v4.13.0 — spawns with stdio stdin=ignore so interactive prompts cannot hang', async () => {
+    spawnMock.mockReturnValueOnce(
+      makeChild({ exitCode: 0, stdout: 'ok' }) as unknown as ReturnType<typeof spawn>,
+    )
+    await spawnCmd(ctx(), 'echo hello', [])
+    const opts = spawnMock.mock.calls[0]?.[2] as { stdio: unknown }
+    expect(opts.stdio).toEqual(['ignore', 'pipe', 'pipe'])
+  })
+
   it('returns SpawnOk with stdout/stderr/exitCode on normal completion', async () => {
     spawnMock.mockReturnValueOnce(
       makeChild({ exitCode: 0, stdout: 'hi', stderr: 'warn' }) as unknown as ReturnType<

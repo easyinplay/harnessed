@@ -35,7 +35,11 @@ const REMEDIATION =
   'methodology fallback already inline in role-prompts.yaml per v3.6.0 Phase 1 — install ' +
   'is optional but enables /grill-with-docs /zoom-out etc. SlashCommand acceleration'
 
-const INSTALL_COMMANDS = ['npx skills@latest add mattpocock/skills'] as const
+// v4.13.0 — --copy (Windows symlink-safe) + -y --agent claude-code (skills CLI
+// prompts hang non-interactive spawns; sister manifests/skill-packs yaml).
+const INSTALL_COMMANDS = [
+  'npx skills@latest add mattpocock/skills --copy -y --agent claude-code',
+] as const
 
 export async function checkMattpocockSkills(): Promise<CheckResult> {
   const pluginRoot = join(
