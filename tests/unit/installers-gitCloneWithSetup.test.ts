@@ -124,10 +124,10 @@ function baseManifest(): Manifest {
         method: 'git-clone-with-setup',
         cmd: 'git clone https://github.com/midwayjs/midway.git /tmp/fixture-clone',
         git_ref: PINNED_SHA,
-        idempotent_check: 'test -f /tmp/fixture-clone/SKILL.md',
+        idempotent_check: 'grep -q name /tmp/fixture-clone/SKILL.md',
       },
       verify: {
-        cmd: 'test -f /tmp/fixture-clone/SKILL.md',
+        cmd: 'grep -q name /tmp/fixture-clone/SKILL.md',
         timeout_ms: 5000,
         expected_exit_code: 0,
       },

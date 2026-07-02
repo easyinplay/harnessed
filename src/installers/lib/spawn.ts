@@ -31,6 +31,8 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { homedir } from 'node:os'
 import { checkCmdString } from '../../manifest/security.js'
+import { evalTestChain } from './nativeTest.js'
+import { resolveBash } from './resolveBash.js'
 import type { InstallContext, InstallResult } from './types.js'
 
 /** v3.9.8 — pre-expand `~/` to OS home dir before passing cmd to cmd.exe.
@@ -104,7 +106,18 @@ export async function spawnCmd(
     }
   }
 
-  // 2. Platform branch — Win cmd.exe vs POSIX /bin/sh.
+  // 2. v4.15.1 T2 — native test-chain fast path (BOTH shell modes, all OSes).
+  // verify / idempotent cmds are mostly `test -f A || test -f B`; evaluating them
+  // via fs avoids the shell entirely — immune to the WSL-stub-bash machine class
+  // (v4.15.0 dogfood: every posix verify died on `spawn('bash')` → WSL) AND fixes
+  // the cmd.exe idempotent fallback (cmd.exe has no `test`, v3.9.9).
+  const joinedCmd = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
+  const nativeResult = evalTestChain(joinedCmd)
+  if (nativeResult !== null) {
+    return { ok: true, exitCode: nativeResult ? 0 : 1, stdout: '', stderr: '' }
+  }
+
+  // 3. Platform branch — Win cmd.exe vs POSIX /bin/sh.
   const installCfg = ctx.manifest.spec.install
   // v3.0.2: timeoutMs MUST be explicit (back-compat: undefined → 60s install default).
   const effectiveTimeoutMs = timeoutMs ?? DEFAULT_INSTALL_TIMEOUT_MS
@@ -126,9 +139,26 @@ export async function spawnCmd(
   const stdio: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
   if (process.platform === 'win32') {
     if (opts?.posixShell) {
-      const joined = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
+      // v4.15.1 T1 — resolve Git Bash explicitly instead of trusting PATH order.
+      // A System32 WSL stub on PATH made `spawn('bash')` silently execute against
+      // the (absent) Linux side — refuse it fail-loud with a specific hint.
+      const bash = resolveBash()
+      if (bash.path === null) {
+        return {
+          ok: false,
+          phase: 'spawn',
+          error: {
+            file: ctx.manifest.metadata.name,
+            path: '/spec/install/cmd',
+            message: `the only \`bash\` on PATH is the WSL stub (${bash.wslOnPath ?? 'C:\\Windows\\System32\\bash.exe'}) — it cannot run harnessed verify/install commands (WSL '~' is the Linux home, and distro-less stubs exit 1). Install Git for Windows (https://git-scm.com/download/win), reorder PATH so Git Bash precedes WSL bash.exe, or set HARNESSED_BASH to a Git Bash path, then re-run \`harnessed setup\`.`,
+            line: null,
+            column: null,
+            keyword: 'bash-missing',
+          },
+        }
+      }
       triedBash = true
-      child = spawn('bash', ['-c', joined], { cwd, env, windowsHide: true, stdio })
+      child = spawn(bash.path, ['-c', joinedCmd], { cwd, env, windowsHide: true, stdio })
     } else {
       // v3.9.8 — expand `~/` because cmd.exe doesn't (POSIX-only convention).
       const expandedCmd = expandTildeForWindows(cmd)
@@ -141,11 +171,10 @@ export async function spawnCmd(
       })
     }
   } else {
-    const joined = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
-    child = spawn('/bin/sh', ['-c', joined], { cwd, env, stdio })
+    child = spawn('/bin/sh', ['-c', joinedCmd], { cwd, env, stdio })
   }
 
-  // 3. Collect stdout/stderr + race against timeout.
+  // 4. Collect stdout/stderr + race against timeout.
   let stdout = ''
   let stderr = ''
   child.stdout?.setEncoding('utf8').on('data', (chunk: string) => {
@@ -164,7 +193,10 @@ export async function spawnCmd(
         error: {
           file: ctx.manifest.metadata.name,
           path: '/spec/install/cmd',
-          message: `spawn timed out after ${effectiveTimeoutMs}ms (cmd: ${cmd}); partial stderr: ${stderr.slice(0, 200)}`,
+          // v4.15.1 — fall back to stdout when stderr is empty (WSL stubs and
+          // some CLIs write their error text to stdout; a bare trailing colon
+          // read as "no reason" in user dogfood).
+          message: `spawn timed out after ${effectiveTimeoutMs}ms (cmd: ${cmd}); partial output: ${(stderr || stdout).slice(0, 200) || '(no output)'}`,
           line: null,
           column: null,
           keyword: 'spawn-timeout',

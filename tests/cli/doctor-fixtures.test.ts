@@ -197,7 +197,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
-          'mcp scope = project',
+          'mcp scope', // v4.15.1 — renamed (informational; user-scope is the install default)
           'jq present',
           'bash flavor (win)',
           'origin URL',

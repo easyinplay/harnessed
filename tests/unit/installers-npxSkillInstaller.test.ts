@@ -122,10 +122,10 @@ function baseManifest(): Manifest {
         method: 'npx-skill-installer',
         cmd: 'npx --yes skills@1.5.7 add mattpocock/skills --agent claude-code --copy --global --yes',
         npm_version: '^1.5.7',
-        idempotent_check: 'test -f ~/.claude/skills/skills/SKILL.md',
+        idempotent_check: 'grep -q name ~/.claude/skills/skills/SKILL.md',
       },
       verify: {
-        cmd: 'test -f ~/.claude/skills/skills/SKILL.md',
+        cmd: 'grep -q name ~/.claude/skills/skills/SKILL.md',
         timeout_ms: 5000,
         expected_exit_code: 0,
       },

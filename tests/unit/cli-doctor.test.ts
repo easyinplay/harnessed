@@ -147,27 +147,26 @@ describe('cli/doctor', () => {
     expect(code).toBe(1)
   })
 
-  it('user-scope MCP servers detected → exit 1 (CC #54803 violation)', async () => {
-    spawnSyncMock.mockImplementation(
-      () =>
-        ({
-          status: 0,
-          stdout: 'jq-1.7\n',
-          stderr: '',
-          signal: null,
-          pid: 0,
-          output: [],
-        }) as ReturnType<typeof spawnSync>,
-    )
+  // v4.15.1 — semantics flipped: user-scope mcpServers is the state harnessed's
+  // own installer produces (`--scope user` since v3.0.2). The old check failed
+  // on exactly that, so every completed setup showed a red doctor (user
+  // dogfood). Direct unit assertion on the check (the full-CLI exit code mixes
+  // in unrelated checks like the gstack PATH probe).
+  it('v4.15.1 — user-scope MCP servers → checkMcpScope PASSES (harnessed --scope user default)', async () => {
     readFileMock.mockImplementation((async (p: unknown) => {
       const path = typeof p === 'string' ? p : String(p)
       if (path.endsWith('.claude.json')) {
-        return JSON.stringify({ mcpServers: { 'foo-mcp': { command: 'npx' } } })
+        return JSON.stringify({ mcpServers: { 'foo-mcp': { command: 'npx' }, 'bar-mcp': {} } })
       }
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
       // biome-ignore lint/suspicious/noExplicitAny: readFile has many overloads
     }) as any)
-    const code = await runCli(['doctor'])
-    expect(code).toBe(1)
+    const { checkMcpScope } = await import('../../src/cli/lib/check-builtin.js')
+    const r = await checkMcpScope()
+    expect(r.status).toBe('pass')
+    expect(r.name).toBe('mcp scope')
+    expect(r.message).toContain('2 user-scope server(s)')
+    expect(r.message).toContain('harnessed default')
+    expect(r.fix).toBeUndefined()
   })
 })

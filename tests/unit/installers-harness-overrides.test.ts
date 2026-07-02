@@ -53,9 +53,12 @@ function pwfManifest(withOverride: boolean): Manifest {
           method: 'npx-skill-installer',
           cmd: 'npx --yes skills@latest add OthmanAdi/planning-with-files --copy -y',
           npm_version: '^1.5.7',
-          idempotent_check: 'test -d ~/.agents/skills/planning-with-files',
+          idempotent_check: 'grep -q name ~/.agents/skills/planning-with-files/SKILL.md',
         },
-        verify: { cmd: 'test -f ~/.agents/skills/planning-with-files/SKILL.md', timeout_ms: 5000 },
+        verify: {
+          cmd: 'grep -q name ~/.agents/skills/planning-with-files/SKILL.md',
+          timeout_ms: 5000,
+        },
       },
     }
   }

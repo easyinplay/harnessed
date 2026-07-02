@@ -5,15 +5,18 @@
 //
 // 4 built-in checks moved here verbatim:
 //   - checkNodeVersion  (sync, Node ≥22 hard requirement)
-//   - checkMcpScope     (async, ADR 0004 § 5 project-scope MCP enforcement)
+//   - checkMcpScope     (async; v4.15.1 informational — user-scope is the
+//                        harnessed install default since v3.0.2, never a fail)
 //   - checkJq           (sync, jq CLI presence + platform install hint)
-//   - checkWinBash      (sync, WSL bash detection + ralph-loop fork bug guard)
+//   - checkWinBash      (sync; v4.15.1 resolveBash SoT — WSL stub detection
+//                        aligned with what spawnCmd actually executes)
 
 import { spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { detectPlatform } from '../../installers/lib/platform.js'
+import { resolveBash } from '../../installers/lib/resolveBash.js'
 
 export interface CheckResult {
   name: string
@@ -46,13 +49,18 @@ export async function checkMcpScope(): Promise<CheckResult> {
   // platform it is meaningless → pass-skip.
   if (detectPlatform().id !== 'claude') {
     return {
-      name: 'mcp scope = project',
+      name: 'mcp scope',
       status: 'pass',
       message: 'skipped (claude-only check)',
     }
   }
-  // ADR 0004 § 5: MCP servers must be installed at project scope (.mcp.json),
-  // never at user scope (~/.claude.json mcpServers block) — CC #54803.
+  // v4.15.1 — semantics ALIGNED with the installer: since v3.0.2 harnessed
+  // deliberately installs MCP servers with `claude mcp add --scope user`
+  // (~/.claude.json; CWD-independent, cross-project — see mcpStdioAdd.ts header;
+  // the pre-v3.0.2 CC #54803 user-scope read-back bug is fixed upstream). The
+  // old check FAILED on exactly the state our own setup produces — every user
+  // who completed setup saw a red doctor (v4.15.0 dogfood). Now informational:
+  // report where servers live, never fail.
   const projectMcp = join(process.cwd(), '.mcp.json')
   const userClaude = join(homedir(), '.claude.json')
 
@@ -61,31 +69,28 @@ export async function checkMcpScope(): Promise<CheckResult> {
     await readFile(projectMcp, 'utf8')
     projectExists = true
   } catch {
-    // .mcp.json absence is fine if no MCP servers are installed yet — only an issue
-    // if the user has them at user scope instead.
+    // .mcp.json absence is fine — user-scope is the harnessed default.
   }
 
-  let userHasMcp = false
+  let userCount = 0
   try {
     const raw = await readFile(userClaude, 'utf8')
     const parsed = JSON.parse(raw) as { mcpServers?: Record<string, unknown> }
-    userHasMcp = !!parsed.mcpServers && Object.keys(parsed.mcpServers).length > 0
+    userCount = parsed.mcpServers ? Object.keys(parsed.mcpServers).length : 0
   } catch {
-    // ENOENT or malformed JSON — treat as no user-scope MCP servers, OK.
+    // ENOENT or malformed JSON — treat as no user-scope MCP servers.
   }
 
-  if (userHasMcp) {
-    return {
-      name: 'mcp scope = project',
-      status: 'fail',
-      message: `~/.claude.json has user-scope mcpServers (CC #54803 risk)`,
-      fix: 'remove user-scope entries; re-add via `claude mcp add --scope project ...`',
-    }
-  }
+  const parts: string[] = []
+  if (userCount > 0)
+    parts.push(
+      `${userCount} user-scope server(s) (~/.claude.json — harnessed default since v3.0.2)`,
+    )
+  if (projectExists) parts.push('project .mcp.json present')
   return {
-    name: 'mcp scope = project',
+    name: 'mcp scope',
     status: 'pass',
-    message: projectExists ? 'project .mcp.json present' : 'no MCP servers installed',
+    message: parts.length > 0 ? parts.join('; ') : 'no MCP servers installed',
   }
 }
 
@@ -108,15 +113,34 @@ export function checkJq(): CheckResult {
   return { name: 'jq present', status: 'fail', message: 'jq not found in PATH', fix }
 }
 
+/** v4.15.1 — sanitize external tool output before embedding in a doctor line:
+ *  first line only, printable chars only, capped. The WSL stub prints a CP936
+ *  error to stdout that rendered as mojibake in the user's doctor output. */
+function sanitizeToolOutput(raw: string, cap = 60): string {
+  const first = raw.split(/\r?\n/)[0] ?? ''
+  const printable = first.replace(/[^\x20-\x7E]/g, '').trim()
+  return printable.length > 0 ? printable.slice(0, cap) : '(unreadable output)'
+}
+
 export function checkWinBash(): CheckResult {
   // Only meaningful on Windows; on Unix we report skipped-OK.
   if (process.platform !== 'win32') {
     return { name: 'bash flavor (win)', status: 'pass', message: 'skipped (non-Windows)' }
   }
-  // Step 1: locate the `bash` that PATH would resolve.
-  const where = spawnSync('where', ['bash'], { encoding: 'utf8' })
-  const firstBash = (where.stdout ?? '').split(/\r?\n/)[0]?.trim() ?? '(not found)'
-  if (where.status !== 0 || !firstBash || firstBash === '(not found)') {
+  // v4.15.1 — single SoT with the installers: resolveBash() is exactly what
+  // spawnCmd's posixShell branch will use, so doctor reports the REAL runtime
+  // state instead of re-deriving it (pre-4.15.1 this check detected the WSL
+  // stub but setup didn't consume the diagnosis — user dogfood).
+  const r = resolveBash()
+  if (r.path === null) {
+    return {
+      name: 'bash flavor (win)',
+      status: 'fail',
+      message: `only the WSL stub is on PATH (${sanitizeToolOutput(r.wslOnPath ?? '')}) — harnessed verify/install cmds cannot run`,
+      fix: 'install Git for Windows (https://git-scm.com/download/win), reorder PATH so Git Bash precedes WSL bash.exe, or set HARNESSED_BASH to a Git Bash path',
+    }
+  }
+  if (r.source === 'path-fallback') {
     return {
       name: 'bash flavor (win)',
       status: 'fail',
@@ -124,16 +148,17 @@ export function checkWinBash(): CheckResult {
       fix: 'install Git for Windows (Git Bash) and ensure it is on PATH',
     }
   }
-  // Step 2: WSL probe — non-empty WSL_DISTRO_NAME = WSL bash, ralph-loop fork bug risk.
-  const probe = spawnSync('bash', ['-c', 'echo $WSL_DISTRO_NAME'], { encoding: 'utf8' })
-  const distro = (probe.stdout ?? '').trim()
-  if (distro.length > 0) {
+  if (r.wslOnPath) {
     return {
       name: 'bash flavor (win)',
-      status: 'fail',
-      message: `WSL bash (${distro}) — ralph-loop subagent fork breaks under WSL`,
+      status: 'warn',
+      message: `PATH-first bash is the WSL stub (${sanitizeToolOutput(r.wslOnPath)}); harnessed resolved Git Bash at ${r.path} — but OTHER tools (e.g. ralph-loop plugin forks) may still hit WSL`,
       fix: 'reorder PATH so Git Bash precedes WSL bash.exe (Settings → System → Environment Variables)',
     }
   }
-  return { name: 'bash flavor (win)', status: 'pass', message: `${firstBash} (Git Bash / native)` }
+  return {
+    name: 'bash flavor (win)',
+    status: 'pass',
+    message: `${r.path} (Git Bash / native, via ${r.source})`,
+  }
 }

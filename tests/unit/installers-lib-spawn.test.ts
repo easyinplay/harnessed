@@ -22,6 +22,7 @@ vi.mock('node:child_process', () => ({
 }))
 
 import { spawn } from 'node:child_process'
+import { resetBashResolutionCache } from '../../src/installers/lib/resolveBash.js'
 import { type SpawnOk, spawnCmd } from '../../src/installers/lib/spawn.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
@@ -306,14 +307,24 @@ describe('spawnCmd', () => {
 
   // v23 (4.5.1) — POSIX-shell routing. git-clone-with-setup + all verify cmds use
   // rm/cp/test/grep/| which cmd.exe cannot run; on Windows they MUST route through
-  // Git Bash. These two tests force process.platform deterministically so they
+  // Git Bash. These tests force process.platform deterministically so they
   // assert the same behavior regardless of CI host OS.
+  // v4.15.1 — cmds here use grep (NOT test-chains): pure `test -f` chains now take
+  // the native fs fast path and never spawn (covered by the dedicated describe
+  // below). HARNESSED_BASH pins resolveBash to the literal 'bash' so the routing
+  // assertions stay host-independent (real machines would resolve a full path).
   describe('v23 posixShell routing (Git Bash on Windows)', () => {
     const realPlatform = process.platform
     function forcePlatform(value: NodeJS.Platform): void {
       Object.defineProperty(process, 'platform', { value, configurable: true })
     }
+    beforeEach(() => {
+      vi.stubEnv('HARNESSED_BASH', 'bash')
+      resetBashResolutionCache()
+    })
     afterEach(() => {
+      vi.unstubAllEnvs()
+      resetBashResolutionCache()
       Object.defineProperty(process, 'platform', { value: realPlatform, configurable: true })
     })
 
@@ -322,10 +333,12 @@ describe('spawnCmd', () => {
       spawnMock.mockReturnValueOnce(
         makeChild({ exitCode: 0, stdout: 'ok' }) as unknown as ReturnType<typeof spawn>,
       )
-      await spawnCmd(ctx(), 'test -f ~/.claude/skills/x/SKILL.md', [], 5000, { posixShell: true })
+      await spawnCmd(ctx(), 'grep -q x ~/.claude/skills/x/SKILL.md', [], 5000, {
+        posixShell: true,
+      })
       const callArgs = spawnMock.mock.calls[0] as [string, string[], unknown]
       expect(callArgs[0]).toBe('bash')
-      expect(callArgs[1]).toEqual(['-c', 'test -f ~/.claude/skills/x/SKILL.md'])
+      expect(callArgs[1]).toEqual(['-c', 'grep -q x ~/.claude/skills/x/SKILL.md'])
     })
 
     it('on win32 WITHOUT posixShell still uses cmd.exe /c', async () => {
@@ -357,7 +370,7 @@ describe('spawnCmd', () => {
       spawnMock.mockReturnValueOnce(
         makeChild({ emitError: enoent }) as unknown as ReturnType<typeof spawn>,
       )
-      const r = await spawnCmd(ctx(), 'test -f /x', [], 5000, { posixShell: true })
+      const r = await spawnCmd(ctx(), 'grep -q x /x', [], 5000, { posixShell: true })
       expect(isInstallFailure(r)).toBe(true)
       if (isInstallFailure(r)) {
         expect(r.phase).toBe('spawn')
@@ -365,6 +378,48 @@ describe('spawnCmd', () => {
         expect(r.error.message).toContain('Git Bash')
         expect(r.error.message).toContain('git-scm.com')
       }
+    })
+
+    it('v4.15.1 — WSL-stub-only PATH → refuse fail-loud (keyword bash-missing), NO spawn', async () => {
+      forcePlatform('win32')
+      vi.unstubAllEnvs() // drop the HARNESSED_BASH pin — we inject the resolution directly
+      resetBashResolutionCache({
+        path: null,
+        source: 'path',
+        reason: 'wsl-only',
+        wslOnPath: 'C:\\Windows\\System32\\bash.exe',
+      })
+      const r = await spawnCmd(ctx(), 'grep -q x /x', [], 5000, { posixShell: true })
+      expect(isInstallFailure(r)).toBe(true)
+      if (isInstallFailure(r)) {
+        expect(r.error.keyword).toBe('bash-missing')
+        expect(r.error.message).toContain('WSL stub')
+        expect(r.error.message).toContain('HARNESSED_BASH')
+      }
+      expect(spawnMock).not.toHaveBeenCalled()
+    })
+  })
+
+  // v4.15.1 T2 — native test-chain fast path: pure `test -f/-d` chains are
+  // evaluated via fs and NEVER spawn a shell (immune to the WSL-stub machine
+  // class + fixes the cmd.exe idempotent fallback which has no `test`).
+  describe('v4.15.1 native test-chain fast path', () => {
+    it('pure test-chain → fs verdict, spawn NOT called (missing path → exit 1)', async () => {
+      const r = await spawnCmd(ctx(), 'test -f /definitely/not/here/SKILL.md', [], 5000, {
+        posixShell: true,
+      })
+      expect(isSpawnOk(r)).toBe(true)
+      if (isSpawnOk(r)) expect(r.exitCode).toBe(1)
+      expect(spawnMock).not.toHaveBeenCalled()
+    })
+
+    it('pure test-chain existing path → exit 0, spawn NOT called (also WITHOUT posixShell)', async () => {
+      // process.cwd() always exists — `test -d <cwd>` is a deterministic true.
+      const cwdFwd = process.cwd().replace(/\\/g, '/')
+      const r = await spawnCmd(ctx(), `test -d ${cwdFwd}`, [])
+      expect(isSpawnOk(r)).toBe(true)
+      if (isSpawnOk(r)) expect(r.exitCode).toBe(0)
+      expect(spawnMock).not.toHaveBeenCalled()
     })
   })
 })

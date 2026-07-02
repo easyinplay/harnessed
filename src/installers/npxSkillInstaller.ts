@@ -44,6 +44,7 @@ import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
+import { formatVerifyFail } from './lib/verifyMessage.js'
 
 export const installNpxSkillInstaller: Installer = async (ctx) => {
   const install = ctx.manifest.spec.install
@@ -202,7 +203,8 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `manifest verify cmd exit ${vr.exitCode} ≠ expected ${expected}: ${vr.stderr.slice(0, 200)}`,
+        // v4.15.1 — unified verify-fail format (cmd + output tail; no dangling colon).
+        formatVerifyFail(ctx.manifest.spec.verify.cmd, vr.exitCode, expected, vr.stdout, vr.stderr),
         'verify-failed',
       ),
     }

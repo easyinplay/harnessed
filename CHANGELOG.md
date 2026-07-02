@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.15.1] - 2026-07-02
+
+### Fixed
+
+- **WSL-stub bash 根因(用户 dogfood v4.15.0:一台 PATH 上 bash = C:\\Windows\\System32\\bash.exe 且无发行版的机器,mattpocock-skills / design-taste-frontend / ctx7 verify 与 force-update refresh 全灭 — 组件实际装成功,doctor 也证实).** 三层修复:(1) 新 `resolveBash`(src/installers/lib/resolveBash.ts)显式解析 Git Bash — env `HARNESSED_BASH` 覆盖 → PATH 首个非 WSL bash(健康机器 byte-compatible)→ `where git` 派生 → 标准安装位置 → PATH 仅剩 WSL stub 时拒绝 spawn 并 fail-loud(含改 PATH / 设 HARNESSED_BASH 提示),结果 memoize;(2) 新 `evalTestChain`(nativeTest.ts)把 `test -f A || test -f B` 形态的 verify/idempotent 用 fs 原生求值 — 零 shell、跨 OS,顺带修复 cmd.exe idempotent fallback 从来跑不了 `test` 的旧问题(v3.9.9 已述),文法保守(管道/重定向/变量/glob 一律回落 spawn);(3) doctor `checkWinBash` 改用 resolveBash 单一 SoT(报告的就是 spawnCmd 真正会用的 bash),WSL stub 的 CP936 乱码输出消毒后再嵌入。
+- **doctor 假阳性 ×2(装完 MCP 必红 + gstack 误报).** `checkMcpScope` 语义与 installer 对齐 — v3.0.2 起 harnessed 自己就用 `--scope user` 装 MCP,旧检查恰好 FAIL 在 setup 产出的状态上;现改 informational(报告 user/project 两侧分布,永不 fail),名称 `mcp scope = project` → `mcp scope`。gstack 检查加文件系统分支(PATH 无 wrapper 但 `<skillsDir>/gstack/` 已装 → pass),移除指向不存在包的 `npm i -g @gstack/cli` 修复建议(改 `harnessed setup`)。
+- **空错误文本 + quiet 泄漏.** verify 失败消息统一为 `verify failed (exit N ≠ expected M): \`cmd\` — <stderr|stdout|(no output)>`(WSL stub 报错走 stdout,旧格式只截 stderr → 悬空冒号);spawn 超时消息同样 stdout 兜底;npmCli 的 "(L4 system install...)" 行加 quiet 门(不再错位插进 Step B 进度流)。
+
+### Added
+
+- **setup 输出打磨(用户反馈 "看看还能继续改进").** 分组表格分隔线按实际最宽行计算;force-update 二 pass 增加与首 pass 对称的 `force-updating N plugin(s)...` 头行;存在 failed 组件时在 "setup complete" 前输出诚实的失败摘要(计数 + 重试/诊断路径),失败的 setup 不再看起来全绿。
+
 ## [4.15.0] - 2026-07-02
 
 ### Added

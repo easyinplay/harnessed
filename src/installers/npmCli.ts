@@ -21,6 +21,7 @@ import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult, Level } from './lib/types.js'
+import { formatVerifyFail } from './lib/verifyMessage.js'
 
 function detectLevel(cmd: string): Level {
   if (/\bnpm\s+install\s+-g\b/.test(cmd)) return 'L4'
@@ -59,9 +60,13 @@ export const installNpmCli: Installer = async (ctx) => {
   const plan: DiffPlan = { files: [] }
   // L1 npx & L4 global both produce "(no file changes)" diff — L4 PATH mod is
   // not previewable as a unified diff; the cmd echo is the audit trail.
-  if (!ctx.opts.quiet) process.stdout.write(renderDiff(plan, ctx))
-  if (level === 'L4')
-    process.stdout.write('  (L4 system install — global PATH change; see cmd above)\n')
+  if (!ctx.opts.quiet) {
+    process.stdout.write(renderDiff(plan, ctx))
+    // v4.15.1 — gated by quiet: in setup's quiet Step B this line printed with
+    // no cmd echo above it, landing mid-progress-stream (user dogfood confusion).
+    if (level === 'L4')
+      process.stdout.write('  (L4 system install — global PATH change; see cmd above)\n')
+  }
   const conf = await confirmAt(level, { ...ctx, level })
   if (!conf.proceed) {
     if (level === 'L4' && conf.reason === 'flag-missing' && !ctx.opts.nonInteractive) {
@@ -125,7 +130,8 @@ export const installNpmCli: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify exit ${vr.exitCode} ≠ expected ${expected}`,
+        // v4.15.1 — unified verify-fail format (cmd + output tail; no dangling colon).
+        formatVerifyFail(ctx.manifest.spec.verify.cmd, vr.exitCode, expected, vr.stdout, vr.stderr),
         'verify-failed',
       ),
     }

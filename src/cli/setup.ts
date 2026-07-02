@@ -136,13 +136,19 @@ export function printGrouped(b: StepBResult, prefix = ''): void {
     if (!entries || entries.length === 0) continue
     console.log(`\n  ${prefix}${GROUP_LABELS[g] ?? g} (${entries.length})`)
     const nameW = Math.max(...entries.map((e) => e.name.length), 'component'.length)
-    console.log(`    ${'—'.repeat(2 + 18 + 1 + nameW + 2 + 24)}`)
-    for (const e of entries) {
+    // v4.15.1 — render rows first so the separator matches the REAL widest row
+    // (the previous fixed `+24` estimate under/overshot with long failure notes).
+    const rows = entries.map((e) => {
       const note = e.note && e.note.length > NOTE_MAX ? `${e.note.slice(0, NOTE_MAX)}…` : e.note
       const line = `    ${GLYPHS[e.status] ?? ' '} ${e.status.padEnd(18)} ${e.name.padEnd(nameW)}${note ? `  ${note}` : ''}`
-      if (e.status === 'failed') console.error(line)
-      else if (e.status === 'kept-existing') console.warn(line)
-      else console.log(line)
+      return { status: e.status, line }
+    })
+    const sepW = Math.max(...rows.map((r) => r.line.length)) - 4
+    console.log(`    ${'—'.repeat(sepW)}`)
+    for (const r of rows) {
+      if (r.status === 'failed') console.error(r.line)
+      else if (r.status === 'kept-existing') console.warn(r.line)
+      else console.log(r.line)
     }
   }
 }
@@ -373,6 +379,9 @@ export function registerSetup(program: Command): void {
             // Second pass: force-update path. runInstall sees
             // opts.updateInstalled=true → bypasses idempotent_check probe →
             // runs install command. MCP installers ignore the flag per design.
+            // v4.15.1 — symmetric progress header (first pass has one; the
+            // second pass previously started dumping [n/m] lines with no lead-in).
+            console.log(`\nforce-updating ${b.alreadyInstalled.length} plugin(s)...`)
             const b2 = await runStepBInstall(manifestPaths, {
               updateInstalled: true,
               quiet: true,
@@ -416,6 +425,14 @@ export function registerSetup(program: Command): void {
         }
       }
 
+      // v4.15.1 — honest failure trailer: a long grouped table scrolls the
+      // failed rows away; restate the count + retry path right before the
+      // "setup complete" line so a failed setup never reads as fully green.
+      if (b.failed.length > 0) {
+        console.error(
+          `\n${b.failed.length} component(s) failed — see the notes in the tables above; re-run \`harnessed setup\` to retry, or run \`harnessed doctor\` for environment diagnostics.`,
+        )
+      }
       console.log(
         t('setup.complete', {
           skills: skillsInstalled,

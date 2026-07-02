@@ -57,12 +57,26 @@ describe('probeGstackPrefix — D-01 PROBE 4 outcome branches + Win shell flavor
     expect(r.fix).toContain('edit .harnessed/config.json')
   })
 
-  it('4. neither found → status=fail, detail=neither, fix=install gstack', () => {
+  // v4.15.1 — branch 4 now needs an injected `exists` (default probes the REAL
+  // skills dirs; dev machines with gstack installed would flip this to pass).
+  it('4. neither found (PATH + fs) → status=fail, detail=neither, fix=harnessed setup', () => {
     spawnSyncMock.mockReturnValueOnce(ssNotFound()).mockReturnValueOnce(ssNotFound())
-    const r = probeGstackPrefix()
+    const r = probeGstackPrefix({ exists: () => false })
     expect(r.status).toBe('fail')
     expect(r.detail).toContain('neither')
-    expect(r.fix).toContain('install gstack')
+    expect(r.fix).toContain('harnessed setup')
+    // the pre-4.15.1 hint pointed at a nonexistent npm package — must be gone
+    expect(r.fix).not.toContain('@gstack/cli')
+  })
+
+  it('4b. v4.15.1 — nothing on PATH but skills dir installed → pass (fs branch)', () => {
+    spawnSyncMock.mockReturnValueOnce(ssNotFound()).mockReturnValueOnce(ssNotFound())
+    const r = probeGstackPrefix({
+      exists: (p) => p.replace(/\\/g, '/').endsWith('gstack/office-hours/SKILL.md'),
+    })
+    expect(r.status).toBe('pass')
+    expect(r.prefix).toBe('')
+    expect(r.detail).toContain('gstack skills dir found')
   })
 
   it('5. Win platform → spawnSync called with "where" not "which"', () => {

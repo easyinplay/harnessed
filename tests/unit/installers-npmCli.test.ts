@@ -193,3 +193,55 @@ describe('installNpmCli', () => {
     }
   })
 })
+
+// v4.15.1 T3 — the "(L4 system install — global PATH change; see cmd above)"
+// line leaked into setup's quiet Step B progress stream (no cmd echo above it
+// in quiet mode — user dogfood confusion). Now gated by !ctx.opts.quiet.
+describe('installNpmCli v4.15.1 quiet gating', () => {
+  beforeEach(() => {
+    spawnMock.mockReset()
+  })
+
+  function captureStdout(): { writes: string[]; restore: () => void } {
+    const writes: string[] = []
+    const orig = process.stdout.write.bind(process.stdout)
+    const writer = (chunk: unknown): boolean => {
+      writes.push(String(chunk))
+      return true
+    }
+    // biome-ignore lint/suspicious/noExplicitAny: stdout.write overload polymorphism
+    process.stdout.write = writer as any
+    return {
+      writes,
+      restore: () => {
+        process.stdout.write = orig
+      },
+    }
+  }
+
+  it('quiet: true → L4 hint line NOT written', async () => {
+    spawnMock.mockImplementation(
+      () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+    )
+    const cap = captureStdout()
+    try {
+      await installNpmCli(ctx({ quiet: true }))
+    } finally {
+      cap.restore()
+    }
+    expect(cap.writes.join('')).not.toContain('L4 system install')
+  })
+
+  it('quiet: false → L4 hint line IS written (pre-4.15.1 behavior preserved)', async () => {
+    spawnMock.mockImplementation(
+      () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+    )
+    const cap = captureStdout()
+    try {
+      await installNpmCli(ctx({ quiet: false }))
+    } finally {
+      cap.restore()
+    }
+    expect(cap.writes.join('')).toContain('L4 system install')
+  })
+})
