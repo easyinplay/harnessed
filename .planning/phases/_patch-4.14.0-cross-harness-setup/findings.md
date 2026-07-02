@@ -54,7 +54,7 @@
   `~/.codex/skills/gsd-*/SKILL.md` + config.toml per-agent TOML。
 - ui-ux-pro-max(midwayjs/midway):manifest 现行 cmd 就是从上游 `.codex/skills/ui-ux-pro-max` 拷出来装进
   ~/.claude/skills — 上游本体即 codex 形态,codex override 只需换 cp 目标。
-- gstack(garrytan/gstack):clone 到 ~/.claude/skills/gstack + setup.sh,CC 深度绑定;codex 支持未见 → 跳过 + follow-up。
+- gstack(garrytan/gstack):~~CC 深度绑定~~ **用户指正 + README § Other AI Agents 实证(4.14.2)**:官方支持 10 agents,codex 走 `./setup --host codex` 装到 ~/.codex/skills/gstack-*/。另发现上游脚本已 setup.sh → setup 改名、repo 布局改根级 skill dirs(claude 路径 cmd/verify 同步修)。
 
 设计落点:manifest schema 增可选 `spec.harness_overrides.codex`(install/verify 子块),dispatch 按平台合并;
 无 override 的 CC-only method → 'harness-mismatch' 诚实跳过。

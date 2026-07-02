@@ -18,11 +18,27 @@ spec:
   install_type: git
   install:
     method: git-clone-with-setup
-    cmd: "rm -rf ~/.claude/skills/gstack && git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup.sh"
+    # v4.14.2 — 上游脚本 setup.sh → setup 改名 + repo 布局改为根级 skill dirs
+    # (office-hours/SKILL.md,原 skills/office-hours.md 已不存在;本机 v1.52+ 实证)。
+    # clone 保持无 flag 的 `git clone <url> <dest>` 形状 — extractGitCloneTarget
+    # 与 git-clone-idempotent 回归测试锁定该相邻性(--single-branch 会使解析错位)。
+    cmd: "rm -rf ~/.claude/skills/gstack && git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup"
     git_ref: 14fc0866d9ac9d09d25adcac7b4437c0a235902b
     idempotent_check: "test -d ~/.claude/skills/gstack/.git"
+  # v4.14.2 — 用户指正: gstack 官方支持 10 agents(README § Other AI Agents),
+  # codex 走 `./setup --host codex`,skills 装到 ~/.codex/skills/gstack-*/。
+  harness_overrides:
+    codex:
+      install:
+        method: git-clone-with-setup
+        cmd: "rm -rf ~/gstack && git clone https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && bash ./setup --host codex"
+        git_ref: 14fc0866d9ac9d09d25adcac7b4437c0a235902b
+        idempotent_check: "ls ~/.codex/skills 2>/dev/null | grep -q '^gstack-'"
+      verify:
+        cmd: "ls ~/.codex/skills | grep -q '^gstack-'"
+        timeout_ms: 10000
   verify:
-    cmd: "test -f ~/.claude/skills/gstack/skills/office-hours.md"
+    cmd: "test -f ~/.claude/skills/gstack/office-hours/SKILL.md"
     timeout_ms: 5000
   uninstall:
     cmd: "rm -rf ~/.claude/skills/gstack"

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.14.2] - 2026-07-02
+
+### Fixed
+
+- **gstack 多平台支持(用户指正 — README § Other AI Agents:官方支持 10 agents).** 4.14.0 误判 gstack CC-only 未加 override;现补 `harness_overrides.codex`(`git clone → ~/gstack && ./setup --host codex`,skills 落 `~/.codex/skills/gstack-*/`,verify/idempotent 探测该前缀)。同时发现上游两处 drift 并修正 claude 路径:setup.sh → setup 脚本改名(fresh install 会挂)、repo 布局改根级 skill dirs(verify `skills/office-hours.md` → `office-hours/SKILL.md`)(clone 保持无 flag 的 `git clone <url> <dest>` 形状,extractGitCloneTarget 解析依赖)。
+
 ## [4.14.1] - 2026-07-02
 
 ### Fixed
