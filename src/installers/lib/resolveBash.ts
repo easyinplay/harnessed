@@ -22,7 +22,14 @@
 
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+// CI portability (post-4.15.1) — path.win32 explicitly: this module only ever reasons about
+// Windows-style paths (compute() exits early on non-win32), but the SUITE runs
+// on all 3 CI OSes — POSIX `dirname`/`join` mangle `C:\...` strings (dirname →
+// '.', join → mixed separators), which broke the ubuntu/macos runs of the
+// injected-deps tests while Windows passed.
+import { win32 } from 'node:path'
+
+const { dirname, join } = win32
 
 export interface BashResolution {
   /** Absolute bash path, literal 'bash' (legacy fallback), or null (refused). */
