@@ -4,8 +4,7 @@
 // Sister: src/installers/ccHookAdd.ts — inverse of install-time merge.
 
 import { readFile, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { getSettingsPath } from '../installers/lib/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -23,7 +22,9 @@ export const uninstallCcHookAdd: Uninstaller = async (ctx) => {
   const abort = dryRunGate(ctx)
   if (abort) return abort
 
-  const settingsPath = join(homedir(), '.claude', 'settings.json')
+  // v4.14.0 — settings path via descriptor (claude byte-identical; cc-hook-add
+  // is gated claude-only at runInstall dispatch, so codex never reaches here).
+  const settingsPath = getSettingsPath()
   let existing: string
   try {
     existing = await readFile(settingsPath, 'utf8')

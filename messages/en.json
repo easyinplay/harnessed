@@ -18,6 +18,7 @@
   "setup.step_b_complete": "Upstream components: {{installed}} installed / {{already}} already-installed / {{skipped}} skipped / {{failed}} failed [{{seconds}}s]",
   "setup.complete": "setup complete — {{skills}} workflows + {{manifests}} base manifests configured",
   "setup.mcp_hint": "Run /mcp in Claude Code to verify MCP server connections.",
+  "setup.mcp_hint_codex": "Run codex mcp list to verify MCP server connections.",
   "setup.bundled_summary": "\nharnessed workflows bundled at <packageRoot>/workflows/ (share-only, read-only)",
   "setup.bundled_location": "",
   "setup.doctor_hint": "\nRun harnessed doctor to verify your environment.",

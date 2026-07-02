@@ -14,7 +14,7 @@
 // Mocks: child_process / fs/promises / @clack/prompts / node:os (homedir).
 
 import { EventEmitter } from 'node:events'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
 // fs/promises: mkdir/writeFile/rename for backup; readFile for state;
@@ -258,6 +258,79 @@ describe('installNpxSkillInstaller', () => {
       if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
         expect(r.appliedFiles.some((f) => f.endsWith('SKILL.md'))).toBe(true)
       }
+    } finally {
+      s.restore()
+    }
+  })
+})
+
+// v4.14.0 T4 — per-platform --agent injection: manifests no longer hardcode
+// --agent; the installer appends '--agent <claude-code|codex>' from the active
+// PlatformDescriptor. Explicit manifest --agent wins (no double injection).
+describe('installNpxSkillInstaller — --agent injection (v4.14.0)', () => {
+  const CMD_NO_AGENT = 'npx --yes skills@latest add mattpocock/skills --copy --global -y'
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+    spawnMock.mockReset()
+    accessMock.mockReset()
+    accessMock.mockResolvedValue(undefined)
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  function spawnedFlat(): string {
+    return spawnMock.mock.calls
+      .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
+      .join('\n')
+  }
+
+  it('claude platform → appends --agent claude-code', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
+      const c = ctx({}, (m) => {
+        ;(m.spec.install as { cmd: string }).cmd = CMD_NO_AGENT
+      })
+      const r = await installNpxSkillInstaller(c)
+      expect(r).toMatchObject({ ok: true })
+      expect(spawnedFlat()).toContain('--agent claude-code')
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('codex platform → appends --agent codex', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
+      const c = ctx({}, (m) => {
+        ;(m.spec.install as { cmd: string }).cmd = CMD_NO_AGENT
+      })
+      const r = await installNpxSkillInstaller(c)
+      expect(r).toMatchObject({ ok: true })
+      expect(spawnedFlat()).toContain('--agent codex')
+      expect(spawnedFlat()).not.toContain('--agent claude-code')
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('manifest already carries --agent → respected verbatim, no double injection', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
+      const c = ctx({}, (m) => {
+        ;(m.spec.install as { cmd: string }).cmd = `${CMD_NO_AGENT} --agent cursor`
+      })
+      const r = await installNpxSkillInstaller(c)
+      expect(r).toMatchObject({ ok: true })
+      const flat = spawnedFlat()
+      expect(flat).toContain('--agent cursor')
+      expect(flat).not.toContain('--agent claude-code')
     } finally {
       s.restore()
     }

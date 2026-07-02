@@ -33,13 +33,13 @@
 // — direct fs is faster, doesn't depend on /bin/test or cmd.exe behavior,
 // and produces a clean Promise without process plumbing.
 
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { detectSkillPresence, extractSkillName, isAlreadyInstalled } from './lib/idempotent.js'
+import { detectPlatform, getSkillsDir } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
@@ -95,12 +95,28 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
     }
   }
 
-  // L2 — per-user (~/.claude/skills/<name>/). pure-create DiffPlan with
-  // SKILL.md as the target file under HOME scope. rollback = rm -rf the
-  // skill dir.
+  // v4.14.0 T4 — per-platform --agent injection. The skills CLI targets a
+  // specific agent's skills dir; pinning it in manifest cmds hardcoded CC
+  // (4.13.0 regression on codex). Inject from the active descriptor instead:
+  // claude → claude-code, codex → codex (both verified valid agent ids via
+  // `skills ls --agent` probe, findings.md). An explicit manifest --agent wins;
+  // unknown platform ids inject nothing (skills CLI auto-detects).
+  const AGENT_BY_PLATFORM: Record<string, string | undefined> = {
+    claude: 'claude-code',
+    codex: 'codex',
+  }
+  const platformId = detectPlatform().id
+  const agentId = AGENT_BY_PLATFORM[platformId]
+  const hasExplicitAgent = /(?:^|\s)(?:--agent|-a)\s/.test(install.cmd)
+  const effectiveCmd =
+    agentId && !hasExplicitAgent ? `${install.cmd} --agent ${agentId}` : install.cmd
+
+  // L2 — per-user (<skillsDir>/<name>/). pure-create DiffPlan with SKILL.md as
+  // the target file under HOME scope. rollback = rm -rf the skill dir.
+  // v4.14.0 — skillsDir via descriptor (was hardcoded ~/.claude/skills).
   const name = ctx.manifest.metadata.name
   const skillSegment = extractSkillName(install.cmd, name)
-  const skillDir = join(homedir(), '.claude', 'skills', skillSegment)
+  const skillDir = join(getSkillsDir(), skillSegment)
   const skillMdPath = join(skillDir, 'SKILL.md')
   const plan: DiffPlan = {
     files: [
@@ -108,7 +124,7 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
         target: skillMdPath,
         scope: 'HOME',
         oldText: '',
-        newText: `// new SKILL.md created by: ${install.cmd}\n`,
+        newText: `// new SKILL.md created by: ${effectiveCmd}\n`,
       },
     ],
   }
@@ -124,9 +140,10 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   const bk = await backup(plan, ctx)
   if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
 
-  // npx invocation (cmd from manifest; B1 re-screened by spawnCmd).
+  // npx invocation (cmd from manifest + injected --agent; B1 re-screened by
+  // spawnCmd — agent ids are alnum+dash, they pass checkCmdString).
   // v3.0.2: explicit install timeout (60s — npx cold cache + skills add filesystem traverse).
-  const sp = await spawnCmd(ctx, install.cmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
+  const sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
     return {

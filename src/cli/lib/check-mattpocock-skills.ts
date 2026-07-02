@@ -5,15 +5,24 @@
 //
 // Probe locations (try both per mattpocock dual support):
 //   1. ~/.claude/plugins/cache/mattpocock-skills/mattpocock-skills/<version>/  (plugin form)
-//   2. ~/.claude/skills/mattpocock-skills/                                       (user-skill form)
+//   2. <harness skills dirs>/mattpocock-skills/                                 (user-skill form)
 // Either present → pass. Both missing → warn (non-blocking per warn ≠ fail R2.4.1)
 // — methodology fallback already inline in role-prompts.yaml per v3.6.0 Phase 1,
 // so install is optional; remediation enables /grill-with-docs /zoom-out etc.
 // SlashCommand acceleration.
+//
+// v4.14.0 — cross-harness: plugin-cache probe gated on getPluginsRegistry()
+// (claude-only concept), skill probes span harnessSkillsDirs(), and the
+// install_commands --agent is computed from the ACTIVE platform at check time.
 
 import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import {
+  detectPlatform,
+  getPluginsRegistry,
+  harnessSkillsDirs,
+} from '../../installers/lib/platform.js'
 
 interface CheckResult {
   name: string
@@ -35,11 +44,15 @@ const REMEDIATION =
   'methodology fallback already inline in role-prompts.yaml per v3.6.0 Phase 1 — install ' +
   'is optional but enables /grill-with-docs /zoom-out etc. SlashCommand acceleration'
 
-// v4.13.0 — --copy (Windows symlink-safe) + -y --agent claude-code (skills CLI
-// prompts hang non-interactive spawns; sister manifests/skill-packs yaml).
-const INSTALL_COMMANDS = [
-  'npx skills@latest add mattpocock/skills --copy -y --agent claude-code',
-] as const
+// v4.13.0 — --copy (Windows symlink-safe) + -y (skills CLI prompts hang
+// non-interactive spawns; sister manifests/skill-packs yaml).
+// v4.14.0 — --agent computed per platform (was hardcoded claude-code — wrong
+// install target on codex). Function, not module const: detectPlatform must
+// resolve at CHECK time, not import time.
+function installCommands(): readonly string[] {
+  const agent = detectPlatform().id === 'codex' ? 'codex' : 'claude-code'
+  return [`npx skills@latest add mattpocock/skills --copy -y --agent ${agent}`] as const
+}
 
 export async function checkMattpocockSkills(): Promise<CheckResult> {
   const pluginRoot = join(
@@ -50,50 +63,57 @@ export async function checkMattpocockSkills(): Promise<CheckResult> {
     'mattpocock-skills',
     'mattpocock-skills',
   )
-  const skillRoot = join(homedir(), '.claude', 'skills', 'mattpocock-skills')
 
-  // Try plugin form first (sister check-planning-with-files.ts L24-43)
-  try {
-    const entries = await readdir(pluginRoot)
-    const versions = entries.filter((e) => /^\d+\.\d+/.test(e))
-    if (versions.length > 0) {
+  // Try plugin form first (sister check-planning-with-files.ts L24-43).
+  // v4.14.0 — claude-only concept; skipped where no plugin registry exists.
+  if (getPluginsRegistry() !== null) {
+    try {
+      const entries = await readdir(pluginRoot)
+      const versions = entries.filter((e) => /^\d+\.\d+/.test(e))
+      if (versions.length > 0) {
+        return {
+          name: 'mattpocock-skills',
+          status: 'pass',
+          message: `installed as plugin (version ${versions.join(', ')})`,
+        }
+      }
+    } catch {
+      // fall through to user-skill check
+    }
+  }
+
+  // Try user-skill form across ALL harness skills dirs (v4.14.0 — was
+  // hardcoded ~/.claude/skills; codex installs land in ~/.agents/skills).
+  for (const skillsDir of harnessSkillsDirs()) {
+    try {
+      const skillRoot = join(skillsDir, 'mattpocock-skills')
+      await stat(skillRoot)
       return {
         name: 'mattpocock-skills',
         status: 'pass',
-        message: `installed as plugin (version ${versions.join(', ')})`,
+        message: `installed as user-skill (${skillRoot})`,
       }
+    } catch {
+      // fall through to indicator-skill check
     }
-  } catch {
-    // fall through to user-skill check
-  }
-
-  // Try user-skill form
-  try {
-    await stat(skillRoot)
-    return {
-      name: 'mattpocock-skills',
-      status: 'pass',
-      message: `installed as user-skill (${skillRoot})`,
-    }
-  } catch {
-    // fall through to indicator-skill check
   }
 
   // v3.9.20 — npx skills CLI installs individual skill dirs (diagnose / tdd /
   // zoom-out / etc.) without a parent `mattpocock-skills/` folder. Sister
   // INSTALLED_INDICATORS pattern in src/installers/lib/idempotent.ts v3.9.19.
   const indicators = ['diagnose', 'tdd', 'zoom-out']
-  for (const ind of indicators) {
-    const indPath = join(homedir(), '.claude', 'skills', ind)
-    try {
-      await stat(indPath)
-      return {
-        name: 'mattpocock-skills',
-        status: 'pass',
-        message: `installed as individual skills (found ${ind}/)`,
+  for (const skillsDir of harnessSkillsDirs()) {
+    for (const ind of indicators) {
+      try {
+        await stat(join(skillsDir, ind))
+        return {
+          name: 'mattpocock-skills',
+          status: 'pass',
+          message: `installed as individual skills (found ${ind}/)`,
+        }
+      } catch {
+        // try next indicator
       }
-    } catch {
-      // try next indicator
     }
   }
 
@@ -102,6 +122,6 @@ export async function checkMattpocockSkills(): Promise<CheckResult> {
     status: 'warn',
     message: 'not installed (plugin cache + user-skill paths both missing)',
     fix: REMEDIATION,
-    install_commands: INSTALL_COMMANDS,
+    install_commands: installCommands(),
   }
 }

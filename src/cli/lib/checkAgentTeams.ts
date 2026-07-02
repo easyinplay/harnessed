@@ -3,8 +3,7 @@
 // Sister RESEARCH § 4.3 verbatim implementation; wired by setup.ts / doctor.ts.
 
 import { readFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { resolve } from 'node:path'
+import { getSettingsPath } from '../../installers/lib/platform.js'
 
 export interface AgentTeamsCheckResult {
   status: 'pass' | 'warn' | 'missing'
@@ -21,7 +20,8 @@ export async function checkAgentTeams(): Promise<AgentTeamsCheckResult> {
   let settingsValue: string | undefined
   let settingsOn = false
   try {
-    const path = resolve(homedir(), '.claude', 'settings.json')
+    // v4.14.0 — settings path via descriptor (claude byte-identical resolve).
+    const path = getSettingsPath()
     const raw = await readFile(path, 'utf8')
     const data = JSON.parse(raw) as { env?: Record<string, string> }
     // Q-AUDIT-5b LOCKED: root-level env.* NOT nested experimental.*

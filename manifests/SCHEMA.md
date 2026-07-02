@@ -61,6 +61,8 @@ spec: {...}                # 见 § 3
 | `tested_with_versions.cc_versions` | optional | string[] | weekly CI 回填 |
 | `tested_with_versions.node_versions` | optional | string[] | weekly CI 回填 |
 | `mutually_exclusive_with` | optional | string[] | manifest names（v0.2+ 启用） |
+| `harness_overrides.codex.install` | optional | object | v4.14.0 — codex 平台整块替换 install（复用 § 4 install 判别 union;runInstall dispatch 前按 detectPlatform().id 合并） |
+| `harness_overrides.codex.verify` | optional | object | v4.14.0 — codex 平台替换 verify(缺省沿用主 verify);无 override 的 `cc-plugin-marketplace` / `cc-hook-add` 在非 claude 平台 → `harness-mismatch` 诚实跳过 |
 
 ---
 

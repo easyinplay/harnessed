@@ -24,7 +24,12 @@
 // Robust: malformed JSON → return false (graceful), don't crash the installer.
 
 import { readFile } from 'node:fs/promises'
-import { getMcpConfigPath, getPluginsRegistry, getSettingsPath } from './platform.js'
+import {
+  detectPlatform,
+  getMcpConfigPath,
+  getPluginsRegistry,
+  getSettingsPath,
+} from './platform.js'
 
 /**
  * Path to the user-global Claude Code config file written by `claude mcp add
@@ -79,15 +84,43 @@ export async function readUserClaudeJson(): Promise<UserClaudeJsonShape> {
 }
 
 /**
- * Check whether an MCP server is registered in `~/.claude.json`.
+ * v4.14.0 — codex MCP registration probe: `~/.codex/config.toml` table-header
+ * existence check. A registered server appears as `[mcp_servers.<name>]` (bare)
+ * or `[mcp_servers."<name>"]` (quoted — TOML quotes keys containing dots), and
+ * may ALSO surface only via a sub-table (`[mcp_servers.<name>.env]`). Line-start
+ * regex on the raw file — deliberately NOT a full TOML parse (findings.md 锁定
+ * 决策: header 正则,零新依赖; the header line IS the registration contract).
+ */
+export function isMcpServerInToml(raw: string, name: string): boolean {
+  const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const re = new RegExp(`^\\s*\\[mcp_servers\\.(?:${esc}|"${esc}"|'${esc}')(?:\\]|\\.)`, 'm')
+  return re.test(raw)
+}
+
+/**
+ * Check whether an MCP server is registered with the ACTIVE harness.
  *
  * Used by `mcpStdioAdd.ts` + `mcpHttpAdd.ts` v3.0.3 verify step in place of
  * `spawn('claude', ['mcp', 'list'])` + stdout match.
  *
- * Returns `true` if `mcpServers[name]` exists (any truthy value); `false` if
- * the file is missing, malformed, or the server is not present.
+ * claude → `~/.claude.json` `mcpServers[name]` exists (any truthy value).
+ * codex (v4.14.0) → `~/.codex/config.toml` `[mcp_servers.<name>]` header probe.
+ * Both: `false` if the file is missing, malformed, or the server is not present.
  */
 export async function isMcpServerRegistered(name: string): Promise<boolean> {
+  const platform = detectPlatform()
+  if (platform.id === 'codex') {
+    let raw: string
+    try {
+      raw = await readFile(platform.mcpConfigPath, 'utf8')
+    } catch (err) {
+      // ENOENT (first install) → not registered; other errors re-throw (sister
+      // readUserClaudeJson contract — no silent swallowing of EACCES/EISDIR).
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false
+      throw err
+    }
+    return isMcpServerInToml(raw, name)
+  }
   const config = await readUserClaudeJson()
   const servers = config.mcpServers
   if (!servers || typeof servers !== 'object') return false

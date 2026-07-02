@@ -13,7 +13,7 @@
 // Mocks: child_process / fs/promises / @clack/prompts (C6 mitigation).
 
 import { EventEmitter } from 'node:events'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
 // v3.0.3 — verify reads ~/.claude.json via fs; default mock returns
@@ -289,6 +289,75 @@ describe('installCcPluginMarketplace', () => {
         expect(r.error.keyword).toBe('verify-failed')
         expect(r.error.message).toContain('not found in enabledPlugins map')
       }
+    } finally {
+      s.restore()
+    }
+  })
+})
+
+// v4.14.0 T3 — harness gate: cc-plugin-marketplace is claude-only (codex has no
+// plugin registry / marketplace CLI). Non-claude platform → aborted
+// 'harness-mismatch' BEFORE any spawn or idempotent probe.
+describe('installCcPluginMarketplace — codex harness gate (v4.14.0)', () => {
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    spawnMock.mockReset()
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it("codex platform → aborted reason 'harness-mismatch', zero spawns", async () => {
+    const r = await installCcPluginMarketplace(ctx())
+    expect(r).toMatchObject({ aborted: true, reason: 'harness-mismatch' })
+    expect(spawnMock).not.toHaveBeenCalled()
+  })
+})
+
+// v4.14.0 T3 REVISED — codex override path: codex-flavored cmd (merged by
+// resolveForHarness) → `codex plugin add <p>@<m>` + verify via `codex plugin
+// list` stdout match.
+describe('installCcPluginMarketplace — codex override cmd (v4.14.0)', () => {
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    spawnMock.mockReset()
+    readFileMock.mockReset()
+    // state read etc. — never a valid claude config on codex.
+    readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('codex cmd → spawns `codex plugin add` (no --scope) + verify via codex plugin list stdout', async () => {
+    const s = silence()
+    try {
+      let call = 0
+      spawnMock.mockImplementation(() => {
+        call += 1
+        // call 1 = plugin add; call 2 = verify plugin list (stdout must contain name)
+        return makeChild(
+          call === 1
+            ? { exitCode: 0 }
+            : { exitCode: 0, stdout: 'superpowers@openai-curated (installed)\n' },
+        ) as unknown as ReturnType<typeof spawn>
+      })
+      const c = ctx({}, (m) => {
+        ;(m.metadata as { name: string }).name = 'superpowers'
+        ;(m.spec.install as { cmd: string }).cmd = 'codex plugin add superpowers@openai-curated'
+      })
+      const r = await installCcPluginMarketplace(c)
+      expect(r).toMatchObject({ ok: true })
+      const flat = spawnMock.mock.calls
+        .map((c2) => `${String(c2[0])} ${((c2[1] ?? []) as string[]).join(' ')}`)
+        .join('\n')
+      expect(flat).toContain('codex')
+      expect(flat).not.toContain('claude')
+      expect(flat).toContain('plugin add superpowers@openai-curated')
+      expect(flat).not.toContain('--scope')
+      expect(flat).toContain('plugin list')
     } finally {
       s.restore()
     }

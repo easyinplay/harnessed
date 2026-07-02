@@ -42,9 +42,10 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
+import { detectPlatform } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
-import { runArgs } from './lib/runClaudeArgs.js'
+import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
@@ -81,24 +82,36 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
   const name = ctx.manifest.metadata.name
   const pkg = ctx.manifest.metadata.upstream.source
   const ver = install.npm_version
-  // v3.0.2 hotfix: `--scope user` (writes ~/.claude.json user-global config,
-  // CWD-independent) instead of `--scope project` (writes <cwd>/.mcp.json,
+  // v4.14.0 — platform routing. claude keeps the v3.0.2 shape verbatim; codex
+  // uses its own CLI (`codex mcp add <name> -- <command...>` — no --scope /
+  // --transport flags, findings.md research). Any OTHER harness id has no MCP
+  // write path → honest 'harness-mismatch' skip, never a claude-CLI side effect.
+  const platform = detectPlatform()
+  if (platform.id !== 'claude' && platform.id !== 'codex') {
+    return { aborted: true, reason: 'harness-mismatch' }
+  }
+  const bin = platform.id
+  // v3.0.2 hotfix (claude): `--scope user` (writes ~/.claude.json user-global
+  // config, CWD-independent) instead of `--scope project` (writes <cwd>/.mcp.json,
   // EPERM when user CWD is read-only). harnessed setup is an onboarding
   // command — MCP servers should be available cross-project after install,
   // not scoped to whatever ephemeral CWD the user launched from.
-  const addArgs = [
-    'mcp',
-    'add',
-    '--scope',
-    'user',
-    '--transport',
-    'stdio',
-    name,
-    '--',
-    'npx',
-    '--yes',
-    `${pkg}@${ver}`,
-  ]
+  const addArgs =
+    bin === 'codex'
+      ? ['mcp', 'add', name, '--', 'npx', '--yes', `${pkg}@${ver}`]
+      : [
+          'mcp',
+          'add',
+          '--scope',
+          'user',
+          '--transport',
+          'stdio',
+          name,
+          '--',
+          'npx',
+          '--yes',
+          `${pkg}@${ver}`,
+        ]
 
   // H2 defense-in-depth — re-screen each constructed arg. metadata.name and
   // metadata.upstream.source pass through B1 only as YAML scalars; never as
@@ -123,19 +136,25 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
   // <cwd>/.mcp.json (project-local config). `--scope user` flag writes to
   // ~/.claude.json. Simulate entry textually — `claude mcp add --dry-run`
   // CLI flag is not documented, relying on it would be unstable contract.
-  const mcpFile = `${getMcpSpawnCwd()}/.claude.json`
+  // v4.14.0: codex target is ~/.codex/config.toml [mcp_servers.<name>] table
+  // (written by `codex mcp add`).
+  const mcpFile = bin === 'codex' ? platform.mcpConfigPath : `${getMcpSpawnCwd()}/.claude.json`
   const newEntry = JSON.stringify(
     { [name]: { type: 'stdio', command: 'npx', args: ['--yes', `${pkg}@${ver}`] } },
     null,
     2,
   )
+  const mergeNote =
+    bin === 'codex'
+      ? `// will be written as [mcp_servers.${name}] into ~/.codex/config.toml by \`codex mcp add\`:`
+      : '// will be merged into ~/.claude.json mcpServers map by `claude mcp add --scope user`:'
   const plan: DiffPlan = {
     files: [
       {
         target: mcpFile,
         scope: 'HOME',
         oldText: '',
-        newText: `// will be merged into ~/.claude.json mcpServers map by \`claude mcp add --scope user\`:\n${newEntry}\n`,
+        newText: `${mergeNote}\n${newEntry}\n`,
       },
     ],
   }
@@ -156,7 +175,7 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
   // during the write; using homedir() avoids EPERM when user launches
   // harnessed from a read-only CWD (e.g. C:\Windows\System32).
   const spawnCwd = install.cwd ?? getMcpSpawnCwd()
-  const r = await runArgs(addArgs, spawnCwd)
+  const r = await runHarnessArgs(bin, addArgs, spawnCwd)
   if (r.exitCode !== 0) {
     // ADR 0004 idempotent contract (v1.0.4): server already registered is
     // not a failure. The pre-v3.0.2 error string was "already exists in
@@ -173,7 +192,7 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `claude mcp add exited ${r.exitCode}: ${r.stderr.slice(0, 200)}`,
+        `${bin} mcp add exited ${r.exitCode}: ${r.stderr.slice(0, 200)}`,
         'install-failed',
       ),
     }
@@ -186,6 +205,12 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
   // timeout that surfaced when 3 MCP installers ran sequentially in setup.
   const registered = await isMcpServerRegistered(name)
   if (!registered) {
+    // v4.14.0 — config label follows the platform (claude JSON map vs codex
+    // TOML table); claude wording is byte-identical to pre-4.14.0.
+    const cfgLabel =
+      bin === 'codex'
+        ? '[mcp_servers] table of ~/.codex/config.toml'
+        : 'mcpServers map of ~/.claude.json'
     return {
       ok: false,
       phase: 'verify',
@@ -193,7 +218,7 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify: '${name}' not found in mcpServers map of ~/.claude.json after install spawn exit 0 (file may have been overwritten, or claude mcp add wrote to a non-default location)`,
+        `verify: '${name}' not found in ${cfgLabel} after install spawn exit 0 (file may have been overwritten, or ${bin} mcp add wrote to a non-default location)`,
         'verify-failed',
       ),
     }

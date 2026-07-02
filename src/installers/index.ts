@@ -19,6 +19,7 @@
 import { installCcHookAdd } from './ccHookAdd.js'
 import { installCcPluginMarketplace } from './ccPluginMarketplace.js'
 import { installGitCloneWithSetup } from './gitCloneWithSetup.js'
+import { detectPlatform } from './lib/platform.js'
 import type { Installer, InstallOpts, InstallResult, Level, Manifest } from './lib/types.js'
 import { installMcpHttpAdd } from './mcpHttpAdd.js'
 import { installMcpStdioAdd } from './mcpStdioAdd.js'
@@ -54,7 +55,39 @@ function levelOf(manifest: Manifest): Level {
   }
 }
 
+// v4.14.0 T3 — methods with NO non-claude install path unless the manifest
+// carries a harness override (claude plugin marketplace / settings hooks are
+// CC infrastructure; ralph-loop & gstack intentionally have no codex override).
+const CLAUDE_ONLY_METHODS: ReadonlySet<string> = new Set(['cc-plugin-marketplace', 'cc-hook-add'])
+
+/** v4.14.0 T3 — resolve the effective manifest for the ACTIVE harness platform.
+ *  claude → verbatim. Other platforms: `spec.harness_overrides.<id>` present →
+ *  install (and verify, when given) replaced wholesale; absent + claude-only
+ *  method → 'harness-mismatch' gate. Exported for setup/tests. */
+export function resolveForHarness(
+  manifest: Manifest,
+): { manifest: Manifest; gate: null } | { manifest: Manifest; gate: InstallResult } {
+  const platform = detectPlatform()
+  if (platform.id === 'claude') return { manifest, gate: null }
+  const override = platform.id === 'codex' ? manifest.spec.harness_overrides?.codex : undefined
+  if (override) {
+    const spec = {
+      ...manifest.spec,
+      install: override.install,
+      verify: override.verify ?? manifest.spec.verify,
+    }
+    return { manifest: { ...manifest, spec }, gate: null }
+  }
+  if (CLAUDE_ONLY_METHODS.has(manifest.spec.install.method)) {
+    return { manifest, gate: { aborted: true, reason: 'harness-mismatch' } }
+  }
+  return { manifest, gate: null }
+}
+
 export async function runInstall(manifest: Manifest, opts: InstallOpts): Promise<InstallResult> {
-  const installer = installers[manifest.spec.install.method]
-  return installer({ manifest, opts, level: levelOf(manifest), cwd: process.cwd() })
+  const resolved = resolveForHarness(manifest)
+  if (resolved.gate) return resolved.gate
+  const effective = resolved.manifest
+  const installer = installers[effective.spec.install.method]
+  return installer({ manifest: effective, opts, level: levelOf(effective), cwd: process.cwd() })
 }

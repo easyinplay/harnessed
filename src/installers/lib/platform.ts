@@ -240,11 +240,18 @@ export function getMcpConfigPath(home?: string): string {
 
 /**
  * Deduped skills-dir set of ALL known descriptors (claude + codex) =
- * `~/.claude/skills` + `~/.agents/skills`. Phase C / D6: replaces the hardcoded
- * `['.claude','.agents']` dual-probe in idempotent.ts so the probe set is
- * descriptor-derived (same paths, single source of truth). Order: claude first.
+ * `~/.claude/skills` + `~/.agents/skills` + `~/.codex/skills`. Phase C / D6:
+ * replaces the hardcoded `['.claude','.agents']` dual-probe in idempotent.ts so
+ * the probe set is descriptor-derived (single source of truth). Order: claude first.
+ *
+ * v4.14.0 — added `~/.codex/skills`: codex's OWN skills dir is distinct from the
+ * shared `~/.agents/skills` convention (its descriptor skillsDir), and upstream
+ * installers targeting codex write there (e.g. `@opengsd/gsd-core --codex` →
+ * `~/.codex/skills/gsd-<name>`). Probe-only widening — install targets still
+ * come from the active descriptor's skillsDir.
  */
 export function harnessSkillsDirs(home?: string): string[] {
-  const dirs = [claudeDescriptor(home).skillsDir, codexDescriptor(home).skillsDir]
+  const codex = codexDescriptor(home)
+  const dirs = [claudeDescriptor(home).skillsDir, codex.skillsDir, join(codex.homeDir, 'skills')]
   return [...new Set(dirs)]
 }

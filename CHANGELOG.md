@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.14.0] - 2026-07-02
+
+### Added
+
+- **codex MCP 写入路径 (cross-harness setup parity 根因 1).** `mcp-stdio-add` / `mcp-http-add` installer 按 `detectPlatform().id` 路由:claude 保持 `claude mcp add --scope user` 逐字节不变;codex 走 `codex mcp add <name> -- npx --yes <pkg>@<ver>`(stdio)/ `codex mcp add <name> --url <url>`(http),verify/idempotent 读侧用 `~/.codex/config.toml` 的 `[mcp_servers.<name>]` header 正则存在性探测(不引 TOML parser,零新依赖);codex 无 `--header` flag → 带 auth header 的 http manifest 在 codex 平台 fail-loud。`runClaudeArgs` 泛化为 `runHarnessArgs(bin, ...)`(codex 不在 PATH → 明确报错),`ProcResult` 增 `stdout`。
+- **manifest schema 新增 `spec.harness_overrides.codex`(install + 可选 verify 子块,复用现有判别 union).** `runInstall` dispatch 前按平台合并 override;无 override 的 claude-only method(`cc-plugin-marketplace` / `cc-hook-add`)在非 claude 平台 → `aborted 'harness-mismatch'` 诚实跳过(setup 显示 "claude-only install method (no codex equivalent)")。5 个 manifest 落 codex override(上游逐个实证):superpowers(`codex plugin add superpowers@openai-curated`)、karpathy-skills / planning-with-files(skills CLI 路径)、gsd(`@opengsd/gsd-core --codex --global` → ~/.codex/skills)、ui-ux-pro-max(git-clone cp 到 ~/.agents/skills);ralph-loop / gstack 无 codex 等价 → 跳过。`ccPluginMarketplace` installer 支持 codex verb(`plugin add`,verify 走 `codex plugin list` stdout 15s)。
+
+### Fixed
+
+- **setup 管线 8 处 CC-only 硬编码(codex 平台下错误执行或必失败).** (1) `--agent claude-code` 从 3 个 npx-skill manifest + doctor install_commands 撤下,installer 按平台注入 `--agent <claude-code|codex>`(显式 manifest --agent 优先);(2) `npxSkillInstaller` DiffPlan/backup 路径与 uninstall 侧(mcp remove bin / npx-skill skillDir / ccHookAdd settingsPath / unified uninstall 三路径)全部改走 descriptor resolver;(3) Agent Teams warn(setup + doctor)与 `setup.mcp_hint` 按平台门控(codex 提示 `codex mcp list`,新 i18n key `setup.mcp_hint_codex` 双语);(4) doctor checks(mattpocock / planning-with-files / mcp-scope / token-budget)plugin-cache 探测按 `getPluginsRegistry()` 门控、skills 探测遍历 `harnessSkillsDirs()`;(5) `harnessSkillsDirs()` 增 `~/.codex/skills` 探测项(gsd --codex 落点);(6) detectNative 增 MCP 原生注册探测(双平台,替代 shell `claude mcp list | grep` 主路径);(7) confirmAt L3 文案通用化。claude 平台行为逐字节回归保持(1760 tests)。
+
 ## [4.13.0] - 2026-07-02
 
 ### Fixed

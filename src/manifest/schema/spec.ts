@@ -174,6 +174,28 @@ const ProvidedUnit = Type.Object(
   { additionalProperties: false },
 )
 
+// v4.14.0 — cross-harness overrides (patch 4.14.0 T3 REVISED). A manifest whose
+// default install path is claude-flavored may declare a per-harness alternative
+// (today only `codex`). Structure REUSES the install discriminated union + the
+// Verify schema verbatim — an override is a full replacement install block (and
+// optionally verify), not a patch. runInstall merges the override by
+// detectPlatform().id BEFORE dispatch; absent override + claude-only method →
+// aborted 'harness-mismatch' (honest skip; ralph-loop / gstack use this).
+const HarnessOverride = Type.Object(
+  {
+    install: Type.Unsafe<Install>(InstallSchema),
+    verify: Type.Optional(Verify),
+  },
+  { additionalProperties: false },
+)
+
+const HarnessOverrides = Type.Object(
+  {
+    codex: Type.Optional(HarnessOverride),
+  },
+  { additionalProperties: false },
+)
+
 export const SpecSchema = Type.Object(
   {
     type: TypeEnum,
@@ -195,6 +217,8 @@ export const SpecSchema = Type.Object(
     triggers: Type.Optional(Triggers),
     // ADR 0010 errata (phase 2.1 T1.3) — bundle-install `provides` field.
     provides: Type.Optional(Type.Array(ProvidedUnit, { minItems: 2, uniqueItems: true })),
+    // v4.14.0 — per-harness install/verify overrides (codex only for now).
+    harness_overrides: Type.Optional(HarnessOverrides),
   },
   { additionalProperties: false },
 )

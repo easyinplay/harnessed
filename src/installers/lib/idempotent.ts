@@ -28,7 +28,7 @@ import { access } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { getSkillsDir, harnessSkillsDirs } from './platform.js'
-import { isPluginRegistered } from './readClaudeConfig.js'
+import { isMcpServerRegistered, isPluginRegistered } from './readClaudeConfig.js'
 import { spawnCmd } from './spawn.js'
 import type { InstallContext } from './types.js'
 
@@ -139,6 +139,18 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   // a single dir matching `name`). Cross-method since the pack format varies.
   // v4.13.0 — probes all harness skills dirs (see indicatorPresent).
   if (await indicatorPresent(name)) return true
+
+  // v4.14.0 — native MCP registration probe (platform-aware: claude JSON map /
+  // codex config.toml header via isMcpServerRegistered). Only-if-registered
+  // short-circuit — absence still falls through to the supplementary plugin
+  // probe + shell fallback (some MCP tools are ALSO installed as CC plugins).
+  if (method === 'mcp-stdio-add' || method === 'mcp-http-add') {
+    try {
+      if (await isMcpServerRegistered(name)) return true
+    } catch {
+      /* unreadable config → fall through */
+    }
+  }
 
   if (method === 'cc-plugin-marketplace') {
     const m = cmd.match(/(?:claude\s+)?plugin\s+install\s+(\S+)/i)

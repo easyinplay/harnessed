@@ -40,9 +40,10 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
+import { detectPlatform } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { isPluginRegistered } from './lib/readClaudeConfig.js'
-import { runArgs } from './lib/runClaudeArgs.js'
+import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
@@ -52,18 +53,23 @@ import type { DiffPlan, Installer } from './lib/types.js'
 //   `/plugin marketplace add <owner/repo-or-url> && /plugin install <plugin>@<marketplace>`
 // OR
 //   `/plugin install <plugin>@<marketplace>`              (marketplace pre-registered)
+// v4.14.0: codex overrides use the codex verb `plugin add <plugin>@<marketplace>`
+// (codex CLI has no `plugin install`) — accepted as an alias here.
 // We extract:
 //   - marketplaceRef:  the token after `marketplace add` (can be owner/repo or URL)
-//   - pluginAtMkt:     the `<plugin>@<marketplace>` token after `plugin install`
+//   - pluginAtMkt:     the `<plugin>@<marketplace>` token after `plugin install|add`
 interface ParsedCmd {
   marketplaceRef: string | null
   pluginAtMkt: string
 }
 function parseCmd(cmd: string): ParsedCmd | null {
-  // marketplaceRef
+  // marketplaceRef — exclude the `marketplace add` form from the plugin matcher
+  // below by matching it first.
   const mktMatch = cmd.match(/(?:\/?plugin)\s+marketplace\s+add\s+(\S+)/i)
-  // pluginAtMkt — strip leading slash, strip trailing semicolons/&&
-  const pluginMatch = cmd.match(/(?:\/?plugin)\s+install\s+(\S+)/i)
+  // pluginAtMkt — strip leading slash, strip trailing semicolons/&&.
+  // `install` (claude) or `add` (codex); `(?!marketplace)` keeps `plugin add`
+  // from swallowing `plugin marketplace add <ref>`.
+  const pluginMatch = cmd.match(/(?:\/?plugin)\s+(?:install|add)\s+(?!marketplace\b)(\S+)/i)
   if (!pluginMatch || pluginMatch[1] === undefined) return null
   const pluginAtMkt = pluginMatch[1].replace(/[;&]+$/, '')
   if (!pluginAtMkt.includes('@')) return null
@@ -88,6 +94,18 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       ),
     }
   }
+  // v4.14.0 T3 — harness gate. The claude plugin marketplace is CC infra; on a
+  // non-claude platform this installer only proceeds when the ACTIVE cmd is a
+  // codex-flavored override (`codex plugin ...` — runInstall merged
+  // spec.harness_overrides.codex before dispatch). Anything else → honest skip,
+  // never a wrong-platform `claude plugin install` side effect.
+  const platform = detectPlatform()
+  const isCodexCmd = /^codex\b/.test(install.cmd.trim())
+  if (platform.id !== 'claude' && !(platform.id === 'codex' && isCodexCmd)) {
+    return { aborted: true, reason: 'harness-mismatch' }
+  }
+  const bin = platform.id === 'codex' ? 'codex' : 'claude'
+
   const pre = preflight(ctx)
   if (!pre.ok) {
     if (pre.abortReason === 'platform-mismatch')
@@ -119,9 +137,14 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   }
   const pluginName = parsed.pluginAtMkt.split('@')[0] ?? parsed.pluginAtMkt
 
-  // v3.0.2 hotfix: `--scope user` (writes ~/.claude.json) — CWD-independent,
-  // EPERM-free in read-only launch dirs. Sister mcpStdioAdd v3.0.2 scope flip.
-  const installArgs = ['plugin', 'install', parsed.pluginAtMkt, '--scope', 'user']
+  // v3.0.2 hotfix (claude): `--scope user` (writes ~/.claude.json) — CWD-
+  // independent, EPERM-free in read-only launch dirs. Sister mcpStdioAdd v3.0.2.
+  // v4.14.0 (codex): verb is `plugin add <p>@<m>` (no --scope; codex CLI shape
+  // per findings.md 附录 — `codex plugin add PLUGIN@MARKETPLACE`).
+  const installArgs =
+    bin === 'codex'
+      ? ['plugin', 'add', parsed.pluginAtMkt]
+      : ['plugin', 'install', parsed.pluginAtMkt, '--scope', 'user']
   const allArgs: string[][] = []
   if (parsed.marketplaceRef !== null) {
     allArgs.push(['plugin', 'marketplace', 'add', parsed.marketplaceRef])
@@ -151,15 +174,20 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // map) instead of <cwd>/.claude/settings.json (project-local). Diff target
   // updated to mirror. No `--dry-run` flag on `claude plugin install` — cmd
   // echo remains the audit trail.
-  const settingsFile = `${getMcpSpawnCwd()}/.claude.json`
+  // v4.14.0: codex plugin registry lives inline in ~/.codex/config.toml.
+  const settingsFile = bin === 'codex' ? platform.mcpConfigPath : `${getMcpSpawnCwd()}/.claude.json`
   const newEntry = JSON.stringify({ enabledPlugins: { [parsed.pluginAtMkt]: true } }, null, 2)
+  const mergeNote =
+    bin === 'codex'
+      ? '// will be registered in ~/.codex/config.toml by `codex plugin add`:'
+      : '// will be merged into ~/.claude.json enabledPlugins map by `claude plugin install --scope user`:'
   const plan: DiffPlan = {
     files: [
       {
         target: settingsFile,
         scope: 'HOME',
         oldText: '',
-        newText: `// will be merged into ~/.claude.json enabledPlugins map by \`claude plugin install --scope user\`:\n${newEntry}\n`,
+        newText: `${mergeNote}\n${newEntry}\n`,
       },
     ],
   }
@@ -183,7 +211,11 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // Step 1 — marketplace add (D-20: non-zero is non-fatal; step 2 is the decider).
   let stepOneStderr = ''
   if (parsed.marketplaceRef !== null) {
-    const r1 = await runArgs(['plugin', 'marketplace', 'add', parsed.marketplaceRef], spawnCwd)
+    const r1 = await runHarnessArgs(
+      bin,
+      ['plugin', 'marketplace', 'add', parsed.marketplaceRef],
+      spawnCwd,
+    )
     stepOneStderr = r1.stderr
     // intentional: do not return on r1.exitCode !== 0
   }
@@ -191,7 +223,7 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // Step 2 — plugin install. This is the authoritative outcome decider.
   // v3.9.9: 60s timeout (claude plugin install cold-start can exceed 15s;
   // sister mcpStdioAdd v3.0.3 same fix).
-  const r2 = await runArgs(installArgs, spawnCwd, 60_000)
+  const r2 = await runHarnessArgs(bin, installArgs, spawnCwd, 60_000)
   if (r2.exitCode !== 0) {
     return {
       ok: false,
@@ -200,16 +232,28 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `claude plugin install exited ${r2.exitCode}: ${r2.stderr.slice(0, 200)}${stepOneStderr ? ` | marketplace-add stderr: ${stepOneStderr.slice(0, 100)}` : ''}`,
+        `${bin} plugin ${bin === 'codex' ? 'add' : 'install'} exited ${r2.exitCode}: ${r2.stderr.slice(0, 200)}${stepOneStderr ? ` | marketplace-add stderr: ${stepOneStderr.slice(0, 100)}` : ''}`,
         'install-failed',
       ),
     }
   }
 
-  // v3.0.3 hotfix: verify reads ~/.claude.json directly via fs (no spawn).
-  // Sister mcpStdioAdd v3.0.3 verify rationale.
-  const registered = await isPluginRegistered(pluginName)
+  // v3.0.3 hotfix (claude): verify reads ~/.claude.json directly via fs (no
+  // spawn). Sister mcpStdioAdd v3.0.3 verify rationale.
+  // v4.14.0 (codex): no filesystem plugin registry (pluginsRegistry null) —
+  // verify spawns `codex plugin list` and matches the plugin name on stdout
+  // (15s budget; task_plan T3 REVISED). Only runs on codex, so the claude
+  // cold-start-timeout concern that motivated v3.0.3 does not regress.
+  let registered: boolean
+  if (bin === 'codex') {
+    const vr = await runHarnessArgs('codex', ['plugin', 'list'], spawnCwd, 15_000)
+    registered = vr.exitCode === 0 && vr.stdout.includes(pluginName)
+  } else {
+    registered = await isPluginRegistered(pluginName)
+  }
   if (!registered) {
+    const cfgLabel =
+      bin === 'codex' ? '`codex plugin list` output' : 'enabledPlugins map of ~/.claude.json'
     return {
       ok: false,
       phase: 'verify',
@@ -217,7 +261,7 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify: plugin '${pluginName}' not found in enabledPlugins map of ~/.claude.json after install spawn exit 0 (file may have been overwritten, or claude plugin install wrote to a non-default location)`,
+        `verify: plugin '${pluginName}' not found in ${cfgLabel} after install spawn exit 0 (file may have been overwritten, or ${bin} plugin ${bin === 'codex' ? 'add' : 'install'} wrote to a non-default location)`,
         'verify-failed',
       ),
     }

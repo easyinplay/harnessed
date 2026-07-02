@@ -83,10 +83,13 @@ describe('dual-platform resolution (Phase C / Acceptance 5)', () => {
     expect(x.supportsEnvKeyWrite).toBe(false)
   })
 
-  it('idempotent probe set is descriptor-derived = both harness skills dirs', () => {
+  // v4.14.0 — third entry ~/.codex/skills (codex-native installers like
+  // `@opengsd/gsd-core --codex` write there; probe-only widening).
+  it('idempotent probe set is descriptor-derived = all harness skills dirs', () => {
     expect(harnessSkillsDirs(HOME)).toEqual([
       join(HOME, '.claude', 'skills'),
       join(HOME, '.agents', 'skills'),
+      join(HOME, '.codex', 'skills'),
     ])
   })
 })

@@ -24,6 +24,7 @@ import * as p from '@clack/prompts'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
 import { getHarnessedRoot } from '../installers/lib/harnessedRoot.js'
+import { detectPlatform } from '../installers/lib/platform.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { runUninstall } from '../uninstallers/index.js'
@@ -96,9 +97,12 @@ async function removeSettingsEnv(settingsPath: string): Promise<boolean> {
 }
 
 async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void> {
-  const commandsDir = join(home, '.claude', 'commands')
-  const skillsDir = join(home, '.claude', 'skills')
-  const settingsPath = join(home, '.claude', 'settings.json')
+  // v4.14.0 — dirs via the active PlatformDescriptor (claude byte-identical:
+  // commandsDir/skillsDir/settingsPath resolve to the pre-4.14.0 ~/.claude paths).
+  const platform = detectPlatform(home)
+  const commandsDir = platform.commandsDir
+  const skillsDir = platform.skillsDir
+  const settingsPath = platform.settingsPath
   const harnessedRoot = getHarnessedRoot()
 
   // Discover workflow names from bundled workflows/
@@ -191,11 +195,12 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
     }
   }
 
-  // Defense-in-depth: validate state dir is under ~/.claude/ before recursive rm.
+  // Defense-in-depth: validate state dir is under the platform home dir
+  // (~/.claude or ~/.codex) before recursive rm. Claude behavior unchanged.
   const normalizedRoot = pathResolve(harnessedRoot)
-  const claudeDir = join(home, '.claude')
-  if (!normalizedRoot.startsWith(pathResolve(claudeDir) + sep)) {
-    console.error(`error: state dir ${harnessedRoot} is not under ${claudeDir} — refusing`)
+  const platformHome = platform.homeDir
+  if (!normalizedRoot.startsWith(pathResolve(platformHome) + sep)) {
+    console.error(`error: state dir ${harnessedRoot} is not under ${platformHome} — refusing`)
     process.exit(1)
   }
   let removedStateDir = false

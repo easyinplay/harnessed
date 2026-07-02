@@ -111,6 +111,19 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
     expect(events.every((e) => e.status === 'installed')).toBe(true)
   })
 
+  // v4.14.0 T3 — aborted 'harness-mismatch' surfaces as a self-explanatory
+  // skipped reason (bare 'harness-mismatch' told the user nothing).
+  it("maps aborted 'harness-mismatch' to a descriptive skipped reason", async () => {
+    wireValidate({
+      'k.yaml': { name: 'karpathy-skills', method: 'cc-plugin-marketplace' },
+    })
+    runInstallMock.mockResolvedValue({ aborted: true, reason: 'harness-mismatch' } as never)
+    const b = await runStepBInstall(['k.yaml'], { quiet: true })
+    expect(b.skipped).toHaveLength(1)
+    expect(b.skipped[0]?.name).toBe('karpathy-skills')
+    expect(b.skipped[0]?.reason).toContain('claude-only install method')
+  })
+
   it('classifies statuses and reports failed validation without running install', async () => {
     validateMock.mockImplementation(((_src: string, path: string) => {
       if (path.includes('bad')) {

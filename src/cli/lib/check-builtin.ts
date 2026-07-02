@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { detectPlatform } from '../../installers/lib/platform.js'
 
 export interface CheckResult {
   name: string
@@ -41,6 +42,15 @@ export function checkNodeVersion(): CheckResult {
 }
 
 export async function checkMcpScope(): Promise<CheckResult> {
+  // v4.14.0 — this check reads CC-specific files (~/.claude.json); on any other
+  // platform it is meaningless → pass-skip.
+  if (detectPlatform().id !== 'claude') {
+    return {
+      name: 'mcp scope = project',
+      status: 'pass',
+      message: 'skipped (claude-only check)',
+    }
+  }
   // ADR 0004 § 5: MCP servers must be installed at project scope (.mcp.json),
   // never at user scope (~/.claude.json mcpServers block) — CC #54803.
   const projectMcp = join(process.cwd(), '.mcp.json')

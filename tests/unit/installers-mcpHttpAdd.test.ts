@@ -368,3 +368,79 @@ describe('installMcpHttpAdd', () => {
     }
   })
 })
+
+// v4.14.0 T2 — codex platform routing: `codex mcp add <name> --url <url>`;
+// --header unsupported by codex CLI → fail-loud preflight error.
+describe('installMcpHttpAdd — codex platform (v4.14.0)', () => {
+  const CODEX_TOML = '[mcp_servers.exa-mcp-http]\nurl = "https://exa.example.com/mcp"\n'
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    spawnMock.mockReset()
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue(CODEX_TOML)
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    delete process.env.HTTP_TEST_KEY
+  })
+
+  it('spawns `codex mcp add <name> --url <url>` (no --scope/--transport)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpHttpAdd(ctx())
+      expect(r).toMatchObject({ ok: true })
+      const flat = spawnMock.mock.calls
+        .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
+        .join('\n')
+      expect(flat).toContain('codex')
+      expect(flat).not.toContain('claude')
+      expect(flat).toContain('mcp add exa-mcp-http --url https://exa.example.com/mcp')
+      expect(flat).not.toContain('--scope')
+      expect(flat).not.toContain('--transport')
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('--header present on codex → ok:false preflight (codex CLI has no --header)', async () => {
+    const s = silence()
+    try {
+      process.env.HTTP_TEST_KEY = 'sk-123'
+      const c = ctx({}, (m) => {
+        m.spec.install.cmd =
+          'claude mcp add --transport http exa-mcp-http https://exa.example.com/mcp --header "X-Key: ${HTTP_TEST_KEY}"'
+      })
+      const r = await installMcpHttpAdd(c)
+      expect(r).toMatchObject({ ok: false, phase: 'preflight' })
+      if ('error' in r && r.error) {
+        expect(r.error.message).toContain('--header')
+        expect(r.error.message).toContain('codex')
+      }
+      expect(spawnMock).not.toHaveBeenCalled()
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('happy path: appliedFiles targets ~/.codex/config.toml', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpHttpAdd(ctx())
+      expect(r).toMatchObject({ ok: true })
+      if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
+        expect(
+          r.appliedFiles.some((f) => f.replace(/\\/g, '/').endsWith('.codex/config.toml')),
+        ).toBe(true)
+      }
+    } finally {
+      s.restore()
+    }
+  })
+})

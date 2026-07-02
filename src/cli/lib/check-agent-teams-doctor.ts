@@ -6,6 +6,7 @@
 // Status map: checkAgentTeams 'pass' → 'pass'; 'missing' → 'warn' (non-blocking
 // per CLAUDE.md L21 "warn ≠ fail / exit 0" R2.4.1 + R20.11 acceptance c).
 
+import { detectPlatform } from '../../installers/lib/platform.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
 
 interface CheckResult {
@@ -16,6 +17,16 @@ interface CheckResult {
 }
 
 export async function checkAgentTeamsDoctor(): Promise<CheckResult> {
+  // v4.14.0 — Agent Teams is a Claude Code concept; on other platforms the
+  // warn + CC remediation are meaningless → pass-skip (sister
+  // warnIfAgentTeamsMissing gate in setup-helpers.ts).
+  if (detectPlatform().id !== 'claude') {
+    return {
+      name: 'Agent Teams env',
+      status: 'pass',
+      message: 'skipped (claude-only check)',
+    }
+  }
   const r = await checkAgentTeams()
   if (r.status === 'pass') {
     const source = r.detected.env ? 'env var' : 'settings.json'

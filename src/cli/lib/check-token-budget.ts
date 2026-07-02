@@ -3,9 +3,9 @@
 // skills/ SKILL.md frontmatter description tokens via Phase 3.1 D-01
 // estimateTokens (Buffer.byteLength /4 zero-dep heuristic). Karpathy ≤40L hard.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { estimateTokens } from '../../checkpoint/template.js'
+import { getSkillsDir } from '../../installers/lib/platform.js'
 import type { CheckResult } from './check-deprecations.js'
 
 const CONTEXT_WINDOW_TOKENS = 200_000
@@ -24,7 +24,8 @@ function scanSkillsDir(root: string): { name: string; tokens: number }[] {
 }
 
 export function checkTokenBudget(): CheckResult {
-  const roots = [join(homedir(), '.claude', 'skills'), join(process.cwd(), 'skills')]
+  // v4.14.0 — user-skills root via descriptor (claude byte-identical path).
+  const roots = [getSkillsDir(), join(process.cwd(), 'skills')]
   const items = roots.flatMap(scanSkillsDir)
   const total = items.reduce((s, i) => s + i.tokens, 0)
   const over = items.filter((i) => i.tokens > PER_SKILL_THRESHOLD).length

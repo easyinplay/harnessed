@@ -33,6 +33,18 @@ spec:
     timeout_ms: 5000
   uninstall:
     cmd: "/plugin uninstall planning-with-files@planning-with-files"
+  # v4.14.0 — codex install path (findings 附录实证: README "installs across 60+
+  # agents via the SKILL.md standard" + .codex hooks adapter/docs/codex.md)。
+  harness_overrides:
+    codex:
+      install:
+        method: npx-skill-installer
+        cmd: "npx --yes skills@latest add OthmanAdi/planning-with-files --copy -y"
+        npm_version: ^1.5.7
+        idempotent_check: "test -d ~/.agents/skills/planning-with-files || test -d ~/.claude/skills/planning-with-files"
+      verify:
+        cmd: "test -f ~/.agents/skills/planning-with-files/SKILL.md || test -f ~/.claude/skills/planning-with-files/SKILL.md"
+        timeout_ms: 5000
   upstream_health:
     stability: stable
     last_check: "2026-05-11"

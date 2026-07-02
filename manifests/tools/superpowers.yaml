@@ -30,6 +30,19 @@ spec:
     timeout_ms: 5000
   uninstall:
     cmd: "/plugin uninstall superpowers@superpowers-marketplace"
+  # v4.14.0 — codex install path (findings 附录实证: obra/superpowers README 官方
+  # 支持 Codex CLI;openai-curated 为 codex 预置 marketplace,superpowers 在列 →
+  # 单步 `codex plugin add`,无需 marketplace add)。
+  harness_overrides:
+    codex:
+      install:
+        method: cc-plugin-marketplace
+        cmd: "codex plugin add superpowers@openai-curated"
+        git_ref: v6.0.3
+        idempotent_check: "codex plugin list | grep -q superpowers"
+      verify:
+        cmd: "codex plugin list | grep -q superpowers"
+        timeout_ms: 15000
   upstream_health:
     stability: stable
     last_check: "2026-06-30"

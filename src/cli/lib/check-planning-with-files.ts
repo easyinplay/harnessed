@@ -10,6 +10,7 @@
 import { readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { getPluginsRegistry } from '../../installers/lib/platform.js'
 
 interface CheckResult {
   name: string
@@ -33,6 +34,17 @@ const INSTALL_COMMANDS = [
 ] as const
 
 export async function checkPlanningWithFiles(): Promise<CheckResult> {
+  // v4.14.0 — plugin-cache probe is a claude-only concept. On a platform with
+  // no plugin registry (codex) the warn + `claude plugin install` remediation
+  // would be misleading → pass-skip (setup's codex install path is the
+  // harness_overrides npx-skill route, verified by its own manifest verify).
+  if (getPluginsRegistry() === null) {
+    return {
+      name: 'planning-with-files plugin',
+      status: 'pass',
+      message: 'skipped (claude-only plugin-cache probe; no plugin registry on this platform)',
+    }
+  }
   const root = join(
     homedir(),
     '.claude',

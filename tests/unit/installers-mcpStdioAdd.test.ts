@@ -17,7 +17,7 @@
 // Mocks: child_process / fs/promises / @clack/prompts (C6 mitigation).
 
 import { EventEmitter } from 'node:events'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
 // v3.0.3 — verify reads ~/.claude.json via fs; mock returns a valid mcpServers
@@ -347,6 +347,81 @@ describe('installMcpStdioAdd', () => {
       readFileMock.mockResolvedValue('{ not valid json')
       const r = await installMcpStdioAdd(ctx())
       expect(r).toMatchObject({ ok: false, phase: 'verify' })
+    } finally {
+      s.restore()
+    }
+  })
+})
+
+// v4.14.0 T2 — codex platform routing: `codex mcp add <name> -- npx --yes <pkg>@<ver>`
+// (no --scope / --transport flags — codex CLI shape per findings.md research),
+// verify probes ~/.codex/config.toml [mcp_servers.<name>] header.
+describe('installMcpStdioAdd — codex platform (v4.14.0)', () => {
+  const CODEX_TOML = '[mcp_servers.tavily-mcp]\ncommand = "npx"\n'
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    spawnMock.mockReset()
+    readFileMock.mockReset()
+    readFileMock.mockResolvedValue(CODEX_TOML)
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it('spawns `codex mcp add <name> -- npx --yes <pkg>@<ver>` (no --scope/--transport)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpStdioAdd(ctx())
+      expect(r).toMatchObject({ ok: true })
+      const flat = spawnMock.mock.calls
+        .map((c) => `${String(c[0])} ${((c[1] ?? []) as string[]).join(' ')}`)
+        .join('\n')
+      expect(flat).toContain('codex')
+      expect(flat).not.toContain('claude')
+      expect(flat).toContain('mcp add tavily-mcp -- npx --yes tavily-mcp@^1.0.0')
+      expect(flat).not.toContain('--scope')
+      expect(flat).not.toContain('--transport')
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('happy path: appliedFiles targets ~/.codex/config.toml', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpStdioAdd(ctx())
+      expect(r).toMatchObject({ ok: true })
+      if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
+        expect(
+          r.appliedFiles.some((f) => f.replace(/\\/g, '/').endsWith('.codex/config.toml')),
+        ).toBe(true)
+      }
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('install ok but header missing from config.toml → verify-failed mentions config.toml', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      readFileMock.mockReset()
+      readFileMock.mockResolvedValue('[mcp_servers.other-mcp]\ncommand = "npx"\n')
+      const r = await installMcpStdioAdd(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'verify' })
+      if ('error' in r && r.error) {
+        expect(r.error.keyword).toBe('verify-failed')
+        expect(r.error.message).toContain('config.toml')
+      }
     } finally {
       s.restore()
     }

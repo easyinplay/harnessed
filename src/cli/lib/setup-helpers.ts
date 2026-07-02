@@ -11,6 +11,7 @@
 import { readFile } from 'node:fs/promises'
 import { runInstall } from '../../installers/index.js'
 import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
+import { detectPlatform } from '../../installers/lib/platform.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
@@ -36,6 +37,10 @@ export type { NestedWorkflow, ScanResult } from './scan-nested.js'
  * when Agent Teams CC env flag is off (session-scoped tolerance policy).
  */
 export async function warnIfAgentTeamsMissing(): Promise<void> {
+  // v4.14.0 — Agent Teams is a Claude Code concept (CC 2.1.133+ env flag); on
+  // any other harness platform the warning + `claude config set` remediation
+  // are meaningless noise → silent no-op.
+  if (detectPlatform().id !== 'claude') return
   const r = await checkAgentTeams()
   if (r.status !== 'missing') return
   console.warn('\n⚠️  Agent Teams 未启用 — parallelism-gate 升级路径不可用')
@@ -167,7 +172,15 @@ export async function runStepBInstall(
     const name = manifest.metadata.name
     try {
       const r = await runInstall(manifest, opts)
-      if ('aborted' in r) return emit({ status: 'skipped', name, reason: r.reason })
+      if ('aborted' in r) {
+        // v4.14.0 — bare 'harness-mismatch' tells the user nothing; expand to a
+        // self-explanatory skip note (platform id from the active descriptor).
+        const reason =
+          r.reason === 'harness-mismatch'
+            ? `harness-mismatch — claude-only install method (no ${detectPlatform().id} equivalent)`
+            : r.reason
+        return emit({ status: 'skipped', name, reason })
+      }
       if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)
         return emit({ status: 'already-installed', name })
       if (r.ok) return emit({ status: 'installed', name })

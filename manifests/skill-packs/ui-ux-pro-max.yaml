@@ -31,6 +31,18 @@ spec:
     cmd: "rm -rf ~/.claude/skills/ui-ux-pro-max"
     cleanup_paths:
       - ~/.claude/skills/ui-ux-pro-max
+  # v4.14.0 — codex install path: 上游源码本体就在 midway .codex/skills/(findings
+  # 附录),override 仅把 cp 目标换到共享 ~/.agents/skills(codex descriptor skillsDir)。
+  harness_overrides:
+    codex:
+      install:
+        method: git-clone-with-setup
+        cmd: "rm -rf ~/.agents/skills/.cache/midway-uiux && git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.agents/skills/.cache/midway-uiux && mkdir -p ~/.agents/skills && rm -rf ~/.agents/skills/ui-ux-pro-max && cp -R ~/.agents/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.agents/skills/ui-ux-pro-max && rm -rf ~/.agents/skills/.cache/midway-uiux"
+        git_ref: e89d70e4bcd0ae04709a773db549cf61fcf813ac
+        idempotent_check: "test -f ~/.agents/skills/ui-ux-pro-max/SKILL.md"
+      verify:
+        cmd: "test -f ~/.agents/skills/ui-ux-pro-max/SKILL.md"
+        timeout_ms: 5000
   upstream_health:
     stability: beta
     last_check: "2026-05-13"

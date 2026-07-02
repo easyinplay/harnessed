@@ -3,9 +3,9 @@
 // extractSkillName imported from shared lib (sister installers/lib/idempotent.ts).
 
 import { rm } from 'node:fs/promises'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { extractSkillName } from '../installers/lib/idempotent.js'
+import { getSkillsDir } from '../installers/lib/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -20,7 +20,8 @@ export const uninstallNpxSkillInstaller: Uninstaller = async (ctx) => {
 
   const name = ctx.manifest.metadata.name
   const skillName = extractSkillName(install.cmd, name)
-  const skillDir = join(homedir(), '.claude', 'skills', skillName)
+  // v4.14.0 — platform skills dir via descriptor (was hardcoded ~/.claude/skills).
+  const skillDir = join(getSkillsDir(), skillName)
 
   await rm(skillDir, { recursive: true, force: true, maxRetries: 3 })
   return { ok: true, removedPaths: [skillDir] }

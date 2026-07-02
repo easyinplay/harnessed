@@ -65,7 +65,14 @@ export type InstallResult =
       error: InstallError
       backupId?: string
     }
-  | { aborted: true; reason: 'user-cancel' | 'level-flag-missing' | 'platform-mismatch' }
+  // v4.14.0 — 'harness-mismatch': the active harness platform (detectPlatform)
+  // has no install path for this method and the manifest declares no
+  // spec.harness_overrides entry for it. Honest skip, never a wrong-platform
+  // side effect (e.g. codex setup silently writing ~/.claude.json).
+  | {
+      aborted: true
+      reason: 'user-cancel' | 'level-flag-missing' | 'platform-mismatch' | 'harness-mismatch'
+    }
 
 export type Installer = (ctx: InstallContext) => Promise<InstallResult>
 

@@ -154,11 +154,15 @@ describe('platform — detectPlatform precedence (Phase C / D3)', () => {
 })
 
 describe('platform — harnessSkillsDirs (Phase C / D6)', () => {
-  it('returns deduped [claude.skillsDir, codex.skillsDir]', () => {
+  // v4.14.0 — third entry ~/.codex/skills: codex's own skills dir (distinct from
+  // the shared ~/.agents/skills descriptor skillsDir); upstream codex installers
+  // write there (e.g. @opengsd/gsd-core --codex). Probe-only widening.
+  it('returns deduped [claude.skillsDir, codex.skillsDir, codex homeDir skills]', () => {
     const dirs = harnessSkillsDirs('/home/x')
     expect(dirs).toEqual([
       join('/home/x', '.claude', 'skills'),
       join('/home/x', '.agents', 'skills'),
+      join('/home/x', '.codex', 'skills'),
     ])
   })
 })

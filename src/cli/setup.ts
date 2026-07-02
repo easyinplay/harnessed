@@ -423,7 +423,9 @@ export function registerSetup(program: Command): void {
         }),
       )
       if (b.alreadyInstalled.length > 0 || b.installed.length > 0) {
-        console.log(t('setup.mcp_hint'))
+        // v4.14.0 — hint follows the active platform ("/mcp in Claude Code" is
+        // meaningless on codex; there the check is `codex mcp list`).
+        console.log(t(detectPlatform().id === 'codex' ? 'setup.mcp_hint_codex' : 'setup.mcp_hint'))
       }
 
       // ── Phase v2.0-2.3 W1.1: Pure bundled distribution highlight (D-01) ───

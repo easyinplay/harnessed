@@ -41,9 +41,10 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
+import { detectPlatform } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
-import { runArgs } from './lib/runClaudeArgs.js'
+import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
@@ -163,10 +164,38 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
     }
   }
 
-  // v3.0.2 hotfix: `--scope user` writes ~/.claude.json (user-global config,
-  // CWD-independent). Pre-v3.0.2 `--scope project` writes <cwd>/.mcp.json
+  // v4.14.0 — platform routing (sister mcpStdioAdd). codex http shape is
+  // `codex mcp add <name> --url <url>`; codex CLI has NO --header flag, so a
+  // headered manifest fails loud instead of silently dropping auth headers.
+  const platform = detectPlatform()
+  if (platform.id !== 'claude' && platform.id !== 'codex') {
+    return { aborted: true, reason: 'harness-mismatch' }
+  }
+  const bin = platform.id
+  if (bin === 'codex' && hdr.flat.length > 0) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: {
+        ...err(
+          ctx,
+          '/spec/install/cmd',
+          `mcp-http-add --header is not supported by the codex CLI (\`codex mcp add\` has no --header flag); this server cannot be installed on the codex platform with auth headers`,
+          'harness-unsupported-headers',
+        ),
+        suggest:
+          'install this MCP server on the claude platform, or drop the --header from the manifest if the endpoint is unauthenticated',
+      },
+    }
+  }
+
+  // v3.0.2 hotfix (claude): `--scope user` writes ~/.claude.json (user-global
+  // config, CWD-independent). Pre-v3.0.2 `--scope project` writes <cwd>/.mcp.json
   // which EPERMs in read-only CWD. Mirrors mcpStdioAdd v3.0.2 scope flip.
-  const addArgs = ['mcp', 'add', '--scope', 'user', '--transport', 'http', ...hdr.flat, name, url]
+  const addArgs =
+    bin === 'codex'
+      ? ['mcp', 'add', name, '--url', url]
+      : ['mcp', 'add', '--scope', 'user', '--transport', 'http', ...hdr.flat, name, url]
 
   // H2 defense-in-depth — re-screen each constructed arg. Header values were
   // env-resolved above, so no ${VAR} pattern reaches this check; URL is a
@@ -190,7 +219,8 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // v3.0.2: diff target is ~/.claude.json (user-global, `--scope user`)
   // instead of <cwd>/.mcp.json (project-local). Entry shape per CC spec:
   // { [name]: { type: 'http', url, headers: {Key:Value} } } — non-stdio.
-  const mcpFile = `${getMcpSpawnCwd()}/.claude.json`
+  // v4.14.0: codex target is ~/.codex/config.toml (url-form [mcp_servers] table).
+  const mcpFile = bin === 'codex' ? platform.mcpConfigPath : `${getMcpSpawnCwd()}/.claude.json`
   // Reassemble headers as an object for the diff preview (purely informational).
   const headersObj: Record<string, string> = {}
   for (let i = 0; i < hdr.flat.length; i += 2) {
@@ -204,13 +234,17 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
       ? { [name]: { type: 'http', url, headers: headersObj } }
       : { [name]: { type: 'http', url } }
   const newEntry = JSON.stringify(entry, null, 2)
+  const mergeNote =
+    bin === 'codex'
+      ? `// will be written as [mcp_servers.${name}] (url form) into ~/.codex/config.toml by \`codex mcp add\`:`
+      : '// will be merged into ~/.claude.json mcpServers map by `claude mcp add --scope user`:'
   const plan: DiffPlan = {
     files: [
       {
         target: mcpFile,
         scope: 'HOME',
         oldText: '',
-        newText: `// will be merged into ~/.claude.json mcpServers map by \`claude mcp add --scope user\`:\n${newEntry}\n`,
+        newText: `${mergeNote}\n${newEntry}\n`,
       },
     ],
   }
@@ -230,7 +264,7 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // regardless of spawn cwd, but the CC CLI may create temp files in cwd;
   // homedir() avoids EPERM when user launches harnessed from a read-only CWD.
   const spawnCwd = install.cwd ?? getMcpSpawnCwd()
-  const r = await runArgs(addArgs, spawnCwd)
+  const r = await runHarnessArgs(bin, addArgs, spawnCwd)
   if (r.exitCode !== 0) {
     // ADR 0004 idempotent contract: server already registered is not a failure.
     // v3.0.2: match on "already exists" substring (CC CLI error message no
@@ -245,7 +279,7 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `claude mcp add (http) exited ${r.exitCode}: ${r.stderr.slice(0, 200)}`,
+        `${bin} mcp add (http) exited ${r.exitCode}: ${r.stderr.slice(0, 200)}`,
         'install-failed',
       ),
     }
@@ -256,6 +290,11 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // instant, immune to cold-start timeout.
   const registered = await isMcpServerRegistered(name)
   if (!registered) {
+    // v4.14.0 — config label follows the platform; claude wording byte-identical.
+    const cfgLabel =
+      bin === 'codex'
+        ? '[mcp_servers] table of ~/.codex/config.toml'
+        : 'mcpServers map of ~/.claude.json'
     return {
       ok: false,
       phase: 'verify',
@@ -263,7 +302,7 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify: '${name}' not found in mcpServers map of ~/.claude.json after install spawn exit 0 (file may have been overwritten, or claude mcp add wrote to a non-default location)`,
+        `verify: '${name}' not found in ${cfgLabel} after install spawn exit 0 (file may have been overwritten, or ${bin} mcp add wrote to a non-default location)`,
         'verify-failed',
       ),
     }

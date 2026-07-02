@@ -65,8 +65,10 @@ export async function confirmAt(level: Level, ctx: InstallContext): Promise<Conf
     if (first !== true) return { proceed: false }
 
     const second = await p.confirm({
+      // v4.14.0 — wording generalized: the shared user-scope config is
+      // ~/.claude.json on claude, ~/.codex/config.toml on codex.
       message:
-        'This affects other plugins (e.g. ~/.claude.json is shared user-scope state). Confirm again?',
+        'This affects other plugins (the harness user-scope config is shared state). Confirm again?',
       initialValue: false,
     })
     if (p.isCancel(second)) return { proceed: false, reason: 'user-cancel' }
