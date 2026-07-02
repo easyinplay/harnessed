@@ -78,7 +78,10 @@ export interface StepBResult {
   // present on disk (prior version retained). Rendered as a WARN bucket, not an
   // error: "kept existing — refresh failed, prior version retained". Only ever
   // populated by the force-update second pass after reclassifyForceUpdateFailures.
-  keptExisting?: string[]
+  // v4.15.2 T3 — carries the underlying failure reason (pre-4.15.2 the reason was
+  // swallowed by reclassification; user dogfood could not diagnose WHY mattpocock
+  // refresh failed).
+  keptExisting?: { name: string; reason: string }[]
 }
 
 /** v4.13.0 — per-manifest completion event for live setup progress output.
@@ -242,8 +245,10 @@ export async function runStepBInstall(
 export interface ForceUpdateReclassification {
   /** Remaining genuine failures, verbatim `"<name>: <reason>"` form. */
   failed: string[]
-  /** Bare component names whose refresh failed but whose prior install survives. */
-  keptExisting: string[]
+  /** Components whose refresh failed but whose prior install survives.
+   *  v4.15.2 — reason preserved for the summary table (was: bare names, which
+   *  swallowed the diagnosis; user dogfood could not tell WHY a refresh failed). */
+  keptExisting: { name: string; reason: string }[]
 }
 
 /** Pure (probe-injected) reclassification. For each force-pass failure that was
@@ -258,9 +263,10 @@ export async function reclassifyForceUpdateFailures(
 ): Promise<ForceUpdateReclassification> {
   const priorlyInstalled = new Set(firstPass.alreadyInstalled)
   const failed: string[] = []
-  const keptExisting: string[] = []
+  const keptExisting: { name: string; reason: string }[] = []
   for (const entry of forcePass.failed) {
-    const name = (entry.match(/^([^:]+):/)?.[1] ?? entry).trim()
+    const m = entry.match(/^([^:]+):\s*(.*)$/s)
+    const name = (m?.[1] ?? entry).trim()
     if (priorlyInstalled.has(name)) {
       let present = false
       try {
@@ -269,7 +275,7 @@ export async function reclassifyForceUpdateFailures(
         present = false
       }
       if (present) {
-        keptExisting.push(name)
+        keptExisting.push({ name, reason: m?.[2]?.trim() ?? '' })
         continue
       }
     }

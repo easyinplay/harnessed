@@ -200,10 +200,10 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     expect(JSON.parse(stdout).summary).toBe('warn')
   })
 
-  it('cell 3 — jq missing → fail → exit 1 per B-06', async () => {
+  it('cell 3 — jq missing → warn → exit 0 (v4.15.2 T5: jq is optional, not a core dep)', async () => {
     mockSpawn({ jq: false })
     const { code } = await runCli(['doctor'])
-    expect(code).toBe(1)
+    expect(code).toBe(0)
   })
 
   it('cell 4 — --json emits {checks, summary} 3-tier "pass|warn|fail" for CI', async () => {

@@ -34,6 +34,7 @@ import { checkCmdString } from '../../manifest/security.js'
 import { evalTestChain } from './nativeTest.js'
 import { resolveBash } from './resolveBash.js'
 import type { InstallContext, InstallResult } from './types.js'
+import { sanitizeOutputTail } from './verifyMessage.js'
 
 /** v3.9.8 — pre-expand `~/` to OS home dir before passing cmd to cmd.exe.
  *  Windows cmd.exe does NOT expand `~` as POSIX shells do, causing
@@ -46,6 +47,43 @@ function expandTildeForWindows(cmd: string): string {
   // Match `~/` only at start of string OR after whitespace / shell-quote /
   // glob-safe boundary chars — avoid replacing `something~/x`.
   return cmd.replace(/(^|[\s"'`(])~\//g, `$1${home}/`)
+}
+
+/** v4.15.2 T2 — does this cmd actually NEED a POSIX shell? Callers pass
+ *  posixShell for whole manifest surfaces (all verify cmds), but plain exe
+ *  invocations like `ctx7 --version` have no POSIX dependency — routing them
+ *  through bash made them hostage to the machine's bash health (v4.15.1
+ *  dogfood: WSL app-alias broke `ctx7 --version` for no reason). Conservative:
+ *  any shell syntax or coreutil first-token keeps the POSIX route. */
+const POSIX_SYNTAX_RE = /[|;<>`$~[\]{}()*?!]|&&/
+const POSIX_FIRST_TOKENS = new Set([
+  'test',
+  'grep',
+  'rm',
+  'cp',
+  'mv',
+  'mkdir',
+  'ls',
+  'cat',
+  'cd',
+  'sh',
+  'bash',
+  'command',
+  'find',
+  'sed',
+  'awk',
+  'touch',
+  'ln',
+  'chmod',
+  'head',
+  'tail',
+  'which',
+  'echo',
+])
+export function needsPosixShell(cmd: string): boolean {
+  if (POSIX_SYNTAX_RE.test(cmd)) return true
+  const firstToken = cmd.trim().split(/\s+/)[0]?.toLowerCase() ?? ''
+  return POSIX_FIRST_TOKENS.has(firstToken)
 }
 
 export const DEFAULT_VERIFY_TIMEOUT_MS = 15_000
@@ -138,7 +176,10 @@ export async function spawnCmd(
   // Closed stdin makes prompt-happy CLIs fail fast or take their non-TTY default.
   const stdio: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
   if (process.platform === 'win32') {
-    if (opts?.posixShell) {
+    // v4.15.2 T2 — posixShell is a capability HINT, not a hard route: a cmd with
+    // no POSIX dependency (plain exe verify like `ctx7 --version`) runs via
+    // cmd.exe, decoupling it from bash health entirely (.cmd shims prefer it).
+    if (opts?.posixShell && needsPosixShell(joinedCmd)) {
       // v4.15.1 T1 — resolve Git Bash explicitly instead of trusting PATH order.
       // A System32 WSL stub on PATH made `spawn('bash')` silently execute against
       // the (absent) Linux side — refuse it fail-loud with a specific hint.
@@ -195,8 +236,9 @@ export async function spawnCmd(
           path: '/spec/install/cmd',
           // v4.15.1 — fall back to stdout when stderr is empty (WSL stubs and
           // some CLIs write their error text to stdout; a bare trailing colon
-          // read as "no reason" in user dogfood).
-          message: `spawn timed out after ${effectiveTimeoutMs}ms (cmd: ${cmd}); partial output: ${(stderr || stdout).slice(0, 200) || '(no output)'}`,
+          // read as "no reason" in user dogfood). v4.15.2 — sanitized (CP936
+          // mojibake was embedded verbatim in the ctx7 dogfood error).
+          message: `spawn timed out after ${effectiveTimeoutMs}ms (cmd: ${cmd}); partial output: ${(stderr || stdout).trim() ? sanitizeOutputTail(stderr || stdout, 200) : '(no output)'}`,
           line: null,
           column: null,
           keyword: 'spawn-timeout',

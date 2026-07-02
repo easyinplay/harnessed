@@ -129,7 +129,11 @@ describe('cli/doctor', () => {
     expect(code).toBe(0)
   })
 
-  it('jq missing → exit 1', async () => {
+  // v4.15.2 T5 — jq downgraded fail → warn (optional dep: only `audit-log --filter`
+  // + ralph-loop-on-Windows consume it). Direct unit assertion on the check — the
+  // full-CLI exit code under an everything-fails spawn mock mixes in host-dependent
+  // checks (winbash / gstack fs probes).
+  it('jq missing → warn (not fail) + install_commands for auto-install (v4.15.2 T5)', async () => {
     spawnSyncMock.mockImplementation(() => {
       return {
         status: 127,
@@ -142,9 +146,11 @@ describe('cli/doctor', () => {
         // biome-ignore lint/suspicious/noExplicitAny: spawnSync return shape varies
       } as any
     })
-    readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
-    const code = await runCli(['doctor'])
-    expect(code).toBe(1)
+    const { checkJq } = await import('../../src/cli/lib/check-builtin.js')
+    const r = checkJq()
+    expect(r.status).toBe('warn')
+    expect(r.message).toContain('optional')
+    expect(r.install_commands?.length).toBe(1)
   })
 
   // v4.15.1 — semantics flipped: user-scope mcpServers is the state harnessed's

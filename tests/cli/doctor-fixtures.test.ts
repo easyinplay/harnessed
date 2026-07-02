@@ -213,8 +213,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
         ]),
       )
       if (scenario.name === 'missing-jq') {
-        expect(parsed.summary).toBe('fail')
-        expect(code).toBe(1)
+        // v4.15.2 T5 — jq downgraded fail → warn (optional: only audit-log --filter
+        // + ralph-loop-on-Windows consume it; setup/core never does).
+        expect(parsed.summary).toBe('warn')
+        expect(code).toBe(0)
       } else if (scenario.name === 'tampered-origin') {
         expect(parsed.summary).toBe('warn') // doctor allowFork=true → warn (audit fails hard)
         expect(code).toBe(0) // B-06: warn ≠ fail

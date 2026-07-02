@@ -17,6 +17,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { detectPlatform } from '../../installers/lib/platform.js'
 import { resolveBash } from '../../installers/lib/resolveBash.js'
+import { sanitizeOutputTail } from '../../installers/lib/verifyMessage.js'
 
 export interface CheckResult {
   name: string
@@ -110,16 +111,31 @@ export function checkJq(): CheckResult {
       : process.platform === 'darwin'
         ? 'brew install jq'
         : 'apt-get install jq  (or: dnf install jq)'
-  return { name: 'jq present', status: 'fail', message: 'jq not found in PATH', fix }
+  // v4.15.2 T5 — fail → warn. 实际消费方核查:jq 只被 (1) `harnessed audit-log
+  // --filter`(可选功能,自带 ENOENT 降级提示)与 (2) ralph-loop plugin 的 Windows
+  // 运行时(manifest notice)使用 — 不是 setup/核心链路依赖,不该把 doctor 打红。
+  // install_commands 让 setup 末尾的 auto-install 可以顺手补装。
+  const installCmd =
+    process.platform === 'win32'
+      ? 'winget install jqlang.jq'
+      : process.platform === 'darwin'
+        ? 'brew install jq'
+        : 'apt-get install -y jq'
+  return {
+    name: 'jq present',
+    status: 'warn',
+    message:
+      'jq not found in PATH (optional — needed by `harnessed audit-log --filter` and the ralph-loop plugin on Windows)',
+    fix,
+    install_commands: [installCmd],
+  }
 }
 
-/** v4.15.1 — sanitize external tool output before embedding in a doctor line:
- *  first line only, printable chars only, capped. The WSL stub prints a CP936
- *  error to stdout that rendered as mojibake in the user's doctor output. */
+/** v4.15.2 T4 — delegates to the shared sanitizer (verifyMessage.ts): doctor and
+ *  installer error tails go through the SAME cleaning (first non-empty line,
+ *  printable-only, capped). Local wrapper keeps the 60-char doctor cap. */
 function sanitizeToolOutput(raw: string, cap = 60): string {
-  const first = raw.split(/\r?\n/)[0] ?? ''
-  const printable = first.replace(/[^\x20-\x7E]/g, '').trim()
-  return printable.length > 0 ? printable.slice(0, cap) : '(unreadable output)'
+  return sanitizeOutputTail(raw, cap)
 }
 
 export function checkWinBash(): CheckResult {

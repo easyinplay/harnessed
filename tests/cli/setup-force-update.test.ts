@@ -35,7 +35,10 @@ describe('reclassifyForceUpdateFailures — Fix C kept-existing fail-soft', () =
     const first = mkResult({ alreadyInstalled: ['gstack', 'gsd'] })
     const force = mkResult({ failed: ['gstack: git-clone-with-setup cmd exited 1'] })
     const r = await reclassifyForceUpdateFailures(first, force, probeFrom(['gstack']))
-    expect(r.keptExisting).toEqual(['gstack'])
+    // v4.15.2 T3 — keptExisting carries the underlying reason (was: bare names).
+    expect(r.keptExisting).toEqual([
+      { name: 'gstack', reason: 'git-clone-with-setup cmd exited 1' },
+    ])
     expect(r.failed).toEqual([])
   })
 
@@ -77,7 +80,9 @@ describe('reclassifyForceUpdateFailures — Fix C kept-existing fail-soft', () =
       force,
       probeFrom(['gstack', 'ui-ux-pro-max']),
     )
-    expect(r.keptExisting.sort()).toEqual(['gstack', 'ui-ux-pro-max'])
+    // v4.15.2 T3 — objects with reason; sort by name for a stable comparison.
+    expect(r.keptExisting.map((k) => k.name).sort()).toEqual(['gstack', 'ui-ux-pro-max'])
+    expect(r.keptExisting.every((k) => k.reason === 'cmd exited 1')).toBe(true)
     expect(r.failed.sort()).toEqual(['fresh-pkg: install failed', 'frontend-design: cmd exited 1'])
     expect(r.keptExisting.length + r.failed.length).toBe(force.failed.length)
   })

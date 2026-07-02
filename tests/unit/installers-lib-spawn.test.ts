@@ -341,6 +341,48 @@ describe('spawnCmd', () => {
       expect(callArgs[1]).toEqual(['-c', 'grep -q x ~/.claude/skills/x/SKILL.md'])
     })
 
+    // v4.15.2 T2 — 用户 dogfood(v4.15.1):`ctx7 --version` 这类纯 exe verify 被
+    // posixShell 强行送进 bash;机器上 bash 是 WSL 别名时白白陪葬。无 POSIX 依赖
+    // (无 builtins / 管道 / ~ / 重定向)的 cmd 改走 cmd.exe(.cmd shim 本就更合适)。
+    it('v4.15.2 — plain exe verify (no POSIX builtins) routes via cmd.exe despite posixShell', async () => {
+      forcePlatform('win32')
+      spawnMock.mockReturnValueOnce(
+        makeChild({ exitCode: 0, stdout: '0.4.2' }) as unknown as ReturnType<typeof spawn>,
+      )
+      await spawnCmd(ctx(), 'ctx7 --version', [], 5000, { posixShell: true })
+      const callArgs = spawnMock.mock.calls[0] as [string, string[], unknown]
+      expect(callArgs[0]).toBe('cmd.exe')
+      expect(callArgs[1]?.[0]).toBe('/c')
+    })
+
+    it('v4.15.2 — plain exe verify succeeds even when bash is refused (wsl-only)', async () => {
+      forcePlatform('win32')
+      vi.unstubAllEnvs()
+      resetBashResolutionCache({
+        path: null,
+        source: 'path',
+        reason: 'wsl-only',
+        wslOnPath: 'C:\\Users\\u\\AppData\\Local\\Microsoft\\WindowsApps\\bash.exe',
+      })
+      spawnMock.mockReturnValueOnce(
+        makeChild({ exitCode: 0, stdout: '0.4.2' }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await spawnCmd(ctx(), 'ctx7 --version', [], 5000, { posixShell: true })
+      expect(isSpawnOk(r)).toBe(true)
+      const callArgs = spawnMock.mock.calls[0] as [string, string[], unknown]
+      expect(callArgs[0]).toBe('cmd.exe')
+    })
+
+    it('v4.15.2 — POSIX first-token cmds (rm / cp / mkdir …) still route through bash', async () => {
+      forcePlatform('win32')
+      spawnMock.mockReturnValueOnce(
+        makeChild({ exitCode: 0, stdout: '' }) as unknown as ReturnType<typeof spawn>,
+      )
+      await spawnCmd(ctx(), 'rm -rf /tmp/x', [], 5000, { posixShell: true })
+      const callArgs = spawnMock.mock.calls[0] as [string, string[], unknown]
+      expect(callArgs[0]).toBe('bash')
+    })
+
     it('on win32 WITHOUT posixShell still uses cmd.exe /c', async () => {
       forcePlatform('win32')
       spawnMock.mockReturnValueOnce(

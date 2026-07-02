@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.15.2] - 2026-07-03
+
+### Fixed
+
+- **WSL app 别名漏网(用户 dogfood v4.15.1 同机:PATH bash = `C:\Users\<u>\AppData\Local\Microsoft\WindowsApps\bash.exe`,Microsoft Store WSL 执行别名).** 4.15.1 的已知-stub 正则只列 System32/Sysnative/SysWOW64,该别名在解析第 2 步被采纳,doctor 同步误报 "(Git Bash / native)" — ctx7 L4 verify 与 gstack / ui-ux-pro-max 的 force-refresh(git-clone posix cmd)仍打到 WSL。双修:(1) 正则增补 `Microsoft\WindowsApps` 位置;(2) 新增功能探针 — 每个候选 bash 跑一次 `-c` no-op,exit 非 0(无发行版 stub 的行为)即拒绝并继续解析链,未知位置的 stub / 损坏 bash 一并兜住(探针不可用时降级接受,保持 partial-mock 测试惰性;env `HARNESSED_BASH` 显式覆盖跳过探针)。
+- **非 POSIX verify 与 bash 解耦.** `posixShell` 改为能力提示而非硬路由:无 POSIX 依赖的纯 exe 调用(如 `ctx7 --version`)在 Windows 改走 cmd.exe(.cmd shim 本就更合适),bash 健康与否不再牵连这类 verify;含 shell 语法或 coreutil 首 token 的 cmd 保持 bash 路径。
+- **kept-existing 行携带底层失败原因.** 此前 reclassification 吞掉 reason,用户无法诊断 mattpocock refresh 为何失败;现在表格 note 列显示 `refresh failed: <原因≤90> — prior version retained`(`StepBResult.keptExisting` 形状 string[] → {name, reason}[])。
+- **错误尾巴消毒共享化.** ctx7 失败消息把 WSL stub 的 CP936 乱码原样嵌入;`sanitizeOutputTail`(首个非空行、仅可打印 ASCII、封顶)统一用于 verify 失败消息、spawn 超时消息与 doctor checkWinBash。
+
+### Changed
+
+- **doctor `jq present` 检查 fail → warn.** 消费方核查:jq 只被 `harnessed audit-log --filter`(自带 ENOENT 降级)与 ralph-loop plugin 的 Windows 运行时使用,非 setup / 核心链路依赖;附 install_commands 供 setup 末尾 auto-install 顺手补装。
+
 ## [4.15.1] - 2026-07-02
 
 ### Fixed

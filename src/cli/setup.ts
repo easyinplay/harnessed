@@ -124,12 +124,16 @@ export function printGrouped(b: StepBResult, prefix = ''): void {
   for (const n of b.alreadyInstalled) push(groupOf(n), { status: 'already-installed', name: n })
   // Patch 4.10.1 Fix C — kept-existing: refresh failed but prior version retained.
   // Rendered as a WARN row (not error red) — component is still usable.
-  for (const n of b.keptExisting ?? [])
-    push(groupOf(n), {
+  // v4.15.2 T3 — note surfaces the underlying failure reason (previously swallowed
+  // by reclassification; user dogfood could not diagnose refresh fails).
+  for (const k of b.keptExisting ?? []) {
+    const why = k.reason ? `refresh failed: ${k.reason.slice(0, 90)}` : 'refresh failed'
+    push(groupOf(k.name), {
       status: 'kept-existing',
-      name: n,
-      note: 'refresh failed, prior version retained',
+      name: k.name,
+      note: `${why} — prior version retained`,
     })
+  }
 
   for (const g of GROUP_ORDER) {
     const entries = buckets[g]
