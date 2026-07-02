@@ -494,6 +494,10 @@ capabilities:
   # D-10: ralph-loop 真接 SDK wrapper (NOT mock reference; sister Phase 2.2 v0.2.0 ship)
   # v3.4.2: ralph-loop is a claude-plugins-official plugin; cmd is the bare `/ralph-loop`
   # (verified: ralph-loop@claude-plugins-official in installed_plugins.json).
+  # v4.15.0 (ADR 0036 amends D-10 interactive surface): 三级偏好链 — plugin 优先
+  # (fail-closed verbatim match + 硬 max-iterations) → 未装时 native `/goal` gate
+  # (CC 2.1.139+ / Codex 双平台内置) → self-loop 兜底。链条语义由各 workflow SKILL.md
+  # 指令文本承载(不加 schema 字段);SDK 路径 ralphLoopWrap 不参与该链。
   ralph-loop:
     impl: plugin
     install_type: plugin
@@ -501,7 +505,7 @@ capabilities:
     cmd: /ralph-loop
     since: v2.0
     category: tool-bundled-skill
-    description: Sub-task completion gate (verbatim COMPLETE; max-iterations fallback)
+    description: Sub-task completion gate (plugin preferred; native /goal fallback on CC 2.1.139+ & Codex; self-loop last resort)
     sdk_ref: src/workflow/lib/ralphLoop.ts
     fires_when:
       - subtask.completion_required == true

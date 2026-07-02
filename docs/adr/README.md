@@ -74,6 +74,7 @@
 | [0033](./0033-state-machine-ledger-evidence-guard.md) | v5.0 — workflow state machine: progress ledger + fail-closed evidence guard (D1 ledger-only progression, no FSM lib; KARPATHY-minimal per Trellis/comet absorption) | Accepted | 2026-06-05 |
 | [0034](./0034-ecc-assimilation-deconfliction.md) | ECC 选择性同化 + de-confliction 矩阵 (additive-first A→B posture; 246 skills/61 agents partition 核对) | Accepted | 2026-06-17 |
 | [0035](./0035-v13-upstream-resync.md) | v13.0 Upstream Re-sync — gstack/gsd-core/superpowers pin bump (D1) + 5 selective wire (D2: verification-before-completion·gsd-eval-review·/diagram·gsd-validate-phase·systematic-debugging) + skip MemPalace/gbrain/ios (D3 一事实一个家) | Accepted | 2026-07-01 |
+| [0036](./0036-completion-gate-three-tier-fallback.md) | Completion gate 交互面三级偏好链 — ralph-loop plugin 优先 → native /goal (CC 2.1.139+/Codex) → self-loop 兜底;amends 0011 D-10 + 0028 交互面,SDK wrapper 不变 | Accepted | 2026-07-02 |
 
 ## 参考
 

@@ -123,7 +123,9 @@ function spawnLoopSteps(indent: string): string[] {
     `${i}a. Bash: \`harnessed prompt <sub> --task "<spec>" --json\` → parse \`{prompt, max_iterations, model}\`.`,
     `${i}b. Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`. Wrap in the ralph-loop plugin for completion-promise enforcement:`,
     `${i}   \`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"\``,
-    `${i}   If the ralph-loop plugin is not installed, self-loop: spawn → check output for \`<promise>COMPLETE</promise>\` → if absent, re-spawn with the prior output appended (up to max_iterations).`,
+    // v4.15.0 (ADR 0036) — 3-tier preference chain: plugin → native /goal → self-loop.
+    `${i}   If the ralph-loop plugin is not installed, use the native goal gate instead (Claude Code 2.1.139+ / Codex): \`/goal "this subtask is delivered: the subagent's final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"\` then spawn the subagent and let the goal evaluator drive re-spawns until it clears. Set the goal only at the leaf subtask level (\`/goal\` is single-slot per session).`,
+    `${i}   If \`/goal\` is unavailable too, self-loop: spawn → check output for \`<promise>COMPLETE</promise>\` → if absent, re-spawn with the prior output appended (up to max_iterations).`,
     `${i}c. If the subagent output contains \`STATUS: NEEDS_CLARIFICATION\` + a question list: STOP. Use AskUserQuestion to relay those exact questions to the user. Append the user's answers to the spec, then re-spawn the same sub. (This is the round-trip headless spawn cannot do.)`,
     `${i}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --summary "<one-line>"\`.`,
   ]
@@ -191,10 +193,11 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
   // the evidence-guard (fail-CLOSED) detail and appends step e (checkpoint fail on
   // unrecoverable failure) — both absent from the simpler EXECUTION body.
   const leafIndent = '     '
-  // spawnLoopSteps emits steps a-d as 6 lines (b spans 3: the `b.` line + 2
-  // continuations); the first 5 are a + b(×3) + c, which the leaf reuses verbatim.
+  // spawnLoopSteps emits steps a-d as 7 lines (b spans 4: the `b.` line + 3
+  // continuations — v4.15.0 ADR 0036 adds the /goal tier); the first 6 are
+  // a + b(×4) + c, which the leaf reuses verbatim.
   const leafSpawnLoop = [
-    ...spawnLoopSteps(leafIndent).slice(0, 5),
+    ...spawnLoopSteps(leafIndent).slice(0, 6),
     `${leafIndent}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED): if it exits non-zero because a declared \`artifacts_expected\` file is missing, the sub is NOT done — re-spawn to produce the artifact, or pass \`--force\` only to deliberately override (records \`evidence_status: overridden\`).`,
     `${leafIndent}e. If the sub cannot reach COMPLETE (max_iterations exhausted, unrecoverable error): Bash \`harnessed checkpoint fail <sub> --summary "<why>"\` to flip the ledger entry to \`failed\`, then STOP and report to the user.`,
   ]

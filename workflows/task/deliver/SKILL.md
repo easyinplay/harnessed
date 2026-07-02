@@ -43,6 +43,11 @@ ralph-loop SDK wrapper 保 completion-promise verbatim string `"COMPLETE"` — s
 LLM-as-judge). Sister capabilities.yaml `ralph-loop` entry impl `bundled-skill` +
 `sdk_ref: src/workflow/lib/ralphLoop.ts` (Phase 2.2 v0.2.0 ship)。
 
+交互面三级偏好链 (v4.15.0 / ADR 0036): ralph-loop plugin 优先 (fail-closed 逐字匹配 +
+硬 max-iterations) → 未装时 native `/goal` gate (Claude Code 2.1.139+ / Codex 双平台内置,
+条件句写 verbatim `<promise>COMPLETE</promise>` + turn 上界) → `/goal` 亦不可用时 self-loop
+兜底。SDK 路径 (ralphLoopWrap 硬上界) 不参与该链,始终 verbatim 匹配。
+
 ### Parallelism — ralph-loop 正交 wrapper
 
 `parallelism: judgments.parallelism-gate.ralph-loop-wrapper.fires` ref — per R20.10
@@ -93,7 +98,7 @@ Do NOT pipe to `harnessed run task-deliver` — that is the CI/headless path (in
 that blocks the session inside Claude Code).
 
 1. Bash: `harnessed prompt task-deliver --task "$ARGUMENTS" --json` → parse `{prompt, max_iterations, model}`.
-2. Spawn a CC-native subagent (Task / Agent tool) with that `prompt` + `model`, wrapped in the ralph-loop plugin: `/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`. If the plugin is absent, self-loop: spawn → check output for `<promise>COMPLETE</promise>` → re-spawn with prior output appended (up to max_iterations).
+2. Spawn a CC-native subagent (Task / Agent tool) with that `prompt` + `model`, wrapped in the ralph-loop plugin: `/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`. If the plugin is absent, use the native goal gate instead (Claude Code 2.1.139+ / Codex): `/goal "this subtask is delivered: the subagent's final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"` then spawn the subagent and let the goal evaluator drive re-spawns until it clears. If `/goal` is unavailable too, self-loop: spawn → check output for `<promise>COMPLETE</promise>` → re-spawn with prior output appended (up to max_iterations). Set the goal only at the leaf subtask level — `/goal` is single-slot per session and a nested goal overwrites the outer one.
 3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.
 4. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete task-deliver --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.
 

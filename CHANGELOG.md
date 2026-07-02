@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.15.0] - 2026-07-02
+
+### Added
+
+- **Completion gate 交互面三级偏好链(ADR 0036,用户裁决:不替换 ralph-loop,做偏好链).** 28 workflow 的 SKILL.md 指令(23 en + 23 zh-Hans)与 `generateCommands` 生成的 commands/<x>.md 从两级(ralph-loop plugin → self-loop)升级为三级:plugin 优先(fail-closed 逐字匹配 + 硬 max-iterations)→ 未装时 native `/goal` gate(Claude Code 2.1.139+ / Codex 双平台内置零安装;条件句写 verbatim `<promise>COMPLETE</promise>` + turn 上界,并约束只在叶子 subtask 层设置——`/goal` 每 session 单槽)→ `/goal` 亦不可用时 self-loop 兜底。codex 平台由此获得原生 completion gate(ralph-loop plugin 无 codex 等价,4.14.0 起 harness-mismatch 跳过)。SDK 路径(`ralphLoopWrap` 硬上界 + 4-layer verbatim `isComplete`)与 ralph-loop manifest 零改动;trade-off(fail-open 余量 / 软上界 / 单槽覆盖 / 双平台实现差异)记录于 docs/adr/0036。
+
 ## [4.14.2] - 2026-07-02
 
 ### Fixed

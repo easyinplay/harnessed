@@ -6,6 +6,10 @@
 # default fan-out OR Agent Teams 升级 (5 触发 OR-chain per bundled Agent Teams
 # routing + D-11)。02-progress-mark: planning-with-files /plan 更新 progress.md 标记完成。
 #
+# v4.15.0 (ADR 0036) 交互面三级偏好链: ralph-loop plugin 优先 → 未装时 native /goal
+# gate (CC 2.1.139+ / Codex) → self-loop 兜底。SDK 路径 (ralphLoopWrap 硬上界) 不变;
+# defaults.ralph_max_iterations 插值语义不变(/goal 分支映射为条件句 turn 上界)。
+#
 # Brief enforcement (W0.9 spec MUST include):
 #   - ralph-loop completion_promise = COMPLETE (R20.10 verbatim acceptance string)
 #   - parallelism-gate ref: judgments.parallelism-gate.ralph-loop-wrapper.fires
