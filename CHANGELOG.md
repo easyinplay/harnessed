@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.14.1] - 2026-07-02
+
+### Fixed
+
+- **schemas/manifest.v1.schema.json 再生成遗漏(CI Schema regen gate 红 + npm 4.14.0 包内 schema 过期).** 4.14.0 在 typebox(src/manifest/schema/spec.ts)加了 `harness_overrides` 但未跑 `pnpm build && pnpm build:schema` 再生成静态 JSON 产物(build-schema.mjs 从 dist/ 读,本地陈旧 dist 掩盖了 drift,CI 全新 build 后抓到)。仅影响编辑器 yaml-language-server 提示;运行时校验(dist 内 typebox)在 4.14.0 已正确。
+
 ## [4.14.0] - 2026-07-02
 
 ### Added
