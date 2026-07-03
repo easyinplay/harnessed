@@ -348,6 +348,34 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(warnOut).toMatch(/↳ gstack:/)
   })
 
+  // Cell 9c (v4.16.1 T2): dead-zone fix — a kept-existing reason of 90-100 chars
+  // rendered a truncated note (the 90-char slice inside the decorated string) but
+  // the ↳ block was suppressed by the old `full.length <= NOTE_MAX` gate
+  // (gstack dogfood v4.16.0: reason ~95 chars → note ends with … yet no detail).
+  it('cell 9c — printGrouped emits the ↳ block when the note truncates a 90-100 char reason', () => {
+    let warnOut = ''
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'warn').mockImplementation((...a: unknown[]) => {
+      warnOut += `${a.map(String).join(' ')}\n`
+    })
+    // 95 chars: inside the 90 (note slice) .. 100 (old gate) dead zone.
+    const reason = `git-clone-with-setup cmd exited 1: ${'z'.repeat(54)}DEADZONE`
+    expect(reason.length).toBeGreaterThan(90)
+    expect(reason.length).toBeLessThanOrEqual(100)
+    printGrouped({
+      installed: [],
+      alreadyInstalled: [],
+      skipped: [],
+      failed: [],
+      keptExisting: [{ name: 'gstack', reason }],
+      elapsedMs: 0,
+      componentTypes: { gstack: 'command' },
+    })
+    expect(warnOut).toMatch(/↳ gstack:/)
+    expect(warnOut).toContain('DEADZONE')
+  })
+
   // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled
   it('cell 6 — parallel smoke: 3 manifests all installed concurrently, [parallel Xs] in summary', async () => {
     readdirMock.mockImplementation(

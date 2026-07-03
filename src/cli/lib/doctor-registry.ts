@@ -48,6 +48,9 @@ export const CHECKS: readonly CheckFn[] = [
   // Phase 18 — opt-in CodeGraph semantic-index detect (always 'pass'; absence of an
   // optional tool is not a health failure).
   async () => (await import('./check-codegraph.js')).checkCodeGraph(process.cwd()),
+  // v4.16.1 T3 — bun presence (warn-only): gstack's upstream setup hard-requires
+  // bun; missing bun is THE gstack refresh-failure cause on user dogfood machines.
+  async () => (await import('./check-bun.js')).checkBun(),
   // Phase 20 — "update available" version check ('warn' only when behind; 'pass'
   // when current/ahead/npm-unreachable — fail-soft, never flips the summary).
   async () => (await import('./check-update.js')).checkUpdate(),

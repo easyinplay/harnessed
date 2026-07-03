@@ -162,8 +162,15 @@ export function printGrouped(b: StepBResult, prefix = ''): void {
     // v4.16.0 T4 — full-reason detail block: any failed / kept-existing entry
     // whose reason outgrew the note column gets an untruncated (capped 400)
     // line after the table, on the same stream as its row.
+    // v4.16.1 T2 — dead-zone fix: the old `full.length <= NOTE_MAX` gate
+    // suppressed the ↳ block for 90-100 char reasons whose note WAS truncated
+    // (kept-existing notes embed only `full.slice(0, 90)` inside a decorated
+    // string — gstack dogfood v4.16.0). Print whenever the rendered note does
+    // not carry the complete reason.
     for (const e of entries) {
-      if (!e.full || e.full.length <= NOTE_MAX) continue
+      if (!e.full) continue
+      const shownNote = (e.note ?? '').slice(0, NOTE_MAX)
+      if (shownNote.includes(e.full)) continue
       const full = e.full.length > 400 ? `${e.full.slice(0, 400)}…` : e.full
       const line = `      ↳ ${e.name}: ${full}`
       if (e.status === 'failed') console.error(line)

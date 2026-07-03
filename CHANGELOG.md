@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.16.1] - 2026-07-03
+
+### Fixed
+
+- **ctx7 重复 L4 prompt(dogfood v4.16.0:L4 rescue 装好 ctx7 后,每次 setup 仍报 `level-flag-missing` 并重复请求 L4 确认).** 根因:`detectNative` 的 npm-cli 分支只查 `<skillsDir>/<name>`(对全局 npm CLI 无意义),shell fallback `command -v` 在 cmd.exe 下也永远失败。新增 `binaryProbe`(src/installers/lib/binaryProbe.ts):从 manifest verify cmd 首 token 提取二进制名(`ctx7 --version` → `ctx7`;POSIX builtin / npx / node 等非组件 token 回退 metadata.name),`where`/`which` 原生探测 PATH — 第二次 setup 直接 already-installed,不再进 L4 gate。
+- **spawn/verify 失败消息改取输出尾部(gstack 真因曾被裁掉).** 上游 gstack `setup` 脚本首查 `command -v bun`,缺失 exit 1,"Error: bun is required but not installed." 在 stderr **尾部** — 旧的头部截取只留下 git 的 "Cloning into…" 进度噪声。新 `sanitizeOutputTailEnd`(从末行向前拼接,cap 300/160/200),`formatSpawnFail` / `formatVerifyFail` / spawn 超时消息全部接入;doctor `checkWinBash` 的单行消毒(`sanitizeOutputTail`)保持不变。
+- **↳ 全文原因块死区(90-100 字符 reason:note 显示被截断但详细块被抑制).** 旧门槛 `full.length <= 100` 与 kept-existing note 内嵌的 `slice(0, 90)` 之间存在死区(gstack dogfood 恰好落入)。改为"渲染后的 note 未携带完整 reason 即打印 ↳"。
+
+### Added
+
+- **doctor 第 15 项检查 `bun present`(warn-only).** bun 是 gstack 上游 setup 的硬性构建依赖(browse binary),缺失即 gstack refresh 必败;win/darwin 提供 `install_commands`(winget / brew)进 setup 末 auto-install,linux 官方路径为远程脚本管道、仅给 fix 文案不自动执行。
+
 ## [4.16.0] - 2026-07-03
 
 ### Fixed

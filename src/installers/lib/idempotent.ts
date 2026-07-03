@@ -27,6 +27,7 @@
 import { access } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { binaryOnPath, extractVerifyBinary } from './binaryProbe.js'
 import { getSkillsDir, harnessSkillsDirs } from './platform.js'
 import { isMcpServerRegistered, isPluginRegistered } from './readClaudeConfig.js'
 import { spawnCmd } from './spawn.js'
@@ -196,6 +197,12 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   }
 
   if (method === 'npm-cli') {
+    // v4.16.1 T1 — global CLI binaries: PATH probe first (ctx7 dogfood: installed
+    // via L4 rescue yet every later setup re-skipped it level-flag-missing and
+    // re-prompted — the skillDir probe below is meaningless for npm -g CLIs, and
+    // the shell `command -v` fallback can't run under cmd.exe).
+    const bin = extractVerifyBinary(ctx.manifest.spec.verify?.cmd, name)
+    if (bin && binaryOnPath(bin)) return true
     const skillDir = join(getSkillsDir(), name)
     try {
       await access(skillDir)

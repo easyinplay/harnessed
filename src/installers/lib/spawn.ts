@@ -34,7 +34,7 @@ import { checkCmdString } from '../../manifest/security.js'
 import { evalTestChain } from './nativeTest.js'
 import { resolveBash } from './resolveBash.js'
 import type { InstallContext, InstallResult } from './types.js'
-import { sanitizeOutputTail } from './verifyMessage.js'
+import { sanitizeOutputTailEnd } from './verifyMessage.js'
 
 /** v3.9.8 — pre-expand `~/` to OS home dir before passing cmd to cmd.exe.
  *  Windows cmd.exe does NOT expand `~` as POSIX shells do, causing
@@ -238,7 +238,8 @@ export async function spawnCmd(
           // some CLIs write their error text to stdout; a bare trailing colon
           // read as "no reason" in user dogfood). v4.15.2 — sanitized (CP936
           // mojibake was embedded verbatim in the ctx7 dogfood error).
-          message: `spawn timed out after ${effectiveTimeoutMs}ms (cmd: ${cmd}); partial output: ${(stderr || stdout).trim() ? sanitizeOutputTail(stderr || stdout, 200) : '(no output)'}`,
+          // v4.16.1 T2 — tail-END biased (errors live at the end of output).
+          message: `spawn timed out after ${effectiveTimeoutMs}ms (cmd: ${cmd}); partial output: ${(stderr || stdout).trim() ? sanitizeOutputTailEnd(stderr || stdout, 200) : '(no output)'}`,
           line: null,
           column: null,
           keyword: 'spawn-timeout',

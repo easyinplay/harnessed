@@ -34,7 +34,20 @@ vi.mock('../../src/installers/lib/platform.js', () => ({
   getSettingsPath: () => '/fake-home/.claude/settings.json',
 }))
 
-import { detectSkillPresence, extractSkillName } from '../../src/installers/lib/idempotent.js'
+// v4.16.1 T1 — binaryProbe factory: real extractVerifyBinary, controllable
+// binaryOnPath (the real one spawns where/which — nondeterministic on dev hosts).
+const binOnPathMock = vi.fn((_bin: string) => false)
+vi.mock('../../src/installers/lib/binaryProbe.js', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../src/installers/lib/binaryProbe.js')>()
+  return { ...real, binaryOnPath: (b: string) => binOnPathMock(b) }
+})
+
+import {
+  detectSkillPresence,
+  extractSkillName,
+  isAlreadyInstalled,
+} from '../../src/installers/lib/idempotent.js'
+import type { InstallContext, Manifest } from '../../src/installers/lib/types.js'
 
 /** access resolves only for paths containing one of `present` fragments. */
 function accessPresent(present: string[]): void {
@@ -137,5 +150,83 @@ describe('detectSkillPresence (v4.13.0 dual-dir probe)', () => {
         'design-taste-frontend',
       ),
     ).resolves.toBe(false)
+  })
+})
+
+// v4.16.1 T1 — npm-cli installed-state via PATH binary probe (ctx7 dogfood:
+// installed by L4 rescue, yet every later setup re-skipped level-flag-missing
+// and re-prompted — the skillDir probe is meaningless for global npm CLIs).
+describe('isAlreadyInstalled npm-cli binary probe (v4.16.1 T1)', () => {
+  const ctx7Ctx = (): InstallContext => ({
+    manifest: {
+      apiVersion: 'harnessed/v1',
+      kind: 'Manifest',
+      metadata: {
+        name: 'ctx7',
+        display_name: 'ctx7 CLI',
+        description: 'd',
+        upstream: {
+          source: 'ctx7',
+          homepage: 'https://context7.com',
+          repository: 'https://github.com/upstash/context7.git',
+          license: 'MIT',
+          notice: 'n',
+        },
+      },
+      spec: {
+        type: 'cli-npm',
+        component_type: 'cli-binary',
+        category: 'search',
+        install_type: 'npm',
+        install: { method: 'npm-cli', cmd: 'npm install -g ctx7', npm_version: '^0.4.0' },
+        verify: { cmd: 'ctx7 --version', timeout_ms: 5000 },
+        uninstall: { cmd: 'npm uninstall -g ctx7' },
+        upstream_health: {
+          stability: 'stable',
+          last_check: '2026-07-03',
+          last_known_good_version: '0.4.x',
+          fallback_action: 'warn',
+        },
+        signed_by: 'easyinplay',
+        platforms: ['linux', 'darwin', 'win32'],
+      },
+    } as unknown as Manifest,
+    opts: {
+      apply: true,
+      dryRun: false,
+      system: false,
+      nonInteractive: true,
+      fullDiff: false,
+      color: 'auto',
+      updateInstalled: false,
+      quiet: true,
+    },
+    level: 'L4',
+    cwd: '/tmp',
+  })
+
+  beforeEach(() => {
+    accessMock.mockReset()
+    accessPresent([])
+    binOnPathMock.mockReset()
+    binOnPathMock.mockReturnValue(false)
+  })
+
+  it('binary on PATH → already-installed (no L4 re-prompt on the next setup)', async () => {
+    binOnPathMock.mockReturnValue(true)
+    await expect(isAlreadyInstalled(ctx7Ctx())).resolves.toBe(true)
+    expect(binOnPathMock).toHaveBeenCalledWith('ctx7')
+  })
+
+  it('binary absent → falls through to the legacy probes → false', async () => {
+    await expect(isAlreadyInstalled(ctx7Ctx())).resolves.toBe(false)
+  })
+
+  it('updateInstalled=true bypasses the probe entirely (force-update contract)', async () => {
+    binOnPathMock.mockReturnValue(true)
+    const ctx = ctx7Ctx()
+    ctx.opts.updateInstalled = true
+    await expect(isAlreadyInstalled(ctx)).resolves.toBe(false)
+    expect(binOnPathMock).not.toHaveBeenCalled()
   })
 })

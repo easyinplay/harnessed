@@ -28,6 +28,13 @@ describe('formatVerifyFail (v4.15.1 T3)', () => {
     expect(m).toContain('…')
     expect(m).toContain('exit 2 ≠ expected 0')
   })
+
+  // v4.16.1 T2 — verify 输出同样错误在尾部。
+  it('keeps the TAIL of multi-line verify output', () => {
+    const stderr = ['progress line 1', 'progress line 2', 'THE ACTUAL FAILURE'].join('\n')
+    const m = formatVerifyFail('bash ./setup', 1, 0, '', stderr)
+    expect(m).toContain('THE ACTUAL FAILURE')
+  })
 })
 
 describe('formatSpawnFail (v4.16.0 T5)', () => {
@@ -35,6 +42,26 @@ describe('formatSpawnFail (v4.16.0 T5)', () => {
     expect(formatSpawnFail('npx skills add', 1, '', 'npm ERR boom')).toBe(
       'npx skills add exited 1: npm ERR boom',
     )
+  })
+
+  // v4.16.1 T2 — 错误在输出末尾(gstack dogfood:stderr 头部是 git 的
+  // "Cloning into…" 进度,真凶 "Error: bun is required" 在尾部,头部截取把它裁掉)。
+  it('keeps the TAIL of multi-line output — the error lives at the end', () => {
+    const stderr = [
+      "Cloning into 'C:/Users/u/.claude/skills/gstack'...",
+      'remote: Enumerating objects: 1200, done.',
+      'Receiving objects: 100% (1200/1200), done.',
+      'Error: bun is required but not installed.',
+    ].join('\n')
+    const m = formatSpawnFail('git-clone-with-setup cmd', 1, '', stderr)
+    expect(m).toContain('bun is required')
+  })
+
+  it('joins the last lines from the end within the cap', () => {
+    const stderr = ['head noise', 'penultimate detail', 'FINAL ERROR'].join('\n')
+    const m = formatSpawnFail('x', 1, '', stderr)
+    expect(m).toContain('FINAL ERROR')
+    expect(m).toContain('penultimate detail')
   })
 
   it('stderr empty → stdout fallback (WSL/npx crashes write stdout or nothing)', () => {

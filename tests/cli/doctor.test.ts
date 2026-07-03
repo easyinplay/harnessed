@@ -155,17 +155,17 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
 
   // v3.7.0 Phase 1 — registry future-proof: CHECKS array is single source of truth.
   // Bump assertion when adding a check (sister doctor.ts --description string update).
-  it('cell 0 — CHECKS registry has 14 entries (Phase 20 +update)', async () => {
+  it('cell 0 — CHECKS registry has 15 entries (v4.16.1 +bun)', async () => {
     const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
-    expect(CHECKS.length).toBe(14)
+    expect(CHECKS.length).toBe(15)
   })
 
-  it('cell 1 — all 14 checks pass → exit 0 + summary "pass" (Phase 20 bump 13→14)', async () => {
+  it('cell 1 — all 15 checks pass → exit 0 + summary "pass" (v4.16.1 bump 14→15)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(14)
+    expect(p.checks).toHaveLength(15)
     expect(p.summary).toBe('pass')
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
     // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
@@ -180,6 +180,8 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     expect(p.checks.map((c) => c.name)).toContain('codegraph')
     // Phase 20 — 14th check (update available, fail-soft pass)
     expect(p.checks.map((c) => c.name)).toContain('update')
+    // v4.16.1 — 15th check (bun present, warn-only gstack build dep)
+    expect(p.checks.map((c) => c.name)).toContain('bun present')
   })
 
   it('cell 5 — doctor 8th check token budget — status warn does NOT fail exit (B-06 + D-04)', async () => {
@@ -187,7 +189,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
     const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
-    expect(p.checks).toHaveLength(14)
+    expect(p.checks).toHaveLength(15)
     const tokenBudget = p.checks.find((c) => c.name === 'token budget')
     expect(tokenBudget).toBeDefined()
     expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')
