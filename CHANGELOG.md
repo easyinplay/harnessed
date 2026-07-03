@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.16.2] - 2026-07-03
+
+### Fixed
+
+- **ui-ux-pro-max 每轮 force-update 的 SHA "unverifiable" ⚠ 静音(设计内噪声).** 该 manifest 的 install cmd 本身就在结尾 `rm -rf` 自己的 clone cache 目录 — D-15 `git rev-parse` 天生无物可查,每轮 warn 是纯噪声(dogfood v4.16.1)。新 `isSelfCleaningCloneCmd`(clone 之后出现针对 clone dest 的 `rm -rf`,带词边界防前缀误匹配;gstack 式的 clone 前预清理不算)→ 判定 self-cleaning 即静默跳过 rev-parse,manifest verify 保持 install authority(ADR 0037 已录该模式)。非 self-cleaning cmd 的目录缺失仍保留 4.16.0 的 warn 降级。
+- **ctx7 在 force-update pass 显示裸 `level-flag-missing`(误读为反复失败).** force 语义 bypass 已装探测 → 已装的 L4 工具每次 force pass 都撞 `--system` 门。force pass 的 skip reason 改为自解释文案(`L4 system-scope — excluded from force-update; update manually: \`npm install -g ctx7\``);普通 pass 保持字面 `level-flag-missing`(l4-rescue 的过滤契约,仅消费首 pass)。
+- **gstack git_ref pin 过期(force-update ⚠ 提示的行动项).** 14fc0866(v1.52 时代)→ 11de390b(上游当前 HEAD,gh api 实证;`last_known_good_version` 1.58.0.0 → 1.58.5.0 按上游 VERSION 文件),base + codex override 两处同步。按 ADR 0037,pin 记录 install-time last-known-good,随发布节奏 bump。
+
 ## [4.16.1] - 2026-07-03
 
 ### Fixed

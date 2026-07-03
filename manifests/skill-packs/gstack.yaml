@@ -23,7 +23,10 @@ spec:
     # clone 保持无 flag 的 `git clone <url> <dest>` 形状 — extractGitCloneTarget
     # 与 git-clone-idempotent 回归测试锁定该相邻性(--single-branch 会使解析错位)。
     cmd: "rm -rf ~/.claude/skills/gstack && git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup"
-    git_ref: 14fc0866d9ac9d09d25adcac7b4437c0a235902b
+    # v4.16.2 — pin bumped to upstream HEAD (was 14fc0866, v1.52 era; force-update
+    # dogfood surfaced the drift warn). Per ADR 0037 the pin records install-time
+    # last-known-good state — bump on release cadence, not per upstream push.
+    git_ref: 11de390be1be6849eb9a15f91ff4922dd16c589a
     idempotent_check: "test -d ~/.claude/skills/gstack/.git"
   # v4.14.2 — 用户指正: gstack 官方支持 10 agents(README § Other AI Agents),
   # codex 走 `./setup --host codex`,skills 装到 ~/.codex/skills/gstack-*/。
@@ -32,7 +35,7 @@ spec:
       install:
         method: git-clone-with-setup
         cmd: "rm -rf ~/gstack && git clone https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && bash ./setup --host codex"
-        git_ref: 14fc0866d9ac9d09d25adcac7b4437c0a235902b
+        git_ref: 11de390be1be6849eb9a15f91ff4922dd16c589a
         idempotent_check: "ls ~/.codex/skills 2>/dev/null | grep -q '^gstack-'"
       verify:
         cmd: "ls ~/.codex/skills | grep -q '^gstack-'"
@@ -46,8 +49,8 @@ spec:
       - ~/.claude/skills/gstack
   upstream_health:
     stability: stable
-    last_check: "2026-06-30"
-    last_known_good_version: 1.58.0.0
+    last_check: "2026-07-03"
+    last_known_good_version: 1.58.5.0
     fallback_action: warn
   signed_by: easyinplay
   platforms:

@@ -34,7 +34,10 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
-import { installGitCloneWithSetup } from '../../src/installers/gitCloneWithSetup.js'
+import {
+  installGitCloneWithSetup,
+  isSelfCleaningCloneCmd,
+} from '../../src/installers/gitCloneWithSetup.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
 const spawnMock = vi.mocked(spawn)
@@ -302,5 +305,62 @@ describe('installGitCloneWithSetup', () => {
     } finally {
       s.restore()
     }
+  })
+
+  it('v4.16.2 T2 — self-cleaning cmd (dest rm-ed after clone) → ok, NO warn, rev-parse skipped', async () => {
+    // ui-ux-pro-max pattern: cmd clones into a cache dir and rm's it at the end.
+    // The SHA is unverifiable EVERY run by design — a per-run warn is pure noise
+    // (user dogfood v4.16.1). Expect: rev-parse spawn not attempted (exactly 2
+    // spawns: install + verify) and console.warn never called.
+    const s = silence()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      spawnMock.mockImplementation(
+        scriptedSpawn([
+          { exitCode: 0 }, // install cmd
+          { exitCode: 0 }, // verify cmd (rev-parse must NOT consume this slot)
+        ]),
+      )
+      const r = await installGitCloneWithSetup(
+        ctx(undefined, (m) => {
+          m.spec.install.cmd =
+            'rm -rf /tmp/cache-clone && git clone https://github.com/midwayjs/midway.git /tmp/cache-clone && cp -R /tmp/cache-clone/sub /tmp/dest && rm -rf /tmp/cache-clone'
+        }),
+      )
+      expect(r).toMatchObject({ ok: true })
+      expect(spawnMock).toHaveBeenCalledTimes(2)
+      expect(warnSpy).not.toHaveBeenCalled()
+    } finally {
+      warnSpy.mockRestore()
+      s.restore()
+    }
+  })
+})
+
+describe('isSelfCleaningCloneCmd (v4.16.2 T2)', () => {
+  it('real ui-ux-pro-max cmd (rm of clone dest after clone) → true', () => {
+    const cmd =
+      'rm -rf ~/.claude/skills/.cache/midway-uiux && git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.claude/skills/.cache/midway-uiux && mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/ui-ux-pro-max && cp -R ~/.claude/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.claude/skills/ui-ux-pro-max && rm -rf ~/.claude/skills/.cache/midway-uiux'
+    expect(isSelfCleaningCloneCmd(cmd)).toBe(true)
+  })
+
+  it('real gstack cmd (rm of dest only BEFORE clone — pre-clean) → false', () => {
+    const cmd =
+      'rm -rf ~/.claude/skills/gstack && git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && bash ./setup'
+    expect(isSelfCleaningCloneCmd(cmd)).toBe(false)
+  })
+
+  it('prefix collision: rm -rf of a LONGER path sharing the dest prefix → false', () => {
+    const cmd = 'git clone https://x.git ~/x && rm -rf ~/x-cache'
+    expect(isSelfCleaningCloneCmd(cmd)).toBe(false)
+  })
+
+  it('simple self-cleaning: clone then rm of the same dest → true', () => {
+    const cmd = 'git clone https://x.git /tmp/d && cp /tmp/d/f /out && rm -rf /tmp/d'
+    expect(isSelfCleaningCloneCmd(cmd)).toBe(true)
+  })
+
+  it('unparseable clone (no dest) → false', () => {
+    expect(isSelfCleaningCloneCmd('npm install -g foo')).toBe(false)
   })
 })

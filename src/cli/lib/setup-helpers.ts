@@ -178,10 +178,18 @@ export async function runStepBInstall(
       if ('aborted' in r) {
         // v4.14.0 — bare 'harness-mismatch' tells the user nothing; expand to a
         // self-explanatory skip note (platform id from the active descriptor).
+        // v4.16.2 — L4 flag-missing under FORCE-update gets an explanatory
+        // display reason: force bypasses the idempotent probe, so an already-
+        // installed L4 tool (ctx7) hits the --system gate every force pass and
+        // the bare 'level-flag-missing' read as a recurring failure (dogfood
+        // v4.16.1). The NORMAL pass keeps the literal string — l4-rescue
+        // filters on `reason === 'level-flag-missing'` (first pass only).
         const reason =
           r.reason === 'harness-mismatch'
             ? `harness-mismatch — claude-only install method (no ${detectPlatform().id} equivalent)`
-            : r.reason
+            : r.reason === 'level-flag-missing' && runOpts.updateInstalled === true
+              ? `L4 system-scope — excluded from force-update; update manually: \`${manifest.spec.install.cmd}\``
+              : r.reason
         return emit({ status: 'skipped', name, reason })
       }
       if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)

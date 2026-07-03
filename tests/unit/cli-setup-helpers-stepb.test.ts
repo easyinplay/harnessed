@@ -37,7 +37,7 @@ function manifestFor(name: string, method: string) {
     errors: [],
     manifest: {
       metadata: { name },
-      spec: { component_type: 'mcp-tool', install: { method } },
+      spec: { component_type: 'mcp-tool', install: { method, cmd: `install-${name}` } },
     },
   }
 }
@@ -137,5 +137,26 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
     expect(b.failed[0]).toContain('validate: schema boom')
     expect(b.skipped).toEqual([{ name: 'good-tool', reason: 'level-flag-missing' }])
     expect(runInstallMock).toHaveBeenCalledTimes(1)
+  })
+
+  // v4.16.2 T3 — force-update bypasses the idempotent probe, so an already-
+  // installed L4 tool (ctx7) hits the --system gate every force pass and used
+  // to print the misleading bare 'level-flag-missing'. The FORCE pass gets an
+  // explanatory display reason; the normal pass keeps the literal string —
+  // l4-rescue filters on `reason === 'level-flag-missing'` (first pass only).
+  it('v4.16.2 T3 — L4 flag-missing skip under force-update → explanatory reason with manual hint', async () => {
+    wireValidate({ 'ctx7.yaml': { name: 'ctx7', method: 'npm-cli' } })
+    runInstallMock.mockResolvedValue({ aborted: true, reason: 'level-flag-missing' } as never)
+    const b = await runStepBInstall(['ctx7.yaml'], { quiet: true, updateInstalled: true })
+    expect(b.skipped).toHaveLength(1)
+    expect(b.skipped[0]?.reason).toContain('excluded from force-update')
+    expect(b.skipped[0]?.reason).not.toBe('level-flag-missing')
+  })
+
+  it('v4.16.2 T3 — L4 flag-missing skip on the NORMAL pass keeps the literal reason (l4-rescue contract)', async () => {
+    wireValidate({ 'ctx7.yaml': { name: 'ctx7', method: 'npm-cli' } })
+    runInstallMock.mockResolvedValue({ aborted: true, reason: 'level-flag-missing' } as never)
+    const b = await runStepBInstall(['ctx7.yaml'], { quiet: true })
+    expect(b.skipped).toEqual([{ name: 'ctx7', reason: 'level-flag-missing' }])
   })
 })

@@ -69,7 +69,10 @@ function gitRevParseHead(cwd: string, timeoutMs = 10_000): Promise<{ sha: string
 // must know the directory to run `git rev-parse HEAD` against post-clone. If
 // the cmd shape can't be parsed, we fail preflight clearly (no silent
 // fallback). Walks `git clone [flags] <url> <dest>` to find <dest>.
-function extractCloneTarget(cmd: string): string | null {
+// v4.16.2 — split raw-token extraction from `~` expansion so the self-cleaning
+// detector below can match the dest VERBATIM against the cmd string (the cmd
+// carries the raw `~/...` form, not the expanded path).
+function extractRawCloneDest(cmd: string): { raw: string; cloneIdx: number } | null {
   const idx = cmd.indexOf('git clone')
   if (idx < 0) return null
   const tail = cmd.slice(idx + 'git clone'.length).trim()
@@ -91,12 +94,39 @@ function extractCloneTarget(cmd: string): string | null {
   // repo-name dir in cwd, which is fragile; require explicit dest.
   const dest = tokens[i + 1]
   if (!dest || dest === '&&' || dest === ';' || dest === '|') return null
+  return { raw: dest, cloneIdx: idx }
+}
+
+function extractCloneTarget(cmd: string): string | null {
+  const parsed = extractRawCloneDest(cmd)
+  if (!parsed) return null
+  const dest = parsed.raw
   if (dest.startsWith('~/')) {
     const home = process.env.HOME ?? process.env.USERPROFILE
     if (!home) return null
     return `${home}${dest.slice(1)}`
   }
   return dest
+}
+
+/** v4.16.2 — does the cmd remove its OWN clone dest after cloning (ui-ux-pro-max
+ *  pattern: clone into .cache/, cp the payload out, rm the cache)? For such
+ *  cmds the D-15 SHA check is unverifiable EVERY run by design — the caller
+ *  skips rev-parse silently instead of warning on each force-update (dogfood
+ *  v4.16.1 noise). Only an `rm -rf <dest>` occurrence AFTER the clone counts;
+ *  a pre-clean rm BEFORE the clone (gstack pattern) does not. Boundary-checked
+ *  so dest `~/x` does not match `rm -rf ~/x-cache`. Exported for tests. */
+export function isSelfCleaningCloneCmd(cmd: string): boolean {
+  const parsed = extractRawCloneDest(cmd)
+  if (!parsed) return false
+  const needle = `rm -rf ${parsed.raw}`
+  let idx = cmd.indexOf(needle, parsed.cloneIdx)
+  while (idx >= 0) {
+    const after = cmd[idx + needle.length]
+    if (after === undefined || /\s/.test(after)) return true
+    idx = cmd.indexOf(needle, idx + 1)
+  }
+  return false
 }
 
 export const installGitCloneWithSetup: Installer = async (ctx) => {
@@ -226,8 +256,14 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   // Warnings go through console.warn unconditionally (NOT quiet-gated): quiet
   // suppresses diff previews, never supply-chain notices; InstallResult's ok
   // variant has no message channel to carry them.
-  const rp = await gitRevParseHead(cloneTarget)
-  if (rp.exit !== 0 || !rp.sha) {
+  // v4.16.2 — self-cleaning cmds (dest rm-ed after clone, ui-ux-pro-max
+  // pattern) make the SHA unverifiable by DESIGN on every run: skip rev-parse
+  // silently (a per-run warn is pure noise — dogfood v4.16.1); the manifest
+  // verify cmd below stays the install authority (ADR 0037 records this mode).
+  const rp = isSelfCleaningCloneCmd(install.cmd) ? null : await gitRevParseHead(cloneTarget)
+  if (rp === null) {
+    // self-cleaning by design — nothing to inspect, no warn.
+  } else if (rp.exit !== 0 || !rp.sha) {
     console.warn(
       `  ⚠ ${name}: git_ref SHA pin '${install.git_ref}' unverifiable — \`git rev-parse HEAD\` exit ${rp.exit} in ${cloneTarget} (the install cmd may remove its own clone dir); falling back to the manifest verify cmd as the install authority`,
     )
