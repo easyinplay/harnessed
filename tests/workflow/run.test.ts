@@ -316,7 +316,7 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     const v3Phases = [
       {
         id: 'p1',
-        invokes_tools: [{ tool: 'zoom-out' }, { tool: 'diagnose' }],
+        invokes_tools: [{ tool: 'grill-with-docs' }, { tool: 'diagnose' }],
       },
     ]
     loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
@@ -326,7 +326,7 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     expect(arbitrateBeforeSpawnMock).toHaveBeenCalledTimes(1)
     const calledFired = arbitrateBeforeSpawnMock.mock.calls[0]?.[0] ?? []
     expect(calledFired).toEqual([
-      { name: 'zoom-out', tier: 'zoom-out' },
+      { name: 'grill-with-docs', tier: 'grill-with-docs' },
       { name: 'diagnose', tier: 'diagnose' },
     ])
   })
@@ -334,7 +334,7 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
   it('12. T3.5.W1.5 — before-spawn NOT fire: invokes_tools.length=1 (single tool) → arbitrate NOT called', async () => {
     // Single-tool phase 不需 arbitrate (RESEARCH-disciplines § 4.4 verbatim: length > 1 trigger)。
     isVetoedMock.mockResolvedValue(false)
-    const v3Phases = [{ id: 'p1', invokes_tools: [{ tool: 'zoom-out' }] }]
+    const v3Phases = [{ id: 'p1', invokes_tools: [{ tool: 'grill-with-docs' }] }]
     loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
     const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
     expect(r.status).toBe('complete')
@@ -345,7 +345,9 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     // K14 mitigation:arbitrate throw → warn + 不阻塞;phase 仍 complete。
     isVetoedMock.mockResolvedValue(false)
     arbitrateBeforeSpawnMock.mockRejectedValueOnce(new Error('priority.yaml malformed'))
-    const v3Phases = [{ id: 'p1', invokes_tools: [{ tool: 'zoom-out' }, { tool: 'diagnose' }] }]
+    const v3Phases = [
+      { id: 'p1', invokes_tools: [{ tool: 'grill-with-docs' }, { tool: 'diagnose' }] },
+    ]
     loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const r = await runWorkflow('workflows/task/code/workflow.yaml', {})

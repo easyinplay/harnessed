@@ -271,6 +271,30 @@ describe('installMcpHttpAdd', () => {
     }
   })
 
+  // v4.16.3 — stdout fallback (formatSpawnFail parity with the other installers):
+  // empty stderr must not produce the dangling-colon message class.
+  it('install spawn exit=1 with stdout-only output → message carries stdout tail', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () =>
+          makeChild({
+            exitCode: 1,
+            stdout: 'progress line\nError: endpoint rejected',
+            stderr: '',
+          }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpHttpAdd(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'spawn' })
+      if ('error' in r && r.error) {
+        expect(r.error.message).toContain('Error: endpoint rejected')
+        expect(r.error.message).not.toMatch(/exited 1: $/)
+      }
+    } finally {
+      s.restore()
+    }
+  })
+
   // v1.0.4 T1.5 + v3.0.2 — ADR 0004 idempotent contract: "already exists"
   // stderr (substring) with exit=1 → ok:true + alreadyInstalled:true.
   it('install exit=1 + "already exists" stderr → ok:true alreadyInstalled:true', async () => {

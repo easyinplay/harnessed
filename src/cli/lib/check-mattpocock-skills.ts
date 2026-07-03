@@ -8,7 +8,7 @@
 //   2. <harness skills dirs>/mattpocock-skills/                                 (user-skill form)
 // Either present → pass. Both missing → warn (non-blocking per warn ≠ fail R2.4.1)
 // — methodology fallback already inline in role-prompts.yaml per v3.6.0 Phase 1,
-// so install is optional; remediation enables /grill-with-docs /zoom-out etc.
+// so install is optional; remediation enables /grill-with-docs /diagnosing-bugs etc.
 // SlashCommand acceleration.
 //
 // v4.14.0 — cross-harness: plugin-cache probe gated on getPluginsRegistry()

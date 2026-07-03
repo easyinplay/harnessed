@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.16.3] - 2026-07-04
+
+### Changed
+
+- **mattpocock 招式命令上游对账(登记 follow-up 落地;上游 2026-07 重构实证 gh api 全目录清单).** 三类失配处理:(1) `diagnose` capability 的 cmd/skill_dir 对齐上游改名(`/diagnose` → `/diagnosing-bugs`),KEY 保留不动引用面;role-prompts(en+zh)、routing/decision_rules、gsd-debug alias 链、manifest description 等全部字面 `/diagnose` 同步,残留 sweep 清零。(2) `zoom-out` capability **整体移除**(上游删除该 skill,无稳定后继;用户指示不做兼容性保留)— task/code、task/auto 的 tools_available / invokes_tools / SKILL(.zh-Hans).md 叙述、role-prompts 方法论条目(en+zh)、decision_rules 清单全部同步剔除,check-workflow-schema C1 交叉校验绿。(3) `investigate` capability 的 impl 由 mattpocock-skills 改为 gstack(上游已无该 skill;gstack `/investigate` 为现存实现),`investigate-gstack` 的失效 mattpocock alias 移除,改为 namespace-suffix 兼容别名。上游新增 skills(triage / research / implement 等)按 YAGNI 不扩容 capability。
+
+### Fixed
+
+- **mcp installer spawn 失败消息接入 `formatSpawnFail`(登记 follow-up 落地).** `claude|codex mcp add exited N: <stderr 头部截取>` 改为与其余 4 个 installer 一致的 tail-END + stdout 兜底格式 — CC CLI 把错误写到 stdout 且 stderr 为空时不再产生悬空冒号消息。
+
 ## [4.16.2] - 2026-07-03
 
 ### Fixed

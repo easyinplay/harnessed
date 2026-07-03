@@ -48,6 +48,7 @@ import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
+import { formatSpawnFail } from './lib/verifyMessage.js'
 
 // D-16 — resolve ${ENV_VAR} placeholders from process.env BEFORE arg
 // construction. Returns either the resolved value or throws-style {error}.
@@ -279,7 +280,9 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `${bin} mcp add (http) exited ${r.exitCode}: ${r.stderr.slice(0, 200)}`,
+        // v4.16.3 — formatSpawnFail parity with the other 4 installers
+        // (tail-END + stdout fallback; CC CLI errors can land on stdout).
+        formatSpawnFail(`${bin} mcp add (http)`, r.exitCode, r.stdout, r.stderr),
         'install-failed',
       ),
     }

@@ -47,15 +47,14 @@ describe('role-prompts.yaml — mattpocock methodology inline (v3.6.0 Phase 1)',
     expect(joined).toMatch(/doc-diff/i)
   })
 
-  it('cell 3 — task-code checklist contains zoom-out + improve-arch methodology items', async () => {
+  it('cell 3 — task-code checklist contains improve-arch methodology items (zoom-out removed v4.16.3)', async () => {
     const prompts = await loadRolePrompts(WORKFLOWS_DIR)
     const checklist = prompts['task-code']?.checklist ?? []
-    // checklist length grew from 7 → 12 (1 zoom-out + 4 improve-arch items)
-    expect(checklist.length).toBeGreaterThanOrEqual(12)
+    // v4.16.3: zoom-out methodology item removed (upstream deleted the skill) → 11
+    expect(checklist.length).toBeGreaterThanOrEqual(11)
     const joined = checklist.join('\n')
-    // zoom-out methodology phrase
-    expect(joined).toMatch(/zoom-out:.*layer of abstraction/i)
-    expect(joined).toMatch(/CONTEXT\.md domain glossary/i)
+    // v4.16.3 — zoom-out methodology item removed with the capability (upstream deleted)
+    expect(joined).not.toMatch(/zoom-out:/i)
     // improve-codebase-architecture methodology phrases
     expect(joined).toMatch(/improve-arch.*deepening opportunities/i)
     expect(joined).toMatch(/deletion test/i)

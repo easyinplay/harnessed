@@ -244,6 +244,33 @@ describe('installMcpStdioAdd', () => {
       expect(r).toMatchObject({ ok: false, phase: 'spawn' })
       if ('error' in r && r.error) {
         expect(r.error.keyword).toBe('install-failed')
+        // v4.16.3 — formatSpawnFail parity with the other 4 installers
+        // (tail-END + stdout fallback; no dangling colon on empty output).
+        expect(r.error.message).toBe('claude mcp add exited 1: install boom')
+      }
+    } finally {
+      s.restore()
+    }
+  })
+
+  // v4.16.3 — stdout fallback (formatSpawnFail parity): CC CLI errors that land
+  // on stdout with an empty stderr must not produce the dangling-colon class.
+  it('install spawn exit=1 with stdout-only output → message carries stdout tail', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () =>
+          makeChild({
+            exitCode: 1,
+            stdout: 'progress line\nError: marketplace unreachable',
+            stderr: '',
+          }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpStdioAdd(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'spawn' })
+      if ('error' in r && r.error) {
+        expect(r.error.message).toContain('Error: marketplace unreachable')
+        expect(r.error.message).not.toMatch(/exited 1: $/)
       }
     } finally {
       s.restore()

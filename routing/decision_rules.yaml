@@ -269,8 +269,7 @@ rules:
         ref: mattpocock_phases.execute.skills
       primary_skills:
         - diagnose
-        - zoom-out
-      rationale: 系统化排错 — gsd execute-task + diagnose/zoom-out 招式主导
+      rationale: 系统化排错 — gsd execute-task + diagnose(/diagnosing-bugs)招式主导
 
   - id: engineering-verify-pr
     priority: 60
@@ -326,15 +325,13 @@ mattpocock_phases:
     skills:
       - tdd
       - diagnose
-      - zoom-out
       - caveman
       - grill-with-docs
       - playwright-cli
       - improve-codebase-architecture
     triggers:
       - /tdd
-      - /diagnose
-      - /zoom-out
+      - /diagnosing-bugs
       - /caveman
       - /grill-with-docs
       - /playwright-cli

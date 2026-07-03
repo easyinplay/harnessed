@@ -6,7 +6,7 @@ description: |
   fire on test sub。schema_version: harnessed.workflow.v3 with delegates_to (4 sub: clarify order 1
   conditional + code order 2 + test order 3 conditional + deliver order 4) + disciplines_applied
   (6 default) + tools_available (8 entry: superpowers-brainstorming + tdd + grill-with-docs +
-  zoom-out + improve-codebase-architecture + diagnose + ralph-loop + planning-with-files)。
+  improve-codebase-architecture + diagnose + ralph-loop + planning-with-files)。
   Triggered by slash command `/task`
   (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
 trigger_phrases:
@@ -47,7 +47,6 @@ Sister `workflows/capabilities.yaml`:
 - `superpowers-brainstorming` — Bucket 4 核心 capability (sub clarify upstream)
 - `tdd` — Bucket 4 核心 capability TDD red-green-refactor (sub test upstream)
 - `grill-with-docs` — Bucket 1 mattpocock conditional invoke (clarify)
-- `zoom-out` — Bucket 1 mattpocock conditional invoke (code, unfamiliar_module)
 - `improve-codebase-architecture` — Bucket 1 mattpocock conditional invoke (code, architecture_health_audit)
 - `diagnose` — Bucket 1 mattpocock conditional invoke (code/test, bug_root_cause_unknown / test_fail)
 - `ralph-loop` — Bucket 4 核心 capability orthogonal wrapper (deliver)

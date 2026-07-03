@@ -8,11 +8,12 @@
 # ADR 0024+ + npm patch release (2-3 day cycle). Schema = harnessed.capabilities.v1 (sister
 # Phase 2.2 schemaVersion 7 surface convention).
 #
-# Entry buckets (5, total 39 — v13.0 P42 +gsd-eval-review[B2] +verification-before-completion[B4]; P43 +diagram[B7] +gsd-validate-phase[B2], +systematic-debugging alias on gsd-debug):
-#   1. mattpocock 12 高频招式 (D-09)        — grill-with-docs / zoom-out / diagnose / caveman /
+# Entry buckets (5, total 38 — v13.0 P42 +gsd-eval-review[B2] +verification-before-completion[B4]; P43 +diagram[B7] +gsd-validate-phase[B2], +systematic-debugging alias on gsd-debug;
+#   4.16.3 上游对账: -zoom-out[上游删除] / diagnose cmd → /diagnosing-bugs[上游改名] / investigate impl → gstack[mattpocock 上游消失]):
+#   1. mattpocock 高频招式 (D-09)           — grill-with-docs / diagnose(→/diagnosing-bugs) / caveman /
 #                                              grill-me / tdd / to-prd / to-issues /
 #                                              improve-codebase-architecture / code-review /
-#                                              code-simplifier / investigate
+#                                              code-simplifier
 #   2. special-purpose tools 13+ (D-14)     — ui-ux-pro-max / design-taste-frontend / playwright-cli /
 #                                              playwright-test / webapp-testing /
 #                                              chrome-devtools-mcp / ctx7 / tavily-mcp /
@@ -45,22 +46,17 @@ capabilities:
     fires_when:
       - phase.spec_ambiguous == true
 
-  zoom-out:
-    impl: mattpocock-skills
-    install_type: user-skill
-    skill_dir: zoom-out
-    cmd: /zoom-out
-    since: v2.0
-    category: tool-slash-cmd
-    description: 陌生模块导航 (fires when subtask.unfamiliar_module == true)
-    fires_when:
-      - subtask.unfamiliar_module == true
+  # v4.16.3 — zoom-out entry REMOVED (mattpocock 上游 2026-07 重构删除该 skill,无稳定
+  # 后继;用户指示不做兼容性保留)。引用面(task/code、task/auto、role-prompts、
+  # decision_rules)已同步清理。
 
   diagnose:
     impl: mattpocock-skills
     install_type: user-skill
-    skill_dir: diagnose
-    cmd: /diagnose
+    # v4.16.3 — 上游 2026-07 重构改名 diagnose → diagnosing-bugs(skills/engineering/
+    # diagnosing-bugs);capability KEY 保留 diagnose(引用面稳定),cmd/skill_dir 对齐上游。
+    skill_dir: diagnosing-bugs
+    cmd: /diagnosing-bugs
     since: v2.0
     category: tool-slash-cmd
     description: 系统化排错 (fires when test_fail OR debug context)
@@ -160,13 +156,17 @@ capabilities:
       - phase.stage == 'verify' AND phase.is_final_step == true
 
   investigate:
-    impl: mattpocock-skills
+    # v4.16.3 — impl mattpocock-skills → gstack:上游 mattpocock/skills 2026-07 重构后
+    # 不再有 investigate skill;gstack 的 /investigate(系统化根因调试)是现存实现。
+    # KEY 保留 investigate(引用面稳定);sister Bucket 7 investigate-gstack 为同实现的
+    # namespace-suffix 兼容别名。
+    impl: gstack
     install_type: user-skill
-    skill_dir: investigate
+    skill_dir: gstack
     cmd: /investigate
     since: v2.0
     category: tool-slash-cmd
-    description: gstack-routed bug investigation (fires when bug_root_cause_unknown)
+    description: gstack bug investigation (fires when bug_root_cause_unknown)
     fires_when:
       - subtask.bug_root_cause_unknown == true
 
@@ -318,12 +318,13 @@ capabilities:
     cmd: /gsd-debug
     since: v2.0
     category: tool-slash-cmd
-    description: GSD systematic debugging (overlap with mattpocock /diagnose + superpowers systematic-debugging — alias)
+    description: GSD systematic debugging (overlap with mattpocock /diagnosing-bugs + superpowers systematic-debugging — alias)
     # ADR-0034 Finding 1 — ECC per-language build-resolvers收编 as debug/verify-dimension
     # aliases (build-failure fix; runtime picks language-matching one). Opt-in: no-op
     # when ECC absent.
     aliases:
-      - { impl: mattpocock-skills, cmd: /diagnose }
+      # v4.16.3 — 上游改名 diagnose → diagnosing-bugs
+      - { impl: mattpocock-skills, cmd: /diagnosing-bugs }
       # v13.0 P43 — superpowers-native debug alias (双 impl 备选, sister tdd superpowers主/mattpocock备)
       - { impl: superpowers, cmd: "superpowers:systematic-debugging" }
       - { impl: ecc, cmd: "ecc:rust-build" }
@@ -658,7 +659,7 @@ capabilities:
   # (sister project CLAUDE.md gstack skill routing 直接 invoke cmd 名)。
   # 例外 2 alias suffix `-gstack` 避免命名冲突:
   #   - retro-gstack (alias to harnessed standalone /retro)
-  #   - investigate-gstack (alias to mattpocock investigate)
+  #   - investigate-gstack (namespace-suffix alias of Bucket 1 investigate; v4.16.3 起同为 gstack impl)
   # carrier name 自带 `gstack` 字符串 (NOT prefix policy): open-gstack-browser, gstack-upgrade
 
   autoplan:
@@ -1069,9 +1070,9 @@ capabilities:
     cmd: /investigate
     since: v3.0
     category: tool-slash-cmd
-    description: gstack bug investigation (alias to mattpocock investigate, 解决 namespace 冲突)
-    aliases:
-      - { impl: mattpocock-skills, cmd: /investigate }
+    # v4.16.3 — mattpocock alias 移除(上游重构后无 investigate skill);本 entry 现为
+    # Bucket 1 investigate(同 gstack 实现)的 namespace-suffix 兼容别名。
+    description: gstack bug investigation (namespace-suffix alias of investigate)
     fires_when:
       - subtask.bug_root_cause_unknown == true
 

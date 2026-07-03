@@ -49,6 +49,7 @@ import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
+import { formatSpawnFail } from './lib/verifyMessage.js'
 
 export const installMcpStdioAdd: Installer = async (ctx) => {
   const install = ctx.manifest.spec.install
@@ -192,7 +193,9 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `${bin} mcp add exited ${r.exitCode}: ${r.stderr.slice(0, 200)}`,
+        // v4.16.3 — formatSpawnFail parity with the other 4 installers
+        // (tail-END + stdout fallback; CC CLI errors can land on stdout).
+        formatSpawnFail(`${bin} mcp add`, r.exitCode, r.stdout, r.stderr),
         'install-failed',
       ),
     }

@@ -221,13 +221,14 @@ describe('Cycle 3 — /task master orchestrator dogfood', () => {
     expect(r.skipped).toEqual(['clarify'])
   })
 
-  it('F10: tools_available 含 planning-with-files (progress.md sink) + 4 mattpocock 招式', () => {
+  it('F10: tools_available 含 planning-with-files (progress.md sink) + 3 mattpocock 招式', () => {
     const raw = readFileSync(TASK_YAML, 'utf8')
     const m = parseYaml(raw) as WorkflowSchemaV3T
     expect(m.tools_available).toContain('planning-with-files')
-    // mattpocock conditional route — grill-with-docs / zoom-out / improve-codebase-architecture / diagnose
+    // mattpocock conditional route — grill-with-docs / improve-codebase-architecture / diagnose
+    // (v4.16.3: zoom-out removed — upstream deleted the skill)
     expect(m.tools_available).toContain('grill-with-docs')
-    expect(m.tools_available).toContain('zoom-out')
+    expect(m.tools_available).not.toContain('zoom-out')
     expect(m.tools_available).toContain('improve-codebase-architecture')
     expect(m.tools_available).toContain('diagnose')
   })
