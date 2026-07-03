@@ -195,21 +195,75 @@ describe('installGitCloneWithSetup', () => {
     }
   })
 
-  it('D-15 SHA-mismatch: rev-parse returns different SHA → keyword:sha-mismatch', async () => {
+  it('D-15 SHA-mismatch on FRESH install (updateInstalled:false) → keyword:sha-mismatch', async () => {
+    // v4.16.0 T1 — the hard supply-chain gate is scoped to fresh installs;
+    // force-update degrades (next test). Fresh mode runs the idempotent probe
+    // first, so the spawn script gains a leading not-installed step.
     const s = silence()
     try {
       spawnMock.mockImplementation(
         scriptedSpawn([
+          { exitCode: 1 }, // idempotent_check (grep) — not installed
           { exitCode: 0 }, // install cmd
           { exitCode: 0, stdout: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n' }, // rev-parse mismatch
         ]),
       )
-      const r = await installGitCloneWithSetup(ctx())
+      const r = await installGitCloneWithSetup(ctx({ updateInstalled: false }))
       expect(r).toMatchObject({ ok: false, phase: 'verify' })
       if ('error' in r && r.error) {
         expect(r.error.keyword).toBe('sha-mismatch')
       }
     } finally {
+      s.restore()
+    }
+  })
+
+  it('v4.16.0 T1 — SHA mismatch under force-update (updateInstalled:true) → degraded ok + warn', async () => {
+    // force-update semantics = "refresh to upstream latest"; a pinned git_ref
+    // from install-time will legitimately trail HEAD. Degrade to ok + warn
+    // (bump-git_ref hint) instead of failing the refresh (user dogfood: gstack /
+    // ui-ux-pro-max would fail every force-update once their clone succeeds).
+    const s = silence()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      spawnMock.mockImplementation(
+        scriptedSpawn([
+          { exitCode: 0 }, // install cmd (updateInstalled:true skips idempotent probe)
+          { exitCode: 0, stdout: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\n' }, // rev-parse mismatch
+          { exitCode: 0 }, // verify cmd
+        ]),
+      )
+      const r = await installGitCloneWithSetup(ctx())
+      expect(r).toMatchObject({ ok: true })
+      const warned = warnSpy.mock.calls.map((c) => String(c[0])).join('\n')
+      expect(warned).toContain('git_ref')
+      expect(warned).toContain('deadbeef')
+    } finally {
+      warnSpy.mockRestore()
+      s.restore()
+    }
+  })
+
+  it('v4.16.0 T1 — rev-parse unverifiable (clone dir removed by cmd) → degraded ok + warn', async () => {
+    // ui-ux-pro-max pattern: the install cmd clones into a .cache dir and rm's
+    // it at the end — rev-parse has nothing to inspect (exit 128 / ENOENT).
+    // Manifest verify (next spawn) is the authority; SHA check degrades to warn.
+    const s = silence()
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      spawnMock.mockImplementation(
+        scriptedSpawn([
+          { exitCode: 0 }, // install cmd
+          { exitCode: 128, stdout: '' }, // rev-parse — dir gone
+          { exitCode: 0 }, // verify cmd
+        ]),
+      )
+      const r = await installGitCloneWithSetup(ctx())
+      expect(r).toMatchObject({ ok: true })
+      const warned = warnSpy.mock.calls.map((c) => String(c[0])).join('\n')
+      expect(warned).toContain('unverifiable')
+    } finally {
+      warnSpy.mockRestore()
       s.restore()
     }
   })

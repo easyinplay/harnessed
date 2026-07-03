@@ -47,6 +47,7 @@ import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
+import { formatSpawnFail } from './lib/verifyMessage.js'
 
 // Parse `<plugin>@<marketplace>` and the marketplace URL/owner-repo from the
 // manifest cmd. cmd shape (per real manifests + CC docs):
@@ -232,7 +233,8 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `${bin} plugin ${bin === 'codex' ? 'add' : 'install'} exited ${r2.exitCode}: ${r2.stderr.slice(0, 200)}${stepOneStderr ? ` | marketplace-add stderr: ${stepOneStderr.slice(0, 100)}` : ''}`,
+        // v4.16.0 T5 — shared spawn-fail format (stderr → stdout fallback).
+        `${formatSpawnFail(`${bin} plugin ${bin === 'codex' ? 'add' : 'install'}`, r2.exitCode, r2.stdout, r2.stderr)}${stepOneStderr ? ` | marketplace-add stderr: ${stepOneStderr.slice(0, 100)}` : ''}`,
         'install-failed',
       ),
     }

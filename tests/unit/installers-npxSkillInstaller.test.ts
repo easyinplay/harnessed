@@ -243,6 +243,50 @@ describe('installNpxSkillInstaller', () => {
     }
   })
 
+  it('v4.16.0 T3 — Windows hard-crash exit (0xC0000409) retried once: crash → success → ok:true', async () => {
+    // design-taste-frontend dogfood: `npx skills add` died with exit 3221226505
+    // (STATUS_STACK_BUFFER_OVERRUN — node hard crash, typically transient).
+    // NTSTATUS exits can only occur on win32 (POSIX exit codes are 0-255), so
+    // the retry predicate needs no platform gate.
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        scriptedSpawn([
+          { exitCode: 3221226505 }, // install — hard crash
+          { exitCode: 0 }, // install retry — succeeds
+          { exitCode: 0 }, // manifest verify cmd
+        ]),
+      )
+      accessMock.mockResolvedValue(undefined) // SKILL.md exists
+      const r = await installNpxSkillInstaller(ctx())
+      expect(r).toMatchObject({ ok: true })
+      expect(spawnMock).toHaveBeenCalledTimes(3)
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('v4.16.0 T3 — double hard-crash → ok:false install-failed (single retry only)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        scriptedSpawn([
+          { exitCode: 3221226505 }, // install — hard crash
+          { exitCode: 3221226505 }, // retry — crashes again
+        ]),
+      )
+      const r = await installNpxSkillInstaller(ctx())
+      expect(r).toMatchObject({ ok: false, phase: 'spawn' })
+      if ('error' in r && r.error) {
+        expect(r.error.keyword).toBe('install-failed')
+        expect(r.error.message).toContain('3221226505')
+      }
+      expect(spawnMock).toHaveBeenCalledTimes(2)
+    } finally {
+      s.restore()
+    }
+  })
+
   it('happy path: install ok + SKILL.md present + verify ok → ok:true with appliedFiles', async () => {
     const s = silence()
     try {

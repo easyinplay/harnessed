@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.16.0] - 2026-07-03
+
+### Fixed
+
+- **force-refresh 四失败确诊修复(dogfood v4.15.2,kept-existing 带因面首次给出可诊断原因).** (1) **ui-ux-pro-max 结构性误报**:D-15 的 `git rev-parse HEAD` 在被 install cmd 自删的 `.cache` clone 目录上跑 → 必挂(4.10.1 起 latent,此前被 WSL verify 失败掩盖)— rev-parse 不可执行现降级 console.warn,以 manifest verify(native test 链)为准;(2) **SHA pin 与 force-update 语义矛盾**:force-update = 刷新到上游最新,install-time 的 git_ref pin 必然落后 HEAD — mismatch 在 `updateInstalled` 下降级 warn(提示 bump git_ref),fresh install 硬门不变(ADR 0037,amends ADR 0010 D-15);(3) **mattpocock 上游更名**:`diagnose` → `diagnosing-bugs`、`zoom-out` 已删(2026-07-03 实证)— manifest verify/idempotent、INSTALLED_INDICATORS、doctor indicators 全部对齐(legacy `diagnose` 保留探测,pre-rename 机器不误报);capabilities.yaml 招式 cmd 全量对账记 follow-up;(4) **design-taste npx 硬崩(exit 3221226505 / 0xC0000409)**:Windows NTSTATUS 硬崩类 exit 单次重试(POSIX exit ≤255,谓词天然 win32-only)。
+- **spawn 阶段错误消息 stdout 兜底.** 新 `formatSpawnFail` 统一 4 个 installer(npx-skill / git-clone / npm-cli / cc-plugin)的 install-spawn 失败消息(stderr → stdout → «no output»,sanitize)— 消灭 `npx skills add exited 3221226505: ` 空尾类。
+
+### Added
+
+- **失败/kept-existing 全文原因块.** 表格 note 列保持截断,组表格后对超长原因输出 `↳ <name>: <full ≤400>` 行(同流:failed→stderr,kept-existing→warn)— v4.15.2 的 90 char 截断恰好吃掉 gstack / mattpocock 的诊断部分,下轮 dogfood 直读真因。
+
 ## [4.15.2] - 2026-07-03
 
 ### Fixed

@@ -95,6 +95,20 @@ describe('detectSkillPresence (v4.13.0 dual-dir probe)', () => {
     ).resolves.toBe(true)
   })
 
+  it('v4.16.0 — mattpocock NEW upstream skill name (diagnosing-bugs) detected', async () => {
+    // Upstream mattpocock/skills renamed `diagnose` → `diagnosing-bugs` and
+    // dropped `zoom-out` (verified 2026-07-03 via gh api skills/engineering).
+    // Fresh installs create the NEW names only; legacy `diagnose` stays in the
+    // indicator list so pre-rename machines still detect as installed.
+    accessPresent(['/.claude/skills/diagnosing-bugs'])
+    await expect(
+      detectSkillPresence(
+        'npx --yes skills@latest add mattpocock/skills --copy --global',
+        'mattpocock-skills',
+      ),
+    ).resolves.toBe(true)
+  })
+
   it('--skill name found under ~/.agents/skills → true', async () => {
     accessPresent(['/.agents/skills/design-taste-frontend/SKILL.md'])
     await expect(

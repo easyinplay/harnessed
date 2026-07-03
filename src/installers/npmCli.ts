@@ -21,7 +21,7 @@ import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult, Level } from './lib/types.js'
-import { formatVerifyFail } from './lib/verifyMessage.js'
+import { formatSpawnFail, formatVerifyFail } from './lib/verifyMessage.js'
 
 function detectLevel(cmd: string): Level {
   if (/\bnpm\s+install\s+-g\b/.test(cmd)) return 'L4'
@@ -109,7 +109,8 @@ export const installNpmCli: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `install cmd exited ${sp.exitCode}: ${sp.stderr.slice(0, 200)}`,
+        // v4.16.0 T5 — shared spawn-fail format (stderr → stdout fallback).
+        formatSpawnFail('install cmd', sp.exitCode, sp.stdout, sp.stderr),
         'install-failed',
       ),
     }

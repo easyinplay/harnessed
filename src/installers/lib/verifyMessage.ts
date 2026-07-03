@@ -19,6 +19,21 @@ export function sanitizeOutputTail(raw: string, cap = 160): string {
   return printable.length > 0 ? printable.slice(0, cap) : '(unreadable output)'
 }
 
+/** v4.16.0 T5 — install-spawn failure message with the same tail contract as
+ *  formatVerifyFail (stderr → stdout fallback → '(no output)'). Kills the
+ *  `npx skills add exited 3221226505: ` dangling-colon class (design-taste
+ *  dogfood: node hard-crash writes nothing to stderr). */
+export function formatSpawnFail(
+  label: string,
+  exitCode: number,
+  stdout: string,
+  stderr: string,
+): string {
+  const rawTail = stderr.trim() || stdout.trim()
+  const tail = rawTail.length > 0 ? sanitizeOutputTail(rawTail) : '(no output)'
+  return `${label} exited ${exitCode}: ${tail}`
+}
+
 export function formatVerifyFail(
   cmd: string,
   exitCode: number,

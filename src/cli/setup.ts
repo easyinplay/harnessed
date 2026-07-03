@@ -108,15 +108,19 @@ export function printGrouped(b: StepBResult, prefix = ''): void {
     'kept-existing': '⚠',
   }
   const groupOf = (n: string): string => b.componentTypes[n] ?? 'other'
-  const buckets: Record<string, Array<{ status: string; name: string; note?: string }>> = {}
-  const push = (group: string, entry: { status: string; name: string; note?: string }): void => {
+  // v4.16.0 T4 — `full` carries the untruncated reason for the post-table
+  // detail block (dogfood v4.15.2: the note truncation ate exactly the
+  // diagnostic part of gstack / mattpocock refresh failures).
+  type Entry = { status: string; name: string; note?: string; full?: string }
+  const buckets: Record<string, Entry[]> = {}
+  const push = (group: string, entry: Entry): void => {
     if (!buckets[group]) buckets[group] = []
     buckets[group].push(entry)
   }
   for (const n of b.failed) {
     // failed entries arrive verbatim as "<name>: <reason>" — split into columns.
     const m = n.match(/^([^:]+):\s*(.*)$/s)
-    push(groupOf(m?.[1] ?? n), { status: 'failed', name: m?.[1] ?? n, note: m?.[2] })
+    push(groupOf(m?.[1] ?? n), { status: 'failed', name: m?.[1] ?? n, note: m?.[2], full: m?.[2] })
   }
   for (const n of b.installed) push(groupOf(n), { status: 'installed', name: n })
   for (const s of b.skipped)
@@ -132,6 +136,7 @@ export function printGrouped(b: StepBResult, prefix = ''): void {
       status: 'kept-existing',
       name: k.name,
       note: `${why} — prior version retained`,
+      full: k.reason,
     })
   }
 
@@ -153,6 +158,16 @@ export function printGrouped(b: StepBResult, prefix = ''): void {
       if (r.status === 'failed') console.error(r.line)
       else if (r.status === 'kept-existing') console.warn(r.line)
       else console.log(r.line)
+    }
+    // v4.16.0 T4 — full-reason detail block: any failed / kept-existing entry
+    // whose reason outgrew the note column gets an untruncated (capped 400)
+    // line after the table, on the same stream as its row.
+    for (const e of entries) {
+      if (!e.full || e.full.length <= NOTE_MAX) continue
+      const full = e.full.length > 400 ? `${e.full.slice(0, 400)}…` : e.full
+      const line = `      ↳ ${e.name}: ${full}`
+      if (e.status === 'failed') console.error(line)
+      else console.warn(line)
     }
   }
 }

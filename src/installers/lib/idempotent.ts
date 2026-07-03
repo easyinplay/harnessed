@@ -82,13 +82,17 @@ function extractGitCloneTarget(cmd: string): string | null {
  *  When ANY listed indicator exists under `~/.claude/skills/`, consider the
  *  pack installed. Sister `ctx7→context7` plugin-name aliasing pattern.
  *  - `gsd` installs 70+ `gsd-<name>/` skill dirs (no single `gsd/` folder)
- *  - `mattpocock-skills` installs `diagnose/`, `tdd/`, `zoom-out/`, etc.
+ *  - `mattpocock-skills` installs individual skill dirs (`tdd/`, ...)
  *    (extractSkillName from `npx ... skills add mattpocock/skills` yields
  *    `skills` which never exists)
+ *  v4.16.0 — upstream mattpocock/skills renamed `diagnose` → `diagnosing-bugs`
+ *  and dropped `zoom-out` (verified 2026-07-03). Legacy `diagnose` stays in the
+ *  list: pre-rename machines still carry it and remain legitimately installed
+ *  (OR-probe — a superset is cheap and never false-negative).
  */
 const INSTALLED_INDICATORS: Record<string, string[]> = {
   gsd: ['gsd-progress', 'gsd-plan-phase'],
-  'mattpocock-skills': ['diagnose', 'tdd', 'zoom-out'],
+  'mattpocock-skills': ['tdd', 'diagnosing-bugs', 'grill-with-docs', 'diagnose'],
 }
 
 /** v4.13.0 — indicator sub-skill probe across ALL harness skills dirs.

@@ -42,7 +42,7 @@ const REMEDIATION =
   'install via `npx skills@latest add mattpocock/skills` ' +
   '(or git clone https://github.com/mattpocock/skills ~/.claude/skills/mattpocock-skills); ' +
   'methodology fallback already inline in role-prompts.yaml per v3.6.0 Phase 1 — install ' +
-  'is optional but enables /grill-with-docs /zoom-out etc. SlashCommand acceleration'
+  'is optional but enables /grill-with-docs /tdd /diagnosing-bugs etc. SlashCommand acceleration'
 
 // v4.13.0 — --copy (Windows symlink-safe) + -y (skills CLI prompts hang
 // non-interactive spawns; sister manifests/skill-packs yaml).
@@ -98,10 +98,12 @@ export async function checkMattpocockSkills(): Promise<CheckResult> {
     }
   }
 
-  // v3.9.20 — npx skills CLI installs individual skill dirs (diagnose / tdd /
-  // zoom-out / etc.) without a parent `mattpocock-skills/` folder. Sister
-  // INSTALLED_INDICATORS pattern in src/installers/lib/idempotent.ts v3.9.19.
-  const indicators = ['diagnose', 'tdd', 'zoom-out']
+  // v3.9.20 — npx skills CLI installs individual skill dirs without a parent
+  // `mattpocock-skills/` folder. Sister INSTALLED_INDICATORS pattern in
+  // src/installers/lib/idempotent.ts.
+  // v4.16.0 — upstream renamed `diagnose` → `diagnosing-bugs`, dropped
+  // `zoom-out` (verified 2026-07-03); legacy `diagnose` kept for pre-rename installs.
+  const indicators = ['tdd', 'diagnosing-bugs', 'grill-with-docs', 'diagnose']
   for (const skillsDir of harnessSkillsDirs()) {
     for (const ind of indicators) {
       try {

@@ -315,6 +315,39 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(stderr).toMatch(/✗ failed\s+exa-mcp\s+verify: not found/)
   })
 
+  // Cell 9b (v4.16.0 T4): long failed / kept-existing reasons get a full-text
+  // block after the table (the 90/100-char note truncation ate the diagnostic
+  // part of gstack / mattpocock refresh failures in user dogfood v4.15.2).
+  it('cell 9b — printGrouped emits full-reason lines for truncated failed/kept-existing notes', () => {
+    let stderr = ''
+    let warnOut = ''
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
+      stderr += `${a.map(String).join(' ')}\n`
+    })
+    vi.spyOn(console, 'warn').mockImplementation((...a: unknown[]) => {
+      warnOut += `${a.map(String).join(' ')}\n`
+    })
+    const longFail = `verify failed (exit 1): ${'x'.repeat(120)}TAIL-F`
+    const longKept = `git-clone-with-setup cmd exited 1: ${'y'.repeat(120)}TAIL-K`
+    printGrouped({
+      installed: [],
+      alreadyInstalled: [],
+      skipped: [],
+      failed: [`exa-mcp: ${longFail}`],
+      keptExisting: [{ name: 'gstack', reason: longKept }],
+      elapsedMs: 0,
+      componentTypes: { 'exa-mcp': 'mcp-tool', gstack: 'command' },
+    })
+    // Table note stays truncated…
+    expect(stderr).toContain('…')
+    // …but the full reason (incl. the tail beyond the truncation point) follows.
+    expect(stderr).toContain('TAIL-F')
+    expect(stderr).toMatch(/↳ exa-mcp:/)
+    expect(warnOut).toContain('TAIL-K')
+    expect(warnOut).toMatch(/↳ gstack:/)
+  })
+
   // Cell 6: parallel install smoke — 3 manifests all fire concurrently via Promise.allSettled
   it('cell 6 — parallel smoke: 3 manifests all installed concurrently, [parallel Xs] in summary', async () => {
     readdirMock.mockImplementation(

@@ -35,7 +35,7 @@ import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
-import { formatVerifyFail } from './lib/verifyMessage.js'
+import { formatSpawnFail, formatVerifyFail } from './lib/verifyMessage.js'
 
 // D-15 inline SHA-verify. Runs `git rev-parse HEAD` in the cloned dir,
 // compares against the manifest's git_ref. Only invoked after a successful
@@ -202,7 +202,8 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `git-clone-with-setup cmd exited ${sp.exitCode}: ${sp.stderr.slice(0, 200)}`,
+        // v4.16.0 T5 — shared spawn-fail format (stderr → stdout fallback).
+        formatSpawnFail('git-clone-with-setup cmd', sp.exitCode, sp.stdout, sp.stderr),
         'install-failed',
       ),
     }
@@ -211,31 +212,42 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   // D-15 — SHA-verify. `git rev-parse HEAD` in clone target dir; match the
   // manifest git_ref by prefix (git's standard SHA-prefix semantics — a
   // 7-hex prefix is a valid name for the full 40-hex commit).
+  //
+  // v4.16.0 (ADR 0037, amends ADR 0010 D-15) — two degradations, dogfood-driven:
+  //   (a) rev-parse UNVERIFIABLE (dir gone): cmds may remove their own clone dir
+  //       by design (ui-ux-pro-max clones into .cache/ then rm's it) — there is
+  //       nothing to inspect. Degrade to console.warn; the manifest verify cmd
+  //       below (native test-chain) is the authority for "did it install".
+  //   (b) SHA MISMATCH under force-update (opts.updateInstalled): force-update
+  //       semantics = "refresh to upstream latest", so an install-time pin
+  //       legitimately trails HEAD — warn (bump-git_ref hint) instead of failing
+  //       every refresh forever. FRESH installs keep the hard fail (the pin is
+  //       the supply-chain gate for first contact with the upstream).
+  // Warnings go through console.warn unconditionally (NOT quiet-gated): quiet
+  // suppresses diff previews, never supply-chain notices; InstallResult's ok
+  // variant has no message channel to carry them.
   const rp = await gitRevParseHead(cloneTarget)
   if (rp.exit !== 0 || !rp.sha) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/install/git_ref',
-        `git rev-parse HEAD failed in ${cloneTarget} (exit ${rp.exit}); cannot verify SHA pin '${install.git_ref}'`,
-        'sha-mismatch',
-      ),
-    }
-  }
-  if (!rp.sha.startsWith(install.git_ref)) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/install/git_ref',
-        `git_ref SHA mismatch: manifest pinned '${install.git_ref}' but HEAD is '${rp.sha}' in ${cloneTarget}`,
-        'sha-mismatch',
-      ),
+    console.warn(
+      `  ⚠ ${name}: git_ref SHA pin '${install.git_ref}' unverifiable — \`git rev-parse HEAD\` exit ${rp.exit} in ${cloneTarget} (the install cmd may remove its own clone dir); falling back to the manifest verify cmd as the install authority`,
+    )
+  } else if (!rp.sha.startsWith(install.git_ref)) {
+    if (ctx.opts.updateInstalled === true) {
+      console.warn(
+        `  ⚠ ${name}: upstream HEAD '${rp.sha}' no longer matches manifest git_ref pin '${install.git_ref}' (expected under force-update — the pin records install-time state); consider bumping git_ref in the manifest`,
+      )
+    } else {
+      return {
+        ok: false,
+        phase: 'verify',
+        backupId: bk.backupId,
+        error: err(
+          ctx,
+          '/spec/install/git_ref',
+          `git_ref SHA mismatch: manifest pinned '${install.git_ref}' but HEAD is '${rp.sha}' in ${cloneTarget}`,
+          'sha-mismatch',
+        ),
+      }
     }
   }
 

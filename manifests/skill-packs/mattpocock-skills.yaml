@@ -28,11 +28,15 @@ spec:
     # (hardcoding claude-code pinned the wrong install target on codex).
     cmd: "npx --yes skills@latest add mattpocock/skills --copy --global -y"
     npm_version: ^1.5.7
-    # v4.13.0 — the skills CLI installs INDIVIDUAL skill dirs (diagnose/ tdd/
-    # zoom-out/ ...), never a mattpocock-skills/ parent folder; probe indicators.
-    idempotent_check: "test -d ~/.claude/skills/diagnose || test -d ~/.agents/skills/diagnose"
+    # v4.13.0 — the skills CLI installs INDIVIDUAL skill dirs, never a
+    # mattpocock-skills/ parent folder; probe indicators.
+    # v4.16.0 — upstream renamed `diagnose` → `diagnosing-bugs` and dropped
+    # `zoom-out` (verified 2026-07-03 via skills/engineering listing); probe the
+    # surviving `tdd` + the new name so fresh installs verify (dogfood v4.15.2:
+    # verify pinned the dead `diagnose` path → every refresh reported failed).
+    idempotent_check: "test -d ~/.claude/skills/tdd || test -d ~/.agents/skills/tdd || test -d ~/.claude/skills/diagnosing-bugs || test -d ~/.agents/skills/diagnosing-bugs"
   verify:
-    cmd: "test -f ~/.claude/skills/diagnose/SKILL.md || test -f ~/.agents/skills/diagnose/SKILL.md"
+    cmd: "test -f ~/.claude/skills/tdd/SKILL.md || test -f ~/.agents/skills/tdd/SKILL.md || test -f ~/.claude/skills/diagnosing-bugs/SKILL.md || test -f ~/.agents/skills/diagnosing-bugs/SKILL.md"
     timeout_ms: 5000
   uninstall:
     cmd: "rm -rf ~/.claude/skills/mattpocock-skills"

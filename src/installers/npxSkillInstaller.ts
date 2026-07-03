@@ -44,7 +44,15 @@ import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
-import { formatVerifyFail } from './lib/verifyMessage.js'
+import { formatSpawnFail, formatVerifyFail } from './lib/verifyMessage.js'
+
+/** v4.16.0 T3 — Windows NTSTATUS hard-crash exits worth ONE retry. Observed in
+ *  user dogfood: `npx skills add` died with 3221226505 (0xC0000409,
+ *  STATUS_STACK_BUFFER_OVERRUN — a node process abort, typically transient).
+ *  0xC0000005 (access violation) is the same class. No platform gate needed:
+ *  POSIX exit codes are 0-255, these values can only occur on win32. */
+const HARD_CRASH_EXITS = new Set([3221226505, 3221225477])
+const HARD_CRASH_RETRY_DELAY_MS = 500
 
 export const installNpxSkillInstaller: Installer = async (ctx) => {
   const install = ctx.manifest.spec.install
@@ -144,8 +152,14 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   // npx invocation (cmd from manifest + injected --agent; B1 re-screened by
   // spawnCmd — agent ids are alnum+dash, they pass checkCmdString).
   // v3.0.2: explicit install timeout (60s — npx cold cache + skills add filesystem traverse).
-  const sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
+  let sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
+  // v4.16.0 T3 — one retry on Windows hard-crash exits (transient node aborts).
+  if (HARD_CRASH_EXITS.has(sp.exitCode)) {
+    await new Promise((r) => setTimeout(r, HARD_CRASH_RETRY_DELAY_MS))
+    sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
+    if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
+  }
   if (sp.exitCode !== 0) {
     return {
       ok: false,
@@ -154,7 +168,8 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/cmd',
-        `npx skills add exited ${sp.exitCode}: ${sp.stderr.slice(0, 200)}`,
+        // v4.16.0 T5 — shared spawn-fail format (stderr → stdout fallback).
+        formatSpawnFail('npx skills add', sp.exitCode, sp.stdout, sp.stderr),
         'install-failed',
       ),
     }
