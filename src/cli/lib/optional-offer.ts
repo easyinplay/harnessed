@@ -3,8 +3,11 @@
 // manifests/optional/(codegraph / ecc / perturn-inject)per Phase 18 D2 特意不进
 // Step B 的 auto-glob(opt-in 锁定)——但 pre-4.18.0 setup 没有任何入口,唯一路径是
 // 用户自己知道 `harnessed install <name>`(三层解析 install.ts:72 已通,却无人引导)。
-// 本模块在 setup 收尾前逐个 offer:已装跳过、逐项 confirm(default No — opt-in 语义)、
-// 同意即单 manifest runInstall。非交互(CI / 管道)只打一行 advisory,不 prompt。
+// 本模块在 setup 收尾前 offer:已装跳过、未装项一屏 p.multiselect 勾选
+// (initialValues [] + required:false — 默认全不选、直接回车即全不装,opt-in 语义;
+// v4.18.0 multiselect 增强,替代初版逐项 confirm 循环)、勾中即单 manifest runInstall,
+// 执行前逐项回显 `$ <cmd>`(informed consent 不降级 — 勾选屏 hint 只放 description)。
+// 非交互(CI / 管道)只打一行 advisory,不 prompt。
 //
 // Own module (not a setup-helpers export): tests/cli/setup-*.test.ts factory-mock
 // setup-helpers.js; adding an export there breaks every factory (memory lesson
@@ -42,6 +45,11 @@ const PROBE_OPTS: InstallOpts = {
   color: 'auto',
   updateInstalled: false,
   quiet: true,
+}
+
+/** Keep multiselect hints one-line — long manifest descriptions wrap the picker. */
+function truncateHint(desc: string): string {
+  return desc.length > 80 ? `${desc.slice(0, 80)}…` : desc
 }
 
 async function loadOptionalManifests(optionalDir: string): Promise<Manifest[]> {
@@ -98,16 +106,33 @@ export async function runOptionalOffer(
     return out
   }
 
-  console.log(`\n${pending.length} optional component(s) available (opt-in — default No):`)
+  console.log(
+    `\n${pending.length} optional component(s) available (opt-in — none selected by default):`,
+  )
+  const ans = await p.multiselect({
+    message:
+      'Select optional components to install (space to toggle, enter to continue — empty = install nothing)',
+    options: pending.map((m) => ({
+      value: m.metadata.name,
+      label: m.metadata.display_name ?? m.metadata.name,
+      hint: truncateHint(m.metadata.description),
+    })),
+    initialValues: [],
+    required: false,
+  })
+  if (p.isCancel(ans)) {
+    out.skipped.push(...pending.map((m) => m.metadata.name))
+    return out
+  }
+  const chosen = new Set(ans as string[])
   for (const manifest of pending) {
     const name = manifest.metadata.name
-    console.log(`\n  ${manifest.metadata.display_name ?? name} — ${manifest.metadata.description}`)
-    console.log(`    $ ${manifest.spec.install.cmd}`)
-    const ans = await p.confirm({ message: `Install optional "${name}"?`, initialValue: false })
-    if (p.isCancel(ans) || ans !== true) {
+    if (!chosen.has(name)) {
       out.skipped.push(name)
       continue
     }
+    // informed consent — echo the exact command about to run for this selection.
+    console.log(`\n  ${name}: $ ${manifest.spec.install.cmd}`)
     const opts: InstallOpts = {
       ...PROBE_OPTS,
       apply: true,

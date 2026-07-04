@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **setup optional-tier 推荐块(用户指示: setup 能装 codegraph).** `manifests/optional/`(codegraph / ecc / perturn-inject)per Phase 18 D2 特意不进 Step B auto-glob,但此前 setup 没有任何入口 — 唯一路径是用户自己知道 `harnessed install <name>`(三层解析早已打通却无人引导)。新增 `src/cli/lib/optional-offer.ts`(沿 l4-rescue 独立模块 + 动态 import 先例):setup 收尾前逐个 offer 未安装的 optional 组件 — 展示 display_name / description / install cmd,逐项 clack confirm(default **No**,opt-in 语义),同意即单 manifest `runInstall`(npm-cli → `system:true`,该 confirm 即 L4 显式 opt-in,`npm i -g` 缩写落 detectLevel 的 safest-default L4 分支;其余 method 不消费 system);codegraph 装毕追加 `codegraph init` 每项目建索引提示(上游两步语义)。已装项静默跳过;非 TTY / `--non-interactive` 只打一行 advisory(`install with \`harnessed install <name>\`: …`),不 prompt。
+- **setup optional-tier 推荐块(用户指示: setup 能装 codegraph).** `manifests/optional/`(codegraph / ecc / perturn-inject)per Phase 18 D2 特意不进 Step B auto-glob,但此前 setup 没有任何入口 — 唯一路径是用户自己知道 `harnessed install <name>`(三层解析早已打通却无人引导)。新增 `src/cli/lib/optional-offer.ts`(沿 l4-rescue 独立模块 + 动态 import 先例):setup 收尾前把未安装的 optional 组件放进一屏 clack `multiselect` 勾选(label = display_name、hint = description,`initialValues: []` + `required: false` — **默认全不选**,直接回车即全不装,opt-in 语义;Esc/Ctrl-C 同样全跳过),勾中项逐个执行前回显 `$ <install cmd>`(informed consent)再单 manifest `runInstall`(npm-cli → `system:true`,该勾选即 L4 显式 opt-in,`npm i -g` 缩写落 detectLevel 的 safest-default L4 分支;其余 method 不消费 system);codegraph 装毕追加 `codegraph init` 每项目建索引提示(上游两步语义)。已装项静默跳过;非 TTY / `--non-interactive` 只打一行 advisory(`install with \`harnessed install <name>\`: …`),不 prompt。
 
 ### Fixed
 

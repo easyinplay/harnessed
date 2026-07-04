@@ -27,3 +27,14 @@
    "全装静默" 与 "目录缺失" 两个边界)。
 2. setup.ts 接线点在 L4 rescue 之后、failure trailer 之前(task_plan 说 "setup.complete 摘要之前",
    实际放在 trailer 前更合理 — offer 的失败不计入 Step B 的 failed 统计,两者语义独立)。
+
+## multiselect 增强(用户选定,发版前并入 4.18.0)
+
+- 逐项 confirm 循环 → 一屏 `p.multiselect`(label=display_name、hint=description 截 80、
+  `initialValues: []` + `required: false` — 默认全不选;isCancel → 全跳过)。
+- informed consent 迁移:cmd 不再在勾选前逐项铺开,改为勾中项执行前回显 `$ <cmd>`。
+- 测试 8 → 11 用例:新增 multiselect options 形状 / 子集勾选 / 空选 / cancel 分支;
+  npm-cli(system:true)/ cc-plugin(system:false)/ 已装跳过 / 非交互 advisory / 失败桶 /
+  缺目录 语义等价迁移(confirm mock → multiselect mock)。
+- @clack/prompts 0.10.1 multiselect API 经 node_modules d.ts 实证(首次在仓内使用)。
+- CHANGELOG 4.18.0 条目文本同步(版本未发,原位改写)。

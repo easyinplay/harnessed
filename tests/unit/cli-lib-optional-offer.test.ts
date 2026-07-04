@@ -1,13 +1,18 @@
 // v4.18.0 — unit tests for src/cli/lib/optional-offer.ts (setup optional-tier
 // offer; user directive: setup 能装 codegraph。manifests/optional/ stays out of
 // Step B by design (Phase 18 D2 opt-in) — this block surfaces it interactively).
+// v4.18.0 (multiselect 增强): per-item confirm loop → single p.multiselect screen
+// (initialValues [] — opt-in default stays "install nothing"; required:false).
 //
 // Covers:
 //   - already-installed → no prompt, alreadyInstalled bucket
-//   - consent on npm-cli (codegraph) → runInstall with system:true (L4 opt-in
-//     IS this confirm) + nonInteractive:true; post-install `codegraph init` hint
-//   - consent on non-npm method (ecc cc-plugin) → system:false
-//   - decline → skipped, runInstall NOT called
+//   - select codegraph (npm-cli) → runInstall with system:true (L4 opt-in IS the
+//     selection) + nonInteractive:true; post-install `codegraph init` hint;
+//     `$ <cmd>` echoed before execution (informed consent)
+//   - select non-npm method (ecc cc-plugin) → system:false
+//   - subset selection → chosen installed, unchosen skipped
+//   - empty selection → all skipped, runInstall NOT called
+//   - cancel (Ctrl-C/Esc) → all skipped, runInstall NOT called
 //   - non-interactive → advisory line only, no prompt, no install
 //   - empty/missing optional dir → empty result
 
@@ -26,10 +31,11 @@ vi.mock('../../src/manifest/validate.js', () => ({
 vi.mock('../../src/installers/lib/idempotent.js', () => ({
   isAlreadyInstalled: vi.fn(async () => false),
 }))
-const confirmMock = vi.fn(async (_o?: unknown) => true)
+const CANCEL = Symbol('clack:cancel')
+const multiselectMock = vi.fn(async (_o?: unknown): Promise<unknown> => [])
 vi.mock('@clack/prompts', () => ({
-  confirm: (o: unknown) => confirmMock(o as never),
-  isCancel: () => false,
+  multiselect: (o: unknown) => multiselectMock(o as never),
+  isCancel: (v: unknown) => v === CANCEL,
 }))
 
 import { readdir } from 'node:fs/promises'
@@ -83,12 +89,12 @@ describe('runOptionalOffer', () => {
     vi.restoreAllMocks()
     runInstallMock.mockReset()
     validateMock.mockReset()
-    confirmMock.mockReset()
+    multiselectMock.mockReset()
     installedMock.mockReset()
     readdirMock.mockReset()
     readdirMock.mockResolvedValue(['codegraph.yaml'] as never)
     installedMock.mockResolvedValue(false)
-    confirmMock.mockResolvedValue(true)
+    multiselectMock.mockResolvedValue(['codegraph'])
     validateMock.mockReturnValue({ ok: true, errors: [], manifest: CODEGRAPH_MANIFEST } as never)
     silenceConsole()
   })
@@ -97,11 +103,11 @@ describe('runOptionalOffer', () => {
     installedMock.mockResolvedValue(true)
     const r = await runOptionalOffer('/opt', { interactive: true })
     expect(r.alreadyInstalled).toEqual(['codegraph'])
-    expect(confirmMock).not.toHaveBeenCalled()
+    expect(multiselectMock).not.toHaveBeenCalled()
     expect(runInstallMock).not.toHaveBeenCalled()
   })
 
-  it('consent on npm-cli → runInstall with system:true + nonInteractive:true, init hint printed', async () => {
+  it('select npm-cli → runInstall with system:true + nonInteractive:true, cmd echo + init hint printed', async () => {
     runInstallMock.mockResolvedValue({ ok: true, backupId: 'bk', appliedFiles: [] } as never)
     const r = await runOptionalOffer('/opt', { interactive: true })
     expect(r.installed).toEqual(['codegraph'])
@@ -114,12 +120,31 @@ describe('runOptionalOffer', () => {
     expect(opts.system).toBe(true)
     expect(opts.nonInteractive).toBe(true)
     expect(opts.apply).toBe(true)
+    // informed consent — the exact install cmd is echoed before execution
+    expect(logLines.join('\n')).toContain('$ npm i -g @colbymchenry/codegraph')
     expect(logLines.join('\n')).toContain('codegraph init')
   })
 
-  it('consent on non-npm method (cc-plugin) → system:false', async () => {
+  it('multiselect receives display_name label + description hint + opt-in defaults', async () => {
+    runInstallMock.mockResolvedValue({ ok: true, backupId: 'bk', appliedFiles: [] } as never)
+    await runOptionalOffer('/opt', { interactive: true })
+    expect(multiselectMock).toHaveBeenCalledOnce()
+    const arg = multiselectMock.mock.calls[0]?.[0] as {
+      options: Array<{ value: string; label: string; hint?: string }>
+      initialValues: string[]
+      required: boolean
+    }
+    expect(arg.options).toEqual([
+      { value: 'codegraph', label: 'CodeGraph', hint: 'semantic index' },
+    ])
+    expect(arg.initialValues).toEqual([])
+    expect(arg.required).toBe(false)
+  })
+
+  it('select non-npm method (cc-plugin) → system:false', async () => {
     readdirMock.mockResolvedValue(['ecc.yaml'] as never)
     validateMock.mockReturnValue({ ok: true, errors: [], manifest: ECC_MANIFEST } as never)
+    multiselectMock.mockResolvedValue(['ecc'])
     runInstallMock.mockResolvedValue({ ok: true, backupId: 'bk', appliedFiles: [] } as never)
     const r = await runOptionalOffer('/opt', { interactive: true })
     expect(r.installed).toEqual(['ecc'])
@@ -128,8 +153,28 @@ describe('runOptionalOffer', () => {
     expect(logLines.join('\n')).not.toContain('codegraph init')
   })
 
-  it('decline → skipped, runInstall NOT called', async () => {
-    confirmMock.mockResolvedValue(false)
+  it('subset selection → chosen installed, unchosen skipped', async () => {
+    readdirMock.mockResolvedValue(['codegraph.yaml', 'ecc.yaml'] as never)
+    validateMock
+      .mockReturnValueOnce({ ok: true, errors: [], manifest: CODEGRAPH_MANIFEST } as never)
+      .mockReturnValueOnce({ ok: true, errors: [], manifest: ECC_MANIFEST } as never)
+    multiselectMock.mockResolvedValue(['ecc'])
+    runInstallMock.mockResolvedValue({ ok: true, backupId: 'bk', appliedFiles: [] } as never)
+    const r = await runOptionalOffer('/opt', { interactive: true })
+    expect(r.installed).toEqual(['ecc'])
+    expect(r.skipped).toEqual(['codegraph'])
+    expect(runInstallMock).toHaveBeenCalledOnce()
+  })
+
+  it('empty selection → all skipped, runInstall NOT called', async () => {
+    multiselectMock.mockResolvedValue([])
+    const r = await runOptionalOffer('/opt', { interactive: true })
+    expect(r.skipped).toEqual(['codegraph'])
+    expect(runInstallMock).not.toHaveBeenCalled()
+  })
+
+  it('cancel (Ctrl-C/Esc) → all skipped, runInstall NOT called', async () => {
+    multiselectMock.mockResolvedValue(CANCEL)
     const r = await runOptionalOffer('/opt', { interactive: true })
     expect(r.skipped).toEqual(['codegraph'])
     expect(runInstallMock).not.toHaveBeenCalled()
@@ -138,7 +183,7 @@ describe('runOptionalOffer', () => {
   it('non-interactive → advisory line only, no prompt, no install', async () => {
     const r = await runOptionalOffer('/opt', { interactive: false })
     expect(r.skipped).toEqual(['codegraph'])
-    expect(confirmMock).not.toHaveBeenCalled()
+    expect(multiselectMock).not.toHaveBeenCalled()
     expect(runInstallMock).not.toHaveBeenCalled()
     expect(logLines.join('\n')).toContain('harnessed install')
   })
