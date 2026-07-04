@@ -451,6 +451,20 @@ export function registerSetup(program: Command): void {
         }
       }
 
+      // v4.18.0 — optional-tier offer (manifests/optional/: codegraph / ecc /
+      // perturn-inject). Phase 18 D2 keeps optional/ out of Step B's auto-glob
+      // (opt-in locked); pre-4.18.0 setup gave the tier NO surface at all — it
+      // was only reachable by users who already knew `harnessed install <name>`.
+      // Interactive → per-component confirm (default No); non-TTY → one advisory
+      // line. Dynamic import mirrors l4-rescue (setup-tests mock-factory safety).
+      if (!dryRun) {
+        const optIsTty = process.stdin.isTTY === true && process.stdout.isTTY === true
+        const { runOptionalOffer } = await import('./lib/optional-offer.js')
+        await runOptionalOffer(resolve(pkgRoot, 'manifests', 'optional'), {
+          interactive: optIsTty && raw.nonInteractive !== true,
+        })
+      }
+
       // v4.15.1 — honest failure trailer: a long grouped table scrolls the
       // failed rows away; restate the count + retry path right before the
       // "setup complete" line so a failed setup never reads as fully green.
