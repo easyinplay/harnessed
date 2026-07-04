@@ -42,7 +42,7 @@ vi.mock('@clack/prompts', () => ({
 
 import * as fsp from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { isAbsolute, join } from 'node:path'
 import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
 import { runInstall } from '../../src/installers/index.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
@@ -84,10 +84,10 @@ function ccHookManifest(): Manifest {
       install_type: 'hook',
       install: {
         method: 'cc-hook-add',
-        cmd: 'node scripts/dashboard.mjs --no-open',
+        cmd: 'node scripts/no-such-fixture.mjs --no-open',
         hook_event: 'SessionStart',
         hook_matcher: 'startup|resume',
-        hook_command: 'node scripts/dashboard.mjs --no-open',
+        hook_command: 'node scripts/no-such-fixture.mjs --no-open',
         idempotent_check: 'grep -q dashboard.mjs ~/.claude/settings.json',
       },
       verify: { cmd: 'true', timeout_ms: 5000, expected_exit_code: 0 },
@@ -137,9 +137,17 @@ describe('cc-hook-add installer', () => {
       })
       expect('ok' in r && r.ok === true).toBe(true)
       const written = JSON.parse(fakeFs[SETTINGS_PATH] ?? '{}')
+      // v4.20.0 hotfix — CC schema shape: { matcher?, hooks: [{ type, command }] }
+      // (the pre-4.20.0 flat { command } form failed CC settings validation).
       expect(written.hooks.SessionStart).toHaveLength(1)
-      expect(written.hooks.SessionStart[0].command).toBe('node scripts/dashboard.mjs --no-open')
       expect(written.hooks.SessionStart[0].matcher).toBe('startup|resume')
+      expect(written.hooks.SessionStart[0].hooks).toHaveLength(1)
+      expect(written.hooks.SessionStart[0].hooks[0]).toEqual({
+        type: 'command',
+        // scripts/no-such-fixture.mjs does not exist in-repo → relative token stays verbatim.
+        command: 'node scripts/no-such-fixture.mjs --no-open',
+      })
+      expect(written.hooks.SessionStart[0].command).toBeUndefined()
     } finally {
       cap.restore()
     }
@@ -167,24 +175,31 @@ describe('cc-hook-add installer', () => {
       })
       expect('ok' in r && r.ok === true).toBe(true)
       const written = JSON.parse(fakeFs[SETTINGS_PATH] ?? '{}')
-      // Preserved other event AND other matcher within same event.
+      // Preserved other event AND unrelated entry within same event (legacy flat
+      // entries NOT belonging to this registration are left untouched).
       expect(written.hooks.PreToolUse).toHaveLength(1)
       expect(written.hooks.SessionStart).toHaveLength(2)
-      const cmds = written.hooks.SessionStart.map((h: { command: string }) => h.command)
-      expect(cmds).toContain('echo other')
-      expect(cmds).toContain('node scripts/dashboard.mjs --no-open')
+      const flatCmds = written.hooks.SessionStart.map((h: { command?: string }) => h.command)
+      expect(flatCmds).toContain('echo other')
+      const nested = written.hooks.SessionStart.find((h: { hooks?: { command: string }[] }) =>
+        Array.isArray(h.hooks),
+      )
+      expect(nested.hooks[0].command).toBe('node scripts/no-such-fixture.mjs --no-open')
     } finally {
       cap.restore()
     }
   })
 
-  it('install — idempotent on duplicate (matching cmd+matcher) → ok + appliedFiles=[]', async () => {
+  it('install — idempotent on the exact corrected entry → ok + appliedFiles=[]', async () => {
     for (const k of Object.keys(fakeFs)) delete fakeFs[k]
     fakeFs[SETTINGS_PATH] = JSON.stringify(
       {
         hooks: {
           SessionStart: [
-            { command: 'node scripts/dashboard.mjs --no-open', matcher: 'startup|resume' },
+            {
+              matcher: 'startup|resume',
+              hooks: [{ type: 'command', command: 'node scripts/no-such-fixture.mjs --no-open' }],
+            },
           ],
         },
       },
@@ -204,6 +219,76 @@ describe('cc-hook-add installer', () => {
         expect(r.backupId).toBe('idempotent-skip')
         expect(r.appliedFiles).toEqual([])
       }
+    } finally {
+      cap.restore()
+    }
+  })
+
+  // v4.20.0 hotfix — self-heal migration (dogfood: broken flat entry + hand-fixed
+  // nested-but-relative entry must both collapse into ONE corrected entry).
+  it('install — migrates legacy flat + relative variants into one corrected entry', async () => {
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    fakeFs[SETTINGS_PATH] = JSON.stringify(
+      {
+        hooks: {
+          SessionStart: [
+            { command: 'node scripts/no-such-fixture.mjs --no-open' }, // broken flat (pre-4.20.0 installer)
+            { hooks: [{ type: 'command', command: 'node scripts/no-such-fixture.mjs --no-open' }] }, // hand-fixed, no matcher
+            { command: 'echo unrelated' },
+          ],
+        },
+      },
+      null,
+      2,
+    )
+    const cap = captureStdout()
+    try {
+      const r = await installCcHookAdd({
+        manifest: ccHookManifest(),
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect('ok' in r && r.ok === true).toBe(true)
+      const written = JSON.parse(fakeFs[SETTINGS_PATH] ?? '{}')
+      expect(written.hooks.SessionStart).toHaveLength(2) // unrelated + ONE corrected
+      const ours = written.hooks.SessionStart.filter((h: { hooks?: unknown }) =>
+        Array.isArray(h.hooks),
+      )
+      expect(ours).toHaveLength(1)
+      expect(ours[0].matcher).toBe('startup|resume')
+      expect(ours[0].hooks[0].command).toBe('node scripts/no-such-fixture.mjs --no-open')
+    } finally {
+      cap.restore()
+    }
+  })
+
+  // v4.20.0 hotfix — perturn-inject shape: no matcher + package-relative script
+  // that EXISTS in-repo (bin/harnessed-inject-state.mjs) → absolute resolution.
+  it('install — omits matcher when undefined and resolves existing bin/ script to absolute', async () => {
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    const m = ccHookManifest()
+    ;(m.spec.install as { hook_matcher?: string }).hook_matcher = undefined
+    ;(m.spec.install as { hook_event: string }).hook_event = 'UserPromptSubmit'
+    ;(m.spec.install as { hook_command: string }).hook_command =
+      'node bin/harnessed-inject-state.mjs'
+    const cap = captureStdout()
+    try {
+      const r = await installCcHookAdd({
+        manifest: m,
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect('ok' in r && r.ok === true).toBe(true)
+      const written = JSON.parse(fakeFs[SETTINGS_PATH] ?? '{}')
+      const entry = written.hooks.UserPromptSubmit[0]
+      expect('matcher' in entry).toBe(false)
+      const cmd: string = entry.hooks[0].command
+      expect(cmd.startsWith('node ')).toBe(true)
+      const scriptPath = cmd.slice('node '.length).replace(/^"|"$/g, '')
+      expect(scriptPath.endsWith('harnessed-inject-state.mjs')).toBe(true)
+      expect(isAbsolute(scriptPath)).toBe(true)
     } finally {
       cap.restore()
     }

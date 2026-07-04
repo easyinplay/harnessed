@@ -24,11 +24,14 @@
 // installers (mcpStdioAdd / mcpHttpAdd) do NOT consume this helper — their
 // existing stderr "already exists" path respects user MCP config unconditionally.
 
-import { access } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { access, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { getAssetsRoot } from '../../cli/lib/assetsRoot.js'
 import { binaryOnPath, extractVerifyBinary } from './binaryProbe.js'
-import { getSkillsDir, harnessSkillsDirs } from './platform.js'
+import { detectCcHookInstalled } from './hookEntry.js'
+import { getSettingsPath, getSkillsDir, harnessSkillsDirs } from './platform.js'
 import { isMcpServerRegistered, isPluginRegistered } from './readClaudeConfig.js'
 import { spawnCmd } from './spawn.js'
 import type { InstallContext } from './types.js'
@@ -243,6 +246,30 @@ export async function isAlreadyInstalled(
   // render + spawn-args contract) is exercisable by tests / users running
   // `--dry-run`. Real install behavior unchanged (probe runs when apply:true).
   if (ctx.opts.dryRun) return false
+
+  // v4.20.0 hotfix — cc-hook-add is AUTHORITATIVE (no shell-grep fallback):
+  // the legacy `grep -q <marker> settings.json` matches broken flat/relative
+  // entries too, which made setup/optional-offer skip exactly the installs that
+  // need the self-heal migration (dogfood: perturn-inject malformed entry).
+  const installCfg = ctx.manifest.spec.install
+  if (installCfg.method === 'cc-hook-add') {
+    let raw: string | null
+    try {
+      raw = await readFile(getSettingsPath(), 'utf8')
+    } catch {
+      raw = null
+    }
+    return detectCcHookInstalled(
+      raw,
+      installCfg.hook_event,
+      installCfg.hook_command,
+      installCfg.hook_matcher,
+      {
+        assetsRoot: getAssetsRoot,
+        exists: existsSync,
+      },
+    )
+  }
 
   // v3.9.9 — native detection first (Windows compat: cmd.exe /c can't run
   // `/plugin list`, `test`, `grep -q`, etc. that appear in idempotent_checks).

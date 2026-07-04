@@ -15,9 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **messages/ 的 compiled 接线(B1 撤回项复活,惰性方案).** `wireMessagesDir(provider)`:src/cli.ts 进程入口注入 `() => join(getAssetsRoot(), 'messages')` thunk(首次 `t()` 才求值)— vitest setupFiles 预加载 i18n 不经 cli.ts,B1 击穿 gates/setup-locale 17 测试的 mock 时序问题由此规避(该 17 测试保持绿有断言);npm 模式候选等价,compiled 模式 zh-Hans 从解包目录可读。
 - **CI/发布管线.** ci.yml 新 `binary-smoke` job(3-OS 原生编译 + 异地 cwd 冒烟:--version 断言 + 28 workflows + 幂等解包;oven-sh/setup-bun SHA-pin v2.2.0);publish.yml 新 `binaries` job(needs: publish,per-OS 编译后 `gh release upload` 附到 release)— 二进制与 npm **并行**分发,签名/自更新属 Phase 3。
 
+### Fixed
+
+- **cc-hook-add 双重 bug(用户 dogfood,发版拦截修复;perturn-inject 装出的 settings.json hook 非法).** (1) 条目形状:旧 installer 写扁平 `{ command }`,而 Claude Code settings schema 要求 `{ matcher?, hooks: [{ type: 'command', command }] }` — 扁平形每个 session 都触发 CC 校验报错("hooks.UserPromptSubmit.1.hooks: Expected array");(2) 路径:`bin/harnessed-inject-state.mjs` 包内相对路径原样写入,仅 cwd 恰含该文件时可跑,其余项目每个 prompt hook 报错。修复(新 `src/installers/lib/hookEntry.ts` 单一 SoT):安装时把包内相对脚本段基于 `getAssetsRoot()` 解析为绝对路径(含空格加引号;manifest 保持可移植相对写法,installer authoritative — sister mcpStdioAdd);写入 CC 真实 schema 形状(matcher 未设则省略 key);**自愈迁移** — 安装时凡命中本注册脚本的条目(旧扁平形 / 手工修过但相对路径形 / 陈旧绝对形)统一收敛为一条修正条目,受损用户重跑 `harnessed setup` / `harnessed install perturn-inject` 即恢复;`isAlreadyInstalled` 对 cc-hook-add 改为形状感知的 authoritative 探测(不再落 shell grep — grep 会把坏条目误判为已装,恰好跳过最需要自愈的安装);卸载器同步识别新旧两种形状。verify 改嵌套形 + 解析后命令。
+
 ### Notes
 
-- 已知限制(D6):perturn-inject hook 的 `node bin/harnessed-inject-state.mjs` 仍需宿主 node;纯二进制用户装该 optional hook 前需自备 node。
+- 已知限制(D6):perturn-inject hook 的 `node <abs>/bin/harnessed-inject-state.mjs` 仍需宿主 node;纯二进制用户装该 optional hook 前需自备 node。
 - follow-up(D7):`assets/<旧版本>/` 目录不自动清理,留 doctor/gc 承接。
 
 ## [4.19.0] - 2026-07-04

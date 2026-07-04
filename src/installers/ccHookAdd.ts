@@ -1,22 +1,43 @@
 // Phase 2.4 W3 T3.1 — install method 7/7: cc-hook-add (D-04 § 3.1 + R2.4.4 +
 // B-20/B-21/B-22). Sister: npxSkillInstaller (L2 HOME write, real-path verify).
 // L3 tier (~/.claude/settings.json is shared user-scope state — sister mcp-stdio).
-// Deep-merges settings.hooks[event][] (NEVER overwrite). Idempotent on duplicate
-// (matching command+matcher → skip with appliedFiles:[]). R7 verify: re-read +
+// Deep-merges settings.hooks[event][] (NEVER overwrite). R7 verify: re-read +
 // .some() grep (writeFile exit ≠ filesystem truth — sister npx-skill-installer C6).
+//
+// v4.20.0 hotfix (dogfood, pre-release gate) — DOUBLE bug fixed via lib/hookEntry:
+//   1. entry shape: pre-4.20.0 wrote flat { matcher?, command } — Claude Code's
+//      settings schema requires { matcher?, hooks: [{ type: 'command', command }] }
+//      (flat form fails CC validation on every session).
+//   2. path: package-relative script tokens (e.g. `bin/harnessed-inject-state.mjs`)
+//      are now resolved to absolute paths against getAssetsRoot() at install time
+//      (manifest keeps the portable relative form; installer is authoritative —
+//      sister mcpStdioAdd args reconstruction).
+// Self-heal migration: ALL entries matching this registration's script (legacy
+// flat, hand-fixed nested-but-relative, stale-absolute) are collapsed into ONE
+// corrected entry on install — damaged users re-run setup/install and recover.
 
+import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { getAssetsRoot } from '../cli/lib/assetsRoot.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
+import {
+  type AnyHookEntry,
+  desiredHookEntry,
+  entryMatchesRegistration,
+  hookScriptMarker,
+  isDesiredHookEntry,
+  resolveHookCommand,
+} from './lib/hookEntry.js'
 import { getSettingsPath } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
 
 interface Settings {
-  hooks?: Record<string, { matcher?: string; command: string }[]>
+  hooks?: Record<string, AnyHookEntry[]>
   [k: string]: unknown
 }
 
@@ -69,11 +90,17 @@ export const installCcHookAdd: Installer = async (ctx) => {
   const ev = install.hook_event
   const matcher = install.hook_matcher
   const cmd = install.hook_command
-  settings.hooks[ev] = settings.hooks[ev] ?? []
-  if (settings.hooks[ev].some((h) => h.command === cmd && h.matcher === matcher)) {
+  // v4.20.0 — authoritative command resolution + CC-schema entry shape + self-heal.
+  const cmdDeps = { assetsRoot: getAssetsRoot, exists: existsSync }
+  const resolvedCmd = resolveHookCommand(cmd, cmdDeps)
+  const marker = hookScriptMarker(cmd)
+  const arr = settings.hooks[ev] ?? []
+  const ours = arr.filter((e) => entryMatchesRegistration(e, cmd, resolvedCmd, marker))
+  if (ours.length === 1 && isDesiredHookEntry(ours[0] ?? {}, matcher, resolvedCmd)) {
     return { ok: true, backupId: 'idempotent-skip', appliedFiles: [] }
   }
-  settings.hooks[ev].push({ matcher, command: cmd })
+  const others = arr.filter((e) => !entryMatchesRegistration(e, cmd, resolvedCmd, marker))
+  settings.hooks[ev] = [...others, desiredHookEntry(matcher, resolvedCmd)]
   const newText = `${JSON.stringify(settings, null, 2)}\n`
   const plan: DiffPlan = {
     files: [{ target: settingsPath, scope: 'HOME', oldText: existing ?? '', newText }],
@@ -108,7 +135,8 @@ export const installCcHookAdd: Installer = async (ctx) => {
       ),
     }
   }
-  if (!verify.hooks?.[ev]?.some((h) => h.command === cmd)) {
+  // v4.20.0 — nested-shape verify against the RESOLVED command.
+  if (!verify.hooks?.[ev]?.some((e) => isDesiredHookEntry(e, matcher, resolvedCmd))) {
     return {
       ok: false,
       phase: 'verify',
@@ -116,7 +144,7 @@ export const installCcHookAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/install/hook_command',
-        `hook '${cmd.slice(0, 80)}' missing in hooks.${ev}[] after write`,
+        `hook '${resolvedCmd.slice(0, 80)}' missing in hooks.${ev}[] after write`,
         'verify-failed',
       ),
     }

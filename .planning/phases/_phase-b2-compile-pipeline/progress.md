@@ -53,3 +53,23 @@ harnessed: unpacked 157 bundled asset file(s) to C:\Users\easyi\.claude\harnesse
 - D6:perturn-inject hook 需宿主 node(纯二进制用户装该 optional hook 前自备)。
 - D7:assets/<旧版本>/ 不自动清理 → doctor/gc 承接。
 - Phase 3(未启动):curl 安装器 + 自更新 + npm per-platform 二进制包 + 签名。
+
+## 追加 — cc-hook-add 双重 bug 修复(dogfood 发版拦截,2026-07-04)
+
+来源:用户在另一机器 dogfood 报告 perturn-inject 装出的 settings.json hook 被 CC 判非法
+(扁平 `{command}` 缺 `hooks:[{type,command}]` 包装)+ `node bin/harnessed-inject-state.mjs`
+相对路径(仅 cwd 恰含该文件时可跑)。
+
+- 新 `src/installers/lib/hookEntry.ts`(独立模块,mock-export-gap 规避):resolveHookCommand
+  (相对段基于 getAssetsRoot 绝对化,空格加引号,node 保留 PATH 查找)、desiredHookEntry /
+  isDesiredHookEntry(CC schema 形状,matcher 未设省略)、entryMatchesRegistration(marker =
+  脚本 basename,识别扁平/嵌套相对/正确三形)、detectCcHookInstalled(authoritative 探测)。
+- ccHookAdd installer:自愈迁移(命中条目统一收敛为一条修正条目;幂等 = 恰一条且 deep-equal);
+  verify 嵌套形 + 解析后命令。
+- isAlreadyInstalled:cc-hook-add 分支 authoritative(不落 shell grep — grep 把坏条目误判已装,
+  恰好跳过最需自愈的安装,optional-offer 因此不会再 offer)。
+- uninstaller:entryMatchesRegistration 同源匹配,新旧形状均可移除。
+- 测试:hookEntry 12 新用例 + installer 7(3 既有断言按新 schema 形状更新:fresh/deep-merge/
+  idempotent;新增 migration + matcher 省略/绝对化两 cell);fixture 命令改 scripts/no-such-fixture.mjs
+  (原 scripts/dashboard.mjs 在仓库真实存在,解析行为正确命中,fixture 假设错误)。
+- 全量 vitest 1893/0;tsc 0;biome clean;gates 7/7。

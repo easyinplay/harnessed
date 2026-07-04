@@ -3,13 +3,21 @@
 // Idempotent: settings.json absent or hook not present → ok:true noop.
 // Sister: src/installers/ccHookAdd.ts — inverse of install-time merge.
 
+import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { getAssetsRoot } from '../cli/lib/assetsRoot.js'
+import {
+  type AnyHookEntry,
+  entryMatchesRegistration,
+  hookScriptMarker,
+  resolveHookCommand,
+} from '../installers/lib/hookEntry.js'
 import { getSettingsPath } from '../installers/lib/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
 interface Settings {
-  hooks?: Record<string, { matcher?: string; command: string }[]>
+  hooks?: Record<string, AnyHookEntry[]>
   [k: string]: unknown
 }
 
@@ -46,16 +54,20 @@ export const uninstallCcHookAdd: Uninstaller = async (ctx) => {
 
   const ev = install.hook_event
   const cmd = install.hook_command
-  const matcher = install.hook_matcher
 
   if (!settings.hooks?.[ev]) {
     // Hook event block absent — idempotent noop.
     return { ok: true, removedPaths: [] }
   }
 
+  // v4.20.0 hotfix — remove ALL shape/path variants of this registration:
+  // legacy flat { command }, hand-fixed nested-but-relative, and the corrected
+  // nested-absolute form (sister installers/lib/hookEntry matching).
+  const resolved = resolveHookCommand(cmd, { assetsRoot: getAssetsRoot, exists: existsSync })
+  const marker = hookScriptMarker(cmd)
   const before = settings.hooks[ev].length
   settings.hooks[ev] = settings.hooks[ev].filter(
-    (h) => !(h.command === cmd && h.matcher === matcher),
+    (h) => !entryMatchesRegistration(h, cmd, resolved, marker),
   )
 
   // Clean up empty hook event array.
