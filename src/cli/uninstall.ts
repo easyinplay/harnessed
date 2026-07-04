@@ -28,8 +28,8 @@ import { detectPlatform } from '../installers/lib/platform.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { runUninstall } from '../uninstallers/index.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 import { shouldOverwriteFile } from './lib/generateCommands.js'
-import { getPackageRoot } from './lib/packagePath.js'
 import { scanWorkflowsNested } from './lib/scan-nested.js'
 
 interface RawOpts {
@@ -106,7 +106,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   const harnessedRoot = getHarnessedRoot()
 
   // Discover workflow names from bundled workflows/
-  const pkgRoot = getPackageRoot()
+  const pkgRoot = getAssetsRoot()
   let workflowNames: string[] = []
   try {
     const wfEntries = await readdir(pathResolve(pkgRoot, 'workflows'))
@@ -249,9 +249,9 @@ export function registerUninstall(program: Command): void {
       const resolvedName = resolveAlias(name) ?? name
       checkPathSafe(resolvedName)
 
-      const manifestPath = pathResolve(getPackageRoot(), `manifests/tools/${resolvedName}.yaml`)
+      const manifestPath = pathResolve(getAssetsRoot(), `manifests/tools/${resolvedName}.yaml`)
       const skillPackPath = pathResolve(
-        getPackageRoot(),
+        getAssetsRoot(),
         `manifests/skill-packs/${resolvedName}.yaml`,
       )
       let yamlSrc: string

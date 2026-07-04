@@ -11,7 +11,7 @@ import { join } from 'node:path'
 import type { Command } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
 import { getHarnessedRoot } from '../installers/lib/harnessedRoot.js'
-import { getPackageRoot } from './lib/packagePath.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 
 interface UpdateOpts {
   check?: boolean
@@ -26,7 +26,7 @@ function npmExecutable(): string {
 
 function changelogTop(): string | null {
   try {
-    const p = join(getPackageRoot(), 'CHANGELOG.md')
+    const p = join(getAssetsRoot(), 'CHANGELOG.md')
     if (!existsSync(p)) return null
     const body = readFileSync(p, 'utf8')
     // first "## " section (Keep-a-Changelog entry) bounded for readability

@@ -20,8 +20,8 @@ import { parse as parseYaml } from 'yaml'
 import { getLocale, type SupportedLocale } from '../i18n/index.js'
 import { resolveLocaleYaml } from '../i18n/localeYaml.js'
 import { buildAgentDef } from '../workflow/run.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 import { loadRolePrompts } from './lib/generateCommands.js'
-import { getPackageRoot } from './lib/packagePath.js'
 import { resolveWorkflowYaml } from './run.js'
 
 const DEFAULT_MAX_ITERATIONS = 20
@@ -193,7 +193,7 @@ export function registerPrompt(program: Command): void {
     .option('--task <text>', 'task description prepended as a ## Task section')
     .option('--json', 'emit JSON {prompt, max_iterations, model, specialist} instead of text')
     .action(async (sub: string, raw: RawOpts) => {
-      const packageRoot = getPackageRoot()
+      const packageRoot = getAssetsRoot()
       const workflowsDir = resolve(packageRoot, 'workflows')
 
       // Missing workflows dir is the only hard error (role-prompts.yaml unreadable

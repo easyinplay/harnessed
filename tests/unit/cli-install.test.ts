@@ -67,6 +67,32 @@ async function runCli(argv: string[]): Promise<number> {
   }
 }
 
+// B1 T4 — 与 runCli 同构,但捕获 console.log 行(silence() 会吞掉输出,嵌套 spy
+// 会被其内部 mock 覆盖,故独立一个捕获版 helper)。
+async function runCliCaptured(argv: string[]): Promise<{ code: number; logs: string[] }> {
+  const exit = spyExit()
+  const logs: string[] = []
+  const out = vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+  const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+  const log = vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
+    logs.push(a.join(' '))
+  })
+  const program = new Command().exitOverride()
+  registerInstall(program)
+  try {
+    await program.parseAsync(['node', 'harnessed', ...argv])
+    return { code: 0, logs }
+  } catch (e) {
+    if (e instanceof ExitError) return { code: e.code, logs }
+    throw e
+  } finally {
+    exit.mockRestore()
+    out.mockRestore()
+    err.mockRestore()
+    log.mockRestore()
+  }
+}
+
 describe('cli/install', () => {
   beforeEach(() => {
     readFileMock.mockReset()
@@ -97,6 +123,36 @@ describe('cli/install', () => {
     })
     const code = await runCli(['install', 'ctx7', '--non-interactive', '--system'])
     expect(code).toBe(0)
+  })
+
+  // B1 T4 (spike bug #2) — already-installed 结果不得冒充新安装:
+  // 显示 "already-installed <name>@<ver>",exit 0 不变。
+  it('already-installed result → exit 0 + distinct message (NOT "installed")', async () => {
+    readFileMock.mockResolvedValue('apiVersion: harnessed/v1')
+    validateMock.mockReturnValue({
+      ok: true,
+      manifest: {
+        metadata: { name: 'ctx7' },
+        spec: { install: { method: 'npm-cli', npm_version: '^1.0.0' } },
+      },
+      // biome-ignore lint/suspicious/noExplicitAny: see above
+    } as any)
+    runInstallMock.mockResolvedValue({
+      ok: true,
+      alreadyInstalled: true,
+      backupId: 'noop-idempotent',
+    })
+    const { code, logs } = await runCliCaptured([
+      'install',
+      'ctx7',
+      '--non-interactive',
+      '--system',
+    ])
+    expect(code).toBe(0)
+    const line = logs.find((l) => l.includes('ctx7'))
+    expect(line).toBeDefined()
+    expect(line).toContain('already-installed ctx7@^1.0.0')
+    expect(line?.startsWith('installed ')).toBe(false)
   })
 
   it('aborted result → exit 2', async () => {

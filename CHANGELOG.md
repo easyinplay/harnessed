@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.19.0] - 2026-07-04
+
+### Added
+
+- **B1 — 资产解析 seam(bun-compile 单文件分发路线 Phase 1;spike: `.planning/phases/_spike-bun-compile/`).** 新 `getAssetsRoot()`(src/cli/lib/assetsRoot.ts,独立模块防 packagePath 既有 mock 面):env `HARNESSED_ASSETS_OVERRIDE` 覆盖 → compiled 运行时(bunfs 前缀检测,含实测 `%7EBUN` 百分号编码形)→ `<stateRoot>/assets/<version>/`,缺资产一次性 fail-loud 警告 + 调用方既有 missing-file 路径 → 默认严格等于 `getPackageRoot()`(npm/dev 逐字节不变,全量测试即等价性回归网)。10 个 CLI 消费文件的 workflows/manifests/messages/CHANGELOG 资产读取全部迁移到 seam;stateRoot 惰性求值(部分 mock 环境不触碰 detectPlatform)。资产解包数据源与编译管线属 Phase 2 — 本 seam 已实测:compiled exe + 手工铺设 `assets/<ver>/` 即恢复完整 setup,缺失则 exit 1 + 明确指路。
+- **i18n 内嵌 en 兜底(spike bug #1 根治).** `messages/en.json` 经 tsup json-import 打进 bundle;messages/ 不可读(compiled / 资产缺失)时 `t()` 兜底真实英文文案而非裸奔 key;zh-Hans 文件在场路径逐字节不变。注:i18n 不得静态依赖 assetsRoot(vitest 全局 setupFiles 预加载会击穿 packagePath mock,实测教训入注释)。
+
+### Fixed
+
+- **`harnessed install` already-installed 冒充新安装(spike bug #2).** idempotent 短路(含 ctx7→context7 插件别名命中)现打印 `already-installed <name>@<ver> (idempotent check hit; nothing to do)`,不再显示 `installed`;exit 0 语义不变。i18n keys en/zh 同步。
+- 勘误:spike 记录的 "workflows_not_found 时 exit 0" 为测量伪影(管道吞退出码),真实已 exit 1,无需修。
+
 ## [4.18.0] - 2026-07-04
 
 ### Added

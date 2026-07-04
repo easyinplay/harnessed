@@ -17,6 +17,14 @@
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+// B1 (v4.19.0) — 内嵌 en 表(tsup json-import 打进 bundle,同 package.json version
+// 机制)。compiled 二进制 / 任何 messages/ 不可读环境下,t() 兜底到真实英文文案而非
+// 裸奔 key(spike 实测 bug)。zh-Hans 文件在场时路径逐字节不变。
+// 注意:i18n 不得静态依赖 assetsRoot/packagePath —— 全局 setupFiles(tests/setup-i18n.ts)
+// 会在任何 vi.mock 注册前预加载 i18n,连带把依赖链钉进未 mock 的模块缓存,击穿
+// gates/setup-locale 等既有 packagePath mock(B1 实测)。compiled 模式的 messages/
+// 解包接线属 Phase 2;Phase 1 由内嵌 en 承担 compiled 可用性。
+import enEmbedded from '../../messages/en.json' with { type: 'json' }
 
 export type SupportedLocale = 'en' | 'zh-Hans'
 
@@ -63,7 +71,6 @@ function safeIntlLocale(): string | undefined {
 function messagesDir(): string {
   // dist/cli.mjs and src/i18n/index.ts both resolve via package root sibling `messages/`.
   const here = dirname(fileURLToPath(import.meta.url))
-  // src/i18n/ → ../../messages   OR   dist/ → ../messages
   const candidates = [resolve(here, '..', '..', 'messages'), resolve(here, '..', 'messages')]
   for (const c of candidates) {
     try {
@@ -84,7 +91,9 @@ function loadLocale(locale: SupportedLocale): Record<string, string> {
     const raw = readFileSync(path, 'utf8')
     cache[locale] = JSON.parse(raw) as Record<string, string>
   } catch {
-    cache[locale] = {}
+    // B1: en 文件不可读 → 内嵌表兜底(compiled / 资产缺失环境的可用性优先)。
+    // zh-Hans 不可读 → 空表,t() 的既有 current→en 链会落到内嵌 en。
+    cache[locale] = locale === 'en' ? (enEmbedded as Record<string, string>) : {}
   }
   return cache[locale] as Record<string, string>
 }

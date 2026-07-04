@@ -19,11 +19,11 @@ import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { getLocale, t } from '../i18n/index.js'
 import { detectPlatform, getCommandsDir, getSkillsDir } from '../installers/lib/platform.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
 import { loadRolePrompts, writeAllCommands } from './lib/generateCommands.js'
-import { getPackageRoot } from './lib/packagePath.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   makeIdempotentProbe,
@@ -219,7 +219,7 @@ export function registerSetup(program: Command): void {
       // Phase C / D5 — apply --platform FIRST so all resolver-backed paths below
       // (skills/commands/state) route to the chosen platform for this run.
       if (raw.platform !== undefined) await applyPlatformOption(raw.platform)
-      const pkgRoot = getPackageRoot()
+      const pkgRoot = getAssetsRoot()
       const workflowsDir = resolve(pkgRoot, 'workflows')
       const skillsBase = getSkillsDir()
 

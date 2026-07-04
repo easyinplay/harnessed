@@ -152,9 +152,11 @@ export function registerCheckpoint(program: Command): void {
         if (action === 'complete') {
           const { checkArtifacts } = await import('../checkpoint/evidence.js')
           const { mutateSubProgress } = await import('../checkpoint/state.js')
-          const { getPackageRoot } = await import('./lib/packagePath.js')
+          // B1 (v4.19.0): workflows/ 是运行时资产 — 经 assetsRoot seam(npm/dev 下
+          // === packageRoot,compiled 下指向解包目录)。
+          const { getAssetsRoot } = await import('./lib/assetsRoot.js')
 
-          const result = await checkArtifacts(sub, getPackageRoot())
+          const result = await checkArtifacts(sub, getAssetsRoot())
           const { checkPlanningSync } = await import('../checkpoint/evidence.js')
           const syncResult = await checkPlanningSync(process.cwd(), null)
 

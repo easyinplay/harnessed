@@ -25,7 +25,7 @@ import { runInstall } from '../installers/index.js'
 import type { InstallError, InstallOpts } from '../installers/lib/types.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
-import { getPackageRoot } from './lib/packagePath.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 
 interface RawOpts {
   dryRun?: boolean
@@ -70,7 +70,7 @@ export function registerInstall(program: Command): void {
       // on-demand tier: `harnessed setup` Step B never globs it (no auto-install),
       // but explicit `harnessed install <name>` resolves it here.
       const candidatePaths = ['tools', 'skill-packs', 'optional'].map((dir) =>
-        resolve(getPackageRoot(), `manifests/${dir}/${resolvedName}.yaml`),
+        resolve(getAssetsRoot(), `manifests/${dir}/${resolvedName}.yaml`),
       )
       let yamlSrc: string | undefined
       let chosenPath: string | undefined
@@ -131,10 +131,14 @@ export function registerInstall(program: Command): void {
           v.manifest.spec.install.method === 'npm-cli' && 'npm_version' in v.manifest.spec.install
             ? v.manifest.spec.install.npm_version
             : ''
+        // B1 (v4.19.0, spike bug #2) — already-installed 短路(含 ctx7→context7 插件
+        // 别名这类探测命中)不得冒充新安装;exit 0 语义不变。
+        const already = 'alreadyInstalled' in result && result.alreadyInstalled === true
+        const keyBase = already ? 'install.already_installed' : 'install.success'
         console.log(
           version
-            ? t('install.success_with_version', { name: v.manifest.metadata.name, version })
-            : t('install.success', { name: v.manifest.metadata.name }),
+            ? t(`${keyBase}_with_version`, { name: v.manifest.metadata.name, version })
+            : t(keyBase, { name: v.manifest.metadata.name }),
         )
         process.exit(0)
       }

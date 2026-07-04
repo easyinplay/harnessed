@@ -15,7 +15,7 @@ import type { Command } from 'commander'
 import { runInstall } from '../installers/index.js'
 import type { InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
-import { getPackageRoot } from './lib/packagePath.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 
 interface RawOpts {
   dryRun?: boolean
@@ -51,7 +51,7 @@ export async function installBaseProfile(opts: InstallOpts): Promise<InstallProf
   const alreadyInstalled: string[] = []
   const skipped: { name: string; reason: string }[] = []
   const failed: { name: string; reason: string }[] = []
-  for (const path of await listBaseManifests(getPackageRoot())) {
+  for (const path of await listBaseManifests(getAssetsRoot())) {
     let yamlSrc: string
     try {
       yamlSrc = await readFile(path, 'utf8')

@@ -24,7 +24,7 @@ import { join } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
 import { runWorkflow } from '../workflow/run.js'
-import { getPackageRoot } from './lib/packagePath.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 import { resolveWorkflowYaml } from './run.js'
 
 interface RawOpts {
@@ -34,7 +34,7 @@ interface RawOpts {
   model?: 'haiku' | 'sonnet' | 'opus'
 }
 
-const PACKAGE_ROOT = getPackageRoot()
+const PACKAGE_ROOT = getAssetsRoot()
 const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')
 
 export function registerResearch(program: Command): void {

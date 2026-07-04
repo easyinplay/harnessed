@@ -15,8 +15,8 @@ import type { Command } from 'commander'
 import { parse as parseYaml } from 'yaml'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
-import { getPackageRoot } from './lib/packagePath.js'
 
 const VALID_MASTERS = new Set(['auto', 'discuss', 'plan', 'task', 'verify'])
 
@@ -99,7 +99,7 @@ export function registerGates(program: Command): void {
         return
       }
 
-      const packageRoot = getPackageRoot()
+      const packageRoot = getAssetsRoot()
       const yamlPath = resolveMasterYamlPath(master, packageRoot)
 
       let raw_yaml: string

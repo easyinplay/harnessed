@@ -34,9 +34,9 @@ import { detectPlatform } from '../installers/lib/platform.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { runWorkflow } from '../workflow/run.js'
+import { getAssetsRoot } from './lib/assetsRoot.js'
 import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
 import { buildDefaultGateContext } from './lib/gateContext.js'
-import { getPackageRoot } from './lib/packagePath.js'
 
 interface RawOpts {
   task?: string
@@ -52,7 +52,7 @@ interface RawOpts {
   skipSub?: string
 }
 
-const PACKAGE_ROOT = getPackageRoot()
+const PACKAGE_ROOT = getAssetsRoot()
 const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')
 
 /** Phase 5 — module-level lazy cache for the 6-stage chain extracted from

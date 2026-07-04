@@ -33,6 +33,8 @@
   "install.audit_hint": "  fix:  run 'harnessed audit' to inspect manifest issues",
   "install.success": "installed {{name}}",
   "install.success_with_version": "installed {{name}}@{{version}}",
+  "install.already_installed": "already-installed {{name}} (idempotent check hit; nothing to do)",
+  "install.already_installed_with_version": "already-installed {{name}}@{{version}} (idempotent check hit; nothing to do)",
   "install.aborted": "aborted: {{reason}}",
 
   "uninstall.dry_run.preview": "[dry-run] would uninstall '{{name}}' via method '{{method}}'",
