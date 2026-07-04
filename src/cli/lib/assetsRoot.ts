@@ -71,12 +71,18 @@ export function computeAssetsRoot(d: AssetsRootDeps): AssetsRootResolution {
     return { root: override.trim(), source: 'override', compiledAssetsMissing: false }
   }
   if (isCompiledModuleUrl(d.moduleUrl)) {
-    const root = join(d.stateRoot(), 'assets', d.version)
+    const root = join(d.stateRoot(), 'assets', d.version) // = compiledAssetsDir(注入形)
     // workflows/ 是资产集的必然成员 — 以它的存在代表解包完成。
     const present = d.exists(join(root, 'workflows'))
     return { root, source: 'compiled', compiledAssetsMissing: !present }
   }
   return { root: d.packageRoot, source: 'package', compiledAssetsMissing: false }
+}
+
+/** B2 — compiled 资产目标目录(单一 SoT:computeAssetsRoot compiled 分支与
+ *  compile/entry.ts 的首跑解包写入同一路径;entry 复用本导出而非复制构造)。 */
+export function compiledAssetsDir(version: string): string {
+  return join(detectPlatform().stateRoot, 'assets', version)
 }
 
 function realDeps(): AssetsRootDeps {

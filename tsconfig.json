@@ -34,5 +34,8 @@
     "tsBuildInfoFile": "./.tscache/tsbuildinfo"
   },
   "include": ["src/**/*", "scripts/**/*", "tests/**/*"],
-  "exclude": ["dist", "node_modules", ".harnessed", "vendor"]
+  // src/compile/entry.ts:B2 bun-compile 专属入口,静态 import 构建期生成的
+  // assets-bundle.gen.json(.gitignore)→ tsc 在干净 checkout 下必 TS2307。
+  // 仅排除该单文件;bundleAssets/unpackAssets 仍全量类型检查。
+  "exclude": ["dist", "node_modules", ".harnessed", "vendor", "src/compile/entry.ts"]
 }

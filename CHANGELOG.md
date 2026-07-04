@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.20.0] - 2026-07-04
+
+### Added
+
+- **B2 — bun-compile 单文件二进制管线(路线 Phase 2;B1 seam 的解包数据源落地).** `bun scripts/build-binary.mjs`(`pnpm build:binary`,须 bun 运行)把资产集(workflows/manifests/messages/routing/config-templates/schemas/bin + CHANGELOG.md,157 文件 ~1.1MB)编成 v1 JSON bundle(`src/compile/bundleAssets.ts`,base64 + posix relPath + fileCount,零新依赖)嵌入 `src/compile/entry.ts` 编译产物;首跑经 `unpackAssets`(原子:`.unpack-tmp` 写入 + 计数完整性校验 + rename;损坏目标替换;relPath 逃逸硬拒)解包到 `compiledAssetsDir(version)` — 与 `getAssetsRoot()` compiled 分支同一路径 SoT。本机端到端(Windows + bun 1.3.14):97MB exe 异地 cwd 首跑解包 157 文件 → `setup --dry-run` 28 workflows;二次运行幂等跳过;哨兵改写解包目录 en.json 输出即变(compiled 全链路读解包目录实证)。npm 渠道(tsup dist)零接触;`assets-bundle.gen.json` / `dist-bin/` 均 .gitignore;`src/compile/entry.ts` 单文件 tsconfig exclude(gen.json 仅构建期存在)。
+- **messages/ 的 compiled 接线(B1 撤回项复活,惰性方案).** `wireMessagesDir(provider)`:src/cli.ts 进程入口注入 `() => join(getAssetsRoot(), 'messages')` thunk(首次 `t()` 才求值)— vitest setupFiles 预加载 i18n 不经 cli.ts,B1 击穿 gates/setup-locale 17 测试的 mock 时序问题由此规避(该 17 测试保持绿有断言);npm 模式候选等价,compiled 模式 zh-Hans 从解包目录可读。
+- **CI/发布管线.** ci.yml 新 `binary-smoke` job(3-OS 原生编译 + 异地 cwd 冒烟:--version 断言 + 28 workflows + 幂等解包;oven-sh/setup-bun SHA-pin v2.2.0);publish.yml 新 `binaries` job(needs: publish,per-OS 编译后 `gh release upload` 附到 release)— 二进制与 npm **并行**分发,签名/自更新属 Phase 3。
+
+### Notes
+
+- 已知限制(D6):perturn-inject hook 的 `node bin/harnessed-inject-state.mjs` 仍需宿主 node;纯二进制用户装该 optional hook 前需自备 node。
+- follow-up(D7):`assets/<旧版本>/` 目录不自动清理,留 doctor/gc 承接。
+
 ## [4.19.0] - 2026-07-04
 
 ### Added

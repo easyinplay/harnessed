@@ -4,6 +4,8 @@ node_modules/
 
 # Build outputs
 dist/
+dist-bin/
+src/compile/assets-bundle.gen.json
 build/
 .tscache/
 *.tsbuildinfo

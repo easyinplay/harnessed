@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { join } from 'node:path'
 import { Command } from 'commander'
 import pkg from '../package.json' with { type: 'json' }
 import { registerAdvance } from './cli/advance.js'
@@ -13,6 +14,7 @@ import { registerGc } from './cli/gc.js'
 import { registerInstall } from './cli/install.js'
 import { registerInstallBase } from './cli/install-base.js'
 import { registerLearn } from './cli/learn.js'
+import { getAssetsRoot } from './cli/lib/assetsRoot.js'
 import { parseBareInvocation, runHere } from './cli/lib/here.js'
 import { registerManifestAdd } from './cli/manifest-add.js'
 import { registerNext } from './cli/next.js'
@@ -29,8 +31,15 @@ import { registerStatus } from './cli/status.js'
 import { registerUninstall } from './cli/uninstall.js'
 import { registerUpdate } from './cli/update.js'
 import { registerWorkflows } from './cli/workflows.js'
-import { setLocale } from './i18n/index.js'
+import { setLocale, wireMessagesDir } from './i18n/index.js'
 import { migrateLegacyHarnessedRoot } from './installers/lib/harnessedRoot.js'
+
+// B2 (v4.20.0, D5) — messages/ 的 assetsRoot 接线,惰性注入(thunk 到首次 t()
+// 才求值)。只在真 CLI 进程入口 wire — vitest 的 setupFiles 预加载 i18n 时不经
+// 此文件,B1 的 mock 时序教训(击穿 gates/setup-locale 17 测试)由此规避。
+// npm 模式下 getAssetsRoot() === packageRoot → 与既有候选等价;compiled 模式
+// 指向解包目录 → zh-Hans 从 <stateRoot>/assets/<ver>/messages/ 可读。
+wireMessagesDir(() => join(getAssetsRoot(), 'messages'))
 
 // v3.0.3 — migrate any pre-v3.0.3 `~/.harnessed/` to `~/.claude/harnessed/`
 // before any subcommand runs. Idempotent on subsequent invocations.

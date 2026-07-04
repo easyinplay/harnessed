@@ -68,10 +68,31 @@ function safeIntlLocale(): string | undefined {
   }
 }
 
+// B2 (v4.20.0) — compiled 模式 messages/ 接线,惰性依赖注入(D5):
+// i18n 不得静态 import assetsRoot(上方 B1 教训 — setupFiles 预加载钉缓存),
+// 改由 src/cli.ts 顶层(真 CLI 进程,永不在 vitest setupFiles 路径上)注入
+// `() => join(getAssetsRoot(), 'messages')` thunk。未注入(测试/库内嵌用法)
+// → 行为与 B1 逐字节一致;注入后该候选排最前,npm 模式下它 === 既有候选 1
+// (getAssetsRoot === packageRoot),compiled 模式下指向解包目录 → zh-Hans 可读。
+let wiredMessagesDirProvider: (() => string) | null = null
+
+/** 注入 messages/ 目录提供者(仅 src/cli.ts 进程入口调用;thunk 惰性求值)。 */
+export function wireMessagesDir(provider: (() => string) | null): void {
+  wiredMessagesDirProvider = provider
+}
+
 function messagesDir(): string {
   // dist/cli.mjs and src/i18n/index.ts both resolve via package root sibling `messages/`.
   const here = dirname(fileURLToPath(import.meta.url))
-  const candidates = [resolve(here, '..', '..', 'messages'), resolve(here, '..', 'messages')]
+  const candidates: string[] = []
+  if (wiredMessagesDirProvider) {
+    try {
+      candidates.push(wiredMessagesDirProvider())
+    } catch {
+      /* provider 求值失败 → 回落既有候选(可用性优先) */
+    }
+  }
+  candidates.push(resolve(here, '..', '..', 'messages'), resolve(here, '..', 'messages'))
   for (const c of candidates) {
     try {
       readFileSync(join(c, 'en.json'), 'utf8')
@@ -111,9 +132,10 @@ export function getLocale(): SupportedLocale {
   return currentLocale
 }
 
-/** Reset cache + locale — for unit tests only. */
+/** Reset cache + locale + wired provider — for unit tests only. */
 export function __resetForTests(): void {
   currentLocale = null
+  wiredMessagesDirProvider = null
   for (const k of Object.keys(cache)) delete cache[k as SupportedLocale]
 }
 
