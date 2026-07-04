@@ -291,6 +291,8 @@ prompts:
       更新 `progress.md`。
     checklist:
       - "任何编辑前:把你打算改的文件从头到尾读一遍"
+      # v4.17.0 — CodeGraph light wiring (opt-in; sister capabilities.yaml `codegraph` entry)
+      - "代码库导航:项目存在 `.codegraph/` 索引时,符号查找 / 调用链 / 影响面分析优先用 codegraph MCP 工具(`codegraph_explore`),替代 grep/glob/逐文件 Read 爬取"
       - "满足验收标准的最小改动 —— 不要范围蔓延"
       - "每个文件 ≤200 LOC(超过就拆模块)"
       - "信任内部代码:别在每一层重复校验已检查过的输入"

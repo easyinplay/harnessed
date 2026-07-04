@@ -311,6 +311,8 @@ prompts:
       planning-with-files `/plan` when done.
     checklist:
       - "Before any edit: read the file you intend to change end-to-end"
+      # v4.17.0 — CodeGraph light wiring (opt-in; sister capabilities.yaml `codegraph` entry)
+      - "Codebase navigation: if the project has a `.codegraph/` index, prefer the codegraph MCP tools (`codegraph_explore`) for symbol lookup / call paths / impact analysis instead of grep/glob/file-by-file Read crawling"
       - "Smallest change that satisfies the acceptance criteria — no scope creep"
       - "≤200 LOC per file (split modules if growing past it)"
       - "Trust internal code: don't re-validate already-checked inputs at every layer"

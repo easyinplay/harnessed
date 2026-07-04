@@ -23,6 +23,10 @@ export function checkCodeGraph(cwd: string = process.cwd()): CheckResult {
     status: 'pass',
     message:
       'CodeGraph not configured (optional semantic index — fewer tool-calls on code navigation)',
-    fix: 'npx @colbymchenry/codegraph to enable (MIT, 100% local, self-installs)',
+    // v4.17.0 — BOTH enable steps: `npx @colbymchenry/codegraph` only wires the
+    // MCP server into agents (upstream README step 2); the per-project index is
+    // the separate `codegraph init` (step 3). The pre-4.17.0 hint stopped at
+    // step 1, leaving `.codegraph/` absent and this check forever "not configured".
+    fix: 'npx @colbymchenry/codegraph to wire agents, then `codegraph init` in each project to build the index (MIT, 100% local; auto-sync keeps it fresh)',
   }
 }

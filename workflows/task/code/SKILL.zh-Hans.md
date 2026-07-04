@@ -44,12 +44,19 @@ behavioral rule，遵循 D-09 L0 Discipline Substrate。
 
 ## mattpocock conditional route (D-05 invokes_tools)
 
-Phase 01-code 根据 phase fact context 条件性 fire 3 个 mattpocock 招式：
+Phase 01-code 根据 phase fact context 条件性 fire 2 个 mattpocock 招式：
 - `improve-codebase-architecture` — 周期架构健康审查（当 `phase.architecture_health_audit == true`）
 - `diagnose` — bug 系统化排错（当 `subtask.bug_root_cause_unknown == true`）
 
-3 个触发条件 OR-chain，任 1 触发即 invoke 对应招式——互不排斥（对应 CLAUDE.md
+2 个触发条件 OR-chain，任 1 触发即 invoke 对应招式——互不排斥（对应 CLAUDE.md
 「mattpocock 招式按需召唤」模式，NOT exclusive）。无触发 = pure karpathy 心法 only。
+
+## CodeGraph navigation (opt-in, v4.17.0)
+
+项目存在 `.codegraph/` 索引时（opt-in 的 CodeGraph 语义索引 — 对应
+`capabilities.yaml` 的 `codegraph` entry），符号查找 / 调用链 / 影响面分析优先用
+codegraph MCP 工具（`codegraph_explore`），替代 grep/glob/逐文件 Read 爬取。
+无 `.codegraph/` 则跳过（不做安装劝导）。
 
 ## Phase 02-progress planning-with-files plugin 直接对接 (Q-AUDIT-5a LOCKED Option A)
 

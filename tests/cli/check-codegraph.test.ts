@@ -32,6 +32,17 @@ describe('checkCodeGraph (opt-in doctor detect — always pass)', () => {
     expect(`${r.message} ${r.fix ?? ''}`.toLowerCase()).toContain('codegraph')
   })
 
+  it('absent — fix hint covers BOTH enable steps (wire agents + per-project init)', () => {
+    // v4.17.0 — `npx @colbymchenry/codegraph` only wires the MCP server into
+    // agents; it does NOT index the project. The index is the separate
+    // per-project `codegraph init` (upstream README § Get Started step 3).
+    // Pre-4.17.0 the hint stopped at step 1, so users "enabled" CodeGraph and
+    // still saw "not configured".
+    const r = checkCodeGraph(tmp)
+    expect(r.fix).toContain('npx @colbymchenry/codegraph')
+    expect(r.fix).toContain('codegraph init')
+  })
+
   it('always pass regardless of presence', () => {
     mkdirSync(join(tmp, '.codegraph'), { recursive: true })
     expect(checkCodeGraph(tmp).status).toBe('pass')

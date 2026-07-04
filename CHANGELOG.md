@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.17.0] - 2026-07-04
+
+### Added
+
+- **CodeGraph 编排轻接线(built-but-unwired 补线;用户选项 1).** `capabilities.yaml` 的 `codegraph` entry(Phase 18 编目,opt-in)此前零编排引用。现加条件优先指令:项目存在 `.codegraph/` 索引时,符号查找 / 调用链 / 影响面分析优先用 codegraph MCP 工具(`codegraph_explore`),替代 grep/glob/逐文件 Read 爬取;无索引则跳过(不做安装劝导)。落点:role-prompts(en+zh)`task-code` checklist + `workflows/task/code/SKILL(.zh-Hans).md` 新增 CodeGraph navigation 节;不建 judgment gate(轻量接线)。
+
+### Fixed
+
+- **doctor codegraph 启用提示补全第二步.** `npx @colbymchenry/codegraph` 只把 MCP server 接进 agent(上游 README step 2),**不建索引** — 每项目 `codegraph init`(step 3)才生成 `.codegraph/`;旧提示止步第一步,用户"启用"后 doctor 仍永远 "not configured"。现提示两步齐全。
+- **task/code SKILL(.zh-Hans).md 招式计数陈旧.** 4.16.3 移除 zoom-out 后 "3 mattpocock 招式 / 3 触发条件" 未同步 → 修正为 2。
+
+### Notes
+
+- **"每次 commit 触发 CodeGraph 重建" 评估后不做**:上游 auto-sync 默认开启(文件 watcher,"the index is never stale, and there is nothing to re-run",README § step 4)— 按 commit 粒度重建是逆上游设计的冗余且更迟钝。若实际使用观察到索引漂移再复议(依据记录于 `.planning/phases/_patch-4.17.0-codegraph-wiring/progress.md`)。
+
 ## [4.16.3] - 2026-07-04
 
 ### Changed
