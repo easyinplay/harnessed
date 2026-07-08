@@ -152,12 +152,15 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   // npx invocation (cmd from manifest + injected --agent; B1 re-screened by
   // spawnCmd — agent ids are alnum+dash, they pass checkCmdString).
   // v3.0.2: explicit install timeout (60s — npx cold cache + skills add filesystem traverse).
-  let sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
+  // v4.20.1: neutralCwd — npx runs npm exec, which walks the spawn cwd upward to
+  // the nearest package.json; an ambient devEngines declaration there kills the
+  // install with EBADDEVENGINES (dogfood). Global-semantics install → neutral cwd.
+  let sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { neutralCwd: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   // v4.16.0 T3 — one retry on Windows hard-crash exits (transient node aborts).
   if (HARD_CRASH_EXITS.has(sp.exitCode)) {
     await new Promise((r) => setTimeout(r, HARD_CRASH_RETRY_DELAY_MS))
-    sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
+    sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { neutralCwd: true })
     if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   }
   if (sp.exitCode !== 0) {
@@ -205,8 +208,10 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   // v3.0.2: verify honors spec.verify.timeout_ms (default 15s).
   const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
   // v23 (4.5.1) — verify cmds use POSIX builtins (test/grep/|); route through Git Bash on Windows.
+  // v4.20.1: neutralCwd (sister install spawn above).
   const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs, {
     posixShell: true,
+    neutralCwd: true,
   })
   if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
   const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0

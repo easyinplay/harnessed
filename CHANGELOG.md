@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.20.1] - 2026-07-04
+
+### Fixed
+
+- **中性 spawn cwd — EBADDEVENGINES 环境污染免疫(用户 dogfood v4.20.0:gsd / playwright-test / mattpocock-skills / design-taste-frontend 四个 npm/npx 类 force-refresh 全灭).** 根因(本机复现实锤):`npm exec` 会从 spawn cwd 向上查找最近的 package.json 并强制校验其 `devEngines` — 用户从 home 目录跑 setup,home 里存在 bun 生成的 `devEngines: { runtime: { name: 'bun', onFail: 'download' } }` package.json,npm 只认 runtime name `node` → 该目录树下一切 npx 必死(上游三包经 `npm view` 核实均无 devEngines,纯环境污染;失败的 4 个全是 npm/npx 类,git / claude-plugin 类全过)。修复 = v3.0.2 `getMcpSpawnCwd` 先例推广:新 `getNeutralSpawnCwd()`(env `HARNESSED_SPAWN_CWD` 覆盖 → `<stateRoot>/.spawn/` + **哨兵 package.json**(name-only,截断 npm 向上查找 — stateRoot 本身就在被污染的 home 之下,没有哨兵子目录仍会被祖先命中)→ fs 失败回退 ctx.cwd fail-open)。接线:`npm-cli` / `npx-skill-installer` 的 install + verify spawn(`spawnCmd` 新 `neutralCwd` opt-in;manifest `install.cwd` 仍最高优先)与 auto-install 的 install_commands spawnSync;这些安装均为全局语义(`-g` / `--global` / `--copy`),cwd 本无意义,不再继承用户 shell cwd。端到端复现回归:污染目录直跑 `npx skills@1.5.7 --version` → EBADDEVENGINES;同一污染树下的哨兵子目录 → `1.5.7` exit 0。
+
 ## [4.20.0] - 2026-07-04
 
 ### Added

@@ -19,6 +19,7 @@
 
 import { spawnSync } from 'node:child_process'
 import * as p from '@clack/prompts'
+import { getNeutralSpawnCwd } from '../../installers/lib/safeCwd.js'
 import { CHECKS, type CheckResult } from './doctor-registry.js'
 
 export interface AutoInstallOpts {
@@ -109,6 +110,11 @@ export async function runAutoInstall(opts: AutoInstallOpts): Promise<AutoInstall
         // shims); Unix is fine either way. Pass-through to OS shell handles
         // PATH resolution + extension lookup.
         shell: true,
+        // v4.20.1 — neutral cwd: install commands are global-semantics; the
+        // user's shell cwd may carry an ambient devEngines package.json that
+        // kills every npx-based command (EBADDEVENGINES dogfood). Fail-open to
+        // inherited cwd when neutral resolution is unavailable.
+        cwd: getNeutralSpawnCwd() ?? undefined,
       })
       if (r.status !== 0) {
         const reason =

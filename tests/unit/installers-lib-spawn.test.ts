@@ -234,6 +234,28 @@ describe('spawnCmd', () => {
     expect(opts.cwd).toBe('/custom/dir')
   })
 
+  // v4.20.1 — neutralCwd opt-in (EBADDEVENGINES ambient package.json immunity).
+  // Global test setup pins HARNESSED_SPAWN_CWD, so getNeutralSpawnCwd returns it
+  // verbatim — these cells assert the routing, the fs branch is covered by
+  // installers-lib-safeCwd.test.ts.
+  it('neutralCwd: true routes spawn cwd through getNeutralSpawnCwd', async () => {
+    spawnMock.mockReturnValueOnce(makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>)
+    await spawnCmd(ctx(), 'echo', [], undefined, { neutralCwd: true })
+    const opts = spawnMock.mock.calls[0]?.[2] as { cwd: string }
+    expect(opts.cwd).toBe(process.env.HARNESSED_SPAWN_CWD)
+    expect(opts.cwd).not.toBe('/tmp/proj')
+  })
+
+  it('manifest install.cwd wins over neutralCwd', async () => {
+    spawnMock.mockReturnValueOnce(makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>)
+    const c = ctx((m) => {
+      ;(m.spec.install as { cwd: string }).cwd = '/custom/dir'
+    })
+    await spawnCmd(c, 'echo', [], undefined, { neutralCwd: true })
+    const opts = spawnMock.mock.calls[0]?.[2] as { cwd: string }
+    expect(opts.cwd).toBe('/custom/dir')
+  })
+
   it('falls back to ctx.cwd when manifest install.cwd not set', async () => {
     spawnMock.mockReturnValueOnce(makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>)
     await spawnCmd(ctx(), 'echo', [])

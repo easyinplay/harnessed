@@ -99,7 +99,9 @@ export const installNpmCli: Installer = async (ctx) => {
   const bk = await backup(plan, ctx)
   if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
   // v3.0.2: explicit install timeout (60s default — Windows cold npm/npx cache friendly).
-  const sp = await spawnCmd(ctx, cmd, [], DEFAULT_INSTALL_TIMEOUT_MS)
+  // v4.20.1: neutralCwd — global-semantics npm/npx install must not inherit the
+  // user's shell cwd (ambient devEngines package.json → EBADDEVENGINES dogfood).
+  const sp = await spawnCmd(ctx, cmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { neutralCwd: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
     return {
@@ -118,8 +120,11 @@ export const installNpmCli: Installer = async (ctx) => {
   // v3.0.2: verify honors spec.verify.timeout_ms (default 15s) — manifest authors retain control.
   const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
   // v23 (4.5.1) — verify cmds use POSIX builtins (test/grep/|); route through Git Bash on Windows.
+  // v4.20.1: neutralCwd on verify too (e.g. `ctx7 --version` must not die to
+  // ambient npm/devEngines config in the user's shell cwd ancestry).
   const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs, {
     posixShell: true,
+    neutralCwd: true,
   })
   if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
   const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0

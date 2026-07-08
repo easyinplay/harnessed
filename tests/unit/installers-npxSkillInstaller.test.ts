@@ -306,6 +306,22 @@ describe('installNpxSkillInstaller', () => {
       s.restore()
     }
   })
+
+  // v4.20.1 — npx install spawn must use the NEUTRAL cwd (EBADDEVENGINES ambient
+  // package.json immunity; sister installers-npmCli cell). Setup pins
+  // HARNESSED_SPAWN_CWD globally so the neutral value is exact.
+  it('install spawn uses neutral cwd (EBADDEVENGINES ambient immunity)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }, { exitCode: 0 }]))
+      accessMock.mockResolvedValueOnce(undefined)
+      await installNpxSkillInstaller(ctx())
+      const firstSpawnOpts = spawnMock.mock.calls[0]?.[2] as { cwd?: string }
+      expect(firstSpawnOpts.cwd).toBe(process.env.HARNESSED_SPAWN_CWD)
+    } finally {
+      s.restore()
+    }
+  })
 })
 
 // v4.14.0 T4 — per-platform --agent injection: manifests no longer hardcode

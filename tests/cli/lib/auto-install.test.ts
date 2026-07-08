@@ -6,6 +6,16 @@
 
 import { describe, expect, it, vi } from 'vitest'
 
+// v4.20.1 — spawnSync mocked so the interactive cell can assert the neutral cwd
+// without running a real install; earlier cells never spawn (mock inert there).
+vi.mock('node:child_process', () => ({
+  spawnSync: vi.fn(() => ({ status: 0 })),
+}))
+vi.mock('@clack/prompts', () => ({
+  confirm: vi.fn(async () => true),
+  isCancel: vi.fn(() => false),
+}))
+
 // Mock the CHECKS registry to avoid touching real filesystem / spawns.
 vi.mock('../../../src/cli/lib/doctor-registry.js', () => ({
   CHECKS: [
@@ -59,5 +69,29 @@ describe('cli/lib/auto-install — v3.9.0 P4 plugin auto-install dispatcher', ()
     const r = await runAutoInstall({ nonInteractive: true, autoInstall: true })
     // fake-warn-no-install-cmds NOT in skipped (filtered out before per-check loop).
     expect(r.skipped).not.toContain('fake-warn-no-install-cmds')
+  })
+
+  // v4.20.1 — interactive install spawns must run from the NEUTRAL cwd, not the
+  // user's shell cwd (dogfood EBADDEVENGINES: ambient devEngines package.json in
+  // the cwd's ancestry kills every npx-based command). Global setup pins
+  // HARNESSED_SPAWN_CWD, so the expected value is exact.
+  it('F5. consented install commands spawn with the neutral cwd', async () => {
+    const { spawnSync } = await import('node:child_process')
+    const spawnSyncMock = vi.mocked(spawnSync)
+    spawnSyncMock.mockClear()
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      const r = await runAutoInstall({ nonInteractive: false, autoInstall: true })
+      expect(r.installed).toContain('fake-missing-plugin')
+      expect(spawnSyncMock.mock.calls.length).toBeGreaterThan(0)
+      for (const call of spawnSyncMock.mock.calls) {
+        const opts = call[2] as { cwd?: string }
+        expect(opts.cwd).toBe(process.env.HARNESSED_SPAWN_CWD)
+      }
+    } finally {
+      logSpy.mockRestore()
+      errSpy.mockRestore()
+    }
   })
 })

@@ -192,6 +192,24 @@ describe('installNpmCli', () => {
       s.restore()
     }
   })
+
+  // v4.20.1 — install spawn must run from the NEUTRAL cwd, not the user's shell
+  // cwd (dogfood: a bun-generated devEngines package.json in the user's home made
+  // every npx-based install die with EBADDEVENGINES — npm exec walks cwd upward).
+  // Global test setup pins HARNESSED_SPAWN_CWD, so the neutral value is exact.
+  it('install spawn uses neutral cwd (EBADDEVENGINES ambient immunity)', async () => {
+    const s = silence()
+    try {
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      await installNpmCli(ctx())
+      const firstSpawnOpts = spawnMock.mock.calls[0]?.[2] as { cwd?: string }
+      expect(firstSpawnOpts.cwd).toBe(process.env.HARNESSED_SPAWN_CWD)
+    } finally {
+      s.restore()
+    }
+  })
 })
 
 // v4.15.1 T3 — the "(L4 system install — global PATH change; see cmd above)"
