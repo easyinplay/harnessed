@@ -119,7 +119,7 @@ prompts:
       - "讨论 library / framework API 时显式标注版本(训练截止可能已过时)"
       - "把相互冲突的来源并列呈现;不要悄悄只选一个"
       - "用户必须裁决的事项标 `OPEN: <问题>`;绝不掩盖"
-      - "结果持久化到 `.planning/<phase>/findings.md`,供跨 session 交接"
+      - "结果持久化到 `.planning/phases/<NN>-<slug>/findings.md`,供跨 session 交接(NN = 两位数,取现有最大 phase 目录号 + 1;slug = kebab 短名)"
     severity: "verified / unverified / conflicting / open"
     description: "多源调研产出带引用支撑的 findings.md(不臆测)。"
 
@@ -169,11 +169,12 @@ prompts:
       待决决策、跨 phase 数据流不清,或范围跨度 >1 天。改写自 GSD
       `/gsd-discuss-phase`。
     checklist:
+      - "若 `/gsd-discuss-phase` skill 可用,直接调用它并沿用其产物结构;仅在不可用时按以下步骤手工执行"
       - "把每个待决决策列成一个单独问题(每条 1 行)"
       - "对每个问题,列 2-4 个候选答案并附一行 tradeoff"
       - "识别跨 phase 契约(数据流 / API 形态 / 迁移顺序)"
       - "标出阻塞启动的决策(规划前必须答)vs. 可延后的"
-      - "持久化到 `.planning/<phase>/findings.md` + `knowledge.md` 以便交接"
+      - "持久化到 `.planning/phases/<NN>-<slug>/findings.md` + `knowledge.md` 以便交接(NN = 两位数,取现有最大 phase 目录号 + 1;slug = kebab 短名)"
       - "若该层确实已清晰,直说『无需澄清』并退出"
     severity: "blocking / deferrable / resolved"
     description: "浮现灰区 phase 决策,列出候选答案,标明阻塞 vs. 可延后。"
@@ -236,12 +237,13 @@ prompts:
       `/gsd-plan-phase`(Wave A research → Wave B planner → Wave C
       plan-checker)。
     checklist:
+      - "若 `/gsd-plan-phase` skill 可用,直接调用它并沿用其产物结构;仅在不可用时按以下步骤手工执行"
       - "每个任务点名它触碰的确切文件(不是只写『auth 模块』)"
       - "每个任务有第三方可验证的验收标准"
       - "依赖显式化(任务 N 需要任务 M 的产出)"
       - "每个任务 ≤1 天;更大就拆"
       - "为每个任务指明验证步骤(test / lint / typecheck)"
-      - "经 planning-with-files `/plan` 持久化为 `task_plan.md` + `progress.md`"
+      - "经 planning-with-files `/plan` 持久化为 `task_plan.md` + `progress.md`,目录为 `.planning/phases/<NN>-<slug>/`"
       - "最后过一遍:一个全新 agent 仅凭这些文件就能执行"
     severity: "ready-to-execute / needs-revision / blocked"
     description: "把 phase 拆成带文件路径 + 验收标准的有序任务;经 planning-with-files 持久化。"

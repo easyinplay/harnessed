@@ -61,7 +61,7 @@ grep/glob/file-by-file Read crawling. No `.codegraph/` → skip this (no install
 ## Phase 02-progress planning-with-files plugin 真接 (Q-AUDIT-5a LOCKED Option A)
 
 02-progress invokes the **Claude Code plugin** slash command `/plan` to update
-`progress.md` in `.planning/<phase-id>/` — 跟踪 subtask 完成 / blocked / next step
+`progress.md` in `.planning/phases/<NN>-<slug>/` — 跟踪 subtask 完成 / blocked / next step
 per bundled "跨 session 恢复" 模式 + R20.6 Manus-style 持久化. Requires the
 `planning-with-files` Claude Code plugin (install via Claude Code plugin
 marketplace).

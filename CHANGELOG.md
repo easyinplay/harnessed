@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.21.0] - 2026-07-04
+
+### Fixed
+
+- **/auto 规划产物结构漂移(用户 dogfood:KidsTetris 项目产出自造的 `.planning/phase-0-discuss/` 布局,无 ROADMAP/REQUIREMENTS/phases/ 层级).** 三处根因三处修:(1) role-prompts(discuss-phase / plan-phase / research,en+zh)与 workflow SKILL 中的松散占位符 `.planning/<phase>/` 全部统一为 GSD 标准 `.planning/phases/<NN>-<slug>/`(命名规则写进指令:NN 两位数取现有最大 + 1、slug kebab 短名),`generateCommands` 共享模板同步;(2) 新项目引导 — discuss master 与生成的 `/discuss` 命令加 step 0:`.planning/ROADMAP.md` 缺失时优先调用 `/gsd-new-project`,不可用则按内嵌最小骨架先建 ROADMAP/STATE/REQUIREMENTS 再继续;(3) 调真命令优先 — discuss-phase / plan-phase checklist 首条要求 `/gsd-discuss-phase`、`/gsd-plan-phase` skill 可用时直接调用并沿用其产物结构,仅不可用时才按 checklist 手工执行。capabilityResolver 渲染层经查无责(user-skill cmd 保持正确)。
+- **perturn-inject hook 命令路径书写形式(用户 dogfood:每个 prompt 报 `UserPromptSubmit hook error` + `cjs/loader` MODULE_NOT_FOUND).** 4.20.0 的绝对化用 `path.join` 产出反斜杠且仅含空格才加引号;CC 经 shell 执行 hook 命令时未引号的 `C:\Users\...` 反斜杠被当转义吃掉(`C:Users...`)→ node 找不到脚本。`resolveHookCommand` 改为恒引号 + 正斜杠输出(与真实 settings.json 中其它可用 node hook 的书写惯例一致;Windows node 接受 `/`)。已装用户重跑 `harnessed setup` 经自愈迁移自动纠正。
+
 ## [4.20.1] - 2026-07-04
 
 ### Fixed

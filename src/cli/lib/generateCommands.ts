@@ -144,13 +144,17 @@ function buildInteractiveBody(name: string, prompt: RolePrompt): string {
     ``,
     `Clarification requires real user dialogue. Spawned subagents cannot ask the user questions, so run this stage directly in this session — do NOT spawn it.`,
     ``,
+    // v4.21.0 (KidsTetris dogfood) — bootstrap step + GSD-standard phase-dir
+    // convention: the loose \`.planning/\` wording let agents invent their own
+    // layout (phase-0-discuss/ etc.) on fresh projects with no ROADMAP.
+    `0. New-project bootstrap — if \`.planning/ROADMAP.md\` does not exist: invoke \`/gsd-new-project\` when available; otherwise create a minimal \`ROADMAP.md\` (one table row per phase), \`STATE.md\` (digest, <100 lines), and \`REQUIREMENTS.md\` (numbered acceptance criteria) before continuing.`,
     `1. Evaluate the clarification criteria for "$ARGUMENTS":`,
     `   - Strategic layer: new feature / new milestone / unclear business scope → run gstack \`/office-hours\` + \`/plan-ceo-review\``,
     `   - Phase layer: ≥2 open implementation decisions / unclear cross-phase API contract → run GSD \`/gsd-discuss-phase\``,
     `   - Subtask layer: ≥2 distinct approaches / core algorithm / API contract design / high error cost → run superpowers brainstorming`,
     `2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions). Lock every open decision.`,
     `3. Skip layers that don't fire — state which were skipped and why (transparent skip).`,
-    `4. Persist locked decisions to \`.planning/\` via planning-with-files (\`findings.md\` / \`task_plan.md\`).`,
+    `4. Persist locked decisions to \`.planning/phases/<NN>-<slug>/\` via planning-with-files (\`findings.md\` / \`task_plan.md\`; NN = two-digit, one above the highest existing phase dir; slug = kebab-case short name).`,
     ``,
     `Output: a locked spec the execution stages can consume without further user input. Then run \`/plan\` → \`/task\` → \`/verify\` with that spec.`,
     ``,

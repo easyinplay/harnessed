@@ -56,13 +56,17 @@ Sister `workflows/capabilities.yaml`:
 澄清需要真实用户对话,所以本阶段直接在**本 session** 跑 —— **不要** spawn,也**不要**自行演绎:
 按以下步骤走,把 locked spec 持久化给执行阶段。
 
+0. **新项目引导** —— 若 `.planning/ROADMAP.md` 不存在:`/gsd-new-project` skill 可用则先调用它;不可用则先创建最小骨架再继续(后续 phase 目录遵循 `.planning/phases/<NN>-<slug>/`):
+   - `ROADMAP.md`:`# Roadmap` + 每 phase 一行表:`| 01 | <slug> | <一行目标> | in-progress |`
+   - `STATE.md`:`# STATE (digest — 保持 <100 行)` + `current: phase 01-<slug> / stage discuss` + `next: <动作>`
+   - `REQUIREMENTS.md`:`# Requirements` + 编号行 `- R1: <可验证的验收标准>`
 1. 对 "$ARGUMENTS" 评估澄清判据:
    - **战略层** —— 新功能 / 新 milestone / 商业 scope 不清 → gstack `/office-hours` + `/plan-ceo-review`
    - **Phase 层** —— ≥2 个 open implementation decision / 跨 phase API contract 不清 → GSD `/gsd-discuss-phase`
    - **子任务层** —— ≥2 个不同方案 / 核心算法 / API contract 设计 / 高错误成本 → superpowers brainstorming
 2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。
 3. 不 fire 的层透明 skip —— 说明哪些被 skip 及原因。
-4. 把 locked 决策持久化到 `.planning/`(planning-with-files 的 `findings.md` / `task_plan.md`)。
+4. 把 locked 决策持久化到 `.planning/phases/<NN>-<slug>/`(planning-with-files 的 `findings.md` / `task_plan.md`;NN = 两位数,取现有最大 phase 目录号 + 1)。
 
 产出:一份 locked spec,执行阶段(`/plan` → `/task` → `/verify`)无需再问用户即可消费。
 

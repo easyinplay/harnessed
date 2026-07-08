@@ -20,21 +20,25 @@ const deps = (existing: string[]) => ({
 
 const INJECT = 'node bin/harnessed-inject-state.mjs'
 const INJECT_ABS = join(ROOT, 'bin', 'harnessed-inject-state.mjs')
+// v4.21.0 dogfood — resolved paths are emitted forward-slash + ALWAYS quoted
+// (unquoted backslashes are eaten as shell escapes when CC runs the hook →
+// MODULE_NOT_FOUND on every prompt). Expectations mirror that contract.
+const INJECT_ABS_CMD = `"${INJECT_ABS.replace(/\\/g, '/')}"`
 
 describe('resolveHookCommand', () => {
-  it('resolves an existing package-relative token to an absolute path', () => {
+  it('resolves an existing package-relative token to a forward-slash quoted absolute path', () => {
     const r = resolveHookCommand(INJECT, deps([INJECT_ABS]))
-    expect(r).toBe(`node ${INJECT_ABS}`)
+    expect(r).toBe(`node ${INJECT_ABS_CMD}`)
   })
 
-  it('quotes resolved paths containing spaces', () => {
+  it('quotes resolved paths containing spaces (forward-slash form)', () => {
     const root = join('C:', 'fake dir', 'assets')
     const abs = join(root, 'bin', 'x.mjs')
     const r = resolveHookCommand('node bin/x.mjs', {
       assetsRoot: () => root,
       exists: (p) => p === abs,
     })
-    expect(r).toBe(`node "${abs}"`)
+    expect(r).toBe(`node "${abs.replace(/\\/g, '/')}"`)
   })
 
   it('leaves non-existing relative tokens and flags verbatim', () => {
@@ -85,7 +89,7 @@ describe('entryMatchesRegistration + isDesiredHookEntry', () => {
 
 describe('detectCcHookInstalled (authoritative probe)', () => {
   const d = deps([INJECT_ABS])
-  const resolved = `node ${INJECT_ABS}`
+  const resolved = `node ${INJECT_ABS_CMD}`
   const ev = 'UserPromptSubmit'
 
   it('true only for the exact corrected entry', () => {

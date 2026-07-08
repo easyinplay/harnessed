@@ -61,7 +61,7 @@ codegraph MCP 工具（`codegraph_explore`），替代 grep/glob/逐文件 Read 
 ## Phase 02-progress planning-with-files plugin 直接对接 (Q-AUDIT-5a LOCKED Option A)
 
 02-progress 调用 **Claude Code plugin** slash command `/plan` 更新
-`.planning/<phase-id>/` 下的 `progress.md`——跟踪 subtask 完成 / blocked / next step，
+`.planning/phases/<NN>-<slug>/` 下的 `progress.md`——跟踪 subtask 完成 / blocked / next step，
 遵循捆绑的「跨 session 恢复」模式 + R20.6 Manus-style 持久化。需要安装
 `planning-with-files` Claude Code plugin（通过 Claude Code plugin marketplace 安装）。
 

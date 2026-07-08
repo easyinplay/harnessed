@@ -58,7 +58,8 @@ K8 ctx single snapshot:auto top-level invoke 1 snapshot, pass to all 6 spawn
 - **Pre-flight gates**: complexity assessment + understanding check (interactive prompts)
 - **Continuous chain**: 6 stage 一行命令跑完, 中间不停
 - **Fail-fast**: 任一 stage fail 立即停, `harnessed resume` 续
-- **Context 自动传递**: planning-with-files `.planning/<phase>/` 喂下 stage
+- **New-project bootstrap**: `.planning/ROADMAP.md` missing → stage ① runs `/gsd-new-project` (when available) or creates the minimal ROADMAP/STATE/REQUIREMENTS skeleton first
+- **Context 自动传递**: planning-with-files `.planning/phases/<NN>-<slug>/` 喂下 stage
 - **Retro mandatory**: auto mode hands-off scenario,末尾强制 `/retro` 总结 (无 opt-out flag)
 - **沿用 sister planning-with-files /plan 持久化 cadence**
 

@@ -60,9 +60,16 @@ function stripQuotes(token: string): { bare: string; quoted: boolean } {
 /**
  * Resolve package-relative file tokens in a hook command to absolute paths
  * under the assets root. Tokens that do not exist there are left verbatim
- * (fail-open: an unknown relative token may be intentional). Absolute results
- * containing spaces are double-quoted. The `node` executable token stays a
- * bare PATH lookup (binary users without node = D6 known limitation).
+ * (fail-open: an unknown relative token may be intentional). The `node`
+ * executable token stays a bare PATH lookup (binary users without node = D6
+ * known limitation).
+ *
+ * v4.21.0 dogfood — resolved paths are emitted FORWARD-SLASH + ALWAYS quoted:
+ * CC executes hook commands through a shell where unquoted `C:\Users\...`
+ * backslashes are eaten as escapes (`C:Users...` → node MODULE_NOT_FOUND at
+ * cjs/loader on every prompt, user report). Forward-slash + quoted is the
+ * proven-working convention of every other node hook in real settings.json
+ * files (node accepts `/` on Windows).
  */
 export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
   let root: string | null = null
@@ -73,7 +80,7 @@ export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
     root = root ?? deps.assetsRoot()
     const abs = join(root, bare)
     if (!deps.exists(abs)) return token
-    return abs.includes(' ') ? `"${abs}"` : abs
+    return `"${abs.replace(/\\/g, '/')}"`
   })
   return out.join(' ')
 }

@@ -57,13 +57,17 @@ Clarification needs real user dialogue, so run this stage directly in THIS sessi
 spawn it, and do NOT improvise: follow these steps so the locked spec is persisted for the
 execution stages.
 
+0. **New-project bootstrap** — if `.planning/ROADMAP.md` does not exist: invoke `/gsd-new-project` when that skill is available; otherwise create the minimal skeleton before continuing (then phase dirs follow `.planning/phases/<NN>-<slug>/`):
+   - `ROADMAP.md`: `# Roadmap` + one table row per phase: `| 01 | <slug> | <one-line goal> | in-progress |`
+   - `STATE.md`: `# STATE (digest — keep <100 lines)` + `current: phase 01-<slug> / stage discuss` + `next: <action>`
+   - `REQUIREMENTS.md`: `# Requirements` + numbered rows `- R1: <verifiable acceptance criterion>`
 1. Evaluate the clarification criteria for "$ARGUMENTS":
    - **Strategic** — new feature / milestone / unclear business scope → gstack `/office-hours` + `/plan-ceo-review`
    - **Phase** — ≥2 open implementation decisions / unclear cross-phase API contract → GSD `/gsd-discuss-phase`
    - **Subtask** — ≥2 distinct approaches / core algorithm / API contract design / high error cost → superpowers brainstorming
 2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision.
 3. Transparent-skip layers that don't fire — state which were skipped and why.
-4. Persist the locked decisions to `.planning/` via planning-with-files (`findings.md` / `task_plan.md`).
+4. Persist the locked decisions to `.planning/phases/<NN>-<slug>/` via planning-with-files (`findings.md` / `task_plan.md`; NN = two-digit, one above the highest existing phase dir).
 
 Output: a locked spec the execution stages (`/plan` → `/task` → `/verify`) consume without further user input.
 
