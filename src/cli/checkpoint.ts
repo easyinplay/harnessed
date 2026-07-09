@@ -198,6 +198,58 @@ export function registerCheckpoint(program: Command): void {
         const { activatePhase, completePhase } = await import('../checkpoint/engineHook.js')
 
         if (action === 'start') {
+          // 4.22.1 — step-0 skeleton nudge (dogfood: the model skipped the /auto
+          // step-0 skeleton; the complete-side planning-sync gate blocked correctly
+          // but LATE). Warn at start time on stderr (stdout stays clean for JSON
+          // consumers); fail-soft; silent for non-GSD users (no .planning/ at all).
+          try {
+            const { stat: statFs } = await import('node:fs/promises')
+            const { resolve: resolvePath } = await import('node:path')
+            const planningDir = resolvePath(process.cwd(), '.planning')
+            const hasPlanning = await statFs(planningDir)
+              .then((s) => s.isDirectory())
+              .catch(() => false)
+            if (hasPlanning) {
+              const missing: string[] = []
+              for (const f of ['STATE.md', 'ROADMAP.md']) {
+                const ok = await statFs(resolvePath(planningDir, f))
+                  .then((s) => s.isFile())
+                  .catch(() => false)
+                if (!ok) missing.push(`.planning/${f}`)
+              }
+              if (missing.length > 0) {
+                console.error(
+                  `⚠️ [harnessed] step 0 skeleton missing (${missing.join(', ')}) — the ` +
+                    `evidence guard's planning-sync gate will block \`checkpoint complete\`. ` +
+                    `Create the skeleton first (see the /auto SKILL step 0).`,
+                )
+              }
+            }
+          } catch {
+            // fail-soft — the nudge must never break start.
+          }
+          // 4.22.1 T2b — dual-guard conflict pre-check (dogfood: ECC GateGuard's
+          // filename policy blocks the evidence-guard contract names; the main
+          // session can fact-retry past it, SUBAGENTS cannot → renamed artifacts →
+          // every complete fail-closed blocks; verify's five *-report.md recur it).
+          // Warn at start (stderr), fail-soft; detection SoT = check-guard-conflict.ts.
+          try {
+            const { detectGateGuardActive, GUARD_CONFLICT_ADVICE } = await import(
+              './lib/check-guard-conflict.js'
+            )
+            const det = await detectGateGuardActive()
+            if (det.active) {
+              console.error(
+                `⚠️ [harnessed] ECC GateGuard appears active (via ${det.source}) — its ` +
+                  `filename policy (report/findings/summary/analysis) collides with the ` +
+                  `evidence-guard artifact names (findings.md, *-report.md); subagent Writes ` +
+                  `have no fact-retry channel and \`checkpoint complete\` will block. ` +
+                  GUARD_CONFLICT_ADVICE,
+              )
+            }
+          } catch {
+            // fail-soft — the pre-check must never break start.
+          }
           const { checkpointPath } = await activatePhase(sub)
           // D3 graceful degrade — seed the ledger only when a plan is supplied; a
           // missing/empty/invalid --plan leaves an empty ledger, no error.

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.22.1] - 2026-07-09
+
+### Fixed
+
+- **evidence guard 裸名解析基与 4.21.0 动态目录约定错位(dogfood:首个完整合规 /auto 运行被冤枉 fail-closed).** `artifacts_expected: [findings.md, knowledge.md]` 是字面量,guard 只 stat 项目 cwd 根;而 4.21.0 起写入约定是运行时动态的 `.planning/phases/<NN>-<slug>/` — 字面量表达不了动态目录,两契约从未对齐(此前无合规运行走到 `checkpoint complete`,首次暴露:agent 按 SKILL 指示写了 knowledge.md,guard 却在根目录找)。修复:**裸名(无路径分隔符)多基探测** — cwd 根(零回归,根优先)→ `.planning/phases/<dir>/`(文件 mtime 最新者胜)→ `.planning/<dir>/`(legacy 布局);含分隔符的声明维持精确 cwd 相对语义逐字节不变;`found[].path` 仍存绝对路径(drift 契约不变)。已接受弱化(记录):旧 phase 目录同名文件可满足新 sub 的 guard — 证据语义为"产物已持久化",mtime 最新优先缓解。
+- **step-0 骨架前移提示.** dogfood 中模型跳过 /auto step 0,`.planning/STATE.md` 缺失被 complete 侧 planning-sync 门正确拦截 — 但太晚。`checkpoint start` 现检测 `.planning/` 存在而 STATE.md / ROADMAP.md 缺失 → stderr 一行警告(stdout 不污染;fail-soft;无 `.planning/` 的非 GSD 用户静默)。
+
+### Added
+
+- **双守卫冲突预检(dogfood:ECC GateGuard × evidence guard 生态冲突).** GateGuard 的 PreToolUse 文件名策略(拦 report/findings/summary/analysis 类 Write)与 evidence guard 的 artifacts 契约名(findings.md、verify 阶段 5 个 *-report.md)相撞;主 session 可走 fact-retry 通道,subagent 无此通道 → 被迫改名 → `checkpoint complete` 永远 fail-closed。新增共享探测(`check-guard-conflict.ts`:kill-switch `GATEGUARD_DISABLED=1` / `ECC_GATEGUARD`∈{off,0,false,disabled} 优先;active 信号 = settings hooks 关键字 / ecc 插件注册 / env 显式启用):(1) `checkpoint start` stderr 预警 + 三选一建议(GateGuard 配置豁免 `.planning/` 优先 / `ECC_GATEGUARD=off` 次之 / 勿全量 `--force` 掏空证据门);(2) doctor 第 16 项检查(warn-only — 共装守卫是配置选择不是故障)。
+
 ## [4.22.0] - 2026-07-09
 
 ### Added

@@ -51,6 +51,9 @@ export const CHECKS: readonly CheckFn[] = [
   // v4.16.1 T3 — bun presence (warn-only): gstack's upstream setup hard-requires
   // bun; missing bun is THE gstack refresh-failure cause on user dogfood machines.
   async () => (await import('./check-bun.js')).checkBun(),
+  // 4.22.1 T4 — dual-guard conflict (warn-only): ECC GateGuard's filename policy
+  // vs evidence-guard artifact contract names (subagents cannot fact-retry).
+  async () => (await import('./check-guard-conflict.js')).checkGuardConflict(),
   // Phase 20 — "update available" version check ('warn' only when behind; 'pass'
   // when current/ahead/npm-unreachable — fail-soft, never flips the summary).
   async () => (await import('./check-update.js')).checkUpdate(),

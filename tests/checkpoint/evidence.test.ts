@@ -6,7 +6,15 @@
 // never depend on the real `workflows/` tree (isolation per design §11).
 
 import { createHash } from 'node:crypto'
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  unlinkSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -210,5 +218,66 @@ describe('detectDrift', () => {
     expect(drift[0]?.path).toBe(abs)
     expect(drift[0]?.was).toBe(sha256('bye'))
     expect(drift[0]?.now).toBe('')
+  })
+})
+
+// 4.22.1 — bare-name multi-base resolution (dogfood: first compliant run exposed
+// that `artifacts_expected: [findings.md]` was stat'd at cwd ROOT while the
+// 4.21.0 write convention is the DYNAMIC `.planning/phases/<NN>-<slug>/` dir —
+// the two contracts had never been aligned; guard false-blocked real artifacts).
+// Bare names (no path separator) now probe: cwd root → .planning/phases/*/
+// (newest file mtime wins) → .planning/*/ (legacy layout). Separator'd paths
+// keep exact cwd-relative semantics.
+describe('checkArtifacts — bare-name multi-base resolution (4.22.1)', () => {
+  it('cwd root still wins when the file exists at root (precedence + zero regression)', async () => {
+    writeLeaf('discuss-phase', [['findings.md']])
+    writeArtifact('findings.md', 'root copy')
+    writeArtifact('.planning/phases/01-discuss/findings.md', 'phases copy')
+    const r = await checkArtifacts('discuss-phase', root)
+    expect(r.status).toBe('verified')
+    expect(r.found).toEqual([{ path: join(root, 'findings.md'), sha256: sha256('root copy') }])
+  })
+
+  it('resolves a bare name via .planning/phases/*/ picking the newest match', async () => {
+    writeLeaf('discuss-phase', [['findings.md']])
+    const older = writeArtifact('.planning/phases/01-discuss/findings.md', 'older')
+    const newer = writeArtifact('.planning/phases/02-plan/findings.md', 'newer')
+    // Force a strictly newer mtime on the intended winner (fs timestamp
+    // granularity on some filesystems is 1-2s; utimesSync is deterministic).
+    const past = new Date(Date.now() - 60_000)
+    utimesSync(older, past, past)
+    const r = await checkArtifacts('discuss-phase', root)
+    expect(r.status).toBe('verified')
+    expect(r.found).toEqual([{ path: newer, sha256: sha256('newer') }])
+    // drift re-hashes off the stored absolute path — same contract as root hits.
+    writeFileSync(newer, 'tampered', 'utf8')
+    const drift = await detectDrift(r.found)
+    expect(drift).toHaveLength(1)
+    expect(drift[0]?.path).toBe(newer)
+  })
+
+  it('falls back to legacy .planning/*/ when phases/ has no match', async () => {
+    writeLeaf('discuss-phase', [['knowledge.md']])
+    const legacy = writeArtifact('.planning/phase-0-discuss/knowledge.md', 'legacy layout')
+    const r = await checkArtifacts('discuss-phase', root)
+    expect(r.status).toBe('verified')
+    expect(r.found).toEqual([{ path: legacy, sha256: sha256('legacy layout') }])
+  })
+
+  it('reports the bare name in missing[] when absent from every base', async () => {
+    writeLeaf('discuss-phase', [['findings.md']])
+    writeArtifact('.planning/phases/01-discuss/unrelated.md', 'x')
+    const r = await checkArtifacts('discuss-phase', root)
+    expect(r.status).toBe('missing')
+    expect(r.missing).toEqual(['findings.md'])
+  })
+
+  it('separator paths keep exact cwd-relative semantics (no multi-base probe)', async () => {
+    writeLeaf('discuss-phase', [['docs/findings.md']])
+    // Same basename exists under phases/ — must NOT satisfy a separator'd path.
+    writeArtifact('.planning/phases/01-discuss/docs/findings.md', 'wrong home')
+    const r = await checkArtifacts('discuss-phase', root)
+    expect(r.status).toBe('missing')
+    expect(r.missing).toEqual(['docs/findings.md'])
   })
 })

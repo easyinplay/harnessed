@@ -12,7 +12,7 @@
 //                        (cross-CC handoff drift — warn, not block, per ADR-0033 D4).
 
 import { createHash } from 'node:crypto'
-import { readFile, stat } from 'node:fs/promises'
+import { readdir, readFile, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { resolveWorkflowYaml } from '../cli/run.js'
@@ -77,17 +77,68 @@ export async function checkArtifacts(
   const found: EvidenceRefType[] = []
   const missing: string[] = []
   for (const rel of declared) {
-    const abs = resolve(cwd, rel)
-    const present = await stat(abs)
-      .then((s) => s.isFile())
-      .catch(() => false)
+    const abs = await resolveDeclaredArtifact(cwd, rel)
     // Store the ABSOLUTE path so detectDrift re-hashes the same file later (P0-A).
-    if (present) found.push({ path: abs, sha256: await hashFile(abs) })
+    if (abs) found.push({ path: abs, sha256: await hashFile(abs) })
     else missing.push(rel)
   }
   // P1-3 three-state honesty: 'verified' when nothing missing; 'missing' when a
   // declared artifact is absent (caller still gates on `missing.length`).
   return { status: missing.length === 0 ? 'verified' : 'missing', found, missing }
+}
+
+// 4.22.1 — resolve one declared artifact to an absolute path, or null.
+//
+// Paths WITH a separator keep the exact cwd-relative semantics (pre-4.22.1
+// behavior, unchanged). BARE names probe three bases in order:
+//   1. <cwd>/<name>                          — original base (zero regression)
+//   2. <cwd>/.planning/phases/<dir>/<name>   — the 4.21.0 write convention
+//      (.planning/phases/<NN>-<slug>/ is chosen at RUNTIME, so a literal yaml
+//      declaration cannot express it — this probe closes the gap that
+//      false-blocked the first fully-compliant /auto run: agents wrote
+//      findings.md/knowledge.md where the SKILL told them to, and the guard
+//      stat'd cwd root only)
+//   3. <cwd>/.planning/<dir>/<name>          — pre-4.21.0 legacy layouts
+// Within a scanned base the NEWEST file mtime wins. Known accepted weakness
+// (task_plan D2): an older phase dir's same-named file can satisfy a new
+// sub's guard — evidence semantics are "the artifact was persisted", and
+// newest-mtime preference plus per-phase dirs keep this honest enough.
+// (Line comments, not JSDoc: the path examples would need a "* /" sequence
+// which terminates a block comment — the known biome/JSDoc trap.)
+async function resolveDeclaredArtifact(cwd: string, rel: string): Promise<string | null> {
+  const isFileAt = (p: string): Promise<boolean> =>
+    stat(p)
+      .then((s) => s.isFile())
+      .catch(() => false)
+
+  if (/[\\/]/.test(rel)) {
+    const abs = resolve(cwd, rel)
+    return (await isFileAt(abs)) ? abs : null
+  }
+
+  const atRoot = resolve(cwd, rel)
+  if (await isFileAt(atRoot)) return atRoot
+
+  for (const base of [resolve(cwd, '.planning', 'phases'), resolve(cwd, '.planning')]) {
+    let entries: string[]
+    try {
+      entries = await readdir(base)
+    } catch {
+      continue
+    }
+    let best: { abs: string; mtime: number } | null = null
+    for (const entry of entries) {
+      // Skip the phases/ container itself when scanning the legacy base.
+      if (base.endsWith('.planning') && entry === 'phases') continue
+      const cand = resolve(base, entry, rel)
+      const st = await stat(cand).catch(() => null)
+      if (st?.isFile() && (!best || st.mtimeMs > best.mtime)) {
+        best = { abs: cand, mtime: st.mtimeMs }
+      }
+    }
+    if (best) return best.abs
+  }
+  return null
 }
 
 export interface CheckPlanningSyncResult {
