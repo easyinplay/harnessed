@@ -16,7 +16,6 @@ import {
   MANUAL_FIX_CMD,
   PLANNING_GLOB,
   planExemption,
-  previewLines,
   refusalLines,
   runExemptionFlow,
 } from '../../../src/cli/lib/guard-exemption.js'
