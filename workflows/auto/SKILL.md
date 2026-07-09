@@ -106,6 +106,10 @@ Sister `workflows/capabilities.yaml`:
 
 ## How to invoke
 
+!`harnessed checkpoint intent auto`
+
+> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: steps 2-3 below seed the ledger, and a per-turn `<workflow-intent>` reminder persists until they run.
+
 The numbered sequence below **is** the state machine — execute it step by step with Bash.
 Do NOT improvise an equivalent flow from the Overview above: freelancing bypasses the engine
 (no per-sub ledger, no evidence guard, no recovery). harnessed is the orchestration brain
@@ -116,7 +120,7 @@ Do NOT pipe to `harnessed run auto` — that is the CI/headless path (in-process
 that blocks the session, bypasses Agent Teams, and hangs inside Claude Code).
 
 1. FIRST run the discuss stage interactively in THIS session (spawned subagents cannot ask the user questions). Evaluate strategic / phase / subtask clarification criteria for "$ARGUMENTS"; dialogue with the user (AskUserQuestion) for each layer that fires, lock decisions, transparent-skip the rest. Produce a locked spec.
-2. Bash: `harnessed gates auto --task "<locked spec>" --skip-sub clarify` → parse the JSON `{fire, skip, parallelism}`. This is the plan SoT (no spawn). Keep the verbatim JSON.
+2. Bash: `harnessed gates auto --task "<locked spec>" --skip-sub clarify` → parse the JSON `{fire, skip, parallelism}`. This is the plan SoT (no spawn). Keep the verbatim JSON. For a small self-contained task (single-file / single-page class), the sanctioned lite path is adding `--skip-sub verify --skip-sub retro` (repeatable / comma-separated) — skipped subs are still recorded in the ledger with reasons; lite ≠ freestyle (the ledger/evidence IS the difference).
 3. Bash: `harnessed checkpoint start auto --plan '<the verbatim gates JSON from step 2>'` → seeds the per-sub ledger so `harnessed status --recover` can re-orient you after compaction.
 4. If `parallelism.escalate_to_teams === true`: read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team (`TeamCreate` → `Agent(name, team_name, …)` per sub with its `harnessed prompt <sub>` prompt → coordinate via `SendMessage` → `SendMessage shutdown_request` + `TeamDelete`). Still checkpoint each sub (`complete` / `fail`) as below.
 5. Otherwise, for each fired sub in `order` (serial subs sequentially, parallel subs concurrently):

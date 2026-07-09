@@ -181,6 +181,39 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     expect(clarifyGateCalls.length).toBe(0)
   })
 
+  // 4.22.0 T4 — --skip-sub is REPEATABLE (commander accumulator) in addition to
+  // comma-separated. Pre-fix, a non-collecting option kept only the LAST flag
+  // (dogfood: `--skip-sub clarify --skip-sub retro --skip-sub verify` dropped
+  // clarify+retro silently).
+  it('cell 2b — repeated --skip-sub flags accumulate (and mix with comma form)', async () => {
+    setMaster(
+      'task',
+      [
+        clauseLine('clarify', { gate: 'judgments.subtask-gate.brainstorming.fires' }),
+        clauseLine('code'),
+        clauseLine('test'),
+        clauseLine('deliver'),
+      ].join('\n'),
+    )
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { code, stdout } = await runCli([
+      'gates',
+      'task',
+      '--skip-sub',
+      'clarify,code',
+      '--skip-sub',
+      'test',
+    ])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    const skipSubs = parsed.skip.map((s: { sub: string }) => s.sub)
+    expect(skipSubs).toContain('clarify')
+    expect(skipSubs).toContain('code')
+    expect(skipSubs).toContain('test')
+    const fireSubs = parsed.fire.map((f: { sub: string }) => f.sub)
+    expect(fireSubs).toEqual(['task-deliver'])
+  })
+
   it('cell 3 — gate returns false → sub in skip[] reason "gate ... = false"', async () => {
     setMaster(
       'task',

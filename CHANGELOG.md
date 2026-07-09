@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.22.0] - 2026-07-09
+
+### Added
+
+- **/auto 合规结构化 — 三层反 freestyle 防御(用户 dogfood:主 agent 判断"任务小"主动绕过全部 harnessed CLI,无 gates JSON / 无 ledger / 无 evidence guard;现有"勿 freestyle"强措辞被证伪).**
+  - **L1 引擎预启动**:新 `harnessed checkpoint intent <master>` — 生成的 `/auto`(及 plan/task/verify master 命令与 SKILL)顶部经 CC `` !`cmd` `` 预执行,在模型看到任何内容**之前**把调用意图登记进 store(session-scoped key,`intents` sidecar,additive-optional 无 schema bump);`checkpoint start` 吸收(清除)intent。命令绝对 fail-soft(含自身 path guard,任何错误静默 exit 0 — CC 预执行失败行为未文档化,不能让报错污染 prompt)。任务文本不进预执行命令(`$ARGUMENTS` 转义规则未文档化,注入面为零)。
+  - **L3 每 turn 护栏**:`bin/harnessed-inject-state.mjs` 与 `injectState.ts`(parity 契约)— fresh intent(TTL 24h)+ 未 seed 的 ledger → 每 turn 注入 `<workflow-intent>` 提醒(含 intent 年龄 + 精确的 gates→start 指令);ledger seeded 后回归现有 breadcrumb,无 intent 行为逐字节不变。`status --recover` 顶部同步报告 pending intent(仅 ledger 为空时,与 bin 口径一致)。
+  - **L2 合规轻量路径(消除绕过动机)**:/auto 的 step 2(SKILL en/zh + 生成命令)写明 sanctioned lite —— 自包含小任务可 `--skip-sub verify --skip-sub retro`,被 skip 的 sub 仍带原因进 ledger;"lite ≠ freestyle,差别就在 ledger/evidence"。
+  - **gates `--skip-sub` 可重复修复**:此前非收集型 option 只保留最后一个 flag(`--skip-sub a --skip-sub b` 静默丢 a);现 commander 累加器 + 逗号分隔兼容。
+
 ## [4.21.0] - 2026-07-04
 
 ### Fixed

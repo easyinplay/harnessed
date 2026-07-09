@@ -19,6 +19,47 @@ export interface NextPointer {
   remainingPhases: number
 }
 
+// ── 4.22.0 (L3 anti-freestyle) — intent guard. `harnessed checkpoint intent
+// <master>` is pre-executed by the generated /auto command (CC `!`cmd``
+// preprocessing) BEFORE the model sees anything; a fresh intent whose ledger was
+// never seeded (`checkpoint start` absorbs the intent) is the freestyle
+// signature, and this block nags every turn until steps 2-3 run. The bin
+// replicates this logic (parity test). ──
+
+/** Intent freshness window — a marker older than this stops nagging (an
+ *  abandoned /auto invocation must not haunt tomorrow's session). */
+export const INTENT_TTL_MS = 24 * 60 * 60 * 1000
+
+export interface WorkflowIntent {
+  master: string
+  ts: string
+}
+
+/** '<1m' | 'Nm' | 'Nh' — coarse on purpose (minute-floor keeps the bin/TS parity
+ *  test stable across the two processes' clock reads). */
+export function formatIntentAge(ms: number): string {
+  const m = Math.floor(ms / 60_000)
+  if (m < 1) return '<1m'
+  if (m < 60) return `${m}m`
+  return `${Math.floor(m / 60)}h`
+}
+
+/** Pure — the per-turn freestyle nag. '' for null/unparseable/expired intent. */
+export function buildIntentBlock(intent: WorkflowIntent | null | undefined, nowMs: number): string {
+  if (!intent) return ''
+  const born = Date.parse(intent.ts)
+  if (Number.isNaN(born)) return ''
+  const age = nowMs - born
+  if (age < 0 || age > INTENT_TTL_MS) return ''
+  const m = intent.master
+  return [
+    '<workflow-intent>',
+    `intent: /${m} invoked ${formatIntentAge(age)} ago — ledger NOT seeded`,
+    `ENGINE: /${m} is registered but not engaged — freestyle risk. Run: \`harnessed gates ${m} --task "<locked spec>"\` → \`harnessed checkpoint start ${m} --plan '<gates JSON>'\`; then drive each sub via \`harnessed prompt\` / \`harnessed checkpoint complete|fail\`.`,
+    '</workflow-intent>',
+  ].join('\n')
+}
+
 export function buildWorkflowStateBlock(
   wf: CurrentWorkflowV1Type | null,
   forward?: NextPointer | null,
@@ -185,14 +226,20 @@ export function findPhaseContextExcerpt(
 
 /** End-to-end (impure via findPhaseContextExcerpt) — compose the per-turn
  *  injection: <workflow-state> + relevance-filtered <project-context>. Returns ''
- *  when there is no workflow; just the workflow-state block when nothing relevant. */
+ *  when there is no workflow; just the workflow-state block when nothing relevant.
+ *  4.22.0 — a fresh `intent` with no workflow (or an unseeded ledger) prepends the
+ *  <workflow-intent> nag; a seeded ledger ignores the intent (byte-identical). */
 export function buildInjection(
   repoRoot: string,
   wf: CurrentWorkflowV1Type | null,
   learningsMd: string,
   budget: number = DEFAULT_INJECT_BUDGET,
+  intent: WorkflowIntent | null = null,
+  nowMs: number = Date.now(),
 ): string {
-  if (!wf) return ''
+  const ledgerEmpty = (wf?.sub_progress ?? []).length === 0
+  const intentBlock = ledgerEmpty ? buildIntentBlock(intent, nowMs) : ''
+  if (!wf) return intentBlock
   // Phase 39 (D6) — only when this workflow's subs are all resolved do we derive
   // the cross-unit next from disk (the bin mirrors this exactly). includeTasks:false
   // keeps it the phase-level floor (OQ-2 lean); disk I/O stays in this impure layer.
@@ -206,7 +253,8 @@ export function buildInjection(
   const usedTokens = rel.reduce((a, e) => a + tok(e.raw), 0)
   const ctx = findPhaseContextExcerpt(repoRoot, wf.phase, Math.max(0, budget - usedTokens))
   const pc = buildProjectContextBlock({ learnings: rel, contextExcerpt: ctx ?? undefined })
-  return pc ? `${ws}\n${pc}` : ws
+  const normal = pc ? `${ws}\n${pc}` : ws
+  return intentBlock ? `${intentBlock}\n${normal}` : normal
 }
 
 /** Impure — derive the per-turn forward pointer (Phase 39 / D6). Scans .planning/

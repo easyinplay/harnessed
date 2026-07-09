@@ -33,12 +33,28 @@ export const RetroMetaEntry = Type.Object(
 )
 export type RetroMetaEntryType = Static<typeof RetroMetaEntry>
 
+/** 4.22.0 (L1 anti-freestyle) — invocation intent sidecar. Written by
+ *  `harnessed checkpoint intent <master>` (pre-executed by the generated /auto
+ *  command + master SKILL.md via CC's `!`cmd`` preprocessing), absorbed (cleared)
+ *  by `checkpoint start`. Keyed like `workflows` (activeKey). A fresh intent with
+ *  an unseeded ledger = the freestyle signature the per-turn inject bin nags on. */
+export const IntentEntry = Type.Object(
+  {
+    master: Type.String({ minLength: 1 }),
+    ts: Type.String({ minLength: 1 }),
+  },
+  { additionalProperties: false },
+)
+export type IntentEntryType = Static<typeof IntentEntry>
+
 export const WorkflowStoreV1 = Type.Object(
   {
     schemaVersion: Type.Literal(SCHEMA_VERSIONS.workflowStore),
     workflows: Type.Record(Type.String(), CurrentWorkflowV1),
     // Additive-optional (no schemaVersion bump — old stores Value.Check-pass).
     retro_meta: Type.Optional(Type.Record(Type.String(), RetroMetaEntry)),
+    // 4.22.0 — additive-optional, same rationale.
+    intents: Type.Optional(Type.Record(Type.String(), IntentEntry)),
   },
   { additionalProperties: false },
 )
@@ -125,6 +141,13 @@ export async function writeStoreRaw(store: WorkflowStoreV1Type): Promise<void> {
   const p = storePath()
   await mkdir(dirname(p), { recursive: true })
   await writeFileAtomic(p, JSON.stringify(store, null, 2))
+}
+
+/** 4.22.0 — lock-free read of this session's pending intent (composite key first,
+ *  bare repoKey fallback — mirrors the workflow slot lookup). null when none. */
+export async function readIntent(cwd: string = process.cwd()): Promise<IntentEntryType | null> {
+  const store = await readStoreRaw()
+  return store.intents?.[activeKey(cwd)] ?? store.intents?.[repoKey(cwd)] ?? null
 }
 
 /** All in-flight workflows (one per repo). */

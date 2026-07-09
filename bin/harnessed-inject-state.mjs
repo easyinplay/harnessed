@@ -52,19 +52,61 @@ function sessionIdEnvName() {
 
 // Phase 35 — try the session-scoped slot first, then the bare repoKey slot, then
 // the legacy singleton (dual-write anchor). `keys` is ordered most→least specific.
+// 4.22.0 — also surfaces the intent sidecar (same key order) for the freestyle nag.
 function readWorkflow(root, keys) {
+  let wf = null
+  let intent = null
   try {
     const store = JSON.parse(readFileSync(join(root, 'workflows.json'), 'utf8'))
     if (store?.workflows) {
       for (const k of keys) {
-        if (store.workflows[k]) return store.workflows[k]
+        if (store.workflows[k]) {
+          wf = store.workflows[k]
+          break
+        }
+      }
+    }
+    if (store?.intents) {
+      for (const k of keys) {
+        if (store.intents[k]) {
+          intent = store.intents[k]
+          break
+        }
       }
     }
   } catch {}
-  try {
-    return JSON.parse(readFileSync(join(root, 'current-workflow.json'), 'utf8'))
-  } catch {}
-  return null
+  if (!wf) {
+    try {
+      wf = JSON.parse(readFileSync(join(root, 'current-workflow.json'), 'utf8'))
+    } catch {}
+  }
+  return { wf, intent }
+}
+
+// 4.22.0 — parity with injectState.ts INTENT_TTL_MS / formatIntentAge /
+// buildIntentBlock (the parity test compares stdout byte-for-byte).
+const INTENT_TTL_MS = 24 * 60 * 60 * 1000
+
+function formatIntentAge(ms) {
+  const m = Math.floor(ms / 60_000)
+  if (m < 1) return '<1m'
+  if (m < 60) return `${m}m`
+  return `${Math.floor(m / 60)}h`
+}
+
+function intentBlock(intent, nowMs) {
+  if (!intent) return ''
+  const born = Date.parse(intent.ts)
+  if (Number.isNaN(born)) return ''
+  const age = nowMs - born
+  if (age < 0 || age > INTENT_TTL_MS) return ''
+  const m = intent.master
+  return [
+    '<workflow-intent>',
+    `intent: /${m} invoked ${formatIntentAge(age)} ago — ledger NOT seeded`,
+    `ENGINE: /${m} is registered but not engaged — freestyle risk. Run: \`harnessed gates ${m} --task "<locked spec>"\` → \`harnessed checkpoint start ${m} --plan '<gates JSON>'\`; then drive each sub via \`harnessed prompt\` / \`harnessed checkpoint complete|fail\`.`,
+    '</workflow-intent>',
+  ].join('\n')
 }
 
 // Phase 39 (D6) — plain-JS replicas of planningScan/deriveNext/describeUnit for the
@@ -269,8 +311,15 @@ try {
   const key = repoKey(process.cwd())
   const envName = sessionIdEnvName()
   const sid = envName ? process.env[envName]?.trim() : undefined
-  const wf = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
-  if (!wf) process.exit(0)
+  const { wf, intent } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
+  // 4.22.0 — freestyle nag: a fresh intent whose ledger was never seeded (start
+  // absorbs the intent) keeps reminding until steps 2-3 (gates → start) run.
+  const ledgerEmpty = (wf?.sub_progress ?? []).length === 0
+  const ib = ledgerEmpty ? intentBlock(intent, Date.now()) : ''
+  if (!wf) {
+    if (ib) process.stdout.write(`${ib}\n`)
+    process.exit(0)
+  }
 
   const budget = Number(process.env.HARNESSED_INJECT_BUDGET) || DEFAULT_INJECT_BUDGET
   // Phase 39 (D6) — derive the forward pointer only when the subs are all resolved
@@ -293,7 +342,8 @@ try {
   const ctx = findPhaseContextExcerpt(key, wf.phase, Math.max(0, budget - used))
   const pc = projectContextBlock(rel, ctx ?? undefined)
 
-  process.stdout.write(`${pc ? `${ws}\n${pc}` : ws}\n`)
+  const normal = pc ? `${ws}\n${pc}` : ws
+  process.stdout.write(`${ib ? `${ib}\n${normal}` : normal}\n`)
 } catch {
   // no state / corrupt / not a harnessed session -> inject nothing
 }

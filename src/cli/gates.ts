@@ -29,7 +29,9 @@ const PARALLELISM_GATE = 'judgments.parallelism-gate.agent-teams-upgrade.fires'
 
 interface RawOpts {
   task?: string
-  skipSub?: string
+  // 4.22.0 — repeatable flag (commander accumulator); each value may itself be
+  // comma-separated. Pre-fix a plain option kept only the LAST --skip-sub.
+  skipSub?: string[]
   context?: string
 }
 
@@ -77,7 +79,12 @@ export function registerGates(program: Command): void {
     )
     .argument('<master>', 'master name: auto | discuss | plan | task | verify')
     .option('--task <text>', 'task description (injected as gateContext.task)')
-    .option('--skip-sub <names>', 'comma-separated sub names to skip without gate eval')
+    .option(
+      '--skip-sub <names>',
+      'sub names to skip without gate eval (repeatable and/or comma-separated)',
+      (v: string, prev: string[]) => [...prev, v],
+      [] as string[],
+    )
     .option('--context <json>', 'JSON object merged over the default gate context')
     .action(async (master: string, raw: RawOpts) => {
       if (!VALID_MASTERS.has(master)) {
@@ -150,12 +157,10 @@ export function registerGates(program: Command): void {
         }
       }
       const skipSubs = new Set(
-        typeof raw.skipSub === 'string' && raw.skipSub.length > 0
-          ? raw.skipSub
-              .split(',')
-              .map((s) => s.trim())
-              .filter((s) => s.length > 0)
-          : [],
+        (Array.isArray(raw.skipSub) ? raw.skipSub : [])
+          .flatMap((v) => v.split(','))
+          .map((s) => s.trim())
+          .filter((s) => s.length > 0),
       )
       ctx.skip_subs = [...skipSubs]
 

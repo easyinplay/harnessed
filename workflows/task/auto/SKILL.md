@@ -58,6 +58,10 @@ Sister `workflows/capabilities.yaml`:
 
 ## How to invoke
 
+!`harnessed checkpoint intent task`
+
+> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: steps 2-3 below seed the ledger, and a per-turn `<workflow-intent>` reminder persists until they run.
+
 The numbered sequence below **is** the state machine — execute it step by step with Bash.
 Do NOT improvise an equivalent flow from the Overview above: freelancing bypasses the engine
 (no per-sub ledger, no evidence guard, no recovery). harnessed is the orchestration brain

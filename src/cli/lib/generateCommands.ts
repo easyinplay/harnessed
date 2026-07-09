@@ -214,12 +214,21 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
     ``,
     `## How to run (orchestrator — clarify in THIS session, then drive native subagent spawns)`,
     ``,
+    // 4.22.0 (L1 anti-freestyle) — CC pre-executes this at prompt-assembly time
+    // (before the model sees anything): registers the invocation intent so the
+    // per-turn inject nags until steps 2-3 seed the ledger. The CLI is fail-soft
+    // (silent exit 0 on any error) because CC's failing-pre-exec behavior is
+    // undocumented.
+    `!\`harnessed checkpoint intent ${name}\``,
+    ``,
+    `> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: steps 2-3 below seed the ledger, and a per-turn \`<workflow-intent>\` reminder persists until they run.`,
+    ``,
     `harnessed is the orchestration brain: \`harnessed gates\` tells you which subs fire, \`harnessed prompt\` gives you each sub's spawn-ready prompt, and \`harnessed checkpoint\` records the per-sub state-machine ledger. YOU (the main session) do the spawning with CC-native Task / Agent tools — keeping the session responsive, enabling Agent Teams, and letting clarification round-trips reach the user.`,
     ``,
     `Drive this exact sequence (it is the state machine — follow the file, don't improvise from memory):`,
     ``,
     ...autoDiscussStep,
-    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub clarify\` → parse the JSON \`{fire: [{sub, order, mode, is_master}], skip: [{sub, reason}], parallelism: {escalate_to_teams}}\`. This is the plan SoT (no spawn). Keep the verbatim JSON for the next step.`,
+    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub clarify\` → parse the JSON \`{fire: [{sub, order, mode, is_master}], skip: [{sub, reason}], parallelism: {escalate_to_teams}}\`. This is the plan SoT (no spawn). Keep the verbatim JSON for the next step.${name === 'auto' ? ' For a small self-contained task (single-file / single-page class), the sanctioned lite path is adding `--skip-sub verify --skip-sub retro` (repeatable / comma-separated) — skipped subs are still recorded in the ledger with reasons; lite ≠ freestyle (the ledger/evidence IS the difference).' : ''}`,
     `3. Bash: \`harnessed checkpoint start ${name} --plan '<the verbatim gates JSON from step 2>'\` → seeds the sub-progress ledger in \`current-workflow.json\` (fired subs → \`pending\`, skipped subs → \`skipped\` + reason). This makes \`harnessed status --recover\` able to tell you where you are after compaction.`,
     `4. If \`parallelism.escalate_to_teams === true\`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read \`~/.claude/rules/agent-teams.md\`, then \`TeamCreate\` → \`Agent(name, team_name, ...)\` per fired sub (prompt from \`harnessed prompt <sub>\`) → coordinate via SendMessage → \`SendMessage shutdown_request\` + \`TeamDelete\`. Still checkpoint each sub (\`complete\` / \`fail\`) as below.`,
     `5. Otherwise, for each fired sub in \`order\` (serial subs sequentially, parallel subs concurrently via parallel Task calls):`,

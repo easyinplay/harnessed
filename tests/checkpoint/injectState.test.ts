@@ -6,11 +6,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { NextUnit } from '../../src/checkpoint/deriveNext.js'
 import {
   buildInjection,
+  buildIntentBlock,
   buildProjectContextBlock,
   buildWorkflowStateBlock,
   DEFAULT_INJECT_BUDGET,
   filterRelevantLearnings,
   findPhaseContextExcerpt,
+  INTENT_TTL_MS,
   parseLearnings,
   selectWithinBudget,
 } from '../../src/checkpoint/injectState.js'
@@ -465,5 +467,133 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     expect(stdout).not.toContain('ENGINE:')
     // parity: byte-identical to the TS builder on the same disk inputs
     expect(stdout).toBe(buildInjection(repoRoot, resolvedWf, '', DEFAULT_INJECT_BUDGET).trim())
+  })
+})
+
+// ── 4.22.0 T3 — intent guard (L3 anti-freestyle per-turn nag) ──
+
+describe('buildIntentBlock + buildInjection intent guard (4.22.0)', () => {
+  const NOW = Date.parse('2026-07-05T12:00:00.000Z')
+  const freshIntent = { master: 'auto', ts: '2026-07-05T11:49:30.000Z' } // ~10.5m old
+
+  it('emits the workflow-intent block for a fresh intent', () => {
+    const block = buildIntentBlock(freshIntent, NOW)
+    expect(block).toContain('<workflow-intent>')
+    expect(block).toContain('intent: /auto invoked 10m ago')
+    expect(block).toContain('harnessed gates auto')
+    expect(block).toContain('harnessed checkpoint start auto')
+    expect(block).toContain('</workflow-intent>')
+  })
+
+  it('returns empty for null / unparseable ts / expired TTL', () => {
+    expect(buildIntentBlock(null, NOW)).toBe('')
+    expect(buildIntentBlock({ master: 'auto', ts: 'not-a-date' }, NOW)).toBe('')
+    const stale = { master: 'auto', ts: new Date(NOW - INTENT_TTL_MS - 1000).toISOString() }
+    expect(buildIntentBlock(stale, NOW)).toBe('')
+  })
+
+  it('buildInjection: no workflow + fresh intent → intent block alone; no intent → "" (legacy)', () => {
+    const out = buildInjection('/no/such/repo', null, '', DEFAULT_INJECT_BUDGET, freshIntent, NOW)
+    expect(out).toBe(buildIntentBlock(freshIntent, NOW))
+    expect(buildInjection('/no/such/repo', null, '', DEFAULT_INJECT_BUDGET, null, NOW)).toBe('')
+  })
+
+  it('buildInjection: workflow with a SEEDED ledger ignores the intent (byte-identical)', () => {
+    const wf: CurrentWorkflowV1Type = {
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'auto',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-07-05T11:50:00.000Z',
+      sub_progress: [{ sub: 'plan', status: 'pending', gate_fired: true }],
+    }
+    const withIntent = buildInjection(
+      '/no/such/repo',
+      wf,
+      '',
+      DEFAULT_INJECT_BUDGET,
+      freshIntent,
+      NOW,
+    )
+    const without = buildInjection('/no/such/repo', wf, '', DEFAULT_INJECT_BUDGET, null, NOW)
+    expect(withIntent).toBe(without)
+    expect(withIntent).not.toContain('<workflow-intent>')
+  })
+
+  it('buildInjection: workflow with an EMPTY ledger + fresh intent → intent block prepended', () => {
+    const wf: CurrentWorkflowV1Type = {
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'auto',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-07-05T11:50:00.000Z',
+    }
+    const out = buildInjection('/no/such/repo', wf, '', DEFAULT_INJECT_BUDGET, freshIntent, NOW)
+    expect(out.startsWith(buildIntentBlock(freshIntent, NOW))).toBe(true)
+    expect(out).toContain('<workflow-state>')
+  })
+})
+
+describe('bin parity — intent guard (4.22.0)', () => {
+  let tmp: string
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), 'inject-intent-'))
+    mkdirSync(join(tmp, 'repo', '.git'), { recursive: true })
+    mkdirSync(join(tmp, 'root', '.claude', 'harnessed'), { recursive: true })
+  })
+  afterEach(() => rmSync(tmp, { recursive: true, force: true }))
+
+  const binPath = join(__dirname, '..', '..', 'bin', 'harnessed-inject-state.mjs')
+  const runBin = () => {
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      HOME: join(tmp, 'root'),
+      USERPROFILE: join(tmp, 'root'),
+      HARNESSED_ROOT_OVERRIDE: join(tmp, 'root', '.claude', 'harnessed'),
+    }
+    delete env.CLAUDE_CODE_SESSION_ID
+    delete env.HARNESSED_PLATFORM
+    return execFileSync('node', [binPath], {
+      env,
+      encoding: 'utf8',
+      cwd: join(tmp, 'repo'),
+    })
+  }
+
+  it('fresh intent + no workflow → bin emits the intent block (parity with TS builder)', () => {
+    const repoRoot = realpathSync(join(tmp, 'repo'))
+    // Center the age at 10m30s so ±30s of runtime skew keeps floor(minutes)=10.
+    const intent = { master: 'auto', ts: new Date(Date.now() - 10.5 * 60_000).toISOString() }
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: {},
+        intents: { [repoRoot]: intent },
+      }),
+    )
+    const stdout = runBin().trim()
+    expect(stdout).toContain('<workflow-intent>')
+    expect(stdout).toContain('intent: /auto invoked 10m ago')
+    expect(stdout).toBe(
+      buildInjection(repoRoot, null, '', DEFAULT_INJECT_BUDGET, intent, Date.now()).trim(),
+    )
+  })
+
+  it('expired intent + no workflow → bin emits nothing (legacy silence)', () => {
+    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const intent = {
+      master: 'auto',
+      ts: new Date(Date.now() - INTENT_TTL_MS - 60_000).toISOString(),
+    }
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: {},
+        intents: { [repoRoot]: intent },
+      }),
+    )
+    expect(runBin().trim()).toBe('')
   })
 })

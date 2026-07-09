@@ -26,7 +26,7 @@
 import type { Command } from 'commander'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 
-const ACTIONS = ['start', 'complete', 'fail'] as const
+const ACTIONS = ['start', 'complete', 'fail', 'intent'] as const
 type Action = (typeof ACTIONS)[number]
 
 function isAction(a: string): a is Action {
@@ -93,7 +93,7 @@ export function registerCheckpoint(program: Command): void {
   program
     .command('checkpoint <action> <sub>')
     .description(
-      'Record workflow progress: start | complete | fail <sub-workflow> (writes to ~/.claude/harnessed/checkpoints/)',
+      'Record workflow progress: intent | start | complete | fail <sub-workflow> (writes to ~/.claude/harnessed/checkpoints/)',
     )
     .option('--summary <text>', 'short summary stored as the checkpoint lastTask')
     .option('--plan <json>', 'gates plan JSON (start only) — seeds the sub-progress ledger')
@@ -116,6 +116,39 @@ export function registerCheckpoint(program: Command): void {
             `[harnessed] checkpoint: unknown action "${action}" — expected one of ${ACTIONS.join(', ')}`,
           )
           process.exit(1)
+          return
+        }
+
+        // 4.22.0 (L1 anti-freestyle) — `intent <master>`: record that a master
+        // command was INVOKED before any plan exists. Pre-executed by the
+        // generated /auto command + master SKILL.md via CC's `!`cmd``
+        // preprocessing, so it runs before the model decides anything; a fresh
+        // intent with an unseeded ledger is the freestyle signature the per-turn
+        // inject bin nags on. ABSOLUTELY fail-soft (own guard included): CC's
+        // behavior on a failing pre-exec is undocumented — nothing here may
+        // print an error into the assembled prompt or exit non-zero.
+        if (action === 'intent') {
+          try {
+            checkPathSafe(sub)
+            const { mutateStore } = await import('../checkpoint/state.js')
+            const { activeKey } = await import('../checkpoint/workflowStore.js')
+            const key = activeKey()
+            await mutateStore((store) => ({
+              ...store,
+              intents: {
+                ...(store.intents ?? {}),
+                [key]: { master: sub, ts: new Date().toISOString() },
+              },
+            }))
+            console.log(
+              `[harnessed] engine engaged: /${sub} invoked — intent registered, ledger awaiting plan. ` +
+                `Next: \`harnessed gates ${sub} --task "<locked spec>"\` → \`harnessed checkpoint start ${sub} --plan '<gates JSON>'\`. ` +
+                'Freestyling past this point bypasses the ledger, evidence guard, and recovery.',
+            )
+          } catch {
+            // fail-soft — a pre-exec surface must never pollute the prompt
+          }
+          process.exit(0)
           return
         }
 
@@ -143,6 +176,22 @@ export function registerCheckpoint(program: Command): void {
             const { seedLedger } = await import('../checkpoint/ledger.js')
             const { mutateSubProgress } = await import('../checkpoint/state.js')
             await mutateSubProgress(() => seedLedger(plan))
+          }
+          // 4.22.0 — absorb this session's pending intent: start IS the engagement
+          // the intent was waiting for, so the per-turn nag stops here. Fail-soft
+          // (an intent-clear problem must never break start).
+          try {
+            const { mutateStore } = await import('../checkpoint/state.js')
+            const { activeKey, repoKey } = await import('../checkpoint/workflowStore.js')
+            await mutateStore((store) => {
+              if (!store.intents) return store
+              const intents = { ...store.intents }
+              delete intents[activeKey()]
+              delete intents[repoKey()]
+              return { ...store, intents }
+            })
+          } catch {
+            // fail-soft
           }
           console.log(`[harnessed] checkpoint started: ${sub} → ${checkpointPath}`)
           process.exit(0)

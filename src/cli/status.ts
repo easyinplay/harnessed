@@ -59,8 +59,17 @@ function evidenceLabel(entry: SubProgressEntryType): string {
 export async function buildRecoverLines(
   workflow: { phase: string; status: string; started_at: string } | null,
   ledger: SubProgressEntryType[],
+  // 4.22.0 — a fresh pending intent (caller TTL-filters); surfaces the freestyle
+  // signature ("/auto invoked but never engaged") at the top of the recover view.
+  intent?: { master: string; ageMs: number } | null,
 ): Promise<string[]> {
   const lines: string[] = []
+  if (intent) {
+    const { formatIntentAge } = await import('../checkpoint/injectState.js')
+    lines.push(
+      `⚠ intent pending: /${intent.master} invoked ${formatIntentAge(intent.ageMs)} ago — ledger not seeded; run \`harnessed gates ${intent.master}\` → \`harnessed checkpoint start ${intent.master} --plan '<gates JSON>'\``,
+    )
+  }
   if (!workflow || ledger.length === 0) {
     lines.push('no ledger — run gates + start')
     return lines
@@ -113,7 +122,27 @@ export function registerStatus(program: Command): void {
       if (opts.recover) {
         const wf = await readCurrentWorkflow()
         const ledger = wf?.sub_progress ?? []
-        const lines = await buildRecoverLines(wf, ledger)
+        // 4.22.0 — surface a fresh unabsorbed intent (dynamic import + fail-soft:
+        // sibling test files factory-mock workflowStore without readIntent).
+        // Ledger-empty gate mirrors the inject bin: a seeded ledger IS engagement,
+        // so a re-registered intent on top of it is not worth a warning line.
+        let intent: { master: string; ageMs: number } | null = null
+        if (ledger.length === 0) {
+          try {
+            const { readIntent } = await import('../checkpoint/workflowStore.js')
+            const { INTENT_TTL_MS } = await import('../checkpoint/injectState.js')
+            const raw = await readIntent()
+            if (raw) {
+              const age = Date.now() - Date.parse(raw.ts)
+              if (!Number.isNaN(age) && age >= 0 && age <= INTENT_TTL_MS) {
+                intent = { master: raw.master, ageMs: age }
+              }
+            }
+          } catch {
+            // no intent surface — recover view degrades to the ledger-only shape
+          }
+        }
+        const lines = await buildRecoverLines(wf, ledger, intent)
         for (const l of lines) console.log(l)
         return
       }
