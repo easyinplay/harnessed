@@ -42,3 +42,26 @@ yaml-i18n-parity — `!` 行 en/zh 成对,结构 parity 保持);build ok。
 2. status --recover 的 intent 报告加 ledger-empty gate(task_plan 未明说;与 bin/L3 口径统一,
    手跑 case 4 暴露 seeded+重登记边缘态后决定)。
 3. checkpoint 命令 description 顺手补 `intent |`(可发现性)。
+
+## T6 (追加,2026-07-09) — leaf 级 intent 变体
+
+- 分型 SoT:workflows/role-prompts.yaml `is_master: true`(与 generateCommands 的
+  orchestrator/execution 分体同源;auto/discuss/plan/task/verify/ship 6 个 master)。
+  新 src/checkpoint/intentKind.ts(独立模块,mock-export-gap 惯例);未知名/yaml 读失败
+  fail-soft 按 leaf。附带发现(未动,范围外一句):ship 在 role-prompts 是 master 且其
+  SKILL 引用 `harnessed gates ship`,但 gates.ts VALID_MASTERS 不含 ship → `gates ship`
+  报 unknown master,ship/auto SOP 的 step 2 实际不可执行,建议下轮对账。
+- IntentEntry 增 additive-optional `kind`('master'|'leaf';旧 intent 缺省 = master,
+  765cbc9 只写过 master)。吸收:leaf = 该 sub 的 checkpoint complete/fail(名字匹配,
+  absorbIntentFor,fail-soft);master 仍由 start 全清。
+- 铺设计数:`!` 行 = generateCommands 执行体 1 处 + 18 leaf SKILL × en/zh + ship/auto
+  master × en/zh = 38 文件(脚本注入,幂等,零跳过);intent 参数取各文件自身
+  `harnessed prompt <sub>` 的 flattened 名(verify-qa / task-code / ship-preflight 等)。
+  排除:discuss master + discuss/{strategic,phase,subtask}(无 checkpoint 步骤,纯交互)。
+- bin 手跑两态:leaf banner("sub not yet checkpointed…prompt→spawn→complete")→
+  bin 注入 leaf 唠叨块 → `checkpoint complete verify-qa --force` 吸收 → bin 静默。
+  bin/injectState parity 分支同步(既有 parity 契约测试覆盖)。
+- 验证:vitest 全量 1923/0(+8:checkpoint-intent 5 + injectState 2 + generate-commands 1);
+  tsc 0;biome clean;scripts/check-*.mjs 全过(含双语 parity);CHANGELOG 4.22.0 节追加
+  leaf 变体条目。被更新既有断言:无;新测试自修 1 处(checkpoint fail 按设计 exit 1,
+  初版断言误写 0)。

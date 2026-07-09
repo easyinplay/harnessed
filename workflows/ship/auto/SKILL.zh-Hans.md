@@ -47,6 +47,10 @@ preflight 通过后，主控将 PR + deploy 委派给 gstack `/ship`（组合复
 
 ## 如何调用
 
+!`harnessed checkpoint intent ship`
+
+> 上方 banner(如出现)表示本次调用已在引擎**登记**(intent 标记)——尚未合规:下方 step 2-3 完成 ledger seed 前,每 turn 会持续注入 `<workflow-intent>` 提醒。
+
 下面这套编号序列**就是** state machine —— 逐步用 Bash 执行。**不要**从上方 Overview 自行演绎一套
 等价流程:freestyle 会旁路引擎(无 per-sub ledger、无 evidence guard、无 recovery)。harnessed 是
 编排大脑(`harnessed gates` 决定哪些 sub fire,`harnessed prompt` 给出每个 spawn-ready prompt,

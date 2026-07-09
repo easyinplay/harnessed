@@ -33,6 +33,8 @@ export const INTENT_TTL_MS = 24 * 60 * 60 * 1000
 export interface WorkflowIntent {
   master: string
   ts: string
+  /** 4.22.0 T6 — absent = 'master' (765cbc9 back-compat). */
+  kind?: 'master' | 'leaf'
 }
 
 /** '<1m' | 'Nm' | 'Nh' — coarse on purpose (minute-floor keeps the bin/TS parity
@@ -52,6 +54,17 @@ export function buildIntentBlock(intent: WorkflowIntent | null | undefined, nowM
   const age = nowMs - born
   if (age < 0 || age > INTENT_TTL_MS) return ''
   const m = intent.master
+  // 4.22.0 T6 — leaf intents nag toward the LEAF SOP (prompt → spawn →
+  // checkpoint complete); gates/start do not exist in a leaf command's SOP and
+  // would mislead. kind-absent = master (765cbc9 stores).
+  if (intent.kind === 'leaf') {
+    return [
+      '<workflow-intent>',
+      `intent: /${m} invoked ${formatIntentAge(age)} ago — sub NOT checkpointed`,
+      `ENGINE: /${m} is registered but not engaged — freestyle risk. Run: \`harnessed prompt ${m} --task "<spec>" --json\` → spawn per SOP → \`harnessed checkpoint complete ${m}\` (or \`harnessed checkpoint fail ${m}\`).`,
+      '</workflow-intent>',
+    ].join('\n')
+  }
   return [
     '<workflow-intent>',
     `intent: /${m} invoked ${formatIntentAge(age)} ago — ledger NOT seeded`,

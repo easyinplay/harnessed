@@ -89,6 +89,27 @@ async function parsePlan(
   return plan
 }
 
+// 4.22.0 T6 — absorb a pending intent when ITS OWN sub completes/fails (the
+// leaf-intent lifecycle; master intents are absorbed by `checkpoint start`).
+// Name-matched: completing a DIFFERENT sub leaves the intent (and its per-turn
+// nag) alive. Fail-soft — intent bookkeeping must never break a checkpoint.
+async function absorbIntentFor(sub: string): Promise<void> {
+  try {
+    const { mutateStore } = await import('../checkpoint/state.js')
+    const { activeKey, repoKey } = await import('../checkpoint/workflowStore.js')
+    await mutateStore((store) => {
+      if (!store.intents) return store
+      const intents = { ...store.intents }
+      for (const k of [activeKey(), repoKey()]) {
+        if (intents[k]?.master === sub) delete intents[k]
+      }
+      return { ...store, intents }
+    })
+  } catch {
+    // fail-soft
+  }
+}
+
 export function registerCheckpoint(program: Command): void {
   program
     .command('checkpoint <action> <sub>')
@@ -132,18 +153,27 @@ export function registerCheckpoint(program: Command): void {
             checkPathSafe(sub)
             const { mutateStore } = await import('../checkpoint/state.js')
             const { activeKey } = await import('../checkpoint/workflowStore.js')
+            // 4.22.0 T6 — master vs leaf via role-prompts is_master (single SoT);
+            // classifier is itself fail-soft (unknown/unreadable → 'leaf').
+            const { classifyIntentKind } = await import('../checkpoint/intentKind.js')
+            const { getAssetsRoot } = await import('./lib/assetsRoot.js')
+            const kind = classifyIntentKind(sub, getAssetsRoot())
             const key = activeKey()
             await mutateStore((store) => ({
               ...store,
               intents: {
                 ...(store.intents ?? {}),
-                [key]: { master: sub, ts: new Date().toISOString() },
+                [key]: { master: sub, ts: new Date().toISOString(), kind },
               },
             }))
             console.log(
-              `[harnessed] engine engaged: /${sub} invoked — intent registered, ledger awaiting plan. ` +
-                `Next: \`harnessed gates ${sub} --task "<locked spec>"\` → \`harnessed checkpoint start ${sub} --plan '<gates JSON>'\`. ` +
-                'Freestyling past this point bypasses the ledger, evidence guard, and recovery.',
+              kind === 'master'
+                ? `[harnessed] engine engaged: /${sub} invoked — intent registered, ledger awaiting plan. ` +
+                    `Next: \`harnessed gates ${sub} --task "<locked spec>"\` → \`harnessed checkpoint start ${sub} --plan '<gates JSON>'\`. ` +
+                    'Freestyling past this point bypasses the ledger, evidence guard, and recovery.'
+                : `[harnessed] engine engaged: /${sub} invoked — intent registered, sub not yet checkpointed. ` +
+                    `Next: \`harnessed prompt ${sub} --task "<spec>" --json\` → spawn per SOP → \`harnessed checkpoint complete ${sub}\` (or \`fail\`). ` +
+                    'Freestyling past this point bypasses the ledger, evidence guard, and recovery.',
             )
           } catch {
             // fail-soft — a pre-exec surface must never pollute the prompt
@@ -247,6 +277,8 @@ export function registerCheckpoint(program: Command): void {
               ? { evidence_status: evidenceStatus }
               : { evidence: result.found, evidence_status: evidenceStatus }
           await mutateSubProgress((e) => markIfSeeded(e, sub, 'done', markOpts))
+          // 4.22.0 T6 — a leaf intent for THIS sub is satisfied by its completion.
+          await absorbIntentFor(sub)
 
           // G1 — recompute scale from the post-mark ledger + working-tree size and
           // record verify_mode on the envelope (advisory; consumed by the verify skill).
@@ -357,6 +389,8 @@ export function registerCheckpoint(program: Command): void {
         // status union has no 'fail').
         const { mutateSubProgress } = await import('../checkpoint/state.js')
         await mutateSubProgress((e) => markIfSeeded(e, sub, 'failed'))
+        // 4.22.0 T6 — a failed sub is still a RESOLVED sub for its leaf intent.
+        await absorbIntentFor(sub)
         // v5.0 Spec 1 — a failed sub must NOT flip the workflow to 'complete'. The
         // failed entry lives in the ledger; the orchestrator/user reads it and
         // decides STOP. Workflow stays 'active'.

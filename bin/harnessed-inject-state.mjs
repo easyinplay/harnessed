@@ -101,6 +101,16 @@ function intentBlock(intent, nowMs) {
   const age = nowMs - born
   if (age < 0 || age > INTENT_TTL_MS) return ''
   const m = intent.master
+  // 4.22.0 T6 — leaf variant (MUST stay byte-equivalent to injectState.ts
+  // buildIntentBlock; the parity test compares the two). kind-absent = master.
+  if (intent.kind === 'leaf') {
+    return [
+      '<workflow-intent>',
+      `intent: /${m} invoked ${formatIntentAge(age)} ago — sub NOT checkpointed`,
+      `ENGINE: /${m} is registered but not engaged — freestyle risk. Run: \`harnessed prompt ${m} --task "<spec>" --json\` → spawn per SOP → \`harnessed checkpoint complete ${m}\` (or \`harnessed checkpoint fail ${m}\`).`,
+      '</workflow-intent>',
+    ].join('\n')
+  }
   return [
     '<workflow-intent>',
     `intent: /${m} invoked ${formatIntentAge(age)} ago — ledger NOT seeded`,

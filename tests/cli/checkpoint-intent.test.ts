@@ -135,3 +135,65 @@ describe('checkpoint intent <master> (4.22.0 L1 anti-freestyle)', () => {
     expect(stdout).toContain('no ledger')
   })
 })
+
+// 4.22.0 T6 — leaf intent variant: user-invoked stage commands (/verify-qa 类)
+// register a LEAF intent whose banner/nag points at the leaf SOP (prompt →
+// spawn → checkpoint complete), and which is absorbed by that sub's
+// complete/fail instead of `checkpoint start`.
+describe('checkpoint intent — leaf variant (4.22.0 T6)', () => {
+  let tmp: string
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), 'intent-leaf-'))
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', join(tmp, 'harnessed'))
+    vi.stubEnv('CLAUDE_CODE_SESSION_ID', 'intent-test-session')
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  it('classifies a non-master sub as leaf: leaf banner + kind persisted', async () => {
+    const r = await runCli(['checkpoint', 'intent', 'verify-qa'])
+    expect(r.code).toBe(0)
+    expect(r.stdout).toContain('harnessed prompt verify-qa')
+    expect(r.stdout).toContain('checkpoint complete verify-qa')
+    expect(r.stdout).not.toContain('harnessed gates')
+    const store = await readStoreRaw()
+    const entry = Object.values(store.intents ?? {})[0]
+    expect(entry?.master).toBe('verify-qa')
+    expect(entry?.kind).toBe('leaf')
+  })
+
+  it('classifies role-prompts is_master entries as master (auto + ship), kind persisted', async () => {
+    await runCli(['checkpoint', 'intent', 'auto'])
+    let store = await readStoreRaw()
+    expect(Object.values(store.intents ?? {})[0]?.kind).toBe('master')
+    const r = await runCli(['checkpoint', 'intent', 'ship'])
+    expect(r.stdout).toContain('harnessed gates ship')
+    store = await readStoreRaw()
+    expect(Object.values(store.intents ?? {})[0]?.kind).toBe('master')
+  })
+
+  it('checkpoint complete <sub> absorbs the MATCHING leaf intent', async () => {
+    await runCli(['checkpoint', 'intent', 'verify-qa'])
+    const r = await runCli(['checkpoint', 'complete', 'verify-qa', '--force', '--summary', 'x'])
+    expect(r.code).toBe(0)
+    const store = await readStoreRaw()
+    expect(Object.keys(store.intents ?? {}).length).toBe(0)
+  })
+
+  it('checkpoint complete of a DIFFERENT sub keeps the intent', async () => {
+    await runCli(['checkpoint', 'intent', 'verify-qa'])
+    await runCli(['checkpoint', 'complete', 'task-code', '--force', '--summary', 'x'])
+    const store = await readStoreRaw()
+    expect(Object.values(store.intents ?? {})[0]?.master).toBe('verify-qa')
+  })
+
+  it('checkpoint fail <sub> absorbs the matching leaf intent (fail still exits 1 by design)', async () => {
+    await runCli(['checkpoint', 'intent', 'verify-qa'])
+    const r = await runCli(['checkpoint', 'fail', 'verify-qa', '--summary', 'broken'])
+    expect(r.code).toBe(1) // fail signals via exit code — absorb must happen regardless
+    const store = await readStoreRaw()
+    expect(Object.keys(store.intents ?? {}).length).toBe(0)
+  })
+})

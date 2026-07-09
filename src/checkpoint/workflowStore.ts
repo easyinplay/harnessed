@@ -40,8 +40,15 @@ export type RetroMetaEntryType = Static<typeof RetroMetaEntry>
  *  an unseeded ledger = the freestyle signature the per-turn inject bin nags on. */
 export const IntentEntry = Type.Object(
   {
+    // Invoked command name (master OR leaf sub — field name kept for 765cbc9
+    // store back-compat; kind carries the distinction).
     master: Type.String({ minLength: 1 }),
     ts: Type.String({ minLength: 1 }),
+    // 4.22.0 T6 — additive-optional: absent = 'master' (765cbc9 only ever wrote
+    // master intents). 'leaf' switches banner/nag to the leaf SOP wording
+    // (prompt → spawn → checkpoint complete) and the absorb trigger to that
+    // sub's complete/fail instead of `checkpoint start`.
+    kind: Type.Optional(Type.Union([Type.Literal('master'), Type.Literal('leaf')])),
   },
   { additionalProperties: false },
 )

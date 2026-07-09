@@ -684,3 +684,19 @@ describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 
     expect(interactive.content).not.toContain('harnessed gates')
   })
 })
+
+// 4.22.0 T6 — leaf commands get the same L1 pre-exec intent line as masters
+// (leaf freestyle = skipping prompt/checkpoint on a directly-invoked stage cmd).
+describe('execution body intent pre-exec (4.22.0 T6)', () => {
+  it('EXECUTION body starts its how-to section with the `!` intent line + explainer', () => {
+    const { content } = generateCommandFile(
+      'verify-paranoid',
+      SUB_PROMPT,
+      {},
+      new Set<string>(),
+      new Set<string>(),
+    )
+    expect(content).toContain('!`harnessed checkpoint intent verify-paranoid`')
+    expect(content).toContain('intent marker')
+  })
+})

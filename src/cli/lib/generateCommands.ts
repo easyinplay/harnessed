@@ -263,6 +263,13 @@ function buildExecutionBody(name: string, prompt: RolePrompt): string {
     ``,
     `## How to run (execution — native subagent spawn)`,
     ``,
+    // 4.22.0 T6 — same L1 anti-freestyle pre-exec as the orchestrator body:
+    // registers a LEAF intent (absorbed by this sub's checkpoint complete/fail);
+    // the per-turn inject nags while it is fresh and unresolved. Fail-soft CLI.
+    `!\`harnessed checkpoint intent ${name}\``,
+    ``,
+    `> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: the steps below (prompt → spawn → checkpoint complete) resolve it, and a per-turn \`<workflow-intent>\` reminder persists until they run.`,
+    ``,
     `harnessed gives you the spawn-ready prompt; YOU spawn the subagent with a CC-native Task / Agent tool (keeps the session responsive + lets clarification round-trips reach the user).`,
     ``,
     ...spawnLoopSteps('').map((s) =>

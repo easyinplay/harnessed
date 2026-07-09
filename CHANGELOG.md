@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **L3 每 turn 护栏**:`bin/harnessed-inject-state.mjs` 与 `injectState.ts`(parity 契约)— fresh intent(TTL 24h)+ 未 seed 的 ledger → 每 turn 注入 `<workflow-intent>` 提醒(含 intent 年龄 + 精确的 gates→start 指令);ledger seeded 后回归现有 breadcrumb,无 intent 行为逐字节不变。`status --recover` 顶部同步报告 pending intent(仅 ledger 为空时,与 bin 口径一致)。
   - **L2 合规轻量路径(消除绕过动机)**:/auto 的 step 2(SKILL en/zh + 生成命令)写明 sanctioned lite —— 自包含小任务可 `--skip-sub verify --skip-sub retro`,被 skip 的 sub 仍带原因进 ledger;"lite ≠ freestyle,差别就在 ledger/evidence"。
   - **gates `--skip-sub` 可重复修复**:此前非收集型 option 只保留最后一个 flag(`--skip-sub a --skip-sub b` 静默丢 a);现 commander 累加器 + 逗号分隔兼容。
+  - **leaf 级 intent 变体(T6 追加)**:单阶段命令直调(`/verify-qa`、`/task-code` 类)同构 freestyle 风险,但 master 文案(gates→start)对 leaf 是误导 — `checkpoint intent` 现按 role-prompts.yaml `is_master`(单一 SoT,未知名/读失败 fail-soft 按 leaf)自动分型:leaf 的 banner 与每 turn 唠叨指向 leaf SOP(`harnessed prompt <sub>` → spawn → `checkpoint complete <sub>`),吸收条件 = 该 sub 自身的 `complete`/`fail`(名字匹配,master 仍由 `start` 吸收;kind 为 store 的 additive-optional 字段,旧 intent 缺省视为 master)。`!` 预执行铺设:generateCommands 执行体 + 18 个 leaf SKILL(en/zh 成对)+ ship/auto master(前次遗漏);discuss master 及 discuss 子层维持排除(纯交互 SOP 无 checkpoint 步骤)。
 
 ## [4.21.0] - 2026-07-04
 

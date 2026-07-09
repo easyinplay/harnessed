@@ -597,3 +597,31 @@ describe('bin parity — intent guard (4.22.0)', () => {
     expect(runBin().trim()).toBe('')
   })
 })
+
+// 4.22.0 T6 — leaf intent nag variant: text points at the leaf SOP (prompt →
+// spawn → checkpoint complete), never at gates/start (which do not exist in a
+// leaf command's SOP). Master text stays byte-identical, kind-absent = master
+// (back-compat: 765cbc9 only ever wrote master intents).
+describe('buildIntentBlock — leaf variant (4.22.0 T6)', () => {
+  const NOW = Date.parse('2026-07-05T12:00:00.000Z')
+
+  it('leaf kind → prompt/complete instructions, no gates/start', () => {
+    const block = buildIntentBlock(
+      { master: 'verify-qa', ts: '2026-07-05T11:49:30.000Z', kind: 'leaf' },
+      NOW,
+    )
+    expect(block).toContain('<workflow-intent>')
+    expect(block).toContain('intent: /verify-qa invoked 10m ago')
+    expect(block).toContain('harnessed prompt verify-qa')
+    expect(block).toContain('harnessed checkpoint complete verify-qa')
+    expect(block).not.toContain('harnessed gates')
+    expect(block).not.toContain('checkpoint start')
+  })
+
+  it('explicit kind:master is byte-identical to kind-absent (back-compat)', () => {
+    const ts = '2026-07-05T11:49:30.000Z'
+    expect(buildIntentBlock({ master: 'auto', ts, kind: 'master' }, NOW)).toBe(
+      buildIntentBlock({ master: 'auto', ts }, NOW),
+    )
+  })
+})

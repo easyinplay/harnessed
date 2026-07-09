@@ -33,6 +33,16 @@ TDD: T1/T3/T4 先测。
 ## T2 — 预执行接线 + banner 文案 + L2 lite 措辞 [generateCommands.ts + 5 组 master SKILL en/zh]
 ## T3 — perturn-inject intent 护栏 [bin/harnessed-inject-state.mjs](D4;注意该 bin 零依赖纯 node 内置,保持)
 ## T4 — gates --skip-sub 可重复修复 [src/cli/gates.ts]
+## T6 (追加,用户确认 2026-07-05) — leaf 级 intent 变体
+- D6 leaf 直调同构风险(用户敲 /verify-qa 类,模型跳过 prompt→spawn→checkpoint complete 直接干活),
+  但 master 文案(gates→start)对 leaf 是误导 → leaf 变体:
+  - `checkpoint intent <sub>` 自动分型(sub 是否 master 由 workflows 元数据判定,不加 flag);
+    leaf banner/唠叨:"next: `harnessed prompt <sub>` → spawn → `checkpoint complete <sub>`";
+  - 吸收条件:该 sub 的 checkpoint complete/fail(master 仍为 start);
+  - buildExecutionBody + 全部 leaf SKILL(en/zh 成对,~23 对)加 `!` 行;
+  - master 驱动的 spawn 不加载 SKILL(prompt 来自 CLI)→ 无重复 intent 噪音,已核实;
+  - discuss master 维持排除。
+
 ## T5 — 收尾:vitest 全量 + tsc + biome + scripts/check-*.mjs(i18n parity 双 gate);CHANGELOG
 `## [4.22.0]`(中文,Edit 写)+ bump 4.22.0 + progress.md。commit 后立即 push(push-on-commit 规则);
 tag 等用户确认。

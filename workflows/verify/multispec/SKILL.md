@@ -66,6 +66,10 @@ Phase-level `on` clause (critical-release 升级触发):
 
 ## How to invoke
 
+!`harnessed checkpoint intent verify-multispec`
+
+> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: the steps below (prompt → spawn → checkpoint complete) resolve it, and a per-turn `<workflow-intent>` reminder persists until they run.
+
 The numbered sequence below **is** the state machine — execute it with Bash. Do NOT improvise
 an equivalent flow from the Overview above: freelancing bypasses the engine (no ledger, no
 evidence guard). harnessed gives you the spawn-ready prompt; YOU spawn the subagent with a
