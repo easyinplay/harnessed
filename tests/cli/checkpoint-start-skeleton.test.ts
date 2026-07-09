@@ -9,7 +9,7 @@
 // Same harness family as checkpoint-intent.test.ts: real state layer against a
 // tmp HARNESSED_ROOT_OVERRIDE, engineHook mocked, cwd chdir'd into a tmp project.
 
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Command } from 'commander'
@@ -31,6 +31,21 @@ vi.mock('../../src/cli/lib/check-guard-conflict.js', async (importOriginal) => {
       gateGuardActive.value
         ? { active: true, source: 'settings-hooks' }
         : { active: false, source: null },
+    ),
+  }
+})
+
+// 4.22.2 — control the exemption flow's yml discovery (real fs for everything
+// else so apply/no-apply is observable on disk). 'project' resolves to the
+// per-test tmp cwd at CALL time (chdir happens in beforeEach).
+const ymlMode = vi.hoisted(() => ({ value: 'none' as 'none' | 'project' }))
+vi.mock('../../src/cli/lib/guard-exemption.js', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('../../src/cli/lib/guard-exemption.js')>()
+  const { join: joinPath } = await import('node:path')
+  return {
+    ...orig,
+    findGateguardYml: vi.fn(async () =>
+      ymlMode.value === 'project' ? joinPath(process.cwd(), '.gateguard.yml') : null,
     ),
   }
 })
@@ -141,5 +156,51 @@ describe('checkpoint start — dual-guard (GateGuard) conflict warning (4.22.1 T
     const { code, stderr } = await runCli(['checkpoint', 'start', 'auto'])
     expect(code).toBe(0)
     expect(stderr).not.toMatch(/GateGuard/)
+  })
+})
+
+describe('checkpoint start — GateGuard exemption flow (4.22.2)', () => {
+  it('active + unexempt .gateguard.yml (non-TTY) → preview + manual-cmd advice, file untouched', async () => {
+    gateGuardActive.value = true
+    ymlMode.value = 'project'
+    const yml = join(projectDir, '.gateguard.yml')
+    writeFileSync(yml, 'enabled: true\nignore_paths:\n  - ".venv/**"\n', 'utf8')
+    try {
+      const { code, stderr } = await runCli(['checkpoint', 'start', 'auto'])
+      expect(code).toBe(0)
+      expect(stderr).toContain('+   - ".planning/**"') // exact diff preview
+      expect(stderr).toContain('exempt-gateguard') // non-interactive manual advice
+      // never mutated without live consent (non-TTY vitest run)
+      expect(readFileSync(yml, 'utf8')).not.toContain('.planning/**')
+    } finally {
+      gateGuardActive.value = false
+      ymlMode.value = 'none'
+    }
+  })
+
+  it('active + already-exempt yml → resolved, no collision warning', async () => {
+    gateGuardActive.value = true
+    ymlMode.value = 'project'
+    writeFileSync(join(projectDir, '.gateguard.yml'), 'ignore_paths:\n  - ".planning/**"\n', 'utf8')
+    try {
+      const { code, stderr } = await runCli(['checkpoint', 'start', 'auto'])
+      expect(code).toBe(0)
+      expect(stderr).not.toMatch(/collides/)
+      expect(stderr).not.toContain('+   - ".planning/**"')
+    } finally {
+      gateGuardActive.value = false
+      ymlMode.value = 'none'
+    }
+  })
+
+  it('active + no yml (bundled/unknown variant) → the 4.22.1 generic warning stands', async () => {
+    gateGuardActive.value = true
+    try {
+      const { code, stderr } = await runCli(['checkpoint', 'start', 'auto'])
+      expect(code).toBe(0)
+      expect(stderr).toMatch(/collides/)
+    } finally {
+      gateGuardActive.value = false
+    }
   })
 })

@@ -81,4 +81,34 @@ describe('checkGuardConflict (doctor, warn-only)', () => {
       expect(r.fix).toMatch(/\.planning\//)
     }
   })
+
+  // 4.22.2 — variant-aware fix channel (injected exemption probe).
+  const activeDeps = deps({ env: { ECC_GATEGUARD: 'on' } })
+
+  it('active + unexempt .gateguard.yml → warn carries the auto-fix command', async () => {
+    const r = await checkGuardConflict(activeDeps, {
+      findYml: async () => '/x/.gateguard.yml',
+      readFile: async () => 'enabled: true\n',
+    })
+    expect(r.status).toBe('warn')
+    expect(r.install_commands).toContain('harnessed exempt-gateguard')
+  })
+
+  it('active + already-exempt yml → pass (resolved), doctor stops nagging', async () => {
+    const r = await checkGuardConflict(activeDeps, {
+      findYml: async () => '/x/.gateguard.yml',
+      readFile: async () => 'ignore_paths:\n  - ".planning/**"\n',
+    })
+    expect(r.status).toBe('pass')
+    expect(r.message).toMatch(/exempt/i)
+  })
+
+  it('active + no yml (bundled/unknown variant) → warn without auto-fix command', async () => {
+    const r = await checkGuardConflict(activeDeps, {
+      findYml: async () => null,
+      readFile: async () => '',
+    })
+    expect(r.status).toBe('warn')
+    expect(r.install_commands ?? []).not.toContain('harnessed exempt-gateguard')
+  })
 })

@@ -93,9 +93,32 @@ export const GUARD_CONFLICT_ADVICE =
   'harnessed-orchestrated sessions; do NOT blanket `checkpoint complete --force` — that ' +
   'silently voids the evidence guard.'
 
-/** Doctor check — warn-only (a co-installed guard is a config choice, not a fault). */
-export async function checkGuardConflict(): Promise<CheckResult> {
-  const det = await detectGateGuardActive()
+/** 4.22.2 — injectable exemption probe (variant分型: full gateguard-ai has a
+ *  `.gateguard.yml` config surface we can auto-fix; the bundled ecc fact-force
+ *  hook has neither a filename policy nor a config file). */
+export interface ExemptionProbeDeps {
+  findYml: () => Promise<string | null>
+  readFile: (p: string) => Promise<string>
+}
+
+async function defaultExemptionProbe(): Promise<ExemptionProbeDeps> {
+  const { findGateguardYml } = await import('./guard-exemption.js')
+  return {
+    findYml: () => findGateguardYml(),
+    readFile: (p) => readFile(p, 'utf8'),
+  }
+}
+
+/** Doctor check — warn-only (a co-installed guard is a config choice, not a
+ *  fault). 4.22.2: variant-aware — a found-but-unexempt `.gateguard.yml` gets
+ *  the auto-fix channel (`harnessed exempt-gateguard`, consumed by the doctor
+ *  auto-install confirm, default YES per D1); an exempted one resolves to pass
+ *  (the nag stops exactly when the conflict does, D3). */
+export async function checkGuardConflict(
+  deps: Partial<GuardConflictDeps> = {},
+  exemption?: ExemptionProbeDeps,
+): Promise<CheckResult> {
+  const det = await detectGateGuardActive(deps)
   if (!det.active) {
     return {
       name: 'guard conflict (GateGuard)',
@@ -103,6 +126,36 @@ export async function checkGuardConflict(): Promise<CheckResult> {
       message: 'ECC GateGuard not detected — no dual-guard filename conflict',
     }
   }
+
+  // Variant probe — fail-soft to the generic warn on any error.
+  try {
+    const probe = exemption ?? (await defaultExemptionProbe())
+    const ymlPath = await probe.findYml()
+    if (ymlPath) {
+      const { planExemption } = await import('./guard-exemption.js')
+      const plan = planExemption(await probe.readFile(ymlPath))
+      if (plan.action === 'skip') {
+        return {
+          name: 'guard conflict (GateGuard)',
+          status: 'pass',
+          message: `GateGuard active but .planning/** is exempted in ${ymlPath} — conflict resolved`,
+        }
+      }
+      return {
+        name: 'guard conflict (GateGuard)',
+        status: 'warn',
+        message:
+          `ECC GateGuard appears active (via ${det.source}) with ${ymlPath} — its filename ` +
+          'policy collides with harnessed evidence-guard artifact names (findings.md, ' +
+          '*-report.md); a sanctioned auto-fix is available',
+        fix: GUARD_CONFLICT_ADVICE,
+        install_commands: ['harnessed exempt-gateguard'],
+      }
+    }
+  } catch {
+    // fall through to the generic warn
+  }
+
   return {
     name: 'guard conflict (GateGuard)',
     status: 'warn',

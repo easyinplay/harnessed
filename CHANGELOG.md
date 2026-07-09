@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.22.2] - 2026-07-09
+
+### Added
+
+- **GateGuard 豁免 consented auto-fix(双守卫冲突的一键解;用户拍板:默认 Yes + 拒绝须醒目).** 完整版 gateguard-ai 的 `.gateguard.yml` 官方支持 `ignore_paths`(上游 README 实证)— harnessed 现在能替用户完成 `.planning/**` 豁免,而不是只警告让用户自查:(1) 新 CLI `harnessed exempt-gateguard` — 备份先行(`<stateRoot>/backups/gateguard.yml.<ts>.bak`)、**文本级幂等追加**(注释/格式/EOL 原样保留,绝不整文件重序列化)、写前打印精确 diff 行 + 目标文件 + 备份路径(透明度不因默认 Yes 降级);(2) `checkpoint start` 预检升级为变体分型 — 检出未豁免的 `.gateguard.yml` 时 TTY 下 clack confirm(**默认 Yes**:豁免域仅一个 glob、可逆、是双守卫共存的唯一正确配置;默认 No 会被回车划过,verify 阶段五个 `*-report.md` 必然重演),拒绝则输出醒目 ⚠ 块(三条具体后果 + 手动命令);非 TTY 打印 diff 预览 + 手动命令,绝不无人值守修改;已豁免静默;无 `.gateguard.yml`(ecc bundled fact-force 变体,无文件名策略也无配置文件)维持 4.22.1 通用警告;(3) doctor 检查升级 — 未豁免时 warn 携带 `install_commands: ['harnessed exempt-gateguard']`(auto-install confirm 流,默认 Yes),**豁免完成即转 pass**(唠叨与冲突同生同灭);(4) 红线:改第三方 guard 配置必须备份 + 追加式 + diff 先行,静默修改绝对禁止。
+
 ## [4.22.1] - 2026-07-09
 
 ### Fixed

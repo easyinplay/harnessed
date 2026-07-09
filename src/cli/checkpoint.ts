@@ -232,20 +232,47 @@ export function registerCheckpoint(program: Command): void {
           // filename policy blocks the evidence-guard contract names; the main
           // session can fact-retry past it, SUBAGENTS cannot → renamed artifacts →
           // every complete fail-closed blocks; verify's five *-report.md recur it).
-          // Warn at start (stderr), fail-soft; detection SoT = check-guard-conflict.ts.
+          // 4.22.2 — variant-aware: a `.gateguard.yml` (full gateguard-ai) gets the
+          // consented auto-fix (confirm default YES per D1; refusal prints the loud
+          // D3 block; non-TTY prints preview + the manual command, never mutates);
+          // already-exempt stays silent; no yml → the 4.22.1 generic warn stands.
+          // All stderr, all fail-soft; detection SoT = check-guard-conflict.ts.
           try {
             const { detectGateGuardActive, GUARD_CONFLICT_ADVICE } = await import(
               './lib/check-guard-conflict.js'
             )
             const det = await detectGateGuardActive()
             if (det.active) {
-              console.error(
-                `⚠️ [harnessed] ECC GateGuard appears active (via ${det.source}) — its ` +
-                  `filename policy (report/findings/summary/analysis) collides with the ` +
-                  `evidence-guard artifact names (findings.md, *-report.md); subagent Writes ` +
-                  `have no fact-retry channel and \`checkpoint complete\` will block. ` +
-                  GUARD_CONFLICT_ADVICE,
+              const { findGateguardYml, runExemptionFlow } = await import(
+                './lib/guard-exemption.js'
               )
+              const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
+              const flowResult = await runExemptionFlow({
+                findYml: () => findGateguardYml(),
+                print: (line) => console.error(line),
+                ...(isTty
+                  ? {
+                      confirm: async () => {
+                        const p = await import('@clack/prompts')
+                        const ans = await p.confirm({
+                          message:
+                            'Apply the GateGuard exemption now? (appends ".planning/**" to ignore_paths — backed up first)',
+                          initialValue: true, // D1 — default YES
+                        })
+                        return !p.isCancel(ans) && ans === true
+                      },
+                    }
+                  : {}),
+              })
+              if (flowResult === 'no-yml') {
+                console.error(
+                  `⚠️ [harnessed] ECC GateGuard appears active (via ${det.source}) — its ` +
+                    `filename policy (report/findings/summary/analysis) collides with the ` +
+                    `evidence-guard artifact names (findings.md, *-report.md); subagent Writes ` +
+                    `have no fact-retry channel and \`checkpoint complete\` will block. ` +
+                    GUARD_CONFLICT_ADVICE,
+                )
+              }
             }
           } catch {
             // fail-soft — the pre-check must never break start.

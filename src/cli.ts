@@ -9,6 +9,7 @@ import { registerBackupList } from './cli/backup-list.js'
 import { registerCheckpoint } from './cli/checkpoint.js'
 import { registerCompact } from './cli/compact-cmd.js'
 import { registerDoctor } from './cli/doctor.js'
+import { registerExemptGateguard } from './cli/exempt-gateguard.js'
 import { registerGates } from './cli/gates.js'
 import { registerGc } from './cli/gc.js'
 import { registerInstall } from './cli/install.js'
@@ -116,6 +117,7 @@ registerAdvance(program) // v12.0 Phase 38 D4 — `harnessed advance` cross-phas
 registerReject(program) // 21st — G7-lite user-rejected terminal sub status
 registerCompact(program) // 22nd — Phase 14 compact: summarize+evict resolved ledger entries
 registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight workflows (one per repo)
+registerExemptGateguard(program) // 4.22.2 — dual-guard conflict fix channel (doctor auto-install consumes it)
 registerLearn(program) // 24th — Phase 16 learning loop: append a prose learning to .planning/LEARNINGS.md
 registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams + --migration-report
 registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate
