@@ -244,6 +244,16 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     expect(parsed.skip.map((s: { sub: string }) => s.sub)).not.toContain('task-clarify')
   })
 
+  it('cell 4c — ship is a valid master (v4.22.0: was missing from VALID_MASTERS since Phase 21)', async () => {
+    // clause sub is the bare stage name; fireEntry flattens to `ship-preflight`.
+    setMaster('ship', clauseLine('preflight', { mode: 'serial', order: 1 }))
+    const { code, stdout } = await runCli(['gates', 'ship', '--task', 'release milestone'])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.master).toBe('ship')
+    expect(parsed.fire.map((f: { sub: string }) => f.sub)).toContain('ship-preflight')
+  })
+
   it('cell 5 — unknown master → exit 1', async () => {
     // 'bogus' is not a valid master — no yaml fixture registered, readFile throws.
     const { code } = await runCli(['gates', 'bogus'])

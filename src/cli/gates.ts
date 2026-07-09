@@ -18,7 +18,11 @@ import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
 import { getAssetsRoot } from './lib/assetsRoot.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
 
-const VALID_MASTERS = new Set(['auto', 'discuss', 'plan', 'task', 'verify'])
+// v4.22.0 dogfood — 'ship' was a real master (workflows/ship/auto/workflow.yaml,
+// Phase 21) missing from this whitelist since it shipped: `gates ship` errored
+// unknown-master, so /ship-auto step 2 was unexecutable (built-but-unwired class).
+// ship is NOT in /auto's fire chain (post-verify manual stage) — direct-call only.
+const VALID_MASTERS = new Set(['auto', 'discuss', 'plan', 'task', 'verify', 'ship'])
 
 // v4.1 — stage masters (recursable). `auto` is the super-master; its fired subs
 // that are themselves stage masters must be recursed (harnessed gates <sub>),
@@ -77,7 +81,7 @@ export function registerGates(program: Command): void {
     .description(
       'Evaluate which sub-workflows fire for a master orchestrator (JSON plan, no spawn).',
     )
-    .argument('<master>', 'master name: auto | discuss | plan | task | verify')
+    .argument('<master>', 'master name: auto | discuss | plan | task | verify | ship')
     .option('--task <text>', 'task description (injected as gateContext.task)')
     .option(
       '--skip-sub <names>',
@@ -89,7 +93,7 @@ export function registerGates(program: Command): void {
     .action(async (master: string, raw: RawOpts) => {
       if (!VALID_MASTERS.has(master)) {
         console.error(
-          `error: unknown master '${master}'. Expected one of: auto, discuss, plan, task, verify.`,
+          `error: unknown master '${master}'. Expected one of: auto, discuss, plan, task, verify, ship.`,
         )
         process.exit(1)
         return
