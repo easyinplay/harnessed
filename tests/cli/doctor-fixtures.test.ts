@@ -76,6 +76,16 @@ vi.mock('../../src/cli/lib/check-codegraph.js', () => ({
 }))
 // Phase 20 — 14th check mock (check-update.ts spawns `npm view`). Real logic in
 // tests/cli/check-update.test.ts. Default pass.
+// 4.23.0 (issue #3) — 17th check mock (reads the real skills dir + hash
+// ledger; the global fs mocks would make it audit garbage). Real logic in
+// tests/cli/lib/skillIntegrity.test.ts (tmpdir).
+vi.mock('../../src/cli/lib/check-skill-integrity.js', () => ({
+  checkSkillIntegrity: () => ({
+    name: 'workflow skill integrity',
+    status: 'pass',
+    message: '28 installed workflow skill(s) match their install-time hash ledger',
+  }),
+}))
 vi.mock('../../src/cli/lib/check-update.js', () => ({
   checkUpdate: () => ({ name: 'update', status: 'pass', message: 'up to date (test)' }),
 }))
@@ -193,7 +203,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
     test(`scenario: '${scenario.name}' — 16 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(16)
+      expect(parsed.checks).toHaveLength(17)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -212,6 +222,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
           'update', // ← Phase 20 14th check (update available, fail-soft pass)
           'bun present', // ← v4.16.1 15th check (warn-only gstack build dep)
           'guard conflict (GateGuard)', // ← 4.22.1 16th check (dual-guard, warn-only)
+          'workflow skill integrity', // ← 4.23.0 17th check (issue #3, warn-only)
         ]),
       )
       if (scenario.name === 'missing-jq') {

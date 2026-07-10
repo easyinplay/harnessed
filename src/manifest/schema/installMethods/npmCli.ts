@@ -12,6 +12,10 @@ export const NpmCli = Type.Object(
     args: Type.Optional(Type.Record(Type.String(), Type.Unknown())),
     npm_version: Type.String({ minLength: 1 }),
     idempotent_check: Type.String({ minLength: 1 }),
+    // 4.23.0 (issue #3 req 5) — skill names this pack copies into the flat
+    // ~/.claude/skills namespace; enables pre-install collision warnings against
+    // shipped workflow names + post-install undeclared-name drift detection.
+    installs_skills: Type.Optional(Type.Array(Type.String({ minLength: 1 }))),
   },
   { additionalProperties: false },
 )

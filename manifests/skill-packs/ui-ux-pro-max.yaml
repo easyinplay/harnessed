@@ -23,6 +23,9 @@ spec:
     cmd: "rm -rf ~/.claude/skills/.cache/midway-uiux && git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.claude/skills/.cache/midway-uiux && mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/ui-ux-pro-max && cp -R ~/.claude/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.claude/skills/ui-ux-pro-max && rm -rf ~/.claude/skills/.cache/midway-uiux"
     git_ref: e89d70e4bcd0ae04709a773db549cf61fcf813ac
     idempotent_check: "test -f ~/.claude/skills/ui-ux-pro-max/SKILL.md"
+    # 4.23.0 (issue #3 req 5) — single skill copied from upstream .codex/skills.
+    installs_skills:
+      - ui-ux-pro-max
   verify:
     cmd: "test -f ~/.claude/skills/ui-ux-pro-max/SKILL.md"
     timeout_ms: 5000

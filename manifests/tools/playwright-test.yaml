@@ -27,6 +27,9 @@ spec:
     cmd: "npx --yes skills@1.5.7 add microsoft/playwright-cli --copy --global -y"
     npm_version: ^1.5.7
     idempotent_check: "test -f ~/.claude/skills/playwright-cli/SKILL.md || test -f ~/.agents/skills/playwright-cli/SKILL.md"
+    # 4.23.0 (issue #3 req 5) — single-skill pack (microsoft/playwright-cli).
+    installs_skills:
+      - playwright-cli
   verify:
     cmd: "test -f ~/.claude/skills/playwright-cli/SKILL.md || test -f ~/.agents/skills/playwright-cli/SKILL.md"
     timeout_ms: 5000

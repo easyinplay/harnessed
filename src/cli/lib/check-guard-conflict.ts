@@ -86,38 +86,45 @@ export async function detectGateGuardActive(
   }
 }
 
-/** Shared warning body (checkpoint start stderr + doctor fix hint use the same三选一). */
+/** Shared warning body (checkpoint start stderr + doctor fix hint use the same三选一).
+ *  4.23.0 (T8) — env channel only: the 4.22.2 `.gateguard.yml` advice is gone
+ *  with the yml machinery (user decision 2026-07-10: single channel). */
 export const GUARD_CONFLICT_ADVICE =
-  'options (best first): (1) exempt .planning/ paths in the GateGuard config — planning ' +
-  'docs are the legitimate home of findings.md/*-report.md; (2) set ECC_GATEGUARD=off for ' +
-  'harnessed-orchestrated sessions; do NOT blanket `checkpoint complete --force` — that ' +
-  'silently voids the evidence guard.'
+  'options (best first): (1) run `harnessed exempt-gateguard` — persists ' +
+  'GATEGUARD_EXEMPT_GLOBS=".planning/**" into the harness settings env (backed up first; ' +
+  'planning dirs are the legitimate home of findings.md/*-report.md); (2) if your ecc ' +
+  'predates GATEGUARD_EXEMPT_GLOBS support, upgrade first: `claude plugin update ecc`; ' +
+  '(3) interim: set ECC_GATEGUARD=off for harnessed-orchestrated sessions; do NOT blanket ' +
+  '`checkpoint complete --force` — that silently voids the evidence guard.'
 
-/** 4.22.2 — injectable exemption probe (variant分型: full gateguard-ai has a
- *  `.gateguard.yml` config surface we can auto-fix; the bundled ecc fact-force
- *  hook has neither a filename policy nor a config file). */
+/** 4.23.0 (T8) — injectable exemption probe (variant分型 by CAPABILITY, not by
+ *  config file): current ecc's gateguard-fact-force.js honors
+ *  GATEGUARD_EXEMPT_GLOBS (comma-separated globs, normalized-path match); old
+ *  ecc has no exemption surface at all → advise upgrade. */
 export interface ExemptionProbeDeps {
-  findYml: () => Promise<string | null>
-  readFile: (p: string) => Promise<string>
+  capability: () => Promise<import('./guard-exemption.js').ExemptCapability>
+  currentValue: () => Promise<string | undefined>
 }
 
 async function defaultExemptionProbe(): Promise<ExemptionProbeDeps> {
-  const { findGateguardYml } = await import('./guard-exemption.js')
+  const { probeExemptCapability, readCurrentEnvValue } = await import('./guard-exemption.js')
   return {
-    findYml: () => findGateguardYml(),
-    readFile: (p) => readFile(p, 'utf8'),
+    capability: () => probeExemptCapability(),
+    currentValue: () => readCurrentEnvValue(),
   }
 }
 
 /** Doctor check — warn-only (a co-installed guard is a config choice, not a
- *  fault). 4.22.2: variant-aware — a found-but-unexempt `.gateguard.yml` gets
- *  the auto-fix channel (`harnessed exempt-gateguard`, consumed by the doctor
- *  auto-install confirm, default YES per D1); an exempted one resolves to pass
- *  (the nag stops exactly when the conflict does, D3). */
+ *  fault). Variant-aware: an exempted env (settings or live process env)
+ *  resolves to pass (the nag stops exactly when the conflict does, D3); a
+ *  capable-but-unexempt install gets the auto-fix channel
+ *  (`harnessed exempt-gateguard`, doctor auto-install confirm default YES per
+ *  D1); a legacy ecc gets the upgrade advice. */
 export async function checkGuardConflict(
   deps: Partial<GuardConflictDeps> = {},
   exemption?: ExemptionProbeDeps,
 ): Promise<CheckResult> {
+  const d = { ...defaultDeps(), ...deps }
   const det = await detectGateGuardActive(deps)
   if (!det.active) {
     return {
@@ -127,43 +134,54 @@ export async function checkGuardConflict(
     }
   }
 
-  // Variant probe — fail-soft to the generic warn on any error.
+  // Variant probe — fail-soft to the legacy/upgrade warn on any error.
   try {
     const probe = exemption ?? (await defaultExemptionProbe())
-    const ymlPath = await probe.findYml()
-    if (ymlPath) {
-      const { planExemption } = await import('./guard-exemption.js')
-      const plan = planExemption(await probe.readFile(ymlPath))
-      if (plan.action === 'skip') {
-        return {
-          name: 'guard conflict (GateGuard)',
-          status: 'pass',
-          message: `GateGuard active but .planning/** is exempted in ${ymlPath} — conflict resolved`,
-        }
+    const { PLANNING_GLOB, splitGlobs } = await import('./guard-exemption.js')
+    // Exempted already? Check the persisted settings env AND the live process
+    // env (a user may export the var globally instead of via settings.json).
+    const persisted = await probe.currentValue()
+    const live = d.env.GATEGUARD_EXEMPT_GLOBS
+    if (splitGlobs(persisted).includes(PLANNING_GLOB) || splitGlobs(live).includes(PLANNING_GLOB)) {
+      return {
+        name: 'guard conflict (GateGuard)',
+        status: 'pass',
+        message:
+          'GateGuard active but .planning/** is exempted via GATEGUARD_EXEMPT_GLOBS — ' +
+          'conflict resolved',
       }
+    }
+    if ((await probe.capability()) === 'env-supported') {
       return {
         name: 'guard conflict (GateGuard)',
         status: 'warn',
         message:
-          `ECC GateGuard appears active (via ${det.source}) with ${ymlPath} — its filename ` +
-          'policy collides with harnessed evidence-guard artifact names (findings.md, ' +
-          '*-report.md); a sanctioned auto-fix is available',
+          `ECC GateGuard appears active (via ${det.source}) — its fact-forcing policy ` +
+          'collides with harnessed evidence-guard artifact names (findings.md, ' +
+          '*-report.md); a sanctioned env exemption is available (GATEGUARD_EXEMPT_GLOBS)',
         fix: GUARD_CONFLICT_ADVICE,
         install_commands: ['harnessed exempt-gateguard'],
       }
     }
   } catch {
-    // fall through to the generic warn
+    // fall through to the legacy/upgrade warn
   }
 
+  // Legacy ecc (or unprobeable install): no exemption surface exists in the
+  // resident hook — writing the env key would be silently ignored, so the fix
+  // is an upgrade, not an auto-write.
   return {
     name: 'guard conflict (GateGuard)',
     status: 'warn',
     message:
       `ECC GateGuard appears active (via ${det.source}) — its filename policy (blocks ` +
       'report/findings/summary/analysis Writes) collides with harnessed evidence-guard ' +
-      'artifact names (findings.md, *-report.md); subagents have no fact-retry channel, ' +
-      'so `checkpoint complete` will fail-closed block',
-    fix: GUARD_CONFLICT_ADVICE,
+      'artifact names (findings.md, *-report.md); this ecc version predates the ' +
+      'GATEGUARD_EXEMPT_GLOBS exemption surface',
+    fix:
+      'upgrade ecc first: `claude plugin update ecc` (restart required), then run ' +
+      '`harnessed exempt-gateguard` to persist the .planning/** exemption; interim: set ' +
+      'ECC_GATEGUARD=off for harnessed-orchestrated sessions; do NOT blanket ' +
+      '`checkpoint complete --force` — that silently voids the evidence guard.',
   }
 }

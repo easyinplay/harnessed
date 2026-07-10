@@ -39,6 +39,11 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { detectSkillPresence, extractSkillName, isAlreadyInstalled } from './lib/idempotent.js'
+import {
+  auditPostInstall,
+  snapshotSkillNames,
+  warnDeclaredCollisions,
+} from './lib/packSkillAudit.js'
 import { detectPlatform, getSkillsDir } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
@@ -155,6 +160,9 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   // v4.20.1: neutralCwd — npx runs npm exec, which walks the spawn cwd upward to
   // the nearest package.json; an ambient devEngines declaration there kills the
   // install with EBADDEVENGINES (dogfood). Global-semantics install → neutral cwd.
+  // 4.23.0 (issue #3) — flat-namespace collision audit around the external writer.
+  await warnDeclaredCollisions(ctx)
+  const packSnapshot = await snapshotSkillNames()
   let sp = await spawnCmd(ctx, effectiveCmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { neutralCwd: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   // v4.16.0 T3 — one retry on Windows hard-crash exits (transient node aborts).
@@ -177,6 +185,9 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
       ),
     }
   }
+
+  // 4.23.0 (issue #3) — post-install diff: undeclared new names + workflow collisions.
+  await auditPostInstall(ctx, packSnapshot)
 
   // D2.1-6 CRITICAL — real-path verify. npx exit 0 ≠ files actually written.
   // v4.13.0 — probe via detectSkillPresence (shared with the idempotent_check

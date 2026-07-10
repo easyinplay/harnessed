@@ -28,6 +28,58 @@ spec:
     # last-known-good state — bump on release cadence, not per upstream push.
     git_ref: 11de390be1be6849eb9a15f91ff4922dd16c589a
     idempotent_check: "test -d ~/.claude/skills/gstack/.git"
+    # 4.23.0 (issue #3 req 5) — upstream root-level skill dirs (v1.58 era,
+    # known set). `retro` and `ship` COLLIDE with harnessed's retro workflow /
+    # ship master — the post-Step-B integrity pass restores the engine versions.
+    installs_skills:
+      - office-hours
+      - plan-ceo-review
+      - plan-eng-review
+      - plan-design-review
+      - plan-devex-review
+      - plan-tune
+      - autoplan
+      - spec
+      - skillify
+      - design-consultation
+      - design-shotgun
+      - design-html
+      - design-review
+      - devex-review
+      - review
+      - cso
+      - qa
+      - qa-only
+      - investigate
+      - retro
+      - health
+      - benchmark
+      - benchmark-models
+      - ship
+      - land-and-deploy
+      - canary
+      - document-release
+      - document-generate
+      - landing-report
+      - browse
+      - connect-chrome
+      - open-gstack-browser
+      - scrape
+      - pair-agent
+      - setup-deploy
+      - setup-browser-cookies
+      - setup-gbrain
+      - sync-gbrain
+      - codex
+      - learn
+      - context-save
+      - context-restore
+      - make-pdf
+      - careful
+      - freeze
+      - guard
+      - unfreeze
+      - gstack-upgrade
   # v4.14.2 — 用户指正: gstack 官方支持 10 agents(README § Other AI Agents),
   # codex 走 `./setup --host codex`,skills 装到 ~/.codex/skills/gstack-*/。
   harness_overrides:

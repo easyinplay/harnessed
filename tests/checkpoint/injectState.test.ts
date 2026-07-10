@@ -67,6 +67,36 @@ describe('buildWorkflowStateBlock', () => {
     expect(buildWorkflowStateBlock(wf)).toContain('BREAK-LOOP')
   })
 
+  // 4.23.0 (issue #3, T4/D4) — staleness: a pending sub whose ledger file has
+  // had NO checkpoint activity for >24h reads as STALE (abandoned/bypassed run),
+  // not as a live state machine directive. Parity branch exists in
+  // bin/harnessed-inject-state.mjs (mtime-derived ledgerAgeMs).
+  const pendingWf = (): CurrentWorkflowV1Type => ({
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: 'task',
+    status: 'active',
+    last_checkpoint_path: null,
+    started_at: '2026-06-12T00:00:00.000Z',
+    sub_progress: [{ sub: 'b', status: 'pending', gate_fired: true }],
+  })
+
+  it('emits the STALE line (not the live ENGINE directive) when ledgerAgeMs > 24h', () => {
+    const out = buildWorkflowStateBlock(pendingWf(), undefined, 3 * 24 * 60 * 60 * 1000)
+    expect(out).toContain('ENGINE: STALE state machine')
+    expect(out).toContain('>3d') // floor(days) surfaced
+    expect(out).toContain('status --recover')
+    expect(out).toContain('checkpoint fail b')
+    expect(out).not.toContain('mid state-machine') // the live directive is REPLACED
+  })
+
+  it('keeps the live ENGINE directive for a fresh ledger / unknown age', () => {
+    for (const age of [0, 60_000, null, undefined]) {
+      const out = buildWorkflowStateBlock(pendingWf(), undefined, age)
+      expect(out).not.toContain('STALE')
+      expect(out).toContain('mid state-machine')
+    }
+  })
+
   // Phase 22 — smart-reminder lines, emitted from envelope flags.
   const reminderWf = (extra: Partial<CurrentWorkflowV1Type>): CurrentWorkflowV1Type => ({
     schemaVersion: SCHEMA_VERSIONS.currentWorkflow,

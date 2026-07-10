@@ -32,6 +32,9 @@ spec:
     cmd: "npx --yes skills@latest add Leonxlnx/taste-skill --skill design-taste-frontend --copy -y"
     npm_version: ^1.5.7
     idempotent_check: "test -d ~/.claude/skills/design-taste-frontend || test -d ~/.agents/skills/design-taste-frontend"
+    # 4.23.0 (issue #3 req 5) — single-skill install (--skill selection).
+    installs_skills:
+      - design-taste-frontend
   verify:
     # v4.13.0 — dual-path: --copy installs can land in ~/.agents/skills too.
     cmd: "test -f ~/.claude/skills/design-taste-frontend/SKILL.md || test -f ~/.agents/skills/design-taste-frontend/SKILL.md"

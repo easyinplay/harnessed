@@ -1,84 +1,114 @@
-// 4.22.2 T1/T3 — GateGuard `.gateguard.yml` exemption auto-fix (TDD red-first).
+// 4.23.0 (T8) — GateGuard exemption via the env channel (TDD red-first).
 //
-// gateguard-ai (full package) documents `ignore_paths` in `.gateguard.yml`
-// (upstream README). harnessed offers a consented auto-fix appending
-// `.planning/**` — default YES (user decision 2026-07-05: narrow scope,
-// backed-up, the only config where both guards work as designed), refusal path
-// must be LOUD (3 concrete consequences + the exact manual command).
-//
-// Text-level append only (4.16.0 messages-json lesson: never re-serialize a
-// user-owned config wholesale — comments and formatting must survive).
+// Current ecc's gateguard-fact-force.js honors `GATEGUARD_EXEMPT_GLOBS` (comma-
+// separated globs; normalized-path match skips fact-forcing). harnessed offers
+// a consented auto-fix persisting `.planning/**` into the harness settings env
+// — default YES (2026-07-05 decision carried over), refusal path stays LOUD.
+// Supersedes the 4.22.2 `.gateguard.yml` text-append channel (removed — user
+// decision 2026-07-10: single channel, env only).
 
 import { describe, expect, it, vi } from 'vitest'
 import {
-  applyExemption,
-  findGateguardYml,
+  ECC_UPGRADE_CMD,
+  EXEMPT_ENV_KEY,
   MANUAL_FIX_CMD,
   PLANNING_GLOB,
-  planExemption,
+  planEnvExemption,
+  probeExemptCapability,
+  readCurrentEnvValue,
   refusalLines,
   runExemptionFlow,
+  splitGlobs,
+  upgradeAdviceLines,
 } from '../../../src/cli/lib/guard-exemption.js'
 
-describe('planExemption (idempotent text-level append)', () => {
-  it('skip when .planning/** already present', () => {
-    const raw = 'enabled: true\nignore_paths:\n  - ".venv/**"\n  - ".planning/**"\n'
-    expect(planExemption(raw).action).toBe('skip')
+describe('planEnvExemption (idempotent comma-list append)', () => {
+  it('skip when .planning/** already listed', () => {
+    expect(planEnvExemption('.planning/**').action).toBe('skip')
+    expect(planEnvExemption('docs/**, .planning/** ,tmp/**').action).toBe('skip')
   })
 
-  it('skip on single-quoted existing entry', () => {
-    const raw = "ignore_paths:\n  - '.planning/**'\n"
-    expect(planExemption(raw).action).toBe('skip')
+  it('starts a fresh list when unset/empty', () => {
+    expect(planEnvExemption(undefined)).toEqual({ action: 'set', value: PLANNING_GLOB })
+    expect(planEnvExemption('')).toEqual({ action: 'set', value: PLANNING_GLOB })
   })
 
-  it('append-entry right after an existing ignore_paths header, preserving comments', () => {
-    const raw =
-      '# my config\nenabled: true\n\nignore_paths:\n  # deps\n  - ".venv/**"\n  - "node_modules/**"\n'
-    const plan = planExemption(raw)
-    expect(plan.action).toBe('append-entry')
-    const text = plan.newText ?? ''
-    // inserted immediately after the header line (list order is semantically free)
-    expect(text).toContain(`ignore_paths:\n  - "${PLANNING_GLOB}"\n  # deps\n`)
-    // untouched surroundings survive verbatim
-    expect(text).toContain('# my config\nenabled: true\n')
-    expect(text).toContain('  - "node_modules/**"\n')
+  it('appends after existing globs, preserving them verbatim', () => {
+    expect(planEnvExemption('docs/**,build/**')).toEqual({
+      action: 'set',
+      value: `docs/**,build/**,${PLANNING_GLOB}`,
+    })
   })
 
-  it('append-section at EOF when no ignore_paths exists', () => {
-    const raw = 'enabled: true\ngates:\n  read_before_edit: true\n'
-    const plan = planExemption(raw)
-    expect(plan.action).toBe('append-section')
-    expect(plan.newText).toBe(`${raw}\nignore_paths:\n  - "${PLANNING_GLOB}"\n`)
-  })
-
-  it('preserves CRLF line endings when the file uses them', () => {
-    const raw = 'enabled: true\r\nignore_paths:\r\n  - ".venv/**"\r\n'
-    const plan = planExemption(raw)
-    expect(plan.action).toBe('append-entry')
-    expect(plan.newText).toContain(`ignore_paths:\r\n  - "${PLANNING_GLOB}"\r\n`)
-    expect(plan.newText).not.toMatch(/[^\r]\n/)
+  it('splitGlobs trims whitespace and drops empty tokens', () => {
+    expect(splitGlobs(' a/** , , b/** ')).toEqual(['a/**', 'b/**'])
+    expect(splitGlobs(undefined)).toEqual([])
   })
 })
 
-describe('findGateguardYml (cwd first, then home)', () => {
-  const deps = (existing: string[]) => ({
-    cwd: '/proj',
-    home: '/home/u',
-    exists: async (p: string) => existing.includes(p.replace(/\\/g, '/')),
+describe('probeExemptCapability (installed-hook grep)', () => {
+  const registry = JSON.stringify({
+    version: 2,
+    plugins: {
+      'ecc@ecc': [{ scope: 'user', installPath: '/plug/ecc/2.0.0' }],
+      'other@m': [{ installPath: '/plug/other/1.0.0' }],
+    },
   })
 
-  it('cwd wins over home', async () => {
-    const p = await findGateguardYml(deps(['/proj/.gateguard.yml', '/home/u/.gateguard.yml']))
-    expect((p ?? '').replace(/\\/g, '/')).toBe('/proj/.gateguard.yml')
+  it('env-supported when the resident hook mentions the env key', async () => {
+    const r = await probeExemptCapability({
+      registryPath: () => '/reg.json',
+      readFile: async (p) => {
+        if (p === '/reg.json') return registry
+        if (p.replace(/\\/g, '/').includes('/plug/ecc/2.0.0/scripts/hooks/')) {
+          return `const exempt = process.env.${EXEMPT_ENV_KEY} || ''`
+        }
+        throw new Error('ENOENT')
+      },
+    })
+    expect(r).toBe('env-supported')
   })
 
-  it('falls back to home', async () => {
-    const p = await findGateguardYml(deps(['/home/u/.gateguard.yml']))
-    expect((p ?? '').replace(/\\/g, '/')).toBe('/home/u/.gateguard.yml')
+  it('legacy when the hook exists but predates the env key', async () => {
+    const r = await probeExemptCapability({
+      registryPath: () => '/reg.json',
+      readFile: async (p) =>
+        p === '/reg.json' ? registry : 'module.exports = factForce // old hook',
+    })
+    expect(r).toBe('legacy')
   })
 
-  it('null when neither exists', async () => {
-    expect(await findGateguardYml(deps([]))).toBeNull()
+  it('legacy (fail-soft) on no registry / unreadable hook / no ecc entry', async () => {
+    expect(await probeExemptCapability({ registryPath: () => null })).toBe('legacy')
+    expect(
+      await probeExemptCapability({
+        registryPath: () => '/reg.json',
+        readFile: async () => {
+          throw new Error('EACCES')
+        },
+      }),
+    ).toBe('legacy')
+    expect(
+      await probeExemptCapability({
+        registryPath: () => '/reg.json',
+        readFile: async () => JSON.stringify({ plugins: { 'other@m': [] } }),
+      }),
+    ).toBe('legacy')
+  })
+})
+
+describe('readCurrentEnvValue (settings.json env reader, fail-soft)', () => {
+  it('returns the persisted value', async () => {
+    const v = await readCurrentEnvValue({
+      readSettings: async () => JSON.stringify({ env: { [EXEMPT_ENV_KEY]: 'a/**,b/**' } }),
+    })
+    expect(v).toBe('a/**,b/**')
+  })
+
+  it('undefined on absent file / malformed JSON / unset key', async () => {
+    expect(await readCurrentEnvValue({ readSettings: async () => null })).toBeUndefined()
+    expect(await readCurrentEnvValue({ readSettings: async () => '{oops' })).toBeUndefined()
+    expect(await readCurrentEnvValue({ readSettings: async () => '{"env":{}}' })).toBeUndefined()
   })
 })
 
@@ -93,59 +123,33 @@ describe('refusalLines (D3 — loud decline)', () => {
   })
 })
 
-describe('applyExemption (backup first, append only)', () => {
-  const mkDeps = (raw: string) => {
-    const writes: Array<{ path: string; text: string }> = []
-    const backups: string[] = []
-    return {
-      writes,
-      backups,
-      deps: {
-        readFile: async () => raw,
-        writeFile: async (p: string, text: string) => {
-          writes.push({ path: p, text })
-        },
-        backup: async (_raw: string) => {
-          backups.push('B')
-          return { status: 'ok' as const, path: '/backups/gateguard.yml.bak' }
-        },
-      },
-    }
-  }
-
-  it('applies: backup happens before write, file gets the appended glob', async () => {
-    const h = mkDeps('ignore_paths:\n  - ".venv/**"\n')
-    const r = await applyExemption('/proj/.gateguard.yml', h.deps)
-    expect(r.status).toBe('applied')
-    expect(h.backups.length).toBe(1)
-    expect(h.writes.length).toBe(1)
-    expect(h.writes[0]?.text).toContain(PLANNING_GLOB)
-    if (r.status === 'applied') expect(r.backupPath).toBe('/backups/gateguard.yml.bak')
-  })
-
-  it('already: no backup, no write', async () => {
-    const h = mkDeps(`ignore_paths:\n  - "${PLANNING_GLOB}"\n`)
-    const r = await applyExemption('/proj/.gateguard.yml', h.deps)
-    expect(r.status).toBe('already')
-    expect(h.backups.length).toBe(0)
-    expect(h.writes.length).toBe(0)
+describe('upgradeAdviceLines (legacy ecc)', () => {
+  it('names the upgrade command and the interim kill switch', () => {
+    const block = upgradeAdviceLines().join('\n')
+    expect(block).toContain(ECC_UPGRADE_CMD)
+    expect(block).toContain('ECC_GATEGUARD=off')
   })
 })
 
 describe('runExemptionFlow (interactive confirm default YES)', () => {
-  const flowDeps = (raw: string) => {
+  const flowDeps = (existing: string | undefined) => {
     const printed: string[] = []
-    const writes: string[] = []
+    const merges: string[] = []
     return {
       printed,
-      writes,
+      merges,
       deps: {
-        findYml: async () => '/proj/.gateguard.yml',
-        readFile: async () => raw,
-        writeFile: async (_p: string, text: string) => {
-          writes.push(text)
+        probe: async () => 'env-supported' as const,
+        readEnvValue: async () => existing,
+        merge: async (value: string) => {
+          merges.push(value)
+          return {
+            outcome: 'merged' as const,
+            path: '/fake/settings.json',
+            backupPath: '/b/settings.bak',
+          }
         },
-        backup: async () => ({ status: 'ok' as const, path: '/b/gg.bak' }),
+        supportsEnvWrite: () => true,
         print: (line: string) => {
           printed.push(line)
         },
@@ -153,52 +157,81 @@ describe('runExemptionFlow (interactive confirm default YES)', () => {
     }
   }
 
-  it('confirm=yes → applied; preview shows exact diff line + target + backup before consent', async () => {
-    const h = flowDeps('enabled: true\n')
+  it('confirm=yes → applied; preview shows exact env change + target before consent', async () => {
+    const h = flowDeps(undefined)
     const confirm = vi.fn(async () => true)
     const r = await runExemptionFlow({ confirm, ...h.deps })
     expect(r).toBe('applied')
     expect(confirm).toHaveBeenCalledOnce()
-    const beforeConsent = h.printed.join('\n')
-    expect(beforeConsent).toContain(`+   - "${PLANNING_GLOB}"`)
-    expect(beforeConsent).toContain('/proj/.gateguard.yml')
-    expect(h.writes.length).toBe(1)
+    const out = h.printed.join('\n')
+    expect(out).toContain(`+ env.${EXEMPT_ENV_KEY} = "${PLANNING_GLOB}"`)
+    expect(out).toContain('/fake/settings.json') // ✓ line names the target
+    expect(h.merges).toEqual([PLANNING_GLOB])
   })
 
-  it('confirm=no → declined + loud refusal block printed, nothing written', async () => {
-    const h = flowDeps('enabled: true\n')
+  it('appends to an existing list instead of clobbering it', async () => {
+    const h = flowDeps('docs/**')
+    const r = await runExemptionFlow({ confirm: async () => true, ...h.deps })
+    expect(r).toBe('applied')
+    expect(h.merges).toEqual([`docs/**,${PLANNING_GLOB}`])
+    expect(h.printed.join('\n')).toContain(`"docs/**" → "docs/**,${PLANNING_GLOB}"`)
+  })
+
+  it('confirm=no → declined + loud refusal block printed, nothing merged', async () => {
+    const h = flowDeps(undefined)
     const r = await runExemptionFlow({ confirm: async () => false, ...h.deps })
     expect(r).toBe('declined')
-    expect(h.writes.length).toBe(0)
+    expect(h.merges.length).toBe(0)
     expect(h.printed.join('\n')).toContain(MANUAL_FIX_CMD)
   })
 
-  it('no confirm fn (non-interactive) → advises manual command, nothing written', async () => {
-    const h = flowDeps('enabled: true\n')
+  it('no confirm fn (non-interactive) → advises manual command, nothing merged', async () => {
+    const h = flowDeps(undefined)
     const r = await runExemptionFlow({ ...h.deps })
     expect(r).toBe('advised')
-    expect(h.writes.length).toBe(0)
+    expect(h.merges.length).toBe(0)
     expect(h.printed.join('\n')).toContain(MANUAL_FIX_CMD)
   })
 
-  it('already exempt → already, quiet (no refusal block)', async () => {
-    const h = flowDeps(`ignore_paths:\n  - "${PLANNING_GLOB}"\n`)
+  it('already exempt → already, quiet (no refusal block, no merge)', async () => {
+    const h = flowDeps(`x/**,${PLANNING_GLOB}`)
     const r = await runExemptionFlow({ confirm: async () => true, ...h.deps })
     expect(r).toBe('already')
-    expect(h.writes.length).toBe(0)
+    expect(h.merges.length).toBe(0)
   })
 
-  it('no yml found → no-yml (caller falls back to variant wording)', async () => {
-    const printed: string[] = []
+  it('legacy capability → not-capable, silent (caller words the advice)', async () => {
+    const h = flowDeps(undefined)
     const r = await runExemptionFlow({
-      findYml: async () => null,
-      readFile: async () => '',
-      writeFile: async () => {},
-      backup: async () => ({ status: 'ok' as const, path: '' }),
-      print: (l: string) => {
-        printed.push(l)
-      },
+      ...h.deps,
+      probe: async () => 'legacy' as const,
+      confirm: async () => true,
     })
-    expect(r).toBe('no-yml')
+    expect(r).toBe('not-capable')
+    expect(h.merges.length).toBe(0)
+    expect(h.printed.length).toBe(0)
+  })
+
+  it('platform without env-key write (codex) → unsupported-platform + shell-export hint', async () => {
+    const h = flowDeps(undefined)
+    const r = await runExemptionFlow({
+      ...h.deps,
+      supportsEnvWrite: () => false,
+      confirm: async () => true,
+    })
+    expect(r).toBe('unsupported-platform')
+    expect(h.merges.length).toBe(0)
+    expect(h.printed.join('\n')).toContain(EXEMPT_ENV_KEY)
+  })
+
+  it('merge warn outcome → error + manual command advice', async () => {
+    const h = flowDeps(undefined)
+    const r = await runExemptionFlow({
+      ...h.deps,
+      merge: async () => ({ outcome: 'warn' as const, message: 'disk full' }),
+      confirm: async () => true,
+    })
+    expect(r).toBe('error')
+    expect(h.printed.join('\n')).toContain('disk full')
   })
 })

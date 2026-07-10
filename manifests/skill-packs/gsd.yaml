@@ -21,6 +21,10 @@ spec:
     cmd: "npx --yes @opengsd/gsd-core@latest --claude --global"
     npm_version: ^1.6.0
     idempotent_check: "test -d ~/.claude/skills/gsd-plan-phase"
+    # 4.23.0 (issue #3 req 5) — gsd-core installs gsd-* prefixed skill dirs only
+    # (naturally collision-free with harnessed workflow names); declared empty on
+    # purpose so the post-install diff still reports any future unprefixed name.
+    installs_skills: []
   verify:
     cmd: "test -f ~/.claude/skills/gsd-plan-phase/SKILL.md"
     timeout_ms: 10000

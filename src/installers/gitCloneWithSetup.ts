@@ -31,6 +31,11 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
+import {
+  auditPostInstall,
+  snapshotSkillNames,
+  warnDeclaredCollisions,
+} from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
@@ -222,6 +227,9 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   // spawnCmd handles cross-OS shell + B1 re-screen. cmd is single string.
   // v3.0.2: explicit install timeout (60s — git clone over network can exceed 15s).
   // v23 (4.5.1) — posixShell: this cmd uses rm/cp/mkdir; route through Git Bash on Windows.
+  // 4.23.0 (issue #3) — flat-namespace collision audit around the external writer.
+  await warnDeclaredCollisions(ctx)
+  const packSnapshot = await snapshotSkillNames()
   const sp = await spawnCmd(ctx, install.cmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { posixShell: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
@@ -238,6 +246,9 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
       ),
     }
   }
+
+  // 4.23.0 (issue #3) — post-install diff: undeclared new names + workflow collisions.
+  await auditPostInstall(ctx, packSnapshot)
 
   // D-15 — SHA-verify. `git rev-parse HEAD` in clone target dir; match the
   // manifest git_ref by prefix (git's standard SHA-prefix semantics — a

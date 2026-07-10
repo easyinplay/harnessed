@@ -35,6 +35,31 @@ spec:
     # surviving `tdd` + the new name so fresh installs verify (dogfood v4.15.2:
     # verify pinned the dead `diagnose` path → every refresh reported failed).
     idempotent_check: "test -d ~/.claude/skills/tdd || test -d ~/.agents/skills/tdd || test -d ~/.claude/skills/diagnosing-bugs || test -d ~/.agents/skills/diagnosing-bugs"
+    # 4.23.0 (issue #3 req 5) — upstream skills/ engineering + productivity sets
+    # (gh api 实证 2026-07-10). `research` COLLIDES with harnessed's research
+    # workflow — the post-Step-B integrity pass restores the engine version.
+    installs_skills:
+      - ask-matt
+      - code-review
+      - codebase-design
+      - diagnosing-bugs
+      - domain-modeling
+      - grill-with-docs
+      - implement
+      - improve-codebase-architecture
+      - prototype
+      - research
+      - resolving-merge-conflicts
+      - setup-matt-pocock-skills
+      - tdd
+      - to-issues
+      - to-prd
+      - triage
+      - grill-me
+      - grilling
+      - handoff
+      - teach
+      - writing-great-skills
   verify:
     cmd: "test -f ~/.claude/skills/tdd/SKILL.md || test -f ~/.agents/skills/tdd/SKILL.md || test -f ~/.claude/skills/diagnosing-bugs/SKILL.md || test -f ~/.agents/skills/diagnosing-bugs/SKILL.md"
     timeout_ms: 5000

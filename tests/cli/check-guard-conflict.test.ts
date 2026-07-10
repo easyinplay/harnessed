@@ -82,33 +82,46 @@ describe('checkGuardConflict (doctor, warn-only)', () => {
     }
   })
 
-  // 4.22.2 — variant-aware fix channel (injected exemption probe).
+  // 4.23.0 (T8) — variant-aware fix channel by CAPABILITY (env channel only;
+  // the 4.22.2 yml probe is gone with the yml machinery).
   const activeDeps = deps({ env: { ECC_GATEGUARD: 'on' } })
 
-  it('active + unexempt .gateguard.yml → warn carries the auto-fix command', async () => {
+  it('active + env-capable ecc, unexempt → warn carries the auto-fix command', async () => {
     const r = await checkGuardConflict(activeDeps, {
-      findYml: async () => '/x/.gateguard.yml',
-      readFile: async () => 'enabled: true\n',
+      capability: async () => 'env-supported',
+      currentValue: async () => undefined,
     })
     expect(r.status).toBe('warn')
+    expect(r.message).toMatch(/GATEGUARD_EXEMPT_GLOBS/)
     expect(r.install_commands).toContain('harnessed exempt-gateguard')
   })
 
-  it('active + already-exempt yml → pass (resolved), doctor stops nagging', async () => {
+  it('active + settings env already exempted → pass (resolved), doctor stops nagging', async () => {
     const r = await checkGuardConflict(activeDeps, {
-      findYml: async () => '/x/.gateguard.yml',
-      readFile: async () => 'ignore_paths:\n  - ".planning/**"\n',
+      capability: async () => 'env-supported',
+      currentValue: async () => 'docs/**,.planning/**',
     })
     expect(r.status).toBe('pass')
     expect(r.message).toMatch(/exempt/i)
   })
 
-  it('active + no yml (bundled/unknown variant) → warn without auto-fix command', async () => {
+  it('active + live process env exempted → pass even without a settings entry', async () => {
+    const r = await checkGuardConflict(
+      deps({ env: { ECC_GATEGUARD: 'on', GATEGUARD_EXEMPT_GLOBS: '.planning/**' } }),
+      { capability: async () => 'env-supported', currentValue: async () => undefined },
+    )
+    expect(r.status).toBe('pass')
+  })
+
+  it('active + legacy ecc → warn advises the upgrade, not the auto-fix command', async () => {
     const r = await checkGuardConflict(activeDeps, {
-      findYml: async () => null,
-      readFile: async () => '',
+      capability: async () => 'legacy',
+      currentValue: async () => undefined,
     })
     expect(r.status).toBe('warn')
+    expect(r.message).toMatch(/predates/i)
+    expect(r.fix).toContain('claude plugin update ecc')
+    expect(r.fix).toContain('ECC_GATEGUARD=off')
     expect(r.install_commands ?? []).not.toContain('harnessed exempt-gateguard')
   })
 })

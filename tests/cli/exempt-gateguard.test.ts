@@ -1,15 +1,40 @@
-// 4.22.2 T2 — `harnessed exempt-gateguard` CLI (the auto-install fix channel).
+// 4.23.0 (T8) — `harnessed exempt-gateguard` CLI (the auto-install fix channel,
+// env variant: persists GATEGUARD_EXEMPT_GLOBS=".planning/**" into settings env).
 //
 // Consent semantics: invoking the command IS the consent (doctor auto-install
 // already confirmed, default YES; or the user typed it from the refusal-block
 // advice) — so the command applies without another prompt, but still prints the
-// exact diff + backup path (D2 transparency) before writing.
+// exact env change + backup path (D2 transparency) before writing.
+//
+// The CLI passes the module's own exports into runExemptionFlow's deps, so a
+// factory mock on guard-exemption.js controls probe/read/merge WITHOUT touching
+// the host's real settings.json (settingsWriter would otherwise write ~/.claude).
 
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import { Command } from 'commander'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+const ctl = vi.hoisted(() => ({
+  capability: 'env-supported' as 'env-supported' | 'legacy',
+  existing: undefined as string | undefined,
+  merges: [] as string[],
+  mergeOutcome: 'merged' as 'merged' | 'warn',
+}))
+
+vi.mock('../../src/cli/lib/guard-exemption.js', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('../../src/cli/lib/guard-exemption.js')>()
+  return {
+    ...orig,
+    probeExemptCapability: vi.fn(async () => ctl.capability),
+    readCurrentEnvValue: vi.fn(async () => ctl.existing),
+    applyEnvExemption: vi.fn(async (value: string) => {
+      ctl.merges.push(value)
+      return ctl.mergeOutcome === 'merged'
+        ? { outcome: 'merged' as const, path: '/fake/settings.json', backupPath: '/fake/b.bak' }
+        : { outcome: 'warn' as const, message: 'write failed' }
+    }),
+  }
+})
+
 import { registerExemptGateguard } from '../../src/cli/exempt-gateguard.js'
 
 class ExitError extends Error {
@@ -48,53 +73,48 @@ async function runCli(argv: string[]): Promise<{ code: number; out: string }> {
   return { code, out }
 }
 
-let stateRoot: string
-let projectDir: string
-let prevCwd: string
-
-beforeEach(() => {
-  stateRoot = mkdtempSync(join(tmpdir(), 'harnessed-exempt-state-'))
-  projectDir = mkdtempSync(join(tmpdir(), 'harnessed-exempt-proj-'))
-  process.env.HARNESSED_ROOT_OVERRIDE = stateRoot
-  prevCwd = process.cwd()
-  process.chdir(projectDir)
-})
-afterEach(() => {
-  process.chdir(prevCwd)
-  delete process.env.HARNESSED_ROOT_OVERRIDE
-  rmSync(stateRoot, { recursive: true, force: true })
-  rmSync(projectDir, { recursive: true, force: true })
-})
-
 describe('harnessed exempt-gateguard', () => {
-  it('applies the exemption: file mutated, backup written, exit 0', async () => {
-    const yml = join(projectDir, '.gateguard.yml')
-    writeFileSync(yml, '# cfg\nenabled: true\nignore_paths:\n  - ".venv/**"\n', 'utf8')
+  it('capable + unexempt → applies: env change previewed, merge called, exit 0', async () => {
+    ctl.capability = 'env-supported'
+    ctl.existing = undefined
+    ctl.merges = []
+    ctl.mergeOutcome = 'merged'
     const { code, out } = await runCli(['exempt-gateguard'])
     expect(code).toBe(0)
-    const text = readFileSync(yml, 'utf8')
-    expect(text).toContain('.planning/**')
-    expect(text).toContain('# cfg') // comments survive (text-level append)
-    expect(out).toContain('+   - ".planning/**"') // diff printed before write
-    // backup landed under the harnessed backups dir
-    const backups = readdirSync(join(stateRoot, 'backups'))
-    expect(backups.some((f) => f.startsWith('gateguard.yml.'))).toBe(true)
+    expect(ctl.merges).toEqual(['.planning/**'])
+    expect(out).toContain('+ env.GATEGUARD_EXEMPT_GLOBS = ".planning/**"') // preview before write
+    expect(out).toContain('/fake/settings.json') // target named
+    expect(out).toContain('/fake/b.bak') // backup path surfaced
   })
 
-  it('second run is idempotent: already exempt, no new backup, exit 0', async () => {
-    const yml = join(projectDir, '.gateguard.yml')
-    writeFileSync(yml, `ignore_paths:\n  - ".planning/**"\n`, 'utf8')
+  it('second run is idempotent: already listed, no merge, exit 0', async () => {
+    ctl.capability = 'env-supported'
+    ctl.existing = 'docs/**,.planning/**'
+    ctl.merges = []
     const { code, out } = await runCli(['exempt-gateguard'])
     expect(code).toBe(0)
+    expect(ctl.merges.length).toBe(0)
     expect(out).toMatch(/already/i)
   })
 
-  it('no .gateguard.yml anywhere → explains the variant situation, exit 0', async () => {
-    // findGateguardYml probes cwd then HOME — pin HOME probing away from the
-    // real host home is not possible here, so tolerate either outcome shape:
-    // exit 0 and a non-empty explanation.
+  it('legacy ecc → upgrade advice (claude plugin update ecc), no merge, exit 0', async () => {
+    ctl.capability = 'legacy'
+    ctl.existing = undefined
+    ctl.merges = []
     const { code, out } = await runCli(['exempt-gateguard'])
     expect(code).toBe(0)
-    expect(out.length).toBeGreaterThan(0)
+    expect(ctl.merges.length).toBe(0)
+    expect(out).toContain('claude plugin update ecc')
+    expect(out).toContain('ECC_GATEGUARD=off')
+  })
+
+  it('merge failure → exit 1 with the manual advice', async () => {
+    ctl.capability = 'env-supported'
+    ctl.existing = undefined
+    ctl.merges = []
+    ctl.mergeOutcome = 'warn'
+    const { code, out } = await runCli(['exempt-gateguard'])
+    expect(code).toBe(1)
+    expect(out).toContain('write failed')
   })
 })

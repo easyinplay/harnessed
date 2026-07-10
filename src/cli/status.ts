@@ -142,6 +142,19 @@ export function registerStatus(program: Command): void {
             // no intent surface — recover view degrades to the ledger-only shape
           }
         }
+        // 4.23.0 (issue #3 req 1) — a shadowed workflow skill makes the recover
+        // view actively misleading ("mid state-machine" while /research runs a
+        // foreign skill). Surface the integrity warning FIRST. Fail-soft.
+        try {
+          const { checkSkillIntegrity } = await import('./lib/check-skill-integrity.js')
+          const integ = await checkSkillIntegrity()
+          if (integ.status === 'warn') {
+            console.warn(`⚠ ${integ.message}`)
+            if (integ.fix) console.warn(`    fix: ${integ.fix}`)
+          }
+        } catch {
+          /* advisory only */
+        }
         const lines = await buildRecoverLines(wf, ledger, intent)
         for (const l of lines) console.log(l)
         return

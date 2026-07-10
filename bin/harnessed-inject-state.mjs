@@ -13,7 +13,7 @@
 // Phase 15 repo-aware: resolves the active repo's slot from
 // workflows.json[repoKey(cwd)] (legacy current-workflow.json as a fallback).
 // Root: HARNESSED_ROOT_OVERRIDE if set, else <homedir>/.claude/harnessed.
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
@@ -56,12 +56,23 @@ function sessionIdEnvName() {
 function readWorkflow(root, keys) {
   let wf = null
   let intent = null
+  let ledgerAgeMs = null
+  const ageOf = (p) => {
+    try {
+      return Date.now() - statSync(p).mtimeMs
+    } catch {
+      return null
+    }
+  }
   try {
-    const store = JSON.parse(readFileSync(join(root, 'workflows.json'), 'utf8'))
+    const storePath = join(root, 'workflows.json')
+    const store = JSON.parse(readFileSync(storePath, 'utf8'))
     if (store?.workflows) {
       for (const k of keys) {
         if (store.workflows[k]) {
           wf = store.workflows[k]
+          // 4.23.0 (issue #3 req 3) — ledger file age drives the STALE wording.
+          ledgerAgeMs = ageOf(storePath)
           break
         }
       }
@@ -77,10 +88,12 @@ function readWorkflow(root, keys) {
   } catch {}
   if (!wf) {
     try {
-      wf = JSON.parse(readFileSync(join(root, 'current-workflow.json'), 'utf8'))
+      const legacyPath = join(root, 'current-workflow.json')
+      wf = JSON.parse(readFileSync(legacyPath, 'utf8'))
+      ledgerAgeMs = ageOf(legacyPath)
     } catch {}
   }
-  return { wf, intent }
+  return { wf, intent, ledgerAgeMs }
 }
 
 // 4.22.0 — parity with injectState.ts INTENT_TTL_MS / formatIntentAge /
@@ -203,7 +216,10 @@ function forwardPointer(repoRoot, wf) {
   return { unit, remainingPhases: phases.filter((p) => !p.complete).length }
 }
 
-function workflowStateBlock(wf, forward) {
+// 4.23.0 (issue #3 req 3) — parity with injectState.ts STALE_LEDGER_MS.
+const STALE_LEDGER_MS = 24 * 60 * 60 * 1000
+
+function workflowStateBlock(wf, forward, ledgerAgeMs) {
   const ledger = wf.sub_progress ?? []
   const next = ledger.find((e) => e.status === 'pending')?.sub ?? null
   const lines = [
@@ -213,7 +229,12 @@ function workflowStateBlock(wf, forward) {
     next ? `next: ${next}` : 'next: (none — all subs resolved)',
   ]
   // issue #2 (T2) — anti-freestyle enforcement (parity with injectState.ts).
-  if (next) {
+  if (next && typeof ledgerAgeMs === 'number' && ledgerAgeMs > STALE_LEDGER_MS) {
+    const days = Math.floor(ledgerAgeMs / (24 * 60 * 60 * 1000))
+    lines.push(
+      `ENGINE: STALE state machine — sub '${next}' has been pending with NO checkpoint activity for >${days}d. This ledger may belong to an abandoned/bypassed run (issue #3 class). Run \`harnessed status --recover\` to re-orient, then either resume the sub or close it out with \`harnessed checkpoint fail ${next} --summary "<why>"\`.`,
+    )
+  } else if (next) {
     lines.push(
       `ENGINE: mid state-machine — drive sub '${next}' via \`harnessed prompt ${next}\` → spawn → \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
     )
@@ -321,7 +342,7 @@ try {
   const key = repoKey(process.cwd())
   const envName = sessionIdEnvName()
   const sid = envName ? process.env[envName]?.trim() : undefined
-  const { wf, intent } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
+  const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
   // 4.22.0 — freestyle nag: a fresh intent whose ledger was never seeded (start
   // absorbs the intent) keeps reminding until steps 2-3 (gates → start) run.
   const ledgerEmpty = (wf?.sub_progress ?? []).length === 0
@@ -336,7 +357,7 @@ try {
   // (parity with buildInjection). `key` is the repo root holding .planning/.
   const pending = (wf.sub_progress ?? []).find((e) => e.status === 'pending')?.sub ?? null
   const forward = pending === null ? forwardPointer(key, wf) : null
-  const ws = workflowStateBlock(wf, forward)
+  const ws = workflowStateBlock(wf, forward, ledgerAgeMs)
 
   let learningsMd = ''
   try {

@@ -305,6 +305,13 @@
                 "idempotent_check": {
                   "minLength": 1,
                   "type": "string"
+                },
+                "installs_skills": {
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -350,6 +357,13 @@
                 "idempotent_check": {
                   "minLength": 1,
                   "type": "string"
+                },
+                "installs_skills": {
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -395,6 +409,13 @@
                 "idempotent_check": {
                   "minLength": 1,
                   "type": "string"
+                },
+                "installs_skills": {
+                  "type": "array",
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
                 }
               }
             },
@@ -1026,6 +1047,13 @@
                         "idempotent_check": {
                           "minLength": 1,
                           "type": "string"
+                        },
+                        "installs_skills": {
+                          "type": "array",
+                          "items": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
                         }
                       }
                     },
@@ -1071,6 +1099,13 @@
                         "idempotent_check": {
                           "minLength": 1,
                           "type": "string"
+                        },
+                        "installs_skills": {
+                          "type": "array",
+                          "items": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
                         }
                       }
                     },
@@ -1116,6 +1151,13 @@
                         "idempotent_check": {
                           "minLength": 1,
                           "type": "string"
+                        },
+                        "installs_skills": {
+                          "type": "array",
+                          "items": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
                         }
                       }
                     },

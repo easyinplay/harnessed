@@ -232,10 +232,13 @@ export function registerCheckpoint(program: Command): void {
           // filename policy blocks the evidence-guard contract names; the main
           // session can fact-retry past it, SUBAGENTS cannot → renamed artifacts →
           // every complete fail-closed blocks; verify's five *-report.md recur it).
-          // 4.22.2 — variant-aware: a `.gateguard.yml` (full gateguard-ai) gets the
-          // consented auto-fix (confirm default YES per D1; refusal prints the loud
-          // D3 block; non-TTY prints preview + the manual command, never mutates);
-          // already-exempt stays silent; no yml → the 4.22.1 generic warn stands.
+          // 4.23.0 (T8) — variant-aware by CAPABILITY: a current ecc (its hook
+          // honors GATEGUARD_EXEMPT_GLOBS) gets the consented env auto-fix
+          // (confirm default YES per D1; refusal prints the loud D3 block;
+          // non-TTY prints preview + the manual command, never mutates);
+          // already-exempt stays silent; legacy ecc → the generic warn with the
+          // upgrade-first advice. Module exports are passed into the flow's deps
+          // so tests can factory-mock them (same seam as 4.22.2's findYml).
           // All stderr, all fail-soft; detection SoT = check-guard-conflict.ts.
           try {
             const { detectGateGuardActive, GUARD_CONFLICT_ADVICE } = await import(
@@ -243,12 +246,12 @@ export function registerCheckpoint(program: Command): void {
             )
             const det = await detectGateGuardActive()
             if (det.active) {
-              const { findGateguardYml, runExemptionFlow } = await import(
-                './lib/guard-exemption.js'
-              )
+              const ge = await import('./lib/guard-exemption.js')
               const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
-              const flowResult = await runExemptionFlow({
-                findYml: () => findGateguardYml(),
+              const flowResult = await ge.runExemptionFlow({
+                probe: () => ge.probeExemptCapability(),
+                readEnvValue: () => ge.readCurrentEnvValue(),
+                merge: (value) => ge.applyEnvExemption(value),
                 print: (line) => console.error(line),
                 ...(isTty
                   ? {
@@ -256,7 +259,7 @@ export function registerCheckpoint(program: Command): void {
                         const p = await import('@clack/prompts')
                         const ans = await p.confirm({
                           message:
-                            'Apply the GateGuard exemption now? (appends ".planning/**" to ignore_paths — backed up first)',
+                            'Apply the GateGuard exemption now? (persists GATEGUARD_EXEMPT_GLOBS=".planning/**" into settings env — backed up first)',
                           initialValue: true, // D1 — default YES
                         })
                         return !p.isCancel(ans) && ans === true
@@ -264,7 +267,7 @@ export function registerCheckpoint(program: Command): void {
                     }
                   : {}),
               })
-              if (flowResult === 'no-yml') {
+              if (flowResult === 'not-capable') {
                 console.error(
                   `⚠️ [harnessed] ECC GateGuard appears active (via ${det.source}) — its ` +
                     `filename policy (report/findings/summary/analysis) collides with the ` +

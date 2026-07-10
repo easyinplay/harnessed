@@ -78,6 +78,16 @@ vi.mock('../../src/cli/lib/check-codegraph.js', () => ({
 vi.mock('../../src/cli/lib/check-update.js', () => ({
   checkUpdate: () => ({ name: 'update', status: 'pass', message: 'up to date (test)' }),
 }))
+// 4.23.0 (issue #3) — 17th check mock (check-skill-integrity.ts reads the real
+// skills dir + hash ledger; the global fs mocks would make it audit garbage).
+// Real logic unit-tested in tests/cli/lib/skillIntegrity.test.ts (tmpdir).
+vi.mock('../../src/cli/lib/check-skill-integrity.js', () => ({
+  checkSkillIntegrity: () => ({
+    name: 'workflow skill integrity',
+    status: 'pass',
+    message: '28 installed workflow skill(s) match their install-time hash ledger',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -155,17 +165,17 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
 
   // v3.7.0 Phase 1 — registry future-proof: CHECKS array is single source of truth.
   // Bump assertion when adding a check (sister doctor.ts --description string update).
-  it('cell 0 — CHECKS registry has 16 entries (4.22.1 +guard-conflict)', async () => {
+  it('cell 0 — CHECKS registry has 17 entries (4.23.0 +skill-integrity)', async () => {
     const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
-    expect(CHECKS.length).toBe(16)
+    expect(CHECKS.length).toBe(17)
   })
 
-  it('cell 1 — all 16 checks pass → exit 0 + summary "pass" (4.22.1 bump 15→16)', async () => {
+  it('cell 1 — all 17 checks pass → exit 0 + summary "pass" (4.23.0 bump 16→17)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(16)
+    expect(p.checks).toHaveLength(17)
     expect(p.summary).toBe('pass')
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
     // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
@@ -184,6 +194,8 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     expect(p.checks.map((c) => c.name)).toContain('bun present')
     // 4.22.1 — 16th check (dual-guard GateGuard conflict, warn-only)
     expect(p.checks.map((c) => c.name)).toContain('guard conflict (GateGuard)')
+    // 4.23.0 — 17th check (installed workflow-skill integrity, warn-only)
+    expect(p.checks.map((c) => c.name)).toContain('workflow skill integrity')
   })
 
   it('cell 5 — doctor 8th check token budget — status warn does NOT fail exit (B-06 + D-04)', async () => {
@@ -191,7 +203,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
     const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
-    expect(p.checks).toHaveLength(16)
+    expect(p.checks).toHaveLength(17)
     const tokenBudget = p.checks.find((c) => c.name === 'token budget')
     expect(tokenBudget).toBeDefined()
     expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')

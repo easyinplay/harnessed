@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.23.0] - 2026-07-10
+
+修复 GitHub issue #3(严重:`harnessed setup` 自伤 — 扁平 `~/.claude/skills/` 命名空间下 skill pack 静默覆盖引擎 workflow)与 issue #2 残余,并按用户拍板将 GateGuard 豁免通道整体切换为上游 env 通道。
+
+### Fixed
+
+- **setup 安装顺序反转(issue #3 根因)**:Step A(28 个 workflow 安装 + A.5 渲染 + A.6 commands)移到 Step B(skill packs)之后 — 引擎面最后落笔,harnessed 成为自己名字的 last writer。实测冲突集为 {research←mattpocock-skills, retro←gstack, ship←gstack}(`ship` 为 issue 未报告的第三个)。
+- **staleness 升级(issue #3 stale-pending 场景)**:perturn 注入(`injectState.ts` 与 `bin/harnessed-inject-state.mjs` 双端 parity)对 pending sub 的 ledger 文件 mtime 超 24h(`STALE_LEDGER_MS`)输出 `ENGINE: STALE state machine` 措辞(引导 `status --recover` / `checkpoint fail`),替代误导性的 "mid state-machine" 直播态。
+- **issue #2 残余核验**:workflows/auto SKILL.md 已含完整内联可执行序列 + "Do NOT improvise" 硬前置(4.21/4.22 成果),经核验无需改动。
+
+### Added
+
+- **安装时 hash 台账 + 四态完整性校验自愈**(`skillIntegrity.ts`,新):setup Step A.5 渲染后把每个 workflow 渲染态 sha256 记入 `<stateRoot>/skill-hashes.json`;末尾全量审计(ok / foreign=marker 丢失即 pack 覆盖 / tampered=保留 marker 的手改 / stale=旧版本或无台账记录 / missing),坏项自动从 bundle 重装 + 重渲染 + 重记台账,并经 manifests 声明反查肇事 pack。保证链:bundled 源 → 安装时渲染(唯一合法差异)→ 台账钉住渲染态 → 任何第三方改动偏离台账即被抓。doctor 新增第 17 检查 `workflow skill integrity`(warn-only);`status --recover` 顶部同报。
+- **manifest `installs_skills` 声明**(schema 可选字段,6 个 manifest 已填):安装器 pre-install 做声明∩workflow 名冲突预警,post-install snapshot-diff 对未声明新名 warn(上游漂移探测)(`packSkillAudit.ts`,新)。
+- **GateGuard 豁免 env 通道(T8,supersede 4.22.2 yml 通道)**:最新 ECC 的 gateguard-fact-force.js 支持 `GATEGUARD_EXEMPT_GLOBS` env 豁免;`harnessed exempt-gateguard` 改为能力探测(定位已装 ecc hook 并 grep env key)后经 `mergeSettingsEnvKey` 写 `env.GATEGUARD_EXEMPT_GLOBS=".planning/**"`(幂等追加、备份先行、confirm 默认 Yes、codex 平台 `supportsEnvKeyWrite` 门降级为 shell export 提示);旧版 ecc → 提示 `claude plugin update ecc` 升级 + `ECC_GATEGUARD=off` 备选。4.22.2 的 `.gateguard.yml` 文本追加机械整体移除(单一通道降复杂度;pip gateguard-ai 变体非目标用户面)。doctor / `checkpoint start` / CLI 三入口分型同步。
+- **setup 末尾显式 GateGuard 冲突面(T7)**:setup 结束时完整打印 guard-conflict warn(message + 变体感知 fix);pass 静默 — 修复 4.22.x 该告警仅在 auto-install 场景可见的盲区。
+- **delivery-contract 文档面(T5)**:research SKILL(en/zh)spawn 步骤注明 blocking-Agent 契约(named/background teammate 最终文本被平台丢弃,必须 file-write 或 SendMessage 回主 session);role-prompts(en/zh)review-team checklist 加 delivery contract 行,teams cleanup 措辞改为 "TeamDelete 权威、shutdown_request 尽力而为"。
+
 ## [4.22.2] - 2026-07-09
 
 ### Added

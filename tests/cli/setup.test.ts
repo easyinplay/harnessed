@@ -56,6 +56,10 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
   vi.spyOn(console, 'error').mockImplementation((...a: unknown[]) => {
     stderr += `${a.map(String).join(' ')}\n`
   })
+  // 4.23.0 T7 — the setup-end guard-conflict block prints via console.warn.
+  vi.spyOn(console, 'warn').mockImplementation((...a: unknown[]) => {
+    stderr += `${a.map(String).join(' ')}\n`
+  })
   const program = new Command().exitOverride()
   registerSetup(program)
   try {
@@ -166,6 +170,33 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(runInstallMock).toHaveBeenCalledTimes(2)
     expect(stdout).toContain('Upstream components: 2 installed')
     expect(stdout).toContain('setup complete — 1 workflows + 2 base manifests')
+  })
+
+  // Cell 3b (4.23.0 issue #3 / T2, TDD): ORDER INVERSION — Step B (packs) must
+  // run BEFORE Step A (workflow cp). The packs copy upstream skills into the
+  // same flat ~/.claude/skills namespace; installing the engine workflows LAST
+  // makes harnessed the last writer for its own names (research/retro/ship were
+  // the observed clobber set). Order-sensitive assertion, recorded reason: this
+  // inverts the original A→B sequence on purpose.
+  it('cell 3b — Step B (runInstall) completes BEFORE the first Step A workflow cp', async () => {
+    readdirMock.mockImplementation(
+      makeWorkflowsReaddir(['research'], { 'skill-packs': ['gsd.yaml'], tools: ['ctx7.yaml'] }),
+    )
+    statMock.mockImplementation(makeStatMock(['research']))
+    cpMock.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    validateManifestFileMock
+      .mockReturnValueOnce(makeValidManifest('ctx7') as never)
+      .mockReturnValueOnce(makeValidManifest('gsd') as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+
+    const { code } = await runCli(['setup'])
+    expect(code).toBe(0)
+    expect(runInstallMock).toHaveBeenCalledTimes(2)
+    expect(cpMock).toHaveBeenCalled()
+    const lastInstall = Math.max(...runInstallMock.mock.invocationCallOrder)
+    const firstCp = Math.min(...cpMock.mock.invocationCallOrder)
+    expect(lastInstall).toBeLessThan(firstCp)
   })
 
   // Cell 4 (v3.0-3.3 T3.3.W0.12): both flat keep dirs (research + retro) installed
@@ -400,5 +431,68 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     // Parallel timing tag present in summary line
     expect(stdout).toContain('[0.0s]')
     expect(stdout).toContain('setup complete — 1 workflows + 3 base manifests')
+  })
+})
+
+// 4.23.0 T7 — explicit GateGuard conflict surface at setup end (TDD three-state).
+// Dogfood: after a full reinstall the 4.22.x guard-conflict work was invisible
+// (auto-install only lists warn checks WITH install_commands). Setup now prints
+// the doctor check verbatim: warn → message + fix (variant-aware per T8);
+// pass/inactive → silent. Fail-soft: a throwing check never breaks setup.
+describe('cli/setup — 4.23.0 T7 (GateGuard conflict surface at setup end)', () => {
+  beforeEach(() => {
+    readdirMock.mockReset()
+    statMock.mockReset()
+    cpMock.mockReset()
+    readFileMock.mockReset()
+    runInstallMock.mockReset()
+    validateManifestFileMock.mockReset()
+    readdirMock.mockImplementation(makeWorkflowsReaddir(['research']))
+    statMock.mockImplementation(makeStatMock(['research']))
+    cpMock.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+  })
+  afterEach(() => {
+    delete process.env.ECC_GATEGUARD
+    vi.restoreAllMocks()
+  })
+
+  it('T7a — active + env-capable ecc → warn block with the auto-fix advice', async () => {
+    process.env.ECC_GATEGUARD = 'on'
+    // registry names an ecc install whose hook understands GATEGUARD_EXEMPT_GLOBS
+    readFileMock.mockImplementation(async (p: unknown) => {
+      const path = String(p).replace(/\\/g, '/')
+      if (path.includes('installed_plugins.json')) {
+        return JSON.stringify({
+          version: 2,
+          plugins: { 'ecc@ecc': [{ installPath: '/plug/ecc/2.1.0' }] },
+        }) as never
+      }
+      if (path.includes('gateguard-fact-force.js')) {
+        return 'const g = process.env.GATEGUARD_EXEMPT_GLOBS' as never
+      }
+      return 'yaml-content' as never
+    })
+    const { code, stderr } = await runCli(['setup'])
+    expect(code).toBe(0)
+    expect(stderr).toContain('guard conflict (GateGuard)')
+    expect(stderr).toContain('fix:')
+    expect(stderr).toContain('harnessed exempt-gateguard')
+  })
+
+  it('T7b — active + legacy ecc (probe miss) → warn advises the ecc upgrade', async () => {
+    process.env.ECC_GATEGUARD = 'on'
+    // default 'yaml-content' reads → registry unparseable → capability legacy
+    const { code, stderr } = await runCli(['setup'])
+    expect(code).toBe(0)
+    expect(stderr).toContain('guard conflict (GateGuard)')
+    expect(stderr).toContain('claude plugin update ecc')
+  })
+
+  it('T7c — GateGuard inactive → setup end stays silent about guard conflict', async () => {
+    const { code, stderr } = await runCli(['setup'])
+    expect(code).toBe(0)
+    expect(stderr).not.toContain('guard conflict (GateGuard)')
   })
 })

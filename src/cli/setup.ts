@@ -252,97 +252,6 @@ export function registerSetup(program: Command): void {
         process.exit(0)
       }
 
-      let skillsInstalled = 0
-      for (const wf of toInstall) {
-        const src = join(workflowsDir, wf.relPath)
-        const dst = join(skillsBase, wf.name)
-        try {
-          await cp(src, dst, { recursive: true, force: true })
-          skillsInstalled++
-        } catch (e) {
-          console.error(t('setup.copy_failed', { name: wf.name, message: (e as Error).message }))
-          process.exit(1)
-        }
-      }
-
-      console.log(t('setup.step_a_complete', { count: skillsInstalled, path: skillsBase }))
-
-      // ── Step A.5: Render `{{ capabilities.<name>.cmd }}` placeholders ───────
-      // v3.4.1 hotfix — sub-workflow SKILL.md files contain Jinja-style template
-      // refs that were never substituted at install time; end users saw literal
-      // `{{ capabilities.gstack-review.cmd }}` strings in installed skills so
-      // `/verify-paranoid` (and 20+ siblings) never invoked the real plugin cmd.
-      // Resolver reads ~/.claude/plugins/installed_plugins.json + capabilities.yaml,
-      // renders to namespaced form (`/gstack:review`) when plugin installed, OR
-      // leaves bare cmd + emits warning when plugin missing. Non-blocking — any
-      // unexpected error reduces to per-skill warn-and-continue (sister fallback
-      // 铁律 1).
-      const skillNames = toInstall.map((wf) => wf.name)
-      // Phase 29 — resolve locale ONCE and thread it into the render loop so the
-      // dest SKILL.md carries the locale-correct body. `--lang` is a global flag
-      // pre-parsed in src/cli.ts (→ setLocale) BEFORE this action runs, so
-      // getLocale() already reflects it; en → byte-identical to pre-29 behavior.
-      const rendered = await renderAllSkills(
-        skillNames,
-        skillsBase,
-        workflowsDir,
-        undefined,
-        getLocale(),
-      )
-      // (Step A.5 render count suppressed — internal detail)
-      if (rendered.aggregatedWarnings.length > 0) {
-        console.warn(t('setup.step_a_render.warnings_header'))
-        for (const w of rendered.aggregatedWarnings) {
-          console.warn(`    - ${w}`)
-        }
-      }
-
-      // ── Step A.6: Generate ~/.claude/commands/<x>.md (v3.4.3) ───────────────
-      // v3.4.3 — SKILL.md alone does NOT register a slash command. Claude Code
-      // platform-level slash commands require `~/.claude/commands/<x>.md`
-      // (filename = slash name; YAML frontmatter + body = prompt). This step
-      // writes one per installed sub-workflow, with a dual-path body: preferred
-      // (upstream slash cmd) + fallback (Task-spawn self-contained role prompt
-      // adapted from gstack expert prompts). Skip + warn if user already has
-      // a same-named commands/ file (additive only — never overwrite).
-      const commandsBase = getCommandsDir()
-      try {
-        await mkdir(commandsBase, { recursive: true })
-      } catch (e) {
-        console.warn(
-          `  [A.6] could not create ${commandsBase} — skipping commands/ generation (${(e as Error).message})`,
-        )
-      }
-      let capabilitiesMap = {}
-      try {
-        capabilitiesMap = await loadCapabilities(workflowsDir)
-      } catch (e) {
-        console.warn(
-          `  [A.6] capabilities.yaml unreadable — skipping commands/ generation (${(e as Error).message})`,
-        )
-      }
-      const rolePrompts = await loadRolePrompts(workflowsDir)
-      const installedPlugins = readInstalledPlugins()
-      const installedUserSkills = readInstalledUserSkills()
-      const cmdResult = await writeAllCommands(
-        skillNames,
-        commandsBase,
-        rolePrompts,
-        capabilitiesMap,
-        installedPlugins,
-        installedUserSkills,
-        async (p, c) => writeFile(p, c, 'utf8'),
-      )
-      const writtenCount = cmdResult.results.filter((r) => r.written).length
-      const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
-      if (writtenCount > 0 || skippedCount > 0) {
-        console.log(`  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`)
-      }
-
-      // ── Step C: Agent Teams auto-enable ────────────────────────────────
-      await enableAgentTeamsInSettings()
-      await enableUserLangInSettings(raw.userLang)
-
       // ── Step B: install-base auto-glob chain (parallel) ─────────────────────
       // v3.9.7 — flow corrected per user UX feedback. First pass: default
       // (updateInstalled=false) — idempotent_check probes short-circuit
@@ -435,6 +344,115 @@ export function registerSetup(program: Command): void {
         }
       }
 
+      // ── Step A (4.23.0: moved AFTER Step B — issue #3): the skill packs above
+      // copy upstream skills into the same flat ~/.claude/skills namespace and were
+      // observed clobbering shipped workflows (mattpocock research, gstack retro).
+      // Installing the workflows LAST makes the engine the last writer; the end-of-run
+      // integrity pass below is the backstop for later writers (auto-install).
+      let skillsInstalled = 0
+      for (const wf of toInstall) {
+        const src = join(workflowsDir, wf.relPath)
+        const dst = join(skillsBase, wf.name)
+        try {
+          await cp(src, dst, { recursive: true, force: true })
+          skillsInstalled++
+        } catch (e) {
+          console.error(t('setup.copy_failed', { name: wf.name, message: (e as Error).message }))
+          process.exit(1)
+        }
+      }
+
+      console.log(t('setup.step_a_complete', { count: skillsInstalled, path: skillsBase }))
+
+      // ── Step A.5: Render `{{ capabilities.<name>.cmd }}` placeholders ───────
+      // v3.4.1 hotfix — sub-workflow SKILL.md files contain Jinja-style template
+      // refs that were never substituted at install time; end users saw literal
+      // `{{ capabilities.gstack-review.cmd }}` strings in installed skills so
+      // `/verify-paranoid` (and 20+ siblings) never invoked the real plugin cmd.
+      // Resolver reads ~/.claude/plugins/installed_plugins.json + capabilities.yaml,
+      // renders to namespaced form (`/gstack:review`) when plugin installed, OR
+      // leaves bare cmd + emits warning when plugin missing. Non-blocking — any
+      // unexpected error reduces to per-skill warn-and-continue (sister fallback
+      // 铁律 1).
+      const skillNames = toInstall.map((wf) => wf.name)
+      // Phase 29 — resolve locale ONCE and thread it into the render loop so the
+      // dest SKILL.md carries the locale-correct body. `--lang` is a global flag
+      // pre-parsed in src/cli.ts (→ setLocale) BEFORE this action runs, so
+      // getLocale() already reflects it; en → byte-identical to pre-29 behavior.
+      const rendered = await renderAllSkills(
+        skillNames,
+        skillsBase,
+        workflowsDir,
+        undefined,
+        getLocale(),
+      )
+      // (Step A.5 render count suppressed — internal detail)
+      if (rendered.aggregatedWarnings.length > 0) {
+        console.warn(t('setup.step_a_render.warnings_header'))
+        for (const w of rendered.aggregatedWarnings) {
+          console.warn(`    - ${w}`)
+        }
+      }
+
+      // 4.23.0 (T1) — pin the RENDERED state into the install-time hash ledger
+      // (<stateRoot>/skill-hashes.json). The integrity audit's baseline is this
+      // ledger, NOT the bundled source: render divergence (capability cmd +
+      // locale substitutions) is legal; post-install divergence from the ledger
+      // is not. recordSkillHashes is fail-soft (unwritable ledger → audit reads
+      // 'stale' next run, never breaks setup).
+      try {
+        const { recordSkillHashes } = await import('./lib/skillIntegrity.js')
+        await recordSkillHashes(skillNames, skillsBase)
+      } catch {
+        /* advisory ledger — see above */
+      }
+
+      // ── Step A.6: Generate ~/.claude/commands/<x>.md (v3.4.3) ───────────────
+      // v3.4.3 — SKILL.md alone does NOT register a slash command. Claude Code
+      // platform-level slash commands require `~/.claude/commands/<x>.md`
+      // (filename = slash name; YAML frontmatter + body = prompt). This step
+      // writes one per installed sub-workflow, with a dual-path body: preferred
+      // (upstream slash cmd) + fallback (Task-spawn self-contained role prompt
+      // adapted from gstack expert prompts). Skip + warn if user already has
+      // a same-named commands/ file (additive only — never overwrite).
+      const commandsBase = getCommandsDir()
+      try {
+        await mkdir(commandsBase, { recursive: true })
+      } catch (e) {
+        console.warn(
+          `  [A.6] could not create ${commandsBase} — skipping commands/ generation (${(e as Error).message})`,
+        )
+      }
+      let capabilitiesMap = {}
+      try {
+        capabilitiesMap = await loadCapabilities(workflowsDir)
+      } catch (e) {
+        console.warn(
+          `  [A.6] capabilities.yaml unreadable — skipping commands/ generation (${(e as Error).message})`,
+        )
+      }
+      const rolePrompts = await loadRolePrompts(workflowsDir)
+      const installedPlugins = readInstalledPlugins()
+      const installedUserSkills = readInstalledUserSkills()
+      const cmdResult = await writeAllCommands(
+        skillNames,
+        commandsBase,
+        rolePrompts,
+        capabilitiesMap,
+        installedPlugins,
+        installedUserSkills,
+        async (p, c) => writeFile(p, c, 'utf8'),
+      )
+      const writtenCount = cmdResult.results.filter((r) => r.written).length
+      const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
+      if (writtenCount > 0 || skippedCount > 0) {
+        console.log(`  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`)
+      }
+
+      // ── Step C: Agent Teams auto-enable ────────────────────────────────
+      await enableAgentTeamsInSettings()
+      await enableUserLangInSettings(raw.userLang)
+
       // v4.13.0 — L4 rescue: Step B is nonInteractive so L4 manifests (global
       // npm installs, e.g. ctx7) skip with level-flag-missing every run. Offer
       // an interactive opt-in here (TTY only; dynamic import mirrors the
@@ -505,6 +523,81 @@ export function registerSetup(program: Command): void {
           nonInteractive: raw.nonInteractive === true || !isTty,
           autoInstall: raw.autoInstall !== false, // commander default = true; --no-auto-install flips
         })
+      }
+
+      // ── 4.23.0 (issue #3): end-of-run skill integrity audit + SELF-HEAL ─────
+      // Runs LAST (after Step B / force-update / L4 / optional / auto-install —
+      // every path that can invoke an external skill writer). Baseline = the
+      // install-time hash ledger written after Step A.5 above (four bad states:
+      // foreign = marker gone = pack clobber; tampered = marker kept, hash
+      // diverged; stale = old version / no ledger record; missing). Every bad
+      // entry is re-installed from the bundle + re-rendered + re-pinned, with
+      // the likely culprit pack (foreign only) named via manifests'
+      // installs_skills declarations.
+      // Wholly fail-soft: degraded envs (tests, partial installs) audit to [].
+      try {
+        const {
+          attachCulprits,
+          auditInstalledSkills,
+          buildCulpritIndex,
+          integrityReportLines,
+          recordSkillHashes,
+        } = await import('./lib/skillIntegrity.js')
+        const audit = attachCulprits(
+          await auditInstalledSkills(toInstall, skillsBase, workflowsDir),
+          await buildCulpritIndex(manifestPaths),
+        )
+        const bad = audit.filter((e) => e.status !== 'ok')
+        if (bad.length > 0) {
+          for (const line of integrityReportLines(audit)) console.warn(line)
+          let healed = 0
+          const healedNames: string[] = []
+          for (const e of bad) {
+            const wf = toInstall.find((w) => w.name === e.name)
+            if (!wf) continue
+            try {
+              await cp(join(workflowsDir, wf.relPath), join(skillsBase, wf.name), {
+                recursive: true,
+                force: true,
+              })
+              healed++
+              healedNames.push(e.name)
+            } catch {
+              console.warn(`    ✗ could not restore '${e.name}' — re-run \`harnessed setup\``)
+            }
+          }
+          if (healed > 0) {
+            try {
+              await renderAllSkills(healedNames, skillsBase, workflowsDir, undefined, getLocale())
+            } catch {
+              /* render is best-effort during heal; the copy already restored the engine */
+            }
+            // Re-pin the healed rendered state so the next audit reads 'ok'.
+            await recordSkillHashes(healedNames, skillsBase)
+            console.warn(
+              `  ✓ restored ${healed} harnessed workflow skill(s) from the bundle (packs keep their other skills; the colliding name belongs to the engine)`,
+            )
+          }
+        }
+      } catch {
+        /* integrity audit is advisory + self-healing — never fails setup */
+      }
+
+      // ── 4.23.0 (T7): explicit GateGuard conflict surface at setup end ───────
+      // Dogfood: after a full reinstall the 4.22.x guard-conflict work was
+      // invisible — auto-install only lists warn checks WITH install_commands.
+      // Print the check verbatim here; the message/fix are variant-aware (T8:
+      // env-capable ecc → `harnessed exempt-gateguard`; legacy ecc → upgrade
+      // advice; exempted/inactive → pass, silent).
+      try {
+        const { checkGuardConflict } = await import('./lib/check-guard-conflict.js')
+        const guard = await checkGuardConflict()
+        if (guard.status === 'warn') {
+          console.warn(`\n⚠ ${guard.name} — ${guard.message}`)
+          if (guard.fix) console.warn(`    fix: ${guard.fix}`)
+        }
+      } catch {
+        /* advisory only */
       }
       process.exit(0)
     })

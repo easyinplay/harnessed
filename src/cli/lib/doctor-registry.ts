@@ -54,6 +54,9 @@ export const CHECKS: readonly CheckFn[] = [
   // 4.22.1 T4 — dual-guard conflict (warn-only): ECC GateGuard's filename policy
   // vs evidence-guard artifact contract names (subagents cannot fact-retry).
   async () => (await import('./check-guard-conflict.js')).checkGuardConflict(),
+  // 4.23.0 (issue #3) — installed workflow-skill integrity (warn-only): flat
+  // ~/.claude/skills packs can silently shadow shipped workflows; setup self-heals.
+  async () => (await import('./check-skill-integrity.js')).checkSkillIntegrity(),
   // Phase 20 — "update available" version check ('warn' only when behind; 'pass'
   // when current/ahead/npm-unreachable — fail-soft, never flips the summary).
   async () => (await import('./check-update.js')).checkUpdate(),

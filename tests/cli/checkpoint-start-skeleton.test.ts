@@ -9,7 +9,7 @@
 // Same harness family as checkpoint-intent.test.ts: real state layer against a
 // tmp HARNESSED_ROOT_OVERRIDE, engineHook mocked, cwd chdir'd into a tmp project.
 
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Command } from 'commander'
@@ -35,18 +35,25 @@ vi.mock('../../src/cli/lib/check-guard-conflict.js', async (importOriginal) => {
   }
 })
 
-// 4.22.2 — control the exemption flow's yml discovery (real fs for everything
-// else so apply/no-apply is observable on disk). 'project' resolves to the
-// per-test tmp cwd at CALL time (chdir happens in beforeEach).
-const ymlMode = vi.hoisted(() => ({ value: 'none' as 'none' | 'project' }))
+// 4.23.0 (T8) — control the exemption flow's capability probe + env reads +
+// merge (the checkpoint pre-check passes these module exports into the flow's
+// deps, so this factory mock intercepts them; the host's real settings.json is
+// never touched).
+const exemptCtl = vi.hoisted(() => ({
+  capability: 'legacy' as 'env-supported' | 'legacy',
+  existing: undefined as string | undefined,
+  merges: [] as string[],
+}))
 vi.mock('../../src/cli/lib/guard-exemption.js', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../../src/cli/lib/guard-exemption.js')>()
-  const { join: joinPath } = await import('node:path')
   return {
     ...orig,
-    findGateguardYml: vi.fn(async () =>
-      ymlMode.value === 'project' ? joinPath(process.cwd(), '.gateguard.yml') : null,
-    ),
+    probeExemptCapability: vi.fn(async () => exemptCtl.capability),
+    readCurrentEnvValue: vi.fn(async () => exemptCtl.existing),
+    applyEnvExemption: vi.fn(async (value: string) => {
+      exemptCtl.merges.push(value)
+      return { outcome: 'merged' as const, path: '/fake/settings.json', backupPath: '/fake/b.bak' }
+    }),
   }
 })
 
@@ -159,46 +166,49 @@ describe('checkpoint start — dual-guard (GateGuard) conflict warning (4.22.1 T
   })
 })
 
-describe('checkpoint start — GateGuard exemption flow (4.22.2)', () => {
-  it('active + unexempt .gateguard.yml (non-TTY) → preview + manual-cmd advice, file untouched', async () => {
+describe('checkpoint start — GateGuard exemption flow (4.23.0 env channel)', () => {
+  it('active + env-capable ecc (non-TTY) → env-change preview + manual-cmd advice, nothing merged', async () => {
     gateGuardActive.value = true
-    ymlMode.value = 'project'
-    const yml = join(projectDir, '.gateguard.yml')
-    writeFileSync(yml, 'enabled: true\nignore_paths:\n  - ".venv/**"\n', 'utf8')
+    exemptCtl.capability = 'env-supported'
+    exemptCtl.existing = undefined
+    exemptCtl.merges = []
     try {
       const { code, stderr } = await runCli(['checkpoint', 'start', 'auto'])
       expect(code).toBe(0)
-      expect(stderr).toContain('+   - ".planning/**"') // exact diff preview
+      expect(stderr).toContain('+ env.GATEGUARD_EXEMPT_GLOBS = ".planning/**"') // exact preview
       expect(stderr).toContain('exempt-gateguard') // non-interactive manual advice
       // never mutated without live consent (non-TTY vitest run)
-      expect(readFileSync(yml, 'utf8')).not.toContain('.planning/**')
+      expect(exemptCtl.merges.length).toBe(0)
     } finally {
       gateGuardActive.value = false
-      ymlMode.value = 'none'
+      exemptCtl.capability = 'legacy'
     }
   })
 
-  it('active + already-exempt yml → resolved, no collision warning', async () => {
+  it('active + already-exempt env → resolved, no collision warning', async () => {
     gateGuardActive.value = true
-    ymlMode.value = 'project'
-    writeFileSync(join(projectDir, '.gateguard.yml'), 'ignore_paths:\n  - ".planning/**"\n', 'utf8')
+    exemptCtl.capability = 'env-supported'
+    exemptCtl.existing = '.planning/**'
     try {
       const { code, stderr } = await runCli(['checkpoint', 'start', 'auto'])
       expect(code).toBe(0)
       expect(stderr).not.toMatch(/collides/)
-      expect(stderr).not.toContain('+   - ".planning/**"')
+      expect(stderr).not.toContain('+ env.GATEGUARD_EXEMPT_GLOBS')
     } finally {
       gateGuardActive.value = false
-      ymlMode.value = 'none'
+      exemptCtl.capability = 'legacy'
+      exemptCtl.existing = undefined
     }
   })
 
-  it('active + no yml (bundled/unknown variant) → the 4.22.1 generic warning stands', async () => {
+  it('active + legacy ecc → the generic warning stands with the upgrade-first advice', async () => {
     gateGuardActive.value = true
+    exemptCtl.capability = 'legacy'
     try {
       const { code, stderr } = await runCli(['checkpoint', 'start', 'auto'])
       expect(code).toBe(0)
       expect(stderr).toMatch(/collides/)
+      expect(stderr).toContain('claude plugin update ecc')
     } finally {
       gateGuardActive.value = false
     }

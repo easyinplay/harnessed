@@ -73,9 +73,18 @@ export function buildIntentBlock(intent: WorkflowIntent | null | undefined, nowM
   ].join('\n')
 }
 
+/** 4.23.0 (issue #3 req 3) — a `pending` sub whose ledger has seen no checkpoint
+ *  activity for this long is presented as STALE, not as a live state machine:
+ *  the issue #3 session ran to completion against a previous DAY's in-flight
+ *  ledger while the reminder kept advising "mid state-machine" as if fresh. */
+export const STALE_LEDGER_MS = 24 * 60 * 60 * 1000
+
 export function buildWorkflowStateBlock(
   wf: CurrentWorkflowV1Type | null,
   forward?: NextPointer | null,
+  // Age of the ledger file (mtime → now), when the caller knows it. undefined →
+  // byte-identical pre-4.23.0 output.
+  ledgerAgeMs?: number | null,
 ): string {
   if (!wf) return ''
   const ledger = wf.sub_progress ?? []
@@ -90,7 +99,12 @@ export function buildWorkflowStateBlock(
   // issue #2 (T2) — anti-freestyle enforcement. While a sub is still pending, pull
   // a drifting agent back to the engine/ledger instead of letting it freestyle the
   // orchestration. Advisory tone like SHIP-READY/VERIFY-MODE; absent when resolved.
-  if (next) {
+  if (next && typeof ledgerAgeMs === 'number' && ledgerAgeMs > STALE_LEDGER_MS) {
+    const days = Math.floor(ledgerAgeMs / (24 * 60 * 60 * 1000))
+    lines.push(
+      `ENGINE: STALE state machine — sub '${next}' has been pending with NO checkpoint activity for >${days}d. This ledger may belong to an abandoned/bypassed run (issue #3 class). Run \`harnessed status --recover\` to re-orient, then either resume the sub or close it out with \`harnessed checkpoint fail ${next} --summary "<why>"\`.`,
+    )
+  } else if (next) {
     lines.push(
       `ENGINE: mid state-machine — drive sub '${next}' via \`harnessed prompt ${next}\` → spawn → \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
     )

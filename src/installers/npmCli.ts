@@ -17,6 +17,11 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
+import {
+  auditPostInstall,
+  snapshotSkillNames,
+  warnDeclaredCollisions,
+} from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'
@@ -101,6 +106,9 @@ export const installNpmCli: Installer = async (ctx) => {
   // v3.0.2: explicit install timeout (60s default — Windows cold npm/npx cache friendly).
   // v4.20.1: neutralCwd — global-semantics npm/npx install must not inherit the
   // user's shell cwd (ambient devEngines package.json → EBADDEVENGINES dogfood).
+  // 4.23.0 (issue #3) — flat-namespace collision audit (gsd-core writes gsd-* skills).
+  await warnDeclaredCollisions(ctx)
+  const packSnapshot = await snapshotSkillNames()
   const sp = await spawnCmd(ctx, cmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { neutralCwd: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
@@ -117,6 +125,8 @@ export const installNpmCli: Installer = async (ctx) => {
       ),
     }
   }
+  // 4.23.0 (issue #3) — post-install diff: undeclared new names + workflow collisions.
+  await auditPostInstall(ctx, packSnapshot)
   // v3.0.2: verify honors spec.verify.timeout_ms (default 15s) — manifest authors retain control.
   const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
   // v23 (4.5.1) — verify cmds use POSIX builtins (test/grep/|); route through Git Bash on Windows.
