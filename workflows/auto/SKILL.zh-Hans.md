@@ -117,7 +117,7 @@ Sister `workflows/capabilities.yaml`:
 **不要** pipe 到 `harnessed run auto` —— 那是 CI/headless 路径(in-process SDK spawn,会阻塞
 session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
 
-1. 先在**本 session** 交互式跑 discuss 阶段(spawned subagent 无法向用户提问):对 "$ARGUMENTS" 评估 strategic / phase / subtask 澄清判据,对每个 fire 的层用 AskUserQuestion 与用户对话锁决策,其余透明 skip。产出 locked spec。
+1. 先在**本 session** 交互式跑 discuss 阶段(spawned subagent 无法向用户提问):对 "$ARGUMENTS" 评估 strategic / phase / subtask 澄清判据,对每个 fire 的层用 AskUserQuestion 与用户对话锁决策,其余透明 skip。blocking 集锁定后,把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(各项 agent 推荐默认值预选)—— deferrable 推迟的是排期,不是用户决策权;仅当用户明确再次推迟才可跳过该项。产出 locked spec。
 2. Bash: `harnessed gates auto --task "<locked spec>" --skip-sub clarify` → 解析 JSON `{fire, skip, parallelism}`。这是 plan SoT(不 spawn)。保留 verbatim JSON。自包含小任务(单文件/单页面级)的合规轻量路径:追加 `--skip-sub verify --skip-sub retro`(可重复/逗号分隔)——被 skip 的 sub 仍带原因进 ledger;lite ≠ freestyle(差别就在 ledger/evidence)。
 3. Bash: `harnessed checkpoint start auto --plan '<step 2 的 verbatim gates JSON>'` → seed per-sub ledger,让 `harnessed status --recover` 能在 compaction 后给你重新定位。
 4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动(`TeamCreate` → 每个 sub `Agent(name, team_name, …)` + 其 `harnessed prompt <sub>` prompt → 用 `SendMessage` 协调 → `SendMessage shutdown_request` + `TeamDelete`)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。

@@ -174,6 +174,8 @@ prompts:
       - "对每个问题,列 2-4 个候选答案并附一行 tradeoff"
       - "识别跨 phase 契约(数据流 / API 形态 / 迁移顺序)"
       - "标出阻塞启动的决策(规划前必须答)vs. 可延后的"
+      - "deferrable = 仅在用户有一次 override 机会之后才可采用默认值:orchestrator 必须把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(推荐默认值预选)—— deferrable 项不允许在用户不知情时被 resolve"
+      - "仅当默认值可逆且不会改变任何需求的本质(可测试断言 → 结构恒真、验收方法变更、跨 phase contract 形态改变)时才可标 deferrable;若会改变,升格为 blocking。『两个候选都满足现有需求原文』不足以 defer"
       - "持久化到 `.planning/phases/<NN>-<slug>/findings.md` + `knowledge.md` 以便交接(NN = 两位数,取现有最大 phase 目录号 + 1;slug = kebab 短名)"
       - "若该层确实已清晰,直说『无需澄清』并退出"
     severity: "blocking / deferrable / resolved"

@@ -65,7 +65,7 @@ execution stages.
    - **Strategic** — new feature / milestone / unclear business scope → gstack `/office-hours` + `/plan-ceo-review`
    - **Phase** — ≥2 open implementation decisions / unclear cross-phase API contract → GSD `/gsd-discuss-phase`
    - **Subtask** — ≥2 distinct approaches / core algorithm / API contract design / high error cost → superpowers brainstorming
-2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision.
+2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision. After locking blocking decisions, relay the deferrable set to the user in a single batched AskUserQuestion with each agent-recommended default pre-selected — only skip an item if the user explicitly defers it again; a deferrable item is never resolved without the user seeing it.
 3. Transparent-skip layers that don't fire — state which were skipped and why.
 4. Persist the locked decisions to `.planning/phases/<NN>-<slug>/` via planning-with-files (`findings.md` / `task_plan.md`; NN = two-digit, one above the highest existing phase dir).
 

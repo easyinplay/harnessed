@@ -64,7 +64,7 @@ Sister `workflows/capabilities.yaml`:
    - **战略层** —— 新功能 / 新 milestone / 商业 scope 不清 → gstack `/office-hours` + `/plan-ceo-review`
    - **Phase 层** —— ≥2 个 open implementation decision / 跨 phase API contract 不清 → GSD `/gsd-discuss-phase`
    - **子任务层** —— ≥2 个不同方案 / 核心算法 / API contract 设计 / 高错误成本 → superpowers brainstorming
-2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。
+2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。blocking 集锁定后,把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(各项 agent 推荐默认值预选)—— 仅当用户明确再次推迟才可跳过该项;deferrable 项绝不允许在用户未见的情况下被 resolve。
 3. 不 fire 的层透明 skip —— 说明哪些被 skip 及原因。
 4. 把 locked 决策持久化到 `.planning/phases/<NN>-<slug>/`(planning-with-files 的 `findings.md` / `task_plan.md`;NN = 两位数,取现有最大 phase 目录号 + 1)。
 

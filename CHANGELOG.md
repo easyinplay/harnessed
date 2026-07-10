@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.23.1] - 2026-07-11
+
+修复 GitHub issue #4:`deferrable` 灰区决策无用户 relay 门 — plan 阶段直接采纳 agent 建议默认值,用户全程不可见("可推迟排期"被静默升格为"agent 代决";报告案例中一个 deferrable 默认值把验收需求从可测试断言变成结构恒真,验收方法被无声改变)。
+
+### Fixed
+
+- **deferrable relay 契约(issue #4 req 1)**:`workflows/auto/SKILL.md` step 1 与 `workflows/discuss/auto/SKILL.md` step 2(含 zh-Hans 镜像)新增硬性行 — blocking 集锁定后,deferrable 集必须以**单轮批量 AskUserQuestion** 呈给用户(agent 建议默认值预选);deferrable 推迟的是排期,不是用户决策权;仅当用户明确再推迟才可跳过。
+- **deferrable 升格判据(issue #4 req 2)**:`workflows/role-prompts.yaml` discuss-phase checklist(+ zh-Hans 镜像,7→9 条)新增 — deferrable 仅当默认值可逆**且**不改变任何需求本质(可测试断言 → 结构恒真、验收方法变更、跨 phase 契约形变);否则必须标 blocking。"两个候选都满足现有需求"不足以 defer。同时把 relay 语义写进 checklist(deferrable = 用户有一次 override 机会后才可默认,非"无需用户"),spawn 出的 discuss-phase 子代理产物自带该契约。
+
+### Added
+
+- **回归测试** `tests/workflow/deferrableRelay.test.ts`(6 cells):en/zh role-prompts 关键词、en↔zh checklist 条目数相等(yaml-i18n-parity 防回归)、auto 与 discuss SKILL en/zh relay 行。
+
 ## [4.23.0] - 2026-07-10
 
 修复 GitHub issue #3(严重:`harnessed setup` 自伤 — 扁平 `~/.claude/skills/` 命名空间下 skill pack 静默覆盖引擎 workflow)与 issue #2 残余,并按用户拍板将 GateGuard 豁免通道整体切换为上游 env 通道。
