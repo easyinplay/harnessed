@@ -361,3 +361,32 @@ execute-task 各 phase model 建议：
 | G4 heal 预览(dry-run 语义) | ECC repair --dry-run | IMPL: v4.24.0(adopt-light) | doctor fix 行 "would reinstall: ...";不加新命令 |
 | G5 ambiguity 量化阈值 | OMC deep-interview | DEFERRED (v5+ discuss) | 方向级设计:阈值定标/测量口径/与三层澄清判据关系 |
 | 不借鉴 | omo zod strict / comet 全量 FATAL / Trellis 3-way 全套 | DECLINED | 同面已覆盖 / 4.23.2 分型即立场 / preserve-in-place 与引擎完整性契约冲突 |
+
+### 增补 3:comet / Trellis 近 10 版 changelog 演进分析(2026-07-11,2 subagent)
+
+> 口径:borrow = 对 harnessed 特性面(manifest/gates/ledger/完整性/relay/doctor/i18n/binary)真实适配;avoid = 从 fix/revert 链读出的初版设计缺陷。全文两清单各 8 条见 subagent 产出,此处存 harnessed 视角的裁剪版。
+
+**主旋律**:Trellis(v0.6.0-beta.22→v0.6.6)= multi-agent runtime + mem + SDK 抽取,GA 后 6 个 patch 几乎全耗在 13→16 平台矩阵手工 dispatch 的连环回归。comet(0.3.3→0.4.0-beta.3)= 从 prose 门走向脚本级强制、从 Bash 走向纯 Node(0.4.0-beta.1 整体重写),新增 eval 评估体系。
+
+**BORROW 候选(harnessed 视角裁剪)**
+- B1 ⭐ Trellis v0.6.5/0.6.6:context 注入 "systemPrompt byte-stable across turns" 保 provider prefix-cache 资格。直接对号 harnessed perturn 注入(bin/harnessed-inject-state.mjs)— 应审计我方每轮注入的字节稳定性(合法状态变化外不引入 churn)。
+- B2 comet 0.3.7:compaction 生存组合 — `handoff_hash --hash-only` 命中免重读 + skill 单次加载(实测省 ~44K token/10 task)。对号 checkpoint ledger + hash 台账的增量消费。
+- B3 comet 0.3.5:不确定性降级原则 "SUGGESTION > WARNING > CRITICAL,只有 build 失败/测试失败/安全问题标 CRITICAL"。对号 doctor/verify 判定分级,防误报升格阻塞。
+- B4 comet 0.4.0-beta.1:`comet eval` L1/L2/L3 benchmark harness(pass rate/token/retry/cost + --dry-run)。harnessed 作为 orchestrator 的质量量化缺口,v5+ 立项候选。
+- B5 Trellis v0.6.0:`trellis upgrade` channel-aware(stable/beta/rc)+ --dry-run;homedir 安全阀(TRELLIS_ALLOW_HOMEDIR=1)。bun-compile track Phase 3(自更新/安装器)直接素材。
+- B6 Trellis v0.6.0-beta.23:版本化 migration manifest + 历史 manifest 不可变("retain original typoed text for auditability")。对号未来 ledger/安装态 schema 迁移。
+- B7 comet 0.3.7/0.3.9:`auto_transition` per-change + 项目默认 snapshot 进 change state(改默认不扰动进行中 change)。对号 gates 推进策略配置化(低优先)。
+- 过程纪律:Trellis rc.* freeze("frozen feature surface, features deferred to v0.7+")— v1.0-RC 收敛期照做;Trellis v0.6.2 事故后清单化 gate = 我方 check-*.mjs 同思路,互证。
+
+**AVOID(harnessed 现状对账)**
+- A1 Bash 承载核心逻辑 → 三平台出血链(comet 0.3.4→0.3.6→0.3.8→0.3.9→beta.1 全量重写)。harnessed 已是纯 Node + binary track ✅;manifests install cmd 保持"上游命令字符串仅透传不解释"边界。
+- A2 平台 dispatch 矩阵手工维护(Trellis v0.6.4→0.6.6 连环修,4 平台缺 trellis-start / 13 处补清单)。harnessed 的 PlatformDescriptor 单一派生 seam 正是解药,铁律:永不搞 per-platform 手工功能清单 ✅。
+- A3 prose 门挡不住 phase-skip(comet 0.3.9 仍在修 open→build 跳 design)。= 我方 issue #2 /auto freestyle 同款病;checkpoint intent + perturn 护栏 + evidence guard 的脚本级路线获对照验证 ✅;comet 补的 "evidence-on-every-transition" 提示我方:transition 级(非仅 complete 级)校验是潜在加固面。
+- A4 路由事实双写(comet resolver 与 guard rule hardcode 脱节)/ 生成物双源(Trellis TOML prelude)。= 我方 D-13 declarative SoT 原则,互证 ✅。
+- A5 known-broken 静默返回空(Trellis v0.6.0 GA 带病发布 mem 空结果)。= Trellis fail-open 病灶延伸;我方 4.23.2 分型立场已表态 ✅。
+- A6 全局守卫按"第一个 active change"定状态 → 并行 change 误伤(comet 0.3.7→0.3.9→beta.2 连环修)。我方 v11.0 session-scoped composite key 已规避同类;多 workflow 并行同 repo 场景留意。
+- A7 语言相关文本过滤(comet AWK GIVEN/WHEN/THEN 滤中文 spec drift)= 我方 `\b` CJK 教训同构,已入 memory ✅。
+- A8 写宿主配置不验 schema(comet 0.3.7 hook 格式错导致 CC /doctor 报错)= 我方 ccHookAdd 扁平形状 bug 同课,已付学费 ✅。
+- A9 用户自定义 shell 命令字段加固成本 > 价值,comet 最终移除 build_command/verify_command。启示:凡新增"用户可配命令"字段先过此问。
+
+**Actionable 短清单**:B1 注入字节稳定性审计(近期可做)、B3 doctor/verify 分级措辞(近期可做)、B2 hash 命中免重读(中)、B5 自更新素材(bun Phase 3)、B4 eval harness(v5+ 立项)、A3 transition 级校验加固(候选)。
