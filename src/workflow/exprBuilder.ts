@@ -33,6 +33,18 @@ export class GateEvalError extends Error {
   }
 }
 
+// 4.23.2 (issue #5) — discriminator for the fail-closed carve-out to ADR 0029
+// fail-soft. expr-eval throws `undefined variable: <name>` when a BARE
+// identifier is missing from the eval context: that is a STATIC config bug
+// (gate expression ↔ gateContext contract drift), not a runtime fault.
+// Failing open on it turns the gated sub into the default path — issue #5:
+// verify-multispec (4-specialist Agent Team) fired on every ordinary verify.
+// Callers treat this class as gate=false; all other eval errors stay fail-soft.
+// Static guard: tests/workflow/judgmentContextAudit.test.ts.
+export function isUndefinedVariableError(e: unknown): boolean {
+  return e instanceof GateEvalError && /undefined variable/i.test(e.message)
+}
+
 export function evalGate(expression: string, context: Record<string, unknown>): boolean {
   try {
     const parsed = _parserSingleton.parse(expression)

@@ -84,6 +84,7 @@ vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
   runBeforeCommitHook: (_ctx: unknown): Promise<void> => runBeforeCommitHookMock(),
 }))
 
+import { GateEvalError } from '../../src/workflow/exprBuilder.js'
 import type { FallbackMaxIterationsExceededConfig } from '../../src/workflow/lib/ralphLoop.js'
 import {
   _dispatchSkillStub,
@@ -222,6 +223,50 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     expect(completePhaseMock).toHaveBeenCalledTimes(3) // skip completes with skip marker
     const skipLastTask = completePhaseMock.mock.calls[1]?.[0].lastTask ?? ''
     expect(skipLastTask).toMatch(/skipped: gate judgments\.subtask-gate/)
+  })
+
+  it('4b. 4.23.2 (issue #5) — v2 phase.gate undefined-variable eval error → fail-CLOSED: phase skipped', async () => {
+    // Config-bug carve-out to ADR 0029: a gate expression referencing a variable
+    // missing from the context must NOT fail-open into running the phase.
+    isVetoedMock.mockResolvedValue(false)
+    const v2Phases = [
+      { id: '01-gated', gate: 'judgments.stage-routing.verify-multispec-critical-release.fires' },
+      { id: '02-plain' },
+    ]
+    loadPhasesMock.mockReturnValue({ workflow: 'plan-feature', phases: v2Phases })
+    resolveJudgmentGateMock.mockRejectedValueOnce(
+      new GateEvalError('Gate eval failed: undefined variable: is_critical_release', 'expr'),
+    )
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const r = await runWorkflow(
+      'workflows/plan-feature/workflow.yaml',
+      { gstack_prefix: 'gstack-' },
+      { packageRoot: '/tmp/fake-root', gateContext: {} },
+    )
+    expect(r).toEqual({ status: 'complete', phasesRun: 2, skippedPhases: ['01-gated'] })
+    const warns = warnSpy.mock.calls.map((c) => c.join(' ')).join('\n')
+    expect(warns).toMatch(/undefined variable/)
+    expect(warns).toMatch(/fail-closed/)
+    warnSpy.mockRestore()
+  })
+
+  it('4c. 4.23.2 — non-config gate eval error keeps ADR 0029 fail-soft (phase runs)', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    const v2Phases = [
+      { id: '01-gated', gate: 'judgments.strategic-gate.office-hours.fires' },
+      { id: '02-plain' },
+    ]
+    loadPhasesMock.mockReturnValue({ workflow: 'plan-feature', phases: v2Phases })
+    resolveJudgmentGateMock.mockRejectedValueOnce(new Error('ENOENT judgments unreadable'))
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const r = await runWorkflow(
+      'workflows/plan-feature/workflow.yaml',
+      { gstack_prefix: 'gstack-' },
+      { packageRoot: '/tmp/fake-root', gateContext: {} },
+    )
+    // both phases ran, none skipped (fail-soft treats eval fault as fired=true)
+    expect(r).toEqual({ status: 'complete', phasesRun: 2 })
+    warnSpy.mockRestore()
   })
 
   it('5. T2.4.W1.4 — v1 phases (NO `gate` field) untouched by gate path — resolveJudgmentGate NOT called', async () => {

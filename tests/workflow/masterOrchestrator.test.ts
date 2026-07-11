@@ -38,6 +38,7 @@ vi.mock('node:fs/promises', async () => {
   return { ...actual, readFile: (p: string) => readFileMock(p) }
 })
 
+import { GateEvalError } from '../../src/workflow/exprBuilder.js'
 import {
   type MasterName,
   runMasterOrchestrator,
@@ -377,6 +378,84 @@ describe('runMasterOrchestrator — issue #1 parallel fail-fast (surface rejecte
     )
     // sibling still attempted (allSettled waits) — both spawned before surfacing failure
     expect(seen.sort()).toEqual(['phase', 'subtask'])
+  })
+})
+
+// ── 4.23.2 issue #5 — fail-closed undefined-variable + skip alias/warning ────
+describe('runMasterOrchestrator — 4.23.2 issue #5 (config-error fail-closed + skip alias)', () => {
+  it('41. undefined-variable GateEvalError → fail-closed: sub SKIPPED, not fired', async () => {
+    yamlFileMap.set(
+      pathFor('verify'),
+      masterYaml(
+        'verify',
+        [
+          clauseLine('multispec', {
+            gate: 'judgments.stage-routing.verify-multispec-critical-release.fires',
+          }),
+          clauseLine('progress'),
+        ].join('\n'),
+      ),
+    )
+    resolveJudgmentGateMock.mockRejectedValue(
+      new GateEvalError('Gate eval failed: undefined variable: is_critical_release', 'expr'),
+    )
+    const spawn: SpawnDriver = vi.fn(async () => {})
+    const r = await runMasterOrchestrator('verify', {}, PACKAGE_ROOT, spawn)
+    expect(r.fired).toEqual(['progress'])
+    expect(r.skipped).toEqual(['multispec'])
+    expect(spawn).toHaveBeenCalledTimes(1)
+    const warns = consoleWarnSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n')
+    expect(warns).toMatch(/undefined variable/)
+    expect(warns).toMatch(/fail-closed/)
+  })
+
+  it('42. skip_subs accepts flattened <master>-<sub> alias (verify-paranoid → paranoid)', async () => {
+    yamlFileMap.set(
+      pathFor('verify'),
+      masterYaml(
+        'verify',
+        [
+          clauseLine('paranoid', {
+            gate: 'judgments.stage-routing.verify-paranoid-critical.fires',
+          }),
+          clauseLine('progress'),
+        ].join('\n'),
+      ),
+    )
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const spawn: SpawnDriver = vi.fn(async () => {})
+    const r = await runMasterOrchestrator(
+      'verify',
+      { skip_subs: ['verify-paranoid'] },
+      PACKAGE_ROOT,
+      spawn,
+    )
+    expect(r.fired).toEqual(['progress'])
+    expect(r.skipped).toEqual(['paranoid'])
+    // paranoid gate NOT evaluated (skip filter runs pre-gate)
+    expect(resolveJudgmentGateMock).not.toHaveBeenCalled()
+    // all requested names matched → no ignored warning
+    const warns = consoleWarnSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n')
+    expect(warns).not.toMatch(/ignored/)
+  })
+
+  it('43. unmatched skip_subs name → console.warn ignored + valid subs (was silent no-op)', async () => {
+    yamlFileMap.set(
+      pathFor('verify'),
+      masterYaml('verify', [clauseLine('progress'), clauseLine('paranoid')].join('\n')),
+    )
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const spawn: SpawnDriver = vi.fn(async () => {})
+    const r = await runMasterOrchestrator(
+      'verify',
+      { skip_subs: ['task-bogus'] },
+      PACKAGE_ROOT,
+      spawn,
+    )
+    expect(r.fired.sort()).toEqual(['paranoid', 'progress'])
+    const warns = consoleWarnSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n')
+    expect(warns).toMatch(/--skip-sub "task-bogus" ignored: not a sub of master verify/)
+    expect(warns).toMatch(/valid subs:.*progress/)
   })
 })
 

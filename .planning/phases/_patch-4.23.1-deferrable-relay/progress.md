@@ -8,5 +8,5 @@
 - [x] T4 主 session 复验:vitest 全量 2002 passed / 0 failed;tsc 0;pnpm lint exit 0
       (1 个既有 warning 非本次);gate scripts 7/7 PASS(含双 i18n-parity)
 - [x] CHANGELOG `## [4.23.1]` + bump 4.23.1
-- [ ] commit + push(Fixes #4 自动关闭)+ issue 回复修复说明
+- [x] commit `47ff90b` + push main;issue #4 回复修复说明并已 CLOSED(Fixes #4)
 - [ ] tag v4.23.1(等用户确认)

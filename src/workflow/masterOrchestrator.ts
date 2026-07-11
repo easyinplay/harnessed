@@ -7,12 +7,14 @@
 import { readFile } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
+import { isUndefinedVariableError } from './exprBuilder.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
 import {
   type DelegationClauseT,
   WorkflowSchemaV3,
   type WorkflowSchemaV3T,
 } from './schema/workflow.js'
+import { matchSkipSub, warnUnmatchedSkips } from './skipSubs.js'
 
 export type MasterName = 'discuss' | 'plan' | 'task' | 'verify' | 'auto'
 
@@ -127,8 +129,13 @@ export async function runMasterOrchestrator(
 
   // Phase 1: gate eval per delegation clause(unconditional fire 当 clause.gate undefined)
   const gateEvalled: GateEvaluation[] = []
+  const matchedSkips = new Set<string>()
   for (const clause of master.delegates_to) {
-    if (skipSubs.has(clause.sub)) {
+    // 4.23.2 (issue #5 defect 2) — accept the flattened `<master>-<sub>` alias
+    // users see in fire[] / slash commands (verify-paranoid → paranoid).
+    const skipHit = matchSkipSub(skipSubs, clause.sub, masterName)
+    if (skipHit !== null) {
+      matchedSkips.add(skipHit)
       gateEvalled.push({
         clause,
         passes: false,
@@ -148,21 +155,47 @@ export async function runMasterOrchestrator(
         reason: passes ? undefined : `gate ${clause.gate} = false`,
       })
     } catch (e) {
-      // v3.9.23 — fail-soft per ADR 0029 (sister src/workflow/run.ts:486 phase
-      // gate eval). Previously set passes=false on eval error → silently skipped
-      // the sub-workflow whenever a gate expression referenced an undeclared
-      // variable. The correct semantic: eval error is operational fault, NOT a
-      // judgment to skip — proceed with sub as if gate fired=true and emit warn.
-      console.warn(
-        `⚠️ master ${masterName} sub ${clause.sub} gate ${clause.gate} eval failed (${(e as Error).message}); proceeding with sub as if gate fired=true (ADR 0029 fail-soft).`,
-      )
-      gateEvalled.push({
-        clause,
-        passes: true,
-        reason: `gate eval error (fail-soft fires=true): ${(e as Error).message}`,
-      })
+      if (isUndefinedVariableError(e)) {
+        // 4.23.2 (issue #5 defect 1) — undefined variable is a STATIC config bug
+        // (expression ↔ gateContext drift), not an operational fault: fail-open
+        // here made the most expensive sub (verify-multispec 4-specialist team)
+        // the default path on every verify. Fail-CLOSED + loud warn;
+        // ADR 0029 Amendment (4.23.2).
+        console.warn(
+          `⚠️ master ${masterName} sub ${clause.sub} gate ${clause.gate} references a variable ` +
+            `missing from the gate context (${(e as Error).message}). Treating as NOT fired ` +
+            `(fail-closed for config errors) — fix the judgments yaml expression or supply the ` +
+            `variable via --context / gateContext defaults.`,
+        )
+        gateEvalled.push({
+          clause,
+          passes: false,
+          reason: `gate ${clause.gate} misconfigured (undefined variable) — fail-closed, not fired`,
+        })
+      } else {
+        // v3.9.23 — fail-soft per ADR 0029 (sister src/workflow/run.ts phase
+        // gate eval). Previously set passes=false on eval error → silently skipped
+        // the sub-workflow whenever a gate eval faulted. The correct semantic for
+        // OPERATIONAL faults: proceed with sub as if gate fired=true and emit warn.
+        console.warn(
+          `⚠️ master ${masterName} sub ${clause.sub} gate ${clause.gate} eval failed (${(e as Error).message}); proceeding with sub as if gate fired=true (ADR 0029 fail-soft).`,
+        )
+        gateEvalled.push({
+          clause,
+          passes: true,
+          reason: `gate eval error (fail-soft fires=true): ${(e as Error).message}`,
+        })
+      }
     }
   }
+  // Surface requested skip names that matched no clause (was a silent no-op).
+  warnUnmatchedSkips(
+    skipSubs,
+    matchedSkips,
+    masterName,
+    master.delegates_to.map((c) => c.sub),
+    (m) => console.warn(m),
+  )
 
   // Transparency block + Phase 2 split + Phase 2.5 arbitrate (helpers split per karpathy ≤200L)
   emitGateTransparency(masterName, master.delegates_to.length, gateEvalled)

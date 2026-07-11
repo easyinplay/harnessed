@@ -14,7 +14,9 @@ import { resolve } from 'node:path'
 import type { Command } from 'commander'
 import { parse as parseYaml } from 'yaml'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
+import { isUndefinedVariableError } from '../workflow/exprBuilder.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
+import { matchSkipSub, warnUnmatchedSkips } from '../workflow/skipSubs.js'
 import { getAssetsRoot } from './lib/assetsRoot.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
 
@@ -171,9 +173,14 @@ export function registerGates(program: Command): void {
       const fire: FireEntry[] = []
       const skip: SkipEntry[] = []
 
-      // Gate eval loop — mirror masterOrchestrator.ts:121-165 (no spawn).
+      // Gate eval loop — mirror masterOrchestrator.ts gate eval loop (no spawn).
+      const matchedSkips = new Set<string>()
       for (const clause of clauses) {
-        if (skipSubs.has(clause.sub)) {
+        // 4.23.2 (issue #5 defect 2) — accept the flattened `<master>-<sub>`
+        // alias users see in fire[] / slash commands (verify-paranoid → paranoid).
+        const skipHit = matchSkipSub(skipSubs, clause.sub, master)
+        if (skipHit !== null) {
+          matchedSkips.add(skipHit)
           skip.push({
             sub: clause.sub,
             reason: 'skipped via skip_subs (done interactively in main session)',
@@ -192,15 +199,40 @@ export function registerGates(program: Command): void {
             skip.push({ sub: clause.sub, reason: `gate ${clause.gate} = false` })
           }
         } catch (e) {
-          // ADR 0029 fail-soft — eval error is operational fault, not a judgment
-          // to skip. Fire the sub as if the gate returned true; emit warn.
-          console.warn(
-            `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} eval failed ` +
-              `(${(e as Error).message}); firing sub as if gate=true (ADR 0029 fail-soft).`,
-          )
-          fire.push(fireEntry(clause, master))
+          if (isUndefinedVariableError(e)) {
+            // 4.23.2 (issue #5 defect 1) — undefined variable is a STATIC config
+            // bug (expression ↔ gateContext drift), not an operational fault:
+            // fail-open here made the most expensive sub the default path.
+            // Fail-CLOSED + loud warn; ADR 0029 Amendment (4.23.2).
+            console.warn(
+              `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} references a variable ` +
+                `missing from the gate context (${(e as Error).message}). Treating as NOT fired ` +
+                `(fail-closed for config errors) — fix the judgments yaml expression or supply ` +
+                `the variable via --context / gateContext defaults.`,
+            )
+            skip.push({
+              sub: clause.sub,
+              reason: `gate ${clause.gate} misconfigured (undefined variable) — fail-closed, not fired`,
+            })
+          } else {
+            // ADR 0029 fail-soft — eval error is operational fault, not a judgment
+            // to skip. Fire the sub as if the gate returned true; emit warn.
+            console.warn(
+              `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} eval failed ` +
+                `(${(e as Error).message}); firing sub as if gate=true (ADR 0029 fail-soft).`,
+            )
+            fire.push(fireEntry(clause, master))
+          }
         }
       }
+      // Surface requested skip names that matched no clause (was a silent no-op).
+      warnUnmatchedSkips(
+        skipSubs,
+        matchedSkips,
+        master,
+        clauses.map((c) => c.sub),
+        (m) => console.warn(m),
+      )
 
       // Parallelism — agent-teams-upgrade routing gate (try/catch → conservative false).
       let parallelism: GatesPlan['parallelism'] = { escalate_to_teams: false, reason: null }

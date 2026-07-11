@@ -35,6 +35,12 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
     shared_task_list: false,
     opposing_hypothesis_debate: false,
     fullstack_three_way: false,
+    // 4.23.2 (issue #5) — stage-routing.yaml verify-multispec-critical-release
+    // references the BARE identifier (root-flat schema contract, sister
+    // src/workflow/schema/phaseFactContext.ts). Missing here since the v4.1.2
+    // extraction → eval threw undefined-variable → ADR 0029 fail-soft fired the
+    // 4-specialist multispec team on EVERY verify. Opt-in via --context.
+    is_critical_release: false,
     phase: {
       stage,
       is_critical_module: true,

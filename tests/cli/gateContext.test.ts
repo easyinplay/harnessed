@@ -16,6 +16,15 @@ describe('buildDefaultGateContext', () => {
     expect((ctx.phase as Record<string, unknown>).is_critical_module).toBe(true)
     expect((ctx.subtask as Record<string, unknown>).core_algorithm).toBe(true)
   })
+
+  it('4.23.2 (issue #5) — root-flat is_critical_release present, default false (opt-in)', () => {
+    // stage-routing.yaml verify-multispec-critical-release references the BARE
+    // identifier (phaseFactContext.ts root-flat schema contract). Missing since
+    // the v4.1.2 extraction → eval threw → ADR 0029 fail-soft fired the
+    // 4-specialist multispec team on every ordinary verify.
+    const ctx = buildDefaultGateContext('do X', 'verify')
+    expect(ctx.is_critical_release).toBe(false)
+  })
 })
 
 describe('mergeGateContext — deep merge', () => {

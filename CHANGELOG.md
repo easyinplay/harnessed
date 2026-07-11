@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.23.2] - 2026-07-11
+
+修复 GitHub issue #5:gate 表达式引用上下文缺失变量时 fail-soft 误触最贵子项(`verify-multispec` 4-specialist Agent Team 在非关键发布也 fire)+ `--skip-sub` 对斜杠命令名静默失效。
+
+### Fixed
+
+- **`is_critical_release` 缺失注入(issue #5 缺陷 1 根因)**:root-flat `is_critical_release` 是 schema 契约(`phaseFactContext.ts` v3.3 W0.8 required boolean),v4.1.2 抽取 `buildDefaultGateContext` 时漏了它 → eval 抛 "undefined variable" → fail-soft 误 fire。补进默认上下文(默认 `false`,critical release 经 `--context '{"is_critical_release": true}'` opt-in);judgments yaml 表达式不动(与 issue 建议 1 相反 — 裸引用即契约)。普通 verify 现在干净 skip multispec(`gate ... = false`)。
+- **fail-soft 分型(issue #5 缺陷 1 策略,ADR 0038)**:三处 gate catch(`gates.ts` / `masterOrchestrator.ts` / `run.ts`)区分错误类别 — expr-eval "undefined variable"(静态配置 bug)改 **fail-closed**(视为 gate=false 不 fire + 醒目 warn 指向修复通道);其余 runtime 错误维持 ADR 0029 fail-soft fire。判别器 `isUndefinedVariableError` 出自 `exprBuilder.ts`。
+- **`--skip-sub` 别名 + 未命中警告(issue #5 缺陷 2)**:`--skip-sub verify-paranoid`(面向用户的斜杠命令名)现在在 master `verify` 下命中内名 `paranoid`(`<master>-<sub>` 别名,新模块 `src/workflow/skipSubs.ts`,gates CLI 与 masterOrchestrator 双通道共享);未命中任何 clause 的 skip 名打 stderr 警告(`ignored: not a sub of master <X>; valid subs: ...`),不再静默吞。auto lite 路径(`--skip-sub verify --skip-sub retro`)回归测试锁定不受影响。
+
+### Added
+
+- **ADR 0038** `gate-eval-undefined-variable-fail-closed`(Amends ADR-0029;0029 本体在 CI A7 守恒环内不可追加):undefined-variable 例外 fail-closed 的动机与边界。
+- **类杀审计测试** `tests/workflow/judgmentContextAudit.test.ts`:遍历全部 judgments yaml 的 43 条 fires_when/skips_when × 默认上下文求值,零 undefined-variable(此测在 v4.1.2 当场就会红);另实证 expr-eval 对 object member 缺失(`phase.x`)静默求 false,裸标识符是唯一 fail-open 面。
+- `tests/workflow/skipSubs.test.ts` 等 24 个新用例(fail-closed 三通道 / 别名 / 警告 / opt-in 通道 / lite 回归)。
+
 ## [4.23.1] - 2026-07-11
 
 修复 GitHub issue #4:`deferrable` 灰区决策无用户 relay 门 — plan 阶段直接采纳 agent 建议默认值,用户全程不可见("可推迟排期"被静默升格为"agent 代决";报告案例中一个 deferrable 默认值把验收需求从可测试断言变成结构恒真,验收方法被无声改变)。

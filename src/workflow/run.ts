@@ -17,6 +17,7 @@ import { runAfterOutputHook } from '../discipline/enforcement/after-output.js'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
 import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
+import { isUndefinedVariableError } from './exprBuilder.js'
 import { isVetoed } from './governance.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
 import type { AgentDefinition } from './lib/agentDefinition.js'
@@ -483,16 +484,27 @@ export async function runWorkflow(
       return { status: 'paused-veto', phasesRun: i, lastPhaseId: ph.id }
     }
 
-    // v2 `phase.gate` 4-level ref pre-flight。Fail-soft per ADR 0029 (eval throw → warn + 视为 fired=true)。
+    // v2 `phase.gate` 4-level ref pre-flight。Fail-soft per ADR 0029 (eval throw → warn + 视为 fired=true),
+    // EXCEPT undefined-variable (static config bug) → fail-closed per ADR 0029 Amendment (4.23.2, issue #5).
     if ('gate' in ph && ph.gate) {
       let fires = true
       try {
         fires = await resolveJudgmentGate(ph.gate, gateContext, packageRoot)
       } catch (err) {
-        console.warn(
-          `⚠️ phase ${ph.id} gate ${ph.gate} eval failed (${(err as Error).message}); ` +
-            'proceeding with phase as if gate fired=true (ADR 0029 fail-soft).',
-        )
+        if (isUndefinedVariableError(err)) {
+          console.warn(
+            `⚠️ phase ${ph.id} gate ${ph.gate} references a variable missing from the gate ` +
+              `context (${(err as Error).message}). Treating as NOT fired (fail-closed for ` +
+              `config errors) — fix the judgments yaml expression or supply the variable via ` +
+              `--context / gateContext defaults.`,
+          )
+          fires = false
+        } else {
+          console.warn(
+            `⚠️ phase ${ph.id} gate ${ph.gate} eval failed (${(err as Error).message}); ` +
+              'proceeding with phase as if gate fired=true (ADR 0029 fail-soft).',
+          )
+        }
       }
       if (!fires) {
         skippedPhases.push(ph.id)

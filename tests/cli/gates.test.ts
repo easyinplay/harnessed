@@ -12,6 +12,7 @@
 import { resolve } from 'node:path'
 import { Command } from 'commander'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { GateEvalError } from '../../src/workflow/exprBuilder.js'
 
 // vi.mock hoisting — declare BEFORE importing src under test.
 const resolveJudgmentGateMock =
@@ -401,6 +402,115 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     const parsed = JSON.parse(stdout)
     expect(parsed.parallelism.escalate_to_teams).toBe(true)
     expect(parsed.parallelism.reason).toMatch(/agent-teams-upgrade/)
+  })
+
+  // 4.23.2 (issue #5 defect 1) — fail-soft carve-out: an undefined-variable
+  // GateEvalError is a STATIC config bug (expression ↔ gateContext drift), not
+  // an operational fault. Fail-open on it made the 4-specialist multispec team
+  // the default path on every ordinary verify. Config bugs fail-CLOSED.
+  it('cell 17 — undefined-variable GateEvalError → fail-closed: sub in skip[], NOT fired', async () => {
+    setMaster(
+      'verify',
+      [
+        clauseLine('multispec', {
+          gate: 'judgments.stage-routing.verify-multispec-critical-release.fires',
+        }),
+        clauseLine('progress'),
+      ].join('\n'),
+    )
+    resolveJudgmentGateMock.mockRejectedValue(
+      new GateEvalError('Gate eval failed: undefined variable: is_critical_release', 'expr'),
+    )
+    const { code, stdout, stderr } = await runCli(['gates', 'verify'])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.fire.map((f: { sub: string }) => f.sub)).toEqual(['verify-progress'])
+    const skipEntry = parsed.skip.find((s: { sub: string }) => s.sub === 'multispec')
+    expect(skipEntry).toBeDefined()
+    expect(skipEntry.reason).toMatch(/misconfigured \(undefined variable\)/)
+    expect(skipEntry.reason).toMatch(/fail-closed/)
+    expect(stderr).toMatch(/undefined variable/)
+    expect(stderr).toMatch(/fail-closed/)
+  })
+
+  it('cell 17b — non-config eval error (plain Error) keeps ADR 0029 fail-soft fire', async () => {
+    // Guards the carve-out boundary: only undefined-variable GateEvalError flips
+    // to fail-closed; operational faults still fire (existing cell 4 semantics).
+    setMaster(
+      'verify',
+      [clauseLine('multispec', { gate: 'judgments.stage-routing.x.fires' })].join('\n'),
+    )
+    resolveJudgmentGateMock.mockRejectedValue(new Error('ENOENT judgments file unreadable'))
+    const { stdout } = await runCli(['gates', 'verify'])
+    expect(JSON.parse(stdout).fire.map((f: { sub: string }) => f.sub)).toContain('verify-multispec')
+  })
+
+  // 4.23.2 (issue #5 defect 2) — --skip-sub accepts the user-facing flattened
+  // `<master>-<sub>` alias (fire[] emits verify-paranoid, so users type that).
+  it('cell 18 — --skip-sub flattened alias verify-paranoid/verify-multispec → skipped, no gate eval', async () => {
+    setMaster(
+      'verify',
+      [
+        clauseLine('progress'),
+        clauseLine('paranoid', { gate: 'judgments.stage-routing.verify-paranoid-critical.fires' }),
+        clauseLine('multispec', {
+          gate: 'judgments.stage-routing.verify-multispec-critical-release.fires',
+        }),
+      ].join('\n'),
+    )
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { code, stdout, stderr } = await runCli([
+      'gates',
+      'verify',
+      '--skip-sub',
+      'verify-paranoid,verify-multispec',
+    ])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.skip.map((s: { sub: string }) => s.sub)).toEqual(
+      expect.arrayContaining(['paranoid', 'multispec']),
+    )
+    expect(parsed.fire.map((f: { sub: string }) => f.sub)).toEqual(['verify-progress'])
+    // neither clause gate was evaluated (skip filter runs pre-gate)
+    const gateCalls = resolveJudgmentGateMock.mock.calls.filter((c) =>
+      String(c[0]).startsWith('judgments.stage-routing.'),
+    )
+    expect(gateCalls.length).toBe(0)
+    expect(stderr).not.toMatch(/ignored/)
+  })
+
+  it('cell 19 — unmatched --skip-sub name → stderr warning naming valid subs, plan unaffected', async () => {
+    setMaster(
+      'verify',
+      [clauseLine('progress'), clauseLine('paranoid', { gate: 'judgments.x.y.fires' })].join('\n'),
+    )
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { code, stdout, stderr } = await runCli(['gates', 'verify', '--skip-sub', 'verify-bogus'])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.fire.map((f: { sub: string }) => f.sub)).toEqual([
+      'verify-progress',
+      'verify-paranoid',
+    ])
+    expect(stderr).toMatch(/--skip-sub "verify-bogus" ignored: not a sub of master verify/)
+    expect(stderr).toMatch(/valid subs:.*progress/)
+  })
+
+  it('cell 20 — auto lite path --skip-sub verify,retro exact names still skip (regression)', async () => {
+    setMaster('auto', [clauseLine('plan'), clauseLine('verify'), clauseLine('retro')].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const { stdout, stderr } = await runCli([
+      'gates',
+      'auto',
+      '--skip-sub',
+      'verify',
+      '--skip-sub',
+      'retro',
+    ])
+    const parsed = JSON.parse(stdout)
+    expect(parsed.skip.map((s: { sub: string }) => s.sub).sort()).toEqual(['retro', 'verify'])
+    expect(parsed.fire.map((f: { sub: string }) => f.sub)).toEqual(['plan'])
+    expect(stderr).not.toMatch(/ignored/)
   })
 
   it('cell 16 — --context partial phase override does not crash (deep-merge keeps defaults)', async () => {

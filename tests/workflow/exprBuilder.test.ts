@@ -2,7 +2,12 @@
 // 5 positive syntax + 3 negative + 2 injection per PLAN L175.
 
 import { describe, expect, it } from 'vitest'
-import { _parserSingleton, evalGate, GateEvalError } from '../../src/workflow/exprBuilder.js'
+import {
+  _parserSingleton,
+  evalGate,
+  GateEvalError,
+  isUndefinedVariableError,
+} from '../../src/workflow/exprBuilder.js'
 
 describe('exprBuilder.evalGate — positive syntax (5)', () => {
   it('1. string == comparison: phase.type == "new_feature"', () => {
@@ -61,5 +66,38 @@ describe('exprBuilder.evalGate — injection lockdown (2)', () => {
 
   it('10. Parser singleton identity (acceptance criterion e)', () => {
     expect(_parserSingleton).toBe(_parserSingleton)
+  })
+})
+
+// 4.23.2 (issue #5) — discriminator for the fail-closed exception to ADR 0029:
+// a bare identifier missing from the eval context is a STATIC config bug
+// (gate expression ↔ gateContext contract drift), not a runtime fault.
+describe('exprBuilder.isUndefinedVariableError — 4.23.2 fail-closed discriminator', () => {
+  it('11. true for GateEvalError wrapping expr-eval "undefined variable: X"', () => {
+    let caught: unknown
+    try {
+      evalGate('is_critical_release == true', {})
+    } catch (e) {
+      caught = e
+    }
+    expect(caught).toBeInstanceOf(GateEvalError)
+    expect(isUndefinedVariableError(caught)).toBe(true)
+  })
+
+  it('12. false for a plain Error with the same message (must be GateEvalError)', () => {
+    expect(isUndefinedVariableError(new Error('undefined variable: x'))).toBe(false)
+  })
+
+  it('13. false for a GateEvalError of a different failure class', () => {
+    expect(
+      isUndefinedVariableError(
+        new GateEvalError('Expression must evaluate to boolean, got number', 'x'),
+      ),
+    ).toBe(false)
+  })
+
+  it('14. false for non-error values', () => {
+    expect(isUndefinedVariableError(undefined)).toBe(false)
+    expect(isUndefinedVariableError('undefined variable: x')).toBe(false)
   })
 })
