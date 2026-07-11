@@ -401,3 +401,12 @@ execute-task 各 phase model 建议：
 | B5 自更新素材(channel + --dry-run + homedir 阀) | PENDING (bun track Phase 3) | 等用户信号 |
 | B4 eval harness | DEFERRED (v5+ 立项) | |
 | A3 transition 级校验加固 | CANDIDATE | evidence guard 现在 complete 级;是否升 transition 级待讨论 |
+
+### 增补 3 实施回填(续,2026-07-12,v4.26.0)
+
+| 候选 | Status | Notes |
+|---|---|---|
+| A3 transition 级校验 | IMPL: v4.26.0 | 串行次序守卫(complete/fail 双路径 fail-closed + --force 越序声明);ledger 补 mode/order 透传;effective-order 语义镜像 PARALLEL_MID_ANCHOR |
+| B2 hash 命中免重读(消费面) | DEFERRED (YAGNI) | B1 已覆盖注入大头;status/prompt 低频收益边际 |
+| B5 自更新 | NEXT(/plan-ceo-review 立项门) | bun track Phase 3:channel + --dry-run + homedir 阀 + curl 安装器 |
+| B4 eval harness | DEFERRED (v5+ 立项) | |

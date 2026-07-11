@@ -47,13 +47,21 @@ export interface MarkSubOpts {
  *  stable sort); skip entries follow in input order. */
 export function seedLedger(plan: GatesPlan): SubProgressEntryType[] {
   const fireEntries = plan.fire.map(
-    (f, i): { order: number; idx: number; entry: SubProgressEntryType } => ({
-      // missing order → Infinity so explicitly-ordered subs sort ahead while
-      // unordered ones retain relative input order (stabilized by idx).
-      order: f.order ?? Number.POSITIVE_INFINITY,
-      idx: i,
-      entry: { sub: f.sub, status: 'pending', gate_fired: true },
-    }),
+    (f, i): { order: number; idx: number; entry: SubProgressEntryType } => {
+      const entry: SubProgressEntryType = { sub: f.sub, status: 'pending', gate_fired: true }
+      // 4.26.0 (A3) — persist the plan's serial/parallel semantics so the
+      // serial-order guard can enforce sequence at complete/fail time. The plan's
+      // `mode` is a plain string; only the schema's 2-enum values are carried.
+      if (f.mode === 'serial' || f.mode === 'parallel') entry.mode = f.mode
+      if (f.order !== undefined) entry.order = f.order
+      return {
+        // missing order → Infinity so explicitly-ordered subs sort ahead while
+        // unordered ones retain relative input order (stabilized by idx).
+        order: f.order ?? Number.POSITIVE_INFINITY,
+        idx: i,
+        entry,
+      }
+    },
   )
   fireEntries.sort((a, b) => a.order - b.order || a.idx - b.idx)
 
@@ -102,4 +110,36 @@ export function markSub(
  *  remain. Skipped/done/failed entries are ignored. */
 export function nextPending(entries: SubProgressEntryType[]): string | null {
   return entries.find((e) => e.status === 'pending')?.sub ?? null
+}
+
+/** Mirror of masterOrchestrator's PARALLEL_MID_ANCHOR: parallel subs (which
+ *  carry no explicit order) execute between serial-leading (<50) and
+ *  serial-trailing (≥50) entries. The ledger ARRAY position cannot be used for
+ *  sequence checks — seedLedger sorts missing-order entries last (Infinity),
+ *  which puts parallel members after a serial tail like `simplify` order 99. */
+const PARALLEL_MID_ANCHOR = 50
+
+/** 4.26.0 (A3 serial-order guard) — pending subs whose sequence position comes
+ *  BEFORE `sub`, making its complete/fail a sequence jump (comet 0.3.9
+ *  phase-skip lesson). Effective order = entry.order, or the mid anchor for
+ *  unordered (parallel) entries; serial entries always carry an explicit order
+ *  (K9 invariant).
+ *  - target mode 'serial'   → every pending known-mode entry ordered before it
+ *    blocks (the serial tail waits for the whole preceding chain, parallel
+ *    members included);
+ *  - target 'parallel'/unknown → only pending SERIAL entries ordered before it
+ *    block (parallel group members legitimately resolve in any order).
+ *  Entries without a `mode` field are never counted (pre-4.26.0 ledger →
+ *  back-compat no-op); unknown target sub → [] (markSub owns that error). */
+export function findSerialBlockers(entries: SubProgressEntryType[], sub: string): string[] {
+  const target = entries.find((e) => e.sub === sub)
+  if (!target) return []
+  const eff = (e: SubProgressEntryType): number => e.order ?? PARALLEL_MID_ANCHOR
+  const counts =
+    target.mode === 'serial'
+      ? (e: SubProgressEntryType) => e.mode === 'serial' || e.mode === 'parallel'
+      : (e: SubProgressEntryType) => e.mode === 'serial'
+  return entries
+    .filter((e) => e.sub !== sub && e.status === 'pending' && counts(e) && eff(e) < eff(target))
+    .map((e) => e.sub)
 }

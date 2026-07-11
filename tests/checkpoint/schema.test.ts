@@ -155,6 +155,26 @@ describe('additive G1/G6/G7 schema fields', () => {
     expect(Value.Check(SubProgressEntry, entry)).toBe(true)
   })
 
+  it('accepts mode + order on a sub entry (4.26.0 A3 serial-order guard)', () => {
+    const entry = {
+      sub: 'progress',
+      status: 'pending',
+      gate_fired: true,
+      mode: 'serial',
+      order: 1,
+    }
+    expect(Value.Check(SubProgressEntry, entry)).toBe(true)
+    // pre-4.26.0 entry without the new fields stays valid (optional back-compat).
+    expect(Value.Check(SubProgressEntry, { sub: 's', status: 'pending', gate_fired: true })).toBe(
+      true,
+    )
+  })
+
+  it('rejects an unrecognized mode value on a sub entry (2-enum)', () => {
+    const bad = { sub: 's', status: 'pending', gate_fired: true, mode: 'sequential' }
+    expect(Value.Check(SubProgressEntry, bad)).toBe(false)
+  })
+
   it('rejects an invalid verify_mode value', () => {
     const bad = {
       schemaVersion: SCHEMA_VERSIONS.currentWorkflow,

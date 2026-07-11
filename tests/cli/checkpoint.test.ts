@@ -270,10 +270,15 @@ describe('cli/checkpoint — start/complete/fail', () => {
           }
         : null
 
-    // First two fails: fail_count < 3, no BREAK-LOOP.
+    // First two fails: fail_count < 3, no BREAK-LOOP. Each fail invocation reads
+    // the workflow TWICE since 4.26.0 (serial-order guard pre-mutate read + the
+    // breakLoop post-mark read), so queue each value twice.
     vi.mocked(readCurrentWorkflow)
       .mockResolvedValueOnce(makeWorkflow(1))
+      .mockResolvedValueOnce(makeWorkflow(1))
       .mockResolvedValueOnce(makeWorkflow(2))
+      .mockResolvedValueOnce(makeWorkflow(2))
+      .mockResolvedValueOnce(makeWorkflow(3))
       .mockResolvedValueOnce(makeWorkflow(3))
 
     const r1 = await runCli(['checkpoint', 'fail', 'task-loop'])

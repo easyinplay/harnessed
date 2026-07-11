@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.26.0] - 2026-07-12
+
+intel 候选 P1 动工:A3 串行次序守卫(comet 0.3.9 phase-skip 教训 "enforcement 必须每个 transition 脚本级校验";我方 evidence guard 此前只在 complete 级守证据、不守次序)。
+
+### Added
+
+- **串行次序守卫(transition 级,fail-closed)**:`checkpoint complete/fail` 现在拦截"串行前置仍 pending 时结算后面的 sub"— BLOCK 块列出 pending 的串行前置 + 两条出路(先结算前置 / `--force` 有意越序并打印声明)。次序语义 = effective-order(镜像 masterOrchestrator `PARALLEL_MID_ANCHOR=50`:parallel 无 order 视为中锚),并行组内乱序合法放行,串行尾(如 verify 的 simplify order 99)在全前置 resolved 前被拦。
+- **ledger 携带串并行语义**:`SubProgressEntry` 新增可选 `mode`/`order`,`checkpoint start` seeding 从 gates plan fire 条目透传(FireEntry 原生携带,gates/masterOrchestrator 零改动;此前 seeding 丢弃)。pre-4.26.0 envelope 无字段合法 — 旧 ledger 守卫 no-op 不误拦;守卫内部任何异常 warn + 放行(运行时故障 fail-soft,4.23.2 分型立场)。
+
+### Deferred
+
+- **B2(ledger 消费面 hash 免重读)**:注入大头已由 4.25.0 B1 覆盖,status/prompt 消费面低频、收益边际 — YAGNI 记录不做。B5(自更新,bun track Phase 3)与 B4(eval harness)按优先级后续立项。
+
 ## [4.25.0] - 2026-07-11
 
 intel 增补 3(comet/Trellis 近 10 版 changelog 分析)actionable 短清单动工:B1 注入 delta 化(Trellis byte-stable/memoize + comet hash 命中免重读合成)+ B3 不确定性分级(comet 0.3.5 原则)。

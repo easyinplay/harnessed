@@ -110,6 +110,47 @@ async function absorbIntentFor(sub: string): Promise<void> {
   }
 }
 
+/** 4.26.0 (A3, comet 0.3.9 phase-skip lesson) — serial-order guard shared by
+ *  complete/fail: read the current ledger and return the pending serial-sequence
+ *  blockers for `sub`. Any internal error → warn + [] (fail-soft: a runtime
+ *  fault, not a config error — the 4.23.2 fail-closed carve-out is for static
+ *  config bugs only). */
+async function serialOrderBlockers(sub: string): Promise<string[]> {
+  try {
+    const { readCurrentWorkflow } = await import('../checkpoint/state.js')
+    const { findSerialBlockers } = await import('../checkpoint/ledger.js')
+    const wf = await readCurrentWorkflow()
+    return findSerialBlockers(wf?.sub_progress ?? [], sub)
+  } catch (e) {
+    console.warn(`[harnessed] serial-order guard skipped (fail-soft): ${(e as Error).message}`)
+    return []
+  }
+}
+
+/** Fail-closed enforcement half of the serial-order guard: false = blocked
+ *  (message printed, caller exits 1); true = proceed (--force prints an explicit
+ *  override note — the jump is deliberate and on the record). */
+function enforceSerialOrder(
+  action: 'complete' | 'fail',
+  sub: string,
+  blockers: string[],
+  force: boolean | undefined,
+): boolean {
+  if (blockers.length === 0) return true
+  if (!force) {
+    console.error(
+      `[harnessed] checkpoint ${action} BLOCKED: ${sub} — ${blockers.length} earlier serial-sequence sub(s) still pending (serial-order guard, fail-closed):`,
+    )
+    for (const b of blockers) console.error(`  - ${b} (complete or fail it first)`)
+    console.error('  (re-run with --force to jump the sequence deliberately)')
+    return false
+  }
+  console.warn(
+    `[harnessed] serial-order guard overridden (--force): ${action} ${sub} ahead of pending sub(s) ${blockers.join(', ')}`,
+  )
+  return true
+}
+
 export function registerCheckpoint(program: Command): void {
   program
     .command('checkpoint <action> <sub>')
@@ -120,7 +161,7 @@ export function registerCheckpoint(program: Command): void {
     .option('--plan <json>', 'gates plan JSON (start only) — seeds the sub-progress ledger')
     .option(
       '--force',
-      'complete only — override a missing-artifact evidence block (records overridden)',
+      'complete/fail — override a fail-closed guard: the missing-artifact evidence block (complete; records overridden) or the serial-order guard',
     )
     .option(
       '--tokens <n>',
@@ -311,6 +352,13 @@ export function registerCheckpoint(program: Command): void {
         }
 
         if (action === 'complete') {
+          // 4.26.0 (A3) — serial-order guard BEFORE the evidence guard: jumping a
+          // pending serial predecessor is a transition violation regardless of
+          // whatever artifacts this sub can show.
+          if (!enforceSerialOrder('complete', sub, await serialOrderBlockers(sub), opts.force)) {
+            process.exit(1)
+            return
+          }
           const { checkArtifacts } = await import('../checkpoint/evidence.js')
           const { mutateSubProgress } = await import('../checkpoint/state.js')
           // B1 (v4.19.0): workflows/ 是运行时资产 — 经 assetsRoot seam(npm/dev 下
@@ -469,6 +517,12 @@ export function registerCheckpoint(program: Command): void {
         // action === 'fail' — flip the ledger entry → 'failed', record a terminal
         // checkpoint with FAILED: prefix, signal failure via exit code (engineHook
         // status union has no 'fail').
+        // 4.26.0 (A3) — same serial-order guard: failing a serial successor while
+        // its predecessor is still pending is the same sequence jump.
+        if (!enforceSerialOrder('fail', sub, await serialOrderBlockers(sub), opts.force)) {
+          process.exit(1)
+          return
+        }
         const { mutateSubProgress } = await import('../checkpoint/state.js')
         await mutateSubProgress((e) => markIfSeeded(e, sub, 'failed'))
         // 4.22.0 T6 — a failed sub is still a RESOLVED sub for its leaf intent.

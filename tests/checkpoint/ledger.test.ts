@@ -2,7 +2,13 @@
 // TDD: written RED against a stub (functions throw), then driven to GREEN.
 
 import { describe, expect, it } from 'vitest'
-import { type GatesPlan, markSub, nextPending, seedLedger } from '../../src/checkpoint/ledger.js'
+import {
+  findSerialBlockers,
+  type GatesPlan,
+  markSub,
+  nextPending,
+  seedLedger,
+} from '../../src/checkpoint/ledger.js'
 import type { SubProgressEntryType } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
 
 // ── seedLedger ────────────────────────────────────────────────────────────
@@ -77,6 +83,104 @@ describe('seedLedger', () => {
 
   it('returns an empty ledger for an empty plan', () => {
     expect(seedLedger({ fire: [], skip: [] })).toEqual([])
+  })
+})
+
+// ── seedLedger mode/order passthrough (4.26.0 A3 serial-order guard) ──────
+
+describe('seedLedger mode/order passthrough (A3)', () => {
+  it('persists mode + order from fire entries into the ledger', () => {
+    const plan: GatesPlan = {
+      master: 'verify',
+      fire: [
+        { sub: 'verify-progress', mode: 'serial', order: 1 },
+        { sub: 'verify-code-review', mode: 'parallel' },
+        { sub: 'verify-simplify', mode: 'serial', order: 99 },
+      ],
+      skip: [],
+    }
+    const led = seedLedger(plan)
+    const bySub = new Map(led.map((e) => [e.sub, e]))
+    expect(bySub.get('verify-progress')).toEqual({
+      sub: 'verify-progress',
+      status: 'pending',
+      gate_fired: true,
+      mode: 'serial',
+      order: 1,
+    })
+    // NOTE: seedLedger sorts missing-order entries LAST (Infinity), so the
+    // parallel entry lands after the serial tail in ARRAY position — which is
+    // exactly why findSerialBlockers uses effective order, not position.
+    expect(bySub.get('verify-code-review')).toEqual({
+      sub: 'verify-code-review',
+      status: 'pending',
+      gate_fired: true,
+      mode: 'parallel',
+    })
+    expect(bySub.get('verify-simplify')).toMatchObject({ mode: 'serial', order: 99 })
+  })
+
+  it('omits mode/order fields when the fire entry lacks them (byte-stable legacy shape)', () => {
+    const led = seedLedger({ fire: [{ sub: 'task-code' }], skip: [] })
+    expect(led[0]).toEqual({ sub: 'task-code', status: 'pending', gate_fired: true })
+  })
+
+  it('drops an unrecognized mode string instead of persisting it (schema is a 2-enum)', () => {
+    const led = seedLedger({ fire: [{ sub: 'x', mode: 'weird' }], skip: [] })
+    expect(led[0]).toEqual({ sub: 'x', status: 'pending', gate_fired: true })
+  })
+})
+
+// ── findSerialBlockers (4.26.0 A3) ────────────────────────────────────────
+
+describe('findSerialBlockers (A3 serial-order guard)', () => {
+  // verify-master shape: serial(1) progress → parallel code-review/paranoid →
+  // serial(99) simplify.
+  const verifyLedger: SubProgressEntryType[] = [
+    { sub: 'progress', status: 'pending', gate_fired: true, mode: 'serial', order: 1 },
+    { sub: 'code-review', status: 'pending', gate_fired: true, mode: 'parallel' },
+    { sub: 'paranoid', status: 'pending', gate_fired: true, mode: 'parallel' },
+    { sub: 'simplify', status: 'pending', gate_fired: true, mode: 'serial', order: 99 },
+  ]
+
+  it('blocks a parallel sub while an earlier serial sub is pending', () => {
+    expect(findSerialBlockers(verifyLedger, 'code-review')).toEqual(['progress'])
+  })
+
+  it('does NOT block parallel siblings on each other (any completion order)', () => {
+    const led = markSub(verifyLedger, 'progress', 'done')
+    expect(findSerialBlockers(led, 'paranoid')).toEqual([])
+    expect(findSerialBlockers(led, 'code-review')).toEqual([])
+  })
+
+  it('blocks the serial tail while ANY known-mode predecessor is pending', () => {
+    const led = markSub(verifyLedger, 'progress', 'done')
+    expect(findSerialBlockers(led, 'simplify')).toEqual(['code-review', 'paranoid'])
+  })
+
+  it('unblocks the serial tail once all predecessors are resolved (done/failed/skipped)', () => {
+    let led = markSub(verifyLedger, 'progress', 'done')
+    led = markSub(led, 'code-review', 'done')
+    led = markSub(led, 'paranoid', 'failed')
+    expect(findSerialBlockers(led, 'simplify')).toEqual([])
+  })
+
+  it('returns [] for a sub not present in the ledger', () => {
+    expect(findSerialBlockers(verifyLedger, 'nope')).toEqual([])
+  })
+
+  it('ignores predecessors without a mode field (pre-4.26.0 ledger, back-compat no-op)', () => {
+    const legacy: SubProgressEntryType[] = [
+      { sub: 'a', status: 'pending', gate_fired: true },
+      { sub: 'b', status: 'pending', gate_fired: true },
+    ]
+    expect(findSerialBlockers(legacy, 'b')).toEqual([])
+    // serial target: an unknown-mode predecessor still cannot be judged → no-op.
+    const mixed: SubProgressEntryType[] = [
+      { sub: 'a', status: 'pending', gate_fired: true },
+      { sub: 'z', status: 'pending', gate_fired: true, mode: 'serial', order: 99 },
+    ]
+    expect(findSerialBlockers(mixed, 'z')).toEqual([])
   })
 })
 

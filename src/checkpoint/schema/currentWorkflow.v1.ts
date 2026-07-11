@@ -56,6 +56,12 @@ export const SubProgressEntry = Type.Object(
     // G6 — failure counter; incremented only on each ->failed transition (drives
     // breakLoop detection). 'rejected' is terminal and does NOT increment it.
     fail_count: Type.Optional(Type.Integer({ minimum: 0 })),
+    // 4.26.0 (A3 serial-order guard) — seeding-time serial/parallel semantics
+    // carried over from the gates plan (fire[].mode/order). Optional: pre-4.26.0
+    // envelopes lack them, and the guard no-ops on entries without `mode`
+    // (back-compat fail-soft; comet 0.3.9 phase-skip lesson).
+    mode: Type.Optional(Type.Union([Type.Literal('serial'), Type.Literal('parallel')])),
+    order: Type.Optional(Type.Integer()),
   },
   { additionalProperties: false },
 )
