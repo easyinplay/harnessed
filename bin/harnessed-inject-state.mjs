@@ -13,7 +13,8 @@
 // Phase 15 repo-aware: resolves the active repo's slot from
 // workflows.json[repoKey(cwd)] (legacy current-workflow.json as a fallback).
 // Root: HARNESSED_ROOT_OVERRIDE if set, else <homedir>/.claude/harnessed.
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 
@@ -48,6 +49,60 @@ function sessionIdEnvName() {
   const platform = (process.env.HARNESSED_PLATFORM || 'claude').trim()
   if (platform === 'codex') return null
   return 'CLAUDE_CODE_SESSION_ID' // claude (default)
+}
+
+// ── 4.25.0 (intel B1) — session-scoped delta cache for <project-context>.
+// Inline mirror of src/checkpoint/injectCache.ts (this file is self-contained
+// plain JS by contract); the delta cells in tests/checkpoint/injectState.test.ts
+// hold the two implementations together. Fail-soft: the cache may only ever
+// SAVE tokens, never lose context — a skip is honored only when the
+// incremented entry was persisted (else `turns` would freeze and the periodic
+// compaction-hedge refresh would never fire). ──
+
+const DEFAULT_REFRESH_TURNS = 10
+
+function parseRefreshTurns(raw) {
+  const n = Number.parseInt(raw ?? '', 10)
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_REFRESH_TURNS
+}
+
+function decidePcEmission(cache, pcHash, refreshN, nowMs) {
+  if (cache && cache.pcHash === pcHash && cache.turns < refreshN) {
+    return { emit: false, next: { pcHash, ts: cache.ts, turns: cache.turns + 1 } }
+  }
+  return { emit: true, next: { pcHash, ts: nowMs, turns: 0 } }
+}
+
+/** true ⇔ the full pc block should be emitted this turn (default on ANY trouble). */
+function shouldEmitPc(root, repoRoot, sid, pc) {
+  try {
+    const key = createHash('sha256').update(`${repoRoot}::${sid}`).digest('hex').slice(0, 16)
+    const file = join(root, 'inject-cache', `${key}.json`)
+    let cache = null
+    try {
+      const parsed = JSON.parse(readFileSync(file, 'utf8'))
+      if (
+        parsed &&
+        typeof parsed.pcHash === 'string' &&
+        typeof parsed.ts === 'number' &&
+        typeof parsed.turns === 'number'
+      ) {
+        cache = parsed
+      }
+    } catch {}
+    const pcHash = createHash('sha256').update(pc).digest('hex')
+    const refreshN = parseRefreshTurns(process.env.HARNESSED_INJECT_REFRESH_TURNS)
+    const d = decidePcEmission(cache, pcHash, refreshN, Date.now())
+    try {
+      mkdirSync(join(root, 'inject-cache'), { recursive: true })
+      writeFileSync(file, `${JSON.stringify(d.next)}\n`, 'utf8')
+    } catch {
+      return true // could not persist the increment — never skip on an unpersisted decision
+    }
+    return d.emit
+  } catch {
+    return true
+  }
 }
 
 // Phase 35 — try the session-scoped slot first, then the bare repoKey slot, then
@@ -371,7 +426,13 @@ try {
   )
   const used = rel.reduce((a, e) => a + tok(e.raw), 0)
   const ctx = findPhaseContextExcerpt(key, wf.phase, Math.max(0, budget - used))
-  const pc = projectContextBlock(rel, ctx ?? undefined)
+  let pc = projectContextBlock(rel, ctx ?? undefined)
+
+  // 4.25.0 (intel B1) — same session + byte-identical pc already injected on a
+  // recent turn → skip it (the content is in the conversation); periodic
+  // refresh + hash-miss re-emission handled by the cache decision. No sid or
+  // any cache trouble → full injection, byte-identical to pre-4.25.0.
+  if (pc && sid && !shouldEmitPc(root, key, sid, pc)) pc = ''
 
   const normal = pc ? `${ws}\n${pc}` : ws
   process.stdout.write(`${ib ? `${ib}\n${normal}` : normal}\n`)

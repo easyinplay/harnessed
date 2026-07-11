@@ -387,6 +387,7 @@ prompts:
       - "内联代码注释 / docstring —— 改动是否违反声明的不变量?"
       - "每条发现打 0-100 分;<80 丢弃;保留的发现引用 file:line"
       - "避免:既有问题、linter 能抓的吹毛求疵、用户没改的行"
+      - "Severity 纪律:只有可复现的 build 失败、测试失败、可利用的安全漏洞可标最高级 —— 模糊 / 判断类发现必须降级,绝不就高"
     severity: "critical / high / medium(只报告置信度 ≥80 的发现)"
     description: "多 agent code review fan-out —— 对照 base 分支的 diff,带置信度过滤的发现。"
 
@@ -407,6 +408,7 @@ prompts:
       - "列 / 字段名安全 —— ORM .select/.eq 的列与 schema 匹配"
       - "边界处的类型强转 —— hash/digest 输入在序列化前已归一化"
       - "时间窗口安全 —— 假设 24h 覆盖的 date-key 查询;feature 间桶不匹配"
+      - "Severity 纪律:只有可复现的 build 失败、测试失败、可利用的安全漏洞可标最高级 —— 模糊 / 判断类发现必须降级,绝不就高"
     severity: "CRITICAL / INFORMATIONAL(Fix-First 启发式 —— critical → ASK,informational → AUTO-FIX)"
     description: "偏执狂 Staff Engineer 落地前审查(默认存疑模式,critical+informational 两轮)。"
 
@@ -426,6 +428,7 @@ prompts:
       - "State:empty、loading、error、overflow —— 没有一个像 AI placeholder"
       - "Mobile:375x812 视口 —— 真实布局,不是堆叠的桌面版"
       - "若提供 creds / cookies 则验证已登录路径;核心流程深度 > 广度"
+      - "Severity 纪律:只有可复现的 build 失败、测试失败、可利用的安全漏洞可标最高级 —— 模糊 / 判断类发现必须降级,绝不就高"
     severity: "blocker / major / minor / nit"
     description: "端到端 QA 跑查 —— orient / explore / form / state / 响应式(核心流程深度 > 广度)。"
 
@@ -445,6 +448,7 @@ prompts:
       - "Dockerfile:缺 USER(以 root 跑)、secrets 作为 ARG、镜像里有 .env、无意义暴露的端口"
       - "IaC:通配符 IAM、.tfvars 里硬编码 secrets、特权容器、K8s 里的 hostNetwork"
       - "依赖审计(npm audit / pip-audit / bundler-audit)—— 标记 SKIPPED 的工具,而非让审计失败"
+      - "Severity 纪律:只有可复现的 build 失败、测试失败、可利用的安全漏洞可标最高级 —— 模糊 / 判断类发现必须降级,绝不就高"
     severity: "CRITICAL / HIGH / MEDIUM / LOW / INFO"
     description: "CSO 安全审计 —— OWASP Top 10 + secrets 考古 + CI/CD / Docker / IaC 加固。"
 

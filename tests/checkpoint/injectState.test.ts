@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -653,5 +653,117 @@ describe('buildIntentBlock — leaf variant (4.22.0 T6)', () => {
     expect(buildIntentBlock({ master: 'auto', ts, kind: 'master' }, NOW)).toBe(
       buildIntentBlock({ master: 'auto', ts }, NOW),
     )
+  })
+})
+
+// ── 4.25.0 (intel B1) — session-scoped delta injection: the bin skips re-injecting
+// a byte-identical <project-context> within the same session (hash cache under
+// <root>/inject-cache/), refreshing every N turns as a compaction hedge. No sid /
+// cache trouble → byte-identical legacy full injection (fail-soft). ──
+
+describe('bin delta injection (4.25.0 — session pc cache)', () => {
+  let tmp: string
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), 'inject-delta-'))
+    mkdirSync(join(tmp, 'repo', '.git'), { recursive: true })
+    mkdirSync(join(tmp, 'repo', '.planning'), { recursive: true })
+    mkdirSync(join(tmp, 'root', '.claude', 'harnessed'), { recursive: true })
+    writeFileSync(join(tmp, 'repo', '.planning', 'LEARNINGS.md'), LEARNINGS_MD, 'utf8')
+  })
+  afterEach(() => rmSync(tmp, { recursive: true, force: true }))
+
+  const wf: CurrentWorkflowV1Type = {
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: 'task',
+    status: 'active',
+    last_checkpoint_path: null,
+    started_at: '2026-06-12T00:00:00.000Z',
+    sub_progress: [{ sub: 'beta', status: 'pending', gate_fired: true }],
+  }
+
+  const binPath = join(__dirname, '..', '..', 'bin', 'harnessed-inject-state.mjs')
+
+  const seed = (sid?: string) => {
+    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const slot = sid ? `${repoRoot}::${sid}` : repoRoot
+    writeFileSync(
+      join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: { [slot]: wf },
+      }),
+    )
+  }
+
+  const runBin = (extraEnv: NodeJS.ProcessEnv = {}) => {
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      HOME: join(tmp, 'root'),
+      USERPROFILE: join(tmp, 'root'),
+      HARNESSED_ROOT_OVERRIDE: join(tmp, 'root', '.claude', 'harnessed'),
+    }
+    delete env.CLAUDE_CODE_SESSION_ID
+    delete env.HARNESSED_PLATFORM
+    delete env.HARNESSED_INJECT_REFRESH_TURNS
+    return execFileSync('node', [binPath], {
+      env: { ...env, ...extraEnv },
+      encoding: 'utf8',
+      cwd: join(tmp, 'repo'),
+    })
+  }
+
+  it('same session, unchanged pc → 2nd run keeps <workflow-state>, skips <project-context>', () => {
+    seed('sessD1')
+    const first = runBin({ CLAUDE_CODE_SESSION_ID: 'sessD1' })
+    expect(first).toContain('<workflow-state>')
+    expect(first).toContain('<project-context>')
+    const second = runBin({ CLAUDE_CODE_SESSION_ID: 'sessD1' })
+    expect(second).toContain('<workflow-state>')
+    expect(second).not.toContain('<project-context>')
+  })
+
+  it('HARNESSED_INJECT_REFRESH_TURNS=1 → full, skip, full (periodic refresh)', () => {
+    seed('sessD2')
+    const env = { CLAUDE_CODE_SESSION_ID: 'sessD2', HARNESSED_INJECT_REFRESH_TURNS: '1' }
+    expect(runBin(env)).toContain('<project-context>')
+    expect(runBin(env)).not.toContain('<project-context>')
+    expect(runBin(env)).toContain('<project-context>')
+  })
+
+  it('no session id → every run carries the full pc (legacy behavior)', () => {
+    seed()
+    expect(runBin()).toContain('<project-context>')
+    expect(runBin()).toContain('<project-context>')
+  })
+
+  it('pc content change between turns → hash miss → full re-injection', () => {
+    seed('sessD3')
+    expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessD3' })).toContain('<project-context>')
+    writeFileSync(
+      join(tmp, 'repo', '.planning', 'LEARNINGS.md'),
+      `${LEARNINGS_MD}\n### 2026-06-14T00:00:00.000Z — phase task\n- failed: beta\n`,
+      'utf8',
+    )
+    const third = runBin({ CLAUDE_CODE_SESSION_ID: 'sessD3' })
+    expect(third).toContain('<project-context>')
+    expect(third).toContain('failed: beta')
+  })
+
+  it('corrupt cache file → fail-soft full injection', () => {
+    seed('sessD4')
+    runBin({ CLAUDE_CODE_SESSION_ID: 'sessD4' }) // primes the cache
+    const cacheDir = join(tmp, 'root', '.claude', 'harnessed', 'inject-cache')
+    for (const f of readdirSync(cacheDir)) {
+      writeFileSync(join(cacheDir, f), '{oops', 'utf8')
+    }
+    expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessD4' })).toContain('<project-context>')
+  })
+
+  it('different sessions do not share the cache', () => {
+    seed('sessA')
+    expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessA' })).toContain('<project-context>')
+    // sessB reads the bare slot? No — seed wrote only sessA's slot; reseed for B.
+    seed('sessB')
+    expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessB' })).toContain('<project-context>')
   })
 })

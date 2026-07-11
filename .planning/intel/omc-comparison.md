@@ -390,3 +390,14 @@ execute-task 各 phase model 建议：
 - A9 用户自定义 shell 命令字段加固成本 > 价值,comet 最终移除 build_command/verify_command。启示:凡新增"用户可配命令"字段先过此问。
 
 **Actionable 短清单**:B1 注入字节稳定性审计(近期可做)、B3 doctor/verify 分级措辞(近期可做)、B2 hash 命中免重读(中)、B5 自更新素材(bun Phase 3)、B4 eval harness(v5+ 立项)、A3 transition 级校验加固(候选)。
+
+### 增补 3 实施回填(2026-07-11,v4.25.0)
+
+| 候选 | Status | Notes |
+|---|---|---|
+| B1 注入字节稳定性/delta 化 | IMPL: v4.25.0 | injectCache.ts + bin 镜像;hash 命中跳过 + REFRESH_TURNS=10 周期重注;无 sid 字节等同旧行为 |
+| B3 不确定性降级原则 | IMPL: v4.25.0 | verify ×4 条目 en/zh checklist + doctor fail 面 allowlist 测试(audit:4 处 fail 全合规零降级) |
+| B2 hash 命中免重读(ledger 消费面) | PENDING | B1 已覆盖注入面;status --recover / prompt 消费面待评估 |
+| B5 自更新素材(channel + --dry-run + homedir 阀) | PENDING (bun track Phase 3) | 等用户信号 |
+| B4 eval harness | DEFERRED (v5+ 立项) | |
+| A3 transition 级校验加固 | CANDIDATE | evidence guard 现在 complete 级;是否升 transition 级待讨论 |

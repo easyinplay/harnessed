@@ -410,6 +410,7 @@ prompts:
       - "Inline code comments / docstrings — does the change violate stated invariants?"
       - "Score each finding 0-100; drop <80; cite file:line for kept findings"
       - "Avoid: pre-existing issues, linter-catchable nits, lines user did not modify"
+      - "Severity discipline: only reproducible build failures, test failures, and exploitable security vulnerabilities may take the top severity — ambiguous or judgment-call findings MUST be downgraded, never rounded up"
     severity: "critical / high / medium (only findings ≥80 confidence are reported)"
     description: "Multi-agent code review fan-out — diff vs base branch with confidence-filtered findings."
 
@@ -431,6 +432,7 @@ prompts:
       - "Column/field name safety — ORM .select/.eq columns match schema"
       - "Type coercion at boundaries — hash/digest inputs normalized before serialize"
       - "Time window safety — date-key lookups assuming 24h coverage; mismatched buckets between features"
+      - "Severity discipline: only reproducible build failures, test failures, and exploitable security vulnerabilities may take the top severity — ambiguous or judgment-call findings MUST be downgraded, never rounded up"
     severity: "CRITICAL / INFORMATIONAL (Fix-First Heuristic — critical → ASK, informational → AUTO-FIX)"
     description: "Paranoid Staff Engineer pre-landing review (default-suspect mode, critical+informational two-pass)."
 
@@ -450,6 +452,7 @@ prompts:
       - "States: empty, loading, error, overflow — none look like AI placeholder"
       - "Mobile: 375x812 viewport — real layout, not stacked desktop"
       - "Authenticated paths if creds / cookies provided; depth > breadth on core flows"
+      - "Severity discipline: only reproducible build failures, test failures, and exploitable security vulnerabilities may take the top severity — ambiguous or judgment-call findings MUST be downgraded, never rounded up"
     severity: "blocker / major / minor / nit"
     description: "End-to-end QA pass — orient / explore / forms / states / responsive (depth > breadth on core flows)."
 
@@ -469,6 +472,7 @@ prompts:
       - "Dockerfiles: missing USER (root), secrets as ARG, .env in image, exposed ports without purpose"
       - "IaC: wildcard IAM, hardcoded secrets in .tfvars, privileged containers, hostNetwork in K8s"
       - "Dependency audit (npm audit / pip-audit / bundler-audit) — note SKIPPED tools rather than fail audit"
+      - "Severity discipline: only reproducible build failures, test failures, and exploitable security vulnerabilities may take the top severity — ambiguous or judgment-call findings MUST be downgraded, never rounded up"
     severity: "CRITICAL / HIGH / MEDIUM / LOW / INFO"
     description: "CSO security audit — OWASP Top 10 + secrets archaeology + CI/CD / Docker / IaC hardening."
 

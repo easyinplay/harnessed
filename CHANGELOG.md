@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.25.0] - 2026-07-11
+
+intel 增补 3(comet/Trellis 近 10 版 changelog 分析)actionable 短清单动工:B1 注入 delta 化(Trellis byte-stable/memoize + comet hash 命中免重读合成)+ B3 不确定性分级(comet 0.3.5 原则)。
+
+### Added
+
+- **per-turn 注入 delta 化(B1)**:`<project-context>`(≤1500 token 的 learnings + CONTEXT 摘录)此前每轮全量重注;现改会话级缓存 — sha256 命中且未到刷新周期则本轮只发 `<workflow-state>`,默认每 10 轮强制重注一次(env `HARNESSED_INJECT_REFRESH_TURNS` 可调)对冲 compaction 丢历史。内容变化(learnings 追加/phase 推进)hash 自变 → 自动全量。新模块 `src/checkpoint/injectCache.ts` + bin 内联镜像(parity);缓存键 = sha256(repoKey::sessionId) 前 16 位,落 `<harnessedRoot>/inject-cache/`。无 session id 环境字节等同旧行为;缓存任何异常 fail-soft 回全量;skip 决策仅在缓存增量成功持久化后生效(写失败即全量,防 turns 冻结)。同内容会话内约省 10/11 重注开销。
+- **verify 家族 severity 纪律(B3)**:role-prompts verify-code-review / verify-paranoid / verify-qa / verify-security checklist(en/zh 各 +1 条)— "only reproducible build failures, test failures, and exploitable security vulnerabilities may take the top severity — ambiguous or judgment-call findings MUST be downgraded, never rounded up"。防模糊发现升格成阻塞。
+- **doctor fail 面 allowlist 测试(B3/D3)**:audit 全部 checks 的 `status: 'fail'` 使用面(共 4 处:node<22、WSL stub/无 bash ×2、自带 aliases.yaml 损坏)— 全部属"harnessed 自身无法工作"类,零降级;新增 fail 面须过 `doctorFailSurface.test.ts` allowlist。
+
 ## [4.24.0] - 2026-07-11
 
 五家对照(OMC / omo / ECC / comet / Trellis,`.planning/intel/omc-comparison.md` 三题对照两轮实证)后的 gap 补齐:follow 更优方案(用户授权),逐候选采纳决策见 `_patch-4.24.0-intel-gap-close/task_plan.md`。
