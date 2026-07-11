@@ -80,3 +80,31 @@ describe('deferrable relay gate (issue #4, 4.23.1)', () => {
     expect(zh).toContain('用户明确再次推迟')
   })
 })
+
+// 4.24.0 (intel gap G3 — comet decision-point Red Flags table, adopted):
+// pre-refute the agent's self-decide excuses so "small change" / "user would
+// probably agree" cannot silently bypass the relay contract above.
+describe('red-flags rebuttal table (intel G3, 4.24.0)', () => {
+  it('cell 7 — en discuss-phase checklist pre-refutes self-decide excuses', async () => {
+    const prompts = await loadRolePrompts(WORKFLOWS_DIR)
+    const joined = (prompts['discuss-phase']?.checklist ?? []).join('\n')
+    expect(joined).toMatch(/red flags/i)
+    expect(joined).toMatch(/user would probably agree/i)
+    expect(joined).toMatch(/no size exception/i)
+  })
+
+  it('cell 8 — zh mirror carries the rebuttal table (toContain, no \b)', () => {
+    const raw = read('role-prompts.zh-Hans.yaml')
+    expect(raw).toContain('无效借口')
+    expect(raw).toContain('没有大小豁免')
+  })
+
+  it('cell 9 — en/zh checklist grew to ≥10 and counts stay equal', () => {
+    const en = parse(read('role-prompts.yaml'))
+    const zh = parse(read('role-prompts.zh-Hans.yaml'))
+    const enList = en?.prompts?.['discuss-phase']?.checklist ?? []
+    const zhList = zh?.prompts?.['discuss-phase']?.checklist ?? []
+    expect(enList.length).toBeGreaterThanOrEqual(10)
+    expect(enList.length).toBe(zhList.length)
+  })
+})

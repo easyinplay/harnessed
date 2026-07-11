@@ -249,6 +249,15 @@ export function attachCulprits(
   )
 }
 
+/** Doctor fix line — heal PREVIEW (4.24.0 intel gap G4, ECC `repair --dry-run`
+ *  semantics adopted light): doctor is the preview channel, setup is the heal
+ *  channel; no new command. Names exactly what setup would reinstall and that
+ *  the replaced content is backed up first (G1). */
+export function healPreviewFix(bad: SkillIntegrityEntry[]): string {
+  const names = bad.map((e) => e.name).join(', ')
+  return `would reinstall: ${names}; run \`harnessed setup\` to heal (a backup of the current content is taken first, under \`~/.claude/harnessed/backups/\`)`
+}
+
 /** Human lines for a non-clean audit (shared by setup / doctor / status). */
 export function integrityReportLines(entries: SkillIntegrityEntry[]): string[] {
   const bad = entries.filter((e) => e.status !== 'ok')

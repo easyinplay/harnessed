@@ -350,3 +350,14 @@ execute-task 各 phase model 建议：
 - 对照:comet 把配置错误全量 FATAL(比我们更硬 — 我们保留了运行时故障 fail-soft 不锁流程);Trellis 的 "可见降级" 措辞哲学与我们 STALE breadcrumb 同向,但 config 层未贯彻。
 
 **五家总盘点**(含前节 OMC/omo/ECC):T1 成熟度 Trellis ≈ harnessed > OMC > comet > ECC > omo;T2 只有 comet 与 harnessed 有真机制,其余靠 prompt/模式分流;T3 fail-closed 光谱 comet > omo ≈ harnessed(分型)> ECC(fail-open 可见)> Trellis(混合)> OMC(fail-open 静默)。skip 传错名警告仍仅 harnessed 有(comet 不适用)。借鉴候选清单:Trellis 3-way 升级分类 + backup、comet 安装前 unmanaged-entries 拒绝 + Red Flags 反驳表、ECC repair --dry-run、OMC ambiguity 量化阈值。
+
+### 借鉴候选实施回填(2026-07-11,v4.24.0)
+
+| 候选 | 来源 | Status | Notes |
+|---|---|---|---|
+| G1 备份后再覆盖(自愈前 backup) | Trellis | IMPL: v4.24.0 | `skillBackup.ts` + setup 自愈循环接线;`~/.harnessed/backups/<ts>-skill-heal/` |
+| G2 装前变更检测+备份+警告 | comet(throw 拒绝改造为 backup+warn) | IMPL: v4.24.0 | Step A hash 对台账;无基准保守视为已改(Trellis 语义) |
+| G3 Red Flags 反驳表 | comet decision-point.md | IMPL: v4.24.0 | role-prompts discuss-phase en/zh 9→10 条;deferrableRelay.test 锁 |
+| G4 heal 预览(dry-run 语义) | ECC repair --dry-run | IMPL: v4.24.0(adopt-light) | doctor fix 行 "would reinstall: ...";不加新命令 |
+| G5 ambiguity 量化阈值 | OMC deep-interview | DEFERRED (v5+ discuss) | 方向级设计:阈值定标/测量口径/与三层澄清判据关系 |
+| 不借鉴 | omo zod strict / comet 全量 FATAL / Trellis 3-way 全套 | DECLINED | 同面已覆盖 / 4.23.2 分型即立场 / preserve-in-place 与引擎完整性契约冲突 |

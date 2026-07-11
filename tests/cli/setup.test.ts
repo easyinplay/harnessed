@@ -163,8 +163,10 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    // Step A
-    expect(cpMock).toHaveBeenCalledOnce()
+    // Step A — 2 cp per workflow since 4.24.0 (G2): the mocked env reads as
+    // "dst exists + no usable ledger" → conservative pre-overwrite backup cp,
+    // then the install cp. Recorded reason: intel gap-close backup-before-overwrite.
+    expect(cpMock).toHaveBeenCalledTimes(2)
     expect(stdout).toContain('Step A: 1 workflow')
     // Step B
     expect(runInstallMock).toHaveBeenCalledTimes(2)
@@ -200,6 +202,31 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
   })
 
   // Cell 4 (v3.0-3.3 T3.3.W0.12): both flat keep dirs (research + retro) installed
+  // Cell 3c (4.24.0 intel gap G2, TDD): pre-overwrite backup warning block.
+  // Under the global mocks the env reads as "dst exists (stat resolves a dir)
+  // + ledger unreadable (readFile returns non-JSON)" → the conservative
+  // Trellis-semantics path: back up, then overwrite, then warn with the backup
+  // location. Coverage note: the REAL-fs skip path (pristine ledger match → no
+  // backup) is unit-tested in tests/cli/lib/skillBackup.test.ts — this cell
+  // locks the setup-side wiring + warn surface only.
+  it('cell 3c — Step A backs up a modified/unverifiable existing skill before overwriting and warns with the location', async () => {
+    readdirMock.mockImplementation(
+      makeWorkflowsReaddir(['research'], { 'skill-packs': ['gsd.yaml'], tools: ['ctx7.yaml'] }),
+    )
+    statMock.mockImplementation(makeStatMock(['research']))
+    cpMock.mockResolvedValue(undefined)
+    readFileMock.mockResolvedValue('yaml-content' as never)
+    validateManifestFileMock
+      .mockReturnValueOnce(makeValidManifest('ctx7') as never)
+      .mockReturnValueOnce(makeValidManifest('gsd') as never)
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+
+    const { code, stderr } = await runCli(['setup'])
+    expect(code).toBe(0)
+    expect(stderr).toMatch(/backed up/i)
+    expect(stderr).toContain('research')
+  })
+
   it('cell 4 — flat keep dirs (research + retro) both installed', async () => {
     readdirMock.mockImplementation(makeWorkflowsReaddir(['research', 'retro']))
     statMock.mockImplementation(makeStatMock(['research', 'retro']))
@@ -214,7 +241,8 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    expect(cpMock).toHaveBeenCalledTimes(2)
+    // 4 = 2 workflows × (backup cp + install cp) — see cell 3 recorded reason (4.24.0 G2).
+    expect(cpMock).toHaveBeenCalledTimes(4)
     expect(stdout).toContain('Step A: 2 workflow')
   })
 

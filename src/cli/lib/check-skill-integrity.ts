@@ -12,7 +12,12 @@ import { getSkillsDir } from '../../installers/lib/platform.js'
 import { getAssetsRoot } from './assetsRoot.js'
 import type { CheckResult } from './check-builtin.js'
 import { scanWorkflowsNested } from './scan-nested.js'
-import { attachCulprits, auditInstalledSkills, buildCulpritIndex } from './skillIntegrity.js'
+import {
+  attachCulprits,
+  auditInstalledSkills,
+  buildCulpritIndex,
+  healPreviewFix,
+} from './skillIntegrity.js'
 
 export async function checkSkillIntegrity(): Promise<CheckResult> {
   const name = 'workflow skill integrity'
@@ -52,7 +57,9 @@ export async function checkSkillIntegrity(): Promise<CheckResult> {
       name,
       status: 'warn',
       message: `${bad.length} workflow skill(s) diverged from the install-time state (foreign/tampered/stale/missing) — the slash command may NOT enter the engine: ${detail}`,
-      fix: 're-run `harnessed setup` (its end-of-run integrity pass restores + re-pins the shipped versions)',
+      // 4.24.0 (intel G4) — heal preview: name what setup would reinstall +
+      // the backup-first guarantee, instead of a generic "re-run setup".
+      fix: healPreviewFix(bad),
     }
   } catch {
     // Fail-soft: an unreadable env is not a health failure for this check.

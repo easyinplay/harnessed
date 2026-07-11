@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.24.0] - 2026-07-11
+
+五家对照(OMC / omo / ECC / comet / Trellis,`.planning/intel/omc-comparison.md` 三题对照两轮实证)后的 gap 补齐:follow 更优方案(用户授权),逐候选采纳决策见 `_patch-4.24.0-intel-gap-close/task_plan.md`。
+
+### Added
+
+- **备份后再覆盖(G1,follow Trellis)**:setup 末尾完整性自愈重装前,先把被覆盖的 foreign/tampered skill 目录备份到 `~/.harnessed/backups/<ts>-skill-heal/`(heal 汇总行报备份路径);此前 `cp force:true` 直接覆盖,内容永久丢失。新模块 `src/cli/lib/skillBackup.ts`(目录树备份 + README 恢复提示;备份失败醒目警告后仍 heal — 引擎完整性优先)。
+- **Step A 装前变更检测 + 备份(G2,adapt comet)**:workflow 安装覆盖前对比目标 SKILL.md sha256 与 hash 台账 — 原样 → 静默覆盖零开销;已改/无基准(保守视为已改,Trellis "assume modified" 语义)→ 备份到 `<ts>-step-a/` 再覆盖 + 聚合警告块。不采 comet 的 throw 拒绝:引擎名按 4.23.0 契约归 harnessed,拒绝会 brick setup。
+- **Red Flags 反驳表(G3,follow comet decision-point 协议)**:role-prompts discuss-phase checklist(en/zh,9→10 条)预先驳斥四种 agent 自决借口(「改动很小,不用确认」/「用户大概率会同意」/「推荐答案很明显」/「问一下会打断节奏」)— "Decision points have no size exception — relay anyway"。
+- **doctor heal 预览(G4,adopt-light ECC repair --dry-run 语义)**:skill-integrity warn 的 fix 行改为 `would reinstall: <names>; run \`harnessed setup\` to heal (a backup of the current content is taken first)`。不加新命令(doctor 即 preview,setup 即 heal)。
+
+### Deferred
+
+- **ambiguity 量化阈值(G5,OMC deep-interview)**:把"该不该问"变成测量题是方向级设计,推迟 v5+ discuss;intel 实施回填表已记录。不借鉴声明(omo zod strict / comet 全量 FATAL / Trellis 3-way 全套)见 task_plan。
+
 ## [4.23.2] - 2026-07-11
 
 修复 GitHub issue #5:gate 表达式引用上下文缺失变量时 fail-soft 误触最贵子项(`verify-multispec` 4-specialist Agent Team 在非关键发布也 fire)+ `--skip-sub` 对斜杠命令名静默失效。

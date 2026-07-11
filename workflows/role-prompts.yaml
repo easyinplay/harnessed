@@ -190,6 +190,7 @@ prompts:
       - "Flag decisions blocking start (must answer before plan) vs. deferrable"
       - "Deferrable = safe to default only AFTER the user has one chance to override: the orchestrator relays the deferrable set in ONE batched AskUserQuestion with recommended defaults pre-selected — a deferrable item is NOT resolved without the user"
       - "Deferrable only if the default is reversible AND does not change the nature of any requirement (testable assertion → structural identity, changed acceptance method, altered cross-phase contract shape); if it does, mark it blocking. 'Both candidates satisfy the requirement as written' is NOT sufficient to defer"
+      - "Red flags — all invalid excuses to skip the relay: 'small change, no confirmation needed' / 'the user would probably agree' / 'the recommendation is obvious, adopt the default' / 'asking interrupts the flow'. Decision points have no size exception — relay anyway"
       - "Persist to `.planning/phases/<NN>-<slug>/findings.md` + `knowledge.md` for hand-off (NN = two-digit, one above the highest existing phase dir; slug = kebab-case short name)"
       - "If the layer is genuinely clear, say 'no clarification needed' and exit"
     severity: "blocking / deferrable / resolved"

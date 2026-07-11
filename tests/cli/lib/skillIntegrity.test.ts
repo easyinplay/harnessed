@@ -213,3 +213,19 @@ describe('integrityReportLines', () => {
     expect(lines).toMatch(/re-run `harnessed setup`/)
   })
 })
+
+// 4.24.0 (intel gap G4 — ECC `repair --dry-run` semantics, adopted light):
+// doctor's warn fix line becomes a heal PREVIEW — names what setup would
+// reinstall and that a backup of the current content is taken first.
+describe('healPreviewFix (doctor heal preview)', () => {
+  it('names every diverged skill and the backup-first heal channel', async () => {
+    const { healPreviewFix } = await import('../../../src/cli/lib/skillIntegrity.js')
+    const s = healPreviewFix([
+      { name: 'research', status: 'foreign' },
+      { name: 'retro', status: 'tampered' },
+    ])
+    expect(s).toContain('would reinstall: research, retro')
+    expect(s).toContain('run `harnessed setup` to heal')
+    expect(s).toMatch(/backup of the current content/i)
+  })
+})

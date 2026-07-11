@@ -176,6 +176,7 @@ prompts:
       - "标出阻塞启动的决策(规划前必须答)vs. 可延后的"
       - "deferrable = 仅在用户有一次 override 机会之后才可采用默认值:orchestrator 必须把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(推荐默认值预选)—— deferrable 项不允许在用户不知情时被 resolve"
       - "仅当默认值可逆且不会改变任何需求的本质(可测试断言 → 结构恒真、验收方法变更、跨 phase contract 形态改变)时才可标 deferrable;若会改变,升格为 blocking。『两个候选都满足现有需求原文』不足以 defer"
+      - "Red flags —— 以下全是跳过 relay 的无效借口:『改动很小,不用确认』/『用户大概率会同意』/『推荐答案很明显,直接采用默认』/『问一下会打断节奏』。决策点没有大小豁免 —— 一律 relay"
       - "持久化到 `.planning/phases/<NN>-<slug>/findings.md` + `knowledge.md` 以便交接(NN = 两位数,取现有最大 phase 目录号 + 1;slug = kebab 短名)"
       - "若该层确实已清晰,直说『无需澄清』并退出"
     severity: "blocking / deferrable / resolved"

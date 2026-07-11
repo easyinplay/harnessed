@@ -349,16 +349,64 @@ export function registerSetup(program: Command): void {
       // observed clobbering shipped workflows (mattpocock research, gstack retro).
       // Installing the workflows LAST makes the engine the last writer; the end-of-run
       // integrity pass below is the backstop for later writers (auto-install).
+      // 4.24.0 (intel gap G2 — Trellis/comet adapted): before overwriting an
+      // existing skill dir whose content is not the pristine install-time
+      // ledger state (or has no usable baseline — conservative), back it up
+      // under ~/.claude/harnessed/backups/<ts>-step-a/. The engine still wins
+      // the name (4.23.0 last-writer contract) — we preserve data, not refuse.
+      // Whole surface is fail-soft: backup trouble never blocks Step A.
+      let skillBackupApi: typeof import('./lib/skillBackup.js') | null = null
+      let stepALedger: import('./lib/skillIntegrity.js').SkillHashLedger | null = null
+      try {
+        skillBackupApi = await import('./lib/skillBackup.js')
+        const { readHashLedger } = await import('./lib/skillIntegrity.js')
+        stepALedger = await readHashLedger()
+      } catch {
+        skillBackupApi = null
+      }
+      let stepASession: string | null = null
+      const stepABackups: { name: string; dir?: string; error?: string }[] = []
+
       let skillsInstalled = 0
       for (const wf of toInstall) {
         const src = join(workflowsDir, wf.relPath)
         const dst = join(skillsBase, wf.name)
         try {
+          if (skillBackupApi) {
+            try {
+              const pristine = await skillBackupApi.skillContentMatchesLedger(
+                wf.name,
+                skillsBase,
+                stepALedger,
+              )
+              if (pristine !== true) {
+                stepASession ??= skillBackupApi.newBackupSessionDir('step-a')
+                const b = await skillBackupApi.backupSkillDir(wf.name, skillsBase, stepASession)
+                if (b.ok) stepABackups.push({ name: wf.name, dir: b.dir })
+                else if (b.code !== 'ENOENT') stepABackups.push({ name: wf.name, error: b.message })
+                // ENOENT → fresh install, nothing on disk to preserve.
+              }
+            } catch {
+              /* fail-soft — install proceeds without a backup */
+            }
+          }
           await cp(src, dst, { recursive: true, force: true })
           skillsInstalled++
         } catch (e) {
           console.error(t('setup.copy_failed', { name: wf.name, message: (e as Error).message }))
           process.exit(1)
+        }
+      }
+      if (stepABackups.length > 0) {
+        console.warn(
+          `\n  ${stepABackups.length} existing skill dir(s) were not the pristine installed state — backed up before overwriting:`,
+        )
+        for (const b of stepABackups) {
+          console.warn(
+            b.dir
+              ? `    ${b.name} → ${b.dir}`
+              : `    ⚠ ${b.name}: backup FAILED (${b.error}) — overwritten anyway (engine integrity first)`,
+          )
         }
       }
 
@@ -552,10 +600,30 @@ export function registerSetup(program: Command): void {
           for (const line of integrityReportLines(audit)) console.warn(line)
           let healed = 0
           const healedNames: string[] = []
+          // 4.24.0 (intel gap G1 — Trellis backup-before-overwrite): the content
+          // being healed away may be a pack's ONLY copy of that skill, or a user
+          // edit. Back it up before restoring the engine version. Backup failure
+          // warns but never blocks the heal (engine integrity outranks it).
+          let healSession: string | null = null
+          let healBackedUp = false
           for (const e of bad) {
             const wf = toInstall.find((w) => w.name === e.name)
             if (!wf) continue
             try {
+              try {
+                const skb = await import('./lib/skillBackup.js')
+                healSession ??= skb.newBackupSessionDir('skill-heal')
+                const b = await skb.backupSkillDir(e.name, skillsBase, healSession)
+                if (b.ok) healBackedUp = true
+                else if (b.code !== 'ENOENT') {
+                  console.warn(
+                    `    ⚠ backup of '${e.name}' FAILED (${b.message}) — healing anyway (engine integrity first)`,
+                  )
+                }
+                // ENOENT ('missing' entries): nothing on disk, nothing to back up.
+              } catch {
+                /* fail-soft */
+              }
               await cp(join(workflowsDir, wf.relPath), join(skillsBase, wf.name), {
                 recursive: true,
                 force: true,
@@ -575,7 +643,9 @@ export function registerSetup(program: Command): void {
             // Re-pin the healed rendered state so the next audit reads 'ok'.
             await recordSkillHashes(healedNames, skillsBase)
             console.warn(
-              `  ✓ restored ${healed} harnessed workflow skill(s) from the bundle (packs keep their other skills; the colliding name belongs to the engine)`,
+              `  ✓ restored ${healed} harnessed workflow skill(s) from the bundle (packs keep their other skills; the colliding name belongs to the engine)${
+                healBackedUp && healSession ? ` — replaced content backed up to ${healSession}` : ''
+              }`,
             )
           }
         }
