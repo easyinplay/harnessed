@@ -329,3 +329,24 @@ execute-task 各 phase model 建议：
 - **ECC**:一致哲学 = "gate 故障绝不锁死 agent" — 分发层 fail-open + 显式 stderr(script 缺失/parse 失败/state 写失败全放行并说明,deny 附恢复通道);唯一论证过的 fail-closed 是 config-protection("so the guard is never silently weakened");hookify 规则当前无 runtime 消费者。
 
 **结论**:三家路线图谱 = omo(配置 fail-closed)/ ECC(运行 fail-open + 可见)/ OMC(fail-open + 静默,最弱)。harnessed 4.23.2 的分型(静态配置错误 fail-closed、运行时故障 fail-soft)恰好是 omo 与 ECC 两种正确哲学的合成:配置 bug 不该放大成本(omo 侧),运行故障不该锁死流程(ECC 侧)。skip 名传错警告:四者中仅 harnessed 有。
+
+### 增补 2:comet 与 Trellis 对照(2026-07-11,同三题,2 subagent 实证)
+
+**形态定位**:comet(rpamis/comet,2.2k stars,npm `@rpamis/comet`)= 安装器 + skill 编排 + 门控引擎(OpenSpec + Superpowers + 自家 skill,5-phase 状态机 `.comet.yaml` + guard 脚本),三题全适用。Trellis(mindfold-ai/Trellis,12.3k stars,npm `@mindfoldhq/trellis`,AGPL)= 模板安装器 + 任务状态机(`.trellis/` + 17 平台目录),单一上游无第三方组合,Q1 适用面是"模板 vs 用户修改"而非多包冲突。
+
+**T1 完整性(issue #3)**
+- comet:`assets/manifest.json` skills 清单声明(≈我们 installs_skills)+ 安装前 existing 检测交互(--yes 默认 skip 不覆盖)+ `assertDirectoryContainsOnlyManagedEntries` 遇 unmanaged 直接 throw(fail-closed 所有权防线)+ 同名多来源 hash 不一致标 `ambiguous`。缺口:doctor 只查缺失不比对内容 hash,外部覆盖后无 tamper 检测。
+- Trellis:五家中最强的升级保护 — `.trellis/.template-hashes.json` SHA256 台账(LF 归一化;无记录 "assume it's modified (conservative)")+ 安装冲突交互(非 TTY fall back to skip)+ `TRELLIS:START/END` managed block + `pruneOrphanManifestKeys` 自愈 + update 时间戳 backup + 基于 hash 的 3-way 分类("Deleted by you (preserved)" / "User data (preserved)")+ 用户区(spec/)整体豁免 hash 跟踪。
+- 对照:Trellis 的 hash 台账与我们 4.23.0 skill-hashes.json 同构且多了 3-way 升级分类;comet 的"安装前 fail-closed 拒绝接管含 unmanaged entries 的目录"是我们没有的形态(我们是装后校验自愈)。
+
+**T2 relay 门(issue #4)**
+- comet:**五家唯一有同构机制且更成体系** — 专门协议 `reference/decision-point.md`:"Never substitute recommendation rules, defaults, historical preferences, or 'the user would probably agree' for current confirmation";优先 AskUserQuestion,降级 text-options 并 "stop until the user replies";SKILL.md 枚举 9 个 blocking 节点 + Red Flags 反驳表("This is a small change, confirmation isn't needed" → "Decision points have no size exception");auto_transition 不豁免 decision points。
+- Trellis:阶段级硬门("Task creation approval is not implementation approval")+ brainstorm 每问必含推荐答案与 trade-off;技术类决策明确授权自决,deferred 决策靠 prd open questions + artifact review 兜底,无逐条 relay 协议。
+- 对照:comet 与我们 4.23.1 同向,其 Red Flags 反驳表(预先驳斥 agent 自决借口)是值得借鉴的 prompt 加固形态;我们的差异化在 relay 是引擎侧契约(role-prompts checklist + 回归测试锁)而非纯 skill 文本。
+
+**T3 门控健壮性(issue #5)**
+- comet:**fail-closed 阵营最坚决** — `.comet.yaml` schema 校验失败/未知字段 → FATAL(≈我们 undefined-variable fail-closed);注释明确 "malformed config must not be treated as 'no removed field present' ... blocks the guard";PreToolUse 守卫读状态出错 exit 2、未匹配 phase 默认 blocked。CLI 用 commander 未知 flag 报错;无 --skip-sub 类语义(该点不适用)。
+- Trellis:混合 — breadcrumb hook 显式设计可见降级("users see (and fix) the broken state instead of the hook silently masking it");但 config 损坏静默回全默认、无效枚举静默回退、task.json malformed 静默 exit 0,fail-open silent 为主。
+- 对照:comet 把配置错误全量 FATAL(比我们更硬 — 我们保留了运行时故障 fail-soft 不锁流程);Trellis 的 "可见降级" 措辞哲学与我们 STALE breadcrumb 同向,但 config 层未贯彻。
+
+**五家总盘点**(含前节 OMC/omo/ECC):T1 成熟度 Trellis ≈ harnessed > OMC > comet > ECC > omo;T2 只有 comet 与 harnessed 有真机制,其余靠 prompt/模式分流;T3 fail-closed 光谱 comet > omo ≈ harnessed(分型)> ECC(fail-open 可见)> Trellis(混合)> OMC(fail-open 静默)。skip 传错名警告仍仅 harnessed 有(comet 不适用)。借鉴候选清单:Trellis 3-way 升级分类 + backup、comet 安装前 unmanaged-entries 拒绝 + Red Flags 反驳表、ECC repair --dry-run、OMC ambiguity 量化阈值。
