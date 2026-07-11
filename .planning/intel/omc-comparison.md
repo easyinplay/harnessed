@@ -296,3 +296,36 @@ execute-task 各 phase model 建议：
 
 **Status summary**: 5 IMPL (CD-2/CD-3/CD-5/CD-6/EE-5) + 1 PIGGY (CD-3 同 phase Wave 2 ship) + 5 PENDING + 4 DEFERRED = 14 entry tracked。 Phase 2.3 ship 时同步 update CD-3 + EE-5 commit hash 回填本表。
 
+
+---
+
+## § issue #3/#4/#5 三题对照(2026-07-11 增补 — 3 subagent 实证调研)
+
+> 背景:harnessed v4.23.0/4.23.1/4.23.2 修复 issues #3(skill 覆盖/完整性)、#4(deferrable 决策 relay 门)、#5(gate 未定义变量 fail-open + skip-sub 静默失效)。本节记录三个对照项目对同类问题的解法,来源 = gh CLI + shallow clone(OMC/omo)+ 本机 ECC 插件缓存 2.0.0-rc.1 实证,非 README 转述。
+
+### T1 skill 安装冲突与完整性(对应 issue #3)
+
+| 机制 | OMC | omo | ECC | harnessed 4.23.0 |
+|---|---|---|---|---|
+| 冲突预防 | 事后 doctor(`omc doctor conflicts`),安装瞬间 `cpSync force:true` 仍覆盖 | 不复制进扁平命名空间:多 scope 原位加载 + runtime `deduplicateSkillsByName` scope 优先级 first-wins(零告警,文档明文接受覆盖) | plugin 命名空间天然隔离(`ecc:`) | Step A 后置(last-writer)+ installs_skills 声明 + 安装前交集预警 |
+| 所有权标识 | `.omc-managed` 文件 + CLAUDE.md `OMC:VERSION` 防降级 marker | 无(仅自身组件 sha256 trust 登记) | install-state 记录(无 marker) | `harnessed-generated` marker + 渲染态 sha256 台账 |
+| 完整性校验 | SHA-256 `hashFileContents` shipped vs target;`prunePluginDuplicateSkills` 仅删 content 相同或带 marker 的副本("Frontmatter structure alone is not a reliable ownership signal") | doctor 审计自身 bundle(missing/zero-bytes)+ loadedVersion 陈旧检测 | `inspectManagedOperation` 逐字节比对源 repo(`areFilesEqual`),分型 missing/drifted/missing-source/unverified | 五态 ok/foreign/tampered/stale/missing |
+| 自愈 | `omc update --force` 重装 | 无(doctor 只提示 REINSTALL_FIX 命令) | `scripts/repair.js` rebuild(支持 --dry-run,手动) | setup 末尾自动自愈重装 + 三入口可见 |
+
+**结论**:OMC 与我们同题同向且成熟(marker+hash+doctor 三件套,值得对照);omo 用"不落盘"绕开问题(runtime 加载,代价 = 覆盖静默);ECC 有检测+修复但不自动触发、以源 repo 为基准不防基准失真。harnessed 的"自动自愈 + pack 声明预警"组合在四者中最完整。借鉴候选:ECC `repair --dry-run` 形态(自愈前预览)。
+
+### T2 deferrable 决策的用户 relay 门(对应 issue #4)
+
+- **OMC**:分层策略 — `/plan` 硬门(强制 AskUserQuestion 结构化 UI,"never ask for approval in plain text";User Preference/Scope Decision 必须问);`/deep-interview` 有量化 ambiguity 阈值门(默认 0.2,不达标不准执行);但 `/autopilot` 全代决。**无通用 per-decision relay 门**,靠用户选模式分流。
+- **omo**:纯 prompt 层("MUST NOT: Proceed without user confirmation on major decisions";但 "Multiple interpretations, similar effort → Proceed with reasonable default, note assumption")。无 runtime 门。
+- **ECC**:plan 级整体 confirm 门("MUST receive user approval before proceeding")+ prp-plan Ambiguity Gate("Do NOT guess. Ask.");但哲学反向 — prp 追求 "implement without asking further questions","可用默认值"的决策直接代决,默认值只有恰好写进 plan 文本才被用户看到。
+
+**结论**:三家都没有 harnessed 4.23.1 的 "deferrable 集批量 relay(默认值预选、用户一次 override 机会)" 机制 — 这是我们从真实事故(R1.3 验收性质被静默改变)推出的独有契约。OMC 的 ambiguity 量化阈值是另一条有意思的路(把"该不该问"从判断题变成测量题),可作 v5+ 讨论素材。
+
+### T3 gate/路由配置健壮性(对应 issue #5)
+
+- **OMC**:路由硬编码 TS(无表达式引擎,不存在 undefined-variable 面);hook 校验失败 → `{continue: true}` **fail-open**(28 处);`OMC_SKIP_HOOKS` 传错名静默无效零警告(与我们 issue #5 缺陷 2 同病,未修);doctor 事后报告未知 config 字段。
+- **omo**:**fail-closed 典范** — 配置层 zod `.strict()` unknown key 整层拒载 + 结构化 diagnostic;规则 frontmatter 损坏 → 规则不激活 + diagnostic 留档。弱点:多处 bare `catch {}` 静默吞 fs 错误;CLI flag 拼错无警告。
+- **ECC**:一致哲学 = "gate 故障绝不锁死 agent" — 分发层 fail-open + 显式 stderr(script 缺失/parse 失败/state 写失败全放行并说明,deny 附恢复通道);唯一论证过的 fail-closed 是 config-protection("so the guard is never silently weakened");hookify 规则当前无 runtime 消费者。
+
+**结论**:三家路线图谱 = omo(配置 fail-closed)/ ECC(运行 fail-open + 可见)/ OMC(fail-open + 静默,最弱)。harnessed 4.23.2 的分型(静态配置错误 fail-closed、运行时故障 fail-soft)恰好是 omo 与 ECC 两种正确哲学的合成:配置 bug 不该放大成本(omo 侧),运行故障不该锁死流程(ECC 侧)。skip 名传错警告:四者中仅 harnessed 有。

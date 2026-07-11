@@ -12,7 +12,7 @@
       gates 7/7;fork 侧真实 CLI dogfood 四场景(普通 verify skip multispec /
       skip 别名生效 / bogus 名警告 / --context opt-in 恢复 fire)
 - [x] CHANGELOG `## [4.23.2]` + bump 4.23.2
-- [ ] commit + push(Fixes #5)+ issue 回复(D1 分歧说明 + D5 paranoid 偏置透明声明)
+- [x] commit `6e244b5` + push main;issue #5 回复(D1 分歧 + D5 声明)并已 CLOSED(Fixes #5)
 - [ ] tag v4.23.2(等用户确认)
 
 ## D5 透明声明(待用户裁决可改)
