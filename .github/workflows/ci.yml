@@ -421,7 +421,11 @@ jobs:
           [ -x "$BIN" ] || { echo "::error::binary not installed at $BIN"; exit 1; }
           v=$("$BIN" --version)
           [ "$v" = "$VER" ] || { echo "::error::installed --version '$v' != '$VER'"; exit 1; }
-          case "$out" in *"export PATH="*) ;; *) echo "::error::PATH guidance missing from installer output"; exit 1;; esac
+          # PATH outcome is environment-dependent: runners already have ~/.local/bin
+          # on PATH (installer prints "already on your PATH" — the designed
+          # zero-friction path), dev boxes may not (installer prints the export
+          # snippet). Either is correct; assert one of them appeared.
+          case "$out" in *"export PATH="*|*"already on your PATH"*) ;; *) echo "::error::PATH guidance missing from installer output"; exit 1;; esac
           echo "installer-smoke ✅ unix v$VER"
       - name: installer rehearsal (windows)
         if: runner.os == 'Windows'
