@@ -40,3 +40,17 @@ describe('versionBannerLines', () => {
     expect(lines).toEqual(['harnessed setup vnot-a-version'])
   })
 })
+
+// 4.27.0 (B3 Slice 1, T4) — compiled-aware update hint: the banner's behind-line
+// command is parameterized so binary users are pointed at `harnessed update`
+// instead of the npm-only install command.
+describe('versionBannerLines — compiled hint', () => {
+  it('third arg overrides the update command hint', () => {
+    const lines = versionBannerLines('4.10.0', '4.11.0', 'harnessed update')
+    expect(lines[1]).toBe('⚠ update available: 4.10.0 → 4.11.0 — harnessed update')
+  })
+  it('default hint stays the npm command (npm-mode behavior unchanged)', () => {
+    const lines = versionBannerLines('4.10.0', '4.11.0')
+    expect(lines[1]).toContain('npm install -g harnessed@latest')
+  })
+})

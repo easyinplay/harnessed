@@ -52,11 +52,55 @@ describe('resolveHookCommand', () => {
 })
 
 describe('hookScriptMarker', () => {
-  it('yields the script basename for package-relative commands', () => {
-    expect(hookScriptMarker(INJECT)).toBe('harnessed-inject-state.mjs')
+  // 4.27.0 (B3 T1) — inject-state identity is NORMALIZED to the subcommand
+  // token so the npm form (`node .../harnessed-inject-state.mjs`) and the
+  // compiled form (`"<binary>" inject-state`) share one registration identity
+  // (entryMatchesRegistration uses substring includes → both contain it).
+  it('normalizes the inject-state script to the subcommand identity', () => {
+    expect(hookScriptMarker(INJECT)).toBe('inject-state')
+  })
+  it('yields the compiled-form identity for `"<binary>" inject-state`', () => {
+    expect(hookScriptMarker('"C:/Users/x/harnessed.exe" inject-state')).toBe('inject-state')
+  })
+  it('yields the script basename for other package-relative commands', () => {
+    expect(hookScriptMarker('node scripts/foo-hook.mjs')).toBe('foo-hook.mjs')
   })
   it('yields null for commands without a relative file token', () => {
     expect(hookScriptMarker('codegraph prompt-hook')).toBeNull()
+  })
+})
+
+describe('4.27.0 compiled routing (D6 hook self-containment)', () => {
+  it('resolveHookCommand routes the inject hook to `"<binary>" inject-state` when compiled', () => {
+    const r = resolveHookCommand(INJECT, {
+      ...deps([INJECT_ABS]),
+      compiledExecPath: () => 'C:\\Users\\x\\bin\\harnessed.exe',
+    })
+    expect(r).toBe('"C:/Users/x/bin/harnessed.exe" inject-state')
+  })
+
+  it('compiledExecPath null (npm mode) → legacy resolution unchanged', () => {
+    const r = resolveHookCommand(INJECT, { ...deps([INJECT_ABS]), compiledExecPath: () => null })
+    expect(r).toBe(`node ${INJECT_ABS_CMD}`)
+  })
+
+  it('compiled routing does NOT hijack non-inject hooks', () => {
+    const r = resolveHookCommand('node bin/x.mjs', {
+      assetsRoot: () => ROOT,
+      exists: () => false,
+      compiledExecPath: () => 'C:\\bin\\harnessed.exe',
+    })
+    expect(r).toBe('node bin/x.mjs')
+  })
+
+  it('cross-form identity: npm-form entry matches a compiled-mode registration (and vice versa)', () => {
+    const marker = hookScriptMarker(INJECT)
+    const compiledCmd = '"C:/bin/harnessed.exe" inject-state'
+    // old mjs entry in settings vs new registration
+    expect(entryMatchesRegistration({ command: INJECT }, INJECT, compiledCmd, marker)).toBe(true)
+    // new compiled entry in settings vs npm registration
+    const e = { hooks: [{ type: 'command', command: compiledCmd }] }
+    expect(entryMatchesRegistration(e, INJECT, `node ${INJECT_ABS}`, marker)).toBe(true)
   })
 })
 

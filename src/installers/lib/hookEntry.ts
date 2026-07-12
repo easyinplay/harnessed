@@ -38,7 +38,14 @@ export interface HookCmdDeps {
   /** Assets root the package-relative script tokens resolve against. */
   assetsRoot: () => string
   exists: (p: string) => boolean
+  /** 4.27.0 (B3 T1 / D6) — compiled-mode routing: when non-null, the inject
+   *  hook resolves to `"<binary>" inject-state` (no host node needed). npm
+   *  mode returns null and the legacy node+mjs resolution applies. */
+  compiledExecPath?: () => string | null
 }
+
+/** The inject hook's normalized registration identity (see hookScriptMarker). */
+const INJECT_IDENTITY = 'inject-state'
 
 const ABSOLUTE_RE = /^([A-Za-z]:[\\/]|[\\/])/
 
@@ -72,6 +79,13 @@ function stripQuotes(token: string): { bare: string; quoted: boolean } {
  * files (node accepts `/` on Windows).
  */
 export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
+  // 4.27.0 (B3 T1) — compiled binaries route the inject hook to themselves:
+  // `"<binary>" inject-state`. Forward-slash + quoted (v4.21.0 shell-escape
+  // contract). Other hooks keep the legacy resolution untouched.
+  if (deps.compiledExecPath && hookScriptMarker(raw) === INJECT_IDENTITY) {
+    const exe = deps.compiledExecPath()
+    if (exe) return `"${exe.replace(/\\/g, '/')}" ${INJECT_IDENTITY}`
+  }
   let root: string | null = null
   const tokens = raw.split(/\s+/).filter((t) => t.length > 0)
   const out = tokens.map((token) => {
@@ -87,14 +101,26 @@ export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
 
 /** Identity marker for "this entry belongs to this hook registration": the
  *  basename of the first package-relative file token, or null when the command
- *  has none (identity falls back to exact command match). */
+ *  has none (identity falls back to exact command match).
+ *
+ *  4.27.0 (B3 T1) — the inject hook's identity is NORMALIZED to `inject-state`
+ *  so the npm form (`node …/harnessed-inject-state.mjs`) and the compiled form
+ *  (`"<binary>" inject-state`) share ONE registration identity — the substring
+ *  match in entryMatchesRegistration then migrates/dedupes across mode
+ *  switches in both directions (no orphan hooks, no double registration). */
 export function hookScriptMarker(raw: string): string | null {
   for (const token of raw.split(/\s+/)) {
     const { bare } = stripQuotes(token)
     if (isRelativeFileToken(bare)) {
       const seg = bare.split(/[\\/]/)
-      return seg[seg.length - 1] ?? null
+      const base = seg[seg.length - 1] ?? null
+      if (base?.includes(INJECT_IDENTITY)) return INJECT_IDENTITY
+      return base
     }
+  }
+  // compiled form: no relative file token — the bare subcommand token IS the identity
+  for (const token of raw.split(/\s+/)) {
+    if (stripQuotes(token).bare === INJECT_IDENTITY) return INJECT_IDENTITY
   }
   return null
 }

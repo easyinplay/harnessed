@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.27.0] - 2026-07-12
+
+B 路线 Phase 3 Slice 1:二进制正确性 + 自更新。立项走完整 `/plan-ceo-review`(SELECTIVE EXPANSION;3 轮对抗 spec loop 18 修 PASS 8.5/10 + outside voice 7 点;7 项用户裁决)— CEO plan 见 `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`,任务册 T1-T7。
+
+### Added
+
+- **`harnessed inject-state` 子命令(D6 hook 自包含)**:perturn hook 在 compiled 二进制模式下改写为 `"<binary>" inject-state`(执行解包资产内同一份 mjs — parity by construction),纯二进制用户不再依赖宿主 node;`hookScriptMarker` 身份归一化为 `inject-state`,npm↔binary 双向迁移去重,杜绝孤儿/双注册。npm 模式 hook 命令零变化。
+- **`harnessed update` compiled 分支**(并入既有命令,不新增 self-update):模式检测(`isCompiledRuntime()` NEW seam)在任何 npm 触碰之前;GitHub releases/latest 下载(pid 唯一 temp)→ per-asset `.sha256` 校验 → `--version` smoke → 同目录 rename dance 原子替换 → 回滚网 copy 到 `<stateRoot>/bin-backup/<旧ver>/`。`--dry-run` 双模式;安全阀(路径不可写/node_modules → 路由 npm 流);平台资产 404 → 可操作报错原件不动(绝不静默装旧版)。npm 流行为零变化。
+- **更新提醒改造(E2)**:`check-update.ts` 加 24h 缓存(`HARNESSED_UPDATE_CHECK_TIMEOUT_MS` 默认 2000)+ 按运行时分流数据源(compiled → GitHub / npm → npm view);status 顶部挂同一提醒;version-banner 按模式给正确升级命令。
+- **`harnessed gc` compiled 面(D7 + E4 收尾)**:assets/<ver> 保留集 = {运行中, 新装};bin-backup 保 1;同目录 `.bak-*` 清扫(Windows 删自身映像 EPERM 属预期,留档交 gc)。update 成功后机会性 gc。
+- **发布管线**:`build-binary.mjs` 产出 per-asset `.sha256`(sha256sum 兼容;publish.yml 的 `harnessed-*` glob 顺带上传,零管线改动);binary-smoke CI 扩展 — 真编译产物演习 `update --dry-run` + 本地源(`HARNESSED_UPDATE_SOURCE_DIR` seam)完整 swap,3-OS 覆盖 Bun runtime 语义。
+- 资产命名稳定契约冻结为公共 API:`harnessed-{darwin-arm64,linux-x64,windows-x64.exe}` + 各自 `.sha256`,变更需 major。
+
+### Known limitations(CEO review 记录在案)
+
+- 旧二进制(4.20.0-4.26.0)无 compiled update 分支,需手动重下载一次(鸡生蛋)。
+- 替换瞬间新起的 hook 调用可能撞毫秒级缺档窗口(hook 本身 fail-soft)。
+- 慢网络下更新提醒在 2s 预算内静默(env 可调);无签名 exe 可能被 Windows Defender/SmartScreen 拦(E1 签名重估时解)。
+- **手动回滚**:`copy <stateRoot>/bin-backup/<旧ver>/harnessed-windows-x64.exe <当前二进制路径>`(unix 同理 + chmod 755);`update --rollback` 子命令在 TODOS。
+
 ## [4.26.0] - 2026-07-12
 
 intel 候选 P1 动工:A3 串行次序守卫(comet 0.3.9 phase-skip 教训 "enforcement 必须每个 transition 脚本级校验";我方 evidence guard 此前只在 complete 级守证据、不守次序)。

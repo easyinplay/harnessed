@@ -51,6 +51,13 @@ export interface AssetsRootResolution {
   compiledAssetsMissing: boolean
 }
 
+/** 4.27.0 (B3 Slice 1) — runtime-level compiled predicate,单一 SoT seam:
+ *  update.ts 模式分流 / hookEntry compiled 路由 / check-update 数据源分流共用。
+ *  纯包装 isCompiledModuleUrl(本模块 import.meta.url);url 参数仅供测试注入。 */
+export function isCompiledRuntime(url: string = import.meta.url): boolean {
+  return isCompiledModuleUrl(url)
+}
+
 export function isCompiledModuleUrl(url: string): boolean {
   // bun 的 import.meta.url 会把 `~` 百分号编码(实测:file:///B:/%7EBUN/root/cli.exe)
   // — 先 decode 再匹配;decode 失败(畸形 URI)按原文匹配。

@@ -18,6 +18,66 @@ interface UpdateOpts {
   upstreams?: boolean
   all?: boolean
   migrationReport?: boolean
+  dryRun?: boolean
+}
+
+/** 4.27.0 (B3 T2) — compiled-branch flow. Returns true when handled (the npm
+ *  flow must not run), false = fall through to npm (safety-valve 'refused').
+ *  Exit-code contract: 'error' exits non-zero with the actionable message. */
+async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
+  const { realSelfUpdateDeps, runBinarySelfUpdate } = await import('./lib/selfUpdateBinary.js')
+  const r = await runBinarySelfUpdate(realSelfUpdateDeps(), {
+    dryRun: opts.dryRun === true,
+    check: opts.check === true,
+  })
+  switch (r.status) {
+    case 'refused':
+      console.warn(`[harnessed] binary self-update refused: ${r.reason} — using the npm flow`)
+      return false
+    case 'checked':
+      console.log(`  installed: ${r.installed}\n  latest:    ${r.latest}\n  status:    ${r.cmp}`)
+      process.exit(0)
+      return true
+    case 'dry-run':
+      console.log('[harnessed] update --dry-run (compiled binary) — would run:')
+      for (const s of r.steps) console.log(`  - ${s}`)
+      process.exit(0)
+      return true
+    case 'current':
+      console.log(`[harnessed] already up to date (${r.version}).`)
+      process.exit(0)
+      return true
+    case 'updated': {
+      console.log(`[harnessed] updated ${r.from} → ${r.to}.`)
+      if (r.backupDir) console.log(`  previous binary kept at: ${r.backupDir}`)
+      if (!r.bakRemoved)
+        console.log(
+          `  note: ${r.bakPath} left in place (running image / rollback net) — gc sweeps it later`,
+        )
+      // D7 — opportunistic gc: keep {old, new} asset versions (fail-soft).
+      try {
+        const { gcCompiledArtifacts } = await import('./gc.js')
+        const { detectPlatform } = await import('../installers/lib/platform.js')
+        await gcCompiledArtifacts({
+          keepVersions: [r.from, r.to],
+          stateRoot: detectPlatform().stateRoot,
+          execPath: null, // never sweep .bak in the same run that created it
+        })
+      } catch {
+        /* advisory */
+      }
+      console.log(
+        '[harnessed] restart Claude Code so the new version + hooks take effect. ' +
+          `Manual rollback if needed: copy the binary back from the bin-backup dir above.`,
+      )
+      process.exit(0)
+      return true
+    }
+    case 'error':
+      console.warn(`[harnessed] update failed: ${r.message}`)
+      process.exit(1)
+      return true
+  }
 }
 
 function npmExecutable(): string {
@@ -48,6 +108,7 @@ export function registerUpdate(program: Command): void {
     .option('--upstreams', 're-run the base manifests to upgrade upstream plugins')
     .option('--all', 'alias for --upstreams (self + upstreams)')
     .option('--migration-report', 'read-only inventory of stale harnessed state (deletes nothing)')
+    .option('--dry-run', 'preview what the update would do without writing anything')
     .action(async (opts: UpdateOpts) => {
       // --migration-report: read-only, no version check, no install.
       if (opts.migrationReport === true) {
@@ -60,6 +121,17 @@ export function registerUpdate(program: Command): void {
           if (it.present) console.log(`           hint: ${it.hint}`)
         }
         process.exit(0)
+      }
+
+      // 4.27.0 (B3 T2, rev3 issue 4) — mode detection BEFORE any npm touch:
+      // the npm-flow preflight below exits 0 when npm is unreachable, and
+      // compiled machines usually have no npm — a later check would short-
+      // circuit the compiled branch forever. Latest source on this branch is
+      // GitHub releases/latest, never `npm view`.
+      const { isCompiledRuntime } = await import('./lib/assetsRoot.js')
+      if (isCompiledRuntime()) {
+        const handled = await runCompiledFlow(opts)
+        if (handled) return
       }
 
       const { compareVersions, fetchLatestVersion } = await import('./lib/version-check.js')
@@ -78,6 +150,12 @@ export function registerUpdate(program: Command): void {
       }
 
       if (cmp === 'behind') {
+        if (opts.dryRun === true) {
+          console.log(
+            `[harnessed] update --dry-run — would run: npm i -g harnessed@latest (${pkg.version} → ${latest})`,
+          )
+          process.exit(0)
+        }
         console.log(`[harnessed] updating ${pkg.version} → ${latest} ...`)
         execFileSync(npmExecutable(), ['i', '-g', 'harnessed@latest'], {
           stdio: 'inherit',

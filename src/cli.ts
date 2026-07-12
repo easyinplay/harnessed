@@ -12,6 +12,7 @@ import { registerDoctor } from './cli/doctor.js'
 import { registerExemptGateguard } from './cli/exempt-gateguard.js'
 import { registerGates } from './cli/gates.js'
 import { registerGc } from './cli/gc.js'
+import { registerInjectState } from './cli/injectStateCmd.js'
 import { registerInstall } from './cli/install.js'
 import { registerInstallBase } from './cli/install-base.js'
 import { registerLearn } from './cli/learn.js'
@@ -122,6 +123,7 @@ registerLearn(program) // 24th — Phase 16 learning loop: append a prose learni
 registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams + --migration-report
 registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate
 registerRetro(program) // 27th — Phase 22 retro-reminder reset (--done zeroes the phase counter)
+registerInjectState(program) // 28th — 4.27.0 B3 D6: perturn hook via the binary itself (no host node)
 
 // v8.0 Phase 24 — zero-arg `harnessed` you-are-here entry (comet `/comet` analog).
 // D3 explicit bare-invocation detection BEFORE program.parse: ONLY `[]` / `['--json']`

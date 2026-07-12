@@ -23,9 +23,28 @@ vi.mock('../../src/cli/install-base.js', () => ({
     failed: [],
   })),
 }))
+// 4.27.0 (B3 T2) — compiled-branch routing seams. isCompiledRuntime is spread-
+// mocked (getAssetsRoot stays real for changelogTop); the binary engine is
+// fully mocked (unit-tested separately in tests/cli/lib/selfUpdateBinary.test.ts).
+vi.mock('../../src/cli/lib/assetsRoot.js', async (orig) => ({
+  ...(await orig<typeof import('../../src/cli/lib/assetsRoot.js')>()),
+  isCompiledRuntime: vi.fn(() => false),
+}))
+vi.mock('../../src/cli/lib/selfUpdateBinary.js', () => ({
+  runBinarySelfUpdate: vi.fn(async () => ({ status: 'current', version: '0.0.0' })),
+  realSelfUpdateDeps: vi.fn(() => ({}) as never),
+}))
+// The 'updated' branch runs an opportunistic assets gc — mock it so the unit
+// test never sweeps the REAL <stateRoot>/assets of the dev machine.
+vi.mock('../../src/cli/gc.js', () => ({
+  registerGc: vi.fn(),
+  gcCompiledArtifacts: vi.fn(async () => ({ removed: [], kept: [] })),
+}))
 
 import { execFileSync } from 'node:child_process'
 import { installBaseProfile } from '../../src/cli/install-base.js'
+import { isCompiledRuntime } from '../../src/cli/lib/assetsRoot.js'
+import { runBinarySelfUpdate } from '../../src/cli/lib/selfUpdateBinary.js'
 import { fetchLatestVersion } from '../../src/cli/lib/version-check.js'
 import { registerUpdate } from '../../src/cli/update.js'
 
@@ -112,5 +131,54 @@ describe('harnessed update', () => {
     expect(stdout.toLowerCase()).toContain('read-only')
     expect(execFileSync).not.toHaveBeenCalled()
     expect(fetchLatestVersion).not.toHaveBeenCalled() // no version check on this path
+  })
+
+  // ── 4.27.0 (B3 T2) — compiled branch routing ─────────────────────────────
+  it('compiled runtime → binary engine runs, npm is NEVER touched (mode detection first)', async () => {
+    vi.mocked(isCompiledRuntime).mockReturnValue(true)
+    vi.mocked(runBinarySelfUpdate).mockResolvedValue({
+      status: 'updated',
+      from: '4.26.0',
+      to: '4.27.0',
+      bakPath: '/x/harnessed.bak-4.26.0',
+      bakRemoved: true,
+      backupDir: '/state/bin-backup/4.26.0',
+    })
+    const { stdout } = await runCli(['update'])
+    expect(runBinarySelfUpdate).toHaveBeenCalled()
+    expect(fetchLatestVersion).not.toHaveBeenCalled() // rev3 issue 4: before ANY npm touch
+    expect(execFileSync).not.toHaveBeenCalled()
+    expect(stdout).toContain('4.27.0')
+  })
+
+  it('compiled + refused (safety valve) → falls back to the npm flow', async () => {
+    vi.mocked(isCompiledRuntime).mockReturnValue(true)
+    vi.mocked(runBinarySelfUpdate).mockResolvedValue({
+      status: 'refused',
+      reason: 'binary lives under node_modules',
+    })
+    vi.mocked(fetchLatestVersion).mockResolvedValue(pkg.version)
+    const { stdout } = await runCli(['update'])
+    expect(fetchLatestVersion).toHaveBeenCalled()
+    expect(stdout.toLowerCase()).toContain('up to date')
+  })
+
+  it('npm mode --dry-run → prints the npm command, installs nothing', async () => {
+    vi.mocked(isCompiledRuntime).mockReturnValue(false)
+    vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
+    const { stdout } = await runCli(['update', '--dry-run'])
+    expect(stdout).toContain('npm i -g harnessed@latest')
+    expect(execFileSync).not.toHaveBeenCalled()
+  })
+
+  it('compiled update error → non-zero exit + manual-restore/npm guidance surfaced', async () => {
+    vi.mocked(isCompiledRuntime).mockReturnValue(true)
+    vi.mocked(runBinarySelfUpdate).mockResolvedValue({
+      status: 'error',
+      message: 'sha256 mismatch — aborted; original binary untouched',
+    })
+    const { code, stderr } = await runCli(['update'])
+    expect(code).not.toBe(0)
+    expect(stderr).toContain('sha256 mismatch')
   })
 })

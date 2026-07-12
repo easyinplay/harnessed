@@ -6,16 +6,24 @@
 // regression.
 
 import pkg from '../../../package.json' with { type: 'json' }
-import { compareVersions, fetchLatestVersion } from './version-check.js'
+import { isCompiledRuntime } from './assetsRoot.js'
+import { compareVersions } from './version-check.js'
 
 /** Build the banner lines for `harnessed setup`. Line 1 is always the installed
- *  version; line 2 (when determinable) is the npm-latest verdict:
- *    behind  → `⚠ update available: <installed> → <latest> — npm install -g harnessed@latest`
+ *  version; line 2 (when determinable) is the latest-version verdict:
+ *    behind  → `⚠ update available: <installed> → <latest> — <updateHint>`
  *    current → `✓ latest (v<latest>)`
  *    ahead   → `✓ latest (v<installed>)` (local/dev build newer than npm)
  *    offline → `  could not check latest version`
- *    unknown (malformed version) → no verdict line (no false claim). */
-export function versionBannerLines(installed: string, latest: string | null): string[] {
+ *    unknown (malformed version) → no verdict line (no false claim).
+ *  4.27.0 — updateHint is parameterized: compiled binaries point at
+ *  `harnessed update` (npm command is meaningless there); default keeps the
+ *  npm text byte-identical. */
+export function versionBannerLines(
+  installed: string,
+  latest: string | null,
+  updateHint = 'npm install -g harnessed@latest',
+): string[] {
   const lines = [`harnessed setup v${installed}`]
   if (latest === null) {
     lines.push('  could not check latest version')
@@ -23,7 +31,7 @@ export function versionBannerLines(installed: string, latest: string | null): st
   }
   const cmp = compareVersions(installed, latest)
   if (cmp === 'behind') {
-    lines.push(`⚠ update available: ${installed} → ${latest} — npm install -g harnessed@latest`)
+    lines.push(`⚠ update available: ${installed} → ${latest} — ${updateHint}`)
   } else if (cmp === 'current') {
     lines.push(`✓ latest (v${latest})`)
   } else if (cmp === 'ahead') {
@@ -42,11 +50,13 @@ const BANNER_ART = [
 ]
 
 /** Impure — print the ASCII wordmark, then resolve this build's version +
- *  npm-latest (fail-soft, timeout-bounded via fetchLatestVersion; offline → null,
- *  never blocks) and print the version banner. Printed in --dry-run too — the
- *  version is wanted regardless of mode. */
+ *  latest (4.27.0: through the shared 24h cache with the compiled/npm source
+ *  split; fail-soft, offline → null, never blocks) and print the version
+ *  banner. Printed in --dry-run too — the version is wanted regardless of mode. */
 export async function printSetupVersionBanner(): Promise<void> {
   for (const line of BANNER_ART) console.log(line)
-  const latest = await fetchLatestVersion()
-  for (const line of versionBannerLines(pkg.version, latest)) console.log(line)
+  const { resolveLatestCachedDefault } = await import('./update-check-cache.js')
+  const latest = await resolveLatestCachedDefault()
+  const hint = isCompiledRuntime() ? 'harnessed update' : undefined
+  for (const line of versionBannerLines(pkg.version, latest, hint)) console.log(line)
 }

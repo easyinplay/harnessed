@@ -81,3 +81,16 @@ describe('computeAssetsRoot (D1 优先级)', () => {
     expect(r.root).toBe(BASE.packageRoot)
   })
 })
+
+// 4.27.0 (B3 Slice 1) — runtime-level compiled predicate (single SoT seam;
+// update.ts / hookEntry routing / check-update source split all consume it).
+describe('isCompiledRuntime', () => {
+  it('false under vitest (npm/dev runtime)', async () => {
+    const { isCompiledRuntime } = await import('../../src/cli/lib/assetsRoot.js')
+    expect(isCompiledRuntime()).toBe(false)
+  })
+  it('true for a bunfs module url (percent-encoded Windows form)', async () => {
+    const { isCompiledRuntime } = await import('../../src/cli/lib/assetsRoot.js')
+    expect(isCompiledRuntime('file:///B:/%7EBUN/root/cli.exe')).toBe(true)
+  })
+})

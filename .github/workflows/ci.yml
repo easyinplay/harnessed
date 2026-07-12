@@ -339,7 +339,8 @@ jobs:
       - run: bun scripts/build-binary.mjs
       - name: smoke — version + asset unpack + 28 workflows from a foreign cwd
         run: |
-          BIN=$(ls dist-bin/harnessed-*)
+          # 4.27.0 — dist-bin now also carries <asset>.sha256; the smoke wants the exe only.
+          BIN=$(ls dist-bin/harnessed-* | grep -v '\.sha256$')
           VER=$(node -p "require('./package.json').version")
           SMOKE_DIR=$(mktemp -d)
           cp "$BIN" "$SMOKE_DIR/"
@@ -354,3 +355,32 @@ jobs:
           second=$("./$EXE" --version 2>&1 >/dev/null || true)
           case "$second" in *unpacked*) echo "::error::second run re-unpacked assets (idempotency broken)"; exit 1;; esac
           echo "binary-smoke ✅ $EXE v$VER (28 workflows, idempotent unpack)"
+      # 4.27.0 (B3 T6 / OV3 用户裁决) — update rehearsal on the REAL compiled
+      # product, 3-OS: covers Bun-runtime rename/EPERM/spawn semantics and a
+      # genuine Windows PE smoke that fixture unit tests cannot fake. Zero
+      # network: HARNESSED_UPDATE_SOURCE_DIR is the same seam the unit tests
+      # inject. dry-run must write nothing; the real swap must leave a working
+      # binary + the bin-backup rollback net.
+      - name: smoke — update dry-run + local-source swap rehearsal
+        run: |
+          BIN=$(ls dist-bin/harnessed-* | grep -v '\.sha256$')
+          VER=$(node -p "require('./package.json').version")
+          R_DIR=$(mktemp -d)
+          SRC_DIR=$(mktemp -d)
+          cp "$BIN" "$R_DIR/"
+          cp "$BIN" "$SRC_DIR/"
+          cp "$BIN.sha256" "$SRC_DIR/"
+          cd "$R_DIR"
+          EXE=$(ls harnessed-*)
+          chmod +x "$EXE" 2>/dev/null || true
+          # dry-run: step preview, zero writes
+          out=$(HARNESSED_UPDATE_SOURCE_DIR="$SRC_DIR" "./$EXE" update --dry-run)
+          case "$out" in *sha256*) ;; *) echo "::error::dry-run preview missing sha256 step"; echo "$out"; exit 1;; esac
+          ls | grep -q '\.bak-' && { echo "::error::dry-run created a .bak"; exit 1; }
+          ls | grep -q '\.harnessed-update-' && { echo "::error::dry-run left a temp file"; exit 1; }
+          # real swap rehearsal (same version — the source-dir seam skips the compare)
+          HARNESSED_UPDATE_SOURCE_DIR="$SRC_DIR" "./$EXE" update
+          newv=$("./$EXE" --version)
+          [ "$newv" = "$VER" ] || { echo "::error::post-swap --version '$newv' != '$VER'"; exit 1; }
+          [ -d "$HOME/.claude/harnessed/bin-backup/$VER" ] || { echo "::error::bin-backup rollback net missing"; exit 1; }
+          echo "update-rehearsal ✅ $EXE v$VER (dry-run clean + swap + rollback net)"

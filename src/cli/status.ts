@@ -159,6 +159,16 @@ export function registerStatus(program: Command): void {
         for (const l of lines) console.log(l)
         return
       }
+      // 4.27.0 (B3 T4 / E2) — discovery loop: surface an available update at the
+      // top of `harnessed status`. Shares the 24h cache with doctor (near-zero
+      // marginal cost); fail-soft — never blocks or breaks status.
+      try {
+        const { checkUpdate } = await import('./lib/check-update.js')
+        const upd = await checkUpdate()
+        if (upd.status === 'warn') console.log(`⚠ ${upd.message} — ${upd.fix ?? ''}`)
+      } catch {
+        /* advisory only */
+      }
       const state = await readState(process.cwd())
       const names = Object.keys(state.installed).sort()
       if (names.length === 0) {

@@ -18,7 +18,7 @@
 
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
-import { getAssetsRoot } from '../cli/lib/assetsRoot.js'
+import { getAssetsRoot, isCompiledRuntime } from '../cli/lib/assetsRoot.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
@@ -91,7 +91,13 @@ export const installCcHookAdd: Installer = async (ctx) => {
   const matcher = install.hook_matcher
   const cmd = install.hook_command
   // v4.20.0 — authoritative command resolution + CC-schema entry shape + self-heal.
-  const cmdDeps = { assetsRoot: getAssetsRoot, exists: existsSync }
+  // 4.27.0 (B3 T1 / D6) — compiled binaries register `"<binary>" inject-state`
+  // (the hook calls the binary itself; no host node needed).
+  const cmdDeps = {
+    assetsRoot: getAssetsRoot,
+    exists: existsSync,
+    compiledExecPath: () => (isCompiledRuntime() ? process.execPath : null),
+  }
   const resolvedCmd = resolveHookCommand(cmd, cmdDeps)
   const marker = hookScriptMarker(cmd)
   const arr = settings.hooks[ev] ?? []

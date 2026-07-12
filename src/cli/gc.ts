@@ -16,10 +16,92 @@
 // keepLast + olderThan filter 仍 protect 误删近期 snapshot (safety contract)。
 
 import { readdir, readFile, rm, stat } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import type { Command } from 'commander'
+import pkg from '../../package.json' with { type: 'json' }
 import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
+
+// ── 4.27.0 (B3 Slice 1, T5 / D7) — compiled-artifact gc ─────────────────────
+// Sweeps three self-update leftovers (CEO plan rev2 issue 5 + rev3 issue 3):
+//   assets/<ver>       keep-set = {running version, newly installed version}
+//                      (post-update the old process's pkg.version ≠ the new
+//                      binary's — both stay; entry.ts re-unpacks on demand so
+//                      an over-eager delete self-heals)
+//   bin-backup/<ver>   keep newest 1 (E4 rollback net)
+//   <execDir>/<base>.bak-*  Windows EPERM leftovers (the running image cannot
+//                      delete itself; the NEXT run sweeps it)
+// Fail-soft everywhere — gc must never break the command that invoked it.
+
+export interface CompiledGcResult {
+  removed: string[]
+  kept: string[]
+}
+
+export async function gcCompiledArtifacts(opts: {
+  keepVersions: string[]
+  stateRoot: string
+  execPath?: string | null
+  dryRun?: boolean
+}): Promise<CompiledGcResult> {
+  const removed: string[] = []
+  const kept: string[] = []
+  const keep = new Set(opts.keepVersions)
+
+  // assets/<ver> — remove versions outside the keep-set
+  try {
+    const assetsDir = join(opts.stateRoot, 'assets')
+    for (const e of await readdir(assetsDir, { withFileTypes: true })) {
+      if (!e.isDirectory()) continue
+      const p = join(assetsDir, e.name)
+      if (keep.has(e.name)) {
+        kept.push(p)
+        continue
+      }
+      removed.push(p)
+      if (!opts.dryRun) await rm(p, { recursive: true, force: true })
+    }
+  } catch {
+    /* no assets dir — npm mode or fresh install */
+  }
+
+  // bin-backup/<ver> — keep the newest 1 (name-sorted; versions sort well enough
+  // for "newest": ties only matter across a single update boundary)
+  try {
+    const backupDir = join(opts.stateRoot, 'bin-backup')
+    const vers = (await readdir(backupDir, { withFileTypes: true }))
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name)
+      .sort()
+    for (const v of vers.slice(0, -1)) {
+      const p = join(backupDir, v)
+      removed.push(p)
+      if (!opts.dryRun) await rm(p, { recursive: true, force: true })
+    }
+    const newest = vers[vers.length - 1]
+    if (newest) kept.push(join(backupDir, newest))
+  } catch {
+    /* no bin-backup dir */
+  }
+
+  // <execDir>/<base>.bak-* — self-update leftovers next to the binary
+  if (opts.execPath) {
+    try {
+      const dir = dirname(opts.execPath)
+      const base = basename(opts.execPath)
+      for (const e of await readdir(dir, { withFileTypes: true })) {
+        if (!e.isFile() || !e.name.startsWith(`${base}.bak-`)) continue
+        const p = join(dir, e.name)
+        removed.push(p)
+        if (!opts.dryRun) await rm(p, { force: true })
+      }
+    } catch {
+      /* unreadable exec dir */
+    }
+  }
+
+  return { removed, kept }
+}
 
 interface BackupMetadata {
   installer: string
@@ -135,5 +217,29 @@ export function registerGc(program: Command): void {
         if (!dryRun) await rm(c.path, { recursive: true, force: true })
       }
       if (dryRun) console.log(t('gc.dry_run_rerun_hint'))
+
+      // 4.27.0 (B3 T5) — compiled-artifact pass. Gated on the compiled runtime
+      // (assets/bin-backup/.bak-* only ever exist from binary runs; an npm/dev
+      // invocation — including vitest — must never sweep the REAL state root).
+      try {
+        const { isCompiledRuntime } = await import('./lib/assetsRoot.js')
+        if (isCompiledRuntime() || process.env.HARNESSED_GC_COMPILED === '1') {
+          const { detectPlatform } = await import('../installers/lib/platform.js')
+          const r = await gcCompiledArtifacts({
+            keepVersions: [pkg.version],
+            stateRoot: detectPlatform().stateRoot,
+            execPath: isCompiledRuntime() ? process.execPath : null,
+            dryRun,
+          })
+          if (r.removed.length > 0) {
+            console.log(
+              `  compiled artifacts ${dryRun ? 'to remove' : 'removed'}: ${r.removed.length}`,
+            )
+            for (const p of r.removed) console.log(`    ${p}`)
+          }
+        }
+      } catch {
+        /* advisory — gc never fails the command */
+      }
     })
 }

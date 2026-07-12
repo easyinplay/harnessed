@@ -6,8 +6,9 @@
 // npm 渠道(tsup dist)零接触;本脚本 import TS 源(bun 原生转译),不依赖 dist。
 
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 // bun 转译 TS import;若误用 node 运行,此 import 即报错(fail-fast 提示见 catch 下方)。
 import { collectAssets } from '../src/compile/bundleAssets.ts'
@@ -54,3 +55,11 @@ if (r.status !== 0) {
 console.error(
   `[build-binary] ok: ${outfile} (${(statSync(outfile).size / 1024 / 1024).toFixed(0)} MB, v${pkg.version})`,
 )
+
+// 3. per-asset .sha256(4.27.0 B3 T3 — 冻结契约:update 端完整性校验数据源)。
+//    sha256sum 兼容格式 `<hex>  <filename>`;每个 matrix job 只写自己的资产,
+//    规避单一 SUMS 文件被 3 并行 job 互相 --clobber 的竞态;publish.yml 的
+//    `dist-bin/harnessed-*` glob 顺带上传本文件,管线零改动。
+const hex = createHash('sha256').update(readFileSync(outfile)).digest('hex')
+writeFileSync(`${outfile}.sha256`, `${hex}  ${basename(outfile)}\n`)
+console.error(`[build-binary] sha256: ${outfile}.sha256`)
