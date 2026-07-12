@@ -10,6 +10,10 @@
       compiled 更新检查真实 GitHub 路径;MINGW 门 exit 1 正确指引
 - [x] 主 session 复验:vitest 2121/0;tsc 0;lint 0;bash -n OK;gates 7/7
 - [x] CHANGELOG `## [4.28.0]` + bump
-- [ ] commit + push;tag v4.28.0(等用户确认)
-- [ ] 发版后:installer-smoke CI 首次实证;真实 curl/irm 路径 dogfood;
-      排队:Slice 3(npm per-platform 包)、E1 签名重估(安装器已落地,重估条件成熟)
+- [x] commit `1542605` + push;tag v4.28.0 已发(用户确认)
+- [x] 发版实证:publish success + npm 4.28.0 上线;installer-smoke 首跑 unix 双平台
+      断言误报(runner 的 ~/.local/bin 本在 PATH,安装器正确走零摩擦分支,断言硬要
+      export 片段)→ `5e74b31` 一行修(对齐 windows 侧双形态)→ 三平台全绿;
+      复跑一次 windows 既有 token-budget 测试超时(runner 负载抖动,非回归)→ rerun 绿
+- [ ] 排队:Slice 3(npm per-platform 包)、E1 签名重估(安装器已落地,重估条件成熟);
+      用户真实 curl/irm 路径 dogfood
