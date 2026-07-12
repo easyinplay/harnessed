@@ -17,5 +17,5 @@
       tsc 0;lint 0(仅既有 warning);gates 7/7;真机三连(mode-B→block / active→silent /
       cap→silent)
 - [x] docs/STOP-HOOK-RECOVER.md(探测器原理 + settings.json 手动 snippet);CHANGELOG 4.30.0 + bump
-- [ ] commit + push;issue #6 回复关闭(Fixes #6);tag v4.30.0(等确认)
+- [x] commit `e792038` + push;issue #6 已回复并 CLOSED;tag v4.30.0 等用户确认
 - 备注:office-hours(eval harness 立项)暂停在设计文档批准门,#6 完成后恢复
