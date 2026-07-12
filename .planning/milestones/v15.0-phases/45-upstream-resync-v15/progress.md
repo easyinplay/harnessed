@@ -10,4 +10,4 @@
 - [x] T-final 主 session 复验:vitest 串行权威 2121/0;tsc 0;lint 0;gates 7/7
 - [x] CHANGELOG `## [4.29.0]` + bump + MILESTONES v15.0 行 + STATE 同步(58 行)
 - [x] commit + push + tag v4.29.0(预先授权)
-- [ ] 发版监控收尾;用户 `harnessed setup` 重装生效
+- [x] 发版收尾:ci 29199852762 + publish 29199855282 success;npm 4.29.0;6 资产齐。用户 `harnessed setup` 重装生效
