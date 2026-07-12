@@ -23,7 +23,12 @@ spec:
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin marketplace add OthmanAdi/planning-with-files && /plugin install planning-with-files@planning-with-files"
-    git_ref: v2.37.0
+    # v15.0 re-sync (2026-07-13) — v2.37.0 → v3.4.1 (clone 实测:.claude-plugin/
+    # marketplace 结构与 skills/ 目录集不变,安装形态零变化;上游明示 v3 默认
+    # 行为与 v2.43.0 逐字节兼容)。收益:Windows session-catchup 修复(v3.2.0,
+    # pin 的 2.37.0 在 win32 上 /clear 恢复完全不工作)+ opt-in --autonomous
+    # (省 per-tool 重注入 token)+ PLANNING_DISABLED=1 逃生口(v3.4.0)。
+    git_ref: v3.4.1
     idempotent_check: "/plugin list | grep -q planning-with-files"
     marketplace_source:        # ADR 0005 — third-party marketplace structured metadata
       source: github
@@ -47,8 +52,8 @@ spec:
         timeout_ms: 5000
   upstream_health:
     stability: stable
-    last_check: "2026-05-11"
-    last_known_good_version: 2.37.0
+    last_check: "2026-07-13"
+    last_known_good_version: 3.4.1
     fallback_action: warn
   signed_by: easyinplay
   platforms:

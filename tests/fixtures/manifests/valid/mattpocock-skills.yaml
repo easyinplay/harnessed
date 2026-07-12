@@ -4,7 +4,7 @@ kind: Manifest
 metadata:
   name: mattpocock-skills
   display_name: mattpocock-skills
-  description: Engineering/productivity skill pack (/diagnosing-bugs /tdd /grill-with-docs /to-prd etc.) by Matt Pocock.
+  description: Engineering/productivity skill pack (/diagnosing-bugs /tdd /grill-with-docs /to-spec etc.) by Matt Pocock.
   upstream:
     source: mattpocock/skills
     homepage: https://github.com/mattpocock/skills

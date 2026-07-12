@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.29.0] - 2026-07-13
+
+v15.0 Upstream Re-sync(7 pin 全扫侦察 → 双主菜 + 三顺手;上次 re-sync = v13.0 2026-07-01)。**Installed users re-run `harnessed setup`**。
+
+### Changed
+
+- **planning-with-files v2.37.0 → v3.4.1**(主菜):Windows session-catchup(`/clear` 恢复)修复 — pin 的 2.37.0 在 win32 上该功能完全不工作;另获 opt-in `--autonomous`(砍 68% per-tool 重注入 token tax)、`--gated` 完成门、`PLANNING_DISABLED=1` 逃生口、Codex hooks Windows 修复。跨 major 但上游明示默认输出字节兼容;clone 实证安装布局零变化,claude/codex 双通道 cmd 不动。
+- **mattpocock/skills 改名对齐**(主菜):上游 `to-prd` → `to-spec`、`to-issues` → `to-tickets`,新增 `wayfinder`。installs_skills 清单按 clone 实测重建(22 项;deprecated/in-progress 分区不入);capabilities.yaml / decision_rules.yaml / WORKFLOW.md 全仓引用改名(grep 实证零残留;历史归档与 A7 守恒 ADR 按纪律未动);lkg pin → main-391a2701。
+- **superpowers v6.0.3 → v6.1.1**:`using-superpowers` bootstrap 压缩(每 session 固定 token 成本下降)+ Codex `hooks: {}` 修复(不再误注册 Claude SessionStart hook);claude/codex 双通道 pin 同步。
+- **gstack pin 11de390b → 7c9df1c5**(1.58.5.0 → 1.60.1.0):4 commits 纯 eval 测试基建,skill 面零变化(installs_skills 不动)。
+- **gsd-core last_known_good → 1.6.1**(hotfix,^1.6.0 semver 已覆盖零行为变化);TODOS 加 1.7.0 GA watch 项(其 host-integration interface 与 harnessed 安装通道直接相关,现处 rc.6)。
+- 零 delta 不动:karpathy-skills(上游休眠)、ui-ux-pro-max(skill 路径无 commit)。
+
 ## [4.28.0] - 2026-07-12
 
 B 路线 Phase 3 Slice 2:一行安装器(CEO plan Deferred 首项,OV1 裁决"紧跟不拖")。原定落位目录 `~/.harnessed/bin` 被实施 fork 的真机演习证伪(遗留根,二进制启动迁移即改名,落位物蒸发)— 灰区协议回流,用户裁决改为平台惯例位置。

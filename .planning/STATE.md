@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-milestone_name: (none — post-milestone patch/phase arc 4.13.0→4.28.0)
+milestone_name: (none — v15.0 Upstream Re-sync SHIPPED npm 4.29.0 2026-07-13)
 status: no-active-milestone
-last_updated: "2026-07-12T13:00:00.000Z"
-last_activity: 2026-07-12
+last_updated: "2026-07-13T00:00:00.000Z"
+last_activity: 2026-07-13
 progress:
   total_phases: 0
   completed_phases: 0
@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.28.0** 2026-07-12. Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
+- **Latest shipped (npm)**: **v4.29.0** 2026-07-13(v15.0 Upstream Re-sync)。Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
@@ -29,7 +29,8 @@ progress:
 ## Current Position
 
 - **v14.0 Hardening & Distribution retroactively CLOSED 2026-07-12**(lightweight + fuller archive pass):4.13→4.28 弧线定名收账,61 个 phase 目录归位 `milestones/<vN>-phases/`,active `phases/` 清零。详:`milestones/v14.0-MILESTONE-AUDIT.md` + RETROSPECTIVE v14.0 节。
-- **Next(等用户信号)**:E1 签名重估(证书采购,用户决策)· Slice 3 已降 P3 defer(价值质疑入 TODOS)· eval harness v5+ 立项。全清单:`TODOS.md`。
+- **v15.0 Upstream Re-sync SHIPPED 2026-07-13(npm 4.29.0)**:pwf v3.4.1 + mattpocock 改名 + 三顺手 pin;详 MILESTONES v15.0 行 + `phases/45-upstream-resync-v15/`。
+- **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项 · gsd-core 1.7.0 GA watch。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
 ## Accumulated Context

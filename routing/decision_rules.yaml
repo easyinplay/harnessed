@@ -298,12 +298,12 @@ mattpocock_phases:
   discuss:
     skills:
       - grill-with-docs
-      - to-prd
+      - to-spec
       - grill-me
       - explore
     triggers:
       - /grill-with-docs
-      - /to-prd
+      - /to-spec
       - /grill-me
       - /explore
       - 澄清规格
@@ -312,11 +312,11 @@ mattpocock_phases:
       - 探索方案
   plan:
     skills:
-      - to-issues
+      - to-tickets
       - grill-me
       - design-review
     triggers:
-      - /to-issues
+      - /to-tickets
       - /grill-me
       - /design-review
       - 拆任务

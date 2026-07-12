@@ -376,7 +376,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 ### 7.2 category=tool-slash-cmd (56 entry — 5 sub-bucket)
 
 **mattpocock 11** (v2 SHIPPED):
-`grill-with-docs` / `zoom-out` / `diagnose` / `caveman` / `grill-me` / `to-prd` / `to-issues` / `improve-codebase-architecture` / `code-review` / `code-simplifier` / `investigate`
+`grill-with-docs` / `zoom-out` / `diagnose` / `caveman` / `grill-me` / `to-spec`(原 to-prd)/ `to-tickets`(原 to-issues,v15.0 上游改名)/ `improve-codebase-architecture` / `code-review` / `code-simplifier` / `investigate`
 
 **gstack 6 core wrapped** (v2 SHIPPED — wrapped in 6 sub-workflow):
 `gstack-office-hours` (discuss-strategic) / `gstack-plan-ceo-review` (discuss-strategic) / `gstack-review` (verify-paranoid) / `gstack-qa` (verify-qa) / `gstack-cso` (verify-security) / `gstack-design-review` (verify-design)

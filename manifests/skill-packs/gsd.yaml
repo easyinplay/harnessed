@@ -46,8 +46,11 @@ spec:
         timeout_ms: 10000
   upstream_health:
     stability: stable
-    last_check: "2026-06-30"
-    last_known_good_version: 1.6.0
+    # v15.0 re-sync (2026-07-13) — 1.6.1 hotfix 已被 ^1.6.0 semver 覆盖(cmd 用
+    # @latest 自动拿到);1.7.0 在 rc.6(host-integration interface ADR-1239 +
+    # write-confinement),GA 后再评 — watch 项见 TODOS.md。
+    last_check: "2026-07-13"
+    last_known_good_version: 1.6.1
     fallback_action: warn
   signed_by: easyinplay
   platforms:

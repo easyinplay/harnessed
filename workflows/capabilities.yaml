@@ -11,7 +11,7 @@
 # Entry buckets (5, total 38 — v13.0 P42 +gsd-eval-review[B2] +verification-before-completion[B4]; P43 +diagram[B7] +gsd-validate-phase[B2], +systematic-debugging alias on gsd-debug;
 #   4.16.3 上游对账: -zoom-out[上游删除] / diagnose cmd → /diagnosing-bugs[上游改名] / investigate impl → gstack[mattpocock 上游消失]):
 #   1. mattpocock 高频招式 (D-09)           — grill-with-docs / diagnose(→/diagnosing-bugs) / caveman /
-#                                              grill-me / tdd / to-prd / to-issues /
+#                                              grill-me / tdd / to-spec / to-tickets (v15.0 上游改名,原 to-prd/to-issues) /
 #                                              improve-codebase-architecture / code-review /
 #                                              code-simplifier
 #   2. special-purpose tools 13+ (D-14)     — ui-ux-pro-max / design-taste-frontend / playwright-cli /
@@ -91,25 +91,28 @@ capabilities:
     fires_when:
       - phase.spec_ambiguous == true AND phase.no_docs == true
 
-  to-prd:
+  # v15.0 re-sync (2026-07-13) — upstream renamed to-prd → to-spec, to-issues →
+  # to-tickets (clone 实证 @391a2701)。capability key 同步改名(全仓 grep 实证
+  # 无 judgments/role-prompts/模板引用旧 key);fires_when 事实名保留(语义仍准)。
+  to-spec:
     impl: mattpocock-skills
     install_type: user-skill
-    skill_dir: to-prd
-    cmd: /to-prd
+    skill_dir: to-spec
+    cmd: /to-spec
     since: v2.0
     category: tool-slash-cmd
-    description: translate idea → PRD (fires when phase.translate_idea_to_prd == true)
+    description: translate idea → spec (fires when phase.translate_idea_to_prd == true)
     fires_when:
       - phase.translate_idea_to_prd == true
 
-  to-issues:
+  to-tickets:
     impl: mattpocock-skills
     install_type: user-skill
-    skill_dir: to-issues
-    cmd: /to-issues
+    skill_dir: to-tickets
+    cmd: /to-tickets
     since: v2.0
     category: tool-slash-cmd
-    description: translate PRD → issues (fires when phase.translate_prd_to_issues == true)
+    description: translate spec → tickets (fires when phase.translate_prd_to_issues == true)
     fires_when:
       - phase.translate_prd_to_issues == true
 

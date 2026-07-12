@@ -4,7 +4,7 @@ kind: Manifest
 metadata:
   name: mattpocock-skills
   display_name: mattpocock-skills
-  description: Engineering/productivity skill pack (/diagnosing-bugs /tdd /grill-with-docs /to-prd etc.) by Matt Pocock.
+  description: Engineering/productivity skill pack (/diagnosing-bugs /tdd /grill-with-docs /to-spec etc.) by Matt Pocock.
   upstream:
     source: mattpocock/skills
     homepage: https://github.com/mattpocock/skills
@@ -35,9 +35,13 @@ spec:
     # surviving `tdd` + the new name so fresh installs verify (dogfood v4.15.2:
     # verify pinned the dead `diagnose` path → every refresh reported failed).
     idempotent_check: "test -d ~/.claude/skills/tdd || test -d ~/.agents/skills/tdd || test -d ~/.claude/skills/diagnosing-bugs || test -d ~/.agents/skills/diagnosing-bugs"
-    # 4.23.0 (issue #3 req 5) — upstream skills/ engineering + productivity sets
-    # (gh api 实证 2026-07-10). `research` COLLIDES with harnessed's research
-    # workflow — the post-Step-B integrity pass restores the engine version.
+    # 4.23.0 (issue #3 req 5) — upstream skills/ engineering + productivity sets.
+    # `research` COLLIDES with harnessed's research workflow — the post-Step-B
+    # integrity pass restores the engine version.
+    # v15.0 re-sync (2026-07-13, clone 实测 @391a2701) — upstream renamed
+    # `to-prd` → `to-spec`, `to-issues` → `to-tickets`; added `wayfinder`.
+    # deprecated/ 分区(design-an-interface/qa/request-refactor-plan/
+    # ubiquitous-language)与 in-progress/misc/personal 不入清单(非安装集)。
     installs_skills:
       - ask-matt
       - code-review
@@ -52,9 +56,10 @@ spec:
       - resolving-merge-conflicts
       - setup-matt-pocock-skills
       - tdd
-      - to-issues
-      - to-prd
+      - to-spec
+      - to-tickets
       - triage
+      - wayfinder
       - grill-me
       - grilling
       - handoff
@@ -69,8 +74,8 @@ spec:
       - ~/.claude/skills/mattpocock-skills
   upstream_health:
     stability: stable
-    last_check: "2026-06-09"
-    last_known_good_version: main-76-commits
+    last_check: "2026-07-13"
+    last_known_good_version: main-391a2701
     fallback_action: warn
   signed_by: easyinplay
   platforms:

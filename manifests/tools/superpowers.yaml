@@ -23,7 +23,11 @@ spec:
   install:
     method: cc-plugin-marketplace
     cmd: "/plugin marketplace add obra/superpowers-marketplace && /plugin install superpowers@superpowers-marketplace"
-    git_ref: v6.0.3
+    # v15.0 re-sync (2026-07-13) — v6.0.3 → v6.1.1:v6.1.0 using-superpowers
+    # bootstrap token 压缩(每 session 固定成本下降)+ Codex marketplace 安装;
+    # v6.1.1 Codex `hooks: {}` 修复(不再误注册 Claude SessionStart hook)。
+    # Gemini CLI 支持上游移除(Google EOL)— harnessed 无 gemini 平台面,无涉。
+    git_ref: v6.1.1
     idempotent_check: "/plugin list | grep -q superpowers"
   verify:
     cmd: "/plugin list | grep -q superpowers"
@@ -38,15 +42,15 @@ spec:
       install:
         method: cc-plugin-marketplace
         cmd: "codex plugin add superpowers@openai-curated"
-        git_ref: v6.0.3
+        git_ref: v6.1.1
         idempotent_check: "codex plugin list | grep -q superpowers"
       verify:
         cmd: "codex plugin list | grep -q superpowers"
         timeout_ms: 15000
   upstream_health:
     stability: stable
-    last_check: "2026-06-30"
-    last_known_good_version: 6.0.3
+    last_check: "2026-07-13"
+    last_known_good_version: 6.1.1
     fallback_action: warn
   signed_by: easyinplay
   platforms:

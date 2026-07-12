@@ -26,7 +26,9 @@ spec:
     # v4.16.2 — pin bumped to upstream HEAD (was 14fc0866, v1.52 era; force-update
     # dogfood surfaced the drift warn). Per ADR 0037 the pin records install-time
     # last-known-good state — bump on release cadence, not per upstream push.
-    git_ref: 11de390be1be6849eb9a15f91ff4922dd16c589a
+    # v15.0 re-sync (2026-07-13) — 11de390b → 7c9df1c5 (v1.60.1.0):落差仅 4
+    # commits,全部 eval 测试基建,零 skill 面变化(installs_skills 集实证不变)。
+    git_ref: 7c9df1c568a9ea745508f679a329332b2c338063
     idempotent_check: "test -d ~/.claude/skills/gstack/.git"
     # 4.23.0 (issue #3 req 5) — upstream root-level skill dirs (v1.58 era,
     # known set). `retro` and `ship` COLLIDE with harnessed's retro workflow /
@@ -87,7 +89,7 @@ spec:
       install:
         method: git-clone-with-setup
         cmd: "rm -rf ~/gstack && git clone https://github.com/garrytan/gstack.git ~/gstack && cd ~/gstack && bash ./setup --host codex"
-        git_ref: 11de390be1be6849eb9a15f91ff4922dd16c589a
+        git_ref: 7c9df1c568a9ea745508f679a329332b2c338063
         idempotent_check: "ls ~/.codex/skills 2>/dev/null | grep -q '^gstack-'"
       verify:
         cmd: "ls ~/.codex/skills | grep -q '^gstack-'"
@@ -101,8 +103,8 @@ spec:
       - ~/.claude/skills/gstack
   upstream_health:
     stability: stable
-    last_check: "2026-07-03"
-    last_known_good_version: 1.58.5.0
+    last_check: "2026-07-13"
+    last_known_good_version: 1.60.1.0
     fallback_action: warn
   signed_by: easyinplay
   platforms:
