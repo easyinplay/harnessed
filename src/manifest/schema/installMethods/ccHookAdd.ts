@@ -18,6 +18,8 @@ const HookEvent = Type.Union([
   Type.Literal('UserPromptSubmit'),
   Type.Literal('PreToolUse'),
   Type.Literal('PostToolUse'),
+  // 4.30.0 (issue #6) — Stop hook for mode-B tool-call corruption auto-recovery.
+  Type.Literal('Stop'),
 ])
 
 export const CcHookAdd = Type.Object(

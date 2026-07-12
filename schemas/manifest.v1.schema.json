@@ -556,6 +556,10 @@
                     {
                       "const": "PostToolUse",
                       "type": "string"
+                    },
+                    {
+                      "const": "Stop",
+                      "type": "string"
                     }
                   ]
                 },
@@ -1297,6 +1301,10 @@
                             },
                             {
                               "const": "PostToolUse",
+                              "type": "string"
+                            },
+                            {
+                              "const": "Stop",
                               "type": "string"
                             }
                           ]

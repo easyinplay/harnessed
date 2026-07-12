@@ -44,8 +44,12 @@ export interface HookCmdDeps {
   compiledExecPath?: () => string | null
 }
 
-/** The inject hook's normalized registration identity (see hookScriptMarker). */
-const INJECT_IDENTITY = 'inject-state'
+/** Normalized registration identities for first-party harnessed hooks whose npm
+ *  form is `node …/harnessed-<id>.mjs` and compiled form is `"<binary>" <id>`.
+ *  Both forms share ONE identity so entryMatchesRegistration migrates/dedupes
+ *  across mode switches in either direction. 4.30.0 added `stop-hook` (issue #6)
+ *  alongside 4.27.0's `inject-state`. */
+const COMPILED_HOOK_IDENTITIES = ['inject-state', 'stop-hook'] as const
 
 const ABSOLUTE_RE = /^([A-Za-z]:[\\/]|[\\/])/
 
@@ -79,12 +83,17 @@ function stripQuotes(token: string): { bare: string; quoted: boolean } {
  * files (node accepts `/` on Windows).
  */
 export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
-  // 4.27.0 (B3 T1) — compiled binaries route the inject hook to themselves:
-  // `"<binary>" inject-state`. Forward-slash + quoted (v4.21.0 shell-escape
-  // contract). Other hooks keep the legacy resolution untouched.
-  if (deps.compiledExecPath && hookScriptMarker(raw) === INJECT_IDENTITY) {
+  // 4.27.0 (B3 T1) / 4.30.0 (issue #6) — compiled binaries route first-party
+  // hooks to themselves: `"<binary>" <id>`. Forward-slash + quoted (v4.21.0
+  // shell-escape contract). Other hooks keep the legacy resolution untouched.
+  const marker = deps.compiledExecPath ? hookScriptMarker(raw) : null
+  if (
+    deps.compiledExecPath &&
+    marker &&
+    (COMPILED_HOOK_IDENTITIES as readonly string[]).includes(marker)
+  ) {
     const exe = deps.compiledExecPath()
-    if (exe) return `"${exe.replace(/\\/g, '/')}" ${INJECT_IDENTITY}`
+    if (exe) return `"${exe.replace(/\\/g, '/')}" ${marker}`
   }
   let root: string | null = null
   const tokens = raw.split(/\s+/).filter((t) => t.length > 0)
@@ -114,13 +123,16 @@ export function hookScriptMarker(raw: string): string | null {
     if (isRelativeFileToken(bare)) {
       const seg = bare.split(/[\\/]/)
       const base = seg[seg.length - 1] ?? null
-      if (base?.includes(INJECT_IDENTITY)) return INJECT_IDENTITY
+      // npm form: harnessed-<id>.mjs basename normalizes to its known identity.
+      const id = COMPILED_HOOK_IDENTITIES.find((k) => base?.includes(k))
+      if (id) return id
       return base
     }
   }
   // compiled form: no relative file token — the bare subcommand token IS the identity
   for (const token of raw.split(/\s+/)) {
-    if (stripQuotes(token).bare === INJECT_IDENTITY) return INJECT_IDENTITY
+    const { bare } = stripQuotes(token)
+    if ((COMPILED_HOOK_IDENTITIES as readonly string[]).includes(bare)) return bare
   }
   return null
 }

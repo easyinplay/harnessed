@@ -30,6 +30,7 @@ import { registerRollback } from './cli/rollback.js'
 import { registerRun } from './cli/run.js'
 import { registerSetup } from './cli/setup.js'
 import { registerStatus } from './cli/status.js'
+import { registerStopHook } from './cli/stopHookCmd.js'
 import { registerUninstall } from './cli/uninstall.js'
 import { registerUpdate } from './cli/update.js'
 import { registerWorkflows } from './cli/workflows.js'
@@ -124,6 +125,7 @@ registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams +
 registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate
 registerRetro(program) // 27th — Phase 22 retro-reminder reset (--done zeroes the phase counter)
 registerInjectState(program) // 28th — 4.27.0 B3 D6: perturn hook via the binary itself (no host node)
+registerStopHook(program) // 29th — 4.30.0 issue #6: mode-B tool-call corruption auto-recovery Stop hook
 
 // v8.0 Phase 24 — zero-arg `harnessed` you-are-here entry (comet `/comet` analog).
 // D3 explicit bare-invocation detection BEFORE program.parse: ONLY `[]` / `['--json']`

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.30.0] - 2026-07-13
+
+修复 GitHub issue #6(多用户反馈):静默 "mode-B" 工具调用损坏自动恢复。Claude Code 偶发把 tool-call 开启定界符误采样成随机垃圾词(count/court/…),整个 `<invoke>…</invoke>` 块降级为纯文本 — 无 tool 执行、无错误、turn 正常结束,模型收不到失败信号,只能靠用户手动"重试"。
+
+### Added
+
+- **Mode-B 自动恢复 Stop hook**(opt-in):`bin/harnessed-stop-hook.mjs` 在每次 turn 结束读取最后一条 assistant 消息,命中 mode-B 签名即返回 `{"decision":"block", reason}` 给模型一个新 turn 重发工具调用 — 无需用户介入。探测器 key 在结构不变量(`<invoke name="` / `<parameter name="` 只应存在于 structured tool_use block,出现在 TEXT 即损坏);假阳门:无 structured tool_use + 剥离 code fence + 尾锚(最后一个 tag 在消息末尾 200 字符内 — mode-B 截断于工具调用,元讨论继续写散文)。issue 实证 12,104-turn transcript:76/76 真阳、1 假阳(尾锚门消除)。
+- **循环护栏**:respect `stop_hook_active` + 每(session, 消息签名)重试上限 2;任何错误/非命中静默 exit 0(Stop hook 绝不 wedge 正常 turn end)。
+- **`harnessed stop-hook` 子命令**:compiled 二进制模式 hook 调二进制自身(`"<binary>" stop-hook`,4.27.0 inject-state 同款 parity-by-construction);hookEntry marker 身份表加 `stop-hook`,npm↔binary 双向迁移去重。
+- **`manifests/optional/stop-hook-recover.yaml`**:optional 组件(setup 自动 offer);`hook_event` schema 加 `Stop` 字面量(typebox regen)。
+- **`docs/STOP-HOOK-RECOVER.md`**:探测器原理 + `~/.claude/settings.json` 手动安装 snippet(第二台机器);与 `~/.claude/CLAUDE.md` 的 emission 规避(预防面)互补——本 hook 是恢复面。
+
+### Notes
+
+- Post-hoc:hook 自动恢复损坏后的一个浪费 turn,不预防误采样。预防是模型级的,损坏率随 context 增大而升,`/compact` 或新 session 仍是高发时的杠杆。
+
 ## [4.29.0] - 2026-07-13
 
 v15.0 Upstream Re-sync(7 pin 全扫侦察 → 双主菜 + 三顺手;上次 re-sync = v13.0 2026-07-01)。**Installed users re-run `harnessed setup`**。

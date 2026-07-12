@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+# 4.30.0 (issue #6) — opt-in Stop hook auto-recovering silent "mode-B" tool-call
+# corruption. Claude Code occasionally mis-samples the tool-open delimiter into a
+# garbage word so the whole <invoke>…</invoke> block is emitted as PLAIN TEXT: no
+# tool runs, no error, the turn just ends and the model gets no failure signal —
+# today the only recovery is the user manually typing "retry". This Stop hook runs
+# bin/harnessed-stop-hook.mjs at every turn end; on detecting the mode-B signature
+# (tool-call tags in the assistant message's TEXT content, tail-anchored, no
+# structured tool_use this turn) it returns {"decision":"block", reason} to hand
+# the model one fresh turn to re-emit the call — no user prompt needed. Loop guard:
+# stop_hook_active + a per-(session, message-signature) retry cap of 2. Fail-soft:
+# any error or non-match exits 0 silently (a Stop hook must never wedge turn end).
+# Opt-in (manifests/optional/) because it is a defensive net most useful on long/
+# large-context sessions where the corruption rate climbs. Idempotent.
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: stop-hook-recover
+  display_name: Mode-B Tool-Call Auto-Recovery (Stop hook)
+  description: Opt-in Stop hook that auto-retries silent mode-B tool-call corruption (issue #6) so the user stops typing "retry".
+  upstream:
+    source: stop-hook-recover
+    homepage: https://github.com/easyinplay/harnessed
+    repository: https://github.com/easyinplay/harnessed.git
+    license: MIT
+    notice: First-party harnessed hook (4.30.0, issue #6).
+spec:
+  type: cc-hook
+  component_type: command
+  category: meta
+  install_type: hook
+  install:
+    method: cc-hook-add
+    cmd: "node bin/harnessed-stop-hook.mjs"
+    hook_event: Stop
+    hook_command: "node bin/harnessed-stop-hook.mjs"
+    idempotent_check: "grep -q harnessed-stop-hook ~/.claude/settings.json"
+  verify:
+    cmd: "grep -q harnessed-stop-hook ~/.claude/settings.json"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "true"
+  upstream_health:
+    stability: beta
+    last_check: "2026-07-13"
+    last_known_good_version: "0.1.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

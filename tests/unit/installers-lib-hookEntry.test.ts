@@ -104,6 +104,41 @@ describe('4.27.0 compiled routing (D6 hook self-containment)', () => {
   })
 })
 
+describe('4.30.0 stop-hook identity (issue #6 — second compiled hook)', () => {
+  const STOP = 'node bin/harnessed-stop-hook.mjs'
+  const STOP_ABS = join(ROOT, 'bin', 'harnessed-stop-hook.mjs')
+
+  it('normalizes the stop-hook script to the subcommand identity', () => {
+    expect(hookScriptMarker(STOP)).toBe('stop-hook')
+    expect(hookScriptMarker('"C:/Users/x/harnessed.exe" stop-hook')).toBe('stop-hook')
+  })
+
+  it('routes the stop hook to `"<binary>" stop-hook` when compiled', () => {
+    const r = resolveHookCommand(STOP, {
+      ...deps([STOP_ABS]),
+      compiledExecPath: () => 'C:\\Users\\x\\bin\\harnessed.exe',
+    })
+    expect(r).toBe('"C:/Users/x/bin/harnessed.exe" stop-hook')
+  })
+
+  it('npm mode → legacy node+mjs resolution', () => {
+    const r = resolveHookCommand(STOP, { ...deps([STOP_ABS]), compiledExecPath: () => null })
+    expect(r).toBe(`node "${STOP_ABS.replace(/\\/g, '/')}"`)
+  })
+
+  it('stop-hook identity does not collide with inject-state', () => {
+    expect(hookScriptMarker(STOP)).not.toBe(hookScriptMarker(INJECT))
+  })
+
+  it('cross-form migration for stop-hook (npm ↔ compiled)', () => {
+    const marker = hookScriptMarker(STOP)
+    const compiledCmd = '"C:/bin/harnessed.exe" stop-hook'
+    expect(entryMatchesRegistration({ command: STOP }, STOP, compiledCmd, marker)).toBe(true)
+    const e = { hooks: [{ type: 'command', command: compiledCmd }] }
+    expect(entryMatchesRegistration(e, STOP, `node ${STOP_ABS}`, marker)).toBe(true)
+  })
+})
+
 describe('entryMatchesRegistration + isDesiredHookEntry', () => {
   const marker = hookScriptMarker(INJECT)
   const resolved = `node ${INJECT_ABS}`
