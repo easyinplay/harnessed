@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.28.0] - 2026-07-12
+
+B 路线 Phase 3 Slice 2:一行安装器(CEO plan Deferred 首项,OV1 裁决"紧跟不拖")。原定落位目录 `~/.harnessed/bin` 被实施 fork 的真机演习证伪(遗留根,二进制启动迁移即改名,落位物蒸发)— 灰区协议回流,用户裁决改为平台惯例位置。
+
+### Added
+
+- **一行安装器(消灭 Node 22 前置)**:
+  - unix:`curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash` → `~/.local/bin/harnessed`
+  - Windows:`irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex` → `%LOCALAPPDATA%\harnessed\bin\harnessed.exe`
+  - 流程:平台检测(darwin 仅 arm64,其余明确指 npm 渠道;Git Bash/MSYS 指 install.ps1)→ `releases/latest/download` 稳定重定向下载 → per-asset `.sha256` 校验 → `--version` smoke → PATH 处理(unix 已在 PATH 零提示、否则按 $SHELL 打印 snippet 不改 rc;Windows 交互 consent 幂等追加 user PATH,非交互打印自包含指令)。任一步失败醒目报错不留半装。
+- **installer-smoke CI job**(3-OS):`HARNESSED_INSTALLER_SOURCE_DIR` 零网络 seam 跑完整安装,断言落位/版本/PATH 提示。
+- README Quick Install 节:一行安装器优先,npm 渠道并列(并行分发铁律)。
+
+### Notes
+
+- 真机持久性核验:安装后三次启动(--version ×2 + doctor)二进制存活、迁移逻辑不再触碰新目录;doctor 顺带完成 compiled 更新检查真实 GitHub 路径的首次实证(`✓ update — up to date (4.27.0)`)。
+- 安装脚本走 raw main 分支(薄逻辑),更新走 `harnessed update`(重逻辑在二进制)。
+
 ## [4.27.0] - 2026-07-12
 
 B 路线 Phase 3 Slice 1:二进制正确性 + 自更新。立项走完整 `/plan-ceo-review`(SELECTIVE EXPANSION;3 轮对抗 spec loop 18 修 PASS 8.5/10 + outside voice 7 点;7 项用户裁决)— CEO plan 见 `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`,任务册 T1-T7。

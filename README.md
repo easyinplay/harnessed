@@ -97,6 +97,20 @@ Native agents give you primitives; harnessed wires them into a methodology. Wher
 
 ## 📦 Quick Install
 
+**One-line installer (no Node.js required)** — standalone binary, self-updates via `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+**Or via npm** (both channels are first-class and stay in sync):
+
 ```bash
 npm install -g harnessed && harnessed setup
 ```
