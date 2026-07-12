@@ -16,8 +16,10 @@
   Why: 受限网络下 update 下载不走系统代理。等真实用户信号;当前以可操作报错 + npm 渠道兜底。
 - [ ] **Slice 2:curl/PowerShell 一行安装器** — P1(本切片发布后紧跟,OV1 裁决"不拖")
   Why: 创造二进制用户群;消灭 Node 22 前置。Depends: 资产命名契约(已冻结)+ per-asset .sha256(Slice 1 交付)。
-- [ ] **Slice 3:npm per-platform optionalDependencies 二进制包** — P2
-  Why: esbuild/Biome 模式,npm 用户也免 Node 前置运行时。Depends: Slice 1/2。
+- [ ] **Slice 3:npm per-platform optionalDependencies 二进制包** — P3(2026-07-12 降级,用户裁决)
+  Why: esbuild/Biome 模式。价值质疑:npm 用户必有 Node(包是纯 JS 本就能跑),二进制用户已有一行安装器;
+  收益仅剩启动速度,代价是 4 个 npm 包的发布管线/版本锁/launcher shim 维护面。等真实需求信号再启。
+  Depends: Slice 1/2(已发)。
 
 ## Earlier deferrals (intel 回填表镜像,详 .planning/intel/omc-comparison.md)
 

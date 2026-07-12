@@ -1,7 +1,7 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v13.0 Upstream Re-sync shipped npm 4.12.0 2026-07-01 (closed lightweight); next direction TBD.
-> Current published npm: **4.12.0** (2026-07-01; v13.0 upstream re-sync — gstack/gsd-core/superpowers pin bump + 5 wire) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
+> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v14.0 Hardening & Distribution retroactively closed 2026-07-12; queue in TODOS.md.
+> Current published npm: **4.28.0** (2026-07-12; v14.0 arc close — hardening + binary distribution) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
 
 ---
 

@@ -21,15 +21,16 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.28.0** 2026-07-12. Since v13.0 (4.12.0, last formal milestone) a 16-version post-milestone arc, three sub-arcs (detail: CHANGELOG per version + `.planning/phases/_patch-*/_phase-*` dirs):
+- **Latest shipped (npm)**: **v4.28.0** 2026-07-12. Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
 
 ## Current Position
 
-- **Next(等用户信号)**:B 路线 Slice 3(npm per-platform 包 — 价值/成本存疑,defer 建议已呈)· E1 签名重估(证书采购,用户决策)· 4.13–4.28 弧线补记 retro/milestone 归档(phases/ 现 61 目录,_patch/_phase 未归档)。全清单:`TODOS.md`(4.28.0 起为 defer 记录的家)。
-- **进行中债**:README 镜像同步(9 语言,fork 进行中)。
+- **v14.0 Hardening & Distribution retroactively CLOSED 2026-07-12**(lightweight + fuller archive pass):4.13→4.28 弧线定名收账,61 个 phase 目录归位 `milestones/<vN>-phases/`,active `phases/` 清零。详:`milestones/v14.0-MILESTONE-AUDIT.md` + RETROSPECTIVE v14.0 节。
+- **Next(等用户信号)**:E1 签名重估(证书采购,用户决策)· Slice 3 已降 P3 defer(价值质疑入 TODOS)· eval harness v5+ 立项。全清单:`TODOS.md`。
+- README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
 ## Accumulated Context
 
@@ -46,7 +47,7 @@ progress:
 ### Open todos / carry-forward (non-blocking)
 
 - `TODOS.md`(repo 根,4.28.0 起):E1 签名 / E3 channel / --rollback / proxy / Slice 2✅(已发)/ Slice 3 / eval harness / ambiguity 阈值。
-- 历史遗留(v9.0 系):`migrateLegacyHarnessedRoot` 未 descriptor-routed、残余 `~/.claude` hardcodes;doc-hygiene:phases/ 09–44 + _patch/_phase 目录待归档 pass。
+- 历史遗留(v9.0 系):`migrateLegacyHarnessedRoot` 未 descriptor-routed、残余 `~/.claude` hardcodes。(phases/ 归档 pass ✅ 2026-07-12 完成,unmapped 2 目录见 audit。)
 - **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`。
 
 ## Session Continuity

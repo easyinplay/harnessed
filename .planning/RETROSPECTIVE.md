@@ -1246,3 +1246,38 @@ Phase 6.1 = 🎯 v1.0 GA FINAL phase — PRODUCTION RELEASE (NOT close ceremony)
 ---
 
 *v3.9.x RETROSPECTIVE complete — 2026-05-27; 11 releases / 3 days / 1040 tests stable. 维护系列 active, 下次 gstack review 节点: v3.9.22 附近 (每 5 releases).*
+
+## v14.0 Hardening & Distribution RETROSPECTIVE (2026-07-04 → 2026-07-12, retroactive close)
+
+> Post-v13.0 的 dogfood/issue 驱动弧线,npm 4.13.0→4.28.0(23 publishes / 28 CHANGELOG 版本),
+> 非 phase-driven;2026-07-12 回溯定名收账。详:`milestones/v14.0-MILESTONE-AUDIT.md` + CHANGELOG。
+
+### What Worked
+
+- **Dogfood → issue → 结构性防线的闭环**:用户取证级 issue(#2–#5)每个都换来一类杀防线
+  (skill 完整性台账+自愈 / deferrable relay 门 / gate fail-closed 分型 + judgments 审计测试),
+  不止修单例。
+- **对照借鉴管线**:五家(OMC/omo/ECC/comet/Trellis)三题实证 + 近 10 版 changelog 分析 →
+  intel 双清单 → 逐候选裁决 → 4.24–4.26 三连落地;外部教训以"现状对账"方式消化,避免照抄。
+- **relay 契约实战自证**(4.23.1 建,4.28.0 用):安装器 fork 真机演习证伪落位目录(遗留根
+  迁移蒸发),NEEDS_CLARIFICATION 停驻 → relay → 用户裁决 → SendMessage 续跑 — 机制全链路可用。
+- **演习 seam 模式**(HARNESSED_UPDATE_SOURCE_DIR / HARNESSED_INSTALLER_SOURCE_DIR):
+  真产物 + 零网络的 3-OS CI 实证,弥补"单测跑 Node、生产跑 Bun"的语义分叉。
+- **完整 CEO review 只用在刀刃**(Phase 3 Slice 1 一次):spec loop 3 轮抓出"repo 已有
+  update 命令"级事实错误,证明对抗 spec review 对含平台敏感逻辑的切片值回票价。
+
+### Key Lessons
+
+- 单一 fail-soft 策略会把配置错误放大成本(undefined variable fail-open 误触 4-specialist
+  team)— 分型(静态配置 fail-closed / 运行时 fail-soft)是正解,且要有审计测试守静态面。
+- 扁平命名空间的 last-writer-wins 必须配"声明 + 台账 + 自愈 + 备份"四件套,任一缺位都是静默自伤。
+- `~/.harnessed` 遗留根迁移陷阱:任何"复用既有目录"决策必须真机验证首次启动路径。
+- CI 断言要接受设计内的分支结果(installer-smoke 硬要 export 片段,zero-friction 分支反而报错)。
+
+### Cost Patterns
+
+- 23 publishes / 9 天;测试 1673→2121;发版 SOP 固化(CHANGELOG→bump→push→tag 等确认→后台 watch)。
+
+---
+
+*v14.0 RETROSPECTIVE complete — 2026-07-12; retroactive close + fuller archive pass(61 dirs 归位,active phases/ 清零)。*
