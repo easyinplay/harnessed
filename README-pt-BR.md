@@ -99,6 +99,20 @@ Os agentes nativos te dão primitivos; o harnessed os conecta em uma metodologia
 
 ## 📦 Quick Install
 
+**Instalador de uma linha (não requer Node.js)** — binário independente, auto-atualiza via `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+**Ou via npm** (ambos os canais são de primeira classe e ficam em sincronia):
+
 ```bash
 npm install -g harnessed && harnessed setup
 ```
@@ -122,8 +136,9 @@ A IA vai buscar automaticamente o documento + executar a instalação, lidando c
 O caminho mais curto do zero a um workflow em execução:
 
 ```bash
-# 1. Instale (uma linha)
+# 1. Instale (escolha um canal — veja Quick Install acima)
 npm install -g harnessed && harnessed setup
+# ou binário (sem Node.js): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
 
 ```
@@ -492,8 +507,8 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `harnessed run <name>` | Executa um workflow via spawn SDK in-process (modo CI/headless). Slash commands usam spawn CC-native em vez disso. |
 | `harnessed resume` | Retoma a partir do checkpoint mais recente após interrupção de sessão |
 | `harnessed status` | Phase atual + detentor do lock |
-| `harnessed doctor` | Health check com 14 verificações (Node / MCP / jq / Win bash / routing / token budget / mattpocock / CodeGraph / update-available, etc.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Auto-atualização (`npm i -g harnessed@latest`); `--check` reporta a versão mais recente; `--upstreams` re-executa os manifests base; `--migration-report` é um inventário de estado obsoleto somente leitura |
+| `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / integridade de skills / conflito GateGuard / update-available etc.) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | Auto-atualização por canal: instalações binárias se substituem no local a partir dos GitHub releases (verificação sha256, versão anterior mantida para rollback); instalações npm executam `npm i -g harnessed@latest`. `--check` informa a versão mais recente; `--upstreams` reexecuta os manifests base; `--migration-report` é um inventário read-only de estado obsoleto |
 | `harnessed release-preflight` | Gate de prontidão para release somente leitura (CHANGELOG `[Unreleased]` / versão / git-clean / tag-absent); sai com 1 se não estiver pronto. O gate do stage Ship. |
 | `harnessed retro --done` | Reseta o contador de phases do lembrete de retro após rodar `/retro` (limpa o nudge RETRO-DUE por turno). |
 | `harnessed install <name>` | Instala um Manifest upstream |
@@ -531,7 +546,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 Sim, mas **a experiência do usuário = um único comando**:
 
 ```bash
-harnessed setup  # Instala automaticamente gstack + GSD + superpowers + planning-with-files; 26 Skills de Workflow vão para ~/.claude/skills/ + variável de ambiente Agent Teams gravada automaticamente em ~/.claude.json
+harnessed setup  # Instala automaticamente gstack + GSD + superpowers + planning-with-files; 28 Skills de Workflow vão para ~/.claude/skills/ + variável de ambiente Agent Teams gravada automaticamente em ~/.claude/settings.json
 ```
 
 Pense no `brew install <formula>` puxando o conjunto completo de dependências — você não precisa fazer `brew install` de cada dependência separadamente.
@@ -580,7 +595,7 @@ Depende do campo `pause` no frontmatter de `workflows/<name>/SKILL.md`:
 - `pause: human_review` → bloqueia aguardando aprovação do usuário (gate de governança / lock final, por exemplo `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` gate de lock-in `/plan-eng-review`)
 - Sem `pause` → encadeia automaticamente para a próxima fase
 
-O output de cada fase é gravado em `.harnessed/checkpoints/`; após uma interrupção de sessão, `harnessed resume` continua a partir do checkpoint mais recente.
+O output de cada fase é gravado em `~/.claude/harnessed/checkpoints/`; após uma interrupção de sessão, `harnessed resume` continua a partir do checkpoint mais recente.
 
 </details>
 
@@ -591,10 +606,10 @@ O output de cada fase é gravado em `.harnessed/checkpoints/`; após uma interru
 
 É um híbrido:
 
-- `npx harnessed@latest setup` executa o **CLI Node.js** (`bin/harnessed`)
+- `npx harnessed@latest setup` executa o **CLI Node.js** (`bin/harnessed`) — ou use o binário independente do instalador de uma linha (sem Node.js)
 - o setup instala **Skills de Workflow** (markdown) em `~/.claude/skills/`, carregadas pelo runtime do Claude Code
 - `/discuss` / `/plan` / `/task` / `/verify` etc. são slash commands dentro do CC que disparam a execução das Skills
-- O CLI e as Skills do CC compartilham o diretório de estado `.harnessed/checkpoints/`
+- O CLI e as Skills do CC compartilham o diretório de estado `~/.claude/harnessed/checkpoints/`
 
 </details>
 

@@ -99,6 +99,20 @@ Native ajanlar size ilkeller (primitives) verir; harnessed onları bir metodoloj
 
 ## 📦 Hızlı Kurulum
 
+**Tek satırlık kurulum (Node.js gerekmez)** — bağımsız binary, sonrasında `harnessed update` ile kendini günceller:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+**Veya npm ile** (iki kanal da birinci sınıftır ve senkron kalır):
+
 ```bash
 npm install -g harnessed && harnessed setup
 ```
@@ -122,8 +136,9 @@ Yapay zeka dokümanı otomatik olarak çeker ve kurulumu gerçekleştirir; işle
 Sıfırdan çalışan bir Workflow'a en kısa yol:
 
 ```bash
-# 1. Kurulum (tek satır)
+# 1. Kurulum (kanal seçin — yukarıdaki Hızlı Kurulum'a bakın)
 npm install -g harnessed && harnessed setup
+# veya binary (Node.js gerekmez): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
 
 ```
@@ -492,8 +507,8 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `harnessed run <name>` | Bir workflow'u in-process SDK spawn ile çalıştırır (CI/headless modu). Slash command'lar bunun yerine CC-native spawn kullanır. |
 | `harnessed resume` | Oturum kesintisinden sonra en son checkpoint'ten devam eder |
 | `harnessed status` | Mevcut phase + kilit sahibi |
-| `harnessed doctor` | 14-kontrollü sağlık denetimi (Node / MCP / jq / Win bash / routing / token bütçesi / mattpocock / CodeGraph / güncelleme-mevcut vb.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Kendini güncelle (`npm i -g harnessed@latest`); `--check` en son sürümü bildirir; `--upstreams` temel manifest'leri yeniden çalıştırır; `--migration-report` salt-okunur bir bayat-durum envanteridir |
+| `harnessed doctor` | Sağlık kontrolü (Node / MCP / jq / Win bash / routing / token budget / skill bütünlüğü / GateGuard çakışması / update-available vb.) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | Kanala göre kendini güncelleme: binary kurulumlar GitHub releases'ten yerinde kendini değiştirir (sha256 doğrulamalı, önceki sürüm rollback için saklanır); npm kurulumları `npm i -g harnessed@latest` çalıştırır. `--check` en son sürümü bildirir; `--upstreams` temel manifest'leri yeniden çalıştırır; `--migration-report` salt-okunur eski durum envanteridir |
 | `harnessed release-preflight` | Salt-okunur sürüm-hazırlık kapısı (CHANGELOG `[Unreleased]` / sürüm / git-clean / tag-yokluğu); hazır değilse 1 ile çıkar. Ship-aşaması kapısı. |
 | `harnessed retro --done` | `/retro` çalıştırdıktan sonra retro-hatırlatıcı phase sayacını sıfırlar (tur başına RETRO-DUE dürtmesini temizler). |
 | `harnessed install <isim>` | Upstream manifest'i kurar |
@@ -531,7 +546,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 Evet, ancak **kullanıcı deneyimi = tek komut**:
 
 ```bash
-harnessed setup  # gstack + GSD + superpowers + planning-with-files'ı otomatik kurar; 26 workflow skill ~/.claude/skills/'e iner + Agent Teams ortam değişkeni ~/.claude.json'a otomatik yazılır
+harnessed setup  # gstack + GSD + superpowers + planning-with-files'ı otomatik kurar; 28 workflow skill ~/.claude/skills/'e iner + Agent Teams ortam değişkeni ~/.claude/settings.json'a otomatik yazılır
 ```
 
 `brew install <formula>`'nın tam bağımlılık kümesini çektiğini düşünün — her bağımlılık için ayrı ayrı `brew install` yapmanıza gerek yoktur.
@@ -580,7 +595,7 @@ harnessed setup  # gstack + GSD + superpowers + planning-with-files'ı otomatik 
 - `pause: human_review` → kullanıcı onayını bekleyerek bloklar (governance kapısı / son kilit, örn. `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` `/plan-eng-review` kilit kapısı)
 - `pause` yok → bir sonraki aşamaya otomatik zincirler
 
-Her aşama çıktısı `.harnessed/checkpoints/`'a yazılır; oturum kesintisinden sonra `harnessed resume` en son checkpoint'ten devam eder.
+Her aşama çıktısı `~/.claude/harnessed/checkpoints/`'a yazılır; oturum kesintisinden sonra `harnessed resume` en son checkpoint'ten devam eder.
 
 </details>
 
@@ -591,10 +606,10 @@ Her aşama çıktısı `.harnessed/checkpoints/`'a yazılır; oturum kesintisind
 
 Karma bir yapı:
 
-- `npx harnessed@latest setup` **Node.js CLI**'yi çalıştırır (`bin/harnessed`)
+- `npx harnessed@latest setup` **Node.js CLI**'yi çalıştırır (`bin/harnessed`) — veya tek satırlık kurulumun bağımsız binary'sini kullanın (Node.js gerekmez)
 - Kurulum, **workflow skills'i** (markdown) `~/.claude/skills/`'e yükler; Claude Code çalışma zamanı tarafından yüklenir
 - `/discuss` / `/plan` / `/task` / `/verify` vb. yetenek yürütmesini tetikleyen CC içindeki slash komutlarıdır
-- CLI ve CC skills, `.harnessed/checkpoints/` durum dizinini paylaşır
+- CLI ve CC skills, `~/.claude/harnessed/checkpoints/` durum dizinini paylaşır
 
 </details>
 

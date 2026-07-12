@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: none
-milestone_name: (none — v13.0 Upstream Re-sync SHIPPED + PUBLISHED npm 4.12.0 2026-07-01)
+milestone_name: (none — post-milestone patch/phase arc 4.13.0→4.28.0)
 status: no-active-milestone
-last_updated: "2026-07-01T00:00:00.000Z"
-last_activity: 2026-07-01
+last_updated: "2026-07-12T13:00:00.000Z"
+last_activity: 2026-07-12
 progress:
-  total_phases: 4
-  completed_phases: 4
+  total_phases: 0
+  completed_phases: 0
   total_plans: 0
   completed_plans: 0
-  percent: 100
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -21,36 +21,36 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Current focus**: **No active milestone. Latest npm 4.11.3** (2026-06-30) — last real milestone v12.0 Forward Continuation (npm 4.10.0); 4.10.1→4.11.3 are post-milestone patches (see Current Position). **Process lessons (cross-session)**: (1) a 300s install spawn-timeout isn't always slow network — run the real command for the true error (a PromptScript `--global` rejection errors in 4s via `owner/repo` shorthand but hangs via full-URL); (2) local vitest can't run the `setup.test.ts` family (orphan-MCP-proc) → CI is the authoritative gate; extract a heavily-`vi.mock`'d addition into its own module ([[feedback_mock-export-gap-extract-module]]).
-- **Latest shipped (npm)**: **v4.11.3** 2026-06-30 (cosmetic: HARNESSED ASCII wordmark + parrot tagline atop `harnessed setup`). Post-v12.0 patch series: 4.10.1 installer force-update robustness (idempotent rm-before-write + 120→300s timeout + `kept-existing` warn) · 4.11.0 design swap (frontend-design → design-taste-frontend taste-skill, two-stage overlay) · 4.11.1 setup robustness (atomicWrite race + version banner) · 4.11.2 taste-skill v2 PromptScript install fix (`owner/repo` shorthand + `--skill … --copy`, no `--global`). Detail: CHANGELOG `## [4.10.1]`…`## [4.11.3]`.
+- **Latest shipped (npm)**: **v4.28.0** 2026-07-12. Since v13.0 (4.12.0, last formal milestone) a 16-version post-milestone arc, three sub-arcs (detail: CHANGELOG per version + `.planning/phases/_patch-*/_phase-*` dirs):
+  1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
+  2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
+  3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
 
 ## Current Position
 
-- **v13.0 Upstream Re-sync SHIPPED + PUBLISHED npm 4.12.0 2026-07-01** (minor; closed lightweight). gstack 1.52.1.0→1.58.0.0 · gsd-core ^1.4.1→^1.6.0 · superpowers v5.1.0→v6.0.3 pin bump (继承上游硬化, 窗口 0 新 user-facing skill 但白拿 token carving/安全 guard/UAT routing) + 5 selective wire (verification-before-completion task/deliver 证据门 · gsd-eval-review + gsd-validate-phase verify conditional sub · /diagram gstack B7 · systematic-debugging gsd-debug alias)。capabilities 35→39, verify sub 5→7 (4 phase 41–44, spec 统领无 phase dir)。3-subagent delta 调研 + 2 spike (gsd 安装面/superpowers worktree 兼容); skip MemPalace(记忆双 home)/gbrain/ios。Full flow: push→CI 3-OS green→tag `v4.12.0`→publish.yml (npm publish --provenance + gh release); npm latest=4.12.0 + gh release non-draft 验证。**Installed users re-run `harnessed setup`.** 详 ADR-0035 + spec `specs/2026-06-30-upstream-resync-v13.md`.
-- **v12.0 Forward Continuation SHIPPED + PUBLISHED npm 4.10.0 2026-06-30**, closed lightweight (ROADMAP + MILESTONES index rows + audit 9/9+4/4; phase dirs 37–40 stay in `phases/`). Closes the horizontal-advance gap: after a task/phase finishes, derive + advance to the next from `.planning` disk SoT (no queue), vs manual re-invocation. Design = 5-repo fusion (gsd-pi/gsd-core/Trellis/comet/oh-my-pi); spec `specs/2026-06-30-forward-continuation-design.md`. Bundled the issue #2 fix. Phase-level advance is the shipped floor (OQ-2); task-level resolver-ready, CLI-unwired.
-- **harnessed-site CLI docs DONE**: `reference/cli.md` next/advance (en+zh) written + pushed (commit `0f3b24d`, site repo).
-- **Deferred (non-blocking)**: 9 localized READMEs design-routing two-stage deeper reword still old XOR wording (cosmetic i18n) · optional D5 `gsd_run` reuse · task-level CLI surface (resolver-ready, CLI-unwired).
-- **Next: no active milestone — direction TBD.** New direction → strategy gate (`/office-hours` + `/plan-ceo-review`) per global cadence (skip only if pre-defined).
+- **Next(等用户信号)**:B 路线 Slice 3(npm per-platform 包 — 价值/成本存疑,defer 建议已呈)· E1 签名重估(证书采购,用户决策)· 4.13–4.28 弧线补记 retro/milestone 归档(phases/ 现 61 目录,_patch/_phase 未归档)。全清单:`TODOS.md`(4.28.0 起为 defer 记录的家)。
+- **进行中债**:README 镜像同步(9 语言,fork 进行中)。
 
 ## Accumulated Context
 
 ### Invariants (must not break)
 
 - en-default byte-identical; claude default install byte-identical; additive-only (no en-behavior mutation).
-- KARPATHY-minimal surgical diffs; full gate green vs the 1394-test baseline; Windows CI green on 3 platforms.
-- Biome preempt before every TS/JS commit (`pnpm exec biome check --write`).
-- Every `.planning/` edit self-exemplifies doc-discipline (STATE digest <100 lines; overview pointers not inlined narrative).
-- NEVER push to remote without explicit user approval.
+- KARPATHY-minimal surgical diffs; full gate green(vitest 基线 2121;`--no-file-parallelism` 为权威口径); Windows CI green on 3 platforms.
+- Biome preempt before every TS/JS commit; `pnpm lint` 全域真实退出码(禁 `| tail` 掩蔽)。
+- Every `.planning/` edit self-exemplifies doc-discipline (STATE digest <100 lines; overview pointers not inlined narrative)。
+- **Commit 即 push main**(2026-07-05 坏盘事故后用户批准);tag/发版仍需用户确认。
+- `~/.harnessed` 是遗留根,永不可作安装目标(启动迁移蒸发陷阱,4.28.0 真机实证)。
+- typebox 改动必须 `pnpm build && pnpm build:schema` 并提交 schemas/;vi.mock factory 模块禁加新导出(独立新模块)。
 
-### Open todos / carry-forward (non-blocking, from v9.0)
+### Open todos / carry-forward (non-blocking)
 
-- v9.0 perf follow-on (`detectPlatform` step-3 pin `readFileSync` per-call throw-catch), `migrateLegacyHarnessedRoot` not descriptor-routed, residual `~/.claude` hardcodes (check-*/uninstallers/harnessedRoot legacy-migration), doc-hygiene (shipped phase dirs 09–28 stay in active `phases/`). Detail: prior STATE git history + `milestones/v9.0-MILESTONE-AUDIT.md`. Address when touched / a fuller archive pass is wanted.
-- **Uncommitted (pre-existing, not this milestone)**: `README.md` — intentional 2-line removal (comparison-doc pointer); leave for user.
-- **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`.
+- `TODOS.md`(repo 根,4.28.0 起):E1 签名 / E3 channel / --rollback / proxy / Slice 2✅(已发)/ Slice 3 / eval harness / ambiguity 阈值。
+- 历史遗留(v9.0 系):`migrateLegacyHarnessedRoot` 未 descriptor-routed、残余 `~/.claude` hardcodes;doc-hygiene:phases/ 09–44 + _patch/_phase 目录待归档 pass。
+- **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`。
 
 ## Session Continuity
 
-- **issue #2 fixed (local, npm UNPUBLISHED) 2026-06-29**: `/auto` etc. injected the philosophy-layer `SKILL.md` whose "How to invoke" was a cross-file pointer to `commands/<name>.md` → agent freestyled, bypassing the engine (no `gates`/`checkpoint`/ledger/evidence-guard). 5-repo research (comet/oh-my-pi/gsd-pi/Trellis/gsd-core) → consensus: the injected artifact itself must carry executable steps + bypass must fail at the engine/per-turn layer; cross-harness (Codex ⊅ `@import`) → inline TEXT not `@import`. Fix = **T1** inline the deterministic state-machine into all 52 SKILL invoke sections (+ anti-freestyle directive + Trellis-style positive-invariant test; marker→`v4.9.3`) + **T2** per-turn `ENGINE:` enforcement line in the `<workflow-state>` breadcrumb (`injectState.ts` + `bin/harnessed-inject-state.mjs` parity). Also **promoted `ship` to orchestrator** (a documented stage-master but missing `role-prompts.yaml` entry → `commands/ship.md` never generated + misclassified execution; added ship/ship-preflight entries + `ORCHESTRATOR_COMMANDS`/`nameToYamlHintPath`). + README `🆚 vs Native Claude Code / Codex` table. Commits `eaab2b4`(T1+ship)/`aa199a3`(T2)/`d384863`(README). **SHIPPED npm 4.10.0** (bundled into v12.0 Forward Continuation, 2026-06-30). Installed users need `harnessed setup` re-copy.
-- **issue #1 fixed + PUBLISHED npm 4.9.1 2026-06-26**: `/auto` via SKILL.md drove the deprecated `harnessed run` (nested SDK spawn → silent no-op + 108s hang inside CC). Root cause = v4.0 migration updated `commands/<name>.md` to CC-native but left 48 `SKILL.md` invoke sections on `harnessed run`. Fix = footgun-anchored rewrite of all 48 SKILL files to CC-native (+ `skill-invoke-parity` anti-drift test) + `harnessed run` runtime hardening (defaultSpawnDriver fail-fast on sub failure / nested-CC guard via Phase 35 `sessionIdEnv` seam / non-interactive readline guard). vitest 1535 pass 0 fail. Released as patch: commits `953c134`/`fcb19cc`(i18n-parity regression fix)/`14dab93`(bump), tag `v4.9.1`, npm latest=4.9.1 + gh release non-draft. **Installed users need `harnessed setup` re-copy** for the SKILL fix to take effect. Lesson: ran the CI hard-fail gate scripts (`scripts/check-*.mjs`) only after a red CI — see [[feedback_ci-gate-scripts-preflight]].
-- **v11.0 SHIPPED + PUBLISHED npm 4.9.0 2026-06-26** (CEO review → SHIP; full flow push→CI 3-OS green→tag `v4.9.0`→publish.yml npm-publish+gh-release; verified npm latest=4.9.0 + gh release non-draft). Closed lightweight (audit 4/4); the v5.0 state-machine arc fully delivered. **No active milestone — next direction TBD.** When starting one: strategy gate (`/office-hours` + `/plan-ceo-review`) applies for a genuinely new direction (skip only if pre-defined like v11.0 was). Baseline 1470 tests. Per 逐-gate + NEVER push without explicit user approval.
-- **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session. GSD `context: fork` slash skills fire-and-die — spawn `gsd-planner`/`gsd-executor` via Agent tool if needed; self-verify subagent outputs (grep files / run green gate), don't trust swallowed final text. Always produce PWF 三件套 (task_plan/progress/findings) alongside GSD PLAN/SUMMARY per phase.
+- **本弧线方法论状态**(2026-07-12):relay 契约(4.23.1)首次完整实战 — 4.28.0 安装器 fork 真机证伪 D2 落位目录 → `STATUS: NEEDS_CLARIFICATION` 停驻 → 主 session relay → 用户裁决 → SendMessage 续跑。gate 治理(4.23.2 fail-closed 分型 + judgments 审计测试)与 skill 完整性(4.23.0 台账 + 4.24.0 备份)为当前防线基座。
+- **Methodology lesson (still active)**: GSD plan-phase agent chain overreaches on this host — drive plan+execute hand-controlled in the main session;fork subagent + TDD + 主 session 复验为本弧线标准 cadence;subagent 产出必须主 session 亲验(vitest/tsc/gates 实跑)。
+- **发版 SOP**:CHANGELOG(Edit 工具,禁 heredoc)→ bump → commit+push → tag(等确认)→ 后台 watch CI+publish → 收尾确认;三平台二进制 + per-asset .sha256 随 release。

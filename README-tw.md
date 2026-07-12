@@ -99,6 +99,20 @@ harnessed 的三層架構方案是軟體工程上既有的 **BDD → SDD → TDD
 
 ## 📦 快速安裝
 
+**一行安裝器(無需 Node.js)** —— 獨立二進位檔,後續以 `harnessed update` 自我更新:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+**或使用 npm**(兩條通道皆為一等公民,版本保持同步):
+
 ```bash
 npm install -g harnessed && harnessed setup
 ```
@@ -122,8 +136,9 @@ AI 會自動抓取文件並執行安裝，處理作業系統 / 權限 / PATH / c
 從零到一條運轉中的 workflow，最短路徑：
 
 ```bash
-# 1. 安裝（一行）
+# 1. 安裝（任選通道 —— 見上方快速安裝）
 npm install -g harnessed && harnessed setup
+# 或二進位（無需 Node.js）: curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
 
 ```
@@ -492,8 +507,8 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `harnessed run <name>` | 透過 in-process SDK spawn 執行 workflow（CI/headless 模式）。slash command 改用 CC-native spawn |
 | `harnessed resume` | session 中斷後從最近的 checkpoint 繼續 |
 | `harnessed status` | 目前 phase + 鎖定持有者 |
-| `harnessed doctor` | 14 項健康檢查（Node / MCP / jq / Win bash / routing / token budget / mattpocock / CodeGraph / update-available 等） |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Self-update（`npm i -g harnessed@latest`）；`--check` 報告最新版本；`--upstreams` 重跑 base manifest；`--migration-report` 是 read-only 的陳舊狀態盤點 |
+| `harnessed doctor` | 健康檢查(Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 衝突 / update-available 等) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | 自我更新,依安裝通道分流:二進位安裝從 GitHub releases 原地自替換(sha256 校驗,保留上一版可回滾);npm 安裝執行 `npm i -g harnessed@latest`。`--check` 回報最新版本;`--upstreams` 重跑基礎 manifests;`--migration-report` 為唯讀過期狀態盤點 |
 | `harnessed release-preflight` | Read-only 發布就緒關卡（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；未就緒則 exit 1。即 Ship-stage 關卡 |
 | `harnessed retro --done` | 執行完 `/retro` 後重置 retro-reminder phase 計數器（清除每輪的 RETRO-DUE 提醒） |
 | `harnessed install <name>` | 安裝上游 manifest |
@@ -531,7 +546,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 需要，但**使用者體驗 = 一個指令**：
 
 ```bash
-harnessed setup  # 自動安裝 gstack + GSD + superpowers + planning-with-files；26 個 workflow skill 部署至 ~/.claude/skills/ + Agent Teams 環境變數自動寫入 ~/.claude.json
+harnessed setup  # 自動安裝 gstack + GSD + superpowers + planning-with-files；28 個 workflow skill 部署至 ~/.claude/skills/ + Agent Teams 環境變數自動寫入 ~/.claude/settings.json
 ```
 
 想像 `brew install <formula>` 拉取完整相依集合 —— 你不需要對每個相依套件分別執行 `brew install`。
@@ -580,7 +595,7 @@ harnessed setup  # 自動安裝 gstack + GSD + superpowers + planning-with-files
 - `pause: human_review` → 阻塞等待使用者核准（治理關卡 / 最終鎖定，例如 `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` `/plan-eng-review` 鎖定關卡）
 - 無 `pause` → 自動串接到下一個 phase
 
-每個 phase 的輸出會寫入 `.harnessed/checkpoints/`；session 中斷後，`harnessed resume` 從最近的 checkpoint 繼續。
+每個 phase 的輸出會寫入 `~/.claude/harnessed/checkpoints/`；session 中斷後，`harnessed resume` 從最近的 checkpoint 繼續。
 
 </details>
 
@@ -591,10 +606,10 @@ harnessed setup  # 自動安裝 gstack + GSD + superpowers + planning-with-files
 
 兩者兼具：
 
-- `npx harnessed@latest setup` 執行 **Node.js CLI**（`bin/harnessed`）
+- `npx harnessed@latest setup` 執行 **Node.js CLI**（`bin/harnessed`） —— 或使用一行安裝器的獨立二進位檔(無需 Node.js)
 - setup 將 **workflow skills**（Markdown）安裝至 `~/.claude/skills/`，由 Claude Code 執行期載入
 - `/discuss` / `/plan` / `/task` / `/verify` 等是 CC 內部的指令，觸發 skill 執行
-- CLI 與 CC skills 共用 `.harnessed/checkpoints/` 狀態目錄
+- CLI 與 CC skills 共用 `~/.claude/harnessed/checkpoints/` 狀態目錄
 
 </details>
 

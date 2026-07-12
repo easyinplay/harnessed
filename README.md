@@ -134,8 +134,9 @@ The AI will auto-fetch the doc + run the install, handling OS / permissions / PA
 The shortest path from zero to a running workflow:
 
 ```bash
-# 1. Install (one line)
+# 1. Install (pick a channel — see Quick Install above)
 npm install -g harnessed && harnessed setup
+# or binary (no Node.js): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
 
 ```
@@ -504,8 +505,8 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed run <name>` | Run a workflow via in-process SDK spawn (CI/headless mode). Slash commands use CC-native spawn instead. |
 | `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
 | `harnessed status` | Current phase + lock holder |
-| `harnessed doctor` | 14-check health check (Node / MCP / jq / Win bash / routing / token budget / mattpocock / CodeGraph / update-available, etc.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Self-update (`npm i -g harnessed@latest`); `--check` reports the latest version; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
+| `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / skill integrity / GateGuard conflict / update-available, etc.) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | Self-update, channel-aware: binary installs replace themselves in place from GitHub releases (sha256-verified, previous version kept for rollback); npm installs run `npm i -g harnessed@latest`. `--check` reports the latest version; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
 | `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exits 1 if not ready. The Ship-stage gate. |
 | `harnessed retro --done` | Reset the retro-reminder phase counter after running `/retro` (clears the per-turn RETRO-DUE nudge). |
 | `harnessed install <name>` | Install an upstream manifest |
@@ -543,7 +544,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 Yes, but **the user experience = one command**:
 
 ```bash
-harnessed setup  # Auto-installs gstack + GSD + superpowers + planning-with-files; 26 workflow skills land in ~/.claude/skills/ + Agent Teams env var auto-written to ~/.claude.json
+harnessed setup  # Auto-installs gstack + GSD + superpowers + planning-with-files; 28 workflow skills land in ~/.claude/skills/ + Agent Teams env var auto-written to ~/.claude/settings.json
 ```
 
 Think `brew install <formula>` pulling the full dependency set — you don't need to `brew install` each dependency separately.
@@ -592,7 +593,7 @@ Depends on the `pause` field in `workflows/<name>/SKILL.md` frontmatter:
 - `pause: human_review` → blocks waiting for user approval (governance gate / final lock, e.g. `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` `/plan-eng-review` lock-in gate)
 - No `pause` → auto-chains to the next phase
 
-Each phase output is written to `.harnessed/checkpoints/`; after a session interruption `harnessed resume` continues from the latest checkpoint.
+Each phase output is written to `~/.claude/harnessed/checkpoints/`; after a session interruption `harnessed resume` continues from the latest checkpoint.
 
 </details>
 
@@ -603,10 +604,10 @@ Each phase output is written to `.harnessed/checkpoints/`; after a session inter
 
 A hybrid:
 
-- `npx harnessed@latest setup` runs the **Node.js CLI** (`bin/harnessed`)
+- `npx harnessed@latest setup` runs the **Node.js CLI** (`bin/harnessed`) — or use the standalone binary from the one-line installer (no Node.js required)
 - setup installs **workflow skills** (markdown) into `~/.claude/skills/`, loaded by the Claude Code runtime
 - `/discuss` / `/plan` / `/task` / `/verify` etc. are slash commands inside CC that trigger skill execution
-- The CLI and the CC skills share the `.harnessed/checkpoints/` state directory
+- The CLI and the CC skills share the `~/.claude/harnessed/checkpoints/` state directory
 
 </details>
 

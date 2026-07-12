@@ -99,6 +99,20 @@ Native agent cho bạn các primitive; harnessed kết nối chúng thành một
 
 ## 📦 Quick Install
 
+**Trình cài đặt một dòng (không cần Node.js)** — binary độc lập, tự cập nhật qua `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+**Hoặc qua npm** (cả hai kênh đều là first-class và luôn đồng bộ):
+
 ```bash
 npm install -g harnessed && harnessed setup
 ```
@@ -122,8 +136,9 @@ AI sẽ tự fetch tài liệu + chạy install, xử lý các edge case về OS
 Con đường ngắn nhất từ con số không tới một workflow đang chạy:
 
 ```bash
-# 1. Cài đặt (một dòng)
+# 1. Cài đặt (chọn kênh — xem Quick Install ở trên)
 npm install -g harnessed && harnessed setup
+# hoặc binary (không cần Node.js): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
 
 ```
@@ -492,8 +507,8 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `harnessed run <name>` | Chạy một workflow qua in-process SDK spawn (chế độ CI/headless). Slash command dùng CC-native spawn thay thế. |
 | `harnessed resume` | Tiếp tục từ checkpoint gần nhất sau khi session bị gián đoạn |
 | `harnessed status` | Phase hiện tại + lock holder |
-| `harnessed doctor` | Health check 14 mục (Node / MCP / jq / Win bash / routing / token budget / mattpocock / CodeGraph / update-available, v.v.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Tự cập nhật (`npm i -g harnessed@latest`); `--check` báo phiên bản mới nhất; `--upstreams` chạy lại các base manifest; `--migration-report` là bản kiểm kê trạng thái cũ chỉ-đọc |
+| `harnessed doctor` | Kiểm tra sức khỏe (Node / MCP / jq / Win bash / routing / token budget / toàn vẹn skill / xung đột GateGuard / update-available, v.v.) |
+| `harnessed update [--check\|--upstreams\|--migration-report]` | Tự cập nhật theo kênh cài đặt: bản cài binary tự thay thế tại chỗ từ GitHub releases (kiểm tra sha256, giữ phiên bản trước để rollback); bản cài npm chạy `npm i -g harnessed@latest`. `--check` báo phiên bản mới nhất; `--upstreams` chạy lại các manifests cơ sở; `--migration-report` là bản kiểm kê trạng thái cũ chỉ-đọc |
 | `harnessed release-preflight` | Gate sẵn-sàng-release chỉ-đọc (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exit 1 nếu chưa sẵn sàng. Đây là gate của Stage Ship. |
 | `harnessed retro --done` | Reset bộ đếm phase của retro-reminder sau khi chạy `/retro` (xóa nudge RETRO-DUE mỗi lượt). |
 | `harnessed install <name>` | Cài một upstream manifest |
@@ -531,7 +546,7 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 Có, nhưng **trải nghiệm người dùng = một lệnh duy nhất**:
 
 ```bash
-harnessed setup  # Tự động cài gstack + GSD + superpowers + planning-with-files; 26 workflow skill đến ~/.claude/skills/ + biến môi trường Agent Teams tự động ghi vào ~/.claude.json
+harnessed setup  # Tự động cài gstack + GSD + superpowers + planning-with-files; 28 workflow skill đến ~/.claude/skills/ + biến môi trường Agent Teams tự động ghi vào ~/.claude/settings.json
 ```
 
 Hãy nghĩ như `brew install <formula>` kéo toàn bộ dependency — bạn không cần `brew install` từng dependency riêng lẻ.
@@ -580,7 +595,7 @@ Phụ thuộc vào trường `pause` trong frontmatter `workflows/<name>/SKILL.m
 - `pause: human_review` → chặn lại chờ người dùng phê duyệt (governance gate / khóa cuối, ví dụ `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` gate khóa `/plan-eng-review`)
 - Không có `pause` → tự động nối tiếp sang phase tiếp theo
 
-Output của mỗi phase được ghi vào `.harnessed/checkpoints/`; sau khi session bị gián đoạn, `harnessed resume` tiếp tục từ checkpoint mới nhất.
+Output của mỗi phase được ghi vào `~/.claude/harnessed/checkpoints/`; sau khi session bị gián đoạn, `harnessed resume` tiếp tục từ checkpoint mới nhất.
 
 </details>
 
@@ -591,10 +606,10 @@ Output của mỗi phase được ghi vào `.harnessed/checkpoints/`; sau khi se
 
 Là hybrid:
 
-- `npx harnessed@latest setup` chạy **Node.js CLI** (`bin/harnessed`)
+- `npx harnessed@latest setup` chạy **Node.js CLI** (`bin/harnessed`) — hoặc dùng binary độc lập từ trình cài đặt một dòng (không cần Node.js)
 - setup cài **workflow skill** (markdown) vào `~/.claude/skills/`, được Claude Code runtime tải lên
 - `/discuss` / `/plan` / `/task` / `/verify` v.v. là slash command trong CC kích hoạt thực thi skill
-- CLI và CC skill chia sẻ thư mục state `.harnessed/checkpoints/`
+- CLI và CC skill chia sẻ thư mục state `~/.claude/harnessed/checkpoints/`
 
 </details>
 
