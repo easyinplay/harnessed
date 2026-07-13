@@ -29,6 +29,6 @@
 
 ## Earlier deferrals (intel 回填表镜像,详 .planning/intel/omc-comparison.md)
 
-- [x] **B4 eval harness** — Slice A SHIPPED 4.31.0(trap suite + coverage 导航;B 真 agent 冻结待 mock report 实验、C 录制器待续)
+- [x] **B4 eval harness** — Slice A SHIPPED 4.31.0(trap suite + coverage 导航;B 真 agent 解冻(mock report 实验 2026-07-13 验证:观望者答装)、C 录制器待续)
 - [ ] **SOP 文本 `--skip-sub clarify` 改名 `discuss`** — P3 / S,下次 SKILL 渲染 pass 顺带(engine 侧 synonym 已兼容,纯文本卫生)
 - [ ] **G5/OMC ambiguity 量化阈值** — P3,方向级设计,v5+ discuss
