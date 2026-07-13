@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.31.1] - 2026-07-13
+
+eval 首次 CI 运行(v4.31.0 tag)3-OS 红的 hotfix — 讽刺且合理:trap suite 第一个逮住的是自己 harness 的隔离缺陷。
+
+### Fixed
+
+- **eval runner 对祖先 git repo 的密封性**:scenario cwd 是裸 tmpdir,但 `checkpoint complete` 的 `defaultShipReady(cwd)` 会让 git 向上走父目录 — 录制机的 HOME(os.tmpdir() 的祖先)本身是个 git repo(1 commit 无 release tag),golden 把 `ship_ready:true/ship_commits:1` 的环境泄漏录了进去;CI 无祖先 repo → fail-soft false → 3 scenario 红。修复:runner 隔离期 pin `GIT_CEILING_DIRECTORIES=os.tmpdir()`(git 官方上行截止机制),ship 面全环境确定性化;5 个 golden 重录(纯 ship 字段变化,biome 归一)。
+- **hermeticity 回归测试**:故意把 OS temp 指进一个新建 git repo 内,断言 scenario 仍 PASS golden;mutation 验收 EFFECTIVE(撤修复必红 — 本地即可复现原 CI 失败)。
+
 ## [4.31.0] - 2026-07-13
 
 **eval Slice A:编排器行为回归 trap suite**。治理门全链(office-hours 设计文档 APPROVED → plan-ceo-review CLEARED:spec loop 2 轮 + 深审 + outside voice 共 15 项发现消化,9 项用户裁决)。设计核心 = eureka:评编排器时其行为(gate/ledger/guard)是确定性的 — 回放断言零随机零跑分成本,事故即种子;真 agent benchmark(B 路线)冻结至获客假设验证。

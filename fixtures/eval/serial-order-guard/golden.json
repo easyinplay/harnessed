@@ -63,8 +63,8 @@
       }
     ],
     "verify_mode": "light",
-    "ship_ready": true,
-    "ship_commits": 1,
+    "ship_ready": false,
+    "ship_commits": 0,
     "retro_due": false
   }
 }

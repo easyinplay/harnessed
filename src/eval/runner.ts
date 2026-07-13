@@ -238,6 +238,15 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
   const prevCwd = process.cwd()
   const prevRoot = process.env.HARNESSED_ROOT_OVERRIDE
   const prevAssets = process.env.HARNESSED_ASSETS_OVERRIDE
+  // Hermeticity: engine steps shell out to git against cwd (e.g. shipReady at
+  // `checkpoint complete`). A bare tmpdir is NOT a repo, but git walks UP to
+  // parent dirs — on a machine whose home (an ancestor of os.tmpdir()) is a
+  // git repo, ship_ready leaked that ambient repo into goldens while CI
+  // (no ancestor repo) saw fail-soft false → 3-OS red on eval's first CI run.
+  // GIT_CEILING_DIRECTORIES stops the upward walk at the tmp root, making the
+  // outcome deterministic everywhere: not-a-repo → fail-soft {ready:false}.
+  const prevCeiling = process.env.GIT_CEILING_DIRECTORIES
+  process.env.GIT_CEILING_DIRECTORIES = tmpdir()
   process.env.HARNESSED_ROOT_OVERRIDE = stateRoot
   if (scenario.assets_dir) {
     process.env.HARNESSED_ASSETS_OVERRIDE = isAbsolute(scenario.assets_dir)
@@ -280,6 +289,8 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
     else process.env.HARNESSED_ROOT_OVERRIDE = prevRoot
     if (prevAssets === undefined) delete process.env.HARNESSED_ASSETS_OVERRIDE
     else process.env.HARNESSED_ASSETS_OVERRIDE = prevAssets
+    if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES
+    else process.env.GIT_CEILING_DIRECTORIES = prevCeiling
     _clearJudgmentCache()
   }
 
