@@ -53,10 +53,27 @@ function parseArgs(argv) {
   return opts
 }
 
-/** Build the exact dispatch command for an arm. Calibrated in W2, frozen after. */
+/** Build the exact dispatch command for an arm. Calibrated in W2 (pilot run
+ *  2026-07-13), frozen after: headless needs permissions pre-granted (isolated
+ *  temp workspace — the agent only ever sees the fixture copy) and a turn cap
+ *  so a wedged run cannot burn unbounded tokens. */
 function buildCommand(arm, prompt) {
-  const base = ['claude', '-p', '--output-format', 'stream-json', '--verbose']
-  if (arm === 'bare') return [...base, prompt]
+  const base = [
+    'claude',
+    '-p',
+    '--output-format',
+    'stream-json',
+    '--verbose',
+    '--dangerously-skip-permissions',
+    '--max-turns',
+    '40',
+  ]
+  // bare arm: same machine state (ceteris paribus — the ONLY variable is the
+  // /auto entry), but the Skill tool is disallowed so ambient installed skills
+  // cannot leak orchestration into the bare run. NOTE --disallowedTools is
+  // VARIADIC — it must come AFTER the positional prompt or it swallows it
+  // (W3 calibration: two bare runs failed with "Input must be provided").
+  if (arm === 'bare') return [...base, prompt, '--disallowedTools', 'Skill']
   // harnessed arm: same headless entry; the /auto skill routes through the
   // engine (gates → checkpoint → prompt → evidence guard).
   return [...base, `/auto "${prompt.replace(/"/g, '\\"')}"`]
