@@ -22,9 +22,18 @@
 //                                    none_declared     → markSub done, 'none_declared'
 //                                  + completePhase(complete) terminal checkpoint, exit 0
 //   fail <sub> [--summary]       → markSub failed + completePhase w/ FAILED: prefix, exit 1.
+//
+// 4.31.0 (eval Slice A wave 0) — the action bodies for start/complete/fail are
+// extracted into exported runCheckpointStart/Complete/Fail(sub, opts, deps)
+// orchestration functions (behavior-preserving; deps = cli/lib/runDeps.ts seam,
+// production default = process/console). The commander action is a thin shell.
+// The eval runner drives these exports so trap scenarios exercise the REAL
+// guard orchestration (serial-order guard, evidence three-state, GateGuard
+// pre-check), not a reimplementation.
 
 import type { Command } from 'commander'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
+import { defaultRunDeps, type RunDeps } from './lib/runDeps.js'
 
 const ACTIONS = ['start', 'complete', 'fail', 'intent'] as const
 type Action = (typeof ACTIONS)[number]
@@ -115,14 +124,14 @@ async function absorbIntentFor(sub: string): Promise<void> {
  *  blockers for `sub`. Any internal error → warn + [] (fail-soft: a runtime
  *  fault, not a config error — the 4.23.2 fail-closed carve-out is for static
  *  config bugs only). */
-async function serialOrderBlockers(sub: string): Promise<string[]> {
+async function serialOrderBlockers(sub: string, deps: RunDeps = defaultRunDeps): Promise<string[]> {
   try {
     const { readCurrentWorkflow } = await import('../checkpoint/state.js')
     const { findSerialBlockers } = await import('../checkpoint/ledger.js')
     const wf = await readCurrentWorkflow()
     return findSerialBlockers(wf?.sub_progress ?? [], sub)
   } catch (e) {
-    console.warn(`[harnessed] serial-order guard skipped (fail-soft): ${(e as Error).message}`)
+    deps.warn(`[harnessed] serial-order guard skipped (fail-soft): ${(e as Error).message}`)
     return []
   }
 }
@@ -135,20 +144,375 @@ function enforceSerialOrder(
   sub: string,
   blockers: string[],
   force: boolean | undefined,
+  deps: RunDeps = defaultRunDeps,
 ): boolean {
   if (blockers.length === 0) return true
   if (!force) {
-    console.error(
+    deps.error(
       `[harnessed] checkpoint ${action} BLOCKED: ${sub} — ${blockers.length} earlier serial-sequence sub(s) still pending (serial-order guard, fail-closed):`,
     )
-    for (const b of blockers) console.error(`  - ${b} (complete or fail it first)`)
-    console.error('  (re-run with --force to jump the sequence deliberately)')
+    for (const b of blockers) deps.error(`  - ${b} (complete or fail it first)`)
+    deps.error('  (re-run with --force to jump the sequence deliberately)')
     return false
   }
-  console.warn(
+  deps.warn(
     `[harnessed] serial-order guard overridden (--force): ${action} ${sub} ahead of pending sub(s) ${blockers.join(', ')}`,
   )
   return true
+}
+
+export interface CheckpointStartOpts {
+  summary?: string
+  plan?: string
+}
+
+export interface CheckpointCompleteOpts {
+  summary?: string
+  force?: boolean
+  tokens?: string
+}
+
+export interface CheckpointFailOpts {
+  summary?: string
+  force?: boolean
+}
+
+/** `checkpoint start <master> [--plan <json>]` orchestration body (extracted
+ *  4.31.0 wave 0 — behavior-preserving; always terminates via deps.exit). */
+export async function runCheckpointStart(
+  sub: string,
+  opts: CheckpointStartOpts,
+  deps: RunDeps = defaultRunDeps,
+): Promise<void> {
+  const { activatePhase } = await import('../checkpoint/engineHook.js')
+  // 4.22.1 — step-0 skeleton nudge (dogfood: the model skipped the /auto
+  // step-0 skeleton; the complete-side planning-sync gate blocked correctly
+  // but LATE). Warn at start time on stderr (stdout stays clean for JSON
+  // consumers); fail-soft; silent for non-GSD users (no .planning/ at all).
+  try {
+    const { stat: statFs } = await import('node:fs/promises')
+    const { resolve: resolvePath } = await import('node:path')
+    const planningDir = resolvePath(process.cwd(), '.planning')
+    const hasPlanning = await statFs(planningDir)
+      .then((s) => s.isDirectory())
+      .catch(() => false)
+    if (hasPlanning) {
+      const missing: string[] = []
+      for (const f of ['STATE.md', 'ROADMAP.md']) {
+        const ok = await statFs(resolvePath(planningDir, f))
+          .then((s) => s.isFile())
+          .catch(() => false)
+        if (!ok) missing.push(`.planning/${f}`)
+      }
+      if (missing.length > 0) {
+        deps.error(
+          `⚠️ [harnessed] step 0 skeleton missing (${missing.join(', ')}) — the ` +
+            `evidence guard's planning-sync gate will block \`checkpoint complete\`. ` +
+            `Create the skeleton first (see the /auto SKILL step 0).`,
+        )
+      }
+    }
+  } catch {
+    // fail-soft — the nudge must never break start.
+  }
+  // 4.22.1 T2b — dual-guard conflict pre-check (dogfood: ECC GateGuard's
+  // filename policy blocks the evidence-guard contract names; the main
+  // session can fact-retry past it, SUBAGENTS cannot → renamed artifacts →
+  // every complete fail-closed blocks; verify's five *-report.md recur it).
+  // 4.23.0 (T8) — variant-aware by CAPABILITY: a current ecc (its hook
+  // honors GATEGUARD_EXEMPT_GLOBS) gets the consented env auto-fix
+  // (confirm default YES per D1; refusal prints the loud D3 block;
+  // non-TTY prints preview + the manual command, never mutates);
+  // already-exempt stays silent; legacy ecc → the generic warn with the
+  // upgrade-first advice. Module exports are passed into the flow's deps
+  // so tests can factory-mock them (same seam as 4.22.2's findYml).
+  // All stderr, all fail-soft; detection SoT = check-guard-conflict.ts.
+  try {
+    const { detectGateGuardActive, GUARD_CONFLICT_ADVICE } = await import(
+      './lib/check-guard-conflict.js'
+    )
+    const det = await detectGateGuardActive()
+    if (det.active) {
+      const ge = await import('./lib/guard-exemption.js')
+      const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
+      const flowResult = await ge.runExemptionFlow({
+        probe: () => ge.probeExemptCapability(),
+        readEnvValue: () => ge.readCurrentEnvValue(),
+        merge: (value) => ge.applyEnvExemption(value),
+        print: (line) => deps.error(line),
+        ...(isTty
+          ? {
+              confirm: async () => {
+                const p = await import('@clack/prompts')
+                const ans = await p.confirm({
+                  message:
+                    'Apply the GateGuard exemption now? (persists GATEGUARD_EXEMPT_GLOBS=".planning/**" into settings env — backed up first)',
+                  initialValue: true, // D1 — default YES
+                })
+                return !p.isCancel(ans) && ans === true
+              },
+            }
+          : {}),
+      })
+      if (flowResult === 'not-capable') {
+        deps.error(
+          `⚠️ [harnessed] ECC GateGuard appears active (via ${det.source}) — its ` +
+            `filename policy (report/findings/summary/analysis) collides with the ` +
+            `evidence-guard artifact names (findings.md, *-report.md); subagent Writes ` +
+            `have no fact-retry channel and \`checkpoint complete\` will block. ` +
+            GUARD_CONFLICT_ADVICE,
+        )
+      }
+    }
+  } catch {
+    // fail-soft — the pre-check must never break start.
+  }
+  const { checkpointPath } = await activatePhase(sub)
+  // D3 graceful degrade — seed the ledger only when a plan is supplied; a
+  // missing/empty/invalid --plan leaves an empty ledger, no error.
+  const plan = await parsePlan(opts.plan)
+  if (plan) {
+    const { seedLedger } = await import('../checkpoint/ledger.js')
+    const { mutateSubProgress } = await import('../checkpoint/state.js')
+    await mutateSubProgress(() => seedLedger(plan))
+  }
+  // 4.22.0 — absorb this session's pending intent: start IS the engagement
+  // the intent was waiting for, so the per-turn nag stops here. Fail-soft
+  // (an intent-clear problem must never break start).
+  try {
+    const { mutateStore } = await import('../checkpoint/state.js')
+    const { activeKey, repoKey } = await import('../checkpoint/workflowStore.js')
+    await mutateStore((store) => {
+      if (!store.intents) return store
+      const intents = { ...store.intents }
+      delete intents[activeKey()]
+      delete intents[repoKey()]
+      return { ...store, intents }
+    })
+  } catch {
+    // fail-soft
+  }
+  deps.log(`[harnessed] checkpoint started: ${sub} → ${checkpointPath}`)
+  deps.exit(0)
+  return
+}
+
+/** `checkpoint complete <sub> [--force] [--tokens <n>]` orchestration body
+ *  (extracted 4.31.0 wave 0 — behavior-preserving; always terminates via
+ *  deps.exit). */
+export async function runCheckpointComplete(
+  sub: string,
+  opts: CheckpointCompleteOpts,
+  deps: RunDeps = defaultRunDeps,
+): Promise<void> {
+  const { completePhase } = await import('../checkpoint/engineHook.js')
+  // 4.26.0 (A3) — serial-order guard BEFORE the evidence guard: jumping a
+  // pending serial predecessor is a transition violation regardless of
+  // whatever artifacts this sub can show.
+  if (
+    !enforceSerialOrder('complete', sub, await serialOrderBlockers(sub, deps), opts.force, deps)
+  ) {
+    deps.exit(1)
+    return
+  }
+  const { checkArtifacts } = await import('../checkpoint/evidence.js')
+  const { mutateSubProgress } = await import('../checkpoint/state.js')
+  // B1 (v4.19.0): workflows/ 是运行时资产 — 经 assetsRoot seam(npm/dev 下
+  // === packageRoot,compiled 下指向解包目录)。
+  const { getAssetsRoot } = await import('./lib/assetsRoot.js')
+
+  const result = await checkArtifacts(sub, getAssetsRoot())
+  const { checkPlanningSync } = await import('../checkpoint/evidence.js')
+  const syncResult = await checkPlanningSync(process.cwd(), null)
+
+  // Fail-CLOSED (ADR-0033 D2 + Phase 12 G2): merge artifact missing set with
+  // planning sync missing set. Any missing item blocks completion unless --force.
+  // The ledger entry stays 'pending'; no done flip; exit 1.
+  const allMissing = [...result.missing, ...syncResult.missing]
+  if (allMissing.length > 0 && !opts.force) {
+    deps.error(
+      `[harnessed] checkpoint complete BLOCKED: ${sub} — ${allMissing.length} item(s) missing (evidence guard + .planning/ sync, fail-closed):`,
+    )
+    for (const m of allMissing) deps.error(`  - ${m}`)
+    deps.error('  (re-run with --force to override and record evidence_status=overridden)')
+    deps.exit(1)
+    return
+  }
+
+  // Resolve the three-state evidence posture for the ledger mark, then do a
+  // SINGLE mark. D3: if the ledger was never seeded (empty/absent --plan at
+  // start), the sub is not present → `markIfSeeded` no-ops (the checkpoint
+  // envelope below is the baseline; the ledger is an additive overlay, never
+  // a hard gate). P1-5 — `evidenceStatus` captures the ACTUAL posture written
+  // (not `result.status`, which would print 'missing' on a --force override
+  // and hide the override).
+  //   missing && force → 'overridden' (record present artifacts as evidence)
+  //   verified         → 'verified'   (record found artifacts as evidence)
+  //   none_declared    → 'none_declared' (guard had nothing to check; NOT a pass)
+  let evidenceStatus: 'overridden' | 'verified' | 'none_declared'
+  if (allMissing.length > 0 && opts.force) evidenceStatus = 'overridden'
+  else if (result.status === 'verified') evidenceStatus = 'verified'
+  else evidenceStatus = 'none_declared'
+
+  // none_declared records no evidence refs (nothing was checked); the other
+  // two postures attach the present artifacts as evidence.
+  const markOpts =
+    evidenceStatus === 'none_declared'
+      ? { evidence_status: evidenceStatus }
+      : { evidence: result.found, evidence_status: evidenceStatus }
+  await mutateSubProgress((e) => markIfSeeded(e, sub, 'done', markOpts))
+  // 4.22.0 T6 — a leaf intent for THIS sub is satisfied by its completion.
+  await absorbIntentFor(sub)
+
+  // G1 — recompute scale from the post-mark ledger + working-tree size and
+  // record verify_mode on the envelope (advisory; consumed by the verify skill).
+  const { collectScaleMetrics, assessScale } = await import('../checkpoint/scale.js')
+  const { readCurrentWorkflow, writeCurrentWorkflow } = await import('../checkpoint/state.js')
+  const afterMark = await readCurrentWorkflow()
+  if (afterMark) {
+    const metrics = await collectScaleMetrics(process.cwd(), afterMark.sub_progress ?? [])
+    await writeCurrentWorkflow({ ...afterMark, verify_mode: assessScale(metrics) })
+  }
+
+  // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must not
+  // flip the whole workflow to 'complete'. Reuse the post-mark ledger read
+  // above (the verify_mode write does not touch sub_progress, so afterMark's
+  // ledger is current) and use nextPending: null (all subs resolved, incl. the
+  // empty/unseeded ledger where nextPending([])===null) → transition workflow
+  // complete (legacy single-sub behavior); non-null (pending subs remain) →
+  // keep workflow active.
+  const { nextPending } = await import('../checkpoint/ledger.js')
+  const allResolved = nextPending(afterMark?.sub_progress ?? []) === null
+  await completePhase({
+    phaseId: sub,
+    status: 'complete',
+    lastTask: opts.summary ?? `phase ${sub} complete`,
+    transitionWorkflowComplete: allResolved,
+  })
+
+  // Phase 16 — auto-capture learnings: when the workflow completes
+  // (allResolved), append the final ledger's failure/loop/reject signals
+  // to the repo's .planning/LEARNINGS.md. Uses the pre-compact `afterMark`
+  // snapshot so rejected entries (which the auto-compact below would evict)
+  // are not lost. No-op for a clean ledger (D4).
+  if (allResolved && afterMark) {
+    const { captureWorkflowLearnings } = await import('../checkpoint/learnings.js')
+    const captured = await captureWorkflowLearnings(afterMark.sub_progress ?? [], sub)
+    if (captured > 0) {
+      deps.log(`[harnessed] captured ${captured} learning(s) → .planning/LEARNINGS.md`)
+    }
+  }
+
+  // Phase 14 — auto-compact: when the caller passes a conversation token
+  // count that crosses the shouldCompact threshold, evict resolved ledger
+  // entries (G6-safe: fail_count>0 entries are never evicted). Silent no-op
+  // without --tokens (manual `harnessed compact` is the other path).
+  const { shouldAutoCompact, compactWorkflow } = await import('../checkpoint/compact.js')
+  if (shouldAutoCompact(opts.tokens != null ? Number(opts.tokens) : undefined)) {
+    const c = await compactWorkflow()
+    if (c.evicted > 0) {
+      deps.log(
+        `[harnessed] auto-compact: evicted ${c.evicted} resolved entries (-${c.pct_saved}% tokens)`,
+      )
+    }
+  }
+
+  // Phase 22 — smart reminders: only when this completion finishes the whole
+  // chain (allResolved = a completed phase/cycle). Set AFTER auto-compact so
+  // the flags survive the compact envelope rewrite. Fail-soft (a reminder must
+  // never block a checkpoint): any error here is swallowed, no flags set.
+  if (allResolved) {
+    try {
+      const { defaultShipReady } = await import('../checkpoint/shipReady.js')
+      const { incrementPhases, isRetroDue, retroThreshold } = await import(
+        '../checkpoint/retroMeta.js'
+      )
+      const { mutateStore, readCurrentWorkflow, writeCurrentWorkflow } = await import(
+        '../checkpoint/state.js'
+      )
+      const { repoKey } = await import('../checkpoint/workflowStore.js')
+
+      const ship = defaultShipReady(process.cwd())
+      const key = repoKey()
+      const threshold = retroThreshold(process.env)
+
+      // Bump the per-repo retro counter (store sidecar; survives activate()).
+      let retroDue = false
+      await mutateStore((store) => {
+        const meta = { ...(store.retro_meta ?? {}) }
+        const next = incrementPhases(meta[key])
+        meta[key] = next
+        retroDue = isRetroDue(next.phases_since_retro, threshold)
+        return { ...store, retro_meta: meta }
+      })
+
+      // Merge the flags onto the latest envelope (read by the G4 inject twins).
+      const latest = await readCurrentWorkflow()
+      if (latest) {
+        await writeCurrentWorkflow({
+          ...latest,
+          ship_ready: ship.ready,
+          ship_commits: ship.commits,
+          retro_due: retroDue,
+        })
+      }
+    } catch {
+      // fail-soft — never let a reminder break the checkpoint
+    }
+  }
+
+  deps.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${evidenceStatus})`)
+  deps.exit(0)
+  return
+}
+
+/** `checkpoint fail <sub> [--summary]` orchestration body (extracted 4.31.0
+ *  wave 0 — behavior-preserving; always terminates via deps.exit). Flip the
+ *  ledger entry → 'failed', record a terminal checkpoint with FAILED: prefix,
+ *  signal failure via exit code (engineHook status union has no 'fail'). */
+export async function runCheckpointFail(
+  sub: string,
+  opts: CheckpointFailOpts,
+  deps: RunDeps = defaultRunDeps,
+): Promise<void> {
+  const { completePhase } = await import('../checkpoint/engineHook.js')
+  // 4.26.0 (A3) — same serial-order guard: failing a serial successor while
+  // its predecessor is still pending is the same sequence jump.
+  if (!enforceSerialOrder('fail', sub, await serialOrderBlockers(sub, deps), opts.force, deps)) {
+    deps.exit(1)
+    return
+  }
+  const { mutateSubProgress } = await import('../checkpoint/state.js')
+  await mutateSubProgress((e) => markIfSeeded(e, sub, 'failed'))
+  // 4.22.0 T6 — a failed sub is still a RESOLVED sub for its leaf intent.
+  await absorbIntentFor(sub)
+  // v5.0 Spec 1 — a failed sub must NOT flip the workflow to 'complete'. The
+  // failed entry lives in the ledger; the orchestrator/user reads it and
+  // decides STOP. Workflow stays 'active'.
+  await completePhase({
+    phaseId: sub,
+    status: 'complete',
+    lastTask: `FAILED: ${opts.summary ?? ''}`,
+    transitionWorkflowComplete: false,
+  })
+  // G6 — after recording the failure, detect a fix-forget-repeat loop and
+  // surface a break-loop directive (the skill doc carries the 5-dim analysis).
+  const { readCurrentWorkflow } = await import('../checkpoint/state.js')
+  const { detectLoop, LOOP_THRESHOLD } = await import('../checkpoint/breakLoop.js')
+  const latest = await readCurrentWorkflow()
+  const loops = detectLoop(latest?.sub_progress ?? [])
+  const looped = loops.find((l) => l.sub === sub)
+  if (looped) {
+    deps.error(
+      `[harnessed] BREAK-LOOP: sub '${sub}' failed ${looped.count}x (>= ${LOOP_THRESHOLD}). ` +
+        'Stop retrying — run the break-loop skill for root-cause analysis and capture the lesson to .planning/.',
+    )
+  }
+  deps.error(
+    `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,
+  )
+  deps.exit(1)
+  return
 }
 
 export function registerCheckpoint(program: Command): void {
@@ -236,323 +600,18 @@ export function registerCheckpoint(program: Command): void {
           return
         }
 
-        const { activatePhase, completePhase } = await import('../checkpoint/engineHook.js')
-
         if (action === 'start') {
-          // 4.22.1 — step-0 skeleton nudge (dogfood: the model skipped the /auto
-          // step-0 skeleton; the complete-side planning-sync gate blocked correctly
-          // but LATE). Warn at start time on stderr (stdout stays clean for JSON
-          // consumers); fail-soft; silent for non-GSD users (no .planning/ at all).
-          try {
-            const { stat: statFs } = await import('node:fs/promises')
-            const { resolve: resolvePath } = await import('node:path')
-            const planningDir = resolvePath(process.cwd(), '.planning')
-            const hasPlanning = await statFs(planningDir)
-              .then((s) => s.isDirectory())
-              .catch(() => false)
-            if (hasPlanning) {
-              const missing: string[] = []
-              for (const f of ['STATE.md', 'ROADMAP.md']) {
-                const ok = await statFs(resolvePath(planningDir, f))
-                  .then((s) => s.isFile())
-                  .catch(() => false)
-                if (!ok) missing.push(`.planning/${f}`)
-              }
-              if (missing.length > 0) {
-                console.error(
-                  `⚠️ [harnessed] step 0 skeleton missing (${missing.join(', ')}) — the ` +
-                    `evidence guard's planning-sync gate will block \`checkpoint complete\`. ` +
-                    `Create the skeleton first (see the /auto SKILL step 0).`,
-                )
-              }
-            }
-          } catch {
-            // fail-soft — the nudge must never break start.
-          }
-          // 4.22.1 T2b — dual-guard conflict pre-check (dogfood: ECC GateGuard's
-          // filename policy blocks the evidence-guard contract names; the main
-          // session can fact-retry past it, SUBAGENTS cannot → renamed artifacts →
-          // every complete fail-closed blocks; verify's five *-report.md recur it).
-          // 4.23.0 (T8) — variant-aware by CAPABILITY: a current ecc (its hook
-          // honors GATEGUARD_EXEMPT_GLOBS) gets the consented env auto-fix
-          // (confirm default YES per D1; refusal prints the loud D3 block;
-          // non-TTY prints preview + the manual command, never mutates);
-          // already-exempt stays silent; legacy ecc → the generic warn with the
-          // upgrade-first advice. Module exports are passed into the flow's deps
-          // so tests can factory-mock them (same seam as 4.22.2's findYml).
-          // All stderr, all fail-soft; detection SoT = check-guard-conflict.ts.
-          try {
-            const { detectGateGuardActive, GUARD_CONFLICT_ADVICE } = await import(
-              './lib/check-guard-conflict.js'
-            )
-            const det = await detectGateGuardActive()
-            if (det.active) {
-              const ge = await import('./lib/guard-exemption.js')
-              const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
-              const flowResult = await ge.runExemptionFlow({
-                probe: () => ge.probeExemptCapability(),
-                readEnvValue: () => ge.readCurrentEnvValue(),
-                merge: (value) => ge.applyEnvExemption(value),
-                print: (line) => console.error(line),
-                ...(isTty
-                  ? {
-                      confirm: async () => {
-                        const p = await import('@clack/prompts')
-                        const ans = await p.confirm({
-                          message:
-                            'Apply the GateGuard exemption now? (persists GATEGUARD_EXEMPT_GLOBS=".planning/**" into settings env — backed up first)',
-                          initialValue: true, // D1 — default YES
-                        })
-                        return !p.isCancel(ans) && ans === true
-                      },
-                    }
-                  : {}),
-              })
-              if (flowResult === 'not-capable') {
-                console.error(
-                  `⚠️ [harnessed] ECC GateGuard appears active (via ${det.source}) — its ` +
-                    `filename policy (report/findings/summary/analysis) collides with the ` +
-                    `evidence-guard artifact names (findings.md, *-report.md); subagent Writes ` +
-                    `have no fact-retry channel and \`checkpoint complete\` will block. ` +
-                    GUARD_CONFLICT_ADVICE,
-                )
-              }
-            }
-          } catch {
-            // fail-soft — the pre-check must never break start.
-          }
-          const { checkpointPath } = await activatePhase(sub)
-          // D3 graceful degrade — seed the ledger only when a plan is supplied; a
-          // missing/empty/invalid --plan leaves an empty ledger, no error.
-          const plan = await parsePlan(opts.plan)
-          if (plan) {
-            const { seedLedger } = await import('../checkpoint/ledger.js')
-            const { mutateSubProgress } = await import('../checkpoint/state.js')
-            await mutateSubProgress(() => seedLedger(plan))
-          }
-          // 4.22.0 — absorb this session's pending intent: start IS the engagement
-          // the intent was waiting for, so the per-turn nag stops here. Fail-soft
-          // (an intent-clear problem must never break start).
-          try {
-            const { mutateStore } = await import('../checkpoint/state.js')
-            const { activeKey, repoKey } = await import('../checkpoint/workflowStore.js')
-            await mutateStore((store) => {
-              if (!store.intents) return store
-              const intents = { ...store.intents }
-              delete intents[activeKey()]
-              delete intents[repoKey()]
-              return { ...store, intents }
-            })
-          } catch {
-            // fail-soft
-          }
-          console.log(`[harnessed] checkpoint started: ${sub} → ${checkpointPath}`)
-          process.exit(0)
+          await runCheckpointStart(sub, opts)
           return
         }
 
         if (action === 'complete') {
-          // 4.26.0 (A3) — serial-order guard BEFORE the evidence guard: jumping a
-          // pending serial predecessor is a transition violation regardless of
-          // whatever artifacts this sub can show.
-          if (!enforceSerialOrder('complete', sub, await serialOrderBlockers(sub), opts.force)) {
-            process.exit(1)
-            return
-          }
-          const { checkArtifacts } = await import('../checkpoint/evidence.js')
-          const { mutateSubProgress } = await import('../checkpoint/state.js')
-          // B1 (v4.19.0): workflows/ 是运行时资产 — 经 assetsRoot seam(npm/dev 下
-          // === packageRoot,compiled 下指向解包目录)。
-          const { getAssetsRoot } = await import('./lib/assetsRoot.js')
-
-          const result = await checkArtifacts(sub, getAssetsRoot())
-          const { checkPlanningSync } = await import('../checkpoint/evidence.js')
-          const syncResult = await checkPlanningSync(process.cwd(), null)
-
-          // Fail-CLOSED (ADR-0033 D2 + Phase 12 G2): merge artifact missing set with
-          // planning sync missing set. Any missing item blocks completion unless --force.
-          // The ledger entry stays 'pending'; no done flip; exit 1.
-          const allMissing = [...result.missing, ...syncResult.missing]
-          if (allMissing.length > 0 && !opts.force) {
-            console.error(
-              `[harnessed] checkpoint complete BLOCKED: ${sub} — ${allMissing.length} item(s) missing (evidence guard + .planning/ sync, fail-closed):`,
-            )
-            for (const m of allMissing) console.error(`  - ${m}`)
-            console.error(
-              '  (re-run with --force to override and record evidence_status=overridden)',
-            )
-            process.exit(1)
-            return
-          }
-
-          // Resolve the three-state evidence posture for the ledger mark, then do a
-          // SINGLE mark. D3: if the ledger was never seeded (empty/absent --plan at
-          // start), the sub is not present → `markIfSeeded` no-ops (the checkpoint
-          // envelope below is the baseline; the ledger is an additive overlay, never
-          // a hard gate). P1-5 — `evidenceStatus` captures the ACTUAL posture written
-          // (not `result.status`, which would print 'missing' on a --force override
-          // and hide the override).
-          //   missing && force → 'overridden' (record present artifacts as evidence)
-          //   verified         → 'verified'   (record found artifacts as evidence)
-          //   none_declared    → 'none_declared' (guard had nothing to check; NOT a pass)
-          let evidenceStatus: 'overridden' | 'verified' | 'none_declared'
-          if (allMissing.length > 0 && opts.force) evidenceStatus = 'overridden'
-          else if (result.status === 'verified') evidenceStatus = 'verified'
-          else evidenceStatus = 'none_declared'
-
-          // none_declared records no evidence refs (nothing was checked); the other
-          // two postures attach the present artifacts as evidence.
-          const markOpts =
-            evidenceStatus === 'none_declared'
-              ? { evidence_status: evidenceStatus }
-              : { evidence: result.found, evidence_status: evidenceStatus }
-          await mutateSubProgress((e) => markIfSeeded(e, sub, 'done', markOpts))
-          // 4.22.0 T6 — a leaf intent for THIS sub is satisfied by its completion.
-          await absorbIntentFor(sub)
-
-          // G1 — recompute scale from the post-mark ledger + working-tree size and
-          // record verify_mode on the envelope (advisory; consumed by the verify skill).
-          const { collectScaleMetrics, assessScale } = await import('../checkpoint/scale.js')
-          const { readCurrentWorkflow, writeCurrentWorkflow } = await import(
-            '../checkpoint/state.js'
-          )
-          const afterMark = await readCurrentWorkflow()
-          if (afterMark) {
-            const metrics = await collectScaleMetrics(process.cwd(), afterMark.sub_progress ?? [])
-            await writeCurrentWorkflow({ ...afterMark, verify_mode: assessScale(metrics) })
-          }
-
-          // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must not
-          // flip the whole workflow to 'complete'. Reuse the post-mark ledger read
-          // above (the verify_mode write does not touch sub_progress, so afterMark's
-          // ledger is current) and use nextPending: null (all subs resolved, incl. the
-          // empty/unseeded ledger where nextPending([])===null) → transition workflow
-          // complete (legacy single-sub behavior); non-null (pending subs remain) →
-          // keep workflow active.
-          const { nextPending } = await import('../checkpoint/ledger.js')
-          const allResolved = nextPending(afterMark?.sub_progress ?? []) === null
-          await completePhase({
-            phaseId: sub,
-            status: 'complete',
-            lastTask: opts.summary ?? `phase ${sub} complete`,
-            transitionWorkflowComplete: allResolved,
-          })
-
-          // Phase 16 — auto-capture learnings: when the workflow completes
-          // (allResolved), append the final ledger's failure/loop/reject signals
-          // to the repo's .planning/LEARNINGS.md. Uses the pre-compact `afterMark`
-          // snapshot so rejected entries (which the auto-compact below would evict)
-          // are not lost. No-op for a clean ledger (D4).
-          if (allResolved && afterMark) {
-            const { captureWorkflowLearnings } = await import('../checkpoint/learnings.js')
-            const captured = await captureWorkflowLearnings(afterMark.sub_progress ?? [], sub)
-            if (captured > 0) {
-              console.log(`[harnessed] captured ${captured} learning(s) → .planning/LEARNINGS.md`)
-            }
-          }
-
-          // Phase 14 — auto-compact: when the caller passes a conversation token
-          // count that crosses the shouldCompact threshold, evict resolved ledger
-          // entries (G6-safe: fail_count>0 entries are never evicted). Silent no-op
-          // without --tokens (manual `harnessed compact` is the other path).
-          const { shouldAutoCompact, compactWorkflow } = await import('../checkpoint/compact.js')
-          if (shouldAutoCompact(opts.tokens != null ? Number(opts.tokens) : undefined)) {
-            const c = await compactWorkflow()
-            if (c.evicted > 0) {
-              console.log(
-                `[harnessed] auto-compact: evicted ${c.evicted} resolved entries (-${c.pct_saved}% tokens)`,
-              )
-            }
-          }
-
-          // Phase 22 — smart reminders: only when this completion finishes the whole
-          // chain (allResolved = a completed phase/cycle). Set AFTER auto-compact so
-          // the flags survive the compact envelope rewrite. Fail-soft (a reminder must
-          // never block a checkpoint): any error here is swallowed, no flags set.
-          if (allResolved) {
-            try {
-              const { defaultShipReady } = await import('../checkpoint/shipReady.js')
-              const { incrementPhases, isRetroDue, retroThreshold } = await import(
-                '../checkpoint/retroMeta.js'
-              )
-              const { mutateStore, readCurrentWorkflow, writeCurrentWorkflow } = await import(
-                '../checkpoint/state.js'
-              )
-              const { repoKey } = await import('../checkpoint/workflowStore.js')
-
-              const ship = defaultShipReady(process.cwd())
-              const key = repoKey()
-              const threshold = retroThreshold(process.env)
-
-              // Bump the per-repo retro counter (store sidecar; survives activate()).
-              let retroDue = false
-              await mutateStore((store) => {
-                const meta = { ...(store.retro_meta ?? {}) }
-                const next = incrementPhases(meta[key])
-                meta[key] = next
-                retroDue = isRetroDue(next.phases_since_retro, threshold)
-                return { ...store, retro_meta: meta }
-              })
-
-              // Merge the flags onto the latest envelope (read by the G4 inject twins).
-              const latest = await readCurrentWorkflow()
-              if (latest) {
-                await writeCurrentWorkflow({
-                  ...latest,
-                  ship_ready: ship.ready,
-                  ship_commits: ship.commits,
-                  retro_due: retroDue,
-                })
-              }
-            } catch {
-              // fail-soft — never let a reminder break the checkpoint
-            }
-          }
-
-          console.log(`[harnessed] checkpoint complete: ${sub} (evidence: ${evidenceStatus})`)
-          process.exit(0)
+          await runCheckpointComplete(sub, opts)
           return
         }
 
-        // action === 'fail' — flip the ledger entry → 'failed', record a terminal
-        // checkpoint with FAILED: prefix, signal failure via exit code (engineHook
-        // status union has no 'fail').
-        // 4.26.0 (A3) — same serial-order guard: failing a serial successor while
-        // its predecessor is still pending is the same sequence jump.
-        if (!enforceSerialOrder('fail', sub, await serialOrderBlockers(sub), opts.force)) {
-          process.exit(1)
-          return
-        }
-        const { mutateSubProgress } = await import('../checkpoint/state.js')
-        await mutateSubProgress((e) => markIfSeeded(e, sub, 'failed'))
-        // 4.22.0 T6 — a failed sub is still a RESOLVED sub for its leaf intent.
-        await absorbIntentFor(sub)
-        // v5.0 Spec 1 — a failed sub must NOT flip the workflow to 'complete'. The
-        // failed entry lives in the ledger; the orchestrator/user reads it and
-        // decides STOP. Workflow stays 'active'.
-        await completePhase({
-          phaseId: sub,
-          status: 'complete',
-          lastTask: `FAILED: ${opts.summary ?? ''}`,
-          transitionWorkflowComplete: false,
-        })
-        // G6 — after recording the failure, detect a fix-forget-repeat loop and
-        // surface a break-loop directive (the skill doc carries the 5-dim analysis).
-        const { readCurrentWorkflow } = await import('../checkpoint/state.js')
-        const { detectLoop, LOOP_THRESHOLD } = await import('../checkpoint/breakLoop.js')
-        const latest = await readCurrentWorkflow()
-        const loops = detectLoop(latest?.sub_progress ?? [])
-        const looped = loops.find((l) => l.sub === sub)
-        if (looped) {
-          console.error(
-            `[harnessed] BREAK-LOOP: sub '${sub}' failed ${looped.count}x (>= ${LOOP_THRESHOLD}). ` +
-              'Stop retrying — run the break-loop skill for root-cause analysis and capture the lesson to .planning/.',
-          )
-        }
-        console.error(
-          `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,
-        )
-        process.exit(1)
+        // action === 'fail'
+        await runCheckpointFail(sub, opts)
       },
     )
 }

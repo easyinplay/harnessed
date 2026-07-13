@@ -19,6 +19,7 @@ import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
 import { matchSkipSub, warnUnmatchedSkips } from '../workflow/skipSubs.js'
 import { getAssetsRoot } from './lib/assetsRoot.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
+import { defaultRunDeps, type RunDeps } from './lib/runDeps.js'
 
 // v4.22.0 dogfood — 'ship' was a real master (workflows/ship/auto/workflow.yaml,
 // Phase 21) missing from this whitelist since it shipped: `gates ship` errored
@@ -77,6 +78,174 @@ function resolveMasterYamlPath(master: string, packageRoot: string): string {
     : resolve(packageRoot, 'workflows', master, 'auto', 'workflow.yaml')
 }
 
+/** `harnessed gates <master>` orchestration body (extracted 4.31.0 eval Slice A
+ *  wave 0 — behavior-preserving; always terminates via deps.exit). The eval
+ *  runner drives this export so trap scenarios exercise the REAL fire/skip
+ *  assembly, --skip-sub alias matching, and the 4.23.2 fail-closed/fail-soft
+ *  split — not a reimplementation. */
+export async function runGatesPlan(
+  master: string,
+  raw: RawOpts,
+  deps: RunDeps = defaultRunDeps,
+): Promise<void> {
+  if (!VALID_MASTERS.has(master)) {
+    deps.error(
+      `error: unknown master '${master}'. Expected one of: auto, discuss, plan, task, verify, ship.`,
+    )
+    deps.exit(1)
+    return
+  }
+
+  // P0-B — defense-in-depth: `master` feeds resolveMasterYamlPath path joins.
+  // VALID_MASTERS already whitelists it, but guard for consistency with the
+  // other CLI entry points.
+  try {
+    checkPathSafe(master)
+  } catch {
+    deps.error('error: invalid master name (path traversal rejected)')
+    deps.exit(1)
+    return
+  }
+
+  const packageRoot = getAssetsRoot()
+  const yamlPath = resolveMasterYamlPath(master, packageRoot)
+
+  let raw_yaml: string
+  try {
+    raw_yaml = await readFile(yamlPath, 'utf8')
+  } catch (err) {
+    deps.error(
+      `error: failed to read master workflow.yaml at ${yamlPath} — ${(err as Error).message}`,
+    )
+    deps.exit(1)
+    return
+  }
+
+  let parsed: unknown
+  try {
+    parsed = parseYaml(raw_yaml)
+  } catch (err) {
+    deps.error(`error: failed to parse ${yamlPath} — ${(err as Error).message}`)
+    deps.exit(1)
+    return
+  }
+
+  const delegates = (parsed as { delegates_to?: unknown })?.delegates_to
+  if (!Array.isArray(delegates) || delegates.length === 0) {
+    deps.error(`error: master '${master}' workflow.yaml missing delegates_to[]`)
+    deps.exit(1)
+    return
+  }
+  const clauses = delegates as DelegationClause[]
+
+  const task = typeof raw.task === 'string' ? raw.task : ''
+  const stage = master
+
+  // Build gate context: shared defaults → deep-merge --context → add skip_subs.
+  let ctx = buildDefaultGateContext(task, stage)
+  if (typeof raw.context === 'string' && raw.context.length > 0) {
+    let extra: unknown
+    try {
+      extra = JSON.parse(raw.context)
+    } catch (err) {
+      deps.error(`error: --context is not valid JSON — ${(err as Error).message}`)
+      deps.exit(1)
+      return
+    }
+    if (extra && typeof extra === 'object' && !Array.isArray(extra)) {
+      // deep-merge so a partial {phase:{x:true}} doesn't wipe the other phase.* defaults.
+      ctx = mergeGateContext(ctx, extra as Record<string, unknown>)
+    }
+  }
+  const skipSubs = new Set(
+    (Array.isArray(raw.skipSub) ? raw.skipSub : [])
+      .flatMap((v) => v.split(','))
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0),
+  )
+  ctx.skip_subs = [...skipSubs]
+
+  const fire: FireEntry[] = []
+  const skip: SkipEntry[] = []
+
+  // Gate eval loop — mirror masterOrchestrator.ts gate eval loop (no spawn).
+  const matchedSkips = new Set<string>()
+  for (const clause of clauses) {
+    // 4.23.2 (issue #5 defect 2) — accept the flattened `<master>-<sub>`
+    // alias users see in fire[] / slash commands (verify-paranoid → paranoid).
+    const skipHit = matchSkipSub(skipSubs, clause.sub, master)
+    if (skipHit !== null) {
+      matchedSkips.add(skipHit)
+      skip.push({
+        sub: clause.sub,
+        reason: 'skipped via skip_subs (done interactively in main session)',
+      })
+      continue
+    }
+    if (!clause.gate) {
+      fire.push(fireEntry(clause, master))
+      continue
+    }
+    try {
+      const passes = await resolveJudgmentGate(clause.gate, ctx, packageRoot)
+      if (passes) {
+        fire.push(fireEntry(clause, master))
+      } else {
+        skip.push({ sub: clause.sub, reason: `gate ${clause.gate} = false` })
+      }
+    } catch (e) {
+      if (isUndefinedVariableError(e)) {
+        // 4.23.2 (issue #5 defect 1) — undefined variable is a STATIC config
+        // bug (expression ↔ gateContext drift), not an operational fault:
+        // fail-open here made the most expensive sub the default path.
+        // Fail-CLOSED + loud warn; ADR 0029 Amendment (4.23.2).
+        deps.warn(
+          `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} references a variable ` +
+            `missing from the gate context (${(e as Error).message}). Treating as NOT fired ` +
+            `(fail-closed for config errors) — fix the judgments yaml expression or supply ` +
+            `the variable via --context / gateContext defaults.`,
+        )
+        skip.push({
+          sub: clause.sub,
+          reason: `gate ${clause.gate} misconfigured (undefined variable) — fail-closed, not fired`,
+        })
+      } else {
+        // ADR 0029 fail-soft — eval error is operational fault, not a judgment
+        // to skip. Fire the sub as if the gate returned true; emit warn.
+        deps.warn(
+          `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} eval failed ` +
+            `(${(e as Error).message}); firing sub as if gate=true (ADR 0029 fail-soft).`,
+        )
+        fire.push(fireEntry(clause, master))
+      }
+    }
+  }
+  // Surface requested skip names that matched no clause (was a silent no-op).
+  warnUnmatchedSkips(
+    skipSubs,
+    matchedSkips,
+    master,
+    clauses.map((c) => c.sub),
+    (m) => deps.warn(m),
+  )
+
+  // Parallelism — agent-teams-upgrade routing gate (try/catch → conservative false).
+  let parallelism: GatesPlan['parallelism'] = { escalate_to_teams: false, reason: null }
+  try {
+    const escalate = await resolveJudgmentGate(PARALLELISM_GATE, ctx, packageRoot)
+    parallelism = escalate
+      ? { escalate_to_teams: true, reason: 'agent-teams-upgrade gate fired' }
+      : { escalate_to_teams: false, reason: null }
+  } catch {
+    parallelism = { escalate_to_teams: false, reason: null }
+  }
+
+  const result: GatesPlan = { master, fire, skip, parallelism }
+  deps.log(JSON.stringify(result, null, 2))
+  deps.exit(0)
+  return
+}
+
 export function registerGates(program: Command): void {
   program
     .command('gates')
@@ -93,161 +262,7 @@ export function registerGates(program: Command): void {
     )
     .option('--context <json>', 'JSON object merged over the default gate context')
     .action(async (master: string, raw: RawOpts) => {
-      if (!VALID_MASTERS.has(master)) {
-        console.error(
-          `error: unknown master '${master}'. Expected one of: auto, discuss, plan, task, verify, ship.`,
-        )
-        process.exit(1)
-        return
-      }
-
-      // P0-B — defense-in-depth: `master` feeds resolveMasterYamlPath path joins.
-      // VALID_MASTERS already whitelists it, but guard for consistency with the
-      // other CLI entry points.
-      try {
-        checkPathSafe(master)
-      } catch {
-        console.error('error: invalid master name (path traversal rejected)')
-        process.exit(1)
-        return
-      }
-
-      const packageRoot = getAssetsRoot()
-      const yamlPath = resolveMasterYamlPath(master, packageRoot)
-
-      let raw_yaml: string
-      try {
-        raw_yaml = await readFile(yamlPath, 'utf8')
-      } catch (err) {
-        console.error(
-          `error: failed to read master workflow.yaml at ${yamlPath} — ${(err as Error).message}`,
-        )
-        process.exit(1)
-        return
-      }
-
-      let parsed: unknown
-      try {
-        parsed = parseYaml(raw_yaml)
-      } catch (err) {
-        console.error(`error: failed to parse ${yamlPath} — ${(err as Error).message}`)
-        process.exit(1)
-        return
-      }
-
-      const delegates = (parsed as { delegates_to?: unknown })?.delegates_to
-      if (!Array.isArray(delegates) || delegates.length === 0) {
-        console.error(`error: master '${master}' workflow.yaml missing delegates_to[]`)
-        process.exit(1)
-        return
-      }
-      const clauses = delegates as DelegationClause[]
-
-      const task = typeof raw.task === 'string' ? raw.task : ''
-      const stage = master
-
-      // Build gate context: shared defaults → deep-merge --context → add skip_subs.
-      let ctx = buildDefaultGateContext(task, stage)
-      if (typeof raw.context === 'string' && raw.context.length > 0) {
-        let extra: unknown
-        try {
-          extra = JSON.parse(raw.context)
-        } catch (err) {
-          console.error(`error: --context is not valid JSON — ${(err as Error).message}`)
-          process.exit(1)
-          return
-        }
-        if (extra && typeof extra === 'object' && !Array.isArray(extra)) {
-          // deep-merge so a partial {phase:{x:true}} doesn't wipe the other phase.* defaults.
-          ctx = mergeGateContext(ctx, extra as Record<string, unknown>)
-        }
-      }
-      const skipSubs = new Set(
-        (Array.isArray(raw.skipSub) ? raw.skipSub : [])
-          .flatMap((v) => v.split(','))
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0),
-      )
-      ctx.skip_subs = [...skipSubs]
-
-      const fire: FireEntry[] = []
-      const skip: SkipEntry[] = []
-
-      // Gate eval loop — mirror masterOrchestrator.ts gate eval loop (no spawn).
-      const matchedSkips = new Set<string>()
-      for (const clause of clauses) {
-        // 4.23.2 (issue #5 defect 2) — accept the flattened `<master>-<sub>`
-        // alias users see in fire[] / slash commands (verify-paranoid → paranoid).
-        const skipHit = matchSkipSub(skipSubs, clause.sub, master)
-        if (skipHit !== null) {
-          matchedSkips.add(skipHit)
-          skip.push({
-            sub: clause.sub,
-            reason: 'skipped via skip_subs (done interactively in main session)',
-          })
-          continue
-        }
-        if (!clause.gate) {
-          fire.push(fireEntry(clause, master))
-          continue
-        }
-        try {
-          const passes = await resolveJudgmentGate(clause.gate, ctx, packageRoot)
-          if (passes) {
-            fire.push(fireEntry(clause, master))
-          } else {
-            skip.push({ sub: clause.sub, reason: `gate ${clause.gate} = false` })
-          }
-        } catch (e) {
-          if (isUndefinedVariableError(e)) {
-            // 4.23.2 (issue #5 defect 1) — undefined variable is a STATIC config
-            // bug (expression ↔ gateContext drift), not an operational fault:
-            // fail-open here made the most expensive sub the default path.
-            // Fail-CLOSED + loud warn; ADR 0029 Amendment (4.23.2).
-            console.warn(
-              `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} references a variable ` +
-                `missing from the gate context (${(e as Error).message}). Treating as NOT fired ` +
-                `(fail-closed for config errors) — fix the judgments yaml expression or supply ` +
-                `the variable via --context / gateContext defaults.`,
-            )
-            skip.push({
-              sub: clause.sub,
-              reason: `gate ${clause.gate} misconfigured (undefined variable) — fail-closed, not fired`,
-            })
-          } else {
-            // ADR 0029 fail-soft — eval error is operational fault, not a judgment
-            // to skip. Fire the sub as if the gate returned true; emit warn.
-            console.warn(
-              `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} eval failed ` +
-                `(${(e as Error).message}); firing sub as if gate=true (ADR 0029 fail-soft).`,
-            )
-            fire.push(fireEntry(clause, master))
-          }
-        }
-      }
-      // Surface requested skip names that matched no clause (was a silent no-op).
-      warnUnmatchedSkips(
-        skipSubs,
-        matchedSkips,
-        master,
-        clauses.map((c) => c.sub),
-        (m) => console.warn(m),
-      )
-
-      // Parallelism — agent-teams-upgrade routing gate (try/catch → conservative false).
-      let parallelism: GatesPlan['parallelism'] = { escalate_to_teams: false, reason: null }
-      try {
-        const escalate = await resolveJudgmentGate(PARALLELISM_GATE, ctx, packageRoot)
-        parallelism = escalate
-          ? { escalate_to_teams: true, reason: 'agent-teams-upgrade gate fired' }
-          : { escalate_to_teams: false, reason: null }
-      } catch {
-        parallelism = { escalate_to_teams: false, reason: null }
-      }
-
-      const result: GatesPlan = { master, fire, skip, parallelism }
-      console.log(JSON.stringify(result, null, 2))
-      process.exit(0)
+      await runGatesPlan(master, raw)
     })
 }
 
