@@ -16,8 +16,8 @@ apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: stop-hook-recover
-  display_name: Mode-B Tool-Call Auto-Recovery (Stop hook)
-  description: Opt-in Stop hook that auto-retries silent mode-B tool-call corruption (issue #6) so the user stops typing "retry".
+  display_name: Tool-Call Auto-Recovery (Stop hook)
+  description: Opt-in Stop hook that auto-retries silently corrupted tool calls (emitted as plain text; issue #6) so the user stops typing "retry".
   upstream:
     source: stop-hook-recover
     homepage: https://github.com/easyinplay/harnessed
