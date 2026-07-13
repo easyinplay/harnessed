@@ -11,4 +11,6 @@
 - [x] T-final 复验:vitest 串行权威 2171/0;tsc 0;lint 0(golden biome preempt);
       gates 7/7;dist eval 10/10
 - [x] CHANGELOG 4.31.0 + bump + TODOS 回填(B4 → SHIPPED;SOP 文本改名 P3)
-- [ ] commit + push;tag v4.31.0(等确认);发版后 intel 回填 + mock report assignment 待用户
+- [x] commit + push + tag v4.31.0(publish 绿;CI 红 → 4.31.1 hermeticity hotfix 复绿)
+- [x] 4.31.1:GIT_CEILING_DIRECTORIES 密封 + 5 golden 重录 + hermeticity 测试(mutation EFFECTIVE)
+- [x] intel 回填(B4 → IMPL Slice A);mock report assignment 待用户(P3 验证)

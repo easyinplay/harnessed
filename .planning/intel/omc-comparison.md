@@ -410,3 +410,9 @@ execute-task 各 phase model 建议：
 | B2 hash 命中免重读(消费面) | DEFERRED (YAGNI) | B1 已覆盖注入大头;status/prompt 低频收益边际 |
 | B5 自更新 | NEXT(/plan-ceo-review 立项门) | bun track Phase 3:channel + --dry-run + homedir 阀 + curl 安装器 |
 | B4 eval harness | DEFERRED (v5+ 立项) | |
+
+### 增补 3 实施回填(续 2,2026-07-13,v4.31.0/4.31.1)
+
+| 候选 | Status | Notes |
+|---|---|---|
+| B4 eval harness | IMPL: v4.31.0 Slice A(+4.31.1 hermeticity hotfix) | 治理门双道后按 EUREKA 转向:非 comet 式真 agent 跑分,而是确定性编排行为回归 trap suite(`harnessed eval`,10 scenario,mutation 验收 3/3;首日逮住 --skip-sub clarify 存量缺陷与自身 hermeticity 缺陷);B 路线(真 agent benchmark)冻结至 P3 获客假设验证(mock report assignment 待用户) |
