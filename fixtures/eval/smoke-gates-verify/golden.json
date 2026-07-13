@@ -1,0 +1,13 @@
+{
+  "steps": [
+    {
+      "kind": "gates",
+      "exitCode": 0,
+      "stdout": [
+        "{\n  \"master\": \"verify\",\n  \"fire\": [\n    {\n      \"sub\": \"verify-progress\",\n      \"order\": 1,\n      \"mode\": \"serial\"\n    },\n    {\n      \"sub\": \"verify-code-review\",\n      \"mode\": \"parallel\"\n    },\n    {\n      \"sub\": \"verify-paranoid\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.stage-routing.verify-paranoid-critical.fires\"\n    },\n    {\n      \"sub\": \"verify-simplify\",\n      \"order\": 99,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"qa\",\n      \"reason\": \"gate judgments.stage-routing.verify-qa-ui.fires = false\"\n    },\n    {\n      \"sub\": \"security\",\n      \"reason\": \"gate judgments.stage-routing.verify-security-secrets.fires = false\"\n    },\n    {\n      \"sub\": \"design\",\n      \"reason\": \"gate judgments.stage-routing.verify-design-changes.fires = false\"\n    },\n    {\n      \"sub\": \"eval-review\",\n      \"reason\": \"gate judgments.stage-routing.verify-eval-review-aiphase.fires = false\"\n    },\n    {\n      \"sub\": \"validate-phase\",\n      \"reason\": \"gate judgments.stage-routing.verify-validate-phase-coverage.fires = false\"\n    },\n    {\n      \"sub\": \"multispec\",\n      \"reason\": \"gate judgments.stage-routing.verify-multispec-critical-release.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+      ],
+      "stderr": []
+    }
+  ],
+  "workflow": null
+}

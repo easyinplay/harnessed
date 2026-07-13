@@ -1,0 +1,12 @@
+# TRAP — issue #5 缺陷 1(2026-07-10):gate 表达式引用上下文不存在的裸变量,
+# 4.23.2 之前 ADR 0029 fail-soft 把该配置错误 fail-open 成 fire,非关键发布
+# 也误触 verify-multispec(4-specialist Agent Team 最贵路径)。本 trap 用
+# doctored judgments(assets/ 下 stage-routing 的 multispec 表达式引用
+# is_critical_release_undefined_xyz)断言 fail-closed skip。
+name: issue5-undefined-variable
+description: "traps issue #5 defect 1 — undefined bare variable must fail-closed skip, not fail-open fire (pre-4.23.2 regression)"
+assets_dir: assets
+steps:
+  - gates:
+      master: verify
+      task: undefined-variable trap

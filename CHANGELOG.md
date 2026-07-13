@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.31.0] - 2026-07-13
+
+**eval Slice A:编排器行为回归 trap suite**。治理门全链(office-hours 设计文档 APPROVED → plan-ceo-review CLEARED:spec loop 2 轮 + 深审 + outside voice 共 15 项发现消化,9 项用户裁决)。设计核心 = eureka:评编排器时其行为(gate/ledger/guard)是确定性的 — 回放断言零随机零跑分成本,事故即种子;真 agent benchmark(B 路线)冻结至获客假设验证。
+
+### Added
+
+- **`harnessed eval`(第 30 子命令)**:YAML scenario 驱动 wave0 提取的**真编排函数**(非 primitives 副本),golden 结构级比对(归一化:realpath+`<TMP>` 占位+分隔符+时间戳剥离);`--json` / `--coverage`(judgments triggers × scenario 命中矩阵,裸奔高亮 — 种子增长导航图)/ `--update-golden`(diff 人工过目)/ `--filter`;GITHUB_ACTIONS 下 `::error` 注释;错误三型(CONFIG-ERROR / MISSING-GOLDEN / ERROR vs FAIL)。
+- **wave0 守卫编排提取**(独立 commit `393f348`):runCheckpointStart/Complete/Fail + runGatesPlan(RunDeps 注入,ExitError sentinel);16 处 exit 调用点核验零副作用分叉;零测试文件修改硬验收。
+- **种子 scenario ×10**(每个头注逮的事故):issue #5 双缺陷 / 4.26.0 串行守卫 / 4.22.1 evidence 多基 / evidence 三态 / auto-lite 回归 / 台账 envelope / 四 master 广度基线 + 2 冒烟。coverage 14/41。
+- **mutation 验收 3/3 EFFECTIVE**(scripts/verify-eval-traps.mjs,local-only):反转 4.23.2/4.26.0 修复 → 对应 trap 必红(重引入 patch 留证 findings)— 探测器活性的行为级证明。
+- ci.yml eval 步(单 ubuntu,build→eval)。
+
+### Fixed
+
+- **eval 首日战果:`--skip-sub clarify` 从未生效**(存量缺陷,eval 录制时逮到):SOP 教科书命令的 `clarify` 不是 auto 的子项名(应为 `discuss`)— 合规 /auto 的 discuss master 一直在澄清已交互完成后**仍 fire 并递归重跑**;4.23.2 加警告后还每次打杂散 ignored。修复:skipSubs 加 `clarify→discuss` 同义词(兼容全部已装旧 SKILL 文本);SOP 文本改名记 TODOS 下次渲染 pass。**行为变化:合规 /auto 的 discuss 现在正确进 skip。**
+
 ## [4.30.0] - 2026-07-13
 
 修复 GitHub issue #6(多用户反馈):静默 "mode-B" 工具调用损坏自动恢复。Claude Code 偶发把 tool-call 开启定界符误采样成随机垃圾词(count/court/…),整个 `<invoke>…</invoke>` 块降级为纯文本 — 无 tool 执行、无错误、turn 正常结束,模型收不到失败信号,只能靠用户手动"重试"。

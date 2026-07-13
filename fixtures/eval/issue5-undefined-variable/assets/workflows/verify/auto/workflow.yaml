@@ -1,0 +1,81 @@
+# workflows/verify/auto/workflow.yaml — Phase v3.0-3.5 W1 T3.5.W1.4
+#
+# Stage ④ Verify master orchestrator — 7 sub conditional per bundled Verify-stage cadence
+# + RESEARCH-workflows § Area 2 verify master:
+#   progress 必跑 (serial order 1) →
+#   code-review 并行 (parallel) +
+#   paranoid 关键模块 (parallel + gate is-critical-module) +
+#   qa+security+design 可选 conditional (parallel) +
+#   simplify 末尾 (serial order 99) +
+#   multispec 关键发布 Pattern C (parallel + gate critical-release-upgrade)
+#
+# Sister refs:
+#   - workflows/judgments/stage-routing.yaml — verify-* triggers (7 sub delegation)
+#   - workflows/judgments/parallelism-gate.yaml — agent-teams-upgrade trigger (multispec gate)
+#   - workflows/verify/{progress,code-review,paranoid,qa,security,design,simplify,multispec}/workflow.yaml
+#     — 8 sub-workflow Phase 3.4 SHIPPED
+#   - workflows/capabilities.yaml — gsd-verify-work + gsd-progress + code-review + gstack-review +
+#     gstack-qa + gstack-cso + gstack-design-review + code-simplifier + agent-teams-create +
+#     planning-with-files
+#   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 Master Orchestrator yaml Examples
+#   - src/workflow/schema/workflow.ts WorkflowSchemaV3 + DelegationClause (Phase 3.3 W0.5 SHIPPED)
+#
+# Master invariant (per WorkflowSchemaV3 runtime + check-workflow-schema.mjs K9):
+#   - phases 缺省 (master only has delegates_to[])
+#   - 7 delegates_to: serial 2 (progress order 1 + simplify order 99) + parallel 5
+#   - serial mode 必带 explicit order (K9 invariant T3.3.W0.10)
+#   - parallel mode 无 order field 需求
+
+schema_version: harnessed.workflow.v3
+workflow: verify
+description: |
+  Stage ④ Verify master orchestrator — 7 sub conditional per bundled Verify-stage cadence:
+  progress 必跑串行 → code-review 并行 → paranoid 关键模块强制 → qa/security/design
+  可选 conditional 并行 → simplify 末尾串行 → multispec 关键发布 Pattern C 4-specialist Agent Team。
+  serial mode 必带 explicit order (K9 invariant); progress order 1 起点, simplify order 99 末尾。
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available:
+  - gsd-verify-work
+  - gsd-progress
+  - code-review
+  - gstack-review
+  - gstack-qa
+  - gstack-cso
+  - gstack-design-review
+  - gsd-eval-review
+  - gsd-validate-phase
+  - code-simplifier
+  - agent-teams-create
+  - planning-with-files
+
+delegates_to:
+  - sub: progress
+    mode: serial
+    order: 1
+  - sub: code-review
+    mode: parallel
+  - sub: paranoid
+    gate: judgments.stage-routing.verify-paranoid-critical.fires
+    mode: parallel
+  - sub: qa
+    gate: judgments.stage-routing.verify-qa-ui.fires
+    mode: parallel
+  - sub: security
+    gate: judgments.stage-routing.verify-security-secrets.fires
+    mode: parallel
+  - sub: design
+    gate: judgments.stage-routing.verify-design-changes.fires
+    mode: parallel
+  - sub: eval-review
+    gate: judgments.stage-routing.verify-eval-review-aiphase.fires
+    mode: parallel
+  - sub: validate-phase
+    gate: judgments.stage-routing.verify-validate-phase-coverage.fires
+    mode: parallel
+  - sub: multispec
+    gate: judgments.stage-routing.verify-multispec-critical-release.fires
+    mode: parallel
+  - sub: simplify
+    mode: serial
+    order: 99

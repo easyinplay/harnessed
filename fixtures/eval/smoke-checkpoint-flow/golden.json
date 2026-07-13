@@ -1,0 +1,52 @@
+{
+  "steps": [
+    {
+      "kind": "file",
+      "exitCode": null,
+      "stdout": [],
+      "stderr": []
+    },
+    {
+      "kind": "file",
+      "exitCode": null,
+      "stdout": [],
+      "stderr": []
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"],
+      "stderr": []
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint complete: progress (evidence: none_declared)"],
+      "stderr": []
+    }
+  ],
+  "workflow": {
+    "schemaVersion": "harnessed.current-workflow.v1",
+    "phase": "verify",
+    "status": "active",
+    "last_checkpoint_path": "<TMP>/checkpoints/verify.json",
+    "sub_progress": [
+      {
+        "sub": "progress",
+        "status": "done",
+        "gate_fired": true,
+        "mode": "serial",
+        "order": 1,
+        "evidence_status": "none_declared"
+      },
+      {
+        "sub": "simplify",
+        "status": "pending",
+        "gate_fired": true,
+        "mode": "serial",
+        "order": 99
+      }
+    ],
+    "verify_mode": "light"
+  }
+}

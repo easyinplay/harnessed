@@ -1,0 +1,8 @@
+# Smoke: default-context verify plan — pipeline wiring proof (real seeds land
+# in Wave 2). Locks the fire/skip assembly + parallelism gate baseline.
+name: smoke-gates-verify
+description: pipeline smoke — verify master fire/skip baseline under default context
+steps:
+  - gates:
+      master: verify
+      task: eval pipeline smoke

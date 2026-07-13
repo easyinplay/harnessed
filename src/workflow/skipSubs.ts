@@ -12,10 +12,20 @@
 
 /** Return the requested name that skips `sub` (exact bare name, or the
  *  flattened `<master>-<sub>` alias), or null when nothing matches. */
+// 4.31.0 (eval 首日战果) — `clarify` is the /auto SOP's historical name for the
+// interactively-completed discuss work (`--skip-sub clarify` appears verbatim in
+// every installed SKILL text), but auto's delegates clause is named `discuss`.
+// Without this synonym every compliant /auto run prints a stray "ignored" warning
+// (silently swallowed pre-4.23.2, exposed by the unmatched-skip warning).
+const SKIP_SYNONYMS: Record<string, string> = { clarify: 'discuss' }
+
 export function matchSkipSub(requested: Set<string>, sub: string, master: string): string | null {
   if (requested.has(sub)) return sub
   const alias = `${master}-${sub}`
   if (requested.has(alias)) return alias
+  for (const [syn, canonical] of Object.entries(SKIP_SYNONYMS)) {
+    if (canonical === sub && requested.has(syn)) return syn
+  }
   return null
 }
 

@@ -1,0 +1,16 @@
+# TRAP — ledger 台账 schema 面:checkpoint fail 后 envelope 的
+# status/fail_count/mode/order 字段形状(G6 fail_count 仅 ->failed 转换自增;
+# 4.26.0 起 mode/order 透传)。envelope 结构漂移会破坏 status --recover 与
+# perturn 注入的消费面。
+name: checkpoint-fail-envelope
+description: "traps the ledger envelope shape after a fail — status/fail_count/mode/order fields (consumed by recover + perturn inject)"
+steps:
+  - file: { path: .planning/STATE.md, content: "# STATE" }
+  - checkpoint:
+      action: start
+      sub: task
+      plan:
+        fire:
+          - { sub: task-code, mode: serial, order: 1 }
+        skip: []
+  - checkpoint: { action: fail, sub: task-code, summary: simulated unrecoverable }

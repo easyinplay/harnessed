@@ -75,3 +75,23 @@ describe('warnUnmatchedSkips', () => {
     expect(msgs).toEqual([])
   })
 })
+
+describe('SKIP_SYNONYMS — clarify→discuss (4.31.0 eval 首日战果)', () => {
+  it('clarify matches the discuss clause (auto SOP compat)', () => {
+    expect(matchSkipSub(new Set(['clarify']), 'discuss', 'auto')).toBe('clarify')
+  })
+  it('clarify does NOT match unrelated subs', () => {
+    expect(matchSkipSub(new Set(['clarify']), 'verify', 'auto')).toBeNull()
+  })
+  it('warnUnmatchedSkips stays silent when clarify matched via synonym', () => {
+    const warnings: string[] = []
+    warnUnmatchedSkips(
+      new Set(['clarify']),
+      new Set(['clarify']),
+      'auto',
+      ['research', 'discuss', 'plan', 'task', 'verify', 'retro'],
+      (m) => warnings.push(m),
+    )
+    expect(warnings).toEqual([])
+  })
+})

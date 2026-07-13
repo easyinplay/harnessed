@@ -1,0 +1,17 @@
+# TRAP — 4.22.1 evidence 裸名多基解析:artifacts_expected 裸名(progress.md)
+# 不在 cwd 根而在 .planning/phases/<动态目录>/ 时,守卫必须按多基解析找到它
+# (4.22.1 之前只查 cwd 根 → 误 BLOCK)。golden 的 found[].path 证明基地。
+name: evidence-multibase
+description: "traps 4.22.1 evidence bare-name multi-base resolution — artifact in dynamic phase dir must verify (pre-4.22.1 false BLOCK)"
+steps:
+  - file: { path: .planning/STATE.md, content: "# STATE" }
+  - file: { path: .planning/phases/01-old/notes.md, content: other }
+  - file: { path: .planning/phases/02-new/progress.md, content: "# progress evidence", mtime: "2026-06-01T00:00:00Z" }
+  - checkpoint:
+      action: start
+      sub: verify
+      plan:
+        fire:
+          - { sub: verify-progress, mode: serial, order: 1 }
+        skip: []
+  - checkpoint: { action: complete, sub: verify-progress, summary: evidence in phase dir }

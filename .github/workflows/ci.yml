@@ -231,6 +231,14 @@ jobs:
             echo "::error::schemas/ drift detected — run 'corepack pnpm build:schema' locally and commit"
             exit 1
           }
+      # 4.31.0 eval Slice A (T6) — orchestrator-behavior regression trap suite.
+      # Single-ubuntu by CEO-plan ruling: the runner is pure in-process (golden
+      # paths normalized cross-platform); Windows/macOS engine surface is already
+      # covered by the unit matrix above. Sequencing: `pnpm build` ran at the top
+      # of this job — eval executes the dist artifact (production truth, OV4).
+      - name: eval trap suite (4.31.0 Slice A)
+        if: matrix.os == 'ubuntu-latest'
+        run: node dist/cli.mjs eval --dir fixtures/eval
       # Phase 2.3 Wave 0 T0.5 — schemaVersion consumer call site gate (T1.2).
       # B1 plan-check fix (≥7 → ≥2 honest baseline) — Phase 2.2 W2 schemaVersion
       # 实际 helper-only adoption; ≥2 反映当前 grep -r "branchOnSchemaVersion" src/

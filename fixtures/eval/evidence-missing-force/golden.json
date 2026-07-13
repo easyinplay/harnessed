@@ -1,0 +1,55 @@
+{
+  "steps": [
+    {
+      "kind": "file",
+      "exitCode": null,
+      "stdout": [],
+      "stderr": []
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"],
+      "stderr": [
+        "⚠️ [harnessed] step 0 skeleton missing (.planning/ROADMAP.md) — the evidence guard's planning-sync gate will block `checkpoint complete`. Create the skeleton first (see the /auto SKILL step 0)."
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 1,
+      "stdout": [],
+      "stderr": [
+        "[harnessed] checkpoint complete BLOCKED: verify-progress — 1 item(s) missing (evidence guard + .planning/ sync, fail-closed):",
+        "  - progress.md",
+        "  (re-run with --force to override and record evidence_status=overridden)"
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint complete: verify-progress (evidence: overridden)"],
+      "stderr": []
+    }
+  ],
+  "workflow": {
+    "schemaVersion": "harnessed.current-workflow.v1",
+    "phase": "verify",
+    "status": "complete",
+    "last_checkpoint_path": "<TMP>/checkpoints/verify.json",
+    "sub_progress": [
+      {
+        "sub": "verify-progress",
+        "status": "done",
+        "gate_fired": true,
+        "mode": "serial",
+        "order": 1,
+        "evidence": [],
+        "evidence_status": "overridden"
+      }
+    ],
+    "verify_mode": "light",
+    "ship_ready": true,
+    "ship_commits": 1,
+    "retro_due": false
+  }
+}

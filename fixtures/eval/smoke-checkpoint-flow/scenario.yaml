@@ -1,0 +1,30 @@
+# Smoke: start → complete flow with a seeded 2-sub serial ledger + .planning
+# skeleton (exercises the file-step vocabulary and the planning-sync verified
+# path). Real incident seeds land in Wave 2.
+name: smoke-checkpoint-flow
+description: pipeline smoke — checkpoint start/complete with planning skeleton
+steps:
+  - file:
+      path: .planning/STATE.md
+      content: "# STATE"
+      mtime: "2026-01-01T00:00:00Z"
+  - file:
+      path: .planning/ROADMAP.md
+      content: "# Roadmap"
+      mtime: "2026-01-01T00:00:00Z"
+  - checkpoint:
+      action: start
+      sub: verify
+      plan:
+        fire:
+          - sub: progress
+            mode: serial
+            order: 1
+          - sub: simplify
+            mode: serial
+            order: 99
+        skip: []
+  - checkpoint:
+      action: complete
+      sub: progress
+      summary: smoke progress done

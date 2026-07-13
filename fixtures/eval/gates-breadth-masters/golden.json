@@ -1,0 +1,37 @@
+{
+  "steps": [
+    {
+      "kind": "gates",
+      "exitCode": 0,
+      "stdout": [
+        "{\n  \"master\": \"discuss\",\n  \"fire\": [\n    {\n      \"sub\": \"discuss-phase\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.stage-routing.discuss-phase-delegate.fires\"\n    },\n    {\n      \"sub\": \"discuss-subtask\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.stage-routing.discuss-subtask-delegate.fires\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"strategic\",\n      \"reason\": \"gate judgments.stage-routing.discuss-strategic-delegate.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+      ],
+      "stderr": []
+    },
+    {
+      "kind": "gates",
+      "exitCode": 0,
+      "stdout": [
+        "{\n  \"master\": \"plan\",\n  \"fire\": [\n    {\n      \"sub\": \"plan-architecture\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.stage-routing.plan-architecture-delegate.fires\"\n    },\n    {\n      \"sub\": \"plan-phase\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+      ],
+      "stderr": []
+    },
+    {
+      "kind": "gates",
+      "exitCode": 0,
+      "stdout": [
+        "{\n  \"master\": \"task\",\n  \"fire\": [\n    {\n      \"sub\": \"task-clarify\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    },\n    {\n      \"sub\": \"task-code\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    },\n    {\n      \"sub\": \"task-test\",\n      \"order\": 3,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.tdd-gate.tdd-strongly-suggested.fires\"\n    },\n    {\n      \"sub\": \"task-deliver\",\n      \"order\": 4,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+      ],
+      "stderr": []
+    },
+    {
+      "kind": "gates",
+      "exitCode": 0,
+      "stdout": [
+        "{\n  \"master\": \"ship\",\n  \"fire\": [\n    {\n      \"sub\": \"ship-preflight\",\n      \"order\": 1,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+      ],
+      "stderr": []
+    }
+  ],
+  "workflow": null
+}

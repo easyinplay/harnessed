@@ -9,6 +9,7 @@ import { registerBackupList } from './cli/backup-list.js'
 import { registerCheckpoint } from './cli/checkpoint.js'
 import { registerCompact } from './cli/compact-cmd.js'
 import { registerDoctor } from './cli/doctor.js'
+import { registerEval } from './cli/evalCmd.js'
 import { registerExemptGateguard } from './cli/exempt-gateguard.js'
 import { registerGates } from './cli/gates.js'
 import { registerGc } from './cli/gc.js'
@@ -126,6 +127,7 @@ registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-r
 registerRetro(program) // 27th — Phase 22 retro-reminder reset (--done zeroes the phase counter)
 registerInjectState(program) // 28th — 4.27.0 B3 D6: perturn hook via the binary itself (no host node)
 registerStopHook(program) // 29th — 4.30.0 issue #6: mode-B tool-call corruption auto-recovery Stop hook
+registerEval(program) // 30th — 4.31.0 eval Slice A: orchestrator-behavior regression trap suite
 
 // v8.0 Phase 24 — zero-arg `harnessed` you-are-here entry (comet `/comet` analog).
 // D3 explicit bare-invocation detection BEFORE program.parse: ONLY `[]` / `['--json']`

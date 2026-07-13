@@ -1,0 +1,9 @@
+# TRAP — /auto lite 路径回归锁(4.23.2 起契约):--skip-sub clarify/verify/retro
+# 为 master 级直接命中,必须原样进 skip 且零 ignored 警告(别名机制不得误伤直命中)。
+name: auto-lite-skip
+description: "traps the sanctioned /auto lite path — direct-name master-level skips must land in skip with zero ignored warnings"
+steps:
+  - gates:
+      master: auto
+      task: lite path trap
+      skip_sub: [clarify, verify, retro]

@@ -1,0 +1,10 @@
+# TRAP — issue #5 缺陷 2(2026-07-10):--skip-sub 传斜杠命令名(verify-paranoid)
+# 因 clause 内名是 paranoid 而静默不命中,且拼错名(verify-bogus)无任何警告。
+# 4.23.2 修复 = <master>-<sub> 别名命中 + 未命中 stderr 警告。
+name: issue5-skip-sub-alias
+description: "traps issue #5 defect 2 — slash-name skip alias must hit, bogus name must warn (pre-4.23.2 both silent)"
+steps:
+  - gates:
+      master: verify
+      task: skip alias trap
+      skip_sub: [verify-paranoid, verify-bogus]

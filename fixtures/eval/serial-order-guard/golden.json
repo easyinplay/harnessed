@@ -1,0 +1,70 @@
+{
+  "steps": [
+    {
+      "kind": "file",
+      "exitCode": null,
+      "stdout": [],
+      "stderr": []
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"],
+      "stderr": [
+        "⚠️ [harnessed] step 0 skeleton missing (.planning/ROADMAP.md) — the evidence guard's planning-sync gate will block `checkpoint complete`. Create the skeleton first (see the /auto SKILL step 0)."
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 1,
+      "stdout": [],
+      "stderr": [
+        "[harnessed] checkpoint complete BLOCKED: simplify — 1 earlier serial-sequence sub(s) still pending (serial-order guard, fail-closed):",
+        "  - progress (complete or fail it first)",
+        "  (re-run with --force to jump the sequence deliberately)"
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint complete: simplify (evidence: none_declared)"],
+      "stderr": [
+        "[harnessed] serial-order guard overridden (--force): complete simplify ahead of pending sub(s) progress"
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint complete: progress (evidence: none_declared)"],
+      "stderr": []
+    }
+  ],
+  "workflow": {
+    "schemaVersion": "harnessed.current-workflow.v1",
+    "phase": "verify",
+    "status": "complete",
+    "last_checkpoint_path": "<TMP>/checkpoints/verify.json",
+    "sub_progress": [
+      {
+        "sub": "progress",
+        "status": "done",
+        "gate_fired": true,
+        "mode": "serial",
+        "order": 1,
+        "evidence_status": "none_declared"
+      },
+      {
+        "sub": "simplify",
+        "status": "done",
+        "gate_fired": true,
+        "mode": "serial",
+        "order": 99,
+        "evidence_status": "none_declared"
+      }
+    ],
+    "verify_mode": "light",
+    "ship_ready": true,
+    "ship_commits": 1,
+    "retro_due": false
+  }
+}

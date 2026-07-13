@@ -1,0 +1,10 @@
+# BREADTH — 非事故种子:四个 stage master 在默认上下文下的 fire/skip 基线快照。
+# 目的:(a) E2 覆盖度 — 一次性求值 discuss/plan/task/ship 系 triggers;
+# (b) 任何 role-prompts/judgments/defaults 改动引起的编排面漂移在此显形。
+name: gates-breadth-masters
+description: "breadth baseline — discuss/plan/task/ship master fire/skip snapshots under default context (trigger coverage + drift canary)"
+steps:
+  - gates: { master: discuss, task: breadth baseline }
+  - gates: { master: plan, task: breadth baseline }
+  - gates: { master: task, task: breadth baseline }
+  - gates: { master: ship, task: breadth baseline }

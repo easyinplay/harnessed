@@ -1,0 +1,40 @@
+{
+  "steps": [
+    {
+      "kind": "file",
+      "exitCode": null,
+      "stdout": [],
+      "stderr": []
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 0,
+      "stdout": ["[harnessed] checkpoint started: task → <TMP>/checkpoints/task.json"],
+      "stderr": [
+        "⚠️ [harnessed] step 0 skeleton missing (.planning/ROADMAP.md) — the evidence guard's planning-sync gate will block `checkpoint complete`. Create the skeleton first (see the /auto SKILL step 0)."
+      ]
+    },
+    {
+      "kind": "checkpoint",
+      "exitCode": 1,
+      "stdout": [],
+      "stderr": ["[harnessed] checkpoint FAILED recorded: task-code — simulated unrecoverable"]
+    }
+  ],
+  "workflow": {
+    "schemaVersion": "harnessed.current-workflow.v1",
+    "phase": "task",
+    "status": "active",
+    "last_checkpoint_path": "<TMP>/checkpoints/task.json",
+    "sub_progress": [
+      {
+        "sub": "task-code",
+        "status": "failed",
+        "gate_fired": true,
+        "mode": "serial",
+        "order": 1,
+        "fail_count": 1
+      }
+    ]
+  }
+}

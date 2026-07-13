@@ -1,0 +1,18 @@
+# TRAP — 4.26.0 串行次序守卫(intel A3 / comet 0.3.9 phase-skip 同类):
+# 串行前置(progress order 1)pending 时结算后位串行 sub(simplify order 99)
+# 必须 fail-closed BLOCK;--force 有意越序需打印声明行。4.26.0 之前不设防。
+name: serial-order-guard
+description: "traps 4.26.0 serial-order guard — completing a later serial sub while an earlier serial sub is pending must BLOCK; --force must declare"
+steps:
+  - file: { path: .planning/STATE.md, content: "# STATE" }
+  - checkpoint:
+      action: start
+      sub: verify
+      plan:
+        fire:
+          - { sub: progress, mode: serial, order: 1 }
+          - { sub: simplify, mode: serial, order: 99 }
+        skip: []
+  - checkpoint: { action: complete, sub: simplify, summary: out-of-order attempt }
+  - checkpoint: { action: complete, sub: simplify, summary: forced jump, force: true }
+  - checkpoint: { action: complete, sub: progress, summary: in-order fine }

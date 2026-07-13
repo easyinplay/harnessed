@@ -1,12 +1,14 @@
 # progress — 4.31.0 eval Slice A
 
-- [x] 治理门双道:office-hours(设计文档 APPROVED,eureka = 评编排器行为非跑分)+
-      plan-ceo-review(CLEARED:spec loop 2 轮 7 修 9/10 + 深审 F1/F2 + OV 6 点,
-      共 9 项用户裁决,零未决;8 任务成册)
-- [x] 用户裁决:直接实施(T1 wave0 先行独立 commit)
-- [ ] Wave 0(T1)fork 实施中:action body 提取(ExitError 注入;零测试修改硬验收;
-      20 处 exit 调用点逐点核验)
-- [ ] Wave 1(T2-T4+T8):schema+regen → runner/golden → CLI → vitest 薄壳
-- [ ] Wave 2(T5-T7):种子 5-8 → ci eval 步 → mutation 一次性验收留证
-- [ ] T-final:全量验证 + CHANGELOG 4.31.0 + bump + commit/push;tag 等确认;
-      TODOS/intel 回填(B4 → IMPL)
+- [x] 治理门双道(office-hours APPROVED + plan-ceo-review CLEARED,9 项用户裁决零未决)
+- [x] Wave 0(T1)提取重构:独立 commit `393f348`,零测试修改硬验收 + 16 exit 点核验
+- [x] Wave 1(T2-T4+T8):src/eval/ 引擎(schema/$unset/golden 归一化/错误三型)+
+      evalCmd 四旗标 + 26 新 cell;schemas/ 零 drift 实证(进程内 typebox)
+- [x] Wave 2(T5-T7):真种子 7+1 广度(coverage 14/41)+ ci eval 步 + mutation 验收
+      3/3 EFFECTIVE(留证 findings.md);runner envelope 时序修复
+- [x] eval 首日战果:`--skip-sub clarify` 从未生效(discuss 双跑存量缺陷)→
+      clarify→discuss synonym 修复 + 3 测试 + golden 重录人工过目
+- [x] T-final 复验:vitest 串行权威 2171/0;tsc 0;lint 0(golden biome preempt);
+      gates 7/7;dist eval 10/10
+- [x] CHANGELOG 4.31.0 + bump + TODOS 回填(B4 → SHIPPED;SOP 文本改名 P3)
+- [ ] commit + push;tag v4.31.0(等确认);发版后 intel 回填 + mock report assignment 待用户

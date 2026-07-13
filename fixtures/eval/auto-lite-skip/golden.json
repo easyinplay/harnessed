@@ -1,0 +1,13 @@
+{
+  "steps": [
+    {
+      "kind": "gates",
+      "exitCode": 0,
+      "stdout": [
+        "{\n  \"master\": \"auto\",\n  \"fire\": [\n    {\n      \"sub\": \"plan\",\n      \"order\": 2,\n      \"mode\": \"serial\",\n      \"is_master\": true\n    },\n    {\n      \"sub\": \"task\",\n      \"order\": 3,\n      \"mode\": \"serial\",\n      \"is_master\": true\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"research\",\n      \"reason\": \"gate judgments.stage-routing.auto-research-unclear.fires = false\"\n    },\n    {\n      \"sub\": \"discuss\",\n      \"reason\": \"skipped via skip_subs (done interactively in main session)\"\n    },\n    {\n      \"sub\": \"verify\",\n      \"reason\": \"skipped via skip_subs (done interactively in main session)\"\n    },\n    {\n      \"sub\": \"retro\",\n      \"reason\": \"skipped via skip_subs (done interactively in main session)\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+      ],
+      "stderr": []
+    }
+  ],
+  "workflow": null
+}

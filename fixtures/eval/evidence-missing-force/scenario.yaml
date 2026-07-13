@@ -1,0 +1,16 @@
+# TRAP — evidence guard fail-closed 三态(ADR-0033 D2 + P1-5):声明的
+# artifacts_expected 缺失 → complete 必须 BLOCK 非零;--force 越过 → 台账
+# 记 evidence_status=overridden(非 verified)。守 fail-closed 语义与三态完整性。
+name: evidence-missing-force
+description: "traps evidence guard fail-closed + overridden three-state — missing declared artifact must BLOCK; --force must record overridden"
+steps:
+  - file: { path: .planning/STATE.md, content: "# STATE" }
+  - checkpoint:
+      action: start
+      sub: verify
+      plan:
+        fire:
+          - { sub: verify-progress, mode: serial, order: 1 }
+        skip: []
+  - checkpoint: { action: complete, sub: verify-progress, summary: no artifact laid }
+  - checkpoint: { action: complete, sub: verify-progress, summary: forced past, force: true }
