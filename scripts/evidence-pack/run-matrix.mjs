@@ -41,7 +41,10 @@ for (const [task, arm, rep] of RUNS) {
   }
   try {
     const r = JSON.parse(
-      readFileSync(join('scripts/evidence-pack/runs', `${task}-${arm}-r${rep}.result.json`), 'utf8'),
+      readFileSync(
+        join('scripts/evidence-pack/runs', `${task}-${arm}-r${rep}.result.json`),
+        'utf8',
+      ),
     )
     spent += r.metrics?.costUsd ?? 0
     const pass = r.acceptance?.checklist?.passRate ?? r.acceptance?.passRate ?? '?'

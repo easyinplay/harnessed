@@ -1,0 +1,73 @@
+{
+  "task": "compound-recurring-todos",
+  "arm": "bare",
+  "rep": 2,
+  "dryRun": false,
+  "timestamp": "2026-07-14T01:18:51.436Z",
+  "command": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
+    "--max-turns",
+    "40",
+    "# Task: add recurring-todo support (compound feature)\n\nThis repo is a small in-memory TODO store (`src/store.mjs`) with a passing test\nsuite. Implement recurring-todo support end to end. There are SEVEN explicit\nacceptance requirements — all of them are checked mechanically, so treat each\none as a deliverable, not a suggestion:\n\n- **R1 — recurrence field.** `add()` accepts an optional `recurrence` field with\n  exactly two legal values: `'daily'` or `'weekly'`. Any other non-null value\n  must be rejected with a thrown `Error` (message must mention `recurrence`).\n  Todos without the field behave exactly as before.\n- **R2 — next instance on complete, exactly once.** When `complete(id)` is called\n  on a recurring todo, the store creates ONE new pending todo: same `title`,\n  same `recurrence`, and `due` rolled forward by the period (`daily` = +1 day,\n  `weekly` = +7 days, correct across month/year boundaries). Completing the SAME\n  id again must be idempotent — it must NOT create another instance.\n- **R3 — zero behavior change for plain todos.** All pre-existing tests keep\n  passing UNMODIFIED. Do not edit or delete the existing tests in\n  `test/store.test.mjs` (adding new tests is allowed and required — see R4).\n- **R4 — author tests for the new behavior.** Add at least FOUR new tests\n  covering recurrence, including at minimum: the invalid-value rejection, and\n  the complete-twice idempotency edge.\n- **R5 — document the API.** Add a `README.md` with an API documentation section\n  for the new behavior: the `recurrence` field, what `complete()` does for\n  recurring todos, and at least one fenced code-block example.\n- **R6 — dueBefore interaction.** New instances created by R2 participate in\n  `list({dueBefore})` filtering correctly (the documented on-or-before boundary\n  semantics apply to them like any other todo).\n- **R7 — green finish.** `npm test` must exit 0 when you are done.",
+    "--disallowedTools",
+    "Skill"
+  ],
+  "workspace": "C:\\Users\\easyi\\AppData\\Local\\Temp\\evidence-compound-recurring-todos-bare-DawAo6",
+  "transcript": "D:\\GitCode\\harnessed\\scripts\\evidence-pack\\runs\\compound-recurring-todos-bare-r2.jsonl",
+  "metrics": {
+    "turns": 14,
+    "inputTokens": 83,
+    "outputTokens": 8511,
+    "costUsd": 4.3570495000000005,
+    "resultSubtype": "success"
+  },
+  "acceptance": {
+    "exitCode": 0,
+    "checklist": {
+      "task": "compound-recurring-todos",
+      "checks": [
+        {
+          "id": "r1-recurrence-field",
+          "desc": "add() accepts 'daily'|'weekly', rejects others loudly",
+          "pass": true
+        },
+        {
+          "id": "r2-next-instance-once",
+          "desc": "complete() rolls due forward once; re-complete is idempotent",
+          "pass": true
+        },
+        {
+          "id": "r3-originals-green",
+          "desc": "embedded snapshot of the original 5 tests passes against src/",
+          "pass": true
+        },
+        {
+          "id": "r4-new-tests",
+          "desc": ">=4 new tests; recurrence + invalid-value + idempotency covered",
+          "pass": true
+        },
+        {
+          "id": "r5-readme-docs",
+          "desc": "README.md documents recurrence + complete(), with a fenced example",
+          "pass": true
+        },
+        {
+          "id": "r6-duebefore-interaction",
+          "desc": "next instance participates in list({dueBefore}) boundary semantics",
+          "pass": true
+        },
+        {
+          "id": "r7-tests-green",
+          "desc": "npm test exits 0",
+          "pass": true
+        }
+      ],
+      "passRate": 1
+    }
+  }
+}

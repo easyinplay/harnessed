@@ -1,0 +1,51 @@
+{
+  "task": "feature-cli-stats",
+  "arm": "harnessed",
+  "rep": 3,
+  "dryRun": false,
+  "timestamp": "2026-07-13T17:57:18.175Z",
+  "command": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
+    "--max-turns",
+    "40",
+    "/auto \"# Task: add a --median stat\n\nImplement a `median` statistic with this exact spec:\n\n1. `src/stats.mjs` exports `median(values)`. It validates input the same way the\n   existing functions do (non-empty array of finite numbers, otherwise throw),\n   sorts **numerically**, returns the middle value for an odd count and the\n   average of the two middle values for an even count. It must not mutate the\n   input array.\n2. `src/cli.mjs` accepts a `--median` flag that behaves exactly like the\n   existing `--mean`/`--min`/`--max` flags (composable with them, reported under\n   the `median` key). Unknown flags must still exit 2.\n\nThe acceptance tests already exist in `test/median.test.mjs` and are currently\nfailing. Do not modify any test file. `npm test` must exit 0 when you are done.\""
+  ],
+  "workspace": "C:\\Users\\easyi\\AppData\\Local\\Temp\\evidence-feature-cli-stats-harnessed-7e0678",
+  "transcript": "D:\\GitCode\\harnessed\\scripts\\evidence-pack\\runs\\feature-cli-stats-harnessed-r3.jsonl",
+  "metrics": {
+    "turns": 24,
+    "inputTokens": 296,
+    "outputTokens": 22575,
+    "costUsd": 9.535068250000004,
+    "resultSubtype": "success"
+  },
+  "acceptance": {
+    "exitCode": 0,
+    "checklist": {
+      "task": "feature-cli-stats",
+      "checks": [
+        {
+          "id": "tests-green",
+          "desc": "npm test exits 0 (incl. the 4 median acceptance tests)",
+          "pass": true
+        },
+        {
+          "id": "tests-untouched",
+          "desc": "median acceptance test file was not modified",
+          "pass": true
+        },
+        {
+          "id": "immutability",
+          "desc": "median() does not mutate its input",
+          "pass": true
+        }
+      ],
+      "passRate": 1
+    }
+  }
+}

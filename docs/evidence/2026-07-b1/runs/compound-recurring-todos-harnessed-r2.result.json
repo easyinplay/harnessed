@@ -1,0 +1,24 @@
+{
+  "task": "compound-recurring-todos",
+  "arm": "harnessed",
+  "rep": 2,
+  "dryRun": false,
+  "timestamp": "2026-07-14T13:40:00.000Z",
+  "status": "CAPPED_AT_30MIN",
+  "note": "claude -p 被外部 GNU timeout 于 30 分钟上限杀止(wrapper 日志 exit=124);验收为杀止后对残留 workspace 实测 — wrapper 即时 salvage 与静置复测均 7/7(中间一次满载机上的收尾器读数 6/7,系验收器 R7 npm test 在高负载下的 flake,已由两次独立 7/7 读数覆盖);metrics 不可得(stdout 缓冲随进程丢失)。与 r1 同型:工作完成、进程不终止。",
+  "acceptance": {
+    "exitCode": 0,
+    "checklist": {
+      "task": "compound-recurring-todos",
+      "passRate": 1,
+      "salvaged": true
+    }
+  },
+  "metrics": {
+    "turns": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "costUsd": null,
+    "resultSubtype": "timeout-capped"
+  }
+}

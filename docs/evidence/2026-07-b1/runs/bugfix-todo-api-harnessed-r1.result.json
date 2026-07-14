@@ -1,0 +1,51 @@
+{
+  "task": "bugfix-todo-api",
+  "arm": "harnessed",
+  "rep": 1,
+  "dryRun": false,
+  "timestamp": "2026-07-13T14:55:57.780Z",
+  "command": [
+    "claude",
+    "-p",
+    "--output-format",
+    "stream-json",
+    "--verbose",
+    "--dangerously-skip-permissions",
+    "--max-turns",
+    "40",
+    "/auto \"# Task: fix the dueBefore boundary bug\n\nOne test in this repo fails: `list({dueBefore}) includes a todo due exactly on the\nboundary date`. The documented contract (see the JSDoc on `list()` in\n`src/store.mjs`) says `dueBefore` keeps todos due **on or before** the given date,\nbut the current implementation excludes the boundary day.\n\nFix the implementation so the failing test passes. Do not modify any test file,\ndo not change the public API, and keep all other tests green. `npm test` must\nexit 0 when you are done.\""
+  ],
+  "workspace": "C:\\Users\\easyi\\AppData\\Local\\Temp\\evidence-bugfix-todo-api-harnessed-w8V0yp",
+  "transcript": "D:\\GitCode\\harnessed\\scripts\\evidence-pack\\runs\\bugfix-todo-api-harnessed-r1.jsonl",
+  "metrics": {
+    "turns": 26,
+    "inputTokens": 13734,
+    "outputTokens": 15588,
+    "costUsd": 7.7462545,
+    "resultSubtype": "success"
+  },
+  "acceptance": {
+    "exitCode": 0,
+    "checklist": {
+      "task": "bugfix-todo-api",
+      "checks": [
+        {
+          "id": "tests-green",
+          "desc": "npm test exits 0 (all 5 tests pass)",
+          "pass": true
+        },
+        {
+          "id": "tests-untouched",
+          "desc": "test file was not modified",
+          "pass": true
+        },
+        {
+          "id": "api-surface",
+          "desc": "store still exports createStore with add/complete/list",
+          "pass": true
+        }
+      ],
+      "passRate": 1
+    }
+  }
+}

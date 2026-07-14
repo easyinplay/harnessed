@@ -93,6 +93,8 @@ Native agents give you primitives; harnessed wires them into a methodology. Wher
 
 > Native agents win on zero-setup, zero-overhead for trivial one-off edits. harnessed earns its keep the moment work spans multiple steps, sessions, or subagents — where freestyle drift and lost-in-chat state start costing you.
 
+**Don't take our word for it — we ran the experiment.** A published A/B evidence pack ([docs/evidence/2026-07-b1/](./docs/evidence/2026-07-b1/)) compares `/auto` against bare Claude Code on 4 machine-graded tasks, full transcripts included. Honest headline: on small, fully-specified tasks both arms score 100% and bare is 4-5× cheaper — use bare (or auto-lite) there. The orchestration value claim lives in fuzzy-spec / multi-session territory, which that experiment deliberately does not cover; bring us a real task from that territory and we'll run the same protocol on it.
+
 ---
 
 ## 📦 Quick Install

@@ -53,6 +53,22 @@ function parseArgs(argv) {
   return opts
 }
 
+/** Redact credential shapes and secret-named env assignments from a transcript
+ *  before it is written to a committed file. Covers GitHub tokens, OpenAI/Slack
+ *  keys, AWS access keys, and any `*(TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL|AUTH)*=value`
+ *  env dump line. Idempotent (already-redacted markers are left alone). */
+function scrubSecrets(text) {
+  return text
+    .replace(
+      /\b(gh[opusr]_[A-Za-z0-9]{16,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9-]{20,}|xox[bap]-[A-Za-z0-9-]{10,}|AKIA[A-Z0-9]{16})\b/g,
+      (m) => `[REDACTED-${m.slice(0, 4)}]`,
+    )
+    .replace(
+      /([A-Z0-9_]*(?:TOKEN|SECRET|KEY|PASSWORD|CREDENTIAL|AUTH)[A-Z0-9_]*)=([^\s\\"']{8,})/g,
+      (m, k, v) => (/REDACTED/.test(v) ? m : `${k}=[REDACTED-ENV]`),
+    )
+}
+
 /** Build the exact dispatch command for an arm. Calibrated in W2 (pilot run
  *  2026-07-13), frozen after: headless needs permissions pre-granted (isolated
  *  temp workspace — the agent only ever sees the fixture copy) and a turn cap
@@ -155,7 +171,12 @@ if (opts.dryRun) {
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
   })
-  writeFileSync(transcriptPath, out)
+  // Secret hygiene: an agent that runs `env`/`printenv` dumps the full
+  // environment into the stream-json transcript — which we commit to the repo.
+  // Redact known credential shapes + secret-named env assignments BEFORE the
+  // transcript touches disk. (Discovered when GitHub push-protection blocked a
+  // real GITHUB_PERSONAL_ACCESS_TOKEN in a committed transcript, 2026-07-14.)
+  writeFileSync(transcriptPath, scrubSecrets(out))
   transcript = summarizeTranscript(transcriptPath)
 }
 

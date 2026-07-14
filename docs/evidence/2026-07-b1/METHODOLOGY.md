@@ -80,3 +80,32 @@ node scripts/evidence-pack/run.mjs --task bugfix-todo-api --arm bare --rep 1 --d
 Each run writes `scripts/evidence-pack/runs/<task>-<arm>-r<N>.jsonl` (transcript)
 and `...result.json` (metrics + acceptance checklist + exact command). RESULTS.md
 in this directory aggregates the grid after W3.
+
+## Calibration change history (full disclosure)
+
+- **W2 pilot**: headless dispatch required `--dangerously-skip-permissions` (isolated temp workspace only) + `--max-turns 40`. Frozen after pilot.
+- **Variadic flag incident**: the bare arm's `--disallowedTools Skill` was initially placed BEFORE the positional prompt; the variadic option swallowed the entire prompt and two bugfix bare runs died with "Input must be provided". Fixed by ordering the flag after the prompt; the two runs were re-recorded. No data from the broken invocations is included.
+- **Pre-setup pilot voided**: the very first bare run executed before `harnessed setup` existed on this machine; it was superseded by a post-setup re-run so both arms share identical machine state.
+
+## Environment disclosure
+
+- Both arms run on the SAME machine with the SAME global Claude Code configuration — including the user's ambient MCP servers and hooks. The only intended variable is the `/auto` entry.
+- The bare arm additionally passes `--disallowedTools Skill` so ambient installed skills cannot leak orchestration into it.
+- Consequence observed: every headless run inherits the full global config (≈11 hook child-process chains + all user-level MCP servers spawn per run). See Reliability in RESULTS.md — this shaped the non-termination findings.
+
+## Salvage protocol (when a run does not exit cleanly)
+
+A run that is killed (wedge or external cap) leaves no stream-json transcript (stdout is buffered by the dispatcher and lost with the process). In that case:
+1. The workspace is preserved (cleanup is skipped on abnormal exit).
+2. `acceptance.mjs` is executed against the residual workspace — this measures WORK COMPLETED at kill time, mechanically, same checker as clean runs.
+3. The result.json is hand-written with an explicit `status` (`WEDGED_WORK_COMPLETE` / `CAPPED_AT_30MIN`), `salvaged: true`, and `metrics: null` — salvaged rows never claim turns/cost.
+4. Every salvage read is disclosed, including flaky ones (compound r2: one 6/7 read under machine load, two independent 7/7 reads; recorded as 7/7 with the flake noted).
+
+## Cost accounting basis
+
+- The RESULTS total ($68.53, 16 runs) sums MEASURED `total_cost_usd` from clean-exit runs only.
+- Four harnessed runs (2 × 30-min DNF later re-run as r3, compound r1 11h wedge, compound r2 30-min cap) were billed but their cost is unknowable (transcript lost). Bounded estimate by analogy with completed harnessed runs (~$8-11 each): **+$35-45**, putting the true experiment total at roughly **$105-115** including the voided pilot ($2.18).
+
+## 附:secret 脱敏(2026-07-14 事故补记)
+
+harnessed arm 的一次 transcript 录进了 agent 执行 `env` 的完整环境,含真实 `GITHUB_PERSONAL_ACCESS_TOKEN`。GitHub push-protection 拦下,已脱敏入档,并在 `scripts/evidence-pack/run.mjs` 增 `scrubSecrets()` 写盘前过滤(token shape + secret-named env 赋值)。**该 token 已在别处轮换。** 教训:录制真实 agent 会话必须写盘前脱敏 env dump。

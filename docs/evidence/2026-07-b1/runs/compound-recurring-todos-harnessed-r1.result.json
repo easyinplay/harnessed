@@ -1,0 +1,24 @@
+{
+  "task": "compound-recurring-todos",
+  "arm": "harnessed",
+  "rep": 1,
+  "dryRun": false,
+  "timestamp": "2026-07-14T12:25:24.424Z",
+  "status": "WEDGED_WORK_COMPLETE",
+  "note": "claude -p 完成全部工作后未退出(挂 11h 后人工杀树);验收为杀树后对残留 workspace 实测;metrics 不可得(stdout 缓冲随进程丢失);楔死取证:11 条相同 hook 子进程链 + 全套用户级 MCP server 零进展",
+  "acceptance": {
+    "exitCode": 0,
+    "checklist": {
+      "task": "compound-recurring-todos",
+      "passRate": 1,
+      "salvaged": true
+    }
+  },
+  "metrics": {
+    "turns": null,
+    "inputTokens": null,
+    "outputTokens": null,
+    "costUsd": null,
+    "resultSubtype": "wedged-killed"
+  }
+}
