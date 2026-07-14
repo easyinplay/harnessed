@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.0] - 2026-07-15
+
+eval Slice C:显式录制导出 —— 把一次真实运行的 checkpoint 轨迹转成 Slice A 格式的可回放 trap scenario,trap 语料从 dogfood 自增长(不再全靠手写)。用户裁决:显式命令(非自动后台录制)+ 默认脱敏(刚发生 token 泄漏后隐私优先)。
+
+### Added
+
+- **`harnessed eval record --from <checkpoint-dir>`**:读一次真实运行的 checkpoint envelope/ledger → 生成 scenario.yaml + golden.json(`--out` 指定落点,`--name` 命名,`--include-text` opt-in 保留原文)。产出与现有 runner **逐字节兼容**,原样 replay —— round-trip by construction(record → replay → PASS 自身 golden,测试硬验收)。
+- **默认脱敏**(隐私优先,与 4.31.1 scrubSecrets 同哲学):task/summary free-text → 占位符;文件路径由 runner 归一(`<TMP>` 等,scenario 层不含真实路径);credential shape 复用 scrub;引擎元数据(skip reason / mode / order / evidence_status)保留以利 trap 可读性。真机 dogfood 验证:真实敏感路径未泄漏进 scenario。`--include-text` 才留原文(帮助明示风险)。
+- **已知边界**:record 还原引擎行为序列(gate/ledger/guard),不还原真实副作用(spawn/外部);`evidence_status: verified` 的 sub 标 KNOWN BOUNDARY 不重建 artifacts。
+
+新模块 `src/eval/record.ts`;11 新测试 cell(脱敏四类 + round-trip + --include-text + 缺参报错)。schemas/ 零变更(复用现有 EvalScenario schema)。
+
 ## [4.31.2] - 2026-07-14
 
 修复 issue #7:headless(`claude -p`)下 /auto 完工不退出(证据包实验 compound 任务两次挂起,r1 挂 11h — 工作全部完成、验收 7/7,但进程不退出)。根因 = /auto 的 spawn-based 编排(Agent Teams 背景 spawn / ralph-loop)遗留孤儿子进程,每个孤儿复制一套 MCP 子树,stdio 管道保持打开阻塞宿主退出。systematic-debugging 定位:H1(harnessed hook)代码级排除、H2(MCP 未关停)由 bare arm 同继承 MCP 却 0 挂起排除为根因、H3 有 SKILL.md 自述 "headless path hangs inside Claude Code" 内证。
