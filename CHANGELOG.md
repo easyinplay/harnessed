@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.31.2] - 2026-07-14
+
+修复 issue #7:headless(`claude -p`)下 /auto 完工不退出(证据包实验 compound 任务两次挂起,r1 挂 11h — 工作全部完成、验收 7/7,但进程不退出)。根因 = /auto 的 spawn-based 编排(Agent Teams 背景 spawn / ralph-loop)遗留孤儿子进程,每个孤儿复制一套 MCP 子树,stdio 管道保持打开阻塞宿主退出。systematic-debugging 定位:H1(harnessed hook)代码级排除、H2(MCP 未关停)由 bare arm 同继承 MCP 却 0 挂起排除为根因、H3 有 SKILL.md 自述 "headless path hangs inside Claude Code" 内证。
+
+### Fixed
+
+- **headless 检测 → 禁 Agent Teams 升级**:`harnessed gates` 检出 headless(显式 `HARNESSED_HEADLESS=1` env — CC 无原生 headless 信号可辨,`harnessed gates` 是被 spawn 的子进程其 stdout 在交互/headless 两种 session 下都是 pipe,isTTY 不可区分,故用 opt-in env,保守宁漏不误伤正常 TTY session)→ `escalate_to_teams` 强制 false + reason 注明 "Agent Teams are session-scoped, incompatible with -p"。新模块 `src/cli/lib/detectHeadless.ts`。
+- **teardown finally 契约强化**:auto SKILL(en/zh)step 4 — Agent Teams 清理从"尽力而为"升为 MUST-in-finally:无论 max_iterations 是否耗尽 / 是否 done,收尾前必须 `SendMessage shutdown_request` 全 teammate + `TeamDelete`;并明写 headless session 绝不 `TeamCreate` / 背景 Agent spawn,顺序驱动 subs。
+- **evidence-pack runner** 设 `HARNESSED_HEADLESS=1`(消除实验复发面)。
+
+### Notes
+
+- 诚实约束:Agent Teams 是 CC 原生、harnessed 引擎看不到 team 生命周期,故"引擎强制 teardown"不可能 — 修复 = headless 禁 spawn(釜底抽薪)+ SKILL 契约层强化。真机 headless 闭环 CI 无法覆盖(CI 不跑 headless /auto),留 dogfood 验证。
+
 ## [4.31.1] - 2026-07-13
 
 eval 首次 CI 运行(v4.31.0 tag)3-OS 红的 hotfix — 讽刺且合理:trap suite 第一个逮住的是自己 harness 的隔离缺陷。

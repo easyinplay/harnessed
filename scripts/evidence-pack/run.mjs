@@ -170,6 +170,11 @@ if (opts.dryRun) {
     cwd: workspace,
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
+    // issue #7: this IS a headless run — signal it so `harnessed gates`
+    // suppresses Agent Teams escalation (session-scoped teams orphan
+    // subprocesses that hang the headless host). CC propagates env to the
+    // Bash-tool subprocess that runs `harnessed gates`.
+    env: { ...process.env, HARNESSED_HEADLESS: '1' },
   })
   // Secret hygiene: an agent that runs `env`/`printenv` dumps the full
   // environment into the stream-json transcript — which we commit to the repo.

@@ -297,6 +297,38 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     expect(parsed.parallelism.reason).toBe(null)
   })
 
+  it('cell 7b — HARNESSED_HEADLESS=1 forces escalate_to_teams=false even when gate fires (issue #7)', async () => {
+    setMaster('task', [clauseLine('code')].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true) // parallelism gate WOULD fire
+    const prev = process.env.HARNESSED_HEADLESS
+    process.env.HARNESSED_HEADLESS = '1'
+    try {
+      const { code, stdout } = await runCli(['gates', 'task'])
+      expect(code).toBe(0)
+      const parsed = JSON.parse(stdout)
+      expect(parsed.parallelism.escalate_to_teams).toBe(false)
+      expect(parsed.parallelism.reason).toMatch(/headless/i)
+    } finally {
+      if (prev === undefined) delete process.env.HARNESSED_HEADLESS
+      else process.env.HARNESSED_HEADLESS = prev
+    }
+  })
+
+  it('cell 7c — no HARNESSED_HEADLESS → gate behavior unchanged (fires → true)', async () => {
+    setMaster('task', [clauseLine('code')].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    const prev = process.env.HARNESSED_HEADLESS
+    delete process.env.HARNESSED_HEADLESS
+    try {
+      const { stdout } = await runCli(['gates', 'task'])
+      const parsed = JSON.parse(stdout)
+      expect(parsed.parallelism.escalate_to_teams).toBe(true)
+      expect(parsed.parallelism.reason).toMatch(/agent-teams/)
+    } finally {
+      if (prev !== undefined) process.env.HARNESSED_HEADLESS = prev
+    }
+  })
+
   it('cell 8 — --context json merges over default context (passed to gate eval)', async () => {
     setMaster(
       'task',

@@ -18,6 +18,7 @@ import { isUndefinedVariableError } from '../workflow/exprBuilder.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
 import { matchSkipSub, warnUnmatchedSkips } from '../workflow/skipSubs.js'
 import { getAssetsRoot } from './lib/assetsRoot.js'
+import { detectHeadless } from './lib/detectHeadless.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
 import { defaultRunDeps, type RunDeps } from './lib/runDeps.js'
 
@@ -230,14 +231,26 @@ export async function runGatesPlan(
   )
 
   // Parallelism — agent-teams-upgrade routing gate (try/catch → conservative false).
+  // 4.31.2 (issue #7): under headless `claude -p`, Agent Teams are session-scoped
+  // (lost on /resume) and their background spawns leave orphan subprocesses whose
+  // piped stdio blocks the host from exiting (the 11h hang). Suppress the upgrade
+  // BEFORE evaluating the gate — never fire teams in headless.
   let parallelism: GatesPlan['parallelism'] = { escalate_to_teams: false, reason: null }
-  try {
-    const escalate = await resolveJudgmentGate(PARALLELISM_GATE, ctx, packageRoot)
-    parallelism = escalate
-      ? { escalate_to_teams: true, reason: 'agent-teams-upgrade gate fired' }
-      : { escalate_to_teams: false, reason: null }
-  } catch {
-    parallelism = { escalate_to_teams: false, reason: null }
+  const hl = detectHeadless(process.env, Boolean(process.stdout.isTTY))
+  if (hl.headless) {
+    parallelism = {
+      escalate_to_teams: false,
+      reason: 'headless mode — Agent Teams are session-scoped, incompatible with -p (issue #7)',
+    }
+  } else {
+    try {
+      const escalate = await resolveJudgmentGate(PARALLELISM_GATE, ctx, packageRoot)
+      parallelism = escalate
+        ? { escalate_to_teams: true, reason: 'agent-teams-upgrade gate fired' }
+        : { escalate_to_teams: false, reason: null }
+    } catch {
+      parallelism = { escalate_to_teams: false, reason: null }
+    }
   }
 
   const result: GatesPlan = { master, fire, skip, parallelism }
