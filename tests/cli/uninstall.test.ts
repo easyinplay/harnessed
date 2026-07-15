@@ -18,6 +18,14 @@ vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(),
   isCancel: vi.fn().mockReturnValue(false),
 }))
+// assetsRoot mocked so the CLI-removal hint's channel branch (isCompiledRuntime)
+// is controllable; getAssetsRoot returns a stub (readdir/readFile are mocked, so
+// the value is never dereferenced for real I/O).
+const assetsMock = vi.hoisted(() => ({ compiled: false }))
+vi.mock('../../src/cli/lib/assetsRoot.js', () => ({
+  getAssetsRoot: () => '/fake/pkg',
+  isCompiledRuntime: () => assetsMock.compiled,
+}))
 
 import { spawn } from 'node:child_process'
 import { readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
@@ -413,6 +421,7 @@ describe('cli/uninstall (no name) — unified', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     isCancelMock.mockReturnValue(false)
+    assetsMock.compiled = false
     // Default: nothing installed
     readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
@@ -511,5 +520,40 @@ describe('cli/uninstall (no name) — unified', () => {
     const rmCalls = rmMock.mock.calls.map((c) => String(c[0]))
     const stateDirIdx = rmCalls.findLastIndex((p) => p.includes('harnessed'))
     expect(stateDirIdx).toBe(rmCalls.length - 1)
+  })
+
+  // ── CLI-removal hint (channel-aware; closes "uninstall not unified" gap) ──
+
+  it('completion prints CLI-removal hint — npm channel by default', async () => {
+    mockArtifacts()
+    confirmMock.mockResolvedValue(true)
+    const { stdout } = await runCli(['uninstall'])
+    expect(stdout).toContain('to remove the harnessed CLI itself')
+    expect(stdout).toContain('npm uninstall -g harnessed')
+  })
+
+  it('dry-run also prints the CLI-removal hint', async () => {
+    mockArtifacts()
+    const { code, stdout } = await runCli(['uninstall', '--dry-run'])
+    expect(code).toBe(2)
+    expect(stdout).toContain('to remove the harnessed CLI itself')
+  })
+
+  it('compiled binary channel → binary removal hint names the exe path', async () => {
+    assetsMock.compiled = true
+    mockArtifacts()
+    confirmMock.mockResolvedValue(true)
+    const { stdout } = await runCli(['uninstall'])
+    expect(stdout).toContain(process.execPath)
+    expect(stdout).toContain('PATH')
+    // npm line must NOT be the primary channel line for a binary install
+    expect(stdout).not.toMatch(/npm: npm uninstall -g harnessed/)
+  })
+
+  it('nothing-to-do still tells the user how to remove the CLI', async () => {
+    const { code, stdout } = await runCli(['uninstall'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('nothing to do')
+    expect(stdout).toContain('to remove the harnessed CLI itself')
   })
 })

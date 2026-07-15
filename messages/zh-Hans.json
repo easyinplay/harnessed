@@ -58,6 +58,10 @@
   "uninstall.unified.removed_state_dir": "  已移除 ~/.claude/harnessed/",
   "uninstall.unified.partial_failure": "\n{{count}} 个条目无法移除（权限不足或已不存在）：",
   "uninstall.unified.complete": "uninstall 完成 — harnessed 自身的文件已移除",
+  "uninstall.unified.cli_hint_header": "\n删除 harnessed CLI 本体(上面这步没删 —— 只清了 setup 文件):",
+  "uninstall.unified.cli_hint_binary": "  二进制: 删除 {{path}}\n          再从 PATH 移除 {{dir}}",
+  "uninstall.unified.cli_hint_npm": "  npm: npm uninstall -g harnessed",
+  "uninstall.unified.cli_hint_other": "  两种方式都装过?另一份也要删 —— npm: 'npm uninstall -g harnessed' / 二进制: 删 exe + 从 PATH 移除其 bin 目录",
 
   "gc.invalid_duration": "error: invalid --older-than '{{value}}'",
   "gc.invalid_duration.fix": "  fix:  use format <N>{d|h|m|w} e.g. 30d / 24h / 60m / 4w",

@@ -58,6 +58,10 @@
   "uninstall.unified.removed_state_dir": "  removed ~/.claude/harnessed/",
   "uninstall.unified.partial_failure": "\n{{count}} item(s) could not be removed (permission denied or already gone):",
   "uninstall.unified.complete": "uninstall complete — harnessed's own files have been removed",
+  "uninstall.unified.cli_hint_header": "\nto remove the harnessed CLI itself (the step above did not — it only cleared setup files):",
+  "uninstall.unified.cli_hint_binary": "  binary: delete {{path}}\n          then remove {{dir}} from your PATH",
+  "uninstall.unified.cli_hint_npm": "  npm: npm uninstall -g harnessed",
+  "uninstall.unified.cli_hint_other": "  installed both ways? remove the other too — npm: 'npm uninstall -g harnessed' / binary: delete the exe + its bin dir from PATH",
 
   "gc.invalid_duration": "error: invalid --older-than '{{value}}'",
   "gc.invalid_duration.fix": "  fix:  use format <N>{d|h|m|w} e.g. 30d / 24h / 60m / 4w",

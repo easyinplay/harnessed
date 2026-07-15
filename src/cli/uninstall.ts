@@ -19,7 +19,7 @@
 
 import { readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
-import { join, resolve as pathResolve, sep } from 'node:path'
+import { dirname, join, resolve as pathResolve, sep } from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
@@ -28,7 +28,7 @@ import { detectPlatform } from '../installers/lib/platform.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { runUninstall } from '../uninstallers/index.js'
-import { getAssetsRoot } from './lib/assetsRoot.js'
+import { getAssetsRoot, isCompiledRuntime } from './lib/assetsRoot.js'
 import { shouldOverwriteFile } from './lib/generateCommands.js'
 import { scanWorkflowsNested } from './lib/scan-nested.js'
 
@@ -96,6 +96,27 @@ async function removeSettingsEnv(settingsPath: string): Promise<boolean> {
   return true
 }
 
+/** Unified uninstall only tears down the setup footprint (skills/commands/
+ *  settings/state), never the CLI executable itself — and removing that is
+ *  channel-specific (npm global vs standalone binary). Print the exact last
+ *  step for the channel this process was launched from, plus a dual-install
+ *  caution. Closes the "two install methods → uninstall not unified" gap
+ *  without a risky self-delete (a running exe is locked on Windows). */
+function printCliRemovalHint(): void {
+  console.log(t('uninstall.unified.cli_hint_header'))
+  if (isCompiledRuntime()) {
+    console.log(
+      t('uninstall.unified.cli_hint_binary', {
+        path: process.execPath,
+        dir: dirname(process.execPath),
+      }),
+    )
+  } else {
+    console.log(t('uninstall.unified.cli_hint_npm'))
+  }
+  console.log(t('uninstall.unified.cli_hint_other'))
+}
+
 async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void> {
   // v4.14.0 — dirs via the active PlatformDescriptor (claude byte-identical:
   // commandsDir/skillsDir/settingsPath resolve to the pre-4.14.0 ~/.claude paths).
@@ -136,6 +157,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   const discoverable = commandFiles.length + skillDirs.length + (hasSettingsChanges ? 1 : 0)
   if (discoverable === 0) {
     console.log(t('uninstall.unified.nothing'))
+    printCliRemovalHint()
     process.exit(0)
   }
 
@@ -149,6 +171,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
 
   if (dryRun) {
     console.log(t('uninstall.unified.dry_run_hint'))
+    printCliRemovalHint()
     process.exit(2)
   }
 
@@ -223,6 +246,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
     for (const f of failures) console.error(`  ${f}`)
   }
   console.log(t('uninstall.unified.complete'))
+  printCliRemovalHint()
   process.exit(0)
 }
 

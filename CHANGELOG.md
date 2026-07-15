@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.2] - 2026-07-15
+
+`harnessed uninstall`(无参 unified)收尾补通道感知的 CLI 本体删除提示。此前 unified uninstall 只拆 setup 足迹(skills/commands/settings/state dir),不删 CLI 可执行本体,且收尾一句不提怎么删 —— 用户装了两种通道(npm-global / 独立二进制)时"卸载不统一":拆完 setup 仍留一个 CLI + PATH 条目,不知下一步。
+
+### Fixed
+
+- **unified uninstall 收尾追加 CLI 本体删除提示**(`printCliRemovalHint`):按运行进程的安装通道(`isCompiledRuntime()`)打印精确的最后一步 —— 编译二进制 → 删 `process.execPath` + 从 PATH 移除其 bin 目录;npm → `npm uninstall -g harnessed`;并附双通道装机的提醒(两种都装过则另一份也删)。不做危险自删(Windows 运行中 exe 被锁)。三处触发点(`nothing-to-do` / `--dry-run` / 正常完成)均打印。
+- 新 4 i18n key(en + zh-Hans,key parity 校验通过);4 新测试 cell(npm 通道 / 二进制通道命名 exe / dry-run / nothing-to-do 均带提示),vitest uninstall 套件 21/21。
+
 ## [4.32.1] - 2026-07-15
 
 修复一行安装器(install.ps1 / install.sh)的两个 dogfood 缺陷:装完二进制后 `harnessed setup` 是纯手动 next-step,用户在**未重载/被遮蔽的 PATH** 下单独执行,bare `harnessed` 解析到**先前就在 PATH 上的另一份 harnessed**(npm-global 遮蔽新装二进制),于是 setup 跑的是**旧的那份**并打印过期版本号("版本不一样")。根因 = 安装与 setup 分离执行 + 安装器从不检测 PATH 遮蔽。
