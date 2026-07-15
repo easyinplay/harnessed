@@ -87,6 +87,9 @@ try {
   if ($LASTEXITCODE -ne 0) { Fail 'installed binary failed its --version smoke' }
   Write-Note "installed harnessed v$out -> $BinPath"
 
+  # -- interactivity gate (shared by PATH + setup consent) --------------------
+  $interactive = [Environment]::UserInteractive -and -not $env:CI
+
   # -- PATH handling (consent-gated user-scope append; locked decision D3) ----
   $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
   if ($null -eq $userPath) { $userPath = '' }
@@ -97,7 +100,6 @@ try {
   if ($onPath) {
     Write-Note "$InstallDir is already on your PATH"
   } else {
-    $interactive = [Environment]::UserInteractive -and -not $env:CI
     $consent = $false
     if ($interactive) {
       $answer = Read-Host "[harnessed installer] add $InstallDir to your user PATH? (Y/n)"
@@ -118,9 +120,50 @@ try {
     }
   }
 
-  Write-Host '[harnessed installer] next steps:'
-  Write-Host '  harnessed setup    # install workflow skills + upstream components'
-  Write-Host '  harnessed update   # self-update this binary later'
+  # -- shadow guard: is a *different* harnessed already resolvable on PATH? ----
+  # A pre-existing npm-global (or older binary) harnessed earlier on PATH
+  # shadows the one we just installed, so a bare `harnessed setup` would run the
+  # WRONG build (the "版本不一样" report). $env:Path in this process does not yet
+  # include the new dir, so Get-Command resolves whatever shadows it.
+  $shadow = $null
+  $existing = Get-Command harnessed -ErrorAction SilentlyContinue
+  if ($existing -and $existing.Source -and ($existing.Source -ne $BinPath)) {
+    $shadow = $existing.Source
+  }
+  if ($shadow) {
+    Write-Host ''
+    Write-Host "[harnessed installer] NOTE: another 'harnessed' is earlier on your PATH and will shadow this binary:" -ForegroundColor Yellow
+    Write-Host "    $shadow"
+    Write-Host "  a bare 'harnessed' keeps running that one. To make this binary win, either:"
+    Write-Host "    - remove the other:        npm uninstall -g harnessed"
+    Write-Host "    - or invoke by full path:  & '$BinPath'"
+  }
+
+  # -- setup: offer to run it now, by absolute path (locked: consent-gated) ----
+  # Invoking $BinPath directly guarantees the freshly-installed build runs its
+  # own setup — this both delivers a default setup and sidesteps any PATH shadow.
+  $ranSetup = $false
+  if ($interactive) {
+    $answer = Read-Host "[harnessed installer] run 'harnessed setup' now (installs workflow skills + upstream components)? (Y/n)"
+    if ($answer -eq '' -or $answer -match '^[Yy]') {
+      Write-Note 'running setup...'
+      & $BinPath setup
+      $ranSetup = $true
+    }
+  }
+
+  # Shadow-aware hints: after a shadow warning, a bare `harnessed` would run the
+  # wrong build, so point the manual commands at the absolute path instead.
+  $setupHint = if ($shadow) { "& '$BinPath' setup" } else { 'harnessed setup' }
+  $updateHint = if ($shadow) { "& '$BinPath' update" } else { 'harnessed update' }
+  if ($ranSetup) {
+    Write-Host '[harnessed installer] next step:'
+    Write-Host "  $updateHint   # self-update this binary later"
+  } else {
+    Write-Host '[harnessed installer] next steps:'
+    Write-Host "  $setupHint    # install workflow skills + upstream components"
+    Write-Host "  $updateHint   # self-update this binary later"
+  }
 } finally {
   Remove-Item -Recurse -Force $TmpDir -ErrorAction SilentlyContinue
 }

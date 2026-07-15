@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.1] - 2026-07-15
+
+修复一行安装器(install.ps1 / install.sh)的两个 dogfood 缺陷:装完二进制后 `harnessed setup` 是纯手动 next-step,用户在**未重载/被遮蔽的 PATH** 下单独执行,bare `harnessed` 解析到**先前就在 PATH 上的另一份 harnessed**(npm-global 遮蔽新装二进制),于是 setup 跑的是**旧的那份**并打印过期版本号("版本不一样")。根因 = 安装与 setup 分离执行 + 安装器从不检测 PATH 遮蔽。
+
+### Fixed
+
+- **setup 按绝对路径征询后自动跑**:安装成功后,interactive session 提示 `run 'harnessed setup' now? (Y/n)`,同意则 `& $BinPath setup`(ps1)/ `"$BIN_PATH" setup`(sh)—— 直呼刚装的二进制,既提供"默认 setup"又**绕过任何 PATH 遮蔽**保证跑的是新构建。non-interactive / CI 保留手动 next-steps(与既有 PATH 征询同款门控)。curl|bash 下 stdin 被脚本占用,unix 侧 prompt 从 `/dev/tty` 读。
+- **shadow 守卫**:安装后用 `Get-Command harnessed`(ps1)/ `command -v harnessed`(sh)解析 bare `harnessed` 当前指向何处;若存在且 ≠ 新装 `$BinPath`,明确警告遮蔽路径 + 修法(`npm uninstall -g harnessed` 或按绝对路径调用)。遮蔽存在时,手动 next-steps 的命令自动改用绝对路径提示(bare `harnessed` 会跑错构建)。
+- **版本横幅无需改**:横幅诚实报告**运行中**二进制的 `pkg.version`;缺陷在于 setup 跑了错的二进制,绝对路径调用已修正。
+
+新回归护栏 `tests/integration/installer-oneliner-setup-shadow.test.ts`(4 cell,ps1/sh 文本契约 + parity);两安装器无 spawn harness,以 `HARNESSED_INSTALLER_SOURCE_DIR` seam 手动彩排(ps1 非交互实测 shadow 命中 + 绝对路径 next-steps + exit 0;sh `bash -n` 语法验)。
+
 ## [4.32.0] - 2026-07-15
 
 eval Slice C:显式录制导出 —— 把一次真实运行的 checkpoint 轨迹转成 Slice A 格式的可回放 trap scenario,trap 语料从 dogfood 自增长(不再全靠手写)。用户裁决:显式命令(非自动后台录制)+ 默认脱敏(刚发生 token 泄漏后隐私优先)。

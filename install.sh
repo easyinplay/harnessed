@@ -119,6 +119,53 @@ case ":$PATH:" in
     ;;
 esac
 
-printf '[harnessed installer] next steps:\n'
-printf '  harnessed setup    # install workflow skills + upstream components\n'
-printf '  harnessed update   # self-update this binary later\n'
+# ── shadow guard: is a *different* harnessed already resolvable on PATH? ─────
+# A pre-existing npm-global (or older binary) harnessed earlier on PATH shadows
+# the one we just installed, so a bare `harnessed setup` would run the WRONG
+# build (the "版本不一样" report). ~/.local/bin normally holds the fresh binary,
+# so command -v resolves to it unless another dir sits earlier on PATH.
+SHADOW=""
+if command -v harnessed >/dev/null 2>&1; then
+  EXISTING=$(command -v harnessed)
+  [ "$EXISTING" != "$BIN_PATH" ] && SHADOW="$EXISTING"
+fi
+if [ -n "$SHADOW" ]; then
+  printf "\n[harnessed installer] NOTE: another 'harnessed' is earlier on your PATH and will shadow this binary:\n"
+  printf '    %s\n' "$SHADOW"
+  printf "  a bare 'harnessed' keeps running that one. To make this binary win, either:\n"
+  printf '    - remove the other:        npm uninstall -g harnessed\n'
+  printf '    - or invoke by full path:  %s\n' "$BIN_PATH"
+fi
+
+# ── setup: offer to run it now, by absolute path (locked: consent-gated) ─────
+# Invoking $BIN_PATH directly guarantees the freshly-installed build runs its
+# own setup — this both delivers a default setup and sidesteps any PATH shadow.
+# curl|bash feeds the script into stdin, so a prompt must read from /dev/tty.
+RAN_SETUP=0
+if [ -t 1 ] && [ -r /dev/tty ]; then
+  printf "[harnessed installer] run 'harnessed setup' now (installs workflow skills + upstream components)? (Y/n) "
+  read -r ANS </dev/tty || ANS=""
+  case "$ANS" in
+    ''|[Yy]*)
+      note "running setup..."
+      "$BIN_PATH" setup
+      RAN_SETUP=1
+      ;;
+  esac
+fi
+
+# Shadow-aware hints: after a shadow warning, a bare `harnessed` would run the
+# wrong build, so point the manual commands at the absolute path instead.
+if [ -n "$SHADOW" ]; then
+  SETUP_HINT="$BIN_PATH setup"; UPDATE_HINT="$BIN_PATH update"
+else
+  SETUP_HINT="harnessed setup"; UPDATE_HINT="harnessed update"
+fi
+if [ "$RAN_SETUP" -eq 1 ]; then
+  printf '[harnessed installer] next step:\n'
+  printf '  %s   # self-update this binary later\n' "$UPDATE_HINT"
+else
+  printf '[harnessed installer] next steps:\n'
+  printf '  %s    # install workflow skills + upstream components\n' "$SETUP_HINT"
+  printf '  %s   # self-update this binary later\n' "$UPDATE_HINT"
+fi
