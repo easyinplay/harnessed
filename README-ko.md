@@ -135,19 +135,13 @@ AI가 문서를 자동으로 가져와 설치를 실행하며, OS / 권한 / PAT
 
 제로에서 실행 중인 Workflow까지의 최단 경로:
 
-```bash
-# 1. 설치 (채널 선택 — 위 빠른 설치 참고)
-npm install -g harnessed && harnessed setup
-# 또는 바이너리 (Node.js 불필요): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
-
-```
-# 2. Claude Code 안에서 — 첫 Workflow 시작
+# 1. Claude Code 안에서 — 첫 Workflow 시작
 /auto "당신의 첫 요구사항"        # 입문자 기본값: 모든 Stage를 끝까지 실행
 ```
 
 ```bash
-# 3. 길을 잃었나요? 인자 없이 harnessed 실행 — 현재 위치 + 다음 할 일을 알려줍니다
+# 2. 길을 잃었나요? 인자 없이 harnessed 실행 — 현재 위치 + 다음 할 일을 알려줍니다
 harnessed
 #   → 현재 위치 대시보드 (활성 Phase + 단계별 상태) + NEXT: auto|manual|done 줄
 #   status / next / resume 를 기억할 필요 없음 — 명령어 하나 (comet `/comet` 유사, 읽기 전용)
@@ -155,7 +149,7 @@ harnessed
 ```
 
 ```bash
-# 4. 중단 후 언제든지 재개
+# 3. 중단 후 언제든지 재개
 harnessed            # 동일한 현재 위치 뷰
 harnessed resume     # 가장 최근 체크포인트에서 계속
 ```

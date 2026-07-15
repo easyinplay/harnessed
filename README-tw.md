@@ -135,19 +135,13 @@ AI 會自動抓取文件並執行安裝，處理作業系統 / 權限 / PATH / c
 
 從零到一條運轉中的 workflow，最短路徑：
 
-```bash
-# 1. 安裝（任選通道 —— 見上方快速安裝）
-npm install -g harnessed && harnessed setup
-# 或二進位（無需 Node.js）: curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
-
-```
-# 2. 在 Claude Code 內 —— 啟動你的第一條 workflow
+# 1. 在 Claude Code 內 —— 啟動你的第一條 workflow
 /auto "你的第一個需求"               # 新手預設：端到端跑完所有 stage
 ```
 
 ```bash
-# 3. 迷路了？不帶參數執行 harnessed —— 它會告訴你身在何處 + 下一步是什麼
+# 2. 迷路了？不帶參數執行 harnessed —— 它會告訴你身在何處 + 下一步是什麼
 harnessed
 #   → you-are-here 儀表板（active phase + 每步狀態）+ 一行 NEXT: auto|manual|done
 #   不必記 status / next / resume —— 一個指令（comet `/comet` 類比，read-only）
@@ -155,7 +149,7 @@ harnessed
 ```
 
 ```bash
-# 4. 中斷後隨時回復
+# 3. 中斷後隨時回復
 harnessed            # 同一個 you-are-here 視圖
 harnessed resume     # 從最近 checkpoint 繼續
 ```

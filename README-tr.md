@@ -135,19 +135,13 @@ Yapay zeka dokümanı otomatik olarak çeker ve kurulumu gerçekleştirir; işle
 
 Sıfırdan çalışan bir Workflow'a en kısa yol:
 
-```bash
-# 1. Kurulum (kanal seçin — yukarıdaki Hızlı Kurulum'a bakın)
-npm install -g harnessed && harnessed setup
-# veya binary (Node.js gerekmez): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
-
-```
-# 2. Claude Code içinde — ilk Workflow'unuzu başlatın
+# 1. Claude Code içinde — ilk Workflow'unuzu başlatın
 /auto "ilk gereksiniminiz"        # yeni başlayan varsayılanı: tüm aşamaları uçtan uca çalıştırır
 ```
 
 ```bash
-# 3. Kaybolduysanız? harnessed'ı argümansız çalıştırın — nerede olduğunuzu + sırada ne olduğunu söyler
+# 2. Kaybolduysanız? harnessed'ı argümansız çalıştırın — nerede olduğunuzu + sırada ne olduğunu söyler
 harnessed
 #   → buradasınız panosu (aktif phase + adım başına durum) + bir NEXT: auto|manual|done satırı
 #   status / next / resume hatırlamaya gerek yok — tek komut (comet `/comet` benzeri, salt-okunur)
@@ -155,7 +149,7 @@ harnessed
 ```
 
 ```bash
-# 4. Bir kesintiden sonra istediğiniz zaman devam edin
+# 3. Bir kesintiden sonra istediğiniz zaman devam edin
 harnessed            # aynı buradasınız görünümü
 harnessed resume     # en son checkpoint'ten devam edin
 ```

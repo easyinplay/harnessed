@@ -135,19 +135,13 @@ A IA vai buscar automaticamente o documento + executar a instalação, lidando c
 
 O caminho mais curto do zero a um workflow em execução:
 
-```bash
-# 1. Instale (escolha um canal — veja Quick Install acima)
-npm install -g harnessed && harnessed setup
-# ou binário (sem Node.js): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
-
-```
-# 2. Dentro do Claude Code — dispare seu primeiro workflow
+# 1. Dentro do Claude Code — dispare seu primeiro workflow
 /auto "seu primeiro requisito"        # padrão para iniciantes: roda todos os stages de ponta a ponta
 ```
 
 ```bash
-# 3. Perdido? Execute harnessed sem argumentos — ele te diz onde você está + o que vem a seguir
+# 2. Perdido? Execute harnessed sem argumentos — ele te diz onde você está + o que vem a seguir
 harnessed
 #   → dashboard você-está-aqui (phase ativa + status por step) + uma linha NEXT: auto|manual|done
 #   sem precisar lembrar status / next / resume — um único comando (análogo ao comet `/comet`, somente leitura)
@@ -155,7 +149,7 @@ harnessed
 ```
 
 ```bash
-# 4. Retome a qualquer momento após uma interrupção
+# 3. Retome a qualquer momento após uma interrupção
 harnessed            # mesma visão você-está-aqui
 harnessed resume     # continua a partir do checkpoint mais recente
 ```

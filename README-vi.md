@@ -135,19 +135,13 @@ AI sẽ tự fetch tài liệu + chạy install, xử lý các edge case về OS
 
 Con đường ngắn nhất từ con số không tới một workflow đang chạy:
 
-```bash
-# 1. Cài đặt (chọn kênh — xem Quick Install ở trên)
-npm install -g harnessed && harnessed setup
-# hoặc binary (không cần Node.js): curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash && harnessed setup
 ```
-
-```
-# 2. Bên trong Claude Code — khởi động workflow đầu tiên của bạn
+# 1. Bên trong Claude Code — khởi động workflow đầu tiên của bạn
 /auto "yêu cầu đầu tiên của bạn"        # mặc định cho người mới: chạy mọi stage từ đầu đến cuối
 ```
 
 ```bash
-# 3. Lạc lối? Chạy harnessed không tham số — nó cho bạn biết bạn đang ở đâu + tiếp theo là gì
+# 2. Lạc lối? Chạy harnessed không tham số — nó cho bạn biết bạn đang ở đâu + tiếp theo là gì
 harnessed
 #   → dashboard bạn-đang-ở-đây (phase đang hoạt động + trạng thái từng bước) + một dòng NEXT: auto|manual|done
 #   không cần nhớ status / next / resume — một lệnh duy nhất (tương tự comet `/comet`, chỉ đọc)
@@ -155,7 +149,7 @@ harnessed
 ```
 
 ```bash
-# 4. Tiếp tục bất cứ lúc nào sau khi bị gián đoạn
+# 3. Tiếp tục bất cứ lúc nào sau khi bị gián đoạn
 harnessed            # cùng một view bạn-đang-ở-đây
 harnessed resume     # tiếp tục từ checkpoint mới nhất
 ```
