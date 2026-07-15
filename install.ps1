@@ -132,11 +132,11 @@ try {
   }
   if ($shadow) {
     Write-Host ''
-    Write-Host "[harnessed installer] NOTE: another 'harnessed' is earlier on your PATH and will shadow this binary:" -ForegroundColor Yellow
+    Write-Host "[harnessed installer] NOTE: another 'harnessed' is already installed and earlier on your PATH:" -ForegroundColor Yellow
     Write-Host "    $shadow"
-    Write-Host "  a bare 'harnessed' keeps running that one. To make this binary win, either:"
-    Write-Host "    - remove the other:        npm uninstall -g harnessed"
-    Write-Host "    - or invoke by full path:  & '$BinPath'"
+    Write-Host "  a bare 'harnessed' keeps running that one, and updating one channel leaves the other stale. Pick one channel:"
+    Write-Host "    - keep the existing one: update it in place (if npm: npm install -g harnessed@latest) — you can ignore this new binary"
+    Write-Host "    - keep this new binary:  npm uninstall -g harnessed, then use 'harnessed update' (or run now by full path: & '$BinPath')"
   }
 
   # -- setup: offer to run it now, by absolute path (locked: consent-gated) ----

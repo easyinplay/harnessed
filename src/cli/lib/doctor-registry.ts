@@ -60,4 +60,7 @@ export const CHECKS: readonly CheckFn[] = [
   // Phase 20 — "update available" version check ('warn' only when behind; 'pass'
   // when current/ahead/npm-unreachable — fail-soft, never flips the summary).
   async () => (await import('./check-update.js')).checkUpdate(),
+  // 4.32.4 — dual install-channel conflict (warn-only): npm-global + standalone
+  // binary both present → ambiguous PATH resolution + stale-update trap.
+  async () => (await import('./check-install-channels.js')).checkInstallChannels(),
 ]

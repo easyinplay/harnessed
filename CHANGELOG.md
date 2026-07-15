@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [4.32.3] - 2026-07-15
+## [4.32.4] - 2026-07-15
+
+两种安装通道(npm-global + 独立二进制)互测。此前 shadow guard 只在 binary 安装器侧、且只在 PATH 遮蔽时触发;npm 方向零检测。现在两通道并存时明确提示"更新一个另一个会陈旧 → 二选一保留",双向覆盖。
+
+### Added
+
+- **`detectInstallChannels` + `checkInstallChannels`**(`src/cli/lib/check-install-channels.ts`):检测 npm-global 与独立二进制是否并存(运行中的通道由 `isCompiledRuntime()` 判定必然存在,另一条按平台规范路径 + `npm prefix -g` 探测)。并存 → warn(warn-only,不 fail),`fix` 给双通道二选一建议(留 npm 用 `npm install -g harnessed@latest` + 删二进制;或留二进制用 `harnessed update` + `npm uninstall -g harnessed`)。平台路径用 `win32.join`/`posix.join` 避免跨 OS 分隔符错乱。
+- **surface 到两个 chokepoint**:`harnessed doctor` 第 18 项 check(on-demand);`harnessed setup` 收尾(npm 与 binary-installer 两条安装流都经过 setup,一处覆盖双向)。
+- **install.ps1 / install.sh shadow guard 改口径**:从"删除或用绝对路径"改为双通道二选一(留旧的原地更新 / 或删旧装新),与 CLI 侧措辞统一。
+
+新测试:`check-install-channels.test.ts`(9 cell,2×2×presence 矩阵 + CheckResult 映射 + dualChannelLines,注入 deps 纯逻辑);doctor 注册表 17→18(3 断言更新 + install-channels mock,理由同 sister check —— 真机 spawn/fs 依赖);installer 文本契约 4/4 仍绿。tsc 0 / biome 0。
 
 gsd-core 1.7.0 GA re-sync。gsd-core 1.7.0 正式版已发(npm `latest`=1.7.0,`next`=1.7.0-rc.6 反成旧)。关闭 v15.0 记的 "1.7.0 GA watch"(TODOS)。
 

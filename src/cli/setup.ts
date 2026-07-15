@@ -560,6 +560,18 @@ export function registerSetup(program: Command): void {
       // complexity + scope creep; user opts in by running `harnessed doctor`).
       console.log(t('setup.doctor_hint'))
 
+      // 4.32.4 — cross-channel install warning: both flows (npm + binary
+      // installer's auto-setup) converge here, so this is the one place that
+      // catches "installed via the other channel too" in both directions.
+      const { detectInstallChannels, dualChannelLines } = await import(
+        './lib/check-install-channels.js'
+      )
+      const channels = detectInstallChannels()
+      if (channels.both) {
+        console.log('')
+        for (const line of dualChannelLines(channels)) console.log(line)
+      }
+
       // v3.9.0 P4 — auto-install missing third-party plugins (default opt-in,
       // confirm prompt per plugin). Skips on --non-interactive, --no-auto-install,
       // dry-run path (no side effects per Phase 1 dry-run contract), or non-TTY

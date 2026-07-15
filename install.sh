@@ -130,11 +130,11 @@ if command -v harnessed >/dev/null 2>&1; then
   [ "$EXISTING" != "$BIN_PATH" ] && SHADOW="$EXISTING"
 fi
 if [ -n "$SHADOW" ]; then
-  printf "\n[harnessed installer] NOTE: another 'harnessed' is earlier on your PATH and will shadow this binary:\n"
+  printf "\n[harnessed installer] NOTE: another 'harnessed' is already installed and earlier on your PATH:\n"
   printf '    %s\n' "$SHADOW"
-  printf "  a bare 'harnessed' keeps running that one. To make this binary win, either:\n"
-  printf '    - remove the other:        npm uninstall -g harnessed\n'
-  printf '    - or invoke by full path:  %s\n' "$BIN_PATH"
+  printf "  a bare 'harnessed' keeps running that one, and updating one channel leaves the other stale. Pick one channel:\n"
+  printf '    - keep the existing one: update it in place (if npm: npm install -g harnessed@latest) — you can ignore this new binary\n'
+  printf '    - keep this new binary:  npm uninstall -g harnessed, then use "harnessed update" (or run by full path: %s)\n' "$BIN_PATH"
 fi
 
 # ── setup: offer to run it now, by absolute path (locked: consent-gated) ─────
