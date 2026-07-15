@@ -99,7 +99,15 @@ Native ajanlar size ilkeller (primitives) verir; harnessed onları bir metodoloj
 
 ## 📦 Hızlı Kurulum
 
-**Tek satırlık kurulum (Node.js gerekmez)** — bağımsız binary, sonrasında `harnessed update` ile kendini günceller:
+**npm ile** (önerilen — iki kanal da birinci sınıftır ve senkron kalır):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
+
+**Node.js yok mu? Bağımsız binary** — platforma göre, sonrasında `harnessed update` ile kendini günceller:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -110,14 +118,6 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
-
-**Veya npm ile** (iki kanal da birinci sınıftır ve senkron kalır):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
 
 🤖 **Veya bir yapay zekaya kurdurun** — bu cümleyi Claude Code'a (ya da herhangi bir yapay zeka asistanına) yapıştırın:
 

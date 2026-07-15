@@ -99,7 +99,15 @@ Native agent cho bạn các primitive; harnessed kết nối chúng thành một
 
 ## 📦 Quick Install
 
-**Trình cài đặt một dòng (không cần Node.js)** — binary độc lập, tự cập nhật qua `harnessed update`:
+**Qua npm** (khuyến nghị — cả hai kênh đều là first-class và luôn đồng bộ):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x không hỗ trợ chuỗi `&&` — dùng `;` hoặc hai dòng riêng (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe đều hoạt động bình thường.
+
+**Không có Node.js? Binary độc lập** — theo nền tảng, tự cập nhật qua `harnessed update`:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -110,14 +118,6 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
-
-**Hoặc qua npm** (cả hai kênh đều là first-class và luôn đồng bộ):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x không hỗ trợ chuỗi `&&` — dùng `;` hoặc hai dòng riêng (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe đều hoạt động bình thường.
 
 🤖 **Hoặc nhờ AI cài giúp** — dán câu này vào Claude Code (hoặc bất kỳ AI assistant nào):
 

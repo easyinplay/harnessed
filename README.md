@@ -99,7 +99,15 @@ Native agents give you primitives; harnessed wires them into a methodology. Wher
 
 ## 📦 Quick Install
 
-**One-line installer (no Node.js required)** — standalone binary, self-updates via `harnessed update`:
+**Via npm** (recommended — both channels are first-class and stay in sync):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
+
+**No Node.js? Standalone binary** — per-platform, self-updates via `harnessed update`:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -110,14 +118,6 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
-
-**Or via npm** (both channels are first-class and stay in sync):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
 
 🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
 

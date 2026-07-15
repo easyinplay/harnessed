@@ -97,7 +97,15 @@ harnessed 的三层栈方案是软件工程上既有的 **BDD → SDD → TDD** 
 
 ## 📦 快速安装
 
-**一行安装器(无需 Node.js)** —— 独立二进制,后续用 `harnessed update` 自更新:
+**走 npm**(推荐 —— 两条通道同为一等公民,版本保持同步):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x 不支持 `&&` 链接 —— 改用 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
+
+**没有 Node.js?独立二进制** —— 分平台安装,后续用 `harnessed update` 自更新:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -108,14 +116,6 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
-
-**或走 npm**(两条通道同为一等公民,版本保持同步):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x 不支持 `&&` 链接 —— 改用 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
 
 🤖 **或让 AI 帮你装** —— 把下面这句话发给 Claude Code (或任何 AI 助手):
 
