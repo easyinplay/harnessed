@@ -7,7 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [4.32.2] - 2026-07-15
+## [4.32.3] - 2026-07-15
+
+gsd-core 1.7.0 GA re-sync。gsd-core 1.7.0 正式版已发(npm `latest`=1.7.0,`next`=1.7.0-rc.6 反成旧)。关闭 v15.0 记的 "1.7.0 GA watch"(TODOS)。
+
+### Changed
+
+- **gsd manifest re-sync 到 1.7.0 GA**(`manifests/skill-packs/gsd.yaml`):`npm_version` 基线 `^1.6.0` → `^1.7.0`(主 + codex override 两处);`upstream_health.last_known_good_version` `1.6.1` → `1.7.0`;`last_check` → `2026-07-15`。
+- **评估结论(write-confinement 无影响)**:1.7.0 的 host-integration interface(ADR-1239)+ destSubpath write-confinement **未改** claude runtime 的写入路径 —— 本机 1.7.0 GA 实测 gsd-* 仍装到 `~/.claude/skills/`(71 skill,`gsd-plan-phase/SKILL.md` 在),manifest 的 idempotent_check / verify 路径假设全部成立,无结构性改动。TODOS watch 项已关。
+
+manifest-only(schema 校验 + install-type test 6/6 通过);无代码 / schema 结构变更。
 
 `harnessed uninstall`(无参 unified)收尾补通道感知的 CLI 本体删除提示。此前 unified uninstall 只拆 setup 足迹(skills/commands/settings/state dir),不删 CLI 可执行本体,且收尾一句不提怎么删 —— 用户装了两种通道(npm-global / 独立二进制)时"卸载不统一":拆完 setup 仍留一个 CLI + PATH 条目,不知下一步。
 

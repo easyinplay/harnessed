@@ -23,9 +23,10 @@
 
 ## Watch items
 
-- [ ] **gsd-core 1.7.0 GA watch**(v15.0 re-sync 记,2026-07-13)— 现在 rc.6(`next` tag):
-  negotiated host-integration interface(ADR-1239)与 destSubpath write-confinement 与
-  harnessed 安装通道直接相关;GA 后评估 re-sync(write-confinement 可能改安装写入路径行为)。
+- [x] **gsd-core 1.7.0 GA watch** — RESOLVED 2026-07-15:1.7.0 GA 已发(npm latest=1.7.0)。
+  评估结论:host-integration interface(ADR-1239)+ destSubpath write-confinement 未改
+  claude runtime 写入路径(本机 1.7.0 实测 gsd-* 仍装 ~/.claude/skills/,71 skill)。
+  manifest re-sync 完成(npm_version ^1.7.0 / last_known_good 1.7.0 / 4.32.3)。
 
 ## Earlier deferrals (intel 回填表镜像,详 .planning/intel/omc-comparison.md)
 

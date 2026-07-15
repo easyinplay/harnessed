@@ -19,7 +19,7 @@ spec:
   install:
     method: npm-cli
     cmd: "npx --yes @opengsd/gsd-core@latest --claude --global"
-    npm_version: ^1.6.0
+    npm_version: ^1.7.0
     idempotent_check: "test -d ~/.claude/skills/gsd-plan-phase"
     # 4.23.0 (issue #3 req 5) — gsd-core installs gsd-* prefixed skill dirs only
     # (naturally collision-free with harnessed workflow names); declared empty on
@@ -39,18 +39,21 @@ spec:
       install:
         method: npm-cli
         cmd: "npx --yes @opengsd/gsd-core@latest --codex --global"
-        npm_version: ^1.6.0
+        npm_version: ^1.7.0
         idempotent_check: "test -d ~/.codex/skills/gsd-plan-phase"
       verify:
         cmd: "test -f ~/.codex/skills/gsd-plan-phase/SKILL.md"
         timeout_ms: 10000
   upstream_health:
     stability: stable
-    # v15.0 re-sync (2026-07-13) — 1.6.1 hotfix 已被 ^1.6.0 semver 覆盖(cmd 用
-    # @latest 自动拿到);1.7.0 在 rc.6(host-integration interface ADR-1239 +
-    # write-confinement),GA 后再评 — watch 项见 TODOS.md。
-    last_check: "2026-07-13"
-    last_known_good_version: 1.6.1
+    # 4.32.3 re-sync (2026-07-15) — gsd-core 1.7.0 GA 已发(npm latest=1.7.0,
+    # next=1.7.0-rc.6 反成旧)。评估结论:1.7.0 的 host-integration interface
+    # (ADR-1239) + destSubpath write-confinement 未改 claude runtime 的写入路径
+    # —— 本机 1.7.0 GA 实测 gsd-* 仍装到 ~/.claude/skills/(71 skill,
+    # gsd-plan-phase/SKILL.md 在),idempotent_check/verify 假设全部成立。
+    # npm_version 基线抬到 ^1.7.0;TODOS watch 项已关。
+    last_check: "2026-07-15"
+    last_known_good_version: 1.7.0
     fallback_action: warn
   signed_by: easyinplay
   platforms:
