@@ -385,14 +385,21 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     expect(stdout).toBe(buildInjection(repoRoot, wf, LEARNINGS_MD, DEFAULT_INJECT_BUDGET).trim())
   })
 
-  it('falls back to legacy current-workflow.json when workflows.json is absent', () => {
+  it('IGNORES the legacy global current-workflow.json — anti cross-repo leak (issue: phantom inject in a repo with no slot)', () => {
+    // The pre-Phase-15 singleton carries NO repo identity, so an unconditional
+    // fallback injects one repo's workflow-state into EVERY other repo that has
+    // no workflows.json slot (independent new project → phantom <workflow-state>
+    // every turn). The hot-path hook must never inject unattributable state:
+    // with only the legacy singleton present and no slot for this repo, emit
+    // nothing. (Migration of a genuine pre-Phase-15 root stays owned by
+    // readStoreRaw, which only reads legacy when workflows.json is wholly absent.)
     writeFileSync(
       join(tmp, 'root', '.claude', 'harnessed', 'current-workflow.json'),
       JSON.stringify(wf),
     )
     const stdout = runBin().trim()
-    expect(stdout).toContain('<workflow-state>')
-    expect(stdout).toContain('phase: task')
+    expect(stdout).toBe('')
+    expect(stdout).not.toContain('<workflow-state>')
   })
 
   it('Phase 22 — emits SHIP-READY / RETRO-DUE from envelope flags; matches buildInjection', () => {

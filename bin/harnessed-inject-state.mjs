@@ -11,7 +11,8 @@
 // compares its stdout to the TS builder.
 //
 // Phase 15 repo-aware: resolves the active repo's slot from
-// workflows.json[repoKey(cwd)] (legacy current-workflow.json as a fallback).
+// workflows.json[repoKey(cwd)]. No legacy current-workflow.json fallback
+// (removed 4.32.6 — it leaked cross-repo; see readWorkflow).
 // Root: HARNESSED_ROOT_OVERRIDE if set, else <homedir>/.claude/harnessed.
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -105,8 +106,8 @@ function shouldEmitPc(root, repoRoot, sid, pc) {
   }
 }
 
-// Phase 35 — try the session-scoped slot first, then the bare repoKey slot, then
-// the legacy singleton (dual-write anchor). `keys` is ordered most→least specific.
+// Phase 35 — try the session-scoped slot first, then the bare repoKey slot.
+// `keys` is ordered most→least specific. No legacy-singleton fallback (see below).
 // 4.22.0 — also surfaces the intent sidecar (same key order) for the freestyle nag.
 function readWorkflow(root, keys) {
   let wf = null
@@ -141,13 +142,13 @@ function readWorkflow(root, keys) {
       }
     }
   } catch {}
-  if (!wf) {
-    try {
-      const legacyPath = join(root, 'current-workflow.json')
-      wf = JSON.parse(readFileSync(legacyPath, 'utf8'))
-      ledgerAgeMs = ageOf(legacyPath)
-    } catch {}
-  }
+  // NO legacy `current-workflow.json` fallback here (removed 4.32.6): the
+  // pre-Phase-15 global singleton carries no repo identity, so an unconditional
+  // fallback leaked one repo's workflow-state into EVERY repo lacking a slot —
+  // an independent new project would get a phantom <workflow-state> every turn.
+  // Migration of a genuine pre-Phase-15 root is owned by readStoreRaw
+  // (workflowStore.ts), which only reads the singleton when workflows.json is
+  // wholly absent; the hot-path hook only ever reads the per-repo store.
   return { wf, intent, ledgerAgeMs }
 }
 

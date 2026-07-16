@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.6] - 2026-07-16
+
+修复 perturn-inject hook 跨 repo 状态泄漏(dogfood 发现):在一个**独立、未使用 harnessed** 的新 git repo 里,UserPromptSubmit hook 每回合仍注入**别的 repo 的** `<workflow-state>`。
+
+### Fixed
+
+- **`bin/harnessed-inject-state.mjs` `readWorkflow` 删掉 legacy 全局单例 fallback**:pre-Phase-15 的 `~/.claude/harnessed/current-workflow.json` **不带任何 repo 身份**,而 bin 之前"当前 repo 在 `workflows.json` 无 slot 就无条件退到该单例",于是把某个 repo 的 workflow-state 泄漏进**每一个没有自己 slot 的 repo**(独立新项目 → 每回合 phantom `<workflow-state>`)。hot-path hook 现在只读 per-repo 的 `workflows.json`,无 slot = 静默 exit 0。
+- 迁移归属不变:真正的 pre-Phase-15 root 迁移仍由 `readStoreRaw`(`workflowStore.ts`)负责 —— 它只在 `workflows.json` **整个缺失**时才读单例,不是跨 repo 泄漏源。compiled-binary 的 `harnessed inject-state` 子命令 dynamic-import 同一个 bin,一处修复双通道覆盖。
+
+parity test cell 由"falls back to legacy"改为"IGNORES legacy(anti cross-repo leak)→ 无 slot 时零注入";54 test 绿。tsc 0 / biome 0。
+
+注:机器上残留的 `~/.claude/harnessed/current-workflow.json` 现已被 hook 忽略(inert),可安全手动删除(现代版本从不再写它,已被 `workflows.json` 取代;`harnessed update --migration-report` 也会列出)。
+
 ## [4.32.5] - 2026-07-16
 
 修复 issue #8:卸载后残留 `Stop` / `UserPromptSubmit` hook 导致每次提交 prompt 报 `MODULE_NOT_FOUND`。此前 unified uninstall(`harnessed uninstall` 无参数)只清 workflows / commands / settings env vars / state dir,**不清 hooks**;用户直接 `npm uninstall -g harnessed` 后,`~/.claude/settings.json` 里指向已删除 `bin/*.mjs` 的 hook 每个 prompt / Stop 触发一次 `node:internal/modules/cjs/loader … MODULE_NOT_FOUND`。
