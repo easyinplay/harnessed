@@ -38,6 +38,15 @@ vi.mock('../../src/cli/lib/check-install-channels.js', () => ({
     message: 'single channel (npm)',
   }),
 }))
+// issue #8 — stale-hook self-heal check reads ~/.claude/settings.json; mock to a
+// clean pass here (primary logic unit-tested in tests/cli/check-stale-hooks.test.ts).
+vi.mock('../../src/cli/lib/check-stale-hooks.js', () => ({
+  checkStaleHooks: () => ({
+    name: 'stale hooks',
+    status: 'pass',
+    message: 'no orphaned harnessed hooks',
+  }),
+}))
 // Phase v2.0-2.4 W3 T2.4.W3.1 — 9th + 10th check mocks (same reason as 7th/8th):
 // real impls read process.env / fs which doctor.test.ts has globally mocked.
 // PRIMARY logic unit-tested in tests/cli/checkAgentTeams.test.ts + tests/cli/
@@ -176,9 +185,9 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
 
   // v3.7.0 Phase 1 — registry future-proof: CHECKS array is single source of truth.
   // Bump assertion when adding a check (sister doctor.ts --description string update).
-  it('cell 0 — CHECKS registry has 18 entries (4.32.4 +install-channels)', async () => {
+  it('cell 0 — CHECKS registry has 19 entries (issue #8 +stale-hooks)', async () => {
     const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
-    expect(CHECKS.length).toBe(18)
+    expect(CHECKS.length).toBe(19)
   })
 
   it('cell 1 — all 18 checks pass → exit 0 + summary "pass" (4.32.4 bump 17→18)', async () => {
@@ -186,7 +195,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(18)
+    expect(p.checks).toHaveLength(19)
     expect(p.summary).toBe('pass')
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
     // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
@@ -216,7 +225,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
     const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
-    expect(p.checks).toHaveLength(18)
+    expect(p.checks).toHaveLength(19)
     const tokenBudget = p.checks.find((c) => c.name === 'token budget')
     expect(tokenBudget).toBeDefined()
     expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')

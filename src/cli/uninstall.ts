@@ -23,6 +23,10 @@ import { dirname, join, resolve as pathResolve, sep } from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
+import {
+  countHarnessedHooks,
+  stripHarnessedHooks,
+} from '../installers/lib/harnessedHookTeardown.js'
 import { getHarnessedRoot } from '../installers/lib/harnessedRoot.js'
 import { detectPlatform } from '../installers/lib/platform.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
@@ -62,38 +66,55 @@ async function discoverCommandFiles(commandsDir: string): Promise<string[]> {
 async function checkSettingsEnv(settingsPath: string): Promise<{
   hasAgentTeams: boolean
   hasUserLang: boolean
+  staleHooks: number
 }> {
   try {
     const raw = await readFile(settingsPath, 'utf8')
     const data = JSON.parse(raw) as Record<string, unknown>
     const env = (data.env ?? {}) as Record<string, unknown>
+    const hooks = data.hooks
     return {
       hasAgentTeams: 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' in env,
       hasUserLang: 'HARNESSED_USER_LANG' in env,
+      // issue #8 — count orphaned harnessed-owned Stop/UserPromptSubmit hooks.
+      staleHooks: hooks && typeof hooks === 'object' ? countHarnessedHooks(hooks as never) : 0,
     }
   } catch {
-    return { hasAgentTeams: false, hasUserLang: false }
+    return { hasAgentTeams: false, hasUserLang: false, staleHooks: 0 }
   }
 }
 
-async function removeSettingsEnv(settingsPath: string): Promise<boolean> {
+/** Single read-modify-write of ~/.claude/settings.json: drop harnessed env vars
+ *  AND strip first-party harnessed hook registrations (issue #8). Returns what
+ *  actually changed so the caller can report each independently. */
+async function removeSettingsFootprint(
+  settingsPath: string,
+): Promise<{ envRemoved: boolean; hooksRemoved: number }> {
   const raw = await readFile(settingsPath, 'utf8')
   const data = JSON.parse(raw) as Record<string, unknown>
   const env = (data.env ?? {}) as Record<string, unknown>
-  let changed = false
+  let envRemoved = false
   if ('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' in env) {
     delete env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
-    changed = true
+    envRemoved = true
   }
   if ('HARNESSED_USER_LANG' in env) {
     delete env.HARNESSED_USER_LANG
-    changed = true
+    envRemoved = true
   }
-  if (!changed) return false
+
+  let hooksRemoved = 0
+  const hooks = data.hooks
+  if (hooks && typeof hooks === 'object') {
+    hooksRemoved = stripHarnessedHooks(hooks as never).removed
+    if (Object.keys(hooks as object).length === 0) delete data.hooks
+  }
+
+  if (!envRemoved && hooksRemoved === 0) return { envRemoved: false, hooksRemoved: 0 }
   if (Object.keys(env).length === 0) delete data.env
   else data.env = env
   await writeFile(settingsPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8')
-  return true
+  return { envRemoved, hooksRemoved }
 }
 
 /** Unified uninstall only tears down the setup footprint (skills/commands/
@@ -140,6 +161,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   const commandFiles = await discoverCommandFiles(commandsDir)
   const settingsEnv = await checkSettingsEnv(settingsPath)
   const hasSettingsChanges = settingsEnv.hasAgentTeams || settingsEnv.hasUserLang
+  const staleHooks = settingsEnv.staleHooks
 
   // Verify skill dirs exist before counting
   const skillDirs: string[] = []
@@ -154,7 +176,8 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   }
 
   // ── Summary ─────────────────────────────────────────────────
-  const discoverable = commandFiles.length + skillDirs.length + (hasSettingsChanges ? 1 : 0)
+  const discoverable =
+    commandFiles.length + skillDirs.length + (hasSettingsChanges ? 1 : 0) + (staleHooks > 0 ? 1 : 0)
   if (discoverable === 0) {
     console.log(t('uninstall.unified.nothing'))
     printCliRemovalHint()
@@ -166,6 +189,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
     console.log(t('uninstall.unified.commands', { count: commandFiles.length }))
   if (skillDirs.length > 0) console.log(t('uninstall.unified.skills', { count: skillDirs.length }))
   if (hasSettingsChanges) console.log(t('uninstall.unified.settings'))
+  if (staleHooks > 0) console.log(t('uninstall.unified.hooks', { count: staleHooks }))
   console.log(t('uninstall.unified.state_dir'))
   console.log(t('uninstall.unified.upstream_note'))
 
@@ -210,9 +234,12 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   }
 
   let removedSettings = false
-  if (hasSettingsChanges) {
+  let removedHooks = 0
+  if (hasSettingsChanges || staleHooks > 0) {
     try {
-      removedSettings = await removeSettingsEnv(settingsPath)
+      const r = await removeSettingsFootprint(settingsPath)
+      removedSettings = r.envRemoved
+      removedHooks = r.hooksRemoved
     } catch (e) {
       failures.push(`${settingsPath}: ${(e as Error).message}`)
     }
@@ -240,6 +267,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   if (removedSkills > 0)
     console.log(t('uninstall.unified.removed_skills', { count: removedSkills }))
   if (removedSettings) console.log(t('uninstall.unified.removed_settings'))
+  if (removedHooks > 0) console.log(t('uninstall.unified.removed_hooks', { count: removedHooks }))
   if (removedStateDir) console.log(t('uninstall.unified.removed_state_dir'))
   if (failures.length > 0) {
     console.error(t('uninstall.unified.partial_failure', { count: failures.length }))

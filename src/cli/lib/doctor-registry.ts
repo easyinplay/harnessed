@@ -63,4 +63,8 @@ export const CHECKS: readonly CheckFn[] = [
   // 4.32.4 — dual install-channel conflict (warn-only): npm-global + standalone
   // binary both present → ambiguous PATH resolution + stale-update trap.
   async () => (await import('./check-install-channels.js')).checkInstallChannels(),
+  // issue #8 — orphaned harnessed Stop/UserPromptSubmit hooks (warn-only): a hook
+  // pointing at a deleted bin/*.mjs makes Claude Code error MODULE_NOT_FOUND every
+  // prompt; `harnessed uninstall` now strips them.
+  async () => (await import('./check-stale-hooks.js')).checkStaleHooks(),
 ]

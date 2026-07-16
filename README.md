@@ -501,7 +501,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed run <name>` | Run a workflow via in-process SDK spawn (CI/headless mode). Slash commands use CC-native spawn instead. |
 | `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
 | `harnessed status` | Current phase + lock holder |
-| `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / skill integrity / GateGuard conflict / update-available, etc.) |
+| `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / skill integrity / GateGuard conflict / update-available / stale hooks, etc.). The **stale hooks** check flags orphaned harnessed `Stop`/`UserPromptSubmit` entries in `~/.claude/settings.json` that point at a deleted `bin/*.mjs` — the cause of a `MODULE_NOT_FOUND` error on every prompt after a raw `npm uninstall -g harnessed`. Fix: run `harnessed uninstall` (it strips them) **before** removing the package. |
 | `harnessed update [--check\|--upstreams\|--migration-report]` | Self-update, channel-aware: binary installs replace themselves in place from GitHub releases (sha256-verified, previous version kept for rollback); npm installs run `npm i -g harnessed@latest`. `--check` reports the latest version; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
 | `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exits 1 if not ready. The Ship-stage gate. |
 | `harnessed retro --done` | Reset the retro-reminder phase counter after running `/retro` (clears the per-turn RETRO-DUE nudge). |

@@ -513,6 +513,74 @@ describe('cli/uninstall (no name) — unified', () => {
     expect(written.env?.OTHER_VAR).toBe('keep-me')
   })
 
+  it('strips orphaned harnessed hooks, preserves unrelated hooks (issue #8)', async () => {
+    readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+    readFileMock.mockImplementation(async (p: unknown) => {
+      if (String(p).includes('settings.json'))
+        return JSON.stringify({
+          hooks: {
+            UserPromptSubmit: [
+              {
+                hooks: [
+                  {
+                    type: 'command',
+                    command:
+                      'node "C:/gone/npm/node_modules/harnessed/bin/harnessed-inject-state.mjs"',
+                  },
+                ],
+              },
+            ],
+            Stop: [
+              {
+                hooks: [
+                  {
+                    type: 'command',
+                    command: 'node "C:/gone/harnessed/bin/harnessed-stop-hook.mjs"',
+                  },
+                ],
+              },
+            ],
+            PreToolUse: [{ hooks: [{ type: 'command', command: 'node bin/guard.mjs' }] }],
+          },
+        }) as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    rmMock.mockResolvedValue(undefined)
+    writeFileMock.mockResolvedValue(undefined)
+    confirmMock.mockResolvedValue(true)
+    const { code, stdout } = await runCli(['uninstall'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('hook')
+    expect(writeFileMock).toHaveBeenCalled()
+    const written = JSON.parse(String(writeFileMock.mock.calls[0]?.[1]))
+    expect(written.hooks?.UserPromptSubmit).toBeUndefined()
+    expect(written.hooks?.Stop).toBeUndefined()
+    expect(written.hooks?.PreToolUse).toHaveLength(1)
+  })
+
+  it('--dry-run surfaces harnessed hooks without mutating', async () => {
+    readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+    readFileMock.mockImplementation(async (p: unknown) => {
+      if (String(p).includes('settings.json'))
+        return JSON.stringify({
+          hooks: {
+            UserPromptSubmit: [
+              {
+                hooks: [
+                  { type: 'command', command: 'node "C:/gone/bin/harnessed-inject-state.mjs"' },
+                ],
+              },
+            ],
+          },
+        }) as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    const { code, stdout } = await runCli(['uninstall', '--dry-run'])
+    expect(code).toBe(2)
+    expect(stdout).toContain('hook')
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
   it('state dir removed last', async () => {
     mockArtifacts()
     confirmMock.mockResolvedValue(true)

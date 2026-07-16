@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.5] - 2026-07-16
+
+修复 issue #8:卸载后残留 `Stop` / `UserPromptSubmit` hook 导致每次提交 prompt 报 `MODULE_NOT_FOUND`。此前 unified uninstall(`harnessed uninstall` 无参数)只清 workflows / commands / settings env vars / state dir,**不清 hooks**;用户直接 `npm uninstall -g harnessed` 后,`~/.claude/settings.json` 里指向已删除 `bin/*.mjs` 的 hook 每个 prompt / Stop 触发一次 `node:internal/modules/cjs/loader … MODULE_NOT_FOUND`。
+
+### Added
+
+- **`src/installers/lib/harnessedHookTeardown.ts`**:纯函数 SoT,从 hook command 字符串本身识别 harnessed 自有 hook —— 覆盖全部历史形态(npm 相对 `node bin/harnessed-inject-state.mjs`、npm 绝对含引号、compiled `"<binary>" inject-state`、bare `harnessed inject-state`、legacy flat `{command}`、nested `{hooks:[…]}`)。导出 `harnessedHookIdentity` / `harnessedHookScriptPath` / `stripHarnessedHooks`(mutate + 计数)/ `countHarnessedHooks`(非 mutate)/ `harnessedStaleHookPaths`(绝对路径不存在检测)。**关键**:`hookScriptMarker()` 对绝对路径 token 返回 null(只归一化相对 token),orphaned 绝对路径精确匹配会漏 —— 本模块按 script basename anchor 直接匹配,不依赖当前可解析的包路径。
+- **doctor stale-hook 自愈 check**(`src/cli/lib/check-stale-hooks.ts`,第 19 项):检测 settings.json 中指向已删除脚本的 harnessed hook(warn-only;只报**绝对路径且确实不存在**的,bare/相对 token 跳过以免误报),`fix` 指向 `harnessed uninstall`。
+- README `harnessed doctor` 行补 stale-hooks 说明 + `npm uninstall` 前先跑 `harnessed uninstall` 的提示。
+
+### Changed
+
+- **unified uninstall 补 hook teardown**(`src/cli/uninstall.ts`):discovery / summary / `--dry-run` / removal / completion 五处贯通;settings.json 单次 read-modify-write 同时清 env vars + strip hooks(`removeSettingsFootprint`)。新 i18n key `uninstall.unified.hooks` / `removed_hooks`(en + zh-Hans)。
+
+新测试:`harnessedHookTeardown.test.ts`(16 cell,全形态 + stale 检测)、`check-stale-hooks.test.ts`(6 cell)、uninstall 补 2 cell(strip + dry-run surface)、doctor 注册表 18→19。tsc 0 / biome 0 / en↔zh key parity 绿。
+
 ## [4.32.4] - 2026-07-15
 
 两种安装通道(npm-global + 独立二进制)互测。此前 shadow guard 只在 binary 安装器侧、且只在 PATH 遮蔽时触发;npm 方向零检测。现在两通道并存时明确提示"更新一个另一个会陈旧 → 二选一保留",双向覆盖。

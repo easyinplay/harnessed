@@ -89,6 +89,24 @@ vi.mock('../../src/cli/lib/check-skill-integrity.js', () => ({
 vi.mock('../../src/cli/lib/check-update.js', () => ({
   checkUpdate: () => ({ name: 'update', status: 'pass', message: 'up to date (test)' }),
 }))
+// 4.32.4 install-channels + issue #8 stale-hooks both call fs.existsSync at
+// runtime; this file mocks node:fs with readFileSync only (no existsSync), so
+// mock these two checks to deterministic pass. Real logic unit-tested in
+// tests/cli/check-install-channels.test.ts + tests/cli/check-stale-hooks.test.ts.
+vi.mock('../../src/cli/lib/check-install-channels.js', () => ({
+  checkInstallChannels: () => ({
+    name: 'install channel',
+    status: 'pass',
+    message: 'single channel (npm)',
+  }),
+}))
+vi.mock('../../src/cli/lib/check-stale-hooks.js', () => ({
+  checkStaleHooks: () => ({
+    name: 'stale hooks',
+    status: 'pass',
+    message: 'no orphaned harnessed hooks',
+  }),
+}))
 
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -200,10 +218,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 16 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 19 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(17)
+      expect(parsed.checks).toHaveLength(19)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
