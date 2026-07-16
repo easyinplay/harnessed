@@ -49,7 +49,7 @@ export interface HookCmdDeps {
  *  Both forms share ONE identity so entryMatchesRegistration migrates/dedupes
  *  across mode switches in either direction. 4.30.0 added `stop-hook` (issue #6)
  *  alongside 4.27.0's `inject-state`. */
-const COMPILED_HOOK_IDENTITIES = ['inject-state', 'stop-hook'] as const
+export const COMPILED_HOOK_IDENTITIES = ['inject-state', 'stop-hook'] as const
 
 const ABSOLUTE_RE = /^([A-Za-z]:[\\/]|[\\/])/
 
@@ -137,7 +137,13 @@ export function hookScriptMarker(raw: string): string | null {
   return null
 }
 
-function entryCommands(entry: AnyHookEntry): string[] {
+/** Recorded command strings an entry carries (nested group + legacy flat).
+ *  Null-safe: a malformed hand-edited settings.json may hold `null`/primitive
+ *  array elements (e.g. `"Stop": [null]`) — those yield [] instead of throwing,
+ *  so callers (doctor self-heal) keep their fail-soft contract. Shared SoT for
+ *  harnessedHookTeardown.ts too. */
+export function entryCommands(entry: AnyHookEntry | null | undefined): string[] {
+  if (!entry || typeof entry !== 'object') return []
   const cmds: string[] = []
   if (typeof entry.command === 'string') cmds.push(entry.command)
   if (Array.isArray(entry.hooks)) {

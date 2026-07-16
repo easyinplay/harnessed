@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.7] - 2026-07-16
+
+高置信度 code review(workflow 多 agent,17 agents / 每 finding 独立 verify)对 4.32.5 issue #8 hook teardown 代码的加固。修 5 类真 bug + 3 项 DRY,全在 `src/installers/lib/harnessedHookTeardown.ts` 及消费方。
+
+### Fixed
+
+- **group-level 误删**(CONFIRMED):`stripHarnessedHooks` 之前在 hook-**group** 粒度过滤,一个 group 同时含 harnessed hook 与用户 sibling hook 时整组删除 → 静默丢用户的 hook。改为 **inner `hooks[]` 粒度**过滤,保留 sibling;group 空了才删。
+- **左边界缺失 → 误删**(CONFIRMED/PLAUSIBLE):identity regex 无左边界,`node ./scripts/team-harnessed-stop-hook.mjs` / `"C:/tools/myharnessed.exe" inject-state` 等用户自有 hook 被当成 harnessed 删掉。加 `(?:^|[\s"'=/\\])` 左边界锚定。
+- **doctor 崩溃**(CONFIRMED):`entryCommands` 对 `null`/primitive 数组元素(手改坏的 settings.json,如 `"Stop":[null]`)解引用抛错 → `Promise.all(CHECKS)` reject → 整个 `harnessed doctor` 崩、丢弃所有其他 check(违反 warn-never-fail)。共享的 `entryCommands` 加 null guard + `check-stale-hooks` 加 try/catch。
+- **带空格路径假全清**(CONFIRMED):`harnessedHookScriptPath` 的 `[^"'\s]*` 在空格处截断,`C:/Program Files/.../harnessed-inject-state.mjs` 被截成相对片段 → stale 检测跳过 → doctor 报"无 orphan"而 hook 每 prompt 仍 MODULE_NOT_FOUND。改为整段引号内捕获(含空格)。
+- **relative orphan 漏报**(PLAUSIBLE):`harnessedStaleHookPaths` 只报绝对路径,pre-4.20.0 的相对 shape(`node bin/harnessed-inject-state.mjs`,cwd 相关必坏)uninstall 会删但 doctor 报 pass。现相对 `.mjs` 也报(bare `harnessed` PATH token 仍跳过,不误报)。
+
+### Changed (DRY / simplify)
+
+- **合并 SoT**:`COMPILED_HOOK_IDENTITIES` + `entryCommands` 从 `hookEntry.ts` **export 共享**,`harnessedHookTeardown.ts` 不再各自复制(消除 IDS / entryCommands / AnyEntry 三处副本 + 三处内联 id 正则 → 从 `ID_ALT` 派生)。防未来加第三个 hook 时两处 drift 漏删(正是 issue #8 的 bug 类)。
+
+**保留决策**:review 提的"删 legacy fallback 致 pre-workflows.json 用户丢 breadcrumb"(4.32.6)属**刻意 tradeoff** —— 反例(保留 fallback)会重新引入跨 repo 泄漏;`readStoreRaw` 在下次 checkpoint 时迁移;4.32.x 机器上"只有 current-workflow.json 无 workflows.json"几乎不可能。不改。
+
+新增回归测试:group sibling 保留 / 左边界拒斥 / null 元素不抛 / 带空格路径 / relative orphan 上报 / count==removed 粒度。CI 全套 2203 test 绿(+10)。tsc 0 / biome 0。
+
 ## [4.32.6] - 2026-07-16
 
 修复 perturn-inject hook 跨 repo 状态泄漏(dogfood 发现):在一个**独立、未使用 harnessed** 的新 git repo 里,UserPromptSubmit hook 每回合仍注入**别的 repo 的** `<workflow-state>`。

@@ -52,7 +52,15 @@ export function checkStaleHooks(deps?: Partial<StaleHooksDeps>): CheckResult {
     return { name: NAME, status: 'pass', message: 'no hooks registered' }
   }
 
-  const stale = harnessedStaleHookPaths(hooks as never, exists)
+  // Defensive: harnessedStaleHookPaths is null-safe, but a doctor check must
+  // NEVER throw (it would reject Promise.all in doctor.ts and discard every
+  // other check). Any surprise on a hand-mangled settings.json → skip, not fail.
+  let stale: { event: string; path: string }[]
+  try {
+    stale = harnessedStaleHookPaths(hooks as never, exists)
+  } catch {
+    return { name: NAME, status: 'pass', message: 'hooks unreadable — skipped' }
+  }
   if (stale.length === 0) {
     return { name: NAME, status: 'pass', message: 'no orphaned harnessed hooks' }
   }
@@ -60,7 +68,7 @@ export function checkStaleHooks(deps?: Partial<StaleHooksDeps>): CheckResult {
   return {
     name: NAME,
     status: 'warn',
-    message: `${stale.length} harnessed hook(s) point at a deleted script — Claude Code errors MODULE_NOT_FOUND every prompt (${list})`,
+    message: `${stale.length} harnessed hook(s) point at a missing/unresolvable script — Claude Code errors MODULE_NOT_FOUND every prompt (${list})`,
     fix: `run 'harnessed uninstall' to strip them, or delete the matching Stop/UserPromptSubmit entries from ${settingsPath}`,
   }
 }

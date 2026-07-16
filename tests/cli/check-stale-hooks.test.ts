@@ -73,6 +73,24 @@ describe('checkStaleHooks', () => {
     expect(r.status).toBe('pass')
   })
 
+  it('malformed hooks (null array element) → pass, never throws (warn-never-fail contract)', () => {
+    const r = withSettings({ hooks: { Stop: [null, { hooks: [null] }] } }, () => false)
+    expect(r.status).toBe('pass')
+  })
+
+  it('relative-form harnessed hook (pre-4.20.0 orphan) → warn', () => {
+    const r = withSettings(
+      {
+        hooks: {
+          UserPromptSubmit: [{ hooks: [{ command: 'node bin/harnessed-inject-state.mjs' }] }],
+        },
+      },
+      () => true, // exists is irrelevant for a cwd-relative script
+    )
+    expect(r.status).toBe('warn')
+    expect(r.fix).toContain('harnessed uninstall')
+  })
+
   it('unrelated hook pointing nowhere → pass (not ours)', () => {
     const r = withSettings(
       {

@@ -45,6 +45,18 @@ describe('harnessedHookIdentity', () => {
     expect(harnessedHookIdentity('echo harnessed-was-here')).toBeNull()
     expect(harnessedHookIdentity('node harnessed-inject-statement.mjs')).toBeNull()
   })
+
+  it('requires a LEFT boundary — a user script merely ENDING in the name is NOT owned', () => {
+    // review finding: no left boundary → silent deletion of a user's own hook.
+    expect(harnessedHookIdentity('node ./scripts/team-harnessed-stop-hook.mjs')).toBeNull()
+    expect(harnessedHookIdentity('node my-harnessed-inject-state.mjs')).toBeNull()
+    expect(harnessedHookIdentity('"C:/tools/myharnessed.exe" inject-state')).toBeNull()
+    // but a genuine harnessed path (separator/quote/start boundary) still matches
+    expect(harnessedHookIdentity('node "C:/x/harnessed/bin/harnessed-stop-hook.mjs"')).toBe(
+      'stop-hook',
+    )
+    expect(harnessedHookIdentity('"C:/x/harnessed.exe" inject-state')).toBe('inject-state')
+  })
 })
 
 describe('harnessedHookScriptPath', () => {
@@ -66,6 +78,15 @@ describe('harnessedHookScriptPath', () => {
 
   it('bare form → the bare token (unstattable, caller skips)', () => {
     expect(harnessedHookScriptPath('harnessed stop-hook')).toBe('harnessed')
+  })
+
+  it('quoted path WITH SPACES → the whole path (review finding: not truncated at space)', () => {
+    expect(harnessedHookScriptPath('node "C:/Program Files/npm/harnessed-inject-state.mjs"')).toBe(
+      'C:/Program Files/npm/harnessed-inject-state.mjs',
+    )
+    expect(harnessedHookScriptPath('"C:/Program Files/harnessed/harnessed.exe" stop-hook')).toBe(
+      'C:/Program Files/harnessed/harnessed.exe',
+    )
   })
 
   it('unrelated → null', () => {
@@ -96,6 +117,54 @@ describe('stripHarnessedHooks', () => {
     expect(hooks.UserPromptSubmit).toHaveLength(1)
     expect(hooks.Stop).toBeUndefined() // emptied → pruned
     expect(hooks.PreToolUse).toHaveLength(1)
+  })
+
+  it('preserves a SIBLING non-harnessed hook in the same group (review finding: no data loss)', () => {
+    const hooks: Record<string, unknown[]> = {
+      UserPromptSubmit: [
+        {
+          matcher: '',
+          hooks: [
+            { type: 'command', command: 'node "/x/harnessed/bin/harnessed-inject-state.mjs"' },
+            { type: 'command', command: 'node /x/my-tool.mjs' },
+          ],
+        },
+      ],
+    }
+    const { removed } = stripHarnessedHooks(hooks as never)
+    expect(removed).toBe(1)
+    // group survives with the user's sibling hook intact
+    expect(hooks.UserPromptSubmit).toHaveLength(1)
+    const grp = hooks.UserPromptSubmit?.[0] as { hooks: { command: string }[] }
+    expect(grp.hooks).toHaveLength(1)
+    expect(grp.hooks[0]?.command).toContain('my-tool.mjs')
+  })
+
+  it('tolerates null / primitive array elements (malformed settings.json — no throw)', () => {
+    const hooks: Record<string, unknown[]> = {
+      Stop: [null, 'garbage', { hooks: [{ command: 'node /x/harnessed-stop-hook.mjs' }] }],
+    }
+    expect(() => stripHarnessedHooks(hooks as never)).not.toThrow()
+    expect(countHarnessedHooks(hooks as never)).toBe(0) // the harnessed one already stripped
+  })
+
+  it('count granularity matches removed (per-command, not per-group)', () => {
+    const mk = () =>
+      ({
+        UserPromptSubmit: [
+          {
+            hooks: [
+              { command: 'node /x/harnessed-inject-state.mjs' },
+              { command: 'node /x/harnessed-stop-hook.mjs' },
+              { command: 'node /x/keep.mjs' },
+            ],
+          },
+        ],
+      }) as Record<string, unknown[]>
+    const counted = countHarnessedHooks(mk() as never)
+    const { removed } = stripHarnessedHooks(mk() as never)
+    expect(counted).toBe(2)
+    expect(removed).toBe(counted)
   })
 
   it('removes legacy flat { command } form', () => {
@@ -155,5 +224,28 @@ describe('harnessedStaleHookPaths', () => {
       ],
     }
     expect(harnessedStaleHookPaths(onlyBare as never, () => false)).toEqual([])
+  })
+
+  it('reports a RELATIVE harnessed .mjs (pre-4.20.0 broken shape) regardless of exists', () => {
+    // review finding: relative orphan errors every prompt but was reported pass.
+    const rel = {
+      UserPromptSubmit: [{ hooks: [{ command: 'node bin/harnessed-inject-state.mjs' }] }],
+    }
+    const stale = harnessedStaleHookPaths(rel as never, () => true) // exists ignored for relative
+    expect(stale).toEqual([{ event: 'UserPromptSubmit', path: 'bin/harnessed-inject-state.mjs' }])
+  })
+
+  it('reports an absolute path WITH SPACES that is missing (review finding: not skipped)', () => {
+    const spaced = {
+      Stop: [{ hooks: [{ command: 'node "C:/Program Files/npm/harnessed-stop-hook.mjs"' }] }],
+    }
+    const stale = harnessedStaleHookPaths(spaced as never, () => false)
+    expect(stale).toEqual([{ event: 'Stop', path: 'C:/Program Files/npm/harnessed-stop-hook.mjs' }])
+  })
+
+  it('null / primitive array elements do not throw', () => {
+    const bad = { Stop: [null, 42, { hooks: [null] }] }
+    expect(() => harnessedStaleHookPaths(bad as never, () => false)).not.toThrow()
+    expect(harnessedStaleHookPaths(bad as never, () => false)).toEqual([])
   })
 })
