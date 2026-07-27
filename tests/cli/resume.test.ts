@@ -23,6 +23,7 @@ import { join as pathJoin } from 'node:path'
 import { Command } from 'commander'
 import { detectDrift } from '../../src/checkpoint/evidence.js'
 import { runResume } from '../../src/checkpoint/resume.js'
+import { repoKey } from '../../src/checkpoint/workflowStore.js'
 import { registerResume } from '../../src/cli/resume.js'
 import { harnessedFile, harnessedSubdir } from '../../src/installers/lib/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
@@ -30,21 +31,31 @@ import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 const detectDriftMock = vi.mocked(detectDrift)
 
 // v3.0.3 — paths under ~/.claude/harnessed/ via harnessedRoot SoT.
-const STATE_PATH = harnessedFile('current-workflow.json')
+// issue #10 — the workflow lives in the per-repo store (workflows.json), NOT the
+// legacy singleton; resume reads it via readCurrentWorkflow → readStoreRaw.
+const STORE_PATH = harnessedFile('workflows.json')
 const CP_PATH = pathJoin(harnessedSubdir('checkpoints'), '3.1.json')
 
-function seedPausedWorkflow(cpPath: string = CP_PATH) {
+/** Seed a CurrentWorkflowV1 envelope into the per-repo store under this cwd's key. */
+function seedStore(envelope: Record<string, unknown>) {
   fsState.set(
-    STATE_PATH,
+    STORE_PATH,
     JSON.stringify({
-      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
-      phase: '3.1',
-      status: 'paused',
-      last_checkpoint_path: cpPath,
-      started_at: '2026-05-16T10:00:00.000Z',
-      paused_at: '2026-05-16T11:00:00.000Z',
+      schemaVersion: SCHEMA_VERSIONS.workflowStore,
+      workflows: { [repoKey()]: envelope },
     }),
   )
+}
+
+function seedPausedWorkflow(cpPath: string = CP_PATH) {
+  seedStore({
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: '3.1',
+    status: 'paused',
+    last_checkpoint_path: cpPath,
+    started_at: '2026-05-16T10:00:00.000Z',
+    paused_at: '2026-05-16T11:00:00.000Z',
+  })
 }
 
 function seedCheckpoint(overrides: Record<string, unknown> = {}, path: string = CP_PATH) {
@@ -109,16 +120,13 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
   })
 
   it('25. workflow status="active" → "no-paused-phase" + CLI exit 1 (D-03 fail-loud)', async () => {
-    fsState.set(
-      STATE_PATH,
-      JSON.stringify({
-        schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
-        phase: '3.1',
-        status: 'active',
-        last_checkpoint_path: null,
-        started_at: '2026-05-16T10:00:00.000Z',
-      }),
-    )
+    seedStore({
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: '3.1',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-05-16T10:00:00.000Z',
+    })
     const r = await runResume()
     expect(r.status).toBe('no-paused-phase')
     if (r.status === 'no-paused-phase') expect(r.error).toMatch(/'active'/)
@@ -192,27 +200,24 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
 
 // v5.0 Spec 1 (F) — resume evidence drift warn (warn, never block).
 function seedPausedWithEvidence() {
-  fsState.set(
-    STATE_PATH,
-    JSON.stringify({
-      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
-      phase: '3.1',
-      status: 'paused',
-      last_checkpoint_path: CP_PATH,
-      started_at: '2026-05-16T10:00:00.000Z',
-      paused_at: '2026-05-16T11:00:00.000Z',
-      sub_progress: [
-        {
-          sub: 'code',
-          status: 'done',
-          gate_fired: true,
-          evidence_status: 'verified',
-          evidence: [{ path: 'progress.md', sha256: 'abc1234deadbeef' }],
-        },
-        { sub: 'test', status: 'pending', gate_fired: true },
-      ],
-    }),
-  )
+  seedStore({
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: '3.1',
+    status: 'paused',
+    last_checkpoint_path: CP_PATH,
+    started_at: '2026-05-16T10:00:00.000Z',
+    paused_at: '2026-05-16T11:00:00.000Z',
+    sub_progress: [
+      {
+        sub: 'code',
+        status: 'done',
+        gate_fired: true,
+        evidence_status: 'verified',
+        evidence: [{ path: 'progress.md', sha256: 'abc1234deadbeef' }],
+      },
+      { sub: 'test', status: 'pending', gate_fired: true },
+    ],
+  })
 }
 
 describe('resume evidence drift (v5.0 Spec 1 F)', () => {
@@ -272,18 +277,15 @@ describe('resume recoveryActions (G3)', () => {
 
   it('35. paused workflow with a pending sub → ok result carries recoveryActions with "run sub <name>"', async () => {
     // Seed a paused workflow whose ledger has one pending sub ('test').
-    fsState.set(
-      STATE_PATH,
-      JSON.stringify({
-        schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
-        phase: '3.1',
-        status: 'paused',
-        last_checkpoint_path: CP_PATH,
-        started_at: '2026-05-16T10:00:00.000Z',
-        paused_at: '2026-05-16T11:00:00.000Z',
-        sub_progress: [{ sub: 'test', status: 'pending', gate_fired: true }],
-      }),
-    )
+    seedStore({
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: '3.1',
+      status: 'paused',
+      last_checkpoint_path: CP_PATH,
+      started_at: '2026-05-16T10:00:00.000Z',
+      paused_at: '2026-05-16T11:00:00.000Z',
+      sub_progress: [{ sub: 'test', status: 'pending', gate_fired: true }],
+    })
     seedCheckpoint()
     detectDriftMock.mockResolvedValue([])
     const r = await runResume()

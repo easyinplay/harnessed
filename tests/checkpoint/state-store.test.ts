@@ -79,18 +79,26 @@ describe('state.ts per-repo store (Phase 15)', () => {
     expect(await readCurrentWorkflow()).toBeNull()
   })
 
-  it('migration — legacy current-workflow.json read verbatim, persisted on first write, legacy retained', async () => {
+  it('issue #10 — legacy current-workflow.json is NOT auto-migrated (unkeyed global singleton stays out of live state)', async () => {
     process.chdir(join(tmp, 'repoA'))
     await writeFile(legacyFile(), JSON.stringify(env('legacy-phase')), 'utf8')
-    // read sees the legacy envelope (no store yet)
-    expect((await readCurrentWorkflow())?.phase).toBe('legacy-phase')
+    // no store yet + a legacy singleton present → read returns null, NOT the
+    // singleton attributed to this repo (that was the cross-repo leak).
+    expect(await readCurrentWorkflow()).toBeNull()
     expect(existsSync(storeFile())).toBe(false)
-    // first write persists the store under this repo's key
-    await writeCurrentWorkflow(env('legacy-phase'))
-    expect(existsSync(storeFile())).toBe(true)
-    expect((await readCurrentWorkflow())?.phase).toBe('legacy-phase')
-    // legacy file retained (rollback anchor)
-    expect(existsSync(legacyFile())).toBe(true)
+  })
+
+  it('issue #10 — a legacy singleton written by one repo does NOT leak into another repo', async () => {
+    // repoA runs a workflow → the write-only D7 mirror updates the global singleton.
+    process.chdir(join(tmp, 'repoA'))
+    await writeCurrentWorkflow(env('phaseA'))
+    expect(existsSync(legacyFile())).toBe(true) // mirror still written (eval-record / rollback anchor)
+    // repoB has never run a workflow (no slot). It must NOT inherit repoA's
+    // envelope via the singleton — the phantom-inject bug.
+    process.chdir(join(tmp, 'repoB'))
+    // simulate a corrupt/absent store so only the singleton could surface it
+    rmSync(storeFile(), { force: true })
+    expect(await readCurrentWorkflow()).toBeNull()
   })
 
   it('mutateSubProgress — single-lock RMW over the slot; no-op when unseeded', async () => {

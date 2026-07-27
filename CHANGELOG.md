@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.9] - 2026-07-27
+
+架构 code review HIGH(issue #10)。
+
+### Fixed
+
+- **issue #10 — 修 workflow 状态跨 repo 泄漏残留。** `workflowStore.readStoreRaw` 在 `workflows.json` 缺失/损坏时会读 legacy 单例 `current-workflow.json` 并把它挂到 `repoKey(cwd)`。该单例是**无 key 的全局文件**(每个 harness root 一份,所有 repo 共享),挂到当前 cwd 的 repoKey = 把一个 repo 的 workflow 归属到恰好先读它的另一个 repo —— 一个从没跑过 workflow 的新 repo 会看到幻象 `<workflow-state>` 注入。4.32.6 修了 `bin/harnessed-inject-state.mjs` 的 legacy reader,本次让 TS store 路径与之一致:`readStoreRaw` 不再读 legacy fallback,`workflows.json`(按 repoKey 分槽)是唯一读 SoT,隔离 by construction。
+  - state.ts 的 D7 镜像写保留(改注释澄清):现为**只写** artifact —— rollback anchor + `harnessed eval record --from <harness-root>` 的数据源;无任何路径把它读回 live state。
+  - 修 doc 漂移:`src/cli/lib/generateCommands.ts` 生成的 `/命令` 说明由「`current-workflow.json`(sole SoT)」改为「`workflows.json`(per-repo store, sole SoT)」。
+
 ## [4.32.8] - 2026-07-27
 
 整体架构 code review(3 agent 分半区并行:orchestration-brain / package-manager / CLI-delivery)后修 CRITICAL C1(issue #9)。

@@ -90,15 +90,14 @@ async function withLock<T>(fn: () => Promise<T>): Promise<T> {
  *  fail-soft). Throws only via writeCurrentWorkflow on known-version drift. */
 export async function readCurrentWorkflow(): Promise<CurrentWorkflowV1Type | null> {
   // Phase 15 — resolve the active repo's slot from the per-repo multi-workflow
-  // store. readStoreRaw validates the store (each slot is a CurrentWorkflowV1)
-  // and transparently surfaces a legacy singleton in-memory (compat-read, D5),
-  // so the CD-5 fail-soft null behavior is preserved.
+  // store. readStoreRaw validates the store (each slot is a CurrentWorkflowV1),
+  // returns an empty store when workflows.json is missing/corrupt (issue #10 — it
+  // no longer reads the unkeyed legacy singleton), so CD-5 fail-soft null holds.
   const store = await readStoreRaw()
   // Phase 34 (Spec 2/D) — prefer this session's composite slot; fall back to the
   // bare repoKey slot so an in-flight workflow started without session-scoping
-  // (or surfaced by readStoreRaw's legacy compat-read under repoKey) stays
-  // visible. With no session id, activeKey()===repoKey() → the fallback branch is
-  // redundant and the path is byte-identical to the pre-Phase-34 single slot.
+  // stays visible. With no session id, activeKey()===repoKey() → the fallback
+  // branch is redundant and byte-identical to the pre-Phase-34 single slot.
   return store.workflows[activeKey()] ?? store.workflows[repoKey()] ?? null
 }
 
@@ -122,9 +121,13 @@ async function writeCurrentWorkflowUnlocked(s: CurrentWorkflowV1Type): Promise<v
   // covers it until this session-keyed slot exists, then shadows it.
   store.workflows[activeKey()] = s
   await writeStoreRaw(store)
-  // D7 dual-write — mirror the active repo's envelope to the legacy singleton
-  // as a one-release rollback anchor (a code revert still finds current data).
-  // The harness-root dir already exists (withLock mkdir + writeStoreRaw mkdir).
+  // D7 mirror — write the active envelope to the legacy singleton as a WRITE-ONLY
+  // artifact: a one-release rollback anchor (a code revert to a pre-Phase-15
+  // harnessed still finds current data) and the source `harnessed eval record
+  // --from <harness-root>` reads. issue #10 — readStoreRaw NO LONGER reads this
+  // file back, so the unkeyed global singleton can never be attributed to a repo
+  // (the cross-repo leak). The harness-root dir already exists (withLock mkdir +
+  // writeStoreRaw mkdir).
   await writeFileAtomic(statePath(), JSON.stringify(s, null, 2))
 }
 

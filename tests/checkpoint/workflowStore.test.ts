@@ -179,11 +179,12 @@ describe('store kernels + migration', () => {
     expect(s.workflows[repoKey()]?.phase).toBe('task')
   })
 
-  it('migration: legacy current-workflow.json surfaces in-memory under repoKey, WITHOUT writing', async () => {
+  it('issue #10: legacy current-workflow.json is IGNORED (unkeyed global singleton must not surface under repoKey → cross-repo leak)', async () => {
     await writeFile(legacyFile(), JSON.stringify(envelope('legacy-phase')), 'utf8')
     const s = await readStoreRaw()
-    expect(s.workflows[repoKey()]?.phase).toBe('legacy-phase')
-    // read must be side-effect-free — no workflows.json materialized
+    // the unkeyed singleton is never attributed to a repo — empty store, not a
+    // phantom slot holding another repo's workflow.
+    expect(s.workflows).toEqual({})
     expect(existsSync(storeFile())).toBe(false)
   })
 

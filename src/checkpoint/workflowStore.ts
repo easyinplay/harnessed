@@ -17,7 +17,7 @@ import { harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { detectPlatform } from '../installers/lib/platform.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { writeFileAtomic } from './atomicWrite.js'
-import { CurrentWorkflowV1, type CurrentWorkflowV1Type } from './schema/currentWorkflow.v1.js'
+import { CurrentWorkflowV1 } from './schema/currentWorkflow.v1.js'
 
 /** Phase 22 — per-repo retro cadence sidecar. Lives at the STORE level (NOT the
  *  envelope) because `activate()` writes a fresh envelope each phase and would
@@ -70,9 +70,6 @@ export type WorkflowStoreV1Type = Static<typeof WorkflowStoreV1>
 function storePath(): string {
   return harnessedFile('workflows.json')
 }
-function legacyPath(): string {
-  return harnessedFile('current-workflow.json')
-}
 
 function emptyStore(): WorkflowStoreV1Type {
   return { schemaVersion: SCHEMA_VERSIONS.workflowStore, workflows: {} }
@@ -113,28 +110,25 @@ export function activeKey(cwd: string = process.cwd()): string {
   return sid ? `${base}::${sid}` : base
 }
 
-/** Lock-FREE read. Returns the parsed store when `workflows.json` exists+valid.
- *  Otherwise, when a legacy singleton `current-workflow.json` exists+valid,
- *  surfaces it IN MEMORY under repoKey(cwd) (compat-read, D5) WITHOUT writing —
- *  reads stay side-effect-free; the migration persists on the next locked write.
- *  Empty store when neither is present/valid. */
+/** Lock-FREE read. Returns the parsed store when `workflows.json` exists+valid,
+ *  else an empty store.
+ *
+ *  issue #10 — the legacy singleton `current-workflow.json` is NO LONGER read as
+ *  a fallback. It is an UNKEYED global file (one per harness root, shared by every
+ *  repo), so surfacing it under `repoKey(cwd)` attributed one repo's workflow to
+ *  whatever repo happened to read it first — a cross-repo state leak (the phantom
+ *  `<workflow-state>` a fresh repo with no slot saw injected). `workflows.json`
+ *  is the sole read SoT and is per-repo keyed, so isolation is by construction.
+ *  (The 4.32.6 bin fix already stopped `bin/harnessed-inject-state.mjs` from
+ *  reading the singleton; this brings the TS store path into line.) The singleton
+ *  is still WRITTEN by state.ts as a write-only eval-record / rollback anchor —
+ *  nothing reads it back into live state. */
 export async function readStoreRaw(): Promise<WorkflowStoreV1Type> {
   try {
     const parsed = JSON.parse(await readFile(storePath(), 'utf8'))
     if (Value.Check(WorkflowStoreV1, parsed)) return parsed as WorkflowStoreV1Type
   } catch {
-    // missing or corrupt store → try legacy fallback below
-  }
-  try {
-    const legacy = JSON.parse(await readFile(legacyPath(), 'utf8'))
-    if (Value.Check(CurrentWorkflowV1, legacy)) {
-      return {
-        schemaVersion: SCHEMA_VERSIONS.workflowStore,
-        workflows: { [repoKey()]: legacy as CurrentWorkflowV1Type },
-      }
-    }
-  } catch {
-    // no legacy either
+    // missing or corrupt store → empty (never the unkeyed legacy singleton)
   }
   return emptyStore()
 }
