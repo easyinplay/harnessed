@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.8] - 2026-07-27
+
+整体架构 code review(3 agent 分半区并行:orchestration-brain / package-manager / CLI-delivery)后修 CRITICAL C1(issue #9)。
+
+### Fixed
+
+- **C1 (issue #9) — uninstall 现在兑现 manifest 声明的 `spec.uninstall` 契约。** `spec.uninstall`(`cmd` + `cleanup_paths`)是 schema-REQUIRED 且过 security 安检,但从无执行者:`runUninstall` 只按 `install.method` 派发到 per-method 卸载器,而后者从 `spec.install` 反推 teardown。对两个最复杂的真实 manifest 卸载错误或空转 —— `gsd`(npm-cli `npx --yes` 被误判 ephemeral no-op,71 个 skill 目录留盘)、`ui-ux-pro-max`(自清理 clone,per-method rm 已消失的 cache 路径,真 skill 原地不动)。
+  - 新增 `src/uninstallers/lib/declaredTeardown.ts`:通过共享 spawn seam(复用 `checkCmdString` 安检)运行声明 `cmd`,再 **$HOME 限制 + 幂等 force-rm** 移除 `cleanup_paths`。声明 cmd fail-soft(非零退出 / 缺 Git Bash / timeout 均 warn + 继续到跨平台的 `cleanup_paths` fs 移除);`cleanup_path` 越出 `$HOME` 子树或触发路径穿越向量则 hard-fail(broken/hostile manifest 必须失败响亮)。
+  - `runUninstall` 把「装 skill 到目录」的 3 方法(`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`)路由到声明式 teardown;`cc-hook-add`(settings.json JSON 手术,声明 cmd 是 `"true"` 占位)/ `cc-plugin-marketplace` / `mcp-*-add`(带平台门控,声明 cmd 仅镜像 per-method inverse)保留各自 per-method 卸载器。
+
 ## [4.32.7] - 2026-07-16
 
 高置信度 code review(workflow 多 agent,17 agents / 每 finding 独立 verify)对 4.32.5 issue #8 hook teardown 代码的加固。修 5 类真 bug + 3 项 DRY,全在 `src/installers/lib/harnessedHookTeardown.ts` 及消费方。

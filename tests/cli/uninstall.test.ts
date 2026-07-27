@@ -242,6 +242,8 @@ spec:
     timeout_ms: 5000
   uninstall:
     cmd: "rm -rf ~/.claude/skills/my-skill"
+    cleanup_paths:
+      - ~/.claude/skills/my-skill
   upstream_health:
     stability: stable
     last_check: "2026-01-01"
@@ -324,22 +326,28 @@ describe('cli/uninstall <name> — per-manifest', () => {
     expect(stdout).toMatch(/\[dry-run\]/)
   })
 
-  it('ephemeral npm-cli (npx --yes) → exit 0 + ephemeral warn', async () => {
+  it('npm-cli → runs the declared uninstall cmd via spawn + exit 0 (C1: honors spec.uninstall, not per-method ephemeral no-op)', async () => {
     mockManifestFile(EPHEMERAL_NPM_MANIFEST_YAML)
+    mockSpawnExit(0)
     confirmMock.mockResolvedValue(true)
-    const { code, stdout } = await runCli(['uninstall', 'ctx7-ephemeral'])
+    const { code } = await runCli(['uninstall', 'ctx7-ephemeral'])
     expect(code).toBe(0)
-    expect(stdout).toContain('ephemeral install')
+    // C1: npm-cli routes to the declared teardown, which runs uninstall.cmd
+    // through the spawn seam instead of the per-method "ephemeral → no-op" path.
+    expect(spawnMock).toHaveBeenCalled()
   })
 
-  it('git-clone-with-setup → fs.rm called with clone target + exit 0', async () => {
+  it('git-clone-with-setup → declared teardown removes cleanup_paths via fs.rm + exit 0 (C1)', async () => {
     mockManifestFile(GIT_CLONE_MANIFEST_YAML)
+    mockSpawnExit(0) // declared cmd `rm -rf …` goes through the spawn seam (Git Bash on win)
     rmMock.mockResolvedValue(undefined)
     confirmMock.mockResolvedValue(true)
     const { code } = await runCli(['uninstall', 'my-skill'])
     expect(code).toBe(0)
+    // cross-platform removal is the confined cleanup_paths fs.rm — not the
+    // per-method reverse-parsed clone dest.
     expect(rmMock).toHaveBeenCalledWith(
-      expect.stringContaining('.claude/skills/my-skill'),
+      expect.stringMatching(/[/\\]\.claude[/\\]skills[/\\]my-skill$/),
       expect.objectContaining({ recursive: true, force: true }),
     )
   })
@@ -408,6 +416,7 @@ describe('cli/uninstall <name> — per-manifest', () => {
 
   it('fs.rm called with { recursive: true, force: true }', async () => {
     mockManifestFile(GIT_CLONE_MANIFEST_YAML)
+    mockSpawnExit(0)
     rmMock.mockResolvedValue(undefined)
     confirmMock.mockResolvedValue(true)
     await runCli(['uninstall', 'my-skill'])
