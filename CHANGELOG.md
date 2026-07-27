@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.10] - 2026-07-27
+
+架构 code review HIGH(#4)。
+
+### Fixed
+
+- **#4 — COMPLETION_SCHEMA 不再把 task 链专用的 `phase` 强加给每个 spawn。** `sdkSpawn` 对所有 spawn 硬编码 `outputFormat: {json_schema, COMPLETION_SCHEMA}`,而该 schema 把 `phase` 设为 `required` 且 enum 锁死为 4-phase task 链(`01-clarify`/`02-code`/`03-test`/`04-deliver`)。discuss/plan/verify/research/retro 等非 task sub 无此标签 → 无法产出 schema-valid 的 `structured_output` → 结构化 completion 检测对它们不可达。而**没有任何 consumer 读 `phase`**(`isComplete` + run.ts 派生只看 `status`/`subtype`)。现 `required` 只留 `status`;`phase` 降为可选、无 enum 约束的自标签。
+
+### Known / deferred
+
+- **#3(completion 谓词分歧,未修 — 待决策)**:同一 SDK envelope 在 `run.ts` 单发路径(`status==='COMPLETE' || subtype==='success'`,宽松)与 `ralphLoop.isComplete`(`subtype==='success' && status==='COMPLETE'`,严格)得到相反判定。统一必然改一侧的**被测试钉死的**行为,且「正确」语义取决于 SDK 是否可靠填充 `structured_output`(本地无 live spawn 不可验)。属编排 pass/fail 语义决策,留待用户定夺 strict vs lenient。
+
 ## [4.32.9] - 2026-07-27
 
 架构 code review HIGH(issue #10)。

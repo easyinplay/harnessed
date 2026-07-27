@@ -3,19 +3,23 @@
 // Phase 2.2 Wave 2 T2.2 — Unified COMPLETION_SCHEMA (D2.2-1 / RESEARCH § 1.4).
 // ADR 0011 errata — dual-signal completion 4-layer (phase 2.2 W2 — F4).
 //
-// IMPL NOTE — RESEARCH § 1.4 establishes ONE schema shared across the 4-phase
-// task chain (01-clarify / 02-code / 03-test / 04-deliver). Karpathy
-// YAGNI: per-phase schema variants are NOT needed — a single status/phase
-// discriminator + free-form summary + optional blockers covers every phase's
-// completion semantics. Consumer at `isComplete()` (lib/ralphLoop.ts) branches
-// on `status === 'COMPLETE'`. PRIMARY signal — see SC3 plan-fork
-// (`outputFormat: { type: 'json_schema', schema: COMPLETION_SCHEMA }`).
-
+// IMPL NOTE — ONE schema shared by EVERY spawn (sdkSpawn hardcodes it as the
+// `outputFormat`). Consumers (`isComplete()` in lib/ralphLoop.ts + run.ts's
+// dispatch parse) branch ONLY on `status` (and `subtype`) — nothing reads `phase`.
+//
+// issue #4 — `phase` used to be `required` AND enum-locked to the 4-phase task
+// chain (01-clarify / 02-code / 03-test / 04-deliver). But this schema is applied
+// to ALL spawns, including discuss / plan / verify / research / retro subs that
+// have no such label, so those subs could not produce a schema-valid
+// structured_output — making structured completion detection unreachable for them.
+// Since no consumer reads `phase`, only `status` is required now; `phase` stays as
+// an OPTIONAL, unconstrained self-label (a task sub may still emit '02-code'; a
+// non-task sub omits it or free-labels).
 export const COMPLETION_SCHEMA = {
   type: 'object',
   properties: {
     status: { type: 'string', enum: ['COMPLETE', 'PARTIAL', 'BLOCKED'] },
-    phase: { type: 'string', enum: ['01-clarify', '02-code', '03-test', '04-deliver'] },
+    phase: { type: 'string' },
     summary: { type: 'string' },
     blockers: { type: 'array', items: { type: 'string' } },
     // v3.5.0 Phase 2 — Option 1-Lite signal-driven Agent Teams escalation.
@@ -26,7 +30,7 @@ export const COMPLETION_SCHEMA = {
     needs_teams_escalation: { type: 'boolean' },
     escalation_reason: { type: 'string' },
   },
-  required: ['status', 'phase'],
+  required: ['status'],
 } as const
 
 export type CompletionStatus = 'COMPLETE' | 'PARTIAL' | 'BLOCKED'
