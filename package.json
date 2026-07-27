@@ -1,6 +1,6 @@
 {
   "name": "harnessed",
-  "version": "4.32.11",
+  "version": "4.32.12",
   "description": "AI coding harness package manager + composition orchestrator",
   "type": "module",
   "license": "Apache-2.0",
@@ -58,7 +58,8 @@
   ],
   "scripts": {
     "dev": "tsup --watch",
-    "build": "tsc --noEmit && tsup",
+    "build": "tsc --noEmit && tsup && node ./scripts/build-hooks.mjs",
+    "build:hooks": "node ./scripts/build-hooks.mjs",
     "build:schema": "node ./scripts/build-schema.mjs",
     "validate:schema": "node ./scripts/validate-schema.mjs",
     "typecheck": "tsc --noEmit",
@@ -90,6 +91,7 @@
     "@types/node": "^22.10.0",
     "@types/proper-lockfile": "^4.1.4",
     "@vitest/coverage-v8": "^4.0.0",
+    "esbuild": "0.27.7",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "vitest": "^4.0.0"

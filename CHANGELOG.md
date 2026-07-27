@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.12] - 2026-07-27
+
+架构 code review HIGH(#5,slice 1/2 — stop-hook)。
+
+### Changed
+
+- **#5(slice 1)— stop-hook 改为 TS 单一源 + build-time codegen,消除手写镜像。** `bin/harnessed-stop-hook.mjs` 曾是 `src/checkpoint/modeBDetect.ts` `detectModeB` 的手写 plain-JS 镜像(仅靠 parity test 焊接,新增 TS 分支若 fixture 未覆盖会静默分叉)。现 `bin/harnessed-stop-hook.mjs` 由 `scripts/build-hooks.mjs`(esbuild)从 `src/checkpoint/stopHookMain.ts` bundle 生成 —— `detectModeB` 直接 import 自 `modeBDetect.ts`(单一源),hook-specific 的 IO glue 也迁入该 TS entry。
+  - bundle **dep-free**(entry 仅 import node: builtins + dep-light 的 `modeBDetect.ts`,无 typebox),per-prompt 热路径启动成本不变。
+  - 生成物 committed(如 schemas/);esbuild 输出对固定版本 deterministic,新增 CI「Hook regen gate」(`build:hooks` + `git diff --exit-code bin/`)挡 TS 改而 .mjs 未重生成的漂移。
+  - `build` 脚本追加 `build:hooks`;`esbuild@0.27.7` 提为直接 devDependency。
+  - inject-state(443 行,slice 2)待续:需先调和 `buildInjection` 签名 thread `ledgerAgeMs`。
+
 ## [4.32.11] - 2026-07-27
 
 架构 code review HIGH(#3,方向 C)。

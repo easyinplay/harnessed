@@ -231,6 +231,17 @@ jobs:
             echo "::error::schemas/ drift detected — run 'corepack pnpm build:schema' locally and commit"
             exit 1
           }
+      - run: corepack pnpm build:hooks
+      # architecture review #5 — hook regen drift gate. bin/*.mjs are esbuild
+      # bundles of src/checkpoint/*Main.ts (single source), committed like schemas/.
+      # esbuild output is deterministic for the pinned version, so a mismatch means
+      # someone edited the TS without regenerating (the drift the codegen prevents).
+      - name: Hook regen gate (architecture review #5)
+        run: |
+          git diff --exit-code bin/ || {
+            echo "::error::bin/ hook drift detected — run 'corepack pnpm build:hooks' locally and commit"
+            exit 1
+          }
       # 4.31.0 eval Slice A (T6) — orchestrator-behavior regression trap suite.
       # Single-ubuntu by CEO-plan ruling: the runner is pure in-process (golden
       # paths normalized cross-platform); Windows/macOS engine surface is already
