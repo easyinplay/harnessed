@@ -6,18 +6,36 @@
 import type { SdkResultEnvelope } from './completionSchema.js'
 import { extractPromise } from './promiseExtract.js'
 
-/** 4-layer dual-signal completion detect: (1) outer PRIMARY structured_output,
- *  (2) outer FALLBACK <promise> in result text, (3) inner FALLBACK on raw
- *  string (non-JSON envelope — test mock / degraded; B-07 Tier A path). */
+/** Single SoT completion predicate — issue #3 direction C ("principled middle").
+ *  BOTH the single-shot dispatch (run.ts) and the ralph-loop retry gate call this
+ *  one function, so the identical envelope can never be judged two ways (the prior
+ *  divergence: run.ts treated `subtype:'success'` alone as done while this gate
+ *  looped it to max-iter → fail).
+ *
+ *  Semantics:
+ *   - an EXPLICIT structured status is authoritative:
+ *       COMPLETE  → done, but only on a successful run (`subtype === 'success'`);
+ *                   a COMPLETE claim on an errored/aborted run is not trusted.
+ *       PARTIAL / BLOCKED → not done (ralph keeps retrying; single-shot fails).
+ *   - status ABSENT (the SDK did not populate structured_output):
+ *       a clean run (`subtype === 'success'`) counts as done;
+ *       otherwise fall back to a verbatim `<promise>COMPLETE</promise>` tag in the
+ *       result text (B-07 degraded path), else not done.
+ *   - a non-JSON raw string (test mock / degraded) → the `<promise>` tag alone. */
 export function isComplete(output: string): boolean {
+  let env: SdkResultEnvelope
   try {
-    const env = JSON.parse(output) as SdkResultEnvelope
-    if (env.subtype === 'success' && env.structured_output?.status === 'COMPLETE') return true
-    if (extractPromise(env.text ?? env.result ?? '') === 'COMPLETE') return true
-    return false
+    env = JSON.parse(output) as SdkResultEnvelope
   } catch {
     return extractPromise(output) === 'COMPLETE'
   }
+  const succeeded = env.subtype === 'success'
+  const status = env.structured_output?.status
+  if (status === 'COMPLETE') return succeeded
+  if (status === 'PARTIAL' || status === 'BLOCKED') return false
+  // status absent → a clean run is done; else the degraded <promise> fallback.
+  if (succeeded) return true
+  return extractPromise(env.text ?? env.result ?? '') === 'COMPLETE'
 }
 
 export class MaxIterationsExceededError extends Error {

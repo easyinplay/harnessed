@@ -626,6 +626,44 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     }
   })
 
+  // issue #3 (direction C) — run.ts now shares ralphLoop.isComplete, so the
+  // production dispatch respects an explicit non-COMPLETE status and distrusts a
+  // COMPLETE claim on an errored run (the prior inline predicate marked both 'ok').
+  async function dispatchWithResult(msg: Record<string, unknown>): Promise<string> {
+    const sdkMod = await import('@anthropic-ai/claude-agent-sdk')
+    const querySpy = vi.spyOn(sdkMod, 'query').mockImplementation(
+      () =>
+        (async function* () {
+          yield { type: 'result', session_id: 's', ...msg }
+          // biome-ignore lint/suspicious/noExplicitAny: SDK mock iterable typed loosely
+        })() as any,
+    )
+    try {
+      return (await _productionDispatchFn('test-skill')).status
+    } finally {
+      querySpy.mockRestore()
+    }
+  }
+
+  it('C1. status=PARTIAL on a successful run → fail (explicit incomplete respected; was ok)', async () => {
+    expect(
+      await dispatchWithResult({ subtype: 'success', structured_output: { status: 'PARTIAL' } }),
+    ).toBe('fail')
+  })
+
+  it('C2. status=COMPLETE on an errored run → fail (COMPLETE not trusted without success; was ok)', async () => {
+    expect(
+      await dispatchWithResult({
+        subtype: 'error_max_turns',
+        structured_output: { status: 'COMPLETE' },
+      }),
+    ).toBe('fail')
+  })
+
+  it('C3. subtype=success with no structured_output → ok (clean run, no explicit incomplete signal)', async () => {
+    expect(await dispatchWithResult({ subtype: 'success', result: 'did the work' })).toBe('ok')
+  })
+
   it('23. v3.5.0 Phase 2 — runWorkflow emits stderr escalation hint containing escalation_reason when stub returns needsTeamsEscalation:true', async () => {
     isVetoedMock.mockResolvedValue(false)
     // DI-override stub to return escalation signal — exercises runWorkflow's

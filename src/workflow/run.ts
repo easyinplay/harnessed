@@ -24,6 +24,7 @@ import type { AgentDefinition } from './lib/agentDefinition.js'
 import {
   type FallbackMaxIterationsExceededConfig,
   handleMaxIterationsExceeded,
+  isComplete,
   MaxIterationsExceededError,
   ralphLoopWrap,
 } from './lib/ralphLoop.js'
@@ -370,8 +371,11 @@ export const _dispatchSkillStub = {
       result?: string
       subtype?: string
     }
-    const status: 'ok' | 'fail' =
-      env.structured_output?.status === 'COMPLETE' || env.subtype === 'success' ? 'ok' : 'fail'
+    // issue #3 (direction C) — single SoT completion predicate. Was an inline
+    // `status==='COMPLETE' || subtype==='success'` that disagreed with
+    // ralphLoop.isComplete on the same envelope; both now share isComplete so a
+    // PARTIAL/BLOCKED status is respected and an errored COMPLETE is not trusted.
+    const status: 'ok' | 'fail' = isComplete(envelopeJson) ? 'ok' : 'fail'
     const escalation = env.structured_output?.needs_teams_escalation === true
     return {
       status,

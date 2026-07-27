@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.11] - 2026-07-27
+
+架构 code review HIGH(#3,方向 C)。
+
+### Fixed
+
+- **#3 — 统一 completion 判定为单一 SoT(方向 C「原则中庸」)。** 同一 SDK envelope 之前在 `run.ts` 单发路径(`status==='COMPLETE' || subtype==='success'`,宽松)与 `ralphLoop.isComplete`(严格)得到相反判定 —— `{subtype:'success'}` 无 status 被单发判「完成」却被 ralph 判「未完成」→ 循环到 max-iter → fail。现两处共用 `isComplete`,语义:
+  - 显式结构化 status 为准:`COMPLETE` 且 `subtype==='success'` → 完成(errored run 上的 COMPLETE 不采信);`PARTIAL`/`BLOCKED` → 未完成(ralph 继续重试,单发判 fail)。
+  - status 缺失(SDK 未填 structured_output):干净 run(`subtype==='success'`)→ 完成;否则回落到 result text 里的 `<promise>COMPLETE</promise>`(B-07 降级路径)。
+  - 非 JSON raw string → 仅 `<promise>` tag。
+  - 净效果:保留「success 无 status → 完成」的韧性(不因 SDK 不填 structured_output 而虚假失败),只收紧「显式 PARTIAL/BLOCKED」与「errored+COMPLETE」两类(此前被 run.ts 误判 ok)。
+
 ## [4.32.10] - 2026-07-27
 
 架构 code review HIGH(#4)。

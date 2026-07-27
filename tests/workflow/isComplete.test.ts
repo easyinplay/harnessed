@@ -95,8 +95,13 @@ describe('isComplete — layer 4: all signals fail → false', () => {
     expect(isComplete('')).toBe(false)
   })
 
-  it('returns false for JSON envelope with no structured_output and no text/result fields', () => {
+  it('issue #3 (direction C) — {subtype:success} with no structured_output → TRUE (a clean run with no explicit incomplete signal is done; was false, which made run.ts and ralph disagree on the same envelope)', () => {
     const env = JSON.stringify({ subtype: 'success' })
+    expect(isComplete(env)).toBe(true)
+  })
+
+  it('issue #3 (direction C) — {subtype:error} with no structured_output and no promise → false', () => {
+    const env = JSON.stringify({ subtype: 'error_max_turns' })
     expect(isComplete(env)).toBe(false)
   })
 
