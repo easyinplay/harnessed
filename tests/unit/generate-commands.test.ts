@@ -520,11 +520,14 @@ describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 
     expect(content).not.toContain('harnessed run auto --task-stdin')
   })
 
-  it('cell 24 — ORCHESTRATOR (task) → harnessed gates task + --skip-sub clarify', () => {
+  it('cell 24 — ORCHESTRATOR (task) → harnessed gates task + --skip-sub discuss', () => {
     const { content } = generateCommandFile('task', TASK_MASTER_PROMPT, CAPS, new Set(), new Set())
     expect(content).toMatch(/in THIS session/)
     expect(content).toContain('harnessed gates task')
-    expect(content).toContain('--skip-sub clarify')
+    // TODOS 34 (4.32.20) — SOP text renamed to the real /auto sub name; the
+    // engine-side clarify→discuss synonym stays for already-installed texts.
+    expect(content).toContain('--skip-sub discuss')
+    expect(content).not.toContain('--skip-sub clarify')
     expect(content).toContain('NEEDS_CLARIFICATION')
     expect(content).not.toContain('harnessed run task --task-stdin')
   })

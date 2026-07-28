@@ -19,13 +19,40 @@ interface UpdateOpts {
   all?: boolean
   migrationReport?: boolean
   dryRun?: boolean
+  /** TODOS 3 (4.32.20) — compiled-only: restore a banked binary from
+   *  bin-backup/. `true` = newest banked version; a string = that version. */
+  rollback?: boolean | string
 }
 
 /** 4.27.0 (B3 T2) — compiled-branch flow. Returns true when handled (the npm
  *  flow must not run), false = fall through to npm (safety-valve 'refused').
  *  Exit-code contract: 'error' exits non-zero with the actionable message. */
 async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
-  const { realSelfUpdateDeps, runBinarySelfUpdate } = await import('./lib/selfUpdateBinary.js')
+  const { realSelfUpdateDeps, runBinaryRollback, runBinarySelfUpdate } = await import(
+    './lib/selfUpdateBinary.js'
+  )
+  // TODOS 3 (4.32.20) — --rollback: restore from bin-backup/ (E4 net) via the
+  // same rename dance; the replaced binary is banked first (reversible).
+  if (opts.rollback !== undefined && opts.rollback !== false) {
+    const r = await runBinaryRollback(realSelfUpdateDeps(), {
+      version: typeof opts.rollback === 'string' ? opts.rollback : undefined,
+    })
+    switch (r.status) {
+      case 'refused':
+        console.warn(`[harnessed] rollback refused: ${r.reason} — use npm to change versions`)
+        process.exit(1)
+        return true
+      case 'error':
+        console.warn(`[harnessed] rollback failed: ${r.message}`)
+        process.exit(1)
+        return true
+      case 'rolled-back':
+        console.log(`[harnessed] rolled back ${r.from} → ${r.to} (from ${r.backupUsed}).`)
+        console.log('[harnessed] restart Claude Code so the restored version takes effect.')
+        process.exit(0)
+        return true
+    }
+  }
   const r = await runBinarySelfUpdate(realSelfUpdateDeps(), {
     dryRun: opts.dryRun === true,
     check: opts.check === true,
@@ -109,6 +136,10 @@ export function registerUpdate(program: Command): void {
     .option('--all', 'alias for --upstreams (self + upstreams)')
     .option('--migration-report', 'read-only inventory of stale harnessed state (deletes nothing)')
     .option('--dry-run', 'preview what the update would do without writing anything')
+    .option(
+      '--rollback [version]',
+      'compiled binary only — restore a previous version from bin-backup/ (default: newest banked)',
+    )
     .action(async (opts: UpdateOpts) => {
       // --migration-report: read-only, no version check, no install.
       if (opts.migrationReport === true) {
@@ -132,6 +163,12 @@ export function registerUpdate(program: Command): void {
       if (isCompiledRuntime()) {
         const handled = await runCompiledFlow(opts)
         if (handled) return
+      } else if (opts.rollback !== undefined && opts.rollback !== false) {
+        // npm-managed installs version-switch via npm, not bin-backup.
+        console.warn(
+          '[harnessed] --rollback is compiled-binary only — on npm use `npm i -g harnessed@<version>`',
+        )
+        process.exit(1)
       }
 
       const { compareVersions, fetchLatestVersion } = await import('./lib/version-check.js')

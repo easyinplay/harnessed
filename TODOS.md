@@ -7,11 +7,11 @@
 
 - [ ] **E1 二进制签名(Windows Authenticode + macOS notarization)** — P2 / L(CC: M + 证书采购)
   Why: 无签名 exe 触发 SmartScreen/Gatekeeper + Defender 误报,安装器体验最大摩擦源。
-  Depends: Slice 2 安装器立项时重估;证书成本(OV ~$100+/年,Apple $99/年)。
+  Depends: **用户拍板证书采购** — 决策清单已备:`docs/e1-code-signing-options.md`(4.32.20,三档预算 + 三个拍板问题)。
+  注意:与 4.32.19 更新通道 ed25519 资产签名(review #12)是两回事,后者已落地。
 - [ ] **E3 channel-aware update(stable/beta)** — P3 / M(CC: S-M)
   Why: Trellis 模式的预发订阅。Blocked by: 发布节奏尚无 beta 轨道(预发 tag 约定 + publish.yml 分轨先行)。
-- [ ] **`harnessed update --rollback`** — P3 / S(CC: S)
-  Why: bin-backup 已存旧版,一条命令原子恢复。当前切片以文档化手动 restore 覆盖;等真实回滚需求信号。
+- [x] **`harnessed update --rollback`** — SHIPPED 4.32.20:`runBinaryRollback`(同款 rename dance,被换下的二进制先 bank 回 bin-backup/<curver>/ 保可逆;`--rollback [version]`,缺省取最高 banked 版;npm 模式明确拒绝导向 `npm i -g`)。
 - [ ] **undici EnvHttpProxyAgent 代理支持** — P3 / S
   Why: 受限网络下 update 下载不走系统代理。等真实用户信号;当前以可操作报错 + npm 渠道兜底。
 - [ ] **Slice 2:curl/PowerShell 一行安装器** — P1(本切片发布后紧跟,OV1 裁决"不拖")
@@ -31,5 +31,5 @@
 ## Earlier deferrals (intel 回填表镜像,详 .planning/intel/omc-comparison.md)
 
 - [x] **B4 eval harness** — Slice A SHIPPED 4.31.0(trap suite + coverage 导航;B1 证据包 SHIPPED(逮住 issue #7);Slice C 录制导出 SHIPPED 4.32.0(harnessed eval record,默认脱敏,round-trip);后续差异化实验需另一形态(模糊 spec/跨 session))
-- [ ] **SOP 文本 `--skip-sub clarify` 改名 `discuss`** — P3 / S,下次 SKILL 渲染 pass 顺带(engine 侧 synonym 已兼容,纯文本卫生)
+- [x] **SOP 文本 `--skip-sub clarify` 改名 `discuss`** — SHIPPED 4.32.20:generator(generateCommands + rewrite-skill-invoke-sections)+ 全部 workflows/*/SKILL{,.zh-Hans}.md 改 `--skip-sub discuss`;engine 侧 clarify→discuss synonym 保留(兼容已装旧文本)。
 - [ ] **G5/OMC ambiguity 量化阈值** — P3,方向级设计,v5+ discuss

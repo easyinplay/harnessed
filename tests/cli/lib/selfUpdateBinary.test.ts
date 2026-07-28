@@ -10,13 +10,14 @@
 // rolls back from .bak. Real fs against tmpdirs; failure injection via fsOps.
 
 import { createHash, sign as edSign, generateKeyPairSync } from 'node:crypto'
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   assetNameFor,
+  runBinaryRollback,
   runBinarySelfUpdate,
   type SelfUpdateDeps,
 } from '../../../src/cli/lib/selfUpdateBinary.js'
@@ -128,13 +129,38 @@ describe('runBinarySelfUpdate — dry-run (zero writes)', () => {
   })
 })
 
-// #12 — the .sha256.sig ed25519 signature is contractual: same-origin sha256
-// alone only guards transport corruption (an attacker replacing release assets
-// replaces both), the signature is the cross-origin second factor.
-describe('runBinarySelfUpdate — signature verification (#12)', () => {
+// #12 — GITHUB MODE ONLY: the .sha256.sig ed25519 signature is contractual on
+// the release channel (same-origin sha256 alone only guards transport
+// corruption — an attacker replacing release assets replaces both). The
+// sourceDir rehearsal seam is local trust (like rollback) and skips it.
+describe('runBinarySelfUpdate — signature verification (#12, GitHub mode)', () => {
+  const NEW = 'NET-BINARY'
+  /** GitHub-mode deps: URL-aware net mocks; `sig` shapes the .sig fetch. */
+  const ghDeps = (w: ReturnType<typeof world>, sig: 'valid' | 'stale' | 'garbage' | 'missing') => ({
+    ...w.deps,
+    sourceDir: null,
+    resolveRelease: async () => ({
+      version: '9.9.9',
+      assetUrl: 'https://gh/asset',
+      shaUrl: 'https://gh/asset.sha256',
+    }),
+    downloadTo: async (_url: string, dest: string) => {
+      writeFileSync(dest, NEW)
+    },
+    fetchShaText: async (url: string) => {
+      const shaText = `${sha256(NEW)}  ${w.asset}\n`
+      if (!url.endsWith('.sig')) return shaText
+      if (sig === 'missing') throw new Error('404')
+      if (sig === 'stale') return signSha(`${'c'.repeat(64)}  other\n`)
+      if (sig === 'garbage') return 'not-base64-sig'
+      return signSha(shaText)
+    },
+    smoke: async () => '9.9.9',
+  })
+
   it('missing .sha256.sig → error, exec unchanged', async () => {
-    const w = world({ omitSig: true })
-    const r = await runBinarySelfUpdate(w.deps, {})
+    const w = world()
+    const r = await runBinarySelfUpdate(ghDeps(w, 'missing'), {})
     expect(r.status).toBe('error')
     if (r.status !== 'error') return
     expect(r.message).toMatch(/\.sha256\.sig/)
@@ -142,8 +168,8 @@ describe('runBinarySelfUpdate — signature verification (#12)', () => {
   })
 
   it('signature over DIFFERENT sha text (asset+sha swapped, sig stale) → error', async () => {
-    const w = world({ sigOverride: signSha(`${'c'.repeat(64)}  other\n`) })
-    const r = await runBinarySelfUpdate(w.deps, {})
+    const w = world()
+    const r = await runBinarySelfUpdate(ghDeps(w, 'stale'), {})
     expect(r.status).toBe('error')
     if (r.status !== 'error') return
     expect(r.message).toMatch(/signature/i)
@@ -151,17 +177,106 @@ describe('runBinarySelfUpdate — signature verification (#12)', () => {
   })
 
   it('garbage signature bytes → error, exec unchanged', async () => {
-    const w = world({ sigOverride: 'not-base64-sig' })
-    const r = await runBinarySelfUpdate(w.deps, {})
+    const w = world()
+    const r = await runBinarySelfUpdate(ghDeps(w, 'garbage'), {})
     expect(r.status).toBe('error')
     expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
   })
 
   it('valid sig under the WRONG key (default embedded prod key) → error', async () => {
     const w = world()
-    const r = await runBinarySelfUpdate({ ...w.deps, publicKeyPem: undefined }, {})
+    const r = await runBinarySelfUpdate({ ...ghDeps(w, 'valid'), publicKeyPem: undefined }, {})
     expect(r.status).toBe('error')
     expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+  })
+
+  it('sourceDir rehearsal seam needs NO .sig (local trust) — swap succeeds', async () => {
+    const w = world({ omitSig: true })
+    const r = await runBinarySelfUpdate(w.deps, {})
+    expect(r.status).toBe('updated')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('NEW-BINARY')
+  })
+})
+
+// TODOS 3 (4.32.20) — `harnessed update --rollback`: bin-backup/<ver>/ already
+// holds the pre-update binary (E4 net); one command restores it atomically via
+// the SAME same-dir rename dance. Local trust: the backup was verified at
+// install time — smoke only, no sha/sig (backups carry neither).
+describe('runBinaryRollback (--rollback)', () => {
+  const seedBackup = (w: ReturnType<typeof world>, ver: string, content: string) => {
+    const dir = join(w.stateRoot, 'bin-backup', ver)
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, w.asset), content)
+  }
+
+  it('restores the newest backup version, re-banks the replaced binary', async () => {
+    const w = world()
+    seedBackup(w, '4.25.0', 'OLDER-BINARY')
+    seedBackup(w, '4.26.5', 'NEWER-BACKUP')
+    const deps = { ...w.deps, currentVersion: '4.27.0', smoke: async () => '4.26.5' }
+    const r = await runBinaryRollback(deps, {})
+    expect(r.status).toBe('rolled-back')
+    if (r.status !== 'rolled-back') return
+    expect(r.from).toBe('4.27.0')
+    expect(r.to).toBe('4.26.5')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('NEWER-BACKUP')
+    // the replaced binary is banked for a forward re-roll
+    expect(readFileSync(join(w.stateRoot, 'bin-backup', '4.27.0', w.asset), 'utf8')).toBe(
+      'OLD-BINARY',
+    )
+  })
+
+  it('explicit version picks that backup dir', async () => {
+    const w = world()
+    seedBackup(w, '4.25.0', 'OLDER-BINARY')
+    seedBackup(w, '4.26.5', 'NEWER-BACKUP')
+    const deps = { ...w.deps, currentVersion: '4.27.0', smoke: async () => '4.25.0' }
+    const r = await runBinaryRollback(deps, { version: '4.25.0' })
+    expect(r.status).toBe('rolled-back')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLDER-BINARY')
+  })
+
+  it('no backups → error naming the bin-backup dir, exec unchanged', async () => {
+    const w = world()
+    const r = await runBinaryRollback(w.deps, {})
+    expect(r.status).toBe('error')
+    if (r.status !== 'error') return
+    expect(r.message).toContain('bin-backup')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+  })
+
+  it('unknown explicit version → error listing available versions', async () => {
+    const w = world()
+    seedBackup(w, '4.25.0', 'OLDER-BINARY')
+    const r = await runBinaryRollback(w.deps, { version: '9.9.9' })
+    expect(r.status).toBe('error')
+    if (r.status !== 'error') return
+    expect(r.message).toContain('4.25.0')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+  })
+
+  it('failed smoke aborts, exec unchanged', async () => {
+    const w = world()
+    seedBackup(w, '4.26.5', 'BAD-BACKUP')
+    const deps = {
+      ...w.deps,
+      smoke: async () => {
+        throw new Error('spawn EACCES')
+      },
+    }
+    const r = await runBinaryRollback(deps, {})
+    expect(r.status).toBe('error')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+  })
+
+  it('refuses under node_modules (npm-managed)', async () => {
+    const w = world()
+    seedBackup(w, '4.26.5', 'X')
+    const r = await runBinaryRollback(
+      { ...w.deps, execPath: join(w.dir, 'node_modules', '.bin', 'harnessed') },
+      {},
+    )
+    expect(r.status).toBe('refused')
   })
 })
 

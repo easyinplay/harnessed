@@ -28,6 +28,7 @@ import {
   rename as fsRename,
   unlink as fsUnlink,
   mkdir,
+  readdir,
   readFile,
   writeFile,
 } from 'node:fs/promises'
@@ -186,7 +187,9 @@ export async function runBinarySelfUpdate(
         ? `copy ${sourceAsset} → ${tempPath} (local source dir — rehearsal seam)`
         : `download ${assetUrl ?? `latest ${asset}`} → ${tempPath}`,
       `verify sha256 against ${deps.sourceDir ? sourceSha : (shaUrl ?? `${asset}.sha256`)}`,
-      'verify the ed25519 signature (.sha256.sig) against the embedded release public key',
+      ...(deps.sourceDir
+        ? []
+        : ['verify the ed25519 signature (.sha256.sig) against the embedded release public key']),
       ...(deps.platform === 'win32' ? [] : ['chmod 755 the downloaded binary']),
       'smoke: spawn `--version` on the new binary',
       `rename ${deps.execPath} → ${bakPath} (same-dir, same-volume)`,
@@ -209,11 +212,14 @@ export async function runBinarySelfUpdate(
     return { status: 'error', message: `download failed: ${(e as Error).message}` }
   }
 
-  // ── integrity (contractual — a missing .sha256 OR .sha256.sig is a hard
-  // error). #12: the sha256 alone is same-origin with the asset (both live on
-  // the release), so it only guards transport corruption; the ed25519
-  // signature over the .sha256 text (signed in CI, verified against the
-  // embedded public key) is the cross-origin second factor. ──
+  // ── integrity (contractual — a missing .sha256 is a hard error). #12: in
+  // GitHub mode the sha256 is same-origin with the asset (both live on the
+  // release), so it only guards transport corruption; the ed25519 signature
+  // over the .sha256 text (signed in CI, verified against the embedded public
+  // key) is the cross-origin second factor, contractual since 4.32.19. The
+  // sourceDir rehearsal seam is LOCAL TRUST (like rollback's bin-backup) and
+  // skips the signature — the release channel is the attack surface, not a
+  // local dir the operator staged. ──
   try {
     const shaText = deps.sourceDir
       ? await readFile(sourceSha ?? '', 'utf8')
@@ -226,17 +232,15 @@ export async function runBinarySelfUpdate(
         `sha256 mismatch — expected ${expected.slice(0, 12)}…, got ${actual.slice(0, 12)}…`,
       )
     }
-    const sigText = deps.sourceDir
-      ? await readFile(`${sourceSha ?? ''}.sig`, 'utf8').catch(() => {
-          throw new Error(`missing .sha256.sig (signature is contractual since 4.32.19)`)
-        })
-      : await deps.fetchShaText(`${shaUrl ?? ''}.sig`).catch(() => {
-          throw new Error(`missing .sha256.sig (signature is contractual since 4.32.19)`)
-        })
-    if (!verifyShaSignature(shaText, sigText, deps.publicKeyPem)) {
-      throw new Error(
-        `ed25519 signature over .sha256 did not verify — the release assets may be tampered`,
-      )
+    if (!deps.sourceDir) {
+      const sigText = await deps.fetchShaText(`${shaUrl ?? ''}.sig`).catch(() => {
+        throw new Error(`missing .sha256.sig (signature is contractual since 4.32.19)`)
+      })
+      if (!verifyShaSignature(shaText, sigText, deps.publicKeyPem)) {
+        throw new Error(
+          `ed25519 signature over .sha256 did not verify — the release assets may be tampered`,
+        )
+      }
     }
   } catch (e) {
     await unlink(tempPath).catch(() => {})
@@ -324,6 +328,138 @@ export async function runBinarySelfUpdate(
     bakRemoved,
     backupDir,
   }
+}
+
+// ── TODOS 3 (4.32.20) — `harnessed update --rollback` ─────────────────────
+
+export type RollbackOutcome =
+  | { status: 'rolled-back'; from: string; to: string; backupUsed: string }
+  | { status: 'refused'; reason: string }
+  | { status: 'error'; message: string }
+
+/** Restore a previous binary from `<stateRoot>/bin-backup/<ver>/<asset>` via the
+ *  SAME same-dir rename dance as the update swap. `version` picks an exact
+ *  backup; absent → the highest banked version. Local trust: the backup was
+ *  integrity-verified when it was installed — `--version` smoke only (backups
+ *  carry no .sha256/.sig). The replaced binary is banked under the CURRENT
+ *  version first, so a rollback is itself reversible. */
+export async function runBinaryRollback(
+  deps: SelfUpdateDeps,
+  opts: { version?: string },
+): Promise<RollbackOutcome> {
+  const rename = deps.fsOps?.rename ?? fsRename
+  const copyFile = deps.fsOps?.copyFile ?? fsCopyFile
+  const unlink = deps.fsOps?.unlink ?? fsUnlink
+
+  if (normalized(deps.execPath).includes('/node_modules/')) {
+    return { status: 'refused', reason: 'binary lives under node_modules (npm-managed)' }
+  }
+
+  const asset = assetNameFor(deps.platform, deps.arch)
+  const backupsRoot = join(deps.stateRoot(), 'bin-backup')
+  let versions: string[] = []
+  try {
+    const entries = await readdir(backupsRoot, { withFileTypes: true })
+    for (const e of entries) {
+      if (!e.isDirectory()) continue
+      const has = await access(join(backupsRoot, e.name, asset)).then(
+        () => true,
+        () => false,
+      )
+      if (has) versions.push(e.name)
+    }
+  } catch {
+    versions = []
+  }
+  if (versions.length === 0) {
+    return {
+      status: 'error',
+      message: `no rollback candidates — ${backupsRoot} holds no banked ${asset}`,
+    }
+  }
+
+  let target: string
+  if (opts.version) {
+    if (!versions.includes(opts.version)) {
+      return {
+        status: 'error',
+        message: `no backup for version ${opts.version} — available: ${versions.sort().join(', ')}`,
+      }
+    }
+    target = opts.version
+  } else {
+    // highest banked semver = the most recent pre-update image
+    target = versions.reduce((a, b) => (compareVersions(a, b) === 'behind' ? b : a))
+  }
+  const backupBin = join(backupsRoot, target, asset)
+
+  const execDir = dirname(deps.execPath)
+  const execBase = basename(deps.execPath)
+  const ext = deps.platform === 'win32' ? '.exe' : ''
+  const tempPath = join(execDir, `.harnessed-rollback-${deps.pid}${ext}`)
+  const bakPath = join(execDir, `${execBase}.bak-${deps.currentVersion}`)
+
+  // ── stage + smoke (any failure: original untouched) ──
+  try {
+    await fsCopyFile(backupBin, tempPath)
+    if (deps.platform !== 'win32') await chmod(tempPath, 0o755)
+    const out = (await deps.smoke(tempPath)).trim()
+    if (!/^\d+\.\d+\.\d+/.test(out)) {
+      throw new Error(`--version smoke returned unexpected output: ${out.slice(0, 80)}`)
+    }
+  } catch (e) {
+    await unlink(tempPath).catch(() => {})
+    return {
+      status: 'error',
+      message: `rollback staging failed: ${(e as Error).message} — original binary untouched`,
+    }
+  }
+
+  // ── swap (same dance as the update path; failed temp→exec restores .bak) ──
+  try {
+    await rename(deps.execPath, bakPath)
+  } catch (e) {
+    await unlink(tempPath).catch(() => {})
+    return {
+      status: 'error',
+      message: `could not move the current binary aside: ${(e as Error).message} — original untouched`,
+    }
+  }
+  try {
+    await rename(tempPath, deps.execPath)
+  } catch (e) {
+    try {
+      await rename(bakPath, deps.execPath)
+      return {
+        status: 'error',
+        message: `swap failed (${(e as Error).message}) — restored the previous binary`,
+      }
+    } catch (rb) {
+      return {
+        status: 'error',
+        message:
+          `CRITICAL: swap failed AND restore failed (${(rb as Error).message}). ` +
+          `Restore manually: copy "${bakPath}" "${deps.execPath}"`,
+      }
+    }
+  }
+
+  // ── bank the replaced binary under the CURRENT version (reversible), then
+  // delete the .bak fail-soft (Windows: running image → EPERM expected) ──
+  let copied = false
+  try {
+    const dir = join(backupsRoot, deps.currentVersion)
+    await mkdir(dir, { recursive: true })
+    await copyFile(bakPath, join(dir, execBase))
+    copied = true
+  } catch (e) {
+    deps.log(
+      `warning: could not bank the replaced binary (${(e as Error).message}) — keeping ${bakPath}`,
+    )
+  }
+  if (copied) await unlink(bakPath).catch(() => {})
+
+  return { status: 'rolled-back', from: deps.currentVersion, to: target, backupUsed: backupBin }
 }
 
 // ── real deps (impure; update.ts wires these) ─────────────────────────────

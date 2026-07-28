@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.20] - 2026-07-29
+
+TODOS P3 小件清理(Slice 3 维持用户 2026-07-12 裁决「等真实需求信号」不启动;E1 出采购决策清单)。
+
+### Added
+
+- **`harnessed update --rollback [version]`(compiled 二进制专属)。** bin-backup/(E4 回滚网)已存每次 update 换下的旧版;现一条命令原子恢复:`runBinaryRollback` 复用同款 same-dir rename dance(staging 失败原件不动、swap 失败自动还原),被换下的当前版**先 bank 回** `bin-backup/<curver>/` 保回滚可逆。缺省取最高 banked 版本,`--rollback <ver>` 指定;无候选/未知版本给可操作报错(列可用版本)。本地信任模型:backup 安装时已过完整性校验,恢复仅 `--version` smoke(backup 不携带 .sha256/.sig)。npm 模式明确拒绝并导向 `npm i -g harnessed@<version>`。测试 6 cell(最新版选择/指定版/无候选/未知版/smoke 失败/安全阀)。
+- **`docs/e1-code-signing-options.md` — E1 采购决策清单。** OS code signing(Windows Authenticode / macOS notarization)三档预算路径(维持现状 $0 / Azure Trusted Signing ~$120 每年 / 双平台 ~$220 每年)+ 排除项(sigstore/自签名不解 SmartScreen)+ 三个拍板问题。采购动作留给用户;与 4.32.19 更新通道 ed25519 资产签名是两回事。
+
+### Fixed
+
+- **main CI 自 4.32.12 起持续红,两类根因均修(本地全绿 ≠ CI 绿的教训重演)。**
+  - **lint ×3 OS**:`biome check .` 覆盖 bin/*.mjs,而 codegen 后的 esbuild 输出不合 biome 格式(双引号/分号)。biome 的 formatter 不支持注释级文件豁免、config-protection 禁改 biome.json → 改为 **build:hooks 自格式化产物**(esbuild bundle 后跑 `biome format --write bin/*.mjs`;biome 对固定版本 deterministic,drift gate 仍 byte-exact);banner 保留 lint/assist 两条文件级 suppression。
+  - **binary-smoke ×3 OS**:4.32.19 把 `.sha256.sig` 强制到了 sourceDir 演习 seam,CI 演习 fixture 无 .sig 即挂。**收窄签名契约至 GitHub 模式**(真攻击面 = release 渠道);sourceDir seam 为本地信任(与 rollback 的 bin-backup 同模型),不验签。4 个 sig 测试 cell 改写为 GitHub-mode mock + 新增 sourceDir 免签 cell。
+
+### Changed
+
+- **SOP 文本 `--skip-sub clarify` → `--skip-sub discuss`(TODOS 34 渲染 pass)。** `clarify` 从来不是 /auto 的子项名(4.31.0 eval 首日战果);generator(generateCommands + rewrite-skill-invoke-sections)与全部 workflows/*/SKILL{,.zh-Hans}.md 教科书命令改为真名 `discuss`。engine 侧 `clarify→discuss` synonym **保留**(兼容所有已安装旧 SKILL 文本,行为零变化)。
+
 ## [4.32.19] - 2026-07-28
 
 架构 code review MEDIUM(#12,B 路线 E1 签名落地)。

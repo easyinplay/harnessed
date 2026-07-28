@@ -32,6 +32,7 @@ vi.mock('../../src/platform/assetsRoot.js', async (orig) => ({
 }))
 vi.mock('../../src/cli/lib/selfUpdateBinary.js', () => ({
   runBinarySelfUpdate: vi.fn(async () => ({ status: 'current', version: '0.0.0' })),
+  runBinaryRollback: vi.fn(async () => ({ status: 'error', message: 'not under test' })),
   realSelfUpdateDeps: vi.fn(() => ({}) as never),
 }))
 // The 'updated' branch runs an opportunistic assets gc — mock it so the unit

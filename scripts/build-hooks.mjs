@@ -12,6 +12,7 @@
 // pinned version + input, so `pnpm build:hooks` + `git diff --exit-code bin/` is a
 // drift gate (sister to the schemas/ regen gate).
 
+import { execFileSync } from 'node:child_process'
 import { chmodSync } from 'node:fs'
 import { build } from 'esbuild'
 
@@ -28,7 +29,17 @@ for (const { entry, out } of HOOKS) {
     platform: 'node',
     format: 'esm',
     target: 'node22',
-    banner: { js: '#!/usr/bin/env node' },
+    banner: {
+      // biome file-level suppressions ride IN the artifact (config-protection
+      // forbids weakening biome.json): formatting/linting of bin/*.mjs is owned
+      // by esbuild + the CI hook drift gate, not by biome.
+      js: [
+        '#!/usr/bin/env node',
+        '// biome-ignore-all format: esbuild-generated (hook drift gate owns this file)',
+        '// biome-ignore-all lint: esbuild-generated',
+        '// biome-ignore-all assist/source/organizeImports: esbuild-generated',
+      ].join('\n'),
+    },
     legalComments: 'none',
   })
   try {
@@ -38,3 +49,13 @@ for (const { entry, out } of HOOKS) {
   }
   console.log(`[build-hooks] ${entry} -> ${out}`)
 }
+
+// CI lint (`biome check .`) covers bin/*.mjs and config-protection forbids
+// excluding them in biome.json — so the pipeline formats its own output.
+// biome format is deterministic for a pinned version, so the CI hook drift
+// gate (build:hooks + git diff) stays byte-exact.
+execFileSync(
+  'corepack',
+  ['pnpm', 'exec', 'biome', 'format', '--write', ...HOOKS.map((h) => h.out)],
+  { stdio: 'inherit', shell: process.platform === 'win32' },
+)
