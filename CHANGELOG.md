@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.15] - 2026-07-28
+
+架构 code review MEDIUM(#10)。
+
+### Added
+
+- **#10 — `--json` 调用的逃逸错误现在 stdout 发 JSON 信封。** 带 `--json` 的 action 在 happy/handled 路径各自发结构化结果,但**逃逸**到 process-root `unhandledRejection`/`uncaughtException` handler 的错误(LockHeldError、fs fault、unknown master 等)此前只打 stderr 人类行 `error: …` —— 机器消费者(driver loop `while harnessed advance --json; do…`、生成的 /auto pre-exec、hooks)解析 stdout 时只见 exit 1 + 空 stdout,无法 surface 原因。现 root handler 在 argv 含 `--json` 时**先**向 stdout 打单行 `{"error":{"message":…}}` 信封(shape 与所有命令的 success payload 不相交,`JSON.parse(stdout).error` 可作可靠失败探针),stderr 人类行 + exit 1 不变。
+  - 可测核心提取为 `src/cli/lib/fatalError.ts`(`wantsJsonEnvelope` / `formatFatalEnvelope`,unit 3 cell);cli.ts root handler 接线。
+  - scope 限定字面 `--json` flag:stdout 天然为 JSON 契约但无 flag 的命令(gates)仍靠 exit code signal,不在 leaf 里嗅探命令名。
+  - 诚实声明:现存 `--json` 命令的错误路径实测全 fail-soft(resume/eval/audit-log/doctor 4 probe 无自然逃逸)——信封覆盖的是 root handler 存在理由的那类**不可预见** throw(EPERM/fs fault 野外类,v3.0.3 历史实锤)。
+
 ## [4.32.14] - 2026-07-28
 
 架构 code review MEDIUM(#11)。

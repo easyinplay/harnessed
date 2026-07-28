@@ -18,6 +18,7 @@ import { registerInstall } from './cli/install.js'
 import { registerInstallBase } from './cli/install-base.js'
 import { registerLearn } from './cli/learn.js'
 import { getAssetsRoot } from './cli/lib/assetsRoot.js'
+import { formatFatalEnvelope, wantsJsonEnvelope } from './cli/lib/fatalError.js'
 import { parseBareInvocation, runHere } from './cli/lib/here.js'
 import { registerManifestAdd } from './cli/manifest-add.js'
 import { registerNext } from './cli/next.js'
@@ -75,14 +76,19 @@ for (let i = 2; i < argv.length; i++) {
 // + exit 1. This is preferred over per-action try/catch (which would entangle with
 // the `process.exit`-mocked CLI unit tests that import each `register*` in isolation
 // against their own Command instance — this file is never imported by those tests).
-process.on('unhandledRejection', (reason) => {
-  const msg = reason instanceof Error ? reason.message : String(reason)
+// 4.32.15 (#10) — when the invocation asked for --json, ALSO print a single-line
+// {error:{message}} envelope to stdout so machine consumers (driver loops, hooks)
+// parsing stdout can surface WHY instead of seeing exit 1 with empty stdout.
+const fatal = (msg: string): never => {
+  if (wantsJsonEnvelope(process.argv)) console.log(formatFatalEnvelope(msg))
   console.error(`error: ${msg}`)
   process.exit(1)
+}
+process.on('unhandledRejection', (reason) => {
+  fatal(reason instanceof Error ? reason.message : String(reason))
 })
 process.on('uncaughtException', (err) => {
-  console.error(`error: ${err instanceof Error ? err.message : String(err)}`)
-  process.exit(1)
+  fatal(err instanceof Error ? err.message : String(err))
 })
 
 const program = new Command()
