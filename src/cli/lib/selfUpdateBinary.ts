@@ -34,6 +34,7 @@ import {
 import { basename, dirname, join } from 'node:path'
 import pkg from '../../../package.json' with { type: 'json' }
 import { detectPlatform } from '../../platform/platform.js'
+import { verifyShaSignature } from './updateSignature.js'
 import { compareVersions } from './version-check.js'
 
 const OWNER_REPO = 'easyinplay/harnessed'
@@ -78,6 +79,9 @@ export interface SelfUpdateDeps {
     copyFile?: (from: string, to: string) => Promise<void>
     unlink?: (p: string) => Promise<void>
   }
+  /** #12 test seam — release signing public key override (default: the
+   *  embedded HARNESSED_RELEASE_PUBKEY_PEM). */
+  publicKeyPem?: string
 }
 
 export type SelfUpdateOutcome =
@@ -182,6 +186,7 @@ export async function runBinarySelfUpdate(
         ? `copy ${sourceAsset} → ${tempPath} (local source dir — rehearsal seam)`
         : `download ${assetUrl ?? `latest ${asset}`} → ${tempPath}`,
       `verify sha256 against ${deps.sourceDir ? sourceSha : (shaUrl ?? `${asset}.sha256`)}`,
+      'verify the ed25519 signature (.sha256.sig) against the embedded release public key',
       ...(deps.platform === 'win32' ? [] : ['chmod 755 the downloaded binary']),
       'smoke: spawn `--version` on the new binary',
       `rename ${deps.execPath} → ${bakPath} (same-dir, same-volume)`,
@@ -204,7 +209,11 @@ export async function runBinarySelfUpdate(
     return { status: 'error', message: `download failed: ${(e as Error).message}` }
   }
 
-  // ── integrity (contractual — a missing .sha256 is a hard error) ──
+  // ── integrity (contractual — a missing .sha256 OR .sha256.sig is a hard
+  // error). #12: the sha256 alone is same-origin with the asset (both live on
+  // the release), so it only guards transport corruption; the ed25519
+  // signature over the .sha256 text (signed in CI, verified against the
+  // embedded public key) is the cross-origin second factor. ──
   try {
     const shaText = deps.sourceDir
       ? await readFile(sourceSha ?? '', 'utf8')
@@ -215,6 +224,18 @@ export async function runBinarySelfUpdate(
     if (actual !== expected) {
       throw new Error(
         `sha256 mismatch — expected ${expected.slice(0, 12)}…, got ${actual.slice(0, 12)}…`,
+      )
+    }
+    const sigText = deps.sourceDir
+      ? await readFile(`${sourceSha ?? ''}.sig`, 'utf8').catch(() => {
+          throw new Error(`missing .sha256.sig (signature is contractual since 4.32.19)`)
+        })
+      : await deps.fetchShaText(`${shaUrl ?? ''}.sig`).catch(() => {
+          throw new Error(`missing .sha256.sig (signature is contractual since 4.32.19)`)
+        })
+    if (!verifyShaSignature(shaText, sigText, deps.publicKeyPem)) {
+      throw new Error(
+        `ed25519 signature over .sha256 did not verify — the release assets may be tampered`,
       )
     }
   } catch (e) {

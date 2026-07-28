@@ -9,7 +9,7 @@
 // Any pre-swap failure leaves the original untouched; a failed temp→exec rename
 // rolls back from .bak. Real fs against tmpdirs; failure injection via fsOps.
 
-import { createHash } from 'node:crypto'
+import { createHash, sign as edSign, generateKeyPairSync } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdir, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -23,12 +23,23 @@ import {
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 
-/** Build a tmp world: exec file + local source dir with a "new binary" + .sha256. */
+// #12 — test release-signing keypair: fixtures are signed with this key and the
+// deps inject its public half (the embedded production key must NOT verify
+// test fixtures — see the dedicated cell).
+const TEST_KEYS = generateKeyPairSync('ed25519')
+const TEST_PUBKEY_PEM = TEST_KEYS.publicKey.export({ type: 'spki', format: 'pem' }).toString()
+const signSha = (shaText: string) =>
+  edSign(null, Buffer.from(shaText, 'utf8'), TEST_KEYS.privateKey).toString('base64')
+
+/** Build a tmp world: exec file + local source dir with a "new binary" +
+ *  .sha256 + .sha256.sig (#12). */
 function world(opts?: {
   newContent?: string
   shaOverride?: string
   omitAsset?: boolean
   omitSha?: boolean
+  omitSig?: boolean
+  sigOverride?: string
   platform?: string
   arch?: string
 }) {
@@ -42,11 +53,12 @@ function world(opts?: {
   writeFileSync(execPath, 'OLD-BINARY')
   const newContent = opts?.newContent ?? 'NEW-BINARY'
   if (!opts?.omitAsset) writeFileSync(join(srcDir, asset), newContent)
+  const shaText = `${opts?.shaOverride ?? sha256(newContent)}  ${asset}\n`
   if (!opts?.omitSha) {
-    writeFileSync(
-      join(srcDir, `${asset}.sha256`),
-      `${opts?.shaOverride ?? sha256(newContent)}  ${asset}\n`,
-    )
+    writeFileSync(join(srcDir, `${asset}.sha256`), shaText)
+  }
+  if (!opts?.omitSig) {
+    writeFileSync(join(srcDir, `${asset}.sha256.sig`), opts?.sigOverride ?? signSha(shaText))
   }
   const logs: string[] = []
   const deps: SelfUpdateDeps = {
@@ -66,6 +78,7 @@ function world(opts?: {
     stateRoot: () => stateRoot,
     log: (l) => logs.push(l),
     pid: 4242,
+    publicKeyPem: TEST_PUBKEY_PEM,
   }
   return { dir, srcDir, stateRoot, execPath, asset, deps, logs }
 }
@@ -112,6 +125,43 @@ describe('runBinarySelfUpdate — dry-run (zero writes)', () => {
     expect(r.status).toBe('dry-run')
     if (r.status !== 'dry-run') return
     expect(r.steps.join('\n')).toMatch(/\.harnessed-update-4242\.exe/)
+  })
+})
+
+// #12 — the .sha256.sig ed25519 signature is contractual: same-origin sha256
+// alone only guards transport corruption (an attacker replacing release assets
+// replaces both), the signature is the cross-origin second factor.
+describe('runBinarySelfUpdate — signature verification (#12)', () => {
+  it('missing .sha256.sig → error, exec unchanged', async () => {
+    const w = world({ omitSig: true })
+    const r = await runBinarySelfUpdate(w.deps, {})
+    expect(r.status).toBe('error')
+    if (r.status !== 'error') return
+    expect(r.message).toMatch(/\.sha256\.sig/)
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+  })
+
+  it('signature over DIFFERENT sha text (asset+sha swapped, sig stale) → error', async () => {
+    const w = world({ sigOverride: signSha(`${'c'.repeat(64)}  other\n`) })
+    const r = await runBinarySelfUpdate(w.deps, {})
+    expect(r.status).toBe('error')
+    if (r.status !== 'error') return
+    expect(r.message).toMatch(/signature/i)
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+  })
+
+  it('garbage signature bytes → error, exec unchanged', async () => {
+    const w = world({ sigOverride: 'not-base64-sig' })
+    const r = await runBinarySelfUpdate(w.deps, {})
+    expect(r.status).toBe('error')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+  })
+
+  it('valid sig under the WRONG key (default embedded prod key) → error', async () => {
+    const w = world()
+    const r = await runBinarySelfUpdate({ ...w.deps, publicKeyPem: undefined }, {})
+    expect(r.status).toBe('error')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
   })
 })
 
@@ -314,7 +364,11 @@ describe('runBinarySelfUpdate — GitHub mode (no sourceDir)', () => {
           await mkdir(join(dest, '..'), { recursive: true })
           writeFileSync(dest, newContent)
         },
-        fetchShaText: async () => `${sha256(newContent)}  ${w.asset}\n`,
+        // #12 — URL-aware: the engine fetches BOTH `<shaUrl>` and `<shaUrl>.sig`.
+        fetchShaText: async (url: string) => {
+          const shaText = `${sha256(newContent)}  ${w.asset}\n`
+          return url.endsWith('.sig') ? signSha(shaText) : shaText
+        },
         smoke: async () => '4.27.0',
       },
       {},

@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.19] - 2026-07-28
+
+架构 code review MEDIUM(#12,B 路线 E1 签名落地)。
+
+### Added
+
+- **#12 — 二进制自更新通道加 ed25519 签名(cross-origin 第二因子)。** 自更新此前从**同一 origin**(GitHub release)下载 `<asset>` 与 `<asset>.sha256`,sha256 只防传输损坏:能替换 release 资产的攻击者两个文件一起换,校验照过。现:
+  - **CI 签名**:publish.yml binaries matrix 新增 sign 步(`scripts/sign-binaries.mjs`),用 `HARNESSED_SIGNING_KEY` repo secret(ed25519 私钥,2026-07-28 生成,仅存于 GitHub secret + 本机 `~/.claude/harnessed-signing/`)对每个 `.sha256` **内容**签名,产出 sibling `<asset>.sha256.sig`(base64);upload glob 自动带上。key 缺失或零输入 hard-fail(未签名 release 会 brick 所有 ≥4.32.19 客户端的 update)。
+  - **客户端验签**:`src/cli/lib/updateSignature.ts` 内嵌 release 公钥(SPKI PEM),`verifyShaSignature` 用 node:crypto 原生 ed25519 验证(零新依赖,malformed 输入一律 false 不 throw)。selfUpdateBinary 在 sha256 匹配后 fetch `${shaUrl}.sig`(sourceDir seam 读 `<asset>.sha256.sig` 文件)并验签;**缺失或验签失败均 hard error**,原二进制不动。签名自 4.32.19 起为契约(旧 4.32.18- 客户端不验,前向兼容)。
+  - 本地 rehearsal 闭环:真私钥跑 sign 脚本 → 内嵌公钥验 true。密钥轮换 = 新 key 随新 binary 发布、过渡期双签。
+  - 测试:updateSignature 4 cell(测试 keypair 往返/篡改/垃圾/错 key)+ selfUpdateBinary 新增 4 cell(缺 .sig / 陈旧 sig / 垃圾 sig / 错 key 均 error 且 exec 不动)+ deps 新增 `publicKeyPem` 测试 seam;GitHub-mode mock 改 URL-aware。
+
 ## [4.32.18] - 2026-07-28
 
 架构 code review MEDIUM(#7,slice 2b — 上行 import 归零)。
