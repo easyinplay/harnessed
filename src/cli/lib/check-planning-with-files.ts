@@ -10,7 +10,7 @@
 import { readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { getPluginsRegistry } from '../../installers/lib/platform.js'
+import { getPluginsRegistry } from '../../platform/platform.js'
 
 interface CheckResult {
   name: string

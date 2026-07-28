@@ -42,7 +42,7 @@ import { readFile, rename, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import pkg from '../../../package.json' with { type: 'json' }
-import { harnessedFile } from '../../installers/lib/harnessedRoot.js'
+import { harnessedFile } from '../../platform/harnessedRoot.js'
 
 /** Same shape the generated-commands overwrite guard uses; duplicated locally on
  *  purpose — generateCommands.ts is factory-mocked by several setup test suites

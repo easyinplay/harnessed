@@ -11,7 +11,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import type { Command } from 'commander'
 import type { AuditRecord } from '../audit/log.js'
 import { t } from '../i18n/index.js'
-import { harnessedFile } from '../installers/lib/harnessedRoot.js'
+import { harnessedFile } from '../platform/harnessedRoot.js'
 
 // v3.0.3 — homedir-rooted via harnessedRoot SoT (sister src/audit/log.ts).
 function auditPath(): string {

@@ -224,7 +224,7 @@ export function registerGc(program: Command): void {
       try {
         const { isCompiledRuntime } = await import('./lib/assetsRoot.js')
         if (isCompiledRuntime() || process.env.HARNESSED_GC_COMPILED === '1') {
-          const { detectPlatform } = await import('../installers/lib/platform.js')
+          const { detectPlatform } = await import('../platform/platform.js')
           const r = await gcCompiledArtifacts({
             keepVersions: [pkg.version],
             stateRoot: detectPlatform().stateRoot,

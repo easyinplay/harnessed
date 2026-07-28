@@ -14,7 +14,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { harnessSkillsDirs } from '../../installers/lib/platform.js'
+import { harnessSkillsDirs } from '../../platform/platform.js'
 
 export type GstackPrefix = 'gstack-' | ''
 

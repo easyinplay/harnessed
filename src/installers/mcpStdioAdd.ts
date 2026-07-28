@@ -37,12 +37,12 @@
 // it on startup), zero spawn, zero timeout risk, cross-platform.
 
 import { checkCmdString } from '../manifest/security.js'
+import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
-import { detectPlatform } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
 import { runHarnessArgs } from './lib/runClaudeArgs.js'

@@ -20,7 +20,7 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
-import { harnessedSubdir } from './harnessedRoot.js'
+import { harnessedSubdir } from '../../platform/harnessedRoot.js'
 import type { DiffPlan, InstallContext, InstallError } from './types.js'
 
 // v2.0.1 fix: backup root migrated from `<ctx.cwd>/.harnessed-backup/` to

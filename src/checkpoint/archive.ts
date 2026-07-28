@@ -10,7 +10,7 @@
 
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
+import { harnessedSubdir } from '../platform/harnessedRoot.js'
 import { writeFileSyncAtomic } from './atomicWrite.js'
 
 export class ArchiveWriteError extends Error {

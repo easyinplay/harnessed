@@ -3,8 +3,8 @@
 // parseCmd inline — single caller, YAGNI per RESEARCH § 7 Q2.
 // Reuses runArgs from installers/lib/runClaudeArgs.ts (#BF Phase 5.1 W0).
 
-import { detectPlatform } from '../installers/lib/platform.js'
 import { runArgs } from '../installers/lib/runClaudeArgs.js'
+import { detectPlatform } from '../platform/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 

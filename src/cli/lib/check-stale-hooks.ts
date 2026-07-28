@@ -14,7 +14,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { harnessedStaleHookPaths } from '../../installers/lib/harnessedHookTeardown.js'
-import { getSettingsPath } from '../../installers/lib/platform.js'
+import { getSettingsPath } from '../../platform/platform.js'
 import type { CheckResult } from './check-builtin.js'
 
 export interface StaleHooksDeps {

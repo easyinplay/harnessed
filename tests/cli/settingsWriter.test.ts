@@ -20,7 +20,7 @@ vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(),
 }))
 
-vi.mock('../../src/installers/lib/harnessedRoot.js', () => ({
+vi.mock('../../src/platform/harnessedRoot.js', () => ({
   harnessedSubdir: (name: string) => `/fake-home/.claude/harnessed/${name}`,
 }))
 

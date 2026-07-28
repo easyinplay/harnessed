@@ -33,7 +33,7 @@
 // avoid magic, schema stays additive, future capabilities are obvious.
 
 import { readdirSync, readFileSync } from 'node:fs'
-import { getPluginsRegistry, getSkillsDir } from '../../installers/lib/platform.js'
+import { getPluginsRegistry, getSkillsDir } from '../../platform/platform.js'
 
 /** Minimal shape needed from capabilities.yaml — additive yaml-tolerant. */
 export interface CapabilityEntry {

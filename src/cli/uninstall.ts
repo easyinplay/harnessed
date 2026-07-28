@@ -27,10 +27,10 @@ import {
   countHarnessedHooks,
   stripHarnessedHooks,
 } from '../installers/lib/harnessedHookTeardown.js'
-import { getHarnessedRoot } from '../installers/lib/harnessedRoot.js'
-import { detectPlatform } from '../installers/lib/platform.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
+import { getHarnessedRoot } from '../platform/harnessedRoot.js'
+import { detectPlatform } from '../platform/platform.js'
 import { runUninstall } from '../uninstallers/index.js'
 import { getAssetsRoot, isCompiledRuntime } from './lib/assetsRoot.js'
 import { shouldOverwriteFile } from './lib/generateCommands.js'

@@ -10,7 +10,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Command } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
-import { getHarnessedRoot } from '../installers/lib/harnessedRoot.js'
+import { getHarnessedRoot } from '../platform/harnessedRoot.js'
 import { getAssetsRoot } from './lib/assetsRoot.js'
 
 interface UpdateOpts {
@@ -57,7 +57,7 @@ async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
       // D7 — opportunistic gc: keep {old, new} asset versions (fail-soft).
       try {
         const { gcCompiledArtifacts } = await import('./gc.js')
-        const { detectPlatform } = await import('../installers/lib/platform.js')
+        const { detectPlatform } = await import('../platform/platform.js')
         await gcCompiledArtifacts({
           keepVersions: [r.from, r.to],
           stateRoot: detectPlatform().stateRoot,

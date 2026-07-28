@@ -25,7 +25,7 @@
 // Backup → ~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak.
 // Any error → warn + skip (sister fallback 铁律 1), NOT throw — non-blocking setup.
 
-import { detectPlatform } from '../../installers/lib/platform.js'
+import { detectPlatform } from '../../platform/platform.js'
 import { mergeSettingsEnvKey } from './settingsWriter.js'
 
 const ENV_KEY = 'HARNESSED_USER_LANG'

@@ -19,8 +19,8 @@ import { nextPending } from '../checkpoint/ledger.js'
 import type { SubProgressEntryType } from '../checkpoint/schema/index.js'
 import { readCurrentWorkflow } from '../checkpoint/state.js'
 import { t } from '../i18n/index.js'
-import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
 import { readState } from '../installers/lib/state.js'
+import { getHarnessedRoot, harnessedFile } from '../platform/harnessedRoot.js'
 
 /** v5.0 Spec 1 (B) — status marker per sub `status` (design §7 sample). */
 export function statusMarker(status: SubProgressEntryType['status']): string {

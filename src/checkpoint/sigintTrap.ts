@@ -3,7 +3,7 @@
 // 30s timeout fallback for async checkpoint hangs. Standard SIGINT exit code 128+2 = 130.
 // v3.0.3 — archive path routed through `getHarnessedRoot()` SoT (sister engineHook).
 import { join } from 'node:path'
-import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
+import { harnessedSubdir } from '../platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { pause } from './state.js'
 import { writeCheckpoint } from './template.js'

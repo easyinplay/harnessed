@@ -15,7 +15,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import pkg from '../../../package.json' with { type: 'json' }
-import { detectPlatform } from '../../installers/lib/platform.js'
+import { detectPlatform } from '../../platform/platform.js'
 import { isCompiledRuntime } from './assetsRoot.js'
 import { fetchLatestVersion } from './version-check.js'
 

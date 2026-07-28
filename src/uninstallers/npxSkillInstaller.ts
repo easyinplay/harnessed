@@ -5,7 +5,7 @@
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { extractSkillName } from '../installers/lib/idempotent.js'
-import { getSkillsDir } from '../installers/lib/platform.js'
+import { getSkillsDir } from '../platform/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 

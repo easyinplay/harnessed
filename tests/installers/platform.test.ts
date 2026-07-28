@@ -12,7 +12,7 @@ import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
+import { getHarnessedRoot } from '../../src/platform/harnessedRoot.js'
 import {
   claudeDescriptor,
   codexDescriptor,
@@ -22,7 +22,7 @@ import {
   getPluginsRegistry,
   getSettingsPath,
   getSkillsDir,
-} from '../../src/installers/lib/platform.js'
+} from '../../src/platform/platform.js'
 
 const ENV_KEY = 'HARNESSED_ROOT_OVERRIDE'
 

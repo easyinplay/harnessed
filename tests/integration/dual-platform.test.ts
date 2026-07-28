@@ -17,7 +17,7 @@ import {
   codexDescriptor,
   detectPlatform,
   harnessSkillsDirs,
-} from '../../src/installers/lib/platform.js'
+} from '../../src/platform/platform.js'
 
 const PLATFORM_KEY = 'HARNESSED_PLATFORM'
 const OVERRIDE_KEY = 'HARNESSED_ROOT_OVERRIDE'

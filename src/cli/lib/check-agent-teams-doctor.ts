@@ -6,7 +6,7 @@
 // Status map: checkAgentTeams 'pass' → 'pass'; 'missing' → 'warn' (non-blocking
 // per CLAUDE.md L21 "warn ≠ fail / exit 0" R2.4.1 + R20.11 acceptance c).
 
-import { detectPlatform } from '../../installers/lib/platform.js'
+import { detectPlatform } from '../../platform/platform.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
 
 interface CheckResult {

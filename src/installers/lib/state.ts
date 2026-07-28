@@ -26,7 +26,7 @@
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
-import { harnessedFile } from './harnessedRoot.js'
+import { harnessedFile } from '../../platform/harnessedRoot.js'
 
 export interface HarnessedStateEntry {
   version: string

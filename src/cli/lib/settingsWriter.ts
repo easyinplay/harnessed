@@ -16,8 +16,8 @@
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
-import { harnessedSubdir } from '../../installers/lib/harnessedRoot.js'
-import { getSettingsPath } from '../../installers/lib/platform.js'
+import { harnessedSubdir } from '../../platform/harnessedRoot.js'
+import { getSettingsPath } from '../../platform/platform.js'
 
 /**
  * Discriminated outcome of a settings env-key merge.

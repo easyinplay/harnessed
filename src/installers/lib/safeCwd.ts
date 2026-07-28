@@ -20,7 +20,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { detectPlatform } from './platform.js'
+import { detectPlatform } from '../../platform/platform.js'
 
 /**
  * Return the homedir-rooted spawn cwd used by `claude mcp add` /

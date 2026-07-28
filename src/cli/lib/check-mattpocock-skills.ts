@@ -18,11 +18,7 @@
 import { readdir, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import {
-  detectPlatform,
-  getPluginsRegistry,
-  harnessSkillsDirs,
-} from '../../installers/lib/platform.js'
+import { detectPlatform, getPluginsRegistry, harnessSkillsDirs } from '../../platform/platform.js'
 
 interface CheckResult {
   name: string

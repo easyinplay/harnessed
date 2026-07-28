@@ -5,7 +5,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { estimateTokens } from '../../checkpoint/template.js'
-import { getSkillsDir } from '../../installers/lib/platform.js'
+import { getSkillsDir } from '../../platform/platform.js'
 import type { CheckResult } from './check-deprecations.js'
 
 const CONTEXT_WINDOW_TOKENS = 200_000

@@ -25,7 +25,7 @@ import {
   estimateTokens,
   writeCheckpoint,
 } from '../../src/checkpoint/template.js'
-import { harnessedSubdir } from '../../src/installers/lib/harnessedRoot.js'
+import { harnessedSubdir } from '../../src/platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const makeCheckpoint = (overrides: Partial<CheckpointV1Type> = {}): CheckpointV1Type => ({

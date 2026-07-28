@@ -15,9 +15,9 @@ import { spawnSync } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { detectPlatform } from '../../installers/lib/platform.js'
 import { resolveBash } from '../../installers/lib/resolveBash.js'
 import { sanitizeOutputTail } from '../../installers/lib/verifyMessage.js'
+import { detectPlatform } from '../../platform/platform.js'
 
 export interface CheckResult {
   name: string

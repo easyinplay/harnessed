@@ -45,7 +45,7 @@ import {
   getHarnessedRoot,
   harnessedFile,
   harnessedSubdir,
-} from '../../src/installers/lib/harnessedRoot.js'
+} from '../../src/platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const STATE_PATH = harnessedFile('current-workflow.json')

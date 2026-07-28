@@ -11,7 +11,7 @@
 import { resolveAutoTransition, resolveNext } from '../../checkpoint/nextStep.js'
 import type { SubProgressEntryType } from '../../checkpoint/schema/currentWorkflow.v1.js'
 import { t } from '../../i18n/index.js'
-import { harnessedFile } from '../../installers/lib/harnessedRoot.js'
+import { harnessedFile } from '../../platform/harnessedRoot.js'
 import { buildRecoverLines } from '../status.js'
 
 /** Workflow envelope subset consumed by the here view (mirrors buildRecoverLines). */

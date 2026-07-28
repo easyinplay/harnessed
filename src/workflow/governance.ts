@@ -7,7 +7,7 @@
 
 import { readFile } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
-import { harnessedFile } from '../installers/lib/harnessedRoot.js'
+import { harnessedFile } from '../platform/harnessedRoot.js'
 import { branchOnSchemaVersion } from '../types/schemaVersion.js'
 import { GovernanceV1, type GovernanceV1Type } from './schema/governance.js'
 

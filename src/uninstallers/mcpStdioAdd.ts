@@ -3,8 +3,8 @@
 // v4.14.0 — bin follows detectPlatform().id: codex → `codex mcp remove <name>`
 // (same CLI shape, findings.md research). Reuses runHarnessArgs.
 
-import { detectPlatform } from '../installers/lib/platform.js'
 import { runHarnessArgs } from '../installers/lib/runClaudeArgs.js'
+import { detectPlatform } from '../platform/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 

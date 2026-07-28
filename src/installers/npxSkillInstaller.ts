@@ -34,6 +34,7 @@
 // and produces a clean Promise without process plumbing.
 
 import { join } from 'node:path'
+import { detectPlatform, getSkillsDir } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
@@ -44,7 +45,6 @@ import {
   snapshotSkillNames,
   warnDeclaredCollisions,
 } from './lib/packSkillAudit.js'
-import { detectPlatform, getSkillsDir } from './lib/platform.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { updateInstalled } from './lib/state.js'

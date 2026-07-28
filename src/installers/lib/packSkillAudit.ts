@@ -21,7 +21,7 @@ import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { getAssetsRoot } from '../../cli/lib/assetsRoot.js'
 import { scanWorkflowsNested } from '../../cli/lib/scan-nested.js'
-import { getSkillsDir } from './platform.js'
+import { getSkillsDir } from '../../platform/platform.js'
 import type { InstallContext } from './types.js'
 
 /** Names currently present in the flat skills dir (empty set on any error). */

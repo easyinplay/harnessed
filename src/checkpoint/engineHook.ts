@@ -9,7 +9,7 @@
 // (homedir-rooted; EPERM-free in read-only CWD). Sister v2.0.1 backup pattern.
 
 import { join } from 'node:path'
-import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
+import { harnessedSubdir } from '../platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { activate as stateActivate, complete as stateComplete } from './state.js'
 import { writeCheckpoint } from './template.js'

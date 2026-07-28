@@ -12,7 +12,7 @@ import {
   hookScriptMarker,
   resolveHookCommand,
 } from '../installers/lib/hookEntry.js'
-import { getSettingsPath } from '../installers/lib/platform.js'
+import { getSettingsPath } from '../platform/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 

@@ -41,7 +41,7 @@ vi.mock('proper-lockfile', () => ({
 // Imports AFTER mocks
 import { join as pathJoin } from 'node:path'
 import { activatePhase, completePhase } from '../../src/checkpoint/engineHook.js'
-import { harnessedFile, harnessedSubdir } from '../../src/installers/lib/harnessedRoot.js'
+import { harnessedFile, harnessedSubdir } from '../../src/platform/harnessedRoot.js'
 import { ralphLoopWrap } from '../../src/workflow/lib/ralphLoop.js'
 
 // v3.0.3 — paths resolve under ~/.claude/harnessed/ now.

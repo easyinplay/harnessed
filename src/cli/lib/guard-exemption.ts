@@ -24,11 +24,7 @@
 
 import { readFile as fsReadFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import {
-  detectPlatform,
-  getPluginsRegistry,
-  getSettingsPath,
-} from '../../installers/lib/platform.js'
+import { detectPlatform, getPluginsRegistry, getSettingsPath } from '../../platform/platform.js'
 import { type MergeOutcome, mergeSettingsEnvKey } from './settingsWriter.js'
 
 export const PLANNING_GLOB = '.planning/**'

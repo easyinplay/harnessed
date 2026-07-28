@@ -20,14 +20,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readInstalledPlugins } from '../../src/cli/lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from '../../src/cli/lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from '../../src/cli/lib/enableUserLangInSettings.js'
+import { isPluginRegistered } from '../../src/installers/lib/readClaudeConfig.js'
 import {
   claudeDescriptor,
   codexDescriptor,
   detectPlatform,
   getPluginsRegistry,
   harnessSkillsDirs,
-} from '../../src/installers/lib/platform.js'
-import { isPluginRegistered } from '../../src/installers/lib/readClaudeConfig.js'
+} from '../../src/platform/platform.js'
 
 const OVERRIDE_KEY = 'HARNESSED_ROOT_OVERRIDE'
 const PLATFORM_KEY = 'HARNESSED_PLATFORM'

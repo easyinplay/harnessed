@@ -13,7 +13,7 @@
 import { mkdir } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
 import lockfile from 'proper-lockfile'
-import { getHarnessedRoot, harnessedFile } from '../installers/lib/harnessedRoot.js'
+import { getHarnessedRoot, harnessedFile } from '../platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { writeFileAtomic } from './atomicWrite.js'
 import {

@@ -3,7 +3,7 @@
 // Sister RESEARCH § 4.3 verbatim implementation; wired by setup.ts / doctor.ts.
 
 import { readFile } from 'node:fs/promises'
-import { getSettingsPath } from '../../installers/lib/platform.js'
+import { getSettingsPath } from '../../platform/platform.js'
 
 export interface AgentTeamsCheckResult {
   status: 'pass' | 'warn' | 'missing'

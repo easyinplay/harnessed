@@ -43,7 +43,7 @@ vi.mock('../../src/cli/lib/setup-helpers.js', () => ({
 import { mkdir, readdir, writeFile } from 'node:fs/promises'
 import { Command } from 'commander'
 import { registerSetup } from '../../src/cli/setup.js'
-import { getCommandsDir, getSkillsDir } from '../../src/installers/lib/platform.js'
+import { getCommandsDir, getSkillsDir } from '../../src/platform/platform.js'
 
 const readdirMock = vi.mocked(readdir)
 const mkdirMock = vi.mocked(mkdir)

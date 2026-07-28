@@ -33,7 +33,7 @@ import {
 } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import pkg from '../../../package.json' with { type: 'json' }
-import { detectPlatform } from '../../installers/lib/platform.js'
+import { detectPlatform } from '../../platform/platform.js'
 import { compareVersions } from './version-check.js'
 
 const OWNER_REPO = 'easyinplay/harnessed'

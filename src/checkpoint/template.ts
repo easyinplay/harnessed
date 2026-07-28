@@ -11,7 +11,7 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
-import { harnessedSubdir } from '../installers/lib/harnessedRoot.js'
+import { harnessedSubdir } from '../platform/harnessedRoot.js'
 import { writeFileSyncAtomic } from './atomicWrite.js'
 import { CheckpointV1, type CheckpointV1Type } from './schema/index.js'
 

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.16] - 2026-07-28
+
+架构 code review MEDIUM(#7,slice 1/2 — 埋藏 infra 出土)。
+
+### Changed
+
+- **#7(slice 1)— `platform.ts` + `harnessedRoot.ts` 从 `installers/lib/` 移至 `src/platform/`。** 两模块是全 harness 的基础设施(PlatformDescriptor seam:state root / skills dir / settings path / session-id env;homedir 状态根 + 遗留迁移),被 checkpoint(7 文件)/ workflow / audit / cli(20+ 文件)/ uninstallers 消费,却埋在 `installers/lib/` 这个 feature 目录下 —— 层级上"所有人依赖 installers 的内部实现"。现出土为顶层 `src/platform/`(platform.ts 零依赖、harnessedRoot 只依赖 platform,干净 leaf 层),63 条 import 机械改写(同深度路径替换),tsc 强制验证,行为零变更。
+  - vitest tally 与移动前逐位一致(2271 pass);dist rebuild + hook drift gate CLEAN(inject/stop hook entry 本就不 import 这两模块,dep-free 复刻不受影响)。
+  - **slice 2(deferred)— 上行 import 9 处**:`cli/lib/assetsRoot`(5 处非 cli 消费)、`cli/lib/generateCommands.loadRolePrompts`(workflow/run)、`cli/run.resolveWorkflowYaml`(checkpoint/evidence)、`cli/lib/runDeps`(eval/runner)、`cli/lib/scan-nested`(installers/lib/packSkillAudit)。各需逐个抽取到合适下层,非机械移动,另行 slice。
+
 ## [4.32.15] - 2026-07-28
 
 架构 code review MEDIUM(#10)。

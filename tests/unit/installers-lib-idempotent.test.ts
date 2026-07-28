@@ -26,7 +26,7 @@ vi.mock('node:fs/promises', () => ({
 
 // platform.js factory — idempotent.ts consumes getSkillsDir + harnessSkillsDirs;
 // its transitive readClaudeConfig.js consumes the 3 config-path getters.
-vi.mock('../../src/installers/lib/platform.js', () => ({
+vi.mock('../../src/platform/platform.js', () => ({
   getSkillsDir: () => '/fake-home/.claude/skills',
   harnessSkillsDirs: () => ['/fake-home/.claude/skills', '/fake-home/.agents/skills'],
   getMcpConfigPath: () => '/fake-home/.claude.json',

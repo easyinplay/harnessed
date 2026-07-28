@@ -18,7 +18,7 @@ import {
   buildAuditRecord,
   emitAuditRecord,
 } from '../../src/audit/log.js'
-import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
+import { getHarnessedRoot } from '../../src/platform/harnessedRoot.js'
 import type { ArbitrateResult, Rule, TaskContext } from '../../src/workflow/lib/agentDefinition.js'
 
 const makeFixture = (taskText = 'test task content') => ({

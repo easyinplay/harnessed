@@ -37,7 +37,7 @@ import { registerUninstall } from './cli/uninstall.js'
 import { registerUpdate } from './cli/update.js'
 import { registerWorkflows } from './cli/workflows.js'
 import { setLocale, wireMessagesDir } from './i18n/index.js'
-import { migrateLegacyHarnessedRoot } from './installers/lib/harnessedRoot.js'
+import { migrateLegacyHarnessedRoot } from './platform/harnessedRoot.js'
 
 // B2 (v4.20.0, D5) — messages/ 的 assetsRoot 接线,惰性注入(thunk 到首次 t()
 // 才求值)。只在真 CLI 进程入口 wire — vitest 的 setupFiles 预加载 i18n 时不经

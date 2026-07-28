@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { compiledAssetsDir } from '../../src/cli/lib/assetsRoot.js'
 import { __resetForTests, setLocale, t, wireMessagesDir } from '../../src/i18n/index.js'
-import { detectPlatform } from '../../src/installers/lib/platform.js'
+import { detectPlatform } from '../../src/platform/platform.js'
 
 const tmp: string[] = []
 afterEach(() => {

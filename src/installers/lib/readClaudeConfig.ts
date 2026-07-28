@@ -29,7 +29,7 @@ import {
   getMcpConfigPath,
   getPluginsRegistry,
   getSettingsPath,
-} from './platform.js'
+} from '../../platform/platform.js'
 
 /**
  * Path to the user-global Claude Code config file written by `claude mcp add

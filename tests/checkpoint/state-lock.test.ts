@@ -35,7 +35,7 @@ vi.mock('node:fs/promises', () => ({
 }))
 
 import { activate, LockHeldError, writeCurrentWorkflow } from '../../src/checkpoint/state.js'
-import { getHarnessedRoot } from '../../src/installers/lib/harnessedRoot.js'
+import { getHarnessedRoot } from '../../src/platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const HARNESSED_ROOT = getHarnessedRoot()

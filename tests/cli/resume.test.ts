@@ -25,7 +25,7 @@ import { detectDrift } from '../../src/checkpoint/evidence.js'
 import { runResume } from '../../src/checkpoint/resume.js'
 import { repoKey } from '../../src/checkpoint/workflowStore.js'
 import { registerResume } from '../../src/cli/resume.js'
-import { harnessedFile, harnessedSubdir } from '../../src/installers/lib/harnessedRoot.js'
+import { harnessedFile, harnessedSubdir } from '../../src/platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const detectDriftMock = vi.mocked(detectDrift)

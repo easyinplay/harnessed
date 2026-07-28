@@ -22,8 +22,8 @@
 // `checkpoint start`.
 
 import { readFile } from 'node:fs/promises'
-import { getSettingsPath } from '../../installers/lib/platform.js'
 import { isPluginRegistered } from '../../installers/lib/readClaudeConfig.js'
+import { getSettingsPath } from '../../platform/platform.js'
 import type { CheckResult } from './check-builtin.js'
 
 const DISABLE_VALUES = new Set(['off', '0', 'false', 'disabled'])
