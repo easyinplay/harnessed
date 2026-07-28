@@ -25,7 +25,7 @@
 //
 // 4.31.0 (eval Slice A wave 0) — the action bodies for start/complete/fail are
 // extracted into exported runCheckpointStart/Complete/Fail(sub, opts, deps)
-// orchestration functions (behavior-preserving; deps = cli/lib/runDeps.ts seam,
+// orchestration functions (behavior-preserving; deps = platform/runDeps.ts seam,
 // production default = process/console). The commander action is a thin shell.
 // The eval runner drives these exports so trap scenarios exercise the REAL
 // guard orchestration (serial-order guard, evidence three-state, GateGuard
@@ -33,7 +33,7 @@
 
 import type { Command } from 'commander'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
-import { defaultRunDeps, type RunDeps } from './lib/runDeps.js'
+import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
 
 const ACTIONS = ['start', 'complete', 'fail', 'intent'] as const
 type Action = (typeof ACTIONS)[number]

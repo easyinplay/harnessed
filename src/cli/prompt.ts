@@ -20,9 +20,9 @@ import { parse as parseYaml } from 'yaml'
 import { getLocale, type SupportedLocale } from '../i18n/index.js'
 import { resolveLocaleYaml } from '../i18n/localeYaml.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
+import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
+import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { buildAgentDef } from '../workflow/run.js'
-import { loadRolePrompts } from './lib/generateCommands.js'
-import { resolveWorkflowYaml } from './run.js'
 
 const DEFAULT_MAX_ITERATIONS = 20
 const DEFAULT_MODEL = 'sonnet'

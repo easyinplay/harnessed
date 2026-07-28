@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.18] - 2026-07-28
+
+架构 code review MEDIUM(#7,slice 2b — 上行 import 归零)。
+
+### Changed
+
+- **#7(slice 2b)— 剩余 4 处「核心 import 上行进 cli/」全部消除;`src/` 上行 import 现为 0。**
+  - `runDeps.ts`(process-IO 注入 seam,零依赖)整文件移 `src/platform/runDeps.ts` —— `eval/runner` 不再上行。
+  - `scan-nested.ts`(workflows/ 目录扫描,零依赖)整文件移 `src/workflow/scan-nested.ts` —— `installers/lib/packSkillAudit` 不再上行。
+  - `loadRolePrompts` + `RolePrompt` 从 `cli/lib/generateCommands.ts` 抽取为 `src/workflow/rolePrompts.ts`(registry 是 workflow-domain 数据,spawn 路径注入用)—— `workflow/run` 不再上行;generateCommands 5 个残留 dead import(readFile/parseYaml/getLocale/SupportedLocale/resolveLocaleYaml)一并清除。
+  - `resolveWorkflowYaml` 从 `cli/run.ts` 抽取为 `src/workflow/resolveYaml.ts`(3-tier workflows/ 布局查找是 workflow-domain 知识)—— `checkpoint/evidence` 不再上行;cli 6 面(run/prompt/research/checkpoint/gates/generateCommands)全部改从下层 import。
+  - 纯搬迁/抽取,零行为变更;5 个 test 文件 import 路径同步。#7 全部 slice(1 / 2a / 2b)交付完毕。
+
 ## [4.32.17] - 2026-07-28
 
 架构 code review MEDIUM(#7,slice 2a — assetsRoot 出土,上行 import 9 处修 5)。

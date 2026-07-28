@@ -21,11 +21,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CapabilityMap } from '../../src/cli/lib/capabilityResolver.js'
 import {
   generateCommandFile,
-  loadRolePrompts,
-  type RolePrompt,
   shouldOverwriteFile,
   writeAllCommands,
 } from '../../src/cli/lib/generateCommands.js'
+import { loadRolePrompts, type RolePrompt } from '../../src/workflow/rolePrompts.js'
 
 let tmpRoot: string
 

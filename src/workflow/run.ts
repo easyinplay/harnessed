@@ -12,7 +12,6 @@
 import { dirname, join, resolve as pathResolve } from 'node:path'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
-import { loadRolePrompts, type RolePrompt } from '../cli/lib/generateCommands.js'
 import { runAfterOutputHook } from '../discipline/enforcement/after-output.js'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
@@ -31,6 +30,7 @@ import {
 import { sdkSpawn } from './lib/sdkSpawn.js'
 import { loadPhases } from './loadPhases.js'
 import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
+import { loadRolePrompts, type RolePrompt } from './rolePrompts.js'
 
 export type { FallbackMaxIterationsExceededConfig } from './lib/ralphLoop.js'
 

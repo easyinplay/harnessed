@@ -33,8 +33,8 @@ import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
 import { detectPlatform } from '../platform/platform.js'
 import { runUninstall } from '../uninstallers/index.js'
+import { scanWorkflowsNested } from '../workflow/scan-nested.js'
 import { shouldOverwriteFile } from './lib/generateCommands.js'
-import { scanWorkflowsNested } from './lib/scan-nested.js'
 
 interface RawOpts {
   dryRun?: boolean

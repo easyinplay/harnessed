@@ -15,12 +15,12 @@ import type { Command } from 'commander'
 import { parse as parseYaml } from 'yaml'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
+import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
 import { isUndefinedVariableError } from '../workflow/exprBuilder.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
 import { matchSkipSub, warnUnmatchedSkips } from '../workflow/skipSubs.js'
 import { detectHeadless } from './lib/detectHeadless.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
-import { defaultRunDeps, type RunDeps } from './lib/runDeps.js'
 
 // v4.22.0 dogfood — 'ship' was a real master (workflows/ship/auto/workflow.yaml,
 // Phase 21) missing from this whitelist since it shipped: `gates ship` errored

@@ -26,7 +26,7 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
-import { captureRunDeps, ExitError } from '../cli/lib/runDeps.js'
+import { captureRunDeps, ExitError } from '../platform/runDeps.js'
 import { diffGolden, loadGolden, normalizeGolden, writeGolden } from './golden.js'
 import { type EvalScenarioType, validateScenario } from './schema.js'
 

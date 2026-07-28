@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { loadRolePrompts } from '../../src/cli/lib/generateCommands.js'
+import { loadRolePrompts } from '../../src/workflow/rolePrompts.js'
 
 const PACKAGE_ROOT = process.cwd()
 const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')

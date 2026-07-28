@@ -14,11 +14,11 @@ import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
 import { detectPlatform } from '../../platform/platform.js'
+import type { ScanResult } from '../../workflow/scan-nested.js'
+import { scanWorkflowsNested } from '../../workflow/scan-nested.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
-import type { ScanResult } from './scan-nested.js'
-import { scanWorkflowsNested } from './scan-nested.js'
 
-export type { NestedWorkflow, ScanResult } from './scan-nested.js'
+export type { NestedWorkflow, ScanResult } from '../../workflow/scan-nested.js'
 
 // v3.9.5 — removed stale PHASE_21 deferred-method set. Per src/installers/index.ts
 // L1-2 ("All 6 methods are now runtime-ready"), all installer dispatchers

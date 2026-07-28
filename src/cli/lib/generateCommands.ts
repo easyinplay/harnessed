@@ -20,35 +20,9 @@
 // Karpathy simplicity: pure functions, single yaml load, no new deps.
 
 import { existsSync, readFileSync as nodeReadFileSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { parse as parseYaml } from 'yaml'
-import { getLocale, type SupportedLocale } from '../../i18n/index.js'
-import { resolveLocaleYaml } from '../../i18n/localeYaml.js'
+import type { RolePrompt } from '../../workflow/rolePrompts.js'
 import type { CapabilityMap } from './capabilityResolver.js'
-
-/** Per-sub-workflow metadata from `workflows/role-prompts.yaml`. */
-export interface RolePrompt {
-  /** Capability key whose `.cmd` is the preferred slash command. Empty for masters. */
-  primary_cap: string
-  /** Title of the expert persona used in the fallback Task-spawn prompt. */
-  specialist: string
-  /** One-line job description (string with leading verb). */
-  responsibility: string
-  /** Checklist items (5-10) — skipped for masters (empty array). */
-  checklist: string[]
-  /** Severity scale label rendered in report-format section. */
-  severity: string
-  /** YAML frontmatter `description` field for the generated commands/<x>.md. */
-  description: string
-  /** Master orchestrators are pure dispatchers (no role-prompt fallback). */
-  is_master?: boolean
-}
-
-/** Full registry shape — `{ prompts: { <slash-name>: RolePrompt, ... } }`. */
-interface RolePromptsDoc {
-  prompts?: Record<string, RolePrompt>
-}
 
 /** Single generated command file (filename + content). */
 export interface GeneratedCommand {
@@ -68,24 +42,6 @@ export interface CommandWriteResult {
   written: boolean
   /** Warning text when skipped or when role-prompt missing for the workflow. */
   warning?: string
-}
-
-/** Load and parse `<workflowsDir>/role-prompts.yaml` (or its locale sibling).
- *  Tolerant of missing file. Phase 33: `locale` (default `getLocale()`) selects
- *  `role-prompts.<locale>.yaml` when present — en serves the byte-identical base. */
-export async function loadRolePrompts(
-  workflowsDir: string,
-  locale: SupportedLocale = getLocale(),
-): Promise<Record<string, RolePrompt>> {
-  const path = resolveLocaleYaml(workflowsDir, 'role-prompts', locale)
-  let raw: string
-  try {
-    raw = await readFile(path, 'utf8')
-  } catch {
-    return {}
-  }
-  const doc = parseYaml(raw) as RolePromptsDoc | null
-  return doc?.prompts ?? {}
 }
 
 /** v4.0 — INTERACTIVE: pure clarification requiring user dialogue. Headless

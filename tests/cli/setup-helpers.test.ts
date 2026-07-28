@@ -16,7 +16,7 @@ import {
   FLAT_LEGACY_KEEP,
   NON_WORKFLOW_DIRS,
   scanWorkflowsNested,
-} from '../../src/cli/lib/scan-nested.js'
+} from '../../src/workflow/scan-nested.js'
 
 const readdirMock = vi.mocked(readdir)
 const statMock = vi.mocked(stat)
@@ -54,7 +54,7 @@ function makeReaddir(topEntries: string[], nested: Record<string, string[]> = {}
   }
 }
 
-describe('cli/lib/scan-nested — Phase v3.0-3.3 T3.3.W0.12 nested 2-level scan', () => {
+describe('workflow/scan-nested — Phase v3.0-3.3 T3.3.W0.12 nested 2-level scan', () => {
   beforeEach(() => {
     readdirMock.mockReset()
     statMock.mockReset()

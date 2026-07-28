@@ -1,4 +1,4 @@
-// src/cli/lib/runDeps.ts — injected side-effect seam for extracted CLI
+// src/platform/runDeps.ts — injected side-effect seam for extracted CLI
 // orchestration bodies (4.31.0 eval Slice A wave 0, CEO plan scope 0).
 //
 // The commander actions in cli/checkpoint.ts and cli/gates.ts delegate to

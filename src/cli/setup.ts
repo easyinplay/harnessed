@@ -20,10 +20,11 @@ import type { Command } from 'commander'
 import { getLocale, t } from '../i18n/index.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { detectPlatform, getCommandsDir, getSkillsDir } from '../platform/platform.js'
+import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
-import { loadRolePrompts, writeAllCommands } from './lib/generateCommands.js'
+import { writeAllCommands } from './lib/generateCommands.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   makeIdempotentProbe,

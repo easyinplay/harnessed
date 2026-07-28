@@ -26,7 +26,6 @@
 // resolves direct + parent-stage fallback per D-1 Option C, fail-soft per
 // ADR 0029 (stderr warn + null on yaml read/parse error).
 
-import { existsSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
@@ -34,6 +33,7 @@ import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { detectPlatform } from '../platform/platform.js'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
+import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { runWorkflow } from '../workflow/run.js'
 import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
 import { buildDefaultGateContext } from './lib/gateContext.js'
@@ -228,36 +228,6 @@ function isNestedHarnessContext(): boolean {
   const sid = process.env[sessEnv]?.trim()
   if (!sid) return false
   return !process.stdin.isTTY
-}
-
-/** 3-tier lookup matches workflows/ layout:
- *    1. workflows/<name>/workflow.yaml             (research, retro, auto top-level)
- *    2. workflows/<name>/auto/workflow.yaml        (4 stage-masters: discuss/plan/task/verify)
- *    3. workflows/<stage>/<sub>/workflow.yaml      (24 subs; <name> = '<stage>-<sub>' OR '<sub>')
- *
- * Sub names by convention flatten to `<stage>-<sub>` (e.g. 'verify-paranoid'
- * → workflows/verify/paranoid/workflow.yaml). Split on the FIRST dash to
- * derive (stage, sub). If `<name>` has no dash, only tiers 1 + 2 apply.
- */
-export async function resolveWorkflowYaml(
-  name: string,
-  workflowsDir: string,
-): Promise<string | null> {
-  // Tier 1: top-level standalone
-  const tier1 = join(workflowsDir, name, 'workflow.yaml')
-  if (existsSync(tier1)) return tier1
-  // Tier 2: stage-master auto
-  const tier2 = join(workflowsDir, name, 'auto', 'workflow.yaml')
-  if (existsSync(tier2)) return tier2
-  // Tier 3: split on first dash
-  const dashIdx = name.indexOf('-')
-  if (dashIdx > 0) {
-    const stage = name.slice(0, dashIdx)
-    const sub = name.slice(dashIdx + 1)
-    const tier3 = join(workflowsDir, stage, sub, 'workflow.yaml')
-    if (existsSync(tier3)) return tier3
-  }
-  return null
 }
 
 export async function listWorkflowNames(workflowsDir: string): Promise<string[]> {

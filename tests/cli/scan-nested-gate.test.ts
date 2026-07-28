@@ -9,7 +9,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { scanWorkflowsNested } from '../../src/cli/lib/scan-nested.js'
+import { scanWorkflowsNested } from '../../src/workflow/scan-nested.js'
 
 let tmpRoot: string
 

@@ -17,7 +17,7 @@ import type { Command } from 'commander'
 import { recordScenario } from '../eval/record.js'
 import { computeCoverage, runEvalSuite } from '../eval/runner.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
-import { defaultRunDeps, type RunDeps } from './lib/runDeps.js'
+import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
 
 interface EvalOpts {
   dir?: string

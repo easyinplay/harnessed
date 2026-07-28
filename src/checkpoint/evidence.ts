@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
-import { resolveWorkflowYaml } from '../cli/run.js'
+import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import type { CurrentWorkflowV1Type, EvidenceRefType } from './schema/currentWorkflow.v1.js'
 
 /** sha256 hex digest of a file's bytes. */
