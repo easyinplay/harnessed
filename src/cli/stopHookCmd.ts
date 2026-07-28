@@ -10,7 +10,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Command } from 'commander'
-import { getAssetsRoot } from './lib/assetsRoot.js'
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 
 export function registerStopHook(program: Command): void {
   program

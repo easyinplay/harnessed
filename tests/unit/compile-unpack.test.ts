@@ -1,6 +1,6 @@
 // B2 T2 — 首跑解包器(compiled entry 消费;TDD 先红)。
 // 判据契约:`<target>/workflows` 存在 = 已解包 — 与 computeAssetsRoot 的 presence
-// probe(src/cli/lib/assetsRoot.ts)同一判据,两处注释互相交叉引用。
+// probe(src/platform/assetsRoot.ts)同一判据,两处注释互相交叉引用。
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'

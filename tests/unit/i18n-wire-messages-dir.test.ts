@@ -5,8 +5,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { compiledAssetsDir } from '../../src/cli/lib/assetsRoot.js'
 import { __resetForTests, setLocale, t, wireMessagesDir } from '../../src/i18n/index.js'
+import { compiledAssetsDir } from '../../src/platform/assetsRoot.js'
 import { detectPlatform } from '../../src/platform/platform.js'
 
 const tmp: string[] = []

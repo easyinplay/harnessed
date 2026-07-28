@@ -36,7 +36,7 @@ vi.mock('node:fs/promises', async () => {
   return { ...actual, readFile: (p: string) => readFileMock(p) }
 })
 // Pin package root so fixture path keys are deterministic.
-vi.mock('../../src/cli/lib/packagePath.js', () => ({
+vi.mock('../../src/platform/packagePath.js', () => ({
   getPackageRoot: () => '/fake-root',
 }))
 

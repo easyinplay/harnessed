@@ -5,13 +5,13 @@
 
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
-import { getAssetsRoot } from '../cli/lib/assetsRoot.js'
 import {
   type AnyHookEntry,
   entryMatchesRegistration,
   hookScriptMarker,
   resolveHookCommand,
 } from '../installers/lib/hookEntry.js'
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { getSettingsPath } from '../platform/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'

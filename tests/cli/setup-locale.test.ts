@@ -48,7 +48,7 @@ vi.mock('../../src/cli/lib/enableUserLangInSettings.js', () => ({
 
 // getPackageRoot → tmp fixture pkg (set per-test via the holder below).
 const pkgRootHolder = { value: '' }
-vi.mock('../../src/cli/lib/packagePath.js', () => ({
+vi.mock('../../src/platform/packagePath.js', () => ({
   getPackageRoot: () => pkgRootHolder.value,
 }))
 

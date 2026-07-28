@@ -10,8 +10,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Command } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
-import { getAssetsRoot } from './lib/assetsRoot.js'
 
 interface UpdateOpts {
   check?: boolean
@@ -128,7 +128,7 @@ export function registerUpdate(program: Command): void {
       // compiled machines usually have no npm — a later check would short-
       // circuit the compiled branch forever. Latest source on this branch is
       // GitHub releases/latest, never `npm view`.
-      const { isCompiledRuntime } = await import('./lib/assetsRoot.js')
+      const { isCompiledRuntime } = await import('../platform/assetsRoot.js')
       if (isCompiledRuntime()) {
         const handled = await runCompiledFlow(opts)
         if (handled) return

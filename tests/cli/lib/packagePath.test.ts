@@ -4,7 +4,7 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { getPackageRoot } from '../../../src/cli/lib/packagePath.js'
+import { getPackageRoot } from '../../../src/platform/packagePath.js'
 
 describe('getPackageRoot', () => {
   it('returns a string', () => {

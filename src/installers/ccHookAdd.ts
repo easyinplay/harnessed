@@ -18,7 +18,7 @@
 
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
-import { getAssetsRoot, isCompiledRuntime } from '../cli/lib/assetsRoot.js'
+import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getSettingsPath } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'

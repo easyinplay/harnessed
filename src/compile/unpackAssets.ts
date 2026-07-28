@@ -2,7 +2,7 @@
 //
 // 目标路径 = getAssetsRoot() compiled 分支解析的 <stateRoot>/assets/<version>/
 // (调用方经 compiledAssetsDir() 取得,不复制常量)。判据契约:`<target>/workflows`
-// 存在 = 已解包 — 与 computeAssetsRoot 的 presence probe(src/cli/lib/assetsRoot.ts)
+// 存在 = 已解包 — 与 computeAssetsRoot 的 presence probe(src/platform/assetsRoot.ts)
 // 同一判据。
 //
 // 原子性(D7):写入 `<target>.unpack-tmp`(同父目录,rename 原子)→ 计数校验

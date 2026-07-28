@@ -15,7 +15,7 @@ import type { Command } from 'commander'
 import { runInstall } from '../installers/index.js'
 import type { InstallOpts } from '../installers/lib/types.js'
 import { validateManifestFile } from '../manifest/validate.js'
-import { getAssetsRoot } from './lib/assetsRoot.js'
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 
 interface RawOpts {
   dryRun?: boolean

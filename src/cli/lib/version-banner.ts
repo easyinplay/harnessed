@@ -6,7 +6,7 @@
 // regression.
 
 import pkg from '../../../package.json' with { type: 'json' }
-import { isCompiledRuntime } from './assetsRoot.js'
+import { isCompiledRuntime } from '../../platform/assetsRoot.js'
 import { compareVersions } from './version-check.js'
 
 /** Build the banner lines for `harnessed setup`. Line 1 is always the installed

@@ -26,8 +26,8 @@ vi.mock('../../src/cli/install-base.js', () => ({
 // 4.27.0 (B3 T2) — compiled-branch routing seams. isCompiledRuntime is spread-
 // mocked (getAssetsRoot stays real for changelogTop); the binary engine is
 // fully mocked (unit-tested separately in tests/cli/lib/selfUpdateBinary.test.ts).
-vi.mock('../../src/cli/lib/assetsRoot.js', async (orig) => ({
-  ...(await orig<typeof import('../../src/cli/lib/assetsRoot.js')>()),
+vi.mock('../../src/platform/assetsRoot.js', async (orig) => ({
+  ...(await orig<typeof import('../../src/platform/assetsRoot.js')>()),
   isCompiledRuntime: vi.fn(() => false),
 }))
 vi.mock('../../src/cli/lib/selfUpdateBinary.js', () => ({
@@ -43,10 +43,10 @@ vi.mock('../../src/cli/gc.js', () => ({
 
 import { execFileSync } from 'node:child_process'
 import { installBaseProfile } from '../../src/cli/install-base.js'
-import { isCompiledRuntime } from '../../src/cli/lib/assetsRoot.js'
 import { runBinarySelfUpdate } from '../../src/cli/lib/selfUpdateBinary.js'
 import { fetchLatestVersion } from '../../src/cli/lib/version-check.js'
 import { registerUpdate } from '../../src/cli/update.js'
+import { isCompiledRuntime } from '../../src/platform/assetsRoot.js'
 
 class ExitError extends Error {
   constructor(public code: number) {

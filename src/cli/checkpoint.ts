@@ -319,7 +319,7 @@ export async function runCheckpointComplete(
   const { mutateSubProgress } = await import('../checkpoint/state.js')
   // B1 (v4.19.0): workflows/ 是运行时资产 — 经 assetsRoot seam(npm/dev 下
   // === packageRoot,compiled 下指向解包目录)。
-  const { getAssetsRoot } = await import('./lib/assetsRoot.js')
+  const { getAssetsRoot } = await import('../platform/assetsRoot.js')
 
   const result = await checkArtifacts(sub, getAssetsRoot())
   const { checkPlanningSync } = await import('../checkpoint/evidence.js')
@@ -561,7 +561,7 @@ export function registerCheckpoint(program: Command): void {
             // 4.22.0 T6 — master vs leaf via role-prompts is_master (single SoT);
             // classifier is itself fail-soft (unknown/unreadable → 'leaf').
             const { classifyIntentKind } = await import('../checkpoint/intentKind.js')
-            const { getAssetsRoot } = await import('./lib/assetsRoot.js')
+            const { getAssetsRoot } = await import('../platform/assetsRoot.js')
             const kind = classifyIntentKind(sub, getAssetsRoot())
             const key = activeKey()
             await mutateStore((store) => ({

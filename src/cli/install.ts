@@ -25,7 +25,7 @@ import { runInstall } from '../installers/index.js'
 import type { InstallError, InstallOpts } from '../installers/lib/types.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
-import { getAssetsRoot } from './lib/assetsRoot.js'
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 
 interface RawOpts {
   dryRun?: boolean

@@ -20,9 +20,9 @@
 
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import pkg from '../../../package.json' with { type: 'json' }
-import { detectPlatform } from '../../platform/platform.js'
+import pkg from '../../package.json' with { type: 'json' }
 import { getPackageRoot } from './packagePath.js'
+import { detectPlatform } from './platform.js'
 
 /** bunfs 虚拟根前缀(spike 实测两形:unix `/$bunfs/`、Windows `B:/~BUN/`)。
  *  统一斜杠后做子串匹配,不依赖宿主分隔符(3-OS CI)。 */

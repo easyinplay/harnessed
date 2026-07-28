@@ -22,7 +22,7 @@ vi.mock('@clack/prompts', () => ({
 // is controllable; getAssetsRoot returns a stub (readdir/readFile are mocked, so
 // the value is never dereferenced for real I/O).
 const assetsMock = vi.hoisted(() => ({ compiled: false }))
-vi.mock('../../src/cli/lib/assetsRoot.js', () => ({
+vi.mock('../../src/platform/assetsRoot.js', () => ({
   getAssetsRoot: () => '/fake/pkg',
   isCompiledRuntime: () => assetsMock.compiled,
 }))

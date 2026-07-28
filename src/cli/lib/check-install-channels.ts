@@ -14,7 +14,7 @@ import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { posix, win32 } from 'node:path'
-import { isCompiledRuntime } from './assetsRoot.js'
+import { isCompiledRuntime } from '../../platform/assetsRoot.js'
 import type { CheckResult } from './check-builtin.js'
 
 /** Platform-correct path.join regardless of the HOST os — the candidate paths

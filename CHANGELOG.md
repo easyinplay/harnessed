@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.17] - 2026-07-28
+
+架构 code review MEDIUM(#7,slice 2a — assetsRoot 出土,上行 import 9 处修 5)。
+
+### Changed
+
+- **#7(slice 2a)— `assetsRoot.ts` + `packagePath.ts` 从 `cli/lib/` 移至 `src/platform/`。** assetsRoot(npm/compiled 双通道的资产根解析)被 compile / installers / uninstallers 5 处非 cli 模块上行 import —— 基础设施住在 CLI feature 目录里。packagePath(package root 解析,assetsRoot 唯一 src 消费者)同移。9 处上行 import 修掉 5,cli/lib 对下层的暴露面随之收窄。
+- **修 move-induced 潜伏 bug:`getPackageRoot()` source 分支上溯层数。** 该函数按 import.meta.url 上溯**固定层数**找 package root:dist 分支 1 层不变,source/test 分支原为 3 层(基于旧位置 `src/cli/lib/`);移到 `src/platform/` 后 3 层会越过 package root(tsc 静默)。改为 2 层,packagePath/assetsRoot/gates/setup-locale 等 86 定点测试全绿。
+
+### Known / deferred
+
+- **#7 slice 2b(上行 import 剩 4 处)**:`workflow/run` ← `cli/lib/generateCommands.loadRolePrompts`;`checkpoint/evidence` ← `cli/run.resolveWorkflowYaml`;`eval/runner` ← `cli/lib/runDeps`;`installers/lib/packSkillAudit` ← `cli/lib/scan-nested`。各需逐个抽取到下层模块(非机械移动),另行 slice。
+
 ## [4.32.16] - 2026-07-28
 
 架构 code review MEDIUM(#7,slice 1/2 — 埋藏 infra 出土)。

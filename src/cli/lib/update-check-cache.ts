@@ -15,8 +15,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import pkg from '../../../package.json' with { type: 'json' }
+import { isCompiledRuntime } from '../../platform/assetsRoot.js'
 import { detectPlatform } from '../../platform/platform.js'
-import { isCompiledRuntime } from './assetsRoot.js'
 import { fetchLatestVersion } from './version-check.js'
 
 export const DEFAULT_UPDATE_CHECK_TTL_MS = 24 * 60 * 60 * 1000

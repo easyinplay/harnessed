@@ -23,8 +23,8 @@
 import { join } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { runWorkflow } from '../workflow/run.js'
-import { getAssetsRoot } from './lib/assetsRoot.js'
 import { resolveWorkflowYaml } from './run.js'
 
 interface RawOpts {

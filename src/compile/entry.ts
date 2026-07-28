@@ -10,7 +10,7 @@
 // 损失局限于此 30 行,biome 仍覆盖)— tsup/npm 渠道零接触(不在 tsup entry 图)。
 // 诊断输出走 stderr:stdout 留给子命令的 --json 消费者。
 
-import { compiledAssetsDir } from '../cli/lib/assetsRoot.js'
+import { compiledAssetsDir } from '../platform/assetsRoot.js'
 // @ts-expect-error — 构建期生成物(.gitignore),tsc 项目已 exclude 本文件,此注释仅为编辑器降噪。
 import bundle from './assets-bundle.gen.json' with { type: 'json' }
 import { unpackAssets } from './unpackAssets.js'

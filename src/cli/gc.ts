@@ -222,7 +222,7 @@ export function registerGc(program: Command): void {
       // (assets/bin-backup/.bak-* only ever exist from binary runs; an npm/dev
       // invocation — including vitest — must never sweep the REAL state root).
       try {
-        const { isCompiledRuntime } = await import('./lib/assetsRoot.js')
+        const { isCompiledRuntime } = await import('../platform/assetsRoot.js')
         if (isCompiledRuntime() || process.env.HARNESSED_GC_COMPILED === '1') {
           const { detectPlatform } = await import('../platform/platform.js')
           const r = await gcCompiledArtifacts({

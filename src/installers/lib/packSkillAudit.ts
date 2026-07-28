@@ -19,8 +19,8 @@
 
 import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { getAssetsRoot } from '../../cli/lib/assetsRoot.js'
 import { scanWorkflowsNested } from '../../cli/lib/scan-nested.js'
+import { getAssetsRoot } from '../../platform/assetsRoot.js'
 import { getSkillsDir } from '../../platform/platform.js'
 import type { InstallContext } from './types.js'
 

@@ -8,8 +8,8 @@
 
 import { readdir } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { getAssetsRoot } from '../../platform/assetsRoot.js'
 import { getSkillsDir } from '../../platform/platform.js'
-import { getAssetsRoot } from './assetsRoot.js'
 import type { CheckResult } from './check-builtin.js'
 import { scanWorkflowsNested } from './scan-nested.js'
 import {

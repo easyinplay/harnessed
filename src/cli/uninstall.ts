@@ -29,10 +29,10 @@ import {
 } from '../installers/lib/harnessedHookTeardown.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
+import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
 import { detectPlatform } from '../platform/platform.js'
 import { runUninstall } from '../uninstallers/index.js'
-import { getAssetsRoot, isCompiledRuntime } from './lib/assetsRoot.js'
 import { shouldOverwriteFile } from './lib/generateCommands.js'
 import { scanWorkflowsNested } from './lib/scan-nested.js'
 

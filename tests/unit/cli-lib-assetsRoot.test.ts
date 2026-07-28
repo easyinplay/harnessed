@@ -3,7 +3,7 @@
 // (D1 — 现有全量测试是等价性回归网)。
 
 import { describe, expect, it } from 'vitest'
-import { computeAssetsRoot, isCompiledModuleUrl } from '../../src/cli/lib/assetsRoot.js'
+import { computeAssetsRoot, isCompiledModuleUrl } from '../../src/platform/assetsRoot.js'
 
 const BASE = {
   env: {} as Record<string, string | undefined>,
@@ -86,11 +86,11 @@ describe('computeAssetsRoot (D1 优先级)', () => {
 // update.ts / hookEntry routing / check-update source split all consume it).
 describe('isCompiledRuntime', () => {
   it('false under vitest (npm/dev runtime)', async () => {
-    const { isCompiledRuntime } = await import('../../src/cli/lib/assetsRoot.js')
+    const { isCompiledRuntime } = await import('../../src/platform/assetsRoot.js')
     expect(isCompiledRuntime()).toBe(false)
   })
   it('true for a bunfs module url (percent-encoded Windows form)', async () => {
-    const { isCompiledRuntime } = await import('../../src/cli/lib/assetsRoot.js')
+    const { isCompiledRuntime } = await import('../../src/platform/assetsRoot.js')
     expect(isCompiledRuntime('file:///B:/%7EBUN/root/cli.exe')).toBe(true)
   })
 })
