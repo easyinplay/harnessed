@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.14] - 2026-07-28
+
+架构 code review MEDIUM(#11)。
+
+### Changed
+
+- **#11 — `PARALLEL_MID_ANCHOR = 50` 三处副本收敛为单一源。** 该 mid anchor 被 copy-paste 进 `masterOrchestrator.ts`(serial/parallel 分带)、`ledger.ts`(serial-order guard 的 effective order)、`eval/record.ts`(record→replay 重建),每处各带一句「mirror of …」注释。改一处另两处静默分叉 → 三者对 parallel 带位置产生分歧(潜伏 correctness hazard)。现 hoist 到 `src/checkpoint/subAnchor.ts`,三处 import 同一值。
+  - leaf **zero-dependency**(仅裸 literal + doc):`ledger.ts` 在 dep-free 的 per-turn hook bundle(`bin/harnessed-inject-state.mjs`)内,故该模块不得拉 typebox;regen 后 bundle 仍 0 typebox refs,drift gate CLEAN。
+  - `masterOrchestrator`(workflow,上层)→ `checkpoint`(下层)为下行边,非 #7 类倒置;`eval→checkpoint` 边已存在。
+
 ## [4.32.13] - 2026-07-28
 
 架构 code review HIGH(#5,slice 2/2 — inject-state 收尾)。

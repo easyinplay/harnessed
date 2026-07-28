@@ -8,6 +8,7 @@
 // in evidence.ts; orchestration lives in checkpoint.ts.
 
 import type { EvidenceRefType, SubProgressEntryType } from './schema/currentWorkflow.v1.js'
+import { PARALLEL_MID_ANCHOR } from './subAnchor.js'
 
 /** A single fired sub in the `gates` plan. Mirrors gates.ts FireEntry. */
 export interface GatesPlanFireEntry {
@@ -112,12 +113,10 @@ export function nextPending(entries: SubProgressEntryType[]): string | null {
   return entries.find((e) => e.status === 'pending')?.sub ?? null
 }
 
-/** Mirror of masterOrchestrator's PARALLEL_MID_ANCHOR: parallel subs (which
- *  carry no explicit order) execute between serial-leading (<50) and
- *  serial-trailing (≥50) entries. The ledger ARRAY position cannot be used for
- *  sequence checks — seedLedger sorts missing-order entries last (Infinity),
- *  which puts parallel members after a serial tail like `simplify` order 99. */
-const PARALLEL_MID_ANCHOR = 50
+// PARALLEL_MID_ANCHOR (imported): the ledger ARRAY position cannot be used for
+// sequence checks — seedLedger sorts missing-order entries last (Infinity), which
+// puts parallel members after a serial tail like `simplify` order 99; the anchor
+// gives unordered (parallel) subs an effective mid position instead.
 
 /** 4.26.0 (A3 serial-order guard) — pending subs whose sequence position comes
  *  BEFORE `sub`, making its complete/fail a sequence jump (comet 0.3.9

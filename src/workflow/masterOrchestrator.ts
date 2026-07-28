@@ -7,6 +7,7 @@
 import { readFile } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
+import { PARALLEL_MID_ANCHOR } from '../checkpoint/subAnchor.js'
 import { isUndefinedVariableError } from './exprBuilder.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
 import {
@@ -199,7 +200,6 @@ export async function runMasterOrchestrator(
 
   // Transparency block + Phase 2 split + Phase 2.5 arbitrate (helpers split per karpathy ≤200L)
   emitGateTransparency(masterName, master.delegates_to.length, gateEvalled)
-  const PARALLEL_MID_ANCHOR = 50
   const firedClauses = gateEvalled.filter((g) => g.passes).map((g) => g.clause)
   const serialLeading = firedClauses
     .filter((c) => c.mode === 'serial' && (c.order ?? 0) < PARALLEL_MID_ANCHOR)

@@ -29,14 +29,10 @@ import type {
   CurrentWorkflowV1Type,
   SubProgressEntryType,
 } from '../checkpoint/schema/currentWorkflow.v1.js'
+import { PARALLEL_MID_ANCHOR } from '../checkpoint/subAnchor.js'
 import type { EvalScenarioType } from './schema.js'
 
 const SUMMARY_PLACEHOLDER = '<SUMMARY-REDACTED>'
-
-/** parallel subs without an explicit order sort to the mid anchor (mirrors
- *  masterOrchestrator's PARALLEL_MID_ANCHOR) so the reconstructed complete
- *  order clears the serial-order guard. */
-const PARALLEL_MID_ANCHOR = 50
 
 /** Redact credential shapes + secret-named env assignments (same shapes as the
  *  evidence-pack scrubber; inlined to avoid a src→scripts import). Idempotent. */
