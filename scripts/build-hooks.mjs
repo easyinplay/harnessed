@@ -15,7 +15,10 @@
 import { chmodSync } from 'node:fs'
 import { build } from 'esbuild'
 
-const HOOKS = [{ entry: 'src/checkpoint/stopHookMain.ts', out: 'bin/harnessed-stop-hook.mjs' }]
+const HOOKS = [
+  { entry: 'src/checkpoint/stopHookMain.ts', out: 'bin/harnessed-stop-hook.mjs' },
+  { entry: 'src/checkpoint/injectStateMain.ts', out: 'bin/harnessed-inject-state.mjs' },
+]
 
 for (const { entry, out } of HOOKS) {
   await build({

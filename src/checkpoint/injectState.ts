@@ -23,8 +23,8 @@ export interface NextPointer {
 // <master>` is pre-executed by the generated /auto command (CC `!`cmd``
 // preprocessing) BEFORE the model sees anything; a fresh intent whose ledger was
 // never seeded (`checkpoint start` absorbs the intent) is the freestyle
-// signature, and this block nags every turn until steps 2-3 run. The bin
-// replicates this logic (parity test). ──
+// signature, and this block nags every turn until steps 2-3 run. The per-turn bin
+// bundles this module directly (esbuild; see injectStateMain.ts) — no replica. ──
 
 /** Intent freshness window — a marker older than this stops nagging (an
  *  abandoned /auto invocation must not haunt tomorrow's session). */
@@ -150,8 +150,9 @@ export function buildWorkflowStateBlock(
 }
 
 // ── Phase 17 — relevance-filtered project-context injection (consumption half of
-// the learning loop). Deterministic, LLM-free. The bin replicates this logic in
-// plain JS (hot path); the parity test guards drift. ──
+// the learning loop). Deterministic, LLM-free. The per-turn bin bundles these
+// builders (esbuild; injectStateMain delegates to buildInjection) — no plain-JS
+// replica; the parity test guards the entry's IO glue equivalence. ──
 
 export const DEFAULT_INJECT_BUDGET = 1500
 
@@ -251,6 +252,24 @@ export function findPhaseContextExcerpt(
   return null
 }
 
+/** 4.32.13 (architecture review #5 slice 2) — the environmental knobs the per-turn
+ *  hook supplies so buildInjection stays the SINGLE assembly path (the generated
+ *  bin/harnessed-inject-state.mjs delegates here; no hand-mirrored copy). */
+export interface BuildInjectionOpts {
+  /** Ledger file age (mtime → now). Threaded into buildWorkflowStateBlock so the
+   *  STALE-vs-live ENGINE wording is decided here too. Pre-4.32.13 buildInjection
+   *  called the 2-arg form and DROPPED this, so the STALE branch only ever fired in
+   *  the hand-written bin (a latent divergence the parity test never exercised).
+   *  undefined/null → byte-identical pre-4.23.0 wording (live directive). */
+  ledgerAgeMs?: number | null
+  /** Session-scoped delta gate for the <project-context> block. Receives the full
+   *  block; returns false to drop it (the content already sits in this session's
+   *  conversation — pure token save). The impure cache lives in the hook
+   *  (injectStateMain); this seam keeps the ONE assembly path here. Absent → pc is
+   *  always kept (legacy, byte-identical). */
+  pcGate?: (pc: string) => boolean
+}
+
 /** End-to-end (impure via findPhaseContextExcerpt) — compose the per-turn
  *  injection: <workflow-state> + relevance-filtered <project-context>. Returns ''
  *  when there is no workflow; just the workflow-state block when nothing relevant.
@@ -263,15 +282,17 @@ export function buildInjection(
   budget: number = DEFAULT_INJECT_BUDGET,
   intent: WorkflowIntent | null = null,
   nowMs: number = Date.now(),
+  opts: BuildInjectionOpts = {},
 ): string {
   const ledgerEmpty = (wf?.sub_progress ?? []).length === 0
   const intentBlock = ledgerEmpty ? buildIntentBlock(intent, nowMs) : ''
   if (!wf) return intentBlock
   // Phase 39 (D6) — only when this workflow's subs are all resolved do we derive
-  // the cross-unit next from disk (the bin mirrors this exactly). includeTasks:false
+  // the cross-unit next from disk (the bin bundles buildInjection, which runs this).
+  // includeTasks:false
   // keeps it the phase-level floor (OQ-2 lean); disk I/O stays in this impure layer.
   const forward = nextPending(wf.sub_progress ?? []) === null ? forwardPointer(repoRoot, wf) : null
-  const ws = buildWorkflowStateBlock(wf, forward)
+  const ws = buildWorkflowStateBlock(wf, forward, opts.ledgerAgeMs)
   const ledgerSubs = (wf.sub_progress ?? []).map((e) => e.sub)
   const rel = selectWithinBudget(
     filterRelevantLearnings(parseLearnings(learningsMd), { phase: wf.phase, ledgerSubs }),
@@ -279,7 +300,10 @@ export function buildInjection(
   )
   const usedTokens = rel.reduce((a, e) => a + tok(e.raw), 0)
   const ctx = findPhaseContextExcerpt(repoRoot, wf.phase, Math.max(0, budget - usedTokens))
-  const pc = buildProjectContextBlock({ learnings: rel, contextExcerpt: ctx ?? undefined })
+  const pcRaw = buildProjectContextBlock({ learnings: rel, contextExcerpt: ctx ?? undefined })
+  // Session-delta gate: drop the block only when the hook's cache says so. No gate
+  // (unit tests / no-sid hook path) → keep it (legacy).
+  const pc = pcRaw && opts.pcGate ? (opts.pcGate(pcRaw) ? pcRaw : '') : pcRaw
   const normal = pc ? `${ws}\n${pc}` : ws
   return intentBlock ? `${intentBlock}\n${normal}` : normal
 }

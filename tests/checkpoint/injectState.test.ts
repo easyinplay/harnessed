@@ -322,6 +322,101 @@ describe('buildInjection', () => {
   })
 })
 
+// ── 4.32.13 (#5 slice 2) — buildInjection reconciliation: thread ledgerAgeMs into
+// the state block (was dropped by the 2-arg buildWorkflowStateBlock call, so the
+// STALE-ledger branch only ever fired in the hand-written bin) + a pcGate seam so
+// the hook's session-delta cache can drop <project-context> through the ONE
+// assembly path (buildInjection) instead of re-implementing it. ──
+describe('buildInjection — ledgerAgeMs + pcGate seam (4.32.13 / #5 slice 2)', () => {
+  const pendingWf: CurrentWorkflowV1Type = {
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: 'task',
+    status: 'active',
+    last_checkpoint_path: null,
+    started_at: '2026-06-12T00:00:00.000Z',
+    sub_progress: [{ sub: 'beta', status: 'pending', gate_fired: true }],
+  }
+
+  it('threads ledgerAgeMs → STALE line when >24h (dropped pre-4.32.13)', () => {
+    const out = buildInjection('/no/such/repo', pendingWf, '', DEFAULT_INJECT_BUDGET, null, 0, {
+      ledgerAgeMs: 3 * 24 * 60 * 60 * 1000,
+    })
+    expect(out).toContain('ENGINE: STALE state machine')
+    expect(out).toContain('>3d')
+    expect(out).not.toContain('mid state-machine')
+  })
+
+  it('fresh/absent ledgerAgeMs is byte-identical to the no-opts call (live directive)', () => {
+    const withOpts = buildInjection(
+      '/no/such/repo',
+      pendingWf,
+      '',
+      DEFAULT_INJECT_BUDGET,
+      null,
+      0,
+      {
+        ledgerAgeMs: 0,
+      },
+    )
+    const noOpts = buildInjection('/no/such/repo', pendingWf, '', DEFAULT_INJECT_BUDGET, null, 0)
+    expect(withOpts).toBe(noOpts)
+    expect(withOpts).toContain('mid state-machine')
+  })
+
+  it('pcGate:false drops <project-context> (keeps workflow-state); pcGate:true keeps it', () => {
+    const dropped = buildInjection(
+      '/no/such/repo',
+      pendingWf,
+      LEARNINGS_MD,
+      DEFAULT_INJECT_BUDGET,
+      null,
+      0,
+      { pcGate: () => false },
+    )
+    expect(dropped).toContain('<workflow-state>')
+    expect(dropped).not.toContain('<project-context>')
+
+    const kept = buildInjection(
+      '/no/such/repo',
+      pendingWf,
+      LEARNINGS_MD,
+      DEFAULT_INJECT_BUDGET,
+      null,
+      0,
+      { pcGate: () => true },
+    )
+    expect(kept).toContain('<project-context>')
+  })
+
+  it('pcGate receives the full <project-context> block string', () => {
+    let seen: string | null = null
+    buildInjection('/no/such/repo', pendingWf, LEARNINGS_MD, DEFAULT_INJECT_BUDGET, null, 0, {
+      pcGate: (pc) => {
+        seen = pc
+        return true
+      },
+    })
+    expect(seen).not.toBeNull()
+    expect(seen as unknown as string).toContain('<project-context>')
+    expect(seen as unknown as string).toContain('looped: alpha')
+  })
+
+  it('no pcGate → pc always kept (legacy, byte-identical)', () => {
+    const withEmptyOpts = buildInjection(
+      '/no/such/repo',
+      pendingWf,
+      LEARNINGS_MD,
+      DEFAULT_INJECT_BUDGET,
+      null,
+      0,
+      {},
+    )
+    const legacy = buildInjection('/no/such/repo', pendingWf, LEARNINGS_MD, DEFAULT_INJECT_BUDGET)
+    expect(withEmptyOpts).toBe(legacy)
+    expect(withEmptyOpts).toContain('<project-context>')
+  })
+})
+
 // ── Phase 17: repo-aware bin parity ──
 
 describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {

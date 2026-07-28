@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.13] - 2026-07-28
+
+架构 code review HIGH(#5,slice 2/2 — inject-state 收尾)。
+
+### Changed
+
+- **#5(slice 2)— inject-state hook 改为 TS 单一源 + codegen,443 行手写镜像归零。** `bin/harnessed-inject-state.mjs` 曾把**整条 pure pipeline** 手写复刻为 plain JS(`workflowStateBlock` / `forwardPointer` / `scanPhases` / `parseLearnings` / inject 缓存 …),仅靠 parity test 焊接 —— fixture 未覆盖的 TS 分支会在每 turn 热路径静默分叉。现 `bin/harnessed-inject-state.mjs` 由 `scripts/build-hooks.mjs`(esbuild)从新 entry `src/checkpoint/injectStateMain.ts` bundle 生成,assembly **全权委托** `buildInjection`(单一源),inject 缓存 import 自 `injectCache.ts`;entry 只留无第二消费者的 hook-specific IO glue(`repoKey`/`harnessedRoot`/`sessionIdEnvName` 的 dep-free 复刻 + 原始 `workflows.json` 读取 + ledger mtime)。
+  - bundle **dep-free**(node: builtins + dep-light 的 `injectState`/`injectCache` 及其 sibling;currentWorkflow schema 仅 `import type` 擦除,无 typebox),per-prompt 热路径成本不变。
+  - 生成物 committed;esbuild deterministic(本地 build 两次 byte-identical)+ LF-only;slice 1 的 CI「Hook regen gate」(`build:hooks` + `git diff --exit-code bin/`)已自动覆盖本 bin。
+
+### Fixed
+
+- **#5 附带修复 `buildInjection` 丢 `ledgerAgeMs` 的潜伏分歧。** `buildInjection` 此前调 2 参 `buildWorkflowStateBlock(wf, forward)`,**丢弃** `ledgerAgeMs` —— 于是 STALE-ledger ENGINE 行(issue #3 req 3,>24h 无 checkpoint 活动的 pending sub 判「abandoned/bypassed run」而非「live state machine」)**只在手写 bin 里触发过**,TS builder 永不发,parity test 从未 exercise 到该分支。现 `buildInjection` 新增 `opts: { ledgerAgeMs?, pcGate? }`:`ledgerAgeMs` thread 进 `buildWorkflowStateBlock`(修 STALE 分歧),`pcGate` 让 hook 的 session-delta 缓存经**同一条** assembly 路径剥离 `<project-context>`(而非另写一份)。opts 缺省 → byte-identical 旧行为。
+
 ## [4.32.12] - 2026-07-27
 
 架构 code review HIGH(#5,slice 1/2 — stop-hook)。

@@ -16,9 +16,10 @@
 // no sid / unreadable cache / unwritable cache ⇒ full injection. In particular
 // a skip decision is only honored when the incremented cache entry was
 // PERSISTED (otherwise `turns` would freeze and the periodic refresh would
-// never fire). bin/harnessed-inject-state.mjs inlines this exact logic (it is
-// self-contained plain JS by contract); the delta cells in
-// tests/checkpoint/injectState.test.ts hold the two implementations together.
+// never fire). The per-turn bin (bin/harnessed-inject-state.mjs) imports this
+// module directly — injectStateMain wires shouldEmitPc over these exports and
+// hands buildInjection a pcGate; no plain-JS replica. The delta cells in
+// tests/checkpoint/injectState.test.ts exercise the generated bin end-to-end.
 
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
