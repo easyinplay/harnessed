@@ -31,7 +31,8 @@ progress:
 - **v14.0 Hardening & Distribution retroactively CLOSED 2026-07-12**(lightweight + fuller archive pass):4.13→4.28 弧线定名收账,61 个 phase 目录归位 `milestones/<vN>-phases/`,active `phases/` 清零。详:`milestones/v14.0-MILESTONE-AUDIT.md` + RETROSPECTIVE v14.0 节。
 - **v15.0 Upstream Re-sync SHIPPED 2026-07-13(npm 4.29.0)**:pwf v3.4.1 + mattpocock 改名 + 三顺手 pin;详 MILESTONES v15.0 行 + `phases/45-upstream-resync-v15/`。
 - **Phase 51 ECC 编排(2026-07-29,npm 4.32.23 已 commit+push,CI 绿)**:治理链裁出的 B 机器方案被立项自带的对照实测否掉,降级 prose 级(aliases 首次渲染进 subagent prompt)+ 修两个真 bug(setup MCP 串行化分区 / doctor per-check 容错)。决策链与实证详 `phases/51-ecc-orchestration/`(findings F1-F9)。B 方案蓝图保留待回补,触发条件见 `TODOS.md`。
-- **Next(等用户信号)**:ECC rust/go 手测(决定是否回补 B 机器层)· E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
+- **Phase 51 结案(2026-07-29)**:rust/go 对照实测补齐 —— 三语言三次通用发现均为 ECC 专家的严格超集,B 机器方案确定不回补(TODOS 项 closed)。
+- **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
 ## Accumulated Context

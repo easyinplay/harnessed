@@ -71,6 +71,36 @@ lib = `expr-eval@2.0.2`(`package.json:84`),唯一求值入口 `evalGate`(`src/wo
 
 **证据强度限定**:TS 是对该假设最不利的测试面(通用 reviewer 在 TS/JS 上训练密度最高,且本仓就是 TS 有充分上下文)。rust/go 的 borrow checker / goroutine 泄漏面**未被本代理测覆盖**,用户手上的 15-min 实测仍是独立第二锚点。
 
+## F10 rust / go 对照实测(2026-07-29,补齐 F8 的证据强度限定)
+
+F8 只测了 TS(对专家最不利面)。补测 rust + go —— design doc 点名的「borrow checker / goroutine 泄漏」正是这两面。
+
+**rust**:`D:\GitCode\reedline-pr` commit `caeff8a`(upstream PR #1117 "Asyncronous prompt updates",单文件 +225/-17,async + 共享状态)。
+
+| | `ecc:rust-reviewer` | 通用 |
+|---|---|---|
+| 发现数 | 5(1 HIGH + 4 MEDIUM/style) | 9(2 BLOCKER + 4 SUGGESTION + 3 NIT) |
+| 共同命中 | `Arc::strong_count` 门控竞态;`Ordering::Relaxed` 无 happens-before;测试只覆盖 primitive 不覆盖 read loop | 同左,且更深:给出竞态的 5 步交错、定位到 drop 与 store 之间的窗口、给出 flag 复查修法;把 Relaxed 从「文档该补一句」升级为真实数据可见性缺陷 + Release/Acquire 修法 |
+| 专家独有 | `#[must_use]` 缺失(真实,小);derive 顺序(风格) | — |
+| 通用独有 | — | **`RepaintSignal` 没从私有 mod re-export → 整个 feature 对下游 crate 不可用**(写临时 integration test 编译实证 `error[E0425]`,专家完全没发现);`#[derive(Default)]` 让下游能造出永远失效的 handle;取 handle 即把 session 从阻塞 read 切成 100ms 轮询但公开文档未说明;缺 example(而 example 按外部 crate 编译,本会立刻暴露导出缺口) |
+
+两侧都跑了 `cargo check/clippy/fmt` + 新测试,基线相同。
+
+**go**:`plandex/app/server/types/active_plan.go`(446 行,16 处 mutex,2 goroutine;go 仓全是 depth-1 浅克隆无 diff 可取,改整文件同题对照)。
+
+| | `ecc:go-reviewer` | 通用 |
+|---|---|---|
+| 发现数 | 5(2 CRITICAL + 3 HIGH) | 11 + nits(5 红 + 6 黄) |
+| 共同命中 | subscriptions map header 复制导致锁范围假保护(runtime fatal);持 `streamMu` 向可能无接收者的 channel 裸发送;skipBuffer 分支缺 return 导致重复投递;`cond.Signal` 丢失唤醒;Subscribe 桥接 goroutine 不被 Unsubscribe 释放 | 全部命中(通用还补充 `recover()` 救不了并发 map 访问 —— 那是 runtime throw 不是 panic) |
+| 专家独有 | 无 | — |
+| 通用独有 | — | `StreamDoneCh` 二次发送永久阻塞 `Finish()`(专家只泛指裸发送,没定位到这条);全仓 ~30 个 sender 抢单次消费 channel;`BuildQueuesByPath` 读端锁状态不一致(逐个列出 5 个越界读点);`messageQueue` 无上界;`FlushStreamBuffer` 不保证 flush(会被速率判定塞回);`ResetModelCtx` 无同步写导出字段;导出可变字段无同步契约 |
+
+通用侧交叉核对了 6 个关联文件(消费端/写入端)才敢断言「唯一消费者已 return」—— 这是它能定位 `StreamDoneCh` 那条的原因。
+
+**判定**:三语言(TS / rust / go)三次,**通用发现均为专家的严格超集**,且通用独有项里包含每个语言最严重的那条(TS:doctor 崩溃面;rust:feature 对外不可用;go:`Finish()` 永久阻塞)。design doc 假设的「专家揪出通用漏掉的语言特有问题」在三个面上都不成立。B 方案(probe + resolver + 语言推导器 + schema)**确定不回补**。
+
+**可能的机制解释(非结论,供后续参考)**:ECC 专家 agent 的 `tools: Read, Grep, Glob, Bash` 与通用相同,差异在系统提示词把注意力**收窄**到该语言的 checklist 维度,而这三次的最严重缺陷都在**跨文件契约面**(导出面 / 消费端生命周期 / 调用方锁约定),恰好落在收窄视野之外。
+
 ## F9 T0 附带打出的真 bug(独立于本 Phase 存废)
 
 1. **`src/cli/lib/setup-helpers.ts:244-245`(两路 review 共同判定最重)**:MCP 串行化分区读 raw `spec.install.method`,而同 commit 新引入的 `installGroupOf`(`:131`)读 `effectiveInstallMethod`(应用 `harness_overrides.codex`)。同一事实两个判定点。base 非 MCP + codex override 成 `mcp-stdio-add` → 分桶显示 `'mcp-tool'` 但实际进并行组 → 重开 v4.13.0 的 `~/.claude.json` lost-update 竞态(注释 `:107-111` 正是为此存在)。**现网潜伏**:7 个带 `harness_overrides` 的 manifest(superpowers/gstack/karpathy/planning-with-files/gsd/ui-ux-pro-max/ecc)base 与 override 均不跨 MCP 边界,已逐个核实。

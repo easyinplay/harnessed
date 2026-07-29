@@ -19,6 +19,14 @@
 - **修 `doctor.ts:20`**:`Promise.all` → `allSettled`,崩掉的 check 降级成 warn 行,其余 19 个照常报告(`readClaudeConfig` 对 EACCES/EISDIR 显式 re-throw 是有意设计,doctor 侧必须兜住)。
 - TODOS 新增「Gate semantics」节:ADR-0038 第三类 fail-soft 缺口(引入数组 fact 前必须先收口)+ B 方案回补触发条件。
 
+## rust / go 对照实测(收口,2026-07-29)
+
+用真实上游代码补测两个「专家该赢」的面:rust = `reedline-pr` commit `caeff8a`(async 共享状态,+225/-17);go = `plandex` `active_plan.go`(446 行,16 mutex / 2 goroutine;go 仓皆 depth-1 无 diff,改整文件同题对照)。
+
+结果与 TS 面同向且更明确:**三语言三次,通用发现均为专家的严格超集**,通用独有项里包含每个语言最严重的那条 —— rust 的「`RepaintSignal` 未 re-export,整个 feature 对下游 crate 不可用」(通用写临时 integration test 编译实证 `error[E0425]`,专家全无察觉)、go 的「`StreamDoneCh` 二次发送使 `Finish()` 永久阻塞」。专家独有项只剩 `#[must_use]` 与 derive 顺序两条边缘项。详 findings F10。
+
+**Phase 51 结案**:B 方案(probe + resolver + diff→language 推导器 + schema gate + ADR)确定不回补,TODOS 对应项已 closed;prose 级交付(4.32.23)保留。
+
 ### 待办
 
-- [ ] 用户 15-min rust/go 手测 → 决定是否回补 B 机器层
+- 无。Phase 结案。

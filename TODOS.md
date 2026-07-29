@@ -30,10 +30,11 @@
   引入任何数组 fact 前必须先把正则收口到 fail-closed(ADR-0038 的「静态配置漂移」理由同样成立)。
   证据:`.planning/phases/51-ecc-orchestration/findings.md` F7。
 
-- [ ] **ECC 语言专家路由是否补机器层(B 方案)** — P3,等用户 rust/go 手测结论
-  4.32.23 已交付 prose 级(Approach A:`harnessed prompt` 渲染 aliases + 单火/降级指令)。
-  TS 面代理实测判专家无优势(findings F8),故未建 probe/resolver/git 语言推导机器。
-  若 rust/go 面实测显示专家确有语言特有发现,再按 `task_plan.md` 的 T1-T5 回补。
+- [x] **ECC 语言专家路由是否补机器层(B 方案)** — CLOSED 2026-07-29:**不补**。
+  rust(reedline-pr `caeff8a`)+ go(plandex `active_plan.go`)对照实测补齐后,三语言
+  (TS/rust/go)三次通用发现均为专家的**严格超集**,且通用独有项含每个语言最严重那条
+  (rust:feature 对下游 crate 不可用;go:`Finish()` 永久阻塞)。证据 findings F8+F10。
+  prose 级(4.32.23 aliases 渲染)保留 —— 装了 ECC 的用户仍可用,但不再为它建机器。
 
 ## Watch items
 
