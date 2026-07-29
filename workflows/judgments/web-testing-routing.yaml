@@ -45,6 +45,11 @@ triggers:
     description: |
       chrome-devtools-mcp — 非功能性诊断必须用 (NOT playwright/test/cli/webapp-testing)。
       LCP / Core Web Vitals / ARIA / 堆快照。
+      Provider 说明 (4.32.22 终局): 二选一 — ecc (manifests/optional/ecc.yaml,
+      bonus tier; ECC 唯一默认 MCP connector) 或 optional 自装 manifest
+      (manifests/optional/chrome-devtools-mcp.yaml, mcp-stdio-add 兜底, 供不装
+      ecc 的用户; setup optional offer 可勾选)。双装同名双前缀歧义, doctor
+      `ecc` check 会 warn。两者都缺 → 本 capability 不可用。
     fires_when: "subtask.test_type == 'perf-diagnostic'"
     invokes:
       - capability: chrome-devtools-mcp

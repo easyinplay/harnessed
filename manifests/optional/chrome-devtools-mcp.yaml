@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# 4.32.22 FINAL — OPTIONAL fallback manifest (manifests/optional/, NOT tools/).
+# History: 4.32.21 the tools/ manifest was migrated to the official plugin,
+# then 4.32.22 deleted outright under the interim "ecc base, sole provider"
+# scheme. That scheme was withdrawn (ecc demoted to bonus tier), which reopened
+# the gap: users who do NOT install ecc would have no non-functional
+# diagnostics (perf / a11y / memory) provider. This manifest is the self-install
+# fallback — EITHER/OR with ecc (ECC bundles a same-name chrome-devtools
+# connector as its only default MCP; installing both creates same-name
+# dual-prefix tool-call ambiguity, and the doctor `ecc` check warns on the
+# leftover). Version floor raised ^0.1.0 → ^1.6.0 (the 4.32.21-era pin was
+# stale). Offered via the setup optional-tier offer (opt-in, like codegraph).
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: chrome-devtools-mcp
+  display_name: Chrome DevTools MCP (either/or with ecc)
+  description: Perf / a11y / memory-leak diagnostics via Chrome DevTools MCP. Either/or with ecc (ECC bundles the same connector).
+  upstream:
+    source: chrome-devtools-mcp
+    homepage: https://github.com/ChromeDevTools/chrome-devtools-mcp
+    repository: https://github.com/ChromeDevTools/chrome-devtools-mcp.git
+    license: Apache-2.0
+    notice: |
+      chrome-devtools-mcp by ChromeDevTools team (Apache-2.0, npm stdio MCP).
+      EITHER/OR with ecc: ECC bundles a same-name chrome-devtools connector as
+      its only default MCP — installing both creates same-name dual-prefix
+      tool-call ambiguity (doctor `ecc` check warns to remove one). This
+      manifest exists so users who do NOT install ecc still get non-functional
+      diagnostics (perf / a11y / memory). Method = mcp-stdio-add (no HTTP
+      endpoint; matches tavily-mcp shape).
+spec:
+  type: mcp-npm
+  component_type: mcp-tool
+  category: testing
+  install_type: mcp
+  install:
+    method: mcp-stdio-add
+    cmd: "claude mcp add --scope project --transport stdio chrome-devtools-mcp -- npx --yes chrome-devtools-mcp@^1.6.0"
+    npm_version: ^1.6.0
+    idempotent_check: "claude mcp list | grep -q chrome-devtools-mcp"
+  verify:
+    cmd: "claude mcp list | grep -q chrome-devtools-mcp"
+    timeout_ms: 10000
+  uninstall:
+    cmd: "claude mcp remove --scope project chrome-devtools-mcp"
+  upstream_health:
+    stability: stable
+    last_check: "2026-07-29"
+    last_known_good_version: "1.6.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32
+  decision_rules:
+    trigger: "perf / a11y / memory-leak / LCP / Core Web Vitals"
+    default_expert: chrome-devtools-mcp

@@ -67,4 +67,8 @@ export const CHECKS: readonly CheckFn[] = [
   // pointing at a deleted bin/*.mjs makes Claude Code error MODULE_NOT_FOUND every
   // prompt; `harnessed uninstall` now strips them.
   async () => (await import('./check-stale-hooks.js')).checkStaleHooks(),
+  // 4.32.22 — ECC per-harness detect (optional; pass unless CC-side ecc overlaps
+  // the official chrome-devtools-mcp plugin → warn). CC plugin registry + codex
+  // sync-clone probed independently.
+  async () => (await import('./check-ecc.js')).checkEcc(),
 ]

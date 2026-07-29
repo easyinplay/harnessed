@@ -317,12 +317,13 @@ jobs:
           # H4 layer 1 — mcp-stdio-add dry-run: shim must be reachable; diff
           # output must mention ~/.claude.json (v3.0.2 --scope user 后写入位置) +
           # the manifest name.
-          # 4.32.21 — exa-mcp dry-run cell removed: manifests/tools/exa-mcp.yaml
-          # deleted (exa capability now provided by the optional ECC plugin's
-          # built-in hosted exa MCP). tavily-mcp keeps the mcp-stdio-add path hot.
+          # 4.32.22 — exa-mcp dry-run cell restored (manifests/tools/exa-mcp.yaml
+          # is back as a base component; reverts the 4.32.21 removal).
           ok_or_dryrun node ./dist/cli.mjs install tavily-mcp --dry-run --non-interactive
           grep -q "tavily-mcp" out.log
           grep -q ".claude.json" out.log
+          ok_or_dryrun node ./dist/cli.mjs install exa-mcp --dry-run --non-interactive
+          grep -q "exa-mcp" out.log
 
           # H4 layer 2 — real spawn npm-cli (no claude CLI dep) dry-run.
           # ctx7 + gsd both declare `npm install -g` (L4); --system flag

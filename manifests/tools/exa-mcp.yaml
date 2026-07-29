@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# 4.32.22 — RESTORED as a base component (reverts the 4.32.21 deletion, user
+# ruling "exa 我觉得还是需要的"). The ECC-side exa was retired to an opt-in MCP
+# catalog entry after the 2026-06 connector audit, so it does NOT carry this
+# capability — harnessed installs the official stdio server directly again.
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: exa-mcp
+  display_name: Exa MCP
+  description: Neural-search MCP for descriptive queries / academic papers / batch URL fetch (web_fetch_exa).
+  upstream:
+    source: exa-mcp-server
+    homepage: https://docs.exa.ai/reference/exa-mcp
+    repository: https://github.com/exa-labs/exa-mcp-server.git
+    license: MIT
+    notice: |
+      exa-mcp-server by exa-labs (official), used as semantic-search MCP per
+      harnessed routing rules. Requires EXA_API_KEY at runtime — the server
+      reads it from its process env; configure via the ~/.claude/settings.json
+      "env" block or an OS environment variable (doctor + setup surface a hint
+      when the server is installed but the key is missing).
+spec:
+  type: mcp-npm
+  component_type: mcp-tool
+  category: search
+  install_type: mcp
+  install:
+    method: mcp-stdio-add
+    cmd: "claude mcp add --scope project --transport stdio exa-mcp -- npx --yes exa-mcp-server@^3.2.0"
+    npm_version: ^3.2.0
+    idempotent_check: "claude mcp list | grep -q exa"
+  verify:
+    cmd: "claude mcp list | grep -q exa"
+    timeout_ms: 10000
+  uninstall:
+    cmd: "claude mcp remove --scope project exa-mcp"
+  upstream_health:
+    stability: stable
+    # 4.32.22 — npm latest is 3.2.1 (verified 2026-07-29); ^3.2.0 install range
+    # already covers it, so cmd/npm_version stay as restored.
+    last_check: "2026-07-29"
+    last_known_good_version: 3.2.1
+    fallback_action: use_alternative
+    alternative: tavily-mcp
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

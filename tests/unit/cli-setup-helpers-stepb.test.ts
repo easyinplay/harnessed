@@ -159,4 +159,72 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
     const b = await runStepBInstall(['ctx7.yaml'], { quiet: true })
     expect(b.skipped).toEqual([{ name: 'ctx7', reason: 'level-flag-missing' }])
   })
+
+  // 4.32.22 — setup grouping buckets by install.method, NOT component_type.
+  // Trigger case (historical: 4.32.21-era chrome-devtools): a manifest with
+  // component_type=mcp-tool but install method cc-plugin-marketplace belongs
+  // under "Commands & Skills" (plugin channel; force-updatable), not
+  // "MCP servers" (mcpServers-config channel; force-update-excluded).
+  it('4.32.22 — componentTypes buckets derive from install.method (cc-plugin mcp-tool → command)', async () => {
+    // NOTE manifestFor() hardcodes component_type: 'mcp-tool' for ALL entries —
+    // exactly the trap: buckets must follow the method anyway.
+    wireValidate({
+      'a.yaml': { name: 'tavily-mcp', method: 'mcp-stdio-add' },
+      'b.yaml': { name: 'some-http-mcp', method: 'mcp-http-add' },
+      'c.yaml': { name: 'plugin-shaped-mcp', method: 'cc-plugin-marketplace' },
+      'd.yaml': { name: 'gstack', method: 'git-clone-with-setup' },
+      'e.yaml': { name: 'planning-with-files', method: 'npx-skill-installer' },
+      'f.yaml': { name: 'ctx7', method: 'npm-cli' },
+      'g.yaml': { name: 'weird', method: 'copy-file' },
+    })
+    runInstallMock.mockResolvedValue({ ok: true } as never)
+    const b = await runStepBInstall(
+      ['a.yaml', 'b.yaml', 'c.yaml', 'd.yaml', 'e.yaml', 'f.yaml', 'g.yaml'],
+      { quiet: true },
+    )
+    expect(b.componentTypes).toEqual({
+      'tavily-mcp': 'mcp-tool',
+      'some-http-mcp': 'mcp-tool',
+      'plugin-shaped-mcp': 'command',
+      gstack: 'command',
+      'planning-with-files': 'command',
+      ctx7: 'cli-binary',
+      weird: 'other',
+    })
+  })
+
+  // 4.32.22 — codex harness override flips the effective method: a synthetic
+  // cc-plugin manifest whose harness_overrides.codex declares mcp-stdio-add
+  // buckets as 'mcp-tool' on codex even though the base method is
+  // cc-plugin-marketplace (the bucket follows the EFFECTIVE install channel).
+  it('4.32.22 — bucket follows the harness-override effective method on codex', async () => {
+    const origPlatform = process.env.HARNESSED_PLATFORM
+    const origRootOverride = process.env.HARNESSED_ROOT_OVERRIDE
+    delete process.env.HARNESSED_ROOT_OVERRIDE // takes precedence over HARNESSED_PLATFORM
+    process.env.HARNESSED_PLATFORM = 'codex'
+    try {
+      validateMock.mockImplementation((() => ({
+        ok: true,
+        errors: [],
+        manifest: {
+          metadata: { name: 'plugin-with-codex-mcp' },
+          spec: {
+            component_type: 'mcp-tool',
+            install: { method: 'cc-plugin-marketplace', cmd: 'claude plugin install x' },
+            harness_overrides: {
+              codex: { install: { method: 'mcp-stdio-add', cmd: 'claude mcp add ...' } },
+            },
+          },
+        },
+      })) as never)
+      runInstallMock.mockResolvedValue({ ok: true } as never)
+      const b = await runStepBInstall(['c.yaml'], { quiet: true })
+      expect(b.componentTypes).toEqual({ 'plugin-with-codex-mcp': 'mcp-tool' })
+    } finally {
+      if (origPlatform === undefined) delete process.env.HARNESSED_PLATFORM
+      else process.env.HARNESSED_PLATFORM = origPlatform
+      if (origRootOverride === undefined) delete process.env.HARNESSED_ROOT_OVERRIDE
+      else process.env.HARNESSED_ROOT_OVERRIDE = origRootOverride
+    }
+  })
 })

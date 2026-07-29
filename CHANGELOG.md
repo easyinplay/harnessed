@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.22] - 2026-07-29
+
+ECC 边界终裁:exa 恢复自装 + key 检测;chrome-devtools 二选一(ecc 承接为主 + optional 自装兜底);ecc 定为 **bonus tier**(不必装、offer 知情提示);doctor 新增 per-harness ecc 检测 + 双装检测;setup 分桶按 method。决策链:中途曾定「ecc 升 base 必装 + chrome-devtools 归 ECC 独供」,经实证研究(ECC 2.1.0 冲突矩阵破坏级冲突为零、静态列表税实测 ≈23-25k tokens/session、上游 hook 面随升级漂移)撤回 —— harnessed 不背 ECC 的安装/摩擦责任,环境里有就点亮更细化编排。
+
+### Added
+
+- **doctor 20th check `ecc`(per-harness 独立探测,bonus tier 语义)。** CC 侧探 `~/.claude/plugins/installed_plugins.json` 的 `ecc@ecc`(纯 fs,复用 `isPluginRegistered` 含 legacy settings fallback,不 spawn claude CLI);codex 侧探 `~/.codex/.cache/ecc/.git`(与 manifest `harness_overrides.codex` verify 同款);**两侧独立检测独立报告,不互相推断**;codex 平台缺 `~/.codex/config.toml` → 报 codex-not-present(不是 ecc-missing),孤儿 clone cache 不算已装。状态语义:任一侧装了 → pass(注明 chrome-devtools connector 由 ECC 提供);两侧都缺 → **pass-informational**(可选增强:装 ecc 解锁更细化编排,提示 ~20k+ tokens/session 静态列表代价,sister check-codegraph「optional 缺失不是健康问题」);CC 侧 ecc 与 chrome-devtools 其他渠道并存(4.32.21 过渡方案的官方 plugin `chrome-devtools-mcp@claude-plugins-official`,或 `~/.claude.json` mcpServers 里的 stdio 条目)→ warn 双装(同名双前缀调用歧义),remediation 卸残留留 ecc(`claude plugin uninstall ...` / `claude mcp remove chrome-devtools-mcp`)。doctor 19→20 checks。
+- **search MCP API key 检测(doctor + setup 尾提示)。** 两个 search MCP 运行时才读 key,装了没 key 首次查询静默失败:tavily-mcp → `TAVILY_API_KEY`、exa-mcp → `EXA_API_KEY`。新 `src/cli/lib/search-mcp-keys.ts` 按来源优先级探测(`mcpServers.<name>.env` > `~/.claude/settings.json` env 块 > 进程 env);doctor 12th check 更名 `MCP servers (tavily/exa)`,对已装 server 检 key,缺 → warn + remediation(settings.json env 写法 / shell export);`harnessed setup` 摘要输出后,已装 search MCP 缺 key 时逐 key 打印配置提示(i18n en+zh-Hans,`setup.search_key_hint.*`)。
+- **恢复 `manifests/tools/exa-mcp.yaml`(revert 4.32.21 删除,用户裁决「exa 我觉得还是需要的」)。** ECC 侧 exa 2026-06 connector audit 后已退役为 opt-in catalog,不构成承接。恢复 pre-删除形态 + `last_check: 2026-07-29`(npm latest 3.2.1,`^3.2.0` 范围已覆盖,cmd 不动);notice 注明运行需 `EXA_API_KEY`。连带恢复:`tavily-mcp.yaml` `upstream_health.alternative: ecc → exa-mcp`;capabilities.yaml / web-search-routing.yaml 的 exa provider 注记改回 base 组件语义(需 EXA_API_KEY,未配置 fallback tavily / 内置 WebSearch);CI exa dry-run 冒烟 cell 与 mock-claude `mcp list` exa 行恢复。base manifest 数回到 13(tools 6 + skill-packs 7)。
+- **新 `manifests/optional/chrome-devtools-mcp.yaml`(自装兜底,与 ecc 二选一)。** ecc 降回 optional 后「不装 ecc 的用户无非功能性诊断(perf / a11y / memory)provider」缺口重现 → 恢复 mcp-stdio-add 形态自装 manifest 于 **optional/**(非 tools/,不进 Step B auto-glob,经 setup optional offer 勾选):`claude mcp add --scope project --transport stdio chrome-devtools-mcp -- npx --yes chrome-devtools-mcp@^1.6.0`(版本从 4.32.21 时代钉死的 ^0.1.0 升 ^1.6.0),verify/idempotent/uninstall 走 `claude mcp` 命令。notice 写明与 ecc **二选一**(ECC 已含同名 connector,双装同名双前缀歧义,doctor `ecc` check 会 warn)。dry-run 冒烟 cell 恢复(optional 路径)。
+
+### Changed
+
+- **ecc 定位终裁:bonus tier(留 `manifests/optional/`,不升 base)。** harnessed 不承诺必装/offer-by-default,不背 ECC 的安装与摩擦责任;但环境里有 ecc 时 capabilities.yaml Bucket 11 + verify aliases(`ecc:python-review` 等)自动点亮更细化编排 —— 点亮机制本体保留不动。manifest metadata 重写为 bonus tier 定位:(a)装后解锁语言级 review/build 专家路由等细化编排;(b)**代价 ~20k+ tokens/session 静态列表开销 —— 由 ECC 自身规模(281 skills/94 commands/67 agents 清单加载)决定,非 harnessed 引入**;(c)gateguard 等强意见 hooks 可用 `GATEGUARD_EXEMPT_GLOBS`(`harnessed exempt-gateguard` 写入)或 `ECC_GATEGUARD=off` 调节。setup optional offer 对 ecc 条目打**知情提示**(i18n en+zh-Hans,`setup.optional_offer.ecc_note`,含 (a)(b) 两点)。codex `harness_overrides` sync flow(4.32.21 补齐)保留。
+- **chrome-devtools 供给改二选一(ecc 承接为主 + optional 自装兜底)。** 翻案链写清:4.32.21 mcp-stdio-add(钉 ^0.1.0)→ 官方 plugin(cc-plugin-marketplace)→ 4.32.22 官方 plugin 方案撤销、中途曾定 ECC 独供 → 终局:装 ecc 的用户由 ECC 承接(其唯一默认 MCP connector 即 chrome-devtools),不装 ecc 的用户走 optional 自装 manifest(上文);两渠道**二选一**,doctor `ecc` check 挡双装。`chrome-devtools-mcp` capability 与 web-testing-routing 分支**保留**(provider 注记改二选一语义,清除「必装」字样)。
+
+### Fixed
+
+- **setup 分组按 install CHANNEL(effective method)分桶,不再按 `component_type`。** `runStepBInstall` 的 `componentTypes` 改由 effective install method 派生(codex 平台先应用 `harness_overrides`):mcp-stdio-add / mcp-http-add → 「MCP servers」;cc-plugin-marketplace / git-clone-with-setup / npx-skill-installer / cc-hook-add → 「Commands & Skills」;npm-cli → 「CLI tools」;其余 → Other。force-update 排除集合同判据(仅 method-MCP 安装器忽略 `--update-installed`,plugin 形态可正常 force-update),update 提示的「MCP servers excluded」文案按桶派生并列出具体排除项、无排除项时不再出现。
+
 ## [4.32.21] - 2026-07-29
 
 Manifest 层去重与升级(用户裁决锁定):ECC 承接 exa + chrome-devtools plugin 化。

@@ -55,13 +55,14 @@ const CASES: DryRunCase[] = [
     yamlPath: 'manifests/tools/playwright-test.yaml',
     expectedMethod: 'npx-skill-installer',
   },
+  // 4.32.22 final — chrome-devtools-mcp back as an OPTIONAL fallback manifest
+  // (manifests/optional/, mcp-stdio-add @^1.6.0): either/or with ecc (bonus
+  // tier; ECC bundles the same-name connector — doctor's `ecc` check warns on
+  // dual-install). Restores dry-run dispatch coverage for the manifest.
   {
     name: 'chrome-devtools-mcp',
-    yamlPath: 'manifests/tools/chrome-devtools-mcp.yaml',
-    // T1.5 landed mcp-stdio-add (npx chrome-devtools-mcp@^0.1.0); 4.32.21
-    // migrated to cc-plugin-marketplace — official claude-plugins-official
-    // plugin (auto-updating, fuller toolset) supersedes the pinned npm stdio.
-    expectedMethod: 'cc-plugin-marketplace',
+    yamlPath: 'manifests/optional/chrome-devtools-mcp.yaml',
+    expectedMethod: 'mcp-stdio-add',
   },
   {
     name: 'ui-ux-pro-max',
@@ -148,11 +149,12 @@ describe('Phase 2.3 Wave 1 — 5 NEW adapter manifest install dry-run e2e', () =
       ).toBe(true)
     }
 
-    // Distribution sanity: design >= 1, testing >= 2 (playwright + chrome-devtools).
+    // Distribution sanity: design >= 1, testing >= 1 (playwright + the restored
+    // chrome-devtools optional-fallback case, both category testing).
     const dist: Record<string, number> = {}
     for (const c of categories) dist[c.category] = (dist[c.category] ?? 0) + 1
     expect(dist.design ?? 0).toBeGreaterThanOrEqual(1)
-    expect(dist.testing ?? 0).toBeGreaterThanOrEqual(2)
+    expect(dist.testing ?? 0).toBeGreaterThanOrEqual(1)
   })
 
   // v3.9.8 — schema-only sentinel for karpathy-skills.yaml.

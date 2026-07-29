@@ -241,7 +241,12 @@ capabilities:
     cmd: chrome-devtools
     since: v2.0
     category: tool-mcp
-    description: 性能/a11y/内存泄漏诊断 (非功能性 only; NOT for E2E test)
+    # 4.32.22 终局 — provider 二选一: ecc (manifests/optional/ecc.yaml, bonus
+    # tier; ECC connector audit 后其唯一默认 MCP connector 即 chrome-devtools)
+    # 或 optional 自装 manifest (manifests/optional/chrome-devtools-mcp.yaml,
+    # mcp-stdio-add 兜底, 供不装 ecc 的用户)。双装会产生同名双前缀调用歧义
+    # (doctor `ecc` check 挡残留双装)。
+    description: "性能/a11y/内存泄漏诊断 (非功能性 only; NOT for E2E test); provider 二选一 — ecc (bonus tier, ECC 唯一默认 MCP connector) 或 optional 自装 manifest chrome-devtools-mcp (不装 ecc 的兜底); 双装 doctor warn; 两者都缺时本 capability 不可用"
     fires_when:
       - subtask.type in ['perf_diagnose', 'a11y_audit', 'memory_leak']
 
@@ -277,11 +282,11 @@ capabilities:
     cmd: web_fetch_exa
     since: v2.0
     category: tool-mcp
-    # 4.32.21 — manifests/tools/exa-mcp.yaml 已删;provider = ECC MCP catalog
-    # opt-in (mcp-configs/mcp-servers.json 手动拷入 .mcp.json, hosted
-    # https://mcp.exa.ai/mcp, 同名工具 web_search_exa / web_fetch_exa;
-    # ≤2.0.0-rc.1 旧版曾默认 bundle, 2026-06 MCP connector audit 后退役为 opt-in)。
-    description: "描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景 — 描述式查询 / 学术 / 批量抓多 URL); provider = ECC MCP catalog opt-in (mcp-configs/mcp-servers.json); 未 opt-in 时本 capability 不可用, fallback 走 tavily-mcp / 内置 WebSearch (web-search-routing 已有 fallback 分支)"
+    # 4.32.22 — 恢复 base 组件语义 (manifests/tools/exa-mcp.yaml 已恢复, 翻案
+    # 4.32.21 删除; ECC 侧 exa 2026-06 connector audit 后退役为 opt-in, 不构成
+    # 承接)。运行需 EXA_API_KEY (server 进程 env 读取; settings.json env 块 /
+    # OS env 配置)。
+    description: "描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景 — 描述式查询 / 学术 / 批量抓多 URL); 需 EXA_API_KEY, 未配置时不可用, fallback 走 tavily-mcp / 内置 WebSearch (web-search-routing 已有 fallback 分支)"
     fires_when:
       - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
 

@@ -311,6 +311,49 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(stdout).not.toMatch(/^\s*failed\s+/m)
   })
 
+  // Cell 7b (4.32.22): search MCP key tail hint — installed tavily/exa without
+  // their API keys → one hint line per missing key after the setup summary.
+  it('cell 7b — installed search MCPs without API keys → tail hint lines printed', async () => {
+    const origTavilyKey = process.env.TAVILY_API_KEY
+    const origExaKey = process.env.EXA_API_KEY
+    delete process.env.TAVILY_API_KEY
+    delete process.env.EXA_API_KEY
+    try {
+      readdirMock.mockImplementation(
+        makeWorkflowsReaddir(['research'], { tools: ['tavily-mcp.yaml'] }),
+      )
+      statMock.mockImplementation(makeStatMock(['research']))
+      cpMock.mockResolvedValue(undefined)
+      // Path-conditional readFile: the harness MCP config carries both search
+      // servers WITHOUT env keys; settings.json has no env block either.
+      readFileMock.mockImplementation(async (p: unknown) => {
+        const path = String(p).replace(/\\/g, '/')
+        if (path.endsWith('.claude.json')) {
+          return JSON.stringify({
+            mcpServers: {
+              'tavily-mcp': { type: 'stdio', command: 'npx' },
+              'exa-mcp': { type: 'stdio', command: 'npx' },
+            },
+          }) as never
+        }
+        if (path.includes('settings.json')) return JSON.stringify({}) as never
+        return 'yaml-content' as never
+      })
+      validateManifestFileMock.mockReturnValue(makeValidManifest('tavily-mcp') as never)
+      runInstallMock.mockResolvedValue({ ok: true } as never)
+
+      const { code, stderr } = await runCli(['setup', '--no-auto-install'])
+      expect(code).toBe(0)
+      expect(stderr).toContain('TAVILY_API_KEY')
+      expect(stderr).toContain('EXA_API_KEY')
+    } finally {
+      if (origTavilyKey === undefined) delete process.env.TAVILY_API_KEY
+      else process.env.TAVILY_API_KEY = origTavilyKey
+      if (origExaKey === undefined) delete process.env.EXA_API_KEY
+      else process.env.EXA_API_KEY = origExaKey
+    }
+  })
+
   // Cell 8 (v3.3.1 hotfix): Step C — Agent Teams auto-enable wired in setup
   it('cell 8 — Step C: Agent Teams auto-enable runs silently (v3.9.12 output suppressed)', async () => {
     readdirMock.mockImplementation(makeWorkflowsReaddir(['research']))

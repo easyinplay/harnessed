@@ -20,9 +20,9 @@
 echo "[mock-claude] $*" >&2
 case "$1 $2" in
   "mcp list")
-    # 4.32.21 — exa-mcp line removed (manifest deleted; exa now ships via the
-    # optional ECC plugin, not a Step B mcp-stdio-add manifest).
+    # 4.32.22 — exa-mcp line restored (manifest back as a base component).
     echo "tavily-mcp"
+    echo "exa-mcp"
     exit 0
     ;;
   "mcp add")

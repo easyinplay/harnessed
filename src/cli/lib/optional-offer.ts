@@ -1,6 +1,8 @@
 // v4.18.0 — setup optional-tier offer(用户指示: setup 能装 codegraph)。
 //
-// manifests/optional/(codegraph / ecc / perturn-inject)per Phase 18 D2 特意不进
+// manifests/optional/(codegraph / ecc / chrome-devtools-mcp / perturn-inject /
+// stop-hook-recover;4.32.22 终局 — ecc 为 bonus tier 留在 optional,offer 时打
+// 知情提示;chrome-devtools-mcp 为不装 ecc 用户的兜底,与 ecc 二选一)per Phase 18 D2 特意不进
 // Step B 的 auto-glob(opt-in 锁定)——但 pre-4.18.0 setup 没有任何入口,唯一路径是
 // 用户自己知道 `harnessed install <name>`(三层解析 install.ts:72 已通,却无人引导)。
 // 本模块在 setup 收尾前 offer:已装跳过、未装项一屏 p.multiselect 勾选
@@ -22,6 +24,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as p from '@clack/prompts'
+import { t } from '../../i18n/index.js'
 import { runInstall } from '../../installers/index.js'
 import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../installers/lib/types.js'
@@ -109,6 +112,12 @@ export async function runOptionalOffer(
   console.log(
     `\n${pending.length} optional component(s) available (opt-in — none selected by default):`,
   )
+  // 4.32.22 — informed offer note for ecc (bonus tier, user ruling): sell the
+  // value (finer-grained orchestration) AND be honest that the ~20k+ tokens/
+  // session static-listing cost comes from ECC's own scale, not from harnessed.
+  if (pending.some((m) => m.metadata.name === 'ecc')) {
+    console.log(t('setup.optional_offer.ecc_note'))
+  }
   const ans = await p.multiselect({
     message:
       'Select optional components to install (space to toggle, enter to continue — empty = install nothing)',

@@ -307,8 +307,18 @@ export function registerSetup(program: Command): void {
         const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
         if (isTty) {
           const { confirm, isCancel } = await import('@clack/prompts')
+          // 4.32.22 — the force-update exclusion set is derived from the
+          // method-based bucket (componentTypes is method-bucketed since
+          // 4.32.22): only mcp-stdio-add / mcp-http-add installers ignore the
+          // updateInstalled flag. cc-plugin-shaped entries (e.g.
+          // chrome-devtools-mcp) ARE force-updatable and are not excluded.
+          const mcpExcluded = b.alreadyInstalled.filter((n) => b.componentTypes[n] === 'mcp-tool')
+          const exclusionNote =
+            mcpExcluded.length > 0
+              ? ` (${mcpExcluded.length} MCP server(s) excluded — they ignore force-update: ${mcpExcluded.join(', ')})`
+              : ''
           const ans = await confirm({
-            message: `Update ${b.alreadyInstalled.length} already-installed plugin(s) listed above? (MCP servers excluded — they ignore force-update)`,
+            message: `Update ${b.alreadyInstalled.length} already-installed plugin(s) listed above?${exclusionNote}`,
             initialValue: false,
           })
           if (!isCancel(ans) && ans === true) {
@@ -519,7 +529,10 @@ export function registerSetup(program: Command): void {
       }
 
       // v4.18.0 — optional-tier offer (manifests/optional/: codegraph / ecc /
-      // perturn-inject). Phase 18 D2 keeps optional/ out of Step B's auto-glob
+      // chrome-devtools-mcp / perturn-inject / stop-hook-recover; 4.32.22 final
+      // — ecc stays optional as BONUS TIER with an informed offer note, and
+      // chrome-devtools-mcp is the either/or fallback for non-ecc users).
+      // Phase 18 D2 keeps optional/ out of Step B's auto-glob
       // (opt-in locked); pre-4.18.0 setup gave the tier NO surface at all — it
       // was only reachable by users who already knew `harnessed install <name>`.
       // Interactive → per-component confirm (default No); non-TTY → one advisory
@@ -550,6 +563,16 @@ export function registerSetup(program: Command): void {
         // v4.14.0 — hint follows the active platform ("/mcp in Claude Code" is
         // meaningless on codex; there the check is `codex mcp list`).
         console.log(t(detectPlatform().id === 'codex' ? 'setup.mcp_hint_codex' : 'setup.mcp_hint'))
+      }
+
+      // 4.32.22 — search-MCP API-key tail hint: tavily/exa installed but their
+      // key (TAVILY_API_KEY / EXA_API_KEY) resolvable from no source → one line
+      // per missing key. Fail-soft: any probe error must never break setup.
+      try {
+        const { searchMcpKeyHintLines } = await import('./lib/search-mcp-keys.js')
+        for (const line of await searchMcpKeyHintLines()) console.warn(line)
+      } catch {
+        /* advisory only */
       }
 
       // ── Phase v2.0-2.3 W1.1: Pure bundled distribution highlight (D-01) ───

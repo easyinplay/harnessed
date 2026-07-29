@@ -1,12 +1,22 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
 #
-# OPT-IN catalog manifest — lives in manifests/optional/ so `harnessed setup` /
-# install-base (which globs ONLY manifests/tools + manifests/skill-packs) NEVER
-# auto-installs ECC into the base profile. ECC is an optional upstream AND a
-# pre-release (stability=unstable) — users opt in explicitly. harnessed catalogs
-# this manifest + routes a curated subset (capabilities.yaml Bucket 11 + verify
-# aliases, opt-in no-op when ECC absent); the install cmd below is the user-run
-# path (`claude plugin install ecc@ecc`). Sister: manifests/optional/codegraph.yaml.
+# 4.32.22 FINAL — BONUS TIER (manifests/optional/, user ruling; the interim
+# base-promotion was withdrawn after empirical study). Findings: ECC 2.1.0
+# conflict matrix shows ZERO breaking-level conflicts, but its static listing
+# tax measures ≈23-25k tokens/session — driven by ECC's own scale (281 skills /
+# 94 commands / 67 agents loaded into every session listing), NOT by harnessed;
+# and its hook surface drifts across upstream upgrades. Ruling: harnessed does
+# not carry ECC's install/friction responsibility — but when ECC is present in
+# the environment, capabilities.yaml Bucket 11 + verify aliases light up
+# finer-grained orchestration (per-language review/build expert routing etc.).
+# `harnessed setup` surfaces it via the optional-tier offer with an INFORMED
+# note (value + token cost); doctor `ecc` check: missing on both harnesses →
+# pass-informational (optional enhancement, not a health gap); ecc + leftover
+# chrome-devtools channel (official plugin or stdio mcpServers entry) → warn
+# dual-install (ECC bundles the same-name connector; see
+# manifests/optional/chrome-devtools-mcp.yaml — the two are either/or).
+# Friction tuning: GATEGUARD_EXEMPT_GLOBS (written by `harnessed
+# exempt-gateguard`) or ECC_GATEGUARD=off moderates the opinionated hooks.
 #
 # ECC (Affaan Mustafa) selective assimilation — A posture per ADR-0034.
 # ECC is a near-complete PARALLEL stack (its own plan/execute/review/learn/
@@ -17,23 +27,27 @@
 # engine collision, same rationale as gsd-execute-phase).
 #
 # De-confliction matrix SoT: docs/adr/0034-ecc-assimilation-deconfliction.md
-# EE-5 gate record:           manifests/optional/ecc.ee5-answers.json
+# EE-5 gate record:           manifests/optional/ecc.ee5-answers.json (record
+#                             stays in optional/ as an immutable audit artifact)
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: ecc
-  display_name: ECC (selective domain + verify-alias assimilation, A posture)
-  description: ECC selective assimilation per ADR-0034 (A posture) — additive domain-pattern + cost/hook + per-language reviewer alias.
+  display_name: ECC (bonus tier — unlocks finer-grained orchestration)
+  description: "ECC bonus tier: unlocks finer orchestration (ecc:* expert routing); costs ~20k+ tokens/session listing (ECC-side)."
   upstream:
     source: github.com/affaan-m/ECC
     homepage: https://ecc.tools
     repository: https://github.com/affaan-m/ECC.git
     license: MIT
     notice: |
-      ECC (Engineering Claude Code) by Affaan Mustafa, distributed via the `ecc`
-      Claude Code marketplace. harnessed assimilates a curated subset selectively
-      (A posture, de-confliction per ADR-0034) — NOT vendored, NOT wired as a
-      parallel stack. Upstream is pre-release (2.0.0-rc.1); stability=unstable.
+      ECC (Engineering Claude Code) by Affaan Mustafa, via the `ecc` CC
+      marketplace. Bonus tier: installing it lights up finer-grained
+      orchestration (per-language review/build expert routing etc.). Cost:
+      ~20k+ tokens/session static listing overhead — inherent to ECC's own
+      scale (281 skills / 94 commands / 67 agents), NOT introduced by
+      harnessed. Opinionated hooks (gateguard) are tunable via
+      GATEGUARD_EXEMPT_GLOBS (`harnessed exempt-gateguard`) or ECC_GATEGUARD=off.
 spec:
   type: cc-plugin
   component_type: command

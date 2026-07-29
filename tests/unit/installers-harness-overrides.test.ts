@@ -199,8 +199,11 @@ spec:
 // instead of the harness-mismatch gate (regression guard: the pre-4.32.21
 // chrome-devtools mcp-stdio-add manifest installed fine on codex).
 describe('codex dispatch — 4.32.21 plugin-form real manifests (T6/T7/T9)', () => {
+  // 4.32.22 final — chrome-devtools-mcp row stays removed from THIS describe
+  // (its optional fallback manifest is mcp-stdio-add base method, no plugin-form
+  // override to exercise); ecc back at manifests/optional/ (bonus tier — the
+  // interim base promotion was withdrawn), codex override unchanged.
   const CELLS = [
-    { yamlPath: 'manifests/tools/chrome-devtools-mcp.yaml', codexMethod: 'mcp-stdio-add' },
     { yamlPath: 'manifests/skill-packs/ui-ux-pro-max.yaml', codexMethod: 'git-clone-with-setup' },
     { yamlPath: 'manifests/optional/ecc.yaml', codexMethod: 'git-clone-with-setup' },
   ] as const

@@ -60,9 +60,19 @@ vi.mock('../../src/cli/lib/check-mattpocock-skills.js', () => ({
 }))
 vi.mock('../../src/cli/lib/check-mcp-availability.js', () => ({
   checkMcpAvailability: () => ({
-    name: 'MCP servers (tavily)',
+    name: 'MCP servers (tavily/exa)',
     status: 'pass',
-    message: 'installed: tavily-mcp',
+    message: 'installed: tavily-mcp, exa-mcp (API keys configured)',
+  }),
+}))
+// 4.32.22 — 20th check mock (check-ecc.ts stats ~/.codex paths via fs/promises
+// which the global mock exports only readFile from). Real logic unit-tested in
+// tests/cli/check-ecc.test.ts (tmpdir + HOME redirect).
+vi.mock('../../src/cli/lib/check-ecc.js', () => ({
+  checkEcc: () => ({
+    name: 'ecc',
+    status: 'pass',
+    message: 'CC: installed (plugin ecc@ecc); codex: not present (no ~/.codex/config.toml)',
   }),
 }))
 // Phase 18 — 13th check mock (check-codegraph.ts uses fs existsSync not in the
@@ -218,10 +228,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 19 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 20 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(19)
+      expect(parsed.checks).toHaveLength(20)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -235,7 +245,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
           'Agent Teams env', // ← Phase v2.0-2.4 W3 T2.4.W3.1 9th check (D-11)
           'planning-with-files plugin', // ← Phase v2.0-2.4 W3 T2.4.W3.1 10th check (D-15)
           'mattpocock-skills', // ← v3.6.0 Phase 2 Wave 1 11th check (user reframe)
-          'MCP servers (tavily)', // ← v3.6.0 Phase 2 Wave 2 12th check (audit P1a); 4.32.21 tavily-only
+          'MCP servers (tavily/exa)', // ← v3.6.0 Phase 2 Wave 2 12th check (audit P1a); 4.32.22 exa restored
           'codegraph', // ← Phase 18 13th check (opt-in semantic index, always pass)
           'update', // ← Phase 20 14th check (update available, fail-soft pass)
           'bun present', // ← v4.16.1 15th check (warn-only gstack build dep)

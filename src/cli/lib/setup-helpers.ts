@@ -71,8 +71,15 @@ export interface StepBResult {
   skipped: { name: string; reason: string }[]
   failed: string[]
   elapsedMs: number
-  // v3.9.21 — per-manifest component_type for grouped output in setup display.
+  // v3.9.21 — per-manifest display group for grouped output in setup display.
   // Map<name, 'mcp-tool' | 'cli-binary' | 'command'>; missing entries display as 'other'.
+  // 4.32.22 — buckets derive from the EFFECTIVE install.method (harness override
+  // applied), NOT spec.component_type: the group communicates the install
+  // CHANNEL (mcpServers config vs plugin/skill vs global CLI), and force-update
+  // exclusion follows the same channel (MCP installers ignore the flag). A
+  // cc-plugin-marketplace manifest with component_type=mcp-tool (e.g. the
+  // 4.32.21-era chrome-devtools form) belongs under "Commands & Skills",
+  // where force-update DOES apply.
   componentTypes: Record<string, string>
   // Patch 4.10.1 Fix C — force-update refresh failures whose component is still
   // present on disk (prior version retained). Rendered as a WARN bucket, not an
@@ -103,6 +110,39 @@ type StepBEntry =
  *  dogfood: tavily survived, chrome-devtools-mcp + exa-mcp verify-failed with
  *  "file may have been overwritten"). These methods must be serialized. */
 const MCP_METHODS = new Set(['mcp-stdio-add', 'mcp-http-add'])
+
+/** 4.32.22 — the manifest's EFFECTIVE install method for the active harness:
+ *  non-claude platforms take `spec.harness_overrides.<id>.install.method` when
+ *  declared (mirrors installers/index.ts resolveForHarness, re-derived locally
+ *  so setup-helpers stays importable under the tests' `{ runInstall }`-only
+ *  vi.mock of installers/index — adding an import there breaks its mockers). */
+function effectiveInstallMethod(manifest: Manifest): string {
+  if (detectPlatform().id === 'codex') {
+    const override = manifest.spec.harness_overrides?.codex
+    if (override) return override.install.method
+  }
+  return manifest.spec.install.method
+}
+
+/** 4.32.22 — display/exclusion bucket by install CHANNEL (effective method):
+ *  mcp-stdio-add / mcp-http-add → 'mcp-tool' (mcpServers config; force-update
+ *  excluded); cc-plugin-marketplace / git-clone-with-setup / npx-skill-installer /
+ *  cc-hook-add → 'command'; npm-cli → 'cli-binary'; anything else → 'other'. */
+export function installGroupOf(manifest: Manifest): string {
+  const method = effectiveInstallMethod(manifest)
+  if (MCP_METHODS.has(method)) return 'mcp-tool'
+  switch (method) {
+    case 'cc-plugin-marketplace':
+    case 'git-clone-with-setup':
+    case 'npx-skill-installer':
+    case 'cc-hook-add':
+      return 'command'
+    case 'npm-cli':
+      return 'cli-binary'
+    default:
+      return 'other'
+  }
+}
 
 /** Step B: parallel install-base auto-glob chain via Promise.allSettled (v1.0.3 T1.1).
  *  v3.9.6 — `runOpts.updateInstalled` (optional) forces re-install for plugins
@@ -167,7 +207,7 @@ export async function runStepBInstall(
       )
       continue
     }
-    componentTypes[v.manifest.metadata.name] = v.manifest.spec.component_type
+    componentTypes[v.manifest.metadata.name] = installGroupOf(v.manifest)
     valid.push({ manifest: v.manifest })
   }
 
