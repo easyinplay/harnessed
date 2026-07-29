@@ -113,6 +113,17 @@ function makeValidManifest(name: string) {
   }
 }
 
+// 4.32.23 — FILE-level timeout instead of per-cell patches. Every cell here
+// drives the whole setup chain (Step B packs → Step A cp → optional glob →
+// key-hint tail → grouping), which has grown past the 5s default on slow CI
+// runners: 9b04ab1 bumped cell 3 to 15s after a 5011ms Windows failure, then
+// cell 1 tipped over on an ubuntu runner (2dee117). The cascade is what makes
+// this expensive — a timed-out cell's CLI promise keeps running and its cp/mock
+// calls land in the NEXT cell, so one slow cell reports as two failures
+// (cell 2 saw 4 stray real-path cp calls under --dry-run). Raising the whole
+// file removes the whack-a-mole.
+vi.setConfig({ testTimeout: 20_000 })
+
 describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Step B install-base)', () => {
   beforeEach(() => {
     readdirMock.mockReset()
