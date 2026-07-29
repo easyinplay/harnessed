@@ -172,7 +172,9 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(runInstallMock).toHaveBeenCalledTimes(2)
     expect(stdout).toContain('Upstream components: 2 installed')
     expect(stdout).toContain('setup complete — 1 workflows + 2 base manifests')
-  })
+    // 4.32.22 — the full setup chain grew (optional glob + key-hint tail + method
+    // bucketing); slow CI Windows runners tipped past the 5s default (5011ms).
+  }, 15_000)
 
   // Cell 3b (4.23.0 issue #3 / T2, TDD): ORDER INVERSION — Step B (packs) must
   // run BEFORE Step A (workflow cp). The packs copy upstream skills into the
