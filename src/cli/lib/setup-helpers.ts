@@ -241,8 +241,12 @@ export async function runStepBInstall(
     }
   }
 
-  const mcp = valid.filter((v) => MCP_METHODS.has(v.manifest.spec.install.method))
-  const rest = valid.filter((v) => !MCP_METHODS.has(v.manifest.spec.install.method))
+  // 4.32.23 — partition on the EFFECTIVE method (same resolver as installGroupOf
+  // above). Reading the raw spec.install.method here let a codex harness-override
+  // into an MCP method land in the parallel group while being displayed as an
+  // MCP bucket — the v4.13.0 shared-config lost-update race, silently reopened.
+  const mcp = valid.filter((v) => MCP_METHODS.has(effectiveInstallMethod(v.manifest)))
+  const rest = valid.filter((v) => !MCP_METHODS.has(effectiveInstallMethod(v.manifest)))
   const runMcpSerial = async (): Promise<StepBEntry[]> => {
     const out: StepBEntry[] = []
     for (const { manifest } of mcp) out.push(await runOne(manifest))

@@ -17,7 +17,21 @@ export function registerDoctor(program: Command): void {
     .action(async (opts: { json?: boolean }) => {
       // Run all checks in parallel (no data deps between them). Order preserved
       // for human-readable output per doctor.test.ts cell-1+4+5 expectations.
-      const results: CheckResult[] = await Promise.all(CHECKS.map((c) => c()))
+      // 4.32.23 — allSettled, not all: readClaudeConfig deliberately re-throws
+      // non-ENOENT read errors (EACCES / EISDIR), so one unlucky check used to
+      // abort `doctor` with a bare stack trace and discard every other result.
+      // A crashed check degrades to its own warn row; the rest still report.
+      const settled = await Promise.allSettled(CHECKS.map((c) => c()))
+      const results: CheckResult[] = settled.map((s, i) =>
+        s.status === 'fulfilled'
+          ? s.value
+          : {
+              name: `check #${i + 1}`,
+              status: 'warn' as const,
+              message: `check crashed: ${s.reason instanceof Error ? s.reason.message : String(s.reason)}`,
+              fix: 'this check was skipped; the other checks above are unaffected',
+            },
+      )
       const hasFail = results.some((r) => r.status === 'fail')
       const hasWarn = results.some((r) => r.status === 'warn')
       if (opts.json) {

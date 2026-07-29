@@ -234,6 +234,47 @@ describe('cli/prompt — v4.1 tools_available injection', () => {
   })
 })
 
+// 4.32.23 — capability `aliases` were declared in the yaml SoT since ADR-0034
+// but NEVER rendered anywhere (zero runtime consumers), so the ECC per-language
+// experts the setup offer promises ("unlocks finer-grained orchestration") were
+// invisible to the subagent. Approach A (prose-level routing): surface the
+// alias list + a single-fire / fallback instruction; the model does the
+// language match. No probe, no resolver, no git spawn.
+describe('cli/prompt — 4.32.23 capability alias rendering (降级链 prose 级)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete process.env.HARNESSED_USER_LANG
+  })
+
+  it('cell 14 — verify-code-review renders the base cmd AND its ECC language aliases', async () => {
+    const { code, stdout } = await runCli(['prompt', 'verify-code-review'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Tools')
+    // base entry — the chain tail, always present
+    expect(stdout).toContain('/code-review')
+    // ECC per-language experts, upstream agent face (`<lang>-reviewer`)
+    expect(stdout).toContain('ecc:python-reviewer')
+    expect(stdout).toContain('ecc:rust-reviewer')
+    expect(stdout).toContain('ecc:go-reviewer')
+  })
+
+  it('cell 15 — alias line carries the single-fire + fallback instruction', async () => {
+    const { code, stdout } = await runCli(['prompt', 'verify-code-review'])
+    expect(code).toBe(0)
+    // ADR-0034 single-fire: never base + specialist together
+    expect(stdout).toMatch(/never both/i)
+    // 降级链铁律: no provider → base cmd, no hard dependency
+    expect(stdout).toMatch(/not installed/i)
+  })
+
+  it('cell 16 — a tool without aliases renders no alias sub-line', async () => {
+    const { code, stdout } = await runCli(['prompt', 'plan-phase'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Tools')
+    expect(stdout).not.toMatch(/never both/i)
+  })
+})
+
 describe('cli/prompt — v4.1.1 disciplines_applied injection', () => {
   afterEach(() => {
     vi.restoreAllMocks()

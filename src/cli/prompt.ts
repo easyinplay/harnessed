@@ -71,7 +71,10 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
 
     const capRaw = await readFile(resolve(workflowsDir, 'capabilities.yaml'), 'utf8')
     const capDoc = parseYaml(capRaw) as {
-      capabilities?: Record<string, { cmd?: string; impl?: string }>
+      capabilities?: Record<
+        string,
+        { cmd?: string; impl?: string; aliases?: { cmd?: string; impl?: string }[] }
+      >
     } | null
     const caps = capDoc?.capabilities ?? {}
     const lines: string[] = []
@@ -79,6 +82,20 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
       const cmd = caps[tool]?.cmd
       const impl = caps[tool]?.impl
       lines.push(cmd ? `- Invoke \`${cmd}\` (${tool}${impl ? `, ${impl}` : ''})` : `- ${tool}`)
+      // 4.32.23 — surface the entry's aliases (declared in the yaml SoT since
+      // ADR-0034, never rendered until now). Prose-level routing: the model
+      // matches the diff's language/stack itself. Single-fire (ADR-0034) and
+      // the 降级链 rule (base entry is the chain tail — providers like ECC are
+      // BONUS TIER, never a hard dependency) are stated inline.
+      const aliases = (caps[tool]?.aliases ?? []).filter((a) => typeof a.cmd === 'string')
+      if (cmd && aliases.length > 0) {
+        const rendered = aliases
+          .map((a) => `\`${a.cmd}\`${a.impl ? ` (${a.impl})` : ''}`)
+          .join(', ')
+        lines.push(
+          `  - specialist alternatives: ${rendered} — pick at most ONE whose provider is installed AND whose language/stack matches the change; run it INSTEAD of the base cmd above (never both). Provider not installed or no match → just use \`${cmd}\`.`,
+        )
+      }
     }
     if (lines.length === 0) return ''
     return `\n## Tools — invoke these (not optional)\nThis workflow's SoT declares the following upstream tools. Actually invoke them as part of your work — do NOT improvise a lightweight substitute. Persist artifacts in the upstream's native format (e.g. planning-with-files → \`task_plan.md\` / \`progress.md\` / \`findings.md\`; GSD → \`PLAN.md\` / \`STATE.md\`).\n${lines.join('\n')}\n`

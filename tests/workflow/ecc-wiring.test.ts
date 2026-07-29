@@ -79,18 +79,49 @@ describe('ECC Bucket 11 wiring (ADR-0034)', () => {
 describe('ECC verify-dimension aliases (Finding 1 single-fire guard)', () => {
   it('per-language reviewers are aliases under code-review, NOT standalone entries', () => {
     const aliasCmds = (entries['code-review']?.aliases ?? []).map((a) => a.cmd)
-    expect(aliasCmds).toContain('ecc:python-review')
-    expect(aliasCmds).toContain('ecc:rust-review')
+    expect(aliasCmds).toContain('ecc:python-reviewer')
+    expect(aliasCmds).toContain('ecc:rust-reviewer')
     // and NOT wired as a parallel top-level capability (would triple-fire in verify)
-    expect(entries['ecc-python-review']).toBeUndefined()
-    expect(entries['ecc-rust-review']).toBeUndefined()
+    expect(entries['ecc-python-reviewer']).toBeUndefined()
+    expect(entries['ecc-rust-reviewer']).toBeUndefined()
   })
 
   it('per-language build-resolvers are aliases under gsd-debug', () => {
     const aliasCmds = (entries['gsd-debug']?.aliases ?? []).map((a) => a.cmd)
-    expect(aliasCmds).toContain('ecc:rust-build')
-    expect(aliasCmds).toContain('ecc:go-build')
-    expect(entries['ecc-rust-build']).toBeUndefined()
+    expect(aliasCmds).toContain('ecc:rust-build-resolver')
+    expect(aliasCmds).toContain('ecc:go-build-resolver')
+    expect(entries['ecc-rust-build-resolver']).toBeUndefined()
+  })
+
+  // 4.32.23 — the pre-4.32.23 alias names (`ecc:python-review` command face for
+  // reviewers, `ecc:rust-build` / `ecc:go-build` / `ecc:build-fix` for resolvers)
+  // did not all exist upstream. Reviewers/resolvers must use the UPSTREAM AGENT
+  // FACE, which is uniform and hole-free: `<lang>-reviewer` / `<lang>-build-resolver`
+  // (plus the generic `build-error-resolver`). Guards against silent drift back.
+  it('every ecc alias uses the upstream agent face (reviewer / resolver suffix)', () => {
+    const AGENT_FACE = /^ecc:[a-z0-9-]+-(reviewer|build-resolver|resolver)$/
+    for (const [name, e] of Object.entries(entries)) {
+      for (const a of e.aliases ?? []) {
+        if (a.impl !== 'ecc') continue
+        expect(a.cmd, `${name} alias not on the ECC agent face: ${a.cmd}`).toMatch(AGENT_FACE)
+      }
+    }
+  })
+})
+
+// 4.32.23 — 降级链铁律 (memory `ecc-positioning`): ECC is BONUS TIER, so every
+// entry that carries ECC specialist aliases must have a NON-ecc base impl —
+// the base entry IS the chain tail and must work with ECC absent. A base entry
+// with `impl: ecc` would make the whole capability a hard ECC dependency.
+describe('降级链 chain-tail invariant', () => {
+  it('no entry with ecc aliases has an ecc base impl', () => {
+    for (const [name, e] of Object.entries(entries)) {
+      const hasEccAlias = (e.aliases ?? []).some((a) => a.impl === 'ecc')
+      if (!hasEccAlias) continue
+      expect(e.impl, `${name} has ecc aliases but its base impl is ecc (no fallback)`).not.toBe(
+        'ecc',
+      )
+    }
   })
 })
 

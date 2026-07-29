@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.32.23] - 2026-07-29
+
+ECC 编排立项的产物 —— 但**不是**原计划那个。治理链(office-hours → design doc → plan-ceo-review → outside voice)裁出「降级链一等公民」B 方案后,立项要求的对照实测把它否了:同题同 diff 下 `ecc:typescript-reviewer` 的发现是通用 review 的真子集,零语言特有发现。于是砍掉 probe/resolver/语言推导器整套机器,改交付 prose 级路由(Approach A)+ 实测过程中打出的两个真 bug。决策与证据链:`.planning/phases/51-ecc-orchestration/`(findings F1-F9)。
+
+### Added
+
+- **capability `aliases` 首次进入 subagent prompt(prose 级专家路由)。** ADR-0034 起 `aliases` 就声明在 `workflows/capabilities.yaml` 里,却**零运行时消费者**(仅 schema + 测试断言读它)—— setup offer 文案承诺的「装 ECC 点亮更细化编排」对 subagent 完全不可见。现在 `harnessed prompt` 的 `## Tools` 段在每个 base cmd 下渲染其 alias 列表:`specialist alternatives: <cmd> (<impl>), … — pick at most ONE whose provider is installed AND whose language/stack matches the change; run it INSTEAD of the base cmd above (never both). Provider not installed or no match → just use <base cmd>.` 单火约束(ADR-0034)与降级链铁律(base entry 即链尾,ECC 是 bonus tier 永不硬依赖)写在指令里,语言匹配交给模型 —— 无 presence probe、无 git spawn、无新模块、无 schema 变更。
+
+### Fixed
+
+- **`gsd-debug` 的三个 ECC build alias 名上游根本不存在。** ECC 2.1.0 实拉验证:`ecc:rust-build` / `ecc:go-build` / `ecc:build-fix` 三个名全是臆造,真名为 `rust-build-resolver` / `go-build-resolver` / 通用 `build-error-resolver`(上游**无** python-build-resolver,该角色由 django/pytorch resolver 分担)。同时把 `code-review` 的 reviewer alias 从 command 面改到 **agent 面**(`ecc:<lang>-reviewer`):`ecc:<lang>-review` 只是薄壳命令,正文就是调同名 agent,且命令面有覆盖洞(无 typescript/java/swift/php/csharp/fsharp),而 agent 面 11 语言齐整;build-resolver 更是**只有** agent 面。新增两条守卫测试:ECC alias 必须匹配 agent-face 正则;任何带 ECC alias 的 entry 其 base `impl` 不得为 `ecc`(降级链链尾不变式)。
+- **`workflows/capabilities.yaml` 的 stale 注释兑现。** 原注释称 "runtime/priority.yaml picks the language-matching one" —— 该文件从未存在(仓内只有 `workflows/disciplines/priority.yaml`,不做 alias 选择)。改写为指向本次落地的真实机制。
+- **setup 的 MCP 串行化分区忽略 harness override(潜伏的写竞态回归)。** 4.32.22 把**显示分桶**改走 `effectiveInstallMethod`(应用 `spec.harness_overrides.codex`),却把 `runStepBInstall` 的**串行化分区**留在 raw `spec.install.method` 上,同一事实两个判定点:base 非 MCP + codex override 成 `mcp-stdio-add` 的 manifest 会被显示成 MCP 桶却混进并行组,重开 v4.13.0 的共享配置 lost-update 竞态(当年 dogfood:tavily 活下来、chrome-devtools + exa 被覆盖 verify-failed)。现网 7 个带 `harness_overrides` 的 manifest 都不跨 MCP 边界故未触发。补串行化断言测试(此前测试只断言分桶,反而把不一致固化了)。
+- **`harnessed doctor` 任一 check 抛错即整体崩。** `readClaudeConfig` 对非 ENOENT 读错误(EACCES / EISDIR)**显式 re-throw**(反 silent-swallow 的有意设计),而 doctor 用 `Promise.all` 派发全部 20 个 check —— 一个抛错 → 裸 stack trace + 另外 19 个结果全丢。改 `Promise.allSettled`,崩掉的 check 降级为自己那一行 warn(`check crashed: <message>`),其余照常报告;warn ≠ fail 的退出码策略(B-06)不变。
+
 ## [4.32.22] - 2026-07-29
 
 ECC 边界终裁:exa 恢复自装 + key 检测;chrome-devtools 二选一(ecc 承接为主 + optional 自装兜底);ecc 定为 **bonus tier**(不必装、offer 知情提示);doctor 新增 per-harness ecc 检测 + 双装检测;setup 分桶按 method。决策链:中途曾定「ecc 升 base 必装 + chrome-devtools 归 ECC 独供」,经实证研究(ECC 2.1.0 冲突矩阵破坏级冲突为零、静态列表税实测 ≈23-25k tokens/session、上游 hook 面随升级漂移)撤回 —— harnessed 不背 ECC 的安装/摩擦责任,环境里有就点亮更细化编排。

@@ -137,12 +137,24 @@ capabilities:
     category: tool-slash-cmd
     description: verify-work parallel fan-out (multi-agent high-confidence findings)
     # ADR-0034 Finding 1 — ECC per-language reviewers收编 as verify-dimension aliases
-    # (NOT a parallel Bucket 11 entry; runtime/priority.yaml picks the language-matching
-    # one → single fire, no triple-review). Opt-in: no-op when ECC absent.
+    # (NOT parallel Bucket 11 entries — those would triple-fire in verify).
+    # 4.32.23 — the selection mechanism is now REAL and prose-level: `harnessed
+    # prompt` renders this alias list into the subagent's `## Tools` section with
+    # a single-fire + fallback instruction (src/cli/prompt.ts buildToolsSection),
+    # and the model matches the diff's language itself. (The pre-4.32.23 comment
+    # here promised a `runtime/priority.yaml` arbiter that never existed.)
+    # 4.32.23 — names corrected to the UPSTREAM AGENT FACE (ECC 2.1.0 实拉):
+    # `ecc:<lang>-review` is a thin COMMAND shell whose body just invokes the
+    # `<lang>-reviewer` agent, and the command face has coverage holes
+    # (no typescript/java/swift/php/csharp/fsharp) while the agent face covers
+    # 11 languages uniformly. Build-resolvers have NO command face at all, so the
+    # agent face is also the only way to keep review/build consistent.
+    # BONUS TIER: no-op when ECC absent — base `/code-review` is the chain tail.
     aliases:
-      - { impl: ecc, cmd: "ecc:python-review" }
-      - { impl: ecc, cmd: "ecc:rust-review" }
-      - { impl: ecc, cmd: "ecc:go-review" }
+      - { impl: ecc, cmd: "ecc:python-reviewer" }
+      - { impl: ecc, cmd: "ecc:rust-reviewer" }
+      - { impl: ecc, cmd: "ecc:go-reviewer" }
+      - { impl: ecc, cmd: "ecc:typescript-reviewer" }
     fires_when:
       - phase.stage == 'verify'
 
@@ -332,16 +344,21 @@ capabilities:
     category: tool-slash-cmd
     description: GSD systematic debugging (overlap with mattpocock /diagnosing-bugs + superpowers systematic-debugging — alias)
     # ADR-0034 Finding 1 — ECC per-language build-resolvers收编 as debug/verify-dimension
-    # aliases (build-failure fix; runtime picks language-matching one). Opt-in: no-op
-    # when ECC absent.
+    # aliases (build-failure fix). Selection is prose-level per 4.32.23 (see the
+    # code-review entry above). Opt-in: no-op when ECC absent.
+    # 4.32.23 — the three ecc names below were WRONG: `ecc:rust-build` /
+    # `ecc:go-build` / `ecc:build-fix` do not exist upstream (ECC 2.1.0 实拉).
+    # Real agent names are `<lang>-build-resolver`, plus the generic
+    # `build-error-resolver` (build/TypeScript). Upstream has NO
+    # python-build-resolver (django/pytorch resolvers split that role).
     aliases:
       # v4.16.3 — 上游改名 diagnose → diagnosing-bugs
       - { impl: mattpocock-skills, cmd: /diagnosing-bugs }
       # v13.0 P43 — superpowers-native debug alias (双 impl 备选, sister tdd superpowers主/mattpocock备)
       - { impl: superpowers, cmd: "superpowers:systematic-debugging" }
-      - { impl: ecc, cmd: "ecc:rust-build" }
-      - { impl: ecc, cmd: "ecc:go-build" }
-      - { impl: ecc, cmd: "ecc:build-fix" }
+      - { impl: ecc, cmd: "ecc:rust-build-resolver" }
+      - { impl: ecc, cmd: "ecc:go-build-resolver" }
+      - { impl: ecc, cmd: "ecc:build-error-resolver" }
     fires_when:
       - subtask.type == 'debug'
 

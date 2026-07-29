@@ -21,6 +21,20 @@
   收益仅剩启动速度,代价是 4 个 npm 包的发布管线/版本锁/launcher shim 维护面。等真实需求信号再启。
   Depends: Slice 1/2(已发)。
 
+## Gate semantics
+
+- [ ] **ADR-0038 第三类:对缺失/null 成员用 `in` 落 fail-SOFT** — P2(4.32.23 spike 实测发现)
+  `'x' in subtask.missing` 抛的是 `Cannot read properties of undefined (reading 'length')`,
+  不匹配 `isUndefinedVariableError` 的 `/undefined variable/i`(`src/workflow/exprBuilder.ts:44-46`)
+  → 落 ADR-0029 fail-soft,子项照 fire。目前无 judgment 用数组 fact 故未触发;
+  引入任何数组 fact 前必须先把正则收口到 fail-closed(ADR-0038 的「静态配置漂移」理由同样成立)。
+  证据:`.planning/phases/51-ecc-orchestration/findings.md` F7。
+
+- [ ] **ECC 语言专家路由是否补机器层(B 方案)** — P3,等用户 rust/go 手测结论
+  4.32.23 已交付 prose 级(Approach A:`harnessed prompt` 渲染 aliases + 单火/降级指令)。
+  TS 面代理实测判专家无优势(findings F8),故未建 probe/resolver/git 语言推导机器。
+  若 rust/go 面实测显示专家确有语言特有发现,再按 `task_plan.md` 的 T1-T5 回补。
+
 ## Watch items
 
 - [x] **gsd-core 1.7.0 GA watch** — RESOLVED 2026-07-15:1.7.0 GA 已发(npm latest=1.7.0)。

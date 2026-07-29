@@ -227,4 +227,54 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
       else process.env.HARNESSED_ROOT_OVERRIDE = origRootOverride
     }
   })
+
+  // 4.32.23 — the 4.32.22 refactor routed the DISPLAY bucket through
+  // effectiveInstallMethod but left the SERIALIZATION partition on the raw
+  // spec.install.method, so a codex-override-into-MCP manifest was bucketed
+  // 'mcp-tool' yet still ran in the parallel group — silently reopening the
+  // v4.13.0 lost-update race on the shared config writer. One concept, one
+  // decision point: both must read the effective method.
+  it('4.32.23 — MCP serialization partition follows the harness-override effective method', async () => {
+    const origPlatform = process.env.HARNESSED_PLATFORM
+    const origRootOverride = process.env.HARNESSED_ROOT_OVERRIDE
+    delete process.env.HARNESSED_ROOT_OVERRIDE
+    process.env.HARNESSED_PLATFORM = 'codex'
+    try {
+      validateMock.mockImplementation(((_src: string, path: string) => {
+        const base = path.replace(/\\/g, '/').split('/').pop() ?? path
+        return {
+          ok: true,
+          errors: [],
+          manifest: {
+            metadata: { name: `codex-mcp-${base}` },
+            spec: {
+              component_type: 'mcp-tool',
+              // base method is NOT an MCP method — only the codex override is
+              install: { method: 'cc-plugin-marketplace', cmd: 'claude plugin install x' },
+              harness_overrides: {
+                codex: { install: { method: 'mcp-stdio-add', cmd: 'claude mcp add ...' } },
+              },
+            },
+          },
+        }
+      }) as never)
+      let active = 0
+      let maxActive = 0
+      runInstallMock.mockImplementation((async () => {
+        active += 1
+        maxActive = Math.max(maxActive, active)
+        await new Promise((r) => setTimeout(r, 10))
+        active -= 1
+        return { ok: true }
+      }) as never)
+      const b = await runStepBInstall(['a.yaml', 'b.yaml', 'c.yaml'], { quiet: true })
+      expect(b.installed).toHaveLength(3)
+      expect(maxActive).toBe(1) // shared-config writers must not overlap
+    } finally {
+      if (origPlatform === undefined) delete process.env.HARNESSED_PLATFORM
+      else process.env.HARNESSED_PLATFORM = origPlatform
+      if (origRootOverride === undefined) delete process.env.HARNESSED_ROOT_OVERRIDE
+      else process.env.HARNESSED_ROOT_OVERRIDE = origRootOverride
+    }
+  })
 })
