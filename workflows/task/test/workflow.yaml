@@ -42,5 +42,5 @@ phases:
         tool: diagnose
     max_iterations: '{{ defaults.ralph_max_iterations.task-test.01-test }}'
     # v3.8.0 P1 — TDD core-logic phase, opts into full 3-RULES inject (escalation
-    # may fire when test failures trigger /diagnose handoff or subagent context overflow).
+    # may fire when test failures trigger /diagnosing-bugs handoff or subagent context overflow).
     injects_rules: [escalation, transparent-skip, agent-teams-prevention]

@@ -59,7 +59,7 @@ SDK, 用户 explicit signal 可切换 mattpocock /tdd alias path。
 ## Conditional diagnose invoke (D-05 invokes_tools)
 
 Phase 01-test 条件性 fire `diagnose` (capabilities.yaml L55-64 mattpocock-skills
-/diagnose) when `test_fail == true` — sister CLAUDE.md "系统化排错" pattern;
+/diagnosing-bugs) when `test_fail == true` — sister CLAUDE.md "系统化排错" pattern;
 test fail 时进入 diagnose loop (reproduce → minimise → hypothesise → instrument →
 fix → regression-test), 测试通过则 skip diagnose entirely。
 

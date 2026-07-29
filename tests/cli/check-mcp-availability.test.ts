@@ -1,6 +1,13 @@
 // v3.6.0 Phase 2 Wave 3 — checkMcpAvailability helper PRIMARY coverage.
 // Sister Phase 3.4 W1 T1.3 check-token-budget.test.ts tmpdir + HOME redirect
 // + vi.resetModules per-cell isolation pattern (real fs, NOT global mock).
+//
+// 4.32.21 — target set shrunk to tavily-mcp only:
+//   - exa-mcp manifest deleted (ECC plugin 2.0 bundles hosted exa MCP; the
+//     capability survives in capabilities.yaml with provider=ecc semantics)
+//   - chrome-devtools-mcp migrated to cc-plugin-marketplace (official
+//     claude-plugins-official plugin) — registered as a plugin, NOT in
+//     ~/.claude.json mcpServers, so this check no longer owns it.
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -30,51 +37,45 @@ afterEach(() => {
 })
 
 // v3.9.5 — write to `~/.claude.json` (user-scope, sister mcpStdioAdd `--scope user`).
-// Previous version (v3.6.0 Phase 2) wrote to `~/.claude/settings.json` — wrong file;
-// fixed in v3.9.5 to align with isMcpServerRegistered helper read path.
 function writeClaudeConfig(mcpServers: Record<string, unknown>): void {
   writeFileSync(join(tmpRoot, '.claude.json'), JSON.stringify({ mcpServers }), 'utf8')
 }
 
-describe('checkMcpAvailability — v3.6.0 Phase 2 Wave 3 (all-3 / partial / none)', () => {
-  it('1. all 3 target MCP servers present → status=pass + all-3 message', async () => {
-    // v3.9.5 — server names match manifest install.cmd register names (stdio
-    // + npx → `tavily-mcp` / `exa-mcp` / `chrome-devtools-mcp`).
+describe('checkMcpAvailability — 4.32.21 tavily-only target set', () => {
+  it('1. tavily-mcp present → status=pass', async () => {
     writeClaudeConfig({
       'tavily-mcp': { type: 'stdio', command: 'npx' },
+    })
+    const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
+    const r = await checkMcpAvailability()
+    expect(r.status).toBe('pass')
+    expect(r.message).toMatch(/tavily-mcp/)
+    expect(r.name).toBe('MCP servers (tavily)')
+  })
+
+  it('2. legacy exa-mcp / chrome-devtools-mcp entries do NOT satisfy the check', async () => {
+    // 4.32.21 regression guard — exa-mcp is now ECC-plugin-provided and
+    // chrome-devtools-mcp is plugin-distributed; stale mcpServers entries for
+    // them must not mask a missing tavily-mcp.
+    writeClaudeConfig({
       'exa-mcp': { type: 'stdio', command: 'npx' },
       'chrome-devtools-mcp': { type: 'stdio', command: 'npx' },
     })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
-    expect(r.status).toBe('pass')
-    expect(r.message).toMatch(/all 3 installed/)
-  })
-
-  it('2. partial: 1-2 of 3 present → status=warn + lists missing', async () => {
-    writeClaudeConfig({
-      'tavily-mcp': { type: 'stdio', command: 'npx' },
-      // exa-mcp + chrome-devtools-mcp missing
-    })
-    const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
-    const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
-    expect(r.message).toMatch(/1\/3 installed/)
     expect(r.message).toMatch(/tavily-mcp/)
-    expect(r.message).toMatch(/missing:/)
-    expect(r.message).toMatch(/exa-mcp/)
-    expect(r.message).toMatch(/chrome-devtools-mcp/)
     // v3.9.5 — install_commands removed (Step B owns install). fix points to setup.
     expect(r.fix).toMatch(/harnessed setup/)
     expect(r.install_commands).toBeUndefined()
   })
 
-  it('3. none of 3 present (~/.claude.json missing entirely) → status=warn', async () => {
-    // No ~/.claude.json written — isMcpServerRegistered returns false for all
+  it('3. ~/.claude.json missing entirely → status=warn', async () => {
+    // No ~/.claude.json written — isMcpServerRegistered returns false
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
-    expect(r.message).toMatch(/none of 3 target MCP servers/)
+    expect(r.message).toMatch(/tavily-mcp/)
     expect(r.fix).toMatch(/harnessed setup/)
     expect(r.install_commands).toBeUndefined()
   })

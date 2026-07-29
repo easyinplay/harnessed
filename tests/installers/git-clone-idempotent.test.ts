@@ -1,10 +1,15 @@
 // Patch 4.10.1 installer-robustness Fix A + Fix B regression guards.
 //
-// Fix A — the git-clone skill-packs (gstack / ui-ux-pro-max) must `rm -rf
-// <final-dest>` BEFORE writing that dest, so a force-update re-run
-// is idempotent (prior dogfood: clone/cp into an existing dir exited 1). The
-// `git clone <url> <dest>` shape MUST stay intact (extractCloneTarget + D-15
-// SHA-verify depend on it).
+// Fix A — the git-clone skill-packs must `rm -rf <final-dest>` BEFORE writing
+// that dest, so a force-update re-run is idempotent (prior dogfood: clone/cp
+// into an existing dir exited 1). The `git clone <url> <dest>` shape MUST stay
+// intact (extractCloneTarget + D-15 SHA-verify depend on it).
+//
+// 4.32.21 — ui-ux-pro-max cell REMOVED: manifest migrated git-clone-with-setup
+// → cc-plugin-marketplace (official nextlevelbuilder/ui-ux-pro-max-skill
+// plugin); its dry-run/method assertion now lives in
+// tests/integration/manifest-install-dry-run.test.ts. gstack remains the sole
+// git-clone skill-pack under this guard.
 //
 // Fix B — DEFAULT_INSTALL_TIMEOUT_MS bumped 120s → 300s (cold npx/clone exceeds
 // 120s on real machines; comet gives npx skills 300s).
@@ -36,20 +41,6 @@ describe('Fix A — git-clone skill-packs rm final dest before write (idempotent
     // git clone <url> <dest> shape preserved (extractCloneTarget dependency)
     expect(cmd).toContain(
       'git clone https://github.com/garrytan/gstack.git ~/.claude/skills/gstack',
-    )
-  })
-
-  it('ui-ux-pro-max: rm -rf final dest precedes cp into it; clone shape intact', async () => {
-    const cmd = await loadCmd('ui-ux-pro-max.yaml')
-    const rmFinalIdx = cmd.indexOf('rm -rf ~/.claude/skills/ui-ux-pro-max ')
-    const cpIdx = cmd.indexOf(
-      'cp -R ~/.claude/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.claude/skills/ui-ux-pro-max',
-    )
-    expect(rmFinalIdx).toBeGreaterThanOrEqual(0)
-    expect(cpIdx).toBeGreaterThan(rmFinalIdx) // rm final dest BEFORE cp
-    // git clone into cache dir unchanged (depth/branch flags preserved)
-    expect(cmd).toContain(
-      'git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.claude/skills/.cache/midway-uiux',
     )
   })
 })

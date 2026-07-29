@@ -53,7 +53,7 @@ harnessed 的三層架構方案是軟體工程上既有的 **BDD → SDD → TDD
 
 這些迴圈是 **巢狀的鏡頭，不是階段** —— 經典的 Cucumber BDD-外環 + TDD-內環雙環，在 GenAI 時代再加一道 SDD spec 環擴展成三環。harnessed 將預設的外→內遍歷跑成它的 5-stage cadence，外加 **它今天就已經落地的 back-edge**：Verify 將失敗工作踢回 Task，撞上灰色地帶的 subagent 在繼續前先 round-trip 回澄清，每條 shipped 的迴圈將 learnings 餵回下一輪 Discuss。（更細粒度的結構化 back-edge —— 例如契約矛盾直接路由回 Spec、模糊需求回 Behavior —— 在 roadmap 上，尚未 ship。harnessed 是三環的線性-cadence 實作；完整的 routed graph 是它的演進路徑。）
 
-**元件重疊 —— 這正是重點。** **GSD** 作為編排骨幹貫穿全部三個迴圈，**gstack** 橫跨 Behavior + Review，**superpowers** 橫跨 Behavior（brainstorm）+ Implementation（TDD）。harnessed 將它們接線 —— 並仲裁重疊 —— 進一個 engine。兩條 **橫切紀律 (cross-cutting disciplines)** 貫穿每一層：**karpathy 原則**（*怎麼* 寫程式碼 —— simplicity-first、surgical diff）+ **mattpocock 招式**（按需的戰術工具，如 `/diagnose`、`/zoom-out`）。
+**元件重疊 —— 這正是重點。** **GSD** 作為編排骨幹貫穿全部三個迴圈，**gstack** 橫跨 Behavior + Review，**superpowers** 橫跨 Behavior（brainstorm）+ Implementation（TDD）。harnessed 將它們接線 —— 並仲裁重疊 —— 進一個 engine。兩條 **橫切紀律 (cross-cutting disciplines)** 貫穿每一層：**karpathy 原則**（*怎麼* 寫程式碼 —— simplicity-first、surgical diff）+ **mattpocock 招式**（按需的戰術工具，如 `/diagnosing-bugs`、`/grill-with-docs`）。
 
 對應到上面的 runtime 迴圈：**Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**，然後 **Verify + Ship** 以證據關卡閉合。
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | 子項 | GSD `/gsd-plan-phase` + planning-with-files `/plan` | 計畫層 —— 持久化 `task_plan.md` + `progress.md` |
 | `/task` | ③ Task | 主控 | masterOrchestrator | 每個子任務串行呼叫 4 個子項（clarify → code → test → deliver） |
 | `/task-clarify` | ③ Task | 子項 | superpowers brainstorming + `/grill-with-docs` conditional | 子任務啟動澄清關卡 |
-| `/task-code` | ③ Task | 子項 | karpathy 4 原則 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | 子任務編碼 + 跨 session 的 progress.md 同步 |
-| `/task-test` | ③ Task | 子項 | superpowers TDD red-green-refactor + `/diagnose` conditional | 核心邏輯 TDD 強制執行（別名 mattpocock `/tdd`） |
+| `/task-code` | ③ Task | 子項 | karpathy 4 原則 + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | 子任務編碼 + 跨 session 的 progress.md 同步 |
+| `/task-test` | ③ Task | 子項 | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | 核心邏輯 TDD 強制執行（別名 mattpocock `/tdd`） |
 | `/task-deliver` | ③ Task | 子項 | `ralph-loop` SDK 包裝器 + Agent Teams conditional | 直到逐字輸出 `COMPLETE` + R20.10 max_iter 退路 |
 | `/verify` | ④ Verify | 主控 | masterOrchestrator | 10 個子項依情境條件分派 |
 | `/verify-progress` | ④ Verify | 子項 | GSD `/gsd-verify-work` + `/gsd-progress` | 強制串行起點 —— UAT 驗收 + 狀態同步 |

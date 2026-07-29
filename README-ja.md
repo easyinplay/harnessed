@@ -53,7 +53,7 @@ harnessed の三層スタックは、ソフトウェアエンジニアリング�
 
 これらのループは **ネストしたレンズであって、フェーズではありません** —— 古典的な Cucumber の BDD-外側 + TDD-内側の二重ループを、GenAI 時代の SDD spec リングで拡張した三重ループです。harnessed はデフォルトの外→内の走査を 5-stage cadence として実行し、加えて **今日すでに出荷している back-edge** を備えます：Verify は失敗した作業を Task へ差し戻し、グレーゾーンに当たった subagent は続行前に澄清へ round-trip し、出荷された各サイクルは learnings を次の Discuss へ送り返します。（より細粒度の構造化された back-edge —— 例えば契約矛盾を直接 Spec へ、曖昧な要件を Behavior へルーティングする —— は roadmap 上にあり、まだ出荷されていません。harnessed は三重ループの線形-cadence な実現形であり、完全な routed graph はその進化経路です。）
 
-**コンポーネントが重なり合う —— それが要点です。** **GSD** はオーケストレーションのバックボーンとして三つのループすべてを貫き、**gstack** は Behavior + Review にまたがり、**superpowers** は Behavior（brainstorm）+ Implementation（TDD）にまたがります。harnessed はそれらを接続し —— 重なりを調停し —— 一つの engine にまとめます。2 つの **横断的な規律 (cross-cutting disciplines)** が各層を貫きます：**karpathy 原則**（*どのように* コードを書くか —— simplicity-first、surgical diff）+ **mattpocock ムーブ**（`/diagnose`、`/zoom-out` などのオンデマンドな戦術ツール）。
+**コンポーネントが重なり合う —— それが要点です。** **GSD** はオーケストレーションのバックボーンとして三つのループすべてを貫き、**gstack** は Behavior + Review にまたがり、**superpowers** は Behavior（brainstorm）+ Implementation（TDD）にまたがります。harnessed はそれらを接続し —— 重なりを調停し —— 一つの engine にまとめます。2 つの **横断的な規律 (cross-cutting disciplines)** が各層を貫きます：**karpathy 原則**（*どのように* コードを書くか —— simplicity-first、surgical diff）+ **mattpocock ムーブ**（`/diagnosing-bugs`、`/grill-with-docs` などのオンデマンドな戦術ツール）。
 
 上の runtime ループへの対応：**Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**、そして **Verify + Ship** が証拠ゲートで閉じます。
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | サブ | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Plan レイヤー —— `task_plan.md` + `progress.md` を永続化 |
 | `/task` | ③ Task | マスター | masterOrchestrator | サブタスクごとに 4 サブを直列呼び出し（clarify → code → test → deliver） |
 | `/task-clarify` | ③ Task | サブ | superpowers brainstorming + `/grill-with-docs` 条件付き | サブタスク開始時の澄清ゲート |
-| `/task-code` | ③ Task | サブ | karpathy 4 原則 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` 条件付き | サブタスクコーディング + クロスセッション progress.md 同期 |
-| `/task-test` | ③ Task | サブ | superpowers TDD red-green-refactor + `/diagnose` 条件付き | コアロジックに TDD 必須（mattpocock `/tdd` のエイリアス） |
+| `/task-code` | ③ Task | サブ | karpathy 4 原則 + `/improve-codebase-architecture` / `/diagnosing-bugs` 条件付き | サブタスクコーディング + クロスセッション progress.md 同期 |
+| `/task-test` | ③ Task | サブ | superpowers TDD red-green-refactor + `/diagnosing-bugs` 条件付き | コアロジックに TDD 必須（mattpocock `/tdd` のエイリアス） |
 | `/task-deliver` | ③ Task | サブ | `ralph-loop` SDK ラッパー + Agent Teams 条件付き | 逐語的 `COMPLETE` まで + R20.10 max_iter フォールバック |
 | `/verify` | ④ Verify | マスター | masterOrchestrator | シナリオ別に 10 サブを条件付きディスパッチ |
 | `/verify-progress` | ④ Verify | サブ | GSD `/gsd-verify-work` + `/gsd-progress` | 必須の直列スタート地点 —— UAT 受け入れ + 状態同期 |

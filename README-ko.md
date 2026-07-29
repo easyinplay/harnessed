@@ -53,7 +53,7 @@ harnessed의 3계층 스택은 확립된 **BDD → SDD → TDD** 중첩의 소�
 
 이 루프들은 Phase가 아니라 **중첩된 렌즈**입니다 — 고전적인 Cucumber BDD-외부 + TDD-내부 이중 루프에, GenAI 시대의 SDD spec 링을 더해 삼중 루프로 확장한 것입니다. harnessed는 기본 외부→내부 순회를 5-Stage 케이던스로 실행하며, 여기에 **오늘 실제로 제공하는 back-edge들**을 더합니다: Verify는 실패한 작업을 Task로 되돌리고, 회색지대에 부딪힌 subagent는 계속하기 전에 명료화로 round-trip하며, 출시된 모든 사이클은 learnings를 다음 Discuss로 되돌려 공급합니다. (더 세분화된 구조적 back-edge — 예: contract 모순이 곧장 Spec으로 라우팅되거나, 모호한 requirement가 Behavior로 라우팅되는 것 — 은 로드맵에 있으며 아직 제공되지 않습니다. harnessed는 삼중 루프의 선형 케이던스 구현이며, 완전히 라우팅된 그래프는 그 진화 경로입니다.)
 
-**컴포넌트들은 중첩됩니다 — 그게 핵심입니다.** **GSD**는 orchestration 백본으로 세 루프 전체를 관통하고, **gstack**은 Behavior + Review에 걸치며, **superpowers**는 Behavior(brainstorm) + Implementation(TDD)에 걸칩니다. harnessed는 이들을 엮고 — 중첩을 중재하여 — 하나의 엔진으로 만듭니다. 두 가지 **cross-cutting 규율**이 모든 계층을 관통합니다: **karpathy 원칙**(*어떻게* 코딩할지 — simplicity-first, surgical diff) + **mattpocock 기법**(`/diagnose`, `/zoom-out` 같은 온디맨드 전술 도구).
+**컴포넌트들은 중첩됩니다 — 그게 핵심입니다.** **GSD**는 orchestration 백본으로 세 루프 전체를 관통하고, **gstack**은 Behavior + Review에 걸치며, **superpowers**는 Behavior(brainstorm) + Implementation(TDD)에 걸칩니다. harnessed는 이들을 엮고 — 중첩을 중재하여 — 하나의 엔진으로 만듭니다. 두 가지 **cross-cutting 규율**이 모든 계층을 관통합니다: **karpathy 원칙**(*어떻게* 코딩할지 — simplicity-first, surgical diff) + **mattpocock 기법**(`/diagnosing-bugs`, `/grill-with-docs` 같은 온디맨드 전술 도구).
 
 위의 런타임 루프에 매핑하면: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, 그다음 **Verify + Ship**이 증거 게이트로 이를 닫습니다.
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | 서브 | GSD `/gsd-plan-phase` + planning-with-files `/plan` | 계획 계층 — `task_plan.md` + `progress.md` 영속화 |
 | `/task` | ③ Task | 마스터 | masterOrchestrator | 서브태스크당 4개 서브 직렬 호출 (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | 서브 | superpowers brainstorming + `/grill-with-docs` 조건부 | 서브태스크 시작 명료화 게이트 |
-| `/task-code` | ③ Task | 서브 | karpathy 4 원칙 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` 조건부 | 서브태스크 코딩 + 크로스 세션 progress.md 동기화 |
-| `/task-test` | ③ Task | 서브 | superpowers TDD red-green-refactor + `/diagnose` 조건부 | 핵심 로직에 TDD 필수 (별칭: mattpocock `/tdd`) |
+| `/task-code` | ③ Task | 서브 | karpathy 4 원칙 + `/improve-codebase-architecture` / `/diagnosing-bugs` 조건부 | 서브태스크 코딩 + 크로스 세션 progress.md 동기화 |
+| `/task-test` | ③ Task | 서브 | superpowers TDD red-green-refactor + `/diagnosing-bugs` 조건부 | 핵심 로직에 TDD 필수 (별칭: mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | 서브 | `ralph-loop` SDK 래퍼 + Agent Teams 조건부 | verbatim `COMPLETE`까지 + R20.10 max_iter 폴백 |
 | `/verify` | ④ Verify | 마스터 | masterOrchestrator | 시나리오별 조건부 디스패치로 10개 서브 실행 |
 | `/verify-progress` | ④ Verify | 서브 | GSD `/gsd-verify-work` + `/gsd-progress` | 필수 직렬 시작점 — UAT 인수 + 상태 동기화 |

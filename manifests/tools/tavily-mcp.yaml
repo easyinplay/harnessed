@@ -31,7 +31,10 @@ spec:
     last_check: "2026-05-11"
     last_known_good_version: 0.2.19
     fallback_action: use_alternative
-    alternative: exa-mcp
+    # 4.32.21 — was exa-mcp; that manifest is deleted (exa is now provided by
+    # the ECC plugin's built-in hosted exa MCP). Alternative points at the
+    # optional ecc manifest (manifests/optional/ecc.yaml).
+    alternative: ecc
   signed_by: easyinplay
   platforms:
     - linux

@@ -24,6 +24,9 @@ triggers:
     description: |
       Exa MCP 覆盖默认 — 描述式查询 / 学术论文 / 批量抓多 URL /
       用户明说"研究/深度调研" / Token 敏感 (Exa highlights 密度约 2× Tavily)。
+      Provider 说明 (4.32.21): exa 由 ECC MCP catalog opt-in 提供
+      (mcp-configs/mcp-servers.json 手动拷入 .mcp.json; ≤2.0.0-rc.1 旧版曾默认
+      bundle); 未 opt-in → 本分支不 fire, 落 tavily-mcp 默认分支 / 内置 WebSearch。
     fires_when: "subtask.needs_web_search == true and subtask.search_type in ['descriptive', 'academic']"
     invokes:
       - capability: exa-mcp

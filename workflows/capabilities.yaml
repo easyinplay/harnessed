@@ -277,7 +277,11 @@ capabilities:
     cmd: web_fetch_exa
     since: v2.0
     category: tool-mcp
-    description: "描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景 — 描述式查询 / 学术 / 批量抓多 URL)"
+    # 4.32.21 — manifests/tools/exa-mcp.yaml 已删;provider = ECC MCP catalog
+    # opt-in (mcp-configs/mcp-servers.json 手动拷入 .mcp.json, hosted
+    # https://mcp.exa.ai/mcp, 同名工具 web_search_exa / web_fetch_exa;
+    # ≤2.0.0-rc.1 旧版曾默认 bundle, 2026-06 MCP connector audit 后退役为 opt-in)。
+    description: "描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景 — 描述式查询 / 学术 / 批量抓多 URL); provider = ECC MCP catalog opt-in (mcp-configs/mcp-servers.json); 未 opt-in 时本 capability 不可用, fallback 走 tavily-mcp / 内置 WebSearch (web-search-routing 已有 fallback 分支)"
     fires_when:
       - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
 

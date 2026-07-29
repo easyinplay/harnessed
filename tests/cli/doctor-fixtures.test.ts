@@ -60,9 +60,9 @@ vi.mock('../../src/cli/lib/check-mattpocock-skills.js', () => ({
 }))
 vi.mock('../../src/cli/lib/check-mcp-availability.js', () => ({
   checkMcpAvailability: () => ({
-    name: 'MCP servers (tavily/exa/chrome-devtools)',
+    name: 'MCP servers (tavily)',
     status: 'pass',
-    message: 'all 3 installed: tavily-mcp, exa-mcp, chrome-devtools',
+    message: 'installed: tavily-mcp',
   }),
 }))
 // Phase 18 — 13th check mock (check-codegraph.ts uses fs existsSync not in the
@@ -235,7 +235,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
           'Agent Teams env', // ← Phase v2.0-2.4 W3 T2.4.W3.1 9th check (D-11)
           'planning-with-files plugin', // ← Phase v2.0-2.4 W3 T2.4.W3.1 10th check (D-15)
           'mattpocock-skills', // ← v3.6.0 Phase 2 Wave 1 11th check (user reframe)
-          'MCP servers (tavily/exa/chrome-devtools)', // ← v3.6.0 Phase 2 Wave 2 12th check (audit P1a)
+          'MCP servers (tavily)', // ← v3.6.0 Phase 2 Wave 2 12th check (audit P1a); 4.32.21 tavily-only
           'codegraph', // ← Phase 18 13th check (opt-in semantic index, always pass)
           'update', // ← Phase 20 14th check (update available, fail-soft pass)
           'bun present', // ← v4.16.1 15th check (warn-only gstack build dep)

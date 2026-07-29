@@ -53,7 +53,7 @@ harnessed'ın üç katmanlı yığını, yerleşik **BDD → SDD → TDD** iç i
 
 Döngüler, aşama değil **iç içe geçmiş merceklerdir** — klasik Cucumber BDD-dış + TDD-iç çift döngüsü, GenAI çağı SDD spec halkasıyla genişletilerek üçlü döngüye dönüştürülmüştür. harnessed, varsayılan dış→iç geçişi 5-aşamalı cadence'ı olarak çalıştırır ve buna **bugün sevk ettiği geri-kenarları (back-edges)** ekler: Verify, başarısız işi Task'a geri gönderir; gri bir alana çarpan bir subagent, devam etmeden önce açıklamaya gidip geri döner; ve sevk edilen her döngü, öğrenimleri bir sonraki Discuss'a geri besler. (Daha ince taneli yapılandırılmış geri-kenarlar — örn. bir contract çelişkisini doğrudan Spec'e, belirsiz bir gereksinimi Behavior'a yönlendirmek — yol haritasındadır, henüz sevk edilmemiştir. harnessed, üçlü döngünün doğrusal-cadence gerçeklemesidir; tam yönlendirilmiş graf onun evrim yoludur.)
 
-**Bileşenler örtüşür — mesele tam da bu.** **GSD**, orkestrasyon omurgası olarak üç döngünün hepsinden geçer; **gstack**, Behavior + Review'ı kapsar; **superpowers**, Behavior (brainstorm) + Implementation (TDD)'i kapsar. harnessed bunları bağlar — ve örtüşmeyi tahkim eder — tek bir motorda. Her katmandan geçen iki **çapraz-kesim disiplini** vardır: **karpathy ilkeleri** (*nasıl* kodlanır — basitlik-önce, cerrahi diff'ler) + **mattpocock hamleleri** (`/diagnose`, `/zoom-out` gibi talep üzerine taktiksel araçlar).
+**Bileşenler örtüşür — mesele tam da bu.** **GSD**, orkestrasyon omurgası olarak üç döngünün hepsinden geçer; **gstack**, Behavior + Review'ı kapsar; **superpowers**, Behavior (brainstorm) + Implementation (TDD)'i kapsar. harnessed bunları bağlar — ve örtüşmeyi tahkim eder — tek bir motorda. Her katmandan geçen iki **çapraz-kesim disiplini** vardır: **karpathy ilkeleri** (*nasıl* kodlanır — basitlik-önce, cerrahi diff'ler) + **mattpocock hamleleri** (`/diagnosing-bugs`, `/grill-with-docs` gibi talep üzerine taktiksel araçlar).
 
 Yukarıdaki çalışma zamanı döngüsüyle eşlenir: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, ardından **Verify + Ship** bunu kanıt kapılarıyla kapatır.
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | Alt | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Plan katmanı — `task_plan.md` + `progress.md` kalıcılaştırır |
 | `/task` | ③ Task | Ana | masterOrchestrator | Her alt görev için 4 alt-workflow seri çağrısı (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | Alt | superpowers brainstorming + `/grill-with-docs` koşullu | Alt görev başlangıç açıklama kapısı |
-| `/task-code` | ③ Task | Alt | karpathy 4 ilkesi + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` koşullu | Alt görev kodlama + çapraz oturum progress.md senkronizasyonu |
-| `/task-test` | ③ Task | Alt | superpowers TDD red-green-refactor + `/diagnose` koşullu | Temel mantık için TDD zorunlu (mattpocock `/tdd` takma adı) |
+| `/task-code` | ③ Task | Alt | karpathy 4 ilkesi + `/improve-codebase-architecture` / `/diagnosing-bugs` koşullu | Alt görev kodlama + çapraz oturum progress.md senkronizasyonu |
+| `/task-test` | ③ Task | Alt | superpowers TDD red-green-refactor + `/diagnosing-bugs` koşullu | Temel mantık için TDD zorunlu (mattpocock `/tdd` takma adı) |
 | `/task-deliver` | ③ Task | Alt | `ralph-loop` SDK sarmalayıcı + Agent Teams koşullu | Verbatim `COMPLETE` alınana kadar + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Ana | masterOrchestrator | 10 alt-workflow senaryoya göre koşullu dağıtım |
 | `/verify-progress` | ④ Verify | Alt | GSD `/gsd-verify-work` + `/gsd-progress` | Zorunlu seri başlangıç noktası — UAT kabulü + durum senkronizasyonu |

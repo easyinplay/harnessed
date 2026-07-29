@@ -1,6 +1,8 @@
 // v4.14.0 T3 REVISED — spec.harness_overrides.codex: schema 接受 + runInstall
 // dispatch 前按平台合并 + 无 override 的 claude-only method 兜底 harness-mismatch。
 
+import { readFileSync } from 'node:fs'
+import { resolve as resolvePath } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveForHarness } from '../../src/installers/index.js'
@@ -189,6 +191,41 @@ spec:
     const v = validateManifestFile(yaml, 'superpowers.yaml')
     expect(v.ok).toBe(true)
   })
+})
+
+// 4.32.21 — codex dispatch cells for the plugin-form manifests (T6/T7/T9).
+// cc-plugin-marketplace is CLAUDE_ONLY; each of these REAL manifests must carry
+// a harness_overrides.codex block so codex resolves to an installable method
+// instead of the harness-mismatch gate (regression guard: the pre-4.32.21
+// chrome-devtools mcp-stdio-add manifest installed fine on codex).
+describe('codex dispatch — 4.32.21 plugin-form real manifests (T6/T7/T9)', () => {
+  const CELLS = [
+    { yamlPath: 'manifests/tools/chrome-devtools-mcp.yaml', codexMethod: 'mcp-stdio-add' },
+    { yamlPath: 'manifests/skill-packs/ui-ux-pro-max.yaml', codexMethod: 'git-clone-with-setup' },
+    { yamlPath: 'manifests/optional/ecc.yaml', codexMethod: 'git-clone-with-setup' },
+  ] as const
+
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  for (const c of CELLS) {
+    it(`${c.yamlPath} — codex resolves to ${c.codexMethod}, no harness-mismatch gate`, () => {
+      const p = resolvePath(process.cwd(), c.yamlPath)
+      const v = validateManifestFile(readFileSync(p, 'utf8'), c.yamlPath)
+      expect(v.ok, `${c.yamlPath} schema validate must pass`).toBe(true)
+      if (!v.ok) return
+      // base install stays cc-plugin-marketplace (claude path unchanged)
+      expect(v.manifest.spec.install.method).toBe('cc-plugin-marketplace')
+      const r = resolveForHarness(v.manifest as unknown as Manifest)
+      expect(r.gate).toBeNull()
+      expect(r.manifest.spec.install.method).toBe(c.codexMethod)
+    })
+  }
 })
 
 // v4.14.0 — 全量真实 manifest schema 校验 sweep(harness_overrides 落地的 5 个

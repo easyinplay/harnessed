@@ -1,41 +1,54 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# 4.32.21 — install method changed from `git-clone-with-setup` (self-pack:
+# clone midwayjs/midway v4-next, cp .codex/skills/ui-ux-pro-max into
+# ~/.claude/skills) to `cc-plugin-marketplace` — the official
+# nextlevelbuilder/ui-ux-pro-max-skill plugin supersedes the git self-pack
+# (auto-updating, kills the plugin-skill + user-skill dual-load). Third-party
+# marketplace ⇒ two-stage cmd (`marketplace add` first); sister
+# karpathy-skills.yaml pattern. codex keeps the midway git-clone path via
+# harness_overrides (`claude plugin` is a Claude Code-only concept).
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: ui-ux-pro-max
-  display_name: ui-ux-pro-max (midwayjs/midway)
-  description: Data-driven, standards-based UI/UX expert skill (Codex skill ported via git-clone-with-setup; v4-next branch).
+  display_name: ui-ux-pro-max
+  description: Data-driven, standards-based UI/UX expert skill, installed as the official ui-ux-pro-max Claude Code plugin.
   upstream:
     source: midwayjs/midway
     homepage: https://github.com/midwayjs/midway/tree/v4-next/.codex/skills/ui-ux-pro-max
     repository: https://github.com/midwayjs/midway.git
     license: MIT
     notice: |
-      ui-ux-pro-max skill from midwayjs/midway v4-next branch (Codex skill ported to Claude Code skills/).
-      D1.3-5 path B 主推 (avoids vercel-labs/skills issue #373 update break on non-main branches).
+      ui-ux-pro-max skill (MIT), distributed as a Claude Code plugin via the
+      nextlevelbuilder/ui-ux-pro-max-skill marketplace (4.32.21 — supersedes
+      the git-clone-with-setup self-pack from midwayjs/midway v4-next, which
+      dual-loaded next to the plugin). Third-party marketplace ⇒ two-stage
+      install (`claude plugin marketplace add` + `claude plugin install`).
+      codex installs still use the midway git-clone path (harness_overrides).
 spec:
-  type: cc-skill-pack
+  type: cc-plugin
   component_type: command
   category: design
-  install_type: git
+  install_type: skill
   install:
-    method: git-clone-with-setup
-    cmd: "rm -rf ~/.claude/skills/.cache/midway-uiux && git clone --depth 1 --branch v4-next https://github.com/midwayjs/midway.git ~/.claude/skills/.cache/midway-uiux && mkdir -p ~/.claude/skills && rm -rf ~/.claude/skills/ui-ux-pro-max && cp -R ~/.claude/skills/.cache/midway-uiux/.codex/skills/ui-ux-pro-max ~/.claude/skills/ui-ux-pro-max && rm -rf ~/.claude/skills/.cache/midway-uiux"
-    git_ref: e89d70e4bcd0ae04709a773db549cf61fcf813ac
-    idempotent_check: "test -f ~/.claude/skills/ui-ux-pro-max/SKILL.md"
-    # 4.23.0 (issue #3 req 5) — single skill copied from upstream .codex/skills.
-    installs_skills:
-      - ui-ux-pro-max
+    method: cc-plugin-marketplace
+    cmd: "claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill && claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill"
+    # 4.32.21 — local marketplace cache 实测版本 (~/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/)
+    git_ref: 2.5.0
+    idempotent_check: "claude plugin list 2>&1 | grep -qw ui-ux-pro-max"
+    marketplace_source:
+      source: github
+      repo: nextlevelbuilder/ui-ux-pro-max-skill
   verify:
-    cmd: "test -f ~/.claude/skills/ui-ux-pro-max/SKILL.md"
-    timeout_ms: 5000
-    expected_exit_code: 0
+    cmd: "claude plugin list 2>&1 | grep -qw ui-ux-pro-max"
+    timeout_ms: 10000
   uninstall:
-    cmd: "rm -rf ~/.claude/skills/ui-ux-pro-max"
-    cleanup_paths:
-      - ~/.claude/skills/ui-ux-pro-max
-  # v4.14.0 — codex install path: 上游源码本体就在 midway .codex/skills/(findings
-  # 附录),override 仅把 cp 目标换到共享 ~/.agents/skills(codex descriptor skillsDir)。
+    cmd: "claude plugin uninstall ui-ux-pro-max@ui-ux-pro-max-skill"
+  # v4.14.0 — codex install path unchanged by the 4.32.21 plugin migration:
+  # `claude plugin` does not exist on codex, so codex keeps the upstream midway
+  # .codex/skills git-clone into shared ~/.agents/skills (codex descriptor
+  # skillsDir).
   harness_overrides:
     codex:
       install:
@@ -47,9 +60,9 @@ spec:
         cmd: "test -f ~/.agents/skills/ui-ux-pro-max/SKILL.md"
         timeout_ms: 5000
   upstream_health:
-    stability: beta
-    last_check: "2026-05-13"
-    last_known_good_version: v4-next-e89d70e4bcd0
+    stability: stable
+    last_check: "2026-07-29"
+    last_known_good_version: "2.5.0"
     fallback_action: warn
   signed_by: easyinplay
   platforms:

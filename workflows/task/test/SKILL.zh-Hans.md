@@ -59,7 +59,7 @@ SDK，用户发出明确信号时可切换至 mattpocock /tdd 别名路径。
 ## 条件式 diagnose 调用（D-05 invokes_tools）
 
 阶段 01-test 在 `test_fail == true` 时条件性触发 `diagnose`（capabilities.yaml L55-64 mattpocock-skills
-/diagnose）— 对应 sister CLAUDE.md「系统化排错」模式；
+/diagnosing-bugs）— 对应 sister CLAUDE.md「系统化排错」模式；
 测试失败时进入 diagnose 循环（reproduce → minimise → hypothesise → instrument →
 fix → regression-test），测试通过则完全跳过 diagnose。
 

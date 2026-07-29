@@ -53,7 +53,7 @@ three-layer stack của harnessed là một hiện thực hóa kỹ thuật ph�
 
 Các vòng lặp là **những lăng kính lồng nhau, không phải các phase** — chính là double-loop kinh điển của Cucumber BDD-outer + TDD-inner, mở rộng với một vòng spec SDD thời GenAI thành triple-loop. harnessed chạy traversal outer→inner mặc định như cadence 5-stage của nó, cộng với các **back-edge mà nó ship ngày hôm nay**: Verify đẩy công việc thất bại quay lại Task, một subagent gặp vùng xám sẽ round-trip về clarification trước khi tiếp tục, và mỗi chu kỳ đã ship đưa learnings quay lại Discuss tiếp theo. (Các back-edge có cấu trúc mịn hơn — ví dụ một mâu thuẫn contract định tuyến thẳng về Spec, một requirement mơ hồ về Behavior — đang nằm trên roadmap, chưa ship. harnessed là hiện thực hóa linear-cadence của triple-loop; đồ thị routed đầy đủ là con đường tiến hóa của nó.)
 
-**Các thành phần chồng chéo — đó chính là điểm mấu chốt.** **GSD** xuyên suốt cả ba vòng lặp như xương sống orchestration, **gstack** trải dài Behavior + Review, **superpowers** trải dài Behavior (brainstorm) + Implementation (TDD). harnessed kết nối chúng — và phân xử phần chồng chéo — thành một engine duy nhất. Hai **kỷ luật xuyên suốt** chạy qua mọi tầng: **karpathy principles** (*làm sao* viết code — simplicity-first, surgical diffs) + **mattpocock moves** (công cụ chiến thuật theo nhu cầu như `/diagnose`, `/zoom-out`).
+**Các thành phần chồng chéo — đó chính là điểm mấu chốt.** **GSD** xuyên suốt cả ba vòng lặp như xương sống orchestration, **gstack** trải dài Behavior + Review, **superpowers** trải dài Behavior (brainstorm) + Implementation (TDD). harnessed kết nối chúng — và phân xử phần chồng chéo — thành một engine duy nhất. Hai **kỷ luật xuyên suốt** chạy qua mọi tầng: **karpathy principles** (*làm sao* viết code — simplicity-first, surgical diffs) + **mattpocock moves** (công cụ chiến thuật theo nhu cầu như `/diagnosing-bugs`, `/grill-with-docs`).
 
 Ánh xạ tới runtime loop ở trên: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, sau đó **Verify + Ship** khép lại bằng các evidence gate.
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Tầng Plan — lưu `task_plan.md` + `progress.md` |
 | `/task` | ③ Task | Master | masterOrchestrator | Gọi nối tiếp 4 sub cho mỗi subtask (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` có điều kiện | Gate làm rõ khi bắt đầu subtask |
-| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` có điều kiện | Coding subtask + đồng bộ progress.md xuyên session |
-| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` có điều kiện | TDD bắt buộc cho logic cốt lõi (alias mattpocock `/tdd`) |
+| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` có điều kiện | Coding subtask + đồng bộ progress.md xuyên session |
+| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` có điều kiện | TDD bắt buộc cho logic cốt lõi (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams có điều kiện | Đến khi verbatim `COMPLETE` + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 sub dispatch có điều kiện theo scenario |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Điểm bắt đầu nối tiếp bắt buộc — chấp nhận UAT + đồng bộ state |

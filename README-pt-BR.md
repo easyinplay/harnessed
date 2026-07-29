@@ -53,7 +53,7 @@ A stack de três camadas do harnessed é uma implementação de engenharia de so
 
 Os loops são **lentes aninhadas, não fases** — o clássico duplo-loop Cucumber BDD-externo + TDD-interno, estendido com um anel de spec SDD da era GenAI em um triplo-loop. O harnessed roda a travessia padrão externo→interno como sua cadência de 5 stages, mais as **back-edges que ele já entrega hoje**: o Verify chuta o trabalho que falhou de volta ao Task, um subagent que atinge uma área cinzenta faz round-trip até a clarificação antes de continuar, e cada ciclo entregue realimenta os learnings no próximo Discuss. (Back-edges estruturadas mais granulares — por exemplo, uma contradição de contract roteando direto para o Spec, um requisito ambíguo para o Behavior — estão no roadmap, não foram entregues. O harnessed é a realização de cadência linear do triplo-loop; o grafo roteado completo é o seu caminho de evolução.)
 
-**Os componentes se sobrepõem — esse é o ponto.** O **GSD** atravessa todos os três loops como a espinha dorsal de orquestração, o **gstack** abrange Behavior + Review, o **superpowers** abrange Behavior (brainstorm) + Implementation (TDD). O harnessed os conecta — e arbitra a sobreposição — em um único motor. Duas **disciplinas transversais** percorrem cada camada: **princípios karpathy** (*como* codificar — simplicity-first, diffs cirúrgicos) + **movimentos mattpocock** (ferramentas táticas sob demanda como `/diagnose`, `/zoom-out`).
+**Os componentes se sobrepõem — esse é o ponto.** O **GSD** atravessa todos os três loops como a espinha dorsal de orquestração, o **gstack** abrange Behavior + Review, o **superpowers** abrange Behavior (brainstorm) + Implementation (TDD). O harnessed os conecta — e arbitra a sobreposição — em um único motor. Duas **disciplinas transversais** percorrem cada camada: **princípios karpathy** (*como* codificar — simplicity-first, diffs cirúrgicos) + **movimentos mattpocock** (ferramentas táticas sob demanda como `/diagnosing-bugs`, `/grill-with-docs`).
 
 Mapeado ao loop de runtime acima: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, e então **Verify + Ship** o fecham com gates de evidência.
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Camada de plano — persiste `task_plan.md` + `progress.md` |
 | `/task` | ③ Task | Master | masterOrchestrator | Invocação serial de 4 subs por subtask (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` condicional | Gate de clarificação no início da subtask |
-| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` condicional | Codificação da subtask + sincronização cross-session de progress.md |
-| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` condicional | TDD obrigatório para lógica central (alias mattpocock `/tdd`) |
+| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` condicional | Codificação da subtask + sincronização cross-session de progress.md |
+| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` condicional | TDD obrigatório para lógica central (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | wrapper SDK `ralph-loop` + Agent Teams condicional | Até `COMPLETE` verbatim + fallback max_iter R20.10 |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs com Dispatcher condicional por cenário |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Ponto de partida serial obrigatório — aceitação UAT + sincronização de estado |

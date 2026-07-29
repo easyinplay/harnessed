@@ -52,6 +52,26 @@ spec:
     timeout_ms: 10000
   uninstall:
     cmd: "claude plugin uninstall ecc@ecc"
+  # 4.32.21 — codex channel. ECC is multi-harness: CC = plugin marketplace
+  # (above); codex = README-recommended sync flow (clone + scripts/
+  # sync-ecc-to-codex.sh, which merges AGENTS.md/skills/prompts/agents into
+  # ~/.codex with timestamped backups; codex marketplace route is experimental
+  # and NOT recommended upstream — "pick one path only per harness").
+  # Prerequisite: run Codex once so ~/.codex/config.toml exists. The clone is
+  # KEPT (gstack-style pre-clean, not self-cleaning) so D-15 SHA-verify can
+  # rev-parse it against git_ref. idempotent/verify are WEAK checks — they
+  # probe the kept clone cache, not the ~/.codex merge state (sync output has
+  # no stable pinned artifact contract).
+  harness_overrides:
+    codex:
+      install:
+        method: git-clone-with-setup
+        cmd: "rm -rf ~/.codex/.cache/ecc && git clone https://github.com/affaan-m/ECC.git ~/.codex/.cache/ecc && cd ~/.codex/.cache/ecc && bash scripts/sync-ecc-to-codex.sh"
+        git_ref: ec92b528471df708c2384ebbcc82b390b60f535a
+        idempotent_check: "test -d ~/.codex/.cache/ecc/.git"
+      verify:
+        cmd: "test -d ~/.codex/.cache/ecc/.git"
+        timeout_ms: 10000
   upstream_health:
     stability: unstable
     last_check: "2026-06-17"

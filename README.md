@@ -51,7 +51,7 @@ harnessed's three-layer stack is a software-engineering implementation of the es
 
 The loops are **nested lenses, not phases** — the classic Cucumber BDD-outer + TDD-inner double-loop, extended with a GenAI-era SDD spec ring into a triple-loop. harnessed runs the default outer→inner traversal as its 5-stage cadence, plus the **back-edges it ships today**: Verify kicks failing work back to Task, a subagent that hits a gray area round-trips to clarification before continuing, and every shipped cycle feeds learnings back into the next Discuss. (Finer-grained structured back-edges — e.g. a contract contradiction routing straight to Spec, an ambiguous requirement to Behavior — are on the roadmap, not shipped. harnessed is the linear-cadence realization of the triple-loop; the full routed graph is its evolution path.)
 
-**The components overlap — that's the point.** **GSD** threads through all three loops as the orchestration backbone, **gstack** spans Behavior + Review, **superpowers** spans Behavior (brainstorm) + Implementation (TDD). harnessed wires them — and arbitrates the overlap — into one engine. Two **cross-cutting disciplines** run through every layer: **karpathy principles** (*how* to code — simplicity-first, surgical diffs) + **mattpocock moves** (on-demand tactical tools like `/diagnose`, `/zoom-out`).
+**The components overlap — that's the point.** **GSD** threads through all three loops as the orchestration backbone, **gstack** spans Behavior + Review, **superpowers** spans Behavior (brainstorm) + Implementation (TDD). harnessed wires them — and arbitrates the overlap — into one engine. Two **cross-cutting disciplines** run through every layer: **karpathy principles** (*how* to code — simplicity-first, surgical diffs) + **mattpocock moves** (on-demand tactical tools like `/diagnosing-bugs`, `/grill-with-docs`).
 
 Mapped to the runtime loop above: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, then **Verify + Ship** close it with evidence gates.
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Plan layer — persists `task_plan.md` + `progress.md` |
 | `/task` | ③ Task | Master | masterOrchestrator | Serial invoke of 4 subs per subtask (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | Subtask startup clarification gate |
-| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | Subtask coding + cross-session progress.md sync |
-| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | TDD mandatory for core logic (alias mattpocock `/tdd`) |
+| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | Subtask coding + cross-session progress.md sync |
+| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | TDD mandatory for core logic (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | Until verbatim `COMPLETE` + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs conditional dispatch by scenario |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Mandatory serial starting point — UAT acceptance + state sync |

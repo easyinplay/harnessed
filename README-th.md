@@ -53,7 +53,7 @@ three-layer stack ของ harnessed คือการ implement แบบ sof
 
 ลูปเหล่านี้เป็น **เลนส์ที่ซ้อนกัน ไม่ใช่ phase** — double-loop คลาสสิกแบบ Cucumber ที่ BDD-outer + TDD-inner ขยายด้วยวง SDD spec ในยุค GenAI ให้กลายเป็น triple-loop harnessed รัน traversal แบบ outer→inner เป็น default ในรูปของ cadence 5 stage บวกกับ **back-edges ที่ ship แล้วในวันนี้**: Verify เตะงานที่ล้มเหลวกลับไปยัง Task, subagent ที่ชน gray area จะ round-trip กลับไป clarification ก่อนดำเนินต่อ และทุกรอบที่ ship แล้วจะป้อน learnings กลับเข้าสู่ Discuss ถัดไป (back-edges เชิงโครงสร้างที่ละเอียดกว่านี้ — เช่น การขัดแย้งของ contract route ตรงไป Spec, requirement ที่กำกวม route ไป Behavior — อยู่ใน roadmap ยังไม่ ship harnessed คือการ realize triple-loop ในรูปแบบ linear-cadence ส่วน routed graph เต็มรูปแบบคือเส้นทางวิวัฒนาการของมัน)
 
-**component ทับซ้อนกัน — และนั่นคือประเด็น** **GSD** ร้อยผ่านทั้งสามลูปในฐานะแกนหลัก (backbone) ของ orchestration, **gstack** ครอบคลุม Behavior + Review, **superpowers** ครอบคลุม Behavior (brainstorm) + Implementation (TDD) harnessed ร้อยเรียงพวกมัน — และตัดสินการทับซ้อน — เข้าเป็น engine เดียว มี **วินัยข้ามชั้น (cross-cutting disciplines)** สองอย่างที่ทำงานทะลุทุก layer: **karpathy principles** (*วิธี* เขียนโค้ด — simplicity-first, surgical diffs) + **mattpocock moves** (เครื่องมือเชิงกลยุทธ์ตามต้องการ เช่น `/diagnose`, `/zoom-out`)
+**component ทับซ้อนกัน — และนั่นคือประเด็น** **GSD** ร้อยผ่านทั้งสามลูปในฐานะแกนหลัก (backbone) ของ orchestration, **gstack** ครอบคลุม Behavior + Review, **superpowers** ครอบคลุม Behavior (brainstorm) + Implementation (TDD) harnessed ร้อยเรียงพวกมัน — และตัดสินการทับซ้อน — เข้าเป็น engine เดียว มี **วินัยข้ามชั้น (cross-cutting disciplines)** สองอย่างที่ทำงานทะลุทุก layer: **karpathy principles** (*วิธี* เขียนโค้ด — simplicity-first, surgical diffs) + **mattpocock moves** (เครื่องมือเชิงกลยุทธ์ตามต้องการ เช่น `/diagnosing-bugs`, `/grill-with-docs`)
 
 แมปกับ runtime loop ด้านบน: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)** จากนั้น **Verify + Ship** ปิดงานด้วย evidence gate
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Plan layer — บันทึก `task_plan.md` + `progress.md` |
 | `/task` | ③ Task | Master | masterOrchestrator | เรียก 4 subs แบบ serial ต่อ subtask (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | Subtask startup clarification gate |
-| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | Subtask coding + sync progress.md ข้าม session |
-| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | TDD บังคับสำหรับ core logic (alias mattpocock `/tdd`) |
+| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | Subtask coding + sync progress.md ข้าม session |
+| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | TDD บังคับสำหรับ core logic (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | จนกว่าจะได้ `COMPLETE` ตรงตัว + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs conditional dispatch ตามสถานการณ์ |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | จุดเริ่มต้น serial บังคับ — UAT acceptance + state sync |

@@ -51,7 +51,7 @@ harnessed 的三层栈方案是软件工程上既有的 **BDD → SDD → TDD** 
 
 这些循环是 **嵌套的镜头,不是阶段** —— 经典的 Cucumber BDD-外环 + TDD-内环双环,在 GenAI 时代再加一道 SDD spec 环扩展成三环。harnessed 把默认的外→内遍历跑成它的 5-stage cadence,外加 **它今天就已经落地的 back-edge**: Verify 把失败工作踢回 Task,撞上灰色地带的 subagent 在继续前先 round-trip 回澄清,每条 shipped 的循环把 learnings 喂回下一轮 Discuss。(更细粒度的结构化 back-edge —— 例如契约矛盾直接路由回 Spec、模糊需求回 Behavior —— 在 roadmap 上,尚未 ship。harnessed 是三环的线性-cadence 实现;完整的 routed graph 是它的演进路径。)
 
-**组件重叠 —— 这正是重点。** **GSD** 作为编排骨干贯穿全部三个循环,**gstack** 横跨 Behavior + Review,**superpowers** 横跨 Behavior (brainstorm) + Implementation (TDD)。harnessed 把它们接线 —— 并仲裁重叠 —— 进一个 engine。两条 **横切纪律 (cross-cutting disciplines)** 贯穿每一层: **karpathy 心法** (*怎么* 写代码 —— simplicity-first、surgical diff) + **mattpocock 招式** (按需的战术工具,如 `/diagnose`、`/zoom-out`)。
+**组件重叠 —— 这正是重点。** **GSD** 作为编排骨干贯穿全部三个循环,**gstack** 横跨 Behavior + Review,**superpowers** 横跨 Behavior (brainstorm) + Implementation (TDD)。harnessed 把它们接线 —— 并仲裁重叠 —— 进一个 engine。两条 **横切纪律 (cross-cutting disciplines)** 贯穿每一层: **karpathy 心法** (*怎么* 写代码 —— simplicity-first、surgical diff) + **mattpocock 招式** (按需的战术工具,如 `/diagnosing-bugs`、`/grill-with-docs`)。
 
 对应到上面的 runtime 循环: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**,然后 **Verify + Ship** 用证据关卡闭合。
 
@@ -264,8 +264,8 @@ graph TD
 | `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | 计划层 —— 持久化 `task_plan.md` + `progress.md` |
 | `/task` | ③ Task | Master | masterOrchestrator | 每子任务串行 invoke 4 sub (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | 子任务起步澄清 gate |
-| `/task-code` | ③ Task | Sub | karpathy 4 心法 + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` conditional | 子任务编码 + 跨 session progress.md 同步 |
-| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnose` conditional | 核心逻辑 TDD 强制 (alias mattpocock `/tdd`) |
+| `/task-code` | ③ Task | Sub | karpathy 4 心法 + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | 子任务编码 + 跨 session progress.md 同步 |
+| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | 核心逻辑 TDD 强制 (alias mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | 至 verbatim `COMPLETE` + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 sub 按场景 conditional dispatch |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | 必跑串行起点 —— UAT 验收 + 状态同步 |

@@ -78,9 +78,9 @@ vi.mock('../../src/cli/lib/check-mattpocock-skills.js', () => ({
 }))
 vi.mock('../../src/cli/lib/check-mcp-availability.js', () => ({
   checkMcpAvailability: () => ({
-    name: 'MCP servers (tavily/exa/chrome-devtools)',
+    name: 'MCP servers (tavily)',
     status: 'pass',
-    message: 'all 3 installed: tavily-mcp, exa-mcp, chrome-devtools',
+    message: 'installed: tavily-mcp',
   }),
 }))
 // Phase 18 — 13th check mock (same reason: check-codegraph.ts uses fs existsSync
@@ -205,7 +205,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     expect(p.checks.map((c) => c.name)).toContain('planning-with-files plugin')
     // v3.6.0 Phase 2 Wave 3 — 11th + 12th check assertions (mattpocock + MCP avail)
     expect(p.checks.map((c) => c.name)).toContain('mattpocock-skills')
-    expect(p.checks.map((c) => c.name)).toContain('MCP servers (tavily/exa/chrome-devtools)')
+    expect(p.checks.map((c) => c.name)).toContain('MCP servers (tavily)')
     // Phase 18 — 13th check (opt-in codegraph detect, always pass)
     expect(p.checks.map((c) => c.name)).toContain('codegraph')
     // Phase 20 — 14th check (update available, fail-soft pass)

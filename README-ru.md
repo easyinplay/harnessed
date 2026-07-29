@@ -53,7 +53,7 @@ Three-layer stack у harnessed — это программно-инженерн�
 
 Циклы — это **вложенные линзы, а не фазы**: классический Cucumber-овский двойной цикл BDD-снаружи + TDD-внутри, расширенный кольцом SDD-spec эпохи GenAI до тройного цикла. harnessed запускает обход по умолчанию outer→inner как свой 5-стадийный ритм, плюс **обратные рёбра, которые он поставляет уже сегодня**: Verify отбрасывает провалившуюся работу обратно в Task, subagent, наткнувшийся на серую зону, делает round-trip к прояснению перед продолжением, а каждый отгруженный цикл возвращает learnings в следующий Discuss. (Более мелкозернистые структурированные обратные рёбра — например, противоречие контракта, маршрутизируемое прямо в Spec, или неоднозначное требование в Behavior — на roadmap, но ещё не поставлены. harnessed — это реализация тройного цикла в линейном ритме; полный маршрутизируемый граф — его эволюционный путь.)
 
-**Компоненты пересекаются — в этом и суть.** **GSD** проходит сквозь все три цикла как orchestration-хребет, **gstack** охватывает Behavior + Review, **superpowers** охватывает Behavior (brainstorm) + Implementation (TDD). harnessed связывает их — и арбитрирует пересечение — в один движок. Две **сквозные дисциплины** проходят через каждый уровень: **karpathy principles** (*как* писать код — simplicity-first, surgical diffs) + **mattpocock moves** (тактические инструменты по требованию, такие как `/diagnose`, `/zoom-out`).
+**Компоненты пересекаются — в этом и суть.** **GSD** проходит сквозь все три цикла как orchestration-хребет, **gstack** охватывает Behavior + Review, **superpowers** охватывает Behavior (brainstorm) + Implementation (TDD). harnessed связывает их — и арбитрирует пересечение — в один движок. Две **сквозные дисциплины** проходят через каждый уровень: **karpathy principles** (*как* писать код — simplicity-first, surgical diffs) + **mattpocock moves** (тактические инструменты по требованию, такие как `/diagnosing-bugs`, `/grill-with-docs`).
 
 Соотнесено с рантайм-циклом выше: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, затем **Verify + Ship** замыкают всё с evidence-воротами.
 
@@ -266,8 +266,8 @@ graph TD
 | `/plan-phase` | ② Plan | Суб | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Уровень плана — сохраняет `task_plan.md` + `progress.md` |
 | `/task` | ③ Task | Мастер | masterOrchestrator | Последовательный вызов 4 суб-воркфлоу на подзадачу (clarify → code → test → deliver) |
 | `/task-clarify` | ③ Task | Суб | superpowers brainstorming + `/grill-with-docs` условно | Ворота прояснения при запуске подзадачи |
-| `/task-code` | ③ Task | Суб | karpathy 4 principles + `/zoom-out` / `/improve-codebase-architecture` / `/diagnose` условно | Написание кода для подзадачи + синхронизация progress.md между сессиями |
-| `/task-test` | ③ Task | Суб | superpowers TDD red-green-refactor + `/diagnose` условно | TDD обязателен для основной логики (псевдоним mattpocock `/tdd`) |
+| `/task-code` | ③ Task | Суб | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` условно | Написание кода для подзадачи + синхронизация progress.md между сессиями |
+| `/task-test` | ③ Task | Суб | superpowers TDD red-green-refactor + `/diagnosing-bugs` условно | TDD обязателен для основной логики (псевдоним mattpocock `/tdd`) |
 | `/task-deliver` | ③ Task | Суб | `ralph-loop` SDK wrapper + Agent Teams условно | До verbatim `COMPLETE` + R20.10 откат при max_iter |
 | `/verify` | ④ Verify | Мастер | masterOrchestrator | 10 суб-воркфлоу с условной диспетчеризацией по сценарию |
 | `/verify-progress` | ④ Verify | Суб | GSD `/gsd-verify-work` + `/gsd-progress` | Обязательная последовательная точка входа — приёмка UAT + синхронизация состояния |

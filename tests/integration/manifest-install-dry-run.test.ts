@@ -58,9 +58,19 @@ const CASES: DryRunCase[] = [
   {
     name: 'chrome-devtools-mcp',
     yamlPath: 'manifests/tools/chrome-devtools-mcp.yaml',
-    // T1.5 DEVIATION: plan T1.5 example said mcp-http-add; we landed mcp-stdio-add
-    // (Rule 1 BUG fix — no HTTP endpoint upstream, npm stdio MCP per research § 3.3).
-    expectedMethod: 'mcp-stdio-add',
+    // T1.5 landed mcp-stdio-add (npx chrome-devtools-mcp@^0.1.0); 4.32.21
+    // migrated to cc-plugin-marketplace — official claude-plugins-official
+    // plugin (auto-updating, fuller toolset) supersedes the pinned npm stdio.
+    expectedMethod: 'cc-plugin-marketplace',
+  },
+  {
+    name: 'ui-ux-pro-max',
+    yamlPath: 'manifests/skill-packs/ui-ux-pro-max.yaml',
+    // Originally git-clone-with-setup (midwayjs/midway v4-next self-pack);
+    // 4.32.21 migrated to cc-plugin-marketplace — official
+    // nextlevelbuilder/ui-ux-pro-max-skill plugin supersedes the git self-pack
+    // (kills the dual-load of plugin skill + user-skill copy).
+    expectedMethod: 'cc-plugin-marketplace',
   },
   // Phase 2.3 W6 DI-1 hotfix — karpathy-skills.yaml schema-only validation
   // moved to dedicated test below (not in 5-manifest dry-run dispatch list).
