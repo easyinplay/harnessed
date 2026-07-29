@@ -86,7 +86,7 @@ Native ajanlar size ilkeller (primitives) verir; harnessed onları bir metodoloj
 |---|---|---|---|
 | **Workflow / metodoloji** | Yalnızca ilkeller — akışı her seferinde siz tasarlarsınız | Daha az ilkel — prompt başına serbest stil | Kodlanmış **Discuss→Ship** 5-aşama üç katmanlı yığın motoru — BDD + SDD + TDD döngüleri + 2 çapraz-kesim (Review + Ship) |
 | **Talimat enjeksiyonu** | `CLAUDE.md` + skill'ler + hook'lar var, ama statik ve elle bağlanmış | Yalnızca `AGENTS.md` — skill/hook yok | Tur başına breadcrumb hook + görev kapsamlı yönlendirme + her döngüde enjekte edilen öğrenimler |
-| **Durum / ilerleme** | Sohbet bağlamı — `/clear` / compaction'da kaybolur | Sohbet bağlamı — kalıcılık katmanı yok | Diskte `.planning/` + `current-workflow.json` defteri + checkpoint kanıtı |
+| **Durum / ilerleme** | Sohbet bağlamı — `/clear` / compaction'da kaybolur | Sohbet bağlamı — kalıcılık katmanı yok | Diskte `.planning/` + repo başına `workflows.json` defteri + checkpoint kanıtı |
 | **Oturumlar arası kurtarma** | Bağlamı elle yeniden açıklayın | Bağlamı elle yeniden açıklayın | `harnessed status --recover`: buradasınız + sonraki adım |
 | **Doğrulama / "bitti"** | Ajan kendini "bitti" diye bildirir | Ajan kendini "bitti" diye bildirir | Bağımsız inceleme subagent'ları + **fail-CLOSED kanıt koruması** (eksik artifact = bitmemiş) |
 | **Subagent orkestrasyonu** | Subagent + Agent Teams mevcut, ama elle orkestre edilir | Subagent/team ilkeli yok | `gates → prompt → spawn → checkpoint`; Agent Teams göreve göre otomatik etkin |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff tasarım belgesi öz-içerikli
 ├── routing/                    # L4: yönlendirme motoru SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (IDE / CI tarafından kullanılır)
-├── src/                        # L4: TS motoru (workflow + routing + cli + installer'lar + checkpoint + audit + state)
+├── src/                        # L4: TS motoru (platform + workflow + routing + cli + installer'lar + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI kapısı (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # proje belleği (STATE + ROADMAP + REQUIREMENTS + phase başına + milestone'lar)
@@ -502,13 +502,13 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `harnessed resume` | Oturum kesintisinden sonra en son checkpoint'ten devam eder |
 | `harnessed status` | Mevcut phase + kilit sahibi |
 | `harnessed doctor` | Sağlık kontrolü (Node / MCP / jq / Win bash / routing / token budget / skill bütünlüğü / GateGuard çakışması / update-available vb.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Kanala göre kendini güncelleme: binary kurulumlar GitHub releases'ten yerinde kendini değiştirir (sha256 doğrulamalı, önceki sürüm rollback için saklanır); npm kurulumları `npm i -g harnessed@latest` çalıştırır. `--check` en son sürümü bildirir; `--upstreams` temel manifest'leri yeniden çalıştırır; `--migration-report` salt-okunur eski durum envanteridir |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Kanala göre kendini güncelleme: binary kurulumlar GitHub releases'ten yerinde kendini değiştirir (sha256 + ed25519 imza doğrulamalı — release'ler `<asset>.sha256.sig` içerir, 4.32.19'dan beri imzalı-release sözleşmesi; değiştirilen sürüm rollback için saklanır); npm kurulumları `npm i -g harnessed@latest` çalıştırır. `--check` en son sürümü bildirir; `--rollback [version]` (yalnızca binary kurulumlar) saklanan önceki binary'yi atomik olarak geri yükler — npm kurulumları `npm i -g harnessed@<version>` komutuna yönlendirilir; `--upstreams` temel manifest'leri yeniden çalıştırır; `--migration-report` salt-okunur eski durum envanteridir |
 | `harnessed release-preflight` | Salt-okunur sürüm-hazırlık kapısı (CHANGELOG `[Unreleased]` / sürüm / git-clean / tag-yokluğu); hazır değilse 1 ile çıkar. Ship-aşaması kapısı. |
 | `harnessed retro --done` | `/retro` çalıştırdıktan sonra retro-hatırlatıcı phase sayacını sıfırlar (tur başına RETRO-DUE dürtmesini temizler). |
 | `harnessed install <isim>` | Upstream manifest'i kurar |
-| `harnessed uninstall [isim]` | Ters kaldırma |
+| `harnessed uninstall [isim]` | Ters kaldırma — skill kuran method'lar (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`) için manifest'te bildirilen `spec.uninstall` teardown'ını çalıştırır (cmd + `$HOME` ile sınırlı, idempotent `cleanup_paths`); diğer method'lar kendi method-başına ters işlemlerini korur |
 | `harnessed backup` | Anlık görüntü yedek yönetimi |
-| `harnessed rollback <zaman_damgası>` | Tek satır geri alma (EOL koruma + sha1 doğrulama) |
+| `harnessed rollback <zaman_damgası>` | Bir **yedek anlık görüntüsünün** tek satır geri alınması (EOL koruma + sha1 doğrulama) — önceki bir **derlenmiş binary**'yi geri yükleyen `update --rollback`'ten farklıdır |
 | `harnessed gc` | Süresi dolmuş yedekleri temizler |
 | `harnessed audit-log` | Yönlendirme şeffaflık günlüğü sorgusu (`--filter` jq ifadesini destekler) |
 
@@ -522,6 +522,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `--non-interactive` | CI / betiklenmiş senaryolar |
 | `--system` | L4 global kuruluma izin ver (aksi takdirde L1 npx geçici olarak düşürülür) |
 | `--yes` | Kaldırmada (uninstall) etkileşimli onayı atla |
+| `--json` | Makine tarafından okunabilir stdout (argümansız dashboard / `next` / `advance` vb.); süreç köküne kadar kaçan hatalar da stdout'a tek satırlık bir `{"error":{"message":…}}` zarfı yazar, bu sayede `JSON.parse(stdout).error` güvenilir bir hata sondasıdır |
 | `--full-diff` | 200 satırın üzerinde katlanan farkları genişlet |
 | `--no-color` | Rengi zorla kapat (TTY'de bile) |
 | `--task <text>` | `run` — görev açıklaması (workflow `gateContext.task` olarak iletilir) |

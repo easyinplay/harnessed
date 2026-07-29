@@ -86,7 +86,7 @@ Three-layer stack у harnessed — это программно-инженерн�
 |---|---|---|---|
 | **Workflow / методология** | Только примитивы — вы каждый раз проектируете поток | Меньше примитивов — фристайл по каждому промпту | Кодифицированный 5-стадийный движок **Discuss→Ship** three-layer-stack — циклы BDD + SDD + TDD + 2 сквозных (Review + Ship) |
 | **Инъекция инструкций** | `CLAUDE.md` + skills + hooks существуют, но статичны и связываются вручную | Только `AGENTS.md` — без skills/hooks | Per-turn breadcrumb hook + маршрутизация в пределах задачи + learnings инжектятся каждый цикл |
-| **Состояние / прогресс** | Контекст чата — теряется при `/clear` / compaction | Контекст чата — нет слоя персистентности | Дисковый `.planning/` + ledger `current-workflow.json` + checkpoint evidence |
+| **Состояние / прогресс** | Контекст чата — теряется при `/clear` / compaction | Контекст чата — нет слоя персистентности | Дисковый `.planning/` + ledger `workflows.json` (по одному на репозиторий) + checkpoint evidence |
 | **Восстановление между сессиями** | Объяснять контекст заново вручную | Объяснять контекст заново вручную | `harnessed status --recover`: «вы здесь» + следующий шаг |
 | **Верификация / «готово»** | Агент сам сообщает «готово» | Агент сам сообщает «готово» | Независимые review-subagent-ы + **fail-CLOSED evidence guard** (нет артефакта = не готово) |
 | **Оркестрация subagent-ов** | Subagent-ы + Agent Teams доступны, но оркестрируются вручную | Нет примитива subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams включаются автоматически по задаче |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # самодостаточный дизайн-документ cc-handoff
 ├── routing/                    # L4: движок маршрутизации SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (потребляется IDE / CI)
-├── src/                        # L4: TS-движок (workflow + routing + cli + installers + checkpoint + audit + state)
+├── src/                        # L4: TS-движок (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # память проекта (STATE + ROADMAP + REQUIREMENTS + на каждую фазу + milestone-ы)
@@ -502,13 +502,13 @@ planning-with-files /plan (сквозной инструмент) → запис
 | `harnessed resume` | Продолжить с последней контрольной точки после прерывания сессии |
 | `harnessed status` | Текущая фаза + владелец блокировки |
 | `harnessed doctor` | Проверка здоровья (Node / MCP / jq / Win bash / routing / token budget / целостность скиллов / конфликт GateGuard / update-available и др.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Самообновление с учётом канала установки: бинарная установка заменяет себя на месте из GitHub releases (проверка sha256, предыдущая версия сохраняется для отката); npm-установка выполняет `npm i -g harnessed@latest`. `--check` сообщает последнюю версию; `--upstreams` перезапускает базовые manifests; `--migration-report` — read-only инвентаризация устаревшего состояния |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Самообновление с учётом канала установки: бинарная установка заменяет себя на месте из GitHub releases (проверка sha256 + подписи ed25519 — релизы поставляются с `<asset>.sha256.sig`, контракт подписанных релизов начиная с 4.32.19; заменённая версия сохраняется для отката); npm-установка выполняет `npm i -g harnessed@latest`. `--check` сообщает последнюю версию; `--rollback [version]` (только бинарные установки) атомарно восстанавливает сохранённый предыдущий бинарник — npm-установкам предлагается `npm i -g harnessed@<version>`; `--upstreams` перезапускает базовые manifests; `--migration-report` — read-only инвентаризация устаревшего состояния |
 | `harnessed release-preflight` | Read-only ворота готовности к релизу (CHANGELOG `[Unreleased]` / версия / git-clean / отсутствие тега); выход 1, если не готово. Ворота стадии Ship. |
 | `harnessed retro --done` | Сбрасывает счётчик фаз retro-напоминания после запуска `/retro` (очищает per-turn подсказку RETRO-DUE). |
 | `harnessed install <name>` | Установить Manifest апстрима |
-| `harnessed uninstall [name]` | Обратное удаление |
+| `harnessed uninstall [name]` | Обратное удаление — выполняет объявленный в manifest teardown `spec.uninstall` (cmd + ограничение `$HOME`, идемпотентные `cleanup_paths`) для методов, устанавливающих скиллы (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); остальные методы сохраняют свой per-method reverse |
 | `harnessed backup` | Управление резервными копиями (снимки состояния) |
-| `harnessed rollback <timestamp>` | Откат одной командой (сохранение EOL + проверка sha1) |
+| `harnessed rollback <timestamp>` | Откат **снимка резервной копии** одной командой (сохранение EOL + проверка sha1) — не путать с `update --rollback`, который восстанавливает предыдущий **скомпилированный бинарник** |
 | `harnessed gc` | Очистить устаревшие резервные копии |
 | `harnessed audit-log` | Запрос лога прозрачности маршрутизации (поддерживает `--filter` jq-выражение) |
 
@@ -522,6 +522,7 @@ planning-with-files /plan (сквозной инструмент) → запис
 | `--non-interactive` | Сценарии CI / скриптового запуска |
 | `--system` | Разрешить глобальную установку L4 (иначе понизить до L1 npx ephemeral) |
 | `--yes` | Пропустить интерактивное подтверждение при uninstall |
+| `--json` | Машиночитаемый stdout (zero-arg dashboard / `next` / `advance` и т.д.); ошибки, дошедшие до корня процесса, также выводят однострочный конверт `{"error":{"message":…}}` в stdout, так что `JSON.parse(stdout).error` — надёжная проба на сбой |
 | `--full-diff` | Развернуть diff-ы, свёрнутые выше 200 строк |
 | `--no-color` | Принудительно отключить цвет (даже на TTY) |
 | `--task <text>` | `run` — описание задачи (передаётся как `gateContext.task` workflow) |

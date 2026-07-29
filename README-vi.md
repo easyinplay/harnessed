@@ -86,7 +86,7 @@ Native agent cho bạn các primitive; harnessed kết nối chúng thành một
 |---|---|---|---|
 | **Workflow / phương pháp** | Chỉ có primitive — bạn tự thiết kế luồng mỗi lần | Ít primitive hơn — freestyle theo từng prompt | Engine three-layer-stack 5-stage **Discuss→Ship** đã được codified — các loop BDD + SDD + TDD + 2 xuyên suốt (Review + Ship) |
 | **Tiêm chỉ dẫn** | `CLAUDE.md` + skills + hooks tồn tại, nhưng tĩnh & kết nối thủ công | Chỉ có `AGENTS.md` — không có skills/hooks | Breadcrumb hook mỗi lượt + routing theo phạm vi task + learnings tiêm vào mỗi chu kỳ |
-| **State / tiến độ** | Chat context — mất khi `/clear` / compaction | Chat context — không có tầng persistence | `.planning/` trên disk + ledger `current-workflow.json` + checkpoint evidence |
+| **State / tiến độ** | Chat context — mất khi `/clear` / compaction | Chat context — không có tầng persistence | `.planning/` trên disk + ledger `workflows.json` (mỗi repo một) + checkpoint evidence |
 | **Khôi phục xuyên session** | Giải thích lại context thủ công | Giải thích lại context thủ công | `harnessed status --recover`: bạn-đang-ở-đây + bước tiếp theo |
 | **Verification / "đã xong"** | Agent tự báo "đã xong" | Agent tự báo "đã xong" | Subagent review độc lập + **evidence guard fail-CLOSED** (thiếu artifact = chưa xong) |
 | **Điều phối subagent** | Có subagent + Agent Teams, nhưng điều phối thủ công | Không có primitive subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams tự bật theo task |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff design doc self-contained
 ├── routing/                    # L4: routing engine SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (IDE / CI sử dụng)
-├── src/                        # L4: TS engine (workflow + routing + cli + installers + checkpoint + audit + state)
+├── src/                        # L4: TS engine (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # project memory (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
@@ -502,13 +502,13 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `harnessed resume` | Tiếp tục từ checkpoint gần nhất sau khi session bị gián đoạn |
 | `harnessed status` | Phase hiện tại + lock holder |
 | `harnessed doctor` | Kiểm tra sức khỏe (Node / MCP / jq / Win bash / routing / token budget / toàn vẹn skill / xung đột GateGuard / update-available, v.v.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Tự cập nhật theo kênh cài đặt: bản cài binary tự thay thế tại chỗ từ GitHub releases (kiểm tra sha256, giữ phiên bản trước để rollback); bản cài npm chạy `npm i -g harnessed@latest`. `--check` báo phiên bản mới nhất; `--upstreams` chạy lại các manifests cơ sở; `--migration-report` là bản kiểm kê trạng thái cũ chỉ-đọc |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Tự cập nhật theo kênh cài đặt: bản cài binary tự thay thế tại chỗ từ GitHub releases (xác minh sha256 + chữ ký ed25519 — các release kèm `<asset>.sha256.sig`, hợp đồng signed-release từ 4.32.19; phiên bản bị thay thế được lưu lại để rollback); bản cài npm chạy `npm i -g harnessed@latest`. `--check` báo phiên bản mới nhất; `--rollback [version]` (chỉ bản cài binary) khôi phục nguyên tử một binary trước đó đã lưu — bản cài npm được chỉ tới `npm i -g harnessed@<version>`; `--upstreams` chạy lại các manifests cơ sở; `--migration-report` là bản kiểm kê trạng thái cũ chỉ-đọc |
 | `harnessed release-preflight` | Gate sẵn-sàng-release chỉ-đọc (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exit 1 nếu chưa sẵn sàng. Đây là gate của Stage Ship. |
 | `harnessed retro --done` | Reset bộ đếm phase của retro-reminder sau khi chạy `/retro` (xóa nudge RETRO-DUE mỗi lượt). |
 | `harnessed install <name>` | Cài một upstream manifest |
-| `harnessed uninstall [name]` | Gỡ cài đặt thống nhất — không tên: xóa file của harnessed (upstream được giữ nguyên); có tên: gỡ một upstream riêng lẻ |
+| `harnessed uninstall [name]` | Gỡ cài đặt ngược — chạy teardown `spec.uninstall` khai báo trong manifest (cmd + giới hạn trong `$HOME`, `cleanup_paths` idempotent) cho các method cài skill (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); các method khác giữ cơ chế reverse theo từng method |
 | `harnessed backup` | Quản lý backup snapshot |
-| `harnessed rollback <timestamp>` | Rollback một dòng lệnh (giữ EOL + xác minh sha1) |
+| `harnessed rollback <timestamp>` | Rollback một dòng lệnh cho **backup snapshot** (giữ EOL + xác minh sha1) — khác với `update --rollback`, vốn khôi phục một **binary đã biên dịch** trước đó |
 | `harnessed gc` | Dọn dẹp backup đã hết hạn |
 | `harnessed audit-log` | Truy vấn log minh bạch routing (hỗ trợ biểu thức jq `--filter`) |
 
@@ -522,6 +522,7 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `--non-interactive` | CI / kịch bản scripted |
 | `--system` | Cho phép cài L4 toàn cục (nếu không sẽ hạ xuống L1 npx ephemeral) |
 | `--yes` | Bỏ qua xác nhận tương tác khi uninstall |
+| `--json` | Stdout dạng machine-readable (dashboard zero-arg / `next` / `advance`, v.v.); lỗi thoát tới gốc process cũng phát một envelope `{"error":{"message":…}}` một dòng trên stdout, nên `JSON.parse(stdout).error` là phép thử thất bại đáng tin cậy |
 | `--full-diff` | Mở rộng diff bị gấp khi vượt quá 200 dòng |
 | `--no-color` | Buộc không màu (kể cả trên TTY) |
 | `--task <text>` | Subcommand `run` — mô tả task (truyền vào `gateContext.task` của workflow) |

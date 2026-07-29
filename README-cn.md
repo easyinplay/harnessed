@@ -84,7 +84,7 @@ harnessed 的三层栈方案是软件工程上既有的 **BDD → SDD → TDD** 
 |---|---|---|---|
 | **工作流 / 方法论** | 只有原语 —— 每次自己设计流程 | 原语更少 —— 每条 prompt 即兴发挥 | 编码化的 **Discuss→Ship** 5-stage 三层栈 engine —— BDD + SDD + TDD 循环 + 2 横切 (Review + Ship) |
 | **指令注入** | `CLAUDE.md` + skill + hook 存在,但静态、得手工接线 | 只有 `AGENTS.md` —— 无 skill/hook | 每轮 breadcrumb hook + task-scoped 路由 + 每轮注入 learnings |
-| **状态 / 进度** | 对话 context —— `/clear` / compaction 即丢失 | 对话 context —— 无持久化层 | 落盘 `.planning/` + `current-workflow.json` ledger + checkpoint 证据 |
+| **状态 / 进度** | 对话 context —— `/clear` / compaction 即丢失 | 对话 context —— 无持久化层 | 落盘 `.planning/` + 每 repo 一份的 `workflows.json` ledger + checkpoint 证据 |
 | **跨 session 恢复** | 手工重新解释 context | 手工重新解释 context | `harnessed status --recover`: you-are-here + 下一步 |
 | **验证 / 「完成」** | agent 自报「完成」 | agent 自报「完成」 | 独立审查 subagent + **fail-CLOSED 证据 guard** (缺产物 = 没完成) |
 | **Subagent 编排** | 有 subagent + Agent Teams,但得手工编排 | 无 subagent/team 原语 | `gates → prompt → spawn → checkpoint`;Agent Teams 按任务自动启用 |
@@ -369,7 +369,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff design doc 自包含
 ├── routing/                    # L4: routing engine SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (IDE / CI consume)
-├── src/                        # L4: TS engine (workflow + routing + cli + installers + checkpoint + audit + state)
+├── src/                        # L4: TS engine (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # project memory (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
@@ -500,13 +500,13 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed resume` | session 中断后从最近 checkpoint 恢复 |
 | `harnessed status` | 当前 phase + lock holder |
 | `harnessed doctor` | 健康检查 (Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 冲突 / update-available 等) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | 自更新,按安装通道分流:二进制安装从 GitHub releases 原地自替换(sha256 校验,保留上一版可回滚);npm 安装执行 `npm i -g harnessed@latest`。`--check` 报告最新版本;`--upstreams` 重跑基础 manifests;`--migration-report` 为只读陈旧状态盘点 |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自更新,按安装通道分流:二进制安装从 GitHub releases 原地自替换(sha256 + ed25519 签名双重校验 —— releases 附带 `<asset>.sha256.sig`,4.32.19 起为签名发布契约;被替换的版本存档备回滚);npm 安装执行 `npm i -g harnessed@latest`。`--check` 报告最新版本;`--rollback [version]`(仅二进制安装)原子恢复已存档的上一版二进制 —— npm 安装则被指引执行 `npm i -g harnessed@<version>`;`--upstreams` 重跑基础 manifests;`--migration-report` 为只读陈旧状态盘点 |
 | `harnessed release-preflight` | Read-only 发布就绪关卡 (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent);未就绪则 exit 1。即 Ship-stage 关卡 |
 | `harnessed retro --done` | 跑完 `/retro` 后重置 retro-reminder phase 计数器 (清掉每轮的 RETRO-DUE 提醒) |
 | `harnessed install <name>` | 装上游 manifest |
-| `harnessed uninstall [name]` | 反向卸载 |
+| `harnessed uninstall [name]` | 反向卸载 —— 对装 skill 的方法 (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`) 执行 manifest 声明的 `spec.uninstall` teardown (cmd + 限定 `$HOME` 内、幂等 `cleanup_paths`);其余方法沿用各自的 per-method 反向逻辑 |
 | `harnessed backup` | snapshot 备份管理 |
-| `harnessed rollback <timestamp>` | 一行回滚 (EOL preserve + sha1 verify) |
+| `harnessed rollback <timestamp>` | 一行回滚**备份快照** (EOL preserve + sha1 verify) —— 区别于 `update --rollback`:后者恢复的是上一版**编译二进制** |
 | `harnessed gc` | 清理过期 backup |
 | `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
 
@@ -520,6 +520,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `--non-interactive` | CI / 脚本场景 |
 | `--system` | 允许 L4 全局装 (否则降级 L1 npx ephemeral) |
 | `--yes` | 卸载时跳过交互确认 |
+| `--json` | 机器可读 stdout (零参 dashboard / `next` / `advance` 等);逃逸到进程根的错误也会在 stdout 输出单行 `{"error":{"message":…}}` envelope,因此 `JSON.parse(stdout).error` 是可靠的失败探针 |
 | `--full-diff` | 展开 > 200 行的 diff 折叠 |
 | `--no-color` | 强制 nocolor (即使 TTY) |
 | `--task <text>` | `run` —— 任务描述 (传入 workflow `gateContext.task`) |

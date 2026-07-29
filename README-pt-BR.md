@@ -86,7 +86,7 @@ Os agentes nativos te dão primitivos; o harnessed os conecta em uma metodologia
 |---|---|---|---|
 | **Workflow / metodologia** | Apenas primitivos — você projeta o fluxo toda vez | Menos primitivos — freestyle por prompt | Motor three-layer-stack codificado de 5 stages **Discuss→Ship** — loops BDD + SDD + TDD + 2 transversais (Review + Ship) |
 | **Injeção de instrução** | `CLAUDE.md` + skills + hooks existem, mas estáticos e conectados à mão | Apenas `AGENTS.md` — sem skills/hooks | Hook de breadcrumb por turno + roteamento task-scoped + learnings injetados a cada ciclo |
-| **Estado / progresso** | Contexto do chat — perdido em `/clear` / compaction | Contexto do chat — sem camada de persistência | `.planning/` em disco + ledger `current-workflow.json` + evidências de checkpoint |
+| **Estado / progresso** | Contexto do chat — perdido em `/clear` / compaction | Contexto do chat — sem camada de persistência | `.planning/` em disco + ledger `workflows.json` por repo + evidências de checkpoint |
 | **Recuperação entre sessões** | Re-explicar o contexto à mão | Re-explicar o contexto à mão | `harnessed status --recover`: você-está-aqui + próximo passo |
 | **Verificação / "concluído"** | O agente se auto-reporta "concluído" | O agente se auto-reporta "concluído" | Subagents de revisão independentes + **guard de evidências fail-CLOSED** (artifact ausente = não concluído) |
 | **Orquestração de subagents** | Subagents + Agent Teams disponíveis, mas orquestrados à mão | Sem primitivo de subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams auto-habilitados por tarefa |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff design doc self-contained
 ├── routing/                    # L4: SSOT do engine de roteamento (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (consumido por IDE / CI)
-├── src/                        # L4: engine TS (workflow + routing + cli + installers + checkpoint + audit + state)
+├── src/                        # L4: engine TS (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # gate CI (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # Memory do projeto (STATE + ROADMAP + REQUIREMENTS + por-phase + milestones)
@@ -502,13 +502,13 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `harnessed resume` | Retoma a partir do checkpoint mais recente após interrupção de sessão |
 | `harnessed status` | Phase atual + detentor do lock |
 | `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / integridade de skills / conflito GateGuard / update-available etc.) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Auto-atualização por canal: instalações binárias se substituem no local a partir dos GitHub releases (verificação sha256, versão anterior mantida para rollback); instalações npm executam `npm i -g harnessed@latest`. `--check` informa a versão mais recente; `--upstreams` reexecuta os manifests base; `--migration-report` é um inventário read-only de estado obsoleto |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Auto-atualização por canal: instalações binárias se substituem no local a partir dos GitHub releases (verificação sha256 + assinatura ed25519 — os releases incluem `<asset>.sha256.sig`, contrato de release assinado desde 4.32.19; a versão substituída é guardada para rollback); instalações npm executam `npm i -g harnessed@latest`. `--check` informa a versão mais recente; `--rollback [version]` (apenas instalações binárias) restaura atomicamente um binário anterior guardado — instalações npm são direcionadas a `npm i -g harnessed@<version>`; `--upstreams` reexecuta os manifests base; `--migration-report` é um inventário read-only de estado obsoleto |
 | `harnessed release-preflight` | Gate de prontidão para release somente leitura (CHANGELOG `[Unreleased]` / versão / git-clean / tag-absent); sai com 1 se não estiver pronto. O gate do stage Ship. |
 | `harnessed retro --done` | Reseta o contador de phases do lembrete de retro após rodar `/retro` (limpa o nudge RETRO-DUE por turno). |
 | `harnessed install <name>` | Instala um Manifest upstream |
-| `harnessed uninstall [name]` | Desinstalação reversa |
+| `harnessed uninstall [name]` | Desinstalação reversa — executa o teardown `spec.uninstall` declarado no manifest (cmd + confinado a `$HOME`, `cleanup_paths` idempotente) para os métodos que instalam skills (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); os demais métodos mantêm sua reversão por método |
 | `harnessed backup` | Gerenciamento de snapshots de backup |
-| `harnessed rollback <timestamp>` | Rollback em um único comando (preservação de EOL + verificação sha1) |
+| `harnessed rollback <timestamp>` | Rollback em um único comando de um **snapshot de backup** (preservação de EOL + verificação sha1) — distinto de `update --rollback`, que restaura um **binário compilado** anterior |
 | `harnessed gc` | Limpa backups expirados |
 | `harnessed audit-log` | Consulta do log de transparência de roteamento (suporta expressão jq com `--filter`) |
 
@@ -522,6 +522,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `--non-interactive` | Cenários CI / scripted |
 | `--system` | Permite instalação global L4 (caso contrário, faz downgrade para npx efêmero L1) |
 | `--yes` | Pula a confirmação interativa na desinstalação |
+| `--json` | stdout legível por máquina (dashboard sem argumentos / `next` / `advance` etc.); erros que escapam até a raiz do processo também emitem um envelope `{"error":{"message":…}}` de linha única no stdout, então `JSON.parse(stdout).error` é uma sonda de falha confiável |
 | `--full-diff` | Expande diffs recolhidos acima de 200 linhas |
 | `--no-color` | Força sem cor (mesmo em TTY) |
 | `--task <text>` | Subcomando `run` — descrição da tarefa (passada como `gateContext.task` do workflow) |

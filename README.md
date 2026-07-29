@@ -84,7 +84,7 @@ Native agents give you primitives; harnessed wires them into a methodology. Wher
 |---|---|---|---|
 | **Workflow / methodology** | Primitives only — you design the flow each time | Fewer primitives — freestyle per prompt | Codified **Discuss→Ship** 5-stage three-layer-stack engine — BDD + SDD + TDD loops + 2 cross-cutting (Review + Ship) |
 | **Instruction injection** | `CLAUDE.md` + skills + hooks exist, but static & wired by hand | `AGENTS.md` only — no skills/hooks | Per-turn breadcrumb hook + task-scoped routing + learnings injected each cycle |
-| **State / progress** | Chat context — lost on `/clear` / compaction | Chat context — no persistence layer | On-disk `.planning/` + `current-workflow.json` ledger + checkpoint evidence |
+| **State / progress** | Chat context — lost on `/clear` / compaction | Chat context — no persistence layer | On-disk `.planning/` + `workflows.json` per-repo ledger + checkpoint evidence |
 | **Cross-session recovery** | Re-explain the context by hand | Re-explain the context by hand | `harnessed status --recover`: you-are-here + next step |
 | **Verification / "done"** | Agent self-reports "done" | Agent self-reports "done" | Independent review subagents + **fail-CLOSED evidence guard** (missing artifact = not done) |
 | **Subagent orchestration** | Subagents + Agent Teams available, but orchestrated by hand | No subagent/team primitive | `gates → prompt → spawn → checkpoint`; Agent Teams auto-enabled per task |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff design doc self-contained
 ├── routing/                    # L4: routing engine SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (IDE / CI consume)
-├── src/                        # L4: TS engine (workflow + routing + cli + installers + checkpoint + audit + state)
+├── src/                        # L4: TS engine (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # project memory (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
@@ -502,13 +502,13 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
 | `harnessed status` | Current phase + lock holder |
 | `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / skill integrity / GateGuard conflict / update-available / stale hooks, etc.). The **stale hooks** check flags orphaned harnessed `Stop`/`UserPromptSubmit` entries in `~/.claude/settings.json` that point at a deleted `bin/*.mjs` — the cause of a `MODULE_NOT_FOUND` error on every prompt after a raw `npm uninstall -g harnessed`. Fix: run `harnessed uninstall` (it strips them) **before** removing the package. |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | Self-update, channel-aware: binary installs replace themselves in place from GitHub releases (sha256-verified, previous version kept for rollback); npm installs run `npm i -g harnessed@latest`. `--check` reports the latest version; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Self-update, channel-aware: binary installs replace themselves in place from GitHub releases (sha256 + ed25519-signature verified — releases ship `<asset>.sha256.sig`, signed-release contract since 4.32.19; the replaced version is banked for rollback); npm installs run `npm i -g harnessed@latest`. `--check` reports the latest version; `--rollback [version]` (binary installs only) atomically restores a banked previous binary — npm installs are pointed at `npm i -g harnessed@<version>`; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
 | `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exits 1 if not ready. The Ship-stage gate. |
 | `harnessed retro --done` | Reset the retro-reminder phase counter after running `/retro` (clears the per-turn RETRO-DUE nudge). |
 | `harnessed install <name>` | Install an upstream manifest |
-| `harnessed uninstall [name]` | Reverse uninstall |
+| `harnessed uninstall [name]` | Reverse uninstall — runs the manifest's declared `spec.uninstall` teardown (cmd + `$HOME`-confined, idempotent `cleanup_paths`) for the skill-installing methods (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); other methods keep their per-method reverse |
 | `harnessed backup` | Snapshot backup management |
-| `harnessed rollback <timestamp>` | One-line rollback (EOL preserve + sha1 verify) |
+| `harnessed rollback <timestamp>` | One-line rollback of a **backup snapshot** (EOL preserve + sha1 verify) — distinct from `update --rollback`, which restores a previous **compiled binary** |
 | `harnessed gc` | Clean up expired backups |
 | `harnessed audit-log` | Routing transparency log query (supports `--filter` jq expression) |
 
@@ -522,6 +522,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `--non-interactive` | CI / scripted scenarios |
 | `--system` | Allow L4 global install (otherwise downgrade to L1 npx ephemeral) |
 | `--yes` | Skip interactive confirm on uninstall |
+| `--json` | Machine-readable stdout (zero-arg dashboard / `next` / `advance`, etc.); errors that escape to the process root also emit a single-line `{"error":{"message":…}}` envelope on stdout, so `JSON.parse(stdout).error` is a reliable failure probe |
 | `--full-diff` | Expand diffs folded above 200 lines |
 | `--no-color` | Force nocolor (even on TTY) |
 | `--task <text>` | `run` — task description (passed as workflow `gateContext.task`) |

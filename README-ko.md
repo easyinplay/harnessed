@@ -86,7 +86,7 @@ Native 에이전트는 primitive를 제공하고, harnessed는 그것을 방법�
 |---|---|---|---|
 | **Workflow / 방법론** | primitive만 — 매번 흐름을 직접 설계 | 더 적은 primitive — 프롬프트마다 자유 형식 | 코드화된 **Discuss→Ship** 5-Stage 3계층 스택 엔진 — BDD + SDD + TDD 루프 + 2개 cross-cutting (Review + Ship) |
 | **지시 주입** | `CLAUDE.md` + skills + hooks 존재하나 정적이며 수동으로 엮어야 함 | `AGENTS.md`만 — skills/hooks 없음 | turn마다 breadcrumb hook + 태스크 범위 라우팅 + 사이클마다 learnings 주입 |
-| **상태 / 진행** | 채팅 컨텍스트 — `/clear` / compaction 시 손실 | 채팅 컨텍스트 — 영속화 계층 없음 | 디스크 상의 `.planning/` + `current-workflow.json` 원장 + checkpoint 증거 |
+| **상태 / 진행** | 채팅 컨텍스트 — `/clear` / compaction 시 손실 | 채팅 컨텍스트 — 영속화 계층 없음 | 디스크 상의 `.planning/` + 저장소별 `workflows.json` 원장 + checkpoint 증거 |
 | **크로스 세션 복구** | 컨텍스트를 직접 다시 설명 | 컨텍스트를 직접 다시 설명 | `harnessed status --recover`: 현재 위치 + 다음 단계 |
 | **검증 / "완료"** | 에이전트가 "완료"를 자가 보고 | 에이전트가 "완료"를 자가 보고 | 독립 검토 subagent + **fail-CLOSED 증거 가드**(아티팩트 누락 = 미완료) |
 | **Subagent orchestration** | Subagent + Agent Teams 사용 가능하나 수동 오케스트레이션 | subagent/team primitive 없음 | `gates → prompt → spawn → checkpoint`; 태스크별 Agent Teams 자동 활성화 |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff 설계 문서 자기 완결
 ├── routing/                    # L4: 라우팅 엔진 SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (IDE / CI 사용)
-├── src/                        # L4: TS 엔진 (workflow + routing + cli + installers + checkpoint + audit + state)
+├── src/                        # L4: TS 엔진 (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest 단위 + 통합 + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI 게이트 (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # 프로젝트 메모리 (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
@@ -502,13 +502,13 @@ planning-with-files /plan (cross-cutting 도구) → .planning/<phase-id>/에 �
 | `harnessed resume` | 세션 중단 후 가장 최근 체크포인트에서 재개 |
 | `harnessed status` | 현재 Phase + 잠금 보유자 |
 | `harnessed doctor` | 헬스 체크 (Node / MCP / jq / Win bash / routing / token budget / skill 무결성 / GateGuard 충돌 / update-available 등) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | 자가 업데이트, 설치 채널별 분기: 바이너리 설치는 GitHub releases에서 제자리 자가 교체(sha256 검증, 이전 버전은 롤백용 보관); npm 설치는 `npm i -g harnessed@latest` 실행. `--check`는 최신 버전 보고; `--upstreams`는 기본 manifests 재실행; `--migration-report`는 읽기 전용 상태 인벤토리 |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 자가 업데이트, 설치 채널별 분기: 바이너리 설치는 GitHub releases에서 제자리 자가 교체(sha256 + ed25519 서명 검증 — 릴리스마다 `<asset>.sha256.sig` 동봉, 4.32.19부터 서명 릴리스 계약; 교체된 이전 버전은 롤백용으로 보관); npm 설치는 `npm i -g harnessed@latest` 실행. `--check`는 최신 버전 보고; `--rollback [version]`(바이너리 설치 전용)은 보관된 이전 바이너리를 원자적으로 복원 — npm 설치는 `npm i -g harnessed@<version>` 안내; `--upstreams`는 기본 manifests 재실행; `--migration-report`는 읽기 전용 상태 인벤토리 |
 | `harnessed release-preflight` | 읽기 전용 릴리스 준비 게이트 (CHANGELOG `[Unreleased]` / 버전 / git-clean / tag-absent); 준비되지 않으면 exit 1. Ship Stage 게이트 |
 | `harnessed retro --done` | `/retro` 실행 후 retro 알림 Phase 카운터 리셋 (turn마다 뜨는 RETRO-DUE nudge 해제) |
 | `harnessed install <name>` | Upstream manifest 설치 |
-| `harnessed uninstall [name]` | 통합 제거 |
+| `harnessed uninstall [name]` | 통합 제거 — skill 설치 계열 method(`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`)는 manifest에 선언된 `spec.uninstall` teardown(cmd + `$HOME` 범위 제한, 멱등 `cleanup_paths`) 실행; 그 외 method는 각자의 method별 역방향 제거 유지 |
 | `harnessed backup` | 스냅샷 백업 관리 |
-| `harnessed rollback <timestamp>` | 원라인 롤백 (EOL 보존 + sha1 검증) |
+| `harnessed rollback <timestamp>` | **백업 스냅샷**의 원라인 롤백 (EOL 보존 + sha1 검증) — 이전 **컴파일된 바이너리**를 복원하는 `update --rollback`과는 별개 |
 | `harnessed gc` | 만료된 백업 정리 |
 | `harnessed audit-log` | 라우팅 투명성 로그 조회 (`--filter` jq 표현식 지원) |
 
@@ -522,6 +522,7 @@ planning-with-files /plan (cross-cutting 도구) → .planning/<phase-id>/에 �
 | `--non-interactive` | CI / 스크립트 시나리오 |
 | `--system` | L4 전역 설치 허용 (그렇지 않으면 L1 npx 임시로 다운그레이드) |
 | `--yes` | uninstall 시 대화형 확인 건너뛰기 |
+| `--json` | 기계가 읽을 수 있는 stdout (인자 없는 대시보드 / `next` / `advance` 등); 프로세스 루트까지 빠져나간 오류도 stdout에 한 줄짜리 `{"error":{"message":…}}` envelope로 출력되므로 `JSON.parse(stdout).error`가 신뢰할 수 있는 실패 탐지 수단 |
 | `--full-diff` | 200줄 이상 접힌 diff 펼치기 |
 | `--no-color` | TTY에서도 색상 강제 비활성화 |
 | `--task <text>` | `run` — 태스크 설명 (workflow `gateContext.task`에 전달됨) |

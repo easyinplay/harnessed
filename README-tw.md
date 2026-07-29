@@ -86,7 +86,7 @@ harnessed 的三層架構方案是軟體工程上既有的 **BDD → SDD → TDD
 |---|---|---|---|
 | **工作流 / 方法論** | 只有原語 —— 每次自己設計流程 | 原語更少 —— 每條 prompt 即興發揮 | 編碼化的 **Discuss→Ship** 5-stage 三層架構 engine —— BDD + SDD + TDD 迴圈 + 2 橫切（Review + Ship） |
 | **指令注入** | `CLAUDE.md` + skill + hook 存在，但靜態、得手工接線 | 只有 `AGENTS.md` —— 無 skill/hook | 每輪 breadcrumb hook + task-scoped 路由 + 每輪注入 learnings |
-| **狀態 / 進度** | 對話 context —— `/clear` / compaction 即遺失 | 對話 context —— 無持久化層 | 落盤 `.planning/` + `current-workflow.json` ledger + checkpoint 證據 |
+| **狀態 / 進度** | 對話 context —— `/clear` / compaction 即遺失 | 對話 context —— 無持久化層 | 落盤 `.planning/` + 每個 repo 一份的 `workflows.json` ledger + checkpoint 證據 |
 | **跨 session 回復** | 手工重新解釋 context | 手工重新解釋 context | `harnessed status --recover`：you-are-here + 下一步 |
 | **驗證 /「完成」** | agent 自報「完成」 | agent 自報「完成」 | 獨立審查 subagent + **fail-CLOSED 證據 guard**（缺產物 = 沒完成） |
 | **Subagent 編排** | 有 subagent + Agent Teams，但得手工編排 | 無 subagent/team 原語 | `gates → prompt → spawn → checkpoint`；Agent Teams 依任務自動啟用 |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff 設計文件自包含
 ├── routing/                    # L4：路由引擎 SSOT（decision_rules.yaml）
 ├── schemas/                    # L3：JSON Schema（IDE / CI 使用）
-├── src/                        # L4：TS 引擎（workflow + routing + cli + installers + checkpoint + audit + state）
+├── src/                        # L4：TS 引擎（platform + workflow + routing + cli + installers + checkpoint + audit + state）
 ├── tests/                      # vitest 單元 + 整合 + dogfood（R8.1 dogfood-first）
 ├── scripts/                    # CI 關卡（check-workflow-schema, transparency-verdict, state-archive）
 ├── .planning/                  # 專案記憶（STATE + ROADMAP + REQUIREMENTS + 每個 phase + milestones）
@@ -502,13 +502,13 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `harnessed resume` | session 中斷後從最近的 checkpoint 繼續 |
 | `harnessed status` | 目前 phase + 鎖定持有者 |
 | `harnessed doctor` | 健康檢查(Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 衝突 / update-available 等) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | 自我更新,依安裝通道分流:二進位安裝從 GitHub releases 原地自替換(sha256 校驗,保留上一版可回滾);npm 安裝執行 `npm i -g harnessed@latest`。`--check` 回報最新版本;`--upstreams` 重跑基礎 manifests;`--migration-report` 為唯讀過期狀態盤點 |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自我更新,依安裝通道分流:二進位安裝從 GitHub releases 原地自替換(sha256 + ed25519 簽章雙重驗證 —— releases 附帶 `<asset>.sha256.sig`,4.32.19 起為簽章發布契約;被替換的版本會封存以供回滾);npm 安裝執行 `npm i -g harnessed@latest`。`--check` 回報最新版本;`--rollback [version]`(僅二進位安裝)原子還原已封存的上一版二進位檔 —— npm 安裝則被指引執行 `npm i -g harnessed@<version>`;`--upstreams` 重跑基礎 manifests;`--migration-report` 為唯讀過期狀態盤點 |
 | `harnessed release-preflight` | Read-only 發布就緒關卡（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；未就緒則 exit 1。即 Ship-stage 關卡 |
 | `harnessed retro --done` | 執行完 `/retro` 後重置 retro-reminder phase 計數器（清除每輪的 RETRO-DUE 提醒） |
 | `harnessed install <name>` | 安裝上游 manifest |
-| `harnessed uninstall [name]` | 反向解除安裝 |
+| `harnessed uninstall [name]` | 反向解除安裝 —— 對安裝 skill 的方法（`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`）執行 manifest 宣告的 `spec.uninstall` teardown（cmd + 限定 `$HOME` 內、冪等 `cleanup_paths`）；其餘方法沿用各自的 per-method 反向邏輯 |
 | `harnessed backup` | 快照備份管理 |
-| `harnessed rollback <timestamp>` | 一行還原（EOL 保留 + sha1 驗證） |
+| `harnessed rollback <timestamp>` | 一行還原**備份快照**（EOL 保留 + sha1 驗證） —— 有別於 `update --rollback`:後者還原的是上一版**編譯後的二進位檔** |
 | `harnessed gc` | 清除過期備份 |
 | `harnessed audit-log` | 路由透明度日誌查詢（支援 `--filter` jq 運算式） |
 
@@ -522,6 +522,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `--non-interactive` | CI / 腳本化場景 |
 | `--system` | 允許 L4 全域安裝（否則降級為 L1 npx 短暫執行） |
 | `--yes` | 解除安裝時跳過互動確認 |
+| `--json` | 機器可讀的 stdout(零參數 dashboard / `next` / `advance` 等);逃逸到行程根的錯誤也會在 stdout 輸出單行 `{"error":{"message":…}}` envelope,因此 `JSON.parse(stdout).error` 是可靠的失敗探針 |
 | `--full-diff` | 展開超過 200 行的折疊差異 |
 | `--no-color` | 強制無色彩輸出（即使在 TTY 中） |
 | `--task <text>` | `run` 子命令 —— 任務描述（傳入 workflow `gateContext.task`） |

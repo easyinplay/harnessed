@@ -86,7 +86,7 @@ Native agent ให้ primitive แก่คุณ; harnessed ร้อยเ�
 |---|---|---|---|
 | **Workflow / methodology** | มีแต่ primitive — ออกแบบ flow เองทุกครั้ง | primitive น้อยกว่า — freestyle ต่อ prompt | engine three-layer-stack 5 stage **Discuss→Ship** ที่ codified แล้ว — ลูป BDD + SDD + TDD + 2 cross-cutting (Review + Ship) |
 | **Instruction injection** | `CLAUDE.md` + skills + hooks มีอยู่ แต่ static และต้องร้อยสายด้วยมือ | มีแค่ `AGENTS.md` — ไม่มี skills/hooks | breadcrumb hook ต่อ turn + routing scoped ตาม task + learnings inject ทุกรอบ |
-| **State / progress** | Chat context — หายเมื่อ `/clear` / compaction | Chat context — ไม่มีชั้น persistence | `.planning/` บนดิสก์ + ledger `current-workflow.json` + checkpoint evidence |
+| **State / progress** | Chat context — หายเมื่อ `/clear` / compaction | Chat context — ไม่มีชั้น persistence | `.planning/` บนดิสก์ + ledger `workflows.json` ราย repo + checkpoint evidence |
 | **Cross-session recovery** | อธิบาย context ใหม่ด้วยมือ | อธิบาย context ใหม่ด้วยมือ | `harnessed status --recover`: คุณอยู่ตรงนี้ + ขั้นถัดไป |
 | **Verification / "done"** | agent รายงานตัวเองว่า "done" | agent รายงานตัวเองว่า "done" | review subagent อิสระ + **evidence guard แบบ fail-CLOSED** (artifact หาย = ยังไม่เสร็จ) |
 | **Subagent orchestration** | มี Subagents + Agent Teams แต่ต้อง orchestrate ด้วยมือ | ไม่มี primitive ของ subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams เปิดใช้อัตโนมัติตาม task |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff design doc self-contained
 ├── routing/                    # L4: routing engine SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (IDE / CI consume)
-├── src/                        # L4: TS engine (workflow + routing + cli + installers + checkpoint + audit + state)
+├── src/                        # L4: TS engine (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # project memory (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
@@ -502,13 +502,13 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `harnessed resume` | ดำเนินการต่อจาก checkpoint ล่าสุดหลัง session ถูกขัดจังหวะ |
 | `harnessed status` | Phase ปัจจุบัน + lock holder |
 | `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / ความสมบูรณ์ของ skill / ความขัดแย้ง GateGuard / update-available ฯลฯ) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | อัปเดตตัวเองตามช่องทางติดตั้ง: การติดตั้งแบบไบนารีจะแทนที่ตัวเองจาก GitHub releases (ตรวจ sha256 เก็บเวอร์ชันก่อนหน้าไว้ rollback); การติดตั้งแบบ npm รัน `npm i -g harnessed@latest`. `--check` รายงานเวอร์ชันล่าสุด; `--upstreams` รันฐาน manifests ใหม่; `--migration-report` เป็นรายการสถานะเก่าแบบอ่านอย่างเดียว |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | อัปเดตตัวเองตามช่องทางติดตั้ง: การติดตั้งแบบไบนารีจะแทนที่ตัวเองจาก GitHub releases (ตรวจ sha256 + ลายเซ็น ed25519 — releases มาพร้อม `<asset>.sha256.sig` ตามสัญญา signed-release ตั้งแต่ 4.32.19; เวอร์ชันที่ถูกแทนที่จะถูกเก็บไว้สำหรับ rollback); การติดตั้งแบบ npm รัน `npm i -g harnessed@latest`. `--check` รายงานเวอร์ชันล่าสุด; `--rollback [version]` (เฉพาะการติดตั้งแบบไบนารี) กู้คืนไบนารีเวอร์ชันก่อนหน้าที่เก็บไว้แบบ atomic — การติดตั้งแบบ npm จะถูกชี้ไปที่ `npm i -g harnessed@<version>`; `--upstreams` รันฐาน manifests ใหม่; `--migration-report` เป็นรายการสถานะเก่าแบบอ่านอย่างเดียว |
 | `harnessed release-preflight` | Release-readiness gate แบบ read-only (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exit 1 หากยังไม่พร้อม คือ gate ของ Stage Ship |
 | `harnessed retro --done` | รีเซ็ตตัวนับ phase ของ retro-reminder หลังรัน `/retro` (เคลียร์ RETRO-DUE nudge ต่อ turn) |
 | `harnessed install <name>` | ติดตั้ง upstream manifest |
-| `harnessed uninstall [name]` | การถอนการติดตั้งแบบรวม — ไม่ระบุชื่อ: ลบไฟล์ของ harnessed เอง (upstream คงอยู่); ระบุชื่อ: ลบ upstream รายตัว |
+| `harnessed uninstall [name]` | การถอนการติดตั้งแบบย้อนกลับ — รัน teardown `spec.uninstall` ที่ประกาศไว้ใน manifest (cmd + จำกัดขอบเขตใน `$HOME`, `cleanup_paths` แบบ idempotent) สำหรับ method ที่ติดตั้ง skill (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); method อื่นยังคงใช้ reverse ตาม method เดิม |
 | `harnessed backup` | จัดการ snapshot backup |
-| `harnessed rollback <timestamp>` | Rollback หนึ่งบรรทัด (EOL preserve + sha1 verify) |
+| `harnessed rollback <timestamp>` | Rollback หนึ่งบรรทัดของ **backup snapshot** (EOL preserve + sha1 verify) — ต่างจาก `update --rollback` ซึ่งกู้คืน **compiled binary** เวอร์ชันก่อนหน้า |
 | `harnessed gc` | ล้าง backup ที่หมดอายุ |
 | `harnessed audit-log` | Query log ความโปร่งใสของ routing (รองรับ `--filter` jq expression) |
 
@@ -522,6 +522,7 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `--non-interactive` | สำหรับ CI / scripted scenarios |
 | `--system` | อนุญาต L4 global install (ไม่เช่นนั้น downgrade เป็น L1 npx ephemeral) |
 | `--yes` | ข้ามการยืนยันแบบ interactive ตอน uninstall |
+| `--json` | Stdout แบบ machine-readable (dashboard แบบ zero-arg / `next` / `advance` ฯลฯ); error ที่หลุดไปถึง process root ก็จะปล่อย envelope `{"error":{"message":…}}` บรรทัดเดียวบน stdout ด้วย ทำให้ `JSON.parse(stdout).error` เป็นตัวตรวจความล้มเหลวที่เชื่อถือได้ |
 | `--full-diff` | ขยาย diff ที่ถูกพับไว้เกิน 200 บรรทัด |
 | `--no-color` | บังคับ nocolor (แม้บน TTY) |
 | `--task <text>` | Subcommand `run` — task description (ส่งเข้า workflow `gateContext.task`) |

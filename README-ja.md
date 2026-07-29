@@ -86,7 +86,7 @@ harnessed の三層スタックは、ソフトウェアエンジニアリング�
 |---|---|---|---|
 | **ワークフロー / メソドロジー** | 原語のみ —— 毎回フローを自分で設計 | 原語が少ない —— プロンプトごとに自由形式 | コード化された **Discuss→Ship** 5-stage 三層スタック engine —— BDD + SDD + TDD ループ + 2 つの横断（Review + Ship） |
 | **命令の注入** | `CLAUDE.md` + skill + hook は存在するが、静的で手作業の接続 | `AGENTS.md` のみ —— skill/hook なし | 各ターンの breadcrumb hook + task-scoped ルーティング + 各サイクルに注入される learnings |
-| **状態 / 進捗** | チャット context —— `/clear` / compaction で消失 | チャット context —— 永続化レイヤーなし | ディスク上の `.planning/` + `current-workflow.json` ledger + checkpoint 証拠 |
+| **状態 / 進捗** | チャット context —— `/clear` / compaction で消失 | チャット context —— 永続化レイヤーなし | ディスク上の `.planning/` + リポジトリごとの `workflows.json` ledger + checkpoint 証拠 |
 | **クロスセッション回復** | 手作業で context を説明し直す | 手作業で context を説明し直す | `harnessed status --recover`: you-are-here + 次のステップ |
 | **検証 /「完了」** | agent が「完了」を自己申告 | agent が「完了」を自己申告 | 独立レビュー subagent + **fail-CLOSED 証拠ガード**（成果物の欠如 = 未完了） |
 | **Subagent オーケストレーション** | subagent + Agent Teams は利用可能だが手作業でオーケストレーション | subagent/team 原語なし | `gates → prompt → spawn → checkpoint`；Agent Teams はタスクごとに自動有効化 |
@@ -371,7 +371,7 @@ harnessed/
 │       └── protocols.yaml      # cc-handoff 設計ドキュメント自己完結
 ├── routing/                    # L4: ルーティングエンジン SSOT（decision_rules.yaml）
 ├── schemas/                    # L3: JSON Schema（IDE / CI で使用）
-├── src/                        # L4: TS エンジン（workflow + routing + cli + installers + checkpoint + audit + state）
+├── src/                        # L4: TS エンジン（platform + workflow + routing + cli + installers + checkpoint + audit + state）
 ├── tests/                      # vitest ユニット + インテグレーション + dogfood（R8.1 dogfood-first）
 ├── scripts/                    # CI ゲート（check-workflow-schema, transparency-verdict, state-archive）
 ├── .planning/                  # プロジェクトメモリ（STATE + ROADMAP + REQUIREMENTS + フェーズ別 + マイルストーン）
@@ -502,13 +502,13 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `harnessed resume` | セッション中断後に最新チェックポイントから再開 |
 | `harnessed status` | 現在の phase + ロックホルダー |
 | `harnessed doctor` | ヘルスチェック(Node / MCP / jq / Win bash / routing / token budget / skill 完全性 / GateGuard 競合 / update-available など) |
-| `harnessed update [--check\|--upstreams\|--migration-report]` | 自己更新(インストールチャネルで分岐):バイナリ版は GitHub releases からその場で自己置換(sha256 検証、前バージョンをロールバック用に保持);npm 版は `npm i -g harnessed@latest` を実行。`--check` は最新バージョンを報告;`--upstreams` はベース manifests を再実行;`--migration-report` は読み取り専用の陳腐化状態インベントリ |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自己更新(インストールチャネルで分岐):バイナリ版は GitHub releases からその場で自己置換(sha256 + ed25519 署名検証 —— releases には `<asset>.sha256.sig` が同梱、4.32.19 以降は署名付きリリース契約;置換された前バージョンはロールバック用に退避);npm 版は `npm i -g harnessed@latest` を実行。`--check` は最新バージョンを報告;`--rollback [version]`(バイナリ版のみ)は退避済みの前バージョンバイナリをアトミックに復元 —— npm 版は `npm i -g harnessed@<version>` を案内;`--upstreams` はベース manifests を再実行;`--migration-report` は読み取り専用の陳腐化状態インベントリ |
 | `harnessed release-preflight` | Read-only のリリース準備ゲート（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；準備未完了なら exit 1。Ship-stage のゲート |
 | `harnessed retro --done` | `/retro` 実行後に retro-reminder フェーズカウンターをリセット（各ターンの RETRO-DUE ナッジをクリア） |
 | `harnessed install <name>` | 上流 manifest をインストール |
-| `harnessed uninstall [name]` | リバースアンインストール |
+| `harnessed uninstall [name]` | リバースアンインストール —— skill をインストールするメソッド(`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`)では manifest が宣言する `spec.uninstall` teardown(cmd + `$HOME` 内に限定、冪等な `cleanup_paths`)を実行;その他のメソッドは従来どおり per-method の逆適用 |
 | `harnessed backup` | スナップショットバックアップ管理 |
-| `harnessed rollback <timestamp>` | ワンラインロールバック（EOL 保持 + sha1 検証） |
+| `harnessed rollback <timestamp>` | **バックアップスナップショット**のワンラインロールバック（EOL 保持 + sha1 検証） —— `update --rollback` とは別物:あちらは前バージョンの**コンパイル済みバイナリ**を復元 |
 | `harnessed gc` | 期限切れバックアップのクリーンアップ |
 | `harnessed audit-log` | ルーティング透過ログのクエリ（`--filter` jq 式に対応） |
 
@@ -522,6 +522,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `--non-interactive` | CI / スクリプトシナリオ |
 | `--system` | L4 グローバルインストールを許可（指定がない場合は L1 npx エフェメラルにダウングレード） |
 | `--yes` | アンインストール時の対話確認をスキップ |
+| `--json` | 機械可読な stdout(引数なし dashboard / `next` / `advance` など);プロセスルートまで漏れたエラーも stdout に単一行の `{"error":{"message":…}}` envelope を出力するため、`JSON.parse(stdout).error` が信頼できる失敗プローブになる |
 | `--full-diff` | 200 行以上で折り畳まれた diff を展開 |
 | `--no-color` | TTY であっても強制的に色なし |
 | `--task <text>` | `run` サブコマンド —— タスク記述（workflow `gateContext.task` に渡される） |
