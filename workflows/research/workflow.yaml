@@ -13,6 +13,9 @@
 #   KEEP phases verbatim (01-fan-out + 02-synth) — phases 内容 reuse v2 SHIPPED
 #                                                              (per PLAN L455 "phases 内容 reuse v2")
 #
+# T2.3 delta: 01-fan-out 拆成 5 条 gated source lane (见 phases 内注记) —
+#   web-search-routing.yaml 5 trigger 从运行时孤儿变成真 gate。
+#
 # Sister refs:
 #   - .planning/phase-v3.0-3.2/PLAN.md L450-457 (T3.4.W1.1 spec verbatim)
 #   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 Standalone research v3 example
@@ -33,15 +36,52 @@ disciplines_applied: [karpathy, output-style, language, operational, priority, p
 tools_available: [tavily-mcp, exa-mcp, ctx7, gsd-discuss-phase]
 
 phases:
-  # 01-fan-out: 多源 fan-out — Tavily / Exa / ctx7 各源并行查询 (subagent fan-out per CLAUDE.md
-  # 子任务并行执行机制); generic shape — workflow engine 按 capability route 触发 3 source sequentially
-  - id: 01-fan-out
+  # T2.3 — 01-fan-out 的 generic "按 capability route 触发 source" 注记终于落地:
+  # 5 条 source lane 各由 workflows/judgments/web-search-routing.yaml 的一个 trigger
+  # gate。之前那 5 个 trigger 是运行时孤儿 (零 gate ref → resolveJudgmentGate 纯 ref
+  # 驱动, 文件永不加载求值), ADR-0032:81 描述过这步接线但从未落地。
+  # lane 之间互斥 (search_type 单值); 默认 gateContext = keyword → 只 fire tavily lane,
+  # 与改动前"01-fan-out 无条件跑一次"行为等价。
+  # 全部沿用 defaults.ralph_max_iterations.research.01-fan-out 预算 (同一 fan-out 阶段)。
+
+  # lane 1 (默认) — Tavily MCP 关键词 / 库 API / 新闻时效 / 生产 RAG
+  - id: 01-fan-out-tavily-keyword
     upstream: web-search
     model: sonnet
+    gate: judgments.web-search-routing.tavily-mcp-default.fires
     max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
     parallelism: judgments.parallelism-gate.subagent-default.fires
 
+  # lane 2 — Exa MCP 覆盖默认: 描述式查询 / 学术论文 (需 EXA_API_KEY, 缺则落 lane 1)
+  - id: 01-fan-out-exa-descriptive
+    upstream: web-search
+    model: sonnet
+    gate: judgments.web-search-routing.exa-mcp-descriptive-academic.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
+
+  # lane 3 — Tavily 必用: 抓整站 / 站点结构 (crawl / map), Exa 无对等工具
+  - id: 01-fan-out-tavily-crawl
+    upstream: web-search
+    model: sonnet
+    gate: judgments.web-search-routing.tavily-crawl-map-site.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
+
+  # lane 4 — ctx7 CLI: 库 / API / 框架 / SDK / CLI 工具文档 (prefer over web search)
+  - id: 01-fan-out-ctx7-lib-docs
+    upstream: ctx7
+    model: sonnet
+    gate: judgments.web-search-routing.ctx7-lib-docs.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
+
+  # lane 5 (永远规则) — 单次轻量查询 (一个明确 URL) 直接 WebFetch, 不走 MCP / CLI
+  - id: 01-fan-out-webfetch-url
+    upstream: web-search
+    model: haiku
+    gate: judgments.web-search-routing.webfetch-single-url.fires
+    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
+
   # 02-synth: GSD discuss synth aggregate — 多源结果 dedup + reconcile + GSD discuss-phase format
+  # (无 gate — 无论命中哪条 lane 都要 aggregate)
   - id: 02-synth
     upstream: gsd
     capability: '{{ capabilities.gsd-discuss-phase.cmd }}'

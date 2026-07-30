@@ -70,7 +70,7 @@ Sister `workflows/capabilities.yaml`:
 
 产出:一份 locked spec,执行阶段(`/plan` → `/task` → `/verify`)无需再问用户即可消费。
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->
 
 ## 参考资料
 

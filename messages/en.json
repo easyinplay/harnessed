@@ -80,6 +80,14 @@
   "doctor.summary.warn": "\nall checks ok (with warnings — see hints above)",
   "doctor.summary.pass": "\nall checks passed",
 
+  "check_docs.clean": "documentation discipline: no violations",
+  "check_docs.state_line_limit": "STATE.md is {{lines}} lines > the {{limit}}-line digest limit — archive older phase narrative to RETROSPECTIVE.md (override for one run: HARNESSED_ALLOW_LONG_STATE=1)",
+  "check_docs.state_key_decisions": "{{count}} '关键决议 ship 总结' section(s) > {{limit}} — keep only the current one; move the rest to RETROSPECTIVE.md",
+  "check_docs.state_errata": "historical commentary '{{excerpt}}' belongs in RETROSPECTIVE.md, not in the STATE digest",
+  "check_docs.roadmap_narrative": "closing narrative inlined in an overview doc ({{signals}}) — ROADMAP carries one line + a pointer per phase; narrative goes to SUMMARY / VERIFICATION",
+  "check_docs.summary_halt": "\ndocumentation discipline: {{halt}} blocking + {{warn}} advisory violation(s)",
+  "check_docs.summary_warn": "\ndocumentation discipline: {{warn}} advisory violation(s) (non-blocking)",
+
   "backup.no_backups": "no backups found ({{root}} absent)",
   "backup.no_backups_empty": "no backups found ({{root}} empty)",
   "backup.total_snapshots": "\n{{count}} snapshot(s) total",

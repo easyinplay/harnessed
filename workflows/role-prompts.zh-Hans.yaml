@@ -348,7 +348,7 @@ prompts:
       - "若 agent 逐字吐出 'COMPLETE',经 `/plan` 标记 progress.md 完成"
       - "若超过 max_iterations,发警告 + 停止;不要静默继续"
       - "若需要 teammate 通信 / context 溢出 → 升级到 Agent Teams"
-      - "清理:TeamDelete 是权威清场;shutdown_request 尽力而为(卡死的 teammate 只保证在 session 结束时停止)"
+      - "清理:按名请求每个 teammate shut down —— 这个请求**就是**清场手段(CC 2.1.178+ 已无 delete 工具);团目录在 session 退出时自动删除,而无视请求的 teammate 只保证在 session 结束时停止"
     severity: "complete / max-iter-exceeded / escalated-to-teams"
     description: "用逐字 COMPLETE 承诺把子任务包进 ralph-loop;需要时升级到 Agent Teams。"
 
@@ -495,18 +495,18 @@ prompts:
     primary_cap: "agent-teams-create"
     specialist: "多 specialist Agent Team 编排器(Pattern C)"
     responsibility: |
-      仅限关键发布 / 大型重构。经 TeamCreate 派出 4 个 teammate
-      (code-review + gstack-review + gstack-cso + gstack-qa),让它们
-      经 SendMessage 交叉质询发现(不是 fire-and-forget),lead 裁决最终
-      报告。清理强制。
+      仅限关键发布 / 大型重构。spawn 4 个后台 teammate
+      (code-review + gstack-review + gstack-cso + gstack-qa)—— 团在第一个
+      spawn 时隐式形成,没有建团步骤 —— 让它们经 SendMessage 交叉质询发现
+      (不是 fire-and-forget),lead 裁决最终报告。收尾前必须停掉每个 teammate。
     checklist:
       - "Token 成本关卡:估算 team_cost vs 2 × subagent_cost;只在 team 划算时升级"
-      - "TeamCreate 4 个 teammate:code-review / gstack-review / gstack-cso / gstack-qa"
+      - "spawn 4 个后台 teammate(第一个 spawn 即成团;`team_name` 被忽略):code-review / gstack-review / gstack-cso / gstack-qa"
       - "每个 teammate 的 brief 自包含(没有共享 session 上下文可依赖)"
       - "交付契约:named/background teammate 的**最终消息**会被平台丢弃 —— 每条发现必须经 SendMessage 发给 lead 或写入文件由 lead 读回;绝不依赖 teammate 的最后一条输出"
       - "往返发现:每个 teammate 发 top-3 发现;其他人评级(真 / 误报 / 吹毛求疵)"
       - "Lead 裁决冲突;产出按 CRITICAL → HIGH → MEDIUM 排序的最终报告"
-      - "清理强制:TeamDelete 是权威清场;对每个 teammate 的 shutdown_request 尽力而为(卡死的 teammate 只保证在 session 结束时停止)"
+      - "清理强制:按名请求 4 个 teammate 各自 shut down 并确认真的停了 —— 这个请求**就是**清场手段(已无 delete 工具);团目录在 session 退出时自动删除,而无视请求的 teammate 只保证在 session 结束时停止"
       - "若关卡未触发(常规 PR),不要升级 —— 回退到单 agent fan-out"
     severity: "ship-blocker / ship-with-action / informational"
     description: "Pattern C 4-specialist Agent Team —— 关键发布的多维度审查,带 SendMessage 交叉质询。"

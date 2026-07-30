@@ -3,7 +3,8 @@
 // (D-04 + D-11 strategic-gate / phase-gate skip path).
 // T3.5.W0.2 — 5 NEW fixture verify master vs sub detect + loadDisciplinesForPhase wedge.
 // T3.5.W1.5 — 6 NEW fixture verify 3 phase-level hook fire point per RESEARCH-disciplines § 4.4
-// (before-spawn invokes_tools.length>1 / after-output r.target=chat / before-commit r.triggers_commit)。
+// (before-spawn invokes_tools.length>1 / before-commit r.triggers_commit;
+//  after-output removed 4.34.0 — hook deleted, never reachable in the real path)。
 // Sister Phase 3.1 W1 state.test.ts vi.mock pattern.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -39,7 +40,6 @@ interface FiredCapShape {
   tier?: string
 }
 const arbitrateBeforeSpawnMock = vi.fn<(fired: FiredCapShape[]) => Promise<FiredCapShape[]>>()
-const runAfterOutputHookMock = vi.fn<() => Promise<string[]>>()
 const runBeforeCommitHookMock = vi.fn<() => Promise<void>>()
 
 vi.mock('../../src/workflow/governance.js', () => ({
@@ -78,9 +78,6 @@ vi.mock('../../src/discipline/enforcement/before-phase-execute.js', () => ({
 vi.mock('../../src/discipline/enforcement/before-spawn.js', () => ({
   arbitrateBeforeSpawn: (fired: FiredCapShape[], _root: string): Promise<FiredCapShape[]> =>
     arbitrateBeforeSpawnMock(fired),
-}))
-vi.mock('../../src/discipline/enforcement/after-output.js', () => ({
-  runAfterOutputHook: (_ctx: unknown): Promise<string[]> => runAfterOutputHookMock(),
 }))
 vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
   runBeforeCommitHook: (_ctx: unknown): Promise<void> => runBeforeCommitHookMock(),
@@ -142,13 +139,11 @@ beforeEach(() => {
   runMasterOrchestratorMock.mockReset()
   loadDisciplinesForPhaseMock.mockReset()
   arbitrateBeforeSpawnMock.mockReset()
-  runAfterOutputHookMock.mockReset()
   runBeforeCommitHookMock.mockReset()
   loadPhasesMock.mockReturnValue({ workflow: 'plan-feature', phases: fivePhases })
   resolveJudgmentGateMock.mockResolvedValue(true)
   loadDisciplinesForPhaseMock.mockResolvedValue(new Map())
   arbitrateBeforeSpawnMock.mockImplementation(async (fired) => fired)
-  runAfterOutputHookMock.mockResolvedValue([])
   runBeforeCommitHookMock.mockResolvedValue(undefined)
   // Reset stub fn to test shim (per-test override 后 restore;Phase v3.4.4 production
   // default 现 call real sdkSpawn — tests own legacy '<stub for X>' shim via _testStubFn)。
@@ -427,22 +422,11 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     warnSpy.mockRestore()
   })
 
-  it('14. T3.5.W1.5 — after-output fires: stub r.target=chat → runAfterOutputHook called', async () => {
-    // Stub override return shape with target='chat' → after-output validate fires。
-    isVetoedMock.mockResolvedValue(false)
-    _dispatchSkillStub.fn = async (skillName) => ({
-      status: 'ok',
-      output: `chat response from ${skillName}`,
-      target: 'chat',
-    })
-    const v2Phases = [{ id: 'p1' }]
-    loadPhasesMock.mockReturnValue({ workflow: 'task', phases: v2Phases })
-    const r = await runWorkflow('workflows/task/clarify/workflow.yaml', {})
-    expect(r.status).toBe('complete')
-    expect(runAfterOutputHookMock).toHaveBeenCalledTimes(1)
-    // KEY: file/commit-message target NOT trigger after-output;default undefined NOT trigger 也证实。
-    expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
-  })
+  // 4.34.0 — cell 14 ("after-output fires when r.target==='chat'") DELETED with the
+  // hook itself. `target` was never assigned outside this very stub, and the whole
+  // `harnessed run` path is forbidden by every SKILL, so the cell only ever proved
+  // the test double worked. Output-style scoping now lives in `harnessed prompt`
+  // (buildDisciplinesSection chat-scope block, covered by tests/cli/prompt.test.ts).
 
   it('15. T3.5.W1.5 — before-commit fires: stub r.triggers_commit=true → runBeforeCommitHook called', async () => {
     // Stub override triggers_commit=true → before-commit hook fires before completePhase。
@@ -457,19 +441,16 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     const r = await runWorkflow('workflows/task/deliver/workflow.yaml', {})
     expect(r.status).toBe('complete')
     expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
-    // KEY: after-output NOT trigger (target undefined ≠ 'chat')。
-    expect(runAfterOutputHookMock).not.toHaveBeenCalled()
   })
 
-  it('16. T3.5.W1.5 — default stub (target=undefined, triggers_commit=undefined) → both hook NOT called', async () => {
-    // Default WIRED stub return NO target NO triggers_commit → backwards-compat existing fixture
-    // 不破:after-output + before-commit both 跳过(negative gating proof)。
+  it('16. T3.5.W1.5 — default stub (triggers_commit=undefined) → hooks NOT called', async () => {
+    // Default WIRED stub return NO triggers_commit → backwards-compat existing fixture
+    // 不破:before-commit 跳过(negative gating proof)。
     isVetoedMock.mockResolvedValue(false)
     const r = await runWorkflow('workflows/plan-feature/workflow.yaml', {})
     expect(r.status).toBe('complete')
     expect(r.phasesRun).toBe(5)
-    // Default stub 不带 target / triggers_commit → 两 hook 全 NOT fire。
-    expect(runAfterOutputHookMock).not.toHaveBeenCalled()
+    // Default stub 不带 triggers_commit → before-commit NOT fire。
     expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
     // Default fivePhases 不带 invokes_tools → before-spawn 也 NOT fire。
     expect(arbitrateBeforeSpawnMock).not.toHaveBeenCalled()
@@ -549,7 +530,9 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     expect(fallbackReminder).toContain('shared_task_list')
     expect(fallbackReminder).toContain('opposing_hypothesis_debate')
     expect(fallbackReminder).toContain('fullstack_three_way')
-    expect(fallbackReminder).toContain('do NOT attempt to call TeamCreate')
+    // T2.4 — CC 2.1.178+ deleted TeamCreate/TeamDelete; the rule now forbids the ACTIONS
+    // (spawning teammates / calling SendMessage) rather than naming a dead tool.
+    expect(fallbackReminder).toContain('do NOT attempt to spawn teammates or call SendMessage')
     // Phase 3 TRANSPARENT_SKIP_RULES appended
     expect(fallbackReminder).toContain('Skipped <phase>, because <reason>')
     expect(fallbackReminder).toContain('Tell me if you actually need it')
@@ -709,7 +692,8 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
       expect(allErrCalls).toContain(
         'fullstack_three_way: 3-role API contract spans frontend+backend+tests',
       )
-      expect(allErrCalls).toContain('TeamCreate')
+      // T2.4 — hint points at the surviving mechanism (background Agent spawn), not TeamCreate
+      expect(allErrCalls).toContain('spawn background teammates with the Agent tool')
       expect(allErrCalls).toContain('parallelism-gate.yaml')
     } finally {
       errSpy.mockRestore()

@@ -10,14 +10,23 @@ schema_version: harnessed.workflow.v3
 harnessed v2.0 随附的多源调研工作流（Stage ① Discuss）；
 `workflow.yaml` schema 在 Phase v3.0-3.4 W1.1 中 bump 至 `harnessed.workflow.v3`
 (T3.4.W1.1 — D-09 L0 Discipline Substrate + D-05 tools_available 交叉验证)；
-phases 内容（01-fan-out + 02-synth）原样沿用 v2 SHIPPED，未做更改。
+T2.3 把 `01-fan-out` 拆成 5 条 gated source lane —— 每条 lane 各由
+`workflows/judgments/web-search-routing.yaml` 的一个 trigger gate（那 5 个 trigger 此前是
+运行时孤儿：零 gate ref，文件永不加载求值）。`02-synth` 未变。
 
-## 阶段 (2)
+## 阶段 (6)
 
-| # | Phase | Upstream | Capability | Model | Description |
-|---|-------|----------|-----------|-------|-------------|
-| 01 | `01-fan-out` | web-search | (route-by-subtask) | sonnet | 3 路并发调研 (Tavily MCP / Exa MCP / ctx7 CLI，遵循内置 web-search + context7 路由规则) |
-| 02 | `02-synth` | gsd | `gsd-discuss-phase` | opus | GSD discuss-phase 聚合 + 去重 + 对账 |
+| # | Phase | Upstream | Capability | Model | Gate | Description |
+|---|-------|----------|-----------|-------|------|-------------|
+| 01 | `01-fan-out-tavily-keyword` | web-search | (route-by-subtask) | sonnet | `judgments.web-search-routing.tavily-mcp-default.fires` | 默认 lane —— Tavily MCP 关键词 / 库 API / 新闻时效 / 生产 RAG |
+| 02 | `01-fan-out-exa-descriptive` | web-search | (route-by-subtask) | sonnet | `judgments.web-search-routing.exa-mcp-descriptive-academic.fires` | Exa MCP 覆盖默认 —— 描述式查询 / 学术论文（需 `EXA_API_KEY`，缺则落默认 lane） |
+| 03 | `01-fan-out-tavily-crawl` | web-search | (route-by-subtask) | sonnet | `judgments.web-search-routing.tavily-crawl-map-site.fires` | Tavily 必用 —— 抓整站 / 站点结构 (crawl / map)，Exa 无对等工具 |
+| 04 | `01-fan-out-ctx7-lib-docs` | ctx7 | (route-by-subtask) | sonnet | `judgments.web-search-routing.ctx7-lib-docs.fires` | ctx7 CLI —— 库 / API / 框架 / SDK / CLI 工具文档（优先于 web search） |
+| 05 | `01-fan-out-webfetch-url` | web-search | (route-by-subtask) | haiku | `judgments.web-search-routing.webfetch-single-url.fires` | 永远规则 —— 单次轻量查询（一个明确 URL）直接 WebFetch，不走 MCP / CLI |
+| 06 | `02-synth` | gsd | `gsd-discuss-phase` | opus | （无 gate —— 无论命中哪条 lane 都要 aggregate） | GSD discuss-phase 聚合 + 去重 + 对账 |
+
+lane 之间互斥（`subtask.search_type` 单值）；默认 gateContext（`search_type == 'keyword'`）
+只 fire Tavily lane，与 T2.3 之前"`01-fan-out` 无条件跑一次"行为等价。
 
 ## Capability refs
 
@@ -55,4 +64,4 @@ Code 内部会阻塞 session)。
 3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn。
 4. 命中 `<promise>COMPLETE</promise>`:Bash `harnessed checkpoint complete research --summary "<one-line>"`。evidence guard 在此运行(fail-CLOSED):若声明的 `artifacts_expected` 文件缺失会 exit 非零 —— 重 spawn 产出它再算 done。
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->

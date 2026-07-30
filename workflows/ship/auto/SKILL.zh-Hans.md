@@ -62,7 +62,7 @@ session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
 1. 若 "$ARGUMENTS" 触发澄清判据(≥2 方案 / 核心算法 / API contract / 高错误成本),先在**本 session** 交互澄清(AskUserQuestion)并锁决策;否则透明 skip。产出 locked spec。
 2. Bash: `harnessed gates ship --task "<locked spec>" --skip-sub discuss` → 解析 JSON `{fire, skip, parallelism}`。这是 plan SoT(不 spawn)。保留 verbatim JSON。
 3. Bash: `harnessed checkpoint start ship --plan '<step 2 的 verbatim gates JSON>'` → seed per-sub ledger,让 `harnessed status --recover` 能在 compaction 后给你重新定位。
-4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动(`TeamCreate` → 每个 sub `Agent(name, team_name, …)` + 其 `harnessed prompt <sub>` prompt → 用 `SendMessage` 协调 → `SendMessage shutdown_request` + `TeamDelete`)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。
+4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动。**没有建团步骤、也没有建团工具** —— 对每个 fired sub 用 `Agent(name: <sub>, run_in_background: true, prompt: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个后台 teammate,团在**第一个** spawn 时隐式形成,本 session 即 lead(`team_name` 入参被接受但忽略 —— 团名由 session 派生)。用 `SendMessage` 协调;某个 sub 完成后,**按名**请求该 teammate 关闭(例如「ask the verify-qa teammate to shut down」)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。
 5. 否则,对 `order` 里每个 fired sub(serial 串行、parallel 并发):
    - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed gates <sub> --task "<spec>" --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → 对它的 fired subs 重复本循环。
    - **否则(leaf sub):**
@@ -75,4 +75,4 @@ session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
 
 **若丢失上下文(compaction / resume):** 先跑 `harnessed status --recover` —— 它读 ledger 并打印「你在这里,下一步是什么」,让你从第一个 `pending` sub 续跑而非重启。若 ledger 为空,重跑 step 2-3。
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->

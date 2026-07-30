@@ -72,9 +72,23 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
       reliability_required: true,
       communication_needed: false,
       needs_lib_docs: false,
-      needs_web_search: false,
+      // T2.3 — web-search-routing.yaml declares Tavily/keyword THE default route,
+      // and workflows/research/workflow.yaml now gates its 5 source lanes on those
+      // triggers. Leaving needs_web_search=false + search_type='general' (not even
+      // a member of the SearchType union in schema/phaseFactContext.ts) would make
+      // every lane evaluate false → the research workflow would degrade to zero
+      // sources, a regression vs the previously-unconditional fan-out step. The
+      // non-default lanes (descriptive/academic → exa, site-crawl, lib-docs →
+      // ctx7, single-url → WebFetch) stay opt-in via --context.
+      needs_web_search: true,
+      search_type: 'keyword',
+      // T2.3 — `browse` capability + web-testing-routing browse-probe fact. Default
+      // FALSE (opt-in): it is an OR-arm of the browser-probe route, and defaulting
+      // it true would route a browser lane on every eval — the same "most expensive
+      // sub became the default path" defect 4.23.2 fixed. Reachable via --context
+      // or a facts-extraction chain.
+      needs_browser_automation: false,
       parallel_count: 1,
-      search_type: 'general',
       test_type: 'general',
     },
   }

@@ -6,6 +6,7 @@ import { registerAdvance } from './cli/advance.js'
 import { registerAudit } from './cli/audit.js'
 import { registerAuditLog } from './cli/audit-log.js'
 import { registerBackupList } from './cli/backup-list.js'
+import { registerCheckDocs } from './cli/checkDocs.js'
 import { registerCheckpoint } from './cli/checkpoint.js'
 import { registerCompact } from './cli/compact-cmd.js'
 import { registerDoctor } from './cli/doctor.js'
@@ -134,6 +135,7 @@ registerRetro(program) // 27th — Phase 22 retro-reminder reset (--done zeroes 
 registerInjectState(program) // 28th — 4.27.0 B3 D6: perturn hook via the binary itself (no host node)
 registerStopHook(program) // 29th — 4.30.0 issue #6: mode-B tool-call corruption auto-recovery Stop hook
 registerEval(program) // 30th — 4.31.0 eval Slice A: orchestrator-behavior regression trap suite
+registerCheckDocs(program) // 31st — T2.5: doc-discipline gate that actually SHIPS (scripts/ is not in `files`)
 
 // v8.0 Phase 24 — zero-arg `harnessed` you-are-here entry (comet `/comet` analog).
 // D3 explicit bare-invocation detection BEFORE program.parse: ONLY `[]` / `['--json']`

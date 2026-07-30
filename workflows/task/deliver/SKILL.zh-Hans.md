@@ -66,8 +66,9 @@ L42-45 中的 `wraps:` 正交字段）。Runtime engine 评估 wrapping mode 后
 5. `fullstack_three_way == true` — 全栈三路协同
 
 任 1 触发 → 升级 subagent fan-out → Agent Teams Pattern A/B/C。清理是强制的，
-遵循 agent-teams.md 防呆清单（SendMessage shutdown_request + TeamDelete）——属于
-engine 级别的连接，NOT yaml schema 的职责范围。
+遵循 agent-teams.md 防呆清单（lead 按名请求每个 teammate shut down；CC 2.1.178+ 已无
+teardown 工具，团目录在 session 退出时自动清理——剩下的纪律是别把 teammate 落在运行态）
+——属于 engine 级别的连接，NOT yaml schema 的职责范围。
 
 ### R20.10 explicit max_iterations_exceeded handler（非静默中止）
 
@@ -105,7 +106,7 @@ Code 内部会阻塞 session)。
 3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn。
 4. 命中 `<promise>COMPLETE</promise>`:Bash `harnessed checkpoint complete task-deliver --summary "<one-line>"`。evidence guard 在此运行(fail-CLOSED):若声明的 `artifacts_expected` 文件缺失会 exit 非零 —— 重 spawn 产出它再算 done。
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->
 
 ## References
 

@@ -9,6 +9,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { buildDefaultGateContext } from '../../src/cli/lib/gateContext.js'
 import {
   _clearJudgmentCache,
   resolveJudgmentGate,
@@ -208,5 +209,68 @@ triggers:
     await expect(
       resolveJudgmentGate('judgments.malformed.bogus.fires', {}, tmpRoot),
     ).rejects.toThrow(/Invalid judgment file malformed\.yaml/)
+  })
+})
+
+// T2.3 — the 3 routing judgments are now gate-referenced, so their expressions
+// hit resolveJudgmentGate for real. Guard the two facts that were absent from
+// PhaseFactContext / buildDefaultGateContext before T2.3: an absent BARE
+// identifier throws (ADR 0029 Amendment fail-closed), and an absent object
+// member evaluates to a silent false — either way the branch could never fire.
+describe('judgmentResolver — routing judgments evaluate against the default context', () => {
+  it('13. web-testing-routing.browse-probe fires for a browser-automation subtask', async () => {
+    const ctx = buildDefaultGateContext('probe the login page', 'verify') as unknown as Record<
+      string,
+      unknown
+    >
+    ;(ctx.subtask as Record<string, unknown>).needs_browser_automation = true
+    const result = await resolveJudgmentGate(
+      'judgments.web-testing-routing.browse-probe.fires',
+      ctx,
+      PACKAGE_ROOT,
+    )
+    expect(result).toBe(true)
+  })
+
+  it('14. browse-probe does NOT fire on the untouched default context', async () => {
+    const ctx = buildDefaultGateContext('write a backend module', 'task') as unknown as Record<
+      string,
+      unknown
+    >
+    const result = await resolveJudgmentGate(
+      'judgments.web-testing-routing.browse-probe.fires',
+      ctx,
+      PACKAGE_ROOT,
+    )
+    expect(result).toBe(false)
+  })
+
+  it('15. web-search default lane (tavily keyword) fires on the default context', async () => {
+    const ctx = buildDefaultGateContext('research X', 'discuss') as unknown as Record<
+      string,
+      unknown
+    >
+    expect(
+      await resolveJudgmentGate(
+        'judgments.web-search-routing.tavily-mcp-default.fires',
+        ctx,
+        PACKAGE_ROOT,
+      ),
+    ).toBe(true)
+    // Non-default lanes stay closed until facts say otherwise.
+    expect(
+      await resolveJudgmentGate(
+        'judgments.web-search-routing.exa-mcp-descriptive-academic.fires',
+        ctx,
+        PACKAGE_ROOT,
+      ),
+    ).toBe(false)
+    expect(
+      await resolveJudgmentGate(
+        'judgments.web-search-routing.ctx7-lib-docs.fires',
+        ctx,
+        PACKAGE_ROOT,
+      ),
+    ).toBe(false)
   })
 })

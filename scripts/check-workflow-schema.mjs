@@ -13,6 +13,15 @@
 //   C2. workflow.yaml `disciplines_applied[]` ⊂ 6 discipline basename set
 //   C3. judgments/*.yaml triggers.*.invokes[].capability ⊂ capabilities.yaml entry name set
 // + invariant K9: master workflow delegates_to[] serial mode 必带 order
+// + invariant K10 (T2.3): NO orphan judgment trigger — every triggers-shaped
+//   judgments/*.yaml trigger must be referenced by some workflow yaml
+//   `gate:` / `parallelism:` / `skip_gate:` field, or be listed in
+//   ORPHAN_TRIGGER_EXEMPTIONS with a reason. resolveJudgmentGate is purely
+//   ref-driven (src/workflow/judgmentResolver.ts): an unreferenced trigger file
+//   is never even loaded, so the rules it encodes silently never reach the model.
+//   That is how workflows/judgments/web-{search,testing,design}-routing.yaml
+//   (12 triggers) stayed dead from ADR-0032 until T2.3 — and no test could tell,
+//   because tests/workflow/workflow-gate-refs.test.ts only validated ref SHAPE.
 // + tolerance: Phase 3.3 W0 末 0 workflow yaml exist 时仍 exit 0 (仅 capabilities + disciplines + judgments validate)
 //
 // SSOT: TS schema files in src/workflow/schema/ are the source of truth; this
@@ -283,6 +292,81 @@ const WorkflowSchemaV2 = Type.Object(
   { additionalProperties: false },
 )
 
+// ── K10 orphan-trigger exemptions (T2.3) ──────────────────────────────────────
+// Keyed `<judgment file basename>.<trigger name>`. Every entry needs a REASON —
+// an unexplained entry is an orphan in disguise. Only two legitimate classes:
+//   (a) always-fire delegations — the sub is delegated UNCONDITIONALLY (no gate
+//       by design); the trigger documents the "总 fire" semantic + its invokes.
+//   (b) route alternatives / not-yet-wired upstream surfaces — consumed as prose
+//       doctrine or `wraps` targets, or awaiting a sub-workflow that doesn't exist.
+const ORPHAN_TRIGGER_EXEMPTIONS = new Map([
+  [
+    'parallelism-gate.main-session-fallback',
+    '(b) downgrade route, not a gate — referenced as a ralph-loop-wrapper `wraps` target + prompt doctrine',
+  ],
+  [
+    'stage-routing.plan-phase-delegate',
+    '(a) workflows/plan/auto/workflow.yaml delegates `phase` unconditionally (always-fire, gate absent by design)',
+  ],
+  [
+    'stage-routing.verify-progress-always',
+    '(a) workflows/verify/auto/workflow.yaml delegates `progress` unconditionally (always-fire)',
+  ],
+  [
+    'stage-routing.ship-preflight-always',
+    '(a) workflows/ship/auto/workflow.yaml delegates `preflight` unconditionally (always-fire)',
+  ],
+  [
+    'stage-phase-gate.gsd-spec-phase',
+    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
+  ],
+  [
+    'stage-phase-gate.gsd-ui-phase',
+    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
+  ],
+  [
+    'stage-phase-gate.gsd-secure-phase',
+    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
+  ],
+  [
+    'stage-phase-gate.gsd-ai-integration-phase',
+    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
+  ],
+])
+
+/** All triggers declared across triggers-shaped judgment files: `<file>.<trigger>`. */
+const declaredTriggers = new Set()
+/** All `<file>.<trigger>` referenced by a workflow gate-bearing field. */
+const referencedTriggers = new Set()
+
+/** Record a `judgments.<file>.<trigger>.<field>` ref (any non-4-part value ignored —
+ *  ref SHAPE is validated by tests/workflow/workflow-gate-refs.test.ts). */
+function noteTriggerRef(value) {
+  if (typeof value !== 'string') return
+  const parts = value.split('.')
+  if (parts.length === 4 && parts[0] === 'judgments') {
+    referencedTriggers.add(`${parts[1]}.${parts[2]}`)
+  }
+}
+
+/** Collect refs from every gate-bearing field of one parsed workflow yaml.
+ *  `skip_gate` is read forward-compatibly (field may not exist yet). */
+function collectTriggerRefs(parsed) {
+  if (Array.isArray(parsed?.phases)) {
+    for (const ph of parsed.phases) {
+      noteTriggerRef(ph?.gate)
+      noteTriggerRef(ph?.parallelism)
+      noteTriggerRef(ph?.skip_gate)
+    }
+  }
+  if (Array.isArray(parsed?.delegates_to)) {
+    for (const clause of parsed.delegates_to) {
+      noteTriggerRef(clause?.gate)
+      noteTriggerRef(clause?.skip_gate)
+    }
+  }
+}
+
 // ── Error reporting helpers ───────────────────────────────────────────────────
 let failed = 0
 function reportErrors(label, schema, parsed) {
@@ -345,8 +429,13 @@ if (existsSync(judgmentsDir)) {
       failed++
       continue
     }
-    // C3 cross-validate (skip fallback rules + user-overrides — no triggers[].invokes)
+    // C3 cross-validate + K10 collection (skip fallback rules + user-overrides —
+    // their top-level key is `rules` / `overrides`, not `triggers`, so they carry
+    // neither invokes nor gate-referenceable triggers; see the 3-way schema split above).
     if (isFallback || isUserOverrides) continue
+    for (const trigName of Object.keys(parsed.triggers ?? {})) {
+      declaredTriggers.add(`${base}.${trigName}`)
+    }
     for (const [trigName, trig] of Object.entries(parsed.triggers ?? {})) {
       for (const inv of trig.invokes ?? []) {
         if (capNames.size > 0 && !capNames.has(inv.capability)) {
@@ -414,6 +503,10 @@ for (const { relPath, path } of collectWorkflowYamls()) {
   const label = `workflows/${relPath}`
   const version = parsed?.schema_version
 
+  // K10 — collect gate refs from EVERY workflow yaml regardless of schema version
+  // (legacy v1 files still reference triggers; skipping them would report false orphans).
+  collectTriggerRefs(parsed)
+
   if (version === 'harnessed.workflow.v3') {
     // V3 — light validate fields + cross-deps + K9 invariant
     // (Full V3 TypeBox not inlined since schema-teammate ships ST validation
@@ -480,10 +573,33 @@ for (const { relPath, path } of collectWorkflowYamls()) {
   }
 }
 
+// ── Step 5: K10 orphan judgment trigger gate (NEW T2.3) ───────────────────────
+const orphanTriggers = [...declaredTriggers]
+  .filter((t) => !referencedTriggers.has(t))
+  .filter((t) => !ORPHAN_TRIGGER_EXEMPTIONS.has(t))
+  .sort()
+if (orphanTriggers.length > 0) {
+  for (const t of orphanTriggers) {
+    console.error(
+      `::error::FAIL judgments.${t} — never referenced by any workflow yaml ` +
+        '`gate:` / `parallelism:` / `skip_gate:` field. resolveJudgmentGate is ref-driven, ' +
+        'so this trigger is never loaded or evaluated (runtime orphan). Wire it to the ' +
+        'semantically-correct workflow phase / delegates_to clause, or add it to ' +
+        'ORPHAN_TRIGGER_EXEMPTIONS in scripts/check-workflow-schema.mjs with a reason.',
+    )
+  }
+  failed += orphanTriggers.length
+}
+
+const exemptSeen = [...declaredTriggers].filter(
+  (t) => !referencedTriggers.has(t) && ORPHAN_TRIGGER_EXEMPTIONS.has(t),
+).length
+
 if (failed > 0) {
   console.error(`\n${failed} workflow yaml file(s) failed schema validation`)
   process.exit(1)
 }
 console.log(
-  `Workflow schema validation passed (capabilities + ${discBasenames.size} disciplines + judgments cross-validated + workflow v2=${v2Validated} / v3=${v3Validated}, legacy v1 skipped=${v1Skipped})`,
+  `Workflow schema validation passed (capabilities + ${discBasenames.size} disciplines + judgments cross-validated + workflow v2=${v2Validated} / v3=${v3Validated}, legacy v1 skipped=${v1Skipped}` +
+    `, K10 judgment triggers declared=${declaredTriggers.size} / exempt=${exemptSeen})`,
 )

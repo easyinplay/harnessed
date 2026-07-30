@@ -209,6 +209,114 @@ describe('check-workflow-schema — Contract 3 (NEW C.2): judgments invokes ⊂ 
         invokes: [{ capability: 'office-hours' }],
       },
     })
+    // T2.3 orphan gate: a trigger must be referenced by some workflow gate.
+    writeWorkflow('discuss', {
+      schema_version: 'harnessed.workflow.v2',
+      workflow: 'discuss',
+      phases: [{ id: 'p1', gate: 'judgments.strategic-gate.office-hours-trigger.fires' }],
+    })
+    const r = runScript()
+    expect(r.code).toBe(0)
+  })
+})
+
+// T2.3 — orphan judgment trigger gate. Before this gate the 3 bundled routing
+// judgments (web-search / web-testing / web-design, 12 triggers) had zero `gate:`
+// reference: resolveJudgmentGate is purely ref-driven, so nothing ever loaded or
+// evaluated them and no test could tell. This is the missing static invariant.
+describe('check-workflow-schema — T2.3 orphan judgment trigger gate', () => {
+  it('15. trigger referenced by no workflow gate → exit 1 naming the orphan', () => {
+    writeCaps()
+    writeJudgment('web-search-routing', {
+      'tavily-mcp-default': { fires_when: 'subtask.needs_web_search == true' },
+    })
+    const r = runScript()
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain('judgments.web-search-routing.tavily-mcp-default')
+    expect(r.stderr).toContain('never referenced')
+  })
+
+  it('16. trigger referenced via phases[].gate → exit 0', () => {
+    writeCaps()
+    writeJudgment('web-search-routing', { 'tavily-mcp-default': { fires_when: 'true' } })
+    writeWorkflow('research', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'research',
+      phases: [{ id: '01-a', gate: 'judgments.web-search-routing.tavily-mcp-default.fires' }],
+    })
+    const r = runScript()
+    expect(r.code).toBe(0)
+  })
+
+  it('17. trigger referenced via delegates_to[].gate → exit 0', () => {
+    writeCaps()
+    writeJudgment('stage-routing', { 'verify-qa-ui': { fires_when: 'true' } })
+    writeWorkflow('verify', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'verify',
+      delegates_to: [
+        { sub: 'qa', gate: 'judgments.stage-routing.verify-qa-ui.fires', mode: 'parallel' },
+      ],
+    })
+    const r = runScript()
+    expect(r.code).toBe(0)
+  })
+
+  it('18. trigger referenced via phases[].parallelism → exit 0', () => {
+    writeCaps()
+    writeJudgment('parallelism-gate', { 'subagent-default': { fires_when: 'true' } })
+    writeWorkflow('research', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'research',
+      phases: [{ id: '01-a', parallelism: 'judgments.parallelism-gate.subagent-default.fires' }],
+    })
+    const r = runScript()
+    expect(r.code).toBe(0)
+  })
+
+  it('19. trigger referenced via phases[].skip_gate (forward-compat field) → exit 0', () => {
+    writeCaps()
+    writeJudgment('tdd-gate', { 'tdd-strongly-suggested': { fires_when: 'true' } })
+    writeWorkflow('task', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'task',
+      phases: [{ id: '01-a', skip_gate: 'judgments.tdd-gate.tdd-strongly-suggested.skips' }],
+    })
+    const r = runScript()
+    expect(r.code).toBe(0)
+  })
+
+  it('20. fallback.yaml rules + user-overrides.yaml are exempt (not triggers-shaped)', () => {
+    writeCaps()
+    const dir = join(tmp, 'workflows', 'judgments')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(
+      join(dir, 'fallback.yaml'),
+      JSON.stringify({
+        schema_version: 'harnessed.judgment.v1',
+        rules: { 'uncertain-skip-transparently': { description: 'x' } },
+      }),
+      'utf8',
+    )
+    writeFileSync(
+      join(dir, 'user-overrides.yaml'),
+      JSON.stringify({
+        schema_version: 'harnessed.user-overrides.v1',
+        overrides: [
+          { id: 'o1', keywords: ['k'], triggers: ['judgments.subtask-gate.brainstorming.fires'] },
+        ],
+      }),
+      'utf8',
+    )
+    const r = runScript()
+    expect(r.code).toBe(0)
+  })
+
+  it('21. allowlisted exemption (stage-phase-gate.gsd-ui-phase) is not reported', () => {
+    writeCaps()
+    writeJudgment('stage-phase-gate', {
+      'gsd-ui-phase': { fires_when: 'phase.has_ui_changes == true' },
+    })
     const r = runScript()
     expect(r.code).toBe(0)
   })

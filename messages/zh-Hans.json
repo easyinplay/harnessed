@@ -80,6 +80,14 @@
   "doctor.summary.warn": "\nall checks ok (with warnings — see hints above)",
   "doctor.summary.pass": "\nall checks passed",
 
+  "check_docs.clean": "文档纪律检查通过：无违规",
+  "check_docs.state_line_limit": "STATE.md 当前 {{lines}} 行，超过 {{limit}} 行 digest 上限 —— 把更早的 phase 叙事归档到 RETROSPECTIVE.md（单次放行：HARNESSED_ALLOW_LONG_STATE=1）",
+  "check_docs.state_key_decisions": "'关键决议 ship 总结' section 有 {{count}} 个，超过 {{limit}} 个 —— 只留当前那个，其余移入 RETROSPECTIVE.md",
+  "check_docs.state_errata": "历史批注 '{{excerpt}}' 属于 RETROSPECTIVE.md，不该留在 STATE digest 里",
+  "check_docs.roadmap_narrative": "概览文档内联了收尾叙事（{{signals}}）—— ROADMAP 一 phase 一行结论 + 指针，叙事进 SUMMARY / VERIFICATION",
+  "check_docs.summary_halt": "\n文档纪律：{{halt}} 项阻断 + {{warn}} 项提示",
+  "check_docs.summary_warn": "\n文档纪律：{{warn}} 项提示（不阻断）",
+
   "backup.no_backups": "no backups found ({{root}} absent)",
   "backup.no_backups_empty": "no backups found ({{root}} empty)",
   "backup.total_snapshots": "\n{{count}} snapshot(s) total",

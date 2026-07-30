@@ -192,9 +192,10 @@ describe('buildAgentDef — Phase 4 role-prompts enrichment (4 fixtures)', () =>
     // 4 prevention-rule key phrases (one per item, verbatim from D1):
     //   1. Session-scoped (teams die at session end)
     expect(reminder).toContain('Session-scoped')
-    //   2. Cleanup mandatory — shutdown_request literal
-    expect(reminder).toContain('shutdown_request')
-    expect(reminder).toContain('TeamDelete')
+    //   2. Cleanup mandatory — T2.4: by-name shutdown request + automatic session-exit
+    //      cleanup (CC 2.1.178+ deleted TeamDelete; there is no teardown tool to name).
+    expect(reminder).toContain('shut down BY NAME')
+    expect(reminder).toMatch(/cleaned up automatically/i)
     //   3. Token cost estimation — team_cost formula identifier
     expect(reminder).toContain('team_cost')
     expect(reminder).toContain('subagent_cost')

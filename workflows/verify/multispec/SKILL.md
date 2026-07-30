@@ -4,7 +4,7 @@ description: |
   Stage ④.h verify sub-workflow — 4-specialist Agent Team Pattern C 多维度审查 (关键发布 /
   大重构 PR 升级, code-review + gstack-review + gstack-cso + gstack-qa 4 teammate 互相
   SendMessage 质询, NOT fire-and-forget subagent fan-out; bundled Agent Teams Pattern C
-  routing). Cleanup mandatory: shutdown_request + TeamDelete (bundled cleanup discipline).
+  routing). Cleanup mandatory: 按名请求每个 teammate shut down (bundled cleanup discipline).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (agent-teams 3 + 4 specialist capability) + 2 phase (01-team-create on critical-release
   invoke / 02-team-cleanup mandatory shutdown)。
@@ -31,17 +31,20 @@ D-11 Agent Teams + Pattern A sub-workflow ship)。
 | 1 | `01-team-create` | claude-platform | opus | `{{ capabilities.agent-teams-create.cmd }}` | `parallelism: agent-teams-upgrade.fires`; `on: is_major_release OR is_large_refactor → invoke` |
 | 2 | `02-team-cleanup` | claude-platform | haiku | `{{ capabilities.agent-teams-shutdown.cmd }}` | mandatory 防呆清单 |
 
-Per-phase config loads from `workflows/verify/multispec/workflow.yaml`; phase 01 creates 4
-teammate (code-review + gstack-review + gstack-cso + gstack-qa) via TeamCreate, teammates 互相
-SendMessage 质询 findings 是否真问题 (NOT fire-and-forget); phase 02 mandatory shutdown_request
-+ TeamDelete (bundled Agent Teams cleanup discipline)。
+Per-phase config loads from `workflows/verify/multispec/workflow.yaml`; phase 01 spawns 4
+background teammate (code-review + gstack-review + gstack-cso + gstack-qa) with
+`Agent(name, run_in_background=true)` — the team forms implicitly on the FIRST spawn (CC
+2.1.178+ has no create step / no create tool), teammates 互相 SendMessage 质询 findings 是否
+真问题 (NOT fire-and-forget); phase 02 mandatory 按名请求每个 teammate shut down (bundled
+Agent Teams cleanup discipline — 团目录在 session 退出时自动清理,无独立 teardown 工具,
+剩下的纪律是别把 teammate 落在运行态)。
 
 ## Capability refs
 
 Sister `workflows/capabilities.yaml` entries:
-- `agent-teams-create` — Bucket 5 Agent Teams (impl: claude-platform, cmd: TeamCreate)
+- `agent-teams-create` — Bucket 5 Agent Teams (impl: claude-platform, cmd: `Agent(name, run_in_background=true)`)
 - `agent-teams-send-message` — Bucket 5 Agent Teams (impl: claude-platform, cmd: SendMessage)
-- `agent-teams-shutdown` — Bucket 5 Agent Teams (impl: claude-platform, cmd: TeamDelete)
+- `agent-teams-shutdown` — Bucket 5 Agent Teams (impl: claude-platform, cmd: `ask the <teammate-name> teammate to shut down`)
 - `code-review` — Bucket 1 mattpocock (teammate 1)
 - `gstack-review` — Bucket 3 治理关卡 (teammate 2 Paranoid Staff Engineer)
 - `gstack-cso` — Bucket 3 治理关卡 (teammate 3 安全审查)
@@ -83,7 +86,7 @@ that blocks the session inside Claude Code).
 3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.
 4. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete verify-multispec --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->
 
 ## References
 

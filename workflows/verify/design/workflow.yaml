@@ -4,8 +4,10 @@
 # (has_design_changes 触发, 可选 conditional; bundled verify-stage optional /design-review step).
 #
 # Sister refs:
-#   - workflows/judgments/web-design-routing.yaml — 两段式 ui-ux-pro-max 结构 → design-taste-frontend 打磨
-#   - workflows/judgments/stage-routing.yaml verify-design-changes trigger (has_design_changes)
+#   - workflows/judgments/web-design-routing.yaml — 3 trigger 全接线 (T2.3):
+#     design-review-post (01) + ui-ux-pro-max-structure (02) + design-taste-polish (03)
+#   - workflows/judgments/stage-routing.yaml verify-design-changes trigger — 仍在
+#     workflows/verify/auto/workflow.yaml delegates_to 作 sub 级 delegation gate
 #   - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / design-taste-frontend
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister pattern
 #   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/design example verbatim
@@ -14,10 +16,11 @@ schema_version: harnessed.workflow.v3
 workflow: verify-design
 description: |
   Stage ④.f gstack /design-review 设计系统一致性 + AI 审美问题识别 (has_design_changes 触发,
-  可选 conditional)。Gate: judgments.stage-routing.verify-design-changes.fires
-  (phase.has_design_changes == true) — UI module fire only; 后端 / docs PR skip。
-  tools_available 含 ui-ux-pro-max (Stage 1 结构骨架) + design-taste-frontend (Stage 2 视觉打磨叠加)
-  per bundled 两段式 web-design routing (workflows/judgments/web-design-routing.yaml).
+  可选 conditional)。Gate: judgments.web-design-routing.design-review-post.fires
+  (phase.stage == 'verify' and phase.has_design_changes == true) — UI module fire only;
+  后端 / docs PR skip。tools_available 含 ui-ux-pro-max (Stage 1 结构骨架) +
+  design-taste-frontend (Stage 2 视觉打磨叠加) per bundled 两段式 web-design routing
+  (workflows/judgments/web-design-routing.yaml); T2.3 起两段式各成一条 remediation lane phase。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available: [gstack-design-review, ui-ux-pro-max, design-taste-frontend]
@@ -28,8 +31,34 @@ phases:
     upstream: gstack
     capability: '{{ capabilities.gstack-design-review.cmd }}'
     model: sonnet
-    gate: judgments.stage-routing.verify-design-changes.fires
+    # T2.3 — gate 由 judgments.stage-routing.verify-design-changes.fires 换成
+    # 同址的 judgments.web-design-routing.design-review-post.fires。两个 trigger 的
+    # fires_when 逐字等价 ("phase.stage == 'verify' and phase.has_design_changes == true"),
+    # 所以行为零变化; 换 ref 让 web-design-routing 的第 3 个 trigger 不再是运行时孤儿,
+    # 而 stage-routing.verify-design-changes 仍由 workflows/verify/auto/workflow.yaml
+    # 的 delegates_to 引用 (粗粒度 delegation gate 与 phase gate 各司其职)。
+    gate: judgments.web-design-routing.design-review-post.fires
     max_iterations: 3
     # D2-followup (ADR-0033): declare report artifact so the evidence guard is real
     # (verified, not none_declared) — proves the design-review consistency pass actually ran.
     artifacts_expected: [design-review-report.md]
+
+  # T2.3 — 两段式 remediation lane。01-design-review 出问题清单后:
+  # 命中结构 / 交互逻辑问题 → Stage 1 ui-ux-pro-max; 命中视觉打磨 / AI 味问题 → Stage 2
+  # design-taste-frontend (顺序上 polish 在结构之后, per web-design-routing.yaml)。
+  # 两条 lane 之前是运行时孤儿 (零 gate ref → 文件永不加载求值)。
+  - id: 02-ui-ux-structure
+    name: ui-ux-pro-max (Stage 1 — 受众 / 交互逻辑 / 设计主轴, 数据驱动结构骨架)
+    upstream: ui-ux-pro-max
+    capability: '{{ capabilities.ui-ux-pro-max.cmd }}'
+    model: sonnet
+    gate: judgments.web-design-routing.ui-ux-pro-max-structure.fires
+    max_iterations: 3
+
+  - id: 03-design-taste-polish
+    name: design-taste-frontend (Stage 2 — 细节 + 视觉打磨 → 高级感, anti-slop)
+    upstream: design-taste-frontend
+    capability: '{{ capabilities.design-taste-frontend.cmd }}'
+    model: sonnet
+    gate: judgments.web-design-routing.design-taste-polish.fires
+    max_iterations: 3

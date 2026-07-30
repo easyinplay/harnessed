@@ -9,10 +9,11 @@
 // git churn for low value.
 //
 // 4 fixture per teammate brief acceptance verbatim (now v3-aware):
-//   F1: yaml parse + TypeBox Value.Check(WorkflowSchemaV3) pass + schema_version=workflow.v3 + 2 phase count
+//   F1: yaml parse + TypeBox Value.Check(WorkflowSchemaV3) pass + schema_version=workflow.v3 + 6 phase count
 //   F2: 3 source capability refs (tavily-mcp / exa-mcp / ctx7) resolve from capabilities.yaml
 //   F3: GSD discuss-phase synth capability ref at 02-synth resolves
 //   F4: defaults.yaml ralph_max_iterations.research.{01-fan-out,02-synth} numeric value 1-100 range
+//   F5 (T2.3): the 5 web-search-routing triggers each gate exactly one fan-out lane
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -39,14 +40,17 @@ const parsed = parseYaml(rawYaml) as {
     model?: string
     max_iterations?: number | string
     parallelism?: string
+    gate?: string
   }>
 }
 
 describe('research workflow.yaml v3 — T2.4.W2.1 (D-08 + R20.7; v3.4.4 v2→v3 bump)', () => {
-  test('F1: yaml parse + Value.Check(WorkflowSchemaV3) pass + schema_version=workflow.v3 + 2 phase', () => {
+  test('F1: yaml parse + Value.Check(WorkflowSchemaV3) pass + schema_version=workflow.v3 + 6 phase', () => {
     expect(parsed.schema_version).toBe('harnessed.workflow.v3')
     expect(parsed.workflow).toBe('research')
-    expect(parsed.phases).toHaveLength(2)
+    // T2.3 — the single generic `01-fan-out` step became 5 gated source lanes
+    // (one per web-search-routing trigger) + 02-synth.
+    expect(parsed.phases).toHaveLength(6)
 
     if (!Value.Check(WorkflowSchemaV3, parsed)) {
       const errors = [...Value.Errors(WorkflowSchemaV3, parsed)].slice(0, 3)
@@ -101,5 +105,19 @@ describe('research workflow.yaml v3 — T2.4.W2.1 (D-08 + R20.7; v3.4.4 v2→v3 
     expect(fanOut).toBeLessThanOrEqual(defaults.hard_upper_limit)
     expect(synth).toBeGreaterThanOrEqual(1)
     expect(synth).toBeLessThanOrEqual(defaults.hard_upper_limit)
+  })
+
+  test('F5 (T2.3): each web-search-routing trigger gates exactly one fan-out lane', () => {
+    const expected = [
+      'judgments.web-search-routing.tavily-mcp-default.fires',
+      'judgments.web-search-routing.exa-mcp-descriptive-academic.fires',
+      'judgments.web-search-routing.tavily-crawl-map-site.fires',
+      'judgments.web-search-routing.ctx7-lib-docs.fires',
+      'judgments.web-search-routing.webfetch-single-url.fires',
+    ]
+    const gates = parsed.phases.map((p) => p.gate).filter((g): g is string => typeof g === 'string')
+    expect([...gates].sort()).toEqual([...expected].sort())
+    // 02-synth stays unconditional — the aggregate always runs.
+    expect(parsed.phases.find((p) => p.id === '02-synth')?.gate).toBeUndefined()
   })
 })

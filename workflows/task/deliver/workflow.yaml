@@ -41,8 +41,8 @@ description: |
   default fan-out OR Agent Teams 升级 (5 触发 OR-chain per bundled Agent Teams routing
   + D-11)。R20.10 explicit max_iterations_exceeded handler: emit_warning_and_halt
   exit_code 1 (NOT silent abort, sister Phase 2.4 W1.2 fallbackHandlers.ts engine.ts
-  wire pattern)。Cleanup mandatory when Agent Teams escalation path fires (shutdown_request
-  + TeamDelete per bundled Agent Teams cleanup discipline)。
+  wire pattern)。Cleanup mandatory when Agent Teams escalation path fires (按名请求每个
+  teammate shut down per bundled Agent Teams cleanup discipline; 团目录 session 退出自动清理)。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available:

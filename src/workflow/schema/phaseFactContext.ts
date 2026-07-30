@@ -7,7 +7,7 @@
 //
 // Field source (v3 additive):
 //   phase: v2 14 + 6 NEW core (D-01 + web-design + D-06 + sister v2 backfill 3) = 20
-//   subtask: v2 13 + 5 NEW (3 enum + 2 boolean) = 18
+//   subtask: v2 13 + 5 NEW (3 enum + 2 boolean) = 18, + T2.3 needs_browser_automation = 19
 //   root flat: v2 6 + 2 NEW boolean = 8
 
 import { type Static, Type } from '@sinclair/typebox'
@@ -105,6 +105,12 @@ const SubtaskShape = Type.Object(
     needs_lib_docs: Type.Boolean(), // ctx7 / context7 MCP routing
     needs_web_search: Type.Boolean(), // tavily/exa MCP routing (subtask-nested + root-flat duplicate per Appendix C)
     needs_google_workspace: Type.Boolean(), // google-workspace gws CLI routing
+    // T2.3 NEW — browser routing (capabilities.yaml `browse` fires_when +
+    // web-testing-routing.yaml browse-probe). Was referenced by the `browse`
+    // capability but declared nowhere: SubtaskShape is additionalProperties:false
+    // and buildDefaultGateContext never seeded it, so the browser branch was
+    // permanently unreachable (ADR-0038 fail-closed).
+    needs_browser_automation: Type.Boolean(),
   },
   { additionalProperties: false },
 )

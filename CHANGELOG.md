@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.34.0] - 2026-07-30
+
+CLAUDE.md 差距审计第二梯队。本版把三类「写了但从没通电」的机制接上,并把一个上游已删除的 API 面迁完。承接 4.33.0 的框架约束:**普通用户没有作者本机那份 `~/.claude/CLAUDE.md`**,所以 bundled 资产不接线 = 用户永远得不到。
+
+### Added
+
+- **`harnessed check-docs`(第 31 个子命令)+ opt-in 的文档纪律 hook。** 此前唯一真正硬失败的文档纪律 gate 是 `scripts/check-state-archive-stale.mjs`,而 **`scripts/` 不在 npm `files` 白名单** → 用户装了 harnessed 得不到任何文档纪律守卫。现在规则实现落 `src/`(随 `dist/` 分发),`manifests/optional/doc-discipline-gate.yaml` 用 `cc-hook-add` 把它接成 `PreToolUse(Bash)` hook,`--hook` 内再判 `tool_name` 与 git commit 正则,其余 Bash 调用 no-op。**exit code 直接当 hook 契约**:0 清洁 / 1 warn(仅建议,不阻断)/ 2 halt(阻断工具调用),与 `doc-discipline.yaml` 的 `enforcement:` 字段一一对应。选 PreToolUse 而非 Stop:Stop 上 exit 2 会阻断回合结束并重新提示模型,而这是模型无法修复的确定性检查 → 无限循环。`--max-state-lines` 默认 100(等于 bundled yaml 的值 —— shipped 默认必须与用户读到的规则一致;`scripts/` 侧的 150 是本仓自己的收紧节奏,刻意不统一)。
+- **孤儿 judgment trigger 的 CI gate(K10)。** `resolveJudgmentGate` 是纯 ref 驱动:没有 `workflow.yaml` 的 `gate:` / `parallelism:` 引用,judgment 文件永不加载。此前**没有任何机制能发现孤儿**(既有测试只校验 ref 形状)。新 gate 枚举全部 trigger 与全部引用点求差集,当前读数 `declared=41 / exempt=8`;8 条豁免各带理由,分两类:真·always-fire 语义的无条件 delegate(硬接 gate 会把无条件 sub 变成条件 sub,是行为回归)与对应 sub-workflow 尚不存在的 GSD phase。
+
+### Fixed
+
+- **三份 web routing judgment 是运行时孤儿 —— 12 个 trigger 零引用。** `web-search-routing` / `web-testing-routing` / `web-design-routing` 写得完整(fact 也都在 schema 与 gateContext 里备好),但 ADR-0032 描述过的那步 `gate:` 接线从未落地,所以整组「按需 rules 路由」从未通电。现全部接线:research 的 `01-fan-out` 拆成 5 条 gated lane(兑现该 phase 注释里承诺过、从未实现的「按 capability route 触发 source」)· verify/qa 补 4 条 lane · verify/design 换 ref(与 `stage-routing.verify-design-changes` 的 predicate 逐字相同,零行为变化)。连带 `chrome-devtools-mcp` 与 `browse` 补进 `verify/qa` 的 `tools_available` —— 此前「非功能性诊断必用 chrome-devtools-mcp」这条硬规则对模型完全不可见。
+- **浏览器路由改为 `/browse` 主导**(用户裁决),`playwright-cli` 降为备选:`needs_browser_automation` 补进 `SubtaskShape` 与 gateContext(此前该 fact 不在 schema 里 → 求值撞 undefined-variable → 按 ADR-0038 fail-closed **永不 fire**),trigger 改名 `playwright-cli-probe` → `browse-probe`,降级链按既有手法用 prose 注记表达(`/browse` 来自 gstack,未装则退 `playwright-cli`,两者都缺退平台内置)。**刻意不引入 deny-list**:原方案里「禁 `mcp__claude-in-chrome__*`」依据的是作者本机实测,属个人环境偏好,bundle 一条硬 deny 等于把它塞进所有用户的引擎。
+- **`Agent Teams` 指令面全线指向上游已删除的 API。** CC v2.1.178+ 删除了两个团生命周期工具:团在首个后台 teammate spawn 时隐式形成、`team_name` 被接受但忽略、关闭是**按名请求**而非工具调用、团目录 session 退出自动清理。此前 34 个 SKILL × 2 语言 + capabilities + role-prompts + `run.ts` + `verify/multispec` / `task/deliver` 的 workflow.yaml + `docs/WORKFLOW.md` 全部还写着旧 API,而 `workflows/auto/SKILL.md` 更把已不存在的删团工具定为 **MUST-in-finally 契约** —— 该分支一旦命中即不可执行。capability 的 `cmd` 字段改为承载调用形态(`Agent(name, run_in_background=true)` / `ask the <teammate-name> teammate to shut down`)而非编造工具名;`cc_version` 只声明 `>=2.1.178` 并说明不再支持旧路径。**连带修 `generateCommands.ts`** —— 它是 `~/.claude/commands/<name>.md` 的生成器、也就是用户实际读到的指令面,若留在旧 API 就会 ship 一个活的矛盾(SKILL 说「没有建团工具」而生成的命令文件说「调建团工具」)。新增守卫测试:死工具字面量不得出现在活指令面,迁移说明注释需在 ±1 行内带否定语(豁免藏不住真指令)。
+- **删除 `after-output` 强制 hook(死代码)。** 它只在 `r.target === 'chat'` 时可达,而该字段除测试 stub 外**全仓从无赋值**,且所在的 `harnessed run` 路径被每个 SKILL 明令禁用 —— 在真实编排里执行次数为 0。它的职责(output-style 规则只约束对话回复、不约束 subagent 写的文件)已由 4.33.0 的 prompt 注入 scope 分组承担,确定性的文档检查则由本版的 `check-docs` 承担。同步清理其单测与两处 mock。`before-spawn` 保留(4.33.0 已修 tier bug)。
+- **research 默认 fact 修正(防回归)。** `01-fan-out` 拆成 5 条 gated lane 后,若沿用旧默认 `needs_web_search: false`,每条 lane 都不 fire → research 退化成零来源,比接线前更糟。改为 `true` + `search_type: 'general' → 'keyword'`(顺带修一处 schema drift:`'general'` 根本不在 `SearchType` union 里),使默认恰好只 fire tavily lane,与接线前「一个 fan-out 步骤无条件跑一次」行为等价。
+- **本仓 ROADMAP 的两处内联收尾叙事。** 新 `check-docs` 规则改对之后立刻发现自己的文档在违规:里程碑索引行里内联了 `CI green 3-OS`(该信息已被同行末尾的 SUMMARY / audit 指针覆盖)。同时把 `adr-ref` 从 ROADMAP narrative 信号里移除并加回归测试锁住 —— `ADR-0030` 这类引用**本身就是指针**,正是该规则希望概览层使用的形态,拿它当违规信号会惩罚正确行为、把规则意图弄反。
+
+### Notes
+
+- 未纳入本版的后续项见 `.planning/phases/52-claude-md-gap-close/CONTEXT.md`:`resolveHookCommand` 的 compiled 分支会**静默丢掉尾部 flag**(所以不能把 `check-docs` 直接加进 `COMPILED_HOOK_IDENTITIES`,否则 `--hook` 消失、hook 从「只在 git commit 时检查」变成对每个 Bash 调用无条件阻断)· `masterOrchestrator-helpers.ts` 的同构仲裁缺陷(先答「`order` 已决定次序处 tier 仲裁是否还有意义」)· en base 资产 597 行中文(其中 `role-prompts.yaml` 4 行在 body/description 里、会进模型 prompt)。
+- T2.1(gate facts 生产链)与 T2.2(`enforcement: mandatory`)的 spec 已 ready-to-execute,裁决见 `T2.1-SPEC.md`;T2.7(完成保证内置化 / 摘 ralph-loop 与 karpathy-skills 两个上游依赖)spec 待裁决,见 `T2.7-SPEC-loop-internalization.md`。
+
 ## [4.33.0] - 2026-07-30
 
 CLAUDE.md 差距审计第一梯队。四路并行只读审计(治理关卡 / 澄清判据与并行机制 / 文档纪律与 TDD / rules 路由与输出规范)逐条对齐三层栈方法论,产出 `.planning/CLAUDE-MD-GAP-AUDIT-2026-07-30.md`(五类系统性断裂 + 7 个确认 bug + 5 处文档失真,每条带 `file:line`);本版交付其中修复成本最低、影响最直接的四项。

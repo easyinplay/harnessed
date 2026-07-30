@@ -25,6 +25,34 @@ describe('buildDefaultGateContext', () => {
     const ctx = buildDefaultGateContext('do X', 'verify')
     expect(ctx.is_critical_release).toBe(false)
   })
+
+  it('T2.3 — subtask.needs_browser_automation present, default false (opt-in)', () => {
+    // workflows/judgments/web-testing-routing.yaml browse-probe references
+    // subtask.needs_browser_automation (sister capabilities.yaml `browse`
+    // fires_when). Default FALSE: it is an OR-arm of the browser-probe route, and
+    // a true default would spawn a browser lane on every eval — the same
+    // "most expensive sub became the default path" defect class as 4.23.2.
+    // Sister facts needs_web_search / needs_lib_docs / needs_google_workspace
+    // keep the same opt-in shape.
+    const ctx = buildDefaultGateContext('do X', 'verify')
+    const subtask = ctx.subtask as Record<string, unknown>
+    expect('needs_browser_automation' in subtask).toBe(true)
+    expect(subtask.needs_browser_automation).toBe(false)
+  })
+
+  it('T2.3 — web-search default route is live (needs_web_search + keyword search_type)', () => {
+    // Wiring workflows/research/workflow.yaml phases to the 5 web-search-routing
+    // triggers turns the previously-unconditional fan-out step into 5 gated route
+    // lanes. Without a live default the whole workflow would degrade to zero
+    // sources; web-search-routing.yaml itself declares Tavily/keyword the default
+    // route, and 'general' was not even a member of the SearchType union in
+    // src/workflow/schema/phaseFactContext.ts (schema drift).
+    const subtask = buildDefaultGateContext('do X', 'discuss').subtask as Record<string, unknown>
+    expect(subtask.needs_web_search).toBe(true)
+    expect(subtask.search_type).toBe('keyword')
+    // Non-default lanes stay opt-in.
+    expect(subtask.needs_lib_docs).toBe(false)
+  })
 })
 
 describe('mergeGateContext — deep merge', () => {

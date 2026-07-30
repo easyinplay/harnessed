@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+# T2.5 — opt-in commit-time documentation-discipline gate.
+# Registers a PreToolUse(Bash) hook running `harnessed check-docs --hook`. The
+# --hook mode reads the tool payload on stdin and returns immediately (exit 0)
+# unless the command is a `git commit` — so every other Bash call is a no-op,
+# and the check only runs at the commit boundary declared by
+# workflows/disciplines/doc-discipline.yaml (enforcement_layer: commit).
+# Exit codes ARE the gate: 2 = blocking violation (PreToolUse blocks the commit
+# and hands stderr to the model), 1 = advisory only (stderr to the user), 0 =
+# clean. `HARNESSED_ALLOW_LONG_STATE=1` is the documented single-run override.
+# Opt-in (manifests/optional/) because it blocks a tool call on a doc rule; a
+# repo with a different STATE cadence should set its own ceiling first
+# (`harnessed check-docs --max-state-lines <n>`). Idempotent — re-install on an
+# existing matching entry → skip.
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: doc-discipline-gate
+  display_name: Documentation Discipline Gate (PreToolUse / git commit)
+  description: Opt-in PreToolUse hook blocking `git commit` when .planning/ breaches doc discipline (harnessed check-docs).
+  upstream:
+    source: doc-discipline-gate
+    homepage: https://github.com/easyinplay/harnessed
+    repository: https://github.com/easyinplay/harnessed.git
+    license: MIT
+    notice: First-party harnessed hook (T2.5, doc-discipline enforcement that ships).
+spec:
+  type: cc-hook
+  component_type: command
+  category: meta
+  install_type: hook
+  install:
+    method: cc-hook-add
+    cmd: "harnessed check-docs --hook"
+    hook_event: PreToolUse
+    hook_matcher: Bash
+    hook_command: "harnessed check-docs --hook"
+    idempotent_check: "grep -q 'check-docs' ~/.claude/settings.json"
+  verify:
+    cmd: "grep -q 'check-docs' ~/.claude/settings.json"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "true"
+  upstream_health:
+    stability: beta
+    last_check: "2026-07-30"
+    last_known_good_version: "0.1.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

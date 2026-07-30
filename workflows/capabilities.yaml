@@ -566,12 +566,28 @@ capabilities:
 
   # ============================================================================
   # Bucket 5 — Agent Teams 3 升级触发 (per D-11 + Q-AUDIT-5b schema fix +
-  #            bundled Agent Teams prerequisite: CC 2.1.133+ + env var)
+  #            bundled Agent Teams prerequisite: CC 2.1.178+ + env var)
   # ============================================================================
   #
   # Q-AUDIT-5b 2026-05-20 fix: settings_env_var root-level `env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
   # (NOT nested experimental.* — Wave A 本地 settings.json 实证修正 prior schema 错误)。
-  # Per Q-AUDIT-2 D-11: harnessed doctor + setup 检查 env var present + cc_version ≥2.1.133。
+  # Per Q-AUDIT-2 D-11: harnessed doctor + setup 检查 env var present + cc_version ≥2.1.178。
+  #
+  # 2026-07-30 UPSTREAM API MIGRATION (code.claude.com/docs/en/agent-teams, CC v2.1.178):
+  # `TeamCreate` / `TeamDelete` 两个工具**已被上游删除**("Both tools no longer exist")。
+  # 新机制:
+  #   - 建团:无建团步骤、无建团工具。设好 env var 后**第一个 spawn 出来的 teammate 即隐式成团**,
+  #     主 session = lead。`Agent` 工具的 `team_name` 入参"accepted but ignored"(团名由 session
+  #     派生 `session-<sessionId 前 8 位>`)。
+  #   - 关闭:lead **按名**请求 teammate shut down;teammate 可 approve 优雅退出 / reject 带理由。
+  #   - 清理:"cleaned up automatically when the session ends, so there's no separate cleanup step"。
+  #   - 一 session 一团;无嵌套团队(teammate 不能再 spawn teammate)。
+  # 因此本 bucket 的 `cmd` 不再是"工具名":create = 一种 spawn 调用形态,shutdown = 一句按名请求。
+  #
+  # `requires.cc_version` 是 free-form String(src/workflow/schema/capabilities.ts L25),
+  # 目前**没有任何 consumer 解析它** —— 它是给人/模型读的声明。旧路径(2.1.133 ≤ v < 2.1.178,
+  # 走已删除的 TeamCreate/TeamDelete)harnessed 不再支持,故这里只声明新下界 `>=2.1.178`,
+  # 不写区间(区间会暗示存在双路径 dispatch,而引擎里并不存在)。
   #
   # 5 fires_when OR-chain (multi-select; Agent Teams upgrade triggers):
   #   1. teammate_send_message_needed — teammate 间需 SendMessage 互通 (NOT fire-and-forget)
@@ -581,13 +597,16 @@ capabilities:
   #   5. fullstack_three_way          — 全栈三路协同 (前端 + 后端 + 测试同步 + API contract)
   agent-teams-create:
     impl: claude-platform
-    cmd: TeamCreate
+    cmd: 'Agent(name, run_in_background=true)'
     since: v2.0
     category: agent-platform
-    description: Agent Teams team 创建 (CC 2.1.133+ experimental)
+    description: >-
+      Agent Teams 成团 = 直接 spawn 后台 teammate,团在 first teammate spawn 时隐式形成
+      (implicit — CC 2.1.178+ 删除了 TeamCreate,无建团步骤);主 session = lead。
+      `team_name` 入参被接受但忽略(团名由 session 派生)。一 session 一团、无嵌套团队。
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
-      cc_version: ">=2.1.133"
+      cc_version: ">=2.1.178"
     fires_when:
       - teammate_send_message_needed == true
       - subagent_context_overflow == true
@@ -600,20 +619,26 @@ capabilities:
     cmd: SendMessage
     since: v2.0
     category: agent-platform
-    description: Agent Teams teammate 间通信 (round-trip 已验证 2026-05-19)
+    description: >-
+      Agent Teams teammate 间通信 (round-trip 已验证 2026-05-19)。工具本身早于 2.1.178 即存在,
+      但 harnessed 只支持 2.1.178+ 的隐式成团路径,故与 bucket 同下界;无广播,每个 recipient 单发。
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
-      cc_version: ">=2.1.133"
+      cc_version: ">=2.1.178"
 
   agent-teams-shutdown:
     impl: claude-platform
-    cmd: TeamDelete
+    cmd: 'ask the <teammate-name> teammate to shut down'
     since: v2.0
     category: agent-platform
-    description: Agent Teams cleanup (shutdown_request 之后 TeamDelete; mandatory cleanup discipline)
+    description: >-
+      Agent Teams 关闭 = lead 按名请求 teammate shut down(不是工具调用 —— CC 2.1.178+ 删除了
+      TeamDelete,无等价工具);teammate 可 approve 优雅退出 / reject 带理由,且会先做完当前
+      tool call。团的共享目录在 session 退出时自动清理,无独立 cleanup 步骤 —— 剩下的纪律是
+      「别把 teammate 落在运行态」(未关闭的 teammate 持续烧 token、可能挂起宿主)。
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
-      cc_version: ">=2.1.133"
+      cc_version: ">=2.1.178"
 
   # ============================================================================
   # Bucket 6 — L0 Discipline Substrate behavioral ref (D-09 NEW v3, 6 entry)

@@ -15,10 +15,24 @@ description: |
   Stage ④.d gstack /qa 端到端 QA 验收 (has_ui_changes 触发, 可选 conditional)。
   Gate: judgments.stage-routing.verify-qa-ui.fires (phase.has_ui_changes == true) —
   frontend / E2E module fire only; 后端 / docs PR skip。tools_available 包含
-  playwright-cli / playwright-test / webapp-testing 配套 E2E test 工具链。
+  browse / playwright-cli / playwright-test / webapp-testing / chrome-devtools-mcp
+  配套 E2E test + 非功能性诊断工具链 (T2.3: 三层职责矩阵 4 条 lane 各接一个
+  web-testing-routing gate)。
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
-tools_available: [gstack-qa, playwright-cli, playwright-test, webapp-testing]
+# T2.3 — browse 补入 (手层主导, /browse 优先于 playwright-cli);
+# chrome-devtools-mcp 补入 —— 「非功能性诊断 (性能 / a11y / 内存) 必用
+# chrome-devtools-mcp」之前对模型完全不可见 (不在任何 tools_available)。
+# chrome-devtools-mcp provider 二选一: ecc (bonus tier, ECC 唯一默认 MCP connector)
+# 或 optional 自装 manifest chrome-devtools-mcp (不装 ecc 的兜底); 双装 doctor warn;
+# 两者都缺时该 lane 不可用 (注记体例同 web-testing-routing.yaml)。
+tools_available:
+  - gstack-qa
+  - browse
+  - playwright-cli
+  - playwright-test
+  - webapp-testing
+  - chrome-devtools-mcp
 
 phases:
   - id: 01-qa
@@ -31,3 +45,42 @@ phases:
     # D2-followup (ADR-0033): declare report artifact so the evidence guard is real
     # (verified, not none_declared) — proves the end-to-end QA pass actually ran.
     artifacts_expected: [qa-report.md]
+
+  # T2.3 — 三层职责矩阵 + 非功能性诊断的 4 条 lane。之前 web-testing-routing.yaml
+  # 的 4 个 trigger 是运行时孤儿 (零 gate ref → 文件永不加载求值)。lane 由
+  # subtask.test_type 单值选择 (互斥); 默认 gateContext test_type 无信号 → 全 skip,
+  # 与改动前行为等价 (只跑 01-qa)。
+
+  # 脑 — 提交进 repo / CI 跑的正式 E2E test framework
+  - id: 02-e2e-ci
+    name: '@playwright/test (脑层 — frontend/e2e/*.spec.ts, 断言 / fixtures / reporter)'
+    upstream: playwright-test
+    model: sonnet
+    gate: judgments.web-testing-routing.playwright-test-default.fires
+    max_iterations: 3
+
+  # 手 — AI 实时探查 / 调试 / 一次性确认; /browse 主导, 未装 gstack 降级 playwright-cli
+  - id: 03-browser-probe
+    name: browse (手层 — /browse 主导; 未装 gstack 降级 playwright-cli)
+    upstream: gstack
+    capability: '{{ capabilities.browse.cmd }}'
+    model: sonnet
+    gate: judgments.web-testing-routing.browse-probe.fires
+    max_iterations: 3
+
+  # 筋骨 — Python 后端联动特例 (Tortoise ORM / pandas / Django Jinja 模板)
+  - id: 04-python-backend-e2e
+    name: webapp-testing (筋骨层 — tests/e2e/*.py + with_server.py 双进程)
+    upstream: gstack
+    capability: '{{ capabilities.webapp-testing.cmd }}'
+    model: sonnet
+    gate: judgments.web-testing-routing.webapp-testing-python-backend.fires
+    max_iterations: 3
+
+  # 非功能性诊断 — 必用 chrome-devtools-mcp (NOT playwright/test/cli/webapp-testing)
+  - id: 05-perf-a11y-diagnostic
+    name: chrome-devtools-mcp (LCP / Core Web Vitals / ARIA / 堆快照 — 非功能性 only)
+    upstream: chrome-devtools-mcp
+    model: sonnet
+    gate: judgments.web-testing-routing.chrome-devtools-mcp-diagnostic.fires
+    max_iterations: 3

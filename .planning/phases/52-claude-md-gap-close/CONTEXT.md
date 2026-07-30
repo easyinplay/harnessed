@@ -43,6 +43,10 @@
 - **T2.6 `masterOrchestrator-helpers.ts:216/218` 的同构仲裁缺陷 —— 先答「该不该接线」再动手**(第一梯队 T4 发现)。那里是**真正的 delegation spawn 点**(`tier: c.sub` 填 sub-workflow 名同样不是 hierarchy 条目 + 返回值同样丢弃,注释自认 "v3.0 sub-as-tier placeholder"),影响面比 `run.ts` 那处大。但 `delegates_to` 已有 `order` + `serial/parallel` 决定次序,所以**先答:tier 仲裁在该点是否还有独立意义?** 若 `order` 已全权决定 → 正解是删 placeholder 调用而非补映射(与 D1 的「删死抽象优于为对称而接线」同一哲学)。
 - **T2.5 强制层混合落地(D1 的 hook 侧)** —— `harnessed check-docs` 子命令(STATE 行数 / ROADMAP 内联叙事)+ opt-in manifest 把它接成 CC hook;biome-preempt 与 no-push-without-approval 同法;删 `after-output` 死代码及其单测。
 
+## 安装层 follow-up(T2.5 发现,单独 slice)
+
+**`resolveHookCommand` 的 compiled 分支会静默丢掉尾部 flag。** `harnessed uninstall` 与 doctor 的 stale-hook 自愈靠 `src/installers/lib/hookEntry.ts` 的 `COMPILED_HOOK_IDENTITIES = ['inject-state','stop-hook']` 识别第一方 hook。把 `check-docs` 加进去**会出事**:compiled 分支返回 `"<binary>" <marker>` 形态,`--hook` 会被丢掉 → 该 hook 从「只在 git commit 时检查」变成**对每个 Bash 调用无条件阻断**。这是「看起来接好了、实际变成全局门」的静默故障。修法是教 compiled 分支保留尾部 flag,属安装层单独 slice。当前状态:manifest-scoped uninstall(`src/uninstallers/ccHookAdd.ts` 精确命令匹配)可用,统一 uninstall 不认这个 hook。
+
 ## 第三梯队(文档对账 + 小额结构债,低风险可随时插入)
 
 第一梯队实施中新发现的三项:

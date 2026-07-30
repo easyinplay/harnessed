@@ -4,9 +4,16 @@
 #
 # 三层职责矩阵 verbatim:
 #   脑 (写测试 / 跑 CI)         — @playwright/test (frontend/e2e/*.spec.ts)
-#   手 (AI 实时操作)            — playwright-cli (一行 Bash, token 最省)
+#   手 (AI 实时操作)            — /browse 主导 (gstack headless Playwright);
+#                                 未装 gstack 降级 playwright-cli (一行 Bash, token 最省)
 #   筋骨 (Python 后端联动)      — webapp-testing skill (tests/e2e/*.py)
 #   非功能性诊断 (性能/a11y/内存) — chrome-devtools-mcp (必用)
+#
+# T2.3 — 本 file 的 4 trigger 之前是运行时孤儿 (零 gate ref → resolveJudgmentGate
+# 纯 ref 驱动, 永不加载求值)。现由 workflows/verify/qa/workflow.yaml 的 4 条 lane
+# phase 各接一个 gate。手层 trigger 由 playwright-cli-probe 改名 browse-probe:
+# 浏览器探查偏好 /browse (token 高效, 可复用 cookies 与会话状态)。
+# 这是路由偏好, NOT deny-list — 不禁用任何浏览器工具。
 #
 # expr-eval 2.0.2 case-sensitive: keyword `and` / `or` 全小写 (sister Phase 2.3 W0.2 bug)
 
@@ -23,14 +30,19 @@ triggers:
     invokes:
       - capability: playwright-test
 
-  playwright-cli-probe:
+  browse-probe:
     description: |
-      playwright-cli — AI 实时操作浏览器 一行 Bash, token 最省;
-      用于探查 / 调试 / 一次性确认 (非提交 repo)。
-      探查产出的 selectors 再沉淀到正式 test。
-    fires_when: "subtask.test_type == 'probe'"
+      浏览器探查 / 调试 / 一次性确认 (非提交 repo) — 主导 /browse。
+      探查产出的 selectors 再沉淀到正式 test (playwright-test-default lane)。
+      Provider 说明 (降级链, 同下方 chrome-devtools 二选一注记体例):
+      首选 browse (gstack user-skill, capabilities.yaml browse — headless Playwright,
+      token 高效, 可复用 cookies 与会话状态) → 未装 gstack 时本 capability 不可用,
+      降级 playwright-cli (npm-cli, 无 gstack 依赖, 仍在 tools_available 内) →
+      两者都缺时用 harness 平台内置浏览器工具。
+      路由偏好而非 deny-list: 只表达优先级, 不禁用任何浏览器工具。
+    fires_when: "subtask.test_type == 'probe' or subtask.needs_browser_automation == true"
     invokes:
-      - capability: playwright-cli
+      - capability: browse
 
   webapp-testing-python-backend:
     description: |

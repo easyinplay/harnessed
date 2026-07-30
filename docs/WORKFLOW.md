@@ -86,7 +86,7 @@ flowchart TB
 
 1. **Clarify interactively** — main session 用 `AskUserQuestion` 当面澄清(subagent 不能向 user 提问的根因解)。
 2. **Gate route** — `harnessed gates <master> --task "<spec>" --skip-sub clarify` → JSON `{fire:[{sub,order,mode}], skip, parallelism:{escalate_to_teams}}`。
-3. **Teams 分支** — 若 `escalate_to_teams` 为 true → CC-native Agent Teams(`TeamCreate` / `SendMessage` / `TeamDelete`,per `~/.claude/rules/agent-teams.md`)。
+3. **Teams 分支** — 若 `escalate_to_teams` 为 true → CC-native Agent Teams(`Agent(name, run_in_background=true)` spawn 后台 teammate 即隐式成团 / `SendMessage` 协调 / 按名请求 teammate shut down,per `~/.claude/rules/agent-teams.md`;CC 2.1.178+ 已删除建团 / 删团工具)。
 4. **per fired sub** — else 对每个 fired sub:`harnessed prompt <sub> --json` → `{prompt, max_iterations, model}` → **CC-native `Task` spawn** 外层套 ralph-loop plugin → 若 output 含 `STATUS: NEEDS_CLARIFICATION` → `AskUserQuestion` relay 给 user → re-spawn → 直到 output 含 `<promise>COMPLETE</promise>` → `harnessed checkpoint complete <sub>` 记录。
 5. **`harnessed run` 保留** — 仅 CI / headless 场景(无 interactive main session 可编排时)。
 
@@ -101,7 +101,7 @@ flowchart TB
         Clarify --> Gates["2. harnessed gates &lt;master&gt;<br/>--task --skip-sub clarify<br/>→ JSON {fire[], skip, parallelism}"]
         Gates --> Branch{escalate_to_teams?}
 
-        Branch -->|yes| Teams["3. CC-native Agent Teams<br/>TeamCreate / SendMessage / TeamDelete<br/>(rules/agent-teams.md)"]
+        Branch -->|yes| Teams["3. CC-native Agent Teams<br/>Agent(run_in_background) 隐式成团 / SendMessage<br/>/ 按名 shut down (rules/agent-teams.md)"]
 
         Branch -->|no| Loop
 
@@ -150,7 +150,7 @@ flowchart TB
 ### 1.5.4 Why (v4.0 转向动机)
 
 - **Keeps session responsive** — workflow 不再在 harnessed 进程内阻塞跑;main session 持续可交互,spawn 由 CC 原生异步执行。
-- **Enables Agent Teams** — 编排权回到 CC main session 后,可直接用 CC 平台层 `TeamCreate` / `SendMessage`(v3.x in-process SDK spawn 做不到)。
+- **Enables Agent Teams** — 编排权回到 CC main session 后,可直接用 CC 平台层后台 `Agent(...)` teammate spawn(隐式成团)+ `SendMessage`(v3.x in-process SDK spawn 做不到)。
 - **Enables clarification round-trips** — subagent 遇 gray area 返回 `STATUS: NEEDS_CLARIFICATION`,main session `AskUserQuestion` relay 给 user 再 re-spawn — subagent 借 main session 之手"够到" user(headless 模式根本不可能)。
 
 ---
@@ -273,7 +273,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 ### 4.3 Cleanup 防呆铁律
 
 - Session-scoped — Team 只活在当前 session, `/resume` 会丢 teammates
-- 必须 `SendMessage shutdown_request` + `TeamDelete` cleanup
+- 收尾前必须**按名**请求每个 teammate shut down(是请求而非命令:teammate 先做完当前 tool call,可 approve 优雅退出 / reject 带理由);团的共享目录在 session 退出时自动清理,无独立 cleanup 步骤 —— 剩下的纪律是别把 teammate 落在运行态(会持续烧 token、可能挂起宿主)
 - Token cost estimation: `doctor check` + workflow runtime warn 当 `estimated team_cost > 2 × subagent fan-out cost`
 - Brief 自包含 — teammate 启动时无主 session 上下文
 
@@ -332,7 +332,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | 5 | `tdd-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md TDD 强烈建议节 |
 | 6 | `fallback.yaml` | rules | v2 SHIPPED, v3 no change (3 铁律) | CLAUDE.md fallback 3 铁律 |
 | 7 | `web-design-routing.yaml` | triggers | **NEW v3** (两段式 3 trigger: ui-ux-pro-max-structure + design-taste-polish + design-review-post) | `~/.claude/rules/web-design.md` |
-| 8 | `web-testing-routing.yaml` | triggers | **NEW v3** (4 trigger: playwright-test-default + playwright-cli-probe + webapp-testing-python-backend + chrome-devtools-mcp-diagnostic) | `~/.claude/rules/web-testing.md` |
+| 8 | `web-testing-routing.yaml` | triggers | **NEW v3** (4 trigger: playwright-test-default + browse-probe + webapp-testing-python-backend + chrome-devtools-mcp-diagnostic) | `~/.claude/rules/web-testing.md` |
 | 9 | `web-search-routing.yaml` | triggers | **NEW v3** (5 trigger: tavily-default + exa-descriptive + tavily-crawl + ctx7-lib-docs + webfetch-single-url) | `~/.claude/rules/web-search.md` + `context7.md` + `google-workspace.md` |
 | 10 | `stage-routing.yaml` | triggers | **NEW v3** (12+ trigger: master orchestrator sub delegation per D-01) | CLAUDE.md 4-stage + D-07 20 workflow |
 | 11 | `user-overrides.yaml` | overrides | **v3.6.0** (keyword → trigger ref 覆盖, fallback 铁律 2 "用户明示 → 覆盖判据") | CLAUDE.md fallback 三铁律 |
@@ -359,7 +359,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | `tool-cli` | **2** | 1 (ctx7) | 1 (gws) | ctx7 / gws |
 | `tool-plugin` | **2** | 1 (planning-with-files) | 1 (@playwright/test reclass) | Claude Code plugin / npm-cli |
 | `tool-bundled-skill` | **3** | 2 (ralph-loop + webapp-testing reclass) | 1 (playwright-cli reclass) | sdk_ref bundled |
-| `agent-platform` | **3** | 3 | 0 | TeamCreate / SendMessage / TeamDelete |
+| `agent-platform` | **3** | 3 | 0 | `Agent(name, run_in_background=true)` / SendMessage / 按名 shut down 请求 |
 | **TOTAL** | **75** | **32** | **43** | (含 reclass 调整) |
 
 ### 7.1 category=behavioral (6 entry — D-09 L0 discipline-ref)
@@ -422,7 +422,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 ### 7.7 category=agent-platform (3 — L5b Execution Mechanism backbone)
 
-`agent-teams-create` (TeamCreate) / `agent-teams-send-message` (SendMessage) / `agent-teams-shutdown` (TeamDelete)
+`agent-teams-create` (`Agent(name, run_in_background=true)` — 团在 first teammate spawn 时隐式形成) / `agent-teams-send-message` (SendMessage) / `agent-teams-shutdown` (`ask the <teammate-name> teammate to shut down` — 非工具调用)
 
 ---
 

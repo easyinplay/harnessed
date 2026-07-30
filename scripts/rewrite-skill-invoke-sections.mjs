@@ -18,6 +18,14 @@
 // `buildSection*` to re-render all SKILL files. Idempotent via the v4 marker.
 //
 // Skips legacy v2 dirs (plan-feature / execute-task / verify-work).
+//
+// SoT DISCIPLINE (learned the hard way at v4.10.0): between v4.9.3 and v4.10.0 five
+// features were hand-edited into the rendered SKILL files WITHOUT being folded back
+// here (intent banner / native `/goal` gate fallback / research delivery contract /
+// auto deferrable-relay + lite path / discuss new-project bootstrap). The marker was
+// never bumped, so the drift stayed invisible — and the next legitimate bump would
+// have silently deleted all five. They are reconciled below. Never hand-edit a
+// rendered invoke section: change the builder here and re-run.
 
 import { readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
@@ -33,8 +41,8 @@ const DEPRECATED = new Set(['plan-feature', 'execute-task', 'verify-work'])
 // rewrite". Digit-loose `v\d+\.\d+\.\d+` per generateCommands.ts marker regex.
 // Skip-current keys off NEW_MARKER only, so a previous-marker section (v4.9.2)
 // is always re-rendered to the current shape.
-const OLD_MARKER = '<!-- harnessed-generated:v4.9.2 -->'
-const NEW_MARKER = '<!-- harnessed-generated:v4.9.3 -->'
+const OLD_MARKER = '<!-- harnessed-generated:v4.9.3 -->'
+const NEW_MARKER = '<!-- harnessed-generated:v4.10.0 -->'
 
 // issue #2 — body-type sets MUST mirror generateCommands.ts so the inlined SKILL
 // invoke section carries the SAME deterministic engine sequence as the sibling
@@ -80,17 +88,92 @@ function buildSectionZh(name) {
   return executionZh(name)
 }
 
-// ── ORCHESTRATOR (auto/plan/task/verify) — mirrors buildOrchestratorBody ──────
+// ── Shared fragments ─────────────────────────────────────────────────────────
+//
+// `harnessed checkpoint intent <name>` banner (orchestrator + execution only —
+// interactive stages never seed a ledger). The blockquote differs by body type
+// because the resolving steps differ (2-3 seed vs prompt→spawn→complete).
+
+function intentBannerEn(name, kind) {
+  const tail =
+    kind === 'orchestrator'
+      ? 'steps 2-3 below seed the ledger, and a per-turn `<workflow-intent>` reminder persists until they run.'
+      : 'the steps below (prompt → spawn → checkpoint complete) resolve it, and a per-turn `<workflow-intent>` reminder persists until they run.'
+  return [
+    `!\`harnessed checkpoint intent ${name}\``,
+    '',
+    `> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: ${tail}`,
+    '',
+  ]
+}
+
+function intentBannerZh(name, kind) {
+  const tail =
+    kind === 'orchestrator'
+      ? '下方 step 2-3 完成 ledger seed 前,每 turn 会持续注入 `<workflow-intent>` 提醒。'
+      : '按下方步骤(prompt → spawn → checkpoint complete)完成即解除;在此之前每 turn 会持续注入 `<workflow-intent>` 提醒。'
+  return [
+    `!\`harnessed checkpoint intent ${name}\``,
+    '',
+    `> 上方 banner(如出现)表示本次调用已在引擎**登记**(intent 标记)——尚未合规:${tail}`,
+    '',
+  ]
+}
+
+// ralph-loop → native `/goal` gate → self-loop degradation chain (shared by the
+// orchestrator leaf step 5b and the execution step 2).
+const SPAWN_LOOP_EN =
+  'Spawn a CC-native subagent (Task / Agent tool) with that `prompt` + `model`, wrapped in the ralph-loop plugin: `/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`. If the plugin is absent, use the native goal gate instead (Claude Code 2.1.139+ / Codex): `/goal "this subtask is delivered: the subagent\'s final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"` then spawn the subagent and let the goal evaluator drive re-spawns until it clears. If `/goal` is unavailable too, self-loop: spawn → check output for `<promise>COMPLETE</promise>` → re-spawn with prior output appended (up to max_iterations). Set the goal only at the leaf subtask level — `/goal` is single-slot per session and a nested goal overwrites the outer one.'
+
+const SPAWN_LOOP_ZH =
+  '用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,用 ralph-loop plugin 包裹:`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`。若 plugin 未装,改用原生 goal gate(Claude Code 2.1.139+ / Codex):`/goal "this subtask is delivered: the subagent\'s final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"`,随后 spawn subagent,由 goal 评估器驱动重 spawn 直到目标清除。若 `/goal` 也不可用,自循环:spawn → 检查输出 `<promise>COMPLETE</promise>` → 把上轮输出 append 后重 spawn(至多 max_iterations)。goal 只在叶子 subtask 层设置 — `/goal` 每 session 单槽,嵌套 goal 会覆盖外层。'
+
+// `research` only: its whole deliverable is the subagent's text, so the blocking
+// vs background delivery contract is load-bearing there.
+const DELIVERY_CONTRACT_EN =
+  " Delivery contract: use a BLOCKING Agent/Task call — only a blocking call returns the subagent's final text as your tool result. A named/background teammate's final message is DISCARDED by the platform; if you must run it that way, instruct the agent to write its findings to a file (and read it back) or SendMessage them to the main session — otherwise the COMPLETE promise and the findings never reach you."
+
+const DELIVERY_CONTRACT_ZH =
+  '交付契约:必须用**阻塞式** Agent/Task 调用 —— 只有阻塞调用会把 subagent 的最终文本作为 tool result 返回给你。named/background teammate 的最终消息会被平台**丢弃**;若必须那样跑,要求 agent 把发现写入文件(你再读回)或 SendMessage 回主 session —— 否则 COMPLETE promise 和研究发现永远到不了你手里。'
+
+// Agent Teams step 4 — CC v2.1.178+ API. `TeamCreate` / `TeamDelete` were DELETED
+// upstream ("Both tools no longer exist", code.claude.com/docs/en/agent-teams):
+// the team forms implicitly on the first teammate spawn, `team_name` is accepted
+// but ignored, teardown is a by-name shutdown request, and the team's shared dirs
+// are removed automatically when the session exits.
+const TEAMS_STEP_EN =
+  '4. If `parallelism.escalate_to_teams === true`: read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with `Agent(name: <sub>, run_in_background: true, prompt: <that sub\'s `harnessed prompt <sub>` prompt>)` and the team forms implicitly on the FIRST spawn, with this session as lead (the `team_name` input is accepted but ignored — the name is session-derived). Coordinate via `SendMessage`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down"). Still checkpoint each sub (`complete` / `fail`) as below.'
+
+const TEAMS_STEP_ZH =
+  '4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动。**没有建团步骤、也没有建团工具** —— 对每个 fired sub 用 `Agent(name: <sub>, run_in_background: true, prompt: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个后台 teammate,团在**第一个** spawn 时隐式形成,本 session 即 lead(`team_name` 入参被接受但忽略 —— 团名由 session 派生)。用 `SendMessage` 协调;某个 sub 完成后,**按名**请求该 teammate 关闭(例如「ask the verify-qa teammate to shut down」)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。'
+
+// auto-only sub-bullets (issue #7 lineage): the teardown discipline restated for
+// the new API + the headless prohibition.
+const TEAMS_TEARDOWN_EN = [
+  '   - **Shut every teammate down before you finish — MUST-in-finally, not best-effort**: regardless of whether every sub reached COMPLETE, max_iterations was exhausted, or you consider the work done, ask each teammate to shut down by name before you end the run, and confirm it actually stopped. Shutdown is a REQUEST: the teammate finishes its current tool call first and may reject with a reason, so re-ask rather than assume. The team directory is removed automatically at session exit (there is no teardown tool), but a teammate you never stopped keeps consuming tokens and can hang the host (headless especially — issue #7: an 11h hang, work complete but the process never exited).',
+  '   - **Headless never spawns teams**: in a headless session (`claude -p`) `harnessed gates` already returns `escalate_to_teams: false` (Agent Teams are session-scoped — lost on `/resume`, incompatible with `-p`). Do NOT spawn teammates or background-`Agent` in headless even if you think it would parallelize — run the fired subs sequentially in-session instead.',
+]
+
+const TEAMS_TEARDOWN_ZH = [
+  '   - **收尾前必须关闭每个 teammate —— finally 强制契约,非尽力而为**:无论是否每个 sub 都到达 COMPLETE、max_iterations 是否耗尽、或你是否认为工作已完成,收尾前都要**按名**请求每个 teammate 关闭,并确认它真的停了。关闭是**请求**:teammate 会先做完当前 tool call,也可能带理由拒绝 —— 所以要复查重发,不要假定。团目录在 session 退出时**自动**删除(没有 teardown 工具),但你没停掉的 teammate 会持续烧 token 并可能挂起宿主(headless 尤甚 —— issue #7:挂 11 小时,工作已完成但进程从不退出)。',
+  '   - **headless 绝不 spawn team**:headless session(`claude -p`)下 `harnessed gates` 已返回 `escalate_to_teams: false`(Agent Teams 是 session-scoped —— `/resume` 即丢,与 `-p` 不兼容)。即使你认为能并行,headless 下也**不要** spawn teammate 或背景 `Agent` —— 改为在 session 内顺序驱动 fired subs。',
+]
+
+// ── ORCHESTRATOR (auto/plan/task/verify/ship) — mirrors buildOrchestratorBody ──
 
 function orchestratorEn(name) {
-  const step1 =
-    name === 'auto'
-      ? `1. FIRST run the discuss stage interactively in THIS session (spawned subagents cannot ask the user questions). Evaluate strategic / phase / subtask clarification criteria for "$ARGUMENTS"; dialogue with the user (AskUserQuestion) for each layer that fires, lock decisions, transparent-skip the rest. Produce a locked spec.`
-      : `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first (AskUserQuestion) and lock decisions; otherwise transparent-skip. Produce a locked spec.`
-  const step6tail = name === 'auto' ? ' Then run the `retro` stage to capture lessons.' : ''
+  const isAuto = name === 'auto'
+  const step1 = isAuto
+    ? `1. FIRST run the discuss stage interactively in THIS session (spawned subagents cannot ask the user questions). Evaluate strategic / phase / subtask clarification criteria for "$ARGUMENTS"; dialogue with the user (AskUserQuestion) for each layer that fires, lock decisions, transparent-skip the rest. After locking blocking decisions, relay the deferrable set to the user in a single batched AskUserQuestion with each agent-recommended default pre-selected — deferrable defers scheduling, not user authority; only skip an item if the user explicitly defers it again. Produce a locked spec.`
+    : `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first (AskUserQuestion) and lock decisions; otherwise transparent-skip. Produce a locked spec.`
+  const step2tail = isAuto
+    ? ' For a small self-contained task (single-file / single-page class), the sanctioned lite path is adding `--skip-sub verify --skip-sub retro` (repeatable / comma-separated) — skipped subs are still recorded in the ledger with reasons; lite ≠ freestyle (the ledger/evidence IS the difference).'
+    : ''
+  const step6tail = isAuto ? ' Then run the `retro` stage to capture lessons.' : ''
   return [
     '## How to invoke',
     '',
+    ...intentBannerEn(name, 'orchestrator'),
     'The numbered sequence below **is** the state machine — execute it step by step with Bash.',
     'Do NOT improvise an equivalent flow from the Overview above: freelancing bypasses the engine',
     '(no per-sub ledger, no evidence guard, no recovery). harnessed is the orchestration brain',
@@ -101,14 +184,15 @@ function orchestratorEn(name) {
     'that blocks the session, bypasses Agent Teams, and hangs inside Claude Code).',
     '',
     step1,
-    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub discuss\` → parse the JSON \`{fire, skip, parallelism}\`. This is the plan SoT (no spawn). Keep the verbatim JSON.`,
+    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub discuss\` → parse the JSON \`{fire, skip, parallelism}\`. This is the plan SoT (no spawn). Keep the verbatim JSON.${step2tail}`,
     `3. Bash: \`harnessed checkpoint start ${name} --plan '<the verbatim gates JSON from step 2>'\` → seeds the per-sub ledger so \`harnessed status --recover\` can re-orient you after compaction.`,
-    '4. If `parallelism.escalate_to_teams === true`: read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team (`TeamCreate` → `Agent(name, team_name, …)` per sub with its `harnessed prompt <sub>` prompt → coordinate via `SendMessage` → `SendMessage shutdown_request` + `TeamDelete`). Still checkpoint each sub (`complete` / `fail`) as below.',
+    TEAMS_STEP_EN,
+    ...(isAuto ? TEAMS_TEARDOWN_EN : []),
     '5. Otherwise, for each fired sub in `order` (serial subs sequentially, parallel subs concurrently):',
     '   - **If the entry has `is_master: true`** (a stage master — e.g. `/auto` firing `plan`/`task`/`verify`): do NOT prompt+spawn it. RECURSE: run that master’s own `harnessed gates <sub> --task "<spec>" --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → repeat this loop for ITS fired subs.',
     '   - **Else (leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → parse `{prompt, max_iterations, model}`.',
-    '     b. Spawn a CC-native subagent (Task / Agent tool) with that `prompt` + `model`, wrapped in the ralph-loop plugin: `/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`. If the plugin is absent, self-loop: spawn → check output for `<promise>COMPLETE</promise>` → re-spawn with prior output appended (up to max_iterations).',
+    `     b. ${SPAWN_LOOP_EN}`,
     '     c. If the output contains `STATUS: NEEDS_CLARIFICATION` + questions: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.',
     '     d. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete <sub> --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it, or pass `--force` only to deliberately override.',
     '     e. If the sub cannot reach COMPLETE (max_iterations exhausted / unrecoverable error): Bash `harnessed checkpoint fail <sub> --summary "<why>"`, then STOP and report to the user.',
@@ -121,14 +205,18 @@ function orchestratorEn(name) {
 }
 
 function orchestratorZh(name) {
-  const step1 =
-    name === 'auto'
-      ? `1. 先在**本 session** 交互式跑 discuss 阶段(spawned subagent 无法向用户提问):对 "$ARGUMENTS" 评估 strategic / phase / subtask 澄清判据,对每个 fire 的层用 AskUserQuestion 与用户对话锁决策,其余透明 skip。产出 locked spec。`
-      : `1. 若 "$ARGUMENTS" 触发澄清判据(≥2 方案 / 核心算法 / API contract / 高错误成本),先在**本 session** 交互澄清(AskUserQuestion)并锁决策;否则透明 skip。产出 locked spec。`
-  const step6tail = name === 'auto' ? ' 然后跑 `retro` 阶段沉淀 lessons。' : ''
+  const isAuto = name === 'auto'
+  const step1 = isAuto
+    ? `1. 先在**本 session** 交互式跑 discuss 阶段(spawned subagent 无法向用户提问):对 "$ARGUMENTS" 评估 strategic / phase / subtask 澄清判据,对每个 fire 的层用 AskUserQuestion 与用户对话锁决策,其余透明 skip。blocking 集锁定后,把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(各项 agent 推荐默认值预选)—— deferrable 推迟的是排期,不是用户决策权;仅当用户明确再次推迟才可跳过该项。产出 locked spec。`
+    : `1. 若 "$ARGUMENTS" 触发澄清判据(≥2 方案 / 核心算法 / API contract / 高错误成本),先在**本 session** 交互澄清(AskUserQuestion)并锁决策;否则透明 skip。产出 locked spec。`
+  const step2tail = isAuto
+    ? '自包含小任务(单文件/单页面级)的合规轻量路径:追加 `--skip-sub verify --skip-sub retro`(可重复/逗号分隔)——被 skip 的 sub 仍带原因进 ledger;lite ≠ freestyle(差别就在 ledger/evidence)。'
+    : ''
+  const step6tail = isAuto ? ' 然后跑 `retro` 阶段沉淀 lessons。' : ''
   return [
     '## 如何调用',
     '',
+    ...intentBannerZh(name, 'orchestrator'),
     '下面这套编号序列**就是** state machine —— 逐步用 Bash 执行。**不要**从上方 Overview 自行演绎一套',
     '等价流程:freestyle 会旁路引擎(无 per-sub ledger、无 evidence guard、无 recovery)。harnessed 是',
     '编排大脑(`harnessed gates` 决定哪些 sub fire,`harnessed prompt` 给出每个 spawn-ready prompt,',
@@ -138,14 +226,15 @@ function orchestratorZh(name) {
     'session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。',
     '',
     step1,
-    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub discuss\` → 解析 JSON \`{fire, skip, parallelism}\`。这是 plan SoT(不 spawn)。保留 verbatim JSON。`,
+    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub discuss\` → 解析 JSON \`{fire, skip, parallelism}\`。这是 plan SoT(不 spawn)。保留 verbatim JSON。${step2tail}`,
     `3. Bash: \`harnessed checkpoint start ${name} --plan '<step 2 的 verbatim gates JSON>'\` → seed per-sub ledger,让 \`harnessed status --recover\` 能在 compaction 后给你重新定位。`,
-    '4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动(`TeamCreate` → 每个 sub `Agent(name, team_name, …)` + 其 `harnessed prompt <sub>` prompt → 用 `SendMessage` 协调 → `SendMessage shutdown_request` + `TeamDelete`)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。',
+    TEAMS_STEP_ZH,
+    ...(isAuto ? TEAMS_TEARDOWN_ZH : []),
     '5. 否则,对 `order` 里每个 fired sub(serial 串行、parallel 并发):',
     '   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed gates <sub> --task "<spec>" --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → 对它的 fired subs 重复本循环。',
     '   - **否则(leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → 解析 `{prompt, max_iterations, model}`。',
-    '     b. 用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,用 ralph-loop plugin 包裹:`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`。若 plugin 未装,自循环:spawn → 检查输出 `<promise>COMPLETE</promise>` → 把上轮输出 append 后重 spawn(至多 max_iterations)。',
+    `     b. ${SPAWN_LOOP_ZH}`,
     '     c. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn 同一 sub。',
     '     d. 命中 `<promise>COMPLETE</promise>`:Bash `harnessed checkpoint complete <sub> --summary "<one-line>"`。evidence guard 在此运行(fail-CLOSED):若声明的 `artifacts_expected` 文件缺失会 exit 非零 —— 重 spawn 产出它,或仅在刻意覆盖时传 `--force`。',
     '     e. 若 sub 无法达到 COMPLETE(max_iterations 耗尽 / 不可恢复错误):Bash `harnessed checkpoint fail <sub> --summary "<why>"`,然后 STOP 并向用户报告。',
@@ -160,9 +249,11 @@ function orchestratorZh(name) {
 // ── EXECUTION (everything else) — mirrors buildExecutionBody ──────────────────
 
 function executionEn(name) {
+  const tail = name === 'research' ? DELIVERY_CONTRACT_EN : ''
   return [
     '## How to invoke',
     '',
+    ...intentBannerEn(name, 'execution'),
     'The numbered sequence below **is** the state machine — execute it with Bash. Do NOT improvise',
     'an equivalent flow from the Overview above: freelancing bypasses the engine (no ledger, no',
     'evidence guard). harnessed gives you the spawn-ready prompt; YOU spawn the subagent with a',
@@ -172,7 +263,7 @@ function executionEn(name) {
     'that blocks the session inside Claude Code).',
     '',
     `1. Bash: \`harnessed prompt ${name} --task "$ARGUMENTS" --json\` → parse \`{prompt, max_iterations, model}\`.`,
-    '2. Spawn a CC-native subagent (Task / Agent tool) with that `prompt` + `model`, wrapped in the ralph-loop plugin: `/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`. If the plugin is absent, self-loop: spawn → check output for `<promise>COMPLETE</promise>` → re-spawn with prior output appended (up to max_iterations).',
+    `2. ${SPAWN_LOOP_EN}${tail}`,
     '3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.',
     `4. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete ${name} --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED): if a declared \`artifacts_expected\` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.`,
     '',
@@ -181,9 +272,11 @@ function executionEn(name) {
 }
 
 function executionZh(name) {
+  const tail = name === 'research' ? DELIVERY_CONTRACT_ZH : ''
   return [
     '## 如何调用',
     '',
+    ...intentBannerZh(name, 'execution'),
     '下面这套编号序列**就是** state machine —— 用 Bash 执行。**不要**从上方 Overview 自行演绎等价流程:',
     'freestyle 会旁路引擎(无 ledger、无 evidence guard)。harnessed 给你 spawn-ready prompt;**你**用',
     'CC-native Task / Agent 工具 spawn subagent(保持 session 响应 + 让澄清 round-trip 能回到用户)。',
@@ -192,7 +285,7 @@ function executionZh(name) {
     'Code 内部会阻塞 session)。',
     '',
     `1. Bash: \`harnessed prompt ${name} --task "$ARGUMENTS" --json\` → 解析 \`{prompt, max_iterations, model}\`。`,
-    '2. 用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,用 ralph-loop plugin 包裹:`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`。若 plugin 未装,自循环:spawn → 检查 `<promise>COMPLETE</promise>` → 把上轮输出 append 后重 spawn(至多 max_iterations)。',
+    `2. ${SPAWN_LOOP_ZH}${tail}`,
     '3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn。',
     `4. 命中 \`<promise>COMPLETE</promise>\`:Bash \`harnessed checkpoint complete ${name} --summary "<one-line>"\`。evidence guard 在此运行(fail-CLOSED):若声明的 \`artifacts_expected\` 文件缺失会 exit 非零 —— 重 spawn 产出它再算 done。`,
     '',
@@ -201,8 +294,26 @@ function executionZh(name) {
 }
 
 // ── INTERACTIVE (discuss family + task-clarify) — mirrors buildInteractiveBody ─
+//
+// `discuss` (the stage master) additionally owns the new-project bootstrap and
+// the deferrable-relay contract; the 4 leaf clarification subs stay lean.
 
-function interactiveEn(_name) {
+function interactiveEn(name) {
+  const isMaster = name === 'discuss'
+  const step0 = isMaster
+    ? [
+        '0. **New-project bootstrap** — if `.planning/ROADMAP.md` does not exist: invoke `/gsd-new-project` when that skill is available; otherwise create the minimal skeleton before continuing (then phase dirs follow `.planning/phases/<NN>-<slug>/`):',
+        '   - `ROADMAP.md`: `# Roadmap` + one table row per phase: `| 01 | <slug> | <one-line goal> | in-progress |`',
+        '   - `STATE.md`: `# STATE (digest — keep <100 lines)` + `current: phase 01-<slug> / stage discuss` + `next: <action>`',
+        '   - `REQUIREMENTS.md`: `# Requirements` + numbered rows `- R1: <verifiable acceptance criterion>`',
+      ]
+    : []
+  const step2 = isMaster
+    ? '2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision. After locking blocking decisions, relay the deferrable set to the user in a single batched AskUserQuestion with each agent-recommended default pre-selected — only skip an item if the user explicitly defers it again; a deferrable item is never resolved without the user seeing it.'
+    : '2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision.'
+  const step4 = isMaster
+    ? '4. Persist the locked decisions to `.planning/phases/<NN>-<slug>/` via planning-with-files (`findings.md` / `task_plan.md`; NN = two-digit, one above the highest existing phase dir).'
+    : '4. Persist the locked decisions to `.planning/` via planning-with-files (`findings.md` / `task_plan.md`).'
   return [
     '## How to invoke',
     '',
@@ -210,13 +321,14 @@ function interactiveEn(_name) {
     'spawn it, and do NOT improvise: follow these steps so the locked spec is persisted for the',
     'execution stages.',
     '',
+    ...step0,
     '1. Evaluate the clarification criteria for "$ARGUMENTS":',
     '   - **Strategic** — new feature / milestone / unclear business scope → gstack `/office-hours` + `/plan-ceo-review`',
     '   - **Phase** — ≥2 open implementation decisions / unclear cross-phase API contract → GSD `/gsd-discuss-phase`',
     '   - **Subtask** — ≥2 distinct approaches / core algorithm / API contract design / high error cost → superpowers brainstorming',
-    '2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision.',
+    step2,
     "3. Transparent-skip layers that don't fire — state which were skipped and why.",
-    '4. Persist the locked decisions to `.planning/` via planning-with-files (`findings.md` / `task_plan.md`).',
+    step4,
     '',
     'Output: a locked spec the execution stages (`/plan` → `/task` → `/verify`) consume without further user input.',
     '',
@@ -224,20 +336,36 @@ function interactiveEn(_name) {
   ].join('\n')
 }
 
-function interactiveZh(_name) {
+function interactiveZh(name) {
+  const isMaster = name === 'discuss'
+  const step0 = isMaster
+    ? [
+        '0. **新项目引导** —— 若 `.planning/ROADMAP.md` 不存在:`/gsd-new-project` skill 可用则先调用它;不可用则先创建最小骨架再继续(后续 phase 目录遵循 `.planning/phases/<NN>-<slug>/`):',
+        '   - `ROADMAP.md`:`# Roadmap` + 每 phase 一行表:`| 01 | <slug> | <一行目标> | in-progress |`',
+        '   - `STATE.md`:`# STATE (digest — 保持 <100 行)` + `current: phase 01-<slug> / stage discuss` + `next: <动作>`',
+        '   - `REQUIREMENTS.md`:`# Requirements` + 编号行 `- R1: <可验证的验收标准>`',
+      ]
+    : []
+  const step2 = isMaster
+    ? '2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。blocking 集锁定后,把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(各项 agent 推荐默认值预选)—— 仅当用户明确再次推迟才可跳过该项;deferrable 项绝不允许在用户未见的情况下被 resolve。'
+    : '2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。'
+  const step4 = isMaster
+    ? '4. 把 locked 决策持久化到 `.planning/phases/<NN>-<slug>/`(planning-with-files 的 `findings.md` / `task_plan.md`;NN = 两位数,取现有最大 phase 目录号 + 1)。'
+    : '4. 把 locked 决策持久化到 `.planning/`(planning-with-files 的 `findings.md` / `task_plan.md`)。'
   return [
     '## 如何调用',
     '',
     '澄清需要真实用户对话,所以本阶段直接在**本 session** 跑 —— **不要** spawn,也**不要**自行演绎:',
     '按以下步骤走,把 locked spec 持久化给执行阶段。',
     '',
+    ...step0,
     '1. 对 "$ARGUMENTS" 评估澄清判据:',
     '   - **战略层** —— 新功能 / 新 milestone / 商业 scope 不清 → gstack `/office-hours` + `/plan-ceo-review`',
     '   - **Phase 层** —— ≥2 个 open implementation decision / 跨 phase API contract 不清 → GSD `/gsd-discuss-phase`',
     '   - **子任务层** —— ≥2 个不同方案 / 核心算法 / API contract 设计 / 高错误成本 → superpowers brainstorming',
-    '2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。',
+    step2,
     '3. 不 fire 的层透明 skip —— 说明哪些被 skip 及原因。',
-    '4. 把 locked 决策持久化到 `.planning/`(planning-with-files 的 `findings.md` / `task_plan.md`)。',
+    step4,
     '',
     '产出:一份 locked spec,执行阶段(`/plan` → `/task` → `/verify`)无需再问用户即可消费。',
     '',

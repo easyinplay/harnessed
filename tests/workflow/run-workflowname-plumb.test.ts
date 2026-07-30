@@ -38,9 +38,6 @@ vi.mock('../../src/workflow/governance.js', () => ({
 vi.mock('../../src/discipline/enforcement/before-phase-execute.js', () => ({
   loadDisciplinesForPhase: () => loadDisciplinesForPhaseMockF1(),
 }))
-vi.mock('../../src/discipline/enforcement/after-output.js', () => ({
-  runAfterOutputHook: async () => [],
-}))
 vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
   runBeforeCommitHook: async () => {},
 }))

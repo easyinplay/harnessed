@@ -19,17 +19,21 @@ trigger_phrases:
 
 ## Overview
 
-1-phase sub-workflow mapping CLAUDE.md "Verify 阶段 — 可选 /design-review" onto harnessed
+3-phase sub-workflow mapping CLAUDE.md "Verify 阶段 — 可选 /design-review" onto harnessed
 runtime (Phase v3.0-3.4 W0.13c — D-04 Stage ④ Verify 7 sub + D-12 gstack 治理关卡 +
-Pattern A sub-workflow ship)。
+Pattern A sub-workflow ship; T2.3 两段式 remediation lane 接线)。
 
 | phase | id | upstream | model | capability | gate |
 | ----- | -- | -------- | ----- | ---------- | ---- |
-| 1 | `01-design-review` | gstack | sonnet | `{{ capabilities.gstack-design-review.cmd }}` | `judgments.stage-routing.verify-design-changes.fires` |
+| 1 | `01-design-review` | gstack | sonnet | `{{ capabilities.gstack-design-review.cmd }}` | `judgments.web-design-routing.design-review-post.fires` |
+| 2 | `02-ui-ux-structure` | ui-ux-pro-max | sonnet | `{{ capabilities.ui-ux-pro-max.cmd }}` | `judgments.web-design-routing.ui-ux-pro-max-structure.fires` |
+| 3 | `03-design-taste-polish` | design-taste-frontend | sonnet | `{{ capabilities.design-taste-frontend.cmd }}` | `judgments.web-design-routing.design-taste-polish.fires` |
 
 Per-phase config loads from `workflows/verify/design/workflow.yaml`; engine 4-level gate
 resolver evaluates `phase.has_design_changes == true` via expr-eval — true 则 invoke gstack
-`/design-review` (设计系统一致性 + AI 审美问题识别), false 则 skip。
+`/design-review` (设计系统一致性 + AI 审美问题识别), false 则 skip。Phase 02 / 03 是
+review 出问题清单后的两段式 remediation lane (结构问题 → Stage 1; 视觉打磨 / AI 味 → Stage 2),
+各由 `phase.has_ui_changes == true` 独立 gate。
 
 ## Capability refs
 
@@ -41,8 +45,13 @@ Sister `workflows/capabilities.yaml` entries:
 
 ## Gate ref
 
-Sister `workflows/judgments/stage-routing.yaml`:
-- `verify-design-changes.fires` — `phase.stage == 'verify' and phase.has_design_changes == true`
+Sister `workflows/judgments/web-design-routing.yaml`:
+- `design-review-post.fires` — `phase.stage == 'verify' and phase.has_design_changes == true`
+- `ui-ux-pro-max-structure.fires` — `phase.has_ui_changes == true`
+- `design-taste-polish.fires` — `phase.has_ui_changes == true`
+
+`judgments.stage-routing.verify-design-changes.fires` (逐字等价 predicate) 仍由
+`workflows/verify/auto/workflow.yaml` 的 `delegates_to` 作粗粒度 sub 级 delegation gate 引用。
 
 ## Routing rules (bundled web-design routing — `workflows/judgments/web-design-routing.yaml`)
 
@@ -69,7 +78,7 @@ that blocks the session inside Claude Code).
 3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.
 4. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete verify-design --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->
 
 ## References
 
@@ -77,5 +86,5 @@ that blocks the session inside Claude Code).
 - D-12 gstack 治理关卡可选
 - workflows/judgments/web-design-routing.yaml — 两段式 ui-ux-pro-max 结构 → design-taste-frontend 打磨
 - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / design-taste-frontend
-- workflows/judgments/stage-routing.yaml — verify-design-changes trigger
+- workflows/judgments/stage-routing.yaml — verify-design-changes trigger (verify/auto delegation gate)
 - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister verbatim

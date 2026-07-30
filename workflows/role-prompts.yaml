@@ -370,7 +370,7 @@ prompts:
       - "If agent emits 'COMPLETE' verbatim, mark progress.md done via `/plan`"
       - "If max_iterations exceeded, emit warning + halt; do NOT silent-continue"
       - "If teammate communication needed / context overflow → escalate to Agent Teams"
-      - "Cleanup: TeamDelete is the authoritative teardown; shutdown_request is best-effort (a stuck teammate is only guaranteed stopped at session end)"
+      - "Cleanup: ask each teammate to shut down by name — that request IS the teardown (CC 2.1.178+ has no delete tool); the team's shared dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends"
     severity: "complete / max-iter-exceeded / escalated-to-teams"
     description: "Wrap subtask in ralph-loop with verbatim COMPLETE promise; escalate to Agent Teams when needed."
 
@@ -519,18 +519,19 @@ prompts:
     primary_cap: "agent-teams-create"
     specialist: "Multi-specialist Agent Team orchestrator (Pattern C)"
     responsibility: |
-      Critical release / large refactor only. Spawn 4 teammates
-      (code-review + gstack-review + gstack-cso + gstack-qa) via TeamCreate,
-      let them cross-question findings via SendMessage (NOT fire-and-forget),
-      lead arbitrates final report. Cleanup mandatory.
+      Critical release / large refactor only. Spawn 4 background teammates
+      (code-review + gstack-review + gstack-cso + gstack-qa) — the team forms
+      implicitly on the first spawn, there is no create step — let them
+      cross-question findings via SendMessage (NOT fire-and-forget), lead
+      arbitrates final report. Stop every teammate before finishing.
     checklist:
       - "Token-cost gate: estimate team_cost vs 2 × subagent_cost; only escalate when team wins"
-      - "TeamCreate with 4 teammates: code-review / gstack-review / gstack-cso / gstack-qa"
+      - "Spawn 4 background teammates (the first spawn forms the team; `team_name` is ignored): code-review / gstack-review / gstack-cso / gstack-qa"
       - "Each teammate's brief is self-contained (no shared session context to lean on)"
       - "Delivery contract: a named/background teammate's FINAL message is discarded by the platform — every finding must arrive via SendMessage to the lead or be written to a file the lead reads back; never rely on the teammate's last output"
       - "Round-trip findings: each teammate sends top-3 findings; others rate (real / false-positive / nit)"
       - "Lead arbitrates conflicts; produces final report ordered CRITICAL → HIGH → MEDIUM"
-      - "Cleanup MANDATORY: TeamDelete is authoritative; shutdown_request to each teammate is best-effort (a stuck teammate is only guaranteed stopped at session end)"
+      - "Cleanup MANDATORY: ask each of the 4 teammates to shut down by name and confirm it stopped — that request IS the teardown (no delete tool exists); the team dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends"
       - "If the gate doesn't fire (regular PR), DO NOT escalate — fall back to single-agent fan-out"
     severity: "ship-blocker / ship-with-action / informational"
     description: "Pattern C 4-specialist Agent Team — critical-release multi-dimensional review with SendMessage cross-questioning."

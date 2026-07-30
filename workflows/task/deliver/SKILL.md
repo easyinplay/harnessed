@@ -66,7 +66,8 @@ execution unit + 套 ralph-loop completion check。
 5. `fullstack_three_way == true` — 全栈三路协同
 
 任 1 fire → escalate subagent fan-out → Agent Teams Pattern A/B/C。Cleanup mandatory
-per agent-teams.md 防呆清单 (SendMessage shutdown_request + TeamDelete) — engine-level
+per agent-teams.md 防呆清单 (lead 按名请求每个 teammate shut down; CC 2.1.178+ 无 teardown
+工具,团目录 session 退出时自动清理 —— 剩下的纪律是别把 teammate 落在运行态) — engine-level
 wiring, NOT yaml schema scope。
 
 ### R20.10 explicit max_iterations_exceeded handler (NOT silent abort)
@@ -106,7 +107,7 @@ that blocks the session inside Claude Code).
 3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.
 4. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete task-deliver --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->
 
 ## References
 

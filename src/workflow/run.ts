@@ -1,5 +1,7 @@
 // run.ts — D-03 WIRED + D-04 PUSH + W0.2 (master detect + disciplines wedge) + W1.5
-// (3 phase-level hook: before-spawn / after-output / before-commit per RESEARCH-disciplines § 4.4)。
+// (2 phase-level hook: before-spawn / before-commit per RESEARCH-disciplines § 4.4;
+//  after-output removed 4.34.0 — was never reachable, superseded by the scope-grouped
+//  discipline block in `harnessed prompt`)。
 // Phase v3.4.4 — _dispatchSkillStub.fn production default rewired to real sdkSpawn
 // (was literal '<stub for X>'). DI seam preserved for tests.
 // Phase v3.4.4 (Phase 3) — _dispatchSkillStub.fn now conditionally wraps sdkSpawn
@@ -12,7 +14,6 @@
 import { dirname, join, resolve as pathResolve } from 'node:path'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
-import { runAfterOutputHook } from '../discipline/enforcement/after-output.js'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
 import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
@@ -68,10 +69,11 @@ export interface DispatchStubResult {
  *  criticalSystemReminder_EXPERIMENTAL (already piped through sdkReconcile.ts
  *  L54-56 into spawned subagent prompt). Self-contained natural-language
  *  transcription of workflows/judgments/parallelism-gate.yaml agent-teams-upgrade
- *  fires_when. Spawned subagent CANNOT itself call TeamCreate (SDK v0.3.142 does
- *  not expose Team APIs); it ONLY signals via structured_output.needs_teams_escalation.
+ *  fires_when. A spawned subagent CANNOT form a team itself (the SDK does not expose
+ *  the team APIs, and upstream forbids nested teams outright — a teammate cannot spawn
+ *  teammates); it ONLY signals via structured_output.needs_teams_escalation.
  *  See PHASE-2-SPEC.md § D2 for design rationale + spike result. */
-export const ESCALATION_RULES = `If during this task you detect ANY of the following 5 conditions, set \`needs_teams_escalation: true\` in your structured output and fill \`escalation_reason\` with the trigger name + one-sentence specifics. These are signals to the human user in the main Claude Code session — do NOT attempt to call TeamCreate/SendMessage/TeamDelete yourself (those tools are not available to you).
+export const ESCALATION_RULES = `If during this task you detect ANY of the following 5 conditions, set \`needs_teams_escalation: true\` in your structured output and fill \`escalation_reason\` with the trigger name + one-sentence specifics. These are signals to the human user in the main Claude Code session — do NOT attempt to spawn teammates or call SendMessage yourself (the Agent Teams surface is not available to you, and upstream forbids nested teams: only the lead session can manage a team).
 
 Five triggers (any one suffices):
 
@@ -114,11 +116,11 @@ This applies to: strategic-layer review skip / phase-layer clarification skip / 
  *
  *  See PHASE-4-SPEC.md § D1 for design rationale + prompt-budget impact (~200
  *  tokens, total criticalSystemReminder_EXPERIMENTAL ~670 tokens). */
-export const AGENT_TEAMS_PREVENTION_RULES = `If you signal needs_teams_escalation=true, ALSO advise the user on these 4 Agent Teams prevention rules in your escalation_reason or summary (the user will be the one calling TeamCreate / SendMessage / TeamDelete; remind them upfront):
+export const AGENT_TEAMS_PREVENTION_RULES = `If you signal needs_teams_escalation=true, ALSO advise the user on these 4 Agent Teams prevention rules in your escalation_reason or summary (the user will be the one spawning teammates and calling SendMessage; remind them upfront):
 
-1. **Session-scoped**: Teams live only in the current Claude Code session. \`/resume\` loses all teammates. Do not treat teams as persistent state — finish team work within one session.
+1. **Session-scoped**: Teams live only in the current Claude Code session. \`/resume\` loses all teammates. Do not treat teams as persistent state — finish team work within one session. A team forms implicitly on the first background \`Agent(...)\` teammate spawn; there is no create step (CC 2.1.178+ removed the create/delete tools).
 
-2. **Cleanup mandatory**: Before session ends, send \`SendMessage(to=<teammate>, content="shutdown_request")\` to each teammate, then call \`TeamDelete\`. Orphan teammates consume resources. This is a hard rule, not advisory.
+2. **Stop every teammate before finishing**: ask each teammate to shut down BY NAME (e.g. "ask the researcher teammate to shut down") — it is a request, so the teammate finishes its current tool call first and may reject with a reason; confirm it actually stopped. The team's shared directories are cleaned up automatically at session exit, so there is no separate teardown step, but a teammate left running keeps consuming tokens. This is a hard rule, not advisory.
 
 3. **Token cost estimation**: Before creating a team, estimate \`team_cost ≈ N_teammates × N_rounds × avg_tokens_per_round + N_teammates × initial_brief_tokens\`. Compare to subagent fan-out cost (\`≈ N_subagents × (initial_brief + summary_tokens)\`). Only open a team when \`team_cost < 2 × subagent_cost\` — otherwise prefer fan-out.
 
@@ -400,7 +402,7 @@ export interface RunWorkflowOpts {
 
 /** Run a workflow YAML to complete / paused-veto / failed (activate before veto per
  *  B-01)。W0.2: master detect → runMasterOrchestrator + disciplines wedge → gateContext。
- *  W1.5: 3 phase-level hook fire point (before-spawn / after-output / before-commit)。 */
+ *  W1.5: 2 phase-level hook fire point (before-spawn / before-commit)。 */
 export async function runWorkflow(
   yamlPath: string,
   vars: Record<string, string>,
@@ -569,34 +571,26 @@ export async function runWorkflow(
     // v3.5.0 Phase 2 — Option 1-Lite escalation hint to user (D4). spawned subagent
     // signaled one of 5 parallelism-gate.yaml agent-teams-upgrade triggers fired.
     // User in main Claude Code session decides whether to open Agent Teams
-    // (TeamCreate not available to spawned subagents via SDK v0.3.142). Non-blocking;
+    // (a spawned subagent cannot form a team — no SDK surface + no nested teams). Non-blocking;
     // English-only per D5 default (i18n deferred to v3.6 if user requests).
     if (r.needsTeamsEscalation === true) {
       const reason = r.escalationReason ?? 'unspecified trigger'
       console.error(
         `⚠️ phase ${ph.id} suggests Agent Teams escalation — ${reason}. ` +
-          'Consider opening a team in your main Claude Code session (TeamCreate) ' +
+          'Consider forming a team in your main Claude Code session (spawn background teammates with the Agent tool) ' +
           'if continuing this work benefits from teammate coordination. ' +
           'See workflows/judgments/parallelism-gate.yaml for the 5 upgrade triggers.',
       )
     }
 
-    // W1.5 — after-output validate if r.target==='chat' (commit/file target 不应用 output-style)。
-    if (r.target === 'chat') {
-      try {
-        await runAfterOutputHook({
-          responseText: r.output,
-          responseTarget: 'chat',
-          userRequestedEmoji: false,
-          packageRoot,
-        })
-      } catch (err) {
-        console.warn(
-          `⚠️ phase ${ph.id} after-output hook failed (${(err as Error).message}); ` +
-            'proceeding (ADR 0029 fail-soft).',
-        )
-      }
-    }
+    // 4.34.0 — the after-output hook is GONE, not disabled. It was only reachable
+    // when `r.target === 'chat'`, a field never assigned outside the test stub, on
+    // a `harnessed run` path every SKILL forbids ("Do NOT pipe to `harnessed run`")
+    // — so it executed zero times in the real orchestration. Its job (output-style
+    // rules must constrain chat replies, NOT the files a subagent writes) is now
+    // done at the only surface that actually reaches the model: the scope-grouped
+    // discipline block in `harnessed prompt` (4.33.0 buildDisciplinesSection).
+    // Deterministic doc-discipline checks moved to `harnessed check-docs` instead.
 
     // W1.5 — before-commit hook if r.triggers_commit===true (biome-preempt + no-skip-hooks)。
     // changedFiles + cmdArgs v3.0 WIRED 默认 empty (Phase 3.3+ dogfood 真接 spawn 时 fill)。

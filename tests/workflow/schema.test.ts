@@ -108,6 +108,17 @@ describe('edge — 4 case', () => {
     expect(Value.Check(Capabilities, bad)).toBe(false)
   })
 
+  test('E5 (T2.3): subtask.needs_browser_automation is a required SubtaskShape field', () => {
+    // `browse` capability + web-testing-routing browse-probe reference this fact.
+    // SubtaskShape is additionalProperties:false, so a missing member silently
+    // evaluated to false forever (ADR-0038 fail-closed) until it was declared.
+    const ok = makeValidPhaseFactContext()
+    expect(Value.Check(PhaseFactContext, ok)).toBe(true)
+    const bad = makeValidPhaseFactContext()
+    delete (bad.subtask as { needs_browser_automation?: boolean }).needs_browser_automation
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+
   test('E4: PhaseFactContext wrong field type (lines as string not number)', () => {
     const bad = makeValidPhaseFactContext()
     // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
@@ -240,7 +251,7 @@ describe('Capabilities v3 discriminated union — T3.3.W0.7', () => {
 
 // Phase v3.0-3.3 W0 T3.3.W0.8 — phaseFactContext extend 13 NEW field MIN scope.
 describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
-  test('PF1: full valid v3 context passes (47 field — 20 phase + 18 subtask + 1 user + 8 root-flat)', () => {
+  test('PF1: full valid v3 context passes (48 field — 20 phase + 19 subtask + 1 user + 8 root-flat)', () => {
     const ok = makeValidPhaseFactContext()
     expect(Value.Check(PhaseFactContext, ok)).toBe(true)
   })
@@ -481,6 +492,8 @@ function makeValidPhaseFactContext() {
       needs_lib_docs: false,
       needs_web_search: false,
       needs_google_workspace: false,
+      // T2.3 NEW — web-testing-routing browse-probe / capabilities.yaml `browse`
+      needs_browser_automation: false,
     },
     user: { explicit_signal: [] },
     teammate_send_message_needed: false,

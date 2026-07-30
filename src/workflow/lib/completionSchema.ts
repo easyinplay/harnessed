@@ -25,8 +25,11 @@ export const COMPLETION_SCHEMA = {
     // v3.5.0 Phase 2 — Option 1-Lite signal-driven Agent Teams escalation.
     // spawned subagent SHOULD set this when any of parallelism-gate.yaml 5
     // upgrade triggers fire. harnessed runtime propagates to stderr hint;
-    // user opens team in main Claude Code session (TeamCreate not exposed to
-    // spawned subagents via SDK v0.3.142 — see PHASE-2-SPEC.md § Why).
+    // user opens the team in the main Claude Code session — a spawned subagent
+    // cannot form one itself (originally because the SDK never exposed the create
+    // tool; since CC v2.1.178 there IS no create tool at all — teams form
+    // implicitly on the lead's first background teammate spawn, and teammates
+    // cannot nest teammates. See PHASE-2-SPEC.md § Why for the original rationale).
     needs_teams_escalation: { type: 'boolean' },
     escalation_reason: { type: 'string' },
   },

@@ -10,14 +10,24 @@ schema_version: harnessed.workflow.v3
 Multi-source research workflow shipped with harnessed v2.0 (Stage ① Discuss);
 `workflow.yaml` schema bumped to `harnessed.workflow.v3` in Phase v3.0-3.4 W1.1
 (T3.4.W1.1 — D-09 L0 Discipline Substrate + D-05 tools_available cross-validate);
-phases content (01-fan-out + 02-synth) verbatim reused from v2 SHIPPED unchanged.
+T2.3 split `01-fan-out` into 5 gated source lanes — each lane is now gated by one
+`workflows/judgments/web-search-routing.yaml` trigger (those 5 triggers used to be runtime
+orphans: zero gate ref, so the file was never loaded or evaluated). `02-synth` unchanged.
 
-## Phases (2)
+## Phases (6)
 
-| # | Phase | Upstream | Capability | Model | Description |
-|---|-------|----------|-----------|-------|-------------|
-| 01 | `01-fan-out` | web-search | (route-by-subtask) | sonnet | 3 source fan-out (Tavily MCP / Exa MCP / ctx7 CLI per bundled web-search + context7 routing) |
-| 02 | `02-synth` | gsd | `gsd-discuss-phase` | opus | GSD discuss-phase aggregate + dedup + reconcile |
+| # | Phase | Upstream | Capability | Model | Gate | Description |
+|---|-------|----------|-----------|-------|------|-------------|
+| 01 | `01-fan-out-tavily-keyword` | web-search | (route-by-subtask) | sonnet | `judgments.web-search-routing.tavily-mcp-default.fires` | 默认 lane — Tavily MCP 关键词 / 库 API / 新闻时效 / 生产 RAG |
+| 02 | `01-fan-out-exa-descriptive` | web-search | (route-by-subtask) | sonnet | `judgments.web-search-routing.exa-mcp-descriptive-academic.fires` | Exa MCP 覆盖默认 — 描述式查询 / 学术论文 (需 `EXA_API_KEY`, 缺则落默认 lane) |
+| 03 | `01-fan-out-tavily-crawl` | web-search | (route-by-subtask) | sonnet | `judgments.web-search-routing.tavily-crawl-map-site.fires` | Tavily 必用 — 抓整站 / 站点结构 (crawl / map), Exa 无对等工具 |
+| 04 | `01-fan-out-ctx7-lib-docs` | ctx7 | (route-by-subtask) | sonnet | `judgments.web-search-routing.ctx7-lib-docs.fires` | ctx7 CLI — 库 / API / 框架 / SDK / CLI 工具文档 (prefer over web search) |
+| 05 | `01-fan-out-webfetch-url` | web-search | (route-by-subtask) | haiku | `judgments.web-search-routing.webfetch-single-url.fires` | 永远规则 — 单次轻量查询 (一个明确 URL) 直接 WebFetch, 不走 MCP / CLI |
+| 06 | `02-synth` | gsd | `gsd-discuss-phase` | opus | (无 gate — 无论命中哪条 lane 都要 aggregate) | GSD discuss-phase aggregate + dedup + reconcile |
+
+Lanes are mutually exclusive (`subtask.search_type` is single-valued); the default
+gateContext (`search_type == 'keyword'`) fires only the Tavily lane, which is behaviourally
+identical to the pre-T2.3 unconditional single `01-fan-out`.
 
 ## Capability refs
 
@@ -56,4 +66,4 @@ that blocks the session inside Claude Code).
 3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.
 4. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete research --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.
 
-<!-- harnessed-generated:v4.9.3 -->
+<!-- harnessed-generated:v4.10.0 -->
