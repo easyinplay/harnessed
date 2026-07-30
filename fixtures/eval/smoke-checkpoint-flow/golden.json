@@ -15,17 +15,13 @@
     {
       "kind": "checkpoint",
       "exitCode": 0,
-      "stdout": [
-        "[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"
-      ],
+      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"],
       "stderr": []
     },
     {
       "kind": "checkpoint",
       "exitCode": 0,
-      "stdout": [
-        "[harnessed] checkpoint complete: progress (evidence: none_declared)"
-      ],
+      "stdout": ["[harnessed] checkpoint complete: progress (evidence: none_declared)"],
       "stderr": [
         "⚠️ [harnessed] completion promise unverified for progress — no --result/--result-file supplied, so the promise gate is unarmed for this completion (artifact + boundary gates still applied)."
       ]

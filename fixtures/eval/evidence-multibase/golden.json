@@ -21,9 +21,7 @@
     {
       "kind": "checkpoint",
       "exitCode": 0,
-      "stdout": [
-        "[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"
-      ],
+      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"],
       "stderr": [
         "⚠️ [harnessed] step 0 skeleton missing (.planning/ROADMAP.md) — the evidence guard's planning-sync gate will block `checkpoint complete`. Create the skeleton first (see the /auto SKILL step 0)."
       ]
@@ -31,9 +29,7 @@
     {
       "kind": "checkpoint",
       "exitCode": 0,
-      "stdout": [
-        "[harnessed] checkpoint complete: verify-progress (evidence: verified)"
-      ],
+      "stdout": ["[harnessed] checkpoint complete: verify-progress (evidence: verified)"],
       "stderr": [
         "⚠️ [harnessed] completion promise unverified for verify-progress — no --result/--result-file supplied, so the promise gate is unarmed for this completion (artifact + boundary gates still applied)."
       ]
