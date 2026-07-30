@@ -4,7 +4,7 @@
       "kind": "gates",
       "exitCode": 0,
       "stdout": [
-        "{\n  \"master\": \"discuss\",\n  \"fire\": [\n    {\n      \"sub\": \"discuss-phase\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.stage-routing.discuss-phase-delegate.fires\"\n    },\n    {\n      \"sub\": \"discuss-subtask\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.stage-routing.discuss-subtask-delegate.fires\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"strategic\",\n      \"reason\": \"gate judgments.stage-routing.discuss-strategic-delegate.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+        "{\n  \"master\": \"discuss\",\n  \"fire\": [\n    {\n      \"sub\": \"discuss-phase\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.phase-gate.gsd-discuss-phase.fires\"\n    },\n    {\n      \"sub\": \"discuss-subtask\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"strategic\",\n      \"reason\": \"gate judgments.strategic-gate.strategic-tier-delegate.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
       ],
       "stderr": []
     },
@@ -12,7 +12,7 @@
       "kind": "gates",
       "exitCode": 0,
       "stdout": [
-        "{\n  \"master\": \"plan\",\n  \"fire\": [\n    {\n      \"sub\": \"plan-architecture\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.stage-routing.plan-architecture-delegate.fires\"\n    },\n    {\n      \"sub\": \"plan-phase\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+        "{\n  \"master\": \"plan\",\n  \"fire\": [\n    {\n      \"sub\": \"plan-phase\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"architecture\",\n      \"reason\": \"gate judgments.stage-routing.plan-architecture-delegate.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
       ],
       "stderr": []
     },

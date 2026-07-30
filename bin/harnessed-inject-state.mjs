@@ -183,6 +183,9 @@ function scanTasks(dirPath) {
   return { nextUnchecked: null }
 }
 
+// src/checkpoint/progress.ts
+var PLATEAU_THRESHOLD = 2
+
 // src/checkpoint/injectState.ts
 var INTENT_TTL_MS = 24 * 60 * 60 * 1e3
 function formatIntentAge(ms) {
@@ -245,6 +248,19 @@ function buildWorkflowStateBlock(wf, forward, ledgerAgeMs) {
     lines.push(
       `BREAK-LOOP: sub '${l.sub}' failed ${l.count}x \u2014 stop retrying, run break-loop skill`,
     )
+  }
+  for (const e of ledger) {
+    const attempts = e.fail_count ?? 0
+    if (e.attempt_budget !== void 0 && attempts >= e.attempt_budget) {
+      lines.push(
+        `BUDGET-EXHAUSTED: sub '${e.sub}' spent ${attempts}/${e.attempt_budget} attempts \u2014 do NOT spawn it again; re-scope, fix the blocker, or escalate`,
+      )
+    }
+    if ((e.progress?.stale_count ?? 0) >= PLATEAU_THRESHOLD) {
+      lines.push(
+        `NO-PROGRESS: sub '${e.sub}' made no improvement for ${e.progress?.stale_count} consecutive attempts (metric: ${e.progress?.metric}) \u2014 stop respawning, change the approach`,
+      )
+    }
   }
   if (wf.ship_ready) {
     lines.push(

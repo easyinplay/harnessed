@@ -654,7 +654,17 @@ capabilities:
     cmd: '<not-applicable-behavioral>'
     since: v2.0
     category: behavioral
-    description: 4 心法 + ≤200L hard limit + no-feature-creep + trust-internal-code + no-comments-default
+    # T2.7 (4.34.x) — description reconciles 1:1 with the rule ids in the
+    # discipline_ref file, and tests/workflow/karpathy-discipline.test.ts locks
+    # that reconciliation. The pre-T2.7 text advertised `trust-internal-code` +
+    # `no-comments-default` with no rule behind them; keep the `<N> rules: <id> /
+    # <id> / ...` suffix shape when editing or the guard fails.
+    description: >-
+      Bundled karpathy coding discipline, applied by every workflow via
+      disciplines_applied (no upstream plugin required) — 7 rules:
+      think-before-coding / simplicity-first / surgical-changes /
+      goal-driven-execution / file-length-200-hard-limit / trust-internal-code /
+      no-comments-default
     discipline_ref: workflows/disciplines/karpathy.yaml
 
   output-style-discipline:

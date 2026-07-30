@@ -60,30 +60,27 @@ describe('Phase 2.3 e2e 4-link smoke (Wave 5 T5.3; Link 3+4 deleted v3.4.4 P6)',
   // with src/routing/ deletion. Archeology preserved in git history; resurrect
   // via git revert of Phase 6 Wave 3a commit + this cell deletion if needed.
 
-  it('Link 5 — karpathy SKILL-ONLY: SKILL.md + manifest co-shipped + D-02 SKILL-ONLY surface', () => {
-    // T5.3 verifies ship-artifact reality of all 5 links. Phase 2.3 W6 DI-1
-    // hotfix applied — karpathy-skills.yaml now schema-valid (git_ref pinned to
-    // 40-hex schema-compliant placeholder + install_type: git per ADR 0007 1:N
-    // closure for git-clone-with-setup method). Full schema validation now
-    // possible (see tests/integration/manifest-install-dry-run.test.ts
-    // "karpathy-skills schema-only regression sentinel" for the dedicated
-    // schema-validate sentinel).
-    //
-    // Note: install.cmd still uses local `cp -R skills/karpathy-baseline ~/.claude/`
-    // — git_ref + git-clone-with-setup are semantic placeholders for the local-copy
-    // install path (no actual git fetch). Full installer-level local-copy support
-    // deferred to v0.2.4+ (new `local-copy` install_type/method).
-    const skillMd = join(ROOT, 'skills', 'karpathy-baseline', 'SKILL.md')
+  // 4.34.x (T2.7) — Link 5 INVERTED. It used to assert the upstream
+  // `karpathy-skills` manifest shipped alongside the local SKILL.md. That plugin
+  // is now dropped: the karpathy heuristics were already fully internalized as
+  // workflows/disciplines/karpathy.yaml (referenced by every workflow's
+  // `disciplines_applied`, injected via buildDisciplinesSection), and the repo
+  // had zero call sites for the upstream slash command. The cell now guards the
+  // REMOVAL — the manifest must stay gone and the bundled discipline must
+  // remain the (self-contained) carrier.
+  it('Link 5 — karpathy internalized: upstream manifest dropped, bundled discipline carries it', () => {
     const manifestYaml = join(ROOT, 'manifests', 'skill-packs', 'karpathy-skills.yaml')
-    expect(existsSync(skillMd), 'karpathy-baseline/SKILL.md ship (T2.3 0ccb58d)').toBe(true)
-    expect(existsSync(manifestYaml), 'karpathy-skills.yaml REWRITE (T2.4 b97677d)').toBe(true)
-    // v3.9.8 — manifest migrated to cc-plugin-marketplace method (was a broken
-    // git-clone-with-setup + local cp -R hybrid that Step B rejected every run).
-    // Sister: manifest-install-dry-run.test.ts schema-only sentinel.
-    const yaml = readFileSync(manifestYaml, 'utf8')
-    expect(yaml).toMatch(/install_type:\s*skill/)
-    expect(yaml).toMatch(/method:\s*cc-plugin-marketplace/)
-    expect(yaml).toMatch(/andrej-karpathy-skills@karpathy-skills/)
+    expect(
+      existsSync(manifestYaml),
+      'karpathy-skills.yaml must stay deleted (T2.7 — plugin was redundant)',
+    ).toBe(false)
+
+    const discipline = join(ROOT, 'workflows', 'disciplines', 'karpathy.yaml')
+    expect(existsSync(discipline), 'bundled karpathy discipline is the replacement').toBe(true)
+    const yaml = readFileSync(discipline, 'utf8')
+    // the 2 rules added as the precondition for dropping the plugin
+    expect(yaml).toMatch(/id:\s*trust-internal-code/)
+    expect(yaml).toMatch(/id:\s*no-comments-default/)
   })
 
   it('Cross-link compose: EE-5 + install CLI register on same Command tree without collision', async () => {

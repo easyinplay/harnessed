@@ -41,6 +41,11 @@ tools_available:
 delegates_to:
   - sub: clarify
     gate: judgments.subtask-gate.brainstorming.fires
+    # T2.1 D-5 — the ❌ half of subtask-gate finally evaluates: CRUD / a plain
+    # standard-lib call / a <20-line change vetoes brainstorming even when an
+    # OR-arm of fires_when matched. Veto is fail-OPEN (a broken skips_when never
+    # deletes the gate) — src/workflow/skipGate.ts.
+    skip_gate: judgments.subtask-gate.brainstorming.skips
     mode: serial
     order: 1
   - sub: code
@@ -48,6 +53,8 @@ delegates_to:
     order: 2
   - sub: test
     gate: judgments.tdd-gate.tdd-strongly-suggested.fires
+    # T2.1 D-5 — tdd-gate's declared skips (crud / ui_polish / docs_only).
+    skip_gate: judgments.tdd-gate.tdd-strongly-suggested.skips
     mode: serial
     order: 3
   - sub: deliver

@@ -12,6 +12,7 @@ import { registerCompact } from './cli/compact-cmd.js'
 import { registerDoctor } from './cli/doctor.js'
 import { registerEval } from './cli/evalCmd.js'
 import { registerExemptGateguard } from './cli/exempt-gateguard.js'
+import { registerFacts } from './cli/facts.js'
 import { registerGates } from './cli/gates.js'
 import { registerGc } from './cli/gc.js'
 import { registerInjectState } from './cli/injectStateCmd.js'
@@ -136,6 +137,7 @@ registerInjectState(program) // 28th — 4.27.0 B3 D6: perturn hook via the bina
 registerStopHook(program) // 29th — 4.30.0 issue #6: mode-B tool-call corruption auto-recovery Stop hook
 registerEval(program) // 30th — 4.31.0 eval Slice A: orchestrator-behavior regression trap suite
 registerCheckDocs(program) // 31st — T2.5: doc-discipline gate that actually SHIPS (scripts/ is not in `files`)
+registerFacts(program) // 32nd — T2.1: gate-fact production chain (feeds `gates --context-file`)
 
 // v8.0 Phase 24 — zero-arg `harnessed` you-are-here entry (comet `/comet` analog).
 // D3 explicit bare-invocation detection BEFORE program.parse: ONLY `[]` / `['--json']`

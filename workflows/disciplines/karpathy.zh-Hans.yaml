@@ -45,3 +45,30 @@ rules:
     check_method: external-cmd
     auto_fix_cmd: 'wc -l <file> | awk ''{if ($1>200) exit 1}'''
     # 实装 split helper pattern (sister fallbackHandlers.ts / sdkReconcile.ts ≤80L)
+
+  # ── T2.7 (4.34.x) — capability description 自 v2.0 起就在声称、但一直没有规则
+  # 落地的两条。补齐是摘除上游 `karpathy-skills` plugin 的前置:plugin 本身早已
+  # 冗余(仓内 0 处调用),但不补这两条就摘,等于静默丢掉这两个思想。
+  # 两条都是判断题、无确定性检查 → `warn`,不给 `halt`。
+
+  - id: trust-internal-code
+    description: 信任内部代码 —— 只在信任边界(外部输入 / 解析后的配置 / 用户数据)做校验,不在每一层内部调用上重复防御;不给自己控制的调用点加冗余断言
+    enforcement: warn
+    trigger: subtask.type == 'code-write'
+    check_method: heuristic
+    # sister role-prompts.zh-Hans.yaml task-code checklist「信任内部代码:不在每层
+    # 重复校验已经检查过的输入」
+
+  - id: no-comments-default
+    description: 注释解释 WHY 不解释 WHAT —— 删掉复述代码的注释、以及已经与代码脱节的注释;一条注释必须补上代码本身承载不了的信息(设计理由 / 约束 / 上游出处)
+    enforcement: warn
+    trigger: subtask.type == 'code-write'
+    check_method: llm-judge
+    # check_method='llm-judge' — sister simplicity-first:由 verify 阶段的
+    # code-simplifier review 承接(role-prompts.zh-Hans.yaml verify-simplify
+    # checklist「撒谎或重复代码的注释 → 删」)。
+    #
+    # 上游 karpathy 原条是「默认不写注释」,这里 REWRITE 不照搬(T2.7 OQ3 裁决):
+    # 照搬会与本仓的高注释密度基线冲突,更会伤到 bundled 资产 —— 普通用户没有作者
+    # 本机那份 ~/.claude/CLAUDE.md,yaml / SKILL 里的注释是他们理解这些资产的唯一
+    # 途径。所以规则约束的是注释的「质量」(why 而非 what),不是注释的「有无」。

@@ -25,7 +25,7 @@ In-scope vulnerabilities:
 
 Out-of-scope:
 
-- Vulnerabilities in **upstream packages** themselves (gstack / GSD / ralph-loop / Tavily MCP / Exa MCP / ctx7 / planning-with-files / superpowers / mattpocock-skills / karpathy-skills) — report to those projects directly. harnessed only describes them via manifests; trust delegation is by design (see `THREAT-MODEL.md` when v0.4 ships).
+- Vulnerabilities in **upstream packages** themselves (gstack / GSD / ralph-loop / Tavily MCP / Exa MCP / ctx7 / planning-with-files / superpowers / mattpocock-skills) — report to those projects directly. harnessed only describes them via manifests; trust delegation is by design (see `THREAT-MODEL.md` when v0.4 ships).
 - Issues requiring a malicious user already having write access to a victim's `manifests/` directory.
 
 ### Response SLA

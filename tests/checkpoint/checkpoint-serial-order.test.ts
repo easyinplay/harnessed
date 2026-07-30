@@ -177,7 +177,14 @@ describe('checkpoint complete/fail — serial-order guard (4.26.0 A3)', () => {
     const { code, stderr } = await runCli(['checkpoint', 'complete', 'code-review'])
     expect(code).toBe(0)
     expect(completePhase).toHaveBeenCalledTimes(1)
-    expect(stderr).toContain('serial-order guard skipped')
+    // T2.7 renamed this warning from 'serial-order guard skipped'. The try/catch it
+    // comes from used to wrap read + `findSerialBlockers`; it now wraps the ledger READ
+    // only, and that one read feeds two consumers (the serial-order guard and the
+    // loop-damping state). So the narrower text is the accurate one: a read fault
+    // degrades both, not just the guard. No fail-soft coverage was lost —
+    // `findSerialBlockers` (src/checkpoint/ledger.ts:142) is a total function over the
+    // array this returns, so it has no throwing branch to protect.
+    expect(stderr).toContain('ledger read skipped')
   })
 })
 

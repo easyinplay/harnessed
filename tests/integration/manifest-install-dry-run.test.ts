@@ -20,7 +20,7 @@
 // to short-circuit before spawning. This is an integration test that exercises
 // the real dispatch + real schema validate + real preflight + real diff render.
 
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { runInstall } from '../../src/installers/index.js'
@@ -157,27 +157,16 @@ describe('Phase 2.3 Wave 1 — 5 NEW adapter manifest install dry-run e2e', () =
     expect(dist.testing ?? 0).toBeGreaterThanOrEqual(1)
   })
 
-  // v3.9.8 — schema-only sentinel for karpathy-skills.yaml.
-  // Manifest migrated from local `cp -R skills/karpathy-baseline` (DI-1 hotfix
-  // legacy path with `git-clone-with-setup` method) to `cc-plugin-marketplace`
-  // matching the actual install path (`claude plugin install
-  // andrej-karpathy-skills@karpathy-skills`); the pre-v3.9.8 manifest was
-  // broken — gitCloneWithSetup installer rejected its cmd shape every Step B run.
-  // Sister: dogfood report 2026-05-26 + audit Cat D fix.
-  it('karpathy-skills — schema-only regression sentinel (v3.9.8 cc-plugin-marketplace)', () => {
-    const yamlSrc = readFileSync(
-      resolve(process.cwd(), 'manifests/skill-packs/karpathy-skills.yaml'),
-      'utf8',
+  // 4.34.x (T2.7) — the karpathy-skills schema sentinel is GONE with its
+  // manifest. The plugin was redundant: the heuristics live in
+  // workflows/disciplines/karpathy.yaml (all 28 workflows reference it via
+  // `disciplines_applied`) and the repo never invoked the upstream slash
+  // command. What survives is a removal guard so the dependency can't creep
+  // back in unnoticed; the discipline-side contract is covered by
+  // tests/workflow/karpathy-discipline.test.ts.
+  it('karpathy-skills — upstream manifest stays removed (T2.7 dependency drop)', () => {
+    expect(existsSync(resolve(process.cwd(), 'manifests/skill-packs/karpathy-skills.yaml'))).toBe(
+      false,
     )
-    const v = validateManifestFile(yamlSrc, 'manifests/skill-packs/karpathy-skills.yaml')
-    expect(v.ok, 'karpathy-skills schema must validate').toBe(true)
-    if (!v.ok) return
-    const install = v.manifest.spec.install as { git_ref?: string; method?: string }
-    // git_ref must match GIT_REF_PATTERN (40-hex SHA / SemVer) regardless of method.
-    expect(install.git_ref).toMatch(/^([a-f0-9]{7,40}|v?\d+\.\d+\.\d+([.-][\w.-]+)?)$/)
-    // v3.9.8 — install_type ↔ method closure now `skill` ∈ {cc-plugin-marketplace,
-    // npx-skill-installer} (karpathy is plugin-marketplace-distributed).
-    expect(v.manifest.spec.install_type).toBe('skill')
-    expect(install.method).toBe('cc-plugin-marketplace')
   })
 })

@@ -44,12 +44,18 @@ export interface HookCmdDeps {
   compiledExecPath?: () => string | null
 }
 
-/** Normalized registration identities for first-party harnessed hooks whose npm
- *  form is `node …/harnessed-<id>.mjs` and compiled form is `"<binary>" <id>`.
- *  Both forms share ONE identity so entryMatchesRegistration migrates/dedupes
- *  across mode switches in either direction. 4.30.0 added `stop-hook` (issue #6)
- *  alongside 4.27.0's `inject-state`. */
-export const COMPILED_HOOK_IDENTITIES = ['inject-state', 'stop-hook'] as const
+/** Normalized registration identities for first-party harnessed hooks. The
+ *  identity is the CLI subcommand the binary dispatches on; the npm form is
+ *  either `node …/harnessed-<id>.mjs` (inject-state / stop-hook — a dep-free bin
+ *  script) or the bare CLI form `harnessed <id> …` (check-docs — a plain
+ *  subcommand, no bin script), and the compiled form is always
+ *  `"<binary>" <id> …`. All forms share ONE identity so entryMatchesRegistration
+ *  migrates/dedupes across mode switches in either direction. 4.30.0 added
+ *  `stop-hook` (issue #6) alongside 4.27.0's `inject-state`; 4.34.1 added
+ *  `check-docs` (doc-discipline-gate, 4.34.0) — see resolveHookCommand for why
+ *  that one could not be listed until the compiled rewrite preserved trailing
+ *  arguments. */
+export const COMPILED_HOOK_IDENTITIES = ['inject-state', 'stop-hook', 'check-docs'] as const
 
 const ABSOLUTE_RE = /^([A-Za-z]:[\\/]|[\\/])/
 
@@ -68,6 +74,36 @@ function stripQuotes(token: string): { bare: string; quoted: boolean } {
   return { bare: token, quoted: false }
 }
 
+/** Whitespace tokenization shared by marker lookup and command rewriting — the
+ *  two MUST agree on token indices (the compiled rewrite slices by index). */
+function splitTokens(raw: string): string[] {
+  return raw.split(/\s+/).filter((t) => t.length > 0)
+}
+
+/** hookScriptMarker + WHERE the marker token sits, so the compiled rewrite can
+ *  carry everything that follows it. See hookScriptMarker for the identity rules. */
+function hookMarkerAt(raw: string): { marker: string; index: number } | null {
+  const tokens = splitTokens(raw)
+  for (const [i, token] of tokens.entries()) {
+    const { bare } = stripQuotes(token)
+    if (!isRelativeFileToken(bare)) continue
+    const seg = bare.split(/[\\/]/)
+    const base = seg[seg.length - 1]
+    if (base === undefined) return null
+    // npm form: harnessed-<id>.mjs basename normalizes to its known identity.
+    const id = COMPILED_HOOK_IDENTITIES.find((k) => base.includes(k))
+    return { marker: id ?? base, index: i }
+  }
+  // compiled/bare-CLI form: no relative file token — the bare subcommand token
+  // IS the identity (`harnessed check-docs --hook`, `"<binary>" stop-hook`).
+  for (const [i, token] of tokens.entries()) {
+    const { bare } = stripQuotes(token)
+    if ((COMPILED_HOOK_IDENTITIES as readonly string[]).includes(bare))
+      return { marker: bare, index: i }
+  }
+  return null
+}
+
 /**
  * Resolve package-relative file tokens in a hook command to absolute paths
  * under the assets root. Tokens that do not exist there are left verbatim
@@ -84,19 +120,31 @@ function stripQuotes(token: string): { bare: string; quoted: boolean } {
  */
 export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
   // 4.27.0 (B3 T1) / 4.30.0 (issue #6) — compiled binaries route first-party
-  // hooks to themselves: `"<binary>" <id>`. Forward-slash + quoted (v4.21.0
+  // hooks to themselves: `"<binary>" <id> …`. Forward-slash + quoted (v4.21.0
   // shell-escape contract). Other hooks keep the legacy resolution untouched.
-  const marker = deps.compiledExecPath ? hookScriptMarker(raw) : null
+  //
+  // 4.34.1 — the rewrite substitutes the TRANSPORT ONLY (`node <script>` / bare
+  // `harnessed` PATH lookup → this binary's own absolute path + subcommand); the
+  // hook's SEMANTICS may live in arguments AFTER the identity token, so every
+  // one of them is carried over verbatim. Dropping them is a silent failure:
+  // doc-discipline-gate's `harnessed check-docs --hook` degrades from a
+  // git-commit-only check into an unconditional block on EVERY Bash tool call.
+  // (Tail args are NOT path-resolved — a first-party subcommand's flags are its
+  // own vocabulary, not package-relative files.)
+  const at = deps.compiledExecPath ? hookMarkerAt(raw) : null
   if (
     deps.compiledExecPath &&
-    marker &&
-    (COMPILED_HOOK_IDENTITIES as readonly string[]).includes(marker)
+    at &&
+    (COMPILED_HOOK_IDENTITIES as readonly string[]).includes(at.marker)
   ) {
     const exe = deps.compiledExecPath()
-    if (exe) return `"${exe.replace(/\\/g, '/')}" ${marker}`
+    if (exe) {
+      const tail = splitTokens(raw).slice(at.index + 1)
+      return [`"${exe.replace(/\\/g, '/')}"`, at.marker, ...tail].join(' ')
+    }
   }
   let root: string | null = null
-  const tokens = raw.split(/\s+/).filter((t) => t.length > 0)
+  const tokens = splitTokens(raw)
   const out = tokens.map((token) => {
     const { bare } = stripQuotes(token)
     if (!isRelativeFileToken(bare)) return token
@@ -116,25 +164,13 @@ export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
  *  so the npm form (`node …/harnessed-inject-state.mjs`) and the compiled form
  *  (`"<binary>" inject-state`) share ONE registration identity — the substring
  *  match in entryMatchesRegistration then migrates/dedupes across mode
- *  switches in both directions (no orphan hooks, no double registration). */
+ *  switches in both directions (no orphan hooks, no double registration).
+ *
+ *  4.34.1 — thin wrapper over hookMarkerAt (single SoT with the compiled
+ *  rewrite, which additionally needs the marker's token index). */
 export function hookScriptMarker(raw: string): string | null {
-  for (const token of raw.split(/\s+/)) {
-    const { bare } = stripQuotes(token)
-    if (isRelativeFileToken(bare)) {
-      const seg = bare.split(/[\\/]/)
-      const base = seg[seg.length - 1] ?? null
-      // npm form: harnessed-<id>.mjs basename normalizes to its known identity.
-      const id = COMPILED_HOOK_IDENTITIES.find((k) => base?.includes(k))
-      if (id) return id
-      return base
-    }
-  }
-  // compiled form: no relative file token — the bare subcommand token IS the identity
-  for (const token of raw.split(/\s+/)) {
-    const { bare } = stripQuotes(token)
-    if ((COMPILED_HOOK_IDENTITIES as readonly string[]).includes(bare)) return bare
-  }
-  return null
+  const at = hookMarkerAt(raw)
+  return at === null ? null : at.marker
 }
 
 /** Recorded command strings an entry carries (nested group + legacy flat).

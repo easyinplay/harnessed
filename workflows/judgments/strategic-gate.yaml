@@ -23,3 +23,33 @@ triggers:
     skips_when: "phase.scope_locked_in_history == true or phase.type in ['bug_fix', 'tech_debt']"
     invokes:
       - capability: gstack-plan-ceo-review
+
+  # Routing-shaped entry in a tier-judgment file — deliberate. The /discuss master
+  # asks a coarser question than either trigger above: "is the strategic tier in
+  # play at all?", i.e. the UNION of the two. It cannot gate on `office-hours`
+  # (that drops the `is_major_release` arm) nor on `plan-ceo-review` (that drops
+  # the new_milestone / new_feature arms), so the union needs a home — and its home
+  # must be HERE, beside its two members, where a new arm added to either one makes
+  # the omission from the union visible in the same screenful. Living in
+  # stage-routing.yaml is what let it rot unobserved (sister: the phase-tier copy
+  # that silently lost `files_touched > 5`).
+  #
+  # The delegation is coarse ON PURPOSE: /discuss-strategic re-gates each member
+  # independently inside the sub-workflow, so a context that fires only one arm
+  # runs only that one capability. This trigger decides whether the tier is
+  # entered, never which of the two runs.
+  #
+  # Endgame is not this entry: it is a schema that lets `gate:` take multiple refs
+  # OR'd together, which would delete the union expression instead of relocating
+  # it. That costs WorkflowSchemaV3 + gates.ts + masterOrchestrator.ts +
+  # scripts/check-workflow-schema.mjs (mirror) — a separate slice. Until then this
+  # is the cheapest form that keeps one expression with one home.
+  strategic-tier-delegate:
+    description: |
+      /discuss master → /discuss-strategic 委派 gate — 上面两条 trigger 的并集
+      (任一 office-hours OR plan-ceo-review 可能 fire → 战略层适用)。
+      sub-workflow 内部再对两条各自独立 gate。
+    fires_when: "phase.type in ['new_project', 'new_milestone', 'new_feature'] or phase.is_major_release == true"
+    invokes:
+      - capability: gstack-office-hours
+      - capability: gstack-plan-ceo-review

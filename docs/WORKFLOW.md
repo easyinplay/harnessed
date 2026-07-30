@@ -229,7 +229,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 | # | Discipline | enforcement_layer | auto_enforce | 核心 rules (verbatim CLAUDE.md) | Sister source |
 |---|---|---|---|---|---|
-| 1 | `karpathy.yaml` | `code-writing` | true | think-before-coding (warn) / simplicity-first (warn) / surgical-changes (warn) / goal-driven (warn) / **file-length-200-hard-limit (halt)** | `~/.claude/CLAUDE.md` andrej-karpathy-skills 心法 |
+| 1 | `karpathy.yaml` | `code-writing` | true | think-before-coding (warn) / simplicity-first (warn) / surgical-changes (warn) / goal-driven (warn) / **file-length-200-hard-limit (halt)** / trust-internal-code (warn) / no-comments-default (warn) | karpathy 心法 — **fully bundled**; 上游 `karpathy-skills` plugin 已于 4.34.x 摘除 (T2.7) |
 | 2 | `output-style.yaml` | `output` | true | bluf-conclusion-first (warn) / **no-sycophantic-open-close (auto-fix)** / no-emoji-unless-requested (warn) / **no-em-dash (auto-fix)** / precise-quantifier (info) / no-end-recap (warn) / no-empty-continuation-question (warn) | CLAUDE.md 对话回答风格 |
 | 3 | `language.yaml` | `output` | true | default-language-zh-hans (warn) / preserve-english-categories 8 类 (warn) / lang-request-override (info) | CLAUDE.md 语言与输出规范 |
 | 4 | `operational.yaml` | `commit` | true | **biome-preempt (auto-fix)** / a7-adr-conservation (warn) / **no-push-without-approval (halt)** / **no-skip-hooks (halt)** / **destructive-ops-explicit (halt)** / authorization-not-transitive (warn) | project CLAUDE.md commit safety + `~/.claude/CLAUDE.md` |

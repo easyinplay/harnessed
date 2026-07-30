@@ -200,6 +200,57 @@ describe('generateCommandFile — v4.0 body shape', () => {
   })
 })
 
+// T2.1 D-1/D-3 — the facts step is a SISTER-SURFACE invariant, not a nicety.
+// `~/.claude/commands/<name>.md` (this generator) and `workflows/**/SKILL*.md`
+// (scripts/rewrite-skill-invoke-sections.mjs) are two renderings of ONE sequence,
+// and the 4.34.0 Agent Teams regression is what happens when only one of them is
+// updated: the SKILL said the team tools were gone while the command file still
+// told the agent to call them. Here the drift would be quieter still — a command
+// file whose step 2 omits `--context-file` runs every gate against generic
+// defaults, i.e. exactly the "criteria with no discriminating power" defect T2.1
+// exists to remove, with no error anywhere.
+describe('generateCommandFile — T2.1 facts step, in lockstep with the SKILL sister', () => {
+  const SKILL_TASK = readFileSync(
+    join(process.cwd(), 'workflows', 'task', 'auto', 'SKILL.md'),
+    'utf8',
+  )
+  /** The verbatim line the SKILL generator renders — the alignment reference. */
+  function skillLineStartingWith(prefix: string): string {
+    const line = SKILL_TASK.split('\n').find((l) => l.startsWith(prefix))
+    if (!line) throw new Error(`workflows/task/auto/SKILL.md has no line starting "${prefix}"`)
+    return line
+  }
+
+  it('cell 34 — ORCHESTRATOR body carries the facts step verbatim from the SKILL sister', () => {
+    const { content } = generateCommandFile('task', MASTER_PROMPT, CAPS, new Set(), new Set())
+    expect(content).toContain(skillLineStartingWith('1b. Bash: `harnessed facts task'))
+  })
+
+  it('cell 35 — step 2 feeds the filled facts back in via --context-file', () => {
+    const { content } = generateCommandFile('task', MASTER_PROMPT, CAPS, new Set(), new Set())
+    expect(content).toContain(
+      'harnessed gates task --task "<locked spec>" --context-file .harnessed-facts.json --skip-sub discuss',
+    )
+  })
+
+  it('cell 36 — the is_master RECURSE branch repeats facts → gates --context-file', () => {
+    const { content } = generateCommandFile('task', MASTER_PROMPT, CAPS, new Set(), new Set())
+    // The recursion is where a missed --context-file would silently reappear one
+    // level down even if the top-level step 2 were correct.
+    expect(content).toContain('harnessed facts <sub> --out .harnessed-facts.json')
+    expect(content).toContain(
+      'harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss',
+    )
+  })
+
+  it('cell 37 — EXECUTION + INTERACTIVE bodies stay factless (no gates step to feed)', () => {
+    const exec = generateCommandFile('verify-paranoid', SUB_PROMPT, CAPS, new Set(), new Set())
+    const inter = generateCommandFile('discuss', MASTER_PROMPT, CAPS, new Set(), new Set())
+    expect(exec.content).not.toContain('harnessed facts')
+    expect(inter.content).not.toContain('harnessed facts')
+  })
+})
+
 describe('writeAllCommands — directory integration', () => {
   it('cell 8 — writes a new commands/<x>.md for each named workflow with a role-prompt entry', async () => {
     const commandsDir = join(tmpRoot, 'commands')

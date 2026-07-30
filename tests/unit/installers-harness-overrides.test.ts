@@ -248,6 +248,9 @@ describe('all real manifests validate (v4.14.0 sweep)', () => {
         count += 1
       }
     }
-    expect(count).toBeGreaterThanOrEqual(13)
+    // 4.34.x (T2.7) — base set 13 → 12: `karpathy-skills` dropped (its heuristics
+    // were already fully carried by workflows/disciplines/karpathy.yaml, so the
+    // upstream plugin was pure install cost). 6 tools + 6 skill-packs.
+    expect(count).toBeGreaterThanOrEqual(12)
   })
 })

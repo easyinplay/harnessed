@@ -567,6 +567,34 @@ describe('cli/uninstall (no name) — unified', () => {
     expect(written.hooks?.PreToolUse).toHaveLength(1)
   })
 
+  it('strips the doc-discipline-gate PreToolUse hook, keeps a user Bash hook (4.34.1)', async () => {
+    readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+    readFileMock.mockImplementation(async (p: unknown) => {
+      if (String(p).includes('settings.json'))
+        return JSON.stringify({
+          hooks: {
+            PreToolUse: [
+              {
+                matcher: 'Bash',
+                hooks: [{ type: 'command', command: 'harnessed check-docs --hook' }],
+              },
+              { matcher: 'Bash', hooks: [{ type: 'command', command: 'node bin/guard.mjs' }] },
+            ],
+          },
+        }) as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    rmMock.mockResolvedValue(undefined)
+    writeFileMock.mockResolvedValue(undefined)
+    confirmMock.mockResolvedValue(true)
+    const { code } = await runCli(['uninstall'])
+    expect(code).toBe(0)
+    const written = JSON.parse(String(writeFileMock.mock.calls[0]?.[1]))
+    expect(written.hooks?.PreToolUse).toHaveLength(1)
+    expect(JSON.stringify(written.hooks?.PreToolUse)).toContain('guard.mjs')
+    expect(JSON.stringify(written.hooks?.PreToolUse)).not.toContain('check-docs')
+  })
+
   it('--dry-run surfaces harnessed hooks without mutating', async () => {
     readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     readFileMock.mockImplementation(async (p: unknown) => {

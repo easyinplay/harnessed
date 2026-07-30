@@ -41,8 +41,8 @@ const DEPRECATED = new Set(['plan-feature', 'execute-task', 'verify-work'])
 // rewrite". Digit-loose `v\d+\.\d+\.\d+` per generateCommands.ts marker regex.
 // Skip-current keys off NEW_MARKER only, so a previous-marker section (v4.9.2)
 // is always re-rendered to the current shape.
-const OLD_MARKER = '<!-- harnessed-generated:v4.9.3 -->'
-const NEW_MARKER = '<!-- harnessed-generated:v4.10.0 -->'
+const OLD_MARKER = '<!-- harnessed-generated:v4.10.0 -->'
+const NEW_MARKER = '<!-- harnessed-generated:v4.11.0 -->'
 
 // issue #2 — body-type sets MUST mirror generateCommands.ts so the inlined SKILL
 // invoke section carries the SAME deterministic engine sequence as the sibling
@@ -159,6 +159,19 @@ const TEAMS_TEARDOWN_ZH = [
   '   - **headless 绝不 spawn team**:headless session(`claude -p`)下 `harnessed gates` 已返回 `escalate_to_teams: false`(Agent Teams 是 session-scoped —— `/resume` 即丢,与 `-p` 不兼容)。即使你认为能并行,headless 下也**不要** spawn teammate 或背景 `Agent` —— 改为在 session 内顺序驱动 fired subs。',
 ]
 
+// T2.1 — the gate-fact production step. Without it the gates below evaluate
+// against generic defaults (audit S2: every judgement-call fact was pinned to its
+// firing side and NO workflow ever passed --context, so the criteria had zero
+// discriminating power — "always fire" wearing a criteria costume). This step is
+// where the locked spec turns into the facts the gates actually read.
+function factsStepEn(name) {
+  return `1b. Bash: \`harnessed facts ${name} --out .harnessed-facts.json\` → it lists ONLY the facts this stage’s gates actually read: deterministic ones already filled (change size / files touched / stage, from git), judgement calls left \`null\` with a one-line hint of what to judge. Edit the file and replace each \`null\` in \`facts\` with your honest answer from the locked spec — leave one null only if you genuinely cannot judge it (it then falls back to the built-in default). Do NOT skip this step and do NOT invent facts the command did not ask for.`
+}
+
+function factsStepZh(name) {
+  return `1b. Bash: \`harnessed facts ${name} --out .harnessed-facts.json\` → 它只列出**本阶段 gate 真正读取**的 fact:能确定性推导的已填好(改动行数 / 触及文件数 / stage,来自 git),判断题留 \`null\` 并附一行说明。编辑该文件,把 \`facts\` 里每个 \`null\` 按 locked spec 换成你的真实判断 —— 只有确实无法判断时才留 null(此时回退内置默认值)。**不要**跳过本步,也**不要**自行编造命令没问的 fact。`
+}
+
 // ── ORCHESTRATOR (auto/plan/task/verify/ship) — mirrors buildOrchestratorBody ──
 
 function orchestratorEn(name) {
@@ -184,12 +197,13 @@ function orchestratorEn(name) {
     'that blocks the session, bypasses Agent Teams, and hangs inside Claude Code).',
     '',
     step1,
-    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub discuss\` → parse the JSON \`{fire, skip, parallelism}\`. This is the plan SoT (no spawn). Keep the verbatim JSON.${step2tail}`,
+    factsStepEn(name),
+    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --context-file .harnessed-facts.json --skip-sub discuss\` → parse the JSON \`{fire, skip, parallelism}\`. This is the plan SoT (no spawn). Keep the verbatim JSON.${step2tail}`,
     `3. Bash: \`harnessed checkpoint start ${name} --plan '<the verbatim gates JSON from step 2>'\` → seeds the per-sub ledger so \`harnessed status --recover\` can re-orient you after compaction.`,
     TEAMS_STEP_EN,
     ...(isAuto ? TEAMS_TEARDOWN_EN : []),
     '5. Otherwise, for each fired sub in `order` (serial subs sequentially, parallel subs concurrently):',
-    '   - **If the entry has `is_master: true`** (a stage master — e.g. `/auto` firing `plan`/`task`/`verify`): do NOT prompt+spawn it. RECURSE: run that master’s own `harnessed gates <sub> --task "<spec>" --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → repeat this loop for ITS fired subs.',
+    '   - **If the entry has `is_master: true`** (a stage master — e.g. `/auto` firing `plan`/`task`/`verify`): do NOT prompt+spawn it. RECURSE: run that master’s own `harnessed facts <sub> --out .harnessed-facts.json` (fill the nulls) → `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → repeat this loop for ITS fired subs.',
     '   - **Else (leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → parse `{prompt, max_iterations, model}`.',
     `     b. ${SPAWN_LOOP_EN}`,
@@ -226,12 +240,13 @@ function orchestratorZh(name) {
     'session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。',
     '',
     step1,
-    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --skip-sub discuss\` → 解析 JSON \`{fire, skip, parallelism}\`。这是 plan SoT(不 spawn)。保留 verbatim JSON。${step2tail}`,
+    factsStepZh(name),
+    `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --context-file .harnessed-facts.json --skip-sub discuss\` → 解析 JSON \`{fire, skip, parallelism}\`。这是 plan SoT(不 spawn)。保留 verbatim JSON。${step2tail}`,
     `3. Bash: \`harnessed checkpoint start ${name} --plan '<step 2 的 verbatim gates JSON>'\` → seed per-sub ledger,让 \`harnessed status --recover\` 能在 compaction 后给你重新定位。`,
     TEAMS_STEP_ZH,
     ...(isAuto ? TEAMS_TEARDOWN_ZH : []),
     '5. 否则,对 `order` 里每个 fired sub(serial 串行、parallel 并发):',
-    '   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed gates <sub> --task "<spec>" --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → 对它的 fired subs 重复本循环。',
+    '   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed facts <sub> --out .harnessed-facts.json`(填完 null)→ `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → 对它的 fired subs 重复本循环。',
     '   - **否则(leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → 解析 `{prompt, max_iterations, model}`。',
     `     b. ${SPAWN_LOOP_ZH}`,

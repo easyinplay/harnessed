@@ -2,6 +2,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { buildDefaultGateContext, mergeGateContext } from '../../src/cli/lib/gateContext.js'
+import { evalGate } from '../../src/workflow/exprBuilder.js'
 
 describe('buildDefaultGateContext', () => {
   it('seeds phase.stage + provides phase/subtask + team-routing facts', () => {
@@ -12,9 +13,37 @@ describe('buildDefaultGateContext', () => {
     // v4.1.2 — parallelism team facts present (were missing → gate threw)
     expect(ctx.teammate_send_message_needed).toBe(false)
     expect(ctx.fullstack_three_way).toBe(false)
-    // a representative phase + subtask default
-    expect((ctx.phase as Record<string, unknown>).is_critical_module).toBe(true)
-    expect((ctx.subtask as Record<string, unknown>).core_algorithm).toBe(true)
+    // a representative phase + subtask default (safety-net side, still on)
+    expect((ctx.phase as Record<string, unknown>).has_cross_phase_data_flow).toBe(true)
+    expect((ctx.subtask as Record<string, unknown>).is_core_business_logic).toBe(true)
+  })
+
+  it('T2.1 OQ2(c) — the four over-eager defaults are off the fire side', () => {
+    // Audit S2: buildDefaultGateContext pinned every judgement-call fact to the
+    // "will fire" side, and NO workflow ever passed --context — so the criteria
+    // had zero discriminating power (equivalent to "always fire"). OQ2 resolved
+    // to (c): withdraw exactly these four now, keep the rest of the safety net
+    // until `harnessed facts` coverage data says otherwise.
+    //   - phase.is_critical_module      → stage-routing.verify-paranoid-critical
+    //   - phase.is_complex_architecture → stage-routing.plan-architecture-delegate
+    //   - subtask.core_algorithm        → subtask-gate.brainstorming
+    //   - subtask.error_cost            → subtask-gate.brainstorming
+    // They are still PRESENT (option (b) "leave undefined and lean on
+    // fail-closed" was rejected — a missing bare fact silently deletes a
+    // governance gate); only their value moved to the non-firing side.
+    const ctx = buildDefaultGateContext('do X', 'verify')
+    const phase = ctx.phase as Record<string, unknown>
+    const subtask = ctx.subtask as Record<string, unknown>
+    expect(phase.is_critical_module).toBe(false)
+    expect(phase.is_complex_architecture).toBe(false)
+    expect(subtask.core_algorithm).toBe(false)
+    expect(subtask.error_cost).toBe('low')
+    for (const k of ['is_critical_module', 'is_complex_architecture']) {
+      expect(k in phase, `${k} must stay declared`).toBe(true)
+    }
+    for (const k of ['core_algorithm', 'error_cost']) {
+      expect(k in subtask, `${k} must stay declared`).toBe(true)
+    }
   })
 
   it('4.23.2 (issue #5) — root-flat is_critical_release present, default false (opt-in)', () => {
@@ -40,6 +69,36 @@ describe('buildDefaultGateContext', () => {
     expect(subtask.needs_browser_automation).toBe(false)
   })
 
+  it('T2.1 gap-close — has_ai_phase / requires_coverage_audit declared, default false', () => {
+    // stage-routing.yaml verify-eval-review-aiphase (:83) and
+    // verify-validate-phase-coverage (:89) read these two, but neither was
+    // declared in PhaseShape (additionalProperties:false) nor seeded here — an
+    // absent OBJECT MEMBER evaluates to a silent false (only bare identifiers
+    // throw), so both verify subs were unreachable on the default path with no
+    // signal anywhere. Declared now; the value stays on the NON-firing side
+    // because both subs are expensive audits that should be requested, not
+    // defaulted — `harnessed facts verify` lists them as nulls for the model.
+    const phase = buildDefaultGateContext('do X', 'verify').phase as Record<string, unknown>
+    expect('has_ai_phase' in phase).toBe(true)
+    expect('requires_coverage_audit' in phase).toBe(true)
+    expect(phase.has_ai_phase).toBe(false)
+    expect(phase.requires_coverage_audit).toBe(false)
+  })
+
+  it('T2.1 gap-close — the two verify sub gates are reachable once the facts are filled', () => {
+    const base = buildDefaultGateContext('do X', 'verify')
+    const evalExpr = evalGate
+    const aiPhase = "phase.stage == 'verify' and phase.has_ai_phase == true"
+    const coverage = "phase.stage == 'verify' and phase.requires_coverage_audit == true"
+    expect(evalExpr(aiPhase, base as unknown as Record<string, unknown>)).toBe(false)
+    expect(evalExpr(coverage, base as unknown as Record<string, unknown>)).toBe(false)
+    const filled = mergeGateContext(base, {
+      phase: { has_ai_phase: true, requires_coverage_audit: true },
+    }) as unknown as Record<string, unknown>
+    expect(evalExpr(aiPhase, filled)).toBe(true)
+    expect(evalExpr(coverage, filled)).toBe(true)
+  })
+
   it('T2.3 — web-search default route is live (needs_web_search + keyword search_type)', () => {
     // Wiring workflows/research/workflow.yaml phases to the 5 web-search-routing
     // triggers turns the previously-unconditional fan-out step into 5 gated route
@@ -62,7 +121,7 @@ describe('mergeGateContext — deep merge', () => {
     const phase = merged.phase as Record<string, unknown>
     expect(phase.is_major_release).toBe(true) // overridden
     expect(phase.stage).toBe('plan') // preserved
-    expect(phase.is_critical_module).toBe(true) // preserved (shallow assign would wipe)
+    expect(phase.has_cross_phase_data_flow).toBe(true) // preserved (shallow assign would wipe)
     expect(Object.keys(phase).length).toBe(Object.keys(base.phase).length)
   })
 
@@ -78,5 +137,22 @@ describe('mergeGateContext — deep merge', () => {
     const base = buildDefaultGateContext('t', 'task')
     const merged = mergeGateContext(base, { user_understanding_unclear: true })
     expect(merged.user_understanding_unclear).toBe(true)
+  })
+
+  it('T2.1 D-4 — a null fact means NOT PROVIDED: the default survives', () => {
+    // `harnessed facts` emits null for every judgement call it will not fake.
+    // If the model hands the file back with some nulls unfilled, those must fall
+    // back to the defaults — writing null INTO the context would make
+    // `subtask.error_cost == 'high'` compare against null and, worse, silently
+    // erase a seeded default.
+    const base = buildDefaultGateContext('t', 'task')
+    const merged = mergeGateContext(base, {
+      subtask: { approaches: null, is_algorithm: true },
+      user_understanding_unclear: null,
+    })
+    const subtask = merged.subtask as Record<string, unknown>
+    expect(subtask.approaches).toBe((base.subtask as Record<string, unknown>).approaches)
+    expect(subtask.is_algorithm).toBe(true)
+    expect(merged.user_understanding_unclear).toBe(false)
   })
 })

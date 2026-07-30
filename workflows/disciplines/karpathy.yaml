@@ -45,3 +45,32 @@ rules:
     check_method: external-cmd
     auto_fix_cmd: 'wc -l <file> | awk ''{if ($1>200) exit 1}'''
     # 实装 split helper pattern (sister fallbackHandlers.ts / sdkReconcile.ts ≤80L)
+
+  # ── T2.7 (4.34.x) — the 2 rules the `karpathy-guidelines` capability description
+  # had been claiming since v2.0 without a rule behind them. Added as the
+  # precondition for dropping the upstream `karpathy-skills` plugin: the plugin
+  # was already redundant (0 call sites), but摘除 without these two would have
+  # silently dropped the ideas. Both are judgment calls with no deterministic
+  # check → `warn`, never `halt`.
+
+  - id: trust-internal-code
+    description: Trust internal code — validate at the trust boundary (external input, parsed config, user data), not at every internal layer; do not add defensive re-checks or redundant assertions on call sites you control
+    enforcement: warn
+    trigger: subtask.type == 'code-write'
+    check_method: heuristic
+    # sister role-prompts.yaml task-code checklist "Trust internal code: don't
+    # re-validate already-checked inputs at every layer"
+
+  - id: no-comments-default
+    description: Comments explain WHY, not WHAT — delete comments that restate the code or that have drifted out of sync with it; a comment must add context the code cannot carry (rationale, constraint, upstream reference)
+    enforcement: warn
+    trigger: subtask.type == 'code-write'
+    check_method: llm-judge
+    # check_method='llm-judge' — sister simplicity-first: verify phase 的
+    # code-simplifier review 承接 (role-prompts.yaml verify-simplify checklist
+    # "Comments that lie or duplicate the code → delete").
+    #
+    # 上游 karpathy 原条是「默认不写注释」,这里 REWRITE 不照搬 (T2.7 OQ3 裁决):
+    # 照搬会与本仓的高注释密度基线冲突,更会伤到 bundled 资产 —— 普通用户没有作者
+    # 本机那份 ~/.claude/CLAUDE.md,yaml / SKILL 里的注释是他们理解这些资产的唯一
+    # 途径。所以规则约束的是注释的「质量」(why 而非 what),不是注释的「有无」。

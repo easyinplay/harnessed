@@ -57,7 +57,7 @@ function markIfSeeded(
 
 // markSub is loaded lazily at the module top once (pure fn, no I/O) so markIfSeeded
 // can call it synchronously inside the mutateSubProgress closure.
-import { markSub as markSubImpl } from '../checkpoint/ledger.js'
+import { findSerialBlockers, markSub as markSubImpl } from '../checkpoint/ledger.js'
 
 /** Parse the `--plan` gates JSON. Returns null on missing/empty/invalid input so
  *  the caller can degrade to an empty ledger (D3) instead of throwing. */
@@ -119,19 +119,22 @@ async function absorbIntentFor(sub: string): Promise<void> {
   }
 }
 
-/** 4.26.0 (A3, comet 0.3.9 phase-skip lesson) — serial-order guard shared by
- *  complete/fail: read the current ledger and return the pending serial-sequence
- *  blockers for `sub`. Any internal error → warn + [] (fail-soft: a runtime
- *  fault, not a config error — the 4.23.2 fail-closed carve-out is for static
- *  config bugs only). */
-async function serialOrderBlockers(sub: string, deps: RunDeps = defaultRunDeps): Promise<string[]> {
+/** Read the sub-progress ledger once per action. Any internal error → warn + []
+ *  (fail-soft: a runtime fault, not a config error — the 4.23.2 fail-closed carve-out
+ *  is for static config bugs only).
+ *
+ *  T2.7 — deliberately ONE read shared by the serial-order guard and the loop
+ *  guarantees (prior-attempt damping state). Adding a second read here would shift the
+ *  per-action read count that the ledger unit tests queue their fixtures against. */
+async function readLedgerSafe(
+  deps: RunDeps = defaultRunDeps,
+): Promise<import('../checkpoint/schema/currentWorkflow.v1.js').SubProgressEntryType[]> {
   try {
     const { readCurrentWorkflow } = await import('../checkpoint/state.js')
-    const { findSerialBlockers } = await import('../checkpoint/ledger.js')
     const wf = await readCurrentWorkflow()
-    return findSerialBlockers(wf?.sub_progress ?? [], sub)
+    return wf?.sub_progress ?? []
   } catch (e) {
-    deps.warn(`[harnessed] serial-order guard skipped (fail-soft): ${(e as Error).message}`)
+    deps.warn(`[harnessed] ledger read skipped (fail-soft): ${(e as Error).message}`)
     return []
   }
 }
@@ -170,11 +173,18 @@ export interface CheckpointCompleteOpts {
   summary?: string
   force?: boolean
   tokens?: string
+  /** T2.7 D-1 — the subagent's final output (raw text or SDK result envelope JSON),
+   *  checked against the `<promise>COMPLETE</promise>` predicate. */
+  result?: string
+  /** Same, read from a file — the quoting-safe channel on Windows. */
+  resultFile?: string
 }
 
 export interface CheckpointFailOpts {
   summary?: string
   force?: boolean
+  /** T2.7 D-3 — failing-test count for this attempt; the preferred progress metric. */
+  failingTests?: string
 }
 
 /** `checkpoint start <master> [--plan <json>]` orchestration body (extracted
@@ -309,9 +319,8 @@ export async function runCheckpointComplete(
   // 4.26.0 (A3) — serial-order guard BEFORE the evidence guard: jumping a
   // pending serial predecessor is a transition violation regardless of
   // whatever artifacts this sub can show.
-  if (
-    !enforceSerialOrder('complete', sub, await serialOrderBlockers(sub, deps), opts.force, deps)
-  ) {
+  const preLedger = await readLedgerSafe(deps)
+  if (!enforceSerialOrder('complete', sub, findSerialBlockers(preLedger, sub), opts.force, deps)) {
     deps.exit(1)
     return
   }
@@ -325,10 +334,55 @@ export async function runCheckpointComplete(
   const { checkPlanningSync } = await import('../checkpoint/evidence.js')
   const syncResult = await checkPlanningSync(process.cwd(), null)
 
+  // ── T2.7 D-4 — BOUNDARY for the tdd-evidence.md done-criterion. Existence alone is
+  // gameable (empty file / boilerplate / a plausible red→green record written while
+  // the tests were deleted). Runs only when the sub actually declares that artifact
+  // AND it resolved, keyed off the resolved artifact NAME rather than a hardcoded sub
+  // (data-driven: any leaf declaring it inherits the boundary). All git-derived checks
+  // are fail-open; heuristic findings warn and never block (ECC delivery-gate:28). ──
+  const boundaryBlocks: string[] = []
+  try {
+    const { checkTddBoundary, isTddEvidencePath } = await import('../checkpoint/tddBoundary.js')
+    const evidenceArtifact = result.found.find((f) => isTddEvidencePath(f.path))
+    if (evidenceArtifact) {
+      for (const f of await checkTddBoundary(process.cwd(), evidenceArtifact.path)) {
+        if (f.kind === 'block') boundaryBlocks.push(`boundary(${f.id}): ${f.message}`)
+        else deps.warn(`⚠️ [harnessed] boundary warning (${f.id}): ${f.message}`)
+      }
+    }
+  } catch {
+    // fail-open — a boundary fault must never block a legitimate completion.
+  }
+
+  // ── T2.7 D-1 — the completion promise, verified on the LIVE path. `isComplete` is
+  // reused verbatim from src/workflow/lib/ralphLoop.ts (its only prior consumer was
+  // `harnessed run`, which every SKILL forbids). Supplied-and-failing is fail-closed;
+  // NOT supplied is an advisory warning, because callers predating the flag must keep
+  // working and because the promise is structurally a self-report (ECC
+  // gan-style-harness:15-17) — it is one check among four, not the guarantee. ──
+  const { verifyCompletionClaim } = await import('../checkpoint/completionClaim.js')
+  const claim = await verifyCompletionClaim({
+    ...(opts.result !== undefined ? { result: opts.result } : {}),
+    ...(opts.resultFile !== undefined ? { resultFile: opts.resultFile } : {}),
+  })
+  const claimBlocks =
+    claim.verdict === 'incomplete'
+      ? [
+          `completion promise not met (${claim.source}): the subagent output carries no verbatim <promise>COMPLETE</promise> and no structured COMPLETE status on a successful run`,
+        ]
+      : []
+  if (claim.verdict === 'not_provided') {
+    deps.warn(
+      `⚠️ [harnessed] completion promise unverified for ${sub} — no --result/--result-file supplied, so the promise gate is unarmed for this completion (artifact + boundary gates still applied).`,
+    )
+  }
+
   // Fail-CLOSED (ADR-0033 D2 + Phase 12 G2): merge artifact missing set with
   // planning sync missing set. Any missing item blocks completion unless --force.
+  // T2.7 extends the same blocker set with the boundary and promise findings so
+  // `--force` keeps ONE meaning: an audited override recorded as `overridden`.
   // The ledger entry stays 'pending'; no done flip; exit 1.
-  const allMissing = [...result.missing, ...syncResult.missing]
+  const allMissing = [...result.missing, ...syncResult.missing, ...boundaryBlocks, ...claimBlocks]
   if (allMissing.length > 0 && !opts.force) {
     deps.error(
       `[harnessed] checkpoint complete BLOCKED: ${sub} — ${allMissing.length} item(s) missing (evidence guard + .planning/ sync, fail-closed):`,
@@ -356,10 +410,16 @@ export async function runCheckpointComplete(
 
   // none_declared records no evidence refs (nothing was checked); the other
   // two postures attach the present artifacts as evidence.
+  // T2.7 — the promise verdict rides along on the same single mark, so the ledger
+  // (not just a log line) records whether the gate was armed, passed, or overridden.
   const markOpts =
     evidenceStatus === 'none_declared'
-      ? { evidence_status: evidenceStatus }
-      : { evidence: result.found, evidence_status: evidenceStatus }
+      ? { evidence_status: evidenceStatus, completion_claim: claim.verdict }
+      : {
+          evidence: result.found,
+          evidence_status: evidenceStatus,
+          completion_claim: claim.verdict,
+        }
   await mutateSubProgress((e) => markIfSeeded(e, sub, 'done', markOpts))
   // 4.22.0 T6 — a leaf intent for THIS sub is satisfied by its completion.
   await absorbIntentFor(sub)
@@ -478,12 +538,50 @@ export async function runCheckpointFail(
   const { completePhase } = await import('../checkpoint/engineHook.js')
   // 4.26.0 (A3) — same serial-order guard: failing a serial successor while
   // its predecessor is still pending is the same sequence jump.
-  if (!enforceSerialOrder('fail', sub, await serialOrderBlockers(sub, deps), opts.force, deps)) {
+  const preLedger = await readLedgerSafe(deps)
+  if (!enforceSerialOrder('fail', sub, findSerialBlockers(preLedger, sub), opts.force, deps)) {
     deps.exit(1)
     return
   }
+
+  // ── T2.7 D-3 — sample this attempt's progress BEFORE the mark, folding it into the
+  // prior attempt's damping state. Two metrics, no self-report (OQ2): the failing-test
+  // count when the caller measured one, else the digest of the sub's declared evidence
+  // artifacts (which the evidence guard already hashes). Nothing measurable → no mark
+  // and no damping (fail-open). ──
+  const { sampleProgress, isPlateaued, evidenceDigest, PLATEAU_THRESHOLD } = await import(
+    '../checkpoint/progress.js'
+  )
+  const { getAssetsRoot } = await import('../platform/assetsRoot.js')
+  const assetsRoot = getAssetsRoot()
+  const failingTests = opts.failingTests !== undefined ? Number(opts.failingTests) : undefined
+  let digest = ''
+  try {
+    const { checkArtifacts } = await import('../checkpoint/evidence.js')
+    digest = evidenceDigest((await checkArtifacts(sub, assetsRoot)).found)
+  } catch {
+    // fail-open — the fallback metric is simply unavailable.
+  }
+  const prev = preLedger.find((e) => e.sub === sub)?.progress
+  const nextProgress = sampleProgress(prev, {
+    ...(failingTests !== undefined && Number.isFinite(failingTests)
+      ? { failing_tests: failingTests }
+      : {}),
+    evidence_digest: digest,
+  })
+
+  // ── T2.7 D-2 — resolve the sub's `ralph_max_iterations` ceiling and persist it on
+  // the entry, so the PURE per-turn injector can enforce it without reading yaml. ──
+  const { resolveAttemptBudget, isBudgetExhausted } = await import('../checkpoint/budget.js')
+  const budget = await resolveAttemptBudget(sub, assetsRoot)
+
   const { mutateSubProgress } = await import('../checkpoint/state.js')
-  await mutateSubProgress((e) => markIfSeeded(e, sub, 'failed'))
+  await mutateSubProgress((e) =>
+    markIfSeeded(e, sub, 'failed', {
+      attempt_budget: budget,
+      ...(nextProgress ? { progress: nextProgress } : {}),
+    }),
+  )
   // 4.22.0 T6 — a failed sub is still a RESOLVED sub for its leaf intent.
   await absorbIntentFor(sub)
   // v5.0 Spec 1 — a failed sub must NOT flip the workflow to 'complete'. The
@@ -508,6 +606,28 @@ export async function runCheckpointFail(
         'Stop retrying — run the break-loop skill for root-cause analysis and capture the lesson to .planning/.',
     )
   }
+
+  // ── T2.7 — the two stopping reasons the live path was missing. Same counting
+  // source as BREAK-LOOP (the ledger's per-sub fail_count), same breadcrumb shape;
+  // the per-turn injector re-emits both every turn from the persisted entry, so the
+  // directive does not depend on the operator having read this one stderr line. ──
+  const attempts = latest?.sub_progress?.find((e) => e.sub === sub)?.fail_count ?? 0
+  if (isBudgetExhausted(attempts, budget)) {
+    deps.error(
+      `[harnessed] BUDGET-EXHAUSTED: sub '${sub}' has spent ${attempts}/${budget} attempts ` +
+        '(workflows/defaults.yaml ralph_max_iterations). Do not spawn it again — re-scope the ' +
+        'subtask, fix the blocker, or escalate to the user.',
+    )
+  }
+  if (isPlateaued(nextProgress)) {
+    deps.error(
+      `[harnessed] NO-PROGRESS: sub '${sub}' has produced no improvement for ` +
+        `${nextProgress?.stale_count} consecutive attempts (metric: ${nextProgress?.metric}, ` +
+        `threshold ${PLATEAU_THRESHOLD}). Stop respawning — a loop with no damping just ` +
+        'spins in place. Change the approach or escalate.',
+    )
+  }
+
   deps.error(
     `[harnessed] checkpoint FAILED recorded: ${sub}${opts.summary ? ` — ${opts.summary}` : ''}`,
   )
@@ -531,11 +651,35 @@ export function registerCheckpoint(program: Command): void {
       '--tokens <n>',
       'complete only — conversation token count; auto-compacts the ledger when >= the shouldCompact threshold (Phase 14)',
     )
+    // T2.7 D-1 — the completion promise on the LIVE path (previously only reachable
+    // via `harnessed run`, which every SKILL forbids). Supplied-and-failing blocks;
+    // not supplied warns.
+    .option(
+      '--result <text>',
+      "complete only — the subagent's final output (or SDK result envelope JSON); blocked unless it carries a verbatim <promise>COMPLETE</promise> or a structured COMPLETE status",
+    )
+    .option(
+      '--result-file <path>',
+      'complete only — same as --result but read from a file (quoting-safe on Windows); wins over --result',
+    )
+    // T2.7 D-3 — the preferred no-progress metric. A measurement, not a self-assessment.
+    .option(
+      '--failing-tests <n>',
+      'fail only — number of tests still failing after this attempt; drives the no-progress circuit breaker (falls back to the evidence-artifact digest when omitted)',
+    )
     .action(
       async (
         action: string,
         sub: string,
-        opts: { summary?: string; plan?: string; force?: boolean; tokens?: string },
+        opts: {
+          summary?: string
+          plan?: string
+          force?: boolean
+          tokens?: string
+          result?: string
+          resultFile?: string
+          failingTests?: string
+        },
       ) => {
         if (!isAction(action)) {
           console.error(

@@ -56,6 +56,19 @@ export async function resolveJudgmentGate(
     return true
   }
 
+  return evalGate(await resolveJudgmentExpression(gateRef, packageRoot), context)
+}
+
+/** Resolve a `judgments.<file>.<trigger>.<fires|skips>` ref to its RAW expression
+ *  string, without evaluating it. Extracted at T2.1 so `harnessed facts` can
+ *  enumerate the fact names a master's gates actually consume (D-1) and so the
+ *  `skip_gate` veto (D-5) reuses one loader/cache instead of a second copy.
+ *  Throws on every malformed / missing / expression-less ref — callers decide the
+ *  fail direction (gates.ts: fail-closed; skipGate.ts: no veto). */
+export async function resolveJudgmentExpression(
+  gateRef: string,
+  packageRoot: string,
+): Promise<string> {
   const parts = gateRef.split('.')
   if (parts.length !== 4 || parts[0] !== 'judgments') {
     throw new Error(`Invalid gate ref: ${gateRef}`)
@@ -99,8 +112,7 @@ export async function resolveJudgmentGate(
       `Field '${fieldName}' has no expression in trigger '${triggerName}' of ${fileName}.yaml`,
     )
   }
-
-  return evalGate(expr, context)
+  return expr
 }
 
 // Test-only — clears the parsed-yaml cache so cache-hit / cache-miss fixtures

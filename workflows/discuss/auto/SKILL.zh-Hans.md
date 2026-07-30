@@ -24,9 +24,9 @@ trigger_phrases:
 
 | 子工作流 | gate ref | mode | 触发时机 |
 | --- | -------- | ---- | ---------- |
-| `strategic` | `judgments.stage-routing.discuss-strategic-delegate.fires` | parallel | new_project / new_milestone / new_feature / is_major_release |
-| `phase` | `judgments.stage-routing.discuss-phase-delegate.fires` | parallel | open_decisions ≥ 2 / cross_phase_data_flow / scope_days > 1 |
-| `subtask` | `judgments.stage-routing.discuss-subtask-delegate.fires` | parallel | approaches ≥ 2 / core_algorithm / has_api_contract / error_cost=high |
+| `strategic` | `judgments.strategic-gate.strategic-tier-delegate.fires` | parallel | new_project / new_milestone / new_feature / is_major_release |
+| `phase` | `judgments.phase-gate.gsd-discuss-phase.fires` | parallel | open_decisions ≥ 2 / cross_phase_data_flow / scope_days > 1 / files_touched > 5 |
+| `subtask` | `judgments.subtask-gate.brainstorming.fires` | parallel | approaches ≥ 2 / core_algorithm / has_api_contract / error_cost=high |
 
 引擎运行时通过 `runMasterOrchestrator` 以
 T3.5.W0.1（sister sub-workflow `runWorkflow` SDK pattern，并行 fan-out 通过
@@ -70,7 +70,7 @@ Sister `workflows/capabilities.yaml`:
 
 产出:一份 locked spec,执行阶段(`/plan` → `/task` → `/verify`)无需再问用户即可消费。
 
-<!-- harnessed-generated:v4.10.0 -->
+<!-- harnessed-generated:v4.11.0 -->
 
 ## 参考资料
 

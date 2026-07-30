@@ -6,8 +6,8 @@
 # Sister refs:
 #   - workflows/judgments/web-design-routing.yaml — 3 trigger 全接线 (T2.3):
 #     design-review-post (01) + ui-ux-pro-max-structure (02) + design-taste-polish (03)
-#   - workflows/judgments/stage-routing.yaml verify-design-changes trigger — 仍在
-#     workflows/verify/auto/workflow.yaml delegates_to 作 sub 级 delegation gate
+#     design-review-post 同时是 workflows/verify/auto/workflow.yaml `design`
+#     delegate 的 gate (stage-routing.verify-design-changes 那份逐字副本已删)
 #   - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / design-taste-frontend
 #   - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister pattern
 #   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 verify/design example verbatim
@@ -34,9 +34,9 @@ phases:
     # T2.3 — gate 由 judgments.stage-routing.verify-design-changes.fires 换成
     # 同址的 judgments.web-design-routing.design-review-post.fires。两个 trigger 的
     # fires_when 逐字等价 ("phase.stage == 'verify' and phase.has_design_changes == true"),
-    # 所以行为零变化; 换 ref 让 web-design-routing 的第 3 个 trigger 不再是运行时孤儿,
-    # 而 stage-routing.verify-design-changes 仍由 workflows/verify/auto/workflow.yaml
-    # 的 delegates_to 引用 (粗粒度 delegation gate 与 phase gate 各司其职)。
+    # 所以行为零变化; 换 ref 让 web-design-routing 的第 3 个 trigger 不再是运行时孤儿。
+    # 后续: stage-routing 的那份副本已删, verify/auto 的 delegate gate 也指到这里 —
+    # 一个判据一个家 (guard: tests/workflow/judgment-expression-dedup.test.ts)。
     gate: judgments.web-design-routing.design-review-post.fires
     max_iterations: 3
     # D2-followup (ADR-0033): declare report artifact so the evidence guard is real

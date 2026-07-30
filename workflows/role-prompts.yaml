@@ -80,7 +80,7 @@ prompts:
     specialist: "Stage 3 task dispatcher"
     responsibility: |
       Per-subtask serial chain: `/task-clarify` (conditional brainstorming) →
-      `/task-code` (karpathy 4 心法 + mattpocock conditional招式) →
+      `/task-code` (karpathy 4 principles + conditional mattpocock moves) →
       `/task-test` (TDD strongly suggested gate) → `/task-deliver` (ralph-loop
       COMPLETE wrapper). Re-enter for each subtask.
     checklist: []
@@ -308,7 +308,7 @@ prompts:
     primary_cap: "planning-with-files"
     specialist: "Karpathy-discipline implementer"
     responsibility: |
-      Implement a single subtask under karpathy 4 心法 (Think Before Coding /
+      Implement a single subtask under the karpathy 4 principles (Think Before Coding /
       Simplicity First / Surgical Changes / Goal-Driven Execution) with
       ≤200 LOC per file. Conditionally invoke `/improve-codebase-architecture`
       for periodic health audits, `/diagnosing-bugs` for unknown bug root
@@ -331,7 +331,7 @@ prompts:
       - "improve-arch: name candidates using CONTEXT.md domain vocabulary (e.g. 'the Order intake module', not 'FooBarHandler'); if a candidate contradicts an existing ADR, only surface it when the friction is real enough to revisit the ADR"
       - "improve-arch: present candidates as a before/after report and let the user pick which to explore before designing interfaces"
     severity: "needs-fix / done / blocked"
-    description: "Implement a subtask under karpathy 4 心法 (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven); ≤200 LOC per file. improve-codebase-architecture for shallow-module deepening audits."
+    description: "Implement a subtask under the karpathy 4 principles (Think Before Coding, Simplicity First, Surgical Changes, Goal-Driven); ≤200 LOC per file. improve-codebase-architecture for shallow-module deepening audits."
 
   task-test:
     primary_cap: "tdd"
@@ -349,7 +349,7 @@ prompts:
       - "Negative cases matter: at least 1 test per error / edge / boundary"
       - "Test name = expected behavior, not 'test1', not 'should work'"
       - "On unexpected failure: stop adding tests; route to `/diagnosing-bugs` for root cause"
-      # TDD 跳过声明协议 (sister CLAUDE.md) — machine-enforced via workflows/task/test/workflow.yaml artifacts_expected
+      # TDD skip-declaration protocol — machine-enforced via workflows/task/test/workflow.yaml artifacts_expected
       - "Write `tdd-evidence.md` before completing: EITHER the red→green record (the failing test, then the pass) OR, when the tdd-gate skips (crud / ui_polish / docs_only), an explicit `SKIPPED — <reason>` declaration. No declaration and no test run = `harnessed checkpoint complete task-test` is BLOCKED (fail-closed evidence guard, exit 1)"
     severity: "red / green / refactored / blocked"
     description: "Enforce red-green-refactor TDD for core logic; `/diagnosing-bugs` handoff on test failures."

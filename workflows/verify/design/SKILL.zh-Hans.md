@@ -50,8 +50,9 @@ Sister `workflows/judgments/web-design-routing.yaml`：
 - `ui-ux-pro-max-structure.fires` — `phase.has_ui_changes == true`
 - `design-taste-polish.fires` — `phase.has_ui_changes == true`
 
-`judgments.stage-routing.verify-design-changes.fires`（predicate 逐字等价）仍由
-`workflows/verify/auto/workflow.yaml` 的 `delegates_to` 作粗粒度 sub 级 delegation gate 引用。
+`workflows/verify/auto/workflow.yaml` 的 `delegates_to` 也 gate 在
+`design-review-post.fires` 上 —— 之前那条逐字等价的 `stage-routing.verify-design-changes`
+副本已删,一个判据一个家。
 
 ## 路由规则（bundled web-design routing — `workflows/judgments/web-design-routing.yaml`）
 
@@ -77,7 +78,7 @@ Code 内部会阻塞 session)。
 3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn。
 4. 命中 `<promise>COMPLETE</promise>`:Bash `harnessed checkpoint complete verify-design --summary "<one-line>"`。evidence guard 在此运行(fail-CLOSED):若声明的 `artifacts_expected` 文件缺失会 exit 非零 —— 重 spawn 产出它再算 done。
 
-<!-- harnessed-generated:v4.10.0 -->
+<!-- harnessed-generated:v4.11.0 -->
 
 ## 参考资料
 
@@ -85,5 +86,5 @@ Code 内部会阻塞 session)。
 - D-12 gstack 治理关卡可选
 - workflows/judgments/web-design-routing.yaml — 两段式 ui-ux-pro-max 结构 → design-taste-frontend 打磨
 - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / design-taste-frontend
-- workflows/judgments/stage-routing.yaml — verify-design-changes trigger（verify/auto delegation gate）
+- workflows/verify/auto/workflow.yaml — `design` delegate gate = 同一个 design-review-post trigger
 - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister verbatim

@@ -286,6 +286,31 @@ describe('check-workflow-schema — T2.3 orphan judgment trigger gate', () => {
     expect(r.code).toBe(0)
   })
 
+  // T2.1 D-5 — `delegates_to[].skip_gate` is the field that actually ships (the
+  // phases[] read above was written forward-compatibly before it existed). A
+  // trigger reachable ONLY through a skip_gate must count as referenced,
+  // otherwise wiring the ❌ half of a judgment would trip the orphan gate.
+  it('19b. trigger referenced ONLY via delegates_to[].skip_gate → exit 0', () => {
+    writeCaps()
+    writeJudgment('subtask-gate', {
+      brainstorming: { skips_when: "subtask.type in ['crud']" },
+    })
+    writeWorkflow('task', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'task',
+      delegates_to: [
+        {
+          sub: 'clarify',
+          skip_gate: 'judgments.subtask-gate.brainstorming.skips',
+          mode: 'serial',
+          order: 1,
+        },
+      ],
+    })
+    const r = runScript()
+    expect(r.code).toBe(0)
+  })
+
   it('20. fallback.yaml rules + user-overrides.yaml are exempt (not triggers-shaped)', () => {
     writeCaps()
     const dir = join(tmp, 'workflows', 'judgments')

@@ -28,8 +28,9 @@ overrides:
       - "brainstorm first"
       - "let's brainstorm"
     triggers:
+      # stage-routing.discuss-subtask-delegate removed — it was a copy of this
+      # trigger; workflows/discuss/auto/workflow.yaml now gates on the canonical one.
       - judgments.subtask-gate.brainstorming.fires
-      - judgments.stage-routing.discuss-subtask-delegate.fires
 
   - id: strategic-review
     keywords:
@@ -42,7 +43,9 @@ overrides:
     triggers:
       - judgments.strategic-gate.office-hours.fires
       - judgments.strategic-gate.plan-ceo-review.fires
-      - judgments.stage-routing.discuss-strategic-delegate.fires
+      # was stage-routing.discuss-strategic-delegate — same expression, relocated
+      # beside the two triggers it aggregates.
+      - judgments.strategic-gate.strategic-tier-delegate.fires
 
   - id: arch-review
     keywords:
@@ -60,8 +63,9 @@ overrides:
       - "discuss-phase"
       - "gsd-discuss-phase"
     triggers:
+      # stage-routing.discuss-phase-delegate removed — it was a (drifted) copy of
+      # this trigger; workflows/discuss/auto/workflow.yaml now gates on the canonical one.
       - judgments.phase-gate.gsd-discuss-phase.fires
-      - judgments.stage-routing.discuss-phase-delegate.fires
 
   - id: paranoid-review
     keywords:

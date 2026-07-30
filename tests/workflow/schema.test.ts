@@ -119,6 +119,19 @@ describe('edge — 4 case', () => {
     expect(Value.Check(PhaseFactContext, bad)).toBe(false)
   })
 
+  test('E6 (T2.1 gap-close): phase.has_ai_phase / requires_coverage_audit are required PhaseShape fields', () => {
+    // stage-routing.yaml gates /verify-eval-review and /verify-validate-phase on
+    // these two. PhaseShape is additionalProperties:false and declared neither,
+    // so the declared fact contract disagreed with the yaml that reads it.
+    const ok = makeValidPhaseFactContext()
+    expect(Value.Check(PhaseFactContext, ok)).toBe(true)
+    for (const field of ['has_ai_phase', 'requires_coverage_audit'] as const) {
+      const bad = makeValidPhaseFactContext()
+      delete (bad.phase as Record<string, unknown>)[field]
+      expect(Value.Check(PhaseFactContext, bad), `${field} must be required`).toBe(false)
+    }
+  })
+
   test('E4: PhaseFactContext wrong field type (lines as string not number)', () => {
     const bad = makeValidPhaseFactContext()
     // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
@@ -471,6 +484,9 @@ function makeValidPhaseFactContext() {
       requires_peer_review: false,
       is_final_step: false,
       has_business_decisions: false,
+      // T2.1 gap-close — stage-routing verify-eval-review / verify-validate-phase
+      has_ai_phase: false,
+      requires_coverage_audit: false,
     },
     subtask: {
       type: 'crud' as const,

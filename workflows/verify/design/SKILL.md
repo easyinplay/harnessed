@@ -50,8 +50,9 @@ Sister `workflows/judgments/web-design-routing.yaml`:
 - `ui-ux-pro-max-structure.fires` — `phase.has_ui_changes == true`
 - `design-taste-polish.fires` — `phase.has_ui_changes == true`
 
-`judgments.stage-routing.verify-design-changes.fires` (逐字等价 predicate) 仍由
-`workflows/verify/auto/workflow.yaml` 的 `delegates_to` 作粗粒度 sub 级 delegation gate 引用。
+`workflows/verify/auto/workflow.yaml` 的 `delegates_to` 也 gate 在
+`design-review-post.fires` 上 — 之前那条逐字等价的 `stage-routing.verify-design-changes`
+副本已删,一个判据一个家。
 
 ## Routing rules (bundled web-design routing — `workflows/judgments/web-design-routing.yaml`)
 
@@ -78,7 +79,7 @@ that blocks the session inside Claude Code).
 3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.
 4. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete verify-design --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.
 
-<!-- harnessed-generated:v4.10.0 -->
+<!-- harnessed-generated:v4.11.0 -->
 
 ## References
 
@@ -86,5 +87,5 @@ that blocks the session inside Claude Code).
 - D-12 gstack 治理关卡可选
 - workflows/judgments/web-design-routing.yaml — 两段式 ui-ux-pro-max 结构 → design-taste-frontend 打磨
 - workflows/capabilities.yaml — gstack-design-review / ui-ux-pro-max / design-taste-frontend
-- workflows/judgments/stage-routing.yaml — verify-design-changes trigger (verify/auto delegation gate)
+- workflows/verify/auto/workflow.yaml — `design` delegate gate = 同一个 design-review-post trigger
 - workflows/verify-work/workflow.yaml v2 SHIPPED phase 07-design-review-conditional sister verbatim

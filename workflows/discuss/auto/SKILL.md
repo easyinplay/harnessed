@@ -24,9 +24,9 @@ trigger_phrases:
 
 | sub | gate ref | mode | when fires |
 | --- | -------- | ---- | ---------- |
-| `strategic` | `judgments.stage-routing.discuss-strategic-delegate.fires` | parallel | new_project / new_milestone / new_feature / is_major_release |
-| `phase` | `judgments.stage-routing.discuss-phase-delegate.fires` | parallel | open_decisions ≥ 2 / cross_phase_data_flow / scope_days > 1 |
-| `subtask` | `judgments.stage-routing.discuss-subtask-delegate.fires` | parallel | approaches ≥ 2 / core_algorithm / has_api_contract / error_cost=high |
+| `strategic` | `judgments.strategic-gate.strategic-tier-delegate.fires` | parallel | new_project / new_milestone / new_feature / is_major_release |
+| `phase` | `judgments.phase-gate.gsd-discuss-phase.fires` | parallel | open_decisions ≥ 2 / cross_phase_data_flow / scope_days > 1 / files_touched > 5 |
+| `subtask` | `judgments.subtask-gate.brainstorming.fires` | parallel | approaches ≥ 2 / core_algorithm / has_api_contract / error_cost=high |
 
 Engine runtime spawns 3 sub-workflow phases via `runMasterOrchestrator` per
 T3.5.W0.1 (sister sub-workflow `runWorkflow` SDK pattern, parallel fan-out via
@@ -71,7 +71,7 @@ execution stages.
 
 Output: a locked spec the execution stages (`/plan` → `/task` → `/verify`) consume without further user input.
 
-<!-- harnessed-generated:v4.10.0 -->
+<!-- harnessed-generated:v4.11.0 -->
 
 ## References
 

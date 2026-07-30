@@ -139,6 +139,66 @@ describe('4.30.0 stop-hook identity (issue #6 — second compiled hook)', () => 
   })
 })
 
+// 4.34.1 (silent-failure fix) — `harnessed check-docs --hook` (doc-discipline-gate,
+// 4.34.0) is the first first-party hook whose SEMANTICS live in a trailing flag:
+// `--hook` is what makes it a git-commit-only gate; without it the PreToolUse(Bash)
+// hook blocks EVERY Bash call. The compiled rewrite only substitutes the TRANSPORT
+// (`node <script>` / bare PATH → `"<binary>" <subcommand>`), so every argument after
+// the identity token must survive it.
+describe('4.34.1 compiled routing preserves args after the identity token', () => {
+  const DOCS = 'harnessed check-docs --hook'
+  const EXE = 'C:\\Users\\x\\bin\\harnessed.exe'
+  const EXE_Q = '"C:/Users/x/bin/harnessed.exe"'
+  const compiled = { ...deps([]), compiledExecPath: () => EXE }
+
+  it('check-docs is a first-party identity in the bare-CLI and compiled forms', () => {
+    expect(hookScriptMarker(DOCS)).toBe('check-docs')
+    expect(hookScriptMarker('"C:/x/harnessed.exe" check-docs --hook')).toBe('check-docs')
+  })
+
+  it('routes to the binary AND keeps the trailing --hook flag', () => {
+    expect(resolveHookCommand(DOCS, compiled)).toBe(`${EXE_Q} check-docs --hook`)
+  })
+
+  it('REGRESSION GUARD (this bug): a compiled rewrite must never drop args after the identity', () => {
+    const r = resolveHookCommand(DOCS, compiled)
+    // The exact silent failure: `--hook` dropped ⇒ the doc-discipline gate stops
+    // being a git-commit check and becomes an unconditional block on every Bash
+    // tool call. If anyone breaks tail preservation, this must go red.
+    expect(r.startsWith(`${EXE_Q} check-docs`)).toBe(true) // routed to the binary…
+    expect(r).not.toBe(`${EXE_Q} check-docs`) // …but NOT stripped to a bare gate
+    expect(r.split(/\s+/).slice(2)).toEqual(['--hook'])
+    // generic invariant: raw's post-identity tail is preserved verbatim, in order
+    const tail = DOCS.split(/\s+/).slice(DOCS.split(/\s+/).indexOf('check-docs') + 1)
+    expect(r.split(/\s+/).slice(2)).toEqual(tail)
+  })
+
+  it('generalizes to the mjs-script forms (tail after the script token survives)', () => {
+    const r = resolveHookCommand('node bin/harnessed-stop-hook.mjs --verbose --cap=2', compiled)
+    expect(r).toBe(`${EXE_Q} stop-hook --verbose --cap=2`)
+  })
+
+  it('no trailing args → byte-identical to the 4.27.0/4.30.0 form (zero behavior change)', () => {
+    expect(resolveHookCommand(INJECT, compiled)).toBe(`${EXE_Q} inject-state`)
+    expect(resolveHookCommand('node bin/harnessed-stop-hook.mjs', compiled)).toBe(
+      `${EXE_Q} stop-hook`,
+    )
+  })
+
+  it('npm mode leaves the bare-CLI hook command verbatim (harnessed resolves on PATH)', () => {
+    expect(resolveHookCommand(DOCS, { ...deps([]), compiledExecPath: () => null })).toBe(DOCS)
+    expect(resolveHookCommand(DOCS, deps([]))).toBe(DOCS)
+  })
+
+  it('cross-form identity: bare-CLI entry ↔ compiled registration migrate/dedupe', () => {
+    const marker = hookScriptMarker(DOCS)
+    const compiledCmd = `${EXE_Q} check-docs --hook`
+    expect(entryMatchesRegistration({ command: DOCS }, DOCS, compiledCmd, marker)).toBe(true)
+    const e = { hooks: [{ type: 'command', command: compiledCmd }] }
+    expect(entryMatchesRegistration(e, DOCS, DOCS, marker)).toBe(true)
+  })
+})
+
 describe('entryMatchesRegistration + isDesiredHookEntry', () => {
   const marker = hookScriptMarker(INJECT)
   const resolved = `node ${INJECT_ABS}`

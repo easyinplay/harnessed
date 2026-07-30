@@ -39,6 +39,21 @@ describe('harnessedHookIdentity', () => {
     expect(harnessedHookIdentity('harnessed inject-state')).toBe('inject-state')
   })
 
+  // 4.34.1 — doc-discipline-gate (4.34.0) registers `harnessed check-docs --hook`
+  // as PreToolUse(Bash). Its identity was MISSING from the shared id set, so
+  // unified `harnessed uninstall` + doctor self-heal did not see it at all.
+  it('doc-discipline-gate forms (bare CLI / compiled, WITH a trailing flag) → identity', () => {
+    expect(harnessedHookIdentity('harnessed check-docs --hook')).toBe('check-docs')
+    expect(harnessedHookIdentity('"C:/Users/x/bin/harnessed.exe" check-docs --hook')).toBe(
+      'check-docs',
+    )
+    expect(harnessedHookIdentity('"/home/u/.local/bin/harnessed" check-docs --hook')).toBe(
+      'check-docs',
+    )
+    // left-boundary guard still applies — a user's own lookalike is NOT owned
+    expect(harnessedHookIdentity('"C:/tools/myharnessed.exe" check-docs --hook')).toBeNull()
+  })
+
   it('unrelated commands → null', () => {
     expect(harnessedHookIdentity('node bin/other-tool.mjs')).toBeNull()
     expect(harnessedHookIdentity('npx some-formatter')).toBeNull()
@@ -87,6 +102,13 @@ describe('harnessedHookScriptPath', () => {
     expect(harnessedHookScriptPath('"C:/Program Files/harnessed/harnessed.exe" stop-hook')).toBe(
       'C:/Program Files/harnessed/harnessed.exe',
     )
+  })
+
+  it('doc-discipline-gate: compiled → binary path, bare → bare token (flag ignored)', () => {
+    expect(harnessedHookScriptPath('"C:/live/harnessed/bin/harnessed.exe" check-docs --hook')).toBe(
+      'C:/live/harnessed/bin/harnessed.exe',
+    )
+    expect(harnessedHookScriptPath('harnessed check-docs --hook')).toBe('harnessed')
   })
 
   it('unrelated → null', () => {
@@ -167,6 +189,24 @@ describe('stripHarnessedHooks', () => {
     expect(removed).toBe(counted)
   })
 
+  it('removes the doc-discipline-gate PreToolUse hook, keeps a user Bash hook (4.34.1)', () => {
+    const hooks: Record<string, unknown[]> = {
+      PreToolUse: [
+        {
+          matcher: 'Bash',
+          hooks: [{ type: 'command', command: 'harnessed check-docs --hook' }],
+        },
+        { matcher: 'Bash', hooks: [{ type: 'command', command: 'node bin/guard.mjs' }] },
+      ],
+    }
+    expect(countHarnessedHooks(hooks as never)).toBe(1)
+    const { removed } = stripHarnessedHooks(hooks as never)
+    expect(removed).toBe(1)
+    expect(hooks.PreToolUse).toHaveLength(1)
+    const kept = hooks.PreToolUse?.[0] as { hooks: { command: string }[] }
+    expect(kept.hooks[0]?.command).toContain('guard.mjs')
+  })
+
   it('removes legacy flat { command } form', () => {
     const hooks: Record<string, unknown[]> = {
       UserPromptSubmit: [{ command: 'node bin/harnessed-inject-state.mjs' }],
@@ -241,6 +281,25 @@ describe('harnessedStaleHookPaths', () => {
     }
     const stale = harnessedStaleHookPaths(spaced as never, () => false)
     expect(stale).toEqual([{ event: 'Stop', path: 'C:/Program Files/npm/harnessed-stop-hook.mjs' }])
+  })
+
+  it('doc-discipline-gate: missing compiled binary → stale; bare PATH form → skipped (4.34.1)', () => {
+    const compiled = {
+      PreToolUse: [
+        {
+          hooks: [
+            { type: 'command', command: '"C:/gone/harnessed/harnessed.exe" check-docs --hook' },
+          ],
+        },
+      ],
+    }
+    expect(harnessedStaleHookPaths(compiled as never, () => false)).toEqual([
+      { event: 'PreToolUse', path: 'C:/gone/harnessed/harnessed.exe' },
+    ])
+    const bare = {
+      PreToolUse: [{ hooks: [{ type: 'command', command: 'harnessed check-docs --hook' }] }],
+    }
+    expect(harnessedStaleHookPaths(bare as never, () => false)).toEqual([])
   })
 
   it('null / primitive array elements do not throw', () => {

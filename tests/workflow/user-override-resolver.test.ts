@@ -70,7 +70,7 @@ describe('judgmentResolver — Phase 3 user-override bypass (5 fixtures)', () =>
     const overrides = [
       'judgments.subtask-gate.brainstorming.fires',
       'judgments.strategic-gate.office-hours.fires',
-      'judgments.stage-routing.discuss-subtask-delegate.fires',
+      'judgments.strategic-gate.strategic-tier-delegate.fires',
     ]
     // Matching ref → bypass true
     const r1 = await resolveJudgmentGate(
@@ -104,7 +104,7 @@ describe('judgmentResolver — Phase 3 user-override bypass (5 fixtures)', () =>
       'judgments.phase-gate.gsd-discuss-phase.fires',
       'judgments.subtask-gate.brainstorming.fires',
       'judgments.tdd-gate.tdd-strongly-suggested.fires',
-      'judgments.stage-routing.discuss-subtask-delegate.fires',
+      'judgments.strategic-gate.strategic-tier-delegate.fires',
     ]
     for (const gateRef of cases) {
       const result = await resolveJudgmentGate(

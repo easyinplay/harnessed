@@ -9,6 +9,7 @@ import { deriveNext, type NextUnit } from './deriveNext.js'
 import { describeUnit } from './forwardStep.js'
 import { nextPending } from './ledger.js'
 import { scanPlanning } from './planningScan.js'
+import { PLATEAU_THRESHOLD } from './progress.js'
 import type { CurrentWorkflowV1Type } from './schema/currentWorkflow.v1.js'
 
 /** Phase 39 (D6) — the per-turn forward pointer passed into the (pure) state-block
@@ -123,6 +124,25 @@ export function buildWorkflowStateBlock(
     lines.push(
       `BREAK-LOOP: sub '${l.sub}' failed ${l.count}x — stop retrying, run break-loop skill`,
     )
+  }
+  // T2.7 D-2/D-3 — the two damping stops, re-emitted EVERY turn from the persisted
+  // entry. `checkpoint fail` prints them once on stderr; this is the channel that
+  // actually reaches the model on the next turn, which is what "refuse to spawn it
+  // again" has to mean when the spawn itself happens in the harness, not in the CLI.
+  // Both are pure reads of the ledger (the budget was resolved and stored at fail
+  // time precisely so this builder stays yaml-free).
+  for (const e of ledger) {
+    const attempts = e.fail_count ?? 0
+    if (e.attempt_budget !== undefined && attempts >= e.attempt_budget) {
+      lines.push(
+        `BUDGET-EXHAUSTED: sub '${e.sub}' spent ${attempts}/${e.attempt_budget} attempts — do NOT spawn it again; re-scope, fix the blocker, or escalate`,
+      )
+    }
+    if ((e.progress?.stale_count ?? 0) >= PLATEAU_THRESHOLD) {
+      lines.push(
+        `NO-PROGRESS: sub '${e.sub}' made no improvement for ${e.progress?.stale_count} consecutive attempts (metric: ${e.progress?.metric}) — stop respawning, change the approach`,
+      )
+    }
   }
   // Phase 22 — smart-reminder lines from envelope flags (AI judges; not gates).
   if (wf.ship_ready) {

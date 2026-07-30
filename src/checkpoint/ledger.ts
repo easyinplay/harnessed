@@ -39,6 +39,12 @@ export type SubStatus = SubProgressEntryType['status']
 export interface MarkSubOpts {
   evidence?: EvidenceRefType[]
   evidence_status?: SubProgressEntryType['evidence_status']
+  // T2.7 — loop-guarantee fields (see currentWorkflow.v1.ts). Each is written only
+  // when the caller has something to say; `undefined` leaves the prior value intact
+  // so a later mark never erases an earlier attempt's damping state.
+  completion_claim?: SubProgressEntryType['completion_claim']
+  progress?: SubProgressEntryType['progress']
+  attempt_budget?: SubProgressEntryType['attempt_budget']
 }
 
 /** Seed the ledger from a `harnessed gates` plan (Q5 seed-upfront). Fired subs
@@ -101,6 +107,9 @@ export function markSub(
   if (status === 'failed') updated.fail_count = (current.fail_count ?? 0) + 1
   if (opts?.evidence !== undefined) updated.evidence = opts.evidence
   if (opts?.evidence_status !== undefined) updated.evidence_status = opts.evidence_status
+  if (opts?.completion_claim !== undefined) updated.completion_claim = opts.completion_claim
+  if (opts?.progress !== undefined) updated.progress = opts.progress
+  if (opts?.attempt_budget !== undefined) updated.attempt_budget = opts.attempt_budget
 
   const next = entries.slice()
   next[idx] = updated

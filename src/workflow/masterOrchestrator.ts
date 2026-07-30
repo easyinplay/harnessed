@@ -15,6 +15,7 @@ import {
   WorkflowSchemaV3,
   type WorkflowSchemaV3T,
 } from './schema/workflow.js'
+import { resolveSkipVeto } from './skipGate.js'
 import { matchSkipSub, warnUnmatchedSkips } from './skipSubs.js'
 
 export type MasterName = 'discuss' | 'plan' | 'task' | 'verify' | 'auto'
@@ -150,11 +151,18 @@ export async function runMasterOrchestrator(
     }
     try {
       const passes = await resolveJudgmentGate(clause.gate, context, packageRoot)
-      gateEvalled.push({
-        clause,
-        passes,
-        reason: passes ? undefined : `gate ${clause.gate} = false`,
-      })
+      if (!passes) {
+        // gate false → not run, and skip_gate is NOT consulted: a veto can only
+        // ever remove work the gate already elected to do.
+        gateEvalled.push({ clause, passes: false, reason: `gate ${clause.gate} = false` })
+        continue
+      }
+      // T2.1 D-5 — same veto the `harnessed gates` path applies, from the SAME
+      // module, so one yaml cannot mean two things across the CLI plan path and
+      // this CI/headless path. Never throws; a faulty skip expression resolves to
+      // "no veto" (src/workflow/skipGate.ts header).
+      const veto = await resolveSkipVeto(clause.skip_gate, context, packageRoot)
+      gateEvalled.push(veto ? { clause, passes: false, reason: veto } : { clause, passes: true })
     } catch (e) {
       if (isUndefinedVariableError(e)) {
         // 4.23.2 (issue #5 defect 1) — undefined variable is a STATIC config bug

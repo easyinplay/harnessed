@@ -7,6 +7,18 @@
 // paranoid) fire by default. Sub-workflow gate expressions reference phase.* /
 // subtask.* — an undefined variable would throw at expr-eval, so every variable
 // any judgments/*.yaml `fires_when` references MUST exist here.
+//
+// T2.1 OQ2 = (c) — that "bias toward important" was pinned so hard that the
+// criteria had NO discriminating power: every judgement-call fact sat on its
+// firing side and no workflow ever supplied --context, so the gates were
+// equivalent to "always fire". Four are now withdrawn to their non-firing side
+// (`phase.is_critical_module`, `phase.is_complex_architecture`,
+// `subtask.core_algorithm`, `subtask.error_cost`); the rest of the safety net
+// stays until `harnessed facts` produces real coverage data on which facts
+// models actually fill. Withdrawn ≠ deleted: option (b) "leave them undefined
+// and let ADR-0038 fail-closed decide" was rejected, because an absent fact
+// silently DELETES a governance gate. `harnessed facts <master>` is how the
+// real values now reach a run.
 
 export interface DefaultGateContext {
   task: string
@@ -43,14 +55,27 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
     is_critical_release: false,
     phase: {
       stage,
-      is_critical_module: true,
+      // T2.1 OQ2(c) — withdrawn: gated stage-routing.verify-paranoid-critical,
+      // which meant the paranoid staff-engineer review fired on EVERY verify.
+      is_critical_module: false,
       is_final_step: true,
       is_major_release: false,
       has_auth_or_secrets: false,
       has_design_changes: false,
       has_ui_changes: false,
+      // T2.1 gap-close — stage-routing verify-eval-review-aiphase /
+      // verify-validate-phase-coverage read these; neither was declared here nor
+      // in PhaseShape, so the member was absent and both gates evaluated to a
+      // silent false forever. Default FALSE (the non-firing side) on purpose:
+      // both subs are expensive retroactive audits that should be requested by a
+      // filled fact, not defaulted on. `harnessed facts verify` lists them as
+      // nulls with hints so the model supplies the real answer.
+      has_ai_phase: false,
+      requires_coverage_audit: false,
       requires_creative_polish: false,
-      is_complex_architecture: true,
+      // T2.1 OQ2(c) — withdrawn: gated stage-routing.plan-architecture-delegate,
+      // which meant /plan always spawned the eng-review architecture sub.
+      is_complex_architecture: false,
       has_cross_phase_data_flow: true,
       open_decisions: 2,
       scope_days: 2,
@@ -60,9 +85,11 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
     },
     subtask: {
       approaches: 2,
-      core_algorithm: true,
+      // T2.1 OQ2(c) — withdrawn (both are subtask-gate.brainstorming OR-arms;
+      // `approaches: 2` / `has_api_contract: true` stay as the safety net).
+      core_algorithm: false,
       has_api_contract: true,
-      error_cost: 'high',
+      error_cost: 'low',
       lines: 50,
       type: 'general',
       is_core_business_logic: true,
@@ -94,17 +121,29 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
   }
 }
 
-/** Merge user `--context` JSON over the defaults. Deep-merges the nested
- *  `phase` / `subtask` objects so a partial override (e.g. flip one phase fact)
- *  does NOT clobber the other defaults — the v4.1.1 shallow Object.assign bug. */
+/** Merge user `--context` / `--context-file` JSON over the defaults. Deep-merges
+ *  the nested `phase` / `subtask` objects so a partial override (e.g. flip one
+ *  phase fact) does NOT clobber the other defaults — the v4.1.1 shallow
+ *  Object.assign bug.
+ *
+ *  T2.1 D-4 — a `null` value means NOT PROVIDED and is dropped, so the default
+ *  survives. `harnessed facts` emits null for every judgement call it refuses to
+ *  fake; a partially-filled facts file must therefore degrade to today's
+ *  behaviour rather than (a) comparing null against a literal
+ *  (`null == 'high'` → surprising falses) or (b) erasing a seeded default and
+ *  turning a bare fact into an undefined-variable fail-closed skip. */
 export function mergeGateContext(
   base: DefaultGateContext,
   extra: Record<string, unknown>,
 ): DefaultGateContext {
   const merged: DefaultGateContext = { ...base }
   for (const [k, v] of Object.entries(extra)) {
+    if (v === null) continue
     if ((k === 'phase' || k === 'subtask') && v && typeof v === 'object' && !Array.isArray(v)) {
-      merged[k] = { ...(base[k] as Record<string, unknown>), ...(v as Record<string, unknown>) }
+      const overrides = Object.fromEntries(
+        Object.entries(v as Record<string, unknown>).filter(([, val]) => val !== null),
+      )
+      merged[k] = { ...(base[k] as Record<string, unknown>), ...overrides }
     } else {
       merged[k] = v
     }

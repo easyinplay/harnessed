@@ -65,7 +65,9 @@ delegates_to:
     gate: judgments.stage-routing.verify-security-secrets.fires
     mode: parallel
   - sub: design
-    gate: judgments.stage-routing.verify-design-changes.fires
+    # Canonical design-tier trigger (was a verbatim stage-routing copy; the sub's
+    # own phase gate has pointed here since T2.3 — same predicate, one home now).
+    gate: judgments.web-design-routing.design-review-post.fires
     mode: parallel
   - sub: eval-review
     gate: judgments.stage-routing.verify-eval-review-aiphase.fires

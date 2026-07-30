@@ -18,15 +18,21 @@ import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
 import { isUndefinedVariableError } from '../workflow/exprBuilder.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
+import { resolveSkipVeto } from '../workflow/skipGate.js'
 import { matchSkipSub, warnUnmatchedSkips } from '../workflow/skipSubs.js'
 import { detectHeadless } from './lib/detectHeadless.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
+
+/** Shared with `harnessed facts` so the two commands can never disagree about
+ *  what a master is (T2.1: facts feeds gates — a divergent whitelist would make
+ *  one of them silently unusable). */
+export const GATE_MASTERS = ['auto', 'discuss', 'plan', 'task', 'verify', 'ship'] as const
 
 // v4.22.0 dogfood — 'ship' was a real master (workflows/ship/auto/workflow.yaml,
 // Phase 21) missing from this whitelist since it shipped: `gates ship` errored
 // unknown-master, so /ship-auto step 2 was unexecutable (built-but-unwired class).
 // ship is NOT in /auto's fire chain (post-verify manual stage) — direct-call only.
-const VALID_MASTERS = new Set(['auto', 'discuss', 'plan', 'task', 'verify', 'ship'])
+const VALID_MASTERS = new Set<string>(GATE_MASTERS)
 
 // v4.1 — stage masters (recursable). `auto` is the super-master; its fired subs
 // that are themselves stage masters must be recursed (harnessed gates <sub>),
@@ -41,11 +47,16 @@ interface RawOpts {
   // comma-separated. Pre-fix a plain option kept only the LAST --skip-sub.
   skipSub?: string[]
   context?: string
+  // T2.1 D-3 — path to a JSON context file. Exists because Windows quoting of
+  // nested JSON on a shell command line has bitten this project repeatedly
+  // (PowerShell + Git Bash double-escaping); `harnessed facts --out` writes it.
+  contextFile?: string
 }
 
 interface DelegationClause {
   sub: string
   gate?: string
+  skip_gate?: string
   mode?: string
   order?: number
 }
@@ -73,7 +84,10 @@ interface GatesPlan {
   parallelism: { escalate_to_teams: boolean; reason: string | null }
 }
 
-function resolveMasterYamlPath(master: string, packageRoot: string): string {
+/** Exported so `harnessed facts` resolves the SAME yaml `harnessed gates` will
+ *  read — a second copy of this join is exactly how facts could start describing
+ *  a different file than the one that gets evaluated. */
+export function resolveMasterYamlPath(master: string, packageRoot: string): string {
   return master === 'auto'
     ? resolve(packageRoot, 'workflows', 'auto', 'workflow.yaml')
     : resolve(packageRoot, 'workflows', master, 'auto', 'workflow.yaml')
@@ -142,8 +156,38 @@ export async function runGatesPlan(
   const task = typeof raw.task === 'string' ? raw.task : ''
   const stage = master
 
-  // Build gate context: shared defaults → deep-merge --context → add skip_subs.
+  // Build gate context: shared defaults → deep-merge --context-file → deep-merge
+  // --context → add skip_subs. Order is load-bearing and documented in --help:
+  // the file is the bulk facts payload (`harnessed facts --out`), the inline flag
+  // is the human/agent's last-second override, so the command line wins.
   let ctx = buildDefaultGateContext(task, stage)
+  if (typeof raw.contextFile === 'string' && raw.contextFile.length > 0) {
+    let rawJson: string
+    try {
+      rawJson = await readFile(raw.contextFile, 'utf8')
+    } catch (err) {
+      deps.error(
+        `error: failed to read --context-file at ${raw.contextFile} — ${(err as Error).message}`,
+      )
+      deps.exit(1)
+      return
+    }
+    let extra: unknown
+    try {
+      extra = JSON.parse(rawJson)
+    } catch (err) {
+      deps.error(`error: --context-file is not valid JSON — ${(err as Error).message}`)
+      deps.exit(1)
+      return
+    }
+    // Accept BOTH a bare context object and the `harnessed facts` envelope
+    // ({master, facts, hints, derived, usage}). One file format either way: the
+    // model can hand back exactly what `harnessed facts --out` produced without
+    // an unwrap step it could get wrong. No gate expression references `facts`,
+    // so the discrimination is unambiguous.
+    const unwrapped = unwrapFactsEnvelope(extra)
+    if (unwrapped) ctx = mergeGateContext(ctx, unwrapped)
+  }
   if (typeof raw.context === 'string' && raw.context.length > 0) {
     let extra: unknown
     try {
@@ -189,11 +233,17 @@ export async function runGatesPlan(
     }
     try {
       const passes = await resolveJudgmentGate(clause.gate, ctx, packageRoot)
-      if (passes) {
-        fire.push(fireEntry(clause, master))
-      } else {
+      if (!passes) {
+        // gate false → not run, and the skip_gate is NOT consulted: a veto can
+        // only ever remove work the gate already elected to do.
         skip.push({ sub: clause.sub, reason: `gate ${clause.gate} = false` })
+        continue
       }
+      // T2.1 D-5 — the ❌ half of the judgment finally evaluates. Never throws;
+      // a faulty skip expression resolves to "no veto" (src/workflow/skipGate.ts).
+      const veto = await resolveSkipVeto(clause.skip_gate, ctx, packageRoot)
+      if (veto) skip.push({ sub: clause.sub, reason: veto })
+      else fire.push(fireEntry(clause, master))
     } catch (e) {
       if (isUndefinedVariableError(e)) {
         // 4.23.2 (issue #5 defect 1) — undefined variable is a STATIC config
@@ -274,9 +324,26 @@ export function registerGates(program: Command): void {
       [] as string[],
     )
     .option('--context <json>', 'JSON object merged over the default gate context')
+    .option(
+      '--context-file <path>',
+      'path to a JSON gate context (bare object OR a `harnessed facts` envelope). Merged BEFORE --context, so an inline --context wins on conflict. A null fact means "not provided" and keeps the default.',
+    )
     .action(async (master: string, raw: RawOpts) => {
       await runGatesPlan(master, raw)
     })
+}
+
+/** T2.1 D-3 — accept both file shapes. Returns the mergeable context object, or
+ *  null when the payload is not an object at all (arrays / scalars are ignored,
+ *  matching the existing `--context` tolerance). */
+function unwrapFactsEnvelope(parsed: unknown): Record<string, unknown> | null {
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
+  const obj = parsed as Record<string, unknown>
+  const facts = obj.facts
+  if (facts && typeof facts === 'object' && !Array.isArray(facts)) {
+    return facts as Record<string, unknown>
+  }
+  return obj
 }
 
 function fireEntry(clause: DelegationClause, master: string): FireEntry {

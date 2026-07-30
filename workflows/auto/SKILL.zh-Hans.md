@@ -118,13 +118,14 @@ Sister `workflows/capabilities.yaml`:
 session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
 
 1. 先在**本 session** 交互式跑 discuss 阶段(spawned subagent 无法向用户提问):对 "$ARGUMENTS" 评估 strategic / phase / subtask 澄清判据,对每个 fire 的层用 AskUserQuestion 与用户对话锁决策,其余透明 skip。blocking 集锁定后,把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(各项 agent 推荐默认值预选)—— deferrable 推迟的是排期,不是用户决策权;仅当用户明确再次推迟才可跳过该项。产出 locked spec。
-2. Bash: `harnessed gates auto --task "<locked spec>" --skip-sub discuss` → 解析 JSON `{fire, skip, parallelism}`。这是 plan SoT(不 spawn)。保留 verbatim JSON。自包含小任务(单文件/单页面级)的合规轻量路径:追加 `--skip-sub verify --skip-sub retro`(可重复/逗号分隔)——被 skip 的 sub 仍带原因进 ledger;lite ≠ freestyle(差别就在 ledger/evidence)。
+1b. Bash: `harnessed facts auto --out .harnessed-facts.json` → 它只列出**本阶段 gate 真正读取**的 fact:能确定性推导的已填好(改动行数 / 触及文件数 / stage,来自 git),判断题留 `null` 并附一行说明。编辑该文件,把 `facts` 里每个 `null` 按 locked spec 换成你的真实判断 —— 只有确实无法判断时才留 null(此时回退内置默认值)。**不要**跳过本步,也**不要**自行编造命令没问的 fact。
+2. Bash: `harnessed gates auto --task "<locked spec>" --context-file .harnessed-facts.json --skip-sub discuss` → 解析 JSON `{fire, skip, parallelism}`。这是 plan SoT(不 spawn)。保留 verbatim JSON。自包含小任务(单文件/单页面级)的合规轻量路径:追加 `--skip-sub verify --skip-sub retro`(可重复/逗号分隔)——被 skip 的 sub 仍带原因进 ledger;lite ≠ freestyle(差别就在 ledger/evidence)。
 3. Bash: `harnessed checkpoint start auto --plan '<step 2 的 verbatim gates JSON>'` → seed per-sub ledger,让 `harnessed status --recover` 能在 compaction 后给你重新定位。
 4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动。**没有建团步骤、也没有建团工具** —— 对每个 fired sub 用 `Agent(name: <sub>, run_in_background: true, prompt: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个后台 teammate,团在**第一个** spawn 时隐式形成,本 session 即 lead(`team_name` 入参被接受但忽略 —— 团名由 session 派生)。用 `SendMessage` 协调;某个 sub 完成后,**按名**请求该 teammate 关闭(例如「ask the verify-qa teammate to shut down」)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。
    - **收尾前必须关闭每个 teammate —— finally 强制契约,非尽力而为**:无论是否每个 sub 都到达 COMPLETE、max_iterations 是否耗尽、或你是否认为工作已完成,收尾前都要**按名**请求每个 teammate 关闭,并确认它真的停了。关闭是**请求**:teammate 会先做完当前 tool call,也可能带理由拒绝 —— 所以要复查重发,不要假定。团目录在 session 退出时**自动**删除(没有 teardown 工具),但你没停掉的 teammate 会持续烧 token 并可能挂起宿主(headless 尤甚 —— issue #7:挂 11 小时,工作已完成但进程从不退出)。
    - **headless 绝不 spawn team**:headless session(`claude -p`)下 `harnessed gates` 已返回 `escalate_to_teams: false`(Agent Teams 是 session-scoped —— `/resume` 即丢,与 `-p` 不兼容)。即使你认为能并行,headless 下也**不要** spawn teammate 或背景 `Agent` —— 改为在 session 内顺序驱动 fired subs。
 5. 否则,对 `order` 里每个 fired sub(serial 串行、parallel 并发):
-   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed gates <sub> --task "<spec>" --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → 对它的 fired subs 重复本循环。
+   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed facts <sub> --out .harnessed-facts.json`(填完 null)→ `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → 对它的 fired subs 重复本循环。
    - **否则(leaf sub):**
      a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → 解析 `{prompt, max_iterations, model}`。
      b. 用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,用 ralph-loop plugin 包裹:`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`。若 plugin 未装,改用原生 goal gate(Claude Code 2.1.139+ / Codex):`/goal "this subtask is delivered: the subagent's final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"`,随后 spawn subagent,由 goal 评估器驱动重 spawn 直到目标清除。若 `/goal` 也不可用,自循环:spawn → 检查输出 `<promise>COMPLETE</promise>` → 把上轮输出 append 后重 spawn(至多 max_iterations)。goal 只在叶子 subtask 层设置 — `/goal` 每 session 单槽,嵌套 goal 会覆盖外层。
@@ -135,7 +136,7 @@ session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
 
 **若丢失上下文(compaction / resume):** 先跑 `harnessed status --recover` —— 它读 ledger 并打印「你在这里,下一步是什么」,让你从第一个 `pending` sub 续跑而非重启。若 ledger 为空,重跑 step 2-3。
 
-<!-- harnessed-generated:v4.10.0 -->
+<!-- harnessed-generated:v4.11.0 -->
 
 ## 参考文档
 

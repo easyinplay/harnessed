@@ -91,6 +91,47 @@ describe('checkStaleHooks', () => {
     expect(r.fix).toContain('harnessed uninstall')
   })
 
+  // 4.34.1 — doc-discipline-gate (PreToolUse/Bash) was invisible to self-heal
+  // because `check-docs` was not a first-party hook identity.
+  it('orphaned doc-discipline-gate (compiled binary gone) → warn', () => {
+    const r = withSettings(
+      {
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [
+                { type: 'command', command: '"C:/gone/harnessed/harnessed.exe" check-docs --hook' },
+              ],
+            },
+          ],
+        },
+      },
+      () => false,
+    )
+    expect(r.status).toBe('warn')
+    expect(r.message).toContain('PreToolUse')
+    expect(r.message).toContain('C:/gone/harnessed/harnessed.exe')
+    expect(r.fix).toContain('harnessed uninstall')
+  })
+
+  it('healthy doc-discipline-gate (bare PATH form) → pass, never a false positive', () => {
+    const r = withSettings(
+      {
+        hooks: {
+          PreToolUse: [
+            {
+              matcher: 'Bash',
+              hooks: [{ type: 'command', command: 'harnessed check-docs --hook' }],
+            },
+          ],
+        },
+      },
+      () => false,
+    )
+    expect(r.status).toBe('pass')
+  })
+
   it('unrelated hook pointing nowhere → pass (not ours)', () => {
     const r = withSettings(
       {

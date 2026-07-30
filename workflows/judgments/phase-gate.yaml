@@ -11,7 +11,11 @@ triggers:
       GSD /gsd-discuss-phase — 新 phase 且 ≥2 个 open implementation decisions,
       或跨 phase 数据流 / API contract / 依赖不清, 或 phase scope > 1 天 / > 5 文件,
       或存在灰色地带 (多种合理实现都讲得通) 时激活。
-    fires_when: "phase.open_decisions >= 2 or phase.has_cross_phase_data_flow == true or phase.scope_days > 1"
+    # T2.1 D-2 follow-up — the `> 5 文件` half of the scope criterion. `files_touched`
+    # is derived by `harnessed facts` from `git diff --name-only` (worktree ∪ index)
+    # and is OPTIONAL: buildDefaultGateContext never seeds it, so an unknown count
+    # (no repo / clean tree) is an absent member = quiet false, not a fired gate.
+    fires_when: "phase.open_decisions >= 2 or phase.has_cross_phase_data_flow == true or phase.scope_days > 1 or phase.files_touched > 5"
     skips_when: "phase.single_task == true or phase.scope_days < 1"
     invokes:
       - capability: gsd-discuss-phase

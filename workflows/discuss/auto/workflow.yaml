@@ -29,11 +29,24 @@ tools_available: [planning-with-files]
 
 delegates_to:
   - sub: strategic
-    gate: judgments.stage-routing.discuss-strategic-delegate.fires
+    # Aggregate of strategic-gate's two triggers (office-hours ∪ plan-ceo-review),
+    # now homed in that file rather than mirrored in stage-routing.yaml. Coarse by
+    # design: /discuss-strategic re-gates the two independently inside the sub.
+    gate: judgments.strategic-gate.strategic-tier-delegate.fires
     mode: parallel
   - sub: phase
-    gate: judgments.stage-routing.discuss-phase-delegate.fires
+    # Gates on the CANONICAL phase-tier trigger. It used to gate on a
+    # stage-routing.yaml copy of this predicate, which silently lost the
+    # `phase.files_touched > 5` scope arm when that arm was added here — the
+    # criterion existed but could not decide anything at master tier.
+    gate: judgments.phase-gate.gsd-discuss-phase.fires
+    # T2.1 D-5 — phase-gate's declared skips (single self-contained task, or a
+    # sub-day scope) veto the phase-tier discussion even though fires_when
+    # matched. This is also the first consumer of phase-gate.yaml's ❌ half,
+    # which had been dead configuration since Phase 2.3.
+    skip_gate: judgments.phase-gate.gsd-discuss-phase.skips
     mode: parallel
   - sub: subtask
-    gate: judgments.stage-routing.discuss-subtask-delegate.fires
+    # Canonical subtask-tier trigger (was a verbatim stage-routing copy).
+    gate: judgments.subtask-gate.brainstorming.fires
     mode: parallel

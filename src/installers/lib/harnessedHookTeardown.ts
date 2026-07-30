@@ -14,6 +14,9 @@
 //   npm absolute : node "C:/.../harnessed/bin/harnessed-stop-hook.mjs"
 //   compiled     : "C:/.../harnessed.exe" inject-state   (4.27.0/4.30.0)
 //   bare PATH    : harnessed inject-state
+//   subcommand+flags : harnessed check-docs --hook       (4.34.0/4.34.1 — the id
+//                      is the subcommand; trailing flags are part of the command
+//                      and must never change ownership)
 // Pure, dependency-free — safe to call from uninstall + doctor without I/O.
 //
 // The hook-id set + the command-string enumerator are SHARED with hookEntry.ts
@@ -24,7 +27,7 @@
 import { type AnyHookEntry, COMPILED_HOOK_IDENTITIES, entryCommands } from './hookEntry.js'
 
 export type HarnessedHookId = (typeof COMPILED_HOOK_IDENTITIES)[number]
-/** `inject-state|stop-hook` — the id alternation for building matchers. */
+/** `inject-state|stop-hook|check-docs` — the id alternation for building matchers. */
 const ID_ALT = COMPILED_HOOK_IDENTITIES.join('|')
 // A first-party token must start at a command boundary (start-of-string, space,
 // quote, or path separator) — NOT mid-token — so a user's own

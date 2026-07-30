@@ -80,6 +80,22 @@ const PhaseShape = Type.Object(
     requires_peer_review: Type.Boolean(), // sister gsd-review v2 fires_when backfill
     is_final_step: Type.Boolean(), // sister code-simplifier v2 fires_when backfill
     has_business_decisions: Type.Boolean(), // sister gstack-plan-ceo-review v2 backfill
+    // T2.1 gap-close — read by stage-routing.yaml verify-eval-review-aiphase (:83)
+    // and verify-validate-phase-coverage (:89) since v13.0, but declared in
+    // NEITHER this shape nor buildDefaultGateContext. A missing object MEMBER is
+    // a silent false (only bare identifiers throw undefined-variable), so both
+    // verify subs were permanently unreachable with no signal — the same
+    // built-but-unwired class as T2.3's needs_browser_automation.
+    has_ai_phase: Type.Boolean(), // gsd-eval-review — AI phase eval coverage audit
+    requires_coverage_audit: Type.Boolean(), // gsd-validate-phase — Nyquist coverage backfill
+    // T2.1 D-2 NEW — deterministically DERIVED by `harnessed facts` from
+    // `git diff --name-only` (worktree ∪ index), never asked of the model. Makes
+    // the "phase scope > 5 files" half of the phase-tier criterion expressible;
+    // phase-gate.yaml only encodes the `scope_days` half today.
+    // Optional on purpose: absent = unknown (no repo / clean tree). A seeded 0
+    // would be a manufactured signal, and buildDefaultGateContext therefore does
+    // NOT seed it — the sister default context stays honest about not knowing.
+    files_touched: Type.Optional(Type.Number()),
   },
   { additionalProperties: false },
 )

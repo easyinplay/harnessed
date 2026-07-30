@@ -62,6 +62,38 @@ export const SubProgressEntry = Type.Object(
     // (back-compat fail-soft; comet 0.3.9 phase-skip lesson).
     mode: Type.Optional(Type.Union([Type.Literal('serial'), Type.Literal('parallel')])),
     order: Type.Optional(Type.Integer()),
+    // ── T2.7 (loop internalization) — three additive-optional fields that move the
+    // completion GUARANTEE from the dead `harnessed run` path onto the ledger. Old
+    // envelopes without them still Value.Check-pass → NO schemaVersion bump.
+    //
+    // completion_claim — verdict of the `<promise>COMPLETE</promise>` predicate
+    //   (src/workflow/lib/ralphLoop.ts isComplete) at `checkpoint complete`.
+    //   'not_provided' = the caller passed no claim, so the gate was unarmed.
+    completion_claim: Type.Optional(
+      Type.Union([
+        Type.Literal('complete'),
+        Type.Literal('incomplete'),
+        Type.Literal('not_provided'),
+      ]),
+    ),
+    // progress — no-progress damping state (src/checkpoint/progress.ts). `stale_count`
+    //   is consecutive attempts with no improvement under `metric`; PLATEAU_THRESHOLD
+    //   consecutive ones mean the loop is spinning in place.
+    progress: Type.Optional(
+      Type.Object(
+        {
+          metric: Type.Union([Type.Literal('failing_tests'), Type.Literal('evidence_digest')]),
+          failing_tests: Type.Optional(Type.Integer({ minimum: 0 })),
+          evidence_digest: Type.Optional(Type.String()),
+          stale_count: Type.Integer({ minimum: 0 }),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+    // attempt_budget — the sub's resolved `ralph_max_iterations` ceiling, persisted at
+    //   the first failure so the PURE per-turn injector can compare it against
+    //   fail_count without reading yaml (src/checkpoint/budget.ts resolves it).
+    attempt_budget: Type.Optional(Type.Integer({ minimum: 1 })),
   },
   { additionalProperties: false },
 )

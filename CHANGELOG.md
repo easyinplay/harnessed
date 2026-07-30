@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.35.0] - 2026-07-31
+
+判据第一次真的有辨别力,完成保证第一次不依赖上游 plugin。承接 4.33/4.34 的框架约束(**普通用户没有作者本机那份 `~/.claude/CLAUDE.md`**),本版把「写了但从没通电」的最后几处接上,并摘掉一个早已冗余的上游依赖。
+
+### Added
+
+- **`harnessed facts <master>`(第 32 个子命令)+ `harnessed gates --context-file`。** 此前 gate 判据在运行时**没有辨别力**:`buildDefaultGateContext` 把判据 fact 全设成「会 fire」的一侧,而 `workflows/` 下零处传 `--context` —— 等价「永远 fire」。新子命令从 master yaml 的 `gate` / `skip_gate` 反查 judgment 表达式、再用 expr-eval 的变量提取器派生出**真正被 gate 的 fact 集**(不是把 40 个 fact 全塞给模型),自动填三项确定性推导(`subtask.lines` / `phase.files_touched` 从 `git diff --numstat` / `--name-only` 派生;`phase.stage` 取 master 实参),判断题留 `null` 并附一句人话解释它在判什么。fact 集**不硬编码**:对账测试用另一套独立的正则提取器重算期望集,两套算法不同源才检得出漂移。`--context-file` 避开 Windows 上嵌套 JSON 双层转义的老坑。**刻意不推** `open_decisions` / `error_cost` / `approaches` —— 从代码推是造假信号,比默认全开更危险。
+- **`delegates_to[].skip_gate` —— judgment 的 `skips_when` 首次真正生效。** resolver 早就支持 `.skips`,但所有 `gate:` 一律引 `.fires`,所有 ❌ 跳过条件**从不被求值**。veto 语义**故意与 ADR-0038 反向**:撞 undefined 变量时**不 veto**(`fires` 侧 fail-closed 是「不确定就不跑」,veto 侧「不确定就不 veto」等于「不确定就跑」——两者同为「配置坏了就不多做事,也绝不静默删掉治理关卡」)。`gates.ts` 与 `masterOrchestrator.ts` 共用同一模块,并有一条五行真值表的**双引擎一致性测试**锁死(同一份 yaml + 同一 context,两条路径必须给出相同裁决)。
+- **完成保证内化 —— 不装任何上游 plugin 也成立。** 此前 harnessed 自己的机器(`isComplete` 4 层双信号 / `promiseExtract` / `ralph_max_iterations`)齐全但长在 `harnessed run` 那条被每个 SKILL 明令禁用的死路上。现搬到 checkpoint / ledger 活路径,由**四个确定性检查**构成:产物存在性(`checkArtifacts` fail-closed)· **产物 boundary**(`tddBoundary.ts`:非空 / 红绿两侧俱在 / 测试文件未被删)· 迭代预算耗尽 · **无进展熔断**(连续 2 次失败测试数不降或证据 digest 不变)。`<promise>COMPLETE</promise>` 校验**不算进这四项** —— 它判的是自述,只在 `--result` 传入时武装。参考 ECC 2.1.0 的循环编排设计(`gan-harness.sh` 的三重停机 + `loop-design-check` 的「done-criterion 必须配 boundary」),但**不照搬**它那套「模型自述分数 + 三层正则抠 markdown、抠不到默认 0.0」的脆弱形态。
+- **跨文件重复表达式的守卫测试。** 扫全部 `workflows/judgments/*.yaml` 的 `fires_when` / `skips_when`,规范化后分组,任何 ≥2 成员即失败。第三条断言是关键:**复合谓词(含 `and` / `or`)永不可豁免** —— 复合式正是「抄判据」的形态,给它开豁免等于废掉这道防线。
+
+### Fixed
+
+- **`stage-routing.yaml` 逐字复制了三个 gate 文件的判据,master 走副本、原文件成装饰品。** 后果刚被实证:新加的 `phase.files_touched > 5` 判据进了 `phase-gate.yaml`,但 discuss master 读的是三臂旧副本 —— **加了等于没加**(实测:改前 `files_touched: 9` 与 `2` 结果完全相同,改后才分开)。现删除三条副本、master delegate 直引 canonical,K10 孤儿 trigger 读数 `41 → 38` 零 orphan。strategic 那条**不是**逐字副本而是两条 trigger 的并集(直接指向任一条都会丢臂造成回归),改为在 `strategic-gate.yaml` 新增聚合 trigger 逐字搬迁、零行为变化。第三组重复(`phase.has_ui_changes` × 3)是原子单事实谓词、分属不同层,豁免并写明理由。
+- **`resolveAttemptBudget` 的 key 永远查不中 → 迭代预算从未生效。** `defaults.yaml` 的 key 是完整 workflow 名(`task-test`),而 ledger 里的 `sub` 是叶名(`test`)—— 查不到就静默退回常量 20,**每个真实 sub 的预算都是 20**。改为 exact-match 优先 + 叶名后缀匹配,歧义叶取 MAX(fail-open:宁可晚停不可误停)。
+- **`tddBoundary` 的 git 检查审判了错误的仓库。** `C:/Users/easyi` 本身是 git 仓库而 `%TEMP%` 在它里面,所以 fixture 的 tmpdir 落在该仓库工作树内 → `rev-parse --verify HEAD` 成功、fail-open 短路没机会触发,而两条 `git diff` **没带 pathspec**,报的是整个 home 仓库的 diff(其中一个历史误提交的已删除文件命中测试路径判定)。加 `-- .` 限定;这在语义上更正确 —— boundary 只该审判它被指向的那棵子树,不该审判碰巧包住它的仓库。补双向隔离性测试(子目录零 finding / 指向 cwd 仍 BLOCK),防止 scoping 把该检查静默阉割。
+- **`phase.has_ai_phase` / `phase.requires_coverage_audit` 不在 schema 与默认 context 里**,导致 `verify-eval-review` 与 `verify-validate-phase` 在默认路径上永远是静默 false。补进 `PhaseShape` + gateContext(取不 fire 的一侧,靠 `harnessed facts` 列成 null 交模型填)。
+- **摘掉 `karpathy-skills` 上游依赖(base manifest 13 → 12)。** 它其实早已内化完:`capabilities.yaml` 的条目是 `impl: harnessed-bundled` + `discipline_ref`,规则被全部 28 个 workflow 通过 `disciplines_applied` 引用,仓内零处调上游 slash command —— 那个 plugin 是冗余的。**但前置条件是补齐超额声称**:description 声称覆盖 `trust-internal-code` 与 `no-comments-default`,规则里根本没有。两条补进 discipline(5 → 7),其中 `no-comments-default` **改写不照搬** —— 上游主张「默认不写注释」,而 bundled 资产的注释是普通用户理解它的唯一途径,落地为「注释解释 why 不解释 what」。同时把 description 变成**机器可读契约**(`… — N rules: id / id / …`)并加双向集合对账测试,永久关掉超额声称这个洞。
+- **`role-prompts.yaml` 的 4 行中文会进模型 prompt。** role prompt 是 subagent 的主体 prompt,英文用户会收到夹带中文的角色定义(v10.0 的 i18n 只修了 discipline 侧)。en base 改英文、中文留在 zh sibling;守卫测试**双向**断言(en 零 CJK **且** zh 仍含 CJK),防止靠删中文而不是搬中文把测试骗绿。
+- **`generateCommands.ts` 未同步 facts 步骤**(与 SKILL 是声明了 MUST-stay-in-lockstep 的姊妹面)。对齐测试不硬编码句子,而是读活的 `SKILL.md` 抠出该行再断言生成器输出包含同一字符串。
+- **`resolveHookCommand` 的 compiled 分支静默丢弃尾部 flag。** 该分支替换的是**传输方式**而非语义(compiled 形态没有宿主 `node`、且资产按版本分目录,写死路径会在升级后变孤儿),但「命令 = 传输 + 身份」这个假设只在前两个无参数 hook 上成立。4.34.0 的 `check-docs --hook` 一旦被识别为第一方 hook,`--hook` 会被丢掉 → 从「只在 git commit 时检查」变成**对每个 Bash 调用无条件阻断**。改为保留 marker 之后的所有 token(无参数时输出逐字节不变),`check-docs` 加入 `COMPILED_HOOK_IDENTITIES`,统一 uninstall 与 doctor 自愈现在都覆盖它。
+
+### Notes
+
+- **✅ 与 ❌ 同时成立时 `skips_when` 否决 `fires_when`** —— 这是显式决定,不是执行顺序的副作用,有专门测试锁定。依据:方法论的 Phase 层判据里两类条件本就不互斥(「≥2 open decisions」与「< 1 天工作量」可同真),而 fallback 铁律是「拿不准 → 倾向跳过」。连带修正两个 dogfood fixture —— 它们的 `scope_days` 是 `skips_when` 还是死配置时随手填的占位值,现在该字段有语义了。
+- 撤下四个恒真默认值的行为影响:`verify-paranoid` 不再每次 verify 都跑,`/plan` 不再每次都 spawn 架构 review。这是本 slice 要的 —— 这些门第一次由判据决定而非恒真。
+- 未纳入的后续项见 `.planning/phases/52-claude-md-gap-close/CONTEXT.md`:ralph-loop 依赖的实际摘除(等内化验证后)· `masterOrchestrator-helpers.ts` 的同构仲裁缺陷 · en base 资产约 500 行 `#` 注释中文 · checkpoint CLI 面整体未接 i18n。
+
 ## [4.34.0] - 2026-07-30
 
 CLAUDE.md 差距审计第二梯队。本版把三类「写了但从没通电」的机制接上,并把一个上游已删除的 API 面迁完。承接 4.33.0 的框架约束:**普通用户没有作者本机那份 `~/.claude/CLAUDE.md`**,所以 bundled 资产不接线 = 用户永远得不到。

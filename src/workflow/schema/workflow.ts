@@ -60,6 +60,11 @@ export const DelegationClause = Type.Object(
   {
     sub: Type.String({ minLength: 1 }), // sub-stage workflow name e.g. 'strategic' / 'phase' / 'subtask'
     gate: Type.Optional(Type.String()), // judgments.<file>.<trigger>.fires 4-level ref
+    // T2.1 D-5 NEW — judgments.<file>.<trigger>.skips 4-level ref. Evaluated ONLY
+    // when `gate` fired; true ⇒ veto the sub. Any fault (undefined variable /
+    // missing trigger / no skips_when) ⇒ no veto, so a broken skip expression can
+    // never silently delete a governance step (src/workflow/skipGate.ts).
+    skip_gate: Type.Optional(Type.String()),
     mode: Type.Optional(Type.Union([Type.Literal('parallel'), Type.Literal('serial')])),
     order: Type.Optional(Type.Number()), // serial-only: explicit ordering (K9 mitigation enforced in check-workflow-schema)
   },

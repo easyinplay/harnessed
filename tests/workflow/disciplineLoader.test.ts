@@ -27,12 +27,14 @@ beforeEach(() => {
 })
 
 describe('disciplineLoader — load each of 6 LOCKED disciplines', () => {
-  it('1. loadDiscipline karpathy → enforcement_layer=code-writing, 5 rules', async () => {
+  // 4.34.x (T2.7) — 5 → 7 rules: `trust-internal-code` + `no-comments-default`
+  // were added so dropping the upstream karpathy-skills plugin loses nothing.
+  it('1. loadDiscipline karpathy → enforcement_layer=code-writing, 7 rules', async () => {
     const d = await loadDiscipline('karpathy', PACKAGE_ROOT)
     expect(d.discipline).toBe('karpathy')
     expect(d.enforcement_layer).toBe('code-writing')
     expect(d.auto_enforce).toBe(true)
-    expect(d.rules.length).toBe(5)
+    expect(d.rules.length).toBe(7)
   })
 
   it('2. loadDiscipline output-style → enforcement_layer=output, 7 rules', async () => {

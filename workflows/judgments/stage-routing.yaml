@@ -10,27 +10,22 @@
 schema_version: harnessed.judgment.v1
 
 triggers:
-  # /discuss master → 3 sub conditional fire
-  discuss-strategic-delegate:
-    description: |
-      /discuss master → /discuss-strategic 委派 fire 当 strategic-gate.fires
-      (任一 office-hours OR plan-ceo-review)。
-    fires_when: "phase.type in ['new_project', 'new_milestone', 'new_feature'] or phase.is_major_release == true"
-    invokes:
-      - capability: gstack-office-hours
-      - capability: gstack-plan-ceo-review
-
-  discuss-phase-delegate:
-    description: /discuss master → /discuss-phase 委派 fire per phase-gate.fires。
-    fires_when: "phase.open_decisions >= 2 or phase.has_cross_phase_data_flow == true or phase.scope_days > 1"
-    invokes:
-      - capability: gsd-discuss-phase
-
-  discuss-subtask-delegate:
-    description: /discuss master → /discuss-subtask 委派 fire per subtask-gate.fires。
-    fires_when: "subtask.approaches >= 2 or subtask.core_algorithm == true or subtask.has_api_contract == true or subtask.error_cost == 'high'"
-    invokes:
-      - capability: superpowers-brainstorming
+  # discuss-strategic-delegate MOVED to judgments/strategic-gate.yaml as
+  # `strategic-tier-delegate` — verbatim expression, zero behaviour change. It was
+  # not a copy but the UNION of that file's two triggers, so it could not simply be
+  # deleted in favour of one of them (either choice drops arms). Relocating it
+  # beside its two members is what makes a future drift visible: adding an arm to
+  # `office-hours` now sits one screenful from the union that must learn it too.
+  #
+  # discuss-phase-delegate / discuss-subtask-delegate REMOVED — they were verbatim
+  # copies of judgments/phase-gate.yaml `gsd-discuss-phase` and
+  # judgments/subtask-gate.yaml `brainstorming`, and the copies were what
+  # workflows/discuss/auto/workflow.yaml actually evaluated. The phase copy had
+  # already drifted: the `phase.files_touched > 5` scope arm was added to
+  # phase-gate.yaml but never to the copy, so the criterion could not change any
+  # master-tier decision. The master now gates directly on the canonical triggers
+  # (gate refs are cross-file — judgments.<file>.<trigger>.fires resolves any
+  # judgments/*.yaml). Guard: tests/workflow/judgment-expression-dedup.test.ts.
 
   # /plan master → 2 sub serial
   plan-architecture-delegate:
@@ -72,11 +67,11 @@ triggers:
     invokes:
       - capability: gstack-cso
 
-  verify-design-changes:
-    description: /verify master → /verify-design fire 当 has_design_changes。
-    fires_when: "phase.stage == 'verify' and phase.has_design_changes == true"
-    invokes:
-      - capability: gstack-design-review
+  # verify-design-changes REMOVED — verbatim copy of
+  # judgments/web-design-routing.yaml `design-review-post`, which T2.3 already
+  # made the canonical home (workflows/verify/design/workflow.yaml gates on it).
+  # workflows/verify/auto/workflow.yaml now delegates on the same canonical
+  # trigger; predicate is unchanged, so behaviour is identical.
 
   verify-eval-review-aiphase:
     description: /verify master → /verify-eval-review fire 当 has_ai_phase (AI phase eval 覆盖审计)。

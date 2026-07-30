@@ -47,26 +47,35 @@ describe('Cycle 1 — /discuss master orchestrator dogfood', () => {
     expect(subs).toEqual(['phase', 'strategic', 'subtask'])
   })
 
-  it('F3: 3 sub gate refs 全 judgments.stage-routing.discuss-*-delegate.fires', () => {
+  // phase / subtask gate on the CANONICAL tier trigger — the stage-routing copies
+  // they used to reference were deleted (the phase copy had already drifted: it
+  // lacked phase-gate.yaml's `files_touched > 5` arm, so that criterion could not
+  // decide anything at master tier). Guard: tests/workflow/judgment-expression-dedup.test.ts.
+  it('F3: 3 sub gate refs — canonical tier triggers (strategic delegate still aggregates 2)', () => {
     const raw = readFileSync(DISCUSS_YAML, 'utf8')
     const m = parseYaml(raw) as WorkflowSchemaV3T
     const gates = (m.delegates_to ?? []).map((d) => d.gate).sort()
     expect(gates).toEqual([
-      'judgments.stage-routing.discuss-phase-delegate.fires',
-      'judgments.stage-routing.discuss-strategic-delegate.fires',
-      'judgments.stage-routing.discuss-subtask-delegate.fires',
+      'judgments.phase-gate.gsd-discuss-phase.fires',
+      'judgments.strategic-gate.strategic-tier-delegate.fires',
+      'judgments.subtask-gate.brainstorming.fires',
     ])
   })
 
   it('F4: runMasterOrchestrator(discuss, all-fire-context) → fired=3 + skipped=0 (new_feature 启动 高频路径)', async () => {
     // Context 设计 — 触发全 3 sub: new_feature (strategic) + open_decisions≥2 (phase) +
     // approaches≥2 (subtask)。spawnDriver no-op (dogfood spawn 仅验 gate-route 不深 spawn)。
+    //
+    // `scope_days` 自 T2.1 D-5 起是有语义的值,不再是任意占位:phase 层 delegate 接了
+    // `skip_gate: judgments.phase-gate.gsd-discuss-phase.skips`,而 skips_when 含
+    // `phase.scope_days < 1` —— 半天工作量会正当否决 phase 层 (❌ 优先于 ✅)。本用例断言的是
+    // 路由链行为 (三层全触发),所以 scope_days 必须 ≥ 1 才能测到它本来要测的东西。
     const ctx = {
       phase: {
         type: 'new_feature',
         open_decisions: 3,
         has_cross_phase_data_flow: false,
-        scope_days: 0.5,
+        scope_days: 2,
       },
       subtask: { approaches: 2, core_algorithm: false, has_api_contract: false, error_cost: 'low' },
     }
@@ -80,13 +89,17 @@ describe('Cycle 1 — /discuss master orchestrator dogfood', () => {
   it('F5: bug_fix context → strategic skip + phase + subtask 独立判 (chain-isolation 铁律)', async () => {
     // 战略层 skip (非 new_feature 且非 major_release) → phase/subtask 独立 eval, NOT
     // forced skip。Per ~/.claude/CLAUDE.md "Fallback 铁律 3 链式互不前置"。
+    //
+    // scope_days ≥ 1 同 F4 —— 该值现在有语义 (`< 1` 触发 phase 层 skip_gate veto)。铁律要
+    // 证的是「上层 skip 不强制下层 skip」,phase 层必须因自身判据 fire,不能被自己的 ❌ 半边
+    // 顺带否决掉,否则这条用例会因为错误的原因变绿。
     const ctx = {
       phase: {
         type: 'bug_fix',
         is_major_release: false,
         open_decisions: 3, // phase 灰色 ≥2 → 该层 fires
         has_cross_phase_data_flow: false,
-        scope_days: 0.2,
+        scope_days: 1.5,
       },
       subtask: {
         approaches: 1, // 单一实现 → subtask 该层 skip
