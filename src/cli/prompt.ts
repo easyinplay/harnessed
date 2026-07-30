@@ -104,6 +104,24 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
   }
 }
 
+/** Scope guard — a discipline rule whose `trigger` names `response.target == 'chat'`
+ *  constrains the conversational reply ONLY, never the project files the subagent
+ *  authors (README / CHANGELOG / SUMMARY.md / PLAN.md / code comments). The renderer
+ *  used to drop `trigger` and head every rule with "always-on", so subagents applied
+ *  chat-reply style (no em-dash / no end recap / no emoji / per-paragraph BLUF) to
+ *  their own written artifacts. Deliberately a pure string match — no expr-eval — per
+ *  karpathy minimal implementation; an unknown / missing trigger falls back to
+ *  always-on (same fail-soft semantics as the rest of this function). */
+const CHAT_TRIGGER_RE = /response\.target\s*==\s*['"]chat['"]/
+
+const CHAT_SCOPE_NOTE =
+  'scope — chat replies ONLY: the rules nested below govern how you talk to the user and do NOT constrain the files you write (README / CHANGELOG / PLAN.md / SUMMARY.md / docs / code comments follow their own conventions, and may use emoji, em-dashes, headings and summary sections):'
+
+function isChatScoped(trigger: unknown): boolean {
+  const s = Array.isArray(trigger) ? trigger.join(' ') : typeof trigger === 'string' ? trigger : ''
+  return CHAT_TRIGGER_RE.test(s)
+}
+
 /** v4.1.1 — Disciplines section. Reads the sub's workflow.yaml
  *  `disciplines_applied[]`, then each `disciplines/<name>.yaml` rule list, and
  *  emits a compact always-on directive block. Same flatten bug as tools: the 6
@@ -129,13 +147,24 @@ export async function buildDisciplinesSection(
     for (const name of names) {
       try {
         const dRaw = await readFile(resolveLocaleYaml(disciplinesDir, name, locale), 'utf8')
-        const dDoc = parseYaml(dRaw) as { rules?: { description?: string }[] } | null
+        const dDoc = parseYaml(dRaw) as {
+          rules?: { description?: string; trigger?: unknown }[]
+        } | null
         const rules = Array.isArray(dDoc?.rules) ? dDoc.rules : []
-        const descs = rules
-          .map((r) => (typeof r.description === 'string' ? r.description.trim() : ''))
-          .filter((s) => s.length > 0)
-          .map((s) => `  - ${s.replace(/\s+/g, ' ')}`)
-        if (descs.length > 0) blocks.push(`- **${name}**:\n${descs.join('\n')}`)
+        const always: string[] = []
+        const chat: string[] = []
+        for (const r of rules) {
+          const desc =
+            typeof r.description === 'string' ? r.description.trim().replace(/\s+/g, ' ') : ''
+          if (desc.length === 0) continue
+          ;(isChatScoped(r.trigger) ? chat : always).push(desc)
+        }
+        const lines = always.map((d) => `  - ${d}`)
+        if (chat.length > 0) {
+          lines.push(`  - ${CHAT_SCOPE_NOTE}`)
+          lines.push(...chat.map((d) => `    - ${d}`))
+        }
+        if (lines.length > 0) blocks.push(`- **${name}**:\n${lines.join('\n')}`)
       } catch {
         /* skip unreadable discipline */
       }
@@ -147,13 +176,52 @@ export async function buildDisciplinesSection(
   }
 }
 
+/** Fail-soft text for the preserve-English directive: used verbatim when
+ *  language.yaml is missing / unreadable / carries no numbered categories. Narrower
+ *  than the yaml SoT (it predates it) — never let a yaml miss drop the directive. */
+const PRESERVE_FALLBACK =
+  'Keep code, commands, file/identifier/API names, error messages, stack traces, URLs, commit hashes, and version numbers in their original form (do not translate or transliterate them).'
+
+/** Read the 8 preserve-English categories out of the `language` discipline SoT
+ *  (workflows/disciplines/language.yaml, rule `preserve-english-categories`). The
+ *  categories live as numbered lines in that rule's `description` — the discipline
+ *  schema is `additionalProperties: false`, so the rule body IS the structured home.
+ *  Reads the en base: this section is English scaffolding addressed to the subagent.
+ *  Fail-soft → [] (caller falls back to PRESERVE_FALLBACK). */
+async function loadPreserveCategories(packageRoot: string): Promise<string[]> {
+  try {
+    const path = resolve(packageRoot, 'workflows', 'disciplines', 'language.yaml')
+    const doc = parseYaml(await readFile(path, 'utf8')) as {
+      rules?: { id?: string; description?: string }[]
+    } | null
+    const rule = (Array.isArray(doc?.rules) ? doc.rules : []).find(
+      (r) => r?.id === 'preserve-english-categories',
+    )
+    const desc = typeof rule?.description === 'string' ? rule.description : ''
+    return desc
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => /^\d+\.\s+\S/.test(l))
+  } catch {
+    return []
+  }
+}
+
 /** Build the `## Language` section from env.HARNESSED_USER_LANG. Empty string
- *  when unset (subagent then mirrors the user's conversation language naturally). */
-function buildLanguageSection(): string {
+ *  when unset (subagent then mirrors the user's conversation language naturally).
+ *  The preserve-English list comes from the language discipline yaml (SoT) rather
+ *  than a hardcoded sentence — the hardcoded one silently omitted 3 of the 8
+ *  categories (product/company names, industry abbreviations, verbatim quoting). */
+export async function buildLanguageSection(packageRoot: string): Promise<string> {
   const code = process.env.HARNESSED_USER_LANG
   if (!code) return ''
   const name = LANG_NAMES[code] ?? code
-  return `\n## Language\nRespond in ${name}. Keep code, commands, file/identifier/API names, error messages, stack traces, URLs, commit hashes, and version numbers in their original form (do not translate or transliterate them).\n`
+  const categories = await loadPreserveCategories(packageRoot)
+  const preserve =
+    categories.length > 0
+      ? `The following always stay in their original English form (do not translate, transliterate, or rewrite them):\n${categories.join('\n')}`
+      : PRESERVE_FALLBACK
+  return `\n## Language\nRespond in ${name}.\n${preserve}\n`
 }
 
 const PROTOCOLS = `
@@ -225,7 +293,8 @@ export function registerPrompt(program: Command): void {
 
       const toolsSection = await buildToolsSection(sub, packageRoot)
       const disciplinesSection = await buildDisciplinesSection(sub, packageRoot)
-      const fullPrompt = `${taskSection}${body}\n${toolsSection}${disciplinesSection}${PROTOCOLS}${buildLanguageSection()}`
+      const languageSection = await buildLanguageSection(packageRoot)
+      const fullPrompt = `${taskSection}${body}\n${toolsSection}${disciplinesSection}${PROTOCOLS}${languageSection}`
 
       if (raw.json) {
         const maxIterations = await resolveMaxIterations(sub, packageRoot)

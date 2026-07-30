@@ -14,8 +14,21 @@ priority_hierarchy:
   - superpowers                  # 子任务执行质量
   - planning-with-files          # 计划持久化
   - karpathy                     # 编码行为
-  - mattpocock                   # 招式 by-demand
-  - parallel                     # subagent / Agent Teams / ralph-loop 执行机制
+  # `mattpocock` = 「按需召唤的招式」层的落位 (/grill-with-docs、/diagnosing-bugs、
+  # /to-spec、/to-tickets、/tdd、/improve-codebase-architecture 等),排在 karpathy 与
+  # parallel 之间。
+  #
+  # 它 NOT 属于方法论优先级句原文的 6 tier
+  # (gstack > GSD > superpowers > planning-with-files > andrej-karpathy-skills >
+  # 子任务并行机制) —— 那句话不是穷举式 tier 定义,招式层需要一个显式 rank 才能
+  # 参与 before-spawn 仲裁。
+  #
+  # 请勿当作「偏差」删除:删掉后这批招式 capability 会 fall through 到
+  # MAX_SAFE_INTEGER rank,排到 parallel 之下变成全局最低优先。而
+  # workflows/discuss/subtask/workflow.yaml 与 workflows/task/code/workflow.yaml
+  # 真在消费同 tier 并发。
+  - mattpocock                   # 招式 by-demand (rationale 见上方注释)
+  - parallel                     # subagent / Agent Teams 执行机制 (ralph-loop 是正交 wrapper, 见 judgments/parallelism-gate.yaml ralph-loop-wrapper.wraps)
 
 rules:
   - id: multi-capability-arbitration

@@ -22,20 +22,25 @@ rules:
     trigger: every Claude response
     check_method: read env.HARNESSED_USER_LANG, validate output lang matches
 
+  # The 8 categories are DATA, not a comment: src/cli/prompt.ts buildLanguageSection
+  # parses the numbered lines below and renders them into the spawn prompt's
+  # `## Language` section. Keep one category per numbered line (`N. <sentence>`),
+  # language-agnostic (they apply to any env.HARNESSED_USER_LANG).
   - id: preserve-english-categories
-    description: 8 类强制保留英文原文,不翻译不音译 (语言无关 — 任何 user_lang 都适用)
+    description: |-
+      8 categories always stay in their original English form — never translate,
+      transliterate, or rewrite them:
+      1. Code, commands, shell snippets, config file contents, regex, SQL
+      2. File / directory / path names (e.g. `src/components/Button.tsx`, `.planning/STATE.md`)
+      3. Tool / framework / library / product / company names (e.g. Claude Code, GSD, subagent, React, Anthropic)
+      4. API / function / class / variable / field names, env vars, config keys (e.g. `buildAgentDef`, `HARNESSED_USER_LANG`)
+      5. Error messages, stack traces, log output
+      6. URLs, commit hashes, issue / PR numbers, version numbers, git refs
+      7. Industry abbreviations and standard terms (TDD, CRUD, API, MCP, PR, CI/CD, a11y, ORM, RAG, token, context window, prompt, subagent)
+      8. Quoted material — documents, errors, config examples, the user's own words — reproduced verbatim, with any explanation kept outside the quote
     enforcement: warn
     trigger: always-on
     check_method: heuristic
-    # 8 类 (verbatim CLAUDE.md, language-agnostic):
-    #   1. 代码/命令/shell/配置/正则/SQL  /  code / cmd / shell / config / regex / SQL
-    #   2. 文件/目录/路径名 (src/components/Button.tsx 等)
-    #   3. 工具/框架/库/产品/公司名 (Claude Code / GSD / React 等)
-    #   4. API/函数/类/变量/字段/环境变量/配置键
-    #   5. 错误信息/stack trace/log 输出
-    #   6. URL / commit hash / issue / PR 编号 / 版本号 / git ref
-    #   7. 业内固定缩写与通用术语 (TDD / CRUD / API / MCP / token 等)
-    #   8. 引用原文 verbatim
 
   - id: cross-cultural-humor
     description: |-

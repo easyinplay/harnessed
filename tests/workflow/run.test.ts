@@ -34,7 +34,9 @@ const loadDisciplinesForPhaseMock = vi.fn<() => Promise<Map<string, unknown>>>()
 // T3.5.W1.5 — 3 phase-level hook mock。
 interface FiredCapShape {
   name: string
-  tier: string
+  /** 4.32.22 — Optional: run.ts now passes capability NAME only and lets
+   *  before-spawn resolve the tier from capabilities.yaml `impl`. */
+  tier?: string
 }
 const arbitrateBeforeSpawnMock = vi.fn<(fired: FiredCapShape[]) => Promise<FiredCapShape[]>>()
 const runAfterOutputHookMock = vi.fn<() => Promise<string[]>>()
@@ -370,10 +372,31 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     expect(r.phasesRun).toBe(1)
     expect(arbitrateBeforeSpawnMock).toHaveBeenCalledTimes(1)
     const calledFired = arbitrateBeforeSpawnMock.mock.calls[0]?.[0] ?? []
-    expect(calledFired).toEqual([
-      { name: 'grill-with-docs', tier: 'grill-with-docs' },
-      { name: 'diagnose', tier: 'diagnose' },
-    ])
+    // 4.32.22 — was `tier: <tool name>` (never a priority_hierarchy entry →
+    // indexOf -1 → arbitration was a no-op). run.ts now passes the capability
+    // NAME only; before-spawn resolves the tier from capabilities.yaml.
+    expect(calledFired).toEqual([{ name: 'grill-with-docs' }, { name: 'diagnose' }])
+  })
+
+  it('11b. 4.32.22 — arbitrate return value IS consumed: arbitrated order surfaced, not input order', async () => {
+    // Pre-fix run.ts discarded the sorted array entirely. Observable proof: the
+    // transparency line must echo the ARBITRATED sequence returned by the hook.
+    isVetoedMock.mockResolvedValue(false)
+    arbitrateBeforeSpawnMock.mockImplementation(async (fired) => [...fired].reverse())
+    const v3Phases = [
+      {
+        id: 'p1',
+        invokes_tools: [{ tool: 'grill-with-docs' }, { tool: 'diagnose' }],
+      },
+    ]
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: v3Phases })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    const warnMsg = warnSpy.mock.calls.map((c: unknown[]) => String(c[0])).join('\n')
+    expect(warnMsg).toMatch(/priority-arbitrated order: diagnose > grill-with-docs/)
+    expect(warnMsg).not.toMatch(/order: grill-with-docs > diagnose/)
+    warnSpy.mockRestore()
   })
 
   it('12. T3.5.W1.5 — before-spawn NOT fire: invokes_tools.length=1 (single tool) → arbitrate NOT called', async () => {

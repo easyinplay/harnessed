@@ -328,6 +328,8 @@ prompts:
       - "负面用例很重要:每个 error / edge / boundary 至少 1 个测试"
       - "测试名 = 预期行为,不是 'test1',不是 'should work'"
       - "遇到意外失败:停止加测试;转 `/diagnosing-bugs` 找根因"
+      # TDD 跳过声明协议 (sister CLAUDE.md) — machine-enforced via workflows/task/test/workflow.yaml artifacts_expected
+      - "完成前写 `tdd-evidence.md`:要么留红→绿证据(先失败的测试,再通过),要么在 tdd-gate 跳过时(crud / ui_polish / docs_only)写显式 `SKIPPED — <理由>` 声明。既无声明又没跑测试 = `harnessed checkpoint complete task-test` 会被 BLOCKED(fail-closed evidence guard,exit 1)"
     severity: "red / green / refactored / blocked"
     description: "为核心逻辑执行 red-green-refactor TDD;测试失败时交接 `/diagnosing-bugs`。"
 

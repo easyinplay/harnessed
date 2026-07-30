@@ -44,3 +44,16 @@ phases:
     # v3.8.0 P1 — TDD core-logic phase, opts into full 3-RULES inject (escalation
     # may fire when test failures trigger /diagnosing-bugs handoff or subagent context overflow).
     injects_rules: [escalation, transparent-skip, agent-teams-prevention]
+    # TDD 跳过声明协议 machine-ization — sister CLAUDE.md「无跳过声明且未执行测试验证,
+    # 主会话将拒绝验收」. ONE artifact both branches must produce:
+    #   - gate fired  → red→green record (failing test first, then the pass)
+    #   - gate skipped (crud / ui_polish / docs_only per tdd-gate.skips_when)
+    #                 → explicit `SKIPPED — <reason>` declaration
+    # `artifacts_expected` is AND semantics (every declared path must exist), so the
+    # two-way choice lives INSIDE the file content, not in the list. Reuses the
+    # existing fail-closed guard (src/checkpoint/evidence.ts checkArtifacts →
+    # src/cli/checkpoint.ts BLOCKED exit 1; `--force` records evidence_status=
+    # overridden = audited escape hatch). Dedicated name on purpose: reusing
+    # findings.md (discuss-phase / discuss-strategic) would let an unrelated upstream
+    # artifact satisfy this gate via the 4.22.1 bare-name .planning/phases/*/ probe.
+    artifacts_expected: [tdd-evidence.md]

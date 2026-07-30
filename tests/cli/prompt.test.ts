@@ -9,10 +9,13 @@
 // REAL bundled workflows/role-prompts.yaml (24 entries, stable) + defaults.yaml
 // (integration-ish) — no mocking needed.
 
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { Command } from 'commander'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { registerPrompt } from '../../src/cli/prompt.js'
+import { buildLanguageSection, registerPrompt } from '../../src/cli/prompt.js'
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -310,5 +313,158 @@ describe('cli/prompt — v4.1.1 disciplines_applied injection', () => {
     const { code, stdout } = await runCli(['prompt', 'nonexistent-xyz'])
     expect(code).toBe(0)
     expect(stdout).not.toContain('## Disciplines')
+  })
+})
+
+// Fix 1 — discipline SCOPE. output-style.yaml carries `trigger: response.target ==
+// 'chat'` on the conversational rules (no-em-dash / no-end-recap / no-emoji /
+// no-empty-continuation-question). The renderer used to drop `trigger` entirely and
+// head the whole block with "always-on", so subagents applied chat-reply style rules
+// to the project files they authored (README / CHANGELOG / SUMMARY.md / PLAN.md).
+describe('cli/prompt — discipline scope grouping (chat replies vs always-on)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete process.env.HARNESSED_USER_LANG
+  })
+
+  it('cell 18 — chat-scoped rules render under a "chat replies ONLY" sub-block that exempts files', async () => {
+    const { code, stdout } = await runCli(['prompt', 'task-code'])
+    expect(code).toBe(0)
+    expect(stdout).toMatch(/chat replies ONLY/i)
+    expect(stdout).toMatch(/do NOT constrain the files you write/i)
+    const marker = stdout.search(/chat replies ONLY/i)
+    expect(marker).toBeGreaterThan(-1)
+    expect(stdout.indexOf('No em-dash')).toBeGreaterThan(marker)
+    expect(stdout.indexOf('No closing summary')).toBeGreaterThan(marker)
+  })
+
+  // Coordinator ruling (2026-07-30) — `harnessed prompt` is the ONLY channel through
+  // which a normal user (no personal ~/.claude/CLAUDE.md) receives these rules, so the
+  // per-rule scope must be exact. bluf-conclusion-first + no-sycophantic-open-close are
+  // chat-scope (auto-fix strip-sycophantic would otherwise rewrite delivered artifacts);
+  // precise-quantifier deliberately STAYS always-on (project files want precise
+  // quantifiers too, and it produces no wrong artifact). This test locks all three so a
+  // later blanket edit cannot silently move them.
+  it('cell 25 — ruling lock: BLUF + no-sycophantic are chat-scoped, precise-quantifier stays always-on', async () => {
+    const { code, stdout } = await runCli(['prompt', 'task-code'])
+    expect(code).toBe(0)
+    const marker = stdout.search(/chat replies ONLY/i)
+    expect(marker).toBeGreaterThan(-1)
+    // chat-scoped
+    expect(stdout.indexOf('Conclusion first (BLUF)')).toBeGreaterThan(marker)
+    expect(stdout.indexOf('Remove opening/closing filler')).toBeGreaterThan(marker)
+    // always-on — must NOT drift into the chat sub-block
+    const pq = stdout.indexOf('Precise quantifiers')
+    expect(pq).toBeGreaterThan(-1)
+    expect(pq).toBeLessThan(marker)
+  })
+
+  it('cell 19 — always-on rules stay unscoped (karpathy + biome still present)', async () => {
+    const { stdout } = await runCli(['prompt', 'task-code'])
+    expect(stdout).toContain('## Disciplines')
+    expect(stdout).toContain('**karpathy**')
+    expect(stdout).toMatch(/biome/)
+    const marker = stdout.search(/chat replies ONLY/i)
+    // karpathy has no chat-scoped rule → its block precedes the output-style marker
+    expect(stdout.indexOf('**karpathy**')).toBeLessThan(marker)
+  })
+})
+
+// Fix 2 — the 8 preserve-English categories are data in language.yaml, not a
+// hardcoded sentence. The old hardcoded line missed categories 3 (product/company
+// names), 7 (industry abbreviations) and 8 (verbatim quoting), plus regex/SQL/config
+// contents from category 1.
+describe('cli/prompt — language preserve categories sourced from language.yaml', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    delete process.env.HARNESSED_USER_LANG
+  })
+
+  it('cell 20 — zh-Hans → all 8 categories surfaced (product names / abbreviations / verbatim)', async () => {
+    process.env.HARNESSED_USER_LANG = 'zh-Hans'
+    const { code, stdout } = await runCli(['prompt', 'task-code'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('## Language')
+    expect(stdout).toContain('简体中文')
+    expect(stdout).toMatch(/do not translate/i)
+    const langSection = stdout.slice(stdout.indexOf('## Language'))
+    // category 1 — regex / SQL / config file contents (missing from the old line)
+    expect(langSection).toMatch(/regex/i)
+    expect(langSection).toContain('SQL')
+    // category 3 — tool / framework / product / company names
+    expect(langSection).toMatch(/product/i)
+    expect(langSection).toContain('Claude Code')
+    // category 7 — industry abbreviations / standard terms
+    expect(langSection).toMatch(/abbreviation/i)
+    expect(langSection).toContain('TDD')
+    // category 8 — quoted material reproduced verbatim
+    expect(langSection).toMatch(/verbatim/i)
+    // exactly 8 numbered categories rendered
+    expect(langSection.match(/^\d+\.\s/gm)?.length).toBe(8)
+  })
+})
+
+describe('buildLanguageSection — yaml-sourced categories + fail-soft', () => {
+  let root: string
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'harnessed-lang-'))
+    mkdirSync(join(root, 'workflows', 'disciplines'), { recursive: true })
+  })
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true })
+    delete process.env.HARNESSED_USER_LANG
+  })
+
+  it('cell 21 — HARNESSED_USER_LANG unset → empty string (no ## Language at all)', async () => {
+    delete process.env.HARNESSED_USER_LANG
+    expect(await buildLanguageSection(root)).toBe('')
+  })
+
+  it('cell 22 — reads the numbered categories out of language.yaml', async () => {
+    writeFileSync(
+      join(root, 'workflows', 'disciplines', 'language.yaml'),
+      `schema_version: harnessed.discipline.v1
+discipline: language
+enforcement_layer: output
+auto_enforce: true
+rules:
+  - id: preserve-english-categories
+    description: |-
+      Keep the following in English:
+      1. FIRST-CATEGORY-MARKER
+      2. SECOND-CATEGORY-MARKER
+    enforcement: warn
+    trigger: always-on
+    check_method: heuristic
+`,
+      'utf8',
+    )
+    process.env.HARNESSED_USER_LANG = 'zh-Hans'
+    const out = await buildLanguageSection(root)
+    expect(out).toContain('## Language')
+    expect(out).toContain('FIRST-CATEGORY-MARKER')
+    expect(out).toContain('SECOND-CATEGORY-MARKER')
+  })
+
+  it('cell 23 — corrupt language.yaml → fail-soft to the built-in preserve sentence', async () => {
+    writeFileSync(
+      join(root, 'workflows', 'disciplines', 'language.yaml'),
+      'rules: [ {a: 1,\n  - ]]]\n\tbad: "unterminated\n',
+      'utf8',
+    )
+    process.env.HARNESSED_USER_LANG = 'en'
+    const out = await buildLanguageSection(root)
+    expect(out).toContain('## Language')
+    expect(out).toContain('English')
+    expect(out).toMatch(/do not translate/i)
+  })
+
+  it('cell 24 — missing language.yaml → fail-soft, still emits ## Language', async () => {
+    process.env.HARNESSED_USER_LANG = 'en'
+    const out = await buildLanguageSection(root)
+    expect(out).toContain('## Language')
+    expect(out).toMatch(/do not translate/i)
   })
 })

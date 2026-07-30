@@ -468,12 +468,35 @@ export async function runWorkflow(
     await activatePhase(ph.id)
 
     // W1.5 — before-spawn arbitrate if `invokes_tools.length > 1` (K14 warn-not-halt)。
+    //
+    // 4.32.22 no-op fix (2 defects):
+    //   1. `tier` was the tool NAME ('grill-with-docs'), never a priority.yaml
+    //      `priority_hierarchy` entry → indexOf -1 for every entry → identity sort.
+    //      Now we pass the capability name only; before-spawn resolves the tier
+    //      from capabilities.yaml `impl`.
+    //   2. The sorted array was discarded. It is now consumed below.
+    //
+    // Consumption semantics (deliberately narrow): `invokes_tools` is NOT spawned
+    // by this engine — neither serially nor as a parallel fan-out. The phase
+    // dispatch below spawns `ph.skills[0] ?? ph.id`; the declared tools are slash
+    // commands the SPAWNED subagent may invoke. So there is no engine-side spawn
+    // order for the arbitration to permute, and inventing one would change the
+    // parallelism semantics. The arbitrated order is therefore surfaced as a
+    // deterministic transparency line (sister masterOrchestrator-helpers
+    // `emitGateTransparency` / `maybeArbitrate` warn), which is the honest
+    // maximum until the tool-invocation path itself is wired.
     const invokesTools =
       'invokes_tools' in ph && Array.isArray(ph.invokes_tools) ? ph.invokes_tools : undefined
     if (invokesTools && invokesTools.length > 1) {
       try {
-        const firedCaps = invokesTools.map((c) => ({ name: c.tool, tier: c.tool }))
-        await arbitrateBeforeSpawn(firedCaps, packageRoot)
+        const firedCaps = invokesTools.map((c) => ({ name: c.tool }))
+        const arbitrated = await arbitrateBeforeSpawn(firedCaps, packageRoot)
+        console.warn(
+          `⚠️ phase ${ph.id} fires ${arbitrated.length} tools — priority-arbitrated order: ` +
+            `${arbitrated.map((c) => (c.tier ? `${c.name} (${c.tier})` : c.name)).join(' > ')} ` +
+            '(highest priority.yaml tier first; untiered capabilities keep declared ' +
+            'order at the tail; K14 warn-not-halt).',
+        )
       } catch (err) {
         console.warn(
           `⚠️ phase ${ph.id} before-spawn arbitrate failed (${(err as Error).message}); ` +

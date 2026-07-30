@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.33.0] - 2026-07-30
+
+CLAUDE.md 差距审计第一梯队。四路并行只读审计(治理关卡 / 澄清判据与并行机制 / 文档纪律与 TDD / rules 路由与输出规范)逐条对齐三层栈方法论,产出 `.planning/CLAUDE-MD-GAP-AUDIT-2026-07-30.md`(五类系统性断裂 + 7 个确认 bug + 5 处文档失真,每条带 `file:line`);本版交付其中修复成本最低、影响最直接的四项。
+
+**贯穿本版的框架约束**:普通用户没有类似作者本机那份 `~/.claude/CLAUDE.md`,所以方法论必须活在 harnessed 自己的 bundled 资产里 —— `harnessed prompt` 的注入是普通用户拿到这些规则的**唯一**通道。这条重排了修复优先级:注入层的正确性从「洁癖」升为「规则能否落地的唯一保障」。
+
+### Fixed
+
+- **discipline 的 scope 在 prompt 注入层被剥离(唯一会主动产生错误产物的缺口)。** `buildDisciplinesSection` 只渲染 `rules[].description`,把 `trigger` 与 `enforcement` 整个丢掉,再冠以 `## Disciplines (always-on — L0 substrate)` 表头。于是本该只约束对话回复的 output-style 规则(禁 em-dash / 禁结尾总结 / 禁 emoji / 段段 BLUF)被 subagent 无条件套到它自己写的 README / CHANGELOG / SUMMARY.md / PLAN.md 上。现在按 scope 分两组渲染,chat-scope 规则落在一个明确写着「govern how you talk to the user and do NOT constrain the files you write」的子块下;纯字符串匹配 `response.target == 'chat'`(不引 expr-eval),trigger 缺失/未知一律当 always-on(与该函数既有 fail-soft 一致)。连带纠正 `output-style.yaml` 三条错标 `always-on` 的规则归属:`bluf-conclusion-first` 与 `no-sycophantic-open-close` 改 chat-scope(后者是 `enforcement: auto-fix` + `strip-sycophantic`,无条件生效等于让改写器去动产物文案,三条里唯一会破坏交付物的),`precise-quantifier` **故意保持 always-on**(产物文件也该精确量词,且不产生错误产物)—— 该裁决由测试锁定,防后人顺手全改。
+- **语言纪律的 8 类英文保留清单缺 3 类,且走硬编码而非 yaml SoT。** 8 类原本只是 `language.yaml` 的纯注释,真正到达 subagent 的是 `buildLanguageSection` 里一句硬编码,对照方法论原文缺第 3 类(工具/框架/库/产品/公司名)、第 7 类(业内固定缩写 TDD/CRUD/MCP/a11y)、第 8 类(引用原文 verbatim),第 1 类也漏了 regex / SQL / 配置文件内容。现在 8 类提升为 `preserve-english-categories` 规则 description 内的编号 data,`buildLanguageSection` 从 yaml 解析;yaml 缺失/损坏 → fail-soft 回退原句。(未做成顶层 `preserve_categories:` 字段:discipline schema 是 `additionalProperties: false` 且 CI 有逐字镜像,顶层新键会同时打红 schema gate,需 schema + 镜像 + 重生成 `schemas/` 三件套,单开 slice。)
+- **`/task --skip-sub discuss` 命不中任何 delegation clause → 主 session 澄清后仍 spawn brainstorming subagent。** `task` 的 sub 名是 `clarify`,而 SKILL 文本传的是 `discuss`,`SKIP_SYNONYMS` 只有 `clarify → discuss` 单向,`matchSkipSub` 三路匹配全 false。后果是方法论明令禁止的退化:subagent 无法与用户对话,在其内部跑 brainstorming 会变成自闭式 question generation。4.32.20 那次改名只修了 `/auto`(它的 sub 就叫 `discuss`),漏了 `/task` —— 而 `/task` 是 Execute 阶段主入口,每个子任务走一次。同义词改为 **per-entry 双向且非传递**(将来加 `{ foo: 'discuss' }` 不会让 `foo` 成为 `clarify` 的同义词),返回值仍是**用户实际输入的拼写**(`warnUnmatchedSkips` 拿它做差集,返回 clause 名会误报)。端到端验证:`clarify` 落 `skip`、`fire` 里无 `task-clarify`、stderr 无 unmatched 警告;旧写法 `--skip-sub clarify` 与 `/auto` 路径均不回归。
+- **优先级仲裁是 no-op。** `run.ts` 把 `tier` 填成工具名而非 `priority_hierarchy` 条目名 → `hierarchy.indexOf(tier)` 全部 -1 → 全落 `MAX_SAFE_INTEGER`,排序退化为恒等;且返回值未赋值使用,结果直接丢弃。现在 tier 从 capability 的 `impl` 解析(`gstack`/`gsd`/`superpowers`/`mattpocock-skills`→`mattpocock`/`claude-platform`→`parallel`),两条按 capability 名覆盖(`planning-with-files` / `karpathy-guidelines`,其 impl 桶是异质的不能整桶映射);未匹配 → `MAX_SAFE_INTEGER` + **稳定排序**(decorate-sort-undecorate,同 rank 保留输入顺序);`capabilities.yaml` 不可读 → warn + 空 map 不重排(ADR-0029 fail-soft)。tier 的语义定义为「owning upstream system」,即方法论优先级句排的东西。**已知残留**:`invokes_tools` 声明的工具从不被引擎 spawn(它们是给 subagent 用的 slash command),所以仲裁结果目前只落成确定性的 transparency 行;要让顺序真正决定行为需把 arbitrated 列表喂进 `buildAgentDef`,超出本版范围。
+
+### Added
+
+- **TDD 跳过声明协议的验收门(此前 0 机器化)。** 方法论要求「若评估无需 TDD 必须在文件里显式记录跳过理由;无声明且未执行测试验证则拒绝验收」,但 `workflows/task/test/workflow.yaml` 从未声明 `artifacts_expected` → `checkArtifacts` 返回 `none_declared` → `harnessed checkpoint complete task-test` 无任何拦点,既拦不住缺声明也拦不住没跑测试;skip reason 只落 ledger 的 `current-workflow.json`。现在声明 `artifacts_expected: [tdd-evidence.md]`,复用现成 fail-closed 证据门(缺失 → BLOCKED exit 1,`--force` 记 `evidence_status: overridden` 作为有审计痕迹的逃生口),**零 `src/` 改动**。二选一(红→绿记录 / `SKIPPED — <reason>` 声明)放在文件内容里,因为 `collectDeclared` 是纯 AND 语义无 OR;不复用 `findings.md` 是因为 discuss 阶段先写的同名文件会经由裸名的 phase 目录探测**直接满足**该门造成假绿。role prompt checklist(en + zh-Hans)同步加一条,写明无声明会被 BLOCKED。
+
+### Notes
+
+- 未纳入本版、已记入 `.planning/phases/52-claude-md-gap-close/CONTEXT.md` 的后续项:`masterOrchestrator-helpers.ts` 的同构仲裁缺陷(先答「`order` 已决定次序处 tier 仲裁是否还有意义」,若无则删 placeholder 优于补映射)· en base 资产 597 行中文(其中 `role-prompts.yaml` 4 行**在 body/description 里、会进模型 prompt**,英文用户的 subagent 会收到夹带中文的角色定义)· `task/test/SKILL.md` 表格缺 `artifacts_expected` 列且无 gate 校验 SKILL.md↔workflow.yaml 一致性。
+- 审计中改判为 **out-of-scope** 的条目(属作者环境偏好,不该 bundle 强推):`CLI-TOOLS.md` 的 fd/rg/bat/eza 强制替换(用户机器上可能未安装)· RTK · `gws` 的操作 SOP。
+
 ## [4.32.23] - 2026-07-29
 
 ECC 编排立项的产物 —— 但**不是**原计划那个。治理链(office-hours → design doc → plan-ceo-review → outside voice)裁出「降级链一等公民」B 方案后,立项要求的对照实测把它否了:同题同 diff 下 `ecc:typescript-reviewer` 的发现是通用 review 的真子集,零语言特有发现。于是砍掉 probe/resolver/语言推导器整套机器,改交付 prose 级路由(Approach A)+ 实测过程中打出的两个真 bug。决策与证据链:`.planning/phases/51-ecc-orchestration/`(findings F1-F9)。

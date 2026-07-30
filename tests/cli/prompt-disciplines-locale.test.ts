@@ -89,3 +89,58 @@ describe('buildDisciplinesSection — locale-aware discipline file read', () => 
     expect(out).toContain('surgical, minimal-diff')
   })
 })
+
+// Fix 1 — rules whose `trigger` names `response.target == 'chat'` constrain only the
+// conversational reply, never the project files the subagent authors. The renderer
+// used to drop `trigger` and present every rule as unconditional. Pure string match
+// (no expr-eval): unknown / missing trigger → always-on (fail-soft).
+const MIXED_TRIGGERS = `schema_version: harnessed.discipline.v1
+discipline: karpathy
+enforcement_layer: output
+auto_enforce: true
+rules:
+  - id: always-rule
+    description: ALWAYS-MARKER applies everywhere.
+    enforcement: info
+    trigger: always-on
+    check_method: heuristic
+  - id: chat-rule
+    description: CHAT-MARKER constrains the reply.
+    enforcement: info
+    trigger: response.target == 'chat'
+    check_method: regex
+  - id: chat-compound-rule
+    description: COMPOUND-MARKER constrains the reply too.
+    enforcement: info
+    trigger: response.target == 'chat' AND user.requested_emoji == false
+    check_method: regex
+  - id: opaque-trigger-rule
+    description: UNKNOWN-MARKER carries an unrecognised trigger.
+    enforcement: info
+    trigger: humor_or_idiom_present
+    check_method: heuristic
+`
+
+describe('buildDisciplinesSection — chat-scope grouping', () => {
+  it('chat-scoped rules move under an explicit "chat replies ONLY" sub-block', async () => {
+    writeFileSync(join(root, 'workflows', 'disciplines', 'karpathy.yaml'), MIXED_TRIGGERS, 'utf8')
+    const out = await buildDisciplinesSection('mytool', root, 'en')
+    const marker = out.search(/chat replies ONLY/i)
+    expect(marker).toBeGreaterThan(-1)
+    expect(out).toMatch(/do NOT constrain the files you write/i)
+    expect(out.indexOf('CHAT-MARKER')).toBeGreaterThan(marker)
+    expect(out.indexOf('COMPOUND-MARKER')).toBeGreaterThan(marker)
+    // always-on + opaque triggers stay in the unscoped block, above the marker
+    expect(out.indexOf('ALWAYS-MARKER')).toBeGreaterThan(-1)
+    expect(out.indexOf('ALWAYS-MARKER')).toBeLessThan(marker)
+    expect(out.indexOf('UNKNOWN-MARKER')).toBeGreaterThan(-1)
+    expect(out.indexOf('UNKNOWN-MARKER')).toBeLessThan(marker)
+  })
+
+  it('discipline with no chat-scoped rule → no chat sub-block emitted', async () => {
+    writeFileSync(join(root, 'workflows', 'disciplines', 'karpathy.yaml'), EN_KARPATHY, 'utf8')
+    const out = await buildDisciplinesSection('mytool', root, 'en')
+    expect(out).toContain('surgical, minimal-diff')
+    expect(out).not.toMatch(/chat replies ONLY/i)
+  })
+})
