@@ -141,6 +141,33 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
     expect(r.fix).toMatch(/claude mcp remove chrome-devtools-mcp/)
   })
 
+  // The both-missing branch is the ONLY one where chrome-devtools can end up with
+  // zero providers (ecc absent ⇒ the connector only exists if self-installed).
+  // Pre-fix it sold ECC's orchestration value and said nothing about that, so a
+  // declared capability went quiet with no report anywhere.
+  it('4b. both missing AND no standalone chrome-devtools → reports the zero-provider gap + both enable paths', async () => {
+    mkdirSync(join(tmpRoot, '.claude'), { recursive: true })
+    const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
+    const r = await checkEcc()
+    // Severity is unchanged: an absent optional tool is informational, not a
+    // health failure (sister check-codegraph). Only the message got complete.
+    expect(r.status).toBe('pass')
+    expect(r.message).toMatch(/ZERO providers/)
+    expect(r.message).toMatch(/05-perf-a11y-diagnostic/)
+    expect(r.message).toMatch(/harnessed install ecc/)
+    expect(r.message).toMatch(/claude mcp add chrome-devtools-mcp/)
+  })
+
+  it('4c. ecc missing but standalone chrome-devtools registered → no zero-provider warning', async () => {
+    mkdirSync(join(tmpRoot, '.claude'), { recursive: true })
+    writeClaudeJsonMcp({ 'chrome-devtools-mcp': { type: 'stdio', command: 'npx' } })
+    const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
+    const r = await checkEcc()
+    expect(r.status).toBe('pass')
+    expect(r.message).not.toMatch(/ZERO providers/)
+    expect(r.message).toMatch(/still covered by the standalone provider/)
+  })
+
   it('7. codex config.toml missing but stale clone cache exists → codex-not-present (not ecc-installed)', async () => {
     writePluginsRegistry(['ecc@ecc'])
     writeCodexEccClone() // orphan cache without a codex install

@@ -7,7 +7,8 @@
 #   手 (AI 实时操作)            — /browse 主导 (gstack headless Playwright);
 #                                 未装 gstack 降级 playwright-cli (一行 Bash, token 最省)
 #   筋骨 (Python 后端联动)      — webapp-testing skill (tests/e2e/*.py)
-#   非功能性诊断 (性能/a11y/内存) — chrome-devtools-mcp (必用)
+#   非功能性诊断 (性能/a11y/内存) — chrome-devtools-mcp (有 provider 时必用;
+#                                 ecc / 自装 manifest 二选一, 两者都缺则该 lane 不 fire)
 #
 # T2.3 — 本 file 的 4 trigger 之前是运行时孤儿 (零 gate ref → resolveJudgmentGate
 # 纯 ref 驱动, 永不加载求值)。现由 workflows/verify/qa/workflow.yaml 的 4 条 lane
@@ -55,13 +56,21 @@ triggers:
 
   chrome-devtools-mcp-diagnostic:
     description: |
-      chrome-devtools-mcp — 非功能性诊断必须用 (NOT playwright/test/cli/webapp-testing)。
-      LCP / Core Web Vitals / ARIA / 堆快照。
+      chrome-devtools-mcp — 非功能性诊断在 provider 在场时必须用它
+      (NOT playwright/test/cli/webapp-testing)。LCP / Core Web Vitals / ARIA / 堆快照。
       Provider 说明 (4.32.22 终局): 二选一 — ecc (manifests/optional/ecc.yaml,
       bonus tier; ECC 唯一默认 MCP connector) 或 optional 自装 manifest
       (manifests/optional/chrome-devtools-mcp.yaml, mcp-stdio-add 兜底, 供不装
       ecc 的用户; setup optional offer 可勾选)。双装同名双前缀歧义, doctor
-      `ecc` check 会 warn。两者都缺 → 本 capability 不可用。
-    fires_when: "subtask.test_type == 'perf-diagnostic'"
+      `ecc` check 会 warn。
+      两者都缺 → 本 capability 不可用, 本 trigger 不 fire。这一句从散文变成判据:
+      fires_when 第二个 arm `chrome_devtools_available == true` 由
+      src/cli/lib/probe-chrome-devtools.ts 实测 (ecc plugin / 官方 plugin /
+      stdio mcpServers 三种注册形态), 经 `harnessed facts` 自动填入 (确定性事实,
+      不问模型)。probe 抛错 = unknown → 仍算 available (fail-soft; 绝不静默删掉
+      已声明的诊断能力, sister src/workflow/skipGate.ts)。
+      未 fire 时的开启路径 (二选一): `harnessed install ecc`
+      或 `claude mcp add chrome-devtools-mcp` —— 只装其中一个。
+    fires_when: "subtask.test_type == 'perf-diagnostic' and chrome_devtools_available == true"
     invokes:
       - capability: chrome-devtools-mcp

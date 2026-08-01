@@ -154,6 +154,13 @@ export const PhaseFactContext = Type.Object(
     // Phase v3.0-3.3 W0 T3.3.W0.8 — 2 NEW root-flat boolean per Appendix C MIN scope:
     needs_web_search: Type.Boolean(), // web-search-routing.yaml top-level ref convenience
     is_critical_release: Type.Boolean(), // stage-routing.yaml verify-multispec-critical-release
+    // 3rd root-flat NEW — chrome-devtools MCP provider availability, read as a
+    // BARE identifier by web-testing-routing.yaml chrome-devtools-mcp-diagnostic.
+    // Root-flat on purpose: it describes the ENVIRONMENT (is a provider
+    // registered?), not the phase or the subtask. Deterministically derived by
+    // `harnessed facts` from src/cli/lib/probe-chrome-devtools.ts — never a
+    // judgement call handed to the model.
+    chrome_devtools_available: Type.Boolean(),
   },
   { additionalProperties: false },
 )

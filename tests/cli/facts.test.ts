@@ -22,6 +22,7 @@ import {
   type FactsEnvelope,
   runFactsPlan,
 } from '../../src/cli/facts.js'
+import type { ChromeDevtoolsProbe } from '../../src/cli/lib/probe-chrome-devtools.js'
 import { captureRunDeps, ExitError } from '../../src/platform/runDeps.js'
 import { _clearJudgmentCache } from '../../src/workflow/judgmentResolver.js'
 
@@ -53,15 +54,35 @@ function gitStub(map: Record<string, string | null>): (args: string[]) => string
 
 const NO_GIT = () => null
 
+/** chrome-devtools provider probe stub — pinned so the envelope is deterministic
+ *  regardless of what is installed on the machine running the suite. */
+function cdtStub(opts: { ecc?: boolean; stdio?: boolean; unknown?: boolean } = {}) {
+  return async (): Promise<ChromeDevtoolsProbe> => {
+    const providers: string[] = []
+    if (opts.ecc) providers.push('ecc plugin')
+    if (opts.stdio) providers.push('chrome-devtools-mcp stdio MCP server')
+    return {
+      ecc: Boolean(opts.ecc),
+      standalonePlugin: false,
+      standaloneStdio: Boolean(opts.stdio),
+      unknown: Boolean(opts.unknown),
+      providers,
+    }
+  }
+}
+
+const NO_CDT = cdtStub()
+
 async function runFacts(
   master: string,
   raw: Parameters<typeof runFactsPlan>[1] = {},
   git: (args: string[]) => string | null = NO_GIT,
+  probeCdt: () => Promise<ChromeDevtoolsProbe> = NO_CDT,
 ): Promise<{ code: number; envelope: FactsEnvelope | null; stderr: string[] }> {
   const { deps, stdout, stderr } = captureRunDeps()
   let code = 0
   try {
-    await runFactsPlan(master, raw, deps, git)
+    await runFactsPlan(master, raw, deps, git, probeCdt)
   } catch (e) {
     if (e instanceof ExitError) code = e.code
     else throw e
@@ -225,6 +246,39 @@ describe('harnessed facts <master> envelope', () => {
     expect((env.facts.subtask as Record<string, unknown>).lines).toBeNull()
     // a null derived fact DOES get a hint — the model has to supply it now
     expect(env.hints['subtask.lines']).toBeTruthy()
+  })
+
+  // chrome_devtools_available is an ENVIRONMENT fact (is a provider registered?),
+  // deterministically derivable from the filesystem. It must be auto-filled like
+  // subtask.lines, never handed to the model as a null to guess.
+  it('chrome_devtools_available is DERIVED, never a null for the model to answer', async () => {
+    const { envelope } = await runFacts('verify', {}, NO_GIT, cdtStub({ ecc: true }))
+    const env = envelope as FactsEnvelope
+    expect(env.derived.chrome_devtools_available?.value).toBe(true)
+    expect(env.facts.chrome_devtools_available).toBe(true)
+    // root-flat, not nested under phase/subtask (it describes the environment)
+    expect((env.facts.phase as Record<string, unknown>).chrome_devtools_available).toBeUndefined()
+    // and it is NOT re-asked as a judgement call
+    expect(env.hints.chrome_devtools_available).toBeUndefined()
+  })
+
+  it('no provider → the fact is false and its provenance names BOTH enable paths', async () => {
+    const { envelope } = await runFacts('verify', {}, NO_GIT, NO_CDT)
+    const env = envelope as FactsEnvelope
+    // `false` must survive into facts — `?? null` would be a bug here.
+    expect(env.derived.chrome_devtools_available?.value).toBe(false)
+    expect(env.facts.chrome_devtools_available).toBe(false)
+    const source = env.derived.chrome_devtools_available?.source ?? ''
+    expect(source).toContain('NO chrome-devtools provider registered')
+    expect(source).toContain('harnessed install ecc')
+    expect(source).toContain('claude mcp add chrome-devtools-mcp')
+  })
+
+  it('probe faulted → the fact stays TRUE (unknown must not delete the diagnostic lane)', async () => {
+    const { envelope } = await runFacts('verify', {}, NO_GIT, cdtStub({ unknown: true }))
+    const env = envelope as FactsEnvelope
+    expect(env.derived.chrome_devtools_available?.value).toBe(true)
+    expect(env.derived.chrome_devtools_available?.source).toContain('FAULTED')
   })
 
   it('--out writes the same JSON to disk', async () => {

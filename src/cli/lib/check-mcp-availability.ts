@@ -19,6 +19,10 @@
 // either/or — ecc (bonus tier) or the optional self-install manifest
 // manifests/optional/chrome-devtools-mcp.yaml; not a base component, and
 // ecc-overlapping entries are flagged by the doctor `ecc` check instead).
+// The exclusion is deliberate and stays: a base-MCP "not registered" warn would
+// be wrong for an either/or optional provider. Reporting the zero-provider case
+// belongs to the `ecc` check (src/cli/lib/check-ecc.ts), which reads the shared
+// src/cli/lib/probe-chrome-devtools.ts probe.
 //
 // Distinct from existing `checkMcpScope` which checks scope hygiene (project
 // vs user — CC #54803 risk); this check is server-by-server availability.

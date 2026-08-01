@@ -63,6 +63,36 @@ Phase 01-test 条件性 fire `diagnose` (capabilities.yaml L55-64 mattpocock-ski
 test fail 时进入 diagnose loop (reproduce → minimise → hypothesise → instrument →
 fix → regression-test), 测试通过则 skip diagnose entirely。
 
+## Narrowing the test run with CodeGraph (opt-in, presence-conditional)
+
+**Only when the project has a `.codegraph/` index AND `codegraph` is on PATH.** Both
+missing-cases run the full suite exactly as before, **silently — no install nag** (same
+standing contract as `workflows/task/code` CodeGraph navigation).
+
+When both are present, derive the affected test files from the working-tree diff and run
+those first (upstream's own CI/hook recipe):
+
+```bash
+AFFECTED=$(git diff --name-only HEAD | codegraph affected --stdin --quiet)
+if [ -n "$AFFECTED" ]; then npx vitest run $AFFECTED; fi
+```
+
+`codegraph affected` traces import dependencies transitively (default depth 5) from the
+changed source files to the test files that reach them. Do NOT re-index or `codegraph
+sync` first: the index auto-syncs on every file change.
+
+**An EMPTY affected list means "run the full suite" — never "run nothing".** Empty is
+"the trace found no edge", not "there is nothing to verify": the diff may touch files the
+graph does not model (config, fixtures, generated code), or the graph may simply be
+behind. A narrowing heuristic that can silently run zero tests turns a green run into a
+lie, so an empty list falls straight back to the full suite.
+
+**The narrowed run is a fast first pass, not a substitute for the full suite.** Use it
+inside the red-green inner loop for quick feedback. **The completion evidence for this sub
+MUST come from a FULL-suite run** — the test log cited in `artifacts_expected` /
+`tdd-evidence.md` and the run backing `<promise>COMPLETE</promise>` are the full-suite
+result. Never mark this sub complete on a narrowed pass alone.
+
 ## How to invoke
 
 !`harnessed checkpoint intent task-test`

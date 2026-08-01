@@ -34,11 +34,17 @@ import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
 import { _parserSingleton } from '../workflow/exprBuilder.js'
 import { resolveJudgmentExpression } from '../workflow/judgmentResolver.js'
 import { GATE_MASTERS, resolveMasterYamlPath } from './gates.js'
+import {
+  type ChromeDevtoolsProbe,
+  chromeDevtoolsAvailable,
+  chromeDevtoolsFactSource,
+  probeChromeDevtools,
+} from './lib/probe-chrome-devtools.js'
 
 const VALID_MASTERS = new Set<string>(GATE_MASTERS)
 
 export interface DerivedFact {
-  value: number | string | null
+  value: number | string | boolean | null
   /** Provenance, so a reader can audit the number rather than trust it. */
   source: string
 }
@@ -293,6 +299,7 @@ export async function runFactsPlan(
   raw: { out?: string },
   deps: RunDeps = defaultRunDeps,
   gitRun: (args: string[]) => string | null = defaultGitRun,
+  probeCdt: () => Promise<ChromeDevtoolsProbe> = () => probeChromeDevtools(),
 ): Promise<void> {
   if (!VALID_MASTERS.has(master)) {
     deps.error(
@@ -322,6 +329,13 @@ export async function runFactsPlan(
   }
 
   const git = deriveGitFacts(gitRun)
+  // Environment fact, not a judgement call: whether ANY chrome-devtools MCP
+  // provider is registered is a filesystem answer, so it is auto-filled here for
+  // the same reason `subtask.lines` is — leaving it null would hand the model a
+  // question it cannot answer honestly, and the gate that reads it
+  // (judgments.web-testing-routing.chrome-devtools-mcp-diagnostic.fires) would
+  // fall back to the seeded "unknown = available" default forever.
+  const cdt = await probeCdt()
   const derived: Record<string, DerivedFact> = {
     // `harnessed gates` seeds phase.stage from the master argument, so facts MUST
     // report the same thing: deriving a stage from the ledger instead could hand
@@ -340,6 +354,13 @@ export async function runFactsPlan(
       value: git.files_touched,
       source:
         'git diff --name-only + --cached --name-only (unique paths; null when no repo / clean tree)',
+    },
+    // Root-flat (bare identifier), sister src/workflow/schema/phaseFactContext.ts.
+    // `source` doubles as the SKIP REASON: when no provider is registered it
+    // names BOTH enable paths, so losing the diagnostic lane is never silent.
+    chrome_devtools_available: {
+      value: chromeDevtoolsAvailable(cdt),
+      source: chromeDevtoolsFactSource(cdt),
     },
   }
 

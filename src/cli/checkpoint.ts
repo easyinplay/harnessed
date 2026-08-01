@@ -450,6 +450,22 @@ export async function runCheckpointComplete(
     transitionWorkflowComplete: allResolved,
   })
 
+  // First-time CodeGraph bootstrap — hung HERE, on the workflow-complete
+  // transition (`allResolved`, the same condition that flipped the workflow, not a
+  // sub, to 'complete') and restricted to the `task` master (`afterMark.phase` is
+  // the master `checkpoint start` activated; leaf completions never rewrite it).
+  // Background + first-time-only + silent-when-absent; see codegraphInit.ts for the
+  // full contract. Wrapped fail-soft on top of the module's own internal fail-soft:
+  // a bootstrap must never delay, block, or fail a legitimate completion.
+  if (allResolved && afterMark?.phase === 'task') {
+    try {
+      const { maybeInitCodeGraph } = await import('../checkpoint/codegraphInit.js')
+      maybeInitCodeGraph({ note: (m) => deps.error(m) })
+    } catch {
+      // fail-soft
+    }
+  }
+
   // Phase 16 — auto-capture learnings: when the workflow completes
   // (allResolved), append the final ledger's failure/loop/reject signals
   // to the repo's .planning/LEARNINGS.md. Uses the pre-compact `afterMark`

@@ -259,7 +259,12 @@ capabilities:
     # 或 optional 自装 manifest (manifests/optional/chrome-devtools-mcp.yaml,
     # mcp-stdio-add 兜底, 供不装 ecc 的用户)。双装会产生同名双前缀调用歧义
     # (doctor `ecc` check 挡残留双装)。
-    description: "性能/a11y/内存泄漏诊断 (非功能性 only; NOT for E2E test); provider 二选一 — ecc (bonus tier, ECC 唯一默认 MCP connector) 或 optional 自装 manifest chrome-devtools-mcp (不装 ecc 的兜底); 双装 doctor warn; 两者都缺时本 capability 不可用"
+    # 「两者都缺时本 capability 不可用」曾经只是这行散文 —— 无任何代码求值,
+    # 于是 verify/qa phase 05 在零 provider 的机器上照样 fire。现由
+    # judgments.web-testing-routing.chrome-devtools-mcp-diagnostic.fires 的
+    # `chrome_devtools_available == true` arm 强制 (实测: probe-chrome-devtools.ts;
+    # 自动填入: `harnessed facts`; 报告: doctor `ecc` check)。
+    description: "性能/a11y/内存泄漏诊断 (非功能性 only; NOT for E2E test); provider 二选一 — ecc (bonus tier, ECC 唯一默认 MCP connector) 或 optional 自装 manifest chrome-devtools-mcp (不装 ecc 的兜底); 双装 doctor warn; 两者都缺时本 capability 不可用 —— 由 gate fact chrome_devtools_available 强制, 该 lane 不 fire, 开启路径 `harnessed install ecc` 或 `claude mcp add chrome-devtools-mcp` 二选一"
     fires_when:
       - subtask.type in ['perf_diagnose', 'a11y_audit', 'memory_leak']
 

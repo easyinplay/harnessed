@@ -37,6 +37,7 @@ import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { runWorkflow } from '../workflow/run.js'
 import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
 import { buildDefaultGateContext } from './lib/gateContext.js'
+import { isChromeDevtoolsAvailable } from './lib/probe-chrome-devtools.js'
 
 interface RawOpts {
   task?: string
@@ -155,6 +156,12 @@ export function registerRun(program: Command): void {
       // undefined variable would throw at eval.
       const gateContext: Record<string, unknown> = {
         ...buildDefaultGateContext(task, stage),
+        // buildDefaultGateContext is synchronous and can only seed the fail-soft
+        // "unknown = available" default for chrome_devtools_available. This is the
+        // runtime path that actually evaluates the verify/qa phase-05 gate, so
+        // overlay the MEASURED value (never throws; unknown still resolves true —
+        // see src/cli/lib/probe-chrome-devtools.ts).
+        chrome_devtools_available: await isChromeDevtoolsAvailable(),
         ...(raw.model ? { modelOverride: raw.model } : {}),
         ...(raw.maxIterations ? { maxIterations: raw.maxIterations } : {}),
         ...(raw.staged ? { staged: true } : {}),

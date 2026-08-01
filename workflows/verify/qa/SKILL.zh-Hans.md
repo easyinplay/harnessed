@@ -45,8 +45,9 @@ Sister `workflows/capabilities.yaml` 条目：
 - `playwright-cli` — Bucket 2 special-purpose (impl: npm-cli, browser_probe——未装 gstack 时的降级)
 - `playwright-test` — Bucket 2 special-purpose (impl: npm-cli, e2e_test typescript)
 - `webapp-testing` — Bucket 2 special-purpose (impl: gstack, e2e_test python)
-- `chrome-devtools-mcp` — Bucket 4 tool-mcp (impl: mcp, cmd: chrome-devtools——非功能性诊断必用；
-  provider 二选一: ecc bonus tier 或 optional 自装 manifest，两者都缺则该 lane 不可用)
+- `chrome-devtools-mcp` — Bucket 4 tool-mcp (impl: mcp, cmd: chrome-devtools——有 provider 时
+  非功能性诊断必用；provider 二选一: ecc bonus tier 或 optional 自装 manifest，两者都缺则
+  该 lane 不 fire，由 gate fact `chrome_devtools_available` 强制)
 
 ## Gate ref
 
@@ -65,7 +66,17 @@ Sister `workflows/judgments/web-testing-routing.yaml`（T2.3 — 4 条 lane 各�
 - 探查 / 调试 / 一次性确认 → `/browse` 主导（token 高效，可复用 cookies 与会话状态）；
   未装 gstack 时降级 `playwright-cli`——phase 03
 - setup 需 Python 后端 (Tortoise ORM / pandas) → `webapp-testing` skill——phase 04
-- 性能 / a11y / 内存诊断 → **必用** `chrome-devtools-mcp`（NOT playwright/test/cli/webapp-testing）——phase 05
+- 性能 / a11y / 内存诊断 → **provider 在场时必用** `chrome-devtools-mcp`
+  （NOT playwright/test/cli/webapp-testing）——phase 05。
+  chrome-devtools 有两个 provider，且都是 optional：**ecc plugin** 或**自装的
+  chrome-devtools-mcp server**。两者都缺时本 lane 的 gate
+  （`chrome-devtools-mcp-diagnostic.fires` 含 `chrome_devtools_available == true`）
+  为 false，phase 05 不 fire —— 不要去调一个不存在的工具，也不要用
+  playwright / webapp-testing 顶替它做非功能性诊断。
+  开启路径二选一（只装一个，双装会产生同名双前缀调用歧义）：
+  `harnessed install ecc`，或 `claude mcp add chrome-devtools-mcp`。
+  当前机器的实测值：`harnessed facts verify` 的 `derived.chrome_devtools_available`
+  （`source` 字段写明原因与开启路径）；`harnessed doctor` 的 `ecc` check 同样会报。
 
 ## 如何调用
 

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.37.0] - 2026-08-01
+
+两处「声明了能力,却没人验证它在不在」补上机器。chrome-devtools 从散文承诺变成会被求值的事实;CodeGraph 从只读的导航建议变成会自己建索引、会缩窄测试范围的接线。
+
+### Added
+
+- **`chrome_devtools_available` —— capability 可用性第一次被代码求值**。`workflows/verify/qa/` phase 05 声明「非功能性诊断**必用** chrome-devtools-mcp」,而它的两个 provider(`ecc` plugin 自带的 connector,或自装的 `manifests/optional/chrome-devtools-mcp.yaml`)**都是可选的** —— 两个都缺时 gate 照样 fire,模型被指向一个不存在的工具。`capabilities.yaml` 里那句「两者都缺时本 capability 不可用」是散文,零处代码读它。现新增 `src/cli/lib/probe-chrome-devtools.ts` 单一探针(plugin 注册 + stdio 注册两路,与 `check-ecc` 的双装探测共用),经 `harnessed facts` 自动填充为 gate 事实,`web-testing-routing.chrome-devtools-mcp-diagnostic` 的 `fires_when` 增加可用性臂。两条启用路径由单一常量承载,出现在事实 provenance、trigger description、doctor 消息和两面 SKILL 里。
+- **CodeGraph `affected` 缩窄测试范围**(`workflows/task/test/SKILL.md` + zh 姊妹面):有 `.codegraph/` 索引且二进制在 PATH 时,先用 `git diff --name-only | codegraph affected --stdin --quiet` 跑受影响的测试。**空列表回退跑全量**,不是跑零个 —— 一个能静默跑零测试的缩窄启发式会把绿色变成谎言。完成证据仍必须来自全量运行,缩窄只是快速首轮。
+- **首次索引在 task 收尾自动建立**(`src/checkpoint/codegraphInit.ts`)。`codegraph` 在 PATH 且项目无 `.codegraph/` 时,workflow 转 complete 后后台 `codegraph init`,下个 task 即可受益。挂在 `transitionWorkflowComplete` 的判定表达式上而非生成的散文步骤 —— 后者是模型要记得去跑的指令,正是本仓反复在修的形态。绝不阻塞、绝不非零退出;再入保护用按项目路径 hash 的 `flag: 'wx'` claim 文件(两次 `checkpoint complete` 是两个进程,进程内标志挡不住),30 分钟可重占以防索引器崩溃后永久堵死。auto-init 后 `.codegraph/` 未被忽略则向 `.gitignore` 追加一行并明示 —— 索引是 SQLite 文件,不忽略会被下一次 `git add -A` 卷进仓库。
+
+### Changed
+
+- `verify/qa` 的 SKILL 与 `capabilities.yaml` 不再声称无条件「必用」—— 无 provider 时那句话是假的。措辞改为随可用性限定,并列出两条启用方式。
+- `check-ecc` 的 both-missing 分支此前只推销 ECC 的编排价值,对 chrome-devtools 此刻零 provider 只字未提 —— 而那是唯一需要提的分支。状态语义不变(可选工具缺席属信息而非健康故障,同 `check-codegraph`),只是消息补全。`check-mcp-availability` 对 chrome-devtools 的排除是对的,不动。
+
+### Notes
+
+- 探针故障(读不到 `~/.claude.json` / plugin 注册表)判为**可用**,与 ADR-0038 的 fail-closed 反向:0038 管的是静态配置错误(未定义裸变量),而读文件失败是运行期故障,属 ADR-0029 fail-soft;更要紧的是 `skipGate.ts` 的原则 —— 永远不许悄悄**删掉**一道声明过的步骤。探针把 `unknown` 与 `no provider` 分开携带,理由串会说明是哪种。
+- 用的是 `fires_when` 增臂而非 `skip_gate`:`skip_gate` 只存在于 master 的 `delegates_to[]`(`DelegationClause`),`WorkflowPhaseV3` 是 `additionalProperties: false` 且引擎的 phase 循环根本没有 veto 路径 —— 写在 phase 上会被 schema 门直接打回,即便通过也是死配置。
+- 诚实边界:`harnessed run` 没有 `--context` 入口,默认路径下 `subtask.test_type` 恒为 `'general'`,phase 05 本就全 skip(这是 `verify/qa` 明文设计的互斥单选,不是缺陷)。本次修复对今天可见行为的作用主要在散文与 doctor 报告;gate 臂是为任何真正传入 `test_type: 'perf-diagnostic'` 的调用方 correct-by-construction。
+
 ## [4.36.0] - 2026-08-01
 
 摘掉 `ralph-loop` 上游依赖 —— base 组件 12 → 11。4.35.0 把交付保证内化到了 harnessed 自己的活路径上,这一版兑现内化的收益:交付闸门不再需要装任何插件。同时修掉 `harnessed setup` 把同一批组件印两遍的输出。

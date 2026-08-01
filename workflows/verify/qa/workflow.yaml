@@ -25,7 +25,8 @@ disciplines_applied: [karpathy, output-style, language, operational, priority, p
 # chrome-devtools-mcp」之前对模型完全不可见 (不在任何 tools_available)。
 # chrome-devtools-mcp provider 二选一: ecc (bonus tier, ECC 唯一默认 MCP connector)
 # 或 optional 自装 manifest chrome-devtools-mcp (不装 ecc 的兜底); 双装 doctor warn;
-# 两者都缺时该 lane 不可用 (注记体例同 web-testing-routing.yaml)。
+# 两者都缺时该 lane 不可用 —— 不再只是注记: phase 05 gate 含
+# `chrome_devtools_available == true` arm 强制 (注记体例同 web-testing-routing.yaml)。
 tools_available:
   - gstack-qa
   - browse
@@ -77,7 +78,12 @@ phases:
     gate: judgments.web-testing-routing.webapp-testing-python-backend.fires
     max_iterations: 3
 
-  # 非功能性诊断 — 必用 chrome-devtools-mcp (NOT playwright/test/cli/webapp-testing)
+  # 非功能性诊断 — 有 provider 时必用 chrome-devtools-mcp (NOT playwright/test/cli/webapp-testing)。
+  # gate 有两个 arm: subtask.test_type == 'perf-diagnostic' AND chrome_devtools_available == true。
+  # 第二个 arm 由 src/cli/lib/probe-chrome-devtools.ts 实测 (ecc plugin / 官方 plugin /
+  # stdio mcpServers), `harnessed facts` 自动填入。两个 provider 都缺 → 本 phase 不 fire;
+  # 开启路径二选一: `harnessed install ecc` 或 `claude mcp add chrome-devtools-mcp`
+  # (只装一个; 双装 doctor `ecc` check warn)。probe 抛错 = unknown → 仍 fire (fail-soft)。
   - id: 05-perf-a11y-diagnostic
     name: chrome-devtools-mcp (LCP / Core Web Vitals / ARIA / 堆快照 — 非功能性 only)
     upstream: chrome-devtools-mcp

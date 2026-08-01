@@ -33,6 +33,10 @@ export interface DefaultGateContext {
   shared_task_list: boolean
   opposing_hypothesis_debate: boolean
   fullstack_three_way: boolean
+  // chrome-devtools MCP provider availability (root-flat, sister
+  // src/cli/lib/probe-chrome-devtools.ts). Read by
+  // judgments.web-testing-routing.chrome-devtools-mcp-diagnostic.fires.
+  chrome_devtools_available: boolean
   [key: string]: unknown
 }
 
@@ -53,6 +57,21 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
     // extraction → eval threw undefined-variable → ADR 0029 fail-soft fired the
     // 4-specialist multispec team on EVERY verify. Opt-in via --context.
     is_critical_release: false,
+    // chrome-devtools MCP provider availability — the BARE identifier read by
+    // judgments.web-testing-routing.chrome-devtools-mcp-diagnostic.fires, so it
+    // MUST be declared here (an absent bare variable throws → ADR-0038
+    // fail-closed would delete the lane on a machine that HAS a provider).
+    //
+    // Seeded TRUE = "unknown", not "measured". This builder is synchronous and
+    // the real answer needs async fs probes (~/.claude/plugins/installed_plugins.json
+    // + the harness mcpServers config), so the honest default is the fail-soft
+    // direction documented in src/cli/lib/probe-chrome-devtools.ts: a value we
+    // could not measure must never silently REMOVE a declared capability
+    // (src/workflow/skipGate.ts invariant). The measured value arrives through
+    // `harnessed facts <master>` (deterministically derived, auto-filled) →
+    // `harnessed gates --context-file`, and through `harnessed run`'s awaited
+    // probe overlay.
+    chrome_devtools_available: true,
     phase: {
       stage,
       // T2.1 OQ2(c) — withdrawn: gated stage-routing.verify-paranoid-critical,

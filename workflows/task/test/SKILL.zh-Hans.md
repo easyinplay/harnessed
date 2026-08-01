@@ -63,6 +63,32 @@ SDK，用户发出明确信号时可切换至 mattpocock /tdd 别名路径。
 测试失败时进入 diagnose 循环（reproduce → minimise → hypothesise → instrument →
 fix → regression-test），测试通过则完全跳过 diagnose。
 
+## 用 CodeGraph 收窄测试范围（opt-in，presence-conditional）
+
+**仅当项目存在 `.codegraph/` 索引且 `codegraph` 在 PATH 上时生效。** 两者任一缺失就照旧跑
+全量测试，**且静默 —— 不做安装提示**（与 `workflows/task/code` 的 CodeGraph 导航同一条既定
+契约）。
+
+两者都在时，从工作树 diff 推导出受影响的测试文件并优先跑它们（上游自带的 CI/hook 配方）：
+
+```bash
+AFFECTED=$(git diff --name-only HEAD | codegraph affected --stdin --quiet)
+if [ -n "$AFFECTED" ]; then npx vitest run $AFFECTED; fi
+```
+
+`codegraph affected` 从改动的源文件出发，传递式追踪 import 依赖（默认深度 5）找到能触达它们
+的测试文件。**不要**先重建索引或跑 `codegraph sync`：索引在每次文件变更时自动同步。
+
+**affected 列表为空表示「跑全量套件」，绝不是「什么都不跑」。** 空的含义是「没追踪到边」，
+而非「没有东西需要验证」：diff 可能触及图未建模的文件（配置、fixture、生成代码），也可能只是
+图落后了。一个能悄无声息跑零个测试的收窄启发式会把绿色跑结果变成谎言，所以列表为空时直接
+回退到全量套件。
+
+**收窄跑只是快速首过，不能替代全量套件。** 它用于 red-green 内循环拿快速反馈。**本 sub 的完成
+证据必须来自一次全量跑** —— `artifacts_expected` / `tdd-evidence.md` 中引用的测试日志、以及
+支撑 `<promise>COMPLETE</promise>` 的那次运行，都是全量套件的结果。绝不允许仅凭一次收窄跑通
+就把本 sub 标记为完成。
+
 ## 如何调用
 
 !`harnessed checkpoint intent task-test`

@@ -264,7 +264,7 @@ describe('Capabilities v3 discriminated union — T3.3.W0.7', () => {
 
 // Phase v3.0-3.3 W0 T3.3.W0.8 — phaseFactContext extend 13 NEW field MIN scope.
 describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
-  test('PF1: full valid v3 context passes (48 field — 20 phase + 19 subtask + 1 user + 8 root-flat)', () => {
+  test('PF1: full valid v3 context passes (49 field — 20 phase + 19 subtask + 1 user + 9 root-flat)', () => {
     const ok = makeValidPhaseFactContext()
     expect(Value.Check(PhaseFactContext, ok)).toBe(true)
   })
@@ -294,6 +294,16 @@ describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
     const bad = makeValidPhaseFactContext()
     // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
     delete (bad as any).is_critical_release
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+
+  test('PF6: root-flat chrome_devtools_available missing rejected (required boolean per web-testing-routing)', () => {
+    // The chrome-devtools-mcp-diagnostic trigger reads it as a BARE identifier;
+    // an absent bare variable throws and ADR-0038 then fails CLOSED, deleting the
+    // perf / a11y / memory lane on machines that DO have a provider.
+    const bad = makeValidPhaseFactContext()
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
+    delete (bad as any).chrome_devtools_available
     expect(Value.Check(PhaseFactContext, bad)).toBe(false)
   })
 })
@@ -520,5 +530,8 @@ function makeValidPhaseFactContext() {
     // T3.3.W0.8 2 NEW root-flat boolean
     needs_web_search: false,
     is_critical_release: false,
+    // 3rd root-flat — chrome-devtools MCP provider availability, read as a BARE
+    // identifier by web-testing-routing.chrome-devtools-mcp-diagnostic.
+    chrome_devtools_available: true,
   }
 }

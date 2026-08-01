@@ -23,19 +23,26 @@
 //   - missing on both     → pass-INFORMATIONAL (sister check-codegraph:
 //     absence of an optional tool is not a health failure) — note the value
 //     (finer-grained orchestration) AND the honest cost (~20k+ tokens/session
-//     static listing, ECC-side) so opting in is an informed choice
+//     static listing, ECC-side) so opting in is an informed choice, AND (new)
+//     whether chrome-devtools is left with ZERO providers, since this is the
+//     only branch where that can happen
 //   - dual-install leftovers (CC side, ecc present): the official
 //     chrome-devtools-mcp@claude-plugins-official plugin still enabled
 //     (4.32.21 interim scheme) OR a chrome-devtools-mcp stdio entry still in
 //     ~/.claude.json mcpServers (pre-4.32.21 install or the optional
 //     chrome-devtools-mcp.yaml fallback — either/or with ecc) →
 //     warn: same-name dual-prefix ambiguity; remove the leftover, keep ecc.
+// All three registration probes (ecc plugin / official chrome-devtools plugin /
+// chrome-devtools stdio entry) come from the SHARED
+// src/cli/lib/probe-chrome-devtools.ts, which is also what the
+// `chrome_devtools_available` gate fact reads — one definition, so the doctor
+// report and the runtime gate cannot drift apart.
 
 import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { isMcpServerRegistered, isPluginRegistered } from '../../installers/lib/readClaudeConfig.js'
 import type { CheckResult } from './check-builtin.js'
+import { CHROME_DEVTOOLS_ENABLE_PATHS, probeChromeDevtools } from './probe-chrome-devtools.js'
 
 const NAME = 'ecc'
 
@@ -50,7 +57,10 @@ async function pathExists(p: string): Promise<boolean> {
 
 export async function checkEcc(): Promise<CheckResult> {
   // CC side — plugin registry probe (pure fs; marketplace key is `ecc@ecc`).
-  const ccInstalled = await isPluginRegistered('ecc')
+  // Shared with the chrome_devtools_available gate fact so the doctor report and
+  // the runtime gate can never disagree (src/cli/lib/probe-chrome-devtools.ts).
+  const cdt = await probeChromeDevtools()
+  const ccInstalled = cdt.ecc
 
   // codex side — platform marker first, THEN the sync-clone probe.
   const codexHome = join(homedir(), '.codex')
@@ -71,11 +81,11 @@ export async function checkEcc(): Promise<CheckResult> {
   if (ccInstalled) {
     const leftovers: string[] = []
     const fixes: string[] = []
-    if (await isPluginRegistered('chrome-devtools-mcp')) {
+    if (cdt.standalonePlugin) {
       leftovers.push('official chrome-devtools-mcp@claude-plugins-official plugin still enabled')
       fixes.push('`claude plugin uninstall chrome-devtools-mcp@claude-plugins-official`')
     }
-    if (await isMcpServerRegistered('chrome-devtools-mcp')) {
+    if (cdt.standaloneStdio) {
       leftovers.push('chrome-devtools-mcp stdio entry still registered in mcpServers')
       fixes.push('`claude mcp remove chrome-devtools-mcp`')
     }
@@ -96,6 +106,21 @@ export async function checkEcc(): Promise<CheckResult> {
     // 4.32.22 final — ecc is BONUS TIER: absence is informational, never a
     // health gap (sister check-codegraph). Sell the value, be honest about the
     // ECC-side token cost so opting in is an informed choice.
+    //
+    // This is ALSO the only branch where chrome-devtools can end up with ZERO
+    // providers: ecc is absent, so the connector is only there if the user
+    // self-installed the standalone server. Pre-fix this branch said nothing
+    // about that, and the perf / a11y / memory diagnostic lane went quiet with
+    // no report anywhere. Status stays `pass` — an absent optional tool is
+    // informational, not a health failure (sister check-codegraph); the gap was
+    // the message being incomplete, not the severity.
+    const cdtPart = cdt.unknown
+      ? ' Separately, the chrome-devtools provider probe FAULTED (unreadable plugin registry / MCP config) — availability unknown, so the perf / a11y / memory diagnostic lane is left ON (fail-soft).'
+      : cdt.providers.length > 0
+        ? ` chrome-devtools is still covered by the standalone provider (${cdt.providers.join(' + ')}).`
+        : ' NOTE: chrome-devtools now has ZERO providers, so the perf / a11y / memory diagnostic lane ' +
+          '(verify-qa `05-perf-a11y-diagnostic`) will not run — ' +
+          `${CHROME_DEVTOOLS_ENABLE_PATHS}`
     return {
       name: NAME,
       status: 'pass',
@@ -103,7 +128,7 @@ export async function checkEcc(): Promise<CheckResult> {
         `not installed (${ccPart}; ${codexPart}) — optional enhancement: ` +
         '`harnessed install ecc` unlocks finer-grained orchestration ' +
         '(per-language review/build expert routing etc.) at a ~20k+ tokens/session ' +
-        'static-listing cost (ECC-side scale, not harnessed)',
+        `static-listing cost (ECC-side scale, not harnessed).${cdtPart}`,
     }
   }
 
