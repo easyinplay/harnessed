@@ -92,7 +92,7 @@ export const WorkflowPhaseV3 = Type.Object(
     id: Type.String({ minLength: 1 }),
     name: Type.Optional(Type.String()),
     upstream: Type.Optional(Type.String()),
-    capability: Type.Optional(Type.String()), // '{{ capabilities.ralph-loop.cmd }}'
+    capability: Type.Optional(Type.String()), // '{{ capabilities.completion-gate.cmd }}'
     model: Type.Optional(ModelTier),
     invokes: Type.Optional(Type.String()), // legacy slash-cmd OR JINJA template
     args: Type.Optional(Type.Record(Type.String(), Type.Unknown())),

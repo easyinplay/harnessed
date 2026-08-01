@@ -255,7 +255,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
       )
       if (scenario.name === 'missing-jq') {
         // v4.15.2 T5 — jq downgraded fail → warn (optional: only audit-log --filter
-        // + ralph-loop-on-Windows consume it; setup/core never does).
+        // consumes it since 4.36.0; setup/core never does).
         expect(parsed.summary).toBe('warn')
         expect(code).toBe(0)
       } else if (scenario.name === 'tampered-origin') {

@@ -250,7 +250,10 @@ describe('all real manifests validate (v4.14.0 sweep)', () => {
     }
     // 4.34.x (T2.7) — base set 13 → 12: `karpathy-skills` dropped (its heuristics
     // were already fully carried by workflows/disciplines/karpathy.yaml, so the
-    // upstream plugin was pure install cost). 6 tools + 6 skill-packs.
-    expect(count).toBeGreaterThanOrEqual(12)
+    // upstream plugin was pure install cost).
+    // 4.36.0 — 12 → 11: `ralph-loop` dropped for the same reason, once the delivery
+    // guarantee it supplied ran on harnessed's own live path (ADR-0039).
+    // 5 tools + 6 skill-packs.
+    expect(count).toBeGreaterThanOrEqual(11)
   })
 })

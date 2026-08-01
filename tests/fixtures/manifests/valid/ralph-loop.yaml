@@ -1,16 +1,25 @@
 # yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+#
+# SCHEMA FIXTURE ONLY — harnessed does NOT ship this manifest. `manifests/tools/
+# ralph-loop.yaml` was deleted in 4.36.0 when the completion guarantee was
+# internalized (`harnessed checkpoint complete` / `checkpoint fail`); this file
+# stays purely as the `type: cc-plugin` × `install_type: skill` ×
+# `method: cc-plugin-marketplace` shape under tests/fixtures/manifests/valid/,
+# which is loaded by directory glob (tests/unit/manifest-validate.fixtures.test.ts
+# + the perf suite's ≥10-fixture floor). Same precedent as karpathy-skills.yaml,
+# whose manifest was likewise dropped while its fixture stayed.
 apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: ralph-loop
   display_name: ralph-loop
-  description: Sub-task delivery loop with completion-promise (Anthropic-official). Windows requires jq + Git Bash.
+  description: Third-party sub-task delivery loop (Anthropic-official plugin). Schema fixture only — not shipped by harnessed.
   upstream:
     source: ralph-loop
     homepage: https://github.com/anthropics/claude-plugins-official/tree/main/plugins/ralph-loop
     repository: https://github.com/anthropics/claude-plugins-official.git
     license: MIT
-    notice: ralph-loop maintained by Anthropic in claude-plugins-official, used as sub-task delivery guarantor in harnessed.
+    notice: ralph-loop maintained by Anthropic in claude-plugins-official. Retained here only as a schema fixture; harnessed no longer installs or depends on it.
 spec:
   type: cc-plugin
   component_type: command

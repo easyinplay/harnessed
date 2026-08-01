@@ -75,7 +75,7 @@ export function registerRun(program: Command): void {
     .option('--task-stdin', 'read task description from stdin until EOF (avoids shell-escape)')
     .option(
       '--max-iterations <n>',
-      'ralph-loop max iter (default 20; honored Phase 3 onward)',
+      'SDK-path retry-loop max iter (default 20; honored Phase 3 onward)',
       (v) => parseInt(v, 10),
     )
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")

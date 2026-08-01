@@ -36,7 +36,7 @@ rules:
     enforcement: halt
     trigger: cmd.type == 'git-push'
     check_method: external-cmd
-    # ralph-loop / subagent 自动调 git push → halt;user explicit `git push` 在主 session 允许
+    # completion-gate loop / subagent 自动调 git push → halt;user explicit `git push` 在主 session 允许
 
   - id: no-skip-hooks
     description: |

@@ -24,7 +24,8 @@
 #                                              gstack-design-review
 #   4. 核心 capability 4                    — tdd (D-13 alias) / planning-with-files (D-15 +
 #                                              Q-AUDIT-5a claude-code-plugin reframe) /
-#                                              ralph-loop (D-10) / superpowers-brainstorming
+#                                              completion-gate (4.36.0 内置化,原 D-10
+#                                              ralph-loop 上游 plugin) / superpowers-brainstorming
 #   5. Agent Teams 3 (D-11 + Q-AUDIT-5b)    — agent-teams-create / agent-teams-send-message /
 #                                              agent-teams-shutdown
 schema_version: harnessed.capabilities.v1
@@ -521,21 +522,23 @@ capabilities:
     fires_when:
       - phase.stage == 'plan' AND phase.requires_persisted_plan == true
 
-  # D-10: ralph-loop 真接 SDK wrapper (NOT mock reference; sister Phase 2.2 v0.2.0 ship)
-  # v3.4.2: ralph-loop is a claude-plugins-official plugin; cmd is the bare `/ralph-loop`
-  # (verified: ralph-loop@claude-plugins-official in installed_plugins.json).
-  # v4.15.0 (ADR 0036 amends D-10 interactive surface): 三级偏好链 — plugin 优先
-  # (fail-closed verbatim match + 硬 max-iterations) → 未装时 native `/goal` gate
-  # (CC 2.1.139+ / Codex 双平台内置) → self-loop 兜底。链条语义由各 workflow SKILL.md
-  # 指令文本承载(不加 schema 字段);SDK 路径 ralphLoopWrap 不参与该链。
-  ralph-loop:
-    impl: plugin
-    install_type: plugin
-    plugin_id: ralph-loop
-    cmd: /ralph-loop
-    since: v2.0
-    category: tool-bundled-skill
-    description: Sub-task completion gate (plugin preferred; native /goal fallback on CC 2.1.139+ & Codex; self-loop last resort)
+  # 完成保证 (原 D-10 `ralph-loop`) — 4.35.0 起完全内置,4.36.0 摘除上游 plugin 依赖。
+  # 交互面 = harnessed 自己的 CLI,不再是 slash command:
+  #   `harnessed checkpoint complete <sub> --result-file <path>` — 对 declared evidence
+  #   artifacts / TDD boundary (src/checkpoint/tddBoundary.ts) / verbatim completion
+  #   promise (src/checkpoint/completionClaim.ts) 三者 fail-closed。
+  #   `harnessed checkpoint fail <sub> --failing-tests <n>` — 记一次 attempt 并在到达停机
+  #   条件时打印 BUDGET-EXHAUSTED (budget.ts) / NO-PROGRESS (progress.ts) / BREAK-LOOP
+  #   (breakLoop.ts)。这三条停机理由 == 上游 `/ralph-loop --max-iterations
+  #   --completion-promise` 曾提供的全部语义,且没有"装没装 plugin"这个可用性问题。
+  # SDK 路径 (src/workflow/lib/ralphLoop.ts ralphLoopWrap 硬上界) 是 harnessed 自有代码,
+  # 与上游 plugin 无关,保留不动;completionClaim.ts 复用其 isComplete。
+  completion-gate:
+    impl: harnessed-bundled
+    cmd: harnessed checkpoint complete
+    since: v4.36
+    category: tool-cli
+    description: 子任务完成保证 (fail-closed evidence + TDD boundary + verbatim COMPLETE; `checkpoint fail` 出 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP)
     sdk_ref: src/workflow/lib/ralphLoop.ts
     fires_when:
       - subtask.completion_required == true
@@ -554,7 +557,7 @@ capabilities:
 
   # v13.0 P42 (upstream re-sync) — superpowers task 级 per-claim 证据门 (evidence before
   # claims): 子任务声明 done/fixed/passing 前强制跑验证命令并贴 output。Pairs with
-  # ralph-loop COMPLETE + karpathy 完成=验收通过 (sister CLAUDE.md 子任务交付铁律)。
+  # completion-gate COMPLETE + karpathy 完成=验收通过 (sister CLAUDE.md 子任务交付铁律)。
   verification-before-completion:
     impl: superpowers
     cmd: "superpowers:verification-before-completion"
@@ -1264,7 +1267,7 @@ capabilities:
   # at ~/.claude/skills/<skill_dir>/ (2026-06-09).
   #
   # KEYSTONE: gsd-execute-phase is deliberately NOT wired — the execute mechanism stays
-  # harnessed self-owned (CC-native spawn + ralph-loop + v4.2 checkpoint ledger).
+  # harnessed self-owned (CC-native spawn + completion-gate + v4.2 checkpoint ledger).
   #
   # 4 design-contract phase skills (spec/ui/secure/ai-integration) pair with sister
   # judgments triggers in workflows/judgments/stage-phase-gate.yaml.

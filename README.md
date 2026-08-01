@@ -47,7 +47,7 @@ harnessed's three-layer stack is a software-engineering implementation of the es
 |---|---|---|---|
 | **① Behavior** | BDD | *What* to build + how we know it's done | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → acceptance criteria |
 | **② Spec** | SDD | *How* it's structured | GSD plan-phase → requirements / design / tasks · contracts (Spec Kit / ECC patterns) |
-| **③ Implementation** | TDD | Does it actually *work* | superpowers TDD red-green · subagent execution · GSD verify-work · ralph-loop completion |
+| **③ Implementation** | TDD | Does it actually *work* | superpowers TDD red-green · subagent execution · GSD verify-work · harnessed completion gate |
 
 The loops are **nested lenses, not phases** — the classic Cucumber BDD-outer + TDD-inner double-loop, extended with a GenAI-era SDD spec ring into a triple-loop. harnessed runs the default outer→inner traversal as its 5-stage cadence, plus the **back-edges it ships today**: Verify kicks failing work back to Task, a subagent that hits a gray area round-trips to clarification before continuing, and every shipped cycle feeds learnings back into the next Discuss. (Finer-grained structured back-edges — e.g. a contract contradiction routing straight to Spec, an ambiguous requirement to Behavior — are on the roadmap, not shipped. harnessed is the linear-cadence realization of the triple-loop; the full routed graph is its evolution path.)
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | Subtask startup clarification gate |
 | `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | Subtask coding + cross-session progress.md sync |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | TDD mandatory for core logic (alias mattpocock `/tdd`) |
-| `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | Until verbatim `COMPLETE` + R20.10 max_iter fallback |
+| `/task-deliver` | ③ Task | Sub | `harnessed checkpoint` completion gate + Agent Teams conditional | Until verbatim `COMPLETE` + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs conditional dispatch by scenario |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Mandatory serial starting point — UAT acceptance + state sync |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | High-confidence findings in parallel |
@@ -303,7 +303,7 @@ graph TD
 | ---- | ---- | ---- | ---- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask (3 in parallel) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture (conditional) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver (4 serial per subtask) | karpathy principles + mattpocock moves + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver (4 serial per subtask) | karpathy principles + mattpocock moves + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5 parallel conditional → simplify (+ multispec critical) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight (release-readiness gate) → delegate PR/deploy | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI (tag-ready boundary) |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
 ├────────────────────────────────────────────────────────────┤
 │ L5b Execution Mechanism (orthogonal): subagent / Agent Teams │
-│   / main session + ralph-loop wrapper                       │
+│   / main session + harnessed completion gate                │
 │   parallelism-gate.yaml: default subagent → escalate 5 triggers │
 │   Pattern A full-stack three-way / B opposing hypotheses / C multi-dim review │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd (~60): gstack 30+ optional + gsd 10+ + mattpocock 12 high-frequency + etc.
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli (2):         ctx7 / gws
+tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
+tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 

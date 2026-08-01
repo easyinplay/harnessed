@@ -2,7 +2,7 @@
 #
 # Stage ③ Task master orchestrator — 串行 invoke 4 sub per subtask (clarify → code → test → deliver)
 # per bundled Execute-stage cadence + RESEARCH-workflows § Area 2。
-# ralph-loop COMPLETE wrapper 在 deliver phase 内 (D-10 orthogonal wrapper not master concern)。
+# completion-gate COMPLETE wrapper 在 deliver phase 内 (D-10 orthogonal wrapper not master concern)。
 # tdd-gate conditional fire on test sub (sister task/test/workflow.yaml gate
 # judgments.tdd-gate.tdd-strongly-suggested.fires)。
 #
@@ -11,7 +11,7 @@
 #   - workflows/judgments/tdd-gate.yaml — tdd-strongly-suggested trigger (test conditional)
 #   - workflows/task/{clarify,code,test,deliver}/workflow.yaml — 4 sub-workflow Phase 3.4 SHIPPED
 #   - workflows/capabilities.yaml — superpowers-brainstorming + tdd + grill-with-docs +
-#     improve-codebase-architecture + diagnose + ralph-loop + planning-with-files
+#     improve-codebase-architecture + diagnose + completion-gate + planning-with-files
 #   - .planning/phase-v3.0-3.2/RESEARCH-workflows.md § Area 2 Master Orchestrator yaml Examples
 #   - src/workflow/schema/workflow.ts WorkflowSchemaV3 + DelegationClause (Phase 3.3 W0.5 SHIPPED)
 #
@@ -24,7 +24,7 @@ schema_version: harnessed.workflow.v3
 workflow: task
 description: |
   Stage ③ Task master orchestrator — 串行 invoke 4 sub per subtask (clarify → code → test → deliver);
-  ralph-loop COMPLETE wrapper 在 deliver phase 内 (D-10 orthogonal wrapper not master concern)。
+  completion-gate COMPLETE wrapper 在 deliver phase 内 (D-10 orthogonal wrapper not master concern)。
   tdd-gate conditional fire on test sub (核心业务 / 算法 / 数据处理 / 回归 risk high / reliability
   required, 6 fires_when OR-chain; bundled tdd-gate judgment)。execute-task 每个 subtask 入口走一次。
 
@@ -35,7 +35,7 @@ tools_available:
   - grill-with-docs
   - improve-codebase-architecture
   - diagnose
-  - ralph-loop
+  - completion-gate
   - planning-with-files
 
 delegates_to:

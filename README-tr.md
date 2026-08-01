@@ -49,7 +49,7 @@ harnessed'ın üç katmanlı yığını, yerleşik **BDD → SDD → TDD** iç i
 |---|---|---|---|
 | **① Behavior** | BDD | *Ne* inşa edilecek + bittiğini nasıl bileceğiz | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → kabul kriterleri |
 | **② Spec** | SDD | *Nasıl* yapılandırılır | GSD plan-phase → gereksinimler / tasarım / görevler · contract'lar (Spec Kit / ECC desenleri) |
-| **③ Implementation** | TDD | Gerçekten *çalışıyor* mu | superpowers TDD red-green · subagent yürütme · GSD verify-work · ralph-loop tamamlama |
+| **③ Implementation** | TDD | Gerçekten *çalışıyor* mu | superpowers TDD red-green · subagent yürütme · GSD verify-work · harnessed completion gate |
 
 Döngüler, aşama değil **iç içe geçmiş merceklerdir** — klasik Cucumber BDD-dış + TDD-iç çift döngüsü, GenAI çağı SDD spec halkasıyla genişletilerek üçlü döngüye dönüştürülmüştür. harnessed, varsayılan dış→iç geçişi 5-aşamalı cadence'ı olarak çalıştırır ve buna **bugün sevk ettiği geri-kenarları (back-edges)** ekler: Verify, başarısız işi Task'a geri gönderir; gri bir alana çarpan bir subagent, devam etmeden önce açıklamaya gidip geri döner; ve sevk edilen her döngü, öğrenimleri bir sonraki Discuss'a geri besler. (Daha ince taneli yapılandırılmış geri-kenarlar — örn. bir contract çelişkisini doğrudan Spec'e, belirsiz bir gereksinimi Behavior'a yönlendirmek — yol haritasındadır, henüz sevk edilmemiştir. harnessed, üçlü döngünün doğrusal-cadence gerçeklemesidir; tam yönlendirilmiş graf onun evrim yoludur.)
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | Alt | superpowers brainstorming + `/grill-with-docs` koşullu | Alt görev başlangıç açıklama kapısı |
 | `/task-code` | ③ Task | Alt | karpathy 4 ilkesi + `/improve-codebase-architecture` / `/diagnosing-bugs` koşullu | Alt görev kodlama + çapraz oturum progress.md senkronizasyonu |
 | `/task-test` | ③ Task | Alt | superpowers TDD red-green-refactor + `/diagnosing-bugs` koşullu | Temel mantık için TDD zorunlu (mattpocock `/tdd` takma adı) |
-| `/task-deliver` | ③ Task | Alt | `ralph-loop` SDK sarmalayıcı + Agent Teams koşullu | Verbatim `COMPLETE` alınana kadar + R20.10 max_iter fallback |
+| `/task-deliver` | ③ Task | Alt | `harnessed checkpoint` completion gate + Agent Teams koşullu | Verbatim `COMPLETE` alınana kadar + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Ana | masterOrchestrator | 10 alt-workflow senaryoya göre koşullu dağıtım |
 | `/verify-progress` | ④ Verify | Alt | GSD `/gsd-verify-work` + `/gsd-progress` | Zorunlu seri başlangıç noktası — UAT kabulü + durum senkronizasyonu |
 | `/verify-code-review` | ④ Verify | Alt | `code-review` çok-subagent fan-out | Paralel yüksek-güvenilirlik bulguları |
@@ -303,7 +303,7 @@ graph TD
 | ---- | ---- | ---- | ---- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask (3 paralel) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture (koşullu) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver (her alt görev için 4 seri) | karpathy ilkeleri + mattpocock hamleleri + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver (her alt görev için 4 seri) | karpathy ilkeleri + mattpocock hamleleri + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5 paralel koşullu → simplify (+ multispec kritik) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight (sürüm-hazırlık kapısı) → PR/deploy devri | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI (tag'e hazır sınırı) |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Workflow orkestrasyonu (workflows/<aşama>/<alt>/)         │
 ├────────────────────────────────────────────────────────────┤
 │ L5b Yürütme Mekanizması (ortogonal): subagent / Agent Teams  │
-│   / ana oturum + ralph-loop sarmalayıcı                     │
+│   / ana oturum + harnessed completion gate                  │
 │   parallelism-gate.yaml: varsayılan subagent → 5 tetikleyici ile tırmanma │
 │   Pattern A tam-yığın üçlü / B karşıt hipotezler / C çok-boyutlu inceleme │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd (~60): gstack 30+ isteğe bağlı + gsd 10+ + mattpocock 12 yüksek-frekanslı + vb.
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli (2):         ctx7 / gws
+tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
+tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 

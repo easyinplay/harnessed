@@ -15,7 +15,7 @@ phase 1.4 routing engine v1 implementation depends on a stable AgentDefinition f
 1. RESEARCH-1 § 3.1 inheritance table cited 7 fields; **5 fields missing** (`disallowedTools` / `memory` / `maxTurns` / `background` / `effort`) — incomplete contract = phase 1.4 plan-checker actionability gap.
 2. No factory function signature documented — phase 1.4 implementation could pick any signature, breaking 1:1 alignment with this contract.
 3. Error handling paths (skill-not-installed / no-COMPLETE / spawn-fail / verbatim-COMPLETE risk) not enumerated — phase 1.4 runtime might silently fail.
-4. ralph-loop integration semantics (`--completion-promise "COMPLETE"` + `--max-iterations 20` + factory-internal `maxTurns × 50`) not normative.
+4. Completion-gate integration semantics (verbatim `COMPLETE` promise + a retry budget + factory-internal `maxTurns × 50`) not normative.
 
 This contract closes those gaps. **D-12 lock**: phase 1.3 ships **draft only** (no factory implementation code) —守 phase 1.3 / 1.4 边界. phase 1.4 plan-checker will use this document as V1 BLOCKER acceptance bar.
 
@@ -42,7 +42,7 @@ The 12 fields are imported from `@anthropic-ai/claude-agent-sdk` `AgentDefinitio
 | `skills` | `string[]` | **List of skill names to preload into agent's context at startup. Unlisted skills remain invocable through Skill tool**. **CRITICAL**: skills must be installed in `~/.claude/skills/` BEFORE spawn — main process is responsible (see § 4 / § 5 path 1). |
 | `mcpServers` | `(string \| object)[]` | MCP servers available to this agent — by name (referencing main config) or inline config object. |
 | `memory` | `'user' \| 'project' \| 'local'` | Memory source for this agent. `'user'` = user-level CLAUDE.md / `'project'` = project-level CLAUDE.md / `'local'` = local-only memory. |
-| `maxTurns` | `number` | Maximum agentic turns (LLM round-trips) before agent stops. Acts as hard upper bound; recommended `50` (see § 6 ralph-loop integration). |
+| `maxTurns` | `number` | Maximum agentic turns (LLM round-trips) before agent stops. Acts as hard upper bound; recommended `50` (see § 6 completion-gate integration). |
 | `background` | `boolean` | Run agent as non-blocking background task. Main agent does not await result; suitable for fire-and-forget side tasks. |
 | `effort` | `'low' \| 'medium' \| 'high' \| 'xhigh' \| 'max' \| number` | Reasoning effort level. Higher = more thinking tokens consumed; trade-off vs cost. |
 | `permissionMode` | `'default' \| 'acceptEdits' \| 'bypassPermissions' \| 'plan'` | Permission mode for tool execution within this agent. **Distinct from main agent's `permissionMode`** — subagent isolation table (RESEARCH-1 § 1.1) confirms each agent has its own permission scope. |
@@ -130,15 +130,15 @@ export type AgentFactory = (
 
 **Anti-pattern (rejected)**: silent fallback — drop skill from `skills` array, spawn anyway. Rejected because CC startup behavior with missing skill is unspecified, and silent skill-drop hides routing errors from user.
 
-### § 5.2 Path 2 — subagent final message no-COMPLETE (ralph-loop retry)
+### § 5.2 Path 2 — subagent final message no-COMPLETE (completion-gate retry)
 
 **Trigger**: subagent returns final message but does NOT contain verbatim `COMPLETE` token. F33 mitigation (RESEARCH-1 § 6) — main agent MUST detect verbatim string match (not summarized).
 
 **Behavior**:
 - Main agent main system prompt MUST instruct: "When delegating via Agent tool, do NOT summarize subagent final message; pass verbatim back."
 - After Agent tool return, main agent MUST grep verbatim `COMPLETE` in subagent final message string.
-- If absent → ralph-loop retry: factory called AGAIN with augmented `task.task` ("previous attempt did not produce COMPLETE; please fix X and emit COMPLETE token") + `opts.maxTurnsOverride` decremented.
-- Ralph-loop external `--max-iterations 20` cap. After 20 retries → main agent writes `progress.md` BLOCKED finding + escalates to human.
+- If absent → completion-gate retry: factory called AGAIN with augmented `task.task` ("previous attempt did not produce COMPLETE; please fix X and emit COMPLETE token") + `opts.maxTurnsOverride` decremented.
+- The retry budget is external to the factory. On the live path it is `harnessed checkpoint fail <sub> --failing-tests <n>`, which prints `BUDGET-EXHAUSTED` / `NO-PROGRESS` / `BREAK-LOOP` once a stop condition is reached; the main agent MUST stop retrying on any one of the three and write a `progress.md` BLOCKED finding + escalate to human.
 
 **Anti-pattern (rejected)**: trust subagent's "looks done" final message without verbatim check — silent quality drift.
 
@@ -153,21 +153,20 @@ export type AgentFactory = (
 **Trigger**: subagent IS producing COMPLETE in its actual final message, BUT main agent's prompt is summarizing rather than passing verbatim → false negative on grep check (Path 2 wrongly retries forever).
 
 **Behavior**: main agent system prompt explicit instruction (mandatory):
-> "When invoking Agent tool, pass the subagent's final message string verbatim to the user-visible output and to ralph-loop COMPLETE-detection. Do NOT summarize, paraphrase, or add prefixes/suffixes."
+> "When invoking Agent tool, pass the subagent's final message string verbatim to the user-visible output and to COMPLETE-detection. Do NOT summarize, paraphrase, or add prefixes/suffixes."
 
 This instruction is part of phase 1.4 main-agent prompt template, NOT factory's concern. But contract documents the risk.
 
 ---
 
-## § 6 ralph-loop integration
+## § 6 completion-gate integration
 
-phase 1.3 contract aligns AgentDefinition.maxTurns with CLAUDE.md ralph-loop convention:
+phase 1.3 contract aligns AgentDefinition.maxTurns with the completion-gate convention. Since 4.36.0 that gate is harnessed's own CLI, not the upstream `/ralph-loop` plugin (ADR 0039):
 
-- **External wrapper**: `ralph-loop --completion-promise "COMPLETE" --max-iterations 20 ...`
-  - `completion-promise "COMPLETE"` → ralph-loop greps verbatim COMPLETE in each iteration's final output.
-  - `max-iterations 20` → ralph-loop external cap on retries.
-- **Internal AgentDefinition.maxTurns**: factory sets `maxTurns: opts.maxTurnsOverride ?? 50` as **per-spawn** internal cap (LLM round-trips per single Agent tool call). Each ralph-loop iteration spawns a fresh subagent with maxTurns = 50.
-- **Combined effective cap**: `20 iterations × 50 turns = 1000 total turns` worst case before BLOCKED finding raised.
+- **External wrapper**: `harnessed checkpoint complete <sub> --result-file <path>` — fail-closed on the declared artifacts, the TDD boundary, and a verbatim `<promise>COMPLETE</promise>` (or a structured COMPLETE status). When it blocks, `harnessed checkpoint fail <sub> --failing-tests <n>` records the attempt and prints `BUDGET-EXHAUSTED` (attempts spent vs `workflows/defaults.yaml ralph_max_iterations`) / `NO-PROGRESS` / `BREAK-LOOP`.
+  - Retry ONLY while none of those three has fired; any one of them is a stop directive.
+- **Internal AgentDefinition.maxTurns**: factory sets `maxTurns: opts.maxTurnsOverride ?? 50` as **per-spawn** internal cap (LLM round-trips per single Agent tool call). Each retry spawns a fresh subagent with maxTurns = 50.
+- **Combined effective cap**: `<attempt budget> × 50 turns` worst case (e.g. 20 × 50 = 1000) before the BLOCKED finding is raised.
 
 ---
 
@@ -212,7 +211,7 @@ This contract is **frozen at phase 1.3 ship time as v1**. Any v2 evolution (字�
 - phase 1.2.5 RESEARCH-1 § 1.1 — subagent isolation table + Fact D (no recursive spawn)
 - phase 1.2.5 RESEARCH-1 § 6 — F33 verbatim COMPLETE mitigation rationale
 - phase 1.3 progress.md F36 — ui-ux-pro-max install path (skills fail-fast 实证 first-class fixture)
-- CLAUDE.md § ralph-loop — `--completion-promise "COMPLETE" --max-iterations 20` convention
+- ADR 0039 — completion guarantee internalized; upstream `/ralph-loop` dependency removed (supersedes ADR 0036)
 - ADR 0001 § "字段拒绝清单" — security gate (factory output cmd field 不允许 `${...}` / `$(...)` / backtick)
 - ADR 0007 — manifest schema 3-field errata (category + install_type + decision_rules — phase 1.3 ship)
 

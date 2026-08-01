@@ -49,7 +49,7 @@ harnessed の三層スタックは、ソフトウェアエンジニアリング�
 |---|---|---|---|
 | **① Behavior** | BDD | *何* を作るか + どうなれば完了か | gstack `/office-hours` ガバナンス · GSD discuss · superpowers brainstorming → 受け入れ基準 |
 | **② Spec** | SDD | *どのように* 構造化するか | GSD plan-phase → requirements / design / tasks · 契約（Spec Kit / ECC patterns） |
-| **③ Implementation** | TDD | それは実際に *動く* か | superpowers TDD red-green · subagent 実行 · GSD verify-work · ralph-loop completion |
+| **③ Implementation** | TDD | それは実際に *動く* か | superpowers TDD red-green · subagent 実行 · GSD verify-work · harnessed completion gate |
 
 これらのループは **ネストしたレンズであって、フェーズではありません** —— 古典的な Cucumber の BDD-外側 + TDD-内側の二重ループを、GenAI 時代の SDD spec リングで拡張した三重ループです。harnessed はデフォルトの外→内の走査を 5-stage cadence として実行し、加えて **今日すでに出荷している back-edge** を備えます：Verify は失敗した作業を Task へ差し戻し、グレーゾーンに当たった subagent は続行前に澄清へ round-trip し、出荷された各サイクルは learnings を次の Discuss へ送り返します。（より細粒度の構造化された back-edge —— 例えば契約矛盾を直接 Spec へ、曖昧な要件を Behavior へルーティングする —— は roadmap 上にあり、まだ出荷されていません。harnessed は三重ループの線形-cadence な実現形であり、完全な routed graph はその進化経路です。）
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | サブ | superpowers brainstorming + `/grill-with-docs` 条件付き | サブタスク開始時の澄清ゲート |
 | `/task-code` | ③ Task | サブ | karpathy 4 原則 + `/improve-codebase-architecture` / `/diagnosing-bugs` 条件付き | サブタスクコーディング + クロスセッション progress.md 同期 |
 | `/task-test` | ③ Task | サブ | superpowers TDD red-green-refactor + `/diagnosing-bugs` 条件付き | コアロジックに TDD 必須（mattpocock `/tdd` のエイリアス） |
-| `/task-deliver` | ③ Task | サブ | `ralph-loop` SDK ラッパー + Agent Teams 条件付き | 逐語的 `COMPLETE` まで + R20.10 max_iter フォールバック |
+| `/task-deliver` | ③ Task | サブ | `harnessed checkpoint` completion gate + Agent Teams 条件付き | 逐語的 `COMPLETE` まで + R20.10 max_iter フォールバック |
 | `/verify` | ④ Verify | マスター | masterOrchestrator | シナリオ別に 10 サブを条件付きディスパッチ |
 | `/verify-progress` | ④ Verify | サブ | GSD `/gsd-verify-work` + `/gsd-progress` | 必須の直列スタート地点 —— UAT 受け入れ + 状態同期 |
 | `/verify-code-review` | ④ Verify | サブ | `code-review` マルチ subagent ファンアウト | 並列での高信頼度ファインディング |
@@ -303,7 +303,7 @@ graph TD
 | ---- | ---- | ---- | ---- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask（3 並列） | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture（条件付き）→ phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver（サブタスクごとに 4 直列） | karpathy 原則 + mattpocock ムーブ + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver（サブタスクごとに 4 直列） | karpathy 原則 + mattpocock ムーブ + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5 並列条件付き → simplify（+ multispec クリティカル） | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight（リリース準備ゲート）→ PR/deploy を委譲 | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI（tag-ready 境界） |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Workflow Orchestration（workflows/<stage>/<sub>/）        │
 ├────────────────────────────────────────────────────────────┤
 │ L5b 実行メカニズム（直交）: subagent / Agent Teams            │
-│   / メインセッション + ralph-loop ラッパー                   │
+│   / メインセッション + harnessed completion gate         │
 │   parallelism-gate.yaml: デフォルト subagent → 5 トリガーでエスカレート │
 │   Pattern A フルスタック三方向 / B 対立仮説 / C 多次元レビュー │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral（6）:       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd（~60）: gstack 30+ オプション + gsd 10+ + mattpocock 12 高頻度 + その他
 tool-mcp（3）:         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli（2）:         ctx7 / gws
+tool-cli（3）:         ctx7 / gws / completion-gate
 tool-plugin（2）:      planning-with-files / @playwright/test
-tool-bundled（3）:     ralph-loop / webapp-testing / playwright-cli
+tool-bundled（2）:     webapp-testing / playwright-cli
 agent-platform（3）:   agent-teams-create / send-message / shutdown
 ```
 

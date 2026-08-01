@@ -49,7 +49,7 @@ Three-layer stack у harnessed — это программно-инженерн�
 |---|---|---|---|
 | **① Behavior** | BDD | *Что* строить + как мы поймём, что готово | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → критерии приёмки |
 | **② Spec** | SDD | *Как* это структурировано | GSD plan-phase → requirements / design / tasks · контракты (Spec Kit / ECC patterns) |
-| **③ Implementation** | TDD | Оно действительно *работает* | superpowers TDD red-green · subagent execution · GSD verify-work · ralph-loop completion |
+| **③ Implementation** | TDD | Оно действительно *работает* | superpowers TDD red-green · subagent execution · GSD verify-work · harnessed completion gate |
 
 Циклы — это **вложенные линзы, а не фазы**: классический Cucumber-овский двойной цикл BDD-снаружи + TDD-внутри, расширенный кольцом SDD-spec эпохи GenAI до тройного цикла. harnessed запускает обход по умолчанию outer→inner как свой 5-стадийный ритм, плюс **обратные рёбра, которые он поставляет уже сегодня**: Verify отбрасывает провалившуюся работу обратно в Task, subagent, наткнувшийся на серую зону, делает round-trip к прояснению перед продолжением, а каждый отгруженный цикл возвращает learnings в следующий Discuss. (Более мелкозернистые структурированные обратные рёбра — например, противоречие контракта, маршрутизируемое прямо в Spec, или неоднозначное требование в Behavior — на roadmap, но ещё не поставлены. harnessed — это реализация тройного цикла в линейном ритме; полный маршрутизируемый граф — его эволюционный путь.)
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | Суб | superpowers brainstorming + `/grill-with-docs` условно | Ворота прояснения при запуске подзадачи |
 | `/task-code` | ③ Task | Суб | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` условно | Написание кода для подзадачи + синхронизация progress.md между сессиями |
 | `/task-test` | ③ Task | Суб | superpowers TDD red-green-refactor + `/diagnosing-bugs` условно | TDD обязателен для основной логики (псевдоним mattpocock `/tdd`) |
-| `/task-deliver` | ③ Task | Суб | `ralph-loop` SDK wrapper + Agent Teams условно | До verbatim `COMPLETE` + R20.10 откат при max_iter |
+| `/task-deliver` | ③ Task | Суб | `harnessed checkpoint` completion gate + Agent Teams условно | До verbatim `COMPLETE` + R20.10 откат при max_iter |
 | `/verify` | ④ Verify | Мастер | masterOrchestrator | 10 суб-воркфлоу с условной диспетчеризацией по сценарию |
 | `/verify-progress` | ④ Verify | Суб | GSD `/gsd-verify-work` + `/gsd-progress` | Обязательная последовательная точка входа — приёмка UAT + синхронизация состояния |
 | `/verify-code-review` | ④ Verify | Суб | `code-review` с параллельным fan-out по subagent-ам | Высокодостоверные находки параллельно |
@@ -303,7 +303,7 @@ graph TD
 | ------ | ------ | ---------------------- | --------------------------- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask (3 параллельно) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture (условно) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver (4 последовательно на подзадачу) | karpathy principles + mattpocock moves + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver (4 последовательно на подзадачу) | karpathy principles + mattpocock moves + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5 параллельных условных → simplify (+ multispec критический) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight (ворота готовности к релизу) → делегирование PR/deploy | `harnessed release-preflight` + gstack `/ship` + CI `publish.yml` (граница tag-ready) |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Оркестрация workflow (workflows/<stage>/<sub>/)           │
 ├────────────────────────────────────────────────────────────┤
 │ L5b Механизм исполнения (ортогональный): subagent / Agent Teams │
-│   / основная сессия + ralph-loop wrapper                    │
+│   / основная сессия + harnessed completion gate             │
 │   parallelism-gate.yaml: по умолчанию subagent → эскалация по 5 триггерам │
 │   Pattern A полностековая трёхсторонняя / B противостоящие гипотезы / C многомерное ревью │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd (~60): gstack 30+ опциональных + gsd 10+ + mattpocock 12 высокочастотных + и т.д.
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli (2):         ctx7 / gws
+tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
+tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 

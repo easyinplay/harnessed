@@ -50,7 +50,7 @@ diff 之前显示 summary：`will modify N files (M lines added, K removed)`。
 ```json
 {
   "installer": "cc-plugin-marketplace",
-  "manifest": "ralph-loop",
+  "manifest": "superpowers",
   "timestamp": "2026-05-12T15:30:00Z",
   "files": [
     { "target": "~/.claude.json", "backup": "HOME/.claude.json", "sha1": "...", "mode": "644", "eol": "crlf" }

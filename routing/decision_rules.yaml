@@ -191,7 +191,7 @@ rules:
 
   # ─── engineering (phase 1.5 T4.1 — 5 specific rules) ─────────
   # NOTE: engineering category base layer 已装 (gstack/GSD/superpowers/karpathy/
-  #       mattpocock/ralph-loop/planning-with-files), 不需 install routing;
+  #       mattpocock/planning-with-files), 不需 install routing;
   #       下列 5 rules 按 discuss/plan/execute/verify 分阶段调度 mattpocock 23 招式
   #       (skills_overlay ref → mattpocock_phases 段, 见文件末). D1.5-3 真理 source:
   #       用户笔记 ~/.claude/CLAUDE.md 工作流 4 阶段映射.

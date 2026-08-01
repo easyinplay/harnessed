@@ -49,7 +49,7 @@ harnessed 的三層架構方案是軟體工程上既有的 **BDD → SDD → TDD
 |---|---|---|---|
 | **① Behavior** | BDD | 做 *什麼* + 怎麼算做完 | gstack `/office-hours` 治理 · GSD discuss · superpowers brainstorming → 驗收標準 |
 | **② Spec** | SDD | *如何* 組織結構 | GSD plan-phase → requirements / design / tasks · 契約（Spec Kit / ECC patterns） |
-| **③ Implementation** | TDD | 它到底能不能 *跑* | superpowers TDD red-green · subagent 執行 · GSD verify-work · ralph-loop completion |
+| **③ Implementation** | TDD | 它到底能不能 *跑* | superpowers TDD red-green · subagent 執行 · GSD verify-work · harnessed completion gate |
 
 這些迴圈是 **巢狀的鏡頭，不是階段** —— 經典的 Cucumber BDD-外環 + TDD-內環雙環，在 GenAI 時代再加一道 SDD spec 環擴展成三環。harnessed 將預設的外→內遍歷跑成它的 5-stage cadence，外加 **它今天就已經落地的 back-edge**：Verify 將失敗工作踢回 Task，撞上灰色地帶的 subagent 在繼續前先 round-trip 回澄清，每條 shipped 的迴圈將 learnings 餵回下一輪 Discuss。（更細粒度的結構化 back-edge —— 例如契約矛盾直接路由回 Spec、模糊需求回 Behavior —— 在 roadmap 上，尚未 ship。harnessed 是三環的線性-cadence 實作；完整的 routed graph 是它的演進路徑。）
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | 子項 | superpowers brainstorming + `/grill-with-docs` conditional | 子任務啟動澄清關卡 |
 | `/task-code` | ③ Task | 子項 | karpathy 4 原則 + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | 子任務編碼 + 跨 session 的 progress.md 同步 |
 | `/task-test` | ③ Task | 子項 | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | 核心邏輯 TDD 強制執行（別名 mattpocock `/tdd`） |
-| `/task-deliver` | ③ Task | 子項 | `ralph-loop` SDK 包裝器 + Agent Teams conditional | 直到逐字輸出 `COMPLETE` + R20.10 max_iter 退路 |
+| `/task-deliver` | ③ Task | 子項 | `harnessed checkpoint` completion gate + Agent Teams conditional | 直到逐字輸出 `COMPLETE` + R20.10 max_iter 退路 |
 | `/verify` | ④ Verify | 主控 | masterOrchestrator | 10 個子項依情境條件分派 |
 | `/verify-progress` | ④ Verify | 子項 | GSD `/gsd-verify-work` + `/gsd-progress` | 強制串行起點 —— UAT 驗收 + 狀態同步 |
 | `/verify-code-review` | ④ Verify | 子項 | `code-review` 多 subagent 展開 | 平行高置信度發現 |
@@ -303,7 +303,7 @@ graph TD
 | ---- | ---- | ---- | ---- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask（3 個平行） | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture（conditional）→ phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver（每個子任務 4 個串行） | karpathy 原則 + mattpocock 招式 + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver（每個子任務 4 個串行） | karpathy 原則 + mattpocock 招式 + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5 個平行 conditional → simplify（+ multispec 關鍵時） | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight（發布就緒關卡）→ 委派 PR/deploy | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI（tag-ready 邊界） |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Workflow 編排（workflows/<stage>/<sub>/）                  │
 ├────────────────────────────────────────────────────────────┤
 │ L5b 執行機制（正交）: subagent / Agent Teams                  │
-│   / 主 session + ralph-loop 包裝器                           │
+│   / 主 session + harnessed completion gate                │
 │   parallelism-gate.yaml: 預設 subagent → 5 個觸發條件升級    │
 │   Pattern A 全端三路 / B 對立假設 / C 多維度審查              │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd (~60): gstack 30+ optional + gsd 10+ + mattpocock 12 高頻 + 等
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli (2):         ctx7 / gws
+tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
+tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 

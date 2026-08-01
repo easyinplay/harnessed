@@ -71,19 +71,27 @@ const MARKER = `<!-- harnessed-generated:v3.4.4 -->`
 const LANG_DIRECTIVE = `> **Language**: respond to the user in the language set by \`env.HARNESSED_USER_LANG\` (e.g. \`zh-Hans\` → 简体中文, \`en\` → English). If unset, mirror the user's input language. Keep code / commands / identifiers / error messages / URLs verbatim.`
 
 /** Shared spawn-loop snippet (v4.0) — how CC executes ONE sub via native spawn
- *  with prompt from `harnessed prompt`, ralph-loop completion, NEEDS_CLARIFICATION
- *  round-trip, and checkpoint. Reused by ORCHESTRATOR (per-sub) + EXECUTION. */
+ *  with prompt from `harnessed prompt`, harnessed's own completion gate,
+ *  NEEDS_CLARIFICATION round-trip, and checkpoint. Reused by ORCHESTRATOR
+ *  (per-sub) + EXECUTION.
+ *
+ *  4.36.0 (ADR 0039, supersedes ADR 0036) — the completion guarantee was
+ *  internalized in 4.35.0 (`checkpoint complete` verifies artifacts + the TDD
+ *  boundary + the verbatim promise; `checkpoint fail` emits BUDGET-EXHAUSTED /
+ *  NO-PROGRESS / BREAK-LOOP). The upstream `/ralph-loop` plugin and the native
+ *  `/goal` fallback are both gone from the instruction surface: the two flags
+ *  they supplied (`--max-iterations` / `--completion-promise`) are now the three
+ *  stop reasons the ledger prints, on a path with no availability question. */
 function spawnLoopSteps(indent: string): string[] {
   const i = indent
   return [
     `${i}a. Bash: \`harnessed prompt <sub> --task "<spec>" --json\` → parse \`{prompt, max_iterations, model}\`.`,
-    `${i}b. Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`. Wrap in the ralph-loop plugin for completion-promise enforcement:`,
-    `${i}   \`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"\``,
-    // v4.15.0 (ADR 0036) — 3-tier preference chain: plugin → native /goal → self-loop.
-    `${i}   If the ralph-loop plugin is not installed, use the native goal gate instead (Claude Code 2.1.139+ / Codex): \`/goal "this subtask is delivered: the subagent's final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"\` then spawn the subagent and let the goal evaluator drive re-spawns until it clears. Set the goal only at the leaf subtask level (\`/goal\` is single-slot per session).`,
-    `${i}   If \`/goal\` is unavailable too, self-loop: spawn → check output for \`<promise>COMPLETE</promise>\` → if absent, re-spawn with the prior output appended (up to max_iterations).`,
+    `${i}b. Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`, then drive delivery with harnessed's own completion gate:`,
+    `${i}   - on return, write the subagent's final output to a file and run \`harnessed checkpoint complete <sub> --result-file <path>\` — it is fail-closed on the declared artifacts, the TDD boundary, and the verbatim \`<promise>COMPLETE</promise>\`.`,
+    `${i}   - if it blocks, run \`harnessed checkpoint fail <sub> --failing-tests <n>\` to record the attempt; it prints BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP when a stop condition is reached.`,
+    `${i}   - respawn ONLY while none of those three has fired. Any one of them means stop: re-scope the subtask, fix the blocker, or escalate to the user. Never respawn past a stop directive.`,
     `${i}c. If the subagent output contains \`STATUS: NEEDS_CLARIFICATION\` + a question list: STOP. Use AskUserQuestion to relay those exact questions to the user. Append the user's answers to the spec, then re-spawn the same sub. (This is the round-trip headless spawn cannot do.)`,
-    `${i}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --summary "<one-line>"\`.`,
+    `${i}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"\`.`,
   ]
 }
 
@@ -147,19 +155,19 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
           `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first (AskUserQuestion) and lock decisions. Otherwise transparent-skip. Produce a locked spec.`,
         ]
   // v5.0 — the deterministic state-machine spawn loop for ONE leaf sub: prompt →
-  // spawn → ralph-loop → NEEDS_CLARIFICATION round-trip → checkpoint complete (on
-  // COMPLETE) OR checkpoint fail (on unrecoverable failure). Steps a-c are the
+  // spawn → completion gate → NEEDS_CLARIFICATION round-trip → checkpoint complete
+  // (on COMPLETE) OR checkpoint fail (on unrecoverable failure). Steps a-c are the
   // shared `spawnLoopSteps` (indented 5sp); the leaf variant overrides step d with
-  // the evidence-guard (fail-CLOSED) detail and appends step e (checkpoint fail on
-  // unrecoverable failure) — both absent from the simpler EXECUTION body.
+  // the evidence-guard (fail-CLOSED) detail and appends step e (checkpoint fail +
+  // the three stop reasons) — both absent from the simpler EXECUTION body.
   const leafIndent = '     '
-  // spawnLoopSteps emits steps a-d as 7 lines (b spans 4: the `b.` line + 3
-  // continuations — v4.15.0 ADR 0036 adds the /goal tier); the first 6 are
-  // a + b(×4) + c, which the leaf reuses verbatim.
+  // spawnLoopSteps emits steps a-d as 7 lines (b spans 4: the `b.` line + the 3
+  // completion-gate bullets); the first 6 are a + b(×4) + c, which the leaf
+  // reuses verbatim.
   const leafSpawnLoop = [
     ...spawnLoopSteps(leafIndent).slice(0, 6),
-    `${leafIndent}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED): if it exits non-zero because a declared \`artifacts_expected\` file is missing, the sub is NOT done — re-spawn to produce the artifact, or pass \`--force\` only to deliberately override (records \`evidence_status: overridden\`).`,
-    `${leafIndent}e. If the sub cannot reach COMPLETE (max_iterations exhausted, unrecoverable error): Bash \`harnessed checkpoint fail <sub> --summary "<why>"\` to flip the ledger entry to \`failed\`, then STOP and report to the user.`,
+    `${leafIndent}d. On \`<promise>COMPLETE</promise>\`: write the subagent's final output to a file, then Bash \`harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED) and blocks unless ALL hold: every declared \`artifacts_expected\` file exists, the TDD boundary passes (non-empty evidence / both the red and green sides present / the test file was not deleted), and the result carries a verbatim \`<promise>COMPLETE</promise>\` (or a structured COMPLETE status). \`--result <text>\` is the inline variant; \`--result-file\` wins and is quoting-safe on Windows. If it exits non-zero the sub is NOT done — re-spawn to fix the gap, or pass \`--force\` only to deliberately override (records \`evidence_status: overridden\` — an audited override, not a silent pass).`,
+    `${leafIndent}e. If the complete gate blocked: Bash \`harnessed checkpoint fail <sub> --failing-tests <n>\` to record the attempt (omit the flag when the sub has no tests — the evidence-artifact digest is the fallback progress metric). It prints \`BUDGET-EXHAUSTED\` (attempts spent vs \`workflows/defaults.yaml ralph_max_iterations\`), \`NO-PROGRESS\` (no improvement for N consecutive attempts) or \`BREAK-LOOP\` (this sub failed >= the threshold) when a stop condition is reached. Respawn ONLY while none of those three has fired; any one of them means STOP — re-scope the subtask, fix the blocker, or escalate to the user, and report it. Never respawn past a stop directive.`,
   ]
   return [
     `# /${name}`,
@@ -266,7 +274,8 @@ function buildExecutionBody(name: string, prompt: RolePrompt): string {
  *   INTERACTIVE (discuss family + task-clarify): main-session dialogue, never spawn
  *   ORCHESTRATOR (auto / plan / task / verify): `harnessed gates` → CC-native
  *     subagent spawns per fired sub (or Agent Teams escalation) with prompts
- *     from `harnessed prompt`, ralph-loop completion, NEEDS_CLARIFICATION round-trip
+ *     from `harnessed prompt`, harnessed's own completion gate (`harnessed
+ *     checkpoint complete` / `fail`), NEEDS_CLARIFICATION round-trip
  *   EXECUTION (everything else): single sub — `harnessed prompt` → native spawn
  *
  * The CC main session is the executor; harnessed CLIs are秒级 advisors (gates /

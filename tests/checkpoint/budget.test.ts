@@ -2,8 +2,9 @@
 //
 // `workflows/defaults.yaml:11 ralph_max_iterations` shipped as a template value with
 // no executor on the live path: its only consumers were `harnessed run` (which every
-// SKILL forbids) and the `harnessed prompt --json` payload handed to the ralph-loop
-// plugin. This resolves the same table against the ledger's per-sub attempt counter
+// SKILL forbids) and the `harnessed prompt --json` payload handed to a then-upstream
+// loop plugin (dependency dropped in 4.36.0 — the key name is retained deliberately;
+// see workflows/defaults.yaml). This resolves the same table against the ledger's per-sub attempt counter
 // (`fail_count`, the counting source BREAK-LOOP already uses).
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'

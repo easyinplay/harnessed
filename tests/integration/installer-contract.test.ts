@@ -305,13 +305,13 @@ function ccPluginManifest(): Manifest {
     apiVersion: 'harnessed/v1',
     kind: 'Manifest',
     metadata: {
-      name: 'ralph-loop',
-      display_name: 'Ralph Loop',
+      name: 'example-plugin',
+      display_name: 'Example Plugin',
       description: 'fixture',
       upstream: {
-        source: 'ralph-loop',
+        source: 'example-plugin',
         homepage: 'https://example.com',
-        repository: 'https://github.com/example/ralph-loop.git',
+        repository: 'https://github.com/example/example-plugin.git',
         license: 'MIT',
         notice: 'fixture',
       },
@@ -326,15 +326,15 @@ function ccPluginManifest(): Manifest {
         // ccPluginMarketplace parses `plugin marketplace add <ref>` and
         // `plugin install <plugin>@<mkt>` from cmd. Note: the `/` prefix
         // is the in-REPL slash form; we strip it during parse.
-        cmd: '/plugin marketplace add example/ralph-loop && /plugin install ralph-loop@example',
+        cmd: '/plugin marketplace add example/example-plugin && /plugin install example-plugin@example',
         // 40-hex SHA satisfies preflight GIT_REF_SHAPE regex (the schema
         // permits either SHA or SemVer; cc-plugin-marketplace's verify path
         // does not use git_ref directly — it's recorded for audit-trail).
         git_ref: 'a1b2c3d4e5f67890123456789012345678901234',
-        idempotent_check: 'claude plugin list | grep -q ralph-loop',
+        idempotent_check: 'claude plugin list | grep -q example-plugin',
       },
       verify: { cmd: 'claude plugin list --json', timeout_ms: 5000, expected_exit_code: 0 },
-      uninstall: { cmd: 'claude plugin uninstall ralph-loop' },
+      uninstall: { cmd: 'claude plugin uninstall example-plugin' },
       upstream_health: {
         stability: 'stable',
         last_check: '2026-05-12',

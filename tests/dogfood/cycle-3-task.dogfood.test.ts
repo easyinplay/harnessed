@@ -187,15 +187,17 @@ describe('Cycle 3 — /task master orchestrator dogfood', () => {
     expect(joined).toMatch(/\[task master\] Complete: 4 fired, 0 skipped/)
   })
 
-  it('F8: ralph-loop NOT in master scope (D-10 orthogonal wrapper) — tools_available list ralph-loop but master 不 invoke', () => {
-    // ralph-loop 在 deliver sub workflow 内 (D-10 orthogonal wrapper) NOT master concern。
-    // tools_available declare ralph-loop but master yaml 不 invoke (delegates_to 不含 ralph-loop)。
+  it('F8: completion-gate NOT in master scope (D-10 orthogonal wrapper) — tools_available list completion-gate but master 不 invoke', () => {
+    // completion-gate 在 deliver sub workflow 内 (D-10 orthogonal wrapper) NOT master concern。
+    // tools_available declare completion-gate but master yaml 不 invoke (delegates_to 不含它)。
     const raw = readFileSync(TASK_YAML, 'utf8')
     const m = parseYaml(raw) as WorkflowSchemaV3T
-    expect(m.tools_available).toContain('ralph-loop')
-    // master delegates_to 仅 4 sub workflow,NOT ralph-loop 直接 invoke
+    expect(m.tools_available).toContain('completion-gate')
+    // 4.36.0 — 上游 ralph-loop plugin 依赖摘除,旧 capability 名不得复活
+    expect(m.tools_available).not.toContain('ralph-loop')
+    // master delegates_to 仅 4 sub workflow,NOT completion-gate 直接 invoke
     const subs = (m.delegates_to ?? []).map((d) => d.sub)
-    expect(subs).not.toContain('ralph-loop')
+    expect(subs).not.toContain('completion-gate')
   })
 
   it('F9: tdd-gate fires_when verify — is_data_processing trigger TDD fire alone (5 OR-chain branch)', async () => {

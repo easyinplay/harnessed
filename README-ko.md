@@ -49,7 +49,7 @@ harnessed의 3계층 스택은 확립된 **BDD → SDD → TDD** 중첩의 소�
 |---|---|---|---|
 | **① Behavior** | BDD | *무엇*을 만들지 + 완료를 어떻게 아는지 | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → 인수 기준 |
 | **② Spec** | SDD | *어떻게* 구조화하는지 | GSD plan-phase → requirements / design / tasks · contracts (Spec Kit / ECC 패턴) |
-| **③ Implementation** | TDD | 실제로 *동작*하는지 | superpowers TDD red-green · subagent 실행 · GSD verify-work · ralph-loop completion |
+| **③ Implementation** | TDD | 실제로 *동작*하는지 | superpowers TDD red-green · subagent 실행 · GSD verify-work · harnessed completion gate |
 
 이 루프들은 Phase가 아니라 **중첩된 렌즈**입니다 — 고전적인 Cucumber BDD-외부 + TDD-내부 이중 루프에, GenAI 시대의 SDD spec 링을 더해 삼중 루프로 확장한 것입니다. harnessed는 기본 외부→내부 순회를 5-Stage 케이던스로 실행하며, 여기에 **오늘 실제로 제공하는 back-edge들**을 더합니다: Verify는 실패한 작업을 Task로 되돌리고, 회색지대에 부딪힌 subagent는 계속하기 전에 명료화로 round-trip하며, 출시된 모든 사이클은 learnings를 다음 Discuss로 되돌려 공급합니다. (더 세분화된 구조적 back-edge — 예: contract 모순이 곧장 Spec으로 라우팅되거나, 모호한 requirement가 Behavior로 라우팅되는 것 — 은 로드맵에 있으며 아직 제공되지 않습니다. harnessed는 삼중 루프의 선형 케이던스 구현이며, 완전히 라우팅된 그래프는 그 진화 경로입니다.)
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | 서브 | superpowers brainstorming + `/grill-with-docs` 조건부 | 서브태스크 시작 명료화 게이트 |
 | `/task-code` | ③ Task | 서브 | karpathy 4 원칙 + `/improve-codebase-architecture` / `/diagnosing-bugs` 조건부 | 서브태스크 코딩 + 크로스 세션 progress.md 동기화 |
 | `/task-test` | ③ Task | 서브 | superpowers TDD red-green-refactor + `/diagnosing-bugs` 조건부 | 핵심 로직에 TDD 필수 (별칭: mattpocock `/tdd`) |
-| `/task-deliver` | ③ Task | 서브 | `ralph-loop` SDK 래퍼 + Agent Teams 조건부 | verbatim `COMPLETE`까지 + R20.10 max_iter 폴백 |
+| `/task-deliver` | ③ Task | 서브 | `harnessed checkpoint` completion gate + Agent Teams 조건부 | verbatim `COMPLETE`까지 + R20.10 max_iter 폴백 |
 | `/verify` | ④ Verify | 마스터 | masterOrchestrator | 시나리오별 조건부 디스패치로 10개 서브 실행 |
 | `/verify-progress` | ④ Verify | 서브 | GSD `/gsd-verify-work` + `/gsd-progress` | 필수 직렬 시작점 — UAT 인수 + 상태 동기화 |
 | `/verify-code-review` | ④ Verify | 서브 | `code-review` 멀티 Subagent 팬아웃 | 병렬 고신뢰 발견 사항 |
@@ -303,7 +303,7 @@ graph TD
 | ---- | ---- | ---- | ---- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask (3개 병렬) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture (조건부) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver (서브태스크당 4개 직렬) | karpathy 원칙 + mattpocock 기법 + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver (서브태스크당 4개 직렬) | karpathy 원칙 + mattpocock 기법 + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5개 병렬 조건부 → simplify (+ multispec 중요 릴리스) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight (릴리스 준비 게이트) → PR/deploy 위임 | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI (tag-ready 경계) |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
 ├────────────────────────────────────────────────────────────┤
 │ L5b 실행 메커니즘 (직교): subagent / Agent Teams              │
-│   / 메인 세션 + ralph-loop 래퍼                              │
+│   / 메인 세션 + harnessed completion gate                  │
 │   parallelism-gate.yaml: 기본 subagent → 5가지 트리거로 에스컬레이션 │
 │   Pattern A 풀스택 3방향 / B 대립 가설 / C 다차원 검토          │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd (~60): gstack 30+ 선택 + gsd 10+ + mattpocock 12 고빈도 + etc.
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli (2):         ctx7 / gws
+tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
+tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 

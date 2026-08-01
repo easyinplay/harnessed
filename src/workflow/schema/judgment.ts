@@ -7,7 +7,7 @@
 //     - strategic-gate.yaml   (office-hours / plan-ceo-review)
 //     - phase-gate.yaml       (gsd-discuss-phase)
 //     - subtask-gate.yaml     (brainstorming)
-//     - parallelism-gate.yaml (subagent-default / agent-teams-upgrade / main-session-fallback / ralph-loop-wrapper)
+//     - parallelism-gate.yaml (subagent-default / agent-teams-upgrade / main-session-fallback / completion-gate-wrapper)
 //     - tdd-gate.yaml         (tdd-strongly-suggested)
 //   rules root key (1 file):
 //     - fallback.yaml         (uncertain-skip-transparently / user-explicit-override / chain-isolation)
@@ -32,7 +32,7 @@ const RequiresCapabilities = Type.Object(
 )
 
 // Triggers-style entry — 5 file 通用 shape.
-// `wraps` 仅 parallelism-gate.yaml ralph-loop-wrapper 用 (orthogonal wrapper per R20.10).
+// `wraps` 仅 parallelism-gate.yaml completion-gate-wrapper 用 (orthogonal wrapper per R20.10).
 export const JudgmentTrigger = Type.Object(
   {
     description: Type.Optional(Type.String()),

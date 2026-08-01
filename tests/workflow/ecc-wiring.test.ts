@@ -138,12 +138,18 @@ describe('ECC hard-exclusion safety boundary (Finding 2)', () => {
     'continuous-learning',
     'instinct-',
   ]
+  // 4.36.0 — harnessed's OWN `harnessed <subcommand>` CLI surfaces are exempt.
+  // The invariant guards against wiring an ECC *skill* whose family name collides
+  // with a harnessed keystone engine; a cmd that literally invokes that harnessed
+  // engine (e.g. the `completion-gate` capability's `harnessed checkpoint complete`)
+  // is the engine itself, not an ECC substitute for it. Without this carve-out the
+  // bare-substring match reads "checkpoint" in harnessed's own binary invocation
+  // and flags the very thing the exclusion exists to protect.
+  const isHarnessedOwnCli = (s: string | undefined) => s?.startsWith('harnessed ') === true
   it('no hard-excluded ECC family is wired (entry name or cmd)', () => {
-    const haystack = Object.entries(entries).flatMap(([name, e]) => [
-      name,
-      e.cmd,
-      ...(e.aliases ?? []).map((a) => a.cmd),
-    ])
+    const haystack = Object.entries(entries)
+      .flatMap(([name, e]) => [name, e.cmd, ...(e.aliases ?? []).map((a) => a.cmd)])
+      .filter((h) => !isHarnessedOwnCli(h))
     for (const forbidden of FORBIDDEN) {
       const hit = haystack.find((h) => h.includes(forbidden))
       expect(hit, `hard-excluded family '${forbidden}' wired as: ${hit}`).toBeUndefined()

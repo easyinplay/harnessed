@@ -1,5 +1,5 @@
 // src/discipline/enforcement/before-commit.ts — Phase v3.0-3.3 W0 T3.3.W0.9 (R30.9).
-// Hook trigger: git commit / push cmd dispatch 前;ralph-loop / subagent / 主 session 全走此 hook.
+// Hook trigger: git commit / push cmd dispatch 前;completion-gate loop / subagent / 主 session 全走此 hook.
 // Reads operational.yaml rule[id=biome-preempt + no-push-without-approval + no-skip-hooks]
 // → enforce halt OR auto-fix per yaml enforcement field.
 //

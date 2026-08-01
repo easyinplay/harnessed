@@ -81,11 +81,11 @@ prompts:
     responsibility: |
       Per-subtask serial chain: `/task-clarify` (conditional brainstorming) →
       `/task-code` (karpathy 4 principles + conditional mattpocock moves) →
-      `/task-test` (TDD strongly suggested gate) → `/task-deliver` (ralph-loop
-      COMPLETE wrapper). Re-enter for each subtask.
+      `/task-test` (TDD strongly suggested gate) → `/task-deliver` (completion
+      gate: verbatim COMPLETE). Re-enter for each subtask.
     checklist: []
     severity: "per-subtask 4-step serial gate"
-    description: "Stage 3 Task master — per-subtask clarify→code→test→deliver chain (ralph-loop COMPLETE at deliver)."
+    description: "Stage 3 Task master — per-subtask clarify→code→test→deliver chain (completion gate at deliver)."
 
   verify:
     primary_cap: ""
@@ -355,24 +355,28 @@ prompts:
     description: "Enforce red-green-refactor TDD for core logic; `/diagnosing-bugs` handoff on test failures."
 
   task-deliver:
-    primary_cap: "ralph-loop"
-    specialist: "Completion-promise enforcer (ralph-loop COMPLETE)"
+    primary_cap: "completion-gate"
+    specialist: "Completion-promise enforcer (verbatim COMPLETE)"
     responsibility: |
-      Wrap the subtask in ralph-loop with `completion_promise: "COMPLETE"`
-      and `max_iterations: <N>`. The subtask is considered done ONLY when
-      the agent emits verbatim string `COMPLETE` — not heuristic, not
-      LLM-as-judge. On max_iterations exceeded, emit explicit warning +
+      Drive the subtask under harnessed's own completion gate with
+      `completion_promise: "COMPLETE"` and `max_iterations: <N>`. The subtask
+      is considered done ONLY when `harnessed checkpoint complete <sub>
+      --result-file <path>` accepts it — it is fail-closed on the declared
+      evidence artifacts, the TDD boundary, and the verbatim string
+      `COMPLETE`; not heuristic, not LLM-as-judge. On a failed attempt run
+      `harnessed checkpoint fail <sub> --failing-tests <n>`; when it prints
+      BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP, emit explicit warning +
       halt (NOT silent abort). Then mark progress.md complete.
     checklist:
       - "Confirm subtask acceptance criteria are explicit and verifiable BEFORE looping"
       - "Set `max_iterations` based on subtask size; default 20"
       - "On loop entry, give the agent the full spec + acceptance criteria + completion promise"
       - "If agent emits 'COMPLETE' verbatim, mark progress.md done via `/plan`"
-      - "If max_iterations exceeded, emit warning + halt; do NOT silent-continue"
+      - "On BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP from `harnessed checkpoint fail`, emit warning + halt; do NOT silent-continue"
       - "If teammate communication needed / context overflow → escalate to Agent Teams"
       - "Cleanup: ask each teammate to shut down by name — that request IS the teardown (CC 2.1.178+ has no delete tool); the team's shared dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends"
     severity: "complete / max-iter-exceeded / escalated-to-teams"
-    description: "Wrap subtask in ralph-loop with verbatim COMPLETE promise; escalate to Agent Teams when needed."
+    description: "Drive subtask through the completion gate with a verbatim COMPLETE promise; escalate to Agent Teams when needed."
 
   # ============================================================================
   # verify-* (8 subs)

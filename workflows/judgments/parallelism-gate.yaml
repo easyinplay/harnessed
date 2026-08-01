@@ -1,8 +1,10 @@
 # workflows/judgments/parallelism-gate.yaml
 # Parallelism 判据 — bundled subagent vs Agent Teams routing rules
-# (4 triggers: subagent-default / main-session-fallback / agent-teams-upgrade / ralph-loop-wrapper)
+# (4 triggers: subagent-default / main-session-fallback / agent-teams-upgrade / completion-gate-wrapper)
 # Bundled Agent Teams lifecycle: 5 upgrade triggers + cleanup discipline
-# Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-11 (parallelism-gate) + R20.10 (ralph-loop 正交 wrapper)
+# Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per D-11 (parallelism-gate) + R20.10 (完成保证正交 wrapper)
+# 4.36.0 — trigger renamed ralph-loop-wrapper → completion-gate-wrapper (上游 plugin 依赖摘除;
+# 保证由 harnessed `checkpoint complete` / `checkpoint fail` 自己提供)
 
 schema_version: harnessed.judgment.v1
 
@@ -35,14 +37,17 @@ triggers:
       capabilities:
         - agent-teams-create
 
-  ralph-loop-wrapper:
+  completion-gate-wrapper:
     description: |
-      Orthogonal — ralph-loop 正交 wrapper, 套在 subagent / team / main session
+      Orthogonal — 完成保证正交 wrapper, 套在 subagent / team / main session
       外层保 completion-promise verbatim "COMPLETE"。任何执行单元均可套用,
-      并非互斥触发器 (per R20.10 + D-10)。
+      并非互斥触发器 (per R20.10 + D-10)。4.36.0 起由 harnessed 自己的
+      `harnessed checkpoint complete` / `checkpoint fail` 兑现 (fail-closed
+      evidence + TDD boundary + verbatim promise; BUDGET-EXHAUSTED /
+      NO-PROGRESS / BREAK-LOOP), 不再依赖上游 ralph-loop plugin。
     wraps:
       - subagent-default
       - agent-teams-upgrade
       - main-session-fallback
     invokes:
-      - capability: ralph-loop
+      - capability: completion-gate

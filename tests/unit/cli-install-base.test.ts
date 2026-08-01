@@ -148,11 +148,11 @@ describe('cli/install-base', () => {
     // L1-2 "All 6 methods are now runtime-ready"). Previously these 3 manifests
     // would short-circuit as "skipped (deferred phase 2.1)". Now they go
     // through runInstall like any other method.
-    readdirMock.mockResolvedValueOnce(['superpowers.yaml', 'ralph-loop.yaml'] as never)
+    readdirMock.mockResolvedValueOnce(['superpowers.yaml', 'playwright-test.yaml'] as never)
     readdirMock.mockResolvedValueOnce(['gstack.yaml'] as never)
     readFileMock.mockResolvedValue('apiVersion: harnessed/v1')
     mockManifest('superpowers', 'cc-plugin-marketplace')
-    mockManifest('ralph-loop', 'cc-plugin-marketplace')
+    mockManifest('playwright-test', 'cc-plugin-marketplace')
     mockManifest('gstack', 'git-clone-with-setup')
     runInstallMock.mockResolvedValue({ ok: true, backupId: 'noop', appliedFiles: [] })
     const code = await runCli(['install-base', '--dry-run', '--non-interactive'])

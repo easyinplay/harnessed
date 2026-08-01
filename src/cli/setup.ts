@@ -30,6 +30,7 @@ import {
   makeIdempotentProbe,
   reclassifyForceUpdateFailures,
   runStepBInstall,
+  type StepBProgressEvent,
   type StepBResult,
   scanWorkflowsWithSkill,
   warnIfAgentTeamsMissing,
@@ -180,6 +181,52 @@ export function printGrouped(b: StepBResult, prefix = ''): void {
   }
 }
 
+/** Minimal write sink — `process.stdout` in production, a fake in tests. */
+export interface ProgressSink {
+  isTTY?: boolean
+  write(chunk: string): unknown
+}
+
+/** 4.36.0 — Step B progress is TRANSIENT now, not a permanent transcript.
+ *
+ *  Why progress exists at all: v4.13.0 added one line per finished component
+ *  because Step B was silent for its whole runtime and read as a hang (a cold
+ *  install runs for minutes with nothing on screen).
+ *
+ *  What broke: those lines were permanent, so every component rendered twice —
+ *  once as a `[n/N]` row and again in the grouped table right below it. User
+ *  dogfood report: "分组和上游检测1-13重复了" (13 components listed twice).
+ *
+ *  The fix keeps the reassurance and drops the duplicate: one line rewritten in
+ *  place with `\r`, padded to the widest line seen so far so a short name never
+ *  leaves residue from a longer predecessor, then erased by `done()` so the
+ *  grouped table starts on a clean row.
+ *
+ *  Why non-TTY emits NOTHING: the hang perception this solves is a live-terminal
+ *  problem only — nobody watches a redirected log for signs of life, `\r`
+ *  rewriting is meaningless there, and a captured log (CI, `| tee`, `> file`)
+ *  must not carry the duplicate rows either. The `installing N upstream
+ *  components...` header already tells a log reader the step started. */
+export function makeProgressPrinter(out: ProgressSink = process.stdout): {
+  onProgress: (ev: StepBProgressEvent) => void
+  done: () => void
+} {
+  if (out.isTTY !== true) return { onProgress: () => {}, done: () => {} }
+  let width = 0
+  return {
+    onProgress(ev) {
+      const line = `  [${ev.done}/${ev.total}] ${ev.status} ${ev.name}`
+      width = Math.max(width, line.length)
+      out.write(`\r${line.padEnd(width)}`)
+    },
+    done() {
+      if (width === 0) return
+      out.write(`\r${' '.repeat(width)}\r`)
+      width = 0
+    },
+  }
+}
+
 export function registerSetup(program: Command): void {
   program
     .command('setup')
@@ -262,25 +309,17 @@ export function registerSetup(program: Command): void {
       // first pass (CI / scripted use).
       const manifestPaths = await listBaseManifests(pkgRoot)
       const forceFirstPass = raw.updateInstalled === true
-      // v4.13.0 — live progress lines (user UX feedback: Step B was silent for
-      // its whole runtime and read as a hang). One line per finished component;
-      // works on non-TTY too (plain console.log, no spinner dependency).
-      const progressPrinter = (ev: {
-        done: number
-        total: number
-        name: string
-        status: string
-      }): void => {
-        console.log(`  [${ev.done}/${ev.total}] ${ev.status} ${ev.name}`)
-      }
+      // v4.13.0 live progress, 4.36.0 transient — see makeProgressPrinter.
+      const progress = makeProgressPrinter()
       console.log(
         `\ninstalling ${manifestPaths.length} upstream components (MCP serialized, rest parallel)...`,
       )
       const b = await runStepBInstall(manifestPaths, {
         updateInstalled: forceFirstPass,
         quiet: true,
-        onProgress: progressPrinter,
+        onProgress: progress.onProgress,
       })
+      progress.done()
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
         t('setup.step_b_complete', {
@@ -331,8 +370,9 @@ export function registerSetup(program: Command): void {
             const b2 = await runStepBInstall(manifestPaths, {
               updateInstalled: true,
               quiet: true,
-              onProgress: progressPrinter,
+              onProgress: progress.onProgress,
             })
+            progress.done()
             // Patch 4.10.1 Fix C — fail-soft reclassification (comet ensureOpenSpecCli):
             // a refresh that failed but whose component is still on disk is NOT a
             // failure — the prior version is retained. Move failed→keptExisting when

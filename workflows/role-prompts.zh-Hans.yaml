@@ -69,11 +69,11 @@ prompts:
     responsibility: |
       逐子任务串行链:`/task-clarify`(视情况 brainstorming)→
       `/task-code`(karpathy 4 心法 + mattpocock 视情况招式)→
-      `/task-test`(强烈建议的 TDD 关卡)→ `/task-deliver`(ralph-loop
-      COMPLETE wrapper)。每个子任务重新进入一遍。
+      `/task-test`(强烈建议的 TDD 关卡)→ `/task-deliver`(完成门:
+      逐字 COMPLETE)。每个子任务重新进入一遍。
     checklist: []
     severity: "逐子任务 4 步串行关卡"
-    description: "Stage 3 Task master — 逐子任务 clarify→code→test→deliver 链(deliver 处 ralph-loop COMPLETE)。"
+    description: "Stage 3 Task master — 逐子任务 clarify→code→test→deliver 链(deliver 处走完成门)。"
 
   verify:
     primary_cap: ""
@@ -334,23 +334,26 @@ prompts:
     description: "为核心逻辑执行 red-green-refactor TDD;测试失败时交接 `/diagnosing-bugs`。"
 
   task-deliver:
-    primary_cap: "ralph-loop"
-    specialist: "Completion-promise 执行者(ralph-loop COMPLETE)"
+    primary_cap: "completion-gate"
+    specialist: "Completion-promise 执行者(逐字 COMPLETE)"
     responsibility: |
       用 `completion_promise: "COMPLETE"` 和 `max_iterations: <N>` 把子任务
-      包进 ralph-loop。只有当 agent 逐字吐出字符串 `COMPLETE` 时,子任务
-      才算完成 —— 不靠启发式,不靠 LLM-as-judge。超过 max_iterations 时,
-      显式发警告 + 停止(不是静默放弃)。然后标记 progress.md 完成。
+      交给 harnessed 自己的完成门驱动。只有当 `harnessed checkpoint complete
+      <sub> --result-file <path>` 放行时,子任务才算完成 —— 它对声明的证据
+      artifacts、TDD boundary、逐字字符串 `COMPLETE` 三者 fail-closed;不靠
+      启发式,不靠 LLM-as-judge。失败的一轮跑 `harnessed checkpoint fail <sub>
+      --failing-tests <n>`;当它打印 BUDGET-EXHAUSTED / NO-PROGRESS /
+      BREAK-LOOP 时,显式发警告 + 停止(不是静默放弃)。然后标记 progress.md 完成。
     checklist:
       - "进入循环前,确认子任务验收标准是显式且可验证的"
       - "按子任务大小设 `max_iterations`;默认 20"
       - "进入循环时,把完整 spec + 验收标准 + completion promise 交给 agent"
       - "若 agent 逐字吐出 'COMPLETE',经 `/plan` 标记 progress.md 完成"
-      - "若超过 max_iterations,发警告 + 停止;不要静默继续"
+      - "`harnessed checkpoint fail` 打出 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP 时,发警告 + 停止;不要静默继续"
       - "若需要 teammate 通信 / context 溢出 → 升级到 Agent Teams"
       - "清理:按名请求每个 teammate shut down —— 这个请求**就是**清场手段(CC 2.1.178+ 已无 delete 工具);团目录在 session 退出时自动删除,而无视请求的 teammate 只保证在 session 结束时停止"
     severity: "complete / max-iter-exceeded / escalated-to-teams"
-    description: "用逐字 COMPLETE 承诺把子任务包进 ralph-loop;需要时升级到 Agent Teams。"
+    description: "用逐字 COMPLETE 承诺把子任务过完成门;需要时升级到 Agent Teams。"
 
   # ============================================================================
   # verify-* (8 subs)

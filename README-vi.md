@@ -49,7 +49,7 @@ three-layer stack của harnessed là một hiện thực hóa kỹ thuật ph�
 |---|---|---|---|
 | **① Behavior** | BDD | Xây dựng *cái gì* + làm sao biết đã xong | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → acceptance criteria |
 | **② Spec** | SDD | Cấu trúc *như thế nào* | GSD plan-phase → requirements / design / tasks · contracts (Spec Kit / ECC patterns) |
-| **③ Implementation** | TDD | Liệu nó có thực sự *chạy được* | superpowers TDD red-green · subagent execution · GSD verify-work · ralph-loop completion |
+| **③ Implementation** | TDD | Liệu nó có thực sự *chạy được* | superpowers TDD red-green · subagent execution · GSD verify-work · harnessed completion gate |
 
 Các vòng lặp là **những lăng kính lồng nhau, không phải các phase** — chính là double-loop kinh điển của Cucumber BDD-outer + TDD-inner, mở rộng với một vòng spec SDD thời GenAI thành triple-loop. harnessed chạy traversal outer→inner mặc định như cadence 5-stage của nó, cộng với các **back-edge mà nó ship ngày hôm nay**: Verify đẩy công việc thất bại quay lại Task, một subagent gặp vùng xám sẽ round-trip về clarification trước khi tiếp tục, và mỗi chu kỳ đã ship đưa learnings quay lại Discuss tiếp theo. (Các back-edge có cấu trúc mịn hơn — ví dụ một mâu thuẫn contract định tuyến thẳng về Spec, một requirement mơ hồ về Behavior — đang nằm trên roadmap, chưa ship. harnessed là hiện thực hóa linear-cadence của triple-loop; đồ thị routed đầy đủ là con đường tiến hóa của nó.)
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` có điều kiện | Gate làm rõ khi bắt đầu subtask |
 | `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` có điều kiện | Coding subtask + đồng bộ progress.md xuyên session |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` có điều kiện | TDD bắt buộc cho logic cốt lõi (alias mattpocock `/tdd`) |
-| `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams có điều kiện | Đến khi verbatim `COMPLETE` + R20.10 max_iter fallback |
+| `/task-deliver` | ③ Task | Sub | `harnessed checkpoint` completion gate + Agent Teams có điều kiện | Đến khi verbatim `COMPLETE` + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 sub dispatch có điều kiện theo scenario |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Điểm bắt đầu nối tiếp bắt buộc — chấp nhận UAT + đồng bộ state |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | Các phát hiện độ tin cậy cao theo song song |
@@ -303,7 +303,7 @@ Phương pháp three-layer-stack 5 stage — khuyến nghị chạy qua 5 master
 | ---- | ---- | ---- | ---- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask (3 song song) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture (có điều kiện) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver (4 nối tiếp mỗi subtask) | karpathy principles + mattpocock moves + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver (4 nối tiếp mỗi subtask) | karpathy principles + mattpocock moves + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5 song song có điều kiện → simplify (+ multispec critical) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight (gate sẵn-sàng-release) → ủy quyền PR/deploy | `harnessed release-preflight` + gstack `/ship` + CI `publish.yml` (ranh giới tag-ready) |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
 ├────────────────────────────────────────────────────────────┤
 │ L5b Cơ chế thực thi (trực giao): subagent / Agent Teams     │
-│   / main session + ralph-loop wrapper                       │
+│   / main session + harnessed completion gate                │
 │   parallelism-gate.yaml: subagent mặc định → leo thang 5 trigger │
 │   Pattern A full-stack ba chiều / B giả thuyết đối lập / C review đa chiều │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd (~60): gstack 30+ tùy chọn + gsd 10+ + mattpocock 12 tần suất cao + v.v.
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli (2):         ctx7 / gws
+tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
+tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 

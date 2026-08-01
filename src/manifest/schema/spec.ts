@@ -180,7 +180,7 @@ const ProvidedUnit = Type.Object(
 // Verify schema verbatim — an override is a full replacement install block (and
 // optionally verify), not a patch. runInstall merges the override by
 // detectPlatform().id BEFORE dispatch; absent override + claude-only method →
-// aborted 'harness-mismatch' (honest skip; ralph-loop / gstack use this).
+// aborted 'harness-mismatch' (honest skip; superpowers / gstack use this).
 const HarnessOverride = Type.Object(
   {
     install: Type.Unsafe<Install>(InstallSchema),

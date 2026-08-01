@@ -49,7 +49,7 @@ three-layer stack ของ harnessed คือการ implement แบบ sof
 |---|---|---|---|
 | **① Behavior** | BDD | *อะไร* ที่จะสร้าง + รู้ได้อย่างไรว่าเสร็จ | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → acceptance criteria |
 | **② Spec** | SDD | โครงสร้าง *อย่างไร* | GSD plan-phase → requirements / design / tasks · contracts (Spec Kit / ECC patterns) |
-| **③ Implementation** | TDD | มัน *ทำงาน* จริงไหม | superpowers TDD red-green · subagent execution · GSD verify-work · ralph-loop completion |
+| **③ Implementation** | TDD | มัน *ทำงาน* จริงไหม | superpowers TDD red-green · subagent execution · GSD verify-work · harnessed completion gate |
 
 ลูปเหล่านี้เป็น **เลนส์ที่ซ้อนกัน ไม่ใช่ phase** — double-loop คลาสสิกแบบ Cucumber ที่ BDD-outer + TDD-inner ขยายด้วยวง SDD spec ในยุค GenAI ให้กลายเป็น triple-loop harnessed รัน traversal แบบ outer→inner เป็น default ในรูปของ cadence 5 stage บวกกับ **back-edges ที่ ship แล้วในวันนี้**: Verify เตะงานที่ล้มเหลวกลับไปยัง Task, subagent ที่ชน gray area จะ round-trip กลับไป clarification ก่อนดำเนินต่อ และทุกรอบที่ ship แล้วจะป้อน learnings กลับเข้าสู่ Discuss ถัดไป (back-edges เชิงโครงสร้างที่ละเอียดกว่านี้ — เช่น การขัดแย้งของ contract route ตรงไป Spec, requirement ที่กำกวม route ไป Behavior — อยู่ใน roadmap ยังไม่ ship harnessed คือการ realize triple-loop ในรูปแบบ linear-cadence ส่วน routed graph เต็มรูปแบบคือเส้นทางวิวัฒนาการของมัน)
 
@@ -268,7 +268,7 @@ graph TD
 | `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | Subtask startup clarification gate |
 | `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | Subtask coding + sync progress.md ข้าม session |
 | `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | TDD บังคับสำหรับ core logic (alias mattpocock `/tdd`) |
-| `/task-deliver` | ③ Task | Sub | `ralph-loop` SDK wrapper + Agent Teams conditional | จนกว่าจะได้ `COMPLETE` ตรงตัว + R20.10 max_iter fallback |
+| `/task-deliver` | ③ Task | Sub | `harnessed checkpoint` completion gate + Agent Teams conditional | จนกว่าจะได้ `COMPLETE` ตรงตัว + R20.10 max_iter fallback |
 | `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs conditional dispatch ตามสถานการณ์ |
 | `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | จุดเริ่มต้น serial บังคับ — UAT acceptance + state sync |
 | `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | ค้นพบปัญหา high-confidence แบบ parallel |
@@ -303,7 +303,7 @@ graph TD
 | ---- | ---- | ---- | ---- |
 | ① **Discuss** | `/discuss` | strategic / phase / subtask (3 แบบ parallel) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture (conditional) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver (4 แบบ serial ต่อ subtask) | karpathy principles + mattpocock moves + superpowers TDD + `ralph-loop` |
+| ③ **Task** | `/task` | clarify → code → test → deliver (4 แบบ serial ต่อ subtask) | karpathy principles + mattpocock moves + superpowers TDD + harnessed completion gate |
 | ④ **Verify** | `/verify` | progress → 5 parallel conditional → simplify (+ multispec critical) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
 | ⑤ **Ship** | `/ship` | preflight (release-readiness gate) → delegate PR/deploy | `harnessed release-preflight` + gstack `/ship` + CI `publish.yml` (ขอบเขต tag-ready) |
 
@@ -389,7 +389,7 @@ harnessed/
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
 ├────────────────────────────────────────────────────────────┤
 │ L5b Execution Mechanism (orthogonal): subagent / Agent Teams │
-│   / main session + ralph-loop wrapper                       │
+│   / main session + harnessed completion gate                │
 │   parallelism-gate.yaml: default subagent → escalate 5 triggers │
 │   Pattern A full-stack three-way / B opposing hypotheses / C multi-dim review │
 ├────────────────────────────────────────────────────────────┤
@@ -417,9 +417,9 @@ harnessed/
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
 tool-slash-cmd (~60): gstack 30+ optional + gsd 10+ + mattpocock 12 high-frequency + etc.
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
-tool-cli (2):         ctx7 / gws
+tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
-tool-bundled (3):     ralph-loop / webapp-testing / playwright-cli
+tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 

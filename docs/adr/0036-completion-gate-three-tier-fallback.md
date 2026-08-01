@@ -1,6 +1,8 @@
 # ADR 0036 — Completion gate 交互面三级偏好链: ralph-loop plugin → native /goal → self-loop
 
-- **Status**: Accepted
+- **Status**: Superseded by ADR-0039 (2026-08-01) — 三级链的存在理由是 upstream plugin 的
+  可用性;4.35.0 把完成保证内置到 `harnessed checkpoint` 后该理由消失,4.36.0 摘除依赖并
+  把指令面收敛为单一自有闸门。本文 main body 不改(不可变决策记录),后续以 ADR-0039 为准。
 - **Date**: 2026-07-02
 - **Supersedes**: none — **Amends** ADR-0011 D-10 与 ADR-0028 的**交互 cmd 面**(仅 SKILL.md 指令层);SDK wrapper(`src/workflow/lib/ralphLoop.ts`)不变
 - **Relates to**: ADR-0011(execute-task SDK + ralph-loop 真接)、ADR-0028(D-10 R20.10 capability wire)、`.planning/phases/_patch-4.14.0-cross-harness-setup/`(cross-harness parity 前置)

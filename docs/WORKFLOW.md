@@ -41,7 +41,7 @@ flowchart TB
         T1 --> Tc["/task-clarify<br/>superpowers brainstorm +<br/>mattpocock /grill-with-docs<br/>(gate: 不熟 OR ≥2 approach)"]
         T1 --> Tcode["/task-code<br/>karpathy 心法 +<br/>mattpocock /zoom-out /improve-arch +<br/>planning-with-files progress.md"]
         T1 --> Tt["/task-test<br/>superpowers TDD OR<br/>mattpocock /tdd<br/>(tdd-gate.fires)"]
-        T1 --> Td["/task-deliver<br/>ralph-loop COMPLETE wrapper<br/>(parallelism-gate.fires)"]
+        T1 --> Td["/task-deliver<br/>completion gate COMPLETE wrapper<br/>(parallelism-gate.fires)"]
     end
 
     S3 --> S4
@@ -82,12 +82,12 @@ flowchart TB
 
 **v3.x 旧机制 (superseded)**: slash command (`~/.claude/commands/<x>.md`) pipe 到 `harnessed run` → **in-process SDK spawn 整条 workflow**。问题: (a) 阻塞当前 session(整个 workflow 在 harnessed 进程内跑); (b) bypass CC-native Agent Teams(harnessed 自己的 SDK spawn 无法用 CC 平台层编队); (c) **无法做 clarification round-trip**(headless subagent 不能向 user 提问)。
 
-**v4.0 新机制**: slash command 不再直接 `run`,而是**指挥 CC main session 编排 CC-NATIVE subagent spawn**。harnessed 退居为 "决策大脑 + prompt 库",由三个秒级 CLI 暴露纯函数式查询(gate 路由 / prompt 生成 / checkpoint 记录),实际 spawn / Agent Teams / ralph-loop / AskUserQuestion 全部由 CC main session 用 **CC 原生工具**执行。流程:
+**v4.0 新机制**: slash command 不再直接 `run`,而是**指挥 CC main session 编排 CC-NATIVE subagent spawn**。harnessed 退居为 "决策大脑 + prompt 库",由三个秒级 CLI 暴露纯函数式查询(gate 路由 / prompt 生成 / checkpoint 记录),实际 spawn / Agent Teams / AskUserQuestion 全部由 CC main session 用 **CC 原生工具**执行;完成保证由 harnessed 自己的 `checkpoint` CLI 承担(4.36.0 起不再依赖上游 `/ralph-loop` plugin,见 ADR 0039)。流程:
 
 1. **Clarify interactively** — main session 用 `AskUserQuestion` 当面澄清(subagent 不能向 user 提问的根因解)。
 2. **Gate route** — `harnessed gates <master> --task "<spec>" --skip-sub clarify` → JSON `{fire:[{sub,order,mode}], skip, parallelism:{escalate_to_teams}}`。
 3. **Teams 分支** — 若 `escalate_to_teams` 为 true → CC-native Agent Teams(`Agent(name, run_in_background=true)` spawn 后台 teammate 即隐式成团 / `SendMessage` 协调 / 按名请求 teammate shut down,per `~/.claude/rules/agent-teams.md`;CC 2.1.178+ 已删除建团 / 删团工具)。
-4. **per fired sub** — else 对每个 fired sub:`harnessed prompt <sub> --json` → `{prompt, max_iterations, model}` → **CC-native `Task` spawn** 外层套 ralph-loop plugin → 若 output 含 `STATUS: NEEDS_CLARIFICATION` → `AskUserQuestion` relay 给 user → re-spawn → 直到 output 含 `<promise>COMPLETE</promise>` → `harnessed checkpoint complete <sub>` 记录。
+4. **per fired sub** — else 对每个 fired sub:`harnessed prompt <sub> --json` → `{prompt, max_iterations, model}` → **CC-native `Task` spawn** → 若 output 含 `STATUS: NEEDS_CLARIFICATION` → `AskUserQuestion` relay 给 user → re-spawn → subagent 返回后把最终输出写文件,`harnessed checkpoint complete <sub> --result-file <path>`(对产物 / TDD boundary / verbatim `<promise>COMPLETE</promise>` 三重 fail-closed)记录;被拦下则 `harnessed checkpoint fail <sub> --failing-tests <n>`,它在命中停机条件时打印 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP —— **仅当**三者都未触发才允许重 spawn,任一触发即停(重新收敛范围 / 修阻塞点 / 上报用户)。
 5. **`harnessed run` 保留** — 仅 CI / headless 场景(无 interactive main session 可编排时)。
 
 ### 1.5.1 v4.0 orchestration flow (mermaid)
@@ -108,7 +108,7 @@ flowchart TB
         subgraph Loop["4. per fired sub (loop)"]
             direction TB
             Prompt["harnessed prompt &lt;sub&gt; --json<br/>→ {prompt, max_iterations, model}"]
-            Prompt --> Spawn["CC-native Task spawn<br/>(ralph-loop plugin wrapper)"]
+            Prompt --> Spawn["CC-native Task spawn<br/>(harnessed checkpoint 完成闸门)"]
             Spawn --> Check{output has<br/>NEEDS_CLARIFICATION?}
             Check -->|yes| Relay["AskUserQuestion relay<br/>→ re-spawn"]
             Relay --> Spawn
@@ -145,7 +145,7 @@ flowchart TB
 |---|---|---|
 | **INTERACTIVE** | discuss family (`/discuss*`) + `/task-clarify` | main-session dialogue — `AskUserQuestion` 当面澄清,不 spawn |
 | **ORCHESTRATOR** | `/auto` + `/plan` + `/task` + `/verify` (4 master) | `harnessed gates` → CC-native spawn(loop per fired sub OR Agent Teams 分支) |
-| **EXECUTION** | 其余 sub workflow(`/task-code` `/verify-paranoid` 等) | `harnessed prompt <sub>` → 单次 CC-native `Task` spawn(ralph-loop wrapper) |
+| **EXECUTION** | 其余 sub workflow(`/task-code` `/verify-paranoid` 等) | `harnessed prompt <sub>` → 单次 CC-native `Task` spawn → `harnessed checkpoint complete/fail` 完成闸门 |
 
 ### 1.5.4 Why (v4.0 转向动机)
 
@@ -169,7 +169,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 ├─────────────────────────────────────────────────────────────┤
 │ L5b Execution          subagent (default) / Agent Teams      │
 │     Mechanism          (Pattern A/B/C escalate) / 主 session  │
-│                        / ralph-loop (orthogonal wrapper)     │
+│                        / completion gate (orthogonal wrapper)│
 ├─────────────────────────────────────────────────────────────┤
 │ L5a Workflow SoT       workflows/capabilities.yaml (102) +   │
 │                        workflows/judgments/ (10 yaml routing)│
@@ -190,7 +190,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 ├─────────────────────────────────────────────────────────────┤
 │ L1  Upstream Component gstack / GSD / superpowers /          │
 │                        planning-with-files / mattpocock /    │
-│                        karpathy / ralph-loop / etc.          │
+│                        karpathy / completion-gate / etc.     │
 ├─────────────────────────────────────────────────────────────┤
 │ L0  Discipline         workflows/disciplines/ 7 yaml          │
 │     Substrate          (karpathy / output-style / language /  │
@@ -248,7 +248,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 **核心原则** (per `~/.claude/rules/agent-teams.md` verbatim):
 
 ```
-任 phase 执行 = 选 1 mechanism (subagent OR Teams OR 主 session) + 可选 ralph-loop wrapper
+任 phase 执行 = 选 1 mechanism (subagent OR Teams OR 主 session) + 可选 completion-gate wrapper
 
 每 phase yaml: parallelism: judgments.parallelism-gate.<route>.fires
 ```
@@ -260,7 +260,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | **主 session 直跑** | downgrade | `lines < 20` OR `single_command_query` | 单 grep / 单 read / trivial edit |
 | **subagent fan-out** | ✅ default | `file_independent` AND `parallel_count ≤ 3` AND `NO communication` | research / verify 单文件 / 跑测试 / 抓 doc |
 | **Agent Teams escalate** | upgrade | `teammate_send_message_needed` OR `subagent_context_overflow` OR `shared_task_list` OR `opposing_hypothesis_debate` OR `fullstack_three_way` | 见下方 Pattern A/B/C |
-| **ralph-loop wrapper** | orthogonal | 任 mechanism 外层套 `--completion-promise COMPLETE` | 完成 promise 保证 (sister Phase 2.4 W1.1 wire) |
+| **completion-gate wrapper** | orthogonal | 任 mechanism 外层套 `harnessed checkpoint complete --result-file` / `fail --failing-tests` | 完成 promise 保证 (harnessed 自有 CLI;三停机理由 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP) |
 
 ### 4.2 Agent Teams 3 Pattern (verbatim from `~/.claude/rules/agent-teams.md`)
 
@@ -296,7 +296,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | 9 | `/task-clarify` | ③ Execute | sub | superpowers `brainstorming` + mattpocock `/grill-with-docs` | 子任务澄清 (fires when 不熟 OR ≥2 approach) |
 | 10 | `/task-code` | ③ Execute | sub | karpathy 心法 + mattpocock `/zoom-out` `/improve-arch` + planning-with-files `progress.md` | 编码执行 (心法 always-on + 招式 by-condition) |
 | 11 | `/task-test` | ③ Execute | sub | superpowers TDD OR mattpocock `/tdd` | 测试 (fires when `tdd-gate.fires` 核心逻辑强制) |
-| 12 | `/task-deliver` | ③ Execute | sub | ralph-loop COMPLETE wrapper | Completion-promise (`parallelism-gate.fires` mechanism 外层) |
+| 12 | `/task-deliver` | ③ Execute | sub | completion gate COMPLETE wrapper | Completion-promise (`parallelism-gate.fires` mechanism 外层) |
 | 13 | `/verify` | ④ Verify | **master** | (5-9 sub conditional per `judgments.stage-routing`) | Auto orchestrator — multi-agent + 简化 |
 | 14 | `/verify-progress` | ④ Verify | sub | GSD `/gsd-verify-work` + `/gsd-progress` + planning-with-files `progress.md` | 必跑串行 (always) |
 | 15 | `/verify-code-review` | ④ Verify | sub | code-review skill multi-agent parallel | 多 agent 高置信度问题 |
@@ -328,7 +328,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | 1 | `strategic-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md 战略层 (3 ✅ + 4 ❌) |
 | 2 | `phase-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md Phase 层 |
 | 3 | `subtask-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md 子任务层 |
-| 4 | `parallelism-gate.yaml` | triggers | v2 SHIPPED, v3 no change (4 route + ralph wrapper 已含) | `~/.claude/rules/agent-teams.md` |
+| 4 | `parallelism-gate.yaml` | triggers | v2 SHIPPED, v3 no change (4 route + completion-gate wrapper 已含) | `~/.claude/rules/agent-teams.md` |
 | 5 | `tdd-gate.yaml` | triggers | v2 SHIPPED, v3 no change | CLAUDE.md TDD 强烈建议节 |
 | 6 | `fallback.yaml` | rules | v2 SHIPPED, v3 no change (3 铁律) | CLAUDE.md fallback 3 铁律 |
 | 7 | `web-design-routing.yaml` | triggers | **NEW v3** (两段式 3 trigger: ui-ux-pro-max-structure + design-taste-polish + design-review-post) | `~/.claude/rules/web-design.md` |
@@ -358,7 +358,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | `tool-mcp` | **3** | 3 | 0 | chrome-devtools / tavily / exa |
 | `tool-cli` | **2** | 1 (ctx7) | 1 (gws) | ctx7 / gws |
 | `tool-plugin` | **2** | 1 (planning-with-files) | 1 (@playwright/test reclass) | Claude Code plugin / npm-cli |
-| `tool-bundled-skill` | **3** | 2 (ralph-loop + webapp-testing reclass) | 1 (playwright-cli reclass) | sdk_ref bundled |
+| `tool-bundled-skill` | **3** | 2 (completion-gate + webapp-testing reclass) | 1 (playwright-cli reclass) | sdk_ref bundled |
 | `agent-platform` | **3** | 3 | 0 | `Agent(name, run_in_background=true)` / SendMessage / 按名 shut down 请求 |
 | **TOTAL** | **75** | **32** | **43** | (含 reclass 调整) |
 
@@ -416,7 +416,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 | Entry | impl | cmd | sdk_ref / plugin |
 |---|---|---|---|
-| `ralph-loop` | bundled-skill | `ralph-loop` | `src/routing/lib/ralphLoop.ts` |
+| `completion-gate` | harnessed-bundled | (无上游 — harnessed 自有 CLI) | `src/workflow/lib/ralphLoop.ts` |
 | `webapp-testing` | gstack | `/webapp-testing` | v3 reclass (sister gstack 起源, paradigm 非 plugin) |
 | `playwright-cli` | npm-cli | `playwright` | v3 reclass (AI-probe paradigm 非 plugin 非 CLI 标准) |
 
@@ -438,7 +438,7 @@ harnessed v3.0 = **superset of user manual**:
 | CLAUDE.md fallback 3 铁律 | `judgments/fallback.yaml` |
 | CLAUDE.md 语言/风格/priority/纪律 | L0 `disciplines/*.yaml` 6 file |
 | CLAUDE.md mattpocock 23 招式 | `capabilities` category=tool-slash-cmd (v3 ship 11 高频, 23 全集 v3.x patch defer) |
-| CLAUDE.md ralph-loop completion | `capabilities.ralph-loop` + workflow `/task-deliver` wrapper |
+| CLAUDE.md 子任务完成保证 | `capabilities.completion-gate` + workflow `/task-deliver` wrapper |
 | Obsidian doc gstack 介入节点 | 6 core workflow + 33 optional capabilities |
 | Obsidian doc 测试 3-layer + Pattern A/B/C | `judgments/web-testing-routing.yaml` + L5b 3 pattern |
 | `rules/agent-teams.md` | `judgments/parallelism-gate.yaml` + L5b + doctor token cost check |

@@ -109,7 +109,7 @@ fallback:
 
 ### 目标
 
-子任务的完整执行流程：澄清 → 编码（karpathy 心法）→ 交付保证（ralph-loop）。
+子任务的完整执行流程：澄清 → 编码（karpathy 心法）→ 交付保证（harnessed 自有 completion gate）。
 
 ### 上游依赖
 
@@ -118,7 +118,7 @@ fallback:
 | superpowers | 步骤 1（brainstorming）+ 步骤 3（TDD 可选） | 必需 |
 | karpathy-skills | 步骤 2（编码心法） | 必需 |
 | mattpocock-skills | 步骤 2（按需召唤 /diagnose, /zoom-out, /grill-with-docs） | 必需 |
-| ralph-loop | 步骤 4（交付保证） | 必需 |
+| （无上游）— harnessed 自有 `harnessed checkpoint` CLI | 步骤 4（交付保证） | 内置 |
 
 ### Phases Schema
 
@@ -155,8 +155,8 @@ phases:
 
   - id: 04-deliver
     layer: execution
-    upstream: ralph-loop
-    invokes: [/ralph-loop]
+    # upstream 故意留空：交付保证是 harnessed 自有 CLI，没有上游可指（ADR 0039）
+    invokes: [harnessed checkpoint complete]
     args:
       prompt_template: "完成 {task}. 标准: 功能完整+测试通过+karpathy simplicity. 输出 COMPLETE"
       max_iterations: 20
@@ -169,10 +169,10 @@ phases:
 ### 设计决策(已敲定)
 
 - ✅ 步骤 3 TDD 决策由 **harnessed 路由器判断**（基于任务类型 keywords），未命中再问用户
-- ✅ ralph-loop completion criteria 模板按任务类型分模板（`templates/ralph-criteria/{ui,backend,algorithm}.md`），v0.2 先内置 3 个，后续社区贡献
+- ✅ completion criteria 模板按任务类型分模板（`templates/ralph-criteria/{ui,backend,algorithm}.md`），v0.2 先内置 3 个，后续社区贡献
 - ✅ mattpocock 主动召唤逻辑：`routing/execute.md` 定义触发关键词（"陌生模块"→zoom-out, "排错"→diagnose 等），用户也可手动调用
-- ✅ **ralph-loop `--completion-promise` 不可靠**（ralph-loop issue #1429），workflow 模板**强制 `--max-iterations` 兜底**（phases SCHEMA `args.max_iterations` 显式 required，禁省略）
-- ✅ **Windows 用户兼容**：`harnessed doctor` 检查 `jq` 可用性 + `bash` 解析路径（强制 Git Bash，**不接受 WSL** — 路径冲突导致 ralph-loop 跑飞）；缺失时输出可执行修复命令
+- ✅ **单靠承诺字符串不可靠**（被评者自述,上游 ralph-loop issue #1429 是同一问题的实证），所以交付保证必须配预算与阻尼：`harnessed checkpoint complete <sub> --result-file <path>` 三重 fail-closed（产物 / TDD boundary / verbatim promise），`harnessed checkpoint fail <sub> --failing-tests <n>` 出 `BUDGET-EXHAUSTED` / `NO-PROGRESS` / `BREAK-LOOP` 三条停机理由；**仅当**三者都未触发才允许重 spawn（phases SCHEMA `args.max_iterations` 显式 required，禁省略）
+- ✅ **Windows 用户兼容**：`harnessed doctor` 检查 `bash` 解析路径（强制 Git Bash，**不接受 WSL** — 路径冲突）；缺失时输出可执行修复命令。交付保证内置化（ADR 0039）后不再需要上游 plugin 的 `jq` 依赖
 
 ---
 

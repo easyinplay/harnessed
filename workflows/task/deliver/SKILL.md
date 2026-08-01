@@ -1,21 +1,22 @@
 ---
 name: task-deliver
 description: |
-  task-deliver workflow v3 — Stage ③.d 子任务交付 sub-workflow (ralph-loop COMPLETE
-  wrapper + Agent Teams conditional escalation + R20.10 explicit max_iterations_exceeded
-  fallback)。2-phase composition: 01-deliver (ralph-loop SDK wrapper with completion_promise
-  verbatim "COMPLETE" + parallelism judgments.parallelism-gate.ralph-loop-wrapper.fires +
+  task-deliver workflow v3 — Stage ③.d 子任务交付 sub-workflow (harnessed 自有 completion-gate
+  + Agent Teams conditional escalation + R20.10 explicit max_iterations_exceeded
+  fallback)。2-phase composition: 01-deliver (completion-gate with completion_promise
+  verbatim "COMPLETE" + parallelism judgments.parallelism-gate.completion-gate-wrapper.fires +
   fallback emit_warning_and_halt exit_code 1) → 02-progress-mark (Claude Code plugin
   /plan mark subtask complete in progress.md)。
   schema_version: harnessed.workflow.v3 with disciplines_applied [6] + tools_available
-  [ralph-loop, agent-teams-create, agent-teams-send-message, agent-teams-shutdown,
+  [completion-gate, verification-before-completion, agent-teams-create,
+  agent-teams-send-message, agent-teams-shutdown,
   planning-with-files]. Triggered by harnessed CLI `harnessed task-deliver --task <text>`
   or slash command `/task-deliver` after `harnessed setup`.
 trigger_phrases:
   - "deliver this subtask"
   - "task-deliver workflow"
   - "Stage 3 deliver"
-  - "ralph-loop COMPLETE"
+  - "completion gate COMPLETE"
   - "跑 task-deliver"
 ---
 
@@ -25,36 +26,46 @@ trigger_phrases:
 
 2-phase sub-workflow mapping the user's CLAUDE.md Stage ③.d 子任务交付 discipline
 onto the harnessed runtime, fully `harnessed.workflow.v3` schema (Phase v3.0-3.4 W0
-T3.4.W0.9 — D-09 L0 Discipline Substrate + D-10 ralph-loop SDK wrapper + D-11 Agent
+T3.4.W0.9 — D-09 L0 Discipline Substrate + D-10 completion gate + D-11 Agent
 Teams 升级 5 触发 OR-chain + R20.10 explicit max_iterations_exceeded handler).
 
 | phase | id | upstream | model | capability / args / parallelism / fallback |
 | ----- | -- | -------- | ----- | ------------------------------------------ |
-| 1 | `01-deliver` | ralph-loop | haiku | `{{ capabilities.ralph-loop.cmd }}` + `args: {completion_promise: COMPLETE, max_iterations: ...}` + `parallelism: judgments.parallelism-gate.ralph-loop-wrapper.fires` + `fallback.max_iterations_exceeded.action: emit_warning_and_halt` |
+| 1 | `01-deliver` | (none — harnessed 自有 CLI) | haiku | `{{ capabilities.completion-gate.cmd }}` + `args: {completion_promise: COMPLETE, max_iterations: ...}` + `parallelism: judgments.parallelism-gate.completion-gate-wrapper.fires` + `fallback.max_iterations_exceeded.action: emit_warning_and_halt` |
 | 2 | `02-progress-mark` | planning-with-files | haiku | `{{ capabilities.planning-with-files.cmd }}` / `invokes: /plan` / `artifacts_expected: [progress.md]` |
 
 Per-phase config loads from `workflows/task/deliver/workflow.yaml`; engine.runRouting
 spawns each phase as a sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+.
 
-## Phase 01 ralph-loop COMPLETE wrapper (R20.10 + D-10 + ADR 0011)
+## Phase 01 completion gate (R20.10 + D-10 + ADR 0039)
 
-ralph-loop SDK wrapper 保 completion-promise verbatim string `"COMPLETE"` — sub-task
-被认为完成的判据是子任务输出包含 verbatim "COMPLETE" string (NOT 启发式 / NOT
-LLM-as-judge). Sister capabilities.yaml `ralph-loop` entry impl `bundled-skill` +
-`sdk_ref: src/workflow/lib/ralphLoop.ts` (Phase 2.2 v0.2.0 ship)。
+完成判据是子任务输出包含 verbatim `"COMPLETE"` string (NOT 启发式 / NOT LLM-as-judge)。
+4.36.0 起这条保证**完全内置**,跑在 harnessed 自己的 live path 上,不依赖任何上游 plugin:
 
-交互面三级偏好链 (v4.15.0 / ADR 0036): ralph-loop plugin 优先 (fail-closed 逐字匹配 +
-硬 max-iterations) → 未装时 native `/goal` gate (Claude Code 2.1.139+ / Codex 双平台内置,
-条件句写 verbatim `<promise>COMPLETE</promise>` + turn 上界) → `/goal` 亦不可用时 self-loop
-兜底。SDK 路径 (ralphLoopWrap 硬上界) 不参与该链,始终 verbatim 匹配。
+- `harnessed checkpoint complete <sub> --result-file <path>` — fail-CLOSED,同时校验
+  声明的 `artifacts_expected` 产物存在、TDD boundary 通过(证据非空 / 红绿两侧齐全 /
+  测试文件未被删除)、结果含 verbatim `<promise>COMPLETE</promise>`(或结构化 COMPLETE
+  状态)。`--result <text>` 是内联变体;`--result-file` 优先且在 Windows 上引号安全。
+  `--force` 记录可审计的覆盖(`evidence_status=overridden`),不是静默放行。
+- `harnessed checkpoint fail <sub> --failing-tests <n>` — 记录本次尝试,并在命中停机
+  条件时打印 `BUDGET-EXHAUSTED`(已用尝试次数 vs `workflows/defaults.yaml
+  ralph_max_iterations`)/ `NO-PROGRESS`(连续 N 次无进展;失败测试数,省略该 flag 时退回
+  证据产物摘要)/ `BREAK-LOOP`(该 sub 失败次数达阈值)。
+- **仅当**这三条停机理由都未触发时才允许重 spawn。任一触发即停:重新收敛子任务范围、
+  修掉阻塞点,或上报用户。绝不越过停机指令继续重 spawn。
 
-### Parallelism — ralph-loop 正交 wrapper
+这三条停机理由 == 上游 `/ralph-loop --max-iterations` + `--completion-promise` 曾经提供的
+东西,只是长在自有路径上、没有「装没装」的问题(ADR 0039 supersedes ADR 0036 的
+plugin → `/goal` → self-loop 三级链)。Sister capabilities.yaml `completion-gate` entry
+impl `harnessed-bundled` + `sdk_ref: src/workflow/lib/ralphLoop.ts`。
 
-`parallelism: judgments.parallelism-gate.ralph-loop-wrapper.fires` ref — per R20.10
-+ D-10, ralph-loop 是 **正交 wrapper** 套在 subagent-default / agent-teams-upgrade /
+### Parallelism — completion gate 正交 wrapper
+
+`parallelism: judgments.parallelism-gate.completion-gate-wrapper.fires` ref — per R20.10
++ D-10, completion gate 是 **正交 wrapper** 套在 subagent-default / agent-teams-upgrade /
 main-session-fallback 任 1 mode 外层 (NOT 互斥触发器, 而是 `wraps:` orthogonal field
-in parallelism-gate.yaml L42-45). Runtime engine 评估 wrapping mode 后 spawn 相应
-execution unit + 套 ralph-loop completion check。
+in parallelism-gate.yaml). Runtime engine 评估 wrapping mode 后 spawn 相应
+execution unit + 套 completion check。
 
 ### Agent Teams conditional escalation (D-11 + agent-teams.md 5 OR-chain)
 
@@ -75,10 +86,11 @@ wiring, NOT yaml schema scope。
 phase.fallback.max_iterations_exceeded = `{action: emit_warning_and_halt, message,
 exit_code: 1}` — schema-enforced via FallbackMaxIterationsExceeded Type.Literal(
 'emit_warning_and_halt') (workflow.ts L70-77). Sister Phase 2.4 W1.2 fallbackHandlers.ts
-engine.ts wire — ralph-loop 撞 max_iterations 时 explicit emit warning + halt with
-exit_code 1, NOT silent abort / continue。
+engine.ts wire — 撞 max_iterations 时 explicit emit warning + halt with
+exit_code 1, NOT silent abort / continue。交互面的对应物是 `checkpoint fail` 打印的
+`BUDGET-EXHAUSTED`。
 
-Brief enforcement W0.9: ✅ ralph-loop completion_promise COMPLETE / ✅ parallelism-gate
+Brief enforcement W0.9: ✅ completion-gate completion_promise COMPLETE / ✅ parallelism-gate
 ref / ✅ R20.10 explicit max_iterations_exceeded handler。
 
 ## Phase 02 progress-mark planning-with-files (D-15 + Q-AUDIT-5a Option A)
@@ -103,24 +115,29 @@ Do NOT pipe to `harnessed run task-deliver` — that is the CI/headless path (in
 that blocks the session inside Claude Code).
 
 1. Bash: `harnessed prompt task-deliver --task "$ARGUMENTS" --json` → parse `{prompt, max_iterations, model}`.
-2. Spawn a CC-native subagent (Task / Agent tool) with that `prompt` + `model`, wrapped in the ralph-loop plugin: `/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`. If the plugin is absent, use the native goal gate instead (Claude Code 2.1.139+ / Codex): `/goal "this subtask is delivered: the subagent's final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"` then spawn the subagent and let the goal evaluator drive re-spawns until it clears. If `/goal` is unavailable too, self-loop: spawn → check output for `<promise>COMPLETE</promise>` → re-spawn with prior output appended (up to max_iterations). Set the goal only at the leaf subtask level — `/goal` is single-slot per session and a nested goal overwrites the outer one.
+2. Spawn a CC-native subagent (Task / Agent tool) with that `prompt` and `model`, then drive delivery with harnessed's own completion gate:
+   - on return, write the subagent's final output to a file and run `harnessed checkpoint complete task-deliver --result-file <path>` — it is fail-closed on the declared artifacts, the TDD boundary, and the verbatim `<promise>COMPLETE</promise>`.
+   - if it blocks, run `harnessed checkpoint fail task-deliver --failing-tests <n>` to record the attempt; it prints BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP when a stop condition is reached.
+   - respawn ONLY while none of those three has fired. Any one of them means stop: re-scope the subtask, fix the blocker, or escalate to the user. Never respawn past a stop directive.
 3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.
-4. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete task-deliver --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.
+4. On `<promise>COMPLETE</promise>`: write the subagent’s final output to a file, then Bash `harnessed checkpoint complete task-deliver --result-file <path> --summary "<one-line>"`. Fail-CLOSED — it blocks unless every declared `artifacts_expected` file exists, the TDD boundary passes (non-empty evidence / both the red and green sides present / the test file was not deleted), and the result carries a verbatim `<promise>COMPLETE</promise>` (or a structured COMPLETE status). `--result <text>` is the inline variant; `--result-file` wins and is quoting-safe on Windows. `--force` records an audited override (`evidence_status=overridden`) — it does not silently pass.
+5. If the complete gate blocked: Bash `harnessed checkpoint fail task-deliver --failing-tests <n>` to record the attempt. It prints `BUDGET-EXHAUSTED` / `NO-PROGRESS` / `BREAK-LOOP` once a stop condition is reached. Respawn ONLY while none of those three has fired; any one of them means STOP — re-scope the subtask, fix the blocker, or escalate to the user.
 
-<!-- harnessed-generated:v4.11.0 -->
+<!-- harnessed-generated:v4.12.0 -->
 
 ## References
 
 - D-09 — L0 Discipline Substrate always-on (6 disciplines)
-- D-10 — ralph-loop 真接 SDK wrapper (NOT mock reference; v0.2.0 ship)
+- D-10 — 完成保证真接 SDK wrapper (NOT mock reference; v0.2.0 ship)
 - D-11 — Agent Teams 升级 5 触发 OR-chain per bundled parallelism-gate rules
-- R20.10 — ralph-loop max_iterations_exceeded explicit emit_warning_and_halt
-  (acceptance c "NOT silent abort"); ralph-loop 正交 wrapper wraps 3 mode
+- R20.10 — max_iterations_exceeded explicit emit_warning_and_halt
+  (acceptance c "NOT silent abort"); completion gate 正交 wrapper wraps 3 mode
 - D-02 — SKILL.md `name:` bare slash cmd (`task-deliver` NOT `task/deliver`) per ADR 0030
-- ADR 0011 — SDK + ralph-loop integration v0.2.0 baseline
-- `workflows/judgments/parallelism-gate.yaml` triggers.ralph-loop-wrapper +
+- ADR 0011 — SDK + 完成保证 integration v0.2.0 baseline
+- ADR 0039 — 完成保证内置化 + 摘除上游 `/ralph-loop` 依赖 (supersedes ADR 0036)
+- `workflows/judgments/parallelism-gate.yaml` triggers.completion-gate-wrapper +
   agent-teams-upgrade + subagent-default + main-session-fallback
-- `workflows/capabilities.yaml` — ralph-loop + agent-teams-{create,send-message,shutdown}
+- `workflows/capabilities.yaml` — completion-gate + agent-teams-{create,send-message,shutdown}
   + planning-with-files entries
 - `workflows/defaults.yaml` — ralph_max_iterations.task-deliver.* values (T3.4.W2.2 followup)
 - `docs/WORKFLOW.md` — 4-stage workflow mermaid + Stage ③ Execute 章节

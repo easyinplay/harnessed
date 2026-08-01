@@ -2,18 +2,18 @@
 name: task
 description: |
   Stage ③ Task 主控编排器 — 串行 invoke 4 sub per subtask (clarify → code → test → deliver)。
-  ralph-loop COMPLETE wrapper 在 deliver phase 内 (D-10 orthogonal wrapper)。tdd-gate conditional
+  completion gate (harnessed 自有 checkpoint CLI) 在 deliver phase 内 (D-10 orthogonal wrapper)。tdd-gate conditional
   fire on test sub。schema_version: harnessed.workflow.v3 with delegates_to (4 sub: clarify order 1
   conditional + code order 2 + test order 3 conditional + deliver order 4) + disciplines_applied
   (6 default) + tools_available (8 entry: superpowers-brainstorming + tdd + grill-with-docs +
-  improve-codebase-architecture + diagnose + ralph-loop + planning-with-files)。
+  improve-codebase-architecture + diagnose + completion-gate + planning-with-files)。
   Triggered by slash command `/task`
   (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
 trigger_phrases:
   - "task"
   - "子任务执行"
   - "stage 3 execute"
-  - "ralph loop"
+  - "completion gate"
   - "执行子任务"
 ---
 
@@ -29,17 +29,23 @@ trigger_phrases:
 | 1 | `clarify` | `judgments.subtask-gate.brainstorming.fires` | serial | approaches ≥ 2 / core_algorithm / has_api_contract / error_cost=high |
 | 2 | `code` | （无条件 — karpathy 心法 always-on + mattpocock conditional route） | serial | 始终触发 |
 | 3 | `test` | `judgments.tdd-gate.tdd-strongly-suggested.fires` | serial | 核心业务 / 算法 / 数据处理 / 回归 risk / reliability (6 fires_when OR-chain) |
-| 4 | `deliver` | （无条件 — ralph-loop COMPLETE wrapper） | serial | 始终触发 |
+| 4 | `deliver` | （无条件 — completion gate COMPLETE wrapper） | serial | 始终触发 |
 
 Engine runtime 通过 `runMasterOrchestrator` 按顺序 spawn 4 个子工作流阶段
 （依照 T3.5.W0.1：clarify → code → test → deliver）。K9 invariant 强制执行：每个 serial
 mode delegate 必须携带显式 `order`。每个 subtask 入口走一次此主控编排器。
 
-## ralph-loop 正交 wrapper (D-10)
+## 完成闸门正交 wrapper (D-10)
 
-ralph-loop 是正交 wrapper, 套在 deliver sub 的 01-deliver phase 外层保 completion-promise
-verbatim "COMPLETE" (R20.10)。任何执行单元 (subagent / team / 主 session) 都可外层套 ralph-loop
+完成闸门是正交 wrapper, 套在 deliver sub 的 01-deliver phase 外层保 completion-promise
+verbatim "COMPLETE" (R20.10)。任何执行单元 (subagent / team / 主 session) 都可外层套它
 保 completion-promise (bundled subagent vs Agent Teams routing — orthogonal wrapper rule).
+
+它是 harnessed 自有的 CLI,不是上游 plugin (ADR 0039,4.36.0 摘除 `/ralph-loop` 依赖):
+`harnessed checkpoint complete <sub> --result-file <path>` 对产物 / TDD boundary / verbatim
+`<promise>COMPLETE</promise>` 三重 fail-closed;被拦下时 `harnessed checkpoint fail <sub>
+--failing-tests <n>` 记录尝试并在命中停机条件时打印 BUDGET-EXHAUSTED / NO-PROGRESS /
+BREAK-LOOP。**仅当**三者都未触发才允许重 spawn;任一触发即停。
 
 ## Capability refs
 
@@ -49,7 +55,7 @@ Sister `workflows/capabilities.yaml`:
 - `grill-with-docs` — Bucket 1 mattpocock conditional invoke (clarify)
 - `improve-codebase-architecture` — Bucket 1 mattpocock conditional invoke (code, architecture_health_audit)
 - `diagnose` — Bucket 1 mattpocock conditional invoke (code/test, bug_root_cause_unknown / test_fail)
-- `ralph-loop` — Bucket 4 核心 capability orthogonal wrapper (deliver)
+- `completion-gate` — Bucket 4 核心 capability orthogonal wrapper (deliver;harnessed 自有 `harnessed checkpoint complete` / `fail`,无上游 plugin)
 - `planning-with-files` — Bucket 4 核心 capability (code + deliver progress.md update)
 
 ## Invocation
@@ -79,20 +85,23 @@ session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
    - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed facts <sub> --out .harnessed-facts.json`(填完 null)→ `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → 对它的 fired subs 重复本循环。
    - **否则(leaf sub):**
      a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → 解析 `{prompt, max_iterations, model}`。
-     b. 用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,用 ralph-loop plugin 包裹:`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`。若 plugin 未装,改用原生 goal gate(Claude Code 2.1.139+ / Codex):`/goal "this subtask is delivered: the subagent's final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"`,随后 spawn subagent,由 goal 评估器驱动重 spawn 直到目标清除。若 `/goal` 也不可用,自循环:spawn → 检查输出 `<promise>COMPLETE</promise>` → 把上轮输出 append 后重 spawn(至多 max_iterations)。goal 只在叶子 subtask 层设置 — `/goal` 每 session 单槽,嵌套 goal 会覆盖外层。
+     b. 用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,然后用 harnessed 自己的完成闸门驱动交付:
+        - subagent 返回后,把它的最终输出写入文件,跑 `harnessed checkpoint complete <sub> --result-file <path>` —— 该命令对声明的产物、TDD boundary、逐字 `<promise>COMPLETE</promise>` 三者 fail-closed。
+        - 若被拦下,跑 `harnessed checkpoint fail <sub> --failing-tests <n>` 记录本次尝试;命中停机条件时它会打印 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP。
+        - **仅当**这三者都未触发时才允许重 spawn。任一触发即停:重新收敛子任务范围、修掉阻塞点,或上报用户。绝不越过停机指令继续重 spawn。
      c. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn 同一 sub。
-     d. 命中 `<promise>COMPLETE</promise>`:Bash `harnessed checkpoint complete <sub> --summary "<one-line>"`。evidence guard 在此运行(fail-CLOSED):若声明的 `artifacts_expected` 文件缺失会 exit 非零 —— 重 spawn 产出它,或仅在刻意覆盖时传 `--force`。
-     e. 若 sub 无法达到 COMPLETE(max_iterations 耗尽 / 不可恢复错误):Bash `harnessed checkpoint fail <sub> --summary "<why>"`,然后 STOP 并向用户报告。
+     d. 命中 `<promise>COMPLETE</promise>`:把 subagent 最终输出写入文件,再 Bash `harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"`。fail-CLOSED —— 除非声明的 `artifacts_expected` 文件全部存在、TDD boundary 通过(证据非空 / 红绿两侧齐全 / 测试文件未被删除)、且结果含逐字 `<promise>COMPLETE</promise>`(或结构化 COMPLETE 状态),否则拦下。`--result <text>` 是内联变体;`--result-file` 优先且在 Windows 上引号安全。exit 非零即表示该 sub **未** done —— 重 spawn 补齐,或仅在刻意覆盖时传 `--force`(记录 `evidence_status=overridden`,是可审计的覆盖而非静默放行)。
+     e. 若 complete 闸门拦下:Bash `harnessed checkpoint fail <sub> --failing-tests <n>` 记录本次尝试(该 sub 无测试时省略该 flag —— 回退用证据产物摘要作进展度量)。命中停机条件时它会打印 `BUDGET-EXHAUSTED`(已用尝试次数 vs `workflows/defaults.yaml ralph_max_iterations`)、`NO-PROGRESS`(连续 N 次无进展)或 `BREAK-LOOP`(该 sub 失败次数达阈值)。**仅当**三者都未触发时才允许重 spawn;任一触发即 STOP —— 重新收敛范围、修掉阻塞点或上报用户,并说明情况。
 6. 所有 fired subs `done`(或记录 `failed`)后,Bash `harnessed status --recover` 确认 ledger,并向用户报告 per-sub fired/skipped/done/failed 摘要。
 
 **若丢失上下文(compaction / resume):** 先跑 `harnessed status --recover` —— 它读 ledger 并打印「你在这里,下一步是什么」,让你从第一个 `pending` sub 续跑而非重启。若 ledger 为空,重跑 step 2-3。
 
-<!-- harnessed-generated:v4.11.0 -->
+<!-- harnessed-generated:v4.12.0 -->
 
 ## References
 
 - D-01 master orchestrator delegation pattern
 - D-02 bare slash cmd convention (ADR 0030 namespace policy LOCK)
-- D-10 ralph-loop orthogonal wrapper
+- D-10 completion gate orthogonal wrapper (ADR 0039 — 内置化后摘除上游 `/ralph-loop`)
 - workflows/judgments/{subtask-gate,tdd-gate}.yaml — brainstorming + tdd-strongly-suggested triggers
 - workflows/task/{clarify,code,test,deliver}/workflow.yaml — 4 sub-workflow Phase 3.4 SHIPPED

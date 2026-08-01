@@ -4,8 +4,12 @@
 // template value with no enforcement on any live path: it was interpolated into
 // workflow.yaml (`{{ defaults.ralph_max_iterations.task-test.01-test }}`) for
 // `harnessed run` — the path every SKILL forbids — and echoed in the
-// `harnessed prompt --json` payload for the upstream ralph-loop plugin to honor. On a
-// machine with no plugin installed, nothing consumed it.
+// `harnessed prompt --json` payload for an upstream loop plugin to honor. On a
+// machine with no plugin installed, nothing consumed it. (4.36.0 — that upstream
+// dependency is gone entirely; this executor IS the enforcement. The yaml key keeps
+// its legacy `ralph_max_iterations` name deliberately: it is read by exact string
+// here and interpolated by name from workflow yaml, so renaming buys nothing
+// user-visible and risks a silent lookup miss.)
 //
 // The ledger already counts per-sub attempts: `SubProgressEntry.fail_count`, the same
 // counter BREAK-LOOP reads (src/cli/checkpoint.ts BREAK-LOOP / breakLoop.ts). Same

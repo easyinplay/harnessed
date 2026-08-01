@@ -71,7 +71,7 @@ execution stages.
 
 Output: a locked spec the execution stages (`/plan` → `/task` → `/verify`) consume without further user input.
 
-<!-- harnessed-generated:v4.11.0 -->
+<!-- harnessed-generated:v4.12.0 -->
 
 ## References
 

@@ -76,6 +76,8 @@
 | [0035](./0035-v13-upstream-resync.md) | v13.0 Upstream Re-sync — gstack/gsd-core/superpowers pin bump (D1) + 5 selective wire (D2: verification-before-completion·gsd-eval-review·/diagram·gsd-validate-phase·systematic-debugging) + skip MemPalace/gbrain/ios (D3 一事实一个家) | Accepted | 2026-07-01 |
 | [0036](./0036-completion-gate-three-tier-fallback.md) | Completion gate 交互面三级偏好链 — ralph-loop plugin 优先 → native /goal (CC 2.1.139+/Codex) → self-loop 兜底;amends 0011 D-10 + 0028 交互面,SDK wrapper 不变 | Accepted | 2026-07-02 |
 | [0037](./0037-sha-pin-force-update-degradation.md) | D-15 SHA pin 降级语义 — rev-parse 目录被 cmd 自删 → warn 降级;force-update 下 mismatch → warn(pin=install-time 记录);fresh install 硬门不变;amends 0010 D-15 | Accepted | 2026-07-03 |
+| [0038](./0038-gate-eval-undefined-variable-fail-closed.md) | gate eval 未定义变量按配置错误 fail-closed(ADR 0029 fail-soft 的例外;三处 gate-eval catch 收窄,其余 fail-soft 不变) | Accepted | 2026-07-11 |
+| [0039](./0039-completion-guarantee-internalized-drop-ralph-loop.md) | 完成保证内置化落地,摘除上游 `/ralph-loop` 依赖 — 指令面收敛为单一自有闸门(`checkpoint complete --result-file` 三重 fail-closed + `checkpoint fail` 三条停机理由),`/goal` tier 一并删除;supersedes 0036 | Accepted | 2026-08-01 |
 
 ## 参考
 

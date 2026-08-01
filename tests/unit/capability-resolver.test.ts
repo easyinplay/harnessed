@@ -52,14 +52,14 @@ describe('readInstalledPlugins — installed_plugins.json parsing', () => {
         version: 2,
         plugins: {
           'code-review@claude-plugins-official': [{ version: '1.0' }],
-          'ralph-loop@claude-plugins-official': [{ version: '1.0.0' }],
+          'ui-ux-pro-max@nextlevelbuilder': [{ version: '1.0.0' }],
           'planning-with-files@planning-with-files': [{ version: '2.34.0' }],
         },
       }),
     )
     const plugins = readInstalledPlugins(fakeHome)
     expect(plugins.has('code-review')).toBe(true)
-    expect(plugins.has('ralph-loop')).toBe(true)
+    expect(plugins.has('ui-ux-pro-max')).toBe(true)
     expect(plugins.has('planning-with-files')).toBe(true)
     expect(plugins.size).toBe(3)
   })

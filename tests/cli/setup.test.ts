@@ -27,7 +27,7 @@ vi.mock('../../src/manifest/validate.js', () => ({
 
 import { cp, readdir, readFile, stat } from 'node:fs/promises'
 import { Command } from 'commander'
-import { printGrouped, registerSetup } from '../../src/cli/setup.js'
+import { makeProgressPrinter, printGrouped, registerSetup } from '../../src/cli/setup.js'
 import { runInstall } from '../../src/installers/index.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
@@ -578,5 +578,58 @@ describe('cli/setup — 4.23.0 T7 (GateGuard conflict surface at setup end)', ()
     const { code, stderr } = await runCli(['setup'])
     expect(code).toBe(0)
     expect(stderr).not.toContain('guard conflict (GateGuard)')
+  })
+})
+
+// 4.36.0 — Step B progress must be transient. The v4.13.0 progress lines were
+// permanent console.log rows, so each component was rendered twice: once as
+// [n/N] and again in the grouped table below (user dogfood: "分组和上游检测
+// 1-13重复了"). Locks the two halves of the fix — the TTY line is rewritten in
+// place and erased before the table, and a non-TTY sink gets nothing at all so
+// a captured log carries the table only.
+describe('cli/setup — 4.36.0 makeProgressPrinter (transient Step B progress)', () => {
+  function makeSink(isTTY: boolean) {
+    const chunks: string[] = []
+    return { sink: { isTTY, write: (s: string) => chunks.push(s) }, chunks }
+  }
+
+  it('TTY — writes progress, never advances a line, and erases itself on done()', () => {
+    const { sink, chunks } = makeSink(true)
+    const p = makeProgressPrinter(sink)
+    for (const [i, name] of ['gsd', 'mattpocock-skills', 'ctx7'].entries()) {
+      p.onProgress({ done: i + 1, total: 3, name, status: 'already-installed' })
+    }
+    expect(chunks.length).toBe(3)
+    expect(chunks.join('')).toContain('[2/3] already-installed mattpocock-skills')
+    p.done()
+    // Final write is a pure erase: carriage return, blanks, carriage return —
+    // no [n/N] text survives into the grouped table that prints next.
+    const last = chunks[chunks.length - 1]
+    expect(last).toMatch(/^\r +\r$/)
+    expect(last).not.toContain('[')
+    // Never emitted a newline → the whole step occupied exactly one row.
+    expect(chunks.join('')).not.toContain('\n')
+  })
+
+  it('non-TTY — N progress events produce ZERO writes', () => {
+    const { sink, chunks } = makeSink(false)
+    const p = makeProgressPrinter(sink)
+    for (let i = 1; i <= 5; i++) {
+      p.onProgress({ done: i, total: 5, name: `comp-${i}`, status: 'installed' })
+    }
+    p.done()
+    expect(chunks).toEqual([])
+  })
+
+  it('TTY — a short name after a long one is padded to the widest line (no residue)', () => {
+    const { sink, chunks } = makeSink(true)
+    const p = makeProgressPrinter(sink)
+    p.onProgress({ done: 1, total: 2, name: 'a-very-long-component-name', status: 'installed' })
+    p.onProgress({ done: 2, total: 2, name: 'ctx7', status: 'installed' })
+    expect(chunks.length).toBe(2)
+    const first = chunks[0] ?? ''
+    const second = chunks[1] ?? ''
+    expect(second.length).toBeGreaterThanOrEqual(first.length)
+    expect(second).toMatch(/ctx7 {2,}$/)
   })
 })

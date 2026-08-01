@@ -83,6 +83,38 @@ describe('Phase 2.3 e2e 4-link smoke (Wave 5 T5.3; Link 3+4 deleted v3.4.4 P6)',
     expect(yaml).toMatch(/id:\s*no-comments-default/)
   })
 
+  // 4.36.0 — Link 6, same INVERTED shape as Link 5. The sub-task completion
+  // guarantee was internalized in 4.35.0 (`harnessed checkpoint complete` is
+  // fail-closed on evidence artifacts + the TDD boundary + the verbatim promise;
+  // `harnessed checkpoint fail` emits BUDGET-EXHAUSTED / NO-PROGRESS /
+  // BREAK-LOOP — exactly what `/ralph-loop --max-iterations
+  // --completion-promise` supplied). The upstream manifest is therefore gone and
+  // the bundled `completion-gate` capability is the carrier. NOTE: this does NOT
+  // cover src/workflow/lib/ralphLoop.ts, which is harnessed's own SDK-path
+  // wrapper and stays.
+  it('Link 6 — completion guarantee internalized: upstream manifest dropped, bundled capability carries it', () => {
+    const manifestYaml = join(ROOT, 'manifests', 'tools', 'ralph-loop.yaml')
+    expect(
+      existsSync(manifestYaml),
+      'ralph-loop.yaml must stay deleted (4.36.0 — guarantee runs on harnessed’s own live path)',
+    ).toBe(false)
+
+    const caps = readFileSync(join(ROOT, 'workflows', 'capabilities.yaml'), 'utf8')
+    expect(caps).toMatch(/^ {2}completion-gate:$/m)
+    expect(caps).not.toMatch(/^ {2}ralph-loop:$/m)
+    // the cmd must be the real CLI surface, never a slash command
+    expect(caps).toMatch(/cmd: harnessed checkpoint complete/)
+
+    // trigger KEY only — the file's header comment still names the old key to
+    // document the rename, which is deliberate and must not trip this guard.
+    const gate = readFileSync(join(ROOT, 'workflows', 'judgments', 'parallelism-gate.yaml'), 'utf8')
+    expect(gate).toMatch(/^ {2}completion-gate-wrapper:$/m)
+    expect(gate).not.toMatch(/^ {2}ralph-loop-wrapper:$/m)
+
+    // harnessed's own SDK wrapper is NOT part of the removal
+    expect(existsSync(join(ROOT, 'src', 'workflow', 'lib', 'ralphLoop.ts'))).toBe(true)
+  })
+
   it('Cross-link compose: EE-5 + install CLI register on same Command tree without collision', async () => {
     const { registerManifestAdd } = await import('../../src/cli/manifest-add.js')
     const program = new Command()

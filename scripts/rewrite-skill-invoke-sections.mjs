@@ -41,8 +41,8 @@ const DEPRECATED = new Set(['plan-feature', 'execute-task', 'verify-work'])
 // rewrite". Digit-loose `v\d+\.\d+\.\d+` per generateCommands.ts marker regex.
 // Skip-current keys off NEW_MARKER only, so a previous-marker section (v4.9.2)
 // is always re-rendered to the current shape.
-const OLD_MARKER = '<!-- harnessed-generated:v4.10.0 -->'
-const NEW_MARKER = '<!-- harnessed-generated:v4.11.0 -->'
+const OLD_MARKER = '<!-- harnessed-generated:v4.11.0 -->'
+const NEW_MARKER = '<!-- harnessed-generated:v4.12.0 -->'
 
 // issue #2 — body-type sets MUST mirror generateCommands.ts so the inlined SKILL
 // invoke section carries the SAME deterministic engine sequence as the sibling
@@ -120,18 +120,47 @@ function intentBannerZh(name, kind) {
   ]
 }
 
-// ralph-loop → native `/goal` gate → self-loop degradation chain (shared by the
-// orchestrator leaf step 5b and the execution step 2).
-const SPAWN_LOOP_EN =
-  'Spawn a CC-native subagent (Task / Agent tool) with that `prompt` + `model`, wrapped in the ralph-loop plugin: `/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`. If the plugin is absent, use the native goal gate instead (Claude Code 2.1.139+ / Codex): `/goal "this subtask is delivered: the subagent\'s final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"` then spawn the subagent and let the goal evaluator drive re-spawns until it clears. If `/goal` is unavailable too, self-loop: spawn → check output for `<promise>COMPLETE</promise>` → re-spawn with prior output appended (up to max_iterations). Set the goal only at the leaf subtask level — `/goal` is single-slot per session and a nested goal overwrites the outer one.'
+// 4.36.0 (ADR 0039, supersedes ADR 0036) — the spawn + completion-gate step,
+// shared by the orchestrator leaf step 5b and the execution step 2.
+//
+// History: this used to be a 3-tier degradation chain — upstream `/ralph-loop`
+// plugin → native `/goal` → hand-rolled self-loop. 4.35.0 internalized the
+// guarantee (`harnessed checkpoint complete` verifies the declared artifacts +
+// the TDD boundary + the verbatim promise; `harnessed checkpoint fail` emits the
+// three stop reasons BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP). Those two
+// commands supply exactly what `--max-iterations` + `--completion-promise` used
+// to, on harnessed's own live path — so the chain collapses to one tier with no
+// availability question. Keep the three bullets AND the "any one means stop"
+// rule in every rendering: they are the contract, not decoration.
 
-const SPAWN_LOOP_ZH =
-  '用 CC-native subagent(Task / Agent 工具)以该 `prompt` + `model` spawn,用 ralph-loop plugin 包裹:`/ralph-loop "<prompt>" --max-iterations <max_iterations> --completion-promise "COMPLETE"`。若 plugin 未装,改用原生 goal gate(Claude Code 2.1.139+ / Codex):`/goal "this subtask is delivered: the subagent\'s final output contains verbatim <promise>COMPLETE</promise>; or stop after <max_iterations> turns"`,随后 spawn subagent,由 goal 评估器驱动重 spawn 直到目标清除。若 `/goal` 也不可用,自循环:spawn → 检查输出 `<promise>COMPLETE</promise>` → 把上轮输出 append 后重 spawn(至多 max_iterations)。goal 只在叶子 subtask 层设置 — `/goal` 每 session 单槽,嵌套 goal 会覆盖外层。'
+function spawnLoopEn(indent, sub, tail = '') {
+  const b = `${indent}   - `
+  const lines = [
+    `Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`, then drive delivery with harnessed's own completion gate:`,
+    `${b}on return, write the subagent's final output to a file and run \`harnessed checkpoint complete ${sub} --result-file <path>\` — it is fail-closed on the declared artifacts, the TDD boundary, and the verbatim \`<promise>COMPLETE</promise>\`.`,
+    `${b}if it blocks, run \`harnessed checkpoint fail ${sub} --failing-tests <n>\` to record the attempt; it prints BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP when a stop condition is reached.`,
+    `${b}respawn ONLY while none of those three has fired. Any one of them means stop: re-scope the subtask, fix the blocker, or escalate to the user. Never respawn past a stop directive.`,
+  ]
+  if (tail) lines.push(`${b}${tail}`)
+  return lines.join('\n')
+}
+
+function spawnLoopZh(indent, sub, tail = '') {
+  const b = `${indent}   - `
+  const lines = [
+    `用 CC-native subagent(Task / Agent 工具)以该 \`prompt\` + \`model\` spawn,然后用 harnessed 自己的完成闸门驱动交付:`,
+    `${b}subagent 返回后,把它的最终输出写入文件,跑 \`harnessed checkpoint complete ${sub} --result-file <path>\` —— 该命令对声明的产物、TDD boundary、逐字 \`<promise>COMPLETE</promise>\` 三者 fail-closed。`,
+    `${b}若被拦下,跑 \`harnessed checkpoint fail ${sub} --failing-tests <n>\` 记录本次尝试;命中停机条件时它会打印 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP。`,
+    `${b}**仅当**这三者都未触发时才允许重 spawn。任一触发即停:重新收敛子任务范围、修掉阻塞点,或上报用户。绝不越过停机指令继续重 spawn。`,
+  ]
+  if (tail) lines.push(`${b}${tail}`)
+  return lines.join('\n')
+}
 
 // `research` only: its whole deliverable is the subagent's text, so the blocking
 // vs background delivery contract is load-bearing there.
 const DELIVERY_CONTRACT_EN =
-  " Delivery contract: use a BLOCKING Agent/Task call — only a blocking call returns the subagent's final text as your tool result. A named/background teammate's final message is DISCARDED by the platform; if you must run it that way, instruct the agent to write its findings to a file (and read it back) or SendMessage them to the main session — otherwise the COMPLETE promise and the findings never reach you."
+  "delivery contract: use a BLOCKING Agent/Task call — only a blocking call returns the subagent's final text as your tool result. A named/background teammate's final message is DISCARDED by the platform; if you must run it that way, instruct the agent to write its findings to a file (and read it back) or SendMessage them to the main session — otherwise the COMPLETE promise and the findings never reach you."
 
 const DELIVERY_CONTRACT_ZH =
   '交付契约:必须用**阻塞式** Agent/Task 调用 —— 只有阻塞调用会把 subagent 的最终文本作为 tool result 返回给你。named/background teammate 的最终消息会被平台**丢弃**;若必须那样跑,要求 agent 把发现写入文件(你再读回)或 SendMessage 回主 session —— 否则 COMPLETE promise 和研究发现永远到不了你手里。'
@@ -206,10 +235,10 @@ function orchestratorEn(name) {
     '   - **If the entry has `is_master: true`** (a stage master — e.g. `/auto` firing `plan`/`task`/`verify`): do NOT prompt+spawn it. RECURSE: run that master’s own `harnessed facts <sub> --out .harnessed-facts.json` (fill the nulls) → `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → repeat this loop for ITS fired subs.',
     '   - **Else (leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → parse `{prompt, max_iterations, model}`.',
-    `     b. ${SPAWN_LOOP_EN}`,
+    `     b. ${spawnLoopEn('     ', '<sub>')}`,
     '     c. If the output contains `STATUS: NEEDS_CLARIFICATION` + questions: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.',
-    '     d. On `<promise>COMPLETE</promise>`: Bash `harnessed checkpoint complete <sub> --summary "<one-line>"`. The evidence guard runs here (fail-CLOSED): if a declared `artifacts_expected` file is missing it exits non-zero — re-spawn to produce it, or pass `--force` only to deliberately override.',
-    '     e. If the sub cannot reach COMPLETE (max_iterations exhausted / unrecoverable error): Bash `harnessed checkpoint fail <sub> --summary "<why>"`, then STOP and report to the user.',
+    '     d. On `<promise>COMPLETE</promise>`: write the subagent’s final output to a file, then Bash `harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"`. Fail-CLOSED — it blocks unless every declared `artifacts_expected` file exists, the TDD boundary passes (non-empty evidence / both the red and green sides present / the test file was not deleted), and the result carries a verbatim `<promise>COMPLETE</promise>` (or a structured COMPLETE status). `--result <text>` is the inline variant; `--result-file` wins and is quoting-safe on Windows. On a non-zero exit the sub is NOT done — re-spawn to close the gap, or pass `--force` only to deliberately override (records `evidence_status=overridden`, an audited override rather than a silent pass).',
+    '     e. If the complete gate blocked: Bash `harnessed checkpoint fail <sub> --failing-tests <n>` to record the attempt (omit the flag when the sub has no tests — the evidence-artifact digest is the fallback progress metric). It prints `BUDGET-EXHAUSTED` (attempts spent vs `workflows/defaults.yaml ralph_max_iterations`), `NO-PROGRESS` (no improvement for N consecutive attempts) or `BREAK-LOOP` (this sub failed >= the threshold) once a stop condition is reached. Respawn ONLY while none of those three has fired; any one of them means STOP — re-scope, fix the blocker, or escalate to the user, and report it.',
     `6. After all fired subs are \`done\` (or recorded \`failed\`), Bash \`harnessed status --recover\` to confirm the ledger and report a per-sub fired/skipped/done/failed summary to the user.${step6tail}`,
     '',
     '**If you lose context (compaction / resume):** run `harnessed status --recover` first — it reads the ledger and prints "you are here, this is next" so you resume at the first `pending` sub instead of restarting. If the ledger is empty, re-run steps 2-3.',
@@ -249,10 +278,10 @@ function orchestratorZh(name) {
     '   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed facts <sub> --out .harnessed-facts.json`(填完 null)→ `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan \'<json>\'` → 对它的 fired subs 重复本循环。',
     '   - **否则(leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → 解析 `{prompt, max_iterations, model}`。',
-    `     b. ${SPAWN_LOOP_ZH}`,
+    `     b. ${spawnLoopZh('     ', '<sub>')}`,
     '     c. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn 同一 sub。',
-    '     d. 命中 `<promise>COMPLETE</promise>`:Bash `harnessed checkpoint complete <sub> --summary "<one-line>"`。evidence guard 在此运行(fail-CLOSED):若声明的 `artifacts_expected` 文件缺失会 exit 非零 —— 重 spawn 产出它,或仅在刻意覆盖时传 `--force`。',
-    '     e. 若 sub 无法达到 COMPLETE(max_iterations 耗尽 / 不可恢复错误):Bash `harnessed checkpoint fail <sub> --summary "<why>"`,然后 STOP 并向用户报告。',
+    '     d. 命中 `<promise>COMPLETE</promise>`:把 subagent 最终输出写入文件,再 Bash `harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"`。fail-CLOSED —— 除非声明的 `artifacts_expected` 文件全部存在、TDD boundary 通过(证据非空 / 红绿两侧齐全 / 测试文件未被删除)、且结果含逐字 `<promise>COMPLETE</promise>`(或结构化 COMPLETE 状态),否则拦下。`--result <text>` 是内联变体;`--result-file` 优先且在 Windows 上引号安全。exit 非零即表示该 sub **未** done —— 重 spawn 补齐,或仅在刻意覆盖时传 `--force`(记录 `evidence_status=overridden`,是可审计的覆盖而非静默放行)。',
+    '     e. 若 complete 闸门拦下:Bash `harnessed checkpoint fail <sub> --failing-tests <n>` 记录本次尝试(该 sub 无测试时省略该 flag —— 回退用证据产物摘要作进展度量)。命中停机条件时它会打印 `BUDGET-EXHAUSTED`(已用尝试次数 vs `workflows/defaults.yaml ralph_max_iterations`)、`NO-PROGRESS`(连续 N 次无进展)或 `BREAK-LOOP`(该 sub 失败次数达阈值)。**仅当**三者都未触发时才允许重 spawn;任一触发即 STOP —— 重新收敛范围、修掉阻塞点或上报用户,并说明情况。',
     `6. 所有 fired subs \`done\`(或记录 \`failed\`)后,Bash \`harnessed status --recover\` 确认 ledger,并向用户报告 per-sub fired/skipped/done/failed 摘要。${step6tail}`,
     '',
     '**若丢失上下文(compaction / resume):** 先跑 `harnessed status --recover` —— 它读 ledger 并打印「你在这里,下一步是什么」,让你从第一个 `pending` sub 续跑而非重启。若 ledger 为空,重跑 step 2-3。',
@@ -278,9 +307,10 @@ function executionEn(name) {
     'that blocks the session inside Claude Code).',
     '',
     `1. Bash: \`harnessed prompt ${name} --task "$ARGUMENTS" --json\` → parse \`{prompt, max_iterations, model}\`.`,
-    `2. ${SPAWN_LOOP_EN}${tail}`,
+    `2. ${spawnLoopEn('', name, tail)}`,
     '3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.',
-    `4. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete ${name} --summary "<one-line>"\`. The evidence guard runs here (fail-CLOSED): if a declared \`artifacts_expected\` file is missing it exits non-zero — re-spawn to produce it before treating the sub as done.`,
+    `4. On \`<promise>COMPLETE</promise>\`: write the subagent’s final output to a file, then Bash \`harnessed checkpoint complete ${name} --result-file <path> --summary "<one-line>"\`. Fail-CLOSED — it blocks unless every declared \`artifacts_expected\` file exists, the TDD boundary passes (non-empty evidence / both the red and green sides present / the test file was not deleted), and the result carries a verbatim \`<promise>COMPLETE</promise>\` (or a structured COMPLETE status). \`--result <text>\` is the inline variant; \`--result-file\` wins and is quoting-safe on Windows. \`--force\` records an audited override (\`evidence_status=overridden\`) — it does not silently pass.`,
+    `5. If the complete gate blocked: Bash \`harnessed checkpoint fail ${name} --failing-tests <n>\` to record the attempt. It prints \`BUDGET-EXHAUSTED\` / \`NO-PROGRESS\` / \`BREAK-LOOP\` once a stop condition is reached. Respawn ONLY while none of those three has fired; any one of them means STOP — re-scope the subtask, fix the blocker, or escalate to the user.`,
     '',
     NEW_MARKER,
   ].join('\n')
@@ -300,9 +330,10 @@ function executionZh(name) {
     'Code 内部会阻塞 session)。',
     '',
     `1. Bash: \`harnessed prompt ${name} --task "$ARGUMENTS" --json\` → 解析 \`{prompt, max_iterations, model}\`。`,
-    `2. ${SPAWN_LOOP_ZH}${tail}`,
+    `2. ${spawnLoopZh('', name, tail)}`,
     '3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn。',
-    `4. 命中 \`<promise>COMPLETE</promise>\`:Bash \`harnessed checkpoint complete ${name} --summary "<one-line>"\`。evidence guard 在此运行(fail-CLOSED):若声明的 \`artifacts_expected\` 文件缺失会 exit 非零 —— 重 spawn 产出它再算 done。`,
+    `4. 命中 \`<promise>COMPLETE</promise>\`:把 subagent 最终输出写入文件,再 Bash \`harnessed checkpoint complete ${name} --result-file <path> --summary "<one-line>"\`。fail-CLOSED —— 除非声明的 \`artifacts_expected\` 文件全部存在、TDD boundary 通过(证据非空 / 红绿两侧齐全 / 测试文件未被删除)、且结果含逐字 \`<promise>COMPLETE</promise>\`(或结构化 COMPLETE 状态),否则拦下。\`--result <text>\` 是内联变体;\`--result-file\` 优先且在 Windows 上引号安全。\`--force\` 记录可审计的覆盖(\`evidence_status=overridden\`),不是静默放行。`,
+    `5. 若 complete 闸门拦下:Bash \`harnessed checkpoint fail ${name} --failing-tests <n>\` 记录本次尝试。命中停机条件时会打印 \`BUDGET-EXHAUSTED\` / \`NO-PROGRESS\` / \`BREAK-LOOP\`。**仅当**三者都未触发时才允许重 spawn;任一触发即 STOP —— 重新收敛子任务范围、修掉阻塞点,或上报用户。`,
     '',
     NEW_MARKER,
   ].join('\n')

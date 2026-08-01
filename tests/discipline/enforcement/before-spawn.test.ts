@@ -109,7 +109,7 @@ describe('discipline/enforcement/before-spawn', () => {
     // shuffle among themselves — only sink below the ranked entry.
     const fired: FiredCapability[] = [
       { name: 'ecc-api-design' },
-      { name: 'ralph-loop' }, // impl plugin — orthogonal wrapper, deliberately untiered
+      { name: 'completion-gate' }, // impl harnessed-bundled — orthogonal wrapper, deliberately untiered
       { name: 'caveman' },
       { name: 'gstack-review' },
       { name: 'not-a-capability-at-all' },
@@ -118,7 +118,7 @@ describe('discipline/enforcement/before-spawn', () => {
     expect(out.map((c) => c.name)).toEqual([
       'gstack-review',
       'ecc-api-design',
-      'ralph-loop',
+      'completion-gate',
       'caveman',
       'not-a-capability-at-all',
     ])

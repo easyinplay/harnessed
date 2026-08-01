@@ -337,7 +337,7 @@ describe('workflow.v2 — 5 fixture (T2.4.W0.1)', () => {
     expect(Value.Check(WorkflowSchemaV2, planFeatureV2)).toBe(true)
   })
 
-  test('W2: execute-task v1→v2 migration synthetic fixture (ralph-loop + tdd + fallback) passes', () => {
+  test('W2: execute-task v1→v2 migration synthetic fixture (completion-gate + tdd + fallback) passes', () => {
     const executeTaskV2 = {
       schema_version: 'harnessed.workflow.v2',
       workflow: 'execute-task',
@@ -356,17 +356,16 @@ describe('workflow.v2 — 5 fixture (T2.4.W0.1)', () => {
         },
         {
           id: '04-deliver',
-          name: 'deliver (ralph-loop COMPLETE)',
-          upstream: 'ralph-loop',
+          name: 'deliver (completion-gate COMPLETE)',
           model: 'haiku',
-          capability: '{{ capabilities.ralph-loop.cmd }}',
+          capability: '{{ capabilities.completion-gate.cmd }}',
           args: { completion_promise: 'COMPLETE' },
           gate: 'judgments.parallelism-gate.fires',
-          parallelism: 'judgments.parallelism-gate.ralph-loop-wrapper.fires',
+          parallelism: 'judgments.parallelism-gate.completion-gate-wrapper.fires',
           fallback: {
             max_iterations_exceeded: {
               action: 'emit_warning_and_halt',
-              message: 'ralph-loop max-iterations exceeded',
+              message: 'attempt budget exhausted (BUDGET-EXHAUSTED)',
               exit_code: 1,
             },
           },

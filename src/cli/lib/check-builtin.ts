@@ -111,9 +111,10 @@ export function checkJq(): CheckResult {
       : process.platform === 'darwin'
         ? 'brew install jq'
         : 'apt-get install jq  (or: dnf install jq)'
-  // v4.15.2 T5 — fail → warn. 实际消费方核查:jq 只被 (1) `harnessed audit-log
-  // --filter`(可选功能,自带 ENOENT 降级提示)与 (2) ralph-loop plugin 的 Windows
-  // 运行时(manifest notice)使用 — 不是 setup/核心链路依赖,不该把 doctor 打红。
+  // v4.15.2 T5 — fail → warn. 实际消费方核查:jq 只被 `harnessed audit-log
+  // --filter`(可选功能,自带 ENOENT 降级提示)使用 — 不是 setup/核心链路依赖,不该把
+  // doctor 打红。(4.36.0:第二个消费方 ralph-loop plugin 的 Windows 运行时已随上游
+  // 依赖摘除一起消失。)
   // install_commands 让 setup 末尾的 auto-install 可以顺手补装。
   const installCmd =
     process.platform === 'win32'
@@ -124,8 +125,7 @@ export function checkJq(): CheckResult {
   return {
     name: 'jq present',
     status: 'warn',
-    message:
-      'jq not found in PATH (optional — needed by `harnessed audit-log --filter` and the ralph-loop plugin on Windows)',
+    message: 'jq not found in PATH (optional — needed by `harnessed audit-log --filter`)',
     fix,
     install_commands: [installCmd],
   }
@@ -168,7 +168,7 @@ export function checkWinBash(): CheckResult {
     return {
       name: 'bash flavor (win)',
       status: 'warn',
-      message: `PATH-first bash is the WSL stub (${sanitizeToolOutput(r.wslOnPath)}); harnessed resolved Git Bash at ${r.path} — but OTHER tools (e.g. ralph-loop plugin forks) may still hit WSL`,
+      message: `PATH-first bash is the WSL stub (${sanitizeToolOutput(r.wslOnPath)}); harnessed resolved Git Bash at ${r.path} — but OTHER tools (e.g. third-party plugin forks) may still hit WSL`,
       fix: 'reorder PATH so Git Bash precedes WSL bash.exe (Settings → System → Environment Variables)',
     }
   }

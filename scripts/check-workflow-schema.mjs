@@ -302,7 +302,7 @@ const WorkflowSchemaV2 = Type.Object(
 const ORPHAN_TRIGGER_EXEMPTIONS = new Map([
   [
     'parallelism-gate.main-session-fallback',
-    '(b) downgrade route, not a gate — referenced as a ralph-loop-wrapper `wraps` target + prompt doctrine',
+    '(b) downgrade route, not a gate — referenced as a completion-gate-wrapper `wraps` target + prompt doctrine',
   ],
   [
     'stage-routing.plan-phase-delegate',

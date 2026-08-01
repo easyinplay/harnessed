@@ -57,7 +57,7 @@ function levelOf(manifest: Manifest): Level {
 
 // v4.14.0 T3 — methods with NO non-claude install path unless the manifest
 // carries a harness override (claude plugin marketplace / settings hooks are
-// CC infrastructure; ralph-loop & gstack intentionally have no codex override).
+// CC infrastructure; superpowers & gstack intentionally have no codex override).
 const CLAUDE_ONLY_METHODS: ReadonlySet<string> = new Set(['cc-plugin-marketplace', 'cc-hook-add'])
 
 /** v4.14.0 T3 — resolve the effective manifest for the ACTIVE harness platform.

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.36.0] - 2026-08-01
+
+摘掉 `ralph-loop` 上游依赖 —— base 组件 12 → 11。4.35.0 把交付保证内化到了 harnessed 自己的活路径上,这一版兑现内化的收益:交付闸门不再需要装任何插件。同时修掉 `harnessed setup` 把同一批组件印两遍的输出。
+
+### Changed
+
+- **`ralph-loop` 从 base manifest 摘除**(`manifests/tools/ralph-loop.yaml` 删除,5 tools + 6 skill-packs = 11)。它提供的三重停机现在由 harnessed 自有 CLI 承担:`harnessed checkpoint complete <sub> --result-file <path>` 三重 fail-closed(声明的产物 / TDD boundary / verbatim `<promise>COMPLETE</promise>`),`harnessed checkpoint fail <sub> --failing-tests <n>` 输出 `BUDGET-EXHAUSTED` / `NO-PROGRESS` / `BREAK-LOOP`。仅当三者都未触发才允许重 spawn。
+- **capability `ralph-loop` → `completion-gate`**(`impl: harnessed-bundled`),trigger `parallelism-gate.ralph-loop-wrapper` → `completion-gate-wrapper`,phase `01-deliver` 的 `upstream:` 去掉(schema 里本就是 optional)—— 该 capability 是 harnessed 自己的 CLI,再指任何 upstream 都是把刚摘掉的依赖重新声明一遍。
+- **`/goal` 兜底一并删除**。ADR 0036 的三级链(plugin → `/goal` → self-loop)存在的唯一理由是回答「插件没装怎么办」;自有 gate 成为主路径后这个问题连同两个兜底档一起消失。`/goal` 至今只有 ADR 0036 自述背书,从未实拉验证 —— 留一个未验证的第三档是负债不是保险。ADR 0036 转 `superseded`,新增 **ADR 0039** 记录内化与摘除(含旧 flag → 新停机理由的映射表,以及诚实的代价:失去进程级硬上界,`checkpoint complete` 成为单点)。
+- 指令面 56 个 SKILL 文件经 `scripts/rewrite-skill-invoke-sections.mjs` 重渲染(marker v4.11.0 → v4.12.0),en / zh-Hans 双面同步;README 11 语种的组件清单与 capability 普查同步。
+
+### Fixed
+
+- **`harnessed setup` 把同一批组件印两遍**(用户 dogfood):逐组件进度行 `[n/13] status name` 与随后的分组表格是同一份数据。进度行的存在理由(v4.13.0:Step B 整段静默被当成卡死)只在活终端成立,故改为 **transient** —— TTY 上 `\r` 就地刷新单行、结束前擦除,非 TTY(CI / 重定向)零输出。捕获的日志里只剩表头与分组表格。
+- **`scripts/verify-eval-traps.mjs` 的 overlay 路径失效**:`runDeps.ts` 早已移到 `src/platform/`,该清单还指着 `src/cli/lib/`,整个 trap 套件在 ENOENT 上静默跳过 —— 一道不再 gate 的 gate。修复后三个 trap 全部 TRAP-EFFECTIVE。
+- **`.github/workflows/ci.yml` 的 Windows sentinel 步骤指着不存在的路径**(`tests/routing/` → 实际在 `tests/workflow/`),且用 `pnpm test -- <path>` 这一已知不可靠的过滤形式;改为 `vitest run <path>`。
+- 恢复三个被遗留误删/回退的工作树文件:`workflows/{discuss,verify}/auto/workflow.yaml`(两个 master 缺失导致 K10 孤儿 trigger 门红 + 16 个测试 ENOENT)、`tests/dogfood/cycle-1-discuss.dogfood.test.ts`(盘上是 4.35.0 修复前的 `scope_days` 占位值,会让 skip_gate veto 用例因错误的原因变绿)。
+- `provenance.schema.json` / `docs/INSTALLER-CONTRACT.md` / 项目 `CLAUDE.md` 里指向已删除插件的描述与示例。
+
 ## [4.35.0] - 2026-07-31
 
 判据第一次真的有辨别力,完成保证第一次不依赖上游 plugin。承接 4.33/4.34 的框架约束(**普通用户没有作者本机那份 `~/.claude/CLAUDE.md`**),本版把「写了但从没通电」的最后几处接上,并摘掉一个早已冗余的上游依赖。

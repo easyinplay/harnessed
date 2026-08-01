@@ -131,8 +131,7 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
           `cc-plugin-marketplace cmd must contain \`plugin install <plugin>@<marketplace>\` (parsed from: '${install.cmd.slice(0, 100)}')`,
           'cc-plugin-shape',
         ),
-        suggest:
-          'see manifests/tools/ralph-loop.yaml or manifests/tools/superpowers.yaml for shape',
+        suggest: 'see manifests/tools/superpowers.yaml for shape',
       },
     }
   }

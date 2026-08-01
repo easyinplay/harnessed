@@ -172,15 +172,17 @@ describe('Phase v2.0-2.5 W1 Cycle 1 — parallelism-gate + Agent Teams dogfood',
 
     // Structural assertions — 4 triggers present per W0.2 ship:
     //   subagent-default / main-session-fallback / agent-teams-upgrade /
-    //   ralph-loop-wrapper (orthogonal wrapper per R20.10)
+    //   completion-gate-wrapper (orthogonal wrapper per R20.10; renamed from
+    //   ralph-loop-wrapper in 4.36.0 when the upstream plugin dependency was cut)
     const file = parsed as { triggers: Record<string, unknown> }
     expect(Object.keys(file.triggers)).toEqual(
       expect.arrayContaining([
         'subagent-default',
         'main-session-fallback',
         'agent-teams-upgrade',
-        'ralph-loop-wrapper',
+        'completion-gate-wrapper',
       ]),
     )
+    expect(Object.keys(file.triggers)).not.toContain('ralph-loop-wrapper')
   })
 })

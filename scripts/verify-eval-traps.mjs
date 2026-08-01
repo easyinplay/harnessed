@@ -32,7 +32,10 @@ const FIXTURES = join(MAIN, 'fixtures', 'eval')
  *  HEAD — e.g. uncommitted during Slice A development). Overlaying is harmless
  *  once committed (copies identical files); the MUTATION only ever touches
  *  engine files, never these. */
-const EVAL_OVERLAY = ['src/eval', 'src/cli/evalCmd.ts', 'src/cli.ts', 'src/cli/lib/runDeps.ts']
+// 4.36.0 — `runDeps.ts` moved to src/platform/ (the cross-harness seam) and this
+// list kept the old path, so the overlay silently ENOENT'd the whole trap suite.
+// A path list is a claim about the tree; when it goes stale the gate stops gating.
+const EVAL_OVERLAY = ['src/eval', 'src/cli/evalCmd.ts', 'src/cli.ts', 'src/platform/runDeps.ts']
 
 /** Minimal bug-reintroduction patches (fallback when revert conflicts).
  *  Each reproduces the ESSENCE of the pre-fix defect with a surgical edit;

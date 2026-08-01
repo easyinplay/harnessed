@@ -28,7 +28,7 @@ priority_hierarchy:
   # workflows/discuss/subtask/workflow.yaml 与 workflows/task/code/workflow.yaml
   # 真在消费同 tier 并发。
   - mattpocock                   # 招式 by-demand (rationale 见上方注释)
-  - parallel                     # subagent / Agent Teams 执行机制 (ralph-loop 是正交 wrapper, 见 judgments/parallelism-gate.yaml ralph-loop-wrapper.wraps)
+  - parallel                     # subagent / Agent Teams 执行机制 (完成保证是正交 wrapper, 见 judgments/parallelism-gate.yaml completion-gate-wrapper.wraps)
 
 rules:
   - id: multi-capability-arbitration

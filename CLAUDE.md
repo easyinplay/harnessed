@@ -14,7 +14,7 @@
 - **Stack**: Node.js 22 + TypeScript + pnpm + vitest + biome
 - **Commit safety**: NEVER push to remote without user explicit approval (CLAUDE.md commit safety)
 - **Biome preempt**: TS/JS commit 前必跑 `pnpm exec biome check --write` (3 CI-red recurrences project memory)
-- **Phase cadence**: 三层栈完整方法论严格遵守 (gstack governance → GSD orchestration → superpowers brainstorming + karpathy 心法 + mattpocock 招式 + ralph-loop COMPLETE → verify)
+- **Phase cadence**: 三层栈完整方法论严格遵守 (gstack governance → GSD orchestration → superpowers brainstorming + karpathy 心法 + mattpocock 招式 + harnessed 自有 completion gate → verify)
 
 ---
 
@@ -80,7 +80,7 @@ When in doubt, invoke the gstack skill. The skill has multi-step workflows + che
 
 1. **Discuss** — 🔒 gstack `/office-hours` + `/plan-ceo-review` (或 `/autoplan`) 强制 → GSD `/gsd-discuss-phase` 灰色澄清
 2. **Plan** — GSD `/gsd-plan-phase` + planning-with-files 持久化;复杂架构 gstack `/plan-eng-review`
-3. **Execute** — 每子任务: `superpowers:brainstorming` + karpathy 4 心法 always-on + mattpocock 23 招式按需 + 核心逻辑 TDD + `ralph-loop` 至 verbatim COMPLETE
+3. **Execute** — 每子任务: `superpowers:brainstorming` + karpathy 4 心法 always-on + mattpocock 23 招式按需 + 核心逻辑 TDD + `harnessed checkpoint complete/fail` 交付闸门 (verbatim COMPLETE + 产物 + TDD boundary,三条停机理由)
 4. **Verify** — GSD `/gsd-verify-work` + `code-review` 多 agent + 关键模块 gstack `/review` + `code-simplifier` + 里程碑 `/retro`
 
 详 [docs/WORKFLOW.md](./docs/WORKFLOW.md) — 4-stage mermaid + harnessed v0.4 gap 分析。

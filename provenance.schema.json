@@ -10,7 +10,7 @@
     "source": {
       "type": "string",
       "enum": ["curated", "learned", "imported", "evolved"],
-      "description": "4-class origin (沿袭 ECC SKILL-PLACEMENT-POLICY.md). curated = human-authored. learned = ralph-loop iteration product. imported = external 3rd-party adoption. evolved = subagent / pipeline self-modification."
+      "description": "4-class origin (沿袭 ECC SKILL-PLACEMENT-POLICY.md). curated = human-authored. learned = delivery-loop iteration product. imported = external 3rd-party adoption. evolved = subagent / pipeline self-modification."
     },
     "created_at": {
       "type": "string",
@@ -26,7 +26,7 @@
     "author": {
       "type": "string",
       "minLength": 1,
-      "description": "Subagent name (e.g. 'ui-ux-pro-max'), human user identifier, OR ralph-loop iteration id (e.g. 'ralph-iter-7/4-deliver')."
+      "description": "Subagent name (e.g. 'ui-ux-pro-max'), human user identifier, OR delivery-loop iteration id (e.g. 'iter-7/task-deliver')."
     }
   }
 }

@@ -563,9 +563,14 @@ describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 
     expect(content).toContain('harnessed gates auto')
     expect(content).toContain('harnessed prompt <sub>')
     expect(content).toContain('harnessed checkpoint complete')
-    // Agent Teams escalation + ralph-loop + clarification round-trip
+    // Agent Teams escalation + the completion gate + clarification round-trip.
+    // 4.36.0 — the gate used to be the upstream `/ralph-loop` plugin; it is now
+    // harnessed's own checkpoint CLI, so assert on the three stop reasons the
+    // ledger prints rather than on the dropped plugin name.
     expect(content).toContain('escalate_to_teams')
-    expect(content).toMatch(/ralph-loop/)
+    expect(content).toContain('harnessed checkpoint fail')
+    expect(content).toMatch(/BUDGET-EXHAUSTED \/ NO-PROGRESS \/ BREAK-LOOP/)
+    expect(content).not.toMatch(/ralph-loop/)
     expect(content).toContain('NEEDS_CLARIFICATION')
     // Must NOT use the old SDK-spawn path for itself
     expect(content).not.toContain('harnessed run auto --task-stdin')
@@ -714,9 +719,12 @@ describe('v4.0 — INTERACTIVE / ORCHESTRATOR / EXECUTION command bodies (cells 
 
   it('cell 36 — EXECUTION + INTERACTIVE bodies are NOT touched by the v5.0 orchestrator sequence (regression)', () => {
     // EXECUTION (single-sub) never seeds a ledger or recovers — no orchestration.
+    // 4.36.0 — `harnessed checkpoint fail` is deliberately NOT in this list any
+    // more: with the completion guarantee internalized it belongs to the per-sub
+    // completion gate (shared spawnLoopSteps), not to the orchestrator sequence.
+    // The orchestrator-only markers below are what this regression cell guards.
     const exec = generateCommandFile('verify-paranoid', SUB_PROMPT, CAPS, new Set(), new Set())
     expect(exec.content).not.toContain('harnessed checkpoint start')
-    expect(exec.content).not.toContain('harnessed checkpoint fail')
     expect(exec.content).not.toContain('harnessed status --recover')
     expect(exec.content).not.toContain('harnessed gates')
     // still has its single-sub prompt + complete

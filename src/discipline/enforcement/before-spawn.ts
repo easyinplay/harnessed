@@ -37,9 +37,10 @@ export interface FiredCapability {
  *  Deliberately NOT mapped (→ rank LOWEST, stable order): `ecc` / `mcp` / `cli` /
  *  `npm-cli` / `plugin` / `caveman` / `design-taste-frontend` / `harnessed-bundled`
  *  — none of these upstreams appear in the hierarchy. `plugin` in particular is a
- *  heterogeneous bucket (ralph-loop / code-review / code-simplifier / ui-ux-pro-max);
- *  ralph-loop is an ORTHOGONAL wrapper per CLAUDE.md, explicitly not a tier, so
- *  leaving `plugin` unmapped is the correct outcome rather than an oversight. */
+ *  heterogeneous bucket (code-review / code-simplifier / ui-ux-pro-max), and
+ *  `harnessed-bundled` covers the completion gate, an ORTHOGONAL wrapper per
+ *  CLAUDE.md and explicitly not a tier — so leaving both unmapped is the correct
+ *  outcome rather than an oversight. */
 const IMPL_TIER: Readonly<Record<string, string>> = {
   gstack: 'gstack',
   gsd: 'gsd',

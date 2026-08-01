@@ -68,7 +68,7 @@ Phase 01-brainstorm 在 `phase.spec_ambiguous == true` 时条件性 fire `grill-
 
 产出:一份 locked spec,执行阶段(`/plan` → `/task` → `/verify`)无需再问用户即可消费。
 
-<!-- harnessed-generated:v4.11.0 -->
+<!-- harnessed-generated:v4.12.0 -->
 
 ## References
 
