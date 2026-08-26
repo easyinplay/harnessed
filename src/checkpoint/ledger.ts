@@ -116,6 +116,53 @@ export function markSub(
   return next
 }
 
+/**
+ * 4.38.0 — send a RESOLVED sub back for rework. The edge verify never had: the
+ * three `checkpoint fail` stopping reasons all mean STOP, so "this came back
+ * wrong, do it again" had no machine transition and lived in SKILL.md prose.
+ *
+ * Deliberately NOT the 'rejected' status — that one is a terminal decline and
+ * documents itself as not touching fail_count. Rework is an attempt: it counts,
+ * so a verify that bounces the same sub repeatedly walks into the SAME
+ * BUDGET-EXHAUSTED / BREAK-LOOP machinery a repeatedly failing sub does, with no
+ * second counter to keep in sync.
+ *
+ * The evidence of the rejected attempt is dropped. A pending entry carrying
+ * `evidence_status: 'verified'` is a ledger that claims the work now being redone
+ * was already verified; the guard re-checks artifacts at the next `complete`
+ * anyway, so nothing is lost by clearing it and a false claim is avoided.
+ *
+ * Throws on the two operator errors — unknown sub (parity with markSub: it must
+ * be seeded first) and an already-pending sub (nothing was resolved to send
+ * back). Callers surface these as exit 1; a silent no-op would look like success.
+ */
+export function reopenSub(
+  entries: SubProgressEntryType[],
+  sub: string,
+  reason: string,
+): SubProgressEntryType[] {
+  const idx = entries.findIndex((e) => e.sub === sub)
+  if (idx === -1) {
+    throw new Error(
+      `reopenSub: sub '${sub}' not found in ledger (${entries.length} entries). ` +
+        'It must be seeded before it can be reopened.',
+    )
+  }
+  const current = entries[idx] as SubProgressEntryType
+  if (current.status === 'pending') {
+    throw new Error(`reopenSub: sub '${sub}' is already pending — nothing to send back.`)
+  }
+  const { evidence, evidence_status, completion_claim, ...rest } = current
+  const next = entries.slice()
+  next[idx] = {
+    ...rest,
+    status: 'pending',
+    fail_count: (current.fail_count ?? 0) + 1,
+    reason,
+  }
+  return next
+}
+
 /** First sub still awaiting work (status === 'pending'), or null when none
  *  remain. Skipped/done/failed entries are ignored. */
 export function nextPending(entries: SubProgressEntryType[]): string | null {

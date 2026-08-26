@@ -246,6 +246,12 @@ function buildWorkflowStateBlock(wf, forward, ledgerAgeMs) {
       `ENGINE: mid state-machine \u2014 drive sub '${next}' via \`harnessed prompt ${next}\` \u2192 spawn \u2192 \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
     )
   }
+  const nextEntry = next ? ledger.find((e) => e.sub === next) : void 0
+  if (nextEntry?.reason && (nextEntry.fail_count ?? 0) > 0) {
+    lines.push(
+      `REOPENED: sub '${next}' was sent back (attempt ${nextEntry.fail_count}${nextEntry.attempt_budget !== void 0 ? `/${nextEntry.attempt_budget}` : ''}) \u2014 ${nextEntry.reason}. Address THAT before re-running it; a repeat of the same attempt burns the budget.`,
+    )
+  }
   if (!next && forward && (forward.unit.kind === 'phase' || forward.unit.kind === 'task')) {
     const n = forward.remainingPhases
     lines.push(

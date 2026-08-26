@@ -51,6 +51,17 @@ via stage-routing.yaml）：
    - **关键发布 / 大重构 PR** 升级 4-specialist Agent Team Pattern C（sub multispec，关卡 critical-release-upgrade）
    - 再 `code-simplifier` 末尾（sub simplify，serial order 99）
 
+## 验证判否之后
+
+判否是一次状态机转移，不是写给自己的备注。
+
+`harnessed checkpoint reopen <sub> --reason "<哪里不对>"` 把出问题的 sub 打回 `pending` 并记下原因。每个需要返工的 sub 跑一次，然后重新进入 execute 链 —— 每轮的 `<workflow-state>` 断点会重新把它列为 `next`，并带一行 `REOPENED:` 说明原因。
+
+- **它计入 attempt。** 反复打回同一个 sub 会撞上与反复失败同样的 `BUDGET-EXHAUSTED` / `BREAK-LOOP` 指令。任一触发即停止打回，上报。
+- **不是 `harnessed reject <sub>`** —— 那是终态放弃（这个 sub 根本不做了），并且刻意不计 attempt。
+- **不是 `checkpoint fail`** —— `fail` 记录的是这次尝试收场不好、就此停下；`reopen` 说的是这活儿得重做。
+- 已经处于 `complete` 的 workflow 会被翻回 `active`，迟到的验证不会留下一个「已完成」却挂着未决工作的 workflow。
+
 ## 能力引用
 
 Sister `workflows/capabilities.yaml`：

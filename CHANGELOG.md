@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **doctor 第 21 项 `per-turn inject pairing`**(`src/cli/lib/check-inject-invalidate.ts`)。`cc-hook-add` 一个 manifest 只登记一个 hook,manifest schema 没有依赖字段,所以上面那对钩子只能是两个可选项。只装前一半 = 静默退回 4.25.0 的盲定时器行为,这条检查是唯一会说出来的地方。warn 不 fail:半装状态是旧行为,不是坏行为。
 - **`HARNESSED_INJECT_PC_OFF=1`** —— per-turn 注入的 session 级静音开关。Trellis 用 in-prompt 关键词做同一件事,那要求 hook 每轮读 UserPromptSubmit 的 stdin;热路径上一次阻塞的读就是用户的 prompt 挂住,为省约 1500 token 不值。作用域是刻意窄的:`<workflow-state>` 不可静音 —— 它是把 agent 钉在状态机上的断点,关掉它买到的是漂移不是节省。只认字面 `'1'`。
 
+- **`harnessed checkpoint reopen <sub> --reason "<哪里不对>"` —— verify 判否第一次有回退边**。`checkpoint fail` 的三条停机理由(`BUDGET-EXHAUSTED` / `NO-PROGRESS` / `BREAK-LOOP`)全是「停」,没有一条表示「这活儿回来了不对、重做」,于是判否之后怎么走一直只由 SKILL.md 散文承载 —— 本仓反复在修的 built-but-unwired 形态。comet 把同一条边做成 `--return-to-shape`(只接受来自 Verify/Archive)。新命令把 resolved 的 sub 打回 `pending`、记下原因,并**计入 attempt** —— 反复打回同一个 sub 会撞上与反复失败同样的 BUDGET-EXHAUSTED / BREAK-LOOP 机器,不引入第二个计数器。已处于 `complete` 的 workflow 被翻回 `active`(否则会出现一个「已完成」却挂着 pending sub 的 workflow)。被打回那次的 evidence 一并清除:pending 条目带着 `evidence_status: 'verified'` 是在声称正要重做的活儿已经验过。
+  - **刻意不叫 `reject`**:`harnessed reject <sub>` 已存在且语义相反 —— 终态放弃,schema 注释明写它不动 `fail_count`。返工计数,放弃不计。
+  - 每轮 `<workflow-state>` 断点新增 `REOPENED:` 行,带原因与 attempt 计数。此前断点只说这个 sub 又变成 `next`,不说为什么回来 —— 而那是唯一能改变下一次尝试该做什么的信息。
+  - `workflows/verify/auto/SKILL.md` 双语面新增「验证判否之后」一节,说明它与 `reject` / `fail` 的分界。
+
 ### Changed
 
 - **`git-clone-with-setup` 卸载不再无条件 `rm -rf` clone 目录**。`gstack` / `ui-ux-pro-max` / `ecc` 都走这条安装路径,三个都是用户很可能就地改过的 skill pack,改动此前随卸载静默消失。现在只在**肯定的**脏信号(已跟踪文件被改,或存在未跟踪文件 —— 手工加的 skill 同样算用户工作)上拒绝,并指出 `HARNESSED_FORCE_UNINSTALL=1` 覆盖。未知状态(git 不可用、目标不是 worktree、目录已不在)照常放行:一个没有 git 就无法完成的卸载,拿罕见的数据丢失换来了常见的死路。

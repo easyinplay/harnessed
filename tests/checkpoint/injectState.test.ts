@@ -763,6 +763,60 @@ describe('buildIntentBlock — leaf variant (4.22.0 T6)', () => {
 // <root>/inject-cache/), refreshing every N turns as a compaction hedge. No sid /
 // cache trouble → byte-identical legacy full injection (fail-soft). ──
 
+describe('buildWorkflowStateBlock — reopened sub (4.38.0)', () => {
+  const wf = (over: Record<string, unknown>): CurrentWorkflowV1Type =>
+    ({
+      schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+      phase: 'task',
+      status: 'active',
+      last_checkpoint_path: null,
+      started_at: '2026-08-26T00:00:00.000Z',
+      ...over,
+      // biome-ignore lint/suspicious/noExplicitAny: fixture; schema asserted elsewhere
+    }) as any
+
+  it('a pending sub that was sent back carries WHY, not just that it is next', () => {
+    const out = buildWorkflowStateBlock(
+      wf({
+        sub_progress: [
+          {
+            sub: 'impl',
+            status: 'pending',
+            gate_fired: true,
+            fail_count: 1,
+            reason: 'verify: 缺回归测试',
+          },
+        ],
+      }),
+    )
+    expect(out).toContain('next: impl')
+    expect(out).toContain('REOPENED')
+    expect(out).toContain('verify: 缺回归测试')
+  })
+
+  it('a never-resolved pending sub emits no REOPENED line (fail_count 0)', () => {
+    const out = buildWorkflowStateBlock(
+      wf({
+        sub_progress: [{ sub: 'impl', status: 'pending', gate_fired: true, reason: 'seeded' }],
+      }),
+    )
+    expect(out).not.toContain('REOPENED')
+  })
+
+  it('the line describes the NEXT pending sub, not some other reopened one', () => {
+    const out = buildWorkflowStateBlock(
+      wf({
+        sub_progress: [
+          { sub: 'a', status: 'pending', gate_fired: true },
+          { sub: 'b', status: 'pending', gate_fired: true, fail_count: 2, reason: 'later' },
+        ],
+      }),
+    )
+    expect(out).toContain('next: a')
+    expect(out).not.toContain('REOPENED')
+  })
+})
+
 describe('bin delta injection (4.25.0 — session pc cache)', () => {
   let tmp: string
   beforeEach(() => {

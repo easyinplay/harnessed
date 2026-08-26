@@ -7,6 +7,7 @@ import {
   type GatesPlan,
   markSub,
   nextPending,
+  reopenSub,
   seedLedger,
 } from '../../src/checkpoint/ledger.js'
 import type { SubProgressEntryType } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
@@ -290,5 +291,63 @@ describe('nextPending', () => {
 
   it('returns null for an empty ledger', () => {
     expect(nextPending([])).toBeNull()
+  })
+})
+
+describe('reopenSub (4.38.0 — verify sends a sub back for rework)', () => {
+  const base = (): SubProgressEntryType[] => [
+    {
+      sub: 'impl',
+      status: 'done',
+      gate_fired: true,
+      fail_count: 1,
+      attempt_budget: 20,
+      evidence_status: 'verified',
+      evidence: [{ path: 'src/x.ts', sha256: 'a'.repeat(64) }],
+      completion_claim: 'complete',
+    },
+    { sub: 'verify', status: 'pending', gate_fired: true },
+  ]
+
+  it('done → pending, and the attempt counter moves (budget/break-loop see it)', () => {
+    const next = reopenSub(base(), 'impl', 'verify: 缺回归测试')
+    const e = next.find((x) => x.sub === 'impl')
+    expect(e?.status).toBe('pending')
+    expect(e?.fail_count).toBe(2)
+    expect(e?.reason).toBe('verify: 缺回归测试')
+  })
+
+  it('drops the evidence of the rejected attempt — a pending entry must not claim verification', () => {
+    const e = reopenSub(base(), 'impl', 'r').find((x) => x.sub === 'impl')
+    expect(e?.evidence_status).toBeUndefined()
+    expect(e?.evidence).toBeUndefined()
+    expect(e?.completion_claim).toBeUndefined()
+  })
+
+  it('carries the attempt budget forward (it was resolved once; do not re-resolve)', () => {
+    expect(reopenSub(base(), 'impl', 'r').find((x) => x.sub === 'impl')?.attempt_budget).toBe(20)
+  })
+
+  it('leaves every other entry byte-identical', () => {
+    const before = base()
+    const next = reopenSub(before, 'impl', 'r')
+    expect(next.find((x) => x.sub === 'verify')).toEqual(before.find((x) => x.sub === 'verify'))
+  })
+
+  it('unknown sub → throws (parity with markSub: it must be seeded first)', () => {
+    expect(() => reopenSub(base(), 'nope', 'r')).toThrow(/not found/)
+  })
+
+  it('an already-pending sub → throws (nothing was resolved to send back)', () => {
+    expect(() => reopenSub(base(), 'verify', 'r')).toThrow(/pending/)
+  })
+
+  it('a failed sub can also be reopened (fail then rework is the same edge)', () => {
+    const entries: SubProgressEntryType[] = [
+      { sub: 'impl', status: 'failed', gate_fired: true, fail_count: 2 },
+    ]
+    const e = reopenSub(entries, 'impl', 'r')[0]
+    expect(e?.status).toBe('pending')
+    expect(e?.fail_count).toBe(3)
   })
 })

@@ -16,6 +16,7 @@ before being called a gap. Two of five survived that check.
 | A1 | Trellis `feat(omp): compaction-aware injection`, `feat(mem): recover conversations hidden behind compaction` | SessionStart hook invalidating the per-turn delta cache | `manifests/optional/perturn-inject-invalidate.yaml`, `injectCache.invalidateInjectCache`, `--invalidate` branch in `injectStateMain`, doctor check 21 |
 | B1 | Trellis `no-trellis skip keyword mutes per-turn context injection (#427)` | Substituted: `HARNESSED_INJECT_PC_OFF=1` (see D5) | `injectStateMain` |
 | B2 | Trellis `guard uninstall against deleting uncommitted user data` | Dirty-clone refusal before `rm -rf` | `src/uninstallers/gitCloneWithSetup.ts` |
+| A2 | comet `feat(cli): add return-to-shape recovery (#339)` | `checkpoint reopen <sub> --reason` — the rework edge verify never had | `ledger.reopenSub`, `runCheckpointReopen`, `REOPENED:` breadcrumb line, `verify/auto` SKILL ×2 |
 
 ## Rejected after verification (no code)
 
@@ -86,6 +87,26 @@ expand short names, so the two never matched and every branch fell to `null`.
 Final form asks the filesystem instead (`existsSync(join(dir, '.git'))`), which
 has no path form to normalize. Regression test: a non-repo child of a
 deliberately dirty repo must answer `null`.
+
+**D8 — the rework edge is `reopen`, not `reject`.** User picked the small shape
+(a checkpoint subcommand reusing the existing ledger) over a workflow-level
+rewind. Implementation then hit a name collision worth recording: the status
+union ALREADY carries `'rejected'` and `harnessed reject <sub>` already exists —
+with the OPPOSITE meaning. `rejected` is a terminal decline and
+`currentWorkflow.v1.ts` documents it as deliberately not incrementing
+`fail_count`. Rework must count (that is the whole point of routing it through
+the existing budget/break-loop machinery), so it could not reuse that verb.
+Chosen: status returns to `pending`, `fail_count` increments, `reason` recorded,
+and the evidence of the rejected attempt is cleared — a pending entry claiming
+`evidence_status: 'verified'` would assert the work now being redone was already
+verified.
+
+**D9 — the breadcrumb had to say WHY.** `buildWorkflowStateBlock` already lists a
+pending sub as `next` with an ENGINE line, so a reopened sub was visible; it was
+not *explicable*. The reason is the only part that changes what the next attempt
+should do differently, so a `REOPENED:` line carries it plus the attempt count.
+Guarded on `fail_count > 0` — `reason` is also where a gates-plan skip reason
+lands, and a skipped sub is never `next`.
 
 ## Incidents
 

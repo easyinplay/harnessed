@@ -35,7 +35,7 @@ import type { Command } from 'commander'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
 
-const ACTIONS = ['start', 'complete', 'fail', 'intent'] as const
+const ACTIONS = ['start', 'complete', 'fail', 'reopen', 'intent'] as const
 type Action = (typeof ACTIONS)[number]
 
 function isAction(a: string): a is Action {
@@ -178,6 +178,12 @@ export interface CheckpointCompleteOpts {
   result?: string
   /** Same, read from a file — the quoting-safe channel on Windows. */
   resultFile?: string
+}
+
+/** 4.38.0 — `checkpoint reopen`. `reason` is required by the CLI, not optional
+ *  here only because commander hands the whole option bag over untyped. */
+export interface CheckpointReopenOpts {
+  reason?: string
 }
 
 export interface CheckpointFailOpts {
@@ -651,11 +657,98 @@ export async function runCheckpointFail(
   return
 }
 
+/** `checkpoint reopen <sub> --reason <text>` — send a RESOLVED sub back for
+ *  rework. The transition verify never had: `fail` three stopping reasons all
+ *  mean STOP, so a rejected verification had no machine edge and was carried by
+ *  SKILL.md prose. comet ships the same edge as `--return-to-shape`.
+ *
+ *  Not `harnessed reject <sub>`, which already exists and means the opposite (a
+ *  terminal decline that deliberately does not touch fail_count). Rework is an
+ *  attempt and counts as one, so repeated bounces hit the SAME BUDGET-EXHAUSTED
+ *  / BREAK-LOOP machinery repeated failures do — one counter, not two.
+ *
+ *  Fail-LOUD, unlike the sibling actions marking through `markIfSeeded`: an
+ *  unknown or already-pending sub is an operator error, and a silent no-op here
+ *  reads as "sent back" while the ledger still says done. */
+export async function runCheckpointReopen(
+  sub: string,
+  opts: CheckpointReopenOpts,
+  deps: RunDeps = defaultRunDeps,
+): Promise<void> {
+  const reason = opts.reason?.trim()
+  if (!reason) {
+    deps.error(
+      '[harnessed] checkpoint reopen: --reason <text> is required (why is it coming back?)',
+    )
+    deps.exit(1)
+    return
+  }
+
+  const { readCurrentWorkflow, mutateSubProgress, writeCurrentWorkflow } = await import(
+    '../checkpoint/state.js'
+  )
+  const wf = await readCurrentWorkflow()
+  if (!wf) {
+    deps.error('[harnessed] checkpoint reopen: no active workflow — nothing to send back.')
+    deps.exit(1)
+    return
+  }
+  const entries = wf.sub_progress ?? []
+  const { reopenSub } = await import('../checkpoint/ledger.js')
+  try {
+    reopenSub(entries, sub, reason) // dry run: surface the operator error BEFORE any write
+  } catch (e) {
+    deps.error(`[harnessed] checkpoint reopen: ${(e as Error).message}`)
+    deps.exit(1)
+    return
+  }
+  await mutateSubProgress((e) => reopenSub(e, sub, reason))
+
+  // A verify rejection usually arrives AFTER the chain closed, so the workflow is
+  // sitting at 'complete'. Leaving it there would mean a workflow that is complete
+  // and simultaneously has a pending sub — the per-turn injector would keep
+  // reporting done while the work is outstanding.
+  if (wf.status === 'complete') {
+    await writeCurrentWorkflow({ ...wf, status: 'active' })
+  }
+
+  // Same counters as `fail`, read back after the mutation.
+  const latest = await readCurrentWorkflow()
+  const entry = latest?.sub_progress?.find((e) => e.sub === sub)
+  const attempts = entry?.fail_count ?? 0
+  const budget = entry?.attempt_budget
+  if (budget !== undefined) {
+    const { isBudgetExhausted } = await import('../checkpoint/budget.js')
+    if (isBudgetExhausted(attempts, budget)) {
+      deps.error(
+        `[harnessed] BUDGET-EXHAUSTED: sub '${sub}' has spent ${attempts}/${budget} attempts ` +
+          '(workflows/defaults.yaml ralph_max_iterations). Do not spawn it again — re-scope the ' +
+          'subtask, fix the blocker, or escalate to the user.',
+      )
+    }
+  }
+  const { detectLoop, LOOP_THRESHOLD } = await import('../checkpoint/breakLoop.js')
+  const looped = detectLoop(latest?.sub_progress ?? []).find((l) => l.sub === sub)
+  if (looped) {
+    deps.error(
+      `[harnessed] BREAK-LOOP: sub '${sub}' has been sent back / failed ${looped.count}x ` +
+        `(>= ${LOOP_THRESHOLD}). Stop retrying — run the break-loop skill for root-cause ` +
+        'analysis and capture the lesson to .planning/.',
+    )
+  }
+
+  deps.log(
+    `[harnessed] checkpoint reopen: ${sub} → pending (attempt ${attempts}` +
+      `${budget !== undefined ? `/${budget}` : ''}) — ${reason}`,
+  )
+  deps.exit(0)
+}
+
 export function registerCheckpoint(program: Command): void {
   program
     .command('checkpoint <action> <sub>')
     .description(
-      'Record workflow progress: intent | start | complete | fail <sub-workflow> (writes to ~/.claude/harnessed/checkpoints/)',
+      'Record workflow progress: intent | start | complete | fail | reopen <sub-workflow> (writes to ~/.claude/harnessed/checkpoints/)',
     )
     .option('--summary <text>', 'short summary stored as the checkpoint lastTask')
     .option('--plan <json>', 'gates plan JSON (start only) — seeds the sub-progress ledger')
@@ -680,6 +773,10 @@ export function registerCheckpoint(program: Command): void {
     )
     // T2.7 D-3 — the preferred no-progress metric. A measurement, not a self-assessment.
     .option(
+      '--reason <text>',
+      'reopen only — why the sub is coming back (required); recorded on the ledger entry and surfaced by the per-turn injector',
+    )
+    .option(
       '--failing-tests <n>',
       'fail only — number of tests still failing after this attempt; drives the no-progress circuit breaker (falls back to the evidence-artifact digest when omitted)',
     )
@@ -695,6 +792,7 @@ export function registerCheckpoint(program: Command): void {
           result?: string
           resultFile?: string
           failingTests?: string
+          reason?: string
         },
       ) => {
         if (!isAction(action)) {
@@ -767,6 +865,11 @@ export function registerCheckpoint(program: Command): void {
 
         if (action === 'complete') {
           await runCheckpointComplete(sub, opts)
+          return
+        }
+
+        if (action === 'reopen') {
+          await runCheckpointReopen(sub, opts)
           return
         }
 

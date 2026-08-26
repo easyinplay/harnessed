@@ -110,6 +110,17 @@ export function buildWorkflowStateBlock(
       `ENGINE: mid state-machine — drive sub '${next}' via \`harnessed prompt ${next}\` → spawn → \`harnessed checkpoint complete/fail\`. Do NOT freestyle the orchestration or skip the ledger; run \`harnessed status --recover\` if unsure where you are.`,
     )
   }
+  // 4.38.0 — a sub sent back by `checkpoint reopen` is pending again, and the
+  // lines above say so; they do not say WHY, which is the only part that changes
+  // what the next attempt should do differently. `fail_count > 0` is what
+  // separates a reopened entry from a freshly seeded one (a skip reason also
+  // lands in `reason`, but a skipped sub is never `next`).
+  const nextEntry = next ? ledger.find((e) => e.sub === next) : undefined
+  if (nextEntry?.reason && (nextEntry.fail_count ?? 0) > 0) {
+    lines.push(
+      `REOPENED: sub '${next}' was sent back (attempt ${nextEntry.fail_count}${nextEntry.attempt_budget !== undefined ? `/${nextEntry.attempt_budget}` : ''}) — ${nextEntry.reason}. Address THAT before re-running it; a repeat of the same attempt burns the budget.`,
+    )
+  }
   // Phase 39 (D6) — per-turn current→next pointer. Emitted ONLY when this workflow
   // is done (no pending sub → no ENGINE line) AND a concrete cross-unit next exists
   // (phase|task; done/blocked yield no pointer). Keeps the agent moving forward

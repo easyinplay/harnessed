@@ -51,6 +51,17 @@ Engine runtime per T3.5.W0.1 `runMasterOrchestrator`:
    - **关键发布 / 大重构 PR** 升级 4-specialist Agent Team Pattern C (sub multispec, gate critical-release-upgrade)
    - 再 `code-simplifier` 末尾 (sub simplify, serial order 99)
 
+## When verification fails
+
+A rejected verification is a machine transition, not a note to yourself.
+
+`harnessed checkpoint reopen <sub> --reason "<what is wrong>"` sends the offending sub back to `pending` and records why. Run it once per sub that must be redone, then re-enter the execute chain — the per-turn `<workflow-state>` breadcrumb lists the sub as `next` again and carries a `REOPENED:` line with the reason.
+
+- **It counts as an attempt.** Bouncing the same sub repeatedly reaches the same `BUDGET-EXHAUSTED` / `BREAK-LOOP` directives a repeatedly failing sub does. When either fires, stop reopening and escalate.
+- **Not `harnessed reject <sub>`** — that is a terminal decline (this sub is not being done at all) and deliberately does not count attempts.
+- **Not `checkpoint fail`** — `fail` records that an attempt ended badly and stops; `reopen` says the work must be done again.
+- A workflow already at `complete` is flipped back to `active`, so a late verification cannot leave a "complete" workflow holding pending work.
+
 ## Capability refs
 
 Sister `workflows/capabilities.yaml`:
