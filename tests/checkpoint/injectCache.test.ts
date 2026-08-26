@@ -13,6 +13,7 @@ import {
   DEFAULT_REFRESH_TURNS,
   decidePcEmission,
   injectCacheKey,
+  invalidateInjectCache,
   parseRefreshTurns,
   readInjectCache,
   writeInjectCache,
@@ -106,5 +107,43 @@ describe('read/write inject cache (impure, fail-soft)', () => {
 
   it('write reports success (true) so a skip decision can be trusted', () => {
     expect(writeInjectCache(tmp, 'k2', { pcHash: 'h', ts: 1, turns: 0 })).toBe(true)
+  })
+})
+
+describe('invalidateInjectCache (4.38.0 — real compaction signal)', () => {
+  let tmp: string
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), 'inject-inval-'))
+    mkdirSync(join(tmp, 'inject-cache'), { recursive: true })
+  })
+  afterEach(() => rmSync(tmp, { recursive: true, force: true }))
+
+  it('drops every entry → the next turn re-emits the full block', () => {
+    const k1 = injectCacheKey('/repo/a', 'sess1')
+    const k2 = injectCacheKey('/repo/b', 'sess2')
+    writeInjectCache(tmp, k1, { pcHash: 'abc', ts: 1, turns: 3 })
+    writeInjectCache(tmp, k2, { pcHash: 'def', ts: 1, turns: 7 })
+    expect(readInjectCache(tmp, k1)).not.toBeNull()
+
+    expect(invalidateInjectCache(tmp)).toBe(true)
+
+    expect(readInjectCache(tmp, k1)).toBeNull()
+    expect(readInjectCache(tmp, k2)).toBeNull()
+    // a null cache is exactly the "emit full" branch of decidePcEmission
+    expect(decidePcEmission(readInjectCache(tmp, k1), 'abc', 10, 1).emit).toBe(true)
+  })
+
+  it('no cache dir → idempotent success (fail-soft, never throws)', () => {
+    rmSync(join(tmp, 'inject-cache'), { recursive: true, force: true })
+    expect(invalidateInjectCache(tmp)).toBe(true)
+    expect(invalidateInjectCache(join(tmp, 'does', 'not', 'exist'))).toBe(true)
+  })
+
+  it('writing again after an invalidation restarts the turn counter', () => {
+    const k = injectCacheKey('/repo/a', 'sess1')
+    writeInjectCache(tmp, k, { pcHash: 'abc', ts: 1, turns: 9 })
+    invalidateInjectCache(tmp)
+    const d = decidePcEmission(readInjectCache(tmp, k), 'abc', 10, 42)
+    expect(d.next).toEqual({ pcHash: 'abc', ts: 42, turns: 0 })
   })
 })

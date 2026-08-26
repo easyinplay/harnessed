@@ -11,7 +11,7 @@ import { dirname, join as join4, resolve } from 'node:path'
 
 // src/checkpoint/injectCache.ts
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 var DEFAULT_REFRESH_TURNS = 10
 function decidePcEmission(cache, pcHash, refreshN, nowMs) {
@@ -51,6 +51,14 @@ function writeInjectCache(root, key, entry) {
 `,
       'utf8',
     )
+    return true
+  } catch {
+    return false
+  }
+}
+function invalidateInjectCache(root) {
+  try {
+    rmSync(join(root, 'inject-cache'), { recursive: true, force: true })
     return true
   } catch {
     return false
@@ -455,6 +463,10 @@ function shouldEmitPc(root, repoRoot, sid, pc) {
 function main() {
   try {
     const root = harnessedRoot()
+    if (process.argv.includes('--invalidate')) {
+      invalidateInjectCache(root)
+      return
+    }
     const key = repoKey(process.cwd())
     const envName = sessionIdEnvName()
     const sid = envName ? process.env[envName]?.trim() : void 0
@@ -464,9 +476,11 @@ function main() {
       learningsMd = readFileSync4(join4(key, '.planning', 'LEARNINGS.md'), 'utf8')
     } catch {}
     const budget = Number(process.env.HARNESSED_INJECT_BUDGET) || DEFAULT_INJECT_BUDGET
+    const pcOff = process.env.HARNESSED_INJECT_PC_OFF === '1'
+    const pcGate = pcOff ? () => false : sid ? (pc) => shouldEmitPc(root, key, sid, pc) : void 0
     const out = buildInjection(key, wf, learningsMd, budget, intent, Date.now(), {
       ledgerAgeMs,
-      pcGate: sid ? (pc) => shouldEmitPc(root, key, sid, pc) : void 0,
+      pcGate,
     })
     if (out)
       process.stdout.write(`${out}

@@ -22,7 +22,7 @@
 // tests/checkpoint/injectState.test.ts exercise the generated bin end-to-end.
 
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 export const DEFAULT_REFRESH_TURNS = 10
@@ -85,6 +85,28 @@ export function writeInjectCache(root: string, key: string, entry: InjectCacheEn
   try {
     mkdirSync(join(root, 'inject-cache'), { recursive: true })
     writeFileSync(cacheFile(root, key), `${JSON.stringify(entry)}\n`, 'utf8')
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Impure, fail-soft — drop every cached delta entry under `root`.
+ *  4.38.0: the 4.25.0 header called the REFRESH_TURNS timer a "stateless
+ *  alternative to a PreCompact hook we do not install". This is that hook's
+ *  half — a SessionStart entry runs the per-turn bin with `--invalidate`.
+ *  Every SessionStart source is a context discontinuity that can have dropped
+ *  the earlier <project-context> copy a skip decision is taken on behalf of
+ *  (compact compresses it away, clear wipes it, resume rebuilds from the
+ *  record); `startup` is a no-op because a new session id is a new cache key.
+ *  Blast radius is the whole `inject-cache/` dir, not one session: the entry
+ *  filename hashes repoKey AND sid together, so a single session cannot be
+ *  singled out without the sid the hook does not reliably carry. Over-clearing
+ *  is the safe direction under the module's fail-soft contract — the worst case
+ *  is one redundant full injection (<= DEFAULT_INJECT_BUDGET) per live session. */
+export function invalidateInjectCache(root: string): boolean {
+  try {
+    rmSync(join(root, 'inject-cache'), { recursive: true, force: true })
     return true
   } catch {
     return false

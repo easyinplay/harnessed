@@ -71,4 +71,8 @@ export const CHECKS: readonly CheckFn[] = [
   // the official chrome-devtools-mcp plugin → warn). CC plugin registry + codex
   // sync-clone probed independently.
   async () => (await import('./check-ecc.js')).checkEcc(),
+  // 4.38.0 — half-installed per-turn injection (warn-only): perturn-inject
+  // without perturn-inject-invalidate keeps skipping <project-context> after a
+  // compact/clear has already dropped the copy it is skipping on behalf of.
+  async () => (await import('./check-inject-invalidate.js')).checkInjectInvalidate(),
 ]

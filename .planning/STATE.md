@@ -32,6 +32,8 @@ progress:
 - **v15.0 Upstream Re-sync SHIPPED 2026-07-13(npm 4.29.0)**:pwf v3.4.1 + mattpocock 改名 + 三顺手 pin;详 MILESTONES v15.0 行 + `phases/45-upstream-resync-v15/`。
 - **Phase 51 ECC 编排(2026-07-29,npm 4.32.23 已 commit+push,CI 绿)**:治理链裁出的 B 机器方案被立项自带的对照实测否掉,降级 prose 级(aliases 首次渲染进 subagent prompt)+ 修两个真 bug(setup MCP 串行化分区 / doctor per-check 容错)。决策链与实证详 `phases/51-ecc-orchestration/`(findings F1-F9)。B 方案蓝图保留待回补,触发条件见 `TODOS.md`。
 - **Phase 51 结案(2026-07-29)**:rust/go 对照实测补齐 —— 三语言三次通用发现均为 ECC 专家的严格超集,B 机器方案确定不回补(TODOS 项 closed)。
+- **Phase 53 竞品情报读取(2026-08-26,4.38.0)**:comet + Trellis 自 06-13 起全部提交过读,五条候选逐条在本仓验证 —— 落地 2(compaction 失效钩子 / 卸载脏 clone 保护)、替代实现 1(注入静音改 env 开关)、查证后否决 2。`docs/comparison.md` 刷新至 08-26 快照。决策链 D1-D7 + 否决理由详 `phases/53-competitor-intel-4.38/CONTEXT.md`。
+- **Next milestone(用户已指定)**:codex 完整支持 + 兼容平台范围扩大(竞品十周内各加 4 个平台,本仓仍 CC + 部分 codex)。按 cadence 单开,未启动。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 

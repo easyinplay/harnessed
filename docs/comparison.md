@@ -1,19 +1,21 @@
 # harnessed vs comet vs Trellis — an honest comparison
 
-> Snapshot date: **2026-06-13**. Numbers move; treat them as a point-in-time reading, not a leaderboard.
+> Snapshot date: **2026-08-26** (previous: 2026-06-13). Numbers move; treat them as a point-in-time reading, not a leaderboard.
 > Written by the harnessed maintainer. We try hard not to flatter ourselves here — where harnessed is behind, this says so.
 
 [comet](https://github.com/rpamis/comet) and [Trellis](https://github.com/mindfold-ai/Trellis) are the two AI-coding-harness projects closest in spirit to harnessed. This page compares the three honestly: the headline metrics, what each does well, and where harnessed genuinely lags.
 
 ## The metrics (and why one of them is noise)
 
-| | npm downloads / month | GitHub stars | downloads ÷ stars |
-|---|---|---|---|
-| **harnessed** | 8,627 | **2** | 4,313 : 1 |
-| **comet** | 6,810 | 1,207 | 5.6 : 1 |
-| **Trellis** | 13,247 | 10,221 | 1.3 : 1 |
+| | npm downloads / month | GitHub stars | downloads ÷ stars | stars since 06-13 |
+|---|---|---|---|---|
+| **harnessed** | 2,771 | **2** | 1,386 : 1 | 0 |
+| **comet** | 6,275 | 2,844 | 2.2 : 1 | +1,637 (×2.4) |
+| **Trellis** | 17,136 | 14,235 | 1.2 : 1 | +4,014 (×1.4) |
 
-*(npm `api.npmjs.org`, 2026-05-13 → 06-11; GitHub stars via API, 2026-06-13.)*
+*(npm `api.npmjs.org`, 2026-07-26 → 08-25; GitHub stars via API, 2026-08-26.)*
+
+harnessed's download count fell by two thirds while its star count did not move at all — consistent with the reading below that those downloads were never people. Both competitors added more stars in ten weeks than harnessed has had in its lifetime.
 
 **Read the third column before the first.** harnessed's download/star ratio is three orders of magnitude out of line with comet and Trellis. A package with 8,627 monthly downloads and **2 stars** does not have 8,627 human users — those downloads are overwhelmingly CI runs, the maintainer's own `npx harnessed@latest` dogfooding, and registry/mirror bots (60 versions were published in about a month). **harnessed's real organic adoption is ~0.** comet and Trellis, by contrast, have download/star ratios consistent with genuine human uptake.
 
@@ -40,6 +42,16 @@ So: comet and Trellis have shipped and found users. harnessed has shipped a lot 
 - **Declarative composition + a supply-chain layer.** None of the three vendor upstream source (an earlier draft of this page wrongly said comet does — corrected). The real difference: comet installs each upstream with bespoke, per-component imperative code; harnessed describes each upstream in a uniform YAML manifest carrying a license whitelist, provenance, an audit trail, and health metadata — a supply-chain/governance layer comet's installers don't have — over an imperative installer backend for the irregular cases. Trellis is a self-contained monolith. harnessed's bet: the declarative-manifest-plus-provenance layer scales composition better as the component count grows. (Caveat: this is cleaner *in principle* but under-validated — comet has actually shipped imperative installers across 14 platforms, while harnessed's manifests have only been exercised on Claude Code and have already had to cram multi-step installs into a single command string.)
 - **Engineering rigor.** TypeScript + TypeBox schema validation + atomic writes + `proper-lockfile` + graceful-degrade schema versioning + ~1,290 tests. comet's state machine is shell scripts (its own README calls the old approach "fragile"). Same job, an order of magnitude more crash-resistance.
 - **Audit + provenance + supply-chain hygiene.** A JSONL audit log, a provenance schema, path-traversal hardening, license-whitelist manifest validation. For a tool that installs many heterogeneous upstream components, this matters — and neither competitor emphasizes it.
+
+## What changed since the 2026-06-13 snapshot
+
+Ten weeks of commits on both sides, read in full on 2026-08-26. Three things worth recording.
+
+**Platform expansion is the axis where the gap is widening, not holding.** comet added Grok, Trae, CodeBuddy and Antigravity 2.0 as first-class platforms and gave `init`/`update` a `--platform` target; Trellis added DeepSeek Harness, Kimi Code, Snow CLI and Grok Build, on top of deepening OpenCode / Pi / Codex. harnessed still implements Claude Code, with a partial codex path behind the `PlatformDescriptor` seam. This page already listed cross-platform breadth as a lag; the new information is the *rate*.
+
+**Trellis is converging on declarative platform configuration.** `refactor(configurators): describe each platform's file set once` moves it away from per-platform imperative configurators toward describing each platform's files once. That is a data point for harnessed's central bet — that imperative installers stop scaling as the component/platform count grows — arriving from the project with the most platforms to maintain. It does not validate the manifest layer itself, which is still exercised on one harness.
+
+**Two upstream fixes landed here; two were checked and rejected.** 4.38.0 took Trellis's compaction-aware injection (as a SessionStart cache invalidation) and its uninstall guard against deleting uncommitted user data. Rejected after checking this repo: Trellis's context-injection caps (harnessed has had `DEFAULT_INJECT_BUDGET` since 4.25.0) and comet's "exclude runtime state from eval copies" (the eval runner builds a fresh tmp repo per scenario rather than copying anything). One item runs the other way: Trellis's `drop invented platform session env var names` is a defect harnessed's `PlatformDescriptor` contract already forbids by construction.
 
 ## Bottom line
 

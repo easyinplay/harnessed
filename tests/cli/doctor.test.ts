@@ -197,15 +197,15 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
   // Bump assertion when adding a check (sister doctor.ts --description string update).
   it('cell 0 — CHECKS registry has 20 entries (4.32.22 +ecc)', async () => {
     const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
-    expect(CHECKS.length).toBe(20)
+    expect(CHECKS.length).toBe(21)
   })
 
-  it('cell 1 — all 20 checks pass → exit 0 + summary "pass" (4.32.22 bump 19→20)', async () => {
+  it('cell 1 — all 21 checks pass → exit 0 + summary "pass" (4.38.0 bump 20→21)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(20)
+    expect(p.checks).toHaveLength(21)
     expect(p.summary).toBe('pass')
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
     // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
@@ -237,7 +237,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
     const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
-    expect(p.checks).toHaveLength(20)
+    expect(p.checks).toHaveLength(21)
     const tokenBudget = p.checks.find((c) => c.name === 'token budget')
     expect(tokenBudget).toBeDefined()
     expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')

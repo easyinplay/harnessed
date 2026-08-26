@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+# 4.38.0 — the compaction half of per-turn injection. PAIRS WITH `perturn-inject`;
+# installing it alone does nothing (there is no delta cache to drop), and
+# installing perturn-inject alone silently falls back to the 4.25.0 behaviour —
+# a blind HARNESSED_INJECT_REFRESH_TURNS timer (default 10).
+#
+# Why it exists: the per-turn hook skips re-emitting <project-context> while the
+# block's hash is unchanged, because the copy already sits in the conversation.
+# Compaction removes that copy without touching the cache, so the skip keeps
+# firing on behalf of content that is gone — up to REFRESH_TURNS-1 turns blind.
+# injectCache.ts (4.25.0) named the timer "a stateless alternative to a PreCompact
+# hook we do not install"; this manifest installs the real signal instead.
+#
+# SessionStart carries every context discontinuity: `compact` compresses the
+# earlier copy away, `clear` wipes it, `resume` rebuilds from the record. No
+# hook_matcher — `startup` is already a no-op (a new session id is a new cache
+# key) and an unfiltered entry is one less thing to keep in sync with CC's source
+# vocabulary. Same bin as perturn-inject, one flag apart; silent, always exit 0.
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: perturn-inject-invalidate
+  display_name: Per-Turn Injection Cache Invalidation (SessionStart)
+  description: Opt-in SessionStart hook dropping the per-turn delta cache after compact/clear/resume so the next turn re-injects in full. Pairs with perturn-inject.
+  upstream:
+    source: perturn-inject-invalidate
+    homepage: https://github.com/easyinplay/harnessed
+    repository: https://github.com/easyinplay/harnessed.git
+    license: MIT
+    notice: First-party harnessed hook (4.38.0).
+spec:
+  type: cc-hook
+  component_type: command
+  category: meta
+  install_type: hook
+  install:
+    method: cc-hook-add
+    cmd: "node bin/harnessed-inject-state.mjs --invalidate"
+    hook_event: SessionStart
+    hook_command: "node bin/harnessed-inject-state.mjs --invalidate"
+    idempotent_check: "grep -q 'harnessed-inject-state.mjs --invalidate' ~/.claude/settings.json"
+  verify:
+    cmd: "grep -q 'harnessed-inject-state.mjs --invalidate' ~/.claude/settings.json"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "true"
+  upstream_health:
+    stability: beta
+    last_check: "2026-08-26"
+    last_known_good_version: "0.1.0"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

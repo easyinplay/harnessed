@@ -31,6 +31,7 @@ import { dirname, join, resolve } from 'node:path'
 import {
   decidePcEmission,
   injectCacheKey,
+  invalidateInjectCache,
   parseRefreshTurns,
   readInjectCache,
   writeInjectCache,
@@ -141,6 +142,15 @@ function shouldEmitPc(root: string, repoRoot: string, sid: string, pc: string): 
 function main(): void {
   try {
     const root = harnessedRoot()
+    // 4.38.0 — SessionStart entry (compact/clear/resume/startup). A context
+    // discontinuity invalidates every skip decision the delta cache is holding,
+    // so drop it and let the next UserPromptSubmit turn re-emit in full. Silent,
+    // always exit 0: a hook that prints on SessionStart would inject noise into
+    // every session, and a hook that throws would surface as a startup error.
+    if (process.argv.includes('--invalidate')) {
+      invalidateInjectCache(root)
+      return
+    }
     // `key` is the repo ROOT (holds .planning/ for buildInjection's disk scans). The
     // workflow LOOKUP prefers the session-scoped composite slot (Phase 34/35), then
     // the bare repoKey. The composite key is NOT a real directory.
@@ -157,11 +167,23 @@ function main(): void {
     }
 
     const budget = Number(process.env.HARNESSED_INJECT_BUDGET) || DEFAULT_INJECT_BUDGET
+    // 4.38.0 — opt-out for the token-heavy half. Trellis mutes its equivalent with
+    // an in-prompt keyword, which costs a stdin read on EVERY prompt; a blocking
+    // read in this hot path would hang the user's turn, so the escape hatch is
+    // session-scoped instead. It gates <project-context> ONLY: <workflow-state> is
+    // the you-are-here breadcrumb that keeps the agent on the state machine, and a
+    // switch that silently turns off drift protection is not an escape hatch.
+    const pcOff = process.env.HARNESSED_INJECT_PC_OFF === '1'
     // Session-delta gate wired only when a session id is present (parity with the
     // pre-4.32.13 bin: `if (pc && sid && !shouldEmitPc)`). No sid → full injection.
+    const pcGate = pcOff
+      ? () => false
+      : sid
+        ? (pc: string) => shouldEmitPc(root, key, sid, pc)
+        : undefined
     const out = buildInjection(key, wf, learningsMd, budget, intent, Date.now(), {
       ledgerAgeMs,
-      pcGate: sid ? (pc) => shouldEmitPc(root, key, sid, pc) : undefined,
+      pcGate,
     })
     if (out) process.stdout.write(`${out}\n`)
   } catch {

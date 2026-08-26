@@ -18,6 +18,10 @@ export function registerInjectState(program: Command): void {
   program
     .command('inject-state')
     .description('(internal) per-turn <workflow-state> hook output — used by the perturn hook')
+    // 4.38.0 — declared so commander does not reject the SessionStart form.
+    // The flag is consumed by the bin's own process.argv check (the dynamic
+    // import below re-enters the same argv), not by this action.
+    .option('--invalidate', '(internal) drop the per-session <project-context> delta cache')
     .action(async () => {
       try {
         const mjs = join(getAssetsRoot(), 'bin', 'harnessed-inject-state.mjs')

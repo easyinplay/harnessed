@@ -807,6 +807,7 @@ describe('bin delta injection (4.25.0 — session pc cache)', () => {
     delete env.CLAUDE_CODE_SESSION_ID
     delete env.HARNESSED_PLATFORM
     delete env.HARNESSED_INJECT_REFRESH_TURNS
+    delete env.HARNESSED_INJECT_PC_OFF
     return execFileSync('node', [binPath], {
       env: { ...env, ...extraEnv },
       encoding: 'utf8',
@@ -867,5 +868,74 @@ describe('bin delta injection (4.25.0 — session pc cache)', () => {
     // sessB reads the bare slot? No — seed wrote only sessA's slot; reseed for B.
     seed('sessB')
     expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessB' })).toContain('<project-context>')
+  })
+
+  // 4.38.0 — the SessionStart hook (compact/clear/resume) runs the same bin with
+  // --invalidate. Without it the delta cache keeps skipping <project-context> for
+  // up to DEFAULT_REFRESH_TURNS-1 turns AFTER compaction already dropped the copy
+  // it is skipping on behalf of (the 4.25.0 header called the timer a "stateless
+  // alternative to a PreCompact hook we do not install" — this is that hook).
+  it('--invalidate drops the cache → the next turn re-emits the full block', () => {
+    seed('sessInv')
+    expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessInv' })).toContain('<project-context>')
+    expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessInv' })).not.toContain('<project-context>')
+
+    const out = execFileSync('node', [binPath, '--invalidate'], {
+      env: {
+        ...process.env,
+        HOME: join(tmp, 'root'),
+        USERPROFILE: join(tmp, 'root'),
+        HARNESSED_ROOT_OVERRIDE: join(tmp, 'root', '.claude', 'harnessed'),
+      },
+      encoding: 'utf8',
+      cwd: join(tmp, 'repo'),
+    })
+    expect(out).toBe('') // hook prints nothing; exit 0
+
+    expect(runBin({ CLAUDE_CODE_SESSION_ID: 'sessInv' })).toContain('<project-context>')
+  })
+
+  // 4.38.0 — session-level escape hatch. Trellis mutes its per-turn injection with
+  // an in-prompt keyword; that needs the hook to read the UserPromptSubmit stdin
+  // payload on EVERY turn, and a read that blocks is the user's prompt hanging —
+  // too much risk on the hot path for a ~1500-token saving. An env switch buys the
+  // same relief at session granularity with none of it.
+  //
+  // Deliberately narrow: <workflow-state> is NOT mutable. It is the breadcrumb that
+  // keeps the agent on the state machine; a user who silences it gets drift, not
+  // savings. Only the advisory <project-context> block answers to this flag.
+  it('HARNESSED_INJECT_PC_OFF=1 → keeps <workflow-state>, drops <project-context>', () => {
+    seed('sessOff')
+    const out = runBin({ CLAUDE_CODE_SESSION_ID: 'sessOff', HARNESSED_INJECT_PC_OFF: '1' })
+    expect(out).toContain('<workflow-state>')
+    expect(out).not.toContain('<project-context>')
+  })
+
+  it('HARNESSED_INJECT_PC_OFF=1 mutes even with no session id (no cache to gate on)', () => {
+    seed()
+    const out = runBin({ HARNESSED_INJECT_PC_OFF: '1' })
+    expect(out).toContain('<workflow-state>')
+    expect(out).not.toContain('<project-context>')
+  })
+
+  it('any other value is not the off switch (explicit 1 only)', () => {
+    seed('sessOff2')
+    expect(
+      runBin({ CLAUDE_CODE_SESSION_ID: 'sessOff2', HARNESSED_INJECT_PC_OFF: 'true' }),
+    ).toContain('<project-context>')
+  })
+
+  it('--invalidate on a never-primed root is a silent no-op (exit 0)', () => {
+    const out = execFileSync('node', [binPath, '--invalidate'], {
+      env: {
+        ...process.env,
+        HOME: join(tmp, 'root'),
+        USERPROFILE: join(tmp, 'root'),
+        HARNESSED_ROOT_OVERRIDE: join(tmp, 'root', '.claude', 'harnessed', 'nope'),
+      },
+      encoding: 'utf8',
+      cwd: join(tmp, 'repo'),
+    })
+    expect(out).toBe('')
   })
 })

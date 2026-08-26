@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.38.0] - 2026-08-26
+
+对手侧近 10 周提交的过读,挑出三条与本仓共享缺陷类的,逐条在本仓验证后落地。一条是把有意选的弱替代升级成真信号,一条是补一个会静默吃掉用户改动的删除路径,一条把 Trellis 的热路径方案换成零风险形态。
+
+### Added
+
+- **注入缓存的 compaction 失效钩子**(`manifests/optional/perturn-inject-invalidate.yaml` + `harnessed-inject-state --invalidate`)。per-turn hook 在 `<project-context>` 哈希不变时跳过重发,理由是那份内容还在对话里 —— 但 compaction 把它压掉了,缓存毫不知情,于是「跳过」继续替一份已经不存在的内容生效,最长 `HARNESSED_INJECT_REFRESH_TURNS - 1`(默认 9)轮。`injectCache.ts` 的 4.25.0 头注释把那个定时器称作 "a stateless alternative to a PreCompact hook we do not install";这次装的就是那个 hook。挂 SessionStart 不加 matcher:`compact` 压缩、`clear` 清空、`resume` 重建,都是上下文断点,而 `startup` 本就是空操作(新 session id 即新缓存键)。清整个 `inject-cache/` 而非单条 —— 条目文件名把 repoKey 与 sid 一起哈希,拿不到 sid 就单不出来;多注一次是本模块 fail-soft 契约允许的方向,少注不是。
+- **doctor 第 21 项 `per-turn inject pairing`**(`src/cli/lib/check-inject-invalidate.ts`)。`cc-hook-add` 一个 manifest 只登记一个 hook,manifest schema 没有依赖字段,所以上面那对钩子只能是两个可选项。只装前一半 = 静默退回 4.25.0 的盲定时器行为,这条检查是唯一会说出来的地方。warn 不 fail:半装状态是旧行为,不是坏行为。
+- **`HARNESSED_INJECT_PC_OFF=1`** —— per-turn 注入的 session 级静音开关。Trellis 用 in-prompt 关键词做同一件事,那要求 hook 每轮读 UserPromptSubmit 的 stdin;热路径上一次阻塞的读就是用户的 prompt 挂住,为省约 1500 token 不值。作用域是刻意窄的:`<workflow-state>` 不可静音 —— 它是把 agent 钉在状态机上的断点,关掉它买到的是漂移不是节省。只认字面 `'1'`。
+
+### Changed
+
+- **`git-clone-with-setup` 卸载不再无条件 `rm -rf` clone 目录**。`gstack` / `ui-ux-pro-max` / `ecc` 都走这条安装路径,三个都是用户很可能就地改过的 skill pack,改动此前随卸载静默消失。现在只在**肯定的**脏信号(已跟踪文件被改,或存在未跟踪文件 —— 手工加的 skill 同样算用户工作)上拒绝,并指出 `HARNESSED_FORCE_UNINSTALL=1` 覆盖。未知状态(git 不可用、目标不是 worktree、目录已不在)照常放行:一个没有 git 就无法完成的卸载,拿罕见的数据丢失换来了常见的死路。
+- 脏判定用 `git rev-parse --show-toplevel` 与目标目录比对,不用 `--is-inside-work-tree`。后者会向上走:clone 目录本身不是 repo 时,只要任何祖先是(受版本控制的 home、repo 形状的 TMPDIR),它照样答 `true`,随后的 porcelain 报的是**外层** repo 的脏状态,于是一次无关的卸载被挡下。要求 toplevel 就是本目录,才把问题钉在 clone 自己身上 —— 而 clone target 正是这个形状。
+
+### Notes
+
+- 对手侧另两条候选**在本仓查证后判定不适用,未写代码**:(1) Trellis 的 `cap sub-agent context injection` 系列 —— 我们 `DEFAULT_INJECT_BUDGET = 1500` 与 `selectWithinBudget` 一直在;(2) comet 的 `exclude .comet runtime state from eval skill copies` —— `src/eval/runner.ts` 每个 scenario 起全新 tmp repo + tmp state root,并用 `GIT_CEILING_DIRECTORIES` 封住 git 上溯(同类泄漏本仓已踩过并修在注释里),`EVAL_OVERLAY` 是四条源码白名单,不递归拷贝任何运行产物。
+- Trellis 的 `fix(scripts): drop invented platform session env var names` 是本仓**领先**的一条:`src/platform/platform.ts` 早已把「未经证实不得发明 session env 名」写进契约,codex 的 `sessionIdEnv` 就是 `null`。
+- `src/checkpoint/budget.ts` 在开工时被发现于工作树中被清空(102 行全删,非本次改动,与上一轮两个 master `workflow.yaml` 凭空消失同型),已从 HEAD 恢复。
+
 ## [4.37.0] - 2026-08-01
 
 两处「声明了能力,却没人验证它在不在」补上机器。chrome-devtools 从散文承诺变成会被求值的事实;CodeGraph 从只读的导航建议变成会自己建索引、会缩窄测试范围的接线。
