@@ -372,3 +372,34 @@ describe('deriveSecondOpinion (Phase 54 T3)', () => {
     expect(r.reason).toBeNull()
   })
 })
+
+// Phase 54 T4 — 「判据不可用」必须说出来。
+//
+// CEO 发现 4 要的不是「取 false」而是「取 false 且看得见」。承担这件事的不是每轮断点行
+// (那需要为一个罕见分支新开一条事实注释通道,而 gate 上下文是 additionalProperties:
+// false),而是这里:`harnessed facts` 的 `source` 字段。/auto 每次 master 调用都会跑
+// facts,所以这行就在决策发生的那一刻、在模型眼前。锁住它的文案,防它日后被改成一句
+// 无信息量的通用话。
+describe('requires_second_opinion 的不可用原因是可见的 (Phase 54 T4)', () => {
+  it('无 tag 时 source 写明 criterion unavailable + 原因', async () => {
+    const { envelope } = await runFacts('verify', {}, NO_GIT)
+    const d = envelope?.derived?.requires_second_opinion
+    expect(d?.value).toBe(false)
+    expect(String(d?.source)).toMatch(/criterion unavailable/i)
+    expect(String(d?.source)).toMatch(/tag/i)
+  })
+
+  it('可用时 source 描述的是判据本身,不是错误', async () => {
+    const git = (args: string[]): string | null => {
+      const k = args.join(' ')
+      if (k === 'describe --tags --abbrev=0') return 'v4.38.0'
+      if (k === 'diff --name-only v4.38.0') return 'workflows/capabilities.yaml'
+      return null
+    }
+    const { envelope } = await runFacts('verify', {}, git)
+    const d = envelope?.derived?.requires_second_opinion
+    expect(d?.value).toBe(true)
+    expect(String(d?.source)).not.toMatch(/unavailable/i)
+    expect(String(d?.source)).toMatch(/orchestration surface/i)
+  })
+})

@@ -43,7 +43,7 @@ verified_refs:
 | 面 | 规模 | 后果 |
 |---|---|---|
 | `capabilities.yaml` 的 `fires_when` | 112 条 | 误读(读的人当它生效) |
-| `phaseFactContext` 声明未派生的事实 | 14 个 | 误读 + 未来引用会 fail-closed |
+| gate 引用了没人供给的事实 | 实测 0 个 | (若有)裸标识符 fail-closed 静默删 lane;对象成员静默 false |
 | **`phases[].max_iterations` 模板引用** | **21 处全部失效** | **行为:每个 phase 的迭代上限实跑 20,而非声明值** |
 
 ## T0 是最重的一条(P1,规划期实测发现)
@@ -80,7 +80,7 @@ verified_refs:
 
 ### Wave 0 — T0(独立,先行)
 
-- [ ] **T0 (P1)** — engine — 让 `max_iterations` 的模板引用真的被解析
+- [x] **T0 (P1)** — engine — 让 `max_iterations` 的模板引用真的被解析
   - 1. `src/workflow/loadPhases.ts` — 插值覆盖 `max_iterations`(现仅 `ph.invokes`)
   - 2. `workflows/defaults.yaml` + 5 个 workflow.yaml — 对齐键名
   - 3. `tests/workflow/template-ref-resolvable.test.ts` — 每个 `{{ defaults.X.Y }}`
@@ -90,7 +90,7 @@ verified_refs:
 
 ### Wave 1 — T1(必须先于 T2)
 
-- [ ] **T1 (P1)** — capabilities — `fires_when` → `routing_note`,schema 删旧字段
+- [x] **T1 (P1)** — capabilities — `fires_when` → `routing_note`,schema 删旧字段
   - **sed 只作用于 `workflows/capabilities.yaml` 单文件** —— `workflows/judgments/*.yaml`
     里的 `fires_when` 是真求值字段,误伤即全线 gate 失效(ENG-3)
   - `src/workflow/schema/capabilities.ts` 删 `fires_when`、声明 `routing_note`;
@@ -99,14 +99,14 @@ verified_refs:
 
 ### Wave 2 — T2/T3/T4/T5(共享 judgment + 事实链,同一波)
 
-- [ ] **T2 (P1)** — workflows — 新增 leaf `workflows/verify/second-opinion/`(order 90)
+- [x] **T2 (P1)** — workflows — 新增 leaf `workflows/verify/second-opinion/`(order 90)
   - `workflow.yaml` 静态声明 `artifacts_expected: [second-opinion.md]`
   - master `workflows/verify/auto/workflow.yaml` 加 `delegates_to` 条目 + `gate:`
   - **顺带修 stale 注释**:该文件头部写「7 delegates_to」,实际 10 条(加本条后 11)
   - 双语 SKILL + `defaults.yaml` 的 `ralph_max_iterations` 条目(T0 之后键名才有意义)
   - Verify: `check-workflow-schema.mjs`(K10 无孤儿)+ 两道 i18n parity 门
 
-- [ ] **T3 (P1)** — facts — `requires_second_opinion` 声明 + 派生
+- [x] **T3 (P1)** — facts — `requires_second_opinion` 声明 + 派生
   - 基准:`git describe --tags --abbrev=0` .. HEAD ∪ 工作树(**不用** merge-base)
   - 命中集 = **引擎运行时真读的文件面**:`workflows/judgments/` · `capabilities.yaml` ·
     `role-prompts` · `disciplines` · `phaseFactContext.ts` · `facts.ts` ·
@@ -114,13 +114,33 @@ verified_refs:
   - 算不出来(无 tag / 无 git / shallow)→ `false`,并交由 T4 显式报出
   - Verify: 四条 shadow 路径单测;`harnessed facts --json` 含该键
 
-- [ ] **T4 (P1)** — inject — `SECOND-OPINION: 判据不可用(<原因>)` 断点行
-  - Verify: `tests/checkpoint/injectState.test.ts` 覆盖有/无两态;bin 重新生成
+- [x] **T4 (P1)** — 可见性 **(形态已改:不做每轮断点行)**
+  - CEO 发现 4 要的是「取 false 且看得见」。T3 落地后,`harnessed facts` 的
+    `derived.requires_second_opinion.source` 直接写
+    `criterion unavailable — <原因>`,而 `/auto` 每次 master 调用都跑 facts ——
+    那行就在**决策发生的那一刻**、在模型眼前。
+  - 原计划的每轮断点行需要新开一条事实注释通道(`gates.ts` 的 skip reason 目前是
+    通用的 `gate <ref> = false`,而 gate 上下文是 `additionalProperties: false`,
+    注释没地方放)。为一个罕见分支新增一个可腐烂的面,正是本 phase 在治的形态。
+  - 改为在 `tests/cli/facts.test.ts` 加两条断言锁住该文案(可用 / 不可用两态),
+    防它日后被改成无信息量的通用句。
 
-- [ ] **T5 (P1)** — tests — 事实派生一致性
-  - declared ⇄ derived,差集 == 显式 `UNDERIVED_FACTS` 常量
-  - **derived ⇄ consumed**(OV#4 补的第二条边:派生了却没人读同样是死的)
-  - Verify: 人为加一个只声明不派生的事实 → 红
+- [x] **T5 (P1)** — tests — 事实供给一致性 **(方向已更正)**
+  - **更正**:立项时写的「声明 46 / 派生 32 → 14 个悬空事实」是**错的**。那两个数
+    量的是不同结构:`PhaseFactContext` 声明的是 gate 表达式**可用的词汇表**,
+    `facts.ts` 的 `derived` 只是确定性派生的那 5 个,其余由模型按
+    `collectGatedFactNames` 抽出的清单填。未被任何 gate 引用的声明只是没用上的词汇,
+    不是缺陷。该数字曾进入设计文档与本 SPEC,已一并更正。
+  - 真正会咬人的是**反向**:一个 gate 引用了没人供给的事实。裸标识符抛
+    undefined-variable → ADR-0038 fail-closed → lane 被静默删(4.23.2 issue #5 原形);
+    对象成员则是静默 false(T2.1 gap-close 的两个 verify sub 因此永久不可达)。
+  - 落成 `tests/workflow/fact-supply-parity.test.ts`:对每个 master,
+    `collectGatedFactNames` 返回的每个名字必须由 `buildDefaultGateContext`
+    ∪ `FACTS_SUPPLIED`(运行时经 `--context-file` 的第二通道)供给。
+    **零正则** —— 走真解析器与真对象。实测当前 0 孤儿。
+  - 该测试当场兑现了价值:先报 `discuss → phase.files_touched`,查证后是
+    `Type.Optional` 由 `harnessed facts` 经第二通道供给的合法项 —— 于是把第二通道
+    显式列出来,现在「别处合法供给」与「没人供给」在测试里可区分。
 
 ### Wave 3 — T6/T7
 
