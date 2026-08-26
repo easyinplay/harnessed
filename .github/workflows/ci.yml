@@ -333,7 +333,7 @@ jobs:
           ok_or_dryrun node ./dist/cli.mjs install gsd --dry-run --non-interactive --system
   # B2 (v4.20.0) — bun-compile 单文件二进制冒烟(task_plan _phase-b2-compile-pipeline)。
   # 独立 job(不阻塞 test 主 job 的失败归因):3-OS 原生编译(交叉编译 --target 未实测,
-  # D4 锁定不作为 CI 路径)→ 异地 cwd 冒烟:--version 断言 + setup --dry-run 28 workflows
+  # D4 锁定不作为 CI 路径)→ 异地 cwd 冒烟:--version 断言 + setup --dry-run 29 workflows
   # (资产解包全链路:entry 首跑解包 → getAssetsRoot compiled 分支 → readdir)。
   # doctor 不作断言(runner 环境差异:jq/bash flavor 等 check 与二进制机制无关)。
   binary-smoke:
@@ -358,7 +358,7 @@ jobs:
           bun-version: '1.3.14'
       - run: corepack pnpm install --frozen-lockfile
       - run: bun scripts/build-binary.mjs
-      - name: smoke — version + asset unpack + 28 workflows from a foreign cwd
+      - name: smoke — version + asset unpack + 29 workflows from a foreign cwd
         run: |
           # 4.27.0 — dist-bin now also carries <asset>.sha256; the smoke wants the exe only.
           BIN=$(ls dist-bin/harnessed-* | grep -v '\.sha256$')
@@ -371,11 +371,12 @@ jobs:
           out=$("./$EXE" --version)
           [ "$out" = "$VER" ] || { echo "::error::--version '$out' != '$VER'"; exit 1; }
           count=$("./$EXE" setup --dry-run 2>/dev/null | grep -c "  →  ")
-          [ "$count" -eq 28 ] || { echo "::error::expected 28 workflows in dry-run, got $count"; exit 1; }
+          # Phase 54 T2 — 29 since workflows/verify/second-opinion/ landed.
+          [ "$count" -eq 29 ] || { echo "::error::expected 29 workflows in dry-run, got $count"; exit 1; }
           # 二次运行不得重复解包(stderr 无 unpacked 行 — 幂等)。
           second=$("./$EXE" --version 2>&1 >/dev/null || true)
           case "$second" in *unpacked*) echo "::error::second run re-unpacked assets (idempotency broken)"; exit 1;; esac
-          echo "binary-smoke ✅ $EXE v$VER (28 workflows, idempotent unpack)"
+          echo "binary-smoke ✅ $EXE v$VER (29 workflows, idempotent unpack)"
       # 4.27.0 (B3 T6 / OV3 用户裁决) — update rehearsal on the REAL compiled
       # product, 3-OS: covers Bun-runtime rename/EPERM/spawn semantics and a
       # genuine Windows PE smoke that fixture unit tests cannot fake. Zero
