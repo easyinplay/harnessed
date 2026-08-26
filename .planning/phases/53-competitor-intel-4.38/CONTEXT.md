@@ -75,12 +75,17 @@ complete without a working `git` trades a rare data loss for a common dead end
 pattern rather than adding a field to the `UninstallOpts` shared by all seven
 uninstallers.
 
-**D7 — `--show-toplevel`, not `--is-inside-work-tree`.** Found while making the
-B2 test go green: git walks up, so a non-repo clone target answers `true`
-whenever any ancestor is a repo, and the porcelain then reports the *outer* repo
-dirt and blocks an unrelated uninstall. Requiring the toplevel to be the target
-directory pins the question to the clone. The test that caught this ran under a
-TMPDIR with a repo ancestor.
+**D7 — a `.git` probe, not a git question.** Found in two steps. First, making
+the B2 test go green exposed the ancestor walk: git resolves from cwd upward, so
+a non-repo clone target answers `true` whenever any ancestor is a repo, and the
+porcelain then reports the *outer* repo dirt and blocks an unrelated uninstall.
+The first fix compared `git rev-parse --show-toplevel` against the target
+directory — and went red on Windows CI only: that runner's `os.tmpdir()` is an
+8.3 SHORT path (`…/RUNNER~1/…`), git prints the long one, `realpathSync` does not
+expand short names, so the two never matched and every branch fell to `null`.
+Final form asks the filesystem instead (`existsSync(join(dir, '.git'))`), which
+has no path form to normalize. Regression test: a non-repo child of a
+deliberately dirty repo must answer `null`.
 
 ## Incidents
 

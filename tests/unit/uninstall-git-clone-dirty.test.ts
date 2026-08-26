@@ -59,6 +59,17 @@ describe('hasUncommittedWork', { timeout: 30_000 }, () => {
     expect(hasUncommittedWork(join(tmp, 'plain'))).toBeNull()
   })
 
+  // The ancestor-walk bug this guard was rewritten around: a child of a repo is
+  // not itself a clone root, and asking git from inside it reports the PARENT's
+  // dirt. Deterministic here — the parent is dirty on purpose.
+  it('non-repo child of a DIRTY repo → null (never inherits the parent state)', () => {
+    git(tmp, 'init', '-q')
+    writeFileSync(join(tmp, 'dirty.txt'), 'parent has uncommitted work')
+    mkdirSync(join(tmp, 'child'), { recursive: true })
+    expect(hasUncommittedWork(join(tmp, 'child'))).toBeNull()
+    expect(hasUncommittedWork(tmp)).toBe(true)
+  })
+
   it('missing directory → null (nothing to protect)', () => {
     expect(hasUncommittedWork(join(tmp, 'gone'))).toBeNull()
     expect(existsSync(join(tmp, 'gone'))).toBe(false)

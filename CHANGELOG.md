@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **`git-clone-with-setup` 卸载不再无条件 `rm -rf` clone 目录**。`gstack` / `ui-ux-pro-max` / `ecc` 都走这条安装路径,三个都是用户很可能就地改过的 skill pack,改动此前随卸载静默消失。现在只在**肯定的**脏信号(已跟踪文件被改,或存在未跟踪文件 —— 手工加的 skill 同样算用户工作)上拒绝,并指出 `HARNESSED_FORCE_UNINSTALL=1` 覆盖。未知状态(git 不可用、目标不是 worktree、目录已不在)照常放行:一个没有 git 就无法完成的卸载,拿罕见的数据丢失换来了常见的死路。
-- 脏判定用 `git rev-parse --show-toplevel` 与目标目录比对,不用 `--is-inside-work-tree`。后者会向上走:clone 目录本身不是 repo 时,只要任何祖先是(受版本控制的 home、repo 形状的 TMPDIR),它照样答 `true`,随后的 porcelain 报的是**外层** repo 的脏状态,于是一次无关的卸载被挡下。要求 toplevel 就是本目录,才把问题钉在 clone 自己身上 —— 而 clone target 正是这个形状。
+- 「这个目录本身是不是 repo 根」由目录里有没有 `.git` 判定,不问 git。git 会从 cwd 向上走:clone 目录本身不是 repo 时,只要任何祖先是(受版本控制的 home、repo 形状的 TMPDIR),它照样答 `true`,随后的 porcelain 报的是**外层** repo 的脏状态,一次无关的卸载被挡下。先写的 `git rev-parse --show-toplevel` 与目标目录比对在 Windows CI 上翻车 —— runner 的 `os.tmpdir()` 是 8.3 短名(`…/RUNNER~1/…`),git 打印长名,而 `realpathSync` 不展开短名,于是两边恒不相等、所有分支落到 `null`。文件系统探测没有路径形式可规范化。
 
 ### Notes
 

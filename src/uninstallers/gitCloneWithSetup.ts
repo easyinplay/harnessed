@@ -3,8 +3,9 @@
 // extractCloneTarget inline — sister src/installers/gitCloneWithSetup.ts L70-98 YAGNI.
 
 import { execFileSync } from 'node:child_process'
-import { realpathSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
+import { join } from 'node:path'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -48,19 +49,20 @@ function extractCloneTarget(cmd: string): string | null {
  * git was present to make the clone in the first place.
  */
 export function hasUncommittedWork(dir: string): boolean | null {
+  // "Is this directory itself a repo root?" is answered by a `.git` entry sitting
+  // in it — NOT by asking git, which walks UP from cwd and so answers yes for a
+  // non-repo clone target whenever any ancestor is a repo (a version-controlled
+  // home, a repo-shaped TMPDIR); the porcelain would then report the OUTER repo's
+  // dirt and block an unrelated uninstall.
+  //
+  // `git rev-parse --show-toplevel` compared against `dir` was the first attempt
+  // and it went red on the Windows CI runner: os.tmpdir() there is an 8.3 SHORT
+  // path (…/RUNNER~1/…), git prints the LONG one, and realpathSync does not
+  // expand short names — so the two never matched and every case fell to `null`.
+  // A filesystem probe has no path-form to normalize. (`.git` is a FILE, not a
+  // directory, inside a linked worktree — existsSync covers both.)
+  if (!existsSync(join(dir, '.git'))) return null
   try {
-    // `--show-toplevel`, not `--is-inside-work-tree`: git walks UP from cwd, so a
-    // clone target that is NOT a repo still answers "true" whenever any ancestor
-    // is one (a home dir under version control, a repo-shaped TMPDIR) — and the
-    // porcelain that follows would then report the OUTER repo's dirt and block an
-    // unrelated uninstall. Requiring the toplevel to BE this directory pins the
-    // question to the clone itself, which is exactly what a clone target is.
-    const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-      cwd: dir,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim()
-    if (top === '' || realpathSync(top) !== realpathSync(dir)) return null
     const status = execFileSync('git', ['status', '--porcelain'], {
       cwd: dir,
       encoding: 'utf8',
