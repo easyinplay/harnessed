@@ -212,3 +212,31 @@ describe('_dispatchSkillStub.fn — ralph-loop wrap behavior (v3.4.4 Phase 3 Com
     expect(queryCallCount).toBe(2) // exhausted maxIter=2
   })
 })
+
+// Phase 54 T0 — `max_iterations` 的模板引用从未被解析过(loadPhases 只插值 ph.invokes,
+// 且 interpolate 的 STRICT 正则不认 dot-path),所以 21 处声明全部落回 20。解法不是
+// 补一个模板层,而是删掉 yaml 里的字段、让值走 defaults.yaml 查表 —— 与
+// `resolveAttemptBudget` 同一条已知能工作的路径,单一数据源。
+describe('resolveMaxIterations — defaults 查表(Phase 54 T0)', () => {
+  it('10. 无 CLI、无 yaml 字段时用 defaults 查表值', () => {
+    expect(resolveMaxIterations({ id: '01-simplify' }, {}, 5)).toBe(5)
+  })
+
+  it('11. yaml 字面量仍胜过 defaults(向后兼容,不破坏手写数字)', () => {
+    expect(resolveMaxIterations({ id: 'p1', max_iterations: 15 }, {}, 5)).toBe(15)
+  })
+
+  it('12. CLI flag 胜过两者', () => {
+    expect(resolveMaxIterations({ id: 'p1', max_iterations: 15 }, { maxIterations: 7 }, 5)).toBe(7)
+  })
+
+  it('13. defaults 缺失 → 仍落 20;非正数 defaults 不被采信', () => {
+    expect(resolveMaxIterations({ id: 'p1' }, {}, undefined)).toBe(20)
+    expect(resolveMaxIterations({ id: 'p1' }, {}, 0)).toBe(20)
+    expect(resolveMaxIterations({ id: 'p1' }, {}, -3)).toBe(20)
+  })
+
+  it('14. defaults 也受 hard upper limit 钳制', () => {
+    expect(resolveMaxIterations({ id: 'p1' }, {}, 500)).toBe(100)
+  })
+})

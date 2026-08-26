@@ -11,7 +11,9 @@
 // Phase v3.4.4 (Phase 4) — buildAgentDef enriched with role-prompts.yaml lookup
 // + workflowName plumbed through MaxIterFallbackCtx (replaces hardcoded
 // 'harnessed-run' literal at fallback site).
+import { readFileSync } from 'node:fs'
 import { dirname, join, resolve as pathResolve } from 'node:path'
+import { parse as parseYaml } from 'yaml'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
 import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
@@ -265,14 +267,19 @@ export function isRalphLoopOptIn(phase: unknown): boolean {
  *
  *  Priority (high → low):
  *    1. gateContext.maxIterations (CLI flag)
- *    2. phase.max_iterations (yaml Number OR coerced String)
- *    3. RALPH_DEFAULT_MAX_ITER (hardcoded 20)
+ *    2. phase.max_iterations (yaml Number OR coerced String — literal overrides only)
+ *    3. fromDefaults (workflows/defaults.yaml ralph_max_iterations.<workflow>.<phase>)
+ *    4. RALPH_DEFAULT_MAX_ITER (hardcoded 20)
  *
  *  Result clamped to [1, RALPH_HARD_UPPER_LIMIT (100)] regardless of source.
  *
  *  Exported for unit-testability + so Phase 3 Commit 3's call-site at L183 can
  *  pass the resolved value down to `_dispatchSkillStub.fn` opts.maxIter. */
-export function resolveMaxIterations(phase: unknown, gateContext: Record<string, unknown>): number {
+export function resolveMaxIterations(
+  phase: unknown,
+  gateContext: Record<string, unknown>,
+  fromDefaults?: number,
+): number {
   const fromCli =
     typeof gateContext.maxIterations === 'number' ? gateContext.maxIterations : undefined
   let fromYaml: number | undefined
@@ -284,7 +291,18 @@ export function resolveMaxIterations(phase: unknown, gateContext: Record<string,
       if (Number.isFinite(n) && n > 0) fromYaml = n
     }
   }
-  const chosen = fromCli ?? fromYaml ?? RALPH_DEFAULT_MAX_ITER
+  // Phase 54 T0 — the defaults.yaml lookup. Same table `resolveAttemptBudget`
+  // reads, and now the ONLY place per-phase ceilings come from: the yaml field
+  // that used to carry `{{ defaults.ralph_max_iterations.X.Y }}` is gone,
+  // because nothing ever resolved it (loadPhases interpolates `ph.invokes`
+  // only, and interpolate's STRICT regex rejects dot-paths anyway) — all 21
+  // refs silently fell through to RALPH_DEFAULT_MAX_ITER. A literal number in
+  // yaml still wins, so a hand-written override keeps working.
+  const fromTable =
+    typeof fromDefaults === 'number' && Number.isFinite(fromDefaults) && fromDefaults > 0
+      ? fromDefaults
+      : undefined
+  const chosen = fromCli ?? fromYaml ?? fromTable ?? RALPH_DEFAULT_MAX_ITER
   return Math.min(Math.max(1, chosen), RALPH_HARD_UPPER_LIMIT)
 }
 
@@ -395,6 +413,38 @@ export const _dispatchSkillStub = {
   },
 }
 
+/** Phase 54 T0 — per-phase iteration ceilings, read straight from
+ *  `workflows/defaults.yaml`. The workflow yamls used to carry
+ *  `{{ defaults.ralph_max_iterations.<workflow>.<phase> }}`, but nothing ever
+ *  resolved it: `loadPhases` interpolates `ph.invokes` only, and `interpolate`'s
+ *  STRICT regex rejects dot-paths and throws on any residual `{{ }}`. All 21
+ *  refs reached `resolveMaxIterations` as literal strings, parsed to NaN, and
+ *  fell through to 20 — a phase declaring 5 ran 20. The field is gone from the
+ *  yamls now; this lookup is the single source, shared with
+ *  `resolveAttemptBudget` (which reads the same table one level coarser).
+ *
+ *  Fail-soft: any read/parse trouble yields an empty table and every phase falls
+ *  back to RALPH_DEFAULT_MAX_ITER, i.e. exactly today's behaviour. */
+function loadMaxIterTable(packageRoot: string): Record<string, Record<string, number>> {
+  try {
+    const doc = parseYaml(
+      readFileSync(join(packageRoot, 'workflows', 'defaults.yaml'), 'utf8'),
+    ) as { ralph_max_iterations?: Record<string, Record<string, unknown>> } | null
+    const out: Record<string, Record<string, number>> = {}
+    for (const [wf, phases] of Object.entries(doc?.ralph_max_iterations ?? {})) {
+      if (!phases || typeof phases !== 'object') continue
+      const row: Record<string, number> = {}
+      for (const [id, v] of Object.entries(phases)) {
+        if (typeof v === 'number' && Number.isFinite(v) && v > 0) row[id] = v
+      }
+      out[wf] = row
+    }
+    return out
+  } catch {
+    return {}
+  }
+}
+
 export interface RunWorkflowOpts {
   packageRoot?: string
   gateContext?: Record<string, unknown>
@@ -413,6 +463,7 @@ export async function runWorkflow(
   const yamlDir = dirname(pathResolve(yamlPath))
   const inferredRoot = pathResolve(yamlDir, '..', '..')
   const packageRoot = opts.packageRoot ?? inferredRoot
+  const maxIterTable = loadMaxIterTable(packageRoot)
   // shallow-clone gateContext 避免 mutate caller object (W0.2 加 disciplines)。
   const gateContext: Record<string, unknown> = { ...(opts.gateContext ?? {}) }
 
@@ -550,7 +601,7 @@ export async function runWorkflow(
     const skillName = ('skills' in ph && ph.skills?.[0]) || ph.id
     // Phase v3.4.4 (Phase 3) — resolve max-iter + extract fallback config from phase yaml
     // before dispatch; both consumed by _dispatchSkillStub.fn opts to gate ralph-loop wrap.
-    const maxIter = resolveMaxIterations(ph, gateContext)
+    const maxIter = resolveMaxIterations(ph, gateContext, maxIterTable[workflowName]?.[ph.id])
     const fallback =
       'fallback' in ph && ph.fallback?.max_iterations_exceeded
         ? (ph.fallback.max_iterations_exceeded as FallbackMaxIterationsExceededConfig)

@@ -27,7 +27,6 @@ phases:
     capability: '{{ capabilities.gstack-office-hours.cmd }}'
     model: opus
     gate: judgments.strategic-gate.office-hours.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.discuss-strategic.01-office-hours }}'
 
   - id: 02-plan-ceo-review
     name: gstack-plan-ceo-review (CEO 视角 商业价值 + 10-star 潜力 + scope)
@@ -35,7 +34,6 @@ phases:
     capability: '{{ capabilities.gstack-plan-ceo-review.cmd }}'
     model: opus
     gate: judgments.strategic-gate.plan-ceo-review.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.discuss-strategic.02-plan-ceo-review }}'
 
   - id: 03-persist
     name: planning-with-files findings.md (战略层决策 + 理由持久化)

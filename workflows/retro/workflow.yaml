@@ -28,7 +28,6 @@ phases:
     upstream: gstack
     capability: '{{ capabilities.retro-gstack.cmd }}'
     model: opus
-    max_iterations: '{{ defaults.ralph_max_iterations.retro.01-retro }}'
 
   - id: 02-persist
     name: planning-with-files RETROSPECTIVE.md (经验教训持久化)

@@ -24,7 +24,6 @@ phases:
     capability: '{{ capabilities.gsd-discuss-phase.cmd }}'
     model: sonnet
     gate: judgments.phase-gate.gsd-discuss-phase.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.discuss-phase.01-gsd-discuss }}'
 
   - id: 02-persist
     name: planning-with-files findings.md + knowledge.md (phase decision 持久化)

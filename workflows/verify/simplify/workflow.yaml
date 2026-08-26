@@ -27,4 +27,3 @@ phases:
     capability: '{{ capabilities.code-simplifier.cmd }}'
     model: sonnet
     gate: judgments.stage-routing.verify-simplify-tail.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.verify-simplify.01-simplify }}'

@@ -31,4 +31,3 @@ phases:
     capability: '{{ capabilities.plan-eng-review.cmd }}'
     model: opus
     gate: judgments.stage-routing.plan-architecture-delegate.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.plan-architecture.01-plan-eng-review }}'

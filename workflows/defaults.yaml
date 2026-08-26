@@ -17,7 +17,13 @@ schema_version: harnessed.defaults.v1
 ralph_max_iterations:
   # v3 standalone (research v3 schema bump + retro NEW per Phase 3.4 W1.1+W1.2)
   research:
-    01-fan-out: 3
+    # 5 个 fan-out phase 共用同一预算。曾写作单个 `01-fan-out` 前缀键,但查表按
+    # phase id 精确匹配 (Phase 54 T0),前缀键匹配不到任何 phase → 全落默认 20。
+    01-fan-out-tavily-keyword: 3
+    01-fan-out-exa-descriptive: 3
+    01-fan-out-tavily-crawl: 3
+    01-fan-out-ctx7-lib-docs: 3
+    01-fan-out-webfetch-url: 3
     02-synth: 3
 
   retro:
@@ -30,7 +36,7 @@ ralph_max_iterations:
     02-plan-ceo-review: 3
 
   discuss-phase:
-    01-gsd-discuss-phase: 5
+    01-gsd-discuss: 5
 
   discuss-subtask:
     01-brainstorm: 5
@@ -40,12 +46,12 @@ ralph_max_iterations:
     01-plan-eng-review: 3
 
   plan-phase:
-    01-gsd-plan-phase: 5
+    01-gsd-plan: 5
     02-persist: 5
 
   # v3 sub-workflow — task stage (4 sub per Phase 3.4 W0.6-W0.9)
   task-clarify:
-    01-clarify: 5
+    01-brainstorm: 5
 
   task-code:
     01-code: 20
@@ -60,13 +66,13 @@ ralph_max_iterations:
   verify-progress:
     01-gsd-verify-work: 3
     02-gsd-progress: 3
-    03-persist: 3
+    03-progress-update: 3
 
   verify-code-review:
     01-code-review: 5
 
   verify-paranoid:
-    01-gstack-review: 3
+    01-review: 3
 
   verify-qa:
     01-qa: 3
@@ -78,7 +84,7 @@ ralph_max_iterations:
     01-design-review: 3
 
   verify-simplify:
-    01-code-simplifier: 5
+    01-simplify: 5
 
   verify-multispec:
     01-team-create: 1

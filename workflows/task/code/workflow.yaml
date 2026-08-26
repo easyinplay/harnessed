@@ -35,7 +35,6 @@ phases:
     name: code (karpathy 心法 always-on + mattpocock conditional route)
     upstream: karpathy
     model: sonnet
-    max_iterations: '{{ defaults.ralph_max_iterations.task-code.01-code }}'
     invokes_tools:
       - if: 'phase.architecture_health_audit == true'
         tool: improve-codebase-architecture

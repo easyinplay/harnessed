@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [Unreleased]
+
+### Fixed
+
+- **21 处 per-phase 迭代上限第一次真的生效(Phase 54 T0)**。`workflows/**/workflow.yaml` 的 `phases[].max_iterations` 全部写成 `{{ defaults.ralph_max_iterations.<workflow>.<phase> }}`,而**没有任何一处被解析过**:`loadPhases` 的插值只覆盖 `ph.invokes`(实测 v3 下该字段恒为 `undefined`,分支从不触发),且 `interpolate` 的 `STRICT = /\{\{\s*(\w+)\s*\}\}/g` 不认 dot-path、残留即抛错 —— 接进去只会把 21 处全变成异常。21 处以字面串抵达 `resolveMaxIterations`,`parseInt` 得 NaN,统统落回 `RALPH_DEFAULT_MAX_ITER = 20`。声明 5 的 phase 实跑 20,四倍于写下的意图。
+  - 修法不是补模板层,而是**删掉 yaml 里的字段**,让值只走 `workflows/defaults.yaml` 查表 —— 与 `resolveAttemptBudget` 同一条已知能工作的路径,单一数据源。`resolveMaxIterations` 新增可选第三参数,优先级 CLI flag > yaml 字面量(向后兼容手写数字)> defaults 查表 > 20。
+  - **边界**:`checkpoint` 的 attempt budget(`budget.ts` 按 sub 直读 defaults)一直是好的;坏的是 run 引擎的 per-phase 上限。两个不同的天花板,不要混。
+  - 顺带修 **7 处键名漂移**:5 处 workflow 的 phase id 与 defaults 键早已分家(如 `verify-simplify` 的 `01-simplify` vs defaults 的 `01-code-simplifier`);`research` 的单个 `01-fan-out` 前缀键展开成 5 个真实 lane id(精确匹配下前缀键匹配不到任何 phase);`verify-progress.03-persist` 对齐为真实的 `03-progress-update`。
+  - 新增 `tests/workflow/template-ref-resolvable.test.ts`:defaults 表里的每个 `<workflow>.<phase>` 必须对应一个真实存在的 phase,且不得有 workflow.yaml 再写回不可解析的 `{{ defaults… }}`。零正则抓源码 —— 直接读两个 yaml 拿真数据。
+
 ## [4.38.0] - 2026-08-26
 
 对手侧近 10 周提交的过读,挑出三条与本仓共享缺陷类的,逐条在本仓验证后落地。一条是把有意选的弱替代升级成真信号,一条是补一个会静默吃掉用户改动的删除路径,一条把 Trellis 的热路径方案换成零风险形态。

@@ -36,4 +36,3 @@ phases:
     invokes_tools:
       - if: 'phase.spec_ambiguous == true'
         tool: grill-with-docs
-    max_iterations: '{{ defaults.ralph_max_iterations.task-clarify.01-brainstorm }}'

@@ -69,7 +69,6 @@ phases:
     model: haiku
     args:
       completion_promise: COMPLETE
-      max_iterations: '{{ defaults.ralph_max_iterations.task-deliver.01-deliver }}'
     parallelism: judgments.parallelism-gate.completion-gate-wrapper.fires
     on:
       - if: 'subtask.lines >= 20 and subtask.type != "single_command_query"'

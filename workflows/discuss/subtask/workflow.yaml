@@ -30,4 +30,3 @@ phases:
         tool: grill-with-docs
       - if: 'phase.spec_ambiguous == true and phase.no_docs == true'
         tool: grill-me
-    max_iterations: '{{ defaults.ralph_max_iterations.discuss-subtask.01-brainstorm }}'

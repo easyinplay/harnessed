@@ -12,7 +12,9 @@
 //   F1: yaml parse + TypeBox Value.Check(WorkflowSchemaV3) pass + schema_version=workflow.v3 + 6 phase count
 //   F2: 3 source capability refs (tavily-mcp / exa-mcp / ctx7) resolve from capabilities.yaml
 //   F3: GSD discuss-phase synth capability ref at 02-synth resolves
-//   F4: defaults.yaml ralph_max_iterations.research.{01-fan-out,02-synth} numeric value 1-100 range
+//   F4: every research phase id has a numeric ralph_max_iterations entry in 1..hard_upper_limit
+//       (Phase 54 T0 — the single `01-fan-out` prefix key was expanded to the 5 real lane ids;
+//        lookup is now exact-by-phase-id, so a prefix key would match nothing and fall to 20)
 //   F5 (T2.3): the 5 web-search-routing triggers each gate exactly one fan-out lane
 
 import { readFileSync } from 'node:fs'
@@ -93,18 +95,21 @@ describe('research workflow.yaml v3 — T2.4.W2.1 (D-08 + R20.7; v3.4.4 v2→v3 
     expect(gsdEntry.cmd).toBeTruthy()
   })
 
-  test('F4: defaults.yaml ralph_max_iterations.research.{01-fan-out,02-synth} numeric in 1-100 range', () => {
+  test('F4: every research phase id has a defaults entry in 1..hard_upper_limit', () => {
     const defaultsRaw = readFileSync(DEFAULTS_PATH, 'utf8')
     const defaults = parseYaml(defaultsRaw) as {
       ralph_max_iterations: { research: Record<string, number> }
       hard_upper_limit: number
     }
-    const fanOut = defaults.ralph_max_iterations.research['01-fan-out']
-    const synth = defaults.ralph_max_iterations.research['02-synth']
-    expect(fanOut).toBeGreaterThanOrEqual(1)
-    expect(fanOut).toBeLessThanOrEqual(defaults.hard_upper_limit)
-    expect(synth).toBeGreaterThanOrEqual(1)
-    expect(synth).toBeLessThanOrEqual(defaults.hard_upper_limit)
+    const table = defaults.ralph_max_iterations.research
+    const ids = parsed.phases.map((p) => p.id)
+    expect(ids.length).toBe(6)
+    for (const id of ids) {
+      const v = table[id]
+      expect(typeof v, `research.${id} missing from defaults.yaml`).toBe('number')
+      expect(v).toBeGreaterThanOrEqual(1)
+      expect(v).toBeLessThanOrEqual(defaults.hard_upper_limit)
+    }
   })
 
   test('F5 (T2.3): each web-search-routing trigger gates exactly one fan-out lane', () => {

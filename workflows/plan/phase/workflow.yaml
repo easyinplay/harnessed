@@ -26,7 +26,6 @@ phases:
     upstream: gsd
     capability: '{{ capabilities.gsd-plan-phase.cmd }}'
     model: sonnet
-    max_iterations: '{{ defaults.ralph_max_iterations.plan-phase.01-gsd-plan }}'
 
   - id: 02-persist
     name: planning-with-files /plan (task_plan.md + progress.md 持久化)

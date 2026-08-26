@@ -25,7 +25,6 @@ phases:
     upstream: gsd
     capability: '{{ capabilities.gsd-verify-work.cmd }}'
     model: sonnet
-    max_iterations: '{{ defaults.ralph_max_iterations.verify-progress.01-gsd-verify-work }}'
 
   - id: 02-gsd-progress
     name: gsd-progress (状态同步 — ROADMAP/STATE/REQUIREMENTS 更新)

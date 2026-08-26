@@ -49,7 +49,6 @@ phases:
     upstream: web-search
     model: sonnet
     gate: judgments.web-search-routing.tavily-mcp-default.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
     parallelism: judgments.parallelism-gate.subagent-default.fires
 
   # lane 2 — Exa MCP 覆盖默认: 描述式查询 / 学术论文 (需 EXA_API_KEY, 缺则落 lane 1)
@@ -57,28 +56,24 @@ phases:
     upstream: web-search
     model: sonnet
     gate: judgments.web-search-routing.exa-mcp-descriptive-academic.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
 
   # lane 3 — Tavily 必用: 抓整站 / 站点结构 (crawl / map), Exa 无对等工具
   - id: 01-fan-out-tavily-crawl
     upstream: web-search
     model: sonnet
     gate: judgments.web-search-routing.tavily-crawl-map-site.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
 
   # lane 4 — ctx7 CLI: 库 / API / 框架 / SDK / CLI 工具文档 (prefer over web search)
   - id: 01-fan-out-ctx7-lib-docs
     upstream: ctx7
     model: sonnet
     gate: judgments.web-search-routing.ctx7-lib-docs.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
 
   # lane 5 (永远规则) — 单次轻量查询 (一个明确 URL) 直接 WebFetch, 不走 MCP / CLI
   - id: 01-fan-out-webfetch-url
     upstream: web-search
     model: haiku
     gate: judgments.web-search-routing.webfetch-single-url.fires
-    max_iterations: '{{ defaults.ralph_max_iterations.research.01-fan-out }}'
 
   # 02-synth: GSD discuss synth aggregate — 多源结果 dedup + reconcile + GSD discuss-phase format
   # (无 gate — 无论命中哪条 lane 都要 aggregate)
@@ -86,4 +81,3 @@ phases:
     upstream: gsd
     capability: '{{ capabilities.gsd-discuss-phase.cmd }}'
     model: opus
-    max_iterations: '{{ defaults.ralph_max_iterations.research.02-synth }}'
