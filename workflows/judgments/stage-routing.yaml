@@ -55,6 +55,16 @@ triggers:
     invokes:
       - capability: gstack-review
 
+  verify-second-opinion-orchestration:
+    description: |
+      /verify master → /verify-second-opinion fire 当本次改动触及编排契约本身。
+      判据由 `harnessed facts` 从 `git diff --name-only <last release tag>` 机械派生
+      (root-flat bare identifier `requires_second_opinion`),不是交给模型的判断题。
+      算不出来时取 false 并显式报出原因 —— 不乱 fire,且不静默。
+    fires_when: "phase.stage == 'verify' and requires_second_opinion == true"
+    invokes:
+      - capability: codex
+
   verify-qa-ui:
     description: /verify master → /verify-qa fire 当 has_ui_changes。
     fires_when: "phase.stage == 'verify' and phase.has_ui_changes == true"

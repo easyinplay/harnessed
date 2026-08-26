@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`verify/second-opinion` —— 跨模型第二意见第一次成为会被求值的编排单元(Phase 54 T2+T3)**。`capabilities.yaml` 里的 `codex` 能力(第二意见 / cross-AI peer review)此前被锁在一条**死** `fires_when` 后面,而它引用的 `phase.requires_second_opinion` 全仓只出现那一次 —— 连事实都没声明过。
+  - **判据机械派生,不是判断题**:`harnessed facts` 取 `git diff --name-only <上一个 release tag>` 与 **ORCHESTRATION SURFACE**(`workflows/judgments/` · `capabilities.yaml` · `role-prompts` · `disciplines/` · `defaults.yaml` · `phaseFactContext.ts` · `judgmentResolver.ts` · `exprBuilder.ts` · `facts.ts` · `ledger.ts` · 任一 `workflows/**/SKILL*.md`)的交集。集合**从代码推导**,不是从样本拟合 —— 早先草案用的是「最近三次发版恰好碰过的四条路径」,那是在缺陷被发现的地方过拟合,既误报(一行 ADR 拼写修正命中)又漏报(200 行改注入语义不命中),而且把 `capabilities.yaml` / `facts.ts` 这两个缺陷出生地排除在外。
+  - **基准是 release tag,不是 `merge-base origin/main`**:后者在 commit-即-push-main 的纪律下塌缩成 HEAD,只看得见未提交改动,会漏掉多-commit milestone 的早期 commit。
+  - **条件性交付要求 = 条件性 fire 的 sub**(零新机制)。`artifacts_expected` 是 phase 级静态列表,直接声明会让第二意见记录**无条件必交**、判据没命中也卡住,`--force` 随即变成肌肉记忆。改为新 leaf `workflows/verify/second-opinion/`(serial order 90,在 code-review/paranoid 之后、simplify 之前),由 `delegates_to.gate` 控制它跑不跑;跑了就必交 `second-opinion.md`(evidence guard 已 fail-closed),没跑则 ledger 记 `status: skipped` + 原因。**跳过从隐形变成台账上一行。**
+  - `requires_second_opinion` 为 root-flat 裸标识符(sister `chrome_devtools_available`),`buildDefaultGateContext` 种 **`false`** —— 与 chrome-devtools 种 `true` 方向相反:那边未知不可**删**能力,这边未知不可**加**活。算不出来时 `harnessed facts` 的 `source` 直接写「criterion unavailable — <原因>」。
+
 ### Changed
 
 - **`capabilities.yaml` 的 `fires_when` 改名 `routing_note`,并从 schema 删掉旧名(Phase 54 T1)**。judgment 文件里的 `fires_when` 是**真求值**的(`judgmentResolver` 读 `triggers`/`rules`);`capabilities.yaml` 里同名的 108 条**没有任何消费者** —— gate 引擎不读它,`prompt.ts:72-96` 只渲染 `cmd`/`impl`/`aliases`。同名异义就是误读的根源:读的人(包括未来的实施 subagent)会把它当生效路由,而项目 SPEC 检查表的 grep 恰恰会**放行**它们(检查表验「存在」,不验「被消费」)。

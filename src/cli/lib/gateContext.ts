@@ -37,6 +37,7 @@ export interface DefaultGateContext {
   // src/cli/lib/probe-chrome-devtools.ts). Read by
   // judgments.web-testing-routing.chrome-devtools-mcp-diagnostic.fires.
   chrome_devtools_available: boolean
+  requires_second_opinion: boolean
   [key: string]: unknown
 }
 
@@ -72,6 +73,13 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
     // `harnessed gates --context-file`, and through `harnessed run`'s awaited
     // probe overlay.
     chrome_devtools_available: true,
+    // Phase 54 T3 — seeded FALSE, the opposite of the line above and for the
+    // same reason read the other way: this builder is synchronous and cannot
+    // shell out to git, so the honest default is the direction where being
+    // wrong costs least. Unknown must not ADD a review step — a gate that
+    // fires when it cannot justify itself becomes noise, and noise gets
+    // ignored. The measured value arrives via `harnessed facts`.
+    requires_second_opinion: false,
     phase: {
       stage,
       // T2.1 OQ2(c) — withdrawn: gated stage-routing.verify-paranoid-critical,

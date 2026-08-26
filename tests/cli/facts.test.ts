@@ -19,6 +19,7 @@ import { parse as parseYaml } from 'yaml'
 import {
   collectGatedFactNames,
   deriveGitFacts,
+  deriveSecondOpinion,
   type FactsEnvelope,
   runFactsPlan,
 } from '../../src/cli/facts.js'
@@ -293,5 +294,81 @@ describe('harnessed facts <master> envelope', () => {
     const { code, stderr } = await runFacts('bogus')
     expect(code).toBe(1)
     expect(stderr.join('\n')).toContain("unknown master 'bogus'")
+  })
+})
+
+// Phase 54 T3 — `requires_second_opinion`.
+//
+// 判据 = 本次改动是否触及**引擎运行时真读的面**。刻意不是「三个发版的 diff 拟合出的
+// 路径集」(CEO 发现 6 / outside voice OV#2+OV#6):那样拟出来的集合区分的是「大发版
+// vs installer 发版」,不是「该审 vs 不该审」—— 一行 ADR 拼写修正会命中,200 行改
+// 注入语义不命中。集合从代码推导:引擎读哪些文件做决策,改哪些就该请第二意见。
+//
+// 基准 = 上一个 release tag,不是 merge-base origin/main:后者在 commit-即-push-main
+// 的纪律下塌缩成 HEAD,只看得见未提交改动,会漏掉多-commit milestone 的早期 commit。
+//
+// 算不出来(无 tag / 无 git / diff 失败)→ false + 一个非空 reason。不乱 fire,且不静默。
+describe('deriveSecondOpinion (Phase 54 T3)', () => {
+  const runner =
+    (map: Record<string, string | null>) =>
+    (args: string[]): string | null => {
+      const key = args.join(' ')
+      return key in map ? (map[key] ?? null) : null
+    }
+
+  const TAG = 'describe --tags --abbrev=0'
+  const withTag = (diff: string | null) =>
+    runner({ [TAG]: 'v4.38.0', 'diff --name-only v4.38.0': diff })
+
+  it('fires when the diff touches a judgment file', () => {
+    const r = deriveSecondOpinion(withTag('workflows/judgments/stage-routing.yaml'))
+    expect(r.fires).toBe(true)
+    expect(r.reason).toBeNull()
+  })
+
+  it('fires on capabilities.yaml, the fact schema, the resolver, and the ledger', () => {
+    for (const p of [
+      'workflows/capabilities.yaml',
+      'src/workflow/schema/phaseFactContext.ts',
+      'src/workflow/judgmentResolver.ts',
+      'src/checkpoint/ledger.ts',
+      'src/cli/facts.ts',
+      'workflows/task/test/SKILL.zh-Hans.md',
+      'workflows/disciplines/protocols.yaml',
+    ]) {
+      expect(deriveSecondOpinion(withTag(p)).fires, p).toBe(true)
+    }
+  })
+
+  it('does NOT fire on installer / doc / test-only changes', () => {
+    const diff = ['README.md', 'src/installers/npmCli.ts', 'tests/cli/doctor.test.ts'].join(
+      String.fromCharCode(10),
+    )
+    const r = deriveSecondOpinion(withTag(diff))
+    expect(r.fires).toBe(false)
+    expect(r.reason).toBeNull()
+  })
+
+  it('a mixed diff fires as soon as ONE surface file is touched', () => {
+    const diff = ['README.md', 'workflows/capabilities.yaml'].join(String.fromCharCode(10))
+    expect(deriveSecondOpinion(withTag(diff)).fires).toBe(true)
+  })
+
+  it('no release tag → false, and says so (never silent)', () => {
+    const r = deriveSecondOpinion(runner({}))
+    expect(r.fires).toBe(false)
+    expect(r.reason).toMatch(/tag/i)
+  })
+
+  it('tag found but the diff call fails → false, and says so', () => {
+    const r = deriveSecondOpinion(withTag(null))
+    expect(r.fires).toBe(false)
+    expect(r.reason).toMatch(/diff/i)
+  })
+
+  it('an empty diff is a real answer (clean tree since the tag), not unknown', () => {
+    const r = deriveSecondOpinion(withTag(''))
+    expect(r.fires).toBe(false)
+    expect(r.reason).toBeNull()
   })
 })

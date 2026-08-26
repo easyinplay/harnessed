@@ -35,6 +35,7 @@ import { detectPlatform } from '../platform/platform.js'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { runWorkflow } from '../workflow/run.js'
+import { secondOpinionFromGit } from './facts.js'
 import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
 import { buildDefaultGateContext } from './lib/gateContext.js'
 import { isChromeDevtoolsAvailable } from './lib/probe-chrome-devtools.js'
@@ -162,6 +163,11 @@ export function registerRun(program: Command): void {
         // overlay the MEASURED value (never throws; unknown still resolves true —
         // see src/cli/lib/probe-chrome-devtools.ts).
         chrome_devtools_available: await isChromeDevtoolsAvailable(),
+        // Phase 54 T3 — same treatment, opposite default: the synchronous builder
+        // seeds `false` (unknown must not add work), so overlay the MEASURED value
+        // here. Never throws — an unavailable criterion resolves false and the
+        // reason surfaces through `harnessed facts` and the per-turn breadcrumb.
+        requires_second_opinion: secondOpinionFromGit().fires,
         ...(raw.model ? { modelOverride: raw.model } : {}),
         ...(raw.maxIterations ? { maxIterations: raw.maxIterations } : {}),
         ...(raw.staged ? { staged: true } : {}),

@@ -121,6 +121,80 @@ export function deriveGitFacts(run: (args: string[]) => string | null): GitFacts
   }
 }
 
+/** The orchestration surface: the files the engine actually READS at runtime to
+ *  make decisions. Touching any of them changes how harnessed behaves, which is
+ *  what makes a cross-model second opinion worth its cost.
+ *
+ *  Derived from the code, NOT fitted to sample diffs. An earlier draft listed the
+ *  four paths the last three releases happened to touch; that set was overfit to
+ *  the releases where the defect class was DISCOVERED, and it both over- and
+ *  under-fired (a one-line ADR typo hit it; a 200-line rewrite of prompt-injection
+ *  semantics missed it). It also excluded `capabilities.yaml` and `facts.ts` — the
+ *  very places the defect class is born. */
+const NEWLINE_RE = new RegExp(String.fromCharCode(13) + '?' + String.fromCharCode(10))
+
+export const ORCHESTRATION_SURFACE: readonly string[] = [
+  'workflows/judgments/',
+  'workflows/capabilities.yaml',
+  'workflows/role-prompts',
+  'workflows/disciplines/',
+  'workflows/defaults.yaml',
+  'src/workflow/schema/phaseFactContext.ts',
+  'src/workflow/judgmentResolver.ts',
+  'src/workflow/exprBuilder.ts',
+  'src/cli/facts.ts',
+  'src/checkpoint/ledger.ts',
+]
+
+/** True when a repo-relative path is part of the orchestration surface. The
+ *  SKILL.md rule is a suffix match because every leaf ships two of them
+ *  (`SKILL.md` + `SKILL.zh-Hans.md`) under an arbitrary workflow directory. */
+function onOrchestrationSurface(path: string): boolean {
+  const p = path.split(String.fromCharCode(92)).join('/').trim()
+  if (p === '') return false
+  if (/^workflows\/.+\/SKILL(\.[A-Za-z-]+)?\.md$/.test(p)) return true
+  return ORCHESTRATION_SURFACE.some((s) => (s.endsWith('/') ? p.startsWith(s) : p === s))
+}
+
+export interface SecondOpinionFact {
+  /** The gate fact. `false` whenever the answer could not be computed. */
+  fires: boolean
+  /** Non-null ⇔ the criterion was UNAVAILABLE (not "computed and false"). The
+   *  per-turn breadcrumb renders it, so an environment that can never answer is
+   *  visibly unavailable instead of silently quiet. */
+  reason: string | null
+}
+
+/** Derive `requires_second_opinion`: did this release-in-progress touch the
+ *  orchestration surface?
+ *
+ *  Base is the LAST RELEASE TAG, not `merge-base HEAD origin/main`. On a repo
+ *  whose discipline is commit-and-push-to-main, the merge-base collapses to HEAD
+ *  and the diff only sees UNCOMMITTED work — so a milestone whose ADR/schema
+ *  change landed in commit 1 would look clean at the verify that runs before
+ *  commit 3. `git diff <tag>` spans committed and working-tree changes alike.
+ *
+ *  Unavailable (no tag / no git / diff failed) ⇒ `fires: false` plus a reason.
+ *  Failing toward false is deliberate: a criterion that fires when it cannot
+ *  justify itself becomes noise, and a gate everyone ignores is how the inert
+ *  declarations this whole phase is about came to exist. */
+export function deriveSecondOpinion(run: (args: string[]) => string | null): SecondOpinionFact {
+  const tagOut = run(['describe', '--tags', '--abbrev=0'])
+  const tag = tagOut === null ? null : tagOut.trim()
+  if (!tag) {
+    return {
+      fires: false,
+      reason: 'no release tag found (git describe --tags failed or the repo has no tags)',
+    }
+  }
+  const diff = run(['diff', '--name-only', tag])
+  if (diff === null) {
+    return { fires: false, reason: `git diff --name-only ${tag} failed` }
+  }
+  const fires = diff.split(NEWLINE_RE).some(onOrchestrationSurface)
+  return { fires, reason: null }
+}
+
 function defaultGitRun(args: string[]): string | null {
   try {
     return execFileSync('git', args, {
@@ -292,6 +366,13 @@ export function buildFactsEnvelope(
   }
 }
 
+/** `deriveSecondOpinion` bound to the real git runner. Exported so the `run`
+ *  command can overlay the MEASURED value onto the synchronous default gate
+ *  context without re-implementing the shell-out. */
+export function secondOpinionFromGit(): SecondOpinionFact {
+  return deriveSecondOpinion(defaultGitRun)
+}
+
 // ── command body ──────────────────────────────────────────────────────────────
 
 export async function runFactsPlan(
@@ -329,6 +410,7 @@ export async function runFactsPlan(
   }
 
   const git = deriveGitFacts(gitRun)
+  const secondOpinion = deriveSecondOpinion(gitRun)
   // Environment fact, not a judgement call: whether ANY chrome-devtools MCP
   // provider is registered is a filesystem answer, so it is auto-filled here for
   // the same reason `subtask.lines` is — leaving it null would hand the model a
@@ -361,6 +443,17 @@ export async function runFactsPlan(
     chrome_devtools_available: {
       value: chromeDevtoolsAvailable(cdt),
       source: chromeDevtoolsFactSource(cdt),
+    },
+    // Phase 54 T3 — root-flat, sister chrome_devtools_available above. `source`
+    // doubles as the UNAVAILABLE REASON: when the criterion cannot be computed
+    // the value is false AND the reason says why, so a repo that can never
+    // answer is visibly unavailable rather than quietly never firing.
+    requires_second_opinion: {
+      value: secondOpinion.fires,
+      source:
+        secondOpinion.reason === null
+          ? 'git diff --name-only <last release tag> ∩ orchestration surface (judgments/capabilities/facts/resolver/ledger/disciplines/SKILL.md)'
+          : `criterion unavailable — ${secondOpinion.reason}`,
     },
   }
 

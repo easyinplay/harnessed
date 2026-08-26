@@ -264,7 +264,7 @@ describe('Capabilities v3 discriminated union — T3.3.W0.7', () => {
 
 // Phase v3.0-3.3 W0 T3.3.W0.8 — phaseFactContext extend 13 NEW field MIN scope.
 describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
-  test('PF1: full valid v3 context passes (49 field — 20 phase + 19 subtask + 1 user + 9 root-flat)', () => {
+  test('PF1: full valid v3 context passes (50 field — 20 phase + 19 subtask + 1 user + 10 root-flat)', () => {
     const ok = makeValidPhaseFactContext()
     expect(Value.Check(PhaseFactContext, ok)).toBe(true)
   })
@@ -304,6 +304,17 @@ describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
     const bad = makeValidPhaseFactContext()
     // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
     delete (bad as any).chrome_devtools_available
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+
+  test('PF7: root-flat requires_second_opinion missing rejected (Phase 54 T3)', () => {
+    // Same bare-identifier contract as PF6, opposite failure direction: an absent
+    // variable throws, ADR-0038 fails CLOSED, and the second-opinion sub silently
+    // never fires — which is exactly the inert-declaration class this phase exists
+    // to remove. Declaring it required is what makes the omission loud.
+    const bad = makeValidPhaseFactContext()
+    // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
+    delete (bad as any).requires_second_opinion
     expect(Value.Check(PhaseFactContext, bad)).toBe(false)
   })
 })
@@ -533,5 +544,8 @@ function makeValidPhaseFactContext() {
     // 3rd root-flat — chrome-devtools MCP provider availability, read as a BARE
     // identifier by web-testing-routing.chrome-devtools-mcp-diagnostic.
     chrome_devtools_available: true,
+    // 4th root-flat (Phase 54 T3) — did this release-in-progress touch the
+    // orchestration surface? Read as a BARE identifier by the second-opinion gate.
+    requires_second_opinion: false,
   }
 }

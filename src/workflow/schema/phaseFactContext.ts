@@ -161,6 +161,15 @@ export const PhaseFactContext = Type.Object(
     // `harnessed facts` from src/cli/lib/probe-chrome-devtools.ts — never a
     // judgement call handed to the model.
     chrome_devtools_available: Type.Boolean(),
+    // 4th root-flat — did this release-in-progress touch the ORCHESTRATION
+    // SURFACE (judgments / capabilities / fact schema / resolver / exprBuilder /
+    // ledger / disciplines / any workflows SKILL.md)? Root-flat because it
+    // describes the CHANGE UNDER REVIEW, not the phase's nature. Derived by
+    // `harnessed facts` from `git diff --name-only <last release tag>` — never a
+    // judgement call handed to the model. Seeded FALSE when unmeasured: unknown
+    // must not ADD work (the mirror of chrome_devtools_available, where unknown
+    // must not REMOVE a capability).
+    requires_second_opinion: Type.Boolean(),
   },
   { additionalProperties: false },
 )

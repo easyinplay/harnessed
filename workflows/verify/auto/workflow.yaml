@@ -22,7 +22,8 @@
 #
 # Master invariant (per WorkflowSchemaV3 runtime + check-workflow-schema.mjs K9):
 #   - phases 缺省 (master only has delegates_to[])
-#   - 7 delegates_to: serial 2 (progress order 1 + simplify order 99) + parallel 5
+#   - 11 delegates_to: serial 3 (progress order 1 + second-opinion order 90 +
+#     simplify order 99) + parallel 8
 #   - serial mode 必带 explicit order (K9 invariant T3.3.W0.10)
 #   - parallel mode 无 order field 需求
 
@@ -78,6 +79,14 @@ delegates_to:
   - sub: multispec
     gate: judgments.stage-routing.verify-multispec-critical-release.fires
     mode: parallel
+  # Phase 54 T2 — 条件性交付要求 = 条件性 fire 的 sub。判据由 harnessed facts 机械
+  # 派生 (git diff <last release tag> ∩ ORCHESTRATION SURFACE);fire 了就必须交
+  # second-opinion.md,evidence guard 已是 fail-closed。order 90:在 code-review /
+  # paranoid 之后 (它也审这些的产出),在 simplify (99) 之前。
+  - sub: second-opinion
+    gate: judgments.stage-routing.verify-second-opinion-orchestration.fires
+    mode: serial
+    order: 90
   - sub: simplify
     mode: serial
     order: 99

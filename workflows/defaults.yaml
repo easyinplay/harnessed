@@ -83,6 +83,10 @@ ralph_max_iterations:
   verify-design:
     01-design-review: 3
 
+  verify-second-opinion:
+    # 第二意见跑一次就该有结论;循环重跑只会稀释它的独立性。
+    01-second-opinion: 2
+
   verify-simplify:
     01-simplify: 5
 
