@@ -67,7 +67,13 @@ const CapabilityEntryBase = Type.Object(
     cmd: Type.String(),
     since: Type.String(),
     description: Type.Optional(Type.String()),
-    fires_when: Type.Optional(Type.Array(Type.String())),
+    // Phase 54 T1 — renamed from `fires_when`. NOTHING evaluates this: the gate
+    // engine reads `fires_when` from workflows/judgments/*.yaml only
+    // (judgmentResolver), and prompt.ts renders cmd/impl/aliases only. Sharing the
+    // judgment field's name made 112 inert entries read as live routing — the
+    // misreading WAS the cost. `fires_when` is deliberately undeclared here so
+    // additionalProperties:false turns writing it back into a build-time error.
+    routing_note: Type.Optional(Type.Array(Type.String())),
     requires: Type.Optional(RequiresShape),
     plugin_path: Type.Optional(Type.String()),
     plugin_namespace: Type.Optional(Type.String()), // v3.4.1 legacy — unused by resolver

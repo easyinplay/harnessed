@@ -75,7 +75,7 @@ const CapabilityEntryBase = Type.Object(
     cmd: Type.String(),
     since: Type.String(),
     description: Type.Optional(Type.String()),
-    fires_when: Type.Optional(Type.Array(Type.String())),
+    routing_note: Type.Optional(Type.Array(Type.String())), // Phase 54 T1 — was fires_when (inert; see capabilities.ts)
     requires: Type.Optional(RequiresShape),
     plugin_path: Type.Optional(Type.String()),
     // v3.4.1/v3.4.2 presence-check fields — mirror src/workflow/schema/capabilities.ts

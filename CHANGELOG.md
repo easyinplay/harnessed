@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`capabilities.yaml` 的 `fires_when` 改名 `routing_note`,并从 schema 删掉旧名(Phase 54 T1)**。judgment 文件里的 `fires_when` 是**真求值**的(`judgmentResolver` 读 `triggers`/`rules`);`capabilities.yaml` 里同名的 108 条**没有任何消费者** —— gate 引擎不读它,`prompt.ts:72-96` 只渲染 `cmd`/`impl`/`aliases`。同名异义就是误读的根源:读的人(包括未来的实施 subagent)会把它当生效路由,而项目 SPEC 检查表的 grep 恰恰会**放行**它们(检查表验「存在」,不验「被消费」)。
+  - 改名把 108 条一次性变得自明,并让 `additionalProperties: false` 承担守卫:写回 `fires_when` 直接是**构建期错误**,不是静默无效。门从「维护一张百条豁免表」缩成「schema 就是门」。
+  - 两处 schema 同步(`src/workflow/schema/capabilities.ts` + `scripts/check-workflow-schema.mjs` 的镜像);该 `.mjs` 里另一处 `fires_when: Type.String()` 是 **judgment trigger** 的真字段,未动。
+
 ### Fixed
 
 - **21 处 per-phase 迭代上限第一次真的生效(Phase 54 T0)**。`workflows/**/workflow.yaml` 的 `phases[].max_iterations` 全部写成 `{{ defaults.ralph_max_iterations.<workflow>.<phase> }}`,而**没有任何一处被解析过**:`loadPhases` 的插值只覆盖 `ph.invokes`(实测 v3 下该字段恒为 `undefined`,分支从不触发),且 `interpolate` 的 `STRICT = /\{\{\s*(\w+)\s*\}\}/g` 不认 dot-path、残留即抛错 —— 接进去只会把 21 处全变成异常。21 处以字面串抵达 `resolveMaxIterations`,`parseInt` 得 NaN,统统落回 `RALPH_DEFAULT_MAX_ITER = 20`。声明 5 的 phase 实跑 20,四倍于写下的意图。

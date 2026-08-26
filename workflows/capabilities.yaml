@@ -44,7 +44,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 规格澄清 with docs (fires when phase.spec_ambiguous == true)
-    fires_when:
+    routing_note:
       - phase.spec_ambiguous == true
 
   # v4.16.3 — zoom-out entry REMOVED (mattpocock 上游 2026-07 重构删除该 skill,无稳定
@@ -61,7 +61,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 系统化排错 (fires when test_fail OR debug context)
-    fires_when:
+    routing_note:
       - subtask.test_fail == true
       - subtask.type == 'debug'
 
@@ -78,7 +78,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: token 紧张时 surgical edit (fires when token_tight == true)
-    fires_when:
+    routing_note:
       - subtask.token_tight == true
 
   grill-me:
@@ -89,12 +89,12 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 反向追问 (fires when spec_ambiguous AND no_docs)
-    fires_when:
+    routing_note:
       - phase.spec_ambiguous == true AND phase.no_docs == true
 
   # v15.0 re-sync (2026-07-13) — upstream renamed to-prd → to-spec, to-issues →
   # to-tickets (clone 实证 @391a2701)。capability key 同步改名(全仓 grep 实证
-  # 无 judgments/role-prompts/模板引用旧 key);fires_when 事实名保留(语义仍准)。
+  # 无 judgments/role-prompts/模板引用旧 key);routing_note 事实名保留(语义仍准)。
   to-spec:
     impl: mattpocock-skills
     install_type: user-skill
@@ -103,7 +103,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: translate idea → spec (fires when phase.translate_idea_to_prd == true)
-    fires_when:
+    routing_note:
       - phase.translate_idea_to_prd == true
 
   to-tickets:
@@ -114,7 +114,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: translate spec → tickets (fires when phase.translate_prd_to_issues == true)
-    fires_when:
+    routing_note:
       - phase.translate_prd_to_issues == true
 
   improve-codebase-architecture:
@@ -125,7 +125,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: architecture health audit (fires when phase.architecture_health_audit == true)
-    fires_when:
+    routing_note:
       - phase.architecture_health_audit == true
 
   # v3.4.2 fix: code-review is a claude-plugins-official PLUGIN (not mattpocock).
@@ -156,7 +156,7 @@ capabilities:
       - { impl: ecc, cmd: "ecc:rust-reviewer" }
       - { impl: ecc, cmd: "ecc:go-reviewer" }
       - { impl: ecc, cmd: "ecc:typescript-reviewer" }
-    fires_when:
+    routing_note:
       - phase.stage == 'verify'
 
   # v3.4.2 fix: code-simplifier is a claude-plugins-official PLUGIN (not mattpocock).
@@ -168,7 +168,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: verify-work tail step (移除重复、多余逻辑)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.is_final_step == true
 
   investigate:
@@ -183,7 +183,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: gstack bug investigation (fires when bug_root_cause_unknown)
-    fires_when:
+    routing_note:
       - subtask.bug_root_cause_unknown == true
 
   # Note: 剩 11 mattpocock 招式 (e.g., /retro, /ship, /office-hours-alias 等) 推 v2.x patch
@@ -203,7 +203,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: UI/UX 默认主方案 数据驱动
-    fires_when:
+    routing_note:
       - phase.has_ui_changes == true
       - subtask.type == 'ui_polish'
 
@@ -217,7 +217,7 @@ capabilities:
     since: v4.11
     category: tool-slash-cmd
     description: 视觉打磨 / anti-slop 高级感 (cross-agent, taste-skill)
-    fires_when:
+    routing_note:
       - phase.has_ui_changes == true
 
   playwright-cli:
@@ -226,7 +226,7 @@ capabilities:
     since: v2.0
     category: tool-bundled-skill
     description: "AI 实时操作浏览器 一行 Bash (手层 — 探查 / 调试 / 一次性交互)"
-    fires_when:
+    routing_note:
       - subtask.type == 'browser_probe'
 
   playwright-test:
@@ -235,7 +235,7 @@ capabilities:
     since: v2.0
     category: tool-plugin
     description: "E2E test framework TypeScript (脑层 — 写测试 / 跑 CI / 断言 / fixtures / reporter)"
-    fires_when:
+    routing_note:
       - subtask.type == 'e2e_test' AND subtask.language == 'typescript'
 
   webapp-testing:
@@ -246,7 +246,7 @@ capabilities:
     since: v2.0
     category: tool-bundled-skill
     description: "Python 后端联动 E2E (筋骨层 — Python Playwright + with_server.py)"
-    fires_when:
+    routing_note:
       - subtask.type == 'e2e_test' AND subtask.language == 'python'
 
   chrome-devtools-mcp:
@@ -265,7 +265,7 @@ capabilities:
     # `chrome_devtools_available == true` arm 强制 (实测: probe-chrome-devtools.ts;
     # 自动填入: `harnessed facts`; 报告: doctor `ecc` check)。
     description: "性能/a11y/内存泄漏诊断 (非功能性 only; NOT for E2E test); provider 二选一 — ecc (bonus tier, ECC 唯一默认 MCP connector) 或 optional 自装 manifest chrome-devtools-mcp (不装 ecc 的兜底); 双装 doctor warn; 两者都缺时本 capability 不可用 —— 由 gate fact chrome_devtools_available 强制, 该 lane 不 fire, 开启路径 `harnessed install ecc` 或 `claude mcp add chrome-devtools-mcp` 二选一"
-    fires_when:
+    routing_note:
       - subtask.type in ['perf_diagnose', 'a11y_audit', 'memory_leak']
 
   ctx7:
@@ -274,7 +274,7 @@ capabilities:
     since: v2.0
     category: tool-cli
     description: 库 API/框架/SDK 文档抓取
-    fires_when:
+    routing_note:
       - subtask.needs_library_docs == true
 
   codegraph:
@@ -283,7 +283,7 @@ capabilities:
     since: v7.0
     category: tool-mcp
     description: 语义代码索引 (symbol/call-graph query; opt-in self-installed, fewer tool-calls)
-    fires_when:
+    routing_note:
       - subtask.type in ['code_navigation', 'symbol_lookup', 'call_graph']
 
   tavily-mcp:
@@ -292,7 +292,7 @@ capabilities:
     since: v2.0
     category: tool-mcp
     description: Web 搜索默认 (关键词/库 API/时效)
-    fires_when:
+    routing_note:
       - subtask.needs_web_search == true
 
   exa-mcp:
@@ -305,7 +305,7 @@ capabilities:
     # 承接)。运行需 EXA_API_KEY (server 进程 env 读取; settings.json env 块 /
     # OS env 配置)。
     description: "描述式/学术 Web 搜索 (覆盖默认 Tavily 的场景 — 描述式查询 / 学术 / 批量抓多 URL); 需 EXA_API_KEY, 未配置时不可用, fallback 走 tavily-mcp / 内置 WebSearch (web-search-routing 已有 fallback 分支)"
-    fires_when:
+    routing_note:
       - subtask.needs_web_search == true AND subtask.search_type in ['descriptive', 'academic']
 
   gsd-discuss-phase:
@@ -316,7 +316,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: GSD discuss-phase 灰色澄清 (Phase 层判据 sister judgments/phase-gate.yaml)
-    fires_when:
+    routing_note:
       - phase.open_decisions >= 2 OR phase.scope_days > 1
 
   gsd-plan-phase:
@@ -327,7 +327,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: GSD plan-phase Wave A research + Wave B planner + Wave C plan-checker
-    fires_when:
+    routing_note:
       - phase.stage == 'plan'
 
   gsd-review:
@@ -338,7 +338,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: GSD cross-AI peer review
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.requires_peer_review == true
 
   gsd-debug:
@@ -365,7 +365,7 @@ capabilities:
       - { impl: ecc, cmd: "ecc:rust-build-resolver" }
       - { impl: ecc, cmd: "ecc:go-build-resolver" }
       - { impl: ecc, cmd: "ecc:build-error-resolver" }
-    fires_when:
+    routing_note:
       - subtask.type == 'debug'
 
   gsd-progress:
@@ -376,7 +376,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: GSD 状态同步 (verify-work serial after gsd-verify-work)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify'
 
   gsd-verify-work:
@@ -387,7 +387,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: verify-work entry (Stage ④ Verify 起点)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify'
 
   # v13.0 P42 (upstream re-sync) — GSD AI phase eval 覆盖审计 (conditional has_ai_phase;
@@ -401,7 +401,7 @@ capabilities:
     since: v13.0
     category: tool-slash-cmd
     description: AI phase eval 覆盖审计 (verify 回查 AI-SPEC eval 是否真覆盖)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.has_ai_phase == true
 
   # v13.0 P43 (upstream re-sync) — GSD Nyquist 覆盖审计 (verify 回溯查 requirement→test
@@ -414,7 +414,7 @@ capabilities:
     since: v13.0
     category: tool-slash-cmd
     description: GSD Nyquist 覆盖审计 (verify 回溯查 requirement→test 缺口并补测)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.requires_coverage_audit == true
 
   # ============================================================================
@@ -429,7 +429,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 战略层产品理念/商业 scope 澄清 (sister CLAUDE.md "新功能启动前强制")
-    fires_when:
+    routing_note:
       - phase.type in ['new_project', 'new_milestone', 'new_feature']
 
   gstack-plan-ceo-review:
@@ -440,7 +440,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 战略评估 CEO 视角 (新功能启动前强制 sister CLAUDE.md)
-    fires_when:
+    routing_note:
       - phase.type == 'new_feature' AND phase.has_business_decisions == true
 
   gstack-review:
@@ -451,7 +451,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: Paranoid Staff Engineer 视角 (关键模块 PR 前强制 sister CLAUDE.md)
-    fires_when:
+    routing_note:
       - phase.is_critical_module == true
 
   gstack-qa:
@@ -462,7 +462,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 端到端 QA 验收 (可选 conditional)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.has_ui_changes == true
 
   gstack-cso:
@@ -473,7 +473,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 安全审查 OWASP/auth/secrets (可选 conditional)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.has_auth_or_secrets == true
 
   gstack-design-review:
@@ -484,7 +484,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 设计系统一致性审查 + AI 审美问题识别 (可选 conditional)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.has_design_changes == true
 
   # ============================================================================
@@ -500,7 +500,7 @@ capabilities:
     description: TDD red-green-refactor (gated by judgments/tdd-gate.yaml fires_when)
     aliases:
       - { impl: mattpocock-skills, cmd: /tdd }
-    fires_when:
+    routing_note:
       - subtask.is_core_business_logic == true
       - subtask.is_algorithm == true
       - subtask.is_data_processing == true
@@ -524,7 +524,7 @@ capabilities:
       - task_plan.md
       - progress.md
       - findings.md
-    fires_when:
+    routing_note:
       - phase.stage == 'plan' AND phase.requires_persisted_plan == true
 
   # 完成保证 (原 D-10 `ralph-loop`) — 4.35.0 起完全内置,4.36.0 摘除上游 plugin 依赖。
@@ -545,7 +545,7 @@ capabilities:
     category: tool-cli
     description: 子任务完成保证 (fail-closed evidence + TDD boundary + verbatim COMPLETE; `checkpoint fail` 出 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP)
     sdk_ref: src/workflow/lib/ralphLoop.ts
-    fires_when:
+    routing_note:
       - subtask.completion_required == true
 
   superpowers-brainstorming:
@@ -554,7 +554,7 @@ capabilities:
     since: v2.0
     category: tool-slash-cmd
     description: 子任务级澄清 multi-approach 探索 (gated by judgments/subtask-gate.yaml)
-    fires_when:
+    routing_note:
       - subtask.approaches >= 2
       - subtask.core_algorithm == true
       - subtask.has_api_contract == true
@@ -569,7 +569,7 @@ capabilities:
     since: v13.0
     category: tool-slash-cmd
     description: 子任务声明 done/fixed/passing 前强制跑验证命令并贴 output (evidence before claims)
-    fires_when:
+    routing_note:
       - subtask.completion_required == true
 
   # ============================================================================
@@ -597,7 +597,7 @@ capabilities:
   # 走已删除的 TeamCreate/TeamDelete)harnessed 不再支持,故这里只声明新下界 `>=2.1.178`,
   # 不写区间(区间会暗示存在双路径 dispatch,而引擎里并不存在)。
   #
-  # 5 fires_when OR-chain (multi-select; Agent Teams upgrade triggers):
+  # 5 routing_note OR-chain (multi-select; Agent Teams upgrade triggers):
   #   1. teammate_send_message_needed — teammate 间需 SendMessage 互通 (NOT fire-and-forget)
   #   2. subagent_context_overflow    — 某 subagent 撞 context 上限需分担
   #   3. shared_task_list             — 多 teammate 共享 task list 自协调
@@ -615,7 +615,7 @@ capabilities:
     requires:
       settings_env_var: env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS == "1"
       cc_version: ">=2.1.178"
-    fires_when:
+    routing_note:
       - teammate_send_message_needed == true
       - subagent_context_overflow == true
       - shared_task_list == true
@@ -742,7 +742,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 串联完整 review pipeline (office-hours + plan-ceo-review + plan-eng-review 等)
-    fires_when:
+    routing_note:
       - phase.requires_full_review_pipeline == true
 
   codex:
@@ -753,7 +753,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 第二意见 / cross-AI peer review via codex
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.requires_second_opinion == true
 
   design-shotgun:
@@ -764,7 +764,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 设计 variants 探索 (一次产出多版本 mockup)
-    fires_when:
+    routing_note:
       - phase.has_design_changes == true AND phase.needs_variants == true
 
   design-html:
@@ -775,7 +775,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 设计 HTML mockup 生成 (throwaway 原型)
-    fires_when:
+    routing_note:
       - phase.has_design_changes == true AND phase.needs_html_mockup == true
 
   design-consultation:
@@ -786,7 +786,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 设计咨询 / 品牌一致性顾问
-    fires_when:
+    routing_note:
       - phase.has_design_changes == true AND phase.needs_brand_consult == true
 
   plan-design-review:
@@ -797,7 +797,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 计划 phase 设计审查 (设计意图与可行性评估)
-    fires_when:
+    routing_note:
       - phase.stage == 'plan' AND phase.has_design_changes == true
 
   plan-devex-review:
@@ -808,7 +808,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 计划 phase 开发体验审查 (DX/onboarding 视角)
-    fires_when:
+    routing_note:
       - phase.stage == 'plan' AND phase.has_devex_concerns == true
 
   plan-eng-review:
@@ -819,7 +819,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 复杂架构审查 (engineering manager 视角, 锁定架构后再 plan-phase)
-    fires_when:
+    routing_note:
       - phase.is_complex_architecture == true
 
   plan-tune:
@@ -830,7 +830,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 计划微调 (重新评估 plan 后细节调整)
-    fires_when:
+    routing_note:
       - phase.stage == 'plan' AND phase.tune_required == true
 
   context-save:
@@ -841,7 +841,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 保存进度 / context handoff 准备
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'save progress'
 
   context-restore:
@@ -852,7 +852,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 恢复进度 / context restoration
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'resume'
 
   qa-only:
@@ -863,7 +863,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: QA 报告 only mode (端到端测试但不修代码)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.has_ui_changes == true AND phase.report_only == true
 
   devex-review:
@@ -874,7 +874,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 开发体验审查 (onboarding test / DX audit)
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.has_devex_concerns == true
 
   benchmark:
@@ -885,7 +885,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 性能基准 / page speed regression 检测
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.has_perf_concerns == true
 
   browse:
@@ -896,7 +896,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 浏览器自动化 / dogfooding (gstack 默认 browser cmd)
-    fires_when:
+    routing_note:
       - subtask.needs_browser_automation == true
 
   open-gstack-browser:
@@ -907,7 +907,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 启动 headed Chrome (gstack 集成 browser headed mode)
-    fires_when:
+    routing_note:
       - subtask.needs_headed_browser == true
 
   connect-chrome:
@@ -918,7 +918,7 @@ capabilities:
     since: v3.x
     category: tool-slash-cmd
     description: 连接现有 Chrome 实例 (用于 Chrome extension 测试) — defer v3.x per W1.1 K1 (gstack plugin 当前未 ship connect-chrome subdir)
-    fires_when:
+    routing_note:
       - subtask.needs_chrome_extension == true
 
   setup-browser-cookies:
@@ -929,7 +929,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 导入 cookies 用于 authenticated browser 测试
-    fires_when:
+    routing_note:
       - subtask.needs_authenticated_browser == true
 
   ship:
@@ -940,7 +940,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 发版 / 创建 PR / deploy (用户 explicit 触发)
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'ship'
       - user.explicit_signal includes 'send it'
 
@@ -952,7 +952,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: merge + deploy + verify 串联
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.is_release_candidate == true
 
   release-preflight:
@@ -961,7 +961,7 @@ capabilities:
     since: v7.0
     category: tool-cli
     description: 只读发布就绪门 (CHANGELOG/version/git-clean/tag; PR ready != release ready)
-    fires_when:
+    routing_note:
       - phase.stage == 'ship'
 
   setup-deploy:
@@ -972,7 +972,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 配置 deployment (新项目 deploy infra setup)
-    fires_when:
+    routing_note:
       - phase.type == 'new_project' AND phase.needs_deploy_config == true
 
   setup-gbrain:
@@ -983,7 +983,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 配置 gbrain 项目上下文 (gstack 项目知识库)
-    fires_when:
+    routing_note:
       - phase.type == 'new_project' AND phase.needs_gbrain == true
 
   canary:
@@ -994,7 +994,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: post-deploy canary monitor / 错误率监控
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.post_deploy_monitor == true
 
   document-release:
@@ -1005,7 +1005,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 发版后更新文档 (changelog / release notes)
-    fires_when:
+    routing_note:
       - phase.is_release_candidate == true AND phase.needs_doc_update == true
 
   document-generate:
@@ -1016,7 +1016,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 生成文档 (PDF / 报告)
-    fires_when:
+    routing_note:
       - subtask.needs_pdf_doc == true
 
   careful:
@@ -1027,7 +1027,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: safety mode / 谨慎模式 (限制高风险操作)
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'careful'
       - user.explicit_signal includes 'guard mode'
 
@@ -1039,7 +1039,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: guard mode (alias of careful, 限制 destructive ops)
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'guard'
 
   freeze:
@@ -1050,7 +1050,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 限制编辑到特定目录 (防误改其他模块)
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'freeze'
 
   unfreeze:
@@ -1061,7 +1061,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 解除 freeze 限制
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'unfreeze'
 
   gstack-upgrade:
@@ -1072,7 +1072,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 升级 gstack 自身 (carrier name 自带 gstack 字符串, NOT prefix policy)
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'upgrade gstack'
 
   learn:
@@ -1083,7 +1083,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 复盘 gstack 已学习到的项目 patterns
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'what has gstack learned'
 
   health:
@@ -1094,7 +1094,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 项目健康检查 (gstack 整体诊断)
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'health check'
 
   make-pdf:
@@ -1105,7 +1105,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: 生成 PDF (文档 / 报告导出)
-    fires_when:
+    routing_note:
       - subtask.needs_pdf_export == true
 
   # v13.0 P43 (upstream re-sync) — gstack 1.58.0.0 NEW skill (commit 14fc0866
@@ -1118,7 +1118,7 @@ capabilities:
     since: v13.0
     category: tool-slash-cmd
     description: 英文描述/mermaid → 可编辑架构图 (.mmd + .excalidraw + SVG; gstack 1.58 NEW)
-    fires_when:
+    routing_note:
       - subtask.needs_diagram == true
 
   # 2 alias suffix `-gstack` (避免命名冲突 per Pattern A E.2)
@@ -1132,7 +1132,7 @@ capabilities:
     description: gstack 复盘 (alias to harnessed standalone /retro, 解决 namespace 冲突)
     aliases:
       - { impl: harnessed-bundled, cmd: /retro }
-    fires_when:
+    routing_note:
       - phase.is_milestone_close == true
 
   investigate-gstack:
@@ -1145,7 +1145,7 @@ capabilities:
     # v4.16.3 — mattpocock alias 移除(上游重构后无 investigate skill);本 entry 现为
     # Bucket 1 investigate(同 gstack 实现)的 namespace-suffix 兼容别名。
     description: gstack bug investigation (namespace-suffix alias of investigate)
-    fires_when:
+    routing_note:
       - subtask.bug_root_cause_unknown == true
 
   spec:
@@ -1156,7 +1156,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: 5-stage spec → GitHub issue → 可选 agent 生成
-    fires_when:
+    routing_note:
       - phase.stage == 'plan' AND phase.needs_spec_to_issues == true
 
   skillify:
@@ -1167,7 +1167,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: 把现有流程蒸馏成新 gstack skill
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'skillify'
 
   pair-agent:
@@ -1178,7 +1178,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: 远程 agent 配对 + ngrok tunnel
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'pair agent'
 
   scrape:
@@ -1189,7 +1189,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: 批量页面抓取
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'scrape'
 
   benchmark-models:
@@ -1200,7 +1200,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: 跨模型基准对比 (Claude/GPT/Gemini)
-    fires_when:
+    routing_note:
       - user.explicit_signal includes 'benchmark models'
 
   landing-report:
@@ -1211,7 +1211,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: post-landing 落地报告
-    fires_when:
+    routing_note:
       - phase.stage == 'verify' AND phase.needs_landing_report == true
 
   # ============================================================================
@@ -1225,7 +1225,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: subagent 编排 (sister parallelism-gate.yaml v2 invokes 已 ref, v3 backfill K2)
-    fires_when:
+    routing_note:
       - subtask.parallel_count <= 3
       - subtask.communication_needed == false
 
@@ -1236,7 +1236,7 @@ capabilities:
     since: v3.0
     category: tool-cli
     description: Google Workspace CLI (Gmail/Drive/Calendar/Sheets/Docs/Slides/Tasks/People/Chat/Forms/Keep/Meet/Classroom/Admin Reports)
-    fires_when:
+    routing_note:
       - subtask.needs_google_workspace == true
 
   # ============================================================================
@@ -1256,7 +1256,7 @@ capabilities:
     since: v3.0
     category: tool-slash-cmd
     description: GSD explore (codebase + 多 source 调研, GSD Core 1.4.1 successor to dropped gsd-research-phase)
-    fires_when:
+    routing_note:
       - phase.stage == 'research'
       - phase.requires_multi_source_research == true
 
@@ -1285,7 +1285,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD spec-phase SDD spec lock (sister judgments/stage-phase-gate.yaml)
-    fires_when:
+    routing_note:
       - phase.stage == 'plan' and phase.requires_spec == true
 
   gsd-ui-phase:
@@ -1296,7 +1296,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD ui-phase UI design contract (sister judgments/stage-phase-gate.yaml)
-    fires_when:
+    routing_note:
       - phase.has_ui_changes == true
 
   gsd-secure-phase:
@@ -1307,7 +1307,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD secure-phase security threat-model gate (sister judgments/stage-phase-gate.yaml)
-    fires_when:
+    routing_note:
       - phase.has_auth_or_secrets == true
 
   gsd-ai-integration-phase:
@@ -1318,7 +1318,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD ai-integration-phase AI-SPEC design contract (sister judgments/stage-phase-gate.yaml)
-    fires_when:
+    routing_note:
       - phase.builds_ai_system == true
 
   gsd-ingest-docs:
@@ -1329,7 +1329,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD ingest-docs bootstrap .planning from existing docs (cc-handoff Ideation→Onboarding)
-    fires_when:
+    routing_note:
       - phase.type == 'onboarding'
 
   gsd-new-project:
@@ -1340,7 +1340,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD new-project greenfield project init
-    fires_when:
+    routing_note:
       - phase.type == 'new_project'
 
   gsd-new-milestone:
@@ -1351,7 +1351,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD new-milestone brownfield milestone start
-    fires_when:
+    routing_note:
       - phase.type == 'new_milestone'
 
   gsd-extract-learnings:
@@ -1362,7 +1362,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD extract-learnings 提取 decisions/lessons from completed phase
-    fires_when:
+    routing_note:
       - phase.is_milestone_close == true
 
   gsd-audit-milestone:
@@ -1373,7 +1373,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD audit-milestone milestone completion audit
-    fires_when:
+    routing_note:
       - phase.is_milestone_close == true
 
   gsd-complete-milestone:
@@ -1384,7 +1384,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD complete-milestone archive completed milestone
-    fires_when:
+    routing_note:
       - phase.is_milestone_close == true
 
   gsd-milestone-summary:
@@ -1395,7 +1395,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD milestone-summary milestone summary
-    fires_when:
+    routing_note:
       - phase.is_milestone_close == true
 
   gsd-docs-update:
@@ -1406,7 +1406,7 @@ capabilities:
     since: v5.1
     category: tool-slash-cmd
     description: GSD docs-update post-ship doc update
-    fires_when:
+    routing_note:
       - phase.needs_doc_update == true
 
   # ============================================================================
@@ -1432,7 +1432,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: MCP server design patterns (ECC domain library — CC-harness-builder core)
-    fires_when:
+    routing_note:
       - subtask.domain == 'mcp_server'
 
   ecc-python-patterns:
@@ -1441,7 +1441,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: Python idiom/structure patterns (ECC domain library)
-    fires_when:
+    routing_note:
       - subtask.domain == 'python'
 
   ecc-rust-patterns:
@@ -1450,7 +1450,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: Rust ownership/idiom patterns (ECC domain library)
-    fires_when:
+    routing_note:
       - subtask.domain == 'rust'
 
   ecc-golang-patterns:
@@ -1459,7 +1459,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: Go idiom/concurrency patterns (ECC domain library)
-    fires_when:
+    routing_note:
       - subtask.domain == 'golang'
 
   ecc-postgres-patterns:
@@ -1468,7 +1468,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: PostgreSQL schema/query/perf patterns (ECC domain library)
-    fires_when:
+    routing_note:
       - subtask.domain == 'postgres'
 
   ecc-docker-patterns:
@@ -1477,7 +1477,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: Docker/container build patterns (ECC domain library)
-    fires_when:
+    routing_note:
       - subtask.domain == 'docker'
 
   ecc-nextjs-turbopack:
@@ -1486,7 +1486,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: Next.js + Turbopack frontend patterns (ECC domain library)
-    fires_when:
+    routing_note:
       - subtask.domain == 'nextjs'
 
   ecc-api-design:
@@ -1495,7 +1495,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: API contract/versioning design patterns (ECC domain library)
-    fires_when:
+    routing_note:
       - subtask.domain == 'api_design'
 
   ecc-cost-tracking:
@@ -1504,7 +1504,7 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: LLM cost/token spend reporting (ECC additive — harnessed has no cost report)
-    fires_when:
+    routing_note:
       - subtask.needs_cost_report == true
 
   ecc-hookify-rules:
@@ -1513,5 +1513,5 @@ capabilities:
     since: v7.1
     category: tool-slash-cmd
     description: Author CC hooks from observed behavior (ECC additive — no harnessed equivalent)
-    fires_when:
+    routing_note:
       - subtask.needs_hook_authoring == true
