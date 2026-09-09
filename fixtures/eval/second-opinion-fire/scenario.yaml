@@ -1,0 +1,24 @@
+# Phase 54 T6 — the FIRE half of the second-opinion gate.
+#
+# smoke-gates-verify already locks the skip half (second-opinion lands in `skip[]`
+# under the default context). Without this scenario the fire branch would have ZERO
+# coverage: the eval runner hands every scenario a bare `mkdtemp` dir with no git
+# repo and no tags (src/eval/runner.ts — GIT_CEILING_DIRECTORIES pins it that way on
+# purpose, for hermeticity), so the real derivation in `deriveSecondOpinion` can
+# never return true there.
+#
+# The SPEC originally called for building a fixture git repo WITH a tag so the real
+# derivation could fire. That was unnecessary: the scenario schema already supplies
+# gate facts directly, and the derivation itself is unit-tested in
+# tests/cli/facts.test.ts (7 cells incl. all three unavailable paths). What is NOT
+# otherwise covered — and what this locks — is the ORCHESTRATION consequence: a true
+# fact must put `verify-second-opinion` into the fire list at serial order 90,
+# between the parallel reviewers and simplify (99).
+name: second-opinion-fire
+description: second-opinion sub fires (serial order 90) when requires_second_opinion is true
+steps:
+  - gates:
+      master: verify
+      task: eval — second-opinion fire branch
+      context:
+        requires_second_opinion: true

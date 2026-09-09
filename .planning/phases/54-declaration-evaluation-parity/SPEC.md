@@ -144,9 +144,15 @@ verified_refs:
 
 ### Wave 3 — T6/T7
 
-- [ ] **T6 (P1)** — eval — 带 tag 的 fixture git 仓
-  - `src/eval/runner.ts` 的 tmp 仓没有 tag,tag 基准下 fire 分支在 CI 恒不可达
-  - Verify: golden 覆盖 fire 与 skip 两态
+- [x] **T6 (P1)** — eval — fire 分支 golden **(方案已更正:不造 git fixture)**
+  - **更正**:立项时写的「必须造带 tag 的 fixture git 仓」是**不必要的**。scenario schema
+    本来就能直接供给 gate 事实(`seed_context` / 每步 `gates.context`),而
+    `deriveSecondOpinion` 本身已在 `tests/cli/facts.test.ts` 有 7 个 cell 单测,含三条
+    不可用路径。造 git 仓只是为了让**真派生**在 CI 里返回 true —— 重复覆盖,且与 runner
+    的 hermeticity 设计对着干(`GIT_CEILING_DIRECTORIES` 有意把 tmp 仓钉死为非 repo)。
+  - 真正缺覆盖的是**编排后果**:事实为真时 `verify-second-opinion` 必须进 fire 列表、
+    serial order 90、夹在并行审查与 `verify-simplify`(99)之间。落成
+    `fixtures/eval/second-opinion-fire/`;skip 半边由既有 `smoke-gates-verify` 覆盖。
 - [ ] **T7 (P2)** — util — 抽 `gitChangedFiles(cwd, base)` 供 `scale.ts` 与 T3 复用
   - **不改 `scale.ts` 的基准语义**(CEO 发现 3 已裁定)
 
