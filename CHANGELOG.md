@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.39.0] - 2026-09-09
+
+Phase 54「声明 / 求值一致性」。本仓的签名缺陷是「声明了机制,却没有代码求值它」 —— 4.36.0 失效的 eval trap、4.37.0 chrome-devtools 的散文承诺、4.38.0 verify 缺回退边,三次都是事故或审计倒推发现的。本轮把这条病族**成建制**清了一遍,其中一面有真实行为后果。
+
+立项前提在执行中被实测推翻五条(112→108 计数 / 「14 个悬空事实」/ 断点行形态 / eval git fixture / DRY 抽取),全部显式更正未静默改写 —— 详 `.planning/phases/54-declaration-evaluation-parity/SPEC.md`。
+
 ### Added
 
 - **`verify/second-opinion` —— 跨模型第二意见第一次成为会被求值的编排单元(Phase 54 T2+T3)**。`capabilities.yaml` 里的 `codex` 能力(第二意见 / cross-AI peer review)此前被锁在一条**死** `fires_when` 后面,而它引用的 `phase.requires_second_opinion` 全仓只出现那一次 —— 连事实都没声明过。
