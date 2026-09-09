@@ -46,8 +46,8 @@ spec:
       - ~/.claude/skills/design-taste-frontend
   upstream_health:
     stability: stable
-    last_check: "2026-06-30"
-    last_known_good_version: v2-default
+    last_check: "2026-09-10"
+    last_known_good_version: "main-ccbc1563"
     fallback_action: warn
   signed_by: easyinplay
   platforms:

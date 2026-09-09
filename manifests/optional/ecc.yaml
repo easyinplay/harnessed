@@ -88,8 +88,15 @@ spec:
         timeout_ms: 10000
   upstream_health:
     stability: unstable
-    last_check: "2026-06-17"
-    last_known_good_version: 2.0.0-rc.1
+    # Phase 55 (2026-09-10) — record re-verified, install path deliberately NOT
+    # changed. Upstream tag is v2.2.1; this machine's marketplace cache holds
+    # 2.1.0. ECC 2.2 advertises a single guided installer covering Claude Code /
+    # Codex / Kimi, which may supersede the two-stage `claude plugin marketplace
+    # add && claude plugin install` above — evaluating that is a behaviour change
+    # (2.0.0-rc.1 → 2.1.0 already swapped the whole MCP server set), not a record
+    # fix, and ECC's bonus-tier positioning was settled 2026-07-29. Open item.
+    last_check: "2026-09-10"
+    last_known_good_version: "2.2.1"
     fallback_action: warn
   signed_by: easyinplay
   platforms:

@@ -28,8 +28,8 @@ spec:
     cmd: "claude mcp remove --scope project tavily-mcp"
   upstream_health:
     stability: beta
-    last_check: "2026-05-11"
-    last_known_good_version: 0.2.19
+    last_check: "2026-09-10"
+    last_known_good_version: "0.2.22"
     fallback_action: use_alternative
     # 4.32.22 — restored to exa-mcp: the 4.32.21 deletion of that manifest was
     # reverted (exa back as a base component; the ECC-side exa is opt-in only

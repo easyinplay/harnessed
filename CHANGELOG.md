@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`scripts/check-upstream-freshness.mjs` — `upstream_health` 从此会被求值(Phase 55)。** `spec.upstream_health` 自 v0.1 起就是必填 schema 块(4 字段 × 19 manifest = 76 条声明),但**零代码消费者** —— 这是 Phase 54 同一病族的第四面。与 `routing_note` 的区别在于:`routing_note` 是被误读成机器输入(改名即解决),而 `last_check` / `last_known_good_version` 是被**人**读成关于上游的当前事实;它们变陈旧时没有任何东西提示读者停止那样读,所以删掉整块会丢失真实的供应链 provenance。新门把腐烂变响:第三方 manifest 的 `last_check` 超过 90 天即 CI 硬失败;first-party manifest(`metadata.upstream.repository` 指向本仓,实测 5 个)豁免 —— 它们的「上游」就是你正在看的这个 commit,日期戳不携带信息。**零网络、零协议适配器**:上游发新版**不应该**让 CI 变红,因为几乎每条 `install.cmd` 都解析 `@latest`,向下漂移本就是预期行为;本门断言的只是「近期有人重新核实过这一行」,恰是 `last_check` 的字面语义。`HARNESSED_FRESHNESS_TODAY` 可覆写「今天」以做确定性验证。CI 中位于 `check-yaml-i18n-parity` 之后(同样依赖 `yaml` 包,须在 `pnpm install` 之后)。
+
+### Changed
+
+- **14 个第三方 manifest 的 `upstream_health` 全量重新核实并盖章 2026-09-10。** 逐行实拉 npm registry / git tag / HEAD sha,不是照抄:`gstack` 1.60.1.0 → **1.84.1.0**、`planning-with-files` 3.4.1 → 3.17.2、`ui-ux-pro-max` 2.5.0 → 2.15.0、`gsd` 1.7.0 → 1.13.0、`superpowers` 6.1.1 → 6.3.0、`ecc` 2.0.0-rc.1 → 2.2.1、`codegraph` 1.0.0 → 1.6.0、`exa-mcp` 3.2.1 → 3.4.1、`ctx7` 0.4.x → 0.5.11、`chrome-devtools-mcp` 1.6.0 → 1.9.0、`tavily-mcp` 0.2.19 → 0.2.22、`playwright-test` 1.5.7 → 1.5.25、`mattpocock-skills` main-391a2701 → main-3cca18b3、`design-taste-frontend` `v2-default` → main-ccbc1563(原值根本不是版本号)。最陈旧的两行(`ctx7` / `tavily-mcp`)距上次核实 121 天。
+- **`manifests/SCHEMA.md` 修正 `last_check` / `last_known_good_version` 两行的说明。** 原文写「weekly CI 自动写入 / 自动维护」—— 那条 weekly CI 从未存在,而这句话正是让这两个字段可以静默腐烂的授权书。改为:`last_check` = 人工核实日期(第三方 >90 天硬失败,first-party 豁免);`last_known_good_version` = 上次核实时观察到的上游版本,**不是**安装时解析的版本(多数 cmd 走 `@latest`,实际装到的会更新)。ADR-0001 的同句不动(A7 守恒锁)。
+
+### Fixed
+
+- **`ui-ux-pro-max` 的 `metadata.upstream` provenance 指错了仓库。** 4.32.21 把安装从 midway 自打包迁到 `nextlevelbuilder/ui-ux-pro-max-skill` plugin 后,`source` / `homepage` / `repository` 三个字段仍留在 `midwayjs/midway`,即 manifest 声明的上游不是它实际安装的上游 —— 供应链层的错误归属。改指 nextlevelbuilder(Claude Code 主路径);midway git-clone 只作为 codex `harness_overrides` 存活,已在该处注明。`install.git_ref` 一并 2.5.0 → 2.15.0。
+- **`playwright-test` 是唯一把 `skills` 安装器 CLI 钉死到精确版本的 manifest。** `npx --yes skills@1.5.7` → `skills@latest`(`npm_version` `^1.5.7` → `^1.5.25`),与 `mattpocock-skills` / `design-taste-frontend` 两个兄弟 manifest 对齐。该钉子把安装器冻在上游 18 个 minor 之前且无理由 —— 被钉的产物应该是 SKILL 内容(来自 `microsoft/playwright-cli` 仓),不是安装器自身的版本。
+- **`ctx7` 的 `npm_version: ^0.4.0` 连当前上游都覆盖不到。** 0.x major 上的 caret range 被锁在 minor,而上游已是 0.5.11。安装命令是无版本的 `npm install -g ctx7`,所以用户一直装的是 0.5.x,只有记录声称一个排除它的范围。改为 `^0.5.0`。
+
+### Notes
+
+- **ECC 的安装路径刻意未动。** 记录已核实到 v2.2.1(本机 marketplace cache 仍是 2.1.0)。ECC 2.2 宣称由单个 guided installer 统一覆盖 Claude Code / Codex / Kimi,可能取代 manifest 里的两段式 `claude plugin marketplace add && claude plugin install` —— 但评估它是**行为变更**而非记录修正(2.0.0-rc.1 → 2.1.0 已经整套换过 MCP server 集合),且 ECC 的 bonus-tier 定位在 2026-07-29 已终裁。作为 open item 记在 `manifests/optional/ecc.yaml` 的 `upstream_health` 注释里。
+
 ## [4.39.0] - 2026-09-09
 
 Phase 54「声明 / 求值一致性」。本仓的签名缺陷是「声明了机制,却没有代码求值它」 —— 4.36.0 失效的 eval trap、4.37.0 chrome-devtools 的散文承诺、4.38.0 verify 缺回退边,三次都是事故或审计倒推发现的。本轮把这条病族**成建制**清了一遍,其中一面有真实行为后果。

@@ -19,7 +19,11 @@ spec:
   install:
     method: npm-cli
     cmd: "npm install -g ctx7"
-    npm_version: ^0.4.0
+    # Phase 55 (2026-09-10) — ^0.4.0 did not even cover the current upstream
+    # (0.5.11): a caret range on a 0.x major is minor-locked. The install cmd is
+    # unversioned `npm install -g ctx7`, so users were always getting 0.5.x while
+    # the record claimed a range that excludes it.
+    npm_version: ^0.5.0
     idempotent_check: "command -v ctx7"
   verify:
     cmd: "ctx7 --version"
@@ -29,8 +33,8 @@ spec:
     cmd: "npm uninstall -g ctx7"
   upstream_health:
     stability: stable
-    last_check: "2026-05-11"
-    last_known_good_version: 0.4.x
+    last_check: "2026-09-10"
+    last_known_good_version: "0.5.11"
     fallback_action: warn
   signed_by: easyinplay
   platforms:

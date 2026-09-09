@@ -52,8 +52,8 @@ spec:
         timeout_ms: 5000
   upstream_health:
     stability: stable
-    last_check: "2026-07-13"
-    last_known_good_version: 3.4.1
+    last_check: "2026-09-10"
+    last_known_good_version: "3.17.2"
     fallback_action: warn
   signed_by: easyinplay
   platforms:

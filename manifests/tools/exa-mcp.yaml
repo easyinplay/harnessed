@@ -40,8 +40,8 @@ spec:
     stability: stable
     # 4.32.22 — npm latest is 3.2.1 (verified 2026-07-29); ^3.2.0 install range
     # already covers it, so cmd/npm_version stay as restored.
-    last_check: "2026-07-29"
-    last_known_good_version: 3.2.1
+    last_check: "2026-09-10"
+    last_known_good_version: "3.4.1"
     fallback_action: use_alternative
     alternative: tavily-mcp
   signed_by: easyinplay

@@ -51,8 +51,8 @@ spec: {...}                # 见 § 3
 | `uninstall.cmd` | ✅ | string | 1-key 卸载命令 |
 | `uninstall.cleanup_paths` | optional | string[] | 额外清理路径 |
 | `upstream_health.stability` | ✅ | enum | `stable` / `beta` / `unstable` / `archived` |
-| `upstream_health.last_check` | ✅ | ISO date | weekly CI 自动写入 |
-| `upstream_health.last_known_good_version` | ✅ | string | weekly CI 自动维护 |
+| `upstream_health.last_check` | ✅ | ISO date | 人工核实日期；第三方 manifest 超过 90 天 CI 硬失败（`scripts/check-upstream-freshness.mjs`），first-party（`upstream.repository` 指向本仓）豁免 |
+| `upstream_health.last_known_good_version` | ✅ | string | 上次核实时观察到的上游版本（npm registry / git tag / HEAD sha）。**不是**安装时解析的版本 —— 多数 `install.cmd` 走 `@latest`，实际装到的会比本字段新 |
 | `upstream_health.fallback_action` | ✅ | enum | `warn` / `block` / `use_alternative` |
 | `upstream_health.alternative` | conditional | string | `fallback_action == use_alternative` 时必填 |
 | `signed_by` | ✅ | string | maintainer GitHub username（v0.1-0.3 commit hash 校验，v0.4+ sigstore） |

@@ -182,6 +182,17 @@ jobs:
       # keys / role-key + rule-id sets / per-entry field presence); absence is OK.
       - name: Yaml i18n parity gate (Phase 33 — role-prompts + disciplines en↔zh-Hans, hard-fail)
         run: node scripts/check-yaml-i18n-parity.mjs
+      # Phase 55 — upstream_health freshness gate (HARD-FAIL).
+      # `spec.upstream_health` was a required schema block with zero consumers, so
+      # its dates and versions rotted silently while still reading as current facts
+      # (Phase 54's declaration-without-evaluation family, 4th surface). This gate
+      # fails when a THIRD-PARTY manifest's last_check is >90d old; first-party
+      # manifests (upstream repository == this repo) are exempt. Zero network by
+      # design — an upstream release must NOT turn CI red, since nearly every
+      # install cmd resolves @latest. Uses the `yaml` package → runs AFTER pnpm
+      # install (sister check-yaml-i18n-parity above).
+      - name: Upstream health freshness gate (Phase 55 — last_check ≤90d, hard-fail)
+        run: node scripts/check-upstream-freshness.mjs
       # Phase 2.4 W6 T6.2 — EE-4 plan-checker quantitative gate (B-11 + B-12 + D-02).
       # Walker scripts/run-plan-checker.mjs (T2.2 f986d42) consumes T2.1 schema
       # routing/plan-review-schema.yaml; BLOCKER (<=2/4 dims) -> exit 1 + ::error::

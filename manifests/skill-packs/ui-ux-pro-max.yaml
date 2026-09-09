@@ -15,9 +15,14 @@ metadata:
   display_name: ui-ux-pro-max
   description: Data-driven, standards-based UI/UX expert skill, installed as the official ui-ux-pro-max Claude Code plugin.
   upstream:
-    source: midwayjs/midway
-    homepage: https://github.com/midwayjs/midway/tree/v4-next/.codex/skills/ui-ux-pro-max
-    repository: https://github.com/midwayjs/midway.git
+    # Phase 55 — provenance corrected. These fields had still named
+    # midwayjs/midway after the 4.32.21 migration, so the manifest declared an
+    # upstream it no longer installs from. `metadata.upstream` names the PRIMARY
+    # (Claude Code) source; the midway git-clone survives only as the codex
+    # harness_override below, and is documented there.
+    source: nextlevelbuilder/ui-ux-pro-max-skill
+    homepage: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill
+    repository: https://github.com/nextlevelbuilder/ui-ux-pro-max-skill.git
     license: MIT
     notice: |
       ui-ux-pro-max skill (MIT), distributed as a Claude Code plugin via the
@@ -34,8 +39,11 @@ spec:
   install:
     method: cc-plugin-marketplace
     cmd: "claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill && claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill"
-    # 4.32.21 — local marketplace cache 实测版本 (~/.claude/plugins/cache/ui-ux-pro-max-skill/ui-ux-pro-max/2.5.0/)
-    git_ref: 2.5.0
+    # Phase 55 (2026-09-10) — bumped to the upstream tag verified in the same
+    # sweep as upstream_health (gh api repos/.../tags → v2.15.0). The local
+    # marketplace cache still holds 2.5.0; the install cmd resolves latest, so
+    # the cache is stale, not the pin.
+    git_ref: 2.15.0
     idempotent_check: "claude plugin list 2>&1 | grep -qw ui-ux-pro-max"
     marketplace_source:
       source: github
@@ -61,8 +69,8 @@ spec:
         timeout_ms: 5000
   upstream_health:
     stability: stable
-    last_check: "2026-07-29"
-    last_known_good_version: "2.5.0"
+    last_check: "2026-09-10"
+    last_known_good_version: "2.15.0"
     fallback_action: warn
   signed_by: easyinplay
   platforms:
