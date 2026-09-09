@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [Unreleased]
-
 ### Added
 
 - **`verify/second-opinion` —— 跨模型第二意见第一次成为会被求值的编排单元(Phase 54 T2+T3)**。`capabilities.yaml` 里的 `codex` 能力(第二意见 / cross-AI peer review)此前被锁在一条**死** `fires_when` 后面,而它引用的 `phase.requires_second_opinion` 全仓只出现那一次 —— 连事实都没声明过。
