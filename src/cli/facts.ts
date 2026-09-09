@@ -174,6 +174,12 @@ export interface SecondOpinionFact {
  *  change landed in commit 1 would look clean at the verify that runs before
  *  commit 3. `git diff <tag>` spans committed and working-tree changes alike.
  *
+ *  Sister-but-not-duplicate of `countChangedFiles` in src/checkpoint/scale.ts:
+ *  that one counts UNCOMMITTED files to size the current verify (merge-base
+ *  base, async shell, catch → 0); this one asks whether the RELEASE touched the
+ *  orchestration surface (tag base, injected sync runner, reason on failure).
+ *  Phase 54 T7 compared them line by line and deliberately left both.
+ *
  *  Unavailable (no tag / no git / diff failed) ⇒ `fires: false` plus a reason.
  *  Failing toward false is deliberate: a criterion that fires when it cannot
  *  justify itself becomes noise, and a gate everyone ignores is how the inert

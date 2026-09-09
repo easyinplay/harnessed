@@ -153,8 +153,24 @@ verified_refs:
   - 真正缺覆盖的是**编排后果**:事实为真时 `verify-second-opinion` 必须进 fire 列表、
     serial order 90、夹在并行审查与 `verify-simplify`(99)之间。落成
     `fixtures/eval/second-opinion-fire/`;skip 半边由既有 `smoke-gates-verify` 覆盖。
-- [ ] **T7 (P2)** — util — 抽 `gitChangedFiles(cwd, base)` 供 `scale.ts` 与 T3 复用
-  - **不改 `scale.ts` 的基准语义**(CEO 发现 3 已裁定)
+- [x] **T7 (P2)** — util — **查证后不做**,两处各留交叉引用注释
+  - ENG-2 报的是「两处 git diff 共用同一条管道,只有基准不同」。逐行比对后该前提不成立:
+
+    | | `scale.ts` `countChangedFiles` | `facts.ts` `deriveSecondOpinion` |
+    |---|---|---|
+    | 执行 | `execp`(async,shell 字符串) | 注入的 sync runner(argv) |
+    | 基准 | `merge-base HEAD origin/main` | `describe --tags`(上一个 release tag) |
+    | 拆行 | `split('
+')` | `split(NEWLINE_RE)`(CRLF 感知) |
+    | 消费 | `.filter(非空).length` → 数量喂 `assessScale` 阈值 | `.some(onOrchestrationSurface)` → 布尔 |
+    | 失败 | `catch` → 0 | runner 返回 null → 带 reason |
+
+  - 真正重叠的只有「把输出拆成行」一步,而连那一步两边写法都不同。抽共享 helper 等于
+    为一行共性新增一个跨 sync/async 的抽象层 —— 而那个层本身就是一个会腐烂的面,
+    正是本 phase 在治的形态。
+  - DRY 要防的是「改一处忘另一处」;这里**改一处本就不应该影响另一处**。
+  - 落地:两处各加一行交叉引用注释,写明「看似重复但不是」及五点差异,防下一个读到的人
+    再提同一条。
 
 ## 不在范围
 

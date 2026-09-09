@@ -35,6 +35,19 @@ export async function collectScaleMetrics(
   }
 }
 
+/** Changed-file count for the CURRENT verify, not for the release.
+ *
+ *  Looks like a duplicate of `deriveSecondOpinion` in src/cli/facts.ts — it is
+ *  not, and Phase 54 T7 checked line by line before deciding to leave both:
+ *  different base (merge-base with origin/main here, last release tag there),
+ *  different execution model (async shell string vs an injected sync argv
+ *  runner), different consumption (a count feeding assessScale's light/full
+ *  threshold vs a boolean over the orchestration surface), different failure
+ *  semantics (catch → 0 here, a null runner result carrying a reason there).
+ *  The only overlap is "split the output into lines", and even that differs.
+ *  Extracting a shared helper would add a sync/async abstraction to dedupe one
+ *  line — and changing one of these should NOT affect the other, which is the
+ *  whole point DRY exists to protect. */
 async function countChangedFiles(cwd: string): Promise<number> {
   try {
     const { stdout: base } = await execp('git merge-base HEAD origin/main', { cwd })
