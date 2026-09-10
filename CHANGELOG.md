@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **doctor 第 22 项 `plugin install freshness` —— marketplace plugin 的静默陈旧第一次说得出口(Phase 56)。** `claude plugin install` 把 plugin 拷进带版本号的 cache 目录(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`)并**钉死在那里**;与 `npx --yes <pkg>@latest` 那批不同,后续 session 不会重新解析 latest。装的那天是什么版本,之后就一直是什么版本,Claude Code 不会提。本机 2026-09-10 实测四个 `cc-plugin-marketplace` 组件**全部落后**:`superpowers` 5.1.0(2026-05-27 装)vs 6.3.0、`planning-with-files` 2.34.0 vs 3.17.2、`ui-ux-pro-max` 2.5.0 vs 2.15.0、`ecc` 2.1.0 vs 2.2.1。新 check 读 plugin registry 的 `version` 与 manifest 的 `last_known_good_version` 比对,落后则 warn 并给出实测存在的修复命令(`claude plugin update <plugin>`)。warn 不 fail:跑旧版是降级不是坏掉,而且 superpowers 5.1.0 → 6.3.0 会换掉用户正在用的技能集,升不升是用户的决定。
+
+  这也是代码库里**唯一**一处把真实探测到的版本与记录版本对比的地方。Phase 55 调查并否决了在 installer-state 层做同样的事:`HarnessedStateEntry.version` 看着像探测值,但它的 7 个调用点传的全是 manifest 声明值(`install.npm_version` / `install.git_ref` / `''`),比了等于拿记录比它自己。plugin registry 的 `version` 是从磁盘读出来的真实值,这才让这个 check 成立。
+
+  **顺带更正 Phase 55 的一句话**:那条 changelog 写「几乎每条 install.cmd 都解析 @latest,向下漂移本就是预期」—— 对 npm / git 那批成立,对这 4 个 plugin 装**不成立**。它们的漂移不是记录不准,是真的装旧了。
+
 - **`scripts/check-upstream-freshness.mjs` — `upstream_health` 从此会被求值(Phase 55)。** `spec.upstream_health` 自 v0.1 起就是必填 schema 块(4 字段 × 19 manifest = 76 条声明),但**零代码消费者** —— 这是 Phase 54 同一病族的第四面。与 `routing_note` 的区别在于:`routing_note` 是被误读成机器输入(改名即解决),而 `last_check` / `last_known_good_version` 是被**人**读成关于上游的当前事实;它们变陈旧时没有任何东西提示读者停止那样读,所以删掉整块会丢失真实的供应链 provenance。新门把腐烂变响:第三方 manifest 的 `last_check` 超过 90 天即 CI 硬失败;first-party manifest(`metadata.upstream.repository` 指向本仓,实测 5 个)豁免 —— 它们的「上游」就是你正在看的这个 commit,日期戳不携带信息。**零网络、零协议适配器**:上游发新版**不应该**让 CI 变红,因为几乎每条 `install.cmd` 都解析 `@latest`,向下漂移本就是预期行为;本门断言的只是「近期有人重新核实过这一行」,恰是 `last_check` 的字面语义。`HARNESSED_FRESHNESS_TODAY` 可覆写「今天」以做确定性验证。CI 中位于 `check-yaml-i18n-parity` 之后(同样依赖 `yaml` 包,须在 `pnpm install` 之后)。
 
 ### Changed

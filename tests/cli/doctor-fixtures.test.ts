@@ -51,6 +51,18 @@ vi.mock('../../src/cli/lib/check-planning-with-files.js', () => ({
 // v3.6.0 Phase 2 Wave 3 — 11th + 12th check mocks (same reason as 9th/10th).
 // PRIMARY logic unit-tested in tests/cli/check-mattpocock-skills.test.ts +
 // tests/cli/check-mcp-availability.test.ts. Scenario matrix axes orthogonal.
+// Phase 56 — 22nd check mock (check-plugin-staleness.ts walks the shipped
+// manifests/ dir and reads ~/.claude/plugins/installed_plugins.json, neither of
+// which the global node:fs mock serves; on a real dev machine it legitimately
+// warns, which would flip this suite's all-pass cells. Real logic unit-tested in
+// tests/cli/check-plugin-staleness.test.ts (12 cells, fully dep-injected).
+vi.mock('../../src/cli/lib/check-plugin-staleness.js', () => ({
+  checkPluginStaleness: () => ({
+    name: 'plugin install freshness',
+    status: 'pass',
+    message: '4 marketplace plugin(s) current',
+  }),
+}))
 vi.mock('../../src/cli/lib/check-mattpocock-skills.js', () => ({
   checkMattpocockSkills: () => ({
     name: 'mattpocock-skills',
@@ -228,10 +240,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 21 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 22 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(21)
+      expect(parsed.checks).toHaveLength(22)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -252,6 +264,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
           'guard conflict (GateGuard)', // ← 4.22.1 16th check (dual-guard, warn-only)
           'workflow skill integrity', // ← 4.23.0 17th check (issue #3, warn-only)
           'per-turn inject pairing', // ← 4.38.0 21st check (perturn-inject without its SessionStart half, warn-only)
+          'plugin install freshness', // ← Phase 56 22nd check (marketplace plugin pinned at install time, warn-only)
         ]),
       )
       if (scenario.name === 'missing-jq') {

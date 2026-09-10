@@ -75,4 +75,10 @@ export const CHECKS: readonly CheckFn[] = [
   // without perturn-inject-invalidate keeps skipping <project-context> after a
   // compact/clear has already dropped the copy it is skipping on behalf of.
   async () => (await import('./check-inject-invalidate.js')).checkInjectInvalidate(),
+  // Phase 56 — silently stale marketplace plugins (warn-only): `claude plugin
+  // install` pins a version into a versioned cache dir and never re-resolves, so
+  // the four cc-plugin-marketplace components drift behind without any signal.
+  // The only comparison in the codebase between a genuinely DETECTED version and
+  // a recorded one — see the header for why the installer-state layer cannot do it.
+  async () => (await import('./check-plugin-staleness.js')).checkPluginStaleness(),
 ]
