@@ -47,7 +47,7 @@ import {
 } from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
-import { updateInstalled } from './lib/state.js'
+import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
 import { formatSpawnFail, formatVerifyFail } from './lib/verifyMessage.js'
 
@@ -82,6 +82,9 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   }
   // v3.9.6 — idempotent_check probe (skip install if already-installed).
   if (await isAlreadyInstalled(ctx)) {
+    // Phase 59 — the receipt was unreachable on this path; record what is
+    // actually present so `harnessed status` can stop under-reporting.
+    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 

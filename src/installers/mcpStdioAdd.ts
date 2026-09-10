@@ -47,7 +47,7 @@ import { preflight } from './lib/preflight.js'
 import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
 import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
-import { updateInstalled } from './lib/state.js'
+import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
 import { formatSpawnFail } from './lib/verifyMessage.js'
 
@@ -77,6 +77,9 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
   // ctx.opts.updateInstalled so force-update never re-modifies ~/.claude.json
   // mcpServers (v3.9.6 dogfood concern: avoid overwriting hand-tuned MCP entries).
   if (await isAlreadyInstalled(ctx, { honorUpdateFlag: false })) {
+    // Phase 59 — the receipt was unreachable on this path; record what is
+    // actually present so `harnessed status` can stop under-reporting.
+    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
@@ -184,6 +187,9 @@ export const installMcpStdioAdd: Installer = async (ctx) => {
     // "already exists in" the user-config (~/.claude.json or similar).
     // Match on the stable "already exists" substring.
     if (r.stderr.includes('already exists')) {
+      // Phase 59 — the receipt was unreachable on this path; record what is
+      // actually present so `harnessed status` can stop under-reporting.
+      await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
       return { ok: true, alreadyInstalled: true, backupId: bk.backupId }
     }
     return {

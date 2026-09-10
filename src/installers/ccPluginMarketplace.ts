@@ -45,7 +45,7 @@ import { preflight } from './lib/preflight.js'
 import { isPluginRegistered } from './lib/readClaudeConfig.js'
 import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
-import { updateInstalled } from './lib/state.js'
+import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
 import { formatSpawnFail } from './lib/verifyMessage.js'
 
@@ -116,6 +116,9 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   }
   // v3.9.6 — idempotent_check probe (skip install if already-installed).
   if (await isAlreadyInstalled(ctx)) {
+    // Phase 59 — the receipt was unreachable on this path; record what is
+    // actually present so `harnessed status` can stop under-reporting.
+    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.git_ref, '')
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 

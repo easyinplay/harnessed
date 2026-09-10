@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **安装收据在幂等路径上根本写不到,`harnessed status` 因此长期少报(Phase 59)。** 六个 installer 全都先探 `isAlreadyInstalled(ctx)` 再早退,而那个早退**位于成功路径末尾 `updateInstalled` 之前** —— 六个无一例外:
+
+  ```
+  ccPluginMarketplace.ts   早退@119   写收据@271
+  gitCloneWithSetup.ts     早退@160   写收据@324
+  mcpHttpAdd.ts            早退@130   写收据@314
+  mcpStdioAdd.ts           早退@80    写收据@230
+  npmCli.ts                早退@61    写收据@157
+  npxSkillInstaller.ts     早退@85    写收据@244
+  ```
+
+  也就是说收据只在**执行了写入**的那条路上产生。用户按上游文档手动装(例如 `claude plugin install`,ECC 与 superpowers 的 README 都这么写),或收据因故丢失,该组件就永远记不上,且**重跑多少次 `harnessed install` 都修不回来** —— 幂等探测命中,那行代码到不了。`state.json` 的唯一真实消费者 `harnessed status` 于是在一台装满组件的机器上报「no installs recorded」(本机实证)。
+
+  新增 `recordObservedInstall()` 并接进全部 8 个早退点(`mcpHttpAdd` / `mcpStdioAdd` 各有两个:预探测一个、spawn 后 `already exists` 一个)。与 `updateInstalled` 的两处差别都是**不多说**:已存在的条目**不重盖 `installedAt`**(不是我们现在装的,也无从知道何时装的,首次记录时间是这个字段能承载的最诚实的值);完全匹配的条目一字不动,所以在已是最新的树上重跑 `harnessed install` 不产生任何写入。失败全吞 —— 收据是账面记录,丢一次账不该把一次成功的幂等空操作变成安装失败。
+
+  端到端实证(本机):`harnessed install ctx7` 命中幂等 → `state.json` 出现条目 → `harnessed status` 从「no installs recorded」变为 `ctx7 @ ^0.5.0 (installed …)`;再跑一次时间戳不变。
+
+  兄弟缺陷:Trellis `fix(update): repair receipt entries for files already identical to a template` (#575) —— 它的回写只取自「变更集」,所以一条错的或缺失的收据躺在一个本来就正确的文件旁边时无法修复。同一形状,同一后果:漂移信号失效。
+
+  顺带记录一个**未修**的观察:`HarnessedStateEntry.manifestSha1` 注释写着「产生这次安装的 manifest yaml 的 sha1」,但全部 6 个调用点传的都是 `''`。又一个没有求值的声明,与 55-58 同族,本次不扩大范围。
+
 ## [4.40.0] - 2026-09-10
 
 Phase 55-58。同一件事的四个面:**声明与现实之间没有人对账**。55 管「记录有没有人核实过」,56 管「机器有没有偷偷落后于记录」,57 是这两条撞出来的实际修复,58 是同一个病长在判断门上的形态 —— 一条写着「小任务不用讨论」的规则,实际执行成了「小任务不许讨论」。

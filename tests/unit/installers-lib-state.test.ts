@@ -7,6 +7,12 @@
 //   - writeState() goes through atomic .tmp + rename
 //   - updateInstalled() adds new entry
 //   - updateInstalled() replaces existing entry (idempotent re-install)
+//   - recordObservedInstall() repairs an absent entry (Phase 59 — the receipt
+//     was unreachable whenever idempotent_check hit, so `harnessed status`
+//     under-reported forever and re-running install could not fix it)
+//   - recordObservedInstall() leaves a matching entry completely alone
+//   - recordObservedInstall() preserves installedAt when repairing a stale one
+//   - recordObservedInstall() swallows I/O failure (receipts are bookkeeping)
 //   - mkdir is called with recursive:true to ensure .harnessed/ exists
 //
 // Mocks: node:fs/promises (no real disk I/O — C6 mitigation).
@@ -24,6 +30,7 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import {
   type HarnessedState,
   readState,
+  recordObservedInstall,
   updateInstalled,
   writeState,
 } from '../../src/installers/lib/state.js'
@@ -188,6 +195,78 @@ describe('state.updateInstalled', () => {
     const written = JSON.parse(writeFileMock.mock.calls[0]?.[1] as string) as HarnessedState
     expect(written.installed.ctx7?.version).toBe('1.0.0')
     expect(written.installed['tavily-mcp']?.version).toBe('0.2.0')
+  })
+})
+
+// Phase 59 — every installer's `isAlreadyInstalled` early return sits BEFORE its
+// `updateInstalled` call, so a component present without a receipt (installed by
+// hand, or entry lost) could never be recorded, and re-running `harnessed
+// install` could not repair it. `harnessed status` is the one consumer of
+// state.json and reported "no installs recorded" on a machine full of them.
+// Sister defect: Trellis #575 (receipt entries for files already identical to a
+// template were never written back, making the drift signal useless).
+describe('state.recordObservedInstall', () => {
+  beforeEach(() => {
+    readFileMock.mockReset()
+    writeFileMock.mockReset()
+    renameMock.mockReset()
+    mkdirMock.mockReset()
+  })
+
+  it('repairs an absent entry', async () => {
+    readFileMock.mockRejectedValueOnce(enoent())
+    await recordObservedInstall(CWD, 'superpowers', '6.3.0', '')
+    const written = JSON.parse(writeFileMock.mock.calls[0]?.[1] as string) as HarnessedState
+    expect(written.installed.superpowers?.version).toBe('6.3.0')
+    expect(written.installed.superpowers?.installedAt).toBeTruthy()
+  })
+
+  it('writes NOTHING when the entry already matches', async () => {
+    const existing: HarnessedState = {
+      version: '1',
+      installed: {
+        superpowers: { version: '6.3.0', installedAt: '2026-05-27T00:00:00Z', manifestSha1: '' },
+      },
+    }
+    readFileMock.mockResolvedValueOnce(JSON.stringify(existing))
+    await recordObservedInstall(CWD, 'superpowers', '6.3.0', '')
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('repairs a stale version but PRESERVES the original installedAt', async () => {
+    // We did not install it now and cannot know when it happened; restamping the
+    // date would make the field a fresh lie rather than a stale truth.
+    const existing: HarnessedState = {
+      version: '1',
+      installed: {
+        superpowers: { version: '5.1.0', installedAt: '2026-05-27T00:00:00Z', manifestSha1: '' },
+      },
+    }
+    readFileMock.mockResolvedValueOnce(JSON.stringify(existing))
+    await recordObservedInstall(CWD, 'superpowers', '6.3.0', '')
+    const written = JSON.parse(writeFileMock.mock.calls[0]?.[1] as string) as HarnessedState
+    expect(written.installed.superpowers?.version).toBe('6.3.0')
+    expect(written.installed.superpowers?.installedAt).toBe('2026-05-27T00:00:00Z')
+  })
+
+  it('preserves unrelated entries while repairing one', async () => {
+    const existing: HarnessedState = {
+      version: '1',
+      installed: {
+        ctx7: { version: '0.5.11', installedAt: '2026-01-01T00:00:00Z', manifestSha1: 'a' },
+      },
+    }
+    readFileMock.mockResolvedValueOnce(JSON.stringify(existing))
+    await recordObservedInstall(CWD, 'ecc', '2.2.1', '')
+    const written = JSON.parse(writeFileMock.mock.calls[0]?.[1] as string) as HarnessedState
+    expect(written.installed.ctx7?.version).toBe('0.5.11')
+    expect(written.installed.ecc?.version).toBe('2.2.1')
+  })
+
+  it('swallows a write failure — a receipt must not fail an install', async () => {
+    readFileMock.mockRejectedValueOnce(enoent())
+    writeFileMock.mockRejectedValueOnce(new Error('EACCES'))
+    await expect(recordObservedInstall(CWD, 'ecc', '2.2.1', '')).resolves.toBeUndefined()
   })
 })
 

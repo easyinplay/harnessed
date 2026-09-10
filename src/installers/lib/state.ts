@@ -105,3 +105,51 @@ export async function updateInstalled(
   }
   await writeState(cwd, state)
 }
+
+/**
+ * Phase 59 — record a component that `idempotent_check` found ALREADY present.
+ *
+ * Every installer probes `isAlreadyInstalled(ctx)` and returns early on a hit,
+ * and that early return sits BEFORE the `updateInstalled` call at the end of the
+ * success path — in all six installers. So the receipt was only ever written on
+ * the path that performed a write: a component installed by hand (e.g. the
+ * upstream-documented `claude plugin install`), or one whose entry was lost,
+ * could never be recorded, and no number of `harnessed install` runs would
+ * repair it. `harnessed status` — the one real consumer of state.json — then
+ * reports "no installs recorded" on a machine full of installed components.
+ *
+ * Same defect Trellis fixed in `fix(update): repair receipt entries for files
+ * already identical to a template` (#575): the write-back drew only from the
+ * changed sets, so an absent or wrong entry beside an already-correct file was
+ * unrepairable.
+ *
+ * Differs from `updateInstalled` in two ways, both about not overclaiming:
+ *   - `installedAt` is NOT restamped when an entry already exists. We did not
+ *     install it now, and we cannot know when it was installed; the first time
+ *     we recorded it is the most honest thing the field can hold.
+ *   - a matching entry is left completely alone, so re-running `harnessed
+ *     install` on an up-to-date tree writes nothing.
+ *
+ * Fail-soft: a receipt is bookkeeping. Losing it must never turn a successful
+ * idempotent no-op into an install failure, so every error is swallowed.
+ */
+export async function recordObservedInstall(
+  cwd: string,
+  name: string,
+  version: string,
+  manifestSha1: string,
+): Promise<void> {
+  try {
+    const state = await readState(cwd)
+    const prev = state.installed[name]
+    if (prev && prev.version === version && prev.manifestSha1 === manifestSha1) return
+    state.installed[name] = {
+      version,
+      installedAt: prev?.installedAt ?? new Date().toISOString(),
+      manifestSha1,
+    }
+    await writeState(cwd, state)
+  } catch {
+    // bookkeeping only — see the fail-soft note above
+  }
+}
