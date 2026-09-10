@@ -37,8 +37,10 @@ spawns each phase as a sub-agent via `@anthropic-ai/claude-agent-sdk` 0.3.142+.
 
 task-clarify is **NOT** a one-shot 阶段 — execute-task master orchestrator delegates
 to task-clarify **每个 subtask 入口走一次** evaluate gate (subtask-gate.brainstorming
-.fires) 是否激活。Skip path (subtask.type in ['crud','standard_lib_call'] OR
-subtask.lines < 20) bypasses brainstorming entirely per CLAUDE.md "拿不准 → 倾向跳过"。
+.fires) 是否激活。Skip path — small OR routine **AND** no design decision
+(approaches < 2, no core algorithm, no API contract, error_cost not 'high') —
+bypasses brainstorming per CLAUDE.md "拿不准 → 倾向跳过"。Phase 58: size alone no
+longer vetoes; "< 20 行" is a modifier on "单一明显实现", not the criterion.
 
 ## Discipline Substrate (L0 always-on)
 

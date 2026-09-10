@@ -12,6 +12,29 @@ triggers:
       或涉及核心算法 / 数据结构 / API contract 设计,
       或无现成 pattern 可抄, 或错误成本高 (数据迁移 / 并发 / 性能关键路径) 时激活。
     fires_when: "subtask.approaches >= 2 or subtask.core_algorithm == true or subtask.has_api_contract == true or subtask.error_cost == 'high'"
-    skips_when: "subtask.type in ['crud', 'standard_lib_call'] or subtask.lines < 20"
+    # Phase 58 — the skip is now CONJOINED with "and there is no design decision
+    # here". It used to be an unconditional veto, and that veto overrode every
+    # risk signal: measured on the real engine, a subtask with approaches=3,
+    # core_algorithm=true, has_api_contract=true, error_cost='high' was still
+    # vetoed at lines=15 ("sub vetoed despite its gate firing"), and fired at
+    # lines=25. Ten lines flipped a governance gate.
+    #
+    # The defect was encoding the SYMPTOM instead of the condition. ~/.claude
+    # CLAUDE.md reads "常规 CRUD" and "单一明显实现（< 20 行 / 一个文件）" — small
+    # size is a MODIFIER on "single obvious implementation", not the criterion.
+    # When approaches >= 2 the implementation is by definition not obvious, so the
+    # skip must not apply. Upstream superpowers 6.3.0 draws the same distinction
+    # on its own axis (spike / bounded / architectural measures whether the flow
+    # already exists in this repo, never the diff size).
+    #
+    # The seeded defaults are deliberately NOT withdrawn to match: under them
+    # `subtask.approaches < 2` and `subtask.has_api_contract == false` are false,
+    # so an unmeasured subtask cannot skip — unknown keeps firing the gate, which
+    # is the safe side. Withdrawing both pins as well would have turned every
+    # fires_when arm false and deleted the gate by default (ADR-0038).
+    # `error_cost in ['low','medium']` rather than `!= 'high'`: the enum is
+    # exactly low|medium|high and `in` is the operator already proven in these
+    # files.
+    skips_when: "(subtask.type in ['crud', 'standard_lib_call'] or subtask.lines < 20) and subtask.approaches < 2 and subtask.core_algorithm == false and subtask.has_api_contract == false and subtask.error_cost in ['low', 'medium']"
     invokes:
       - capability: superpowers-brainstorming

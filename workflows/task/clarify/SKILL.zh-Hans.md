@@ -35,9 +35,10 @@ Discipline Substrate + D-05 conditional `invokes_tools` + D-04 gate ref）。
 ## Per-subtask 重复 invoke 模式
 
 task-clarify **不是**一次性阶段——execute-task 主控编排器对**每个 subtask 入口**委托一次
-task-clarify，评估 gate（subtask-gate.brainstorming.fires）是否激活。跳过路径
-（subtask.type in ['crud','standard_lib_call'] OR subtask.lines < 20）完全绕过
-brainstorming，遵循 CLAUDE.md「拿不准 → 倾向跳过」原则。
+task-clarify，评估 gate（subtask-gate.brainstorming.fires）是否激活。跳过路径 ——
+小或常规 **且** 无设计决策（approaches < 2、非核心算法、无 API contract、
+error_cost 不为 'high'）—— 绕过 brainstorming，遵循 CLAUDE.md「拿不准 → 倾向跳过」
+原则。Phase 58：体量本身不再单独否决,「< 20 行」是「单一明显实现」的修饰语而非判据。
 
 ## Discipline Substrate (L0 always-on)
 

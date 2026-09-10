@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **brainstorming 的跳过条件曾是无条件否决,会压过全部风险信号(Phase 58)。** `workflows/judgments/subtask-gate.yaml` 的 `skips_when` 原为 `subtask.type in ['crud','standard_lib_call'] or subtask.lines < 20`,与四个风险事实**各自独立**求值。在真引擎上实测:一个 `approaches=3` / `core_algorithm=true` / `has_api_contract=true` / `error_cost='high'` —— 触发条件**全部为真**的子任务,在 `lines=15` 时仍被否决(引擎原话 `sub vetoed despite its gate firing`),`lines=25` 时才触发。**十行之差翻转一个治理门。**
+
+  根因是把**症状**编码成了条件。`~/.claude/CLAUDE.md` 的原文是「常规 CRUD」与「**单一明显实现**（< 20 行 / 一个文件）」—— 体量是「单一明显实现」的**修饰语**,不是判据本身;而 `approaches >= 2` 为真时,按定义就不是单一明显实现。上游 superpowers 6.3.0 在它自己的轴上划了同一条线(spike / bounded / architectural 量的是「这个 repo 里有没有现成的流可读」,从不看 diff 大小)。
+
+  新表达式把跳过与「且此处无设计决策」合取。**种子默认值刻意未收回**:在默认值下 `subtask.approaches < 2` 与 `subtask.has_api_contract == false` 均为假,所以一个未被测量的子任务无法跳过 —— 未知继续触发门,这是安全侧。(把两个钉子一并收回会让 `fires_when` 的四条分支全部变假,等于默认删掉这个门 —— ADR-0038 明确反对,也正是本次要避免的。)`error_cost in ['low','medium']` 而非 `!= 'high'`:该枚举恰为 low|medium|high,而 `in` 是这些文件里已验证过的运算符。
+
+  实测四格 + 两条不变量,全部用真 `workflows/judgments/subtask-gate.yaml` 跑真 resolver(`tests/workflow/subtask-gate-veto.test.ts`,7 cell):
+
+  | subtask | 改前 | 改后 |
+  |---|---|---|
+  | 15 行 + 高风险 | SKIP | **FIRE** |
+  | 15 行 + 无风险 | SKIP | SKIP |
+  | 500 行 crud + 高风险 | SKIP | **FIRE** |
+  | 500 行 crud + 无风险 | SKIP | SKIP |
+  | 15 行 + 仅 approaches≥2 | SKIP | **FIRE** |
+  | 默认(零事实) | FIRE | FIRE |
+
+  **同时更正我此前的说法**:我曾判断这条阈值「需要实测而不是改数字」。两者都不是 —— 缺的既不是更好的阈值也不是 A/B,是一个**合取**。上游 6.3.0 变便宜的是**文档**仪式而非**审批**闸门(README 原文:"a bounded task's approval is as hard a gate as an architectural one"),所以「上游变便宜了、harnessed 或许不该跳」这个推理前提本身不成立。
+
 ### Changed
 
 - **四个 marketplace plugin 全部升到位,ECC 的 codex 通道换成原生 plugin(Phase 57)。** 本机执行 `claude plugin update`:superpowers 5.1.0 → 6.3.0、planning-with-files 2.34.0 → 3.17.2、ecc 2.1.0 → 2.2.1、ui-ux-pro-max 2.5.0 → **2.13.0**。Phase 56 的 doctor check 现在报 `4 marketplace plugin(s) current`。
