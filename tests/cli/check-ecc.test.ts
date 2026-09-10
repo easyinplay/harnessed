@@ -68,11 +68,15 @@ function writeCodexEccClone(): void {
   mkdirSync(join(tmpRoot, '.codex', '.cache', 'ecc', '.git'), { recursive: true })
 }
 
+/** Phase 57 — every pre-existing cell predates the native codex plugin path; pin the
+ *  probe OFF so the suite never spawns the developer's real codex. */
+const NO_CODEX_PLUGIN = { codexPluginPresent: () => false }
+
 describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtools either/or)', () => {
   it('1. CC-only installed (ecc@ecc in installed_plugins.json) → pass + CC reported, codex independent', async () => {
     writePluginsRegistry(['ecc@ecc'])
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     expect(r.status).toBe('pass')
     expect(r.name).toBe('ecc')
     expect(r.message).toMatch(/CC: installed/)
@@ -87,7 +91,7 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
     writeCodexConfig()
     writeCodexEccClone()
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     expect(r.status).toBe('pass')
     expect(r.message).toMatch(/codex: installed/)
     expect(r.message).toMatch(/CC: not installed/)
@@ -98,7 +102,7 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
     writeCodexConfig()
     writeCodexEccClone()
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     expect(r.status).toBe('pass')
     expect(r.message).toMatch(/CC: installed/)
     expect(r.message).toMatch(/codex: installed/)
@@ -108,7 +112,7 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
     mkdirSync(join(tmpRoot, '.claude'), { recursive: true })
     writeCodexConfig() // codex platform present but ECC not synced
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     // 4.32.22 final — ecc is BONUS TIER: absence is informational, never a
     // health gap (sister check-codegraph). Message sells the value + is honest
     // about the ECC-side token cost.
@@ -124,7 +128,7 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
   it('5. CC ecc + official chrome-devtools plugin leftover → warn + uninstall-plugin remediation (keep ecc)', async () => {
     writePluginsRegistry(['ecc@ecc', 'chrome-devtools-mcp@claude-plugins-official'])
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     expect(r.status).toBe('warn')
     expect(r.message).toMatch(/dual-install/)
     expect(r.fix).toMatch(/claude plugin uninstall chrome-devtools-mcp@claude-plugins-official/)
@@ -135,7 +139,7 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
     writePluginsRegistry(['ecc@ecc'])
     writeClaudeJsonMcp({ 'chrome-devtools-mcp': { type: 'stdio', command: 'npx' } })
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     expect(r.status).toBe('warn')
     expect(r.message).toMatch(/stdio entry/)
     expect(r.fix).toMatch(/claude mcp remove chrome-devtools-mcp/)
@@ -148,7 +152,7 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
   it('4b. both missing AND no standalone chrome-devtools → reports the zero-provider gap + both enable paths', async () => {
     mkdirSync(join(tmpRoot, '.claude'), { recursive: true })
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     // Severity is unchanged: an absent optional tool is informational, not a
     // health failure (sister check-codegraph). Only the message got complete.
     expect(r.status).toBe('pass')
@@ -162,7 +166,7 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
     mkdirSync(join(tmpRoot, '.claude'), { recursive: true })
     writeClaudeJsonMcp({ 'chrome-devtools-mcp': { type: 'stdio', command: 'npx' } })
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     expect(r.status).toBe('pass')
     expect(r.message).not.toMatch(/ZERO providers/)
     expect(r.message).toMatch(/still covered by the standalone provider/)
@@ -172,9 +176,46 @@ describe('checkEcc — 4.32.22 per-harness ECC detect (bonus tier; chrome-devtoo
     writePluginsRegistry(['ecc@ecc'])
     writeCodexEccClone() // orphan cache without a codex install
     const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
-    const r = await checkEcc()
+    const r = await checkEcc(NO_CODEX_PLUGIN)
     expect(r.status).toBe('pass')
     expect(r.message).toMatch(/codex: not present/)
     expect(r.message).not.toMatch(/codex: installed/)
+  })
+
+  // Phase 57 — the manifest's codex channel moved from the deprecated sync script
+  // to the native codex plugin. Probing only the clone would report "not
+  // installed" for every user on the new path.
+  const YES_CODEX_PLUGIN = { codexPluginPresent: () => true }
+
+  it('8. codex native plugin only (config.toml + `codex plugin list` names ecc) → installed', async () => {
+    writeCodexConfig()
+    const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
+    const r = await checkEcc(YES_CODEX_PLUGIN)
+    expect(r.status).toBe('pass')
+    expect(r.message).toMatch(/codex: installed \(native plugin ecc@ecc\)/)
+  })
+
+  it('9. legacy sync clone wins over the native probe and says it is deprecated', async () => {
+    writeCodexConfig()
+    writeCodexEccClone()
+    const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
+    const r = await checkEcc(YES_CODEX_PLUGIN)
+    expect(r.status).toBe('pass')
+    expect(r.message).toMatch(/legacy .* sync clone/)
+    expect(r.message).toMatch(/deprecated/)
+    expect(r.message).not.toMatch(/native plugin ecc@ecc/)
+  })
+
+  it('10. no codex marker → native probe is never consulted (a codex-less machine pays nothing)', async () => {
+    let called = false
+    const { checkEcc } = await import('../../src/cli/lib/check-ecc.js')
+    const r = await checkEcc({
+      codexPluginPresent: () => {
+        called = true
+        return true
+      },
+    })
+    expect(called).toBe(false)
+    expect(r.message).toMatch(/codex: not present/)
   })
 })

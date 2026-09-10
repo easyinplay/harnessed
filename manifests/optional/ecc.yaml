@@ -66,35 +66,71 @@ spec:
     timeout_ms: 10000
   uninstall:
     cmd: "claude plugin uninstall ecc@ecc"
-  # 4.32.21 — codex channel. ECC is multi-harness: CC = plugin marketplace
-  # (above); codex = README-recommended sync flow (clone + scripts/
-  # sync-ecc-to-codex.sh, which merges AGENTS.md/skills/prompts/agents into
-  # ~/.codex with timestamped backups; codex marketplace route is experimental
-  # and NOT recommended upstream — "pick one path only per harness").
-  # Prerequisite: run Codex once so ~/.codex/config.toml exists. The clone is
-  # KEPT (gstack-style pre-clean, not self-cleaning) so D-15 SHA-verify can
-  # rev-parse it against git_ref. idempotent/verify are WEAK checks — they
-  # probe the kept clone cache, not the ~/.codex merge state (sync output has
-  # no stable pinned artifact contract).
+  # Phase 57 (2026-09-10) — codex channel switched from the sync script to the
+  # NATIVE codex plugin. Upstream flipped its recommendation between 2.0 and 2.2;
+  # the 4.32.21 comment here ("codex marketplace route is experimental and NOT
+  # recommended upstream") is now the opposite of what the README says:
+  #
+  #   "The older `scripts/sync-ecc-to-codex.sh` path is a deprecated
+  #    compatibility option for users who intentionally need copied and merged
+  #    configuration in ~/.codex; it is not required for the native plugin."
+  #
+  # The native route is also strictly better for harnessed's contract: the sync
+  # script's idempotent/verify checks could only probe the kept clone cache, NOT
+  # the ~/.codex merge state (that flow has no stable pinned artifact), whereas
+  # `codex plugin list` is a real registry query. Both `codex plugin` add
+  # commands are idempotent per upstream.
+  #
+  # Method stays cc-plugin-marketplace: src/installers/ccPluginMarketplace.ts
+  # already dispatches on platform (`bin === 'codex'` → `plugin add`, no
+  # `--scope` — codex has one plugin state per CODEX_HOME, not Claude's three
+  # scopes) and parses the two-stage form. Sister precedent: the codex override
+  # in manifests/tools/superpowers.yaml.
+  #
+  # MIGRATION HAZARD, upstream verbatim: "Do not add the native marketplace
+  # plugin on top of the sync flow." A user who ran the pre-Phase-57 codex
+  # install has the legacy layer in ~/.codex and must strip it FIRST with
+  # upstream's own tool — `node scripts/ecc.js uninstall --legacy-codex-sync`
+  # (add --dry-run to preview). harnessed cannot do this for them: the sync
+  # merged files it does not own. The uninstall cmd below therefore removes only
+  # what the native path creates.
+  # Prerequisite unchanged: run Codex once so ~/.codex/config.toml exists.
   harness_overrides:
     codex:
       install:
-        method: git-clone-with-setup
-        cmd: "rm -rf ~/.codex/.cache/ecc && git clone https://github.com/affaan-m/ECC.git ~/.codex/.cache/ecc && cd ~/.codex/.cache/ecc && bash scripts/sync-ecc-to-codex.sh"
+        method: cc-plugin-marketplace
+        cmd: "codex plugin marketplace add affaan-m/ECC && codex plugin add ecc@ecc"
         git_ref: ec92b528471df708c2384ebbcc82b390b60f535a
-        idempotent_check: "test -d ~/.codex/.cache/ecc/.git"
+        idempotent_check: "codex plugin list 2>&1 | grep -qw ecc"
       verify:
-        cmd: "test -d ~/.codex/.cache/ecc/.git"
-        timeout_ms: 10000
+        cmd: "codex plugin list 2>&1 | grep -qw ecc"
+        timeout_ms: 15000
+      # NOTE: the schema's HarnessOverride allows only `install` and `verify`
+      # (additionalProperties: false), so uninstall cannot be overridden per
+      # harness. `spec.uninstall` below stays claude-flavoured; on codex the
+      # correct command is `codex plugin remove ecc@ecc`. Pre-existing gap — the
+      # old sync-flow override had no uninstall either — recorded here rather
+      # than widening the schema for one manifest.
   upstream_health:
     stability: unstable
-    # Phase 55 (2026-09-10) — record re-verified, install path deliberately NOT
-    # changed. Upstream tag is v2.2.1; this machine's marketplace cache holds
-    # 2.1.0. ECC 2.2 advertises a single guided installer covering Claude Code /
-    # Codex / Kimi, which may supersede the two-stage `claude plugin marketplace
-    # add && claude plugin install` above — evaluating that is a behaviour change
-    # (2.0.0-rc.1 → 2.1.0 already swapped the whole MCP server set), not a record
-    # fix, and ECC's bonus-tier positioning was settled 2026-07-29. Open item.
+    # Phase 57 (2026-09-10) — Phase 55's open item RESOLVED by reading the
+    # upstream README instead of the release notes. The guided installer does NOT
+    # supersede the CC path; upstream says so directly:
+    #
+    #   "Both paths install the same `ecc@ecc` plugin. Choose one and do not
+    #    stack another manual Claude install on top."
+    #
+    # and lists the native plugin commands under "Also supported for Claude
+    # Code", with "Claude Code plugin + the legacy Codex sync flow" under
+    # "Works". So switching the CC channel to `npx ecc-universal install
+    # --guided` would install the identical artifact while trading a
+    # deterministic two-stage command for an interactive "reviewed flow" — fatal
+    # for harnessed's non-interactive spawn (sister: the `-y` flags the skills
+    # CLI needed for exactly this reason). CC path therefore UNCHANGED.
+    #
+    # The codex channel DID change — see harness_overrides above. That is where
+    # upstream actually moved: the sync script is now deprecated in favour of the
+    # native codex plugin.
     last_check: "2026-09-10"
     last_known_good_version: "2.2.1"
     fallback_action: warn

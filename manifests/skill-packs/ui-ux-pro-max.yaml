@@ -39,11 +39,15 @@ spec:
   install:
     method: cc-plugin-marketplace
     cmd: "claude plugin marketplace add nextlevelbuilder/ui-ux-pro-max-skill && claude plugin install ui-ux-pro-max@ui-ux-pro-max-skill"
-    # Phase 55 (2026-09-10) — bumped to the upstream tag verified in the same
-    # sweep as upstream_health (gh api repos/.../tags → v2.15.0). The local
-    # marketplace cache still holds 2.5.0; the install cmd resolves latest, so
-    # the cache is stale, not the pin.
-    git_ref: 2.15.0
+    # Phase 57 (2026-09-10) — CORRECTED to 2.13.0. Phase 55 wrote 2.15.0 from
+    # the repo's newest GIT TAG, which is the wrong source for a plugin-channel
+    # manifest: `.claude-plugin/marketplace.json` declares 2.13.0, and that is
+    # what `claude plugin install` actually resolves (verified — the upgrade on
+    # this machine landed on 2.13.0, not 2.15.0). A tag can run ahead of the
+    # published marketplace entry, and recording the tag makes the Phase 56
+    # doctor check warn "behind" against a version the plugin channel does not
+    # serve — an alarm no user can ever clear.
+    git_ref: 2.13.0
     idempotent_check: "claude plugin list 2>&1 | grep -qw ui-ux-pro-max"
     marketplace_source:
       source: github
@@ -70,7 +74,9 @@ spec:
   upstream_health:
     stability: stable
     last_check: "2026-09-10"
-    last_known_good_version: "2.15.0"
+    # Phase 57 — the marketplace-declared version, NOT the repo git tag. See the
+    # install.git_ref comment above for why the tag is the wrong source here.
+    last_known_good_version: "2.13.0"
     fallback_action: warn
   signed_by: easyinplay
   platforms:

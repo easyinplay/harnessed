@@ -38,6 +38,7 @@
 // `chrome_devtools_available` gate fact reads — one definition, so the doctor
 // report and the runtime gate cannot drift apart.
 
+import { spawnSync } from 'node:child_process'
 import { stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -55,23 +56,60 @@ async function pathExists(p: string): Promise<boolean> {
   }
 }
 
-export async function checkEcc(): Promise<CheckResult> {
+/** `codex plugin list` names ecc. Fail-soft: any spawn problem → false, never throw
+ *  (a doctor check that throws rejects doctor.ts's Promise.all and discards the rest). */
+function codexPluginPresent(): boolean {
+  try {
+    const r = spawnSync(process.platform === 'win32' ? 'codex.cmd' : 'codex', ['plugin', 'list'], {
+      encoding: 'utf8',
+      timeout: 10_000,
+      windowsHide: true,
+    })
+    if (r.error || r.status !== 0) return false
+    return /\becc\b/.test(`${r.stdout ?? ''}`)
+  } catch {
+    return false
+  }
+}
+
+export interface EccDeps {
+  /** Injectable so tests never spawn the developer's real codex (machine-dependent). */
+  codexPluginPresent: () => boolean
+}
+
+export async function checkEcc(deps?: Partial<EccDeps>): Promise<CheckResult> {
+  const probeCodexPlugin = deps?.codexPluginPresent ?? codexPluginPresent
   // CC side — plugin registry probe (pure fs; marketplace key is `ecc@ecc`).
   // Shared with the chrome_devtools_available gate fact so the doctor report and
   // the runtime gate can never disagree (src/cli/lib/probe-chrome-devtools.ts).
   const cdt = await probeChromeDevtools()
   const ccInstalled = cdt.ecc
 
-  // codex side — platform marker first, THEN the sync-clone probe.
+  // codex side — platform marker first, THEN the install probes.
+  //
+  // Phase 57 — TWO shapes are now valid, because the manifest's codex channel
+  // moved from the sync script to the native codex plugin (upstream deprecated
+  // the former in 2.2). Probing only the clone would report "not installed" for
+  // every user on the new path.
+  //   - native: ask codex itself. `codex plugin list` is the same judgement the
+  //     manifest's verify/idempotent_check now uses, and it needs no guess about
+  //     where codex records enabled plugins on disk (its state lives in the
+  //     active CODEX_HOME, shape unspecified by upstream docs). Spawned ONLY
+  //     when the codex marker exists, so a machine without codex pays nothing.
+  //   - legacy: the kept sync clone, still valid for users who have not migrated
+  //     (upstream keeps it as a "deprecated compatibility option").
   const codexHome = join(homedir(), '.codex')
   const codexPresent = await pathExists(join(codexHome, 'config.toml'))
-  const codexInstalled =
-    codexPresent && (await pathExists(join(codexHome, '.cache', 'ecc', '.git')))
+  const codexLegacy = codexPresent && (await pathExists(join(codexHome, '.cache', 'ecc', '.git')))
+  const codexNative = codexPresent && !codexLegacy && probeCodexPlugin()
+  const codexInstalled = codexLegacy || codexNative
 
   const ccPart = ccInstalled ? 'CC: installed (plugin ecc@ecc)' : 'CC: not installed'
   const codexPart = codexPresent
     ? codexInstalled
-      ? 'codex: installed (~/.codex/.cache/ecc sync clone)'
+      ? codexNative
+        ? 'codex: installed (native plugin ecc@ecc)'
+        : 'codex: installed (legacy ~/.codex/.cache/ecc sync clone — upstream deprecated it in 2.2; migrate with `node scripts/ecc.js uninstall --legacy-codex-sync` then `codex plugin marketplace add affaan-m/ECC && codex plugin add ecc@ecc`)'
       : 'codex: not installed'
     : 'codex: not present (no ~/.codex/config.toml)'
 

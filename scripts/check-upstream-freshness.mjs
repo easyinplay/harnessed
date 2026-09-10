@@ -115,8 +115,11 @@ for (const m of malformed) {
 
 if (stale.length > 0 || malformed.length > 0) {
   console.error(
-    'Re-verify each row against its upstream (npm view / gh api tags / gh api commits), update ' +
-      'last_known_good_version to what you actually observed, then stamp last_check with today.',
+    'Re-verify each row against its upstream, update last_known_good_version to what you ' +
+      'actually observed, then stamp last_check with today. Pick the source by install.method: ' +
+      "cc-plugin-marketplace → the marketplace manifest's plugin version (NOT the repo git tag, " +
+      'which can run ahead of the published entry); npm → `npm view <pkg> version`; ' +
+      'git → `gh api repos/<r>/tags` or the HEAD sha.',
   )
   process.exit(1)
 }

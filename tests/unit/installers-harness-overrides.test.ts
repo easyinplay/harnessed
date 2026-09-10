@@ -203,9 +203,21 @@ describe('codex dispatch — 4.32.21 plugin-form real manifests (T6/T7/T9)', () 
   // (its optional fallback manifest is mcp-stdio-add base method, no plugin-form
   // override to exercise); ecc back at manifests/optional/ (bonus tier — the
   // interim base promotion was withdrawn), codex override unchanged.
+  // Phase 57 — ecc's codex override moved to the NATIVE codex plugin (upstream
+  // deprecated scripts/sync-ecc-to-codex.sh in 2.2), so its codex method is now
+  // cc-plugin-marketplace too. Because base and override then share a method,
+  // `codexCmdPrefix` is what proves the override actually resolved.
   const CELLS = [
-    { yamlPath: 'manifests/skill-packs/ui-ux-pro-max.yaml', codexMethod: 'git-clone-with-setup' },
-    { yamlPath: 'manifests/optional/ecc.yaml', codexMethod: 'git-clone-with-setup' },
+    {
+      yamlPath: 'manifests/skill-packs/ui-ux-pro-max.yaml',
+      codexMethod: 'git-clone-with-setup',
+      codexCmdPrefix: 'rm -rf ~/.agents/skills/.cache/midway-uiux',
+    },
+    {
+      yamlPath: 'manifests/optional/ecc.yaml',
+      codexMethod: 'cc-plugin-marketplace',
+      codexCmdPrefix: 'codex plugin marketplace add affaan-m/ECC',
+    },
   ] as const
 
   beforeEach(() => {
@@ -227,6 +239,7 @@ describe('codex dispatch — 4.32.21 plugin-form real manifests (T6/T7/T9)', () 
       const r = resolveForHarness(v.manifest as unknown as Manifest)
       expect(r.gate).toBeNull()
       expect(r.manifest.spec.install.method).toBe(c.codexMethod)
+      expect(r.manifest.spec.install.cmd.startsWith(c.codexCmdPrefix)).toBe(true)
     })
   }
 })

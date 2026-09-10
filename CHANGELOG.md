@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **四个 marketplace plugin 全部升到位,ECC 的 codex 通道换成原生 plugin(Phase 57)。** 本机执行 `claude plugin update`:superpowers 5.1.0 → 6.3.0、planning-with-files 2.34.0 → 3.17.2、ecc 2.1.0 → 2.2.1、ui-ux-pro-max 2.5.0 → **2.13.0**。Phase 56 的 doctor check 现在报 `4 marketplace plugin(s) current`。
+- **`manifests/optional/ecc.yaml` 的 codex 通道:`git-clone + scripts/sync-ecc-to-codex.sh` → `codex plugin marketplace add affaan-m/ECC && codex plugin add ecc@ecc`。** 上游在 2.0 到 2.2 之间把推荐反转了,manifest 里 4.32.21 写的「codex marketplace route is experimental and NOT recommended upstream」现在与 README 原文相反:
+
+  > The older `scripts/sync-ecc-to-codex.sh` path is a **deprecated compatibility option** for users who intentionally need copied and merged configuration in `~/.codex`; it is not required for the native plugin.
+
+  原生路径对 harnessed 的契约也严格更好:sync 脚本的 `idempotent_check` / `verify` 只能探那个保留的 clone cache,**探不到** `~/.codex` 的合并状态(该流程没有稳定的钉住产物),而 `codex plugin list` 是真的注册表查询。`method` 仍是 `cc-plugin-marketplace` —— `src/installers/ccPluginMarketplace.ts` 早就按 platform 分派(`bin === 'codex'` 走 `plugin add` 且不带 `--scope`,因为 codex 每个 `CODEX_HOME` 只有一份 plugin 状态,没有 Claude 的三种 scope),两段式形态也已能解析,零代码改动。兄弟先例:`manifests/tools/superpowers.yaml` 的 codex override。
+
+  **迁移风险已在 manifest 内注明**,上游原话:"Do not add the native marketplace plugin on top of the sync flow." 跑过旧路径的用户必须先用上游自己的工具剥掉遗留层(`node scripts/ecc.js uninstall --legacy-codex-sync`),harnessed 不能代劳 —— 那次 sync 合并了它并不拥有的文件。
+
+- **`src/cli/lib/check-ecc.ts` 的 codex 探测同步跟上。** 此前只探 `~/.codex/.cache/ecc/.git`(sync clone),换路径后会把走新路径的用户全部误报成「没装」。现在两种形态都认:原生的问 codex 自己(`codex plugin list`,与 manifest 的 verify 同一判据,不需要猜 codex 把启用状态落在磁盘哪里 —— 上游文档只说存在 active `CODEX_HOME`,没给形状),遗留的继续探 clone 并在消息里标明它已被上游弃用 + 给出迁移命令。**只在 `~/.codex/config.toml` 存在时才 spawn**,没装 codex 的机器零开销;探针可注入,测试永不 spawn 开发者真机的 codex(与 Phase 56 在 doctor 编排测试里避开机器依赖同一个理由)。
+
+### Fixed
+
+- **`ui-ux-pro-max` 的版本记录来源写错了,会造成永远清不掉的 doctor 告警。** Phase 55 把 `last_known_good_version` / `install.git_ref` 写成 2.15.0,那是 repo 最新的 **git tag**;而 `.claude-plugin/marketplace.json` 声明的是 **2.13.0**,`claude plugin install` 实际解析到的也是 2.13.0(本机升级实测落在 2.13.0)。tag 可以跑在已发布的 marketplace 条目前面,记 tag 会让 Phase 56 的 check 对着一个该渠道根本不供的版本永久报「落后」—— 一个用户无论如何都清不掉的警报。两处均改为 2.13.0。
+- **`manifests/SCHEMA.md` 与陈旧门的失败提示补上取值来源规则**:`last_known_good_version` 按 `install.method` 分 —— `cc-plugin-marketplace` 取 marketplace 清单声明的 plugin 版本(**不是** git tag),npm 类取 registry `latest`,git 类取 tag 或 HEAD sha。
+
+### Notes
+
+- **ECC 的 Claude Code 通道刻意**未**改。** Phase 55 把「2.2 的 guided installer 可能取代两段式」列为 open item;读上游 README(而非 release notes)后结论相反,原文:
+
+  > **Both paths install the same `ecc@ecc` plugin.** Choose one and do not stack another manual Claude install on top.
+
+  README 还把原生 plugin 命令列在 "Also supported for Claude Code" 下,把「Claude Code plugin + the legacy Codex sync flow」列在 "Works" 下。所以换成 `npx ecc-universal install --guided` 会装出**同一个**产物,却把一条确定性的两段式命令换成交互式的 "reviewed flow" —— 对 harnessed 的非交互 spawn 是致命的(兄弟教训:skills CLI 当初就是为此加的 `-y`)。
+
 ### Added
 
 - **doctor 第 22 项 `plugin install freshness` —— marketplace plugin 的静默陈旧第一次说得出口(Phase 56)。** `claude plugin install` 把 plugin 拷进带版本号的 cache 目录(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`)并**钉死在那里**;与 `npx --yes <pkg>@latest` 那批不同,后续 session 不会重新解析 latest。装的那天是什么版本,之后就一直是什么版本,Claude Code 不会提。本机 2026-09-10 实测四个 `cc-plugin-marketplace` 组件**全部落后**:`superpowers` 5.1.0(2026-05-27 装)vs 6.3.0、`planning-with-files` 2.34.0 vs 3.17.2、`ui-ux-pro-max` 2.5.0 vs 2.15.0、`ecc` 2.1.0 vs 2.2.1。新 check 读 plugin registry 的 `version` 与 manifest 的 `last_known_good_version` 比对,落后则 warn 并给出实测存在的修复命令(`claude plugin update <plugin>`)。warn 不 fail:跑旧版是降级不是坏掉,而且 superpowers 5.1.0 → 6.3.0 会换掉用户正在用的技能集,升不升是用户的决定。
