@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.40.0] - 2026-09-10
+
+Phase 55-58。同一件事的四个面:**声明与现实之间没有人对账**。55 管「记录有没有人核实过」,56 管「机器有没有偷偷落后于记录」,57 是这两条撞出来的实际修复,58 是同一个病长在判断门上的形态 —— 一条写着「小任务不用讨论」的规则,实际执行成了「小任务不许讨论」。
+
+### Added
+
+- **doctor 第 22 项 `plugin install freshness` —— marketplace plugin 的静默陈旧第一次说得出口(Phase 56)。** `claude plugin install` 把 plugin 拷进带版本号的 cache 目录(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`)并**钉死在那里**;与 `npx --yes <pkg>@latest` 那批不同,后续 session 不会重新解析 latest。装的那天是什么版本,之后就一直是什么版本,Claude Code 不会提。本机 2026-09-10 实测四个 `cc-plugin-marketplace` 组件**全部落后**:`superpowers` 5.1.0(2026-05-27 装)vs 6.3.0、`planning-with-files` 2.34.0 vs 3.17.2、`ui-ux-pro-max` 2.5.0 vs 2.15.0(该记录本身写错了来源,见下方 Fixed)、`ecc` 2.1.0 vs 2.2.1。新 check 读 plugin registry 的 `version` 与 manifest 的 `last_known_good_version` 比对,落后则 warn 并给出实测存在的修复命令(`claude plugin update <plugin>`)。warn 不 fail:跑旧版是降级不是坏掉,而且 superpowers 5.1.0 → 6.3.0 会换掉用户正在用的技能集,升不升是用户的决定。
+
+  这也是代码库里**唯一**一处把真实探测到的版本与记录版本对比的地方。Phase 55 调查并否决了在 installer-state 层做同样的事:`HarnessedStateEntry.version` 看着像探测值,但它的 7 个调用点传的全是 manifest 声明值(`install.npm_version` / `install.git_ref` / `''`),比了等于拿记录比它自己。plugin registry 的 `version` 是从磁盘读出来的真实值,这才让这个 check 成立。
+
+  **顺带更正 Phase 55 的一句话**:那条 changelog 写「几乎每条 install.cmd 都解析 @latest,向下漂移本就是预期」—— 对 npm / git 那批成立,对这 4 个 plugin 装**不成立**。它们的漂移不是记录不准,是真的装旧了。
+
+- **`scripts/check-upstream-freshness.mjs` — `upstream_health` 从此会被求值(Phase 55)。** `spec.upstream_health` 自 v0.1 起就是必填 schema 块(4 字段 × 19 manifest = 76 条声明),但**零代码消费者** —— 这是 Phase 54 同一病族的第四面。与 `routing_note` 的区别在于:`routing_note` 是被误读成机器输入(改名即解决),而 `last_check` / `last_known_good_version` 是被**人**读成关于上游的当前事实;它们变陈旧时没有任何东西提示读者停止那样读,所以删掉整块会丢失真实的供应链 provenance。新门把腐烂变响:第三方 manifest 的 `last_check` 超过 90 天即 CI 硬失败;first-party manifest(`metadata.upstream.repository` 指向本仓,实测 5 个)豁免 —— 它们的「上游」就是你正在看的这个 commit,日期戳不携带信息。**零网络、零协议适配器**:上游发新版**不应该**让 CI 变红,因为几乎每条 `install.cmd` 都解析 `@latest`,向下漂移本就是预期行为;本门断言的只是「近期有人重新核实过这一行」,恰是 `last_check` 的字面语义。`HARNESSED_FRESHNESS_TODAY` 可覆写「今天」以做确定性验证。CI 中位于 `check-yaml-i18n-parity` 之后(同样依赖 `yaml` 包,须在 `pnpm install` 之后)。
+
+### Changed
+
+- **四个 marketplace plugin 全部升到位,ECC 的 codex 通道换成原生 plugin(Phase 57)。** 本机执行 `claude plugin update`:superpowers 5.1.0 → 6.3.0、planning-with-files 2.34.0 → 3.17.2、ecc 2.1.0 → 2.2.1、ui-ux-pro-max 2.5.0 → **2.13.0**。Phase 56 的 doctor check 现在报 `4 marketplace plugin(s) current`。
+- **`manifests/optional/ecc.yaml` 的 codex 通道:`git-clone + scripts/sync-ecc-to-codex.sh` → `codex plugin marketplace add affaan-m/ECC && codex plugin add ecc@ecc`。** 上游在 2.0 到 2.2 之间把推荐反转了,manifest 里 4.32.21 写的「codex marketplace route is experimental and NOT recommended upstream」现在与 README 原文相反:
+
+  > The older `scripts/sync-ecc-to-codex.sh` path is a **deprecated compatibility option** for users who intentionally need copied and merged configuration in `~/.codex`; it is not required for the native plugin.
+
+  原生路径对 harnessed 的契约也严格更好:sync 脚本的 `idempotent_check` / `verify` 只能探那个保留的 clone cache,**探不到** `~/.codex` 的合并状态(该流程没有稳定的钉住产物),而 `codex plugin list` 是真的注册表查询。`method` 仍是 `cc-plugin-marketplace` —— `src/installers/ccPluginMarketplace.ts` 早就按 platform 分派(`bin === 'codex'` 走 `plugin add` 且不带 `--scope`,因为 codex 每个 `CODEX_HOME` 只有一份 plugin 状态,没有 Claude 的三种 scope),两段式形态也已能解析,零代码改动。兄弟先例:`manifests/tools/superpowers.yaml` 的 codex override。
+
+  **迁移风险已在 manifest 内注明**,上游原话:"Do not add the native marketplace plugin on top of the sync flow." 跑过旧路径的用户必须先用上游自己的工具剥掉遗留层(`node scripts/ecc.js uninstall --legacy-codex-sync`),harnessed 不能代劳 —— 那次 sync 合并了它并不拥有的文件。
+
+- **`src/cli/lib/check-ecc.ts` 的 codex 探测同步跟上。** 此前只探 `~/.codex/.cache/ecc/.git`(sync clone),换路径后会把走新路径的用户全部误报成「没装」。现在两种形态都认:原生的问 codex 自己(`codex plugin list`,与 manifest 的 verify 同一判据,不需要猜 codex 把启用状态落在磁盘哪里 —— 上游文档只说存在 active `CODEX_HOME`,没给形状),遗留的继续探 clone 并在消息里标明它已被上游弃用 + 给出迁移命令。**只在 `~/.codex/config.toml` 存在时才 spawn**,没装 codex 的机器零开销;探针可注入,测试永不 spawn 开发者真机的 codex(与 Phase 56 在 doctor 编排测试里避开机器依赖同一个理由)。
+
+
+- **14 个第三方 manifest 的 `upstream_health` 全量重新核实并盖章 2026-09-10。** 逐行实拉 npm registry / git tag / HEAD sha,不是照抄:`gstack` 1.60.1.0 → **1.84.1.0**、`planning-with-files` 3.4.1 → 3.17.2、`ui-ux-pro-max` 2.5.0 → 2.15.0、`gsd` 1.7.0 → 1.13.0、`superpowers` 6.1.1 → 6.3.0、`ecc` 2.0.0-rc.1 → 2.2.1、`codegraph` 1.0.0 → 1.6.0、`exa-mcp` 3.2.1 → 3.4.1、`ctx7` 0.4.x → 0.5.11、`chrome-devtools-mcp` 1.6.0 → 1.9.0、`tavily-mcp` 0.2.19 → 0.2.22、`playwright-test` 1.5.7 → 1.5.25、`mattpocock-skills` main-391a2701 → main-3cca18b3、`design-taste-frontend` `v2-default` → main-ccbc1563(原值根本不是版本号)。最陈旧的两行(`ctx7` / `tavily-mcp`)距上次核实 121 天。
+- **`manifests/SCHEMA.md` 修正 `last_check` / `last_known_good_version` 两行的说明。** 原文写「weekly CI 自动写入 / 自动维护」—— 那条 weekly CI 从未存在,而这句话正是让这两个字段可以静默腐烂的授权书。改为:`last_check` = 人工核实日期(第三方 >90 天硬失败,first-party 豁免);`last_known_good_version` = 上次核实时观察到的上游版本,**不是**安装时解析的版本(多数 cmd 走 `@latest`,实际装到的会更新)。ADR-0001 的同句不动(A7 守恒锁)。
+
 ### Fixed
 
 - **brainstorming 的跳过条件曾是无条件否决,会压过全部风险信号(Phase 58)。** `workflows/judgments/subtask-gate.yaml` 的 `skips_when` 原为 `subtask.type in ['crud','standard_lib_call'] or subtask.lines < 20`,与四个风险事实**各自独立**求值。在真引擎上实测:一个 `approaches=3` / `core_algorithm=true` / `has_api_contract=true` / `error_cost='high'` —— 触发条件**全部为真**的子任务,在 `lines=15` 时仍被否决(引擎原话 `sub vetoed despite its gate firing`),`lines=25` 时才触发。**十行之差翻转一个治理门。**
@@ -28,23 +59,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   **同时更正我此前的说法**:我曾判断这条阈值「需要实测而不是改数字」。两者都不是 —— 缺的既不是更好的阈值也不是 A/B,是一个**合取**。上游 6.3.0 变便宜的是**文档**仪式而非**审批**闸门(README 原文:"a bounded task's approval is as hard a gate as an architectural one"),所以「上游变便宜了、harnessed 或许不该跳」这个推理前提本身不成立。
 
-### Changed
-
-- **四个 marketplace plugin 全部升到位,ECC 的 codex 通道换成原生 plugin(Phase 57)。** 本机执行 `claude plugin update`:superpowers 5.1.0 → 6.3.0、planning-with-files 2.34.0 → 3.17.2、ecc 2.1.0 → 2.2.1、ui-ux-pro-max 2.5.0 → **2.13.0**。Phase 56 的 doctor check 现在报 `4 marketplace plugin(s) current`。
-- **`manifests/optional/ecc.yaml` 的 codex 通道:`git-clone + scripts/sync-ecc-to-codex.sh` → `codex plugin marketplace add affaan-m/ECC && codex plugin add ecc@ecc`。** 上游在 2.0 到 2.2 之间把推荐反转了,manifest 里 4.32.21 写的「codex marketplace route is experimental and NOT recommended upstream」现在与 README 原文相反:
-
-  > The older `scripts/sync-ecc-to-codex.sh` path is a **deprecated compatibility option** for users who intentionally need copied and merged configuration in `~/.codex`; it is not required for the native plugin.
-
-  原生路径对 harnessed 的契约也严格更好:sync 脚本的 `idempotent_check` / `verify` 只能探那个保留的 clone cache,**探不到** `~/.codex` 的合并状态(该流程没有稳定的钉住产物),而 `codex plugin list` 是真的注册表查询。`method` 仍是 `cc-plugin-marketplace` —— `src/installers/ccPluginMarketplace.ts` 早就按 platform 分派(`bin === 'codex'` 走 `plugin add` 且不带 `--scope`,因为 codex 每个 `CODEX_HOME` 只有一份 plugin 状态,没有 Claude 的三种 scope),两段式形态也已能解析,零代码改动。兄弟先例:`manifests/tools/superpowers.yaml` 的 codex override。
-
-  **迁移风险已在 manifest 内注明**,上游原话:"Do not add the native marketplace plugin on top of the sync flow." 跑过旧路径的用户必须先用上游自己的工具剥掉遗留层(`node scripts/ecc.js uninstall --legacy-codex-sync`),harnessed 不能代劳 —— 那次 sync 合并了它并不拥有的文件。
-
-- **`src/cli/lib/check-ecc.ts` 的 codex 探测同步跟上。** 此前只探 `~/.codex/.cache/ecc/.git`(sync clone),换路径后会把走新路径的用户全部误报成「没装」。现在两种形态都认:原生的问 codex 自己(`codex plugin list`,与 manifest 的 verify 同一判据,不需要猜 codex 把启用状态落在磁盘哪里 —— 上游文档只说存在 active `CODEX_HOME`,没给形状),遗留的继续探 clone 并在消息里标明它已被上游弃用 + 给出迁移命令。**只在 `~/.codex/config.toml` 存在时才 spawn**,没装 codex 的机器零开销;探针可注入,测试永不 spawn 开发者真机的 codex(与 Phase 56 在 doctor 编排测试里避开机器依赖同一个理由)。
-
-### Fixed
 
 - **`ui-ux-pro-max` 的版本记录来源写错了,会造成永远清不掉的 doctor 告警。** Phase 55 把 `last_known_good_version` / `install.git_ref` 写成 2.15.0,那是 repo 最新的 **git tag**;而 `.claude-plugin/marketplace.json` 声明的是 **2.13.0**,`claude plugin install` 实际解析到的也是 2.13.0(本机升级实测落在 2.13.0)。tag 可以跑在已发布的 marketplace 条目前面,记 tag 会让 Phase 56 的 check 对着一个该渠道根本不供的版本永久报「落后」—— 一个用户无论如何都清不掉的警报。两处均改为 2.13.0。
 - **`manifests/SCHEMA.md` 与陈旧门的失败提示补上取值来源规则**:`last_known_good_version` 按 `install.method` 分 —— `cc-plugin-marketplace` 取 marketplace 清单声明的 plugin 版本(**不是** git tag),npm 类取 registry `latest`,git 类取 tag 或 HEAD sha。
+
+
+- **`ui-ux-pro-max` 的 `metadata.upstream` provenance 指错了仓库。** 4.32.21 把安装从 midway 自打包迁到 `nextlevelbuilder/ui-ux-pro-max-skill` plugin 后,`source` / `homepage` / `repository` 三个字段仍留在 `midwayjs/midway`,即 manifest 声明的上游不是它实际安装的上游 —— 供应链层的错误归属。改指 nextlevelbuilder(Claude Code 主路径);midway git-clone 只作为 codex `harness_overrides` 存活,已在该处注明。`install.git_ref` 一并 2.5.0 → 2.15.0。
+- **`playwright-test` 是唯一把 `skills` 安装器 CLI 钉死到精确版本的 manifest。** `npx --yes skills@1.5.7` → `skills@latest`(`npm_version` `^1.5.7` → `^1.5.25`),与 `mattpocock-skills` / `design-taste-frontend` 两个兄弟 manifest 对齐。该钉子把安装器冻在上游 18 个 minor 之前且无理由 —— 被钉的产物应该是 SKILL 内容(来自 `microsoft/playwright-cli` 仓),不是安装器自身的版本。
+- **`ctx7` 的 `npm_version: ^0.4.0` 连当前上游都覆盖不到。** 0.x major 上的 caret range 被锁在 minor,而上游已是 0.5.11。安装命令是无版本的 `npm install -g ctx7`,所以用户一直装的是 0.5.x,只有记录声称一个排除它的范围。改为 `^0.5.0`。
 
 ### Notes
 
@@ -53,31 +75,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   > **Both paths install the same `ecc@ecc` plugin.** Choose one and do not stack another manual Claude install on top.
 
   README 还把原生 plugin 命令列在 "Also supported for Claude Code" 下,把「Claude Code plugin + the legacy Codex sync flow」列在 "Works" 下。所以换成 `npx ecc-universal install --guided` 会装出**同一个**产物,却把一条确定性的两段式命令换成交互式的 "reviewed flow" —— 对 harnessed 的非交互 spawn 是致命的(兄弟教训:skills CLI 当初就是为此加的 `-y`)。
-
-### Added
-
-- **doctor 第 22 项 `plugin install freshness` —— marketplace plugin 的静默陈旧第一次说得出口(Phase 56)。** `claude plugin install` 把 plugin 拷进带版本号的 cache 目录(`~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/`)并**钉死在那里**;与 `npx --yes <pkg>@latest` 那批不同,后续 session 不会重新解析 latest。装的那天是什么版本,之后就一直是什么版本,Claude Code 不会提。本机 2026-09-10 实测四个 `cc-plugin-marketplace` 组件**全部落后**:`superpowers` 5.1.0(2026-05-27 装)vs 6.3.0、`planning-with-files` 2.34.0 vs 3.17.2、`ui-ux-pro-max` 2.5.0 vs 2.15.0、`ecc` 2.1.0 vs 2.2.1。新 check 读 plugin registry 的 `version` 与 manifest 的 `last_known_good_version` 比对,落后则 warn 并给出实测存在的修复命令(`claude plugin update <plugin>`)。warn 不 fail:跑旧版是降级不是坏掉,而且 superpowers 5.1.0 → 6.3.0 会换掉用户正在用的技能集,升不升是用户的决定。
-
-  这也是代码库里**唯一**一处把真实探测到的版本与记录版本对比的地方。Phase 55 调查并否决了在 installer-state 层做同样的事:`HarnessedStateEntry.version` 看着像探测值,但它的 7 个调用点传的全是 manifest 声明值(`install.npm_version` / `install.git_ref` / `''`),比了等于拿记录比它自己。plugin registry 的 `version` 是从磁盘读出来的真实值,这才让这个 check 成立。
-
-  **顺带更正 Phase 55 的一句话**:那条 changelog 写「几乎每条 install.cmd 都解析 @latest,向下漂移本就是预期」—— 对 npm / git 那批成立,对这 4 个 plugin 装**不成立**。它们的漂移不是记录不准,是真的装旧了。
-
-- **`scripts/check-upstream-freshness.mjs` — `upstream_health` 从此会被求值(Phase 55)。** `spec.upstream_health` 自 v0.1 起就是必填 schema 块(4 字段 × 19 manifest = 76 条声明),但**零代码消费者** —— 这是 Phase 54 同一病族的第四面。与 `routing_note` 的区别在于:`routing_note` 是被误读成机器输入(改名即解决),而 `last_check` / `last_known_good_version` 是被**人**读成关于上游的当前事实;它们变陈旧时没有任何东西提示读者停止那样读,所以删掉整块会丢失真实的供应链 provenance。新门把腐烂变响:第三方 manifest 的 `last_check` 超过 90 天即 CI 硬失败;first-party manifest(`metadata.upstream.repository` 指向本仓,实测 5 个)豁免 —— 它们的「上游」就是你正在看的这个 commit,日期戳不携带信息。**零网络、零协议适配器**:上游发新版**不应该**让 CI 变红,因为几乎每条 `install.cmd` 都解析 `@latest`,向下漂移本就是预期行为;本门断言的只是「近期有人重新核实过这一行」,恰是 `last_check` 的字面语义。`HARNESSED_FRESHNESS_TODAY` 可覆写「今天」以做确定性验证。CI 中位于 `check-yaml-i18n-parity` 之后(同样依赖 `yaml` 包,须在 `pnpm install` 之后)。
-
-### Changed
-
-- **14 个第三方 manifest 的 `upstream_health` 全量重新核实并盖章 2026-09-10。** 逐行实拉 npm registry / git tag / HEAD sha,不是照抄:`gstack` 1.60.1.0 → **1.84.1.0**、`planning-with-files` 3.4.1 → 3.17.2、`ui-ux-pro-max` 2.5.0 → 2.15.0、`gsd` 1.7.0 → 1.13.0、`superpowers` 6.1.1 → 6.3.0、`ecc` 2.0.0-rc.1 → 2.2.1、`codegraph` 1.0.0 → 1.6.0、`exa-mcp` 3.2.1 → 3.4.1、`ctx7` 0.4.x → 0.5.11、`chrome-devtools-mcp` 1.6.0 → 1.9.0、`tavily-mcp` 0.2.19 → 0.2.22、`playwright-test` 1.5.7 → 1.5.25、`mattpocock-skills` main-391a2701 → main-3cca18b3、`design-taste-frontend` `v2-default` → main-ccbc1563(原值根本不是版本号)。最陈旧的两行(`ctx7` / `tavily-mcp`)距上次核实 121 天。
-- **`manifests/SCHEMA.md` 修正 `last_check` / `last_known_good_version` 两行的说明。** 原文写「weekly CI 自动写入 / 自动维护」—— 那条 weekly CI 从未存在,而这句话正是让这两个字段可以静默腐烂的授权书。改为:`last_check` = 人工核实日期(第三方 >90 天硬失败,first-party 豁免);`last_known_good_version` = 上次核实时观察到的上游版本,**不是**安装时解析的版本(多数 cmd 走 `@latest`,实际装到的会更新)。ADR-0001 的同句不动(A7 守恒锁)。
-
-### Fixed
-
-- **`ui-ux-pro-max` 的 `metadata.upstream` provenance 指错了仓库。** 4.32.21 把安装从 midway 自打包迁到 `nextlevelbuilder/ui-ux-pro-max-skill` plugin 后,`source` / `homepage` / `repository` 三个字段仍留在 `midwayjs/midway`,即 manifest 声明的上游不是它实际安装的上游 —— 供应链层的错误归属。改指 nextlevelbuilder(Claude Code 主路径);midway git-clone 只作为 codex `harness_overrides` 存活,已在该处注明。`install.git_ref` 一并 2.5.0 → 2.15.0。
-- **`playwright-test` 是唯一把 `skills` 安装器 CLI 钉死到精确版本的 manifest。** `npx --yes skills@1.5.7` → `skills@latest`(`npm_version` `^1.5.7` → `^1.5.25`),与 `mattpocock-skills` / `design-taste-frontend` 两个兄弟 manifest 对齐。该钉子把安装器冻在上游 18 个 minor 之前且无理由 —— 被钉的产物应该是 SKILL 内容(来自 `microsoft/playwright-cli` 仓),不是安装器自身的版本。
-- **`ctx7` 的 `npm_version: ^0.4.0` 连当前上游都覆盖不到。** 0.x major 上的 caret range 被锁在 minor,而上游已是 0.5.11。安装命令是无版本的 `npm install -g ctx7`,所以用户一直装的是 0.5.x,只有记录声称一个排除它的范围。改为 `^0.5.0`。
-
-### Notes
-
-- **ECC 的安装路径刻意未动。** 记录已核实到 v2.2.1(本机 marketplace cache 仍是 2.1.0)。ECC 2.2 宣称由单个 guided installer 统一覆盖 Claude Code / Codex / Kimi,可能取代 manifest 里的两段式 `claude plugin marketplace add && claude plugin install` —— 但评估它是**行为变更**而非记录修正(2.0.0-rc.1 → 2.1.0 已经整套换过 MCP server 集合),且 ECC 的 bonus-tier 定位在 2026-07-29 已终裁。作为 open item 记在 `manifests/optional/ecc.yaml` 的 `upstream_health` 注释里。
 
 ## [4.39.0] - 2026-09-09
 
