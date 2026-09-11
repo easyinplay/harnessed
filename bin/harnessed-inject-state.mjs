@@ -9,6 +9,11 @@ import { existsSync as existsSync3, readFileSync as readFileSync4, statSync } fr
 import { homedir } from 'node:os'
 import { dirname, join as join4, resolve } from 'node:path'
 
+// src/platform/ablation.ts
+function isAblated(env = process.env) {
+  return env.HARNESSED_OFF === '1'
+}
+
 // src/checkpoint/injectCache.ts
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -467,6 +472,7 @@ function shouldEmitPc(root, repoRoot, sid, pc) {
   }
 }
 function main() {
+  if (isAblated()) return
   try {
     const root = harnessedRoot()
     if (process.argv.includes('--invalidate')) {

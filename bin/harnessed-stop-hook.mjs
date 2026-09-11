@@ -9,6 +9,11 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+// src/platform/ablation.ts
+function isAblated(env = process.env) {
+  return env.HARNESSED_OFF === '1'
+}
+
 // src/checkpoint/modeBDetect.ts
 var TAIL_WINDOW = 200
 var INVOKE_RE = /<invoke name="/g
@@ -114,6 +119,7 @@ function readStdin() {
   })
 }
 async function main() {
+  if (isAblated()) return
   const raw = await readStdin()
   let payload
   try {

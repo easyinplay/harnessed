@@ -22,6 +22,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { isAblated } from '../platform/ablation.js'
 import { type ContentBlock, detectModeB } from './modeBDetect.js'
 
 const MAX_RETRIES = 2
@@ -116,6 +117,9 @@ function readStdin(): Promise<string> {
 }
 
 async function main(): Promise<void> {
+  // Phase 60 — master kill switch; return before reading stdin so the hook is a
+  // pure no-op rather than a consumer that decides to do nothing.
+  if (isAblated()) return
   const raw = await readStdin()
   let payload: {
     stop_hook_active?: boolean

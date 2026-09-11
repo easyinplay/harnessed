@@ -42,6 +42,14 @@ const PLANNING = join(ROOT, '.planning')
 const ADR = join(ROOT, 'docs', 'adr')
 const NO_OPEN = process.argv.includes('--no-open')
 
+// Phase 60 — master kill switch (HARNESSED_OFF=1). This script is the
+// dashboard-autospawn SessionStart hook's command, so under ablation it must not
+// start a server or write the project registry. Inlined rather than imported
+// from src/platform/ablation.ts: this file is plain .mjs that ships and runs
+// outside the TS build, so it cannot import a dist module. Keep the `=== '1'`
+// test byte-identical to that module.
+if (process.env.HARNESSED_OFF === '1') process.exit(0)
+
 // Phase 2.4 W3 T3.3 (D-04 § 3.3 + R2.4.6 + B-25 + O7) — multi-project registry.
 // ~/.claude/harnessed-projects.json SSOT — auto-init with cwd as first project
 // on first dashboard launch (O7 MIN: zero-config; user 显式 add additional projects).

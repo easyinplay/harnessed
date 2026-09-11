@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`HARNESSED_OFF=1` —— 总闸,用来跑「有 harnessed vs 没有」的对照实验(Phase 60)。** 此前要拿到一个干净的对照组,只能把 hook 卸掉再装回去。现在一个环境变量就够:
+
+  ```bash
+  HARNESSED_OFF=1 claude    # 对照组
+  claude                    # 实验组
+  ```
+
+  覆盖面是**总是会跑**的那四个入口(五个 first-party manifest):`bin/harnessed-inject-state.mjs`(UserPromptSubmit 注入 + SessionStart `--invalidate` 两半)、`bin/harnessed-stop-hook.mjs`(Stop 恢复)、`harnessed check-docs --hook`(PreToolUse 文档闸,ablation 下**放行**而不是拦截)、`scripts/dashboard.mjs`(SessionStart 自动起面板)。显式 CLI 调用(`harnessed run` / `gates` / `checkpoint`)**刻意不管** —— 对照组本来就不会去调它们,而一个「跑了但什么都没做」的 `harnessed run` 比一个照常运行的更坑。零文件移动,因此不存在 restore 冲突这一整类问题。
+
+  **刻意没照抄 Trellis 的形状。** 它的 `trellis ablate` 要快照 + 移除文件 + crash-safe 事务 + 全路径冲突预检(那个 PR 是 29 文件 110 符号),因为 Trellis 把状态 **vendored 进你的项目**,对照实验必须destructive地移除。harnessed 装进宿主 `~/.claude/`,自身的 always-on 足迹就是上面那四个 hook —— 实测本机 harnessed 自己的 hook 数为 0、workflow skill 未装(`~/.claude/skills/ship` 是 gstack 的)。给一个当前不存在的足迹造事务机制,是拿别人架构的解法套自己的问题。
+
+  精确匹配 `=== '1'`,与兄弟开关 `HARNESSED_INJECT_PC_OFF`(4.38.0,只静音 `<project-context>` 那半)同约定 —— 这样 `HARNESSED_OFF=0` / `=false` 不会因为真值性被读成「开」(已测 7 种取值)。
+
+  配 doctor 第 23 项 `ablation switch`:开关开着时 warn 并给出复原方式。这条检查存在的理由是**失效模式是静默** —— 全部 hook 空转、什么都不打印,操作者会得出「harnessed 没用」的结论,与安装损坏无法区分。warn 不 fail:刻意 ablate 的机器不是不健康的机器。
+
 ### Fixed
 
 - **安装收据在幂等路径上根本写不到,`harnessed status` 因此长期少报(Phase 59)。** 六个 installer 全都先探 `isAlreadyInstalled(ctx)` 再早退,而那个早退**位于成功路径末尾 `updateInstalled` 之前** —— 六个无一例外:

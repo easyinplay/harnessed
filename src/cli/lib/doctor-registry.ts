@@ -81,4 +81,8 @@ export const CHECKS: readonly CheckFn[] = [
   // The only comparison in the codebase between a genuinely DETECTED version and
   // a recorded one — see the header for why the installer-state layer cannot do it.
   async () => (await import('./check-plugin-staleness.js')).checkPluginStaleness(),
+  // Phase 60 — HARNESSED_OFF left on (warn-only): the kill switch silences every
+  // first-party hook, so a machine that forgot to unset it looks exactly like a
+  // broken install. doctor is where that gets said out loud.
+  async () => (await import('./check-ablation.js')).checkAblation(),
 ]

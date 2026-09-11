@@ -240,10 +240,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 22 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 23 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(22)
+      expect(parsed.checks).toHaveLength(23)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -265,6 +265,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
           'workflow skill integrity', // ← 4.23.0 17th check (issue #3, warn-only)
           'per-turn inject pairing', // ← 4.38.0 21st check (perturn-inject without its SessionStart half, warn-only)
           'plugin install freshness', // ← Phase 56 22nd check (marketplace plugin pinned at install time, warn-only)
+          'ablation switch', // ← Phase 60 23rd check (HARNESSED_OFF left on, warn-only)
         ]),
       )
       if (scenario.name === 'missing-jq') {

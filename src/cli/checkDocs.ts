@@ -26,6 +26,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
+import { isAblated } from '../platform/ablation.js'
 
 /** doc-discipline.yaml `enforcement` mapped onto the two hook-visible outcomes. */
 export type DocRuleTier = 'halt' | 'warn'
@@ -228,6 +229,11 @@ export function registerCheckDocs(program: Command): void {
     .option('--hook', 'PreToolUse mode: read the tool payload on stdin, gate only git commit')
     .action(
       async (opts: { json?: boolean; cwd?: string; maxStateLines?: string; hook?: boolean }) => {
+        // Phase 60 — master kill switch, HOOK MODE ONLY. Ablation must make the
+        // gate behave as if it were never installed, i.e. allow the commit; it
+        // must NOT silence a deliberate `harnessed check-docs` run, which is an
+        // explicit CLI invocation the operator asked for.
+        if (opts.hook && isAblated()) process.exit(0)
         if (opts.hook && !shouldGateForHookPayload(await readStdin())) process.exit(0)
 
         const parsed = Number(opts.maxStateLines)

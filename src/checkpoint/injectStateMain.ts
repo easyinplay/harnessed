@@ -28,6 +28,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { isAblated } from '../platform/ablation.js'
 import {
   decidePcEmission,
   injectCacheKey,
@@ -140,6 +141,11 @@ function shouldEmitPc(root: string, repoRoot: string, sid: string, pc: string): 
 }
 
 function main(): void {
+  // Phase 60 — master kill switch. Covers BOTH manifests this bin serves
+  // (UserPromptSubmit injection and the SessionStart --invalidate half): under
+  // ablation neither may touch the cache or emit a breadcrumb, or the control
+  // arm of an A/B would still be carrying harnessed's context.
+  if (isAblated()) return
   try {
     const root = harnessedRoot()
     // 4.38.0 — SessionStart entry (compact/clear/resume/startup). A context

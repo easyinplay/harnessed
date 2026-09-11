@@ -11,12 +11,20 @@ import { describe, expect, it } from 'vitest'
 
 const BIN = join(process.cwd(), 'bin', 'harnessed-stop-hook.mjs')
 
-/** Run the hook with a payload on stdin; returns trimmed stdout. */
-function runHook(payload: object, rootOverride: string): string {
+/** Run the hook with a payload on stdin; returns trimmed stdout.
+ *  `extraEnv` lets a cell exercise the Phase 60 kill switch against the SHIPPED
+ *  bundle rather than the TS source — bin/*.mjs is an esbuild artifact that is
+ *  committed, so a gate present in src but absent from the bundle would ship
+ *  broken and every source-level test would still pass. */
+function runHook(
+  payload: object,
+  rootOverride: string,
+  extraEnv: Record<string, string> = {},
+): string {
   return execFileSync('node', [BIN], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
-    env: { ...process.env, HARNESSED_ROOT_OVERRIDE: rootOverride },
+    env: { ...process.env, HARNESSED_ROOT_OVERRIDE: rootOverride, ...extraEnv },
   }).trim()
 }
 
@@ -47,6 +55,36 @@ describe('harnessed-stop-hook.mjs (issue #6)', () => {
     expect(parsed.decision).toBe('block')
     expect(parsed.reason).toMatch(/MODE-B/)
     expect(parsed.reason).toMatch(/real tool call/i)
+  })
+
+  // Phase 60 — the same payload that blocks above must go silent under the
+  // master kill switch, or an A/B control arm would still be getting harnessed's
+  // recovery turn. Falsifiable by construction: it reuses MODE_B, which cell 1
+  // proves does block when the switch is off.
+  it('HARNESSED_OFF=1 → silent even on a mode-B message (master kill switch)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'stophook-off-'))
+    const tp = writeTranscript(dir, MODE_B)
+    const out = runHook(
+      { session_id: 's-off', transcript_path: tp, stop_hook_active: false },
+      dir,
+      {
+        HARNESSED_OFF: '1',
+      },
+    )
+    expect(out).toBe('')
+  })
+
+  it('HARNESSED_OFF=0 is NOT a kill switch — only an exact "1" ablates', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'stophook-off0-'))
+    const tp = writeTranscript(dir, MODE_B)
+    const out = runHook(
+      { session_id: 's-off0', transcript_path: tp, stop_hook_active: false },
+      dir,
+      {
+        HARNESSED_OFF: '0',
+      },
+    )
+    expect(JSON.parse(out).decision).toBe('block')
   })
 
   it('stop_hook_active:true → silent (loop guard 1)', () => {
