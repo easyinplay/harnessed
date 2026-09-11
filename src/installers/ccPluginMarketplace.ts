@@ -18,12 +18,16 @@
 // step-1 failure on re-install). We do NOT pre-probe `marketplace list`
 // (extra spawn, extra failure surface); we let step-2 decide.
 //
-// IMPL NOTE (Rule 1 / parse install.cmd): the install method schema does not
-// carry typed `marketplace_url`/`marketplace_name`/`plugin_name` fields (it
-// has only cmd + git_ref + idempotent_check + optional marketplace_source).
-// We parse the manifest cmd which is the user-facing audit-trail string,
-// matching the architectural discipline already established by mcpStdioAdd
-// (cmd is informational; args reconstructed authoritatively).
+// IMPL NOTE (Rule 1 / where the marketplace ref comes from): Phase 61 —
+// `install.marketplace_source` is now AUTHORITATIVE when present, and parsing
+// the cmd string is the fallback. Before that this note read "we parse the
+// manifest cmd", which was true and was the defect: the field had been schema'd
+// since ADR 0005, three manifests declared it, and the installer regexed the
+// same value back out of the command string — a structured declaration sitting
+// dead beside imperative code doing its job (sister: `mutually_exclusive_with`,
+// deleted in the same phase). The plugin name still comes from the cmd; no
+// manifest declares it separately. Args are still reconstructed authoritatively
+// (cmd stays the user-facing audit-trail string), matching mcpStdioAdd.
 //
 // IMPL NOTE (Rule 1 / H2 sister review fix): re-screen each constructed arg
 // before spawn — same defense-in-depth posture as mcpStdioAdd/mcpHttpAdd.
@@ -140,6 +144,18 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   }
   const pluginName = parsed.pluginAtMkt.split('@')[0] ?? parsed.pluginAtMkt
 
+  // Phase 61 — the DECLARED marketplace wins over the one regexed back out of the
+  // command string. `marketplace_source` had been schema'd since ADR 0005 and read
+  // by nothing: three manifests (ecc, ui-ux-pro-max, superpowers) declared
+  // `{source: github, repo: <owner/repo>}` while this installer re-derived the same
+  // value with `parseCmd`. That is the same shape as `mutually_exclusive_with` —
+  // a structured declaration sitting dead beside imperative code doing its job —
+  // and scripts/check-schema-consumers.mjs now fails CI on it. The regex stays as
+  // the fallback: most manifests carry only the command string.
+  const declaredRef =
+    install.marketplace_source?.source === 'github' ? install.marketplace_source.repo : null
+  const marketplaceRef = declaredRef ?? parsed.marketplaceRef
+
   // v3.0.2 hotfix (claude): `--scope user` (writes ~/.claude.json) — CWD-
   // independent, EPERM-free in read-only launch dirs. Sister mcpStdioAdd v3.0.2.
   // v4.14.0 (codex): verb is `plugin add <p>@<m>` (no --scope; codex CLI shape
@@ -149,8 +165,8 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       ? ['plugin', 'add', parsed.pluginAtMkt]
       : ['plugin', 'install', parsed.pluginAtMkt, '--scope', 'user']
   const allArgs: string[][] = []
-  if (parsed.marketplaceRef !== null) {
-    allArgs.push(['plugin', 'marketplace', 'add', parsed.marketplaceRef])
+  if (marketplaceRef !== null) {
+    allArgs.push(['plugin', 'marketplace', 'add', marketplaceRef])
   }
   allArgs.push(installArgs)
 
@@ -213,12 +229,8 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
 
   // Step 1 — marketplace add (D-20: non-zero is non-fatal; step 2 is the decider).
   let stepOneStderr = ''
-  if (parsed.marketplaceRef !== null) {
-    const r1 = await runHarnessArgs(
-      bin,
-      ['plugin', 'marketplace', 'add', parsed.marketplaceRef],
-      spawnCwd,
-    )
+  if (marketplaceRef !== null) {
+    const r1 = await runHarnessArgs(bin, ['plugin', 'marketplace', 'add', marketplaceRef], spawnCwd)
     stepOneStderr = r1.stderr
     // intentional: do not return on r1.exitCode !== 0
   }

@@ -60,6 +60,3 @@ spec:
     - linux
     - darwin
     - win32
-  tested_with_versions:
-    node_versions:
-      - "22"

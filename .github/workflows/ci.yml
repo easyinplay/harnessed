@@ -167,6 +167,14 @@ jobs:
       # absence of a sibling is OK — green now (0 siblings until Phase 31 lands them).
       - name: Skill i18n parity gate (Phase 30 — en↔zh-Hans structural parity, hard-fail)
         run: node scripts/check-skill-i18n-parity.mjs
+      # Phase 61 — declared-but-never-evaluated gate (HARD-FAIL). harnessed's bet is
+      # that declarative composition scales better than bespoke imperative
+      # installers; the cost it buys is a failure mode the imperative approach
+      # cannot have — a declaration nothing evaluates. Thirteen instances were
+      # found by hand (docs/comparison.md); this catches the class. Dep-free pure
+      # node (fs + regex) → runs BEFORE pnpm install, sister check-provenance.
+      - name: Schema consumer gate (Phase 61 — every declared field must be evaluated, hard-fail)
+        run: node scripts/check-schema-consumers.mjs
       - run: corepack enable
       - run: corepack pnpm install --frozen-lockfile
       # Workflow schema validate — moved here AFTER pnpm install (v3.3.1 CI hotfix

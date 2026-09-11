@@ -1,7 +1,6 @@
 // spec sub-schema per ADR 0001 § Top-level structure.
 // Fields: type, component_type, install (discriminated union), verify, uninstall,
 //         upstream_health, signed_by, signature?, platforms,
-//         tested_with_versions?, mutually_exclusive_with?,
 //         category, install_type, decision_rules? (ADR 0007 errata — phase 1.3 加),
 //         phase?, triggers? (ADR 0009 errata — phase 1.5 T5.5 加).
 //
@@ -86,13 +85,11 @@ const Signature = Type.Object(
   { additionalProperties: false },
 )
 
-const TestedWithVersions = Type.Object(
-  {
-    cc_versions: Type.Optional(Type.Array(Type.String())),
-    node_versions: Type.Optional(Type.Array(Type.String())),
-  },
-  { additionalProperties: false },
-)
+// Phase 61 — `TestedWithVersions` removed. ADR-0001 documented it as "weekly CI
+// 会回填", and that weekly CI was never built; one manifest (gsd) had filled it in
+// by hand and nothing ever read it. Same phantom that licensed `upstream_health`'s
+// dates to rot until Phase 55. A declaration nobody can act on is worse than its
+// absence — readers trust it.
 
 // ADR 0007 errata — categorization schema (phase 1.3 T2.1 加 3 字段).
 // `category` (必填, 6 enum) + `install_type` (必填, 4 enum, 与 install.method 1:N 闭合) +
@@ -207,8 +204,15 @@ export const SpecSchema = Type.Object(
     signed_by: Type.String({ pattern: '^[a-zA-Z0-9-]+$', minLength: 1 }),
     signature: Type.Optional(Signature),
     platforms: Type.Array(Platform, { minItems: 1, uniqueItems: true }),
-    tested_with_versions: Type.Optional(TestedWithVersions),
-    mutually_exclusive_with: Type.Optional(Type.Array(Type.String())),
+    // Phase 61 — `tested_with_versions` and `mutually_exclusive_with` removed;
+    // both were evaluated by nothing. `mutually_exclusive_with` is the sharper
+    // lesson: schema'd and documented as "v0.2+ 启用", never wired, ZERO manifests
+    // ever declared it — and when a real mutual exclusion appeared (ECC's bundled
+    // chrome-devtools connector vs the standalone chrome-devtools-mcp manifest) it
+    // was solved imperatively by hand in src/cli/lib/check-ecc.ts, with nothing
+    // noticing the declarative mechanism for that exact job was sitting dead.
+    // Re-introduce it only when a second real case exists AND the same commit
+    // wires it; scripts/check-schema-consumers.mjs now fails CI otherwise.
     category: Category,
     install_type: InstallType,
     decision_rules: Type.Optional(DecisionRules),

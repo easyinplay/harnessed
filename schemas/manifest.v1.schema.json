@@ -716,30 +716,6 @@
             ]
           }
         },
-        "tested_with_versions": {
-          "additionalProperties": false,
-          "type": "object",
-          "properties": {
-            "cc_versions": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            "node_versions": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "mutually_exclusive_with": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "category": {
           "anyOf": [
             {

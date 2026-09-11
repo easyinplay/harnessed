@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`scripts/check-schema-consumers.mjs` —— 「声明了但没人求值」这一病族第一次有了闸门(Phase 61)。** harnessed 的核心赌注是「声明式描述组合比 bespoke 命令式安装器更可扩展」。这个赌注同时买进了一个命令式做法**不可能有**的失效模式:**一份没有任何东西求值的声明**。在 comet 的模型里安装器代码**就是**描述,不存在「声明了但是死的」字段 —— 因为根本没有字段。本仓已手工确证十三例(见 `docs/comparison.md`),这个闸门把这一类自动化。
+
+  **它证明什么、不证明什么**,写在脚本头部:它证明一个**充分**条件 —— 字段名在 schema 之外、在 `src/` 与 `scripts/` 的任何非注释行里都不出现,那它确定没被读。它**不是**存活性证明:已知假阴性是跨产物重名(`spec.decision_rules` 曾因 `scripts/migrate-decision-rules-v1-to-v2.mjs` 提到的 `routing/decision_rules.yaml` 而误判为 live),动态取值 `spec[key]` 同样绕得过。所以:**红灯永远是真发现,绿灯只是地板不是证书。**
+
+  搜索前剥注释,正是因为十三例里有几个只活在散文里 —— `component_type` 在 `src/cli/setup.ts:90` 有一句注释说「按 component_type 分组」,而代码实际按 `spec.type` 分组;把那句注释算作消费者就会盖住缺陷。
+
+  **「求值」有两种含义**,少了第二种闸门就会说谎:`license` 全仓无人读,但未在白名单里的取值会在 `Value.Check` 失败 —— 因为它的类型是字面量联合,声明在**做实事**,只是不靠被读。所以分三档报告:被代码读(57)/ 仅 schema 约束形状、无行为依赖其取值(14,advisory)/ **完全无人求值(硬失败)**。
+
+  建这个闸门的过程自身抓到两个它自己的缺陷,都已修:脚本把**自己错误提示里的字符串**算成了消费者(`marketplace_source` 因此凭空转绿);以及只识别 `name: Type.X(...)` 而漏掉 `name: NamedSchema` 形式,导致它一开始根本看不见 license / stability / fallback_action 这一族。
+
+### Changed
+
+- **删除 `tested_with_versions`(含 `cc_versions` / `node_versions`)与 `mutually_exclusive_with`(Phase 61)。** 前者被 ADR-0001 记载为「weekly CI 会回填」,而那条 weekly CI 从未存在 —— 与 Phase 55 里让 `upstream_health` 日期烂掉的是同一个幻影;一个 manifest(gsd)曾手工填过,没有任何东西读它。
+
+  后者是更锋利的教训:它被设计、进 schema、在 SCHEMA.md 里写着「v0.2+ 启用」,从未接线,而且**零个 manifest 声明过它**。当真实的互斥需求出现时(ECC 自带的 chrome-devtools 连接器 vs 独立的 `chrome-devtools-mcp` manifest),它被**手写命令式代码**解决在 `src/cli/lib/check-ecc.ts` 的双装检测里,没有任何地方注意到为这件事准备的声明式机制正躺着死。**更正我在 `docs/comparison.md` 里写的判断**:那里写的是「大概该接上」,但零声明意味着接线是为假想需求造机器 —— 删。真有第二个案例时再接,而且必须与接线在同一个 commit 里。
+
+- **`marketplace_source` 接上了,不再被正则重新刨出来(Phase 61)。** 它自 ADR 0005 就在 schema 里,三个 manifest(ecc / ui-ux-pro-max / superpowers)声明了 `{source: github, repo: <owner/repo>}`,而 `ccPluginMarketplace` 安装器一直用 `parseCmd` 从命令字符串里正则解析同一个值。现在声明优先、正则降为回退(多数 manifest 只带命令串)。这是 `mutually_exclusive_with` 那个循环的第二次完整复现,区别只在于这次的需求是真的,所以解法是**接上**而不是删。
+
+  剩余三个已知死字段(`brainstorming_required` / `license_source` / `override_signals`)进了豁免表,每条都写明「KNOWN DEAD, decision pending」加上为什么还没定 —— 豁免表里不带理由的条目,本身就是这个闸门要抓的缺陷,只是升了一层。
+
 ## [4.41.0] - 2026-09-11
 
 Phase 59-60,两条都出自对 `rpamis/comet` 与 `mindfold-ai/Trellis` 自 08-26 以来提交的情报读取。8 条候选里 1 条是真缺陷(幂等路径写不到安装收据)、1 条值得吸收但**换了形状**(总闸做成环境变量而非文件层事务)、5 条查证后排除、1 条上游架构不适用。排除的理由都记在 `.planning/phases/59-*/SPEC.md`,下次读同样的上游不必重查。
