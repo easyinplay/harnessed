@@ -118,7 +118,58 @@ carries one.
 - `component_type` (required on all 19 manifests, read by nothing) and
   `upstream_health.alternative` are exempted from earlier in this phase and are
   schema-breaking to remove; they deserve their own pass.
-- The gate covers `src/manifest/schema/` only. `src/workflow/schema/` has the same
-  exposure and is where three of the thirteen lived (`capabilities.fires_when`,
-  `max_iterations`, the second-opinion sub); K10 covers judgment triggers but not
-  workflow fields.
+- ~~The gate covers `src/manifest/schema/` only.~~ **Done in the same phase** — see
+  "Extension" below.
+
+## Extension — `src/workflow/schema/` (same phase, second commit)
+
+A gate covering a third of the exposure is not finished, and the workflow schema
+is where three of the thirteen hand-found instances actually lived. Coverage went
+**77 → 214 declared fields**.
+
+The extension needed one design change: **consumer roots differ per schema**.
+Manifest fields are read by TypeScript, full stop. Workflow and fact fields are as
+often read by YAML — `requires_second_opinion` is read by an expression inside
+`workflows/judgments/*.yaml` and by no TS property access anywhere. Scanning only
+`src/` would have reported all 56 `PhaseFactContext` fields as dead, which is how
+a gate gets muted. So `SCHEMA_SETS` carries `consumerRoots` per entry, and yaml
+`#` comments are stripped alongside the TS forms.
+
+### A third self-inflicted false positive, found and fixed
+
+`vetoed_at` was reported dead. It is not — it carries a `pattern:` constraint, so
+the validator enforces it. The classifier read only the declaration's FIRST line,
+and that field spans lines:
+
+```ts
+vetoed_at: Type.Optional(
+  Type.String({ pattern: '^\d{4}-…' }),
+),
+```
+
+Its same-file neighbour `vetoed_by` passed purely because its `maxLength` fits on
+one line. Fixed by consuming following lines until the parens balance. That is now
+three defects this gate has found in itself (self-reference, half-blind
+declaration matching, single-line type text) — each one would have quietly
+weakened it rather than breaking it loudly.
+
+### Reading before deleting paid off
+
+`plugin_namespace` looked like another dead field. Its own declaration says
+otherwise: *"kept as a dead Optional to preserve backward-compat for any
+third-party consumer parsing older capabilities.yaml shapes; the resolver no
+longer reads it."* Under `additionalProperties: false`, **accepting** an older
+file is the function — the declaration is doing work, just not by being read.
+Exempted with that reason rather than deleted.
+
+`plugin_path` and `unfamiliar_module` are exempted as KNOWN DEAD with the specific
+question each needs answered. No deletions in this extension: its value is the
+coverage, and rushing removals whose history is unresearched is the failure mode
+the whole phase exists to prevent.
+
+### Verification
+
+- Green: `214 declared field(s): 186 read by code, 18 shape-enforced only, 0
+  evaluated by nothing, 10 exempt`.
+- Falsified on the new surface too: injecting `zz_probe_workflow_dead` into
+  `phaseFactContext.ts` makes it exit 1 and name the field.

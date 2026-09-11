@@ -29,6 +29,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   剩余三个已知死字段(`brainstorming_required` / `license_source` / `override_signals`)进了豁免表,每条都写明「KNOWN DEAD, decision pending」加上为什么还没定 —— 豁免表里不带理由的条目,本身就是这个闸门要抓的缺陷,只是升了一层。
 
+- **闸门扩展到 `src/workflow/schema/`,覆盖面 77 → 214 个声明字段(Phase 61 续)。** 只盖住三分之一暴露面的闸门不算建完,而十三例里有三例(`capabilities.fires_when` / `max_iterations` 模板 / second-opinion sub)正是长在 workflow schema 上。
+
+  扩展需要一处设计改动:**消费者范围按 schema 集合分**。manifest 字段只被 TypeScript 读;workflow 与 fact 字段被 yaml 读的次数不比 TS 少 —— `requires_second_opinion` 是被 `workflows/judgments/*.yaml` 里的表达式读的,全仓没有任何 TS 属性访问碰它。只扫 `src/` 会把 `PhaseFactContext` 的 56 个字段全报成死的,而那正是一个闸门被静音的方式。
+
+  **抓到它自己的第三个假阳性**:`vetoed_at` 被报死,但它带 `pattern:` 约束 —— 分类器只读了声明的**第一行**,而那个字段跨行写;同文件的邻居 `vetoed_by` 仅仅因为 `maxLength` 写得下一行就通过了。已改为吞后续行直到括号平衡。三个自查缺陷(自指 / 半盲匹配 / 单行类型文本)有个共性:**每一个都会悄悄削弱它,而不是响亮地弄坏它。**
+
+  **先读再删又救了一次**:`plugin_namespace` 看着像又一个死字段,但它自己的声明处写着「刻意保留为死 Optional,以便解析旧 capabilities.yaml 形状的第三方消费者仍能通过;resolver 不再读它」。在 `additionalProperties: false` 下,**接受**一个旧文件就是它的功能 —— 声明在做实事,只是不靠被读。按此理由豁免而非删除。本次扩展**零删除**:它的价值在覆盖面,而在没考证过历史的字段上仓促删除,正是整个 phase 要防的那个失效模式。
+
 ## [4.41.0] - 2026-09-11
 
 Phase 59-60,两条都出自对 `rpamis/comet` 与 `mindfold-ai/Trellis` 自 08-26 以来提交的情报读取。8 条候选里 1 条是真缺陷(幂等路径写不到安装收据)、1 条值得吸收但**换了形状**(总闸做成环境变量而非文件层事务)、5 条查证后排除、1 条上游架构不适用。排除的理由都记在 `.planning/phases/59-*/SPEC.md`,下次读同样的上游不必重查。

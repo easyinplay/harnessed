@@ -21,9 +21,8 @@
 // WHAT THIS GATE PROVES, AND WHAT IT DOES NOT
 //
 // It proves a SUFFICIENT condition for dead: a field name that appears nowhere
-// outside its schema, in no non-comment line of src/ or scripts/, is certainly
-// not read. That is the half worth automating, and it would have caught 6 of the
-// 13 found by hand.
+// outside its schema, in no non-comment line of that schema's own consumer roots
+// (see SCHEMA_SETS), is certainly not read. That is the half worth automating.
 //
 // It is NOT a proof of liveness. Known false-negative class: a field whose name
 // collides with a DIFFERENT artifact. `spec.decision_rules` (the per-manifest
@@ -45,10 +44,29 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-/** Schema files: where declarations live. A mention here is never a consumer. */
-const SCHEMA_DIRS = ['src/manifest/schema/']
-/** Where an evaluation could live. */
-const CONSUMER_ROOTS = ['src', 'scripts']
+// Each schema set declares WHERE its evaluations could live, because that differs
+// by schema and getting it wrong makes the gate useless in both directions:
+//
+//   - manifest fields are read by TypeScript, full stop.
+//   - workflow / fact fields are as often read by YAML as by TS. A fact like
+//     `requires_second_opinion` is "read" by an expression inside
+//     workflows/judgments/*.yaml and by no TS property access anywhere. Scanning
+//     only src/ would report the entire PhaseFactContext as dead — 56 fields of
+//     pure noise, which is how a gate gets muted.
+//
+// This is also the surface where three of the thirteen hand-found instances
+// actually lived (`capabilities.fires_when`, the `max_iterations` templates, the
+// second-opinion sub), so leaving it out would have covered the smaller half.
+const SCHEMA_SETS = [
+  { label: 'manifest', dir: 'src/manifest/schema/', consumerRoots: ['src', 'scripts'] },
+  {
+    label: 'workflow',
+    dir: 'src/workflow/schema/',
+    consumerRoots: ['src', 'scripts', 'workflows'],
+  },
+]
+/** Extensions worth searching for a consumer. yaml matters for the workflow set. */
+const CONSUMER_EXT = /\.(ts|mjs|js|yaml)$/
 
 // Every exemption carries a reason. An exemption without one is the same defect
 // this gate exists to catch, one level up.
@@ -86,6 +104,31 @@ const EXEMPTIONS = new Map([
       'evaluated by nothing. Either surface it in `harnessed audit` or delete it.',
   ],
   [
+    'plugin_namespace',
+    'DELIBERATE compat shim, not an accident — src/workflow/schema/capabilities.ts ' +
+      'says so at its declaration: "kept as a dead Optional to preserve ' +
+      'backward-compat for any third-party consumer parsing older capabilities.yaml ' +
+      'shapes; the resolver no longer reads it". Under additionalProperties:false, ' +
+      'ACCEPTING an older file is the function, so the declaration is doing work.',
+  ],
+  [
+    'plugin_path',
+    'KNOWN DEAD, decision pending — zero entries in workflows/capabilities.yaml ' +
+      'declare it and no code reads it. src/cli/lib/check-planning-with-files.ts ' +
+      'names it in a comment but resolves the real install path instead. Decide ' +
+      'with plugin_namespace: if it is the same compat-shim class, say so here; ' +
+      'otherwise delete both the field and its mirror in check-workflow-schema.mjs.',
+  ],
+  [
+    'unfamiliar_module',
+    'KNOWN DEAD, decision pending — a REQUIRED fact in PhaseFactContext that no ' +
+      'judgment expression references, that buildDefaultGateContext does not seed, ' +
+      'and that `harnessed facts` gives no hint for. The forward half of the Phase 54 ' +
+      'invariant (tests/workflow/fact-supply-parity.test.ts locks the reverse: a gate ' +
+      'referencing a fact nobody supplies). Either gate on it or drop it — dropping ' +
+      'also touches the fixture at tests/workflow/schema.test.ts:497.',
+  ],
+  [
     'override_signals',
     'KNOWN DEAD, decision pending — part of the `spec.decision_rules` subtree, whose ' +
       'own comment calls it a "redundant guard layer; SSOT remains ' +
@@ -107,7 +150,7 @@ function walk(dir, out = []) {
       walk(p, out)
       continue
     }
-    if (!/\.(ts|mjs|js)$/.test(e)) continue
+    if (!CONSUMER_EXT.test(e)) continue
     if (/\.test\.|\.d\.ts$|\.d\.mts$/.test(e)) continue
     out.push(p)
   }
@@ -115,11 +158,17 @@ function walk(dir, out = []) {
 }
 
 const norm = (p) => p.replace(/\\/g, '/')
-const isSchema = (p) => SCHEMA_DIRS.some((d) => norm(p).includes(d))
+const ALL_SCHEMA_DIRS = SCHEMA_SETS.map((s) => s.dir)
+const isSchema = (p) => ALL_SCHEMA_DIRS.some((d) => norm(p).includes(d))
 
-/** Strip block and line comments so a mention in prose never counts as a read. */
+/** Strip comments so a mention in prose never counts as a read. Handles both the
+ *  TS forms and yaml's `#`, since the workflow set searches yaml — a field named
+ *  in a yaml comment is documentation, exactly like one named in a JSDoc block. */
 function stripComments(src) {
-  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1')
+  return src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    .replace(/^\s*#.*$/gm, '')
 }
 
 /** Every property declared across the schema files, with its declared type text.
@@ -130,12 +179,36 @@ function stripComments(src) {
  *  saw the license / stability / fallback_action family it was written to audit. */
 function declaredFields(files) {
   const fields = new Map() // field -> { declaredIn, typeText }
-  const re = /^\s{2,}([a-z_][A-Za-z0-9_]*)\s*:\s*([A-Z][A-Za-z0-9_.]*.*|Type\..*)$/gm
+  const re = /^\s{2,}([a-z_][A-Za-z0-9_]*)\s*:\s*([A-Z][A-Za-z0-9_.]*.*|Type\..*)$/
   for (const f of files) {
-    const src = stripComments(readFileSync(f, 'utf8'))
-    for (const m of src.matchAll(re)) {
+    const lines = stripComments(readFileSync(f, 'utf8')).split(/\r?\n/)
+    for (let i = 0; i < lines.length; i++) {
+      const m = re.exec(lines[i] ?? '')
+      if (!m || !m[1]) continue
       const name = m[1]
-      if (!fields.has(name)) fields.set(name, { declaredIn: norm(f), typeText: m[2] })
+      if (fields.has(name)) continue
+      // A declaration can span lines, and the CONSTRAINT is often on a later one:
+      //   vetoed_at: Type.Optional(
+      //     Type.String({ pattern: '^\\d{4}-…' }),
+      //   ),
+      // Reading only the first line classified that as unconstrained — and so as
+      // dead — while its same-file neighbour `vetoed_by`, whose maxLength happens
+      // to fit on one line, passed. Keep consuming lines until the parens balance.
+      let typeText = m[2] ?? ''
+      let depth = 0
+      for (const ch of typeText) {
+        if (ch === '(') depth += 1
+        else if (ch === ')') depth -= 1
+      }
+      for (let j = i + 1; depth > 0 && j < lines.length && j < i + 12; j++) {
+        const next = lines[j] ?? ''
+        typeText += ` ${next}`
+        for (const ch of next) {
+          if (ch === '(') depth += 1
+          else if (ch === ')') depth -= 1
+        }
+      }
+      fields.set(name, { declaredIn: norm(f), typeText })
     }
   }
   return fields
@@ -184,47 +257,61 @@ function isConstrained(typeText, namedUnions) {
 // mentions it.
 const SELF = 'scripts/check-schema-consumers.mjs'
 
-const allFiles = CONSUMER_ROOTS.flatMap((r) => walk(r)).filter((f) => norm(f) !== SELF)
-const schemaFiles = allFiles.filter(isSchema)
-const consumerFiles = allFiles.filter((f) => !isSchema(f))
-
-if (schemaFiles.length === 0) {
-  console.error('[schema-consumers] no schema files found — check SCHEMA_DIRS')
-  process.exit(1)
+/** Read + comment-strip once per root set; walking src/ per field is quadratic. */
+const bodyCache = new Map()
+function bodiesFor(roots) {
+  const key = roots.join('|')
+  const hit = bodyCache.get(key)
+  if (hit) return hit
+  const files = roots.flatMap((r) => walk(r)).filter((f) => norm(f) !== SELF && !isSchema(f))
+  const out = files.map((f) => [norm(f), stripComments(readFileSync(f, 'utf8'))])
+  bodyCache.set(key, out)
+  return out
 }
 
-// Pre-strip once: this walks the whole of src/ per field otherwise.
-const bodies = consumerFiles.map((f) => [norm(f), stripComments(readFileSync(f, 'utf8'))])
-
-const fields = declaredFields(schemaFiles)
-const namedUnions = constrainingConsts(schemaFiles)
 const dead = []
 const shapeOnly = []
+let declaredTotal = 0
 let live = 0
 let exempt = 0
 
-for (const [field, { declaredIn, typeText }] of fields) {
-  if (EXEMPTIONS.has(field)) {
-    exempt += 1
-    continue
+for (const set of SCHEMA_SETS) {
+  const schemaFiles = walk(set.dir)
+  if (schemaFiles.length === 0) {
+    console.error(`[schema-consumers] no schema files under ${set.dir} — check SCHEMA_SETS`)
+    process.exit(1)
   }
-  const re = new RegExp(`\\b${field}\\b`)
-  if (bodies.some(([, body]) => re.test(body))) {
-    live += 1
-    continue
+  const bodies = bodiesFor(set.consumerRoots)
+  const fields = declaredFields(schemaFiles)
+  const namedUnions = constrainingConsts(schemaFiles)
+  declaredTotal += fields.size
+  evaluate(fields, namedUnions, bodies)
+}
+
+function evaluate(fields, namedUnions, bodies) {
+  for (const [field, { declaredIn, typeText }] of fields) {
+    if (EXEMPTIONS.has(field)) {
+      exempt += 1
+      continue
+    }
+    const re = new RegExp(`\\b${field}\\b`)
+    if (bodies.some(([, body]) => re.test(body))) {
+      live += 1
+      continue
+    }
+    if (isConstrained(typeText, namedUnions)) {
+      shapeOnly.push({ field, declaredIn })
+      continue
+    }
+    dead.push({ field, declaredIn })
   }
-  if (isConstrained(typeText, namedUnions)) {
-    shapeOnly.push({ field, declaredIn })
-    continue
-  }
-  dead.push({ field, declaredIn })
 }
 
 dead.sort((a, b) => a.field.localeCompare(b.field))
 shapeOnly.sort((a, b) => a.field.localeCompare(b.field))
 
 console.log(
-  `[schema-consumers] ${fields.size} declared field(s): ${live} read by code, ` +
+  `[schema-consumers] ${declaredTotal} declared field(s): ${live} read by code, ` +
     `${shapeOnly.length} shape-enforced only, ${dead.length} evaluated by nothing, ${exempt} exempt`,
 )
 if (shapeOnly.length > 0) {
