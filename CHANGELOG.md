@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [4.41.0] - 2026-09-11
+
+Phase 59-60,两条都出自对 `rpamis/comet` 与 `mindfold-ai/Trellis` 自 08-26 以来提交的情报读取。8 条候选里 1 条是真缺陷(幂等路径写不到安装收据)、1 条值得吸收但**换了形状**(总闸做成环境变量而非文件层事务)、5 条查证后排除、1 条上游架构不适用。排除的理由都记在 `.planning/phases/59-*/SPEC.md`,下次读同样的上游不必重查。
+
 ### Added
 
 - **`HARNESSED_OFF=1` —— 总闸,用来跑「有 harnessed vs 没有」的对照实验(Phase 60)。** 此前要拿到一个干净的对照组,只能把 hook 卸掉再装回去。现在一个环境变量就够:
