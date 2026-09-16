@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **`check-schema-consumers` 的两处「悄悄变弱」缺陷,修复后暴露 14 个一直被掩盖的死字段。** 起因:4.42.0 删掉 before-commit hook 后,`auto_fix_cmd` 已无任何求值方,闸门却仍是绿的。
+
+  1. **yaml 的键被算成了「读取」。** workflow schema 集合把 `workflows/` 算作消费者目录(judgment 表达式确实在 yaml 里读事实),但 yaml 的**键**是写字段的地方,只有**值**才可能读。于是任何字段只要有 yaml 文件给它赋值,就显得活着。现在剥掉键、保留值;同理,TypeBox 声明行 `name: Type.X(...)` 也不再算读取 —— `scripts/check-workflow-schema.mjs` 逐行镜像了整份 workflow schema。
+  2. **注释剥离不认字符串。** 旧正则把字符串字面量里的块注释开头(`'workflows/judgments/*.yaml'`)当成注释,吞掉了 `check-workflow-schema.mjs` 23k 字符里的 13k。改为识别字符串的扫描器;yaml 不再经过 JS 注释剥离(yaml 正文里未加引号的 glob 同样会误伤,修复过程中实测吞掉了 5 个被明确引用的事实)。
+
+  纯函数抽到 `scripts/lib/schema-consumers-scan.mjs` 并补单测;用旧行为替换后 8 格中 6 格失败。
+
+  **暴露的 14 个字段**逐条核实后进入豁免表,每条写明证据与待定决策,零删除(沿用 Phase 61 的做法:先把看不见的东西变得看得见,删不删单独决定):discipline 的 `auto_fix_cmd` / `check_method` / `auto_enforce` / `required_fields` / `forbidden_phrases` / `file_ownership`;`judgments/fallback.yaml` 三条铁律的 `fallback_action` / `message_template` / `override_signal` / `chain_isolation`(resolver 只读 `fires_when` / `skips_when`,行为实际由命令式代码实现);capabilities 的 `cc_version` / `settings_env_var` / `sdk_ref`;以及刻意保留为文档的 `routing_note`。其中 `cc_version` 已经漂移:capabilities 声明 `>=2.1.178`,doctor 提示写的是 `CC >= 2.1.133`。
+
 ## [4.42.0] - 2026-09-16
 
 ### Fixed

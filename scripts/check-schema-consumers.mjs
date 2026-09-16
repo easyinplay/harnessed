@@ -31,6 +31,19 @@
 // (`spec[key]`) would also slip through. So: a red gate is always a real finding;
 // a green gate is a floor, not a certificate.
 //
+// WHAT COUNTS AS A READ (2026-09-17 — both corrections exposed 14 hidden dead
+// fields, see EXEMPTIONS). A yaml mapping KEY writes a field, only a yaml VALUE
+// can read one; a TypeBox `name: Type.X(...)` line declares a shape wherever it
+// appears (scripts/check-workflow-schema.mjs mirrors the whole workflow schema).
+// Neither is a consumer. Before this, any field some yaml file merely set looked
+// live — which is how `auto_fix_cmd` stayed green after its only evaluator, the
+// before-commit hook, was deleted. The same pass fixed comment stripping, which
+// took a block-comment opener inside a string literal for a real comment and
+// silently deleted most of a file. Transforms + tests:
+// scripts/lib/schema-consumers-scan.mjs, tests/scripts/schema-consumers-scan.test.ts.
+// Remaining false-negative class: a yaml VALUE that is itself inert prose still
+// counts as a read (facts named only inside `routing_note` text).
+//
 // Comments are stripped before searching precisely because several of the 13
 // were mentioned only in prose — `component_type` survives in one comment in
 // src/cli/setup.ts claiming the installer groups output by it, while the code
@@ -43,6 +56,11 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import {
+  stripComments,
+  stripTypeboxDeclarations,
+  stripYamlKeys,
+} from './lib/schema-consumers-scan.mjs'
 
 // Each schema set declares WHERE its evaluations could live, because that differs
 // by schema and getting it wrong makes the gate useless in both directions:
@@ -128,6 +146,98 @@ const EXEMPTIONS = new Map([
       'referencing a fact nobody supplies). Either gate on it or drop it — dropping ' +
       'also touches the fixture at tests/workflow/schema.test.ts:497.',
   ],
+  // ── Exposed 2026-09-17 when yaml KEYS stopped counting as reads. Until then
+  // every field below looked consumed because some yaml file SETS it. ──
+  [
+    'auto_fix_cmd',
+    'KNOWN DEAD, decision pending — its only evaluator was the before-commit hook, ' +
+      'deleted in 4.42.0 as unreachable (review L11). Still set by operational.yaml ' +
+      '(biome) and output-style.yaml (strip-sycophantic / replace-em-dash) plus their ' +
+      'zh-Hans twins, and the `auto-fix` value of Enforcement promises it runs. Delete ' +
+      'field + that union member, or build an evaluator that targets the USER repo.',
+  ],
+  [
+    'check_method',
+    'KNOWN DEAD, decision pending — required on every discipline rule ' +
+      '(heuristic / regex / external-cmd / llm-judge / file-content-match), read by ' +
+      'nothing: `harnessed prompt` renders only description + trigger, `check-docs` ' +
+      'only enforcement. Pure documentation of intent carried as a required field.',
+  ],
+  [
+    'auto_enforce',
+    'KNOWN DEAD, decision pending — top-level boolean on each discipline yaml ' +
+      '(`auto_enforce: true`); no loader branches on it. Every discipline is loaded ' +
+      'regardless, so the flag promises a switch that does not exist.',
+  ],
+  [
+    'required_fields',
+    'KNOWN DEAD, decision pending — protocols.yaml cc-handoff shape (with ' +
+      'forbidden_phrases / file_ownership): the hand-off contract lives as prose in ' +
+      '~/.claude/rules/cc-handoff.md; nothing checks a hand-off document against it.',
+  ],
+  [
+    'forbidden_phrases',
+    'KNOWN DEAD, decision pending — see required_fields (same protocols.yaml ' +
+      'shape; would be the natural input for a `check-docs` rule that does not exist).',
+  ],
+  [
+    'file_ownership',
+    'KNOWN DEAD, decision pending — see required_fields (protocols.yaml write ' +
+      'boundaries per CC role; nothing enforces them).',
+  ],
+  [
+    'fallback_action',
+    'KNOWN DEAD, decision pending — judgments/fallback.yaml rule shape (the three ' +
+      '"fallback 铁律", with message_template / override_signal / chain_isolation). ' +
+      'judgmentResolver reads only fires_when / skips_when, which these rules do not ' +
+      'have; the behaviour they describe is implemented imperatively (skip ' +
+      'transparency in masterOrchestrator, user_overrides in extract-user-overrides). ' +
+      'Same declarative-vs-imperative split as mutually_exclusive_with.',
+  ],
+  [
+    'message_template',
+    'KNOWN DEAD, decision pending — see fallback_action. The skip-transparency text ' +
+      'actually printed is built in code, not from this template.',
+  ],
+  [
+    'override_signal',
+    'KNOWN DEAD, decision pending — see fallback_action. The live override keyword ' +
+      'table is judgments/user-overrides.yaml (singular here, a different artifact).',
+  ],
+  [
+    'chain_isolation',
+    'KNOWN DEAD, decision pending — see fallback_action ("链式互不前置" is honoured ' +
+      'by each layer gating independently, not by reading this boolean).',
+  ],
+  [
+    'routing_note',
+    'DELIBERATE, not an accident — Phase 54 renamed `fires_when` to `routing_note` ' +
+      'precisely because it was never evaluated, and dropped the old key so writing it ' +
+      'back is a build-time error. It is documentation for humans, kept in the entry it ' +
+      'describes. Known false-negative it causes: facts referenced ONLY inside ' +
+      'routing_note prose (explicit_signal, has_business_decisions, ' +
+      'needs_google_workspace, requires_peer_review, requires_persisted_plan) read as ' +
+      'live here; the fact-supply parity test is the backstop for facts.',
+  ],
+  [
+    'cc_version',
+    'KNOWN DEAD, decision pending — capabilities `requires.cc_version` (agent-teams ' +
+      '">=2.1.178"). No check compares it with the installed Claude Code, and it has ' +
+      'already drifted: the doctor hint in src/cli/lib/checkAgentTeams.ts says ' +
+      '"CC >= 2.1.133" for the same feature.',
+  ],
+  [
+    'settings_env_var',
+    'KNOWN DEAD, decision pending — capabilities `requires.settings_env_var` ' +
+      '(agent-teams env expression). The real probe is checkAgentTeams() in doctor, ' +
+      'which hard-codes the variable instead of reading this.',
+  ],
+  [
+    'sdk_ref',
+    'KNOWN DEAD, decision pending — capabilities pointer to the implementing source ' +
+      'file (e.g. src/workflow/lib/ralphLoop.ts); a code-navigation note stored as ' +
+      'schema data, read by nothing and not checked to exist.',
+  ],
   [
     'override_signals',
     'KNOWN DEAD, decision pending — part of the `spec.decision_rules` subtree, whose ' +
@@ -160,16 +270,6 @@ function walk(dir, out = []) {
 const norm = (p) => p.replace(/\\/g, '/')
 const ALL_SCHEMA_DIRS = SCHEMA_SETS.map((s) => s.dir)
 const isSchema = (p) => ALL_SCHEMA_DIRS.some((d) => norm(p).includes(d))
-
-/** Strip comments so a mention in prose never counts as a read. Handles both the
- *  TS forms and yaml's `#`, since the workflow set searches yaml — a field named
- *  in a yaml comment is documentation, exactly like one named in a JSDoc block. */
-function stripComments(src) {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1')
-    .replace(/^\s*#.*$/gm, '')
-}
 
 /** Every property declared across the schema files, with its declared type text.
  *
@@ -264,7 +364,10 @@ function bodiesFor(roots) {
   const hit = bodyCache.get(key)
   if (hit) return hit
   const files = roots.flatMap((r) => walk(r)).filter((f) => norm(f) !== SELF && !isSchema(f))
-  const out = files.map((f) => [norm(f), stripComments(readFileSync(f, 'utf8'))])
+  const out = files.map((f) => {
+    const body = stripComments(readFileSync(f, 'utf8'), f.endsWith('.yaml'))
+    return [norm(f), f.endsWith('.yaml') ? stripYamlKeys(body) : stripTypeboxDeclarations(body)]
+  })
   bodyCache.set(key, out)
   return out
 }
