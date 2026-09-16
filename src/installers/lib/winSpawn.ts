@@ -30,7 +30,7 @@
 
 import { existsSync, statSync } from 'node:fs'
 // win32 explicitly, not the host's path module: this file describes WINDOWS
-// resolution rules, and on a POSIX host `join` would build `D:/claude.EXE`
+// resolution rules, and on a POSIX host `join` would mix separators
 // (caught by CI on macOS/Linux; sister joinFor in check-install-channels.ts).
 import { win32 } from 'node:path'
 
