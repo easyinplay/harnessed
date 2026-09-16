@@ -29,7 +29,12 @@
 // depended on: it is ~20 lines and this is the only call site.
 
 import { existsSync, statSync } from 'node:fs'
-import { extname, join } from 'node:path'
+// win32 explicitly, not the host's path module: this file describes WINDOWS
+// resolution rules, and on a POSIX host `join` would build `D:/claude.EXE`
+// (caught by CI on macOS/Linux; sister joinFor in check-install-channels.ts).
+import { win32 } from 'node:path'
+
+const { extname, join } = win32
 
 const META = /([()\][%!^"`<>&|;, *?])/g
 
