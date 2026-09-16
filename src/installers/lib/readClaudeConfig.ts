@@ -131,7 +131,7 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
  * codex plugin registration probe: `codex plugin add <p>@<m>` records the plugin
  * as a `[plugins."<p>@<m>"]` table in `~/.codex/config.toml` (host-verified,
  * codex 26.x). `pluginName` may be bare (`superpowers`) or qualified
- * (`superpowers@openai-curated`); a bare name matches any marketplace.
+ * (`superpowers@openai-api-curated`); a bare name matches any marketplace.
  *
  * This is the only reliable codex signal: `codex plugin list` also prints every
  * marketplace plugin that is NOT installed (`superpowers@... not installed`), so

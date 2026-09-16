@@ -27,12 +27,13 @@ report's framing or fix is wrong in a way that matters) · **NOT REPRODUCED** ·
   `detectPlatform()` never reads it (fixed with L1); `codex plugin list` lists
   not-installed plugins (fixed with M15); `initialPrompt` dropped the role prompt
   (fixed with L14).
-- **Open verification**: `manifests/tools/superpowers.yaml` codex override adds
-  `superpowers@openai-curated`; codex-cli 0.154.0 lists that marketplace as
-  `openai-api-curated`. A read-only probe cannot tell: `codex plugin add
-  <nonexistent>@<marketplace>` returns the same "not found in marketplace" error for
-  `openai-curated`, `openai-api-curated` and a made-up name. Only a real
-  `codex plugin add` settles it (it installs the plugin — needs the maintainer's go).
+- **Verified on the host (maintainer approved a real install, then removed it)**:
+  `manifests/tools/superpowers.yaml` codex override was BROKEN on codex-cli 0.154.0 —
+  `codex plugin add superpowers@openai-curated` fails ("plugin `superpowers` was not
+  found in marketplace `openai-curated`"); `@openai-api-curated` installs and writes
+  `[plugins."superpowers@openai-api-curated"]`. The M15 probe returned true while
+  installed, false after `codex plugin remove`. Manifest cmd + both shell checks fixed
+  (checks now match the STATUS column); guarded by a test on the shipped manifest.
 - Commits: 97e62a7 … 1d80dc9 (batches 7–25 + CI fixes), CI green on 3 OS at 1d80dc9.
   Not released (4.41.0 is still `latest`).
 

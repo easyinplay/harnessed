@@ -35,17 +35,23 @@ spec:
   uninstall:
     cmd: "/plugin uninstall superpowers@superpowers-marketplace"
   # v4.14.0 — codex install path (findings 附录实证: obra/superpowers README 官方
-  # 支持 Codex CLI;openai-curated 为 codex 预置 marketplace,superpowers 在列 →
-  # 单步 `codex plugin add`,无需 marketplace add)。
+  # 支持 Codex CLI;superpowers 在 codex 预置 marketplace 中 → 单步 `codex plugin add`,
+  # 无需 marketplace add)。
+  # 2026-09-16 (Phase 62) — the preset marketplace is now `openai-api-curated`.
+  # Host-verified on codex-cli 0.154.0: `codex plugin add superpowers@openai-curated`
+  # fails ("plugin `superpowers` was not found in marketplace `openai-curated`");
+  # `@openai-api-curated` installs and registers `[plugins."superpowers@openai-api-curated"]`.
+  # The checks match the STATUS column: `codex plugin list` also prints plugins that
+  # are NOT installed, so a bare name search is a false positive.
   harness_overrides:
     codex:
       install:
         method: cc-plugin-marketplace
-        cmd: "codex plugin add superpowers@openai-curated"
+        cmd: "codex plugin add superpowers@openai-api-curated"
         git_ref: v6.1.1
-        idempotent_check: "codex plugin list | grep -q superpowers"
+        idempotent_check: "codex plugin list | grep -qE 'superpowers@openai-api-curated +installed'"
       verify:
-        cmd: "codex plugin list | grep -q superpowers"
+        cmd: "codex plugin list | grep -qE 'superpowers@openai-api-curated +installed'"
         timeout_ms: 15000
   upstream_health:
     stability: stable
