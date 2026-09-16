@@ -8,7 +8,10 @@ import pkg from '../../package.json' with { type: 'json' }
 
 // Mock npm spawning — assert the invocation, never actually install. execFile is
 // included because version-check.ts promisifies it at module load.
-vi.mock('node:child_process', () => ({ execFileSync: vi.fn(), execFile: vi.fn() }))
+// `exec` too: version-check.ts runs `npm view` through exec on Windows (a .cmd shim
+// cannot be spawned shell-less since Node's CVE-2024-27980 fix), and a mock
+// factory missing an export the module imports fails the whole file at load.
+vi.mock('node:child_process', () => ({ execFileSync: vi.fn(), execFile: vi.fn(), exec: vi.fn() }))
 // Control the published version; keep compareVersions real.
 vi.mock('../../src/cli/lib/version-check.js', async (orig) => ({
   ...(await orig<typeof import('../../src/cli/lib/version-check.js')>()),

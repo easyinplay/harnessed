@@ -157,6 +157,29 @@ export async function mutateSubProgress(
   })
 }
 
+/** Locked read-modify-write of the WHOLE current-workflow record.
+ *
+ *  The sibling of `mutateSubProgress` for callers that change more than the
+ *  ledger. Before this existed those callers read a snapshot outside the lock and
+ *  wrote `{ ...snapshot, <change> }` back through `writeCurrentWorkflow`, which
+ *  replaces the record wholesale — so anything written between the read and the
+ *  write was silently rolled back. `checkpoint reopen` did exactly that to
+ *  ITSELF: it reopened the sub via `mutateSubProgress`, then wrote the pre-reopen
+ *  snapshot back to flip status to active, restoring `done` on the very path
+ *  (a verify rejection arriving after the chain closed) reopen exists for.
+ *
+ *  `fn` gets the current record and returns the next one. No-op when there is no
+ *  workflow record, sister to `mutateSubProgress`. */
+export async function mutateWorkflow(
+  fn: (s: CurrentWorkflowV1Type) => CurrentWorkflowV1Type,
+): Promise<void> {
+  await withLock(async () => {
+    const s = await readCurrentWorkflow()
+    if (!s) return
+    await writeCurrentWorkflowUnlocked(fn(s))
+  })
+}
+
 /** Phase 22 — locked read-modify-write of the WHOLE per-repo store (used for the
  *  `retro_meta` sidecar, which lives at the store level so it survives the fresh
  *  envelope `activate()` writes each phase). Single `withLock` read→fn→write so it
@@ -184,14 +207,17 @@ export async function activate(phase: string, checkpointPath: string | null = nu
 
 /** Transition 2/3 — pause active workflow; preserves started_at. */
 export async function pause(): Promise<void> {
-  const s = await readCurrentWorkflow()
-  if (!s) return
-  await writeCurrentWorkflow({ ...s, status: 'paused', paused_at: new Date().toISOString() })
+  // Locked RMW: an unlocked read here lost-updated any concurrent
+  // `checkpoint complete` that landed between the read and the write — and the
+  // SIGINT trap calls pause() while other writers may still be running.
+  await mutateWorkflow((s) => ({ ...s, status: 'paused', paused_at: new Date().toISOString() }))
 }
 
 /** Transition 3/3 — complete active/paused workflow; preserves timestamps. */
 export async function complete(): Promise<void> {
-  const s = await readCurrentWorkflow()
-  if (!s) return
-  await writeCurrentWorkflow({ ...s, status: 'complete', completed_at: new Date().toISOString() })
+  await mutateWorkflow((s) => ({
+    ...s,
+    status: 'complete',
+    completed_at: new Date().toISOString(),
+  }))
 }

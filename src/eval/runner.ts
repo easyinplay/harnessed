@@ -369,17 +369,30 @@ export async function runEvalSuite(
     entries = []
   }
   for (const dir of entries) {
+    let raw: string
     try {
-      readFileSync(join(dir, 'scenario.yaml'))
+      raw = readFileSync(join(dir, 'scenario.yaml'), 'utf8')
     } catch {
       continue
     }
+    // The filter MUST be decided before the scenario runs. It used to be applied
+    // only to the result: the "cheap pre-filter" above had an empty body, so every
+    // scenario ran regardless — and runScenarioDir writes the golden whenever
+    // updateGolden is set. `eval --filter X --update-golden` therefore rewrote
+    // EVERY golden in the suite, not just X's. The scenario name lives inside the
+    // yaml, so read it here rather than dropping name-only matches with a bare
+    // `continue` on the directory name.
     if (opts.filter && !dir.includes(opts.filter)) {
-      // cheap pre-filter on dir name; name-level filter re-checked below
+      let name = ''
+      try {
+        const doc = parseYaml(raw) as { name?: unknown } | null
+        name = typeof doc?.name === 'string' ? doc.name : ''
+      } catch {
+        // unparseable → let runScenarioDir report it only if the dir matched
+      }
+      if (!name.includes(opts.filter)) continue
     }
-    const r = await runScenarioDir(dir, opts)
-    if (opts.filter && !r.name.includes(opts.filter) && !dir.includes(opts.filter)) continue
-    results.push(r)
+    results.push(await runScenarioDir(dir, opts))
   }
   const summary: SuiteSummary = {
     pass: results.filter((r) => r.status === 'PASS').length,

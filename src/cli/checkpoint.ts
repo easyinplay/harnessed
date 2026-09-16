@@ -684,9 +684,7 @@ export async function runCheckpointReopen(
     return
   }
 
-  const { readCurrentWorkflow, mutateSubProgress, writeCurrentWorkflow } = await import(
-    '../checkpoint/state.js'
-  )
+  const { readCurrentWorkflow, mutateWorkflow } = await import('../checkpoint/state.js')
   const wf = await readCurrentWorkflow()
   if (!wf) {
     deps.error('[harnessed] checkpoint reopen: no active workflow — nothing to send back.')
@@ -702,15 +700,21 @@ export async function runCheckpointReopen(
     deps.exit(1)
     return
   }
-  await mutateSubProgress((e) => reopenSub(e, sub, reason))
-
   // A verify rejection usually arrives AFTER the chain closed, so the workflow is
   // sitting at 'complete'. Leaving it there would mean a workflow that is complete
   // and simultaneously has a pending sub — the per-turn injector would keep
   // reporting done while the work is outstanding.
-  if (wf.status === 'complete') {
-    await writeCurrentWorkflow({ ...wf, status: 'active' })
-  }
+  //
+  // Reopen and the status flip are ONE locked write. They used to be two: reopen
+  // through mutateSubProgress, then `writeCurrentWorkflow({ ...wf, status })` with
+  // the snapshot read above — a whole-record replace carrying the PRE-reopen
+  // ledger, so on exactly the 'complete' path this branch exists for, it wrote
+  // `done` straight back over the reopen it had just made.
+  await mutateWorkflow((s) => ({
+    ...s,
+    sub_progress: reopenSub(s.sub_progress ?? [], sub, reason),
+    status: s.status === 'complete' ? 'active' : s.status,
+  }))
 
   // Same counters as `fail`, read back after the mutation.
   const latest = await readCurrentWorkflow()

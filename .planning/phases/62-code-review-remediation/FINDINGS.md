@@ -1,0 +1,51 @@
+---
+phase: 62
+name: Code Review Report Remediation
+status: in-progress
+created: 2026-09-16
+source: external review report (Qwen workspace, 2026-09-16), 39 findings — 7 high / 16 medium / 16 low
+method: every finding verified against this tree before being called real; a fix
+  counts only with a test that fails on the pre-fix code
+---
+
+# Phase 62 — Code Review Report Remediation
+
+Verdicts: **REAL** (reproduced / confirmed by reading) · **PARTIAL** (real, but the
+report's framing or fix is wrong in a way that matters) · **NOT REPRODUCED** ·
+**PENDING** (not yet checked).
+
+## High
+
+| # | finding | verdict | fix | falsified |
+|---|---|---|---|---|
+| H1 | `checkpoint reopen` writes a stale snapshot back, undoing itself | **REAL** — on exactly the `status==='complete'` path reopen exists for | `mutateWorkflow` single-lock RMW; reopen + status flip in one write | yes: old code under a faithful whole-replace mock → `Expected "pending" / Received "done"` |
+| H2 | Windows `npm.cmd` spawned shell-less → EINVAL → `update` silently broken | **REAL** — reproduced on Node 24.19.0 (`spawn EINVAL`; with shell → `11.17.0`) | Windows path runs the fixed string `npm view harnessed version` through `exec` (no injection surface, no DEP0190) | dogfood: doctor update check now reports `up to date (4.41.0)` |
+| H3 | eval `--filter` pre-filter has an empty body → `--update-golden` rewrites every golden | **PARTIAL** — bug real; the report's fix (bare `continue` on dir name) would drop scenarios matched only by NAME, which lives inside the yaml | read the scenario name before running; skip only when neither dir nor name matches | yes: old runner overwrites a sentinel golden in a scenario outside the filter |
+| H4 | rollback `unlink`s a directory for git-clone installs | REAL (read) | PENDING | — |
+| H5 | `ccHookAdd` crashes on `settings.json` containing `null` | REAL (read) | PENDING | — |
+| H6 | Windows `cmd.exe /c` arg re-parsing; `& \| < > ^` not screened | REAL (read) | PENDING | — |
+| H7 | security gate skips `hook_command` and `harness_overrides.*.cmd` | REAL (read) | PENDING | — |
+
+## Medium
+
+| # | finding | verdict | notes |
+|---|---|---|---|
+| M1 | unlocked read → locked whole write, lost updates | **REAL, partly fixed** | `pause()` / `complete()` now go through `mutateWorkflow`; `checkpoint.ts` verify_mode / ship_ready / retro_due writes and `compact.ts` PENDING |
+| M2–M16 | | PENDING | |
+
+## Low
+
+| # | finding | verdict | notes |
+|---|---|---|---|
+| L2 | `spawnSync('npm')` shell-less on Windows always ENOENT | **PARTIAL** — NOT reproduced here (fnm provides an extensionless shim, status=0); real on a standard Node install that ships only `npm.cmd` | hardened with the same fixed-string-through-shell approach as H2 |
+| L6 | reopen's follow-up read sees the rolled-back state | **REAL** — downstream of H1 | fixed by H1; cell 8 of the reopen suite fails on the old code |
+| others | | PENDING | |
+
+## Why the H1 bug survived its own test suite
+
+`tests/cli/checkpoint-reopen.test.ts` mocked `writeCurrentWorkflow` as a **no-op**.
+The real function replaces the record wholesale, so the rollback needed that write
+to overwrite the ledger the other mock had just changed — which a no-op can never
+do. The mock was kinder than the thing it stood in for, and hid exactly the defect
+it existed to catch. The suite now models one shared record with a real
+whole-replace.

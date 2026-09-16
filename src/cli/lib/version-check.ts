@@ -2,10 +2,11 @@
 // No semver dependency: a minimal numeric-segment + prerelease compare. Network
 // access is isolated behind an injectable runner so callers/tests stay fail-soft.
 
-import { execFile } from 'node:child_process'
+import { exec, execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 
 const execFileAsync = promisify(execFile)
+const execAsync = promisify(exec)
 
 export type VersionComparison = 'current' | 'behind' | 'ahead' | 'unknown'
 
@@ -44,6 +45,21 @@ function npmExecutable(): string {
 }
 
 async function defaultRunner(): Promise<string> {
+  // Windows: `npm` ships as a `.cmd` shim, and since Node's CVE-2024-27980 fix
+  // (18.20.2 / 20.12.2 / 22.x) spawning a .cmd/.bat WITHOUT a shell throws
+  // EINVAL — reproduced on Node 24.19.0. fetchLatestVersion swallowed that into
+  // null, so on Windows `harnessed update` always said "could not reach npm" and
+  // exited 0, and the doctor update check / status / setup banners degraded
+  // silently. The command is a fixed string with no external input, so running
+  // it through the shell carries no injection surface — and using `exec` with a
+  // single string (not an args array + `shell: true`) also avoids DEP0190.
+  if (process.platform === 'win32') {
+    const { stdout } = await execAsync('npm view harnessed version', {
+      timeout: 8000,
+      windowsHide: true,
+    })
+    return stdout
+  }
   const { stdout } = await execFileAsync(npmExecutable(), ['view', 'harnessed', 'version'], {
     timeout: 8000,
     windowsHide: true,

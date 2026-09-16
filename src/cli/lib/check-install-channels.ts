@@ -51,7 +51,19 @@ export interface DetectInstallChannelsDeps {
 function realNpmPrefix(): string | null {
   try {
     if (typeof spawnSync !== 'function') return null
-    const r = spawnSync('npm', ['prefix', '-g'], { encoding: 'utf8', timeout: 5000 })
+    // Windows: bare `npm` only resolves without a shell when the install layout
+    // provides an extensionless/exe shim (fnm does; the standard Node installer
+    // ships only npm.cmd, which Node refuses to spawn shell-less since the
+    // CVE-2024-27980 fix). Fixed string, no external input → no injection surface.
+    const r =
+      process.platform === 'win32'
+        ? spawnSync('npm prefix -g', {
+            encoding: 'utf8',
+            timeout: 5000,
+            shell: true,
+            windowsHide: true,
+          })
+        : spawnSync('npm', ['prefix', '-g'], { encoding: 'utf8', timeout: 5000 })
     if (!r || r.error || r.status !== 0) return null
     const out = (r.stdout ?? '').trim()
     return out.length > 0 ? out : null
