@@ -260,13 +260,13 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // verify spawns `codex plugin list` and matches the plugin name on stdout
   // (15s budget; task_plan T3 REVISED). Only runs on codex, so the claude
   // cold-start-timeout concern that motivated v3.0.3 does not regress.
-  let registered: boolean
-  if (bin === 'codex') {
-    const vr = await runHarnessArgs('codex', ['plugin', 'list'], spawnCwd, 15_000)
-    registered = vr.exitCode === 0 && vr.stdout.includes(pluginName)
-  } else {
-    registered = await isPluginRegistered(pluginName)
-  }
+  //
+  // Superseded for codex: `codex plugin list` ALSO prints marketplace plugins
+  // that are NOT installed (`superpowers@... not installed`), so the stdout
+  // substring match passed verify for a failed install. isPluginRegistered now
+  // reads codex's real registry, the `[plugins."<p>@<m>"]` tables in
+  // ~/.codex/config.toml, for both platforms.
+  const registered = await isPluginRegistered(pluginName)
   if (!registered) {
     const cfgLabel =
       bin === 'codex' ? '`codex plugin list` output' : 'enabledPlugins map of ~/.claude.json'

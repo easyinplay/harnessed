@@ -154,7 +154,8 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   }
 
   if (method === 'cc-plugin-marketplace') {
-    const m = cmd.match(/(?:claude\s+)?plugin\s+install\s+(\S+)/i)
+    // `install` (claude) or `add` (codex; `(?!marketplace)` skips `plugin marketplace add`).
+    const m = cmd.match(/plugin\s+(?:install|add)\s+(?!marketplaceb)(\S+)/i)
     const pluginName = m?.[1]?.split('@')[0] ?? name
     try {
       return await isPluginRegistered(pluginName)

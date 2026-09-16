@@ -128,6 +128,25 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
 }
 
 /**
+ * codex plugin registration probe: `codex plugin add <p>@<m>` records the plugin
+ * as a `[plugins."<p>@<m>"]` table in `~/.codex/config.toml` (host-verified,
+ * codex 26.x). `pluginName` may be bare (`superpowers`) or qualified
+ * (`superpowers@openai-curated`); a bare name matches any marketplace.
+ *
+ * This is the only reliable codex signal: `codex plugin list` also prints every
+ * marketplace plugin that is NOT installed (`superpowers@... not installed`), so
+ * a substring match on its stdout (or piping it through a text search) reports
+ * installed for a plugin that is merely available.
+ */
+export function isPluginInToml(raw: string, pluginName: string): boolean {
+  const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const [plugin = '', market] = pluginName.split('@')
+  const key = market ? `${esc(plugin)}@${esc(market)}` : `${esc(plugin)}(?:@[^"'\\]]+)?`
+  const re = new RegExp(`^\\s*\\[plugins\\.(?:"${key}"|'${key}')\\]`, 'm')
+  return re.test(raw)
+}
+
+/**
  * Check whether a Claude Code plugin is registered.
  *
  * v3.9.8 — primary source is `~/.claude/plugins/installed_plugins.json`
@@ -142,6 +161,15 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
  * Returns `true` if any registry key's left-of-`@` prefix matches `pluginName`.
  */
 export async function isPluginRegistered(pluginName: string): Promise<boolean> {
+  const platform = detectPlatform()
+  if (platform.id === 'codex') {
+    try {
+      return isPluginInToml(await readFile(platform.mcpConfigPath, 'utf8'), pluginName)
+    } catch {
+      return false // ENOENT (codex never configured) / unreadable: not registered
+    }
+  }
+
   // Primary: ~/.claude/plugins/installed_plugins.json (v2 schema, Claude Code 2.1.133+).
   // Phase C / D4: codex has no plugin registry (getPluginsRegistry → null) — skip
   // this probe; the legacy settings/mcp sources below are still consulted.

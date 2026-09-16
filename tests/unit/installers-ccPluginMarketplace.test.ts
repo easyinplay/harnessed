@@ -316,8 +316,9 @@ describe('installCcPluginMarketplace — codex harness gate (v4.14.0)', () => {
 })
 
 // v4.14.0 T3 REVISED — codex override path: codex-flavored cmd (merged by
-// resolveForHarness) → `codex plugin add <p>@<m>` + verify via `codex plugin
-// list` stdout match.
+// resolveForHarness) → `codex plugin add <p>@<m>`; verify reads the
+// `[plugins."<p>@<m>"]` registry in ~/.codex/config.toml (M15: `codex plugin
+// list` also prints plugins that are not installed).
 describe('installCcPluginMarketplace — codex override cmd (v4.14.0)', () => {
   beforeEach(() => {
     vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
@@ -331,18 +332,25 @@ describe('installCcPluginMarketplace — codex override cmd (v4.14.0)', () => {
     vi.unstubAllEnvs()
   })
 
-  it('codex cmd → spawns `codex plugin add` (no --scope) + verify via codex plugin list stdout', async () => {
+  // codex records an installed plugin as a `[plugins."<p>@<m>"]` table in
+  // ~/.codex/config.toml. `readFile` returns that table only once `plugin add`
+  // has been spawned; before it, codex has never been configured (ENOENT).
+  function codexRegistryAfterAdd(written: { value: boolean }): void {
+    readFileMock.mockReset()
+    readFileMock.mockImplementation((async () => {
+      if (!written.value) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      return '[plugins."superpowers@openai-curated"]\nenabled = true\n'
+    }) as unknown as typeof readFile)
+  }
+
+  it('codex cmd → spawns `codex plugin add` (no --scope) + verify reads the config.toml registry', async () => {
     const s = silence()
     try {
-      let call = 0
+      const written = { value: false }
+      codexRegistryAfterAdd(written)
       spawnMock.mockImplementation(() => {
-        call += 1
-        // call 1 = plugin add; call 2 = verify plugin list (stdout must contain name)
-        return makeChild(
-          call === 1
-            ? { exitCode: 0 }
-            : { exitCode: 0, stdout: 'superpowers@openai-curated (installed)\n' },
-        ) as unknown as ReturnType<typeof spawn>
+        written.value = true
+        return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
       })
       const c = ctx({}, (m) => {
         ;(m.metadata as { name: string }).name = 'superpowers'
@@ -357,7 +365,33 @@ describe('installCcPluginMarketplace — codex override cmd (v4.14.0)', () => {
       expect(flat).not.toContain('claude')
       expect(flat).toContain('plugin add superpowers@openai-curated')
       expect(flat).not.toContain('--scope')
-      expect(flat).toContain('plugin list')
+    } finally {
+      s.restore()
+    }
+  })
+
+  it('M15 — `codex plugin list` naming the plugin as "not installed" does NOT pass verify', async () => {
+    // Host-verified: `codex plugin list` prints every marketplace plugin, installed
+    // or not. The old stdout-substring verify passed a silently failed install.
+    const s = silence()
+    try {
+      readFileMock.mockReset()
+      readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+      spawnMock.mockImplementation(
+        () =>
+          makeChild({
+            exitCode: 0,
+            stdout:
+              'PLUGIN                          STATUS         VERSION\n' +
+              'superpowers@openai-curated      not installed\n',
+          }) as unknown as ReturnType<typeof spawn>,
+      )
+      const c = ctx({}, (m) => {
+        ;(m.metadata as { name: string }).name = 'superpowers'
+        ;(m.spec.install as { cmd: string }).cmd = 'codex plugin add superpowers@openai-curated'
+      })
+      const r = await installCcPluginMarketplace(c)
+      expect(r).toMatchObject({ ok: false, phase: 'verify' })
     } finally {
       s.restore()
     }
