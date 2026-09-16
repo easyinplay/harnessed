@@ -3,7 +3,7 @@
 // (D-04 + D-11 strategic-gate / phase-gate skip path).
 // T3.5.W0.2 — 5 NEW fixture verify master vs sub detect + loadDisciplinesForPhase wedge.
 // T3.5.W1.5 — 6 NEW fixture verify 3 phase-level hook fire point per RESEARCH-disciplines § 4.4
-// (before-spawn invokes_tools.length>1 / before-commit r.triggers_commit;
+// (before-spawn invokes_tools.length>1; before-commit removed 4.42.0;
 //  after-output removed 4.34.0 — hook deleted, never reachable in the real path)。
 // Sister Phase 3.1 W1 state.test.ts vi.mock pattern.
 
@@ -40,7 +40,6 @@ interface FiredCapShape {
   tier?: string
 }
 const arbitrateBeforeSpawnMock = vi.fn<(fired: FiredCapShape[]) => Promise<FiredCapShape[]>>()
-const runBeforeCommitHookMock = vi.fn<() => Promise<void>>()
 
 vi.mock('../../src/workflow/governance.js', () => ({
   isVetoed: () => isVetoedMock(),
@@ -78,9 +77,6 @@ vi.mock('../../src/discipline/enforcement/before-phase-execute.js', () => ({
 vi.mock('../../src/discipline/enforcement/before-spawn.js', () => ({
   arbitrateBeforeSpawn: (fired: FiredCapShape[], _root: string): Promise<FiredCapShape[]> =>
     arbitrateBeforeSpawnMock(fired),
-}))
-vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
-  runBeforeCommitHook: (_ctx: unknown): Promise<void> => runBeforeCommitHookMock(),
 }))
 
 import { GateEvalError } from '../../src/workflow/exprBuilder.js'
@@ -139,12 +135,10 @@ beforeEach(() => {
   runMasterOrchestratorMock.mockReset()
   loadDisciplinesForPhaseMock.mockReset()
   arbitrateBeforeSpawnMock.mockReset()
-  runBeforeCommitHookMock.mockReset()
   loadPhasesMock.mockReturnValue({ workflow: 'plan-feature', phases: fivePhases })
   resolveJudgmentGateMock.mockResolvedValue(true)
   loadDisciplinesForPhaseMock.mockResolvedValue(new Map())
   arbitrateBeforeSpawnMock.mockImplementation(async (fired) => fired)
-  runBeforeCommitHookMock.mockResolvedValue(undefined)
   // Reset stub fn to test shim (per-test override 后 restore;Phase v3.4.4 production
   // default 现 call real sdkSpawn — tests own legacy '<stub for X>' shim via _testStubFn)。
   _dispatchSkillStub.fn = _testStubFn
@@ -431,30 +425,15 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
   // the test double worked. Output-style scoping now lives in `harnessed prompt`
   // (buildDisciplinesSection chat-scope block, covered by tests/cli/prompt.test.ts).
 
-  it('15. T3.5.W1.5 — before-commit fires: stub r.triggers_commit=true → runBeforeCommitHook called', async () => {
-    // Stub override triggers_commit=true → before-commit hook fires before completePhase。
-    isVetoedMock.mockResolvedValue(false)
-    _dispatchSkillStub.fn = async (skillName) => ({
-      status: 'ok',
-      output: `<stub for ${skillName}>`,
-      triggers_commit: true,
-    })
-    const v2Phases = [{ id: 'p1' }]
-    loadPhasesMock.mockReturnValue({ workflow: 'task', phases: v2Phases })
-    const r = await runWorkflow('workflows/task/deliver/workflow.yaml', {})
-    expect(r.status).toBe('complete')
-    expect(runBeforeCommitHookMock).toHaveBeenCalledTimes(1)
-  })
+  // 4.42.0 — cell 15 ("before-commit fires when r.triggers_commit===true") DELETED
+  // with the hook itself (external review L11): the field was only ever set by this
+  // stub, so the cell proved the test double, not the product.
 
-  it('16. T3.5.W1.5 — default stub (triggers_commit=undefined) → hooks NOT called', async () => {
-    // Default WIRED stub return NO triggers_commit → backwards-compat existing fixture
-    // 不破:before-commit 跳过(negative gating proof)。
+  it('16. T3.5.W1.5 — default stub → before-spawn NOT called', async () => {
     isVetoedMock.mockResolvedValue(false)
     const r = await runWorkflow('workflows/plan-feature/workflow.yaml', {})
     expect(r.status).toBe('complete')
     expect(r.phasesRun).toBe(5)
-    // Default stub 不带 triggers_commit → before-commit NOT fire。
-    expect(runBeforeCommitHookMock).not.toHaveBeenCalled()
     // Default fivePhases 不带 invokes_tools → before-spawn 也 NOT fire。
     expect(arbitrateBeforeSpawnMock).not.toHaveBeenCalled()
   })

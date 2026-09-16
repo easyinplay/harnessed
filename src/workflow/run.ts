@@ -1,7 +1,7 @@
 // run.ts — D-03 WIRED + D-04 PUSH + W0.2 (master detect + disciplines wedge) + W1.5
-// (2 phase-level hook: before-spawn / before-commit per RESEARCH-disciplines § 4.4;
-//  after-output removed 4.34.0 — was never reachable, superseded by the scope-grouped
-//  discipline block in `harnessed prompt`)。
+// (1 phase-level hook: before-spawn per RESEARCH-disciplines § 4.4;
+//  after-output removed 4.34.0 and before-commit removed 4.42.0 — neither was ever
+//  reachable; output-style scoping lives in `harnessed prompt`)。
 // Phase v3.4.4 — _dispatchSkillStub.fn production default rewired to real sdkSpawn
 // (was literal '<stub for X>'). DI seam preserved for tests.
 // Phase v3.4.4 (Phase 3) — _dispatchSkillStub.fn now conditionally wraps sdkSpawn
@@ -16,7 +16,6 @@ import { dirname, join, resolve as pathResolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
-import { runBeforeCommitHook } from '../discipline/enforcement/before-commit.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
 import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
 import { isUndefinedVariableError } from './exprBuilder.js'
@@ -53,14 +52,13 @@ export interface WorkflowRunResult {
   skippedPhases?: string[]
 }
 
-/** D-03 WIRED stub spawner;W1.5 — Optional target + triggers_commit additive default undefined。
+/** D-03 WIRED stub spawner;W1.5 — Optional target additive default undefined。
  *  Exported for test injection (W1.5 fixture vi.spyOn override stub shape to fire hook path)。 */
 export interface DispatchStubResult {
   status: 'ok' | 'fail'
   output: string
   decision?: string
   target?: 'chat' | 'file' | 'commit-message'
-  triggers_commit?: boolean
   /** v3.5.0 Phase 2 — Option 1-Lite escalation signal from spawned subagent.
    *  When true, runWorkflow emits stderr hint suggesting user open Agent Teams
    *  in main Claude Code session (D3). */
@@ -460,7 +458,7 @@ export interface RunWorkflowOpts {
 
 /** Run a workflow YAML to complete / paused-veto / failed (activate before veto per
  *  B-01)。W0.2: master detect → runMasterOrchestrator + disciplines wedge → gateContext。
- *  W1.5: 2 phase-level hook fire point (before-spawn / before-commit)。 */
+ *  W1.5: 1 phase-level hook fire point (before-spawn)。 */
 export async function runWorkflow(
   yamlPath: string,
   vars: Record<string, string>,
@@ -691,24 +689,12 @@ export async function runWorkflow(
     // discipline block in `harnessed prompt` (4.33.0 buildDisciplinesSection).
     // Deterministic doc-discipline checks moved to `harnessed check-docs` instead.
 
-    // W1.5 — before-commit hook if r.triggers_commit===true (biome-preempt + no-skip-hooks)。
-    // changedFiles + cmdArgs v3.0 WIRED 默认 empty (Phase 3.3+ dogfood 真接 spawn 时 fill)。
-    if (r.triggers_commit === true) {
-      try {
-        await runBeforeCommitHook({
-          changedFiles: [],
-          cmdArgs: [],
-          packageRoot,
-          cmdType: 'git-commit',
-          hasUserApproval: false,
-        })
-      } catch (err) {
-        console.warn(
-          `⚠️ phase ${ph.id} before-commit hook failed (${(err as Error).message}); ` +
-            'proceeding (ADR 0029 fail-soft).',
-        )
-      }
-    }
+    // 4.42.0 — the before-commit hook is GONE, same reasoning as after-output above
+    // (external review L11): it fired only when `r.triggers_commit === true`, a field
+    // no production dispatch ever set, and even then it received `changedFiles: []`
+    // and ran biome / read STATE.md in the harnessed PACKAGE root, not the user repo.
+    // Commit-time rules reach the model through the discipline block in `harnessed
+    // prompt`; STATE.md digest length is checked by `harnessed check-docs`.
 
     await completePhase({
       phaseId: ph.id,

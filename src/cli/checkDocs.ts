@@ -106,7 +106,7 @@ function read(cwd: string, rel: string): string | null {
   }
 }
 
-/** Content lines, ignoring a single trailing newline (sister before-commit.ts). */
+/** Content lines, ignoring a single trailing newline (same counting rule the removed before-commit hook used). */
 function contentLines(content: string): string[] {
   const lines = content.split(/\r?\n/)
   if (lines[lines.length - 1] === '') lines.pop()

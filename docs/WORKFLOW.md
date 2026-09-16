@@ -211,11 +211,9 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 **位置**: `workflows/disciplines/*.yaml` (D-09 Phase v3.0-3.3 W0.4 SHIPPED)
 
-**机制**: 6 yaml = global cross-stage behavioral norms。Runtime engine pre-phase loads + 通过 4 hook helper enforce:
+**机制**: 6 yaml = global cross-stage behavioral norms。Runtime engine pre-phase loads + 通过 2 hook helper enforce(after-output 4.34.0、before-commit 4.42.0 均因生产路径不可达而删除;rule 经 `harnessed prompt` 的 discipline 段送达模型):
 - `before-phase-execute` — pre-load discipline rules for current phase
 - `before-spawn` — sort fired capabilities by `priority.priority_hierarchy` rank
-- `before-commit` — biome preempt auto-fix + A7 ADR conservation check
-- `after-output` — BLUF / strip-sycophantic / em-dash / emoji validation
 
 **Auto-enforce vs warn semantics**:
 | Enforcement | 行为 |

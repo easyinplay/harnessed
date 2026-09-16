@@ -38,9 +38,6 @@ vi.mock('../../src/workflow/governance.js', () => ({
 vi.mock('../../src/discipline/enforcement/before-phase-execute.js', () => ({
   loadDisciplinesForPhase: () => loadDisciplinesForPhaseMockF1(),
 }))
-vi.mock('../../src/discipline/enforcement/before-commit.js', () => ({
-  runBeforeCommitHook: async () => {},
-}))
 vi.mock('../../src/discipline/enforcement/before-spawn.js', () => ({
   arbitrateBeforeSpawn: async (f: unknown) => f,
 }))
