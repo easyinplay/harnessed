@@ -25,6 +25,7 @@ vi.mock('../../src/checkpoint/evidence.js', () => ({
 
 vi.mock('../../src/checkpoint/state.js', () => ({
   mutateSubProgress: vi.fn(async () => undefined),
+  mutateWorkflow: vi.fn(async () => undefined),
   readCurrentWorkflow: vi.fn(async () => null),
   writeCurrentWorkflow: vi.fn(async () => undefined),
 }))

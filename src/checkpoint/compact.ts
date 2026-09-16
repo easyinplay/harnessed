@@ -6,7 +6,7 @@
 // preceded this lost that signal — see _rogue-impl-reference F1).
 
 import type { SubProgressEntryType } from './schema/currentWorkflow.v1.js'
-import { readCurrentWorkflow, writeCurrentWorkflow } from './state.js'
+import { mutateWorkflow, readCurrentWorkflow } from './state.js'
 
 export const DEFAULT_THRESHOLD_PCT = 75
 export const DEFAULT_CONTEXT_WINDOW = 200_000 // sonnet/opus 4.x baseline; 1M ctx defer Phase 3.4
@@ -111,18 +111,29 @@ export async function compactWorkflow(): Promise<CompactWorkflowResult> {
       phase: '(none)',
     }
   }
-  const r = compactLedger(wf.sub_progress ?? [])
-  if (r.evicted > 0) {
-    const prev = wf.compacted_summary
-    await writeCurrentWorkflow({
-      ...wf,
+  // Cheap pre-check on the unlocked snapshot keeps the documented no-write
+  // contract when nothing is evictable. The actual compaction is recomputed
+  // INSIDE the lock: it used to write `{ ...wf, sub_progress: r.kept }` built from
+  // the snapshot above, so any `checkpoint complete`/`fail` that landed between the
+  // read and the write was erased — compaction rolling back live ledger updates.
+  const probe = compactLedger(wf.sub_progress ?? [])
+  if (probe.evicted === 0) return { ...probe, phase: wf.phase }
+
+  let result: CompactWorkflowResult = { ...probe, phase: wf.phase }
+  await mutateWorkflow((cur) => {
+    const r = compactLedger(cur.sub_progress ?? [])
+    result = { ...r, phase: cur.phase }
+    if (r.evicted === 0) return cur
+    const prev = cur.compacted_summary
+    return {
+      ...cur,
       sub_progress: r.kept,
       compacted_summary: {
         evicted: (prev?.evicted ?? 0) + r.evicted,
         by_status: mergeCounts(prev?.by_status, r.by_status),
         last_at: new Date().toISOString(),
       },
-    })
-  }
-  return { ...r, phase: wf.phase }
+    }
+  })
+  return result
 }

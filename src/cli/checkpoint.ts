@@ -433,11 +433,18 @@ export async function runCheckpointComplete(
   // G1 — recompute scale from the post-mark ledger + working-tree size and
   // record verify_mode on the envelope (advisory; consumed by the verify skill).
   const { collectScaleMetrics, assessScale } = await import('../checkpoint/scale.js')
-  const { readCurrentWorkflow, writeCurrentWorkflow } = await import('../checkpoint/state.js')
+  const { readCurrentWorkflow, mutateWorkflow } = await import('../checkpoint/state.js')
   const afterMark = await readCurrentWorkflow()
   if (afterMark) {
     const metrics = await collectScaleMetrics(process.cwd(), afterMark.sub_progress ?? [])
-    await writeCurrentWorkflow({ ...afterMark, verify_mode: assessScale(metrics) })
+    const verifyMode = assessScale(metrics)
+    // Locked RMW that touches ONLY verify_mode. The metrics are computed outside
+    // the lock (they shell out to git), but the write used to be
+    // `writeCurrentWorkflow({ ...afterMark, verify_mode })` — a whole-record
+    // replace of a snapshot taken before that git work, so a `checkpoint
+    // complete` for a sibling sub landing in between had its ledger mark rolled
+    // back. Parallel subs are a supported shape, so that window is real.
+    await mutateWorkflow((s) => ({ ...s, verify_mode: verifyMode }))
   }
 
   // v5.0 Spec 1 — a master chain has many subs; completing ONE sub must not
@@ -509,9 +516,7 @@ export async function runCheckpointComplete(
       const { incrementPhases, isRetroDue, retroThreshold } = await import(
         '../checkpoint/retroMeta.js'
       )
-      const { mutateStore, readCurrentWorkflow, writeCurrentWorkflow } = await import(
-        '../checkpoint/state.js'
-      )
+      const { mutateStore, mutateWorkflow } = await import('../checkpoint/state.js')
       const { repoKey } = await import('../checkpoint/workflowStore.js')
 
       const ship = defaultShipReady(process.cwd())
@@ -528,16 +533,15 @@ export async function runCheckpointComplete(
         return { ...store, retro_meta: meta }
       })
 
-      // Merge the flags onto the latest envelope (read by the G4 inject twins).
-      const latest = await readCurrentWorkflow()
-      if (latest) {
-        await writeCurrentWorkflow({
-          ...latest,
-          ship_ready: ship.ready,
-          ship_commits: ship.commits,
-          retro_due: retroDue,
-        })
-      }
+      // Merge the flags onto the latest envelope (read by the G4 inject twins) in
+      // ONE locked read-modify-write; a separate read then whole-record write lost
+      // any concurrent ledger update that landed between them.
+      await mutateWorkflow((s) => ({
+        ...s,
+        ship_ready: ship.ready,
+        ship_commits: ship.commits,
+        retro_due: retroDue,
+      }))
     } catch {
       // fail-soft — never let a reminder break the checkpoint
     }
