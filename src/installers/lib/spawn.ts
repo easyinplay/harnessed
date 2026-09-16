@@ -31,6 +31,7 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { homedir } from 'node:os'
 import { checkCmdString } from '../../manifest/security.js'
+import { killProcessTree } from './killTree.js'
 import { evalTestChain } from './nativeTest.js'
 import { resolveBash } from './resolveBash.js'
 import { getNeutralSpawnCwd } from './safeCwd.js'
@@ -232,7 +233,7 @@ export async function spawnCmd(
 
   return await new Promise<SpawnOk | InstallResult>((resolve) => {
     const timer = setTimeout(() => {
-      child.kill('SIGKILL')
+      killProcessTree(child)
       resolve({
         ok: false,
         phase: 'spawn',

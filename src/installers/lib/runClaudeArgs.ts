@@ -14,6 +14,7 @@
 // args remain unparsed. This matches the established cross-OS pattern.
 
 import { spawn } from 'node:child_process'
+import { killProcessTree } from './killTree.js'
 import { planWindowsSpawn, resolveWindowsBin } from './winSpawn.js'
 
 export type HarnessBin = 'claude' | 'codex'
@@ -63,7 +64,7 @@ export function runHarnessArgs(
       stderr += c
     })
     const timer = setTimeout(() => {
-      child.kill('SIGKILL')
+      killProcessTree(child)
       resolve({ exitCode: -1, stdout, stderr: `${stderr}[timeout after ${timeoutMs}ms]` })
     }, timeoutMs)
     child.on('error', (e) => {

@@ -32,6 +32,7 @@ import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { parseGitCloneDest } from './lib/gitCloneArgs.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
+import { killProcessTree } from './lib/killTree.js'
 import {
   auditPostInstall,
   snapshotSkillNames,
@@ -57,7 +58,7 @@ function gitRevParseHead(cwd: string, timeoutMs = 10_000): Promise<{ sha: string
       stdout += c
     })
     const timer = setTimeout(() => {
-      child.kill('SIGKILL')
+      killProcessTree(child)
       resolve({ sha: '', exit: -1 })
     }, timeoutMs)
     child.on('error', () => {
