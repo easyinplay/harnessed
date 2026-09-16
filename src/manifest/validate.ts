@@ -57,6 +57,9 @@ const INSTALL_TYPE_METHODS: Record<string, readonly string[]> = {
   mcp: ['mcp-stdio-add', 'mcp-http-add'],
   git: ['git-clone-with-setup'],
   skill: ['cc-plugin-marketplace', 'npx-skill-installer'],
+  // 5th install_type (Phase 2.4). Missing here meant `install_type: hook` accepted
+  // ANY method: an unconstrained bucket, not a closed one (external review L10).
+  hook: ['cc-hook-add'],
 }
 
 function checkInstallTypeMismatch(manifest: Manifest, filename: string): ValidationError[] {

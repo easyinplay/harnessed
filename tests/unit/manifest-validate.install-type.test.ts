@@ -129,6 +129,15 @@ describe('validateManifestFile — install_type ↔ install.method closure (ADR 
     }
   })
 
+  it('rejects hook ↔ npm-cli (L10: the 5th install_type had no closure row, so ANY method passed)', () => {
+    const result = validateManifestFile(withInstallType('hook'), 'it-closure-hook.yaml')
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      const e = result.errors.find((er) => er.keyword === 'install-type-mismatch')
+      expect(e).toBeDefined()
+    }
+  })
+
   it('rejects skill ↔ npm-cli (install-type-mismatch — skill closure excludes npm-cli)', () => {
     const result = validateManifestFile(withInstallType('skill'), 'it-closure-skill.yaml')
     expect(result.ok).toBe(false)
