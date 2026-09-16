@@ -348,9 +348,11 @@ function findPhaseContextExcerpt(repoRoot, phase, budget) {
   try {
     const phasesDir = join3(repoRoot, '.planning', 'phases')
     if (!existsSync2(phasesDir)) return null
+    const phaseNum = /(\d+(?:\.\d+)?)/.exec(phase)?.[1]
+    if (phaseNum === void 0) return null
     for (const dir of readdirSync2(phasesDir)) {
-      const num = /^(\d+)/.exec(dir)?.[1]
-      if (!num || !phase.includes(num)) continue
+      const num = /^(\d+(?:\.\d+)?)/.exec(dir)?.[1]
+      if (num === void 0 || Number(num) !== Number(phaseNum)) continue
       const ctxFile = join3(phasesDir, dir, `${num}-CONTEXT.md`)
       if (!existsSync2(ctxFile)) continue
       const body = readFileSync3(ctxFile, 'utf8')
