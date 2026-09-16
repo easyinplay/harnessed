@@ -30,6 +30,9 @@ export interface SdkSpawnOpts {
   resumeSessionId?: string
   /** Callback fired when SDK emits system:init with session_id (T4.4 hook). */
   onSessionId?: (id: string) => void
+  /** Wall-clock cap for this one spawn. Defaults to HARNESSED_SPAWN_TIMEOUT_MS or
+   *  DEFAULT_SPAWN_TIMEOUT_MS; 0 disables. */
+  timeoutMs?: number
 }
 
 export class SpawnFailError extends Error {
@@ -37,6 +40,22 @@ export class SpawnFailError extends Error {
     super('sdkSpawn produced no result message')
     this.name = 'SpawnFailError'
   }
+}
+
+/** One hour. A real phase can legitimately run long; the cap exists so a hung
+ *  subagent cannot hang a CI job forever (ralph-loop bounds iterations, not time). */
+export const DEFAULT_SPAWN_TIMEOUT_MS = 60 * 60 * 1000
+
+export class SpawnTimeoutError extends Error {
+  constructor(public timeoutMs: number) {
+    super(`sdkSpawn exceeded its ${timeoutMs}ms wall-clock timeout (HARNESSED_SPAWN_TIMEOUT_MS)`)
+    this.name = 'SpawnTimeoutError'
+  }
+}
+
+function envSpawnTimeoutMs(): number {
+  const raw = Number.parseInt(process.env.HARNESSED_SPAWN_TIMEOUT_MS ?? '', 10)
+  return Number.isFinite(raw) && raw >= 0 ? raw : DEFAULT_SPAWN_TIMEOUT_MS
 }
 
 /** Narrow SDKResultMessage.subtype to the discriminator we care about. */
@@ -51,25 +70,60 @@ export async function sdkSpawn(def: AgentDefinition, opts: SdkSpawnOpts): Promis
   const sdkDef = toSdkAgentDefinition(def) // 14→5 字段 unpack (B-01)
   const injectedPrompt = injectFactoryInternalFields(def, def.initialPrompt ?? def.prompt) // 9-字段 prompt inject
   const queryOptions: Record<string, unknown> = {
-    allowedTools: ['Read', 'Edit', 'Write', 'Grep', 'Glob', 'Bash', 'Task'],
+    // The prompt runs as the MAIN thread of this query, so the def's declared
+    // limits must land on the query options; registering them only on the
+    // `agents` entry (or rendering them into prompt text) enforces nothing.
+    allowedTools: def.tools ?? ['Read', 'Edit', 'Write', 'Grep', 'Glob', 'Bash', 'Task'],
+    ...(def.disallowedTools?.length ? { disallowedTools: def.disallowedTools } : {}),
+    ...(def.maxTurns ? { maxTurns: def.maxTurns } : {}),
+    // bypassPermissions additionally needs allowDangerouslySkipPermissions; a
+    // manifest field must not be able to switch that on, so it is not forwarded.
+    ...(def.permissionMode && def.permissionMode !== 'bypassPermissions'
+      ? { permissionMode: def.permissionMode }
+      : {}),
     agents: { [opts.expertName]: sdkDef },
     // PRIMARY signal (B-02 / B-07 SC3) — structured output via json_schema.
     outputFormat: { type: 'json_schema', schema: COMPLETION_SCHEMA },
   }
   if (opts.resumeSessionId) queryOptions.resume = opts.resumeSessionId
 
+  const timeoutMs = opts.timeoutMs ?? envSpawnTimeoutMs()
+  const abortController = new AbortController()
+  queryOptions.abortController = abortController
+
   // SDK `query()` returns AsyncIterable<SDKMessage>; we consume until result.
   // biome-ignore lint/suspicious/noExplicitAny: SDK options 接口含未导出 union — 用 unknown record + cast。
   const q = query({ prompt: injectedPrompt, options: queryOptions as any })
 
   let result: SDKResultMessage | undefined
-  for await (const msg of q as AsyncIterable<SDKMessage>) {
-    if (msg.type === 'system' && msg.subtype === 'init') {
-      opts.onSessionId?.(msg.session_id)
+  const consume = (async () => {
+    for await (const msg of q as AsyncIterable<SDKMessage>) {
+      if (msg.type === 'system' && msg.subtype === 'init') {
+        opts.onSessionId?.(msg.session_id)
+      }
+      if (msg.type === 'result') {
+        result = msg as SDKResultMessage
+      }
     }
-    if (msg.type === 'result') {
-      result = msg as SDKResultMessage
+  })()
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    if (timeoutMs > 0) {
+      // Race rather than rely on the iterator honouring the abort: a stream that
+      // never yields again would otherwise still hang here.
+      const timedOut = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          abortController.abort()
+          reject(new SpawnTimeoutError(timeoutMs))
+        }, timeoutMs)
+      })
+      consume.catch(() => {}) // its rejection after a timeout is expected, not unhandled
+      await Promise.race([consume, timedOut])
+    } else {
+      await consume
     }
+  } finally {
+    clearTimeout(timer)
   }
   if (!result) throw new SpawnFailError()
 

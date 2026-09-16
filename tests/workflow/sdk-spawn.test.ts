@@ -23,11 +23,14 @@ interface QueryCallCapture {
 const calls: QueryCallCapture[] = []
 type MockMsg = Record<string, unknown> & { type: string; subtype?: string }
 let nextMessages: MockMsg[] = []
+/** When true the mocked stream yields nothing and never ends (a hung subagent). */
+let hangForever = false
 
 vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
   query: (params: { prompt: string; options: Record<string, unknown> }) => {
     calls.push({ prompt: params.prompt, options: params.options })
     return (async function* () {
+      if (hangForever) await new Promise(() => {})
       for (const m of nextMessages) yield m
     })()
   },
@@ -35,7 +38,7 @@ vi.mock('@anthropic-ai/claude-agent-sdk', () => ({
 
 import type { AgentDefinition } from '../../src/workflow/lib/agentDefinition.js'
 // Import AFTER vi.mock so the mocked symbol is picked up.
-import { SpawnFailError, sdkSpawn } from '../../src/workflow/lib/sdkSpawn.js'
+import { SpawnFailError, SpawnTimeoutError, sdkSpawn } from '../../src/workflow/lib/sdkSpawn.js'
 
 // ---- Fixtures -------------------------------------------------------------
 
@@ -59,6 +62,7 @@ const baseDef: AgentDefinition = {
 beforeEach(() => {
   calls.length = 0
   nextMessages = []
+  hangForever = false
 })
 afterEach(() => {
   vi.clearAllMocks()
@@ -234,5 +238,72 @@ describe('sdkSpawn — v3.5.0 Phase 2 escalation envelope round-trip', () => {
     expect(env.structured_output.escalation_reason).toBe(
       'fullstack_three_way: API contract spans 3 roles',
     )
+  })
+})
+
+const DONE: MockMsg = {
+  type: 'result',
+  subtype: 'success',
+  result: '<promise>COMPLETE</promise>',
+  session_id: 's',
+}
+
+// External review M5 — no wall-clock bound: a hung subagent hung the CI job.
+describe('sdkSpawn — wall-clock timeout (M5)', () => {
+  it('a stream that never yields again rejects with SpawnTimeoutError and aborts the query', async () => {
+    hangForever = true
+    await expect(sdkSpawn(baseDef, { expertName: 'e', timeoutMs: 30 })).rejects.toBeInstanceOf(
+      SpawnTimeoutError,
+    )
+    const ac = firstCall().options.abortController as AbortController | undefined
+    expect(ac?.signal.aborted).toBe(true)
+  })
+
+  it('a stream that finishes in time is unaffected', async () => {
+    nextMessages = [DONE]
+    await expect(sdkSpawn(baseDef, { expertName: 'e', timeoutMs: 5_000 })).resolves.toContain(
+      'COMPLETE',
+    )
+    expect((firstCall().options.abortController as AbortController).signal.aborted).toBe(false)
+  })
+})
+
+// External review M6 — declared limits were rendered into prompt text only; the
+// prompt runs as the query's main thread, so nothing enforced them.
+describe('sdkSpawn — declared limits reach the query options (M6)', () => {
+  it('tools / disallowedTools / maxTurns / permissionMode are enforced on the query', async () => {
+    nextMessages = [DONE]
+    await sdkSpawn({ ...baseDef, permissionMode: 'plan' } as AgentDefinition, { expertName: 'e' })
+    const o = firstCall().options
+    expect(o.allowedTools).toEqual(['Read', 'Edit'])
+    expect(o.disallowedTools).toEqual(['Bash'])
+    expect(o.maxTurns).toBe(10)
+    expect(o.permissionMode).toBe('plan')
+  })
+
+  it('bypassPermissions is never forwarded (it would also need allowDangerouslySkipPermissions)', async () => {
+    nextMessages = [DONE]
+    await sdkSpawn({ ...baseDef, permissionMode: 'bypassPermissions' } as AgentDefinition, {
+      expertName: 'e',
+    })
+    const o = firstCall().options
+    expect(o.permissionMode).toBeUndefined()
+    expect(o.allowDangerouslySkipPermissions).toBeUndefined()
+  })
+
+  it('a def with no declared tools keeps the default tool set', async () => {
+    nextMessages = [DONE]
+    const {
+      tools: _t,
+      disallowedTools: _d,
+      maxTurns: _m,
+      permissionMode: _p,
+      ...bare
+    } = baseDef as AgentDefinition & Record<string, unknown>
+    await sdkSpawn(bare as AgentDefinition, { expertName: 'e' })
+    const o = firstCall().options
+    expect(o.allowedTools).toEqual(['Read', 'Edit', 'Write', 'Grep', 'Glob', 'Bash', 'Task'])
+    expect(o.maxTurns).toBeUndefined()
+    expect(o.permissionMode).toBeUndefined()
   })
 })
