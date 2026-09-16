@@ -1,8 +1,9 @@
 ---
 phase: 62
 name: Code Review Report Remediation
-status: in-progress
+status: complete
 created: 2026-09-16
+completed: 2026-09-16
 source: external review report (Qwen workspace, 2026-09-16), 39 findings — 7 high / 16 medium / 16 low
 method: every finding verified against this tree before being called real; a fix
   counts only with a test that fails on the pre-fix code
@@ -12,7 +13,28 @@ method: every finding verified against this tree before being called real; a fix
 
 Verdicts: **REAL** (reproduced / confirmed by reading) · **PARTIAL** (real, but the
 report's framing or fix is wrong in a way that matters) · **NOT REPRODUCED** ·
-**PENDING** (not yet checked).
+**NOT A DEFECT** · **NOT CHANGED** (real, but the fix is a product decision).
+
+## Outcome
+
+- All 39 findings + the report's 2 comment/implementation notes (C1, C2) have a verdict.
+- Fixed with a falsifying test: every REAL / PARTIAL item except the three below.
+- **Not changed — product decisions** (awaiting the maintainer): L11 (delete or wire
+  the unreachable before-commit hook), L16 (tighten user-override keyword matching),
+  M6 residual (default tool set incl. `Bash` for defs that declare no tools).
+- **Not a defect**: C2 second half (`git_ref` is required for cc-plugin-marketplace).
+- **Found beyond the report**: the `.platform` pin was written where
+  `detectPlatform()` never reads it (fixed with L1); `codex plugin list` lists
+  not-installed plugins (fixed with M15); `initialPrompt` dropped the role prompt
+  (fixed with L14).
+- **Open verification**: `manifests/tools/superpowers.yaml` codex override adds
+  `superpowers@openai-curated`; codex-cli 0.154.0 lists that marketplace as
+  `openai-api-curated`. A read-only probe cannot tell: `codex plugin add
+  <nonexistent>@<marketplace>` returns the same "not found in marketplace" error for
+  `openai-curated`, `openai-api-curated` and a made-up name. Only a real
+  `codex plugin add` settles it (it installs the plugin — needs the maintainer's go).
+- Commits: 97e62a7 … 1d80dc9 (batches 7–25 + CI fixes), CI green on 3 OS at 1d80dc9.
+  Not released (4.41.0 is still `latest`).
 
 ## High
 

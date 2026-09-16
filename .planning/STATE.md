@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: (none — v15.0 Upstream Re-sync SHIPPED npm 4.29.0 2026-07-13)
 status: no-active-milestone
-last_updated: "2026-07-13T00:00:00.000Z"
-last_activity: 2026-07-13
+last_updated: "2026-09-16T00:00:00.000Z"
+last_activity: 2026-09-16
 progress:
   total_phases: 0
   completed_phases: 0
@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.29.0** 2026-07-13(v15.0 Upstream Re-sync)。Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
+- **Latest shipped (npm)**: **v4.41.0**(Phase 59-60;`npm dist-tag ls` 核实 2026-09-16)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
@@ -34,8 +34,10 @@ progress:
 - **Phase 51 结案(2026-07-29)**:rust/go 对照实测补齐 —— 三语言三次通用发现均为 ECC 专家的严格超集,B 机器方案确定不回补(TODOS 项 closed)。
 - **Phase 53 竞品情报读取(2026-08-26,4.38.0)**:comet + Trellis 自 06-13 起全部提交过读,五条候选逐条在本仓验证 —— 落地 3(compaction 失效钩子 / 卸载脏 clone 保护 / `checkpoint reopen` verify 回退边)、替代实现 1(注入静音改 env 开关)、查证后否决 2。`docs/comparison.md` 刷新至 08-26 快照。决策链 D1-D7 + 否决理由详 `phases/53-competitor-intel-4.38/CONTEXT.md`。
 - **Phase 54 Declaration/Evaluation Parity — T0-T7 全部完成(2026-08-26 立项 → 2026-09-09 收口,未发版)**:三道关卡全过(office-hours 推翻原「完整 codex 支持」指示 → CEO HOLD_SCOPE 6 findings + outside voice → ENG 3 findings)。交付:21 处 per-phase 迭代上限第一次真的生效(此前全落默认 20)+ `capabilities.yaml` 的 108 条 `fires_when` 改名 `routing_note` 并从 schema 删除(写回即构建期错误)+ `verify/second-opinion` 成为会被求值的编排单元(判据机械派生自「引擎真读的面」∩ 上一个 release tag 以来的 diff)+ 两条长期守护断言(事实供给一致性 / defaults ⇄ 真实 phase)。**四条立项前提在执行中被实测推翻并逐条更正**(112→108 计数、「14 个悬空事实」、T4 断点行、T6 git fixture、T7 DRY),更正均显式记录未静默改写。详 `phases/54-declaration-evaluation-parity/SPEC.md`;决策链详设计文档(gstack projects)。
+- **Phase 55-61(2026-09,4.40.0 / 4.41.0 已发 + 61 未发)**:上游体检闸门 / 插件陈旧可见 / ECC codex 原生路径 / brainstorming 跳过合取 / 幂等回执 / `HARNESSED_OFF` / schema 消费者闸门。详各 `phases/55-…61-…/`。
+- **Phase 62 外部代码审查整改 — 完成(2026-09-16,未发版)**:39 项 + 2 注释项逐条核验,真缺陷全部带反证测试修复,CI 3-OS 绿 @ `1d80dc9`;3 项产品决策待定(L11 / L16 / M6 残余)+ 1 项需真实 `codex plugin add` 验证。详 `phases/62-code-review-remediation/FINDINGS.md`。
 - **~~Next milestone:codex 完整支持 + 扩平台~~ —— 2026-08-26 office-hours 否决**:维护者只把 codex 当第二意见/单次任务,「在 codex 里跑完整编排」的价值前提不成立。codex hook 枚举是 CC 严格超集(实测)属「能不能」非「该不该」。蓝图存于设计文档,触发条件见 OQ1。
-- **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
+- **Next(等用户信号)**:Phase 61-62 发版(需确认)· Phase 62 三项产品决策 · E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
 ## Accumulated Context
