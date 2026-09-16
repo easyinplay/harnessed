@@ -24,7 +24,7 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, isAbsolute, join, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { captureRunDeps, ExitError } from '../platform/runDeps.js'
 import { diffGolden, loadGolden, normalizeGolden, writeGolden } from './golden.js'
@@ -133,6 +133,12 @@ async function execStep(
 ): Promise<StepRecord> {
   if ('file' in step) {
     const target = resolve(repoDir, step.file.path)
+    // A file step seeds the scenario's temp repo; `../x` or an absolute path would
+    // write outside it, into the developer's machine (external review L15).
+    const rel = relative(repoDir, target)
+    if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
+      throw new Error(`file step path escapes the scenario repo: ${step.file.path}`)
+    }
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, step.file.content ?? '', 'utf8')
     if (step.file.mtime) {
@@ -246,22 +252,24 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
   // GIT_CEILING_DIRECTORIES stops the upward walk at the tmp root, making the
   // outcome deterministic everywhere: not-a-repo → fail-soft {ready:false}.
   const prevCeiling = process.env.GIT_CEILING_DIRECTORIES
-  process.env.GIT_CEILING_DIRECTORIES = tmpdir()
-  process.env.HARNESSED_ROOT_OVERRIDE = stateRoot
-  if (scenario.assets_dir) {
-    process.env.HARNESSED_ASSETS_OVERRIDE = isAbsolute(scenario.assets_dir)
-      ? scenario.assets_dir
-      : resolve(dir, scenario.assets_dir)
-  }
-  process.chdir(repoDir)
-  const { _clearJudgmentCache } = await import('../workflow/judgmentResolver.js')
-  _clearJudgmentCache()
 
   const steps: StepRecord[] = []
   const evaluatedGateRefs = new Set<string>()
   let engineError: Error | null = null
   let workflow: unknown = null
+  // Every process-global mutation happens INSIDE the try, so the finally below
+  // always restores cwd + env (they used to precede it: a throw there leaked the
+  // overrides into every later scenario and the caller) (external review L15).
   try {
+    process.env.GIT_CEILING_DIRECTORIES = tmpdir()
+    process.env.HARNESSED_ROOT_OVERRIDE = stateRoot
+    if (scenario.assets_dir) {
+      process.env.HARNESSED_ASSETS_OVERRIDE = isAbsolute(scenario.assets_dir)
+        ? scenario.assets_dir
+        : resolve(dir, scenario.assets_dir)
+    }
+    process.chdir(repoDir)
+    ;(await import('../workflow/judgmentResolver.js'))._clearJudgmentCache()
     for (const step of scenario.steps) {
       const rec = await execStep(scenario, step, repoDir)
       steps.push(rec)
@@ -291,7 +299,11 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
     else process.env.HARNESSED_ASSETS_OVERRIDE = prevAssets
     if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES
     else process.env.GIT_CEILING_DIRECTORIES = prevCeiling
-    _clearJudgmentCache()
+    try {
+      ;(await import('../workflow/judgmentResolver.js'))._clearJudgmentCache()
+    } catch {
+      // best-effort
+    }
   }
 
   const cleanup = (): void => {
