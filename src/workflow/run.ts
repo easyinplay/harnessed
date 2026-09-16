@@ -513,8 +513,25 @@ export async function runWorkflow(
   }
 
   const skippedPhases: string[] = []
-  // v3 sub/standalone phases Optional → 守护 fallback;v1/v2 必有 phases (loadPhases validate)。
-  const phases = parsed.phases ?? []
+  // The invariant schema/workflow.ts documents — "every parsed yaml must have
+  // phases[] OR delegates_to[]; the engine asserts in runWorkflow; BOTH absent →
+  // fail-fast" — was never asserted. `phases ?? []` ran zero iterations and
+  // returned {status:'complete', phasesRun:0}, so a misconfigured workflow went
+  // GREEN in CI. Two shapes reach here with nothing to run: no phases at all, and
+  // a yaml that carries delegates_to under a name that is not a master (so its
+  // delegates are ignored). Both are configuration errors, not empty successes.
+  if (!Array.isArray(parsed.phases) || parsed.phases.length === 0) {
+    const hasDelegates =
+      'delegates_to' in parsed &&
+      Array.isArray(parsed.delegates_to) &&
+      parsed.delegates_to.length > 0
+    throw new Error(
+      hasDelegates
+        ? `workflow '${workflowName}' declares delegates_to but is not a master workflow (${MASTER_NAMES.join(', ')}), and has no phases — its delegates would be ignored`
+        : `workflow '${workflowName}' has neither phases nor delegates_to — nothing would run`,
+    )
+  }
+  const phases = parsed.phases
   for (let i = 0; i < phases.length; i++) {
     const ph = phases[i]
     if (!ph) continue

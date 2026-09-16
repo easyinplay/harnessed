@@ -36,7 +36,8 @@ report's framing or fix is wrong in a way that matters) · **NOT REPRODUCED** ·
 | M9 | `prompt <sub>` joins without a traversal guard | **REAL** — `harnessed run` has had the guard since R10.4 | `checkSafeSegment(sub)`, exit 2; falsified |
 | M10 | `rollback <timestamp>` joins without a guard | **REAL, and the existing guard would NOT have caught it** — `checkPathSafe` blocks `../` and `..\` but not a bare `..`, which is all a single segment needs (`rollback ..` → parent of the backup root → a foreign metadata.json whose `files[].target` rollback then writes/unlinks) | new `checkSafeSegment` (non-empty, not `.`/`..`, no separators, plus every checkPathSafe vector); falsified |
 | M11 | `manifest-add --category/--name` joins into a written path | **REAL** | `checkSafeSegment` on both, before any prompt or write; falsified |
-| M2–M7, M12–M15 | | PENDING | |
+| M4 | `runWorkflow` lacks the documented phases-or-delegates fail-fast | **REAL, plus a second shape** — also a yaml carrying `delegates_to` under a NON-master name falls through to the phases path and "completes" with its delegates silently ignored | assert after the master check: no/empty phases → throw, naming which case; falsified (3 cells) |
+| M2, M3, M5–M7, M12–M15 | | PENDING | |
 
 ## Low
 

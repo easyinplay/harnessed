@@ -700,3 +700,35 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     }
   })
 })
+
+// schema/workflow.ts documents a runtime invariant — every parsed yaml has
+// phases[] OR delegates_to[], "the engine asserts in runWorkflow; BOTH absent →
+// fail-fast" — that runWorkflow never asserted. `phases ?? []` looped zero times
+// and returned {status:'complete', phasesRun:0}, so a misconfigured workflow
+// passed green in CI.
+describe('runWorkflow — nothing-to-run is a configuration error, not an empty success', () => {
+  it('neither phases nor delegates_to → throws', async () => {
+    loadPhasesMock.mockReturnValue({ schemaVersion: 3, workflow: 'orphan-sub' })
+    await expect(runWorkflow('workflows/orphan/workflow.yaml', {})).rejects.toThrow(
+      /neither phases nor delegates_to/,
+    )
+  })
+
+  it('empty phases[] → throws', async () => {
+    loadPhasesMock.mockReturnValue({ schemaVersion: 3, workflow: 'orphan-sub', phases: [] })
+    await expect(runWorkflow('workflows/orphan/workflow.yaml', {})).rejects.toThrow(
+      /neither phases nor delegates_to/,
+    )
+  })
+
+  it('delegates_to under a NON-master name (delegates silently ignored) → throws', async () => {
+    loadPhasesMock.mockReturnValue({
+      schemaVersion: 3,
+      workflow: 'not-a-master',
+      delegates_to: [{ sub: 'x', mode: 'serial', order: 1 }],
+    })
+    await expect(runWorkflow('workflows/orphan/workflow.yaml', {})).rejects.toThrow(
+      /not a master workflow/,
+    )
+  })
+})
