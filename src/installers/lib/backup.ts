@@ -42,6 +42,16 @@ export interface BackupFileEntry {
   backup: string // absolute path of backup copy
   sha1: string // sha1 of original content
   eol: 'lf' | 'crlf' // ASSUMPTIONS C3 — preserve original line ending
+  /** Set only on sentinel entries (`backup === ''`), because rollback cannot tell
+   *  the two cases apart after the fact and they need OPPOSITE handling:
+   *   - 'created'         — target did not exist before install; removing it
+   *                         (recursively: git-clone targets are directories)
+   *                         restores the pre-install state.
+   *   - 'preexisting-dir' — target was an existing directory (force-update over
+   *                         a skill dir). No byte backup was possible, so rollback
+   *                         must LEAVE it — deleting would destroy user data.
+   *  Absent on metadata written before this field existed. */
+  sentinel?: 'created' | 'preexisting-dir'
 }
 
 export interface BackupMetadata {
@@ -116,9 +126,10 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
       if (code === 'ENOENT' && file.oldText === '') {
         entries.push({
           target: file.target,
-          backup: '', // sentinel: no backup written; rollback should unlink target
+          backup: '', // sentinel: no backup written; rollback removes the target
           sha1: '',
           eol: 'lf', // moot for non-existent file; default to lf
+          sentinel: 'created',
         })
         continue
       }
@@ -128,7 +139,13 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
       // "illegal operation on a directory, read". (git-clone-with-setup is pure-create;
       // directory rollback is out of scope by its own contract.)
       if (code === 'EISDIR') {
-        entries.push({ target: file.target, backup: '', sha1: '', eol: 'lf' })
+        entries.push({
+          target: file.target,
+          backup: '',
+          sha1: '',
+          eol: 'lf',
+          sentinel: 'preexisting-dir',
+        })
         continue
       }
       return {

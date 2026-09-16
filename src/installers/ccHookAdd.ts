@@ -18,6 +18,7 @@
 
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { checkCmdString } from '../manifest/security.js'
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getSettingsPath } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
@@ -86,10 +87,46 @@ export const installCcHookAdd: Installer = async (ctx) => {
       ),
     }
   }
+  // `JSON.parse` succeeds on `null`, a number, a string or an array — all valid
+  // JSON, none a settings object. settings.json is a hand-editable shared file, and
+  // `settings.hooks = …` on `null` threw an uncaught TypeError that nothing above
+  // this installer catches, aborting the whole setup run. Route non-objects to the
+  // same structured error as unparseable JSON (sister guard: hookEntry.ts).
+  if (settings === null || typeof settings !== 'object' || Array.isArray(settings)) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: err(
+        ctx,
+        '/',
+        `malformed settings.json: top-level value must be a JSON object, got ${
+          settings === null ? 'null' : Array.isArray(settings) ? 'array' : typeof settings
+        }`,
+        'settings-json-malformed',
+      ),
+    }
+  }
   settings.hooks = settings.hooks ?? {}
   const ev = install.hook_event
   const matcher = install.hook_matcher
   const cmd = install.hook_command
+  // Defense in depth: validate() now screens hook_command, but a manifest can reach
+  // an installer without passing through it, and this string is persisted into
+  // settings.json and executed by Claude Code on every matching event. Sister
+  // re-screen: the H2 arg check in ccPluginMarketplace / mcpStdioAdd.
+  const cmdViolation = checkCmdString(cmd)
+  if (cmdViolation) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: err(
+        ctx,
+        '/spec/install/hook_command',
+        `shell escape detected in hook_command: ${cmdViolation.label} (${cmdViolation.hint})`,
+        'security-gate-bypass',
+      ),
+    }
+  }
   // v4.20.0 — authoritative command resolution + CC-schema entry shape + self-heal.
   // 4.27.0 (B3 T1 / D6) — compiled binaries register `"<binary>" inject-state`
   // (the hook calls the binary itself; no host node needed).

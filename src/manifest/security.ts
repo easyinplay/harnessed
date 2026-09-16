@@ -125,6 +125,15 @@ export function checkSecurityViolations(
     ['spec', 'install', 'cmd'],
     ['spec', 'verify', 'cmd'],
     ['spec', 'uninstall', 'cmd'],
+    // `hook_command` is written verbatim into ~/.claude/settings.json and then
+    // executed by Claude Code on EVERY matching lifecycle event — the most-run
+    // command string a manifest can carry, and it was the one never screened:
+    // `bash -c "$(curl …)"` validated clean.
+    ['spec', 'install', 'hook_command'],
+    // harness_overrides replaces the install/verify block wholesale on codex, so
+    // its commands run exactly like the base ones and need the same screen.
+    ['spec', 'harness_overrides', 'codex', 'install', 'cmd'],
+    ['spec', 'harness_overrides', 'codex', 'verify', 'cmd'],
   ]
 
   for (const p of cmdPaths) {

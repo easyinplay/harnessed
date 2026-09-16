@@ -21,10 +21,10 @@ report's framing or fix is wrong in a way that matters) · **NOT REPRODUCED** ·
 | H1 | `checkpoint reopen` writes a stale snapshot back, undoing itself | **REAL** — on exactly the `status==='complete'` path reopen exists for | `mutateWorkflow` single-lock RMW; reopen + status flip in one write | yes: old code under a faithful whole-replace mock → `Expected "pending" / Received "done"` |
 | H2 | Windows `npm.cmd` spawned shell-less → EINVAL → `update` silently broken | **REAL** — reproduced on Node 24.19.0 (`spawn EINVAL`; with shell → `11.17.0`) | Windows path runs the fixed string `npm view harnessed version` through `exec` (no injection surface, no DEP0190) | dogfood: doctor update check now reports `up to date (4.41.0)` |
 | H3 | eval `--filter` pre-filter has an empty body → `--update-golden` rewrites every golden | **PARTIAL** — bug real; the report's fix (bare `continue` on dir name) would drop scenarios matched only by NAME, which lives inside the yaml | read the scenario name before running; skip only when neither dir nor name matches | yes: old runner overwrites a sentinel golden in a scenario outside the filter |
-| H4 | rollback `unlink`s a directory for git-clone installs | REAL (read) | PENDING | — |
-| H5 | `ccHookAdd` crashes on `settings.json` containing `null` | REAL (read) | PENDING | — |
+| H4 | rollback `unlink`s a directory for git-clone installs | **REAL** — clone target is a dir; ENOENT and EISDIR both recorded `backup:''`; rollback single-file `unlink` → EPERM/EISDIR → exit 1. The report's "deletes user data" does NOT happen today (unlink cannot remove a dir) — but a naive `rm -rf` fix would make it happen | backup records `sentinel: 'created' \| 'preexisting-dir'`; rollback removes `created` recursively, LEAVES `preexisting-dir`, and never deletes a directory from legacy metadata on a guess | yes: 3 cells fail on the old code, with `unlink` made to reject on a directory the way the real one does |
+| H5 | `ccHookAdd` crashes on `settings.json` containing `null` | **REAL** — also a number, string, array (all valid JSON) | non-object top level → `settings-json-malformed` structured error, file untouched | yes: old code `TypeError: Cannot read properties of null (reading 'hooks')` |
 | H6 | Windows `cmd.exe /c` arg re-parsing; `& \| < > ^` not screened | REAL (read) | PENDING | — |
-| H7 | security gate skips `hook_command` and `harness_overrides.*.cmd` | REAL (read) | PENDING | — |
+| H7 | security gate skips `hook_command` and `harness_overrides.*.cmd` | **REAL** | 3 paths added to `cmdPaths`; `ccHookAdd` re-screens `hook_command` at runtime (defense in depth) | yes: 5 malicious cases pass the old gate |
 
 ## Medium
 

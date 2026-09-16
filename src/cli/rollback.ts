@@ -10,11 +10,13 @@
 //
 // IMPL NOTE (Rule 1 / ENOENT pure-create sentinel): backup() records files
 // that did not yet exist (oldText === '' + ENOENT) as `{ backup: '', sha1: '' }`.
-// On rollback this means "delete the target file" rather than "restore". We
-// honor that sentinel by calling unlink() instead of writeFile().
+// On rollback that used to mean a single-file unlink(), which cannot remove a
+// directory — every git-clone rollback failed. Entries now carry `sentinel`
+// ('created' → remove recursively; 'preexisting-dir' → leave in place), and
+// legacy metadata without it never deletes a directory on a guess.
 
 import { createHash } from 'node:crypto'
-import { readFile, unlink, writeFile } from 'node:fs/promises'
+import { readFile, rm, stat, unlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
@@ -25,6 +27,8 @@ interface BackupFileEntry {
   backup: string
   sha1: string
   eol: 'lf' | 'crlf'
+  /** Mirror of lib/backup.ts — 'created' vs 'preexisting-dir'; absent on old metadata. */
+  sentinel?: 'created' | 'preexisting-dir'
 }
 interface BackupMetadata {
   installer: string
@@ -62,11 +66,46 @@ export function registerRollback(program: Command): void {
       // Reverse order so files restored later (higher in dependency chain) come first.
       const ordered = [...meta.files].reverse()
       const planned: Array<
-        { target: string; action: 'unlink' } | { target: string; action: 'write'; data: Buffer }
+        | { target: string; action: 'unlink' }
+        | { target: string; action: 'remove-created' }
+        | { target: string; action: 'keep'; why: string }
+        | { target: string; action: 'write'; data: Buffer }
       > = []
       for (const entry of ordered) {
         if (entry.backup === '') {
-          planned.push({ target: entry.target, action: 'unlink' })
+          // A sentinel entry means "no bytes were backed up". What that asks of
+          // rollback depends on WHY, and the two answers are opposites. Before
+          // `sentinel` was recorded every such entry got a single-file unlink(),
+          // which on a git-clone target (a directory) failed with EPERM/EISDIR
+          // and exited 1 — so rolling back any git-clone install always failed.
+          if (entry.sentinel === 'created') {
+            planned.push({ target: entry.target, action: 'remove-created' })
+          } else if (entry.sentinel === 'preexisting-dir') {
+            planned.push({
+              target: entry.target,
+              action: 'keep',
+              why: 'existed before install and could not be byte-backed-up; left untouched',
+            })
+          } else {
+            // Legacy metadata: no way to know whether a DIRECTORY here was created
+            // by the install or was already the user's. Deleting on a guess could
+            // destroy data, so directories are kept; files keep the old unlink.
+            let isDir = false
+            try {
+              isDir = (await stat(entry.target)).isDirectory()
+            } catch {
+              // missing → nothing to remove either way
+            }
+            planned.push(
+              isDir
+                ? {
+                    target: entry.target,
+                    action: 'keep',
+                    why: 'directory from pre-sentinel backup metadata; origin unknown, not deleting',
+                  }
+                : { target: entry.target, action: 'unlink' },
+            )
+          }
           continue
         }
         let buf: Buffer
@@ -93,6 +132,16 @@ export function registerRollback(program: Command): void {
       }
       // Pass 2 — all verified; apply.
       for (const op of planned) {
+        if (op.action === 'keep') {
+          console.warn(`[harnessed] rollback: ${op.target} — ${op.why}`)
+          continue
+        }
+        if (op.action === 'remove-created') {
+          // Did not exist before install, so removing it (file or cloned dir) is
+          // the restore. force:true — already gone is the same end state.
+          await rm(op.target, { recursive: true, force: true })
+          continue
+        }
         if (op.action === 'unlink') {
           try {
             await unlink(op.target)

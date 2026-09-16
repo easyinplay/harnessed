@@ -190,6 +190,35 @@ describe('cc-hook-add installer', () => {
     }
   })
 
+  // settings.json is hand-editable and shared. `null`, a bare number/string and an
+  // array are all valid JSON, so JSON.parse accepted them and `settings.hooks = …`
+  // then threw an UNCAUGHT TypeError — nothing above this installer catches, so a
+  // single stray `null` aborted the entire setup run instead of reporting a
+  // structured error. The file must also be left exactly as the user wrote it.
+  it.each([
+    ['null', 'null'],
+    ['a number', '42'],
+    ['a string', '"hooks"'],
+    ['an array', '[]'],
+  ])('install — settings.json containing %s → structured error, no throw, file untouched', async (_label, raw) => {
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    fakeFs[SETTINGS_PATH] = raw
+    const cap = captureStdout()
+    try {
+      const r = await installCcHookAdd({
+        manifest: ccHookManifest(),
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect('ok' in r && r.ok === false).toBe(true)
+      expect(JSON.stringify(r)).toContain('settings-json-malformed')
+      expect(fakeFs[SETTINGS_PATH]).toBe(raw)
+    } finally {
+      cap.restore()
+    }
+  })
+
   it('install — idempotent on the exact corrected entry → ok + appliedFiles=[]', async () => {
     for (const k of Object.keys(fakeFs)) delete fakeFs[k]
     fakeFs[SETTINGS_PATH] = JSON.stringify(

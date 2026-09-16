@@ -17,15 +17,19 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
   writeFile: vi.fn(),
   unlink: vi.fn(),
+  rm: vi.fn(),
+  stat: vi.fn(),
 }))
 
-import { readFile, unlink, writeFile } from 'node:fs/promises'
+import { readFile, rm, stat, unlink, writeFile } from 'node:fs/promises'
 import { Command } from 'commander'
 import { registerRollback } from '../../src/cli/rollback.js'
 
 const readFileMock = vi.mocked(readFile)
 const writeFileMock = vi.mocked(writeFile)
 const unlinkMock = vi.mocked(unlink)
+const rmMock = vi.mocked(rm)
+const statMock = vi.mocked(stat)
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -59,6 +63,8 @@ describe('cli/rollback', () => {
     readFileMock.mockReset()
     writeFileMock.mockReset()
     unlinkMock.mockReset()
+    rmMock.mockReset()
+    statMock.mockReset()
   })
 
   it('registers `rollback` subcommand', () => {
@@ -147,5 +153,62 @@ describe('cli/rollback', () => {
     expect(code).toBe(0)
     expect(unlinkMock).toHaveBeenCalledTimes(1)
     expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  // git-clone-with-setup's DiffPlan target is the clone DIRECTORY. Every sentinel
+  // entry used to get a single-file unlink(), which on a directory fails (EPERM on
+  // Windows, EISDIR on POSIX) — so rolling back any git-clone install exited 1.
+  // unlink is made to reject the way the real one does on a directory; a mock that
+  // happily "unlinks" a directory would hide the bug.
+  const metaWith = (sentinel: 'created' | 'preexisting-dir' | undefined, target: string) => ({
+    installer: 'gstack',
+    manifest: 'gstack',
+    timestamp: '2026-05-12T00-00-00.000Z',
+    files: [
+      { target, backup: '', sha1: '', eol: 'lf' as const, ...(sentinel ? { sentinel } : {}) },
+    ],
+  })
+  const dirUnlinkFails = () => {
+    const e = new Error('EPERM: operation not permitted, unlink') as NodeJS.ErrnoException
+    e.code = 'EPERM'
+    unlinkMock.mockRejectedValue(e)
+  }
+
+  it("sentinel 'created' on a cloned directory → removed recursively, exit 0", async () => {
+    readFileMock.mockResolvedValue(
+      JSON.stringify(metaWith('created', '/home/u/.claude/skills/gstack')),
+    )
+    dirUnlinkFails()
+    rmMock.mockResolvedValue(undefined)
+    const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+    expect(code).toBe(0)
+    expect(rmMock).toHaveBeenCalledWith('/home/u/.claude/skills/gstack', {
+      recursive: true,
+      force: true,
+    })
+    expect(unlinkMock).not.toHaveBeenCalled()
+  })
+
+  it("sentinel 'preexisting-dir' → left untouched (no byte backup; deleting would destroy user data)", async () => {
+    readFileMock.mockResolvedValue(
+      JSON.stringify(metaWith('preexisting-dir', '/home/u/.claude/skills/gstack')),
+    )
+    const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+    expect(code).toBe(0)
+    expect(rmMock).not.toHaveBeenCalled()
+    expect(unlinkMock).not.toHaveBeenCalled()
+  })
+
+  it('legacy metadata (no sentinel) on a directory → kept, never deleted on a guess', async () => {
+    readFileMock.mockResolvedValue(
+      JSON.stringify(metaWith(undefined, '/home/u/.claude/skills/gstack')),
+    )
+    // biome-ignore lint/suspicious/noExplicitAny: minimal Stats double
+    statMock.mockResolvedValue({ isDirectory: () => true } as any)
+    dirUnlinkFails()
+    const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+    expect(code).toBe(0)
+    expect(rmMock).not.toHaveBeenCalled()
+    expect(unlinkMock).not.toHaveBeenCalled()
   })
 })
