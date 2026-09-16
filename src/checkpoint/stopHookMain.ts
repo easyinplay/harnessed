@@ -20,18 +20,16 @@
 
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { isAblated } from '../platform/ablation.js'
+import { hookStateRoot } from './hookStateRoot.js'
 import { type ContentBlock, detectModeB } from './modeBDetect.js'
 
 const MAX_RETRIES = 2
 
+/** Same resolution as the CLI (see hookStateRoot.ts). */
 function stateRoot(): string {
-  const override = process.env.HARNESSED_ROOT_OVERRIDE
-  return override !== undefined && override !== ''
-    ? override
-    : join(homedir(), '.claude', 'harnessed')
+  return hookStateRoot()
 }
 
 /** The signature of the corrupted message (its joined text), for the retry cap. */

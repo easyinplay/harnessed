@@ -22,13 +22,13 @@
 // the bundle pulls nothing heavy and the per-prompt path stays fast. Fail-soft:
 // ANY error injects nothing (a hook must never block the prompt).
 //
-// Root: HARNESSED_ROOT_OVERRIDE if set, else <homedir>/.claude/harnessed.
+// Root: hookStateRoot() (detectPlatform precedence, dependency-free).
 
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
-import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { isAblated } from '../platform/ablation.js'
+import { hookStateRoot } from './hookStateRoot.js'
 import {
   decidePcEmission,
   injectCacheKey,
@@ -53,15 +53,12 @@ function repoKey(cwd: string): string {
   return resolve(cwd)
 }
 
-/** Dep-free replica of the harness state root (the real getHarnessedRoot routes
- *  through detectPlatform().stateRoot). HARNESSED_ROOT_OVERRIDE else the claude
- *  default `<homedir>/.claude/harnessed` — byte-equivalent for this hot path (the
- *  .platform pin / auto-probe is orthogonal, already surfaced via the override). */
+/** The harness state root, resolved with detectPlatform()'s full precedence
+ *  (override, HARNESSED_PLATFORM, `.platform` pin, auto-probe) — see
+ *  hookStateRoot.ts. The previous "override else ~/.claude/harnessed" diverged
+ *  from the CLI under a codex pin and silently injected nothing. */
 function harnessedRoot(): string {
-  const override = process.env.HARNESSED_ROOT_OVERRIDE
-  return override !== undefined && override !== ''
-    ? override
-    : join(homedir(), '.claude', 'harnessed')
+  return hookStateRoot()
 }
 
 /** Phase 35 — mirror PlatformDescriptor.sessionIdEnv for the hot path: which env

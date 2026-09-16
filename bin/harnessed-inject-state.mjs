@@ -5,19 +5,49 @@
 
 // src/checkpoint/injectStateMain.ts
 import { createHash as createHash2 } from "node:crypto";
-import { existsSync as existsSync3, readFileSync as readFileSync4, statSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { dirname, join as join4, resolve } from 'node:path'
+import { existsSync as existsSync4, readFileSync as readFileSync5, statSync } from 'node:fs'
+import { dirname, join as join5, resolve } from 'node:path'
 
 // src/platform/ablation.ts
 function isAblated(env = process.env) {
   return env.HARNESSED_OFF === '1'
 }
 
+// src/checkpoint/hookStateRoot.ts
+import { existsSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+function hookStateRoot(home = homedir()) {
+  const override = process.env.HARNESSED_ROOT_OVERRIDE
+  if (override !== void 0 && override !== '') return override
+  const claudeHome = join(home, '.claude')
+  const codexHome = join(home, '.codex')
+  const rootOf = (id) =>
+    id === 'claude'
+      ? join(claudeHome, 'harnessed')
+      : id === 'codex'
+        ? join(codexHome, 'harnessed')
+        : null
+  const env = process.env.HARNESSED_PLATFORM
+  if (env !== void 0 && env !== '') {
+    const r = rootOf(env)
+    if (r) return r
+  }
+  try {
+    const r = rootOf(readFileSync(join(claudeHome, 'harnessed', '.platform'), 'utf8').trim())
+    if (r) return r
+  } catch {}
+  try {
+    if (existsSync(claudeHome)) return join(claudeHome, 'harnessed')
+    if (existsSync(codexHome)) return join(codexHome, 'harnessed')
+  } catch {}
+  return join(claudeHome, 'harnessed')
+}
+
 // src/checkpoint/injectCache.ts
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { mkdirSync, readFileSync as readFileSync2, rmSync, writeFileSync } from 'node:fs'
+import { join as join2 } from 'node:path'
 var DEFAULT_REFRESH_TURNS = 10
 function decidePcEmission(cache, pcHash, refreshN, nowMs) {
   if (cache && cache.pcHash === pcHash && cache.turns < refreshN) {
@@ -33,11 +63,11 @@ function injectCacheKey(repoKey2, sid) {
   return createHash('sha256').update(`${repoKey2}::${sid}`).digest('hex').slice(0, 16)
 }
 function cacheFile(root, key) {
-  return join(root, 'inject-cache', `${key}.json`)
+  return join2(root, 'inject-cache', `${key}.json`)
 }
 function readInjectCache(root, key) {
   try {
-    const parsed = JSON.parse(readFileSync(cacheFile(root, key), 'utf8'))
+    const parsed = JSON.parse(readFileSync2(cacheFile(root, key), 'utf8'))
     if (parsed && typeof parsed === 'object') {
       const e = parsed
       if (typeof e.pcHash === 'string' && typeof e.ts === 'number' && typeof e.turns === 'number') {
@@ -49,7 +79,7 @@ function readInjectCache(root, key) {
 }
 function writeInjectCache(root, key, entry) {
   try {
-    mkdirSync(join(root, 'inject-cache'), { recursive: true })
+    mkdirSync(join2(root, 'inject-cache'), { recursive: true })
     writeFileSync(
       cacheFile(root, key),
       `${JSON.stringify(entry)}
@@ -63,7 +93,7 @@ function writeInjectCache(root, key, entry) {
 }
 function invalidateInjectCache(root) {
   try {
-    rmSync(join(root, 'inject-cache'), { recursive: true, force: true })
+    rmSync(join2(root, 'inject-cache'), { recursive: true, force: true })
     return true
   } catch {
     return false
@@ -72,11 +102,11 @@ function invalidateInjectCache(root) {
 
 // src/checkpoint/injectState.ts
 import {
-  existsSync as existsSync2,
+  existsSync as existsSync3,
   readdirSync as readdirSync2,
-  readFileSync as readFileSync3,
+  readFileSync as readFileSync4,
 } from 'node:fs'
-import { join as join3 } from 'node:path'
+import { join as join4 } from 'node:path'
 
 // src/checkpoint/breakLoop.ts
 var LOOP_THRESHOLD = 3
@@ -129,8 +159,8 @@ function describeUnit(unit) {
 }
 
 // src/checkpoint/planningScan.ts
-import { existsSync, readdirSync, readFileSync as readFileSync2 } from 'node:fs'
-import { join as join2 } from 'node:path'
+import { existsSync as existsSync2, readdirSync, readFileSync as readFileSync3 } from 'node:fs'
+import { join as join3 } from 'node:path'
 var PHASE_DIR = /^(\d+(?:\.\d+)?)-(.*)$/
 function scanPlanning(opts = {}) {
   const repoRoot = opts.repoRoot ?? process.cwd()
@@ -143,14 +173,14 @@ function scanPlanning(opts = {}) {
 }
 function scanPhases(repoRoot, includeTasks) {
   try {
-    const phasesDir = join2(repoRoot, '.planning', 'phases')
-    if (!existsSync(phasesDir)) return []
+    const phasesDir = join3(repoRoot, '.planning', 'phases')
+    if (!existsSync2(phasesDir)) return []
     const out = []
     for (const dir of readdirSync(phasesDir)) {
       const m = PHASE_DIR.exec(dir)
       const num = m?.[1]
       if (!num) continue
-      const dirPath = join2(phasesDir, dir)
+      const dirPath = join3(phasesDir, dir)
       let entries
       try {
         entries = readdirSync(dirPath)
@@ -186,9 +216,9 @@ function scanPhases(repoRoot, includeTasks) {
 function scanTasks(dirPath) {
   for (const fname of ['task_plan.md', 'progress.md']) {
     try {
-      const p = join2(dirPath, fname)
-      if (!existsSync(p)) continue
-      const m = /^[ \t]*- \[ \]\s+(.+)$/m.exec(readFileSync2(p, 'utf8'))
+      const p = join3(dirPath, fname)
+      if (!existsSync2(p)) continue
+      const m = /^[ \t]*- \[ \]\s+(.+)$/m.exec(readFileSync3(p, 'utf8'))
       const task = m?.[1]
       if (task) return { nextUnchecked: task.trim() }
     } catch {}
@@ -346,16 +376,16 @@ function buildProjectContextBlock(input) {
 }
 function findPhaseContextExcerpt(repoRoot, phase, budget) {
   try {
-    const phasesDir = join3(repoRoot, '.planning', 'phases')
-    if (!existsSync2(phasesDir)) return null
+    const phasesDir = join4(repoRoot, '.planning', 'phases')
+    if (!existsSync3(phasesDir)) return null
     const phaseNum = /(\d+(?:\.\d+)?)/.exec(phase)?.[1]
     if (phaseNum === void 0) return null
     for (const dir of readdirSync2(phasesDir)) {
       const num = /^(\d+(?:\.\d+)?)/.exec(dir)?.[1]
       if (num === void 0 || Number(num) !== Number(phaseNum)) continue
-      const ctxFile = join3(phasesDir, dir, `${num}-CONTEXT.md`)
-      if (!existsSync2(ctxFile)) continue
-      const body = readFileSync3(ctxFile, 'utf8')
+      const ctxFile = join4(phasesDir, dir, `${num}-CONTEXT.md`)
+      if (!existsSync3(ctxFile)) continue
+      const body = readFileSync4(ctxFile, 'utf8')
       const goalIdx = body.indexOf('## Goal')
       const slice = goalIdx >= 0 ? body.slice(goalIdx) : body
       const next = slice.indexOf('\n## ', 1)
@@ -408,7 +438,7 @@ function forwardPointer(repoRoot, wf) {
 function repoKey(cwd) {
   let dir = resolve(cwd)
   for (;;) {
-    if (existsSync3(join4(dir, '.git'))) return dir
+    if (existsSync4(join5(dir, '.git'))) return dir
     const parent = dirname(dir)
     if (parent === dir) break
     dir = parent
@@ -416,10 +446,7 @@ function repoKey(cwd) {
   return resolve(cwd)
 }
 function harnessedRoot() {
-  const override = process.env.HARNESSED_ROOT_OVERRIDE
-  return override !== void 0 && override !== ''
-    ? override
-    : join4(homedir(), '.claude', 'harnessed')
+  return hookStateRoot()
 }
 function sessionIdEnvName() {
   const platform = (process.env.HARNESSED_PLATFORM || 'claude').trim()
@@ -438,8 +465,8 @@ function readWorkflow(root, keys) {
     }
   }
   try {
-    const storePath = join4(root, 'workflows.json')
-    const store = JSON.parse(readFileSync4(storePath, 'utf8'))
+    const storePath = join5(root, 'workflows.json')
+    const store = JSON.parse(readFileSync5(storePath, 'utf8'))
     if (store?.workflows) {
       for (const k of keys) {
         if (store.workflows[k]) {
@@ -487,7 +514,7 @@ function main() {
     const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
     let learningsMd = ''
     try {
-      learningsMd = readFileSync4(join4(key, '.planning', 'LEARNINGS.md'), 'utf8')
+      learningsMd = readFileSync5(join5(key, '.planning', 'LEARNINGS.md'), 'utf8')
     } catch {}
     const budget = Number(process.env.HARNESSED_INJECT_BUDGET) || DEFAULT_INJECT_BUDGET
     const pcOff = process.env.HARNESSED_INJECT_PC_OFF === '1'

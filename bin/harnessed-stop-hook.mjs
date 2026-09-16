@@ -5,13 +5,48 @@
 
 // src/checkpoint/stopHookMain.ts
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import {
+  existsSync as existsSync2,
+  mkdirSync,
+  readFileSync as readFileSync2,
+  writeFileSync,
+} from 'node:fs'
+import { join as join2 } from 'node:path'
 
 // src/platform/ablation.ts
 function isAblated(env = process.env) {
   return env.HARNESSED_OFF === '1'
+}
+
+// src/checkpoint/hookStateRoot.ts
+import { existsSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+function hookStateRoot(home = homedir()) {
+  const override = process.env.HARNESSED_ROOT_OVERRIDE
+  if (override !== void 0 && override !== '') return override
+  const claudeHome = join(home, '.claude')
+  const codexHome = join(home, '.codex')
+  const rootOf = (id) =>
+    id === 'claude'
+      ? join(claudeHome, 'harnessed')
+      : id === 'codex'
+        ? join(codexHome, 'harnessed')
+        : null
+  const env = process.env.HARNESSED_PLATFORM
+  if (env !== void 0 && env !== '') {
+    const r = rootOf(env)
+    if (r) return r
+  }
+  try {
+    const r = rootOf(readFileSync(join(claudeHome, 'harnessed', '.platform'), 'utf8').trim())
+    if (r) return r
+  } catch {}
+  try {
+    if (existsSync(claudeHome)) return join(claudeHome, 'harnessed')
+    if (existsSync(codexHome)) return join(codexHome, 'harnessed')
+  } catch {}
+  return join(claudeHome, 'harnessed')
 }
 
 // src/checkpoint/modeBDetect.ts
@@ -47,8 +82,7 @@ function detectModeB(content) {
 // src/checkpoint/stopHookMain.ts
 var MAX_RETRIES = 2
 function stateRoot() {
-  const override = process.env.HARNESSED_ROOT_OVERRIDE
-  return override !== void 0 && override !== '' ? override : join(homedir(), '.claude', 'harnessed')
+  return hookStateRoot()
 }
 function messageSig(content) {
   const text = content
@@ -59,8 +93,8 @@ function messageSig(content) {
 }
 function lastAssistantContent(transcriptPath) {
   try {
-    if (!transcriptPath || !existsSync(transcriptPath)) return null
-    const buf = readFileSync(transcriptPath)
+    if (!transcriptPath || !existsSync2(transcriptPath)) return null
+    const buf = readFileSync2(transcriptPath)
     const slice = buf.length > 262144 ? buf.subarray(buf.length - 262144) : buf
     const lines = slice.toString('utf8').split('\n')
     for (let i = lines.length - 1; i >= 0; i--) {
@@ -85,12 +119,12 @@ function retryStore(sessionId) {
     .update(String(sessionId ?? 'nosession'))
     .digest('hex')
     .slice(0, 16)
-  return join(stateRoot(), 'stop-hook-retries', `${id}.json`)
+  return join2(stateRoot(), 'stop-hook-retries', `${id}.json`)
 }
 function readRetry(path) {
   try {
-    if (!existsSync(path)) return { sig: '', count: 0 }
-    const j = JSON.parse(readFileSync(path, 'utf8'))
+    if (!existsSync2(path)) return { sig: '', count: 0 }
+    const j = JSON.parse(readFileSync2(path, 'utf8'))
     return { sig: typeof j.sig === 'string' ? j.sig : '', count: Number(j.count) || 0 }
   } catch {
     return { sig: '', count: 0 }
@@ -98,7 +132,7 @@ function readRetry(path) {
 }
 function writeRetry(path, sig, count) {
   try {
-    mkdirSync(join(path, '..'), { recursive: true })
+    mkdirSync(join2(path, '..'), { recursive: true })
     writeFileSync(path, JSON.stringify({ sig, count }), 'utf8')
     return true
   } catch {
