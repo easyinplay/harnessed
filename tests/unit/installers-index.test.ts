@@ -203,3 +203,27 @@ describe('installers dispatch table', () => {
     }
   })
 })
+
+// External review M14 — an installer's deliberate re-throw (EACCES on
+// ~/.claude.json during verify, a state write after install) escaped runInstall;
+// `install-base` lost the rest of its batch on one throw.
+describe('runInstall catch-all (M14)', () => {
+  it('an installer that throws yields a structured per-component failure, not an exception', async () => {
+    const original = installers['npm-cli']
+    installers['npm-cli'] = async () => {
+      throw Object.assign(new Error("EACCES: permission denied, open '~/.claude.json'"), {
+        code: 'EACCES',
+      })
+    }
+    try {
+      const r = await runInstall(manifestForMethod('npm-cli'), { ...BASE_OPTS, system: true })
+      expect(r).toMatchObject({
+        ok: false,
+        error: { keyword: 'installer-exception', file: manifestForMethod('npm-cli').metadata.name },
+      })
+      expect((r as { error: { message: string } }).error.message).toMatch(/EACCES/)
+    } finally {
+      installers['npm-cli'] = original
+    }
+  })
+})

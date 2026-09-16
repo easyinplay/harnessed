@@ -85,9 +85,36 @@ export function resolveForHarness(
 }
 
 export async function runInstall(manifest: Manifest, opts: InstallOpts): Promise<InstallResult> {
-  const resolved = resolveForHarness(manifest)
-  if (resolved.gate) return resolved.gate
-  const effective = resolved.manifest
-  const installer = installers[effective.spec.install.method]
-  return installer({ manifest: effective, opts, level: levelOf(effective), cwd: process.cwd() })
+  // Catch-all: installers return structured failures for everything they
+  // anticipate, but an fs error they re-throw on purpose (EACCES on
+  // ~/.claude.json during verify, a state-file write after a successful install)
+  // used to escape as an exception. `setup` happened to catch it; `install`,
+  // `install-base` (one throw aborted the rest of the batch), the L4 rescue and
+  // the optional offer did not. Every caller now gets a per-component failure.
+  try {
+    const resolved = resolveForHarness(manifest)
+    if (resolved.gate) return resolved.gate
+    const effective = resolved.manifest
+    const installer = installers[effective.spec.install.method]
+    return await installer({
+      manifest: effective,
+      opts,
+      level: levelOf(effective),
+      cwd: process.cwd(),
+    })
+  } catch (e) {
+    const code = (e as NodeJS.ErrnoException).code
+    return {
+      ok: false,
+      phase: 'spawn',
+      error: {
+        file: manifest.metadata.name,
+        path: '/spec/install',
+        message: `installer threw unexpectedly${code ? ` (${code})` : ''}: ${(e as Error).message ?? String(e)}`,
+        line: null,
+        column: null,
+        keyword: 'installer-exception',
+      },
+    }
+  }
 }
