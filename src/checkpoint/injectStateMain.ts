@@ -100,7 +100,10 @@ function readWorkflow(
       for (const k of keys) {
         if (store.workflows[k]) {
           wf = store.workflows[k]
-          ledgerAgeMs = ageOf(storePath)
+          // Per-slot activity when stamped; the shared file's mtime is refreshed by
+          // ANY repo's write, so it is only the fallback for pre-stamp records (L8).
+          const stamped = wf?.updated_at ? Date.parse(wf.updated_at) : Number.NaN
+          ledgerAgeMs = Number.isNaN(stamped) ? ageOf(storePath) : Date.now() - stamped
           break
         }
       }

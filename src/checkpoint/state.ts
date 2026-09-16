@@ -108,7 +108,10 @@ export async function readCurrentWorkflow(): Promise<CurrentWorkflowV1Type | nul
  *  lets `mutateSubProgress` do a single-lock read-modify-write without the
  *  double-lock deadlock that proper-lockfile (non-reentrant) would otherwise
  *  cause (pre-v4 review C5 lost-update fix). */
-async function writeCurrentWorkflowUnlocked(s: CurrentWorkflowV1Type): Promise<void> {
+async function writeCurrentWorkflowUnlocked(input: CurrentWorkflowV1Type): Promise<void> {
+  // Every slot write goes through here, so this is the one place the per-slot
+  // activity stamp can be kept honest (see the schema's updated_at note).
+  const s: CurrentWorkflowV1Type = { ...input, updated_at: new Date().toISOString() }
   if (!Value.Check(CurrentWorkflowV1, s)) {
     const errs = [...Value.Errors(CurrentWorkflowV1, s)].map((e) => e.message).join('; ')
     throw new WorkflowStateError(`current-workflow schema validation failed: ${errs}`)

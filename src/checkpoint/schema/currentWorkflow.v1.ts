@@ -120,6 +120,12 @@ export const CurrentWorkflowV1 = Type.Object(
     // G2 — when true the next-step contract reports NEXT:auto (skill auto-advances);
     // when false NEXT:manual (pause for the operator). Precedence env > this > default.
     auto_transition: Type.Optional(Type.Boolean()),
+    // Last write to THIS slot (stamped by writeCurrentWorkflowUnlocked). The STALE
+    // ledger breadcrumb used the mtime of the whole multi-repo workflows.json, which
+    // any repo's write refreshes, so an abandoned ledger in one repo never aged
+    // while another repo was active (external review L8). Additive-optional: old
+    // records without it fall back to the file mtime.
+    updated_at: Type.Optional(Type.String({ minLength: 1 })),
     // Phase 14 — compaction digest: cumulative summary of resolved sub-progress
     // entries evicted by `compact`. Additive-optional (NO schemaVersion bump; old
     // files without it still Value.Check-pass). Keeps a readable trace after

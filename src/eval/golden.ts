@@ -7,13 +7,19 @@
 //   replacement would miss).
 // - `\` → `/` separator unification (goldens recorded on Windows must compare
 //   equal on the ubuntu CI step; engine outputs are the only backslash source).
-// - timestamp fields stripped recursively (started_at/completed_at/paused_at/
+// - timestamp fields stripped recursively (started_at/completed_at/paused_at/updated_at/
 //   timestamp): state.ts/engineHook.ts stamp `new Date()` without an injection
 //   seam — stripping is the documented fallback, not laziness.
 
 import { readFileSync, writeFileSync } from 'node:fs'
 
-const TIMESTAMP_KEYS = new Set(['started_at', 'completed_at', 'paused_at', 'timestamp'])
+const TIMESTAMP_KEYS = new Set([
+  'started_at',
+  'completed_at',
+  'paused_at',
+  'updated_at',
+  'timestamp',
+])
 
 function normalizeString(s: string, roots: string[]): string {
   let out = s
