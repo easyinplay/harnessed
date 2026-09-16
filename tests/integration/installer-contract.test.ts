@@ -616,11 +616,14 @@ for (const method of methods) {
         })
         // Match `claude` as the binary token, NOT inside compound words like
         // `claude-code` (which appears as the `--agent claude-code` argument
-        // of `npx skills add`). On Win we route through `cmd.exe /c claude
-        // ...`; on Unix we spawn `claude ...` directly (or `/bin/sh -c
-        // "claude ..."` for the verify pipe). The binary token is always
-        // followed by whitespace and a sub-command (mcp / plugin / etc.).
-        const invokedClaude = allSpawnCalls.some((line) => /(?:^|\s)claude(?:\s|$)/.test(line))
+        // of `npx skills add`). The token may carry a directory and a Windows
+        // extension: lib/winSpawn.ts resolves the bin on PATH and spawns an
+        // .exe DIRECTLY by full path (`...\bin\claude.exe mcp add ...`), and
+        // routes only a .cmd shim through cmd.exe. What the contract asserts is
+        // WHICH program runs, not how its path is spelled.
+        const invokedClaude = allSpawnCalls.some((line) =>
+          /(?:^|[\s\\/"^])claude(?:\.(?:exe|cmd|bat))?(?=[\s"^]|$)/i.test(line),
+        )
 
         if (CLAUDE_CLI_METHODS.has(method)) {
           expect(invokedClaude).toBe(true)

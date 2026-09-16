@@ -14,6 +14,7 @@
 // args remain unparsed. This matches the established cross-OS pattern.
 
 import { spawn } from 'node:child_process'
+import { planWindowsSpawn, resolveWindowsBin } from './winSpawn.js'
 
 export type HarnessBin = 'claude' | 'codex'
 
@@ -30,15 +31,29 @@ export function runHarnessArgs(
   timeoutMs = 15_000,
 ): Promise<ProcResult> {
   return new Promise((resolve) => {
-    // Win: route through cmd.exe /c because the harness CLI ships as a .cmd shim.
     // Unix: spawn the binary directly (no shell) — args remain unparsed.
+    // Windows: see lib/winSpawn.ts. The old `cmd.exe /c bin ...args` let cmd
+    // re-parse every unquoted `& | < > ^ %` — `&` in a URL became a command
+    // separator, and the shipped `tavily-mcp@^0.2.0` silently lost its caret. An
+    // .exe is now spawned directly; only a .cmd/.bat shim goes through cmd.exe,
+    // with arguments quoted and double-escaped.
     const isWin = process.platform === 'win32'
     // v4.13.0 — stdin 'ignore' (sister lib/spawn.ts): harness subcommands must
     // never wait on interactive input during setup.
     const stdio: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
-    const child = isWin
-      ? spawn('cmd.exe', ['/c', bin, ...args], { cwd, windowsHide: true, stdio })
-      : spawn(bin, args, { cwd, shell: false, stdio })
+    let child: ReturnType<typeof spawn>
+    if (isWin) {
+      const plan = planWindowsSpawn(bin, args, resolveWindowsBin(bin))
+      child = spawn(plan.command, plan.args, {
+        cwd,
+        windowsHide: true,
+        stdio,
+        shell: false,
+        windowsVerbatimArguments: plan.verbatim,
+      })
+    } else {
+      child = spawn(bin, args, { cwd, shell: false, stdio })
+    }
     let stdout = ''
     let stderr = ''
     child.stdout?.setEncoding('utf8').on('data', (c: string) => {
