@@ -68,7 +68,11 @@ type ResultSubtype = SDKResultMessage['subtype']
  *  degrade if outputFormat doesn't populate structured_output server-side. */
 export async function sdkSpawn(def: AgentDefinition, opts: SdkSpawnOpts): Promise<string> {
   const sdkDef = toSdkAgentDefinition(def) // 14→5 字段 unpack (B-01)
-  const injectedPrompt = injectFactoryInternalFields(def, def.initialPrompt ?? def.prompt) // 9-字段 prompt inject
+  // Base is ALWAYS the role prompt; initialPrompt is appended once as its own section
+  // by injectFactoryInternalFields. Using `def.initialPrompt ?? def.prompt` as the base
+  // dropped the role prompt whenever initialPrompt was set and emitted initialPrompt
+  // twice (external review L14; latent: no shipped caller sets it).
+  const injectedPrompt = injectFactoryInternalFields(def, def.prompt) // 9-字段 prompt inject
   const queryOptions: Record<string, unknown> = {
     // The prompt runs as the MAIN thread of this query, so the def's declared
     // limits must land on the query options; registering them only on the

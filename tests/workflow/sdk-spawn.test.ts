@@ -307,3 +307,21 @@ describe('sdkSpawn — declared limits reach the query options (M6)', () => {
     expect(o.permissionMode).toBeUndefined()
   })
 })
+
+// External review L14 — with initialPrompt set, the base prompt WAS initialPrompt:
+// the role prompt vanished and initialPrompt was emitted a second time as a section.
+describe('sdkSpawn — prompt assembly with initialPrompt (L14)', () => {
+  const count = (hay: string, needle: string) => hay.split(needle).length - 1
+
+  it('the role prompt is kept and initialPrompt appears exactly once', async () => {
+    nextMessages = [DONE]
+    await sdkSpawn(
+      { description: 'd', prompt: 'ROLE-PROMPT', initialPrompt: 'FIRST-TURN' } as AgentDefinition,
+      { expertName: 'e' },
+    )
+    const prompt = firstCall().prompt
+    expect(count(prompt, 'ROLE-PROMPT')).toBe(1)
+    expect(count(prompt, 'FIRST-TURN')).toBe(1)
+    expect(prompt.startsWith('ROLE-PROMPT')).toBe(true)
+  })
+})
