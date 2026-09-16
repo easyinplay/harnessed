@@ -25,6 +25,26 @@ export class PathTraversalError extends Error {
 }
 
 /**
+ * Guard a CLI argument that must be exactly ONE path segment — a sub-workflow
+ * name, a backup timestamp, a manifest category or adapter name — before it is
+ * joined into a path.
+ *
+ * `checkPathSafe` catches `../` and `..\` but not a bare `..`, and a bare `..`
+ * is all it takes when the value is used as a segment: `harnessed rollback ..`
+ * joined to the PARENT of the backup root and read a foreign `metadata.json`,
+ * whose `files[].target` paths rollback then writes and unlinks. None of these
+ * inputs legitimately contain a separator, so the strict rule is also the
+ * correct one: non-empty, not `.`/`..`, no `/` or `\`, plus every
+ * checkPathSafe vector. Throws PathTraversalError (generic message, D-08).
+ */
+export function checkSafeSegment(input: string): void {
+  checkPathSafe(input)
+  if (input === '' || input === '.' || input === '..' || /[\\/]/.test(input)) {
+    throw new PathTraversalError()
+  }
+}
+
+/**
  * Guard a user-supplied path/name against the 5 OWASP A1 traversal vectors.
  * Throws PathTraversalError on first match.
  * Safe: does NOT include user input in error message (D-08).

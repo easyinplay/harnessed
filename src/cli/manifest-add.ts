@@ -6,6 +6,7 @@ import { stdin, stdout } from 'node:process'
 import * as readline from 'node:readline/promises'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
+import { checkSafeSegment } from '../manifest/lib/path-guard.js'
 
 const QA: readonly { q: string; f: string }[] = [
   { q: '① 是真 reusable surface 还是临时 wrapper?', f: 'q1_reusable_surface' },
@@ -39,6 +40,16 @@ export function registerManifestAdd(program: Command): void {
     .action(async (upstream: string, raw: RawOpts) => {
       const name = raw.name ?? basename(upstream)
       const category = raw.category ?? 'skill-packs'
+      // Both are single segments of a path this command WRITES. Unguarded,
+      // `--category ../../..` overwrote an arbitrary file with Q&A JSON.
+      try {
+        checkSafeSegment(category)
+        checkSafeSegment(name)
+      } catch {
+        console.error('error: invalid --category / --name (path traversal rejected)')
+        process.exit(2)
+        return
+      }
       const outPath = `manifests/${category}/${name}.ee5-answers.json`
       if (raw.nonInteractive) {
         console.warn(t('manifest_add.non_interactive_warn'))

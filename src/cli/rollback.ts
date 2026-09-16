@@ -21,6 +21,7 @@ import { join } from 'node:path'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
+import { checkSafeSegment } from '../manifest/lib/path-guard.js'
 
 interface BackupFileEntry {
   target: string
@@ -48,6 +49,17 @@ export function registerRollback(program: Command): void {
     .command('rollback <timestamp>')
     .description('Restore files from a backup snapshot (preserves original LF/CRLF)')
     .action(async (timestamp: string) => {
+      // A timestamp is one path segment. Unguarded, `rollback ..` joined to the
+      // parent of the backup root and trusted that directory's metadata.json —
+      // whose files[].target paths are then written and unlinked. The sha1 check
+      // constrains the backup SOURCE only, never the target.
+      try {
+        checkSafeSegment(timestamp)
+      } catch {
+        console.error('error: invalid backup timestamp (path traversal rejected)')
+        process.exit(2)
+        return
+      }
       const dir = join(getBackupRoot(), timestamp)
       const metaPath = join(dir, 'metadata.json')
       let meta: BackupMetadata

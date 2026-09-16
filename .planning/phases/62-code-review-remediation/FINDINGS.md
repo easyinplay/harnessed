@@ -33,7 +33,10 @@ report's framing or fix is wrong in a way that matters) · **NOT REPRODUCED** ·
 | M1 | unlocked read → locked whole write, lost updates | **REAL, partly fixed** | `pause()` / `complete()` now go through `mutateWorkflow`; `checkpoint.ts` verify_mode / ship_ready / retro_due writes and `compact.ts` PENDING |
 | M8 | `gc` keeps the lexicographically-last bin-backup | **REAL** — `'4.10.0' < '4.9.0'` as strings, so the NEWER backup was deleted; the existing fixture only used 0.8.0/0.9.0 where the two orders agree | fixed: `byVersion` via `compareVersions` (string fallback for non-semver names); falsified |
 | M16 | `findPhaseContextExcerpt` substring-matches phase numbers | **REAL, and wider than reported** — phase "16" hit dir "1-"; ALSO the reverse: phase "1" never matched zero-padded dir "01-" (`"1".includes("01")` is false), so the standard GSD layout with a short phase string injected nothing | fixed: first numeric token of the phase string compared numerically to the dir number; both directions falsified |
-| M2–M7, M9–M15 | | PENDING | |
+| M9 | `prompt <sub>` joins without a traversal guard | **REAL** — `harnessed run` has had the guard since R10.4 | `checkSafeSegment(sub)`, exit 2; falsified |
+| M10 | `rollback <timestamp>` joins without a guard | **REAL, and the existing guard would NOT have caught it** — `checkPathSafe` blocks `../` and `..\` but not a bare `..`, which is all a single segment needs (`rollback ..` → parent of the backup root → a foreign metadata.json whose `files[].target` rollback then writes/unlinks) | new `checkSafeSegment` (non-empty, not `.`/`..`, no separators, plus every checkPathSafe vector); falsified |
+| M11 | `manifest-add --category/--name` joins into a written path | **REAL** | `checkSafeSegment` on both, before any prompt or write; falsified |
+| M2–M7, M12–M15 | | PENDING | |
 
 ## Low
 

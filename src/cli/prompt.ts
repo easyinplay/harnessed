@@ -19,6 +19,7 @@ import type { Command } from 'commander'
 import { parse as parseYaml } from 'yaml'
 import { getLocale, type SupportedLocale } from '../i18n/index.js'
 import { resolveLocaleYaml } from '../i18n/localeYaml.js'
+import { checkSafeSegment } from '../manifest/lib/path-guard.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { loadRolePrompts } from '../workflow/rolePrompts.js'
@@ -278,6 +279,15 @@ export function registerPrompt(program: Command): void {
     .option('--task <text>', 'task description prepended as a ## Task section')
     .option('--json', 'emit JSON {prompt, max_iterations, model, specialist} instead of text')
     .action(async (sub: string, raw: RawOpts) => {
+      // Same guard `harnessed run` has had since R10.4; this entry point skipped it,
+      // so `harnessed prompt ../../x` resolved and rendered an arbitrary workflow.yaml.
+      try {
+        checkSafeSegment(sub)
+      } catch {
+        console.error('error: invalid workflow name (path traversal rejected)')
+        process.exit(2)
+        return
+      }
       const packageRoot = getAssetsRoot()
       const workflowsDir = resolve(packageRoot, 'workflows')
 
