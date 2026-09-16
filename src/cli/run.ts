@@ -32,6 +32,7 @@ import type { Command } from 'commander'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { detectPlatform } from '../platform/platform.js'
+import { WorkflowHaltError } from '../workflow/lib/fallbackHandlers.js'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { runWorkflow } from '../workflow/run.js'
@@ -211,6 +212,11 @@ export function registerRun(program: Command): void {
       try {
         result = await runWorkflow(yamlPath, {}, { packageRoot: PACKAGE_ROOT, gateContext })
       } catch (err) {
+        // A configured halt already printed its UX text; exit with the yaml's code.
+        if (err instanceof WorkflowHaltError) {
+          process.exit(err.exitCode)
+          return
+        }
         console.error(`error: workflow runtime failed — ${(err as Error).message}`)
         process.exit(1)
         return

@@ -3,7 +3,7 @@
 // Default-skipped on every CI / local `pnpm test` run; only fires when the
 // developer sets HARNESSED_REAL_SPAWN=1 explicitly. Purpose: prove the Phase 3
 // ralph-loop wrap end-to-end (commit b430682) — both the explicit halt path
-// (R20.10 c, `handleMaxIterationsExceeded` fires `process.exit(exit_code)`
+// (R20.10 c, `handleMaxIterationsExceeded` throws WorkflowHaltError, CLI exits `exit_code`
 // with UX text) and the Phase 1 regression that `--max-iterations` reaches
 // `gateContext.maxIterations` in `--dry-run` JSON output.
 //

@@ -228,6 +228,14 @@ describe('cli/run — 15 cells per v3.4.4 PHASE-1-SPEC.md', () => {
     expect(code).toBe(1)
   })
 
+  it('cell 13b — runWorkflow rejects WorkflowHaltError(exitCode 4) → exit 4, no generic "runtime failed" line (M7)', async () => {
+    const { WorkflowHaltError } = await import('../../src/workflow/lib/fallbackHandlers.js')
+    vi.mocked(runWorkflow).mockRejectedValue(new WorkflowHaltError('max-iterations exceeded', 4))
+    const { code, stderr } = await runCli(['run', 'verify-paranoid'])
+    expect(code).toBe(4)
+    expect(stderr).not.toMatch(/workflow runtime failed/)
+  })
+
   it('cell 14 — runWorkflow returns { status: "complete" } → exit 0 + stderr `[stage X complete]` + Phase 5 next-stage envelope', async () => {
     vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 1 })
     _resetAutoChainCache() // cold cache so cell loads chain fresh

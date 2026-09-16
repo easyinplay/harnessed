@@ -10,6 +10,7 @@ import { parse as parseYaml } from 'yaml'
 import { PARALLEL_MID_ANCHOR } from '../checkpoint/subAnchor.js'
 import { isUndefinedVariableError } from './exprBuilder.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
+import { WorkflowHaltError } from './lib/fallbackHandlers.js'
 import {
   type DelegationClauseT,
   WorkflowSchemaV3,
@@ -262,9 +263,16 @@ export async function runMasterOrchestrator(
     const detail = parallelFailures
       .map((f) => `${f.sub}: ${f.reason instanceof Error ? f.reason.message : String(f.reason)}`)
       .join('; ')
-    throw new Error(
-      `[${masterName} master] ${parallelFailures.length} parallel sub(s) failed — ${detail}`,
-    )
+    const message = `[${masterName} master] ${parallelFailures.length} parallel sub(s) failed — ${detail}`
+    // A configured halt in any sibling keeps its yaml exit code through the
+    // aggregate (the highest one wins), instead of degrading to a generic exit 1.
+    const halts = parallelFailures
+      .map((f) => f.reason)
+      .filter((r): r is WorkflowHaltError => r instanceof WorkflowHaltError)
+    if (halts.length > 0) {
+      throw new WorkflowHaltError(message, Math.max(...halts.map((h) => h.exitCode)))
+    }
+    throw new Error(message)
   }
   for (const clause of serialTrailing) {
     console.log(`  → ${clause.sub} (serial order=${clause.order ?? 0})`)

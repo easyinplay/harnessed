@@ -379,6 +379,27 @@ describe('runMasterOrchestrator — issue #1 parallel fail-fast (surface rejecte
     // sibling still attempted (allSettled waits) — both spawned before surfacing failure
     expect(seen.sort()).toEqual(['phase', 'subtask'])
   })
+
+  it('40b. a sibling configured halt (WorkflowHaltError) keeps its exit code through the aggregate; the other sibling runs to completion', async () => {
+    // External review M7: the halt used to be process.exit() inside the library,
+    // which under this allSettled fan-out killed the still-running sibling.
+    const { WorkflowHaltError } = await import('../../src/workflow/lib/fallbackHandlers.js')
+    yamlFileMap.set(
+      pathFor('discuss'),
+      masterYaml('discuss', [clauseLine('phase'), clauseLine('subtask')].join('\n')),
+    )
+    let siblingFinished = false
+    const spawn: SpawnDriver = async (_m, sub) => {
+      if (sub === 'subtask') throw new WorkflowHaltError('max-iterations exceeded', 3)
+      await new Promise((r) => setTimeout(r, 20))
+      siblingFinished = true
+    }
+    const err = await runMasterOrchestrator('discuss', {}, PACKAGE_ROOT, spawn).catch((e) => e)
+    expect(err).toBeInstanceOf(WorkflowHaltError)
+    expect((err as InstanceType<typeof WorkflowHaltError>).exitCode).toBe(3)
+    expect((err as Error).message).toMatch(/subtask/)
+    expect(siblingFinished).toBe(true)
+  })
 })
 
 // ── 4.23.2 issue #5 — fail-closed undefined-variable + skip alias/warning ────

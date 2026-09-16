@@ -15,7 +15,7 @@
 //   9.  resolveMaxIterations — clamp at hard_upper_limit 100 (CLI=500 → 100)
 //   10. _dispatchSkillStub.fn opt-in + non-COMPLETE repeatedly → MaxIterationsExceededError → fail-soft
 //   11. _dispatchSkillStub.fn opt-in + COMPLETE on iter 2 → ok + 2 spawn calls
-//   12. _dispatchSkillStub.fn opt-in + fallback config → handleMaxIterationsExceeded fires process.exit(1)
+//   12. _dispatchSkillStub.fn opt-in + fallback config → handleMaxIterationsExceeded throws WorkflowHaltError(1), never process.exit
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -178,7 +178,7 @@ describe('_dispatchSkillStub.fn — ralph-loop wrap behavior (v3.4.4 Phase 3 Com
     expect(r.decision).toBe('COMPLETE')
   })
 
-  it('12. opt-in + fallback config → MaxIterationsExceededError → handleMaxIterationsExceeded fires process.exit(1)', async () => {
+  it('12. opt-in + fallback config → MaxIterationsExceededError → WorkflowHaltError(exitCode 1), process.exit NOT called', async () => {
     queryResponses = [NON_COMPLETE_ENVELOPE, NON_COMPLETE_ENVELOPE]
     // Mock process.exit to throw ExitError (sister tests/routing/ralph-fallback.test.ts:40-44)
     const exitSpy = vi
@@ -203,8 +203,10 @@ describe('_dispatchSkillStub.fn — ralph-loop wrap behavior (v3.4.4 Phase 3 Com
         maxIter: 2,
         fallback: phase.fallback.max_iterations_exceeded,
       }),
-    ).rejects.toThrow(ExitError)
-    expect(exitSpy).toHaveBeenCalledWith(1)
+    ).rejects.toMatchObject({ name: 'WorkflowHaltError', exitCode: 1 })
+    // External review M7: a library must not terminate the process (it killed
+    // parallel siblings and skipped checkpoint flushes). The CLI decides the exit.
+    expect(exitSpy).not.toHaveBeenCalled()
     const stderr = errSpy.mock.calls.map((c) => c.join(' ')).join('\n')
     expect(stderr).toMatch(/max-iterations exceeded/i)
     expect(stderr).toContain('phase-p1')

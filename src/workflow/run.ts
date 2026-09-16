@@ -357,9 +357,10 @@ export const _dispatchSkillStub = {
         envelopeJson = await spawnOnce()
       }
     } catch (err) {
-      // R20.10 c — explicit halt path: phase fallback config present → UX text + process.exit
+      // R20.10 c — explicit halt path: phase fallback config present → UX text +
+      // WorkflowHaltError, which propagates to the CLI entry point (exit code there).
       if (err instanceof MaxIterationsExceededError && opts?.fallback) {
-        // handleMaxIterationsExceeded calls process.exit(exit_code) — never returns
+        // handleMaxIterationsExceeded throws WorkflowHaltError — never returns
         handleMaxIterationsExceeded(err, opts.fallback, {
           subtaskSummary: `phase ${skillName}`,
           // Phase 4 — plumbed actual workflow name (was hardcoded 'harnessed-run'

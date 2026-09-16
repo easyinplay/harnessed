@@ -7,9 +7,27 @@
 // CONTRACT — fallback config 来自 phases.yaml v2 phase.fallback.max_iterations_exceeded
 // (TypeBox schema src/workflow/schema/workflow.ts L38-45 ship by T2.4.W0.1). engine.ts
 // catch block delegates here — handler emits full UX text to stderr (PLAN L342-358)
-// then process.exit(exit_code). Return type `never` — process.exit unreachable after.
+// then THROWS WorkflowHaltError carrying exit_code. Return type `never`.
+//
+// It used to call process.exit(exit_code) right here. That is a library killing the
+// process: pending checkpoint writes never flushed, and under the master's parallel
+// fan-out (Promise.allSettled) one sub hitting max-iterations terminated every
+// sibling mid-flight. The exit decision now belongs to the CLI entry point
+// (src/cli/run.ts, src/cli/research.ts), which maps the error to its exit code.
 
 import type { MaxIterationsExceededError, VerbatimCompleteFailError } from './ralphLoop.js'
+
+/** A deliberate, configured halt (yaml `emit_warning_and_halt`). The UX text has
+ *  already been written to stderr; the CLI entry point exits with `exitCode`. */
+export class WorkflowHaltError extends Error {
+  constructor(
+    message: string,
+    readonly exitCode: number,
+  ) {
+    super(message)
+    this.name = 'WorkflowHaltError'
+  }
+}
 
 export interface FallbackMaxIterationsExceededConfig {
   action: 'emit_warning_and_halt'
@@ -31,7 +49,7 @@ export interface VerbatimFallbackCtx {
   phaseId: string
 }
 
-/** Emit RESEARCH § 7.2 verbatim UX text + process.exit. Yaml `message` placeholder
+/** Emit RESEARCH § 7.2 verbatim UX text, then throw WorkflowHaltError. Yaml `message` placeholder
  *  `{{ args.max_iterations }}` is substituted with actual iter (sister Phase 3.2 W1
  *  T1.6 interpolate.ts STRICT regex 不支持 dot-path — inline minimal substitution). */
 export function handleMaxIterationsExceeded(
@@ -61,8 +79,10 @@ Manual options:
 Exit code: ${fallback.exit_code}
 ${yamlShort}`
   console.error(uxText)
-  process.exit(fallback.exit_code)
-  throw new Error('unreachable') // satisfies `never` return type for type-checker
+  throw new WorkflowHaltError(
+    `ralph-loop max-iterations exceeded (${err.iterations}/${ctx.maxIterations}) for ${ctx.workflowName} / phase ${ctx.phaseId}`,
+    fallback.exit_code,
+  )
 }
 
 /** Symmetric handler for VerbatimCompleteFailError (sister ralphLoop.ts L29-34
@@ -86,6 +106,8 @@ Manual options:
   B) Abort cleanly: exit ${fallback.exit_code}
 Exit code: ${fallback.exit_code}`
   console.error(uxText)
-  process.exit(fallback.exit_code)
-  throw new Error('unreachable')
+  throw new WorkflowHaltError(
+    `ralph-loop verbatim COMPLETE signal missing for ${ctx.workflowName} / phase ${ctx.phaseId}`,
+    fallback.exit_code,
+  )
 }
