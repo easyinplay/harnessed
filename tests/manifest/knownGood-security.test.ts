@@ -24,6 +24,7 @@ function setupFixtureCwd(): Fixture {
   mkdirSync(join(cwd, 'versions'), { recursive: true })
   const prevCwd = process.cwd()
   process.chdir(cwd)
+  vi.stubEnv('HARNESSED_ASSETS_OVERRIDE', cwd)
   return { cwd, prevCwd }
 }
 
@@ -37,6 +38,7 @@ describe('Phase 3.3 W2 T2.4 — known-good.v1 STRIDE threat fixture (T-3.3-05)',
 
   afterEach(() => {
     process.chdir(fx.prevCwd)
+    vi.unstubAllEnvs()
   })
 
   it('K1 — malicious non-semver harnessed_version rejected fail-loud (T-3.3-05)', async () => {

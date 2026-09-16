@@ -9,10 +9,15 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
 import { parse } from 'yaml'
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { checkPathSafe } from './lib/path-guard.js'
 import { AliasesV1, type AliasesV1Type } from './schema/aliases.v1.js'
 
-const ALIASES_PATH = join(process.cwd(), 'manifests', 'aliases.yaml')
+// Resolved against the ASSETS root (the installed package / compiled bundle), not
+// process.cwd() at module load: under an npm global install or the compiled binary
+// the cwd is the user's project, so the alias table was never found and every
+// alias silently no-op'd (external review L9).
+const aliasesPath = (): string => join(getAssetsRoot(), 'manifests', 'aliases.yaml')
 
 let _cached: AliasesV1Type | null = null
 
@@ -20,8 +25,8 @@ let _cached: AliasesV1Type | null = null
  *  Throws Karpathy fail-loud Error on schema invalid (debug locality). */
 export function loadAliases(): AliasesV1Type | null {
   if (_cached) return _cached
-  if (!existsSync(ALIASES_PATH)) return null
-  const raw = readFileSync(ALIASES_PATH, 'utf8')
+  if (!existsSync(aliasesPath())) return null
+  const raw = readFileSync(aliasesPath(), 'utf8')
   const parsed = parse(raw) as unknown
   if (!Value.Check(AliasesV1, parsed)) {
     const errs = [...Value.Errors(AliasesV1, parsed)].slice(0, 3)

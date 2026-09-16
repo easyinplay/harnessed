@@ -14,11 +14,13 @@ beforeEach(() => {
   tmpRoot = mkdtempSync(join(tmpdir(), 'check-dep-'))
   mkdirSync(join(tmpRoot, 'manifests'), { recursive: true })
   process.chdir(tmpRoot)
+  vi.stubEnv('HARNESSED_ASSETS_OVERRIDE', tmpRoot)
   vi.resetModules()
 })
 
 afterEach(() => {
   process.chdir(origCwd)
+  vi.unstubAllEnvs()
   rmSync(tmpRoot, { recursive: true, force: true })
 })
 

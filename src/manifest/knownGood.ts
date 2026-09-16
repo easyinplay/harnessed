@@ -9,9 +9,11 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
 import { parse } from 'yaml'
+import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { KnownGoodV1, type KnownGoodV1Type } from './schema/known-good.v1.js'
 
-const versionsDir = (): string => join(process.cwd(), 'versions')
+// Assets root, not process.cwd() (see aliases.ts, external review L9).
+const versionsDir = (): string => join(getAssetsRoot(), 'versions')
 
 const _cache = new Map<string, KnownGoodV1Type | null>()
 

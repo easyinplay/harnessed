@@ -15,11 +15,13 @@ beforeEach(() => {
   tmpRoot = mkdtempSync(join(tmpdir(), 'aliases-test-'))
   mkdirSync(join(tmpRoot, 'manifests'), { recursive: true })
   process.chdir(tmpRoot)
+  vi.stubEnv('HARNESSED_ASSETS_OVERRIDE', tmpRoot)
   vi.resetModules()
 })
 
 afterEach(() => {
   process.chdir(origCwd)
+  vi.unstubAllEnvs()
   rmSync(tmpRoot, { recursive: true, force: true })
 })
 
@@ -85,5 +87,27 @@ aliases:
     )
     const mod = await import('../../src/manifest/aliases.js')
     expect(() => mod.loadAliases()).toThrow(/schema invalid/)
+  })
+})
+
+// External review L9 — the alias table was located via process.cwd() captured at
+// module load. Under an npm global install or the compiled binary the cwd is the
+// user's project, so aliases silently never resolved.
+describe('aliases.ts — located via the assets root, not the cwd (L9)', () => {
+  it('resolves from the assets root while the cwd is an unrelated project dir', async () => {
+    writeFileSync(
+      join(tmpRoot, 'manifests', 'aliases.yaml'),
+      "schemaVersion: harnessed.aliases.v1\naliases:\n  old-name:\n    redirect: new-name\n    reason: r\n    since_version: '0.3.0'\n    deprecation_date: '2026-05-17'\n",
+      'utf8',
+    )
+    const project = mkdtempSync(join(tmpdir(), 'aliases-user-project-'))
+    process.chdir(project)
+    try {
+      const mod = await import('../../src/manifest/aliases.js')
+      expect(mod.resolveAlias('old-name')).toBe('new-name')
+    } finally {
+      process.chdir(origCwd)
+      rmSync(project, { recursive: true, force: true })
+    }
   })
 })

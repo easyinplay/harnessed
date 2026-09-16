@@ -33,6 +33,7 @@ function setupFixtureCwd(): Fixture {
   mkdirSync(join(cwd, 'manifests'), { recursive: true })
   const prevCwd = process.cwd()
   process.chdir(cwd)
+  vi.stubEnv('HARNESSED_ASSETS_OVERRIDE', cwd)
   return { cwd, prevCwd }
 }
 
@@ -47,6 +48,7 @@ describe('Phase 3.3 W2 T2.4 — aliases.v1 STRIDE threat fixture (T-3.3-01 + T-3
 
   afterEach(() => {
     process.chdir(fx.prevCwd)
+    vi.unstubAllEnvs()
   })
 
   it('A1 — path traversal redirect string passes schema; install-layer path resolve confines (T-3.3-01)', async () => {

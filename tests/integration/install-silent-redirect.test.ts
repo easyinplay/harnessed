@@ -42,7 +42,16 @@ describe('Phase 3.3 W2 T2.3 — install silent redirect observability gate (D-02
     const r = spawnSync(
       process.execPath,
       [CLI, 'install', 'old-name', '--dry-run', '--non-interactive', '--system'],
-      { cwd, encoding: 'utf8', env: { ...process.env, NO_COLOR: '1', HARNESSED_LANG: 'en' } },
+      {
+        cwd,
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          NO_COLOR: '1',
+          HARNESSED_LANG: 'en',
+          HARNESSED_ASSETS_OVERRIDE: cwd,
+        },
+      },
     )
     const stdout = r.stdout ?? ''
     const stderr = r.stderr ?? ''
