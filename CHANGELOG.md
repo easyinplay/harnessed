@@ -5,7 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.42.0] - 2026-09-16
+
+### Fixed
+
+外部代码审查报告(39 项 + 2 处注释/实现矛盾)逐条对照本仓核验后整改(Phase 62)。原则:先证实再修;每个修复都带一个**在修复前代码上失败**的测试。逐项裁决、证据与未改理由见 `.planning/phases/62-code-review-remediation/FINDINGS.md`。以下按用户可感知程度排列。
+
+- **Windows:harness CLI 参数被 cmd.exe 二次解析(H6,比报告更糟)。** 旧形状 `cmd.exe /c claude ...args` 让 `& | < > ^ %` 全部变成语法:URL 里的 `&` 可注入命令;shipped 参数 `tavily-mcp@^0.2.0` / `exa-mcp-server@^3.2.0` 的 `^` 被静默吞掉,semver 范围在每台 Windows 上变成精确 pin。现在 `.exe` 直接 spawn、不经 shell;只有 `.cmd` shim 走 cmd.exe,参数按 cross-spawn 算法加引号并双重转义。以真实 cmd.exe + `%*` shim 往返验证。
+- **Windows:`harnessed update` 查询 npm 静默失效(H2)。** `npm.cmd` 无 shell spawn 在 Node 的 CVE-2024-27980 修复后抛 EINVAL。
+- **`rollback` 对 git clone 类安装必然失败(H4)**;`checkpoint reopen` 把自己的修改写回被回滚(H1);`eval --filter --update-golden` 会改写**所有** golden(H3);`settings.json` 顶层为 `null` 时 `ccHookAdd` 崩溃(H5);安全门漏检 `hook_command` 与 `harness_overrides.*.cmd`(H7)。
+- **codex 平台。** 插件幂等探测恒为假,每次 setup 重复 `codex plugin add`;codex verify 用 `codex plugin list` 子串匹配,而该列表同时打印**未安装**的插件,安装失败也能通过(M15,改读 `~/.codex/config.toml` 的 `[plugins."<p>@<m>"]`)。`setup --platform codex` 的 pin 写到了 `detectPlatform()` 从不读取的位置,机器上只要有 `~/.claude` 就静默回到 claude(L1 核验时发现)。hook bin 的状态根不跟随 pin,注入静默为空(L7)。**superpowers 的 codex 安装命令在当前 codex 上是坏的**:marketplace 已改名 `openai-api-curated`,旧名 `openai-curated` 报 not found(本机真实安装验证后修正)。
+- **并发与状态一致性。** 其余「锁外读 → 整包写」全部改为单锁 read-modify-write(M1);master 并行 fan-out 的兄弟 sub 互相覆盖全局 workflow record、首个完成的 sub 把整条链置 complete(M2);4-phase workflow 第 1 个 phase 后就是 complete、phase 失败不留记录(M3);配错的 workflow(既无 phases 也无 delegates_to)返回 `complete` 绿灯(M4)。
+- **进程与超时。** 库层 `process.exit()` 在并行路径上杀掉所有兄弟 sub,改抛 `WorkflowHaltError` 由 CLI 决定退出码(M7);`sdkSpawn` 无 wall-clock 上界,新增默认 1 小时、`HARNESSED_SPAWN_TIMEOUT_MS` 可调(M5);超时只杀 shell、真正干活的 npm/git 成孤儿继续写配置,改为杀整棵进程树(M13,本机复现);`runInstall` 无兜底,`install-base` 一次异常中断整批(M14)。
+- **路径与校验。** `prompt` / `rollback` / `manifest-add` 的路径穿越,既有 `checkPathSafe` 挡不住裸 `..`(M9-M11);`git clone` 目标解析遇无值 flag 错位、SHA pin 校验降级为 warn(M12);`gc` 按字典序删掉较新的 bin 备份(M8);注入按子串匹配 phase 编号(M16);`install_type: hook` 可搭配任意 method(L10);eval `file` step 可写出临时目录(L15)。
+- **其余低危。** `setup --dry-run` 不再写 pin(L1);`research` 补上嵌套会话防护(L3);`--max-iterations abc` 不再静默回落 20(L5);jq 过滤器语法错误不再显示为 `write EPIPE`(L4);STALE ledger 按 slot 自身活动时间判定,不再被其他 repo 的写入刷新(L8);aliases / known-good 按 assets root 定位(L9);原子写失败不留 `.tmp`(L12);已结清的 sub 不再每回合收到停机指令(L13);`initialPrompt` 不再挤掉角色提示词(L14);已注册的 hook 报 already-installed 并写回执(C2)。
+- 声明的 `tools` / `disallowedTools` / `maxTurns` / `permissionMode` 现在真正落到 SDK query options(M6);`bypassPermissions` 永不转发。
+
+### Removed
+
+- **before-commit hook(审查 L11)。** 只在 `triggers_commit === true` 时触发,而没有任何生产路径设置该字段;即便触发,`changedFiles` 恒为空、biome 与 STATE.md 检查指向 harnessed 包根而非用户仓库。与 4.34.0 删除 after-output hook 同一处理。commit 时规则仍经 `harnessed prompt` 的 discipline 段送达模型,STATE.md 行数由 `harnessed check-docs` 检查。
 
 ### Added
 
