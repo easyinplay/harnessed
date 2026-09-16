@@ -68,7 +68,15 @@ export const defaultSpawnDriver: SpawnDriver = async (
   // veto-paused sub and let real throws propagate. This honors the documented
   // "Fail-fast default" (workflows/auto/SKILL.md). `harnessed run` is the
   // CI/headless path; surfacing failure with a non-zero exit is the right UX.
-  const result = await runWorkflow(subYamlPath, {}, { packageRoot, gateContext: _context })
+  const result = await runWorkflow(
+    subYamlPath,
+    {},
+    {
+      packageRoot,
+      gateContext: _context,
+      subOf: masterName,
+    },
+  )
   if (result.status === 'failed') {
     throw new Error(
       `sub-workflow ${masterName}/${subName} failed` +

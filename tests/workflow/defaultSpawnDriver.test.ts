@@ -31,6 +31,12 @@ describe('defaultSpawnDriver — issue #1 fail-fast (no silent swallow)', () => 
     expect(runWorkflowMock).toHaveBeenCalledTimes(1)
   })
 
+  it('marks the spawned run as a sub of the master (M2: it must not own the global record)', async () => {
+    runWorkflowMock.mockResolvedValue({ status: 'complete', phasesRun: 1 })
+    await defaultSpawnDriver('verify', 'code-review', {}, ROOT)
+    expect(runWorkflowMock.mock.calls[0]?.[2]).toMatchObject({ subOf: 'verify' })
+  })
+
   it('status:failed → throws (carries master/sub + last phase)', async () => {
     runWorkflowMock.mockResolvedValue({
       status: 'failed',

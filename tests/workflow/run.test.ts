@@ -296,9 +296,12 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     const r = await runWorkflow('workflows/discuss/auto/workflow.yaml', {})
     expect(runMasterOrchestratorMock).toHaveBeenCalledTimes(1)
     expect(r).toEqual({ status: 'complete', phasesRun: 2 })
-    // KEY: master path 不走 5-phase 桩 spawn
-    expect(activatePhaseMock).not.toHaveBeenCalled()
-    expect(completePhaseMock).not.toHaveBeenCalled()
+    // KEY: master path 不走 5-phase 桩 spawn. A top-level master owns the global
+    // workflow record: exactly one activate + one complete, both under its own name.
+    expect(activatePhaseMock).toHaveBeenCalledTimes(1)
+    expect(activatePhaseMock).toHaveBeenCalledWith('discuss')
+    expect(completePhaseMock).toHaveBeenCalledTimes(1)
+    expect(completePhaseMock.mock.calls[0]?.[0]).toMatchObject({ phaseId: 'discuss' })
   })
 
   it('7. T3.5.W0.2 — master detect: workflow ∉ 4 master name → fall through to phase path', async () => {
@@ -730,5 +733,76 @@ describe('runWorkflow — nothing-to-run is a configuration error, not an empty 
     await expect(runWorkflow('workflows/orphan/workflow.yaml', {})).rejects.toThrow(
       /not a master workflow/,
     )
+  })
+})
+
+// External review M2 / M3 — who may write the ONE global current-workflow.json.
+describe('runWorkflow — workflow record ownership (M2) and phase-level transitions (M3)', () => {
+  const threePhases = [
+    { id: '01-a', skills: ['a'] },
+    { id: '02-b', skills: ['b'] },
+    { id: '03-c', skills: ['c'] },
+  ]
+  const transitions = () =>
+    completePhaseMock.mock.calls.map(
+      (c) => (c[0] as { transitionWorkflowComplete?: boolean }).transitionWorkflowComplete,
+    )
+
+  it('M3a — only the LAST phase flips the workflow complete (a crash mid-run no longer leaves `complete`)', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: threePhases })
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r.status).toBe('complete')
+    expect(transitions()).toEqual([false, false, true])
+  })
+
+  it('M3b — a failed phase writes a FAILED record and does not flip complete', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    loadPhasesMock.mockReturnValue({ workflow: 'task-code', phases: threePhases })
+    _dispatchSkillStub.fn = async (skillName) =>
+      skillName === 'b'
+        ? { status: 'fail', output: 'leaf spawn died' }
+        : { status: 'ok', output: 'ok' }
+    const r = await runWorkflow('workflows/task/code/workflow.yaml', {})
+    expect(r).toMatchObject({ status: 'failed', lastPhaseId: '02-b' })
+    const last = completePhaseMock.mock.calls.at(-1)?.[0] as {
+      phaseId: string
+      lastTask?: string
+      transitionWorkflowComplete?: boolean
+    }
+    expect(last.phaseId).toBe('02-b')
+    expect(last.lastTask).toMatch(/^FAILED: phase 02-b: leaf spawn died/)
+    expect(last.transitionWorkflowComplete).toBe(false)
+  })
+
+  it('M2 — a sub of a master never replaces or completes the global record', async () => {
+    isVetoedMock.mockResolvedValue(false)
+    loadPhasesMock.mockReturnValue({ workflow: 'code-review', phases: threePhases })
+    const r = await runWorkflow(
+      'workflows/verify/code-review/workflow.yaml',
+      {},
+      { subOf: 'verify' },
+    )
+    expect(r.status).toBe('complete')
+    expect(activatePhaseMock).not.toHaveBeenCalled()
+    // per-phase checkpoint envelopes are still written — just never the transition
+    expect(completePhaseMock).toHaveBeenCalledTimes(3)
+    expect(transitions()).toEqual([false, false, false])
+  })
+
+  it('M2 — a nested master spawned as a sub does not touch the global record either', async () => {
+    loadPhasesMock.mockReturnValue({
+      workflow: 'discuss',
+      delegates_to: [{ sub: 'strategic' }],
+      phases: undefined,
+    })
+    runMasterOrchestratorMock.mockResolvedValue({
+      master: 'discuss',
+      fired: ['strategic'],
+      skipped: [],
+    })
+    await runWorkflow('workflows/discuss/auto/workflow.yaml', {}, { subOf: 'auto' })
+    expect(activatePhaseMock).not.toHaveBeenCalled()
+    expect(completePhaseMock).not.toHaveBeenCalled()
   })
 })

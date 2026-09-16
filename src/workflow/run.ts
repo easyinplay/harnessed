@@ -449,6 +449,13 @@ function loadMaxIterTable(packageRoot: string): Record<string, Record<string, nu
 export interface RunWorkflowOpts {
   packageRoot?: string
   gateContext?: Record<string, unknown>
+  /** Set when this run is a sub spawned by a master orchestrator (the master's
+   *  name). current-workflow.json is ONE global record: a sub must not replace it
+   *  (activate) or flip it complete — the master owns it, and under a parallel
+   *  fan-out sibling subs would otherwise clobber each other's record and the
+   *  first sub to finish would mark the whole chain complete while the rest run.
+   *  Subs still write their per-phase checkpoint envelopes. */
+  subOf?: string
 }
 
 /** Run a workflow YAML to complete / paused-veto / failed (activate before veto per
@@ -488,8 +495,18 @@ export async function runWorkflow(
     Array.isArray(parsed.delegates_to) &&
     parsed.delegates_to.length > 0 &&
     MASTER_NAMES.includes(workflowName as MasterName)
+  // Only a top-level run owns the global workflow record (see RunWorkflowOpts.subOf).
+  const ownsRecord = opts.subOf === undefined
   if (isMaster) {
+    if (ownsRecord) await activatePhase(workflowName)
     const r = await runMasterOrchestrator(workflowName as MasterName, gateContext, packageRoot)
+    if (ownsRecord) {
+      await completePhase({
+        phaseId: workflowName,
+        status: 'complete',
+        lastTask: `master ${workflowName} complete: ${r.fired.length} sub(s) fired`,
+      })
+    }
     return {
       status: 'complete',
       phasesRun: r.fired.length,
@@ -536,7 +553,11 @@ export async function runWorkflow(
   for (let i = 0; i < phases.length; i++) {
     const ph = phases[i]
     if (!ph) continue
-    await activatePhase(ph.id)
+    if (ownsRecord) await activatePhase(ph.id)
+    // Flip the workflow complete only on the LAST phase of a run that owns the
+    // record. The default (true) marked a 4-phase workflow complete after phase 1,
+    // so a crash between phases left a `complete` record for a half-run workflow.
+    const transitionWorkflowComplete = ownsRecord && i === phases.length - 1
 
     // W1.5 — before-spawn arbitrate if `invokes_tools.length > 1` (K14 warn-not-halt)。
     //
@@ -610,6 +631,7 @@ export async function runWorkflow(
           phaseId: ph.id,
           status: 'complete',
           lastTask: `phase ${ph.id} skipped: gate ${ph.gate} evaluated false`,
+          transitionWorkflowComplete,
         })
         continue
       }
@@ -634,6 +656,14 @@ export async function runWorkflow(
         : {}),
     })
     if (r.status !== 'ok') {
+      // Record the failure (same `FAILED:` convention as `harnessed checkpoint fail`);
+      // without it the ledger left this phase `active` forever. Never flips complete.
+      await completePhase({
+        phaseId: ph.id,
+        status: 'complete',
+        lastTask: `FAILED: phase ${ph.id}: ${r.output}`,
+        transitionWorkflowComplete: false,
+      })
       return { status: 'failed', phasesRun: i, lastPhaseId: ph.id }
     }
 
@@ -684,6 +714,7 @@ export async function runWorkflow(
       phaseId: ph.id,
       status: 'complete',
       lastTask: `phase ${ph.id} complete: ${r.output}`,
+      transitionWorkflowComplete,
     })
   }
   return {
