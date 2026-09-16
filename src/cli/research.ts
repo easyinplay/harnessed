@@ -27,6 +27,7 @@ import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { WorkflowHaltError } from '../workflow/lib/fallbackHandlers.js'
 import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { runWorkflow } from '../workflow/run.js'
+import { isNestedHarnessContext } from './lib/nestedHarness.js'
 
 interface RawOpts {
   query?: string
@@ -74,6 +75,18 @@ export function registerResearch(program: Command): void {
       if (raw.dryRun === true) {
         console.log(JSON.stringify({ workflow: 'research', yamlPath, gateContext }, null, 2))
         process.exit(0)
+        return
+      }
+
+      // issue #1 guard, shared with `harnessed run` (external review L3): research is
+      // the same in-process SDK spawn and hangs the same way inside a CC session.
+      if (isNestedHarnessContext()) {
+        console.error(
+          'error: `harnessed research` is the CI/headless path (in-process SDK spawn) and hangs ' +
+            'when invoked from inside a Claude Code session. Use the CC-native `/research` slash ' +
+            'command instead. Set HARNESSED_ALLOW_NESTED=1 to override (CI / testing only).',
+        )
+        process.exit(1)
         return
       }
 

@@ -383,3 +383,43 @@ describe('cli/run — issue #1 nested-CC guard', () => {
     expect(runWorkflow).toHaveBeenCalledTimes(1)
   })
 })
+
+// External review L5 — `--max-iterations abc` parsed to NaN and `0` / NaN were
+// dropped by the `raw.maxIterations ?` spread: a typo silently ran with 20.
+describe('cli/run — --max-iterations validation (L5)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 0 })
+    process.env.HARNESSED_ALLOW_NESTED = '1'
+  })
+  afterEach(() => {
+    delete process.env.HARNESSED_ALLOW_NESTED
+    vi.restoreAllMocks()
+  })
+
+  it.each([
+    'abc',
+    '0',
+    '-3',
+    '101',
+    '2.5',
+    '12abc',
+    '',
+  ])('--max-iterations %j is rejected before anything runs', async (v) => {
+    const { code } = await runCli(['run', 'auto', '--max-iterations', v])
+    expect(code).not.toBe(0)
+    expect(runWorkflow).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['1', 1],
+    ['20', 20],
+    ['100', 100],
+  ])('--max-iterations %s reaches gateContext as %i', async (v, n) => {
+    await runCli(['run', 'auto', '--max-iterations', v])
+    const opts = vi.mocked(runWorkflow).mock.calls[0]?.[2] as {
+      gateContext?: { maxIterations?: number }
+    }
+    expect(opts.gateContext?.maxIterations).toBe(n)
+  })
+})

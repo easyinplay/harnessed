@@ -28,10 +28,9 @@
 
 import { readdir, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { Command } from 'commander'
+import { type Command, InvalidArgumentError } from 'commander'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
-import { detectPlatform } from '../platform/platform.js'
 import { WorkflowHaltError } from '../workflow/lib/fallbackHandlers.js'
 import * as loadPhasesMod from '../workflow/loadPhases.js'
 import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
@@ -39,6 +38,7 @@ import { runWorkflow } from '../workflow/run.js'
 import { secondOpinionFromGit } from './facts.js'
 import { extractMatchedTriggers, loadUserOverrides } from './lib/extract-user-overrides.js'
 import { buildDefaultGateContext } from './lib/gateContext.js'
+import { isNestedHarnessContext } from './lib/nestedHarness.js'
 import { isChromeDevtoolsAvailable } from './lib/probe-chrome-devtools.js'
 
 interface RawOpts {
@@ -67,6 +67,18 @@ const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')
 let _autoChainCache: string[] | null = null
 let _autoChainLoadFailed = false
 
+/** `--max-iterations` must be an integer in [1, 100] (the ralph-loop hard upper
+ *  limit). `parseInt` turned `abc` into NaN and the `raw.maxIterations ?` spread
+ *  then dropped NaN and 0 silently, so a typo ran with the default 20 and no
+ *  error (external review L5). `12abc` / `2.5` are rejected too. */
+export function parseMaxIterations(v: string): number {
+  const n = Number(v)
+  if (!/^\s*\d+\s*$/.test(v) || !Number.isInteger(n) || n < 1 || n > 100) {
+    throw new InvalidArgumentError(`expected an integer between 1 and 100, got '${v}'`)
+  }
+  return n
+}
+
 export function registerRun(program: Command): void {
   program
     .command('run')
@@ -78,8 +90,8 @@ export function registerRun(program: Command): void {
     .option('--task-stdin', 'read task description from stdin until EOF (avoids shell-escape)')
     .option(
       '--max-iterations <n>',
-      'SDK-path retry-loop max iter (default 20; honored Phase 3 onward)',
-      (v) => parseInt(v, 10),
+      'SDK-path retry-loop max iter (default 20; integer 1-100)',
+      parseMaxIterations,
     )
     .option('--model <model>', "subagent model: 'haiku' | 'sonnet' | 'opus'")
     .option(
@@ -232,21 +244,6 @@ export function registerRun(program: Command): void {
       }
       process.exit(result.status === 'failed' ? 1 : 0)
     })
-}
-
-/** issue #1 — detect that `harnessed run` is being invoked from inside an AI
- *  harness session subprocess (the footgun: nested in-process SDK spawn hangs).
- *  True ONLY when: no explicit override AND the active platform exposes a session
- *  id env (Phase 35 seam) AND it is set AND stdin is not an interactive TTY (the
- *  Bash-tool / piped case). A human at a real terminal (TTY) or CI (no session
- *  env) is left alone. */
-function isNestedHarnessContext(): boolean {
-  if (process.env.HARNESSED_ALLOW_NESTED === '1') return false
-  const sessEnv = detectPlatform().sessionIdEnv
-  if (!sessEnv) return false
-  const sid = process.env[sessEnv]?.trim()
-  if (!sid) return false
-  return !process.stdin.isTTY
 }
 
 export async function listWorkflowNames(workflowsDir: string): Promise<string[]> {

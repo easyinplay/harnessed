@@ -77,8 +77,12 @@ describe('cli/research — 9 cells per v3.4.4 PHASE-4-SPEC.md L393-402', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 0 })
+    // The suite may itself run inside a CC session (session id + non-TTY), which
+    // the nested guard (L3) would otherwise trip; guard cells live below.
+    process.env.HARNESSED_ALLOW_NESTED = '1'
   })
   afterEach(() => {
+    delete process.env.HARNESSED_ALLOW_NESTED
     vi.restoreAllMocks()
   })
 
@@ -177,5 +181,52 @@ describe('cli/research — 9 cells per v3.4.4 PHASE-4-SPEC.md L393-402', () => {
     expect(code).not.toMatch(/from ['"]\.\.\/routing\//)
     expect(code).not.toMatch(/from ['"]\.\.\/routing['"]/)
     expect(code).not.toMatch(/TaskContext/)
+  })
+})
+
+// External review L3 — `research` is the same in-process SDK spawn as `run`, but
+// had no nested-session guard, so inside a Claude Code session it reproduced
+// issue #1's 108s hang.
+describe('cli/research — nested-CC guard (L3)', () => {
+  let savedSid: string | undefined
+  let savedAllow: string | undefined
+  let isTTYDescriptor: PropertyDescriptor | undefined
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 0 })
+    savedSid = process.env.CLAUDE_CODE_SESSION_ID
+    savedAllow = process.env.HARNESSED_ALLOW_NESTED
+    isTTYDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    process.env.CLAUDE_CODE_SESSION_ID = 'sess-test-123'
+    delete process.env.HARNESSED_ALLOW_NESTED
+    Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true })
+  })
+  afterEach(() => {
+    if (savedSid === undefined) delete process.env.CLAUDE_CODE_SESSION_ID
+    else process.env.CLAUDE_CODE_SESSION_ID = savedSid
+    if (savedAllow === undefined) delete process.env.HARNESSED_ALLOW_NESTED
+    else process.env.HARNESSED_ALLOW_NESTED = savedAllow
+    if (isTTYDescriptor) Object.defineProperty(process.stdin, 'isTTY', isTTYDescriptor)
+    else Object.defineProperty(process.stdin, 'isTTY', { value: undefined, configurable: true })
+    vi.restoreAllMocks()
+  })
+
+  it('nested + non-TTY + no override → exit 1 + pointer to /research, runWorkflow NOT called', async () => {
+    const { code, stderr } = await runCli(['research', '--query', 'x'])
+    expect(code).toBe(1)
+    expect(stderr).toMatch(/\/research/)
+    expect(runWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('HARNESSED_ALLOW_NESTED=1 overrides → runWorkflow IS called', async () => {
+    process.env.HARNESSED_ALLOW_NESTED = '1'
+    await runCli(['research', '--query', 'x'])
+    expect(runWorkflow).toHaveBeenCalledTimes(1)
+  })
+
+  it('--dry-run is never blocked', async () => {
+    const { code } = await runCli(['research', '--query', 'x', '--dry-run'])
+    expect(code).toBe(0)
   })
 })
