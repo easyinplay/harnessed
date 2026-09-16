@@ -6,7 +6,7 @@
 // Drives the SHIPPED bin (bin/harnessed-inject-state.mjs) end to end.
 
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -19,7 +19,9 @@ afterEach(() => {
 
 function run(updatedAt: string | undefined): string {
   const root = mkdtempSync(join(tmpdir(), 'l8-root-'))
-  const repo = mkdtempSync(join(tmpdir(), 'l8-repo-'))
+  // realpath: on macOS tmpdir() is under the /var -> /private/var symlink, and the
+  // bin keys the slot by the child's realpath cwd (sister eval runner).
+  const repo = realpathSync(mkdtempSync(join(tmpdir(), 'l8-repo-')))
   made.push(root, repo)
   mkdirSync(join(repo, '.git'))
   const slot = {
