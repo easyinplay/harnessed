@@ -31,7 +31,9 @@ report's framing or fix is wrong in a way that matters) · **NOT REPRODUCED** ·
 | # | finding | verdict | notes |
 |---|---|---|---|
 | M1 | unlocked read → locked whole write, lost updates | **REAL, partly fixed** | `pause()` / `complete()` now go through `mutateWorkflow`; `checkpoint.ts` verify_mode / ship_ready / retro_due writes and `compact.ts` PENDING |
-| M2–M16 | | PENDING | |
+| M8 | `gc` keeps the lexicographically-last bin-backup | **REAL** — `'4.10.0' < '4.9.0'` as strings, so the NEWER backup was deleted; the existing fixture only used 0.8.0/0.9.0 where the two orders agree | fixed: `byVersion` via `compareVersions` (string fallback for non-semver names); falsified |
+| M16 | `findPhaseContextExcerpt` substring-matches phase numbers | **REAL, and wider than reported** — phase "16" hit dir "1-"; ALSO the reverse: phase "1" never matched zero-padded dir "01-" (`"1".includes("01")` is false), so the standard GSD layout with a short phase string injected nothing | fixed: first numeric token of the phase string compared numerically to the dir number; both directions falsified |
+| M2–M7, M9–M15 | | PENDING | |
 
 ## Low
 

@@ -264,9 +264,16 @@ export function findPhaseContextExcerpt(
   try {
     const phasesDir = join(repoRoot, '.planning', 'phases')
     if (!existsSync(phasesDir)) return null
+    // Compare phase NUMBERS, not substrings. `phase.includes(num)` matched a phase
+    // of "16" against a dir numbered "1" and injected phase 1's Goal as phase 16's
+    // context — silently, on any layout with non-zero-padded dirs, and on decimal
+    // GSD phases ("2.1" contains "2" and "1"). The phase number is the first
+    // numeric token of the phase string ("13-planning-doc-debloat" → 13).
+    const phaseNum = /(\d+(?:\.\d+)?)/.exec(phase)?.[1]
+    if (phaseNum === undefined) return null
     for (const dir of readdirSync(phasesDir)) {
-      const num = /^(\d+)/.exec(dir)?.[1]
-      if (!num || !phase.includes(num)) continue
+      const num = /^(\d+(?:\.\d+)?)/.exec(dir)?.[1]
+      if (num === undefined || Number(num) !== Number(phaseNum)) continue
       const ctxFile = join(phasesDir, dir, `${num}-CONTEXT.md`)
       if (!existsSync(ctxFile)) continue
       const body = readFileSync(ctxFile, 'utf8')

@@ -21,6 +21,17 @@ import type { Command } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
 import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
+import { compareVersions } from './lib/version-check.js'
+
+/** Ascending by semver; names that are not X.Y.Z fall back to string order so an
+ *  unexpected directory never throws out of gc. */
+function byVersion(a: string, b: string): number {
+  const c = compareVersions(a, b)
+  if (c === 'behind') return -1
+  if (c === 'ahead') return 1
+  if (c === 'current') return 0
+  return a.localeCompare(b)
+}
 
 // ── 4.27.0 (B3 Slice 1, T5 / D7) — compiled-artifact gc ─────────────────────
 // Sweeps three self-update leftovers (CEO plan rev2 issue 5 + rev3 issue 3):
@@ -65,14 +76,17 @@ export async function gcCompiledArtifacts(opts: {
     /* no assets dir — npm mode or fresh install */
   }
 
-  // bin-backup/<ver> — keep the newest 1 (name-sorted; versions sort well enough
-  // for "newest": ties only matter across a single update boundary)
+  // bin-backup/<ver> — keep the newest 1, ordered by VERSION. This used to be a
+  // plain `.sort()`, i.e. lexicographic, and "versions sort well enough" was
+  // false the first time a segment reached two digits: '4.10.0' < '4.9.0' as
+  // strings, so gc deleted the NEWER backup and kept the older one — the opposite
+  // of what rollback (which picks its target with compareVersions) needs.
   try {
     const backupDir = join(opts.stateRoot, 'bin-backup')
     const vers = (await readdir(backupDir, { withFileTypes: true }))
       .filter((e) => e.isDirectory())
       .map((e) => e.name)
-      .sort()
+      .sort(byVersion)
     for (const v of vers.slice(0, -1)) {
       const p = join(backupDir, v)
       removed.push(p)

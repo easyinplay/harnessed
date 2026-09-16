@@ -295,6 +295,36 @@ describe('findPhaseContextExcerpt', () => {
   it('null when no phase dir matches', () => {
     expect(findPhaseContextExcerpt(tmp, 'task', DEFAULT_INJECT_BUDGET)).toBeNull()
   })
+
+  // Phase numbers are compared numerically. `phase.includes(num)` matched phase
+  // "16" against a dir numbered "1" and injected phase 1's Goal as phase 16's
+  // context, silently, on any non-zero-padded layout.
+  it("phase 16 never picks up dir '1-…' (substring), only its own dir", () => {
+    const put = (dir: string, num: string, goal: string) => {
+      mkdirSync(join(tmp, '.planning', 'phases', dir), { recursive: true })
+      writeFileSync(
+        join(tmp, '.planning', 'phases', dir, `${num}-CONTEXT.md`),
+        `## Goal\n\n${goal}\n`,
+        'utf8',
+      )
+    }
+    put('1-first', '1', 'GOAL-OF-PHASE-ONE')
+    expect(findPhaseContextExcerpt(tmp, '16-later', DEFAULT_INJECT_BUDGET)).toBeNull()
+    put('16-later', '16', 'GOAL-OF-PHASE-SIXTEEN')
+    const ex = findPhaseContextExcerpt(tmp, '16-later', DEFAULT_INJECT_BUDGET)
+    expect(ex).toContain('GOAL-OF-PHASE-SIXTEEN')
+    expect(ex).not.toContain('GOAL-OF-PHASE-ONE')
+  })
+
+  it("zero-padded dir '01-…' still matches phase '1'", () => {
+    mkdirSync(join(tmp, '.planning', 'phases', '01-pad'), { recursive: true })
+    writeFileSync(
+      join(tmp, '.planning', 'phases', '01-pad', '01-CONTEXT.md'),
+      '## Goal\n\nPADDED\n',
+      'utf8',
+    )
+    expect(findPhaseContextExcerpt(tmp, '1', DEFAULT_INJECT_BUDGET)).toContain('PADDED')
+  })
 })
 
 describe('buildInjection', () => {

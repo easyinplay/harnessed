@@ -28,6 +28,24 @@ function world() {
   return { stateRoot, execDir, execPath }
 }
 
+describe('gcCompiledArtifacts — bin-backup newest is chosen by VERSION', () => {
+  // A plain .sort() is lexicographic: '4.10.0' < '4.9.0' as strings, so gc kept
+  // the OLDER backup and deleted the newer one — the one rollback most needs. The
+  // fixture below only ever used 0.8.0 / 0.9.0, where string order and version
+  // order happen to agree, which is how this went unnoticed.
+  it('keeps 4.10.0 over 4.9.0 (string order would keep 4.9.0)', async () => {
+    const stateRoot = mkdtempSync(join(tmpdir(), 'gc-ver-'))
+    for (const v of ['4.9.0', '4.10.0', '4.2.0']) {
+      mkdirSync(join(stateRoot, 'bin-backup', v), { recursive: true })
+      writeFileSync(join(stateRoot, 'bin-backup', v, 'harnessed'), v)
+    }
+    await gcCompiledArtifacts({ keepVersions: [], stateRoot })
+    expect(existsSync(join(stateRoot, 'bin-backup', '4.10.0'))).toBe(true)
+    expect(existsSync(join(stateRoot, 'bin-backup', '4.9.0'))).toBe(false)
+    expect(existsSync(join(stateRoot, 'bin-backup', '4.2.0'))).toBe(false)
+  })
+})
+
 describe('gcCompiledArtifacts', () => {
   it('removes assets outside the keep-set, keeps bin-backup newest 1, sweeps .bak-*', async () => {
     const w = world()
