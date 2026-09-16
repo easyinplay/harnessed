@@ -1,8 +1,8 @@
 // Phase 28 W1 — setup --platform <id> (v9.0 Phase C / D5) integration-lite tests.
 //
 // Asserts: (1) invalid id → error + exit(1) before any work; (2) --platform
-// codex sets HARNESSED_PLATFORM for the run, persists the `.platform` pin under
-// the CODEX stateRoot, and routes the resolver-backed skills/commands dirs to
+// codex sets HARNESSED_PLATFORM for the run, persists the `.platform` pin at the
+// well-known CLAUDE stateRoot (the only place detectPlatform reads it), and routes the resolver-backed skills/commands dirs to
 // codex (~/.agents/skills + ~/.codex/prompts). Sister setup.test.ts mock style.
 //
 // Env isolation CRITICAL: HARNESSED_PLATFORM is set by the action — save/restore
@@ -43,7 +43,7 @@ vi.mock('../../src/cli/lib/setup-helpers.js', () => ({
 import { mkdir, readdir, writeFile } from 'node:fs/promises'
 import { Command } from 'commander'
 import { registerSetup } from '../../src/cli/setup.js'
-import { getCommandsDir, getSkillsDir } from '../../src/platform/platform.js'
+import { claudeDescriptor, getCommandsDir, getSkillsDir } from '../../src/platform/platform.js'
 
 const readdirMock = vi.mocked(readdir)
 const mkdirMock = vi.mocked(mkdir)
@@ -113,7 +113,7 @@ describe('setup --platform (Phase C / D5)', () => {
     expect(stderr).toContain('claude | codex')
   })
 
-  it('--platform codex → sets HARNESSED_PLATFORM + persists .platform pin under codex stateRoot + routes resolvers to codex', async () => {
+  it('--platform codex → sets HARNESSED_PLATFORM + persists .platform pin where detectPlatform reads it + routes resolvers to codex', async () => {
     // scanWorkflowsWithSkill mocked to return [] → setup exits 2 (nothing to
     // install) AFTER applyPlatformOption runs. We assert the platform side
     // effects, which happen before that exit.
@@ -123,16 +123,27 @@ describe('setup --platform (Phase C / D5)', () => {
     // env set for the run
     expect(process.env[PLATFORM_KEY]).toBe('codex')
 
-    // pin written to the codex stateRoot (~/.codex/harnessed/.platform)
-    const pinWrite = writeFileMock.mock.calls.find((c) =>
-      String(c[0]).replace(/\\/g, '/').endsWith('.codex/harnessed/.platform'),
+    // Pin written to the well-known claude stateRoot, which is exactly where
+    // detectPlatform() step 3 reads it (tests/installers/platform-codex.test.ts).
+    // It used to go to ~/.codex/harnessed/.platform, which nothing reads.
+    const pinWrites = writeFileMock.mock.calls.filter((c) => String(c[0]).endsWith('.platform'))
+    expect(pinWrites).toHaveLength(1)
+    expect(String(pinWrites[0]?.[0]).replace(/\\/g, '/')).toBe(
+      `${claudeDescriptor().stateRoot.replace(/\\/g, '/')}/.platform`,
     )
-    expect(pinWrite).toBeDefined()
-    expect(pinWrite?.[1]).toBe('codex')
+    expect(pinWrites[0]?.[1]).toBe('codex')
 
     // resolvers now route to codex paths
     expect(getSkillsDir().replace(/\\/g, '/')).toMatch(/\.agents\/skills$/)
     expect(getCommandsDir().replace(/\\/g, '/')).toMatch(/\.codex\/prompts$/)
+  })
+
+  it('L1 — --dry-run --platform codex routes the run but writes no pin (dry-run writes nothing)', async () => {
+    const { code } = await runCli(['setup', '--dry-run', '--platform', 'codex'])
+    expect(code).toBe(2)
+    expect(process.env[PLATFORM_KEY]).toBe('codex')
+    expect(writeFileMock.mock.calls.find((c) => String(c[0]).endsWith('.platform'))).toBeUndefined()
+    expect(mkdirMock).not.toHaveBeenCalled()
   })
 
   it('no --platform → HARNESSED_PLATFORM stays unset (claude-default untouched)', async () => {

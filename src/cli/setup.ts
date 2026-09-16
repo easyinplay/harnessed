@@ -19,7 +19,12 @@ import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { getLocale, t } from '../i18n/index.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
-import { detectPlatform, getCommandsDir, getSkillsDir } from '../platform/platform.js'
+import {
+  claudeDescriptor,
+  detectPlatform,
+  getCommandsDir,
+  getSkillsDir,
+} from '../platform/platform.js'
 import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
@@ -57,7 +62,7 @@ const KNOWN_PLATFORMS = ['claude', 'codex'] as const
  * error + exit(1). Pin-write failure is non-blocking (warn) — env is already set
  * so the run still routes correctly.
  */
-async function applyPlatformOption(platform: string): Promise<void> {
+async function applyPlatformOption(platform: string, persist: boolean): Promise<void> {
   if (!(KNOWN_PLATFORMS as readonly string[]).includes(platform)) {
     console.error(
       `--platform: unknown id '${platform}' (expected one of: ${KNOWN_PLATFORMS.join(' | ')})`,
@@ -65,12 +70,18 @@ async function applyPlatformOption(platform: string): Promise<void> {
     process.exit(1)
   }
   process.env.HARNESSED_PLATFORM = platform
-  // detectPlatform now resolves to the chosen platform → its stateRoot is the
-  // pin's home (codex pin lives in ~/.codex/harnessed, claude in ~/.claude/harnessed).
-  const stateRoot = detectPlatform().stateRoot
+  // --dry-run must not write anything, and that includes the pin: the env var
+  // above already routes this run's resolvers to the chosen platform.
+  if (!persist) return
+  // The pin lives at the WELL-KNOWN location detectPlatform() reads — the claude
+  // (incumbent) stateRoot — whatever platform it names. It used to be written to
+  // the chosen platform's own stateRoot, so a codex pin landed in
+  // ~/.codex/harnessed/.platform where nothing reads it: on any machine that also
+  // has ~/.claude, later runs silently resolved back to claude.
+  const pinRoot = claudeDescriptor().stateRoot
   try {
-    await mkdir(stateRoot, { recursive: true })
-    await writeFile(join(stateRoot, '.platform'), platform, 'utf8')
+    await mkdir(pinRoot, { recursive: true })
+    await writeFile(join(pinRoot, '.platform'), platform, 'utf8')
   } catch (e) {
     console.warn(`  [--platform] could not persist .platform pin (${(e as Error).message})`)
   }
@@ -266,7 +277,7 @@ export function registerSetup(program: Command): void {
       const dryRun = raw.dryRun === true
       // Phase C / D5 — apply --platform FIRST so all resolver-backed paths below
       // (skills/commands/state) route to the chosen platform for this run.
-      if (raw.platform !== undefined) await applyPlatformOption(raw.platform)
+      if (raw.platform !== undefined) await applyPlatformOption(raw.platform, !dryRun)
       const pkgRoot = getAssetsRoot()
       const workflowsDir = resolve(pkgRoot, 'workflows')
       const skillsBase = getSkillsDir()
