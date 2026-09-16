@@ -34,7 +34,7 @@ import {
   resolveHookCommand,
 } from './lib/hookEntry.js'
 import { preflight } from './lib/preflight.js'
-import { updateInstalled } from './lib/state.js'
+import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer } from './lib/types.js'
 
 interface Settings {
@@ -140,7 +140,11 @@ export const installCcHookAdd: Installer = async (ctx) => {
   const arr = settings.hooks[ev] ?? []
   const ours = arr.filter((e) => entryMatchesRegistration(e, cmd, resolvedCmd, marker))
   if (ours.length === 1 && isDesiredHookEntry(ours[0] ?? {}, matcher, resolvedCmd)) {
-    return { ok: true, backupId: 'idempotent-skip', appliedFiles: [] }
+    // Phase 59 wrote the receipt on every other installer's idempotent path and
+    // missed this one; it also returned the plain success shape, so setup
+    // reported "installed" on every re-run of an already-registered hook.
+    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, '', '')
+    return { ok: true, alreadyInstalled: true, backupId: 'idempotent-skip' }
   }
   const others = arr.filter((e) => !entryMatchesRegistration(e, cmd, resolvedCmd, marker))
   settings.hooks[ev] = [...others, desiredHookEntry(matcher, resolvedCmd)]

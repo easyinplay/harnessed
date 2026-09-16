@@ -16,10 +16,12 @@
 //      flag at CLI; if missing, refuse without prompt + print educational
 //      "use --system to opt in" hint (no L4 manifest may auto-apply)
 //
-// nonInteractive mode (CI / scripts): skip all prompts; honor ctx.opts.apply
-// for L1/L2/L3 (apply=true → proceed; apply=false → dry-run yields proceed:
-// true so caller computes plan but does not execute), while L4 still
-// requires --system (security flag, not a UX decision).
+// nonInteractive mode (CI / scripts): skip all prompts; proceed === ctx.opts.apply
+// for L1/L2/L3. apply=false (a dry run) yields proceed:false, which installers
+// surface as `aborted: user-cancel` AFTER rendering the plan — the exit-2 dry-run
+// contract the install integration tests rely on. (This note used to claim
+// apply=false yields proceed:true; the code never did.) L4 still requires
+// --system (security flag, not a UX decision).
 
 import * as p from '@clack/prompts'
 import type { InstallContext, Level } from './types.js'

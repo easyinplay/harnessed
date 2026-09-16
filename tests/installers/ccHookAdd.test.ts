@@ -219,7 +219,7 @@ describe('cc-hook-add installer', () => {
     }
   })
 
-  it('install — idempotent on the exact corrected entry → ok + appliedFiles=[]', async () => {
+  it('install — idempotent on the exact corrected entry → alreadyInstalled + receipt', async () => {
     for (const k of Object.keys(fakeFs)) delete fakeFs[k]
     fakeFs[SETTINGS_PATH] = JSON.stringify(
       {
@@ -243,11 +243,11 @@ describe('cc-hook-add installer', () => {
         level: 'L3',
         cwd: process.cwd(),
       })
-      expect('ok' in r && r.ok === true).toBe(true)
-      if ('ok' in r && r.ok && !('alreadyInstalled' in r)) {
-        expect(r.backupId).toBe('idempotent-skip')
-        expect(r.appliedFiles).toEqual([])
-      }
+      // Already-registered hook: reported as already-installed (not "installed"),
+      // and the install receipt is recorded (Phase 59 missed this installer).
+      expect(r).toMatchObject({ ok: true, alreadyInstalled: true, backupId: 'idempotent-skip' })
+      const receipt = Object.entries(fakeFs).find(([p]) => p.endsWith('state.json'))?.[1]
+      expect(receipt).toContain('dashboard-autospawn')
     } finally {
       cap.restore()
     }
