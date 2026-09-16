@@ -31,6 +31,7 @@ import { join } from 'node:path'
 import { getAssetsRoot } from '../../platform/assetsRoot.js'
 import { getSettingsPath, getSkillsDir, harnessSkillsDirs } from '../../platform/platform.js'
 import { binaryOnPath, extractVerifyBinary } from './binaryProbe.js'
+import { parseGitCloneDest } from './gitCloneArgs.js'
 import { detectCcHookInstalled } from './hookEntry.js'
 import { isMcpServerRegistered, isPluginRegistered } from './readClaudeConfig.js'
 import { spawnCmd } from './spawn.js'
@@ -56,16 +57,8 @@ export function extractSkillName(cmd: string, fallback: string): string {
 // Extract clone target directory from a git-clone-with-setup cmd.
 // Pattern: `git clone [flags] <url> <dest>`. Returns expanded absolute path.
 function extractGitCloneTarget(cmd: string): string | null {
-  const idx = cmd.indexOf('git clone')
-  if (idx < 0) return null
-  const tail = cmd.slice(idx + 'git clone'.length).trim()
-  const tokens = tail.split(/\s+/)
-  let i = 0
-  while (i < tokens.length && tokens[i]?.startsWith('-')) {
-    i += tokens[i]?.includes('=') ? 1 : 2
-  }
-  const dest = tokens[i + 1]
-  if (!dest || dest === '&&' || dest === ';' || dest === '|') return null
+  const dest = parseGitCloneDest(cmd)?.raw
+  if (!dest) return null
   if (dest.startsWith('~/')) return join(homedir(), dest.slice(2))
   if (dest.startsWith('/') || /^[A-Z]:[\\/]/i.test(dest)) return dest
   // relative path — ambiguous, skip native detection

@@ -30,6 +30,7 @@ import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
+import { parseGitCloneDest } from './lib/gitCloneArgs.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
 import {
   auditPostInstall,
@@ -78,28 +79,7 @@ function gitRevParseHead(cwd: string, timeoutMs = 10_000): Promise<{ sha: string
 // detector below can match the dest VERBATIM against the cmd string (the cmd
 // carries the raw `~/...` form, not the expanded path).
 function extractRawCloneDest(cmd: string): { raw: string; cloneIdx: number } | null {
-  const idx = cmd.indexOf('git clone')
-  if (idx < 0) return null
-  const tail = cmd.slice(idx + 'git clone'.length).trim()
-  const tokens = tail.split(/\s+/)
-  let i = 0
-  while (i < tokens.length) {
-    const t = tokens[i]
-    if (t === undefined || !t.startsWith('-')) break
-    if (t === '--depth' || t === '--branch' || t === '-b') {
-      i += 2
-    } else if (t.includes('=')) {
-      i += 1
-    } else {
-      i += 2
-    }
-  }
-  // tokens[i] is the URL; tokens[i+1] is the dest. End-of-clause guards
-  // (&&, ;, |) means the manifest omitted dest — git would default to a
-  // repo-name dir in cwd, which is fragile; require explicit dest.
-  const dest = tokens[i + 1]
-  if (!dest || dest === '&&' || dest === ';' || dest === '|') return null
-  return { raw: dest, cloneIdx: idx }
+  return parseGitCloneDest(cmd)
 }
 
 function extractCloneTarget(cmd: string): string | null {
