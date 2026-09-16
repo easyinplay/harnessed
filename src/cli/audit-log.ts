@@ -70,6 +70,13 @@ function pipeToJq(filterExpr: string, lines: string[]): Promise<number> {
       }
     })
     child.on('close', (code) => resolve(code ?? 0))
+    // jq exits early on a bad filter; our pending write then fails with EPIPE. jq's
+    // own stderr + exit code already explain it, so EPIPE is expected here. Without
+    // a listener it surfaced as an uncaught `write EPIPE` that hid the real error
+    // (external review L4).
+    child.stdin.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code !== 'EPIPE') reject(err)
+    })
     child.stdin.write(lines.join('\n'))
     child.stdin.end()
   })

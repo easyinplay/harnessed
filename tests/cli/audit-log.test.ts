@@ -124,7 +124,7 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
     mockAuditLog([RECORD_A, RECORD_B, RECORD_C])
     // Mock spawn to simulate jq process: emit close event with code 0
     const mockChild = {
-      stdin: { write: vi.fn(), end: vi.fn() },
+      stdin: { write: vi.fn(), end: vi.fn(), on: vi.fn() },
       on: vi.fn().mockImplementation((event: string, cb: (code: number) => void) => {
         if (event === 'close') setTimeout(() => cb(0), 0)
       }),
@@ -238,5 +238,33 @@ describe('cli/audit-log — Phase 5.1 W1 T1.2 TDD RED (D-01 jq + D-02 dual forma
     expect(stdout).not.toContain('ya29.ahJFsecret')
     expect(stdout).not.toContain('AIzaSySecret')
     expect(stdout).toContain('[REDACTED]')
+  })
+})
+
+// External review L4 — a jq syntax error makes jq exit before reading stdin; the
+// pending write then fails with EPIPE, which had no listener and surfaced as an
+// uncaught `write EPIPE` instead of jq's own message and exit code.
+describe('cli/audit-log — jq exiting early (L4)', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it("EPIPE on stdin is absorbed; the CLI exits with jq's own code", async () => {
+    const { EventEmitter } = await import('node:events')
+    mockAuditLog([RECORD_A])
+    const stdin = Object.assign(new EventEmitter(), {
+      write: vi.fn(() => {
+        setImmediate(() =>
+          stdin.emit('error', Object.assign(new Error('write EPIPE'), { code: 'EPIPE' })),
+        )
+        return false
+      }),
+      end: vi.fn(),
+    })
+    const child = Object.assign(new EventEmitter(), { stdin })
+    setTimeout(() => child.emit('close', 3), 20)
+    spawnMock.mockReturnValue(child as unknown as ReturnType<typeof spawn>)
+    const { code } = await runCli(['audit-log', '--filter', '.[bad'])
+    expect(code).toBe(3)
   })
 })
