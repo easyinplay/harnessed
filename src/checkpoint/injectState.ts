@@ -4,7 +4,7 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { detectLoop } from './breakLoop.js'
+import { detectLoop, isSettled } from './breakLoop.js'
 import { deriveNext, type NextUnit } from './deriveNext.js'
 import { describeUnit } from './forwardStep.js'
 import { nextPending } from './ledger.js'
@@ -90,7 +90,8 @@ export function buildWorkflowStateBlock(
   if (!wf) return ''
   const ledger = wf.sub_progress ?? []
   const next = nextPending(ledger)
-  const loops = detectLoop(ledger)
+  // Per-turn directives only for subs that can still be respawned (L13).
+  const loops = detectLoop(ledger.filter((e) => !isSettled(e)))
   const lines = [
     '<workflow-state>',
     `phase: ${wf.phase}`,
@@ -143,6 +144,7 @@ export function buildWorkflowStateBlock(
   // Both are pure reads of the ledger (the budget was resolved and stored at fail
   // time precisely so this builder stays yaml-free).
   for (const e of ledger) {
+    if (isSettled(e)) continue // resolved subs are never respawned (L13)
     const attempts = e.fail_count ?? 0
     if (e.attempt_budget !== undefined && attempts >= e.attempt_budget) {
       lines.push(

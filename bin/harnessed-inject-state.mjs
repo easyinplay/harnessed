@@ -115,6 +115,9 @@ function detectLoop(ledger) {
     .filter((e) => (e.fail_count ?? 0) >= LOOP_THRESHOLD)
     .map((e) => ({ sub: e.sub, count: e.fail_count }))
 }
+function isSettled(e) {
+  return e.status === 'done' || e.status === 'skipped' || e.status === 'rejected'
+}
 
 // src/checkpoint/ledger.ts
 function nextPending(entries) {
@@ -264,7 +267,7 @@ function buildWorkflowStateBlock(wf, forward, ledgerAgeMs) {
   if (!wf) return ''
   const ledger = wf.sub_progress ?? []
   const next = nextPending(ledger)
-  const loops = detectLoop(ledger)
+  const loops = detectLoop(ledger.filter((e) => !isSettled(e)))
   const lines = [
     '<workflow-state>',
     `phase: ${wf.phase}`,
@@ -299,6 +302,7 @@ function buildWorkflowStateBlock(wf, forward, ledgerAgeMs) {
     )
   }
   for (const e of ledger) {
+    if (isSettled(e)) continue
     const attempts = e.fail_count ?? 0
     if (e.attempt_budget !== void 0 && attempts >= e.attempt_budget) {
       lines.push(

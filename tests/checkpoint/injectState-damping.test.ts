@@ -87,3 +87,48 @@ describe('buildWorkflowStateBlock — T2.7 damping breadcrumbs', () => {
     expect(out).not.toContain('NO-PROGRESS')
   })
 })
+
+// External review L13 — the three stop directives did not look at status: a sub
+// that failed its way past the thresholds and then passed (or was skipped /
+// rejected) kept being told to stop, every turn, for the rest of the workflow.
+describe('buildWorkflowStateBlock — settled subs get no stop directives (L13)', () => {
+  const heavy = {
+    gate_fired: true,
+    fail_count: 20,
+    attempt_budget: 15,
+    progress: { metric: 'tests', best: 1, stale_count: 9 },
+  } as const
+
+  it.each([
+    'done',
+    'skipped',
+    'rejected',
+  ] as const)('status %s → no BREAK-LOOP / BUDGET-EXHAUSTED / NO-PROGRESS', (status) => {
+    const out = buildWorkflowStateBlock(
+      wf([
+        { sub: 'task-test', status, ...heavy } as unknown as NonNullable<
+          CurrentWorkflowV1Type['sub_progress']
+        >[number],
+      ]),
+    )
+    expect(out).not.toContain('BREAK-LOOP')
+    expect(out).not.toContain('BUDGET-EXHAUSTED')
+    expect(out).not.toContain('NO-PROGRESS')
+  })
+
+  it.each([
+    'failed',
+    'pending',
+  ] as const)('status %s → all three directives still fire', (status) => {
+    const out = buildWorkflowStateBlock(
+      wf([
+        { sub: 'task-test', status, ...heavy } as unknown as NonNullable<
+          CurrentWorkflowV1Type['sub_progress']
+        >[number],
+      ]),
+    )
+    expect(out).toContain('BREAK-LOOP')
+    expect(out).toContain('BUDGET-EXHAUSTED')
+    expect(out).toContain('NO-PROGRESS')
+  })
+})

@@ -1,6 +1,6 @@
 // v4.1.3 — unit tests for crash-safe atomic writes (temp → rename).
 
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -84,5 +84,28 @@ describe('writeFileAtomic — concurrent writers to the same path (v4.11.1 race 
     for (let i = 0; i < 10; i++) writeFileSyncAtomic(p, JSON.stringify({ n: i }))
     expect(readFileSync(p, 'utf8')).toBe('{"n":9}')
     expect(readdirSync(dir)).toEqual(['sync-state.json'])
+  })
+})
+
+// External review L12 — a rename that keeps failing left its unique temp file
+// behind on every attempt (nothing else ever reuses or cleans those names).
+describe('atomic writes — a persistently failing rename leaves no temp file', () => {
+  // A directory sitting at the target path makes every rename fail.
+  const blocked = (): string => {
+    const target = join(dir, 'state.json')
+    mkdirSync(target)
+    return target
+  }
+
+  it('sync: throws, and the parent dir holds only the blocking directory', () => {
+    const target = blocked()
+    expect(() => writeFileSyncAtomic(target, 'x')).toThrow()
+    expect(readdirSync(dir)).toEqual(['state.json'])
+  })
+
+  it('async: rejects, and the parent dir holds only the blocking directory', async () => {
+    const target = blocked()
+    await expect(writeFileAtomic(target, 'x')).rejects.toThrow()
+    expect(readdirSync(dir)).toEqual(['state.json'])
   })
 })

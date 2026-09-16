@@ -7,8 +7,8 @@
 // `<path>.tmp` first, then rename — rename is atomic on the same filesystem, so
 // a reader sees either the old file or the complete new one, never a partial.
 
-import { renameSync, writeFileSync } from 'node:fs'
-import { rename, writeFile } from 'node:fs/promises'
+import { renameSync, rmSync, writeFileSync } from 'node:fs'
+import { rename, rm, writeFile } from 'node:fs/promises'
 
 // v4.11.1 — UNIQUE temp suffix per write. A shared `<path>.tmp` races when two
 // writers target the same path concurrently (parallel `harnessed setup`
@@ -32,6 +32,12 @@ const RENAME_RETRIES = 10
 const isTransient = (e: unknown): boolean =>
   TRANSIENT_RENAME.has((e as NodeJS.ErrnoException)?.code ?? '')
 
+// When the rename finally gives up, the unique temp file is removed before the
+// error propagates. Unique names mean nothing else ever reuses or cleans it, so a
+// persistently failing target (a directory in the way, a locked file) used to
+// leave one orphan `.tmp` per attempt, accumulating without bound
+// (external review L12). Best-effort: a failed cleanup must not mask the error.
+
 /** Async atomic write: temp file → rename (transient-contention retry). */
 export async function writeFileAtomic(path: string, data: string): Promise<void> {
   const tmp = tmpName(path)
@@ -41,13 +47,23 @@ export async function writeFileAtomic(path: string, data: string): Promise<void>
       await rename(tmp, path)
       return
     } catch (e) {
-      if (i >= RENAME_RETRIES || !isTransient(e)) throw e
+      if (i >= RENAME_RETRIES || !isTransient(e)) {
+        await rm(tmp, { force: true }).catch(() => {})
+        throw e
+      }
       await new Promise((r) => setTimeout(r, 10 * (i + 1)))
     }
   }
 }
 
-/** Sync atomic write: temp file → rename (transient-contention retry, immediate). */
+/** Synchronous sleep for the retry backoff (no busy loop). */
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+/** Sync atomic write: temp file → rename (transient-contention retry with the same
+ *  linear backoff as the async variant — an immediate retry burned all attempts
+ *  within microseconds, before a contending writer could release the target). */
 export function writeFileSyncAtomic(path: string, data: string): void {
   const tmp = tmpName(path)
   writeFileSync(tmp, data, 'utf8')
@@ -56,7 +72,15 @@ export function writeFileSyncAtomic(path: string, data: string): void {
       renameSync(tmp, path)
       return
     } catch (e) {
-      if (i >= RENAME_RETRIES || !isTransient(e)) throw e
+      if (i >= RENAME_RETRIES || !isTransient(e)) {
+        try {
+          rmSync(tmp, { force: true })
+        } catch {
+          // best-effort
+        }
+        throw e
+      }
+      sleepSync(10 * (i + 1))
     }
   }
 }
