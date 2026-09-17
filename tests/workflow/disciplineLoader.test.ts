@@ -33,7 +33,6 @@ describe('disciplineLoader — load each of 6 LOCKED disciplines', () => {
     const d = await loadDiscipline('karpathy', PACKAGE_ROOT)
     expect(d.discipline).toBe('karpathy')
     expect(d.enforcement_layer).toBe('code-writing')
-    expect(d.auto_enforce).toBe(true)
     expect(d.rules.length).toBe(7)
   })
 
@@ -53,7 +52,7 @@ describe('disciplineLoader — load each of 6 LOCKED disciplines', () => {
 
   it('4. loadDiscipline operational → enforcement_layer=commit, 7 rules', async () => {
     // v3.6.0 Phase 3 Wave 3 — added `transparent-skip-on-low-confidence`
-    // rule (P0b 下半, check_method: prompt-inject); count 6 → 7.
+    // rule (P0b 下半, prompt-injected); count 6 → 7.
     const d = await loadDiscipline('operational', PACKAGE_ROOT)
     expect(d.discipline).toBe('operational')
     expect(d.enforcement_layer).toBe('commit')
@@ -69,10 +68,9 @@ describe('disciplineLoader — load each of 6 LOCKED disciplines', () => {
     expect(d.priority_hierarchy?.[0]).toBe('gstack')
   })
 
-  it('6. loadDiscipline protocols → auto_enforce=false, 3 protocols Record', async () => {
+  it('6. loadDiscipline protocols → 3 protocols Record', async () => {
     const d = await loadDiscipline('protocols', PACKAGE_ROOT)
     expect(d.discipline).toBe('protocols')
-    expect(d.auto_enforce).toBe(false)
     expect(d.protocols).toBeDefined()
     expect(Object.keys(d.protocols ?? {}).length).toBe(3)
   })

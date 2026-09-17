@@ -65,7 +65,6 @@ function writeDiscipline(basename: string, extra: Record<string, unknown> = {}) 
     schema_version: 'harnessed.discipline.v1',
     discipline: basename,
     enforcement_layer: 'code-writing',
-    auto_enforce: true,
     rules: [],
     ...extra,
   }
@@ -403,7 +402,6 @@ describe('check-workflow-schema — Discipline schema validate + non-workflow di
         schema_version: 'wrong-surface',
         discipline: 'broken',
         enforcement_layer: 'code-writing',
-        auto_enforce: true,
         rules: [],
       }),
       'utf8',

@@ -6,44 +6,36 @@
 schema_version: harnessed.discipline.v1
 discipline: karpathy
 enforcement_layer: code-writing
-auto_enforce: true
 
 rules:
   - id: think-before-coding
     description: Think before coding; do not dump code directly; brainstorm the design intent before each subtask
     enforcement: warn
     trigger: subtask.type == 'code-write'
-    check_method: heuristic
-    # check_method='heuristic' — runtime engine 检查 subagent 输出 first 200 char 是否含设计意图 marker
+    # runtime engine 检查 subagent 输出 first 200 char 是否含设计意图 marker
     # (e.g., 'Plan:' / 'Approach:' / '设计:' / '思路:'),若全是 code block → warn
 
   - id: simplicity-first
     description: Pursue the minimal effective code, avoid unnecessary complexity; YAGNI / do not write code for hypothetical scenarios
     enforcement: warn
     trigger: always-on
-    check_method: llm-judge
-    # check_method='llm-judge' — verify phase 调用 code-simplifier review
+    # verify phase 调用 code-simplifier review
 
   - id: surgical-changes
     description: Small atomic changes, single responsibility per commit; no large-scale rewrites
     enforcement: warn
     trigger: phase.type == 'execute'
-    check_method: external-cmd
-    auto_fix_cmd: 'git diff --stat HEAD~1 | awk ''{lines+=$3} END {if (lines>300) exit 1}'''
     # 单 commit > 300 line diff → warn (rough heuristic, override allowed via task spec)
 
   - id: goal-driven-execution
     description: Goal-driven, do not diverge / do no unrelated refactoring; solve only the current task and do not smuggle in cleanup
     enforcement: warn
     trigger: phase.type == 'execute'
-    check_method: heuristic
 
   - id: file-length-200-hard-limit
     description: Single-file ≤200L hard limit (per project CLAUDE.md karpathy guideline reminder); over the limit → split into a helper
     enforcement: halt
     trigger: phase.type == 'execute' AND file.lines > 200
-    check_method: external-cmd
-    auto_fix_cmd: 'wc -l <file> | awk ''{if ($1>200) exit 1}'''
     # 实装 split helper pattern (sister fallbackHandlers.ts / sdkReconcile.ts ≤80L)
 
   # ── T2.7 (4.34.x) — the 2 rules the `karpathy-guidelines` capability description
@@ -57,7 +49,6 @@ rules:
     description: Trust internal code — validate at the trust boundary (external input, parsed config, user data), not at every internal layer; do not add defensive re-checks or redundant assertions on call sites you control
     enforcement: warn
     trigger: subtask.type == 'code-write'
-    check_method: heuristic
     # sister role-prompts.yaml task-code checklist "Trust internal code: don't
     # re-validate already-checked inputs at every layer"
 
@@ -65,8 +56,7 @@ rules:
     description: Comments explain WHY, not WHAT — delete comments that restate the code or that have drifted out of sync with it; a comment must add context the code cannot carry (rationale, constraint, upstream reference)
     enforcement: warn
     trigger: subtask.type == 'code-write'
-    check_method: llm-judge
-    # check_method='llm-judge' — sister simplicity-first: verify phase 的
+    # sister simplicity-first: verify phase 的
     # code-simplifier review 承接 (role-prompts.yaml verify-simplify checklist
     # "Comments that lie or duplicate the code → delete").
     #

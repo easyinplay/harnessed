@@ -24,7 +24,6 @@ const EnforcementLayer = Type.Union([
 const Enforcement = Type.Union([
   Type.Literal('halt'), // process.exit non-zero, sister fallbackHandlers
   Type.Literal('warn'), // console.warn emit, continue
-  Type.Literal('auto-fix'), // run auto_fix_cmd then continue (biome --write pattern)
   Type.Literal('info'), // log only, no action
 ])
 
@@ -34,8 +33,10 @@ export const DisciplineRule = Type.Object(
     description: Type.String(), // human-readable
     enforcement: Enforcement,
     trigger: Type.Union([Type.String(), Type.Array(Type.String())]), // expr OR always-on list
-    check_method: Type.String(), // heuristic / regex / external-cmd / llm-judge / file-content-match
-    auto_fix_cmd: Type.Optional(Type.String()), // only enforcement=auto-fix
+    // 4.43.0 — `check_method` / `auto_fix_cmd` and the `auto-fix` enforcement value
+    // removed: nothing ever evaluated them (the only runner, the before-commit hook,
+    // was unreachable and deleted in 4.42.0). A rule's description reaches the model
+    // via `harnessed prompt`; mechanical checks live in `harnessed check-docs`.
   },
   { additionalProperties: false },
 )
@@ -46,10 +47,9 @@ const PriorityHierarchy = Type.Array(Type.String(), { minItems: 1 })
 // protocols.yaml 专字段 — Ideation→Onboarding + Plan→Execute + file-ownership-strict
 const ProtocolShape = Type.Object(
   {
+    // required_fields / forbidden_phrases / file_ownership removed 4.43.0 (never
+    // checked); their content now lives in the protocol's description text.
     description: Type.String(),
-    required_fields: Type.Optional(Type.Array(Type.String())),
-    forbidden_phrases: Type.Optional(Type.Array(Type.String())),
-    file_ownership: Type.Optional(Type.Record(Type.String(), Type.Array(Type.String()))),
     rules: Type.Optional(Type.Array(DisciplineRule)),
   },
   { additionalProperties: false },
@@ -60,7 +60,6 @@ export const Discipline = Type.Object(
     schema_version: Type.Literal(SCHEMA_VERSIONS.discipline),
     discipline: Type.String({ minLength: 1 }), // basename (karpathy / output-style / ...)
     enforcement_layer: EnforcementLayer,
-    auto_enforce: Type.Boolean(),
     rules: Type.Array(DisciplineRule),
     priority_hierarchy: Type.Optional(PriorityHierarchy), // priority.yaml only
     protocols: Type.Optional(Type.Record(Type.String(), ProtocolShape)), // protocols.yaml only

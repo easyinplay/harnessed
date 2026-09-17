@@ -16,42 +16,35 @@ describe('Discipline — 5 positive', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'karpathy',
       enforcement_layer: 'code-writing',
-      auto_enforce: true,
       rules: [
         {
           id: 'think-before-coding',
           description: '先思考后写代码,不直接 dump 代码',
           enforcement: 'warn',
           trigger: "subtask.type == 'code-write'",
-          check_method: 'heuristic',
         },
         {
           id: 'file-length-200-hard-limit',
           description: '单文件 ≤200L 硬限',
           enforcement: 'halt',
           trigger: "phase.type == 'execute' AND file.lines > 200",
-          check_method: 'external-cmd',
-          auto_fix_cmd: "wc -l <file> | awk '{if ($1>200) exit 1}'",
         },
       ],
     }
     expect(Value.Check(Discipline, karpathy)).toBe(true)
   })
 
-  test('P2: output-style.yaml shape (output layer, regex check_method + auto-fix)', () => {
+  test('P2: output-style.yaml shape (output layer, chat-scoped trigger)', () => {
     const outputStyle = {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'output-style',
       enforcement_layer: 'output',
-      auto_enforce: true,
       rules: [
         {
           id: 'no-em-dash',
           description: '禁用 em-dash',
-          enforcement: 'auto-fix',
+          enforcement: 'warn',
           trigger: "response.target == 'chat'",
-          check_method: 'regex',
-          auto_fix_cmd: 'replace-em-dash',
         },
       ],
     }
@@ -63,14 +56,12 @@ describe('Discipline — 5 positive', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'priority',
       enforcement_layer: 'workflow',
-      auto_enforce: true,
       rules: [
         {
           id: 'multi-capability-arbitration',
           description: '多 capability 同 fire → 按 priority_hierarchy order 选最高',
           enforcement: 'warn',
           trigger: 'capabilities.fired_count > 1',
-          check_method: 'heuristic',
         },
       ],
       priority_hierarchy: [
@@ -86,27 +77,21 @@ describe('Discipline — 5 positive', () => {
     expect(Value.Check(Discipline, priority)).toBe(true)
   })
 
-  test('P4: protocols.yaml shape (workflow layer + protocols Record with file_ownership)', () => {
+  test('P4: protocols.yaml shape (workflow layer + protocols Record with nested rules)', () => {
     const protocols = {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'protocols',
       enforcement_layer: 'workflow',
-      auto_enforce: false,
       rules: [],
       protocols: {
         'file-ownership-strict': {
           description: '跨 CC 写入边界',
-          file_ownership: {
-            'plan-cc': ['SPEC.md', 'PLAN.md', 'RESEARCH.md'],
-            'execute-cc': ['PROGRESS.md', 'VERIFICATION.md'],
-          },
           rules: [
             {
               id: 'no-modify-upstream-artifact',
               description: '下游 CC 不修改上游 artifact',
               enforcement: 'halt',
               trigger: "cc.role == 'execute' AND file.target matches 'PLAN.md'",
-              check_method: 'file-content-match',
             },
           ],
         },
@@ -120,14 +105,12 @@ describe('Discipline — 5 positive', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'language',
       enforcement_layer: 'output',
-      auto_enforce: true,
       rules: [
         {
           id: 'default-language-zh-hans',
           description: '默认输出语言简体中文',
           enforcement: 'warn',
           trigger: 'user.lang_request == null',
-          check_method: 'heuristic',
         },
       ],
     }
@@ -140,7 +123,6 @@ describe('Discipline — 5 negative', () => {
     const bad = {
       discipline: 'karpathy',
       enforcement_layer: 'code-writing',
-      auto_enforce: true,
       rules: [],
     }
     expect(Value.Check(Discipline, bad)).toBe(false)
@@ -151,7 +133,6 @@ describe('Discipline — 5 negative', () => {
       schema_version: 'harnessed.discipline.v2',
       discipline: 'karpathy',
       enforcement_layer: 'code-writing',
-      auto_enforce: true,
       rules: [],
     }
     expect(Value.Check(Discipline, bad)).toBe(false)
@@ -162,7 +143,6 @@ describe('Discipline — 5 negative', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'karpathy',
       enforcement_layer: 'invalid-layer',
-      auto_enforce: true,
       rules: [],
     }
     expect(Value.Check(Discipline, bad)).toBe(false)
@@ -173,14 +153,12 @@ describe('Discipline — 5 negative', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'karpathy',
       enforcement_layer: 'code-writing',
-      auto_enforce: true,
       rules: [
         {
           id: 'r1',
           description: 'x',
           enforcement: 'block-and-shout', // invalid
           trigger: 'always-on',
-          check_method: 'heuristic',
         },
       ],
     }
@@ -192,11 +170,59 @@ describe('Discipline — 5 negative', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'karpathy',
       enforcement_layer: 'code-writing',
-      auto_enforce: true,
       rules: [],
       unknown_root_key: 42,
     }
     expect(Value.Check(Discipline, bad)).toBe(false)
+  })
+})
+
+// 4.43.0 — fields that nothing ever evaluated are gone from the schema. Under
+// additionalProperties:false, writing one back is a validation error, which is
+// what keeps a declaration-without-evaluator from quietly returning.
+describe('Discipline — removed never-evaluated fields are rejected', () => {
+  const base = {
+    schema_version: 'harnessed.discipline.v1',
+    discipline: 'karpathy',
+    enforcement_layer: 'code-writing',
+  }
+  const rule = { id: 'r1', description: 'x', enforcement: 'warn', trigger: 'always-on' }
+
+  test('R0: the base shape without them passes', () => {
+    expect(Value.Check(Discipline, { ...base, rules: [rule] })).toBe(true)
+  })
+  // Assert the rejection lands ON the removed key. A bare `Value.Check === false`
+  // passes vacuously for any unrelated reason (the first draft of these cells did,
+  // against the old schema, because the fixture lacked the then-required auto_enforce).
+  const rejectedAt = (value: unknown, path: string) =>
+    [...Value.Errors(Discipline, value)].some(
+      (e) => e.path === path && /Unexpected property/.test(e.message),
+    )
+
+  test('R1: root auto_enforce rejected', () => {
+    expect(rejectedAt({ ...base, auto_enforce: true, rules: [] }, '/auto_enforce')).toBe(true)
+  })
+  test('R2: rule check_method rejected', () => {
+    const v = { ...base, rules: [{ ...rule, check_method: 'heuristic' }] }
+    expect(rejectedAt(v, '/rules/0/check_method')).toBe(true)
+  })
+  test('R3: rule auto_fix_cmd rejected', () => {
+    const v = { ...base, rules: [{ ...rule, auto_fix_cmd: 'x' }] }
+    expect(rejectedAt(v, '/rules/0/auto_fix_cmd')).toBe(true)
+  })
+  test('R4: enforcement "auto-fix" rejected', () => {
+    const v = { ...base, rules: [{ ...rule, enforcement: 'auto-fix' }] }
+    expect([...Value.Errors(Discipline, v)].some((e) => e.path === '/rules/0/enforcement')).toBe(
+      true,
+    )
+  })
+  test.each([
+    ['required_fields', ['a']],
+    ['forbidden_phrases', ['a']],
+    ['file_ownership', { 'plan-cc': ['PLAN.md'] }],
+  ])('R5: protocol %s rejected', (k, value) => {
+    const protocols = { p: { description: 'x', [k]: value } }
+    expect(rejectedAt({ ...base, rules: [], protocols }, `/protocols/p/${k}`)).toBe(true)
   })
 })
 
@@ -205,14 +231,12 @@ describe('Discipline — doc-discipline yaml shape', () => {
     schema_version: 'harnessed.discipline.v1',
     discipline: 'doc',
     enforcement_layer: 'commit',
-    auto_enforce: true,
     rules: [
       {
         id: 'state-digest-line-limit',
         description: 'STATE.md >100 lines triggers halt; override via HARNESSED_ALLOW_LONG_STATE=1',
         enforcement: 'halt',
         trigger: "phase.type == 'commit' AND changed_files contains '.planning/STATE.md'",
-        check_method: 'external-cmd',
       },
       {
         id: 'one-fact-per-file',
@@ -220,7 +244,6 @@ describe('Discipline — doc-discipline yaml shape', () => {
           'Decision docs must be single-topic; duplicate fact spread across files violates one-fact-per-file',
         enforcement: 'warn',
         trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'",
-        check_method: 'heuristic',
       },
       {
         id: 'overview-pointer-no-inline-narrative',
@@ -228,7 +251,6 @@ describe('Discipline — doc-discipline yaml shape', () => {
           'ROADMAP/overview docs must not inline closing narrative (叙事进 SUMMARY, not ROADMAP)',
         enforcement: 'warn',
         trigger: "phase.type == 'commit' AND changed_files matches 'ROADMAP\\.md|STATE\\.md'",
-        check_method: 'heuristic',
       },
       {
         id: 'transient-consume-then-archive',
@@ -236,7 +258,6 @@ describe('Discipline — doc-discipline yaml shape', () => {
           'HANDOFF and other transient artifacts must be archived after consumption, not accumulated at .planning/ root',
         enforcement: 'warn',
         trigger: "phase.type == 'commit' AND changed_files matches 'HANDOFF'",
-        check_method: 'heuristic',
       },
       {
         id: 'status-derived-from-artifacts',
@@ -244,7 +265,6 @@ describe('Discipline — doc-discipline yaml shape', () => {
           'Phase status must derive from VERIFICATION artifacts + test results, not hand-maintained booleans in STATE/ROADMAP',
         enforcement: 'warn',
         trigger: "phase.type == 'commit' AND changed_files contains '.planning/STATE.md'",
-        check_method: 'heuristic',
       },
       {
         id: 'responsibility-matrix-one-home',
@@ -252,7 +272,6 @@ describe('Discipline — doc-discipline yaml shape', () => {
           'Each fact has exactly one home per responsibility matrix (decision→ADR, requirement→REQUIREMENTS, etc.); cross-file duplication is a violation',
         enforcement: 'info',
         trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'",
-        check_method: 'heuristic',
       },
     ],
   }
@@ -261,13 +280,11 @@ describe('Discipline — doc-discipline yaml shape', () => {
     expect(Value.Check(Discipline, docDiscipline)).toBe(true)
   })
 
-  test('D2: state-digest-line-limit has enforcement=halt and check_method=external-cmd', () => {
+  test('D2: state-digest-line-limit has enforcement=halt', () => {
     const rule = docDiscipline.rules.find((r) => r.id === 'state-digest-line-limit')
     expect(rule).toBeDefined()
     // biome-ignore lint/style/noNonNullAssertion: guarded by toBeDefined above
     expect(rule!.enforcement).toBe('halt')
-    // biome-ignore lint/style/noNonNullAssertion: guarded by toBeDefined above
-    expect(rule!.check_method).toBe('external-cmd')
   })
 
   test('D3: responsibility-matrix-one-home has enforcement=info (accepted by schema)', () => {
@@ -279,7 +296,6 @@ describe('Discipline — doc-discipline yaml shape', () => {
           description: 'Each fact has exactly one home per responsibility matrix',
           enforcement: 'info',
           trigger: "phase.type == 'commit' AND changed_files matches '\\.planning/'",
-          check_method: 'heuristic',
         },
       ],
     }
@@ -300,7 +316,6 @@ describe('Discipline — 5 edge', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'protocols',
       enforcement_layer: 'workflow',
-      auto_enforce: false,
       rules: [],
     }
     expect(Value.Check(Discipline, ok)).toBe(true)
@@ -311,14 +326,12 @@ describe('Discipline — 5 edge', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'karpathy',
       enforcement_layer: 'code-writing',
-      auto_enforce: true,
       rules: [
         {
           id: 'simplicity-first',
           description: '追求最小有效代码',
           enforcement: 'warn',
           trigger: ['always-on', 'subtask.type == crud'],
-          check_method: 'llm-judge',
         },
       ],
     }
@@ -330,7 +343,6 @@ describe('Discipline — 5 edge', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'reserved',
       enforcement_layer: 'tool',
-      auto_enforce: false,
       rules: [],
     }
     expect(Value.Check(Discipline, ok)).toBe(true)
@@ -341,7 +353,6 @@ describe('Discipline — 5 edge', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'protocols',
       enforcement_layer: 'workflow',
-      auto_enforce: false,
       rules: [],
       protocols: {},
     }
@@ -353,7 +364,6 @@ describe('Discipline — 5 edge', () => {
       schema_version: 'harnessed.discipline.v1',
       discipline: 'protocols',
       enforcement_layer: 'workflow',
-      auto_enforce: false,
       rules: [],
       protocols: {
         'bad-proto': {

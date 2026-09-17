@@ -200,29 +200,19 @@ const DEnforcementLayer = Type.Union([
   Type.Literal('workflow'),
   Type.Literal('tool'),
 ])
-const DEnforcement = Type.Union([
-  Type.Literal('halt'),
-  Type.Literal('warn'),
-  Type.Literal('auto-fix'),
-  Type.Literal('info'),
-])
+const DEnforcement = Type.Union([Type.Literal('halt'), Type.Literal('warn'), Type.Literal('info')])
 const DisciplineRule = Type.Object(
   {
     id: Type.String({ minLength: 1 }),
     description: Type.String(),
     enforcement: DEnforcement,
     trigger: Type.Union([Type.String(), Type.Array(Type.String())]),
-    check_method: Type.String(),
-    auto_fix_cmd: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 )
 const ProtocolShape = Type.Object(
   {
     description: Type.String(),
-    required_fields: Type.Optional(Type.Array(Type.String())),
-    forbidden_phrases: Type.Optional(Type.Array(Type.String())),
-    file_ownership: Type.Optional(Type.Record(Type.String(), Type.Array(Type.String()))),
     rules: Type.Optional(Type.Array(DisciplineRule)),
   },
   { additionalProperties: false },
@@ -232,7 +222,6 @@ const Discipline = Type.Object(
     schema_version: Type.Literal('harnessed.discipline.v1'),
     discipline: Type.String({ minLength: 1 }),
     enforcement_layer: DEnforcementLayer,
-    auto_enforce: Type.Boolean(),
     rules: Type.Array(DisciplineRule),
     priority_hierarchy: Type.Optional(Type.Array(Type.String(), { minItems: 1 })),
     protocols: Type.Optional(Type.Record(Type.String(), ProtocolShape)),

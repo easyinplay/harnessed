@@ -16,7 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   纯函数抽到 `scripts/lib/schema-consumers-scan.mjs` 并补单测;用旧行为替换后 8 格中 6 格失败。
 
-  **暴露的 14 个字段**逐条核实后进入豁免表,每条写明证据与待定决策,零删除(沿用 Phase 61 的做法:先把看不见的东西变得看得见,删不删单独决定):discipline 的 `auto_fix_cmd` / `check_method` / `auto_enforce` / `required_fields` / `forbidden_phrases` / `file_ownership`;`judgments/fallback.yaml` 三条铁律的 `fallback_action` / `message_template` / `override_signal` / `chain_isolation`(resolver 只读 `fires_when` / `skips_when`,行为实际由命令式代码实现);capabilities 的 `cc_version` / `settings_env_var` / `sdk_ref`;以及刻意保留为文档的 `routing_note`。其中 `cc_version` 已经漂移:capabilities 声明 `>=2.1.178`,doctor 提示写的是 `CC >= 2.1.133`。
+  **暴露的 14 个字段**的去留由维护者裁定:去掉 13 个,保留 `routing_note`(见下方 Removed)。当初逐条核实后先进入豁免表,每条写明证据与待定决策,零删除(沿用 Phase 61 的做法:先把看不见的东西变得看得见,删不删单独决定):discipline 的 `auto_fix_cmd` / `check_method` / `auto_enforce` / `required_fields` / `forbidden_phrases` / `file_ownership`;`judgments/fallback.yaml` 三条铁律的 `fallback_action` / `message_template` / `override_signal` / `chain_isolation`(resolver 只读 `fires_when` / `skips_when`,行为实际由命令式代码实现);capabilities 的 `cc_version` / `settings_env_var` / `sdk_ref`;以及刻意保留为文档的 `routing_note`。其中 `cc_version` 已经漂移:capabilities 声明 `>=2.1.178`,doctor 提示写的是 `CC >= 2.1.133`。
+
+- **Agent Teams 版本下界提示 2.1.133 → 2.1.178。** doctor 修复提示、setup 警告与 `missing_explanation` 文案仍写 2.1.133,而 CC 2.1.178 删除了显式建团 / 删团工具,harnessed 自那次迁移起只驱动隐式 teammate spawn API。2.1.133–2.1.177 的用户会被告知版本够用却跑不通。
+
+### Removed
+
+- **discipline schema 中从未被求值的字段(闸门扩展暴露,维护者裁定删除)。** `auto_enforce`(所有文件都填,没有加载器分支)、规则级 `check_method`(heuristic / llm-judge 等意图说明,标为必填)、`auto_fix_cmd` 连同 `enforcement: auto-fix` 取值(唯一执行者 before-commit hook 已于 4.42.0 删除;原 `auto-fix` 规则改为 `warn`),以及 protocols 的 `required_fields` / `forbidden_phrases` / `file_ownership`(内容并入各协议的 description 文本,信息不丢)。规则的 description 仍经 `harnessed prompt` 送达模型,行为不变。`additionalProperties: false` 下写回任一字段会校验失败,测试断言拒绝恰好落在被删字段的路径上。
 
 ## [4.42.0] - 2026-09-16
 

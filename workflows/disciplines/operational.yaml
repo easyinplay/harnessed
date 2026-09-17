@@ -7,19 +7,15 @@
 schema_version: harnessed.discipline.v1
 discipline: operational
 enforcement_layer: commit
-auto_enforce: true
 
 rules:
   - id: biome-preempt
     description: |
       Before any TS/JS commit you must run `pnpm exec biome check --write` (3 CI-red recurrences Phase 2.1.1/2.2/2.3 project memory)
-    enforcement: auto-fix
+    enforcement: warn
     trigger: |
       phase.type == 'commit' AND
       changed_files matches '\\.(ts|tsx|js|mjs)$'
-    check_method: external-cmd
-    auto_fix_cmd: 'corepack pnpm exec biome check --write'
-    # NEW src/discipline/enforcement/before-commit.ts hook; exit 0 才允许 commit
 
   - id: a7-adr-conservation
     description: |
@@ -27,15 +23,12 @@ rules:
       (sister Phase 1.3-2.6 ADR errata path)
     enforcement: warn
     trigger: phase.type == 'commit' AND changed_files contains 'docs/adr/'
-    check_method: external-cmd
-    auto_fix_cmd: 'scripts/check-adr-conservation.sh'
 
   - id: no-push-without-approval
     description: |
       NEVER push to remote without user explicit approval (project CLAUDE.md commit safety)
     enforcement: halt
     trigger: cmd.type == 'git-push'
-    check_method: external-cmd
     # completion-gate loop / subagent 自动调 git push → halt;user explicit `git push` 在主 session 允许
 
   - id: no-skip-hooks
@@ -43,14 +36,12 @@ rules:
       Skip-hook flags such as --no-verify / --no-gpg-sign are not allowed, unless the user explicitly requests them
     enforcement: halt
     trigger: cmd.type == 'git-commit' AND args contains '--no-verify'
-    check_method: regex
 
   - id: destructive-ops-explicit
     description: |
       Destructive ops (git reset --hard / push --force / rm -rf / drop table) require explicit user confirmation
     enforcement: halt
     trigger: cmd.is_destructive == true
-    check_method: heuristic
     # heuristic — 命令含 'rm -rf' / 'reset --hard' / '--force' / 'DROP TABLE' / 'delete from'
 
   - id: authorization-not-transitive
@@ -58,7 +49,6 @@ rules:
       A user approving one push ≠ approval for the whole session; each destructive / shared-state operation needs separate confirmation
     enforcement: warn
     trigger: cmd.requires_approval == true AND session.has_prior_approval == true
-    check_method: heuristic
 
   # v3.6.0 Phase 3 — transparent-skip discipline (P0b 下半,Audit § fallback
   # 三条铁律 "拿不准 → 倾向跳过 + 透明声明"). prompt-inject method delivered
@@ -76,4 +66,3 @@ rules:
       if you actually need it."
     enforcement: warn
     trigger: gate_evaluation_low_confidence
-    check_method: prompt-inject

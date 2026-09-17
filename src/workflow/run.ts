@@ -96,7 +96,7 @@ If none of the five apply, omit \`needs_teams_escalation\` (defaults to false) a
  *  subagent reads the rule + emits the verbatim skip message when gate context
  *  is ambiguous instead of silent execution.
  *  See workflows/disciplines/operational.yaml `transparent-skip-on-low-confidence`
- *  rule (check_method: prompt-inject) for the discipline-layer declaration. */
+ *  rule (prompt-injected) for the discipline-layer declaration. */
 export const TRANSPARENT_SKIP_RULES = `When you encounter a phase gate or routing decision where the input context is missing key fields, default-valued, or contradictory, do NOT proceed silently. Instead, skip the phase and emit a one-line transparent explanation:
 
   "Skipped <phase>, because <reason>. Tell me if you actually need it."

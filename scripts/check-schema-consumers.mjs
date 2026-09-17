@@ -149,43 +149,6 @@ const EXEMPTIONS = new Map([
   // ── Exposed 2026-09-17 when yaml KEYS stopped counting as reads. Until then
   // every field below looked consumed because some yaml file SETS it. ──
   [
-    'auto_fix_cmd',
-    'KNOWN DEAD, decision pending — its only evaluator was the before-commit hook, ' +
-      'deleted in 4.42.0 as unreachable (review L11). Still set by operational.yaml ' +
-      '(biome) and output-style.yaml (strip-sycophantic / replace-em-dash) plus their ' +
-      'zh-Hans twins, and the `auto-fix` value of Enforcement promises it runs. Delete ' +
-      'field + that union member, or build an evaluator that targets the USER repo.',
-  ],
-  [
-    'check_method',
-    'KNOWN DEAD, decision pending — required on every discipline rule ' +
-      '(heuristic / regex / external-cmd / llm-judge / file-content-match), read by ' +
-      'nothing: `harnessed prompt` renders only description + trigger, `check-docs` ' +
-      'only enforcement. Pure documentation of intent carried as a required field.',
-  ],
-  [
-    'auto_enforce',
-    'KNOWN DEAD, decision pending — top-level boolean on each discipline yaml ' +
-      '(`auto_enforce: true`); no loader branches on it. Every discipline is loaded ' +
-      'regardless, so the flag promises a switch that does not exist.',
-  ],
-  [
-    'required_fields',
-    'KNOWN DEAD, decision pending — protocols.yaml cc-handoff shape (with ' +
-      'forbidden_phrases / file_ownership): the hand-off contract lives as prose in ' +
-      '~/.claude/rules/cc-handoff.md; nothing checks a hand-off document against it.',
-  ],
-  [
-    'forbidden_phrases',
-    'KNOWN DEAD, decision pending — see required_fields (same protocols.yaml ' +
-      'shape; would be the natural input for a `check-docs` rule that does not exist).',
-  ],
-  [
-    'file_ownership',
-    'KNOWN DEAD, decision pending — see required_fields (protocols.yaml write ' +
-      'boundaries per CC role; nothing enforces them).',
-  ],
-  [
     'fallback_action',
     'KNOWN DEAD, decision pending — judgments/fallback.yaml rule shape (the three ' +
       '"fallback 铁律", with message_template / override_signal / chain_isolation). ' +

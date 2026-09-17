@@ -6,7 +6,6 @@
 schema_version: harnessed.discipline.v1
 discipline: output-style
 enforcement_layer: output
-auto_enforce: true
 
 rules:
   # Scope note (2026-07-30) — chat-scope rules carry `trigger: response.target == 'chat'`
@@ -17,34 +16,26 @@ rules:
     description: Conclusion first (BLUF); each paragraph leads with one sentence giving the answer/judgment/recommendation, then expands the reasoning
     enforcement: warn
     trigger: response.target == 'chat'
-    check_method: heuristic
     # heuristic — 第一句长度 ≤ 100 char + 含答案动词 ('是' / '不是' / '推荐' / '应该' / 'use X')
     # 失败 → warn 'BLUF missing: first sentence is not a conclusion'
 
   - id: no-sycophantic-open-close
     description: Remove opening/closing filler phrases like "good question / awesome / perfect / hope this helps / anything else"
-    enforcement: auto-fix
-    # chat-scope is load-bearing here: enforcement=auto-fix means strip-sycophantic
-    # rewrites text, and an unconditional trigger would let it rewrite delivered artifacts.
+    enforcement: warn
+    # chat-scope keeps this off delivered artifacts (README / CHANGELOG may legitimately
+    # use the phrasing a chat reply should not).
     trigger: response.target == 'chat'
-    check_method: regex
-    auto_fix_cmd: 'strip-sycophantic'
-    # NEW src/discipline/enforcement/strip-sycophantic.ts — regex strip 13 known phrase
 
   - id: no-emoji-unless-requested
     description: No emoji unless the user explicitly requests it (project markdown files such as README/PR/CHANGELOG are not constrained)
     enforcement: warn
     trigger: response.target == 'chat' AND user.requested_emoji == false
-    check_method: regex
     # regex /\p{Emoji_Presentation}/u; 命中 + trigger fires → warn
 
   - id: no-em-dash
     description: No em-dash (—— / —); instead use parentheses or colons for asides, commas for lists, and a separate sentence for contrast
-    enforcement: auto-fix
+    enforcement: warn
     trigger: response.target == 'chat'
-    check_method: regex
-    auto_fix_cmd: 'replace-em-dash'
-    # auto-replace '——' → ',  ' (单段内逗号);'—' → ':' OR ','
 
   # Deliberately always-on (not chat-scope): project files want precise quantifiers too,
   # and the rule only tightens a requirement — it never produces a wrong artifact.
@@ -52,13 +43,11 @@ rules:
     description: Precise quantifiers; when a concrete number/filename/line number/commit hash is available, do not say "some/a few/several"
     enforcement: info
     trigger: always-on
-    check_method: llm-judge
 
   - id: no-end-recap
     description: No closing summary unless the user explicitly asks to "summarize/recap"
     enforcement: warn
     trigger: response.target == 'chat'
-    check_method: heuristic
     # heuristic — 末尾 200 char 含 '## 总结' / '## Summary' / 'In summary' / '综上所述'
     # → warn 'redundant end recap'
 
@@ -66,5 +55,4 @@ rules:
     description: No empty continuation questions ("want me to help you X?" / "anything else?"); keep workflow-necessary next-step guidance
     enforcement: warn
     trigger: response.target == 'chat'
-    check_method: regex
     # regex /要不要|还需要别的|希望对你有帮助/  + trigger fires → warn

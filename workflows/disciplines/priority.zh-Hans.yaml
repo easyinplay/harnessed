@@ -6,7 +6,6 @@
 schema_version: harnessed.discipline.v1
 discipline: priority
 enforcement_layer: workflow
-auto_enforce: true
 
 priority_hierarchy:
   - gstack                       # 决策层 最高优先
@@ -37,5 +36,3 @@ rules:
       e.g., gstack /office-hours + GSD /gsd-discuss-phase 同 fire → gstack 先跑
     enforcement: warn
     trigger: capabilities.fired_count > 1
-    check_method: heuristic
-    # NEW src/discipline/enforcement/before-spawn.ts hook — sort fired capabilities by tier rank

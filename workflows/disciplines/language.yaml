@@ -6,7 +6,6 @@
 schema_version: harnessed.discipline.v1
 discipline: language
 enforcement_layer: output
-auto_enforce: true
 
 rules:
   - id: follow-user-language
@@ -20,7 +19,6 @@ rules:
       stay consistent with CLI tone.
     enforcement: info
     trigger: every Claude response
-    check_method: read env.HARNESSED_USER_LANG, validate output lang matches
 
   # The 8 categories are DATA, not a comment: src/cli/prompt.ts buildLanguageSection
   # parses the numbered lines below and renders them into the spawn prompt's
@@ -40,7 +38,6 @@ rules:
       8. Quoted material — documents, errors, config examples, the user's own words — reproduced verbatim, with any explanation kept outside the quote
     enforcement: warn
     trigger: always-on
-    check_method: heuristic
 
   - id: cross-cultural-humor
     description: |-
@@ -51,7 +48,6 @@ rules:
       — same concept, different cultural anchor. Avoid forced calques.
     enforcement: info
     trigger: humor_or_idiom_present
-    check_method: heuristic
 
   - id: lang-request-override
     description: |-
@@ -60,4 +56,3 @@ rules:
       target language regardless of env.HARNESSED_USER_LANG.
     enforcement: info
     trigger: user.lang_request != null
-    check_method: regex

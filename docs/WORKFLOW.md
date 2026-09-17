@@ -215,24 +215,25 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 - `before-phase-execute` — pre-load discipline rules for current phase
 - `before-spawn` — sort fired capabilities by `priority.priority_hierarchy` rank
 
-**Auto-enforce vs warn semantics**:
+**Enforcement 语义**(声明给模型的严重度;机械执行只有 `harnessed check-docs` 读取它):
 | Enforcement | 行为 |
 |---|---|
 | `halt` | 阻断 (e.g., file > 200L / `git push` 无 approval / `--no-verify` flag) |
-| `auto-fix` | 自动修复 (e.g., biome `--write` / strip-sycophantic / replace em-dash) |
 | `warn` | 提示 (e.g., BLUF missing / single commit > 300 lines diff) |
-| `info` | 记录 only (e.g., 量词精确 llm-judge) |
+| `info` | 记录 only (e.g., 量词精确) |
+
+4.43.0 删除了 `auto-fix` 取值与 `auto_fix_cmd` / `check_method` / `auto_enforce` 字段:没有任何代码执行它们(唯一的执行者 before-commit hook 在 4.42.0 因不可达删除)。原 `auto-fix` 规则改为 `warn`。
 
 ### 7 Disciplines 详表
 
-| # | Discipline | enforcement_layer | auto_enforce | 核心 rules (verbatim CLAUDE.md) | Sister source |
-|---|---|---|---|---|---|
-| 1 | `karpathy.yaml` | `code-writing` | true | think-before-coding (warn) / simplicity-first (warn) / surgical-changes (warn) / goal-driven (warn) / **file-length-200-hard-limit (halt)** / trust-internal-code (warn) / no-comments-default (warn) | karpathy 心法 — **fully bundled**; 上游 `karpathy-skills` plugin 已于 4.34.x 摘除 (T2.7) |
-| 2 | `output-style.yaml` | `output` | true | bluf-conclusion-first (warn) / **no-sycophantic-open-close (auto-fix)** / no-emoji-unless-requested (warn) / **no-em-dash (auto-fix)** / precise-quantifier (info) / no-end-recap (warn) / no-empty-continuation-question (warn) | CLAUDE.md 对话回答风格 |
-| 3 | `language.yaml` | `output` | true | default-language-zh-hans (warn) / preserve-english-categories 8 类 (warn) / lang-request-override (info) | CLAUDE.md 语言与输出规范 |
-| 4 | `operational.yaml` | `commit` | true | **biome-preempt (auto-fix)** / a7-adr-conservation (warn) / **no-push-without-approval (halt)** / **no-skip-hooks (halt)** / **destructive-ops-explicit (halt)** / authorization-not-transitive (warn) | project CLAUDE.md commit safety + `~/.claude/CLAUDE.md` |
-| 5 | `priority.yaml` | `workflow` | true | multi-capability-arbitration (warn) — priority_hierarchy: gstack > gsd > superpowers > planning-with-files > karpathy > mattpocock > parallel | CLAUDE.md 响应规范与优先级 |
-| 6 | `protocols.yaml` | `workflow` | false | cc-handoff-ideation-to-onboarding / plan-execute-cc-ready-metadata / **file-ownership-strict (halt)** | `~/.claude/rules/cc-handoff.md` |
+| # | Discipline | enforcement_layer | 核心 rules (verbatim CLAUDE.md) | Sister source |
+|---|---|---|---|---|
+| 1 | `karpathy.yaml` | `code-writing` | think-before-coding (warn) / simplicity-first (warn) / surgical-changes (warn) / goal-driven (warn) / **file-length-200-hard-limit (halt)** / trust-internal-code (warn) / no-comments-default (warn) | karpathy 心法 — **fully bundled**; 上游 `karpathy-skills` plugin 已于 4.34.x 摘除 (T2.7) |
+| 2 | `output-style.yaml` | `output` | bluf-conclusion-first (warn) / **no-sycophantic-open-close (warn)** / no-emoji-unless-requested (warn) / **no-em-dash (warn)** / precise-quantifier (info) / no-end-recap (warn) / no-empty-continuation-question (warn) | CLAUDE.md 对话回答风格 |
+| 3 | `language.yaml` | `output` | default-language-zh-hans (warn) / preserve-english-categories 8 类 (warn) / lang-request-override (info) | CLAUDE.md 语言与输出规范 |
+| 4 | `operational.yaml` | `commit` | **biome-preempt (warn)** / a7-adr-conservation (warn) / **no-push-without-approval (halt)** / **no-skip-hooks (halt)** / **destructive-ops-explicit (halt)** / authorization-not-transitive (warn) | project CLAUDE.md commit safety + `~/.claude/CLAUDE.md` |
+| 5 | `priority.yaml` | `workflow` | multi-capability-arbitration (warn) — priority_hierarchy: gstack > gsd > superpowers > planning-with-files > karpathy > mattpocock > parallel | CLAUDE.md 响应规范与优先级 |
+| 6 | `protocols.yaml` | `workflow` | cc-handoff-ideation-to-onboarding / plan-execute-cc-ready-metadata / **file-ownership-strict (halt)** | `~/.claude/rules/cc-handoff.md` |
 | 7 | `doc-discipline.yaml` (v6.0) | `commit` | true | **state-digest-line-limit (halt + `HARNESSED_ALLOW_LONG_STATE` override)** / one-fact-per-file (warn) / overview-pointer-no-inline-narrative (warn) / transient-consume-then-archive (warn) / status-derived-from-artifacts (warn) / responsibility-matrix-one-home (info) | CLAUDE.md 文档纪律节 |
 
 **snapshot policy** (K7 mitigation): 6 yaml = snapshot of CLAUDE.md as of v3.0 ship date, NOT live-load。CLAUDE.md update → harnessed patch release iterate snapshot。

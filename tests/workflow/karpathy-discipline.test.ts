@@ -25,8 +25,6 @@ interface Rule {
   description: string
   enforcement: string
   trigger: string | string[]
-  check_method: string
-  auto_fix_cmd?: string
 }
 interface DisciplineDoc {
   rules: Rule[]
