@@ -123,10 +123,10 @@ describe('cli/setup — Phase v2.0-2.3 W1.1 (Agent Teams probe + Pure bundled hi
     // (auto-install path otherwise re-runs the doctor registry → double-count).
     const { code, stderr } = await runCli(['setup', '--no-auto-install'])
     expect(code).toBe(0) // acceptance (a): non-blocking
-    // acceptance (b): warn text grep both CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS + 2.1.133+
+    // acceptance (b): warn text grep both CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS + 2.1.178+
     expect(stderr).toContain('Agent Teams 未启用')
     expect(stderr).toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS')
-    expect(stderr).toContain('2.1.133+')
+    expect(stderr).toContain('2.1.178+')
     expect(stderr).toContain('parallelism-gate')
     expect(stderr).toContain('不阻塞')
     expect(checkAgentTeamsMock).toHaveBeenCalledOnce()

@@ -42,6 +42,6 @@ export async function checkAgentTeams(): Promise<AgentTeamsCheckResult> {
     envValue,
     settingsValue,
     remediation:
-      'Agent Teams not enabled. Add to ~/.claude/settings.json:\n  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" }\nOR run: claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1\nOR export env var:\n  export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1\nThen restart Claude Code (CC >= 2.1.133 required).',
+      'Agent Teams not enabled. Add to ~/.claude/settings.json:\n  "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" }\nOR run: claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1\nOR export env var:\n  export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1\nThen restart Claude Code (CC >= 2.1.178 required).',
   }
 }

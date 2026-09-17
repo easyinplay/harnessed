@@ -60,7 +60,7 @@ describe('checkAgentTeams — Q-AUDIT-5b 5-fixture (env / settings.json env.* ro
     expect(r.settingsValue).toBe('1')
   })
 
-  it('4. missing-both → status=missing + remediation has env var + settings.json + CC 2.1.133+', async () => {
+  it('4. missing-both → status=missing + remediation has env var + settings.json + CC 2.1.178+', async () => {
     vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '')
     readFileMock.mockRejectedValue(new Error('ENOENT'))
     const { checkAgentTeams } = await import('../../src/cli/lib/checkAgentTeams.js')
@@ -71,7 +71,9 @@ describe('checkAgentTeams — Q-AUDIT-5b 5-fixture (env / settings.json env.* ro
     expect(r.remediation).toBeDefined()
     expect(r.remediation).toMatch(/CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS/)
     expect(r.remediation).toMatch(/settings\.json/)
-    expect(r.remediation).toMatch(/2\.1\.133/)
+    // 2.1.178 removed TeamCreate/TeamDelete; harnessed only drives the implicit
+    // teammate-spawn API, so an older CC must not be told it is new enough.
+    expect(r.remediation).toMatch(/2\.1\.178/)
     expect(r.remediation).toMatch(/claude config set env\.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1/)
   })
 

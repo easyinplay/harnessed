@@ -37,7 +37,7 @@ export type { NestedWorkflow, ScanResult } from '../../workflow/scan-nested.js'
  * when Agent Teams CC env flag is off (session-scoped tolerance policy).
  */
 export async function warnIfAgentTeamsMissing(): Promise<void> {
-  // v4.14.0 — Agent Teams is a Claude Code concept (CC 2.1.133+ env flag); on
+  // v4.14.0 — Agent Teams is a Claude Code concept (CC 2.1.178+ env flag; 2.1.178 removed the TeamCreate/TeamDelete API harnessed no longer drives); on
   // any other harness platform the warning + `claude config set` remediation
   // are meaningless noise → silent no-op.
   if (detectPlatform().id !== 'claude') return
@@ -46,7 +46,7 @@ export async function warnIfAgentTeamsMissing(): Promise<void> {
   console.warn('\n⚠️  Agent Teams 未启用 — parallelism-gate 升级路径不可用')
   console.warn('   修复: claude config set env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS 1')
   console.warn(
-    '   说明: harnessed v3.0 三层栈方法论 parallelism-gate 升级路径需 CC 2.1.133+ Agent Teams enable',
+    '   说明: harnessed v3.0 三层栈方法论 parallelism-gate 升级路径需 CC 2.1.178+ Agent Teams enable',
   )
   console.warn(
     '   不阻塞 setup,后续 parallelism-gate workflow phase 触发时自动降级 subagent fan-out\n',
