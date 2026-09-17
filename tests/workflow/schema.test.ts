@@ -165,6 +165,25 @@ describe('fallback.yaml rules-shape parity', () => {
     ).toBe(true)
   })
 
+  // Entries are a union, so TypeBox reports only "Expected union value" at the entry;
+  // assert instead that a REAL shipped entry passes and the same entry plus the removed
+  // key does not. The first expectation keeps the second from passing vacuously.
+  test.each([
+    ['requires', 'settings_env_var', 'env.X == "1"'],
+    ['requires', 'cc_version', '>=2.1.178'],
+    [null, 'sdk_ref', 'src/x.ts'],
+  ])('B1c: capability field %s.%s is rejected (removed 4.43.0, never read)', (parent, key, value) => {
+    const shipped = parseYaml(capRaw) as { capabilities: Record<string, Record<string, unknown>> }
+    const entry = { ...(shipped.capabilities['agent-teams-create'] ?? {}) }
+    const docWith = (e: Record<string, unknown>) => ({
+      ...shipped,
+      capabilities: { ...shipped.capabilities, 'agent-teams-create': e },
+    })
+    expect(Value.Check(Capabilities, docWith(entry))).toBe(true)
+    const bad = parent ? { ...entry, [parent]: { [key]: value } } : { ...entry, [key]: value }
+    expect(Value.Check(Capabilities, docWith(bad))).toBe(false)
+  })
+
   test('B2: every shipped judgment yaml accounted for (12 file — 6 v2 base + 4 v3 NEW T3.3.W0.3 + 1 v3.6.0 Phase 3 user-overrides + 1 v5.1 Phase 9 stage-phase-gate)', () => {
     // v3.6.0 Phase 3 Wave 1 — added workflows/judgments/user-overrides.yaml
     // (P0b 上半 mechanism, validated via separate UserOverridesFile schema —

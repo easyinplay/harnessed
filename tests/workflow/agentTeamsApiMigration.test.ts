@@ -133,7 +133,7 @@ describe('capabilities.yaml — agent-platform entries carry the new semantics',
     parseYaml(read('workflows/capabilities.yaml')) as {
       capabilities: Record<
         string,
-        { cmd: string; description?: string; requires?: { cc_version?: string } }
+        { cmd: string; description?: string; requires?: Record<string, unknown> }
       >
     }
   ).capabilities
@@ -163,9 +163,13 @@ describe('capabilities.yaml — agent-platform entries carry the new semantics',
     expect(e?.description ?? '').toMatch(/session (exit|end)|session 退出|自动清理/i)
   })
 
-  it('both migrated entries declare the CC >=2.1.178 floor', () => {
-    expect(caps['agent-teams-create']?.requires?.cc_version).toBe('>=2.1.178')
-    expect(caps['agent-teams-shutdown']?.requires?.cc_version).toBe('>=2.1.178')
+  // 4.43.0 — the floor has ONE home, the code that prints it. The yaml copy
+  // (requires.cc_version) was never read and had drifted from the code (2.1.133).
+  it('the CC >=2.1.178 floor lives in code, not as an unread yaml declaration', () => {
+    expect(read('src/cli/lib/checkAgentTeams.ts')).toContain('CC >= 2.1.178 required')
+    for (const name of ['agent-teams-create', 'agent-teams-send-message', 'agent-teams-shutdown']) {
+      expect(caps[name]?.requires).toBeUndefined()
+    }
   })
 
   it('agent-teams-send-message is untouched (SendMessage still exists)', () => {

@@ -146,8 +146,8 @@ const EXEMPTIONS = new Map([
       'referencing a fact nobody supplies). Either gate on it or drop it — dropping ' +
       'also touches the fixture at tests/workflow/schema.test.ts:497.',
   ],
-  // ── Exposed 2026-09-17 when yaml KEYS stopped counting as reads. Until then
-  // every field below looked consumed because some yaml file SETS it. ──
+  // ── Exposed 2026-09-17 when yaml KEYS stopped counting as reads. The other 13
+  // fields exposed with it were deleted (4.43.0); this one is kept on purpose. ──
   [
     'routing_note',
     'DELIBERATE, not an accident — Phase 54 renamed `fires_when` to `routing_note` ' +
@@ -157,25 +157,6 @@ const EXEMPTIONS = new Map([
       'routing_note prose (explicit_signal, has_business_decisions, ' +
       'needs_google_workspace, requires_peer_review, requires_persisted_plan) read as ' +
       'live here; the fact-supply parity test is the backstop for facts.',
-  ],
-  [
-    'cc_version',
-    'KNOWN DEAD, decision pending — capabilities `requires.cc_version` (agent-teams ' +
-      '">=2.1.178"). No check compares it with the installed Claude Code, and it has ' +
-      'already drifted: the doctor hint in src/cli/lib/checkAgentTeams.ts says ' +
-      '"CC >= 2.1.133" for the same feature.',
-  ],
-  [
-    'settings_env_var',
-    'KNOWN DEAD, decision pending — capabilities `requires.settings_env_var` ' +
-      '(agent-teams env expression). The real probe is checkAgentTeams() in doctor, ' +
-      'which hard-codes the variable instead of reading this.',
-  ],
-  [
-    'sdk_ref',
-    'KNOWN DEAD, decision pending — capabilities pointer to the implementing source ' +
-      'file (e.g. src/workflow/lib/ralphLoop.ts); a code-navigation note stored as ' +
-      'schema data, read by nothing and not checked to exist.',
   ],
   [
     'override_signals',

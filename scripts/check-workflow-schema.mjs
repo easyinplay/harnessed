@@ -49,8 +49,6 @@ const ROOT = process.env.HARNESSED_CHECK_ROOT
 const RequiresShape = Type.Object(
   {
     plugin: Type.Optional(Type.String()),
-    settings_env_var: Type.Optional(Type.String()),
-    cc_version: Type.Optional(Type.String()),
     capabilities: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: false },
@@ -95,7 +93,6 @@ const CapabilityEntryBase = Type.Object(
     skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
-    sdk_ref: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 )

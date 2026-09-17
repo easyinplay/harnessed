@@ -21,8 +21,9 @@ import { SCHEMA_VERSIONS } from '../../types/schemaVersion.js'
 const RequiresShape = Type.Object(
   {
     plugin: Type.Optional(Type.String()),
-    settings_env_var: Type.Optional(Type.String()),
-    cc_version: Type.Optional(Type.String()),
+    // settings_env_var / cc_version removed 4.43.0: never read, and cc_version had
+    // already drifted from the floor the code prints (checkAgentTeams said 2.1.133
+    // while this said >=2.1.178). The Agent Teams prerequisite lives in code only.
     capabilities: Type.Optional(Type.Array(Type.String())),
   },
   { additionalProperties: false },
@@ -90,7 +91,8 @@ const CapabilityEntryBase = Type.Object(
     skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
-    sdk_ref: Type.Optional(Type.String()),
+    // sdk_ref removed 4.43.0: a code-navigation note stored as data, never read or
+    // checked — completion-gate's still pointed at ralphLoop.ts after ADR 0039.
   },
   { additionalProperties: false },
 )

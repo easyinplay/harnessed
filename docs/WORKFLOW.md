@@ -357,7 +357,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | `tool-mcp` | **3** | 3 | 0 | chrome-devtools / tavily / exa |
 | `tool-cli` | **2** | 1 (ctx7) | 1 (gws) | ctx7 / gws |
 | `tool-plugin` | **2** | 1 (planning-with-files) | 1 (@playwright/test reclass) | Claude Code plugin / npm-cli |
-| `tool-bundled-skill` | **3** | 2 (completion-gate + webapp-testing reclass) | 1 (playwright-cli reclass) | sdk_ref bundled |
+| `tool-bundled-skill` | **3** | 2 (completion-gate + webapp-testing reclass) | 1 (playwright-cli reclass) | harnessed-bundled |
 | `agent-platform` | **3** | 3 | 0 | `Agent(name, run_in_background=true)` / SendMessage / 按名 shut down 请求 |
 | **TOTAL** | **75** | **32** | **43** | (含 reclass 调整) |
 
@@ -413,9 +413,9 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 
 ### 7.6 category=tool-bundled-skill (3)
 
-| Entry | impl | cmd | sdk_ref / plugin |
+| Entry | impl | cmd | 实现 / plugin |
 |---|---|---|---|
-| `completion-gate` | harnessed-bundled | (无上游 — harnessed 自有 CLI) | `src/workflow/lib/ralphLoop.ts` |
+| `completion-gate` | harnessed-bundled | (无上游 — harnessed 自有 CLI) | `harnessed checkpoint complete` (`src/cli/checkpoint.ts`) |
 | `webapp-testing` | gstack | `/webapp-testing` | v3 reclass (sister gstack 起源, paradigm 非 plugin) |
 | `playwright-cli` | npm-cli | `playwright` | v3 reclass (AI-probe paradigm 非 plugin 非 CLI 标准) |
 
