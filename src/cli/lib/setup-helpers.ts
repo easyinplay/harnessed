@@ -37,7 +37,7 @@ export type { NestedWorkflow, ScanResult } from '../../workflow/scan-nested.js'
  * when Agent Teams CC env flag is off (session-scoped tolerance policy).
  */
 export async function warnIfAgentTeamsMissing(): Promise<void> {
-  // v4.14.0 — Agent Teams is a Claude Code concept (CC 2.1.178+ env flag; 2.1.178 removed the TeamCreate/TeamDelete API harnessed no longer drives); on
+  // v4.14.0 — Agent Teams is a Claude Code concept (CC 2.1.178+ env flag; 2.1.178 removed the explicit create/delete-team tools; harnessed drives only the implicit teammate-spawn API); on
   // any other harness platform the warning + `claude config set` remediation
   // are meaningless noise → silent no-op.
   if (detectPlatform().id !== 'claude') return
