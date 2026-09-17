@@ -147,6 +147,24 @@ describe('fallback.yaml rules-shape parity', () => {
     expect(Value.Check(JudgmentTriggersFile, parsed)).toBe(false)
   })
 
+  // 4.43.0 — the structured fallback fields were removed (never read); writing one
+  // back is rejected ON that key, so a declaration without an evaluator cannot return.
+  test.each([
+    ['fallback_action', 'skip_with_transparency'],
+    ['message_template', 'x'],
+    ['override_signal', ['x']],
+    ['chain_isolation', true],
+  ])('B1b: fallback rule field %s is rejected', (key, value) => {
+    const doc = {
+      schema_version: 'harnessed.judgment.v1',
+      rules: { r: { description: 'x', [key]: value } },
+    }
+    const errors = [...Value.Errors(JudgmentRulesFile, doc)]
+    expect(
+      errors.some((e) => e.path === `/rules/r/${key}` && /Unexpected property/.test(e.message)),
+    ).toBe(true)
+  })
+
   test('B2: every shipped judgment yaml accounted for (12 file — 6 v2 base + 4 v3 NEW T3.3.W0.3 + 1 v3.6.0 Phase 3 user-overrides + 1 v5.1 Phase 9 stage-phase-gate)', () => {
     // v3.6.0 Phase 3 Wave 1 — added workflows/judgments/user-overrides.yaml
     // (P0b 上半 mechanism, validated via separate UserOverridesFile schema —

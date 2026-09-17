@@ -46,13 +46,15 @@ export const JudgmentTrigger = Type.Object(
 )
 
 // Fallback rule entry — 仅 fallback.yaml 用 (3 rule per CLAUDE.md "Fallback 三条铁律").
+// 4.43.0 — description only. fallback_action / message_template / override_signal /
+// chain_isolation were never read: judgmentResolver evaluates only fires_when /
+// skips_when, and each rule's behaviour is implemented in code (skip transparency:
+// masterOrchestrator-helpers emitGateTransparency; explicit override:
+// judgments/user-overrides.yaml + extract-user-overrides.ts; tier independence: each
+// gate is evaluated on its own). A second, declarative copy could only drift.
 export const FallbackRule = Type.Object(
   {
     description: Type.Optional(Type.String()),
-    fallback_action: Type.Optional(Type.String()),
-    message_template: Type.Optional(Type.String()),
-    override_signal: Type.Optional(Type.Array(Type.String())),
-    chain_isolation: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 )

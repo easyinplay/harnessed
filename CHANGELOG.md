@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **discipline schema 中从未被求值的字段(闸门扩展暴露,维护者裁定删除)。** `auto_enforce`(所有文件都填,没有加载器分支)、规则级 `check_method`(heuristic / llm-judge 等意图说明,标为必填)、`auto_fix_cmd` 连同 `enforcement: auto-fix` 取值(唯一执行者 before-commit hook 已于 4.42.0 删除;原 `auto-fix` 规则改为 `warn`),以及 protocols 的 `required_fields` / `forbidden_phrases` / `file_ownership`(内容并入各协议的 description 文本,信息不丢)。规则的 description 仍经 `harnessed prompt` 送达模型,行为不变。`additionalProperties: false` 下写回任一字段会校验失败,测试断言拒绝恰好落在被删字段的路径上。
+- **`judgments/fallback.yaml` 三条铁律的结构化字段** `fallback_action` / `message_template` / `override_signal` / `chain_isolation`。judgmentResolver 只求值 `fires_when` / `skips_when`,这三条规则的行为一直由代码实现(跳过透明声明 `emitGateTransparency`、显式覆盖 `user-overrides.yaml` + `extract-user-overrides.ts`、各层 gate 独立求值)。声明副本已经漂移:`override_signal` 列的 6 个关键词里,单独的 `brainstorm` 与 `深度调研` 在真正生效的 `user-overrides.yaml` 中并不存在。规则保留为 description 文档,并注明各自的实现位置。
 
 ## [4.42.0] - 2026-09-16
 

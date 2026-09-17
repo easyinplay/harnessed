@@ -2,6 +2,10 @@
 # Fallback 三条铁律 — bundled judgment (unsure → tend to skip with transparent disclosure / explicit user signal overrides / tiers independent)
 # Sister: 不同于 triggers (fires_when/skips_when 模式), 本 file 使用 'rules' 顶级 key
 # Phase v2.0-2.3 Wave 0 T2.3.W0.2 ship per R20.16 + D-16
+#
+# 4.43.0 — documentation only. The structured fields these rules used to carry
+# (fallback_action / message_template / override_signal / chain_isolation) were
+# never read; each rule is implemented in code, named in its description below.
 
 schema_version: harnessed.judgment.v1
 
@@ -11,25 +15,19 @@ rules:
       铁律 1 — 拿不准 → 跳过 + 透明声明。
       Workflow runtime 在 gate eval throw GateEvalError 或 evidence 不足时,
       emit ⚠️ message 给用户, 不静默跳过。
-    fallback_action: skip_with_transparency
-    message_template: "⚠️ 跳过 {gate_name}, 因为 {reason}。如认为需要请明示。"
+      实现:src/workflow/masterOrchestrator-helpers.ts emitGateTransparency(跳过原因逐条打印)。
 
   user-explicit-override:
     description: |
       铁律 2 — 用户明示 → 覆盖判据。
-      Workflow runtime 词法匹配 user input, 命中以下任一 signal 强制 invoke,
+      Workflow runtime 词法匹配 user input, 命中 signal 强制 invoke,
       即使 fires_when==false / skips_when==true。
-    override_signal:
-      - "先 brainstorm"
-      - "跑 office-hours"
-      - "讨论一下"
-      - "office-hours"
-      - "brainstorm"
-      - "深度调研"
+      实现:关键词表在 workflows/judgments/user-overrides.yaml,由
+      src/cli/lib/extract-user-overrides.ts 匹配后写入 gateContext.user_overrides。
 
   chain-isolation:
     description: |
       铁律 3 — 链式互不前置, 跳过战略层 ≠ 必须跳过 phase 层;
       每层独立判断 (防"上层没跑下层不敢跑"的死板)。
       Strategic / phase / subtask 三层 gate eval 互相独立, 无父子继承。
-    chain_isolation: true
+      实现:每个 gate 各自求值,没有任何代码让下层 gate 依赖上层结果。

@@ -152,10 +152,6 @@ const JudgmentTrigger = Type.Object(
 const FallbackRule = Type.Object(
   {
     description: Type.Optional(Type.String()),
-    fallback_action: Type.Optional(Type.String()),
-    message_template: Type.Optional(Type.String()),
-    override_signal: Type.Optional(Type.Array(Type.String())),
-    chain_isolation: Type.Optional(Type.Boolean()),
   },
   { additionalProperties: false },
 )

@@ -313,7 +313,7 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 **Master orchestrator behavior** (per D-01 auto gate-route):
 - Master invoke → 并行 gate-eval per sub via `judgments.<sub>.fires` *(v3.0 描述的是 `harnessed run` in-process gate-eval+spawn 路径; v4.0: 现由 `harnessed gates` 返回 fire/skip JSON,再由 CC main session native spawn — `harnessed run` 仅 CI/headless,详 § 1.5)*
 - 满足 condition 的 sub → 激活
-- 不 fire 的 sub → **透明声明跳过** (sister `fallback.yaml` 铁律 1 `skip_with_transparency`)
+- 不 fire 的 sub → **透明声明跳过** (`fallback.yaml` 铁律 1;实现在 `masterOrchestrator-helpers.ts` 的 `emitGateTransparency`)
 - User 仍可独立 invoke 任 sub (sub 本身是独立 slash cmd)
 
 ---

@@ -149,30 +149,6 @@ const EXEMPTIONS = new Map([
   // ── Exposed 2026-09-17 when yaml KEYS stopped counting as reads. Until then
   // every field below looked consumed because some yaml file SETS it. ──
   [
-    'fallback_action',
-    'KNOWN DEAD, decision pending — judgments/fallback.yaml rule shape (the three ' +
-      '"fallback 铁律", with message_template / override_signal / chain_isolation). ' +
-      'judgmentResolver reads only fires_when / skips_when, which these rules do not ' +
-      'have; the behaviour they describe is implemented imperatively (skip ' +
-      'transparency in masterOrchestrator, user_overrides in extract-user-overrides). ' +
-      'Same declarative-vs-imperative split as mutually_exclusive_with.',
-  ],
-  [
-    'message_template',
-    'KNOWN DEAD, decision pending — see fallback_action. The skip-transparency text ' +
-      'actually printed is built in code, not from this template.',
-  ],
-  [
-    'override_signal',
-    'KNOWN DEAD, decision pending — see fallback_action. The live override keyword ' +
-      'table is judgments/user-overrides.yaml (singular here, a different artifact).',
-  ],
-  [
-    'chain_isolation',
-    'KNOWN DEAD, decision pending — see fallback_action ("链式互不前置" is honoured ' +
-      'by each layer gating independently, not by reading this boolean).',
-  ],
-  [
     'routing_note',
     'DELIBERATE, not an accident — Phase 54 renamed `fires_when` to `routing_note` ' +
       'precisely because it was never evaluated, and dropped the old key so writing it ' +
