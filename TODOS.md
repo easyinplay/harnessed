@@ -3,6 +3,21 @@
 > Deferred work with context. Source of each entry = a review decision (linked). Do not
 > inline into ROADMAP/STATE (doc discipline: one fact one home).
 
+## From /plan-ceo-review 2026-09-22 (codex 宿主对等 — CEO plan: `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-09-22-codex-host-parity.md`)
+
+- [ ] **跨宿主接力(CC ⇄ codex workflow 认领)** — P3 / L(CC: ~4h)
+  Why: CC 额度耗尽时切到 codex 接着跑同一 leaf。设计已裁定:账本迁共享中立根(非 `~/.harnessed`,候选 XDG
+  `$XDG_STATE_HOME/harnessed` / Windows `%LOCALAPPDATA%\harnessed`),复用 proper-lockfile;显式
+  `harnessed checkpoint adopt [--from claude|codex]`,无隐式回退(防 issue #10 串槽);迁移并存 + 撞 key 加
+  conflict 后缀,零覆盖。需 ADR 推翻 v9.0 28-CONTEXT「不做跨平台状态迁移」。
+  Trigger: 维护者在 codex 里真跑 ≥3 次长活并有记录。Depends: codex 宿主对等 milestone Phase 1。
+- [ ] **AGENTS.md 同源生成** — P3 / M(CC: ~1h)
+  Why: `~/.codex/AGENTS.md` 手抄 CLAUDE.md 已漂移(ralph-loop / TeamCreate / zoom-out)。只写 AGENTS.md 标记区间,
+  opt-in,dry-run diff,uninstall 往返,永不写 CLAUDE.md。Trigger: 同上。Depends: Phase 2 渲染器。
+- [ ] **gemini 宿主 milestone** — P2 / L(CC: ~4h)
+  Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。先实测 gemini hook / subagent / skills 目录。
+  Criterion: 实际用不用(design doc 2026-08-26 OQ4)。Depends: codex 宿主对等 milestone 收口。
+
 ## From /plan-ceo-review 2026-07-12 (B5 Phase 3 Slice 1 — CEO plan: `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`)
 
 - [ ] **E1 二进制签名(Windows Authenticode + macOS notarization)** — P2 / L(CC: M + 证书采购)
