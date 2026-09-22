@@ -1,17 +1,17 @@
 # Phase 63 — 平台判定重构(v16.0 / 1a,patch)
 
 SPEC:`.planning/specs/2026-09-22-codex-host-parity-v16.md` §「宿主判定」+ §「Phase 63」(唯一真相源)。
-Status: in-progress
+Status: complete (2026-09-22, commit 8f0ab14, CI run 35727355819 all green)
 
 ## 验收(全部满足才算完成)
 
 - [x] `pnpm exec tsc --noEmit` 0 错误
-- [ ] 全量 vitest 绿(本机 + 在 codex shell env 下再跑一次:设 `CODEX_SESSION_ID=x` 后全量仍绿)
+- [x] 全量 vitest 绿(本机 + 在 codex shell env 下再跑一次:设 `CODEX_SESSION_ID=x` 后全量仍绿)
 - [x] `pnpm build:hooks` 后 `git diff --exit-code bin/` 只含预期变化;bundle 不含 typebox
 - [x] biome check 绿;`scripts/check-*.mjs` 硬门绿
 - [x] CHANGELOG `[Unreleased]` 记录两处如实行为变化(override 只换根 / codex 会话内 run·research 被嵌套守卫拦截)
 - [x] ADR 0040 落盘
-- [ ] CI 三 OS 绿
+- [x] CI 三 OS 绿
 
 ## 任务(顺序执行,TDD:先红后绿)
 
