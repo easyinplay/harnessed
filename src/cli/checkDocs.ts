@@ -206,6 +206,25 @@ export function shouldGateForHookPayload(raw: string): boolean {
   return typeof cmd === 'string' && /\bgit\s+(?:-\S+\s+)*commit\b/.test(cmd)
 }
 
+/** v16.0 Phase 64 — the PreToolUse verdict in codex's JSON form (exit 0). codex
+ *  runs hooks through `pwsh -NoProfile -Command` on Windows, which reports exit 1
+ *  for ANY failing command — the exit-2 block would degrade to a hook error. stdout
+ *  JSON survives every shell: halt → permissionDecision deny, warn → systemMessage
+ *  (a codex Warning entry), pass → null (print nothing). */
+export function codexHookOutput(code: 0 | 1 | 2, lines: readonly string[]): string | null {
+  const text = lines.join('\n')
+  if (code === 2)
+    return JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny',
+        permissionDecisionReason: text,
+      },
+    })
+  if (code === 1) return JSON.stringify({ systemMessage: text })
+  return null
+}
+
 async function readStdin(): Promise<string> {
   if (process.stdin.isTTY) return ''
   try {
@@ -227,8 +246,15 @@ export function registerCheckDocs(program: Command): void {
     .option('--cwd <dir>', 'repo root holding .planning/ (default: current directory)')
     .option('--max-state-lines <n>', `STATE.md digest ceiling (default ${DEFAULT_MAX_STATE_LINES})`)
     .option('--hook', 'PreToolUse mode: read the tool payload on stdin, gate only git commit')
+    .option('--platform <id>', '(hook) host harness; codex → verdict as JSON on stdout, exit 0')
     .action(
-      async (opts: { json?: boolean; cwd?: string; maxStateLines?: string; hook?: boolean }) => {
+      async (opts: {
+        json?: boolean
+        cwd?: string
+        maxStateLines?: string
+        hook?: boolean
+        platform?: string
+      }) => {
         // Phase 60 — master kill switch, HOOK MODE ONLY. Ablation must make the
         // gate behave as if it were never installed, i.e. allow the commit; it
         // must NOT silence a deliberate `harnessed check-docs` run, which is an
@@ -245,6 +271,15 @@ export function registerCheckDocs(program: Command): void {
         const code = exitCodeFor(violations)
         const summary = code === 2 ? 'halt' : code === 1 ? 'warn' : 'pass'
 
+        if (opts.hook && opts.platform === 'codex') {
+          const lines = violations.map((v) => {
+            const where = v.line === undefined ? v.file : `${v.file}:${v.line}`
+            return `${v.tier === 'halt' ? '✗' : '⚠'} ${where} [${v.rule}] ${v.message}`
+          })
+          const verdict = codexHookOutput(code, lines)
+          if (verdict !== null) process.stdout.write(`${verdict}\n`)
+          process.exit(0)
+        }
         if (opts.json) {
           console.log(JSON.stringify({ violations, summary, exit_code: code }, null, 2))
         } else if (violations.length === 0) {

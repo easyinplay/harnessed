@@ -22,6 +22,9 @@ export function registerInjectState(program: Command): void {
     // The flag is consumed by the bin's own process.argv check (the dynamic
     // import below re-enters the same argv), not by this action.
     .option('--invalidate', '(internal) drop the per-session <project-context> delta cache')
+    // v16.0 Phase 64 — binary-mode codex plugin hook (`harnessed inject-state
+    // --platform codex`); the bin reads it from process.argv (hookHost.ts).
+    .option('--platform <id>', '(internal) host harness of the calling hook (codex plugin)')
     .action(async () => {
       try {
         const mjs = join(getAssetsRoot(), 'bin', 'harnessed-inject-state.mjs')

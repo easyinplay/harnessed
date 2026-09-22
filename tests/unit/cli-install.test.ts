@@ -259,3 +259,48 @@ describe('cli/install', () => {
     expect(opts?.apply).toBe(false)
   })
 })
+
+// v16.0 Phase 64 T6 (R8) — codex hook trust consent. `--trust-codex-hooks` =
+// explicit grant; interactive TTY = ask; non-interactive = never write trust.
+// A trust-pending result is still exit 0 (the plugin IS installed) but must say so.
+describe('cli/install — codex hook trust consent', () => {
+  const HOOK = {
+    ok: true,
+    manifest: {
+      metadata: { name: 'perturn-inject' },
+      spec: { install: { method: 'cc-hook-add' } },
+    },
+    // biome-ignore lint/suspicious/noExplicitAny: see above
+  } as any
+  beforeEach(() => {
+    readFileMock.mockReset()
+    runInstallMock.mockReset()
+    validateMock.mockReset()
+    readFileMock.mockResolvedValue('apiVersion: harnessed/v1')
+    validateMock.mockReturnValue(HOOK)
+  })
+
+  it('--trust-codex-hooks → codexHookTrust grant', async () => {
+    runInstallMock.mockResolvedValue({ ok: true, backupId: 'b', appliedFiles: [] })
+    await runCli(['install', 'perturn-inject', '--non-interactive', '--trust-codex-hooks'])
+    expect(runInstallMock.mock.calls[0]?.[1]).toMatchObject({ codexHookTrust: 'grant' })
+  })
+
+  it('--non-interactive without the flag → deny (never trusts silently)', async () => {
+    runInstallMock.mockResolvedValue({ ok: true, backupId: 'b', appliedFiles: [] })
+    await runCli(['install', 'perturn-inject', '--non-interactive'])
+    expect(runInstallMock.mock.calls[0]?.[1]).toMatchObject({ codexHookTrust: 'deny' })
+  })
+
+  it('trustPending → exit 0 and the pending message is printed', async () => {
+    runInstallMock.mockResolvedValue({
+      ok: true,
+      backupId: 'b',
+      appliedFiles: [],
+      trustPending: 'codex hooks installed but NOT trusted yet',
+    })
+    const { code, logs } = await runCliCaptured(['install', 'perturn-inject', '--non-interactive'])
+    expect(code).toBe(0)
+    expect(logs.join('\n')).toContain('NOT trusted yet')
+  })
+})

@@ -111,6 +111,15 @@ vi.mock('../../src/cli/lib/check-skill-integrity.js', () => ({
 vi.mock('../../src/cli/lib/check-update.js', () => ({
   checkUpdate: () => ({ name: 'update', status: 'pass', message: 'up to date (test)' }),
 }))
+// v16.0 Phase 64 — 24th check mock (check-codex-hooks.ts spawns the codex CLI /
+// app-server on codex and uses fs.existsSync). Real logic in check-codex-hooks.test.ts.
+vi.mock('../../src/cli/lib/check-codex-hooks.js', () => ({
+  checkCodexHooks: () => ({
+    name: 'codex hook plugins',
+    status: 'pass',
+    message: 'not codex (claude) — skipped',
+  }),
+}))
 // 4.32.4 install-channels + issue #8 stale-hooks both call fs.existsSync at
 // runtime; this file mocks node:fs with readFileSync only (no existsSync), so
 // mock these two checks to deterministic pass. Real logic unit-tested in
@@ -240,10 +249,10 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
   for (const scenario of SCENARIOS) {
     const skipNonWin = scenario.name === 'clean-win-git-bash' && process.platform !== 'win32'
     const test = skipNonWin ? it.skip : it
-    test(`scenario: '${scenario.name}' — 23 checks emit + summary matches expectation`, async () => {
+    test(`scenario: '${scenario.name}' — 24 checks emit + summary matches expectation`, async () => {
       applyScenario(scenario)
       const { code, parsed } = await runCli()
-      expect(parsed.checks).toHaveLength(23)
+      expect(parsed.checks).toHaveLength(24)
       expect(parsed.checks.map((c) => c.name)).toEqual(
         expect.arrayContaining([
           'node ≥ 22',
@@ -266,6 +275,7 @@ describe('Phase 2.4 W5 T5.1 — doctor 12-check × 6-scenario fixture matrix (72
           'per-turn inject pairing', // ← 4.38.0 21st check (perturn-inject without its SessionStart half, warn-only)
           'plugin install freshness', // ← Phase 56 22nd check (marketplace plugin pinned at install time, warn-only)
           'ablation switch', // ← Phase 60 23rd check (HARNESSED_OFF left on, warn-only)
+          'codex hook plugins', // ← v16.0 Phase 64 24th check (ADR 0041, warn-only; skipped off codex)
         ]),
       )
       if (scenario.name === 'missing-jq') {

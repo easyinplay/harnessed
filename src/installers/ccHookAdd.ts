@@ -20,7 +20,8 @@ import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import { checkCmdString } from '../manifest/security.js'
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
-import { getSettingsPath } from '../platform/platform.js'
+import { detectPlatform, getSettingsPath } from '../platform/platform.js'
+import { installCodexHook } from './codexHookAdd.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
@@ -64,9 +65,11 @@ export const installCcHookAdd: Installer = async (ctx) => {
     return { ok: false, phase: 'preflight', error: e }
   }
 
+  // v16.0 Phase 64 (ADR 0041) — codex has no settings.json hooks surface: the hook
+  // ships as a local codex plugin instead (codexHookAdd.ts).
+  if (detectPlatform().id === 'codex') return installCodexHook(ctx)
   const settingsPath = getSettingsPath()
-  // v16.0 Phase 63 — no JSON settings file on this platform (codex). runInstall
-  // already gates cc-hook-add to claude; a direct call skips the same way.
+  // v16.0 Phase 63 — no JSON settings file on this (non-claude, non-codex) platform.
   if (settingsPath === null) return { aborted: true, reason: 'platform-mismatch' }
   // Sentinel `null` ⇒ file does not exist (oldText='' so backup() emits pure-create).
   let existing: string | null

@@ -50,6 +50,7 @@ interface RawOpts {
   nonInteractive?: boolean
   autoInstall?: boolean // v3.9.0 P4 — commander `--no-auto-install` flag flips this to false
   updateInstalled?: boolean // v3.9.6 — force re-install for already-installed plugins (excludes MCP)
+  trustCodexHooks?: boolean // v16.0 Phase 64 (R8) — explicit codex hook trust consent
 }
 
 /** Known platform ids accepted by `setup --platform <id>`. */
@@ -280,6 +281,12 @@ export function registerSetup(program: Command): void {
     .option(
       '--update-installed',
       'force re-install already-installed plugins (excludes MCP servers); default: skip if installed',
+    )
+    // v16.0 Phase 64 (R8) — codex hook plugins picked in the optional offer are
+    // trusted without a per-hook prompt (default: ask per hook).
+    .option(
+      '--trust-codex-hooks',
+      "codex: trust harnessed's own hook plugins chosen in the optional offer without prompting",
     )
     .action(async (raw: RawOpts) => {
       // Version banner FIRST — print this build's version + an npm-latest check so
@@ -609,6 +616,7 @@ export function registerSetup(program: Command): void {
         const { runOptionalOffer } = await import('./lib/optional-offer.js')
         await runOptionalOffer(resolve(pkgRoot, 'manifests', 'optional'), {
           interactive: optIsTty && raw.nonInteractive !== true,
+          trustCodexHooks: raw.trustCodexHooks === true,
         })
       }
 

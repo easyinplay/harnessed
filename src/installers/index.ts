@@ -56,9 +56,12 @@ function levelOf(manifest: Manifest): Level {
 }
 
 // v4.14.0 T3 — methods with NO non-claude install path unless the manifest
-// carries a harness override (claude plugin marketplace / settings hooks are
-// CC infrastructure; superpowers & gstack intentionally have no codex override).
-const CLAUDE_ONLY_METHODS: ReadonlySet<string> = new Set(['cc-plugin-marketplace', 'cc-hook-add'])
+// carries a harness override (the claude plugin marketplace is CC
+// infrastructure; superpowers & gstack intentionally have no codex override).
+// v16.0 Phase 64 — cc-hook-add left the set: on codex it installs a local codex
+// plugin (codexHookAdd.ts; a hook with no codex port still answers
+// 'harness-mismatch' from there).
+const CLAUDE_ONLY_METHODS: ReadonlySet<string> = new Set(['cc-plugin-marketplace'])
 
 /** v4.14.0 T3 — resolve the effective manifest for the ACTIVE harness platform.
  *  claude → verbatim. Other platforms: `spec.harness_overrides.<id>` present →

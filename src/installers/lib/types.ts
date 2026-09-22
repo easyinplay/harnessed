@@ -30,6 +30,11 @@ export interface InstallOpts {
   // overwrite user-tuned MCP entries). Default false.
   updateInstalled?: boolean
   quiet?: boolean
+  // v16.0 Phase 64 (R8) — consent to write codex hook trust for harnessed's own
+  // hook plugins. 'grant' = --trust-codex-hooks; 'ask' = interactive prompt;
+  // 'deny' / absent = never write trust (non-interactive default). Other
+  // installers ignore it.
+  codexHookTrust?: 'grant' | 'ask' | 'deny'
 }
 
 export interface InstallContext {
@@ -56,9 +61,12 @@ export interface InstallError extends ValidationError {
 //   "already-installed = exit 0 + skip"; v1.0.4 MCP idempotent install patch);
 // `ok: false` with installer phase + InstallError on failure; `aborted: true`
 // for explicit user cancel / level-flag-missing / platform-mismatch.
+// v16.0 Phase 64 — `trustPending`: a codex hook plugin installed fine but its hooks
+// are NOT trusted yet (no consent / trust RPC unavailable) — codex silently skips
+// untrusted hooks, so callers must say so instead of reporting a plain success.
 export type InstallResult =
-  | { ok: true; backupId: string; appliedFiles: string[] }
-  | { ok: true; alreadyInstalled: true; backupId: string }
+  | { ok: true; backupId: string; appliedFiles: string[]; trustPending?: string }
+  | { ok: true; alreadyInstalled: true; backupId: string; trustPending?: string }
   | {
       ok: false
       phase: 'preflight' | 'dry-run' | 'confirm' | 'spawn' | 'verify' | 'rollback'

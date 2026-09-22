@@ -21,6 +21,14 @@ import { readInstalledPlugins } from '../../src/cli/lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from '../../src/cli/lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from '../../src/cli/lib/enableUserLangInSettings.js'
 import { isPluginRegistered } from '../../src/installers/lib/readClaudeConfig.js'
+
+// v16.0 Phase 64 (R6) — codex plugin probe spawns `codex plugin list`; stub it so
+// these descriptor tests never spawn codex or depend on the host's plugins.
+vi.mock('../../src/installers/lib/codexPlugins.js', () => ({
+  isCodexPluginInstalled: vi.fn(async () => false),
+  invalidateCodexPluginCache: vi.fn(),
+}))
+
 import {
   claudeDescriptor,
   codexDescriptor,

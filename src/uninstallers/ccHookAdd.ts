@@ -5,6 +5,7 @@
 
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { removeCodexHook } from '../installers/codexHookAdd.js'
 import {
   type AnyHookEntry,
   entryMatchesRegistration,
@@ -12,7 +13,7 @@ import {
   resolveHookCommand,
 } from '../installers/lib/hookEntry.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
-import { getSettingsPath } from '../platform/platform.js'
+import { detectPlatform, getSettingsPath } from '../platform/platform.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -30,8 +31,12 @@ export const uninstallCcHookAdd: Uninstaller = async (ctx) => {
   const abort = dryRunGate(ctx)
   if (abort) return abort
 
-  // v4.14.0 — settings path via descriptor (claude byte-identical; cc-hook-add
-  // is gated claude-only at runInstall dispatch, so codex never reaches here).
+  // v16.0 Phase 64 (ADR 0041) — codex: the hook is a local codex plugin.
+  if (detectPlatform().id === 'codex') {
+    const r = await removeCodexHook(ctx.manifest.metadata.name, install.hook_event)
+    return r.ok ? r : { ok: false, phase: 'spawn', error: r.error }
+  }
+  // v4.14.0 — settings path via descriptor (claude byte-identical).
   const settingsPath = getSettingsPath()
   // v16.0 Phase 63 — no JSON settings file (codex) → no hook can be registered.
   if (settingsPath === null) return { ok: true, removedPaths: [] }

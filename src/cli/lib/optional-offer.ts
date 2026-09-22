@@ -79,7 +79,7 @@ async function loadOptionalManifests(optionalDir: string): Promise<Manifest[]> {
  *  interactive:false (non-TTY / --non-interactive) → one advisory line, no prompts. */
 export async function runOptionalOffer(
   optionalDir: string,
-  offerOpts: { interactive: boolean },
+  offerOpts: { interactive: boolean; trustCodexHooks?: boolean },
 ): Promise<OptionalOfferResult> {
   const out: OptionalOfferResult = { installed: [], alreadyInstalled: [], skipped: [], failed: [] }
   const manifests = await loadOptionalManifests(optionalDir)
@@ -147,6 +147,9 @@ export async function runOptionalOffer(
       apply: true,
       // see IMPL NOTE header — this confirm IS the L4 opt-in for npm-cli globals.
       system: manifest.spec.install.method === 'npm-cli',
+      // v16.0 Phase 64 (R8) — codex hook trust: setup --trust-codex-hooks grants;
+      // otherwise this interactive offer asks per hook (never silently trusts).
+      codexHookTrust: offerOpts.trustCodexHooks ? 'grant' : 'ask',
     }
     const r = await runInstall(manifest, opts)
     if ('aborted' in r) {
@@ -155,6 +158,7 @@ export async function runOptionalOffer(
     } else if (r.ok) {
       out.installed.push(name)
       console.log(`  ✓ installed ${name}`)
+      if (r.trustPending) console.log(`    ⚠ ${r.trustPending}`)
       if (name === 'codegraph') {
         // Upstream two-step semantics: install wires the MCP server only; the
         // per-project index is a separate `codegraph init` (sister doctor hint).

@@ -30,6 +30,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { isAblated } from '../platform/ablation.js'
 import { detectPlatform } from '../platform/platform.js'
+import { applyPlatformArg, readHookStdin, sessionIdFromPayload } from './hookHost.js'
 import {
   decidePcEmission,
   injectCacheKey,
@@ -124,13 +125,15 @@ function shouldEmitPc(root: string, repoRoot: string, sid: string, pc: string): 
   }
 }
 
-function main(): void {
+async function main(): Promise<void> {
   // Phase 60 — master kill switch. Covers BOTH manifests this bin serves
   // (UserPromptSubmit injection and the SessionStart --invalidate half): under
   // ablation neither may touch the cache or emit a breadcrumb, or the control
   // arm of an A/B would still be carrying harnessed's context.
   if (isAblated()) return
   try {
+    // v16.0 Phase 64 — a codex plugin hook names its host explicitly (hookHost.ts).
+    const hostArg = applyPlatformArg(process.argv)
     const platform = detectPlatform()
     const root = platform.stateRoot
     // 4.38.0 — SessionStart entry (compact/clear/resume/startup). A context
@@ -147,7 +150,11 @@ function main(): void {
     // the bare repoKey. The composite key is NOT a real directory.
     const key = repoKey(process.cwd())
     const envName = platform.sessionIdEnv
-    const sid = envName ? process.env[envName]?.trim() : undefined
+    // codex hook: no CODEX_* env in the hook process — the session id rides stdin.
+    // Only an explicit --platform opts in, so the Claude Code path never reads stdin.
+    const sid =
+      (envName ? process.env[envName]?.trim() : undefined) ||
+      (hostArg ? sessionIdFromPayload(await readHookStdin()) : undefined)
     const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
 
     let learningsMd = ''
@@ -182,4 +189,4 @@ function main(): void {
   }
 }
 
-main()
+void main()

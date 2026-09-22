@@ -303,25 +303,26 @@ export function registerUninstall(program: Command): void {
       const resolvedName = resolveAlias(name) ?? name
       checkPathSafe(resolvedName)
 
-      const manifestPath = pathResolve(getAssetsRoot(), `manifests/tools/${resolvedName}.yaml`)
-      const skillPackPath = pathResolve(
-        getAssetsRoot(),
-        `manifests/skill-packs/${resolvedName}.yaml`,
-      )
-      let yamlSrc: string
-      let chosenPath = manifestPath
-      try {
-        yamlSrc = await readFile(manifestPath, 'utf8')
-      } catch {
+      // Same three tiers as `harnessed install` (tools → skill-packs → optional).
+      // v16.0 Phase 64 R7 — optional/ was missing here, so no optional component
+      // (perturn-inject, doc-discipline-gate, ecc …) could be uninstalled by name.
+      let yamlSrc: string | undefined
+      let chosenPath: string | undefined
+      for (const dir of ['tools', 'skill-packs', 'optional']) {
+        const candidate = pathResolve(getAssetsRoot(), `manifests/${dir}/${resolvedName}.yaml`)
         try {
-          yamlSrc = await readFile(skillPackPath, 'utf8')
-          chosenPath = skillPackPath
+          yamlSrc = await readFile(candidate, 'utf8')
+          chosenPath = candidate
+          break
         } catch {
-          console.error(
-            `${t('install.manifest_not_found', { name: resolvedName })}\n${t('install.manifest_not_found.fix', { name: resolvedName })}`,
-          )
-          process.exit(1)
+          // try next tier
         }
+      }
+      if (yamlSrc === undefined || chosenPath === undefined) {
+        console.error(
+          `${t('install.manifest_not_found', { name: resolvedName })}\n${t('install.manifest_not_found.fix', { name: resolvedName })}`,
+        )
+        process.exit(1)
       }
 
       const v = validateManifestFile(yamlSrc, chosenPath)

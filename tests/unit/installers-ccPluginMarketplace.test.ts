@@ -36,6 +36,7 @@ vi.mock('@clack/prompts', () => ({
 import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { installCcPluginMarketplace } from '../../src/installers/ccPluginMarketplace.js'
+import { invalidateCodexPluginCache } from '../../src/installers/lib/codexPlugins.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
 const spawnMock = vi.mocked(spawn)
@@ -316,15 +317,16 @@ describe('installCcPluginMarketplace — codex harness gate (v4.14.0)', () => {
 })
 
 // v4.14.0 T3 REVISED — codex override path: codex-flavored cmd (merged by
-// resolveForHarness) → `codex plugin add <p>@<m>`; verify reads the
-// `[plugins."<p>@<m>"]` registry in ~/.codex/config.toml (M15: `codex plugin
-// list` also prints plugins that are not installed).
+// resolveForHarness) → `codex plugin add <p>@<m>`. v16.0 Phase 64 (R6): verify
+// asks `codex plugin list --json` (installed[] only — M15: the plain listing also
+// prints plugins that are not installed); config.toml is no longer read.
 describe('installCcPluginMarketplace — codex override cmd (v4.14.0)', () => {
   beforeEach(() => {
     vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     spawnMock.mockReset()
     readFileMock.mockReset()
+    invalidateCodexPluginCache()
     // state read etc. — never a valid claude config on codex.
     readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
   })
@@ -332,26 +334,21 @@ describe('installCcPluginMarketplace — codex override cmd (v4.14.0)', () => {
     vi.unstubAllEnvs()
   })
 
-  // codex records an installed plugin as a `[plugins."<p>@<m>"]` table in
-  // ~/.codex/config.toml. `readFile` returns that table only once `plugin add`
-  // has been spawned; before it, codex has never been configured (ENOENT).
-  function codexRegistryAfterAdd(written: { value: boolean }): void {
-    readFileMock.mockReset()
-    readFileMock.mockImplementation((async () => {
-      if (!written.value) throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-      return '[plugins."superpowers@openai-curated"]\nenabled = true\n'
-    }) as unknown as typeof readFile)
-  }
-
-  it('codex cmd → spawns `codex plugin add` (no --scope) + verify reads the config.toml registry', async () => {
+  it('codex cmd → spawns `codex plugin add` (no --scope) + verify asks `codex plugin list`', async () => {
     const s = silence()
     try {
       const written = { value: false }
-      codexRegistryAfterAdd(written)
-      spawnMock.mockImplementation(() => {
-        written.value = true
-        return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
-      })
+      spawnMock.mockImplementation(((_cmd: string, args: string[]) => {
+        const flat = JSON.stringify(args)
+        if (flat.includes('list')) {
+          const installed = written.value
+            ? [{ pluginId: 'superpowers@openai-curated', installed: true }]
+            : []
+          return makeChild({ exitCode: 0, stdout: JSON.stringify({ installed }) })
+        }
+        if (flat.includes('plugin') && flat.includes('add')) written.value = true
+        return makeChild({ exitCode: 0 })
+      }) as unknown as typeof spawn)
       const c = ctx({}, (m) => {
         ;(m.metadata as { name: string }).name = 'superpowers'
         ;(m.spec.install as { cmd: string }).cmd = 'codex plugin add superpowers@openai-curated'
@@ -365,6 +362,11 @@ describe('installCcPluginMarketplace — codex override cmd (v4.14.0)', () => {
       expect(flat).not.toContain('claude')
       expect(flat).toContain('plugin add superpowers@openai-curated')
       expect(flat).not.toContain('--scope')
+      // ADR 0041 — config.toml (credentials) is never read, not even by the backup step
+      const tomlReads = readFileMock.mock.calls.filter((c2) =>
+        String(c2[0]).endsWith('config.toml'),
+      )
+      expect(tomlReads).toEqual([])
     } finally {
       s.restore()
     }

@@ -29,8 +29,15 @@ import { access, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { getAssetsRoot } from '../../platform/assetsRoot.js'
-import { getSettingsPath, getSkillsDir, harnessSkillsDirs } from '../../platform/platform.js'
+import {
+  detectPlatform,
+  getSettingsPath,
+  getSkillsDir,
+  harnessSkillsDirs,
+} from '../../platform/platform.js'
 import { binaryOnPath, extractVerifyBinary } from './binaryProbe.js'
+import { codexHookPluginId } from './codexHookPlugin.js'
+import { isCodexPluginInstalled } from './codexPlugins.js'
 import { parseGitCloneDest } from './gitCloneArgs.js'
 import { detectCcHookInstalled } from './hookEntry.js'
 import { isMcpServerRegistered, isPluginRegistered } from './readClaudeConfig.js'
@@ -247,7 +254,11 @@ export async function isAlreadyInstalled(
   // need the self-heal migration (dogfood: perturn-inject malformed entry).
   const installCfg = ctx.manifest.spec.install
   if (installCfg.method === 'cc-hook-add') {
-    // v16.0 Phase 63 — null settings path (codex) → not installed; never probe config.toml.
+    // v16.0 Phase 64 (R6) — codex: the hook is the local plugin
+    // harnessed-<name>@harnessed-local; `codex plugin list` is the authority.
+    if (detectPlatform().id === 'codex')
+      return isCodexPluginInstalled(codexHookPluginId(ctx.manifest.metadata.name))
+    // v16.0 Phase 63 — null settings path → not installed; never probe config.toml.
     const settingsPath = getSettingsPath()
     let raw: string | null = null
     if (settingsPath !== null) {

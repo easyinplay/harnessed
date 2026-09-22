@@ -30,6 +30,7 @@ import {
   getPluginsRegistry,
   getSettingsPath,
 } from '../../platform/platform.js'
+import { isCodexPluginInstalled } from './codexPlugins.js'
 
 /**
  * Path to the user-global Claude Code config file written by `claude mcp add
@@ -128,25 +129,6 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
 }
 
 /**
- * codex plugin registration probe: `codex plugin add <p>@<m>` records the plugin
- * as a `[plugins."<p>@<m>"]` table in `~/.codex/config.toml` (host-verified,
- * codex 26.x). `pluginName` may be bare (`superpowers`) or qualified
- * (`superpowers@openai-api-curated`); a bare name matches any marketplace.
- *
- * This is the only reliable codex signal: `codex plugin list` also prints every
- * marketplace plugin that is NOT installed (`superpowers@... not installed`), so
- * a substring match on its stdout (or piping it through a text search) reports
- * installed for a plugin that is merely available.
- */
-export function isPluginInToml(raw: string, pluginName: string): boolean {
-  const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const [plugin = '', market] = pluginName.split('@')
-  const key = market ? `${esc(plugin)}@${esc(market)}` : `${esc(plugin)}(?:@[^"'\\]]+)?`
-  const re = new RegExp(`^\\s*\\[plugins\\.(?:"${key}"|'${key}')\\]`, 'm')
-  return re.test(raw)
-}
-
-/**
  * Check whether a Claude Code plugin is registered.
  *
  * v3.9.8 — primary source is `~/.claude/plugins/installed_plugins.json`
@@ -162,13 +144,9 @@ export function isPluginInToml(raw: string, pluginName: string): boolean {
  */
 export async function isPluginRegistered(pluginName: string): Promise<boolean> {
   const platform = detectPlatform()
-  if (platform.id === 'codex') {
-    try {
-      return isPluginInToml(await readFile(platform.mcpConfigPath, 'utf8'), pluginName)
-    } catch {
-      return false // ENOENT (codex never configured) / unreadable: not registered
-    }
-  }
+  // v16.0 Phase 64 (R6) — codex answers from `codex plugin list` (codexPlugins.ts),
+  // never from config.toml: ADR 0041 keeps harnessed code out of that file.
+  if (platform.id === 'codex') return isCodexPluginInstalled(pluginName)
 
   // Primary: ~/.claude/plugins/installed_plugins.json (v2 schema, Claude Code 2.1.133+).
   // Phase C / D4: codex has no plugin registry (getPluginsRegistry → null) — skip

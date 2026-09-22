@@ -319,6 +319,20 @@ describe('cli/uninstall <name> — per-manifest', () => {
     expect(stderr).toContain('not found')
   })
 
+  // v16.0 Phase 64 R7 — `harnessed install <name>` resolves tools → skill-packs →
+  // optional; uninstall only looked at the first two, so every optional
+  // component (perturn-inject, doc-discipline-gate, ecc …) was "not found".
+  it('resolves a manifest that lives only in manifests/optional/', async () => {
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).replace(/\\/g, '/').includes('manifests/optional/'))
+        return NPM_CLI_MANIFEST_YAML as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    const { code, stdout } = await runCli(['uninstall', 'ctx7', '--dry-run'])
+    expect(code).toBe(2)
+    expect(stdout).toMatch(/\[dry-run\]/)
+  })
+
   it('--dry-run → preview output + exit 2', async () => {
     mockManifestFile(NPM_CLI_MANIFEST_YAML)
     const { code, stdout } = await runCli(['uninstall', 'ctx7', '--dry-run'])

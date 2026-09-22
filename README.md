@@ -2,112 +2,110 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-**English** | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README.md) | **简体中文** | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> _AI coding harness package manager + composition orchestrator_ — it assembles the best of the open-source ecosystem into one executable engine, wired by the three-layer **BDD → SDD → TDD** methodology.
+> _AI coding harness 包管理器 + composition orchestrator_ —— 它把开源生态最优秀的组件装配成一个可执行的 engine，由三层 **BDD → SDD → TDD** 方法论接线。
 
-> **harnessed is an orchestration brain + prompt library**, driving native subagent spawn through three fast, pure-function CLIs — `harnessed gates` (which sub-workflows fire), `harnessed prompt` (spawn-ready prompt for a sub), and `harnessed checkpoint` (record progress).
+> **harnessed 是 orchestration brain + prompt library**，通过三个秒级纯函数 CLI 驱动 native subagent spawn —— `harnessed gates`（哪些子工作流触发）、`harnessed prompt`（子工作流的 spawn-ready prompt）、`harnessed checkpoint`（记录进度）。
 
 [![npm](https://img.shields.io/npm/v/harnessed?label=npm&color=blue)](https://npmjs.com/package/harnessed)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
-> Not affiliated with, endorsed by, or sponsored by Harness Inc. (see [NOTICE](./NOTICE))
+> Not affiliated with, endorsed by, or sponsored by Harness Inc. (见 [NOTICE](./NOTICE))
 
 ---
 
 ## ✨ TL;DR
 
-**How it works**: harnessed **assembles** the best open-source Claude Code agents (gstack, GSD, superpowers, planning-with-files) and **orchestrates** them into one workflow via opinionated composition skills. It does **not** vendor upstream code — manifests describe install/check, and composition skills conduct the multi-upstream collaboration (so an upstream upgrade is just a re-install, never a manual code sync).
+**它怎么运作**: harnessed **装配** 市面上最优秀的开源 Claude Code agent (gstack、GSD、superpowers、planning-with-files),再用强意见 composition skill 把它们 **编排** 成一条工作流。它 **不** vendor 上游代码 —— manifest 描述 install/check,composition skill 指挥多上游协作 (所以上游升级只是一次 re-install,从不需要手动 sync code)。
 
-### 🔁 The operating loop
+### 🔁 运转循环 (operating loop)
 
-> **Discuss → Plan → Build → Verify → Ship**, closed by a **Learn** loop — machine-executed across the three-layer stack (gstack governance · GSD orchestration · superpowers TDD · checkpoint evidence). Raw agent work drifts; harnessed turns it into a source-of-truth path where progress and evidence persist instead of living in chat. **Learning is automatic**: every completed workflow appends its failure/loop/reject signals to `.planning/LEARNINGS.md`, which are injected into the next cycle — this is always-on, **not** gated on the optional Retro. Retro (`/retro`) is a separate, optional milestone summary.
+> **Discuss → Plan → Build → Verify → Ship**,由一个 **Learn** 循环闭合 —— 跨三层栈机器化执行 (gstack 治理 · GSD 编排 · superpowers TDD · checkpoint 证据)。原始 agent 工作会漂移;harnessed 把它变成一条 source-of-truth 路径,进度和证据落盘留存,而不是活在对话里。**学习是自动的**: 每条完成的 workflow 都会把它的 failure/loop/reject 信号追加进 `.planning/LEARNINGS.md`,并注入下一轮循环 —— 这是 always-on 的,**不** 取决于可选的 Retro。Retro (`/retro`) 是独立的、可选的里程碑总结。
 
 ```mermaid
 flowchart LR
-  R(["⓪ Research<br/>multi-source investigate<br/>(optional)"]):::opt --> D
-  D(["① Discuss<br/>3-layer clarify"]) --> P(["② Plan<br/>persist spec + tasks"])
-  P --> T(["③ Task<br/>TDD build + checkpoint"])
-  T --> V(["④ Verify<br/>independent review + evidence gate"])
-  V --> S(["⑤ Ship<br/>release-preflight → tag-ready (publish via CI)"])
-  S -. "milestone summary" .-> RT(["Retro<br/>(optional)"]):::opt
-  V -. "fail / gap" .-> T
-  S == "🔁 Learn — learnings captured on every workflow completion → injected next cycle" ==> D
+  R(["⓪ Research 调研<br/>多源调查<br/>(可选)"]):::opt --> D
+  D(["① Discuss 讨论<br/>三层澄清"]) --> P(["② Plan 规划<br/>持久化 spec + tasks"])
+  P --> T(["③ Task 执行<br/>TDD 构建 + checkpoint"])
+  T --> V(["④ Verify 验证<br/>独立审查 + 证据关卡"])
+  V --> S(["⑤ Ship 交付<br/>release-preflight → tag-ready (经 CI 发布)"])
+  S -. "里程碑总结" .-> RT(["Retro 回顾<br/>(可选)"]):::opt
+  V -. "失败 / gap" .-> T
+  S == "🔁 Learn — 每次 workflow 完成即捕获 learnings → 注入下一循环" ==> D
   classDef opt stroke-dasharray:5,opacity:0.8
 ```
 
 ---
 
-## 🧱 What is the three-layer stack?
+## 🧱 什么是三层栈?
 
-harnessed's three-layer stack is a software-engineering implementation of the established **BDD → SDD → TDD** nesting: three nested feedback loops, each answering a different question. The **three layers are the loops** (the stable theory); harnessed **composes** the open-source ecosystem into each loop — and the components **overlap**, which is exactly what a composition orchestrator arbitrates.
+harnessed 的三层栈方案是软件工程上既有的 **BDD → SDD → TDD** 嵌套的实现: 三个嵌套的反馈循环,各回答一个不同的问题。**三层就是这三个循环** (稳定的理论);harnessed 把开源生态 **组合 (compose)** 进每个循环 —— 而这些组件 **彼此重叠**,这正是 composition orchestrator 要去仲裁的地方。
 
-| Layer | Loop | Question it answers | Composed from (overlapping) |
+| 层 | 循环 | 它回答的问题 | 组合自 (彼此重叠) |
 |---|---|---|---|
-| **① Behavior** | BDD | *What* to build + how we know it's done | gstack `/office-hours` governance · GSD discuss · superpowers brainstorming → acceptance criteria |
-| **② Spec** | SDD | *How* it's structured | GSD plan-phase → requirements / design / tasks · contracts (Spec Kit / ECC patterns) |
-| **③ Implementation** | TDD | Does it actually *work* | superpowers TDD red-green · subagent execution · GSD verify-work · harnessed completion gate |
+| **① Behavior** | BDD | 做 *什么* + 怎么算做完 | gstack `/office-hours` 治理 · GSD discuss · superpowers brainstorming → 验收标准 |
+| **② Spec** | SDD | *如何* 组织结构 | GSD plan-phase → requirements / design / tasks · 契约 (Spec Kit / ECC patterns) |
+| **③ Implementation** | TDD | 它到底能不能 *跑* | superpowers TDD red-green · subagent 执行 · GSD verify-work · harnessed completion gate |
 
-The loops are **nested lenses, not phases** — the classic Cucumber BDD-outer + TDD-inner double-loop, extended with a GenAI-era SDD spec ring into a triple-loop. harnessed runs the default outer→inner traversal as its 5-stage cadence, plus the **back-edges it ships today**: Verify kicks failing work back to Task, a subagent that hits a gray area round-trips to clarification before continuing, and every shipped cycle feeds learnings back into the next Discuss. (Finer-grained structured back-edges — e.g. a contract contradiction routing straight to Spec, an ambiguous requirement to Behavior — are on the roadmap, not shipped. harnessed is the linear-cadence realization of the triple-loop; the full routed graph is its evolution path.)
+这些循环是 **嵌套的镜头,不是阶段** —— 经典的 Cucumber BDD-外环 + TDD-内环双环,在 GenAI 时代再加一道 SDD spec 环扩展成三环。harnessed 把默认的外→内遍历跑成它的 5-stage cadence,外加 **它今天就已经落地的 back-edge**: Verify 把失败工作踢回 Task,撞上灰色地带的 subagent 在继续前先 round-trip 回澄清,每条 shipped 的循环把 learnings 喂回下一轮 Discuss。(更细粒度的结构化 back-edge —— 例如契约矛盾直接路由回 Spec、模糊需求回 Behavior —— 在 roadmap 上,尚未 ship。harnessed 是三环的线性-cadence 实现;完整的 routed graph 是它的演进路径。)
 
-**The components overlap — that's the point.** **GSD** threads through all three loops as the orchestration backbone, **gstack** spans Behavior + Review, **superpowers** spans Behavior (brainstorm) + Implementation (TDD). harnessed wires them — and arbitrates the overlap — into one engine. Two **cross-cutting disciplines** run through every layer: **karpathy principles** (*how* to code — simplicity-first, surgical diffs) + **mattpocock moves** (on-demand tactical tools like `/diagnosing-bugs`, `/grill-with-docs`).
+**组件重叠 —— 这正是重点。** **GSD** 作为编排骨干贯穿全部三个循环,**gstack** 横跨 Behavior + Review,**superpowers** 横跨 Behavior (brainstorm) + Implementation (TDD)。harnessed 把它们接线 —— 并仲裁重叠 —— 进一个 engine。两条 **横切纪律 (cross-cutting disciplines)** 贯穿每一层: **karpathy 心法** (*怎么* 写代码 —— simplicity-first、surgical diff) + **mattpocock 招式** (按需的战术工具,如 `/diagnosing-bugs`、`/grill-with-docs`)。
 
-Mapped to the runtime loop above: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**, then **Verify + Ship** close it with evidence gates.
-
----
-
-> Wait — can harnessed really go toe-to-toe with upstream giants like superpowers / gstack / GSD?
-> Of course — we **stand on the shoulders of giants**. See further, Newton said. 🧐
-> ... *(whispers)* Though on closer look, more like the parrot perched on said shoulder.
-> Eh — parrots mimic; we **orchestrate**. 🦜
+对应到上面的 runtime 循环: **Discuss = Behavior (BDD) · Plan = Spec (SDD) · Build = Implementation (TDD)**,然后 **Verify + Ship** 用证据关卡闭合。
 
 ---
 
-## 🎯 Key Differentiators
-
-- **Three-layer stack machine-executed** — the **BDD→SDD→TDD nested triple-loop** ([what's that?](#-what-is-the-three-layer-stack)), composed from `gstack` + `GSD` + `superpowers` (overlapping, GSD as the backbone) with `karpathy 4 principles` + `mattpocock 23 moves` as cross-cutting disciplines
-- **No vendoring of upstream** — manifests describe install/check; on upstream upgrade users just re-install to get the latest version
-- **Composition Skill** — in-house workflow skills act as the conductor's baton, orchestrating multiple upstreams in concert. **1 super-master `/auto` + 5 stage masters + 20 sub-workflows + 2 standalones = 28 namespace-layered workflows**, full 5-stage machine-execution (`/auto` one-shot across stages / `/discuss /plan /task /verify /ship` single stage / 20 three-layer-stack subs / `/research /retro` 2 standalones)
-- **L0 Discipline Substrate** — global cross-stage behavior baseline (karpathy principles + output-style + language + operational + priority + protocols), applied universally
-- **Package manager mindset** — install dependency graph auto-resolves, doctor health check, install-base one-shot full install
-- **Unified entry point** — users face `/discuss /plan /task /verify /ship` master slash commands without learning each upstream's terminology; sub commands explicitly invoke a single stage (e.g. `/discuss-strategic` runs only the strategic-layer clarification)
-- **Forward continuation** — `harnessed next` / `harnessed advance` carry you across tasks and phases: when one finishes, the next is **derived from `.planning/` disk state** (a phase is done when its `PLAN` has a matching `SUMMARY`) — no queue to maintain, so a mid-stream new phase is picked up automatically, and resume re-derives from disk. A per-turn `NEXT-UNIT` breadcrumb points at what's next
+> 等等 — harnessed 真能跟 superpowers / gstack / GSD 这种上游巨头分庭抗礼?
+> 当然 —— 我们**站在巨人的肩膀上**。牛顿说,这样看得更远。🧐
+> ……*(小声)* 不过仔细看,更像肩上那只鹦鹉。
+> 算了 —— 鹦鹉学舌,我们至少**会编排**。🦜
 
 ---
 
-## 🆚 vs Native Claude Code / Codex
+## 🎯 关键差异化
 
-Native agents give you primitives; harnessed wires them into a methodology. Where a native cell says a primitive "exists," you still design, wire, and maintain it yourself per project — harnessed ships it pre-composed and engine-driven.
+- **三层栈机器化执行** —— 即 **BDD→SDD→TDD 嵌套三环** ([那是什么?](#-什么是三层栈)),组合自 `gstack` + `GSD` + `superpowers` (彼此重叠,GSD 作骨干),并以 `karpathy 4 心法` + `mattpocock 23 招式` 作为横切纪律
+- **不 vendor 上游** —— manifest 描述 install/check;上游升级时用户只需 re-install 即获最新版
+- **Composition Skill** —— 自家 workflow skill 当指挥棒,调度多个上游协同演奏。**1 个 super-master `/auto` + 5 个 stage master + 20 个 sub-workflow + 2 个 standalone = 28 个 namespace-layered workflow**,完整 5-stage 机器化 (`/auto` 跨 stage 一键 / `/discuss /plan /task /verify /ship` 单 stage / 20 个三层栈 sub / `/research /retro` 2 个 standalone)
+- **L0 Discipline Substrate** —— 全局 cross-stage 行为基准 (karpathy 心法 + output-style + language + operational + priority + protocols),applied universally
+- **包管理器思维** —— install dependency graph 自动解析、doctor 健康检查、install-base 一键装齐
+- **统一入口** —— 用户面对 `/discuss /plan /task /verify /ship` 等 master slash command,不需学每家上游术语;sub command 显式调用单 stage (例如 `/discuss-strategic` 只跑战略层澄清)
+- **Forward continuation (前向接续)** —— `harnessed next` / `harnessed advance` 带你跨越 task 与 phase: 一个完成时,下一个 **从 `.planning/` 磁盘状态派生** (一个 phase 完成 = 它的 `PLAN` 有了匹配的 `SUMMARY`) —— 没有队列要维护,所以中途新增的 phase 会被自动拾取,resume 时从磁盘重新派生。每一轮的 `NEXT-UNIT` breadcrumb 指向下一步该做什么
 
-| Dimension | Native Claude Code | Native Codex | harnessed |
+---
+
+## 🆚 harnessed vs 原生 Claude Code / Codex
+
+原生 agent 给你原语 (primitive);harnessed 把它们接线成方法论。原生那一格说某个原语「存在」的地方,你仍要每个项目自己去设计、接线、维护它 —— harnessed 把它预先组合好、由 engine 驱动地交付。
+
+| 维度 | 原生 Claude Code | 原生 Codex | harnessed |
 |---|---|---|---|
-| **Workflow / methodology** | Primitives only — you design the flow each time | Fewer primitives — freestyle per prompt | Codified **Discuss→Ship** 5-stage three-layer-stack engine — BDD + SDD + TDD loops + 2 cross-cutting (Review + Ship) |
-| **Instruction injection** | `CLAUDE.md` + skills + hooks exist, but static & wired by hand | `AGENTS.md` only — no skills/hooks | Per-turn breadcrumb hook + task-scoped routing + learnings injected each cycle |
-| **State / progress** | Chat context — lost on `/clear` / compaction | Chat context — no persistence layer | On-disk `.planning/` + `workflows.json` per-repo ledger + checkpoint evidence |
-| **Cross-session recovery** | Re-explain the context by hand | Re-explain the context by hand | `harnessed status --recover`: you-are-here + next step |
-| **Verification / "done"** | Agent self-reports "done" | Agent self-reports "done" | Independent review subagents + **fail-CLOSED evidence guard** (missing artifact = not done) |
-| **Subagent orchestration** | Subagents + Agent Teams available, but orchestrated by hand | No subagent/team primitive | `gates → prompt → spawn → checkpoint`; Agent Teams auto-enabled per task |
-| **Learning loop** | None | None | `LEARNINGS.md` auto-captured + injected into the next cycle |
-| **Platform reach** | Claude Code only | Codex only | **Cross-harness** — Claude Code primary, Codex via platform layer |
+| **工作流 / 方法论** | 只有原语 —— 每次自己设计流程 | 原语更少 —— 每条 prompt 即兴发挥 | 编码化的 **Discuss→Ship** 5-stage 三层栈 engine —— BDD + SDD + TDD 循环 + 2 横切 (Review + Ship) |
+| **指令注入** | `CLAUDE.md` + skill + hook 存在,但静态、得手工接线 | 只有 `AGENTS.md` —— 无 skill/hook | 每轮 breadcrumb hook + task-scoped 路由 + 每轮注入 learnings |
+| **状态 / 进度** | 对话 context —— `/clear` / compaction 即丢失 | 对话 context —— 无持久化层 | 落盘 `.planning/` + 每 repo 一份的 `workflows.json` ledger + checkpoint 证据 |
+| **跨 session 恢复** | 手工重新解释 context | 手工重新解释 context | `harnessed status --recover`: you-are-here + 下一步 |
+| **验证 / 「完成」** | agent 自报「完成」 | agent 自报「完成」 | 独立审查 subagent + **fail-CLOSED 证据 guard** (缺产物 = 没完成) |
+| **Subagent 编排** | 有 subagent + Agent Teams,但得手工编排 | 无 subagent/team 原语 | `gates → prompt → spawn → checkpoint`;Agent Teams 按任务自动启用 |
+| **学习循环** | 无 | 无 | `LEARNINGS.md` 自动捕获 + 注入下一轮 |
+| **平台覆盖** | 仅 Claude Code | 仅 Codex | **Cross-harness** —— Claude Code 主力,Codex 经 platform 层 |
 
-> Native agents win on zero-setup, zero-overhead for trivial one-off edits. harnessed earns its keep the moment work spans multiple steps, sessions, or subagents — where freestyle drift and lost-in-chat state start costing you.
-
-**Don't take our word for it — we ran the experiment.** A published A/B evidence pack ([docs/evidence/2026-07-b1/](./docs/evidence/2026-07-b1/)) compares `/auto` against bare Claude Code on 4 machine-graded tasks, full transcripts included. Honest headline: on small, fully-specified tasks both arms score 100% and bare is 4-5× cheaper — use bare (or auto-lite) there. The orchestration value claim lives in fuzzy-spec / multi-session territory, which that experiment deliberately does not cover; bring us a real task from that territory and we'll run the same protocol on it.
+> 原生 agent 在零配置、零开销的琐碎一次性改动上取胜。一旦工作跨越多步骤、多 session 或多 subagent —— 即兴漂移和迷失在对话里的状态开始让你付出代价 —— harnessed 就开始挣回它的价值。
 
 ---
 
-## 📦 Quick Install
+## 📦 快速安装
 
-**Via npm** (recommended — both channels are first-class and stay in sync):
+**走 npm**(推荐 —— 两条通道同为一等公民,版本保持同步):
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
-> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
+> Windows PowerShell 5.x 不支持 `&&` 链接 —— 改用 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
 
-**No Node.js? Standalone binary** — per-platform, self-updates via `harnessed update`:
+**没有 Node.js?独立二进制** —— 分平台安装,后续用 `harnessed update` 自更新:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -119,104 +117,104 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
+🤖 **或让 AI 帮你装** —— 把下面这句话发给 Claude Code (或任何 AI 助手):
 
 > Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
 
-The AI will auto-fetch the doc + run the install, handling OS / permissions / PATH / corepack edge cases — no need to copy large chunks of text.
+AI 会自动 fetch 文档 + 跑安装,处理 OS / 权限 / PATH / corepack 等 edge case —— 无需复制大段文字。
 
 > [!TIP]
-> 🚀 **The much-loved Agent Teams and Subagent features are auto-enabled in harnessed based on the task!**
-> No need to manually configure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` writes it to `~/.claude/settings.json` automatically. Pattern A full-stack three-way / Pattern C 4-specialist and other multi-agent workflows work out of the box.
+> 🚀 **很多人喜爱的 Agent Teams 和 Subagent 功能,在 harnessed 中会根据任务自动启用!**
+> 无需手动配置 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` —— `harnessed setup` 会自动写入 `~/.claude/settings.json`。Pattern A 全栈三路 / Pattern C 4-specialist 等 multi-agent workflow 即开即用。
 
 ---
 
 ## ⏱️ First 5 Minutes
 
-The shortest path from zero to a running workflow:
+从零到一条运转中的 workflow,最短路径:
 
 ```
-# 1. Inside Claude Code — kick off your first workflow
-/auto "your first requirement"        # newcomer default: runs all stages end-to-end
+# 1. 在 Claude Code 内 —— 启动你的第一条 workflow
+/auto "你的第一个需求"               # 新手默认: 端到端跑完所有 stage
 ```
 
 ```bash
-# 2. Lost? Run harnessed with no arguments — it tells you where you are + what's next
+# 2. 迷路了? 不带参数跑 harnessed —— 它会告诉你身在何处 + 下一步是什么
 harnessed
-#   → you-are-here dashboard (active phase + per-step status) + a NEXT: auto|manual|done line
-#   no need to remember status / next / resume — one command (comet `/comet` analog, read-only)
-#   add --json for machine-readable output
+#   → you-are-here 仪表盘 (active phase + 每步状态) + 一行 NEXT: auto|manual|done
+#   不必记 status / next / resume —— 一个命令 (comet `/comet` 类比,read-only)
+#   加 --json 输出机器可读格式
 ```
 
 ```bash
-# 3. Resume any time after an interruption
-harnessed            # same you-are-here view
-harnessed resume     # continue from the latest checkpoint
+# 3. 中断后随时恢复
+harnessed            # 同一个 you-are-here 视图
+harnessed resume     # 从最近 checkpoint 继续
 ```
 
-> Want finer control over which stage runs and when? See the 3 modes below.
+> 想更精细地控制哪个 stage 何时跑? 看下面 3 种模式。
 
 ---
 
-## 🚀 Quick Start — 3 Options
+## 🚀 快捷使用 — 3 种选择
 
-In order of increasing user intervention:
+按用户介入程度由低到高:
 
-### 🎯 Auto Mode (Recommended for newcomers / don't want to think hard)
-
-```
-/auto "requirement X"
-
-# For large requirements you can explicitly stage (usually not needed — AI auto-judges and routes in;
-# force it if you believe it's a large requirement):
-/auto "requirement X" --staged
-```
-
-> Don't want to think hard, or just getting started — let harnessed handle everything. Runs the full 6 stages (research conditional → discuss → plan → task → verify → retro mandatory) without stopping. AI 1-shot auto-judges requirement complexity, suggests switching to `--staged` mode for large requirements (stops after each stage for review); before starting prompts "Do you have a clear understanding of the requirement?" — if no → auto-runs `/research` multi-source investigation; ends with mandatory `/retro` summary. Fail-fast on failure, resume via `harnessed resume`.
-
-### 📂 Stage Mode (Recommended for power users / want to review intermediate results)
+### 🎯 Auto Mode (推荐新手 / 不想动脑子)
 
 ```
-/discuss "requirement X"          # Strategic + Phase + Subtask 3-layer clarification
-/plan "requirement X"             # Architecture (conditional) + plan persistence
-/task "subtask-1"                 # 4 subs serial (clarify → code → test → deliver)
-/verify "phase-1"                 # 10 subs conditional verification
+/auto "需求 X"
+
+# 大需求可显式分阶段 (一般不需要 —— AI 自动判断并路由进入;
+# 若你自认是大需求可强制):
+/auto "需求 X" --staged
 ```
 
-> Want to decide which stage to start from / review intermediate outputs — 5 masters callable independently, and each master still auto-fans-out all of that stage's subs internally.
+> 不想动脑子,或者刚入门 —— 一切交给 harnessed。自动跑完全部 6 stage (research conditional → discuss → plan → task → verify → retro mandatory),中间不停。AI 1-shot 自动判断需求复杂度,大需求建议切 `--staged` 模式 (每 stage 完停下 review);开始前 prompt「你对需求有清晰认知吗?」—— 若否 → 自动加跑 `/research` 多源调研;末尾以强制 `/retro` 总结收尾。失败 fail-fast,经 `harnessed resume` 续。
 
-### 🔬 Surgical Mode (Expert mode / you know what you want)
+### 📂 Stage Mode (推荐熟手 / 想 review 中间结果)
 
 ```
-/discuss-phase "..."        # Run only Phase-layer clarification
-/plan-architecture "..."    # Run only architecture review
-/verify-paranoid "..."      # Run only the Paranoid Staff Engineer review
-# ... pick any of the other 20 sub-workflows
+/discuss "需求 X"          # 战略 + Phase + 子任务 3 层澄清
+/plan "需求 X"             # 架构 (conditional) + 计划持久化
+/task "subtask-1"          # 4 sub 串行 (clarify → code → test → deliver)
+/verify "phase-1"          # 10 sub conditional 验证
 ```
 
-> "I'm an expert, I'll decide myself" — skip the master, invoke a sub-workflow directly. Suits advanced users who know exactly which sub they need, or reuse of a single step.
+> 想自己决定从哪个 stage 开始 / review 中间产出 —— 5 个 master 可独立调用,每个 master 内部仍自动 fan-out 该 stage 所有 sub。
+
+### 🔬 Surgical Mode (专家模式 / 知道自己要什么)
+
+```
+/discuss-phase "..."        # 单跑 Phase 层澄清
+/plan-architecture "..."    # 单跑架构审查
+/verify-paranoid "..."      # 单跑 Paranoid Staff Engineer 审查
+# ... 其他 20 个 sub-workflow 任选
+```
+
+> 「我是专家,我自己决定」—— 跳过 master,直接调某 sub-workflow。适合已知精确需要哪个 sub 的高级用户 / 复用某单一环节。
 
 ---
 
-## 📐 5-Stage Flow Diagram
+## 📐 5-stage 流程图
 
 ```mermaid
 graph TD
-  RS([⓪ /research — pre-stage multi-source investigation, optional]):::optional
-  subgraph Discuss[① Discuss — Strategic Clarification]
+  RS([⓪ /research — 前置多源调研, 可选]):::optional
+  subgraph Discuss[① Discuss 战略澄清]
     DM[/discuss master/]
     DS[discuss-strategic]
     DP[discuss-phase]
     DT[discuss-subtask]
     DM --> DS & DP & DT
   end
-  subgraph Plan[② Plan — Task Planning]
+  subgraph Plan[② Plan 任务规划]
     PM[/plan master/]
     PA[plan-architecture]
     PP[plan-phase]
     PM --> PA & PP
   end
-  subgraph Task[③ Task — Execution]
+  subgraph Task[③ Task 执行]
     TM[/task master/]
     TC[task-clarify]
     TCo[task-code]
@@ -224,7 +222,7 @@ graph TD
     TD[task-deliver]
     TM --> TC --> TCo --> TT --> TD
   end
-  subgraph Verify[④ Verify — Verification]
+  subgraph Verify[④ Verify 验证]
     VMs[/verify master/]
     VP[verify-progress]
     VC[verify-code-review]
@@ -238,147 +236,147 @@ graph TD
     VM[verify-multispec]
     VMs --> VP & VC & VPa & VQ & VS & VD & VE & VV & VSi & VM
   end
-  subgraph Ship[⑤ Ship — Release]
+  subgraph Ship[⑤ Ship 发布]
     SMs[/ship master/]
     SP[ship-preflight]
     SMs --> SP
   end
-  RT([⑥ /retro — milestone summary, optional]):::optional
+  RT([⑥ /retro — 里程碑总结, 可选]):::optional
   RS --> Discuss
   Discuss --> Plan --> Task --> Verify --> Ship
   Ship --> RT
   classDef optional stroke-dasharray:5 5,fill:#f5f5f5,color:#666
 ```
 
-> Dashed boxes = optional standalones (`/research` pre-strategic investigation / `/retro` post-milestone summary); solid boxes = main 5-stage cadence (Ship stops at tag-ready; `publish.yml` CI does the actual publish).
+> 虚框 = 可选 standalone (`/research` 战略前调研 / `/retro` 里程碑后总结);实框 = 主流程 5-stage cadence (Ship 停在 tag-ready;由 `publish.yml` CI 完成真正的 publish)。
 
-### 28-Workflow Overview Table
+### 28-Workflow 总览表
 
 | Slash cmd | Stage | Type | Capability / Upstream | Brief |
 |-----------|-------|------|----------------------|-------|
-| `/auto` | All | **Super-master** | masterOrchestrator (across 6 stages) | One-shot full 6-stage run (research conditional → discuss → plan → task → verify → retro mandatory); AI 1-shot complexity judge + understanding check + mandatory retro; `--staged` opt-in stage gate |
-| `/discuss` | ① Discuss | Master | masterOrchestrator | 3 subs parallel gate-eval (chain-isolation rule) |
-| `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` + planning-with-files | Strategic layer — mandatory governance for new features / new milestones / product direction (findings.md persisted) |
-| `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` + planning-with-files | Phase layer — ≥2 open decisions / gray-area clarification (findings.md + knowledge.md persisted) |
-| `/discuss-subtask` | ① Discuss | Sub | superpowers brainstorming + `/grill-with-docs` | Subtask layer — ≥2 approaches / core algorithm / API contract (ephemeral short discussion, not persisted) |
-| `/plan` | ② Plan | Master | masterOrchestrator | Serial invoke of 2 subs (architecture conditional → phase always) |
-| `/plan-architecture` | ② Plan | Sub | gstack `/plan-eng-review` | Architecture layer — mandatory governance gate for complex architecture |
-| `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | Plan layer — persists `task_plan.md` + `progress.md` |
-| `/task` | ③ Task | Master | masterOrchestrator | Serial invoke of 4 subs per subtask (clarify → code → test → deliver) |
-| `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | Subtask startup clarification gate |
-| `/task-code` | ③ Task | Sub | karpathy 4 principles + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | Subtask coding + cross-session progress.md sync |
-| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | TDD mandatory for core logic (alias mattpocock `/tdd`) |
-| `/task-deliver` | ③ Task | Sub | `harnessed checkpoint` completion gate + Agent Teams conditional | Until verbatim `COMPLETE` + R20.10 max_iter fallback |
-| `/verify` | ④ Verify | Master | masterOrchestrator | 10 subs conditional dispatch by scenario |
-| `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | Mandatory serial starting point — UAT acceptance + state sync |
-| `/verify-code-review` | ④ Verify | Sub | `code-review` multi-subagent fan-out | High-confidence findings in parallel |
-| `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | Mandatory for critical-module pre-PR |
-| `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | End-to-end QA (has_ui_changes conditional) |
+| `/auto` | All | **Super-master** | masterOrchestrator (跨 6 stage) | 一键完整跑 6 stage (research conditional → discuss → plan → task → verify → retro mandatory);AI 1-shot 复杂度 judge + 理解度 check + retro mandatory;`--staged` opt-in stage gate |
+| `/discuss` | ① Discuss | Master | masterOrchestrator | 3 sub 并行 gate-eval (chain-isolation 铁律) |
+| `/discuss-strategic` | ① Discuss | Sub | gstack `/office-hours` + `/plan-ceo-review` + planning-with-files | 战略层 —— 新功能 / 新 milestone / 产品方向的强制治理 (findings.md 持久化) |
+| `/discuss-phase` | ① Discuss | Sub | GSD `/gsd-discuss-phase` + planning-with-files | Phase 层 —— ≥2 个 open decision / 灰色地带澄清 (findings.md + knowledge.md 持久化) |
+| `/discuss-subtask` | ① Discuss | Sub | superpowers brainstorming + `/grill-with-docs` | 子任务层 —— ≥2 种 approach / 核心算法 / API contract (ephemeral 短讨论, 不持久化) |
+| `/plan` | ② Plan | Master | masterOrchestrator | 串行 invoke 2 sub (architecture conditional → phase always) |
+| `/plan-architecture` | ② Plan | Sub | gstack `/plan-eng-review` | 架构层 —— 复杂架构的强制治理关卡 |
+| `/plan-phase` | ② Plan | Sub | GSD `/gsd-plan-phase` + planning-with-files `/plan` | 计划层 —— 持久化 `task_plan.md` + `progress.md` |
+| `/task` | ③ Task | Master | masterOrchestrator | 每子任务串行 invoke 4 sub (clarify → code → test → deliver) |
+| `/task-clarify` | ③ Task | Sub | superpowers brainstorming + `/grill-with-docs` conditional | 子任务起步澄清 gate |
+| `/task-code` | ③ Task | Sub | karpathy 4 心法 + `/improve-codebase-architecture` / `/diagnosing-bugs` conditional | 子任务编码 + 跨 session progress.md 同步 |
+| `/task-test` | ③ Task | Sub | superpowers TDD red-green-refactor + `/diagnosing-bugs` conditional | 核心逻辑 TDD 强制 (alias mattpocock `/tdd`) |
+| `/task-deliver` | ③ Task | Sub | `harnessed checkpoint` completion gate + Agent Teams conditional | 至 verbatim `COMPLETE` + R20.10 max_iter fallback |
+| `/verify` | ④ Verify | Master | masterOrchestrator | 10 sub 按场景 conditional dispatch |
+| `/verify-progress` | ④ Verify | Sub | GSD `/gsd-verify-work` + `/gsd-progress` | 必跑串行起点 —— UAT 验收 + 状态同步 |
+| `/verify-code-review` | ④ Verify | Sub | `code-review` 多 subagent fan-out | 高置信度 finding 并行 |
+| `/verify-paranoid` | ④ Verify | Sub | gstack `/review` (Paranoid Staff Engineer) | 关键模块 PR 前强制 |
+| `/verify-qa` | ④ Verify | Sub | gstack `/qa` + playwright-cli / `@playwright/test` / webapp-testing | 端到端 QA (has_ui_changes conditional) |
 | `/verify-security` | ④ Verify | Sub | gstack `/cso` | OWASP / auth / secrets (has_auth_or_secrets conditional) |
-| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | Design system consistency (has_design_changes conditional) |
-| `/verify-eval-review` | ④ Verify | Sub | GSD `/gsd-eval-review` | AI phase eval coverage audit (has_ai_phase conditional; pairs with plan-side gsd-ai-integration-phase) |
-| `/verify-validate-phase` | ④ Verify | Sub | GSD `/gsd-validate-phase` | Nyquist requirement→test coverage backfill (requires_coverage_audit conditional) |
-| `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | Final serial simplification |
-| `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | Critical release / large refactor PR escalation (mutual SendMessage cross-examination) |
-| `/ship` | ⑤ Ship | Master | masterOrchestrator | Release stage after Verify — preflight → delegate PR/deploy to gstack `/ship` → publish via CI (tag-ready boundary) |
-| `/ship-preflight` | ⑤ Ship | Sub | `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); blocks on failure |
-| `/research` | Standalone | Standalone | Tavily / Exa MCP + ctx7 + GSD `/gsd-discuss-phase` | Multi-source investigation (Stage ① alternate) |
-| `/retro` | Standalone | Standalone | gstack `/retro` + planning-with-files RETROSPECTIVE.md | Project / milestone close-out summary |
+| `/verify-design` | ④ Verify | Sub | gstack `/design-review` + ui-ux-pro-max + design-taste-frontend | 设计系统一致性 (has_design_changes conditional) |
+| `/verify-eval-review` | ④ Verify | Sub | GSD `/gsd-eval-review` | AI phase eval 覆盖审计 (has_ai_phase conditional;配 plan 侧 gsd-ai-integration-phase) |
+| `/verify-validate-phase` | ④ Verify | Sub | GSD `/gsd-validate-phase` | Nyquist requirement→test 覆盖查漏 (requires_coverage_audit conditional) |
+| `/verify-simplify` | ④ Verify | Sub | `code-simplifier` | 末尾串行简化 |
+| `/verify-multispec` | ④ Verify | Sub | 4-specialist Agent Team Pattern C | 关键发布 / 大重构 PR 升级 (互相 SendMessage 质询) |
+| `/ship` | ⑤ Ship | Master | masterOrchestrator | Verify 之后的发布 stage —— preflight → 委派 PR/deploy 给 gstack `/ship` → 经 CI publish (tag-ready 边界) |
+| `/ship-preflight` | ⑤ Ship | Sub | `harnessed release-preflight` | Read-only 发布就绪关卡 (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent);失败即 block |
+| `/research` | Standalone | Standalone | Tavily / Exa MCP + ctx7 + GSD `/gsd-discuss-phase` | 多源调研 (Stage ① alternate) |
+| `/retro` | Standalone | Standalone | gstack `/retro` + planning-with-files RETROSPECTIVE.md | 项目 / 里程碑结束总结 |
 
-> Master orchestrator auto gate-routes to the right sub (chain-isolation rule — non-firing subs are transparently declared skipped).
-> Direct sub invocation also bypasses the master to run a single stage, e.g. `/discuss-strategic "new feature X"`.
+> Master orchestrator 自动 gate-route 到合适的 sub (chain-isolation 铁律 —— 不 fire 的 sub 透明声明跳过)。
+> 直接调用 sub 也可绕过 master 单跑某 stage,例如 `/discuss-strategic "新功能 X"`。
 
 ---
 
-## ⚡ Usage Flow
+## ⚡ 使用流程
 
-5-stage three-layer-stack methodology — recommended driving via the 5 master orchestrators in series:
+5-stage 三层栈方法论 —— 推荐用 5 个 master orchestrator 串行驱动:
 
 ```
 /discuss  →  /plan  →  /task  →  /verify  →  /ship
    ①         ②        ③         ④           ⑤
 ```
 
-| Stage | Master | Main sub-workflows | Upstream collaboration |
+| Stage | Master | 主要 sub-workflow | 上游协同 |
 | ---- | ---- | ---- | ---- |
-| ① **Discuss** | `/discuss` | strategic / phase / subtask (3 in parallel) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
+| ① **Discuss** | `/discuss` | strategic / phase / subtask (3 并行) | gstack `/office-hours` + GSD `/gsd-discuss-phase` + superpowers brainstorming |
 | ② **Plan** | `/plan` | architecture (conditional) → phase | gstack `/plan-eng-review` + GSD `/gsd-plan-phase` + planning-with-files |
-| ③ **Task** | `/task` | clarify → code → test → deliver (4 serial per subtask) | karpathy principles + mattpocock moves + superpowers TDD + harnessed completion gate |
-| ④ **Verify** | `/verify` | progress → 5 parallel conditional → simplify (+ multispec critical) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
-| ⑤ **Ship** | `/ship` | preflight (release-readiness gate) → delegate PR/deploy | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI (tag-ready boundary) |
+| ③ **Task** | `/task` | clarify → code → test → deliver (每子任务 4 串行) | karpathy 心法 + mattpocock 招式 + superpowers TDD + harnessed completion gate |
+| ④ **Verify** | `/verify` | progress → 5 并行 conditional → simplify (+ multispec critical) | GSD `/gsd-verify-work` + code-review + gstack `/review` / `/qa` / `/cso` / `/design-review` + code-simplifier |
+| ⑤ **Ship** | `/ship` | preflight (发布就绪关卡) → 委派 PR/deploy | `harnessed release-preflight` + gstack `/ship` + `publish.yml` CI (tag-ready 边界) |
 
-Practical example:
+实操示例:
 
 ```bash
-# 1. Install workflow upstreams (one line installs gstack + GSD + superpowers + planning-with-files)
+# 1. 装 workflow 上游 (一行装齐 gstack + GSD + superpowers + planning-with-files)
 harnessed setup
 
-# 2. Run the 5-stage cadence inside Claude Code
-/discuss "new feature X"          # Strategic + Phase + Subtask 3-layer clarification
-/plan "new feature X"             # Architecture (conditional) + plan (task graph persisted)
-/task "subtask-1: API contract"   # 4 subs serial per subtask
-/verify "phase-1"                 # 10 subs conditional
-/ship                             # release-preflight gate → PR/deploy (tag-ready; publish via CI)
+# 2. 在 Claude Code 内跑 5-stage cadence
+/discuss "新功能 X"               # 战略 + Phase + 子任务 3 层澄清
+/plan "新功能 X"                  # 架构 (conditional) + 计划 (任务图持久化)
+/task "subtask-1: API contract"   # 每子任务 4 sub 串行
+/verify "phase-1"                 # 10 sub conditional
+/ship                             # release-preflight 关卡 → PR/deploy (tag-ready;经 CI publish)
 
-# 3. Resume after interruption (any time)
+# 3. 中断后恢复 (任何时候)
 harnessed resume
 ```
 
-> You can also invoke subs directly to bypass the master and run just one layer, e.g. `/verify-paranoid` runs only the Paranoid Staff Engineer review.
+> 也可直接调 sub 绕过 master 单跑某一层,例如 `/verify-paranoid` 只跑 Paranoid Staff Engineer 审查。
 
-📊 Detailed mermaid + full stage walkthroughs: [docs/WORKFLOW.md](./docs/WORKFLOW.md)
+📊 详细 mermaid + 各 stage 完整说明:[docs/WORKFLOW.md](./docs/WORKFLOW.md)
 
 ---
 
-## 🗂️ Architecture (5-stage namespace-layered)
+## 🗂️ 架构 (5-stage namespace-layered)
 
-### 1. Directory Structure
+### 1. 目录结构
 
 ```
 harnessed/
-├── manifests/                  # L1: upstream description layer (NOT vendored)
-├── workflows/                  # L6: composition skills (5-stage conductor's baton)
-│   ├── discuss/                # Stage ① 3 layers (strategic + phase + subtask)
+├── manifests/                  # L1: 上游描述层 (NOT vendored)
+├── workflows/                  # L6: composition skill (5-stage 指挥棒)
+│   ├── discuss/                # Stage ① 3 layer (strategic + phase + subtask)
 │   │   ├── auto/               # /discuss master gate-route
 │   │   ├── strategic/          # /discuss-strategic (gstack /office-hours + /plan-ceo-review)
 │   │   ├── phase/              # /discuss-phase (GSD /gsd-discuss-phase)
 │   │   └── subtask/            # /discuss-subtask (superpowers brainstorming)
-│   ├── plan/                   # Stage ② (architecture + phase task graph)
+│   ├── plan/                   # Stage ② (architecture + phase 任务图)
 │   ├── task/                   # Stage ③ (clarify + code + test + deliver)
 │   ├── verify/                 # Stage ④ (progress + code-review + paranoid + qa + cso + design + simplify + multispec)
-│   ├── ship/                   # Stage ⑤ (preflight release-readiness gate → delegate PR/deploy to gstack /ship; tag-ready)
+│   ├── ship/                   # Stage ⑤ (preflight 发布就绪关卡 → 委派 PR/deploy 给 gstack /ship;tag-ready)
 │   ├── research/               # standalone Stage ① alternate
 │   ├── retro/                  # standalone post-⑤ milestone close
-│   ├── capabilities.yaml       # L5a: ~100 entries, 7 categories SoT
+│   ├── capabilities.yaml       # L5a: ~100 entry, 7 category SoT
 │   ├── defaults.yaml           # ralph_max_iterations per workflow phase
-│   ├── judgments/              # L5a: three-layer-stack criteria + parallelism + tdd + fallback + rules-routing
+│   ├── judgments/              # L5a: 三层栈判据 + parallelism + tdd + fallback + rules-routing
 │   │   ├── strategic-gate.yaml
 │   │   ├── phase-gate.yaml
 │   │   ├── subtask-gate.yaml
 │   │   ├── parallelism-gate.yaml         # L5b execution mechanism routing
 │   │   ├── tdd-gate.yaml
-│   │   ├── fallback.yaml                 # 3 rules: skip_with_transparency + override + chain_isolation
-│   │   ├── web-design-routing.yaml       # UI design tool routing
-│   │   ├── web-testing-routing.yaml      # E2E / browser testing tool routing
-│   │   ├── web-search-routing.yaml       # Web search / doc fetch routing
-│   │   └── stage-routing.yaml            # master orchestrator sub-stage routing
-│   └── disciplines/            # L0: global cross-stage behavior baseline
-│       ├── karpathy.yaml       # 4 principles + ≤200L
+│   │   ├── fallback.yaml                 # 3 铁律: skip_with_transparency + override + chain_isolation
+│   │   ├── web-design-routing.yaml       # UI 设计工具路由
+│   │   ├── web-testing-routing.yaml      # E2E / 浏览器测试工具路由
+│   │   ├── web-search-routing.yaml       # 网页搜索 / 文档抓取路由
+│   │   └── stage-routing.yaml            # master orchestrator sub-stage 路由
+│   └── disciplines/            # L0: 全局 cross-stage 行为基准
+│       ├── karpathy.yaml       # 4 心法 + ≤200L
 │       ├── output-style.yaml   # BLUF + no-emoji + no-em-dash
 │       ├── language.yaml       # zh-Hans default + English preserve
 │       ├── operational.yaml    # biome preempt + A7 + commit safety
-│       ├── priority.yaml       # skill conflict arbitration
-│       └── protocols.yaml      # cc-handoff design doc self-contained
+│       ├── priority.yaml       # skill conflict 仲裁
+│       └── protocols.yaml      # cc-handoff design doc 自包含
 ├── routing/                    # L4: routing engine SSOT (decision_rules.yaml)
 ├── schemas/                    # L3: JSON Schema (IDE / CI consume)
 ├── src/                        # L4: TS engine (platform + workflow + routing + cli + installers + checkpoint + audit + state)
 ├── tests/                      # vitest unit + integration + dogfood (R8.1 dogfood-first)
 ├── scripts/                    # CI gate (check-workflow-schema, transparency-verdict, state-archive)
 ├── .planning/                  # project memory (STATE + ROADMAP + REQUIREMENTS + per-phase + milestones)
-└── docs/adr/                   # architecture decision records
+└── docs/adr/                   # 架构决策记录
 ```
 
-### 2. Logical Layering (8 layers)
+### 2. 逻辑分层 (8 层)
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -389,12 +387,12 @@ harnessed/
 │ L6 Workflow orchestration (workflows/<stage>/<sub>/)         │
 ├────────────────────────────────────────────────────────────┤
 │ L5b Execution Mechanism (orthogonal): subagent / Agent Teams │
-│   / main session + harnessed completion gate                │
-│   parallelism-gate.yaml: default subagent → escalate 5 triggers │
-│   Pattern A full-stack three-way / B opposing hypotheses / C multi-dim review │
+│   / 主 session + harnessed completion gate                  │
+│   parallelism-gate.yaml: 默认 subagent → escalate 5 触发     │
+│   Pattern A 全栈三路 / B 对立假设 / C 多维度审查              │
 ├────────────────────────────────────────────────────────────┤
 │ L5a Capability + Judgment + Defaults SoT                    │
-│   capabilities.yaml (7 categories) + judgments/ (10 files) + │
+│   capabilities.yaml (7 category) + judgments/ (10 file) +    │
 │   defaults.yaml                                              │
 ├────────────────────────────────────────────────────────────┤
 │ L4  Runtime engine (workflow / routing / handlers)           │
@@ -405,17 +403,17 @@ harnessed/
 ├────────────────────────────────────────────────────────────┤
 │ L1  Upstream components (NOT vendored)                       │
 ├────────────────────────────────────────────────────────────┤
-│ L0  Discipline Substrate (applies globally)                  │
-│   karpathy principles + output-style + language + operational + │
+│ L0  Discipline Substrate (全局生效)                          │
+│   karpathy 心法 + output-style + language + operational +    │
 │   priority + protocols (applied universally to L1-L7)       │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 3. Cross-cutting Capabilities (capabilities.yaml — 7 categories, ~100 entries)
+### 3. Cross-cutting Capabilities (capabilities.yaml — 7 category, ~100 entry)
 
 ```
 behavioral (6):       karpathy-guidelines + output-style + language + operational + priority + protocols
-tool-slash-cmd (~60): gstack 30+ optional + gsd 10+ + mattpocock 12 high-frequency + etc.
+tool-slash-cmd (~60): gstack 30+ optional + gsd 10+ + mattpocock 12 高频 + 等
 tool-mcp (3):         chrome-devtools-mcp / tavily-mcp / exa-mcp
 tool-cli (3):         ctx7 / gws / completion-gate
 tool-plugin (2):      planning-with-files / @playwright/test
@@ -423,18 +421,18 @@ tool-bundled (2):     webapp-testing / playwright-cli
 agent-platform (3):   agent-teams-create / send-message / shutdown
 ```
 
-### 4. Data Flow Example (user invokes `/discuss "new feature X"`)
+### 4. 数据流示例 (用户调用 `/discuss "新功能 X"`)
 
 ```
-[L7] User invokes /discuss "new feature X"
+[L7] User invokes /discuss "新功能 X"
   ↓
 [L6] workflows/discuss/auto/workflow.yaml master orchestrator
   ↓
-[L5a] judgments.strategic-gate.fires + phase-gate.fires + subtask-gate.fires (3-way parallel eval)
+[L5a] judgments.strategic-gate.fires + phase-gate.fires + subtask-gate.fires (3-way 并行 eval)
   ↓
 [L4] judgmentResolver.ts (4-level ref split) + exprBuilder.ts (expr-eval evaluate)
   ↓
-[L0] discipline.priority-hierarchy arbitrates tool conflicts / output-style formats output
+[L0] discipline.priority-hierarchy 仲裁工具冲突 / output-style 格式化输出
   ↓
 [fires=true sub] → invoke sub-workflow (/discuss-strategic / /discuss-phase / /discuss-subtask)
   ↓ for each sub:
@@ -443,90 +441,90 @@ agent-platform (3):   agent-teams-create / send-message / shutdown
       ├─ parallelism: judgments.parallelism-gate.<route>.fires (L5b mechanism)
       └─ phase invocations execute via capability template interpolation
   ↓
-[fallback.yaml chain-isolation] 3 layers judged independently, not serially dependent
-[Skip transparency declaration] non-firing subs → "⚠️ Skipped <sub> because <reason>"
+[fallback.yaml chain-isolation] 三层独立判断, 不串行依赖
+[Skip 透明声明] 不 fire 的 sub → "⚠️ 跳过 <sub>, 因为 <reason>"
   ↓
 planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/<phase-id>/
   ↓
 [L4] state.ts writeCurrentWorkflow (proper-lockfile) + audit.append (12-field JSONL)
 ```
 
-### 5. Decision Routing Matrix (rules-based, codified in judgments + capabilities)
+### 5. 抉择路由矩阵 (rules-based, codified in judgments + capabilities)
 
-| Scenario | Default → Escalate |
+| 场景 | Default → Escalate |
 |------|---------------------|
-| Parallelism mechanism | subagent → Agent Teams Pattern A/B/C (5 triggers) |
-| UI design primary plan | **two-stage**: ui-ux-pro-max (audience / interaction logic / design axis — structure) → design-taste-frontend (anti-slop visual polish overlay, cross-agent taste-skill) |
-| E2E browser exploration | playwright-cli (one-line Bash, token-efficient) |
-| E2E commit-able TS | @playwright/test default |
-| E2E Python backend linkage | webapp-testing |
-| Performance / a11y / memory diagnostics | chrome-devtools-mcp |
-| Web search (keyword) | Tavily MCP default |
-| Web search (descriptive / academic) | Exa MCP |
-| Library API docs | ctx7 CLI |
+| 并行机制 | subagent → Agent Teams Pattern A/B/C (5 触发) |
+| UI 设计主方案 | **两段式**:ui-ux-pro-max(受众 / 交互逻辑 / 设计主轴 — 结构骨架)→ design-taste-frontend(anti-slop 视觉打磨 overlay,跨 agent taste-skill) |
+| E2E 浏览器探查 | playwright-cli (Bash 一行, token 省) |
+| E2E commit-able TS | @playwright/test 默认 |
+| E2E Python 后端联动 | webapp-testing |
+| 性能 / a11y / 内存诊断 | chrome-devtools-mcp |
+| Web 搜索 (关键词) | Tavily MCP 默认 |
+| Web 搜索 (描述式 / 学术) | Exa MCP |
+| 库 API 文档 | ctx7 CLI |
 | GitHub URL | gh CLI |
-| Single URL fetch | WebFetch built-in |
+| 单 URL 抓取 | WebFetch 内置 |
 | Gmail / Drive / Calendar | gws CLI |
-| Architecture review (complex) | gstack /plan-eng-review |
-| TDD mandatory (core algorithm) | superpowers TDD OR mattpocock /tdd |
-| Critical module PR | gstack /review |
-| Large refactor PR multi-dim review | 4-specialist Agent Team Pattern C |
-| Cross-session hand-off | discipline.protocols self-contained design doc |
-| `/auto` complexity for large requirements | AI 1-shot judge → auto-suggest `--staged` (n abort suggests manual `/discuss`) |
-| `/auto` requirement understanding | prompt before start → n auto-adds `/research` multi-source investigation |
+| 架构审查 (复杂) | gstack /plan-eng-review |
+| TDD 强制 (核心算法) | superpowers TDD OR mattpocock /tdd |
+| 关键模块 PR | gstack /review |
+| 大重构 PR 多维度审查 | 4-specialist Agent Team Pattern C |
+| 跨 session hand-off | discipline.protocols self-contained design doc |
+| `/auto` 复杂度大需求 | AI 1-shot judge → 自动建议 `--staged` (n abort 建议手动 `/discuss`) |
+| `/auto` 需求理解度 | 开始前 prompt → n 自动加 `/research` 多源调研 |
 
 ---
 
-## 🛠️ Operational Commands
+## 🛠️ 维护命令 (Operational)
 
-> These are harnessed's own maintenance commands (setup / health check / backup-rollback / state recovery, etc.). For day-to-day feature development just use the slash commands above — you usually don't need these.
+> 这些是 harnessed 自身的维护命令 (setup / 健康检查 / 备份回滚 / 状态恢复等)。日常 feature 开发用上面的 slash command 即可,这块通常用不到。
 
-**v4.0 — orchestration brain.** Slash commands run clarification in the main Claude Code session (so questions reach you), then spawn CC-native subagents (enabling Agent Teams + clarification round-trips). harnessed provides the gate evaluation (`harnessed gates`) and spawn-ready prompts (`harnessed prompt`); the main session does the spawning. `harnessed run` remains for CI/headless use.
+**v4.0 — 编排大脑。** slash command 在 Claude Code 主 session 内跑澄清 (让问题能触达你),再 spawn CC-native subagent (启用 Agent Teams + 澄清 round-trip)。harnessed 负责 gate 评估 (`harnessed gates`) 和 spawn-ready prompt (`harnessed prompt`),由主 session 完成 spawn。`harnessed run` 保留供 CI/headless 使用。
 
-### CLI Commands
+### CLI 命令
 
-| Command | Description |
+| 命令 | 说明 |
 | ---- | ---- |
-| `harnessed setup` | One-time setup; installs workflow skills to `~/.claude/skills/` + MCP to `~/.claude.json` |
-| `harnessed gates <master>` | Evaluate which sub-workflows fire for a master stage (JSON: fire/skip/parallelism). Used by slash commands to orchestrate native spawns. |
-| `harnessed prompt <sub>` | Output a spawn-ready prompt (role + checklist + disciplines + completion/clarification protocols) for a sub-workflow. |
-| `harnessed checkpoint <action> <sub>` | Record sub-workflow start/complete/fail to `~/.claude/harnessed/checkpoints/`. |
-| `harnessed` (no args) | Zero-arg you-are-here: active-workflow dashboard + `NEXT: auto\|manual\|done` + run hint; `--json` machine-readable; no active workflow → onboarding hint (comet `/comet` analog, read-only). |
-| `harnessed next` | Deterministic next-step contract. Within a workflow: `NEXT: auto\|manual\|done`. When the workflow's subs are all resolved it falls through to the next **cross-unit** (next phase/task derived from `.planning/` disk state) with an exit-code contract (`0` advance · `2` done · `10` blocked). |
-| `harnessed advance` | Forward continuation — print the next work unit (next phase/task) across the milestone and the command to run it. Print-only (the main session runs the next `/auto`); refuses to step past an incomplete earlier phase (`--force` overrides); `--json` drives a `while harnessed advance --json; do :; done` loop. |
-| `harnessed reject <sub>` | Mark a sub as user-rejected (terminal, distinct from `failed`). |
-| `harnessed compact [--tokens <n>]` | Summarize+evict resolved ledger entries (G6-safe: `fail_count>0` never evicted); auto-triggers on `checkpoint complete --tokens`. |
-| `harnessed workflows` | List in-flight workflows (one per repo). |
-| `harnessed learn "<lesson>"` | Append a prose learning to this repo's `.planning/LEARNINGS.md`. |
-| `harnessed run <name>` | Run a workflow via in-process SDK spawn (CI/headless mode). Slash commands use CC-native spawn instead. |
-| `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
-| `harnessed status` | Current phase + lock holder |
-| `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / skill integrity / GateGuard conflict / update-available / stale hooks, etc.). The **stale hooks** check flags orphaned harnessed `Stop`/`UserPromptSubmit` entries in `~/.claude/settings.json` that point at a deleted `bin/*.mjs` — the cause of a `MODULE_NOT_FOUND` error on every prompt after a raw `npm uninstall -g harnessed`. Fix: run `harnessed uninstall` (it strips them) **before** removing the package. |
-| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Self-update, channel-aware: binary installs replace themselves in place from GitHub releases (sha256 + ed25519-signature verified — releases ship `<asset>.sha256.sig`, signed-release contract since 4.32.19; the replaced version is banked for rollback); npm installs run `npm i -g harnessed@latest`. `--check` reports the latest version; `--rollback [version]` (binary installs only) atomically restores a banked previous binary — npm installs are pointed at `npm i -g harnessed@<version>`; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
-| `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exits 1 if not ready. The Ship-stage gate. |
-| `harnessed retro --done` | Reset the retro-reminder phase counter after running `/retro` (clears the per-turn RETRO-DUE nudge). |
-| `harnessed install <name>` | Install an upstream manifest |
-| `harnessed uninstall [name]` | Reverse uninstall — runs the manifest's declared `spec.uninstall` teardown (cmd + `$HOME`-confined, idempotent `cleanup_paths`) for the skill-installing methods (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); other methods keep their per-method reverse |
-| `harnessed backup` | Snapshot backup management |
-| `harnessed rollback <timestamp>` | One-line rollback of a **backup snapshot** (EOL preserve + sha1 verify) — distinct from `update --rollback`, which restores a previous **compiled binary** |
-| `harnessed gc` | Clean up expired backups |
-| `harnessed audit-log` | Routing transparency log query (supports `--filter` jq expression) |
+| `harnessed setup` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` + MCP 到 `~/.claude.json` |
+| `harnessed gates <master>` | 评估某 master stage 下哪些 sub-workflow 会 fire (JSON: fire/skip/parallelism)。供 slash command 编排 native spawn |
+| `harnessed prompt <sub>` | 输出某 sub-workflow 的 spawn-ready prompt (role + checklist + disciplines + completion/clarification 协议) |
+| `harnessed checkpoint <action> <sub>` | 记录 sub-workflow 的 start/complete/fail 到 `~/.claude/harnessed/checkpoints/` |
+| `harnessed` (无参数) | Zero-arg you-are-here: active-workflow 仪表盘 + `NEXT: auto\|manual\|done` + run hint;`--json` 机器可读;无 active workflow → onboarding hint (comet `/comet` 类比,read-only) |
+| `harnessed next` | 确定性的下一步契约。workflow 内: `NEXT: auto\|manual\|done`。当 workflow 的所有 sub 都已解决,它会落到下一 **cross-unit** (下一 phase/task,从 `.planning/` 磁盘状态派生),带 exit-code 契约 (`0` advance · `2` done · `10` blocked) |
+| `harnessed advance` | Forward continuation —— 打印跨 milestone 的下一工作单元 (下一 phase/task) 及运行它的命令。Print-only (由主 session 运行下一个 `/auto`);拒绝越过未完成的更早 phase (`--force` 覆盖);`--json` 驱动 `while harnessed advance --json; do :; done` 循环 |
+| `harnessed reject <sub>` | 标记某 sub 为 user-rejected (terminal,与 `failed` 不同) |
+| `harnessed compact [--tokens <n>]` | 汇总+逐出已解决的 ledger 条目 (G6-safe: `fail_count>0` 永不逐出);`checkpoint complete --tokens` 时自动触发 |
+| `harnessed workflows` | 列出 in-flight workflow (每仓库一条) |
+| `harnessed learn "<lesson>"` | 把一条 prose learning 追加到本仓库的 `.planning/LEARNINGS.md` |
+| `harnessed run <name>` | 通过 in-process SDK spawn 运行 workflow (CI/headless 模式)。slash command 改用 CC-native spawn |
+| `harnessed resume` | session 中断后从最近 checkpoint 恢复 |
+| `harnessed status` | 当前 phase + lock holder |
+| `harnessed doctor` | 健康检查 (Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 冲突 / update-available 等) |
+| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自更新,按安装通道分流:二进制安装从 GitHub releases 原地自替换(sha256 + ed25519 签名双重校验 —— releases 附带 `<asset>.sha256.sig`,4.32.19 起为签名发布契约;被替换的版本存档备回滚);npm 安装执行 `npm i -g harnessed@latest`。`--check` 报告最新版本;`--rollback [version]`(仅二进制安装)原子恢复已存档的上一版二进制 —— npm 安装则被指引执行 `npm i -g harnessed@<version>`;`--upstreams` 重跑基础 manifests;`--migration-report` 为只读陈旧状态盘点 |
+| `harnessed release-preflight` | Read-only 发布就绪关卡 (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent);未就绪则 exit 1。即 Ship-stage 关卡 |
+| `harnessed retro --done` | 跑完 `/retro` 后重置 retro-reminder phase 计数器 (清掉每轮的 RETRO-DUE 提醒) |
+| `harnessed install <name>` | 装上游 manifest |
+| `harnessed uninstall [name]` | 反向卸载 —— 对装 skill 的方法 (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`) 执行 manifest 声明的 `spec.uninstall` teardown (cmd + 限定 `$HOME` 内、幂等 `cleanup_paths`);其余方法沿用各自的 per-method 反向逻辑 |
+| `harnessed backup` | snapshot 备份管理 |
+| `harnessed rollback <timestamp>` | 一行回滚**备份快照** (EOL preserve + sha1 verify) —— 区别于 `update --rollback`:后者恢复的是上一版**编译二进制** |
+| `harnessed gc` | 清理过期 backup |
+| `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
 
-### Flags
+### 参数 (Flags)
 
-> All commands **apply (immediate write)** by default — no flag needed. Advanced users can add `--dry-run` to preview.
+> 所有命令默认 **apply (immediate write)**,无需加 flag。高级用户可加 `--dry-run` 预览。
 
-| Flag | Description |
+| Flag | 说明 |
 | ---- | ---- |
-| `--dry-run` | Preview without writing to disk (advanced opt-in) |
-| `--non-interactive` | CI / scripted scenarios |
-| `--system` | Allow L4 global install (otherwise downgrade to L1 npx ephemeral) |
-| `--yes` | Skip interactive confirm on uninstall |
-| `--json` | Machine-readable stdout (zero-arg dashboard / `next` / `advance`, etc.); errors that escape to the process root also emit a single-line `{"error":{"message":…}}` envelope on stdout, so `JSON.parse(stdout).error` is a reliable failure probe |
-| `--full-diff` | Expand diffs folded above 200 lines |
-| `--no-color` | Force nocolor (even on TTY) |
-| `--task <text>` | `run` — task description (passed as workflow `gateContext.task`) |
-| `--task-stdin` | `run` — read task description from stdin until EOF (avoids shell-escape on quotes/$/`) |
+| `--dry-run` | 预览不写盘 (高级用户 opt-in) |
+| `--non-interactive` | CI / 脚本场景 |
+| `--system` | 允许 L4 全局装 (否则降级 L1 npx ephemeral) |
+| `--yes` | 卸载时跳过交互确认 |
+| `--json` | 机器可读 stdout (零参 dashboard / `next` / `advance` 等);逃逸到进程根的错误也会在 stdout 输出单行 `{"error":{"message":…}}` envelope,因此 `JSON.parse(stdout).error` 是可靠的失败探针 |
+| `--full-diff` | 展开 > 200 行的 diff 折叠 |
+| `--no-color` | 强制 nocolor (即使 TTY) |
+| `--task <text>` | `run` —— 任务描述 (传入 workflow `gateContext.task`) |
+| `--task-stdin` | `run` —— 从 stdin 读任务描述直到 EOF (避免 shell 转义引号/$/`) |
 
 
 ---
@@ -534,77 +532,77 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 ## ❓ FAQ
 
 <details>
-<summary><b>Q1. Do I still need to install superpowers / gstack / GSD upstreams after installing harnessed?</b></summary>
+<summary><b>Q1. 装了 harnessed 还需要装 superpowers / gstack / GSD 上游吗?</b></summary>
 
 <br>
 
-Yes, but **the user experience = one command**:
+需要,但**用户感知 = 一行命令**:
 
 ```bash
-harnessed setup  # Auto-installs gstack + GSD + superpowers + planning-with-files; 28 workflow skills land in ~/.claude/skills/ + Agent Teams env var auto-written to ~/.claude/settings.json
+harnessed setup  # 自动装齐 gstack + GSD + superpowers + planning-with-files;28 个 workflow skill 一并落到 ~/.claude/skills/ + Agent Teams env var 自动写 ~/.claude/settings.json
 ```
 
-Think `brew install <formula>` pulling the full dependency set — you don't need to `brew install` each dependency separately.
+类比 `brew install <formula>` 拉取全套依赖集 —— 你不需要单独 `brew install` 每个依赖项。
 
 </details>
 
 <details>
-<summary><b>Q2. Why not just vendor superpowers / gstack into the harnessed repo?</b></summary>
+<summary><b>Q2. 为什么不直接 vendor superpowers / gstack 进 harnessed 仓库?</b></summary>
 
 <br>
 
-4 reasons:
+4 条理由:
 
-1. **Differentiation philosophy** — harnessed is the "assembly-ist package manager" counterposed to the "all-in-one self-built" camp. Vendoring = losing the wedge → becoming yet another plugin pack
-2. **License + attribution nightmare** — vendoring 4-5 actively maintained upstreams = a complex license patchwork
-3. **Upstream upgrades flip direction** — current manifest description lets users re-install for the latest version on upstream upgrade; vendoring forces manual code sync and falls perpetually behind
-4. **Bus factor 1** — a single maintainer keeping 4-5 vendored upstreams in sync = accelerated burnout
+1. **差异化哲学** —— harnessed 是「装配主义包管理器」对位「all-in-one 自建派」。vendor = 失去 wedge → 沦为又一个 plugin pack
+2. **License + attribution 噩梦** —— vendor 4-5 个主动维护的上游 = 复杂 license 拼盘
+3. **上游升级方向反转** —— 当前 manifest 描述方式,上游升级用户 re-install 即得新版;vendor 后被迫手动 sync code,永远落后
+4. **Bus factor 1** —— 单 maintainer 维护 vendor 的 4-5 上游 = 加速 burnout
 
 </details>
 
 <details>
-<summary><b>Q3. gstack / GSD / superpowers all look like plan/discuss tools — aren't they overlapping?</b></summary>
+<summary><b>Q3. gstack / GSD / superpowers 看起来都是 plan/discuss 类,是不是重叠?</b></summary>
 
 <br>
 
-**No**. They are different stages of the three-layer stack:
+**不是**。它们是三层栈的不同阶段:
 
-| Stage | Upstream | Responsibility |
+| 阶段 | 上游 | 职责 |
 | ---- | ---- | ---- |
-| Governance | gstack | Multi-role decision gates (CEO / EM / Designer / Paranoid Engineer) |
-| Brainstorming | superpowers | Subtask design clarification, alternative comparison |
-| Orchestration | GSD | High-level phase task graph + dependency analysis |
-| Persistence | planning-with-files | Persists `task_plan.md` / `progress.md` / `findings.md` |
+| Governance | gstack | 多角色决策关卡 (CEO / EM / Designer / Paranoid Engineer) |
+| Brainstorming | superpowers | 子任务设计澄清、方案对比 |
+| Orchestration | GSD | 高层 phase 任务图 + 依赖分析 |
+| Persistence | planning-with-files | 持久化 `task_plan.md` / `progress.md` / `findings.md` |
 
-`/discuss /plan /task /verify /ship` — the 5 masters string the 5 stages together; each master internally delegates to its sub. Each stage does a different thing and feeds the next. **No merging**.
-
-</details>
-
-<details>
-<summary><b>Q4. Do workflow phases run automatically or wait for the user?</b></summary>
-
-<br>
-
-Depends on the `pause` field in `workflows/<name>/SKILL.md` frontmatter:
-
-- `pause: human_review` → blocks waiting for user approval (governance gate / final lock, e.g. `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` `/plan-eng-review` lock-in gate)
-- No `pause` → auto-chains to the next phase
-
-Each phase output is written to `~/.claude/harnessed/checkpoints/`; after a session interruption `harnessed resume` continues from the latest checkpoint.
+`/discuss /plan /task /verify /ship` —— 5 个 master 把 5 阶段串起来;每个 master 内部再 delegate 到对应 sub。每个阶段做不同的事,输出喂给下一阶段。**没有合并**。
 
 </details>
 
 <details>
-<summary><b>Q5. Is harnessed itself a CC plugin?</b></summary>
+<summary><b>Q4. workflow phase 之间是自动跑还是等用户?</b></summary>
 
 <br>
 
-A hybrid:
+看 `workflows/<name>/SKILL.md` frontmatter 的 `pause` 字段:
 
-- `npx harnessed@latest setup` runs the **Node.js CLI** (`bin/harnessed`) — or use the standalone binary from the one-line installer (no Node.js required)
-- setup installs **workflow skills** (markdown) into `~/.claude/skills/`, loaded by the Claude Code runtime
-- `/discuss` / `/plan` / `/task` / `/verify` etc. are slash commands inside CC that trigger skill execution
-- The CLI and the CC skills share the `~/.claude/harnessed/checkpoints/` state directory
+- `pause: human_review` → 阻塞等用户 approve (governance gate / final lock,如 `/discuss-strategic` gstack `/office-hours` + `/plan-architecture` `/plan-eng-review` 锁定关卡)
+- 无 `pause` → 自动 chain 到下一 phase
+
+每个 phase 输出写到 `~/.claude/harnessed/checkpoints/`,session 中断后 `harnessed resume` 从最近 checkpoint 继续。
+
+</details>
+
+<details>
+<summary><b>Q5. harnessed 自己是 CC plugin 吗?</b></summary>
+
+<br>
+
+混合体:
+
+- `npx harnessed@latest setup` 跑的是 **Node.js CLI** (`bin/harnessed`) —— 或使用一行安装器的独立二进制(无需 Node.js)
+- setup 装的 **workflow skills** (markdown) 进 `~/.claude/skills/`,由 Claude Code 运行时加载
+- `/discuss` / `/plan` / `/task` / `/verify` 等是 CC 内的 slash command,触发 skill 执行
+- CLI 和 CC skill 共享 `~/.claude/harnessed/checkpoints/` 状态目录
 
 </details>
 
@@ -613,6 +611,6 @@ A hybrid:
 
 ## License
 
-[Apache-2.0](./LICENSE) — see [NOTICE](./NOTICE) (includes Harness Inc. trademark disclaimer)
+[Apache-2.0](./LICENSE) —— 见 [NOTICE](./NOTICE) (含 Harness Inc. 商标 disclaimer)
 
-Support development: [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
+支持开发: [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)

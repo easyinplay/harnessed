@@ -89,6 +89,45 @@ function resolveHost(home) {
   return base
 }
 
+// src/checkpoint/hookHost.ts
+function platformArg(argv) {
+  const i = argv.indexOf('--platform')
+  const v = i >= 0 ? argv[i + 1] : void 0
+  return v && !v.startsWith('-') ? v : null
+}
+function applyPlatformArg(argv, env = process.env) {
+  const id = platformArg(argv)
+  if (id) env.HARNESSED_PLATFORM = id
+  return id
+}
+function sessionIdFromPayload(raw) {
+  try {
+    const v = JSON.parse(raw)?.session_id
+    return typeof v === 'string' && v.trim() ? v.trim() : void 0
+  } catch {
+    return void 0
+  }
+}
+function readHookStdin(timeoutMs = 1e3) {
+  if (process.stdin.isTTY) return Promise.resolve('')
+  return new Promise((resolve2) => {
+    let data = ''
+    const done = () => {
+      clearTimeout(timer)
+      process.stdin.removeAllListeners()
+      process.stdin.pause()
+      resolve2(data)
+    }
+    const timer = setTimeout(done, timeoutMs)
+    process.stdin.setEncoding('utf8')
+    process.stdin.on('data', (c) => {
+      data += c
+    })
+    process.stdin.on('end', done)
+    process.stdin.on('error', done)
+  })
+}
+
 // src/checkpoint/injectCache.ts
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync as readFileSync2, rmSync, writeFileSync } from 'node:fs'
@@ -542,9 +581,10 @@ function shouldEmitPc(root, repoRoot, sid, pc) {
     return true
   }
 }
-function main() {
+async function main() {
   if (isAblated()) return
   try {
+    const hostArg = applyPlatformArg(process.argv)
     const platform = detectPlatform()
     const root = platform.stateRoot
     if (process.argv.includes('--invalidate')) {
@@ -553,7 +593,9 @@ function main() {
     }
     const key = repoKey(process.cwd())
     const envName = platform.sessionIdEnv
-    const sid = envName ? process.env[envName]?.trim() : void 0
+    const sid =
+      (envName ? process.env[envName]?.trim() : void 0) ||
+      (hostArg ? sessionIdFromPayload(await readHookStdin()) : void 0)
     const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
     let learningsMd = ''
     try {
@@ -571,4 +613,4 @@ function main() {
 `)
   } catch {}
 }
-main()
+void main()

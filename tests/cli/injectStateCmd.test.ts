@@ -11,7 +11,7 @@ import { Command } from 'commander'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { registerInjectState } from '../../src/cli/injectStateCmd.js'
 
-async function run(assetsDir: string): Promise<string> {
+async function run(assetsDir: string, extra: string[] = []): Promise<string> {
   process.env.HARNESSED_ASSETS_OVERRIDE = assetsDir
   let out = ''
   const write = vi
@@ -24,7 +24,7 @@ async function run(assetsDir: string): Promise<string> {
     const program = new Command()
     program.exitOverride()
     registerInjectState(program)
-    await program.parseAsync(['node', 'harnessed', 'inject-state'])
+    await program.parseAsync(['node', 'harnessed', 'inject-state', ...extra])
   } finally {
     write.mockRestore()
     delete process.env.HARNESSED_ASSETS_OVERRIDE
@@ -53,5 +53,14 @@ describe('harnessed inject-state', () => {
     const dir = mkdtempSync(join(tmpdir(), 'inject-cmd-empty-'))
     const out = await run(dir)
     expect(out).toBe('')
+  })
+
+  // v16.0 Phase 64 — binary-mode codex hook literal: `harnessed inject-state --platform codex`.
+  it('accepts --platform <id> (codex plugin hook form) instead of rejecting it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'inject-cmd-platform-'))
+    mkdirSync(join(dir, 'bin'), { recursive: true })
+    writeFileSync(join(dir, 'bin', 'harnessed-inject-state.mjs'), 'process.stdout.write("OK")\n')
+    const out = await run(dir, ['--platform', 'codex'])
+    expect(out).toContain('OK')
   })
 })

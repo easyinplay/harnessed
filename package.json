@@ -52,6 +52,7 @@
     "config-templates",
     "schemas",
     "README.md",
+    "README-en.md",
     "LICENSE",
     "NOTICE",
     "THIRD-PARTY-NOTICES.md"
@@ -66,6 +67,7 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --passWithNoTests",
+    "test:codex-live": "node ./scripts/codex-live/run.mjs",
     "bench": "vitest bench --run",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

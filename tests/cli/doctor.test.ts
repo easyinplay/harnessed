@@ -131,6 +131,17 @@ vi.mock('../../src/cli/lib/check-skill-integrity.js', () => ({
   }),
 }))
 
+// v16.0 Phase 64 — 24th check mock (check-codex-hooks.ts spawns `codex plugin list`
+// / `codex app-server` on codex and reads plugin dirs). Real logic unit-tested in
+// tests/cli/check-codex-hooks.test.ts (injected deps).
+vi.mock('../../src/cli/lib/check-codex-hooks.js', () => ({
+  checkCodexHooks: () => ({
+    name: 'codex hook plugins',
+    status: 'pass',
+    message: 'not codex (claude) — skipped',
+  }),
+}))
+
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
@@ -207,17 +218,17 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
 
   // v3.7.0 Phase 1 — registry future-proof: CHECKS array is single source of truth.
   // Bump assertion when adding a check (sister doctor.ts --description string update).
-  it('cell 0 — CHECKS registry has 23 entries (Phase 60 +ablation switch)', async () => {
+  it('cell 0 — CHECKS registry has 24 entries (Phase 64 +codex hook plugins)', async () => {
     const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
-    expect(CHECKS.length).toBe(23)
+    expect(CHECKS.length).toBe(24)
   })
 
-  it('cell 1 — all 23 checks pass → exit 0 + summary "pass" (Phase 60 bump 22→23)', async () => {
+  it('cell 1 — all 24 checks pass → exit 0 + summary "pass" (Phase 64 bump 23→24)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
     const p = JSON.parse(stdout) as { checks: { name: string }[]; summary: string }
-    expect(p.checks).toHaveLength(23)
+    expect(p.checks).toHaveLength(24)
     expect(p.summary).toBe('pass')
     expect(p.checks.map((c) => c.name)).toContain('deprecated manifests')
     // Phase 3.4 W1 T1.4 — 8th check assertion (token budget = pass mock when no skills)
@@ -253,7 +264,7 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0) // warn ≠ fail per D-04 DOCTOR WARN + B-06
     const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
-    expect(p.checks).toHaveLength(23)
+    expect(p.checks).toHaveLength(24)
     const tokenBudget = p.checks.find((c) => c.name === 'token budget')
     expect(tokenBudget).toBeDefined()
     expect(['pass', 'warn']).toContain(tokenBudget?.status ?? 'fail')

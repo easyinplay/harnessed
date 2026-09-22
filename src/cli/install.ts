@@ -34,6 +34,7 @@ interface RawOpts {
   fullDiff?: boolean
   color?: boolean // commander turns --no-color into color: false
   knownGood?: boolean // ← Phase 3.3 W1 T1.9 ADD (D-03 YAML version lock consume)
+  trustCodexHooks?: boolean // v16.0 Phase 64 (R8)
 }
 
 function formatError(e: InstallError): string {
@@ -55,6 +56,10 @@ export function registerInstall(program: Command): void {
     .option(
       '--known-good',
       'use known-good version lock from versions/<harnessed-ver>-known-good.yaml',
+    )
+    .option(
+      '--trust-codex-hooks',
+      "codex: trust harnessed's own hook plugins without prompting (default: ask when interactive, never when not)",
     )
     .action(async (name: string, raw: RawOpts) => {
       // Phase 3.3 W1 T1.8 ADD — D-01 alias redirect (D-02 silent install,
@@ -107,6 +112,13 @@ export function registerInstall(program: Command): void {
         nonInteractive: raw.nonInteractive === true,
         fullDiff: raw.fullDiff === true,
         color: raw.color === false ? false : 'auto',
+        // v16.0 Phase 64 (R8) — codex hook trust is a security decision: explicit
+        // flag → grant; interactive TTY → ask; otherwise never written.
+        codexHookTrust: raw.trustCodexHooks
+          ? 'grant'
+          : raw.nonInteractive !== true && process.stdin.isTTY
+            ? 'ask'
+            : 'deny',
       }
 
       // Phase 3.3 W1 T1.9 ADD — D-03 known-good lock consume (lazy load only
@@ -140,6 +152,8 @@ export function registerInstall(program: Command): void {
             ? t(`${keyBase}_with_version`, { name: v.manifest.metadata.name, version })
             : t(keyBase, { name: v.manifest.metadata.name }),
         )
+        // v16.0 Phase 64 — installed, but codex will skip the hooks until trusted.
+        if (result.trustPending) console.log(`⚠ ${result.trustPending}`)
         process.exit(0)
       }
       console.error(formatError(result.error))

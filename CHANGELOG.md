@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **codex 上可安装 harnessed 的 hook(ADR 0041)。** 在 codex 宿主上,`harnessed install perturn-inject | perturn-inject-invalidate | doc-discipline-gate`(以及 setup 的 optional 勾选)不再返回 `harness-mismatch`,而是生成本地 codex 插件 `harnessed-<name>@harnessed-local`(本地 marketplace 位于 `~/.codex/harnessed/marketplace`,`CODEX_HOME` 优先),经 `codex plugin marketplace add` + `codex plugin add` 安装。不写 `~/.codex/hooks.json`,不读写 `~/.codex/config.toml`。hook 命令字面量固定(npm 模式 `node "${PLUGIN_ROOT}/hook.cjs" <id> …`,binary 模式 `harnessed <id> …`),harnessed 资产位置记在 `${PLUGIN_DATA}/install.json`,升级 / 重装不会让已信任的 hook 变成 `modified`。`stop-hook-recover` 在 codex 上仍诚实跳过(依赖 Claude Code transcript 形态)。
+- **codex hook 信任须用户同意。** codex 静默跳过未信任的 hook。交互安装时询问是否信任;非交互默认不信任;`harnessed install <name> --trust-codex-hooks` / `harnessed setup --trust-codex-hooks` 为显式同意。信任经 `codex app-server` 的 `hooks/list` + `config/batchWrite` 写入,只触碰 `harnessed-*@harnessed-local` 的条目;RPC 不可用 / 超时时安装仍成功,但输出「NOT trusted yet」及处理办法,不报成功。`harnessed uninstall <name>` 在 codex 上移除插件、codex 残留的空 cache 目录、信任条目与插件数据目录。
+- **doctor 新增 `codex hook plugins` 检查(第 24 项,warn-only)**:逐插件报告是否已装、信任状态(trusted / untrusted / modified / unknown)、npm shim 链路、binary 模式下 `harnessed` 是否在 PATH。非 codex 平台跳过。
+- **`pnpm test:codex-live`**(`scripts/codex-live/run.mjs`,发版前手动):隔离 `CODEX_HOME` 跑真实安装 → 信任 → 卸载;真实 home 用 `harnessed-probe-*` 命名空间插件跑一轮真实会话,校验注入进上下文并记录每个 hook 的 `durationMs`,结束后清理。
+
+### Changed
+
+- **`inject-state` 接受 `--platform <id>`**:codex hook 进程没有 `CODEX_*` env,插件命令显式传 `--platform codex`,会话 id 取 hook stdin 的 `session_id`。不带该参数(Claude Code)时行为不变,也不读 stdin。
+- **`check-docs --hook --platform codex` 以 stdout JSON 表达裁决**:codex 在 Windows 经 `pwsh -Command` 跑 hook,pwsh 把任何非零退出码报成 1,exit 2 的阻断到不了 codex;改为 `permissionDecision: "deny"`(halt)/ `systemMessage`(warn),退出码 0。Claude Code 下仍是 exit 2 / 1。
+- **codex 插件「已装」判定改用 `codex plugin list --json`**(旧版回退表格输出),不再读 `~/.codex/config.toml` 的 `[plugins.*]` 段头;每个进程只列一次。
+
+### Fixed
+
+- **`harnessed uninstall <name>` 找不到 `manifests/optional/` 下的组件**(perturn-inject、doc-discipline-gate、ecc 等)—— 现在与 `install` 一样按 tools → skill-packs → optional 查找。
+- **`perturn-inject-invalidate` manifest 无法通过校验**(4.38.0 起 `metadata.description` 149 字符,超过 120 上限):`harnessed install perturn-inject-invalidate` 报校验错误,setup 的 optional 勾选静默不列出它。描述已缩短,新增测试校验 `manifests/optional/` 全部 manifest。
+
 ## [4.43.1] - 2026-09-22
 
 ### Changed

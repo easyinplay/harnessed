@@ -41,6 +41,7 @@
 import { checkCmdString } from '../manifest/security.js'
 import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
+import { invalidateCodexPluginCache } from './lib/codexPlugins.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
@@ -219,7 +220,10 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   }
   if (ctx.opts.dryRun) return { aborted: true, reason: 'user-cancel' }
 
-  const bk = await backup(plan, ctx)
+  // v16.0 Phase 64 (ADR 0041) — codex: config.toml is written by `codex plugin add`
+  // itself and holds credentials; backing it up would copy them into harnessed's
+  // backup dir. The plan above stays as the informational diff only.
+  const bk = await backup(bin === 'codex' ? { files: [] } : plan, ctx)
   if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
 
   // v3.0.2: spawn cwd at homedir() — `--scope user` writes ~/.claude.json
@@ -263,9 +267,11 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   //
   // Superseded for codex: `codex plugin list` ALSO prints marketplace plugins
   // that are NOT installed (`superpowers@... not installed`), so the stdout
-  // substring match passed verify for a failed install. isPluginRegistered now
-  // reads codex's real registry, the `[plugins."<p>@<m>"]` tables in
-  // ~/.codex/config.toml, for both platforms.
+  // substring match passed verify for a failed install. v16.0 Phase 64 (R6):
+  // isPluginRegistered asks `codex plugin list --json` (installed[] only) instead
+  // of reading ~/.codex/config.toml; the listing is memoized per process, so drop
+  // the pre-install snapshot the idempotent probe may have cached.
+  if (bin === 'codex') invalidateCodexPluginCache()
   const registered = await isPluginRegistered(pluginName)
   if (!registered) {
     const cfgLabel =

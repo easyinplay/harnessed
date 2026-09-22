@@ -21,7 +21,7 @@ kind: Manifest
 metadata:
   name: perturn-inject-invalidate
   display_name: Per-Turn Injection Cache Invalidation (SessionStart)
-  description: Opt-in SessionStart hook dropping the per-turn delta cache after compact/clear/resume so the next turn re-injects in full. Pairs with perturn-inject.
+  description: Opt-in SessionStart hook dropping the per-turn inject cache after compact/clear/resume. Pairs with perturn-inject.
   upstream:
     source: perturn-inject-invalidate
     homepage: https://github.com/easyinplay/harnessed

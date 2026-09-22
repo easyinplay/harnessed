@@ -85,4 +85,8 @@ export const CHECKS: readonly CheckFn[] = [
   // first-party hook, so a machine that forgot to unset it looks exactly like a
   // broken install. doctor is where that gets said out loud.
   async () => (await import('./check-ablation.js')).checkAblation(),
+  // v16.0 Phase 64 (ADR 0041) — codex hook plugins (warn-only): codex silently
+  // skips an untrusted / modified hook, so "installed" is not "running". Skipped
+  // (pass) on every non-codex platform.
+  async () => (await import('./check-codex-hooks.js')).checkCodexHooks(),
 ]

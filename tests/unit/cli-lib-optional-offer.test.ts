@@ -210,4 +210,24 @@ describe('runOptionalOffer', () => {
     const r = await runOptionalOffer('/opt', { interactive: true })
     expect(r).toEqual({ installed: [], alreadyInstalled: [], skipped: [], failed: [] })
   })
+
+  // v16.0 Phase 64 T6 (R8) — the offer is interactive, so codex hook trust is ASKED
+  // per hook; setup's --trust-codex-hooks turns that into an explicit grant. A
+  // trust-pending install is still "installed" but the pending line is printed.
+  it('codex hook trust: interactive offer → ask; --trust-codex-hooks → grant; pending printed', async () => {
+    runInstallMock.mockResolvedValue({
+      ok: true,
+      backupId: 'bk',
+      appliedFiles: [],
+      trustPending: 'codex hooks installed but NOT trusted yet',
+    } as never)
+    const r = await runOptionalOffer('/opt', { interactive: true })
+    expect(r.installed).toEqual(['codegraph'])
+    expect(runInstallMock.mock.calls[0]?.[1]).toMatchObject({ codexHookTrust: 'ask' })
+    expect(logLines.join('\n')).toContain('NOT trusted yet')
+
+    runInstallMock.mockClear()
+    await runOptionalOffer('/opt', { interactive: true, trustCodexHooks: true })
+    expect(runInstallMock.mock.calls[0]?.[1]).toMatchObject({ codexHookTrust: 'grant' })
+  })
 })

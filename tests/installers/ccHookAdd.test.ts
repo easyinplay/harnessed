@@ -33,6 +33,11 @@ vi.mock('node:fs/promises', () => {
   }
 })
 
+vi.mock('../../src/installers/codexHookAdd.js', () => ({
+  installCodexHook: vi.fn(async () => ({ ok: true, backupId: 'codex-stub', appliedFiles: [] })),
+  removeCodexHook: vi.fn(async () => ({ ok: true, removedPaths: [] })),
+}))
+
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),
   select: vi.fn(async () => 'abort'),
@@ -44,6 +49,7 @@ import * as fsp from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
+import { installCodexHook, removeCodexHook } from '../../src/installers/codexHookAdd.js'
 import { runInstall } from '../../src/installers/index.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { uninstallCcHookAdd } from '../../src/uninstallers/ccHookAdd.js'
@@ -346,20 +352,19 @@ describe('cc-hook-add installer', () => {
   })
 })
 
-// v16.0 Phase 63 T3 — codex has no JSON settings file (settingsPath === null).
-// runInstall gates cc-hook-add to claude, but the installer must still handle a
-// direct call explicitly: platform-mismatch skip, and never touch config.toml.
-describe('cc-hook-add on codex (settingsPath null)', () => {
+// v16.0 Phase 64 (ADR 0041) — on codex, cc-hook-add dispatches to the local
+// codex plugin path (behavior covered in tests/installers/codexHookAdd.test.ts);
+// the settings.json path is never entered and config.toml is never touched.
+describe('cc-hook-add on codex → codex plugin path', () => {
   const touchedToml = () =>
     [...vi.mocked(fsp.readFile).mock.calls, ...vi.mocked(fsp.writeFile).mock.calls].filter((c) =>
       String(c[0]).endsWith('config.toml'),
     )
 
-  it('install → aborted platform-mismatch, no settings read/write', async () => {
+  it('install dispatches to installCodexHook, no settings read/write', async () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     vi.mocked(fsp.readFile).mockClear()
     vi.mocked(fsp.writeFile).mockClear()
-    const cap = captureStdout()
     try {
       const r = await installCcHookAdd({
         manifest: ccHookManifest(),
@@ -367,15 +372,16 @@ describe('cc-hook-add on codex (settingsPath null)', () => {
         level: 'L3',
         cwd: process.cwd(),
       })
-      expect(r).toEqual({ aborted: true, reason: 'platform-mismatch' })
+      expect(r).toEqual({ ok: true, backupId: 'codex-stub', appliedFiles: [] })
+      expect(vi.mocked(installCodexHook)).toHaveBeenCalledTimes(1)
       expect(touchedToml()).toEqual([])
+      expect(vi.mocked(fsp.writeFile)).not.toHaveBeenCalled()
     } finally {
-      cap.restore()
       vi.unstubAllEnvs()
     }
   })
 
-  it('uninstall → idempotent noop, no settings read/write', async () => {
+  it('uninstall dispatches to removeCodexHook, no settings read/write', async () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     vi.mocked(fsp.readFile).mockClear()
     vi.mocked(fsp.writeFile).mockClear()
@@ -386,6 +392,7 @@ describe('cc-hook-add on codex (settingsPath null)', () => {
         cwd: process.cwd(),
       } as never)
       expect(r).toEqual({ ok: true, removedPaths: [] })
+      expect(vi.mocked(removeCodexHook)).toHaveBeenCalledTimes(1)
       expect(touchedToml()).toEqual([])
       expect(vi.mocked(fsp.writeFile)).not.toHaveBeenCalled()
     } finally {
