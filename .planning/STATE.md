@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: (none — v15.0 Upstream Re-sync SHIPPED npm 4.29.0 2026-07-13)
-status: no-active-milestone
-last_updated: "2026-09-16T00:00:00.000Z"
-last_activity: 2026-09-16
+milestone: v16.0
+milestone_name: Codex Host Parity (phases 63-66, SPEC ready-to-plan)
+status: active
+last_updated: "2026-09-22T00:00:00.000Z"
+last_activity: 2026-09-22
 progress:
   total_phases: 0
   completed_phases: 0
@@ -37,7 +37,7 @@ progress:
 - **Phase 55-61(2026-09,4.40.0 / 4.41.0 / 4.42.0 已发)**:上游体检闸门 / 插件陈旧可见 / ECC codex 原生路径 / brainstorming 跳过合取 / 幂等回执 / `HARNESSED_OFF` / schema 消费者闸门。详各 `phases/55-…61-…/`。
 - **Phase 62 外部代码审查整改 — 完成并发版 4.42.0(2026-09-16)**:39 项 + 2 注释项逐条核验,真缺陷全部带反证测试修复;维护者决策:L11 删除、L16 / M6 残余保持;superpowers codex marketplace 名经真机安装验证后修正。详 `phases/62-code-review-remediation/FINDINGS.md`。
 - **4.43.0(2026-09-17)**:闸门不再把 yaml 键 / TypeBox 镜像当读取、修注释剥离吞代码 → 暴露 14 个死字段;维护者裁定删 13(discipline 6 / fallback 规则 4 / capabilities 3)、留 `routing_note`,豁免 25 → 11;顺带修 Agent Teams 版本下界提示 2.1.133 → 2.1.178。详 CHANGELOG 4.43.0。
-- **~~Next milestone:codex 完整支持 + 扩平台~~ —— 2026-08-26 office-hours 否决**:维护者只把 codex 当第二意见/单次任务,「在 codex 里跑完整编排」的价值前提不成立。codex hook 枚举是 CC 严格超集(实测)属「能不能」非「该不该」。蓝图存于设计文档,触发条件见 OQ1。
+- **v16.0 Codex Host Parity — ACTIVE(2026-09-22 立项)**:2026-08-26 否决经 office-hours 重开(OQ1 鸡生蛋 + 对外覆盖),CEO SCOPE_EXPANSION 经 outside voice 回收,codex 0.154 实测定契约,ENG 审 18 项全裁。唯一实施真相源 `.planning/specs/2026-09-22-codex-host-parity-v16.md`(63 平台判定重构 patch → 64 codex hooks 经本地插件 → 65 正文原语化 → 66 agents/spawn/goal/doctor 矩阵)。推迟项见 TODOS.md。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 

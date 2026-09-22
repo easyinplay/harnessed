@@ -42,4 +42,4 @@
 
 | Milestone | Status | Notes |
 |-----------|--------|-------|
-| (none) | — | No active milestone. v14.0 Hardening & Distribution retroactively closed 2026-07-12 (npm 4.28.0); queue: TODOS.md (Slice 3 deferred P3 / E1 签名 user-gated / eval harness v5+). |
+| v16.0 Codex Host Parity | ACTIVE (2026-09-22) | phases 63-66 · 详 `.planning/specs/2026-09-22-codex-host-parity-v16.md` |
