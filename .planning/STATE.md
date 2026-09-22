@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.43.0** 2026-09-17(schema 消费者闸门修正 + 删除 13 个从未被求值的字段;`npm dist-tag ls` 核实,GitHub release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
+- **Latest shipped (npm)**: **v4.43.1** 2026-09-22(v16.0 Phase 63 宿主判定重构 ADR 0040;`npm dist-tag ls` 核实,GitHub release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
@@ -38,7 +38,7 @@ progress:
 - **Phase 62 外部代码审查整改 — 完成并发版 4.42.0(2026-09-16)**:39 项 + 2 注释项逐条核验,真缺陷全部带反证测试修复;维护者决策:L11 删除、L16 / M6 残余保持;superpowers codex marketplace 名经真机安装验证后修正。详 `phases/62-code-review-remediation/FINDINGS.md`。
 - **4.43.0(2026-09-17)**:闸门不再把 yaml 键 / TypeBox 镜像当读取、修注释剥离吞代码 → 暴露 14 个死字段;维护者裁定删 13(discipline 6 / fallback 规则 4 / capabilities 3)、留 `routing_note`,豁免 25 → 11;顺带修 Agent Teams 版本下界提示 2.1.133 → 2.1.178。详 CHANGELOG 4.43.0。
 - **v16.0 Codex Host Parity — ACTIVE(2026-09-22 立项)**:2026-08-26 否决经 office-hours 重开(OQ1 鸡生蛋 + 对外覆盖),CEO SCOPE_EXPANSION 经 outside voice 回收,codex 0.154 实测定契约,ENG 审 18 项全裁。唯一实施真相源 `.planning/specs/2026-09-22-codex-host-parity-v16.md`(63 平台判定重构 patch → 64 codex hooks 经本地插件 → 65 正文原语化 → 66 agents/spawn/goal/doctor 矩阵)。推迟项见 TODOS.md。
-  - **Phase 63 平台判定重构 DONE 2026-09-22**(`8f0ab14`,CI 全绿;未发版)—— 详 `phases/63-platform-detection-refactor/SUMMARY.md`。下一步 Phase 64(codex hooks 经本地插件)。
+  - **Phase 63 平台判定重构 DONE 2026-09-22**(`8f0ab14`,CI 全绿;**已发 npm 4.43.1**)—— 详 `phases/63-platform-detection-refactor/SUMMARY.md`。下一步 Phase 64(codex hooks 经本地插件)。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
