@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.44.0] - 2026-09-23
 
 ### Added
 
@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **codex 上安装插件时不再备份 `~/.codex/config.toml`。** 该文件同时存放 API 凭据,而安装前的备份会把它整份复制到备份目录(`ccPluginMarketplace` 在 codex 上把 `config.toml` 当作待改文件纳入 backup plan)。现在 codex 路径不做该备份(变更预览不受影响 —— 文件本就只由 codex CLI 自己写),并加断言守住。建议已有用户自查备份目录并清理历史副本。
 - **`harnessed uninstall <name>` 找不到 `manifests/optional/` 下的组件**(perturn-inject、doc-discipline-gate、ecc 等)—— 现在与 `install` 一样按 tools → skill-packs → optional 查找。
 - **`perturn-inject-invalidate` manifest 无法通过校验**(4.38.0 起 `metadata.description` 149 字符,超过 120 上限):`harnessed install perturn-inject-invalidate` 报校验错误,setup 的 optional 勾选静默不列出它。描述已缩短,新增测试校验 `manifests/optional/` 全部 manifest。
 
