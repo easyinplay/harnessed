@@ -4,7 +4,7 @@ milestone: v16.0
 milestone_name: Codex Host Parity (phases 63-66, SPEC ready-to-plan)
 status: active
 last_updated: "2026-09-22T00:00:00.000Z"
-last_activity: 2026-09-22
+last_activity: 2026-09-23
 progress:
   total_phases: 0
   completed_phases: 0
@@ -38,8 +38,8 @@ progress:
 - **Phase 62 外部代码审查整改 — 完成并发版 4.42.0(2026-09-16)**:39 项 + 2 注释项逐条核验,真缺陷全部带反证测试修复;维护者决策:L11 删除、L16 / M6 残余保持;superpowers codex marketplace 名经真机安装验证后修正。详 `phases/62-code-review-remediation/FINDINGS.md`。
 - **4.43.0(2026-09-17)**:闸门不再把 yaml 键 / TypeBox 镜像当读取、修注释剥离吞代码 → 暴露 14 个死字段;维护者裁定删 13(discipline 6 / fallback 规则 4 / capabilities 3)、留 `routing_note`,豁免 25 → 11;顺带修 Agent Teams 版本下界提示 2.1.133 → 2.1.178。详 CHANGELOG 4.43.0。
 - **v16.0 Codex Host Parity — ACTIVE(2026-09-22 立项)**:2026-08-26 否决经 office-hours 重开(OQ1 鸡生蛋 + 对外覆盖),CEO SCOPE_EXPANSION 经 outside voice 回收,codex 0.154 实测定契约,ENG 审 18 项全裁。唯一实施真相源 `.planning/specs/2026-09-22-codex-host-parity-v16.md`(63 平台判定重构 patch → 64 codex hooks 经本地插件 → 65 正文原语化 → 66 agents/spawn/goal/doctor 矩阵)。推迟项见 TODOS.md。
-  - **Phase 63 平台判定重构 DONE 2026-09-22**(`8f0ab14`,CI 全绿;**已发 npm 4.43.1**)—— 详 `phases/63-platform-detection-refactor/SUMMARY.md`。下一步 Phase 64(codex hooks 经本地插件)。
-- **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
+  - **Phase 63 平台判定重构 DONE 2026-09-22**(`8f0ab14`,CI 全绿;**已发 npm 4.43.1**)—— 详 `phases/63-platform-detection-refactor/SUMMARY.md`。
+  - **Phase 64 codex hooks 经本地插件 DONE 2026-09-23**(`6edac3f`,CI 全绿,live smoke 29/29 p95 765ms;未发版)—— 插件承载 + app-server 信任 + doctor 检查 + 卸载往返;顺带修 perturn-inject-invalidate 描述超长与 codex backup 含凭据两处既有缺陷。详 `phases/64-codex-hooks-plugin/SUMMARY.md`。下一步 Phase 65(正文宿主原语化)。- **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
 ## Accumulated Context

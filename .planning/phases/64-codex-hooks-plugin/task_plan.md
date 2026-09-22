@@ -1,7 +1,7 @@
 # Phase 64 — codex hooks 经本地插件(v16.0 / 1b,minor)
 
 SPEC:`.planning/specs/2026-09-22-codex-host-parity-v16.md` §「Phase 64」(唯一真相源)+ 本文件的「开工细化」(对 SPEC 的落地修正,2026-09-22 按代码实测)。
-Status: in-progress
+Status: complete (2026-09-23, commit 6edac3f, CI green)
 
 ## 开工细化(对 SPEC 的修正,均源自代码实测)
 
@@ -17,7 +17,7 @@ Status: in-progress
 ## 验收
 
 - [x] `tsc --noEmit` 0;biome 绿;`scripts/check-*.mjs` 全绿(注意 check-schema-consumers:新 schema 字段必须有读取方)
-- [ ] 相关测试本机绿;CI 三 OS 绿
+- [x] 相关测试本机绿(54 文件 / 596 例);CI 三 OS 绿(run 35761453264)
 - [x] 三 shell(cmd / pwsh / sh)契约测试:真实执行生成的 `command` / `commandWindows`(shim 链路)
 - [x] fs 打桩:新 codex 路径与迁移后的插件探测不打开 config.toml
 - [x] `pnpm test:codex-live` 在本机跑通并记录 durationMs(p95 < 1s)
