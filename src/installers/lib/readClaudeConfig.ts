@@ -192,7 +192,9 @@ export async function isPluginRegistered(pluginName: string): Promise<boolean> {
   // Legacy fallback 2: ~/.claude.json.enabledPlugins (pre-v3.9.8 read path;
   //                    kept for test mock compatibility — production v2.1.133+
   //                    doesn't actually write here, verified empirically)
+  // v16.0 Phase 63 — a null settings path (codex) is skipped, not substituted.
   for (const path of [getSettingsPath(), getMcpConfigPath()]) {
+    if (path === null) continue
     try {
       const raw = await readFile(path, 'utf8')
       const parsed = JSON.parse(raw) as { enabledPlugins?: Record<string, unknown> }

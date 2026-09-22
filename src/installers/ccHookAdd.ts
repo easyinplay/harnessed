@@ -65,6 +65,9 @@ export const installCcHookAdd: Installer = async (ctx) => {
   }
 
   const settingsPath = getSettingsPath()
+  // v16.0 Phase 63 — no JSON settings file on this platform (codex). runInstall
+  // already gates cc-hook-add to claude; a direct call skips the same way.
+  if (settingsPath === null) return { aborted: true, reason: 'platform-mismatch' }
   // Sentinel `null` ⇒ file does not exist (oldText='' so backup() emits pure-create).
   let existing: string | null
   try {

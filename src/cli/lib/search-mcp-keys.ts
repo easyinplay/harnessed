@@ -55,7 +55,9 @@ export async function probeSearchMcpKey(server: string): Promise<SearchKeyProbe>
 
   // 2. settings.json top-level env block.
   try {
-    const raw = await readFile(getSettingsPath(), 'utf8')
+    // v16.0 Phase 63 — null (codex: no JSON settings file) → empty, next source.
+    const path = getSettingsPath()
+    const raw = path === null ? '{}' : await readFile(path, 'utf8')
     const parsed = JSON.parse(raw) as { env?: Record<string, unknown> }
     if (parsed?.env && nonEmpty(parsed.env[envVar])) {
       return { server, envVar, present: true, source: 'settings-env' }

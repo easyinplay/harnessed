@@ -247,11 +247,15 @@ export async function isAlreadyInstalled(
   // need the self-heal migration (dogfood: perturn-inject malformed entry).
   const installCfg = ctx.manifest.spec.install
   if (installCfg.method === 'cc-hook-add') {
-    let raw: string | null
-    try {
-      raw = await readFile(getSettingsPath(), 'utf8')
-    } catch {
-      raw = null
+    // v16.0 Phase 63 — null settings path (codex) → not installed; never probe config.toml.
+    const settingsPath = getSettingsPath()
+    let raw: string | null = null
+    if (settingsPath !== null) {
+      try {
+        raw = await readFile(settingsPath, 'utf8')
+      } catch {
+        raw = null
+      }
     }
     return detectCcHookInstalled(
       raw,

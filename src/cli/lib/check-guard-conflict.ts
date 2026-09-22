@@ -40,7 +40,9 @@ function defaultDeps(): GuardConflictDeps {
     env: process.env,
     readSettings: async () => {
       try {
-        return await readFile(getSettingsPath(), 'utf8')
+        // v16.0 Phase 63 — null (codex: no JSON settings file) → no settings signal.
+        const path = getSettingsPath()
+        return path === null ? null : await readFile(path, 'utf8')
       } catch {
         return null
       }

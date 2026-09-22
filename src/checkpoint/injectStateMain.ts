@@ -11,10 +11,11 @@
 // wholesale to `buildInjection` (src/checkpoint/injectState.ts) and the inject
 // cache is imported from `injectCache.ts`; the only code that lives HERE is the
 // hook-specific IO glue with no other consumer:
-//   - repoKey / harnessedRoot / sessionIdEnvName: dep-free replicas (the real ones
-//     live in typebox-tainted workflowStore.ts / platform-seamed harnessedRoot.ts;
-//     importing them would pull typebox into the hot path). The simplified form is
-//     intentional and byte-equivalent for the claude default + HARNESSED_ROOT_OVERRIDE.
+//   - repoKey: dep-free replica (the real one lives in typebox-tainted
+//     workflowStore.ts; importing it would pull typebox into the hot path).
+//     State root + session-id env come straight from detectPlatform()
+//     (src/platform/platform.ts is node:-builtins only) — v16.0 Phase 63 removed
+//     the precedence / sessionIdEnvName replicas that used to drift from the CLI.
 //   - readWorkflow: raw workflows.json JSON.parse (no Value.Check) + ledger mtime age.
 //
 // Dep-free by construction (node: builtins + dep-light injectState/injectCache and
@@ -22,13 +23,13 @@
 // the bundle pulls nothing heavy and the per-prompt path stays fast. Fail-soft:
 // ANY error injects nothing (a hook must never block the prompt).
 //
-// Root: hookStateRoot() (detectPlatform precedence, dependency-free).
+// Root + session env: detectPlatform() (ADR 0040 precedence, dependency-free).
 
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { isAblated } from '../platform/ablation.js'
-import { hookStateRoot } from './hookStateRoot.js'
+import { detectPlatform } from '../platform/platform.js'
 import {
   decidePcEmission,
   injectCacheKey,
@@ -51,23 +52,6 @@ function repoKey(cwd: string): string {
     dir = parent
   }
   return resolve(cwd)
-}
-
-/** The harness state root, resolved with detectPlatform()'s full precedence
- *  (override, HARNESSED_PLATFORM, `.platform` pin, auto-probe) — see
- *  hookStateRoot.ts. The previous "override else ~/.claude/harnessed" diverged
- *  from the CLI under a codex pin and silently injected nothing. */
-function harnessedRoot(): string {
-  return hookStateRoot()
-}
-
-/** Phase 35 — mirror PlatformDescriptor.sessionIdEnv for the hot path: which env
- *  var carries the active session id. HARNESSED_PLATFORM selects (default claude);
- *  codex has none. State-root selection is orthogonal (HARNESSED_ROOT_OVERRIDE). */
-function sessionIdEnvName(): string | null {
-  const platform = (process.env.HARNESSED_PLATFORM || 'claude').trim()
-  if (platform === 'codex') return null
-  return 'CLAUDE_CODE_SESSION_ID' // claude (default)
 }
 
 /** Read the active repo's workflow slot + intent sidecar from workflows.json (raw
@@ -147,7 +131,8 @@ function main(): void {
   // arm of an A/B would still be carrying harnessed's context.
   if (isAblated()) return
   try {
-    const root = harnessedRoot()
+    const platform = detectPlatform()
+    const root = platform.stateRoot
     // 4.38.0 — SessionStart entry (compact/clear/resume/startup). A context
     // discontinuity invalidates every skip decision the delta cache is holding,
     // so drop it and let the next UserPromptSubmit turn re-emit in full. Silent,
@@ -161,7 +146,7 @@ function main(): void {
     // workflow LOOKUP prefers the session-scoped composite slot (Phase 34/35), then
     // the bare repoKey. The composite key is NOT a real directory.
     const key = repoKey(process.cwd())
-    const envName = sessionIdEnvName()
+    const envName = platform.sessionIdEnv
     const sid = envName ? process.env[envName]?.trim() : undefined
     const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
 

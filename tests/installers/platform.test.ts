@@ -107,8 +107,8 @@ describe('platform — sessionIdEnv (Phase 35)', () => {
     expect(claudeDescriptor().sessionIdEnv).toBe('CLAUDE_CODE_SESSION_ID')
   })
 
-  it('codexDescriptor() has no session-id env (null → single-session fallback)', () => {
-    expect(codexDescriptor().sessionIdEnv).toBeNull()
+  it('codexDescriptor() exposes CODEX_SESSION_ID (Phase 63 T2, measured on codex-cli 0.154)', () => {
+    expect(codexDescriptor().sessionIdEnv).toBe('CODEX_SESSION_ID')
   })
 
   it('detectPlatform() default (claude) exposes the claude session-id env name', () => {

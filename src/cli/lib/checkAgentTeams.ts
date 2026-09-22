@@ -21,8 +21,9 @@ export async function checkAgentTeams(): Promise<AgentTeamsCheckResult> {
   let settingsOn = false
   try {
     // v4.14.0 — settings path via descriptor (claude byte-identical resolve).
+    // v16.0 Phase 63 — null (codex: no JSON settings file) → empty, env probe decides.
     const path = getSettingsPath()
-    const raw = await readFile(path, 'utf8')
+    const raw = path === null ? '{}' : await readFile(path, 'utf8')
     const data = JSON.parse(raw) as { env?: Record<string, string> }
     // Q-AUDIT-5b LOCKED: root-level env.* NOT nested experimental.*
     settingsValue = data.env?.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS

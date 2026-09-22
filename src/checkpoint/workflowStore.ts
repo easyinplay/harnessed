@@ -100,8 +100,8 @@ export function repoKey(cwd: string = process.cwd()): string {
  *
  *  Phase 35 — the session-id env NAME is resolved through the PlatformDescriptor
  *  seam (`detectPlatform().sessionIdEnv`), NOT hardcoded, so the harness stays
- *  cross-harness (claude → `CLAUDE_CODE_SESSION_ID`; codex → `null` →
- *  single-session). (CC exposes the id to Bash-invoked CLI + hooks; subagents
+ *  cross-harness (claude → `CLAUDE_CODE_SESSION_ID`; codex → `CODEX_SESSION_ID`
+ *  since v16.0 Phase 63). (CC exposes the id to Bash-invoked CLI + hooks; subagents
  *  inherit the parent's id → same slot.) */
 export function activeKey(cwd: string = process.cwd()): string {
   const base = repoKey(cwd)

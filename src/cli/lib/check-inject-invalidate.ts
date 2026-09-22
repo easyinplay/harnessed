@@ -18,7 +18,7 @@
 
 import { readFileSync } from 'node:fs'
 import { entryCommands } from '../../installers/lib/hookEntry.js'
-import { getSettingsPath } from '../../platform/platform.js'
+import { detectPlatform, getSettingsPath } from '../../platform/platform.js'
 import type { CheckResult } from './check-builtin.js'
 
 export interface InjectInvalidateDeps {
@@ -47,6 +47,13 @@ export function checkInjectInvalidate(deps?: Partial<InjectInvalidateDeps>): Che
       }
     })
 
+  // v16.0 Phase 63 — codex has no JSON settings file: nothing to pair, skip.
+  if (settingsPath === null)
+    return {
+      name: NAME,
+      status: 'pass',
+      message: `no settings file on ${detectPlatform().id} — skipped`,
+    }
   const raw = readText(settingsPath)
   if (raw === null) return { name: NAME, status: 'pass', message: 'no settings.json' }
 

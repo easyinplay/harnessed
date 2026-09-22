@@ -14,7 +14,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { harnessedStaleHookPaths } from '../../installers/lib/harnessedHookTeardown.js'
-import { getSettingsPath } from '../../platform/platform.js'
+import { detectPlatform, getSettingsPath } from '../../platform/platform.js'
 import type { CheckResult } from './check-builtin.js'
 
 export interface StaleHooksDeps {
@@ -38,6 +38,13 @@ export function checkStaleHooks(deps?: Partial<StaleHooksDeps>): CheckResult {
     })
   const exists = deps?.exists ?? existsSync
 
+  // v16.0 Phase 63 — codex has no JSON settings file: no hooks registered there.
+  if (settingsPath === null)
+    return {
+      name: NAME,
+      status: 'pass',
+      message: `no settings file on ${detectPlatform().id} — skipped`,
+    }
   const raw = readText(settingsPath)
   if (raw === null) return { name: NAME, status: 'pass', message: 'no settings.json' }
 

@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **宿主判定优先级重排(ADR 0040)。** `detectPlatform()` 改为:`HARNESSED_PLATFORM`(含 `setup --platform`)→ 宿主 env 嗅探(仅 `CLAUDE_CODE_SESSION_ID` 或仅 `CODEX_SESSION_ID` 存在时生效;两者同时存在 = 嵌套启动,判歧义下落)→ `.platform` pin(先读 `~/.codex/harnessed/.platform`,再读 `~/.claude/harnessed/.platform`)→ 目录探测(`~/.claude` 优先)→ claude。双宿主机器上,判定从「按机器」变为「按会话」:在 codex 会话里运行的 CLI 与 hook 解析到 codex,在 Claude Code 会话里解析到 claude,不再由一份机器级 pin 决定。无宿主 env、无 pin 的 claude 用户判定结果逐字节不变(`tests/installers/platform-golden.test.ts` 锁定)。`setup --platform <id>` 的 pin 写到所选宿主自己的 stateRoot,codex-only 机器不再为存 pin 创建 `~/.claude`;切换宿主时另一侧已存在的旧 pin 一并改写(不新建、不删除);旧版本写在 claude stateRoot 的 codex pin 仍被读取。
+- **`HARNESSED_ROOT_OVERRIDE` 只替换状态根,不再短路平台判定。** 之前设置它会强制 claude descriptor(仅 stateRoot 被替换);现在平台照常按上面的优先级解析,override 只替换解析结果的 `stateRoot`,pin 仍从各宿主自己的 stateRoot 读取。对 claude 用户无差异;在 codex 环境下设置 override 的脚本 / 测试现在得到 codex descriptor。vitest 全局 setupFile 清除 `CODEX_*` / `CLAUDE_CODE_SESSION_ID` / `HARNESSED_PLATFORM`,测试在 Claude Code 或 codex shell 里跑都解析到同一宿主。
+- **codex 会话内 `harnessed run` / `harnessed research` 被嵌套守卫拦截。** codex descriptor 的 `sessionIdEnv` 由 `null` 改为 `CODEX_SESSION_ID`(codex-cli 0.154 实测:codex shell 中存在且等于 hook stdin 的 `session_id`)。于是 issue #1 的嵌套守卫在 codex 会话里也生效(非 TTY 时退出 1,`HARNESSED_ALLOW_NESTED=1` 仍可覆盖);codex 下 workflow ledger 也按会话分槽。
+- **codex descriptor 的 `settingsPath` 改为 `null`。** codex 没有 JSON settings 文件;hook 注册、settings env-key 写入、GateGuard / Agent Teams / stale-hook / inject 配对等探测在 codex 上显式跳过并给出原因,不抛错,也不再回退去打开 `~/.codex/config.toml`。MCP / 插件登记探测经 `mcpConfigPath` 读 `config.toml` 的既有行为不变。
+- **hook bin 不再携带平台判定的复制品。** `bin/harnessed-{stop-hook,inject-state}.mjs` 直接打包 `src/platform/platform.ts`(仅依赖 `node:` 内置模块,bundle 仍不含 typebox),删除 `src/checkpoint/hookStateRoot.ts` 与 `sessionIdEnvName` 两份手工镜像,hook 与 CLI 的根目录 / 会话 env 解析不会再漂移。
+
 ## [4.43.0] - 2026-09-17
 
 ### Fixed

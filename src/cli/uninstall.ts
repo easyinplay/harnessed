@@ -63,11 +63,13 @@ async function discoverCommandFiles(commandsDir: string): Promise<string[]> {
   return owned
 }
 
-async function checkSettingsEnv(settingsPath: string): Promise<{
+async function checkSettingsEnv(settingsPath: string | null): Promise<{
   hasAgentTeams: boolean
   hasUserLang: boolean
   staleHooks: number
 }> {
+  // v16.0 Phase 63 — no JSON settings file (codex) → no settings footprint to remove.
+  if (settingsPath === null) return { hasAgentTeams: false, hasUserLang: false, staleHooks: 0 }
   try {
     const raw = await readFile(settingsPath, 'utf8')
     const data = JSON.parse(raw) as Record<string, unknown>
@@ -235,7 +237,7 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
 
   let removedSettings = false
   let removedHooks = 0
-  if (hasSettingsChanges || staleHooks > 0) {
+  if (settingsPath !== null && (hasSettingsChanges || staleHooks > 0)) {
     try {
       const r = await removeSettingsFootprint(settingsPath)
       removedSettings = r.envRemoved

@@ -33,6 +33,8 @@ export const uninstallCcHookAdd: Uninstaller = async (ctx) => {
   // v4.14.0 — settings path via descriptor (claude byte-identical; cc-hook-add
   // is gated claude-only at runInstall dispatch, so codex never reaches here).
   const settingsPath = getSettingsPath()
+  // v16.0 Phase 63 — no JSON settings file (codex) → no hook can be registered.
+  if (settingsPath === null) return { ok: true, removedPaths: [] }
   let existing: string
   try {
     existing = await readFile(settingsPath, 'utf8')

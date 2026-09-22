@@ -22,14 +22,15 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isAblated } from '../platform/ablation.js'
-import { hookStateRoot } from './hookStateRoot.js'
+import { detectPlatform } from '../platform/platform.js'
 import { type ContentBlock, detectModeB } from './modeBDetect.js'
 
 const MAX_RETRIES = 2
 
-/** Same resolution as the CLI (see hookStateRoot.ts). */
+/** Same resolution as the CLI: detectPlatform() (node:-builtins only, so the
+ *  bundle stays dep-free — v16.0 Phase 63 dropped the hand-kept replica). */
 function stateRoot(): string {
-  return hookStateRoot()
+  return detectPlatform().stateRoot
 }
 
 /** The signature of the corrupted message (its joined text), for the retry cap. */

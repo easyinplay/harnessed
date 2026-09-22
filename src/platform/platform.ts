@@ -41,7 +41,14 @@ export interface PlatformDescriptor {
   id: 'claude' | 'codex' | 'agents' | 'cursor' | 'gemini' | 'copilot'
   homeDir: string
   stateRoot: string
-  settingsPath: string
+  /**
+   * v16.0 Phase 63: `string | null`. The JSON settings file harnessed merges
+   * hooks / env keys / guard exemptions into. `null` on a harness without one
+   * (codex: its config.toml is TOML and only ever written by the codex CLI).
+   * Consumers treat null as "no settings surface → skip with a reason", never
+   * falling back to another file.
+   */
+  settingsPath: string | null
   skillsDir: string
   commandsDir: string
   /**
@@ -65,8 +72,9 @@ export interface PlatformDescriptor {
    * session id, or `null` when it has none. Consumed by `activeKey` (and the
    * inject bin) to scope the workflow ledger pointer per session. `null` →
    * single-session fallback (bare repoKey), byte-identical to no session
-   * scoping. claude → `CLAUDE_CODE_SESSION_ID`; codex → `null` (no verified
-   * session env — anti-stale, do not invent one before it exists).
+   * scoping. claude → `CLAUDE_CODE_SESSION_ID`; codex → `CODEX_SESSION_ID`
+   * (v16.0 Phase 63, measured on codex-cli 0.154: set in codex shells and equal
+   * to the hook stdin session_id).
    */
   sessionIdEnv: string | null
 }
@@ -105,8 +113,9 @@ export function claudeDescriptor(home: string = homedir()): PlatformDescriptor {
  *     (`.agents/skills/<name>/SKILL.md` is byte-compatible with CC's format; codex
  *     reads it. Codex's own bundled skills live at `~/.codex/skills/.system/` —
  *     irrelevant; harnessed-installed skills go to the shared dir.)
- *   - `settingsPath === mcpConfigPath` — both point at the same `config.toml`
- *     (settings + `[mcp_servers.*]` live in one TOML file).
+ *   - `settingsPath` is `null` — there is no JSON settings file; config.toml is
+ *     reachable only as `mcpConfigPath` (read-only `[mcp_servers.*]` /
+ *     `[plugins.*]` probes). v16.0 Phase 63.
  *   - `pluginsRegistry` is `null` — codex has no `installed_plugins.json`
  *     (inline `[marketplaces.*]` instead).
  *   - `supportsEnvKeyWrite` is `false` — the CC env keys are meaningless to codex
@@ -119,15 +128,15 @@ export function codexDescriptor(home: string = homedir()): PlatformDescriptor {
     id: 'codex',
     homeDir: codexHome,
     stateRoot: join(codexHome, 'harnessed'),
-    settingsPath: configToml,
+    settingsPath: null,
     // SHARED convention dir, NOT <homeDir>/skills.
     skillsDir: join(home, '.agents', 'skills'),
     commandsDir: join(codexHome, 'prompts'),
     pluginsRegistry: null,
     mcpConfigPath: configToml,
     supportsEnvKeyWrite: false,
-    // No verified codex session-id env → single-session fallback (anti-stale).
-    sessionIdEnv: null,
+    // Measured on codex-cli 0.154: codex shells carry it, equal to hook session_id.
+    sessionIdEnv: 'CODEX_SESSION_ID',
   }
 }
 
@@ -141,31 +150,37 @@ function descriptorById(id: string, home: string): PlatformDescriptor | undefine
 /**
  * Resolve the active platform descriptor.
  *
- * Phase C precedence (claude-first = zero blast radius for the incumbent):
- *   1. `HARNESSED_ROOT_OVERRIDE` set → claude descriptor with `stateRoot`
- *      replaced by the override verbatim (kept FIRST — preserves e2e test
- *      isolation; other fields stay claude-default, matching today).
- *   2. `HARNESSED_PLATFORM=<id>` env → that descriptor (claude | codex). Unknown
- *      id → ignore, fall through.
- *   3. `.platform` pin file at the claude/incumbent stateRoot (the well-known
- *      location) → the pinned descriptor if it names a known id. Absent /
+ * ADR 0040 precedence (v16.0 Phase 63) — first hit wins:
+ *   1. `HARNESSED_PLATFORM=<id>` env (also how `setup --platform <id>` reaches the
+ *      process) → that descriptor (claude | codex). Unknown id → fall through.
+ *   2. host env sniff — effective only when EXACTLY ONE is set (non-blank):
+ *        `CLAUDE_CODE_SESSION_ID` → claude, `CODEX_SESSION_ID` → codex.
+ *      Both set (one harness launched inside the other) → ambiguous, fall through.
+ *   3. `.platform` pin — codex stateRoot first, then the claude stateRoot (which
+ *      also carries pins written by pre-0040 `setup --platform codex`). Absent /
  *      unreadable / unknown id → fall through.
- *   4. auto-probe: `~/.claude/` exists → claude (INCUMBENT wins); else
- *      `~/.codex/` exists → codex.
- *   5. fallback → `claudeDescriptor()`.
+ *   4. directory probe: `~/.claude/` exists → claude (incumbent); else `~/.codex/`
+ *      exists → codex.
+ *   5. fallback → claude.
  *
- * A claude user with no env / no pin gets byte-identical behavior to today
- * (~/.claude present → step 4 returns claudeDescriptor; absent → step 5 same).
- * codex is reached ONLY via explicit opt-in (env / pin) or a codex-only host.
+ * `HARNESSED_ROOT_OVERRIDE` replaces ONLY `stateRoot` of whatever was resolved
+ * above — it no longer short-circuits to claude (ADR 0040 behavior change). Pins
+ * are still read at the hosts' own stateRoots, never under the override.
+ *
+ * A claude user with no host env / no pin gets byte-identical behavior to before
+ * (tests/installers/platform-golden.test.ts locks it).
  */
 export function detectPlatform(home: string = homedir()): PlatformDescriptor {
+  const resolved = resolveHost(home)
+  const override = process.env.HARNESSED_ROOT_OVERRIDE
+  if (override !== undefined && override !== '') return { ...resolved, stateRoot: override }
+  return resolved
+}
+
+function resolveHost(home: string): PlatformDescriptor {
   const base = claudeDescriptor(home)
 
-  // 1. HARNESSED_ROOT_OVERRIDE — FIRST, unchanged (test-isolation hook).
-  const override = process.env.HARNESSED_ROOT_OVERRIDE
-  if (override !== undefined && override !== '') return { ...base, stateRoot: override }
-
-  // 2. HARNESSED_PLATFORM env.
+  // 1. HARNESSED_PLATFORM env (explicit).
   const envPlatform = process.env.HARNESSED_PLATFORM
   if (envPlatform !== undefined && envPlatform !== '') {
     const d = descriptorById(envPlatform, home)
@@ -173,21 +188,27 @@ export function detectPlatform(home: string = homedir()): PlatformDescriptor {
     // unknown id → fall through (do not throw — anti-footgun)
   }
 
-  // 3. `.platform` pin at the claude/incumbent stateRoot.
-  try {
-    const pin = readFileSync(join(base.stateRoot, '.platform'), 'utf8').trim()
-    const d = descriptorById(pin, home)
-    if (d) return d
-  } catch {
-    // absent / unreadable → fall through
+  // 2. host env sniff — a single session env names the host; both = nested → ambiguous.
+  const inClaude = Boolean(process.env.CLAUDE_CODE_SESSION_ID?.trim())
+  const inCodex = Boolean(process.env.CODEX_SESSION_ID?.trim())
+  if (inClaude !== inCodex) return inClaude ? base : codexDescriptor(home)
+
+  // 3. `.platform` pin — codex stateRoot first, then claude stateRoot.
+  for (const pinRoot of [codexDescriptor(home).stateRoot, base.stateRoot]) {
+    try {
+      const d = descriptorById(readFileSync(join(pinRoot, '.platform'), 'utf8').trim(), home)
+      if (d) return d
+    } catch {
+      // absent / unreadable → next
+    }
   }
 
-  // 4. auto-probe — INCUMBENT (claude) wins when its home exists.
+  // 4. directory probe — INCUMBENT (claude) wins when its home exists.
   //    Wrapped defensively: a partial `node:fs` mock (some unit tests stub only
   //    the sync writers they exercise) can leave `existsSync` undefined. Since
-  //    the auto-probe only disambiguates the no-opt-in case and its absence of
+  //    the probe only disambiguates the no-opt-in case and its absence of
   //    signal means "use the incumbent", any probe failure degrades to the
-  //    claude-default fallback — byte-identical to the pre-Phase-C behavior.
+  //    claude-default fallback.
   try {
     if (existsSync(base.homeDir)) return base
     const codex = codexDescriptor(home)
@@ -209,8 +230,11 @@ export function detectPlatform(home: string = homedir()): PlatformDescriptor {
 // test param (D2). HARNESSED_ROOT_OVERRIDE is orthogonal — it only moves
 // stateRoot, so these config resolvers are unaffected by it.
 
-/** `<home>/.claude/settings.json` — the shared user-scope settings file. */
-export function getSettingsPath(home?: string): string {
+/**
+ * `<home>/.claude/settings.json` — the shared user-scope settings file, or `null`
+ * when the active platform has none (codex). Callers skip with a reason on null.
+ */
+export function getSettingsPath(home?: string): string | null {
   return detectPlatform(home).settingsPath
 }
 

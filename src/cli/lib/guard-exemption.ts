@@ -123,7 +123,9 @@ export async function readCurrentEnvValue(
     deps.readSettings ??
     (async () => {
       try {
-        return await fsReadFile(getSettingsPath(), 'utf8')
+        // v16.0 Phase 63 — null (codex: no JSON settings file) → nothing persisted.
+        const path = getSettingsPath()
+        return path === null ? null : await fsReadFile(path, 'utf8')
       } catch {
         return null
       }
@@ -161,7 +163,7 @@ export function previewLines(existing: string | undefined, newValue: string): st
       : `  ~ env.${EXEMPT_ENV_KEY}: "${existing}" → "${newValue}"`
   return [
     `[harnessed] GateGuard ↔ evidence-guard conflict — sanctioned fix available:`,
-    `  file:   ${getSettingsPath()}`,
+    `  file:   ${getSettingsPath() ?? '(no settings file on this platform)'}`,
     change,
     `  backup: settings.json.<timestamp>.bak under the harnessed backups dir (written first)`,
   ]

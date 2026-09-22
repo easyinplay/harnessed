@@ -1,16 +1,16 @@
 // Phase 28 W1 — Codex second-platform proof (v9.0 Phase C) unit tests.
 //
 // TDD red-first. Asserts the capability-aware PlatformDescriptor + the host-
-// verified codexDescriptor paths + the expanded detectPlatform precedence
-// (override-first → HARNESSED_PLATFORM → .platform pin → claude-first auto-probe
-// → fallback). The load-bearing invariant: the claude default stays byte-
+// verified codexDescriptor paths + the detectPlatform precedence (ADR 0040:
+// HARNESSED_PLATFORM → single host env → .platform pin → claude-first auto-probe
+// → fallback; HARNESSED_ROOT_OVERRIDE only replaces stateRoot). The load-bearing invariant: the claude default stays byte-
 // identical (no env / no pin + ~/.claude present → exact claudeDescriptor).
 //
 // Env isolation is CRITICAL here: a test that sets HARNESSED_PLATFORM must
 // restore it, or it corrupts the claude-default regression proof in every other
 // suite. vi.stubEnv + vi.unstubAllEnvs (afterEach) handle that; HARNESSED_ROOT_
-// OVERRIDE is saved/restored explicitly because it must NOT be set during the
-// precedence tests (it is the FIRST check and would short-circuit them).
+// OVERRIDE is saved/restored explicitly so a leaked override cannot move stateRoot
+// under the precedence assertions.
 
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
@@ -39,10 +39,12 @@ describe('platform — codexDescriptor (Phase C / D1+D2)', () => {
     expect(d.id).toBe('codex')
     expect(d.homeDir).toBe(join('/home/x', '.codex'))
     expect(d.stateRoot).toBe(join('/home/x', '.codex', 'harnessed'))
-    // settings === mcp, both the same TOML config file
-    expect(d.settingsPath).toBe(join('/home/x', '.codex', 'config.toml'))
+    // Phase 63 T2 — no JSON settings file on codex (config.toml is never a settings
+    // target); MCP/plugin probes still read the TOML via mcpConfigPath.
+    expect(d.settingsPath).toBeNull()
     expect(d.mcpConfigPath).toBe(join('/home/x', '.codex', 'config.toml'))
-    expect(d.settingsPath).toBe(d.mcpConfigPath)
+    // Phase 63 T2 — codex shells carry CODEX_SESSION_ID (measured, codex-cli 0.154).
+    expect(d.sessionIdEnv).toBe('CODEX_SESSION_ID')
     // skillsDir is the SHARED ~/.agents/skills, NOT ~/.codex/skills
     expect(d.skillsDir).toBe(join('/home/x', '.agents', 'skills'))
     expect(d.skillsDir).not.toBe(join('/home/x', '.codex', 'skills'))
@@ -84,12 +86,12 @@ describe('platform — detectPlatform precedence (Phase C / D3)', () => {
     rmSync(tmpHome, { recursive: true, force: true })
   })
 
-  it('HARNESSED_ROOT_OVERRIDE wins FIRST → claude id + stateRoot=override (unchanged)', () => {
+  // ADR 0040 — the override replaces ONLY stateRoot; it no longer forces claude.
+  it('HARNESSED_ROOT_OVERRIDE + HARNESSED_PLATFORM=codex → codex descriptor, stateRoot=override', () => {
     process.env[OVERRIDE_KEY] = '/tmp/override-root'
-    vi.stubEnv(PLATFORM_KEY, 'codex') // even with codex env, override is FIRST
+    vi.stubEnv(PLATFORM_KEY, 'codex')
     const d = detectPlatform(tmpHome)
-    expect(d.id).toBe('claude')
-    expect(d.stateRoot).toBe('/tmp/override-root')
+    expect(d).toEqual({ ...codexDescriptor(tmpHome), stateRoot: '/tmp/override-root' })
   })
 
   it("HARNESSED_PLATFORM='codex' (no override) → codex descriptor", () => {
@@ -150,6 +152,107 @@ describe('platform — detectPlatform precedence (Phase C / D3)', () => {
   it('getPluginsRegistry() under HARNESSED_PLATFORM=codex → null', () => {
     vi.stubEnv(PLATFORM_KEY, 'codex')
     expect(getPluginsRegistry(tmpHome)).toBeNull()
+  })
+})
+
+// v16.0 Phase 63 T1 — ADR 0040 precedence: explicit > single host env > pin
+// (codex stateRoot first) > directory probe > claude. The host env sniff is what
+// makes a dual-host machine resolve per session instead of per machine.
+describe('platform — ADR 0040 host precedence (Phase 63)', () => {
+  let tmpHome: string
+
+  function pinAt(host: 'claude' | 'codex', id: string): void {
+    const dir = join(tmpHome, host === 'claude' ? '.claude' : '.codex', 'harnessed')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, '.platform'), `${id}\n`, 'utf8')
+  }
+
+  beforeEach(() => {
+    tmpHome = mkdtempSync(join(tmpdir(), 'harnessed-prec-'))
+    for (const k of [OVERRIDE_KEY, PLATFORM_KEY, 'CLAUDE_CODE_SESSION_ID', 'CODEX_SESSION_ID']) {
+      vi.stubEnv(k, undefined)
+    }
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    rmSync(tmpHome, { recursive: true, force: true })
+  })
+
+  it('HARNESSED_PLATFORM beats a host env', () => {
+    vi.stubEnv(PLATFORM_KEY, 'claude')
+    vi.stubEnv('CODEX_SESSION_ID', 'sess-1')
+    expect(detectPlatform(tmpHome)).toEqual(claudeDescriptor(tmpHome))
+  })
+
+  it('CODEX_SESSION_ID alone → codex, even with ~/.claude present and a claude pin', () => {
+    mkdirSync(join(tmpHome, '.claude'), { recursive: true })
+    pinAt('claude', 'claude')
+    vi.stubEnv('CODEX_SESSION_ID', 'sess-1')
+    expect(detectPlatform(tmpHome)).toEqual(codexDescriptor(tmpHome))
+  })
+
+  it('CLAUDE_CODE_SESSION_ID alone → claude, even with a codex pin', () => {
+    pinAt('codex', 'codex')
+    vi.stubEnv('CLAUDE_CODE_SESSION_ID', 'sess-1')
+    expect(detectPlatform(tmpHome)).toEqual(claudeDescriptor(tmpHome))
+  })
+
+  it('empty host env value is not a signal', () => {
+    mkdirSync(join(tmpHome, '.claude'), { recursive: true })
+    vi.stubEnv('CODEX_SESSION_ID', '  ')
+    expect(detectPlatform(tmpHome)).toEqual(claudeDescriptor(tmpHome))
+  })
+
+  it('both host envs (nested launch) → ambiguous, falls through to the pin', () => {
+    mkdirSync(join(tmpHome, '.claude'), { recursive: true })
+    pinAt('codex', 'codex')
+    vi.stubEnv('CLAUDE_CODE_SESSION_ID', 'a')
+    vi.stubEnv('CODEX_SESSION_ID', 'b')
+    expect(detectPlatform(tmpHome)).toEqual(codexDescriptor(tmpHome))
+  })
+
+  it('both host envs, no pin → directory probe (~/.claude first)', () => {
+    mkdirSync(join(tmpHome, '.claude'), { recursive: true })
+    mkdirSync(join(tmpHome, '.codex'), { recursive: true })
+    vi.stubEnv('CLAUDE_CODE_SESSION_ID', 'a')
+    vi.stubEnv('CODEX_SESSION_ID', 'b')
+    expect(detectPlatform(tmpHome)).toEqual(claudeDescriptor(tmpHome))
+  })
+
+  it('pin at codex stateRoot is read before the claude stateRoot pin', () => {
+    pinAt('codex', 'codex')
+    pinAt('claude', 'claude')
+    expect(detectPlatform(tmpHome)).toEqual(codexDescriptor(tmpHome))
+  })
+
+  it('garbage codex pin falls through to the claude pin', () => {
+    pinAt('codex', 'vim')
+    pinAt('claude', 'claude')
+    mkdirSync(join(tmpHome, '.codex'), { recursive: true })
+    expect(detectPlatform(tmpHome)).toEqual(claudeDescriptor(tmpHome))
+  })
+
+  it('legacy codex pin at the claude stateRoot is still honoured', () => {
+    pinAt('claude', 'codex')
+    expect(detectPlatform(tmpHome)).toEqual(codexDescriptor(tmpHome))
+  })
+
+  it('HARNESSED_ROOT_OVERRIDE only replaces stateRoot: CODEX_SESSION_ID still → codex', () => {
+    vi.stubEnv(OVERRIDE_KEY, join(tmpHome, 'ovr'))
+    vi.stubEnv('CODEX_SESSION_ID', 'sess-1')
+    expect(detectPlatform(tmpHome)).toEqual({
+      ...codexDescriptor(tmpHome),
+      stateRoot: join(tmpHome, 'ovr'),
+    })
+  })
+
+  it('HARNESSED_ROOT_OVERRIDE does not relocate the pin lookup', () => {
+    const ovr = join(tmpHome, 'ovr')
+    mkdirSync(ovr, { recursive: true })
+    writeFileSync(join(ovr, '.platform'), 'codex', 'utf8')
+    vi.stubEnv(OVERRIDE_KEY, ovr)
+    expect(detectPlatform(tmpHome).id).toBe('claude')
   })
 })
 

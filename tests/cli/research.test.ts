@@ -230,3 +230,39 @@ describe('cli/research — nested-CC guard (L3)', () => {
     expect(code).toBe(0)
   })
 })
+
+// v16.0 Phase 63 T7 — inside a codex session the same nested-harness guard
+// fires: codex's sessionIdEnv is CODEX_SESSION_ID (ADR 0040), and the host env
+// sniff resolves the platform to codex even on a dual-host machine.
+describe('cli/research — nested guard inside a codex session (Phase 63)', () => {
+  let isTTYDescriptor: PropertyDescriptor | undefined
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(runWorkflow).mockResolvedValue({ status: 'complete', phasesRun: 0 })
+    isTTYDescriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY')
+    vi.stubEnv('CODEX_SESSION_ID', 'codex-sess-1')
+    vi.stubEnv('CLAUDE_CODE_SESSION_ID', undefined)
+    vi.stubEnv('HARNESSED_PLATFORM', undefined)
+    vi.stubEnv('HARNESSED_ALLOW_NESTED', undefined)
+    Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true })
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    if (isTTYDescriptor) Object.defineProperty(process.stdin, 'isTTY', isTTYDescriptor)
+    else Object.defineProperty(process.stdin, 'isTTY', { value: undefined, configurable: true })
+    vi.restoreAllMocks()
+  })
+
+  it('CODEX_SESSION_ID + non-TTY → exit 1, runWorkflow NOT called', async () => {
+    const { code } = await runCli(['research', '--query', 'x'])
+    expect(code).toBe(1)
+    expect(runWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('HARNESSED_ALLOW_NESTED=1 still overrides under codex', async () => {
+    vi.stubEnv('HARNESSED_ALLOW_NESTED', '1')
+    await runCli(['research', '--query', 'x'])
+    expect(runWorkflow).toHaveBeenCalledTimes(1)
+  })
+})

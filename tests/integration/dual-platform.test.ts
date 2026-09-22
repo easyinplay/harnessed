@@ -61,7 +61,8 @@ describe('dual-platform resolution (Phase C / Acceptance 5)', () => {
     expect(d.skillsDir).toBe(join(HOME, '.agents', 'skills')) // shared, not .codex/skills
     expect(d.commandsDir).toBe(join(HOME, '.codex', 'prompts'))
     expect(d.stateRoot).toBe(join(HOME, '.codex', 'harnessed'))
-    expect(d.settingsPath).toBe(join(HOME, '.codex', 'config.toml'))
+    // v16.0 Phase 63 — codex has no JSON settings file.
+    expect(d.settingsPath).toBeNull()
     expect(d.mcpConfigPath).toBe(join(HOME, '.codex', 'config.toml'))
     expect(d.pluginsRegistry).toBeNull()
     expect(d.supportsEnvKeyWrite).toBe(false)
@@ -72,9 +73,10 @@ describe('dual-platform resolution (Phase C / Acceptance 5)', () => {
     const x = codexDescriptor(HOME)
     // skills: shared dir for codex, under-home for claude
     expect(c.skillsDir).not.toBe(x.skillsDir)
-    // settings === mcp for codex (one TOML file); separate files for claude
+    // settings: separate JSON file for claude; none for codex (v16.0 Phase 63 —
+    // config.toml is reachable only as mcpConfigPath)
     expect(c.settingsPath).not.toBe(c.mcpConfigPath)
-    expect(x.settingsPath).toBe(x.mcpConfigPath)
+    expect(x.settingsPath).toBeNull()
     // plugins registry present for claude, null for codex
     expect(typeof c.pluginsRegistry).toBe('string')
     expect(x.pluginsRegistry).toBeNull()

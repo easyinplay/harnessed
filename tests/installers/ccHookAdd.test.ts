@@ -46,6 +46,7 @@ import { isAbsolute, join } from 'node:path'
 import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
 import { runInstall } from '../../src/installers/index.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
+import { uninstallCcHookAdd } from '../../src/uninstallers/ccHookAdd.js'
 
 const SETTINGS_PATH = join(homedir(), '.claude', 'settings.json')
 const fakeFs = (fsp as unknown as { __fs: Record<string, string> }).__fs
@@ -341,6 +342,54 @@ describe('cc-hook-add installer', () => {
       }
     } finally {
       cap.restore()
+    }
+  })
+})
+
+// v16.0 Phase 63 T3 — codex has no JSON settings file (settingsPath === null).
+// runInstall gates cc-hook-add to claude, but the installer must still handle a
+// direct call explicitly: platform-mismatch skip, and never touch config.toml.
+describe('cc-hook-add on codex (settingsPath null)', () => {
+  const touchedToml = () =>
+    [...vi.mocked(fsp.readFile).mock.calls, ...vi.mocked(fsp.writeFile).mock.calls].filter((c) =>
+      String(c[0]).endsWith('config.toml'),
+    )
+
+  it('install → aborted platform-mismatch, no settings read/write', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.mocked(fsp.readFile).mockClear()
+    vi.mocked(fsp.writeFile).mockClear()
+    const cap = captureStdout()
+    try {
+      const r = await installCcHookAdd({
+        manifest: ccHookManifest(),
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect(r).toEqual({ aborted: true, reason: 'platform-mismatch' })
+      expect(touchedToml()).toEqual([])
+    } finally {
+      cap.restore()
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('uninstall → idempotent noop, no settings read/write', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.mocked(fsp.readFile).mockClear()
+    vi.mocked(fsp.writeFile).mockClear()
+    try {
+      const r = await uninstallCcHookAdd({
+        manifest: ccHookManifest(),
+        opts: { dryRun: false },
+        cwd: process.cwd(),
+      } as never)
+      expect(r).toEqual({ ok: true, removedPaths: [] })
+      expect(touchedToml()).toEqual([])
+      expect(vi.mocked(fsp.writeFile)).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllEnvs()
     }
   })
 })

@@ -22,3 +22,15 @@ try {
   /* tmpdir creation failure → env still set; mocked spawns ignore cwd anyway */
 }
 process.env.HARNESSED_SPAWN_CWD = neutralTestSpawnDir
+
+// v16.0 Phase 63 T5 — the suite must resolve the same host whether it runs in a
+// plain terminal, inside Claude Code or inside a codex shell. detectPlatform()
+// sniffs CLAUDE_CODE_SESSION_ID / CODEX_SESSION_ID and honours HARNESSED_PLATFORM
+// ahead of the pin and the directory probe (ADR 0040), and HARNESSED_ROOT_OVERRIDE
+// no longer short-circuits platform resolution — so strip the ambient host env
+// here; a test that needs one sets it explicitly (vi.stubEnv).
+for (const k of Object.keys(process.env)) {
+  if (k.startsWith('CODEX_') || k === 'CLAUDE_CODE_SESSION_ID' || k === 'HARNESSED_PLATFORM') {
+    delete process.env[k]
+  }
+}

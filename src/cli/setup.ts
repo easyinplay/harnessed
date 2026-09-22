@@ -14,13 +14,14 @@
 //   1 → fs.cp failed
 //   2 → no SKILL.md workflows found (nothing to install)
 
-import { cp, mkdir, readdir, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { getLocale, t } from '../i18n/index.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
 import {
   claudeDescriptor,
+  codexDescriptor,
   detectPlatform,
   getCommandsDir,
   getSkillsDir,
@@ -73,15 +74,30 @@ async function applyPlatformOption(platform: string, persist: boolean): Promise<
   // --dry-run must not write anything, and that includes the pin: the env var
   // above already routes this run's resolvers to the chosen platform.
   if (!persist) return
-  // The pin lives at the WELL-KNOWN location detectPlatform() reads — the claude
-  // (incumbent) stateRoot — whatever platform it names. It used to be written to
-  // the chosen platform's own stateRoot, so a codex pin landed in
-  // ~/.codex/harnessed/.platform where nothing reads it: on any machine that also
-  // has ~/.claude, later runs silently resolved back to claude.
-  const pinRoot = claudeDescriptor().stateRoot
+  // ADR 0040: the pin lives at the chosen host's OWN stateRoot — detectPlatform()
+  // reads the codex stateRoot first, then the claude one — so a codex-only host
+  // never grows a ~/.claude directory just to hold the pin.
+  const [own, other] =
+    platform === 'codex'
+      ? [codexDescriptor().stateRoot, claudeDescriptor().stateRoot]
+      : [claudeDescriptor().stateRoot, codexDescriptor().stateRoot]
   try {
-    await mkdir(pinRoot, { recursive: true })
-    await writeFile(join(pinRoot, '.platform'), platform, 'utf8')
+    await mkdir(own, { recursive: true })
+    await writeFile(join(own, '.platform'), platform, 'utf8')
+    // A stale pin naming the other host would still win (the codex pin is read
+    // first; a legacy codex pin sits at the claude root), so a host switch rewrites
+    // it — only if it already exists: no delete, no mkdir on the other side.
+    const otherPin = join(other, '.platform')
+    let existing: string | undefined
+    try {
+      const raw: unknown = await readFile(otherPin, 'utf8')
+      existing = typeof raw === 'string' ? raw.trim() : undefined
+    } catch {
+      existing = undefined // absent → leave it absent
+    }
+    if (existing !== undefined && existing !== platform) {
+      await writeFile(otherPin, platform, 'utf8')
+    }
   } catch (e) {
     console.warn(`  [--platform] could not persist .platform pin (${(e as Error).message})`)
   }

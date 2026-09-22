@@ -13,35 +13,80 @@ function isAblated(env = process.env) {
   return env.HARNESSED_OFF === '1'
 }
 
-// src/checkpoint/hookStateRoot.ts
+// src/platform/platform.ts
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-function hookStateRoot(home = homedir()) {
-  const override = process.env.HARNESSED_ROOT_OVERRIDE
-  if (override !== void 0 && override !== '') return override
+function claudeDescriptor(home = homedir()) {
   const claudeHome = join(home, '.claude')
+  return {
+    id: 'claude',
+    homeDir: claudeHome,
+    stateRoot: join(claudeHome, 'harnessed'),
+    settingsPath: join(claudeHome, 'settings.json'),
+    skillsDir: join(claudeHome, 'skills'),
+    commandsDir: join(claudeHome, 'commands'),
+    pluginsRegistry: join(claudeHome, 'plugins', 'installed_plugins.json'),
+    // mcpConfigPath is a SIBLING of `.claude` (`<home>/.claude.json`), based on
+    // the same home base — not a child of homeDir.
+    mcpConfigPath: join(home, '.claude.json'),
+    // claude writes its env keys into JSON settings.json (capability present).
+    supportsEnvKeyWrite: true,
+    // Claude Code exposes the active session id to Bash-invoked CLI + hooks.
+    sessionIdEnv: 'CLAUDE_CODE_SESSION_ID',
+  }
+}
+function codexDescriptor(home = homedir()) {
   const codexHome = join(home, '.codex')
-  const rootOf = (id) =>
-    id === 'claude'
-      ? join(claudeHome, 'harnessed')
-      : id === 'codex'
-        ? join(codexHome, 'harnessed')
-        : null
-  const env = process.env.HARNESSED_PLATFORM
-  if (env !== void 0 && env !== '') {
-    const r = rootOf(env)
-    if (r) return r
+  const configToml = join(codexHome, 'config.toml')
+  return {
+    id: 'codex',
+    homeDir: codexHome,
+    stateRoot: join(codexHome, 'harnessed'),
+    settingsPath: null,
+    // SHARED convention dir, NOT <homeDir>/skills.
+    skillsDir: join(home, '.agents', 'skills'),
+    commandsDir: join(codexHome, 'prompts'),
+    pluginsRegistry: null,
+    mcpConfigPath: configToml,
+    supportsEnvKeyWrite: false,
+    // Measured on codex-cli 0.154: codex shells carry it, equal to hook session_id.
+    sessionIdEnv: 'CODEX_SESSION_ID',
+  }
+}
+function descriptorById(id, home) {
+  if (id === 'claude') return claudeDescriptor(home)
+  if (id === 'codex') return codexDescriptor(home)
+  return void 0
+}
+function detectPlatform(home = homedir()) {
+  const resolved = resolveHost(home)
+  const override = process.env.HARNESSED_ROOT_OVERRIDE
+  if (override !== void 0 && override !== '') return { ...resolved, stateRoot: override }
+  return resolved
+}
+function resolveHost(home) {
+  const base = claudeDescriptor(home)
+  const envPlatform = process.env.HARNESSED_PLATFORM
+  if (envPlatform !== void 0 && envPlatform !== '') {
+    const d = descriptorById(envPlatform, home)
+    if (d) return d
+  }
+  const inClaude = Boolean(process.env.CLAUDE_CODE_SESSION_ID?.trim())
+  const inCodex = Boolean(process.env.CODEX_SESSION_ID?.trim())
+  if (inClaude !== inCodex) return inClaude ? base : codexDescriptor(home)
+  for (const pinRoot of [codexDescriptor(home).stateRoot, base.stateRoot]) {
+    try {
+      const d = descriptorById(readFileSync(join(pinRoot, '.platform'), 'utf8').trim(), home)
+      if (d) return d
+    } catch {}
   }
   try {
-    const r = rootOf(readFileSync(join(claudeHome, 'harnessed', '.platform'), 'utf8').trim())
-    if (r) return r
+    if (existsSync(base.homeDir)) return base
+    const codex = codexDescriptor(home)
+    if (existsSync(codex.homeDir)) return codex
   } catch {}
-  try {
-    if (existsSync(claudeHome)) return join(claudeHome, 'harnessed')
-    if (existsSync(codexHome)) return join(codexHome, 'harnessed')
-  } catch {}
-  return join(claudeHome, 'harnessed')
+  return base
 }
 
 // src/checkpoint/injectCache.ts
@@ -449,14 +494,6 @@ function repoKey(cwd) {
   }
   return resolve(cwd)
 }
-function harnessedRoot() {
-  return hookStateRoot()
-}
-function sessionIdEnvName() {
-  const platform = (process.env.HARNESSED_PLATFORM || 'claude').trim()
-  if (platform === 'codex') return null
-  return 'CLAUDE_CODE_SESSION_ID'
-}
 function readWorkflow(root, keys) {
   let wf = null
   let intent = null
@@ -508,13 +545,14 @@ function shouldEmitPc(root, repoRoot, sid, pc) {
 function main() {
   if (isAblated()) return
   try {
-    const root = harnessedRoot()
+    const platform = detectPlatform()
+    const root = platform.stateRoot
     if (process.argv.includes('--invalidate')) {
       invalidateInjectCache(root)
       return
     }
     const key = repoKey(process.cwd())
-    const envName = sessionIdEnvName()
+    const envName = platform.sessionIdEnv
     const sid = envName ? process.env[envName]?.trim() : void 0
     const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
     let learningsMd = ''

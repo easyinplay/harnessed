@@ -17,7 +17,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { harnessedSubdir } from '../../platform/harnessedRoot.js'
-import { getSettingsPath } from '../../platform/platform.js'
+import { detectPlatform, getSettingsPath } from '../../platform/platform.js'
 
 /**
  * Discriminated outcome of a settings env-key merge.
@@ -56,6 +56,9 @@ export async function mergeSettingsEnvKey(
   opts: MergeOpts = {},
 ): Promise<MergeOutcome> {
   const path = getSettingsPath()
+  // v16.0 Phase 63 — codex has no JSON settings file: warn, never touch config.toml.
+  if (path === null)
+    return { outcome: 'warn', message: `no settings file on ${detectPlatform().id} — skipped` }
 
   let raw: string
   try {
