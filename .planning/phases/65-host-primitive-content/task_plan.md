@@ -48,6 +48,18 @@ Status: planned (2026-09-24)
   `AskUserQuestion` 在 codex 上不存在(等价物 `request_user_input`,上游有 handler,**但本机默认启用与否未验证**);
   `~/.claude/` 是路径,codex 上不存在。去重后(不少已落在 C 类整段 span 内)预计 450-500 处。
 
+- **D5 `Claude Code plugin`(29 处)移出 Phase 65,并入 F8;门按短语 allowlist + 映射小节 caveat**。
+  它不是宿主原语,是**上游组件分发渠道的客观名称**(如同「npm 包」不因宿主改名);套 `{{ host.name }}`
+  会造出「Codex plugin marketplace」这个不存在的事物。codex 上这些 plugin 确实不可用,但那是**能力层**
+  问题(F8 `pluginsRegistry: null` → plugin 类能力全告警),归 `capabilityResolver` 的告警机制管,
+  改措辞既治不了又会先产出自相矛盾的 codex 产物。
+  「降为宿主中立措辞」这条**直接否决**:它会改 claude 金标,而逐字节不变是本 phase 的铁律。
+  缓解:R4 映射小节(仅 codex 渲染插入)加一行 caveat,说明此类组件在本宿主不可用且会在能力解析时告警。
+- **D6 批 A / 批 D 的 lockstep 文本今天已漂移 5 处**(`generateCommands.ts:204-211` 的注释声称
+  "MUST stay in lockstep",逐字比对证否:多一句前导、`and`→`;`、少一逗号、括号措辞不同、多两句尾部)。
+  **不强行合并成一个 key**,改为同 primitive 两 variant(`.skill` / `.command`),两侧金标各自保住,
+  lockstep 从「靠人维护」变成「同表相邻可见」;codex 侧两 variant 填同一段顺手收敛漂移。
+
 ## 任务(按**面**分批;T1-T3 已完成)
 
 | T | 内容 | 主要文件 | 验收 |

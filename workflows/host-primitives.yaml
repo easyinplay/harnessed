@@ -11,7 +11,10 @@
 # Rules:
 #   - Host columns are `claude` / `codex` (PlatformDescriptor.id). BOTH are
 #     required on every cell — the renderer throws on a missing column.
-#   - Every primitive MUST declare a `default` variant (bare-placeholder contract).
+#   - Every primitive MUST declare a `default` variant (bare-placeholder contract,
+#     asserted by tests/cli/hostPrimitives.test.ts). Where no variant is a natural
+#     default, `default` is a YAML ALIAS of the widest-used variant — see the
+#     anchors below. Call sites should still name the variant explicitly.
 #   - The `claude` column is the verbatim text today's Claude-authored SKILL.md
 #     bodies already contain, so rendering for claude is byte-identical to the
 #     pre-Phase-65 artifact. Do not "improve" those strings.
@@ -23,25 +26,208 @@
 #     language rules a tool called `SendMessage` is `SendMessage` in every locale.
 #     Those cells are therefore identical in both files by design, not by drift.
 #
-# Phase 65 T2 ships the SKELETON only: the mechanism plus three reference
-# entries. The full vocabulary lands on its own task line — do not bulk-fill here.
+# codex column sourcing (Phase 65 findings F4): tool names and parameters come
+# from upstream `codex-rs/core/src/tools/handlers/multi_agents_spec.rs` on
+# codex-cli 0.155.1 (`multi_agent` stable/true → v1 in effect):
+#   spawn_agent(task_name, message) / send_input(target, items, interrupt) /
+#   wait_agent / list_agents / close_agent / resume_agent
+# codex agent LIFECYCLE (session scope, automatic reclamation on exit, nesting)
+# is NOT measured — every cell that would need it says TODO(未验证) instead of
+# asserting. Do not "fill in" those TODOs without a real measurement.
+#
+# VERBATIM DISCIPLINE: every `claude` value below was verified by string-
+# containment against the real artifact it must restore (25/25). Re-verify after
+# any edit — see .planning/phases/65-host-primitive-content/inventory.md
+# § "金标自检" for the checker script and how to run it. Never transcribe a
+# claude value from the builder source (it is an escaped JS template literal) or
+# from a doc — always `sed -n` it out of the real file.
 
 version: 1
 
 primitives:
+  # ── A 类:token 级 ──────────────────────────────────────────────────────────
+
   # How a harness names "start a delegated agent".
   spawn_subagent:
     default:
       claude: "Task / Agent tool"
       codex: "spawn_agent tool"
     # Chinese-prose variant: the tool name stays English, the noun is localized.
-    # Referenced from zh-Hans SKILL.md bodies; the key exists here for parity.
     zh_tool:
       claude: "Task / Agent 工具"
       codex: "spawn_agent 工具"
+    # `orchestratorEn` says "... Task / Agent tools." (plural).
+    plural:
+      claude: "Task / Agent tools"
+      codex: "spawn_agent tools"
 
   # How a harness names "send a message to a running agent".
   send_message:
     default:
       claude: "SendMessage"
       codex: "send_input"
+
+  # The formation noun. codex v1 has no branded team concept — per F4 the
+  # formation IS repeated spawn_agent, so the codex cell is descriptive prose
+  # rather than a tool name. If a call site reads badly after substitution,
+  # that sentence belongs in a C-class whole-paragraph variant instead.
+  team:
+    default:
+      claude: "Agent Teams"
+      codex: "a multi-agent formation (repeated `spawn_agent`)"
+
+  # Adjective prefix, used adjacent to (or a few words from) spawn_subagent.
+  # Kept separate so the two compose back to the exact original wording.
+  native:
+    default:
+      claude: "CC-native"
+      codex: "codex-native"
+
+  name:
+    default:
+      claude: "Claude Code"
+      codex: "Codex"
+
+  teammate:
+    default:
+      claude: "teammate"
+      codex: "agent"
+    plural:
+      claude: "teammates"
+      codex: "agents"
+
+  # The codex tool exists upstream (codex-rs/core/src/tools/handlers/
+  # request_user_input{,_spec}.rs) but whether it is ENABLED by default on a
+  # given install is NOT verified — the caveat lives once in host_map_notes
+  # below, never inline in the 74 prose sites.
+  ask_user:
+    default:
+      claude: "AskUserQuestion"
+      codex: "request_user_input"
+
+  skills_dir:
+    default:
+      claude: "~/.claude/skills"
+      codex: "~/.agents/skills"
+
+  # ── C 类:整段 ─────────────────────────────────────────────────────────────
+  #
+  # These exist because the claude wording states a CLAUDE-SPECIFIC FACT. A
+  # token-level swap would leave the sentence asserting that fact about codex.
+  # The codex column therefore DROPS the host-specific claim rather than
+  # re-asserting it for a host where it was never measured.
+
+  # `default` aliases `.execution` — the widest-used variant (19 renderings per
+  # locale vs 5 for orchestrator).
+  harnessed_run_warning_note:
+    default: &harnessed_run_execution
+      claude: |-
+        Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (in-process SDK spawn
+        that blocks the session inside Claude Code).
+      codex: |-
+        Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (an in-process SDK
+        spawn that blocks this session).
+    execution: *harnessed_run_execution
+    orchestrator:
+      claude: |-
+        Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (in-process SDK spawn
+        that blocks the session, bypasses Agent Teams, and hangs inside Claude Code).
+      codex: |-
+        Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (an in-process SDK
+        spawn that blocks this session).
+    # The two `command_*` variants belong to src/cli/lib/generateCommands.ts
+    # (en-only surface). Their claude text differs from the SKILL variants above
+    # — that divergence is real and pre-existing; see inventory.md § "批 A / 批 D".
+    command_orchestrator:
+      claude: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn, blocks the session, no Agent Teams, no clarification round-trip)."
+      codex: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn, blocks the session, no clarification round-trip)."
+    command_execution:
+      claude: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn)."
+      codex: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn)."
+
+  # `default` aliases `.skill` (30 hits vs 1 for the command surface).
+  teams_step_note:
+    default: &teams_step_skill
+      claude: '4. If `parallelism.escalate_to_teams === true`: read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with `Agent(name: <sub>, run_in_background: true, prompt: <that sub''s `harnessed prompt <sub>` prompt>)` and the team forms implicitly on the FIRST spawn, with this session as lead (the `team_name` input is accepted but ignored — the name is session-derived). Coordinate via `SendMessage`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down"). Still checkpoint each sub (`complete` / `fail`) as below.'
+      # Drops the `~/.claude/rules/agent-teams.md` read — that file does not exist
+      # on codex, and F7b already settled that codex variants inline the points
+      # rather than pointing at an external file.
+      codex: '4. If `parallelism.escalate_to_teams === true`: spawn one agent per fired sub with `spawn_agent(task_name: <sub>, message: <that sub''s `harnessed prompt <sub>` prompt>)`. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. When a sub is finished, close it with `close_agent`. Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — whether agents are session-scoped, whether anything is reclaimed automatically on exit, and whether an agent may spawn another. Do not rely on any of it until measured.'
+    skill: *teams_step_skill
+    command:
+      claude: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with `Agent(name: <sub>, run_in_background: true, prompt: <that sub''s `harnessed prompt <sub>` prompt>)`; the team forms implicitly on the FIRST spawn with this session as lead (`team_name` is accepted but ignored — the name is session-derived). Coordinate via `SendMessage`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down") — shutdown is a REQUEST, so re-ask rather than assume, and shut every teammate down before you finish (a teammate you never stopped keeps burning tokens and can hang the host). The team directory is removed automatically at session exit; there is no teardown tool. Still checkpoint each sub (`complete` / `fail`) as below.'
+      codex: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple agents to coordinate. Spawn one agent per fired sub with `spawn_agent(task_name: <sub>, message: <that sub''s `harnessed prompt <sub>` prompt>)`. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. Close each finished agent with `close_agent`, and close every agent you spawned before you finish (an agent you never closed keeps burning tokens). Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — session scope, automatic reclamation on exit, nesting. Not asserted here.'
+
+  # Two bullets, each carrying 3 LEADING SPACES in the original. A block scalar
+  # would strip that common indent, so these are double-quoted with \n.
+  teams_teardown_note:
+    default:
+      claude: "   - **Shut every teammate down before you finish — MUST-in-finally, not best-effort**: regardless of whether every sub reached COMPLETE, max_iterations was exhausted, or you consider the work done, ask each teammate to shut down by name before you end the run, and confirm it actually stopped. Shutdown is a REQUEST: the teammate finishes its current tool call first and may reject with a reason, so re-ask rather than assume. The team directory is removed automatically at session exit (there is no teardown tool), but a teammate you never stopped keeps consuming tokens and can hang the host (headless especially — issue #7: an 11h hang, work complete but the process never exited).\n   - **Headless never spawns teams**: in a headless session (`claude -p`) `harnessed gates` already returns `escalate_to_teams: false` (Agent Teams are session-scoped — lost on `/resume`, incompatible with `-p`). Do NOT spawn teammates or background-`Agent` in headless even if you think it would parallelize — run the fired subs sequentially in-session instead."
+      codex: "   - **Close every agent before you finish — MUST-in-finally, not best-effort**: regardless of whether every sub reached COMPLETE, max_iterations was exhausted, or you consider the work done, call `close_agent` for each agent you spawned and confirm it stopped. An agent you never closed keeps consuming tokens and can hang the host (headless especially — issue #7: an 11h hang, work complete but the process never exited). TODO(未验证): whether codex reclaims running agents on session exit — this note deliberately asserts nothing about it, so close them explicitly.\n   - **Headless runs sequentially**: in a headless run `harnessed gates` already returns `escalate_to_teams: false`. Do NOT spawn agents in headless even if you think it would parallelize — run the fired subs sequentially in-session instead."
+
+  delivery_contract_note:
+    default:
+      claude: "delivery contract: use a BLOCKING Agent/Task call — only a blocking call returns the subagent's final text as your tool result. A named/background teammate's final message is DISCARDED by the platform; if you must run it that way, instruct the agent to write its findings to a file (and read it back) or SendMessage them to the main session — otherwise the COMPLETE promise and the findings never reach you."
+      codex: "delivery contract: instruct the agent to write its findings to a file (and read it back), or to return them with `send_input` to this session; call `wait_agent` before you read. TODO(未验证): whether codex hands a spawned agent's final text back to the caller — until measured, do not rely on it, so that the COMPLETE promise and the findings reach you by file or by `send_input` either way."
+    checklist:
+      claude: "Delivery contract: a named/background teammate's FINAL message is discarded by the platform — every finding must arrive via SendMessage to the lead or be written to a file the lead reads back; never rely on the teammate's last output"
+      codex: "Delivery contract: every finding must arrive via `send_input` to the lead or be written to a file the lead reads back; call `wait_agent` before reading. TODO(未验证): whether codex returns a spawned agent's final message to the lead — do not rely on it."
+
+  # `default` aliases `.checklist` — the shortest, most generic phrasing of the
+  # same discipline. The other three are site-specific wordings that must each
+  # restore their own original bytes.
+  teams_cleanup_note:
+    default: &teams_cleanup_checklist
+      claude: "Cleanup: ask each teammate to shut down by name — that request IS the teardown (CC 2.1.178+ has no delete tool); the team's shared dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends"
+      codex: "Cleanup: call `close_agent` for each agent you spawned and confirm it stopped. TODO(未验证): whether codex reclaims agents at session exit — close them explicitly rather than relying on it"
+    checklist: *teams_cleanup_checklist
+    multispec_checklist:
+      claude: "Cleanup MANDATORY: ask each of the 4 teammates to shut down by name and confirm it stopped — that request IS the teardown (no delete tool exists); the team dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends"
+      codex: "Cleanup MANDATORY: call `close_agent` for each of the 4 agents and confirm it stopped. TODO(未验证): whether codex reclaims agents at session exit — close them explicitly rather than relying on it"
+    deliver:
+      claude: |-
+        任 1 fire → escalate subagent fan-out → Agent Teams Pattern A/B/C。Cleanup mandatory
+        per agent-teams.md 防呆清单 (lead 按名请求每个 teammate shut down; CC 2.1.178+ 无 teardown
+        工具,团目录 session 退出时自动清理 —— 剩下的纪律是别把 teammate 落在运行态) — engine-level
+        wiring, NOT yaml schema scope。
+      codex: |-
+        任 1 fire → escalate subagent fan-out → 多 agent 编队 Pattern A/B/C。Cleanup mandatory
+        (对每个 spawn 出来的 agent 调 `close_agent` 并确认它停了 —— 别把 agent 落在运行态) —
+        engine-level wiring, NOT yaml schema scope。
+        TODO(未验证):codex 是否在 session 退出时回收运行中的 agent。
+    multispec:
+      claude: |-
+        Agent Teams cleanup discipline — 团目录在 session 退出时自动清理,无独立 teardown 工具,
+        剩下的纪律是别把 teammate 落在运行态)。
+      codex: |-
+        cleanup discipline — 对每个 spawn 出来的 agent 调 `close_agent` 并确认它停了,
+        别把 agent 落在运行态)。TODO(未验证):codex 的 session 退出回收行为。
+
+  multispec_spawn_note:
+    default:
+      claude: |-
+        `Agent(name, run_in_background=true)` — the team forms implicitly on the FIRST spawn (CC
+        2.1.178+ has no create step / no create tool), teammates 互相 SendMessage 质询 findings 是否
+        真问题 (NOT fire-and-forget)
+      codex: |-
+        `spawn_agent(task_name: <specialist>, message: <brief>)` ×4 — there is no create step;
+        the four agents cross-question each other's findings with `send_input` (NOT
+        fire-and-forget)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Host-map section notes (Phase 65 R4).
+#
+# NOT part of `primitives:` — `loadHostPrimitives` reads only `primitives`, so
+# nothing here affects placeholder rendering or the parity/`default` contracts.
+# These lines are emitted INSIDE the codex-only map section
+# (`<!-- harnessed:host-map:start -->` … `<!-- harnessed:host-map:end -->`)
+# by T10. The claude artifact gets ZERO bytes from this key.
+#
+# Purpose: caveats that are true for the whole artifact and must be stated ONCE,
+# rather than smeared across every prose site that touches them.
+# ─────────────────────────────────────────────────────────────────────────────
+host_map_notes:
+  codex:
+    - "`request_user_input` — TODO(未验证): the tool exists upstream (`codex-rs/core/src/tools/handlers/request_user_input{,_spec}.rs`), but whether it is enabled on this install was not measured. The `default_mode_request_user_input` entry in `codex features list` is a mode flag, not the tool's own switch. If a clarification round-trip is unavailable, do not guess — stop and report `STATUS: NEEDS_CLARIFICATION` with the questions."
+    - "Claude Code plugin components — some workflow prose names an upstream component distributed as a Claude Code plugin (e.g. `planning-with-files`, invoked as `/plan`). That is the component's actual distribution channel, not a Claude Code-specific spelling of something codex also has, so the wording is left as-is. On this host those components are NOT installed: harnessed reports it at capability-resolution time as a per-capability warning. Treat such a step as unavailable rather than substituting an equivalent, and record the skip."
+    - "codex agent lifecycle — session scope, automatic reclamation on session exit, and whether an agent may spawn another are ALL unmeasured. Nothing in this artifact asserts them. Close every agent you spawn with `close_agent` explicitly rather than relying on any cleanup you have not observed."

@@ -105,6 +105,25 @@ session 退出自动清理 / 无 teardown 工具」四条 CC 专属事实)、`:2
 
 `:212` 整段是 C 类的典型:逐 token 替换会把四条 CC 事实伪装成 codex 事实。整段入表。
 
+## F9 `disciplines/language.yaml` 是渲染面,但在 codex 上当前不渲染(两条事实叠加)
+
+台账第二轮发现 `prompt.ts:192-208` 的 `loadPreserveCategories` 会把
+`workflows/disciplines/language.yaml` 的 `preserve-english-categories` 规则 description
+逐行解析进 subagent prompt 的 `## Language` 节 —— 已复核属实(`prompt.ts:186-209`)。
+
+但与 F8 叠加后有个反直觉结论:codex 上 `supportsEnvKeyWrite: false` → `HARNESSED_USER_LANG` 从不写
+→ `buildLanguageSection`(`prompt.ts:217-218`)返回空字符串 → **整个 `## Language` 节在 codex 上不出现**,
+该文件里的 CC token 也就不会进 codex 产物。
+
+**决定:仍然原语化**(成本低),不依赖「一个待修缺陷的当前行为」作为豁免理由。若日后 F8 的语言指令
+缺失被修好,这里无需回头再改。
+
+## F10 全角 / 半角标点在 repo 内两套并存(影响 claude 值的逐字还原)
+
+`task/deliver` 与 `verify/multispec` 的 **zh SKILL 正文用全角 `，（）；`**,而生成器渲染出来的 zh 段用半角。
+同一仓库两套并存,是既有事实。词表里 3 个 key 因此在首稿金标红,已按站点原文分别取值。
+**不在本 phase 统一标点**(统一会改 claude 金标)。
+
 ## F8 顺带发现(不在本 phase 修,记 TODO)
 
 - codex 上 `pluginsRegistry: null`(`platform.ts:135`)→ `readInstalledPlugins` 返回空集

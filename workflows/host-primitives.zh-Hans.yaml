@@ -13,11 +13,30 @@
 # `spawn_agent`、`Task / Agent` 这些 cell 在两个文件里本就相同 —— 这是设计,不是漂移。
 # 中文语境需要的是量词 / 名词侧的本地化,走 `zh_tool` 这类变体,而不是改 default。
 #
-# Phase 65 T2 只落骨架 + 3 个示例条目;完整词表由另一条任务线产出,不要在此批量填充。
+# 每个 primitive 必须有 `default` 变体(裸占位符契约,由
+# tests/cli/hostPrimitives.test.ts 断言)。没有天然 default 的,`default` 用
+# YAML 锚点**别名**指向使用面最广的那个变体 —— 调用点仍应显式写变体名。
+#
+# codex 列取值来源(Phase 65 findings F4):工具名与参数取自上游
+# `codex-rs/core/src/tools/handlers/multi_agents_spec.rs`(codex-cli 0.155.1,
+# `multi_agent` stable/true → v1 生效):
+#   spawn_agent(task_name, message) / send_input(target, items, interrupt) /
+#   wait_agent / list_agents / close_agent / resume_agent
+# codex agent 的**生命周期**(是否 session-scoped、退出是否自动回收、能否嵌套)
+# **未实测** —— 凡需要该事实的 cell 一律写 TODO(未验证),不作断言。没有真实测量
+# 之前不要「补全」这些 TODO。
+#
+# 逐字纪律:下面每个 `claude` 值都用字符串包含比对过真实产物(25/25 通过)。
+# 任何改动后必须重验 —— 校验脚本与用法见
+# .planning/phases/65-host-primitive-content/inventory.md §「金标自检」。
+# **绝不**从 builder 源码(那是带转义的 JS 模板字面量)或文档里转抄 claude 值,
+# 一律从真实文件 `sed -n` 抠出来。
 
 version: 1
 
 primitives:
+  # ── A 类:token 级 ──────────────────────────────────────────────────────────
+
   # 「启动一个受委派的 agent」在各宿主的叫法。
   spawn_subagent:
     default:
@@ -27,9 +46,176 @@ primitives:
     zh_tool:
       claude: "Task / Agent 工具"
       codex: "spawn_agent 工具"
+    # en 侧 `orchestratorEn` 用复数;zh 行文无复数形态,与 zh_tool 同值。
+    plural:
+      claude: "Task / Agent 工具"
+      codex: "spawn_agent 工具"
 
   # 「向运行中的 agent 发消息」在各宿主的叫法。
   send_message:
     default:
       claude: "SendMessage"
       codex: "send_input"
+
+  # 编队名词。codex v1 无品牌化编队概念 —— 按 F4,编队方式就是多次 spawn_agent,
+  # 所以 codex cell 是描述性短语而非工具名。若某句替换后读起来别扭,那句应改判
+  # 为 C 类整段变体,而不是硬套本 token。
+  team:
+    default:
+      claude: "Agent Teams"
+      codex: "多 agent 编队(多次 `spawn_agent`)"
+
+  # 形容词前缀,与 spawn_subagent 相邻或隔词组合。单独成 primitive 是为了让两者
+  # 拼回去逐字节等于原文。
+  native:
+    default:
+      claude: "CC-native"
+      codex: "codex-native"
+
+  name:
+    default:
+      claude: "Claude Code"
+      codex: "Codex"
+
+  # 中文行文里原文也写 teammate(专有名词),故 claude 侧两 locale 同值,
+  # 且 zh 无复数形态。
+  teammate:
+    default:
+      claude: "teammate"
+      codex: "agent"
+    plural:
+      claude: "teammate"
+      codex: "agent"
+
+  # codex 侧工具确在上游(codex-rs/core/src/tools/handlers/
+  # request_user_input{,_spec}.rs),但**是否默认启用未实测** —— caveat 只在下方
+  # host_map_notes 出现一次,绝不内联进 74 处正文。
+  ask_user:
+    default:
+      claude: "AskUserQuestion"
+      codex: "request_user_input"
+
+  skills_dir:
+    default:
+      claude: "~/.claude/skills"
+      codex: "~/.agents/skills"
+
+  # ── C 类:整段 ─────────────────────────────────────────────────────────────
+  #
+  # 之所以整段入表,是因为 claude 措辞陈述了一条 **CC 专属事实**。逐 token 替换
+  # 会让整句把该事实伪装成 codex 的事实。所以 codex 列的做法是**删除**该宿主专属
+  # 断言,而不是为一个从未实测过的宿主重新断言一遍。
+
+  # `default` 别名指向 `.execution` —— 使用面最广(每 locale 19 次渲染,
+  # orchestrator 只有 5 次)。
+  harnessed_run_warning_note:
+    default: &harnessed_run_execution
+      claude: |-
+        **不要** pipe 到 `harnessed run <name>` —— 那是 CI/headless 路径(in-process SDK spawn,在 Claude
+        Code 内部会阻塞 session)。
+      codex: |-
+        **不要** pipe 到 `harnessed run <name>` —— 那是 CI/headless 路径(in-process SDK spawn,
+        会阻塞本 session)。
+    execution: *harnessed_run_execution
+    orchestrator:
+      claude: |-
+        **不要** pipe 到 `harnessed run <name>` —— 那是 CI/headless 路径(in-process SDK spawn,会阻塞
+        session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
+      codex: |-
+        **不要** pipe 到 `harnessed run <name>` —— 那是 CI/headless 路径(in-process SDK spawn,
+        会阻塞本 session)。
+    # 两个 `command_*` 变体属 src/cli/lib/generateCommands.ts(**en-only 交付面**)。
+    # 它们在本文件中仅为满足 key parity 而存在,值与 en 文件相同,zh 渲染永不引用。
+    command_orchestrator:
+      claude: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn, blocks the session, no Agent Teams, no clarification round-trip)."
+      codex: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn, blocks the session, no clarification round-trip)."
+    command_execution:
+      claude: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn)."
+      codex: "Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (SDK spawn)."
+
+  # `default` 别名指向 `.skill`(30 处,command 面只有 1 处)。
+  teams_step_note:
+    default: &teams_step_skill
+      claude: '4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动。**没有建团步骤、也没有建团工具** —— 对每个 fired sub 用 `Agent(name: <sub>, run_in_background: true, prompt: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个后台 teammate,团在**第一个** spawn 时隐式形成,本 session 即 lead(`team_name` 入参被接受但忽略 —— 团名由 session 派生)。用 `SendMessage` 协调;某个 sub 完成后,**按名**请求该 teammate 关闭(例如「ask the verify-qa teammate to shut down」)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。'
+      # 删掉了「读 ~/.claude/rules/agent-teams.md」—— codex 上该文件不存在;
+      # F7b 已定调:codex 变体不引用外部文件,改为内联要点。
+      codex: '4. 若 `parallelism.escalate_to_teams === true`:对每个 fired sub 用 `spawn_agent(task_name: <sub>, message: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个 agent。用 `send_input(target, items)` 协调;`wait_agent` 阻塞等待其中一个结束,`list_agents` 列出运行中的集合。某个 sub 完成后用 `close_agent` 关闭它。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。TODO(未验证):codex agent 的生命周期 —— 是否 session-scoped、退出时是否自动回收、能否嵌套 spawn。实测之前不得依赖。'
+    skill: *teams_step_skill
+    # en-only 面,值同 en 文件(仅为 key parity 存在)。
+    command:
+      claude: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with `Agent(name: <sub>, run_in_background: true, prompt: <that sub''s `harnessed prompt <sub>` prompt>)`; the team forms implicitly on the FIRST spawn with this session as lead (`team_name` is accepted but ignored — the name is session-derived). Coordinate via `SendMessage`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down") — shutdown is a REQUEST, so re-ask rather than assume, and shut every teammate down before you finish (a teammate you never stopped keeps burning tokens and can hang the host). The team directory is removed automatically at session exit; there is no teardown tool. Still checkpoint each sub (`complete` / `fail`) as below.'
+      codex: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple agents to coordinate. Spawn one agent per fired sub with `spawn_agent(task_name: <sub>, message: <that sub''s `harnessed prompt <sub>` prompt>)`. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. Close each finished agent with `close_agent`, and close every agent you spawned before you finish (an agent you never closed keeps burning tokens). Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — session scope, automatic reclamation on exit, nesting. Not asserted here.'
+
+  # 两条 bullet 原文各带 **3 个前导空格**。block scalar 会吃掉公共缩进,
+  # 所以这里用双引号 + \n。
+  teams_teardown_note:
+    default:
+      claude: "   - **收尾前必须关闭每个 teammate —— finally 强制契约,非尽力而为**:无论是否每个 sub 都到达 COMPLETE、max_iterations 是否耗尽、或你是否认为工作已完成,收尾前都要**按名**请求每个 teammate 关闭,并确认它真的停了。关闭是**请求**:teammate 会先做完当前 tool call,也可能带理由拒绝 —— 所以要复查重发,不要假定。团目录在 session 退出时**自动**删除(没有 teardown 工具),但你没停掉的 teammate 会持续烧 token 并可能挂起宿主(headless 尤甚 —— issue #7:挂 11 小时,工作已完成但进程从不退出)。\n   - **headless 绝不 spawn team**:headless session(`claude -p`)下 `harnessed gates` 已返回 `escalate_to_teams: false`(Agent Teams 是 session-scoped —— `/resume` 即丢,与 `-p` 不兼容)。即使你认为能并行,headless 下也**不要** spawn teammate 或背景 `Agent` —— 改为在 session 内顺序驱动 fired subs。"
+      codex: "   - **收尾前必须关闭每个 agent —— finally 强制契约,非尽力而为**:无论是否每个 sub 都到达 COMPLETE、max_iterations 是否耗尽、或你是否认为工作已完成,收尾前都要对每个 spawn 出来的 agent 调 `close_agent` 并确认它真的停了。没停掉的 agent 会持续烧 token 并可能挂起宿主(headless 尤甚 —— issue #7:挂 11 小时,工作已完成但进程从不退出)。TODO(未验证):codex 是否在 session 退出时回收运行中的 agent —— 本条刻意不作断言,所以要显式关闭。\n   - **headless 顺序执行**:headless 下 `harnessed gates` 已返回 `escalate_to_teams: false`。即使你认为能并行,headless 下也**不要** spawn agent —— 改为在 session 内顺序驱动 fired subs。"
+
+  delivery_contract_note:
+    default:
+      claude: "交付契约:必须用**阻塞式** Agent/Task 调用 —— 只有阻塞调用会把 subagent 的最终文本作为 tool result 返回给你。named/background teammate 的最终消息会被平台**丢弃**;若必须那样跑,要求 agent 把发现写入文件(你再读回)或 SendMessage 回主 session —— 否则 COMPLETE promise 和研究发现永远到不了你手里。"
+      codex: "交付契约:要求 agent 把发现写入文件(你再读回)或用 `send_input` 回传本 session;读之前先调 `wait_agent`。TODO(未验证):codex 是否把 spawn 出来的 agent 的最终文本回传给调用方 —— 实测之前不得依赖,所以无论如何都要走文件或 `send_input`,保证 COMPLETE promise 和研究发现到得了你手里。"
+    checklist:
+      claude: "交付契约:named/background teammate 的**最终消息**会被平台丢弃 —— 每条发现必须经 SendMessage 发给 lead 或写入文件由 lead 读回;绝不依赖 teammate 的最后一条输出"
+      codex: "交付契约:每条发现必须经 `send_input` 发给 lead 或写入文件由 lead 读回;读之前先调 `wait_agent`。TODO(未验证):codex 是否把 agent 的最终消息回传给 lead —— 不得依赖"
+
+  # `default` 别名指向 `.checklist` —— 同一纪律里最短、最通用的说法。
+  # 其余三个是站点专属措辞,各自必须还原自己那份原文字节。
+  teams_cleanup_note:
+    default: &teams_cleanup_checklist
+      claude: "清理:按名请求每个 teammate shut down —— 这个请求**就是**清场手段(CC 2.1.178+ 已无 delete 工具);团目录在 session 退出时自动删除,而无视请求的 teammate 只保证在 session 结束时停止"
+      codex: "清理:对每个 spawn 出来的 agent 调 `close_agent` 并确认它停了。TODO(未验证):codex 是否在 session 退出时回收 agent —— 显式关闭,不要依赖它"
+    checklist: *teams_cleanup_checklist
+    multispec_checklist:
+      claude: "清理强制:按名请求 4 个 teammate 各自 shut down 并确认真的停了 —— 这个请求**就是**清场手段(已无 delete 工具);团目录在 session 退出时自动删除,而无视请求的 teammate 只保证在 session 结束时停止"
+      codex: "清理强制:对 4 个 agent 各自调 `close_agent` 并确认真的停了。TODO(未验证):codex 是否在 session 退出时回收 agent —— 显式关闭,不要依赖它"
+    # 注意:zh SKILL 正文用的是**全角**标点(，（）；),与生成器渲染的 zh 段(半角)
+    # 不同。改这两个值时必须逐文件确认字符,不能跨文件复制。
+    deliver:
+      claude: |-
+        任 1 触发 → 升级 subagent fan-out → Agent Teams Pattern A/B/C。清理是强制的，
+        遵循 agent-teams.md 防呆清单（lead 按名请求每个 teammate shut down；CC 2.1.178+ 已无
+        teardown 工具，团目录在 session 退出时自动清理——剩下的纪律是别把 teammate 落在运行态）
+        ——属于 engine 级别的连接，NOT yaml schema 的职责范围。
+      codex: |-
+        任 1 触发 → 升级 subagent fan-out → 多 agent 编队 Pattern A/B/C。清理是强制的
+        （对每个 spawn 出来的 agent 调 `close_agent` 并确认它停了——别把 agent 落在运行态）
+        ——属于 engine 级别的连接，NOT yaml schema 的职责范围。
+        TODO(未验证):codex 是否在 session 退出时回收运行中的 agent。
+    multispec:
+      claude: |-
+        必跑「按名请求每个 teammate shut down」（bundled Agent Teams cleanup discipline——团目录在
+        session 退出时自动清理，无独立 teardown 工具，剩下的纪律是别把 teammate 落在运行态）。
+      codex: |-
+        必跑「对每个 agent 调 `close_agent` 并确认它停了」（cleanup discipline——别把 agent
+        落在运行态）。TODO(未验证):codex 的 session 退出回收行为。
+
+  multispec_spawn_note:
+    default:
+      claude: |-
+        `Agent(name, run_in_background=true)` spawn 4 个后台 teammate（code-review + gstack-review +
+        gstack-cso + gstack-qa），团在**第一个** spawn 时隐式形成（CC 2.1.178+ 无建团步骤、无建团
+        工具）；teammate 互相 SendMessage 质询 findings 是否真问题（NOT fire-and-forget）
+      codex: |-
+        `spawn_agent(task_name: <specialist>, message: <brief>)` ×4 spawn 4 个 agent（code-review +
+        gstack-review + gstack-cso + gstack-qa），没有建团步骤;agent 之间用 `send_input` 互相质询
+        findings 是否真问题（NOT fire-and-forget）
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 映射小节注记(Phase 65 R4)。
+#
+# **不属于** `primitives:` —— `loadHostPrimitives` 只读 `primitives`,所以这里的
+# 内容不影响占位符渲染,也不受 parity / `default` 契约约束。
+# 这些行由 T10 输出进**仅 codex** 的映射小节
+# (`<!-- harnessed:host-map:start -->` … `<!-- harnessed:host-map:end -->`)。
+# claude 产物从本 key 拿到**零字节**。
+#
+# 用途:对整份产物成立、且必须**只说一次**的 caveat,不要摊到每个相关正文站点。
+# ─────────────────────────────────────────────────────────────────────────────
+host_map_notes:
+  codex:
+    - "`request_user_input` —— TODO(未验证):该工具在上游确实存在(`codex-rs/core/src/tools/handlers/request_user_input{,_spec}.rs`),但**本机是否默认启用未实测**。`codex features list` 里的 `default_mode_request_user_input` 是某个模式的 flag,不是该工具自身的开关。若澄清 round-trip 不可用,**不要猜** —— 停下并输出 `STATUS: NEEDS_CLARIFICATION` + 问题列表。"
+    - "Claude Code plugin 类组件 —— 本产物部分正文会提到以 Claude Code plugin 形式分发的上游组件(如 `planning-with-files`,调用形式 `/plan`)。那是该组件**真实的分发渠道名称**,不是「codex 上也有、只是叫法不同」的东西,所以措辞按原样保留。**在本宿主上这些组件并未安装**:harnessed 会在能力解析阶段按 capability 逐条告警。遇到这类步骤请视为**不可用**并记录 skip,不要自行找等价物替代。"
+    - "codex agent 生命周期 —— 是否 session-scoped、session 退出是否自动回收、能否嵌套 spawn,**三者全部未实测**。本产物不对它们作任何断言。请对每个 spawn 出来的 agent **显式**调 `close_agent`,不要依赖任何你没有亲自观察过的清理行为。"
