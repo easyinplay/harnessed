@@ -90,6 +90,21 @@ codex 则从 `$HOME/.agents/skills` 读(learn.chatgpt.com/docs/build-skills,含 
 - eval golden = `fixtures/eval/<scenario>/{scenario.yaml,golden.json}`,11 个 scenario,
   CI 仅 ubuntu 跑 `node dist/cli.mjs eval --dir fixtures/eval`(`ci.yml:269-271`)。
 
+## F7b S2 的改动面已量清:6 处正文字面量
+
+`src/cli/lib/generateCommands.ts` 内 12 行命中里,注释占 5-6 行,真正进产物的是:
+`:89`(spawn 一句)、`:190`(orchestrator 抬头)、`:212`(**Agent Teams 整段**,含「隐式成团 / `team_name` 被忽略 /
+session 退出自动清理 / 无 teardown 工具」四条 CC 专属事实)、`:221`(为何不用 `harnessed run`)、
+`:252`(execution 抬头)、`:263`(sister SKILL.md 路径 `~/.claude/skills/...`)。
+
+其中两处引用在 codex 上指向不存在的东西:
+- `~/.claude/rules/agent-teams.md`(`:212`)——用户私有规则文件,codex 侧无对应物。
+  **决定**:codex 变体不引用外部文件,改为内联要点,且只写 F4 已验证的工具名与参数。
+- `~/.claude/skills/<name>/SKILL.md`(`:263`)——codex 侧应为 `~/.agents/skills/<name>/SKILL.md`;
+  该路径应由 `getSkillsDir()` 派生而非字面量。
+
+`:212` 整段是 C 类的典型:逐 token 替换会把四条 CC 事实伪装成 codex 事实。整段入表。
+
 ## F8 顺带发现(不在本 phase 修,记 TODO)
 
 - codex 上 `pluginsRegistry: null`(`platform.ts:135`)→ `readInstalledPlugins` 返回空集

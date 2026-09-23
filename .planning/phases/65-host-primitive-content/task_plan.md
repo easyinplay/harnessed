@@ -30,23 +30,47 @@ Status: planned (2026-09-24)
 - **R9 既有内容门同步**:`tests/unit/skill-invoke-parity.test.ts` 的 `REQUIRED_TOKENS` / `FOOTGUN`
   在占位符化后会失配,必须同步更新(F7),否则本 phase 第一次改动就红。
 
-## 任务(TDD,顺序;T1-T3 是前置,T4 起可分工)
+## 台账回来后的裁决(2026-09-24,依据 `inventory.md` 的 4 条 NEEDS_CLARIFICATION)
+
+- **D1 分类规则更正(我原先写错了)**:`A-TPL` 与 `C` 不是互斥子类,而是**正交两轴**——
+  「改动手段」(生成器 / 手改)与「粒度」(token / 整段)。生成器 span 内 140 处里有 44 处是 C 语义。
+  采纳台账的 `C-TPL` 标法;**后续分工按「面」切,不按类切**,T5/T6 的 44 处重叠随之消失。
+- **D2 不渲染面 → 门的 allowlist(文件粒度 + 理由注释),不改措辞**。门要求的「零 CC 原语 token」
+  针对**渲染产物**,不是源文件;`judgments/*.yaml` 的 `description`、`workflow.yaml` 的 `name` /
+  `description`、被 parser 剥除的行尾注释都进不了模型 prompt(台账已代码实测)。
+  **T8 原先「judgments 5 处需接入渲染」的前提作废**,T8 缩小到确实进 prompt 的面。
+- **D3 决策编号保留,描述原语化**:`D-11 — Agent Teams 升级…` → `D-11 — {{ host.team }} 升级…`。
+  核过 `docs/adr/0028` / `0032` / README:cross-ref 靠编号本身而非全名,改描述不破引用。
+  **ADR 正文不动**(CI 有 `adr-NNNN-accepted` 正文守恒门)。这 7 处不进 allowlist。
+- **D4 范围扩大(维护者 2026-09-24 拍板:全部纳入)**。SPEC 的 236 处基线只覆盖 9 个工具名 token;
+  实测另有 `CC-native` 97 / `teammate` 131 / `AskUserQuestion` 74 / `Claude Code` 64 / `~/.claude/` 13。
+  其中 `CC-native Task / Agent tool` 若只换后半句会渲染出 `CC-native spawn_agent tool` 混血句;
+  `AskUserQuestion` 在 codex 上不存在(等价物 `request_user_input`,上游有 handler,**但本机默认启用与否未验证**);
+  `~/.claude/` 是路径,codex 上不存在。去重后(不少已落在 C 类整段 span 内)预计 450-500 处。
+
+## 任务(按**面**分批;T1-T3 已完成)
 
 | T | 内容 | 主要文件 | 验收 |
 |---|---|---|---|
-| T1 | **逐处分类台账**:236 处按 A/B/C 三类标注,列出每处的文件:行、类别、归属占位符或整段 key;产出 `inventory.md` | `.planning/phases/65-*/inventory.md`(NEW) | 计数对账 = 236,无未分类项 |
-| T2 | 渲染表 + 解析器:`host-primitives.yaml`(+ zh)、`resolveHostPrimitives()`、占位符替换纯函数(未知 key → 构建期报错,不静默留原文) | `workflows/host-primitives*.yaml`(NEW), `src/cli/lib/hostPrimitives.ts`(NEW) | 单测:命中 / 未知 key 报错 / 变体回退 / locale 选择 |
-| T3 | 接入 S1 渲染点(与 capabilities 替换同一处,次序固定并测试) | `src/cli/lib/renderSkillTemplates.ts`, `capabilityResolver.ts` | 单测 + **claude 渲染逐字节金标**(en 与 zh-Hans 各一) |
-| T4 | A 类改写:非模板句的散落术语 | `workflows/**/SKILL*.md` | 门绿 + 金标绿 |
-| T5 | 模板句改写走生成器(R7):改 builder → 重跑 → diff 复核 96 处 | `scripts/rewrite-skill-invoke-sections.mjs` | 重跑幂等;金标绿 |
-| T6 | C 类整段变体入表并替换 | 表 + `workflows/**` | 金标绿;codex 侧无未验证事实断言 |
-| T7 | B 类:`capabilities.yaml` 补 codex 条目 + `capabilityResolver` 按宿主选;扩展 `check-yaml-i18n-parity` 识别新表结构 | `workflows/capabilities.yaml`, `src/cli/lib/capabilityResolver.ts`, `scripts/check-yaml-i18n-parity.mjs` | 单测 + 门绿 |
-| T8 | S3 运行时 prompt 组装接入宿主原语(role-prompts 10 处 / judgments 5 处的对应面) | `src/cli/prompt.ts`, `src/workflow/run.ts` | 单测:claude 组装结果逐字节不变;codex 组装结果无 CC 原语 token |
-| T9 | S2 commands 按宿主分支(R6) | `src/cli/lib/generateCommands.ts` | **claude 产物逐字节金标** + codex 产物路径正确(`~/.agents/skills` / 无 `~/.claude/rules`) |
+| T1 ✅ | 逐处分类台账(236 处,`inventory.md` 973 行);范围 B 的增量扩写进行中 | `.planning/phases/65-*/inventory.md` | 对账 236 ✓;A 142 / B 27 / C 60 / 待裁 7 → 已裁 |
+| T2 ✅ | 渲染表 + 解析器(未知 key / 未知 variant / 缺宿主文本一律抛错) | `src/cli/lib/hostPrimitives.ts`, `workflows/host-primitives*.yaml` | 26 测试;commit `4427aa2` |
+| T3 ✅ | 接入 S1 渲染点(次序 capabilities → host)+ **claude 逐字节金标**(en 91 条 / zh 62 条) | `renderSkillTemplates.ts`, `tests/fixtures/render-golden/` | 53 测试;mutation 验证有效;commit `4427aa2` |
+| **批 A** | 生成器面:改 6 个 builder + 5 对常量 → 重跑覆盖 span 内 140+ 处 | `scripts/rewrite-skill-invoke-sections.mjs` | 重跑幂等;**claude 金标零差异** |
+| **批 B** | inline 面:span 外的 SKILL 正文(A-INLINE 28 + C-INLINE 10 + 范围 B 新增) | `workflows/**/SKILL*.md` | 金标零差异;顺手消除 `deliver/SKILL.md:28-29` 的折行假阳性 |
+| **批 C** | yaml 面:`capabilities.yaml` 补 codex 条目(3 capability × impl/cmd)+ `capabilityResolver` 按宿主选 + 扩展 `check-yaml-i18n-parity` 识别 `primitives:` 深层结构 | `workflows/capabilities.yaml`, `capabilityResolver.ts`, `scripts/check-yaml-i18n-parity.mjs` | 单测 + 门绿 |
+| **批 D** | S2 命令体按宿主分支(6 处正文字面量);**与批 A 的 `TEAMS_STEP_*` 有 lockstep 关系,须共用同一 key 值**(台账核实中) | `src/cli/lib/generateCommands.ts` | claude 产物逐字节金标 + codex 产物不引用 `~/.claude/*` |
+| T8 | S3 运行时 prompt 组装:只处理**确实进 prompt** 的面(D2 后缩小) | `src/cli/prompt.ts`, `src/workflow/run.ts` | claude 组装逐字节不变;codex 组装无 CC 原语 |
 | T10 | 映射小节生成(R4) | `src/cli/lib/hostPrimitives.ts` | 标记成对;claude 不插;区间内容快照 |
-| T11 | 新门 `scripts/check-host-primitives.mjs` + `.d.mts` + `ci.yml` step + 单测;allowlist(B 类注册表条目、映射小节区间) | `scripts/`, `.github/workflows/ci.yml`, `tests/scripts/` | 门在当前树绿;故意插一个 CC token 会红 |
-| T12 | 同步既有内容门(R9)与 i18n 占位符集合检查(把 `host.*` 纳入 `check-skill-i18n-parity`) | `tests/unit/skill-invoke-parity.test.ts`, `scripts/check-skill-i18n-parity.mjs` | 单测 |
+| T11 | 新门 `scripts/check-host-primitives.mjs` + `.d.mts` + `ci.yml` step + 单测;allowlist = 不渲染面(文件粒度,D2)+ 映射小节区间 | `scripts/`, `.github/workflows/ci.yml`, `tests/scripts/` | 门在当前树绿;故意插一个 CC token 会红 |
+| T12 | 同步既有内容门(R9)与 i18n 占位符集合检查(把 `host.*` 纳入 `check-skill-i18n-parity`)。**既有门断言的是源文件原文**,占位符化后会失配 → 改为断言 **claude 渲染后的文本**(语义不变),候选:`skill-invoke-parity`、`headlessTeardown`(`:24-43` 断言 `shut down` / `按名` / `session-scoped`)、`deferrableRelay`(经查与 CC 原语无关,大概率不受影响)、`severityDiscipline`、`rolePromptsMattpocock` | `tests/unit/skill-invoke-parity.test.ts`, `tests/workflow/*.test.ts`, `scripts/check-skill-i18n-parity.mjs` | 单测;改写前先跑这批测试记录基线 |
 | T13 | eval golden 覆盖 codex 渲染(至少 1 个 scenario)+ CHANGELOG + SUMMARY | `fixtures/eval/`, `CHANGELOG.md` | `pnpm eval` 绿 |
+
+### 批次排序(文件归属互斥,避免并发写同文件)
+
+- **批 A → 批 B 必须串行**:重跑生成器会整体重写每个 `SKILL*.md`,与批 B 的 inline 编辑写同一批文件。
+- **批 C / 批 D 可与批 A 并行**(yaml 面与 TS 面互不相交)。
+- **批 D 依赖批 A 的 key 值**(lockstep 文本),两者的 `host.*` key 必须同值 —— 由词表统一供给,不各写各的。
+- T10 / T11 / T8 在改写全部落地后做(门要在终态绿)。
 
 ## 验收(phase 级)
 
@@ -63,4 +87,7 @@ Status: planned (2026-09-24)
 - codex `pluginsRegistry: null` 的 plugin 能力告警(F8)→ TODOS
 - codex `HARNESSED_USER_LANG` 不可写导致的语言指令缺失(F8)→ TODOS
 - 废弃 `~/.codex/prompts` 交付面(F5)
-- codex agent 生命周期实测(F4)→ 若 Phase 66 需要再测
+- codex agent 生命周期实测(F4)→ 若 Phase 66 需要再测;在此之前 codex 侧正文一律写 `TODO(未验证)`,
+  不断言 session 作用域 / 自动清理 / 能否嵌套
+- `request_user_input` 在本机是否默认启用(未验证)→ codex 侧给工具名但不断言「一定可用」
+- ADR 正文(D3)—— 一个字都不动
