@@ -1,0 +1,35 @@
+# harnessed 宿主原语表 —— `{{ host.* }}` 查表的 zh-Hans 侧(v16.0 Phase 65)。
+#
+# 与 host-primitives.yaml 逐项对等:primitive / variant / host 三层 key 集合必须
+# 完全一致(scripts/check-yaml-i18n-parity.mjs + tests/cli/hostPrimitives.test.ts),
+# 只有值可以按 locale 不同。
+#
+# 占位符语法是纯 ASCII,两个文件里逐字相同:
+#
+#   {{ host.<primitive> }}              ≡ {{ host.<primitive>.default }}
+#   {{ host.<primitive>.<variant> }}
+#
+# 注意:工具名 / API 名属专有名词,不翻译(项目语言规范)。所以 `SendMessage`、
+# `spawn_agent`、`Task / Agent` 这些 cell 在两个文件里本就相同 —— 这是设计,不是漂移。
+# 中文语境需要的是量词 / 名词侧的本地化,走 `zh_tool` 这类变体,而不是改 default。
+#
+# Phase 65 T2 只落骨架 + 3 个示例条目;完整词表由另一条任务线产出,不要在此批量填充。
+
+version: 1
+
+primitives:
+  # 「启动一个受委派的 agent」在各宿主的叫法。
+  spawn_subagent:
+    default:
+      claude: "Task / Agent tool"
+      codex: "spawn_agent tool"
+    # 中文行文变体:工具名保留英文,名词本地化。
+    zh_tool:
+      claude: "Task / Agent 工具"
+      codex: "spawn_agent 工具"
+
+  # 「向运行中的 agent 发消息」在各宿主的叫法。
+  send_message:
+    default:
+      claude: "SendMessage"
+      codex: "send_input"

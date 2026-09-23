@@ -1,0 +1,47 @@
+# harnessed host primitives — the `{{ host.* }}` lookup table (v16.0 Phase 65).
+#
+# Renders the SECOND placeholder family in workflows/**/SKILL.md bodies, next to
+# `{{ capabilities.<x>.cmd }}`. One SKILL.md source, two hosts: the placeholder
+# names the primitive abstractly and this table supplies the word the active
+# harness actually uses.
+#
+#   {{ host.<primitive> }}              ≡ {{ host.<primitive>.default }}
+#   {{ host.<primitive>.<variant> }}
+#
+# Rules:
+#   - Host columns are `claude` / `codex` (PlatformDescriptor.id). BOTH are
+#     required on every cell — the renderer throws on a missing column.
+#   - Every primitive MUST declare a `default` variant (bare-placeholder contract).
+#   - The `claude` column is the verbatim text today's Claude-authored SKILL.md
+#     bodies already contain, so rendering for claude is byte-identical to the
+#     pre-Phase-65 artifact. Do not "improve" those strings.
+#   - Placeholder SYNTAX is pure ASCII and byte-identical across this file and
+#     host-primitives.zh-Hans.yaml; only the rendered TEXT differs by locale.
+#   - The zh-Hans sibling must keep the exact same primitive / variant / host key
+#     set (scripts/check-yaml-i18n-parity.mjs + tests/cli/hostPrimitives.test.ts).
+#   - Proper nouns (tool and API names) are NOT translated — per the project's
+#     language rules a tool called `SendMessage` is `SendMessage` in every locale.
+#     Those cells are therefore identical in both files by design, not by drift.
+#
+# Phase 65 T2 ships the SKELETON only: the mechanism plus three reference
+# entries. The full vocabulary lands on its own task line — do not bulk-fill here.
+
+version: 1
+
+primitives:
+  # How a harness names "start a delegated agent".
+  spawn_subagent:
+    default:
+      claude: "Task / Agent tool"
+      codex: "spawn_agent tool"
+    # Chinese-prose variant: the tool name stays English, the noun is localized.
+    # Referenced from zh-Hans SKILL.md bodies; the key exists here for parity.
+    zh_tool:
+      claude: "Task / Agent 工具"
+      codex: "spawn_agent 工具"
+
+  # How a harness names "send a message to a running agent".
+  send_message:
+    default:
+      claude: "SendMessage"
+      codex: "send_input"

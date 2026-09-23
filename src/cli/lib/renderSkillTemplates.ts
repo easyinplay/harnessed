@@ -17,12 +17,19 @@ import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { getLocale, type SupportedLocale } from '../../i18n/index.js'
+import { detectPlatform, type PlatformDescriptor } from '../../platform/platform.js'
 import {
   type CapabilityMap,
   readInstalledPlugins,
   readInstalledUserSkills,
   renderSkillBody,
 } from './capabilityResolver.js'
+import {
+  loadHostPrimitives,
+  type RenderHostPrimitivesOptions,
+  renderHostPrimitives,
+  toHostId,
+} from './hostPrimitives.js'
 import { resolveSkillBodyFilename, skillBodyFilename } from './resolveSkillBody.js'
 
 /** Locale body siblings to strip from the dest dir after the locale pick, so the
@@ -53,11 +60,25 @@ export async function loadCapabilities(workflowsDir: string): Promise<Capability
 }
 
 /**
- * Render `{{ capabilities.<name>.cmd }}` placeholders in a single installed
- * `~/.claude/skills/<name>/SKILL.md` file in-place.
+ * Render placeholders in a single installed `<skillsDir>/<name>/SKILL.md`
+ * file in-place.
  *
- * Non-fatal: any read/write/parse error returns a result with `error` set so
- * caller (setup.ts) can warn-and-continue (sister fallback 铁律 1).
+ * TWO placeholder families, substituted in a FIXED order:
+ *   1. `{{ capabilities.<name>.cmd }}` (./capabilityResolver.ts)
+ *   2. `{{ host.<primitive>[.<variant>] }}` (./hostPrimitives.ts) — v16.0 Phase 65
+ *
+ * The order matters and is locked by tests: the host pass is LAST, so a host
+ * table value that happens to contain `{{ capabilities.* }}` text is inert —
+ * nothing re-scans the host pass's output. There is deliberately no
+ * render-until-fixpoint loop.
+ *
+ * `hostRender` is optional; omitting it skips family (2) entirely and leaves
+ * behavior byte-identical to pre-Phase-65.
+ *
+ * Non-fatal: any read/write/parse error — INCLUDING a throwing host render —
+ * returns a result with `error` set so caller (setup.ts) can warn-and-continue
+ * (sister fallback 铁律 1). A failed host render writes nothing, so the dest
+ * never holds a half-rendered body.
  */
 export async function renderSkillFile(
   skillName: string,
@@ -66,6 +87,7 @@ export async function renderSkillFile(
   installedPlugins: Set<string>,
   installedUserSkills: Set<string>,
   locale?: SupportedLocale,
+  hostRender?: RenderHostPrimitivesOptions,
 ): Promise<SkillRenderResult> {
   const dir = join(skillsBase, skillName)
   // Phase 29: dest holds a single SKILL.md (the exact name CC reads). The SOURCE
@@ -90,19 +112,36 @@ export async function renderSkillFile(
     return result
   }
   const rendered = renderSkillBody(body, capabilities, installedPlugins, installedUserSkills)
+  // Pass 2 — host primitives. Strict by design (unknown primitive / variant /
+  // missing host column all throw), so wrap it: the message names the placeholder
+  // and its line, but not WHICH skill file carried it. Splice the source path in
+  // and degrade to this module's non-fatal posture instead of letting the throw
+  // escape into setup.ts's un-wrapped Step A.5 call.
+  let finalBody = rendered.body
+  if (hostRender) {
+    try {
+      finalBody = renderHostPrimitives(rendered.body, hostRender)
+    } catch (e) {
+      // No `${skillName}:` prefix — renderAllSkills already prefixes the name
+      // when aggregating; srcPath carries the skill dir for direct callers.
+      result.error = `host-primitive render failed in ${srcPath} — ${(e as Error).message}`
+      result.warnings = rendered.warnings
+      return result
+    }
+  }
   // Did the source differ from the dest SKILL.md? (Always true when a zh sibling
   // was selected — even if no placeholders changed — because the dest currently
   // carries the en body and must be overwritten with the zh body.)
   const localeBodySelected = srcName !== 'SKILL.md'
-  const needsWrite = localeBodySelected || rendered.body !== body
+  const needsWrite = localeBodySelected || finalBody !== body
   if (!needsWrite) {
     // No placeholders AND no locale switch — no-op (e.g. research/SKILL.md has none).
     result.warnings = rendered.warnings
     return result
   }
   try {
-    await writeFile(destPath, rendered.body, 'utf8')
-    result.rendered = rendered.body !== body
+    await writeFile(destPath, finalBody, 'utf8')
+    result.rendered = finalBody !== body
     result.warnings = rendered.warnings
   } catch (e) {
     result.error = `write failed: ${(e as Error).message}`
@@ -135,10 +174,14 @@ export async function renderAllSkills(
   workflowsDir: string,
   homedirOverride?: string,
   locale?: SupportedLocale,
+  host?: PlatformDescriptor['id'],
 ): Promise<{ results: SkillRenderResult[]; aggregatedWarnings: string[] }> {
   // Resolve locale ONCE for the whole loop (don't make each renderSkillFile
   // re-detect — landmine 6 robust path). Caller (setup.ts) may also pass it.
   const resolvedLocale = locale ?? getLocale()
+  // Same one-shot rule for the host + its table: the descriptor id is resolved
+  // once and host-primitives.yaml is read once, then reused for every skill.
+  const resolvedHost = toHostId(host ?? detectPlatform().id)
   let capabilities: CapabilityMap = {}
   try {
     capabilities = await loadCapabilities(workflowsDir)
@@ -160,6 +203,12 @@ export async function renderAllSkills(
   }
   const installedPlugins = readInstalledPlugins(homedirOverride)
   const installedUserSkills = readInstalledUserSkills(homedirOverride)
+  // Tolerant load (missing file → {}); all strictness lives in the renderer, so
+  // an absent table only fails the skills that actually reference a primitive.
+  const hostRender: RenderHostPrimitivesOptions = {
+    host: resolvedHost,
+    table: await loadHostPrimitives({ workflowsDir, locale: resolvedLocale }),
+  }
   const results: SkillRenderResult[] = []
   const warningSet = new Set<string>()
   for (const name of skillNames) {
@@ -170,6 +219,7 @@ export async function renderAllSkills(
       installedPlugins,
       installedUserSkills,
       resolvedLocale,
+      hostRender,
     )
     results.push(r)
     for (const w of r.warnings) warningSet.add(w)
