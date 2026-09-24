@@ -86,15 +86,30 @@ primitives:
     default:
       claude: "Agent Teams"
       codex: "a multi-agent formation (repeated `spawn_agent`)"
-    # Same words as `default`, but the SOURCE line wrapped BETWEEN them
+    # ATTRIBUTIVE / heading position — "bundled <X> routing", "### <X> conditional
+    # escalation", "D-11 <X> 升级". `default`'s codex text is a noun-phrase gloss
+    # WITH an explanatory parenthetical: right where the term stands alone
+    # ("escalate to Agent Teams"), unreadable as a modifier. Only the codex column
+    # differs from `default`; claude stays byte-identical, so the byte golden is
+    # unaffected either way. Keep `default` for standalone-noun sites.
+    attributive:
+      claude: "Agent Teams"
+      codex: "multi-agent formation"
+    # SINGULAR — "4-specialist Agent Team Pattern C". Also attributive, so the
+    # codex column matches `attributive` (that gloss has no plural inflection).
+    singular:
+      claude: "Agent Team"
+      codex: "multi-agent formation"
+    # Same words as `attributive`, but the SOURCE line wrapped BETWEEN them
     # (task/deliver/SKILL.md Overview: `D-11 Agent` / `Teams 升级 …`). Same
     # rationale as spawn_subagent.zh_tool_wrapped — the cell carries the
-    # newline so the body can hold one unbroken placeholder.
+    # newline so the body can hold one unbroken placeholder. That site is
+    # attributive too, hence the `attributive` codex text rather than `default`'s.
     wrapped:
       claude: |-
         Agent
         Teams
-      codex: "a multi-agent formation (repeated `spawn_agent`)"
+      codex: "multi-agent formation"
 
   # Adjective prefix, used adjacent to (or a few words from) spawn_subagent.
   # Kept separate so the two compose back to the exact original wording.
@@ -238,6 +253,16 @@ primitives:
       claude: "Cleanup: ask each teammate to shut down by name — that request IS the teardown (CC 2.1.178+ has no delete tool); the team's shared dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends"
       codex: "Cleanup: call `close_agent` for each agent you spawned and confirm it stopped. TODO(未验证): whether codex reclaims agents at session exit — close them explicitly rather than relying on it"
     checklist: *teams_cleanup_checklist
+    # C-class PHRASE (not a token swap). "ask each teammate to shut down BY NAME"
+    # is the Claude Code teardown IDIOM — CC 2.1.178+ has no delete tool, so the
+    # request itself IS the teardown. Substituting only the noun would leave codex
+    # reading a WRONG INSTRUCTION: codex stops an agent with `close_agent`, and
+    # nothing there answers to a by-name shutdown request. Deliberately SHORT —
+    # one of its two sites is a frontmatter `description`, where length dilutes
+    # the trigger signal.
+    shutdown_phrase:
+      claude: "按名请求每个 teammate shut down"
+      codex: "对每个 agent 调 `close_agent`"
     multispec_checklist:
       claude: "Cleanup MANDATORY: ask each of the 4 teammates to shut down by name and confirm it stopped — that request IS the teardown (no delete tool exists); the team dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends"
       codex: "Cleanup MANDATORY: call `close_agent` for each of the 4 agents and confirm it stopped. TODO(未验证): whether codex reclaims agents at session exit — close them explicitly rather than relying on it"

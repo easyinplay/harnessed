@@ -2,7 +2,7 @@
 name: task-deliver
 description: |
   task-deliver workflow v3 — Stage ③.d 子任务交付 sub-workflow (harnessed 自有 completion-gate
-  + {{ host.team }} conditional escalation + R20.10 explicit max_iterations_exceeded
+  + {{ host.team.attributive }} conditional escalation + R20.10 explicit max_iterations_exceeded
   fallback)。2-phase composition: 01-deliver (completion-gate with completion_promise
   verbatim "COMPLETE" + parallelism judgments.parallelism-gate.completion-gate-wrapper.fires +
   fallback emit_warning_and_halt exit_code 1) → 02-progress-mark (Claude Code plugin
@@ -66,7 +66,7 @@ main-session-fallback 任 1 mode 外层 (NOT 互斥触发器, 而是 `wraps:` or
 in parallelism-gate.yaml). Runtime engine 评估 wrapping mode 后 spawn 相应
 execution unit + 套 completion check。
 
-### {{ host.team }} conditional escalation (D-11 + agent-teams.md 5 OR-chain)
+### {{ host.team.attributive }} conditional escalation (D-11 + agent-teams.md 5 OR-chain)
 
 5 升级触发 (per capabilities.yaml `agent-teams-create.fires_when` + agent-teams.md):
 1. `teammate_send_message_needed == true` — {{ host.teammate }} 间 {{ host.send_message }} 互通 (NOT fire-and-forget)
@@ -124,7 +124,7 @@ Do NOT pipe to `harnessed run task-deliver` — that is the CI/headless path ({{
 
 - D-09 — L0 Discipline Substrate always-on (6 disciplines)
 - D-10 — 完成保证真接 SDK wrapper (NOT mock reference; v0.2.0 ship)
-- D-11 — {{ host.team }} 升级 5 触发 OR-chain per bundled parallelism-gate rules
+- D-11 — {{ host.team.attributive }} 升级 5 触发 OR-chain per bundled parallelism-gate rules
 - R20.10 — max_iterations_exceeded explicit emit_warning_and_halt
   (acceptance c "NOT silent abort"); completion gate 正交 wrapper wraps 3 mode
 - D-02 — SKILL.md `name:` bare slash cmd (`task-deliver` NOT `task/deliver`) per ADR 0030

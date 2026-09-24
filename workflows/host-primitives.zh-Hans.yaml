@@ -73,15 +73,27 @@ primitives:
     default:
       claude: "Agent Teams"
       codex: "多 agent 编队(多次 `spawn_agent`)"
-    # 与 `default` 同词,但**源文件**在两个词之间折行(task/deliver/SKILL.md
+    # **定语 / 标题位** —— 「bundled <X> routing」「### <X> 条件性升级」「D-11 <X> 升级」。
+    # `default` 的 codex 值是带解释性括注的名词短语:**独立名词位**(「升级到 Agent Teams」)
+    # 读着对,放进定语位就不通。本变体只有 codex 列与 `default` 不同,claude 列逐字相同,
+    # 因此对字节金标零影响。独立名词位仍用 `default`。
+    attributive:
+      claude: "Agent Teams"
+      codex: "多 agent 编队"
+    # **单数形** —— 「4-specialist Agent Team Pattern C」。同属定语位,故 codex 列与
+    # `attributive` 相同(中文本就无复数形态)。
+    singular:
+      claude: "Agent Team"
+      codex: "多 agent 编队"
+    # 与 `attributive` 同词,但**源文件**在两个词之间折行(task/deliver/SKILL.md
     # Overview:`D-11 Agent` / `Teams 升级 …`)。理由同 spawn_subagent.zh_tool_wrapped
-    # —— 换行放进 cell,正文写成一个不折行的占位符。zh 正文该处未折行,本变体只为
-    # key parity 存在,zh 渲染不引用。
+    # —— 换行放进 cell,正文写成一个不折行的占位符。该站点亦属定语位,故 codex 取
+    # `attributive` 的值。zh 正文该处未折行,本变体只为 key parity 存在,zh 渲染不引用。
     wrapped:
       claude: |-
         Agent
         Teams
-      codex: "多 agent 编队(多次 `spawn_agent`)"
+      codex: "多 agent 编队"
 
   # 形容词前缀,与 spawn_subagent 相邻或隔词组合。单独成 primitive 是为了让两者
   # 拼回去逐字节等于原文。
@@ -217,6 +229,14 @@ primitives:
       claude: "清理:按名请求每个 teammate shut down —— 这个请求**就是**清场手段(CC 2.1.178+ 已无 delete 工具);团目录在 session 退出时自动删除,而无视请求的 teammate 只保证在 session 结束时停止"
       codex: "清理:对每个 spawn 出来的 agent 调 `close_agent` 并确认它停了。TODO(未验证):codex 是否在 session 退出时回收 agent —— 显式关闭,不要依赖它"
     checklist: *teams_cleanup_checklist
+    # C 类**短语**(不是 token 替换)。「按名请求 teammate shut down」是 Claude Code 的
+    # 清场**惯用法** —— CC 2.1.178+ 没有 delete 工具,这个请求本身就是清场手段。只换名词
+    # 会让 codex 读到一条**错误指令**:codex 用 `close_agent` 停 agent,没有任何东西响应
+    # 「按名请求关闭」。刻意写短 —— 两个站点之一是 frontmatter `description`,过长会稀释
+    # 触发判据。
+    shutdown_phrase:
+      claude: "按名请求每个 teammate shut down"
+      codex: "对每个 agent 调 `close_agent`"
     multispec_checklist:
       claude: "清理强制:按名请求 4 个 teammate 各自 shut down 并确认真的停了 —— 这个请求**就是**清场手段(已无 delete 工具);团目录在 session 退出时自动删除,而无视请求的 teammate 只保证在 session 结束时停止"
       codex: "清理强制:对 4 个 agent 各自调 `close_agent` 并确认真的停了。TODO(未验证):codex 是否在 session 退出时回收 agent —— 显式关闭,不要依赖它"

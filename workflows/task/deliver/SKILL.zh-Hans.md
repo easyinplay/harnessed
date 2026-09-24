@@ -2,7 +2,7 @@
 name: task-deliver
 description: |
   task-deliver workflow v3 — Stage ③.d 子任务交付 sub-workflow (harnessed 自有 completion-gate
-  + {{ host.team }} conditional escalation + R20.10 explicit max_iterations_exceeded
+  + {{ host.team.attributive }} conditional escalation + R20.10 explicit max_iterations_exceeded
   fallback)。2-phase composition: 01-deliver (completion-gate with completion_promise
   verbatim "COMPLETE" + parallelism judgments.parallelism-gate.completion-gate-wrapper.fires +
   fallback emit_warning_and_halt exit_code 1) → 02-progress-mark (Claude Code plugin
@@ -26,7 +26,7 @@ trigger_phrases:
 
 2-phase 子工作流，将 CLAUDE.md Stage ③.d 子任务交付纪律映射到 harnessed runtime，
 完整采用 `harnessed.workflow.v3` schema（Phase v3.0-3.4 W0 T3.4.W0.9 — D-09 L0
-Discipline Substrate + D-10 完成保证 + D-11 {{ host.team }} 升级 5 触发
+Discipline Substrate + D-10 完成保证 + D-11 {{ host.team.attributive }} 升级 5 触发
 OR-chain + R20.10 explicit max_iterations_exceeded handler）。
 
 | phase | id | upstream | model | capability / args / parallelism / fallback |
@@ -67,7 +67,7 @@ main-session-fallback 任意 1 种模式外层（NOT 互斥触发器，而是 pa
 中的 `wraps:` 正交字段）。Runtime engine 评估 wrapping mode 后 spawn 相应
 执行单元并套 completion check。
 
-### {{ host.team }} 条件性升级 (D-11 + agent-teams.md 5 OR-chain)
+### {{ host.team.attributive }} 条件性升级 (D-11 + agent-teams.md 5 OR-chain)
 
 5 个升级触发（来自 capabilities.yaml `agent-teams-create.fires_when` + agent-teams.md）：
 1. `teammate_send_message_needed == true` — {{ host.teammate }} 间 {{ host.send_message }} 互通（NOT fire-and-forget）
@@ -124,7 +124,7 @@ freestyle 会旁路引擎(无 ledger、无 evidence guard)。harnessed 给你 sp
 
 - D-09 — L0 Discipline Substrate always-on (6 disciplines)
 - D-10 — 完成保证真接 SDK wrapper (NOT mock reference; v0.2.0 ship)
-- D-11 — {{ host.team }} 升级 5 触发 OR-chain per bundled parallelism-gate rules
+- D-11 — {{ host.team.attributive }} 升级 5 触发 OR-chain per bundled parallelism-gate rules
 - R20.10 — max_iterations_exceeded explicit emit_warning_and_halt
   (acceptance c "NOT silent abort"); 完成闸门正交 wrapper wraps 3 mode
 - D-02 — SKILL.md `name:` bare slash cmd (`task-deliver` NOT `task/deliver`) per ADR 0030

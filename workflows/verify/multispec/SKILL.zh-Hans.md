@@ -1,10 +1,10 @@
 ---
 name: verify-multispec
 description: |
-  Stage ④.h verify 子工作流 — 4-specialist Agent Team Pattern C 多维度审查（关键发布 /
+  Stage ④.h verify 子工作流 — 4-specialist {{ host.team.singular }} Pattern C 多维度审查（关键发布 /
   大重构 PR 升级，code-review + gstack-review + gstack-cso + gstack-qa 4 {{ host.teammate }} 互相
-  {{ host.send_message }} 质询，NOT fire-and-forget subagent fan-out；bundled {{ host.team }} Pattern C
-  routing）。Cleanup 必跑：按名请求每个 {{ host.teammate }} shut down（bundled cleanup discipline）。
+  {{ host.send_message }} 质询，NOT fire-and-forget subagent fan-out；bundled {{ host.team.attributive }} Pattern C
+  routing）。Cleanup 必跑：{{ host.teams_cleanup_note.shutdown_phrase }}（bundled cleanup discipline）。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (agent-teams 3 + 4 specialist capability) + 2 phase (01-team-create on critical-release
   invoke / 02-team-cleanup mandatory shutdown)。
@@ -22,9 +22,9 @@ trigger_phrases:
 
 ## 概览
 
-2-phase 子工作流，将 CLAUDE.md「Verify 阶段 — 关键发布 / 大重构 PR 升级 Agent Team
+2-phase 子工作流，将 CLAUDE.md「Verify 阶段 — 关键发布 / 大重构 PR 升级 {{ host.team.singular }}
 Pattern C」映射到 harnessed 运行时（Phase v3.0-3.4 W0.13e — D-04 Stage ④ Verify 7 sub +
-D-11 {{ host.team }} + Pattern A sub-workflow ship）。
+D-11 {{ host.team.attributive }} + Pattern A sub-workflow ship）。
 
 | phase | id | upstream | model | capability | gate / on |
 | ----- | -- | -------- | ----- | ---------- | --------- |
@@ -56,7 +56,7 @@ Phase 级 `on` 子句（critical-release 升级触发）：
 - `if: phase.is_major_release == true or phase.is_large_refactor == true` → `action: invoke`
 - else → `action: skip`
 
-## 路由规则（bundled {{ host.team }} routing — `workflows/judgments/parallelism-gate.yaml`）
+## 路由规则（bundled {{ host.team.attributive }} routing — `workflows/judgments/parallelism-gate.yaml`）
 
 - ✅ **触发**：关键发布 / 大重构 PR（≥3 specialist 需互相质询而非 fire-and-forget）
 - ❌ **跳过**：常规 PR / 单点任务（sister verify-code-review fan-out + verify-paranoid 已够用且省 token）
@@ -89,7 +89,7 @@ freestyle 会旁路引擎(无 ledger、无 evidence guard)。harnessed 给你 sp
 ## 参考资料
 
 - D-04 Stage ④ Verify 7 sub 分解
-- D-11 {{ host.team }} 4-specialist Pattern C upgrade
+- D-11 {{ host.team.attributive }} 4-specialist Pattern C upgrade
 - workflows/capabilities.yaml — agent-teams-{create,send-message,shutdown} + 4 specialist
 - workflows/judgments/stage-routing.yaml — verify-multispec-critical-release trigger
 - workflows/judgments/parallelism-gate.yaml — agent-teams-upgrade.fires (5 OR-chain)

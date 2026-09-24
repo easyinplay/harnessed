@@ -2581,3 +2581,58 @@ en 侧用 `spawn_subagent.default` / `.plural`,zh 侧用 `spawn_subagent.zh_tool
    且等价类本身会成为新的维护面 —— 除非 1/2 被实测证明漏检,否则不建议。
 
 无论取哪条,`{{ capabilities.X }}` 那半边的现有逻辑不动。
+
+---
+
+# T11 门 allowlist 候选(批 B 交回,2026-09-24)
+
+> 本节由**批 B**(inline 面)整理,供 `scripts/check-host-primitives.mjs`(T11)直接消费。
+> 收录的是「渲染面上、语义在范围内、但**刻意保留 CC 原语字面**」的站点 —— 与 Q2 那批
+> 「不渲染面」的 allowlist 不同:那批是**门够不着**,这批是**门够得着但不该红**。
+> 站点行号为批 B 落地后(commit `4e25a5b` 之后)的值,T11 落地前请以内容匹配为准。
+
+## A. B 类 capability 注册事实(逐字复述 `capabilities.yaml`)
+
+| 站点 | 命中 | 理由 |
+| ---- | ---- | ---- |
+| `workflows/verify/multispec/SKILL.md`:42-44 | `Agent Teams` / `Agent(` / `run_in_background` / `SendMessage` / `<teammate-name>` / `teammate` | 「Capability refs」节逐字复述 `capabilities.yaml` 的 `impl` / `cmd` 字段(台账 #193-198 判 **B**)。这是**注册表事实**不是措辞:占位符化会让正文与注册表两处真相源漂移。宿主差异归 **批 C**(`capabilities.yaml` 补 codex 条目 + `capabilityResolver` 按宿主选),正文侧一个字不改 |
+| `workflows/verify/multispec/SKILL.zh-Hans.md`:41-43 | 同上 | en 同位 |
+
+## B. `Claude Code plugin` —— 上游组件的分发渠道名(D5)
+
+| 站点 | 理由 |
+| ---- | ---- |
+| `workflows/plan/phase/SKILL.md`:5,37,38 / `SKILL.zh-Hans.md`:5,37 | D5 已裁:它不是宿主原语,是 `planning-with-files` 等上游组件**真实的分发渠道名称**(如同「npm 包」不因宿主改名)。套 `{{ host.name }}` 会造出「Codex plugin marketplace」这个不存在的事物;「降为宿主中立措辞」会改 claude 金标,已直接否决。缓解走 R4 映射小节的 caveat(`host_map_notes.codex` 第 2 条已写) |
+| `workflows/task/code/SKILL.md`:7,63,66,97 / `SKILL.zh-Hans.md`:7,63,66,95 | 同上 |
+| `workflows/task/deliver/SKILL.md`:8,94,96,97 / `SKILL.zh-Hans.md`:8,95,97,98 | 同上 |
+
+> 门实现提示:按**短语** `Claude Code plugin` / `Claude Code 插件` allowlist,不要按
+> `Claude Code` 整词 —— 否则会顺带放过真正该改的裸 `Claude Code`。
+
+## C. 标识符(yaml key / capability id),不是散文
+
+| 站点 | 命中 | 理由 |
+| ---- | ---- | ---- |
+| `workflows/task/deliver/SKILL.md`:72 / `SKILL.zh-Hans.md`:73 | `teammate_send_message_needed` | `parallelism-gate.yaml` 的**触发器 key 名**。改字面就是改引用,对不上 yaml |
+| `workflows/verify/multispec/SKILL.md`:53 / `SKILL.zh-Hans.md`:52 | `teammate_send_message_needed` | 同上(`agent-teams-upgrade.fires` 的 5 OR-chain 列举) |
+| 上述 A 节同两行 | `agent-teams-create` / `-send-message` / `-shutdown` | capability **id**,同理 |
+
+## D. `trigger_phrases` —— 用户输入的匹配键(2026-09-24 裁定)
+
+| 站点 | 命中 | 理由 |
+| ---- | ---- | ---- |
+| `workflows/verify/multispec/SKILL.md`:15 | `"4-specialist Agent Team"` | frontmatter `trigger_phrases:` 是**用户说什么才触发**的匹配键,不是给模型的指令正文。从 CC 迁移过来的用户在 codex 上大概率仍然说 "Agent Team",改了反而匹配不上。**同文件正文里的 `Agent Team` 已全部原语化为 `{{ host.team.singular }}`**,只有这一条例外 |
+| `workflows/verify/multispec/SKILL.zh-Hans.md`:15 | 同上 | en 同位 |
+
+## E. 已知正则漏检,语义在范围内但**刻意不动**
+
+| 站点 | 命中 | 理由 |
+| ---- | ---- | ---- |
+| `workflows/host-primitives.zh-Hans.yaml` 的 `harnessed_run_warning_note.execution{,_tail}` / `.orchestrator{,_tail}` 的 **claude** 值 | `Claude` / `Code` 被换行拆开 | 该折行是 cell 值本身的一部分:`execution_tail` 是**活变体**(19 处渲染,字节金标钉死),`execution` 是无站点的参照变体,由 `golden.mjs` 的 `prefix + tail === whole` compose 断言钉死。改它会同时破坏金标与 compose。**只影响「审计 claude 侧」的正则**(codex 列根本没有 `Claude Code`),对 phase 目标无损 |
+
+## F. 门的口径提醒
+
+1. 门断言的对象是**渲染产物**(claude / codex 两侧),不是源文件 —— D2 已裁。
+2. 映射小节区间(`<!-- harnessed:host-map:start -->` … `end`)整段豁免。
+3. 占位符**自身的文本**含 `teammate` / `team` 等子串(`{{ host.teammate }}`),扫源文件时
+   必须先剥占位符再匹配,否则 100% 假阳性。
