@@ -50,6 +50,15 @@ primitives:
     plural:
       claude: "Task / Agent 工具"
       codex: "spawn_agent 工具"
+    # 与 `zh_tool` 同词,但该调用点的**源文件**在工具名与「工具」之间折行
+    # (verify/code-review/SKILL*.md 正文)。把换行放进 **cell** 里,正文就能写成
+    # 一个不折行的占位符,而 claude 渲染仍逐字节还原原来的两行。反过来重排正文
+    # 会把换行移进 claude 产物,字节金标会(正确地)判红。
+    zh_tool_wrapped:
+      claude: |-
+        Task / Agent
+        工具
+      codex: "spawn_agent 工具"
 
   # 「向运行中的 agent 发消息」在各宿主的叫法。
   send_message:
@@ -63,6 +72,15 @@ primitives:
   team:
     default:
       claude: "Agent Teams"
+      codex: "多 agent 编队(多次 `spawn_agent`)"
+    # 与 `default` 同词,但**源文件**在两个词之间折行(task/deliver/SKILL.md
+    # Overview:`D-11 Agent` / `Teams 升级 …`)。理由同 spawn_subagent.zh_tool_wrapped
+    # —— 换行放进 cell,正文写成一个不折行的占位符。zh 正文该处未折行,本变体只为
+    # key parity 存在,zh 渲染不引用。
+    wrapped:
+      claude: |-
+        Agent
+        Teams
       codex: "多 agent 编队(多次 `spawn_agent`)"
 
   # 形容词前缀,与 spawn_subagent 相邻或隔词组合。单独成 primitive 是为了让两者

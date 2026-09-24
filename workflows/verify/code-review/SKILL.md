@@ -2,7 +2,7 @@
 name: verify-code-review
 description: |
   Stage ④.b verify sub-workflow — code-review 多 agent 并行 fan-out 高置信度 finding
-  (subagent default per bundled parallelism gate — Task / Agent 工具 spawn
+  (subagent default per bundled parallelism gate — {{ host.spawn_subagent.zh_tool }} spawn
   多 subagent fan-out, context 隔离, token 敏感)。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (code-review) + 1 phase (parallelism ref judgments.parallelism-gate.subagent-default.fires)。
@@ -29,8 +29,7 @@ onto harnessed runtime (Phase v3.0-3.4 W0.11 — D-04 Stage ④ Verify 7 sub + �
 | 1 | `01-code-review` | mattpocock-skills | sonnet | `{{ capabilities.code-review.cmd }}` | `judgments.parallelism-gate.subagent-default.fires` |
 
 Per-phase config loads from `workflows/verify/code-review/workflow.yaml`; engine spawns
-multiple subagent in parallel fan-out (bundled subagent-default rule — Task / Agent
-工具 spawn 多任务并发, context 隔离, summary 折叠回主 context)。
+multiple subagent in parallel fan-out (bundled subagent-default rule — {{ host.spawn_subagent.zh_tool_wrapped }} spawn 多任务并发, context 隔离, summary 折叠回主 context)。
 
 ## Capability refs
 

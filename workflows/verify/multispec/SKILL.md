@@ -2,9 +2,9 @@
 name: verify-multispec
 description: |
   Stage ④.h verify sub-workflow — 4-specialist Agent Team Pattern C 多维度审查 (关键发布 /
-  大重构 PR 升级, code-review + gstack-review + gstack-cso + gstack-qa 4 teammate 互相
-  SendMessage 质询, NOT fire-and-forget subagent fan-out; bundled Agent Teams Pattern C
-  routing). Cleanup mandatory: 按名请求每个 teammate shut down (bundled cleanup discipline).
+  大重构 PR 升级, code-review + gstack-review + gstack-cso + gstack-qa 4 {{ host.teammate }} 互相
+  {{ host.send_message }} 质询, NOT fire-and-forget subagent fan-out; bundled {{ host.team }} Pattern C
+  routing). Cleanup mandatory: 按名请求每个 {{ host.teammate }} shut down (bundled cleanup discipline).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (agent-teams 3 + 4 specialist capability) + 2 phase (01-team-create on critical-release
   invoke / 02-team-cleanup mandatory shutdown)。
@@ -24,7 +24,7 @@ trigger_phrases:
 
 2-phase sub-workflow mapping CLAUDE.md "Verify 阶段 — 关键发布 / 大重构 PR 升级 Agent Team
 Pattern C" onto harnessed runtime (Phase v3.0-3.4 W0.13e — D-04 Stage ④ Verify 7 sub +
-D-11 Agent Teams + Pattern A sub-workflow ship)。
+D-11 {{ host.team }} + Pattern A sub-workflow ship)。
 
 | phase | id | upstream | model | capability | gate / on |
 | ----- | -- | -------- | ----- | ---------- | --------- |
@@ -32,12 +32,9 @@ D-11 Agent Teams + Pattern A sub-workflow ship)。
 | 2 | `02-team-cleanup` | claude-platform | haiku | `{{ capabilities.agent-teams-shutdown.cmd }}` | mandatory 防呆清单 |
 
 Per-phase config loads from `workflows/verify/multispec/workflow.yaml`; phase 01 spawns 4
-background teammate (code-review + gstack-review + gstack-cso + gstack-qa) with
-`Agent(name, run_in_background=true)` — the team forms implicitly on the FIRST spawn (CC
-2.1.178+ has no create step / no create tool), teammates 互相 SendMessage 质询 findings 是否
-真问题 (NOT fire-and-forget); phase 02 mandatory 按名请求每个 teammate shut down (bundled
-Agent Teams cleanup discipline — 团目录在 session 退出时自动清理,无独立 teardown 工具,
-剩下的纪律是别把 teammate 落在运行态)。
+background {{ host.teammate }} (code-review + gstack-review + gstack-cso + gstack-qa) with
+{{ host.multispec_spawn_note }}; phase 02 mandatory 按名请求每个 {{ host.teammate }} shut down (bundled
+{{ host.teams_cleanup_note.multispec }}
 
 ## Capability refs
 
@@ -45,10 +42,10 @@ Sister `workflows/capabilities.yaml` entries:
 - `agent-teams-create` — Bucket 5 Agent Teams (impl: claude-platform, cmd: `Agent(name, run_in_background=true)`)
 - `agent-teams-send-message` — Bucket 5 Agent Teams (impl: claude-platform, cmd: SendMessage)
 - `agent-teams-shutdown` — Bucket 5 Agent Teams (impl: claude-platform, cmd: `ask the <teammate-name> teammate to shut down`)
-- `code-review` — Bucket 1 mattpocock (teammate 1)
-- `gstack-review` — Bucket 3 治理关卡 (teammate 2 Paranoid Staff Engineer)
-- `gstack-cso` — Bucket 3 治理关卡 (teammate 3 安全审查)
-- `gstack-qa` — Bucket 3 治理关卡 (teammate 4 端到端 QA)
+- `code-review` — Bucket 1 mattpocock ({{ host.teammate }} 1)
+- `gstack-review` — Bucket 3 治理关卡 ({{ host.teammate }} 2 Paranoid Staff Engineer)
+- `gstack-cso` — Bucket 3 治理关卡 ({{ host.teammate }} 3 安全审查)
+- `gstack-qa` — Bucket 3 治理关卡 ({{ host.teammate }} 4 端到端 QA)
 
 ## Parallelism + on gate refs
 
@@ -60,7 +57,7 @@ Phase-level `on` clause (critical-release 升级触发):
 - `if: phase.is_major_release == true or phase.is_large_refactor == true` → `action: invoke`
 - else → `action: skip`
 
-## Routing rules (bundled Agent Teams routing — `workflows/judgments/parallelism-gate.yaml`)
+## Routing rules (bundled {{ host.team }} routing — `workflows/judgments/parallelism-gate.yaml`)
 
 - ✅ **触发**: 关键发布 / 大重构 PR (≥3 specialist 需互相质询而非 fire-and-forget)
 - ❌ **跳过**: 常规 PR / 单点任务 (sister verify-code-review fan-out + verify-paranoid 已够用且省 token)
@@ -94,7 +91,7 @@ Do NOT pipe to `harnessed run verify-multispec` — that is the CI/headless path
 ## References
 
 - D-04 Stage ④ Verify 7 sub 分解
-- D-11 Agent Teams 4-specialist Pattern C upgrade
+- D-11 {{ host.team }} 4-specialist Pattern C upgrade
 - workflows/capabilities.yaml — agent-teams-{create,send-message,shutdown} + 4 specialist
 - workflows/judgments/stage-routing.yaml — verify-multispec-critical-release trigger
 - workflows/judgments/parallelism-gate.yaml — agent-teams-upgrade.fires (5 OR-chain)

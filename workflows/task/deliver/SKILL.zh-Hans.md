@@ -2,7 +2,7 @@
 name: task-deliver
 description: |
   task-deliver workflow v3 — Stage ③.d 子任务交付 sub-workflow (harnessed 自有 completion-gate
-  + Agent Teams conditional escalation + R20.10 explicit max_iterations_exceeded
+  + {{ host.team }} conditional escalation + R20.10 explicit max_iterations_exceeded
   fallback)。2-phase composition: 01-deliver (completion-gate with completion_promise
   verbatim "COMPLETE" + parallelism judgments.parallelism-gate.completion-gate-wrapper.fires +
   fallback emit_warning_and_halt exit_code 1) → 02-progress-mark (Claude Code plugin
@@ -26,7 +26,7 @@ trigger_phrases:
 
 2-phase 子工作流，将 CLAUDE.md Stage ③.d 子任务交付纪律映射到 harnessed runtime，
 完整采用 `harnessed.workflow.v3` schema（Phase v3.0-3.4 W0 T3.4.W0.9 — D-09 L0
-Discipline Substrate + D-10 完成保证 + D-11 Agent Teams 升级 5 触发
+Discipline Substrate + D-10 完成保证 + D-11 {{ host.team }} 升级 5 触发
 OR-chain + R20.10 explicit max_iterations_exceeded handler）。
 
 | phase | id | upstream | model | capability / args / parallelism / fallback |
@@ -67,19 +67,16 @@ main-session-fallback 任意 1 种模式外层（NOT 互斥触发器，而是 pa
 中的 `wraps:` 正交字段）。Runtime engine 评估 wrapping mode 后 spawn 相应
 执行单元并套 completion check。
 
-### Agent Teams 条件性升级 (D-11 + agent-teams.md 5 OR-chain)
+### {{ host.team }} 条件性升级 (D-11 + agent-teams.md 5 OR-chain)
 
 5 个升级触发（来自 capabilities.yaml `agent-teams-create.fires_when` + agent-teams.md）：
-1. `teammate_send_message_needed == true` — teammate 间 SendMessage 互通（NOT fire-and-forget）
+1. `teammate_send_message_needed == true` — {{ host.teammate }} 间 {{ host.send_message }} 互通（NOT fire-and-forget）
 2. `subagent_context_overflow == true` — subagent 撞 context 上限
-3. `shared_task_list == true` — 多 teammate 共享 task list 自协调
+3. `shared_task_list == true` — 多 {{ host.teammate }} 共享 task list 自协调
 4. `opposing_hypothesis_debate == true` — 对立假设辩论
 5. `fullstack_three_way == true` — 全栈三路协同
 
-任 1 触发 → 升级 subagent fan-out → Agent Teams Pattern A/B/C。清理是强制的，
-遵循 agent-teams.md 防呆清单（lead 按名请求每个 teammate shut down；CC 2.1.178+ 已无
-teardown 工具，团目录在 session 退出时自动清理——剩下的纪律是别把 teammate 落在运行态）
-——属于 engine 级别的连接，NOT yaml schema 的职责范围。
+{{ host.teams_cleanup_note.deliver }}
 
 ### R20.10 explicit max_iterations_exceeded handler（非静默中止）
 
@@ -127,7 +124,7 @@ freestyle 会旁路引擎(无 ledger、无 evidence guard)。harnessed 给你 sp
 
 - D-09 — L0 Discipline Substrate always-on (6 disciplines)
 - D-10 — 完成保证真接 SDK wrapper (NOT mock reference; v0.2.0 ship)
-- D-11 — Agent Teams 升级 5 触发 OR-chain per bundled parallelism-gate rules
+- D-11 — {{ host.team }} 升级 5 触发 OR-chain per bundled parallelism-gate rules
 - R20.10 — max_iterations_exceeded explicit emit_warning_and_halt
   (acceptance c "NOT silent abort"); 完成闸门正交 wrapper wraps 3 mode
 - D-02 — SKILL.md `name:` bare slash cmd (`task-deliver` NOT `task/deliver`) per ADR 0030

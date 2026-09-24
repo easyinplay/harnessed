@@ -39,7 +39,7 @@ mode delegate carries explicit `order`。Each subtask 入口走一次此 master 
 
 完成闸门是正交 wrapper, 套在 deliver sub 的 01-deliver phase 外层保 completion-promise
 verbatim "COMPLETE" (R20.10)。任何执行单元 (subagent / team / 主 session) 都可外层套它
-保 completion-promise (bundled subagent vs Agent Teams routing — orthogonal wrapper rule).
+保 completion-promise (bundled subagent vs {{ host.team }} routing — orthogonal wrapper rule).
 
 它是 harnessed 自有的 CLI,不是上游 plugin (ADR 0039,4.36.0 摘除 `/ralph-loop` 依赖):
 `harnessed checkpoint complete <sub> --result-file <path>` 对产物 / TDD boundary / verbatim

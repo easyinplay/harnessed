@@ -2,7 +2,7 @@
 name: verify-code-review
 description: |
   Stage ④.b verify 子工作流 — code-review 多 agent 并行 fan-out 高置信度 finding
-  （subagent 默认路由，per 打包的 parallelism 关卡 — Task / Agent 工具 spawn
+  （subagent 默认路由，per 打包的 parallelism 关卡 — {{ host.spawn_subagent.zh_tool }} spawn
   多 subagent fan-out，context 隔离，token 敏感）。
   schema_version: harnessed.workflow.v3，含 disciplines_applied（6 default）+ tools_available
   （code-review）+ 1 阶段（parallelism ref judgments.parallelism-gate.subagent-default.fires）。
@@ -29,8 +29,7 @@ trigger_phrases:
 | 1 | `01-code-review` | mattpocock-skills | sonnet | `{{ capabilities.code-review.cmd }}` | `judgments.parallelism-gate.subagent-default.fires` |
 
 每阶段配置从 `workflows/verify/code-review/workflow.yaml` 加载；引擎以并行 fan-out 方式
-启动多个 subagent（打包的 subagent-default 规则 — Task / Agent
-工具 spawn 多任务并发，context 隔离，summary 折叠回主 context）。
+启动多个 subagent（打包的 subagent-default 规则 — {{ host.spawn_subagent.zh_tool_wrapped }} spawn 多任务并发，context 隔离，summary 折叠回主 context）。
 
 ## 能力引用
 

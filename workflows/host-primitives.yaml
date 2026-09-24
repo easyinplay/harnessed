@@ -60,6 +60,17 @@ primitives:
     plural:
       claude: "Task / Agent tools"
       codex: "spawn_agent tools"
+    # Same words as `zh_tool`, but at this call site the SOURCE line wrapped
+    # between the tool name and 工具 (verify/code-review/SKILL*.md body prose).
+    # Carrying the newline in the CELL lets the body hold one unbroken
+    # placeholder while the claude render restores the original two lines
+    # byte-for-byte. Reflowing the body instead would move a newline into the
+    # claude artifact, which the byte golden (rightly) rejects.
+    zh_tool_wrapped:
+      claude: |-
+        Task / Agent
+        工具
+      codex: "spawn_agent 工具"
 
   # How a harness names "send a message to a running agent".
   send_message:
@@ -74,6 +85,15 @@ primitives:
   team:
     default:
       claude: "Agent Teams"
+      codex: "a multi-agent formation (repeated `spawn_agent`)"
+    # Same words as `default`, but the SOURCE line wrapped BETWEEN them
+    # (task/deliver/SKILL.md Overview: `D-11 Agent` / `Teams 升级 …`). Same
+    # rationale as spawn_subagent.zh_tool_wrapped — the cell carries the
+    # newline so the body can hold one unbroken placeholder.
+    wrapped:
+      claude: |-
+        Agent
+        Teams
       codex: "a multi-agent formation (repeated `spawn_agent`)"
 
   # Adjective prefix, used adjacent to (or a few words from) spawn_subagent.
