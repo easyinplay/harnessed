@@ -111,7 +111,16 @@ export async function renderSkillFile(
     result.error = `read failed: ${(e as Error).message}`
     return result
   }
-  const rendered = renderSkillBody(body, capabilities, installedPlugins, installedUserSkills)
+  // Pass 1 — capability cmds, host-aware since v16.0 Phase 65: the three Bucket 5
+  // agent-platform entries carry `by_host.codex`, so a codex install renders the
+  // codex tool name instead of the Claude Code one.
+  const rendered = renderSkillBody(
+    body,
+    capabilities,
+    installedPlugins,
+    installedUserSkills,
+    hostRender?.host,
+  )
   // Pass 2 — host primitives. Strict by design (unknown primitive / variant /
   // missing host column all throw), so wrap it: the message names the placeholder
   // and its line, but not WHICH skill file carried it. Splice the source path in

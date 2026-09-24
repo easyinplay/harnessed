@@ -12,6 +12,12 @@
 //   1. top-level key set identical
 //   2. role-prompts (`prompts:` map): role-key set + per-role field-key set identical
 //   3. disciplines (`rules:` list): rule `id` set + per-rule field-key set identical
+//   4. host-primitives (`primitives:` map): THREE-level key set — primitive keys,
+//      per-primitive variant keys, per-variant host keys (claude/codex). YAML
+//      anchors/aliases in that table (`default: &x` + `other: *x`) are expanded by
+//      the parse, so each alias site is still its own key here. Sibling top-level
+//      keys such as `host_map_notes` are deliberately NOT deep-compared — that one
+//      is codex-only by design (the claude column is intentionally empty).
 //
 // Unlike the dep-free skill guard (scripts/check-skill-i18n-parity.mjs), this uses
 // the `yaml` package for a robust structural parse — so the CI step runs AFTER
@@ -47,6 +53,18 @@ function setEqual(a, b) {
 
 function show(set) {
   return `{${[...set].sort().join(',')}}`
+}
+
+/** Key set of a plain object mapping (empty for null / array / scalar). */
+function mapKeys(v) {
+  return v && typeof v === 'object' && !Array.isArray(v) ? new Set(Object.keys(v)) : new Set()
+}
+
+/** Which exact keys are missing from / extra in zh — names the offending key. */
+function keyDiff(base, zh) {
+  const missing = [...base].filter((k) => !zh.has(k)).sort()
+  const extra = [...zh].filter((k) => !base.has(k)).sort()
+  return `missing_in_zh={${missing.join(',')}} extra_in_zh={${extra.join(',')}}`
 }
 
 /** Top-level mapping keys (empty set for non-object / array roots). */
@@ -160,6 +178,51 @@ export function checkYamlI18nParity(workflowsDir) {
         }
       }
     }
+
+    // 4. host-primitives shape (`primitives:` map, three levels deep).
+    //    primitive → variant → host. Each level names the failing key so the CI
+    //    annotation says WHICH layer and WHICH key drifted. `host_map_notes` and
+    //    any other top-level key stay out of this — only `primitives` is a
+    //    translation-invariant 3-level table.
+    const basePrims = baseDoc?.primitives
+    if (basePrims && typeof basePrims === 'object' && !Array.isArray(basePrims)) {
+      const zhPrims = zhDoc?.primitives
+      const bp = mapKeys(basePrims)
+      const zp = mapKeys(zhPrims)
+      if (!setEqual(bp, zp)) {
+        violations.push({
+          file: sibling,
+          kind: 'primitive-keys',
+          detail: `primitive keys differ — ${keyDiff(bp, zp)} (base=${show(bp)} zh=${show(zp)})`,
+        })
+      }
+      for (const prim of bp) {
+        if (!zp.has(prim)) continue
+        const bVariants = basePrims[prim]
+        const zVariants = zhPrims[prim]
+        const bv = mapKeys(bVariants)
+        const zv = mapKeys(zVariants)
+        if (!setEqual(bv, zv)) {
+          violations.push({
+            file: sibling,
+            kind: 'primitive-variants',
+            detail: `primitive '${prim}' variant keys differ — ${keyDiff(bv, zv)} (base=${show(bv)} zh=${show(zv)})`,
+          })
+        }
+        for (const variant of bv) {
+          if (!zv.has(variant)) continue
+          const bh = mapKeys(bVariants[variant])
+          const zh = mapKeys(zVariants[variant])
+          if (!setEqual(bh, zh)) {
+            violations.push({
+              file: sibling,
+              kind: 'primitive-hosts',
+              detail: `primitive '${prim}' variant '${variant}' host keys differ — ${keyDiff(bh, zh)} (base=${show(bh)} zh=${show(zh)})`,
+            })
+          }
+        }
+      }
+    }
   }
   return { ok: violations.length === 0, violations }
 }
@@ -176,8 +239,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     console.error(
       `[yaml-i18n-parity] ${violations.length} structural-parity violation(s). ` +
         'A <base>.zh-Hans.yaml sibling must match its <base>.yaml in top-level keys, ' +
-        'role/rule key sets, and per-entry field presence (drift-only — absence of a ' +
-        'sibling is OK).',
+        'role/rule key sets, per-entry field presence, and the `primitives` ' +
+        'primitive/variant/host key sets (drift-only — absence of a sibling is OK).',
     )
     process.exit(1)
   }

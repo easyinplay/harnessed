@@ -604,6 +604,12 @@ capabilities:
   agent-teams-create:
     impl: claude-platform
     cmd: 'Agent(name, run_in_background=true)'
+    # v16.0 Phase 65 — codex 的等价原语取自上游 multi_agents_spec.rs(codex-cli 0.155.1,
+    # feature multi_agent v1 生效)。顶层值仍是 Claude Code 的,claude 侧渲染逐字节不变。
+    by_host:
+      codex:
+        impl: codex-platform
+        cmd: 'spawn_agent(task_name, message)'
     since: v2.0
     category: agent-platform
     description: >-
@@ -620,6 +626,10 @@ capabilities:
   agent-teams-send-message:
     impl: claude-platform
     cmd: SendMessage
+    by_host:
+      codex:
+        impl: codex-platform
+        cmd: send_input
     since: v2.0
     category: agent-platform
     description: >-
@@ -629,6 +639,12 @@ capabilities:
   agent-teams-shutdown:
     impl: claude-platform
     cmd: 'ask the <teammate-name> teammate to shut down'
+    # codex 侧从「一句自然语言请求」变成一个真工具名 —— 这是 codex 上更强的保证,
+    # 但不要顺势改 claude 侧的 phase 描述(金标锁着)。
+    by_host:
+      codex:
+        impl: codex-platform
+        cmd: close_agent
     since: v2.0
     category: agent-platform
     description: >-

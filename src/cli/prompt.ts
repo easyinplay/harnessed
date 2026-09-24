@@ -21,9 +21,12 @@ import { getLocale, type SupportedLocale } from '../i18n/index.js'
 import { resolveLocaleYaml } from '../i18n/localeYaml.js'
 import { checkSafeSegment } from '../manifest/lib/path-guard.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
+import { detectPlatform } from '../platform/platform.js'
 import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { buildAgentDef } from '../workflow/run.js'
+import { pickHostValues } from './lib/capabilityResolver.js'
+import { toHostId } from './lib/hostPrimitives.js'
 
 const DEFAULT_MAX_ITERATIONS = 20
 const DEFAULT_MODEL = 'sonnet'
@@ -78,10 +81,16 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
       >
     } | null
     const caps = capDoc?.capabilities ?? {}
+    // v16.0 Phase 65 — this is the RUNTIME surface (the prompt handed to a subagent
+    // in the live session), so the host is the one we are actually running under,
+    // not an install-time target.
+    const host = toHostId(detectPlatform().id)
     const lines: string[] = []
     for (const tool of tools) {
-      const cmd = caps[tool]?.cmd
-      const impl = caps[tool]?.impl
+      const entry = caps[tool]
+      const { cmd, impl } = entry
+        ? pickHostValues(entry, host)
+        : { cmd: undefined, impl: undefined }
       lines.push(cmd ? `- Invoke \`${cmd}\` (${tool}${impl ? `, ${impl}` : ''})` : `- ${tool}`)
       // 4.32.23 — surface the entry's aliases (declared in the yaml SoT since
       // ADR-0034, never rendered until now). Prose-level routing: the model

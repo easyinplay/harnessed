@@ -16,6 +16,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
+  pickHostValues,
   readInstalledPlugins,
   readInstalledUserSkills,
   renderSkillBody,
@@ -320,5 +321,115 @@ describe('resolveCapabilityCmd — install_type array (互为补充 dual-install
     expect(r.warning).toMatch(/^\[plugin\]/)
     // Single hint fragment after dedup — no `OR` chaining 3 copies.
     expect(r.warning).not.toContain(' OR ')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// v16.0 Phase 65 — per-host `by_host` override (cells 27-34).
+//
+// The top-level impl/cmd stay authoritative for Claude Code so every pre-65
+// rendering is byte-identical; `by_host.<host>` replaces only what it declares.
+// ---------------------------------------------------------------------------
+describe('pickHostValues — per-host override', () => {
+  const entry = {
+    cmd: 'Agent(name, run_in_background=true)',
+    impl: 'claude-platform',
+    by_host: {
+      codex: { cmd: 'spawn_agent(task_name, message)', impl: 'codex-platform' },
+    },
+  }
+
+  it('cell 27 — defaults to claude (pure function, no env/FS probe)', () => {
+    expect(pickHostValues(entry)).toEqual({
+      cmd: 'Agent(name, run_in_background=true)',
+      impl: 'claude-platform',
+    })
+  })
+
+  it('cell 28 — codex takes the override', () => {
+    expect(pickHostValues(entry, 'codex')).toEqual({
+      cmd: 'spawn_agent(task_name, message)',
+      impl: 'codex-platform',
+    })
+  })
+
+  it('cell 29 — a host with no override falls back to the top-level values', () => {
+    const noOverride = { cmd: '/review', impl: 'gstack' }
+    expect(pickHostValues(noOverride, 'codex')).toEqual({ cmd: '/review', impl: 'gstack' })
+  })
+
+  it('cell 30 — partial override replaces only the declared field', () => {
+    const cmdOnly = {
+      cmd: 'SendMessage',
+      impl: 'claude-platform',
+      by_host: { codex: { cmd: 'send_input' } },
+    }
+    expect(pickHostValues(cmdOnly, 'codex')).toEqual({
+      cmd: 'send_input',
+      impl: 'claude-platform',
+    })
+  })
+
+  it('cell 31 — claude may declare an explicit override too (symmetry)', () => {
+    const both = {
+      cmd: 'top',
+      by_host: { claude: { cmd: 'claude-cmd' }, codex: { cmd: 'codex-cmd' } },
+    }
+    expect(pickHostValues(both, 'claude').cmd).toBe('claude-cmd')
+    expect(pickHostValues(both, 'codex').cmd).toBe('codex-cmd')
+  })
+})
+
+describe('host-aware rendering through resolveCapabilityCmd / renderSkillBody', () => {
+  const caps = {
+    'agent-teams-send-message': {
+      cmd: 'SendMessage',
+      impl: 'claude-platform',
+      by_host: { codex: { cmd: 'send_input', impl: 'codex-platform' } },
+    },
+  }
+
+  it('cell 32 — resolveCapabilityCmd renders the host cmd', () => {
+    expect(
+      resolveCapabilityCmd(caps['agent-teams-send-message'], new Set(), new Set(), 'codex')
+        .renderedCmd,
+    ).toBe('send_input')
+    // Default arg keeps every pre-65 call site on the Claude Code value.
+    expect(
+      resolveCapabilityCmd(caps['agent-teams-send-message'], new Set(), new Set()).renderedCmd,
+    ).toBe('SendMessage')
+  })
+
+  it('cell 33 — renderSkillBody substitutes per host', () => {
+    const body = 'Coordinate via {{ capabilities.agent-teams-send-message.cmd }}.'
+    expect(renderSkillBody(body, caps, new Set(), new Set(), 'codex').body).toBe(
+      'Coordinate via send_input.',
+    )
+    expect(renderSkillBody(body, caps, new Set(), new Set()).body).toBe(
+      'Coordinate via SendMessage.',
+    )
+  })
+
+  it('cell 34 — shipped capabilities.yaml carries the three Bucket 5 codex overrides', async () => {
+    const { readFile } = await import('node:fs/promises')
+    const { parse } = await import('yaml')
+    const doc = parse(await readFile('workflows/capabilities.yaml', 'utf8')) as {
+      capabilities: Record<string, Parameters<typeof pickHostValues>[0]>
+    }
+    const expected: Record<string, [string, string]> = {
+      'agent-teams-create': [
+        'Agent(name, run_in_background=true)',
+        'spawn_agent(task_name, message)',
+      ],
+      'agent-teams-send-message': ['SendMessage', 'send_input'],
+      'agent-teams-shutdown': ['ask the <teammate-name> teammate to shut down', 'close_agent'],
+    }
+    for (const [name, [claudeCmd, codexCmd]] of Object.entries(expected)) {
+      const cap = doc.capabilities[name]
+      if (!cap) throw new Error(`capability '${name}' missing from capabilities.yaml`)
+      expect(pickHostValues(cap, 'claude').cmd, name).toBe(claudeCmd)
+      expect(pickHostValues(cap, 'codex').cmd, name).toBe(codexCmd)
+      expect(pickHostValues(cap, 'codex').impl, name).toBe('codex-platform')
+    }
   })
 })

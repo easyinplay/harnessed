@@ -8,6 +8,7 @@
 //   - top-level key set identical
 //   - role-prompts: `prompts` role-key set + per-role field-key set identical
 //   - disciplines: `rules[].id` set + per-rule field-key set identical
+//   - host-primitives: `primitives` 3-level key set (primitive → variant → host)
 //   - orphan zh (<base>.zh-Hans.yaml with no <base>.yaml) = violation
 // drift-only: a base .yaml with NO zh sibling is OK (no must-exist).
 
@@ -72,6 +73,51 @@ rules:
     enforcement: warn
     trigger: always-on
     check_method: llm-judge
+`
+
+// host-primitives shape (Phase 65): primitives.<primitive>.<variant>.<host>.
+// Exercises the YAML anchor/alias form the real table uses (`default: &t` +
+// `attributive: *t`) — aliases are expanded by the parse, so the key-set compare
+// sees two distinct variant keys, not one.
+const HOST_EN = `version: 1
+primitives:
+  spawn_subagent:
+    default:
+      claude: "Task / Agent tool"
+      codex: "spawn_agent tool"
+    zh_tool:
+      claude: "Task / Agent 工具"
+      codex: "spawn_agent 工具"
+  team:
+    default: &t
+      claude: "Agent Teams"
+      codex: "multi-agent formation"
+    attributive: *t
+host_map_notes:
+  codex:
+    - "a codex-only caveat"
+    - "another one"
+`
+// Same 3-level key set, translated values. `host_map_notes` deliberately has a
+// DIFFERENT shape (claude side is intentionally empty upstream) — it must not be
+// pulled into the deep compare.
+const HOST_ZH = `version: 1
+primitives:
+  spawn_subagent:
+    default:
+      claude: "Task / Agent 工具"
+      codex: "spawn_agent 工具"
+    zh_tool:
+      claude: "Task / Agent 工具"
+      codex: "spawn_agent 工具"
+  team:
+    default: &t
+      claude: "Agent Teams"
+      codex: "多 agent 编队"
+    attributive: *t
+host_map_notes:
+  codex:
+    - "一条 codex 专属注意事项"
 `
 
 const wRole = (name: string, c: string) => writeFileSync(join(wf, name), c, 'utf8')
@@ -143,6 +189,65 @@ describe('checkYamlI18nParity', () => {
     const res = checkYamlI18nParity(wf)
     expect(res.ok).toBe(false)
     expect(res.violations.map((v) => v.kind)).toContain('rule-fields')
+  })
+
+  it('in-parity host-primitives pair → ok (host_map_notes asymmetry is not a drift)', () => {
+    wRole('host-primitives.yaml', HOST_EN)
+    wRole('host-primitives.zh-Hans.yaml', HOST_ZH)
+    const res = checkYamlI18nParity(wf)
+    expect(res.ok).toBe(true)
+    expect(res.violations).toEqual([])
+  })
+
+  it('primitive missing in zh → primitive-keys violation naming the key', () => {
+    wRole('host-primitives.yaml', HOST_EN)
+    // zh drops the whole `team:` primitive
+    wRole(
+      'host-primitives.zh-Hans.yaml',
+      HOST_ZH.replace(/ {2}team:\n(?:.*\n)*? {4}attributive: \*t\n/, ''),
+    )
+    const res = checkYamlI18nParity(wf)
+    expect(res.ok).toBe(false)
+    const v = res.violations.find((x) => x.kind === 'primitive-keys')
+    expect(v).toBeDefined()
+    expect(v?.detail).toContain('team')
+  })
+
+  it('variant missing in zh → primitive-variants violation naming primitive + key', () => {
+    wRole('host-primitives.yaml', HOST_EN)
+    // zh drops the `zh_tool` variant of spawn_subagent
+    wRole(
+      'host-primitives.zh-Hans.yaml',
+      HOST_ZH.replace(
+        '    zh_tool:\n      claude: "Task / Agent 工具"\n      codex: "spawn_agent 工具"\n',
+        '',
+      ),
+    )
+    const res = checkYamlI18nParity(wf)
+    expect(res.ok).toBe(false)
+    const v = res.violations.find((x) => x.kind === 'primitive-variants')
+    expect(v).toBeDefined()
+    expect(v?.detail).toContain('spawn_subagent')
+    expect(v?.detail).toContain('zh_tool')
+  })
+
+  it('host column missing in zh → primitive-hosts violation naming primitive + variant + key', () => {
+    wRole('host-primitives.yaml', HOST_EN)
+    // zh drops the `codex` column of spawn_subagent.default
+    wRole(
+      'host-primitives.zh-Hans.yaml',
+      HOST_ZH.replace(
+        '    default:\n      claude: "Task / Agent 工具"\n      codex: "spawn_agent 工具"\n',
+        '    default:\n      claude: "Task / Agent 工具"\n',
+      ),
+    )
+    const res = checkYamlI18nParity(wf)
+    expect(res.ok).toBe(false)
+    const v = res.violations.find((x) => x.kind === 'primitive-hosts')
+    expect(v).toBeDefined()
+    expect(v?.detail).toContain('spawn_subagent')
+    expect(v?.detail).toContain('default')
+    expect(v?.detail).toContain('codex')
   })
 
   it('top-level key mismatch → top-keys violation', () => {

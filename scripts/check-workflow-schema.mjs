@@ -57,6 +57,18 @@ const AliasShape = Type.Object(
   { impl: Type.String(), cmd: Type.String() },
   { additionalProperties: false },
 )
+// v16.0 Phase 65 — per-host override (mirror src/workflow/schema/capabilities.ts SSOT).
+// Top-level impl/cmd stay authoritative for Claude Code; a host replaces only what it
+// declares. Host keys are named (not a free-form record) so a typo is a schema error
+// rather than a silently-never-matching entry.
+const ByHostOverrideShape = Type.Object(
+  { impl: Type.Optional(Type.String()), cmd: Type.Optional(Type.String()) },
+  { additionalProperties: false },
+)
+const ByHostShape = Type.Object(
+  { claude: Type.Optional(ByHostOverrideShape), codex: Type.Optional(ByHostOverrideShape) },
+  { additionalProperties: false },
+)
 // D-08 + Pattern A B.3 — discriminated union: behavioral has discipline_ref, tool categories
 // have no discipline_ref (mirror src/workflow/schema/capabilities.ts SSOT).
 const ToolCategoryEnum = Type.Union([
@@ -93,6 +105,7 @@ const CapabilityEntryBase = Type.Object(
     skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
+    by_host: Type.Optional(ByHostShape), // v16.0 Phase 65
   },
   { additionalProperties: false },
 )

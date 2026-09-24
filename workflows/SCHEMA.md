@@ -95,6 +95,37 @@ phases:
 
 ---
 
+## 4b. capabilities.yaml 的 `by_host`（v16.0 Phase 65）
+
+一个 capability 条目的 `impl` / `cmd` 可以按宿主取不同值。**顶层字段仍是权威值（Claude Code）**，
+`by_host.<host>` 只替换它显式声明的字段：
+
+```yaml
+  agent-teams-send-message:
+    impl: claude-platform
+    cmd: SendMessage
+    by_host:
+      codex:
+        impl: codex-platform
+        cmd: send_input
+```
+
+设计约定：
+
+- **顶层值一个字节都不能因为加 `by_host` 而改动** —— claude 侧的渲染产物有逐字节金标
+  （`tests/fixtures/render-golden/`）锁着。
+- `by_host` 是 optional，绝大多数 capability 不需要它。当前只有 Bucket 5 的三个
+  agent-platform 条目使用。
+- 宿主键是**具名**的（`claude` / `codex`）而非自由 record。写错宿主名在自由 record 下会
+  静默永不命中、继续渲染 Claude 原语；具名 + `additionalProperties: false` 把这类拼写错误
+  变成构建期错误。
+- 读取一律经 `pickHostValues()`（`src/cli/lib/capabilityResolver.ts`），不要直接读 `by_host`。
+  该函数默认 `claude`，所以任何未显式传宿主的既有调用点行为不变。
+- schema 的 SSOT 在 `src/workflow/schema/capabilities.ts`；`scripts/check-workflow-schema.mjs`
+  内是它的镜像，两处必须同步。
+
+---
+
 ## 5. 收益（schema-driven 设计动机）
 
 每 phase idempotent + 可单步重跑 + session 中断从最近 checkpoint 恢复 + `harnessed status` 可视化当前 phase。

@@ -4,7 +4,17 @@
 
 export interface YamlI18nViolation {
   file: string
-  kind: 'orphan' | 'parse' | 'top-keys' | 'role-keys' | 'role-fields' | 'rule-ids' | 'rule-fields'
+  kind:
+    | 'orphan'
+    | 'parse'
+    | 'top-keys'
+    | 'role-keys'
+    | 'role-fields'
+    | 'rule-ids'
+    | 'rule-fields'
+    | 'primitive-keys'
+    | 'primitive-variants'
+    | 'primitive-hosts'
   detail: string
 }
 

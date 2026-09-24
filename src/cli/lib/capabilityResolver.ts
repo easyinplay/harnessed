@@ -55,6 +55,15 @@ export interface CapabilityEntry {
   plugin_id?: string
   /** v3.4.2: lookup directory under ~/.claude/skills/. */
   skill_dir?: string
+  /**
+   * v16.0 Phase 65: per-host override of `impl` / `cmd`. Top-level values stay
+   * authoritative (Claude Code); a host replaces only the fields it declares.
+   * Read via {@link pickHostValues}, never directly.
+   */
+  by_host?: {
+    claude?: { cmd?: string; impl?: string }
+    codex?: { cmd?: string; impl?: string }
+  }
 }
 
 /** Capabilities map keyed by capability name (e.g. `gstack-review` → entry). */
@@ -130,6 +139,46 @@ export function readInstalledUserSkills(homedirOverride?: string): Set<string> {
   }
 }
 
+/** The `impl` / `cmd` pair a given host should see for one capability entry. */
+export interface HostCapabilityValues {
+  cmd?: string
+  impl?: string
+}
+
+/**
+ * Structural shape {@link pickHostValues} needs — just the three fields it reads.
+ * Kept separate from {@link CapabilityEntry} so `prompt.ts`, which parses
+ * capabilities.yaml itself into a narrower local shape, can pass its objects without
+ * a cast.
+ */
+export interface HostSelectableCapability {
+  cmd?: string
+  impl?: string
+  by_host?: {
+    claude?: { cmd?: string; impl?: string }
+    codex?: { cmd?: string; impl?: string }
+  }
+}
+
+/**
+ * Pick the host-visible `impl` / `cmd` for one capability entry (v16.0 Phase 65).
+ *
+ * The top-level fields stay authoritative; `by_host.<host>` replaces only the fields
+ * it declares. Defaults to `'claude'` — deliberately NOT `detectPlatform()`, so this
+ * stays a pure function and every pre-65 call site keeps rendering byte-identically
+ * without an implicit env/FS read. Callers that render FOR a host pass it explicitly.
+ */
+export function pickHostValues(
+  capability: HostSelectableCapability,
+  host: 'claude' | 'codex' = 'claude',
+): HostCapabilityValues {
+  const override = capability.by_host?.[host]
+  return {
+    cmd: override?.cmd ?? capability.cmd,
+    impl: override?.impl ?? capability.impl,
+  }
+}
+
 /**
  * Resolve a single capability presence + return cmd UNCHANGED + optional warning.
  *
@@ -145,13 +194,19 @@ export function readInstalledUserSkills(homedirOverride?: string): Set<string> {
  *
  * Missing `plugin_id` / `skill_dir` for the corresponding install_type emits
  * a schema-level warning (config bug — capability misdeclared).
+ *
+ * `host` (v16.0 Phase 65) selects which `by_host` override the returned cmd comes
+ * from; it defaults to `'claude'` so every pre-65 call site is unchanged.
  */
 export function resolveCapabilityCmd(
   capability: CapabilityEntry,
   installedPlugins: Set<string>,
   installedUserSkills: Set<string>,
+  host: 'claude' | 'codex' = 'claude',
 ): ResolvedCmd {
-  const { cmd, install_type, plugin_id, skill_dir } = capability
+  const { install_type, plugin_id, skill_dir } = capability
+  // `capability.cmd` is required on CapabilityEntry, so the fallback keeps this `string`.
+  const cmd = pickHostValues(capability, host).cmd ?? capability.cmd
 
   if (!install_type) return { renderedCmd: cmd }
 
@@ -232,6 +287,7 @@ export function renderSkillBody(
   capabilities: CapabilityMap,
   installedPlugins: Set<string>,
   installedUserSkills: Set<string>,
+  host: 'claude' | 'codex' = 'claude',
 ): RenderedSkill {
   const warningsSet = new Set<string>()
   const out = body.replace(CAPABILITY_CMD_TEMPLATE, (match, name: string) => {
@@ -246,6 +302,7 @@ export function renderSkillBody(
       cap,
       installedPlugins,
       installedUserSkills,
+      host,
     )
     if (warning) warningsSet.add(warning)
     return renderedCmd

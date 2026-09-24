@@ -37,6 +37,30 @@ const AliasShape = Type.Object(
   { additionalProperties: false },
 )
 
+// v16.0 Phase 65 — per-host override of `impl` / `cmd`. The TOP-LEVEL values stay
+// authoritative for Claude Code (so every claude-side rendering is byte-identical to
+// pre-65), and a host listed here replaces only the fields it declares.
+//
+// Host keys are NAMED rather than a free-form record on purpose: a typo'd host name in
+// a Record would silently never match and the entry would quietly keep rendering the
+// Claude primitive on codex — the same class of silent-skip failure the codex hook
+// trust model already cost us once. Declared names + additionalProperties:false turn
+// that typo into a build-time error instead.
+const ByHostOverrideShape = Type.Object(
+  {
+    impl: Type.Optional(Type.String()),
+    cmd: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+)
+const ByHostShape = Type.Object(
+  {
+    claude: Type.Optional(ByHostOverrideShape),
+    codex: Type.Optional(ByHostOverrideShape),
+  },
+  { additionalProperties: false },
+)
+
 // D-08 7-enum 之 6 non-behavioral tool category (Pattern A B.3 — discriminated union variant 2).
 // DisciplineCapabilityEntry 直接 hardcode 'behavioral' literal,sister judgment.ts dual-shape。
 const ToolCategoryEnum = Type.Union([
@@ -91,6 +115,9 @@ const CapabilityEntryBase = Type.Object(
     skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
+    // v16.0 Phase 65 — optional per-host override; absent on all but the Bucket 5
+    // agent-platform entries. See ByHostShape above for why hosts are named.
+    by_host: Type.Optional(ByHostShape),
     // sdk_ref removed 4.43.0: a code-navigation note stored as data, never read or
     // checked — completion-gate's still pointed at ralphLoop.ts after ADR 0039.
   },
