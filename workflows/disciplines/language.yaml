@@ -24,13 +24,21 @@ rules:
   # parses the numbered lines below and renders them into the spawn prompt's
   # `## Language` section. Keep one category per numbered line (`N. <sentence>`),
   # language-agnostic (they apply to any env.HARNESSED_USER_LANG).
+  #
+  # v16.0 Phase 65 T8 — these lines are a RENDERED surface, so `{{ host.* }}`
+  # (workflows/host-primitives.yaml) resolves in them: category 3's example list
+  # names the harness the subagent is actually running on. That render is strict —
+  # an unknown key throws — so only add a placeholder here, never in a rule whose
+  # description is NOT parsed. `follow-user-language` below is exactly such a rule:
+  # buildDisciplinesSection skips the whole `language` discipline (the directive is
+  # built from env instead), so a placeholder in it would never be substituted.
   - id: preserve-english-categories
     description: |-
       8 categories always stay in their original English form — never translate,
       transliterate, or rewrite them:
       1. Code, commands, shell snippets, config file contents, regex, SQL
       2. File / directory / path names (e.g. `src/components/Button.tsx`, `.planning/STATE.md`)
-      3. Tool / framework / library / product / company names (e.g. Claude Code, GSD, subagent, React, Anthropic)
+      3. Tool / framework / library / product / company names (e.g. {{ host.name }}, GSD, subagent, React, Anthropic)
       4. API / function / class / variable / field names, env vars, config keys (e.g. `buildAgentDef`, `HARNESSED_USER_LANG`)
       5. Error messages, stack traces, log output
       6. URLs, commit hashes, issue / PR numbers, version numbers, git refs

@@ -23,7 +23,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
-import { readRenderedSkill } from '../helpers/renderedSkill.js'
+import { readRenderedSkill, readRenderedWorkflowYaml } from '../helpers/renderedSkill.js'
 
 const ROOT = resolve(process.cwd())
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8')
@@ -178,9 +178,15 @@ describe('capabilities.yaml — agent-platform entries carry the new semantics',
   })
 })
 
+// v16.0 Phase 65 T8 — the teardown sentences moved behind `{{ host.* }}`
+// (`teams_cleanup_note.checklist` / `.multispec_checklist`), so these cells read
+// the CLAUDE-RENDERED yaml. Strictly stronger than the old source grep: it proves
+// the placeholder resolves AND that what it resolves to still states both facts.
+// The FORBIDDEN-literal scan above deliberately stays on the raw text — a dead
+// tool name must not appear anywhere, rendered or not.
 describe('role-prompts — teardown authority is bilingually consistent', () => {
-  const en = read('workflows/role-prompts.yaml')
-  const zh = read('workflows/role-prompts.zh-Hans.yaml')
+  const en = readRenderedWorkflowYaml(['role-prompts.yaml'])
+  const zh = readRenderedWorkflowYaml(['role-prompts.zh-Hans.yaml'])
 
   it('en no longer claims a tool is "the authoritative teardown"', () => {
     expect(en).not.toMatch(/authoritative teardown/i)

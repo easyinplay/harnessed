@@ -25,8 +25,11 @@ import {
   renderSkillBody,
 } from './capabilityResolver.js'
 import {
+  buildHostMapSection,
+  type HostMapSectionOptions,
+  insertHostMapSection,
+  loadHostMapNotes,
   loadHostPrimitives,
-  type RenderHostPrimitivesOptions,
   renderHostPrimitives,
   toHostId,
 } from './hostPrimitives.js'
@@ -63,17 +66,22 @@ export async function loadCapabilities(workflowsDir: string): Promise<Capability
  * Render placeholders in a single installed `<skillsDir>/<name>/SKILL.md`
  * file in-place.
  *
- * TWO placeholder families, substituted in a FIXED order:
+ * THREE passes, in a FIXED order:
  *   1. `{{ capabilities.<name>.cmd }}` (./capabilityResolver.ts)
  *   2. `{{ host.<primitive>[.<variant>] }}` (./hostPrimitives.ts) — v16.0 Phase 65
+ *   3. the host-map section (T10) — a non-claude-only block spliced in after the
+ *      frontmatter, NOT a placeholder family. Runs last so it can never be
+ *      re-scanned by (1) or (2): its rows quote raw table values, which may
+ *      legitimately look like text an earlier pass would have rewritten.
  *
- * The order matters and is locked by tests: the host pass is LAST, so a host
- * table value that happens to contain `{{ capabilities.* }}` text is inert —
- * nothing re-scans the host pass's output. There is deliberately no
- * render-until-fixpoint loop.
+ * The order of (1) before (2) matters and is locked by tests: a host table value
+ * that happens to contain `{{ capabilities.* }}` text is inert — nothing
+ * re-scans the host pass's output. There is deliberately no render-until-fixpoint
+ * loop.
  *
- * `hostRender` is optional; omitting it skips family (2) entirely and leaves
- * behavior byte-identical to pre-Phase-65.
+ * `hostRender` is optional; omitting it skips (2) and (3) entirely and leaves
+ * behavior byte-identical to pre-Phase-65. So does `hostRender.host === 'claude'`
+ * for pass (3) specifically — the claude artifact gets zero bytes from it.
  *
  * Non-fatal: any read/write/parse error — INCLUDING a throwing host render —
  * returns a result with `error` set so caller (setup.ts) can warn-and-continue
@@ -87,7 +95,7 @@ export async function renderSkillFile(
   installedPlugins: Set<string>,
   installedUserSkills: Set<string>,
   locale?: SupportedLocale,
-  hostRender?: RenderHostPrimitivesOptions,
+  hostRender?: HostMapSectionOptions,
 ): Promise<SkillRenderResult> {
   const dir = join(skillsBase, skillName)
   // Phase 29: dest holds a single SKILL.md (the exact name CC reads). The SOURCE
@@ -137,6 +145,11 @@ export async function renderSkillFile(
       result.warnings = rendered.warnings
       return result
     }
+    // Pass 3 — host-map section. Total for claude (buildHostMapSection returns ''
+    // and insertHostMapSection then returns the body untouched), so the byte-exact
+    // claude golden cannot be moved by anything here. Idempotent for the rest: an
+    // already-present region is stripped before the single re-insert.
+    finalBody = insertHostMapSection(finalBody, buildHostMapSection(hostRender))
   }
   // Did the source differ from the dest SKILL.md? (Always true when a zh sibling
   // was selected — even if no placeholders changed — because the dest currently
@@ -214,9 +227,15 @@ export async function renderAllSkills(
   const installedUserSkills = readInstalledUserSkills(homedirOverride)
   // Tolerant load (missing file → {}); all strictness lives in the renderer, so
   // an absent table only fails the skills that actually reference a primitive.
-  const hostRender: RenderHostPrimitivesOptions = {
+  // Both reads are once-per-run, not once-per-skill (asserted by tests). The
+  // notes are only consumed by the host-map section, so claude skips the read.
+  const hostRender: HostMapSectionOptions = {
     host: resolvedHost,
     table: await loadHostPrimitives({ workflowsDir, locale: resolvedLocale }),
+    notes:
+      resolvedHost === 'claude'
+        ? []
+        : await loadHostMapNotes({ workflowsDir, locale: resolvedLocale, host: resolvedHost }),
   }
   const results: SkillRenderResult[] = []
   const warningSet = new Set<string>()

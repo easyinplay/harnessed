@@ -16,8 +16,16 @@ import { dirname, join, resolve as pathResolve } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { activatePhase, completePhase } from '../checkpoint/engineHook.js'
 import { pause as statePause } from '../checkpoint/state.js'
+// v16.0 Phase 65 T8 — the ONE upward import in this module. `{{ host.* }}` is a
+// cross-surface render mechanism that already lives in src/cli/lib (beside the two
+// install-time renderers); relocating it to the workflow layer would have to move
+// generateCommands.ts / renderSkillTemplates.ts with it, which is its own refactor.
+import { toHostId } from '../cli/lib/hostPrimitives.js'
+import { renderRolePromptsForHost } from '../cli/lib/rolePromptHostRender.js'
 import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-execute.js'
 import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
+import { getLocale } from '../i18n/index.js'
+import { detectPlatform } from '../platform/platform.js'
 import { isUndefinedVariableError } from './exprBuilder.js'
 import { isVetoed } from './governance.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
@@ -478,7 +486,15 @@ export async function runWorkflow(
   // → empty map (buildAgentDef falls back to conservative 2-field stub).
   let rolePrompts: Record<string, RolePrompt> = {}
   try {
-    rolePrompts = await loadRolePrompts(join(packageRoot, 'workflows'))
+    const wfDir = join(packageRoot, 'workflows')
+    // v16.0 Phase 65 T8 — resolve the `{{ host.* }}` family for the harness this
+    // process is RUNNING under (not an install target): these strings go straight
+    // into a spawned agent's prompt. Loaded once per run, like the registry itself.
+    rolePrompts = await renderRolePromptsForHost(await loadRolePrompts(wfDir), {
+      workflowsDir: wfDir,
+      host: toHostId(detectPlatform().id),
+      locale: getLocale(),
+    })
   } catch (err) {
     console.warn(
       `⚠️ loadRolePrompts failed (${(err as Error).message}); ` +

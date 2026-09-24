@@ -72,6 +72,10 @@ const YAML_BASE = 'host-primitives'
 interface HostPrimitivesDoc {
   version?: number
   primitives?: HostPrimitiveTable
+  /** Per-host caveats for the rendered host-map section — NOT a primitive table
+   *  and deliberately NOT subject to the `default`/parity contracts. Only the
+   *  hosts that need a section appear here (`claude` is absent by design). */
+  host_map_notes?: Partial<Record<HostId, string[]>>
 }
 
 /** Options for {@link loadHostPrimitives}. */
@@ -108,6 +112,69 @@ export async function loadHostPrimitives(
   }
   const doc = parseYaml(raw) as HostPrimitivesDoc | null
   return doc?.primitives ?? {}
+}
+
+/**
+ * Load `host_map_notes.<host>` from the same (locale-selected) yaml file.
+ *
+ * A SEPARATE read rather than a widened {@link loadHostPrimitives} return type:
+ * every existing caller wants the table and nothing else, and the notes are read
+ * once per `renderAllSkills` run (not once per skill), so the second parse of a
+ * ~10 KB file is not worth a breaking signature change.
+ *
+ * Same tolerance as the table load — unreadable file, absent key, or a non-array
+ * value all yield `[]`. The notes are prose the section embeds verbatim; there is
+ * nothing to resolve and therefore nothing to fail loudly about.
+ *
+ * Locale note: the zh-Hans sibling carries zh prose here, so a zh install renders
+ * zh caveats inside an en scaffold. That is deliberate — the scaffold names tools
+ * and columns (proper nouns), the notes are explanation.
+ */
+export async function loadHostMapNotes(
+  opts: LoadHostPrimitivesOptions & { host: HostId },
+): Promise<string[]> {
+  const path = resolveLocaleYaml(opts.workflowsDir, YAML_BASE, opts.locale ?? getLocale())
+  let raw: string
+  try {
+    raw = await readFile(path, 'utf8')
+  } catch {
+    return []
+  }
+  const doc = parseYaml(raw) as HostPrimitivesDoc | null
+  const notes = doc?.host_map_notes?.[opts.host]
+  return Array.isArray(notes) ? notes.filter((n): n is string => typeof n === 'string') : []
+}
+
+/** Memo for {@link loadHostPrimitivesCached}, keyed by `<workflowsDir>|<locale>`.
+ *  Promises (not resolved tables) so concurrent callers share one read. */
+const _tableCache = new Map<string, Promise<HostPrimitiveTable>>()
+
+/**
+ * {@link loadHostPrimitives} with a process-lifetime memo.
+ *
+ * For the install surfaces one load per run falls out of the call graph, but the
+ * RUNTIME surfaces (`harnessed prompt`, `harnessed run`) resolve the table on a
+ * path that can be entered repeatedly — per sub-workflow, per phase, and per test
+ * case. The table is immutable packaged data, so re-reading and re-parsing it is
+ * pure waste; this keeps it to one read per (dir, locale).
+ */
+export function loadHostPrimitivesCached(
+  opts: LoadHostPrimitivesOptions,
+): Promise<HostPrimitiveTable> {
+  const locale = opts.locale ?? getLocale()
+  const key = `${opts.workflowsDir}|${locale}`
+  const hit = _tableCache.get(key)
+  if (hit) return hit
+  const p = loadHostPrimitives({ workflowsDir: opts.workflowsDir, locale })
+  _tableCache.set(key, p)
+  return p
+}
+
+/** Test-only — drops the memo so a fixture that rewrites its yaml between cases
+ *  is re-read. Production callers should never need this (sister
+ *  `_clearDisciplineCache` in src/workflow/disciplineLoader.ts). */
+export function _clearHostPrimitivesCache(): void {
+  _tableCache.clear()
 }
 
 /**
@@ -202,4 +269,174 @@ export function collectHostPlaceholders(body: string): Set<string> {
     keys.add(`${m[1]}.${m[2] ?? DEFAULT_VARIANT}`)
   }
   return keys
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Host-map section (v16.0 Phase 65 T10 / SPEC R4).
+//
+// Pass 3 of the install render, after capabilities and after host primitives.
+// Non-claude artifacts get ONE block, right after the frontmatter, stating which
+// harness they were rendered for and how to decode Claude-Code-authored prose.
+//
+// Why it exists: the rewrite swaps CC terms for codex ones INSIDE the prose, so
+// the artifact stops saying "Claude Code" — but a model reading it can still meet
+// a step whose shape only makes sense against the CC original (and, per F3, can
+// meet the artifact through a directory shared with other tools). One block that
+// names the mapping and the known caveats beats smearing the same hedge across
+// ~74 prose sites.
+//
+// The claude artifact gets ZERO bytes from this pass — byte-exact golden
+// (tests/fixtures/render-golden/claude-{en,zh-Hans}.json). That is enforced by
+// `buildHostMapSection` returning '' for claude AND by `insertHostMapSection`
+// treating an empty section as "do not touch the body at all".
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Opening marker. Stable and exempt from the Phase 65 T11 CC-token gate — the
+ *  section quotes Claude Code terms ON PURPOSE, so the gate skips this span. */
+export const HOST_MAP_START = '<!-- harnessed:host-map:start -->'
+
+/** Closing marker. Always emitted paired with {@link HOST_MAP_START}. */
+export const HOST_MAP_END = '<!-- harnessed:host-map:end -->'
+
+/**
+ * Longest `default` cell (either column) still treated as a TERM worth tabulating.
+ *
+ * The table mixes two populations: short term swaps (`SendMessage` → `send_input`)
+ * and whole C-class paragraphs that exist because a sentence asserts a host-specific
+ * fact. Only the first kind belongs in a glossary. The measured gap is wide — today
+ * the longest term cell is 48 chars and the shortest paragraph cell is 99 — so a
+ * cutoff here is a classifier, not a truncation risk. Multi-line cells are excluded
+ * regardless of length (a block scalar is never a term).
+ */
+const TERM_MAX_LEN = 64
+
+/** One glossary row: `<primitive>` and the two hosts' `default` text. */
+interface HostMapRow {
+  primitive: string
+  claude: string
+  codex: string
+}
+
+/** Escape the one character that would break out of a markdown table cell. */
+function cell(text: string): string {
+  return text.replaceAll('|', '\\|')
+}
+
+/** Inline-code a value, unless it already carries its own backticks. */
+function code(text: string): string {
+  return text.includes('`') ? text : `\`${text}\``
+}
+
+/**
+ * The glossary rows, derived from the table rather than hand-listed: every
+ * primitive whose `default` variant is a single-line term in BOTH columns, sorted
+ * by primitive name so the section is byte-stable across yaml reorderings.
+ */
+export function hostMapRows(table: HostPrimitiveTable): HostMapRow[] {
+  const rows: HostMapRow[] = []
+  for (const primitive of Object.keys(table).sort()) {
+    const entry = table[primitive]?.[DEFAULT_VARIANT]
+    const claude = entry?.claude
+    const codex = entry?.codex
+    if (claude === undefined || codex === undefined) continue
+    if (claude.includes('\n') || codex.includes('\n')) continue
+    if (claude.length > TERM_MAX_LEN || codex.length > TERM_MAX_LEN) continue
+    rows.push({ primitive, claude, codex })
+  }
+  return rows
+}
+
+/** Options for {@link buildHostMapSection}. */
+export interface HostMapSectionOptions {
+  /** The harness the artifact is being rendered FOR. `claude` yields ''. */
+  host: HostId
+  /** Table from {@link loadHostPrimitives} (already locale-selected). */
+  table: HostPrimitiveTable
+  /** Caveats from {@link loadHostMapNotes}; omitted/empty drops the block. */
+  notes?: readonly string[]
+}
+
+/**
+ * Build the marker-delimited host-map block, or '' when there is nothing to say.
+ *
+ * Returns '' for `claude` (the artifact IS the Claude Code original — a map from
+ * CC to CC is noise, and the byte-exact golden forbids it) and for any host with
+ * neither glossary rows nor notes.
+ *
+ * The scaffold (heading, lead sentence, column headers, "Caveats") is English in
+ * every locale: its payload is tool and column names, which the project's language
+ * rules keep untranslated. Only `notes` is locale-sourced.
+ */
+export function buildHostMapSection(opts: HostMapSectionOptions): string {
+  const { host, table } = opts
+  if (host === 'claude') return ''
+  const rows = hostMapRows(table)
+  const notes = opts.notes ?? []
+  if (rows.length === 0 && notes.length === 0) return ''
+
+  const skillsDir = table.skills_dir?.[DEFAULT_VARIANT]?.[host]
+  const where = skillsDir ? ` and installed it under ${code(skillsDir)}` : ''
+  const lines: string[] = [
+    HOST_MAP_START,
+    `## Host map — ${host}`,
+    '',
+    `harnessed rendered this artifact for the **${host}** harness${where}. The workflow prose ` +
+      'was authored against Claude Code, so where a step names a tool it names the ' +
+      `${host} one. Use the table to decode any instruction that still reads as ` +
+      'Claude-Code-shaped; do not substitute the Claude Code names back.',
+  ]
+  if (rows.length > 0) {
+    lines.push(
+      '',
+      `| primitive | Claude Code | ${host} |`,
+      '| --- | --- | --- |',
+      ...rows.map(
+        (r) => `| \`${r.primitive}\` | ${cell(code(r.claude))} | ${cell(code(r.codex))} |`,
+      ),
+    )
+  }
+  if (notes.length > 0) {
+    lines.push('', 'Caveats — these hold for the whole artifact:', '')
+    for (const n of notes) lines.push(`- ${n}`)
+  }
+  lines.push(HOST_MAP_END)
+  return lines.join('\n')
+}
+
+/** Matches a previously inserted block plus any blank lines trailing it. */
+function regionRe(): RegExp {
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`${esc(HOST_MAP_START)}[\\s\\S]*?${esc(HOST_MAP_END)}\\n*`, 'g')
+}
+
+/** Frontmatter block at the very top (`---` … `---`), if the body opens with one. */
+const FRONTMATTER_RX = /^---[ \t]*\r?\n[\s\S]*?\r?\n---[ \t]*(\r?\n|$)/
+
+/**
+ * Splice `section` into `body` immediately after the YAML frontmatter.
+ *
+ * Position rationale: after the frontmatter is the only offset that is both
+ * stable (every workflow body opens with one, and its end is unambiguous) and
+ * safe (inserting BEFORE it would push `---` off line 1 and break every
+ * frontmatter parser, including the host's own skill loader). It is also the
+ * first thing read after the metadata, which is where an orientation note earns
+ * its tokens. A body with no frontmatter takes offset 0.
+ *
+ * IDEMPOTENT by construction: any existing marker region is stripped first, then
+ * exactly one is re-inserted with normalized surrounding blank lines — so
+ * rendering an already-rendered body reproduces it byte-for-byte instead of
+ * stacking a second copy.
+ *
+ * An empty `section` (i.e. host === 'claude') returns `body` UNCHANGED — not even
+ * a strip — so the claude path can never move a byte.
+ */
+export function insertHostMapSection(body: string, section: string): string {
+  if (section === '') return body
+  const stripped = body.replace(regionRe(), '')
+  const fm = FRONTMATTER_RX.exec(stripped)
+  const offset = fm ? fm[0].length : 0
+  const before = stripped.slice(0, offset)
+  const after = stripped.slice(offset).replace(/^\n+/, '')
+  const lead = offset === 0 ? '' : '\n'
+  return `${before}${lead}${section}\n\n${after}`
 }

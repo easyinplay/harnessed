@@ -10,16 +10,24 @@
 //      (testable→structural identity / acceptance method / cross-phase
 //      contract shape) or is irreversible must be upgraded to blocking.
 //
-// Pattern per tests/workflow/rolePromptsMattpocock.test.ts: loadRolePrompts
-// for the en yaml, raw readFileSync for the zh mirror + the 4 SKILL.md files.
+// Pattern per tests/workflow/rolePromptsMattpocock.test.ts: the registry for the
+// en yaml, raw readFileSync for the zh mirror + the 4 SKILL.md files.
 // zh assertions use toContain (JS \b does not match after CJK — memory rule).
+//
+// v16.0 Phase 65 T8 — the clarification tool in the ROLE-PROMPT source is now
+// `{{ host.ask_user }}` too, so the cells that assert it read the CLAUDE-RENDERED
+// registry / yaml (`readRenderedRolePrompts` / `readRenderedWorkflowYaml`) rather
+// than the raw source. Cells whose text carries no placeholder stay on `read`.
 
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { loadRolePrompts } from '../../src/workflow/rolePrompts.js'
-import { readRenderedSkill } from '../helpers/renderedSkill.js'
+import {
+  readRenderedRolePrompts,
+  readRenderedSkill,
+  readRenderedWorkflowYaml,
+} from '../helpers/renderedSkill.js'
 
 const PACKAGE_ROOT = process.cwd()
 const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')
@@ -28,7 +36,7 @@ const read = (...segs: string[]) => readFileSync(join(WORKFLOWS_DIR, ...segs), '
 
 describe('deferrable relay gate (issue #4, 4.23.1)', () => {
   it('cell 1 — en discuss-phase checklist carries the relay contract', async () => {
-    const prompts = await loadRolePrompts(WORKFLOWS_DIR)
+    const prompts = await readRenderedRolePrompts()
     const joined = (prompts['discuss-phase']?.checklist ?? []).join('\n')
     expect(joined).toMatch(/one chance to override/i)
     expect(joined).toMatch(/batched AskUserQuestion/i)
@@ -36,7 +44,7 @@ describe('deferrable relay gate (issue #4, 4.23.1)', () => {
   })
 
   it('cell 2 — en discuss-phase checklist carries the escalation rule', async () => {
-    const prompts = await loadRolePrompts(WORKFLOWS_DIR)
+    const prompts = await readRenderedRolePrompts()
     const joined = (prompts['discuss-phase']?.checklist ?? []).join('\n')
     expect(joined).toMatch(/does not change the nature of any requirement/i)
     expect(joined).toMatch(/mark (it )?blocking/i)
@@ -45,7 +53,7 @@ describe('deferrable relay gate (issue #4, 4.23.1)', () => {
   })
 
   it('cell 3 — zh role-prompts mirror carries both rules (toContain, no \\b)', () => {
-    const raw = read('role-prompts.zh-Hans.yaml')
+    const raw = readRenderedWorkflowYaml(['role-prompts.zh-Hans.yaml'])
     expect(raw).toContain('一次 override 机会')
     expect(raw).toContain('批量 AskUserQuestion')
     expect(raw).toContain('改变任何需求的本质')
@@ -92,7 +100,7 @@ describe('deferrable relay gate (issue #4, 4.23.1)', () => {
 // probably agree" cannot silently bypass the relay contract above.
 describe('red-flags rebuttal table (intel G3, 4.24.0)', () => {
   it('cell 7 — en discuss-phase checklist pre-refutes self-decide excuses', async () => {
-    const prompts = await loadRolePrompts(WORKFLOWS_DIR)
+    const prompts = await readRenderedRolePrompts()
     const joined = (prompts['discuss-phase']?.checklist ?? []).join('\n')
     expect(joined).toMatch(/red flags/i)
     expect(joined).toMatch(/user would probably agree/i)

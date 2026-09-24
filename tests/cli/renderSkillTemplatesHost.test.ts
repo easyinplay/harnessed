@@ -22,7 +22,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CapabilityMap } from '../../src/cli/lib/capabilityResolver.js'
-import { loadHostPrimitives, toHostId } from '../../src/cli/lib/hostPrimitives.js'
+import { HOST_MAP_START, loadHostPrimitives, toHostId } from '../../src/cli/lib/hostPrimitives.js'
 import { renderAllSkills, renderSkillFile } from '../../src/cli/lib/renderSkillTemplates.js'
 import { __resetForTests } from '../../src/i18n/index.js'
 
@@ -210,7 +210,11 @@ describe('renderAllSkills — host selection + single table load', () => {
 
     makeSkill('a', { en: '{{ host.spawn }}' }) // reset the source body
     await renderAllSkills(['a'], tmpRoot, tmpRoot, tmpRoot, 'en', 'codex')
-    expect(read('a')).toBe('spawn_agent tool')
+    // Not `toBe`: from T10 the codex artifact also carries the host-map section
+    // (pass 3). The column choice is what this case pins — the section's own
+    // shape is locked in tests/cli/hostMapSection.test.ts.
+    expect(read('a')).toContain('spawn_agent tool')
+    expect(read('a').startsWith(HOST_MAP_START)).toBe(true)
   })
 
   it('a descriptor id with no implementation renders the claude column', async () => {

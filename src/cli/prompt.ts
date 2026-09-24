@@ -26,7 +26,13 @@ import { resolveWorkflowYaml } from '../workflow/resolveYaml.js'
 import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { buildAgentDef } from '../workflow/run.js'
 import { pickHostValues } from './lib/capabilityResolver.js'
-import { toHostId } from './lib/hostPrimitives.js'
+import {
+  type HostId,
+  loadHostPrimitivesCached,
+  renderHostPrimitives,
+  toHostId,
+} from './lib/hostPrimitives.js'
+import { renderRolePromptsForHost } from './lib/rolePromptHostRender.js'
 
 const DEFAULT_MAX_ITERATIONS = 20
 const DEFAULT_MODEL = 'sonnet'
@@ -67,7 +73,11 @@ async function loadSubArrayField(
   return Array.isArray(v) ? (v as string[]) : []
 }
 
-async function buildToolsSection(sub: string, packageRoot: string): Promise<string> {
+async function buildToolsSection(
+  sub: string,
+  packageRoot: string,
+  host: HostId = toHostId(detectPlatform().id),
+): Promise<string> {
   try {
     const workflowsDir = resolve(packageRoot, 'workflows')
     const tools = await loadSubArrayField(sub, packageRoot, 'tools_available')
@@ -83,8 +93,8 @@ async function buildToolsSection(sub: string, packageRoot: string): Promise<stri
     const caps = capDoc?.capabilities ?? {}
     // v16.0 Phase 65 — this is the RUNTIME surface (the prompt handed to a subagent
     // in the live session), so the host is the one we are actually running under,
-    // not an install-time target.
-    const host = toHostId(detectPlatform().id)
+    // not an install-time target. The default argument above resolves it; callers
+    // (and the byte golden) may pin it explicitly.
     const lines: string[] = []
     for (const tool of tools) {
       const entry = caps[tool]
@@ -217,16 +227,54 @@ async function loadPreserveCategories(packageRoot: string): Promise<string[]> {
   }
 }
 
+/** v16.0 Phase 65 T8 — resolve the `{{ host.* }}` family inside the preserve-English
+ *  category lines. Category 3 ("Tool / framework / library / product / company
+ *  names") carries `{{ host.name }}` in its example list, so on codex the example
+ *  reads `Codex` rather than naming a harness the subagent is not running on.
+ *
+ *  Reads the `en` table to match `loadPreserveCategories`, which reads the en
+ *  base file (this section is English scaffolding addressed to the subagent); the
+ *  `name` primitive is a proper noun and identical in both locale tables anyway.
+ *  Fail-soft: a missing table / unresolvable key leaves the lines verbatim, which
+ *  is the pre-Phase-65 claude wording rather than a broken prompt. */
+async function renderPreserveCategories(
+  categories: string[],
+  packageRoot: string,
+  host: HostId,
+): Promise<string[]> {
+  if (categories.length === 0) return categories
+  try {
+    const table = await loadHostPrimitivesCached({
+      workflowsDir: resolve(packageRoot, 'workflows'),
+      locale: 'en',
+    })
+    return categories.map((c) => renderHostPrimitives(c, { host, table }))
+  } catch (err) {
+    console.error(
+      `⚠️ host-primitive render failed for the language discipline (${(err as Error).message}); ` +
+        'using the raw category lines (ADR 0029 fail-soft).',
+    )
+    return categories
+  }
+}
+
 /** Build the `## Language` section from env.HARNESSED_USER_LANG. Empty string
  *  when unset (subagent then mirrors the user's conversation language naturally).
  *  The preserve-English list comes from the language discipline yaml (SoT) rather
  *  than a hardcoded sentence — the hardcoded one silently omitted 3 of the 8
  *  categories (product/company names, industry abbreviations, verbatim quoting). */
-export async function buildLanguageSection(packageRoot: string): Promise<string> {
+export async function buildLanguageSection(
+  packageRoot: string,
+  host: HostId = toHostId(detectPlatform().id),
+): Promise<string> {
   const code = process.env.HARNESSED_USER_LANG
   if (!code) return ''
   const name = LANG_NAMES[code] ?? code
-  const categories = await loadPreserveCategories(packageRoot)
+  const categories = await renderPreserveCategories(
+    await loadPreserveCategories(packageRoot),
+    packageRoot,
+    host,
+  )
   const preserve =
     categories.length > 0
       ? `The following always stay in their original English form (do not translate, transliterate, or rewrite them):\n${categories.join('\n')}`
@@ -278,6 +326,72 @@ async function resolveMaxIterations(sub: string, packageRoot: string): Promise<n
   }
 }
 
+/** What {@link buildPromptText} returns — the three fields `--json` prints
+ *  alongside `max_iterations` (which the CLI resolves separately). */
+export interface BuiltPrompt {
+  /** The complete spawn-ready prompt text (what the CLI prints). */
+  prompt: string
+  /** Model tier for the spawn (`def.model` or the sonnet default). */
+  model: string
+  /** Specialist title (role-prompts entry, or the generic fallback). */
+  specialist: string
+}
+
+/** Options for {@link buildPromptText}. */
+export interface BuildPromptOptions {
+  /** Prepended as a `## Task` section. */
+  task?: string
+  /** Locale for role-prompts + disciplines. Defaults to `getLocale()`. */
+  locale?: SupportedLocale
+  /** Host to render `{{ host.* }}` for. Defaults to the harness we RUN under. */
+  host?: HostId
+}
+
+/**
+ * Assemble the whole `harnessed prompt <sub>` text.
+ *
+ * v16.0 Phase 65 T8 — extracted from the commander action (below) so the runtime
+ * prompt is addressable as a function: the byte golden
+ * (tests/cli/promptHostGolden.test.ts) asserts that rewriting role-prompts prose
+ * into `{{ host.* }}` placeholders leaves the CLAUDE-side text byte-identical,
+ * which needs the assembled string, not a spawned CLI process.
+ */
+export async function buildPromptText(
+  sub: string,
+  packageRoot: string,
+  opts: BuildPromptOptions = {},
+): Promise<BuiltPrompt> {
+  const workflowsDir = resolve(packageRoot, 'workflows')
+  const locale = opts.locale ?? getLocale()
+  const host = opts.host ?? toHostId(detectPlatform().id)
+
+  // Missing workflows dir is the only hard error (role-prompts.yaml unreadable
+  // is non-fatal → loadRolePrompts returns {} → buildAgentDef fallback path).
+  const rolePrompts = await loadRolePrompts(workflowsDir, locale)
+  // v16.0 Phase 65 T8 — resolve the `{{ host.* }}` family BEFORE buildAgentDef
+  // splices the fields together. Rendering the assembled prompt instead would
+  // also scan the tools / disciplines / protocol sections, which are not part of
+  // this surface's template contract.
+  const def = buildAgentDef(
+    sub,
+    await renderRolePromptsForHost(rolePrompts, { workflowsDir, host, locale }),
+  )
+  const body = def.prompt
+
+  const taskSection =
+    typeof opts.task === 'string' && opts.task.length > 0 ? `## Task\n${opts.task}\n\n` : ''
+
+  const toolsSection = await buildToolsSection(sub, packageRoot, host)
+  const disciplinesSection = await buildDisciplinesSection(sub, packageRoot, locale)
+  const languageSection = await buildLanguageSection(packageRoot, host)
+
+  return {
+    prompt: `${taskSection}${body}\n${toolsSection}${disciplinesSection}${PROTOCOLS}${languageSection}`,
+    model: def.model ?? DEFAULT_MODEL,
+    specialist: rolePrompts[sub]?.specialist ?? DEFAULT_SPECIALIST,
+  }
+}
+
 export function registerPrompt(program: Command): void {
   program
     .command('prompt')
@@ -298,28 +412,17 @@ export function registerPrompt(program: Command): void {
         return
       }
       const packageRoot = getAssetsRoot()
-      const workflowsDir = resolve(packageRoot, 'workflows')
 
-      // Missing workflows dir is the only hard error (role-prompts.yaml unreadable
-      // is non-fatal → loadRolePrompts returns {} → buildAgentDef fallback path).
-      const rolePrompts = await loadRolePrompts(workflowsDir)
-
-      const def = buildAgentDef(sub, rolePrompts)
-      const body = def.prompt
-
-      const taskSection =
-        typeof raw.task === 'string' && raw.task.length > 0 ? `## Task\n${raw.task}\n\n` : ''
-
-      const toolsSection = await buildToolsSection(sub, packageRoot)
-      const disciplinesSection = await buildDisciplinesSection(sub, packageRoot)
-      const languageSection = await buildLanguageSection(packageRoot)
-      const fullPrompt = `${taskSection}${body}\n${toolsSection}${disciplinesSection}${PROTOCOLS}${languageSection}`
+      const {
+        prompt: fullPrompt,
+        model,
+        specialist,
+      } = await buildPromptText(sub, packageRoot, {
+        ...(typeof raw.task === 'string' ? { task: raw.task } : {}),
+      })
 
       if (raw.json) {
         const maxIterations = await resolveMaxIterations(sub, packageRoot)
-        const rp = rolePrompts[sub]
-        const model = def.model ?? DEFAULT_MODEL
-        const specialist = rp?.specialist ?? DEFAULT_SPECIALIST
         console.log(
           JSON.stringify({
             prompt: fullPrompt,

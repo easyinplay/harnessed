@@ -52,3 +52,47 @@ export async function loadRolePrompts(
   const doc = parseYaml(raw) as RolePromptsDoc | null
   return doc?.prompts ?? {}
 }
+
+/**
+ * Apply `render` to the RolePrompt fields that end up in a spawned agent's
+ * PROMPT BODY — `specialist` / `responsibility` / `checklist` / `severity`, i.e.
+ * exactly what `buildAgentDef` (src/workflow/run.ts) splices into `prompt`.
+ *
+ * v16.0 Phase 65 T8 — the runtime hook for the `{{ host.* }}` family. Callers
+ * pass a renderer bound to the host they are running UNDER (not an install
+ * target); see src/cli/prompt.ts `buildPromptText` and run.ts.
+ *
+ * `description` is deliberately NOT rendered. It is the one field this registry
+ * feeds to the INSTALL surface, where `src/cli/lib/generateCommands.ts` emits it
+ * as the generated command's yaml frontmatter `description:` — a slot that is
+ * explicitly held out of that file's host pass ("prompt.description is yaml
+ * content, not a template"). A placeholder there would ship verbatim into
+ * `<claude-home>/commands/<x>.md`. `primary_cap` / `is_master` are keys, not prose.
+ *
+ * The renderer is INJECTED rather than imported so this module stays free of
+ * `src/cli/lib` (architecture review #7 — role-prompts is workflow-domain data
+ * and should not import up into the CLI layer).
+ */
+export function mapRolePromptText(rp: RolePrompt, render: (body: string) => string): RolePrompt {
+  // The yaml is untrusted input and this runs over EVERY entry before any single
+  // one is used, so a malformed neighbour must not take the whole registry down
+  // (it still reaches `buildAgentDef` exactly as malformed as it was).
+  const s = (v: unknown): string => (typeof v === 'string' ? render(v) : (v as string))
+  return {
+    ...rp,
+    specialist: s(rp.specialist),
+    responsibility: s(rp.responsibility),
+    checklist: Array.isArray(rp.checklist) ? rp.checklist.map((c) => s(c)) : rp.checklist,
+    severity: s(rp.severity),
+  }
+}
+
+/** {@link mapRolePromptText} across a whole registry (new object; input untouched). */
+export function mapRolePromptsText(
+  prompts: Record<string, RolePrompt>,
+  render: (body: string) => string,
+): Record<string, RolePrompt> {
+  const out: Record<string, RolePrompt> = {}
+  for (const [name, rp] of Object.entries(prompts)) out[name] = mapRolePromptText(rp, render)
+  return out
+}

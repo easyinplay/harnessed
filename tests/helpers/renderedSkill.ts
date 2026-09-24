@@ -24,6 +24,11 @@ import {
   type HostPrimitiveTable,
   renderHostPrimitives,
 } from '../../src/cli/lib/hostPrimitives.js'
+import {
+  loadRolePrompts,
+  mapRolePromptsText,
+  type RolePrompt,
+} from '../../src/workflow/rolePrompts.js'
 
 const WORKFLOWS = resolve(process.cwd(), 'workflows')
 
@@ -56,4 +61,41 @@ export function readRenderedSkill(segs: string[], host: HostId = 'claude'): stri
   const body = readFileSync(join(WORKFLOWS, ...segs), 'utf8')
   const locale = rel.endsWith('.zh-Hans.md') ? 'zh-Hans' : 'en'
   return renderHostPrimitives(body, { host, table: tableFor(locale) })
+}
+
+/**
+ * Same idea for a `workflows/**\/*.yaml` SOURCE — v16.0 Phase 65 T8 extended the
+ * `{{ host.* }}` family to the RUNTIME surface (`role-prompts{,.zh-Hans}.yaml`,
+ * `disciplines/language.yaml`), so content gates that grep those files need the
+ * rendered text for the same reason the SKILL gates do.
+ *
+ * Renders the WHOLE file text rather than parsing first: placeholders only ever
+ * occur inside scalar values, and a gate that greps raw source wants raw source
+ * back — just with the indirection resolved. The locale table is picked from the
+ * filename (`<base>.zh-Hans.yaml` → zh-Hans), mirroring `resolveLocaleYaml`.
+ */
+export function readRenderedWorkflowYaml(segs: string[], host: HostId = 'claude'): string {
+  const rel = segs.join('/')
+  const body = readFileSync(join(WORKFLOWS, ...segs), 'utf8')
+  const locale = rel.endsWith('.zh-Hans.yaml') ? 'zh-Hans' : 'en'
+  return renderHostPrimitives(body, { host, table: tableFor(locale) })
+}
+
+/**
+ * The role-prompt registry as `buildAgentDef` will see it — i.e. what a spawned
+ * subagent's prompt is built from, `{{ host.* }}` resolved (v16.0 Phase 65 T8).
+ *
+ * Renders exactly the prompt-body fields the production path renders
+ * (`mapRolePromptsText`), so a gate asserting on `checklist` / `responsibility`
+ * matches the runtime text. `description` stays raw here too — it is the one
+ * field that reaches the install surface un-rendered.
+ */
+export async function readRenderedRolePrompts(
+  locale: 'en' | 'zh-Hans' = 'en',
+  host: HostId = 'claude',
+): Promise<Record<string, RolePrompt>> {
+  const table = tableFor(locale)
+  return mapRolePromptsText(await loadRolePrompts(WORKFLOWS, locale), (body) =>
+    renderHostPrimitives(body, { host, table }),
+  )
 }
