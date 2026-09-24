@@ -10,12 +10,15 @@
 // cleanup). The dead-tool literal is pinned absent by tests/workflow/agentTeamsApiMigration.test.ts;
 // this file keeps asserting that the contract itself stayed unconditional.
 
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { readRenderedSkill } from '../helpers/renderedSkill.js'
 
-const WF = join(process.cwd(), 'workflows')
-const read = (p: string) => readFileSync(join(WF, p), 'utf8')
+// v16.0 Phase 65 — step 4 and its teardown bullets now live in
+// `workflows/host-primitives.yaml` behind `{{ host.teams_step_note.skill }}` /
+// `{{ host.teams_teardown_note }}`. Assert the CLAUDE-RENDERED body (what the
+// model receives) rather than the raw source: same contract, one indirection
+// later, and the render itself becomes part of what is guarded.
+const read = (p: string) => readRenderedSkill(p.split('/'))
 
 describe('auto SKILL — Agent Teams teardown contract + headless note (issue #7)', () => {
   it('en step 4 carries a MUST teardown-in-finally contract', () => {

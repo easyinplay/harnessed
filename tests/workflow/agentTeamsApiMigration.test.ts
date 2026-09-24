@@ -23,6 +23,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
+import { readRenderedSkill } from '../helpers/renderedSkill.js'
 
 const ROOT = resolve(process.cwd())
 const read = (rel: string) => readFileSync(join(ROOT, rel), 'utf8')
@@ -204,9 +205,16 @@ describe('role-prompts — teardown authority is bilingually consistent', () => 
   })
 })
 
+// v16.0 Phase 65 — step 4 + its teardown bullets moved behind
+// `{{ host.teams_step_note.skill }}` / `{{ host.teams_teardown_note }}` in
+// workflows/host-primitives.yaml. These two cells assert the CLAUDE-RENDERED body
+// (what the model actually receives), so they still guard the same wording and
+// now also prove the placeholder resolves. The FORBIDDEN-literal scan above stays
+// source-level on purpose: host-primitives.yaml lives under `workflows/` and is
+// already in SCAN_DIRS, so a dead-tool literal in EITHER host column is caught.
 describe('auto SKILL — teardown contract survives the migration (issue #7 lineage)', () => {
   it('en step 4 keeps an unconditional teardown discipline in the new API shape', () => {
-    const s = read('workflows/auto/SKILL.md')
+    const s = readRenderedSkill(['auto', 'SKILL.md'])
     expect(s).toMatch(/shut down/i)
     expect(s).toMatch(/by name/i)
     expect(s).toMatch(/finally|regardless|even if/i)
@@ -215,7 +223,7 @@ describe('auto SKILL — teardown contract survives the migration (issue #7 line
   })
 
   it('zh mirror keeps the same discipline', () => {
-    const s = read('workflows/auto/SKILL.zh-Hans.md')
+    const s = readRenderedSkill(['auto', 'SKILL.zh-Hans.md'])
     expect(s).toMatch(/按名/)
     expect(s).toMatch(/无论|即使/)
     expect(s).toMatch(/孤儿|挂起|泄漏/)

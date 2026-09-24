@@ -124,6 +124,38 @@ session 退出自动清理 / 无 teardown 工具」四条 CC 专属事实)、`:2
 同一仓库两套并存,是既有事实。词表里 3 个 key 因此在首稿金标红,已按站点原文分别取值。
 **不在本 phase 统一标点**(统一会改 claude 金标)。
 
+## F11 金标口径:en 安装下未渲染的 locale sibling 不该进字节锁
+
+批 A 改写后 claude×en 金标红在 **恰好 29 个 `*/SKILL.zh-Hans.md`** 上(一个不多一个不少),
+而 29 个渲染后的 `SKILL.md`、全部 `workflow.yaml`、claude×zh-Hans 整份、codex sanity 全绿;
+另一条独立证据:58 个文件按 claude 渲染后与 `git show HEAD:` 逐字节对比 `0 differ`。
+
+原因:`renderSkillTemplates.ts:135,153` —— en 安装时只渲染并写 `SKILL.md`,
+`localeBodySelected === false` 于是 `SKILL.zh-Hans.md` 以 `cp` 原样留在安装目录,不渲染也不删除;
+而金标的 `hashTree` 哈希安装目录下每一个文件。
+
+**裁决:改金标口径,不改产品行为。** 金标锁的是「宿主实际会读到的内容」,Claude Code 只读 `SKILL.md`
+(官方 skill 加载契约,F3),那份 zh 副本是死副本。codex sanity 断言的口径须同步统一,不留不对称的门。
+`renderSkillTemplates.test.ts:170`「en 侧必须有 zh 兄弟」保留(它锁产品行为),只是不纳入字节锁。
+
+**副作用记 TODO(本 phase 不修)**:en 安装会往 `~/.claude/skills/<name>/` 丢一份**带未解析占位符**的
+`SKILL.zh-Hans.md`。无人读取因而无实际危害,但不干净。后续可选:en 安装也剥除 sibling,或也渲染它。
+
+## F12 marker 版本号与逐字节金标的结构性冲突
+
+`scripts/rewrite-skill-invoke-sections.mjs` 的 marker 字符串**是产物的一部分**,所以 bump `NEW_MARKER`
+必然改掉 58 个文件的 hash —— 与「claude 产物逐字节不变」直接冲突。
+
+**裁决:Phase 65 不 bump**(批 A 用「临时 bump → 重跑 → 改回 → 再重跑」得到正确终态:产物含占位符、
+marker 字节不变)。定调写进该脚本注释:marker 版本号不是用户可见措辞,将来确需 bump 时允许重录 claude
+金标,**但必须在同一 commit 内用 diff 证明「除 marker 行外零差异」**,否则重录就是在掩盖回归。
+
+## F13 en 与 zh 的 `host.*` 占位符集合**故意不相等**
+
+en 正文用 `spawn_subagent.default` / `.plural`,zh 正文用 `.zh_tool` —— 词表设计使然(中英行文形态不同)。
+**T12 把 `host.*` 纳入 `check-skill-i18n-parity` 时不能简单比 variant 集合相等**,否则必红;
+正确判据待定(候选:比 primitive 集合而非 variant 集合)。
+
 ## F8 顺带发现(不在本 phase 修,记 TODO)
 
 - codex 上 `pluginsRegistry: null`(`platform.ts:135`)→ `readInstalledPlugins` 返回空集

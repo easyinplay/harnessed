@@ -117,17 +117,54 @@ primitives:
   # The codex column therefore DROPS the host-specific claim rather than
   # re-asserting it for a host where it was never measured.
 
-  # `default` aliases `.execution` — the widest-used variant (19 renderings per
-  # locale vs 5 for orchestrator).
+  # THREE SHAPES, THREE CONSUMERS — do not point a call site at the wrong one.
+  #
+  #   *_tail  → the SKILL surface (scripts/rewrite-skill-invoke-sections.mjs).
+  #             The sentence names the workflow ("harnessed run auto"), and NOTHING
+  #             substitutes a name at render time: renderHostPrimitives is a plain
+  #             table splice with no template context. So the builder — which DOES
+  #             know the name — emits
+  #                 Do NOT pipe to `harnessed run <the real name>` — that is the
+  #                 CI/headless path (
+  #             as a literal prefix and the placeholder supplies only the tail. The
+  #             split point is the last byte the claude and codex wordings share
+  #             (they diverge immediately after `(`: "in-process" vs "an in-process").
+  #
+  #   orchestrator / execution → the pre-split whole-sentence forms, kept as the
+  #             readable reference for what prefix + tail compose back to. They
+  #             carry a literal `<name>` that no renderer resolves, so they have NO
+  #             live SKILL site. Do not "fix" that by rewording — read the tails.
+  #
+  #   command_* → src/cli/lib/generateCommands.ts (en-only surface). That generator
+  #             runs in TypeScript with the workflow name in hand, so it can do the
+  #             `<name>` substitution itself, which is why those two stay whole.
+  #
+  # `default` aliases `.execution_tail` — the widest-used LIVE variant (19
+  # renderings per locale vs 5 for the orchestrator tail).
   harnessed_run_warning_note:
-    default: &harnessed_run_execution
+    default: &harnessed_run_execution_tail
+      claude: |-
+        in-process SDK spawn
+        that blocks the session inside Claude Code).
+      # Identical for both tails: the codex column drops the Claude-only claims
+      # ("bypasses Agent Teams" / "hangs inside Claude Code") rather than
+      # re-asserting them, which collapses the two wordings into one.
+      codex: &harnessed_run_codex_tail |-
+        an in-process SDK
+        spawn that blocks this session).
+    execution_tail: *harnessed_run_execution_tail
+    orchestrator_tail:
+      claude: |-
+        in-process SDK spawn
+        that blocks the session, bypasses Agent Teams, and hangs inside Claude Code).
+      codex: *harnessed_run_codex_tail
+    execution:
       claude: |-
         Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (in-process SDK spawn
         that blocks the session inside Claude Code).
       codex: |-
         Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (an in-process SDK
         spawn that blocks this session).
-    execution: *harnessed_run_execution
     orchestrator:
       claude: |-
         Do NOT pipe to `harnessed run <name>` — that is the CI/headless path (in-process SDK spawn

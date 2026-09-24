@@ -60,7 +60,7 @@ Sister `workflows/judgments/phase-gate.yaml`:
    - **战略层** —— 新功能 / 新 milestone / 商业 scope 不清 → gstack `/office-hours` + `/plan-ceo-review`
    - **Phase 层** —— ≥2 个 open implementation decision / 跨 phase API contract 不清 → GSD `/gsd-discuss-phase`
    - **子任务层** —— ≥2 个不同方案 / 核心算法 / API contract 设计 / 高错误成本 → superpowers brainstorming
-2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。
+2. 对每个 fire 的层与用户对话(option 型决策用 {{ host.ask_user }}),锁定每个 open decision。
 3. 不 fire 的层透明 skip —— 说明哪些被 skip 及原因。
 4. 把 locked 决策持久化到 `.planning/`(planning-with-files 的 `findings.md` / `task_plan.md`)。
 

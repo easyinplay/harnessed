@@ -1948,7 +1948,17 @@ C 类 6 primitive / 14 占位符)。相较第一轮的 9 / 12,新增 5 primitive
 | `executionEn:304` | `{{ host.native }} {{ host.spawn_subagent }} (keeps…` | ✅ 相邻 | `CC-native Task / Agent tool` ✅ |
 | `executionZh:327` | `{{ host.native }} {{ host.spawn_subagent.zh_tool }} spawn subagent(…` | ✅ 相邻 | `CC-native Task / Agent 工具` ✅ |
 | `orchestratorEn:223` | `{{ host.native }} {{ host.spawn_subagent.plural }}.` | ✅ 相邻 | `CC-native Task / Agent tools` ✅ |
-| `orchestratorZh:266` | `{{ host.native }} {{ host.spawn_subagent.zh_tool }} 做 spawn。` | ✅ 相邻 | `CC-native Task / Agent 工具` ✅ |
+| `orchestratorZh:266` | `{{ host.native }} {{ host.spawn_subagent.zh_tool }}做 spawn。` | ✅ 相邻 | `CC-native Task / Agent 工具` ✅ |
+
+> **更正(批 A 实施,2026-09-24)**:本表 `orchestratorZh:266` 行原写作
+> `{{ host.spawn_subagent.zh_tool }} 做 spawn。`(占位符与 `做` 之间有一个空格),
+> 与站点原文不符 —— 原文是 `CC-native Task / Agent 工具做 spawn。`,`工具` 与 `做`
+> **之间没有空格**。照抄会给 5 个 orchestrator zh 产物各塞一个多余空格,直接打红
+> claude 逐字节金标。上表已改为正确写法。
+>
+> **教训(批 B / 批 C 照办)**:本文件「提议 key 映射」栏里的占位后写法是**示意**,
+> 不是可直接粘贴的成品。落地前一律 `sed -n` 取站点原文逐字节核对空白与标点,
+> 尤其是 CJK 与 ASCII 交界处 —— 那里的空格肉眼几乎看不出来。
 | `spawnLoopEn:139` | `Spawn a {{ host.native }} subagent ({{ host.spawn_subagent }}) with…` | ❌ 中间隔 ` subagent (` | ✅ 仍可还原(两个独立占位符) |
 | `spawnLoopZh:151` | `用 {{ host.native }} subagent({{ host.spawn_subagent.zh_tool }})以该…` | ❌ 中间隔 ` subagent(` | ✅ 仍可还原 |
 
@@ -2510,3 +2520,64 @@ node "C:/Users/easyi/AppData/Local/Temp/claude/D--GitCode-harnessed/60552b8e-eaf
    本产物不作任何断言;请对每个 agent 显式 `close_agent`。
 
 逐字文案见 `workflows/host-primitives.yaml` 末尾的 `host_map_notes:` 节(zh 侧同位)。
+
+---
+
+# 批 A 落地记录(2026-09-24 第四轮)
+
+## 词表增补:`harnessed_run_warning_note.{orchestrator,execution}_tail`(经裁决授权)
+
+**为什么必须加**:该 primitive 的整句值带字面 `<name>`,而渲染链上没有任何环节替换它 ——
+`renderHostPrimitives`(`src/cli/lib/hostPrimitives.ts:157-186`)是纯查表 splice,
+`renderSkillTemplates.ts` 只跑 capabilities + host 两趟,`src/` 全域无 `<name>` 替换。
+builder 写盘在前、占位渲染在后,渲染时已拿不到 skill 名。台账第一轮/第二轮都没发现这点。
+
+**解法(裁决采纳)**:切分点取 claude 与 codex 措辞的**最后一个共同字节** —— `(` 之后立即
+分叉(`in-process` vs `an in-process`)。builder 保留字面前缀(它有名字),占位符只供尾段:
+
+```
+Do NOT pipe to `harnessed run ${name}` — that is the CI/headless path ({{ host.harnessed_run_warning_note.execution_tail }}
+**不要** pipe 到 `harnessed run ${name}` —— 那是 CI/headless 路径({{ host.harnessed_run_warning_note.execution_tail }}
+```
+
+- `default` 改为别名 `.execution_tail`(使用面最广的**活**变体,19×2 渲染)。
+- 两个 tail 的 codex 值逐字相同(codex 列删除了 CC 专属断言,两种措辞收敛成一种),
+  用 YAML 标量锚点 `&harnessed_run_codex_tail` 复用,不复制文本。
+- 整句变体 `.orchestrator` / `.execution` **保留但无活站点**,作为「前缀 + 尾段拼回来是什么」
+  的可读参照;`golden.mjs` 新增 8 条 compose 断言(2 locale × 2 variant × 2 host)钉住
+  「前缀 + tail === 整句参照」,所以参照不会悄悄腐烂。
+- `.command_orchestrator` / `.command_execution` 仍归批 D:`generateCommands.ts` 在 TS 里跑、
+  手上有工作流名,能自己替换 `<name>`,所以那两个保持整句。
+
+词表规模:14 primitive / **30** 可寻址占位符 / **60** cell(原 28 / 56)。
+
+## 金标口径变更(经裁决授权,改测试不改产品)
+
+`tests/cli/renderGolden.test.ts` 原本哈希安装目录下**每一个**文件,包含 en 安装时
+`cp` 留下的未渲染 `SKILL.zh-Hans.md`(`renderSkillTemplates.ts:135,153`:en 安装
+`localeBodySelected === false`,既不渲染也不剥除)。zh 源带上占位符是本 phase 的本意,
+却会让那 29 个死副本的 hash 必然变化 —— 把本意误判成回归。
+
+新增 `LOCALE_SIBLING_RX`,claude 金标与 codex sanity **共用同一口径**(两侧都排除),
+fixture 用脚本只删 key 不动 hash(`git diff --numstat` = `0 29`,零 insertion 即证明)。
+`:170` 那条「en 安装留 sibling / zh 安装剥除」的产品行为断言**保留**,改为对真实安装树
+做存在性判定,不再读金标 key。
+
+**遗留(不在本 phase)**:en 安装确实会往 `~/.claude/skills/<name>/` 丢一份带未解析
+`{{ host.* }}` 的 `SKILL.zh-Hans.md`。CC 只读 `SKILL.md`,无实际危害;
+后续选项 = en 安装也剥除 sibling / 也渲染它。
+
+## 给 T12 的对等判据建议(en/zh `host.*` 占位符集合**故意不等**)
+
+en 侧用 `spawn_subagent.default` / `.plural`,zh 侧用 `spawn_subagent.zh_tool` —— 这是词表
+设计使然(工具名不翻译,但中文行文里的量词要本地化),不是漂移。`check-skill-i18n-parity`
+把 `host.*` 纳入时**不能比 variant 集合相等**,否则必红。建议判据(按严格度递增,取其一):
+
+1. **比 primitive 集合**:`{p | p.v ∈ 占位符集}` 两侧必须相等。抓得住「一侧整段漏改」,
+   放得过 variant 差异。实现最省,推荐作为起点。
+2. **比 primitive 集合 + 每 primitive 的出现次数**:再抓一层「同一 primitive 少了一处」。
+3. **比归一化后的 variant**:给词表加一个 `locale_variant_of:` 之类的等价类声明
+   (`zh_tool ≡ default`),再比归一化集合。最严格,但要动已定稿的词表结构,
+   且等价类本身会成为新的维护面 —— 除非 1/2 被实测证明漏检,否则不建议。
+
+无论取哪条,`{{ capabilities.X }}` 那半边的现有逻辑不动。

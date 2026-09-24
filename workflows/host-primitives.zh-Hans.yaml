@@ -106,17 +106,48 @@ primitives:
   # 会让整句把该事实伪装成 codex 的事实。所以 codex 列的做法是**删除**该宿主专属
   # 断言,而不是为一个从未实测过的宿主重新断言一遍。
 
-  # `default` 别名指向 `.execution` —— 使用面最广(每 locale 19 次渲染,
-  # orchestrator 只有 5 次)。
+  # 三种形状,三个消费方 —— 别把调用点接到错的那个上。
+  #
+  #   *_tail  → SKILL 交付面(scripts/rewrite-skill-invoke-sections.mjs)。
+  #             句子里要写出工作流名(`harnessed run auto`),而渲染期**没有任何环节**
+  #             替换名字:renderHostPrimitives 只是查表做纯字符串 splice,没有模板上下文。
+  #             所以由**知道名字的** builder 输出字面前缀
+  #                 **不要** pipe 到 `harnessed run <真实名字>` —— 那是 CI/headless 路径(
+  #             占位符只供给尾段。切分点取 claude 与 codex 措辞的最后一个共同字节
+  #             (`(` 之后立即分叉)。
+  #
+  #   orchestrator / execution → 切分前的整句形态,保留作为「前缀 + 尾段拼回来是什么」
+  #             的可读参照。它们带字面 `<name>`,没有渲染器会解析,因此**没有活的 SKILL
+  #             站点**。不要靠改措辞来「修」这一点 —— 要看的是两个 tail。
+  #
+  #   command_* → src/cli/lib/generateCommands.ts(**en-only 交付面**)。该生成器在
+  #             TypeScript 里跑、手上有工作流名,能自己替换 `<name>`,所以那两个保持整句。
+  #
+  # `default` 别名指向 `.execution_tail` —— 使用面最广的**活**变体(每 locale 19 次渲染,
+  # orchestrator tail 只有 5 次)。
   harnessed_run_warning_note:
-    default: &harnessed_run_execution
+    default: &harnessed_run_execution_tail
+      claude: |-
+        in-process SDK spawn,在 Claude
+        Code 内部会阻塞 session)。
+      # 两个 tail 的 codex 值相同:codex 列**删除**了 CC 专属断言
+      # (「绕过 Agent Teams」/「在 Claude Code 内部挂死」)而非重新断言,两种措辞因此收敛成一种。
+      codex: &harnessed_run_codex_tail |-
+        in-process SDK spawn,
+        会阻塞本 session)。
+    execution_tail: *harnessed_run_execution_tail
+    orchestrator_tail:
+      claude: |-
+        in-process SDK spawn,会阻塞
+        session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。
+      codex: *harnessed_run_codex_tail
+    execution:
       claude: |-
         **不要** pipe 到 `harnessed run <name>` —— 那是 CI/headless 路径(in-process SDK spawn,在 Claude
         Code 内部会阻塞 session)。
       codex: |-
         **不要** pipe 到 `harnessed run <name>` —— 那是 CI/headless 路径(in-process SDK spawn,
         会阻塞本 session)。
-    execution: *harnessed_run_execution
     orchestrator:
       claude: |-
         **不要** pipe 到 `harnessed run <name>` —— 那是 CI/headless 路径(in-process SDK spawn,会阻塞

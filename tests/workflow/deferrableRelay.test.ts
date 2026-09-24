@@ -19,6 +19,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
 import { loadRolePrompts } from '../../src/workflow/rolePrompts.js'
+import { readRenderedSkill } from '../helpers/renderedSkill.js'
 
 const PACKAGE_ROOT = process.cwd()
 const WORKFLOWS_DIR = join(PACKAGE_ROOT, 'workflows')
@@ -60,21 +61,26 @@ describe('deferrable relay gate (issue #4, 4.23.1)', () => {
     expect(enList.length).toBe(zhList.length)
   })
 
+  // v16.0 Phase 65 — the clarification tool is now `{{ host.ask_user }}` in the
+  // SKILL source (workflows/host-primitives.yaml: claude → `AskUserQuestion`,
+  // codex → `request_user_input`). Cells 5/6 assert the CLAUDE-RENDERED body, so
+  // the relay contract is still pinned to the literal `AskUserQuestion` a Claude
+  // Code install receives — and the placeholder is proven to resolve on top.
   it('cell 5 — /auto step 1 relays the deferrable set (en + zh)', () => {
-    const en = read('auto', 'SKILL.md')
+    const en = readRenderedSkill(['auto', 'SKILL.md'])
     expect(en).toMatch(/relay the deferrable set .*single batched AskUserQuestion/i)
     expect(en).toMatch(/defers scheduling, not user authority/i)
-    const zh = read('auto', 'SKILL.zh-Hans.md')
+    const zh = readRenderedSkill(['auto', 'SKILL.zh-Hans.md'])
     expect(zh).toContain('deferrable 集')
     expect(zh).toContain('单轮批量 AskUserQuestion')
     expect(zh).toContain('推迟的是排期,不是用户决策权')
   })
 
   it('cell 6 — standalone /discuss hand-off relays the deferrable set (en + zh)', () => {
-    const en = read('discuss', 'auto', 'SKILL.md')
+    const en = readRenderedSkill(['discuss', 'auto', 'SKILL.md'])
     expect(en).toMatch(/relay the deferrable set .*single batched AskUserQuestion/i)
     expect(en).toMatch(/only skip an item if the user explicitly defers it again/i)
-    const zh = read('discuss', 'auto', 'SKILL.zh-Hans.md')
+    const zh = readRenderedSkill(['discuss', 'auto', 'SKILL.zh-Hans.md'])
     expect(zh).toContain('deferrable 集')
     expect(zh).toContain('单轮批量 AskUserQuestion')
     expect(zh).toContain('用户明确再次推迟')

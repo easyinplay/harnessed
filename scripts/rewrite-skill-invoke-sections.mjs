@@ -41,6 +41,17 @@ const DEPRECATED = new Set(['plan-feature', 'execute-task', 'verify-work'])
 // rewrite". Digit-loose `v\d+\.\d+\.\d+` per generateCommands.ts marker regex.
 // Skip-current keys off NEW_MARKER only, so a previous-marker section (v4.9.2)
 // is always re-rendered to the current shape.
+//
+// MARKER vs THE BYTE GOLDEN (v16.0 Phase 65 ruling). The marker string is part of
+// the rendered artifact, so bumping it moves every hash in
+// tests/fixtures/render-golden/claude-*.json — it collides head-on with the
+// "rewriting prose into `{{ host.* }}` leaves the claude artifact byte-identical"
+// invariant. The marker version is NOT user-visible wording. When a bump is
+// genuinely needed, re-recording the claude golden is allowed, but the SAME commit
+// must prove by diff that NOTHING except the marker line changed — otherwise the
+// re-record is hiding a regression. Phase 65 deliberately does NOT bump: it only
+// moved host-specific prose behind placeholders that restore the identical bytes,
+// so the marker's discriminating power has no reason to change.
 const OLD_MARKER = '<!-- harnessed-generated:v4.11.0 -->'
 const NEW_MARKER = '<!-- harnessed-generated:v4.12.0 -->'
 
@@ -136,7 +147,7 @@ function intentBannerZh(name, kind) {
 function spawnLoopEn(indent, sub, tail = '') {
   const b = `${indent}   - `
   const lines = [
-    `Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`, then drive delivery with harnessed's own completion gate:`,
+    `Spawn a {{ host.native }} subagent ({{ host.spawn_subagent }}) with that \`prompt\` and \`model\`, then drive delivery with harnessed's own completion gate:`,
     `${b}on return, write the subagent's final output to a file and run \`harnessed checkpoint complete ${sub} --result-file <path>\` — it is fail-closed on the declared artifacts, the TDD boundary, and the verbatim \`<promise>COMPLETE</promise>\`.`,
     `${b}if it blocks, run \`harnessed checkpoint fail ${sub} --failing-tests <n>\` to record the attempt; it prints BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP when a stop condition is reached.`,
     `${b}respawn ONLY while none of those three has fired. Any one of them means stop: re-scope the subtask, fix the blocker, or escalate to the user. Never respawn past a stop directive.`,
@@ -148,7 +159,7 @@ function spawnLoopEn(indent, sub, tail = '') {
 function spawnLoopZh(indent, sub, tail = '') {
   const b = `${indent}   - `
   const lines = [
-    `用 CC-native subagent(Task / Agent 工具)以该 \`prompt\` + \`model\` spawn,然后用 harnessed 自己的完成闸门驱动交付:`,
+    `用 {{ host.native }} subagent({{ host.spawn_subagent.zh_tool }})以该 \`prompt\` + \`model\` spawn,然后用 harnessed 自己的完成闸门驱动交付:`,
     `${b}subagent 返回后,把它的最终输出写入文件,跑 \`harnessed checkpoint complete ${sub} --result-file <path>\` —— 该命令对声明的产物、TDD boundary、逐字 \`<promise>COMPLETE</promise>\` 三者 fail-closed。`,
     `${b}若被拦下,跑 \`harnessed checkpoint fail ${sub} --failing-tests <n>\` 记录本次尝试;命中停机条件时它会打印 BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP。`,
     `${b}**仅当**这三者都未触发时才允许重 spawn。任一触发即停:重新收敛子任务范围、修掉阻塞点,或上报用户。绝不越过停机指令继续重 spawn。`,
@@ -157,36 +168,40 @@ function spawnLoopZh(indent, sub, tail = '') {
   return lines.join('\n')
 }
 
+// v16.0 Phase 65 batch A — the host-specific WHOLE-PARAGRAPH fragments below are
+// no longer literal here. They are `{{ host.<primitive>[.<variant>] }}`
+// placeholders resolved at install time from workflows/host-primitives.yaml (+ its
+// `.zh-Hans` sibling) by src/cli/lib/renderSkillTemplates.ts. The `claude` column
+// of that table holds the exact bytes these constants used to emit, so the Claude
+// Code artifact is unchanged; the `codex` column drops the Claude-only claims
+// instead of re-asserting them for a harness where they were never measured.
+//
+// EDIT THE TABLE, NOT THIS FILE, for the wording — and re-run this script only to
+// propagate a placeholder/structure change. Same SoT discipline as the header:
+// never hand-edit a rendered section.
+//
 // `research` only: its whole deliverable is the subagent's text, so the blocking
 // vs background delivery contract is load-bearing there.
-const DELIVERY_CONTRACT_EN =
-  "delivery contract: use a BLOCKING Agent/Task call — only a blocking call returns the subagent's final text as your tool result. A named/background teammate's final message is DISCARDED by the platform; if you must run it that way, instruct the agent to write its findings to a file (and read it back) or SendMessage them to the main session — otherwise the COMPLETE promise and the findings never reach you."
+const DELIVERY_CONTRACT_EN = '{{ host.delivery_contract_note }}'
 
-const DELIVERY_CONTRACT_ZH =
-  '交付契约:必须用**阻塞式** Agent/Task 调用 —— 只有阻塞调用会把 subagent 的最终文本作为 tool result 返回给你。named/background teammate 的最终消息会被平台**丢弃**;若必须那样跑,要求 agent 把发现写入文件(你再读回)或 SendMessage 回主 session —— 否则 COMPLETE promise 和研究发现永远到不了你手里。'
+const DELIVERY_CONTRACT_ZH = '{{ host.delivery_contract_note }}'
 
-// Agent Teams step 4 — CC v2.1.178+ API. `TeamCreate` / `TeamDelete` were DELETED
-// upstream ("Both tools no longer exist", code.claude.com/docs/en/agent-teams):
-// the team forms implicitly on the first teammate spawn, `team_name` is accepted
-// but ignored, teardown is a by-name shutdown request, and the team's shared dirs
-// are removed automatically when the session exits.
-const TEAMS_STEP_EN =
-  '4. If `parallelism.escalate_to_teams === true`: read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with `Agent(name: <sub>, run_in_background: true, prompt: <that sub\'s `harnessed prompt <sub>` prompt>)` and the team forms implicitly on the FIRST spawn, with this session as lead (the `team_name` input is accepted but ignored — the name is session-derived). Coordinate via `SendMessage`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down"). Still checkpoint each sub (`complete` / `fail`) as below.'
+// Formation step 4. On Claude Code this is the Agent Teams step against the CC
+// v2.1.178+ API (`TeamCreate` / `TeamDelete` were DELETED upstream — the team
+// forms implicitly on the first teammate spawn, `team_name` is accepted but
+// ignored, teardown is a by-name shutdown request). `.skill` is the SKILL-surface
+// variant; generateCommands.ts owns the sibling `.command` variant, which is
+// deliberately NOT the same text (see inventory.md § "批 A / 批 D").
+const TEAMS_STEP_EN = '{{ host.teams_step_note.skill }}'
 
-const TEAMS_STEP_ZH =
-  '4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动。**没有建团步骤、也没有建团工具** —— 对每个 fired sub 用 `Agent(name: <sub>, run_in_background: true, prompt: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个后台 teammate,团在**第一个** spawn 时隐式形成,本 session 即 lead(`team_name` 入参被接受但忽略 —— 团名由 session 派生)。用 `SendMessage` 协调;某个 sub 完成后,**按名**请求该 teammate 关闭(例如「ask the verify-qa teammate to shut down」)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。'
+const TEAMS_STEP_ZH = '{{ host.teams_step_note.skill }}'
 
 // auto-only sub-bullets (issue #7 lineage): the teardown discipline restated for
-// the new API + the headless prohibition.
-const TEAMS_TEARDOWN_EN = [
-  '   - **Shut every teammate down before you finish — MUST-in-finally, not best-effort**: regardless of whether every sub reached COMPLETE, max_iterations was exhausted, or you consider the work done, ask each teammate to shut down by name before you end the run, and confirm it actually stopped. Shutdown is a REQUEST: the teammate finishes its current tool call first and may reject with a reason, so re-ask rather than assume. The team directory is removed automatically at session exit (there is no teardown tool), but a teammate you never stopped keeps consuming tokens and can hang the host (headless especially — issue #7: an 11h hang, work complete but the process never exited).',
-  '   - **Headless never spawns teams**: in a headless session (`claude -p`) `harnessed gates` already returns `escalate_to_teams: false` (Agent Teams are session-scoped — lost on `/resume`, incompatible with `-p`). Do NOT spawn teammates or background-`Agent` in headless even if you think it would parallelize — run the fired subs sequentially in-session instead.',
-]
+// the new API + the headless prohibition. ONE table cell carries BOTH bullets
+// (joined with `\n`, 3 leading spaces preserved), so the array stays 1 entry.
+const TEAMS_TEARDOWN_EN = ['{{ host.teams_teardown_note }}']
 
-const TEAMS_TEARDOWN_ZH = [
-  '   - **收尾前必须关闭每个 teammate —— finally 强制契约,非尽力而为**:无论是否每个 sub 都到达 COMPLETE、max_iterations 是否耗尽、或你是否认为工作已完成,收尾前都要**按名**请求每个 teammate 关闭,并确认它真的停了。关闭是**请求**:teammate 会先做完当前 tool call,也可能带理由拒绝 —— 所以要复查重发,不要假定。团目录在 session 退出时**自动**删除(没有 teardown 工具),但你没停掉的 teammate 会持续烧 token 并可能挂起宿主(headless 尤甚 —— issue #7:挂 11 小时,工作已完成但进程从不退出)。',
-  '   - **headless 绝不 spawn team**:headless session(`claude -p`)下 `harnessed gates` 已返回 `escalate_to_teams: false`(Agent Teams 是 session-scoped —— `/resume` 即丢,与 `-p` 不兼容)。即使你认为能并行,headless 下也**不要** spawn teammate 或背景 `Agent` —— 改为在 session 内顺序驱动 fired subs。',
-]
+const TEAMS_TEARDOWN_ZH = ['{{ host.teams_teardown_note }}']
 
 // T2.1 — the gate-fact production step. Without it the gates below evaluate
 // against generic defaults (audit S2: every judgement-call fact was pinned to its
@@ -206,8 +221,8 @@ function factsStepZh(name) {
 function orchestratorEn(name) {
   const isAuto = name === 'auto'
   const step1 = isAuto
-    ? `1. FIRST run the discuss stage interactively in THIS session (spawned subagents cannot ask the user questions). Evaluate strategic / phase / subtask clarification criteria for "$ARGUMENTS"; dialogue with the user (AskUserQuestion) for each layer that fires, lock decisions, transparent-skip the rest. After locking blocking decisions, relay the deferrable set to the user in a single batched AskUserQuestion with each agent-recommended default pre-selected — deferrable defers scheduling, not user authority; only skip an item if the user explicitly defers it again. Produce a locked spec.`
-    : `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first (AskUserQuestion) and lock decisions; otherwise transparent-skip. Produce a locked spec.`
+    ? `1. FIRST run the discuss stage interactively in THIS session (spawned subagents cannot ask the user questions). Evaluate strategic / phase / subtask clarification criteria for "$ARGUMENTS"; dialogue with the user ({{ host.ask_user }}) for each layer that fires, lock decisions, transparent-skip the rest. After locking blocking decisions, relay the deferrable set to the user in a single batched {{ host.ask_user }} with each agent-recommended default pre-selected — deferrable defers scheduling, not user authority; only skip an item if the user explicitly defers it again. Produce a locked spec.`
+    : `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first ({{ host.ask_user }}) and lock decisions; otherwise transparent-skip. Produce a locked spec.`
   const step2tail = isAuto
     ? ' For a small self-contained task (single-file / single-page class), the sanctioned lite path is adding `--skip-sub verify --skip-sub retro` (repeatable / comma-separated) — skipped subs are still recorded in the ledger with reasons; lite ≠ freestyle (the ledger/evidence IS the difference).'
     : ''
@@ -220,10 +235,9 @@ function orchestratorEn(name) {
     'Do NOT improvise an equivalent flow from the Overview above: freelancing bypasses the engine',
     '(no per-sub ledger, no evidence guard, no recovery). harnessed is the orchestration brain',
     '(`harnessed gates` says which subs fire, `harnessed prompt` gives each spawn-ready prompt,',
-    '`harnessed checkpoint` records the ledger); YOU spawn with CC-native Task / Agent tools.',
+    '`harnessed checkpoint` records the ledger); YOU spawn with {{ host.native }} {{ host.spawn_subagent.plural }}.',
     '',
-    `Do NOT pipe to \`harnessed run ${name}\` — that is the CI/headless path (in-process SDK spawn`,
-    'that blocks the session, bypasses Agent Teams, and hangs inside Claude Code).',
+    `Do NOT pipe to \`harnessed run ${name}\` — that is the CI/headless path ({{ host.harnessed_run_warning_note.orchestrator_tail }}`,
     '',
     step1,
     factsStepEn(name),
@@ -236,7 +250,7 @@ function orchestratorEn(name) {
     '   - **Else (leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → parse `{prompt, max_iterations, model}`.',
     `     b. ${spawnLoopEn('     ', '<sub>')}`,
-    '     c. If the output contains `STATUS: NEEDS_CLARIFICATION` + questions: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.',
+    '     c. If the output contains `STATUS: NEEDS_CLARIFICATION` + questions: STOP, relay them verbatim via {{ host.ask_user }}, append the answers to the spec, then re-spawn the same sub.',
     '     d. On `<promise>COMPLETE</promise>`: write the subagent’s final output to a file, then Bash `harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"`. Fail-CLOSED — it blocks unless every declared `artifacts_expected` file exists, the TDD boundary passes (non-empty evidence / both the red and green sides present / the test file was not deleted), and the result carries a verbatim `<promise>COMPLETE</promise>` (or a structured COMPLETE status). `--result <text>` is the inline variant; `--result-file` wins and is quoting-safe on Windows. On a non-zero exit the sub is NOT done — re-spawn to close the gap, or pass `--force` only to deliberately override (records `evidence_status=overridden`, an audited override rather than a silent pass).',
     '     e. If the complete gate blocked: Bash `harnessed checkpoint fail <sub> --failing-tests <n>` to record the attempt (omit the flag when the sub has no tests — the evidence-artifact digest is the fallback progress metric). It prints `BUDGET-EXHAUSTED` (attempts spent vs `workflows/defaults.yaml ralph_max_iterations`), `NO-PROGRESS` (no improvement for N consecutive attempts) or `BREAK-LOOP` (this sub failed >= the threshold) once a stop condition is reached. Respawn ONLY while none of those three has fired; any one of them means STOP — re-scope, fix the blocker, or escalate to the user, and report it.',
     `6. After all fired subs are \`done\` (or recorded \`failed\`), Bash \`harnessed status --recover\` to confirm the ledger and report a per-sub fired/skipped/done/failed summary to the user.${step6tail}`,
@@ -250,8 +264,8 @@ function orchestratorEn(name) {
 function orchestratorZh(name) {
   const isAuto = name === 'auto'
   const step1 = isAuto
-    ? `1. 先在**本 session** 交互式跑 discuss 阶段(spawned subagent 无法向用户提问):对 "$ARGUMENTS" 评估 strategic / phase / subtask 澄清判据,对每个 fire 的层用 AskUserQuestion 与用户对话锁决策,其余透明 skip。blocking 集锁定后,把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(各项 agent 推荐默认值预选)—— deferrable 推迟的是排期,不是用户决策权;仅当用户明确再次推迟才可跳过该项。产出 locked spec。`
-    : `1. 若 "$ARGUMENTS" 触发澄清判据(≥2 方案 / 核心算法 / API contract / 高错误成本),先在**本 session** 交互澄清(AskUserQuestion)并锁决策;否则透明 skip。产出 locked spec。`
+    ? `1. 先在**本 session** 交互式跑 discuss 阶段(spawned subagent 无法向用户提问):对 "$ARGUMENTS" 评估 strategic / phase / subtask 澄清判据,对每个 fire 的层用 {{ host.ask_user }} 与用户对话锁决策,其余透明 skip。blocking 集锁定后,把 deferrable 集以单轮批量 {{ host.ask_user }} 转达给用户(各项 agent 推荐默认值预选)—— deferrable 推迟的是排期,不是用户决策权;仅当用户明确再次推迟才可跳过该项。产出 locked spec。`
+    : `1. 若 "$ARGUMENTS" 触发澄清判据(≥2 方案 / 核心算法 / API contract / 高错误成本),先在**本 session** 交互澄清({{ host.ask_user }})并锁决策;否则透明 skip。产出 locked spec。`
   const step2tail = isAuto
     ? '自包含小任务(单文件/单页面级)的合规轻量路径:追加 `--skip-sub verify --skip-sub retro`(可重复/逗号分隔)——被 skip 的 sub 仍带原因进 ledger;lite ≠ freestyle(差别就在 ledger/evidence)。'
     : ''
@@ -263,10 +277,9 @@ function orchestratorZh(name) {
     '下面这套编号序列**就是** state machine —— 逐步用 Bash 执行。**不要**从上方 Overview 自行演绎一套',
     '等价流程:freestyle 会旁路引擎(无 per-sub ledger、无 evidence guard、无 recovery)。harnessed 是',
     '编排大脑(`harnessed gates` 决定哪些 sub fire,`harnessed prompt` 给出每个 spawn-ready prompt,',
-    '`harnessed checkpoint` 记录 ledger);**你**(主 session)用 CC-native Task / Agent 工具做 spawn。',
+    '`harnessed checkpoint` 记录 ledger);**你**(主 session)用 {{ host.native }} {{ host.spawn_subagent.zh_tool }}做 spawn。',
     '',
-    `**不要** pipe 到 \`harnessed run ${name}\` —— 那是 CI/headless 路径(in-process SDK spawn,会阻塞`,
-    'session、绕过 Agent Teams,在 Claude Code 内部调用时会挂死)。',
+    `**不要** pipe 到 \`harnessed run ${name}\` —— 那是 CI/headless 路径({{ host.harnessed_run_warning_note.orchestrator_tail }}`,
     '',
     step1,
     factsStepZh(name),
@@ -279,7 +292,7 @@ function orchestratorZh(name) {
     '   - **否则(leaf sub):**',
     '     a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → 解析 `{prompt, max_iterations, model}`。',
     `     b. ${spawnLoopZh('     ', '<sub>')}`,
-    '     c. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn 同一 sub。',
+    '     c. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 {{ host.ask_user }} 原样转达,把答案 append 进 spec,再重 spawn 同一 sub。',
     '     d. 命中 `<promise>COMPLETE</promise>`:把 subagent 最终输出写入文件,再 Bash `harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"`。fail-CLOSED —— 除非声明的 `artifacts_expected` 文件全部存在、TDD boundary 通过(证据非空 / 红绿两侧齐全 / 测试文件未被删除)、且结果含逐字 `<promise>COMPLETE</promise>`(或结构化 COMPLETE 状态),否则拦下。`--result <text>` 是内联变体;`--result-file` 优先且在 Windows 上引号安全。exit 非零即表示该 sub **未** done —— 重 spawn 补齐,或仅在刻意覆盖时传 `--force`(记录 `evidence_status=overridden`,是可审计的覆盖而非静默放行)。',
     '     e. 若 complete 闸门拦下:Bash `harnessed checkpoint fail <sub> --failing-tests <n>` 记录本次尝试(该 sub 无测试时省略该 flag —— 回退用证据产物摘要作进展度量)。命中停机条件时它会打印 `BUDGET-EXHAUSTED`(已用尝试次数 vs `workflows/defaults.yaml ralph_max_iterations`)、`NO-PROGRESS`(连续 N 次无进展)或 `BREAK-LOOP`(该 sub 失败次数达阈值)。**仅当**三者都未触发时才允许重 spawn;任一触发即 STOP —— 重新收敛范围、修掉阻塞点或上报用户,并说明情况。',
     `6. 所有 fired subs \`done\`(或记录 \`failed\`)后,Bash \`harnessed status --recover\` 确认 ledger,并向用户报告 per-sub fired/skipped/done/failed 摘要。${step6tail}`,
@@ -301,14 +314,13 @@ function executionEn(name) {
     'The numbered sequence below **is** the state machine — execute it with Bash. Do NOT improvise',
     'an equivalent flow from the Overview above: freelancing bypasses the engine (no ledger, no',
     'evidence guard). harnessed gives you the spawn-ready prompt; YOU spawn the subagent with a',
-    'CC-native Task / Agent tool (keeps the session responsive + lets clarification round-trips reach the user).',
+    '{{ host.native }} {{ host.spawn_subagent }} (keeps the session responsive + lets clarification round-trips reach the user).',
     '',
-    `Do NOT pipe to \`harnessed run ${name}\` — that is the CI/headless path (in-process SDK spawn`,
-    'that blocks the session inside Claude Code).',
+    `Do NOT pipe to \`harnessed run ${name}\` — that is the CI/headless path ({{ host.harnessed_run_warning_note.execution_tail }}`,
     '',
     `1. Bash: \`harnessed prompt ${name} --task "$ARGUMENTS" --json\` → parse \`{prompt, max_iterations, model}\`.`,
     `2. ${spawnLoopEn('', name, tail)}`,
-    '3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via AskUserQuestion, append the answers to the spec, then re-spawn the same sub.',
+    '3. If the output contains `STATUS: NEEDS_CLARIFICATION` + a question list: STOP, relay them verbatim via {{ host.ask_user }}, append the answers to the spec, then re-spawn the same sub.',
     `4. On \`<promise>COMPLETE</promise>\`: write the subagent’s final output to a file, then Bash \`harnessed checkpoint complete ${name} --result-file <path> --summary "<one-line>"\`. Fail-CLOSED — it blocks unless every declared \`artifacts_expected\` file exists, the TDD boundary passes (non-empty evidence / both the red and green sides present / the test file was not deleted), and the result carries a verbatim \`<promise>COMPLETE</promise>\` (or a structured COMPLETE status). \`--result <text>\` is the inline variant; \`--result-file\` wins and is quoting-safe on Windows. \`--force\` records an audited override (\`evidence_status=overridden\`) — it does not silently pass.`,
     `5. If the complete gate blocked: Bash \`harnessed checkpoint fail ${name} --failing-tests <n>\` to record the attempt. It prints \`BUDGET-EXHAUSTED\` / \`NO-PROGRESS\` / \`BREAK-LOOP\` once a stop condition is reached. Respawn ONLY while none of those three has fired; any one of them means STOP — re-scope the subtask, fix the blocker, or escalate to the user.`,
     '',
@@ -324,14 +336,13 @@ function executionZh(name) {
     ...intentBannerZh(name, 'execution'),
     '下面这套编号序列**就是** state machine —— 用 Bash 执行。**不要**从上方 Overview 自行演绎等价流程:',
     'freestyle 会旁路引擎(无 ledger、无 evidence guard)。harnessed 给你 spawn-ready prompt;**你**用',
-    'CC-native Task / Agent 工具 spawn subagent(保持 session 响应 + 让澄清 round-trip 能回到用户)。',
+    '{{ host.native }} {{ host.spawn_subagent.zh_tool }} spawn subagent(保持 session 响应 + 让澄清 round-trip 能回到用户)。',
     '',
-    `**不要** pipe 到 \`harnessed run ${name}\` —— 那是 CI/headless 路径(in-process SDK spawn,在 Claude`,
-    'Code 内部会阻塞 session)。',
+    `**不要** pipe 到 \`harnessed run ${name}\` —— 那是 CI/headless 路径({{ host.harnessed_run_warning_note.execution_tail }}`,
     '',
     `1. Bash: \`harnessed prompt ${name} --task "$ARGUMENTS" --json\` → 解析 \`{prompt, max_iterations, model}\`。`,
     `2. ${spawnLoopZh('', name, tail)}`,
-    '3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 AskUserQuestion 原样转达,把答案 append 进 spec,再重 spawn。',
+    '3. 若输出含 `STATUS: NEEDS_CLARIFICATION` + 问题列表:STOP,用 {{ host.ask_user }} 原样转达,把答案 append 进 spec,再重 spawn。',
     `4. 命中 \`<promise>COMPLETE</promise>\`:把 subagent 最终输出写入文件,再 Bash \`harnessed checkpoint complete ${name} --result-file <path> --summary "<one-line>"\`。fail-CLOSED —— 除非声明的 \`artifacts_expected\` 文件全部存在、TDD boundary 通过(证据非空 / 红绿两侧齐全 / 测试文件未被删除)、且结果含逐字 \`<promise>COMPLETE</promise>\`(或结构化 COMPLETE 状态),否则拦下。\`--result <text>\` 是内联变体;\`--result-file\` 优先且在 Windows 上引号安全。\`--force\` 记录可审计的覆盖(\`evidence_status=overridden\`),不是静默放行。`,
     `5. 若 complete 闸门拦下:Bash \`harnessed checkpoint fail ${name} --failing-tests <n>\` 记录本次尝试。命中停机条件时会打印 \`BUDGET-EXHAUSTED\` / \`NO-PROGRESS\` / \`BREAK-LOOP\`。**仅当**三者都未触发时才允许重 spawn;任一触发即 STOP —— 重新收敛子任务范围、修掉阻塞点,或上报用户。`,
     '',
@@ -355,8 +366,8 @@ function interactiveEn(name) {
       ]
     : []
   const step2 = isMaster
-    ? '2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision. After locking blocking decisions, relay the deferrable set to the user in a single batched AskUserQuestion with each agent-recommended default pre-selected — only skip an item if the user explicitly defers it again; a deferrable item is never resolved without the user seeing it.'
-    : '2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision.'
+    ? '2. For each layer that fires, hold the dialogue with the user (use {{ host.ask_user }} for option-style decisions) and lock every open decision. After locking blocking decisions, relay the deferrable set to the user in a single batched {{ host.ask_user }} with each agent-recommended default pre-selected — only skip an item if the user explicitly defers it again; a deferrable item is never resolved without the user seeing it.'
+    : '2. For each layer that fires, hold the dialogue with the user (use {{ host.ask_user }} for option-style decisions) and lock every open decision.'
   const step4 = isMaster
     ? '4. Persist the locked decisions to `.planning/phases/<NN>-<slug>/` via planning-with-files (`findings.md` / `task_plan.md`; NN = two-digit, one above the highest existing phase dir).'
     : '4. Persist the locked decisions to `.planning/` via planning-with-files (`findings.md` / `task_plan.md`).'
@@ -393,8 +404,8 @@ function interactiveZh(name) {
       ]
     : []
   const step2 = isMaster
-    ? '2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。blocking 集锁定后,把 deferrable 集以单轮批量 AskUserQuestion 转达给用户(各项 agent 推荐默认值预选)—— 仅当用户明确再次推迟才可跳过该项;deferrable 项绝不允许在用户未见的情况下被 resolve。'
-    : '2. 对每个 fire 的层与用户对话(option 型决策用 AskUserQuestion),锁定每个 open decision。'
+    ? '2. 对每个 fire 的层与用户对话(option 型决策用 {{ host.ask_user }}),锁定每个 open decision。blocking 集锁定后,把 deferrable 集以单轮批量 {{ host.ask_user }} 转达给用户(各项 agent 推荐默认值预选)—— 仅当用户明确再次推迟才可跳过该项;deferrable 项绝不允许在用户未见的情况下被 resolve。'
+    : '2. 对每个 fire 的层与用户对话(option 型决策用 {{ host.ask_user }}),锁定每个 open decision。'
   const step4 = isMaster
     ? '4. 把 locked 决策持久化到 `.planning/phases/<NN>-<slug>/`(planning-with-files 的 `findings.md` / `task_plan.md`;NN = 两位数,取现有最大 phase 目录号 + 1)。'
     : '4. 把 locked 决策持久化到 `.planning/`(planning-with-files 的 `findings.md` / `task_plan.md`)。'

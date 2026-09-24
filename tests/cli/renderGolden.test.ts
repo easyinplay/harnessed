@@ -62,26 +62,61 @@ afterEach(() => {
   }
 })
 
-/** `{relative posix path: sha256}` for every file under `root`, keys sorted. */
+/**
+ * A locale body sibling (`SKILL.zh-Hans.md`, and any future `SKILL.<locale>.md`)
+ * as it sits in the install dir — NOT the rendered `SKILL.md`.
+ *
+ * SCOPE RULING (v16.0 Phase 65). These files are excluded from the byte lock, on
+ * both the claude golden and the codex sanity check, so the two gates share one
+ * scope. Rationale: what this suite locks is the bytes THE HOST ACTUALLY READS,
+ * and Claude Code's skill-loading contract reads `SKILL.md` only. On an en
+ * install `renderSkillFile` picks `SKILL.md` as the source, so `localeBodySelected`
+ * is false and the zh sibling is neither rendered nor stripped — it is a dead `cp`
+ * leftover nothing consumes. (On a zh install it IS the source and IS stripped, so
+ * it never reaches the manifest there anyway.)
+ *
+ * Including it would make every legitimate edit to a zh SOURCE body read as a
+ * regression: from Phase 65 on those bodies carry `{{ host.* }}` placeholders by
+ * design, so the dead copy's bytes MUST move while the rendered artifact does not.
+ * That is the opposite of what this golden is for.
+ *
+ * The product behaviour is unchanged and deliberately still asserted below ("the
+ * en install keeps the sibling, the zh install strips it"); that an en install
+ * therefore ships one file with unresolved placeholders in it is a pre-existing
+ * side effect recorded in the Phase 65 findings / TODOS, not a Phase 65 change.
+ */
+const LOCALE_SIBLING_RX = /(^|\/)SKILL\.[A-Za-z][A-Za-z-]*\.md$/
+
+/** `{relative posix path: sha256}` for every byte-locked file under `root`,
+ *  keys sorted. Locale body siblings are out of scope — see LOCALE_SIBLING_RX. */
 async function hashTree(root: string): Promise<Record<string, string>> {
   const out: Record<string, string> = {}
-  async function walk(dir: string, prefix: string): Promise<void> {
-    const entries = await readdir(dir, { withFileTypes: true })
-    for (const e of [...entries].sort((a, b) => (a.name < b.name ? -1 : 1))) {
-      const rel = prefix === '' ? e.name : `${prefix}/${e.name}`
-      if (e.isDirectory()) await walk(join(dir, e.name), rel)
-      else
-        out[rel] = createHash('sha256')
-          .update(await readFile(join(dir, e.name)))
-          .digest('hex')
-    }
+  for (const rel of await listTree(root)) {
+    if (LOCALE_SIBLING_RX.test(rel)) continue
+    out[rel] = createHash('sha256')
+      .update(await readFile(join(root, rel)))
+      .digest('hex')
   }
-  await walk(root, '')
   return Object.fromEntries(
     Object.keys(out)
       .sort()
       .map((k) => [k, out[k] as string]),
   )
+}
+
+/** Every relative posix path under `root`, sorted — presence, not bytes. */
+async function listTree(root: string): Promise<string[]> {
+  const out: string[] = []
+  async function walk(dir: string, prefix: string): Promise<void> {
+    const entries = await readdir(dir, { withFileTypes: true })
+    for (const e of [...entries].sort((a, b) => (a.name < b.name ? -1 : 1))) {
+      const rel = prefix === '' ? e.name : `${prefix}/${e.name}`
+      if (e.isDirectory()) await walk(join(dir, e.name), rel)
+      else out.push(rel)
+    }
+  }
+  await walk(root, '')
+  return out.sort()
 }
 
 /**
@@ -161,13 +196,12 @@ describe('claude install artifact — byte-exact golden', () => {
     expect(workflows.length).toBeGreaterThan(20)
   })
 
+  // Product behaviour, now asserted on the real install trees instead of on the
+  // golden manifests: the siblings are out of the BYTE lock (LOCALE_SIBLING_RX)
+  // but their presence/absence is still the Phase 29 contract and stays pinned.
   it('zh-Hans install strips the SKILL.zh-Hans.md siblings the en install keeps', async () => {
-    const en = Object.keys(
-      JSON.parse(readFileSync(join(GOLDEN_DIR, 'claude-en.json'), 'utf8')) as object,
-    )
-    const zh = Object.keys(
-      JSON.parse(readFileSync(join(GOLDEN_DIR, 'claude-zh-Hans.json'), 'utf8')) as object,
-    )
+    const en = await listTree((await renderTree('en', 'claude')).skillsBase)
+    const zh = await listTree((await renderTree('zh-Hans', 'claude')).skillsBase)
     expect(en.some((k) => k.endsWith('/SKILL.zh-Hans.md'))).toBe(true)
     expect(zh.some((k) => k.endsWith('/SKILL.zh-Hans.md'))).toBe(false)
   })
@@ -181,8 +215,14 @@ describe('codex install artifact — sanity only (bodies change per rewrite wave
       // as a thrown error — assert the clean run explicitly.
       expect(warnings.filter((w) => w.includes('host-primitive'))).toEqual([])
 
+      // SAME SCOPE as the claude golden above (LOCALE_SIBLING_RX): the files under
+      // test are the rendered `SKILL.md` bodies the host reads, not the raw locale
+      // siblings an en install leaves behind unrendered. Asserting "no `{{ host.`"
+      // on those dead copies would fail by construction — they are never rendered —
+      // and an asymmetric scope between the two gates is exactly the kind of gap a
+      // future rewrite wave would slip through.
       const manifest = await hashTree(skillsBase)
-      const skillMds = Object.keys(manifest).filter((k) => k.endsWith('SKILL.md'))
+      const skillMds = Object.keys(manifest).filter((k) => k.endsWith('/SKILL.md'))
       expect(skillMds.length).toBeGreaterThan(20)
       for (const rel of skillMds) {
         const body = readFileSync(join(skillsBase, rel), 'utf8')

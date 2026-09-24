@@ -66,7 +66,7 @@ execution stages.
    - **Strategic** — new feature / milestone / unclear business scope → gstack `/office-hours` + `/plan-ceo-review`
    - **Phase** — ≥2 open implementation decisions / unclear cross-phase API contract → GSD `/gsd-discuss-phase`
    - **Subtask** — ≥2 distinct approaches / core algorithm / API contract design / high error cost → superpowers brainstorming
-2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions) and lock every open decision.
+2. For each layer that fires, hold the dialogue with the user (use {{ host.ask_user }} for option-style decisions) and lock every open decision.
 3. Transparent-skip layers that don't fire — state which were skipped and why.
 4. Persist the locked decisions to `.planning/` via planning-with-files (`findings.md` / `task_plan.md`).
 
