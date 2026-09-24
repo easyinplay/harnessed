@@ -31,6 +31,11 @@ import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityR
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
 import { writeAllCommands } from './lib/generateCommands.js'
+import {
+  loadHostPrimitives,
+  type RenderHostPrimitivesOptions,
+  toHostId,
+} from './lib/hostPrimitives.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   makeIdempotentProbe,
@@ -567,6 +572,16 @@ export function registerSetup(program: Command): void {
       const rolePrompts = await loadRolePrompts(workflowsDir)
       const installedPlugins = readInstalledPlugins()
       const installedUserSkills = readInstalledUserSkills()
+      // v16.0 Phase 65 batch D — resolve the host + load host-primitives.yaml ONCE
+      // for the whole commands/ pass (sister renderAllSkills one-shot rule).
+      // locale is pinned to `en`: the command BODY template is English by
+      // construction (only `prompt.description` localizes, via loadRolePrompts),
+      // and the zh sibling localizes e.g. `spawn_subagent.plural`, which would
+      // splice Chinese into an English sentence.
+      const commandHostRender: RenderHostPrimitivesOptions = {
+        host: toHostId(detectPlatform().id),
+        table: await loadHostPrimitives({ workflowsDir, locale: 'en' }),
+      }
       const cmdResult = await writeAllCommands(
         skillNames,
         commandsBase,
@@ -575,6 +590,9 @@ export function registerSetup(program: Command): void {
         installedPlugins,
         installedUserSkills,
         async (p, c) => writeFile(p, c, 'utf8'),
+        undefined,
+        undefined,
+        commandHostRender,
       )
       const writtenCount = cmdResult.results.filter((r) => r.written).length
       const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length

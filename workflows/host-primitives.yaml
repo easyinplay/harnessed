@@ -60,6 +60,12 @@ primitives:
     plural:
       claude: "Task / Agent tools"
       codex: "spawn_agent tools"
+    # The CALL form, not the tool-name form: "parallel subs concurrently via
+    # parallel Task calls" (src/cli/lib/generateCommands.ts ORCHESTRATOR body).
+    # `plural` renders "Task / Agent tools", which does not fit that slot.
+    call_plural:
+      claude: "Task calls"
+      codex: "spawn_agent calls"
     # Same words as `zh_tool`, but at this call site the SOURCE line wrapped
     # between the tool name and 工具 (verify/code-review/SKILL*.md body prose).
     # Carrying the newline in the CELL lets the body hold one unbroken
@@ -121,6 +127,12 @@ primitives:
   name:
     default:
       claude: "Claude Code"
+      codex: "Codex"
+    # The BARE agent name as running prose uses it ("<X> loads it when triggers
+    # match"), not the product name. Only the claude column differs from
+    # `default`; codex's product and agent name are the same word.
+    short:
+      claude: "Claude"
       codex: "Codex"
 
   teammate:

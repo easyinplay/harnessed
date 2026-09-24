@@ -20,9 +20,25 @@
 // Karpathy simplicity: pure functions, single yaml load, no new deps.
 
 import { existsSync, readFileSync as nodeReadFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { parse as parseYaml } from 'yaml'
+import { getAssetsRoot } from '../../platform/assetsRoot.js'
+import {
+  claudeDescriptor,
+  codexDescriptor,
+  detectPlatform,
+  getSkillsDir,
+} from '../../platform/platform.js'
 import type { RolePrompt } from '../../workflow/rolePrompts.js'
 import type { CapabilityMap } from './capabilityResolver.js'
+import {
+  type HostId,
+  type HostPrimitiveTable,
+  type RenderHostPrimitivesOptions,
+  renderHostPrimitives,
+  toHostId,
+} from './hostPrimitives.js'
 
 /** Single generated command file (filename + content). */
 export interface GeneratedCommand {
@@ -63,6 +79,108 @@ const ORCHESTRATOR_COMMANDS = new Set(['auto', 'plan', 'task', 'verify', 'ship']
 
 const MARKER = `<!-- harnessed-generated:v3.4.4 -->`
 
+// ─────────────────────────────────────────────────────────────────────────────
+// v16.0 Phase 65 batch D — host primitives on the S2 (generated command) surface.
+//
+// The bodies below are SYNTHESISED here, so until Phase 65 they were pure Claude
+// Code idiom: they told the reader to spawn a "CC-native Task / Agent tool", to
+// call `AskUserQuestion`, and — worst — to read `~/.claude/rules/agent-teams.md`
+// and open `~/.claude/skills/<name>/SKILL.md`, neither of which exists on codex.
+//
+// Same mechanism as the S1 (SKILL.md) surface: the body names the primitive
+// abstractly with `{{ host.<primitive>[.<variant>] }}` and
+// workflows/host-primitives.yaml supplies the word the active harness uses. The
+// `claude` column is the verbatim pre-Phase-65 wording, so the claude artifact is
+// byte-identical — pinned by tests/cli/generateCommandsGolden.test.ts.
+//
+// Two things deliberately do NOT go through the table:
+//   - the skills dir (see `skillsDirProse`) — a PATH is structure, not wording,
+//     so it is derived from the platform descriptor.
+//   - `<name>` inside the two `harnessed_run_warning_note.command_*` cells — this
+//     generator runs in TypeScript with the workflow name in hand, so it
+//     substitutes the name itself (see `runWarning`). The sister SKILL surface
+//     cannot: renderHostPrimitives is a plain table splice with no template
+//     context, which is why the SKILL side had to split those sentences into a
+//     literal prefix + a `*_tail` variant.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Host-specific inputs one command body needs. Resolved ONCE per call. */
+export interface CommandHostContext {
+  /** Placeholder render options — host column + already-loaded table. */
+  render: RenderHostPrimitivesOptions
+  /** `~`-relative skills dir prose for the host (e.g. `~/.claude/skills`). */
+  skillsDir: string
+}
+
+/** Packaged en table, read once and cached for the back-compat call path. */
+let packagedEnTableCache: HostPrimitiveTable | undefined
+
+/**
+ * The `host-primitives.yaml` BASE (en) table from the packaged assets.
+ *
+ * Always the base file, never a locale sibling: this surface's body template is
+ * English by construction (only `prompt.description` is localized, and it comes
+ * from role-prompts.yaml). The zh sibling localizes e.g. `spawn_subagent.plural`
+ * to `Task / Agent 工具`, which would splice Chinese into an English sentence.
+ */
+function packagedEnTable(): HostPrimitiveTable {
+  if (packagedEnTableCache) return packagedEnTableCache
+  const path = join(getAssetsRoot(), 'workflows', 'host-primitives.yaml')
+  const doc = parseYaml(nodeReadFileSync(path, 'utf8')) as {
+    primitives?: HostPrimitiveTable
+  } | null
+  packagedEnTableCache = doc?.primitives ?? {}
+  return packagedEnTableCache
+}
+
+/**
+ * `~`-relative skills dir for `host`, as BODY PROSE (forward slashes).
+ *
+ * Production path: setup.ts renders for the ACTIVE platform (it applies
+ * `--platform` before anything resolves), so this is `getSkillsDir()` — the
+ * descriptor-derived value that already honours the platform pin. When a caller
+ * renders for a host OTHER than the detected one (the codex sanity check running
+ * on a claude machine), fall back to that host's own descriptor so the artifact
+ * never names the wrong tree.
+ *
+ * Tildified because the reader — not a resolver — consumes this: the artifact
+ * must read `~/.claude/skills/...` on every machine, which is also what keeps the
+ * byte golden reproducible off this developer's homedir.
+ */
+function skillsDirProse(host: HostId): string {
+  const home = homedir()
+  const abs =
+    toHostId(detectPlatform().id) === host
+      ? getSkillsDir()
+      : host === 'codex'
+        ? codexDescriptor(home).skillsDir
+        : claudeDescriptor(home).skillsDir
+  const posix = abs.replace(/\\/g, '/')
+  const homePosix = home.replace(/\\/g, '/').replace(/\/+$/, '')
+  return posix.startsWith(`${homePosix}/`) ? `~${posix.slice(homePosix.length)}` : posix
+}
+
+/** Resolve the host context, defaulting to (claude, packaged en table) so the
+ *  pre-Phase-65 five-arg call still produces the exact claude bytes. */
+function resolveHostContext(render?: RenderHostPrimitivesOptions): CommandHostContext {
+  const r = render ?? { host: 'claude', table: packagedEnTable() }
+  return { render: r, skillsDir: skillsDirProse(r.host) }
+}
+
+/** Render ONE `{{ host.<key> }}` for this host. Throws on an unknown key /
+ *  variant / missing host column (hostPrimitives.ts is strict by design);
+ *  `writeAllCommands` turns that into a per-command warning. */
+function hostText(ctx: CommandHostContext, key: string): string {
+  return renderHostPrimitives(`{{ host.${key} }}`, ctx.render)
+}
+
+/** The `harnessed run` warning sentence with `<name>` resolved to the real
+ *  workflow name — the substitution the SKILL surface cannot do (see the block
+ *  comment above). */
+function runWarning(ctx: CommandHostContext, name: string, variant: string): string {
+  return hostText(ctx, `harnessed_run_warning_note.${variant}`).replaceAll('<name>', name)
+}
+
 /** v4.0.1 — language directive for the CC main session's own narration +
  *  clarification dialogue. The `language` discipline says output follows
  *  env.HARNESSED_USER_LANG (set by `harnessed setup`). Spawned subagents get
@@ -86,11 +204,11 @@ function spawnLoopSteps(indent: string): string[] {
   const i = indent
   return [
     `${i}a. Bash: \`harnessed prompt <sub> --task "<spec>" --json\` → parse \`{prompt, max_iterations, model}\`.`,
-    `${i}b. Spawn a CC-native subagent (Task / Agent tool) with that \`prompt\` and \`model\`, then drive delivery with harnessed's own completion gate:`,
+    `${i}b. Spawn a {{ host.native }} subagent ({{ host.spawn_subagent }}) with that \`prompt\` and \`model\`, then drive delivery with harnessed's own completion gate:`,
     `${i}   - on return, write the subagent's final output to a file and run \`harnessed checkpoint complete <sub> --result-file <path>\` — it is fail-closed on the declared artifacts, the TDD boundary, and the verbatim \`<promise>COMPLETE</promise>\`.`,
     `${i}   - if it blocks, run \`harnessed checkpoint fail <sub> --failing-tests <n>\` to record the attempt; it prints BUDGET-EXHAUSTED / NO-PROGRESS / BREAK-LOOP when a stop condition is reached.`,
     `${i}   - respawn ONLY while none of those three has fired. Any one of them means stop: re-scope the subtask, fix the blocker, or escalate to the user. Never respawn past a stop directive.`,
-    `${i}c. If the subagent output contains \`STATUS: NEEDS_CLARIFICATION\` + a question list: STOP. Use AskUserQuestion to relay those exact questions to the user. Append the user's answers to the spec, then re-spawn the same sub. (This is the round-trip headless spawn cannot do.)`,
+    `${i}c. If the subagent output contains \`STATUS: NEEDS_CLARIFICATION\` + a question list: STOP. Use {{ host.ask_user }} to relay those exact questions to the user. Append the user's answers to the spec, then re-spawn the same sub. (This is the round-trip headless spawn cannot do.)`,
     `${i}d. On \`<promise>COMPLETE</promise>\`: Bash \`harnessed checkpoint complete <sub> --result-file <path> --summary "<one-line>"\`.`,
   ]
 }
@@ -116,7 +234,7 @@ function buildInteractiveBody(name: string, prompt: RolePrompt): string {
     `   - Strategic layer: new feature / new milestone / unclear business scope → run gstack \`/office-hours\` + \`/plan-ceo-review\``,
     `   - Phase layer: ≥2 open implementation decisions / unclear cross-phase API contract → run GSD \`/gsd-discuss-phase\``,
     `   - Subtask layer: ≥2 distinct approaches / core algorithm / API contract design / high error cost → run superpowers brainstorming`,
-    `2. For each layer that fires, hold the dialogue with the user (use AskUserQuestion for option-style decisions). Lock every open decision.`,
+    `2. For each layer that fires, hold the dialogue with the user (use {{ host.ask_user }} for option-style decisions). Lock every open decision.`,
     `3. Skip layers that don't fire — state which were skipped and why (transparent skip).`,
     `4. Persist locked decisions to \`.planning/phases/<NN>-<slug>/\` via planning-with-files (\`findings.md\` / \`task_plan.md\`; NN = two-digit, one above the highest existing phase dir; slug = kebab-case short name).`,
     ``,
@@ -145,14 +263,14 @@ function buildInteractiveBody(name: string, prompt: RolePrompt): string {
  *       guard auto-runs) on success / `checkpoint fail` on failure
  *    4. is_master fired subs RECURSE (`harnessed gates <sub>`) instead of spawning
  *    5. `harnessed status --recover` to re-orient after compaction. */
-function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
+function buildOrchestratorBody(name: string, prompt: RolePrompt, ctx: CommandHostContext): string {
   const autoDiscussStep =
     name === 'auto'
       ? [
-          `1. FIRST run the discuss stage interactively in THIS session (spawned subagents cannot ask the user questions). Evaluate strategic / phase / subtask clarification criteria for "$ARGUMENTS"; for each that fires, dialogue with the user (AskUserQuestion) and lock decisions; transparent-skip the rest. Produce a locked spec.`,
+          `1. FIRST run the discuss stage interactively in THIS session (spawned subagents cannot ask the user questions). Evaluate strategic / phase / subtask clarification criteria for "$ARGUMENTS"; for each that fires, dialogue with the user ({{ host.ask_user }}) and lock decisions; transparent-skip the rest. Produce a locked spec.`,
         ]
       : [
-          `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first (AskUserQuestion) and lock decisions. Otherwise transparent-skip. Produce a locked spec.`,
+          `1. If the clarification criteria fire for "$ARGUMENTS" (≥2 approaches / core algorithm / API contract / high error cost), clarify interactively in THIS session first ({{ host.ask_user }}) and lock decisions. Otherwise transparent-skip. Produce a locked spec.`,
         ]
   // v5.0 — the deterministic state-machine spawn loop for ONE leaf sub: prompt →
   // spawn → completion gate → NEEDS_CLARIFICATION round-trip → checkpoint complete
@@ -187,7 +305,7 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
     ``,
     `> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: steps 2-3 below seed the ledger, and a per-turn \`<workflow-intent>\` reminder persists until they run.`,
     ``,
-    `harnessed is the orchestration brain: \`harnessed gates\` tells you which subs fire, \`harnessed prompt\` gives you each sub's spawn-ready prompt, and \`harnessed checkpoint\` records the per-sub state-machine ledger. YOU (the main session) do the spawning with CC-native Task / Agent tools — keeping the session responsive, enabling Agent Teams, and letting clarification round-trips reach the user.`,
+    `harnessed is the orchestration brain: \`harnessed gates\` tells you which subs fire, \`harnessed prompt\` gives you each sub's spawn-ready prompt, and \`harnessed checkpoint\` records the per-sub state-machine ledger. YOU (the main session) do the spawning with {{ host.native }} {{ host.spawn_subagent.plural }} — keeping the session responsive, enabling {{ host.team }}, and letting clarification round-trips reach the user.`,
     ``,
     `Drive this exact sequence (it is the state machine — follow the file, don't improvise from memory):`,
     ``,
@@ -201,16 +319,25 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
     `1b. Bash: \`harnessed facts ${name} --out .harnessed-facts.json\` → it lists ONLY the facts this stage’s gates actually read: deterministic ones already filled (change size / files touched / stage, from git), judgement calls left \`null\` with a one-line hint of what to judge. Edit the file and replace each \`null\` in \`facts\` with your honest answer from the locked spec — leave one null only if you genuinely cannot judge it (it then falls back to the built-in default). Do NOT skip this step and do NOT invent facts the command did not ask for.`,
     `2. Bash: \`harnessed gates ${name} --task "<locked spec>" --context-file .harnessed-facts.json --skip-sub discuss\` → parse the JSON \`{fire: [{sub, order, mode, is_master}], skip: [{sub, reason}], parallelism: {escalate_to_teams}}\`. This is the plan SoT (no spawn). Keep the verbatim JSON for the next step.${name === 'auto' ? ' For a small self-contained task (single-file / single-page class), the sanctioned lite path is adding `--skip-sub verify --skip-sub retro` (repeatable / comma-separated) — skipped subs are still recorded in the ledger with reasons; lite ≠ freestyle (the ledger/evidence IS the difference).' : ''}`,
     `3. Bash: \`harnessed checkpoint start ${name} --plan '<the verbatim gates JSON from step 2>'\` → seeds the sub-progress ledger in \`current-workflow.json\` (fired subs → \`pending\`, skipped subs → \`skipped\` + reason). This makes \`harnessed status --recover\` able to tell you where you are after compaction.`,
-    // 4.34.0 — MUST stay in lockstep with the Agent Teams step 4 in
-    // workflows/*/SKILL.md (see scripts/rewrite-skill-invoke-sections.mjs). CC
-    // v2.1.178+ removed the two team lifecycle tools: the team forms implicitly on
-    // the first background teammate spawn, `team_name` is accepted but ignored,
-    // shutdown is a BY-NAME request rather than a tool call, and the team directory
-    // is removed at session exit. Deliberately not naming the removed tools here —
-    // tests/workflow/agentTeamsApiMigration.test.ts fails on those literals anywhere
-    // in the live instruction surface, and this generator IS that surface.
-    `4. If \`parallelism.escalate_to_teams === true\`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read \`~/.claude/rules/agent-teams.md\`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with \`Agent(name: <sub>, run_in_background: true, prompt: <that sub's \`harnessed prompt <sub>\` prompt>)\`; the team forms implicitly on the FIRST spawn with this session as lead (\`team_name\` is accepted but ignored — the name is session-derived). Coordinate via \`SendMessage\`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down") — shutdown is a REQUEST, so re-ask rather than assume, and shut every teammate down before you finish (a teammate you never stopped keeps burning tokens and can hang the host). The team directory is removed automatically at session exit; there is no teardown tool. Still checkpoint each sub (\`complete\` / \`fail\`) as below.`,
-    `5. Otherwise, for each fired sub in \`order\` (serial subs sequentially, parallel subs concurrently via parallel Task calls):`,
+    // Phase 65 — this step's text is NOT maintained by hand any more. It is
+    // `host.teams_step_note.command` in workflows/host-primitives.yaml; the
+    // sister SKILL.md rendering is `host.teams_step_note.skill` in the SAME
+    // primitive, so the two wordings sit adjacent in one table and any drift
+    // between them is visible on sight instead of relying on this comment.
+    //
+    // History: the pre-Phase-65 comment claimed the two were kept "in lockstep",
+    // but they had already diverged in 5 places (an extra lead-in sentence, `and`
+    // vs `;`, a dropped comma, `the \`team_name\` input is` vs \`team_name\` is`,
+    // and two trailing sentences this surface inlined from TEAMS_TEARDOWN_*).
+    // Both wordings are preserved verbatim in their own variant so each side's
+    // golden stays byte-identical; the codex column of both variants is a single
+    // convergent text, which is where the drift actually gets retired.
+    //
+    // Deliberately not naming the removed CC team lifecycle tools here —
+    // tests/workflow/agentTeamsApiMigration.test.ts fails on those literals
+    // anywhere in the live instruction surface, and this generator IS that surface.
+    `{{ host.teams_step_note.command }}`,
+    `5. Otherwise, for each fired sub in \`order\` (serial subs sequentially, parallel subs concurrently via parallel {{ host.spawn_subagent.call_plural }}):`,
     `   - **If the fired entry has \`is_master: true\`** (it is itself a stage master, e.g. \`/auto\` firing \`plan\`/\`task\`/\`verify\`): do NOT prompt+spawn it directly — that would yield a vague dispatcher. RECURSE: run that master's orchestration — \`harnessed facts <sub> --out .harnessed-facts.json\` (fill the nulls) → \`harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss\` → \`harnessed checkpoint start <sub> --plan '<that JSON>'\` → repeat this whole loop for ITS fired subs. Only leaf subs (no \`is_master\`) reach the spawn loop below.`,
     `   - **Else (leaf sub)** — spawn it, then checkpoint the outcome:`,
     ...leafSpawnLoop,
@@ -218,7 +345,7 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
     ``,
     `**If you lose context (compaction / resume):** run \`harnessed status --recover\` first — it reads the ledger and prints "you are here, this is next" so you can resume the loop at the first \`pending\` sub instead of restarting. If the ledger is empty (no \`--plan\` was seeded), re-run steps 2-3.`,
     ``,
-    `Do NOT pipe to \`harnessed run ${name}\` — that is the CI/headless path (SDK spawn, blocks the session, no Agent Teams, no clarification round-trip).`,
+    runWarning(ctx, name, 'command_orchestrator'),
     ``,
     `## Notes`,
     ``,
@@ -232,7 +359,7 @@ function buildOrchestratorBody(name: string, prompt: RolePrompt): string {
 }
 
 /** EXECUTION body (v4.0) — single sub: prompt → native spawn → clarify → checkpoint. */
-function buildExecutionBody(name: string, prompt: RolePrompt): string {
+function buildExecutionBody(name: string, prompt: RolePrompt, ctx: CommandHostContext): string {
   return [
     `# /${name}`,
     ``,
@@ -249,18 +376,18 @@ function buildExecutionBody(name: string, prompt: RolePrompt): string {
     ``,
     `> The banner above (when present) means this invocation is REGISTERED with the engine (an intent marker) — not yet compliant: the steps below (prompt → spawn → checkpoint complete) resolve it, and a per-turn \`<workflow-intent>\` reminder persists until they run.`,
     ``,
-    `harnessed gives you the spawn-ready prompt; YOU spawn the subagent with a CC-native Task / Agent tool (keeps the session responsive + lets clarification round-trips reach the user).`,
+    `harnessed gives you the spawn-ready prompt; YOU spawn the subagent with a {{ host.native }} {{ host.spawn_subagent }} (keeps the session responsive + lets clarification round-trips reach the user).`,
     ``,
     ...spawnLoopSteps('').map((s) =>
       s.replace('<sub>', name).replace('--task "<spec>"', '--task "$ARGUMENTS"'),
     ),
     ``,
-    `Do NOT pipe to \`harnessed run ${name}\` — that is the CI/headless path (SDK spawn).`,
+    runWarning(ctx, name, 'command_execution'),
     ``,
     `## Notes`,
     ``,
     `- Generated by \`harnessed setup\`. Re-run after a harnessed upgrade to refresh.`,
-    `- The sister \`~/.claude/skills/${name}/SKILL.md\` is the Skill-tool entry point (Claude loads it when triggers match). gate/discipline SoT: \`workflows/${nameToYamlHintPath(name)}\`.`,
+    `- The sister \`${ctx.skillsDir}/${name}/SKILL.md\` is the Skill-tool entry point ({{ host.name.short }} loads it when triggers match). gate/discipline SoT: \`workflows/${nameToYamlHintPath(name)}\`.`,
     ``,
     MARKER,
     ``,
@@ -284,6 +411,13 @@ function buildExecutionBody(name: string, prompt: RolePrompt): string {
  *
  * The 5-arg signature is preserved for back-compat; no `{{ capabilities }}`
  * placeholders are rendered (warnings always empty).
+ *
+ * v16.0 Phase 65 batch D — `hostRender` (6th, optional) picks the host column of
+ * workflows/host-primitives.yaml for the `{{ host.* }}` family in the body.
+ * Omitting it resolves to (claude, packaged en table), i.e. the exact
+ * pre-Phase-65 bytes. Throws if a placeholder cannot be resolved (strict by
+ * design in ./hostPrimitives.ts); `writeAllCommands` turns that into a
+ * per-command warning rather than aborting setup.
  */
 export function generateCommandFile(
   name: string,
@@ -291,18 +425,26 @@ export function generateCommandFile(
   _capabilities: CapabilityMap,
   _installedPlugins: Set<string>,
   _installedUserSkills: Set<string>,
+  hostRender?: RenderHostPrimitivesOptions,
 ): { content: string; warnings: string[] } {
   const isMaster = prompt.is_master === true
   const argHint = isMaster ? '[task description]' : '[requirement text or omit]'
+  const ctx = resolveHostContext(hostRender)
 
-  let body: string
+  let rawBody: string
   if (INTERACTIVE_COMMANDS.has(name)) {
-    body = buildInteractiveBody(name, prompt)
+    rawBody = buildInteractiveBody(name, prompt)
   } else if (ORCHESTRATOR_COMMANDS.has(name)) {
-    body = buildOrchestratorBody(name, prompt)
+    rawBody = buildOrchestratorBody(name, prompt, ctx)
   } else {
-    body = buildExecutionBody(name, prompt)
+    rawBody = buildExecutionBody(name, prompt, ctx)
   }
+  // ONE host pass over the assembled body. The sentences `runWarning` already
+  // resolved carry no placeholders, so re-scanning them is inert — there is
+  // deliberately no render-until-fixpoint loop (sister renderSkillTemplates.ts).
+  // Frontmatter is built below and stays OUT of the pass: `prompt.description`
+  // is yaml content, not a template.
+  const body = renderHostPrimitives(rawBody, ctx.render)
 
   const warnings: string[] = []
 
@@ -373,6 +515,10 @@ export function shouldOverwriteFile(content: string): boolean {
  * neither) are skipped with a warning. The 9-arg signature stays backwards-
  * compatible because `fileExists` and `readFileSync` have default values —
  * existing 7-arg callers in setup.ts continue to work.
+ *
+ * v16.0 Phase 65 batch D — `hostRender` (10th, optional) is threaded straight to
+ * `generateCommandFile`; setup.ts resolves the host + loads the table ONCE and
+ * passes the same object for every command.
  */
 export async function writeAllCommands(
   slashNames: string[],
@@ -384,6 +530,7 @@ export async function writeAllCommands(
   writer: (path: string, content: string) => Promise<void>,
   fileExists: (path: string) => boolean = existsSync,
   readFileSync: (path: string) => string = (p) => nodeReadFileSync(p, 'utf8'),
+  hostRender?: RenderHostPrimitivesOptions,
 ): Promise<{ results: CommandWriteResult[]; warnings: string[] }> {
   const results: CommandWriteResult[] = []
   const aggregatedWarnings = new Set<string>()
@@ -425,13 +572,31 @@ export async function writeAllCommands(
       // Else: harnessed-generated (v3.4.3 or older v3.4.4) → overwrite below.
     }
 
-    const { content, warnings } = generateCommandFile(
-      name,
-      prompt,
-      capabilities,
-      installedPlugins,
-      installedUserSkills,
-    )
+    // Phase 65 — the host pass is strict (unknown primitive / variant / missing
+    // host column all throw). Degrade to a per-command warning instead of letting
+    // it escape into setup.ts's unwrapped Step A.6 call: one unrenderable body
+    // must not take the whole commands/ generation down with it.
+    let content: string
+    let warnings: string[]
+    try {
+      ;({ content, warnings } = generateCommandFile(
+        name,
+        prompt,
+        capabilities,
+        installedPlugins,
+        installedUserSkills,
+        hostRender,
+      ))
+    } catch (e) {
+      results.push({
+        name,
+        path,
+        written: false,
+        warning: `host-primitive render failed for commands/${name}.md — ${(e as Error).message}`,
+      })
+      aggregatedWarnings.add(`commands/${name}.md: host-primitive render failed`)
+      continue
+    }
     try {
       await writer(path, content)
       results.push({ name, path, written: true })

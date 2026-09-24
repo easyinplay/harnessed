@@ -50,6 +50,12 @@ primitives:
     plural:
       claude: "Task / Agent 工具"
       codex: "spawn_agent 工具"
+    # 调用形(非工具名形),站点在 src/cli/lib/generateCommands.ts 的 ORCHESTRATOR
+    # 正文。该面是 **en-only**(命令正文模板恒为英文,渲染时强制读 en 基文件),
+    # 本 cell 仅为 key parity 存在、zh 渲染不引用,故值与 en 文件相同。
+    call_plural:
+      claude: "Task calls"
+      codex: "spawn_agent calls"
     # 与 `zh_tool` 同词,但该调用点的**源文件**在工具名与「工具」之间折行
     # (verify/code-review/SKILL*.md 正文)。把换行放进 **cell** 里,正文就能写成
     # 一个不折行的占位符,而 claude 渲染仍逐字节还原原来的两行。反过来重排正文
@@ -105,6 +111,11 @@ primitives:
   name:
     default:
       claude: "Claude Code"
+      codex: "Codex"
+    # 裸 agent 名(行文里的「<X> loads it when triggers match」),不是产品全名。
+    # 专有名词不翻译,故两 locale 同值;codex 的产品名与 agent 名本就同一个词。
+    short:
+      claude: "Claude"
       codex: "Codex"
 
   # 中文行文里原文也写 teammate(专有名词),故 claude 侧两 locale 同值,
