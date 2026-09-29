@@ -69,6 +69,17 @@ export async function loadRolePrompts(
  * content, not a template"). A placeholder there would ship verbatim into
  * `<claude-home>/commands/<x>.md`. `primary_cap` / `is_master` are keys, not prose.
  *
+ * CAVEAT — this exclusion is right for the COMMANDS surface only, and it has
+ * already bitten once. v16.0 Phase 66 added a second consumer of `description`:
+ * the codex agent role toml (`src/installers/lib/codexAgentRoles.ts`), where the
+ * field is prose that codex itself reads, not a yaml slot — so leaving it
+ * unrendered leaked `{{ host.team }}` straight into a shipped role file (caught
+ * by that module's tests). Each surface that consumes `description` must decide
+ * for itself whether to render it, and pass its own locale-matched table if so
+ * (both existing consumers do this via a separate `descriptionTable` /
+ * `renderDescription` option). Do NOT "fix" this by rendering `description`
+ * here — that would put a placeholder back into command frontmatter.
+ *
  * The renderer is INJECTED rather than imported so this module stays free of
  * `src/cli/lib` (architecture review #7 — role-prompts is workflow-domain data
  * and should not import up into the CLI layer).

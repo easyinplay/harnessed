@@ -38,6 +38,7 @@ import {
   ralphLoopWrap,
 } from './lib/ralphLoop.js'
 import { sdkSpawn } from './lib/sdkSpawn.js'
+import { classifySpawnError, type SpawnFailure } from './lib/spawnFailure.js'
 import { loadPhases } from './loadPhases.js'
 import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
 import { loadRolePrompts, type RolePrompt } from './rolePrompts.js'
@@ -72,6 +73,15 @@ export interface DispatchStubResult {
    *  in main Claude Code session (D3). */
   needsTeamsEscalation?: boolean
   escalationReason?: string
+  /** v16.0 Phase 66 T3 — which of the five named spawn failures this was, when
+   *  the phase failed because the spawn did. Present ONLY for a spawn failure:
+   *  a ralph-loop max-iterations exhaustion is a loop outcome, not a spawn one.
+   *
+   *  Before this field the catch below flattened every exception into one
+   *  string and the kind was unrecoverable downstream. Writing it into the leaf
+   *  ledger is T4 (checkpoint schema + runCheckpointFail); this task stops at
+   *  "the classification is no longer lost". */
+  failure?: SpawnFailure
 }
 /** v3.5.0 Phase 2 — Option 1-Lite escalation rules injected via
  *  criticalSystemReminder_EXPERIMENTAL (already piped through sdkReconcile.ts
@@ -378,12 +388,17 @@ export const _dispatchSkillStub = {
         })
       }
       // Fail-soft per ADR 0029 — runtime emits failure but doesn't crash run loop.
+      // v16.0 Phase 66 T3 — the kind now rides alongside the message instead of
+      // being dissolved into it. `output` keeps its historical wording so the
+      // rendered goldens and the existing assertions are untouched.
+      const failure = classifySpawnError(err)
       return {
         status: 'fail',
         output:
           err instanceof MaxIterationsExceededError
             ? `ralph-loop max-iterations exceeded (${err.iterations}) for ${skillName}`
             : `sdkSpawn failed for ${skillName}: ${(err as Error).message}`,
+        ...(failure ? { failure } : {}),
       }
     }
 

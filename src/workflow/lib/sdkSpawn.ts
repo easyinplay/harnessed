@@ -22,6 +22,13 @@ import { query, type SDKMessage, type SDKResultMessage } from '@anthropic-ai/cla
 import type { AgentDefinition } from './agentDefinition.js'
 import { COMPLETION_SCHEMA, type SdkResultEnvelope } from './completionSchema.js'
 import { injectFactoryInternalFields, toSdkAgentDefinition } from './sdkReconcile.js'
+import type { SpawnFailure } from './spawnFailure.js'
+import { DEFAULT_SPAWN_TIMEOUT_MS, envSpawnTimeoutMs } from './spawnTimeout.js'
+
+// v16.0 Phase 66 T3 — the cap now lives in ./spawnTimeout.js so the codex
+// subprocess path can share it without importing this module (and with it the
+// agent SDK). Re-exported under its original name; nothing had to move.
+export { DEFAULT_SPAWN_TIMEOUT_MS }
 
 export interface SdkSpawnOpts {
   /** Subagent name registered in `agents` map; e.g. 'tavily-mcp', 'ui-ux-pro-max'. */
@@ -36,26 +43,24 @@ export interface SdkSpawnOpts {
 }
 
 export class SpawnFailError extends Error {
+  /** v16.0 Phase 66 T3 — the stream ended without the contractual result: we got
+   *  a run, but not the OUTPUT the contract promised. Same verdict a codex run
+   *  whose `-o` file never appeared gets. The tag is what lets run.ts keep the
+   *  classification instead of flattening it into a message string. */
+  readonly failure: SpawnFailure = 'SpawnOutputMalformed'
   constructor(public lastMessage?: SDKResultMessage) {
     super('sdkSpawn produced no result message')
     this.name = 'SpawnFailError'
   }
 }
 
-/** One hour. A real phase can legitimately run long; the cap exists so a hung
- *  subagent cannot hang a CI job forever (ralph-loop bounds iterations, not time). */
-export const DEFAULT_SPAWN_TIMEOUT_MS = 60 * 60 * 1000
-
 export class SpawnTimeoutError extends Error {
+  /** v16.0 Phase 66 T3 — the one retryable kind (see spawnFailure.js). */
+  readonly failure: SpawnFailure = 'SpawnTimeout'
   constructor(public timeoutMs: number) {
     super(`sdkSpawn exceeded its ${timeoutMs}ms wall-clock timeout (HARNESSED_SPAWN_TIMEOUT_MS)`)
     this.name = 'SpawnTimeoutError'
   }
-}
-
-function envSpawnTimeoutMs(): number {
-  const raw = Number.parseInt(process.env.HARNESSED_SPAWN_TIMEOUT_MS ?? '', 10)
-  return Number.isFinite(raw) && raw >= 0 ? raw : DEFAULT_SPAWN_TIMEOUT_MS
 }
 
 /** Narrow SDKResultMessage.subtype to the discriminator we care about. */

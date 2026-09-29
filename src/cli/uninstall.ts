@@ -63,6 +63,20 @@ async function discoverCommandFiles(commandsDir: string): Promise<string[]> {
   return owned
 }
 
+/** Harnessed-owned codex agent roles, or `[]` when anything about that surface
+ *  is unavailable (uninstall must never fail over an advisory inventory). */
+async function discoverCodexAgentRoles(): Promise<string[]> {
+  try {
+    const [{ resolveCodexHome }, m] = await Promise.all([
+      import('../installers/codexHookAdd.js'),
+      import('../installers/lib/codexAgentRoles.js'),
+    ])
+    return await m.discoverCodexAgentRoleFiles(m.codexAgentsDir(resolveCodexHome()))
+  } catch {
+    return []
+  }
+}
+
 async function checkSettingsEnv(settingsPath: string | null): Promise<{
   hasAgentTeams: boolean
   hasUserLang: boolean
@@ -161,6 +175,12 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   }
 
   const commandFiles = await discoverCommandFiles(commandsDir)
+  // v16.0 Phase 66 T1 — codex-only second command-like surface:
+  // `<CODEX_HOME>/agents/harnessed-<sub>.toml`. Only files carrying BOTH the
+  // `harnessed-` prefix and the generated-by marker are claimed, so the roles
+  // other tools put in that directory (33 GSD ones on a typical host) are never
+  // listed and never removed. Dynamic import mirrors setup's Step A.7.
+  const agentRoleFiles = platform.id === 'codex' ? await discoverCodexAgentRoles() : []
   const settingsEnv = await checkSettingsEnv(settingsPath)
   const hasSettingsChanges = settingsEnv.hasAgentTeams || settingsEnv.hasUserLang
   const staleHooks = settingsEnv.staleHooks
@@ -179,7 +199,11 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
 
   // ── Summary ─────────────────────────────────────────────────
   const discoverable =
-    commandFiles.length + skillDirs.length + (hasSettingsChanges ? 1 : 0) + (staleHooks > 0 ? 1 : 0)
+    commandFiles.length +
+    agentRoleFiles.length +
+    skillDirs.length +
+    (hasSettingsChanges ? 1 : 0) +
+    (staleHooks > 0 ? 1 : 0)
   if (discoverable === 0) {
     console.log(t('uninstall.unified.nothing'))
     printCliRemovalHint()
@@ -189,6 +213,8 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   console.log(t('uninstall.unified.header'))
   if (commandFiles.length > 0)
     console.log(t('uninstall.unified.commands', { count: commandFiles.length }))
+  if (agentRoleFiles.length > 0)
+    console.log(t('uninstall.unified.agent_roles', { count: agentRoleFiles.length }))
   if (skillDirs.length > 0) console.log(t('uninstall.unified.skills', { count: skillDirs.length }))
   if (hasSettingsChanges) console.log(t('uninstall.unified.settings'))
   if (staleHooks > 0) console.log(t('uninstall.unified.hooks', { count: staleHooks }))
@@ -220,6 +246,16 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
     try {
       await rm(path, { force: true })
       removedCommands++
+    } catch (e) {
+      failures.push(`${path}: ${(e as Error).message}`)
+    }
+  }
+
+  let removedAgentRoles = 0
+  for (const path of agentRoleFiles) {
+    try {
+      await rm(path, { force: true })
+      removedAgentRoles++
     } catch (e) {
       failures.push(`${path}: ${(e as Error).message}`)
     }
@@ -266,6 +302,8 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   // ── Completion ──────────────────────────────────────────────
   if (removedCommands > 0)
     console.log(t('uninstall.unified.removed_commands', { count: removedCommands }))
+  if (removedAgentRoles > 0)
+    console.log(t('uninstall.unified.removed_agent_roles', { count: removedAgentRoles }))
   if (removedSkills > 0)
     console.log(t('uninstall.unified.removed_skills', { count: removedSkills }))
   if (removedSettings) console.log(t('uninstall.unified.removed_settings'))

@@ -2,7 +2,7 @@
 
 SPEC:`.planning/specs/2026-09-22-codex-host-parity-v16.md` §「Phase 66」(唯一真相源)
 + 本文件「开工细化」(对 SPEC 的落地修正,依据 `findings.md` 的 F1-F4 核实)。
-Status: planned (2026-09-29)
+Status: T0 complete (2026-09-29) — 四项实测有结论,见 findings F5-F8;T1 起待做
 
 ## 开工细化(对 SPEC 的修正,逐条给理由)
 
@@ -25,10 +25,10 @@ Status: planned (2026-09-29)
 
 | # | 实测项 | 方法 | 不通过时的退路 |
 |---|---|---|---|
-| T0.1 | `codex exec --ephemeral --json -o <file>` 基本跑通 | 隔离 `CODEX_HOME`,最小 prompt | 整条 exec 路径作废 → 只交付 agents toml + doctor |
-| T0.2 | harnessed 注入的 env 是否进入**子会话的 hook 快照** | 复用 Phase 64 的 `harnessed-probe-*` 插件机制 | 改为按 stdin `session_id` 登记子会话 |
-| T0.3 | Windows 上 `-s read-only` 是否真的挡掉工具调用 | 复测(SPEC 该结论写于 09-22,需对 0.155.1 复核) | 按实测结果定默认 sandbox |
-| T0.4 | agents toml 落 `~/.codex/agents/` 后能否被 `spawn_agent(agent_type:)` 引用 | `harnessed-probe-*` 前缀写一个,会话内引用,再删 | agents toml 降级为「仅文档价值」或整项作废 |
+| T0.1 ✅ | 通过。形状 + 三个坑见 F5。**隔离 `CODEX_HOME` 跑不通**(无 auth.json),只能真实 home + `--ephemeral` | | |
+| T0.2 ✅ | **env 传播成立** → 首选识别办法 = hook 侧读自己注入的 env。退路亦可行(stdin `session_id` == JSONL 首事件 `thread_id`)。hook 进程仍无 `CODEX_*` → `--platform codex` 不能省。见 F7 | | |
+| T0.3 ✅ | 确实挡,**但 exitCode 仍是 0** → 成功判据不能看 exit code。默认 sandbox 需为 `workspace-write`(leaf 要写文件)。见 F6 | | |
+| T0.4 ✅ | **能引用且 role 指令生效**;exec 模式下模型有 `spawn_agent`。**签名是 `agent_type` + `message`,无 `task_name`**(SPEC 与 Phase 65 文本已按此更正,commit `31ea64d`)。不存在的 role → `unknown agent_type`,只有 `item.started` 无 `item.completed`,turn 仍 exit 0。见 F8 | | |
 
 **安全**:一律隔离 `CODEX_HOME` 或用 `harnessed-probe-*` 命名空间并清理;不读不写
 `~/.codex/config.toml`;claude 宿主的产品代码永不自动拉起 `codex exec`(开发期手动实测不等于产品行为)。
@@ -38,7 +38,7 @@ Status: planned (2026-09-29)
 | T | 内容 | 主要文件 | 验收 |
 |---|---|---|---|
 | T1 | role-prompts → `~/.codex/agents/harnessed-<sub>.toml` 生成器(`name` / `description` 必填 / `developer_instructions`);命名空间前缀防撞名(F1 重名会被 codex 跳过并告警) | `src/installers/lib/codexAgentRoles.ts`(NEW) | 生成物快照;`description` 非空;安装 / 卸载往返 |
-| T2 | `codexExecSpawn`:子进程 `codex exec --ephemeral --json -o <file>`,复用 `runHarnessArgs` / `planWindowsSpawn` 的既有封装 | `src/workflow/lib/codexExecSpawn.ts`(NEW) | 单测(mock 进程);**测试钉死:仅当本进程宿主为 codex** |
+| T2 | `codexExecSpawn`:子进程 `codex exec --ephemeral --json -o <file> --skip-git-repo-check`,`shell:false` + 绝对路径(F5);成功判据看 `-o` 内容 + 事件流**而非 exit code**(F6) | `src/workflow/lib/codexExecSpawn.ts`(NEW) | 单测(mock 进程);**测试钉死:仅当本进程宿主为 codex** |
 | T3 | 五类具名错误 + 分派:`SpawnTimeout` / `SpawnExitNonZero` / `SpawnOutputMalformed` / `SpawnAuthFailed` / `SpawnRefused`;超时重试 1 次 | `src/workflow/lib/spawnFailure.ts`(NEW), `run.ts` | 五态单测;类型信息不再被压成字符串 |
 | T4 | 错误分类入账本:schema 加可选字段 + `runCheckpointFail` 的注入点 | `src/checkpoint/schema/currentWorkflow.v1.ts`, `src/cli/checkpoint.ts` | 往返测试;**既有 eval golden 不许变**(11+2 份) |
 | T5 | doctor 描述符化 + `--host <id>` / 矩阵视图;`skipped` 成为一等状态 | `doctor-registry.ts`, `doctor.ts`, `check-builtin.ts` | 计数断言同步;矩阵输出快照 |

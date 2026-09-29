@@ -31,7 +31,7 @@ import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityR
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
 import { type CommandRenderOptions, writeAllCommands } from './lib/generateCommands.js'
-import { loadHostPrimitives, toHostId } from './lib/hostPrimitives.js'
+import { loadHostPrimitives, renderHostPrimitives, toHostId } from './lib/hostPrimitives.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   makeIdempotentProbe,
@@ -604,6 +604,58 @@ export function registerSetup(program: Command): void {
       const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
       if (writtenCount > 0 || skippedCount > 0) {
         console.log(`  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`)
+      }
+
+      // ── Step A.7: <CODEX_HOME>/agents/harnessed-<sub>.toml (v16.0 Phase 66) ─
+      // codex-only. A `commands/<x>.md` is what the USER types; an agent role is
+      // what the MODEL names in `spawn_agent(agent_type: …)` — codex discovers
+      // them by scanning `<CODEX_HOME>/agents/` (no config.toml write, ADR 0041).
+      // Host render is mandatory here: the role body is what a codex sub-agent
+      // reads, so `{{ host.* }}` must resolve on the CODEX column, never claude's.
+      // Locale follows the registry that was loaded above (`getLocale()`), unlike
+      // the commands pass, whose English body template has no localized sibling.
+      // Dynamic imports mirror l4-rescue / optional-offer — setup tests that
+      // factory-mock this module's static imports need no new mock exports.
+      if (detectPlatform().id === 'codex') {
+        try {
+          const [{ resolveCodexHome }, agentRoles, { renderRolePromptsForHost }] =
+            await Promise.all([
+              import('../installers/codexHookAdd.js'),
+              import('../installers/lib/codexAgentRoles.js'),
+              import('./lib/rolePromptHostRender.js'),
+            ])
+          // `description` is the one field renderRolePromptsForHost holds back
+          // (raw yaml frontmatter on the commands surface). In an agent role it
+          // is prose codex reads, so it gets the same locale-matched second-table
+          // treatment generateCommands gives `prompt.description`.
+          const descTable = commandHostRender.descriptionTable ?? commandHostRender.table
+          const roles = agentRoles.buildCodexAgentRoles(
+            await renderRolePromptsForHost(rolePrompts, {
+              workflowsDir,
+              host: 'codex',
+              locale: commandLocale,
+            }),
+            skillNames,
+            {
+              renderDescription: (body) =>
+                renderHostPrimitives(body, { host: 'codex', table: descTable }),
+            },
+          )
+          const r = await agentRoles.writeCodexAgentRoles(
+            agentRoles.codexAgentsDir(resolveCodexHome()),
+            roles,
+          )
+          if (r.written.length > 0 || r.skipped.length > 0) {
+            console.log(
+              `  generated ${r.written.length} codex agent role(s) in agents/ (${r.skipped.length} skipped)`,
+            )
+          }
+          for (const s of r.skipped) console.warn(`    - ${s.path}: ${s.reason}`)
+        } catch (e) {
+          // Advisory surface: codex still runs every workflow through the
+          // generated prompts/ commands without these roles.
+          console.warn(`  [A.7] codex agent roles skipped (${(e as Error).message})`)
+        }
       }
 
       // ── Step C: Agent Teams auto-enable ────────────────────────────────
