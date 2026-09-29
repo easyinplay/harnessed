@@ -122,7 +122,15 @@ function makeValidManifest(name: string) {
 // calls land in the NEXT cell, so one slow cell reports as two failures
 // (cell 2 saw 4 stray real-path cp calls under --dry-run). Raising the whole
 // file removes the whack-a-mole.
-vi.setConfig({ testTimeout: 20_000 })
+//
+// v16.0 Phase 65 — 20s → 40s. These cells are load-sensitive, not slow on their
+// own: cell 3 takes ~3s locally and took 5015ms on a green Windows run, then
+// 23358ms on the next one. What changed between them is a NEIGHBOUR — Phase 65
+// added `promptHostGolden.test.ts`, which renders 61 sub-workflows × 2 locales
+// and costs 12.6s on Windows. vitest runs files in parallel, so a heavy neighbour
+// starves this file's IO-bound chain. The budget has to cover the contended case;
+// measuring these cells for speed is what `pnpm bench` is for, not this file.
+vi.setConfig({ testTimeout: 40_000 })
 
 describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Step B install-base)', () => {
   beforeEach(() => {
@@ -183,9 +191,12 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
     expect(runInstallMock).toHaveBeenCalledTimes(2)
     expect(stdout).toContain('Upstream components: 2 installed')
     expect(stdout).toContain('setup complete — 1 workflows + 2 base manifests')
-    // 4.32.22 — the full setup chain grew (optional glob + key-hint tail + method
-    // bucketing); slow CI Windows runners tipped past the 5s default (5011ms).
-  }, 15_000)
+    // v16.0 Phase 65 — the per-cell 15s override that used to sit here is GONE: it
+    // was a leftover from the whack-a-mole era and silently LOWERED this cell below
+    // the file-level budget set above, so the file-level bump never actually reached
+    // the one cell it was raised for. (Windows CI: 5015ms green → 23358ms timeout
+    // "in 15000ms" — the number gave the stale override away.)
+  })
 
   // Cell 3b (4.23.0 issue #3 / T2, TDD): ORDER INVERSION — Step B (packs) must
   // run BEFORE Step A (workflow cp). The packs copy upstream skills into the
