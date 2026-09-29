@@ -2,7 +2,7 @@
 
 SPEC:`.planning/specs/2026-09-22-codex-host-parity-v16.md` §「Phase 65」(唯一真相源)
 + 本文件「开工细化」(对 SPEC 的落地修正,依据 `findings.md` 的 F1-F8 实测)。
-Status: complete (2026-09-29; eval scenario 部分收尾中) — 详 SUMMARY.md
+Status: complete (2026-09-29) — 详 SUMMARY.md
 
 ## 开工细化(对 SPEC 的修正,逐条给理由)
 
@@ -75,7 +75,7 @@ Status: complete (2026-09-29; eval scenario 部分收尾中) — 详 SUMMARY.md
 | T10 ✅ | 映射小节生成(R4):pass 3 插在 frontmatter 之后;词表派生原语对照 + `host_map_notes.<host>` caveat;strip-then-insert 保幂等 | `src/cli/lib/hostPrimitives.ts`, `renderSkillTemplates.ts`, `tests/cli/hostMapSection.test.ts` | 21 测试;claude 金标零差异;codex 每文件恰 1 对标记 |
 | T11 ✅ | 新门 `check-host-primitives.mjs`:门自跑两遍渲染、逐字段选取 yaml 面、短语级 MASKS(零命中即违规) | `scripts/`, `ci.yml`, `tests/scripts/` | `2e7dfe6`;负向验证 4 项含对照组 |
 | T12 ✅ | `host.*` 纳入 `check-skill-i18n-parity`,判据=primitive 集合(三候选实测选出);既有内容门断言对象改为 claude 渲染产物 | `scripts/check-skill-i18n-parity.mjs`, `tests/workflow/*` | `2e7dfe6`;门正则与渲染器对拍 |
-| T13 🔄 | CHANGELOG / SUMMARY / STATE / TODOS ✅;eval scenario 需先给 scenario schema 加 env 支持(当前钉不住宿主)🔄 | `CHANGELOG.md`, `SUMMARY.md`, `fixtures/eval/` | 文档已落;eval 待回 |
+| T13 ✅ | 文档四件 + eval:scenario 加 `env` 钉宿主、新增 `prompt` step、两份 host-render golden | `CHANGELOG.md`, `SUMMARY.md`, `src/eval/**`, `fixtures/eval/host-render-*` | `f3000c6`;dist 跑 eval 13/13;防塌陷断言 |
 
 ### 批次排序(文件归属互斥,避免并发写同文件)
 

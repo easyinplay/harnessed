@@ -52,6 +52,25 @@
   而检测器必须持有这两个字面量(扫描器带特征库是必然)。新增 `DETECTORS` 豁免分类,并配一条断言把每处
   出现钉在「裸字符串数组元素」形态上 —— 祈使句仍然会红(已负向验证)。
 
+## eval:唯一跑 dist 产物的覆盖
+
+三份渲染金标跑的都是 **src**;CI 里 `node dist/cli.mjs eval --dir fixtures/eval` 是唯一跑**生产产物**
+的地方。构建若把渲染链打歪(词表 yaml 查找路径、`getAssetsRoot()` 在 bundle 里解析到别处),
+金标一律照绿,只有这里会红 —— 这条覆盖不是重复。
+
+实施线先走了灰区协议:现有三种 step(`gates` / `checkpoint` / `file`)**没有一条经过宿主渲染路径**,
+用它们拼 "codex scenario" 是假覆盖,并给了实测佐证(`HARNESSED_PLATFORM=codex` 跑 11/11 PASS,
+对的却是 claude 下录的 golden)。裁决是加一个 `prompt` step 驱动 `buildPromptText`,它同时穿过三层:
+role-prompt 的 `{{ host.* }}`、tools 段的 capability cmd(`by_host.codex`)、`## Language` 段的
+preserve categories。
+
+两个设计细节值得留:
+- **`host` 刻意不做 step 字段** —— 给了的话 scenario 只能证明「这个参数能传」,证明不了
+  「`HARNESSED_PLATFORM` → `detectPlatform()` → 渲染器」整条线接上了。
+- **防塌陷断言**:两份 golden 都 PASS 不够。渲染链哪天不再问 host,两份会被重录成同样的字节、
+  然后永远绿着却什么都没覆盖。故直接读两份提交在仓库里的 golden,断言 `claude !== codex` 并逐层
+  spot-check。
+
 ## Lessons
 
 - **给 subagent 的约束若引用项目记忆,必须先确认那条规则在当前上下文真的适用。** 我把「改 TypeBox
