@@ -38,7 +38,7 @@ codex 则从 `$HOME/.agents/skills` 读(learn.chatgpt.com/docs/build-skills,含 
 
 | 概念 | claude | codex(v1) |
 |---|---|---|
-| spawn 子 agent | Task / Agent tool | `spawn_agent`(`task_name`, `message`;v1 另有 `agent_type` / `model` / `reasoning_effort`) |
+| spawn 子 agent | Task / Agent tool | `spawn_agent`(~~`task_name`~~, `message`)——**本行的参数名写错了,见 F14 更正**;v1 实为 `agent_type` / `message` |
 | 给已有 agent 发消息 | `SendMessage` | `send_input`(`target`, `items`, `interrupt`) |
 | 追加任务 | —— | `followup_task`(v2 spec) |
 | 等待完成 | ——(CC 无) | `wait_agent` |
@@ -164,3 +164,77 @@ en 正文用 `spawn_subagent.default` / `.plural`,zh 正文用 `.zh_tool` ——
   (`prompt.ts:217-218`)返回空,**codex subagent prompt 拿不到语言指令**。
 - `setup.ts:567` 的 `loadRolePrompts()` 未显式传 locale,落到 `rolePrompts.ts:44` 的默认参数,
   与同函数上游显式线程下来的 locale 不同源(当前行为一致,属隐患)。
+
+## F14 更正:codex spawn 原语的参数签名(2026-09-29)
+
+**这是事实更正,不是措辞调整。Phase 65 写错了,发版前在此改掉。**
+
+### 原先写的是什么
+
+Phase 65 把 codex 的 spawn 原语一律写成 `spawn_agent(task_name, message)`,并据此在四处写了
+**带具名实参**的指令:`spawn_agent(task_name: <sub>, message: …)` /
+`spawn_agent(task_name: <specialist>, message: <brief>)`。
+
+### 为什么错
+
+读上游时把 **v2 的签名当成了 v1**。`codex-rs/core/src/tools/handlers/multi_agents_spec.rs`
+有两个构造函数:
+
+- `create_spawn_agent_tool_v1` —— properties 来自 `spawn_agent_common_properties_v1`(含
+  `agent_type`),`required: None`,**没有 `task_name`**。
+- `create_spawn_agent_tool_v2` —— 才加 `task_name`,`required: ["task_name", "message"]`。
+
+本机 `codex features list`:`multi_agent` = stable/**true**,`multi_agent_v2` = stable/**false**
+→ **v1 生效**。Phase 65 的词表注释里已经写了「`multi_agent` stable/true → v1 生效」,却配了 v2 的
+签名 —— 两句话自相矛盾,当时没有交叉核对。
+
+### 正确的是什么
+
+**`spawn_agent(agent_type, message)`。** 三重依据:
+
+1. **源码**:上述两个构造函数的 properties / required 差异。
+2. **本机 feature flag**:`multi_agent_v2` stable/false,v2 签名不生效。
+3. **实测**(Phase 66 T0.4,真跑 `codex exec`,见
+   `.planning/phases/66-codex-spawn-agents-goal/findings.md` F8):模型明确报告
+   「`task_name` 参数在我手上的 `spawn_agent` 工具 schema 中不存在」;同一轮实测里用
+   `agent_type: "<role name>"` 成功引用了 `~/.codex/agents/` 里的 agent role,
+   role 的 `developer_instructions` 真的进了子 agent 的上下文。
+
+### 语义差异(为什么不是把 `task_name` 换成 `agent_type` 就完事)
+
+`agent_type` 是**角色名**,必须对应 `~/.codex/agents/<x>.toml` 里的 `name`;传一个不存在的值,
+工具层直接报 `unknown agent_type '<x>'`、不创建 agent(F8 第 4 点)。而原文里
+`task_name: <sub>` / `task_name: <specialist>` 是拿 **sub-workflow 名 / specialist 名**当任务标签
+用的 —— harnessed 今天并不往 `~/.codex/agents/` 写这些 role(那是 Phase 66 尚未落地的工作)。
+所以机械替换成 `agent_type: <sub>` 会把一条**必然报错**的指令写进产物,比原来的错误更糟。
+
+四处带具名实参的句子因此**改写成不依赖该参数的说法**:调 `spawn_agent(message: …)`,
+把 sub / specialist 名写进 `message`,并在同句点明「`agent_type` 选的是 agent role 不是任务标签」。
+纯签名陈述(注释、`capabilities.yaml` 的 `cmd`、checklist)才做 `task_name` → `agent_type` 的直接替换。
+
+### 影响面(已改)
+
+| 面 | 内容 |
+|---|---|
+| `workflows/capabilities.yaml` | `agent-teams-create.by_host.codex.cmd` |
+| `workflows/host-primitives.yaml` | 文件头签名注释 / `teams_step_note` 的 `default`+`command` 两个 codex 变体 / `multispec_spawn_note.default` codex / 该节注释 / `multispec_spawn_note.checklist` codex |
+| `workflows/host-primitives.zh-Hans.yaml` | 同上 6 处 |
+| `tests/unit/capability-resolver.test.ts` | cells 27/28 fixture + cell 34 对 shipped yaml 的断言(3 处) |
+| `tests/eval/fixtures.test.ts` | codex golden 的 capability-cmd spot-check |
+| `tests/cli/generateCommandsGolden.test.ts` | codex `auto.md` 断言改为 `spawn_agent(message:`,并新增 `not.toContain('task_name')` 回归闸 |
+| `tests/scripts/host-primitives-gate.test.ts` | 合成 CAPABILITIES fixture |
+| `CHANGELOG.md` | `[Unreleased]` 两处 |
+| `fixtures/eval/host-render-codex/golden.json` | 用 `eval --update-golden` 重录(2 行) |
+
+**claude 侧零改动**:三份渲染金标(skills / 命令体 / `harnessed prompt`)与
+`fixtures/eval/host-render-claude/golden.json` 均零差异 —— 本次只动 codex 列。
+
+### 复核办法(给后来人)
+
+```bash
+codex features list | rg multi_agent               # v2 必须仍是 stable/false
+rg -n 'task_name' workflows/ tests/ CHANGELOG.md   # 应无命中
+```
+
+若哪天 `multi_agent_v2` 变成 stable/true,`task_name` 才重新成立 —— 那时要连同 `required` 的变化
+一起重写,而不是把这一节改回去。

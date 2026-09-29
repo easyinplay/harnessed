@@ -609,7 +609,7 @@ capabilities:
     by_host:
       codex:
         impl: codex-platform
-        cmd: 'spawn_agent(task_name, message)'
+        cmd: 'spawn_agent(agent_type, message)'
     since: v2.0
     category: agent-platform
     description: >-

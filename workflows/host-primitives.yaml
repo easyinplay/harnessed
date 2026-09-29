@@ -29,7 +29,7 @@
 # codex column sourcing (Phase 65 findings F4): tool names and parameters come
 # from upstream `codex-rs/core/src/tools/handlers/multi_agents_spec.rs` on
 # codex-cli 0.155.1 (`multi_agent` stable/true → v1 in effect):
-#   spawn_agent(task_name, message) / send_input(target, items, interrupt) /
+#   spawn_agent(agent_type, message) / send_input(target, items, interrupt) /
 #   wait_agent / list_agents / close_agent / resume_agent
 # codex agent LIFECYCLE (session scope, automatic reclamation on exit, nesting)
 # is NOT measured — every cell that would need it says TODO(未验证) instead of
@@ -236,11 +236,11 @@ primitives:
       # Drops the `~/.claude/rules/agent-teams.md` read — that file does not exist
       # on codex, and F7b already settled that codex variants inline the points
       # rather than pointing at an external file.
-      codex: '4. If `parallelism.escalate_to_teams === true`: spawn one agent per fired sub with `spawn_agent(task_name: <sub>, message: <that sub''s `harnessed prompt <sub>` prompt>)`. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. When a sub is finished, close it with `close_agent`. Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — whether agents are session-scoped, whether anything is reclaimed automatically on exit, and whether an agent may spawn another. Do not rely on any of it until measured.'
+      codex: '4. If `parallelism.escalate_to_teams === true`: spawn one agent per fired sub with `spawn_agent(message: <that sub''s `harnessed prompt <sub>` prompt>)` — the tool takes only `agent_type` and `message`, and `agent_type` names an agent role under `~/.codex/agents/` rather than labelling the task, so identify the sub inside the message. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. When a sub is finished, close it with `close_agent`. Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — whether agents are session-scoped, whether anything is reclaimed automatically on exit, and whether an agent may spawn another. Do not rely on any of it until measured.'
     skill: *teams_step_skill
     command:
       claude: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with `Agent(name: <sub>, run_in_background: true, prompt: <that sub''s `harnessed prompt <sub>` prompt>)`; the team forms implicitly on the FIRST spawn with this session as lead (`team_name` is accepted but ignored — the name is session-derived). Coordinate via `SendMessage`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down") — shutdown is a REQUEST, so re-ask rather than assume, and shut every teammate down before you finish (a teammate you never stopped keeps burning tokens and can hang the host). The team directory is removed automatically at session exit; there is no teardown tool. Still checkpoint each sub (`complete` / `fail`) as below.'
-      codex: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple agents to coordinate. Spawn one agent per fired sub with `spawn_agent(task_name: <sub>, message: <that sub''s `harnessed prompt <sub>` prompt>)`. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. Close each finished agent with `close_agent`, and close every agent you spawned before you finish (an agent you never closed keeps burning tokens). Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — session scope, automatic reclamation on exit, nesting. Not asserted here.'
+      codex: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple agents to coordinate. Spawn one agent per fired sub with `spawn_agent(message: <that sub''s `harnessed prompt <sub>` prompt>)` — the tool takes only `agent_type` and `message`, and `agent_type` names an agent role under `~/.codex/agents/` rather than labelling the task, so identify the sub inside the message. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. Close each finished agent with `close_agent`, and close every agent you spawned before you finish (an agent you never closed keeps burning tokens). Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — session scope, automatic reclamation on exit, nesting. Not asserted here.'
 
   # Two bullets, each carrying 3 LEADING SPACES in the original. A block scalar
   # would strip that common indent, so these are double-quoted with \n.
@@ -304,13 +304,14 @@ primitives:
         2.1.178+ has no create step / no create tool), teammates 互相 SendMessage 质询 findings 是否
         真问题 (NOT fire-and-forget)
       codex: |-
-        `spawn_agent(task_name: <specialist>, message: <brief>)` ×4 — there is no create step;
-        the four agents cross-question each other's findings with `send_input` (NOT
-        fire-and-forget)
+        `spawn_agent(message: <brief>)` ×4 — there is no create step, and no task-label
+        parameter either (`agent_type` names an agent role under `~/.codex/agents/`, not a
+        task), so name the specialist lens inside the brief; the four agents cross-question
+        each other's findings with `send_input` (NOT fire-and-forget)
     # ── The two role-prompts.yaml `verify-multispec` sites (Phase 65 tail) ──
     # Both state the SAME Claude-Code-only fact in two shapes: a team FORMS on the
     # first spawn and `team_name` is accepted-then-ignored. codex's multi-agent v1
-    # has neither concept — no team handle, and `spawn_agent(task_name, message)`
+    # has neither concept — no team handle, and `spawn_agent(agent_type, message)`
     # takes no team input — so a token-level swap would have the codex artifact
     # asserting a formation semantic that does not exist there. Both codex columns
     # therefore state only what the upstream tool spec shows (no create tool in the
@@ -326,7 +327,7 @@ primitives:
       codex: "— there is no create step: four `spawn_agent` calls are the whole formation —"
     checklist:
       claude: "(the first spawn forms the team; `team_name` is ignored)"
-      codex: "(one `spawn_agent(task_name, message)` per agent; there is no create step and no team handle)"
+      codex: "(one `spawn_agent(agent_type, message)` call per agent; `agent_type` is an agent role, not a task label, so name the specialist in the message; there is no create step and no team handle)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Host-map section notes (Phase 65 R4).

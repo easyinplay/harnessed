@@ -32,7 +32,7 @@ describe('fixtures/eval trap suite (thin shell)', () => {
     expect(claude).toContain('SendMessage') // role-prompt {{ host.send_message }}
     expect(codex).toContain('send_input')
     expect(claude).toContain('Agent(name, run_in_background=true)') // capability cmd
-    expect(codex).toContain('spawn_agent(task_name, message)')
+    expect(codex).toContain('spawn_agent(agent_type, message)')
     expect(claude).toContain('Claude Code') // language-section preserve categories
     expect(codex).not.toContain('Claude Code')
   })

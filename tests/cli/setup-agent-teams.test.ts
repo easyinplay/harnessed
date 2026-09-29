@@ -31,6 +31,15 @@ import { registerSetup } from '../../src/cli/setup.js'
 import { runInstall } from '../../src/installers/index.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
+// v16.0 Phase 66 — same load-sensitivity as the sister file `setup.test.ts:133`, and
+// the same fix. These cells drive the whole setup chain; they are fast on their own
+// but vitest runs files in parallel, and Phase 65 added `promptHostGolden.test.ts`
+// (61 sub-workflows × 2 locales, 12.6s on Windows CI) as a neighbour. Under that
+// contention "cell A3" tipped past the 5s default and reported as a timeout, while
+// the same file passes on its own and under `--no-file-parallelism`. Budget covers
+// the contended case; speed belongs in `pnpm bench`, not here.
+vi.setConfig({ testTimeout: 40_000 })
+
 const readdirMock = vi.mocked(readdir)
 const statMock = vi.mocked(stat)
 const cpMock = vi.mocked(cp)

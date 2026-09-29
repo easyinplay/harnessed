@@ -335,7 +335,7 @@ describe('pickHostValues — per-host override', () => {
     cmd: 'Agent(name, run_in_background=true)',
     impl: 'claude-platform',
     by_host: {
-      codex: { cmd: 'spawn_agent(task_name, message)', impl: 'codex-platform' },
+      codex: { cmd: 'spawn_agent(agent_type, message)', impl: 'codex-platform' },
     },
   }
 
@@ -348,7 +348,7 @@ describe('pickHostValues — per-host override', () => {
 
   it('cell 28 — codex takes the override', () => {
     expect(pickHostValues(entry, 'codex')).toEqual({
-      cmd: 'spawn_agent(task_name, message)',
+      cmd: 'spawn_agent(agent_type, message)',
       impl: 'codex-platform',
     })
   })
@@ -419,7 +419,7 @@ describe('host-aware rendering through resolveCapabilityCmd / renderSkillBody', 
     const expected: Record<string, [string, string]> = {
       'agent-teams-create': [
         'Agent(name, run_in_background=true)',
-        'spawn_agent(task_name, message)',
+        'spawn_agent(agent_type, message)',
       ],
       'agent-teams-send-message': ['SendMessage', 'send_input'],
       'agent-teams-shutdown': ['ask the <teammate-name> teammate to shut down', 'close_agent'],

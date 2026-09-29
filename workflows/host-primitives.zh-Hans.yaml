@@ -20,7 +20,7 @@
 # codex 列取值来源(Phase 65 findings F4):工具名与参数取自上游
 # `codex-rs/core/src/tools/handlers/multi_agents_spec.rs`(codex-cli 0.155.1,
 # `multi_agent` stable/true → v1 生效):
-#   spawn_agent(task_name, message) / send_input(target, items, interrupt) /
+#   spawn_agent(agent_type, message) / send_input(target, items, interrupt) /
 #   wait_agent / list_agents / close_agent / resume_agent
 # codex agent 的**生命周期**(是否 session-scoped、退出是否自动回收、能否嵌套)
 # **未实测** —— 凡需要该事实的 cell 一律写 TODO(未验证),不作断言。没有真实测量
@@ -211,12 +211,12 @@ primitives:
       claude: '4. 若 `parallelism.escalate_to_teams === true`:读 `~/.claude/rules/agent-teams.md`,然后把 fired subs 作为 Agent Team 驱动。**没有建团步骤、也没有建团工具** —— 对每个 fired sub 用 `Agent(name: <sub>, run_in_background: true, prompt: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个后台 teammate,团在**第一个** spawn 时隐式形成,本 session 即 lead(`team_name` 入参被接受但忽略 —— 团名由 session 派生)。用 `SendMessage` 协调;某个 sub 完成后,**按名**请求该 teammate 关闭(例如「ask the verify-qa teammate to shut down」)。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。'
       # 删掉了「读 ~/.claude/rules/agent-teams.md」—— codex 上该文件不存在;
       # F7b 已定调:codex 变体不引用外部文件,改为内联要点。
-      codex: '4. 若 `parallelism.escalate_to_teams === true`:对每个 fired sub 用 `spawn_agent(task_name: <sub>, message: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个 agent。用 `send_input(target, items)` 协调;`wait_agent` 阻塞等待其中一个结束,`list_agents` 列出运行中的集合。某个 sub 完成后用 `close_agent` 关闭它。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。TODO(未验证):codex agent 的生命周期 —— 是否 session-scoped、退出时是否自动回收、能否嵌套 spawn。实测之前不得依赖。'
+      codex: '4. 若 `parallelism.escalate_to_teams === true`:对每个 fired sub 用 `spawn_agent(message: <该 sub 的 `harnessed prompt <sub>` prompt>)` spawn 一个 agent —— 该工具只有 `agent_type` 与 `message` 两个参数,`agent_type` 指的是 `~/.codex/agents/` 下的 agent role 而不是任务标签,所以把 sub 名写进 message。用 `send_input(target, items)` 协调;`wait_agent` 阻塞等待其中一个结束,`list_agents` 列出运行中的集合。某个 sub 完成后用 `close_agent` 关闭它。每个 sub 仍按下方 checkpoint(`complete` / `fail`)。TODO(未验证):codex agent 的生命周期 —— 是否 session-scoped、退出时是否自动回收、能否嵌套 spawn。实测之前不得依赖。'
     skill: *teams_step_skill
     # en-only 面,值同 en 文件(仅为 key parity 存在)。
     command:
       claude: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple subagents to coordinate (SendMessage / shared contract). Read `~/.claude/rules/agent-teams.md`, then drive the fired subs as an Agent Team. There is NO create step and no create tool — spawn one background teammate per fired sub with `Agent(name: <sub>, run_in_background: true, prompt: <that sub''s `harnessed prompt <sub>` prompt>)`; the team forms implicitly on the FIRST spawn with this session as lead (`team_name` is accepted but ignored — the name is session-derived). Coordinate via `SendMessage`; when a sub is finished, ask that teammate to shut down BY NAME (e.g. "ask the verify-qa teammate to shut down") — shutdown is a REQUEST, so re-ask rather than assume, and shut every teammate down before you finish (a teammate you never stopped keeps burning tokens and can hang the host). The team directory is removed automatically at session exit; there is no teardown tool. Still checkpoint each sub (`complete` / `fail`) as below.'
-      codex: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple agents to coordinate. Spawn one agent per fired sub with `spawn_agent(task_name: <sub>, message: <that sub''s `harnessed prompt <sub>` prompt>)`. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. Close each finished agent with `close_agent`, and close every agent you spawned before you finish (an agent you never closed keeps burning tokens). Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — session scope, automatic reclamation on exit, nesting. Not asserted here.'
+      codex: '4. If `parallelism.escalate_to_teams === true`: this stage needs multiple agents to coordinate. Spawn one agent per fired sub with `spawn_agent(message: <that sub''s `harnessed prompt <sub>` prompt>)` — the tool takes only `agent_type` and `message`, and `agent_type` names an agent role under `~/.codex/agents/` rather than labelling the task, so identify the sub inside the message. Coordinate with `send_input(target, items)`; `wait_agent` blocks until one finishes and `list_agents` enumerates the running set. Close each finished agent with `close_agent`, and close every agent you spawned before you finish (an agent you never closed keeps burning tokens). Still checkpoint each sub (`complete` / `fail`) as below. TODO(未验证): codex agent lifecycle — session scope, automatic reclamation on exit, nesting. Not asserted here.'
 
   # 两条 bullet 原文各带 **3 个前导空格**。block scalar 会吃掉公共缩进,
   # 所以这里用双引号 + \n。
@@ -279,13 +279,14 @@ primitives:
         gstack-cso + gstack-qa），团在**第一个** spawn 时隐式形成（CC 2.1.178+ 无建团步骤、无建团
         工具）；teammate 互相 SendMessage 质询 findings 是否真问题（NOT fire-and-forget）
       codex: |-
-        `spawn_agent(task_name: <specialist>, message: <brief>)` ×4 spawn 4 个 agent（code-review +
-        gstack-review + gstack-cso + gstack-qa），没有建团步骤;agent 之间用 `send_input` 互相质询
-        findings 是否真问题（NOT fire-and-forget）
+        `spawn_agent(message: <brief>)` ×4 spawn 4 个 agent（code-review + gstack-review +
+        gstack-cso + gstack-qa），没有建团步骤,也没有任务标签参数（`agent_type` 指的是
+        `~/.codex/agents/` 下的 agent role 而不是任务名），所以把 specialist 视角写进 brief;
+        agent 之间用 `send_input` 互相质询 findings 是否真问题（NOT fire-and-forget）
     # ── role-prompts.yaml `verify-multispec` 的两个站点(Phase 65 收尾)──────
     # 两处陈述的是**同一条 Claude Code 专有事实**:团在第一个 spawn 时形成,且
     # `team_name` 被接受后忽略。codex 的 multi_agent v1 两个概念都没有 —— 没有团
-    # 句柄,`spawn_agent(task_name, message)` 也不收团参数 —— 所以 token 级替换会让
+    # 句柄,`spawn_agent(agent_type, message)` 也不收团参数 —— 所以 token 级替换会让
     # codex 产物断言一个那边不存在的编队语义。两个 codex 列因此只陈述上游工具 spec
     # 能看到的事(6 个工具里没有建团工具),对 agent 生命周期一字不提(未实测)。
     #
@@ -298,7 +299,7 @@ primitives:
       codex: "—— 没有建团步骤:四次 `spawn_agent` 调用就是全部的编队方式 ——"
     checklist:
       claude: "(第一个 spawn 即成团;`team_name` 被忽略)"
-      codex: "(每个 agent 一次 `spawn_agent(task_name, message)`;没有建团步骤,也没有团句柄)"
+      codex: "(每个 agent 一次 `spawn_agent(agent_type, message)` 调用;`agent_type` 是 agent role 不是任务标签,specialist 名写进 message;没有建团步骤,也没有团句柄)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 映射小节注记(Phase 65 R4)。

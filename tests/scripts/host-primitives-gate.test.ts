@@ -65,7 +65,7 @@ const CAPABILITIES = `capabilities:
     cmd: 'Agent(name, run_in_background=true)'
     by_host:
       codex:
-        cmd: 'spawn_agent(task_name, message)'
+        cmd: 'spawn_agent(agent_type, message)'
   legacy-no-codex:
     cmd: 'SendMessage'
 `

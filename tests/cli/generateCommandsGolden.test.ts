@@ -192,7 +192,11 @@ describe('codex command bodies (S2) — sanity only (bodies change per rewrite w
     expect(claudeAuto).toContain('CC-native Task / Agent tools')
     expect(claudeAuto).toContain('~/.claude/rules/agent-teams.md')
     expect(codexAuto).toContain('codex-native spawn_agent tools')
-    expect(codexAuto).toContain('spawn_agent(task_name:')
+    expect(codexAuto).toContain('spawn_agent(message:')
+    // v16.0 Phase 66 F14: multi_agent v1's spawn_agent takes `agent_type` + `message`.
+    // `task_name` is the v2 signature and `multi_agent_v2` is stable/false here, so the
+    // codex artifacts must never name it.
+    expect(codexAuto).not.toContain('task_name')
     expect(codexAuto).not.toContain('CC-native')
     expect(codexAuto).not.toContain('AskUserQuestion')
 

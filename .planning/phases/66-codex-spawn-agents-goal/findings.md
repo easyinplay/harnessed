@@ -139,3 +139,79 @@ JSONL 事件流上。这正是五类具名错误里 `SpawnOutputMalformed` 与 `
 - 不读 / 不写 `~/.codex/config.toml`(含 `experimental_bearer_token`)。
 - claude 宿主**永不自动**拉起 `codex exec`(外发边界)。开发期手动实测不等于产品行为。
 - live 实验一律走 `harnessed-probe-*` 命名空间并清理。
+
+## F7 T0.2 实测:注入 `codex exec` 的 env **直达子会话的 hook 快照**(closes F3 的 T0.2)
+
+探针:`harnessed-probe-env@harnessed-probe-env-mkt` 本地插件,hook 挂 `SessionStart` +
+`UserPromptSubmit`,hook 命令把自身 `process.env` 的匹配键 + stdin 全文 dump 到临时文件;
+经 app-server `hooks/list` + `config/batchWrite` 授信后,用带自定义 env 的
+`codex exec --ephemeral --json -s read-only --skip-git-repo-check` 跑一轮。**1 次 codex 调用**。
+
+四条结论:
+
+1. **`codex exec` 会触发 hook**。两个事件都 fire 了(`SessionStart` + `UserPromptSubmit`),
+   即非交互模式下 hook 面完整可用。
+2. **env 传播成立**。spawn 时注入的 `HARNESSED_SUBSESSION=phase66-probe-sub-0001` 与
+   `HARNESSED_PROBE_MARKER=phase66-t02` 在**两个** hook 进程里都原样可见
+   (dump: `envMatched={"HARNESSED_PROBE_MARKER":"phase66-t02","HARNESSED_SUBSESSION":"phase66-probe-sub-0001",…}`)。
+   → **harnessed 认出「这个 hook 事件来自我 spawn 的子会话」的首选办法 = 直接读自己注入的 env 变量**,
+   不需要任何登记表。
+3. **Phase 64 的「hook 进程无 `CODEX_*` env」在 exec 路径下同样成立**:111 个 env 键里匹配
+   `/CODEX/i` 的为 0。所以 host 仍必须像今天这样由 `--platform codex` 显式传
+   (`codexHookPlugin.ts:57` 的 `HOST_AWARE_IDS` 不用改)。
+4. **退路也成立,且成本极低**。hook stdin 的 `session_id` 与 JSONL 首个事件
+   `{"type":"thread.started","thread_id":"01a0ed97-08d3-7462-923a-b3dedec05903"}` 的 `thread_id`
+   **是同一个值**。而 `thread.started` 是 `--json` 流的**第一条**事件 → spawn 方在子会话跑完之前
+   就能拿到 id,登记 / 比对完全可行。
+
+hook stdin 字段(0.155.1,exec 路径实测):
+- `SessionStart`:`session_id, transcript_path, cwd, hook_event_name, model, permission_mode, source`
+- `UserPromptSubmit`:`session_id, turn_id, transcript_path, cwd, hook_event_name, model, permission_mode, prompt`
+
+**对设计的影响**:子会话识别用 env(主)+ `thread.started.thread_id` 对账(副)。两条都验过,
+不存在「env 不传播只能退 session_id」的分叉,可以两条都实现且互为校验。
+
+## F8 T0.4 实测:`agents/*.toml` **能**被 `codex exec` 会话内的 `spawn_agent` 按名引用(closes F3 的 T0.4)
+
+探针:临时写 `~/.codex/agents/harnessed-probe-echo.toml`(`name` / `description` /
+`developer_instructions` 三字段),用 `codex exec` 跑一轮让模型 spawn 它。**2 次 codex 调用**
+(第一次的 role 指令措辞像 prompt injection,子 agent 按规范拒绝执行 —— 换成中性措辞后复测)。
+
+1. **exec 模式下模型有 `spawn_agent` 工具**(F2 说的「`codex exec` 不能用 `--agent` 指定角色」仍成立,
+   但**模型侧**这条路是通的)。
+2. **role 按名解析成功,且 `developer_instructions` 真的生效**。第二次实测的 role 要求回复末尾附
+   `ECHO-7742`,子 agent 的完成消息就是 `"4\n\nECHO-7742"`。→ 不只是「codex 读得到这个目录」,
+   而是**模型能按名引用 + 指令真的进了子 agent 的上下文**。F3 里那个「读到 ≠ 能引用」的疑虑解除。
+3. **工具 schema:只有 `agent_type` + `message`,没有 `task_name`**。第一次实测里模型明确报告
+   「`task_name` 参数在我手上的 `spawn_agent` 工具 schema 中不存在」。SPEC 若照
+   `spawn_agent(task_name, message)` 写要改。
+4. **不存在的 agent_type 的错误形状**:工具层直接报
+   `unknown agent_type 'harnessed-probe-missing-xyz'`,不创建 agent、不返回 agent_id。
+   事件流表现是**只有 `item.started` 没有对应的 `item.completed`**,而**整个 turn 仍 exit 0**
+   —— 又一个 F6 结论的实例:成功判据不能看 exit code。
+
+**事件形状(harnessed 解析子 agent 产出的入口)**:spawn 与等待都走 `type: "collab_tool_call"` item,
+字段 `tool`(`spawn_agent` / `wait`)、`sender_thread_id`、`receiver_thread_ids`、
+`agents_states`(以子 thread id 为键的 `{status, message}` 映射)、`status`。
+子 agent 的最终文本**不是**独立的顶层 `agent_message`,而是落在 `wait` item 的
+`agents_states[<子 thread id>].message` 里:
+
+```json
+{"type":"item.completed","item":{"id":"item_1","type":"collab_tool_call","tool":"wait",
+ "receiver_thread_ids":["01a0ed99-2645-…"],
+ "agents_states":{"01a0ed99-2645-…":{"status":"completed","message":"4\n\nECHO-7742"}},
+ "status":"completed"}}
+```
+
+观察到的 `agents_states.status` 取值:`pending_init` → `running` → `completed`。
+
+**对设计的影响**:agents toml 不是「仅文档价值」,它是会话内 spawn 那条路径的**真实角色载体**。
+但注意两件事:(a) 子 agent 是**模型自主调用**的,harnessed 只能在 prompt 里请求、不能命令,
+成功与否要靠事件流验证;(b) 子 agent 会应用自己的安全判断(第一次实测就拒了像注入的 role 指令),
+所以 role 的 `developer_instructions` 措辞必须写成正常的角色说明,不能写成
+「忽略一切 / 只输出固定串」这种形状。
+
+**探针清理复核**:`~/.codex/agents` 回到 33 个文件,`fd -H -I 'harnessed-probe' ~/.codex` 无命中,
+`codex plugin list` / `plugin marketplace list` 无 `harnessed-probe-*`,
+`plugins/cache` / `plugins/data` 下无残留,授信条目已用 `config/batchWrite` value=null 清除。
+全程未读 `~/.codex/config.toml`,未改任何既有文件。
