@@ -44,7 +44,32 @@ describe('eval scenario schema (T2)', () => {
     expect(r.ok).toBe(true)
   })
 
-  it('rejects a step that is none of gates/checkpoint/file', () => {
+  // v16.0 Phase 65 T13 — the prompt step (the only host-render-reaching kind).
+  it('accepts a prompt step, with and without its optional fields', () => {
+    expect(
+      validateScenario({ name: 'p', steps: [{ prompt: { sub: 'verify-multispec' } }] }).ok,
+    ).toBe(true)
+    expect(
+      validateScenario({
+        name: 'p',
+        steps: [{ prompt: { sub: 'task-code', task: 'ship it', locale: 'zh-Hans' } }],
+      }).ok,
+    ).toBe(true)
+  })
+
+  it('rejects a prompt step with no sub, an unknown locale, or a stray field', () => {
+    expect(validateScenario({ name: 'p', steps: [{ prompt: {} }] }).ok).toBe(false)
+    expect(
+      validateScenario({ name: 'p', steps: [{ prompt: { sub: 'x', locale: 'fr' } }] }).ok,
+    ).toBe(false)
+    // `host` is deliberately NOT a field — the scenario pins it through `env`,
+    // so that the golden proves detectPlatform() reaches the renderer.
+    expect(
+      validateScenario({ name: 'p', steps: [{ prompt: { sub: 'x', host: 'codex' } }] }).ok,
+    ).toBe(false)
+  })
+
+  it('rejects a step that is none of gates/checkpoint/file/prompt', () => {
     const r = validateScenario({ name: 'bad', steps: [{ bogus: {} }] })
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.errors.length).toBeGreaterThan(0)

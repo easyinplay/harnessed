@@ -1,0 +1,24 @@
+name: host-render-claude
+description: >-
+  Phase 65 host-render baseline — the CLAUDE half of the pair. `harnessed prompt
+  verify-multispec` through the real buildPromptText: that sub carries the densest
+  `{{ host.* }}` coverage in role-prompts.yaml (team / teammate / send_message /
+  multispec_spawn_note / delivery_contract_note / teams_cleanup_note) plus seven
+  tools_available capabilities, three of which declare a by_host.codex cmd. Paired
+  with host-render-codex, the two goldens are the same sub rendered for the two
+  harnesses, so anything that breaks the render chain (host-primitives.yaml lookup
+  path, capability by_host pick, asset-root resolution inside a bundle) shows up as
+  a diff on one side or as the two sides collapsing into each other. CI runs this
+  suite out of dist/ — the three render goldens under tests/ all run src, so this
+  is the only place the PRODUCTION ARTIFACT's render chain is exercised.
+env:
+  # Both keys are pinned rather than inherited: detectPlatform() reads the first
+  # (it is what buildPromptText's default `host` resolves from) and
+  # buildLanguageSection reads the second, so an unpinned recording machine would
+  # be the thing deciding the committed bytes.
+  HARNESSED_PLATFORM: claude
+  HARNESSED_USER_LANG: en
+steps:
+  - prompt:
+      sub: verify-multispec
+      locale: en

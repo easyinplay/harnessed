@@ -1,0 +1,21 @@
+name: host-render-codex
+description: >-
+  Phase 65 host-render pin — the CODEX half of the pair (sibling:
+  host-render-claude, same sub, same locale, same task; only HARNESSED_PLATFORM
+  differs). Proves the rendered prose actually swaps harness: `Agent Teams` →
+  the multi-agent-formation gloss, `teammate` → `agent`, `SendMessage` →
+  `send_input`, and the agent-teams-* capability cmds → their `by_host.codex`
+  values. Before the `prompt` step existed this suite could not see the
+  difference at all — `HARNESSED_PLATFORM=codex` passed all 11 claude-recorded
+  goldens, because gates/checkpoint steps touch no host-render code.
+env:
+  # Both keys are pinned rather than inherited: detectPlatform() reads the first
+  # (it is what buildPromptText's default `host` resolves from) and
+  # buildLanguageSection reads the second, so an unpinned recording machine would
+  # be the thing deciding the committed bytes.
+  HARNESSED_PLATFORM: codex
+  HARNESSED_USER_LANG: en
+steps:
+  - prompt:
+      sub: verify-multispec
+      locale: en

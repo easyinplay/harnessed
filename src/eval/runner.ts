@@ -8,7 +8,9 @@
 // Isolation per scenario (CEO plan): fresh tmpdirs (realpath'd) for the
 // harnessed state root (HARNESSED_ROOT_OVERRIDE) and the repo cwd (chdir —
 // checkArtifacts/checkPlanningSync read process.cwd()); judgments cache
-// cleared; scenarios run SERIALLY (cwd is process-global). Error triage
+// cleared; scenarios run SERIALLY (cwd is process-global). v16.0 Phase 65 T13
+// adds scenario-scoped `env` to that isolation set — pinned before the steps,
+// restored (absent → deleted) in the same finally. Error triage
 // (locked F2): CONFIG-ERROR (bad yaml/schema, named, not a FAIL) /
 // MISSING-GOLDEN (first run → --update-golden) / ERROR (engine threw, stack)
 // vs FAIL (golden mismatch) vs PASS / UPDATED.
@@ -39,7 +41,7 @@ export type ScenarioStatus =
   | 'UPDATED'
 
 export interface StepRecord {
-  kind: 'gates' | 'checkpoint' | 'file'
+  kind: 'gates' | 'checkpoint' | 'file' | 'prompt'
   exitCode: number | null
   stdout: string[]
   stderr: string[]
@@ -148,6 +150,38 @@ async function execStep(
     return { kind: 'file', exitCode: null, stdout: [], stderr: [] }
   }
 
+  if ('prompt' in step) {
+    // v16.0 Phase 65 T13 — the ONE step kind that reaches the host-render chain
+    // (renderRolePromptsForHost → renderHostPrimitives for `{{ host.* }}`, and
+    // pickHostValues for each tools_available capability's cmd). `host` is NOT a
+    // step field on purpose: buildPromptText's default resolves it from
+    // detectPlatform(), so the scenario's `env: {HARNESSED_PLATFORM: …}` is what
+    // decides — which is exactly the wiring the golden is there to pin. Passing
+    // it here would prove only that the parameter works.
+    //
+    // No captureRunDeps: buildPromptText RETURNS the text instead of printing it,
+    // and it never calls process.exit — so exitCode is a flat 0. A render fault
+    // (renderHostPrimitives throws on an unresolvable placeholder, by design)
+    // propagates to the scenario layer as ERROR, which is the loud outcome that
+    // surface wants.
+    const { buildPromptText } = await import('../cli/prompt.js')
+    const { getAssetsRoot } = await import('../platform/assetsRoot.js')
+    const built = await buildPromptText(step.prompt.sub, getAssetsRoot(), {
+      ...(step.prompt.task !== undefined ? { task: step.prompt.task } : {}),
+      locale: step.prompt.locale ?? 'en',
+    })
+    return {
+      kind: 'prompt',
+      exitCode: 0,
+      stdout: [
+        `model: ${built.model}`,
+        `specialist: ${built.specialist}`,
+        ...built.prompt.split('\n'),
+      ],
+      stderr: [],
+    }
+  }
+
   const { deps, stdout, stderr } = captureRunDeps()
   let exitCode: number | null = null
   try {
@@ -252,6 +286,15 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
   // GIT_CEILING_DIRECTORIES stops the upward walk at the tmp root, making the
   // outcome deterministic everywhere: not-a-repo → fail-soft {ready:false}.
   const prevCeiling = process.env.GIT_CEILING_DIRECTORIES
+  // v16.0 Phase 65 T13 — scenario-scoped `env`. Saved per key (undefined = the
+  // key did not exist) and restored in the same finally as the three overrides
+  // above, so a scenario that pins its harness cannot re-key the next one: the
+  // suite is a SINGLE process running scenarios serially, and process.env is
+  // global to it. A key that was absent is DELETED on restore, not set to '' —
+  // `HARNESSED_PLATFORM=''` is a different world from unset (detectPlatform
+  // falls through to auto-probe only when the key is absent or empty, and
+  // `envName in process.env` reads true for the empty string).
+  const prevScenarioEnv = new Map<string, string | undefined>()
 
   const steps: StepRecord[] = []
   const evaluatedGateRefs = new Set<string>()
@@ -261,6 +304,17 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
   // always restores cwd + env (they used to precede it: a throw there leaked the
   // overrides into every later scenario and the caller) (external review L15).
   try {
+    // Scenario env goes on FIRST, so the runner's own pins below always win the
+    // keys it owns: HARNESSED_ROOT_OVERRIDE and GIT_CEILING_DIRECTORIES are set
+    // unconditionally, so a scenario can never point the engine at the developer's
+    // real state root or unfence the git walk. HARNESSED_ASSETS_OVERRIDE is only
+    // claimed when `assets_dir` is declared — a scenario that sets it through `env`
+    // instead (an absolute doctored tree) keeps its value, which is the same
+    // capability `assets_dir` already grants.
+    for (const [key, value] of Object.entries(scenario.env ?? {})) {
+      prevScenarioEnv.set(key, process.env[key])
+      process.env[key] = value
+    }
     process.env.GIT_CEILING_DIRECTORIES = tmpdir()
     process.env.HARNESSED_ROOT_OVERRIDE = stateRoot
     if (scenario.assets_dir) {
@@ -299,6 +353,14 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
     else process.env.HARNESSED_ASSETS_OVERRIDE = prevAssets
     if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES
     else process.env.GIT_CEILING_DIRECTORIES = prevCeiling
+    // Restored LAST (mirror of the apply order): if a scenario named one of the
+    // three keys above, the loop above has already put back the value this
+    // scenario inherited, and this loop writes the same value again. Absent
+    // before → delete.
+    for (const [key, prev] of prevScenarioEnv) {
+      if (prev === undefined) delete process.env[key]
+      else process.env[key] = prev
+    }
     try {
       ;(await import('../workflow/judgmentResolver.js'))._clearJudgmentCache()
     } catch {
