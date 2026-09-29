@@ -85,14 +85,54 @@ TUI 是否可见,只有维护者能测)的情况下重新引入,等于重犯 ADR
 矩阵视图要给每条 check 加描述符(`{ name, hosts, fn }`),这会破坏
 `tests/cli/doctor.test.ts:223,231,267` 三处计数断言(`toBe(24)` / `toHaveLength(24)`)——属预期,同步改。
 
-## F3 待实测(T0,尚未做)
+## F5 T0.1 实测通过 —— `codex exec` 的可用形状(0.155.1,Windows)
 
-- harnessed 经 `codex exec` 注入的 env 是否进入**子会话的 hook 快照**(Phase 64 实测过:hook 进程
-  本身无 `CODEX_*`,而 shell 子进程有;子会话的 hook 看到什么未知)。不进则改为按 stdin `session_id`
-  登记子会话识别。
-- SPEC 称「Windows 上 `read-only` 沙箱工具调用实测失败」—— 该结论写于 2026-09-22,需对当前
-  codex-cli 0.155.1 复测再采信。
-- `thread/goal/set` 对**运行中 TUI** 是否即时可见 —— 这条只有维护者能测(需要开着 TUI)。
+```
+codex exec --ephemeral --json -o <file> -s read-only --skip-git-repo-check "<prompt>"
+```
+exitCode 0 / 约 10s / `-o` 文件写入模型最后一条消息 / stdout 是 JSONL,事件类型依次
+`thread.started` → `turn.started` → `item.completed` → `turn.completed`。
+
+三个踩到的坑,harnessed 实现要照做:
+1. **Windows 上不能 `shell: true`** —— prompt 字符串会被按空格重新切分,报
+   `error: unexpected argument 'with' found`。用 codex.exe 的绝对路径 + `shell: false`
+   (仓库已有 `planWindowsSpawn` / `resolveWindowsBin` 可复用)。
+2. **`--skip-git-repo-check`** 必要,否则在非 git 工作目录直接拒跑。
+3. 即使 `stdio[0] = 'ignore'`,stderr 仍打印 `Reading additional input from stdin...` ——
+   无害,但别把它当错误。
+
+**隔离 `CODEX_HOME` 跑不通**:本机没有 `auth.json`(凭据不在那儿,我们也不去找),隔离 home 就等于
+未认证。所以实测用真实 home + `--ephemeral`(codex 文档:"Run without persisting session files to
+disk")。这条同样是 harnessed 的约束 —— **不能**靠切 `CODEX_HOME` 来隔离 spawn。
+
+## F6 T0.3 实测:`-s read-only` 确实挡工具调用,**但 exit code 仍是 0**
+
+SPEC 写于 09-22 的结论在 0.155.1 上仍成立。模型尝试 shell 时:
+
+```
+ERROR codex_core::tools::router: error=exec_command failed:
+  CreateProcess { message: "Rejected(\"Failed to create unified exec proces…
+```
+模型自己回了 `BLOCKED`,而**进程 exitCode = 0**。
+
+**对设计的影响(重要)**:`codex exec` 的成功判据**不能只看 exit code**。工具被沙箱拒、模型放弃任务、
+输出不合 schema —— 这些都可能以 exit 0 收场。判据必须落在 `-o` 的 last message 内容 +
+JSONL 事件流上。这正是五类具名错误里 `SpawnOutputMalformed` 与 `SpawnRefused` 要分开的理由:
+前者是拿到了输出但不合约,后者是拿到了「我做不了」这种合法但无用的输出。
+
+默认 sandbox 的选择留给实现时定:leaf 子任务通常要写文件,`read-only` 会让它们全部 `SpawnRefused`;
+`workspace-write` 才是可用的默认,但要显式写进文档并让调用方可覆盖。
+
+## F3 待实测(T0,剩余两项)
+
+- **T0.2** harnessed 经 `codex exec` 注入的 env 是否进入**子会话的 hook 快照**(Phase 64 实测过:
+  hook 进程本身无 `CODEX_*`,而 shell 子进程有;子会话的 hook 看到什么未知)。不进则改为按 stdin
+  `session_id` 登记子会话识别。探针已在 T0.1 里预埋了 `HARNESSED_T0_MARKER=phase66-probe`。
+- **T0.4** agents toml 落 `~/.codex/agents/` 后能否被会话内 `spawn_agent(agent_type: …)` 引用。
+  不能则 agents toml 降级为「仅文档价值」或整项作废(F1 证明了 codex 会**读**这个目录,
+  但「读到」与「模型能按名引用」是两件事)。
+- ~~`read-only` 沙箱~~ → 已测,见 F6。
+- ~~`thread/goal/set` 对运行中 TUI 是否可见~~ → goal 已整体移出本 phase(F2d),实测步骤进 TODOS。
 
 ## F4 安全边界(沿用 v16.0,不重新讨论)
 
