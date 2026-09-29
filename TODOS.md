@@ -17,6 +17,29 @@
 - [ ] **gemini 宿主 milestone** — P2 / L(CC: ~4h)
   Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。先实测 gemini hook / subagent / skills 目录。
   Criterion: 实际用不用(design doc 2026-08-26 OQ4)。Depends: codex 宿主对等 milestone 收口。
+- [ ] **codex 上 plugin 类能力全告警** — P2 / S,Phase 65 findings F8
+  Why: codex descriptor 的 `pluginsRegistry: null` → `readInstalledPlugins` 返回空集(不读 fs),于是每个
+  `install_type: plugin` 的 capability 在 codex 上都告警「backing missing」。`planning-with-files` 这类
+  上游在 codex 上确实装不了,所以告警不算假阳性,但**逐条刷屏**且没给用户任何可执行出路。
+  与之配套的 Phase 65 裁决 D5:`Claude Code plugin` 字样刻意保留在正文里,由 codex 映射小节的 caveat 说明
+  「这类组件在本宿主并未安装,遇到就记 skip」。真正的修法在能力层(聚合告警 + 明确 skip 语义),不在措辞。
+  Trigger: 维护者在 codex 上真跑一次 setup 并觉得告警噪音碍事。
+- [ ] **codex 上 subagent prompt 拿不到语言指令** — P3 / S,Phase 65 findings F8
+  Why: codex descriptor `supportsEnvKeyWrite: false` → `HARNESSED_USER_LANG` 从不写 →
+  `buildLanguageSection` 返回空 → 整个 `## Language` 节在 codex 上不出现。副作用:
+  `disciplines/language.yaml` 的 `preserve-english-categories` 也随之不渲染。Phase 65 仍然把它原语化了
+  (不拿一个待修缺陷当豁免理由),所以这里修好后无需回头改正文。
+  需要先定 codex 上语言偏好存哪(不写 `config.toml` 是硬边界)。
+- [ ] **en 安装在 skills 目录留一份带未解析占位符的 zh 副本** — P3 / S,Phase 65 findings F11
+  Why: `renderSkillTemplates.ts` 在 en 安装时只渲染并写 `SKILL.md`,`SKILL.zh-Hans.md` 以 `cp` 原样留下、
+  不渲染也不删除。Claude Code 只读 `SKILL.md`(官方加载契约)所以无人读到,无实际危害,但不干净。
+  两个候选:en 安装也剥除该 sibling,或也渲染它。改的是安装产品行为,故未并入 Phase 65。
+  注意 `renderSkillTemplates.test.ts` 有一条断言锁着「en 侧必须有 zh 兄弟」这一当前行为。
+- [ ] **`check-host-primitives` 未覆盖生成命令体(S2)** — P3 / S,Phase 65 T11 交回
+  Why: 该面是 TS 模板字面量,门要扫它就得先 build。现有覆盖是
+  `tests/cli/generateCommandsGolden.test.ts` 的 codex sanity 块(断言无 `~/.claude/` / `CC-native` /
+  `AskUserQuestion`),**不是**门的完整 token 表。补法很便宜:在 `tests/scripts/` 加一个 test,
+  import `generateCommandFile` + 复用门导出的 `scanCcTokens` / `MASKS`,对 codex bodies 跑同一套判据。
 
 ## From /plan-ceo-review 2026-07-12 (B5 Phase 3 Slice 1 — CEO plan: `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`)
 

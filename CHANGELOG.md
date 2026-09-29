@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **正文按宿主渲染:同一份 workflow 内容装到 Claude Code 或 codex 上,各自指名自己的原语。** 新增第二族占位符 `{{ host.<primitive>[.<variant>] }}`(与既有 `{{ capabilities.<x>.cmd }}` 同族,挂同一个渲染点),词表落 `workflows/host-primitives.yaml` + `.zh-Hans.yaml`(14 primitive / 39 占位符)。四个交付面全部接入:安装到 skills 目录的 SKILL 正文、生成的 `/<name>` 命令体、运行时交给 subagent 的 prompt(role-prompts / `disciplines/language.yaml`)、以及能力注册表。codex 侧工具名取自上游 `codex-rs/core/src/tools/handlers/multi_agents_spec.rs`(本机 codex-cli 0.155.1,`multi_agent` v1 生效):`spawn_agent(task_name, message)` / `send_input` / `wait_agent` / `list_agents` / `close_agent` / `resume_agent`,以及 `request_user_input`。
+- **`capabilities.yaml` 支持 `by_host` 按宿主取值。** 顶层 `impl` / `cmd` 仍是权威的 Claude Code 值,`by_host.<host>` 只替换它显式声明的字段;Bucket 5 的三个 agent-platform 能力据此在 codex 上解析为 `spawn_agent(task_name, message)` / `send_input` / `close_agent`。宿主键是具名的(`claude` / `codex`)而非自由 record —— 写错宿主名在自由 record 下会静默永不命中、继续渲染 Claude 原语,具名 + `additionalProperties: false` 把拼写错误变成构建期错误。
+- **codex 渲染产物带一段宿主映射小节**(`<!-- harnessed:host-map:start -->` … `end`,插在 frontmatter 之后)。内容是从词表派生的原语对照表,加三条 caveat:`request_user_input` 在本机是否默认启用未实测;`Claude Code plugin` 类组件在 codex 上并未安装(harnessed 会在能力解析阶段逐条告警),遇到这类步骤应记 skip 而不是自行找等价物;codex agent 的生命周期(session 作用域 / 退出是否自动回收 / 能否嵌套)全部未实测,产物不作任何断言,请显式 `close_agent`。claude 渲染**一个字节都不插**。
+- **新门 `scripts/check-host-primitives.mjs`**(CI hard-fail):断言 codex 渲染产物在豁免区间外零 Claude Code 原语 token。门自己按安装器顺序跑两遍渲染(capabilities 含 `by_host` 覆盖 → host 占位符),不依赖 build;按**字段**选取 yaml 面而非整文件乱扫;allowlist 是短语级(`Claude Code plugin` 豁免,裸 `Claude Code` 不豁免),且**零命中的 allowlist 条目本身算违规**,避免它腐烂成墓碑。
+- **`check-skill-i18n-parity` 纳入 `host.*` 占位符对等**,判据为 primitive 集合而非 variant 集合 —— 后者按设计必红(en 正文用 `.default` / `.plural`,zh 用 `.zh_tool`),而「中文把两处提及合成一处」是正常译文形态不是漂移。
+- **`check-yaml-i18n-parity` 守到三层**:`primitives:` 的 primitive → variant → host 三层 key 对等,失败信息点名出错的层级与 key。此前 `host-primitives.yaml` 只有顶层 key 被守。
+
+### Changed
+
+- **`prompt.description` 按 locale 渲染。** 命令体模板恒为英文,所以走 en 词表;而 `description` 是这个面上唯一来自本地化 `role-prompts.<locale>.yaml` 的字段,走 en 表会把英文的 codex 说明塞进中文句子。现在它用 locale 匹配的第二张表、并在 body pass **之前**渲染 —— 这也是它能安全进 frontmatter 的原因(body pass 刻意不碰 frontmatter)。en 安装两表同源,行为不变。
+- **Claude Code 侧的渲染产物逐字节不变**,由三份新金标锁住:skills 产物(en 91 条 / zh-Hans 62 条 sha256)、命令体(各 26 条)、`harnessed prompt` 的完整输出(61 个 sub × 2 locale)。金标在改写**之前**录制,批量改写期间它变红即表示还原有 bug,不是重录信号。
+- `scripts/rewrite-skill-invoke-sections.mjs` 的 8 个 builder 与 5 对常量改为输出占位符;`generateCommands.ts` 中声称与它「保持 lockstep」的那段注释被替换 —— 逐字比对发现两侧**已经漂移 5 处**,现在两种措辞作为同一 primitive 的相邻 variant 共存,漂移肉眼可见。
+- `generateCommands.ts` 生成的 sister SKILL 路径改由 `getSkillsDir()` 派生并波浪号化,codex 上正确指向 `~/.agents/skills`;此前硬编码 `~/.claude/skills`。codex 变体也不再引用 `~/.claude/rules/agent-teams.md`(该文件在 codex 上不存在),改为内联要点。
+
+### Fixed
+
+- codex 上生成的 `/<name>` 命令体此前整段是 Claude Code idiom,其中两处直接指向 codex 上不存在的东西(`~/.claude/rules/agent-teams.md` 与 `~/.claude/skills/<name>/SKILL.md`),并指挥模型调用 `AskUserQuestion` 这个 codex 上没有的工具。
+
 ## [4.44.0] - 2026-09-23
 
 ### Added

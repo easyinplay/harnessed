@@ -2,7 +2,7 @@
 
 SPEC:`.planning/specs/2026-09-22-codex-host-parity-v16.md` §「Phase 65」(唯一真相源)
 + 本文件「开工细化」(对 SPEC 的落地修正,依据 `findings.md` 的 F1-F8 实测)。
-Status: planned (2026-09-24)
+Status: complete (2026-09-29; eval scenario 部分收尾中) — 详 SUMMARY.md
 
 ## 开工细化(对 SPEC 的修正,逐条给理由)
 
@@ -71,11 +71,11 @@ Status: planned (2026-09-24)
 | **批 B** ✅ | inline 面 50 + 续作 30(定语位 / 单数 / shutdown 短语);折行入 cell 顺带消除正则假阳性 | `workflows/**/SKILL*.md` | 金标零差异;frontmatter 116/116 可解析 |
 | **批 C** ✅ | yaml 面:`by_host` 可选字段(顶层仍是 claude 权威值)+ `pickHostValues` 纯函数 + 两条消费路径分别接入 + 对等门守到三层 | `workflows/capabilities.yaml`, `capabilityResolver.ts`, `prompt.ts`, `scripts/check-*.mjs` | `e13c144` CI 绿;2172 测试;负向验证三层各点名 |
 | **批 D** ✅ | S2 命令体按宿主分支 + **该面的首个金标**(先录基线再改);lockstep 注释按 D6 替换 | `src/cli/lib/generateCommands.ts`, `setup.ts` | `7da9d92`;两轮变异验证;codex 产物零 `~/.claude/` |
-| T8 | S3 运行时 prompt 组装:只处理**确实进 prompt** 的面(D2 后缩小) | `src/cli/prompt.ts`, `src/workflow/run.ts` | claude 组装逐字节不变;codex 组装无 CC 原语 |
+| T8 ✅ | S3 运行时 prompt(role-prompts 26 处 + language.yaml);占位符与渲染接入同批落地 | `prompt.ts`, `run.ts`, `rolePromptHostRender.ts` | `05e8069`;第三份金标 61 sub × 2 locale |
 | T10 ✅ | 映射小节生成(R4):pass 3 插在 frontmatter 之后;词表派生原语对照 + `host_map_notes.<host>` caveat;strip-then-insert 保幂等 | `src/cli/lib/hostPrimitives.ts`, `renderSkillTemplates.ts`, `tests/cli/hostMapSection.test.ts` | 21 测试;claude 金标零差异;codex 每文件恰 1 对标记 |
-| T11 | 新门 `scripts/check-host-primitives.mjs` + `.d.mts` + `ci.yml` step + 单测;allowlist = 不渲染面(文件粒度,D2)+ 映射小节区间 | `scripts/`, `.github/workflows/ci.yml`, `tests/scripts/` | 门在当前树绿;故意插一个 CC token 会红 |
-| T12 | 同步既有内容门(R9)与 i18n 占位符集合检查(把 `host.*` 纳入 `check-skill-i18n-parity`)。**既有门断言的是源文件原文**,占位符化后会失配 → 改为断言 **claude 渲染后的文本**(语义不变),候选:`skill-invoke-parity`、`headlessTeardown`(`:24-43` 断言 `shut down` / `按名` / `session-scoped`)、`deferrableRelay`(经查与 CC 原语无关,大概率不受影响)、`severityDiscipline`、`rolePromptsMattpocock` | `tests/unit/skill-invoke-parity.test.ts`, `tests/workflow/*.test.ts`, `scripts/check-skill-i18n-parity.mjs` | 单测;改写前先跑这批测试记录基线 |
-| T13 | eval golden 覆盖 codex 渲染(至少 1 个 scenario)+ CHANGELOG + SUMMARY | `fixtures/eval/`, `CHANGELOG.md` | `pnpm eval` 绿 |
+| T11 ✅ | 新门 `check-host-primitives.mjs`:门自跑两遍渲染、逐字段选取 yaml 面、短语级 MASKS(零命中即违规) | `scripts/`, `ci.yml`, `tests/scripts/` | `2e7dfe6`;负向验证 4 项含对照组 |
+| T12 ✅ | `host.*` 纳入 `check-skill-i18n-parity`,判据=primitive 集合(三候选实测选出);既有内容门断言对象改为 claude 渲染产物 | `scripts/check-skill-i18n-parity.mjs`, `tests/workflow/*` | `2e7dfe6`;门正则与渲染器对拍 |
+| T13 🔄 | CHANGELOG / SUMMARY / STATE / TODOS ✅;eval scenario 需先给 scenario schema 加 env 支持(当前钉不住宿主)🔄 | `CHANGELOG.md`, `SUMMARY.md`, `fixtures/eval/` | 文档已落;eval 待回 |
 
 ### 批次排序(文件归属互斥,避免并发写同文件)
 
@@ -86,13 +86,13 @@ Status: planned (2026-09-24)
 
 ## 验收(phase 级)
 
-- [ ] `tsc --noEmit` 0;biome 绿;9 个既有 `check-*.mjs` + 新门全绿
-- [ ] **claude 侧逐字节金标**:S1 渲染产物(en / zh)、S2 命令体 —— 改写前后零差异
-- [ ] codex 渲染产物在映射小节区间外**零 CC 原语 token**(新门断言)
-- [ ] `check-skill-i18n-parity` / `check-yaml-i18n-parity` 绿(占位符集合含 `host.*`)
-- [ ] 本机 vitest 相关文件绿;CI 三 OS 绿
-- [ ] codex 正文不含未验证的 codex 行为断言(R8,人工复核 C 类整段)
-- [ ] CHANGELOG `[Unreleased]` + SUMMARY + STATE 指针
+- [x] `tsc --noEmit` 0;biome 绿;**十道** `check-*.mjs` 全 0(9 既有 + `check-host-primitives`)
+- [x] **claude 侧逐字节金标**:S1(en 91 / zh 62)、S2 命令体(各 26)、**S3 prompt**(61 sub × 2 locale)—— 零差异
+- [x] codex 渲染产物在映射小节区间外**零 CC 原语 token**(`check-host-primitives` 断言,负向验证含对照组)
+- [x] `check-skill-i18n-parity`(纳入 `host.*`,判据=primitive 集合)/ `check-yaml-i18n-parity`(守到三层)均绿
+- [x] 本机 vitest 2228 绿(`--no-file-parallelism`);CI 三 OS 绿(逐 commit 核实)
+- [x] codex 正文不含未验证的 codex 行为断言(R8;生命周期处一律 `TODO(未验证)`,已人工复核 C 类整段)
+- [x] CHANGELOG `[Unreleased]` + SUMMARY + STATE 指针 + TODOS 四项
 
 ## 不做(明确排除)
 
