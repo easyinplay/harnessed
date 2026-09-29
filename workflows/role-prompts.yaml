@@ -376,7 +376,7 @@ prompts:
       - "If {{ host.teammate }} communication needed / context overflow → escalate to {{ host.team }}"
       - "{{ host.teams_cleanup_note.checklist }}"
     severity: "complete / max-iter-exceeded / escalated-to-teams"
-    description: "Drive subtask through the completion gate with a verbatim COMPLETE promise; escalate to Agent Teams when needed."
+    description: "Drive subtask through the completion gate with a verbatim COMPLETE promise; escalate to {{ host.team }} when needed."
 
   # ============================================================================
   # verify-* (8 subs)
@@ -524,13 +524,12 @@ prompts:
     specialist: "Multi-specialist {{ host.team.singular }} orchestrator (Pattern C)"
     responsibility: |
       Critical release / large refactor only. Spawn 4 background {{ host.teammate.plural }}
-      (code-review + gstack-review + gstack-cso + gstack-qa) — the team forms
-      implicitly on the first spawn, there is no create step — let them
+      (code-review + gstack-review + gstack-cso + gstack-qa) {{ host.multispec_spawn_note.responsibility }} let them
       cross-question findings via {{ host.send_message }} (NOT fire-and-forget), lead
       arbitrates final report. Stop every {{ host.teammate }} before finishing.
     checklist:
       - "Token-cost gate: estimate team_cost vs 2 × subagent_cost; only escalate when team wins"
-      - "Spawn 4 background {{ host.teammate.plural }} (the first spawn forms the team; `team_name` is ignored): code-review / gstack-review / gstack-cso / gstack-qa"
+      - "Spawn 4 background {{ host.teammate.plural }} {{ host.multispec_spawn_note.checklist }}: code-review / gstack-review / gstack-cso / gstack-qa"
       - "Each {{ host.teammate }}'s brief is self-contained (no shared session context to lean on)"
       - "{{ host.delivery_contract_note.checklist }}"
       - "Round-trip findings: each {{ host.teammate }} sends top-3 findings; others rate (real / false-positive / nit)"
@@ -538,7 +537,7 @@ prompts:
       - "{{ host.teams_cleanup_note.multispec_checklist }}"
       - "If the gate doesn't fire (regular PR), DO NOT escalate — fall back to single-agent fan-out"
     severity: "ship-blocker / ship-with-action / informational"
-    description: "Pattern C 4-specialist Agent Team — critical-release multi-dimensional review with SendMessage cross-questioning."
+    description: "Pattern C 4-specialist {{ host.team.singular }} — critical-release multi-dimensional review with {{ host.send_message }} cross-questioning."
 
   # ============================================================================
   # ship-* (1 sub)

@@ -307,6 +307,26 @@ primitives:
         `spawn_agent(task_name: <specialist>, message: <brief>)` ×4 — there is no create step;
         the four agents cross-question each other's findings with `send_input` (NOT
         fire-and-forget)
+    # ── The two role-prompts.yaml `verify-multispec` sites (Phase 65 tail) ──
+    # Both state the SAME Claude-Code-only fact in two shapes: a team FORMS on the
+    # first spawn and `team_name` is accepted-then-ignored. codex's multi-agent v1
+    # has neither concept — no team handle, and `spawn_agent(task_name, message)`
+    # takes no team input — so a token-level swap would have the codex artifact
+    # asserting a formation semantic that does not exist there. Both codex columns
+    # therefore state only what the upstream tool spec shows (no create tool in the
+    # 6-tool surface) and say NOTHING about agent lifecycle, which is unmeasured.
+    #
+    # `responsibility` carries a NEWLINE: the source block scalar wrapped inside
+    # the clause, and the cell holds that break so the body can carry one unbroken
+    # placeholder (same rationale as spawn_subagent.zh_tool_wrapped).
+    responsibility:
+      claude: |-
+        — the team forms
+        implicitly on the first spawn, there is no create step —
+      codex: "— there is no create step: four `spawn_agent` calls are the whole formation —"
+    checklist:
+      claude: "(the first spawn forms the team; `team_name` is ignored)"
+      codex: "(one `spawn_agent(task_name, message)` per agent; there is no create step and no team handle)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Host-map section notes (Phase 65 R4).

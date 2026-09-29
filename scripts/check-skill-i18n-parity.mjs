@@ -16,6 +16,9 @@
 //      (placeholders are rendered, never translated)
 //   3. heading LEVEL sequence identical (e.g. [1,2,2,3]; heading TEXT not compared)
 //   4. no orphan zh
+//   5. {{ host.<primitive>[.<variant>] }} PRIMITIVE set exact-equal both
+//      directions — v16.0 Phase 65 T12. See the long note on hostPrimitiveSet for
+//      why this compares primitives and NOT the `<primitive>.<variant>` keys.
 //
 // Dep-free by design: runs in CI BEFORE `corepack pnpm install` (sister
 // scripts/check-provenance.mjs). MUST NOT import the `yaml` package — frontmatter
@@ -56,6 +59,47 @@ function frontmatterKeys(text) {
 function placeholderSet(text) {
   const set = new Set()
   const re = /\{\{\s*(capabilities\.[\w.-]+?)\s*\}\}/g
+  let m
+  // biome-ignore lint/suspicious/noAssignInExpressions: canonical regex-exec loop
+  while ((m = re.exec(text)) !== null) {
+    set.add(m[1])
+  }
+  return set
+}
+
+/**
+ * Set of `{{ host.* }}` PRIMITIVE names — the `<primitive>` half only, with the
+ * `<variant>` deliberately discarded (v16.0 Phase 65 T12).
+ *
+ * Why not the full `<primitive>.<variant>` key, the way check 2 compares full
+ * capability ids: because en and zh legitimately reference DIFFERENT variants of
+ * the same primitive. The table carries prose-shape variants — en bodies say
+ * `{{ host.spawn_subagent.default }}` ("Task / Agent tool") and
+ * `{{ host.spawn_subagent.plural }}`, where the zh body of the same skill says
+ * `{{ host.spawn_subagent.zh_tool }}` ("Task / Agent 工具") — so a variant-level
+ * comparison is red on 24 of the 26 pairs by DESIGN, not by drift.
+ *
+ * Occurrence COUNTS are discarded for the same reason, and that is measured, not
+ * assumed: comparing per-primitive counts is red on verify/multispec today
+ * (en references `teammate` 6× and `teams_cleanup_note` 3×, zh 5× and 2×) purely
+ * because the Chinese sentences fold two mentions into one. A gate that fires on
+ * ordinary translation shape is a gate people learn to ignore.
+ *
+ * The primitive SET is the part that must not drift: it says WHICH host-specific
+ * facts a body talks about. A zh sibling that drops `teams_cleanup_note` entirely
+ * has lost a contract; a zh sibling that says it once instead of twice has not.
+ *
+ * DEP-FREE NOTE: this duplicates the regex in src/cli/lib/hostPrimitives.ts
+ * (`collectHostPlaceholders`) instead of importing it. That module is TypeScript
+ * and this gate runs BEFORE `corepack pnpm install` in CI, with no build output
+ * on disk — importing it is not merely undesirable here, it is impossible. The
+ * duplicated pattern is the one thing to keep in sync if the placeholder syntax
+ * ever changes; the charset (`[A-Za-z0-9_-]`) is asserted identical by
+ * tests/scripts/skill-i18n-parity.test.ts.
+ */
+function hostPrimitiveSet(text) {
+  const set = new Set()
+  const re = /\{\{\s*host\.([A-Za-z0-9_-]+)(?:\.([A-Za-z0-9_-]+))?\s*\}\}/g
   let m
   // biome-ignore lint/suspicious/noAssignInExpressions: canonical regex-exec loop
   while ((m = re.exec(text)) !== null) {
@@ -160,6 +204,20 @@ export function checkSkillI18nParity(workflowsDir) {
       })
     }
 
+    // 5. host-primitive set (primitives only — see hostPrimitiveSet).
+    const enHost = hostPrimitiveSet(en)
+    const zhHost = hostPrimitiveSet(zh)
+    if (!setEqual(enHost, zhHost)) {
+      const only = (a, b) => [...a].filter((x) => !b.has(x)).sort()
+      violations.push({
+        file: zhPath,
+        kind: 'host-primitive',
+        detail:
+          `host primitive set differs — en-only={${only(enHost, zhHost).join(',')}} ` +
+          `zh-only={${only(zhHost, enHost).join(',')}}`,
+      })
+    }
+
     // 3. heading level sequence.
     const enShape = headingShape(en)
     const zhShape = headingShape(zh)
@@ -187,8 +245,8 @@ if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
     console.error(
       `[skill-i18n-parity] ${violations.length} structural-parity violation(s). ` +
         'A SKILL.zh-Hans.md sibling must match its SKILL.md in frontmatter keys, ' +
-        '{{ capabilities.X }} placeholders, and heading-level shape (drift-only — ' +
-        'absence of a sibling is OK).',
+        '{{ capabilities.X }} placeholders, {{ host.* }} primitives, and heading-level ' +
+        'shape (drift-only — absence of a sibling is OK).',
     )
     process.exit(1)
   }

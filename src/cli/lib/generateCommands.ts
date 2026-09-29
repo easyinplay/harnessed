@@ -104,10 +104,32 @@ const MARKER = `<!-- harnessed-generated:v3.4.4 -->`
 //     literal prefix + a `*_tail` variant.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Render options for ONE generated command file.
+ *
+ * Extends {@link RenderHostPrimitivesOptions} (so every pre-existing caller that
+ * passes a bare `{host, table}` still type-checks) with the one thing this
+ * surface needs on top: a SECOND table for `prompt.description`.
+ *
+ * Why two tables. The command BODY is an English template literal, so it renders
+ * off the `en` table — the zh sibling would splice e.g. `Task / Agent 工具` into
+ * an English sentence. `prompt.description` is the one field that comes from the
+ * LOCALIZED `role-prompts.<locale>.yaml`, so it must render off the table of that
+ * same locale or a zh install would get the English codex gloss ("a multi-agent
+ * formation (repeated `spawn_agent`)") inside a Chinese sentence. Omitted →
+ * `table`, i.e. the single-table behaviour every existing caller already had.
+ */
+export interface CommandRenderOptions extends RenderHostPrimitivesOptions {
+  /** Locale-matched table for `prompt.description` only. Defaults to `table`. */
+  descriptionTable?: HostPrimitiveTable
+}
+
 /** Host-specific inputs one command body needs. Resolved ONCE per call. */
 export interface CommandHostContext {
   /** Placeholder render options — host column + already-loaded table. */
   render: RenderHostPrimitivesOptions
+  /** Same host, but the locale-matched table — `prompt.description` only. */
+  descriptionRender: RenderHostPrimitivesOptions
   /** `~`-relative skills dir prose for the host (e.g. `~/.claude/skills`). */
   skillsDir: string
 }
@@ -162,9 +184,14 @@ function skillsDirProse(host: HostId): string {
 
 /** Resolve the host context, defaulting to (claude, packaged en table) so the
  *  pre-Phase-65 five-arg call still produces the exact claude bytes. */
-function resolveHostContext(render?: RenderHostPrimitivesOptions): CommandHostContext {
+function resolveHostContext(render?: CommandRenderOptions): CommandHostContext {
   const r = render ?? { host: 'claude', table: packagedEnTable() }
-  return { render: r, skillsDir: skillsDirProse(r.host) }
+  // `descriptionTable` omitted -> same table as the body, which is exactly the
+  // single-table behaviour every pre-Phase-65 caller already had.
+  const descriptionRender: RenderHostPrimitivesOptions = render?.descriptionTable
+    ? { host: r.host, table: render.descriptionTable }
+    : { host: r.host, table: r.table }
+  return { render: r, descriptionRender, skillsDir: skillsDirProse(r.host) }
 }
 
 /** Render ONE `{{ host.<key> }}` for this host. Throws on an unknown key /
@@ -425,19 +452,27 @@ export function generateCommandFile(
   _capabilities: CapabilityMap,
   _installedPlugins: Set<string>,
   _installedUserSkills: Set<string>,
-  hostRender?: RenderHostPrimitivesOptions,
+  hostRender?: CommandRenderOptions,
 ): { content: string; warnings: string[] } {
   const isMaster = prompt.is_master === true
   const argHint = isMaster ? '[task description]' : '[requirement text or omit]'
   const ctx = resolveHostContext(hostRender)
 
+  // `prompt.description` is the ONE localized field on this surface, so it renders
+  // off the locale-matched table, and it renders HERE — before the body pass. Letting
+  // the en body pass reach it would splice the English codex gloss into a zh
+  // sentence; pre-rendering is also what makes it safe to put in frontmatter, which
+  // the body pass deliberately never touches.
+  const description = renderHostPrimitives(prompt.description, ctx.descriptionRender)
+  const localized: RolePrompt = { ...prompt, description }
+
   let rawBody: string
   if (INTERACTIVE_COMMANDS.has(name)) {
-    rawBody = buildInteractiveBody(name, prompt)
+    rawBody = buildInteractiveBody(name, localized)
   } else if (ORCHESTRATOR_COMMANDS.has(name)) {
-    rawBody = buildOrchestratorBody(name, prompt, ctx)
+    rawBody = buildOrchestratorBody(name, localized, ctx)
   } else {
-    rawBody = buildExecutionBody(name, prompt, ctx)
+    rawBody = buildExecutionBody(name, localized, ctx)
   }
   // ONE host pass over the assembled body. The sentences `runWarning` already
   // resolved carry no placeholders, so re-scanning them is inert — there is
@@ -450,7 +485,7 @@ export function generateCommandFile(
 
   const frontmatter = [
     '---',
-    `description: ${JSON.stringify(prompt.description)}`,
+    `description: ${JSON.stringify(description)}`,
     `argument-hint: ${JSON.stringify(argHint)}`,
     '---',
     '',
@@ -530,7 +565,7 @@ export async function writeAllCommands(
   writer: (path: string, content: string) => Promise<void>,
   fileExists: (path: string) => boolean = existsSync,
   readFileSync: (path: string) => string = (p) => nodeReadFileSync(p, 'utf8'),
-  hostRender?: RenderHostPrimitivesOptions,
+  hostRender?: CommandRenderOptions,
 ): Promise<{ results: CommandWriteResult[]; warnings: string[] }> {
   const results: CommandWriteResult[] = []
   const aggregatedWarnings = new Set<string>()

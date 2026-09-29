@@ -4,7 +4,7 @@
 
 export interface SkillI18nViolation {
   file: string
-  kind: 'orphan' | 'frontmatter' | 'placeholder' | 'heading-shape'
+  kind: 'orphan' | 'frontmatter' | 'placeholder' | 'host-primitive' | 'heading-shape'
   detail: string
 }
 

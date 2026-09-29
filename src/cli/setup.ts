@@ -30,12 +30,8 @@ import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
-import { writeAllCommands } from './lib/generateCommands.js'
-import {
-  loadHostPrimitives,
-  type RenderHostPrimitivesOptions,
-  toHostId,
-} from './lib/hostPrimitives.js'
+import { type CommandRenderOptions, writeAllCommands } from './lib/generateCommands.js'
+import { loadHostPrimitives, toHostId } from './lib/hostPrimitives.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   makeIdempotentProbe,
@@ -578,9 +574,19 @@ export function registerSetup(program: Command): void {
       // construction (only `prompt.description` localizes, via loadRolePrompts),
       // and the zh sibling localizes e.g. `spawn_subagent.plural`, which would
       // splice Chinese into an English sentence.
-      const commandHostRender: RenderHostPrimitivesOptions = {
+      // `descriptionTable` is the locale-matched second table, used for
+      // `prompt.description` ONLY — that is the one field on this surface that comes
+      // from the localized role-prompts sibling, so rendering it off the en table
+      // would put the English codex gloss inside a Chinese sentence. On an en
+      // install both tables are the same object and behaviour is unchanged.
+      const commandLocale = getLocale()
+      const commandHostRender: CommandRenderOptions = {
         host: toHostId(detectPlatform().id),
         table: await loadHostPrimitives({ workflowsDir, locale: 'en' }),
+        descriptionTable:
+          commandLocale === 'en'
+            ? undefined
+            : await loadHostPrimitives({ workflowsDir, locale: commandLocale }),
       }
       const cmdResult = await writeAllCommands(
         skillNames,

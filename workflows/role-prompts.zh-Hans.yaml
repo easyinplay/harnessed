@@ -353,7 +353,7 @@ prompts:
       - "若需要 {{ host.teammate }} 通信 / context 溢出 → 升级到 {{ host.team }}"
       - "{{ host.teams_cleanup_note.checklist }}"
     severity: "complete / max-iter-exceeded / escalated-to-teams"
-    description: "用逐字 COMPLETE 承诺把子任务过完成门;需要时升级到 Agent Teams。"
+    description: "用逐字 COMPLETE 承诺把子任务过完成门;需要时升级到 {{ host.team }}。"
 
   # ============================================================================
   # verify-* (8 subs)
@@ -499,12 +499,11 @@ prompts:
     specialist: "多 specialist {{ host.team.singular }} 编排器(Pattern C)"
     responsibility: |
       仅限关键发布 / 大型重构。spawn 4 个后台 {{ host.teammate.plural }}
-      (code-review + gstack-review + gstack-cso + gstack-qa)—— 团在第一个
-      spawn 时隐式形成,没有建团步骤 —— 让它们经 {{ host.send_message }} 交叉质询发现
+      (code-review + gstack-review + gstack-cso + gstack-qa){{ host.multispec_spawn_note.responsibility }} 让它们经 {{ host.send_message }} 交叉质询发现
       (不是 fire-and-forget),lead 裁决最终报告。收尾前必须停掉每个 {{ host.teammate }}。
     checklist:
       - "Token 成本关卡:估算 team_cost vs 2 × subagent_cost;只在 team 划算时升级"
-      - "spawn 4 个后台 {{ host.teammate.plural }}(第一个 spawn 即成团;`team_name` 被忽略):code-review / gstack-review / gstack-cso / gstack-qa"
+      - "spawn 4 个后台 {{ host.teammate.plural }}{{ host.multispec_spawn_note.checklist }}:code-review / gstack-review / gstack-cso / gstack-qa"
       - "每个 {{ host.teammate }} 的 brief 自包含(没有共享 session 上下文可依赖)"
       - "{{ host.delivery_contract_note.checklist }}"
       - "往返发现:每个 {{ host.teammate }} 发 top-3 发现;其他人评级(真 / 误报 / 吹毛求疵)"
@@ -512,7 +511,7 @@ prompts:
       - "{{ host.teams_cleanup_note.multispec_checklist }}"
       - "若关卡未触发(常规 PR),不要升级 —— 回退到单 agent fan-out"
     severity: "ship-blocker / ship-with-action / informational"
-    description: "Pattern C 4-specialist Agent Team —— 关键发布的多维度审查,带 SendMessage 交叉质询。"
+    description: "Pattern C 4-specialist {{ host.team.singular }} —— 关键发布的多维度审查,带 {{ host.send_message }} 交叉质询。"
 
   # ============================================================================
   # ship-* (1 sub)

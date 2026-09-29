@@ -62,6 +62,14 @@ const DELETION_LANGUAGE = /删除|无等价工具|no longer exist|DELETED|not ex
 // said "call TeamCreate". Keep this list empty unless a genuine leftover appears.
 const OUT_OF_MANDATE: string[] = []
 
+/** Detectors — files whose JOB is to FIND these literals in other files, so carrying
+ *  them is inherent rather than a leftover instruction (a scanner ships signatures).
+ *  v16.0 Phase 65: `check-host-primitives.mjs` asserts the codex render contains no
+ *  Claude-Code primitive token, which requires naming every banned token. The
+ *  companion cell below pins each occurrence to a bare string-array element, so a live
+ *  instruction ("call TeamCreate") still cannot hide behind this allowlist. */
+const DETECTORS = ['scripts/check-host-primitives.mjs']
+
 function walk(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry)
@@ -74,7 +82,7 @@ function walk(dir: string, out: string[] = []): string[] {
 function scanTargets(): string[] {
   const files = SCAN_DIRS.flatMap((d) => walk(join(ROOT, d)))
   files.push(...SCAN_FILES.map((f) => join(ROOT, f)))
-  const skip = new Set([...HISTORICAL, ...OUT_OF_MANDATE, ...MIGRATION_NOTES])
+  const skip = new Set([...HISTORICAL, ...OUT_OF_MANDATE, ...MIGRATION_NOTES, ...DETECTORS])
   return files
     .map((f) => f.slice(ROOT.length + 1).replace(/\\/g, '/'))
     .filter((rel) => !skip.has(rel))
@@ -99,6 +107,23 @@ describe('Agent Teams API migration — deleted tools absent from the live surfa
       }
     }
     expect(hits, `deleted-tool literals still present:\n${hits.join('\n')}`).toEqual([])
+  })
+
+  it('detector files carry the dead tools only as token-table entries', () => {
+    // A bare quoted element on its own line is data. Anything else — prose, a
+    // template literal, an imperative — is not, and fails here.
+    const ELEMENT = /^\s*'[^']+',?\s*(\/\/.*)?$/
+    for (const rel of DETECTORS) {
+      const lines = read(rel).split('\n')
+      for (const bad of FORBIDDEN) {
+        lines.forEach((line, i) => {
+          if (!line.includes(bad)) return
+          expect(ELEMENT.test(line), `${rel}:${i + 1} names ${bad} outside a token table`).toBe(
+            true,
+          )
+        })
+      }
+    }
   })
 
   it('migration-note files mention the dead tools only as errata', () => {

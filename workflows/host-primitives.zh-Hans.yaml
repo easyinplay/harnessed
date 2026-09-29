@@ -282,6 +282,23 @@ primitives:
         `spawn_agent(task_name: <specialist>, message: <brief>)` ×4 spawn 4 个 agent（code-review +
         gstack-review + gstack-cso + gstack-qa），没有建团步骤;agent 之间用 `send_input` 互相质询
         findings 是否真问题（NOT fire-and-forget）
+    # ── role-prompts.yaml `verify-multispec` 的两个站点(Phase 65 收尾)──────
+    # 两处陈述的是**同一条 Claude Code 专有事实**:团在第一个 spawn 时形成,且
+    # `team_name` 被接受后忽略。codex 的 multi_agent v1 两个概念都没有 —— 没有团
+    # 句柄,`spawn_agent(task_name, message)` 也不收团参数 —— 所以 token 级替换会让
+    # codex 产物断言一个那边不存在的编队语义。两个 codex 列因此只陈述上游工具 spec
+    # 能看到的事(6 个工具里没有建团工具),对 agent 生命周期一字不提(未实测)。
+    #
+    # `responsibility` **带换行**:源 block scalar 在该从句内部折行,换行放进 cell,
+    # 正文就能写成一个不折行的占位符(理由同 spawn_subagent.zh_tool_wrapped)。
+    responsibility:
+      claude: |-
+        —— 团在第一个
+        spawn 时隐式形成,没有建团步骤 ——
+      codex: "—— 没有建团步骤:四次 `spawn_agent` 调用就是全部的编队方式 ——"
+    checklist:
+      claude: "(第一个 spawn 即成团;`team_name` 被忽略)"
+      codex: "(每个 agent 一次 `spawn_agent(task_name, message)`;没有建团步骤,也没有团句柄)"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 映射小节注记(Phase 65 R4)。
