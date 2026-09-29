@@ -18,10 +18,7 @@ import {
   type CommandRenderOptions,
   generateCommandFile,
 } from '../../src/cli/lib/generateCommands.js'
-import {
-  type HostPrimitiveTable,
-  loadHostPrimitives,
-} from '../../src/cli/lib/hostPrimitives.js'
+import { type HostPrimitiveTable, loadHostPrimitives } from '../../src/cli/lib/hostPrimitives.js'
 import type { RolePrompt } from '../../src/workflow/rolePrompts.js'
 
 // The body template references many primitives, so both tables start from the REAL
