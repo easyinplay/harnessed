@@ -35,6 +35,10 @@
 - 关键库选型（如 yaml 解析器、JSON Schema 校验器）
 - 命名空间策略调整（v1.0.2 LOCKED: bare slash command per SKILL.md `name:` field;`/plan-feature` / `/execute-task` NOT `/harnessed:*` prefix;future v2.0+ 若引入 namespace 仲裁需 NEW ADR）
 
+## 派生参考
+
+- [host-contract.md](../host-contract.md) — Claude Code / codex 宿主差异契约（ADR 0040 + 0041 的派生汇总：判定优先级、descriptor 差异、交付面、原语对照表、硬边界、已实测 vs 未实测、doctor 宿主矩阵读法）
+
 ## 索引
 
 | # | 标题 | 状态 | 日期 |
