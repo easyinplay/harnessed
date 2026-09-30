@@ -37,20 +37,14 @@
   **正被另一个会话改动**(10 个文件 untracked-modified),按共享工作树纪律不碰。
   Trigger: 那批 README 改动落地后,把「codex 宿主支持到什么程度」的表述对齐到 `docs/` 的契约文档,
   10 个镜像同步。注意 `check-provenance` 与 i18n 对等门。
-- [ ] **MCP 注册探测仍读 `~/.codex/config.toml` 全文** — P2 / S,Phase 64 R6 明确推迟、Phase 66 T6 复核确认
-  Why: `isMcpServerRegistered`(`src/installers/lib/readClaudeConfig.ts:111-124`)在 codex 上
-  `readFile(platform.mcpConfigPath)` 把**整个** config.toml 读进进程内存,再做 `[mcp_servers.<name>]`
-  段头匹配。该文件含明文 `experimental_bearer_token`,所以凭据行会经过内存(不被提取、不被打印,
-  但确实进过进程)。Phase 64 的 R6 已把**插件**探测迁到 `codex plugin list`,当时明确把 MCP 探测留到后面。
-  这也造成一处文档张力:ADR 0041 § Context 3 写「不写也不读 config.toml」,而 ADR 0040 § Decision 4
-  有意保留 `mcpConfigPath` 做 MCP 探测 —— `docs/host-contract.md` §5.1 已把口径校正为
-  「不写;保留一处窄读;写是 `codex mcp add` 干的」。
-  Fix: 迁到 `codex mcp list` 的输出(与 Phase 64 迁插件探测同一手法),之后 `mcpConfigPath` 可整个退役,
-  「不读 config.toml」才真正成立,ADR 张力随之消解。
-  Trigger: 下一次碰 codex MCP 安装路径时顺手做;或安全审查提出时优先。
-  **2026-09-30 收窄**:v16.0 收口审计发现同一文件还有一条**复制**面 —— `mcp-stdio-add` / `mcp-http-add`
-  把它列进了 backup plan,`backup()` 会逐字节复制,凭据在 `~/.harnessed/backups/` 下多出一份。
-  那条已在 4.46.0 修掉(两条反证测试)。**剩下的只有这处窄读**,本项范围不变。
+- [x] **MCP 注册探测仍读 `~/.codex/config.toml` 全文** — **CLOSED 2026-09-30**(v16.0 收口后顺手做,
+  trigger「下一次碰 codex MCP 安装路径时」正好命中:那次改的就是这两个安装器)。
+  探测改问 `codex mcp list --json`(`codexMcpServers.ts`);形状实测于 0.155.1,用 `-c` 的内存内覆盖探得,
+  没写过任何文件。TOML 段头正则连同测试整块删除。**顺带揪出第二处读取**:`probeSearchMcpKey` 经
+  `readUserClaudeJson()` 读同一文件只为让 `JSON.parse` 失败 —— 守卫下在机制上,新调用方自动继承。
+  于是 ADR 0041「不写也不读」不再需要例外条款,与 ADR 0040 保留 `mcpConfigPath` 之间的张力消解:
+  该字段唯一职责变成 diff 预览里的目标文件标注。详 `docs/host-contract.md` §5.1 + CHANGELOG。
+
 - [ ] **codex 上 plugin 类能力全告警** — P2 / S,Phase 65 findings F8
   Why: codex descriptor 的 `pluginsRegistry: null` → `readInstalledPlugins` 返回空集(不读 fs),于是每个
   `install_type: plugin` 的 capability 在 codex 上都告警「backing missing」。`planning-with-files` 这类

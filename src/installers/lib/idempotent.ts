@@ -149,7 +149,7 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   if (await indicatorPresent(name)) return true
 
   // v4.14.0 — native MCP registration probe (platform-aware: claude JSON map /
-  // codex config.toml header via isMcpServerRegistered). Only-if-registered
+  // codex `codex mcp list --json` via isMcpServerRegistered). Only-if-registered
   // short-circuit — absence still falls through to the supplementary plugin
   // probe + shell fallback (some MCP tools are ALSO installed as CC plugins).
   if (method === 'mcp-stdio-add' || method === 'mcp-http-add') {

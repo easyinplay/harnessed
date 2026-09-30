@@ -113,9 +113,11 @@ export function claudeDescriptor(home: string = homedir()): PlatformDescriptor {
  *     (`.agents/skills/<name>/SKILL.md` is byte-compatible with CC's format; codex
  *     reads it. Codex's own bundled skills live at `~/.codex/skills/.system/` —
  *     irrelevant; harnessed-installed skills go to the shared dir.)
- *   - `settingsPath` is `null` — there is no JSON settings file; config.toml is
- *     reachable only as `mcpConfigPath` (read-only `[mcp_servers.*]` /
- *     `[plugins.*]` probes). v16.0 Phase 63.
+ *   - `settingsPath` is `null` — there is no JSON settings file. config.toml is
+ *     reachable only as `mcpConfigPath`, and since v16.0 close that field is purely a
+ *     LABEL: the diff preview names it as the file `codex mcp add` will write. Nothing
+ *     in src/ reads it — the `[mcp_servers.*]` probe moved to `codex mcp list --json`
+ *     and `[plugins.*]` to `codex plugin list --json`. v16.0 Phase 63 / close.
  *   - `pluginsRegistry` is `null` — codex has no `installed_plugins.json`
  *     (inline `[marketplaces.*]` instead).
  *   - `supportsEnvKeyWrite` is `false` — the CC env keys are meaningless to codex

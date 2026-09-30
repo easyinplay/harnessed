@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **harnessed 在 codex 上不再读 `~/.codex/config.toml` —— 一处例外都不剩。** MCP 登记探测
+  (`isMcpServerRegistered`)此前把整个文件读进内存去匹配 `[mcp_servers.<name>]` 段头,而那文件存放
+  明文 `experimental_bearer_token`;现在改问 `codex mcp list --json`。顶层是**数组**(与
+  `codex plugin list --json` 的对象形状不同,照搬会解析成「什么都没注册」),形状实测于 codex-cli
+  0.155.1,用 `-c 'mcp_servers.<probe>={…}'` 的**内存内**配置覆盖探得 —— 没有写过任何文件、
+  没有在你的真实配置里留过探针。听不懂 `--json` 就返回「未知」并据此判未注册(fail-closed:
+  确认不了的 verify 不许放过);刻意不做表格回退 —— HTTP 传输的表格行可能带 bearer token。
+  一次 spawn 的结果按进程记忆,两个安装器在 `mcp add` 之后显式失效缓存(幂等预检发生在 add **之前**,
+  不失效则 verify 必然看一份不可能含新名字的集合)。
+- 同一次迁移揪出**第二处**读取:`probeSearchMcpKey`(doctor 的 `check-mcp-availability` 与 setup
+  尾部提示)经 `readUserClaudeJson()` 读同一个文件,**只为了让 `JSON.parse` 失败**再落到 `{}`。
+  守卫下在 `readUserClaudeJson` 这个机制上而不是那个调用点,新增调用方自动继承;codex 上结论不变
+  (只有 process-env 一源能回答)。
+- codex 上 MCP 安装失败时的 verify 文案改为指名 `codex mcp list --json` 这个探针,不再说
+  「不在 `~/.codex/config.toml` 的 `[mcp_servers]` 表里」—— 那会把你指向一个 harnessed 根本没打开的文件。
+  claude 侧文案逐字节不变。
+- doctor 的 search MCP 缺 key 提示在 codex 上不再叫你去改 `~/.claude/settings.json` 与 `~/.claude.json`
+  —— 那两个文件在 codex 上不起作用(`settingsPath` 为 null、MCP 配置是 TOML),改为直说
+  「在 shell 里 export,这是本宿主上这项检查唯一能读的源」。claude 侧文案不变。
+  这条是上一条的实测副产品:拿一个临时 `CODEX_HOME` 跑真实 doctor 时,提示的错处当场现形。
+
+### Removed
+
+- TOML 段头正则 `isMcpServerInToml` 及其测试整块删除,不留无调用方的导出
+  (`tests/unit/installers-lib-readClaudeConfig-toml.test.ts` 的 codex 半边随之删除并改名 `-mcp`;
+  那几条在迁移后其实是靠**真的 spawn 了 codex** 才碰巧变绿的)。
+
 ## [4.46.0] - 2026-09-30
 
 ### Added

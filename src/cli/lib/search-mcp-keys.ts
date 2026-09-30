@@ -9,9 +9,11 @@
 //   2. `~/.claude/settings.json` top-level `env` block (Claude Code injects it
 //      into spawned processes)
 //   3. process env (OS/shell export)
-// codex note: its MCP/settings config is TOML (~/.codex/config.toml); sources
-// 1-2 degrade gracefully there (JSON parse fails → skipped) and only the
-// process-env source applies. Good enough — the key hint is advisory.
+// codex note: its MCP/settings config is TOML (~/.codex/config.toml), so only the
+// process-env source applies there. Source 1 used to reach that conclusion by reading
+// config.toml and letting JSON.parse fail; since the v16.0 close `readUserClaudeJson`
+// returns `{}` on codex WITHOUT opening it (ADR 0041 — the file holds credentials).
+// Source 2 was already skipped (`settingsPath === null`). The key hint is advisory.
 
 import { readFile } from 'node:fs/promises'
 import { t } from '../../i18n/index.js'

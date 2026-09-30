@@ -30,6 +30,7 @@ import {
   getPluginsRegistry,
   getSettingsPath,
 } from '../../platform/platform.js'
+import { isCodexMcpServerRegistered } from './codexMcpServers.js'
 import { isCodexPluginInstalled } from './codexPlugins.js'
 
 /**
@@ -66,6 +67,15 @@ interface UserClaudeJsonShape {
  * (no silent swallowing — anti-slop posture per CLAUDE.md karpathy heuristic).
  */
 export async function readUserClaudeJson(): Promise<UserClaudeJsonShape> {
+  // v16.0 post-close (ADR 0041) — this function is named for, and shaped around,
+  // `~/.claude.json`. On codex the descriptor points `mcpConfigPath` at config.toml,
+  // so every caller here was opening a credential-bearing TOML file only to have
+  // `JSON.parse` throw and land on the `{}` return below. Same answer, no read.
+  //
+  // Guarded at the mechanism rather than at the call sites: `probeSearchMcpKey`
+  // (doctor `check-mcp-availability` + the setup tail hint) is the live codex caller
+  // today, and guarding it alone would leave the next caller to rediscover this.
+  if (detectPlatform().id === 'codex') return {}
   const path = getUserClaudeJsonPath()
   let raw: string
   try {
@@ -85,43 +95,21 @@ export async function readUserClaudeJson(): Promise<UserClaudeJsonShape> {
 }
 
 /**
- * v4.14.0 — codex MCP registration probe: `~/.codex/config.toml` table-header
- * existence check. A registered server appears as `[mcp_servers.<name>]` (bare)
- * or `[mcp_servers."<name>"]` (quoted — TOML quotes keys containing dots), and
- * may ALSO surface only via a sub-table (`[mcp_servers.<name>.env]`). Line-start
- * regex on the raw file — deliberately NOT a full TOML parse (findings.md 锁定
- * 决策: header 正则,零新依赖; the header line IS the registration contract).
- */
-export function isMcpServerInToml(raw: string, name: string): boolean {
-  const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const re = new RegExp(`^\\s*\\[mcp_servers\\.(?:${esc}|"${esc}"|'${esc}')(?:\\]|\\.)`, 'm')
-  return re.test(raw)
-}
-
-/**
  * Check whether an MCP server is registered with the ACTIVE harness.
  *
  * Used by `mcpStdioAdd.ts` + `mcpHttpAdd.ts` v3.0.3 verify step in place of
  * `spawn('claude', ['mcp', 'list'])` + stdout match.
  *
  * claude → `~/.claude.json` `mcpServers[name]` exists (any truthy value).
- * codex (v4.14.0) → `~/.codex/config.toml` `[mcp_servers.<name>]` header probe.
- * Both: `false` if the file is missing, malformed, or the server is not present.
+ * codex → `codex mcp list --json` (`codexMcpServers.ts`), never config.toml:
+ *   that file holds credentials and ADR 0041 keeps harnessed code out of it. This
+ *   was the last remaining read, and the TOML header parser that served it is deleted
+ *   rather than left exported with no caller.
+ * Both: `false` if the source is missing, malformed, or the server is not present.
  */
 export async function isMcpServerRegistered(name: string): Promise<boolean> {
   const platform = detectPlatform()
-  if (platform.id === 'codex') {
-    let raw: string
-    try {
-      raw = await readFile(platform.mcpConfigPath, 'utf8')
-    } catch (err) {
-      // ENOENT (first install) → not registered; other errors re-throw (sister
-      // readUserClaudeJson contract — no silent swallowing of EACCES/EISDIR).
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false
-      throw err
-    }
-    return isMcpServerInToml(raw, name)
-  }
+  if (platform.id === 'codex') return isCodexMcpServerRegistered(name)
   const config = await readUserClaudeJson()
   const servers = config.mcpServers
   if (!servers || typeof servers !== 'object') return false
@@ -171,6 +159,9 @@ export async function isPluginRegistered(pluginName: string): Promise<boolean> {
   //                    kept for test mock compatibility — production v2.1.133+
   //                    doesn't actually write here, verified empirically)
   // v16.0 Phase 63 — a null settings path (codex) is skipped, not substituted.
+  // NOTE: on codex `getMcpConfigPath()` IS config.toml, so this loop must stay
+  // unreachable there. It is, via the codex early-return at the top of this function.
+  // If that return ever moves below here, this loop starts reading the credential file.
   for (const path of [getSettingsPath(), getMcpConfigPath()]) {
     if (path === null) continue
     try {

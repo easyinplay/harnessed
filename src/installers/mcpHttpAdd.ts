@@ -38,6 +38,7 @@
 import { checkCmdString } from '../manifest/security.js'
 import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
+import { invalidateCodexMcpCache } from './lib/codexMcpServers.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
@@ -302,13 +303,23 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // v3.0.3 hotfix: verify reads ~/.claude.json directly via fs (no spawn).
   // Sister mcpStdioAdd v3.0.3 verify rationale verbatim — cross-platform,
   // instant, immune to cold-start timeout.
+  // v16.0 post-close — the idempotence pre-check already populated the memoized
+  // `codex mcp list` set BEFORE this add ran, so verifying against it without
+  // invalidating would consult a set that cannot contain `name` (guaranteed false
+  // verify-failed). Sister of `invalidateCodexPluginCache` in `ccPluginMarketplace`.
+  if (bin === 'codex') invalidateCodexMcpCache()
   const registered = await isMcpServerRegistered(name)
   if (!registered) {
     // v4.14.0 — config label follows the platform; claude wording byte-identical.
+    // v16.0 post-close — the codex half now names the probe rather than the file: the
+    // check no longer reads config.toml, so blaming that file would send the user to
+    // inspect something harnessed never looked at.
     const cfgLabel =
+      bin === 'codex' ? 'the `codex mcp list --json` listing' : 'mcpServers map of ~/.claude.json'
+    const cfgHint =
       bin === 'codex'
-        ? '[mcp_servers] table of ~/.codex/config.toml'
-        : 'mcpServers map of ~/.claude.json'
+        ? 'the add reported success but the listing does not show it — `codex mcp add` may have written under a different CODEX_HOME, or the listing could not be parsed'
+        : `file may have been overwritten, or ${bin} mcp add wrote to a non-default location`
     return {
       ok: false,
       phase: 'verify',
@@ -316,7 +327,7 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
       error: err(
         ctx,
         '/spec/verify/cmd',
-        `verify: '${name}' not found in ${cfgLabel} after install spawn exit 0 (file may have been overwritten, or ${bin} mcp add wrote to a non-default location)`,
+        `verify: '${name}' not found in ${cfgLabel} after install spawn exit 0 (${cfgHint})`,
         'verify-failed',
       ),
     }

@@ -28,6 +28,7 @@
 // vs user — CC #54803 risk); this check is server-by-server availability.
 
 import { isMcpServerRegistered } from '../../installers/lib/readClaudeConfig.js'
+import { detectPlatform } from '../../platform/platform.js'
 import { probeSearchMcpKey, SEARCH_MCP_KEY_VARS, type SearchKeyProbe } from './search-mcp-keys.js'
 
 interface CheckResult {
@@ -87,9 +88,15 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
   }
   if (keyless.length > 0) {
     const vars = keyless.map((k) => k.envVar).join(' / ')
+    // v16.0 post-close — the hint has to follow the host. On codex, `settingsPath` is
+    // null and the MCP config is TOML, so `probeSearchMcpKey` can only ever answer from
+    // process env there (see search-mcp-keys.ts). Naming the two claude JSON files
+    // would send a codex user to edit files that have no effect on their setup.
     fixes.push(
-      `set ${vars} in the ~/.claude/settings.json "env" block (e.g. {"env": {"${keyless[0]?.envVar}": "<your-key>"}}) ` +
-        `or export it in your shell; a mcpServers.<name>.env entry in ~/.claude.json also works`,
+      detectPlatform().id === 'codex'
+        ? `export ${vars} in your shell (on codex that is the only source this check can read — its MCP config is TOML and there is no JSON settings file)`
+        : `set ${vars} in the ~/.claude/settings.json "env" block (e.g. {"env": {"${keyless[0]?.envVar}": "<your-key>"}}) ` +
+            `or export it in your shell; a mcpServers.<name>.env entry in ~/.claude.json also works`,
     )
   }
 

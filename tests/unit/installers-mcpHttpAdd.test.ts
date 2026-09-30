@@ -42,6 +42,7 @@ vi.mock('@clack/prompts', () => ({
 
 import { spawn } from 'node:child_process'
 import { readFile, writeFile } from 'node:fs/promises'
+import { invalidateCodexMcpCache } from '../../src/installers/lib/codexMcpServers.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { installMcpHttpAdd } from '../../src/installers/mcpHttpAdd.js'
 
@@ -397,10 +398,31 @@ describe('installMcpHttpAdd', () => {
 // v4.14.0 T2 — codex platform routing: `codex mcp add <name> --url <url>`;
 // --header unsupported by codex CLI → fail-loud preflight error.
 describe('installMcpHttpAdd — codex platform (v4.14.0)', () => {
+  // v16.0 post-close — verify now asks `codex mcp list --json` instead of reading
+  // config.toml. Shape below is the one measured on codex-cli 0.155.1 (top-level
+  // ARRAY, `name` per entry) — see `codexMcpServers.ts` for how it was probed.
+  const listJson = (names: string[]) =>
+    JSON.stringify(
+      names.map((n) => ({
+        name: n,
+        enabled: true,
+        disabled_reason: null,
+        transport: { type: 'stdio', command: 'npx', args: [], env: null, env_vars: [], cwd: null },
+        startup_timeout_sec: null,
+        tool_timeout_sec: null,
+        auth_status: 'unsupported',
+      })),
+    )
+  const codexSpawn = (registered: string[]) =>
+    ((_cmd: string, args: string[]) =>
+      (args ?? []).includes('list')
+        ? makeChild({ exitCode: 0, stdout: listJson(registered) })
+        : makeChild({ exitCode: 0 })) as unknown as typeof spawn
   const CODEX_TOML = '[mcp_servers.exa-mcp-http]\nurl = "https://exa.example.com/mcp"\n'
   beforeEach(() => {
     vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    invalidateCodexMcpCache()
     spawnMock.mockReset()
     readFileMock.mockReset()
     readFileMock.mockResolvedValue(CODEX_TOML)
@@ -413,9 +435,7 @@ describe('installMcpHttpAdd — codex platform (v4.14.0)', () => {
   it('spawns `codex mcp add <name> --url <url>` (no --scope/--transport)', async () => {
     const s = silence()
     try {
-      spawnMock.mockImplementation(
-        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
-      )
+      spawnMock.mockImplementation(codexSpawn(['exa-mcp-http']))
       const r = await installMcpHttpAdd(ctx())
       expect(r).toMatchObject({ ok: true })
       const flat = spawnMock.mock.calls
@@ -454,9 +474,7 @@ describe('installMcpHttpAdd — codex platform (v4.14.0)', () => {
   it('happy path: appliedFiles targets ~/.codex/config.toml', async () => {
     const s = silence()
     try {
-      spawnMock.mockImplementation(
-        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
-      )
+      spawnMock.mockImplementation(codexSpawn(['exa-mcp-http']))
       const r = await installMcpHttpAdd(ctx())
       expect(r).toMatchObject({ ok: true })
       if ('ok' in r && r.ok === true && !('alreadyInstalled' in r)) {
@@ -484,9 +502,7 @@ describe('installMcpHttpAdd — codex platform (v4.14.0)', () => {
       readFileMock.mockResolvedValue(`${CODEX_TOML}experimental_bearer_token = "harnessed-probe-SENTINEL-NEVER-COPY"
 `)
       writeFileMock.mockClear()
-      spawnMock.mockImplementation(
-        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
-      )
+      spawnMock.mockImplementation(codexSpawn(['exa-mcp-http']))
       const r = await installMcpHttpAdd(ctx())
       expect(r).toMatchObject({ ok: true })
       const written = writeFileMock.mock.calls.map((c) => String(c[1]))

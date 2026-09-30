@@ -282,18 +282,33 @@ C 类存在的理由:claude 的措辞里**陈述了一个 Claude-only 事实**�
 连带两处实际改动:
 
 - Phase 64 修掉了 `ccPluginMarketplace` 在 codex 上**把 `config.toml` 纳入 backup** 的行为
-  (backup 会复制含凭据的文件)→ 已改为不 backup。
+  (backup 会复制含凭据的文件)→ 已改为不 backup。**v16.0 收口审计发现那次只扫了一个文件**:
+  `mcpStdioAdd` / `mcpHttpAdd` 同样把它列进 backup plan,凭据在 `~/.harnessed/backups/` 下多出一份
+  (4.46.0 修,两条反证测试)。
 - 「已装」判定与信任判定都不再读它:插件从 `codex plugin list --json` 取
   (ADR 0041 § Decision 6),信任从 app-server `hooks/list` 取(§ Decision 5)。
+- **MCP 登记探测也迁走了**(v16.0 收口后):`isMcpServerRegistered` 改问 `codex mcp list --json`
+  (`codexMcpServers.ts`),那条 TOML 段头正则连同它的测试一并删除,不留无调用方的导出。
 
 **精确口径(读 ≠ 写,且不要把这条说过头)**:
 
 - harnessed **自己不写**这个文件。`codex mcp add` / `codex plugin add` 会写 —— 那是 codex CLI 的行为;
   harnessed 只在 diff 预览里把它标为目标文件(`mcpStdioAdd.ts:145` / `mcpHttpAdd.ts:227` /
   `ccPluginMarketplace.ts:198`),预览文本明说 "will be written … by `codex mcp add`"。
-- 仍然保留的**一处窄读**:`isMcpServerRegistered` 在 codex 上把它当文本读,探
-  `[mcp_servers.<name>]` 段头(`readClaudeConfig.ts:110-124`)。ADR 0040 § Decision 4 明确保留
-  `mcpConfigPath` 指向 config.toml「供 MCP / 插件登记探测」,是既有、有意的行为。
+- **曾经保留的那一处窄读已经没有了。** 在 v16.0 收口之前,`isMcpServerRegistered` 会把整个文件
+  读进内存去匹配 `[mcp_servers.<name>]` 段头 —— 凭据行随之经过进程。现在它问
+  `codex mcp list --json`(顶层是**数组**,与 `codex plugin list --json` 的对象形状不同;
+  形状实测于 0.155.1,用 `-c 'mcp_servers.<probe>={…}'` 的内存内覆盖探得,**没有写过任何文件**)。
+  于是 ADR 0041 § Context 3 的「不写也不读」**不再需要例外条款**,与 ADR 0040 § Decision 4 之间的
+  张力随之消解:`mcpConfigPath` 仍然存在,但它唯一的职责变成 diff 预览里的**目标文件标注**。
+  判据落在 `tests/installers/codexMcpServers.test.ts` —— 放一个含假凭据的 decoy config.toml,
+  断言无论答案是 true 还是 false,那个文件都没被打开过(回退实现时该断言会红并打印出那次读取)。
+- **同一次迁移还揪出第二处读取**:`probeSearchMcpKey`(doctor `check-mcp-availability` 与 setup 尾部
+  提示)经 `readUserClaudeJson()` 读 `getMcpConfigPath()` —— 在 codex 上那就是 config.toml,而它读它
+  **只是为了让 `JSON.parse` 失败**然后落到 `{}`。守卫下在 `readUserClaudeJson` 这个机制上而非那个调用点,
+  于是将来新增的调用方自动继承;codex 上的结论不变(只有 process-env 这一源能回答)。
+  剩下唯一一处经 `getMcpConfigPath()` 的读在 `isPluginRegistered` 的 legacy fallback 循环里,
+  靠该函数顶部的 codex 早退保持不可达 —— 代码里写了注释点明这层依赖。
 - `settingsPath` 链**完全不碰**它:codex 上 `settingsPath === null`,每个调用方显式 skip,
   不回退(ADR 0040 § Decision 4;`tests/platform/settingsPath-null.test.ts` 守着)。
 
