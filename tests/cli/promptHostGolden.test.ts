@@ -49,8 +49,22 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { HostId } from '../../src/cli/lib/hostPrimitives.js'
+
+// v16.0 Phase 66 — FILE-level timeout. This file is the heavy one: it renders the
+// full prompt for every sub-workflow × 2 locales (61 × 2), which costs ~12.6s on
+// Windows CI all by itself, and individual cells inside it re-render subsets. The 5s
+// default is not a meaningful budget here, and it already tipped over once on a
+// docs-only commit (run 36652977288, "codex vocabulary actually landed" at 5000ms) —
+// nothing about that commit touched rendering, so the number was pure runner noise.
+//
+// Third instance of the same shape in this milestone: `setup.test.ts` and
+// `setup-agent-teams.test.ts` both needed the same fix, and in their case THIS file
+// was the neighbour starving them. A heavy golden must carry its own budget; measuring
+// these for speed is `pnpm bench`'s job, not a timeout's.
+vi.setConfig({ testTimeout: 60_000 })
+
 import { buildPromptText } from '../../src/cli/prompt.js'
 import type { SupportedLocale } from '../../src/i18n/index.js'
 import { scanWorkflowsNested } from '../../src/workflow/scan-nested.js'
