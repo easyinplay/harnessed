@@ -60,18 +60,20 @@ describe('cross-harness gates (v4.14.0)', () => {
     expect(warnSpy).toHaveBeenCalled()
   })
 
-  it('checkPlanningWithFiles on codex (no plugin registry) → pass-skip, no CC remediation', async () => {
+  // v16.0 Phase 66 T5 — the host early-returns now report `skipped`, a first-class
+  // status that counts as neither a pass nor a fail (src/cli/lib/doctor-matrix.ts).
+  it('checkPlanningWithFiles on codex (no plugin registry) → skipped, no CC remediation', async () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     const r = await checkPlanningWithFiles()
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('skipped')
     expect(r.message).toContain('skipped')
     expect(r.install_commands).toBeUndefined()
   })
 
-  it('checkMcpScope on codex → pass-skip (claude-only check)', async () => {
+  it('checkMcpScope on codex → skipped (claude-only check)', async () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     const r = await checkMcpScope()
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('skipped')
     expect(r.message).toContain('skipped')
   })
 

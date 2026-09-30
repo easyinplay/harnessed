@@ -37,7 +37,7 @@ import {
   MaxIterationsExceededError,
   ralphLoopWrap,
 } from './lib/ralphLoop.js'
-import { sdkSpawn } from './lib/sdkSpawn.js'
+import { dispatchSpawn } from './lib/spawnDispatch.js'
 import { classifySpawnError, type SpawnFailure } from './lib/spawnFailure.js'
 import { loadPhases } from './loadPhases.js'
 import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
@@ -348,7 +348,11 @@ export const _dispatchSkillStub = {
         Array.isArray((phase as Record<string, unknown>).injects_rules)
           ? ((phase as Record<string, unknown>).injects_rules as string[])
           : undefined
-      return sdkSpawn(
+      // v16.0 Phase 66 T3b — one thin per-host hop (lib/spawnDispatch.ts):
+      // claude keeps the in-process SDK query, codex gets the `codex exec`
+      // subprocess. The claude call is forwarded verbatim, so this line is
+      // behaviourally the `sdkSpawn(...)` it replaced.
+      return dispatchSpawn(
         buildAgentDef(
           skillName,
           opts?.rolePrompts,
@@ -685,6 +689,38 @@ export async function runWorkflow(
         : {}),
     })
     if (r.status !== 'ok') {
+      // ── v16.0 Phase 66 T4 — carry the spawn classification onto the leaf ledger.
+      //
+      // IN-PROCESS on purpose, not a shell-out to `harnessed checkpoint fail`: this
+      // loop already writes its own terminal checkpoint below and already imports
+      // src/checkpoint/state.js, so the kind travels the same way the checkpoint
+      // does. The CLI's `--failure` flag (T4) covers the OTHER producer — the live
+      // path, where the host's own session spawns and then calls the CLI.
+      //
+      // Keyed by `workflowName`, not `ph.id`: ledger entries are the flattened
+      // `<master>-<sub>` names seeded by `checkpoint start --plan` (task-code),
+      // while `ph.id` is a phase inside that sub (01-code).
+      //
+      // ANNOTATE, never transition: `markSub(..., 'failed')` would bump fail_count
+      // for an attempt the checkpoint CLI may also count, and that counter is the
+      // sole input to BREAK-LOOP / BUDGET-EXHAUSTED.
+      //
+      // Dynamic import + fail-soft (ADR 0029). A missing ledger entry is already a
+      // no-op inside `annotateSpawnFailure`; the catch covers the write itself —
+      // recording a diagnostic detail must never change a run's verdict.
+      if (r.failure) {
+        try {
+          const { mutateSubProgress } = await import('../checkpoint/state.js')
+          const { annotateSpawnFailure } = await import('../checkpoint/ledger.js')
+          const failure = r.failure
+          await mutateSubProgress((entries) => annotateSpawnFailure(entries, workflowName, failure))
+        } catch (err) {
+          console.warn(
+            `⚠️ could not record spawn failure '${r.failure}' for ${workflowName} on the ledger ` +
+              `(${(err as Error).message}); the terminal checkpoint below is unaffected.`,
+          )
+        }
+      }
       // Record the failure (same `FAILED:` convention as `harnessed checkpoint fail`);
       // without it the ledger left this phase `active` forever. Never flips complete.
       await completePhase({

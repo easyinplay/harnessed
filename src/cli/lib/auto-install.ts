@@ -47,7 +47,12 @@ export async function runAutoInstall(opts: AutoInstallOpts): Promise<AutoInstall
   }
 
   // Re-run doctor checks (mostly cached I/O — file reads + spawnSync('where')).
-  const results: CheckResult[] = await Promise.all(CHECKS.map((c) => c()))
+  // v16.0 Phase 66 T5 — CHECKS entries are descriptors now (`{ name, hosts, fn }`).
+  // Still the FULL list, not `checksForHost`: auto-install runs from `harnessed
+  // setup`, whose --platform has already pinned HARNESSED_PLATFORM for the run, and
+  // a host-inapplicable check reports `skipped` (never `warn`), so it can never
+  // contribute an installable.
+  const results: CheckResult[] = await Promise.all(CHECKS.map((c) => c.fn()))
 
   // Filter: warn-status entries with non-empty install_commands array.
   const installables = results.filter(

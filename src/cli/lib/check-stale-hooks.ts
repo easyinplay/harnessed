@@ -39,10 +39,11 @@ export function checkStaleHooks(deps?: Partial<StaleHooksDeps>): CheckResult {
   const exists = deps?.exists ?? existsSync
 
   // v16.0 Phase 63 — codex has no JSON settings file: no hooks registered there.
+  // Phase 66 T5 — `skipped`, not a `pass` whose prose says otherwise.
   if (settingsPath === null)
     return {
       name: NAME,
-      status: 'pass',
+      status: 'skipped',
       message: `no settings file on ${detectPlatform().id} — skipped`,
     }
   const raw = readText(settingsPath)

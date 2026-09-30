@@ -56,9 +56,10 @@ function deps(over: Partial<CodexHooksDeps> = {}): CodexHooksDeps {
 }
 
 describe('checkCodexHooks', () => {
-  it('not codex → pass, skipped', async () => {
+  // v16.0 Phase 66 T5 — `skipped`, not a `pass` that only SAYS skipped in prose.
+  it('not codex → skipped (host-inapplicable, first-class status)', async () => {
     const r = await checkCodexHooks(deps({ platformId: 'claude' }))
-    expect(r).toMatchObject({ status: 'pass', message: expect.stringContaining('skipped') })
+    expect(r).toMatchObject({ status: 'skipped', message: expect.stringContaining('skipped') })
   })
 
   it('no generated plugin → pass', async () => {

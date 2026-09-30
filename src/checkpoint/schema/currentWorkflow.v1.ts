@@ -7,6 +7,11 @@
 
 import { type Static, Type } from '@sinclair/typebox'
 import { SCHEMA_VERSIONS } from '../../types/schemaVersion.js'
+// v16.0 Phase 66 T4 — the five named spawn failures are declared ONCE, in the
+// module that classifies them. Sister precedent for this direction:
+// src/checkpoint/completionClaim.ts imports isComplete from ../workflow/lib/.
+// `spawnFailure.ts` has no imports of its own, so nothing is dragged in here.
+import { SPAWN_FAILURES } from '../../workflow/lib/spawnFailure.js'
 
 /** 3-state workflow status (D-02 KARPATHY lock). Mirrors `CheckpointStatus`
  *  in `checkpoint.v1.ts` by convention. */
@@ -94,6 +99,21 @@ export const SubProgressEntry = Type.Object(
     //   the first failure so the PURE per-turn injector can compare it against
     //   fail_count without reading yaml (src/checkpoint/budget.ts resolves it).
     attempt_budget: Type.Optional(Type.Integer({ minimum: 1 })),
+    // ── v16.0 Phase 66 T4 — WHICH of the five named spawn failures ended the last
+    // attempt (src/workflow/lib/spawnFailure.ts). Before this the kind was flattened
+    // into a message string at src/workflow/run.ts's catch and lost for good, so the
+    // ledger recorded "failed" with no way to tell a wall-clock timeout (retryable)
+    // from a sandbox refusal or a logged-out harness (both deterministic).
+    //
+    // Additive-optional, and strictly so: an attempt that never supplied a kind must
+    // leave the key ABSENT, not null. 13 eval goldens compare the serialized ledger
+    // verbatim, and both writers (markSub / annotateSpawnFailure) only assign when
+    // the caller passed something. NO schemaVersion bump — old files Value.Check-pass.
+    //
+    // The enum, not a free string: an unrecognised kind is a wiring bug and should
+    // fail the write, which is also what `checkpoint fail --failure` enforces at the
+    // CLI boundary before anything is persisted.
+    spawn_failure: Type.Optional(Type.Union(SPAWN_FAILURES.map((f) => Type.Literal(f)))),
   },
   { additionalProperties: false },
 )

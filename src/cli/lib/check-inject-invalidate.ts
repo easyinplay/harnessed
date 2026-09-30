@@ -48,10 +48,11 @@ export function checkInjectInvalidate(deps?: Partial<InjectInvalidateDeps>): Che
     })
 
   // v16.0 Phase 63 — codex has no JSON settings file: nothing to pair, skip.
+  // Phase 66 T5 — `skipped`, not a `pass` whose prose says otherwise.
   if (settingsPath === null)
     return {
       name: NAME,
-      status: 'pass',
+      status: 'skipped',
       message: `no settings file on ${detectPlatform().id} — skipped`,
     }
   const raw = readText(settingsPath)

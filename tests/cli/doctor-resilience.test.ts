@@ -9,15 +9,34 @@
 import { Command } from 'commander'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../../src/cli/lib/doctor-registry.js', () => ({
-  CHECKS: [
-    async () => ({ name: 'healthy check', status: 'pass', message: 'all good' }),
-    async () => {
-      throw new Error('EACCES: permission denied')
+// v16.0 Phase 66 T5 — registry entries are descriptors (`{ name, hosts, fn }`), so
+// the crashed row is now labelled by its DECLARED name instead of `check #N`.
+vi.mock('../../src/cli/lib/doctor-registry.js', () => {
+  const CHECKS = [
+    {
+      name: 'healthy check',
+      hosts: ['claude', 'codex'],
+      fn: async () => ({ name: 'healthy check', status: 'pass', message: 'all good' }),
     },
-    async () => ({ name: 'later check', status: 'pass', message: 'still reported' }),
-  ],
-}))
+    {
+      name: 'crashing check',
+      hosts: ['claude', 'codex'],
+      fn: async () => {
+        throw new Error('EACCES: permission denied')
+      },
+    },
+    {
+      name: 'later check',
+      hosts: ['claude', 'codex'],
+      fn: async () => ({ name: 'later check', status: 'pass', message: 'still reported' }),
+    },
+  ]
+  return {
+    CHECKS,
+    ALL_HOSTS: ['claude', 'codex'] as const,
+    checksForHost: (host: string) => CHECKS.filter((c) => c.hosts.includes(host)),
+  }
+})
 
 import { registerDoctor } from '../../src/cli/doctor.js'
 
@@ -69,6 +88,7 @@ describe('cli/doctor — 4.32.23 per-check crash resilience', () => {
     }
     expect(parsed.checks).toHaveLength(3)
     const crashed = parsed.checks[1]
+    expect(crashed?.name).toBe('crashing check') // declared name, not `check #2`
     expect(crashed?.status).toBe('warn')
     expect(crashed?.message).toContain('EACCES: permission denied')
     expect(parsed.summary).toBe('warn')

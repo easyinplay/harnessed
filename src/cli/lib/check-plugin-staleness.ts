@@ -160,8 +160,9 @@ export function checkPluginStaleness(overrides?: Partial<PluginStalenessDeps>): 
   const deps = { ...defaultDeps(), ...overrides }
 
   // codex and any other harness without a plugin registry: nothing to compare.
+  // Phase 66 T5 — that is a `skipped`, not a pass: no comparison happened.
   if (deps.registryPath === null) {
-    return { name: NAME, status: 'pass', message: 'no plugin registry on this harness' }
+    return { name: NAME, status: 'skipped', message: 'no plugin registry on this harness' }
   }
   const installed = readInstalledVersions(deps, deps.registryPath)
   if (installed === null) {

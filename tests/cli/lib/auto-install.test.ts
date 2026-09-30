@@ -17,30 +17,43 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 // Mock the CHECKS registry to avoid touching real filesystem / spawns.
+// v16.0 Phase 66 T5 — entries are descriptors (`{ name, hosts, fn }`).
 vi.mock('../../../src/cli/lib/doctor-registry.js', () => ({
   CHECKS: [
-    async () => ({
+    {
       name: 'fake-missing-plugin',
-      status: 'warn' as const,
-      message: 'not installed',
-      fix: 'install via marketplace add + plugin install',
-      install_commands: [
-        'claude plugin marketplace add owner/repo',
-        'claude plugin install fake-plugin',
-      ],
-    }),
-    async () => ({
+      hosts: ['claude'] as const,
+      fn: async () => ({
+        name: 'fake-missing-plugin',
+        status: 'warn' as const,
+        message: 'not installed',
+        fix: 'install via marketplace add + plugin install',
+        install_commands: [
+          'claude plugin marketplace add owner/repo',
+          'claude plugin install fake-plugin',
+        ],
+      }),
+    },
+    {
       name: 'fake-pass-check',
-      status: 'pass' as const,
-      message: 'ok',
-    }),
-    async () => ({
+      hosts: ['claude', 'codex'] as const,
+      fn: async () => ({
+        name: 'fake-pass-check',
+        status: 'pass' as const,
+        message: 'ok',
+      }),
+    },
+    {
       name: 'fake-warn-no-install-cmds',
-      status: 'warn' as const,
-      message: 'misconfigured',
-      fix: 'edit config manually',
-      // No install_commands → not auto-installable.
-    }),
+      hosts: ['claude', 'codex'] as const,
+      fn: async () => ({
+        name: 'fake-warn-no-install-cmds',
+        status: 'warn' as const,
+        message: 'misconfigured',
+        fix: 'edit config manually',
+        // No install_commands → not auto-installable.
+      }),
+    },
   ],
 }))
 

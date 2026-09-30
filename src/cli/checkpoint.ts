@@ -191,6 +191,10 @@ export interface CheckpointFailOpts {
   force?: boolean
   /** T2.7 D-3 — failing-test count for this attempt; the preferred progress metric. */
   failingTests?: string
+  /** v16.0 Phase 66 T4 — which of the five named spawn failures ended the attempt
+   *  (src/workflow/lib/spawnFailure.ts SPAWN_FAILURES). Typed as a plain string
+   *  because commander hands raw CLI text over; validated before any write. */
+  failure?: string
 }
 
 /** `checkpoint start <master> [--plan <json>]` orchestration body (extracted
@@ -562,6 +566,21 @@ export async function runCheckpointFail(
   deps: RunDeps = defaultRunDeps,
 ): Promise<void> {
   const { completePhase } = await import('../checkpoint/engineHook.js')
+  // ── v16.0 Phase 66 T4 — validate the spawn-failure kind FIRST, before the ledger
+  // or the checkpoint envelope is touched. An unrecognised kind is a wiring bug in
+  // whatever produced it, and persisting it would put a value in the ledger that
+  // the schema rejects on the next read (fail-closed at the boundary instead). ──
+  const { isSpawnFailure, SPAWN_FAILURES } = await import('../workflow/lib/spawnFailure.js')
+  if (opts.failure !== undefined && !isSpawnFailure(opts.failure)) {
+    deps.error(
+      `[harnessed] checkpoint fail: unknown --failure kind '${opts.failure}' — expected one of ${SPAWN_FAILURES.join(', ')}`,
+    )
+    deps.exit(1)
+    return
+  }
+  // Narrowed once, into a local: the property narrowing above does not survive the
+  // awaits between here and the ledger write.
+  const spawnFailure = isSpawnFailure(opts.failure) ? opts.failure : undefined
   // 4.26.0 (A3) — same serial-order guard: failing a serial successor while
   // its predecessor is still pending is the same sequence jump.
   const preLedger = await readLedgerSafe(deps)
@@ -606,6 +625,9 @@ export async function runCheckpointFail(
     markIfSeeded(e, sub, 'failed', {
       attempt_budget: budget,
       ...(nextProgress ? { progress: nextProgress } : {}),
+      // T4 — omitted when absent so an untagged failure leaves NO key on the entry
+      // (13 eval goldens compare the serialized ledger verbatim).
+      ...(spawnFailure ? { spawn_failure: spawnFailure } : {}),
     }),
   )
   // 4.22.0 T6 — a failed sub is still a RESOLVED sub for its leaf intent.
@@ -788,6 +810,11 @@ export function registerCheckpoint(program: Command): void {
       '--failing-tests <n>',
       'fail only — number of tests still failing after this attempt; drives the no-progress circuit breaker (falls back to the evidence-artifact digest when omitted)',
     )
+    // v16.0 Phase 66 T4 — the classification injection point findings F2c called for.
+    .option(
+      '--failure <kind>',
+      'fail only — which named spawn failure ended the attempt: SpawnTimeout | SpawnExitNonZero | SpawnOutputMalformed | SpawnAuthFailed | SpawnRefused (recorded on the ledger entry; an unknown value is rejected)',
+    )
     .action(
       async (
         action: string,
@@ -801,6 +828,7 @@ export function registerCheckpoint(program: Command): void {
           resultFile?: string
           failingTests?: string
           reason?: string
+          failure?: string
         },
       ) => {
         if (!isAction(action)) {

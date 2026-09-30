@@ -81,6 +81,8 @@
   "doctor.summary.fail": "\nsome checks failed (see fix hints above)",
   "doctor.summary.warn": "\nall checks ok (with warnings — see hints above)",
   "doctor.summary.pass": "\nall checks passed",
+  "doctor.host_scope": "host: {{host}} — {{applied}} of {{total}} checks apply\n",
+  "doctor.matrix.legend": "\nn/a = the check is not declared for that host in the registry, so it was not run",
 
   "check_docs.clean": "documentation discipline: no violations",
   "check_docs.state_line_limit": "STATE.md is {{lines}} lines > the {{limit}}-line digest limit — archive older phase narrative to RETROSPECTIVE.md (override for one run: HARNESSED_ALLOW_LONG_STATE=1)",

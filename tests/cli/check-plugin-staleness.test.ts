@@ -50,14 +50,16 @@ function deps(files: Record<string, string>, registryRaw: string | null) {
 }
 
 describe('checkPluginStaleness', () => {
-  it('no plugin registry (codex) → pass, nothing read', () => {
+  // v16.0 Phase 66 T5 — host-inapplicable → `skipped` (no comparison happened);
+  // the fail-soft branches below stay `pass` (they applied, they just found nothing).
+  it('no plugin registry (codex) → skipped, nothing read', () => {
     const r = checkPluginStaleness({
       registryPath: null,
       readText: () => {
         throw new Error('must not read')
       },
     })
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('skipped')
     expect(r.message).toContain('no plugin registry')
   })
 

@@ -81,6 +81,8 @@
   "doctor.summary.fail": "\nsome checks failed (see fix hints above)",
   "doctor.summary.warn": "\nall checks ok (with warnings — see hints above)",
   "doctor.summary.pass": "\nall checks passed",
+  "doctor.host_scope": "host: {{host}} — {{applied}} of {{total}} checks apply\n",
+  "doctor.matrix.legend": "\nn/a = the check is not declared for that host in the registry, so it was not run",
 
   "check_docs.clean": "文档纪律检查通过：无违规",
   "check_docs.state_line_limit": "STATE.md 当前 {{lines}} 行，超过 {{limit}} 行 digest 上限 —— 把更早的 phase 叙事归档到 RETROSPECTIVE.md（单次放行：HARNESSED_ALLOW_LONG_STATE=1）",

@@ -95,16 +95,18 @@ describe('settingsPath === null on codex (Phase 63 T3)', () => {
     expect(openedConfigToml()).toEqual([])
   })
 
-  it('checkInjectInvalidate → pass with a readable skip reason', () => {
+  // v16.0 Phase 66 T5 — `skipped`, a first-class status: no settings surface here,
+  // so the check did not run (it is not a green it earned).
+  it('checkInjectInvalidate → skipped with a readable reason', () => {
     const r = checkInjectInvalidate()
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('skipped')
     expect(r.message).toMatch(/no settings file on codex/)
     expect(openedConfigToml()).toEqual([])
   })
 
-  it('checkStaleHooks → pass with a readable skip reason', () => {
+  it('checkStaleHooks → skipped with a readable reason', () => {
     const r = checkStaleHooks()
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('skipped')
     expect(r.message).toMatch(/no settings file on codex/)
     expect(openedConfigToml()).toEqual([])
   })

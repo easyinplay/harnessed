@@ -113,10 +113,11 @@ vi.mock('../../src/cli/lib/check-update.js', () => ({
 }))
 // v16.0 Phase 64 — 24th check mock (check-codex-hooks.ts spawns the codex CLI /
 // app-server on codex and uses fs.existsSync). Real logic in check-codex-hooks.test.ts.
+// v16.0 Phase 66 T5 — `skipped`; it must not move any scenario's summary word.
 vi.mock('../../src/cli/lib/check-codex-hooks.js', () => ({
   checkCodexHooks: () => ({
     name: 'codex hook plugins',
-    status: 'pass',
+    status: 'skipped',
     message: 'not codex (claude) — skipped',
   }),
 }))

@@ -45,6 +45,9 @@ export interface MarkSubOpts {
   completion_claim?: SubProgressEntryType['completion_claim']
   progress?: SubProgressEntryType['progress']
   attempt_budget?: SubProgressEntryType['attempt_budget']
+  // v16.0 Phase 66 T4 — which of the five named spawn failures ended the attempt.
+  // Same undefined-never-erases rule as the three above.
+  spawn_failure?: SubProgressEntryType['spawn_failure']
 }
 
 /** Seed the ledger from a `harnessed gates` plan (Q5 seed-upfront). Fired subs
@@ -110,9 +113,40 @@ export function markSub(
   if (opts?.completion_claim !== undefined) updated.completion_claim = opts.completion_claim
   if (opts?.progress !== undefined) updated.progress = opts.progress
   if (opts?.attempt_budget !== undefined) updated.attempt_budget = opts.attempt_budget
+  if (opts?.spawn_failure !== undefined) updated.spawn_failure = opts.spawn_failure
 
   const next = entries.slice()
   next[idx] = updated
+  return next
+}
+
+/**
+ * v16.0 Phase 66 T4 — record WHICH of the five named spawn failures happened,
+ * without asserting a status transition.
+ *
+ * Separate from `markSub` on purpose, for the one caller that has a
+ * classification but no business flipping the entry: `src/workflow/run.ts`'s
+ * `harnessed run` loop. It already records its own terminal checkpoint through
+ * `completePhase` and has never marked the ledger; routing it through
+ * `markSub(entries, sub, 'failed', …)` would bump `fail_count` a second time for
+ * the same attempt (and so mislead BREAK-LOOP / BUDGET-EXHAUSTED, whose only
+ * counting source is that field). The status-carrying write stays with
+ * `markSub`, which the checkpoint CLI uses.
+ *
+ * No-op — not a throw — when the sub was never seeded, matching
+ * `markIfSeeded`'s rule that the ledger is an additive overlay and never a hard
+ * gate. Returns the SAME array reference in that case so a caller can tell
+ * nothing happened.
+ */
+export function annotateSpawnFailure(
+  entries: SubProgressEntryType[],
+  sub: string,
+  failure: NonNullable<SubProgressEntryType['spawn_failure']>,
+): SubProgressEntryType[] {
+  const idx = entries.findIndex((e) => e.sub === sub)
+  if (idx === -1) return entries
+  const next = entries.slice()
+  next[idx] = { ...(entries[idx] as SubProgressEntryType), spawn_failure: failure }
   return next
 }
 

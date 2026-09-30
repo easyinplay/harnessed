@@ -21,7 +21,18 @@ import { detectPlatform } from '../../platform/platform.js'
 
 export interface CheckResult {
   name: string
-  status: 'pass' | 'warn' | 'fail'
+  /**
+   * v16.0 Phase 66 T5 — `skipped` is a FIRST-CLASS status, no longer a `pass` in
+   * disguise. It means "this check does not apply to the active harness and did
+   * not run" (a host early-return), and it counts as neither a pass nor a fail:
+   * `summarise` (src/cli/lib/doctor-matrix.ts) ignores it, so it can never flip
+   * the summary word or the exit code.
+   *
+   * NOT for fail-soft degradation. A check that wanted to look but could not
+   * (npm unreachable, unreadable registry, mangled settings.json) still reports
+   * `pass` — it applies here, it simply has nothing to complain about.
+   */
+  status: 'pass' | 'warn' | 'fail' | 'skipped'
   message: string
   fix?: string
   /** v3.9.1 — structured install command sequence consumed by auto-install
@@ -47,11 +58,12 @@ export function checkNodeVersion(): CheckResult {
 
 export async function checkMcpScope(): Promise<CheckResult> {
   // v4.14.0 — this check reads CC-specific files (~/.claude.json); on any other
-  // platform it is meaningless → pass-skip.
+  // platform it is meaningless.
+  // v16.0 Phase 66 T5 — `skipped`, not a `pass` that says "skipped" in prose.
   if (detectPlatform().id !== 'claude') {
     return {
       name: 'mcp scope',
-      status: 'pass',
+      status: 'skipped',
       message: 'skipped (claude-only check)',
     }
   }

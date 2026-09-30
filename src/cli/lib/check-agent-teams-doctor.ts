@@ -7,23 +7,20 @@
 // per CLAUDE.md L21 "warn ≠ fail / exit 0" R2.4.1 + R20.11 acceptance c).
 
 import { detectPlatform } from '../../platform/platform.js'
+// v16.0 Phase 66 T5 — shared CheckResult (its `status` now carries `skipped`)
+// instead of a local re-declaration that would have to be widened in parallel.
+import type { CheckResult } from './check-builtin.js'
 import { checkAgentTeams } from './checkAgentTeams.js'
-
-interface CheckResult {
-  name: string
-  status: 'pass' | 'warn' | 'fail'
-  message: string
-  fix?: string
-}
 
 export async function checkAgentTeamsDoctor(): Promise<CheckResult> {
   // v4.14.0 — Agent Teams is a Claude Code concept; on other platforms the
-  // warn + CC remediation are meaningless → pass-skip (sister
-  // warnIfAgentTeamsMissing gate in setup-helpers.ts).
+  // warn + CC remediation are meaningless (sister warnIfAgentTeamsMissing gate
+  // in setup-helpers.ts).
+  // v16.0 Phase 66 T5 — `skipped`, not a `pass` that says "skipped" in prose.
   if (detectPlatform().id !== 'claude') {
     return {
       name: 'Agent Teams env',
-      status: 'pass',
+      status: 'skipped',
       message: 'skipped (claude-only check)',
     }
   }

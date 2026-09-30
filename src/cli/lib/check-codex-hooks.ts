@@ -113,8 +113,9 @@ function chainProblem(d: CodexHooksDeps, pluginName: string, id: string | null):
 
 export async function checkCodexHooks(deps?: Partial<CodexHooksDeps>): Promise<CheckResult> {
   const d = { ...defaultDeps(), ...deps }
+  // Phase 66 T5 — `skipped`, not a `pass` that says "skipped" in prose.
   if (d.platformId !== 'codex')
-    return { name: NAME, status: 'pass', message: `not codex (${d.platformId}) — skipped` }
+    return { name: NAME, status: 'skipped', message: `not codex (${d.platformId}) — skipped` }
   const plugins = await d.pluginDirs()
   if (plugins.length === 0)
     return { name: NAME, status: 'pass', message: 'no harnessed codex hook plugins installed' }

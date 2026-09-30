@@ -134,12 +134,24 @@ vi.mock('../../src/cli/lib/check-skill-integrity.js', () => ({
 // v16.0 Phase 64 — 24th check mock (check-codex-hooks.ts spawns `codex plugin list`
 // / `codex app-server` on codex and reads plugin dirs). Real logic unit-tested in
 // tests/cli/check-codex-hooks.test.ts (injected deps).
+// v16.0 Phase 66 T5 — `skipped`, not the fake `pass` it wore before. On a claude
+// run this is the ONE row whose mark changes (✓ → -); the summary is unaffected.
+// Host-aware like the real check: it reads detectPlatform().id, which `doctor
+// --host` / `--matrix` drive through HARNESSED_PLATFORM — so the matrix cells stay
+// honest (cell 13 asserts no cell is `skipped`).
 vi.mock('../../src/cli/lib/check-codex-hooks.js', () => ({
-  checkCodexHooks: () => ({
-    name: 'codex hook plugins',
-    status: 'pass',
-    message: 'not codex (claude) — skipped',
-  }),
+  checkCodexHooks: () =>
+    process.env.HARNESSED_PLATFORM === 'codex'
+      ? {
+          name: 'codex hook plugins',
+          status: 'pass',
+          message: 'no harnessed codex hook plugins installed',
+        }
+      : {
+          name: 'codex hook plugins',
+          status: 'skipped',
+          message: 'not codex (claude) — skipped',
+        },
 }))
 
 import { spawnSync } from 'node:child_process'
@@ -218,12 +230,14 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
 
   // v3.7.0 Phase 1 — registry future-proof: CHECKS array is single source of truth.
   // Bump assertion when adding a check (sister doctor.ts --description string update).
-  it('cell 0 — CHECKS registry has 24 entries (Phase 64 +codex hook plugins)', async () => {
+  it('cell 0 — CHECKS registry has 24 descriptor entries (Phase 66 T5 shape)', async () => {
     const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
     expect(CHECKS.length).toBe(24)
+    // Phase 66 T5 — every entry carries its own name + host annotation.
+    expect(CHECKS.every((c) => typeof c.name === 'string' && Array.isArray(c.hosts))).toBe(true)
   })
 
-  it('cell 1 — all 24 checks pass → exit 0 + summary "pass" (Phase 64 bump 23→24)', async () => {
+  it('cell 1 — all 24 checks pass/skipped → exit 0 + summary "pass" (Phase 66: 1 skipped)', async () => {
     mockSpawn()
     const { code, stdout } = await runCli(['doctor', '--json'])
     expect(code).toBe(0)
@@ -283,12 +297,155 @@ describe('cli/doctor — Phase 2.4 W1 5-check + Phase 3.2 W1 6 + Phase 3.3 W1 7 
     expect(code).toBe(0)
   })
 
-  it('cell 4 — --json emits {checks, summary} 3-tier "pass|warn|fail" for CI', async () => {
+  it('cell 4 — --json emits {host, checks, summary}; summary stays 3-tier for CI', async () => {
     mockSpawn()
     const { stdout } = await runCli(['doctor', '--json'])
-    const p = JSON.parse(stdout) as { checks: { status: string; name: string }[]; summary: string }
+    const p = JSON.parse(stdout) as {
+      host: string | null
+      checks: { status: string; name: string }[]
+      summary: string
+    }
+    // Phase 66 T5 — `host: null` = not forced; every check ran against the
+    // active harness (the pre-Phase-66 default behaviour).
+    expect(p.host).toBeNull()
     expect(['pass', 'warn', 'fail']).toContain(p.summary)
-    expect(p.checks.every((c) => ['pass', 'warn', 'fail'].includes(c.status))).toBe(true)
+    // Phase 66 T5 — `skipped` joins the per-check status set; the SUMMARY does not.
+    expect(p.checks.every((c) => ['pass', 'warn', 'fail', 'skipped'].includes(c.status))).toBe(true)
     expect(p.checks.map((c) => c.name)).toContain('origin URL')
+  })
+
+  // ── v16.0 Phase 66 T5 ──────────────────────────────────────────────────────
+
+  it('cell 6 — skipped is first-class: the codex-hooks row reports it and the summary stays pass', async () => {
+    mockSpawn()
+    const { code, stdout } = await runCli(['doctor', '--json'])
+    const p = JSON.parse(stdout) as { checks: { name: string; status: string }[]; summary: string }
+    expect(p.checks.find((c) => c.name === 'codex hook plugins')?.status).toBe('skipped')
+    expect(p.summary).toBe('pass') // skipped ≠ warn, skipped ≠ fail
+    expect(code).toBe(0)
+  })
+
+  it('cell 7 — human output marks a skipped row with `-`, not `✓`', async () => {
+    mockSpawn()
+    const { stdout } = await runCli(['doctor'])
+    expect(stdout).toContain('- codex hook plugins —')
+    expect(stdout).not.toContain('✓ codex hook plugins')
+  })
+
+  it('cell 8 — every declared registry name matches the name its check reports', async () => {
+    mockSpawn()
+    const { stdout } = await runCli(['doctor', '--json'])
+    const p = JSON.parse(stdout) as { checks: { name: string }[] }
+    const { CHECKS } = await import('../../src/cli/lib/doctor-registry.js')
+    expect(p.checks.map((c) => c.name)).toEqual(CHECKS.map((c) => c.name))
+  })
+
+  it('cell 9 — --host codex runs only the codex-applicable checks', async () => {
+    mockSpawn()
+    const { code, stdout } = await runCli(['doctor', '--host', 'codex', '--json'])
+    const p = JSON.parse(stdout) as {
+      host: string
+      checks: { name: string; status: string }[]
+      summary: string
+    }
+    const { checksForHost } = await import('../../src/cli/lib/doctor-registry.js')
+    expect(p.host).toBe('codex')
+    expect(p.checks.map((c) => c.name)).toEqual(checksForHost('codex').map((c) => c.name))
+    // the claude-only rows are gone entirely — not present as skipped rows
+    expect(p.checks.map((c) => c.name)).not.toContain('mcp scope')
+    expect(p.checks.map((c) => c.name)).not.toContain('Agent Teams env')
+    expect(p.checks.map((c) => c.name)).toContain('codex hook plugins')
+    expect(code).toBe(0)
+  })
+
+  it('cell 10 — --host claude drops the codex-only check but keeps all claude rows', async () => {
+    mockSpawn()
+    const { stdout } = await runCli(['doctor', '--host', 'claude', '--json'])
+    const p = JSON.parse(stdout) as { checks: { name: string }[] }
+    expect(p.checks.map((c) => c.name)).not.toContain('codex hook plugins')
+    expect(p.checks.map((c) => c.name)).toContain('mcp scope')
+    expect(p.checks).toHaveLength(23)
+  })
+
+  it('cell 11 — --host rejects an unknown id with exit 2', async () => {
+    mockSpawn()
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { code } = await runCli(['doctor', '--host', 'cursor', '--json'])
+    expect(code).toBe(2)
+    expect(err.mock.calls.flat().join(' ')).toContain("unknown id 'cursor'")
+  })
+
+  it('cell 12 — --matrix --json emits one row per check with a cell or null per host', async () => {
+    mockSpawn()
+    const { code, stdout } = await runCli(['doctor', '--matrix', '--json'])
+    expect(code).toBe(0)
+    const { matrix } = JSON.parse(stdout) as {
+      matrix: {
+        hosts: string[]
+        checks: {
+          name: string
+          hosts: string[]
+          cells: Record<string, { status: string } | null>
+        }[]
+        summary: Record<string, string>
+      }
+    }
+    expect(matrix.hosts).toEqual(['claude', 'codex'])
+    expect(matrix.checks).toHaveLength(24)
+    expect(Object.keys(matrix.summary).sort()).toEqual(['claude', 'codex'])
+
+    const row = (n: string) => matrix.checks.find((c) => c.name === n)
+    // claude-only check: no codex cell at all (never run there)
+    expect(row('mcp scope')?.cells.codex).toBeNull()
+    expect(row('mcp scope')?.cells.claude?.status).toBeDefined()
+    // codex-only check: no claude cell
+    expect(row('codex hook plugins')?.cells.claude).toBeNull()
+    // both-hosts check: two real cells
+    expect(row('node ≥ 22')?.cells.claude?.status).toBe('pass')
+    expect(row('node ≥ 22')?.cells.codex?.status).toBe('pass')
+  })
+
+  it('cell 13 — no matrix cell is `skipped`: the host annotations match the checks', async () => {
+    mockSpawn()
+    const { stdout } = await runCli(['doctor', '--matrix', '--json'])
+    const { matrix } = JSON.parse(stdout) as {
+      matrix: { checks: { name: string; cells: Record<string, { status: string } | null> }[] }
+    }
+    // A `skipped` cell means the registry declared a host whose own early-return
+    // rejects it — the drift this whole descriptor layer exists to make visible.
+    // (`codex hook plugins` is mocked, so its codex cell answers for real here.)
+    const drift = matrix.checks.flatMap((c) =>
+      Object.entries(c.cells)
+        .filter(([, cell]) => cell?.status === 'skipped')
+        .map(([host]) => `${c.name} @ ${host}`),
+    )
+    expect(drift).toEqual([])
+  })
+
+  it('cell 14 — --matrix human output is a check × host table with a summary row', async () => {
+    mockSpawn()
+    const { stdout } = await runCli(['doctor', '--matrix'])
+    const lines = stdout.split('\n')
+    expect(lines[0]).toMatch(/^check\s+claude\s+codex$/)
+    expect(lines.find((l) => l.startsWith('mcp scope'))).toMatch(/^mcp scope\s+\S+\s+n\/a$/)
+    expect(lines.find((l) => l.startsWith('codex hook plugins'))).toMatch(
+      /^codex hook plugins\s+n\/a\s+\S+$/,
+    )
+    expect(lines.find((l) => l.startsWith('summary'))).toMatch(/^summary\s+\S+\s+\S+$/)
+  })
+
+  it('cell 15 — --matrix and --host are mutually exclusive (exit 2)', async () => {
+    mockSpawn()
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { code } = await runCli(['doctor', '--matrix', '--host', 'codex'])
+    expect(code).toBe(2)
+    expect(err.mock.calls.flat().join(' ')).toContain('mutually exclusive')
+  })
+
+  it('cell 16 — --host leaves HARNESSED_PLATFORM as it found it', async () => {
+    mockSpawn()
+    const before = process.env.HARNESSED_PLATFORM
+    await runCli(['doctor', '--host', 'codex', '--json'])
+    expect(process.env.HARNESSED_PLATFORM).toBe(before)
   })
 })

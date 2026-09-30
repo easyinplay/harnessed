@@ -11,14 +11,9 @@ import { readdir } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { getPluginsRegistry } from '../../platform/platform.js'
-
-interface CheckResult {
-  name: string
-  status: 'pass' | 'warn' | 'fail'
-  message: string
-  fix?: string
-  install_commands?: readonly string[]
-}
+// v16.0 Phase 66 T5 — shared CheckResult (its `status` now carries `skipped`)
+// instead of a local re-declaration that would have to be widened in parallel.
+import type { CheckResult } from './check-builtin.js'
 
 // v3.9.1 — planning-with-files lives in OthmanAdi/planning-with-files
 // marketplace (NOT default claude marketplace). Two-step install:
@@ -36,12 +31,13 @@ const INSTALL_COMMANDS = [
 export async function checkPlanningWithFiles(): Promise<CheckResult> {
   // v4.14.0 — plugin-cache probe is a claude-only concept. On a platform with
   // no plugin registry (codex) the warn + `claude plugin install` remediation
-  // would be misleading → pass-skip (setup's codex install path is the
-  // harness_overrides npx-skill route, verified by its own manifest verify).
+  // would be misleading (setup's codex install path is the harness_overrides
+  // npx-skill route, verified by its own manifest verify).
+  // v16.0 Phase 66 T5 — `skipped`, not a `pass` that says "skipped" in prose.
   if (getPluginsRegistry() === null) {
     return {
       name: 'planning-with-files plugin',
-      status: 'pass',
+      status: 'skipped',
       message: 'skipped (claude-only plugin-cache probe; no plugin registry on this platform)',
     }
   }
