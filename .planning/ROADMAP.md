@@ -1,7 +1,11 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v14.0 Hardening & Distribution retroactively closed 2026-07-12; queue in TODOS.md.
-> Current published npm: **4.28.0** (2026-07-12; v14.0 arc close — hardening + binary distribution) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
+> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v16.0 Codex Host Parity closed 2026-09-30; queue in TODOS.md.
+> Current published npm: **4.46.0** (2026-09-30; v16.0 close — codex as a first-class host) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
+>
+> **This table stops at v13.0 by design.** Milestones from v14.0 on are indexed in `.planning/MILESTONES.md`,
+> which is the single home for the milestone index — duplicating the rows here would give the same fact two
+> homes and let them drift (this header did exactly that: it sat on 4.28.0 for three months).
 
 ---
 

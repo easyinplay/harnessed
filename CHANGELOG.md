@@ -32,6 +32,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - doctor 的检查注册表带上了宿主元数据,于是矩阵里 `n/a`(注册表没为该宿主声明)与 `skipped`
   (声明了却被检查自己拒掉)可以区分 —— 后者即「声明与实际不符」的漂移信号,有测试双向咬住。
 
+### Fixed
+
+- **codex 上注册 MCP server 会把 `~/.codex/config.toml` 复制进备份目录,连里面的明文凭据一起。**
+  `mcp-stdio-add` / `mcp-http-add` 把该文件列进了 diff plan,而 `backup()` 会逐字节复制 plan 里的每个
+  target,于是凭据在 `~/.harnessed/backups/<id>/HOME/.codex/config.toml` 下多出一份,直到 gc 才消失。
+  换来的回滚能力是零 —— 那个文件由 `codex mcp add` 自己写,harnessed 从不编辑它,恢复整份反而会盖掉
+  别人的改动。v16.0 Phase 64 在 `cc-plugin-marketplace` 上修过同一条,漏扫了这两个姐妹安装器;
+  本次里程碑收口审计逐条核验硬边界时抓出。两条反证测试钉住判据(先验红后验绿)。
+  判据落在**写**而不是「不许读」—— 与 marketplace 那条不同,这条路上读是合法的:
+  `isMcpServerRegistered` 要探 `[mcp_servers.<name>]` 段头才能验证安装成功。
+
 ## [4.45.0] - 2026-09-30
 
 ### Added

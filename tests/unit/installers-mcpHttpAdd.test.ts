@@ -41,12 +41,13 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { installMcpHttpAdd } from '../../src/installers/mcpHttpAdd.js'
 
 const spawnMock = vi.mocked(spawn)
 const readFileMock = vi.mocked(readFile)
+const writeFileMock = vi.mocked(writeFile)
 
 interface FakeChild extends EventEmitter {
   stdout: EventEmitter & { setEncoding: (e: string) => unknown }
@@ -463,6 +464,36 @@ describe('installMcpHttpAdd — codex platform (v4.14.0)', () => {
           r.appliedFiles.some((f) => f.replace(/\\/g, '/').endsWith('.codex/config.toml')),
         ).toBe(true)
       }
+    } finally {
+      s.restore()
+    }
+  })
+  // v16.0 Phase 66 audit (ADR 0041) — the credential boundary. `backup()` reads its
+  // plan's targets and writes byte copies under `~/.harnessed/backups/`, so listing
+  // `config.toml` in the plan copies whatever credentials that file holds. Phase 64
+  // made this fix in `ccPluginMarketplace` and missed the two MCP siblings.
+  //
+  // The assertion here is deliberately NOT the sibling's ("config.toml is never read"):
+  // on this path a read IS legitimate — `isMcpServerRegistered` probes the
+  // `[mcp_servers.<name>]` header to verify the install. So the judgement moves to the
+  // write side: nothing harnessed writes may carry the file's contents. Do not "unify"
+  // the two assertions; they differ because the underlying permission differs.
+  it('codex: config.toml contents are never copied into the backup dir (credential boundary)', async () => {
+    const s = silence()
+    try {
+      readFileMock.mockResolvedValue(`${CODEX_TOML}experimental_bearer_token = "harnessed-probe-SENTINEL-NEVER-COPY"
+`)
+      writeFileMock.mockClear()
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      const r = await installMcpHttpAdd(ctx())
+      expect(r).toMatchObject({ ok: true })
+      const written = writeFileMock.mock.calls.map((c) => String(c[1]))
+      expect(written.some((w) => w.includes('harnessed-probe-SENTINEL-NEVER-COPY'))).toBe(false)
+      // And no backup entry points at the file either — metadata is JSON, so a
+      // `files: []` plan must leave the target unmentioned.
+      expect(written.some((w) => w.includes('config.toml'))).toBe(false)
     } finally {
       s.restore()
     }

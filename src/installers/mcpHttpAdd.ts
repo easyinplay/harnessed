@@ -261,7 +261,12 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   }
   if (ctx.opts.dryRun) return { aborted: true, reason: 'user-cancel' }
 
-  const bk = await backup(plan, ctx)
+  // v16.0 Phase 66 audit (ADR 0041) — codex: `config.toml` is written by `codex mcp add`
+  // itself, never by harnessed, and it holds credentials in plaintext. Backing it up would
+  // copy those into `~/.harnessed/backups/` with nothing to roll back in exchange. Phase 64
+  // made this exact fix in `ccPluginMarketplace` but missed the two MCP siblings; the
+  // milestone audit caught it. The plan above stays as the informational diff only.
+  const bk = await backup(bin === 'codex' ? { files: [] } : plan, ctx)
   if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
 
   // v3.0.2: spawn cwd at homedir() — `--scope user` writes to ~/.claude.json

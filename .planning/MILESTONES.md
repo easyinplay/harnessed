@@ -3,10 +3,10 @@
 > Shipped history index. Generated 2026-06-09 during `.planning/` GSD-layout migration.
 > Per-milestone detail: `.planning/milestones/<version>-ROADMAP.md` + `-REQUIREMENTS.md` + `-MILESTONE-AUDIT.md`.
 > Phase execution records: `.planning/milestones/<version>-phases/`.
-> Full narrative: `CHANGELOG.md` (46 releases) + `.planning/RETROSPECTIVE.md`.
+> Full narrative: `CHANGELOG.md` + `.planning/RETROSPECTIVE.md`.
 >
 > Note: milestone codenames are NOT npm release versions. harnessed publishes by npm semver
-> (latest published: 4.11.3); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
+> (latest published: **4.46.0**, 2026-09-30); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
 > Shipped order below is chronological, not version-monotonic.
 
 ## Shipped
@@ -37,9 +37,8 @@
 
 | v14.0 Hardening & Distribution | 2026-07-04~12 (npm 4.13.0→4.28.0, 23 publishes) | Retroactive close of the post-v13.0 patch/phase arc, 3 sub-arcs: **A** setup 治理 + cross-harness(4.13–4.18:五根因修复→14/14 全绿 · codex 全对齐 · WSL/spawn/hook 环境免疫)· **B** /auto 合规 + 守卫 + issues #2-#5 + intel 五家借鉴(4.20.1–4.26:checkpoint intent/evidence guard · GateGuard env 豁免 · skill 完整性台账+自愈+备份 · deferrable relay 门 · gate fail-closed 分型 + skip-sub 别名 · 注入 delta · 串行次序守卫)· **C** B 路线 Phase 3(4.19/4.20 B1+B2 编译管线;4.27/4.28 update compiled 分支 + hook 自包含 + 一行安装器)。dogfood/issue 驱动非 phase-driven;CEO review 仅 Phase 3 Slice 1(完整 /plan-ceo-review)。vitest 1673→2121。 | `milestones/v14.0-phases/` (27 dirs) + `milestones/v14.0-MILESTONE-AUDIT.md` |
 | v15.0 Upstream Re-sync | 2026-07-13 (npm 4.29.0) | 7-pin 侦察 → 双主菜(pwf v3.4.1 Windows session-catchup 修复 + mattpocock to-spec/to-tickets 改名对齐)+ 三顺手(superpowers 6.1.1 / gstack 1.60.1.0 / gsd-core lkg 1.6.1);gsd-core 1.7.0 GA watch 项。closed lightweight。 | `v15.0-phases/45-upstream-resync-v15/` |
+| v16.0 Codex Host Parity | 2026-09-22~30 (npm 4.43.1→4.46.0) | 4 phases (63–66),codex 成为一等宿主:**63** 平台判定重构(ADR 0040 六级优先级,`HARNESSED_ROOT_OVERRIDE` 不再短路平台解析)· **64** codex hooks 经**本地 codex 插件**承载 + app-server 程序化信任(不写 `~/.codex/hooks.json` —— 位置信任键会毒化他人 hook;live smoke 29/29 p95 765ms)· **65** 正文按宿主渲染:第二族占位符 `{{ host.<primitive> }}`(14 primitive / 39 占位符)接入四个交付面,新门 `check-host-primitives`,claude 侧由三份逐字节金标锁住 · **66** codex agent role toml(目录发现,不碰 config.toml)+ `codex exec` 子进程 spawn 补 CI/headless 面 + spawn 五类具名失败入账本 + `doctor --matrix`/`--host` 且 `skipped` 成一等状态。五条立项前提被实测推翻并逐条更正(含已发版的 `spawn_agent` 签名错误)。收口审计另抓出一条凭据缺陷:两个 MCP 安装器把 `config.toml` 列进 backup plan(4.46.0 修)。详 `milestones/v16.0-MILESTONE-AUDIT.md` + `specs/2026-09-22-codex-host-parity-v16.md` + `phases/63-…`/`64-…`/`65-…`/`66-…` SUMMARY。 | `phases/63-66`(lightweight close,留活动面) |
 
 ## Active
 
-| Milestone | Status | Notes |
-|-----------|--------|-------|
-| v16.0 Codex Host Parity | ACTIVE (2026-09-22) | phases 63-66 · 详 `.planning/specs/2026-09-22-codex-host-parity-v16.md` |
+_None._ v16.0 Codex Host Parity closed 2026-09-30 — next milestone queue lives in `TODOS.md`.

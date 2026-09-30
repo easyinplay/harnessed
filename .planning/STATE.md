@@ -1,10 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: v16.0
-milestone_name: Codex Host Parity (phases 63-66, SPEC ready-to-plan)
-status: active
-last_updated: "2026-09-22T00:00:00.000Z"
-last_activity: 2026-09-23
+milestone: none
+milestone_name: (none — v16.0 Codex Host Parity CLOSED 2026-09-30, npm 4.46.0)
+status: no-active-milestone
+last_updated: "2026-09-30T00:00:00.000Z"
+last_activity: 2026-09-30
 progress:
   total_phases: 0
   completed_phases: 0
@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.45.0** 2026-09-30(v16.0 Phase 65 正文宿主原语化 + Phase 66 T1 codex agent role;registry 直查 `dist-tags.latest=4.45.0` 核实,release 9 assets)。上一版:**v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
+- **Latest shipped (npm)**: **v4.46.0** 2026-09-30(v16.0 Phase 66 T3b-T5 + 收口审计抓出的凭据备份缺陷;v16.0 收官版)。上一版:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
@@ -37,22 +37,12 @@ progress:
 - **Phase 55-61(2026-09,4.40.0 / 4.41.0 / 4.42.0 已发)**:上游体检闸门 / 插件陈旧可见 / ECC codex 原生路径 / brainstorming 跳过合取 / 幂等回执 / `HARNESSED_OFF` / schema 消费者闸门。详各 `phases/55-…61-…/`。
 - **Phase 62 外部代码审查整改 — 完成并发版 4.42.0(2026-09-16)**:39 项 + 2 注释项逐条核验,真缺陷全部带反证测试修复;维护者决策:L11 删除、L16 / M6 残余保持;superpowers codex marketplace 名经真机安装验证后修正。详 `phases/62-code-review-remediation/FINDINGS.md`。
 - **4.43.0(2026-09-17)**:闸门不再把 yaml 键 / TypeBox 镜像当读取、修注释剥离吞代码 → 暴露 14 个死字段;维护者裁定删 13(discipline 6 / fallback 规则 4 / capabilities 3)、留 `routing_note`,豁免 25 → 11;顺带修 Agent Teams 版本下界提示 2.1.133 → 2.1.178。详 CHANGELOG 4.43.0。
-- **v16.0 Codex Host Parity — ACTIVE(2026-09-22 立项)**:2026-08-26 否决经 office-hours 重开(OQ1 鸡生蛋 + 对外覆盖),CEO SCOPE_EXPANSION 经 outside voice 回收,codex 0.154 实测定契约,ENG 审 18 项全裁。唯一实施真相源 `.planning/specs/2026-09-22-codex-host-parity-v16.md`(63 平台判定重构 patch → 64 codex hooks 经本地插件 → 65 正文原语化 → 66 agents/spawn/goal/doctor 矩阵)。推迟项见 TODOS.md。
-  - **Phase 63 平台判定重构 DONE 2026-09-22**(`8f0ab14`,CI 全绿;**已发 npm 4.43.1**)—— 详 `phases/63-platform-detection-refactor/SUMMARY.md`。
-  - **Phase 64 codex hooks 经本地插件 DONE 2026-09-23**(`6edac3f`,CI 全绿,live smoke 29/29 p95 765ms;**已发 npm 4.44.0**)—— 插件承载 + app-server 信任 + doctor 检查 + 卸载往返;顺带修 perturn-inject-invalidate 描述超长与 codex backup 含凭据两处既有缺陷。详 `phases/64-codex-hooks-plugin/SUMMARY.md`。
-  - **Phase 65 正文宿主原语化 DONE 2026-09-29**(11 commit `1626176`→`2e7dfe6`,2228 测试,十门全 0;**未发版**)
-    —— 四个交付面(skills / 生成命令体 / 运行时 prompt / 能力注册表)按宿主渲染,claude 侧由三份逐字节金标锁住;
-    新门 `check-host-primitives`。SPEC 的 236 处基线被实测证明不完整(维护者拍板全纳,实际 450+),
-    分类规则与 lockstep 注释各被证否一次。详 `phases/65-host-primitive-content/SUMMARY.md`。**已发 npm 4.45.0**。
-  - **Phase 66 codex agents / exec spawn / doctor 矩阵 — 进行中(2026-09-29 立项)**:T0 四项实测全部有结论
-    (exec 形状 / env 传子会话 hook / read-only 沙箱仍挡但 exit 0 / agents toml 能被 `spawn_agent` 引用);
-    T1-T3 已交付(`54aad96`)—— agent role 生成已随 4.45.0 发布,codex exec spawn 与五类具名错误**已实现但未接线**故未声明。
-    goal 桥接经维护者裁定移出本 phase(ADR-0039 删它的理由正是「未实证」,codex 侧同样未实证)。
-    顺带更正了 Phase 65 写错的 `spawn_agent` 参数签名(v1 无 `task_name`,`31ea64d`)。
-    T3b-T5 已交付(`80aeb94`,未发版)—— spawn 按宿主分派(补上「已实现但无调用方」的缺口)、
-    失败分类进 leaf 账本 + `checkpoint fail --failure`、doctor `--matrix` / `--host` 且 `skipped` 成一等状态。
-    剩 T6 的 README 部分(推迟:10 个 README 正被另一会话改动)与 T7 收口。
-    详 `phases/66-codex-spawn-agents-goal/SUMMARY.md`。
+- **v16.0 Codex Host Parity CLOSED 2026-09-30(lightweight,npm 4.43.1→4.46.0)**:4 个 phase(63 平台判定重构 →
+  64 codex hooks 经本地插件 → 65 正文宿主原语化 → 66 agents/spawn/doctor 矩阵)全交付,codex 成为一等宿主。
+  五条立项前提被实测推翻并逐条更正(含一个已发版的 `spawn_agent` 签名错误);收口审计另抓出一条凭据缺陷
+  (两个 MCP 安装器把 `config.toml` 列进 backup plan,4.46.0 修)。结转三项:goal 桥接 TUI 实测(只有维护者能做)、
+  README 体系表述(另一会话正在改)、MCP 注册探测迁 `codex mcp list`。
+  详 `milestones/v16.0-MILESTONE-AUDIT.md`(硬边界逐条核验 + 未实测清单)· phase 目录按 lightweight 留在 `phases/`。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
