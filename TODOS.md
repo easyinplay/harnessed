@@ -48,6 +48,9 @@
   Fix: 迁到 `codex mcp list` 的输出(与 Phase 64 迁插件探测同一手法),之后 `mcpConfigPath` 可整个退役,
   「不读 config.toml」才真正成立,ADR 张力随之消解。
   Trigger: 下一次碰 codex MCP 安装路径时顺手做;或安全审查提出时优先。
+  **2026-09-30 收窄**:v16.0 收口审计发现同一文件还有一条**复制**面 —— `mcp-stdio-add` / `mcp-http-add`
+  把它列进了 backup plan,`backup()` 会逐字节复制,凭据在 `~/.harnessed/backups/` 下多出一份。
+  那条已在 4.46.0 修掉(两条反证测试)。**剩下的只有这处窄读**,本项范围不变。
 - [ ] **codex 上 plugin 类能力全告警** — P2 / S,Phase 65 findings F8
   Why: codex descriptor 的 `pluginsRegistry: null` → `readInstalledPlugins` 返回空集(不读 fs),于是每个
   `install_type: plugin` 的 capability 在 codex 上都告警「backing missing」。`planning-with-files` 这类

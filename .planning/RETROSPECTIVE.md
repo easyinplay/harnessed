@@ -1281,3 +1281,49 @@ Phase 6.1 = 🎯 v1.0 GA FINAL phase — PRODUCTION RELEASE (NOT close ceremony)
 ---
 
 *v14.0 RETROSPECTIVE complete — 2026-07-12; retroactive close + fuller archive pass(61 dirs 归位,active phases/ 清零)。*
+
+---
+
+## v16.0 Codex Host Parity RETROSPECTIVE (2026-09-22 → 09-30, lightweight close)
+
+> 4 phases(63–66),npm 4.43.1→4.46.0。codex 从"能装"变成一等宿主。
+> 交付事实与硬边界核验详 `milestones/v16.0-MILESTONE-AUDIT.md`;本节只记方法论。
+
+### What Worked
+
+- **立项前实测,而不是照 SPEC 施工。** Phase 66 的 T0 是四项前置实测,结果直接改写了后续设计:
+  `codex exec` 不能指定 agent role(只有 `-p, --profile`,那是 config profile),所以 agents toml
+  与 exec 是两套机制;`-s read-only` 确实挡工具调用但 **exit code 仍是 0**,于是成功判据从退出码
+  移到输出内容与事件流。这两条都不是读文档能得到的。
+- **实测抓回了一个已经发版的错误。** `spawn_agent` 的参数签名我读上游源码时把 v2 的当成了 v1
+  (v1 required 是 `None`、没有 `task_name`),错误正文随 4.45.0 发出去了,是 T0.4 的实测把它逮住。
+  修的时候四个带命名参数的调用点是**重写**而非机械替换 —— `agent_type: <sub>` 会是一条保证报错的
+  指令,因为 harnessed 还不为 sub 写 role toml。机械替换会留下一个"看起来修好了"的坑。
+- **逐字节金标锁住不该动的那一侧。** Phase 65 要改 450+ 处正文,claude 侧必须零变化。三份金标
+  (skills 产物 / 命令体 / `harnessed prompt` 全量输出)在**改写之前**录制,于是批量改写期间它变红
+  只有一种解释:还原有 bug。「金标红了就重录」在这种任务里是自毁。
+- **新门自带防腐。** `check-host-primitives` 的 allowlist 是短语级的(`Claude Code plugin` 豁免,
+  裸 `Claude Code` 不豁免),而且**零命中的 allowlist 条目本身算违规** —— 豁免项不会腐烂成墓碑。
+
+### Key Lessons
+
+- **「已实现」不等于「可达」。** T2/T3 交付了 `codexExecSpawn` 与五类具名错误,但没有调用方,
+  用户进不去。发版时按 built-but-unwired 如实排除在 CHANGELOG 之外,随后补 T3b 接线。这个模式
+  在本项目反复出现(v11.0 也是"capability built-but-unwired"),值得每次交付时主动问一句
+  「用户从哪进得去」。
+- **修完一条边界要按机制扫姐妹面,不是按文件。** Phase 64 修了 `ccPluginMarketplace` 的凭据备份,
+  两个结构同形的 MCP 安装器没扫到,整整两个 phase 后才由收口审计抓出。正确的复查问法是
+  「谁调用 `backup()` 且 target 可能是敏感文件」,而不是「我改的这个文件还有别的问题吗」。
+- **反复对用户说的话也要核验。** 我在本 milestone 里多次讲"不读 `config.toml`" —— 不准确:
+  写是不写,但 `isMcpServerRegistered` 有一处窄读会把含凭据的整个文件拉进内存。收口时更正,
+  并把 ADR 0041(不写也不读)与 ADR 0040(有意保留 `mcpConfigPath`)的张力如实写进
+  `docs/host-contract.md` §5.1 而不是抹平。
+- **给 subagent 的约束若引用项目记忆,先确认那条规则在当前上下文适用。** Phase 65 批 C 把
+  「改 TypeBox schema 必须跑 `build:schema`」写进 brief,但那条针对 manifest schema,
+  `src/checkpoint/schema/**` 不参与 `schemas/` 生成 —— 代价是两次 8 小时空转。诊断靠进程级证据
+  (无新起子进程)+ 最小任务探针(同批单任务 20 分钟跑完)区分"机制坏了"与"brief 坏了"。
+- **重 golden 测试必须自带文件级 timeout。** 同一形状在本 milestone 内出现三次(邻居饿死 /
+  陈旧 per-cell 覆盖 / 纯文档 commit 变红)。判据:单跑绿 + `--no-file-parallelism` 绿 +
+  报 timeout 而非断言失败 → 负载竞争,去翻那个 commit 改了什么只会白费功夫。
+- **`| tail` 会把退出码换成 tail 的。** 本次收口差点据此认为全量绿(exit 0 来自 tail,日志还是空的)。
+  验收类命令一律重定向到文件再取退出码,和「`pnpm lint` 禁 `| tail` 掩蔽」是同一条。
