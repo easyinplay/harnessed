@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
+- **Latest shipped (npm)**: **v4.45.0** 2026-09-30(v16.0 Phase 65 正文宿主原语化 + Phase 66 T1 codex agent role;registry 直查 `dist-tags.latest=4.45.0` 核实,release 9 assets)。上一版:**v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
@@ -43,7 +43,13 @@ progress:
   - **Phase 65 正文宿主原语化 DONE 2026-09-29**(11 commit `1626176`→`2e7dfe6`,2228 测试,十门全 0;**未发版**)
     —— 四个交付面(skills / 生成命令体 / 运行时 prompt / 能力注册表)按宿主渲染,claude 侧由三份逐字节金标锁住;
     新门 `check-host-primitives`。SPEC 的 236 处基线被实测证明不完整(维护者拍板全纳,实际 450+),
-    分类规则与 lockstep 注释各被证否一次。详 `phases/65-host-primitive-content/SUMMARY.md`。下一步 Phase 66。
+    分类规则与 lockstep 注释各被证否一次。详 `phases/65-host-primitive-content/SUMMARY.md`。**已发 npm 4.45.0**。
+  - **Phase 66 codex agents / exec spawn / doctor 矩阵 — 进行中(2026-09-29 立项)**:T0 四项实测全部有结论
+    (exec 形状 / env 传子会话 hook / read-only 沙箱仍挡但 exit 0 / agents toml 能被 `spawn_agent` 引用);
+    T1-T3 已交付(`54aad96`)—— agent role 生成已随 4.45.0 发布,codex exec spawn 与五类具名错误**已实现但未接线**故未声明。
+    goal 桥接经维护者裁定移出本 phase(ADR-0039 删它的理由正是「未实证」,codex 侧同样未实证)。
+    顺带更正了 Phase 65 写错的 `spawn_agent` 参数签名(v1 无 `task_name`,`31ea64d`)。剩 T4-T7。
+    详 `phases/66-codex-spawn-agents-goal/{findings,task_plan}.md`。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
