@@ -2,7 +2,7 @@
 
 SPEC:`.planning/specs/2026-09-22-codex-host-parity-v16.md` §「Phase 66」(唯一真相源)
 + 本文件「开工细化」(对 SPEC 的落地修正,依据 `findings.md` 的 F1-F4 核实)。
-Status: T0 complete (2026-09-29) — 四项实测有结论,见 findings F5-F8;T1 起待做
+Status: T0-T5 complete (2026-09-30) — 详 SUMMARY.md;剩 T6 的 README 部分(推迟)与 T7 收口
 
 ## 开工细化(对 SPEC 的修正,逐条给理由)
 
@@ -37,22 +37,22 @@ Status: T0 complete (2026-09-29) — 四项实测有结论,见 findings F5-F8;T1
 
 | T | 内容 | 主要文件 | 验收 |
 |---|---|---|---|
-| T1 | role-prompts → `~/.codex/agents/harnessed-<sub>.toml` 生成器(`name` / `description` 必填 / `developer_instructions`);命名空间前缀防撞名(F1 重名会被 codex 跳过并告警) | `src/installers/lib/codexAgentRoles.ts`(NEW) | 生成物快照;`description` 非空;安装 / 卸载往返 |
-| T2 | `codexExecSpawn`:子进程 `codex exec --ephemeral --json -o <file> --skip-git-repo-check`,`shell:false` + 绝对路径(F5);成功判据看 `-o` 内容 + 事件流**而非 exit code**(F6) | `src/workflow/lib/codexExecSpawn.ts`(NEW) | 单测(mock 进程);**测试钉死:仅当本进程宿主为 codex** |
-| T3 | 五类具名错误 + 分派:`SpawnTimeout` / `SpawnExitNonZero` / `SpawnOutputMalformed` / `SpawnAuthFailed` / `SpawnRefused`;超时重试 1 次 | `src/workflow/lib/spawnFailure.ts`(NEW), `run.ts` | 五态单测;类型信息不再被压成字符串 |
-| T4 | 错误分类入账本:schema 加可选字段 + `runCheckpointFail` 的注入点 | `src/checkpoint/schema/currentWorkflow.v1.ts`, `src/cli/checkpoint.ts` | 往返测试;**既有 eval golden 不许变**(11+2 份) |
-| T5 | doctor 描述符化 + `--host <id>` / 矩阵视图;`skipped` 成为一等状态 | `doctor-registry.ts`, `doctor.ts`, `check-builtin.ts` | 计数断言同步;矩阵输出快照 |
-| T6 | README / 站点表述更新;HostAdapter 契约收口(把 Phase 63-66 的宿主差异集中成一份可读契约) | `README*.md`, `docs/` | 文档门绿 |
-| T7 | CHANGELOG / SUMMARY / STATE / TODOS(含 goal 的实测步骤) | docs | — |
+| T1 ✅ | role-prompts → `~/.codex/agents/harnessed-<sub>.toml` 生成器(`name` / `description` 必填 / `developer_instructions`);命名空间前缀防撞名(F1 重名会被 codex 跳过并告警) | `src/installers/lib/codexAgentRoles.ts`(NEW) | 生成物快照;`description` 非空;安装 / 卸载往返 |
+| T2 ✅ | `codexExecSpawn`:子进程 `codex exec --ephemeral --json -o <file> --skip-git-repo-check`,`shell:false` + 绝对路径(F5);成功判据看 `-o` 内容 + 事件流**而非 exit code**(F6) | `src/workflow/lib/codexExecSpawn.ts`(NEW) | 单测(mock 进程);**测试钉死:仅当本进程宿主为 codex** |
+| T3 ✅ | 五类具名错误(分派另见 T3b):`SpawnTimeout` / `SpawnExitNonZero` / `SpawnOutputMalformed` / `SpawnAuthFailed` / `SpawnRefused`;超时重试 1 次 | `src/workflow/lib/spawnFailure.ts`(NEW), `run.ts` | 五态单测;类型信息不再被压成字符串 |
+| T4 ✅ | 错误分类入账本:schema 加可选字段 + `runCheckpointFail` 的注入点 | `src/checkpoint/schema/currentWorkflow.v1.ts`, `src/cli/checkpoint.ts` | 往返测试;**既有 eval golden 不许变**(11+2 份) |
+| T5 ✅ | doctor 描述符化 + `--host <id>` / 矩阵视图;`skipped` 成为一等状态 | `doctor-registry.ts`, `doctor.ts`, `check-builtin.ts` | 计数断言同步;矩阵输出快照 |
+| T6 🔶 | HostAdapter 契约(`docs/`)✅;**README 部分推迟** —— 10 个 README 正被另一会话改动,按共享工作树纪律不碰,已进 TODOS(把 Phase 63-66 的宿主差异集中成一份可读契约) | `README*.md`, `docs/` | 文档门绿 |
+| T7 ✅ | CHANGELOG `[Unreleased]` / SUMMARY / STATE / TODOS(goal 四步实测步骤 + README 推迟项) | docs | — |
 
 ## 验收(phase 级)
 
-- [ ] T0 四项实测有结论并写进 findings(不通过的项按退路调整任务表)
-- [ ] `tsc --noEmit` 0;全域 `corepack pnpm lint` 0;十道 `check-*.mjs` 全 0
-- [ ] 三份渲染金标 + eval golden 无回归
-- [ ] codex exec spawn 仅在宿主为 codex 时可达(测试钉死)
-- [ ] 本机 vitest 绿;CI 三 OS 绿
-- [ ] CHANGELOG / SUMMARY / STATE / TODOS
+- [x] T0 四项实测有结论并写进 findings(F5-F8;四项全部通过,无需走退路)
+- [x] `tsc --noEmit` 0;全域 `corepack pnpm lint` 0;十道 `check-*.mjs` 全 0
+- [x] 三份渲染金标 + eval golden 无回归(13 份零字节变化)
+- [x] codex exec spawn 仅在宿主为 codex 时可达(钉在模块入口,claude 宿主既抛错也到不了 spawn)
+- [x] 本机 vitest 3230 绿;CI 三 OS 绿(逐 commit 核实)
+- [x] CHANGELOG / SUMMARY / STATE / TODOS
 
 ## 不做(明确排除)
 

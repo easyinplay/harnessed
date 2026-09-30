@@ -48,8 +48,11 @@ progress:
     (exec 形状 / env 传子会话 hook / read-only 沙箱仍挡但 exit 0 / agents toml 能被 `spawn_agent` 引用);
     T1-T3 已交付(`54aad96`)—— agent role 生成已随 4.45.0 发布,codex exec spawn 与五类具名错误**已实现但未接线**故未声明。
     goal 桥接经维护者裁定移出本 phase(ADR-0039 删它的理由正是「未实证」,codex 侧同样未实证)。
-    顺带更正了 Phase 65 写错的 `spawn_agent` 参数签名(v1 无 `task_name`,`31ea64d`)。剩 T4-T7。
-    详 `phases/66-codex-spawn-agents-goal/{findings,task_plan}.md`。
+    顺带更正了 Phase 65 写错的 `spawn_agent` 参数签名(v1 无 `task_name`,`31ea64d`)。
+    T3b-T5 已交付(`80aeb94`,未发版)—— spawn 按宿主分派(补上「已实现但无调用方」的缺口)、
+    失败分类进 leaf 账本 + `checkpoint fail --failure`、doctor `--matrix` / `--host` 且 `skipped` 成一等状态。
+    剩 T6 的 README 部分(推迟:10 个 README 正被另一会话改动)与 T7 收口。
+    详 `phases/66-codex-spawn-agents-goal/SUMMARY.md`。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 

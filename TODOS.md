@@ -17,6 +17,26 @@
 - [ ] **gemini 宿主 milestone** — P2 / L(CC: ~4h)
   Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。先实测 gemini hook / subagent / skills 目录。
   Criterion: 实际用不用(design doc 2026-08-26 OQ4)。Depends: codex 宿主对等 milestone 收口。
+- [ ] **codex goal 桥接** — P3 / M,Phase 66 裁定移出(2026-09-29)
+  Why: SPEC 的 Phase 66 列了它,但仓库里 goal 是**被删掉的东西** —— ADR-0036 曾引入三级完成保证链
+  (ralph-loop plugin → 宿主原生 `/goal` → self-loop),**ADR-0039 在 4.43.0 整档 supersede 并删除**,
+  删除理由之一正是「tier 2(原生 `/goal`)从未被实证」(`docs/adr/0039-*.md:27`)。codex 侧的可见性同样未实证,
+  在实测之前重新引入等于重犯同一个错。已知事实:`thread/goal/set` 经 app-server 写入**跨进程持久**
+  (Phase 63-64 期间实测过),但**运行中的 TUI 能否即时感知未知** —— 这是整条路的成立前提。
+  **Trigger(需维护者实测,只有你能做)**:
+    1. 开一个 codex TUI 会话,记下它的 thread id(`codex agents` 可列出会话;或 TUI 内查看)。
+    2. 另开一个终端,用 app-server 的 JSON-RPC 对**那个 threadId** 调 `thread/goal/set`
+       (握手与调用形状见 `src/installers/lib/codexHookTrust.ts:1-17` 的协议注释 + `spawnCodexAppServer`;
+       Phase 64 已验证 `initialize` → `initialized` → 具体方法 这条链可用)。
+    3. 回到那个**仍在运行**的 TUI,不重启、不新开 turn,看 goal 是否已出现/生效。
+    4. 若不可见,再试「设完之后在 TUI 里发一条消息」,区分「完全不可见」与「下一 turn 才生效」。
+  Criterion: 步骤 3 或 4 可见 → 值得立项(那时需要一份新 ADR 说明为何推翻 0039 的相关部分);
+  完全不可见 → 记显式降级并永久关闭此项。Depends: 无(可随时测)。
+- [ ] **README 表述更新(v16.0 宿主对等)** — P2 / S,Phase 66 T6 推迟
+  Why: T6 交付了 `docs/` 下的 HostAdapter 契约,但 README 体系(root + 9 个镜像)在做 Phase 66 时
+  **正被另一个会话改动**(10 个文件 untracked-modified),按共享工作树纪律不碰。
+  Trigger: 那批 README 改动落地后,把「codex 宿主支持到什么程度」的表述对齐到 `docs/` 的契约文档,
+  10 个镜像同步。注意 `check-provenance` 与 i18n 对等门。
 - [ ] **codex 上 plugin 类能力全告警** — P2 / S,Phase 65 findings F8
   Why: codex descriptor 的 `pluginsRegistry: null` → `readInstalledPlugins` 返回空集(不读 fs),于是每个
   `install_type: plugin` 的 capability 在 codex 上都告警「backing missing」。`planning-with-files` 这类

@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **codex 上的 CI / headless spawn 现在真的可达。** `harnessed run` 在 codex 宿主下改走子进程
+  `codex exec --ephemeral --json`(此前只有 Claude Agent SDK 的 in-process 路径,codex 上无从执行)。
+  分派按当前宿主自动选路,claude 侧行为逐字节不变。成功判据不看 exit code —— 沙箱拒掉工具调用、
+  引用了不存在的 agent role、模型放弃任务,这些都会以 exit 0 收场(实测),所以判据落在输出内容与事件流上。
+  注意这条路只补 CI / headless:交互面仍是「正文指挥模型自己用 `spawn_agent`」。
+- **spawn 失败带具名分类进 leaf 账本**:`SpawnTimeout` / `SpawnExitNonZero` / `SpawnOutputMalformed` /
+  `SpawnAuthFailed` / `SpawnRefused`。此前所有 spawn 异常被压成一条字符串,类型信息丢失。
+  `SpawnRefused` 与 `SpawnOutputMalformed` 刻意分开:前者是「运行告诉了我们为什么失败」(沙箱拒、
+  unknown agent role),后者是「运行没给出任何可解析的东西」。超时重试一次。
+  `harnessed checkpoint fail` 新增 `--failure <kind>` 作为手工注入点,未知值在任何写入之前拒绝。
+- **`harnessed doctor --matrix`**:一张「check × 宿主」的矩阵,一次看清每项检查在 claude 与 codex 上
+  各自的状态。`--host <claude|codex>` 只跑适用该宿主的检查(经 `HARNESSED_PLATFORM` 真实解析,
+  格子里是实测状态而非推断)。`--json` 下两者各有自己的结构。
+
+### Changed
+
+- **doctor 的 `skipped` 成为一等状态,不再伪装成 `pass`。** 「非本宿主 → 跳过」的 7 项检查此前返回 `pass`,
+  在汇总里与真正通过的项无法区分。`skipped` 不计票、不影响 exit code。默认输出**不按宿主过滤** ——
+  「这项在这里不适用」值它那一行;过滤只在显式 `--host` / `--matrix` 时生效。claude 上默认输出因此
+  只变一个字符(第 27 行的状态标记)。
+- doctor 的检查注册表带上了宿主元数据,于是矩阵里 `n/a`(注册表没为该宿主声明)与 `skipped`
+  (声明了却被检查自己拒掉)可以区分 —— 后者即「声明与实际不符」的漂移信号,有测试双向咬住。
+
 ## [4.45.0] - 2026-09-30
 
 ### Added
