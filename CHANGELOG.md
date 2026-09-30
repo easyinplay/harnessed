@@ -5,9 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.45.0] - 2026-09-30
 
 ### Added
+
+- **codex 上 `harnessed setup` 会生成 agent role 文件**,写到 `<CODEX_HOME>/agents/harnessed-<sub>.toml`,于是 codex 会话里的模型可以用 `spawn_agent(agent_type: "harnessed-<sub>", …)` 直接起一个带 harnessed 角色指令的子 agent。内容取自 `workflows/role-prompts.yaml` 并经宿主原语渲染(所以里面指名的是 codex 的工具而非 Claude Code 的)。master 编排器不生成 —— 它们是纯 dispatcher,给它们一个可 spawn 的 `agent_type` 只会是死条目。卸载要求文件名前缀与文件头 marker **同时**命中才删,所以其它工具装在同一目录下的 role(本机有 33 个)碰不到;已存在但没有 marker 的同名文件只跳过并报告,不覆盖。codex 的 agent role 走目录发现,**不需要也不会写 `~/.codex/config.toml`**。
 
 - **正文按宿主渲染:同一份 workflow 内容装到 Claude Code 或 codex 上,各自指名自己的原语。** 新增第二族占位符 `{{ host.<primitive>[.<variant>] }}`(与既有 `{{ capabilities.<x>.cmd }}` 同族,挂同一个渲染点),词表落 `workflows/host-primitives.yaml` + `.zh-Hans.yaml`(14 primitive / 39 占位符)。四个交付面全部接入:安装到 skills 目录的 SKILL 正文、生成的 `/<name>` 命令体、运行时交给 subagent 的 prompt(role-prompts / `disciplines/language.yaml`)、以及能力注册表。codex 侧工具名取自上游 `codex-rs/core/src/tools/handlers/multi_agents_spec.rs`(本机 codex-cli 0.155.1,`multi_agent` v1 生效):`spawn_agent(agent_type, message)` / `send_input` / `wait_agent` / `list_agents` / `close_agent` / `resume_agent`,以及 `request_user_input`。
 - **`capabilities.yaml` 支持 `by_host` 按宿主取值。** 顶层 `impl` / `cmd` 仍是权威的 Claude Code 值,`by_host.<host>` 只替换它显式声明的字段;Bucket 5 的三个 agent-platform 能力据此在 codex 上解析为 `spawn_agent(agent_type, message)` / `send_input` / `close_agent`。宿主键是具名的(`claude` / `codex`)而非自由 record —— 写错宿主名在自由 record 下会静默永不命中、继续渲染 Claude 原语,具名 + `additionalProperties: false` 把拼写错误变成构建期错误。
