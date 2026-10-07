@@ -2,7 +2,7 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | **简体中文** | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README-en.md) | **简体中文** | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > _AI coding harness 包管理器 + composition orchestrator_ —— 它把开源生态最优秀的组件装配成一个可执行的 engine，由三层 **BDD → SDD → TDD** 方法论接线。
 
@@ -13,6 +13,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Not affiliated with, endorsed by, or sponsored by Harness Inc. (见 [NOTICE](./NOTICE))
+
+---
+
+## 📦 快速安装
+
+**走 npm**(推荐 —— 两条通道同为一等公民,版本保持同步):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x 不支持 `&&` 链接 —— 改用 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
+
+**没有 Node.js?独立二进制** —— 分平台安装,后续用 `harnessed update` 自更新:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **或让 AI 帮你装** —— 把下面这句话发给 Claude Code (或任何 AI 助手):
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+AI 会自动 fetch 文档 + 跑安装,处理 OS / 权限 / PATH / corepack 等 edge case —— 无需复制大段文字。
+
+> [!TIP]
+> 🚀 **很多人喜爱的 Agent Teams 和 Subagent 功能,在 harnessed 中会根据任务自动启用!**
+> 无需手动配置 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` —— `harnessed setup` 会自动写入 `~/.claude/settings.json`。Pattern A 全栈三路 / Pattern C 4-specialist 等 multi-agent workflow 即开即用。
+
+---
+
+## ⏱️ First 5 Minutes
+
+从零到一条运转中的 workflow,最短路径:
+
+```
+# 1. 在 Claude Code 内 —— 启动你的第一条 workflow
+/auto "你的第一个需求"               # 新手默认: 端到端跑完所有 stage
+```
+
+```bash
+# 2. 迷路了? 不带参数跑 harnessed —— 它会告诉你身在何处 + 下一步是什么
+harnessed
+#   → you-are-here 仪表盘 (active phase + 每步状态) + 一行 NEXT: auto|manual|done
+#   不必记 status / next / resume —— 一个命令 (comet `/comet` 类比,read-only)
+#   加 --json 输出机器可读格式
+```
+
+```bash
+# 3. 中断后随时恢复
+harnessed            # 同一个 you-are-here 视图
+harnessed resume     # 从最近 checkpoint 继续
+```
+
+> 想更精细地控制哪个 stage 何时跑? 看下面 3 种模式。
 
 ---
 
@@ -92,67 +153,6 @@ harnessed 的三层栈方案是软件工程上既有的 **BDD → SDD → TDD** 
 | **平台覆盖** | 仅 Claude Code | 仅 Codex | **Cross-harness** —— Claude Code 主力,Codex 经 platform 层 |
 
 > 原生 agent 在零配置、零开销的琐碎一次性改动上取胜。一旦工作跨越多步骤、多 session 或多 subagent —— 即兴漂移和迷失在对话里的状态开始让你付出代价 —— harnessed 就开始挣回它的价值。
-
----
-
-## 📦 快速安装
-
-**走 npm**(推荐 —— 两条通道同为一等公民,版本保持同步):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x 不支持 `&&` 链接 —— 改用 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
-
-**没有 Node.js?独立二进制** —— 分平台安装,后续用 `harnessed update` 自更新:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **或让 AI 帮你装** —— 把下面这句话发给 Claude Code (或任何 AI 助手):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI 会自动 fetch 文档 + 跑安装,处理 OS / 权限 / PATH / corepack 等 edge case —— 无需复制大段文字。
-
-> [!TIP]
-> 🚀 **很多人喜爱的 Agent Teams 和 Subagent 功能,在 harnessed 中会根据任务自动启用!**
-> 无需手动配置 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` —— `harnessed setup` 会自动写入 `~/.claude/settings.json`。Pattern A 全栈三路 / Pattern C 4-specialist 等 multi-agent workflow 即开即用。
-
----
-
-## ⏱️ First 5 Minutes
-
-从零到一条运转中的 workflow,最短路径:
-
-```
-# 1. 在 Claude Code 内 —— 启动你的第一条 workflow
-/auto "你的第一个需求"               # 新手默认: 端到端跑完所有 stage
-```
-
-```bash
-# 2. 迷路了? 不带参数跑 harnessed —— 它会告诉你身在何处 + 下一步是什么
-harnessed
-#   → you-are-here 仪表盘 (active phase + 每步状态) + 一行 NEXT: auto|manual|done
-#   不必记 status / next / resume —— 一个命令 (comet `/comet` 类比,read-only)
-#   加 --json 输出机器可读格式
-```
-
-```bash
-# 3. 中断后随时恢复
-harnessed            # 同一个 you-are-here 视图
-harnessed resume     # 从最近 checkpoint 继续
-```
-
-> 想更精细地控制哪个 stage 何时跑? 看下面 3 种模式。
 
 ---
 

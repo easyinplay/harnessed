@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | **繁體中文** | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README-en.md) | [简体中文](./README.md) | **繁體中文** | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness 套件管理器 + composition orchestrator_ —— 它將開源生態最優秀的元件裝配成一個可執行的 engine，由三層 **BDD → SDD → TDD** 方法論接線。
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > 本專案與 Harness Inc. 無關聯、未獲其背書或贊助（詳見 [NOTICE](./NOTICE)）
+
+---
+
+## 📦 快速安裝
+
+**使用 npm**(推薦 —— 兩條通道皆為一等公民,版本保持同步):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x 不支援 `&&` 串連 —— 請改用 `;` 或分兩行執行（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe 皆可正常使用。
+
+**沒有 Node.js?獨立二進位檔** —— 分平台安裝,後續以 `harnessed update` 自我更新:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **或者讓 AI 幫你安裝** —— 將這句話貼給 Claude Code（或任何 AI 助理）：
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+AI 會自動抓取文件並執行安裝，處理作業系統 / 權限 / PATH / corepack 等邊緣情況 —— 無需複製大段文字。
+
+> [!TIP]
+> 🚀 **備受喜愛的 Agent Teams 與 Subagent 功能在 harnessed 中會根據任務自動啟用！**
+> 無需手動設定 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` —— `harnessed setup` 會自動將其寫入 `~/.claude/settings.json`。Pattern A 全端三路協同 / Pattern C 四專家審查等多 agent workflow 皆可直接使用。
+
+---
+
+## ⏱️ First 5 Minutes
+
+從零到一條運轉中的 workflow，最短路徑：
+
+```
+# 1. 在 Claude Code 內 —— 啟動你的第一條 workflow
+/auto "你的第一個需求"               # 新手預設：端到端跑完所有 stage
+```
+
+```bash
+# 2. 迷路了？不帶參數執行 harnessed —— 它會告訴你身在何處 + 下一步是什麼
+harnessed
+#   → you-are-here 儀表板（active phase + 每步狀態）+ 一行 NEXT: auto|manual|done
+#   不必記 status / next / resume —— 一個指令（comet `/comet` 類比，read-only）
+#   加 --json 輸出機器可讀格式
+```
+
+```bash
+# 3. 中斷後隨時回復
+harnessed            # 同一個 you-are-here 視圖
+harnessed resume     # 從最近 checkpoint 繼續
+```
+
+> 想更精細地控制哪個 stage 何時跑？看下面 3 種模式。
 
 ---
 
@@ -94,67 +155,6 @@ harnessed 的三層架構方案是軟體工程上既有的 **BDD → SDD → TDD
 | **平台覆蓋** | 僅 Claude Code | 僅 Codex | **Cross-harness** —— Claude Code 主力，Codex 經 platform 層 |
 
 > 原生 agent 在零設定、零開銷的瑣碎一次性改動上取勝。一旦工作跨越多步驟、多 session 或多 subagent —— 即興漂移與迷失在對話裡的狀態開始讓你付出代價 —— harnessed 就開始掙回它的價值。
-
----
-
-## 📦 快速安裝
-
-**使用 npm**(推薦 —— 兩條通道皆為一等公民,版本保持同步):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x 不支援 `&&` 串連 —— 請改用 `;` 或分兩行執行（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe 皆可正常使用。
-
-**沒有 Node.js?獨立二進位檔** —— 分平台安裝,後續以 `harnessed update` 自我更新:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **或者讓 AI 幫你安裝** —— 將這句話貼給 Claude Code（或任何 AI 助理）：
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI 會自動抓取文件並執行安裝，處理作業系統 / 權限 / PATH / corepack 等邊緣情況 —— 無需複製大段文字。
-
-> [!TIP]
-> 🚀 **備受喜愛的 Agent Teams 與 Subagent 功能在 harnessed 中會根據任務自動啟用！**
-> 無需手動設定 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` —— `harnessed setup` 會自動將其寫入 `~/.claude/settings.json`。Pattern A 全端三路協同 / Pattern C 四專家審查等多 agent workflow 皆可直接使用。
-
----
-
-## ⏱️ First 5 Minutes
-
-從零到一條運轉中的 workflow，最短路徑：
-
-```
-# 1. 在 Claude Code 內 —— 啟動你的第一條 workflow
-/auto "你的第一個需求"               # 新手預設：端到端跑完所有 stage
-```
-
-```bash
-# 2. 迷路了？不帶參數執行 harnessed —— 它會告訴你身在何處 + 下一步是什麼
-harnessed
-#   → you-are-here 儀表板（active phase + 每步狀態）+ 一行 NEXT: auto|manual|done
-#   不必記 status / next / resume —— 一個指令（comet `/comet` 類比，read-only）
-#   加 --json 輸出機器可讀格式
-```
-
-```bash
-# 3. 中斷後隨時回復
-harnessed            # 同一個 you-are-here 視圖
-harnessed resume     # 從最近 checkpoint 繼續
-```
-
-> 想更精細地控制哪個 stage 何時跑？看下面 3 種模式。
 
 ---
 

@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | **ไทย**
+[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | **ไทย**
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness package manager + composition orchestrator_ — ประกอบส่วนประกอบที่ดีที่สุดของระบบนิเวศ open-source ให้เป็น engine ที่รันได้หนึ่งเดียว ต่อสายด้วยเมธดวิทยาสามชั้น **BDD → SDD → TDD**
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > ไม่มีความเกี่ยวข้อง ไม่ได้รับการรับรอง หรือได้รับการสนับสนุนจาก Harness Inc. (ดู [NOTICE](./NOTICE))
+
+---
+
+## 📦 Quick Install
+
+**ผ่าน npm** (แนะนำ — ทั้งสองช่องทางเป็น first-class และซิงก์เวอร์ชันกัน):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x ไม่รองรับการเชื่อมคำสั่งด้วย `&&` — ใช้ `;` หรือแยกเป็นสองบรรทัด (`npm install -g harnessed; harnessed setup`) แทน ส่วน bash / zsh / PowerShell 7+ / cmd.exe ใช้งานได้ปกติ
+
+**ไม่มี Node.js? ไบนารีแบบสแตนด์อโลน** — แยกตามแพลตฟอร์ม อัปเดตตัวเองผ่าน `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **หรือจะให้ AI ติดตั้งให้แทนก็ได้** — วางประโยคนี้ใน Claude Code (หรือ AI assistant ตัวไหนก็ได้):
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+AI จะดึงเอกสารมาเองแล้วรันการติดตั้ง รองรับ edge case ด้าน OS / permissions / PATH / corepack — ไม่ต้อง copy ข้อความยาว ๆ มาวางเอง
+
+> [!TIP]
+> 🚀 **ฟีเจอร์ Agent Teams และ Subagents ที่ทุกคนชื่นชอบ เปิดใช้งานอัตโนมัติใน harnessed ตามประเภทงาน!**
+> ไม่จำเป็นต้องกำหนดค่า `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` เอง — `harnessed setup` เขียนค่านี้ลง `~/.claude/settings.json` ให้อัตโนมัติ Pattern A full-stack three-way / Pattern C 4-specialist และ multi-agent workflows อื่น ๆ พร้อมใช้ทันที
+
+---
+
+## ⏱️ 5 นาทีแรก
+
+เส้นทางที่สั้นที่สุดจากศูนย์ไปสู่ workflow ที่กำลังรัน:
+
+```
+# 1. Inside Claude Code — kick off your first workflow
+/auto "your first requirement"        # newcomer default: runs all stages end-to-end
+```
+
+```bash
+# 2. Lost? Run harnessed with no arguments — it tells you where you are + what's next
+harnessed
+#   → you-are-here dashboard (active phase + per-step status) + a NEXT: auto|manual|done line
+#   no need to remember status / next / resume — one command (comet `/comet` analog, read-only)
+#   add --json for machine-readable output
+```
+
+```bash
+# 3. Resume any time after an interruption
+harnessed            # same you-are-here view
+harnessed resume     # continue from the latest checkpoint
+```
+
+> อยากควบคุมละเอียดขึ้นว่า stage ไหนจะรันเมื่อไหร่? ดู 3 โหมดด้านล่าง
 
 ---
 
@@ -94,67 +155,6 @@ Native agent ให้ primitive แก่คุณ; harnessed ร้อยเ�
 | **Platform reach** | Claude Code เท่านั้น | Codex เท่านั้น | **Cross-harness** — Claude Code เป็นหลัก, Codex ผ่าน platform layer |
 
 > Native agent ชนะในเรื่อง zero-setup, zero-overhead สำหรับการแก้แบบ one-off เล็ก ๆ harnessed เริ่มคุ้มค่าทันทีที่งานครอบคลุมหลายขั้นตอน หลาย session หรือหลาย subagent — จุดที่ freestyle drift และ state ที่หายในแชทเริ่มสร้างต้นทุนให้คุณ
-
----
-
-## 📦 Quick Install
-
-**ผ่าน npm** (แนะนำ — ทั้งสองช่องทางเป็น first-class และซิงก์เวอร์ชันกัน):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x ไม่รองรับการเชื่อมคำสั่งด้วย `&&` — ใช้ `;` หรือแยกเป็นสองบรรทัด (`npm install -g harnessed; harnessed setup`) แทน ส่วน bash / zsh / PowerShell 7+ / cmd.exe ใช้งานได้ปกติ
-
-**ไม่มี Node.js? ไบนารีแบบสแตนด์อโลน** — แยกตามแพลตฟอร์ม อัปเดตตัวเองผ่าน `harnessed update`:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **หรือจะให้ AI ติดตั้งให้แทนก็ได้** — วางประโยคนี้ใน Claude Code (หรือ AI assistant ตัวไหนก็ได้):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI จะดึงเอกสารมาเองแล้วรันการติดตั้ง รองรับ edge case ด้าน OS / permissions / PATH / corepack — ไม่ต้อง copy ข้อความยาว ๆ มาวางเอง
-
-> [!TIP]
-> 🚀 **ฟีเจอร์ Agent Teams และ Subagents ที่ทุกคนชื่นชอบ เปิดใช้งานอัตโนมัติใน harnessed ตามประเภทงาน!**
-> ไม่จำเป็นต้องกำหนดค่า `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` เอง — `harnessed setup` เขียนค่านี้ลง `~/.claude/settings.json` ให้อัตโนมัติ Pattern A full-stack three-way / Pattern C 4-specialist และ multi-agent workflows อื่น ๆ พร้อมใช้ทันที
-
----
-
-## ⏱️ 5 นาทีแรก
-
-เส้นทางที่สั้นที่สุดจากศูนย์ไปสู่ workflow ที่กำลังรัน:
-
-```
-# 1. Inside Claude Code — kick off your first workflow
-/auto "your first requirement"        # newcomer default: runs all stages end-to-end
-```
-
-```bash
-# 2. Lost? Run harnessed with no arguments — it tells you where you are + what's next
-harnessed
-#   → you-are-here dashboard (active phase + per-step status) + a NEXT: auto|manual|done line
-#   no need to remember status / next / resume — one command (comet `/comet` analog, read-only)
-#   add --json for machine-readable output
-```
-
-```bash
-# 3. Resume any time after an interruption
-harnessed            # same you-are-here view
-harnessed resume     # continue from the latest checkpoint
-```
-
-> อยากควบคุมละเอียดขึ้นว่า stage ไหนจะรันเมื่อไหร่? ดู 3 โหมดด้านล่าง
 
 ---
 

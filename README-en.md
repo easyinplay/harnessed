@@ -2,7 +2,7 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-**English** | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+**English** | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
 > _AI coding harness package manager + composition orchestrator_ — it assembles the best of the open-source ecosystem into one executable engine, wired by the three-layer **BDD → SDD → TDD** methodology.
 
@@ -13,6 +13,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Not affiliated with, endorsed by, or sponsored by Harness Inc. (see [NOTICE](./NOTICE))
+
+---
+
+## 📦 Quick Install
+
+**Via npm** (recommended — both channels are first-class and stay in sync):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
+
+**No Node.js? Standalone binary** — per-platform, self-updates via `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+The AI will auto-fetch the doc + run the install, handling OS / permissions / PATH / corepack edge cases — no need to copy large chunks of text.
+
+> [!TIP]
+> 🚀 **The much-loved Agent Teams and Subagent features are auto-enabled in harnessed based on the task!**
+> No need to manually configure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` writes it to `~/.claude/settings.json` automatically. Pattern A full-stack three-way / Pattern C 4-specialist and other multi-agent workflows work out of the box.
+
+---
+
+## ⏱️ First 5 Minutes
+
+The shortest path from zero to a running workflow:
+
+```
+# 1. Inside Claude Code — kick off your first workflow
+/auto "your first requirement"        # newcomer default: runs all stages end-to-end
+```
+
+```bash
+# 2. Lost? Run harnessed with no arguments — it tells you where you are + what's next
+harnessed
+#   → you-are-here dashboard (active phase + per-step status) + a NEXT: auto|manual|done line
+#   no need to remember status / next / resume — one command (comet `/comet` analog, read-only)
+#   add --json for machine-readable output
+```
+
+```bash
+# 3. Resume any time after an interruption
+harnessed            # same you-are-here view
+harnessed resume     # continue from the latest checkpoint
+```
+
+> Want finer control over which stage runs and when? See the 3 modes below.
 
 ---
 
@@ -94,67 +155,6 @@ Native agents give you primitives; harnessed wires them into a methodology. Wher
 > Native agents win on zero-setup, zero-overhead for trivial one-off edits. harnessed earns its keep the moment work spans multiple steps, sessions, or subagents — where freestyle drift and lost-in-chat state start costing you.
 
 **Don't take our word for it — we ran the experiment.** A published A/B evidence pack ([docs/evidence/2026-07-b1/](./docs/evidence/2026-07-b1/)) compares `/auto` against bare Claude Code on 4 machine-graded tasks, full transcripts included. Honest headline: on small, fully-specified tasks both arms score 100% and bare is 4-5× cheaper — use bare (or auto-lite) there. The orchestration value claim lives in fuzzy-spec / multi-session territory, which that experiment deliberately does not cover; bring us a real task from that territory and we'll run the same protocol on it.
-
----
-
-## 📦 Quick Install
-
-**Via npm** (recommended — both channels are first-class and stay in sync):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
-
-**No Node.js? Standalone binary** — per-platform, self-updates via `harnessed update`:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-The AI will auto-fetch the doc + run the install, handling OS / permissions / PATH / corepack edge cases — no need to copy large chunks of text.
-
-> [!TIP]
-> 🚀 **The much-loved Agent Teams and Subagent features are auto-enabled in harnessed based on the task!**
-> No need to manually configure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` writes it to `~/.claude/settings.json` automatically. Pattern A full-stack three-way / Pattern C 4-specialist and other multi-agent workflows work out of the box.
-
----
-
-## ⏱️ First 5 Minutes
-
-The shortest path from zero to a running workflow:
-
-```
-# 1. Inside Claude Code — kick off your first workflow
-/auto "your first requirement"        # newcomer default: runs all stages end-to-end
-```
-
-```bash
-# 2. Lost? Run harnessed with no arguments — it tells you where you are + what's next
-harnessed
-#   → you-are-here dashboard (active phase + per-step status) + a NEXT: auto|manual|done line
-#   no need to remember status / next / resume — one command (comet `/comet` analog, read-only)
-#   add --json for machine-readable output
-```
-
-```bash
-# 3. Resume any time after an interruption
-harnessed            # same you-are-here view
-harnessed resume     # continue from the latest checkpoint
-```
-
-> Want finer control over which stage runs and when? See the 3 modes below.
 
 ---
 

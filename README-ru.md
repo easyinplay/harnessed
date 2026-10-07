@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | **Русский** | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | **Русский** | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Примечание (best-effort перевод):** Этот перевод сгенерирован / выполнен по принципу best-effort и может отставать от английского [README.md](./README.md). Для самой свежей и авторитетной версии обращайтесь к английскому README.
+> **Примечание (best-effort перевод):** Этот перевод сгенерирован / выполнен по принципу best-effort и может отставать от английского [README-en.md](./README-en.md). Для самой свежей и авторитетной версии обращайтесь к английскому README.
 
 > _Менеджер пакетов AI coding harness + composition orchestrator_ — собирает лучшие компоненты open-source-экосистемы в единый исполняемый engine, связанный трёхслойной методологией **BDD → SDD → TDD**.
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Не аффилирован с Harness Inc., не одобрен и не спонсируется ею (см. [NOTICE](./NOTICE))
+
+---
+
+## 📦 Quick Install
+
+**Через npm** (рекомендуется — оба канала полноценны и синхронизированы):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x не поддерживает цепочку `&&` — используйте `;` или две строки (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe работают нормально.
+
+**Нет Node.js? Автономный бинарник** — по платформам, далее самообновляется через `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **Или пусть AI установит за вас** — вставьте это предложение в Claude Code (или любой AI-ассистент):
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+AI автоматически скачает документ и выполнит установку, обработав крайние случаи с ОС / правами / PATH / corepack — не нужно копировать большие блоки текста.
+
+> [!TIP]
+> 🚀 **Любимые всеми функции Agent Teams и Subagent в harnessed включаются автоматически в зависимости от задачи!**
+> Нет необходимости вручную настраивать `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` записывает это в `~/.claude/settings.json` автоматически. Pattern A полностековая трёхсторонняя / Pattern C 4-специалиста и другие multi-agent workflow работают «из коробки».
+
+---
+
+## ⏱️ First 5 Minutes
+
+Кратчайший путь от нуля до работающего workflow:
+
+```
+# 1. Внутри Claude Code — запустите первый workflow
+/auto "ваше первое требование"        # дефолт для новичка: прогоняет все стадии end-to-end
+```
+
+```bash
+# 2. Потерялись? Запустите harnessed без аргументов — он скажет, где вы и что дальше
+harnessed
+#   → дашборд «вы здесь» (активная фаза + статус по каждому шагу) + строка NEXT: auto|manual|done
+#   не нужно помнить status / next / resume — одна команда (аналог comet `/comet`, read-only)
+#   добавьте --json для машиночитаемого вывода
+```
+
+```bash
+# 3. Возобновляйте в любой момент после прерывания
+harnessed            # тот же вид «вы здесь»
+harnessed resume     # продолжить с последней контрольной точки
+```
+
+> Нужен более тонкий контроль над тем, какая стадия запускается и когда? См. 3 режима ниже.
 
 ---
 
@@ -94,67 +155,6 @@ Three-layer stack у harnessed — это программно-инженерн�
 | **Охват платформ** | Только Claude Code | Только Codex | **Cross-harness** — Claude Code основной, Codex через platform layer |
 
 > Нативные агенты выигрывают на zero-setup, zero-overhead для тривиальных разовых правок. harnessed начинает окупаться в тот момент, когда работа охватывает несколько шагов, сессий или subagent-ов — там, где фристайл-дрейф и потерянное-в-чате состояние начинают стоить вам дорого.
-
----
-
-## 📦 Quick Install
-
-**Через npm** (рекомендуется — оба канала полноценны и синхронизированы):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x не поддерживает цепочку `&&` — используйте `;` или две строки (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe работают нормально.
-
-**Нет Node.js? Автономный бинарник** — по платформам, далее самообновляется через `harnessed update`:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **Или пусть AI установит за вас** — вставьте это предложение в Claude Code (или любой AI-ассистент):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI автоматически скачает документ и выполнит установку, обработав крайние случаи с ОС / правами / PATH / corepack — не нужно копировать большие блоки текста.
-
-> [!TIP]
-> 🚀 **Любимые всеми функции Agent Teams и Subagent в harnessed включаются автоматически в зависимости от задачи!**
-> Нет необходимости вручную настраивать `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` записывает это в `~/.claude/settings.json` автоматически. Pattern A полностековая трёхсторонняя / Pattern C 4-специалиста и другие multi-agent workflow работают «из коробки».
-
----
-
-## ⏱️ First 5 Minutes
-
-Кратчайший путь от нуля до работающего workflow:
-
-```
-# 1. Внутри Claude Code — запустите первый workflow
-/auto "ваше первое требование"        # дефолт для новичка: прогоняет все стадии end-to-end
-```
-
-```bash
-# 2. Потерялись? Запустите harnessed без аргументов — он скажет, где вы и что дальше
-harnessed
-#   → дашборд «вы здесь» (активная фаза + статус по каждому шагу) + строка NEXT: auto|manual|done
-#   не нужно помнить status / next / resume — одна команда (аналог comet `/comet`, read-only)
-#   добавьте --json для машиночитаемого вывода
-```
-
-```bash
-# 3. Возобновляйте в любой момент после прерывания
-harnessed            # тот же вид «вы здесь»
-harnessed resume     # продолжить с последней контрольной точки
-```
-
-> Нужен более тонкий контроль над тем, какая стадия запускается и когда? См. 3 режима ниже.
 
 ---
 

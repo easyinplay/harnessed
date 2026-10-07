@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | **Türkçe** | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | **Türkçe** | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness paket yöneticisi + composition orchestrator_ — açık kaynak ekosisteminin en iyi bileşenlerini tek bir çalıştırılabilir engine içinde bir araya getirir; üç katmanlı **BDD → SDD → TDD** metodolojisiyle bağlanır.
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Harness Inc. ile herhangi bir bağlantısı, onayı veya sponsorluğu yoktur (bkz. [NOTICE](./NOTICE))
+
+---
+
+## 📦 Hızlı Kurulum
+
+**npm ile** (önerilen — iki kanal da birinci sınıftır ve senkron kalır):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
+
+**Node.js yok mu? Bağımsız binary** — platforma göre, sonrasında `harnessed update` ile kendini günceller:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **Veya bir yapay zekaya kurdurun** — bu cümleyi Claude Code'a (ya da herhangi bir yapay zeka asistanına) yapıştırın:
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+Yapay zeka dokümanı otomatik olarak çeker ve kurulumu gerçekleştirir; işletim sistemi / izinler / PATH / corepack uç durumlarını sizin yerinize halleder — büyük metin parçaları kopyalamanıza gerek yoktur.
+
+> [!TIP]
+> 🚀 **Çok sevilen Agent Teams ve Subagent özellikleri harnessed'da göreve göre otomatik etkinleştirilir!**
+> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`'i elle yapılandırmanıza gerek yok — `harnessed setup` bunu `~/.claude/settings.json`'a otomatik olarak yazar. Pattern A tam-yığın üçlü / Pattern C 4-uzman ve diğer çok-ajan Workflow'ları kutudan çıktığı gibi çalışır.
+
+---
+
+## ⏱️ İlk 5 Dakika
+
+Sıfırdan çalışan bir Workflow'a en kısa yol:
+
+```
+# 1. Claude Code içinde — ilk Workflow'unuzu başlatın
+/auto "ilk gereksiniminiz"        # yeni başlayan varsayılanı: tüm aşamaları uçtan uca çalıştırır
+```
+
+```bash
+# 2. Kaybolduysanız? harnessed'ı argümansız çalıştırın — nerede olduğunuzu + sırada ne olduğunu söyler
+harnessed
+#   → buradasınız panosu (aktif phase + adım başına durum) + bir NEXT: auto|manual|done satırı
+#   status / next / resume hatırlamaya gerek yok — tek komut (comet `/comet` benzeri, salt-okunur)
+#   makine okunabilir çıktı için --json ekleyin
+```
+
+```bash
+# 3. Bir kesintiden sonra istediğiniz zaman devam edin
+harnessed            # aynı buradasınız görünümü
+harnessed resume     # en son checkpoint'ten devam edin
+```
+
+> Hangi aşamanın ne zaman çalışacağı üzerinde daha ince denetim mi istiyorsunuz? Aşağıdaki 3 moda bakın.
 
 ---
 
@@ -94,67 +155,6 @@ Native ajanlar size ilkeller (primitives) verir; harnessed onları bir metodoloj
 | **Platform erişimi** | Yalnızca Claude Code | Yalnızca Codex | **Çapraz-harness** — birincil Claude Code, platform katmanı üzerinden Codex |
 
 > Native ajanlar, önemsiz tek seferlik düzenlemeler için sıfır-kurulum, sıfır-ek yük ile kazanır. harnessed ise iş birden fazla adıma, oturuma ya da subagent'a yayıldığı an hakkını verir — serbest stil savrulması ve sohbette-kaybolan durumun size maliyet çıkarmaya başladığı yerde.
-
----
-
-## 📦 Hızlı Kurulum
-
-**npm ile** (önerilen — iki kanal da birinci sınıftır ve senkron kalır):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
-
-**Node.js yok mu? Bağımsız binary** — platforma göre, sonrasında `harnessed update` ile kendini günceller:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **Veya bir yapay zekaya kurdurun** — bu cümleyi Claude Code'a (ya da herhangi bir yapay zeka asistanına) yapıştırın:
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-Yapay zeka dokümanı otomatik olarak çeker ve kurulumu gerçekleştirir; işletim sistemi / izinler / PATH / corepack uç durumlarını sizin yerinize halleder — büyük metin parçaları kopyalamanıza gerek yoktur.
-
-> [!TIP]
-> 🚀 **Çok sevilen Agent Teams ve Subagent özellikleri harnessed'da göreve göre otomatik etkinleştirilir!**
-> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`'i elle yapılandırmanıza gerek yok — `harnessed setup` bunu `~/.claude/settings.json`'a otomatik olarak yazar. Pattern A tam-yığın üçlü / Pattern C 4-uzman ve diğer çok-ajan Workflow'ları kutudan çıktığı gibi çalışır.
-
----
-
-## ⏱️ İlk 5 Dakika
-
-Sıfırdan çalışan bir Workflow'a en kısa yol:
-
-```
-# 1. Claude Code içinde — ilk Workflow'unuzu başlatın
-/auto "ilk gereksiniminiz"        # yeni başlayan varsayılanı: tüm aşamaları uçtan uca çalıştırır
-```
-
-```bash
-# 2. Kaybolduysanız? harnessed'ı argümansız çalıştırın — nerede olduğunuzu + sırada ne olduğunu söyler
-harnessed
-#   → buradasınız panosu (aktif phase + adım başına durum) + bir NEXT: auto|manual|done satırı
-#   status / next / resume hatırlamaya gerek yok — tek komut (comet `/comet` benzeri, salt-okunur)
-#   makine okunabilir çıktı için --json ekleyin
-```
-
-```bash
-# 3. Bir kesintiden sonra istediğiniz zaman devam edin
-harnessed            # aynı buradasınız görünümü
-harnessed resume     # en son checkpoint'ten devam edin
-```
-
-> Hangi aşamanın ne zaman çalışacağı üzerinde daha ince denetim mi istiyorsunuz? Aşağıdaki 3 moda bakın.
 
 ---
 

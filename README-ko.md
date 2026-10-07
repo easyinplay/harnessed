@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | **한국어** | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | **한국어** | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness 패키지 매니저 + composition orchestrator_ — 오픈소스 생태계의 최고의 컴포넌트를 하나의 실행 가능한 engine으로 조립하고, 3계층 **BDD → SDD → TDD** 방법론으로 연결합니다.
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Harness Inc.와 제휴, 보증, 후원 관계가 없습니다. ([NOTICE](./NOTICE) 참고)
+
+---
+
+## 📦 빠른 설치
+
+**npm으로** (권장 — 두 채널 모두 1급 지원, 버전 동기화 유지):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x는 `&&` 체이닝을 지원하지 않습니다 — `;` 또는 두 줄로 나눠서 사용하세요 (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe는 모두 정상 동작합니다.
+
+**Node.js가 없다면 독립 실행 바이너리** — 플랫폼별, 이후 `harnessed update`로 자가 업데이트:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **또는 AI에게 설치를 맡기세요** — Claude Code(또는 다른 AI 어시스턴트)에 이 문장을 붙여 넣으세요:
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+AI가 문서를 자동으로 가져와 설치를 실행하며, OS / 권한 / PATH / corepack 엣지 케이스까지 처리해 줍니다 — 긴 텍스트를 복사할 필요가 없습니다.
+
+> [!TIP]
+> 🚀 **많은 사랑을 받는 Agent Teams와 Subagent 기능이 harnessed에서 작업에 따라 자동으로 활성화됩니다!**
+> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`를 수동으로 설정할 필요 없습니다 — `harnessed setup`이 `~/.claude/settings.json`에 자동으로 작성합니다. Pattern A 풀스택 3방향 / Pattern C 4-specialist 등 멀티 에이전트 Workflow가 바로 동작합니다.
+
+---
+
+## ⏱️ 처음 5분
+
+제로에서 실행 중인 Workflow까지의 최단 경로:
+
+```
+# 1. Claude Code 안에서 — 첫 Workflow 시작
+/auto "당신의 첫 요구사항"        # 입문자 기본값: 모든 Stage를 끝까지 실행
+```
+
+```bash
+# 2. 길을 잃었나요? 인자 없이 harnessed 실행 — 현재 위치 + 다음 할 일을 알려줍니다
+harnessed
+#   → 현재 위치 대시보드 (활성 Phase + 단계별 상태) + NEXT: auto|manual|done 줄
+#   status / next / resume 를 기억할 필요 없음 — 명령어 하나 (comet `/comet` 유사, 읽기 전용)
+#   기계 판독 출력은 --json 추가
+```
+
+```bash
+# 3. 중단 후 언제든지 재개
+harnessed            # 동일한 현재 위치 뷰
+harnessed resume     # 가장 최근 체크포인트에서 계속
+```
+
+> 어느 Stage가 언제 실행되는지 더 세밀하게 제어하고 싶나요? 아래 3가지 모드를 참고하세요.
 
 ---
 
@@ -94,67 +155,6 @@ Native 에이전트는 primitive를 제공하고, harnessed는 그것을 방법�
 | **플랫폼 도달 범위** | Claude Code 전용 | Codex 전용 | **Cross-harness** — Claude Code 주력, 플랫폼 계층 통해 Codex |
 
 > Native 에이전트는 사소한 일회성 편집에서 제로 셋업, 제로 오버헤드로 승리합니다. harnessed는 작업이 여러 단계, 세션, subagent에 걸치는 순간 — 자유 형식 표류와 채팅 속에서 길 잃은 상태가 비용을 부과하기 시작하는 순간 — 제값을 합니다.
-
----
-
-## 📦 빠른 설치
-
-**npm으로** (권장 — 두 채널 모두 1급 지원, 버전 동기화 유지):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x는 `&&` 체이닝을 지원하지 않습니다 — `;` 또는 두 줄로 나눠서 사용하세요 (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe는 모두 정상 동작합니다.
-
-**Node.js가 없다면 독립 실행 바이너리** — 플랫폼별, 이후 `harnessed update`로 자가 업데이트:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **또는 AI에게 설치를 맡기세요** — Claude Code(또는 다른 AI 어시스턴트)에 이 문장을 붙여 넣으세요:
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI가 문서를 자동으로 가져와 설치를 실행하며, OS / 권한 / PATH / corepack 엣지 케이스까지 처리해 줍니다 — 긴 텍스트를 복사할 필요가 없습니다.
-
-> [!TIP]
-> 🚀 **많은 사랑을 받는 Agent Teams와 Subagent 기능이 harnessed에서 작업에 따라 자동으로 활성화됩니다!**
-> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`를 수동으로 설정할 필요 없습니다 — `harnessed setup`이 `~/.claude/settings.json`에 자동으로 작성합니다. Pattern A 풀스택 3방향 / Pattern C 4-specialist 등 멀티 에이전트 Workflow가 바로 동작합니다.
-
----
-
-## ⏱️ 처음 5분
-
-제로에서 실행 중인 Workflow까지의 최단 경로:
-
-```
-# 1. Claude Code 안에서 — 첫 Workflow 시작
-/auto "당신의 첫 요구사항"        # 입문자 기본값: 모든 Stage를 끝까지 실행
-```
-
-```bash
-# 2. 길을 잃었나요? 인자 없이 harnessed 실행 — 현재 위치 + 다음 할 일을 알려줍니다
-harnessed
-#   → 현재 위치 대시보드 (활성 Phase + 단계별 상태) + NEXT: auto|manual|done 줄
-#   status / next / resume 를 기억할 필요 없음 — 명령어 하나 (comet `/comet` 유사, 읽기 전용)
-#   기계 판독 출력은 --json 추가
-```
-
-```bash
-# 3. 중단 후 언제든지 재개
-harnessed            # 동일한 현재 위치 뷰
-harnessed resume     # 가장 최근 체크포인트에서 계속
-```
-
-> 어느 Stage가 언제 실행되는지 더 세밀하게 제어하고 싶나요? 아래 3가지 모드를 참고하세요.
 
 ---
 

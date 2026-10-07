@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | **Português (Brasil)** | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | **Português (Brasil)** | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
 
 > _Gerenciador de pacotes de AI coding harness + composition orchestrator_ — ele monta os melhores componentes do ecossistema open-source em um único engine executável, conectado pela metodologia de três camadas **BDD → SDD → TDD**.
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Não é afiliado, endossado nem patrocinado pela Harness Inc. (veja [NOTICE](./NOTICE))
+
+---
+
+## 📦 Quick Install
+
+**Via npm** (recomendado — ambos os canais são de primeira classe e ficam em sincronia):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> O Windows PowerShell 5.x não suporta encadeamento com `&&` — use `;` ou duas linhas (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe funcionam normalmente.
+
+**Sem Node.js? Binário independente** — por plataforma, auto-atualiza via `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **Ou peça para uma IA instalar por você** — cole esta frase no Claude Code (ou em qualquer assistente de IA):
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+A IA vai buscar automaticamente o documento + executar a instalação, lidando com casos de borda de OS / permissões / PATH / corepack — sem necessidade de copiar grandes blocos de texto.
+
+> [!TIP]
+> 🚀 **Os adorados recursos Agent Teams e Subagents são habilitados automaticamente no harnessed com base na tarefa!**
+> Não é necessário configurar manualmente `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` grava o valor em `~/.claude/settings.json` automaticamente. O Pattern A de três vias full-stack / Pattern C de 4 especialistas e outros Workflows multi-agente funcionam imediatamente.
+
+---
+
+## ⏱️ Primeiros 5 Minutos
+
+O caminho mais curto do zero a um workflow em execução:
+
+```
+# 1. Dentro do Claude Code — dispare seu primeiro workflow
+/auto "seu primeiro requisito"        # padrão para iniciantes: roda todos os stages de ponta a ponta
+```
+
+```bash
+# 2. Perdido? Execute harnessed sem argumentos — ele te diz onde você está + o que vem a seguir
+harnessed
+#   → dashboard você-está-aqui (phase ativa + status por step) + uma linha NEXT: auto|manual|done
+#   sem precisar lembrar status / next / resume — um único comando (análogo ao comet `/comet`, somente leitura)
+#   adicione --json para output legível por máquina
+```
+
+```bash
+# 3. Retome a qualquer momento após uma interrupção
+harnessed            # mesma visão você-está-aqui
+harnessed resume     # continua a partir do checkpoint mais recente
+```
+
+> Quer um controle mais fino sobre qual stage roda e quando? Veja os 3 modos abaixo.
 
 ---
 
@@ -94,67 +155,6 @@ Os agentes nativos te dão primitivos; o harnessed os conecta em uma metodologia
 | **Alcance de plataforma** | Apenas Claude Code | Apenas Codex | **Cross-harness** — Claude Code primário, Codex via platform layer |
 
 > Os agentes nativos vencem em zero-setup, zero-overhead para edições triviais e pontuais. O harnessed se paga no momento em que o trabalho abrange múltiplos passos, sessões ou subagents — onde a deriva do freestyle e o estado perdido no chat começam a te custar caro.
-
----
-
-## 📦 Quick Install
-
-**Via npm** (recomendado — ambos os canais são de primeira classe e ficam em sincronia):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> O Windows PowerShell 5.x não suporta encadeamento com `&&` — use `;` ou duas linhas (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe funcionam normalmente.
-
-**Sem Node.js? Binário independente** — por plataforma, auto-atualiza via `harnessed update`:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **Ou peça para uma IA instalar por você** — cole esta frase no Claude Code (ou em qualquer assistente de IA):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-A IA vai buscar automaticamente o documento + executar a instalação, lidando com casos de borda de OS / permissões / PATH / corepack — sem necessidade de copiar grandes blocos de texto.
-
-> [!TIP]
-> 🚀 **Os adorados recursos Agent Teams e Subagents são habilitados automaticamente no harnessed com base na tarefa!**
-> Não é necessário configurar manualmente `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` grava o valor em `~/.claude/settings.json` automaticamente. O Pattern A de três vias full-stack / Pattern C de 4 especialistas e outros Workflows multi-agente funcionam imediatamente.
-
----
-
-## ⏱️ Primeiros 5 Minutos
-
-O caminho mais curto do zero a um workflow em execução:
-
-```
-# 1. Dentro do Claude Code — dispare seu primeiro workflow
-/auto "seu primeiro requisito"        # padrão para iniciantes: roda todos os stages de ponta a ponta
-```
-
-```bash
-# 2. Perdido? Execute harnessed sem argumentos — ele te diz onde você está + o que vem a seguir
-harnessed
-#   → dashboard você-está-aqui (phase ativa + status por step) + uma linha NEXT: auto|manual|done
-#   sem precisar lembrar status / next / resume — um único comando (análogo ao comet `/comet`, somente leitura)
-#   adicione --json para output legível por máquina
-```
-
-```bash
-# 3. Retome a qualquer momento após uma interrupção
-harnessed            # mesma visão você-está-aqui
-harnessed resume     # continua a partir do checkpoint mais recente
-```
-
-> Quer um controle mais fino sobre qual stage roda e quando? Veja os 3 modos abaixo.
 
 ---
 

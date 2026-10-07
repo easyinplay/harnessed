@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | **Tiếng Việt** | [ไทย](./README-th.md)
+[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | **Tiếng Việt** | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness package manager + composition orchestrator_ — nó lắp ráp những thành phần tốt nhất của hệ sinh thái open-source thành một engine thực thi được duy nhất, được đấu nối bởi phương pháp luận ba tầng **BDD → SDD → TDD**.
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Không có liên kết, không được xác nhận, không được tài trợ bởi Harness Inc. (xem [NOTICE](./NOTICE))
+
+---
+
+## 📦 Quick Install
+
+**Qua npm** (khuyến nghị — cả hai kênh đều là first-class và luôn đồng bộ):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x không hỗ trợ chuỗi `&&` — dùng `;` hoặc hai dòng riêng (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe đều hoạt động bình thường.
+
+**Không có Node.js? Binary độc lập** — theo nền tảng, tự cập nhật qua `harnessed update`:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **Hoặc nhờ AI cài giúp** — dán câu này vào Claude Code (hoặc bất kỳ AI assistant nào):
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+AI sẽ tự fetch tài liệu + chạy install, xử lý các edge case về OS / permissions / PATH / corepack — không cần sao chép những đoạn văn bản dài.
+
+> [!TIP]
+> 🚀 **Các tính năng Agent Teams và Subagent được yêu thích đã được harnessed tự động bật dựa trên task!**
+> Không cần cấu hình thủ công `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` tự ghi vào `~/.claude/settings.json`. Pattern A full-stack ba chiều / Pattern C 4-specialist và các workflow multi-agent khác hoạt động ngay lập tức.
+
+---
+
+## ⏱️ 5 Phút Đầu Tiên
+
+Con đường ngắn nhất từ con số không tới một workflow đang chạy:
+
+```
+# 1. Bên trong Claude Code — khởi động workflow đầu tiên của bạn
+/auto "yêu cầu đầu tiên của bạn"        # mặc định cho người mới: chạy mọi stage từ đầu đến cuối
+```
+
+```bash
+# 2. Lạc lối? Chạy harnessed không tham số — nó cho bạn biết bạn đang ở đâu + tiếp theo là gì
+harnessed
+#   → dashboard bạn-đang-ở-đây (phase đang hoạt động + trạng thái từng bước) + một dòng NEXT: auto|manual|done
+#   không cần nhớ status / next / resume — một lệnh duy nhất (tương tự comet `/comet`, chỉ đọc)
+#   thêm --json để có output đọc được bằng máy
+```
+
+```bash
+# 3. Tiếp tục bất cứ lúc nào sau khi bị gián đoạn
+harnessed            # cùng một view bạn-đang-ở-đây
+harnessed resume     # tiếp tục từ checkpoint mới nhất
+```
+
+> Muốn kiểm soát mịn hơn về việc stage nào chạy và khi nào? Xem 3 mode bên dưới.
 
 ---
 
@@ -94,67 +155,6 @@ Native agent cho bạn các primitive; harnessed kết nối chúng thành một
 | **Phạm vi nền tảng** | Chỉ Claude Code | Chỉ Codex | **Cross-harness** — Claude Code chính, Codex qua tầng platform |
 
 > Native agent thắng ở chỗ zero-setup, zero-overhead cho những chỉnh sửa one-off tầm thường. harnessed chứng tỏ giá trị ngay khi công việc trải dài qua nhiều bước, nhiều session, hay nhiều subagent — nơi mà sự trôi dạt freestyle và state lạc-trong-chat bắt đầu khiến bạn trả giá.
-
----
-
-## 📦 Quick Install
-
-**Qua npm** (khuyến nghị — cả hai kênh đều là first-class và luôn đồng bộ):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x không hỗ trợ chuỗi `&&` — dùng `;` hoặc hai dòng riêng (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe đều hoạt động bình thường.
-
-**Không có Node.js? Binary độc lập** — theo nền tảng, tự cập nhật qua `harnessed update`:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **Hoặc nhờ AI cài giúp** — dán câu này vào Claude Code (hoặc bất kỳ AI assistant nào):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI sẽ tự fetch tài liệu + chạy install, xử lý các edge case về OS / permissions / PATH / corepack — không cần sao chép những đoạn văn bản dài.
-
-> [!TIP]
-> 🚀 **Các tính năng Agent Teams và Subagent được yêu thích đã được harnessed tự động bật dựa trên task!**
-> Không cần cấu hình thủ công `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` tự ghi vào `~/.claude/settings.json`. Pattern A full-stack ba chiều / Pattern C 4-specialist và các workflow multi-agent khác hoạt động ngay lập tức.
-
----
-
-## ⏱️ 5 Phút Đầu Tiên
-
-Con đường ngắn nhất từ con số không tới một workflow đang chạy:
-
-```
-# 1. Bên trong Claude Code — khởi động workflow đầu tiên của bạn
-/auto "yêu cầu đầu tiên của bạn"        # mặc định cho người mới: chạy mọi stage từ đầu đến cuối
-```
-
-```bash
-# 2. Lạc lối? Chạy harnessed không tham số — nó cho bạn biết bạn đang ở đâu + tiếp theo là gì
-harnessed
-#   → dashboard bạn-đang-ở-đây (phase đang hoạt động + trạng thái từng bước) + một dòng NEXT: auto|manual|done
-#   không cần nhớ status / next / resume — một lệnh duy nhất (tương tự comet `/comet`, chỉ đọc)
-#   thêm --json để có output đọc được bằng máy
-```
-
-```bash
-# 3. Tiếp tục bất cứ lúc nào sau khi bị gián đoạn
-harnessed            # cùng một view bạn-đang-ở-đây
-harnessed resume     # tiếp tục từ checkpoint mới nhất
-```
-
-> Muốn kiểm soát mịn hơn về việc stage nào chạy và khi nào? Xem 3 mode bên dưới.
 
 ---
 

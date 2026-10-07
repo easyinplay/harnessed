@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README.md) | [简体中文](./README-cn.md) | [繁體中文](./README-tw.md) | **日本語** | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | **日本語** | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness パッケージマネージャー + composition orchestrator_ —— オープンソースエコシステムの最良のコンポーネントを 1 つの実行可能な engine に組み立て、三層の **BDD → SDD → TDD** メソドロジーで配線する。
 
@@ -15,6 +15,67 @@
 [![Sponsor](https://img.shields.io/github/sponsors/easyinplay?logo=github&label=Sponsor)](https://github.com/sponsors/easyinplay)
 
 > Harness Inc. との提携・推薦・スポンサー関係は一切ありません（[NOTICE](./NOTICE) 参照）
+
+---
+
+## 📦 Quick Install
+
+**npm 経由**(推奨 —— 両チャネルとも第一級サポート、バージョンは同期):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x は `&&` チェーンに対応していません —— `;` を使うか 2 行に分けてください（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe はすべて正常に動作します。
+
+**Node.js がない場合はスタンドアロンバイナリ** —— プラットフォーム別。以後は `harnessed update` で自己更新:
+
+```bash
+# macOS (Apple Silicon) / Linux (x64)
+curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
+```
+
+```powershell
+# Windows (x64)
+irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
+```
+
+🤖 **または AI にインストールさせる** —— Claude Code（または任意の AI アシスタント）に以下の文を貼り付けてください:
+
+> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
+
+AI がドキュメントを自動取得してインストールを実行します。OS / パーミッション / PATH / corepack のエッジケースも対処するので、長いテキストをコピペする必要はありません。
+
+> [!TIP]
+> 🚀 **大好評の Agent Teams と Subagent 機能は、harnessed がタスクに応じて自動で有効化します!**
+> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` を手動で設定する必要はありません —— `harnessed setup` が `~/.claude/settings.json` に自動書き込みします。Pattern A フルスタック三方向 / Pattern C 4-specialist などのマルチエージェント workflow がすぐに動作します。
+
+---
+
+## ⏱️ First 5 Minutes
+
+ゼロから動作するワークフローまでの最短経路:
+
+```
+# 1. Claude Code 内で —— 最初のワークフローを開始
+/auto "あなたの最初の要件"           # 初心者デフォルト: 全ステージを端から端まで実行
+```
+
+```bash
+# 2. 迷った? 引数なしで harnessed を実行 —— 今どこにいるか + 次に何をするかを教えてくれる
+harnessed
+#   → you-are-here ダッシュボード（active phase + ステップごとのステータス）+ 一行の NEXT: auto|manual|done
+#   status / next / resume を覚える必要はない —— 一つのコマンド（comet `/comet` 相当、read-only）
+#   --json を付けると機械可読出力
+```
+
+```bash
+# 3. 中断後はいつでも再開
+harnessed            # 同じ you-are-here ビュー
+harnessed resume     # 最新の checkpoint から続行
+```
+
+> どのステージをいつ実行するか、もっと細かく制御したい? 下の 3 つのモードを参照してください。
 
 ---
 
@@ -94,67 +155,6 @@ harnessed の三層スタックは、ソフトウェアエンジニアリング�
 | **プラットフォーム到達** | Claude Code のみ | Codex のみ | **Cross-harness** —— Claude Code が主力、Codex は platform レイヤー経由 |
 
 > 原生 agent は、ゼロ設定・ゼロオーバーヘッドで済む些細な一度きりの編集で勝ちます。作業が複数のステップ・セッション・subagent にまたがった瞬間 —— 自由形式のドリフトとチャットに埋もれた状態がコストになり始める地点で —— harnessed は自らの価値を稼ぎ始めます。
-
----
-
-## 📦 Quick Install
-
-**npm 経由**(推奨 —— 両チャネルとも第一級サポート、バージョンは同期):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x は `&&` チェーンに対応していません —— `;` を使うか 2 行に分けてください（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe はすべて正常に動作します。
-
-**Node.js がない場合はスタンドアロンバイナリ** —— プラットフォーム別。以後は `harnessed update` で自己更新:
-
-```bash
-# macOS (Apple Silicon) / Linux (x64)
-curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.sh | bash
-```
-
-```powershell
-# Windows (x64)
-irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
-```
-
-🤖 **または AI にインストールさせる** —— Claude Code（または任意の AI アシスタント）に以下の文を貼り付けてください:
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI がドキュメントを自動取得してインストールを実行します。OS / パーミッション / PATH / corepack のエッジケースも対処するので、長いテキストをコピペする必要はありません。
-
-> [!TIP]
-> 🚀 **大好評の Agent Teams と Subagent 機能は、harnessed がタスクに応じて自動で有効化します!**
-> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` を手動で設定する必要はありません —— `harnessed setup` が `~/.claude/settings.json` に自動書き込みします。Pattern A フルスタック三方向 / Pattern C 4-specialist などのマルチエージェント workflow がすぐに動作します。
-
----
-
-## ⏱️ First 5 Minutes
-
-ゼロから動作するワークフローまでの最短経路:
-
-```
-# 1. Claude Code 内で —— 最初のワークフローを開始
-/auto "あなたの最初の要件"           # 初心者デフォルト: 全ステージを端から端まで実行
-```
-
-```bash
-# 2. 迷った? 引数なしで harnessed を実行 —— 今どこにいるか + 次に何をするかを教えてくれる
-harnessed
-#   → you-are-here ダッシュボード（active phase + ステップごとのステータス）+ 一行の NEXT: auto|manual|done
-#   status / next / resume を覚える必要はない —— 一つのコマンド（comet `/comet` 相当、read-only）
-#   --json を付けると機械可読出力
-```
-
-```bash
-# 3. 中断後はいつでも再開
-harnessed            # 同じ you-are-here ビュー
-harnessed resume     # 最新の checkpoint から続行
-```
-
-> どのステージをいつ実行するか、もっと細かく制御したい? 下の 3 つのモードを参照してください。
 
 ---
 
