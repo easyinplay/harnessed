@@ -106,7 +106,7 @@
 - [x] **Slice 2:curl/PowerShell 一行安装器** — **已发,本条目过期**(2026-10-07 对账补勾)。
   按产物核实而非凭记忆:仓库里有 `install.sh` / `install.ps1`,CHANGELOG 记着
   「B 路线 Phase 3 Slice 2:一行安装器」交付(含 unix `~/.local/bin/harnessed` 与 Windows
-  `%LOCALAPPDATA%\harnessedin\harnessed.exe` 两条落位),之后还有两次 dogfood 修复
+  `%LOCALAPPDATA%\harnessed\bin\harnessed.exe` 两条落位),之后还有两次 dogfood 修复
   (PATH 遮蔽导致 setup 跑到旧那份)。下方 Slice 3 的 Depends 行也早已写「Slice 1/2(已发)」。
   一个实际已发的 **P1** 挂在队首会扭曲优先级,这正是「状态从产物派生」要防的漂移。
 

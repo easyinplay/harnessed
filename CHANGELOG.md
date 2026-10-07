@@ -5,29 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.47.0] - 2026-10-07
 
-### Changed
-
-- **gate 求值的 fail-closed 判据扩到三类静态配置错误(ADR-0042,amends ADR-0038)。** 此前只认
-  `undefined variable`,所以用 `in` 访问一个缺失或 null 的成员(`'x' in subtask.missing`)会抛
-  `TypeError: Cannot read properties of undefined (reading 'length')` —— 不匹配判据、落 ADR-0029 的
-  fail-soft、**子项照 fire**。这正是 issue #5 的形状(gate 越贵、误触越贵),只是换了一条触发路径。
-  表达式无法解析也归入同类:重试永远不会好的错误,当成「gate 已 fire」一定是错的。
-  三条消息都实测自本仓 pinned 的 expr-eval,测试断言真实抛出的文本,上游改措辞会红而不是静默退回。
-  判据改名 `isStaticGateConfigError`(语义变宽,名字跟着变),三处 catch 的 warn 文案一并泛化。
-  **ADR-0038 的一条前提被这次实测证伪**:它写「object member 缺失静默求 false」,对 `in` 不成立。
-  按项目惯例以新 ADR 承载更正、不改 0038 正文。
-  此前未触发只是因为当时没有 judgment 用数组 fact —— 引入第一个数组 fact 的那次改动本会同时激活它。
-
-- **安装目录不再留下带未解析占位符的 locale 副本。** en 安装此前只渲染并写 `SKILL.md`,
-  把 `SKILL.zh-Hans.md` 以 `cp` 原样留在 `~/.claude/skills/<name>/`(codex 上是 `~/.agents/skills/`),
-  里面的 `{{ … }}` 一个都没解析。宿主只读 `SKILL.md` 所以无人读到、无实际危害,但打开它的人只会被误导,
-  而 codex 上那个目录还是**共享**约定目录。现在两个 locale 都剥除,安装目录的契约是「一份渲染好的 `SKILL.md`」。
-  剥除对两条返回路径都生效 —— 包括「正文无占位符因而无需写入」那条提前返回,此前恰恰是那批 skill
-  最容易留下残留(剥除原本写在该返回之后)。`SKILL.md` 的字节不受影响:en 安装仍逐字节不变。
-  两个候选里选剥除而不是「也渲染它」:locale 在安装时选定,换语言要重跑 setup(会重新从包里 cp),
-  第二份 locale 正文没有读者 —— 把垃圾渲染正确仍然是垃圾。
+### Added
 
 - **codex 上的 subagent prompt 终于拿得到 `## Language` 节。** 该节由
   `env.HARNESSED_USER_LANG` 驱动;claude 上 setup 把它写进 `~/.claude/settings.json` 的 `env` 块、
@@ -52,14 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   一处编辑同时覆盖三个面;闸门本身仍不需要 build。并带一条正向对照:同一条管道跑 claude 产物必须仍有命中,
   否则 codex 那边的「零残留」什么都不证明。实测当前 codex 产物零残留。
 
-- **codex 上「插件类能力缺失」的告警不再给一个做不到的动作。** 这类能力(`code-review` /
-  `code-simplifier` / `ui-ux-pro-max` / `planning-with-files`,以及 `caveman` 的插件那一半)此前
-  告诉你去跑 `claude plugin install <id>`;但 codex 没有 Claude Code 插件注册表,这不是「没装」,
-  是**这个宿主上结构性不可用**,没有任何安装能改变。现在直说不可用、并要求把调用它的步骤记为 skip
-  而不是自行找等价物 —— 措辞与 codex 映射小节里既有的 caveat 同源,不另造一套说法。
-  claude 侧文案逐字节不变。
-  顺带把「噪音」量了一遍:`renderAllSkills` 全局去重、命令面不产告警,所以整次 setup 最多 5 行,
-  不是每个能力刷一条 —— 据此**没有**加聚合机制。
+### Changed
 
 - **harnessed 在 codex 上不再读 `~/.codex/config.toml` —— 一处例外都不剩。** MCP 登记探测
   (`isMcpServerRegistered`)此前把整个文件读进内存去匹配 `[mcp_servers.<name>]` 段头,而那文件存放
@@ -74,6 +47,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   尾部提示)经 `readUserClaudeJson()` 读同一个文件,**只为了让 `JSON.parse` 失败**再落到 `{}`。
   守卫下在 `readUserClaudeJson` 这个机制上而不是那个调用点,新增调用方自动继承;codex 上结论不变
   (只有 process-env 一源能回答)。
+
+### Fixed
+
+- **gate 求值的 fail-closed 判据扩到三类静态配置错误(ADR-0042,amends ADR-0038)。** 此前只认
+  `undefined variable`,所以用 `in` 访问一个缺失或 null 的成员(`'x' in subtask.missing`)会抛
+  `TypeError: Cannot read properties of undefined (reading 'length')` —— 不匹配判据、落 ADR-0029 的
+  fail-soft、**子项照 fire**。这正是 issue #5 的形状(gate 越贵、误触越贵),只是换了一条触发路径。
+  表达式无法解析也归入同类:重试永远不会好的错误,当成「gate 已 fire」一定是错的。
+  三条消息都实测自本仓 pinned 的 expr-eval,测试断言真实抛出的文本,上游改措辞会红而不是静默退回。
+  判据改名 `isStaticGateConfigError`(语义变宽,名字跟着变),三处 catch 的 warn 文案一并泛化。
+  **ADR-0038 的一条前提被这次实测证伪**:它写「object member 缺失静默求 false」,对 `in` 不成立。
+  按项目惯例以新 ADR 承载更正、不改 0038 正文。
+  此前未触发只是因为当时没有 judgment 用数组 fact —— 引入第一个数组 fact 的那次改动本会同时激活它。
+
+- **安装目录不再留下带未解析占位符的 locale 副本。** en 安装此前只渲染并写 `SKILL.md`,
+  把 `SKILL.zh-Hans.md` 以 `cp` 原样留在 `~/.claude/skills/<name>/`(codex 上是 `~/.agents/skills/`),
+  里面的 `{{ … }}` 一个都没解析。宿主只读 `SKILL.md` 所以无人读到、无实际危害,但打开它的人只会被误导,
+  而 codex 上那个目录还是**共享**约定目录。现在两个 locale 都剥除,安装目录的契约是「一份渲染好的 `SKILL.md`」。
+  剥除对两条返回路径都生效 —— 包括「正文无占位符因而无需写入」那条提前返回,此前恰恰是那批 skill
+  最容易留下残留(剥除原本写在该返回之后)。`SKILL.md` 的字节不受影响:en 安装仍逐字节不变。
+  两个候选里选剥除而不是「也渲染它」:locale 在安装时选定,换语言要重跑 setup(会重新从包里 cp),
+  第二份 locale 正文没有读者 —— 把垃圾渲染正确仍然是垃圾。
+
+- **codex 上「插件类能力缺失」的告警不再给一个做不到的动作。** 这类能力(`code-review` /
+  `code-simplifier` / `ui-ux-pro-max` / `planning-with-files`,以及 `caveman` 的插件那一半)此前
+  告诉你去跑 `claude plugin install <id>`;但 codex 没有 Claude Code 插件注册表,这不是「没装」,
+  是**这个宿主上结构性不可用**,没有任何安装能改变。现在直说不可用、并要求把调用它的步骤记为 skip
+  而不是自行找等价物 —— 措辞与 codex 映射小节里既有的 caveat 同源,不另造一套说法。
+  claude 侧文案逐字节不变。
+  顺带把「噪音」量了一遍:`renderAllSkills` 全局去重、命令面不产告警,所以整次 setup 最多 5 行,
+  不是每个能力刷一条 —— 据此**没有**加聚合机制。
+
 - codex 上 MCP 安装失败时的 verify 文案改为指名 `codex mcp list --json` 这个探针,不再说
   「不在 `~/.codex/config.toml` 的 `[mcp_servers]` 表里」—— 那会把你指向一个 harnessed 根本没打开的文件。
   claude 侧文案逐字节不变。
