@@ -328,11 +328,25 @@ describe('platform — capability-aware consumers under codex (Phase C / D4)', (
   // precedence covered by tests/cli/userLangPin.test.ts).
   it('enableUserLangInSettings() pins to the state root when supportsEnvKeyWrite=false (codex)', async () => {
     vi.stubEnv(PLATFORM_KEY, 'codex')
-    const r = await enableUserLangInSettings()
-    expect(r.status).toBe('pinned')
-    if (r.status === 'pinned') {
-      expect(r.path.replace(/\\/g, '/')).toContain('/harnessed/user-lang')
-      expect(['en', 'zh-Hans']).toContain(r.detected)
+    // MUST sandbox the state root. This describe deliberately clears
+    // HARNESSED_ROOT_OVERRIDE and does not redirect HOME, which was safe while every
+    // cell in it was a read-only probe — including this one, back when codex made
+    // `enableUserLangInSettings` a pure no-op. Now that it WRITES, an unsandboxed run
+    // puts a `user-lang` pin in the developer's real `~/.codex/harnessed/` (observed),
+    // and on a machine with no `~/.claude` that extra dir flips `detectPlatform`'s
+    // directory probe to codex for every later test — which is exactly how this
+    // landed green locally and red on all three CI runners.
+    const ovr = mkdtempSync(join(tmpdir(), 'harnessed-langpin-'))
+    vi.stubEnv(OVERRIDE_KEY, ovr)
+    try {
+      const r = await enableUserLangInSettings()
+      expect(r.status).toBe('pinned')
+      if (r.status === 'pinned') {
+        expect(r.path.replace(/\\/g, '/')).toBe(`${ovr.replace(/\\/g, '/')}/user-lang`)
+        expect(['en', 'zh-Hans']).toContain(r.detected)
+      }
+    } finally {
+      rmSync(ovr, { recursive: true, force: true })
     }
   })
 })

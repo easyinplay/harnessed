@@ -63,6 +63,13 @@ beforeEach(() => {
   mkdirSync(join(pkgRoot, 'workflows', 'disciplines'), { recursive: true })
   vi.stubEnv('HOME', home)
   vi.stubEnv('USERPROFILE', home)
+  // HOME alone is NOT enough, measured the hard way: a first version of this file
+  // stubbed only HOME and still wrote the pin into the real `~/.codex/harnessed/`.
+  // `HARNESSED_ROOT_OVERRIDE` is the project's purpose-built seam for relocating the
+  // state root (ADR 0040: it replaces stateRoot and nothing else), and it is what the
+  // sister platform tests use. Everything the pin touches hangs off stateRoot, so this
+  // is the stub that actually sandboxes it.
+  vi.stubEnv('HARNESSED_ROOT_OVERRIDE', join(home, 'state'))
 })
 
 afterEach(() => {
@@ -80,11 +87,12 @@ describe('userLangPin — harnessed-owned storage for the reply-language prefere
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     const path = await writeUserLangPin('zh-Hans')
     expect(path).toBe(userLangPinPath())
-    // Must live under harnessed's own state root inside the codex home, and must NOT
-    // be config.toml (ADR 0041) or any file codex owns.
+    // Must live under harnessed's own state root — here the sandboxed one — and must
+    // NOT be config.toml (ADR 0041) or any other file codex owns.
     const norm = path.replace(/\\/g, '/')
-    expect(norm).toContain('/.codex/harnessed/')
+    expect(norm).toBe(`${join(home, 'state').replace(/\\/g, '/')}/user-lang`)
     expect(norm).not.toContain('config.toml')
+    expect(norm).not.toContain('.codex/config')
     expect(readFileSync(path, 'utf8').trim()).toBe('zh-Hans')
     expect(readUserLangPin()).toBe('zh-Hans')
   })
