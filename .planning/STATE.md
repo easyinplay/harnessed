@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.46.0** 2026-09-30(v16.0 Phase 66 T3b-T5 + 收口审计抓出的凭据备份缺陷;v16.0 收官版;三重核实:publish step 日志 `+ harnessed@4.46.0` + registry 直查 `dist-tags.latest=4.46.0` + `npm view`,release 9 assets)。上一版:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
+- **Latest shipped (npm)**: **v4.48.0** 2026-10-08(`harnessed agents-md` + 更正 README 对 Codex 的两处错误断言;三重核实:publish step 日志 `+ harnessed@4.48.0` + registry 直查 `dist-tags.latest=4.48.0` + `npm view`,release 9 assets)。上一版:**v4.47.0** 2026-10-07(codex 不再读 config.toml + 语言 pin + gate fail-closed 扩三类/ADR-0042)· **v4.46.0** 2026-09-30(v16.0 收官版:Phase 66 T3b-T5 + 凭据备份缺陷)。更早:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
@@ -43,6 +43,17 @@ progress:
   (两个 MCP 安装器把 `config.toml` 列进 backup plan,4.46.0 修)。结转三项:goal 桥接 TUI 实测(只有维护者能做)、
   README 体系表述(另一会话正在改)、MCP 注册探测迁 `codex mcp list`。
   详 `milestones/v16.0-MILESTONE-AUDIT.md`(硬边界逐条核验 + 未实测清单)· phase 目录按 lightweight 留在 `phases/`。
+- **v16.0 收口后的收尾批(2026-09-30 → 10-08,npm 4.47.0 / 4.48.0)**:把 TODOS 里积压的
+  P2/P3 逐条清掉,全部按「先实测再改」走 —— 其中三项的**立项前提被实测否掉**,交付因此比条目描述的小。
+  已关闭:MCP 探测迁 `codex mcp list --json`(并按机制扫出第二处 config.toml 读取)· 插件类告警只修
+  错误出路(「刷屏」前提被证否:整次 setup 最多 5 行)· S2 残留判据改为消费闸门的 token 清单 ·
+  语言偏好落 `<stateRoot>/user-lang` pin(codex 重新拿到 `## Language`)· 安装目录不留带占位符的
+  locale 副本 · ADR-0038 第三类 → **ADR-0042**(三层证据,每层验过反向会红)· **goal 桥接永久关闭**
+  (零推理实测:无创建 API + 活 thread 单写者锁,结构性不成立,不需维护者做 TUI 实测)·
+  `harnessed agents-md`(opt-in)· README 对 Codex 的两处**错误否定性断言**更正(10 镜像)·
+  另清掉一条过期 P1(Slice 2 实际早已发布)。
+  期间 vitest 默认 5s 预算被认定为错(同形红四次)→ 全局 `testTimeout`/`hookTimeout` 30s。
+  测试 3254 → 3280;eval 13 → 14 条场景。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
