@@ -146,13 +146,13 @@ Native ajanlar size ilkeller (primitives) verir; harnessed onları bir metodoloj
 | Boyut | Native Claude Code | Native Codex | harnessed |
 |---|---|---|---|
 | **Workflow / metodoloji** | Yalnızca ilkeller — akışı her seferinde siz tasarlarsınız | Daha az ilkel — prompt başına serbest stil | Kodlanmış **Discuss→Ship** 5-aşama üç katmanlı yığın motoru — BDD + SDD + TDD döngüleri + 2 çapraz-kesim (Review + Ship) |
-| **Talimat enjeksiyonu** | `CLAUDE.md` + skill'ler + hook'lar var, ama statik ve elle bağlanmış | Yalnızca `AGENTS.md` — skill/hook yok | Tur başına breadcrumb hook + görev kapsamlı yönlendirme + her döngüde enjekte edilen öğrenimler |
+| **Talimat enjeksiyonu** | `CLAUDE.md` + skill'ler + hook'lar var, ama statik ve elle bağlanmış | `AGENTS.md` + skills (`~/.agents/skills`) + hook — bunlar da statik ve elle bağlanır | Tur başına breadcrumb hook + görev kapsamlı yönlendirme + her döngüde enjekte edilen öğrenimler |
 | **Durum / ilerleme** | Sohbet bağlamı — `/clear` / compaction'da kaybolur | Sohbet bağlamı — kalıcılık katmanı yok | Diskte `.planning/` + repo başına `workflows.json` defteri + checkpoint kanıtı |
 | **Oturumlar arası kurtarma** | Bağlamı elle yeniden açıklayın | Bağlamı elle yeniden açıklayın | `harnessed status --recover`: buradasınız + sonraki adım |
 | **Doğrulama / "bitti"** | Ajan kendini "bitti" diye bildirir | Ajan kendini "bitti" diye bildirir | Bağımsız inceleme subagent'ları + **fail-CLOSED kanıt koruması** (eksik artifact = bitmemiş) |
-| **Subagent orkestrasyonu** | Subagent + Agent Teams mevcut, ama elle orkestre edilir | Subagent/team ilkeli yok | `gates → prompt → spawn → checkpoint`; Agent Teams göreve göre otomatik etkin |
+| **Subagent orkestrasyonu** | Subagent + Agent Teams mevcut, ama elle orkestre edilir | `spawn_agent` / `send_input` / `wait_agent` var — bunlar da elle orkestre edilir; Agent Teams muadili yok | `gates → prompt → spawn → checkpoint`; Agent Teams göreve göre otomatik etkin |
 | **Öğrenme döngüsü** | Yok | Yok | `LEARNINGS.md` otomatik yakalanır + bir sonraki döngüye enjekte edilir |
-| **Platform erişimi** | Yalnızca Claude Code | Yalnızca Codex | **Çapraz-harness** — birincil Claude Code, platform katmanı üzerinden Codex |
+| **Platform erişimi** | Yalnızca Claude Code | Yalnızca Codex | **Çapraz-harness** — Claude Code ve Codex ikisi de birinci sınıf host (hooks / agent roles / spawn dispatch / `doctor --matrix` / host'a göre render edilen metin) |
 
 > Native ajanlar, önemsiz tek seferlik düzenlemeler için sıfır-kurulum, sıfır-ek yük ile kazanır. harnessed ise iş birden fazla adıma, oturuma ya da subagent'a yayıldığı an hakkını verir — serbest stil savrulması ve sohbette-kaybolan durumun size maliyet çıkarmaya başladığı yerde.
 

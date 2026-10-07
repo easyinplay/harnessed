@@ -146,13 +146,13 @@ Native agent ให้ primitive แก่คุณ; harnessed ร้อยเ�
 | มิติ | Native Claude Code | Native Codex | harnessed |
 |---|---|---|---|
 | **Workflow / methodology** | มีแต่ primitive — ออกแบบ flow เองทุกครั้ง | primitive น้อยกว่า — freestyle ต่อ prompt | engine three-layer-stack 5 stage **Discuss→Ship** ที่ codified แล้ว — ลูป BDD + SDD + TDD + 2 cross-cutting (Review + Ship) |
-| **Instruction injection** | `CLAUDE.md` + skills + hooks มีอยู่ แต่ static และต้องร้อยสายด้วยมือ | มีแค่ `AGENTS.md` — ไม่มี skills/hooks | breadcrumb hook ต่อ turn + routing scoped ตาม task + learnings inject ทุกรอบ |
+| **Instruction injection** | `CLAUDE.md` + skills + hooks มีอยู่ แต่ static และต้องร้อยสายด้วยมือ | `AGENTS.md` + skills (`~/.agents/skills`) + hooks — ก็ static และต่อสายด้วยมือเช่นกัน | breadcrumb hook ต่อ turn + routing scoped ตาม task + learnings inject ทุกรอบ |
 | **State / progress** | Chat context — หายเมื่อ `/clear` / compaction | Chat context — ไม่มีชั้น persistence | `.planning/` บนดิสก์ + ledger `workflows.json` ราย repo + checkpoint evidence |
 | **Cross-session recovery** | อธิบาย context ใหม่ด้วยมือ | อธิบาย context ใหม่ด้วยมือ | `harnessed status --recover`: คุณอยู่ตรงนี้ + ขั้นถัดไป |
 | **Verification / "done"** | agent รายงานตัวเองว่า "done" | agent รายงานตัวเองว่า "done" | review subagent อิสระ + **evidence guard แบบ fail-CLOSED** (artifact หาย = ยังไม่เสร็จ) |
-| **Subagent orchestration** | มี Subagents + Agent Teams แต่ต้อง orchestrate ด้วยมือ | ไม่มี primitive ของ subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams เปิดใช้อัตโนมัติตาม task |
+| **Subagent orchestration** | มี Subagents + Agent Teams แต่ต้อง orchestrate ด้วยมือ | มี `spawn_agent` / `send_input` / `wait_agent` — ก็ orchestrate ด้วยมือเช่นกัน; ไม่มีสิ่งเทียบเท่า Agent Teams | `gates → prompt → spawn → checkpoint`; Agent Teams เปิดใช้อัตโนมัติตาม task |
 | **Learning loop** | ไม่มี | ไม่มี | `LEARNINGS.md` capture อัตโนมัติ + inject เข้าสู่รอบถัดไป |
-| **Platform reach** | Claude Code เท่านั้น | Codex เท่านั้น | **Cross-harness** — Claude Code เป็นหลัก, Codex ผ่าน platform layer |
+| **Platform reach** | Claude Code เท่านั้น | Codex เท่านั้น | **Cross-harness** — Claude Code และ Codex เป็น host ชั้นหนึ่งทั้งคู่ (hooks / agent roles / spawn dispatch / `doctor --matrix` / เนื้อหา render ตาม host) |
 
 > Native agent ชนะในเรื่อง zero-setup, zero-overhead สำหรับการแก้แบบ one-off เล็ก ๆ harnessed เริ่มคุ้มค่าทันทีที่งานครอบคลุมหลายขั้นตอน หลาย session หรือหลาย subagent — จุดที่ freestyle drift และ state ที่หายในแชทเริ่มสร้างต้นทุนให้คุณ
 

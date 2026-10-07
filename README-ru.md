@@ -146,13 +146,13 @@ Three-layer stack у harnessed — это программно-инженерн�
 | Измерение | Native Claude Code | Native Codex | harnessed |
 |---|---|---|---|
 | **Workflow / методология** | Только примитивы — вы каждый раз проектируете поток | Меньше примитивов — фристайл по каждому промпту | Кодифицированный 5-стадийный движок **Discuss→Ship** three-layer-stack — циклы BDD + SDD + TDD + 2 сквозных (Review + Ship) |
-| **Инъекция инструкций** | `CLAUDE.md` + skills + hooks существуют, но статичны и связываются вручную | Только `AGENTS.md` — без skills/hooks | Per-turn breadcrumb hook + маршрутизация в пределах задачи + learnings инжектятся каждый цикл |
+| **Инъекция инструкций** | `CLAUDE.md` + skills + hooks существуют, но статичны и связываются вручную | `AGENTS.md` + skills (`~/.agents/skills`) + hooks — тоже статично и подключается вручную | Per-turn breadcrumb hook + маршрутизация в пределах задачи + learnings инжектятся каждый цикл |
 | **Состояние / прогресс** | Контекст чата — теряется при `/clear` / compaction | Контекст чата — нет слоя персистентности | Дисковый `.planning/` + ledger `workflows.json` (по одному на репозиторий) + checkpoint evidence |
 | **Восстановление между сессиями** | Объяснять контекст заново вручную | Объяснять контекст заново вручную | `harnessed status --recover`: «вы здесь» + следующий шаг |
 | **Верификация / «готово»** | Агент сам сообщает «готово» | Агент сам сообщает «готово» | Независимые review-subagent-ы + **fail-CLOSED evidence guard** (нет артефакта = не готово) |
-| **Оркестрация subagent-ов** | Subagent-ы + Agent Teams доступны, но оркестрируются вручную | Нет примитива subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams включаются автоматически по задаче |
+| **Оркестрация subagent-ов** | Subagent-ы + Agent Teams доступны, но оркестрируются вручную | Есть `spawn_agent` / `send_input` / `wait_agent` — тоже оркестрируется вручную; аналога Agent Teams нет | `gates → prompt → spawn → checkpoint`; Agent Teams включаются автоматически по задаче |
 | **Цикл обучения** | Нет | Нет | `LEARNINGS.md` авто-захват + инъекция в следующий цикл |
-| **Охват платформ** | Только Claude Code | Только Codex | **Cross-harness** — Claude Code основной, Codex через platform layer |
+| **Охват платформ** | Только Claude Code | Только Codex | **Cross-harness** — Claude Code и Codex оба полноценные хосты (hooks / agent roles / dispatch spawn / `doctor --matrix` / рендеринг текста под хост) |
 
 > Нативные агенты выигрывают на zero-setup, zero-overhead для тривиальных разовых правок. harnessed начинает окупаться в тот момент, когда работа охватывает несколько шагов, сессий или subagent-ов — там, где фристайл-дрейф и потерянное-в-чате состояние начинают стоить вам дорого.
 

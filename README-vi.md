@@ -146,13 +146,13 @@ Native agent cho bạn các primitive; harnessed kết nối chúng thành một
 | Chiều | Native Claude Code | Native Codex | harnessed |
 |---|---|---|---|
 | **Workflow / phương pháp** | Chỉ có primitive — bạn tự thiết kế luồng mỗi lần | Ít primitive hơn — freestyle theo từng prompt | Engine three-layer-stack 5-stage **Discuss→Ship** đã được codified — các loop BDD + SDD + TDD + 2 xuyên suốt (Review + Ship) |
-| **Tiêm chỉ dẫn** | `CLAUDE.md` + skills + hooks tồn tại, nhưng tĩnh & kết nối thủ công | Chỉ có `AGENTS.md` — không có skills/hooks | Breadcrumb hook mỗi lượt + routing theo phạm vi task + learnings tiêm vào mỗi chu kỳ |
+| **Tiêm chỉ dẫn** | `CLAUDE.md` + skills + hooks tồn tại, nhưng tĩnh & kết nối thủ công | `AGENTS.md` + skills (`~/.agents/skills`) + hooks — cũng tĩnh và phải nối tay | Breadcrumb hook mỗi lượt + routing theo phạm vi task + learnings tiêm vào mỗi chu kỳ |
 | **State / tiến độ** | Chat context — mất khi `/clear` / compaction | Chat context — không có tầng persistence | `.planning/` trên disk + ledger `workflows.json` (mỗi repo một) + checkpoint evidence |
 | **Khôi phục xuyên session** | Giải thích lại context thủ công | Giải thích lại context thủ công | `harnessed status --recover`: bạn-đang-ở-đây + bước tiếp theo |
 | **Verification / "đã xong"** | Agent tự báo "đã xong" | Agent tự báo "đã xong" | Subagent review độc lập + **evidence guard fail-CLOSED** (thiếu artifact = chưa xong) |
-| **Điều phối subagent** | Có subagent + Agent Teams, nhưng điều phối thủ công | Không có primitive subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams tự bật theo task |
+| **Điều phối subagent** | Có subagent + Agent Teams, nhưng điều phối thủ công | Có `spawn_agent` / `send_input` / `wait_agent` — cũng phải điều phối tay; không có tương đương Agent Teams | `gates → prompt → spawn → checkpoint`; Agent Teams tự bật theo task |
 | **Learning loop** | Không có | Không có | `LEARNINGS.md` tự bắt + tiêm vào chu kỳ tiếp theo |
-| **Phạm vi nền tảng** | Chỉ Claude Code | Chỉ Codex | **Cross-harness** — Claude Code chính, Codex qua tầng platform |
+| **Phạm vi nền tảng** | Chỉ Claude Code | Chỉ Codex | **Cross-harness** — Claude Code và Codex đều là host hạng nhất (hooks / agent roles / spawn dispatch / `doctor --matrix` / nội dung render theo host) |
 
 > Native agent thắng ở chỗ zero-setup, zero-overhead cho những chỉnh sửa one-off tầm thường. harnessed chứng tỏ giá trị ngay khi công việc trải dài qua nhiều bước, nhiều session, hay nhiều subagent — nơi mà sự trôi dạt freestyle và state lạc-trong-chat bắt đầu khiến bạn trả giá.
 

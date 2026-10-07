@@ -146,13 +146,13 @@ Os agentes nativos te dão primitivos; o harnessed os conecta em uma metodologia
 | Dimensão | Claude Code nativo | Codex nativo | harnessed |
 |---|---|---|---|
 | **Workflow / metodologia** | Apenas primitivos — você projeta o fluxo toda vez | Menos primitivos — freestyle por prompt | Motor three-layer-stack codificado de 5 stages **Discuss→Ship** — loops BDD + SDD + TDD + 2 transversais (Review + Ship) |
-| **Injeção de instrução** | `CLAUDE.md` + skills + hooks existem, mas estáticos e conectados à mão | Apenas `AGENTS.md` — sem skills/hooks | Hook de breadcrumb por turno + roteamento task-scoped + learnings injetados a cada ciclo |
+| **Injeção de instrução** | `CLAUDE.md` + skills + hooks existem, mas estáticos e conectados à mão | `AGENTS.md` + skills (`~/.agents/skills`) + hooks — também estáticos e ligados à mão | Hook de breadcrumb por turno + roteamento task-scoped + learnings injetados a cada ciclo |
 | **Estado / progresso** | Contexto do chat — perdido em `/clear` / compaction | Contexto do chat — sem camada de persistência | `.planning/` em disco + ledger `workflows.json` por repo + evidências de checkpoint |
 | **Recuperação entre sessões** | Re-explicar o contexto à mão | Re-explicar o contexto à mão | `harnessed status --recover`: você-está-aqui + próximo passo |
 | **Verificação / "concluído"** | O agente se auto-reporta "concluído" | O agente se auto-reporta "concluído" | Subagents de revisão independentes + **guard de evidências fail-CLOSED** (artifact ausente = não concluído) |
-| **Orquestração de subagents** | Subagents + Agent Teams disponíveis, mas orquestrados à mão | Sem primitivo de subagent/team | `gates → prompt → spawn → checkpoint`; Agent Teams auto-habilitados por tarefa |
+| **Orquestração de subagents** | Subagents + Agent Teams disponíveis, mas orquestrados à mão | `spawn_agent` / `send_input` / `wait_agent` existem — também orquestrados à mão; sem equivalente de Agent Teams | `gates → prompt → spawn → checkpoint`; Agent Teams auto-habilitados por tarefa |
 | **Loop de aprendizado** | Nenhum | Nenhum | `LEARNINGS.md` auto-capturado + injetado no próximo ciclo |
-| **Alcance de plataforma** | Apenas Claude Code | Apenas Codex | **Cross-harness** — Claude Code primário, Codex via platform layer |
+| **Alcance de plataforma** | Apenas Claude Code | Apenas Codex | **Cross-harness** — Claude Code e Codex ambos de primeira classe (hooks / agent roles / dispatch de spawn / `doctor --matrix` / prosa renderizada por host) |
 
 > Os agentes nativos vencem em zero-setup, zero-overhead para edições triviais e pontuais. O harnessed se paga no momento em que o trabalho abrange múltiplos passos, sessões ou subagents — onde a deriva do freestyle e o estado perdido no chat começam a te custar caro.
 

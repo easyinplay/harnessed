@@ -28,6 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `--remove` 与 `harnessed uninstall` 都只剥标记区间、保留其余内容。
   非 codex 宿主上**诚实拒绝**(`harness-mismatch`,退出码 1),不悄悄生成一份没人读的副本。
 
+### Fixed
+
+- **README 对比表里两处关于 Codex 的断言是错的,已按实测更正(10 个镜像同步)。**
+  原文写「原生 Codex:只有 `AGENTS.md` —— 无 skill/hook」和「无 subagent/team 原语」。
+  两条都被本项目自己的实测证伪:codex **有 hook**(v16.0 Phase 64 经本地 codex 插件承载,
+  live smoke 29/29、p95 765ms)、**读 skills**(`~/.agents/skills`,整个 `skillsDir` 接缝就是为它),
+  并且**有多 agent 原语** —— `spawn_agent` / `send_input` / `wait_agent` / `list_agents` /
+  `close_agent` / `resume_agent`(Phase 66 实测,当时的结论是它在某些方面比 Claude Code 更全)。
+  这不只是过时:**对上游的否定性断言出错**,而项目记忆里专门有一条要求此类断言必须有引文级来源。
+  第三处「Codex 经 platform 层」说轻了 —— v16.0 之后两个宿主都是一等的,改为点名
+  hook / agent role / spawn 分派 / `doctor --matrix` / 正文按宿主渲染。
+  更正保留了「原生两边都得手工接线、手工编排」这个真正的对比点 —— harnessed 的卖点是接线,
+  不是上游缺原语。
+
 ## [4.47.0] - 2026-10-07
 
 ### Added

@@ -144,13 +144,13 @@ harnessed 的三层栈方案是软件工程上既有的 **BDD → SDD → TDD** 
 | 维度 | 原生 Claude Code | 原生 Codex | harnessed |
 |---|---|---|---|
 | **工作流 / 方法论** | 只有原语 —— 每次自己设计流程 | 原语更少 —— 每条 prompt 即兴发挥 | 编码化的 **Discuss→Ship** 5-stage 三层栈 engine —— BDD + SDD + TDD 循环 + 2 横切 (Review + Ship) |
-| **指令注入** | `CLAUDE.md` + skill + hook 存在,但静态、得手工接线 | 只有 `AGENTS.md` —— 无 skill/hook | 每轮 breadcrumb hook + task-scoped 路由 + 每轮注入 learnings |
+| **指令注入** | `CLAUDE.md` + skill + hook 存在,但静态、得手工接线 | `AGENTS.md` + skills(`~/.agents/skills`)+ hook —— 同样静态、得手工接线 | 每轮 breadcrumb hook + task-scoped 路由 + 每轮注入 learnings |
 | **状态 / 进度** | 对话 context —— `/clear` / compaction 即丢失 | 对话 context —— 无持久化层 | 落盘 `.planning/` + 每 repo 一份的 `workflows.json` ledger + checkpoint 证据 |
 | **跨 session 恢复** | 手工重新解释 context | 手工重新解释 context | `harnessed status --recover`: you-are-here + 下一步 |
 | **验证 / 「完成」** | agent 自报「完成」 | agent 自报「完成」 | 独立审查 subagent + **fail-CLOSED 证据 guard** (缺产物 = 没完成) |
-| **Subagent 编排** | 有 subagent + Agent Teams,但得手工编排 | 无 subagent/team 原语 | `gates → prompt → spawn → checkpoint`;Agent Teams 按任务自动启用 |
+| **Subagent 编排** | 有 subagent + Agent Teams,但得手工编排 | 有 `spawn_agent` / `send_input` / `wait_agent` —— 同样得手工编排;无 Agent Teams 对等物 | `gates → prompt → spawn → checkpoint`;Agent Teams 按任务自动启用 |
 | **学习循环** | 无 | 无 | `LEARNINGS.md` 自动捕获 + 注入下一轮 |
-| **平台覆盖** | 仅 Claude Code | 仅 Codex | **Cross-harness** —— Claude Code 主力,Codex 经 platform 层 |
+| **平台覆盖** | 仅 Claude Code | 仅 Codex | **Cross-harness** —— Claude Code 与 Codex 均为一等宿主(hook / agent role / spawn 分派 / `doctor --matrix` / 正文按宿主渲染) |
 
 > 原生 agent 在零配置、零开销的琐碎一次性改动上取胜。一旦工作跨越多步骤、多 session 或多 subagent —— 即兴漂移和迷失在对话里的状态开始让你付出代价 —— harnessed 就开始挣回它的价值。
 

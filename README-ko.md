@@ -146,13 +146,13 @@ Native 에이전트는 primitive를 제공하고, harnessed는 그것을 방법�
 | 차원 | Native Claude Code | Native Codex | harnessed |
 |---|---|---|---|
 | **Workflow / 방법론** | primitive만 — 매번 흐름을 직접 설계 | 더 적은 primitive — 프롬프트마다 자유 형식 | 코드화된 **Discuss→Ship** 5-Stage 3계층 스택 엔진 — BDD + SDD + TDD 루프 + 2개 cross-cutting (Review + Ship) |
-| **지시 주입** | `CLAUDE.md` + skills + hooks 존재하나 정적이며 수동으로 엮어야 함 | `AGENTS.md`만 — skills/hooks 없음 | turn마다 breadcrumb hook + 태스크 범위 라우팅 + 사이클마다 learnings 주입 |
+| **지시 주입** | `CLAUDE.md` + skills + hooks 존재하나 정적이며 수동으로 엮어야 함 | `AGENTS.md` + skills(`~/.agents/skills`) + hooks — 이쪽도 정적이고 수동 배선 | turn마다 breadcrumb hook + 태스크 범위 라우팅 + 사이클마다 learnings 주입 |
 | **상태 / 진행** | 채팅 컨텍스트 — `/clear` / compaction 시 손실 | 채팅 컨텍스트 — 영속화 계층 없음 | 디스크 상의 `.planning/` + 저장소별 `workflows.json` 원장 + checkpoint 증거 |
 | **크로스 세션 복구** | 컨텍스트를 직접 다시 설명 | 컨텍스트를 직접 다시 설명 | `harnessed status --recover`: 현재 위치 + 다음 단계 |
 | **검증 / "완료"** | 에이전트가 "완료"를 자가 보고 | 에이전트가 "완료"를 자가 보고 | 독립 검토 subagent + **fail-CLOSED 증거 가드**(아티팩트 누락 = 미완료) |
-| **Subagent orchestration** | Subagent + Agent Teams 사용 가능하나 수동 오케스트레이션 | subagent/team primitive 없음 | `gates → prompt → spawn → checkpoint`; 태스크별 Agent Teams 자동 활성화 |
+| **Subagent orchestration** | Subagent + Agent Teams 사용 가능하나 수동 오케스트레이션 | `spawn_agent` / `send_input` / `wait_agent` 있음 — 이쪽도 수동 오케스트레이션; Agent Teams 대응물은 없음 | `gates → prompt → spawn → checkpoint`; 태스크별 Agent Teams 자동 활성화 |
 | **학습 루프** | 없음 | 없음 | `LEARNINGS.md` 자동 수집 + 다음 사이클에 주입 |
-| **플랫폼 도달 범위** | Claude Code 전용 | Codex 전용 | **Cross-harness** — Claude Code 주력, 플랫폼 계층 통해 Codex |
+| **플랫폼 도달 범위** | Claude Code 전용 | Codex 전용 | **Cross-harness** — Claude Code와 Codex 모두 일급 호스트 (hooks / agent roles / spawn 디스패치 / `doctor --matrix` / 호스트별 렌더링) |
 
 > Native 에이전트는 사소한 일회성 편집에서 제로 셋업, 제로 오버헤드로 승리합니다. harnessed는 작업이 여러 단계, 세션, subagent에 걸치는 순간 — 자유 형식 표류와 채팅 속에서 길 잃은 상태가 비용을 부과하기 시작하는 순간 — 제값을 합니다.
 

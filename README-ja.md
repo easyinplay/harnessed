@@ -146,13 +146,13 @@ harnessed の三層スタックは、ソフトウェアエンジニアリング�
 | 次元 | 原生 Claude Code | 原生 Codex | harnessed |
 |---|---|---|---|
 | **ワークフロー / メソドロジー** | 原語のみ —— 毎回フローを自分で設計 | 原語が少ない —— プロンプトごとに自由形式 | コード化された **Discuss→Ship** 5-stage 三層スタック engine —— BDD + SDD + TDD ループ + 2 つの横断（Review + Ship） |
-| **命令の注入** | `CLAUDE.md` + skill + hook は存在するが、静的で手作業の接続 | `AGENTS.md` のみ —— skill/hook なし | 各ターンの breadcrumb hook + task-scoped ルーティング + 各サイクルに注入される learnings |
+| **命令の注入** | `CLAUDE.md` + skill + hook は存在するが、静的で手作業の接続 | `AGENTS.md` + skills(`~/.agents/skills`)+ hook —— こちらも静的で手作業の接続 | 各ターンの breadcrumb hook + task-scoped ルーティング + 各サイクルに注入される learnings |
 | **状態 / 進捗** | チャット context —— `/clear` / compaction で消失 | チャット context —— 永続化レイヤーなし | ディスク上の `.planning/` + リポジトリごとの `workflows.json` ledger + checkpoint 証拠 |
 | **クロスセッション回復** | 手作業で context を説明し直す | 手作業で context を説明し直す | `harnessed status --recover`: you-are-here + 次のステップ |
 | **検証 /「完了」** | agent が「完了」を自己申告 | agent が「完了」を自己申告 | 独立レビュー subagent + **fail-CLOSED 証拠ガード**（成果物の欠如 = 未完了） |
-| **Subagent オーケストレーション** | subagent + Agent Teams は利用可能だが手作業でオーケストレーション | subagent/team 原語なし | `gates → prompt → spawn → checkpoint`；Agent Teams はタスクごとに自動有効化 |
+| **Subagent オーケストレーション** | subagent + Agent Teams は利用可能だが手作業でオーケストレーション | `spawn_agent` / `send_input` / `wait_agent` あり —— こちらも手作業でオーケストレーション；Agent Teams 相当はなし | `gates → prompt → spawn → checkpoint`；Agent Teams はタスクごとに自動有効化 |
 | **学習ループ** | なし | なし | `LEARNINGS.md` を自動捕捉 + 次サイクルへ注入 |
-| **プラットフォーム到達** | Claude Code のみ | Codex のみ | **Cross-harness** —— Claude Code が主力、Codex は platform レイヤー経由 |
+| **プラットフォーム到達** | Claude Code のみ | Codex のみ | **Cross-harness** —— Claude Code と Codex の両方が一等ホスト（hook / agent role / spawn ディスパッチ / `doctor --matrix` / ホスト別レンダリング） |
 
 > 原生 agent は、ゼロ設定・ゼロオーバーヘッドで済む些細な一度きりの編集で勝ちます。作業が複数のステップ・セッション・subagent にまたがった瞬間 —— 自由形式のドリフトとチャットに埋もれた状態がコストになり始める地点で —— harnessed は自らの価値を稼ぎ始めます。
 

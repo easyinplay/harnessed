@@ -144,13 +144,13 @@ Native agents give you primitives; harnessed wires them into a methodology. Wher
 | Dimension | Native Claude Code | Native Codex | harnessed |
 |---|---|---|---|
 | **Workflow / methodology** | Primitives only — you design the flow each time | Fewer primitives — freestyle per prompt | Codified **Discuss→Ship** 5-stage three-layer-stack engine — BDD + SDD + TDD loops + 2 cross-cutting (Review + Ship) |
-| **Instruction injection** | `CLAUDE.md` + skills + hooks exist, but static & wired by hand | `AGENTS.md` only — no skills/hooks | Per-turn breadcrumb hook + task-scoped routing + learnings injected each cycle |
+| **Instruction injection** | `CLAUDE.md` + skills + hooks exist, but static & wired by hand | `AGENTS.md` + skills (`~/.agents/skills`) + hooks — also static & wired by hand | Per-turn breadcrumb hook + task-scoped routing + learnings injected each cycle |
 | **State / progress** | Chat context — lost on `/clear` / compaction | Chat context — no persistence layer | On-disk `.planning/` + `workflows.json` per-repo ledger + checkpoint evidence |
 | **Cross-session recovery** | Re-explain the context by hand | Re-explain the context by hand | `harnessed status --recover`: you-are-here + next step |
 | **Verification / "done"** | Agent self-reports "done" | Agent self-reports "done" | Independent review subagents + **fail-CLOSED evidence guard** (missing artifact = not done) |
-| **Subagent orchestration** | Subagents + Agent Teams available, but orchestrated by hand | No subagent/team primitive | `gates → prompt → spawn → checkpoint`; Agent Teams auto-enabled per task |
+| **Subagent orchestration** | Subagents + Agent Teams available, but orchestrated by hand | `spawn_agent` / `send_input` / `wait_agent` exist — also orchestrated by hand; no Agent-Teams equivalent | `gates → prompt → spawn → checkpoint`; Agent Teams auto-enabled per task |
 | **Learning loop** | None | None | `LEARNINGS.md` auto-captured + injected into the next cycle |
-| **Platform reach** | Claude Code only | Codex only | **Cross-harness** — Claude Code primary, Codex via platform layer |
+| **Platform reach** | Claude Code only | Codex only | **Cross-harness** — Claude Code and Codex both first-class (hooks / agent roles / spawn dispatch / `doctor --matrix` / host-rendered prose) |
 
 > Native agents win on zero-setup, zero-overhead for trivial one-off edits. harnessed earns its keep the moment work spans multiple steps, sessions, or subagents — where freestyle drift and lost-in-chat state start costing you.
 

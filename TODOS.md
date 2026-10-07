@@ -57,11 +57,20 @@
   本身就不成立。ADR-0039 删掉 goal tier 的理由(「从未被实证」)在 codex 侧同样成立,无需新 ADR。
   若上游将来加了 goal 的创建 API,再按本条的实测记录重开。
 
-- [ ] **README 表述更新(v16.0 宿主对等)** — P2 / S,Phase 66 T6 推迟
-  Why: T6 交付了 `docs/` 下的 HostAdapter 契约,但 README 体系(root + 9 个镜像)在做 Phase 66 时
-  **正被另一个会话改动**(10 个文件 untracked-modified),按共享工作树纪律不碰。
-  Trigger: 那批 README 改动落地后,把「codex 宿主支持到什么程度」的表述对齐到 `docs/` 的契约文档,
-  10 个镜像同步。注意 `check-provenance` 与 i18n 对等门。
+- [x] **README 表述更新(v16.0 宿主对等)** — **CLOSED 2026-10-08**。
+  封锁解除:那 10 个 README 的改动(另一会话的「安装路径前置 + 英文链接修正」)已于同日落地
+  (`b25e62f`,维护者明确要求;按显式路径 stage,不含工作树其它内容)。
+  对齐内容不是「补新功能描述」,而是**更正两处错误的否定性断言**:
+  「原生 Codex 只有 `AGENTS.md`、无 skill/hook」与「无 subagent/team 原语」—— 两条都被本项目
+  自己的实测证伪(Phase 64 的 hook via 本地插件 + `~/.agents/skills`;Phase 66 的
+  `spawn_agent` / `send_input` / `wait_agent` / `list_agents` / `close_agent` / `resume_agent`)。
+  项目记忆 `verify-upstream-before-asserting` 要求否定性断言有引文级来源,这两条正是反例。
+  第三处「Codex 经 platform 层」说轻了,改为点名 v16.0 的五项。
+  **README 没有任何闸门或测试守**,所以每次碰都要手验:本次验了(a) 三处旧说法零残留、
+  (b) 10 个镜像结构一致(各 25 个标题,层级与 emoji 逐位相同)、(c) 十道 `check-*.mjs` 全 0。
+  tr 镜像把 `Cross-harness` 译成了 `Çapraz-harness`,机械匹配漏掉它 —— 单独补,
+  并靠「每条替换必须恰好命中一次,否则 abort」的断言把这个漏网当场暴露出来。
+
 - [x] **MCP 注册探测仍读 `~/.codex/config.toml` 全文** — **CLOSED 2026-09-30**(v16.0 收口后顺手做,
   trigger「下一次碰 codex MCP 安装路径时」正好命中:那次改的就是这两个安装器)。
   探测改问 `codex mcp list --json`(`codexMcpServers.ts`);形状实测于 0.155.1,用 `-c` 的内存内覆盖探得,
