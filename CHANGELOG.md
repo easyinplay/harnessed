@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **「codex 产物里不许有 Claude Code 原语」这条契约的判据不再分叉。** 守它的闸门
+  (`check-host-primitives.mjs`)持有唯一的 token 清单,但只作用于 SKILL 正文与运行时 prompt 两个面;
+  生成命令体那个面另有一套在两个文件上手挑三个 token 的点查 —— 往清单里加一条只强化前两个面,
+  而命令体恰恰是出过真缺陷的地方(曾指向 codex 上不存在的 `~/.claude/rules/agent-teams.md`、
+  并命令模型去调 codex 没有的 `AskUserQuestion`)。现在命令体的检查**直接 import 闸门的清单与豁免逻辑**,
+  一处编辑同时覆盖三个面;闸门本身仍不需要 build。并带一条正向对照:同一条管道跑 claude 产物必须仍有命中,
+  否则 codex 那边的「零残留」什么都不证明。实测当前 codex 产物零残留。
+
 - **codex 上「插件类能力缺失」的告警不再给一个做不到的动作。** 这类能力(`code-review` /
   `code-simplifier` / `ui-ux-pro-max` / `planning-with-files`,以及 `caveman` 的插件那一半)此前
   告诉你去跑 `claude plugin install <id>`;但 codex 没有 Claude Code 插件注册表,这不是「没装」,

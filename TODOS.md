@@ -70,13 +70,17 @@
   不渲染也不删除。Claude Code 只读 `SKILL.md`(官方加载契约)所以无人读到,无实际危害,但不干净。
   两个候选:en 安装也剥除该 sibling,或也渲染它。改的是安装产品行为,故未并入 Phase 65。
   注意 `renderSkillTemplates.test.ts` 有一条断言锁着「en 侧必须有 zh 兄弟」这一当前行为。
-- [ ] **`check-host-primitives` 未覆盖生成命令体(S2)** — P3 / S,Phase 65 T11 交回
-  Why: 该面是 TS 模板字面量,门要扫它就得先 build。现有覆盖是
-  `tests/cli/generateCommandsGolden.test.ts` 的 codex sanity 块(断言无 `~/.claude/` / `CC-native` /
-  `AskUserQuestion`),**不是**门的完整 token 表。补法很便宜:在 `tests/scripts/` 加一个 test,
-  import `generateCommandFile` + 复用门导出的 `scanCcTokens` / `MASKS`,对 codex bodies 跑同一套判据。
-
-## From /plan-ceo-review 2026-07-12 (B5 Phase 3 Slice 1 — CEO plan: `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`)
+- [x] **`check-host-primitives` 未覆盖生成命令体(S2)** — **CLOSED 2026-10-07**,但不是让门去 build。
+  真缺口不是「S2 没人查」(`generateCommandsGolden.test.ts` 有 codex sanity 块),而是**判据分叉**:
+  那个 sanity 块在两个文件上手挑三个 token(`task_name` / `CC-native` / `AskUserQuestion`),
+  而门里的 `CC_TOKENS` 才是「什么算残留」的真相源 —— 往它加一条只强化 S1/S3,S2 不受益。
+  而 S2 恰恰是 Phase 65 出过真 bug 的面(指向 `~/.claude/rules/agent-teams.md`、命令模型调
+  `AskUserQuestion`,两者在 codex 上都不存在)。
+  做法:新增 `tests/cli/generateCommandsHostResidue.test.ts`,**import 门的** `CC_TOKENS` /
+  `MASKS` / `maskPhrase` / `hostMapMarkers` / `scanCcTokens`,作用到全部 codex 命令体 ——
+  一处编辑同时覆盖三个面。门保持 dep-light,不新增 build 依赖。
+  自带正向对照:同一条 mask→scan 管道跑 claude 产物必须仍有命中,否则 codex 那条绿什么都不证明
+  (与门自己「零命中的 allowlist 条目算违规」同一思路)。实测当前 codex 产物零残留。
 
 - [ ] **E1 二进制签名(Windows Authenticode + macOS notarization)** — P2 / L(CC: M + 证书采购)
   Why: 无签名 exe 触发 SmartScreen/Gatekeeper + Defender 误报,安装器体验最大摩擦源。

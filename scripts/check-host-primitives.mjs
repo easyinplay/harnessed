@@ -48,8 +48,21 @@
 //     no claude-side audit mode here, so that stays a non-issue.)
 //   * S2, the generated command bodies (src/cli/lib/generateCommands.ts): they are
 //     synthesised from TypeScript template literals, so reaching them needs a
-//     build this dep-light gate deliberately does not take. They are covered by
-//     the codex sanity block in tests/cli/generateCommandsGolden.test.ts.
+//     build this dep-light gate deliberately does not take.
+//
+//     S2 is NOT therefore unjudged. tests/cli/generateCommandsHostResidue.test.ts
+//     IMPORTS `CC_TOKENS`, `MASKS`, `maskPhrase`, `hostMapMarkers` and
+//     `scanCcTokens` from this file and applies them to every codex command body,
+//     so this list stays the single source of truth for all three surfaces —
+//     adding a token here strengthens S1, S3 AND S2 in one edit. Do not let that
+//     test grow its own copy of the list; that is the regression this arrangement
+//     exists to prevent (before it, the S2 check hand-picked three tokens on two
+//     files while the list below grew independently). It also carries a positive
+//     control: the same mask→scan pipeline over the CLAUDE bodies must still hit,
+//     otherwise a green codex scan proves nothing.
+//     tests/cli/generateCommandsGolden.test.ts keeps the complementary checks that
+//     are NOT token-list shaped (nothing unresolved, no `~/.claude/` path, and the
+//     per-file spot assertions about what codex bodies must positively say).
 //
 // Uses the `yaml` package → runs AFTER `corepack pnpm install` in CI (sister
 // scripts/check-yaml-i18n-parity.mjs), NOT before it. Exports `checkHostPrimitives`
