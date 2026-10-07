@@ -27,6 +27,7 @@
 
 import { detectPlatform } from '../../platform/platform.js'
 import { mergeSettingsEnvKey } from './settingsWriter.js'
+import { writeUserLangPin } from './userLangPin.js'
 
 const ENV_KEY = 'HARNESSED_USER_LANG'
 
@@ -36,6 +37,8 @@ export type EnableUserLangResult =
   | { status: 'created'; path: string; detected: UserLangCode }
   | { status: 'already-set'; path: string; existing: string }
   | { status: 'enabled'; path: string; backupPath: string; detected: UserLangCode }
+  /** Host cannot take an env key (codex) — the preference went to the state-root pin. */
+  | { status: 'pinned'; path: string; detected: UserLangCode }
   | { status: 'warn'; message: string }
 
 /**
@@ -70,15 +73,28 @@ function safeIntlLocale(): string | undefined {
 
 export async function enableUserLangInSettings(override?: string): Promise<EnableUserLangResult> {
   // Phase C / D4: capability gate (sister enableAgentTeamsInSettings). codex's
-  // TOML config.toml is not a JSON env-key store — skip + inform, never write.
+  // TOML config.toml is not a JSON env-key store, so the env key cannot be written.
+  //
+  // v16.0 post-close — it used to stop here with a warning, which meant the preference
+  // was simply lost on codex: `buildLanguageSection` reads `env.HARNESSED_USER_LANG`,
+  // nothing ever set it, and the whole `## Language` section (with language.yaml's
+  // preserve-English categories) was missing from every codex subagent prompt. The
+  // preference now goes to a pin in harnessed's own state root instead — see
+  // `userLangPin.ts` for why there and not the locale or a host config file.
   const platform = detectPlatform()
+  const detected = detectUserLang(override)
   if (!platform.supportsEnvKeyWrite) {
-    return {
-      status: 'warn',
-      message: `platform '${platform.id}' does not support env-key settings writes (capability-absent) — ${ENV_KEY} skipped`,
+    try {
+      return { status: 'pinned', path: await writeUserLangPin(detected), detected }
+    } catch (e) {
+      // Same fail-soft posture as every other branch here: setup is never blocked by
+      // this step (sister fallback 铁律 1).
+      return {
+        status: 'warn',
+        message: `platform '${platform.id}' has no env-key store and the ${ENV_KEY} pin could not be written (${(e as Error).message})`,
+      }
     }
   }
-  const detected = detectUserLang(override)
 
   // Case (b) respects an existing user-managed value ONLY when no explicit
   // override was passed. mergeSettingsEnvKey invokes skipIfPresent only for a

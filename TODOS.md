@@ -59,12 +59,16 @@
   的坑在本项目反复出现。考虑过但没走的路:给 schema 加「本宿主不可用」声明(`by_host` 扩展)——
   4 个能力、全是插件分发的上游,不值一个 schema 变更 + 闸门改动。
 
-- [ ] **codex 上 subagent prompt 拿不到语言指令** — P3 / S,Phase 65 findings F8
-  Why: codex descriptor `supportsEnvKeyWrite: false` → `HARNESSED_USER_LANG` 从不写 →
-  `buildLanguageSection` 返回空 → 整个 `## Language` 节在 codex 上不出现。副作用:
-  `disciplines/language.yaml` 的 `preserve-english-categories` 也随之不渲染。Phase 65 仍然把它原语化了
-  (不拿一个待修缺陷当豁免理由),所以这里修好后无需回头改正文。
-  需要先定 codex 上语言偏好存哪(不写 `config.toml` 是硬边界)。
+- [x] **codex 上 subagent prompt 拿不到语言指令** — **CLOSED 2026-10-07**。
+  「语言偏好存哪」这个待定项的答案被约束逼成唯一解:不能写 `config.toml`(含凭据、codex 自己写),
+  codex 无 JSON settings 文件,改 shell profile 等于写一个 harnessed 不拥有的文件 —— 所以写
+  harnessed 自己的 state root:`<stateRoot>/user-lang`,Phase 63 `.platform` pin 的邻居。
+  取值顺序 env → pin(env 优先保住 claude 侧逐字节不变,并保留单次覆盖)。
+  **没有用 `getLocale()` 顶替**:它回答「读哪个语言的 yaml/CLI 文案」,而这里回答「模型用什么语言回话」
+  (`setup --user-lang` 指定)—— 在英文 locale 机器上跑 `--user-lang zh-Hans` 会造成两宿主结论分叉。
+  pin 内容不是受支持语言码时按不存在处理(那个值会拼进 `Respond in <name>`)。
+  卸载无需改动(本来整删 state root)。`host-contract.md` 的缺口表删掉该行、descriptor 表那条改为已修。
+
 - [ ] **en 安装在 skills 目录留一份带未解析占位符的 zh 副本** — P3 / S,Phase 65 findings F11
   Why: `renderSkillTemplates.ts` 在 en 安装时只渲染并写 `SKILL.md`,`SKILL.zh-Hans.md` 以 `cp` 原样留下、
   不渲染也不删除。Claude Code 只读 `SKILL.md`(官方加载契约)所以无人读到,无实际危害,但不干净。

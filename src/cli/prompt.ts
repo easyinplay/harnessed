@@ -33,6 +33,7 @@ import {
   toHostId,
 } from './lib/hostPrimitives.js'
 import { renderRolePromptsForHost } from './lib/rolePromptHostRender.js'
+import { readUserLangPin } from './lib/userLangPin.js'
 
 const DEFAULT_MAX_ITERATIONS = 20
 const DEFAULT_MODEL = 'sonnet'
@@ -267,7 +268,11 @@ export async function buildLanguageSection(
   packageRoot: string,
   host: HostId = toHostId(detectPlatform().id),
 ): Promise<string> {
-  const code = process.env.HARNESSED_USER_LANG
+  // v16.0 post-close — env first (claude's path, byte-identical; also a usable
+  // per-invocation override on any host), then harnessed's own state-root pin, which
+  // is how the preference reaches a host that cannot take an env key (codex). An
+  // unusable pin reads as absent — see userLangPin.ts.
+  const code = process.env.HARNESSED_USER_LANG || readUserLangPin()
   if (!code) return ''
   const name = LANG_NAMES[code] ?? code
   const categories = await renderPreserveCategories(

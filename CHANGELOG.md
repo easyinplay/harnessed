@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **codex 上的 subagent prompt 终于拿得到 `## Language` 节。** 该节由
+  `env.HARNESSED_USER_LANG` 驱动;claude 上 setup 把它写进 `~/.claude/settings.json` 的 `env` 块、
+  由宿主注入到它拉起的进程,而 codex 没有这个机制(`supportsEnvKeyWrite: false`、无 JSON settings 文件),
+  于是那个键从不被写到任何地方 —— 整节连同 `disciplines/language.yaml` 的「保留英文原文」类目一起消失。
+  现在在不支持 env-key 的宿主上,偏好写进 harnessed **自己的** state root(`<stateRoot>/user-lang`,
+  Phase 63 `.platform` pin 的邻居),`buildLanguageSection` 的取值顺序是 env → pin。
+  env 优先:claude 侧逐字节不变,且任一宿主上都保留单次覆盖的办法。
+  存放位置是被约束逼出来的:`~/.codex/config.toml` 不能碰(含凭据、且是 codex 自己写的),
+  codex 无 JSON settings 文件,改 shell profile 等于写一个 harnessed 并不拥有的文件。
+  **刻意不用已解析的 locale 顶替** —— `getLocale()` 回答的是「读哪个语言的 yaml 与 CLI 文案」,
+  而这里回答的是「模型用什么语言回话」(由 `setup --user-lang` 指定):在英文 locale 的机器上
+  跑 `--user-lang zh-Hans` 的人,会在 claude 上收到中文、在 codex 上收到英文。
+  pin 内容不是受支持的语言码时按「不存在」处理,不转发 —— 那个值会被拼进 `Respond in <name>`。
+  卸载无需改动:它本来就整删 state root。
+
 - **「codex 产物里不许有 Claude Code 原语」这条契约的判据不再分叉。** 守它的闸门
   (`check-host-primitives.mjs`)持有唯一的 token 清单,但只作用于 SKILL 正文与运行时 prompt 两个面;
   生成命令体那个面另有一套在两个文件上手挑三个 token 的点查 —— 往清单里加一条只强化前两个面,

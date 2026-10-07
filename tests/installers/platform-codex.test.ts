@@ -320,14 +320,19 @@ describe('platform — capability-aware consumers under codex (Phase C / D4)', (
     }
   })
 
-  it('enableUserLangInSettings() no-op + inform when supportsEnvKeyWrite=false (codex)', async () => {
+  // v16.0 post-close — was "no-op + inform". Informing was not enough: the preference
+  // was simply lost, so `buildLanguageSection` (which reads env.HARNESSED_USER_LANG)
+  // produced nothing and the whole `## Language` section was missing from every codex
+  // subagent prompt. The env key still cannot be written on codex — now the preference
+  // goes to a pin in harnessed's own state root instead (`userLangPin.ts`; contract and
+  // precedence covered by tests/cli/userLangPin.test.ts).
+  it('enableUserLangInSettings() pins to the state root when supportsEnvKeyWrite=false (codex)', async () => {
     vi.stubEnv(PLATFORM_KEY, 'codex')
     const r = await enableUserLangInSettings()
-    expect(r.status).toBe('warn')
-    if (r.status === 'warn') {
-      expect(r.message).toMatch(/does not support env-key/i)
-      expect(r.message).toContain('codex')
-      expect(r.message).not.toMatch(/malformed|JSON/i)
+    expect(r.status).toBe('pinned')
+    if (r.status === 'pinned') {
+      expect(r.path.replace(/\\/g, '/')).toContain('/harnessed/user-lang')
+      expect(['en', 'zh-Hans']).toContain(r.detected)
     }
   })
 })

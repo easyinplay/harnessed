@@ -61,7 +61,7 @@
 | `commandsDir` | `~/.claude/commands` | `~/.codex/prompts` | 仍然交付(`setup.ts:552` 创建并写入),但 OpenAI 已声明 "custom prompts are deprecated in favor of skills"(Phase 65 F5)。Phase 65 的决定是**两面都交付、两面都做原语化**,不在该 phase 讨论废弃。 |
 | `pluginsRegistry` | `~/.claude/plugins/installed_plugins.json` | **`null`** | **没有文件系统插件注册表**(codex 用 inline `[marketplaces.*]`)。`readInstalledPlugins` 因此返回空集(`capabilityResolver.ts:93-96`)→ **每个 `install_type: plugin` 的能力在 codex 上都告警**。这是 Phase 65 F8 记录的已知缺口,未修。 |
 | `mcpConfigPath` | `~/.claude.json`(**homedir 的兄弟**,不是 `.claude` 的子项) | `~/.codex/config.toml` | 不是「可以随便读写 config.toml」的许可 —— 见 §5.1 的精确边界。 |
-| `supportsEnvKeyWrite` | `true` | **`false`** | **两个 env-key 写入器变成 no-op + 告知**:`enableAgentTeamsInSettings`(`:37`)、`enableUserLangInSettings`(`:75`);`guard-exemption.ts:224` 也据此判断能否写 env。连带后果:codex 上 `HARNESSED_USER_LANG` 从不被写入 → `buildLanguageSection`(`prompt.ts:265-282`)在该 env 未设时返回空串 → **codex subagent prompt 拿不到 `## Language` 节**。Phase 65 F8 记录,未修。 |
+| `supportsEnvKeyWrite` | `true` | **`false`** | **两个 env-key 写入器变成 no-op + 告知**:`enableAgentTeamsInSettings`(`:37`)、`enableUserLangInSettings`(`:75`);`guard-exemption.ts:224` 也据此判断能否写 env。连带后果**曾是**:codex 上 `HARNESSED_USER_LANG` 从不被写入 → `buildLanguageSection` 返回空串 → codex subagent prompt 拿不到 `## Language` 节(Phase 65 F8)。**v16.0 收口后已修**:`enableUserLangInSettings` 在不支持 env-key 的宿主上改写 `<stateRoot>/user-lang` pin(`userLangPin.ts`),`buildLanguageSection` 的取值顺序为 env → pin。env 优先保住 claude 侧逐字节不变,也保留任一宿主上的单次覆盖。 |
 | `sessionIdEnv` | `CLAUDE_CODE_SESSION_ID` | `CODEX_SESSION_ID` | 非 null 的连带后果有两条:(a) codex 会话内 `harnessed run` / `research` 被嵌套守卫拦截(`src/cli/run.ts:211` / `research.ts:83`,非 TTY exit 1,`HARNESSED_ALLOW_NESTED=1` 可覆盖)—— 这是修复,嵌套 SDK spawn 在 codex 里同样会挂;(b) workflow ledger 按会话分槽(`activeKey` 用 `CODEX_SESSION_ID`)。 |
 
 另有一个跨宿主的**探测集**(不是 descriptor 字段):`harnessSkillsDirs()`(`platform.ts:277-281`)去重返回
@@ -444,8 +444,7 @@ harnessed 在 `~/.codex` 下的**全部写入**就是:本地 marketplace 目录�
 
 | 缺口 | 后果 | 位置 |
 |---|---|---|
-| codex 上 `pluginsRegistry: null` | `readInstalledPlugins` 返回空集 → **每个 `install_type: plugin` 的能力在 codex 上都告警**。`host_map_notes.codex` 第 2 条把这条告诉读者:把这类步骤当不可用并记录 skip,**不要**替换成一个等价物 | `platform.ts:135`;`capabilityResolver.ts:93-96` |
-| codex 上 `supportsEnvKeyWrite: false` | `HARNESSED_USER_LANG` 从不被写入 → `buildLanguageSection` 返回空 → **codex subagent prompt 拿不到 `## Language` 节** | `platform.ts:137`;`enableUserLangInSettings.ts:75`;`prompt.ts:265-282` |
+| codex 上 `pluginsRegistry: null` | `readInstalledPlugins` 返回空集 → **每个 `install_type: plugin` 的能力在 codex 上都告警**(实测为 4 条 + `caveman`,`renderAllSkills` 全局去重后整次 setup 最多 5 行,不是逐条刷屏)。告警文本本身已按宿主分叉:codex 上不再建议 `claude plugin install`(该宿主无插件注册表,那个动作不可能有用),改为直说不可用并要求记录 skip —— 与 `host_map_notes.codex` 第 2 条同源 | `platform.ts:135`;`capabilityResolver.ts:93-96` |
 | `setup.ts` 的 `loadRolePrompts()` 未显式传 locale | 落到 `rolePrompts.ts:43` 的默认参数,与同函数上游显式线程下来的 locale **不同源**。当前行为一致,属隐患 | `setup.ts` role-prompts 加载点 |
 | en 安装留下未渲染的 locale sibling | `~/.claude/skills/<name>/SKILL.zh-Hans.md` 带**未解析的占位符**。无人读取(CC 只读 `SKILL.md`)因而无实际危害,但不干净 | `renderSkillTemplates.ts:157,175`;裁决见 §4.5 |
 | `stop-hook-recover` 在 codex 上不可用 | 它依赖 CC transcript 形态,在 codex 上**诚实返回 `harness-mismatch`**(不是伪装成成功) | ADR 0041 § Consequences |
