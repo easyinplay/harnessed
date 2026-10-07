@@ -16,7 +16,7 @@ import { parse as parseYaml } from 'yaml'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
-import { isUndefinedVariableError } from '../workflow/exprBuilder.js'
+import { isStaticGateConfigError } from '../workflow/exprBuilder.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
 import { resolveSkipVeto } from '../workflow/skipGate.js'
 import { matchSkipSub, warnUnmatchedSkips } from '../workflow/skipSubs.js'
@@ -245,20 +245,21 @@ export async function runGatesPlan(
       if (veto) skip.push({ sub: clause.sub, reason: veto })
       else fire.push(fireEntry(clause, master))
     } catch (e) {
-      if (isUndefinedVariableError(e)) {
-        // 4.23.2 (issue #5 defect 1) — undefined variable is a STATIC config
+      if (isStaticGateConfigError(e)) {
+        // 4.23.2 (issue #5 defect 1) — static gate-config drift (missing variable, `in`
+        // against a missing/null member, or an unparseable expression) is a config
         // bug (expression ↔ gateContext drift), not an operational fault:
         // fail-open here made the most expensive sub the default path.
         // Fail-CLOSED + loud warn; ADR 0029 Amendment (4.23.2).
         deps.warn(
-          `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} references a variable ` +
-            `missing from the gate context (${(e as Error).message}). Treating as NOT fired ` +
+          `⚠️ master ${master} sub ${clause.sub} gate ${clause.gate} cannot be evaluated against the ` +
+            `gate context (${(e as Error).message}). Treating as NOT fired ` +
             `(fail-closed for config errors) — fix the judgments yaml expression or supply ` +
             `the variable via --context / gateContext defaults.`,
         )
         skip.push({
           sub: clause.sub,
-          reason: `gate ${clause.gate} misconfigured (undefined variable) — fail-closed, not fired`,
+          reason: `gate ${clause.gate} misconfigured (expression/context drift) — fail-closed, not fired`,
         })
       } else {
         // ADR 0029 fail-soft — eval error is operational fault, not a judgment

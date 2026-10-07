@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **gate 求值的 fail-closed 判据扩到三类静态配置错误(ADR-0042,amends ADR-0038)。** 此前只认
+  `undefined variable`,所以用 `in` 访问一个缺失或 null 的成员(`'x' in subtask.missing`)会抛
+  `TypeError: Cannot read properties of undefined (reading 'length')` —— 不匹配判据、落 ADR-0029 的
+  fail-soft、**子项照 fire**。这正是 issue #5 的形状(gate 越贵、误触越贵),只是换了一条触发路径。
+  表达式无法解析也归入同类:重试永远不会好的错误,当成「gate 已 fire」一定是错的。
+  三条消息都实测自本仓 pinned 的 expr-eval,测试断言真实抛出的文本,上游改措辞会红而不是静默退回。
+  判据改名 `isStaticGateConfigError`(语义变宽,名字跟着变),三处 catch 的 warn 文案一并泛化。
+  **ADR-0038 的一条前提被这次实测证伪**:它写「object member 缺失静默求 false」,对 `in` 不成立。
+  按项目惯例以新 ADR 承载更正、不改 0038 正文。
+  此前未触发只是因为当时没有 judgment 用数组 fact —— 引入第一个数组 fact 的那次改动本会同时激活它。
+
 - **安装目录不再留下带未解析占位符的 locale 副本。** en 安装此前只渲染并写 `SKILL.md`,
   把 `SKILL.zh-Hans.md` 以 `cp` 原样留在 `~/.claude/skills/<name>/`(codex 上是 `~/.agents/skills/`),
   里面的 `{{ … }}` 一个都没解析。宿主只读 `SKILL.md` 所以无人读到、无实际危害,但打开它的人只会被误导,

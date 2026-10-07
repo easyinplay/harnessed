@@ -103,8 +103,13 @@
 - [x] **`harnessed update --rollback`** — SHIPPED 4.32.20:`runBinaryRollback`(同款 rename dance,被换下的二进制先 bank 回 bin-backup/<curver>/ 保可逆;`--rollback [version]`,缺省取最高 banked 版;npm 模式明确拒绝导向 `npm i -g`)。
 - [ ] **undici EnvHttpProxyAgent 代理支持** — P3 / S
   Why: 受限网络下 update 下载不走系统代理。等真实用户信号;当前以可操作报错 + npm 渠道兜底。
-- [ ] **Slice 2:curl/PowerShell 一行安装器** — P1(本切片发布后紧跟,OV1 裁决"不拖")
-  Why: 创造二进制用户群;消灭 Node 22 前置。Depends: 资产命名契约(已冻结)+ per-asset .sha256(Slice 1 交付)。
+- [x] **Slice 2:curl/PowerShell 一行安装器** — **已发,本条目过期**(2026-10-07 对账补勾)。
+  按产物核实而非凭记忆:仓库里有 `install.sh` / `install.ps1`,CHANGELOG 记着
+  「B 路线 Phase 3 Slice 2:一行安装器」交付(含 unix `~/.local/bin/harnessed` 与 Windows
+  `%LOCALAPPDATA%\harnessedin\harnessed.exe` 两条落位),之后还有两次 dogfood 修复
+  (PATH 遮蔽导致 setup 跑到旧那份)。下方 Slice 3 的 Depends 行也早已写「Slice 1/2(已发)」。
+  一个实际已发的 **P1** 挂在队首会扭曲优先级,这正是「状态从产物派生」要防的漂移。
+
 - [ ] **Slice 3:npm per-platform optionalDependencies 二进制包** — P3(2026-07-12 降级,用户裁决)
   Why: esbuild/Biome 模式。价值质疑:npm 用户必有 Node(包是纯 JS 本就能跑),二进制用户已有一行安装器;
   收益仅剩启动速度,代价是 4 个 npm 包的发布管线/版本锁/launcher shim 维护面。等真实需求信号再启。
@@ -112,12 +117,14 @@
 
 ## Gate semantics
 
-- [ ] **ADR-0038 第三类:对缺失/null 成员用 `in` 落 fail-SOFT** — P2(4.32.23 spike 实测发现)
-  `'x' in subtask.missing` 抛的是 `Cannot read properties of undefined (reading 'length')`,
-  不匹配 `isUndefinedVariableError` 的 `/undefined variable/i`(`src/workflow/exprBuilder.ts:44-46`)
-  → 落 ADR-0029 fail-soft,子项照 fire。目前无 judgment 用数组 fact 故未触发;
-  引入任何数组 fact 前必须先把正则收口到 fail-closed(ADR-0038 的「静态配置漂移」理由同样成立)。
-  证据:`.planning/phases/51-ecc-orchestration/findings.md` F7。
+- [x] **ADR-0038 第三类:对缺失/null 成员用 `in` 落 fail-SOFT** — **CLOSED 2026-10-07**(ADR-0042)。
+  判据改名 `isStaticGateConfigError`,从单一 `undefined variable` 扩到三类静态漂移:裸标识符缺失 /
+  `in` 访问缺失或 null 成员 / 表达式无法解析。三条消息都**实测**自本仓 pinned 的 expr-eval,
+  测试断言的是真实抛出的文本,所以上游改措辞会红而不是静默退回 fail-soft。
+  刻意不纳入 `must evaluate to boolean`(可能取决于 fact 的运行时类型,不必然静态)。
+  **顺带更正 ADR-0038 的一条前提**:它的 Context 写「object member 缺失静默求 false(4.23.2 实证)」,
+  对 `in` 运算符不成立 —— 实测抛 TypeError。按 0038 自己 amend 0029 的守恒做法,以 ADR-0042 承载、不改其正文。
+  三处 catch 的 warn 文案一并泛化(原文只说「a variable missing」,对后两类是错的指引)。
 
 - [x] **ECC 语言专家路由是否补机器层(B 方案)** — CLOSED 2026-07-29:**不补**。
   rust(reedline-pr `caeff8a`)+ go(plandex `active_plan.go`)对照实测补齐后,三语言

@@ -1,0 +1,17 @@
+# TRAP — ADR-0042 / ADR-0038 第三类(2026-10-07):gate 表达式用 `in` 访问一个
+# **缺失的成员**。ADR-0038 的 Context 曾断言「object member 缺失静默求 false」,
+# 实测证伪:expr-eval 会去取该成员的 `.length`,抛
+# `TypeError: Cannot read properties of undefined (reading 'length')`。
+# 该消息不含 `undefined variable`,所以在 ADR-0042 之前不匹配 fail-closed 判据,
+# 落 ADR-0029 fail-soft —— **子项照 fire**,即 issue #5 的形状换了一条触发路径。
+#
+# 这个场景是产物级(跑 dist)的那一道:单测只能钉住判据函数,它钉住的是
+# `harnessed gates` 真的 fail-closed skip。doctored judgments 在 assets/ 下,
+# 把 multispec 的表达式改成 `'release' in phase.missing_array_xyz`。
+name: adr0042-in-missing-member
+description: "traps the ADR-0038 third class — `in` against a missing member must fail-closed skip, not fail-open fire"
+assets_dir: assets
+steps:
+  - gates:
+      master: verify
+      task: in-missing-member trap

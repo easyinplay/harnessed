@@ -6,7 +6,7 @@ import {
   _parserSingleton,
   evalGate,
   GateEvalError,
-  isUndefinedVariableError,
+  isStaticGateConfigError,
 } from '../../src/workflow/exprBuilder.js'
 
 describe('exprBuilder.evalGate — positive syntax (5)', () => {
@@ -72,7 +72,7 @@ describe('exprBuilder.evalGate — injection lockdown (2)', () => {
 // 4.23.2 (issue #5) — discriminator for the fail-closed exception to ADR 0029:
 // a bare identifier missing from the eval context is a STATIC config bug
 // (gate expression ↔ gateContext contract drift), not a runtime fault.
-describe('exprBuilder.isUndefinedVariableError — 4.23.2 fail-closed discriminator', () => {
+describe('exprBuilder.isStaticGateConfigError — fail-closed discriminator', () => {
   it('11. true for GateEvalError wrapping expr-eval "undefined variable: X"', () => {
     let caught: unknown
     try {
@@ -81,23 +81,81 @@ describe('exprBuilder.isUndefinedVariableError — 4.23.2 fail-closed discrimina
       caught = e
     }
     expect(caught).toBeInstanceOf(GateEvalError)
-    expect(isUndefinedVariableError(caught)).toBe(true)
+    expect(isStaticGateConfigError(caught)).toBe(true)
   })
 
   it('12. false for a plain Error with the same message (must be GateEvalError)', () => {
-    expect(isUndefinedVariableError(new Error('undefined variable: x'))).toBe(false)
+    expect(isStaticGateConfigError(new Error('undefined variable: x'))).toBe(false)
   })
 
   it('13. false for a GateEvalError of a different failure class', () => {
     expect(
-      isUndefinedVariableError(
+      isStaticGateConfigError(
         new GateEvalError('Expression must evaluate to boolean, got number', 'x'),
       ),
     ).toBe(false)
   })
 
+  // ADR-0038 third class (v16.0 post-close) — found by the 4.32.23 spike, see
+  // .planning/phases/51-ecc-orchestration/findings.md F7. `'x' in subtask.missing`
+  // does NOT produce "undefined variable": expr-eval reaches for `.length` on the
+  // missing member and the raw throw is a TypeError. Measured on this repo's pinned
+  // expr-eval, which is why these cells assert the real thrown text rather than a
+  // hand-written message:
+  //
+  //   'x' in subtask.missing  → Cannot read properties of undefined (reading 'length')
+  //   'x' in subtask.nul      → Cannot read properties of null (reading 'length')
+  //   subtask.missing.length  → parse error [1:23]: Expected TNAME
+  //
+  // All three are STATIC drift between a gate expression and the context it is given:
+  // no retry can fix them, so they belong on the fail-closed side with the bare
+  // undefined identifier. Falling open is what issue #5 looked like — the gated sub
+  // (a 4-specialist Agent Team) firing on every ordinary run.
+  //
+  // The yaml corpus is still guarded first by judgmentContextAudit.test.ts, which
+  // evals every fires_when/skips_when against the default context. This classifier is
+  // the second line: a fact that EXISTS in that default context but is missing or null
+  // for some real task at runtime slips past the audit and lands here.
+  it('15. `in` against a MISSING member → fail-closed (the ADR-0038 third class)', () => {
+    let caught: unknown
+    try {
+      evalGate("'x' in subtask.missing", { subtask: {} })
+    } catch (e) {
+      caught = e
+    }
+    expect((caught as Error).message).toMatch(/cannot read properties of undefined/i)
+    expect(isStaticGateConfigError(caught)).toBe(true)
+  })
+
+  it('16. `in` against a NULL member → fail-closed', () => {
+    let caught: unknown
+    try {
+      evalGate("'x' in subtask.nul", { subtask: { nul: null } })
+    } catch (e) {
+      caught = e
+    }
+    expect((caught as Error).message).toMatch(/cannot read properties of null/i)
+    expect(isStaticGateConfigError(caught)).toBe(true)
+  })
+
+  it('17. an unparseable expression → fail-closed (no retry can parse it either)', () => {
+    let caught: unknown
+    try {
+      evalGate('subtask.missing.length > 0', { subtask: {} })
+    } catch (e) {
+      caught = e
+    }
+    expect((caught as Error).message).toMatch(/parse error/i)
+    expect(isStaticGateConfigError(caught)).toBe(true)
+  })
+
+  it('18. a satisfied `in` still just evaluates — the widening added no false positive', () => {
+    expect(evalGate("'x' in arr", { arr: ['x'] })).toBe(true)
+    expect(evalGate("'y' in arr", { arr: ['x'] })).toBe(false)
+  })
+
   it('14. false for non-error values', () => {
-    expect(isUndefinedVariableError(undefined)).toBe(false)
-    expect(isUndefinedVariableError('undefined variable: x')).toBe(false)
+    expect(isStaticGateConfigError(undefined)).toBe(false)
+    expect(isStaticGateConfigError('undefined variable: x')).toBe(false)
   })
 })

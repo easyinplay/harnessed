@@ -459,11 +459,51 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     expect(parsed.fire.map((f: { sub: string }) => f.sub)).toEqual(['verify-progress'])
     const skipEntry = parsed.skip.find((s: { sub: string }) => s.sub === 'multispec')
     expect(skipEntry).toBeDefined()
-    expect(skipEntry.reason).toMatch(/misconfigured \(undefined variable\)/)
+    // v16.0 post-close (ADR-0042) — the label stopped naming one shape: the class now
+    // also covers `in` against a missing/null member and an unparseable expression,
+    // so `(undefined variable)` would mislabel two of the three.
+    expect(skipEntry.reason).toMatch(/misconfigured \(expression\/context drift\)/)
     expect(skipEntry.reason).toMatch(/fail-closed/)
     expect(stderr).toMatch(/undefined variable/)
     expect(stderr).toMatch(/fail-closed/)
   })
+
+  // ADR-0042 — the two shapes ADR-0038's discriminator missed. Same CLI-level
+  // assertion as cell 17: the expensive sub must land in skip[], not fire[].
+  for (const [label, message] of [
+    [
+      '`in` against a missing member',
+      "Gate eval failed: Cannot read properties of undefined (reading 'length')",
+    ],
+    [
+      '`in` against a null member',
+      "Gate eval failed: Cannot read properties of null (reading 'length')",
+    ],
+    ['an unparseable expression', 'Gate eval failed: parse error [1:23]: Expected TNAME'],
+  ] as const) {
+    it(`cell 17a — ${label} → fail-closed too (ADR-0042)`, async () => {
+      setMaster(
+        'verify',
+        [
+          clauseLine('multispec', {
+            gate: 'judgments.stage-routing.verify-multispec-critical-release.fires',
+          }),
+          clauseLine('progress'),
+        ].join('\n'),
+      )
+      resolveJudgmentGateMock.mockRejectedValue(new GateEvalError(message, 'expr'))
+      const { code, stdout, stderr } = await runCli(['gates', 'verify'])
+      expect(code).toBe(0)
+      const parsed = JSON.parse(stdout)
+      // The whole point: before ADR-0042 these fell to fail-soft and `multispec`
+      // appeared HERE, firing a 4-specialist Agent Team on an ordinary verify.
+      expect(parsed.fire.map((f: { sub: string }) => f.sub)).toEqual(['verify-progress'])
+      const skipEntry = parsed.skip.find((s: { sub: string }) => s.sub === 'multispec')
+      expect(skipEntry?.reason).toMatch(/fail-closed/)
+      expect(stderr).toMatch(/cannot be evaluated against/)
+      expect(stderr).not.toMatch(/fail-soft/)
+    })
+  }
 
   it('cell 17b — non-config eval error (plain Error) keeps ADR 0029 fail-soft fire', async () => {
     // Guards the carve-out boundary: only undefined-variable GateEvalError flips

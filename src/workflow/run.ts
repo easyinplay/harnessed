@@ -26,7 +26,7 @@ import { loadDisciplinesForPhase } from '../discipline/enforcement/before-phase-
 import { arbitrateBeforeSpawn } from '../discipline/enforcement/before-spawn.js'
 import { getLocale } from '../i18n/index.js'
 import { detectPlatform } from '../platform/platform.js'
-import { isUndefinedVariableError } from './exprBuilder.js'
+import { isStaticGateConfigError } from './exprBuilder.js'
 import { isVetoed } from './governance.js'
 import { resolveJudgmentGate } from './judgmentResolver.js'
 import type { AgentDefinition } from './lib/agentDefinition.js'
@@ -643,11 +643,12 @@ export async function runWorkflow(
       try {
         fires = await resolveJudgmentGate(ph.gate, gateContext, packageRoot)
       } catch (err) {
-        if (isUndefinedVariableError(err)) {
+        if (isStaticGateConfigError(err)) {
           console.warn(
-            `⚠️ phase ${ph.id} gate ${ph.gate} references a variable missing from the gate ` +
-              `context (${(err as Error).message}). Treating as NOT fired (fail-closed for ` +
-              `config errors) — fix the judgments yaml expression or supply the variable via ` +
+            `⚠️ phase ${ph.id} gate ${ph.gate} cannot be evaluated against the gate context ` +
+              `(${(err as Error).message}) — a missing variable, \`in\` against a missing/null ` +
+              `member, or an unparseable expression. Treating as NOT fired (fail-closed for ` +
+              `config errors) — fix the judgments yaml expression or supply the fact via ` +
               `--context / gateContext defaults.`,
           )
           fires = false
