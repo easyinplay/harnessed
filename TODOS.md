@@ -17,21 +17,32 @@
 - [ ] **gemini 宿主 milestone** — P2 / L(CC: ~4h)
   Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。先实测 gemini hook / subagent / skills 目录。
   Criterion: 实际用不用(design doc 2026-08-26 OQ4)。Depends: codex 宿主对等 milestone 收口。
-- [ ] **codex goal 桥接** — P3 / M,Phase 66 裁定移出(2026-09-29)
-  Why: SPEC 的 Phase 66 列了它,但仓库里 goal 是**被删掉的东西** —— ADR-0036 曾引入三级完成保证链
-  (ralph-loop plugin → 宿主原生 `/goal` → self-loop),**ADR-0039 在 4.43.0 整档 supersede 并删除**,
-  删除理由之一正是「tier 2(原生 `/goal`)从未被实证」(`docs/adr/0039-*.md:27`)。codex 侧的可见性同样未实证,
-  在实测之前重新引入等于重犯同一个错。已知事实:`thread/goal/set` 经 app-server 写入**跨进程持久**
-  (Phase 63-64 期间实测过),但**运行中的 TUI 能否即时感知未知** —— 这是整条路的成立前提。
-  **Trigger(需维护者实测,只有你能做)**:
-    1. 开一个 codex TUI 会话,记下它的 thread id(`codex agents` 可列出会话;或 TUI 内查看)。
-    2. 另开一个终端,用 app-server 的 JSON-RPC 对**那个 threadId** 调 `thread/goal/set`
-       (握手与调用形状见 `src/installers/lib/codexHookTrust.ts:1-17` 的协议注释 + `spawnCodexAppServer`;
-       Phase 64 已验证 `initialize` → `initialized` → 具体方法 这条链可用)。
-    3. 回到那个**仍在运行**的 TUI,不重启、不新开 turn,看 goal 是否已出现/生效。
-    4. 若不可见,再试「设完之后在 TUI 里发一条消息」,区分「完全不可见」与「下一 turn 才生效」。
-  Criterion: 步骤 3 或 4 可见 → 值得立项(那时需要一份新 ADR 说明为何推翻 0039 的相关部分);
-  完全不可见 → 记显式降级并永久关闭此项。Depends: 无(可随时测)。
+- [x] **codex goal 桥接** — **永久关闭 2026-10-07**,结构性不成立(实测,codex-cli 0.155.1)。
+  本项原记「只有维护者能在 TUI 里实测」。那判断划得太宽:整条路可以**零推理**地在 app-server
+  协议层判定,不需要 TUI、不花额度、不碰真实 CODEX_HOME(探针全部在临时目录,`harnessed-probe-*`)。
+  实测三条,每条都是服务端原话:
+  1. **没有创建 goal 的 API。** `thread/goal/set` 是纯 **update** 语义:目标不存在时报
+     `cannot update goal for thread <id>: no goal exists` —— **thread 的所有者自己也被拒**,
+     不只是外部进程。`thread/start {goal: …}` 的参数被接受但不生效(`thread/goal/get` 仍为 null)。
+     167 个 app-server 方法里没有 goal 的创建口(枚举法:发一个不存在的方法,
+     从 `-32600 unknown variant … expected one of …` 的 serde 报错里读全集)。
+     推论:goal 是 codex 自己在 turn 过程中产生的,`goal/set` 只供事后编辑。
+  2. **活 thread 有单写者锁。** 另一个进程 `thread/resume` 同一个 threadId →
+     `thread <id> already has an active writer`。真实场景里持锁的就是那个运行中的 TUI,
+     所以 harnessed 作为另一个进程**永远改不了它的状态**。
+  3. **读是跨进程的,写不是。** 非所有者进程 `thread/goal/get` 能正常返回(`{"goal":null}`)。
+     另:没跑过 turn 的 thread 不落盘(`thread/resume` → `no rollout found`),
+     `thread/inject_items` 可以零推理地造出 rollout(返回 `{}`)—— 这条顺带记下,它是
+     「不花额度地造一个可 resume 的会话」的办法,将来别的实测用得上。
+  **与本条目旧表述的矛盾,如实记下**:原文写「`thread/goal/set` 经 app-server 写入**跨进程持久**
+  (Phase 63-64 期间实测过)」。在 0.155.1 上、对一个**没有 goal 的 thread**,我复现不出成功的写入 ——
+  set 直接被拒。可能当时测的是一个已被 codex 创建过 goal 的 thread。
+  **未实测的那一支**:thread 已有 goal 时,外部进程能否 update 它。即便能,对 harnessed 也无用 ——
+  harnessed 要的是**主动施加**一个 goal,而创建口不存在;只能编辑 codex 自己定的目标没有价值。
+  **因此不需要维护者再做 TUI 实测**:判据「步骤 3 或 4 可见」的前提(外部能把 goal 设进去)
+  本身就不成立。ADR-0039 删掉 goal tier 的理由(「从未被实证」)在 codex 侧同样成立,无需新 ADR。
+  若上游将来加了 goal 的创建 API,再按本条的实测记录重开。
+
 - [ ] **README 表述更新(v16.0 宿主对等)** — P2 / S,Phase 66 T6 推迟
   Why: T6 交付了 `docs/` 下的 HostAdapter 契约,但 README 体系(root + 9 个镜像)在做 Phase 66 时
   **正被另一个会话改动**(10 个文件 untracked-modified),按共享工作树纪律不碰。

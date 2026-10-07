@@ -433,14 +433,38 @@ harnessed 在 `~/.codex` 下的**全部写入**就是:本地 marketplace 目录�
    不是该工具自己的开关**。caveat 只说一次,在 `host_map_notes.codex` 第 1 条,
    不散进 74 处散文。若澄清往返不可用,不许猜 —— 停下并报 `STATUS: NEEDS_CLARIFICATION` + 问题列表。
    词表标注点:`host-primitives.yaml:146-149`。
-6. **`thread/goal/set` 对运行中的 TUI 是否可见。** 未测,且**只有维护者能测**。
-   goal 因此整体移出 Phase 66(维护者 2026-09-29 裁定,Phase 66 F2d):仓库里 goal 是
-   [ADR 0039](./adr/0039-completion-guarantee-internalized-drop-ralph-loop.md) 删掉的东西,
-   删除理由之一正是「tier 2(原生 `/goal`)从未被实证」。在 codex 侧同样未实证的情况下重新引入,
-   等于重犯 ADR 0039 指出的那个错。实测步骤进 `TODOS.md`;实测通过再单独立项,
-   那时需要一份新 ADR 说明为何推翻 0039 的相关部分。
+6. ~~**`thread/goal/set` 对运行中的 TUI 是否可见。**~~ **已实测并关闭(2026-10-07)—— 见 §6.3。**
+   原文记「未测,且只有维护者能测」。那个判断划得太宽:整条路在 app-server 协议层就能
+   **零推理**判定,不需要 TUI、不花额度。结论是 goal 桥接**结构性不成立**,
+   因此 goal 保持在 [ADR 0039](./adr/0039-completion-guarantee-internalized-drop-ralph-loop.md)
+   删除后的状态,**不需要新 ADR**(0039 的删除理由在 codex 侧同样成立)。
 
-### 6.3 已知缺口(测过、成立、但没修)
+### 6.3 goal 桥接:实测后永久关闭(codex-cli 0.155.1,2026-10-07)
+
+探针全程在临时 `CODEX_HOME`(`harnessed-probe-*`,已清理),**不跑 `turn/start`**(无推理、无额度消耗、
+不触碰外发边界),**不调 `config/read`**(它会读出 config.toml 的内容,含凭据)。三条结论都是服务端原话:
+
+| 结论 | 服务端原话 |
+|---|---|
+| **没有创建 goal 的 API**;`thread/goal/set` 是纯 update,**thread 所有者自己也被拒** | `cannot update goal for thread <id>: no goal exists` |
+| **活 thread 有单写者锁** —— 另一个进程无法 resume,真实场景里持锁的就是那个运行中的 TUI | `thread <id> already has an active writer` |
+| 读跨进程成立、写不成立;另:没跑过 turn 的 thread 不落盘 | 非所有者 `thread/goal/get` → `{"goal":null}`;`thread/resume` → `no rollout found for thread id <id>` |
+
+方法全集由枚举法取得(发一个不存在的方法,从 `-32600 unknown variant … expected one of …` 的
+serde 报错里读出 167 个方法名)。`thread/start {goal: …}` 的参数被接受但不生效(`goal/get` 仍为 null)。
+推论:goal 由 codex 自己在 turn 过程中产生,`goal/set` 只供事后编辑。
+
+**与旧表述的矛盾,如实记下**:`TODOS.md` 曾写「`thread/goal/set` 经 app-server 写入**跨进程持久**
+(Phase 63-64 期间实测过)」。在 0.155.1 上、对一个**没有 goal 的 thread**,这个写入复现不出来 ——
+直接被拒。可能当时测的是一个已被 codex 创建过 goal 的 thread。
+**未实测的那一支**:thread 已有 goal 时外部进程能否 update。即便能,对 harnessed 也无用 ——
+它要的是主动**施加**一个 goal,而创建口不存在。
+
+**顺带记一条可复用的事实**:`thread/inject_items`(`{threadId, items:[{type:'user_message', text}]}`)
+能在**不跑推理**的情况下往 thread 写条目并产生 rollout(返回 `{}`)。将来需要「不花额度地造一个
+可 resume 的会话」时用它。
+
+### 6.4 已知缺口(测过、成立、但没修)
 
 不是「未实测」,是「实测确认存在的缺陷」。来源 Phase 65 findings F8 / F11。
 
