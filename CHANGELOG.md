@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`harnessed agents-md`:把 harnessed 自己那段写进 `<CODEX_HOME>/AGENTS.md` 的标记区间。**
+  codex 在会话开始时读 AGENTS.md。此前要让 codex 知道 harnessed 装了什么、本宿主的工具叫什么,
+  只能手抄 —— 而手抄件会漂:实测某份 192 行的副本里 `/to-prd` / `/to-issues` / `/diagnose` /
+  `/zoom-out` 全是上游已改名或已删的,`TeamCreate` / `TeamDelete` 在 Claude Code 里已删除,
+  还有一处更坏:「**Codex** Agent Teams:`TeamCreate` + …」—— 名字本地化了但机制没换,
+  codex 根本没有 Agent Teams。这正是 Phase 65 在 harnessed 自己正文里修掉的那类错,发生在手抄件上。
+  区间内**事实零手打**:命令清单取自 `writeAllCommands` 渲染的同一个集合;原语对照表直接**嵌**
+  `buildHostMapSection()` 的输出(嵌套 marker 是故意的 —— AGENTS.md 里那张表和每份 SKILL 正文里
+  那张从此是同一个产物、同一个 yaml 源,不可能各自漂);caveat 取自 `host_map_notes.codex`。
+  **范围刻意不含你的个人方法论**(gstack 技能清单、三层栈路由偏好):harnessed 没有那份机器可读的
+  真相源,生成不了,它们留在标记区间**外**由你手写、一个字节都不碰。
+  也**不是**「把 CLAUDE.md 渲染成 AGENTS.md」:Phase 65 的渲染器替换的是 `{{ host.* }}` 占位符,
+  而 CLAUDE.md 是自由散文、零占位符 —— 要自动改写散文就得盲替换,而 Phase 65 的教训恰恰是
+  不能盲替换(当时四个调用点是重写的,机械替换会产出一条保证报错的指令)。
+  opt-in 的实现就是「它是一条要你自己敲的命令」:`setup` 不会顺手写你的 AGENTS.md。
+  `--dry-run` 只打**要写的那一段**(不是文件全文)并说明会 create / append / replace;
+  `--remove` 与 `harnessed uninstall` 都只剥标记区间、保留其余内容。
+  非 codex 宿主上**诚实拒绝**(`harness-mismatch`,退出码 1),不悄悄生成一份没人读的副本。
+
 ## [4.47.0] - 2026-10-07
 
 ### Added

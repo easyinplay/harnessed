@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { Command } from 'commander'
 import pkg from '../package.json' with { type: 'json' }
 import { registerAdvance } from './cli/advance.js'
+import { registerAgentsMd } from './cli/agents-md.js'
 import { registerAudit } from './cli/audit.js'
 import { registerAuditLog } from './cli/audit-log.js'
 import { registerBackupList } from './cli/backup-list.js'
@@ -129,6 +130,7 @@ registerReject(program) // 21st — G7-lite user-rejected terminal sub status
 registerCompact(program) // 22nd — Phase 14 compact: summarize+evict resolved ledger entries
 registerWorkflows(program) // 23rd — Phase 15 multi-workflow: list in-flight workflows (one per repo)
 registerExemptGateguard(program) // 4.22.2 — dual-guard conflict fix channel (doctor auto-install consumes it)
+registerAgentsMd(program) // v16.0 post-close — opt-in AGENTS.md block (codex session-start contract)
 registerLearn(program) // 24th — Phase 16 learning loop: append a prose learning to .planning/LEARNINGS.md
 registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams + --migration-report
 registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate

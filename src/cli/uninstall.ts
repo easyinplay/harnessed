@@ -251,6 +251,26 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
     }
   }
 
+  // v16.0 post-close — the other half of the `harnessed agents-md` round trip. The file
+  // itself is the maintainer's, so uninstall strips ONLY the marker-delimited block and
+  // leaves everything they hand-wrote. Absent file / absent block = silent no-op: an
+  // opt-in feature nobody enabled must not make uninstall look like it did something.
+  let removedAgentsMdBlock = false
+  if (platform.id === 'codex') {
+    try {
+      const { agentsMdPath, stripAgentsMdSection } = await import('./lib/agentsMd.js')
+      const p = agentsMdPath()
+      const before = await readFile(p, 'utf8')
+      const after = stripAgentsMdSection(before)
+      if (after !== before) {
+        await writeFile(p, after, 'utf8')
+        removedAgentsMdBlock = true
+      }
+    } catch {
+      /* no AGENTS.md (or unreadable) — nothing to strip, never a failure */
+    }
+  }
+
   let removedAgentRoles = 0
   for (const path of agentRoleFiles) {
     try {
@@ -260,6 +280,8 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
       failures.push(`${path}: ${(e as Error).message}`)
     }
   }
+
+  if (removedAgentsMdBlock) console.log(`  AGENTS.md: harnessed block removed`)
 
   let removedSkills = 0
   for (const dir of skillDirs) {

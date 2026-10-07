@@ -11,9 +11,23 @@
   `harnessed checkpoint adopt [--from claude|codex]`,无隐式回退(防 issue #10 串槽);迁移并存 + 撞 key 加
   conflict 后缀,零覆盖。需 ADR 推翻 v9.0 28-CONTEXT「不做跨平台状态迁移」。
   Trigger: 维护者在 codex 里真跑 ≥3 次长活并有记录。Depends: codex 宿主对等 milestone Phase 1。
-- [ ] **AGENTS.md 同源生成** — P3 / M(CC: ~1h)
-  Why: `~/.codex/AGENTS.md` 手抄 CLAUDE.md 已漂移(ralph-loop / TeamCreate / zoom-out)。只写 AGENTS.md 标记区间,
-  opt-in,dry-run diff,uninstall 往返,永不写 CLAUDE.md。Trigger: 同上。Depends: Phase 2 渲染器。
+- [x] **AGENTS.md 同源生成** — **CLOSED 2026-10-07**,`harnessed agents-md`(opt-in 命令)。
+  范围经维护者当场裁定「只放 harnessed 自己那段」:命令清单 + 宿主原语对照 + caveat,
+  全部从真相源派生(命令取 `writeAllCommands` 的同一集合;对照表**嵌** `buildHostMapSection()`
+  的输出,所以 AGENTS.md 与 SKILL 正文里那张表是同一个产物、同一 yaml 源,不会各自漂)。
+  **个人方法论不生成**:harnessed 没有 gstack 技能清单 / 三层栈路由偏好的机器可读源,
+  它们留在标记区间外手写、不碰。
+  **「把 CLAUDE.md 渲染成 AGENTS.md」这条路被判不成立**:Phase 65 的渲染器替换占位符,
+  而 CLAUDE.md 是零占位符的自由散文;自动改写散文等于盲替换,而 Phase 65 的教训正是不能盲替换。
+  opt-in = 它是一条要手敲的命令,`setup` 不碰 AGENTS.md。`--dry-run` / `--remove` /
+  `uninstall` 剥除三条都有测试;非 codex 宿主诚实拒绝(退出码 1)。
+  实施中自查出的两个错并当场修掉:(1) 预览最初回传**文件全文**,dry-run 把维护者 192 行个人指令
+  整篇打进终端 —— 收窄为只回传那一段;(2) 拒绝文案建议 `--platform codex`,而本命令**没有**这个
+  flag(只有 setup / check-docs / inject-state 有)—— 改为 `HARNESSED_PLATFORM=codex`。
+  实测到的漂移(作为本项动机留档):`/to-prd` `/to-issues` `/diagnose` `/zoom-out` 均已改名或删除;
+  `TeamCreate` / `TeamDelete` 在 Claude Code 已删;且有「Codex Agent Teams + `TeamCreate`」——
+  名字本地化了机制没换,codex 无 Agent Teams。
+
 - [ ] **gemini 宿主 milestone** — P2 / L(CC: ~4h)
   Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。先实测 gemini hook / subagent / skills 目录。
   Criterion: 实际用不用(design doc 2026-08-26 OQ4)。Depends: codex 宿主对等 milestone 收口。
