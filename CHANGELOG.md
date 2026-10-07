@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **codex 上「插件类能力缺失」的告警不再给一个做不到的动作。** 这类能力(`code-review` /
+  `code-simplifier` / `ui-ux-pro-max` / `planning-with-files`,以及 `caveman` 的插件那一半)此前
+  告诉你去跑 `claude plugin install <id>`;但 codex 没有 Claude Code 插件注册表,这不是「没装」,
+  是**这个宿主上结构性不可用**,没有任何安装能改变。现在直说不可用、并要求把调用它的步骤记为 skip
+  而不是自行找等价物 —— 措辞与 codex 映射小节里既有的 caveat 同源,不另造一套说法。
+  claude 侧文案逐字节不变。
+  顺带把「噪音」量了一遍:`renderAllSkills` 全局去重、命令面不产告警,所以整次 setup 最多 5 行,
+  不是每个能力刷一条 —— 据此**没有**加聚合机制。
+
 - **harnessed 在 codex 上不再读 `~/.codex/config.toml` —— 一处例外都不剩。** MCP 登记探测
   (`isMcpServerRegistered`)此前把整个文件读进内存去匹配 `[mcp_servers.<name>]` 段头,而那文件存放
   明文 `experimental_bearer_token`;现在改问 `codex mcp list --json`。顶层是**数组**(与

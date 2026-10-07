@@ -45,13 +45,20 @@
   于是 ADR 0041「不写也不读」不再需要例外条款,与 ADR 0040 保留 `mcpConfigPath` 之间的张力消解:
   该字段唯一职责变成 diff 预览里的目标文件标注。详 `docs/host-contract.md` §5.1 + CHANGELOG。
 
-- [ ] **codex 上 plugin 类能力全告警** — P2 / S,Phase 65 findings F8
-  Why: codex descriptor 的 `pluginsRegistry: null` → `readInstalledPlugins` 返回空集(不读 fs),于是每个
-  `install_type: plugin` 的 capability 在 codex 上都告警「backing missing」。`planning-with-files` 这类
-  上游在 codex 上确实装不了,所以告警不算假阳性,但**逐条刷屏**且没给用户任何可执行出路。
-  与之配套的 Phase 65 裁决 D5:`Claude Code plugin` 字样刻意保留在正文里,由 codex 映射小节的 caveat 说明
-  「这类组件在本宿主并未安装,遇到就记 skip」。真正的修法在能力层(聚合告警 + 明确 skip 语义),不在措辞。
-  Trigger: 维护者在 codex 上真跑一次 setup 并觉得告警噪音碍事。
+- [x] **codex 上 plugin 类能力全告警** — **CLOSED 2026-10-07,但立项前提被实测否掉**。
+  原描述说「逐条刷屏」。实测:`renderAllSkills` 把所有 skill 的告警折进一个 `warningSet` 全局去重,
+  commands 面的 `warnings` 按构造恒为空 —— 所以整次 setup 最多 **5 行**,不是每个能力刷一条。
+  真正会命中的只有 4 个 plugin-only 能力(`code-review` / `code-simplifier` / `ui-ux-pro-max` /
+  `planning-with-files`)加 `caveman`(plugin+user-skill,仅当 user-skill 那条也没命中)。
+  78 个 user-skill-only 在 codex 上照常探真实目录,不是宿主伪影。**因此不做聚合机制**(无需求)。
+  真缺陷在**出路**:那几行告诉 codex 用户去跑 `claude plugin install <id>`,而 codex 根本没有
+  Claude Code 插件注册表(`pluginsRegistry: null`),这个动作不可能有用。已改为「本宿主不可用、
+  没有任何安装能改变、把调用它的步骤记为 skip」,措辞与 `host-primitives.yaml` 里既有的
+  `Claude Code plugin components` caveat 对齐,不另造一套说法。claude 侧文案逐字节不变。
+  可达性单独钉死(`renderAllSkills` 层三条):断掉 host 传参那条立刻变红 —— 这个「已实现但不可达」
+  的坑在本项目反复出现。考虑过但没走的路:给 schema 加「本宿主不可用」声明(`by_host` 扩展)——
+  4 个能力、全是插件分发的上游,不值一个 schema 变更 + 闸门改动。
+
 - [ ] **codex 上 subagent prompt 拿不到语言指令** — P3 / S,Phase 65 findings F8
   Why: codex descriptor `supportsEnvKeyWrite: false` → `HARNESSED_USER_LANG` 从不写 →
   `buildLanguageSection` 返回空 → 整个 `## Language` 节在 codex 上不出现。副作用:

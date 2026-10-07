@@ -201,6 +201,79 @@ describe('renderSkillFile — host render failure is non-fatal and located', () 
   })
 })
 
+// v16.0 post-close — reachability, not just wording. `resolveCapabilityCmd` grew a
+// codex branch for plugin-type capabilities; this asserts the install path actually
+// reaches it, because the `host` parameter defaults to 'claude' and a missing hand-off
+// anywhere in renderAllSkills → renderSkillBody → resolveCapabilityCmd would leave the
+// new text dead code. (That exact "implemented but unreachable" shape has bitten this
+// project repeatedly — see the v16.0 audit.)
+describe('renderAllSkills — plugin-capability advice follows the host', () => {
+  /** A plugin-type capability, referenced from a skill body. */
+  function writePluginSurface(): void {
+    writeFileSync(
+      join(tmpRoot, 'capabilities.yaml'),
+      [
+        'capabilities:',
+        '  pwf:',
+        '    cmd: "/plan"',
+        '    install_type: plugin',
+        '    plugin_id: planning-with-files',
+        '',
+      ].join('\n'),
+      'utf8',
+    )
+    writeFileSync(join(tmpRoot, 'host-primitives.yaml'), HOST_YAML_EN, 'utf8')
+    makeSkill('p', { en: 'use {{ capabilities.pwf.cmd }} here\n' })
+  }
+
+  it('codex → unavailable + record a skip; no `claude plugin install`', async () => {
+    writePluginSurface()
+    const { aggregatedWarnings } = await renderAllSkills(
+      ['p'],
+      tmpRoot,
+      tmpRoot,
+      tmpRoot,
+      'en',
+      'codex',
+    )
+    const joined = aggregatedWarnings.join('\n')
+    expect(joined).toContain('planning-with-files')
+    expect(joined).not.toContain('claude plugin install')
+    expect(joined).toMatch(/skip/i)
+  })
+
+  it('claude → the actionable install hint, unchanged', async () => {
+    writePluginSurface()
+    const { aggregatedWarnings } = await renderAllSkills(
+      ['p'],
+      tmpRoot,
+      tmpRoot,
+      tmpRoot,
+      'en',
+      'claude',
+    )
+    expect(aggregatedWarnings.join('\n')).toContain('claude plugin install planning-with-files')
+  })
+
+  it('the warning is deduped across skills — one line per capability, not per reference', async () => {
+    // The backlog item assumed codex "floods" the output per capability. It does not:
+    // renderAllSkills folds every skill's warnings into one Set. Measured on the real
+    // table: 4 plugin-type capabilities reach this on codex, so at most 5 lines total.
+    writePluginSurface()
+    makeSkill('q', { en: 'also {{ capabilities.pwf.cmd }}\n' })
+    makeSkill('r', { en: 'and {{ capabilities.pwf.cmd }} twice {{ capabilities.pwf.cmd }}\n' })
+    const { aggregatedWarnings } = await renderAllSkills(
+      ['p', 'q', 'r'],
+      tmpRoot,
+      tmpRoot,
+      tmpRoot,
+      'en',
+      'codex',
+    )
+    expect(aggregatedWarnings.filter((w) => w.includes('planning-with-files'))).toHaveLength(1)
+  })
+})
+
 describe('renderAllSkills — host selection + single table load', () => {
   it('host=claude and host=codex render different columns from one source body', async () => {
     writeWorkflowSurface()

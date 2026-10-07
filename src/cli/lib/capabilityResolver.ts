@@ -233,7 +233,24 @@ export function resolveCapabilityCmd(
         anyDetected = true
         break // short-circuit on first hit
       }
-      missingHints.push(`plugin '${plugin_id}' (\`claude plugin install ${plugin_id}\`)`)
+      // v16.0 post-close — on codex this is not a missing install, it is a host that
+      // has no Claude Code plugin registry at all (`pluginsRegistry: null`, so
+      // `readInstalledPlugins` returns an empty set without touching the fs). Telling
+      // that user to run `claude plugin install` offers them an action that cannot
+      // work. Wording tracks the `Claude Code plugin components` caveat already in the
+      // codex host-map section (`workflows/host-primitives.yaml`): the step is
+      // unavailable, do not substitute an equivalent, record the skip.
+      //
+      // Measured before changing this: 4 capabilities reach here on codex
+      // (code-review, code-simplifier, ui-ux-pro-max, planning-with-files) plus caveman
+      // when its user-skill half also misses, and `renderAllSkills` dedupes them into
+      // one set — so it is at most 5 lines per setup, not the per-capability flood the
+      // backlog item assumed. That is why this fixes the text and adds no aggregation.
+      missingHints.push(
+        host === 'codex'
+          ? `plugin '${plugin_id}' is distributed as a Claude Code plugin and this host has no plugin registry — unavailable here, no install can change that; treat steps that call it as skipped (record the skip) rather than substituting an equivalent`
+          : `plugin '${plugin_id}' (\`claude plugin install ${plugin_id}\`)`,
+      )
     } else {
       // 'user-skill'
       if (!skill_dir) {

@@ -267,6 +267,66 @@ describe('renderSkillBody — full SKILL.md rendering', () => {
   })
 })
 
+// v16.0 post-close — a plugin-type capability on codex. Measured before writing this:
+// the noise is NOT per-capability spam (renderAllSkills dedupes into one `warningSet`
+// and the commands surface emits none), it is 4 capabilities / at most 5 deduped lines
+// in a whole setup run: code-review, code-simplifier, ui-ux-pro-max, planning-with-files,
+// plus caveman when its user-skill path also misses. So no aggregation mechanism is
+// warranted — but the ADVICE in those lines was wrong: it told a codex user to run
+// `claude plugin install <id>`, which cannot help them. codex has no Claude Code plugin
+// registry (`pluginsRegistry: null`), so the plugin path is not "missing", it is
+// structurally unavailable on this host and no user action can change that.
+//
+// Wording is kept in step with the caveat already shipped in the codex host-map section
+// (`workflows/host-primitives.yaml`, the `Claude Code plugin components` caveat): treat
+// the step as unavailable rather than substituting an equivalent, and record the skip.
+describe('resolveCapabilityCmd — plugin capabilities on codex (host-unavailable, not fixable)', () => {
+  it('plugin-only on codex → says unavailable + record a skip, never `claude plugin install`', () => {
+    const r = resolveCapabilityCmd(
+      { cmd: '/plan', install_type: 'plugin', plugin_id: 'planning-with-files' },
+      new Set(),
+      new Set(),
+      'codex',
+    )
+    expect(r.renderedCmd).toBe('/plan')
+    expect(r.warning).toBeDefined()
+    expect(r.warning).toContain('planning-with-files')
+    expect(r.warning).not.toContain('claude plugin install')
+    expect(r.warning).toMatch(/skip/i)
+  })
+
+  it('claude keeps the actionable install hint byte-for-byte', () => {
+    // The default host must not drift: this is the pre-existing cell 12 text.
+    const r = resolveCapabilityCmd(
+      { cmd: '/code-review', install_type: 'plugin', plugin_id: 'code-review' },
+      new Set(),
+      new Set(),
+    )
+    expect(r.warning).toContain('claude plugin install code-review')
+  })
+
+  it('dual-install on codex → the user-skill path stays actionable, only the plugin half changes', () => {
+    // `caveman` is the real case: plugin + user-skill. On codex the plugin half is
+    // unavailable, but the skills dir is genuinely probeable, so that half must keep
+    // telling the user what to do.
+    const r = resolveCapabilityCmd(
+      {
+        cmd: '/caveman',
+        install_type: ['plugin', 'user-skill'],
+        plugin_id: 'caveman',
+        skill_dir: 'caveman',
+      },
+      new Set(),
+      new Set(),
+      'codex',
+    )
+    expect(r.warning).toContain('[multi]')
+    expect(r.warning).not.toContain('claude plugin install')
+    expect(r.warning).toContain('caveman')
+    expect(r.warning).toMatch(/git clone|skills\//)
+  })
+})
+
 describe('resolveCapabilityCmd — install_type array (互为补充 dual-install)', () => {
   const dualCaveman = {
     cmd: '/caveman',
