@@ -266,11 +266,13 @@ C 类存在的理由:claude 的措辞里**陈述了一个 Claude-only 事实**�
   字符串**是产物的一部分**,bump 必然改掉 58 个文件的 hash。Phase 65 不 bump;政策写进该脚本注释:
   将来确需 bump 时允许重录 claude 金标,**但必须在同一 commit 内用 diff 证明「除 marker 行外零差异」**,
   否则重录就是在掩盖回归。
-- **金标口径 ⇄ 未渲染的 locale sibling**(Phase 65 F11):en 安装时只渲染并写 `SKILL.md`,
-  `SKILL.zh-Hans.md` 以 `cp` 原样留下、不渲染也不删除(`renderSkillTemplates.ts:157,175`),
-  而 Claude Code 只读 `SKILL.md`。金标锁的是「宿主实际会读到的内容」,那份 zh 副本是死副本,
-  不纳入字节锁。**副作用记 TODO(未修)**:en 安装会往 `~/.claude/skills/<name>/` 丢一份
-  **带未解析占位符**的 `SKILL.zh-Hans.md` —— 无人读取因而无实际危害,但不干净。
+- **金标口径 ⇄ 未渲染的 locale sibling**(Phase 65 F11):金标锁的是「宿主实际会读到的内容」,
+  即渲染后的 `SKILL.md`;locale sibling 不纳入字节锁。
+  **v16.0 收口后那份死副本不再存在**:此前 en 安装只渲染并写 `SKILL.md`,`SKILL.zh-Hans.md`
+  以 `cp` 原样留在安装目录、带着未解析的 `{{ … }}`。无人读取(宿主只读 `SKILL.md`)因而无危害,
+  但打开它的人只会被误导,而 codex 上那个 skills 目录还是**共享**约定目录。现在两个 locale 都剥除,
+  安装目录的契约是「一份渲染好的 `SKILL.md`」。剥除对两条返回路径都生效 —— 包括「正文无占位符
+  因而无需写入」那条提前返回,那恰恰是此前最容易留下残留的一批 skill。
 
 ---
 
@@ -446,7 +448,6 @@ harnessed 在 `~/.codex` 下的**全部写入**就是:本地 marketplace 目录�
 |---|---|---|
 | codex 上 `pluginsRegistry: null` | `readInstalledPlugins` 返回空集 → **每个 `install_type: plugin` 的能力在 codex 上都告警**(实测为 4 条 + `caveman`,`renderAllSkills` 全局去重后整次 setup 最多 5 行,不是逐条刷屏)。告警文本本身已按宿主分叉:codex 上不再建议 `claude plugin install`(该宿主无插件注册表,那个动作不可能有用),改为直说不可用并要求记录 skip —— 与 `host_map_notes.codex` 第 2 条同源 | `platform.ts:135`;`capabilityResolver.ts:93-96` |
 | `setup.ts` 的 `loadRolePrompts()` 未显式传 locale | 落到 `rolePrompts.ts:43` 的默认参数,与同函数上游显式线程下来的 locale **不同源**。当前行为一致,属隐患 | `setup.ts` role-prompts 加载点 |
-| en 安装留下未渲染的 locale sibling | `~/.claude/skills/<name>/SKILL.zh-Hans.md` 带**未解析的占位符**。无人读取(CC 只读 `SKILL.md`)因而无实际危害,但不干净 | `renderSkillTemplates.ts:157,175`;裁决见 §4.5 |
 | `stop-hook-recover` 在 codex 上不可用 | 它依赖 CC transcript 形态,在 codex 上**诚实返回 `harness-mismatch`**(不是伪装成成功) | ADR 0041 § Consequences |
 | `dashboard-autospawn` 不 port | 任何 CLI 路径都不扫描 `manifests/cc-hooks/`,在 claude 上同样不可达 | ADR 0041 § Consequences |
 

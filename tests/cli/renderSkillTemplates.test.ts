@@ -72,15 +72,35 @@ describe('renderSkillFile — locale body selection', () => {
     expect(r.skillPath).toBe(join(dir, 'SKILL.md'))
   })
 
-  it('en + sibling present → dest SKILL.md byte-identical en body; sibling left untouched', async () => {
-    // en MUST NOT consume the zh sibling. (Sibling removal is only for the SELECTED
-    // locale path; en path = today's behavior, no zh awareness.)
+  // v16.0 post-close — the title used to say "sibling left untouched" and the cell
+  // never actually asserted that, so the en path quietly left a `SKILL.zh-Hans.md`
+  // behind in the INSTALL dir with its `{{ … }}` placeholders unresolved. Nobody reads
+  // it (the host loads `SKILL.md` only), but an unresolved-placeholder file sitting in
+  // a skills dir can only mislead whoever opens it. The dest dir's contract is one
+  // rendered `SKILL.md`, so the strip now runs on every path.
+  //
+  // en MUST still not CONSUME the zh sibling: the selected body is the en one and
+  // `SKILL.md` stays byte-identical. Only the leftover file goes.
+  it('en + sibling present → dest SKILL.md byte-identical en body; the sibling is stripped', async () => {
     const dir = makeSkill('demo', { en: 'EN BODY', zh: 'ZH BODY' })
     const before = readFileSync(join(dir, 'SKILL.md'), 'utf8')
     const r = await renderSkillFile('demo', tmpRoot, EMPTY_CAPS, NO_PLUGINS, NO_USER_SKILLS, 'en')
     expect(r.error).toBeUndefined()
     expect(readFileSync(join(dir, 'SKILL.md'), 'utf8')).toBe(before)
     expect(readFileSync(join(dir, 'SKILL.md'), 'utf8')).toBe('EN BODY')
+    expect(existsSync(join(dir, 'SKILL.zh-Hans.md'))).toBe(false)
+  })
+
+  it('en + sibling + a body with NO placeholders → sibling still stripped', async () => {
+    // The sharp case. With nothing to substitute the function takes its no-write
+    // early return, which used to sit BEFORE the strip — so exactly the skills that
+    // need no rendering (e.g. research/SKILL.md) were the ones keeping the debris.
+    const dir = makeSkill('plain', { en: 'no placeholders here', zh: 'ZH BODY' })
+    const r = await renderSkillFile('plain', tmpRoot, EMPTY_CAPS, NO_PLUGINS, NO_USER_SKILLS, 'en')
+    expect(r.error).toBeUndefined()
+    expect(r.rendered).toBe(false)
+    expect(readFileSync(join(dir, 'SKILL.md'), 'utf8')).toBe('no placeholders here')
+    expect(existsSync(join(dir, 'SKILL.zh-Hans.md'))).toBe(false)
   })
 
   it('zh-Hans + NO sibling → falls back to SKILL.md byte-identical; no spurious delete', async () => {

@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **安装目录不再留下带未解析占位符的 locale 副本。** en 安装此前只渲染并写 `SKILL.md`,
+  把 `SKILL.zh-Hans.md` 以 `cp` 原样留在 `~/.claude/skills/<name>/`(codex 上是 `~/.agents/skills/`),
+  里面的 `{{ … }}` 一个都没解析。宿主只读 `SKILL.md` 所以无人读到、无实际危害,但打开它的人只会被误导,
+  而 codex 上那个目录还是**共享**约定目录。现在两个 locale 都剥除,安装目录的契约是「一份渲染好的 `SKILL.md`」。
+  剥除对两条返回路径都生效 —— 包括「正文无占位符因而无需写入」那条提前返回,此前恰恰是那批 skill
+  最容易留下残留(剥除原本写在该返回之后)。`SKILL.md` 的字节不受影响:en 安装仍逐字节不变。
+  两个候选里选剥除而不是「也渲染它」:locale 在安装时选定,换语言要重跑 setup(会重新从包里 cp),
+  第二份 locale 正文没有读者 —— 把垃圾渲染正确仍然是垃圾。
+
 - **codex 上的 subagent prompt 终于拿得到 `## Language` 节。** 该节由
   `env.HARNESSED_USER_LANG` 驱动;claude 上 setup 把它写进 `~/.claude/settings.json` 的 `env` 块、
   由宿主注入到它拉起的进程,而 codex 没有这个机制(`supportsEnvKeyWrite: false`、无 JSON settings 文件),

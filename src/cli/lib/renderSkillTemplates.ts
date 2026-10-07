@@ -158,7 +158,10 @@ export async function renderSkillFile(
   const needsWrite = localeBodySelected || finalBody !== body
   if (!needsWrite) {
     // No placeholders AND no locale switch — no-op (e.g. research/SKILL.md has none).
+    // The sibling strip still runs: this early return is exactly the path the skills
+    // with nothing to substitute take, so skipping it here is what left the debris.
     result.warnings = rendered.warnings
+    await stripLocaleSiblings(dir)
     return result
   }
   try {
@@ -169,21 +172,39 @@ export async function renderSkillFile(
     result.error = `write failed: ${(e as Error).message}`
     return result
   }
-  // Strip any locale-body siblings from the dest so the install dir holds a single
-  // SKILL.md. ONLY runs when a locale body was actually selected — en path performs
-  // no deletes, keeping the en install byte-for-byte identical (landmine 3).
-  if (localeBodySelected) {
-    for (const loc of LOCALE_SIBLINGS) {
-      const sibling = skillBodyFilename(loc)
-      if (sibling === 'SKILL.md') continue
-      try {
-        await rm(join(dir, sibling), { force: true })
-      } catch {
-        // non-fatal: leftover sibling is harmless (CC reads SKILL.md only).
-      }
+  await stripLocaleSiblings(dir)
+  return result
+}
+
+/**
+ * Leave the install dir holding a single `SKILL.md`.
+ *
+ * v16.0 post-close — this used to run ONLY when a locale body had been selected, on the
+ * reasoning that the en path should perform no deletes so the en install stayed
+ * byte-for-byte identical. That invariant is about the BYTES OF `SKILL.md`, which this
+ * does not touch; what the narrow guard actually bought was a `SKILL.zh-Hans.md` left
+ * in `~/.claude/skills/<name>/` (or `~/.agents/skills/<name>/`) with its `{{ … }}`
+ * placeholders unresolved. Nothing reads it — the host loads `SKILL.md` only — but a
+ * file full of unresolved placeholders sitting in a skills dir can only mislead whoever
+ * opens it, and on codex that dir is a SHARED convention dir.
+ *
+ * Of the two candidates on the backlog item (render the sibling too, or strip it),
+ * strip is the one that leaves nothing to explain: the locale is chosen at install time
+ * and switching it means re-running setup, which re-copies from the package. A second
+ * locale's body in the dest serves no reader.
+ *
+ * Fail-soft per sibling: a leftover file is untidy, never a reason to fail an install.
+ */
+async function stripLocaleSiblings(dir: string): Promise<void> {
+  for (const loc of LOCALE_SIBLINGS) {
+    const sibling = skillBodyFilename(loc)
+    if (sibling === 'SKILL.md') continue
+    try {
+      await rm(join(dir, sibling), { force: true })
+    } catch {
+      // non-fatal: a leftover sibling is untidy, not broken (the host reads SKILL.md).
     }
   }
-  return result
 }
 
 /**

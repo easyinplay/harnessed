@@ -166,7 +166,10 @@ describe('setup locale threading (T29.3)', () => {
     expect(code).toBe(0)
     const dir = destSkillDir()
     expect(readFileSync(join(dir, 'SKILL.md'), 'utf8')).toBe('EN BODY')
-    // en path must not consume the zh sibling cp'd into the dest.
-    expect(existsSync(join(dir, 'SKILL.zh-Hans.md'))).toBe(true)
+    // en path must not CONSUME the zh sibling — `SKILL.md` is the en body, byte for
+    // byte. v16.0 post-close: the sibling itself is no longer left in the dest. It was
+    // a `cp` leftover carrying unresolved `{{ … }}` placeholders that nothing reads
+    // (the host loads `SKILL.md` only); the dest dir's contract is one rendered file.
+    expect(existsSync(join(dir, 'SKILL.zh-Hans.md'))).toBe(false)
   })
 })

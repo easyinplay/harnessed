@@ -69,11 +69,19 @@
   pin 内容不是受支持语言码时按不存在处理(那个值会拼进 `Respond in <name>`)。
   卸载无需改动(本来整删 state root)。`host-contract.md` 的缺口表删掉该行、descriptor 表那条改为已修。
 
-- [ ] **en 安装在 skills 目录留一份带未解析占位符的 zh 副本** — P3 / S,Phase 65 findings F11
-  Why: `renderSkillTemplates.ts` 在 en 安装时只渲染并写 `SKILL.md`,`SKILL.zh-Hans.md` 以 `cp` 原样留下、
-  不渲染也不删除。Claude Code 只读 `SKILL.md`(官方加载契约)所以无人读到,无实际危害,但不干净。
-  两个候选:en 安装也剥除该 sibling,或也渲染它。改的是安装产品行为,故未并入 Phase 65。
-  注意 `renderSkillTemplates.test.ts` 有一条断言锁着「en 侧必须有 zh 兄弟」这一当前行为。
+- [x] **en 安装在 skills 目录留一份带未解析占位符的 zh 副本** — **CLOSED 2026-10-07**,选「剥除」。
+  两个候选里不选「也渲染它」:locale 在安装时选定,换语言要重跑 setup(会重新从包里 cp),
+  第二份 locale 正文没有任何读者 —— 把垃圾渲染正确仍然是垃圾。剥除则什么都不用解释。
+  实现上把 strip 提成独立函数,**两条返回路径都跑** —— 包括「正文无占位符因而无需写入」那条提前返回,
+  此前 strip 写在它之后,于是恰恰是无需渲染的那批 skill 留下残留。
+  `SKILL.md` 字节不受影响(en 安装仍逐字节不变,金标守着)。
+  **TODO 原文把锁旧行为的断言位置说错了**:它说在 `renderSkillTemplates.test.ts`,实际那条只断言
+  `SKILL.md` 未变、标题写着「sibling left untouched」却没断言 sibling 存在;真正锁着的是
+  `renderGolden.test.ts:202`(标为 Phase 29 contract)与 `setup-locale.test.ts:170`,两条都已改。
+  `renderGolden.test.ts` 的 `LOCALE_SIBLING_RX` 过滤器保留为双保险并注明理由:它原本是必需的
+  (否则对未渲染副本断言「无 `{{ host.`」必假红),现在冗余,但留着能让「又开始留 sibling」的回归
+  先在 sibling-absence 那条上失败、而不是静默放宽这道门的扫描范围。
+
 - [x] **`check-host-primitives` 未覆盖生成命令体(S2)** — **CLOSED 2026-10-07**,但不是让门去 build。
   真缺口不是「S2 没人查」(`generateCommandsGolden.test.ts` 有 codex sanity 块),而是**判据分叉**:
   那个 sanity 块在两个文件上手挑三个 token(`task_name` / `CC-native` / `AskUserQuestion`),

@@ -196,14 +196,22 @@ describe('claude install artifact — byte-exact golden', () => {
     expect(workflows.length).toBeGreaterThan(20)
   })
 
-  // Product behaviour, now asserted on the real install trees instead of on the
-  // golden manifests: the siblings are out of the BYTE lock (LOCALE_SIBLING_RX)
-  // but their presence/absence is still the Phase 29 contract and stays pinned.
-  it('zh-Hans install strips the SKILL.zh-Hans.md siblings the en install keeps', async () => {
+  // Product behaviour, asserted on the real install trees rather than on the golden
+  // manifests: the siblings are out of the BYTE lock (LOCALE_SIBLING_RX), but whether
+  // they EXIST is a contract of its own and stays pinned here.
+  //
+  // v16.0 post-close — this used to pin "zh strips, en keeps". The en half was not a
+  // contract worth keeping: it left `SKILL.zh-Hans.md` in the install dir with its
+  // `{{ … }}` placeholders unresolved. Nothing reads it (the host loads `SKILL.md`
+  // only), so it was never dangerous, only misleading to whoever opened it — and on
+  // codex the skills dir is a SHARED convention dir. Both locales now strip.
+  it('neither install leaves a SKILL.zh-Hans.md behind — one rendered SKILL.md per dir', async () => {
     const en = await listTree((await renderTree('en', 'claude')).skillsBase)
     const zh = await listTree((await renderTree('zh-Hans', 'claude')).skillsBase)
-    expect(en.some((k) => k.endsWith('/SKILL.zh-Hans.md'))).toBe(true)
+    expect(en.some((k) => k.endsWith('/SKILL.zh-Hans.md'))).toBe(false)
     expect(zh.some((k) => k.endsWith('/SKILL.zh-Hans.md'))).toBe(false)
+    // Sanity: the trees are not empty, so the two assertions above mean something.
+    expect(en.filter((k) => k.endsWith('/SKILL.md')).length).toBeGreaterThan(20)
   })
 })
 
@@ -216,11 +224,16 @@ describe('codex install artifact — sanity only (bodies change per rewrite wave
       expect(warnings.filter((w) => w.includes('host-primitive'))).toEqual([])
 
       // SAME SCOPE as the claude golden above (LOCALE_SIBLING_RX): the files under
-      // test are the rendered `SKILL.md` bodies the host reads, not the raw locale
-      // siblings an en install leaves behind unrendered. Asserting "no `{{ host.`"
-      // on those dead copies would fail by construction — they are never rendered —
-      // and an asymmetric scope between the two gates is exactly the kind of gap a
-      // future rewrite wave would slip through.
+      // test are the rendered `SKILL.md` bodies the host reads.
+      //
+      // v16.0 post-close — that filter used to be load-bearing, because an en install
+      // left an unrendered `SKILL.*.md` sibling in the dest and asserting "no
+      // `{{ host.`" over it would fail by construction. Both locales now strip, so the
+      // filter is belt-and-braces: the cell above asserts no sibling survives either
+      // install, which is what makes it redundant. Keeping it (rather than deleting it)
+      // means a regression that starts leaving siblings again does not also silently
+      // widen this gate's scope — the sibling-absence cell fails first and names the
+      // real problem. The scopes of the two gates stay symmetric either way.
       const manifest = await hashTree(skillsBase)
       const skillMds = Object.keys(manifest).filter((k) => k.endsWith('/SKILL.md'))
       expect(skillMds.length).toBeGreaterThan(20)
