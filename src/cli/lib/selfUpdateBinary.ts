@@ -35,6 +35,7 @@ import {
 import { basename, dirname, join } from 'node:path'
 import pkg from '../../../package.json' with { type: 'json' }
 import { detectPlatform } from '../../platform/platform.js'
+import { ensureProxyDispatcher } from './proxyDispatcher.js'
 import { verifyShaSignature } from './updateSignature.js'
 import { compareVersions } from './version-check.js'
 
@@ -465,6 +466,13 @@ export async function runBinaryRollback(
 // ── real deps (impure; update.ts wires these) ─────────────────────────────
 
 async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  // 受限网络:Node 默认**忽略** HTTP_PROXY(实测 2026-10-14,见 proxyDispatcher.ts 的表),
+  // 所以在第一次出网前把 EnvHttpProxyAgent 装成全局 dispatcher。幂等、fail-soft,
+  // 编译二进制(bun 原生认代理)那条会自己 return,不做任何事。
+  // 装在这里是因为本函数是**本模块**唯一的出网收口点 —— 新增下载路径自动继承。
+  // 全功能共三处出网:本处、`update-check-cache.ts` 的 GitHub API(同样已接),
+  // 以及 npm 版本检查 —— 那条走子进程 `npm view`,代理由 npm 自己处理,不经这里。
+  await ensureProxyDispatcher()
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), timeoutMs)
   try {

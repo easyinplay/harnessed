@@ -17,6 +17,7 @@ import { dirname, join } from 'node:path'
 import pkg from '../../../package.json' with { type: 'json' }
 import { isCompiledRuntime } from '../../platform/assetsRoot.js'
 import { detectPlatform } from '../../platform/platform.js'
+import { ensureProxyDispatcher } from './proxyDispatcher.js'
 import { fetchLatestVersion } from './version-check.js'
 
 export const DEFAULT_UPDATE_CHECK_TTL_MS = 24 * 60 * 60 * 1000
@@ -84,6 +85,9 @@ export async function resolveLatestCached(d: LatestResolverDeps): Promise<string
  *  frozen-contract endpoint with selfUpdateBinary but only needs tag_name. */
 export async function fetchGitHubLatestVersion(timeoutMs: number): Promise<string | null> {
   try {
+    // 受限网络:Node 默认忽略 HTTP_PROXY(实测见 proxyDispatcher.ts 的表)。这是本功能的
+    // 第二个真出网点(另一个在 selfUpdateBinary.ts);npm 那条走子进程 npm view,代理由 npm 自理。
+    await ensureProxyDispatcher()
     const ac = new AbortController()
     const timer = setTimeout(() => ac.abort(), timeoutMs)
     try {
