@@ -5,12 +5,14 @@
 
 ## From /plan-ceo-review 2026-09-22 (codex 宿主对等 — CEO plan: `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-09-22-codex-host-parity.md`)
 
-- [ ] **跨宿主接力(CC ⇄ codex workflow 认领)** — P3 / L(CC: ~4h)
+- [ ] **跨宿主接力(CC ⇄ codex workflow 认领)** — P2 / L,**已批准开发**(2026-10-14)
   Why: CC 额度耗尽时切到 codex 接着跑同一 leaf。设计已裁定:账本迁共享中立根(非 `~/.harnessed`,候选 XDG
   `$XDG_STATE_HOME/harnessed` / Windows `%LOCALAPPDATA%\harnessed`),复用 proper-lockfile;显式
   `harnessed checkpoint adopt [--from claude|codex]`,无隐式回退(防 issue #10 串槽);迁移并存 + 撞 key 加
   conflict 后缀,零覆盖。需 ADR 推翻 v9.0 28-CONTEXT「不做跨平台状态迁移」。
   Trigger: 维护者在 codex 里真跑 ≥3 次长活并有记录。Depends: codex 宿主对等 milestone Phase 1。
+  **2026-10-14 维护者裁决**：**做**。原触发条件(「在 codex 里真跑 ≥3 次长活并有记录」)被直接豁免 —— 不再等 dogfood 数据。
+  仍需一份 ADR 推翻 v9.0 28-CONTEXT「不做跨平台状态迁移」;设计已裁定的部分见本条上文。
 - [x] **AGENTS.md 同源生成** — **CLOSED 2026-10-07**,`harnessed agents-md`(opt-in 命令)。
   范围经维护者当场裁定「只放 harnessed 自己那段」:命令清单 + 宿主原语对照 + caveat,
   全部从真相源派生(命令取 `writeAllCommands` 的同一集合;对照表**嵌** `buildHostMapSection()`
@@ -28,9 +30,12 @@
   `TeamCreate` / `TeamDelete` 在 Claude Code 已删;且有「Codex Agent Teams + `TeamCreate`」——
   名字本地化了机制没换,codex 无 Agent Teams。
 
-- [ ] **gemini 宿主 milestone** — P2 / L(CC: ~4h)
+- [ ] **gemini 宿主 milestone** — P2 / L,**已批准开发**(2026-10-14)
   Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。先实测 gemini hook / subagent / skills 目录。
   Criterion: 实际用不用(design doc 2026-08-26 OQ4)。Depends: codex 宿主对等 milestone 收口。
+  **2026-10-14 维护者裁决**：**做**。OQ4「实际用不用」由维护者直接答「做」。
+  新 milestone → 按三层栈须先过 gstack `/office-hours` + `/plan-ceo-review`,再 GSD plan-phase。
+  先做的事:实测 gemini 的 hook / subagent / skills 目录三面(不实测不得写进 HostAdapter 契约)。
 - [x] **codex goal 桥接** — **永久关闭 2026-10-07**,结构性不成立(实测,codex-cli 0.155.1)。
   本项原记「只有维护者能在 TUI 里实测」。那判断划得太宽:整条路可以**零推理**地在 app-server
   协议层判定,不需要 TUI、不花额度、不碰真实 CODEX_HOME(探针全部在临时目录,`harnessed-probe-*`)。
@@ -128,15 +133,22 @@
   自带正向对照:同一条 mask→scan 管道跑 claude 产物必须仍有命中,否则 codex 那条绿什么都不证明
   (与门自己「零命中的 allowlist 条目算违规」同一思路)。实测当前 codex 产物零残留。
 
-- [ ] **E1 二进制签名(Windows Authenticode + macOS notarization)** — P2 / L(CC: M + 证书采购)
+- [x] **E1 二进制签名(Windows Authenticode + macOS notarization)** — **PARKED**(2026-10-14,维护者裁决延后)
   Why: 无签名 exe 触发 SmartScreen/Gatekeeper + Defender 误报,安装器体验最大摩擦源。
   Depends: **用户拍板证书采购** — 决策清单已备:`docs/e1-code-signing-options.md`(4.32.20,三档预算 + 三个拍板问题)。
   注意:与 4.32.19 更新通道 ed25519 资产签名(review #12)是两回事,后者已落地。
-- [ ] **E3 channel-aware update(stable/beta)** — P3 / M(CC: S-M)
+  **2026-10-14 维护者裁决**：**延后**,从活动队列移出(标 parked,不是放弃)。证书采购是花钱决策,决策清单已备:
+  `docs/e1-code-signing-options.md`(三档预算 + 三个拍板问题)。要重启就把本条改回 `- [ ]`。
+  注意它与「二进制优先于 npm」那条方针相关:无签名是二进制渠道**最大**的摩擦源(SmartScreen / Gatekeeper)。
+- [x] **E3 channel-aware update(stable/beta)** — **PARKED**(2026-10-14)
   Why: Trellis 模式的预发订阅。Blocked by: 发布节奏尚无 beta 轨道(预发 tag 约定 + publish.yml 分轨先行)。
+  **2026-10-14 维护者裁决**：**按建议办** = 继续停。它的前置(发布节奏先有 beta 轨道:预发 tag 约定 + publish.yml 分轨)
+  本身是产品决定「要不要一条预发通道」,维护者未表态要 → 不投机建设。想要时先做轨道再做订阅侧。
 - [x] **`harnessed update --rollback`** — SHIPPED 4.32.20:`runBinaryRollback`(同款 rename dance,被换下的二进制先 bank 回 bin-backup/<curver>/ 保可逆;`--rollback [version]`,缺省取最高 banked 版;npm 模式明确拒绝导向 `npm i -g`)。
-- [ ] **undici EnvHttpProxyAgent 代理支持** — P3 / S
+- [ ] **undici EnvHttpProxyAgent 代理支持** — P3 / S,**已批准开发**(2026-10-14)
   Why: 受限网络下 update 下载不走系统代理。等真实用户信号;当前以可操作报错 + npm 渠道兜底。
+  **2026-10-14 维护者裁决**：**做**。不再等用户信号。范围:`harnessed update` 的下载走 `EnvHttpProxyAgent`,
+  尊重 `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`;保留现有的可操作报错与 npm 渠道兜底作为退路。
 - [x] **Slice 2:curl/PowerShell 一行安装器** — **已发,本条目过期**(2026-10-07 对账补勾)。
   按产物核实而非凭记忆:仓库里有 `install.sh` / `install.ps1`,CHANGELOG 记着
   「B 路线 Phase 3 Slice 2:一行安装器」交付(含 unix `~/.local/bin/harnessed` 与 Windows
@@ -144,13 +156,17 @@
   (PATH 遮蔽导致 setup 跑到旧那份)。下方 Slice 3 的 Depends 行也早已写「Slice 1/2(已发)」。
   一个实际已发的 **P1** 挂在队首会扭曲优先级,这正是「状态从产物派生」要防的漂移。
 
-- [ ] **Slice 3:npm per-platform optionalDependencies 二进制包** — P3(2026-07-12 降级,用户裁决)
+- [ ] **Slice 3:npm per-platform optionalDependencies 二进制包** — P3,**保持 open**(2026-10-14)
   Why: esbuild/Biome 模式。价值质疑:npm 用户必有 Node(包是纯 JS 本就能跑),二进制用户已有一行安装器;
   收益仅剩启动速度,代价是 4 个 npm 包的发布管线/版本锁/launcher shim 维护面。等真实需求信号再启。
   Depends: Slice 1/2(已发)。
 
 ## Gate semantics
 
+  **2026-10-14 维护者裁决**：**不关**。维护者给的方针:「后续二进制方式安装**优先级高于** npm 方式」。
+  ⚠️ 需要留意的张力:本条改善的是 **npm 渠道**(让 npm 用户也拿到二进制),而方针说 npm 是次要渠道;
+  真正推进「二进制优先」的是 **E1 签名**(无签名 = SmartScreen/Gatekeeper 摩擦),而那条刚被延后。
+  所以本条暂不排期,等「二进制优先」具体要落到哪一步再定;若目标是「npm 装完即得原生二进制」则本条就是它。
 - [x] **ADR-0038 第三类:对缺失/null 成员用 `in` 落 fail-SOFT** — **CLOSED 2026-10-07**(ADR-0042)。
   判据改名 `isStaticGateConfigError`,从单一 `undefined variable` 扩到三类静态漂移:裸标识符缺失 /
   `in` 访问缺失或 null 成员 / 表达式无法解析。三条消息都**实测**自本仓 pinned 的 expr-eval,
@@ -177,4 +193,7 @@
 
 - [x] **B4 eval harness** — Slice A SHIPPED 4.31.0(trap suite + coverage 导航;B1 证据包 SHIPPED(逮住 issue #7);Slice C 录制导出 SHIPPED 4.32.0(harnessed eval record,默认脱敏,round-trip);后续差异化实验需另一形态(模糊 spec/跨 session))
 - [x] **SOP 文本 `--skip-sub clarify` 改名 `discuss`** — SHIPPED 4.32.20:generator(generateCommands + rewrite-skill-invoke-sections)+ 全部 workflows/*/SKILL{,.zh-Hans}.md 改 `--skip-sub discuss`;engine 侧 clarify→discuss synonym 保留(兼容已装旧文本)。
-- [ ] **G5/OMC ambiguity 量化阈值** — P3,方向级设计,v5+ discuss
+- [ ] **G5/OMC ambiguity 量化阈值** — P3,**已批准开 discuss**(2026-10-14)
+
+  **2026-10-14 维护者裁决**：**开**。方向级设计 → 走 `/discuss-strategic`(或 gstack `/office-hours`)出方案再决定是否立项,
+  本条本身不产出代码。
