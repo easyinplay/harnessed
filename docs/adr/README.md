@@ -85,6 +85,7 @@
 | [0040](./0040-host-detection-precedence.md) | 宿主判定优先级:显式 `HARNESSED_PLATFORM` > 单一宿主 env 嗅探(`CLAUDE_CODE_SESSION_ID` / `CODEX_SESSION_ID`,并存判歧义)> pin(codex stateRoot 优先)> 目录探测 > claude;`HARNESSED_ROOT_OVERRIDE` 只换状态根;codex `settingsPath: null`、`sessionIdEnv: CODEX_SESSION_ID`;hook bin 删复制品 | Accepted | 2026-09-22 |
 | [0041](./0041-codex-hooks-via-local-plugin.md) | codex hooks 经本地 codex 插件 `harnessed-<manifest>@harnessed-local` 承载(不写 `hooks.json` / `config.toml`);hash 稳定命令字面量 + `${PLUGIN_DATA}/install.json`;hook 侧 `--platform codex` + stdin `session_id`;codex 上裁决走 stdout JSON(pwsh 压退出码);信任经 app-server RPC 且须同意;已装判定改 `codex plugin list` | Accepted | 2026-09-22 |
 | [0042](./0042-gate-eval-static-config-error-widened.md) | gate eval 的 fail-closed 判据从单一 `undefined variable` 扩到三类静态配置错误(裸标识符缺失 / `in` 访问缺失或 null 成员 / 表达式无法解析),改名 `isStaticGateConfigError`;**更正 ADR-0038 的一条前提** —— 「object member 缺失静默求 false」对 `in` 运算符不成立(实测抛 TypeError,于是落 fail-soft、子项照 fire);amends 0038 不改其正文 | Accepted | 2026-10-07 |
+| [0043](./0043-cross-host-relay-shared-state-root.md) | 跨宿主接力:账本迁共享中立状态根(unix 、Windows ,**绝不** ) + 显式 ;槽位记 ,**Phase 34 的裸键回退加宿主闸门**(共享账本下它会变成隐式串槽);并存零覆盖、撞键加后缀;amends v9.0 ARCHITECTURE §3d(它禁的是 auto/silent,不是显式迁移)| Proposed | 2026-10-14 |
 
 ## 参考
 
