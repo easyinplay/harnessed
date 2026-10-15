@@ -142,11 +142,41 @@ export function codexDescriptor(home: string = homedir()): PlatformDescriptor {
   }
 }
 
-/** Known platform descriptors keyed by id (HARNESSED_PLATFORM / .platform pin lookup). */
+/**
+ * The host ids this harness can target, as ONE enumerable exported list.
+ *
+ * v16.0 Phase 67 / D16 (ADR 0043 Decision 15). Before this, the host enumeration
+ * was hand-written in three places and there was nothing to derive a fourth from:
+ * the lookup below was a private `if` chain (not enumerable), and `setup.ts` kept
+ * its own `KNOWN_PLATFORMS` literal. `checkpoint adopt` needs the id list twice
+ * (validating `--from`, and inferring "the other host" when it is omitted), so the
+ * list is declared once here and CONSUMED by `setup.ts` — three hand-written
+ * enumerations collapse to two, rather than growing to four.
+ *
+ * Deliberately NOT derived from `PlatformDescriptor['id']`: that union also carries
+ * the aspirational ids (`agents` / `cursor` / `gemini` / `copilot`) for which no
+ * descriptor exists, and `--from cursor` must be refused, not accepted and then
+ * crash. This list is "hosts with a real descriptor", which is the useful set.
+ */
+export const HOST_IDS = ['claude', 'codex'] as const
+
+/** A host id with a real descriptor (see `HOST_IDS`). */
+export type HostId = (typeof HOST_IDS)[number]
+
+/** Narrow arbitrary text (CLI input, a `.platform` pin, an env var) to a host id. */
+export function isHostId(id: string): id is HostId {
+  return (HOST_IDS as readonly string[]).includes(id)
+}
+
+/** The descriptor for a known host id — the single id→descriptor mapping. */
+export function descriptorFor(id: HostId, home: string = homedir()): PlatformDescriptor {
+  return id === 'codex' ? codexDescriptor(home) : claudeDescriptor(home)
+}
+
+/** Known platform descriptors keyed by id (HARNESSED_PLATFORM / .platform pin lookup).
+ *  Tolerates arbitrary text because both callers pass unvalidated user input. */
 function descriptorById(id: string, home: string): PlatformDescriptor | undefined {
-  if (id === 'claude') return claudeDescriptor(home)
-  if (id === 'codex') return codexDescriptor(home)
-  return undefined
+  return isHostId(id) ? descriptorFor(id, home) : undefined
 }
 
 /**

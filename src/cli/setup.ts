@@ -25,6 +25,7 @@ import {
   detectPlatform,
   getCommandsDir,
   getSkillsDir,
+  HOST_IDS,
 } from '../platform/platform.js'
 import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
@@ -54,8 +55,10 @@ interface RawOpts {
   trustCodexHooks?: boolean // v16.0 Phase 64 (R8) — explicit codex hook trust consent
 }
 
-/** Known platform ids accepted by `setup --platform <id>`. */
-const KNOWN_PLATFORMS = ['claude', 'codex'] as const
+/** Known platform ids accepted by `setup --platform <id>`.
+ *  v16.0 Phase 67 / D16 — derived from the single exported host-id list in
+ *  platform.ts, not a second literal of its own. */
+const KNOWN_PLATFORMS = HOST_IDS
 
 /**
  * Phase C / D5: apply `setup --platform <id>`. Validates the id, sets

@@ -59,10 +59,15 @@ function codexDescriptor(home = homedir()) {
     sessionIdEnv: 'CODEX_SESSION_ID',
   }
 }
+var HOST_IDS = ['claude', 'codex']
+function isHostId(id) {
+  return HOST_IDS.includes(id)
+}
+function descriptorFor(id, home = homedir()) {
+  return id === 'codex' ? codexDescriptor(home) : claudeDescriptor(home)
+}
 function descriptorById(id, home) {
-  if (id === 'claude') return claudeDescriptor(home)
-  if (id === 'codex') return codexDescriptor(home)
-  return void 0
+  return isHostId(id) ? descriptorFor(id, home) : void 0
 }
 function detectPlatform(home = homedir()) {
   const resolved = resolveHost(home)

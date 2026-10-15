@@ -31,11 +31,20 @@
 // guard orchestration (serial-order guard, evidence three-state, GateGuard
 // pre-check), not a reimplementation.
 
+import { homedir } from 'node:os'
 import type { Command } from 'commander'
+import type { AdoptRefusal, AdoptSuccess } from '../checkpoint/adoptSlot.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
+import {
+  HOST_IDS,
+  type HostResolutionReason,
+  type HostResolutionSkip,
+} from '../platform/platform.js'
 import { defaultRunDeps, type RunDeps } from '../platform/runDeps.js'
 
-const ACTIONS = ['start', 'complete', 'fail', 'reopen', 'intent'] as const
+// `adopt` (Phase 67 T6) is the one action with no `<sub>` positional — it acts on
+// THIS repo's slot, not on a named sub-workflow.
+const ACTIONS = ['start', 'complete', 'fail', 'reopen', 'intent', 'adopt'] as const
 type Action = (typeof ACTIONS)[number]
 
 function isAction(a: string): a is Action {
@@ -774,11 +783,170 @@ export async function runCheckpointReopen(
   deps.exit(0)
 }
 
+// ── v16.0 Phase 67 (T6) — `checkpoint adopt` rendering ──────────────────────
+//
+// WIRING + WORDING ONLY. Every decision lives in `src/checkpoint/adoptSlot.ts`,
+// which returns structured data (refusal discriminants / a success record) and
+// never prints or exits. This file carries zero `t()` calls, so checkpoint's
+// user-facing strings are written in place by convention — the i18n catalog is
+// deliberately not in the loop.
+
+/** Collapse a `$HOME`-prefixed path to `~/…` for display, forward-slashed. These
+ *  are display strings: no shell expands `~` on Windows anyway, and the short form
+ *  is what makes a provenance line readable. */
+function tildify(p: string): string {
+  const home = homedir()
+  if (home === '' || !p.startsWith(home)) return p
+  return `~${p.slice(home.length).replace(/\\/g, '/')}`
+}
+
+/** D8 — which rule of the ADR 0040 ladder decided the host. Rendered from T3's
+ *  structured `reason`, so all five rules report honestly instead of the message
+ *  hardcoding the directory-probe case that happens to be the common one. */
+function renderHostReason(reason: HostResolutionReason): string {
+  switch (reason.kind) {
+    case 'env-platform':
+      return `${reason.envVar}=${reason.value} (环境变量显式指定)`
+    case 'host-session-env':
+      return `宿主 session 环境变量 ${reason.envVar} 已设置`
+    case 'platform-pin':
+      return `.platform pin: ${tildify(reason.pinPath)} 写着 ${reason.value}`
+    case 'directory-probe':
+      return `directory probe (${tildify(reason.probedDir)} 存在,incumbent)`
+    case 'fallback':
+      return '无任何宿主信号 → 默认 claude'
+  }
+}
+
+/** A rule that was reached and rejected. Worth printing: these are exactly the
+ *  cases where the user set something that did not take. */
+function renderHostSkip(skip: HostResolutionSkip): string {
+  switch (skip.kind) {
+    case 'env-platform-unknown':
+      return `忽略: ${skip.envVar}=${skip.value} 不是已知宿主 id`
+    case 'host-session-env-ambiguous':
+      return '忽略: CLAUDE_CODE_SESSION_ID 与 CODEX_SESSION_ID 同时存在,无法据此判定宿主'
+    case 'platform-pin-unknown':
+      return `忽略: .platform pin ${tildify(skip.pinPath)} 写着 ${skip.value},不是已知宿主 id`
+  }
+}
+
+function renderAdoptRefusal(r: AdoptRefusal): string[] {
+  switch (r.kind) {
+    case 'unknown-from':
+      return [`refused: --from 未知宿主 id '${r.value}'(已知: ${r.known.join(' | ')})`]
+    case 'from-required':
+      return [
+        `refused: 本宿主是 ${r.host},源宿主有多个候选,不猜(已知: ${r.known.join(' | ')})`,
+        '  显式指定 --from <id>。',
+      ]
+    case 'same-host': {
+      const lines = [
+        `refused: 本进程被解析为宿主 ${r.host}`,
+        `  依据: ${renderHostReason(r.reason)}`,
+      ]
+      for (const s of r.skipped) lines.push(`  ${renderHostSkip(s)}`)
+      lines.push('  --from 与当前宿主相同,无事可做。')
+      lines.push(`修法: HARNESSED_PLATFORM=${r.other} harnessed checkpoint adopt --from ${r.host}`)
+      return lines
+    }
+    case 'dest-not-set-up':
+      return [
+        `refused: 目标宿主 ${r.host} 还没 setup 过`,
+        `  证据: 命令目录里没有 harnessed 生成的命令: ${tildify(r.commandsDir)}`,
+        '  账本不是目标宿主需要的全部 —— 没有命令,adopt 成功了也没东西可跑。先跑:',
+        `    harnessed setup --platform ${r.host}`,
+      ]
+    case 'no-source-ledger':
+      return [`refused: 源宿主 ${r.from} 还没有账本`, `  查过: ${tildify(r.path)}`]
+    case 'source-ledger-unreadable':
+      return [
+        `refused: 源账本在但读不动(JSON 损坏或 schema 不对): ${r.path}`,
+        '  不自动修。备份后检查,或在源宿主重建。',
+      ]
+    case 'no-candidate': {
+      const lines = [
+        `refused: 源宿主 ${r.from} 的账本里没有这个仓的槽位`,
+        `  仓键: ${r.repoKey}`,
+        '  源账本现有键:',
+      ]
+      if (r.sourceKeys.length === 0) lines.push('    (空)')
+      else for (const k of r.sourceKeys) lines.push(`    - ${k}`)
+      return lines
+    }
+    case 'ambiguous': {
+      const lines = [`refused: 源宿主 ${r.from} 有 ${r.candidates.length} 个候选槽位,不猜`]
+      for (const k of r.candidates) lines.push(`  - ${k}`)
+      lines.push('  它们是同一宿主内的多会话槽位,--from 无从消歧。')
+      lines.push('  在源宿主侧把多余的 complete / pause 掉、只留一个,再 adopt。')
+      return lines
+    }
+    case 'dest-occupied': {
+      const subs = r.mine.total > 0 ? `, ${r.mine.done}/${r.mine.total} subs done` : ''
+      return [
+        'refused: 本宿主当前槽位非空',
+        `  我的: ${r.mine.phase} (status:${r.mine.status}${subs})`,
+        `  要接: ${r.theirs.phase} (来自 ${r.from})`,
+        '  adopt 不覆盖在途账本。先跑:',
+        '    harnessed checkpoint complete   # 或 pause',
+      ]
+    }
+  }
+}
+
+function renderAdoptSuccess(r: AdoptSuccess): string[] {
+  const lines = [
+    `adopted: ${r.phase} ← 宿主 ${r.from}`,
+    `  写入: ${tildify(r.destRoot)}/workflows.json 的裸仓键 ${r.key}`,
+    `  源槽位键: ${r.sourceKey} (status:${r.status})`,
+  ]
+  if (r.archivedKey !== undefined) {
+    lines.push(`  被顶掉的 paused 槽位已归档(仅归档,任何读路径都不认它): ${r.archivedKey}`)
+  }
+  if (r.retroMeta !== undefined) {
+    lines.push(`  retro 节奏已带走: phases_since_retro=${r.retroMeta.phases_since_retro}`)
+  }
+  lines.push(
+    `  证据指针未动: ${r.evidencePath ?? '(无)'}`,
+    '    它仍指向源根;下一条 `harnessed checkpoint complete` 会在本宿主根写同名文件,指针自然转正。',
+    '  接力寿命 = 本会话: 首次 `harnessed checkpoint complete` 把槽位叉到本会话的复合键,裸槽位从此冻结(与同宿主多会话行为一致)。',
+    `  源槽位仍在、未被改: ${r.from} 的 ${r.sourceKey} 还是 status:${r.status}`,
+    `    在源宿主侧退休它: HARNESSED_PLATFORM=${r.from} harnessed checkpoint complete ${r.phase} --force`,
+    '跨根访问: 只读, 全程未写源根',
+  )
+  return lines
+}
+
+export interface CheckpointAdoptOpts {
+  /** Source host id, verbatim from `--from`. Omitted → inferred. */
+  from?: string
+}
+
+/** `checkpoint adopt [--from <id>]` orchestration shell — resolve, then print.
+ *  Refusals go to stderr + exit 1; success to stdout + exit 0. */
+export async function runCheckpointAdopt(
+  opts: CheckpointAdoptOpts,
+  deps: RunDeps = defaultRunDeps,
+): Promise<void> {
+  const { adoptSlot } = await import('../checkpoint/adoptSlot.js')
+  const outcome = await adoptSlot({ ...(opts.from !== undefined ? { from: opts.from } : {}) })
+  if (!outcome.ok) {
+    for (const line of renderAdoptRefusal(outcome.refusal)) deps.error(line)
+    deps.exit(1)
+    return
+  }
+  for (const line of renderAdoptSuccess(outcome)) deps.log(line)
+  deps.exit(0)
+}
+
 export function registerCheckpoint(program: Command): void {
   program
-    .command('checkpoint <action> <sub>')
+    // `[sub]` is optional ONLY because `adopt` acts on the repo's slot rather than
+    // on a named sub-workflow (Phase 67 T6). Every other action still requires it —
+    // enforced explicitly below so the refusal stays an exit-1 with a real message.
+    .command('checkpoint <action> [sub]')
     .description(
-      'Record workflow progress: intent | start | complete | fail | reopen <sub-workflow> (writes to ~/.claude/harnessed/checkpoints/)',
+      'Record workflow progress: intent | start | complete | fail | reopen <sub-workflow>, or adopt (cross-host relay) (writes to ~/.claude/harnessed/checkpoints/)',
     )
     .option('--summary <text>', 'short summary stored as the checkpoint lastTask')
     .option('--plan <json>', 'gates plan JSON (start only) — seeds the sub-progress ledger')
@@ -815,10 +983,16 @@ export function registerCheckpoint(program: Command): void {
       '--failure <kind>',
       'fail only — which named spawn failure ended the attempt: SpawnTimeout | SpawnExitNonZero | SpawnOutputMalformed | SpawnAuthFailed | SpawnRefused (recorded on the ledger entry; an unknown value is rejected)',
     )
+    // v16.0 Phase 67 (T6 / D16) — the candidate list is DERIVED from the single
+    // exported host-id list, so a future third host needs no edit here.
+    .option(
+      '--from <host>',
+      `adopt only — which host's ledger to copy this repo's slot FROM: ${HOST_IDS.join(' | ')} (omitted → the other host)`,
+    )
     .action(
       async (
         action: string,
-        sub: string,
+        sub: string | undefined,
         opts: {
           summary?: string
           plan?: string
@@ -829,11 +1003,31 @@ export function registerCheckpoint(program: Command): void {
           failingTests?: string
           reason?: string
           failure?: string
+          from?: string
         },
       ) => {
         if (!isAction(action)) {
           console.error(
             `[harnessed] checkpoint: unknown action "${action}" — expected one of ${ACTIONS.join(', ')}`,
+          )
+          process.exit(1)
+          return
+        }
+
+        // Phase 67 T6 — `adopt` takes no `<sub>`; it adopts THIS repo's slot from
+        // the other host. Handled before the `sub` guard and before checkPathSafe,
+        // which have nothing to screen here.
+        if (action === 'adopt') {
+          await runCheckpointAdopt(opts)
+          return
+        }
+
+        // `[sub]` went optional for `adopt` alone — restore the hard requirement
+        // for every other action rather than letting it reach a path join as
+        // `undefined`.
+        if (sub === undefined) {
+          console.error(
+            `[harnessed] checkpoint ${action}: missing required argument <sub> (the sub-workflow name)`,
           )
           process.exit(1)
           return
