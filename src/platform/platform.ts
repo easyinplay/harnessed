@@ -180,26 +180,118 @@ export function detectPlatform(home: string = homedir()): PlatformDescriptor {
 }
 
 function resolveHost(home: string): PlatformDescriptor {
+  return resolveHostWithReason(home).descriptor
+}
+
+/**
+ * Which rule of the precedence ladder actually DECIDED the host.
+ *
+ * Structured data, deliberately NOT a pre-formatted sentence: the consumer that
+ * needs this (`checkpoint adopt`, which hard-refuses when `--from` names the host
+ * it already resolved to and must say why it resolved that way) renders its own
+ * English at the call site. `src/cli/checkpoint.ts` carries zero `t()` calls, so
+ * checkpoint's user-facing strings live at the call site by convention, not in a
+ * catalog and not here.
+ *
+ * Discriminated on `kind`, so a consumer can switch exhaustively.
+ */
+export type HostResolutionReason =
+  /** 1. `HARNESSED_PLATFORM=<value>` named a known host. */
+  | { kind: 'env-platform'; envVar: 'HARNESSED_PLATFORM'; value: string }
+  /** 2. Exactly one host session env was set, and it names this host. */
+  | { kind: 'host-session-env'; envVar: 'CLAUDE_CODE_SESSION_ID' | 'CODEX_SESSION_ID' }
+  /** 3. A `.platform` pin at `pinPath` held a known host id. */
+  | { kind: 'platform-pin'; pinPath: string; value: string }
+  /** 4. `probedDir` exists on disk (claude's home is probed first, as incumbent). */
+  | { kind: 'directory-probe'; probedDir: string }
+  /** 5. No signal at all → claude. */
+  | { kind: 'fallback' }
+
+/**
+ * A rule that was reached and REJECTED, so the ladder kept descending. Worth
+ * reporting because these are the cases where a user set something that did not
+ * take, which is exactly when "why did it resolve to that?" gets asked.
+ *
+ * An ABSENT `.platform` pin is not listed: that is the overwhelmingly common
+ * path, not an attempted rule, and reporting it would bury the real signals.
+ */
+export type HostResolutionSkip =
+  /** `HARNESSED_PLATFORM` was set to something that is not a known host id. The
+   *  ladder deliberately does not throw here (anti-footgun), so without this the
+   *  typo would be invisible. */
+  | { kind: 'env-platform-unknown'; envVar: 'HARNESSED_PLATFORM'; value: string }
+  /** Both host session envs were set — one harness launched inside the other, so
+   *  neither names the host unambiguously. */
+  | { kind: 'host-session-env-ambiguous' }
+  /** A `.platform` pin was readable but did not name a known host id. */
+  | { kind: 'platform-pin-unknown'; pinPath: string; value: string }
+
+/** A resolved host plus the provenance of that decision. */
+export interface HostResolution {
+  descriptor: PlatformDescriptor
+  /** The rule that decided. */
+  reason: HostResolutionReason
+  /** Rules attempted and rejected before it, in ladder order. Empty on the
+   *  common path. */
+  skipped: HostResolutionSkip[]
+}
+
+/**
+ * The ADR 0040 precedence ladder documented on `detectPlatform`, returning the
+ * resolved descriptor AND the rule that produced it.
+ *
+ * `resolveHost` / `detectPlatform` are the same walk with the reason discarded —
+ * this is the single implementation, so a consumer that needs the provenance does
+ * not re-derive a 5-branch ladder and drift from it.
+ *
+ * Note this is the resolution ONLY: `HARNESSED_ROOT_OVERRIDE` is applied by
+ * `detectPlatform` afterwards and only to `stateRoot`, so the descriptor here
+ * always carries the host's OWN state root. That is what a cross-root reader
+ * wants — an override in effect must not make it believe the other host's ledger
+ * lives under the override.
+ */
+export function resolveHostWithReason(home: string = homedir()): HostResolution {
   const base = claudeDescriptor(home)
+  const skipped: HostResolutionSkip[] = []
 
   // 1. HARNESSED_PLATFORM env (explicit).
   const envPlatform = process.env.HARNESSED_PLATFORM
   if (envPlatform !== undefined && envPlatform !== '') {
     const d = descriptorById(envPlatform, home)
-    if (d) return d
+    if (d) {
+      return {
+        descriptor: d,
+        reason: { kind: 'env-platform', envVar: 'HARNESSED_PLATFORM', value: envPlatform },
+        skipped,
+      }
+    }
     // unknown id → fall through (do not throw — anti-footgun)
+    skipped.push({ kind: 'env-platform-unknown', envVar: 'HARNESSED_PLATFORM', value: envPlatform })
   }
 
   // 2. host env sniff — a single session env names the host; both = nested → ambiguous.
   const inClaude = Boolean(process.env.CLAUDE_CODE_SESSION_ID?.trim())
   const inCodex = Boolean(process.env.CODEX_SESSION_ID?.trim())
-  if (inClaude !== inCodex) return inClaude ? base : codexDescriptor(home)
+  if (inClaude !== inCodex) {
+    return {
+      descriptor: inClaude ? base : codexDescriptor(home),
+      reason: {
+        kind: 'host-session-env',
+        envVar: inClaude ? 'CLAUDE_CODE_SESSION_ID' : 'CODEX_SESSION_ID',
+      },
+      skipped,
+    }
+  }
+  if (inClaude && inCodex) skipped.push({ kind: 'host-session-env-ambiguous' })
 
   // 3. `.platform` pin — codex stateRoot first, then claude stateRoot.
   for (const pinRoot of [codexDescriptor(home).stateRoot, base.stateRoot]) {
+    const pinPath = join(pinRoot, '.platform')
     try {
-      const d = descriptorById(readFileSync(join(pinRoot, '.platform'), 'utf8').trim(), home)
-      if (d) return d
+      const value = readFileSync(pinPath, 'utf8').trim()
+      const d = descriptorById(value, home)
+      if (d) return { descriptor: d, reason: { kind: 'platform-pin', pinPath, value }, skipped }
+      skipped.push({ kind: 'platform-pin-unknown', pinPath, value })
     } catch {
       // absent / unreadable → next
     }
@@ -212,15 +304,27 @@ function resolveHost(home: string): PlatformDescriptor {
   //    signal means "use the incumbent", any probe failure degrades to the
   //    claude-default fallback.
   try {
-    if (existsSync(base.homeDir)) return base
+    if (existsSync(base.homeDir)) {
+      return {
+        descriptor: base,
+        reason: { kind: 'directory-probe', probedDir: base.homeDir },
+        skipped,
+      }
+    }
     const codex = codexDescriptor(home)
-    if (existsSync(codex.homeDir)) return codex
+    if (existsSync(codex.homeDir)) {
+      return {
+        descriptor: codex,
+        reason: { kind: 'directory-probe', probedDir: codex.homeDir },
+        skipped,
+      }
+    }
   } catch {
     // existsSync unavailable / threw → fall through to claude fallback.
   }
 
   // 5. fallback → claude.
-  return base
+  return { descriptor: base, reason: { kind: 'fallback' }, skipped }
 }
 
 // ── Config-dir resolvers (Phase B / D1) ──────────────────────────────────────

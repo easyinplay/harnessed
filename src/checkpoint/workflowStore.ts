@@ -14,7 +14,7 @@ import { mkdir, readFile } from 'node:fs/promises'
 import { dirname, join, resolve } from 'node:path'
 import { type Static, Type } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
-import { harnessedFile } from '../platform/harnessedRoot.js'
+import { getHarnessedRoot, harnessedFile } from '../platform/harnessedRoot.js'
 import { detectPlatform } from '../platform/platform.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
 import { writeFileAtomic } from './atomicWrite.js'
@@ -149,8 +149,31 @@ export function activeKey(cwd: string = process.cwd()): string {
  *  is still WRITTEN by state.ts as a write-only eval-record / rollback anchor —
  *  nothing reads it back into live state. */
 export async function readStoreRaw(): Promise<WorkflowStoreV1Type> {
+  return readStoreAt(getHarnessedRoot())
+}
+
+/** v16.0 Phase 67 T2 — the same lock-free read, against an ARBITRARY state root.
+ *
+ *  Reads `<root>/workflows.json` with identical validation and identical
+ *  fail-soft-to-empty-store semantics; `readStoreRaw()` is this function applied
+ *  to the ACTIVE root. Extracted so the cross-host reader (`checkpoint adopt`,
+ *  which reads the OTHER harness's own stateRoot) does not become a fourth
+ *  hand-copied validate-and-fail-soft reader — there are already three (this one,
+ *  the deliberate dep-free replica in `bin/harnessed-inject-state.mjs`, and its TS
+ *  source `injectStateMain.ts`), and the one pair that was copied rather than
+ *  shared is exactly the pair that silently diverged.
+ *
+ *  Strictly READ-ONLY: no mkdir, no write, no lock. Safe to point at another
+ *  host's root while that host is running — which is the load-bearing reason the
+ *  cross-root copy needs no cross-root locking.
+ *
+ *  Inherited caveat for callers: fail-soft collapses "no ledger here" and "the
+ *  ledger is corrupt" into the same empty store. A caller that must tell those
+ *  apart (an honest "the source ledger is damaged" vs "that host has no ledger")
+ *  has to probe the file's existence itself — this function will not report it. */
+export async function readStoreAt(root: string): Promise<WorkflowStoreV1Type> {
   try {
-    const parsed = JSON.parse(await readFile(storePath(), 'utf8'))
+    const parsed = JSON.parse(await readFile(join(root, 'workflows.json'), 'utf8'))
     if (Value.Check(WorkflowStoreV1, parsed)) return parsed as WorkflowStoreV1Type
   } catch {
     // missing or corrupt store → empty (never the unkeyed legacy singleton)

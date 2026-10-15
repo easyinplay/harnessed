@@ -14,11 +14,13 @@ import {
   activeKey,
   listWorkflows,
   normalizeRepoKey,
+  readStoreAt,
   readStoreRaw,
   repoKey,
   WorkflowStoreV1,
   writeStoreRaw,
 } from '../../src/checkpoint/workflowStore.js'
+import { getHarnessedRoot } from '../../src/platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 // v16.0 Phase 67 T1 — repoKey() now case-folds on win32, so the expected key is
@@ -213,5 +215,156 @@ describe('store kernels + migration', () => {
     expect(ws.map((w) => w.phase).sort()).toEqual(['p1', 'p2'])
     expect(ws[0]).toHaveProperty('key')
     expect(ws[0]).toHaveProperty('status')
+  })
+})
+
+// ── v16.0 Phase 67 T2 — readStoreAt(root) extraction (R1 regression) ─────────
+//
+// `readStoreRaw()` became a one-line delegation to `readStoreAt(getHarnessedRoot())`
+// so a cross-root reader (Phase 67 `checkpoint adopt`) can read ANOTHER host's
+// ledger without hand-copying a fourth validate-and-fail-soft reader (there are
+// already three: this one, the deliberate dep-free replica in
+// bin/harnessed-inject-state.mjs, and its TS source injectStateMain.ts).
+//
+// The first describe below was written GREEN against the PRE-refactor
+// `readStoreRaw` — it pins the behavior the delegation has to preserve verbatim:
+// the path it reads, and fail-soft-to-empty-store on absent / malformed /
+// schema-invalid. The second describe is the new seam.
+//
+// Both sandbox the ACTIVE root via HARNESSED_ROOT_OVERRIDE into a per-test tmpdir.
+// A test that writes the real ~/.claude/harnessed/ or ~/.codex/harnessed/ is a
+// defect: besides polluting the developer's home, on CI (where neither exists)
+// creating one flips detectPlatform()'s directory probe and breaks later suites.
+
+describe('readStoreRaw — path + fail-soft contract (Phase 67 T2 / R1)', () => {
+  let tmp: string
+  let savedOverride: string | undefined
+  let activeRoot: string
+
+  beforeEach(async () => {
+    tmp = mkdtempSync(join(tmpdir(), 'readstoreat-'))
+    activeRoot = join(tmp, 'active-root')
+    savedOverride = process.env.HARNESSED_ROOT_OVERRIDE
+    process.env.HARNESSED_ROOT_OVERRIDE = activeRoot
+    await mkdir(activeRoot, { recursive: true })
+  })
+
+  afterEach(() => {
+    if (savedOverride === undefined) delete process.env.HARNESSED_ROOT_OVERRIDE
+    else process.env.HARNESSED_ROOT_OVERRIDE = savedOverride
+    rmSync(tmp, { recursive: true, force: true })
+  })
+
+  const activeFile = () => join(activeRoot, 'workflows.json')
+
+  it('reads getHarnessedRoot()/workflows.json', async () => {
+    expect(getHarnessedRoot()).toBe(activeRoot)
+    await writeFile(
+      activeFile(),
+      JSON.stringify({
+        schemaVersion: SCHEMA_VERSIONS.workflowStore,
+        workflows: { '/repo/active': envelope('from-active-root') },
+      }),
+      'utf8',
+    )
+    const s = await readStoreRaw()
+    expect(s.workflows['/repo/active']?.phase).toBe('from-active-root')
+  })
+
+  it('fail-softs to an empty store when workflows.json is missing', async () => {
+    expect(existsSync(activeFile())).toBe(false)
+    expect(await readStoreRaw()).toEqual({
+      schemaVersion: SCHEMA_VERSIONS.workflowStore,
+      workflows: {},
+    })
+  })
+
+  it('fail-softs to an empty store when the JSON is malformed', async () => {
+    await writeFile(activeFile(), '{ "workflows": ', 'utf8')
+    expect(await readStoreRaw()).toEqual({
+      schemaVersion: SCHEMA_VERSIONS.workflowStore,
+      workflows: {},
+    })
+  })
+
+  it('fail-softs to an empty store when valid JSON fails Value.Check', async () => {
+    // parses fine, but `workflows` is missing → schema-invalid (the schema case the
+    // `WorkflowStoreV1 schema` describe above pins as a Value.Check reject).
+    const bad = { schemaVersion: SCHEMA_VERSIONS.workflowStore }
+    expect(Value.Check(WorkflowStoreV1, bad)).toBe(false)
+    await writeFile(activeFile(), JSON.stringify(bad), 'utf8')
+    expect(await readStoreRaw()).toEqual({
+      schemaVersion: SCHEMA_VERSIONS.workflowStore,
+      workflows: {},
+    })
+  })
+
+  // ── the new seam: the same read against an arbitrary root ──
+
+  describe('readStoreAt(root)', () => {
+    /** A second root standing in for ANOTHER harness's state root (the
+     *  cross-host read Phase 67 needs). Deliberately NOT the active root and
+     *  NOT reachable through HARNESSED_ROOT_OVERRIDE, which only ever replaces
+     *  the stateRoot of the host that was already resolved. */
+    let otherRoot: string
+
+    beforeEach(async () => {
+      otherRoot = join(tmp, 'other-root')
+      await mkdir(otherRoot, { recursive: true })
+    })
+
+    const seed = (root: string, phase: string) =>
+      writeFile(
+        join(root, 'workflows.json'),
+        JSON.stringify({
+          schemaVersion: SCHEMA_VERSIONS.workflowStore,
+          workflows: { '/repo/x': envelope(phase) },
+        }),
+        'utf8',
+      )
+
+    it('reads the root it is given, NOT the active root', async () => {
+      await seed(activeRoot, 'active-phase')
+      await seed(otherRoot, 'other-phase')
+
+      // each call sees its own root — proves the isolation, not just that one of
+      // them happened to resolve.
+      expect((await readStoreAt(otherRoot)).workflows['/repo/x']?.phase).toBe('other-phase')
+      expect((await readStoreAt(activeRoot)).workflows['/repo/x']?.phase).toBe('active-phase')
+      expect((await readStoreRaw()).workflows['/repo/x']?.phase).toBe('active-phase')
+    })
+
+    it('reads the other root even when the active root has no ledger at all', async () => {
+      await seed(otherRoot, 'other-phase')
+      expect(existsSync(activeFile())).toBe(false)
+      expect((await readStoreAt(otherRoot)).workflows['/repo/x']?.phase).toBe('other-phase')
+      expect((await readStoreRaw()).workflows).toEqual({})
+    })
+
+    it('fail-softs identically on a root with no / malformed / schema-invalid ledger', async () => {
+      const empty = { schemaVersion: SCHEMA_VERSIONS.workflowStore, workflows: {} }
+      expect(await readStoreAt(join(tmp, 'nonexistent-root'))).toEqual(empty)
+
+      await writeFile(join(otherRoot, 'workflows.json'), '{ "workflows": ', 'utf8')
+      expect(await readStoreAt(otherRoot)).toEqual(empty)
+
+      await writeFile(
+        join(otherRoot, 'workflows.json'),
+        JSON.stringify({ schemaVersion: SCHEMA_VERSIONS.workflowStore }),
+        'utf8',
+      )
+      expect(await readStoreAt(otherRoot)).toEqual(empty)
+    })
+
+    it('is strictly read-only: creates nothing under a root that does not exist', async () => {
+      const missing = join(tmp, 'nonexistent-root')
+      await readStoreAt(missing)
+      expect(existsSync(missing)).toBe(false)
+    })
+
+    it('readStoreRaw() is readStoreAt() applied to the active root', async () => {
+      await seed(activeRoot, 'active-phase')
+      expect(await readStoreRaw()).toEqual(await readStoreAt(getHarnessedRoot()))
+    })
   })
 })

@@ -71,27 +71,63 @@ function detectPlatform(home = homedir()) {
   return resolved
 }
 function resolveHost(home) {
+  return resolveHostWithReason(home).descriptor
+}
+function resolveHostWithReason(home = homedir()) {
   const base = claudeDescriptor(home)
+  const skipped = []
   const envPlatform = process.env.HARNESSED_PLATFORM
   if (envPlatform !== void 0 && envPlatform !== '') {
     const d = descriptorById(envPlatform, home)
-    if (d) return d
+    if (d) {
+      return {
+        descriptor: d,
+        reason: { kind: 'env-platform', envVar: 'HARNESSED_PLATFORM', value: envPlatform },
+        skipped,
+      }
+    }
+    skipped.push({ kind: 'env-platform-unknown', envVar: 'HARNESSED_PLATFORM', value: envPlatform })
   }
   const inClaude = Boolean(process.env.CLAUDE_CODE_SESSION_ID?.trim())
   const inCodex = Boolean(process.env.CODEX_SESSION_ID?.trim())
-  if (inClaude !== inCodex) return inClaude ? base : codexDescriptor(home)
+  if (inClaude !== inCodex) {
+    return {
+      descriptor: inClaude ? base : codexDescriptor(home),
+      reason: {
+        kind: 'host-session-env',
+        envVar: inClaude ? 'CLAUDE_CODE_SESSION_ID' : 'CODEX_SESSION_ID',
+      },
+      skipped,
+    }
+  }
+  if (inClaude && inCodex) skipped.push({ kind: 'host-session-env-ambiguous' })
   for (const pinRoot of [codexDescriptor(home).stateRoot, base.stateRoot]) {
+    const pinPath = join(pinRoot, '.platform')
     try {
-      const d = descriptorById(readFileSync(join(pinRoot, '.platform'), 'utf8').trim(), home)
-      if (d) return d
+      const value = readFileSync(pinPath, 'utf8').trim()
+      const d = descriptorById(value, home)
+      if (d) return { descriptor: d, reason: { kind: 'platform-pin', pinPath, value }, skipped }
+      skipped.push({ kind: 'platform-pin-unknown', pinPath, value })
     } catch {}
   }
   try {
-    if (existsSync(base.homeDir)) return base
+    if (existsSync(base.homeDir)) {
+      return {
+        descriptor: base,
+        reason: { kind: 'directory-probe', probedDir: base.homeDir },
+        skipped,
+      }
+    }
     const codex = codexDescriptor(home)
-    if (existsSync(codex.homeDir)) return codex
+    if (existsSync(codex.homeDir)) {
+      return {
+        descriptor: codex,
+        reason: { kind: 'directory-probe', probedDir: codex.homeDir },
+        skipped,
+      }
+    }
   } catch {}
-  return base
+  return { descriptor: base, reason: { kind: 'fallback' }, skipped }
 }
 
 // src/checkpoint/modeBDetect.ts
