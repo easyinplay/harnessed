@@ -5,9 +5,20 @@
 ## 状态
 
 - **立项**: 2026-10-15
-- **当前**: T1 / T2 / T3 / T10 已交付并 push;**T4(`adoptSlot.ts` 核心)待起**
+- **当前**: T1-T6 + T10 已交付并 push。**命令已可用并经独立冒烟**。剩 T7(前置)/ T8 / T11 / T12
 - **基线**: 立项时 HEAD `afe9e7b`,vitest 3296/0,npm latest 4.48.0
-- **现在**: HEAD `74f4714`,vitest **3354**/0(+58),10 闸门全 PASS,bin 漂移闸门本地演练 PASS
+- **现在**: HEAD `541be4b`,vitest **3415**/0(+119),10 闸门全 PASS,bin 漂移闸门提交后演练 PASS
+
+## 独立冒烟实测(主 session 自跑,非采信 subagent)
+
+四次调用全对:成功路径 exit 0 · `src==dest` 拒绝(`依据:` 行正确反映
+`HARNESSED_PLATFORM` 分支而非硬编码探测分支)· 目标占用拒绝(`1/2 subs done`
+由 sub_progress 正确渲染)· `--from` 省略能推断。
+
+逐条印证:**R2 承重不变量 PASS**(源账本 md5 与 mtime 四次调用后逐字节未变,含两条拒绝路径)·
+目标账本写在**裸键**(D4)· `updated_at` 是写入时刻而非源值(D7)· `retro_meta` 取 max 带走、
+`intents` 为 null(D15)· 指针仍指源根(D12)· 源账本里的 `::displaced-*` 归档键
+被正确排除在候选外(D9,否则会变成 2 候选拒绝)。
 
 ## T4 的入口条件(T2/T3 已备好的 seam)
 
@@ -48,10 +59,12 @@
 - [x] T1 `repoKey` 大小写归一 + 账本键迁移 【最先】 ✅ `993b12d`(含 F2 的复制品折叠)
 - [x] T2 抽 `readStoreAt(root)` ✅ `74f4714`
 - [x] T3 导出 `resolveHostWithReason()` ✅ `74f4714`
-- [ ] T4 `adoptSlot.ts` 核心
-- [ ] T5 目标宿主未 setup 时拒绝
-- [ ] T6 CLI 接线
-- [ ] T7 `::displaced-*` 归档 + 修剪
+- [x] T4 `adoptSlot.ts` 核心 ✅ `541be4b`
+- [x] T5 目标宿主未 setup 时拒绝 ✅ `541be4b`(判据 = `commandsDir` 里有 `harnessed-generated:` 标记的命令)
+- [x] T6 CLI 接线 + D16 `HOST_IDS` 导出 ✅ `541be4b`(三份手写宿主清单收敛成两份)
+- [ ] T7 `::displaced-*` / `::premigrate-*` 归档 + 修剪  ← **已升为前置**(见 `findings.md` F10)
+      ⚠️ 开工前要先裁一个有数据丢失风险的问题:修剪只碰归档键,还是也碰真实 `::<sid>` 槽位
+      (后者需按状态与年龄定规则:永不删 `active`,只删足够老的 `complete`)
 - [ ] T8 `resume` 宿主措辞
 - [ ] T9 测试 27 路径 + R1/R2/R3
 - [x] T10 改写 ADR-0043 ✅ `cbd4f0e`

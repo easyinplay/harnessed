@@ -63,6 +63,62 @@ T1 之前两边保留大小写的方式完全一致、永远相合,所以这是*
 `HARNESSED_ROOT_OVERRIDE`** —— 任何走到它的测试都会写真实用户目录。
 既存,已在 `STATE.md` 的 carry-forward(v9.0 历史遗留)。T1 的迁移**刻意不沿用**这个姿态。
 
+## F12 — `PlatformDescriptor.id` 允许 6 个 id,但只有 2 个有描述符
+
+`src/platform/platform.ts:41` 把 `id` 定成
+`'claude' | 'codex' | 'agents' | 'cursor' | 'gemini' | 'copilot'`,
+而 T4 新增的 `HostId`(由 `HOST_IDS` 派生)只有 `'claude' | 'codex'`。
+所以 `descriptor.id` 不能直接赋给 `HostId` 字段,必须经 `isHostId()` 收窄。
+
+这是个会咬将来的落差:**gemini milestone 开工时,`id` 联合里已经有 `'gemini'`,
+但它没有描述符**,于是「类型上允许」与「运行时存在」不一致。加宿主时要同时
+进 `HOST_IDS` 与描述符工厂,只改 `:41` 那个联合会得到一个类型过得去、
+运行时 `descriptorFor` 没有分支的半截宿主。
+
+## F11 — 手写账本 fixture 的三个坑(我连踩三次,产品一次没错)
+
+做 T4-T6 的独立冒烟时,我的 fixture 连续三版被正确地报成「源账本在但读不动」。
+三次都是我的错:
+
+1. **`schemaVersion` 是字符串不是数字。** 值为 `'harnessed.workflow-store.v1'` /
+   `'harnessed.current-workflow.v1'`(`src/types/schemaVersion.ts`),写 `1` 直接
+   `Value.Check` 失败。
+2. **Windows 反斜杠不能手拼进 JSON。** `repoKey` 形如 `c:\users\easyi\...`,
+   直接插进 JSON 字符串里 `\u`(`\users`)被当 unicode 转义起始 ⇒ 坏 JSON。
+   必须用 `JSON.stringify` 生成,不要用 heredoc 手拼。
+3. **`SubProgressEntry.gate_fired` 是必填**(`currentWorkflow.v1.ts:46`,`Type.Boolean()` 非 Optional)。
+   漏掉它会让**整本账**校验失败,因为 `workflows` 是
+   `Type.Record(Type.String(), CurrentWorkflowV1)`,一个槽位不合格就整本不合格。
+
+**反过来说,这三次恰好把 D14 验了**:每次都被准确地归类为「存在但无效」而非
+「不存在」,而且 `{"schemaVersion":...,"workflows":{}}` 报的是「无候选」不是「损坏」。
+定位手段是二分(只含必填 → 逐项加回),比读 schema 猜更快。
+
+## F10 — 槽位单调增长无人修剪 ⇒ T7 从 P2 升为 adopt 可重复使用的**前置**
+
+两条独立实测:
+
+1. **全仓没有任何地方删槽位。** `rg 'delete .*\.workflows|delete store|delete .*\.intents|delete .*retro_meta' src/`
+   **零命中**。`src/cli/gc.ts` 的 `gcCompiledArtifacts` 只扫安装备份与编译产物(`:52`、`:235`),
+   不碰账本。
+2. **session env 确实被注入**:`CLAUDE_CODE_SESSION_ID` 实测已设(36 字符,等于当前会话 id),
+   `CODEX_SESSION_ID` 未设。所以 `activeKey()` 在 claude 侧会产出**复合键**,
+   每个跑过 workflow 的会话留下一个永久 `repoKey::<sid>` 槽位(`state.ts:125` 只写 activeKey)。
+
+合起来的后果:adopt 的候选匹配(D9)排除归档键 `::displaced-*` / `::premigrate-*`,
+但**不排除** `::<sid>` 槽位 —— 它们是真候选。源宿主上会话一累积,
+**D10 的「多候选 → 拒绝并列出」就从边缘情形变成常态**,adopt 第二次起就用不了。
+
+所以 T7 的修剪**不是 P2 加分项**,是 adopt 能被重复使用的前置。原 P2 判断基于
+「增长极慢(只在 paused + adopt 同时发生)」,那只覆盖了我新增的归档键,
+漏了**既存的 session 槽位累积**这条更粗的来源。外部意见 #5 当时点到了
+(「a monotonically growing map makes 'refuse on ambiguity' the normal outcome within weeks」),
+我把它折进 T7 时降级成了「修剪归档键」,没接上它与 D10 的连锁。
+
+**附带实证:T1 的迁移在真机生效。** 账本键今天早些时候是 `D:\GitCode\harnessed`,
+现在是 `d:\gitcode\harnessed`(小写),且仍只有 1 个槽位、仍是裸键 —— 折叠成功、
+未撞键、未丢槽位,与「本机无撞键 ⇒ 迁移为 no-op 式折叠」的预判一致。
+
 ## F8 — 我在 task_plan 与已提交 ADR 里引用了一个不存在的符号 `PLATFORMS`
 
 D2 原写「`PLATFORMS` 已按 id 暴露两根(`platform.ts:145`)」,D16 要求 `--from` 候选从它派生。
