@@ -523,7 +523,7 @@ function forwardPointer(repoRoot, wf) {
 }
 
 // src/checkpoint/injectStateMain.ts
-function repoKey(cwd) {
+function repoRootPath(cwd) {
   let dir = resolve(cwd)
   for (;;) {
     if (existsSync4(join5(dir, '.git'))) return dir
@@ -532,6 +532,10 @@ function repoKey(cwd) {
     dir = parent
   }
   return resolve(cwd)
+}
+function repoKey(cwd) {
+  const root = repoRootPath(cwd)
+  return process.platform === 'win32' ? root.toLowerCase() : root
 }
 function readWorkflow(root, keys) {
   let wf = null
@@ -591,20 +595,31 @@ async function main() {
       invalidateInjectCache(root)
       return
     }
-    const key = repoKey(process.cwd())
+    const repoPath = repoRootPath(process.cwd())
+    const slotKey = repoKey(process.cwd())
     const envName = platform.sessionIdEnv
     const sid =
       (envName ? process.env[envName]?.trim() : void 0) ||
       (hostArg ? sessionIdFromPayload(await readHookStdin()) : void 0)
-    const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
+    const { wf, intent, ledgerAgeMs } = readWorkflow(
+      root,
+      sid ? [`${slotKey}::${sid}`, slotKey] : [slotKey],
+    )
     let learningsMd = ''
     try {
-      learningsMd = readFileSync5(join5(key, '.planning', 'LEARNINGS.md'), 'utf8')
+      learningsMd = readFileSync5(join5(repoPath, '.planning', 'LEARNINGS.md'), 'utf8')
     } catch {}
     const budget = Number(process.env.HARNESSED_INJECT_BUDGET) || DEFAULT_INJECT_BUDGET
     const pcOff = process.env.HARNESSED_INJECT_PC_OFF === '1'
-    const pcGate = pcOff ? () => false : sid ? (pc) => shouldEmitPc(root, key, sid, pc) : void 0
-    const out = buildInjection(key, wf, learningsMd, budget, intent, Date.now(), {
+    const pcGate = pcOff
+      ? () => false
+      : sid
+        ? // slotKey (folded): the PC-emission cache keys state, same reason as the
+          // ledger. Pre-upgrade entries keyed by the unfolded path simply become
+          // unreachable — at most one extra emission after upgrading.
+          (pc) => shouldEmitPc(root, slotKey, sid, pc)
+        : void 0
+    const out = buildInjection(repoPath, wf, learningsMd, budget, intent, Date.now(), {
       ledgerAgeMs,
       pcGate,
     })

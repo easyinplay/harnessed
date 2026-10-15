@@ -13,12 +13,18 @@ import type { CurrentWorkflowV1Type } from '../../src/checkpoint/schema/currentW
 import {
   activeKey,
   listWorkflows,
+  normalizeRepoKey,
   readStoreRaw,
   repoKey,
   WorkflowStoreV1,
   writeStoreRaw,
 } from '../../src/checkpoint/workflowStore.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
+
+// v16.0 Phase 67 T1 — repoKey() now case-folds on win32, so the expected key is
+// `normalizeRepoKey(resolve(...))`, not raw `resolve(...)`. Identity off win32, so
+// these assertions stay byte-identical on linux/darwin.
+const expectedKey = (p: string): string => normalizeRepoKey(resolve(p))
 
 const envelope = (phase: string): CurrentWorkflowV1Type => ({
   schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
@@ -41,7 +47,7 @@ describe('repoKey', () => {
     mkdirSync(join(tmp, '.git'))
     const deep = join(tmp, 'a', 'b', 'c')
     mkdirSync(deep, { recursive: true })
-    expect(repoKey(deep)).toBe(resolve(tmp))
+    expect(repoKey(deep)).toBe(expectedKey(tmp))
   })
 
   it('returns an ancestor-or-self; either a .git root or the cwd fallback', () => {
@@ -50,8 +56,8 @@ describe('repoKey', () => {
     const deep = join(tmp, 'x', 'y')
     mkdirSync(deep, { recursive: true })
     const k = repoKey(deep)
-    expect(resolve(deep).startsWith(k)).toBe(true) // ancestor-or-self of deep
-    expect(existsSync(join(k, '.git')) || k === resolve(deep)).toBe(true)
+    expect(expectedKey(deep).startsWith(k)).toBe(true) // ancestor-or-self of deep
+    expect(existsSync(join(k, '.git')) || k === expectedKey(deep)).toBe(true)
   })
 })
 
@@ -82,13 +88,13 @@ describe('activeKey', () => {
 
   it('appends ::<sid> when CLAUDE_CODE_SESSION_ID is set', () => {
     process.env.CLAUDE_CODE_SESSION_ID = 'sess-abc'
-    expect(activeKey(tmp)).toBe(`${resolve(tmp)}::sess-abc`)
+    expect(activeKey(tmp)).toBe(`${expectedKey(tmp)}::sess-abc`)
   })
 
   it('is the bare repoKey when no session id (byte-identical single-session path)', () => {
     delete process.env.CLAUDE_CODE_SESSION_ID
     expect(activeKey(tmp)).toBe(repoKey(tmp))
-    expect(activeKey(tmp)).toBe(resolve(tmp))
+    expect(activeKey(tmp)).toBe(expectedKey(tmp))
   })
 
   it('is the bare repoKey when session id is empty or whitespace', () => {
@@ -100,14 +106,14 @@ describe('activeKey', () => {
 
   it('trims surrounding whitespace from the session id', () => {
     process.env.CLAUDE_CODE_SESSION_ID = '  sess-xyz  '
-    expect(activeKey(tmp)).toBe(`${resolve(tmp)}::sess-xyz`)
+    expect(activeKey(tmp)).toBe(`${expectedKey(tmp)}::sess-xyz`)
   })
 
   it('threads cwd through to repoKey (composite built on the resolved repo root)', () => {
     process.env.CLAUDE_CODE_SESSION_ID = 'sess-deep'
     const deep = join(tmp, 'a', 'b')
     mkdirSync(deep, { recursive: true })
-    expect(activeKey(deep)).toBe(`${resolve(tmp)}::sess-deep`)
+    expect(activeKey(deep)).toBe(`${expectedKey(tmp)}::sess-deep`)
   })
 
   // Phase 35 — session env resolved via PlatformDescriptor.sessionIdEnv, NOT a
@@ -117,7 +123,7 @@ describe('activeKey', () => {
     process.env.HARNESSED_PLATFORM = 'codex'
     process.env.CLAUDE_CODE_SESSION_ID = 'sess-should-be-ignored'
     expect(activeKey(tmp)).toBe(repoKey(tmp))
-    expect(activeKey(tmp)).toBe(resolve(tmp))
+    expect(activeKey(tmp)).toBe(expectedKey(tmp))
   })
 })
 

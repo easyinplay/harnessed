@@ -17,8 +17,17 @@ import {
   selectWithinBudget,
 } from '../../src/checkpoint/injectState.js'
 import type { CurrentWorkflowV1Type } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
+import { normalizeRepoKey } from '../../src/checkpoint/workflowStore.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
+// v16.0 Phase 67 T1 — the bin-driving cells below key workflows.json by
+// `normalizeRepoKey(realpathSync(...))`, not the raw path: on win32 the CLI writes
+// a case-FOLDED slot key, so a raw-path key is a slot the bin will never look up.
+// Identity off win32. `repoRoot` is also passed to buildInjection, which only ever
+// `join`s it for disk reads (never embeds it in output), and win32's fs is
+// case-insensitive — so the folded value reads the same tree and the byte-exact
+// parity assertions hold.
+//
 // Phase 16 LEARNINGS.md fixture (two entries; newest at bottom).
 const LEARNINGS_MD = `# Learnings
 
@@ -491,7 +500,7 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     // realpathSync (not resolve): the child bin sees process.cwd() with symlinks
     // resolved (macOS /var → /private/var), so the workflows.json key must match
     // that canonical form, else repoKey(cwd) lookup misses. No-op on Linux/Windows.
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     writeFileSync(
       join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
       JSON.stringify({
@@ -531,7 +540,7 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
     // realpathSync (not resolve): the child bin sees process.cwd() with symlinks
     // resolved (macOS /var → /private/var), so the workflows.json key must match
     // that canonical form, else repoKey(cwd) lookup misses. No-op on Linux/Windows.
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const flagged: CurrentWorkflowV1Type = {
       ...wf,
       status: 'complete',
@@ -553,7 +562,7 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
   })
 
   it('Phase 35 — reads the session-scoped slot <repoKey>::<sid> over the bare slot when CLAUDE_CODE_SESSION_ID is set', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const sid = 'sessBIN'
     const sessionWf: CurrentWorkflowV1Type = { ...wf, phase: 'verify' }
     writeFileSync(
@@ -570,7 +579,7 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
   })
 
   it('Phase 35 — HARNESSED_PLATFORM=codex (sessionIdEnv=null) reads the bare slot even with CLAUDE_CODE_SESSION_ID set', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const bareWf: CurrentWorkflowV1Type = { ...wf, phase: 'task' }
     writeFileSync(
       join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
@@ -585,7 +594,7 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
   })
 
   it('Phase 36 — the bin emits the VERIFY-MODE directive from verify_mode; matches buildInjection', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const scaled: CurrentWorkflowV1Type = { ...wf, status: 'complete', verify_mode: 'full' }
     writeFileSync(
       join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),
@@ -601,7 +610,7 @@ describe('bin/harnessed-inject-state.mjs parity (repo-aware)', () => {
   })
 
   it('Phase 39 — emits NEXT-UNIT (current→next phase) when subs resolved + an incomplete next phase; matches buildInjection', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const resolvedWf: CurrentWorkflowV1Type = {
       ...wf,
       phase: '16',
@@ -723,7 +732,7 @@ describe('bin parity — intent guard (4.22.0)', () => {
   }
 
   it('fresh intent + no workflow → bin emits the intent block (parity with TS builder)', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     // Center the age at 10m30s so ±30s of runtime skew keeps floor(minutes)=10.
     const intent = { master: 'auto', ts: new Date(Date.now() - 10.5 * 60_000).toISOString() }
     writeFileSync(
@@ -743,7 +752,7 @@ describe('bin parity — intent guard (4.22.0)', () => {
   })
 
   it('expired intent + no workflow → bin emits nothing (legacy silence)', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const intent = {
       master: 'auto',
       ts: new Date(Date.now() - INTENT_TTL_MS - 60_000).toISOString(),
@@ -870,7 +879,7 @@ describe('bin delta injection (4.25.0 — session pc cache)', () => {
   const binPath = join(__dirname, '..', '..', 'bin', 'harnessed-inject-state.mjs')
 
   const seed = (sid?: string) => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const slot = sid ? `${repoRoot}::${sid}` : repoRoot
     writeFileSync(
       join(tmp, 'root', '.claude', 'harnessed', 'workflows.json'),

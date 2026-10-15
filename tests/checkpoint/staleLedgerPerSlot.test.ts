@@ -10,6 +10,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { normalizeRepoKey } from '../../src/checkpoint/workflowStore.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const made: string[] = []
@@ -34,7 +35,14 @@ function run(updatedAt: string | undefined): string {
     sub_progress: [{ sub: 'task-code', status: 'pending', gate_fired: true }],
   }
   // Written just now: the FILE is fresh, as it is whenever another repo was active.
-  writeFileSync(join(root, 'workflows.json'), JSON.stringify({ workflows: { [repo]: slot } }))
+  // v16.0 Phase 67 T1 — keyed by normalizeRepoKey(repo), not the raw path: on win32
+  // the CLI writes a case-FOLDED slot key and the bin looks up the same, so a
+  // raw-path key is a slot nothing reads. `repo` itself stays unfolded — it is the
+  // child's real cwd. Identity off win32.
+  writeFileSync(
+    join(root, 'workflows.json'),
+    JSON.stringify({ workflows: { [normalizeRepoKey(repo)]: slot } }),
+  )
   const env: Record<string, string | undefined> = { ...process.env, HARNESSED_ROOT_OVERRIDE: root }
   delete env.CLAUDE_CODE_SESSION_ID
   delete env.HARNESSED_OFF

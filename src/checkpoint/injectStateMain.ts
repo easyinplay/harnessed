@@ -42,9 +42,10 @@ import {
 import { buildInjection, DEFAULT_INJECT_BUDGET, type WorkflowIntent } from './injectState.js'
 import type { CurrentWorkflowV1Type } from './schema/currentWorkflow.v1.js'
 
-/** Dep-free replica of workflowStore.repoKey (that module imports typebox). Pure
- *  fs walk-up: nearest ancestor of `cwd` with a `.git`, else the resolved `cwd`. */
-function repoKey(cwd: string): string {
+/** Dep-free replica of workflowStore.repoKey's walk-up, WITHOUT the case fold:
+ *  the real repo-root PATH. Pure fs walk-up: nearest ancestor of `cwd` with a
+ *  `.git`, else the resolved `cwd`. */
+function repoRootPath(cwd: string): string {
   let dir = resolve(cwd)
   for (;;) {
     if (existsSync(join(dir, '.git'))) return dir
@@ -53,6 +54,21 @@ function repoKey(cwd: string): string {
     dir = parent
   }
   return resolve(cwd)
+}
+
+/** Dep-free replica of workflowStore.repoKey (that module imports typebox), fold
+ *  included — these two MUST agree or this hook looks up a key the CLI never wrote.
+ *
+ *  v16.0 Phase 67 T1: `process.cwd()` on win32 returns the casing used to ENTER the
+ *  directory (Windows does not canonicalize it — measured: `chdir('d:/gitcode/x')`
+ *  → `'d:\\gitcode\\x'`, `chdir('D:/GitCode/x')` → `'D:\\GitCode\\x'`), so without
+ *  this fold the CLI would write `d:\…` while this hook read `D:\…` and the per-turn
+ *  injector would go blind. The fold is inlined rather than imported because
+ *  workflowStore.ts pulls typebox into this hot path.
+ *  Parity is locked by tests/checkpoint/repoKeyCase.test.ts. */
+function repoKey(cwd: string): string {
+  const root = repoRootPath(cwd)
+  return process.platform === 'win32' ? root.toLowerCase() : root
 }
 
 /** Read the active repo's workflow slot + intent sidecar from workflows.json (raw
@@ -145,21 +161,31 @@ async function main(): Promise<void> {
       invalidateInjectCache(root)
       return
     }
-    // `key` is the repo ROOT (holds .planning/ for buildInjection's disk scans). The
-    // workflow LOOKUP prefers the session-scoped composite slot (Phase 34/35), then
-    // the bare repoKey. The composite key is NOT a real directory.
-    const key = repoKey(process.cwd())
+    // v16.0 Phase 67 T1 — two values, deliberately NOT one:
+    //   repoPath — the real repo ROOT as entered (holds .planning/ for buildInjection's
+    //     disk scans). Left UNFOLDED: win32's case-insensitive fs means folding would
+    //     work here too, but these consumers gain nothing from it, so keeping them on
+    //     the cwd-derived path keeps their behavior byte-identical.
+    //   slotKey  — the same root case-FOLDED, for everything that KEYS state (the
+    //     ledger slot and the PC-emission cache). Must match what the CLI wrote.
+    // The workflow LOOKUP prefers the session-scoped composite slot (Phase 34/35),
+    // then the bare slotKey. The composite key is NOT a real directory.
+    const repoPath = repoRootPath(process.cwd())
+    const slotKey = repoKey(process.cwd())
     const envName = platform.sessionIdEnv
     // codex hook: no CODEX_* env in the hook process — the session id rides stdin.
     // Only an explicit --platform opts in, so the Claude Code path never reads stdin.
     const sid =
       (envName ? process.env[envName]?.trim() : undefined) ||
       (hostArg ? sessionIdFromPayload(await readHookStdin()) : undefined)
-    const { wf, intent, ledgerAgeMs } = readWorkflow(root, sid ? [`${key}::${sid}`, key] : [key])
+    const { wf, intent, ledgerAgeMs } = readWorkflow(
+      root,
+      sid ? [`${slotKey}::${sid}`, slotKey] : [slotKey],
+    )
 
     let learningsMd = ''
     try {
-      learningsMd = readFileSync(join(key, '.planning', 'LEARNINGS.md'), 'utf8')
+      learningsMd = readFileSync(join(repoPath, '.planning', 'LEARNINGS.md'), 'utf8')
     } catch {
       // no learnings file → buildInjection emits workflow-state only
     }
@@ -177,9 +203,12 @@ async function main(): Promise<void> {
     const pcGate = pcOff
       ? () => false
       : sid
-        ? (pc: string) => shouldEmitPc(root, key, sid, pc)
+        ? // slotKey (folded): the PC-emission cache keys state, same reason as the
+          // ledger. Pre-upgrade entries keyed by the unfolded path simply become
+          // unreachable — at most one extra emission after upgrading.
+          (pc: string) => shouldEmitPc(root, slotKey, sid, pc)
         : undefined
-    const out = buildInjection(key, wf, learningsMd, budget, intent, Date.now(), {
+    const out = buildInjection(repoPath, wf, learningsMd, budget, intent, Date.now(), {
       ledgerAgeMs,
       pcGate,
     })

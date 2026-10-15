@@ -15,8 +15,12 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { buildInjection, DEFAULT_INJECT_BUDGET } from '../../src/checkpoint/injectState.js'
 import type { CurrentWorkflowV1Type } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
+import { normalizeRepoKey } from '../../src/checkpoint/workflowStore.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
+// v16.0 Phase 67 T1 — slot keys go through normalizeRepoKey: on win32 the CLI
+// writes a case-FOLDED key, so a raw-path key is a slot the bin never looks up.
+// Identity off win32.
 const BIN = join(process.cwd(), 'bin', 'harnessed-inject-state.mjs')
 
 let tmp: string
@@ -69,7 +73,7 @@ describe('inject-state bin under a codex plugin hook (--platform codex)', () => 
   })
 
   it('UserPromptSubmit: session slot keyed by stdin session_id at the codex stateRoot', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     const sessionWf: CurrentWorkflowV1Type = { ...wf, phase: 'verify' }
     writeFileSync(
       join(tmp, 'home', '.codex', 'harnessed', 'workflows.json'),
@@ -89,7 +93,7 @@ describe('inject-state bin under a codex plugin hook (--platform codex)', () => 
   })
 
   it('malformed stdin → bare repo slot, never a crash', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     writeFileSync(
       join(tmp, 'home', '.codex', 'harnessed', 'workflows.json'),
       JSON.stringify({
@@ -102,7 +106,7 @@ describe('inject-state bin under a codex plugin hook (--platform codex)', () => 
   })
 
   it('without --platform the stdin is not consulted (claude path unchanged)', () => {
-    const repoRoot = realpathSync(join(tmp, 'repo'))
+    const repoRoot = normalizeRepoKey(realpathSync(join(tmp, 'repo')))
     writeFileSync(
       join(tmp, 'home', '.claude', 'harnessed', 'workflows.json'),
       JSON.stringify({

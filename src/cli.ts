@@ -2,6 +2,7 @@
 import { join } from 'node:path'
 import { Command } from 'commander'
 import pkg from '../package.json' with { type: 'json' }
+import { migrateRepoKeyCase } from './checkpoint/workflowStore.js'
 import { registerAdvance } from './cli/advance.js'
 import { registerAgentsMd } from './cli/agents-md.js'
 import { registerAudit } from './cli/audit.js'
@@ -92,6 +93,19 @@ process.on('unhandledRejection', (reason) => {
 })
 process.on('uncaughtException', (err) => {
   fatal(err instanceof Error ? err.message : String(err))
+})
+
+// v16.0 Phase 67 T1 — fold pre-existing ledger keys to canonical case before any
+// subcommand runs (sibling of migrateLegacyHarnessedRoot above; placed AFTER the
+// handlers so nothing escapes as a raw unhandled rejection). Lock-free + silent
+// when there is nothing to do, so the idle cost is one small read on win32 and
+// zero elsewhere. Fail-SOFT: a concurrent lock holder (per-turn inject hook, a
+// parallel `checkpoint complete`) must not break the invocation — the migration
+// is idempotent and simply retries on the next run.
+await migrateRepoKeyCase().catch((e: unknown) => {
+  console.error(
+    `[harnessed] WARN: repo-key case migration deferred: ${e instanceof Error ? e.message : String(e)}`,
+  )
 })
 
 const program = new Command()
