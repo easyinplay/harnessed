@@ -20,7 +20,7 @@ Claude Code 额度耗尽时,切到 codex 把**同一个 leaf 接着跑完**。
 | # | 裁定 | 依据 |
 |---|---|---|
 | D1 | 不建共享根、不搬账本、**不动任何读路径** | 6 个裸键回退点原样保留 |
-| D2 | `adopt` 从**另一宿主自己的 stateRoot** 只读 `workflows.json` | `PLATFORMS` 已按 id 暴露两根(`platform.ts:145`) |
+| D2 | `adopt` 从**另一宿主自己的 stateRoot** 只读 `workflows.json` | ~~`PLATFORMS` 已按 id 暴露两根~~ **更正 2026-10-15:`PLATFORMS` 不存在**(该处是注释,下面是私有未导出的 `descriptorById`)。实际可用的是 T3 新增的 `resolveHostWithReason()`(返回宿主**自己的** `stateRoot`,pre-override)+ `claudeDescriptor(home)` / `codexDescriptor(home)` |
 | D3 | **跨根严格只读是承重不变量**,全程不写源根 | 这是本方案便宜的全部原因:无需跨根加锁、无需管对端版本 |
 | D4 | 目标键是**裸 `repoKey`**,不是 `activeKey()` | `state.ts:101` 的裸键回退是被接管槽位唯一可达通路;写 `activeKey()` 则下个会话双 miss,重跑 adopt 会从源头拉回接力前旧态 = 数据丢失 |
 | D5 | 接力语义是**一个会话**,adopt 结尾显式预告 | 首次 `complete` 读裸写复合(`state.ts:125`)必然叉开槽位,裸槽从此冻结;跨会话续跑与同宿主原生多会话行为一致,不引入新语义 |
@@ -34,7 +34,7 @@ Claude Code 额度耗尽时,切到 codex 把**同一个 leaf 接着跑完**。
 | D13 | 源槽位**不动** + 结尾点名警告 + 给出清理命令 | 换掉它就要写源根,违反 D3 |
 | D14 | 源账本缺失 vs 损坏**必须分辨**,后者诚实报错 | `readStoreAt` 继承 CD-5 fail-soft,照搬会把「账本坏了」报成「源宿主没账本」 |
 | D15 | `retro_meta` 取 `max(src, dest ?? 0)` 带走;**`intents` 不带** | `retro_meta` 按裸 `repoKey` 键、仓级节奏,归零会静默重置将触发的 retro 提醒;`intents` 是单轮面包屑且被 `checkpoint start` 吸收,带过去只会让 codex 吃别人的 freestyle nag |
-| D16 | `--from` 候选从 `PLATFORMS` **派生**,不得新造字面清单 | `platform.ts:199` / `setup.ts:58` / `setup.ts:83-85` 已是三份手写宿主清单,adopt 不做第四份;加 gemini 时自动跟上 |
+| D16 | `--from` 候选从**单一导出的 id 清单**派生,不得新造字面清单。**更正 2026-10-15:今天没有这样的清单**,所以 T4/T6 要新增一个导出,并让 `setup.ts` 的 `KNOWN_PLATFORMS` 消费它 —— 三份手写清单**收敛成两份**,不只是「不做第四份」 | 现存三份(点名构造,行号会漂移):`resolveHost` 里 pin 探测的 `[codexDescriptor(home).stateRoot, base.stateRoot]` · `setup.ts` 的 `KNOWN_PLATFORMS` · `setup.ts` 按 `platform === 'codex'` 分支写死两种顺序的 `[own, other]` 对 |
 | D17 | 证据路径拷贝若保留(已按 D12 取消)则必须锁内先拷后写 | 保留此条仅为记录推理:锁内顺序决定孤儿文件有无 |
 
 ## 不在范围(考虑过,显式推迟)

@@ -63,6 +63,35 @@ T1 之前两边保留大小写的方式完全一致、永远相合,所以这是*
 `HARNESSED_ROOT_OVERRIDE`** —— 任何走到它的测试都会写真实用户目录。
 既存,已在 `STATE.md` 的 carry-forward(v9.0 历史遗留)。T1 的迁移**刻意不沿用**这个姿态。
 
+## F8 — 我在 task_plan 与已提交 ADR 里引用了一个不存在的符号 `PLATFORMS`
+
+D2 原写「`PLATFORMS` 已按 id 暴露两根(`platform.ts:145`)」,D16 要求 `--from` 候选从它派生。
+**实测它不存在**:`platform.ts` 该处是一句注释,其下是**私有未导出**的
+`descriptorById(id, home)`(一次一个描述符,不可枚举)。全仓 `rg PLATFORMS src/` 只有
+`preflight.ts` 的 `SUPPORTED_PLATFORMS`(OS 名,无关)与 `setup.ts` 的 `KNOWN_PLATFORMS`
+(而它本身就是 D16 要消除的手写清单之一)。
+
+根因:我在会话早期 grep 到那行注释文本就当成了存在一个 keyed record,**没有 grep 符号本身**。
+这正是项目 CLAUDE.md「Spec writing pre-commit checklist」第 3 条要防的事
+(TS function/symbol name 必须 `grep -n "^export function <name>"` 验过),我没执行。
+
+结论**因此加强而非削弱**:今天没有可派生的清单,所以 T4/T6 要新增一个导出的 id 清单
+并让 `KNOWN_PLATFORMS` 消费它,把三份手写清单**收敛成两份**,而不只是「不做第四份」。
+ADR 与 task_plan 均已显式留更正痕迹,未静默改写。
+
+**连带教训:文档里的行号会腐烂。** T3 插入代码后,ADR 引用的 pin 探测位置从 `:199` 漂到 `:288`。
+更正后改为点名构造(`[codexDescriptor(home).stateRoot, base.stateRoot]`)而非只给行号。
+
+## F9 — `<new-diagnostics>` 本 phase 内幻影三次,3/3 全错
+
+第三次报得最像真的:`platform.ts:227 Cannot find name 'resolveHostORIGINAL'` 加两处
+`Duplicate function implementation` —— 一个具体的脚手架名字。实测 `rg resolveHostORIGINAL`
+零命中、`resolveHost` 只定义一次、`tsc --noEmit` 退出 0 零输出。它捕到的是 subagent
+做构建往返实验(为证明 bin 的 delta 全是自己的而非扫进来的陈旧)时的中间态。
+
+判据固化:**诊断与自跑 `tsc` 冲突时,信 `tsc`**;但要先确认 tsc 的覆盖范围
+(本仓 `tsconfig.json` 无 `include`/`exclude` ⇒ 默认覆盖 `tests/`,所以那个 0 是有效的 0)。
+
 ## F7 — `check-host-primitives.mjs` 的扫描盲区(待办 T8 顺带记)
 
 它只扫 `workflows/**/SKILL.md` 与 yaml 面,**扫不到 TS 运行时字符串**。

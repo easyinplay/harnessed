@@ -129,9 +129,22 @@ return store.workflows[activeKey()] ?? store.workflows[repoKey()] ?? null
 14. **目标宿主未 setup 时拒绝。** 账本不是 codex 唯一需要的:`commandsDir` / `skillsDir`
     (`platform.ts:134-137`)只有 `harnessed setup --platform codex`(`setup.ts:58,68-88`)才填。
     无此前置,happy path 是「adopt 说 OK,codex 没有命令可跑」。
-15. **`--from` 候选从 `PLATFORMS`(`platform.ts:145`)派生,不得新造字面清单。**
-    `platform.ts:199` / `setup.ts:58` / `setup.ts:83-85` 已是三份手写宿主清单,
-    adopt 不做第四份;将来加 gemini 时自动跟上。
+15. **`--from` 候选必须从单一导出的宿主 id 清单派生,不得新造字面清单。**
+
+    > **更正(2026-10-15,T2/T3 执行中实测)**:本条原文写「从 `PLATFORMS`(`platform.ts:145`)派生」。
+    > **`PLATFORMS` 不存在。** `platform.ts` 该处是一句注释,其下是**私有未导出**的
+    > `descriptorById(id, home)` —— 一次返回一个描述符,不是可枚举清单。全仓
+    > `rg PLATFORMS src/` 只有 `preflight.ts` 的 `SUPPORTED_PLATFORMS`(OS 名,无关)
+    > 与 `setup.ts` 的 `KNOWN_PLATFORMS`(而它本身就是本条要消除的手写清单之一)。
+    > 所以**今天没有可派生的东西**,结论因此加强而非削弱:T4/T6 需新增一个导出的
+    > id 清单,并让 `setup.ts` 的 `KNOWN_PLATFORMS` 消费它,把三份手写清单**收敛成两份**,
+    > 而不是只是「不做第四份」。
+
+    现存三份手写宿主枚举(用构造名而非行号,行号会随改动漂移 —— T3 已让其中一处从
+    `:199` 移到 `:288`):`resolveHost` 里 `.platform` pin 探测的二元数组
+    `[codexDescriptor(home).stateRoot, base.stateRoot]` · `setup.ts` 的 `KNOWN_PLATFORMS` ·
+    `setup.ts` 里按 `platform === 'codex'` 分支写死两种顺序的 `[own, other]` 对。
+    将来加 gemini 时,派生清单的那条自动跟上。
 
 ### 前置缺陷(必须先修)
 

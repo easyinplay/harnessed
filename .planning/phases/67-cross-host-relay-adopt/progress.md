@@ -5,9 +5,20 @@
 ## 状态
 
 - **立项**: 2026-10-15
-- **当前**: T1 + T10 已交付并 push;T2 待起
+- **当前**: T1 / T2 / T3 / T10 已交付并 push;**T4(`adoptSlot.ts` 核心)待起**
 - **基线**: 立项时 HEAD `afe9e7b`,vitest 3296/0,npm latest 4.48.0
-- **现在**: HEAD `993b12d`,vitest **3324**/0(+28),10 闸门全 PASS
+- **现在**: HEAD `74f4714`,vitest **3354**/0(+58),10 闸门全 PASS,bin 漂移闸门本地演练 PASS
+
+## T4 的入口条件(T2/T3 已备好的 seam)
+
+- `readStoreAt(root)` — 对任意根做读 + `Value.Check` + fail-soft。**注意 D14**:
+  fail-soft 把「没账本」与「账本损坏」塌成同一个空店,T4 必须自己探文件是否存在才能分辨。
+- `resolveHostWithReason(home)` — 返回 `{ descriptor, reason, skipped }`。
+  `reason` 是 5 变体判别联合(阶梯五条规则各一),`skipped` 只记「尝试过但被跳过」的规则
+  (未知 `HARNESSED_PLATFORM` / 两个 session env 同时存在 / pin 指向未知 id;**pin 缺失不记**,
+  那是 99% 路径)。返回的是宿主**自己的** `stateRoot`(pre-override),正是跨根读需要的。
+- **D16 需要的导出 id 清单今天不存在**(见 `findings.md` F8),T4/T6 要新增并让
+  `setup.ts` 的 `KNOWN_PLATFORMS` 消费它。
 
 ## 已交付
 
@@ -35,8 +46,8 @@
 ## 任务进度
 
 - [x] T1 `repoKey` 大小写归一 + 账本键迁移 【最先】 ✅ `993b12d`(含 F2 的复制品折叠)
-- [ ] T2 抽 `readStoreAt(root)`  ← 下一个
-- [ ] T3 导出 `resolveHostWithReason()`
+- [x] T2 抽 `readStoreAt(root)` ✅ `74f4714`
+- [x] T3 导出 `resolveHostWithReason()` ✅ `74f4714`
 - [ ] T4 `adoptSlot.ts` 核心
 - [ ] T5 目标宿主未 setup 时拒绝
 - [ ] T6 CLI 接线
