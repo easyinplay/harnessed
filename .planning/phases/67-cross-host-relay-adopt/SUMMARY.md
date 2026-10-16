@@ -1,6 +1,6 @@
 # Phase 67 SUMMARY — 跨宿主接力 `checkpoint adopt`
 
-**状态**:T1-T12 全部完成(2026-10-15 立项 -> 2026-10-16 收口),**未发版**(等维护者确认)
+**状态**:T1-T12 全部完成(2026-10-15 立项 -> 2026-10-16 收口),随 npm **4.49.0** 发布(tag `v4.49.0`)
 vitest 3446 通过 / 0 失败 / 5 skipped / 1 todo · tsc 0 · biome 0 · 十道 `check-*.mjs` 全 PASS · bin 漂移闸门 PASS · CI 末尾 commit `840906a` success
 
 ## 交付
