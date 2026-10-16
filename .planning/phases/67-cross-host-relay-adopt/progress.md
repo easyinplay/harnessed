@@ -5,7 +5,7 @@
 ## 状态
 
 - **立项**: 2026-10-15
-- **当前**: T1-T6 + T10 已交付并 push。**命令已可用并经独立冒烟**。T7、T8、T11 已交付。剩 T12(复核是否已由 T4 覆盖)/ T9
+- **当前**: T1-T6 + T10 已交付并 push。**命令已可用并经独立冒烟**。T1-T12 全部完成,收口见 SUMMARY.md
 - **基线**: 立项时 HEAD `afe9e7b`,vitest 3296/0,npm latest 4.48.0
 - **现在**: HEAD `541be4b`,vitest **3415**/0(+119),10 闸门全 PASS,bin 漂移闸门提交后演练 PASS
 
@@ -66,10 +66,10 @@
       ⚠️ 开工前要先裁一个有数据丢失风险的问题:修剪只碰归档键,还是也碰真实 `::<sid>` 槽位
       (后者需按状态与年龄定规则:永不删 `active`,只删足够老的 `complete`)
 - [x] T8 `resume` / `checkpoint` 描述宿主中立措辞 ✅(TDD 跳过:纯文案,既有 resume 测试 26 改断言)
-- [ ] T9 测试 27 路径 + R1/R2/R3
+- [x] T9 测试 27 路径 + R1/R2/R3 ✅ 随 T2-T7 交付,对账见 SUMMARY
 - [x] T10 改写 ADR-0043 ✅ `cbd4f0e`
 - [x] T11 10 份 README 命令表 ✅
-- [ ] T12 `retro_meta` 取 max
+- [x] T12 `retro_meta` 取 max ✅ 随 T4(`adoptSlot.test.ts` D15 组)
 
 ## TDD 判据
 

@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: (none — v16.0 Codex Host Parity CLOSED 2026-09-30, npm 4.46.0)
 status: no-active-milestone
-last_updated: "2026-09-30T00:00:00.000Z"
-last_activity: 2026-09-30
+last_updated: "2026-10-16T00:00:00.000Z"
+last_activity: 2026-10-16
 progress:
   total_phases: 0
   completed_phases: 0
@@ -54,10 +54,7 @@ progress:
   另清掉一条过期 P1(Slice 2 实际早已发布)。
   期间 vitest 默认 5s 预算被认定为错(同形红四次)→ 全局 `testTimeout`/`hookTimeout` 30s。
   测试 3254 → 3280;eval 13 → 14 条场景。
-- **Phase 67 跨宿主接力 `checkpoint adopt`(2026-10-15 立项,进行中)**:ADR-0043 原提案的「共享中立状态根」
-  经 `/plan-eng-review` 否决,改为**只读跨根拷贝**;原第 3 条「裸键回退加宿主闸门」被认定**有害**(它会打断
-  它要启用的接力)。12 个任务,T1(`repoKey` win32 大小写归一 + 账本键迁移,既存缺陷)必须最先。
-  详:`phases/67-cross-host-relay-adopt/task_plan.md` · 决策:`docs/adr/0043-*.md`(Accepted 2026-10-15)。
+- **Phase 67 跨宿主接力 `checkpoint adopt` 完成(2026-10-16,未发版)**:共享根否决,改只读跨根拷贝;T1 顺带修 win32 `repoKey` 大小写分裂;T7 补账本槽位修剪。12 任务全交付,vitest 3446/0,CI 绿。真机双宿主接力未验。详:`phases/67-cross-host-relay-adopt/SUMMARY.md` · `docs/adr/0043-*.md`。
 - **Next(等用户信号)**:E1 签名重估(花钱决策)· eval harness v5+ 立项。全清单:`TODOS.md`。
 - README 体系已对账(root 审计 + 9 镜像 + INSTALL-WITH-AI,commit `bc06897`)。
 
