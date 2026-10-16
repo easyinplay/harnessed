@@ -491,6 +491,7 @@ planning-with-files /plan (cross-cutting 도구) → .planning/<phase-id>/에 �
 | `harnessed gates <master>` | 특정 master stage에서 어떤 sub-workflow가 fire하는지 평가 (JSON: fire/skip/parallelism). slash command가 native spawn을 오케스트레이션하는 데 사용 |
 | `harnessed prompt <sub>` | 특정 sub-workflow의 spawn-ready prompt (role + checklist + disciplines + completion/clarification 프로토콜) 출력 |
 | `harnessed checkpoint <action> <sub>` | sub-workflow의 start/complete/fail을 `~/.claude/harnessed/checkpoints/`에 기록 |
+| `harnessed checkpoint adopt [--from <host>]` | 호스트 간 릴레이: 다른 호스트의 활성 Workflow 슬롯을 읽기 전용으로 복사(원본 불변); `--from <host>`로 원본 호스트 지정 |
 | `harnessed` (인자 없음) | 인자 없는 현재 위치: 활성 Workflow 대시보드 + `NEXT: auto\|manual\|done` + 실행 힌트. `--json` 기계 판독. 활성 Workflow 없음 → 온보딩 힌트 (comet `/comet` 유사, 읽기 전용) |
 | `harnessed next` | 결정론적 다음 단계 contract. Workflow 내부: `NEXT: auto\|manual\|done`. Workflow의 서브가 모두 해소되면 다음 **cross-unit**(`.planning/` 디스크 상태에서 파생한 다음 phase/task)으로 fall through하며 exit-code contract (`0` 진행 · `2` 완료 · `10` 차단) |
 | `harnessed advance` | Forward continuation — 마일스톤 전반의 다음 작업 단위(다음 phase/task)와 그 실행 명령을 출력. 출력 전용(다음 `/auto`는 메인 session이 실행); 완료되지 않은 이전 Phase를 건너뛰는 것을 거부 (`--force`로 덮어쓰기); `--json`은 `while harnessed advance --json; do :; done` 루프를 구동 |

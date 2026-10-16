@@ -491,6 +491,7 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `harnessed gates <master>` | ประเมินว่า sub-workflow ใดจะ fire สำหรับ master stage หนึ่ง (JSON: fire/skip/parallelism) ใช้โดย slash command เพื่อ orchestrate การ spawn แบบ native |
 | `harnessed prompt <sub>` | แสดง prompt ที่พร้อม spawn (role + checklist + disciplines + โปรโตคอล completion/clarification) สำหรับ sub-workflow หนึ่ง |
 | `harnessed checkpoint <action> <sub>` | บันทึก start/complete/fail ของ sub-workflow ไปที่ `~/.claude/harnessed/checkpoints/` |
+| `harnessed checkpoint adopt [--from <host>]` | Cross-host relay: คัดลอก slot ของ active workflow จาก host อื่นแบบ read-only (ต้นทางไม่ถูกแก้); ใช้ `--from <host>` ระบุ host ต้นทาง |
 | `harnessed` (no args) | You-are-here แบบ zero-arg: dashboard ของ active-workflow + `NEXT: auto\|manual\|done` + run hint; `--json` แบบ machine-readable; ไม่มี active workflow → onboarding hint (comet `/comet` analog, read-only) |
 | `harnessed next` | สัญญา (contract) ของขั้นถัดไปแบบ deterministic ภายใน workflow: `NEXT: auto\|manual\|done` เมื่อ subs ของ workflow resolve ครบ จะหล่นไปยัง **cross-unit** ถัดไป (phase/task ถัดไปที่ derive จาก disk state ของ `.planning/`) พร้อม exit-code contract (`0` advance · `2` done · `10` blocked) |
 | `harnessed advance` | Forward continuation — พิมพ์ work unit ถัดไป (phase/task ถัดไป) ข้าม milestone และคำสั่งสำหรับรันมัน Print-only (main session เป็นผู้รัน `/auto` ถัดไป); ปฏิเสธการก้าวข้าม phase ก่อนหน้าที่ยังไม่เสร็จ (`--force` override ได้); `--json` ขับลูป `while harnessed advance --json; do :; done` |

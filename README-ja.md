@@ -491,6 +491,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `harnessed gates <master>` | ある master stage でどの sub-workflow が fire するかを評価（JSON: fire/skip/parallelism）。slash コマンドが native spawn をオーケストレーションするために使用 |
 | `harnessed prompt <sub>` | ある sub-workflow の spawn-ready prompt（role + checklist + disciplines + completion/clarification プロトコル）を出力 |
 | `harnessed checkpoint <action> <sub>` | sub-workflow の start/complete/fail を `~/.claude/harnessed/checkpoints/` に記録 |
+| `harnessed checkpoint adopt [--from <host>]` | ホスト間リレー: 別ホストの active workflow スロットを読み取り専用でコピー（ソースは不変）；`--from <host>` で元ホストを指定 |
 | `harnessed`（引数なし） | Zero-arg you-are-here: active-workflow ダッシュボード + `NEXT: auto\|manual\|done` + run hint；`--json` 機械可読；active workflow なし → onboarding hint（comet `/comet` 相当、read-only） |
 | `harnessed next` | 決定論的な次ステップ契約。workflow 内: `NEXT: auto\|manual\|done`。workflow のサブがすべて解決すると、次の **cross-unit**（次の phase/task、`.planning/` ディスク状態から導出）へ落ち、exit-code 契約（`0` advance · `2` done · `10` blocked）を持つ |
 | `harnessed advance` | Forward continuation —— マイルストーンを横断する次の作業ユニット（次の phase/task）とそれを実行するコマンドを出力。Print-only（次の `/auto` はメイン session が実行）；未完了の早い phase を越えることを拒否（`--force` で上書き）；`--json` は `while harnessed advance --json; do :; done` ループを駆動 |

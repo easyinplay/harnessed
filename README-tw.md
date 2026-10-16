@@ -491,6 +491,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `harnessed gates <master>` | 評估某 master stage 下哪些 sub-workflow 會觸發（JSON: fire/skip/parallelism）。供 slash command 編排 native spawn |
 | `harnessed prompt <sub>` | 輸出某 sub-workflow 的 spawn-ready prompt（role + checklist + disciplines + completion/clarification 協議） |
 | `harnessed checkpoint <action> <sub>` | 記錄 sub-workflow 的 start/complete/fail 至 `~/.claude/harnessed/checkpoints/` |
+| `harnessed checkpoint adopt [--from <host>]` | 跨宿主接力：唯讀複製另一宿主的 active workflow 槽位（來源不動）；`--from <host>` 指定來源宿主 |
 | `harnessed`（無參數） | Zero-arg you-are-here：active-workflow 儀表板 + `NEXT: auto\|manual\|done` + run hint；`--json` 機器可讀；無 active workflow → onboarding hint（comet `/comet` 類比，read-only） |
 | `harnessed next` | 確定性的下一步契約。workflow 內：`NEXT: auto\|manual\|done`。當 workflow 的所有子項都已解決，它會落到下一 **cross-unit**（下一 phase/task，從 `.planning/` 磁碟狀態派生），帶 exit-code 契約（`0` advance · `2` done · `10` blocked） |
 | `harnessed advance` | Forward continuation —— 列印跨 milestone 的下一工作單元（下一 phase/task）及執行它的指令。Print-only（由主 session 執行下一個 `/auto`）；拒絕越過未完成的較早 phase（`--force` 覆蓋）；`--json` 驅動 `while harnessed advance --json; do :; done` 迴圈 |
