@@ -5,7 +5,7 @@
 ## 状态
 
 - **立项**: 2026-10-15
-- **当前**: T1-T6 + T10 已交付并 push。**命令已可用并经独立冒烟**。剩 T7(前置)/ T8 / T11 / T12
+- **当前**: T1-T6 + T10 已交付并 push。**命令已可用并经独立冒烟**。T7、T8 已交付。剩 T11 / T12
 - **基线**: 立项时 HEAD `afe9e7b`,vitest 3296/0,npm latest 4.48.0
 - **现在**: HEAD `541be4b`,vitest **3415**/0(+119),10 闸门全 PASS,bin 漂移闸门提交后演练 PASS
 
@@ -62,10 +62,10 @@
 - [x] T4 `adoptSlot.ts` 核心 ✅ `541be4b`
 - [x] T5 目标宿主未 setup 时拒绝 ✅ `541be4b`(判据 = `commandsDir` 里有 `harnessed-generated:` 标记的命令)
 - [x] T6 CLI 接线 + D16 `HOST_IDS` 导出 ✅ `541be4b`(三份手写宿主清单收敛成两份)
-- [ ] T7 `::displaced-*` / `::premigrate-*` 归档 + 修剪  ← **已升为前置**(见 `findings.md` F10)
+- [x] T7 账本槽位修剪 B+E ✅ `c18c04a`(CI success)。原前置项,见 `findings.md` F10
       ⚠️ 开工前要先裁一个有数据丢失风险的问题:修剪只碰归档键,还是也碰真实 `::<sid>` 槽位
       (后者需按状态与年龄定规则:永不删 `active`,只删足够老的 `complete`)
-- [ ] T8 `resume` 宿主措辞
+- [x] T8 `resume` / `checkpoint` 描述宿主中立措辞 ✅(TDD 跳过:纯文案,既有 resume 测试 26 改断言)
 - [ ] T9 测试 27 路径 + R1/R2/R3
 - [x] T10 改写 ADR-0043 ✅ `cbd4f0e`
 - [ ] T11 10 份 README 命令表

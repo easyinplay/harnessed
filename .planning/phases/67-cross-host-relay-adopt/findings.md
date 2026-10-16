@@ -154,3 +154,9 @@ ADR 与 task_plan 均已显式留更正痕迹,未静默改写。
 所以 `resume.ts:81,83` 里硬编码的 `in Claude Code:` 与把 CC `session_id` 当
 「SDK will redirect to original session」广告的措辞,闸门看不见。T8 修措辞,
 闸门盲区本身另记 TODO。
+
+## F13 — T7 / T8 副发现
+
+- `mutateStore` 总是写盘,T7 锁内重判后无可删时仍会无内容变化地重写一次。要避免需给 `state.ts` 加导出,而它被 14 个测试文件 factory mock,故不碰。
+- `messages/zh-Hans.json` 的其他 `gc.*` 文案本来就是英文,T7 只补了新增两条,未回补旧的。
+- T8 把 `resume.ts` 的 `in Claude Code:` 与 `SDK will redirect` 改成宿主中立。F7 的闸门盲区(`check-host-primitives` 扫不到 TS 运行时字符串)仍在,未修,仅挂账。

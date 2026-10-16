@@ -946,7 +946,7 @@ export function registerCheckpoint(program: Command): void {
     // enforced explicitly below so the refusal stays an exit-1 with a real message.
     .command('checkpoint <action> [sub]')
     .description(
-      'Record workflow progress: intent | start | complete | fail | reopen <sub-workflow>, or adopt (cross-host relay) (writes to ~/.claude/harnessed/checkpoints/)',
+      'Record workflow progress: intent | start | complete | fail | reopen <sub-workflow>, or adopt (cross-host relay) (writes under the active host state root)',
     )
     .option('--summary <text>', 'short summary stored as the checkpoint lastTask')
     .option('--plan <json>', 'gates plan JSON (start only) — seeds the sub-progress ledger')

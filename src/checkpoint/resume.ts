@@ -78,9 +78,9 @@ export async function runResume(): Promise<ResumeResult> {
       ? `⚠ checkpoint cwd '${validated.cwd}' ≠ current cwd '${cwd}' — SDK session resume may fail (§ 1.3); fresh-session fallback`
       : undefined
   const sidHint = validated.session_id
-    ? ` (session_id: ${validated.session_id} — SDK will redirect to original session)`
+    ? ` (recorded session_id: ${validated.session_id}, resumable only on the host that created it; other hosts reload context from the checkpoint)`
     : ' (fresh session — context reloaded from checkpoint)'
-  const resumeHint = `→ in Claude Code: /gsd-execute-phase ${validated.phase}${sidHint}`
+  const resumeHint = `→ next: /gsd-execute-phase ${validated.phase}${sidHint}`
 
   // v5.0 Spec 1 (F) — re-hash the live ledger's evidence refs; surface sha256
   // drift as a warning (not a block). Reads from the singleton ledger (sole SoT,

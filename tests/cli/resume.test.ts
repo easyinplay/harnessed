@@ -134,7 +134,7 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
     expect(cli.code).toBe(1)
   })
 
-  it('26. paused + valid checkpoint with session_id → ok + resumeHint mentions SDK redirect', async () => {
+  it('26. paused + valid checkpoint with session_id → ok + resumeHint is host-neutral', async () => {
     seedPausedWorkflow()
     seedCheckpoint()
     const r = await runResume()
@@ -143,7 +143,7 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
       expect(r.checkpoint.phase).toBe('3.1')
       expect(r.checkpoint.last_task).toBe('T4.5 tests in progress')
       expect(r.resumeHint).toMatch(/session_id: sess-resume-1/)
-      expect(r.resumeHint).toMatch(/redirect to original session/)
+      expect(r.resumeHint).toMatch(/resumable only on the host that created it/)
     }
     const cli = await runCli(['resume'])
     expect(cli.code).toBe(0)
