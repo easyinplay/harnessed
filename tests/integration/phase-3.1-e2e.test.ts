@@ -124,7 +124,7 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
     expect(r.checkpoint.phase).toBe('3.1-e2e')
     expect(r.resumeHint).toContain('sess-trap-1')
     expect(r.resumeHint).toContain('/gsd-execute-phase 3.1-e2e')
-    expect(r.resumeHint).toContain('SDK will redirect')
+    expect(r.resumeHint).toContain('resumable only on the host that created it')
   })
 
   it('3. SDK redirect — sdkSpawn invoked with options.resume === captured session_id', async () => {
