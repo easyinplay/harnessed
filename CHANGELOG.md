@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.49.0] - 2026-10-16
+
+### Added
+
+- **`harnessed checkpoint adopt [--from <host>]`:跨宿主接力(Phase 67,ADR-0043)。**
+  把另一宿主账本里本仓库的在途 workflow 槽位**只读复制**到当前宿主的状态根,
+  之后在目标宿主上 `checkpoint complete` 推进、新证据落目标根。源根**一个字节都不写**
+  (拒绝路径同样,测试逐条比对内容与 mtime)。原提案的「共享中立状态根」经评审否决
+  (它不在 `HARNESSED_ROOT_OVERRIDE` 沙箱覆盖内,且原第 3 条「裸键回退加宿主闸门」
+  会打断它要启用的接力),改为跨根拷贝。拒绝路径:源等于目标、目标宿主未 setup、
+  源账本损坏(与「不存在」区分)、零候选或多候选、目标槽位 `active`(`paused` 则归档到
+  `::displaced-<ts>`)。`retro_meta` 取最大值带走,`intents` 不带,证据指针原样保留指向源根。
+- **`harnessed gc` 修剪账本槽位。** 超过 30 天且已完成的 `::<sid>` 会话槽位与同样超龄的
+  `::displaced-*` / `::premigrate-*` 归档键会被清掉;`active`、`paused`、裸 `repoKey`、
+  当前会话槽位、无法判断年龄的槽位一律不删。此前全仓没有任何地方删槽位,
+  会话一多 adopt 的多候选拒绝就成了常态。`adopt` 同时忽略陈旧的已完成会话槽位。
+- **`harnessed update` 在受限网络下走系统代理**(Node 侧装 undici `EnvHttpProxyAgent`;
+  编译二进制由 bun 原生处理,不额外注入)。
+
+### Fixed
+
+- **win32 上 `repoKey` 大小写分裂。** Windows 不规范化 cwd 大小写,同一目录用不同大小写进入
+  会得到两个独立账本槽位,在途 workflow 静默消失。键现在在 win32 折叠为小写,
+  启动时一次性迁移既有键(撞键时保留较新、较旧的归档到 `::premigrate-<6hex>`)。
+  同批修正每轮 hook 用的无依赖 `repoKey` 复制品,否则 CLI 与 hook 的键会不相合。
+- `harnessed resume` 提示与 `checkpoint` 命令描述不再写死 Claude Code 专属措辞与路径;
+  `session_id` 注明仅在创建它的宿主上可 resume。
+
+### Changed
+
+- 内部:`readStoreAt(root)`、`resolveHostWithReason()`、`HOST_IDS` 导出;
+  setup 的 `KNOWN_PLATFORMS` 改为消费 `HOST_IDS`。10 份 README 命令表新增 adopt 行。
+
 ## [4.48.0] - 2026-10-08
 
 ### Added
