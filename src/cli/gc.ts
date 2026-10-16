@@ -19,6 +19,7 @@ import { readdir, readFile, rm, stat } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { Command } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
+import { pruneSlots } from '../checkpoint/pruneSlots.js'
 import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
 import { compareVersions } from './lib/version-check.js'
@@ -160,6 +161,27 @@ async function dirSizeKb(dir: string): Promise<number> {
   return Math.round(total / 1024)
 }
 
+/** Phase 67 T7 (F10) — prune dead `workflows.json` slots. Logic lives in
+ *  `src/checkpoint/pruneSlots.ts`; this only wires `--older-than` / `--dry-run` and
+ *  prints. Not gated on the compiled runtime (the ledger exists for npm installs
+ *  too) and sandboxable through `HARNESSED_ROOT_OVERRIDE`. Fail-soft: a held lock
+ *  or an unwritable ledger must not abort the snapshot gc that follows. */
+export async function gcLedger(olderMs: number, dryRun: boolean): Promise<void> {
+  try {
+    const r = await pruneSlots({ olderThanMs: olderMs, dryRun })
+    if (r.pruned.length === 0) return
+    console.log(
+      t(dryRun ? 'gc.ledger_will_prune' : 'gc.ledger_pruned', {
+        count: r.pruned.length,
+        kept: r.keptCount,
+      }),
+    )
+    for (const k of r.pruned) console.log(`  ${k}`)
+  } catch (e) {
+    console.error(`gc: ledger prune skipped: ${e instanceof Error ? e.message : String(e)}`)
+  }
+}
+
 export function registerGc(program: Command): void {
   program
     .command('gc')
@@ -180,6 +202,9 @@ export function registerGc(program: Command): void {
         process.exit(1)
         return
       }
+      // Phase 67 T7 (F10) — ledger pass FIRST: it is independent of backups, and the
+      // snapshot path below has early `return`s (no backup dir / nothing old).
+      await gcLedger(olderMs, dryRun)
       const keepLast = Number.parseInt(opts.keepLast ?? '0', 10)
       const root = getBackupRoot()
       let dirs: string[]

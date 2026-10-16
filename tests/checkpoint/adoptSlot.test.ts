@@ -451,6 +451,71 @@ describe('adoptSlot — success variants', () => {
   })
 })
 
+// ── T7 / F10 — stale session slots are not candidates ────────────────────────
+
+describe('adoptSlot — stale complete session slots are ignored as candidates (F10)', () => {
+  const stale = (phase: string, over: Partial<CurrentWorkflowV1Type> = {}) =>
+    envelope(phase, {
+      status: 'complete',
+      started_at: '2020-01-01T00:00:00.000Z',
+      updated_at: '2020-01-02T00:00:00.000Z',
+      ...over,
+    })
+  const fresh = (phase: string, over: Partial<CurrentWorkflowV1Type> = {}) =>
+    envelope(phase, { status: 'complete', updated_at: new Date().toISOString(), ...over })
+
+  it('a stale complete session slot beside a live one no longer makes the adopt ambiguous', async () => {
+    seedSource({
+      workflows: {
+        [`${key}::dead`]: stale('phase-old'),
+        [`${key}::live`]: fresh('phase-live'),
+      },
+    })
+    const r = await run('claude')
+    if (!r.ok) throw new Error(`expected success, got ${r.refusal.kind}`)
+    expect(r.sourceKey).toBe(`${key}::live`)
+    expect(r.phase).toBe('phase-live')
+  })
+
+  it('a fresh complete session slot is still a candidate (two fresh -> ambiguous)', async () => {
+    seedSource({
+      workflows: {
+        [`${key}::a`]: fresh('phase-a'),
+        [`${key}::b`]: fresh('phase-b'),
+      },
+    })
+    const r = await run('claude')
+    if (r.ok || r.refusal.kind !== 'ambiguous') throw new Error('expected ambiguous')
+  })
+
+  it('stale active and stale paused session slots are STILL candidates', async () => {
+    seedSource({
+      workflows: {
+        [`${key}::act`]: stale('phase-act', { status: 'active' }),
+        [`${key}::pau`]: stale('phase-pau', { status: 'paused' }),
+      },
+    })
+    const r = await run('claude')
+    if (r.ok || r.refusal.kind !== 'ambiguous') throw new Error('expected ambiguous')
+    expect(r.refusal.candidates.sort()).toEqual([`${key}::act`, `${key}::pau`].sort())
+  })
+
+  it('the only candidate being stale-complete empties the set -> no-candidate', async () => {
+    seedSource({ workflows: { [`${key}::dead`]: stale('phase-old') } })
+    const r = await run('claude')
+    if (r.ok || r.refusal.kind !== 'no-candidate') throw new Error('expected no-candidate')
+    // the evidence still lists every source key, stale ones included
+    expect(r.refusal.sourceKeys).toEqual([`${key}::dead`])
+  })
+
+  it('a stale complete BARE slot is still a candidate (only session slots are ignored)', async () => {
+    seedSource({ workflows: { [key]: stale('phase-bare') } })
+    const r = await run('claude')
+    if (!r.ok) throw new Error(`expected success, got ${r.refusal.kind}`)
+    expect(r.sourceKey).toBe(key)
+  })
+})
+
 // ── D15 sidecars ─────────────────────────────────────────────────────────────
 
 describe('adoptSlot — D15 sidecars (retro_meta carried as max, intents NOT carried)', () => {

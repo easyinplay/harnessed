@@ -77,6 +77,8 @@
   "gc.summary_will_delete": "would delete {{count}} snapshot(s), ~{{sizeKb}} KB total:",
   "gc.summary_deleting": "deleting {{count}} snapshot(s), ~{{sizeKb}} KB total:",
   "gc.dry_run_rerun_hint": "\n(dry-run — re-run without --dry-run to actually delete)",
+  "gc.ledger_will_prune": "将从账本清理 {{count}} 个过期 workflow 槽位(保留 {{kept}} 个):",
+  "gc.ledger_pruned": "已从账本清理 {{count}} 个过期 workflow 槽位(保留 {{kept}} 个):",
 
   "doctor.summary.fail": "\nsome checks failed (see fix hints above)",
   "doctor.summary.warn": "\nall checks ok (with warnings — see hints above)",

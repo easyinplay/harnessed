@@ -77,6 +77,8 @@
   "gc.summary_will_delete": "would delete {{count}} snapshot(s), ~{{sizeKb}} KB total:",
   "gc.summary_deleting": "deleting {{count}} snapshot(s), ~{{sizeKb}} KB total:",
   "gc.dry_run_rerun_hint": "\n(dry-run — re-run without --dry-run to actually delete)",
+  "gc.ledger_will_prune": "would prune {{count}} stale workflow slot(s) from the ledger (kept {{kept}}):",
+  "gc.ledger_pruned": "pruned {{count}} stale workflow slot(s) from the ledger (kept {{kept}}):",
 
   "doctor.summary.fail": "\nsome checks failed (see fix hints above)",
   "doctor.summary.warn": "\nall checks ok (with warnings — see hints above)",

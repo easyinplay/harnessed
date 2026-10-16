@@ -38,6 +38,7 @@ import {
   type PlatformDescriptor,
   resolveHostWithReason,
 } from '../platform/platform.js'
+import { DEFAULT_STALE_MS, isStaleSessionSlot } from './pruneSlots.js'
 import type { CurrentWorkflowV1Type } from './schema/currentWorkflow.v1.js'
 import { mutateStore } from './state.js'
 import {
@@ -55,7 +56,8 @@ type ResolvedHostId = PlatformDescriptor['id']
  *  ARCHIVE-ONLY, exactly like `::premigrate-*`: no read path recognises it and none
  *  may be wired to it (`activeKey()` cannot construct the suffix, so the hot reads
  *  are immune by construction — an injected displaced slot is precisely the
- *  cross-slot bleed of issue #10). Pruning is Phase 67 T7. */
+ *  cross-slot bleed of issue #10). Old ones are pruned by `harnessed gc` (T7,
+ *  `src/checkpoint/pruneSlots.ts`). */
 const DISPLACED = '::displaced-'
 
 /** The archive suffixes a candidate match must EXCLUDE (D9). Both are
@@ -200,14 +202,22 @@ async function destIsSetUp(commandsDir: string): Promise<boolean> {
  * (`normalizeRepoKey`), so both sides of this comparison are already canonical and
  * a fold here would be dead code.
  */
-function findCandidateKeys(sourceKeys: string[], key: string): string[] {
+function findCandidateKeys(
+  workflows: Record<string, CurrentWorkflowV1Type>,
+  key: string,
+  nowMs: number = Date.now(),
+): string[] {
   const prefix = `${key}::`
-  return sourceKeys.filter((k) => {
+  return Object.keys(workflows).filter((k) => {
     if (k === key) return true
     if (!k.startsWith(prefix)) return false
     const segment = k.slice(prefix.length)
     if (segment === '' || segment.includes('::')) return false
-    return !ARCHIVE_SEGMENT_PREFIXES.some((p) => segment.startsWith(p))
+    if (ARCHIVE_SEGMENT_PREFIXES.some((p) => segment.startsWith(p))) return false
+    // T7 / F10 — a `complete` session slot past the same threshold `harnessed gc`
+    // prunes at is dead history, not a relay target. Ignored, never deleted (this
+    // module is read-only on the source root). `active` / `paused` stay candidates.
+    return !isStaleSessionSlot(k, workflows[k] as CurrentWorkflowV1Type, nowMs, DEFAULT_STALE_MS)
   })
 }
 
@@ -339,7 +349,7 @@ export async function adoptSlot(options: AdoptSlotOptions = {}): Promise<AdoptOu
   // 6. D9 / D10 — exactly one candidate, or refuse with the evidence.
   const key = repoKey(cwd)
   const sourceKeys = Object.keys(source.workflows)
-  const candidates = findCandidateKeys(sourceKeys, key)
+  const candidates = findCandidateKeys(source.workflows, key)
   if (candidates.length === 0) {
     return refuse({ kind: 'no-candidate', from, repoKey: key, sourceKeys })
   }
