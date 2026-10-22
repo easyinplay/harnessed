@@ -56,13 +56,13 @@ export interface CapabilityEntry {
   /** v3.4.2: lookup directory under ~/.claude/skills/. */
   skill_dir?: string
   /**
-   * v16.0 Phase 65: per-host override of `impl` / `cmd`. Top-level values stay
+   * Per-host command and presence overrides. Top-level values stay
    * authoritative (Claude Code); a host replaces only the fields it declares.
-   * Read via {@link pickHostValues}, never directly.
+   * Commands use {@link pickHostValues}; presence uses {@link resolveCapabilityCmd}.
    */
   by_host?: {
-    claude?: { cmd?: string; impl?: string }
-    codex?: { cmd?: string; impl?: string }
+    claude?: CapabilityHostOverride
+    codex?: CapabilityHostOverride
   }
 }
 
@@ -145,6 +145,11 @@ export interface HostCapabilityValues {
   impl?: string
 }
 
+interface CapabilityHostOverride extends HostCapabilityValues {
+  install_type?: CapabilityEntry['install_type']
+  skill_dir?: string
+}
+
 /**
  * Structural shape {@link pickHostValues} needs — just the three fields it reads.
  * Kept separate from {@link CapabilityEntry} so `prompt.ts`, which parses
@@ -195,8 +200,8 @@ export function pickHostValues(
  * Missing `plugin_id` / `skill_dir` for the corresponding install_type emits
  * a schema-level warning (config bug — capability misdeclared).
  *
- * `host` (v16.0 Phase 65) selects which `by_host` override the returned cmd comes
- * from; it defaults to `'claude'` so every pre-65 call site is unchanged.
+ * `host` selects the command and presence metadata from `by_host`; omitted fields
+ * inherit the top-level contract. The default keeps Claude callers unchanged.
  */
 export function resolveCapabilityCmd(
   capability: CapabilityEntry,
@@ -204,7 +209,10 @@ export function resolveCapabilityCmd(
   installedUserSkills: Set<string>,
   host: 'claude' | 'codex' = 'claude',
 ): ResolvedCmd {
-  const { install_type, plugin_id, skill_dir } = capability
+  const override = capability.by_host?.[host]
+  const install_type = override?.install_type ?? capability.install_type
+  const skill_dir = override?.skill_dir ?? capability.skill_dir
+  const { plugin_id } = capability
   // `capability.cmd` is required on CapabilityEntry, so the fallback keeps this `string`.
   const cmd = pickHostValues(capability, host).cmd ?? capability.cmd
 
@@ -241,11 +249,7 @@ export function resolveCapabilityCmd(
       // codex host-map section (`workflows/host-primitives.yaml`): the step is
       // unavailable, do not substitute an equivalent, record the skip.
       //
-      // Measured before changing this: 4 capabilities reach here on codex
-      // (code-review, code-simplifier, ui-ux-pro-max, planning-with-files) plus caveman
-      // when its user-skill half also misses, and `renderAllSkills` dedupes them into
-      // one set — so it is at most 5 lines per setup, not the per-capability flood the
-      // backlog item assumed. That is why this fixes the text and adds no aggregation.
+      // Capabilities with a Codex user-skill override bypass this plugin-only path.
       missingHints.push(
         host === 'codex'
           ? `plugin '${plugin_id}' is distributed as a Claude Code plugin and this host has no plugin registry — unavailable here, no install can change that; treat steps that call it as skipped (record the skip) rather than substituting an equivalent`

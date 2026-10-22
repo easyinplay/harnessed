@@ -84,6 +84,12 @@ primitives:
       claude: "SendMessage"
       codex: "send_input"
 
+  # Planning plugin command on Claude, manifest-installed user-skill on Codex.
+  planning_command:
+    default:
+      claude: "/plan"
+      codex: "$planning-with-files"
+
   # The formation noun. codex v1 has no branded team concept — per F4 the
   # formation IS repeated spawn_agent, so the codex cell is descriptive prose
   # rather than a tool name. If a call site reads badly after substitution,
@@ -344,5 +350,6 @@ primitives:
 host_map_notes:
   codex:
     - "`request_user_input` — TODO(未验证): the tool exists upstream (`codex-rs/core/src/tools/handlers/request_user_input{,_spec}.rs`), but whether it is enabled on this install was not measured. The `default_mode_request_user_input` entry in `codex features list` is a mode flag, not the tool's own switch. If a clarification round-trip is unavailable, do not guess — stop and report `STATUS: NEEDS_CLARIFICATION` with the questions."
-    - "Claude Code plugin components — some workflow prose names an upstream component distributed as a Claude Code plugin (e.g. `planning-with-files`, invoked as `/plan`). That is the component's actual distribution channel, not a Claude Code-specific spelling of something codex also has, so the wording is left as-is. On this host those components are NOT installed: harnessed reports it at capability-resolution time as a per-capability warning. Treat such a step as unavailable rather than substituting an equivalent, and record the skip."
+    - "Codex user-skill mappings — load `planning-with-files` from `~/.agents/skills/planning-with-files/SKILL.md` and invoke `$planning-with-files`; load `ui-ux-pro-max` from `~/.agents/skills/ui-ux-pro-max/SKILL.md` and invoke `$ui-ux-pro-max`. Keep the same planning outputs: `task_plan.md`, `progress.md`, and `findings.md`. On this host, interpret legacy planning-with-files `/plan` references and Claude Code plugin requirements for these two components through their Codex user-skill mappings; never invoke harnessed's `/plan` master for planning-with-files, which would recurse."
+    - "Unsupported Claude Code plugin components — `code-review` and `code-simplifier` have no declared Codex install mapping and remain unavailable on this host. Record the skip rather than substituting an equivalent."
     - "codex agent lifecycle — session scope, automatic reclamation on session exit, and whether an agent may spawn another are ALL unmeasured. Nothing in this artifact asserts them. Close every agent you spawn with `close_agent` explicitly rather than relying on any cleanup you have not observed."

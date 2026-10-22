@@ -72,6 +72,12 @@ primitives:
       claude: "SendMessage"
       codex: "send_input"
 
+  # Planning plugin command on Claude, manifest-installed user-skill on Codex.
+  planning_command:
+    default:
+      claude: "/plan"
+      codex: "$planning-with-files"
+
   # 编队名词。codex v1 无品牌化编队概念 —— 按 F4,编队方式就是多次 spawn_agent,
   # 所以 codex cell 是描述性短语而非工具名。若某句替换后读起来别扭,那句应改判
   # 为 C 类整段变体,而不是硬套本 token。
@@ -315,5 +321,6 @@ primitives:
 host_map_notes:
   codex:
     - "`request_user_input` —— TODO(未验证):该工具在上游确实存在(`codex-rs/core/src/tools/handlers/request_user_input{,_spec}.rs`),但**本机是否默认启用未实测**。`codex features list` 里的 `default_mode_request_user_input` 是某个模式的 flag,不是该工具自身的开关。若澄清 round-trip 不可用,**不要猜** —— 停下并输出 `STATUS: NEEDS_CLARIFICATION` + 问题列表。"
-    - "Claude Code plugin 类组件 —— 本产物部分正文会提到以 Claude Code plugin 形式分发的上游组件(如 `planning-with-files`,调用形式 `/plan`)。那是该组件**真实的分发渠道名称**,不是「codex 上也有、只是叫法不同」的东西,所以措辞按原样保留。**在本宿主上这些组件并未安装**:harnessed 会在能力解析阶段按 capability 逐条告警。遇到这类步骤请视为**不可用**并记录 skip,不要自行找等价物替代。"
+    - "Codex user-skill 映射:从 `~/.agents/skills/planning-with-files/SKILL.md` 读取 `planning-with-files`,调用 `$planning-with-files`;从 `~/.agents/skills/ui-ux-pro-max/SKILL.md` 读取 `ui-ux-pro-max`,调用 `$ui-ux-pro-max`。规划产物保持相同:`task_plan.md`、`progress.md`、`findings.md`。本宿主上,旧正文中 planning-with-files `/plan` 的引用和这两项组件的 Claude Code plugin 要求均按其 Codex user-skill 映射解释;绝不能为 planning-with-files 调用 harnessed 的 `/plan` master,否则会递归。"
+    - "仍 unsupported 的 Claude Code plugin 组件:`code-review` 和 `code-simplifier` 没有声明 Codex 安装映射,在本宿主上仍不可用。请记录 skip,不要自行找等价物替代。"
     - "codex agent 生命周期 —— 是否 session-scoped、session 退出是否自动回收、能否嵌套 spawn,**三者全部未实测**。本产物不对它们作任何断言。请对每个 spawn 出来的 agent **显式**调 `close_agent`,不要依赖任何你没有亲自观察过的清理行为。"

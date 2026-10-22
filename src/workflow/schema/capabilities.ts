@@ -37,7 +37,15 @@ const AliasShape = Type.Object(
   { additionalProperties: false },
 )
 
-// v16.0 Phase 65 — per-host override of `impl` / `cmd`. The TOP-LEVEL values stay
+const InstallTypeShape = Type.Union([
+  Type.Literal('plugin'),
+  Type.Literal('user-skill'),
+  Type.Array(Type.Union([Type.Literal('plugin'), Type.Literal('user-skill')]), {
+    minItems: 1,
+  }),
+])
+
+// Per-host command and presence overrides. The TOP-LEVEL values stay
 // authoritative for Claude Code (so every claude-side rendering is byte-identical to
 // pre-65), and a host listed here replaces only the fields it declares.
 //
@@ -50,6 +58,8 @@ const ByHostOverrideShape = Type.Object(
   {
     impl: Type.Optional(Type.String()),
     cmd: Type.Optional(Type.String()),
+    install_type: Type.Optional(InstallTypeShape),
+    skill_dir: Type.Optional(Type.String()),
   },
   { additionalProperties: false },
 )
@@ -102,21 +112,12 @@ const CapabilityEntryBase = Type.Object(
     requires: Type.Optional(RequiresShape),
     plugin_path: Type.Optional(Type.String()),
     plugin_namespace: Type.Optional(Type.String()), // v3.4.1 legacy — unused by resolver
-    install_type: Type.Optional(
-      Type.Union([
-        Type.Literal('plugin'),
-        Type.Literal('user-skill'),
-        Type.Array(Type.Union([Type.Literal('plugin'), Type.Literal('user-skill')]), {
-          minItems: 1,
-        }),
-      ]),
-    ),
+    install_type: Type.Optional(InstallTypeShape),
     plugin_id: Type.Optional(Type.String()),
     skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),
     aliases: Type.Optional(Type.Array(AliasShape)),
-    // v16.0 Phase 65 — optional per-host override; absent on all but the Bucket 5
-    // agent-platform entries. See ByHostShape above for why hosts are named.
+    // Optional per-host command/presence override; hosts are named by ByHostShape.
     by_host: Type.Optional(ByHostShape),
     // sdk_ref removed 4.43.0: a code-navigation note stored as data, never read or
     // checked — completion-gate's still pointed at ralphLoop.ts after ADR 0039.

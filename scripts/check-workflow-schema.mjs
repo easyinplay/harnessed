@@ -57,12 +57,24 @@ const AliasShape = Type.Object(
   { impl: Type.String(), cmd: Type.String() },
   { additionalProperties: false },
 )
-// v16.0 Phase 65 — per-host override (mirror src/workflow/schema/capabilities.ts SSOT).
+const InstallTypeShape = Type.Union([
+  Type.Literal('plugin'),
+  Type.Literal('user-skill'),
+  Type.Array(Type.Union([Type.Literal('plugin'), Type.Literal('user-skill')]), {
+    minItems: 1,
+  }),
+])
+// Per-host command/presence override (mirror src/workflow/schema/capabilities.ts SSOT).
 // Top-level impl/cmd stay authoritative for Claude Code; a host replaces only what it
 // declares. Host keys are named (not a free-form record) so a typo is a schema error
 // rather than a silently-never-matching entry.
 const ByHostOverrideShape = Type.Object(
-  { impl: Type.Optional(Type.String()), cmd: Type.Optional(Type.String()) },
+  {
+    impl: Type.Optional(Type.String()),
+    cmd: Type.Optional(Type.String()),
+    install_type: Type.Optional(InstallTypeShape),
+    skill_dir: Type.Optional(Type.String()),
+  },
   { additionalProperties: false },
 )
 const ByHostShape = Type.Object(
@@ -92,15 +104,7 @@ const CapabilityEntryBase = Type.Object(
     // SSOT (was missing here; their absence made additionalProperties:false reject
     // every entry carrying skill_dir/install_type/plugin_id since v5.1).
     plugin_namespace: Type.Optional(Type.String()),
-    install_type: Type.Optional(
-      Type.Union([
-        Type.Literal('plugin'),
-        Type.Literal('user-skill'),
-        Type.Array(Type.Union([Type.Literal('plugin'), Type.Literal('user-skill')]), {
-          minItems: 1,
-        }),
-      ]),
-    ),
+    install_type: Type.Optional(InstallTypeShape),
     plugin_id: Type.Optional(Type.String()),
     skill_dir: Type.Optional(Type.String()),
     outputs: Type.Optional(Type.Array(Type.String())),

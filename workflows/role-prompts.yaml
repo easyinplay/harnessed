@@ -263,7 +263,7 @@ prompts:
       - "Dependencies are explicit (task N requires task M output)"
       - "Tasks are ≤1 day each; split if larger"
       - "Identify the verification step (test / lint / typecheck) for each task"
-      - "Persist as `task_plan.md` + `progress.md` under `.planning/phases/<NN>-<slug>/` via planning-with-files `/plan`"
+      - "Persist as `task_plan.md` + `progress.md` under `.planning/phases/<NN>-<slug>/` via planning-with-files `{{ host.planning_command }}`"
       - "Final pass: a fresh agent should be able to execute from these files alone"
     severity: "ready-to-execute / needs-revision / blocked"
     description: "Break a phase into ordered tasks with file paths + acceptance criteria; persist via planning-with-files."
@@ -313,7 +313,7 @@ prompts:
       ≤200 LOC per file. Conditionally invoke `/improve-codebase-architecture`
       for periodic health audits, `/diagnosing-bugs` for unknown bug root
       causes. Update `progress.md` via
-      planning-with-files `/plan` when done.
+      planning-with-files `{{ host.planning_command }}` when done.
     checklist:
       - "Before any edit: read the file you intend to change end-to-end"
       # v4.17.0 — CodeGraph light wiring (opt-in; sister capabilities.yaml `codegraph` entry)
@@ -323,7 +323,7 @@ prompts:
       - "Trust internal code: don't re-validate already-checked inputs at every layer"
       - "No speculative abstractions (no 'just in case' generics)"
       - "Edit with surgical precision: full path, exact selectors, no broad rewrites"
-      - "Update progress.md before declaring done (planning-with-files `/plan`)"
+      - "Update progress.md before declaring done (planning-with-files `{{ host.planning_command }}`)"
       # improve-codebase-architecture methodology paraphrased from mattpocock/skills (MIT, b8be62f)
       # Source: skills/engineering/improve-codebase-architecture/SKILL.md
       - "improve-arch: hunt deepening opportunities — modules whose interface is nearly as complex as their implementation are shallow; deep modules hide a lot of behaviour behind a small interface"

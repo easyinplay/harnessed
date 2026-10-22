@@ -246,7 +246,7 @@ prompts:
       - "依赖显式化(任务 N 需要任务 M 的产出)"
       - "每个任务 ≤1 天;更大就拆"
       - "为每个任务指明验证步骤(test / lint / typecheck)"
-      - "经 planning-with-files `/plan` 持久化为 `task_plan.md` + `progress.md`,目录为 `.planning/phases/<NN>-<slug>/`"
+      - "经 planning-with-files `{{ host.planning_command }}` 持久化为 `task_plan.md` + `progress.md`,目录为 `.planning/phases/<NN>-<slug>/`"
       - "最后过一遍:一个全新 agent 仅凭这些文件就能执行"
     severity: "ready-to-execute / needs-revision / blocked"
     description: "把 phase 拆成带文件路径 + 验收标准的有序任务;经 planning-with-files 持久化。"
@@ -292,7 +292,7 @@ prompts:
       在 karpathy 4 心法(Think Before Coding / Simplicity First /
       Surgical Changes / Goal-Driven Execution)约束下实现单个子任务,
       每个文件 ≤200 LOC。视情况调用 `/improve-codebase-architecture`
-      (周期性健康审计)、`/diagnosing-bugs`(未知 bug 根因)。完成时经 planning-with-files `/plan`
+      (周期性健康审计)、`/diagnosing-bugs`(未知 bug 根因)。完成时经 planning-with-files `{{ host.planning_command }}`
       更新 `progress.md`。
     checklist:
       - "任何编辑前:把你打算改的文件从头到尾读一遍"
@@ -303,7 +303,7 @@ prompts:
       - "信任内部代码:别在每一层重复校验已检查过的输入"
       - "不做投机性抽象(不写『以防万一』的泛型)"
       - "外科手术式编辑:完整路径、精确选择器,不做大范围重写"
-      - "宣告完成前更新 progress.md(planning-with-files `/plan`)"
+      - "宣告完成前更新 progress.md(planning-with-files `{{ host.planning_command }}`)"
       # improve-codebase-architecture methodology paraphrased from mattpocock/skills (MIT, b8be62f)
       # Source: skills/engineering/improve-codebase-architecture/SKILL.md
       - "improve-arch:猎取加深机会 —— 接口几乎和实现一样复杂的模块是浅模块;深模块在小接口背后藏了大量行为"

@@ -200,6 +200,12 @@ capabilities:
     install_type: plugin
     plugin_id: ui-ux-pro-max
     cmd: /ui-ux-pro-max
+    by_host:
+      codex:
+        impl: user-skill
+        cmd: $ui-ux-pro-max
+        install_type: user-skill
+        skill_dir: ui-ux-pro-max
     since: v2.0
     category: tool-slash-cmd
     description: UI/UX 默认主方案 数据驱动
@@ -515,6 +521,12 @@ capabilities:
     install_type: plugin
     plugin_id: planning-with-files
     cmd: /plan
+    by_host:
+      codex:
+        impl: user-skill
+        cmd: $planning-with-files
+        install_type: user-skill
+        skill_dir: planning-with-files
     since: v2.0
     category: tool-plugin
     description: Manus-style persistent markdown planning (Claude Code plugin slash cmd)
