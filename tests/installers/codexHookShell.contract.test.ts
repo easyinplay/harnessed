@@ -69,6 +69,7 @@ beforeAll(() => {
     JSON.stringify({ mode: 'npm', assetsRoot: assets, harnessedVersion: '0.0.0-test' }),
   )
   writeFileSync(join(assets, 'bin', 'harnessed-inject-state.mjs'), ECHO(0))
+  writeFileSync(join(assets, 'bin', 'harnessed-check-docs.mjs'), ECHO(4))
   writeFileSync(join(assets, 'dist', 'cli.mjs'), ECHO(3))
   // binary mode: a `harnessed` on PATH (cmd/pwsh resolve harnessed.cmd; sh the script)
   writeFileSync(join(pathDir, 'harnessed.mjs'), ECHO(0))
@@ -120,13 +121,13 @@ describe.each(SHELLS)('codex hook command through $name', (shell) => {
   // harnessed hook may signal through an exit code — check-docs answers with the
   // JSON permissionDecision form under --platform codex (tests/cli/check-docs-codex).
   it.skipIf(!ok)(
-    'npm check-docs: shim → CLI entry; exit code passthrough (pwsh collapses to 1)',
+    'npm check-docs: shim → dedicated bin entry; exit code passthrough (pwsh collapses to 1)',
     () => {
       const cmd = expand(codexHookCommand({ id: 'check-docs', args: ['--hook'] }, 'npm'))
       const r = exec(shell, cmd, { PLUGIN_DATA: dataDir })
-      // pwsh 7.x measured 1; accept 3 too should a future pwsh start passing it through.
-      if (shell.name === 'pwsh') expect([1, 3]).toContain(r.status)
-      else expect(r.status).toBe(3)
+      // pwsh 7.x measured 1; accept 4 too should a future pwsh start passing it through.
+      if (shell.name === 'pwsh') expect([1, 4]).toContain(r.status)
+      else expect(r.status).toBe(4)
       expect(JSON.parse(r.stdout)).toEqual({
         argv: ['check-docs', '--hook', '--platform', 'codex'],
         stdin: PAYLOAD,

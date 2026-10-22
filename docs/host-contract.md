@@ -399,6 +399,8 @@ harnessed 在 `~/.codex` 下的**全部写入**就是:本地 marketplace 目录�
 |---|---|---|---|
 | codex hook 协议与 CC 同形(stdin 字段一致;UserPromptSubmit 的纯文本 / `additionalContext` 都进上下文;PreToolUse 的 shell 工具名是 `Bash`) | 2026-09-22 | **0.154** | ADR 0041 § Context;fixture 取自 0.154 真实 payload(脱敏) |
 | hook 进程无任何 `CODEX_*` env;codex 会话的 shell 带 `CODEX_SESSION_ID`,其值 == hook stdin 的 `session_id` | 2026-09-22 | **0.154** | ADR 0040 § Context |
+| 0.163 复验:hook payload 字段集未变;`SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` 均可由本地插件承载并完成真实 turn | 2026-10-22 | **0.163.0** | `tests/fixtures/codex-hooks/0.163/`(真实 payload 脱敏)+ payload 表征测试 7/7 + `pnpm test:codex-live` 29/29 |
+| `check-docs` Codex hot path 走专用 `bin/harnessed-check-docs.mjs`(约 20.8 KB),不再加载完整 `dist/cli.mjs`(约 728 KB);真实 turn PreToolUse 287ms,host-shell p95 pwsh 290ms / cmd 48ms | 2026-10-22 | **0.163.0**(Windows / pwsh) | `pnpm test:codex-live` 31/31;`tests/cli/checkDocsHookMain.test.ts`;`tests/installers/codexHookShell.contract.test.ts` |
 | pwsh 压退出码 → codex 上 exit 2 的 PreToolUse 阻断到不了宿主;裁决改走 stdout JSON(`permissionDecision: deny` / `systemMessage`,exit 0) | 2026-09-23 | 0.155.1 | Phase 64 SUMMARY「实施中推翻的前提」1;ADR 0041 § Decision 4 |
 | hook 延迟:SessionStart 594 ms / UserPromptSubmit 565 ms / PreToolUse 765 ms(p95 < 1s 预算);`cmd /c` 直跑同一命令 p50 约 100 ms,差额主要是 pwsh 启动 | 2026-09-23 | **0.155.1**(Windows / pwsh) | `pnpm test:codex-live` 29/29;Phase 64 SUMMARY |
 | codex 契约细节:`${PLUGIN_DATA}` = `<CODEX_HOME>/plugins/data/<plugin>-<marketplace>`(不预建);`plugin remove` 不删 data、留空 cache;`marketplace remove` 不幂等;信任删除 = 引号 keyPath + `value:null`;未知 app-server 方法返回 `-32600`;app-server 启动会在 `CODEX_HOME/.tmp` 拉后台 git fetch | 2026-09-23 | 0.155.1 | Phase 64 SUMMARY 第 4 条 |

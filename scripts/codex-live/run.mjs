@@ -9,7 +9,7 @@
 //   hash-stable literals; each generated command is timed through the host shell
 //   (Windows: pwsh as codex runs it, plus explicit `cmd /c`); uninstall must leave
 //   no plugin and no hook listed. The temp home is deleted afterwards.
-// The check-docs hook runs dist/cli.mjs through the shim: run `pnpm build` first.
+// The check-docs hook runs the dedicated bin through the shim: run `pnpm build` first.
 //
 // Stage B — the user's real ~/.codex (skip with --isolated-only): a
 //   `harnessed-probe-live@harnessed-probe-live-mkt` plugin carrying the SAME
@@ -243,52 +243,72 @@ async function stageA(lib) {
   }
 }
 
-// ── shell timing: the generated literal through the host shells ─────────────
+// ── shell timing: the generated literals through the host shells ─────────────
 
 function shellTiming(lib) {
   const dir = mkdtempSync(join(tmpdir(), 'harnessed-codex-live-shim-'))
   try {
     writeFileSync(join(dir, 'hook.cjs'), lib.CODEX_HOOK_SHIM)
     writeFileSync(join(dir, 'install.json'), JSON.stringify({ mode: 'npm', assetsRoot: ROOT }))
-    const payload = readFileSync(
-      join(ROOT, 'tests', 'fixtures', 'codex-hooks', '0.154', 'UserPromptSubmit.json'),
-      'utf8',
-    )
-    const cmd = lib
-      .codexHookCommand({ id: 'inject-state', args: [] }, 'npm')
-      .replaceAll('${PLUGIN_ROOT}', dir)
+    const fixtureDir = join(ROOT, 'tests', 'fixtures', 'codex-hooks')
+    const newestFixture = readdirSync(fixtureDir).sort().at(-1)
+    const readPayload = (name) => readFileSync(join(fixtureDir, newestFixture, name), 'utf8')
+    const cases = [
+      {
+        id: 'inject-state',
+        command: lib.codexHookCommand({ id: 'inject-state', args: [] }, 'npm'),
+        payload: readPayload('UserPromptSubmit.json'),
+      },
+      {
+        id: 'check-docs',
+        command: lib.codexHookCommand({ id: 'check-docs', args: ['--hook'] }, 'npm'),
+        payload: readPayload('PreToolUse.Bash.json'),
+      },
+    ]
     const shells = isWin
       ? [
-          ['pwsh (codex default here)', 'pwsh', ['-NoProfile', '-Command', cmd], false],
-          ['cmd /c', 'cmd.exe', ['/d', '/s', '/c', `"${cmd}"`], true],
+          ['pwsh (codex default here)', 'pwsh', ['-NoProfile', '-Command'], false],
+          ['cmd /c', 'cmd.exe', ['/d', '/s', '/c'], true],
         ]
-      : [['sh -c', 'sh', ['-c', cmd], false]]
-    for (const [label, bin, args, verbatim] of shells) {
-      const ms = []
-      for (let i = 0; i < 10; i++) {
-        const t = performance.now()
-        const r = spawnSync(bin, args, {
-          input: payload,
-          env: { ...process.env, PLUGIN_DATA: dir, HARNESSED_ROOT_OVERRIDE: join(dir, 'state') },
-          windowsVerbatimArguments: verbatim,
-          encoding: 'utf8',
-        })
-        ms.push(performance.now() - t)
-        if (r.status !== 0) {
-          check(`shell ${label} exit 0`, false, r.stderr.slice(0, 200))
-          break
+      : [['sh -c', 'sh', ['-c'], false]]
+    const run = (bin, prefix, cmd, c, verbatim) => {
+      const commandArg = bin === 'cmd.exe' ? `"${cmd}"` : cmd
+      const args = [...prefix, commandArg]
+      return spawnSync(bin, args, {
+        input: c.payload,
+        env: { ...process.env, PLUGIN_DATA: dir, HARNESSED_ROOT_OVERRIDE: join(dir, 'state') },
+        windowsVerbatimArguments: verbatim,
+        encoding: 'utf8',
+      })
+    }
+    for (const [label, bin, prefix, verbatim] of shells) {
+      for (const c of cases) {
+        const cmd = c.command.replaceAll('${PLUGIN_ROOT}', dir)
+        const warm = run(bin, prefix, cmd, c, verbatim)
+        if (warm.status !== 0) {
+          check(`shell ${label} ${c.id} warmup exit 0`, false, warm.stderr.slice(0, 200))
+          continue
         }
+        const ms = []
+        for (let i = 0; i < 10; i++) {
+          const t = performance.now()
+          const r = run(bin, prefix, cmd, c, verbatim)
+          ms.push(performance.now() - t)
+          if (r.status !== 0) {
+            check(`shell ${label} ${c.id} exit 0`, false, r.stderr.slice(0, 200))
+            break
+          }
+        }
+        log(
+          `timing ${label} ${c.id}: p50=${Math.round(ms.sort((a, b) => a - b)[4])}ms p95=${Math.round(p95(ms))}ms (n=${ms.length})`,
+        )
+        check(`shell ${label} ${c.id} p95 < 1000ms`, p95(ms) < 1000)
       }
-      log(
-        `timing ${label}: p50=${Math.round(ms.sort((a, b) => a - b)[4])}ms p95=${Math.round(p95(ms))}ms (n=${ms.length})`,
-      )
-      check(`shell ${label} p95 < 1000ms`, p95(ms) < 1000)
     }
   } finally {
     cleanup(dir)
   }
 }
-
 // ── stage B: real ~/.codex, namespaced probe plugin, one real turn ──────────
 
 async function stageB(lib) {
@@ -358,7 +378,7 @@ async function stageB(lib) {
       JSON.stringify({
         schemaVersion: 1,
         workflows: {
-          [repo]: {
+          [isWin ? repo.toLowerCase() : repo]: {
             schemaVersion: 1,
             phase: 'task',
             status: 'active',

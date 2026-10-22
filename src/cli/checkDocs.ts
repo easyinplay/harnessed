@@ -236,6 +236,62 @@ async function readStdin(): Promise<string> {
   }
 }
 
+export interface CheckDocsCommandOptions {
+  json?: boolean
+  cwd?: string
+  maxStateLines?: string
+  hook?: boolean
+  platform?: string
+}
+
+/** Shared command body for the public CLI and the dedicated hook binary. */
+export async function runCheckDocsCommand(opts: CheckDocsCommandOptions): Promise<void> {
+  // Phase 60 — master kill switch, HOOK MODE ONLY. Ablation must make the
+  // gate behave as if it were never installed, i.e. allow the commit; it
+  // must NOT silence a deliberate `harnessed check-docs` run, which is an
+  // explicit CLI invocation the operator asked for.
+  if (opts.hook && isAblated()) process.exit(0)
+  if (opts.hook && !shouldGateForHookPayload(await readStdin())) process.exit(0)
+
+  const parsed = Number(opts.maxStateLines)
+  const violations = collectDocViolations({
+    cwd: opts.cwd ?? process.cwd(),
+    ...(Number.isFinite(parsed) && parsed > 0 ? { maxStateLines: parsed } : {}),
+    allowLongState: !!process.env.HARNESSED_ALLOW_LONG_STATE,
+  })
+  const code = exitCodeFor(violations)
+  const summary = code === 2 ? 'halt' : code === 1 ? 'warn' : 'pass'
+
+  if (opts.hook && opts.platform === 'codex') {
+    const lines = violations.map((v) => {
+      const where = v.line === undefined ? v.file : `${v.file}:${v.line}`
+      return `${v.tier === 'halt' ? '✗' : '⚠'} ${where} [${v.rule}] ${v.message}`
+    })
+    const verdict = codexHookOutput(code, lines)
+    if (verdict !== null) process.stdout.write(`${verdict}\n`)
+    process.exit(0)
+  }
+  if (opts.json) {
+    console.log(JSON.stringify({ violations, summary, exit_code: code }, null, 2))
+  } else if (violations.length === 0) {
+    console.log(t('check_docs.clean'))
+  } else {
+    for (const v of violations) {
+      const where = v.line === undefined ? v.file : `${v.file}:${v.line}`
+      console.error(`${v.tier === 'halt' ? '✗' : '⚠'} ${where} [${v.rule}] ${v.message}`)
+    }
+    console.error(
+      code === 2
+        ? t('check_docs.summary_halt', {
+            halt: violations.filter((v) => v.tier === 'halt').length,
+            warn: violations.filter((v) => v.tier === 'warn').length,
+          })
+        : t('check_docs.summary_warn', { warn: violations.length }),
+    )
+  }
+  process.exit(code)
+}
+
 export function registerCheckDocs(program: Command): void {
   program
     .command('check-docs')
@@ -247,58 +303,5 @@ export function registerCheckDocs(program: Command): void {
     .option('--max-state-lines <n>', `STATE.md digest ceiling (default ${DEFAULT_MAX_STATE_LINES})`)
     .option('--hook', 'PreToolUse mode: read the tool payload on stdin, gate only git commit')
     .option('--platform <id>', '(hook) host harness; codex → verdict as JSON on stdout, exit 0')
-    .action(
-      async (opts: {
-        json?: boolean
-        cwd?: string
-        maxStateLines?: string
-        hook?: boolean
-        platform?: string
-      }) => {
-        // Phase 60 — master kill switch, HOOK MODE ONLY. Ablation must make the
-        // gate behave as if it were never installed, i.e. allow the commit; it
-        // must NOT silence a deliberate `harnessed check-docs` run, which is an
-        // explicit CLI invocation the operator asked for.
-        if (opts.hook && isAblated()) process.exit(0)
-        if (opts.hook && !shouldGateForHookPayload(await readStdin())) process.exit(0)
-
-        const parsed = Number(opts.maxStateLines)
-        const violations = collectDocViolations({
-          cwd: opts.cwd ?? process.cwd(),
-          ...(Number.isFinite(parsed) && parsed > 0 ? { maxStateLines: parsed } : {}),
-          allowLongState: !!process.env.HARNESSED_ALLOW_LONG_STATE,
-        })
-        const code = exitCodeFor(violations)
-        const summary = code === 2 ? 'halt' : code === 1 ? 'warn' : 'pass'
-
-        if (opts.hook && opts.platform === 'codex') {
-          const lines = violations.map((v) => {
-            const where = v.line === undefined ? v.file : `${v.file}:${v.line}`
-            return `${v.tier === 'halt' ? '✗' : '⚠'} ${where} [${v.rule}] ${v.message}`
-          })
-          const verdict = codexHookOutput(code, lines)
-          if (verdict !== null) process.stdout.write(`${verdict}\n`)
-          process.exit(0)
-        }
-        if (opts.json) {
-          console.log(JSON.stringify({ violations, summary, exit_code: code }, null, 2))
-        } else if (violations.length === 0) {
-          console.log(t('check_docs.clean'))
-        } else {
-          for (const v of violations) {
-            const where = v.line === undefined ? v.file : `${v.file}:${v.line}`
-            console.error(`${v.tier === 'halt' ? '✗' : '⚠'} ${where} [${v.rule}] ${v.message}`)
-          }
-          console.error(
-            code === 2
-              ? t('check_docs.summary_halt', {
-                  halt: violations.filter((v) => v.tier === 'halt').length,
-                  warn: violations.filter((v) => v.tier === 'warn').length,
-                })
-              : t('check_docs.summary_warn', { warn: violations.length }),
-          )
-        }
-        process.exit(code)
-      },
-    )
+    .action((opts: CheckDocsCommandOptions) => runCheckDocsCommand(opts))
 }

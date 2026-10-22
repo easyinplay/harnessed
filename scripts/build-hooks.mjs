@@ -1,10 +1,12 @@
 #!/usr/bin/env node
-// architecture review #5 — generate the self-contained Claude Code hook binaries
+// architecture review #5 — generate the self-contained hook binaries
 // from their TypeScript single-source entries. Each bin/*.mjs is a BUILD ARTIFACT
 // (committed like schemas/), NOT hand-maintained: the mode-B detector / per-turn
 // injection logic lives in src/checkpoint/*.ts and is esbuild-bundled here so the
 // runtime .mjs can never silently drift from the TS it mirrors (the old hazard —
 // a 443-line hand-written plain-JS copy welded only by a parity test).
+// The Codex check-docs entry is the same discipline: one shared command body,
+// a tiny argv adapter, and no full-CLI import on the PreToolUse hot path.
 //
 // Dep-free by construction: the entries import only node: builtins + dep-light
 // sibling modules (no typebox / workflowStore), so the bundle pulls nothing heavy
@@ -19,6 +21,7 @@ import { build } from 'esbuild'
 const HOOKS = [
   { entry: 'src/checkpoint/stopHookMain.ts', out: 'bin/harnessed-stop-hook.mjs' },
   { entry: 'src/checkpoint/injectStateMain.ts', out: 'bin/harnessed-inject-state.mjs' },
+  { entry: 'src/cli/checkDocsHookMain.ts', out: 'bin/harnessed-check-docs.mjs' },
 ]
 
 for (const { entry, out } of HOOKS) {
