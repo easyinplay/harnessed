@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Codex MCP and skill presence probes no longer accept another host's installation as proof; skill-pack indicators require readable `SKILL.md` files rather than empty directories.
+- GSD Codex installation checks accept both current shared and legacy Codex skill layouts.
+- `setup` returns exit 1 when base components failed, after completing workflow installation and recovery work.
+- Codex update/rollback messages and missing-search-key hints name the active host and its usable configuration surface.
+- Codex planning-with-files and UI/UX capabilities use their declared user-skill installation paths and native skill invocation; planning instructions no longer recurse through the harnessed plan master. Claude renderings stay unchanged.
+
+### Added
+
+- `scripts/codex-live/installed-acceptance.mjs` verifies an installed binary against fresh Codex turns, checkpoint promise guards, and document-hook decisions in scratch repositories.
+
 ## [4.49.1] - 2026-10-23
 
 ### Fixed

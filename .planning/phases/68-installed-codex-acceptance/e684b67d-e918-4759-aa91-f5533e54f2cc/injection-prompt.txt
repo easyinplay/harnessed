@@ -1,0 +1,6 @@
+Read-only installed-hook acceptance observation, not an execution task.
+Do not call any tools, spawn agents, inspect files, or read workflow state files.
+Use only the UserPromptSubmit hook context already attached to this turn.
+From its <workflow-state> block, return exactly the value on the next: line.
+Output only that value. No quotes, markdown, explanation, or completion promise.
+If no workflow-state is attached, output NO_WORKFLOW_CONTEXT. Do not guess.

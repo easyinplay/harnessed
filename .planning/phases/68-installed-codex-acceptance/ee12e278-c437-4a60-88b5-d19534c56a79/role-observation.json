@@ -1,0 +1,64 @@
+{
+  "requestedAgentType": "harnessed-task-code",
+  "itemTypes": [
+    "error",
+    "error",
+    "collab_tool_call",
+    "collab_tool_call",
+    "collab_tool_call",
+    "agent_message"
+  ],
+  "callFields": [
+    [
+      "id",
+      "type",
+      "tool",
+      "sender_thread_id",
+      "receiver_thread_ids",
+      "prompt",
+      "agents_states",
+      "status"
+    ],
+    [
+      "id",
+      "type",
+      "tool",
+      "sender_thread_id",
+      "receiver_thread_ids",
+      "prompt",
+      "agents_states",
+      "status"
+    ],
+    [
+      "id",
+      "type",
+      "tool",
+      "sender_thread_id",
+      "receiver_thread_ids",
+      "prompt",
+      "agents_states",
+      "status"
+    ]
+  ],
+  "calls": [
+    {
+      "tool": "spawn_agent",
+      "status": "completed",
+      "receivers": 1
+    },
+    {
+      "tool": "wait",
+      "status": "completed",
+      "receivers": 1
+    },
+    {
+      "tool": "close_agent",
+      "status": "completed",
+      "receivers": 1
+    }
+  ],
+  "roleNameInEvents": false,
+  "roleTypeEvidence": "Requested exact type; Codex JSON does not expose agent_type",
+  "finalMatched": true,
+  "sandbox": "inherited default"
+}

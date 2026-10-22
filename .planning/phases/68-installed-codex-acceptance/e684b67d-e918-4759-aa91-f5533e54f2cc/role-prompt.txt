@@ -1,0 +1,6 @@
+Installed role reachability acceptance only. Do not implement code or change files.
+Use spawn_agent exactly once with agent_type="harnessed-task-code".
+The child message must say: Read-only observation only. Do not call tools, edit files, or run commands. Reply exactly ROLE_READ_ONLY_REACHED.
+Wait for the child, close it, then reply exactly ROLE_READ_ONLY_REACHED.
+Do not fall back to another agent_type, shell command, or uninstalled role.
+Do not use any shell, file, browser, MCP, or network tools in the parent turn.

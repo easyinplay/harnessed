@@ -1,0 +1,39 @@
+{
+  "status": "pass_with_evidence_limitations",
+  "execution": "offline review only; no additional model turns",
+  "originalScriptExit": 1,
+  "reviewedAt": "2026-10-22T18:14:27.948Z",
+  "sourceReportSha256": "b96216c404357e118a1c8ae0e3bf88c1e8fb54adc61ff63da29cf94b9d4ca42b",
+  "injection": {
+    "matched": true,
+    "actualReply": "sentinel-2e890344-de77-495b-ba96-861c2f6304f7",
+    "modelToolCalls": 0,
+    "diagnosticItems": 2
+  },
+  "role": {
+    "requestedAgentType": "harnessed-task-code",
+    "calls": [
+      {
+        "tool": "spawn_agent",
+        "status": "completed",
+        "receivers": 1
+      },
+      {
+        "tool": "wait",
+        "status": "completed",
+        "receivers": 1
+      },
+      {
+        "tool": "close_agent",
+        "status": "completed",
+        "receivers": 1
+      }
+    ],
+    "diagnosticItems": 2
+  },
+  "limitations": [
+    "Original run failed due to diagnostic-item/tool-item misclassification; original report preserved.",
+    "Codex JSON omits agent_type: exact role is requested by prompt, not independently exposed in spawn events.",
+    "Diagnostic messages were not persisted to avoid leaking local MCP/auth details."
+  ]
+}

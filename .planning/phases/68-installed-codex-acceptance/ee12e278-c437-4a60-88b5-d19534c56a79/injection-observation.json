@@ -1,0 +1,7 @@
+{
+  "expected": "sentinel-be66c127-b4b7-4c43-b3dc-92c77adf26f3",
+  "matched": true,
+  "replySha256": "e18bcf26218369aa6344d27b31cb6b4aad100233e37964f5e1d8881cd37f388d",
+  "toolTypes": [],
+  "diagnosticItems": 2
+}

@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: (none — v16.0 Codex Host Parity CLOSED 2026-09-30, npm 4.46.0)
 status: no-active-milestone
-last_updated: "2026-10-22T17:34:00.000Z"
+last_updated: "2026-10-22T19:07:00.000Z"
 last_activity: 2026-10-23
 progress:
   total_phases: 0
@@ -28,6 +28,8 @@ progress:
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
 
 ## Current Position
+
+- **Phase 68 实机 Codex 验收(2026-10-23)**:本机 standalone 已更新至 4.49.1,核心实机 5/5 与真实 commit hook 阻断通过;安装假阳性/退出码/宿主映射修复在源码,尚未发版。依赖仍有 gstack Windows 安装、Exa 401、Tavily headless 审批限制。详 `phases/68-installed-codex-acceptance/VERIFICATION.md`。
 
 - **v14.0 Hardening & Distribution retroactively CLOSED 2026-07-12**(lightweight + fuller archive pass):4.13→4.28 弧线定名收账,61 个 phase 目录归位 `milestones/<vN>-phases/`,active `phases/` 清零。详:`milestones/v14.0-MILESTONE-AUDIT.md` + RETROSPECTIVE v14.0 节。
 - **v15.0 Upstream Re-sync SHIPPED 2026-07-13(npm 4.29.0)**:pwf v3.4.1 + mattpocock 改名 + 三顺手 pin;详 MILESTONES v15.0 行 + `phases/45-upstream-resync-v15/`。

@@ -1,0 +1,6 @@
+{
+  "expected": "sentinel-2e890344-de77-495b-ba96-861c2f6304f7",
+  "matched": true,
+  "replySha256": "7231809e85f2fedf9fc6b3356b5409e9834cfa382906698613be601d8cf8b7e2",
+  "toolTypes": ["error", "error"]
+}

@@ -1,0 +1,218 @@
+{
+  "id": "e684b67d-e918-4759-aa91-f5533e54f2cc",
+  "installed": "C:/Users/easyi/AppData/Local/harnessed/bin/harnessed.exe",
+  "scratch": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-installed-acceptance-V4QTtc",
+  "evidence": "D:\\GitCode\\harnessed\\.planning\\phases\\68-installed-codex-acceptance\\e684b67d-e918-4759-aa91-f5533e54f2cc",
+  "commands": [
+    {
+      "label": "harnessed-version",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 266,
+      "stdoutSha256": "bdc4c7a8d848962dc207d4ce1c5f04319f7dcd512cf4736cdd044c92abdb7b28",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "codex-version",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 48,
+      "stdoutSha256": "15c9db57c80035537f94bea647d07608a1fab5148f5482c0a0d1d7422b7fb69e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "git-init-workflow",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 46,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "checkpoint-start",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 277,
+      "stdoutSha256": "bf9d7c312e005e40e7257527a36dedcde6e575d8e0220791f67de4e488747212",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "next-pending",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 154,
+      "stdoutSha256": "f9ffdc139bdadcc6b9186f357905f76850f72e458ec61173671bf82d9a5ffe09",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "checkpoint-NOT_COMPLETE",
+      "code": 1,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 166,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "0062db231526fbaa0a62f4fc1903c4eb62e069b95c4c465793aa821b3ac9df09"
+    },
+    {
+      "label": "codex-hook-turn",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 9366,
+      "stdoutSha256": "fa2085a3a1b0750ca5df7566efabf47a4a50e961949282e2a3c7419ea199a7af",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "checkpoint-COMPLETE",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 266,
+      "stdoutSha256": "74610aff4dc45597616a525294ad777941604e4b161c7a4dd84591d8beeb4719",
+      "stderrSha256": "45a04ce22e640d6e67423341e77e8e53abaa5c31f1a05fb12fe1d1375578e347"
+    },
+    {
+      "label": "next-complete",
+      "code": 2,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 167,
+      "stdoutSha256": "48eb3f9a92775f359b866aa1255a8aead162dd46e8d66c88bb8924f4eceb40e3",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "git-init-doc-guard",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 51,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "check-docs-deny",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 179,
+      "stdoutSha256": "c21f2d8f6331f71d2db900d242cf97912824a06829ca304f3f6cbdbb1b6ef700",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "check-docs-noncommit",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 177,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "git-init-role",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 45,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "codex-role-turn",
+      "code": 0,
+      "signal": null,
+      "timedOut": false,
+      "spawnError": null,
+      "durationMs": 21952,
+      "stdoutSha256": "eeea8fc99755608de83ba7cbdc7bad1931a57407b57861b607d00d445cc4a64b",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "checks": [
+    {
+      "name": "checkpoint-negative-promise",
+      "status": "pass",
+      "details": {
+        "exitCode": 1,
+        "status": "active",
+        "sub": {
+          "sub": "sentinel-2e890344-de77-495b-ba96-861c2f6304f7",
+          "status": "pending",
+          "gate_fired": true,
+          "mode": "serial",
+          "order": 1
+        }
+      }
+    },
+    {
+      "name": "fresh-UserPromptSubmit-zero-tools-injection",
+      "status": "fail",
+      "kind": "experiment_error",
+      "message": "Model used tools: injection proof invalid"
+    },
+    {
+      "name": "checkpoint-positive-promise-and-close",
+      "status": "pass",
+      "details": {
+        "status": "complete",
+        "sub": {
+          "sub": "sentinel-2e890344-de77-495b-ba96-861c2f6304f7",
+          "status": "done",
+          "gate_fired": true,
+          "mode": "serial",
+          "order": 1,
+          "evidence_status": "none_declared",
+          "completion_claim": "complete"
+        },
+        "nextExit": 2,
+        "artifactEvidence": "none_declared, not verified"
+      }
+    },
+    {
+      "name": "installed-doc-guard-json-deny",
+      "status": "pass",
+      "details": {
+        "exitCode": 0,
+        "decision": "deny",
+        "rule": "state-digest-line-limit",
+        "stateLines": 101,
+        "noncommitControl": "pass",
+        "commitExecuted": false
+      }
+    },
+    {
+      "name": "installed-harnessed-task-code-spawn",
+      "status": "fail",
+      "kind": "experiment_error",
+      "message": "Role probe used prohibited tools"
+    }
+  ],
+  "versions": {
+    "harnessed": "4.49.1",
+    "codex": "codex-cli 0.163.0"
+  },
+  "workflow": {
+    "cwd": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-installed-acceptance-V4QTtc\\workflow",
+    "master": "acceptance-e684b67d-e918-4759-aa91-f5533e54f2cc",
+    "sub": "sentinel-2e890344-de77-495b-ba96-861c2f6304f7"
+  },
+  "status": "fail",
+  "finishedAt": "2026-10-22T18:11:21.203Z"
+}
