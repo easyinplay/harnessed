@@ -25,7 +25,7 @@
 // existing stderr "already exists" path respects user MCP config unconditionally.
 
 import { existsSync } from 'node:fs'
-import { access, readFile } from 'node:fs/promises'
+import { access, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { getAssetsRoot } from '../../platform/assetsRoot.js'
@@ -83,8 +83,8 @@ function extractGitCloneTarget(cmd: string): string | null {
  *  ~/.claude/skills/ and ~/.agents/skills/ (skills CLI global path). */
 /** v3.9.18 — Indicator sub-skill map for skill packs that install multiple
  *  individual skill dirs instead of one folder matching the manifest name.
- *  When ANY listed indicator exists under `~/.claude/skills/`, consider the
- *  pack installed. Sister `ctx7→context7` plugin-name aliasing pattern.
+ *  When ANY listed indicator has a readable SKILL.md file, consider the pack
+ *  installed. Sister `ctx7→context7` plugin-name aliasing pattern.
  *  - `gsd` installs 70+ `gsd-<name>/` skill dirs (no single `gsd/` folder)
  *  - `mattpocock-skills` installs individual skill dirs (`tdd/`, ...)
  *    (extractSkillName from `npx ... skills add mattpocock/skills` yields
@@ -99,6 +99,13 @@ const INSTALLED_INDICATORS: Record<string, string[]> = {
   'mattpocock-skills': ['tdd', 'diagnosing-bugs', 'grill-with-docs', 'diagnose'],
 }
 
+function skillProbeDirs(): string[] {
+  const platform = detectPlatform()
+  return platform.id === 'codex'
+    ? [getSkillsDir(), join(platform.homeDir, 'skills')]
+    : harnessSkillsDirs()
+}
+
 /** v4.13.0 — indicator sub-skill probe across ALL harness skills dirs.
  *  Pre-4.13.0 only getSkillsDir() (~/.claude/skills) was checked; the skills
  *  CLI's --global installs land in ~/.agents/skills, so already-installed packs
@@ -106,10 +113,12 @@ const INSTALLED_INDICATORS: Record<string, string[]> = {
 async function indicatorPresent(name: string): Promise<boolean> {
   const indicators = INSTALLED_INDICATORS[name]
   if (!indicators) return false
-  for (const skillsDir of harnessSkillsDirs()) {
+  for (const skillsDir of skillProbeDirs()) {
     for (const ind of indicators) {
       try {
-        await access(join(skillsDir, ind))
+        const skillMd = join(skillsDir, ind, 'SKILL.md')
+        if (!(await stat(skillMd)).isFile()) continue
+        await readFile(skillMd, 'utf8')
         return true
       } catch {
         /* try next indicator */
@@ -127,7 +136,7 @@ async function indicatorPresent(name: string): Promise<boolean> {
 export async function detectSkillPresence(cmd: string, name: string): Promise<boolean> {
   if (await indicatorPresent(name)) return true
   const skillName = extractSkillName(cmd, name)
-  for (const skillsDir of harnessSkillsDirs()) {
+  for (const skillsDir of skillProbeDirs()) {
     try {
       await access(join(skillsDir, skillName, 'SKILL.md'))
       return true
@@ -173,11 +182,8 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
 
   if (method === 'npx-skill-installer') {
     const skillName = extractSkillName(cmd, name)
-    // v3.9.10: skills CLI --copy --global installs to ~/.agents/skills/ by
-    // default (with symlinks to CC). Check both paths.
-    // Phase C / D6: the probe set is now descriptor-derived (harnessSkillsDirs =
-    // ~/.claude/skills + ~/.agents/skills) — same paths, single source of truth.
-    for (const skillsDir of harnessSkillsDirs()) {
+    // Claude keeps cross-host compatibility; Codex probes only shared + legacy roots.
+    for (const skillsDir of skillProbeDirs()) {
       const skillMd = join(skillsDir, skillName, 'SKILL.md')
       try {
         await access(skillMd)
@@ -248,11 +254,23 @@ export async function isAlreadyInstalled(
   // `--dry-run`. Real install behavior unchanged (probe runs when apply:true).
   if (ctx.opts.dryRun) return false
 
+  const installCfg = ctx.manifest.spec.install
+  // Codex MCP registration is authoritative; legacy fallbacks can match Claude installs.
+  if (
+    (installCfg.method === 'mcp-stdio-add' || installCfg.method === 'mcp-http-add') &&
+    detectPlatform().id === 'codex'
+  ) {
+    try {
+      return await isMcpServerRegistered(ctx.manifest.metadata.name)
+    } catch {
+      return false
+    }
+  }
+
   // v4.20.0 hotfix — cc-hook-add is AUTHORITATIVE (no shell-grep fallback):
   // the legacy `grep -q <marker> settings.json` matches broken flat/relative
   // entries too, which made setup/optional-offer skip exactly the installs that
   // need the self-heal migration (dogfood: perturn-inject malformed entry).
-  const installCfg = ctx.manifest.spec.install
   if (installCfg.method === 'cc-hook-add') {
     // v16.0 Phase 64 (R6) — codex: the hook is the local plugin
     // harnessed-<name>@harnessed-local; `codex plugin list` is the authority.
@@ -288,6 +306,16 @@ export async function isAlreadyInstalled(
   // Fallback: shell spawn (legacy idempotent_check manifest field).
   const idempotentCmd = ctx.manifest.spec.install.idempotent_check
   if (typeof idempotentCmd !== 'string' || idempotentCmd.length === 0) {
+    return false
+  }
+
+  // A Claude-bearing fallback cannot prove that a missing Codex skill is installed.
+  if (
+    (installCfg.method === 'npx-skill-installer' ||
+      Object.hasOwn(INSTALLED_INDICATORS, ctx.manifest.metadata.name)) &&
+    detectPlatform().id === 'codex' &&
+    /\bclaude\b/i.test(idempotentCmd)
+  ) {
     return false
   }
 

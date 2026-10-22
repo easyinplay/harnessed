@@ -1,11 +1,13 @@
 // v4.14.0 T3 REVISED — spec.harness_overrides.codex: schema 接受 + runInstall
 // dispatch 前按平台合并 + 无 override 的 claude-only method 兜底 harness-mismatch。
 
-import { readFileSync } from 'node:fs'
-import { resolve as resolvePath } from 'node:path'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve as resolvePath } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveForHarness } from '../../src/installers/index.js'
+import { evalTestChain } from '../../src/installers/lib/nativeTest.js'
 import type { Manifest } from '../../src/installers/lib/types.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
@@ -246,6 +248,77 @@ describe('codex dispatch — 4.32.21 plugin-form real manifests (T6/T7/T9)', () 
 
 // v4.14.0 — 全量真实 manifest schema 校验 sweep(harness_overrides 落地的 5 个
 // manifest + 其余全部;此前只有点名校验,schema 演进缺全量回归网)。
+describe('GSD Codex skill-file checks', () => {
+  let home: string
+
+  beforeEach(() => {
+    home = mkdtempSync(join(tmpdir(), 'harnessed-gsd-manifest-'))
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    rmSync(home, { recursive: true, force: true })
+  })
+
+  function manifest(): Manifest {
+    const path = resolvePath(process.cwd(), 'manifests/skill-packs/gsd.yaml')
+    const result = validateManifestFile(readFileSync(path, 'utf8'), path)
+    expect(result.ok).toBe(true)
+    if (!result.ok) throw new Error('GSD manifest validation failed')
+    return result.manifest as unknown as Manifest
+  }
+
+  function checks(): string[] {
+    const result = resolveForHarness(manifest())
+    expect(result.gate).toBeNull()
+    return [result.manifest.spec.install.idempotent_check ?? '', result.manifest.spec.verify.cmd]
+  }
+
+  it.each(['.agents', '.codex'])('accepts a real SKILL.md under %s/skills', (root) => {
+    const dir = join(home, root, 'skills', 'gsd-plan-phase')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'SKILL.md'), '# GSD plan phase\n')
+
+    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(true)
+  })
+
+  it.each(['.agents', '.codex'])('rejects empty indicator directories under %s/skills', (root) => {
+    mkdirSync(join(home, root, 'skills', 'gsd-plan-phase'), { recursive: true })
+
+    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(false)
+  })
+
+  it.each(['.agents', '.codex'])('rejects directories named SKILL.md under %s/skills', (root) => {
+    mkdirSync(join(home, root, 'skills', 'gsd-plan-phase', 'SKILL.md'), { recursive: true })
+
+    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(false)
+  })
+
+  it('rejects an absent skill on both paths', () => {
+    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(false)
+  })
+
+  it('preserves the Claude install, version pin and verify declarations', () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    const original = manifest()
+    const result = resolveForHarness(original)
+
+    expect(result.manifest).toBe(original)
+    expect(result.manifest.spec.install).toEqual({
+      method: 'npm-cli',
+      cmd: 'npx --yes @opengsd/gsd-core@latest --claude --global',
+      npm_version: '^1.7.0',
+      idempotent_check: 'test -d ~/.claude/skills/gsd-plan-phase',
+      installs_skills: [],
+    })
+    expect(result.manifest.spec.verify).toEqual({
+      cmd: 'test -f ~/.claude/skills/gsd-plan-phase/SKILL.md',
+      timeout_ms: 10_000,
+    })
+  })
+})
+
 describe('all real manifests validate (v4.14.0 sweep)', () => {
   it('every manifests/{tools,skill-packs}/*.yaml passes validateManifestFile', async () => {
     const { readFile, readdir } = await import('node:fs/promises')

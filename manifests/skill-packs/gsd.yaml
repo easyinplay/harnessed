@@ -32,17 +32,17 @@ spec:
     cmd: "npx --yes @opengsd/gsd-core@latest --uninstall --claude"
     cleanup_paths:
       - ~/.claude/skills/gsd-plan-phase
-  # v4.14.0 — codex install path (findings 附录实证: open-gsd 官方
-  # docs/how-to/install-on-your-runtime.md — `--codex` 装到 ~/.codex/skills/gsd-*/)。
+  # GSD 1.18.0 on Codex installs skills under ~/.agents/skills; retain the legacy
+  # ~/.codex/skills path for existing installs. Probe files, not empty directories.
   harness_overrides:
     codex:
       install:
         method: npm-cli
         cmd: "npx --yes @opengsd/gsd-core@latest --codex --global"
         npm_version: ^1.7.0
-        idempotent_check: "test -d ~/.codex/skills/gsd-plan-phase"
+        idempotent_check: "test -f ~/.agents/skills/gsd-plan-phase/SKILL.md || test -f ~/.codex/skills/gsd-plan-phase/SKILL.md"
       verify:
-        cmd: "test -f ~/.codex/skills/gsd-plan-phase/SKILL.md"
+        cmd: "test -f ~/.agents/skills/gsd-plan-phase/SKILL.md || test -f ~/.codex/skills/gsd-plan-phase/SKILL.md"
         timeout_ms: 10000
   upstream_health:
     stability: stable
