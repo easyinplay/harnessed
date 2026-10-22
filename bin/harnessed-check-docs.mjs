@@ -43,8 +43,12 @@ var en_default = {
   'setup.mcp_hint_codex': 'Run codex mcp list to verify MCP server connections.',
   'setup.search_key_hint.header':
     '\n\u26A0 Search MCP API keys missing \u2014 the server(s) below are installed but will fail at query time until the key is configured:',
+  'setup.search_key_hint.header_codex':
+    '\n\u26A0 Search MCP API keys not visible to this check: Codex checks only process env. Verify the tools first; if authentication fails, set the key in your shell environment.',
   'setup.search_key_hint.line':
     '  {{server}}: set {{envVar}} \u2014 add it to the ~/.claude/settings.json "env" block (e.g. {"env": {"{{envVar}}": "<your-key>"}}) or export {{envVar}} in your shell',
+  'setup.search_key_hint.line_codex':
+    '  {{server}}: set {{envVar}} in your shell environment (export {{envVar}}="<your-key>")',
   'setup.optional_offer.ecc_note':
     "  ecc (bonus tier): installing it unlocks finer-grained scenario orchestration (per-language review/build expert routing etc.); the trade-off is ~20k+ tokens/session of static listing overhead \u2014 inherent to ECC's own scale (281 skills / 94 commands / 67 agents), not introduced by harnessed.",
   'setup.bundled_summary':

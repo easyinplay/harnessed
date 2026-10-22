@@ -40,6 +40,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllEnvs()
   if (origHome === undefined) delete process.env.HOME
   else process.env.HOME = origHome
   if (origUserprofile === undefined) delete process.env.USERPROFILE
@@ -112,6 +114,13 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
+    expect(r.message).toBe(
+      'installed: tavily-mcp, exa-mcp; API key missing: tavily-mcp → TAVILY_API_KEY, exa-mcp → EXA_API_KEY',
+    )
+    expect(r.fix).toBe(
+      'set TAVILY_API_KEY / EXA_API_KEY in the ~/.claude/settings.json "env" block (e.g. {"env": {"TAVILY_API_KEY": "<your-key>"}}) ' +
+        'or export it in your shell; a mcpServers.<name>.env entry in ~/.claude.json also works',
+    )
     expect(r.message).toMatch(/TAVILY_API_KEY/)
     expect(r.message).toMatch(/EXA_API_KEY/)
     expect(r.fix).toMatch(/settings\.json/)
@@ -151,5 +160,22 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     expect(r.message).toMatch(/installed: tavily-mcp/)
     expect(r.message).toMatch(/not registered.*exa-mcp/)
     expect(r.message).not.toMatch(/TAVILY_API_KEY/)
+  })
+
+  it('Codex: env keys not observed stays warn without claiming authentication or query failure', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    const codexMcp = await import('../../src/installers/lib/codexMcpServers.js')
+    vi.spyOn(codexMcp, 'isCodexMcpServerRegistered').mockResolvedValue(true)
+    const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
+    const r = await checkMcpAvailability()
+    expect(r.status).toBe('warn')
+    expect(r.message).toBe(
+      'installed: tavily-mcp, exa-mcp; API key not visible to this check: tavily-mcp → TAVILY_API_KEY, exa-mcp → EXA_API_KEY',
+    )
+    expect(r.message).not.toMatch(/API key missing|will fail|authentication failed/)
+    expect(r.fix).toBe(
+      'export TAVILY_API_KEY / EXA_API_KEY in your shell (on codex that is the only source this check can read — its MCP config is TOML and there is no JSON settings file)',
+    )
+    expect(r.install_commands).toBeUndefined()
   })
 })

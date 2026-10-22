@@ -1,10 +1,9 @@
 // 4.32.22 — search-MCP API-key detection, shared by the doctor
 // check-mcp-availability probe and the setup tail hint.
 //
-// Both search MCPs read their key from the server process env at query time
-// (tavily-mcp → TAVILY_API_KEY, exa-mcp → EXA_API_KEY); an installed server
-// without its key silently fails on first use. Presence is resolved by source
-// priority (user ruling):
+// Observes TAVILY_API_KEY / EXA_API_KEY in the sources below; this is not an
+// authentication or query probe. An unobserved key does not prove tool failure.
+// Presence is resolved by source priority (user ruling):
 //   1. `mcpServers.<name>.env` block in the harness MCP config (~/.claude.json)
 //   2. `~/.claude/settings.json` top-level `env` block (Claude Code injects it
 //      into spawned processes)
@@ -18,7 +17,7 @@
 import { readFile } from 'node:fs/promises'
 import { t } from '../../i18n/index.js'
 import { isMcpServerRegistered, readUserClaudeJson } from '../../installers/lib/readClaudeConfig.js'
-import { getSettingsPath } from '../../platform/platform.js'
+import { detectPlatform, getSettingsPath } from '../../platform/platform.js'
 
 /** Target search MCP servers → the env var each reads its API key from. */
 export const SEARCH_MCP_KEY_VARS: Readonly<Record<string, string>> = {
@@ -93,9 +92,11 @@ export async function missingSearchMcpKeys(): Promise<SearchKeyProbe[]> {
 export async function searchMcpKeyHintLines(): Promise<string[]> {
   const missing = await missingSearchMcpKeys()
   if (missing.length === 0) return []
-  const lines = [t('setup.search_key_hint.header')]
+  const isCodex = detectPlatform().id === 'codex'
+  const lines = [t(isCodex ? 'setup.search_key_hint.header_codex' : 'setup.search_key_hint.header')]
+  const lineKey = isCodex ? 'setup.search_key_hint.line_codex' : 'setup.search_key_hint.line'
   for (const m of missing) {
-    lines.push(t('setup.search_key_hint.line', { server: m.server, envVar: m.envVar }))
+    lines.push(t(lineKey, { server: m.server, envVar: m.envVar }))
   }
   return lines
 }

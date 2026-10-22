@@ -12,9 +12,9 @@
 // 4.32.22 — exa-mcp RESTORED to the target set (user reversal of the 4.32.21
 // deletion: "exa 我觉得还是需要的"; the ECC-side exa was retired to opt-in and
 // does not carry the capability). PLUS per-server API-key detection: both
-// search MCPs silently fail at query time without their key (tavily-mcp →
-// TAVILY_API_KEY, exa-mcp → EXA_API_KEY). Key sources probed in priority
-// order mcp-config env > settings.json env > process env (search-mcp-keys.ts).
+// search MCP key variables are TAVILY_API_KEY / EXA_API_KEY. Key sources probed
+// in priority order mcp-config env > settings.json env > process env
+// (search-mcp-keys.ts). Codex observes only process env, not actual query auth.
 // chrome-devtools-mcp stays OUT of this check (4.32.22 final: provider is
 // either/or — ecc (bonus tier) or the optional self-install manifest
 // manifests/optional/chrome-devtools-mcp.yaml; not a base component, and
@@ -76,7 +76,9 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
   if (installed.length > 0) parts.push(`installed: ${installed.join(', ')}`)
   if (missing.length > 0) parts.push(`not registered: ${missing.join(', ')}`)
   if (keyless.length > 0) {
-    parts.push(`API key missing: ${keyless.map((k) => `${k.server} → ${k.envVar}`).join(', ')}`)
+    const label =
+      detectPlatform().id === 'codex' ? 'API key not visible to this check' : 'API key missing'
+    parts.push(`${label}: ${keyless.map((k) => `${k.server} → ${k.envVar}`).join(', ')}`)
   }
 
   // v3.9.5 — install_commands removed. Step B (`harnessed setup` install-base

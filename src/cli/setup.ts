@@ -10,8 +10,8 @@
 // Workflows without SKILL.md are skipped in Step A.
 //
 // Exit codes:
-//   0 → at least 1 workflow installed + base manifests processed
-//   1 → fs.cp failed
+//   0 → at least 1 workflow installed + no base manifest failures (skips are OK)
+//   1 → fs.cp failed or base manifests failed (after all setup tail work)
 //   2 → no SKILL.md workflows found (nothing to install)
 
 import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
@@ -859,6 +859,6 @@ export function registerSetup(program: Command): void {
       } catch {
         /* advisory only */
       }
-      process.exit(0)
+      process.exit(b.failed.length > 0 ? 1 : 0)
     })
 }
