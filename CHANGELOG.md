@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.49.1] - 2026-10-23
+
+### Fixed
+
+- **Codex `check-docs` hook 热路径不再加载完整 CLI bundle。** 新增专用
+  `bin/harnessed-check-docs.mjs`(约 20.8 KB,随 npm 与 compiled 资产分发),
+  由 Codex plugin shim 直接命中;`harnessed check-docs` CLI 与 hook 共享同一个
+  command body,行为保持同源。此前每次 `PreToolUse` 都要加载约 728 KB 的
+  `dist/cli.mjs`,Windows 冷启动可到 1.4-2.5 秒并触发 live p95 预算。真机
+  Codex 0.163 实测 `PreToolUse` 287ms,三 hook p95 327ms。
+- **双宿主开发机上的 Vitest 不再读取真实 `~/.claude` 配置。** 全局 setup 在剥离
+  ambient host env 的同时改用空 `HOME` / `USERPROFILE`,避免平台探测落回本机
+  Claude 配置、把 GateGuard 输出泄漏进 eval goldens。
+- **Codex live 测试在 win32 使用归一后的 workflow slot key。** Stage B seeding
+  与 Phase 67 后的 lowercase `repoKey` 契约对齐,`UserPromptSubmit` 可稳定注入
+  `<workflow-state>`。
+
+### Changed
+
+- 新增脱敏后的 Codex `0.163` hook payload fixtures。现场复验
+  `SessionStart` / `UserPromptSubmit` / `PreToolUse` / `PostToolUse` 字段集与
+  `0.154` 一致;`test:codex-live` 同时对 `inject-state` 与 `check-docs` 做宿主
+  shell 稳态计时,并在计时前 warm-up,避免把 OS 首次加载当作 hook 回归。
+- `docs/host-contract.md` 记录 Codex `0.163.0` 复验结论与新的 `check-docs`
+  热路径证据。
+
 ## [4.49.0] - 2026-10-16
 
 ### Added
