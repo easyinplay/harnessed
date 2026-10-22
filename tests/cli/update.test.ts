@@ -47,7 +47,7 @@ vi.mock('../../src/cli/gc.js', () => ({
 
 import { execFileSync } from 'node:child_process'
 import { installBaseProfile } from '../../src/cli/install-base.js'
-import { runBinarySelfUpdate } from '../../src/cli/lib/selfUpdateBinary.js'
+import { runBinaryRollback, runBinarySelfUpdate } from '../../src/cli/lib/selfUpdateBinary.js'
 import { fetchLatestVersion } from '../../src/cli/lib/version-check.js'
 import { registerUpdate } from '../../src/cli/update.js'
 import { isCompiledRuntime } from '../../src/platform/assetsRoot.js'
@@ -88,8 +88,15 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
 }
 
 describe('harnessed update', () => {
-  beforeEach(() => vi.clearAllMocks())
-  afterEach(() => vi.restoreAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(isCompiledRuntime).mockReturnValue(false)
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+  })
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
 
   it('--check reports installed/latest/status and does NOT install', async () => {
     vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
@@ -184,5 +191,85 @@ describe('harnessed update', () => {
     const { code, stderr } = await runCli(['update'])
     expect(code).not.toBe(0)
     expect(stderr).toContain('sha256 mismatch')
+  })
+
+  describe.each([
+    {
+      platform: 'codex',
+      updateHint:
+        '[harnessed] restart Codex so the new version + hooks take effect. Manual rollback if needed: copy the binary back from the bin-backup dir above.',
+      rollbackHint: '[harnessed] restart Codex so the restored version takes effect.',
+      npmHint: '[harnessed] updated. Restart Codex so the new version + hooks take effect.',
+    },
+    {
+      platform: 'claude',
+      updateHint:
+        '[harnessed] restart Claude Code so the new version + hooks take effect. Manual rollback if needed: copy the binary back from the bin-backup dir above.',
+      rollbackHint: '[harnessed] restart Claude Code so the restored version takes effect.',
+      npmHint: '[harnessed] updated. Restart Claude Code so the new version + hooks take effect.',
+    },
+  ])('$platform restart hints', ({ platform, updateHint, rollbackHint, npmHint }) => {
+    beforeEach(() => vi.stubEnv('HARNESSED_PLATFORM', platform))
+
+    it('compiled update names the active host and preserves the complete output', async () => {
+      vi.mocked(isCompiledRuntime).mockReturnValue(true)
+      vi.mocked(runBinarySelfUpdate).mockResolvedValue({
+        status: 'updated',
+        from: '4.43.0',
+        to: '4.49.1',
+        bakPath: '/x/harnessed.bak-4.43.0',
+        bakRemoved: true,
+        backupDir: '/state/bin-backup/4.43.0',
+      })
+
+      const { code, stdout, stderr } = await runCli(['update'])
+
+      expect(code).toBe(0)
+      expect(stderr).toBe('')
+      expect(stdout).toBe(
+        '[harnessed] updated 4.43.0 → 4.49.1.\n' +
+          '  previous binary kept at: /state/bin-backup/4.43.0\n' +
+          `${updateHint}\n`,
+      )
+      expect(fetchLatestVersion).not.toHaveBeenCalled()
+      expect(execFileSync).not.toHaveBeenCalled()
+    })
+
+    it('rollback names the active host and preserves the complete output', async () => {
+      vi.mocked(isCompiledRuntime).mockReturnValue(true)
+      vi.mocked(runBinaryRollback).mockResolvedValue({
+        status: 'rolled-back',
+        from: '4.49.1',
+        to: '4.43.0',
+        backupUsed: '/state/bin-backup/4.43.0/harnessed',
+      })
+
+      const { code, stdout, stderr } = await runCli(['update', '--rollback'])
+
+      expect(code).toBe(0)
+      expect(stderr).toBe('')
+      expect(stdout).toBe(
+        '[harnessed] rolled back 4.49.1 → 4.43.0 (from /state/bin-backup/4.43.0/harnessed).\n' +
+          `${rollbackHint}\n`,
+      )
+      expect(runBinaryRollback).toHaveBeenCalledWith({}, { version: undefined })
+      expect(runBinarySelfUpdate).not.toHaveBeenCalled()
+      expect(fetchLatestVersion).not.toHaveBeenCalled()
+      expect(execFileSync).not.toHaveBeenCalled()
+    })
+
+    it('npm update names the active host and preserves the exact final line', async () => {
+      vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
+
+      const { code, stdout, stderr } = await runCli(['update'])
+
+      expect(code).toBe(0)
+      expect(stderr).toBe('')
+      expect(stdout.split('\n').slice(-2).join('\n')).toBe(`${npmHint}\n`)
+      expect(execFileSync).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(execFileSync).mock.calls[0]?.[1]).toEqual(['i', '-g', 'harnessed@latest'])
+      expect(runBinarySelfUpdate).not.toHaveBeenCalled()
+      expect(runBinaryRollback).not.toHaveBeenCalled()
+    })
   })
 })

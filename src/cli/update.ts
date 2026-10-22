@@ -12,6 +12,7 @@ import type { Command } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
 import { getAssetsRoot } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
+import { detectPlatform } from '../platform/platform.js'
 
 interface UpdateOpts {
   check?: boolean
@@ -28,6 +29,7 @@ interface UpdateOpts {
  *  flow must not run), false = fall through to npm (safety-valve 'refused').
  *  Exit-code contract: 'error' exits non-zero with the actionable message. */
 async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
+  const hostName = detectPlatform().id === 'codex' ? 'Codex' : 'Claude Code'
   const { realSelfUpdateDeps, runBinaryRollback, runBinarySelfUpdate } = await import(
     './lib/selfUpdateBinary.js'
   )
@@ -48,7 +50,7 @@ async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
         return true
       case 'rolled-back':
         console.log(`[harnessed] rolled back ${r.from} → ${r.to} (from ${r.backupUsed}).`)
-        console.log('[harnessed] restart Claude Code so the restored version takes effect.')
+        console.log(`[harnessed] restart ${hostName} so the restored version takes effect.`)
         process.exit(0)
         return true
     }
@@ -84,7 +86,6 @@ async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
       // D7 — opportunistic gc: keep {old, new} asset versions (fail-soft).
       try {
         const { gcCompiledArtifacts } = await import('./gc.js')
-        const { detectPlatform } = await import('../platform/platform.js')
         await gcCompiledArtifacts({
           keepVersions: [r.from, r.to],
           stateRoot: detectPlatform().stateRoot,
@@ -94,7 +95,7 @@ async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
         /* advisory */
       }
       console.log(
-        '[harnessed] restart Claude Code so the new version + hooks take effect. ' +
+        `[harnessed] restart ${hostName} so the new version + hooks take effect. ` +
           `Manual rollback if needed: copy the binary back from the bin-backup dir above.`,
       )
       process.exit(0)
@@ -200,8 +201,9 @@ export function registerUpdate(program: Command): void {
         })
         const cl = changelogTop()
         if (cl) console.log(`\n${cl}\n`)
+        const hostName = detectPlatform().id === 'codex' ? 'Codex' : 'Claude Code'
         console.log(
-          '[harnessed] updated. Restart Claude Code so the new version + hooks take effect.',
+          `[harnessed] updated. Restart ${hostName} so the new version + hooks take effect.`,
         )
       } else {
         console.log(`[harnessed] already up to date (${pkg.version}).`)
