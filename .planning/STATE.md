@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: (none — v16.0 Codex Host Parity CLOSED 2026-09-30, npm 4.46.0)
 status: no-active-milestone
-last_updated: "2026-10-16T00:00:00.000Z"
-last_activity: 2026-10-16
+last_updated: "2026-10-22T17:34:00.000Z"
+last_activity: 2026-10-23
 progress:
   total_phases: 0
   completed_phases: 0
@@ -21,7 +21,8 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.49.0** 2026-10-16(Phase 67 `checkpoint adopt` 跨宿主接力 + `gc` 槽位修剪 + win32 `repoKey` 归一 + `update` 走系统代理;publish 4 job success + `npm view` latest=4.49.0 + release 9 assets)。上一版:**v4.48.0** 2026-10-08(`harnessed agents-md` + 更正 README 对 Codex 的两处错误断言;三重核实:publish step 日志 `+ harnessed@4.48.0` + registry 直查 `dist-tags.latest=4.48.0` + `npm view`,release 9 assets)。上一版:**v4.47.0** 2026-10-07(codex 不再读 config.toml + 语言 pin + gate fail-closed 扩三类/ADR-0042)· **v4.46.0** 2026-09-30(v16.0 收官版:Phase 66 T3b-T5 + 凭据备份缺陷)。更早:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
+- **Latest shipped (npm)**: **v4.49.1** 2026-10-23(Codex 0.163 复验 + check-docs 专用 hook + 测试 HOME 隔离;publish run 39822650672 四 job success,registry latest=4.49.1,release 九附件;详 `releases/4.49.1.md`)。
+- **Previous releases**: **v4.49.0** 2026-10-16(Phase 67 `checkpoint adopt` 跨宿主接力 + `gc` 槽位修剪 + win32 `repoKey` 归一 + `update` 走系统代理;publish 4 job success + `npm view` latest=4.49.0 + release 9 assets)。上一版:**v4.48.0** 2026-10-08(`harnessed agents-md` + 更正 README 对 Codex 的两处错误断言;三重核实:publish step 日志 `+ harnessed@4.48.0` + registry 直查 `dist-tags.latest=4.48.0` + `npm view`,release 9 assets)。上一版:**v4.47.0** 2026-10-07(codex 不再读 config.toml + 语言 pin + gate fail-closed 扩三类/ADR-0042)· **v4.46.0** 2026-09-30(v16.0 收官版:Phase 66 T3b-T5 + 凭据备份缺陷)。更早:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
