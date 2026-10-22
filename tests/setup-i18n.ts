@@ -3,13 +3,28 @@
 // to pass regardless of the host machine's $LANG. Individual i18n tests
 // override via setLocale() / __resetForTests() per-cell.
 
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setLocale } from '../src/i18n/index.js'
 
 setLocale('en')
 
+// Dual-host developer machines can carry a real ~/.claude (GateGuard, plugins,
+// settings). After the ambient host env is stripped below, platform detection
+// would otherwise fall through to that directory and leak developer config into
+// supposedly neutral tests. Give every test process an empty home instead; tests
+// that intentionally exercise home resolution override these values per-cell.
+const neutralTestHome = mkdtempSync(join(tmpdir(), 'harnessed-test-home-'))
+process.env.HOME = neutralTestHome
+process.env.USERPROFILE = neutralTestHome
+process.on('exit', () => {
+  try {
+    rmSync(neutralTestHome, { recursive: true, force: true })
+  } catch {
+    // A locked test-created file must not turn a completed suite into a crash.
+  }
+})
 // v4.20.1 — pin the neutral spawn cwd (getNeutralSpawnCwd env-first override) so
 // suites that reach the real spawnCmd never create <stateRoot>/.spawn/ against a
 // real or fake homedir during unit tests. The dir must EXIST (a rare real spawn
