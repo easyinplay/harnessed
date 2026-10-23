@@ -1,6 +1,6 @@
 # Host Installation Contract Design
 
-Status: proposed, awaiting detailed design approval. Scope: Claude Code and Codex.
+Status: approved by the user on 2026-10-23. Scope: Claude Code and Codex. Execution may use the completed static architecture review as its prerequisite; the native gstack gate remains blocked/notrun.
 
 ## 1. Problem And Existing Seams
 
@@ -27,7 +27,7 @@ public lifecycle entrypoint
 ## 3. HostContext Contract
 
 - HostId is limited to the existing implemented claude/codex IDs. An invalid explicit target fails without execution; existing implicit host precedence remains ADR 0040-compatible.
-- Context contains the selected host, OS, resolution reason and resolved host paths. Reuse PlatformDescriptor rather than creating parallel constants.
+- Context contains the selected host, OS and resolved host paths. Reuse PlatformDescriptor rather than creating parallel constants. Implementation refinement: resolution-reason diagnostics stay in the existing host resolver instead of adding an unused snapshot/persisted field.
 - Select host once at the public lifecycle boundary. Passed context is authoritative; an inner operation must not redetect the host from ambient directories after planning.
 - After construction, host, native/config/skill homes and the existing stateRoot are authoritative for every enabled mutation, cleanup, receipt write and native registration target. Ambient environment, directories or pins cannot reselect them. Thread context through applicable helpers before enabling that mutation path, including teardown in Task 3; Task 4 is not permission to defer this safety requirement.
 - Building that context may perform the existing read-only host/pin discovery through injected readers. Purity applies to component-plan derivation from an already captured context; do not redesign host discovery as a side effect of this phase.

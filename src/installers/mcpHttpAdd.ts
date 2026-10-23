@@ -35,10 +35,11 @@
 // mcpStdioAdd v3.0.3 — drop spawn-based verify in favor of fs-based check
 // against the authoritative `mcpServers` map.
 
+import { join } from 'node:path'
 import { checkCmdString } from '../manifest/security.js'
 import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
-import { invalidateCodexMcpCache } from './lib/codexMcpServers.js'
+import { invalidateCodexMcpCache, listCodexMcpServerMetadata } from './lib/codexMcpServers.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
@@ -48,8 +49,32 @@ import { isMcpServerRegistered } from './lib/readClaudeConfig.js'
 import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
-import type { DiffPlan, Installer } from './lib/types.js'
+import type { DiffPlan, InstallContext, Installer, InstallResult } from './lib/types.js'
 import { formatSpawnFail } from './lib/verifyMessage.js'
+
+async function mcpReadinessFailure(
+  ctx: InstallContext,
+  allowAbsent = false,
+): Promise<InstallResult | null> {
+  if (ctx.hostContext?.hostId !== 'codex') return null
+  const servers = await listCodexMcpServerMetadata(ctx.hostContext)
+  const server = servers?.find((entry) => entry.name === ctx.manifest.metadata.name)
+  if (server?.enabled === true || (servers && !server && allowAbsent)) return null
+  return {
+    ok: false,
+    phase: 'verify',
+    error: {
+      ...err(
+        ctx,
+        '/spec/verify/cmd',
+        `MCP registration '${ctx.manifest.metadata.name}' is ${server?.enabled === false ? 'disabled' : 'missing or enablement is unknown'}; no automatic enablement or repair was performed.`,
+        'verify-failed',
+      ),
+      suggest:
+        'Review the server with the native Codex MCP management tool. Registration/enablement does not establish runtime connectivity or authentication.',
+    },
+  }
+}
 
 // D-16 — resolve ${ENV_VAR} placeholders from process.env BEFORE arg
 // construction. Returns either the resolved value or throws-style {error}.
@@ -127,10 +152,20 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   }
   // v3.9.8 Cat G — sister mcpStdioAdd, pre-probe idempotent_check, always
   // honor user config (never re-modify regardless of opts.updateInstalled).
+  const initialReadinessFailure = await mcpReadinessFailure(ctx, true)
+  if (initialReadinessFailure) return initialReadinessFailure
   if (await isAlreadyInstalled(ctx, { honorUpdateFlag: false })) {
+    const readinessFailure = await mcpReadinessFailure(ctx)
+    if (readinessFailure) return readinessFailure
     // Phase 59 — the receipt was unreachable on this path; record what is
     // actually present so `harnessed status` can stop under-reporting.
-    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
+    await recordObservedInstall(
+      ctx.cwd,
+      ctx.manifest.metadata.name,
+      install.npm_version,
+      '',
+      ...(ctx.hostContext ? [ctx.hostContext] : []),
+    )
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
@@ -172,7 +207,7 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // v4.14.0 — platform routing (sister mcpStdioAdd). codex http shape is
   // `codex mcp add <name> --url <url>`; codex CLI has NO --header flag, so a
   // headered manifest fails loud instead of silently dropping auth headers.
-  const platform = detectPlatform()
+  const platform = ctx.hostContext?.platform ?? detectPlatform()
   if (platform.id !== 'claude' && platform.id !== 'codex') {
     return { aborted: true, reason: 'harness-mismatch' }
   }
@@ -225,7 +260,13 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // instead of <cwd>/.mcp.json (project-local). Entry shape per CC spec:
   // { [name]: { type: 'http', url, headers: {Key:Value} } } — non-stdio.
   // v4.14.0: codex target is ~/.codex/config.toml (url-form [mcp_servers] table).
-  const mcpFile = bin === 'codex' ? platform.mcpConfigPath : `${getMcpSpawnCwd()}/.claude.json`
+  const mcpFile = ctx.hostContext
+    ? bin === 'codex'
+      ? join(ctx.hostContext.nativeHome, 'config.toml')
+      : join(ctx.hostContext.userHome, '.claude.json')
+    : bin === 'codex'
+      ? platform.mcpConfigPath
+      : `${getMcpSpawnCwd()}/.claude.json`
   // Reassemble headers as an object for the diff preview (purely informational).
   const headersObj: Record<string, string> = {}
   for (let i = 0; i < hdr.flat.length; i += 2) {
@@ -273,16 +314,26 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // v3.0.2: spawn cwd at homedir() — `--scope user` writes to ~/.claude.json
   // regardless of spawn cwd, but the CC CLI may create temp files in cwd;
   // homedir() avoids EPERM when user launches harnessed from a read-only CWD.
-  const spawnCwd = install.cwd ?? getMcpSpawnCwd()
-  const r = await runHarnessArgs(bin, addArgs, spawnCwd)
+  const spawnCwd = install.cwd ?? getMcpSpawnCwd(...(ctx.hostContext ? [ctx.hostContext] : []))
+  const r = ctx.hostContext
+    ? await runHarnessArgs(bin, addArgs, spawnCwd, undefined, ctx.hostContext)
+    : await runHarnessArgs(bin, addArgs, spawnCwd)
   if (r.exitCode !== 0) {
     // ADR 0004 idempotent contract: server already registered is not a failure.
     // v3.0.2: match on "already exists" substring (CC CLI error message no
     // longer mentions ".mcp.json" specifically with --scope user).
     if (r.stderr.includes('already exists')) {
+      const readinessFailure = await mcpReadinessFailure(ctx)
+      if (readinessFailure) return { ...readinessFailure, backupId: bk.backupId } as InstallResult
       // Phase 59 — the receipt was unreachable on this path; record what is
       // actually present so `harnessed status` can stop under-reporting.
-      await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
+      await recordObservedInstall(
+        ctx.cwd,
+        ctx.manifest.metadata.name,
+        install.npm_version,
+        '',
+        ...(ctx.hostContext ? [ctx.hostContext] : []),
+      )
       return { ok: true, alreadyInstalled: true, backupId: bk.backupId }
     }
     return {
@@ -307,8 +358,11 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
   // `codex mcp list` set BEFORE this add ran, so verifying against it without
   // invalidating would consult a set that cannot contain `name` (guaranteed false
   // verify-failed). Sister of `invalidateCodexPluginCache` in `ccPluginMarketplace`.
-  if (bin === 'codex') invalidateCodexMcpCache()
-  const registered = await isMcpServerRegistered(name)
+  if (bin === 'codex') invalidateCodexMcpCache(...(ctx.hostContext ? [ctx.hostContext] : []))
+  const registered = await isMcpServerRegistered(
+    name,
+    ...(ctx.hostContext ? [ctx.hostContext] : []),
+  )
   if (!registered) {
     // v4.14.0 — config label follows the platform; claude wording byte-identical.
     // v16.0 post-close — the codex half now names the probe rather than the file: the
@@ -333,6 +387,14 @@ export const installMcpHttpAdd: Installer = async (ctx) => {
     }
   }
 
-  await updateInstalled(ctx.cwd, name, install.npm_version, '')
+  const readinessFailure = await mcpReadinessFailure(ctx)
+  if (readinessFailure) return { ...readinessFailure, backupId: bk.backupId } as InstallResult
+  await updateInstalled(
+    ctx.cwd,
+    name,
+    install.npm_version,
+    '',
+    ...(ctx.hostContext ? [ctx.hostContext] : []),
+  )
   return { ok: true, backupId: bk.backupId, appliedFiles: [mcpFile] }
 }

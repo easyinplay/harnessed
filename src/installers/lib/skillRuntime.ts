@@ -2,8 +2,10 @@ import { execFile } from 'node:child_process'
 import { constants } from 'node:fs'
 import { access, stat } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 import { err } from './err.js'
+import { withHostInstallEnv } from './runClaudeArgs.js'
 import type { InstallContext, InstallResult } from './types.js'
 
 async function requireFile(path: string): Promise<void> {
@@ -30,7 +32,13 @@ async function skillRoot(dirs: string[], name: string): Promise<string> {
   throw new Error(`Required installed skill is missing: ${name} (${dirs.join(', ')})`)
 }
 
-async function verifyGsd(root: string, dirs: string[], codex: boolean, cwd: string): Promise<void> {
+async function verifyGsd(
+  root: string,
+  dirs: string[],
+  codex: boolean,
+  cwd: string,
+  context?: HostInstallContext,
+): Promise<void> {
   await skillRoot(dirs, 'gsd-plan-phase')
   for (const phase of ['discuss-phase', 'plan-phase', 'execute-phase', 'verify-work', 'progress']) {
     await requireFile(join(root, 'gsd-core', 'workflows', `${phase}.md`))
@@ -43,7 +51,7 @@ async function verifyGsd(root: string, dirs: string[], codex: boolean, cwd: stri
   }
   const script = join(root, 'gsd-core', 'bin', 'gsd-tools.cjs')
   // A standalone harnessed binary is not Node; load the installed shim with external node.
-  const output = await run('node', [script, 'runtime-identity'], cwd)
+  const output = await run('node', [script, 'runtime-identity'], cwd, context)
   let identity: { packageName?: unknown; version?: unknown } | null
   try {
     identity = JSON.parse(output)
@@ -61,7 +69,22 @@ async function verifyGsd(root: string, dirs: string[], codex: boolean, cwd: stri
   }
 }
 
-function run(binary: string, args: string[], cwd: string): Promise<string> {
+function run(
+  binary: string,
+  args: string[],
+  cwd: string,
+  context?: HostInstallContext,
+): Promise<string> {
+  const env: NodeJS.ProcessEnv = {
+    PATH: process.env.PATH,
+    SystemRoot: process.env.SystemRoot,
+    WINDIR: process.env.WINDIR,
+    TEMP: process.env.TEMP,
+    TMP: process.env.TMP,
+    PYTHONDONTWRITEBYTECODE: '1',
+    PYTHONIOENCODING: 'utf-8',
+    PYTHONUTF8: '1',
+  }
   return new Promise((resolveOutput, reject) => {
     const child = execFile(
       binary,
@@ -74,16 +97,7 @@ function run(binary: string, args: string[], cwd: string): Promise<string> {
         maxBuffer: 256 * 1024,
         encoding: 'utf8',
         // Probes need an interpreter, not the host's provider credentials or Python startup hooks.
-        env: {
-          PATH: process.env.PATH,
-          SystemRoot: process.env.SystemRoot,
-          WINDIR: process.env.WINDIR,
-          TEMP: process.env.TEMP,
-          TMP: process.env.TMP,
-          PYTHONDONTWRITEBYTECODE: '1',
-          PYTHONIOENCODING: 'utf-8',
-          PYTHONUTF8: '1',
-        },
+        env: context ? withHostInstallEnv(env, context) : env,
       },
       (error, stdout, stderr) => {
         if (error)
@@ -95,7 +109,10 @@ function run(binary: string, args: string[], cwd: string): Promise<string> {
   })
 }
 
-async function python(cwd: string): Promise<{ binary: string; args: string[] }> {
+async function python(
+  cwd: string,
+  context?: HostInstallContext,
+): Promise<{ binary: string; args: string[] }> {
   const probe = 'import sys; assert sys.version_info >= (3, 8); print("HARNESSED_PYTHON_OK")'
   for (const [binary, prefix] of [
     ['python3', []],
@@ -104,7 +121,10 @@ async function python(cwd: string): Promise<{ binary: string; args: string[] }> 
   ] as const) {
     const args = [...prefix, '-B', '-S']
     try {
-      if ((await run(binary, [...args, '-I', '-c', probe], cwd)).trim() === 'HARNESSED_PYTHON_OK') {
+      if (
+        (await run(binary, [...args, '-I', '-c', probe], cwd, context)).trim() ===
+        'HARNESSED_PYTHON_OK'
+      ) {
         return { binary, args }
       }
     } catch {
@@ -116,18 +136,26 @@ async function python(cwd: string): Promise<{ binary: string; args: string[] }> 
   )
 }
 
-async function verifyPlanning(root: string, cwd: string): Promise<void> {
+async function verifyPlanning(
+  root: string,
+  cwd: string,
+  context?: HostInstallContext,
+): Promise<void> {
   const script = join(root, 'scripts', 'session-catchup.py')
   await requireFile(script)
   for (const name of ['init-session', 'check-complete']) {
     await requireFile(
-      join(root, 'scripts', `${name}.${process.platform === 'win32' ? 'ps1' : 'sh'}`),
+      join(
+        root,
+        'scripts',
+        `${name}.${(context?.os ?? process.platform) === 'win32' ? 'ps1' : 'sh'}`,
+      ),
     )
   }
   for (const name of ['task_plan', 'progress', 'findings']) {
     await requireFile(join(root, 'templates', `${name}.md`))
   }
-  const py = await python(cwd)
+  const py = await python(cwd, context)
   // Parsing verifies the helper without executing catchup (which reads private session histories).
   await run(
     py.binary,
@@ -139,10 +167,11 @@ async function verifyPlanning(root: string, cwd: string): Promise<void> {
       script,
     ],
     cwd,
+    context,
   )
 }
 
-async function verifyUi(root: string, cwd: string): Promise<void> {
+async function verifyUi(root: string, cwd: string, context?: HostInstallContext): Promise<void> {
   const script = join(root, 'scripts', 'search.py')
   await requireFile(script)
   await requireFile(join(root, 'scripts', 'core.py'))
@@ -158,7 +187,7 @@ async function verifyUi(root: string, cwd: string): Promise<void> {
     'stacks/html-tailwind',
   ].map((name) => join(root, 'data', `${name}.csv`))
   for (const path of data) await requireFile(path)
-  const py = await python(cwd)
+  const py = await python(cwd, context)
   await run(
     py.binary,
     [
@@ -175,6 +204,7 @@ async function verifyUi(root: string, cwd: string): Promise<void> {
       ...data,
     ],
     cwd,
+    context,
   )
   for (const mode of [
     ['--domain', 'style'],
@@ -186,6 +216,7 @@ async function verifyUi(root: string, cwd: string): Promise<void> {
       py.binary,
       [...py.args, script, query, ...mode, '--json', '--max-results', '1'],
       cwd,
+      context,
     )
     let result: { error?: unknown; count?: unknown; results?: unknown }
     try {
@@ -218,20 +249,28 @@ export async function verifySkillRuntime(ctx: InstallContext): Promise<InstallRe
   const name = ctx.manifest.metadata.name
   if (ctx.opts.dryRun || !['gsd', 'planning-with-files', 'ui-ux-pro-max'].includes(name))
     return null
-  const platform = detectPlatform()
-  if (platform.id !== 'codex' && platform.id !== 'claude') return null
-  const codex = platform.id === 'codex'
+  const platform = ctx.hostContext?.platform ?? detectPlatform()
+  const hostId = ctx.hostContext?.hostId ?? platform.id
+  if (hostId !== 'codex' && hostId !== 'claude') return null
+  const codex = hostId === 'codex'
   if (!codex && name !== 'gsd') return null
   const rootKey = codex ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'
-  const configuredRoot = ctx.manifest.spec.install.env?.[rootKey] ?? process.env[rootKey]
-  const root = resolve(configuredRoot || platform.homeDir)
-  const dirs = [...new Set([platform.skillsDir, join(root, 'skills')])]
+  const root =
+    ctx.hostContext?.nativeHome ??
+    resolve((ctx.manifest.spec.install.env?.[rootKey] ?? process.env[rootKey]) || platform.homeDir)
+  const dirs = [
+    ...new Set([
+      ctx.hostContext && !codex ? join(root, 'skills') : platform.skillsDir,
+      join(root, 'skills'),
+    ]),
+  ]
   try {
-    if (name === 'gsd') await verifyGsd(root, dirs, codex, ctx.cwd)
+    if (name === 'gsd') await verifyGsd(root, dirs, codex, ctx.cwd, ctx.hostContext)
     else {
       const installedRoot = await skillRoot(dirs, name)
-      if (name === 'planning-with-files') await verifyPlanning(installedRoot, ctx.cwd)
-      else await verifyUi(installedRoot, ctx.cwd)
+      if (name === 'planning-with-files')
+        await verifyPlanning(installedRoot, ctx.cwd, ctx.hostContext)
+      else await verifyUi(installedRoot, ctx.cwd, ctx.hostContext)
     }
     return null
   } catch (error) {

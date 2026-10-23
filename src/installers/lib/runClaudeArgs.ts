@@ -14,6 +14,7 @@
 // args remain unparsed. This matches the established cross-OS pattern.
 
 import { spawn } from 'node:child_process'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { killProcessTree } from './killTree.js'
 import { planWindowsSpawn, resolveWindowsBin } from './winSpawn.js'
 
@@ -25,11 +26,35 @@ export interface ProcResult {
   stderr: string
 }
 
+/** Apply routing pins after env filtering/merging without changing the parent. */
+export function withHostInstallEnv(
+  env: NodeJS.ProcessEnv,
+  hostContext?: HostInstallContext,
+): NodeJS.ProcessEnv {
+  if (!hostContext) return env
+  const pins: NodeJS.ProcessEnv = {
+    HOME: hostContext.userHome,
+    USERPROFILE: hostContext.userHome,
+    HARNESSED_PLATFORM: hostContext.hostId,
+    HARNESSED_ROOT_OVERRIDE: hostContext.platform.stateRoot,
+    HARNESSED_SPAWN_CWD: hostContext.neutralSpawnCwd ?? '',
+    [hostContext.hostId === 'codex' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR']: hostContext.nativeHome,
+  }
+  const result = { ...env }
+  if (hostContext.os === 'win32') {
+    for (const key of Object.keys(result)) {
+      if (Object.hasOwn(pins, key.toUpperCase())) delete result[key]
+    }
+  }
+  return { ...result, ...pins }
+}
+
 export function runHarnessArgs(
   bin: HarnessBin,
   args: string[],
   cwd: string,
   timeoutMs = 15_000,
+  hostContext?: HostInstallContext,
 ): Promise<ProcResult> {
   return new Promise((resolve) => {
     // Unix: spawn the binary directly (no shell) — args remain unparsed.
@@ -38,7 +63,8 @@ export function runHarnessArgs(
     // separator, and the shipped `tavily-mcp@^0.2.0` silently lost its caret. An
     // .exe is now spawned directly; only a .cmd/.bat shim goes through cmd.exe,
     // with arguments quoted and double-escaped.
-    const isWin = process.platform === 'win32'
+    const isWin = (hostContext?.os ?? process.platform) === 'win32'
+    const envOpts = hostContext ? { env: withHostInstallEnv(process.env, hostContext) } : {}
     // v4.13.0 — stdin 'ignore' (sister lib/spawn.ts): harness subcommands must
     // never wait on interactive input during setup.
     const stdio: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
@@ -47,13 +73,14 @@ export function runHarnessArgs(
       const plan = planWindowsSpawn(bin, args, resolveWindowsBin(bin))
       child = spawn(plan.command, plan.args, {
         cwd,
+        ...envOpts,
         windowsHide: true,
         stdio,
         shell: false,
         windowsVerbatimArguments: plan.verbatim,
       })
     } else {
-      child = spawn(bin, args, { cwd, shell: false, stdio })
+      child = spawn(bin, args, { cwd, ...envOpts, shell: false, stdio })
     }
     let stdout = ''
     let stderr = ''
@@ -91,6 +118,7 @@ export function runArgs(
   claudeArgs: string[],
   cwd: string,
   timeoutMs = 15_000,
+  hostContext?: HostInstallContext,
 ): Promise<ProcResult> {
-  return runHarnessArgs('claude', claudeArgs, cwd, timeoutMs)
+  return runHarnessArgs('claude', claudeArgs, cwd, timeoutMs, hostContext)
 }

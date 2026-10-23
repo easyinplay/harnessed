@@ -8,9 +8,10 @@ Scope: CONTEXT.md, DESIGN.md, PLAN.md; targeted source checks and VALIDATION row
 - static_review: completed
 - native_gstack_gate: blocked
 - native_gstack_gate_execution: notrun
-- implementation: false
-- design_approval: pending
-- recommendation: R1-R3 document revisions recorded below; detailed approval remains pending
+- implementation: in_progress (see EXECUTION.md; no completion claim)
+- design_approval: approved_by_user_2026-10-23
+- execution_prerequisite: static_review_authorized_by_user_2026-10-23
+- recommendation: R1-R3 resolved in the approved design; execute incrementally with fixture verification
 - evidence: static only; no tests, live install, native CLI, secrets or credentials
 
 ## R1: Pin Context Before Each Mutation Route Is Enabled
@@ -94,3 +95,23 @@ those rows confirms the following scope corrections; no implementation is requir
 ## Main-Session Disposition
 
 2026-10-23: the main session checked the source-backed constraints and revised DESIGN sections 3/4/5/7, PLAN Tasks 2/3/4 and VALIDATION C03/U04/U05. R1-R3 are resolved_in_documents, not implemented or runtime-verified. Mutation routes must be context-pinned before enabling teardown; the neutral-teardown policy is evaluated and declaration-bound; current manifests/observed receipts cannot claim historical ownership. These edits do not make the native gate pass or constitute design approval.
+
+## Implementation Peer Review
+
+Independent reviewers inspected disjoint implementations, not their own patches. This is static/fixture peer review; native gstack remains blocked/notrun. Fresh commands and final acceptance remain in EXECUTION.md.
+
+| Finding | Severity | Disposition |
+| --- | --- | --- |
+| Per-file workflow copy followed destination links into external content | P1 | Fixed with complete preflight write-set confinement; old implementation produced real fixture RED; main artifact/lifecycle/contracts scope 83 tests passes |
+| Omitted/conflicting legacy host argument overrode authoritative render context | P2 | Fixed context priority; both locales and trusted parent-alias positive covered |
+| YAML Alias bypassed known command/cleanup security paths | P2 | Fixed native AST alias resolution along known paths, including parent/sequence/element aliases; main 218-test scope passes |
+| Windows native-home env casing discarded a declared override | P2 | Fixed by the existing pure env-normalization policy; last declaration wins, explicit empty and POSIX sensitivity covered |
+| Retained Codex probes could borrow Claude registration or ignore disabled/untrusted state | P2 | Fixed native evidence and explicit Codex verify selection; no Claude base verifier for structural Codex operations |
+| Missing hook currentHash was misreported as completed trust | P2 | Fixed unresolved evidence failure; no automatic trust or success receipt from empty evidence |
+| Claude idempotent dry-run wrote presence receipts | P2 | Fixed before receipt writes; main native scope and final 4327-test gate passed |
+| First-party hook removal lacked resource ownership/canonical confinement | P1 | Fixed generated identity/inventory, canonical/alias boundaries, fresh unknown-vs-absent native evidence and partial untrust-failure handling; final gate passed |
+| Reviewed neutral npm uninstall failure was returned as success | P2 | Fixed Codex error propagation while retaining Claude fail-soft policy; main teardown scope passes |
+
+The final CLI review also found base-method previews and context recapture after confirmation. Per-name CLI preview/confirmation/execution now shares the pure policy and one context; unsupported operations fail before preview/consent. Its RED/GREEN regressions and the final whole suite pass. The no-name unified uninstaller remains outside this per-component migration.
+
+All implementation findings above are closed locally by fresh regressions and the final 4327-test serialized gate. Missing native activation/authentication/browser evidence is not replaced by this table, and native release readiness is not claimed. See VERIFICATION.md.

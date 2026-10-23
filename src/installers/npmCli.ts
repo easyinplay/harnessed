@@ -11,6 +11,8 @@
 // helper. This installer is a thin orchestrator; if you find yourself adding
 // fs/spawn/diff logic *here*, lift it to lib/.
 
+import { lstat, readdir } from 'node:fs/promises'
+import { join } from 'node:path'
 import * as p from '@clack/prompts'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
@@ -25,7 +27,7 @@ import {
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
-import type { DiffPlan, Installer, InstallResult, Level } from './lib/types.js'
+import type { DiffPlan, InstallContext, Installer, InstallResult, Level } from './lib/types.js'
 import { verifyInstalled } from './lib/verifyInstalled.js'
 import { formatSpawnFail } from './lib/verifyMessage.js'
 
@@ -33,6 +35,23 @@ function detectLevel(cmd: string): Level {
   if (/\bnpm\s+install\s+-g\b/.test(cmd)) return 'L4'
   if (/\bnpx\b/.test(cmd)) return 'L1'
   return 'L4' // safest default: assume worst-case scope
+}
+
+function unprovenPackTarget(ctx: InstallContext): InstallResult {
+  return {
+    ok: false,
+    phase: 'preflight',
+    error: {
+      ...err(
+        ctx,
+        '/spec/install',
+        'Existing skill-pack source or external write footprint is unproven; refusing replacement.',
+        'update-unsupported',
+      ),
+      suggest:
+        'Manage the existing skill pack with its upstream tool. A presence receipt does not authorize replacement; use the upstream installer to review unknown write targets.',
+    },
+  }
 }
 
 export const installNpmCli: Installer = async (ctx) => {
@@ -58,14 +77,64 @@ export const installNpmCli: Installer = async (ctx) => {
     return { ok: false, phase: 'preflight', error: e }
   }
   // v3.9.6 — idempotent_check probe (skip install if already-installed).
+  let existingPackTarget = false
+  if (
+    ctx.hostContext &&
+    (ctx.manifest.spec.component_type !== 'cli-binary' || install.installs_skills !== undefined)
+  ) {
+    const names = [ctx.manifest.metadata.name, ...(install.installs_skills ?? [])]
+    if (names.some((name) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)))
+      return unprovenPackTarget(ctx)
+    const roots = [
+      ...new Set([
+        ctx.hostContext.platform.skillsDir,
+        join(ctx.hostContext.nativeHome, 'skills'),
+        join(ctx.hostContext.userHome, '.agents', 'skills'),
+      ]),
+    ]
+    const targets = roots.flatMap((root) => names.map((name) => join(root, name)))
+    if (ctx.manifest.metadata.name === 'gsd') {
+      targets.push(join(ctx.hostContext.nativeHome, 'gsd-core'))
+      for (const root of [
+        ...roots,
+        join(ctx.hostContext.nativeHome, 'agents'),
+        ctx.hostContext.platform.commandsDir,
+      ]) {
+        try {
+          if ((await readdir(root)).some((entry) => entry === 'gsd' || entry.startsWith('gsd-')))
+            existingPackTarget = true
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') existingPackTarget = true
+        }
+      }
+    }
+    for (const target of targets) {
+      if (
+        await lstat(target).then(
+          () => true,
+          (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
+        )
+      )
+        existingPackTarget = true
+    }
+    // npm skill-pack scripts do not provide a bounded writer contract.
+    if (ctx.opts.updateInstalled) return unprovenPackTarget(ctx)
+  }
   if (await isAlreadyInstalled(ctx)) {
     const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
     if (verifyFailure) return verifyFailure
     // Phase 59 — the receipt was unreachable on this path; record what is
     // actually present so `harnessed status` can stop under-reporting.
-    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
+    await recordObservedInstall(
+      ctx.cwd,
+      ctx.manifest.metadata.name,
+      install.npm_version,
+      '',
+      ...(ctx.hostContext ? [ctx.hostContext] : []),
+    )
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
+  if (existingPackTarget) return unprovenPackTarget(ctx)
   let level = detectLevel(install.cmd)
   let cmd = install.cmd
   const plan: DiffPlan = { files: [] }
@@ -114,7 +183,9 @@ export const installNpmCli: Installer = async (ctx) => {
   // user's shell cwd (ambient devEngines package.json → EBADDEVENGINES dogfood).
   // 4.23.0 (issue #3) — flat-namespace collision audit (gsd-core writes gsd-* skills).
   await warnDeclaredCollisions(ctx)
-  const packSnapshot = await snapshotSkillNames()
+  const packSnapshot = await snapshotSkillNames(
+    ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
+  )
   const sp = await spawnCmd(ctx, cmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { neutralCwd: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
@@ -132,11 +203,21 @@ export const installNpmCli: Installer = async (ctx) => {
     }
   }
   // 4.23.0 (issue #3) — post-install diff: undeclared new names + workflow collisions.
-  await auditPostInstall(ctx, packSnapshot)
+  await auditPostInstall(
+    ctx,
+    packSnapshot,
+    ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
+  )
   const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
   if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
   // manifest sha1 capture is a Wave 5 CLI concern (it owns the raw yaml bytes);
   // T3.1 records empty-string placeholder per state.ts schema.
-  await updateInstalled(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
+  await updateInstalled(
+    ctx.cwd,
+    ctx.manifest.metadata.name,
+    install.npm_version,
+    '',
+    ...(ctx.hostContext ? [ctx.hostContext] : []),
+  )
   return { ok: true, backupId: bk.backupId, appliedFiles: [] }
 }

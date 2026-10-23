@@ -38,6 +38,7 @@
 // after sequential MCP adds). v3.0.3 reads `enabledPlugins` from
 // `~/.claude.json` directly. Sister `readClaudeConfig.isPluginRegistered()`.
 
+import { join } from 'node:path'
 import { checkCmdString } from '../manifest/security.js'
 import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
@@ -47,11 +48,11 @@ import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
 import { preflight } from './lib/preflight.js'
-import { isPluginRegistered } from './lib/readClaudeConfig.js'
+import { isPluginRegistered, readPluginEnablement } from './lib/readClaudeConfig.js'
 import { runHarnessArgs } from './lib/runClaudeArgs.js'
 import { getMcpSpawnCwd } from './lib/safeCwd.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
-import type { DiffPlan, Installer } from './lib/types.js'
+import type { DiffPlan, InstallContext, Installer, InstallResult } from './lib/types.js'
 import { formatSpawnFail } from './lib/verifyMessage.js'
 
 // Parse `<plugin>@<marketplace>` and the marketplace URL/owner-repo from the
@@ -86,6 +87,29 @@ function parseCmd(cmd: string): ParsedCmd | null {
   }
 }
 
+async function pluginReadinessFailure(
+  ctx: InstallContext,
+  pluginId: string,
+): Promise<InstallResult | null> {
+  if (!ctx.hostContext) return null
+  const enabled = await readPluginEnablement(pluginId, ctx.hostContext)
+  if (enabled === true) return null
+  return {
+    ok: false,
+    phase: 'verify',
+    error: {
+      ...err(
+        ctx,
+        '/spec/verify/cmd',
+        `Plugin '${pluginId}' is installed but ${enabled === false ? 'disabled' : 'enablement is unknown'}; no automatic enablement was performed.`,
+        'verify-failed',
+      ),
+      suggest:
+        'Review the plugin enablement with the native host management tool; harnessed will not override a disabled or unknown state.',
+    },
+  }
+}
+
 export const installCcPluginMarketplace: Installer = async (ctx) => {
   const install = ctx.manifest.spec.install
   if (install.method !== 'cc-plugin-marketplace') {
@@ -105,7 +129,7 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // codex-flavored override (`codex plugin ...` — runInstall merged
   // spec.harness_overrides.codex before dispatch). Anything else → honest skip,
   // never a wrong-platform `claude plugin install` side effect.
-  const platform = detectPlatform()
+  const platform = ctx.hostContext?.platform ?? detectPlatform()
   const isCodexCmd = /^codex\b/.test(install.cmd.trim())
   if (platform.id !== 'claude' && !(platform.id === 'codex' && isCodexCmd)) {
     return { aborted: true, reason: 'harness-mismatch' }
@@ -120,10 +144,62 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
     return { ok: false, phase: 'preflight', error: e }
   }
   // v3.9.6 — idempotent_check probe (skip install if already-installed).
-  if (await isAlreadyInstalled(ctx)) {
+  const selectedPlugin = ctx.hostContext ? parseCmd(install.cmd)?.pluginAtMkt : undefined
+  const existingPlugin =
+    ctx.hostContext && selectedPlugin
+      ? await isPluginRegistered(selectedPlugin.split('@')[0] ?? selectedPlugin, ctx.hostContext)
+      : false
+  const conflictingPlugin =
+    ctx.hostContext && selectedPlugin && existingPlugin
+      ? !(await isPluginRegistered(selectedPlugin, ctx.hostContext))
+      : false
+  if (
+    conflictingPlugin ||
+    (ctx.hostContext &&
+      ctx.opts.updateInstalled &&
+      (existingPlugin || (await isAlreadyInstalled(ctx, { honorUpdateFlag: false }))))
+  ) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: {
+        ...err(
+          ctx,
+          '/spec/install',
+          'Existing plugin source or marketplace identity is unproven; refusing an external update.',
+          'update-unsupported',
+        ),
+        suggest:
+          'Update the plugin with the native host plugin management tool after checking its marketplace/source; a presence receipt does not authorize replacement.',
+      },
+    }
+  }
+  if (existingPlugin || (await isAlreadyInstalled(ctx))) {
+    if (ctx.hostContext) {
+      const parsed = parseCmd(install.cmd)
+      if (!parsed)
+        return {
+          ok: false,
+          phase: 'preflight',
+          error: err(
+            ctx,
+            '/spec/install/cmd',
+            'Cannot determine qualified plugin identity.',
+            'cc-plugin-shape',
+          ),
+        }
+      const failure = await pluginReadinessFailure(ctx, parsed.pluginAtMkt)
+      if (failure) return failure
+    }
     // Phase 59 — the receipt was unreachable on this path; record what is
     // actually present so `harnessed status` can stop under-reporting.
-    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.git_ref, '')
+    await recordObservedInstall(
+      ctx.cwd,
+      ctx.manifest.metadata.name,
+      install.git_ref,
+      '',
+      ...(ctx.hostContext ? [ctx.hostContext] : []),
+    )
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
@@ -195,7 +271,13 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // updated to mirror. No `--dry-run` flag on `claude plugin install` — cmd
   // echo remains the audit trail.
   // v4.14.0: codex plugin registry lives inline in ~/.codex/config.toml.
-  const settingsFile = bin === 'codex' ? platform.mcpConfigPath : `${getMcpSpawnCwd()}/.claude.json`
+  const settingsFile = ctx.hostContext
+    ? bin === 'codex'
+      ? join(ctx.hostContext.nativeHome, 'config.toml')
+      : join(ctx.hostContext.userHome, '.claude.json')
+    : bin === 'codex'
+      ? platform.mcpConfigPath
+      : `${getMcpSpawnCwd()}/.claude.json`
   const newEntry = JSON.stringify({ enabledPlugins: { [parsed.pluginAtMkt]: true } }, null, 2)
   const mergeNote =
     bin === 'codex'
@@ -229,12 +311,20 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // v3.0.2: spawn cwd at homedir() — `--scope user` writes ~/.claude.json
   // regardless of spawn cwd, but the CC CLI may create temp files in cwd;
   // homedir() avoids EPERM when user launches from a read-only CWD.
-  const spawnCwd = install.cwd ?? getMcpSpawnCwd()
+  const spawnCwd = install.cwd ?? getMcpSpawnCwd(...(ctx.hostContext ? [ctx.hostContext] : []))
 
   // Step 1 — marketplace add (D-20: non-zero is non-fatal; step 2 is the decider).
   let stepOneStderr = ''
   if (marketplaceRef !== null) {
-    const r1 = await runHarnessArgs(bin, ['plugin', 'marketplace', 'add', marketplaceRef], spawnCwd)
+    const r1 = ctx.hostContext
+      ? await runHarnessArgs(
+          bin,
+          ['plugin', 'marketplace', 'add', marketplaceRef],
+          spawnCwd,
+          undefined,
+          ctx.hostContext,
+        )
+      : await runHarnessArgs(bin, ['plugin', 'marketplace', 'add', marketplaceRef], spawnCwd)
     stepOneStderr = r1.stderr
     // intentional: do not return on r1.exitCode !== 0
   }
@@ -242,7 +332,13 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // Step 2 — plugin install. This is the authoritative outcome decider.
   // v3.9.9: 60s timeout (claude plugin install cold-start can exceed 15s;
   // sister mcpStdioAdd v3.0.3 same fix).
-  const r2 = await runHarnessArgs(bin, installArgs, spawnCwd, 60_000)
+  const r2 = await runHarnessArgs(
+    bin,
+    installArgs,
+    spawnCwd,
+    60_000,
+    ...(ctx.hostContext ? [ctx.hostContext] : []),
+  )
   if (r2.exitCode !== 0) {
     return {
       ok: false,
@@ -271,8 +367,10 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
   // isPluginRegistered asks `codex plugin list --json` (installed[] only) instead
   // of reading ~/.codex/config.toml; the listing is memoized per process, so drop
   // the pre-install snapshot the idempotent probe may have cached.
-  if (bin === 'codex') invalidateCodexPluginCache()
-  const registered = await isPluginRegistered(pluginName)
+  if (bin === 'codex') invalidateCodexPluginCache(...(ctx.hostContext ? [ctx.hostContext] : []))
+  const registered = ctx.hostContext
+    ? await isPluginRegistered(parsed.pluginAtMkt, ctx.hostContext)
+    : await isPluginRegistered(pluginName)
   if (!registered) {
     const cfgLabel =
       bin === 'codex' ? '`codex plugin list` output' : 'enabledPlugins map of ~/.claude.json'
@@ -289,6 +387,14 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
     }
   }
 
-  await updateInstalled(ctx.cwd, ctx.manifest.metadata.name, install.git_ref, '')
+  const readinessFailure = await pluginReadinessFailure(ctx, parsed.pluginAtMkt)
+  if (readinessFailure) return { ...readinessFailure, backupId: bk.backupId } as InstallResult
+  await updateInstalled(
+    ctx.cwd,
+    ctx.manifest.metadata.name,
+    install.git_ref,
+    '',
+    ...(ctx.hostContext ? [ctx.hostContext] : []),
+  )
   return { ok: true, backupId: bk.backupId, appliedFiles: [settingsFile] }
 }

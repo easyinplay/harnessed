@@ -3,6 +3,7 @@
 // Otherwise: `npm uninstall <pkg>` via direct spawn (NOT runArgs — runArgs prefixes 'claude').
 
 import { spawn } from 'node:child_process'
+import { withHostInstallEnv } from '../installers/lib/runClaudeArgs.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -28,11 +29,20 @@ export const uninstallNpmCli: Uninstaller = async (ctx) => {
   const m = install.cmd.match(/npm\s+(?:install|i)\s+(?:-g\s+)?(\S+)/)
   const pkg = m?.[1] ?? ctx.manifest.metadata.upstream.source
 
-  const isWin = process.platform === 'win32'
+  const isWin = (ctx.hostContext?.os ?? process.platform) === 'win32'
+  const spawnOptions = ctx.hostContext
+    ? {
+        cwd: ctx.hostContext.userHome,
+        env: withHostInstallEnv(process.env, ctx.hostContext),
+      }
+    : {}
   const result = await new Promise<{ exitCode: number; stderr: string }>((resolve) => {
     const child = isWin
-      ? spawn('cmd.exe', ['/c', 'npm', 'uninstall', '-g', pkg], { windowsHide: true })
-      : spawn('npm', ['uninstall', '-g', pkg], { shell: false })
+      ? spawn('cmd.exe', ['/c', 'npm', 'uninstall', '-g', pkg], {
+          ...spawnOptions,
+          windowsHide: true,
+        })
+      : spawn('npm', ['uninstall', '-g', pkg], { ...spawnOptions, shell: false })
     let stderr = ''
     child.stderr?.setEncoding('utf8').on('data', (c: string) => {
       stderr += c

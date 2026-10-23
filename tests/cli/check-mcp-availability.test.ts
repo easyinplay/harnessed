@@ -73,6 +73,38 @@ function writeSettingsEnv(env: Record<string, string>): void {
 }
 
 describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detection', () => {
+  it('keeps one Codex context for native metadata and key hints after async listing drift', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CODEX_HOME', '/selected-native')
+    writeClaudeConfig({
+      'tavily-mcp': { env: { TAVILY_API_KEY: 'wrong-host-secret' } },
+      'exa-mcp': { env: { EXA_API_KEY: 'wrong-host-secret' } },
+    })
+    runHarnessArgs.mockImplementation(async () => {
+      vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+      vi.stubEnv('CODEX_HOME', '/drift-native')
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify([
+          { name: 'tavily-mcp', enabled: false },
+          { name: 'exa-mcp', enabled: true },
+        ]),
+        stderr: '',
+      }
+    })
+    const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
+    const result = await checkMcpAvailability()
+    expect(result.status).toBe('warn')
+    expect(result.message).toContain('disabled: tavily-mcp')
+    expect(result.message).toContain('API key not visible to this check')
+    expect(result.message).not.toContain('API key hints observed')
+    expectUnverified(result.message)
+    expect(runHarnessArgs.mock.calls[0]?.[4]).toMatchObject({
+      hostId: 'codex',
+      nativeHome: '/selected-native',
+    })
+    expect(JSON.stringify(result)).not.toContain('wrong-host-secret')
+  })
   it('1. registration plus MCP env keys is advisory, never runtime availability', async () => {
     writeClaudeConfig({
       'tavily-mcp': { type: 'stdio', command: 'npx', env: { TAVILY_API_KEY: 'tvly-x' } },

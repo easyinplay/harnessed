@@ -2,6 +2,7 @@
 // Sister: src/installers/lib/types.ts symmetric pattern.
 
 import type { Manifest } from '../../manifest/schema/types.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 
 export interface UninstallOpts {
   apply: boolean // false = dry-run by default per ADR 0004 contract 1
@@ -13,6 +14,7 @@ export interface UninstallContext {
   manifest: Manifest
   opts: UninstallOpts
   cwd: string
+  hostContext?: HostInstallContext
 }
 
 export type UninstallResult =

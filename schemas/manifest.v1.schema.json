@@ -1320,6 +1320,25 @@
                       "type": "integer"
                     }
                   }
+                },
+                "uninstall": {
+                  "additionalProperties": false,
+                  "type": "object",
+                  "required": [
+                    "cmd"
+                  ],
+                  "properties": {
+                    "cmd": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "cleanup_paths": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
                 }
               }
             }

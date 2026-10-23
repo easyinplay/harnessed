@@ -6,11 +6,13 @@ import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { withHostInstallEnv } from '../installers/lib/runClaudeArgs.js'
+import type { HostInstallContext } from '../platform/hostInstallContext.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
 // sister src/installers/gitCloneWithSetup.ts extractCloneTarget — refactor to shared lib if 3rd caller appears.
-function extractCloneTarget(cmd: string): string | null {
+function extractCloneTarget(cmd: string, context?: HostInstallContext): string | null {
   const idx = cmd.indexOf('git clone')
   if (idx < 0) return null
   const tail = cmd.slice(idx + 'git clone'.length).trim()
@@ -30,7 +32,7 @@ function extractCloneTarget(cmd: string): string | null {
   const dest = tokens[i + 1]
   if (!dest || dest === '&&' || dest === ';' || dest === '|') return null
   if (dest.startsWith('~/')) {
-    const home = process.env.HOME ?? process.env.USERPROFILE
+    const home = context?.userHome ?? process.env.HOME ?? process.env.USERPROFILE
     if (!home) return null
     return `${home}${dest.slice(1)}`
   }
@@ -48,7 +50,7 @@ function extractCloneTarget(cmd: string): string | null {
  * (ADR-0029 fail-soft for operational faults). The realistic case is covered:
  * git was present to make the clone in the first place.
  */
-export function hasUncommittedWork(dir: string): boolean | null {
+export function hasUncommittedWork(dir: string, context?: HostInstallContext): boolean | null {
   // "Is this directory itself a repo root?" is answered by a `.git` entry sitting
   // in it — NOT by asking git, which walks UP from cwd and so answers yes for a
   // non-repo clone target whenever any ancestor is a repo (a version-controlled
@@ -67,6 +69,7 @@ export function hasUncommittedWork(dir: string): boolean | null {
       cwd: dir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      ...(context ? { env: withHostInstallEnv(process.env, context) } : {}),
     })
     return status.trim().length > 0
   } catch {
@@ -83,7 +86,7 @@ export const uninstallGitCloneWithSetup: Uninstaller = async (ctx) => {
   const abort = dryRunGate(ctx)
   if (abort) return abort
 
-  const cloneTarget = extractCloneTarget(install.cmd)
+  const cloneTarget = extractCloneTarget(install.cmd, ctx.hostContext)
   if (!cloneTarget) {
     return {
       ok: false,
@@ -96,7 +99,10 @@ export const uninstallGitCloneWithSetup: Uninstaller = async (ctx) => {
   // Override is an env flag rather than a new UninstallOpts field: same house
   // pattern as doc-discipline-gate's HARNESSED_ALLOW_LONG_STATE, and it keeps
   // the opts type (shared by all 7 uninstallers) untouched.
-  if (process.env.HARNESSED_FORCE_UNINSTALL !== '1' && hasUncommittedWork(cloneTarget) === true) {
+  if (
+    process.env.HARNESSED_FORCE_UNINSTALL !== '1' &&
+    hasUncommittedWork(cloneTarget, ctx.hostContext) === true
+  ) {
     return {
       ok: false,
       phase: 'preflight',

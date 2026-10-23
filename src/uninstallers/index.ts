@@ -2,6 +2,11 @@
 // Sister: src/installers/index.ts symmetric pattern.
 // D-01 LOCKED: per-method 7 files (no levelOf() — uninstall has no L4 --system gate).
 
+import { isReviewedNeutralTeardown, resolveComponentPlan } from '../installers/lib/componentPlan.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../platform/hostInstallContext.js'
 import { uninstallCcHookAdd } from './ccHookAdd.js'
 import { uninstallCcPluginMarketplace } from './ccPluginMarketplace.js'
 import { uninstallGitCloneWithSetup } from './gitCloneWithSetup.js'
@@ -43,10 +48,65 @@ const DECLARED_TEARDOWN_METHODS: ReadonlySet<Manifest['spec']['install']['method
 export async function runUninstall(
   manifest: Manifest,
   opts: UninstallOpts,
+  context?: HostInstallContext,
 ): Promise<UninstallResult> {
-  const ctx = { manifest, opts, cwd: process.cwd() }
-  const method = manifest.spec.install.method
-  if (DECLARED_TEARDOWN_METHODS.has(method) && hasDeclaredUninstall(ctx)) {
+  let plan: ReturnType<typeof resolveComponentPlan>
+  try {
+    plan = resolveComponentPlan(manifest, context ?? captureHostInstallContext(), 'uninstall')
+  } catch (error) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: `invalid uninstall contract: ${(error as Error).message}`,
+    }
+  }
+  if (plan.status === 'unsupported') {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: `${plan.reason}: ${plan.detail ?? `no safe ${plan.context.hostId} uninstall contract for '${plan.componentId}'`}`,
+    }
+  }
+  if (opts.apply !== true || opts.dryRun) {
+    return { aborted: true, reason: 'dry-run' }
+  }
+  const ctx = {
+    manifest: structuredClone(plan.manifest) as Manifest,
+    opts,
+    cwd: process.cwd(),
+    hostContext: plan.context,
+  }
+  const method = ctx.manifest.spec.install.method
+  const declared =
+    plan.sources.uninstall === 'host-override' ||
+    (DECLARED_TEARDOWN_METHODS.has(method) && hasDeclaredUninstall(ctx))
+  if (ctx.hostContext.hostId === 'codex') {
+    // Defense-in-depth: the pure uninstall plan already rejects these cases.
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(ctx.manifest.metadata.name)) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error: 'unsupported-operation: invalid native resource identity',
+      }
+    }
+    if (declared && !isReviewedNeutralTeardown(ctx.manifest)) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error:
+          'unsupported-operation: explicit uninstall selects a declaration, not reviewed command/cleanup ownership',
+      }
+    }
+    if (!declared && (method === 'mcp-stdio-add' || method === 'mcp-http-add')) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error:
+          'unsupported-operation: registration-only metadata cannot establish native MCP source identity for teardown',
+      }
+    }
+  }
+  if (declared) {
     return runDeclaredTeardown(ctx)
   }
   const uninstaller = uninstallers[method]

@@ -14,7 +14,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
-import { resolveCodexHome } from '../../installers/codexHookAdd.js'
 import { binaryOnPath } from '../../installers/lib/binaryProbe.js'
 import { CODEX_HOOK_MARKETPLACE } from '../../installers/lib/codexHookPlugin.js'
 import {
@@ -22,8 +21,15 @@ import {
   listCodexHooks,
   type RpcOutcome,
 } from '../../installers/lib/codexHookTrust.js'
-import { listInstalledCodexPlugins } from '../../installers/lib/codexPlugins.js'
-import { detectPlatform } from '../../platform/platform.js'
+import {
+  type CodexPluginMetadata,
+  listCodexPluginMetadata,
+  listInstalledCodexPlugins,
+} from '../../installers/lib/codexPlugins.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../../platform/hostInstallContext.js'
 import type { CheckResult } from './check-builtin.js'
 
 export interface CodexHooksDeps {
@@ -32,6 +38,7 @@ export interface CodexHooksDeps {
   join: (...parts: string[]) => string
   pluginDirs: () => Promise<string[]>
   installedPlugins: () => Promise<Set<string> | null>
+  pluginMetadata: () => Promise<readonly CodexPluginMetadata[] | null>
   listHooks: () => Promise<RpcOutcome<CodexHookEntry[]>>
   readText: (p: string) => string | null
   exists: (p: string) => boolean
@@ -40,10 +47,10 @@ export interface CodexHooksDeps {
 
 const NAME = 'codex hook plugins'
 
-function defaultDeps(): CodexHooksDeps {
-  const codexHome = resolveCodexHome()
+function defaultDeps(context: HostInstallContext): CodexHooksDeps {
+  const codexHome = context.nativeHome
   return {
-    platformId: detectPlatform().id,
+    platformId: context.hostId,
     codexHome,
     join,
     pluginDirs: async () => {
@@ -55,8 +62,9 @@ function defaultDeps(): CodexHooksDeps {
         return []
       }
     },
-    installedPlugins: listInstalledCodexPlugins,
-    listHooks: () => listCodexHooks(),
+    installedPlugins: () => listInstalledCodexPlugins(context),
+    pluginMetadata: () => listCodexPluginMetadata(context),
+    listHooks: () => listCodexHooks({ hostContext: context }),
     readText: (p) => {
       try {
         return readFileSync(p, 'utf8')
@@ -111,8 +119,11 @@ function chainProblem(d: CodexHooksDeps, pluginName: string, id: string | null):
   return (bin && d.exists(bin)) || d.exists(cli) ? null : `shim: no entry under ${info.assetsRoot}`
 }
 
-export async function checkCodexHooks(deps?: Partial<CodexHooksDeps>): Promise<CheckResult> {
-  const d = { ...defaultDeps(), ...deps }
+export async function checkCodexHooks(
+  deps?: Partial<CodexHooksDeps>,
+  context: HostInstallContext = captureHostInstallContext(),
+): Promise<CheckResult> {
+  const d = { ...defaultDeps(context), ...deps }
   // Phase 66 T5 — `skipped`, not a `pass` that says "skipped" in prose.
   if (d.platformId !== 'codex')
     return { name: NAME, status: 'skipped', message: `not codex (${d.platformId}) — skipped` }
@@ -120,7 +131,11 @@ export async function checkCodexHooks(deps?: Partial<CodexHooksDeps>): Promise<C
   if (plugins.length === 0)
     return { name: NAME, status: 'pass', message: 'no harnessed codex hook plugins installed' }
 
-  const [installed, listed] = await Promise.all([d.installedPlugins(), d.listHooks()])
+  const [installed, metadata, listed] = await Promise.all([
+    d.installedPlugins(),
+    d.pluginMetadata(),
+    d.listHooks(),
+  ])
   const problems: string[] = []
   const fixes: string[] = []
   const ok: string[] = []
@@ -128,7 +143,11 @@ export async function checkCodexHooks(deps?: Partial<CodexHooksDeps>): Promise<C
     const manifest = pluginName.replace(/^harnessed-/, '')
     const pluginId = `${pluginName}@${CODEX_HOOK_MARKETPLACE}`
     const issues: string[] = []
-    if (installed && !installed.has(pluginId)) issues.push('not installed in codex')
+    if (installed === null) issues.push('installation: unknown')
+    else if (!installed.has(pluginId)) issues.push('not installed in codex')
+    const entry = metadata?.find((plugin) => plugin.pluginId === pluginId)
+    if (entry?.enabled === false) issues.push('plugin disabled')
+    else if (entry?.enabled !== true) issues.push('enablement: unknown')
     const hooks = listed.ok ? listed.value.filter((h) => h.key.startsWith(`${pluginId}:`)) : []
     const trust = !listed.ok
       ? 'unknown'
@@ -141,11 +160,19 @@ export async function checkCodexHooks(deps?: Partial<CodexHooksDeps>): Promise<C
     if (issues.length === 0) ok.push(manifest)
     else {
       problems.push(`${manifest} (${issues.join('; ')})`)
-      fixes.push(`harnessed install ${manifest} --trust-codex-hooks`)
+      fixes.push(
+        entry?.enabled === true && installed !== null
+          ? `harnessed install ${manifest} --trust-codex-hooks`
+          : 'codex plugin list',
+      )
     }
   }
   if (problems.length === 0)
-    return { name: NAME, status: 'pass', message: `installed + trusted: ${ok.join(', ')}` }
+    return {
+      name: NAME,
+      status: 'pass',
+      message: `installed + enabled + trusted: ${ok.join(', ')}`,
+    }
   return {
     name: NAME,
     status: 'warn',

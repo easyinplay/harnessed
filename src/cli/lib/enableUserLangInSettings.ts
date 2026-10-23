@@ -25,6 +25,7 @@
 // Backup → ~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak.
 // Any error → warn + skip (sister fallback 铁律 1), NOT throw — non-blocking setup.
 
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 import { mergeSettingsEnvKey } from './settingsWriter.js'
 import { writeUserLangPin } from './userLangPin.js'
@@ -71,7 +72,10 @@ function safeIntlLocale(): string | undefined {
   }
 }
 
-export async function enableUserLangInSettings(override?: string): Promise<EnableUserLangResult> {
+export async function enableUserLangInSettings(
+  override?: string,
+  hostContext?: HostInstallContext,
+): Promise<EnableUserLangResult> {
   // Phase C / D4: capability gate (sister enableAgentTeamsInSettings). codex's
   // TOML config.toml is not a JSON env-key store, so the env key cannot be written.
   //
@@ -81,11 +85,11 @@ export async function enableUserLangInSettings(override?: string): Promise<Enabl
   // preserve-English categories) was missing from every codex subagent prompt. The
   // preference now goes to a pin in harnessed's own state root instead — see
   // `userLangPin.ts` for why there and not the locale or a host config file.
-  const platform = detectPlatform()
+  const platform = hostContext?.platform ?? detectPlatform()
   const detected = detectUserLang(override)
-  if (!platform.supportsEnvKeyWrite) {
+  if (hostContext?.hostId === 'codex' || !platform.supportsEnvKeyWrite) {
     try {
-      return { status: 'pinned', path: await writeUserLangPin(detected), detected }
+      return { status: 'pinned', path: await writeUserLangPin(detected, hostContext), detected }
     } catch (e) {
       // Same fail-soft posture as every other branch here: setup is never blocked by
       // this step (sister fallback 铁律 1).
@@ -100,6 +104,7 @@ export async function enableUserLangInSettings(override?: string): Promise<Enabl
   // override was passed. mergeSettingsEnvKey invokes skipIfPresent only for a
   // present non-empty string value — matching the original guard exactly.
   const r = await mergeSettingsEnvKey(ENV_KEY, detected, {
+    hostContext,
     skipIfPresent: () => override === undefined,
   })
   switch (r.outcome) {

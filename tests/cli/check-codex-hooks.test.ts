@@ -41,6 +41,7 @@ function deps(over: Partial<CodexHooksDeps> = {}): CodexHooksDeps {
     join: (...p: string[]) => p.join('/'),
     pluginDirs: async () => ['harnessed-perturn-inject'],
     installedPlugins: async () => new Set([PID]),
+    pluginMetadata: async () => [{ pluginId: PID, installed: true, enabled: true }],
     listHooks: async () => ({
       ok: true,
       value: [{ key: KEY, trustStatus: 'trusted', currentHash: 'h', eventName: 'x' }],

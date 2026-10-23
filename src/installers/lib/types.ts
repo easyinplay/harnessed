@@ -14,6 +14,7 @@
 
 import type { ValidationError } from '../../manifest/errors.js'
 import type { Manifest } from '../../manifest/schema/types.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 
 export type Level = 'L1' | 'L2' | 'L3' | 'L4'
 
@@ -42,6 +43,7 @@ export interface InstallContext {
   opts: InstallOpts
   level: Level
   cwd: string // user project root for backup / state writes
+  hostContext?: HostInstallContext
 }
 
 // Pattern E: extend manifest ValidationError with installer-specific fields.

@@ -40,7 +40,7 @@
 
 ## Backlog / Deferred (future milestones)
 
-- **Phase 69: Host installation contract (design draft, not executing)**: retain shared engine/manifests, first-stage Claude Code/Codex only. Contract, six ordered implementation slices and planned acceptance: [phase plan](phases/69-host-installation-contract/PLAN.md). Detailed approval/native architecture gate unresolved; no release authorized.
+- **Phase 69 release/native follow-up**: local implementation and acceptance complete (4327 tests; independent source/npm/Windows compiled smoke), retaining shared engine/manifests for Claude Code/Codex. [Verification and limits](phases/69-host-installation-contract/VERIFICATION.md). Native gstack remains blocked/notrun; no live migration, global replacement or release authorized. Workspace deletion-policy limitations are recorded separately.
 
 - ~~Deferred non-goal (v7.0 discuss): cross-harness breadth~~ → **un-deferred 2026-06-23** (→ v9.0): demand changed (user direction 守宽做深 + cross-platform) AND feasibility changed (upstreams gstack/ECC verified already cross-harness). routing L2-LLM-supervisor simplification still deferred.
 - Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency hazards `sigintTrap.ts`/`before-commit.ts`.

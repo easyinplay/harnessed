@@ -17,6 +17,7 @@ import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
 import { getLocale, type SupportedLocale } from '../../i18n/index.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform, type PlatformDescriptor } from '../../platform/platform.js'
 import {
   type CapabilityMap,
@@ -218,13 +219,14 @@ export async function renderAllSkills(
   homedirOverride?: string,
   locale?: SupportedLocale,
   host?: PlatformDescriptor['id'],
+  hostContext?: HostInstallContext,
 ): Promise<{ results: SkillRenderResult[]; aggregatedWarnings: string[] }> {
   // Resolve locale ONCE for the whole loop (don't make each renderSkillFile
   // re-detect — landmine 6 robust path). Caller (setup.ts) may also pass it.
   const resolvedLocale = locale ?? getLocale()
   // Same one-shot rule for the host + its table: the descriptor id is resolved
   // once and host-primitives.yaml is read once, then reused for every skill.
-  const resolvedHost = toHostId(host ?? detectPlatform().id)
+  const resolvedHost = toHostId(hostContext?.hostId ?? host ?? detectPlatform().id)
   let capabilities: CapabilityMap = {}
   try {
     capabilities = await loadCapabilities(workflowsDir)
@@ -244,8 +246,12 @@ export async function renderAllSkills(
       ],
     }
   }
-  const installedPlugins = readInstalledPlugins(homedirOverride)
-  const installedUserSkills = readInstalledUserSkills(homedirOverride)
+  const installedPlugins = hostContext
+    ? readInstalledPlugins(homedirOverride, hostContext)
+    : readInstalledPlugins(homedirOverride)
+  const installedUserSkills = hostContext
+    ? readInstalledUserSkills(homedirOverride, hostContext)
+    : readInstalledUserSkills(homedirOverride)
   // Tolerant load (missing file → {}); all strictness lives in the renderer, so
   // an absent table only fails the skills that actually reference a primitive.
   // Both reads are once-per-run, not once-per-skill (asserted by tests). The

@@ -34,6 +34,7 @@ import { checkCmdString } from '../../manifest/security.js'
 import { killProcessTree } from './killTree.js'
 import { evalTestChain } from './nativeTest.js'
 import { resolveBash } from './resolveBash.js'
+import { withHostInstallEnv } from './runClaudeArgs.js'
 import { getNeutralSpawnCwd } from './safeCwd.js'
 import type { InstallContext, InstallResult } from './types.js'
 import { verificationEnv } from './verificationEnv.js'
@@ -45,8 +46,8 @@ import { sanitizeOutputTailEnd } from './verifyMessage.js'
  *  directories" (frontend-design dogfood failure). POSIX /bin/sh expands
  *  `~` natively — this helper is win32-only.
  *  Uses forward slashes in the replaced home path (Windows tools accept both). */
-function expandTildeForWindows(cmd: string): string {
-  const home = homedir().replace(/\\/g, '/')
+function expandTildeForWindows(cmd: string, userHome = homedir()): string {
+  const home = userHome.replace(/\\/g, '/')
   // Match `~/` only at start of string OR after whitespace / shell-quote /
   // glob-safe boundary chars — avoid replacing `something~/x`.
   return cmd.replace(/(^|[\s"'`(])~\//g, `$1${home}/`)
@@ -153,7 +154,7 @@ export async function spawnCmd(
   // (v4.15.0 dogfood: every posix verify died on `spawn('bash')` → WSL) AND fixes
   // the cmd.exe idempotent fallback (cmd.exe has no `test`, v3.9.9).
   const joinedCmd = args.length > 0 ? `${cmd} ${args.join(' ')}` : cmd
-  const nativeResult = evalTestChain(joinedCmd)
+  const nativeResult = evalTestChain(joinedCmd, ctx.hostContext?.userHome)
   if (nativeResult !== null) {
     return { ok: true, exitCode: nativeResult ? 0 : 1, stdout: '', stderr: '' }
   }
@@ -162,15 +163,20 @@ export async function spawnCmd(
   const installCfg = ctx.manifest.spec.install
   // v3.0.2: timeoutMs MUST be explicit (back-compat: undefined → 60s install default).
   const effectiveTimeoutMs = timeoutMs ?? DEFAULT_INSTALL_TIMEOUT_MS
-  const env =
+  const platform = ctx.hostContext?.os ?? process.platform
+  const env = withHostInstallEnv(
     opts?.envMode === 'verify'
-      ? verificationEnv(process.env, installCfg.env)
-      : { ...process.env, ...(installCfg.env ?? {}) }
+      ? verificationEnv(process.env, installCfg.env, platform)
+      : { ...process.env, ...(installCfg.env ?? {}) },
+    ctx.hostContext,
+  )
   // v4.20.1 — opts.neutralCwd routes npm/npx-based installs through the neutral
   // spawn dir (EBADDEVENGINES ambient-package.json immunity, see safeCwd.ts).
   // Manifest install.cwd stays highest priority; neutral resolution failure
   // falls open to ctx.cwd (pre-4.20.1 behavior).
-  const cwd = installCfg.cwd ?? (opts?.neutralCwd ? (getNeutralSpawnCwd() ?? ctx.cwd) : ctx.cwd)
+  const cwd =
+    installCfg.cwd ??
+    (opts?.neutralCwd ? (getNeutralSpawnCwd(ctx.hostContext) ?? ctx.cwd) : ctx.cwd)
 
   let child: ChildProcess
   // v23 (4.5.1) — POSIX-shell cmds (git-clone-with-setup install + all verify cmds
@@ -185,7 +191,7 @@ export async function spawnCmd(
   // a 300s spawn-timeout (user dogfood: mattpocock-skills / design-taste-frontend).
   // Closed stdin makes prompt-happy CLIs fail fast or take their non-TTY default.
   const stdio: ['ignore', 'pipe', 'pipe'] = ['ignore', 'pipe', 'pipe']
-  if (process.platform === 'win32') {
+  if (platform === 'win32') {
     // v4.15.2 T2 — posixShell is a capability HINT, not a hard route: a cmd with
     // no POSIX dependency (plain exe verify like `ctx7 --version`) runs via
     // cmd.exe, decoupling it from bash health entirely (.cmd shims prefer it).
@@ -212,8 +218,8 @@ export async function spawnCmd(
       child = spawn(bash.path, ['-c', joinedCmd], { cwd, env, windowsHide: true, stdio })
     } else {
       // v3.9.8 — expand `~/` because cmd.exe doesn't (POSIX-only convention).
-      const expandedCmd = expandTildeForWindows(cmd)
-      const expandedArgs = args.map(expandTildeForWindows)
+      const expandedCmd = expandTildeForWindows(cmd, ctx.hostContext?.userHome)
+      const expandedArgs = args.map((arg) => expandTildeForWindows(arg, ctx.hostContext?.userHome))
       child = spawn('cmd.exe', ['/c', expandedCmd, ...expandedArgs], {
         cwd,
         env,

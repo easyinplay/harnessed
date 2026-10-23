@@ -543,6 +543,29 @@ export function shouldOverwriteFile(content: string): boolean {
   )
 }
 
+/** One rendered command payload; writeAllCommands applies the existing marker
+ * policy before consuming it. No directory-wide ownership is inferred. */
+export function generateCommandArtifact(
+  name: string,
+  commandsDir: string,
+  prompt: RolePrompt,
+  capabilities: CapabilityMap,
+  installedPlugins: Set<string>,
+  installedUserSkills: Set<string>,
+  hostRender?: CommandRenderOptions,
+): GeneratedCommand & { path: string; warnings: string[] } {
+  const generated = generateCommandFile(
+    name,
+    prompt,
+    capabilities,
+    installedPlugins,
+    installedUserSkills,
+    hostRender,
+  )
+  const filename = `${name}.md`
+  return { ...generated, filename, path: join(commandsDir, filename) }
+}
+
 /**
  * Write all sub-workflow commands files to `<commandsDir>`. v3.4.4 marker-based
  * overwrite: a file is overwritten when it carries the harnessed marker OR
@@ -611,17 +634,17 @@ export async function writeAllCommands(
     // host column all throw). Degrade to a per-command warning instead of letting
     // it escape into setup.ts's unwrapped Step A.6 call: one unrenderable body
     // must not take the whole commands/ generation down with it.
-    let content: string
-    let warnings: string[]
+    let artifact: ReturnType<typeof generateCommandArtifact>
     try {
-      ;({ content, warnings } = generateCommandFile(
+      artifact = generateCommandArtifact(
         name,
+        commandsDir,
         prompt,
         capabilities,
         installedPlugins,
         installedUserSkills,
         hostRender,
-      ))
+      )
     } catch (e) {
       results.push({
         name,
@@ -633,7 +656,7 @@ export async function writeAllCommands(
       continue
     }
     try {
-      await writer(path, content)
+      await writer(artifact.path, artifact.content)
       results.push({ name, path, written: true })
     } catch (e) {
       results.push({
@@ -643,7 +666,7 @@ export async function writeAllCommands(
         warning: `write failed for commands/${name}.md: ${(e as Error).message}`,
       })
     }
-    for (const w of warnings) aggregatedWarnings.add(w)
+    for (const w of artifact.warnings) aggregatedWarnings.add(w)
   }
 
   return { results, warnings: [...aggregatedWarnings] }

@@ -16,10 +16,14 @@
 // to L4 here as the safest pre-confirmation seed — npmCli may downgrade to L1
 // after the dry-run preview when cmd uses npx.
 
-import { detectPlatform } from '../platform/platform.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../platform/hostInstallContext.js'
 import { installCcHookAdd } from './ccHookAdd.js'
 import { installCcPluginMarketplace } from './ccPluginMarketplace.js'
 import { installGitCloneWithSetup } from './gitCloneWithSetup.js'
+import { resolveComponentPlan } from './lib/componentPlan.js'
 import type { Installer, InstallOpts, InstallResult, Level, Manifest } from './lib/types.js'
 import { installMcpHttpAdd } from './mcpHttpAdd.js'
 import { installMcpStdioAdd } from './mcpStdioAdd.js'
@@ -55,14 +59,6 @@ function levelOf(manifest: Manifest): Level {
   }
 }
 
-// v4.14.0 T3 — methods with NO non-claude install path unless the manifest
-// carries a harness override (the claude plugin marketplace is CC
-// infrastructure; superpowers & gstack intentionally have no codex override).
-// v16.0 Phase 64 — cc-hook-add left the set: on codex it installs a local codex
-// plugin (codexHookAdd.ts; a hook with no codex port still answers
-// 'harness-mismatch' from there).
-const CLAUDE_ONLY_METHODS: ReadonlySet<string> = new Set(['cc-plugin-marketplace'])
-
 /** v4.14.0 T3 — resolve the effective manifest for the ACTIVE harness platform.
  *  claude → verbatim. Other platforms: `spec.harness_overrides.<id>` present →
  *  install (and verify, when given) replaced wholesale; absent + claude-only
@@ -70,24 +66,25 @@ const CLAUDE_ONLY_METHODS: ReadonlySet<string> = new Set(['cc-plugin-marketplace
 export function resolveForHarness(
   manifest: Manifest,
 ): { manifest: Manifest; gate: null } | { manifest: Manifest; gate: InstallResult } {
-  const platform = detectPlatform()
-  if (platform.id === 'claude') return { manifest, gate: null }
-  const override = platform.id === 'codex' ? manifest.spec.harness_overrides?.codex : undefined
-  if (override) {
-    const spec = {
-      ...manifest.spec,
-      install: override.install,
-      verify: override.verify ?? manifest.spec.verify,
-    }
-    return { manifest: { ...manifest, spec }, gate: null }
-  }
-  if (CLAUDE_ONLY_METHODS.has(manifest.spec.install.method)) {
+  const plan = resolveComponentPlan(manifest, captureHostInstallContext(), 'install')
+  if (plan.status === 'unsupported') {
     return { manifest, gate: { aborted: true, reason: 'harness-mismatch' } }
   }
-  return { manifest, gate: null }
+  // Keep legacy base-reference identity; the pure plan itself is always cloned.
+  return {
+    manifest:
+      plan.sources.install === 'host-override'
+        ? (structuredClone(plan.manifest) as Manifest)
+        : manifest,
+    gate: null,
+  }
 }
 
-export async function runInstall(manifest: Manifest, opts: InstallOpts): Promise<InstallResult> {
+export async function runInstall(
+  manifest: Manifest,
+  opts: InstallOpts,
+  hostContext?: HostInstallContext,
+): Promise<InstallResult> {
   // Catch-all: installers return structured failures for everything they
   // anticipate, but an fs error they re-throw on purpose (EACCES on
   // ~/.claude.json during verify, a state-file write after a successful install)
@@ -95,15 +92,20 @@ export async function runInstall(manifest: Manifest, opts: InstallOpts): Promise
   // `install-base` (one throw aborted the rest of the batch), the L4 rescue and
   // the optional offer did not. Every caller now gets a per-component failure.
   try {
-    const resolved = resolveForHarness(manifest)
-    if (resolved.gate) return resolved.gate
-    const effective = resolved.manifest
+    const plan = resolveComponentPlan(
+      manifest,
+      hostContext ?? captureHostInstallContext(),
+      'install',
+    )
+    if (plan.status === 'unsupported') return { aborted: true, reason: 'harness-mismatch' }
+    const effective = structuredClone(plan.manifest) as Manifest
     const installer = installers[effective.spec.install.method]
     return await installer({
       manifest: effective,
       opts,
       level: levelOf(effective),
       cwd: process.cwd(),
+      hostContext: plan.context,
     })
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code

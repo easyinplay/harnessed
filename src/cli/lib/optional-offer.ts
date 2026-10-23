@@ -26,9 +26,18 @@ import { join } from 'node:path'
 import * as p from '@clack/prompts'
 import { t } from '../../i18n/index.js'
 import { runInstall } from '../../installers/index.js'
+import {
+  effectiveInstallMethod,
+  type ResolvedComponentPlan,
+  resolveComponentPlan,
+} from '../../installers/lib/componentPlan.js'
 import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../../platform/hostInstallContext.js'
 
 export interface OptionalOfferResult {
   installed: string[]
@@ -80,14 +89,28 @@ async function loadOptionalManifests(optionalDir: string): Promise<Manifest[]> {
 export async function runOptionalOffer(
   optionalDir: string,
   offerOpts: { interactive: boolean; trustCodexHooks?: boolean },
+  hostContext: HostInstallContext = captureHostInstallContext(),
 ): Promise<OptionalOfferResult> {
   const out: OptionalOfferResult = { installed: [], alreadyInstalled: [], skipped: [], failed: [] }
   const manifests = await loadOptionalManifests(optionalDir)
   if (manifests.length === 0) return out
 
-  const pending: Manifest[] = []
-  for (const manifest of manifests) {
-    const ctx: InstallContext = { manifest, opts: PROBE_OPTS, level: 'L2', cwd: process.cwd() }
+  const pending: Array<{ manifest: Manifest; plan: ResolvedComponentPlan }> = []
+  for (const declaration of manifests) {
+    const plan = resolveComponentPlan(declaration, hostContext, 'install')
+    if (plan.status === 'unsupported') {
+      out.skipped.push(plan.componentId)
+      console.log(`  skipped ${plan.componentId} (${plan.reason})`)
+      continue
+    }
+    const manifest = structuredClone(plan.manifest) as Manifest
+    const ctx: InstallContext = {
+      manifest,
+      opts: PROBE_OPTS,
+      level: 'L2',
+      cwd: process.cwd(),
+      hostContext: plan.context,
+    }
     let present = false
     try {
       present = await isAlreadyInstalled(ctx)
@@ -95,13 +118,13 @@ export async function runOptionalOffer(
       present = false
     }
     if (present) out.alreadyInstalled.push(manifest.metadata.name)
-    else pending.push(manifest)
+    else pending.push({ manifest, plan })
   }
   if (pending.length === 0) return out
 
   if (!offerOpts.interactive) {
     // Advisory only — CI / piped stdin cannot answer prompts.
-    const names = pending.map((m) => m.metadata.name)
+    const names = pending.map(({ manifest }) => manifest.metadata.name)
     console.log(
       `\n${names.length} optional component(s) available (opt-in, not part of base setup) — install with \`harnessed install <name>\`: ${names.join(', ')}`,
     )
@@ -115,13 +138,13 @@ export async function runOptionalOffer(
   // 4.32.22 — informed offer note for ecc (bonus tier, user ruling): sell the
   // value (finer-grained orchestration) AND be honest that the ~20k+ tokens/
   // session static-listing cost comes from ECC's own scale, not from harnessed.
-  if (pending.some((m) => m.metadata.name === 'ecc')) {
+  if (pending.some(({ manifest }) => manifest.metadata.name === 'ecc')) {
     console.log(t('setup.optional_offer.ecc_note'))
   }
   const ans = await p.multiselect({
     message:
       'Select optional components to install (space to toggle, enter to continue — empty = install nothing)',
-    options: pending.map((m) => ({
+    options: pending.map(({ manifest: m }) => ({
       value: m.metadata.name,
       label: m.metadata.display_name ?? m.metadata.name,
       hint: truncateHint(m.metadata.description),
@@ -130,11 +153,11 @@ export async function runOptionalOffer(
     required: false,
   })
   if (p.isCancel(ans)) {
-    out.skipped.push(...pending.map((m) => m.metadata.name))
+    out.skipped.push(...pending.map(({ manifest }) => manifest.metadata.name))
     return out
   }
   const chosen = new Set(ans as string[])
-  for (const manifest of pending) {
+  for (const { manifest, plan } of pending) {
     const name = manifest.metadata.name
     if (!chosen.has(name)) {
       out.skipped.push(name)
@@ -146,12 +169,12 @@ export async function runOptionalOffer(
       ...PROBE_OPTS,
       apply: true,
       // see IMPL NOTE header — this confirm IS the L4 opt-in for npm-cli globals.
-      system: manifest.spec.install.method === 'npm-cli',
+      system: effectiveInstallMethod(plan) === 'npm-cli',
       // v16.0 Phase 64 (R8) — codex hook trust: setup --trust-codex-hooks grants;
       // otherwise this interactive offer asks per hook (never silently trusts).
       codexHookTrust: offerOpts.trustCodexHooks ? 'grant' : 'ask',
     }
-    const r = await runInstall(manifest, opts)
+    const r = await runInstall(manifest, opts, plan.context)
     if ('aborted' in r) {
       out.skipped.push(name)
       console.log(`  ↷ skipped ${name} (${r.reason})`)

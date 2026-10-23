@@ -15,9 +15,13 @@
 // Source 2 was already skipped (`settingsPath === null`). The key hint is advisory.
 
 import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { t } from '../../i18n/index.js'
 import { isMcpServerRegistered, readUserClaudeJson } from '../../installers/lib/readClaudeConfig.js'
-import { detectPlatform, getSettingsPath } from '../../platform/platform.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../../platform/hostInstallContext.js'
 
 /** Target search MCP servers → the env var each reads its API key from. */
 export const SEARCH_MCP_KEY_VARS: Readonly<Record<string, string>> = {
@@ -39,13 +43,16 @@ function nonEmpty(v: unknown): v is string {
 }
 
 /** Probe one server's API key across the 3 sources (priority order above). */
-export async function probeSearchMcpKey(server: string): Promise<SearchKeyProbe> {
+export async function probeSearchMcpKey(
+  server: string,
+  context: HostInstallContext = captureHostInstallContext(),
+): Promise<SearchKeyProbe> {
   const envVar = SEARCH_MCP_KEY_VARS[server]
   if (!envVar) return { server, envVar: '', present: false }
 
   // 1. mcpServers.<name>.env in the harness MCP config.
   try {
-    const cfg = await readUserClaudeJson()
+    const cfg = await readUserClaudeJson(context)
     const entry = cfg.mcpServers?.[server] as { env?: Record<string, unknown> } | undefined
     if (entry?.env && nonEmpty(entry.env[envVar])) {
       return { server, envVar, present: true, source: 'mcp-env' }
@@ -57,7 +64,7 @@ export async function probeSearchMcpKey(server: string): Promise<SearchKeyProbe>
   // 2. settings.json top-level env block.
   try {
     // v16.0 Phase 63 — null (codex: no JSON settings file) → empty, next source.
-    const path = getSettingsPath()
+    const path = context.hostId === 'codex' ? null : join(context.nativeHome, 'settings.json')
     const raw = path === null ? '{}' : await readFile(path, 'utf8')
     const parsed = JSON.parse(raw) as { env?: Record<string, unknown> }
     if (parsed?.env && nonEmpty(parsed.env[envVar])) {
@@ -77,11 +84,13 @@ export async function probeSearchMcpKey(server: string): Promise<SearchKeyProbe>
 
 /** Installed-but-keyless search MCPs (uninstalled servers are NOT reported —
  *  uninstalled ≠ misconfigured; install gaps belong to the availability check). */
-export async function missingSearchMcpKeys(): Promise<SearchKeyProbe[]> {
+export async function missingSearchMcpKeys(
+  context: HostInstallContext = captureHostInstallContext(),
+): Promise<SearchKeyProbe[]> {
   const out: SearchKeyProbe[] = []
   for (const server of Object.keys(SEARCH_MCP_KEY_VARS)) {
-    if (!(await isMcpServerRegistered(server))) continue
-    const probe = await probeSearchMcpKey(server)
+    if (!(await isMcpServerRegistered(server, context))) continue
+    const probe = await probeSearchMcpKey(server, context)
     if (!probe.present) out.push(probe)
   }
   return out
@@ -89,10 +98,12 @@ export async function missingSearchMcpKeys(): Promise<SearchKeyProbe[]> {
 
 /** i18n'd setup tail-hint lines: header + one line per missing key.
  *  Empty array when nothing is missing (print nothing — no noise). */
-export async function searchMcpKeyHintLines(): Promise<string[]> {
-  const missing = await missingSearchMcpKeys()
+export async function searchMcpKeyHintLines(
+  context: HostInstallContext = captureHostInstallContext(),
+): Promise<string[]> {
+  const missing = await missingSearchMcpKeys(context)
   if (missing.length === 0) return []
-  const isCodex = detectPlatform().id === 'codex'
+  const isCodex = context.hostId === 'codex'
   const lines = [t(isCodex ? 'setup.search_key_hint.header_codex' : 'setup.search_key_hint.header')]
   const lineKey = isCodex ? 'setup.search_key_hint.line_codex' : 'setup.search_key_hint.line'
   for (const m of missing) {

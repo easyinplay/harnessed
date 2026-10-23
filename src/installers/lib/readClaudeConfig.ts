@@ -24,6 +24,8 @@
 // Robust: malformed JSON → return false (graceful), don't crash the installer.
 
 import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import {
   detectPlatform,
   getMcpConfigPath,
@@ -31,7 +33,7 @@ import {
   getSettingsPath,
 } from '../../platform/platform.js'
 import { isCodexMcpServerRegistered } from './codexMcpServers.js'
-import { isCodexPluginInstalled } from './codexPlugins.js'
+import { isCodexPluginInstalled, listCodexPluginMetadata } from './codexPlugins.js'
 
 /**
  * Path to the user-global Claude Code config file written by `claude mcp add
@@ -41,8 +43,8 @@ import { isCodexPluginInstalled } from './codexPlugins.js'
  * Delegates to the `mcpConfigPath` descriptor resolver (Phase B / D1) — `~/.claude.json`
  * IS the MCP config file. Export name preserved for existing callers/tests.
  */
-export function getUserClaudeJsonPath(): string {
-  return getMcpConfigPath()
+export function getUserClaudeJsonPath(hostContext?: HostInstallContext): string {
+  return hostContext ? join(hostContext.userHome, '.claude.json') : getMcpConfigPath()
 }
 
 interface UserClaudeJsonShape {
@@ -66,7 +68,9 @@ interface UserClaudeJsonShape {
  * so the installer surface them as verify-failed with the original cause
  * (no silent swallowing — anti-slop posture per CLAUDE.md karpathy heuristic).
  */
-export async function readUserClaudeJson(): Promise<UserClaudeJsonShape> {
+export async function readUserClaudeJson(
+  hostContext?: HostInstallContext,
+): Promise<UserClaudeJsonShape> {
   // v16.0 post-close (ADR 0041) — this function is named for, and shaped around,
   // `~/.claude.json`. On codex the descriptor points `mcpConfigPath` at config.toml,
   // so every caller here was opening a credential-bearing TOML file only to have
@@ -75,8 +79,8 @@ export async function readUserClaudeJson(): Promise<UserClaudeJsonShape> {
   // Guarded at the mechanism rather than at the call sites: `probeSearchMcpKey`
   // (doctor `check-mcp-availability` + the setup tail hint) is the live codex caller
   // today, and guarding it alone would leave the next caller to rediscover this.
-  if (detectPlatform().id === 'codex') return {}
-  const path = getUserClaudeJsonPath()
+  if ((hostContext?.hostId ?? detectPlatform().id) === 'codex') return {}
+  const path = getUserClaudeJsonPath(hostContext)
   let raw: string
   try {
     raw = await readFile(path, 'utf8')
@@ -107,10 +111,15 @@ export async function readUserClaudeJson(): Promise<UserClaudeJsonShape> {
  *   rather than left exported with no caller.
  * Both: `false` if the source is missing, malformed, or the server is not present.
  */
-export async function isMcpServerRegistered(name: string): Promise<boolean> {
-  const platform = detectPlatform()
-  if (platform.id === 'codex') return isCodexMcpServerRegistered(name)
-  const config = await readUserClaudeJson()
+export async function isMcpServerRegistered(
+  name: string,
+  hostContext?: HostInstallContext,
+): Promise<boolean> {
+  if ((hostContext?.hostId ?? detectPlatform().id) === 'codex')
+    return hostContext
+      ? isCodexMcpServerRegistered(name, hostContext)
+      : isCodexMcpServerRegistered(name)
+  const config = await readUserClaudeJson(hostContext)
   const servers = config.mcpServers
   if (!servers || typeof servers !== 'object') return false
   return Object.hasOwn(servers, name)
@@ -130,16 +139,23 @@ export async function isMcpServerRegistered(name: string): Promise<boolean> {
  *
  * Returns `true` if any registry key's left-of-`@` prefix matches `pluginName`.
  */
-export async function isPluginRegistered(pluginName: string): Promise<boolean> {
-  const platform = detectPlatform()
+export async function isPluginRegistered(
+  pluginName: string,
+  hostContext?: HostInstallContext,
+): Promise<boolean> {
   // v16.0 Phase 64 (R6) — codex answers from `codex plugin list` (codexPlugins.ts),
   // never from config.toml: ADR 0041 keeps harnessed code out of that file.
-  if (platform.id === 'codex') return isCodexPluginInstalled(pluginName)
+  if ((hostContext?.hostId ?? detectPlatform().id) === 'codex')
+    return hostContext
+      ? isCodexPluginInstalled(pluginName, hostContext)
+      : isCodexPluginInstalled(pluginName)
 
   // Primary: ~/.claude/plugins/installed_plugins.json (v2 schema, Claude Code 2.1.133+).
   // Phase C / D4: codex has no plugin registry (getPluginsRegistry → null) — skip
   // this probe; the legacy settings/mcp sources below are still consulted.
-  const registryPath = getPluginsRegistry()
+  const registryPath = hostContext
+    ? join(hostContext.nativeHome, 'plugins', 'installed_plugins.json')
+    : getPluginsRegistry()
   if (registryPath !== null) {
     try {
       const raw = await readFile(registryPath, 'utf8')
@@ -162,7 +178,10 @@ export async function isPluginRegistered(pluginName: string): Promise<boolean> {
   // NOTE: on codex `getMcpConfigPath()` IS config.toml, so this loop must stay
   // unreachable there. It is, via the codex early-return at the top of this function.
   // If that return ever moves below here, this loop starts reading the credential file.
-  for (const path of [getSettingsPath(), getMcpConfigPath()]) {
+  const legacyPaths = hostContext
+    ? [join(hostContext.nativeHome, 'settings.json'), getUserClaudeJsonPath(hostContext)]
+    : [getSettingsPath(), getMcpConfigPath()]
+  for (const path of legacyPaths) {
     if (path === null) continue
     try {
       const raw = await readFile(path, 'utf8')
@@ -178,4 +197,33 @@ export async function isPluginRegistered(pluginName: string): Promise<boolean> {
   }
 
   return false
+}
+
+/** Enablement is separate from registry presence; a bare name never proves readiness. */
+export async function readPluginEnablement(
+  pluginId: string,
+  hostContext?: HostInstallContext,
+): Promise<boolean | null> {
+  if (!/^[^@\s]+@[^@\s]+$/.test(pluginId)) return null
+  if ((hostContext?.hostId ?? detectPlatform().id) === 'codex') {
+    const entries = await listCodexPluginMetadata(hostContext)
+    return entries?.find((entry) => entry.pluginId === pluginId)?.enabled ?? null
+  }
+  const paths = hostContext
+    ? [join(hostContext.nativeHome, 'settings.json'), getUserClaudeJsonPath(hostContext)]
+    : [getSettingsPath(), getMcpConfigPath()]
+  for (const path of paths) {
+    if (path === null) continue
+    try {
+      const parsed = JSON.parse(await readFile(path, 'utf8')) as {
+        enabledPlugins?: Record<string, unknown>
+      } | null
+      const entries = parsed?.enabledPlugins
+      if (entries && Object.hasOwn(entries, pluginId))
+        return typeof entries[pluginId] === 'boolean' ? entries[pluginId] : null
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return null
+    }
+  }
+  return null
 }

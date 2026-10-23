@@ -18,6 +18,7 @@
 
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { checkCmdString } from '../manifest/security.js'
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { detectPlatform, getSettingsPath } from '../platform/platform.js'
@@ -67,8 +68,10 @@ export const installCcHookAdd: Installer = async (ctx) => {
 
   // v16.0 Phase 64 (ADR 0041) — codex has no settings.json hooks surface: the hook
   // ships as a local codex plugin instead (codexHookAdd.ts).
-  if (detectPlatform().id === 'codex') return installCodexHook(ctx)
-  const settingsPath = getSettingsPath()
+  if ((ctx.hostContext?.hostId ?? detectPlatform().id) === 'codex') return installCodexHook(ctx)
+  const settingsPath = ctx.hostContext
+    ? join(ctx.hostContext.nativeHome, 'settings.json')
+    : getSettingsPath()
   // v16.0 Phase 63 — no JSON settings file on this (non-claude, non-codex) platform.
   if (settingsPath === null) return { aborted: true, reason: 'platform-mismatch' }
   // Sentinel `null` ⇒ file does not exist (oldText='' so backup() emits pure-create).
@@ -149,7 +152,15 @@ export const installCcHookAdd: Installer = async (ctx) => {
     // Phase 59 wrote the receipt on every other installer's idempotent path and
     // missed this one; it also returned the plain success shape, so setup
     // reported "installed" on every re-run of an already-registered hook.
-    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, '', '')
+    if (ctx.opts.apply && !ctx.opts.dryRun) {
+      await recordObservedInstall(
+        ctx.cwd,
+        ctx.manifest.metadata.name,
+        '',
+        '',
+        ...(ctx.hostContext ? [ctx.hostContext] : []),
+      )
+    }
     return { ok: true, alreadyInstalled: true, backupId: 'idempotent-skip' }
   }
   const others = arr.filter((e) => !entryMatchesRegistration(e, cmd, resolvedCmd, marker))
@@ -203,6 +214,12 @@ export const installCcHookAdd: Installer = async (ctx) => {
     }
   }
 
-  await updateInstalled(ctx.cwd, ctx.manifest.metadata.name, '', '')
+  await updateInstalled(
+    ctx.cwd,
+    ctx.manifest.metadata.name,
+    '',
+    '',
+    ...(ctx.hostContext ? [ctx.hostContext] : []),
+  )
   return { ok: true, backupId: bk.backupId, appliedFiles: [settingsPath] }
 }

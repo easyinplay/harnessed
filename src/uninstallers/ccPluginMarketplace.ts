@@ -3,8 +3,9 @@
 // parseCmd inline — single caller, YAGNI per RESEARCH § 7 Q2.
 // Reuses runArgs from installers/lib/runClaudeArgs.ts (#BF Phase 5.1 W0).
 
-import { runArgs } from '../installers/lib/runClaudeArgs.js'
-import { detectPlatform } from '../platform/platform.js'
+import { runHarnessArgs } from '../installers/lib/runClaudeArgs.js'
+import { getMcpSpawnCwd } from '../installers/lib/safeCwd.js'
+import { captureHostInstallContext } from '../platform/hostInstallContext.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -25,16 +26,16 @@ export const uninstallCcPluginMarketplace: Uninstaller = async (ctx) => {
   const abort = dryRunGate(ctx)
   if (abort) return abort
 
-  // v4.14.0 — claude-only uninstall path: the uninstall dispatch does NOT merge
-  // spec.harness_overrides, so on a non-claude platform we fail honest instead
-  // of spawning the wrong CLI. Codex-installed plugins are removed with
-  // `codex plugin remove <p>@<m>` manually (follow-up: override-aware uninstall).
-  if (detectPlatform().id !== 'claude') {
+  // The shared plan selects host overrides, but effective Codex plugin teardown
+  // remains unsupported: neither a guessed inverse nor a declaration proves
+  // resource identity/ownership. Keep this guard for direct method callers too.
+  const context = ctx.hostContext ?? captureHostInstallContext()
+  if (context.hostId !== 'claude') {
     return {
       ok: false,
       phase: 'preflight',
       error:
-        'cc-plugin-marketplace uninstall is claude-only; on codex remove the plugin with `codex plugin remove <plugin>@<marketplace>`',
+        'cc-plugin-marketplace uninstall is claude-only; Codex plugin teardown is unsupported without reviewed command and ownership policy',
     }
   }
 
@@ -47,7 +48,13 @@ export const uninstallCcPluginMarketplace: Uninstaller = async (ctx) => {
     }
   }
 
-  const r = await runArgs(['plugin', 'uninstall', pluginAtMkt], ctx.cwd)
+  const r = await runHarnessArgs(
+    'claude',
+    ['plugin', 'uninstall', pluginAtMkt],
+    getMcpSpawnCwd(context),
+    15_000,
+    context,
+  )
   if (r.exitCode !== 0) {
     return {
       ok: false,

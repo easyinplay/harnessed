@@ -7,7 +7,7 @@
 //   - decline → skipped, runInstall NOT called
 //   - install failure → failed bucket with reason
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(async () => 'yaml-content'),
@@ -45,7 +45,9 @@ function silenceConsole(): void {
 }
 
 describe('runL4Rescue', () => {
+  afterEach(() => vi.unstubAllEnvs())
   beforeEach(() => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
     vi.restoreAllMocks()
     runInstallMock.mockReset()
     validateMock.mockReset()
@@ -53,6 +55,72 @@ describe('runL4Rescue', () => {
     confirmMock.mockResolvedValue(true)
     validateMock.mockReturnValue({ ok: true, errors: [], manifest: CTX7_MANIFEST } as never)
     silenceConsole()
+  })
+
+  it('pins override display, permission and native context across an async consent drift', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CODEX_HOME', '/selected-native')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/selected-state')
+    const logs: string[] = []
+    vi.mocked(console.log).mockImplementation((...args) => {
+      logs.push(args.join(' '))
+    })
+    const manifest = {
+      ...CTX7_MANIFEST,
+      spec: {
+        ...CTX7_MANIFEST.spec,
+        harness_overrides: {
+          codex: { install: { method: 'npm-cli', cmd: 'npm install -g codex-fixture' } },
+        },
+      },
+    }
+    validateMock.mockReturnValue({ ok: true, manifest } as never)
+    confirmMock.mockImplementation(async () => {
+      vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+      vi.stubEnv('CODEX_HOME', '/drift-native')
+      vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/drift-state')
+      return true
+    })
+    runInstallMock.mockResolvedValue({ ok: true, backupId: '', appliedFiles: [] })
+    const result = await runL4Rescue(
+      ['ctx7.yaml'],
+      [{ name: 'ctx7', reason: 'level-flag-missing' }],
+    )
+    expect(result.installed).toEqual(['ctx7'])
+    expect(logs.join('\n')).toContain('$ npm install -g codex-fixture')
+    expect(logs.join('\n')).not.toContain('$ npm install -g ctx7')
+    expect(runInstallMock.mock.calls[0]?.[0].spec.install.cmd).toBe('npm install -g codex-fixture')
+    expect(runInstallMock.mock.calls[0]?.[1]).toMatchObject({
+      system: true,
+      nonInteractive: true,
+      dryRun: false,
+    })
+    expect(runInstallMock.mock.calls[0]?.[2]).toMatchObject({
+      hostId: 'codex',
+      nativeHome: '/selected-native',
+      platform: { stateRoot: '/selected-state' },
+    })
+    expect(manifest.spec.install.cmd).toBe('npm install -g ctx7')
+  })
+
+  it('rejects an unsupported Codex install before asking for L4 consent', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    validateMock.mockReturnValue({
+      ok: true,
+      manifest: {
+        ...CTX7_MANIFEST,
+        spec: {
+          install: { method: 'cc-plugin-marketplace', cmd: 'claude plugin install fixture' },
+        },
+      },
+    } as never)
+    const result = await runL4Rescue(
+      ['ctx7.yaml'],
+      [{ name: 'ctx7', reason: 'level-flag-missing' }],
+    )
+    expect(result).toEqual({ installed: [], skipped: ['ctx7'], failed: [] })
+    expect(confirmMock).not.toHaveBeenCalled()
+    expect(runInstallMock).not.toHaveBeenCalled()
   })
 
   it('no level-flag-missing skips → no prompt, no install', async () => {

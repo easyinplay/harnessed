@@ -178,6 +178,7 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
     expect(runInstallMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ system: system === true, nonInteractive: true }),
+      expect.objectContaining({ userHome: expect.any(String), nativeHome: expect.any(String) }),
     )
     expect(runInstallMock.mock.calls[0]?.[1]).not.toHaveProperty('codexHookTrust')
     expect(b.installed).toEqual(system === true ? ['playwright-cli'] : [])
@@ -202,6 +203,7 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
     expect(runInstallMock).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ system: true, updateInstalled: true }),
+      expect.objectContaining({ userHome: expect.any(String), nativeHome: expect.any(String) }),
     )
   })
 

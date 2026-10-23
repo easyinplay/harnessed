@@ -18,6 +18,8 @@ import * as manifestValidation from '../../src/manifest/validate.js'
 vi.mock('node:fs/promises', () => ({
   cp: vi.fn(),
   mkdir: vi.fn(),
+  lstat: vi.fn(async () => ({ isSymbolicLink: () => false, isDirectory: () => true })),
+  realpath: vi.fn(async (path) => String(path)),
   readdir: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
@@ -129,8 +131,14 @@ beforeEach(() => {
     failed: [],
   })
   vi.stubEnv('HARNESSED_PLATFORM', 'codex')
-  vi.mocked(readdir).mockImplementation(async (path) => {
+  vi.mocked(readdir).mockImplementation(async (path, options?: unknown) => {
     const normalized = String(path).replaceAll('\\', '/')
+    if (options && typeof options === 'object' && 'withFileTypes' in options) {
+      return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+        name,
+        isDirectory: () => false,
+      })) as never
+    }
     return (
       normalized.endsWith('/workflows')
         ? ['demo']
@@ -187,10 +195,13 @@ describe('setup base-install exit status through registerSetup', () => {
       ),
     )
     expect(backupSkillDir).toHaveBeenCalledTimes(2)
-    expect(cp).toHaveBeenCalledTimes(2)
+    expect(cp).toHaveBeenCalledTimes(4)
     expect(auditInstalledSkills).toHaveBeenCalledOnce()
     expect(recordSkillHashes).toHaveBeenCalledTimes(2)
-    expect(runAutoInstall).toHaveBeenCalledWith({ nonInteractive: true, autoInstall: true })
+    expect(runAutoInstall).toHaveBeenCalledWith(
+      { nonInteractive: true, autoInstall: true },
+      expect.objectContaining({ hostId: 'codex' }),
+    )
     expect(searchMcpKeyHintLines).toHaveBeenCalledOnce()
     expect(checkGuardConflict).toHaveBeenCalledOnce()
     expect(vi.mocked(process.exit).mock.invocationCallOrder[0]).toBeGreaterThan(
@@ -267,9 +278,10 @@ describe('setup optional outcomes through registerSetup', () => {
     expect(runOptionalOffer).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ interactive: true }),
+      expect.objectContaining({ hostId: 'codex' }),
     )
     expect(backupSkillDir).toHaveBeenCalledTimes(2)
-    expect(cp).toHaveBeenCalledTimes(2)
+    expect(cp).toHaveBeenCalledTimes(4)
     expect(auditInstalledSkills).toHaveBeenCalledOnce()
     expect(recordSkillHashes).toHaveBeenCalledTimes(2)
     expect(searchMcpKeyHintLines).toHaveBeenCalledOnce()
@@ -344,6 +356,7 @@ describe('setup optional outcomes through registerSetup', () => {
       expect.objectContaining({
         interactive: !['--non-interactive', 'stdin', 'stdout'].includes(outcome),
       }),
+      expect.objectContaining({ hostId: 'codex' }),
     )
     expect(base.failed).toEqual([])
     expect(base.skipped).toEqual([])
@@ -360,7 +373,7 @@ describe('setup optional outcomes through registerSetup', () => {
 
     expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
     expect(process.exit).not.toHaveBeenCalled()
-    expect(cp).toHaveBeenCalledOnce()
+    expect(cp).toHaveBeenCalledTimes(2)
   })
 })
 
@@ -408,6 +421,7 @@ describe('setup L4 rescue result through registerSetup', () => {
     expect(runInstall).toHaveBeenLastCalledWith(
       expect.anything(),
       expect.objectContaining({ system: true, nonInteractive: true }),
+      expect.objectContaining({ hostId: 'codex' }),
     )
     expect(vi.mocked(runInstall).mock.invocationCallOrder[1]).toBeGreaterThan(
       vi.mocked(confirm).mock.invocationCallOrder[0] ?? 0,
@@ -452,6 +466,7 @@ describe('setup L4 rescue result through registerSetup', () => {
     expect(runInstall).not.toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ system: true }),
+      expect.objectContaining({ hostId: 'codex' }),
     )
   })
 
@@ -514,6 +529,7 @@ describe('setup L4 rescue result through registerSetup', () => {
     expect(runOptionalOffer).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ interactive: false, trustCodexHooks: false }),
+      expect.objectContaining({ hostId: 'codex' }),
     )
     expect(confirm).not.toHaveBeenCalled()
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('1 base manifests configured'))
@@ -695,8 +711,14 @@ describe('setup L4 rescue result through registerSetup', () => {
     'declined',
     'failed',
   ] as const)('force-update preserves an L4 skip for the subsequent rescue: %s', async (outcome) => {
-    vi.mocked(readdir).mockImplementation(async (path) => {
+    vi.mocked(readdir).mockImplementation(async (path, options?: unknown) => {
       const normalized = String(path).replaceAll('\\', '/')
+      if (options && typeof options === 'object' && 'withFileTypes' in options) {
+        return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+          name,
+          isDirectory: () => false,
+        })) as never
+      }
       return (
         normalized.endsWith('/workflows')
           ? ['demo']

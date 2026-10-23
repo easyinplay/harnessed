@@ -17,6 +17,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { harnessedSubdir } from '../../platform/harnessedRoot.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform, getSettingsPath } from '../../platform/platform.js'
 
 /**
@@ -35,6 +36,7 @@ export type MergeOutcome =
   | { outcome: 'warn'; message: string }
 
 export interface MergeOpts {
+  hostContext?: HostInstallContext
   /**
    * Given the current value of `env[key]` (a string), return true to treat the
    * file as already-correct and no-op. Used for idempotency / user-override
@@ -55,10 +57,18 @@ export async function mergeSettingsEnvKey(
   value: string,
   opts: MergeOpts = {},
 ): Promise<MergeOutcome> {
-  const path = getSettingsPath()
+  const hostContext = opts.hostContext
+  const path = hostContext
+    ? hostContext.hostId === 'claude' && hostContext.platform.supportsEnvKeyWrite
+      ? join(hostContext.nativeHome, 'settings.json')
+      : null
+    : getSettingsPath()
   // v16.0 Phase 63 — codex has no JSON settings file: warn, never touch config.toml.
   if (path === null)
-    return { outcome: 'warn', message: `no settings file on ${detectPlatform().id} — skipped` }
+    return {
+      outcome: 'warn',
+      message: `no settings file on ${hostContext?.hostId ?? detectPlatform().id} — skipped`,
+    }
 
   let raw: string
   try {
@@ -95,7 +105,7 @@ export async function mergeSettingsEnvKey(
   }
 
   // Case (c): backup original + merge add/update key (non-destructive).
-  const backup = await backupOriginal(raw)
+  const backup = await backupOriginal(raw, hostContext)
   if (backup.status === 'warn') return { outcome: 'warn', message: backup.message }
 
   data.env = { ...env, [key]: value }
@@ -119,8 +129,11 @@ async function createFresh(path: string, key: string, value: string): Promise<Me
 
 async function backupOriginal(
   raw: string,
+  hostContext?: HostInstallContext,
 ): Promise<{ status: 'ok'; path: string } | { status: 'warn'; message: string }> {
-  const backupRoot = harnessedSubdir('backups')
+  const backupRoot = hostContext
+    ? join(hostContext.platform.stateRoot, 'backups')
+    : harnessedSubdir('backups')
   const ts = new Date().toISOString().replace(/:/g, '-')
   const backupPath = join(backupRoot, `settings.json.${ts}.bak`)
   try {

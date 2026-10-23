@@ -15,6 +15,8 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(),
   rename: vi.fn(),
   mkdir: vi.fn(),
+  lstat: vi.fn(async () => ({ isSymbolicLink: () => false, isDirectory: () => true })),
+  realpath: vi.fn(async (path) => String(path)),
 }))
 
 vi.mock('../../src/installers/index.js', () => ({
@@ -87,12 +89,18 @@ function makeStatMock(withSkillMd: string[], _legacy?: string[]) {
   }
 }
 
-/** readdir mock that only returns entries for the top-level workflows dir (not nested children). */
+/** Scanner strings and per-file copy inventory use the same fixture tree. */
 function makeWorkflowsReaddir(topEntries: string[], extras: Record<string, string[]> = {}) {
-  return async (p: unknown) => {
+  return async (p: unknown, options?: unknown) => {
     const ps = String(p).replace(/\\/g, '/')
     // Top-level workflows dir — strip trailing slash, compare basename
     const trimmed = ps.replace(/\/+$/, '')
+    if (options && typeof options === 'object' && 'withFileTypes' in options) {
+      return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+        name,
+        isDirectory: () => false,
+      })) as never
+    }
     if (trimmed.endsWith('/workflows')) return topEntries as never
     for (const [key, val] of Object.entries(extras)) {
       if (trimmed.includes(key)) return val as never
@@ -182,10 +190,15 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    // Step A — 2 cp per workflow since 4.24.0 (G2): the mocked env reads as
+    // Step A: the mocked env reads as
     // "dst exists + no usable ledger" → conservative pre-overwrite backup cp,
-    // then the install cp. Recorded reason: intel gap-close backup-before-overwrite.
-    expect(cpMock).toHaveBeenCalledTimes(2)
+    // then one copy for each declared payload (SKILL.md + workflow.yaml).
+    expect(cpMock).toHaveBeenCalledTimes(3)
+    expect(cpMock).toHaveBeenCalledWith(
+      expect.stringMatching(/workflows[/\\]research[/\\]workflow\.yaml$/),
+      expect.stringMatching(/skills[/\\]research[/\\]workflow\.yaml$/),
+      { force: true },
+    )
     expect(stdout).toContain('Step A: 1 workflow')
     // Step B
     expect(runInstallMock).toHaveBeenCalledTimes(2)
@@ -265,8 +278,8 @@ describe('cli/setup — v1.0.2 T1.5 (one-shot onboarding: Step A workflows + Ste
 
     const { code, stdout } = await runCli(['setup'])
     expect(code).toBe(0)
-    // 4 = 2 workflows × (backup cp + install cp) — see cell 3 recorded reason (4.24.0 G2).
-    expect(cpMock).toHaveBeenCalledTimes(4)
+    // 2 workflows, each with one backup plus two declared payload copies.
+    expect(cpMock).toHaveBeenCalledTimes(6)
     expect(stdout).toContain('Step A: 2 workflow')
   })
 

@@ -75,18 +75,18 @@ Coverage: 4/4 (v11.0 all phases green local 2026-06-26). v10.0 (6/6) shipped npm
 
 ---
 
-## Phase 69: Host Installation Contract (Proposed)
+## Phase 69: Host Installation Contract
 
-This section is additive to the historical milestone requirements above. It is a design/acceptance proposal, not implementation or verification evidence. Scope decisions are in phases/69-host-installation-contract/CONTEXT.md; exact contract and planned coverage are in DESIGN.md and VALIDATION.md there.
+This section is additive to the historical milestone requirements above. Approved scope is in phases/69-host-installation-contract/CONTEXT.md; exact contract/coverage are in DESIGN.md and VALIDATION.md. Fresh local evidence and explicit native/cleanup limits are in VERIFICATION.md and EXECUTION.md there.
 
 | ID | Requirement | Planned Slice | Status |
 | --- | --- | --- | --- |
-| HIC-01 | Pure, immutable host/component resolution for Claude Code and Codex; preserve implicit host precedence and state roots, reject invalid explicit targets without side effects. | Tasks 1-2 | Proposed |
-| HIC-02 | Install, setup grouping/serialization, existing-install probes, update, doctor and uninstall consume the same effective host contract instead of independently interpreting overrides. | Tasks 2-4 | Proposed |
-| HIC-03 | Explicit safe host teardown; optional Codex uninstall override is security-screened and consumed. Unsupported or ambiguous inverse operations cause zero wrong-host mutation. | Task 3 | Proposed |
-| HIC-04 | Native CLI/RPC, confirmation, L4, hook trust, serialization, verify environment isolation and component/OS runtime checks remain separate and enforced. | Tasks 2-4 | Proposed |
-| HIC-05 | Installation-source evidence is not ownership or consent. Existing observed receipts and current templates do not authorize destructive takeover of unknown/user-managed resources. | Tasks 3-4 | Proposed |
-| HIC-06 | Production and tests share enumeration of harnessed-owned rendered artifacts; declaration-to-write and write-to-declaration agree without replacing existing hash/backup policy. | Task 5 | Proposed |
-| HIC-07 | Compatibility, npm/compiled packaging and host-native evidence are independently validated. Unsupported components and upstream/auth/trust blockers remain explicit; no automatic release or live cleanup. | Task 6 | Proposed |
+| HIC-01 | Pure, immutable host/component resolution for Claude Code and Codex; preserve implicit host precedence and state roots, reject invalid explicit targets without side effects. | Tasks 1-2 | Verified locally |
+| HIC-02 | Install, setup grouping/serialization, existing-install probes, update, doctor and per-manifest uninstall consume the same effective host contract instead of independently interpreting overrides. | Tasks 2-4 | Verified locally |
+| HIC-03 | Explicit safe host teardown; optional Codex uninstall override is security-screened and consumed. Unsupported or ambiguous inverse operations cause zero wrong-host mutation. | Task 3 | Verified locally; unsupported remains explicit |
+| HIC-04 | Native CLI/RPC, confirmation, L4, hook trust, serialization, verify environment isolation and component/OS runtime checks remain separate and enforced. | Tasks 2-4 | Fixture verified; live limits recorded |
+| HIC-05 | Installation-source evidence is not ownership or consent. Existing observed receipts and current templates do not authorize destructive takeover of unknown/user-managed resources. | Tasks 3-4 | Verified locally |
+| HIC-06 | Production and tests share enumeration of harnessed-owned rendered artifacts; declaration-to-write and write-to-declaration agree without replacing existing hash/backup policy. | Task 5 | Verified locally; byte goldens unchanged |
+| HIC-07 | Compatibility, npm/compiled packaging and host-native evidence are independently validated. Unsupported components and upstream/auth/trust blockers remain explicit; no automatic release or live cleanup. | Task 6 | Local channels verified; native deferred |
 
-No HIC requirement is marked complete. Fixture and native acceptance must be generated after implementation; planning documents alone cannot satisfy these requirements.
+Local closure is based on the fresh 4327-test serialized suite, production eval 14/14 and independent channel acceptance, not planning documents. Native activation/auth/browser and other-OS live acceptance remain separately deferred. The no-name unified uninstaller was not redesigned; workspace cleanup is incomplete after explicit tool-policy denials.

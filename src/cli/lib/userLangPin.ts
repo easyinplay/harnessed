@@ -27,7 +27,8 @@
 
 import { readFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 
 /** Supported reply languages — same closed set as `enableUserLangInSettings`. */
@@ -39,14 +40,17 @@ const SUPPORTED: readonly string[] = ['en', 'zh-Hans']
 export const USER_LANG_PIN = 'user-lang'
 
 /** `<stateRoot>/user-lang` for the ACTIVE host. */
-export function userLangPinPath(): string {
-  return join(detectPlatform().stateRoot, USER_LANG_PIN)
+export function userLangPinPath(hostContext?: HostInstallContext): string {
+  return join(hostContext?.platform.stateRoot ?? detectPlatform().stateRoot, USER_LANG_PIN)
 }
 
 /** Write the pin (creating the state root if needed). Returns the path written. */
-export async function writeUserLangPin(code: UserLangCode): Promise<string> {
-  const path = userLangPinPath()
-  await mkdir(detectPlatform().stateRoot, { recursive: true })
+export async function writeUserLangPin(
+  code: UserLangCode,
+  hostContext?: HostInstallContext,
+): Promise<string> {
+  const path = userLangPinPath(hostContext)
+  await mkdir(dirname(path), { recursive: true })
   await writeFile(path, `${code}\n`, 'utf8')
   return path
 }
@@ -57,10 +61,10 @@ export async function writeUserLangPin(code: UserLangCode): Promise<string> {
  * Sync + fail-soft on purpose: the one caller is a prompt build that must never throw
  * because of a missing or malformed state file, and the read is a single short file.
  */
-export function readUserLangPin(): UserLangCode | undefined {
+export function readUserLangPin(hostContext?: HostInstallContext): UserLangCode | undefined {
   let raw: string
   try {
-    raw = readFileSync(userLangPinPath(), 'utf8')
+    raw = readFileSync(userLangPinPath(hostContext), 'utf8')
   } catch {
     return undefined
   }

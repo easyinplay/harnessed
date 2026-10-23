@@ -10,6 +10,9 @@ vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
   stat: vi.fn(),
   cp: vi.fn(),
+  mkdir: vi.fn(),
+  lstat: vi.fn(async () => ({ isSymbolicLink: () => false, isDirectory: () => true })),
+  realpath: vi.fn(async (path) => String(path)),
 }))
 
 vi.mock('../../src/installers/index.js', () => ({
@@ -83,8 +86,14 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
 /** Minimal happy-path mocks so setup runs to completion. */
 function setupHappyPathMocks() {
   // Phase v3.0-3.3 T3.3.W0.12: 'execute-task' deprecated → use 'research' (flat keep)
-  readdirMock.mockImplementation(async (p: unknown) => {
+  readdirMock.mockImplementation(async (p: unknown, options?: unknown) => {
     const ps = String(p).replace(/\\/g, '/').replace(/\/+$/, '')
+    if (options && typeof options === 'object' && 'withFileTypes' in options) {
+      return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+        name,
+        isDirectory: () => false,
+      })) as never
+    }
     if (ps.endsWith('/workflows')) return ['research'] as never
     if (ps.includes('tools')) return ['ctx7.yaml'] as never
     return [] as never

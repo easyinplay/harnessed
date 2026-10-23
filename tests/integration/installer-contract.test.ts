@@ -44,6 +44,12 @@ vi.mock('node:fs/promises', () => ({
     e.code = 'ENOENT'
     throw e
   }),
+  lstat: vi.fn(async () => {
+    const e = new Error('ENOENT') as NodeJS.ErrnoException
+    e.code = 'ENOENT'
+    throw e
+  }),
+  readdir: vi.fn(async () => []),
   writeFile: vi.fn(async () => undefined),
   rename: vi.fn(async () => undefined),
   // Phase 2.1 T6.2 — npx-skill-installer real-path verify uses fs.access

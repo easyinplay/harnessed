@@ -23,6 +23,7 @@ import { dirname, join, resolve as pathResolve, sep } from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
+import { resolveComponentPlan } from '../installers/lib/componentPlan.js'
 import {
   countHarnessedHooks,
   stripHarnessedHooks,
@@ -31,6 +32,10 @@ import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../platform/hostInstallContext.js'
 import { detectPlatform } from '../platform/platform.js'
 import { runUninstall } from '../uninstallers/index.js'
 import { scanWorkflowsNested } from '../workflow/scan-nested.js'
@@ -359,6 +364,13 @@ export function registerUninstall(program: Command): void {
       }
 
       // ── Per-manifest uninstall (<name> provided) ──
+      let context: HostInstallContext
+      try {
+        context = captureHostInstallContext()
+      } catch (error) {
+        console.error(`error: invalid uninstall context: ${(error as Error).message}`)
+        process.exit(1)
+      }
       const { resolveAlias } = await import('../manifest/aliases.js')
       const resolvedName = resolveAlias(name) ?? name
       checkPathSafe(resolvedName)
@@ -391,11 +403,19 @@ export function registerUninstall(program: Command): void {
         process.exit(1)
       }
 
+      const plan = resolveComponentPlan(v.manifest, context, 'uninstall')
+      if (plan.status === 'unsupported') {
+        console.error(
+          `error: ${plan.reason}: ${plan.detail ?? `no safe ${context.hostId} uninstall contract for '${plan.componentId}'`}`,
+        )
+        process.exit(1)
+      }
+
       if (dryRun) {
         console.log(
           t('uninstall.dry_run.preview', {
             name: resolvedName,
-            method: v.manifest.spec.install.method,
+            method: plan.manifest.spec.install.method,
           }),
         )
         console.log(t('uninstall.dry_run.run_hint'))
@@ -411,7 +431,11 @@ export function registerUninstall(program: Command): void {
         process.exit(2)
       }
 
-      const result = await runUninstall(v.manifest, { apply: true, dryRun: false, yes: true })
+      const result = await runUninstall(
+        v.manifest,
+        { apply: true, dryRun: false, yes: true },
+        context,
+      )
 
       if ('aborted' in result) {
         console.error(t('install.aborted', { reason: result.reason }))

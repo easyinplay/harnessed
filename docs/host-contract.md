@@ -3,7 +3,7 @@
 > **这是一份契约 / 参考,不是历史。** 它回答「同一份 harnessed 装到 Claude Code 和 codex 上,
 > 各自发生什么」,好让后来人不必去翻四个 phase 的 findings。
 >
-> 覆盖范围:v16.0 Phase 63-66 积累的宿主差异。
+> 覆盖范围:v16.0 Phase 63-66 积累的宿主差异及 Phase 69 安装生命周期契约。
 > 历史指针(叙事在那儿,不在这儿):`.planning/phases/{63-platform-detection-refactor,64-codex-hooks-plugin,65-host-primitive-content,66-codex-spawn-agents-goal}/`。
 > 决策来源:[ADR 0040](./adr/0040-host-detection-precedence.md)(宿主判定)、
 > [ADR 0041](./adr/0041-codex-hooks-via-local-plugin.md)(codex hooks 承载与信任)。
@@ -45,6 +45,41 @@
   `getMcpConfigPath`,`platform.ts:237-263`)与它正交 —— override 只搬 stateRoot,不影响这五个。
 
 ---
+
+### 1.2 安装生命周期快照 (Phase 69)
+
+`src/platform/hostInstallContext.ts` 捕获一次 `HostInstallContext`，仅保存 host、OS、user home、descriptor、native home 和可选 neutral spawn cwd，不保存凭据或完整环境。`src/installers/lib/componentPlan.ts` 的 `resolveComponentPlan(manifest, context, operation)` 只解析声明，不读环境、不访问文件、不运行命令，也不修改输入。
+
+- 首期只有 Claude Code、Codex。显式未知 host 拒绝；隐式探测仍复用上节优先级。
+- `CODEX_HOME` / `CLAUDE_CONFIG_DIR` 决定 native 目标；effective `install.env` 的显式值按既有优先级覆盖。Codex 空值、空白值回退到 descriptor home。
+- `HARNESSED_ROOT_OVERRIDE` 仍只选择 harnessed state root。Codex 的 workflow skills 仍放共享 `.agents/skills`；自定义 `CODEX_HOME` 不搬迁该目录或 state root。
+- 安装、分组、已有资源探测和卸载使用同一 effective install 声明。Codex override 对 install 整块替换，verify 沿用已有 override/default 规则，不合并 base install 的 env/ref。
+- 子进程按快照固定 home/native/state/spawn 目标；verify 的环境 allowlist 独立保留，不因 context 增加 provider secrets。权限确认、L4、hook trust 与 host 选择互不替代。
+
+`plan.sources` 只是声明选自 `base`、`host-override` 或 `native-adapter`，不是安装来源或 ownership。当前 manifest、版本 receipt、目录存在及一次成功 probe 都不证明谁创建了旧资源。
+
+组件卸载特指 `uninstall <name>`：preview、confirm 前检查同一 pure policy，执行传入同一 context。无 name 的统一 footprint 卸载不经过 manifest engine，本阶段没有重写该既有流程。
+
+### 1.3 安全逆操作与更新
+
+`spec.harness_overrides.codex.uninstall` 可选，复用 `Uninstall` strict shape。nested `cmd` / `cleanup_paths` 与 base 字段一样经过 security screening。解析到该字段只说明选中了声明，不授予未知命令、shared skills 或用户文件删除权。
+
+| Codex 逆操作 | 策略 |
+|---|---|
+| MCP registration | 仅 registration/enablement metadata 无法证明来源时，public 卸载入口明确拒绝；不按同名记录推断可删权，也不直接编辑 `config.toml` |
+| harnessed first-party hook | 保留既有 namespaced plugin/trust 清理流程，目标来自同一 context |
+| 全局 `ctx7`、`playwright-cli` | 仅允许已审查的精确 uninstall command 且 cleanup paths 为空；声明改变就不继承审查 |
+| 未审查的 plugin、skill、git 或显式 shell teardown | `unsupported-operation`，在 mutation 前拒绝，不回退到 Claude 命令 |
+
+全局 CLI 中立例外绑定组件身份、有效 npm method、精确 command 和 cleanup paths，不按 `npm-cli` 或组件名字笼统放行。GSD 等 npm-distributed skill pack 不属于此例外。Claude 仍走其既有 teardown 声明，并在捕获的 home 内进行 canonical cleanup confinement。
+
+更新也不能用 presence receipt 认领资源。来源不明的已有 skill/plugin、无法确定输出边界的复合安装命令或不完整用户目录，不能凭 `--update-installed` 自动接管。返回明确拒绝与上游管理工具指引；不新增 ownership 数据库。harnessed 自有 workflow 的既有 backup/warn/overwrite 和 self-heal 策略保持独立，不被替换成 blanket no-overwrite。
+
+### 1.4 自有产物与证据边界
+
+workflow copy、generated commands、namespaced agent roles 和 first-party hook payload 的声明由真实 production writer 消费，并通过双向测试检查缺失或未声明写入。workflow definitions/assets 一并枚举，locale 输入副本单独分类；state metadata、backup 和外部 upstream 输出不冒充自有 payload。
+
+fixture、隔离 npm/compiled smoke 与 native host 验收分别记录于 `.planning/phases/69-host-installation-contract/EXECUTION.md`。编译包首跑解包和 version metadata cache 与 dry-run target mutation 分账。gstack lease、认证和 native trust 的既有 blocker 不因 mock 测试通过而消失。
 
 ## 2. descriptor 差异表
 

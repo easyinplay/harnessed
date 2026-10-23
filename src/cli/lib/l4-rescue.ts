@@ -16,8 +16,16 @@
 import { readFile } from 'node:fs/promises'
 import * as p from '@clack/prompts'
 import { runInstall } from '../../installers/index.js'
+import {
+  type ResolvedComponentPlan,
+  resolveComponentPlan,
+} from '../../installers/lib/componentPlan.js'
 import type { InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../../platform/hostInstallContext.js'
 
 export interface L4RescueResult {
   installed: string[]
@@ -30,17 +38,22 @@ export interface L4RescueResult {
 export async function runL4Rescue(
   manifestPaths: string[],
   skipped: { name: string; reason: string }[],
+  hostContext: HostInstallContext = captureHostInstallContext(),
 ): Promise<L4RescueResult> {
   const out: L4RescueResult = { installed: [], skipped: [], failed: [] }
   const targets = skipped.filter((s) => s.reason === 'level-flag-missing')
   if (targets.length === 0) return out
 
   // Resolve target manifests by name (re-read is cheap local I/O).
-  const byName = new Map<string, Manifest>()
+  const byName = new Map<string, ResolvedComponentPlan>()
   for (const path of manifestPaths) {
     try {
       const v = validateManifestFile(await readFile(path, 'utf8'), path)
-      if (v.ok) byName.set(v.manifest.metadata.name, v.manifest)
+      if (v.ok)
+        byName.set(
+          v.manifest.metadata.name,
+          resolveComponentPlan(v.manifest, hostContext, 'install'),
+        )
     } catch {
       /* unreadable manifest → absent from map → reported as failed below */
     }
@@ -50,11 +63,17 @@ export async function runL4Rescue(
     `\n${targets.length} component(s) need a system-wide (L4) install — harnessed can run them now:`,
   )
   for (const t of targets) {
-    const manifest = byName.get(t.name)
-    if (!manifest) {
+    const plan = byName.get(t.name)
+    if (!plan) {
       out.failed.push({ name: t.name, reason: 'manifest not found for L4 rescue' })
       continue
     }
+    if (plan.status === 'unsupported') {
+      out.skipped.push(t.name)
+      console.log(`  skipped ${t.name} (${plan.reason})`)
+      continue
+    }
+    const manifest = structuredClone(plan.manifest) as Manifest
     console.log(`\n  ${t.name}:`)
     console.log(`    $ ${manifest.spec.install.cmd}`)
     const ans = await p.confirm({
@@ -68,14 +87,14 @@ export async function runL4Rescue(
     const opts: InstallOpts = {
       apply: true,
       dryRun: false,
-      system: true, // the explicit L4 opt-in confirmAt requires
+      system: true, // consent explicitly authorizes retrying the L4-gated component
       nonInteractive: true, // consent already given via the confirm above
       fullDiff: false,
       color: 'auto',
       updateInstalled: false,
       quiet: true,
     }
-    const r = await runInstall(manifest, opts)
+    const r = await runInstall(manifest, opts, plan.context)
     if ('aborted' in r) {
       out.skipped.push(t.name)
       console.log(`  ↷ skipped ${t.name} (${r.reason})`)

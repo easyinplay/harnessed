@@ -25,8 +25,9 @@
 // expected initial condition.
 
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { harnessedFile } from '../../platform/harnessedRoot.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 
 export interface HarnessedStateEntry {
   version: string
@@ -47,12 +48,17 @@ const DEFAULT_STATE: HarnessedState = { version: '1', installed: {} }
 // (Warp default `C:\Program Files\Warp\`). The `cwd` parameter is now ignored
 // for path composition (signature kept for backward-compat with callers like
 // `cli/status.ts` and `npmCli.ts` that still pass `ctx.cwd` or `process.cwd()`).
-function statePath(_cwd: string): string {
-  return harnessedFile('state.json')
+function statePath(_cwd: string, hostContext?: HostInstallContext): string {
+  return hostContext
+    ? join(hostContext.platform.stateRoot, 'state.json')
+    : harnessedFile('state.json')
 }
 
-export async function readState(cwd: string): Promise<HarnessedState> {
-  const path = statePath(cwd)
+export async function readState(
+  cwd: string,
+  hostContext?: HostInstallContext,
+): Promise<HarnessedState> {
+  const path = statePath(cwd, hostContext)
   let raw: string
   try {
     raw = await readFile(path, 'utf8')
@@ -78,8 +84,12 @@ export async function readState(cwd: string): Promise<HarnessedState> {
   }
 }
 
-export async function writeState(cwd: string, state: HarnessedState): Promise<void> {
-  const path = statePath(cwd)
+export async function writeState(
+  cwd: string,
+  state: HarnessedState,
+  hostContext?: HostInstallContext,
+): Promise<void> {
+  const path = statePath(cwd, hostContext)
   const tmp = `${path}.tmp`
   await mkdir(dirname(path), { recursive: true })
   // Trailing newline keeps state.json POSIX-friendly + diff-friendly.
@@ -96,14 +106,15 @@ export async function updateInstalled(
   name: string,
   version: string,
   manifestSha1: string,
+  hostContext?: HostInstallContext,
 ): Promise<void> {
-  const state = await readState(cwd)
+  const state = await readState(cwd, hostContext)
   state.installed[name] = {
     version,
     installedAt: new Date().toISOString(),
     manifestSha1,
   }
-  await writeState(cwd, state)
+  await writeState(cwd, state, hostContext)
 }
 
 /**
@@ -132,23 +143,28 @@ export async function updateInstalled(
  *
  * Fail-soft: a receipt is bookkeeping. Losing it must never turn a successful
  * idempotent no-op into an install failure, so every error is swallowed.
+ * With explicit host context, preserve any existing receipt: presence cannot
+ * establish a changed version or manifest history. An absent receipt retains
+ * the legacy bookkeeping policy, not proof of historical install ownership.
  */
 export async function recordObservedInstall(
   cwd: string,
   name: string,
   version: string,
   manifestSha1: string,
+  hostContext?: HostInstallContext,
 ): Promise<void> {
   try {
-    const state = await readState(cwd)
+    const state = await readState(cwd, hostContext)
     const prev = state.installed[name]
+    if (hostContext && prev) return
     if (prev && prev.version === version && prev.manifestSha1 === manifestSha1) return
     state.installed[name] = {
       version,
       installedAt: prev?.installedAt ?? new Date().toISOString(),
       manifestSha1,
     }
-    await writeState(cwd, state)
+    await writeState(cwd, state, hostContext)
   } catch {
     // bookkeeping only — see the fail-soft note above
   }

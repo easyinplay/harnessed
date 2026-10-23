@@ -21,6 +21,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
 import { harnessedSubdir } from '../../platform/harnessedRoot.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import type { DiffPlan, InstallContext, InstallError } from './types.js'
 
 // v2.0.1 fix: backup root migrated from `<ctx.cwd>/.harnessed-backup/` to
@@ -33,8 +34,8 @@ import type { DiffPlan, InstallContext, InstallError } from './types.js'
 // v3.0.3: routed through the shared `getHarnessedRoot()` SoT (sister
 // `harnessedRoot.ts`) so all harness-owned roots compose from a single helper.
 // Path remains `<homedir>/.harnessed/backups` — no behavioral change.
-export function getBackupRoot(): string {
-  return harnessedSubdir('backups')
+export function getBackupRoot(hostContext?: HostInstallContext): string {
+  return hostContext ? join(hostContext.platform.stateRoot, 'backups') : harnessedSubdir('backups')
 }
 
 export interface BackupFileEntry {
@@ -67,13 +68,18 @@ export type BackupResult =
 
 const HOME_DIR = process.env.HOME ?? process.env.USERPROFILE ?? ''
 
-function mirrorPath(target: string, scope: 'HOME' | 'PROJECT', backupDir: string): string {
+function mirrorPath(
+  target: string,
+  scope: 'HOME' | 'PROJECT',
+  backupDir: string,
+  hostContext?: HostInstallContext,
+): string {
   // For HOME-scope files, mirror under .harnessed-backup/<id>/HOME/<rel-to-home>;
   // for PROJECT-scope, mirror under .harnessed-backup/<id>/PROJECT/<rel-to-cwd>.
   // If we cannot resolve a relative path (e.g. file is outside home dir on a
   // weird Win symlink), fall back to a flat sha1-of-path filename to avoid
   // colliding with sibling files.
-  const root = scope === 'HOME' ? HOME_DIR : '.'
+  const root = scope === 'HOME' ? (hostContext?.userHome ?? HOME_DIR) : '.'
   const rel = root ? relative(root, target) : target
   if (!rel || rel.startsWith('..')) {
     const flat = createHash('sha1').update(target).digest('hex').slice(0, 16)
@@ -94,7 +100,7 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
 
   // ISO timestamp with `:` → `-` for Win filename safety.
   const backupId = new Date().toISOString().replace(/:/g, '-')
-  const backupDir = join(getBackupRoot(), backupId)
+  const backupDir = join(getBackupRoot(ctx.hostContext), backupId)
 
   try {
     await mkdir(backupDir, { recursive: true })
@@ -163,7 +169,7 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
 
     const sha1 = createHash('sha1').update(buf).digest('hex')
     const eol = detectEol(buf)
-    const dest = mirrorPath(file.target, file.scope, backupDir)
+    const dest = mirrorPath(file.target, file.scope, backupDir, ctx.hostContext)
 
     try {
       await mkdir(dirname(dest), { recursive: true })

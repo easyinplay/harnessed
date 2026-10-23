@@ -17,6 +17,7 @@
 // Backup → `~/.claude/harnessed/backups/settings.json.{ISO-ts}.bak`; atomic tmp+rename.
 // Any error → warn + skip (sister fallback 铁律 1 透明声明), NOT throw — non-blocking setup.
 
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 import { mergeSettingsEnvKey } from './settingsWriter.js'
 
@@ -28,19 +29,22 @@ export type EnableResult =
   | { status: 'enabled'; path: string; backupPath: string }
   | { status: 'warn'; message: string }
 
-export async function enableAgentTeamsInSettings(): Promise<EnableResult> {
+export async function enableAgentTeamsInSettings(
+  hostContext?: HostInstallContext,
+): Promise<EnableResult> {
   // Phase C / D4: capability gate. A platform whose settings file is not a JSON
   // env-key store (e.g. codex's TOML config.toml) must NOT be written to — the
   // CC env key is meaningless there and a JSON merge would corrupt the TOML.
   // Short-circuit BEFORE any fs read; inform via the existing 'warn' variant.
-  const platform = detectPlatform()
-  if (!platform.supportsEnvKeyWrite) {
+  const platform = hostContext?.platform ?? detectPlatform()
+  if (hostContext?.hostId === 'codex' || !platform.supportsEnvKeyWrite) {
     return {
       status: 'warn',
       message: `platform '${platform.id}' does not support env-key settings writes (capability-absent) — ${ENV_KEY} skipped`,
     }
   }
   const r = await mergeSettingsEnvKey(ENV_KEY, '1', {
+    hostContext,
     skipIfPresent: (existing) => existing === '1',
   })
   switch (r.outcome) {

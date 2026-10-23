@@ -26,7 +26,8 @@
 // silent skip), aligned with ADR 0001's reproducibility requirement.
 
 import { spawn } from 'node:child_process'
-import { resolve } from 'node:path'
+import { lstat, readdir } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
@@ -44,7 +45,7 @@ import {
 import { preflight } from './lib/preflight.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
-import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
+import type { DiffPlan, InstallContext, Installer, InstallResult } from './lib/types.js'
 import { verifyInstalled } from './lib/verifyInstalled.js'
 import { formatSpawnFail } from './lib/verifyMessage.js'
 
@@ -87,16 +88,34 @@ function extractRawCloneDest(cmd: string): { raw: string; cloneIdx: number } | n
   return parseGitCloneDest(cmd)
 }
 
-function extractCloneTarget(cmd: string): string | null {
+function extractCloneTarget(cmd: string, userHome?: string): string | null {
   const parsed = extractRawCloneDest(cmd)
   if (!parsed) return null
   const dest = parsed.raw
   if (dest.startsWith('~/')) {
-    const home = process.env.HOME ?? process.env.USERPROFILE
+    if (userHome !== undefined) return join(userHome, dest.slice(2))
+    const home = userHome ?? process.env.HOME ?? process.env.USERPROFILE
     if (!home) return null
     return `${home}${dest.slice(1)}`
   }
   return dest
+}
+
+function unprovenCloneTarget(ctx: InstallContext): InstallResult {
+  return {
+    ok: false,
+    phase: 'preflight',
+    error: {
+      ...err(
+        ctx,
+        '/spec/install',
+        'Existing checkout/skill source or external write footprint is unproven; refusing replacement.',
+        'update-unsupported',
+      ),
+      suggest:
+        'Manage the existing checkout and skills with their upstream tool. For a fresh update request, use a plain git clone with an absent explicit destination; a presence receipt does not authorize replacement.',
+    },
+  }
 }
 
 /** v4.16.2 — does the cmd remove its OWN clone dest after cloning (ui-ux-pro-max
@@ -161,7 +180,7 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
 
   // Parse clone target from cmd. Required for D-15 SHA-verify cwd; fail clear
   // if the manifest cmd shape is unsupported (`git clone <url> <dest>`).
-  const cloneTarget = extractCloneTarget(install.cmd)
+  const cloneTarget = extractCloneTarget(install.cmd, ctx.hostContext?.userHome)
   if (!cloneTarget) {
     return {
       ok: false,
@@ -178,12 +197,60 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
     }
   }
 
+  let existingTarget = false
+  if (ctx.hostContext) {
+    const targets = [
+      resolve(install.cwd ?? ctx.cwd, cloneTarget),
+      join(ctx.hostContext.platform.skillsDir, ctx.manifest.metadata.name),
+    ]
+    if (ctx.manifest.metadata.name === 'gstack') {
+      targets.push(join(ctx.hostContext.userHome, 'gstack'))
+      for (const root of [
+        ...new Set([
+          ctx.hostContext.platform.skillsDir,
+          join(ctx.hostContext.nativeHome, 'skills'),
+        ]),
+      ]) {
+        try {
+          if ((await readdir(root)).some((name) => name === 'gstack' || name.startsWith('gstack-')))
+            existingTarget = true
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') existingTarget = true
+        }
+      }
+    }
+    for (const target of targets) {
+      if (
+        await lstat(target).then(
+          () => true,
+          (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
+        )
+      )
+        existingTarget = true
+    }
+  }
+  const plainClone = /^\s*git\s+clone\s+[^;&|<>`$\r\n]+$/.test(install.cmd)
+  if (ctx.hostContext && ctx.opts.updateInstalled) {
+    if (
+      !plainClone ||
+      existingTarget ||
+      (await isAlreadyInstalled(ctx, { honorUpdateFlag: false }))
+    )
+      return unprovenCloneTarget(ctx)
+  }
   if (await isAlreadyInstalled(ctx)) {
     const verifyFailure = await verifyInstalled(ctx)
     if (verifyFailure) return verifyFailure
-    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.git_ref, '')
+    await recordObservedInstall(
+      ctx.cwd,
+      ctx.manifest.metadata.name,
+      install.git_ref,
+      '',
+      ...(ctx.hostContext ? [ctx.hostContext] : []),
+    )
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
+  if (existingTarget) return unprovenCloneTarget(ctx)
 
   // L2 — per-user (~/.claude/skills/<name>/). pure-create DiffPlan:
   // oldText:'' so backup writes a sentinel; rollback = `rm -rf` cloned dir.
@@ -216,7 +283,9 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   // v23 (4.5.1) — posixShell: this cmd uses rm/cp/mkdir; route through Git Bash on Windows.
   // 4.23.0 (issue #3) — flat-namespace collision audit around the external writer.
   await warnDeclaredCollisions(ctx)
-  const packSnapshot = await snapshotSkillNames()
+  const packSnapshot = await snapshotSkillNames(
+    ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
+  )
   const sp = await spawnCmd(ctx, install.cmd, [], DEFAULT_INSTALL_TIMEOUT_MS, { posixShell: true })
   if (!('exitCode' in sp)) return { ...sp, backupId: bk.backupId } as InstallResult
   if (sp.exitCode !== 0) {
@@ -235,7 +304,11 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   }
 
   // 4.23.0 (issue #3) — post-install diff: undeclared new names + workflow collisions.
-  await auditPostInstall(ctx, packSnapshot)
+  await auditPostInstall(
+    ctx,
+    packSnapshot,
+    ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
+  )
 
   // D-15 — SHA-verify. `git rev-parse HEAD` in clone target dir; match the
   // manifest git_ref by prefix (git's standard SHA-prefix semantics — a
@@ -286,12 +359,13 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   }
 
   // The existing-install branch above never repairs. This path has L2 consent.
-  if (name === 'gstack' && detectPlatform().id === 'codex') {
+  if (name === 'gstack' && (ctx.hostContext?.hostId ?? detectPlatform().id) === 'codex') {
     try {
       await repairGstackCodexRuntimeAfterConfirm({
         host: 'codex',
         sourceDir: resolve(install.cwd ?? ctx.cwd, cloneTarget),
-        codexHome: install.env?.CODEX_HOME,
+        codexHome: ctx.hostContext?.nativeHome ?? install.env?.CODEX_HOME,
+        ...(ctx.hostContext ? { hostContext: ctx.hostContext } : {}),
         confirmed: true,
       })
     } catch (error) {
@@ -315,6 +389,12 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   const verifyFailure = await verifyInstalled(ctx)
   if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
 
-  await updateInstalled(ctx.cwd, name, install.git_ref, '')
+  await updateInstalled(
+    ctx.cwd,
+    name,
+    install.git_ref,
+    '',
+    ...(ctx.hostContext ? [ctx.hostContext] : []),
+  )
   return { ok: true, backupId: bk.backupId, appliedFiles: [cloneTarget] }
 }

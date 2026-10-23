@@ -19,7 +19,9 @@
 
 import { spawnSync } from 'node:child_process'
 import * as p from '@clack/prompts'
+import { withHostInstallEnv } from '../../installers/lib/runClaudeArgs.js'
 import { getNeutralSpawnCwd } from '../../installers/lib/safeCwd.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { CHECKS, type CheckResult } from './doctor-registry.js'
 
 export interface AutoInstallOpts {
@@ -39,11 +41,23 @@ export interface AutoInstallResult {
 /** Run all doctor checks, prompt user for each installable warn entry, spawn
  *  each command in install_commands sequentially on consent. Returns counts
  *  for setup summary line. */
-export async function runAutoInstall(opts: AutoInstallOpts): Promise<AutoInstallResult> {
+export async function runAutoInstall(
+  opts: AutoInstallOpts,
+  hostContext?: HostInstallContext,
+): Promise<AutoInstallResult> {
   const out: AutoInstallResult = { installed: [], skipped: [], failed: [] }
 
   if (!opts.autoInstall) {
     return out // explicit opt-out — short-circuit
+  }
+
+  // Doctor command declarations are not an audited Codex install contract.
+  if (hostContext?.hostId === 'codex') {
+    out.skipped.push('auto-install')
+    console.warn(
+      'unsupported-operation: auto-install on codex is advisory-only; no doctor install commands were executed',
+    )
+    return out
   }
 
   // Re-run doctor checks (mostly cached I/O — file reads + spawnSync('where')).
@@ -109,6 +123,7 @@ export async function runAutoInstall(opts: AutoInstallOpts): Promise<AutoInstall
         continue
       }
       const r = spawnSync(exe, args, {
+        ...(hostContext ? { env: withHostInstallEnv(process.env, hostContext) } : {}),
         encoding: 'utf8',
         stdio: 'inherit',
         // Windows needs shell for `.cmd` / `.bat` exes (npx.cmd / claude.cmd
@@ -117,9 +132,9 @@ export async function runAutoInstall(opts: AutoInstallOpts): Promise<AutoInstall
         shell: true,
         // v4.20.1 — neutral cwd: install commands are global-semantics; the
         // user's shell cwd may carry an ambient devEngines package.json that
-        // kills every npx-based command (EBADDEVENGINES dogfood). Fail-open to
-        // inherited cwd when neutral resolution is unavailable.
-        cwd: getNeutralSpawnCwd() ?? undefined,
+        // kills every npx-based command (EBADDEVENGINES dogfood). With context,
+        // fall back to captured home; legacy calls still inherit cwd on failure.
+        cwd: getNeutralSpawnCwd(hostContext) ?? hostContext?.userHome ?? undefined,
       })
       if (r.status !== 0) {
         const reason =

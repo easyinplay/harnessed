@@ -33,6 +33,8 @@
 // avoid magic, schema stays additive, future capabilities are obvious.
 
 import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { getPluginsRegistry, getSkillsDir } from '../../platform/platform.js'
 
 /** Minimal shape needed from capabilities.yaml — additive yaml-tolerant. */
@@ -87,10 +89,17 @@ export interface ResolvedCmd {
  * `capability.plugin_id`. Tolerant of missing/malformed file — returns empty Set
  * so setup remains non-blocking on discovery failure (sister fallback 铁律 1).
  */
-export function readInstalledPlugins(homedirOverride?: string): Set<string> {
+export function readInstalledPlugins(
+  homedirOverride?: string,
+  context?: HostInstallContext,
+): Set<string> {
   // D2: thread the test/override home through the resolver instead of
   // re-hardcoding `.claude`. `undefined` → resolver defaults to homedir().
-  const path = getPluginsRegistry(homedirOverride)
+  const path = context
+    ? context.hostId === 'codex'
+      ? null
+      : join(context.nativeHome, 'plugins', 'installed_plugins.json')
+    : getPluginsRegistry(homedirOverride)
   // Phase C / D4: a platform without a plugin registry (codex) returns null →
   // no plugins to enumerate. Return empty Set (no fs read).
   if (path === null) return new Set()
@@ -126,9 +135,16 @@ export function readInstalledPlugins(homedirOverride?: string): Set<string> {
  * Tolerant of missing skills dir (returns empty Set) — first-time users with no
  * user-skills installed simply see warnings for any user-skill capabilities.
  */
-export function readInstalledUserSkills(homedirOverride?: string): Set<string> {
+export function readInstalledUserSkills(
+  homedirOverride?: string,
+  context?: HostInstallContext,
+): Set<string> {
   // D2: resolver threads the optional home; default → homedir().
-  const skillsRoot = getSkillsDir(homedirOverride)
+  const skillsRoot = context
+    ? context.hostId === 'codex'
+      ? context.platform.skillsDir
+      : join(context.nativeHome, 'skills')
+    : getSkillsDir(homedirOverride)
   try {
     const entries = readdirSync(skillsRoot, { withFileTypes: true })
     const out = new Set<string>()

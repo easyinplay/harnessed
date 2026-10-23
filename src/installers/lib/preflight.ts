@@ -45,7 +45,7 @@ export function preflight(ctx: InstallContext): PreflightOutcome {
   // 1. Platform whitelist. SUPPORTED_PLATFORMS is the harnessed v0.1
   // surface; any platforms[] entry outside it is a manifest error caught by
   // schema, but we double-check for robustness.
-  const current = process.platform as SupportedPlatform
+  const current = (ctx.hostContext?.os ?? process.platform) as SupportedPlatform
   if (!spec.platforms.includes(current)) {
     errors.push({
       file: filename,

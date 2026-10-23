@@ -3,7 +3,8 @@
 // v4.14.0 — bin follows detectPlatform().id (sister mcpStdioAdd uninstaller).
 
 import { runHarnessArgs } from '../installers/lib/runClaudeArgs.js'
-import { detectPlatform } from '../platform/platform.js'
+import { getMcpSpawnCwd } from '../installers/lib/safeCwd.js'
+import { captureHostInstallContext } from '../platform/hostInstallContext.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -16,9 +17,16 @@ export const uninstallMcpHttpAdd: Uninstaller = async (ctx) => {
   const abort = dryRunGate(ctx)
   if (abort) return abort
 
-  const bin = detectPlatform().id === 'codex' ? 'codex' : 'claude'
+  const context = ctx.hostContext ?? captureHostInstallContext()
+  const bin = context.hostId
   const name = ctx.manifest.metadata.name
-  const r = await runHarnessArgs(bin, ['mcp', 'remove', name], ctx.cwd)
+  const r = await runHarnessArgs(
+    bin,
+    ['mcp', 'remove', name],
+    getMcpSpawnCwd(context),
+    15_000,
+    context,
+  )
   if (r.exitCode !== 0) {
     return {
       ok: false,

@@ -29,7 +29,10 @@
 
 import { listCodexMcpServerMetadata } from '../../installers/lib/codexMcpServers.js'
 import { isMcpServerRegistered } from '../../installers/lib/readClaudeConfig.js'
-import { detectPlatform } from '../../platform/platform.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../../platform/hostInstallContext.js'
 import { probeSearchMcpKey, SEARCH_MCP_KEY_VARS, type SearchKeyProbe } from './search-mcp-keys.js'
 
 interface CheckResult {
@@ -50,9 +53,11 @@ const CHECK_NAME = 'MCP servers (tavily/exa)'
 const UNVERIFIED =
   'authentication not verified; approval not probed; runtime availability not verified'
 
-export async function checkMcpAvailability(): Promise<CheckResult> {
-  const isCodex = detectPlatform().id === 'codex'
-  const metadata = isCodex ? await listCodexMcpServerMetadata() : null
+export async function checkMcpAvailability(
+  context: HostInstallContext = captureHostInstallContext(),
+): Promise<CheckResult> {
+  const isCodex = context.hostId === 'codex'
+  const metadata = isCodex ? await listCodexMcpServerMetadata(context) : null
   if (isCodex && metadata === null) {
     return {
       name: CHECK_NAME,
@@ -68,7 +73,7 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
   const unknown: string[] = []
   for (const s of TARGET_SERVERS) {
     const entry = metadata?.find((server) => server.name === s)
-    const registered = isCodex ? entry !== undefined : await isMcpServerRegistered(s)
+    const registered = isCodex ? entry !== undefined : await isMcpServerRegistered(s, context)
     if (!registered) {
       missing.push(s)
       continue
@@ -83,7 +88,7 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
   const keyless: SearchKeyProbe[] = []
   const observed: string[] = []
   for (const s of installed) {
-    const probe = await probeSearchMcpKey(s)
+    const probe = await probeSearchMcpKey(s, context)
     if (!probe.present) keyless.push(probe)
     else observed.push(s)
   }

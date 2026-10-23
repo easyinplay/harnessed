@@ -19,7 +19,9 @@
 import { type ChildProcess, spawn as nodeSpawn } from 'node:child_process'
 import { homedir } from 'node:os'
 import type { Readable, Writable } from 'node:stream'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { killProcessTree } from './killTree.js'
+import { withHostInstallEnv } from './runClaudeArgs.js'
 import { planWindowsSpawn, resolveWindowsBin } from './winSpawn.js'
 
 export interface AppServerProcess {
@@ -31,7 +33,8 @@ export interface AppServerProcess {
 }
 
 export interface TrustDeps {
-  spawn?: () => AppServerProcess
+  spawn?: (hostContext?: HostInstallContext) => AppServerProcess
+  hostContext?: HostInstallContext
   /** cwd reported to hooks/list (plugin hooks are global; any cwd lists them). */
   cwd?: string
   timeoutMs?: number
@@ -65,18 +68,22 @@ export function isHarnessedHookKey(key: string): boolean {
 }
 
 /** `codex app-server` over stdio; Windows via the shared shim-aware planner. */
-export function spawnCodexAppServer(): AppServerProcess {
+export function spawnCodexAppServer(hostContext?: HostInstallContext): AppServerProcess {
+  if (hostContext && hostContext.hostId !== 'codex')
+    throw new Error('Codex app-server requires a Codex context')
   const args = ['app-server']
+  const env = hostContext ? withHostInstallEnv(process.env, hostContext) : undefined
   let child: ChildProcess
-  if (process.platform === 'win32') {
+  if ((hostContext?.os ?? process.platform) === 'win32') {
     const plan = planWindowsSpawn('codex', args, resolveWindowsBin('codex'))
     child = nodeSpawn(plan.command, plan.args, {
       windowsHide: true,
       stdio: ['pipe', 'pipe', 'ignore'],
       windowsVerbatimArguments: plan.verbatim,
+      ...(env ? { env } : {}),
     })
   } else {
-    child = nodeSpawn('codex', args, { stdio: ['pipe', 'pipe', 'ignore'] })
+    child = nodeSpawn('codex', args, { stdio: ['pipe', 'pipe', 'ignore'], ...(env ? { env } : {}) })
   }
   return {
     stdin: child.stdin as Writable,
@@ -103,7 +110,15 @@ async function withAppServer<T>(
 ): Promise<RpcOutcome<T>> {
   let proc: AppServerProcess
   try {
-    proc = (deps.spawn ?? spawnCodexAppServer)()
+    if (deps.hostContext && deps.hostContext.hostId !== 'codex')
+      return {
+        ok: false,
+        failure: 'spawn-failed',
+        detail: 'Codex app-server requires a Codex context',
+      }
+    proc = deps.hostContext
+      ? (deps.spawn ?? spawnCodexAppServer)(deps.hostContext)
+      : (deps.spawn ?? spawnCodexAppServer)()
   } catch (e) {
     return { ok: false, failure: 'spawn-failed', detail: (e as Error).message }
   }
@@ -210,7 +225,7 @@ function parseHooks(result: unknown): CodexHookEntry[] {
         key: h.key,
         eventName: String(h.eventName ?? ''),
         trustStatus: String(h.trustStatus ?? 'unknown'),
-        currentHash: String(h.currentHash ?? ''),
+        currentHash: typeof h.currentHash === 'string' ? h.currentHash : '',
         ...(typeof h.pluginId === 'string' ? { pluginId: h.pluginId } : {}),
         ...(typeof h.command === 'string' ? { command: h.command } : {}),
       })
@@ -223,7 +238,9 @@ const listIn = (call: (m: string, p: unknown) => Promise<unknown>, cwd: string) 
   call('hooks/list', { cwds: [cwd] }).then(parseHooks)
 
 export function listCodexHooks(deps: TrustDeps = {}): Promise<RpcOutcome<CodexHookEntry[]>> {
-  return withAppServer(deps, (call) => listIn(call, deps.cwd ?? homedir()))
+  return withAppServer(deps, (call) =>
+    listIn(call, deps.cwd ?? deps.hostContext?.userHome ?? homedir()),
+  )
 }
 
 /** Trust every not-yet-trusted hook of the given harnessed plugins (upsert). */
@@ -239,11 +256,17 @@ export async function trustCodexHooks(
       detail: `refusing non-harnessed plugin(s): ${foreign.join(', ')}`,
     }
   return withAppServer(deps, async (call) => {
-    const hooks = await listIn(call, deps.cwd ?? homedir())
+    const hooks = await listIn(call, deps.cwd ?? deps.hostContext?.userHome ?? homedir())
     const ours = hooks.filter(
       (h) => isHarnessedHookKey(h.key) && pluginIds.some((p) => h.key.startsWith(`${p}:`)),
     )
-    const todo = ours.filter((h) => h.trustStatus !== 'trusted' && h.currentHash)
+    const unresolved = ours.filter((h) => !h.currentHash.trim())
+    if (unresolved.length > 0)
+      throw new RpcError(
+        'bad-output',
+        `hooks/list: missing currentHash for ${unresolved.map((h) => h.key).join(', ')}`,
+      )
+    const todo = ours.filter((h) => h.trustStatus !== 'trusted')
     const missing = pluginIds.filter((p) => !ours.some((h) => h.key.startsWith(`${p}:`)))
     if (todo.length > 0) {
       await call('config/batchWrite', {

@@ -14,19 +14,14 @@
 //   1 → fs.cp failed or base/selected optional failed (after all setup tail work)
 //   2 → no SKILL.md workflows found (nothing to install)
 
-import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { getLocale, t } from '../i18n/index.js'
+import { getBackupRoot } from '../installers/lib/backup.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
-import {
-  claudeDescriptor,
-  codexDescriptor,
-  detectPlatform,
-  getCommandsDir,
-  getSkillsDir,
-  HOST_IDS,
-} from '../platform/platform.js'
+import { captureHostInstallContext } from '../platform/hostInstallContext.js'
+import { claudeDescriptor, codexDescriptor, HOST_IDS } from '../platform/platform.js'
 import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
@@ -340,9 +335,14 @@ export function registerSetup(program: Command): void {
       // Phase C / D5 — apply --platform FIRST so all resolver-backed paths below
       // (skills/commands/state) route to the chosen platform for this run.
       if (raw.platform !== undefined) await applyPlatformOption(raw.platform, !dryRun)
+      const setupContext = captureHostInstallContext()
+      const skillLedgerPath = join(setupContext.platform.stateRoot, 'skill-hashes.json')
       const pkgRoot = getAssetsRoot()
       const workflowsDir = resolve(pkgRoot, 'workflows')
-      const skillsBase = getSkillsDir()
+      const skillsBase =
+        setupContext.hostId === 'codex'
+          ? setupContext.platform.skillsDir
+          : join(setupContext.nativeHome, 'skills')
 
       // Agent Teams env probe (non-blocking warn) — sister R20.11 acceptance e.
       await warnIfAgentTeamsMissing()
@@ -388,6 +388,7 @@ export function registerSetup(program: Command): void {
         `\ninstalling ${manifestPaths.length} upstream components (MCP serialized, rest parallel)...`,
       )
       const b = await runStepBInstall(manifestPaths, {
+        hostContext: setupContext,
         updateInstalled: forceFirstPass,
         system: raw.system === true,
         quiet: true,
@@ -442,6 +443,7 @@ export function registerSetup(program: Command): void {
             // second pass previously started dumping [n/m] lines with no lead-in).
             console.log(`\nforce-updating ${b.alreadyInstalled.length} plugin(s)...`)
             const b2 = await runStepBInstall(manifestPaths, {
+              hostContext: setupContext,
               updateInstalled: true,
               system: raw.system === true,
               quiet: true,
@@ -452,7 +454,7 @@ export function registerSetup(program: Command): void {
             // a refresh that failed but whose component is still on disk is NOT a
             // failure — the prior version is retained. Move failed→keptExisting when
             // the idempotent_check probe still passes for a previously-installed comp.
-            const probe = await makeIdempotentProbe(manifestPaths)
+            const probe = await makeIdempotentProbe(manifestPaths, setupContext)
             const reclass = await reclassifyForceUpdateFailures(b, b2, probe)
             b2.failed = reclass.failed
             b2.keptExisting = reclass.keptExisting
@@ -487,7 +489,7 @@ export function registerSetup(program: Command): void {
       try {
         skillBackupApi = await import('./lib/skillBackup.js')
         const { readHashLedger } = await import('./lib/skillIntegrity.js')
-        stepALedger = await readHashLedger()
+        stepALedger = await readHashLedger(skillLedgerPath)
       } catch {
         skillBackupApi = null
       }
@@ -507,7 +509,10 @@ export function registerSetup(program: Command): void {
                 stepALedger,
               )
               if (pristine !== true) {
-                stepASession ??= skillBackupApi.newBackupSessionDir('step-a')
+                stepASession ??= skillBackupApi.newBackupSessionDir(
+                  'step-a',
+                  getBackupRoot(setupContext),
+                )
                 const b = await skillBackupApi.backupSkillDir(wf.name, skillsBase, stepASession)
                 if (b.ok) stepABackups.push({ name: wf.name, dir: b.dir })
                 else if (b.code !== 'ENOENT') stepABackups.push({ name: wf.name, error: b.message })
@@ -517,7 +522,7 @@ export function registerSetup(program: Command): void {
               /* fail-soft — install proceeds without a backup */
             }
           }
-          await cp(src, dst, { recursive: true, force: true })
+          await (await import('./lib/workflowArtifacts.js')).copyWorkflowArtifacts(src, dst)
           skillsInstalled++
         } catch (e) {
           console.error(t('setup.copy_failed', { name: wf.name, message: (e as Error).message }))
@@ -560,6 +565,8 @@ export function registerSetup(program: Command): void {
         workflowsDir,
         undefined,
         getLocale(),
+        setupContext.hostId,
+        setupContext,
       )
       // (Step A.5 render count suppressed — internal detail)
       if (rendered.aggregatedWarnings.length > 0) {
@@ -577,7 +584,7 @@ export function registerSetup(program: Command): void {
       // 'stale' next run, never breaks setup).
       try {
         const { recordSkillHashes } = await import('./lib/skillIntegrity.js')
-        await recordSkillHashes(skillNames, skillsBase)
+        await recordSkillHashes(skillNames, skillsBase, skillLedgerPath)
       } catch {
         /* advisory ledger — see above */
       }
@@ -590,7 +597,10 @@ export function registerSetup(program: Command): void {
       // (upstream slash cmd) + fallback (Task-spawn self-contained role prompt
       // adapted from gstack expert prompts). Skip + warn if user already has
       // a same-named commands/ file (additive only — never overwrite).
-      const commandsBase = getCommandsDir()
+      const commandsBase = join(
+        setupContext.nativeHome,
+        setupContext.hostId === 'codex' ? 'prompts' : 'commands',
+      )
       try {
         await mkdir(commandsBase, { recursive: true })
       } catch (e) {
@@ -607,8 +617,8 @@ export function registerSetup(program: Command): void {
         )
       }
       const rolePrompts = await loadRolePrompts(workflowsDir)
-      const installedPlugins = readInstalledPlugins()
-      const installedUserSkills = readInstalledUserSkills()
+      const installedPlugins = readInstalledPlugins(undefined, setupContext)
+      const installedUserSkills = readInstalledUserSkills(undefined, setupContext)
       // v16.0 Phase 65 batch D — resolve the host + load host-primitives.yaml ONCE
       // for the whole commands/ pass (sister renderAllSkills one-shot rule).
       // locale is pinned to `en`: the command BODY template is English by
@@ -622,7 +632,7 @@ export function registerSetup(program: Command): void {
       // install both tables are the same object and behaviour is unchanged.
       const commandLocale = getLocale()
       const commandHostRender: CommandRenderOptions = {
-        host: toHostId(detectPlatform().id),
+        host: toHostId(setupContext.hostId),
         table: await loadHostPrimitives({ workflowsDir, locale: 'en' }),
         descriptionTable:
           commandLocale === 'en'
@@ -657,14 +667,12 @@ export function registerSetup(program: Command): void {
       // the commands pass, whose English body template has no localized sibling.
       // Dynamic imports mirror l4-rescue / optional-offer — setup tests that
       // factory-mock this module's static imports need no new mock exports.
-      if (detectPlatform().id === 'codex') {
+      if (setupContext.hostId === 'codex') {
         try {
-          const [{ resolveCodexHome }, agentRoles, { renderRolePromptsForHost }] =
-            await Promise.all([
-              import('../installers/codexHookAdd.js'),
-              import('../installers/lib/codexAgentRoles.js'),
-              import('./lib/rolePromptHostRender.js'),
-            ])
+          const [agentRoles, { renderRolePromptsForHost }] = await Promise.all([
+            import('../installers/lib/codexAgentRoles.js'),
+            import('./lib/rolePromptHostRender.js'),
+          ])
           // `description` is the one field renderRolePromptsForHost holds back
           // (raw yaml frontmatter on the commands surface). In an agent role it
           // is prose codex reads, so it gets the same locale-matched second-table
@@ -683,7 +691,7 @@ export function registerSetup(program: Command): void {
             },
           )
           const r = await agentRoles.writeCodexAgentRoles(
-            agentRoles.codexAgentsDir(resolveCodexHome()),
+            agentRoles.codexAgentsDir(setupContext.nativeHome),
             roles,
           )
           if (r.written.length > 0 || r.skipped.length > 0) {
@@ -700,8 +708,8 @@ export function registerSetup(program: Command): void {
       }
 
       // ── Step C: Agent Teams auto-enable ────────────────────────────────
-      await enableAgentTeamsInSettings()
-      await enableUserLangInSettings(raw.userLang)
+      await enableAgentTeamsInSettings(setupContext)
+      await enableUserLangInSettings(raw.userLang, setupContext)
 
       // L4 rescue: without --system, Step B skips global npm installs with
       // level-flag-missing. Offer
@@ -715,7 +723,7 @@ export function registerSetup(program: Command): void {
         const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
         if (isTty) {
           const { runL4Rescue } = await import('./lib/l4-rescue.js')
-          const rescue = await runL4Rescue(manifestPaths, b.skipped)
+          const rescue = await runL4Rescue(manifestPaths, b.skipped, setupContext)
           b.installed.push(...rescue.installed)
           for (const failure of rescue.failed) {
             const detail = `${failure.name}: ${failure.reason}`
@@ -757,10 +765,14 @@ export function registerSetup(program: Command): void {
       if (!dryRun) {
         const optIsTty = process.stdin.isTTY === true && process.stdout.isTTY === true
         const { runOptionalOffer } = await import('./lib/optional-offer.js')
-        const optional = await runOptionalOffer(resolve(pkgRoot, 'manifests', 'optional'), {
-          interactive: optIsTty && raw.nonInteractive !== true,
-          trustCodexHooks: raw.trustCodexHooks === true,
-        })
+        const optional = await runOptionalOffer(
+          resolve(pkgRoot, 'manifests', 'optional'),
+          {
+            interactive: optIsTty && raw.nonInteractive !== true,
+            trustCodexHooks: raw.trustCodexHooks === true,
+          },
+          setupContext,
+        )
         optionalFailed = optional.failed.length
         for (const failure of optional.failed) {
           console.error(`  [optional] ${failure.name}: ${failure.reason}`)
@@ -793,7 +805,7 @@ export function registerSetup(program: Command): void {
       if (configured > 0) {
         // v4.14.0 — hint follows the active platform ("/mcp in Claude Code" is
         // meaningless on codex; there the check is `codex mcp list`).
-        console.log(t(detectPlatform().id === 'codex' ? 'setup.mcp_hint_codex' : 'setup.mcp_hint'))
+        console.log(t(setupContext.hostId === 'codex' ? 'setup.mcp_hint_codex' : 'setup.mcp_hint'))
       }
 
       // 4.32.22 — search-MCP API-key tail hint: tavily/exa installed but their
@@ -801,7 +813,7 @@ export function registerSetup(program: Command): void {
       // per missing key. Fail-soft: any probe error must never break setup.
       try {
         const { searchMcpKeyHintLines } = await import('./lib/search-mcp-keys.js')
-        for (const line of await searchMcpKeyHintLines()) console.warn(line)
+        for (const line of await searchMcpKeyHintLines(setupContext)) console.warn(line)
       } catch {
         /* advisory only */
       }
@@ -834,10 +846,13 @@ export function registerSetup(program: Command): void {
       if (!dryRun) {
         const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
         const { runAutoInstall } = await import('./lib/auto-install.js')
-        await runAutoInstall({
-          nonInteractive: raw.nonInteractive === true || !isTty,
-          autoInstall: raw.autoInstall !== false, // commander default = true; --no-auto-install flips
-        })
+        await runAutoInstall(
+          {
+            nonInteractive: raw.nonInteractive === true || !isTty,
+            autoInstall: raw.autoInstall !== false, // commander default = true; --no-auto-install flips
+          },
+          setupContext,
+        )
       }
 
       // ── 4.23.0 (issue #3): end-of-run skill integrity audit + SELF-HEAL ─────
@@ -857,9 +872,12 @@ export function registerSetup(program: Command): void {
           buildCulpritIndex,
           integrityReportLines,
           recordSkillHashes,
+          readHashLedger,
         } = await import('./lib/skillIntegrity.js')
         const audit = attachCulprits(
-          await auditInstalledSkills(toInstall, skillsBase, workflowsDir),
+          await auditInstalledSkills(toInstall, skillsBase, workflowsDir, {
+            ledger: await readHashLedger(skillLedgerPath),
+          }),
           await buildCulpritIndex(manifestPaths),
         )
         const bad = audit.filter((e) => e.status !== 'ok')
@@ -879,7 +897,7 @@ export function registerSetup(program: Command): void {
             try {
               try {
                 const skb = await import('./lib/skillBackup.js')
-                healSession ??= skb.newBackupSessionDir('skill-heal')
+                healSession ??= skb.newBackupSessionDir('skill-heal', getBackupRoot(setupContext))
                 const b = await skb.backupSkillDir(e.name, skillsBase, healSession)
                 if (b.ok) healBackedUp = true
                 else if (b.code !== 'ENOENT') {
@@ -891,10 +909,10 @@ export function registerSetup(program: Command): void {
               } catch {
                 /* fail-soft */
               }
-              await cp(join(workflowsDir, wf.relPath), join(skillsBase, wf.name), {
-                recursive: true,
-                force: true,
-              })
+              await (await import('./lib/workflowArtifacts.js')).copyWorkflowArtifacts(
+                join(workflowsDir, wf.relPath),
+                join(skillsBase, wf.name),
+              )
               healed++
               healedNames.push(e.name)
             } catch {
@@ -903,12 +921,20 @@ export function registerSetup(program: Command): void {
           }
           if (healed > 0) {
             try {
-              await renderAllSkills(healedNames, skillsBase, workflowsDir, undefined, getLocale())
+              await renderAllSkills(
+                healedNames,
+                skillsBase,
+                workflowsDir,
+                undefined,
+                getLocale(),
+                setupContext.hostId,
+                setupContext,
+              )
             } catch {
               /* render is best-effort during heal; the copy already restored the engine */
             }
             // Re-pin the healed rendered state so the next audit reads 'ok'.
-            await recordSkillHashes(healedNames, skillsBase)
+            await recordSkillHashes(healedNames, skillsBase, skillLedgerPath)
             console.warn(
               `  ✓ restored ${healed} harnessed workflow skill(s) from the bundle (packs keep their other skills; the colliding name belongs to the engine)${
                 healBackedUp && healSession ? ` — replaced content backed up to ${healSession}` : ''

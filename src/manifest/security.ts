@@ -24,10 +24,12 @@
 //   - spec.verify.cmd
 //   - spec.uninstall.cmd
 //   - spec.uninstall.cleanup_paths[*]
+//   - spec.harness_overrides.codex.uninstall.{cmd,cleanup_paths[*]}
 
 import type { Document, LineCounter, Node } from 'yaml'
-import { isMap, isScalar, isSeq } from 'yaml'
+import { isAlias, isMap, isScalar, isSeq } from 'yaml'
 import type { ValidationError } from './errors.js'
+import { checkPathSafe, PathTraversalError } from './lib/path-guard.js'
 
 interface ShellPattern {
   test: (s: string) => boolean
@@ -61,6 +63,25 @@ function lineOf(node: Node | null | undefined, lineCounter: LineCounter): number
   return lineCounter.linePos(offset).line
 }
 
+/** Follow only known security paths; retain the first alias usage for diagnostics. */
+function securityNodeAtPath(doc: Document.Parsed, path: Array<string | number>) {
+  let node: unknown = doc.contents
+  let alias: Node | undefined
+  for (const key of path) {
+    if (isAlias(node)) {
+      alias ??= node
+      node = node.resolve(doc)
+    }
+    if (!isMap(node) && !isSeq(node)) return { node: undefined, alias }
+    node = node.get(key, true)
+  }
+  if (isAlias(node)) {
+    alias ??= node
+    node = node.resolve(doc)
+  }
+  return { node, alias }
+}
+
 /**
  * String-level shell-escape detector for runtime defense-in-depth.
  *
@@ -86,7 +107,7 @@ function checkScalarCmd(
   path: Array<string | number>,
   filename: string,
 ): ValidationError | null {
-  const node = doc.getIn(path, true)
+  const { node, alias } = securityNodeAtPath(doc, path)
   if (!node || !isScalar(node)) return null
   const value = node.value
   if (typeof value !== 'string') return null
@@ -96,7 +117,7 @@ function checkScalarCmd(
         file: filename,
         path: `/${path.join('/')}`,
         message: `shell escape detected: '${pat.label}' (${pat.hint}) at ${path.join('.')} — v0.1 forbids dynamic shell evaluation; v0.2 will use \`requires_secret\` + \`\${secret:KEY}\` for env placeholders`,
-        line: lineOf(node, lineCounter),
+        line: lineOf(alias ?? node, lineCounter),
         column: null,
         keyword: 'security',
       }
@@ -130,10 +151,10 @@ export function checkSecurityViolations(
     // command string a manifest can carry, and it was the one never screened:
     // `bash -c "$(curl …)"` validated clean.
     ['spec', 'install', 'hook_command'],
-    // harness_overrides replaces the install/verify block wholesale on codex, so
-    // its commands run exactly like the base ones and need the same screen.
+    // Harness override commands need the same screen as their base counterparts.
     ['spec', 'harness_overrides', 'codex', 'install', 'cmd'],
     ['spec', 'harness_overrides', 'codex', 'verify', 'cmd'],
+    ['spec', 'harness_overrides', 'codex', 'uninstall', 'cmd'],
   ]
 
   for (const p of cmdPaths) {
@@ -142,31 +163,48 @@ export function checkSecurityViolations(
   }
 
   // cleanup_paths is a sequence of strings — iterate each element.
-  const cleanupNode = doc.getIn(['spec', 'uninstall', 'cleanup_paths'], true)
-  if (cleanupNode && isSeq(cleanupNode)) {
+  const cleanupPaths = [
+    ['spec', 'uninstall', 'cleanup_paths'],
+    ['spec', 'harness_overrides', 'codex', 'uninstall', 'cleanup_paths'],
+  ]
+  for (const path of cleanupPaths) {
+    const { node: cleanupNode, alias } = securityNodeAtPath(doc, path)
+    if (!cleanupNode || !isSeq(cleanupNode)) continue
     cleanupNode.items.forEach((item, idx) => {
-      if (!isScalar(item)) return
-      const value = item.value
+      const node = isAlias(item) ? item.resolve(doc) : item
+      if (!isScalar(node)) return
+      const value = node.value
       if (typeof value !== 'string') return
+      const source = alias ?? (isAlias(item) ? item : node)
       for (const pat of PATTERNS) {
         if (pat.test(value)) {
           errors.push({
             file: filename,
-            path: `/spec/uninstall/cleanup_paths/${idx}`,
-            message: `shell escape detected: '${pat.label}' (${pat.hint}) at spec.uninstall.cleanup_paths[${idx}] — v0.1 forbids dynamic shell evaluation`,
-            line: lineOf(item, lineCounter),
+            path: `/${path.join('/')}/${idx}`,
+            message: `shell escape detected: '${pat.label}' (${pat.hint}) at ${path.join('.')}[${idx}] — v0.1 forbids dynamic shell evaluation`,
+            line: lineOf(source, lineCounter),
             column: null,
             keyword: 'security',
           })
-          break
+          return
         }
+      }
+      // Lexical traversal checks do not replace runtime root/symlink confinement.
+      try {
+        checkPathSafe(value)
+      } catch (error) {
+        if (!(error instanceof PathTraversalError)) throw error
+        errors.push({
+          file: filename,
+          path: `/${path.join('/')}/${idx}`,
+          message: error.message,
+          line: lineOf(source, lineCounter),
+          column: null,
+          keyword: 'security',
+        })
       }
     })
   }
-
-  // Sanity guard: if doc has no spec block (incomplete manifest), skip silently;
-  // Ajv will report the structural error.
-  void isMap
 
   return errors
 }

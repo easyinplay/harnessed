@@ -52,6 +52,7 @@ import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
 import { invalidateCodexPluginCache } from '../../src/installers/lib/codexPlugins.js'
 import { isAlreadyInstalled } from '../../src/installers/lib/idempotent.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
+import { captureHostInstallContext } from '../../src/platform/hostInstallContext.js'
 import { uninstallCcHookAdd } from '../../src/uninstallers/ccHookAdd.js'
 
 const KEY = 'harnessed-perturn-inject@harnessed-local:hooks/hooks.json:user_prompt_submit:0:0'
@@ -295,7 +296,10 @@ describe('uninstall on codex (T7)', () => {
       'harnessed-perturn-inject@harnessed-local',
     ])
     expect(codexCalls).toContainEqual(['plugin', 'marketplace', 'remove', 'harnessed-local'])
-    expect(untrust).toHaveBeenCalledWith([KEY])
+    expect(untrust).toHaveBeenCalledWith([KEY], {
+      hostContext: captureHostInstallContext({ hostId: 'codex', userHome: home }),
+      cwd: home,
+    })
     expect(existsSync(cacheMkt)).toBe(false)
     expect(existsSync(DATA('harnessed-perturn-inject'))).toBe(false)
     expect(existsSync(MKT())).toBe(false)
@@ -324,7 +328,7 @@ describe('uninstall on codex (T7)', () => {
     ])
   })
 
-  it('never installed → idempotent ok, deterministic trust key still cleaned', async () => {
+  it('never installed → idempotent ok without claiming trust cleanup authority', async () => {
     list.mockResolvedValue({ ok: true, value: [] })
     untrust.mockResolvedValue({ ok: true, value: { removed: [] } })
     const r = await uninstallCcHookAdd({
@@ -333,6 +337,8 @@ describe('uninstall on codex (T7)', () => {
       cwd,
     })
     expect(r).toMatchObject({ ok: true })
-    expect(untrust).toHaveBeenCalledWith([KEY])
+    expect(untrust).not.toHaveBeenCalled()
+    expect(list).not.toHaveBeenCalled()
+    expect(codexCalls).toEqual([['plugin', 'list', '--json']])
   })
 })

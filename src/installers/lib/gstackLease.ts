@@ -1,21 +1,29 @@
 import { execFile } from 'node:child_process'
 import { lstat, mkdtemp, readdir, readFile, realpath, rm, stat } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 import { err } from './err.js'
 import { resolveBash } from './resolveBash.js'
+import { withHostInstallEnv } from './runClaudeArgs.js'
 import type { InstallContext, InstallResult } from './types.js'
 
 const SCRATCH_PREFIX = '.harnessed-gstack-lease-'
 const TIMEOUT_MS = 10_000
 
-function shellPath(path: string): string {
-  return process.platform === 'win32' ? path.replace(/\\/g, '/') : path
+function shellPath(path: string, context?: HostInstallContext): string {
+  return (context?.os ?? process.platform) === 'win32' ? path.replace(/\\/g, '/') : path
 }
 
-function touch(binary: string, lease: string, source: string, scratch: string): Promise<void> {
+function touch(
+  binary: string,
+  lease: string,
+  source: string,
+  scratch: string,
+  context?: HostInstallContext,
+): Promise<void> {
   // Preserve native shell policy, but never forward credentials or startup hooks.
-  const env: NodeJS.ProcessEnv = {}
+  let env: NodeJS.ProcessEnv = {}
   for (const key of [
     'PATH',
     'SystemRoot',
@@ -30,7 +38,8 @@ function touch(binary: string, lease: string, source: string, scratch: string): 
   ]) {
     if (process.env[key] !== undefined) env[key] = process.env[key]
   }
-  env.GSTACK_LEASE_DIR = shellPath(scratch)
+  if (context) env = withHostInstallEnv(env, context)
+  env.GSTACK_LEASE_DIR = shellPath(scratch, context)
   env.GSTACK_LEASE_LOCK_TRIES = '1'
   return new Promise((resolve, reject) => {
     const child = execFile(
@@ -41,8 +50,8 @@ function touch(binary: string, lease: string, source: string, scratch: string): 
         '-c',
         'exec "$BASH" --noprofile --norc "$1" touch --root "$2" --pid "$$"',
         'harnessed-gstack-lease',
-        shellPath(lease),
-        shellPath(source),
+        shellPath(lease, context),
+        shellPath(source, context),
       ],
       {
         cwd: source,
@@ -83,14 +92,15 @@ async function cleanupScratch(scratch: string, source: string | undefined): Prom
 /** Capability check only: no preamble, repairs, receipts, or shared lease access. */
 export async function verifyGstackLease(ctx: InstallContext): Promise<InstallResult | null> {
   if (ctx.opts.dryRun || ctx.manifest.metadata.name !== 'gstack') return null
-  const platform = detectPlatform()
-  if (platform.id !== 'codex') return null
+  const platform = ctx.hostContext?.platform ?? detectPlatform()
+  if ((ctx.hostContext?.hostId ?? platform.id) !== 'codex') return null
   let scratch: string | undefined
   let source: string | undefined
   let problem: string | undefined
   try {
     const home =
-      (ctx.manifest.spec.install.env?.CODEX_HOME ?? process.env.CODEX_HOME) || platform.homeDir
+      ctx.hostContext?.nativeHome ??
+      ((ctx.manifest.spec.install.env?.CODEX_HOME ?? process.env.CODEX_HOME) || platform.homeDir)
     if (!isAbsolute(home)) throw new Error('CODEX_HOME must be absolute')
     const runtime = await realpath(join(home, 'skills', 'gstack'))
     const lease = join(runtime, 'bin', 'gstack-lease')
@@ -105,11 +115,11 @@ export async function verifyGstackLease(ctx: InstallContext): Promise<InstallRes
     )
     if (!isAbsolute(recordedSource.trim())) throw new Error('gstack .source-path must be absolute')
     source = await realpath(recordedSource.trim())
-    const bash = process.platform === 'win32' ? resolveBash().path : 'bash'
+    const bash = (ctx.hostContext?.os ?? process.platform) === 'win32' ? resolveBash().path : 'bash'
     if (!bash) throw new Error('a usable Git Bash is required')
     // mkdtemp creates an owned directory on the source checkout's filesystem.
     scratch = await mkdtemp(join(source, SCRATCH_PREFIX))
-    await touch(bash, lease, source, scratch)
+    await touch(bash, lease, source, scratch, ctx.hostContext)
     const entries = await readdir(scratch)
     const record = entries[0]
     if (

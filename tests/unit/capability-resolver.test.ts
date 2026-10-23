@@ -14,7 +14,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   pickHostValues,
   readInstalledPlugins,
@@ -22,6 +22,8 @@ import {
   renderSkillBody,
   resolveCapabilityCmd,
 } from '../../src/cli/lib/capabilityResolver.js'
+import { createHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import { claudeDescriptor, codexDescriptor } from '../../src/platform/platform.js'
 
 // Throwaway HOME containing a fake ~/.claude/plugins/installed_plugins.json
 // and ~/.claude/skills/<x>/ subdirs, shaped per real CC structure
@@ -43,7 +45,43 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllEnvs()
   rmSync(fakeHome, { recursive: true, force: true })
+})
+
+describe('capability readers with a captured context', () => {
+  it('reads Claude native-home registry and skills after ambient host drift', () => {
+    const nativeHome = join(fakeHome, 'native')
+    const context = createHostInstallContext(claudeDescriptor(fakeHome), {
+      userHome: fakeHome,
+      os: 'linux',
+      nativeHome,
+    })
+    mkdirSync(join(nativeHome, 'plugins'), { recursive: true })
+    writeFileSync(
+      join(nativeHome, 'plugins', 'installed_plugins.json'),
+      JSON.stringify({ plugins: { 'selected@fixture': [] } }),
+    )
+    mkdirSync(join(nativeHome, 'skills', 'selected-skill'), { recursive: true })
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CLAUDE_CONFIG_DIR', join(fakeHome, 'drift'))
+    expect([...readInstalledPlugins(undefined, context)]).toEqual(['selected'])
+    expect([...readInstalledUserSkills(undefined, context)]).toEqual(['selected-skill'])
+  })
+
+  it('keeps Codex shared skills and never falls back to a Claude plugin registry', () => {
+    const context = createHostInstallContext(codexDescriptor(fakeHome), {
+      userHome: fakeHome,
+      os: 'linux',
+      nativeHome: join(fakeHome, 'native'),
+    })
+    mkdirSync(join(fakeHome, '.agents', 'skills', 'shared-skill'), { recursive: true })
+    writePluginsFile(JSON.stringify({ plugins: { 'wrong-host@fixture': [] } }))
+    mkUserSkill('wrong-host-skill')
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    expect([...readInstalledPlugins(fakeHome, context)]).toEqual([])
+    expect([...readInstalledUserSkills(fakeHome, context)]).toEqual(['shared-skill'])
+  })
 })
 
 describe('readInstalledPlugins — installed_plugins.json parsing', () => {

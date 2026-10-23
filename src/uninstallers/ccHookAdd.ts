@@ -5,6 +5,7 @@
 
 import { existsSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { removeCodexHook } from '../installers/codexHookAdd.js'
 import {
   type AnyHookEntry,
@@ -13,7 +14,7 @@ import {
   resolveHookCommand,
 } from '../installers/lib/hookEntry.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
-import { detectPlatform, getSettingsPath } from '../platform/platform.js'
+import { captureHostInstallContext } from '../platform/hostInstallContext.js'
 import { dryRunGate } from './lib/runOrPreview.js'
 import type { Uninstaller } from './lib/types.js'
 
@@ -32,12 +33,20 @@ export const uninstallCcHookAdd: Uninstaller = async (ctx) => {
   if (abort) return abort
 
   // v16.0 Phase 64 (ADR 0041) — codex: the hook is a local codex plugin.
-  if (detectPlatform().id === 'codex') {
-    const r = await removeCodexHook(ctx.manifest.metadata.name, install.hook_event)
-    return r.ok ? r : { ok: false, phase: 'spawn', error: r.error }
+  const context = ctx.hostContext ?? captureHostInstallContext()
+  if (context.hostId === 'codex') {
+    const r = await removeCodexHook(ctx.manifest.metadata.name, install.hook_event, context)
+    return r.ok
+      ? r
+      : {
+          ok: false,
+          phase: 'phase' in r && r.phase === 'preflight' ? 'preflight' : 'spawn',
+          error: r.error,
+        }
   }
   // v4.14.0 — settings path via descriptor (claude byte-identical).
-  const settingsPath = getSettingsPath()
+  const settingsPath =
+    context.platform.settingsPath === null ? null : join(context.nativeHome, 'settings.json')
   // v16.0 Phase 63 — no JSON settings file (codex) → no hook can be registered.
   if (settingsPath === null) return { ok: true, removedPaths: [] }
   let existing: string

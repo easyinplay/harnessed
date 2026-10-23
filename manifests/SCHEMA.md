@@ -59,9 +59,14 @@ spec: {...}                # 见 § 3
 | `signature.sigstore_bundle` | optional | uri | v0.4+ 启用 |
 | `platforms` | ✅ | enum[] | 至少 1 个：`linux` / `darwin` / `win32`，去重 |
 | `harness_overrides.codex.install` | optional | object | v4.14.0 — codex 平台整块替换 install（复用 § 4 install 判别 union;runInstall dispatch 前按 detectPlatform().id 合并） |
+| `harness_overrides.codex.uninstall` | optional | object | Phase 69 Task 3：复用主 `uninstall` shape，`cmd` 为非空必填 string，`cleanup_paths` 为可选 string[]，禁止额外字段。uninstall plan 整块选择该声明，但 selection 不证明 ownership，也不自动授权执行 |
 | `harness_overrides.codex.verify` | optional | object | v4.14.0 — codex 平台替换 verify(缺省沿用主 verify);无 override 的 `cc-plugin-marketplace` 在非 claude 平台 → `harness-mismatch` 诚实跳过。v16.0 Phase 64(ADR 0041)起 `cc-hook-add` 在 codex 上不再需要 override:first-party hook(`inject-state` / `check-docs`)生成本地 codex 插件 `harnessed-<name>@harnessed-local` 安装;无 codex port 的 hook(`stop-hook`)仍 `harness-mismatch` |
 
 ---
+
+主 `uninstall` 与 `harness_overrides.codex.uninstall` 的 `cmd`、每个 `cleanup_paths` 元素均拒绝 `$()`、`${}` 和 backtick。cleanup 路径还经过现有 `checkPathSafe` traversal 检查；这不证明 ownership。runtime 对既有 Claude cleanup 使用 captured home 和 canonical ancestor confinement，并在命令后再次核对目标。Codex declared shell teardown 仅放行 reviewed neutral 例外：组件 `ctx7` 的 `npm uninstall -g ctx7`、组件 `playwright-cli` 的 `npm uninstall -g @playwright/cli`，effective install 必须符合 `npm-cli` shape 和组件类型，cleanup 必须为空。其他显式命令、未知 shared skill cleanup、缺乏 safe uninstall 声明的 override 均返回 preflight unsupported，不根据字符串猜测删除权。旧 manifest 仍可通过 schema 校验；通过校验不代表可在所有 host 上卸载。
+
+Codex MCP 可由 pure plan 选择 `native-adapter`，但现有 sanitized metadata listing 只有 registration name / enabled，不能证明 transport/source identity；在该 identity 审计策略明确前，public teardown 返回 preflight unsupported，不凭同名 registration 删除。Codex `cc-plugin-marketplace` 同样保持 unsupported，不猜测逆命令或所有权。现有 first-party hook adapter 保留其 namespace 策略。public `runUninstall` 在 `apply !== true` 或 `dryRun` 时不进入任何卸载 dispatcher。
 
 ## 4. type × install.method 兼容矩阵（4 type × 6 method）
 

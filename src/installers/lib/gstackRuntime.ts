@@ -1,5 +1,6 @@
 import { lstat, readFile, realpath, stat, symlink } from 'node:fs/promises'
 import { isAbsolute, join } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 
 export interface GstackCodexRuntimeRepairOptions {
@@ -7,6 +8,7 @@ export interface GstackCodexRuntimeRepairOptions {
   sourceDir: string
   codexHome?: string
   confirmed: boolean
+  hostContext?: HostInstallContext
 }
 
 export interface GstackCodexRuntimeRepairResult {
@@ -19,11 +21,13 @@ export async function repairGstackCodexRuntimeAfterConfirm(
   options: GstackCodexRuntimeRepairOptions,
 ): Promise<GstackCodexRuntimeRepairResult> {
   if (options.host !== 'codex' || options.confirmed !== true) return { status: 'skipped' }
-  const platform = detectPlatform()
-  if (platform.id !== 'codex')
+  const platform = options.hostContext?.platform ?? detectPlatform()
+  if ((options.hostContext?.hostId ?? platform.id) !== 'codex')
     throw new Error('gstack runtime repair requires the active Codex host')
   // Official setup installs here, not getSkillsDir()'s shared .agents/skills directory.
-  const codexHome = (options.codexHome ?? process.env.CODEX_HOME) || platform.homeDir
+  const codexHome =
+    options.hostContext?.nativeHome ??
+    ((options.codexHome ?? process.env.CODEX_HOME) || platform.homeDir)
   if (!isAbsolute(codexHome) || !isAbsolute(options.sourceDir)) {
     throw new Error('gstack runtime repair requires absolute CODEX_HOME and sourceDir paths')
   }
@@ -66,6 +70,10 @@ export async function repairGstackCodexRuntimeAfterConfirm(
   }
 
   // symlink is create-only: a concurrent creator causes EEXIST, never replacement.
-  await symlink(sourceModules, target, process.platform === 'win32' ? 'junction' : 'dir')
+  await symlink(
+    sourceModules,
+    target,
+    (options.hostContext?.os ?? process.platform) === 'win32' ? 'junction' : 'dir',
+  )
   return { status: 'created', runtimeRoot }
 }

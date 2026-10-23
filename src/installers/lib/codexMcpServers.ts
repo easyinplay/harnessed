@@ -38,6 +38,11 @@
 // Own module (not a readClaudeConfig export): tests factory-mock readClaudeConfig, and
 // adding an export to a factory-mocked module breaks every mocker of it.
 
+import { resolve } from 'node:path'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../../platform/hostInstallContext.js'
 import { runHarnessArgs } from './runClaudeArgs.js'
 import { getMcpSpawnCwd } from './safeCwd.js'
 
@@ -74,15 +79,31 @@ export function parseCodexMcpList(stdout: string): Set<string> | null {
   return servers === null ? null : new Set(servers.map((server) => server.name))
 }
 
-let cache: Promise<readonly CodexMcpServerMetadata[] | null> | null = null
-
-export function invalidateCodexMcpCache(): void {
-  cache = null
+const cache = new Map<string, Promise<readonly CodexMcpServerMetadata[] | null>>()
+function cacheKey(context?: HostInstallContext): string {
+  const c = context ?? captureHostInstallContext({ hostId: 'codex' })
+  return JSON.stringify([c.hostId, c.os, resolve(c.userHome), resolve(c.nativeHome)])
 }
 
-async function listOnce(): Promise<readonly CodexMcpServerMetadata[] | null> {
+export function invalidateCodexMcpCache(context?: HostInstallContext): void {
+  if (context) cache.delete(cacheKey(context))
+  else cache.clear()
+}
+
+async function listOnce(
+  context?: HostInstallContext,
+): Promise<readonly CodexMcpServerMetadata[] | null> {
+  if (context && context.hostId !== 'codex') return null
   try {
-    const r = await runHarnessArgs('codex', ['mcp', 'list', '--json'], getMcpSpawnCwd(), 30_000)
+    const r = context
+      ? await runHarnessArgs(
+          'codex',
+          ['mcp', 'list', '--json'],
+          getMcpSpawnCwd(context),
+          30_000,
+          context,
+        )
+      : await runHarnessArgs('codex', ['mcp', 'list', '--json'], getMcpSpawnCwd(), 30_000)
     return r.exitCode === 0 ? parseCodexMcpMetadata(r.stdout) : null
   } catch {
     return null
@@ -90,18 +111,30 @@ async function listOnce(): Promise<readonly CodexMcpServerMetadata[] | null> {
 }
 
 /** Shared memoized, sanitized listing; null = unknown, not known missing. */
-export function listCodexMcpServerMetadata(): Promise<readonly CodexMcpServerMetadata[] | null> {
-  cache = cache ?? listOnce()
-  return cache
+export function listCodexMcpServerMetadata(
+  context?: HostInstallContext,
+): Promise<readonly CodexMcpServerMetadata[] | null> {
+  const key = cacheKey(context)
+  let result = cache.get(key)
+  if (!result) {
+    result = listOnce(context)
+    cache.set(key, result)
+  }
+  return result
 }
 
 /** Memoized registered set; disabled entries still count as registered. */
-export async function listCodexMcpServers(): Promise<Set<string> | null> {
-  const servers = await listCodexMcpServerMetadata()
+export async function listCodexMcpServers(
+  context?: HostInstallContext,
+): Promise<Set<string> | null> {
+  const servers = await listCodexMcpServerMetadata(context)
   return servers === null ? null : new Set(servers.map((server) => server.name))
 }
 
-export async function isCodexMcpServerRegistered(name: string): Promise<boolean> {
-  const names = await listCodexMcpServers()
+export async function isCodexMcpServerRegistered(
+  name: string,
+  context?: HostInstallContext,
+): Promise<boolean> {
+  const names = await listCodexMcpServers(context)
   return names ? names.has(name) : false
 }

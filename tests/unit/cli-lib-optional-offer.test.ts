@@ -16,7 +16,7 @@
 //   - non-interactive → advisory line only, no prompt, no install
 //   - empty/missing optional dir → empty result
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(async () => 'yaml-content'),
@@ -85,7 +85,9 @@ function silenceConsole(): void {
 }
 
 describe('runOptionalOffer', () => {
+  afterEach(() => vi.unstubAllEnvs())
   beforeEach(() => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
     vi.restoreAllMocks()
     runInstallMock.mockReset()
     validateMock.mockReset()
@@ -97,6 +99,85 @@ describe('runOptionalOffer', () => {
     multiselectMock.mockResolvedValue(['codegraph'])
     validateMock.mockReturnValue({ ok: true, errors: [], manifest: CODEGRAPH_MANIFEST } as never)
     silenceConsole()
+  })
+
+  it('uses the effective override for presence, display, system consent and execution after prompt drift', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CODEX_HOME', '/selected-native')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/selected-state')
+    const manifest = {
+      ...CODEGRAPH_MANIFEST,
+      spec: {
+        ...CODEGRAPH_MANIFEST.spec,
+        install: { method: 'cc-plugin-marketplace', cmd: 'claude plugin install wrong-base' },
+        harness_overrides: {
+          codex: { install: { method: 'npm-cli', cmd: 'npm install -g codex-optional' } },
+        },
+      },
+    }
+    validateMock.mockReturnValue({ ok: true, manifest } as never)
+    multiselectMock.mockImplementation(async () => {
+      vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+      vi.stubEnv('CODEX_HOME', '/drift-native')
+      vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/drift-state')
+      return ['codegraph']
+    })
+    runInstallMock.mockResolvedValue({ ok: true, backupId: '', appliedFiles: [] })
+    const result = await runOptionalOffer('/opt', { interactive: true })
+    expect(result).toEqual({
+      installed: ['codegraph'],
+      alreadyInstalled: [],
+      skipped: [],
+      failed: [],
+    })
+    const probe = installedMock.mock.calls[0]?.[0]
+    expect(probe?.manifest.spec.install.cmd).toBe('npm install -g codex-optional')
+    expect(probe?.hostContext).toMatchObject({ hostId: 'codex', nativeHome: '/selected-native' })
+    expect(logLines.join('\n')).toContain('$ npm install -g codex-optional')
+    expect(logLines.join('\n')).not.toContain('wrong-base')
+    expect(runInstallMock.mock.calls[0]?.[0].spec.install.cmd).toBe('npm install -g codex-optional')
+    expect(runInstallMock.mock.calls[0]?.[1]).toMatchObject({
+      system: true,
+      apply: true,
+      dryRun: false,
+    })
+    expect(runInstallMock.mock.calls[0]?.[2]).toMatchObject({
+      hostId: 'codex',
+      nativeHome: '/selected-native',
+      platform: { stateRoot: '/selected-state' },
+    })
+    expect(manifest.spec.install.cmd).toBe('claude plugin install wrong-base')
+  })
+
+  it('does not inherit npm system consent when the effective optional method is a skill', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    validateMock.mockReturnValue({
+      ok: true,
+      manifest: {
+        ...CODEGRAPH_MANIFEST,
+        spec: {
+          ...CODEGRAPH_MANIFEST.spec,
+          harness_overrides: {
+            codex: { install: { method: 'npx-skill-installer', cmd: 'npx skills add fixture' } },
+          },
+        },
+      },
+    } as never)
+    runInstallMock.mockResolvedValue({ ok: true, backupId: '', appliedFiles: [] })
+    await runOptionalOffer('/opt', { interactive: true })
+    expect(runInstallMock.mock.calls[0]?.[1].system).toBe(false)
+    expect(logLines.join('\n')).toContain('$ npx skills add fixture')
+  })
+
+  it('unsupported optional components are skipped without probing, prompting or counting them installed', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    readdirMock.mockResolvedValue(['ecc.yaml'] as never)
+    validateMock.mockReturnValue({ ok: true, manifest: ECC_MANIFEST } as never)
+    const result = await runOptionalOffer('/opt', { interactive: true })
+    expect(result).toEqual({ installed: [], alreadyInstalled: [], skipped: ['ecc'], failed: [] })
+    expect(installedMock).not.toHaveBeenCalled()
+    expect(multiselectMock).not.toHaveBeenCalled()
+    expect(runInstallMock).not.toHaveBeenCalled()
   })
 
   it('already-installed → no prompt, alreadyInstalled bucket', async () => {

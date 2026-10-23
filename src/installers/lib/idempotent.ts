@@ -29,6 +29,7 @@ import { access, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { getAssetsRoot } from '../../platform/assetsRoot.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import {
   detectPlatform,
   getSettingsPath,
@@ -63,10 +64,10 @@ export function extractSkillName(cmd: string, fallback: string): string {
 
 // Extract clone target directory from a git-clone-with-setup cmd.
 // Pattern: `git clone [flags] <url> <dest>`. Returns expanded absolute path.
-function extractGitCloneTarget(cmd: string): string | null {
+function extractGitCloneTarget(cmd: string, context?: HostInstallContext): string | null {
   const dest = parseGitCloneDest(cmd)?.raw
   if (!dest) return null
-  if (dest.startsWith('~/')) return join(homedir(), dest.slice(2))
+  if (dest.startsWith('~/')) return join(context?.userHome ?? homedir(), dest.slice(2))
   if (dest.startsWith('/') || /^[A-Z]:[\\/]/i.test(dest)) return dest
   // relative path — ambiguous, skip native detection
   return null
@@ -99,7 +100,15 @@ const INSTALLED_INDICATORS: Record<string, string[]> = {
   'mattpocock-skills': ['tdd', 'diagnosing-bugs', 'grill-with-docs', 'diagnose'],
 }
 
-function skillProbeDirs(): string[] {
+function skillProbeDirs(context?: HostInstallContext): string[] {
+  if (context)
+    return [
+      ...new Set(
+        context.hostId === 'codex'
+          ? [context.platform.skillsDir, join(context.nativeHome, 'skills')]
+          : [join(context.nativeHome, 'skills'), join(context.userHome, '.agents', 'skills')],
+      ),
+    ]
   const platform = detectPlatform()
   return platform.id === 'codex'
     ? [getSkillsDir(), join(platform.homeDir, 'skills')]
@@ -110,10 +119,10 @@ function skillProbeDirs(): string[] {
  *  Pre-4.13.0 only getSkillsDir() (~/.claude/skills) was checked; the skills
  *  CLI's --global installs land in ~/.agents/skills, so already-installed packs
  *  were re-installed every setup run ("总是检测不到" user dogfood). */
-async function indicatorPresent(name: string): Promise<boolean> {
+async function indicatorPresent(name: string, context?: HostInstallContext): Promise<boolean> {
   const indicators = INSTALLED_INDICATORS[name]
   if (!indicators) return false
-  for (const skillsDir of skillProbeDirs()) {
+  for (const skillsDir of skillProbeDirs(context)) {
     for (const ind of indicators) {
       try {
         const skillMd = join(skillsDir, ind, 'SKILL.md')
@@ -133,10 +142,14 @@ async function indicatorPresent(name: string): Promise<boolean> {
  *  Consumed by detectNative AND npxSkillInstaller's post-install real-path
  *  verify (single source of truth — pre-4.13.0 the installer probed one
  *  hardcoded ~/.claude/skills path and failed packs that install elsewhere). */
-export async function detectSkillPresence(cmd: string, name: string): Promise<boolean> {
-  if (await indicatorPresent(name)) return true
+export async function detectSkillPresence(
+  cmd: string,
+  name: string,
+  context?: HostInstallContext,
+): Promise<boolean> {
+  if (await indicatorPresent(name, context)) return true
   const skillName = extractSkillName(cmd, name)
-  for (const skillsDir of skillProbeDirs()) {
+  for (const skillsDir of skillProbeDirs(context)) {
     try {
       await access(join(skillsDir, skillName, 'SKILL.md'))
       return true
@@ -155,7 +168,7 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   // v3.9.18 — check indicator sub-skills first (skill packs that don't install
   // a single dir matching `name`). Cross-method since the pack format varies.
   // v4.13.0 — probes all harness skills dirs (see indicatorPresent).
-  if (await indicatorPresent(name)) return true
+  if (await indicatorPresent(name, ctx.hostContext)) return true
 
   // v4.14.0 — native MCP registration probe (platform-aware: claude JSON map /
   // codex `codex mcp list --json` via isMcpServerRegistered). Only-if-registered
@@ -163,7 +176,12 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   // probe + shell fallback (some MCP tools are ALSO installed as CC plugins).
   if (method === 'mcp-stdio-add' || method === 'mcp-http-add') {
     try {
-      if (await isMcpServerRegistered(name)) return true
+      if (
+        await (ctx.hostContext
+          ? isMcpServerRegistered(name, ctx.hostContext)
+          : isMcpServerRegistered(name))
+      )
+        return true
     } catch {
       /* unreadable config → fall through */
     }
@@ -171,10 +189,12 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
 
   if (method === 'cc-plugin-marketplace') {
     // `install` (claude) or `add` (codex; `(?!marketplace)` skips `plugin marketplace add`).
-    const m = cmd.match(/plugin\s+(?:install|add)\s+(?!marketplaceb)(\S+)/i)
-    const pluginName = m?.[1]?.split('@')[0] ?? name
+    const m = cmd.match(/plugin\s+(?:install|add)\s+(?!marketplace\b)(\S+)/i)
+    const pluginName = m?.[1] ?? name
     try {
-      return await isPluginRegistered(pluginName)
+      return await (ctx.hostContext
+        ? isPluginRegistered(pluginName, ctx.hostContext)
+        : isPluginRegistered(pluginName))
     } catch {
       return false
     }
@@ -183,7 +203,7 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   if (method === 'npx-skill-installer') {
     const skillName = extractSkillName(cmd, name)
     // Claude keeps cross-host compatibility; Codex probes only shared + legacy roots.
-    for (const skillsDir of skillProbeDirs()) {
+    for (const skillsDir of skillProbeDirs(ctx.hostContext)) {
       const skillMd = join(skillsDir, skillName, 'SKILL.md')
       try {
         await access(skillMd)
@@ -195,7 +215,7 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   }
 
   if (method === 'git-clone-with-setup') {
-    const target = extractGitCloneTarget(cmd)
+    const target = extractGitCloneTarget(cmd, ctx.hostContext)
     if (target) {
       try {
         await access(target)
@@ -213,7 +233,14 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
     // the shell `command -v` fallback can't run under cmd.exe).
     const bin = extractVerifyBinary(ctx.manifest.spec.verify?.cmd, name)
     if (bin && binaryOnPath(bin)) return true
-    const skillDir = join(getSkillsDir(), name)
+    const skillDir = join(
+      ctx.hostContext
+        ? ctx.hostContext.hostId === 'claude'
+          ? join(ctx.hostContext.nativeHome, 'skills')
+          : ctx.hostContext.platform.skillsDir
+        : getSkillsDir(),
+      name,
+    )
     try {
       await access(skillDir)
       return true
@@ -230,7 +257,10 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   if (name === 'ctx7') pluginNames.push('context7')
   for (const pn of pluginNames) {
     try {
-      if (await isPluginRegistered(pn)) return true
+      if (
+        await (ctx.hostContext ? isPluginRegistered(pn, ctx.hostContext) : isPluginRegistered(pn))
+      )
+        return true
     } catch {
       /* continue */
     }
@@ -271,10 +301,12 @@ export async function isAlreadyInstalled(
   // Codex MCP registration is authoritative; legacy fallbacks can match Claude installs.
   if (
     (installCfg.method === 'mcp-stdio-add' || installCfg.method === 'mcp-http-add') &&
-    detectPlatform().id === 'codex'
+    (ctx.hostContext?.hostId ?? detectPlatform().id) === 'codex'
   ) {
     try {
-      return await isMcpServerRegistered(ctx.manifest.metadata.name)
+      return await (ctx.hostContext
+        ? isMcpServerRegistered(ctx.manifest.metadata.name, ctx.hostContext)
+        : isMcpServerRegistered(ctx.manifest.metadata.name))
     } catch {
       return false
     }
@@ -287,10 +319,14 @@ export async function isAlreadyInstalled(
   if (installCfg.method === 'cc-hook-add') {
     // v16.0 Phase 64 (R6) — codex: the hook is the local plugin
     // harnessed-<name>@harnessed-local; `codex plugin list` is the authority.
-    if (detectPlatform().id === 'codex')
-      return isCodexPluginInstalled(codexHookPluginId(ctx.manifest.metadata.name))
+    if ((ctx.hostContext?.hostId ?? detectPlatform().id) === 'codex')
+      return ctx.hostContext
+        ? isCodexPluginInstalled(codexHookPluginId(ctx.manifest.metadata.name), ctx.hostContext)
+        : isCodexPluginInstalled(codexHookPluginId(ctx.manifest.metadata.name))
     // v16.0 Phase 63 — null settings path → not installed; never probe config.toml.
-    const settingsPath = getSettingsPath()
+    const settingsPath = ctx.hostContext
+      ? join(ctx.hostContext.nativeHome, 'settings.json')
+      : getSettingsPath()
     let raw: string | null = null
     if (settingsPath !== null) {
       try {
@@ -326,7 +362,7 @@ export async function isAlreadyInstalled(
   if (
     (installCfg.method === 'npx-skill-installer' ||
       Object.hasOwn(INSTALLED_INDICATORS, ctx.manifest.metadata.name)) &&
-    detectPlatform().id === 'codex' &&
+    (ctx.hostContext?.hostId ?? detectPlatform().id) === 'codex' &&
     /\bclaude\b/i.test(idempotentCmd)
   ) {
     return false

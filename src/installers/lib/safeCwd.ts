@@ -20,6 +20,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 
 /**
@@ -30,8 +31,8 @@ import { detectPlatform } from '../../platform/platform.js'
  *
  * Sister: `src/installers/lib/backup.ts:32` `getBackupRoot()` v2.0.1.
  */
-export function getMcpSpawnCwd(): string {
-  return homedir()
+export function getMcpSpawnCwd(hostContext?: HostInstallContext): string {
+  return hostContext?.userHome ?? homedir()
 }
 
 // v4.20.1 — neutral spawn cwd for npm/npx-based installs (EBADDEVENGINES
@@ -59,18 +60,18 @@ const NEUTRAL_SENTINEL = '{\n  "name": "harnessed-neutral-spawn",\n  "private": 
 /**
  * Resolve the neutral spawn cwd for npm/npx-based install/verify spawns.
  *
- *   1. env `HARNESSED_SPAWN_CWD` — verbatim override (test hook + user escape
- *      hatch; sister HARNESSED_BASH precedent).
+ *   1. Captured `neutralSpawnCwd`, or ambient `HARNESSED_SPAWN_CWD` only for
+ *      legacy callers (test hook + user escape hatch).
  *   2. `<stateRoot>/.spawn/` — created on demand with the sentinel
  *      package.json (never overwritten if present).
  *   3. `null` on any fs failure — caller falls back to ctx.cwd (fail-open:
  *      preserves pre-4.20.1 behavior instead of blocking installs).
  */
-export function getNeutralSpawnCwd(): string | null {
-  const override = process.env.HARNESSED_SPAWN_CWD
+export function getNeutralSpawnCwd(hostContext?: HostInstallContext): string | null {
+  const override = hostContext ? hostContext.neutralSpawnCwd : process.env.HARNESSED_SPAWN_CWD
   if (override !== undefined && override.trim().length > 0) return override.trim()
   try {
-    const dir = join(detectPlatform().stateRoot, '.spawn')
+    const dir = join(hostContext?.platform.stateRoot ?? detectPlatform().stateRoot, '.spawn')
     mkdirSync(dir, { recursive: true })
     const sentinel = join(dir, 'package.json')
     if (!existsSync(sentinel)) writeFileSync(sentinel, NEUTRAL_SENTINEL, 'utf8')

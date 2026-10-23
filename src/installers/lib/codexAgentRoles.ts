@@ -198,6 +198,15 @@ export interface WriteCodexAgentRolesResult {
   skipped: { path: string; reason: string }[]
 }
 
+/** Exact rendered role payloads consumed by the additive-only writer below.
+ * This is not an ownership claim for other files in the host's agents dir. */
+export function codexAgentRoleArtifacts(
+  agentsDir: string,
+  roles: readonly CodexAgentRole[],
+): { path: string; content: string }[] {
+  return roles.map((role) => ({ path: join(agentsDir, role.fileName), content: role.toml }))
+}
+
 /**
  * Write roles into `<CODEX_HOME>/agents/`, creating the directory if codex has
  * never made one.
@@ -214,8 +223,7 @@ export async function writeCodexAgentRoles(
   const result: WriteCodexAgentRolesResult = { written: [], skipped: [] }
   if (roles.length === 0) return result
   await mkdir(agentsDir, { recursive: true })
-  for (const role of roles) {
-    const path = join(agentsDir, role.fileName)
+  for (const { path, content } of codexAgentRoleArtifacts(agentsDir, roles)) {
     let existing: string | null = null
     try {
       existing = await readFile(path, 'utf8')
@@ -227,7 +235,7 @@ export async function writeCodexAgentRoles(
       continue
     }
     try {
-      await writeFile(path, role.toml, 'utf8')
+      await writeFile(path, content, 'utf8')
       result.written.push(path)
     } catch (e) {
       result.skipped.push({ path, reason: (e as Error).message })

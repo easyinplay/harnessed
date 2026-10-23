@@ -10,9 +10,19 @@
 
 import { readFile } from 'node:fs/promises'
 import { runInstall } from '../../installers/index.js'
+import {
+  effectiveInstallMethod,
+  installGroupForPlan,
+  type ResolvedComponentPlan,
+  resolveComponentPlan,
+} from '../../installers/lib/componentPlan.js'
 import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 import type { ScanResult } from '../../workflow/scan-nested.js'
 import { scanWorkflowsNested } from '../../workflow/scan-nested.js'
@@ -111,37 +121,15 @@ type StepBEntry =
  *  "file may have been overwritten"). These methods must be serialized. */
 const MCP_METHODS = new Set(['mcp-stdio-add', 'mcp-http-add'])
 
-/** 4.32.22 — the manifest's EFFECTIVE install method for the active harness:
- *  non-claude platforms take `spec.harness_overrides.<id>.install.method` when
- *  declared (mirrors installers/index.ts resolveForHarness, re-derived locally
- *  so setup-helpers stays importable under the tests' `{ runInstall }`-only
- *  vi.mock of installers/index — adding an import there breaks its mockers). */
-function effectiveInstallMethod(manifest: Manifest): string {
-  if (detectPlatform().id === 'codex') {
-    const override = manifest.spec.harness_overrides?.codex
-    if (override) return override.install.method
-  }
-  return manifest.spec.install.method
-}
-
 /** 4.32.22 — display/exclusion bucket by install CHANNEL (effective method):
  *  mcp-stdio-add / mcp-http-add → 'mcp-tool' (mcpServers config; force-update
  *  excluded); cc-plugin-marketplace / git-clone-with-setup / npx-skill-installer /
  *  cc-hook-add → 'command'; npm-cli → 'cli-binary'; anything else → 'other'. */
-export function installGroupOf(manifest: Manifest): string {
-  const method = effectiveInstallMethod(manifest)
-  if (MCP_METHODS.has(method)) return 'mcp-tool'
-  switch (method) {
-    case 'cc-plugin-marketplace':
-    case 'git-clone-with-setup':
-    case 'npx-skill-installer':
-    case 'cc-hook-add':
-      return 'command'
-    case 'npm-cli':
-      return 'cli-binary'
-    default:
-      return 'other'
-  }
+export function installGroupOf(
+  manifest: Manifest,
+  context: HostInstallContext = captureHostInstallContext(),
+): string {
+  return installGroupForPlan(resolveComponentPlan(manifest, context, 'install'))
 }
 
 /** Step B: parallel install-base auto-glob chain via Promise.allSettled (v1.0.3 T1.1).
@@ -155,12 +143,14 @@ export function installGroupOf(manifest: Manifest): string {
 export async function runStepBInstall(
   manifestPaths: string[],
   runOpts: {
+    hostContext?: HostInstallContext
     updateInstalled?: boolean
     system?: boolean
     quiet?: boolean
     onProgress?: (ev: StepBProgressEvent) => void
   } = {},
 ): Promise<StepBResult> {
+  const hostContext = runOpts.hostContext ?? captureHostInstallContext()
   const opts: InstallOpts = {
     apply: true,
     dryRun: false,
@@ -188,7 +178,7 @@ export async function runStepBInstall(
   // Pre-read + validate ALL manifests first (fast, local I/O) so we can
   // partition by install method before any installer spawns.
   const invalid: StepBEntry[] = []
-  const valid: Array<{ manifest: Manifest }> = []
+  const valid: Array<{ manifest: Manifest; plan: ResolvedComponentPlan }> = []
   for (const path of manifestPaths) {
     let yamlSrc: string
     try {
@@ -208,14 +198,15 @@ export async function runStepBInstall(
       )
       continue
     }
-    componentTypes[v.manifest.metadata.name] = installGroupOf(v.manifest)
-    valid.push({ manifest: v.manifest })
+    const plan = resolveComponentPlan(v.manifest, hostContext, 'install')
+    componentTypes[v.manifest.metadata.name] = installGroupForPlan(plan)
+    valid.push({ manifest: v.manifest, plan })
   }
 
   const runOne = async (manifest: Manifest): Promise<StepBEntry> => {
     const name = manifest.metadata.name
     try {
-      const r = await runInstall(manifest, opts)
+      const r = await runInstall(manifest, opts, hostContext)
       if ('aborted' in r) {
         // v4.14.0 — bare 'harness-mismatch' tells the user nothing; expand to a
         // self-explanatory skip note (platform id from the active descriptor).
@@ -227,7 +218,7 @@ export async function runStepBInstall(
         // filters on `reason === 'level-flag-missing'` (first pass only).
         const reason =
           r.reason === 'harness-mismatch'
-            ? `harness-mismatch — claude-only install method (no ${detectPlatform().id} equivalent)`
+            ? `harness-mismatch — claude-only install method (no ${hostContext.hostId} equivalent)`
             : r.reason === 'level-flag-missing' && runOpts.updateInstalled === true
               ? `L4 system-scope — excluded from force-update; update manually: \`${manifest.spec.install.cmd}\``
               : r.reason
@@ -246,8 +237,8 @@ export async function runStepBInstall(
   // above). Reading the raw spec.install.method here let a codex harness-override
   // into an MCP method land in the parallel group while being displayed as an
   // MCP bucket — the v4.13.0 shared-config lost-update race, silently reopened.
-  const mcp = valid.filter((v) => MCP_METHODS.has(effectiveInstallMethod(v.manifest)))
-  const rest = valid.filter((v) => !MCP_METHODS.has(effectiveInstallMethod(v.manifest)))
+  const mcp = valid.filter((v) => MCP_METHODS.has(effectiveInstallMethod(v.plan)))
+  const rest = valid.filter((v) => !MCP_METHODS.has(effectiveInstallMethod(v.plan)))
   const runMcpSerial = async (): Promise<StepBEntry[]> => {
     const out: StepBEntry[] = []
     for (const { manifest } of mcp) out.push(await runOne(manifest))
@@ -342,24 +333,30 @@ export async function reclassifyForceUpdateFailures(
  *  Unknown, gated, unreadable or unhealthy components stay genuine failures. */
 export async function makeIdempotentProbe(
   manifestPaths: string[],
+  context: HostInstallContext = captureHostInstallContext(),
 ): Promise<(name: string) => Promise<boolean>> {
-  const byName = new Map<string, Manifest>()
+  const byName = new Map<string, { manifest: Manifest; hostContext: HostInstallContext }>()
   for (const path of manifestPaths) {
     try {
       const yamlSrc = await readFile(path, 'utf8')
       const v = validateManifestFile(yamlSrc, path)
       if (v.ok) {
-        const { resolveForHarness } = await import('../../installers/index.js')
-        const resolved = resolveForHarness(v.manifest)
-        if (!resolved.gate) byName.set(resolved.manifest.metadata.name, resolved.manifest)
+        const plan = resolveComponentPlan(v.manifest, context, 'inspect')
+        if (plan.status === 'supported') {
+          byName.set(plan.componentId, {
+            manifest: structuredClone(plan.manifest) as Manifest,
+            hostContext: plan.context,
+          })
+        }
       }
     } catch {
       /* unreadable manifest → name simply absent from map → probe false */
     }
   }
   return async (name: string): Promise<boolean> => {
-    const manifest = byName.get(name)
-    if (!manifest) return false
+    const selected = byName.get(name)
+    if (!selected) return false
+    const { manifest, hostContext } = selected
     const opts: InstallOpts = {
       apply: false,
       dryRun: false,
@@ -370,7 +367,7 @@ export async function makeIdempotentProbe(
       updateInstalled: false,
       quiet: true,
     }
-    const ctx: InstallContext = { manifest, opts, level: 'L2', cwd: process.cwd() }
+    const ctx: InstallContext = { manifest, opts, level: 'L2', cwd: process.cwd(), hostContext }
     try {
       if (!(await isAlreadyInstalled(ctx))) return false
       const { verifyInstalled } = await import('../../installers/lib/verifyInstalled.js')

@@ -29,6 +29,24 @@ afterEach(() => {
 })
 
 describe('setup search-key hint follows the host without reading Codex config', () => {
+  it('pins registration and hint selection when ambient host drifts after the first probe', async () => {
+    setLocale('en')
+    vi.stubEnv('CODEX_HOME', '/selected-native')
+    vi.mocked(isCodexMcpServerRegistered).mockImplementation(async () => {
+      vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+      vi.stubEnv('CODEX_HOME', '/drift-native')
+      return true
+    })
+    const lines = await searchMcpKeyHintLines()
+    expect(lines).toHaveLength(3)
+    expect(lines[0]).toContain('Codex checks only process env')
+    expect(lines.join('\n')).not.toMatch(/\.claude|settings\.json|config\.toml/)
+    expect(readFile).not.toHaveBeenCalled()
+    expect(isCodexMcpServerRegistered).toHaveBeenCalledTimes(2)
+    const contexts = vi.mocked(isCodexMcpServerRegistered).mock.calls.map((call) => call[1])
+    expect(contexts[0]).toMatchObject({ hostId: 'codex', nativeHome: '/selected-native' })
+    expect(contexts[1]).toBe(contexts[0])
+  })
   it.each(['en', 'zh-Hans'])('Codex %s: missing keys only point to shell env', async (locale) => {
     setLocale(locale)
     const lines = await searchMcpKeyHintLines()
