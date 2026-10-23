@@ -11,6 +11,7 @@
 // users it exists for.
 
 import pkg from '../../../package.json' with { type: 'json' }
+import { isBunRuntime } from '../../platform/runtime.js'
 import type { CheckResult } from './check-builtin.js'
 import { compareVersions } from './version-check.js'
 
@@ -25,7 +26,13 @@ export async function checkUpdate(
 ): Promise<CheckResult> {
   const latest = await fetch()
   if (!latest) {
-    return { name: 'update', status: 'pass', message: 'update check skipped (npm unreachable)' }
+    return {
+      name: 'update',
+      status: 'pass',
+      message: isBunRuntime()
+        ? 'update check skipped (registry unavailable)'
+        : 'update check skipped (npm unreachable)',
+    }
   }
   if (compareVersions(installed, latest) === 'behind') {
     return {

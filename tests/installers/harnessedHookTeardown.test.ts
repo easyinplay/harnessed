@@ -117,6 +117,28 @@ describe('harnessedHookScriptPath', () => {
 })
 
 describe('stripHarnessedHooks', () => {
+  it('Bun first-party commands are removed without owning a lookalike or sibling', () => {
+    const commands = [
+      'bun "C:/bun packages/harnessed/bin/harnessed-inject-state.mjs"',
+      'bun "C:/bun packages/harnessed/bin/harnessed-stop-hook.mjs" --verbose',
+      'bun "C:/bun packages/harnessed/bin/harnessed-check-docs.mjs" --hook',
+    ]
+    const sibling = { type: 'command', command: 'bun scripts/team-harnessed-stop-hook.mjs' }
+    const hooks = {
+      UserPromptSubmit: [
+        { hooks: commands.map((command) => ({ type: 'command', command })).concat([sibling]) },
+      ],
+    }
+    for (const command of commands) {
+      expect(harnessedHookIdentity(command)).not.toBeNull()
+      expect(harnessedHookScriptPath(command)).toMatch(/^C:\/bun packages\/harnessed\/bin\//)
+    }
+    expect(countHarnessedHooks(hooks)).toBe(3)
+    expect(stripHarnessedHooks(hooks)).toEqual({ removed: 3 })
+    expect(hooks.UserPromptSubmit).toEqual([{ hooks: [sibling] }])
+    expect(countHarnessedHooks(hooks)).toBe(0)
+  })
+
   it('removes harnessed entries across events, keeps others, prunes empty arrays', () => {
     const hooks: Record<string, unknown[]> = {
       UserPromptSubmit: [

@@ -121,6 +121,28 @@ describe('checkCodexHooks', () => {
     expect(r.message).toContain('PATH')
   })
 
+  it.each([
+    true,
+    false,
+  ])('Bun shim checks bun on PATH, never node (present=%s)', async (present) => {
+    const d = deps()
+    const probes: string[] = []
+    const r = await checkCodexHooks({
+      ...d,
+      readText: (p) =>
+        p.endsWith('install.json')
+          ? JSON.stringify({ mode: 'bun', assetsRoot: 'A' })
+          : (d.readText(p)?.replace('node ', 'bun ') ?? null),
+      onPath: (bin) => {
+        probes.push(bin)
+        return present
+      },
+    })
+    expect(r.status).toBe(present ? 'pass' : 'warn')
+    expect(probes).toEqual(['bun'])
+    if (!present) expect(r.message).toContain('`bun` not on PATH')
+  })
+
   it('never reads config.toml', async () => {
     const seen: string[] = []
     const d = deps()

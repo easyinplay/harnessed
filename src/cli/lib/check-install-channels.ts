@@ -15,6 +15,7 @@ import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { posix, win32 } from 'node:path'
 import { isCompiledRuntime } from '../../platform/assetsRoot.js'
+import { isBunRuntime } from '../../platform/runtime.js'
 import type { CheckResult } from './check-builtin.js'
 
 /** Platform-correct path.join regardless of the HOST os — the candidate paths
@@ -113,9 +114,20 @@ export function detectInstallChannels(
   return { binaryPath, npmPath, running, both: binaryPresent && npmPresent }
 }
 
+function bunPackageAdvisory(binaryPath: string | null): string[] {
+  return [
+    'package install running on Bun; install manager not inferred',
+    ...(binaryPath
+      ? [`standalone binary also present: ${binaryPath}; review PATH precedence`]
+      : []),
+    'package-manager layouts are not fully enumerated; use the actual install manager for updates/removal',
+  ]
+}
+
 /** Advisory lines for the both-channels-present state (English; shared by
  *  doctor fix text + setup output). Empty when only one channel is present. */
 export function dualChannelLines(r: InstallChannelsResult): string[] {
+  if (isBunRuntime()) return bunPackageAdvisory(r.binaryPath)
   if (!r.both) return []
   const bin = r.binaryPath ?? 'the standalone binary'
   const npm = r.npmPath ?? 'the npm-global package'
@@ -131,6 +143,19 @@ export function dualChannelLines(r: InstallChannelsResult): string[] {
 }
 
 export function checkInstallChannels(deps?: Partial<DetectInstallChannelsDeps>): CheckResult {
+  if (isBunRuntime()) {
+    const candidate = binaryCandidate(
+      deps?.platform ?? process.platform,
+      deps?.home ?? homedir(),
+      deps?.env ?? process.env,
+    )
+    const binaryPath = (deps?.exists ?? existsSync)(candidate) ? candidate : null
+    return {
+      name: 'install channel',
+      status: binaryPath ? 'warn' : 'pass',
+      message: bunPackageAdvisory(binaryPath).join('; '),
+    }
+  }
   const r = detectInstallChannels(deps)
   if (!r.both) {
     return {

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-10-24
+
+### Changed
+
+- Standalone binaries are the recommended distribution, an explicit Bun package route is the secondary recommendation, and npm remains compatible with supported Node.js installations. Binary and npm users do not need to install Bun for harnessed itself; upstream tools keep their own runtime requirements.
+- The default README is English, with Simplified Chinese in `README-zh.md` and an English compatibility mirror. New commit descriptions and release records use English; historical records are unchanged.
+- Host spawners and the Claude Agent SDK load only when their execution path is selected. Metadata, first-party hooks, injected test spawners and Codex dispatch no longer eagerly initialize the external Claude SDK. Existing permissions, cancellation, state and error contracts are retained.
+
 ### Fixed
 
 - One-line installers distinguish a successfully installed binary from a failed setup, preserve setup failure evidence, and show a retry command instead of success-only update guidance.
@@ -18,9 +26,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Explicit Bun first-party hook transport for Claude Code and Codex, including matching doctor, owned-artifact and teardown checks. Existing Node and binary hook command literals and consent boundaries remain unchanged.
+- `update --package-manager bun` selects Bun package updates explicitly; running a package on Bun does not establish which manager installed it. Compiled binary updates retain their own channel and reject package-manager overrides.
+- Reproducible runtime benchmark and controlled-PATH channel smoke scripts, including actual first-party hook behavior checks. Three-platform CI verifies Node/npm without Bun, standalone without external Node/Bun, and the optional Bun path without Node.
 - A shared immutable host installation context and pure effective component-plan resolver for Claude Code and Codex, retaining the existing seven installer methods and package channels.
 - Optional Codex uninstall declarations reuse the existing strict schema and command/path security screening; selecting a declaration is not authorization to remove unknown user content.
 - Bidirectional contracts compare harnessed workflow, command, agent-role and first-party hook payload declarations with production writer output, without replacing the existing hash ledger or backup policy.
+
+### Compatibility And Known Issues
+
+- No state/schema migration, automatic Bun installation or implicit package-manager switch is introduced. Choose one distribution; npm and standalone behavior remain supported.
+- Upstream gstack lease readiness remains blocked in the tested Windows Git Bash environment. This release does not change native symlink policy, bypass locking or replace an explicitly required upstream invocation with a static role review.
+- MCP registration is not authenticated execution evidence. API keys, host approvals and upstream runtime prerequisites remain separate from harnessed installation.
 
 ## [4.49.2] - 2026-10-23
 
@@ -3103,7 +3120,8 @@ ADR 0024-0029 全 6 NEW (backfill per ADR 0011 9-section pattern); ci.yml A7 ste
 - Version sync drift across `src/index.ts` + `src/cli.ts` + `package.json` — both files now import `pkg.version` from package.json single SoT (Phase 4.2 ship sister H1 5996ea1)
 - `src/cli/audit.ts` N+1 file read in `auditOne` — refactored to accept optional pre-read src (Phase 4.2 ship sister H2 5996ea1)
 
-[Unreleased]: https://github.com/easyinplay/harnessed/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/easyinplay/harnessed/compare/v5.0.0...HEAD
+[5.0.0]: https://github.com/easyinplay/harnessed/compare/v4.49.2...v5.0.0
 [1.0.3]: https://github.com/easyinplay/harnessed/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/easyinplay/harnessed/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/easyinplay/harnessed/compare/v1.0.0...v1.0.1

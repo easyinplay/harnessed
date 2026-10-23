@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: none
-milestone_name: (none — v16.0 Codex Host Parity CLOSED 2026-09-30, npm 4.46.0)
-status: completed
-last_updated: "2026-10-24T01:14:22+08:00"
+milestone: npm-5.0.0
+milestone_name: Runtime And Onboarding
+status: in_progress
+last_updated: "2026-10-24T03:12:00+08:00"
 last_activity: 2026-10-24
 progress:
   total_phases: 1
-  completed_phases: 1
+  completed_phases: 0
   total_plans: 1
-  completed_plans: 1
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -29,7 +29,7 @@ progress:
 
 ## Current Position
 
-- **Requested npm 5.0.0 (2026-10-24)**: TS/Bun optimization with no forced Bun dependency for binary/npm users; optional Bun route, website installation tabs and GitHub-sourced stable version. Scope and acceptance: `research/npm-5.0-runtime-onboarding-brief.md`. Detailed design/governance pending; not the archived internal v5.0 milestone and not yet implemented or released.
+- **Active npm 5.0.0 (2026-10-24)**: Candidate implemented; 4432 serialized tests, eval 14/14, three-channel real hooks and packed npm checks pass. Site 42 tests + desktop/mobile pass; old 60-second block removed. Details: `phases/70-runtime-onboarding/VERIFICATION.md`. CI/preflight and explicit native-gstack substitution decision pending; no tag/publication/site deployment yet.
 
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 

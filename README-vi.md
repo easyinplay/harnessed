@@ -32,7 +32,19 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> Binary tích hợp runtime, không cần Node.js hay Bun bên ngoài. Các thành phần upstream vẫn có thể cần Node/npm, Git, Bun, Python hoặc thư viện hệ thống cho trình duyệt.
+
+**Qua Bun (khuyến nghị thứ hai; tùy chọn)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed update --package-manager bun
+```
+
+`bun add -g harnessed` là lệnh tương đương. Chỉ cần Bun khi chọn kênh này; npm vẫn dùng Node.js >= 22 và không cần Bun. Cài đặt không tự chọn runtime: shim `harnessed` có thể gọi Node. Hãy giữ `bun run --bun harnessed` cho các lệnh sau. Với Claude Code, đổi `codex` thành `claude` trong setup. runtime không xác định nguồn cài đặt: cập nhật package mặc định vẫn dùng npm; Bun cần chỉ rõ `--package-manager bun`. Chỉ chọn một kênh. Chỉ chạy thủ công `bun remove -g harnessed` khi người dùng quyết định rõ ràng muốn gỡ bản cài đó. Xem [hướng dẫn cài đặt](./INSTALL-WITH-AI.md).
 
 **Qua npm (vẫn được hỗ trợ; cần Node.js >= 22)**:
 
@@ -62,6 +74,8 @@ Con đường ngắn nhất từ con số không tới một workflow đang ch�
 # 1. Bên trong Claude Code — khởi động workflow đầu tiên của bạn
 /auto "yêu cầu đầu tiên của bạn"        # mặc định cho người mới: chạy mọi stage từ đầu đến cuối
 ```
+
+Trong Codex, nhập `$auto "yêu cầu đầu tiên của bạn"`. `/auto` và `$auto` là prompt trong host, không phải lệnh shell. Với kênh Bun, thay `harnessed` ở đầu các ví dụ shell bên dưới bằng `bun run --bun harnessed`.
 
 ```bash
 # 2. Lạc lối? Chạy harnessed không tham số — nó cho bạn biết bạn đang ở đâu + tiếp theo là gì

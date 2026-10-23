@@ -32,7 +32,19 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> Binary kendi runtime'ını içerir; harici Node.js veya Bun gerekmez. Upstream bileşenleri yine de Node/npm, Git, Bun, Python veya tarayıcı sistem kitaplıkları gerektirebilir.
+
+**Bun ile (ikinci öneri; isteğe bağlı)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed update --package-manager bun
+```
+
+`bun add -g harnessed` eşdeğerdir. Bun yalnızca bu kanal seçilirse gereklidir; npm, Node.js >= 22 ile çalışır ve Bun gerektirmez. Kurulum runtime'ı otomatik seçmez: yalın `harnessed` shim'i Node çağırabilir. Sonraki komutlarda da `bun run --bun harnessed` kullanın. Claude Code için setup içindeki `codex` yerine `claude` yazın. runtime kurulum kaynağını belirlemez: paket güncellemesinin varsayılanı npm olarak kalır; Bun için `--package-manager bun` açıkça verilmelidir. Yalnızca bir kanal seçin. `bun remove -g harnessed` komutunu ancak kullanıcı bu kurulumu kaldırmaya açıkça karar verdiğinde elle çalıştırın. [Kurulum kılavuzuna](./INSTALL-WITH-AI.md) bakın.
 
 **npm ile (desteklenen alternatif; Node.js >= 22 gerekir)**:
 
@@ -62,6 +74,8 @@ Sıfırdan çalışan bir Workflow'a en kısa yol:
 # 1. Claude Code içinde — ilk Workflow'unuzu başlatın
 /auto "ilk gereksiniminiz"        # yeni başlayan varsayılanı: tüm aşamaları uçtan uca çalıştırır
 ```
+
+Codex içinde `$auto "ilk gereksiniminiz"` yazın. `/auto` ve `$auto`, host içindeki prompt'lardır; shell komutu değildir. Aşağıdaki shell örneklerinde Bun kanalı için baştaki `harnessed` yerine `bun run --bun harnessed` kullanın.
 
 ```bash
 # 2. Kaybolduysanız? harnessed'ı argümansız çalıştırın — nerede olduğunuzu + sırada ne olduğunu söyler

@@ -32,7 +32,19 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> 바이너리는 runtime을 내장하므로 외부 Node.js나 Bun이 필요 없습니다. 상위 컴포넌트는 Node/npm, Git, Bun, Python 또는 브라우저 시스템 라이브러리가 필요할 수 있습니다.
+
+**Bun으로 설치 (보조 권장 경로; 선택 사항)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed update --package-manager bun
+```
+
+`bun add -g harnessed`도 동일합니다. Bun은 이 경로를 선택할 때만 필요하며, npm 경로는 Node.js >= 22를 사용하고 Bun은 필요 없습니다. 설치만으로 runtime이 자동 선택되지 않습니다. 기본 `harnessed` shim은 Node를 호출할 수 있으므로 이후에도 `bun run --bun harnessed`를 사용하세요. Claude Code에서는 setup의 `codex`를 `claude`로 바꾸세요. runtime으로 설치 출처를 추론하지 않습니다. package 업데이트 기본값은 npm이며 Bun은 `--package-manager bun`을 명시해야 합니다. 세 경로 중 하나만 선택하고, 사용자가 명시적으로 삭제를 선택한 경우에만 `bun remove -g harnessed`를 수동 실행하세요. [설치 가이드](./INSTALL-WITH-AI.md)를 참조하세요.
 
 **npm도 계속 지원** (Node.js >= 22 필요):
 
@@ -62,6 +74,8 @@ AI가 문서를 자동으로 가져와 설치를 실행하며, OS / 권한 / PAT
 # 1. Claude Code 안에서 — 첫 Workflow 시작
 /auto "당신의 첫 요구사항"        # 입문자 기본값: 모든 Stage를 끝까지 실행
 ```
+
+Codex 안에서는 `$auto "당신의 첫 요구사항"`를 입력하세요. `/auto`와 `$auto`는 호스트 prompt이며 shell 명령이 아닙니다. 아래 shell 예제를 Bun 경로에서 사용할 때는 앞의 `harnessed`를 `bun run --bun harnessed`로 바꾸세요.
 
 ```bash
 # 2. 길을 잃었나요? 인자 없이 harnessed 실행 — 현재 위치 + 다음 할 일을 알려줍니다

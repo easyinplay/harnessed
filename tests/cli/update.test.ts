@@ -15,6 +15,8 @@ vi.mock('node:child_process', () => ({ execFileSync: vi.fn(), execFile: vi.fn(),
 // Control the published version; keep compareVersions real.
 vi.mock('../../src/cli/lib/version-check.js', async (orig) => ({
   ...(await orig<typeof import('../../src/cli/lib/version-check.js')>()),
+  fetchLatestNpmVersion: vi.fn(),
+  fetchLatestBunVersion: vi.fn(),
   fetchLatestVersion: vi.fn(),
 }))
 // Spy the upstream re-install; never run the real base profile.
@@ -48,7 +50,11 @@ vi.mock('../../src/cli/gc.js', () => ({
 import { execFileSync } from 'node:child_process'
 import { installBaseProfile } from '../../src/cli/install-base.js'
 import { runBinaryRollback, runBinarySelfUpdate } from '../../src/cli/lib/selfUpdateBinary.js'
-import { fetchLatestVersion } from '../../src/cli/lib/version-check.js'
+import {
+  fetchLatestBunVersion,
+  fetchLatestNpmVersion,
+  fetchLatestVersion,
+} from '../../src/cli/lib/version-check.js'
 import { registerUpdate } from '../../src/cli/update.js'
 import { isCompiledRuntime } from '../../src/platform/assetsRoot.js'
 
@@ -72,6 +78,11 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
   })
   const program = new Command()
   program.exitOverride()
+  program.configureOutput({
+    writeErr: (str) => {
+      stderr += str
+    },
+  })
   registerUpdate(program)
   let code = 0
   try {
@@ -88,18 +99,179 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
 }
 
 describe('harnessed update', () => {
+  const originalBun = Object.getOwnPropertyDescriptor(process.versions, 'bun')
+  const useBun = () =>
+    Object.defineProperty(process.versions, 'bun', {
+      configurable: true,
+      value: '1.4.4',
+    })
+
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new Error('unexpected direct registry fetch')
+      }),
+    )
     vi.mocked(isCompiledRuntime).mockReturnValue(false)
     vi.stubEnv('HARNESSED_PLATFORM', 'claude')
   })
   afterEach(() => {
+    if (originalBun) Object.defineProperty(process.versions, 'bun', originalBun)
+    else Reflect.deleteProperty(process.versions, 'bun')
     vi.restoreAllMocks()
     vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('accepts exactly the explicit npm/bun package-manager choices', async () => {
+    const program = new Command()
+    registerUpdate(program)
+    const option = program.commands[0]?.options.find((o) => o.long === '--package-manager')
+    expect(option?.argChoices).toEqual(['npm', 'bun'])
+    await expect(runCli(['update', '--package-manager', 'pnpm'])).rejects.toMatchObject({
+      code: 'commander.invalidArgument',
+    })
+  })
+
+  it('explicit npm keeps the original npm invocation and latest-version runner', async () => {
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
+    await runCli(['update', '--package-manager', 'npm'])
+    expect(fetchLatestBunVersion).not.toHaveBeenCalled()
+    expect(vi.mocked(execFileSync).mock.calls[0]?.slice(0, 2)).toEqual([
+      process.platform === 'win32' ? 'npm.cmd' : 'npm',
+      ['i', '-g', 'harnessed@latest'],
+    ])
+  })
+
+  it('Bun runtime with explicit npm and a custom registry uses only the npm query', async () => {
+    useBun()
+    vi.stubEnv('npm_config_registry', 'https://registry.fixture.invalid/private/')
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
+    vi.mocked(fetchLatestBunVersion).mockResolvedValue('1.0.0')
+    vi.mocked(fetchLatestVersion).mockResolvedValue('1.0.0')
+    const { code, stdout } = await runCli(['update', '--package-manager', 'npm', '--check'])
+    expect(code).toBe(0)
+    expect(stdout).toContain('99.0.0')
+    expect(stdout).toContain('behind')
+    expect(fetchLatestNpmVersion).toHaveBeenCalledTimes(1)
+    expect(fetchLatestBunVersion).not.toHaveBeenCalled()
+    expect(fetchLatestVersion).not.toHaveBeenCalled()
+    expect(execFileSync).not.toHaveBeenCalled()
+  })
+
+  it('Bun query failure is transparent and never installs or falls back to npm', async () => {
+    vi.mocked(fetchLatestBunVersion).mockResolvedValue(null)
+    const { code, stderr } = await runCli(['update', '--package-manager', 'bun'])
+    expect(code).toBe(0)
+    expect(stderr).toContain('bun info')
+    expect(stderr).toContain('no update performed')
+    expect(fetchLatestNpmVersion).not.toHaveBeenCalled()
+    expect(execFileSync).not.toHaveBeenCalled()
+    expect(installBaseProfile).not.toHaveBeenCalled()
+  })
+
+  it('Node can explicitly choose Bun without inferring an install manager', async () => {
+    vi.mocked(fetchLatestBunVersion).mockResolvedValue('99.0.0')
+    const { code } = await runCli(['update', '--package-manager', 'bun'])
+    expect(code).toBe(0)
+    expect(fetchLatestNpmVersion).not.toHaveBeenCalled()
+    expect(execFileSync).toHaveBeenCalledWith(
+      process.platform === 'win32' ? 'bun.exe' : 'bun',
+      ['add', '--global', 'harnessed@latest'],
+      { stdio: 'inherit', shell: false },
+    )
+  })
+
+  it('explicit Bun uses the running Bun executable, never a shell', async () => {
+    useBun()
+    vi.mocked(fetchLatestBunVersion).mockResolvedValue('99.0.0')
+    await runCli(['update', '--package-manager', 'bun'])
+    expect(execFileSync).toHaveBeenCalledWith(
+      process.execPath,
+      ['add', '--global', 'harnessed@latest'],
+      { stdio: 'inherit', shell: false },
+    )
+  })
+
+  it.each([
+    '--check',
+    '--dry-run',
+  ])('explicit Bun %s is read-only, including --all', async (flag) => {
+    vi.mocked(fetchLatestBunVersion).mockResolvedValue('99.0.0')
+    const { code, stdout } = await runCli(['update', '--package-manager', 'bun', flag, '--all'])
+    expect(code).toBe(0)
+    expect(execFileSync).not.toHaveBeenCalled()
+    expect(installBaseProfile).not.toHaveBeenCalled()
+    if (flag === '--dry-run') expect(stdout).toContain('bun add --global harnessed@latest')
+    else expect(stdout).toContain('99.0.0')
+  })
+
+  it('Bun dry-run is read-only even when current and --upstreams is set', async () => {
+    vi.mocked(fetchLatestBunVersion).mockResolvedValue(pkg.version)
+    const { stdout } = await runCli([
+      'update',
+      '--package-manager',
+      'bun',
+      '--dry-run',
+      '--upstreams',
+    ])
+    expect(execFileSync).not.toHaveBeenCalled()
+    expect(installBaseProfile).not.toHaveBeenCalled()
+    expect(stdout).toContain('upstreams')
+  })
+
+  it('Bun runtime without a manager override preserves npm and explains how to opt in', async () => {
+    useBun()
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
+    const { stderr } = await runCli(['update'])
+    expect(vi.mocked(execFileSync).mock.calls[0]?.[1]).toEqual(['i', '-g', 'harnessed@latest'])
+    expect(stderr).toContain('--package-manager bun')
+    expect(stderr).toContain('npm')
+  })
+
+  it('Bun rollback is refused with the selected manager guidance before any network/install', async () => {
+    const { code, stderr } = await runCli(['update', '--package-manager', 'bun', '--rollback'])
+    expect(code).toBe(1)
+    expect(stderr).toContain('bun add --global harnessed@<version>')
+    expect(fetchLatestBunVersion).not.toHaveBeenCalled()
+    expect(fetchLatestNpmVersion).not.toHaveBeenCalled()
+    expect(execFileSync).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'npm',
+    'bun',
+  ])('compiled explicitly rejects --package-manager %s without switching channels', async (manager) => {
+    vi.mocked(isCompiledRuntime).mockReturnValue(true)
+    const { code, stderr } = await runCli(['update', '--package-manager', manager])
+    expect(code).toBe(1)
+    expect(stderr).toContain('--package-manager')
+    expect(runBinarySelfUpdate).not.toHaveBeenCalled()
+    expect(fetchLatestNpmVersion).not.toHaveBeenCalled()
+    expect(fetchLatestBunVersion).not.toHaveBeenCalled()
+    expect(execFileSync).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    '--check',
+    '--dry-run',
+    '--rollback',
+    '--migration-report',
+  ])('compiled rejects a package-manager override even with %s', async (flag) => {
+    vi.mocked(isCompiledRuntime).mockReturnValue(true)
+    const { code, stderr } = await runCli(['update', '--package-manager', 'bun', flag])
+    expect(code).toBe(1)
+    expect(stderr).toContain('--package-manager')
+    expect(runBinarySelfUpdate).not.toHaveBeenCalled()
+    expect(runBinaryRollback).not.toHaveBeenCalled()
+    expect(fetchLatestBunVersion).not.toHaveBeenCalled()
+    expect(execFileSync).not.toHaveBeenCalled()
   })
 
   it('--check reports installed/latest/status and does NOT install', async () => {
-    vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
     const { stdout } = await runCli(['update', '--check'])
     expect(stdout).toContain(pkg.version)
     expect(stdout).toContain('99.0.0')
@@ -108,7 +280,7 @@ describe('harnessed update', () => {
   })
 
   it('behind → runs `npm i -g harnessed@latest` + restart hint', async () => {
-    vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
     const { stdout } = await runCli(['update'])
     expect(execFileSync).toHaveBeenCalled()
     const call = vi.mocked(execFileSync).mock.calls[0]
@@ -117,20 +289,20 @@ describe('harnessed update', () => {
   })
 
   it('current → does NOT install', async () => {
-    vi.mocked(fetchLatestVersion).mockResolvedValue(pkg.version)
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue(pkg.version)
     const { stdout } = await runCli(['update'])
     expect(execFileSync).not.toHaveBeenCalled()
     expect(stdout.toLowerCase()).toContain('up to date')
   })
 
   it('--upstreams re-runs the base profile after self-update', async () => {
-    vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
     await runCli(['update', '--upstreams'])
     expect(installBaseProfile).toHaveBeenCalled()
   })
 
   it('npm unreachable (fetch null) → no install, friendly message', async () => {
-    vi.mocked(fetchLatestVersion).mockResolvedValue(null)
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue(null)
     const { stderr } = await runCli(['update'])
     expect(execFileSync).not.toHaveBeenCalled()
     expect(stderr.toLowerCase()).toContain('npm')
@@ -141,7 +313,7 @@ describe('harnessed update', () => {
     expect(stdout.toLowerCase()).toContain('migration report')
     expect(stdout.toLowerCase()).toContain('read-only')
     expect(execFileSync).not.toHaveBeenCalled()
-    expect(fetchLatestVersion).not.toHaveBeenCalled() // no version check on this path
+    expect(fetchLatestNpmVersion).not.toHaveBeenCalled() // no version check on this path
   })
 
   // ── 4.27.0 (B3 T2) — compiled branch routing ─────────────────────────────
@@ -157,7 +329,7 @@ describe('harnessed update', () => {
     })
     const { stdout } = await runCli(['update'])
     expect(runBinarySelfUpdate).toHaveBeenCalled()
-    expect(fetchLatestVersion).not.toHaveBeenCalled() // rev3 issue 4: before ANY npm touch
+    expect(fetchLatestNpmVersion).not.toHaveBeenCalled() // rev3 issue 4: before ANY npm touch
     expect(execFileSync).not.toHaveBeenCalled()
     expect(stdout).toContain('4.27.0')
   })
@@ -168,15 +340,15 @@ describe('harnessed update', () => {
       status: 'refused',
       reason: 'binary lives under node_modules',
     })
-    vi.mocked(fetchLatestVersion).mockResolvedValue(pkg.version)
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue(pkg.version)
     const { stdout } = await runCli(['update'])
-    expect(fetchLatestVersion).toHaveBeenCalled()
+    expect(fetchLatestNpmVersion).toHaveBeenCalled()
     expect(stdout.toLowerCase()).toContain('up to date')
   })
 
   it('npm mode --dry-run → prints the npm command, installs nothing', async () => {
     vi.mocked(isCompiledRuntime).mockReturnValue(false)
-    vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
+    vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
     const { stdout } = await runCli(['update', '--dry-run'])
     expect(stdout).toContain('npm i -g harnessed@latest')
     expect(execFileSync).not.toHaveBeenCalled()
@@ -231,7 +403,7 @@ describe('harnessed update', () => {
           '  previous binary kept at: /state/bin-backup/4.43.0\n' +
           `${updateHint}\n`,
       )
-      expect(fetchLatestVersion).not.toHaveBeenCalled()
+      expect(fetchLatestNpmVersion).not.toHaveBeenCalled()
       expect(execFileSync).not.toHaveBeenCalled()
     })
 
@@ -254,12 +426,12 @@ describe('harnessed update', () => {
       )
       expect(runBinaryRollback).toHaveBeenCalledWith({}, { version: undefined })
       expect(runBinarySelfUpdate).not.toHaveBeenCalled()
-      expect(fetchLatestVersion).not.toHaveBeenCalled()
+      expect(fetchLatestNpmVersion).not.toHaveBeenCalled()
       expect(execFileSync).not.toHaveBeenCalled()
     })
 
     it('npm update names the active host and preserves the exact final line', async () => {
-      vi.mocked(fetchLatestVersion).mockResolvedValue('99.0.0')
+      vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
 
       const { code, stdout, stderr } = await runCli(['update'])
 

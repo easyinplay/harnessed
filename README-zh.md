@@ -30,15 +30,45 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> 独立二进制只免除 harnessed 自身的 Node.js 依赖;上游组件仍可能要求 Node/npm、Git、Bun、Python 或浏览器系统库。
+> 独立二进制内嵌 runtime,harnessed 自身不需要外部 Node.js 或 Bun;上游组件仍可能要求 Node/npm、Git、Bun、Python 或浏览器系统库。
+
+**通过 Bun 安装 (次要推荐; 可选)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+```
+
+也可使用等价的 `bun add -g harnessed`。Bun 只在你自选此渠道时必需,不是独立二进制或 npm 渠道的前置依赖。用 Bun 安装不代表自动选择 Bun runtime:裸 `harnessed` shim 的 shebang 仍可能调用 Node.js。setup 和后续 CLI 命令都应显式使用 Bun runner:
+
+```text
+bun run --bun harnessed setup --platform <host>
+```
+
+将 `<host>` 替换为 Claude Code 对应的 `claude` 或 Codex 对应的 `codex`,不要把尖括号输入 shell。例如:
+
+```bash
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed status
+bun run --bun harnessed update --package-manager bun
+```
+
+runtime 不等于 install manager:package 更新保留 npm 默认语义,选择 Bun 必须显式传入 `--package-manager bun`。上游工具仍有各自依赖。
+
+仅当你明确决定卸载 Bun 渠道时,手动运行 `bun remove -g harnessed`;不要自动卸载其他渠道。
 
 **npm 仍受支持** (需要 Node.js >= 22):
+
+此渠道不需要 Bun,继续兼容 Node.js >= 22。
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x 不支持 `&&` 链接 —— 改用 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
+
+binary/npm 渠道的 Codex 用户应以 `harnessed setup --platform codex` 替代默认 setup;Claude Code 用户可显式选择 `--platform claude`。三个安装渠道选一个即可。
 
 🤖 **或让 AI 帮你装** —— 把下面这句话发给 Claude Code (或任何 AI 助手):
 
@@ -56,10 +86,19 @@ AI 会自动 fetch 文档 + 跑安装,处理 OS / 权限 / PATH / corepack 等 e
 
 从零到一条运转中的 workflow,最短路径:
 
+步骤 1 是宿主内的 prompt,不是 shell 命令。在 **Claude Code** 内使用:
+
+```text
+/auto "你的第一个需求"
 ```
-# 1. 在 Claude Code 内 —— 启动你的第一条 workflow
-/auto "你的第一个需求"               # 新手默认: 端到端跑完所有 stage
+
+在 **Codex** 内使用:
+
+```text
+$auto "你的第一个需求"
 ```
+
+两者都在对应宿主 setup 后启动默认的端到端 workflow。下列 shell 示例使用 binary/npm 渠道;若选择 Bun 渠道,将开头的 `harnessed` 替换为 `bun run --bun harnessed`。
 
 ```bash
 # 2. 迷路了? 不带参数跑 harnessed —— 它会告诉你身在何处 + 下一步是什么

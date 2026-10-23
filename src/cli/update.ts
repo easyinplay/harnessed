@@ -8,13 +8,15 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Command } from 'commander'
+import { type Command, Option } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
-import { getAssetsRoot } from '../platform/assetsRoot.js'
+import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
 import { detectPlatform } from '../platform/platform.js'
+import { bunExecutable, isBunRuntime } from '../platform/runtime.js'
 
 interface UpdateOpts {
+  packageManager?: 'npm' | 'bun'
   check?: boolean
   upstreams?: boolean
   all?: boolean
@@ -137,11 +139,24 @@ export function registerUpdate(program: Command): void {
     .option('--all', 'alias for --upstreams (self + upstreams)')
     .option('--migration-report', 'read-only inventory of stale harnessed state (deletes nothing)')
     .option('--dry-run', 'preview what the update would do without writing anything')
+    .addOption(
+      new Option(
+        '--package-manager <npm|bun>',
+        'package self-update manager (default: npm; explicit choice, not install-source detection)',
+      ).choices(['npm', 'bun']),
+    )
     .option(
       '--rollback [version]',
       'compiled binary only — restore a previous version from bin-backup/ (default: newest banked)',
     )
     .action(async (opts: UpdateOpts) => {
+      if (opts.packageManager !== undefined && isCompiledRuntime()) {
+        console.warn(
+          '[harnessed] --package-manager is not applicable to compiled binaries; omit it to keep binary self-update (no channel switch).',
+        )
+        process.exit(1)
+        return
+      }
       // --migration-report: read-only, no version check, no install.
       if (opts.migrationReport === true) {
         const { collectMigrationReport } = await import('./lib/migration-report.js')
@@ -160,23 +175,35 @@ export function registerUpdate(program: Command): void {
       // compiled machines usually have no npm — a later check would short-
       // circuit the compiled branch forever. Latest source on this branch is
       // GitHub releases/latest, never `npm view`.
-      const { isCompiledRuntime } = await import('../platform/assetsRoot.js')
       if (isCompiledRuntime()) {
         const handled = await runCompiledFlow(opts)
         if (handled) return
       } else if (opts.rollback !== undefined && opts.rollback !== false) {
         // npm-managed installs version-switch via npm, not bin-backup.
         console.warn(
-          '[harnessed] --rollback is compiled-binary only — on npm use `npm i -g harnessed@<version>`',
+          opts.packageManager === 'bun'
+            ? '[harnessed] --rollback is compiled-binary only; for Bun use `bun add --global harnessed@<version>`'
+            : '[harnessed] --rollback is compiled-binary only — on npm use `npm i -g harnessed@<version>`',
         )
         process.exit(1)
       }
 
-      const { compareVersions, fetchLatestVersion } = await import('./lib/version-check.js')
-      const latest = await fetchLatestVersion()
+      const manager = opts.packageManager ?? 'npm'
+      if (isBunRuntime() && opts.packageManager === undefined) {
+        console.warn(
+          '[harnessed] Bun runtime does not identify the install manager. Keeping the original npm update default; use --package-manager bun explicitly for a Bun-managed package.',
+        )
+      }
+      const { compareVersions, fetchLatestNpmVersion, fetchLatestBunVersion } = await import(
+        './lib/version-check.js'
+      )
+      const latest =
+        manager === 'bun' ? await fetchLatestBunVersion() : await fetchLatestNpmVersion()
       if (!latest) {
         console.warn(
-          '[harnessed] could not reach npm to check the latest version — try again later',
+          manager === 'bun'
+            ? '[harnessed] could not check the latest version via bun info (unavailable, timed out, or invalid output); no update performed. Try again with the selected package manager.'
+            : '[harnessed] could not reach npm to check the latest version — try again later',
         )
         process.exit(0)
       }
@@ -190,15 +217,22 @@ export function registerUpdate(program: Command): void {
       if (cmp === 'behind') {
         if (opts.dryRun === true) {
           console.log(
-            `[harnessed] update --dry-run — would run: npm i -g harnessed@latest (${pkg.version} → ${latest})`,
+            `[harnessed] update --dry-run — would run: ${manager === 'bun' ? 'bun add --global' : 'npm i -g'} harnessed@latest (${pkg.version} → ${latest})`,
           )
           process.exit(0)
         }
         console.log(`[harnessed] updating ${pkg.version} → ${latest} ...`)
-        execFileSync(npmExecutable(), ['i', '-g', 'harnessed@latest'], {
-          stdio: 'inherit',
-          shell: process.platform === 'win32',
-        })
+        if (manager === 'bun') {
+          execFileSync(bunExecutable(), ['add', '--global', 'harnessed@latest'], {
+            stdio: 'inherit',
+            shell: false,
+          })
+        } else {
+          execFileSync(npmExecutable(), ['i', '-g', 'harnessed@latest'], {
+            stdio: 'inherit',
+            shell: process.platform === 'win32',
+          })
+        }
         const cl = changelogTop()
         if (cl) console.log(`\n${cl}\n`)
         const hostName = detectPlatform().id === 'codex' ? 'Codex' : 'Claude Code'
@@ -207,6 +241,15 @@ export function registerUpdate(program: Command): void {
         )
       } else {
         console.log(`[harnessed] already up to date (${pkg.version}).`)
+      }
+
+      if (manager === 'bun' && opts.dryRun === true) {
+        if (opts.upstreams === true || opts.all === true)
+          console.log(
+            '[harnessed] update --dry-run: would re-run base manifests for upstreams; nothing installed.',
+          )
+        process.exit(0)
+        return
       }
 
       if (opts.upstreams === true || opts.all === true) {

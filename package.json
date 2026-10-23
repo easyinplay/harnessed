@@ -1,6 +1,6 @@
 {
   "name": "harnessed",
-  "version": "4.49.2",
+  "version": "5.0.0",
   "description": "AI coding harness package manager + composition orchestrator",
   "type": "module",
   "license": "Apache-2.0",
@@ -70,6 +70,9 @@
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "test:codex-live": "node ./scripts/codex-live/run.mjs",
     "bench": "vitest bench --run",
+    "bench:runtime": "node scripts/benchmark-runtime.mjs",
+    "test:runtime-channels": "node scripts/runtime-channel-smoke.mjs",
+    "test:docs": "node --test tests/docs/install-channels.contract.mjs",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",

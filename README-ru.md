@@ -32,7 +32,19 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> Бинарник содержит runtime и не требует внешних Node.js или Bun. Компонентам upstream всё ещё могут понадобиться Node/npm, Git, Bun, Python или системные библиотеки браузера.
+
+**Через Bun (второй рекомендуемый вариант; необязательно)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed update --package-manager bun
+```
+
+`bun add -g harnessed` равнозначен. Bun нужен только при выборе этого канала; npm работает с Node.js >= 22 и не требует Bun. Установка не выбирает runtime автоматически: обычный shim `harnessed` может вызывать Node. Для последующих команд сохраняйте `bun run --bun harnessed`. Для Claude Code замените `codex` на `claude` в setup. runtime не определяет источник установки: обновление пакета по умолчанию использует npm, для Bun явно нужен `--package-manager bun`. Выберите один канал. Выполняйте `bun remove -g harnessed` вручную только при явном решении пользователя удалить эту установку. См. [руководство по установке](./INSTALL-WITH-AI.md).
 
 **Через npm (поддерживаемая альтернатива; требуется Node.js >= 22)**:
 
@@ -62,6 +74,8 @@ AI автоматически скачает документ и выполни�
 # 1. Внутри Claude Code — запустите первый workflow
 /auto "ваше первое требование"        # дефолт для новичка: прогоняет все стадии end-to-end
 ```
+
+В Codex введите `$auto "ваше первое требование"`. `/auto` и `$auto` являются prompt внутри хоста, а не командами shell. В примерах shell ниже для канала Bun заменяйте начальный `harnessed` на `bun run --bun harnessed`.
 
 ```bash
 # 2. Потерялись? Запустите harnessed без аргументов — он скажет, где вы и что дальше

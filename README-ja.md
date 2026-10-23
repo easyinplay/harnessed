@@ -32,7 +32,19 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> バイナリは runtime を内蔵し、外部の Node.js や Bun は不要です。上流コンポーネントには Node/npm、Git、Bun、Python、ブラウザー用システムライブラリが必要な場合があります。
+
+**Bun 経由 (第 2 の推奨手段; 任意)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed update --package-manager bun
+```
+
+`bun add -g harnessed` も同等です。Bun が必要なのはこの経路を選ぶ場合だけです。npm は Node.js >= 22 を使い、Bun は不要です。インストールは runtime を自動選択しません。裸の `harnessed` shim は Node を呼ぶ場合があるため、以後も `bun run --bun harnessed` を使ってください。Claude Code では setup の `codex` を `claude` に変更します。runtime からインストール元は判定しません。package 更新の既定は npm のままで、Bun には `--package-manager bun` を明示します。3 経路から 1 つだけ選び、削除はユーザーが明示的に選んだ場合のみ `bun remove -g harnessed` で手動実行します。[インストールガイド](./INSTALL-WITH-AI.md)も参照してください。
 
 **npm 経由もサポート** (Node.js >= 22 が必要):
 
@@ -62,6 +74,8 @@ AI がドキュメントを自動取得してインストールを実行しま�
 # 1. Claude Code 内で —— 最初のワークフローを開始
 /auto "あなたの最初の要件"           # 初心者デフォルト: 全ステージを端から端まで実行
 ```
+
+Codex 内では `$auto "あなたの最初の要件"` を入力します。`/auto` と `$auto` はホスト内の prompt であり、shell コマンドではありません。以下の shell 例を Bun 経路で使う場合、先頭の `harnessed` を `bun run --bun harnessed` に置き換えてください。
 
 ```bash
 # 2. 迷った? 引数なしで harnessed を実行 —— 今どこにいるか + 次に何をするかを教えてくれる

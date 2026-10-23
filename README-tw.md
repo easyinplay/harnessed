@@ -32,7 +32,19 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> 獨立二進位檔內嵌 runtime,不需要外部 Node.js 或 Bun;上游元件仍可能需要 Node/npm、Git、Bun、Python 或瀏覽器系統函式庫。
+
+**透過 Bun 安裝 (次要推薦; 可選)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed update --package-manager bun
+```
+
+也可使用 `bun add -g harnessed`。Bun 僅在自選此渠道時必需;npm 仍使用 Node.js >= 22,不需要 Bun。安裝不會自動選擇 runtime,裸 `harnessed` shim 仍可能呼叫 Node;後續命令請保留 `bun run --bun harnessed`。Claude Code 請將 setup 的 `codex` 換成 `claude`。runtime 不代表安裝來源,package 更新預設仍是 npm;Bun 必須明確傳入 `--package-manager bun`。三渠道擇一,不要全部安裝。僅在使用者明確決定卸載時手動執行 `bun remove -g harnessed`。詳見 [安裝指南](./INSTALL-WITH-AI.md)。
 
 **npm 仍受支援** (需要 Node.js >= 22):
 
@@ -62,6 +74,8 @@ AI 會自動抓取文件並執行安裝，處理作業系統 / 權限 / PATH / c
 # 1. 在 Claude Code 內 —— 啟動你的第一條 workflow
 /auto "你的第一個需求"               # 新手預設：端到端跑完所有 stage
 ```
+
+Codex 則在宿主內輸入 `$auto "你的第一個需求"`。`/auto` 與 `$auto` 是宿主 prompt,不是 shell 命令。以下 shell 範例若走 Bun 渠道,請將開頭的 `harnessed` 換成 `bun run --bun harnessed`。
 
 ```bash
 # 2. 迷路了？不帶參數執行 harnessed —— 它會告訴你身在何處 + 下一步是什麼

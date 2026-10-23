@@ -113,6 +113,7 @@ function chainProblem(d: CodexHooksDeps, pluginName: string, id: string | null):
   if (!info || typeof info.assetsRoot !== 'string') return 'shim: install.json missing'
   if (info.mode === 'binary')
     return d.onPath('harnessed') ? null : '`harnessed` not on PATH (binary-mode hook command)'
+  if (info.mode === 'bun' && !d.onPath('bun')) return '`bun` not on PATH (bun-mode hook command)'
   // the shim runs bin/harnessed-<id>.mjs when present, else the CLI entry
   const bin = id ? d.join(info.assetsRoot, 'bin', `harnessed-${id}.mjs`) : null
   const cli = d.join(info.assetsRoot, 'dist', 'cli.mjs')

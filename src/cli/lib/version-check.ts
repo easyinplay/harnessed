@@ -4,6 +4,7 @@
 
 import { exec, execFile } from 'node:child_process'
 import { promisify } from 'node:util'
+import { bunExecutable, isBunRuntime } from '../../platform/runtime.js'
 
 const execFileAsync = promisify(execFile)
 const execAsync = promisify(exec)
@@ -70,12 +71,45 @@ async function defaultRunner(): Promise<string> {
 /** Fail-soft — resolve the latest published harnessed version, or null on any
  *  failure (network, timeout, non-semver output). NEVER throws. The runner is
  *  injectable so unit tests do not spawn npm. */
-export async function fetchLatestVersion(
+export async function fetchLatestVersion(runner?: () => Promise<string>): Promise<string | null> {
+  try {
+    if (runner !== undefined) return await fetchLatestNpmVersion(runner)
+    return isBunRuntime() ? await fetchLatestBunVersion() : await fetchLatestNpmVersion()
+  } catch {
+    return null
+  }
+}
+
+/** Explicit npm selection must use npm's own registry/config even when hosted by Bun. */
+export async function fetchLatestNpmVersion(
   runner: () => Promise<string> = defaultRunner,
 ): Promise<string | null> {
   try {
     const out = (await runner()).trim()
     return /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(out) ? out : null
+  } catch {
+    return null
+  }
+}
+
+async function defaultBunRunner(): Promise<string> {
+  const { stdout } = await execFileAsync(
+    bunExecutable(),
+    ['info', 'harnessed@latest', 'version', '--json'],
+    { timeout: 8000, windowsHide: true, shell: false },
+  )
+  return stdout
+}
+
+/** Bun resolves its own registry/config, just as `bun add` does; never read auth here. */
+export async function fetchLatestBunVersion(
+  runner: () => Promise<string> = defaultBunRunner,
+): Promise<string | null> {
+  try {
+    const version: unknown = JSON.parse(await runner())
+    return typeof version === 'string' && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version)
+      ? version
+      : null
   } catch {
     return null
   }

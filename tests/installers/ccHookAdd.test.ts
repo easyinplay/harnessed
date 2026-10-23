@@ -121,6 +121,39 @@ const baseOpts: InstallOpts = {
 }
 
 describe('cc-hook-add installer', () => {
+  it('a Bun runtime writes the first-party command through the existing CC schema', async () => {
+    const previous = Object.getOwnPropertyDescriptor(process.versions, 'bun')
+    Object.defineProperty(process.versions, 'bun', { configurable: true, value: '1.4.4' })
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    const cap = captureStdout()
+    try {
+      const manifest = ccHookManifest()
+      if (manifest.spec.install.method !== 'cc-hook-add') throw new Error('invalid fixture')
+      manifest.spec.install.hook_command = 'harnessed check-docs --hook'
+      const r = await installCcHookAdd({
+        manifest,
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect(r).toMatchObject({ ok: true })
+      const written = JSON.parse(fakeFs[SETTINGS_PATH] ?? '{}')
+      expect(written.hooks.SessionStart[0]).toEqual({
+        matcher: 'startup|resume',
+        hooks: [
+          {
+            type: 'command',
+            command: `bun "${process.cwd().replace(/\\/g, '/')}/bin/harnessed-check-docs.mjs" --hook`,
+          },
+        ],
+      })
+    } finally {
+      cap.restore()
+      if (previous) Object.defineProperty(process.versions, 'bun', previous)
+      else Reflect.deleteProperty(process.versions, 'bun')
+    }
+  })
+
   it('dispatch — runInstall routes cc-hook-add to installCcHookAdd', async () => {
     for (const k of Object.keys(fakeFs)) delete fakeFs[k]
     const cap = captureStdout()

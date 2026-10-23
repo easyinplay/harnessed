@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v16.0 Codex Host Parity closed 2026-09-30; queue in TODOS.md.
+> Shipped history = indexed archive (do NOT re-plan). **Active target: public npm 5.0.0 Runtime And Onboarding**. [Phase 70 execution plan](phases/70-runtime-onboarding/PLAN.md); historical v16.0 remains closed.
 > Current published npm: see `.planning/STATE.md` and `.planning/releases/` (single release-status home). Milestone codenames (vN.0) are spec/era names, NOT npm versions.
 >
 > **This table stops at v13.0 by design.** Milestones from v14.0 on are indexed in `.planning/MILESTONES.md`,
@@ -40,7 +40,7 @@
 
 ## Backlog / Deferred (future milestones)
 
-- **Requested public release npm 5.0.0**: TypeScript/Bun optimization with no forced Bun dependency for binary/npm users; optional Bun route; tabbed website onboarding and GitHub-sourced stable version. [Scope and acceptance brief](research/npm-5.0-runtime-onboarding-brief.md). Detailed design/governance pending; this is not the historical internal v5.0 milestone or a release-complete claim.
+- **Active public release npm 5.0.0**: TypeScript/Bun optimization with no forced Bun dependency for binary/npm users; optional Bun route; one replacement website onboarding flow and GitHub-sourced stable version. [Phase 70 plan](phases/70-runtime-onboarding/PLAN.md). This is not the historical internal v5.0 milestone or a release-complete claim.
 
 - **Phase 69 release/native follow-up**: local implementation and acceptance complete (4327 tests; independent source/npm/Windows compiled smoke), retaining shared engine/manifests for Claude Code/Codex. [Verification and limits](phases/69-host-installation-contract/VERIFICATION.md). Native gstack remains blocked/notrun; no live migration, global replacement or release authorized. Workspace deletion-policy limitations are recorded separately.
 

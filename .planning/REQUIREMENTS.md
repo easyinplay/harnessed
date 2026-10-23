@@ -2,7 +2,20 @@
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
 > Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v10.0 i18n Surface (✅ npm v4.8.0).
-> Current published version: **v4.8.0** (v10.0 i18n surface; prior 4.7.0 bundled v8.0+v9.0+ECC). Active milestone: **_(none)_** — v10.0 shipped + published 2026-06-25.
+> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Active target: public npm **5.0.0 Runtime And Onboarding**; the older requirement families below remain historical records.
+
+## Active npm 5.0.0 Requirements
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| RT-01 | Standalone harnessed needs no external Bun/Node; npm keeps supported Node without Bun | Phase 70 channel smoke and product verification | Pending |
+| RT-02 | Measure and reduce short-lived startup cost without changing host/state/security semantics | Phase 70 before/after benchmark and lazy-import regression | In progress |
+| RT-03 | Explicit optional Bun invocation and owned lifecycle are verified, not inferred from package installation | Phase 70 Bun route acceptance | Pending |
+| WEB-01 | Replace old 60-second quickstart with one tabbed install / first workflow / progress-recovery flow | Site source, build and real browser evidence | In progress |
+| WEB-02 | Share latest stable GitHub version metadata with timeout/cache/fallback and no client secrets | Site metadata and browser tests | In progress |
+| REL-01 | Release 5.0.0 only after regression/CI/evidence, with English records and verified published artifacts | Phase 70 release review and release log | Pending |
+
+Plan: [Phase 70](phases/70-runtime-onboarding/PLAN.md). Scope: [approved brief](research/npm-5.0-runtime-onboarding-brief.md). Native governance limitations must remain explicit.
 
 ---
 

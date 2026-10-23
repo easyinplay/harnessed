@@ -18,7 +18,7 @@
 // B-25 split rationale: engine.ts ≤200L hard limit (B-23) — putting the
 // real query() consumer here keeps engine orchestration thin.
 
-import { query, type SDKMessage, type SDKResultMessage } from '@anthropic-ai/claude-agent-sdk'
+import type { SDKMessage, SDKResultMessage } from '@anthropic-ai/claude-agent-sdk'
 import type { AgentDefinition } from './agentDefinition.js'
 import { COMPLETION_SCHEMA, type SdkResultEnvelope } from './completionSchema.js'
 import { injectFactoryInternalFields, toSdkAgentDefinition } from './sdkReconcile.js'
@@ -96,6 +96,8 @@ export async function sdkSpawn(def: AgentDefinition, opts: SdkSpawnOpts): Promis
   }
   if (opts.resumeSessionId) queryOptions.resume = opts.resumeSessionId
 
+  // Keep the external SDK lazy even when local modules are bundled without splitting.
+  const { query } = await import('@anthropic-ai/claude-agent-sdk')
   const timeoutMs = opts.timeoutMs ?? envSpawnTimeoutMs()
   const abortController = new AbortController()
   queryOptions.abortController = abortController

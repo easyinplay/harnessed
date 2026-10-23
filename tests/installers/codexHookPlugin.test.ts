@@ -36,6 +36,15 @@ describe('parseHookIdentity — manifest hook_command → first-party hook id + 
 })
 
 describe('codexHookCommand — hash-stable literal (R4)', () => {
+  it('bun mode keeps a PATH-resolved host and the exact platform arguments', () => {
+    expect(codexHookCommand({ id: 'inject-state', args: ['--invalidate'] }, 'bun')).toBe(
+      `bun "\${PLUGIN_ROOT}/hook.cjs" inject-state --invalidate --platform codex`,
+    )
+    expect(codexHookCommand({ id: 'check-docs', args: ['--hook'] }, 'bun')).toBe(
+      `bun "\${PLUGIN_ROOT}/hook.cjs" check-docs --hook --platform codex`,
+    )
+  })
+
   it('npm mode: unquoted `node` first token + ${PLUGIN_ROOT} shim; --platform codex for inject-state', () => {
     expect(codexHookCommand({ id: 'inject-state', args: [] }, 'npm')).toBe(
       'node "${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex',
@@ -114,6 +123,18 @@ describe('renderCodexHookPlugin — one plugin per hook manifest (CQ2)', () => {
     expect(r?.files.map((f) => f.path)).not.toContain('plugins/harnessed-perturn-inject/hook.cjs')
   })
 
+  it('bun keeps the npm plugin schema and shim, changing only the command host', () => {
+    const npm = renderCodexHookPlugin(spec, 'npm')
+    const bun = renderCodexHookPlugin(spec, 'bun')
+    expect(bun?.files.map((f) => f.path)).toEqual(npm?.files.map((f) => f.path))
+    for (const file of bun?.files ?? []) {
+      const original = npm?.files.find((f) => f.path === file.path)?.content
+      if (file.path.endsWith('hooks/hooks.json')) {
+        expect(file.content).toBe(original?.replaceAll('node ', 'bun '))
+      } else expect(file.content).toBe(original)
+    }
+  })
+
   it('matcher is carried (doc-discipline-gate: PreToolUse / Bash — codex tool name is Bash)', () => {
     const r = renderCodexHookPlugin(
       {
@@ -144,7 +165,7 @@ describe('renderCodexHookPlugin — one plugin per hook manifest (CQ2)', () => {
   })
 
   it('the generated literal never embeds an absolute path (hash-stable)', () => {
-    for (const mode of ['npm', 'binary'] as const) {
+    for (const mode of ['npm', 'bun', 'binary'] as const) {
       const r = renderCodexHookPlugin(spec, mode)
       const hooks = r?.files.find((f) => f.path.endsWith('hooks/hooks.json'))?.content ?? ''
       expect(hooks).not.toMatch(/[A-Za-z]:[\\/]|\/(?:home|Users|usr)\//)

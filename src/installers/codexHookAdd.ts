@@ -27,6 +27,7 @@ import { checkCmdString } from '../manifest/security.js'
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import type { HostInstallContext } from '../platform/hostInstallContext.js'
 import { detectPlatform } from '../platform/platform.js'
+import { isBunRuntime } from '../platform/runtime.js'
 import { backup } from './lib/backup.js'
 import {
   CODEX_HOOK_MARKETPLACE,
@@ -174,7 +175,7 @@ export async function installCodexHook(ctx: InstallContext): Promise<InstallResu
       ),
     }
   const name = ctx.manifest.metadata.name
-  const mode: CodexHookMode = isCompiledRuntime() ? 'binary' : 'npm'
+  const mode: CodexHookMode = isCompiledRuntime() ? 'binary' : isBunRuntime() ? 'bun' : 'npm'
   const rendered = renderCodexHookPlugin(
     {
       manifestName: name,
@@ -431,7 +432,7 @@ async function generatedHookFiles(
   }
   if (
     !info ||
-    (info.mode !== 'npm' && info.mode !== 'binary') ||
+    (info.mode !== 'npm' && info.mode !== 'bun' && info.mode !== 'binary') ||
     typeof info.assetsRoot !== 'string' ||
     !isAbsolute(info.assetsRoot) ||
     !knownVersion(info.harnessedVersion) ||
@@ -447,8 +448,10 @@ async function generatedHookFiles(
     throw new Error(`Unrecognized first-party hook event: ${pluginDir}`)
   const group = hooks.hooks?.[event]?.[0]
   const command = group?.hooks?.[0]?.command
-  // biome-ignore lint/suspicious/noTemplateCurlyInString: Codex expands this literal plugin placeholder.
-  const head = info.mode === 'npm' ? 'node "${PLUGIN_ROOT}/hook.cjs" ' : 'harnessed '
+  const head =
+    info.mode === 'binary'
+      ? 'harnessed '
+      : `${info.mode === 'bun' ? 'bun' : 'node'} "\${PLUGIN_ROOT}/hook.cjs" `
   const suffix = ' --platform codex'
   if (typeof command !== 'string' || !command.startsWith(head) || !command.endsWith(suffix))
     throw new Error(`Unrecognized first-party hook command: ${pluginDir}`)

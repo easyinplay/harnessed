@@ -32,7 +32,19 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> O binário inclui seu runtime e não precisa de Node.js nem Bun externos. Componentes upstream ainda podem exigir Node/npm, Git, Bun, Python ou bibliotecas de sistema do navegador.
+
+**Via Bun (recomendação secundária; opcional)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed update --package-manager bun
+```
+
+`bun add -g harnessed` é equivalente. Bun só é necessário ao escolher este canal; npm continua usando Node.js >= 22, sem exigir Bun. A instalação não escolhe o runtime automaticamente: o shim `harnessed` pode chamar Node. Mantenha `bun run --bun harnessed` nos próximos comandos. Para Claude Code, troque `codex` por `claude` no setup. O runtime não identifica a origem da instalação: atualizações de pacote mantêm npm como padrão; Bun exige `--package-manager bun`. Escolha apenas um canal. Execute `bun remove -g harnessed` manualmente apenas quando o usuário decidir remover essa instalação. Veja o [guia de instalação](./INSTALL-WITH-AI.md).
 
 **Via npm (alternativa suportada; requer Node.js >= 22)**:
 
@@ -62,6 +74,8 @@ O caminho mais curto do zero a um workflow em execução:
 # 1. Dentro do Claude Code — dispare seu primeiro workflow
 /auto "seu primeiro requisito"        # padrão para iniciantes: roda todos os stages de ponta a ponta
 ```
+
+No Codex, digite `$auto "seu primeiro requisito"`. `/auto` e `$auto` são prompts dentro do host, não comandos shell. Nos exemplos shell abaixo, quem usa Bun deve substituir o `harnessed` inicial por `bun run --bun harnessed`.
 
 ```bash
 # 2. Perdido? Execute harnessed sem argumentos — ele te diz onde você está + o que vem a seguir

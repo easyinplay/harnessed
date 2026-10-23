@@ -19,15 +19,13 @@
 // primitive into the SKILL.md body. Do not reach for this from an interactive
 // path.
 //
-// Deliberately imports ONLY `sdkSpawn` from ./sdkSpawn.js — the same single
-// binding run.ts imported before — so the suites that mock that module with a
-// one-export factory keep working.
+// Load only the selected host's spawner, and only when no injected one exists.
+// Read ONLY `sdkSpawn` from ./sdkSpawn.js so single-export mock factories keep
+// working without pulling the SDK into metadata, hook, or codex paths.
 
 import { type HostId, toHostId } from '../../cli/lib/hostPrimitives.js'
 import { detectPlatform } from '../../platform/platform.js'
 import type { AgentDefinition } from './agentDefinition.js'
-import { codexExecSpawn } from './codexExecSpawn.js'
-import { sdkSpawn } from './sdkSpawn.js'
 
 /** The call shape `ralphLoopWrap` drives, i.e. exactly today's `SdkSpawnOpts`
  *  subset that run.ts fills. Kept structural rather than importing
@@ -79,7 +77,9 @@ export async function dispatchSpawn(
 ): Promise<string> {
   const host = (deps.hostId ?? resolveSpawnHost)()
   if (host === 'codex') {
-    return (deps.codexExecSpawn ?? codexExecSpawn)(def, { expertName: opts.expertName })
+    const spawn = deps.codexExecSpawn ?? (await import('./codexExecSpawn.js')).codexExecSpawn
+    return spawn(def, { expertName: opts.expertName })
   }
-  return (deps.sdkSpawn ?? sdkSpawn)(def, opts)
+  const spawn = deps.sdkSpawn ?? (await import('./sdkSpawn.js')).sdkSpawn
+  return spawn(def, opts)
 }

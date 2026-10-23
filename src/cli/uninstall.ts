@@ -37,6 +37,7 @@ import {
   type HostInstallContext,
 } from '../platform/hostInstallContext.js'
 import { detectPlatform } from '../platform/platform.js'
+import { isBunRuntime } from '../platform/runtime.js'
 import { runUninstall } from '../uninstallers/index.js'
 import { scanWorkflowsNested } from '../workflow/scan-nested.js'
 import { shouldOverwriteFile } from './lib/generateCommands.js'
@@ -153,6 +154,14 @@ function printCliRemovalHint(): void {
         dir: dirname(process.execPath),
       }),
     )
+  } else if (isBunRuntime()) {
+    console.log(
+      '  install manager not inferred from Bun runtime; choose the command for the actual install source:',
+    )
+    console.log(t('uninstall.unified.cli_hint_npm'))
+    console.log('  Bun: bun remove --global harnessed')
+    console.log('  Other installs may remain; review PATH separately.')
+    return
   } else {
     console.log(t('uninstall.unified.cli_hint_npm'))
   }

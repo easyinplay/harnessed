@@ -22,6 +22,7 @@ vi.mock('@clack/prompts', () => ({
 // is controllable; getAssetsRoot returns a stub (readdir/readFile are mocked, so
 // the value is never dereferenced for real I/O).
 const assetsMock = vi.hoisted(() => ({ compiled: false }))
+const originalBun = Object.getOwnPropertyDescriptor(process.versions, 'bun')
 vi.mock('../../src/platform/assetsRoot.js', () => ({
   getAssetsRoot: () => '/fake/pkg',
   isCompiledRuntime: () => assetsMock.compiled,
@@ -450,7 +451,11 @@ describe('cli/uninstall (no name) — unified', () => {
     readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     statMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
   })
-  afterEach(() => vi.restoreAllMocks())
+  afterEach(() => {
+    vi.restoreAllMocks()
+    if (originalBun) Object.defineProperty(process.versions, 'bun', originalBun)
+    else Reflect.deleteProperty(process.versions, 'bun')
+  })
 
   function mockArtifacts(): void {
     readdirMock.mockImplementation(async (p: unknown) => {
@@ -643,12 +648,31 @@ describe('cli/uninstall (no name) — unified', () => {
 
   // ── CLI-removal hint (channel-aware; closes "uninstall not unified" gap) ──
 
+  it.each([
+    false,
+    true,
+  ])('Bun lists manual npm/Bun removal choices without inferring or uninstalling (dryRun=%s)', async (dryRun) => {
+    Object.defineProperty(process.versions, 'bun', { configurable: true, value: '1.4.4' })
+    if (dryRun) mockArtifacts()
+    const { stdout } = await runCli(['uninstall', ...(dryRun ? ['--dry-run'] : [])])
+    expect(stdout).toContain('install manager not inferred')
+    expect(stdout).toContain('actual install source')
+    expect(stdout).toContain('npm uninstall -g harnessed')
+    expect(stdout).toContain('bun remove --global harnessed')
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(rmMock).not.toHaveBeenCalled()
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
   it('completion prints CLI-removal hint — npm channel by default', async () => {
     mockArtifacts()
     confirmMock.mockResolvedValue(true)
     const { stdout } = await runCli(['uninstall'])
     expect(stdout).toContain('to remove the harnessed CLI itself')
     expect(stdout).toContain('npm uninstall -g harnessed')
+    expect(stdout).toContain('  npm: npm uninstall -g harnessed\n')
+    expect(stdout).not.toContain('bun remove --global harnessed')
+    expect(stdout).not.toContain('install manager not inferred')
   })
 
   it('dry-run also prints the CLI-removal hint', async () => {

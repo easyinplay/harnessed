@@ -25,7 +25,7 @@ export const CODEX_HOOK_MARKETPLACE = 'harnessed-local'
  *  (Re-running `codex plugin add` refreshes the cache copy regardless — measured.) */
 export const CODEX_HOOK_PLUGIN_VERSION = '1.0.0'
 
-export type CodexHookMode = 'npm' | 'binary'
+export type CodexHookMode = 'npm' | 'bun' | 'binary'
 
 export interface HookIdentity {
   id: string
@@ -84,7 +84,10 @@ export function isCodexPortableHook(hookCommand: string): boolean {
 /** The hash-stable command literal (R4). `command` and `commandWindows` use it verbatim. */
 export function codexHookCommand(ident: HookIdentity, mode: CodexHookMode): string {
   const host = HOST_AWARE_IDS.has(ident.id) ? ['--platform', 'codex'] : []
-  const head = mode === 'npm' ? ['node', '"${PLUGIN_ROOT}/hook.cjs"'] : ['harnessed']
+  const head =
+    mode === 'binary'
+      ? ['harnessed']
+      : [mode === 'bun' ? 'bun' : 'node', `"\${PLUGIN_ROOT}/hook.cjs"`]
   return [...head, ident.id, ...ident.args, ...host].join(' ')
 }
 
@@ -142,7 +145,7 @@ export function renderCodexHookPlugin(
     },
     { path: `${base}/hooks/hooks.json`, content: json({ hooks: { [spec.event]: [group] } }) },
   ]
-  if (mode === 'npm') files.push({ path: `${base}/hook.cjs`, content: CODEX_HOOK_SHIM })
+  if (mode !== 'binary') files.push({ path: `${base}/hook.cjs`, content: CODEX_HOOK_SHIM })
   return { pluginName, files }
 }
 

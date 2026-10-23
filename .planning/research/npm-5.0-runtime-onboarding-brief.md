@@ -1,7 +1,7 @@
 # npm 5.0 Runtime And Onboarding Brief
 
 Date: 2026-10-24.
-Status: User-requested direction; detailed design, governance and implementation acceptance pending.
+Status: User approved starting on 2026-10-24. Execution plan: [Phase 70](../phases/70-runtime-onboarding/PLAN.md). Native governance and implementation/release acceptance remain tracked, not presumed complete.
 
 ## Release Identity And Scope
 
@@ -41,6 +41,8 @@ Replace the existing installation/quickstart area on `harnessed.cc`, not the ent
 3. **Check progress and resume**: combine the README First 5 Minutes status/dashboard and recovery content using the verified `harnessed` and `harnessed resume` commands.
 
 Keep the site's existing visual system and language support. Preserve surrounding sections unless an installation command or version reference would otherwise contradict the new recommendation. Verify tab keyboard behavior, copy feedback, narrow screens and text wrapping with real browser screenshots.
+
+User clarification when approving execution: remove the existing 60-second quickstart presentation after the replacement is introduced. Keep one onboarding flow, not the new three steps plus an old duplicate.
 
 Source discovery located a separate, clean repository at `D:/GitCode/harnessed-site`, remote `easyinplay/harnessed-site`, inspected HEAD `653f62e`. It uses Astro/Starlight and static Cloudflare Workers assets. The site's README dependency summary is stale; inspect package/lockfile before implementation.
 

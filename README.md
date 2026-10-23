@@ -30,15 +30,45 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
 
-> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+> The standalone binary embeds its runtime: harnessed itself needs neither external Node.js nor Bun. Upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+
+**Via Bun (secondary recommendation; optional)**:
+
+```bash
+bun install -g harnessed
+bun run --bun harnessed --version
+```
+
+`bun add -g harnessed` is an equivalent install command. Bun is required only if you choose this channel; it is not a prerequisite for the standalone binary or npm channel. Installing with Bun does not automatically select the runtime: the bare `harnessed` shim may still use a Node.js shebang. Use the explicit Bun runner for setup and subsequent CLI commands:
+
+```text
+bun run --bun harnessed setup --platform <host>
+```
+
+Replace `<host>` with `claude` for Claude Code or `codex` for Codex; do not type the angle brackets in your shell. For example:
+
+```bash
+bun run --bun harnessed setup --platform codex
+bun run --bun harnessed doctor --host codex
+bun run --bun harnessed status
+bun run --bun harnessed update --package-manager bun
+```
+
+The runtime does not identify the install manager: package updates keep the npm default unless you explicitly pass `--package-manager bun`. Upstream tools still have their own requirements.
+
+Only when you explicitly choose to remove a Bun-managed installation, run `bun remove -g harnessed`; do not uninstall another channel automatically.
 
 **Via npm (supported alternative; Node.js >= 22 required)**:
+
+Bun is not required for this channel; Node.js >= 22 remains supported.
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
+
+For binary/npm installs, Codex users should run `harnessed setup --platform codex` instead of the default setup; Claude Code users can select `--platform claude`. Choose one install channel, not all three.
 
 🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
 
@@ -56,10 +86,19 @@ The AI will auto-fetch the doc + run the install, handling OS / permissions / PA
 
 The shortest path from zero to a running workflow:
 
+Step 1 is a prompt inside your host, not a shell command. In **Claude Code**, use:
+
+```text
+/auto "your first requirement"
 ```
-# 1. Inside Claude Code — kick off your first workflow
-/auto "your first requirement"        # newcomer default: runs all stages end-to-end
+
+In **Codex**, use:
+
+```text
+$auto "your first requirement"
 ```
+
+Both start the default end-to-end workflow after setup for that host. The shell examples below use the binary/npm channel; for a Bun-managed install, replace the leading `harnessed` with `bun run --bun harnessed`.
 
 ```bash
 # 2. Lost? Run harnessed with no arguments — it tells you where you are + what's next

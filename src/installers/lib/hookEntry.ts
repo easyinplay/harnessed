@@ -19,6 +19,7 @@
 // than new exports on ccHookAdd.ts/idempotent.ts (mock-export-gap 教训).
 
 import { join } from 'node:path'
+import { isBunRuntime } from '../../platform/runtime.js'
 
 /** Correct CC settings shape: one group per registration. */
 export interface HookGroup {
@@ -42,6 +43,8 @@ export interface HookCmdDeps {
    *  hook resolves to `"<binary>" inject-state` (no host node needed). npm
    *  mode returns null and the legacy node+mjs resolution applies. */
   compiledExecPath?: () => string | null
+  /** Package runtime override; absent means the current runtime (not an install manager). */
+  runtime?: 'node' | 'bun'
 }
 
 /** Normalized registration identities for first-party harnessed hooks. The
@@ -141,6 +144,18 @@ export function resolveHookCommand(raw: string, deps: HookCmdDeps): string {
     if (exe) {
       const tail = splitTokens(raw).slice(at.index + 1)
       return [`"${exe.replace(/\\/g, '/')}"`, at.marker, ...tail].join(' ')
+    }
+  }
+  if ((deps.runtime ?? (isBunRuntime() ? 'bun' : 'node')) === 'bun') {
+    const tokens = splitTokens(raw)
+    const entry = stripQuotes(tokens[1] ?? '').bare
+    // Only exact first-party transports; substring identity matching would also
+    // rewrite third-party scripts such as team-inject-state.mjs.
+    const script = entry.match(/^bin[\\/]harnessed-([a-z-]+)\.mjs$/)
+    const id = tokens[0] === 'node' ? script?.[1] : tokens[0] === 'harnessed' ? entry : null
+    if (id && (COMPILED_HOOK_IDENTITIES as readonly string[]).includes(id)) {
+      const target = join(deps.assetsRoot(), 'bin', `harnessed-${id}.mjs`).replace(/\\/g, '/')
+      return ['bun', `"${target}"`, ...tokens.slice(2)].join(' ')
     }
   }
   let root: string | null = null

@@ -48,10 +48,17 @@ vi.mock('@clack/prompts', () => ({
   isCancel: vi.fn(() => false),
 }))
 
+vi.mock('../../src/platform/assetsRoot.js', async (orig) => ({
+  ...(await orig<typeof import('../../src/platform/assetsRoot.js')>()),
+  isCompiledRuntime: vi.fn(() => false),
+}))
+
 import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
+import { removeCodexHook } from '../../src/installers/codexHookAdd.js'
 import { invalidateCodexPluginCache } from '../../src/installers/lib/codexPlugins.js'
 import { isAlreadyInstalled } from '../../src/installers/lib/idempotent.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
+import { isCompiledRuntime } from '../../src/platform/assetsRoot.js'
 import { captureHostInstallContext } from '../../src/platform/hostInstallContext.js'
 import { uninstallCcHookAdd } from '../../src/uninstallers/ccHookAdd.js'
 
@@ -92,10 +99,14 @@ const OPTS: InstallOpts = {
 let home: string
 let codexHome: string
 let cwd: string
+const originalBun = Object.getOwnPropertyDescriptor(process.versions, 'bun')
+const useBun = () =>
+  Object.defineProperty(process.versions, 'bun', { configurable: true, value: '1.4.4' })
 const MKT = () => join(codexHome, 'harnessed', 'marketplace')
 const DATA = (p: string) => join(codexHome, 'plugins', 'data', `${p}-harnessed-local`)
 
 beforeEach(() => {
+  vi.mocked(isCompiledRuntime).mockReturnValue(false)
   home = mkdtempSync(join(tmpdir(), 'harnessed-codexhook-'))
   codexHome = join(home, '.codex')
   cwd = join(home, 'proj')
@@ -119,6 +130,8 @@ beforeEach(() => {
   invalidateCodexPluginCache()
 })
 afterEach(() => {
+  if (originalBun) Object.defineProperty(process.versions, 'bun', originalBun)
+  else Reflect.deleteProperty(process.versions, 'bun')
   vi.unstubAllEnvs()
   rmSync(home, { recursive: true, force: true })
 })
@@ -129,6 +142,56 @@ const install = (m: Manifest, opts: Partial<InstallOpts> = {}) =>
 const PERTURN = () => manifest('perturn-inject', 'node bin/harnessed-inject-state.mjs')
 
 describe('install on codex', () => {
+  it('changing npm to Bun still requires consent for the modified trust literal', async () => {
+    list.mockResolvedValue({ ok: true, value: [{ key: KEY, trustStatus: 'trusted' }] })
+    await install(PERTURN())
+    useBun()
+    list.mockResolvedValue({ ok: true, value: [{ key: KEY, trustStatus: 'modified' }] })
+    const r = await install(PERTURN())
+    expect(r).toMatchObject({
+      ok: true,
+      trustPending: expect.stringContaining('--trust-codex-hooks'),
+    })
+    expect(trust).not.toHaveBeenCalled()
+  })
+
+  it('Bun installs its shim and mode without implicitly granting trust', async () => {
+    useBun()
+    list.mockResolvedValue({ ok: true, value: [{ key: KEY, trustStatus: 'untrusted' }] })
+    const r = await install(PERTURN())
+    expect(r).toMatchObject({
+      ok: true,
+      trustPending: expect.stringContaining('--trust-codex-hooks'),
+    })
+    const pdir = join(MKT(), 'plugins', 'harnessed-perturn-inject')
+    const hooks = JSON.parse(readFileSync(join(pdir, 'hooks', 'hooks.json'), 'utf8'))
+    expect(hooks.hooks.UserPromptSubmit[0].hooks[0]).toEqual({
+      type: 'command',
+      command: `bun "\${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex`,
+      commandWindows: `bun "\${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex`,
+    })
+    expect(existsSync(join(pdir, 'hook.cjs'))).toBe(true)
+    expect(
+      JSON.parse(readFileSync(join(DATA('harnessed-perturn-inject'), 'install.json'), 'utf8')),
+    ).toMatchObject({ mode: 'bun' })
+    expect(trust).not.toHaveBeenCalled()
+    invalidateCodexPluginCache()
+    expect(await install(PERTURN())).toMatchObject({ ok: true, alreadyInstalled: true })
+  })
+
+  it('compiled keeps the original binary literal even with process.versions.bun', async () => {
+    useBun()
+    vi.mocked(isCompiledRuntime).mockReturnValue(true)
+    list.mockResolvedValue({ ok: true, value: [] })
+    await install(PERTURN())
+    const pdir = join(MKT(), 'plugins', 'harnessed-perturn-inject')
+    const hooks = JSON.parse(readFileSync(join(pdir, 'hooks', 'hooks.json'), 'utf8'))
+    expect(hooks.hooks.UserPromptSubmit[0].hooks[0].command).toBe(
+      'harnessed inject-state --platform codex',
+    )
+    expect(existsSync(join(pdir, 'hook.cjs'))).toBe(false)
+  })
+
   it('generates the plugin + marketplace, installs via the codex CLI, trusts on grant', async () => {
     trust.mockResolvedValue({ ok: true, value: { trusted: [KEY], already: [], missing: [] } })
     const r = await install(PERTURN(), { codexHookTrust: 'grant' })
@@ -272,6 +335,50 @@ describe('installed probe on codex (T5 / R6)', () => {
 })
 
 describe('uninstall on codex (T7)', () => {
+  it('Bun mode does not widen removal authority for a mismatched command host', async () => {
+    useBun()
+    list.mockResolvedValue({ ok: true, value: [] })
+    await install(PERTURN())
+    const hooksPath = join(MKT(), 'plugins', 'harnessed-perturn-inject', 'hooks', 'hooks.json')
+    writeFileSync(hooksPath, readFileSync(hooksPath, 'utf8').replaceAll('bun ', 'node '))
+    codexCalls.length = 0
+    const r = await removeCodexHook('perturn-inject', 'UserPromptSubmit')
+    expect(r).toMatchObject({
+      ok: false,
+      phase: 'preflight',
+      error: expect.stringContaining('Unrecognized first-party hook command'),
+    })
+    expect(codexCalls).toEqual([])
+    expect(untrust).not.toHaveBeenCalled()
+    expect(existsSync(hooksPath)).toBe(true)
+  })
+
+  it('validates and removes Bun-generated files through the existing teardown and consent path', async () => {
+    useBun()
+    list.mockResolvedValue({ ok: true, value: [{ key: KEY, trustStatus: 'trusted' }] })
+    untrust.mockResolvedValue({ ok: true, value: { removed: [KEY] } })
+    await install(PERTURN())
+    // Exercise Bun install-info/head validation independently of the installing runtime.
+    expect(
+      JSON.parse(readFileSync(join(DATA('harnessed-perturn-inject'), 'install.json'), 'utf8')).mode,
+    ).toBe('bun')
+    Reflect.deleteProperty(process.versions, 'bun')
+    const r = await uninstallCcHookAdd({
+      manifest: PERTURN(),
+      opts: { apply: true, dryRun: false, yes: true },
+      cwd,
+    })
+    expect(r).toMatchObject({ ok: true })
+    expect(codexCalls).toContainEqual([
+      'plugin',
+      'remove',
+      'harnessed-perturn-inject@harnessed-local',
+    ])
+    expect(existsSync(MKT())).toBe(false)
+    expect(existsSync(DATA('harnessed-perturn-inject'))).toBe(false)
+    expect(untrust).toHaveBeenCalledTimes(1)
+  })
+
   it('plugin remove → empty cache dir removed → trust entry deleted → plugin + data dirs gone; last one removes the marketplace', async () => {
     list.mockResolvedValue({
       ok: true,

@@ -7,6 +7,7 @@
 
 import pkg from '../../../package.json' with { type: 'json' }
 import { isCompiledRuntime } from '../../platform/assetsRoot.js'
+import { isBunRuntime } from '../../platform/runtime.js'
 import { compareVersions } from './version-check.js'
 
 /** Build the banner lines for `harnessed setup`. Line 1 is always the installed
@@ -57,6 +58,10 @@ export async function printSetupVersionBanner(): Promise<void> {
   for (const line of BANNER_ART) console.log(line)
   const { resolveLatestCachedDefault } = await import('./update-check-cache.js')
   const latest = await resolveLatestCachedDefault()
-  const hint = isCompiledRuntime() ? 'harnessed update' : undefined
+  const hint = isCompiledRuntime()
+    ? 'harnessed update'
+    : isBunRuntime()
+      ? 'Bun-managed packages only: bun run --bun harnessed update --package-manager bun (install manager not inferred)'
+      : undefined
   for (const line of versionBannerLines(pkg.version, latest, hint)) console.log(line)
 }

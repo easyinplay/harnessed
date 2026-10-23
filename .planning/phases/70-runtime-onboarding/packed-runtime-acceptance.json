@@ -1,0 +1,821 @@
+{
+  "kind": "runtime-channel-smoke",
+  "version": "5.0.0",
+  "integrity": "sha512-9SYuXZc+2uHgz1UN3kJhxKGu1+XGIot/DWp3nzHw59VK1/XfuE32DoMt2N3OpgA6DRdWjw3VvAXCWvBaMvXChw==",
+  "packageFiles": 182,
+  "packageSize": 1198608,
+  "installed": true,
+  "schemaVersion": 1,
+  "timestamp": "2026-10-23T19:07:48.059Z",
+  "platform": "win32",
+  "results": [
+    {
+      "channel": "node-npm",
+      "ok": true,
+      "error": null,
+      "fixture": {
+        "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-7KQSRs",
+        "cleanup": "completed"
+      },
+      "traps": {
+        "blocked": ["bun", "bunx"],
+        "policy": "runtime-bearing PATH entries removed; .cmd probes cover shell lookups only; missing runtime .exe attempts can fail without logging; owned paths must succeed; empty log does not prove zero attempts",
+        "probes": [
+          {
+            "name": "bun",
+            "durationMs": 39.15450000000055,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "name": "bunx",
+            "durationMs": 34.171800000000076,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        ],
+        "unexpectedCalls": []
+      },
+      "steps": [
+        {
+          "label": "version",
+          "args": ["--version"],
+          "durationMs": 346.7353000000003,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "5.0.0\n",
+          "stderr": "",
+          "rawOutputBytes": 6,
+          "returnedOutputBytes": 6,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "gates",
+          "args": [
+            "gates",
+            "task",
+            "--task",
+            "Inspect a local fixture; do not spawn, install, or use the network."
+          ],
+          "durationMs": 317.4930000000004,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "{\n  \"master\": \"task\",\n  \"fire\": [\n    {\n      \"sub\": \"task-clarify\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    },\n    {\n      \"sub\": \"task-code\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    },\n    {\n      \"sub\": \"task-test\",\n      \"order\": 3,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.tdd-gate.tdd-strongly-suggested.fires\"\n    },\n    {\n      \"sub\": \"task-deliver\",\n      \"order\": 4,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}\n",
+          "stderr": "",
+          "rawOutputBytes": 579,
+          "returnedOutputBytes": 579,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "prompt",
+          "args": [
+            "prompt",
+            "task-code",
+            "--task",
+            "Inspect a local fixture; do not spawn, install, or use the network.",
+            "--json"
+          ],
+          "durationMs": 403.1985000000004,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "{\"prompt\":\"## Task\\nInspect a local fixture; do not spawn, install, or use the network.\\n\\nYou are a Karpathy-discipline implementer.\\n\\nImplement a single subtask under the karpathy 4 principles (Think Before Coding /\\nSimplicity First / Surgical Changes / Goal-Driven Execution) with\\n≤200 LOC per file. Conditionally invoke `/improve-codebase-architecture`\\nfor periodic health audits, `/diagnosing-bugs` for unknown bug root\\ncauses. Update `progress.md` via\\nplanning-with-files `/plan` when done.\\n\\n\\nChecklist:\\n  1. Before any edit: read the file you intend to change end-to-end\\n  2. Codebase navigation: if the project has a `.codegraph/` index, prefer the codegraph MCP tools (`codegraph_explore`) for symbol lookup / call paths / impact analysis instead of grep/glob/file-by-file Read crawling\\n  3. Smallest change that satisfies the acceptance criteria — no scope creep\\n  4. ≤200 LOC per file (split modules if growing past it)\\n  5. Trust internal code: don't re-validate already-checked inputs at every layer\\n  6. No speculative abstractions (no 'just in case' generics)\\n  7. Edit with surgical precision: full path, exact selectors, no broad rewrites\\n  8. Update progress.md before declaring done (planning-with-files `/plan`)\\n  9. improve-arch: hunt deepening opportunities — modules whose interface is nearly as complex as their implementation are shallow; deep modules hide a lot of behaviour behind a small interface\\n  10. improve-arch deletion test: imagine deleting the module — if complexity vanishes it was a pass-through (delete it); if complexity reappears across N callers it was earning its keep (keep / deepen)\\n  11. improve-arch: name candidates using CONTEXT.md domain vocabulary (e.g. 'the Order intake module', not 'FooBarHandler'); if a candidate contradicts an existing ADR, only surface it when the friction is real enough to revisit the ADR\\n  12. improve-arch: present candidates as a before/after report and let the user pick which to explore before designing interfaces\\n\\nSeverity scale: needs-fix / done / blocked\\n\\nEmit a structured COMPLETE signal when done.\\n\\n## Tools — invoke these (not optional)\\nThis workflow's SoT declares the following upstream tools. Actually invoke them as part of your work — do NOT improvise a lightweight substitute. Persist artifacts in the upstream's native format (e.g. planning-with-files → `task_plan.md` / `progress.md` / `findings.md`; GSD → `PLAN.md` / `STATE.md`).\\n- Invoke `/improve-codebase-architecture` (improve-codebase-architecture, mattpocock-skills)\\n- Invoke `/diagnosing-bugs` (diagnose, mattpocock-skills)\\n- Invoke `/plan` (planning-with-files, claude-code-plugin)\\n\\n## Disciplines (always-on — L0 substrate)\\nFollow these behavioral disciplines while doing the work:\\n- **karpathy**:\\n  - Think before coding; do not dump code directly; brainstorm the design intent before each subtask\\n  - Pursue the minimal effective code, avoid unnecessary complexity; YAGNI / do not write code for hypothetical scenarios\\n  - Small atomic changes, single responsibility per commit; no large-scale rewrites\\n  - Goal-driven, do not diverge / do no unrelated refactoring; solve only the current task and do not smuggle in cleanup\\n  - Single-file ≤200L hard limit (per project CLAUDE.md karpathy guideline reminder); over the limit → split into a helper\\n  - Trust internal code — validate at the trust boundary (external input, parsed config, user data), not at every internal layer; do not add defensive re-checks or redundant assertions on call sites you control\\n  - Comments explain WHY, not WHAT — delete comments that restate the code or that have drifted out of sync with it; a comment must add context the code cannot carry (rationale, constraint, upstream reference)\\n- **output-style**:\\n  - Precise quantifiers; when a concrete number/filename/line number/commit hash is available, do not say \\\"some/a few/several\\\"\\n  - scope — chat replies ONLY: the rules nested below govern how you talk to the user and do NOT constrain the files you write (README / CHANGELOG / PLAN.md / SUMMARY.md / docs / code comments follow their own conventions, and may use emoji, em-dashes, headings and summary sections):\\n    - Conclusion first (BLUF); each paragraph leads with one sentence giving the answer/judgment/recommendation, then expands the reasoning\\n    - Remove opening/closing filler phrases like \\\"good question / awesome / perfect / hope this helps / anything else\\\"\\n    - No emoji unless the user explicitly requests it (project markdown files such as README/PR/CHANGELOG are not constrained)\\n    - No em-dash (—— / —); instead use parentheses or colons for asides, commas for lists, and a separate sentence for contrast\\n    - No closing summary unless the user explicitly asks to \\\"summarize/recap\\\"\\n    - No empty continuation questions (\\\"want me to help you X?\\\" / \\\"anything else?\\\"); keep workflow-necessary next-step guidance\\n- **operational**:\\n  - Before any TS/JS commit you must run `pnpm exec biome check --write` (3 CI-red recurrences Phase 2.1.1/2.2/2.3 project memory)\\n  - A new ADR does not touch the main body of old ADRs; iterate via baseline tag, conserved by the CI A7 step (sister Phase 1.3-2.6 ADR errata path)\\n  - NEVER push to remote without user explicit approval (project CLAUDE.md commit safety)\\n  - Skip-hook flags such as --no-verify / --no-gpg-sign are not allowed, unless the user explicitly requests them\\n  - Destructive ops (git reset --hard / push --force / rm -rf / drop table) require explicit user confirmation\\n  - A user approving one push ≠ approval for the whole session; each destructive / shared-state operation needs separate confirmation\\n  - When a phase gate condition cannot be confidently evaluated (e.g. expected context fields missing, default-valued, or contradictory), prefer skip + transparent explanation over silent execution. Verbatim format: \\\"这次跳过了 <phase>, 因为 <reason>. 如果你认为 需要请明说\\\" / English: \\\"Skipped <phase> because <reason>. Tell me if you actually need it.\\\"\\n- **priority**:\\n  - Multiple capabilities fires_when true at once → pick the highest by priority_hierarchy order e.g., gstack /office-hours + GSD /gsd-discuss-phase fire together → gstack runs first\\n\\n## Completion protocol\\nWhen done emit: <promise>COMPLETE</promise>\\n\\n## Clarification protocol\\nIf you hit a gray area you cannot decide (≥2 reasonable options, missing key context, ambiguous requirement), do NOT self-decide. Emit:\\nSTATUS: NEEDS_CLARIFICATION\\n1. <question>\\n2. <question>\\nThe main session will relay these to the user and re-spawn you with answers.\\n\",\"max_iterations\":20,\"model\":\"sonnet\",\"specialist\":\"Karpathy-discipline implementer\"}\n",
+          "stderr": "",
+          "rawOutputBytes": 6782,
+          "returnedOutputBytes": 6782,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "checkpoint-intent",
+          "args": ["checkpoint", "intent", "task"],
+          "durationMs": 332.0583999999999,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "[harnessed] engine engaged: /task invoked — intent registered, ledger awaiting plan. Next: `harnessed gates task --task \"<locked spec>\"` → `harnessed checkpoint start task --plan '<gates JSON>'`. Freestyling past this point bypasses the ledger, evidence guard, and recovery.\n",
+          "stderr": "",
+          "rawOutputBytes": 279,
+          "returnedOutputBytes": 279,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "status-recover",
+          "args": ["status", "--recover"],
+          "durationMs": 367.0626999999986,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "⚠ intent pending: /task invoked <1m ago — ledger not seeded; run `harnessed gates task` → `harnessed checkpoint start task --plan '<gates JSON>'`\nno ledger — run gates + start\n",
+          "stderr": "⚠ 29 workflow skill(s) diverged from the install-time state (foreign/tampered/stale/missing) — the slash command may NOT enter the engine: auto (missing), discuss (missing), discuss-phase (missing), discuss-strategic (missing), discuss-subtask (missing), plan-architecture (missing), plan (missing), plan-phase (missing), research (missing), retro (missing), ship (missing), ship-preflight (missing), task (missing), task-clarify (missing), task-code (missing), task-deliver (missing), task-test (missing), verify (missing), verify-code-review (missing), verify-design (missing), verify-eval-review (missing), verify-multispec (missing), verify-paranoid (missing), verify-progress (missing), verify-qa (missing), verify-second-opinion (missing), verify-security (missing), verify-simplify (missing), verify-validate-phase (missing)\n    fix: would reinstall: auto, discuss, discuss-phase, discuss-strategic, discuss-subtask, plan-architecture, plan, plan-phase, research, retro, ship, ship-preflight, task, task-clarify, task-code, task-deliver, task-test, verify, verify-code-review, verify-design, verify-eval-review, verify-multispec, verify-paranoid, verify-progress, verify-qa, verify-second-opinion, verify-security, verify-simplify, verify-validate-phase; run `harnessed setup` to heal (a backup of the current content is taken first, under `~/.claude/harnessed/backups/`)\n",
+          "rawOutputBytes": 1567,
+          "returnedOutputBytes": 1567,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "install-stop-hook",
+          "args": ["install", "stop-hook-recover", "--non-interactive"],
+          "durationMs": 381.95889999999963,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "Index: C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-7KQSRs\\home\\.claude\\settings.json\n===================================================================\n--- \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-7KQSRs\\\\home\\\\.claude\\\\settings.json\"\n+++ \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-7KQSRs\\\\home\\\\.claude\\\\settings.json\"\n@@ -0,0 +1,14 @@\n+{\n+  \"hooks\": {\n+    \"Stop\": [\n+      {\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"node \\\"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-stop-hook.mjs\\\"\"\n+          }\n+        ]\n+      }\n+    ]\n+  }\n+}\n\n\nwill modify 1 file (14 added, 0 removed)\ninstalled stop-hook-recover\n",
+          "stderr": "",
+          "rawOutputBytes": 754,
+          "returnedOutputBytes": 754,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "install-inject-hook",
+          "args": ["install", "perturn-inject", "--non-interactive"],
+          "durationMs": 428.85139999999956,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "Index: C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-7KQSRs\\home\\.claude\\settings.json\n===================================================================\n--- \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-7KQSRs\\\\home\\\\.claude\\\\settings.json\"\n+++ \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-7KQSRs\\\\home\\\\.claude\\\\settings.json\"\n@@ -8,7 +8,17 @@\n             \"command\": \"node \\\"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-stop-hook.mjs\\\"\"\n           }\n         ]\n       }\n+    ],\n+    \"UserPromptSubmit\": [\n+      {\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"node \\\"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-inject-state.mjs\\\"\"\n+          }\n+        ]\n+      }\n     ]\n   }\n }\n\n\nwill modify 1 file (10 added, 0 removed)\ninstalled perturn-inject\n",
+          "stderr": "",
+          "rawOutputBytes": 939,
+          "returnedOutputBytes": 939,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        }
+      ],
+      "hooks": [
+        {
+          "event": "Stop",
+          "identity": "stop-hook",
+          "command": "node \"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-stop-hook.mjs\"",
+          "invocation": {
+            "executable": "node",
+            "args": [
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-EJagb8\\npm\\node_modules\\harnessed\\bin\\harnessed-stop-hook.mjs"
+            ]
+          },
+          "result": {
+            "durationMs": 2218.3485999999994,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "{\"decision\":\"block\",\"reason\":\"MODE-B tool corruption detected: your previous message emitted a tool call as plain text (the opening delimiter was mis-sampled to a garbage word). Re-emit that exact same tool call now as a real tool call — content unchanged.\"}\n",
+            "stderr": "",
+            "rawOutputBytes": 261,
+            "returnedOutputBytes": 261,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          "retryResults": [
+            {
+              "durationMs": 57.299300000002404,
+              "exitCode": 0,
+              "signal": null,
+              "timedOut": false,
+              "outputLimitExceeded": false,
+              "error": null,
+              "stdout": "{\"decision\":\"block\",\"reason\":\"MODE-B tool corruption detected: your previous message emitted a tool call as plain text (the opening delimiter was mis-sampled to a garbage word). Re-emit that exact same tool call now as a real tool call — content unchanged.\"}\n",
+              "stderr": "",
+              "rawOutputBytes": 261,
+              "returnedOutputBytes": 261,
+              "rssBytes": null,
+              "rssStatus": "unsupported"
+            },
+            {
+              "durationMs": 56.546699999998964,
+              "exitCode": 0,
+              "signal": null,
+              "timedOut": false,
+              "outputLimitExceeded": false,
+              "error": null,
+              "stdout": "",
+              "stderr": "",
+              "rawOutputBytes": 0,
+              "returnedOutputBytes": 0,
+              "rssBytes": null,
+              "rssStatus": "unsupported"
+            }
+          ]
+        },
+        {
+          "event": "UserPromptSubmit",
+          "identity": "inject-state",
+          "command": "node \"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-inject-state.mjs\"",
+          "invocation": {
+            "executable": "node",
+            "args": [
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-EJagb8\\npm\\node_modules\\harnessed\\bin\\harnessed-inject-state.mjs"
+            ]
+          },
+          "result": {
+            "durationMs": 75.87170000000333,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "<workflow-intent>\nintent: /task invoked <1m ago — ledger NOT seeded\nENGINE: /task is registered but not engaged — freestyle risk. Run: `harnessed gates task --task \"<locked spec>\"` → `harnessed checkpoint start task --plan '<gates JSON>'`; then drive each sub via `harnessed prompt` / `harnessed checkpoint complete|fail`.\n</workflow-intent>\n",
+            "stderr": "",
+            "rawOutputBytes": 348,
+            "returnedOutputBytes": 348,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        }
+      ]
+    },
+    {
+      "channel": "bun-compiled",
+      "ok": true,
+      "error": null,
+      "fixture": {
+        "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-wURMHq",
+        "cleanup": "completed"
+      },
+      "traps": {
+        "blocked": ["bun", "bunx", "node", "nodejs"],
+        "policy": "runtime-bearing PATH entries removed; .cmd probes cover shell lookups only; missing runtime .exe attempts can fail without logging; owned paths must succeed; empty log does not prove zero attempts",
+        "probes": [
+          {
+            "name": "bun",
+            "durationMs": 27.55130000000281,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "name": "bunx",
+            "durationMs": 25.230999999999767,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "name": "node",
+            "durationMs": 27.08339999999953,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "name": "nodejs",
+            "durationMs": 32.97980000000098,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        ],
+        "unexpectedCalls": []
+      },
+      "steps": [
+        {
+          "label": "version",
+          "args": ["--version"],
+          "durationMs": 201.46310000000085,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "5.0.0\n",
+          "stderr": "harnessed: unpacked 167 bundled asset file(s) to C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-wURMHq\\state\\assets\\5.0.0\n",
+          "rawOutputBytes": 133,
+          "returnedOutputBytes": 133,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "gates",
+          "args": [
+            "gates",
+            "task",
+            "--task",
+            "Inspect a local fixture; do not spawn, install, or use the network."
+          ],
+          "durationMs": 115.4236000000019,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "{\n  \"master\": \"task\",\n  \"fire\": [\n    {\n      \"sub\": \"task-clarify\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    },\n    {\n      \"sub\": \"task-code\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    },\n    {\n      \"sub\": \"task-test\",\n      \"order\": 3,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.tdd-gate.tdd-strongly-suggested.fires\"\n    },\n    {\n      \"sub\": \"task-deliver\",\n      \"order\": 4,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}\n",
+          "stderr": "",
+          "rawOutputBytes": 579,
+          "returnedOutputBytes": 579,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "prompt",
+          "args": [
+            "prompt",
+            "task-code",
+            "--task",
+            "Inspect a local fixture; do not spawn, install, or use the network.",
+            "--json"
+          ],
+          "durationMs": 157.13610000000335,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "{\"prompt\":\"## Task\\nInspect a local fixture; do not spawn, install, or use the network.\\n\\nYou are a Karpathy-discipline implementer.\\n\\nImplement a single subtask under the karpathy 4 principles (Think Before Coding /\\nSimplicity First / Surgical Changes / Goal-Driven Execution) with\\n≤200 LOC per file. Conditionally invoke `/improve-codebase-architecture`\\nfor periodic health audits, `/diagnosing-bugs` for unknown bug root\\ncauses. Update `progress.md` via\\nplanning-with-files `/plan` when done.\\n\\n\\nChecklist:\\n  1. Before any edit: read the file you intend to change end-to-end\\n  2. Codebase navigation: if the project has a `.codegraph/` index, prefer the codegraph MCP tools (`codegraph_explore`) for symbol lookup / call paths / impact analysis instead of grep/glob/file-by-file Read crawling\\n  3. Smallest change that satisfies the acceptance criteria — no scope creep\\n  4. ≤200 LOC per file (split modules if growing past it)\\n  5. Trust internal code: don't re-validate already-checked inputs at every layer\\n  6. No speculative abstractions (no 'just in case' generics)\\n  7. Edit with surgical precision: full path, exact selectors, no broad rewrites\\n  8. Update progress.md before declaring done (planning-with-files `/plan`)\\n  9. improve-arch: hunt deepening opportunities — modules whose interface is nearly as complex as their implementation are shallow; deep modules hide a lot of behaviour behind a small interface\\n  10. improve-arch deletion test: imagine deleting the module — if complexity vanishes it was a pass-through (delete it); if complexity reappears across N callers it was earning its keep (keep / deepen)\\n  11. improve-arch: name candidates using CONTEXT.md domain vocabulary (e.g. 'the Order intake module', not 'FooBarHandler'); if a candidate contradicts an existing ADR, only surface it when the friction is real enough to revisit the ADR\\n  12. improve-arch: present candidates as a before/after report and let the user pick which to explore before designing interfaces\\n\\nSeverity scale: needs-fix / done / blocked\\n\\nEmit a structured COMPLETE signal when done.\\n\\n## Tools — invoke these (not optional)\\nThis workflow's SoT declares the following upstream tools. Actually invoke them as part of your work — do NOT improvise a lightweight substitute. Persist artifacts in the upstream's native format (e.g. planning-with-files → `task_plan.md` / `progress.md` / `findings.md`; GSD → `PLAN.md` / `STATE.md`).\\n- Invoke `/improve-codebase-architecture` (improve-codebase-architecture, mattpocock-skills)\\n- Invoke `/diagnosing-bugs` (diagnose, mattpocock-skills)\\n- Invoke `/plan` (planning-with-files, claude-code-plugin)\\n\\n## Disciplines (always-on — L0 substrate)\\nFollow these behavioral disciplines while doing the work:\\n- **karpathy**:\\n  - Think before coding; do not dump code directly; brainstorm the design intent before each subtask\\n  - Pursue the minimal effective code, avoid unnecessary complexity; YAGNI / do not write code for hypothetical scenarios\\n  - Small atomic changes, single responsibility per commit; no large-scale rewrites\\n  - Goal-driven, do not diverge / do no unrelated refactoring; solve only the current task and do not smuggle in cleanup\\n  - Single-file ≤200L hard limit (per project CLAUDE.md karpathy guideline reminder); over the limit → split into a helper\\n  - Trust internal code — validate at the trust boundary (external input, parsed config, user data), not at every internal layer; do not add defensive re-checks or redundant assertions on call sites you control\\n  - Comments explain WHY, not WHAT — delete comments that restate the code or that have drifted out of sync with it; a comment must add context the code cannot carry (rationale, constraint, upstream reference)\\n- **output-style**:\\n  - Precise quantifiers; when a concrete number/filename/line number/commit hash is available, do not say \\\"some/a few/several\\\"\\n  - scope — chat replies ONLY: the rules nested below govern how you talk to the user and do NOT constrain the files you write (README / CHANGELOG / PLAN.md / SUMMARY.md / docs / code comments follow their own conventions, and may use emoji, em-dashes, headings and summary sections):\\n    - Conclusion first (BLUF); each paragraph leads with one sentence giving the answer/judgment/recommendation, then expands the reasoning\\n    - Remove opening/closing filler phrases like \\\"good question / awesome / perfect / hope this helps / anything else\\\"\\n    - No emoji unless the user explicitly requests it (project markdown files such as README/PR/CHANGELOG are not constrained)\\n    - No em-dash (—— / —); instead use parentheses or colons for asides, commas for lists, and a separate sentence for contrast\\n    - No closing summary unless the user explicitly asks to \\\"summarize/recap\\\"\\n    - No empty continuation questions (\\\"want me to help you X?\\\" / \\\"anything else?\\\"); keep workflow-necessary next-step guidance\\n- **operational**:\\n  - Before any TS/JS commit you must run `pnpm exec biome check --write` (3 CI-red recurrences Phase 2.1.1/2.2/2.3 project memory)\\n  - A new ADR does not touch the main body of old ADRs; iterate via baseline tag, conserved by the CI A7 step (sister Phase 1.3-2.6 ADR errata path)\\n  - NEVER push to remote without user explicit approval (project CLAUDE.md commit safety)\\n  - Skip-hook flags such as --no-verify / --no-gpg-sign are not allowed, unless the user explicitly requests them\\n  - Destructive ops (git reset --hard / push --force / rm -rf / drop table) require explicit user confirmation\\n  - A user approving one push ≠ approval for the whole session; each destructive / shared-state operation needs separate confirmation\\n  - When a phase gate condition cannot be confidently evaluated (e.g. expected context fields missing, default-valued, or contradictory), prefer skip + transparent explanation over silent execution. Verbatim format: \\\"这次跳过了 <phase>, 因为 <reason>. 如果你认为 需要请明说\\\" / English: \\\"Skipped <phase> because <reason>. Tell me if you actually need it.\\\"\\n- **priority**:\\n  - Multiple capabilities fires_when true at once → pick the highest by priority_hierarchy order e.g., gstack /office-hours + GSD /gsd-discuss-phase fire together → gstack runs first\\n\\n## Completion protocol\\nWhen done emit: <promise>COMPLETE</promise>\\n\\n## Clarification protocol\\nIf you hit a gray area you cannot decide (≥2 reasonable options, missing key context, ambiguous requirement), do NOT self-decide. Emit:\\nSTATUS: NEEDS_CLARIFICATION\\n1. <question>\\n2. <question>\\nThe main session will relay these to the user and re-spawn you with answers.\\n\",\"max_iterations\":20,\"model\":\"sonnet\",\"specialist\":\"Karpathy-discipline implementer\"}\n",
+          "stderr": "",
+          "rawOutputBytes": 6782,
+          "returnedOutputBytes": 6782,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "checkpoint-intent",
+          "args": ["checkpoint", "intent", "task"],
+          "durationMs": 116.71969999999783,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "[harnessed] engine engaged: /task invoked — intent registered, ledger awaiting plan. Next: `harnessed gates task --task \"<locked spec>\"` → `harnessed checkpoint start task --plan '<gates JSON>'`. Freestyling past this point bypasses the ledger, evidence guard, and recovery.\n",
+          "stderr": "",
+          "rawOutputBytes": 279,
+          "returnedOutputBytes": 279,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "status-recover",
+          "args": ["status", "--recover"],
+          "durationMs": 129.34519999999975,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "⚠ intent pending: /task invoked <1m ago — ledger not seeded; run `harnessed gates task` → `harnessed checkpoint start task --plan '<gates JSON>'`\nno ledger — run gates + start\n",
+          "stderr": "⚠ 29 workflow skill(s) diverged from the install-time state (foreign/tampered/stale/missing) — the slash command may NOT enter the engine: auto (missing), discuss (missing), discuss-phase (missing), discuss-strategic (missing), discuss-subtask (missing), plan-architecture (missing), plan (missing), plan-phase (missing), research (missing), retro (missing), ship (missing), ship-preflight (missing), task (missing), task-clarify (missing), task-code (missing), task-deliver (missing), task-test (missing), verify (missing), verify-code-review (missing), verify-design (missing), verify-eval-review (missing), verify-multispec (missing), verify-paranoid (missing), verify-progress (missing), verify-qa (missing), verify-second-opinion (missing), verify-security (missing), verify-simplify (missing), verify-validate-phase (missing)\n    fix: would reinstall: auto, discuss, discuss-phase, discuss-strategic, discuss-subtask, plan-architecture, plan, plan-phase, research, retro, ship, ship-preflight, task, task-clarify, task-code, task-deliver, task-test, verify, verify-code-review, verify-design, verify-eval-review, verify-multispec, verify-paranoid, verify-progress, verify-qa, verify-second-opinion, verify-security, verify-simplify, verify-validate-phase; run `harnessed setup` to heal (a backup of the current content is taken first, under `~/.claude/harnessed/backups/`)\n",
+          "rawOutputBytes": 1567,
+          "returnedOutputBytes": 1567,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "install-stop-hook",
+          "args": ["install", "stop-hook-recover", "--non-interactive"],
+          "durationMs": 157.57430000000022,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "Index: C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-wURMHq\\home\\.claude\\settings.json\n===================================================================\n--- \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-wURMHq\\\\home\\\\.claude\\\\settings.json\"\n+++ \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-wURMHq\\\\home\\\\.claude\\\\settings.json\"\n@@ -0,0 +1,14 @@\n+{\n+  \"hooks\": {\n+    \"Stop\": [\n+      {\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"\\\"D:/GitCode/harnessed/dist-bin/candidate-5.0-windows-x64.exe\\\" stop-hook\"\n+          }\n+        ]\n+      }\n+    ]\n+  }\n+}\n\n\nwill modify 1 file (14 added, 0 removed)\ninstalled stop-hook-recover\n",
+          "stderr": "",
+          "rawOutputBytes": 705,
+          "returnedOutputBytes": 705,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "install-inject-hook",
+          "args": ["install", "perturn-inject", "--non-interactive"],
+          "durationMs": 185.58879999999772,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "Index: C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-wURMHq\\home\\.claude\\settings.json\n===================================================================\n--- \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-wURMHq\\\\home\\\\.claude\\\\settings.json\"\n+++ \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-wURMHq\\\\home\\\\.claude\\\\settings.json\"\n@@ -8,7 +8,17 @@\n             \"command\": \"\\\"D:/GitCode/harnessed/dist-bin/candidate-5.0-windows-x64.exe\\\" stop-hook\"\n           }\n         ]\n       }\n+    ],\n+    \"UserPromptSubmit\": [\n+      {\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"\\\"D:/GitCode/harnessed/dist-bin/candidate-5.0-windows-x64.exe\\\" inject-state\"\n+          }\n+        ]\n+      }\n     ]\n   }\n }\n\n\nwill modify 1 file (10 added, 0 removed)\ninstalled perturn-inject\n",
+          "stderr": "",
+          "rawOutputBytes": 841,
+          "returnedOutputBytes": 841,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        }
+      ],
+      "hooks": [
+        {
+          "event": "Stop",
+          "identity": "stop-hook",
+          "command": "\"D:/GitCode/harnessed/dist-bin/candidate-5.0-windows-x64.exe\" stop-hook",
+          "invocation": {
+            "executable": "D:\\GitCode\\harnessed\\dist-bin\\candidate-5.0-windows-x64.exe",
+            "args": ["stop-hook"]
+          },
+          "result": {
+            "durationMs": 117.15719999999783,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "{\"decision\":\"block\",\"reason\":\"MODE-B tool corruption detected: your previous message emitted a tool call as plain text (the opening delimiter was mis-sampled to a garbage word). Re-emit that exact same tool call now as a real tool call — content unchanged.\"}\n",
+            "stderr": "",
+            "rawOutputBytes": 261,
+            "returnedOutputBytes": 261,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          "retryResults": [
+            {
+              "durationMs": 134.26050000000032,
+              "exitCode": 0,
+              "signal": null,
+              "timedOut": false,
+              "outputLimitExceeded": false,
+              "error": null,
+              "stdout": "{\"decision\":\"block\",\"reason\":\"MODE-B tool corruption detected: your previous message emitted a tool call as plain text (the opening delimiter was mis-sampled to a garbage word). Re-emit that exact same tool call now as a real tool call — content unchanged.\"}\n",
+              "stderr": "",
+              "rawOutputBytes": 261,
+              "returnedOutputBytes": 261,
+              "rssBytes": null,
+              "rssStatus": "unsupported"
+            },
+            {
+              "durationMs": 100.70969999999943,
+              "exitCode": 0,
+              "signal": null,
+              "timedOut": false,
+              "outputLimitExceeded": false,
+              "error": null,
+              "stdout": "",
+              "stderr": "",
+              "rawOutputBytes": 0,
+              "returnedOutputBytes": 0,
+              "rssBytes": null,
+              "rssStatus": "unsupported"
+            }
+          ]
+        },
+        {
+          "event": "UserPromptSubmit",
+          "identity": "inject-state",
+          "command": "\"D:/GitCode/harnessed/dist-bin/candidate-5.0-windows-x64.exe\" inject-state",
+          "invocation": {
+            "executable": "D:\\GitCode\\harnessed\\dist-bin\\candidate-5.0-windows-x64.exe",
+            "args": ["inject-state"]
+          },
+          "result": {
+            "durationMs": 106.53680000000168,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "<workflow-intent>\nintent: /task invoked <1m ago — ledger NOT seeded\nENGINE: /task is registered but not engaged — freestyle risk. Run: `harnessed gates task --task \"<locked spec>\"` → `harnessed checkpoint start task --plan '<gates JSON>'`; then drive each sub via `harnessed prompt` / `harnessed checkpoint complete|fail`.\n</workflow-intent>\n",
+            "stderr": "",
+            "rawOutputBytes": 348,
+            "returnedOutputBytes": 348,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        }
+      ]
+    },
+    {
+      "channel": "bun-explicit",
+      "ok": true,
+      "error": null,
+      "fixture": {
+        "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-RvHVjv",
+        "cleanup": "completed"
+      },
+      "traps": {
+        "blocked": ["node", "nodejs", "bunx"],
+        "policy": "runtime-bearing PATH entries removed; .cmd probes cover shell lookups only; missing runtime .exe attempts can fail without logging; owned paths must succeed; empty log does not prove zero attempts",
+        "probes": [
+          {
+            "name": "node",
+            "durationMs": 27.823700000000827,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "name": "nodejs",
+            "durationMs": 69.96770000000106,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "name": "bunx",
+            "durationMs": 25.08429999999862,
+            "exitCode": 97,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "",
+            "stderr": "",
+            "rawOutputBytes": 0,
+            "returnedOutputBytes": 0,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        ],
+        "unexpectedCalls": []
+      },
+      "steps": [
+        {
+          "label": "version",
+          "args": ["--version"],
+          "durationMs": 656.107,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "5.0.0\n",
+          "stderr": "",
+          "rawOutputBytes": 6,
+          "returnedOutputBytes": 6,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "gates",
+          "args": [
+            "gates",
+            "task",
+            "--task",
+            "Inspect a local fixture; do not spawn, install, or use the network."
+          ],
+          "durationMs": 173.67120000000068,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "{\n  \"master\": \"task\",\n  \"fire\": [\n    {\n      \"sub\": \"task-clarify\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    },\n    {\n      \"sub\": \"task-code\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    },\n    {\n      \"sub\": \"task-test\",\n      \"order\": 3,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.tdd-gate.tdd-strongly-suggested.fires\"\n    },\n    {\n      \"sub\": \"task-deliver\",\n      \"order\": 4,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}\n",
+          "stderr": "",
+          "rawOutputBytes": 579,
+          "returnedOutputBytes": 579,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "prompt",
+          "args": [
+            "prompt",
+            "task-code",
+            "--task",
+            "Inspect a local fixture; do not spawn, install, or use the network.",
+            "--json"
+          ],
+          "durationMs": 251.14190000000235,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "{\"prompt\":\"## Task\\nInspect a local fixture; do not spawn, install, or use the network.\\n\\nYou are a Karpathy-discipline implementer.\\n\\nImplement a single subtask under the karpathy 4 principles (Think Before Coding /\\nSimplicity First / Surgical Changes / Goal-Driven Execution) with\\n≤200 LOC per file. Conditionally invoke `/improve-codebase-architecture`\\nfor periodic health audits, `/diagnosing-bugs` for unknown bug root\\ncauses. Update `progress.md` via\\nplanning-with-files `/plan` when done.\\n\\n\\nChecklist:\\n  1. Before any edit: read the file you intend to change end-to-end\\n  2. Codebase navigation: if the project has a `.codegraph/` index, prefer the codegraph MCP tools (`codegraph_explore`) for symbol lookup / call paths / impact analysis instead of grep/glob/file-by-file Read crawling\\n  3. Smallest change that satisfies the acceptance criteria — no scope creep\\n  4. ≤200 LOC per file (split modules if growing past it)\\n  5. Trust internal code: don't re-validate already-checked inputs at every layer\\n  6. No speculative abstractions (no 'just in case' generics)\\n  7. Edit with surgical precision: full path, exact selectors, no broad rewrites\\n  8. Update progress.md before declaring done (planning-with-files `/plan`)\\n  9. improve-arch: hunt deepening opportunities — modules whose interface is nearly as complex as their implementation are shallow; deep modules hide a lot of behaviour behind a small interface\\n  10. improve-arch deletion test: imagine deleting the module — if complexity vanishes it was a pass-through (delete it); if complexity reappears across N callers it was earning its keep (keep / deepen)\\n  11. improve-arch: name candidates using CONTEXT.md domain vocabulary (e.g. 'the Order intake module', not 'FooBarHandler'); if a candidate contradicts an existing ADR, only surface it when the friction is real enough to revisit the ADR\\n  12. improve-arch: present candidates as a before/after report and let the user pick which to explore before designing interfaces\\n\\nSeverity scale: needs-fix / done / blocked\\n\\nEmit a structured COMPLETE signal when done.\\n\\n## Tools — invoke these (not optional)\\nThis workflow's SoT declares the following upstream tools. Actually invoke them as part of your work — do NOT improvise a lightweight substitute. Persist artifacts in the upstream's native format (e.g. planning-with-files → `task_plan.md` / `progress.md` / `findings.md`; GSD → `PLAN.md` / `STATE.md`).\\n- Invoke `/improve-codebase-architecture` (improve-codebase-architecture, mattpocock-skills)\\n- Invoke `/diagnosing-bugs` (diagnose, mattpocock-skills)\\n- Invoke `/plan` (planning-with-files, claude-code-plugin)\\n\\n## Disciplines (always-on — L0 substrate)\\nFollow these behavioral disciplines while doing the work:\\n- **karpathy**:\\n  - Think before coding; do not dump code directly; brainstorm the design intent before each subtask\\n  - Pursue the minimal effective code, avoid unnecessary complexity; YAGNI / do not write code for hypothetical scenarios\\n  - Small atomic changes, single responsibility per commit; no large-scale rewrites\\n  - Goal-driven, do not diverge / do no unrelated refactoring; solve only the current task and do not smuggle in cleanup\\n  - Single-file ≤200L hard limit (per project CLAUDE.md karpathy guideline reminder); over the limit → split into a helper\\n  - Trust internal code — validate at the trust boundary (external input, parsed config, user data), not at every internal layer; do not add defensive re-checks or redundant assertions on call sites you control\\n  - Comments explain WHY, not WHAT — delete comments that restate the code or that have drifted out of sync with it; a comment must add context the code cannot carry (rationale, constraint, upstream reference)\\n- **output-style**:\\n  - Precise quantifiers; when a concrete number/filename/line number/commit hash is available, do not say \\\"some/a few/several\\\"\\n  - scope — chat replies ONLY: the rules nested below govern how you talk to the user and do NOT constrain the files you write (README / CHANGELOG / PLAN.md / SUMMARY.md / docs / code comments follow their own conventions, and may use emoji, em-dashes, headings and summary sections):\\n    - Conclusion first (BLUF); each paragraph leads with one sentence giving the answer/judgment/recommendation, then expands the reasoning\\n    - Remove opening/closing filler phrases like \\\"good question / awesome / perfect / hope this helps / anything else\\\"\\n    - No emoji unless the user explicitly requests it (project markdown files such as README/PR/CHANGELOG are not constrained)\\n    - No em-dash (—— / —); instead use parentheses or colons for asides, commas for lists, and a separate sentence for contrast\\n    - No closing summary unless the user explicitly asks to \\\"summarize/recap\\\"\\n    - No empty continuation questions (\\\"want me to help you X?\\\" / \\\"anything else?\\\"); keep workflow-necessary next-step guidance\\n- **operational**:\\n  - Before any TS/JS commit you must run `pnpm exec biome check --write` (3 CI-red recurrences Phase 2.1.1/2.2/2.3 project memory)\\n  - A new ADR does not touch the main body of old ADRs; iterate via baseline tag, conserved by the CI A7 step (sister Phase 1.3-2.6 ADR errata path)\\n  - NEVER push to remote without user explicit approval (project CLAUDE.md commit safety)\\n  - Skip-hook flags such as --no-verify / --no-gpg-sign are not allowed, unless the user explicitly requests them\\n  - Destructive ops (git reset --hard / push --force / rm -rf / drop table) require explicit user confirmation\\n  - A user approving one push ≠ approval for the whole session; each destructive / shared-state operation needs separate confirmation\\n  - When a phase gate condition cannot be confidently evaluated (e.g. expected context fields missing, default-valued, or contradictory), prefer skip + transparent explanation over silent execution. Verbatim format: \\\"这次跳过了 <phase>, 因为 <reason>. 如果你认为 需要请明说\\\" / English: \\\"Skipped <phase> because <reason>. Tell me if you actually need it.\\\"\\n- **priority**:\\n  - Multiple capabilities fires_when true at once → pick the highest by priority_hierarchy order e.g., gstack /office-hours + GSD /gsd-discuss-phase fire together → gstack runs first\\n\\n## Completion protocol\\nWhen done emit: <promise>COMPLETE</promise>\\n\\n## Clarification protocol\\nIf you hit a gray area you cannot decide (≥2 reasonable options, missing key context, ambiguous requirement), do NOT self-decide. Emit:\\nSTATUS: NEEDS_CLARIFICATION\\n1. <question>\\n2. <question>\\nThe main session will relay these to the user and re-spawn you with answers.\\n\",\"max_iterations\":20,\"model\":\"sonnet\",\"specialist\":\"Karpathy-discipline implementer\"}\n",
+          "stderr": "",
+          "rawOutputBytes": 6782,
+          "returnedOutputBytes": 6782,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "checkpoint-intent",
+          "args": ["checkpoint", "intent", "task"],
+          "durationMs": 172.58399999999892,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "[harnessed] engine engaged: /task invoked — intent registered, ledger awaiting plan. Next: `harnessed gates task --task \"<locked spec>\"` → `harnessed checkpoint start task --plan '<gates JSON>'`. Freestyling past this point bypasses the ledger, evidence guard, and recovery.\n",
+          "stderr": "",
+          "rawOutputBytes": 279,
+          "returnedOutputBytes": 279,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "status-recover",
+          "args": ["status", "--recover"],
+          "durationMs": 370.52980000000025,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "⚠ intent pending: /task invoked <1m ago — ledger not seeded; run `harnessed gates task` → `harnessed checkpoint start task --plan '<gates JSON>'`\nno ledger — run gates + start\n",
+          "stderr": "⚠ 29 workflow skill(s) diverged from the install-time state (foreign/tampered/stale/missing) — the slash command may NOT enter the engine: auto (missing), discuss (missing), discuss-phase (missing), discuss-strategic (missing), discuss-subtask (missing), plan-architecture (missing), plan (missing), plan-phase (missing), research (missing), retro (missing), ship (missing), ship-preflight (missing), task (missing), task-clarify (missing), task-code (missing), task-deliver (missing), task-test (missing), verify (missing), verify-code-review (missing), verify-design (missing), verify-eval-review (missing), verify-multispec (missing), verify-paranoid (missing), verify-progress (missing), verify-qa (missing), verify-second-opinion (missing), verify-security (missing), verify-simplify (missing), verify-validate-phase (missing)\n    fix: would reinstall: auto, discuss, discuss-phase, discuss-strategic, discuss-subtask, plan-architecture, plan, plan-phase, research, retro, ship, ship-preflight, task, task-clarify, task-code, task-deliver, task-test, verify, verify-code-review, verify-design, verify-eval-review, verify-multispec, verify-paranoid, verify-progress, verify-qa, verify-second-opinion, verify-security, verify-simplify, verify-validate-phase; run `harnessed setup` to heal (a backup of the current content is taken first, under `~/.claude/harnessed/backups/`)\n",
+          "rawOutputBytes": 1567,
+          "returnedOutputBytes": 1567,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "install-stop-hook",
+          "args": ["install", "stop-hook-recover", "--non-interactive"],
+          "durationMs": 230.41530000000057,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "Index: C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-RvHVjv\\home\\.claude\\settings.json\n===================================================================\n--- \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-RvHVjv\\\\home\\\\.claude\\\\settings.json\"\n+++ \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-RvHVjv\\\\home\\\\.claude\\\\settings.json\"\n@@ -0,0 +1,14 @@\n+{\n+  \"hooks\": {\n+    \"Stop\": [\n+      {\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"bun \\\"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-stop-hook.mjs\\\"\"\n+          }\n+        ]\n+      }\n+    ]\n+  }\n+}\n\n\nwill modify 1 file (14 added, 0 removed)\ninstalled stop-hook-recover\n",
+          "stderr": "",
+          "rawOutputBytes": 753,
+          "returnedOutputBytes": 753,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "install-inject-hook",
+          "args": ["install", "perturn-inject", "--non-interactive"],
+          "durationMs": 237.8094999999994,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "Index: C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-RvHVjv\\home\\.claude\\settings.json\n===================================================================\n--- \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-RvHVjv\\\\home\\\\.claude\\\\settings.json\"\n+++ \"C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-RvHVjv\\\\home\\\\.claude\\\\settings.json\"\n@@ -8,7 +8,17 @@\n             \"command\": \"bun \\\"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-stop-hook.mjs\\\"\"\n           }\n         ]\n       }\n+    ],\n+    \"UserPromptSubmit\": [\n+      {\n+        \"hooks\": [\n+          {\n+            \"type\": \"command\",\n+            \"command\": \"bun \\\"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-inject-state.mjs\\\"\"\n+          }\n+        ]\n+      }\n     ]\n   }\n }\n\n\nwill modify 1 file (10 added, 0 removed)\ninstalled perturn-inject\n",
+          "stderr": "",
+          "rawOutputBytes": 937,
+          "returnedOutputBytes": 937,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        }
+      ],
+      "hooks": [
+        {
+          "event": "Stop",
+          "identity": "stop-hook",
+          "command": "bun \"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-stop-hook.mjs\"",
+          "invocation": {
+            "executable": "bun",
+            "args": [
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-EJagb8\\npm\\node_modules\\harnessed\\bin\\harnessed-stop-hook.mjs"
+            ]
+          },
+          "result": {
+            "durationMs": 234.27740000000267,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "{\"decision\":\"block\",\"reason\":\"MODE-B tool corruption detected: your previous message emitted a tool call as plain text (the opening delimiter was mis-sampled to a garbage word). Re-emit that exact same tool call now as a real tool call — content unchanged.\"}\n",
+            "stderr": "",
+            "rawOutputBytes": 261,
+            "returnedOutputBytes": 261,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          "retryResults": [
+            {
+              "durationMs": 65.53009999999995,
+              "exitCode": 0,
+              "signal": null,
+              "timedOut": false,
+              "outputLimitExceeded": false,
+              "error": null,
+              "stdout": "{\"decision\":\"block\",\"reason\":\"MODE-B tool corruption detected: your previous message emitted a tool call as plain text (the opening delimiter was mis-sampled to a garbage word). Re-emit that exact same tool call now as a real tool call — content unchanged.\"}\n",
+              "stderr": "",
+              "rawOutputBytes": 261,
+              "returnedOutputBytes": 261,
+              "rssBytes": null,
+              "rssStatus": "unsupported"
+            },
+            {
+              "durationMs": 47.308899999999994,
+              "exitCode": 0,
+              "signal": null,
+              "timedOut": false,
+              "outputLimitExceeded": false,
+              "error": null,
+              "stdout": "",
+              "stderr": "",
+              "rawOutputBytes": 0,
+              "returnedOutputBytes": 0,
+              "rssBytes": null,
+              "rssStatus": "unsupported"
+            }
+          ]
+        },
+        {
+          "event": "UserPromptSubmit",
+          "identity": "inject-state",
+          "command": "bun \"C:/Users/easyi/AppData/Local/Temp/harnessed-runtime-EJagb8/npm/node_modules/harnessed/bin/harnessed-inject-state.mjs\"",
+          "invocation": {
+            "executable": "bun",
+            "args": [
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-EJagb8\\npm\\node_modules\\harnessed\\bin\\harnessed-inject-state.mjs"
+            ]
+          },
+          "result": {
+            "durationMs": 48.58990000000267,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "<workflow-intent>\nintent: /task invoked <1m ago — ledger NOT seeded\nENGINE: /task is registered but not engaged — freestyle risk. Run: `harnessed gates task --task \"<locked spec>\"` → `harnessed checkpoint start task --plan '<gates JSON>'`; then drive each sub via `harnessed prompt` / `harnessed checkpoint complete|fail`.\n</workflow-intent>\n",
+            "stderr": "",
+            "rawOutputBytes": 348,
+            "returnedOutputBytes": 348,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        }
+      ]
+    }
+  ],
+  "scope": "core commands + real owned hook install/registration/execution; no upstream install, model, network probe or global writes",
+  "limitations": [
+    "PATH absence/traps do not sandbox absolute executable paths or OS networking",
+    "unexpectedCalls records observed trap hits only; on Windows missing .exe attempts need not hit .cmd traps, so an empty log does not prove zero attempts",
+    "Upstream tools may require their own Node/Bun/git/bash; not certified here",
+    "Claude settings hook surface tested; Codex plugin registration/trust not exercised"
+  ],
+  "ok": true
+}

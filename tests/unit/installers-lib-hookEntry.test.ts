@@ -51,6 +51,61 @@ describe('resolveHookCommand', () => {
   })
 })
 
+describe('explicit Bun package hook commands', () => {
+  const bun = { ...deps([INJECT_ABS]), runtime: 'bun' as const }
+
+  it('runs first-party bin scripts through Bun and preserves trailing arguments', () => {
+    expect(resolveHookCommand(`${INJECT} --invalidate`, bun)).toBe(
+      `bun ${INJECT_ABS_CMD} --invalidate`,
+    )
+  })
+
+  it('runs bare first-party CLI hooks through Bun, not the node shebang', () => {
+    const cli = join(ROOT, 'bin', 'harnessed-check-docs.mjs').replace(/\\/g, '/')
+    expect(resolveHookCommand('harnessed check-docs --hook', bun)).toBe(`bun "${cli}" --hook`)
+  })
+
+  it.each([
+    'node scripts/third-party-inject-state.mjs --flag',
+    'node bin/harnessed-inject-state-extra.mjs',
+    'other check-docs --hook',
+    'python bin/harnessed-inject-state.mjs',
+  ])('does not replace a third-party transport: %s', (raw) => {
+    expect(resolveHookCommand(raw, bun)).toBe(resolveHookCommand(raw, deps([INJECT_ABS])))
+  })
+
+  it('compiled routing has priority even with a Bun runtime', () => {
+    expect(
+      resolveHookCommand(INJECT, { ...bun, compiledExecPath: () => 'C:/bin/harnessed.exe' }),
+    ).toBe('"C:/bin/harnessed.exe" inject-state')
+  })
+
+  it('the installed probe accepts Bun and migrates a node command once', () => {
+    const settings = (command: string) =>
+      JSON.stringify({
+        hooks: { UserPromptSubmit: [desiredHookEntry(undefined, command)] },
+      })
+    expect(
+      detectCcHookInstalled(
+        settings(`bun ${INJECT_ABS_CMD}`),
+        'UserPromptSubmit',
+        INJECT,
+        undefined,
+        bun,
+      ),
+    ).toBe(true)
+    expect(
+      detectCcHookInstalled(
+        settings(`node ${INJECT_ABS_CMD}`),
+        'UserPromptSubmit',
+        INJECT,
+        undefined,
+        bun,
+      ),
+    ).toBe(false)
+  })
+})
+
 describe('hookScriptMarker', () => {
   // 4.27.0 (B3 T1) — inject-state identity is NORMALIZED to the subcommand
   // token so the npm form (`node .../harnessed-inject-state.mjs`) and the

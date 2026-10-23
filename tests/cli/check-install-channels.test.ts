@@ -1,7 +1,7 @@
 // 4.32.4 — cross-channel install detection unit tests. Pure logic via injected
 // deps (no real fs / npm spawn). Covers the 2×2×presence matrix that decides
 // whether to warn about a dual npm + binary install.
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   checkInstallChannels,
   detectInstallChannels,
@@ -10,6 +10,14 @@ import {
 
 const WIN_BIN = 'C:\\Users\\u\\AppData\\Local\\harnessed\\bin\\harnessed.exe'
 const WIN_NPM = 'C:\\Users\\u\\AppData\\Roaming\\npm\\harnessed.cmd'
+const originalBun = Object.getOwnPropertyDescriptor(process.versions, 'bun')
+const useBun = () =>
+  Object.defineProperty(process.versions, 'bun', { configurable: true, value: '1.4.4' })
+
+afterEach(() => {
+  if (originalBun) Object.defineProperty(process.versions, 'bun', originalBun)
+  else Reflect.deleteProperty(process.versions, 'bun')
+})
 
 function winDeps(over: Record<string, unknown>) {
   return {
@@ -74,6 +82,26 @@ describe('detectInstallChannels — both-present matrix', () => {
 })
 
 describe('checkInstallChannels — CheckResult mapping', () => {
+  it.each([
+    true,
+    false,
+  ])('Bun reports only package runtime and the known binary path (binary=%s)', (binary) => {
+    useBun()
+    const npmPrefix = vi.fn(() => null)
+    const res = checkInstallChannels(
+      winDeps({
+        exists: (p: string) => binary && p === WIN_BIN,
+        npmPrefix,
+      }),
+    )
+    expect(res.status).toBe(binary ? 'warn' : 'pass')
+    expect(res.message).toContain('package install running on Bun; install manager not inferred')
+    expect(res.message).toContain('not fully enumerated')
+    expect(res.message).not.toMatch(/running (?:the )?npm|single channel|both npm-global/)
+    expect(npmPrefix).not.toHaveBeenCalled()
+    if (binary) expect(res.message).toContain(WIN_BIN)
+  })
+
   it('single channel → pass', () => {
     const res = checkInstallChannels(winDeps({ running: 'npm', exists: () => false }))
     expect(res.status).toBe('pass')
@@ -91,6 +119,17 @@ describe('checkInstallChannels — CheckResult mapping', () => {
 })
 
 describe('dualChannelLines', () => {
+  it('Bun setup advisory does not report an inferred npm source', () => {
+    const result = detectInstallChannels(winDeps({ exists: (p: string) => p === WIN_BIN }))
+    useBun()
+    const lines = dualChannelLines(result).join('\n')
+    expect(lines).toContain('package install running on Bun; install manager not inferred')
+    expect(lines).toContain(WIN_BIN)
+    expect(lines).toContain('not fully enumerated')
+    expect(lines).not.toContain('you are running the npm one')
+    expect(lines).not.toContain('both harnessed install channels')
+  })
+
   it('empty when single channel', () => {
     const r = detectInstallChannels(winDeps({ running: 'npm', exists: () => false }))
     expect(dualChannelLines(r)).toEqual([])
