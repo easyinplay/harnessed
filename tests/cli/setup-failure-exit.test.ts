@@ -122,6 +122,12 @@ beforeEach(() => {
   vi.mocked(runInstall).mockReset()
   vi.mocked(isAlreadyInstalled).mockReset().mockResolvedValue(false)
   vi.mocked(verifyInstalled).mockReset().mockResolvedValue(null)
+  vi.mocked(runOptionalOffer).mockReset().mockResolvedValue({
+    installed: [],
+    alreadyInstalled: [],
+    skipped: [],
+    failed: [],
+  })
   vi.stubEnv('HARNESSED_PLATFORM', 'codex')
   vi.mocked(readdir).mockImplementation(async (path) => {
     const normalized = String(path).replaceAll('\\', '/')
@@ -174,6 +180,12 @@ describe('setup base-install exit status through registerSetup', () => {
     await expect(runSetup()).rejects.toMatchObject({ code: 1 })
     expect(runInstall).toHaveBeenCalledOnce()
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('1 failed'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /setup incomplete.*1 workflow\(s\) installed.*0 base component\(s\) configured.*1 component\(s\) failed/,
+      ),
+    )
     expect(backupSkillDir).toHaveBeenCalledTimes(2)
     expect(cp).toHaveBeenCalledTimes(2)
     expect(auditInstalledSkills).toHaveBeenCalledOnce()
@@ -196,6 +208,159 @@ describe('setup base-install exit status through registerSetup', () => {
     expect(runInstall).toHaveBeenCalledOnce()
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('0 failed'))
     expect(checkGuardConflict).toHaveBeenCalledOnce()
+  })
+})
+
+describe('setup optional outcomes through registerSetup', () => {
+  const streams = [process.stdin, process.stdout]
+  const ttyDescriptors = streams.map((stream) => Object.getOwnPropertyDescriptor(stream, 'isTTY'))
+  let base: StepBResult
+
+  beforeEach(() => {
+    for (const stream of streams) {
+      Object.defineProperty(stream, 'isTTY', { value: true, configurable: true })
+    }
+    base = stepB({
+      installed: ['gstack'],
+      alreadyInstalled: ['base-mcp'],
+      keptExisting: [{ name: 'base-retained', reason: 'verified prior version retained' }],
+    })
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(base)
+  })
+
+  afterEach(() => {
+    streams.forEach((stream, index) => {
+      const descriptor = ttyDescriptors[index]
+      if (descriptor) Object.defineProperty(stream, 'isTTY', descriptor)
+      else Reflect.deleteProperty(stream, 'isTTY')
+    })
+  })
+
+  it.each([
+    'npm install exited 1',
+    'verify failed: codegraph --version exited 1',
+  ])('selected optional failure is counted after recovery: %s', async (reason) => {
+    vi.mocked(runOptionalOffer).mockResolvedValueOnce({
+      installed: ['ecc'],
+      alreadyInstalled: ['optional-present'],
+      skipped: ['not-selected'],
+      failed: [{ name: 'codegraph', reason }],
+    })
+
+    await expect(runSetup(['--update-installed'])).rejects.toMatchObject({ code: 1 })
+
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/optional.*codegraph/))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining(reason))
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /setup incomplete.*1 workflow\(s\) installed.*3 base component\(s\) configured.*1 component\(s\) failed/,
+      ),
+    )
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+    expect(base.installed).toEqual(['gstack'])
+    expect(base.alreadyInstalled).toEqual(['base-mcp'])
+    expect(base.keptExisting).toEqual([
+      { name: 'base-retained', reason: 'verified prior version retained' },
+    ])
+    expect(base.failed).toEqual([])
+    expect(base.skipped).toEqual([])
+    expect(runOptionalOffer).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ interactive: true }),
+    )
+    expect(backupSkillDir).toHaveBeenCalledTimes(2)
+    expect(cp).toHaveBeenCalledTimes(2)
+    expect(auditInstalledSkills).toHaveBeenCalledOnce()
+    expect(recordSkillHashes).toHaveBeenCalledTimes(2)
+    expect(searchMcpKeyHintLines).toHaveBeenCalledOnce()
+    expect(runAutoInstall).toHaveBeenCalledOnce()
+    expect(checkGuardConflict).toHaveBeenCalledOnce()
+    expect(vi.mocked(auditInstalledSkills).mock.invocationCallOrder[0]).toBeGreaterThan(
+      vi.mocked(runOptionalOffer).mock.invocationCallOrder[0] ?? 0,
+    )
+    expect(vi.mocked(process.exit).mock.invocationCallOrder[0]).toBeGreaterThan(
+      vi.mocked(checkGuardConflict).mock.invocationCallOrder[0] ?? 0,
+    )
+  })
+
+  it('counts base and optional failures together without inflating the configured base count', async () => {
+    base.failed.push('base-broken: base verify failed')
+    vi.mocked(runOptionalOffer).mockResolvedValueOnce({
+      installed: [],
+      alreadyInstalled: [],
+      skipped: [],
+      failed: [
+        { name: 'codegraph', reason: 'npm exited 1' },
+        { name: 'ecc', reason: 'plugin verify failed' },
+      ],
+    })
+
+    await expect(runSetup(['--update-installed'])).rejects.toMatchObject({ code: 1 })
+
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /setup incomplete.*3 base component\(s\) configured.*3 component\(s\) failed/,
+      ),
+    )
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('codegraph: npm exited 1'))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('ecc: plugin verify failed'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+    expect(base.failed).toEqual(['base-broken: base verify failed'])
+    expect(checkGuardConflict).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    'declined',
+    'not-selected',
+    '--non-interactive',
+    'stdin',
+    'stdout',
+    'success',
+  ])('%s optional outcome preserves success and base-only configured count', async (outcome) => {
+    if (outcome === 'stdin' || outcome === 'stdout') {
+      Object.defineProperty(process[outcome], 'isTTY', { value: false, configurable: true })
+    }
+    vi.mocked(runOptionalOffer).mockResolvedValueOnce({
+      installed: outcome === 'success' ? ['codegraph', 'ecc'] : [],
+      alreadyInstalled: outcome === 'success' ? ['optional-present'] : [],
+      skipped: outcome === 'success' ? [] : ['codegraph', 'ecc'],
+      failed: [],
+    })
+
+    await expect(
+      runSetup([
+        '--update-installed',
+        ...(outcome === '--non-interactive' ? ['--non-interactive'] : []),
+      ]),
+    ).rejects.toMatchObject({ code: 0 })
+
+    expect(console.log).toHaveBeenCalledWith(
+      'setup complete \u2014 1 workflows + 3 base manifests configured',
+    )
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('component(s) failed'))
+    expect(runOptionalOffer).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        interactive: !['--non-interactive', 'stdin', 'stdout'].includes(outcome),
+      }),
+    )
+    expect(base.failed).toEqual([])
+    expect(base.skipped).toEqual([])
+    expect(checkGuardConflict).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    new Error('optional installer threw'),
+    'optional installer rejected',
+  ])('preserves the existing rejection boundary without a false success: %s', async (error) => {
+    vi.mocked(runOptionalOffer).mockRejectedValueOnce(error)
+
+    await expect(runSetup(['--update-installed'])).rejects.toBe(error)
+
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+    expect(process.exit).not.toHaveBeenCalled()
+    expect(cp).toHaveBeenCalledOnce()
   })
 })
 
@@ -249,6 +414,8 @@ describe('setup L4 rescue result through registerSetup', () => {
     )
     expect(console.error).toHaveBeenCalledWith(`  [L4 rescue] gstack: ${reason}`)
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
     expect(checkGuardConflict).toHaveBeenCalledOnce()
     expect(vi.mocked(process.exit).mock.invocationCallOrder[0]).toBeGreaterThan(
       vi.mocked(checkGuardConflict).mock.invocationCallOrder[0] ?? 0,
@@ -499,7 +666,12 @@ describe('setup L4 rescue result through registerSetup', () => {
     expect(first.skipped).toEqual([])
     expect(first.failed).toEqual(['unrecovered: first pass failed'])
     expect(first.componentTypes).toEqual({ 'mcp-server': 'mcp-tool', gstack: 'command' })
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('2 base manifests configured'))
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /setup incomplete.*2 base component\(s\) configured.*1 component\(s\) failed/,
+      ),
+    )
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
   })
 
   it('a force-update success replaces the original skip without duplicating other components', async () => {

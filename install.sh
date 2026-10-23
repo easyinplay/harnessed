@@ -148,7 +148,13 @@ if [ -t 1 ] && [ -r /dev/tty ]; then
   case "$ANS" in
     ''|[Yy]*)
       note "running setup..."
-      "$BIN_PATH" setup
+      SETUP_EXIT_CODE=0
+      "$BIN_PATH" setup || SETUP_EXIT_CODE=$?
+      if [ "$SETUP_EXIT_CODE" -ne 0 ]; then
+        printf '\n[harnessed installer] ERROR: setup failed (exit code %s); the binary remains installed at %s\n' "$SETUP_EXIT_CODE" "$BIN_PATH" >&2
+        printf '[harnessed installer] retry: %q setup\n' "$BIN_PATH" >&2
+        exit "$SETUP_EXIT_CODE"
+      fi
       RAN_SETUP=1
       ;;
   esac

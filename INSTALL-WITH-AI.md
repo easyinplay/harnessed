@@ -30,6 +30,7 @@
    ```
    - 脚本自带 sha256 校验 + `--version` smoke;落位 unix `~/.local/bin` / Windows `%LOCALAPPDATA%\harnessed\bin`
    - **交互式会征询 `run 'harnessed setup' now? (Y/n)`**:同意则安装器已按绝对路径跑完 setup → **跳过步骤 3**;非交互(纯管道无 TTY)不征询 → 照步骤 3 手动跑
+   - **二进制安装成功不等于 setup 成功**:如果随后显示 `setup failed` 或 `setup incomplete`,保留已安装的二进制,按错误原因处理,再执行安装器打印的绝对路径 setup 重试命令。此时不能把流程记为完整安装成功,也不应仅重复下载二进制。
    - **注意 PATH 提示 + shadow 警告**:输出含 PATH 指令则替用户执行后重开 shell;若输出 `another 'harnessed' ... will shadow this binary`(先前 npm 全局装过),说明 bare `harnessed` 仍指旧那份 → 按提示 `npm uninstall -g harnessed`,或用打印的绝对路径调用
    - 后续升级 `harnessed update`(二进制原地自替换,保留上一版可回滚)
    - 不支持的平台(如 Intel Mac)脚本明确报错并指向 npm 渠道 → 回步骤 1

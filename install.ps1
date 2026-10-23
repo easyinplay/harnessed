@@ -147,7 +147,21 @@ try {
     $answer = Read-Host "[harnessed installer] run 'harnessed setup' now (installs workflow skills + upstream components)? (Y/n)"
     if ($answer -eq '' -or $answer -match '^[Yy]') {
       Write-Note 'running setup...'
-      & $BinPath setup
+      try {
+        & $BinPath setup
+      } catch {
+        # PowerShell 7 can throw on native nonzero exits before the check below.
+        if ($LASTEXITCODE -eq 0) { throw }
+      }
+      $setupExitCode = $LASTEXITCODE
+      if ($setupExitCode -ne 0) {
+        $retryHint = "& '" + $BinPath.Replace("'", "''") + "' setup"
+        Write-Note "setup failed (exit code $setupExitCode); the binary remains installed at $BinPath"
+        Write-Note "retry: $retryHint"
+        # Unlike Fail, throw is catchable when installed via irm | iex and does
+        # not terminate the user's interactive host. Preserve the native code.
+        throw "setup failed (exit code $setupExitCode). Retry: $retryHint"
+      }
       $ranSetup = $true
     }
   }

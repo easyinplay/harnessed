@@ -10,8 +10,8 @@
 // Workflows without SKILL.md are skipped in Step A.
 //
 // Exit codes:
-//   0 → at least 1 workflow installed + no base manifest failures (skips are OK)
-//   1 → fs.cp failed or base manifests failed (after all setup tail work)
+//   0 → at least 1 workflow installed + no base or selected optional failures (skips are OK)
+//   1 → fs.cp failed or base/selected optional failed (after all setup tail work)
 //   2 → no SKILL.md workflows found (nothing to install)
 
 import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
@@ -753,31 +753,43 @@ export function registerSetup(program: Command): void {
       // was only reachable by users who already knew `harnessed install <name>`.
       // Interactive → per-component confirm (default No); non-TTY → one advisory
       // line. Dynamic import mirrors l4-rescue (setup-tests mock-factory safety).
+      let optionalFailed = 0
       if (!dryRun) {
         const optIsTty = process.stdin.isTTY === true && process.stdout.isTTY === true
         const { runOptionalOffer } = await import('./lib/optional-offer.js')
-        await runOptionalOffer(resolve(pkgRoot, 'manifests', 'optional'), {
+        const optional = await runOptionalOffer(resolve(pkgRoot, 'manifests', 'optional'), {
           interactive: optIsTty && raw.nonInteractive !== true,
           trustCodexHooks: raw.trustCodexHooks === true,
         })
+        optionalFailed = optional.failed.length
+        for (const failure of optional.failed) {
+          console.error(`  [optional] ${failure.name}: ${failure.reason}`)
+        }
       }
 
       // v4.15.1 — honest failure trailer: a long grouped table scrolls the
       // failed rows away; restate the count + retry path right before the
       // "setup complete" line so a failed setup never reads as fully green.
-      if (b.failed.length > 0) {
+      const failedCount = b.failed.length + optionalFailed
+      if (failedCount > 0) {
         console.error(
-          `\n${b.failed.length} component(s) failed — see the notes in the tables above; re-run \`harnessed setup\` to retry, or run \`harnessed doctor\` for environment diagnostics.`,
+          `\n${failedCount} component(s) failed — see the notes above; re-run \`harnessed setup\` to retry, or run \`harnessed doctor\` for environment diagnostics.`,
         )
       }
       const configured =
         b.installed.length + b.alreadyInstalled.length + (b.keptExisting?.length ?? 0)
-      console.log(
-        t('setup.complete', {
-          skills: skillsInstalled,
-          manifests: configured,
-        }),
-      )
+      if (failedCount > 0) {
+        console.error(
+          `setup incomplete - ${skillsInstalled} workflow(s) installed; ${configured} base component(s) configured; ${failedCount} component(s) failed (${b.failed.length} base, ${optionalFailed} optional).`,
+        )
+      } else {
+        console.log(
+          t('setup.complete', {
+            skills: skillsInstalled,
+            manifests: configured,
+          }),
+        )
+      }
       if (configured > 0) {
         // v4.14.0 — hint follows the active platform ("/mcp in Claude Code" is
         // meaningless on codex; there the check is `codex mcp list`).
@@ -924,6 +936,6 @@ export function registerSetup(program: Command): void {
       } catch {
         /* advisory only */
       }
-      process.exit(b.failed.length > 0 ? 1 : 0)
+      process.exit(failedCount > 0 ? 1 : 0)
     })
 }

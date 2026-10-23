@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- One-line installers distinguish a successfully installed binary from a failed setup, preserve setup failure evidence, and show a retry command instead of success-only update guidance.
+- Setup includes failures of explicitly selected optional components in its final result, keeps optional counts separate from base configuration, and no longer prints a successful completion message when installation failed.
+
 ## [4.49.2] - 2026-10-23
 
 ### Fixed
