@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: npm-5.0.0
 milestone_name: Runtime And Onboarding
 status: in_progress
-last_updated: "2026-10-24T03:12:00+08:00"
+last_updated: "2026-10-24T03:30:00+08:00"
 last_activity: 2026-10-24
 progress:
   total_phases: 1
@@ -29,7 +29,7 @@ progress:
 
 ## Current Position
 
-- **Active npm 5.0.0 (2026-10-24)**: Candidate implemented; 4432 serialized tests, eval 14/14, three-channel real hooks and packed npm checks pass. Site 42 tests + desktop/mobile pass; old 60-second block removed. Details: `phases/70-runtime-onboarding/VERIFICATION.md`. CI/preflight and explicit native-gstack substitution decision pending; no tag/publication/site deployment yet.
+- **Active npm 5.0.0 (2026-10-24)**: Runtime candidate `a7a93d3` CI `40011089288` passed 9/9; local4432 tests/eval14/packed3-channel hooks and site42/browser pass. Preflight passed. Details: `phases/70-runtime-onboarding/VERIFICATION.md`. Awaiting user's explicit native-gstack substitution decision; no tag/publication/site deployment. Site changes remain local in `D:/GitCode/harnessed-site`, preview4322.
 
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 

@@ -18,12 +18,12 @@ Scope source: [approved brief](../../research/npm-5.0-runtime-onboarding-brief.m
 
 | Task | Owner / Write Scope | Acceptance | Status |
 | --- | --- | --- | --- |
-| T1 Baseline and channel harness | benchmark worker: new scripts/runtime test files; main executes builds/measurements | Isolated state, bounded subprocesses, reproducible before/after latency and artifact metadata; unsupported RSS explicit | Local checks complete; CI pending |
+| T1 Baseline and channel harness | benchmark worker: new scripts/runtime test files; main executes builds/measurements | Isolated state, bounded subprocesses, reproducible before/after latency and artifact metadata; unsupported RSS explicit | Verified locally and three-platform CI |
 | T2 Lazy host imports | runtime worker: spawnDispatch and related tests | RED/GREEN; injected spawners do not load real implementations; host/options/errors unchanged; measured benefit or revert | Local build/bundle tests/measurement complete |
 | T3 Optional Bun lifecycle | Bun worker owns runtime/hooks/update/hints | Verified invocation/update/hook route, Node/npm never shells out to Bun; standalone first-party paths need neither external runtime | Local source/packed smoke and registry fix pass; native Codex activation not certified |
 | T4 Website onboarding/version | website worker owns site source/tests/docs | No old 60-second section; responsive accessible tabs/copy/host flow; stable release loading/failure/cache tests; English/Chinese docs aligned | Local build/tests/browser pass; review/deployment pending |
-| T5 Integration and review | main plus independent reviewers | Build, schemas, lint, full serialized regression, eval, runtime channel smoke and real desktop/mobile browser evidence | Local verification complete; final-tree CI pending |
-| T6 Release 5.0.0 | main only after gates | English CHANGELOG/logs, CI on three platforms, preflight, tag once, registry and signed binary assets verified; website deployment checked separately | Pending |
+| T5 Integration and review | main plus independent reviewers | Build, schemas, lint, full serialized regression, eval, runtime channel smoke and real desktop/mobile browser evidence | Runtime candidate verified; CI 9/9 |
+| T6 Release 5.0.0 | main only after gates | English CHANGELOG/logs, CI on three platforms, preflight, tag once, registry and signed binary assets verified; website deployment checked separately | Awaiting explicit native-gstack substitution decision; not published |
 
 Do not concurrently rebuild dist while the baseline measurement is being captured. Workers must not commit, push or publish; the main session handles atomic commits and immediate pushes under the standing policy. Preserve unrelated untracked files.
 

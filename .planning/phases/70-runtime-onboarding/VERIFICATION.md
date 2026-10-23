@@ -18,9 +18,9 @@ Date: 2026-10-24. Candidate package version: 5.0.0. Not yet published.
 | Windows binary | Bun compile, 167 bundled assets, 5.0.0 | Pass |
 | Runtime channel smoke | [runtime-channel-smoke.json](./runtime-channel-smoke.json) | Three channels pass |
 | Real packed npm acceptance | [packed-runtime-acceptance.json](./packed-runtime-acceptance.json); 182 files, 1,198,608 bytes, installed in owned temporary prefix | Three channels pass |
-| Remote CI | Must run on the exact pushed candidate | Pending |
+| Remote CI | `40011089288`, exact runtime candidate `a7a93d3979b8ac31b4069c56521bc3fb377898c3`; all 9 jobs completed successfully | Pass |
 
-The first fullsuite during source review was cancelled and is not counted. The final 4432-pass run includes the registry-selection fix and version 5.0.0. A subsequent six-line test-harness correction gives npm distinct empty user/global config files; the production package did not change after the fullsuite. Targeted tests and the real packed-package acceptance cover that correction; remote CI will cover the final tree.
+The first fullsuite during source review was cancelled and is not counted. The final 4432-pass run includes the registry-selection fix and version 5.0.0. A subsequent six-line test-harness correction gives npm distinct empty user/global config files; the production package did not change after the fullsuite. Targeted tests, real packed-package acceptance and the successful three-platform CI cover that correction.
 
 ## Runtime Independence And Scope
 
@@ -83,4 +83,10 @@ Existing site checks remain explicit: full formatting reports pre-existing diffe
 
 Independent static reviews found and corrected SDK import hoisting, UTF-8 output-budget expansion, registry-source mismatch and non-healing high cache versions. These are not native gstack execution receipts.
 
-Native gstack startup did not complete; native office-hours/CEO/architecture/review gates are not marked passed. The main session asked the user whether the documented static reviews and real verification may substitute for this release. Until that decision and final CI/preflight, do not push a version tag, publish npm or deploy the new site against the old stable package. Existing upstream gstack/MCP readiness limitations remain unchanged.
+Native gstack startup did not complete; native office-hours/CEO/architecture/review gates are not marked passed. The main session asked the user whether the documented static reviews and real verification may substitute for this release. CI is now green and the read-only preflight passed four checks on the clean candidate. The substitution decision is still pending: do not push a version tag, publish npm or deploy the new site against the old stable package. Re-run preflight on the eventual release commit. Existing upstream gstack/MCP readiness limitations remain unchanged.
+
+## CI Closure
+
+Initial CI `40010192023` passed 8/9 jobs. The sole failure was an extensionless Bun path returned by Windows Git Bash, before any runtime test launched. Follow-up `a7a93d3` asks Bun for its real executable path; local Git Bash rehearsal passed, then `40011089288` passed all three main test jobs, three binary jobs and three installer jobs. No smoke check, runtime validation or security gate was removed.
+
+This verification-record update is documentation-only; its CI is separate from the already-green runtime candidate. There is no 5.0.0 publication or website deployment receipt yet.

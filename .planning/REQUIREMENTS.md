@@ -8,11 +8,11 @@
 
 | ID | Requirement | Acceptance Home | Status |
 | --- | --- | --- | --- |
-| RT-01 | Standalone harnessed needs no external Bun/Node; npm keeps supported Node without Bun | Phase 70 channel smoke and product verification | Pending |
-| RT-02 | Measure and reduce short-lived startup cost without changing host/state/security semantics | Phase 70 before/after benchmark and lazy-import regression | In progress |
-| RT-03 | Explicit optional Bun invocation and owned lifecycle are verified, not inferred from package installation | Phase 70 Bun route acceptance | Pending |
-| WEB-01 | Replace old 60-second quickstart with one tabbed install / first workflow / progress-recovery flow | Site source, build and real browser evidence | In progress |
-| WEB-02 | Share latest stable GitHub version metadata with timeout/cache/fallback and no client secrets | Site metadata and browser tests | In progress |
+| RT-01 | Standalone harnessed needs no external Bun/Node; npm keeps supported Node without Bun | Phase 70 channel smoke and product verification | Core/owned hooks verified in three-platform CI |
+| RT-02 | Measure and reduce short-lived startup cost without changing host/state/security semantics | Phase 70 before/after benchmark and lazy-import regression | Local measurements and regression verified |
+| RT-03 | Explicit optional Bun invocation and owned lifecycle are verified, not inferred from package installation | Phase 70 Bun route acceptance | Core/CC live and Codex contract coverage; native activation not certified |
+| WEB-01 | Replace old 60-second quickstart with one tabbed install / first workflow / progress-recovery flow | Site source, build and real browser evidence | Local browser/build verified; deployment pending |
+| WEB-02 | Share latest stable GitHub version metadata with timeout/cache/fallback and no client secrets | Site metadata and browser tests | Local tests/browser/live public API verified |
 | REL-01 | Release 5.0.0 only after regression/CI/evidence, with English records and verified published artifacts | Phase 70 release review and release log | Pending |
 
 Plan: [Phase 70](phases/70-runtime-onboarding/PLAN.md). Scope: [approved brief](research/npm-5.0-runtime-onboarding-brief.md). Native governance limitations must remain explicit.

@@ -60,3 +60,10 @@ All selected observations exited 0. Fresh first invocations were 270.9 ms Node, 
 - Windows binary smoke failed before launching any channel: Git Bash `command -v bun` supplied an extensionless path, and Node realpath correctly rejected the nonexistent Windows file. The workflow now asks Bun for its actual `process.execPath` instead of guessing an extension or weakening validation. Product runtime logic is unchanged.
 - The corrected workflow invocation was executed through local Git Bash: all three channel/owned-hook results passed. This is local Windows evidence; the follow-up remote run remains required.
 - The read-only release preflight passed changelog, version, tracked git cleanliness and tag absence after the candidate commit. It is not publication permission, final CI success or a native governance receipt.
+
+## Runtime Candidate CI Complete
+
+- `40010192023` finished 8/9; all three main platform tests passed. Only the Windows binary path lookup failed.
+- Follow-up commit `a7a93d3979b8ac31b4069c56521bc3fb377898c3` passed CI `40011089288`: 9/9 completed successfully, including Windows runtime-channel smoke. The owned `gh run watch` session exited 0.
+- The only remaining intentional background service is the website production preview on port 4322. All workers and test/watch exec sessions ended.
+- User approval for substituting the incomplete native gstack gate is still awaited. No version tag, npm release, global binary replacement or site deployment was performed.
