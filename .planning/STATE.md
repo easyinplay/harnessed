@@ -29,6 +29,8 @@ progress:
 
 ## Current Position
 
+- **安装架构调研(2026-10-23)**:用户撤回直接替换安装模式,保留共享 engine + manifests;首期仅 Claude Code/Codex。已按固定 SHA 调研 comet/Trellis,推荐统一宿主解析、管理来源与自有产物双向契约测试,不复制配置写入/删除策略;尚未开始实现。详 `research/host-installation-patterns.md`。
+
 - **Phase 68 实机 Codex 验收(2026-10-23)**:修复已随 4.49.2 发布,本机 standalone 4.49.1 未静默替换。完整 Codex setup:13 个 base 中 12 个通过 manifest 验收,gstack lease 上游缺陷被正确阻断(exit 1);Exa 401/Tavily 审批限制仍独立存在。详 `phases/68-installed-codex-acceptance/SETUP-RUNTIME-AUDIT.md`。
 
 - **v14.0 Hardening & Distribution retroactively CLOSED 2026-07-12**(lightweight + fuller archive pass):4.13→4.28 弧线定名收账,61 个 phase 目录归位 `milestones/<vN>-phases/`,active `phases/` 清零。详:`milestones/v14.0-MILESTONE-AUDIT.md` + RETROSPECTIVE v14.0 节。
