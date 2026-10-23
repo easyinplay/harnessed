@@ -43,6 +43,7 @@ vi.mock('node:os', async () => {
 })
 
 import { spawn } from 'node:child_process'
+import { writeFile } from 'node:fs/promises'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { installNpxSkillInstaller } from '../../src/installers/npxSkillInstaller.js'
 
@@ -150,9 +151,26 @@ function ctx(over?: Partial<InstallOpts>, modify?: (m: Manifest) => void): Insta
 describe('installNpxSkillInstaller', () => {
   beforeEach(() => {
     spawnMock.mockReset()
+    vi.mocked(writeFile).mockClear()
     accessMock.mockReset()
     // Default: SKILL.md exists (happy path); individual tests override.
     accessMock.mockResolvedValue(undefined)
+  })
+
+  it('an existing skill must pass verify without automatically invoking npx to repair it', async () => {
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 1, stderr: 'runtime missing' }]))
+
+    const result = await installNpxSkillInstaller(ctx({ updateInstalled: false, quiet: true }))
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'verify',
+      error: { keyword: 'verify-failed' },
+    })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).toContain('grep -q name')
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('skills@1.5.7 add')
+    expect(writeFile).not.toHaveBeenCalled()
   })
 
   it('dispatch-mismatch: non-npx-skill-installer method → ok:false preflight', async () => {

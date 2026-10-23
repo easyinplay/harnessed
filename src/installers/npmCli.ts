@@ -23,10 +23,11 @@ import {
   warnDeclaredCollisions,
 } from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
-import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
+import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult, Level } from './lib/types.js'
-import { formatSpawnFail, formatVerifyFail } from './lib/verifyMessage.js'
+import { verifyInstalled } from './lib/verifyInstalled.js'
+import { formatSpawnFail } from './lib/verifyMessage.js'
 
 function detectLevel(cmd: string): Level {
   if (/\bnpm\s+install\s+-g\b/.test(cmd)) return 'L4'
@@ -58,6 +59,8 @@ export const installNpmCli: Installer = async (ctx) => {
   }
   // v3.9.6 — idempotent_check probe (skip install if already-installed).
   if (await isAlreadyInstalled(ctx)) {
+    const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
+    if (verifyFailure) return verifyFailure
     // Phase 59 — the receipt was unreachable on this path; record what is
     // actually present so `harnessed status` can stop under-reporting.
     await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
@@ -130,31 +133,8 @@ export const installNpmCli: Installer = async (ctx) => {
   }
   // 4.23.0 (issue #3) — post-install diff: undeclared new names + workflow collisions.
   await auditPostInstall(ctx, packSnapshot)
-  // v3.0.2: verify honors spec.verify.timeout_ms (default 15s) — manifest authors retain control.
-  const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
-  // v23 (4.5.1) — verify cmds use POSIX builtins (test/grep/|); route through Git Bash on Windows.
-  // v4.20.1: neutralCwd on verify too (e.g. `ctx7 --version` must not die to
-  // ambient npm/devEngines config in the user's shell cwd ancestry).
-  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs, {
-    posixShell: true,
-    neutralCwd: true,
-  })
-  if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
-  const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0
-  if (vr.exitCode !== expected) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/verify/cmd',
-        // v4.15.1 — unified verify-fail format (cmd + output tail; no dangling colon).
-        formatVerifyFail(ctx.manifest.spec.verify.cmd, vr.exitCode, expected, vr.stdout, vr.stderr),
-        'verify-failed',
-      ),
-    }
-  }
+  const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
+  if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
   // manifest sha1 capture is a Wave 5 CLI concern (it owns the raw yaml bytes);
   // T3.1 records empty-string placeholder per state.ts schema.
   await updateInstalled(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')

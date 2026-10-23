@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: webapp-testing
+  display_name: Anthropic Webapp Testing Skill
+  description: Anthropic browser testing skill and server helper; Python Playwright remains a project-level dependency.
+  upstream:
+    source: github.com/anthropics/skills
+    homepage: https://github.com/anthropics/skills/tree/main/skills/webapp-testing
+    repository: https://github.com/anthropics/skills.git
+    license: anthropics-official
+    license_source: anthropics-official
+    notice: |
+      Official anthropics/skills webapp-testing skill; license provenance uses the schema anthropics-official carve-out, not a guessed SPDX identifier.
+      L2 installs only the skill and scripts/with_server.py, independently of gstack.
+      Python Playwright is a project-level dependency, like @playwright/test. No automatic pip install, browser download or project package changes.
+      Verification only checks readable resources and isolated Python helper --help.
+spec:
+  type: cc-skill-pack
+  component_type: command
+  category: testing
+  install_type: skill
+  install:
+    method: npx-skill-installer
+    cmd: "npx --yes skills@latest add anthropics/skills --skill webapp-testing --copy --global -y"
+    npm_version: ^1.7.4
+    idempotent_check: "test -r ~/.agents/skills/webapp-testing/SKILL.md || test -r ~/.codex/skills/webapp-testing/SKILL.md || test -r ~/.claude/skills/webapp-testing/SKILL.md"
+    installs_skills:
+      - webapp-testing
+  verify:
+    cmd: |
+      node -e '
+      const fs = require("node:fs");
+      const path = require("node:path");
+      const home = require("node:os").homedir();
+      const spawnSync = require("node:child_process").spawnSync;
+      const platform = process.env.HARNESSED_PLATFORM;
+      const codex = platform ? platform === "codex" : Boolean(process.env.CODEX_HOME || process.env.CODEX_SESSION_ID);
+      const codexHome = path.resolve(process.env.CODEX_HOME || path.join(home, ".codex"));
+      const roots = codex
+        ? [path.join(home, ".agents", "skills", "webapp-testing"), path.join(codexHome, "skills", "webapp-testing")]
+        : [".agents", ".codex", ".claude"].map(dir => path.join(home, dir, "skills", "webapp-testing"));
+      const root = roots.find(dir => fs.existsSync(path.join(dir, "SKILL.md")));
+      if (!root) throw new Error("webapp-testing SKILL.md is missing");
+      for (const resource of ["SKILL.md", "scripts/with_server.py"]) {
+        const file = path.join(root, resource);
+        fs.accessSync(file, fs.constants.R_OK);
+        const info = fs.statSync(file);
+        if (!info.isFile() || info.size === 0) throw new Error("Required resource is empty or not a file: " + file);
+      }
+      const env = Object.fromEntries(["PATH", "SystemRoot", "WINDIR", "TEMP", "TMP"].map(key => [key, process.env[key]]).filter(pair => pair[1] !== undefined));
+      const options = { cwd: root, env, encoding: "utf8", windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"], timeout: 5000, maxBuffer: 262144 };
+      const flags = ["-I", "-B", "-S"];
+      let python;
+      for (const [binary, prefix] of [["python", []], ["python3", []], ["py", ["-3"]]]) {
+        const probe = spawnSync(binary, [...prefix, ...flags, "-c", "import sys; assert sys.version_info >= (3, 8); print(\"HARNESSED_PYTHON_OK\")"], options);
+        if (!probe.error && probe.status === 0 && probe.stdout.trim() === "HARNESSED_PYTHON_OK") {
+          python = [binary, prefix];
+          break;
+        }
+      }
+      if (!python) throw new Error("Python 3.8+ is required for helper --help; install an interpreter explicitly, not project dependencies");
+      const result = spawnSync(python[0], [...python[1], ...flags, path.join(root, "scripts", "with_server.py"), "--help"], options);
+      if (result.error) throw result.error;
+      process.stdout.write(result.stdout);
+      process.stderr.write(result.stderr);
+      if (result.status !== 0) process.exit(result.status || 1);
+      if (!["usage:", "--server", "--port", "--timeout"].every(text => result.stdout.includes(text))) throw new Error("with_server.py did not return the expected help output");
+      '
+    timeout_ms: 30000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "rm -rf ~/.claude/skills/webapp-testing"
+    cleanup_paths:
+      - ~/.claude/skills/webapp-testing
+  upstream_health:
+    stability: stable
+    last_check: "2026-10-23"
+    last_known_good_version: "1.7.4"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

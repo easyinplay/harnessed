@@ -36,6 +36,7 @@ import { evalTestChain } from './nativeTest.js'
 import { resolveBash } from './resolveBash.js'
 import { getNeutralSpawnCwd } from './safeCwd.js'
 import type { InstallContext, InstallResult } from './types.js'
+import { verificationEnv } from './verificationEnv.js'
 import { sanitizeOutputTailEnd } from './verifyMessage.js'
 
 /** v3.9.8 — pre-expand `~/` to OS home dir before passing cmd to cmd.exe.
@@ -127,7 +128,7 @@ export async function spawnCmd(
   cmd: string,
   args: string[],
   timeoutMs?: number,
-  opts?: { posixShell?: boolean; neutralCwd?: boolean },
+  opts?: { posixShell?: boolean; neutralCwd?: boolean; envMode?: 'verify' },
 ): Promise<SpawnOk | InstallResult> {
   // 1. B1 defense-in-depth — re-check the literal cmd string for shell escapes.
   const violation = checkCmdString(cmd)
@@ -161,7 +162,10 @@ export async function spawnCmd(
   const installCfg = ctx.manifest.spec.install
   // v3.0.2: timeoutMs MUST be explicit (back-compat: undefined → 60s install default).
   const effectiveTimeoutMs = timeoutMs ?? DEFAULT_INSTALL_TIMEOUT_MS
-  const env = { ...process.env, ...(installCfg.env ?? {}) }
+  const env =
+    opts?.envMode === 'verify'
+      ? verificationEnv(process.env, installCfg.env)
+      : { ...process.env, ...(installCfg.env ?? {}) }
   // v4.20.1 — opts.neutralCwd routes npm/npx-based installs through the neutral
   // spawn dir (EBADDEVENGINES ambient-package.json immunity, see safeCwd.ts).
   // Manifest install.cwd stays highest priority; neutral resolution failure

@@ -163,6 +163,48 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
     expect(b.skipped).toEqual([{ name: 'ctx7', reason: 'level-flag-missing' }])
   })
 
+  it.each([
+    undefined,
+    false,
+    true,
+  ])('system=%s only authorizes global installs when true', async (system) => {
+    wireValidate({ 'playwright-cli.yaml': { name: 'playwright-cli', method: 'npm-cli' } })
+    runInstallMock.mockImplementation(async (_manifest, opts) =>
+      opts.system ? ({ ok: true } as never) : { aborted: true, reason: 'level-flag-missing' },
+    )
+
+    const b = await runStepBInstall(['playwright-cli.yaml'], { system })
+
+    expect(runInstallMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ system: system === true, nonInteractive: true }),
+    )
+    expect(runInstallMock.mock.calls[0]?.[1]).not.toHaveProperty('codexHookTrust')
+    expect(b.installed).toEqual(system === true ? ['playwright-cli'] : [])
+    expect(b.skipped).toEqual(
+      system === true ? [] : [{ name: 'playwright-cli', reason: 'level-flag-missing' }],
+    )
+  })
+
+  it('explicit system consent also permits force-update of global CLI tools', async () => {
+    wireValidate({ 'playwright-cli.yaml': { name: 'playwright-cli', method: 'npm-cli' } })
+    runInstallMock.mockImplementation(async (_manifest, opts) =>
+      opts.system ? ({ ok: true } as never) : { aborted: true, reason: 'level-flag-missing' },
+    )
+
+    const b = await runStepBInstall(['playwright-cli.yaml'], {
+      system: true,
+      updateInstalled: true,
+    })
+
+    expect(b.installed).toEqual(['playwright-cli'])
+    expect(b.skipped).toEqual([])
+    expect(runInstallMock).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ system: true, updateInstalled: true }),
+    )
+  })
+
   // 4.32.22 — setup grouping buckets by install.method, NOT component_type.
   // Trigger case (historical: 4.32.21-era chrome-devtools): a manifest with
   // component_type=mcp-tool but install method cc-plugin-marketplace belongs

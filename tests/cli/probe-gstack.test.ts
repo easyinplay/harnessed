@@ -21,8 +21,10 @@ const ORIG_PLATFORM = process.platform
 
 beforeEach(() => {
   spawnSyncMock.mockReset()
+  vi.stubEnv('HARNESSED_PLATFORM', 'claude')
 })
 afterEach(() => {
+  vi.unstubAllEnvs()
   Object.defineProperty(process, 'platform', { value: ORIG_PLATFORM })
 })
 
@@ -86,5 +88,43 @@ describe('probeGstackPrefix — D-01 PROBE 4 outcome branches + Win shell flavor
     expect(spawnSyncMock).toHaveBeenCalledWith('where', ['gstack-office-hours'], expect.any(Object))
     expect(spawnSyncMock).toHaveBeenCalledWith('where', ['office-hours'], expect.any(Object))
     expect(spawnSyncMock).not.toHaveBeenCalledWith('which', expect.anything(), expect.anything())
+  })
+
+  it('Codex never borrows Claude content to pass', () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    spawnSyncMock.mockReturnValue(ssNotFound())
+    const r = probeGstackPrefix({
+      exists: (p) => p.replace(/\\/g, '/').includes('/.claude/skills/gstack/'),
+    })
+    expect(r.status).toBe('fail')
+    expect(r.fix).not.toContain('.claude')
+  })
+
+  it('Codex detects prefixed skill content and the minimal runtime in CODEX_HOME', () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CODEX_HOME', '/custom/codex')
+    spawnSyncMock.mockReturnValue(ssNotFound())
+    const files = new Set([
+      '/custom/codex/skills/gstack-office-hours/SKILL.md',
+      '/custom/codex/skills/gstack/SKILL.md',
+      '/custom/codex/skills/gstack/bin/gstack-browser-ensure',
+    ])
+    const r = probeGstackPrefix({ exists: (p) => files.has(p.replace(/\\/g, '/')) })
+    expect(r.status).toBe('pass')
+    expect(r.prefix).toBe('gstack-')
+    expect(r.detail.replace(/\\/g, '/')).toContain('/custom/codex')
+    expect(r.detail).toContain('content')
+    expect(r.detail).toContain('browser not checked')
+    expect(r.detail).not.toContain('.claude')
+  })
+
+  it('Codex prefixed skill alone does not prove the minimal runtime is present', () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    spawnSyncMock.mockReturnValue(ssNotFound())
+    expect(
+      probeGstackPrefix({
+        exists: (p) => p.replace(/\\/g, '/').endsWith('gstack-office-hours/SKILL.md'),
+      }).status,
+    ).toBe('fail')
   })
 })

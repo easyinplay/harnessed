@@ -13,10 +13,21 @@
 // Mocks: child_process / fs/promises / @clack/prompts (C6 mitigation).
 
 import { EventEmitter } from 'node:events'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { resolve } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { parse } from 'yaml'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
+vi.mock('../../src/installers/lib/gstackLease.js', () => ({
+  verifyGstackLease: vi.fn(async () => null),
+}))
+vi.mock('../../src/installers/lib/gstackRuntime.js', () => ({
+  repairGstackCodexRuntimeAfterConfirm: vi.fn(async () => ({ status: 'created' })),
+}))
 vi.mock('node:fs/promises', () => ({
+  access: vi.fn(async () => {
+    throw new Error('ENOENT')
+  }),
   mkdir: vi.fn(async () => undefined),
   readFile: vi.fn(async () => {
     const e = new Error('ENOENT') as NodeJS.ErrnoException
@@ -34,10 +45,13 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
+import { access, writeFile } from 'node:fs/promises'
+import { confirm } from '@clack/prompts'
 import {
   installGitCloneWithSetup,
   isSelfCleaningCloneCmd,
 } from '../../src/installers/gitCloneWithSetup.js'
+import { repairGstackCodexRuntimeAfterConfirm } from '../../src/installers/lib/gstackRuntime.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
 const spawnMock = vi.mocked(spawn)
@@ -155,6 +169,25 @@ function ctx(over?: Partial<InstallOpts>, modify?: (m: Manifest) => void): Insta
 describe('installGitCloneWithSetup', () => {
   beforeEach(() => {
     spawnMock.mockReset()
+    vi.mocked(access).mockReset().mockRejectedValue(new Error('ENOENT'))
+    vi.mocked(writeFile).mockClear()
+  })
+
+  it('a detected clone must pass verify without rebuilding or relinking its runtime', async () => {
+    vi.mocked(access).mockResolvedValue(undefined)
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 1, stderr: 'runtime missing' }]))
+
+    const result = await installGitCloneWithSetup(ctx({ updateInstalled: false, quiet: true }))
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'verify',
+      error: { keyword: 'verify-failed' },
+    })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).toContain('grep -q name')
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('git clone')
+    expect(writeFile).not.toHaveBeenCalled()
   })
 
   it('dispatch-mismatch: non-git-clone-with-setup method → ok:false preflight', async () => {
@@ -362,5 +395,164 @@ describe('isSelfCleaningCloneCmd (v4.16.2 T2)', () => {
 
   it('unparseable clone (no dest) → false', () => {
     expect(isSelfCleaningCloneCmd('npm install -g foo')).toBe(false)
+  })
+})
+
+describe('gstack Codex runtime dependency repair', () => {
+  const repair = vi.mocked(repairGstackCodexRuntimeAfterConfirm)
+  function gstackContext(over: Partial<InstallOpts> = {}): InstallContext {
+    return ctx({ quiet: true, ...over }, (m) => {
+      m.metadata.name = 'gstack'
+    })
+  }
+
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    repair.mockReset().mockResolvedValue({ status: 'created' })
+    vi.mocked(access).mockReset().mockRejectedValue(new Error('ENOENT'))
+    vi.mocked(writeFile).mockClear()
+    spawnMock
+      .mockReset()
+      .mockImplementation(
+        scriptedSpawn([{ exitCode: 0 }, { exitCode: 0, stdout: PINNED_SHA }, { exitCode: 0 }]),
+      )
+  })
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('repairs after installation but before verify using the actual absolute source path', async () => {
+    const c = gstackContext()
+    c.manifest.spec.install.cmd = 'git clone https://github.com/garrytan/gstack.git relative-clone'
+    c.manifest.spec.install.cwd = resolve('custom-spawn-cwd')
+
+    await expect(installGitCloneWithSetup(c)).resolves.toMatchObject({ ok: true })
+    expect(repair).toHaveBeenCalledExactlyOnceWith({
+      host: 'codex',
+      sourceDir: resolve('custom-spawn-cwd', 'relative-clone'),
+      codexHome: undefined,
+      confirmed: true,
+    })
+    expect(repair.mock.invocationCallOrder[0]).toBeGreaterThan(
+      spawnMock.mock.invocationCallOrder[0] as number,
+    )
+    expect(repair.mock.invocationCallOrder[0]).toBeLessThan(
+      spawnMock.mock.invocationCallOrder[2] as number,
+    )
+  })
+
+  it('passes the actual gstack manifest checkout path to dependency repair', async () => {
+    const fs = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
+    const manifest = parse(await fs.readFile('manifests/skill-packs/gstack.yaml', 'utf8'))
+    const c = gstackContext()
+    c.manifest.spec.install.cmd = manifest.spec.harness_overrides.codex.install.cmd
+
+    await expect(installGitCloneWithSetup(c)).resolves.toMatchObject({ ok: true })
+    expect(repair).toHaveBeenCalledExactlyOnceWith({
+      host: 'codex',
+      sourceDir: resolve(process.env.HOME ?? process.env.USERPROFILE ?? '', 'gstack'),
+      codexHome: undefined,
+      confirmed: true,
+    })
+  })
+
+  it('passes the install CODEX_HOME override to repair, not the parent environment home', async () => {
+    const parentHome = resolve('parent-codex-home')
+    const overrideHome = resolve('install-codex-home')
+    vi.stubEnv('CODEX_HOME', parentHome)
+    const c = gstackContext()
+    c.manifest.spec.install.env = { CODEX_HOME: overrideHome }
+
+    await expect(installGitCloneWithSetup(c)).resolves.toMatchObject({ ok: true })
+    expect(spawnMock.mock.calls[0]?.[2]?.env?.CODEX_HOME).toBe(overrideHome)
+    expect(repair).toHaveBeenCalledExactlyOnceWith({
+      host: 'codex',
+      sourceDir: resolve('/tmp/fixture-clone'),
+      codexHome: overrideHome,
+      confirmed: true,
+    })
+    expect(process.env.CODEX_HOME).toBe(parentHome)
+    expect(repair.mock.invocationCallOrder[0]).toBeGreaterThan(
+      spawnMock.mock.invocationCallOrder[0] as number,
+    )
+  })
+
+  it('does not repair an overridden CODEX_HOME when the L2 confirmation is declined', async () => {
+    vi.stubEnv('CODEX_HOME', resolve('parent-codex-home'))
+    const c = gstackContext({ nonInteractive: false })
+    c.manifest.spec.install.env = { CODEX_HOME: resolve('install-codex-home') }
+    vi.mocked(confirm).mockResolvedValueOnce(false)
+
+    await expect(installGitCloneWithSetup(c)).resolves.toMatchObject({ aborted: true })
+    expect(confirm).toHaveBeenCalled()
+    expect(repair).not.toHaveBeenCalled()
+    expect(spawnMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    { apply: false },
+    { dryRun: true },
+  ])('never repairs before L2 consent or during dry-run: %j', async (opts) => {
+    await expect(installGitCloneWithSetup(gstackContext(opts))).resolves.toMatchObject({
+      aborted: true,
+    })
+    expect(repair).not.toHaveBeenCalled()
+    expect(spawnMock).not.toHaveBeenCalled()
+  })
+
+  it('never repairs after a failed install spawn', async () => {
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 1 }]))
+
+    await expect(installGitCloneWithSetup(gstackContext())).resolves.toMatchObject({
+      ok: false,
+      phase: 'spawn',
+    })
+    expect(repair).not.toHaveBeenCalled()
+  })
+
+  it('existing broken runtime only fails verify and never repairs or records a receipt', async () => {
+    vi.mocked(access).mockResolvedValue(undefined)
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 1 }]))
+
+    await expect(
+      installGitCloneWithSetup(gstackContext({ updateInstalled: false })),
+    ).resolves.toMatchObject({
+      ok: false,
+      phase: 'verify',
+      error: { keyword: 'verify-failed' },
+    })
+    expect(repair).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('reports dependency repair failure without running verify or writing a receipt', async () => {
+    repair.mockRejectedValue(new Error('source dependencies missing'))
+
+    await expect(installGitCloneWithSetup(gstackContext())).resolves.toMatchObject({
+      ok: false,
+      phase: 'verify',
+      error: {
+        keyword: 'verify-failed',
+        message: expect.stringContaining('source dependencies missing'),
+        suggest: expect.stringContaining('harnessed setup --update-installed'),
+      },
+    })
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+    expect(
+      vi.mocked(writeFile).mock.calls.some((call) => String(call[1]).includes('"installed"')),
+    ).toBe(false)
+  })
+
+  it('does not repair on Claude', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+
+    await expect(installGitCloneWithSetup(gstackContext())).resolves.toMatchObject({ ok: true })
+    expect(repair).not.toHaveBeenCalled()
+  })
+
+  it('does not repair unrelated skill packs on Codex', async () => {
+    const c = gstackContext()
+    c.manifest.metadata.name = 'other-skill'
+
+    await expect(installGitCloneWithSetup(c)).resolves.toMatchObject({ ok: true })
+    expect(repair).not.toHaveBeenCalled()
   })
 })

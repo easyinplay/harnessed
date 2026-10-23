@@ -27,6 +27,7 @@
 // Distinct from existing `checkMcpScope` which checks scope hygiene (project
 // vs user — CC #54803 risk); this check is server-by-server availability.
 
+import { listCodexMcpServerMetadata } from '../../installers/lib/codexMcpServers.js'
 import { isMcpServerRegistered } from '../../installers/lib/readClaudeConfig.js'
 import { detectPlatform } from '../../platform/platform.js'
 import { probeSearchMcpKey, SEARCH_MCP_KEY_VARS, type SearchKeyProbe } from './search-mcp-keys.js'
@@ -46,40 +47,59 @@ interface CheckResult {
 const TARGET_SERVERS = Object.keys(SEARCH_MCP_KEY_VARS)
 
 const CHECK_NAME = 'MCP servers (tavily/exa)'
+const UNVERIFIED =
+  'authentication not verified; approval not probed; runtime availability not verified'
 
 export async function checkMcpAvailability(): Promise<CheckResult> {
-  // v3.9.5 — read ~/.claude.json via shared helper (sister Step B writes
-  // there too via mcpStdioAdd --scope user, sister ccPluginMarketplace.ts).
+  const isCodex = detectPlatform().id === 'codex'
+  const metadata = isCodex ? await listCodexMcpServerMetadata() : null
+  if (isCodex && metadata === null) {
+    return {
+      name: CHECK_NAME,
+      status: 'warn',
+      message: `registration unknown (Codex CLI listing unavailable or unparseable); enablement unknown; ${UNVERIFIED}`,
+    }
+  }
+
   const installed: string[] = []
   const missing: string[] = []
+  const enabled: string[] = []
+  const disabled: string[] = []
+  const unknown: string[] = []
   for (const s of TARGET_SERVERS) {
-    if (await isMcpServerRegistered(s)) installed.push(s)
-    else missing.push(s)
+    const entry = metadata?.find((server) => server.name === s)
+    const registered = isCodex ? entry !== undefined : await isMcpServerRegistered(s)
+    if (!registered) {
+      missing.push(s)
+      continue
+    }
+    installed.push(s)
+    if (entry?.enabled === true) enabled.push(s)
+    else if (entry?.enabled === false) disabled.push(s)
+    else unknown.push(s)
   }
 
   // 4.32.22 — key probe only for INSTALLED servers (uninstalled ≠ keyless).
   const keyless: SearchKeyProbe[] = []
+  const observed: string[] = []
   for (const s of installed) {
     const probe = await probeSearchMcpKey(s)
     if (!probe.present) keyless.push(probe)
-  }
-
-  if (missing.length === 0 && keyless.length === 0) {
-    return {
-      name: CHECK_NAME,
-      status: 'pass',
-      message: `installed: ${installed.join(', ')} (API keys configured)`,
-    }
+    else observed.push(s)
   }
 
   const parts: string[] = []
-  if (installed.length > 0) parts.push(`installed: ${installed.join(', ')}`)
+  if (installed.length > 0) parts.push(`registered: ${installed.join(', ')}`)
   if (missing.length > 0) parts.push(`not registered: ${missing.join(', ')}`)
+  if (enabled.length > 0) parts.push(`enabled: ${enabled.join(', ')}`)
+  if (disabled.length > 0) parts.push(`disabled: ${disabled.join(', ')}`)
+  if (unknown.length > 0) parts.push(`enablement unknown: ${unknown.join(', ')}`)
+  if (observed.length > 0) parts.push(`API key hints observed: ${observed.join(', ')}`)
   if (keyless.length > 0) {
-    const label =
-      detectPlatform().id === 'codex' ? 'API key not visible to this check' : 'API key missing'
+    const label = isCodex ? 'API key not visible to this check' : 'API key missing'
     parts.push(`${label}: ${keyless.map((k) => `${k.server} → ${k.envVar}`).join(', ')}`)
   }
+  parts.push(UNVERIFIED)
 
   // v3.9.5 — install_commands removed. Step B (`harnessed setup` install-base
   // chain) owns the install path for these manifests; doctor reports detection
@@ -95,7 +115,7 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
     // process env there (see search-mcp-keys.ts). Naming the two claude JSON files
     // would send a codex user to edit files that have no effect on their setup.
     fixes.push(
-      detectPlatform().id === 'codex'
+      isCodex
         ? `export ${vars} in your shell (on codex that is the only source this check can read — its MCP config is TOML and there is no JSON settings file)`
         : `set ${vars} in the ~/.claude/settings.json "env" block (e.g. {"env": {"${keyless[0]?.envVar}": "<your-key>"}}) ` +
             `or export it in your shell; a mcpServers.<name>.env entry in ~/.claude.json also works`,
@@ -106,6 +126,6 @@ export async function checkMcpAvailability(): Promise<CheckResult> {
     name: CHECK_NAME,
     status: 'warn',
     message: parts.join('; '),
-    fix: fixes.join('; '),
+    ...(fixes.length > 0 ? { fix: fixes.join('; ') } : {}),
   }
 }

@@ -17,6 +17,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const runHarnessArgs = vi.hoisted(() => vi.fn())
+vi.mock('../../src/installers/lib/runClaudeArgs.js', () => ({
+  runHarnessArgs,
+  runArgs: vi.fn(),
+}))
+
 let tmpRoot: string
 let origHome: string | undefined
 let origUserprofile: string | undefined
@@ -35,6 +41,10 @@ beforeEach(() => {
   tmpRoot = mkdtempSync(join(tmpdir(), 'check-mcp-avail-'))
   process.env.HOME = tmpRoot
   process.env.USERPROFILE = tmpRoot
+  vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+  vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+  runHarnessArgs.mockReset()
+  runHarnessArgs.mockRejectedValue(new Error('unexpected subprocess'))
   mkdirSync(join(tmpRoot, '.claude'), { recursive: true })
   vi.resetModules()
 })
@@ -63,14 +73,17 @@ function writeSettingsEnv(env: Record<string, string>): void {
 }
 
 describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detection', () => {
-  it('1. both present with keys in mcpServers env → status=pass', async () => {
+  it('1. registration plus MCP env keys is advisory, never runtime availability', async () => {
     writeClaudeConfig({
       'tavily-mcp': { type: 'stdio', command: 'npx', env: { TAVILY_API_KEY: 'tvly-x' } },
       'exa-mcp': { type: 'stdio', command: 'npx', env: { EXA_API_KEY: 'exa-x' } },
     })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('warn')
+    expectUnverified(r.message)
+    expect(r.message).toMatch(/enablement[^;.]*(?:unknown|not verified)/i)
+    expect(JSON.stringify(r)).not.toMatch(/tvly-x|exa-x/)
     expect(r.name).toBe('MCP servers (tavily/exa)')
     expect(r.message).toMatch(/tavily-mcp/)
     expect(r.message).toMatch(/exa-mcp/)
@@ -88,7 +101,7 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
-    expect(r.message).toMatch(/installed: exa-mcp/)
+    expect(r.message).toMatch(/registered[^;]*exa-mcp/)
     expect(r.message).toMatch(/not registered.*tavily-mcp/)
     expect(r.message).not.toMatch(/chrome-devtools/)
     // v3.9.5 — install_commands removed (Step B owns install). fix points to setup.
@@ -114,9 +127,9 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
-    expect(r.message).toBe(
-      'installed: tavily-mcp, exa-mcp; API key missing: tavily-mcp → TAVILY_API_KEY, exa-mcp → EXA_API_KEY',
-    )
+    expect(r.message).toMatch(/registered[^;]*tavily-mcp/)
+    expect(r.message).toMatch(/API key missing/)
+    expectUnverified(r.message)
     expect(r.fix).toBe(
       'set TAVILY_API_KEY / EXA_API_KEY in the ~/.claude/settings.json "env" block (e.g. {"env": {"TAVILY_API_KEY": "<your-key>"}}) ' +
         'or export it in your shell; a mcpServers.<name>.env entry in ~/.claude.json also works',
@@ -127,7 +140,7 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     expect(r.fix).toMatch(/export/)
   })
 
-  it('5. keys via ~/.claude/settings.json env block → status=pass (source priority 2)', async () => {
+  it('5. settings env keys do not verify authentication', async () => {
     writeClaudeConfig({
       'tavily-mcp': { type: 'stdio', command: 'npx' },
       'exa-mcp': { type: 'stdio', command: 'npx' },
@@ -135,10 +148,11 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     writeSettingsEnv({ TAVILY_API_KEY: 'tvly-x', EXA_API_KEY: 'exa-x' })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('warn')
+    expectUnverified(r.message)
   })
 
-  it('6. keys via process env → status=pass (source priority 3)', async () => {
+  it('6. process env keys do not verify authentication', async () => {
     writeClaudeConfig({
       'tavily-mcp': { type: 'stdio', command: 'npx' },
       'exa-mcp': { type: 'stdio', command: 'npx' },
@@ -147,7 +161,9 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     process.env.EXA_API_KEY = 'exa-proc'
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
-    expect(r.status).toBe('pass')
+    expect(r.status).toBe('warn')
+    expectUnverified(r.message)
+    expect(JSON.stringify(r)).not.toMatch(/tvly-proc|exa-proc/)
   })
 
   it('7. one installed with key + one missing → warn mentions only the real gaps', async () => {
@@ -157,25 +173,91 @@ describe('checkMcpAvailability — 4.32.22 tavily+exa target set + API-key detec
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
-    expect(r.message).toMatch(/installed: tavily-mcp/)
+    expect(r.message).toMatch(/registered[^;]*tavily-mcp/)
     expect(r.message).toMatch(/not registered.*exa-mcp/)
     expect(r.message).not.toMatch(/TAVILY_API_KEY/)
   })
 
   it('Codex: env keys not observed stays warn without claiming authentication or query failure', async () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
-    const codexMcp = await import('../../src/installers/lib/codexMcpServers.js')
-    vi.spyOn(codexMcp, 'isCodexMcpServerRegistered').mockResolvedValue(true)
+    runHarnessArgs.mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify([
+        { name: 'tavily-mcp', enabled: true },
+        { name: 'exa-mcp', enabled: true },
+      ]),
+      stderr: '',
+    })
     const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
     const r = await checkMcpAvailability()
     expect(r.status).toBe('warn')
-    expect(r.message).toBe(
-      'installed: tavily-mcp, exa-mcp; API key not visible to this check: tavily-mcp → TAVILY_API_KEY, exa-mcp → EXA_API_KEY',
-    )
+    expect(r.message).toMatch(/API key not visible to this check/)
+    expect(r.message).toMatch(/TAVILY_API_KEY/)
+    expect(r.message).toMatch(/EXA_API_KEY/)
+    expectUnverified(r.message)
     expect(r.message).not.toMatch(/API key missing|will fail|authentication failed/)
     expect(r.fix).toBe(
       'export TAVILY_API_KEY / EXA_API_KEY in your shell (on codex that is the only source this check can read — its MCP config is TOML and there is no JSON settings file)',
     )
     expect(r.install_commands).toBeUndefined()
   })
+
+  it.each([false, true])('Codex enabled=%s plus keys stays registered WARN', async (enabled) => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    process.env.TAVILY_API_KEY = 'doctor-tavily-secret'
+    process.env.EXA_API_KEY = 'doctor-exa-secret'
+    runHarnessArgs.mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify([
+        { name: 'tavily-mcp', enabled },
+        { name: 'exa-mcp', enabled },
+      ]),
+      stderr: '',
+    })
+    const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
+    const r = await checkMcpAvailability()
+    expect.soft(r.status).toBe('warn')
+    expect.soft(r.message).toMatch(/registered[^;]*tavily-mcp/)
+    expect.soft(r.message).toMatch(enabled ? /enabled/i : /disabled/i)
+    expectUnverified(r.message)
+    expect(r.message).not.toMatch(/not registered/)
+    expect(r.fix ?? '').not.toMatch(/harnessed setup|install|mcp add|enable/i)
+    expect(r.install_commands).toBeUndefined()
+    expect(JSON.stringify(r)).not.toMatch(/doctor-tavily-secret|doctor-exa-secret/)
+    expect(runHarnessArgs).toHaveBeenCalledTimes(1)
+    expect(runHarnessArgs.mock.calls[0]?.slice(0, 2)).toEqual(['codex', ['mcp', 'list', '--json']])
+  })
+
+  it.each([
+    ['CLI missing', -1, ''],
+    ['malformed JSON', 0, '[{oops'],
+    ['wrong payload shape', 0, '{"servers":[]}'],
+  ])('Codex %s means registration UNKNOWN, not missing', async (_label, exitCode, stdout) => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    runHarnessArgs.mockResolvedValue({ exitCode, stdout, stderr: 'fixture listing failure' })
+    const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
+    const r = await checkMcpAvailability()
+    expect(r.status).toBe('warn')
+    expect.soft(r.message).toMatch(/registration[^;.]*(?:unknown|not verified)/i)
+    expect.soft(r.message).not.toMatch(/not registered|API key missing/i)
+    expect.soft(r.fix ?? '').not.toMatch(/harnessed setup|install|mcp add/i)
+    expect(r.install_commands).toBeUndefined()
+  })
+
+  it('Codex a successful empty listing is known missing, with setup advisory', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    runHarnessArgs.mockResolvedValue({ exitCode: 0, stdout: '[]', stderr: '' })
+    const { checkMcpAvailability } = await import('../../src/cli/lib/check-mcp-availability.js')
+    const r = await checkMcpAvailability()
+    expect(r.status).toBe('warn')
+    expect(r.message).toMatch(/not registered[^;]*tavily-mcp[^;]*exa-mcp/)
+    expect(r.fix).toMatch(/harnessed setup/)
+    expect(r.install_commands).toBeUndefined()
+  })
 })
+
+function expectUnverified(message: string): void {
+  expect.soft(message).toMatch(/authentication[^;.]*(?:not verified|unverified)/i)
+  expect.soft(message).toMatch(/approval[^;.]*(?:not probed|unknown)/i)
+  expect.soft(message).toMatch(/runtime availability[^;.]*(?:not verified|unverified)/i)
+}

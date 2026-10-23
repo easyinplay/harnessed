@@ -53,6 +53,7 @@ spec:
       source: github
       repo: nextlevelbuilder/ui-ux-pro-max-skill
   verify:
+    # Claude plugin payload verification remains a separate installer-channel follow-up.
     cmd: "claude plugin list 2>&1 | grep -qw ui-ux-pro-max"
     timeout_ms: 10000
   uninstall:
@@ -69,7 +70,20 @@ spec:
         git_ref: e89d70e4bcd0ae04709a773db549cf61fcf813ac
         idempotent_check: "test -f ~/.agents/skills/ui-ux-pro-max/SKILL.md"
       verify:
-        cmd: "test -f ~/.agents/skills/ui-ux-pro-max/SKILL.md"
+        # verifySkillRuntime adds Python, CSV content and real domain/stack queries.
+        cmd: >-
+          test -f ~/.agents/skills/ui-ux-pro-max/SKILL.md
+          && test -f ~/.agents/skills/ui-ux-pro-max/scripts/search.py
+          && test -f ~/.agents/skills/ui-ux-pro-max/scripts/core.py
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/styles.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/prompts.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/colors.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/charts.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/landing.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/products.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/ux-guidelines.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/typography.csv
+          && test -f ~/.agents/skills/ui-ux-pro-max/data/stacks/html-tailwind.csv
         timeout_ms: 5000
   upstream_health:
     stability: stable

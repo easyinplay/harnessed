@@ -34,6 +34,7 @@ spec:
       source: github
       repo: OthmanAdi/planning-with-files
   verify:
+    # Claude plugin payload verification remains a separate installer-channel follow-up.
     cmd: "/plugin list | grep -q planning-with-files"
     timeout_ms: 5000
   uninstall:
@@ -48,7 +49,14 @@ spec:
         npm_version: ^1.5.7
         idempotent_check: "test -d ~/.agents/skills/planning-with-files || test -d ~/.claude/skills/planning-with-files"
       verify:
-        cmd: "test -f ~/.agents/skills/planning-with-files/SKILL.md || test -f ~/.claude/skills/planning-with-files/SKILL.md"
+        # A Claude skill cannot supply Codex helpers. verifySkillRuntime additionally
+        # checks Python syntax without executing catchup or reading session histories.
+        cmd: >-
+          test -f ~/.agents/skills/planning-with-files/SKILL.md
+          && test -f ~/.agents/skills/planning-with-files/scripts/session-catchup.py
+          && test -f ~/.agents/skills/planning-with-files/templates/task_plan.md
+          && test -f ~/.agents/skills/planning-with-files/templates/progress.md
+          && test -f ~/.agents/skills/planning-with-files/templates/findings.md
         timeout_ms: 5000
   upstream_health:
     stability: stable

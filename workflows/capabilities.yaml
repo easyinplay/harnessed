@@ -228,7 +228,7 @@ capabilities:
 
   playwright-cli:
     impl: npm-cli
-    cmd: playwright
+    cmd: playwright-cli
     since: v2.0
     category: tool-bundled-skill
     description: "AI 实时操作浏览器 一行 Bash (手层 — 探查 / 调试 / 一次性交互)"
@@ -240,18 +240,24 @@ capabilities:
     cmd: "@playwright/test"
     since: v2.0
     category: tool-plugin
-    description: "E2E test framework TypeScript (脑层 — 写测试 / 跑 CI / 断言 / fixtures / reporter)"
+    description: "E2E test framework TypeScript (project-level dependency; install @playwright/test in the project; global playwright-cli does not provide project imports)"
     routing_note:
       - subtask.type == 'e2e_test' AND subtask.language == 'typescript'
 
   webapp-testing:
-    impl: gstack
+    impl: user-skill
     install_type: user-skill
-    skill_dir: gstack
+    skill_dir: webapp-testing
     cmd: /webapp-testing
+    by_host:
+      codex:
+        impl: user-skill
+        cmd: $webapp-testing
+        install_type: user-skill
+        skill_dir: webapp-testing
     since: v2.0
     category: tool-bundled-skill
-    description: "Python 后端联动 E2E (筋骨层 — Python Playwright + with_server.py)"
+    description: "Anthropic webapp-testing skill + with_server.py; Python Playwright is a project-level dependency, never installed automatically"
     routing_note:
       - subtask.type == 'e2e_test' AND subtask.language == 'python'
 

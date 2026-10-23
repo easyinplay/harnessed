@@ -156,6 +156,7 @@ export async function runStepBInstall(
   manifestPaths: string[],
   runOpts: {
     updateInstalled?: boolean
+    system?: boolean
     quiet?: boolean
     onProgress?: (ev: StepBProgressEvent) => void
   } = {},
@@ -163,7 +164,7 @@ export async function runStepBInstall(
   const opts: InstallOpts = {
     apply: true,
     dryRun: false,
-    system: false,
+    system: runOpts.system === true,
     nonInteractive: true,
     fullDiff: false,
     color: 'auto',
@@ -336,12 +337,9 @@ export async function reclassifyForceUpdateFailures(
   return { failed, keptExisting }
 }
 
-/** Build the real idempotent_check probe used by setup's force-update fail-soft.
- *  Pre-validates the manifest set into a name→Manifest map, then returns a probe
- *  that runs the shared `isAlreadyInstalled` detector (native fs / plugin-registry
- *  first, shell idempotent_check fallback). `honorUpdateFlag` is left default —
- *  opts.updateInstalled is false here, so detection runs for real. Unknown names
- *  or read/validate failures resolve to `false` (treated as absent → stays failed). */
+/** Read-only retained-version probe for setup's force-update fail-soft.
+ *  Resolve the active harness before checking presence AND runtime health.
+ *  Unknown, gated, unreadable or unhealthy components stay genuine failures. */
 export async function makeIdempotentProbe(
   manifestPaths: string[],
 ): Promise<(name: string) => Promise<boolean>> {
@@ -350,7 +348,11 @@ export async function makeIdempotentProbe(
     try {
       const yamlSrc = await readFile(path, 'utf8')
       const v = validateManifestFile(yamlSrc, path)
-      if (v.ok) byName.set(v.manifest.metadata.name, v.manifest)
+      if (v.ok) {
+        const { resolveForHarness } = await import('../../installers/index.js')
+        const resolved = resolveForHarness(v.manifest)
+        if (!resolved.gate) byName.set(resolved.manifest.metadata.name, resolved.manifest)
+      }
     } catch {
       /* unreadable manifest → name simply absent from map → probe false */
     }
@@ -370,7 +372,9 @@ export async function makeIdempotentProbe(
     }
     const ctx: InstallContext = { manifest, opts, level: 'L2', cwd: process.cwd() }
     try {
-      return await isAlreadyInstalled(ctx)
+      if (!(await isAlreadyInstalled(ctx))) return false
+      const { verifyInstalled } = await import('../../installers/lib/verifyInstalled.js')
+      return (await verifyInstalled(ctx)) === null
     } catch {
       return false
     }

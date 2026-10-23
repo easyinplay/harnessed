@@ -7,7 +7,7 @@
 // verified 2026-05-20: `~/.claude/plugins/cache/planning-with-files/planning-with-files/2.34.0/`.
 // Missing → warn (non-blocking per warn ≠ fail R2.4.1) with `claude plugin install` remediation.
 
-import { readdir } from 'node:fs/promises'
+import { readdir, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { getPluginsRegistry } from '../../platform/platform.js'
@@ -28,6 +28,33 @@ const INSTALL_COMMANDS = [
   'claude plugin install planning-with-files',
 ] as const
 
+async function readableContent(path: string): Promise<boolean> {
+  try {
+    return (await stat(path)).isFile() && (await readFile(path, 'utf8')).trim().length > 0
+  } catch {
+    return false
+  }
+}
+
+async function hasResourceContent(path: string): Promise<boolean> {
+  try {
+    for (const entry of await readdir(path, { withFileTypes: true })) {
+      if (entry.isFile() && (await readableContent(join(path, entry.name)))) return true
+    }
+  } catch {
+    // Missing, unreadable, or not a resource directory.
+  }
+  return false
+}
+
+async function hasPlanningContent(root: string): Promise<boolean> {
+  return (
+    (await readableContent(join(root, 'SKILL.md'))) &&
+    (await hasResourceContent(join(root, 'scripts'))) &&
+    (await hasResourceContent(join(root, 'templates')))
+  )
+}
+
 export async function checkPlanningWithFiles(): Promise<CheckResult> {
   // v4.14.0 — plugin-cache probe is a claude-only concept. On a platform with
   // no plugin registry (codex) the warn + `claude plugin install` remediation
@@ -38,7 +65,8 @@ export async function checkPlanningWithFiles(): Promise<CheckResult> {
     return {
       name: 'planning-with-files plugin',
       status: 'skipped',
-      message: 'skipped (claude-only plugin-cache probe; no plugin registry on this platform)',
+      message:
+        'skipped (Claude-only plugin-cache probe; Codex installed skills, content and runtime are not verified)',
     }
   }
   const root = join(
@@ -50,20 +78,26 @@ export async function checkPlanningWithFiles(): Promise<CheckResult> {
     'planning-with-files',
   )
   try {
-    const entries = await readdir(root)
-    // entries are version subdirs (e.g., '2.34.0'); at least one = installed.
-    const versions = entries.filter((e) => /^\d+\.\d+/.test(e))
-    if (versions.length > 0) {
-      return {
-        name: 'planning-with-files plugin',
-        status: 'pass',
-        message: `installed (version ${versions.join(', ')})`,
+    const entries = await readdir(root, { withFileTypes: true })
+    for (const version of entries) {
+      if (!version.isDirectory() || !/^\d+\.\d+/.test(version.name)) continue
+      const versionRoot = join(root, version.name)
+      // Resources must accompany SKILL.md at the same candidate root.
+      for (const candidate of [join(versionRoot, 'skills', 'planning-with-files'), versionRoot]) {
+        if (await hasPlanningContent(candidate)) {
+          return {
+            name: 'planning-with-files plugin',
+            status: 'pass',
+            message: `local planning-with-files content detected (version ${version.name}; SKILL.md, scripts and templates); runtime execution not verified`,
+          }
+        }
       }
     }
     return {
       name: 'planning-with-files plugin',
       status: 'warn',
-      message: 'plugin directory exists but no version subdir found',
+      message:
+        'no readable nonempty planning-with-files skill, scripts and templates found together',
       fix: REMEDIATION,
       install_commands: INSTALL_COMMANDS,
     }
@@ -71,7 +105,7 @@ export async function checkPlanningWithFiles(): Promise<CheckResult> {
     return {
       name: 'planning-with-files plugin',
       status: 'warn',
-      message: 'not installed (plugin cache path missing)',
+      message: 'local plugin content not detected (plugin cache path missing or unreadable)',
       fix: REMEDIATION,
       install_commands: INSTALL_COMMANDS,
     }

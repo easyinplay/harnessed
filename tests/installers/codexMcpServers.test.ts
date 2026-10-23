@@ -53,7 +53,10 @@ import { probeSearchMcpKey } from '../../src/cli/lib/search-mcp-keys.js'
 import {
   invalidateCodexMcpCache,
   isCodexMcpServerRegistered,
+  listCodexMcpServerMetadata,
+  listCodexMcpServers,
   parseCodexMcpList,
+  parseCodexMcpMetadata,
 } from '../../src/installers/lib/codexMcpServers.js'
 import { isMcpServerRegistered } from '../../src/installers/lib/readClaudeConfig.js'
 
@@ -118,6 +121,42 @@ describe('parseCodexMcpList', () => {
   })
 })
 
+describe('sanitized Codex MCP metadata parser', () => {
+  it.each([
+    [true, true],
+    [false, false],
+    [undefined, null],
+    [null, null],
+    ['false', null],
+    [0, null],
+    [{ enabled: true }, null],
+  ])('normalizes enabled=%j to %j without exporting sensitive fields', (enabled, expected) => {
+    const stdout = JSON.stringify([
+      {
+        name: 'fixture-mcp',
+        enabled,
+        transport: { env: { SECRET: 'fixture-env-secret' }, bearer_token: 'fixture-token-secret' },
+        disabled_reason: 'fixture-reason-secret',
+        auth_status: 'fixture-auth-secret',
+      },
+    ])
+    const metadata = parseCodexMcpMetadata(stdout)
+    expect(metadata).toEqual([{ name: 'fixture-mcp', enabled: expected }])
+    expect(JSON.stringify(metadata)).not.toMatch(/secret|transport|disabled_reason|auth_status/)
+  })
+
+  it.each(['', '[{oops', '{}', 'null', 'MCP servers: fixture-mcp'])('%j is unknown', (stdout) => {
+    expect(parseCodexMcpMetadata(stdout)).toBeNull()
+  })
+
+  it('empty listing is known empty, while invalid entries expose no extra fields', () => {
+    expect(parseCodexMcpMetadata('[]')).toEqual([])
+    expect(parseCodexMcpMetadata('[null,{},1,{"name":""},{"name":"ok"}]')).toEqual([
+      { name: 'ok', enabled: null },
+    ])
+  })
+})
+
 describe('isMcpServerRegistered on codex', () => {
   let home: string
   beforeEach(() => {
@@ -140,6 +179,8 @@ describe('isMcpServerRegistered on codex', () => {
     vi.stubEnv('USERPROFILE', home)
     vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('TAVILY_API_KEY', '')
+    vi.stubEnv('EXA_API_KEY', '')
   })
   afterEach(() => {
     vi.unstubAllEnvs()
@@ -217,5 +258,159 @@ describe('isMcpServerRegistered on codex', () => {
     runHarnessArgs.mockResolvedValue({ exitCode: -1, stdout: '', stderr: 'codex CLI not found' })
     expect(await isMcpServerRegistered('tavily-mcp')).toBe(false)
     expect(opened.filter((p) => p.replace(/\\/g, '/').endsWith('config.toml'))).toEqual([])
+  })
+
+  it('disabled stays registered through both installer APIs without an add or enable command', async () => {
+    runHarnessArgs.mockResolvedValue({ exitCode: 0, stdout: JSON_OUT, stderr: '' })
+    expect(await isCodexMcpServerRegistered('exa-mcp-http')).toBe(true)
+    expect(await isMcpServerRegistered('exa-mcp-http')).toBe(true)
+    expect(await listCodexMcpServers()).toEqual(new Set(['tavily-mcp', 'exa-mcp-http']))
+    expect(runHarnessArgs).toHaveBeenCalledTimes(1)
+    expect(runHarnessArgs.mock.calls[0]?.slice(0, 2)).toEqual(['codex', ['mcp', 'list', '--json']])
+  })
+
+  it.each([
+    ['true', { enabled: true }, /enabled/i],
+    ['false', { enabled: false }, /disabled/i],
+    ['absent', {}, /enablement[^;.]*(?:unknown|not verified)/i],
+    ['null', { enabled: null }, /enablement[^;.]*(?:unknown|not verified)/i],
+    ['nonboolean', { enabled: 'false' }, /enablement[^;.]*(?:unknown|not verified)/i],
+  ])('doctor preserves %s enablement metadata instead of reducing it to registration', async (_label, fields, state) => {
+    vi.stubEnv('TAVILY_API_KEY', 'fixture-key-tavily')
+    vi.stubEnv('EXA_API_KEY', 'fixture-key-exa')
+    runHarnessArgs.mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify([
+        { name: 'tavily-mcp', ...fields },
+        { name: 'exa-mcp', ...fields },
+      ]),
+      stderr: '',
+    })
+    const r = await checkMcpAvailability()
+    expect.soft(r.status).toBe('warn')
+    expect.soft(r.message).toMatch(/registered[^;]*tavily-mcp/)
+    expect.soft(r.message).toMatch(state)
+    expect(r.fix ?? '').not.toMatch(/harnessed setup|mcp add|install/i)
+    expect(await isMcpServerRegistered('exa-mcp')).toBe(true)
+    expect(runHarnessArgs).toHaveBeenCalledTimes(1)
+  })
+
+  it('doctor and legacy set/boolean consumers share one concurrent cached listing', async () => {
+    runHarnessArgs.mockResolvedValue({ exitCode: 0, stdout: JSON_OUT, stderr: '' })
+    const [names, registered, doctor, metadata] = await Promise.all([
+      listCodexMcpServers(),
+      isCodexMcpServerRegistered('exa-mcp-http'),
+      checkMcpAvailability(),
+      listCodexMcpServerMetadata(),
+    ])
+    expect(names).toEqual(new Set(['tavily-mcp', 'exa-mcp-http']))
+    expect(metadata).toEqual([
+      { name: 'tavily-mcp', enabled: true },
+      { name: 'exa-mcp-http', enabled: false },
+    ])
+    expect(registered).toBe(true)
+    expect(doctor.status).toBe('warn')
+    expect(runHarnessArgs).toHaveBeenCalledTimes(1)
+    expect(runHarnessArgs.mock.calls[0]?.slice(0, 2)).toEqual(['codex', ['mcp', 'list', '--json']])
+  })
+
+  it('cache invalidation refreshes enablement and registration together', async () => {
+    runHarnessArgs.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '[{"name":"tavily-mcp","enabled":false},{"name":"exa-mcp","enabled":false}]',
+      stderr: '',
+    })
+    runHarnessArgs.mockResolvedValueOnce({
+      exitCode: 0,
+      stdout: '[{"name":"tavily-mcp","enabled":true}]',
+      stderr: '',
+    })
+    const before = await checkMcpAvailability()
+    expect.soft(before.message).toMatch(/disabled/i)
+    expect(await listCodexMcpServerMetadata()).toEqual([
+      { name: 'tavily-mcp', enabled: false },
+      { name: 'exa-mcp', enabled: false },
+    ])
+    expect(await isCodexMcpServerRegistered('exa-mcp')).toBe(true)
+    expect(runHarnessArgs).toHaveBeenCalledTimes(1)
+    invalidateCodexMcpCache()
+    const after = await checkMcpAvailability()
+    expect.soft(after.message).toMatch(/enabled/i)
+    expect(after.message).toMatch(/not registered[^;]*exa-mcp/)
+    expect(await listCodexMcpServers()).toEqual(new Set(['tavily-mcp']))
+    expect(await listCodexMcpServerMetadata()).toEqual([{ name: 'tavily-mcp', enabled: true }])
+    expect(runHarnessArgs).toHaveBeenCalledTimes(2)
+  })
+
+  it('transport, env, auth status and disabled reason never escape into doctor or legacy names', async () => {
+    const sensitive = {
+      transport: {
+        type: 'streamable_http',
+        url: 'https://fixture.invalid/?token=fixture-url-secret',
+        env: { TAVILY_API_KEY: 'fixture-env-secret' },
+        bearer_token: 'fixture-bearer-secret',
+      },
+      disabled_reason: 'fixture-reason-secret',
+      auth_status: 'fixture-auth-secret',
+    }
+    runHarnessArgs.mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify([
+        { name: 'tavily-mcp', enabled: false, ...sensitive },
+        { name: 'exa-mcp', enabled: true, ...sensitive },
+      ]),
+      stderr: 'fixture-stderr-secret',
+    })
+    const r = await checkMcpAvailability()
+    const names = await listCodexMcpServers()
+    const metadata = await listCodexMcpServerMetadata()
+    expect(names).toEqual(new Set(['tavily-mcp', 'exa-mcp']))
+    expect(metadata).toEqual([
+      { name: 'tavily-mcp', enabled: false },
+      { name: 'exa-mcp', enabled: true },
+    ])
+    const rendered = JSON.stringify({ doctor: r, names: [...(names ?? [])], metadata })
+    expect(rendered).not.toMatch(/fixture-(?:url|env|bearer|reason|auth|stderr)-secret/)
+    expect(rendered).not.toMatch(/transport|disabled_reason|auth_status|bearer_token/)
+    expect.soft(r.message).toMatch(/disabled/i)
+    expect.soft(r.message).toMatch(/authentication[^;.]*(?:not verified|unverified)/i)
+    expect.soft(r.message).toMatch(/approval[^;.]*(?:not probed|unknown)/i)
+    expect.soft(r.message).toMatch(/runtime availability[^;.]*(?:not verified|unverified)/i)
+    expect(opened.filter((p) => /(?:config\.toml|auth\.json)$/.test(p))).toEqual([])
+  })
+
+  it.each([
+    ['missing CLI', -1, ''],
+    ['malformed listing', 0, '[fixture-json-secret'],
+    ['object listing', 0, '{"servers":[]}'],
+  ])('%s keeps legacy null/false but doctor registration unknown without setup advice', async (_label, exitCode, stdout) => {
+    runHarnessArgs.mockResolvedValue({ exitCode, stdout, stderr: 'fixture-error-secret' })
+    expect(await listCodexMcpServerMetadata()).toBeNull()
+    expect(await listCodexMcpServers()).toBeNull()
+    expect(await isCodexMcpServerRegistered('tavily-mcp')).toBe(false)
+    const r = await checkMcpAvailability()
+    expect(r.status).toBe('warn')
+    expect.soft(r.message).toMatch(/registration[^;.]*(?:unknown|not verified)/i)
+    expect.soft(r.message).not.toMatch(/not registered/i)
+    expect.soft(r.fix ?? '').not.toMatch(/harnessed setup|install|mcp add/i)
+    expect(JSON.stringify(r)).not.toMatch(/fixture-(?:json|error)-secret/)
+    expect(runHarnessArgs).toHaveBeenCalledTimes(1)
+    expect(opened.filter((p) => /(?:config\.toml|auth\.json)$/.test(p))).toEqual([])
+  })
+
+  it('a rejected listing stays unknown and cached without leaking the error', async () => {
+    runHarnessArgs.mockRejectedValue(new Error('fixture-runtime-secret'))
+    const [metadata, names, doctor] = await Promise.all([
+      listCodexMcpServerMetadata(),
+      listCodexMcpServers(),
+      checkMcpAvailability(),
+    ])
+    expect(metadata).toBeNull()
+    expect(names).toBeNull()
+    expect(doctor.status).toBe('warn')
+    expect(doctor.message).toMatch(/registration unknown/)
+    expect(doctor.fix).toBeUndefined()
+    expect(JSON.stringify(doctor)).not.toContain('fixture-runtime-secret')
+    expect(runHarnessArgs).toHaveBeenCalledTimes(1)
   })
 })

@@ -3,11 +3,12 @@
 
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve as resolvePath } from 'node:path'
+import { dirname, join, resolve as resolvePath } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { resolveForHarness } from '../../src/installers/index.js'
 import { evalTestChain } from '../../src/installers/lib/nativeTest.js'
+import { resolveBash } from '../../src/installers/lib/resolveBash.js'
 import type { Manifest } from '../../src/installers/lib/types.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
@@ -248,7 +249,7 @@ describe('codex dispatch — 4.32.21 plugin-form real manifests (T6/T7/T9)', () 
 
 // v4.14.0 — 全量真实 manifest schema 校验 sweep(harness_overrides 落地的 5 个
 // manifest + 其余全部;此前只有点名校验,schema 演进缺全量回归网)。
-describe('GSD Codex skill-file checks', () => {
+describe('GSD installed resource checks', () => {
   let home: string
 
   beforeEach(() => {
@@ -258,6 +259,12 @@ describe('GSD Codex skill-file checks', () => {
   })
   afterEach(() => {
     vi.unstubAllEnvs()
+    if (
+      dirname(resolvePath(home)) !== resolvePath(tmpdir()) ||
+      !home.includes('harnessed-gsd-manifest-')
+    ) {
+      throw new Error(`Refusing to remove unexpected test root: ${home}`)
+    }
     rmSync(home, { recursive: true, force: true })
   })
 
@@ -275,31 +282,84 @@ describe('GSD Codex skill-file checks', () => {
     return [result.manifest.spec.install.idempotent_check ?? '', result.manifest.spec.verify.cmd]
   }
 
-  it.each(['.agents', '.codex'])('accepts a real SKILL.md under %s/skills', (root) => {
+  function evaluate(cmd: string): boolean {
+    const native = evalTestChain(cmd, home)
+    if (native !== null) return native
+    const shell = process.platform === 'win32' ? resolveBash().path : '/bin/sh'
+    if (!shell) throw new Error('A usable POSIX shell is required for manifest contract tests')
+    const result = spawnSync(shell, ['-c', cmd], {
+      cwd: home,
+      env: {
+        PATH: process.env.PATH,
+        SystemRoot: process.env.SystemRoot,
+        HOME: home.replaceAll('\\', '/'),
+        USERPROFILE: home,
+        CODEX_HOME: '',
+      },
+      windowsHide: true,
+      timeout: 5_000,
+      encoding: 'utf8',
+    })
+    if (result.error) throw result.error
+    return result.status === 0
+  }
+
+  function writeRuntime(host: 'claude' | 'codex'): string[] {
+    const root = join(home, `.${host}`)
+    const paths = [
+      ...['discuss-phase', 'plan-phase', 'execute-phase', 'verify-work', 'progress'].map((name) =>
+        join(root, 'gsd-core/workflows', `${name}.md`),
+      ),
+      join(root, 'gsd-core/bin/gsd-tools.cjs'),
+      join(root, 'gsd-core/references/ui-brand.md'),
+      ...['phase-researcher', 'planner', 'plan-checker', 'executor', 'verifier'].map((name) =>
+        join(root, 'agents', `gsd-${name}.${host === 'codex' ? 'toml' : 'md'}`),
+      ),
+    ]
+    for (const path of paths) {
+      mkdirSync(dirname(path), { recursive: true })
+      writeFileSync(path, '# installed resource\n')
+    }
+    return paths
+  }
+
+  it.each([
+    '.agents',
+    '.codex',
+  ])('requires a real SKILL.md under %s/skills and the core runtime', (root) => {
     const dir = join(home, root, 'skills', 'gsd-plan-phase')
     mkdirSync(dir, { recursive: true })
     writeFileSync(join(dir, 'SKILL.md'), '# GSD plan phase\n')
 
-    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(true)
+    const [presence, verify] = checks()
+    expect(evaluate(presence ?? '')).toBe(true)
+    expect(evaluate(verify ?? '')).toBe(false)
+    const resources = writeRuntime('codex')
+    expect(evaluate(verify ?? '')).toBe(true)
+    for (const path of resources) {
+      rmSync(path)
+      expect(evaluate(verify ?? ''), path).toBe(false)
+      writeFileSync(path, '# installed resource\n')
+    }
   })
 
   it.each(['.agents', '.codex'])('rejects empty indicator directories under %s/skills', (root) => {
     mkdirSync(join(home, root, 'skills', 'gsd-plan-phase'), { recursive: true })
 
-    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(false)
+    for (const cmd of checks()) expect(evaluate(cmd)).toBe(false)
   })
 
   it.each(['.agents', '.codex'])('rejects directories named SKILL.md under %s/skills', (root) => {
     mkdirSync(join(home, root, 'skills', 'gsd-plan-phase', 'SKILL.md'), { recursive: true })
 
-    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(false)
+    for (const cmd of checks()) expect(evaluate(cmd)).toBe(false)
   })
 
   it('rejects an absent skill on both paths', () => {
-    for (const cmd of checks()) expect(evalTestChain(cmd, home)).toBe(false)
+    for (const cmd of checks()) expect(evaluate(cmd)).toBe(false)
   })
 
-  it('preserves the Claude install, version pin and verify declarations', () => {
+  it('preserves the Claude install and version pin while requiring all core resources', () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'claude')
     const original = manifest()
     const result = resolveForHarness(original)
@@ -312,10 +372,19 @@ describe('GSD Codex skill-file checks', () => {
       idempotent_check: 'test -d ~/.claude/skills/gsd-plan-phase',
       installs_skills: [],
     })
-    expect(result.manifest.spec.verify).toEqual({
-      cmd: 'test -f ~/.claude/skills/gsd-plan-phase/SKILL.md',
-      timeout_ms: 10_000,
-    })
+    expect(result.manifest.spec.verify.timeout_ms).toBe(10_000)
+    const cmd = result.manifest.spec.verify.cmd
+    const skill = join(home, '.claude/skills/gsd-plan-phase/SKILL.md')
+    mkdirSync(dirname(skill), { recursive: true })
+    writeFileSync(skill, '# GSD plan phase\n')
+    expect(evalTestChain(cmd, home)).toBe(false)
+    const resources = writeRuntime('claude')
+    expect(evalTestChain(cmd, home)).toBe(true)
+    for (const path of [skill, ...resources]) {
+      rmSync(path)
+      expect(evalTestChain(cmd, home), path).toBe(false)
+      writeFileSync(path, '# installed resource\n')
+    }
   })
 })
 
@@ -343,3 +412,5 @@ describe('all real manifests validate (v4.14.0 sweep)', () => {
     expect(count).toBeGreaterThanOrEqual(11)
   })
 })
+
+import { spawnSync } from 'node:child_process'

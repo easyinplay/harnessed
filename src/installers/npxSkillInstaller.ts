@@ -46,10 +46,11 @@ import {
   warnDeclaredCollisions,
 } from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
-import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
+import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
-import { formatSpawnFail, formatVerifyFail } from './lib/verifyMessage.js'
+import { verifyInstalled } from './lib/verifyInstalled.js'
+import { formatSpawnFail } from './lib/verifyMessage.js'
 
 /** v4.16.0 T3 — Windows NTSTATUS hard-crash exits worth ONE retry. Observed in
  *  user dogfood: `npx skills add` died with 3221226505 (0xC0000409,
@@ -80,14 +81,6 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
     const e = pre.errors[0] ?? err(ctx, '/', 'preflight failed (no detail)', 'preflight')
     return { ok: false, phase: 'preflight', error: e }
   }
-  // v3.9.6 — idempotent_check probe (skip install if already-installed).
-  if (await isAlreadyInstalled(ctx)) {
-    // Phase 59 — the receipt was unreachable on this path; record what is
-    // actually present so `harnessed status` can stop under-reporting.
-    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
-    return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
-  }
-
   // D2.1-5 (relaxed) — assert --copy is present. `--global` is OPTIONAL.
   // `--copy` alone already materializes SKILL.md into ~/.claude/skills/<name>/
   // (Windows symlink-safe); `--global` only additionally suppresses the cwd
@@ -110,6 +103,13 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
           '`--copy` materializes files into ~/.claude/skills/ (Windows symlink-safe); `--global` is optional and unsupported by some skill types (e.g. PromptScript)',
       },
     }
+  }
+
+  if (await isAlreadyInstalled(ctx)) {
+    const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
+    if (verifyFailure) return verifyFailure
+    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.npm_version, '')
+    return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
   // v4.14.0 T4 — per-platform --agent injection. The skills CLI targets a
@@ -216,33 +216,8 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
     }
   }
 
-  // Optional secondary verify: run the manifest verify.cmd (often a grep
-  // check) for parity with other installers and to surface install-specific
-  // post-conditions like "CLAUDE.md was patched".
-  // v3.0.2: verify honors spec.verify.timeout_ms (default 15s).
-  const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
-  // v23 (4.5.1) — verify cmds use POSIX builtins (test/grep/|); route through Git Bash on Windows.
-  // v4.20.1: neutralCwd (sister install spawn above).
-  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs, {
-    posixShell: true,
-    neutralCwd: true,
-  })
-  if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
-  const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0
-  if (vr.exitCode !== expected) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/verify/cmd',
-        // v4.15.1 — unified verify-fail format (cmd + output tail; no dangling colon).
-        formatVerifyFail(ctx.manifest.spec.verify.cmd, vr.exitCode, expected, vr.stdout, vr.stderr),
-        'verify-failed',
-      ),
-    }
-  }
+  const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
+  if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
 
   await updateInstalled(ctx.cwd, name, install.npm_version, '')
   return { ok: true, backupId: bk.backupId, appliedFiles: [skillMdPath] }

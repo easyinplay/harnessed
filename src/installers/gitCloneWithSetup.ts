@@ -26,11 +26,14 @@
 // silent skip), aligned with ADR 0001's reproducibility requirement.
 
 import { spawn } from 'node:child_process'
+import { resolve } from 'node:path'
+import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { parseGitCloneDest } from './lib/gitCloneArgs.js'
+import { repairGstackCodexRuntimeAfterConfirm } from './lib/gstackRuntime.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
 import { killProcessTree } from './lib/killTree.js'
 import {
@@ -39,10 +42,11 @@ import {
   warnDeclaredCollisions,
 } from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
-import { DEFAULT_INSTALL_TIMEOUT_MS, DEFAULT_VERIFY_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
+import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
-import { formatSpawnFail, formatVerifyFail } from './lib/verifyMessage.js'
+import { verifyInstalled } from './lib/verifyInstalled.js'
+import { formatSpawnFail } from './lib/verifyMessage.js'
 
 // D-15 inline SHA-verify. Runs `git rev-parse HEAD` in the cloned dir,
 // compares against the manifest's git_ref. Only invoked after a successful
@@ -136,14 +140,6 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
     const e = pre.errors[0] ?? err(ctx, '/', 'preflight failed (no detail)', 'preflight')
     return { ok: false, phase: 'preflight', error: e }
   }
-  // v3.9.6 — idempotent_check probe (skip install if already-installed).
-  if (await isAlreadyInstalled(ctx)) {
-    // Phase 59 — the receipt was unreachable on this path; record what is
-    // actually present so `harnessed status` can stop under-reporting.
-    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.git_ref, '')
-    return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
-  }
-
   // Strict SHA-pin (ADR 0001 + D-15). Schema regex permits SemVer too, but
   // this installer enforces the tighter invariant: rev-parse HEAD returns a
   // SHA, so the authority must be a SHA. SemVer git_ref → preflight-layer error.
@@ -180,6 +176,13 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
         suggest: 'use `git clone [flags] <url> <dest>` with an explicit destination directory',
       },
     }
+  }
+
+  if (await isAlreadyInstalled(ctx)) {
+    const verifyFailure = await verifyInstalled(ctx)
+    if (verifyFailure) return verifyFailure
+    await recordObservedInstall(ctx.cwd, ctx.manifest.metadata.name, install.git_ref, '')
+    return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
 
   // L2 — per-user (~/.claude/skills/<name>/). pure-create DiffPlan:
@@ -282,28 +285,35 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
     }
   }
 
-  // verify cmd (e.g. `test -f ~/.claude/skills/<name>/SKILL.md`).
-  // v3.0.2: verify honors spec.verify.timeout_ms (default 15s).
-  const verifyTimeoutMs = ctx.manifest.spec.verify.timeout_ms ?? DEFAULT_VERIFY_TIMEOUT_MS
-  const vr = await spawnCmd(ctx, ctx.manifest.spec.verify.cmd, [], verifyTimeoutMs, {
-    posixShell: true,
-  })
-  if (!('exitCode' in vr)) return { ...vr, backupId: bk.backupId } as InstallResult
-  const expected = ctx.manifest.spec.verify.expected_exit_code ?? 0
-  if (vr.exitCode !== expected) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/verify/cmd',
-        // v4.15.1 — unified verify-fail format (cmd + output tail; no dangling colon).
-        formatVerifyFail(ctx.manifest.spec.verify.cmd, vr.exitCode, expected, vr.stdout, vr.stderr),
-        'verify-failed',
-      ),
+  // The existing-install branch above never repairs. This path has L2 consent.
+  if (name === 'gstack' && detectPlatform().id === 'codex') {
+    try {
+      await repairGstackCodexRuntimeAfterConfirm({
+        host: 'codex',
+        sourceDir: resolve(install.cwd ?? ctx.cwd, cloneTarget),
+        codexHome: install.env?.CODEX_HOME,
+        confirmed: true,
+      })
+    } catch (error) {
+      return {
+        ok: false,
+        phase: 'verify',
+        backupId: bk.backupId,
+        error: {
+          ...err(
+            ctx,
+            '/spec/verify/cmd',
+            `gstack runtime repair failed: ${(error as Error).message}`,
+            'verify-failed',
+          ),
+          suggest:
+            'Repair the gstack source dependencies, then explicitly rerun `harnessed setup --update-installed`.',
+        },
+      }
     }
   }
+  const verifyFailure = await verifyInstalled(ctx)
+  if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
 
   await updateInstalled(ctx.cwd, name, install.git_ref, '')
   return { ok: true, backupId: bk.backupId, appliedFiles: [cloneTarget] }

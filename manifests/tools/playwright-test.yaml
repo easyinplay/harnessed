@@ -3,17 +3,19 @@ apiVersion: harnessed/v1
 kind: Manifest
 metadata:
   name: playwright-test
-  display_name: Playwright Test (microsoft/playwright-cli)
-  description: End-to-end browser test framework. Frontend e2e (TS / React / Vue) default per decision_rules e2e-default.
+  display_name: Playwright CLI Browser Automation Skill
+  description: Microsoft browser automation skill for playwright-cli, not the @playwright/test test runner.
   upstream:
     source: github.com/microsoft/playwright-cli
     homepage: https://github.com/microsoft/playwright-cli
     repository: https://github.com/microsoft/playwright-cli.git
     license: Apache-2.0
     notice: |
-      playwright-test skill from microsoft/playwright-cli (Microsoft official, Apache-2.0; .planning/research/v0.2.0-extensions.md § 3.2).
-      testing category — frontend e2e default; routed via decision_rules.yaml `e2e-default` rule (priority 50 at L107-114).
-      perf / a11y / memory-leak forbidden — those route to chrome-devtools-mcp per `perf-a11y-memory` rule (L79-95).
+      microsoft/playwright-cli browser automation skill (Microsoft, Apache-2.0).
+      Existing name retained for compatibility; L2 installs skill content only.
+      Separate playwright-cli L4 manifest installs @playwright/cli and Chromium without system dependencies.
+      @playwright/test is a project-level dependency: global CLI does not provide project imports or modify package.json.
+      Performance, a11y and memory diagnostics use chrome-devtools-mcp.
 spec:
   type: cc-skill-pack
   component_type: command

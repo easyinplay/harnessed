@@ -47,6 +47,7 @@ import { printSetupVersionBanner } from './lib/version-banner.js'
 
 interface RawOpts {
   dryRun?: boolean
+  system?: boolean
   userLang?: string
   platform?: string // Phase C / D5 — target harness platform (claude | codex)
   nonInteractive?: boolean
@@ -117,6 +118,39 @@ async function listBaseManifests(pkgRoot: string): Promise<string[]> {
     } catch {}
   }
   return out
+}
+
+function mergeStepBResults(first: StepBResult, next: StepBResult): void {
+  const failureName = (failure: string): string => failure.split(': ', 1)[0] ?? failure
+  // A skipped retry must not replace a prior result, including a rescuable skip.
+  const known = new Set([
+    ...first.installed,
+    ...first.alreadyInstalled,
+    ...first.skipped.map((entry) => entry.name),
+    ...first.failed.map(failureName),
+    ...(first.keptExisting ?? []).map((entry) => entry.name),
+  ])
+  const skipped = next.skipped.filter((entry) => !known.has(entry.name))
+  const replaced = new Set([
+    ...next.installed,
+    ...next.alreadyInstalled,
+    ...next.failed.map(failureName),
+    ...(next.keptExisting ?? []).map((entry) => entry.name),
+    ...skipped.map((entry) => entry.name),
+  ])
+  first.installed = first.installed.filter((name) => !replaced.has(name)).concat(next.installed)
+  first.alreadyInstalled = first.alreadyInstalled
+    .filter((name) => !replaced.has(name))
+    .concat(next.alreadyInstalled)
+  first.failed = first.failed
+    .filter((entry) => !replaced.has(failureName(entry)))
+    .concat(next.failed)
+  first.skipped = first.skipped.filter((entry) => !replaced.has(entry.name)).concat(skipped)
+  first.keptExisting = (first.keptExisting ?? [])
+    .filter((entry) => !replaced.has(entry.name))
+    .concat(next.keptExisting ?? [])
+  first.componentTypes = { ...first.componentTypes, ...next.componentTypes }
+  first.elapsedMs += next.elapsedMs
 }
 
 /** v3.9.21 — grouped output by component_type. Order: MCP servers →
@@ -263,7 +297,7 @@ export function registerSetup(program: Command): void {
   program
     .command('setup')
     .description(
-      'One-shot onboarding: install workflow skills + base manifests to ~/.claude/ (immediate by default — use --dry-run for preview)',
+      'One-shot onboarding: install workflow skills + base manifests for the selected host (immediate by default — use --dry-run for preview)',
     )
     .option('--dry-run', 'preview only — do not write to disk (opt-in for advanced users)')
     .option(
@@ -278,6 +312,7 @@ export function registerSetup(program: Command): void {
     // (default opt-in). `--non-interactive` skips prompts for CI/scripts;
     // `--no-auto-install` keeps v3.8.x advisory-only behavior.
     .option('--non-interactive', 'skip all confirm prompts (CI / scripted setup)')
+    .option('--system', 'allow L4 system-wide installs (e.g. global npm install)')
     .option('--no-auto-install', 'do not prompt to auto-install missing plugins (advisory only)')
     // v3.9.6 — force re-install for already-installed third-party plugins
     // (skip idempotent_check probe). MCP installers ignore this flag —
@@ -354,6 +389,7 @@ export function registerSetup(program: Command): void {
       )
       const b = await runStepBInstall(manifestPaths, {
         updateInstalled: forceFirstPass,
+        system: raw.system === true,
         quiet: true,
         onProgress: progress.onProgress,
       })
@@ -407,6 +443,7 @@ export function registerSetup(program: Command): void {
             console.log(`\nforce-updating ${b.alreadyInstalled.length} plugin(s)...`)
             const b2 = await runStepBInstall(manifestPaths, {
               updateInstalled: true,
+              system: raw.system === true,
               quiet: true,
               onProgress: progress.onProgress,
             })
@@ -429,6 +466,7 @@ export function registerSetup(program: Command): void {
                 `\n  ${b2.keptExisting.length} plugin(s) kept their existing version — refresh failed but the prior install is still usable. Re-run \`harnessed setup\` later to retry the update.`,
               )
             }
+            mergeStepBResults(b, b2)
           }
         }
       }
@@ -665,8 +703,8 @@ export function registerSetup(program: Command): void {
       await enableAgentTeamsInSettings()
       await enableUserLangInSettings(raw.userLang)
 
-      // v4.13.0 — L4 rescue: Step B is nonInteractive so L4 manifests (global
-      // npm installs, e.g. ctx7) skip with level-flag-missing every run. Offer
+      // L4 rescue: without --system, Step B skips global npm installs with
+      // level-flag-missing. Offer
       // an interactive opt-in here (TTY only; dynamic import mirrors the
       // runAutoInstall pattern so setup tests need no new mock exports).
       if (
@@ -677,8 +715,33 @@ export function registerSetup(program: Command): void {
         const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
         if (isTty) {
           const { runL4Rescue } = await import('./lib/l4-rescue.js')
-          await runL4Rescue(manifestPaths, b.skipped)
+          const rescue = await runL4Rescue(manifestPaths, b.skipped)
+          b.installed.push(...rescue.installed)
+          for (const failure of rescue.failed) {
+            const detail = `${failure.name}: ${failure.reason}`
+            b.failed.push(detail)
+            console.error(`  [L4 rescue] ${detail}`)
+          }
+          const resolved = new Set([
+            ...rescue.installed,
+            ...rescue.failed.map((failure) => failure.name),
+          ])
+          b.skipped = b.skipped.filter(
+            (skip) => skip.reason !== 'level-flag-missing' || !resolved.has(skip.name),
+          )
         }
+      }
+
+      if (
+        raw.system !== true &&
+        b.skipped.some(
+          (skip) =>
+            skip.reason === 'level-flag-missing' || skip.reason.startsWith('L4 system-scope'),
+        )
+      ) {
+        console.warn(
+          '\nL4 system-wide installs remain skipped. To explicitly authorize them, run: harnessed setup --system --non-interactive',
+        )
       }
 
       // v4.18.0 — optional-tier offer (manifests/optional/: codegraph / ecc /
@@ -707,13 +770,15 @@ export function registerSetup(program: Command): void {
           `\n${b.failed.length} component(s) failed — see the notes in the tables above; re-run \`harnessed setup\` to retry, or run \`harnessed doctor\` for environment diagnostics.`,
         )
       }
+      const configured =
+        b.installed.length + b.alreadyInstalled.length + (b.keptExisting?.length ?? 0)
       console.log(
         t('setup.complete', {
           skills: skillsInstalled,
-          manifests: b.installed.length + b.alreadyInstalled.length,
+          manifests: configured,
         }),
       )
-      if (b.alreadyInstalled.length > 0 || b.installed.length > 0) {
+      if (configured > 0) {
         // v4.14.0 — hint follows the active platform ("/mcp in Claude Code" is
         // meaningless on codex; there the check is `codex mcp list`).
         console.log(t(detectPlatform().id === 'codex' ? 'setup.mcp_hint_codex' : 'setup.mcp_hint'))

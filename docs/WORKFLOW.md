@@ -409,15 +409,19 @@ v3.0 = harnessed = **8-layer namespace-layered architecture**。每 layer 单一
 | Entry | impl | cmd | requires |
 |---|---|---|---|
 | `planning-with-files` | claude-code-plugin | `/plan` | plugin `planning-with-files >=2.2.0` |
-| `playwright-test` | npm-cli | `@playwright/test` | v3 reclassify from special-purpose |
+| `playwright-test` | npm-cli | `@playwright/test` | project-level package |
 
 ### 7.6 category=tool-bundled-skill (3)
 
 | Entry | impl | cmd | 实现 / plugin |
 |---|---|---|---|
 | `completion-gate` | harnessed-bundled | (无上游 — harnessed 自有 CLI) | `harnessed checkpoint complete` (`src/cli/checkpoint.ts`) |
-| `webapp-testing` | gstack | `/webapp-testing` | v3 reclass (sister gstack 起源, paradigm 非 plugin) |
-| `playwright-cli` | npm-cli | `playwright` | v3 reclass (AI-probe paradigm 非 plugin 非 CLI 标准) |
+| `webapp-testing` | user-skill (anthropics/skills) | `/webapp-testing` (Claude), `$webapp-testing` (Codex) | Independent L2 base manifest; verifies readable same-root `SKILL.md` + `scripts/with_server.py` and isolated Python `--help` |
+| `playwright-cli` | npm-cli | `playwright-cli` | Separate L4 runtime: `@playwright/cli@0.1.22` + Chromium; no system dependencies or project package changes |
+
+The `playwright-test` manifest keeps its existing name for compatibility and installs browser automation guidance only. The independent `playwright-cli` manifest installs and verifies the browser runtime. `@playwright/test` is a project-level dependency: the global CLI does not make it importable in a user project. Neither manifest changes the user's `package.json` or installs the project's test runner.
+
+The `webapp-testing` skill comes from the official `anthropics/skills` repository, not gstack. Its helper verification starts no server or browser. Python Playwright and its compatible browsers remain project-managed dependencies, just as `@playwright/test` belongs to the TypeScript project. Setup does not run pip or claim that either project dependency is importable.
 
 ### 7.7 category=agent-platform (3 — L5b Execution Mechanism backbone)
 

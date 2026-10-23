@@ -26,7 +26,22 @@ spec:
     # purpose so the post-install diff still reports any future unprefixed name.
     installs_skills: []
   verify:
-    cmd: "test -f ~/.claude/skills/gsd-plan-phase/SKILL.md"
+    # Filesystem floor; verifySkillRuntime also checks readable, nonempty resources.
+    # Only core phase roles are required, not the optional GSD role catalog.
+    cmd: >-
+      test -f ~/.claude/skills/gsd-plan-phase/SKILL.md
+      && test -f ~/.claude/gsd-core/workflows/discuss-phase.md
+      && test -f ~/.claude/gsd-core/workflows/plan-phase.md
+      && test -f ~/.claude/gsd-core/workflows/execute-phase.md
+      && test -f ~/.claude/gsd-core/workflows/verify-work.md
+      && test -f ~/.claude/gsd-core/workflows/progress.md
+      && test -f ~/.claude/gsd-core/bin/gsd-tools.cjs
+      && test -f ~/.claude/gsd-core/references/ui-brand.md
+      && test -f ~/.claude/agents/gsd-phase-researcher.md
+      && test -f ~/.claude/agents/gsd-planner.md
+      && test -f ~/.claude/agents/gsd-plan-checker.md
+      && test -f ~/.claude/agents/gsd-executor.md
+      && test -f ~/.claude/agents/gsd-verifier.md
     timeout_ms: 10000
   uninstall:
     cmd: "npx --yes @opengsd/gsd-core@latest --uninstall --claude"
@@ -42,7 +57,26 @@ spec:
         npm_version: ^1.7.0
         idempotent_check: "test -f ~/.agents/skills/gsd-plan-phase/SKILL.md || test -f ~/.codex/skills/gsd-plan-phase/SKILL.md"
       verify:
-        cmd: "test -f ~/.agents/skills/gsd-plan-phase/SKILL.md || test -f ~/.codex/skills/gsd-plan-phase/SKILL.md"
+        # Match the install target without dynamic substitution; custom homes never
+        # fall back to resources under ~/.codex. Shared or native legacy skills work.
+        cmd: >-
+          if test -n "$CODEX_HOME"; then GSD_VERIFY_ROOT="$CODEX_HOME"; else GSD_VERIFY_ROOT="$HOME/.codex"; fi;
+          if test -f "$HOME/.agents/skills/gsd-plan-phase/SKILL.md"; then GSD_VERIFY_SKILL="$HOME/.agents/skills/gsd-plan-phase/SKILL.md"; else GSD_VERIFY_SKILL="$GSD_VERIFY_ROOT/skills/gsd-plan-phase/SKILL.md"; fi;
+          test -f "$GSD_VERIFY_SKILL" && test -r "$GSD_VERIFY_SKILL" && test -s "$GSD_VERIFY_SKILL" || exit 1;
+          for GSD_VERIFY_RESOURCE in
+          gsd-core/workflows/discuss-phase.md
+          gsd-core/workflows/plan-phase.md
+          gsd-core/workflows/execute-phase.md
+          gsd-core/workflows/verify-work.md
+          gsd-core/workflows/progress.md
+          gsd-core/bin/gsd-tools.cjs
+          gsd-core/references/ui-brand.md
+          agents/gsd-phase-researcher.toml
+          agents/gsd-planner.toml
+          agents/gsd-plan-checker.toml
+          agents/gsd-executor.toml
+          agents/gsd-verifier.toml;
+          do test -f "$GSD_VERIFY_ROOT/$GSD_VERIFY_RESOURCE" && test -r "$GSD_VERIFY_ROOT/$GSD_VERIFY_RESOURCE" && test -s "$GSD_VERIFY_ROOT/$GSD_VERIFY_RESOURCE" || exit 1; done
         timeout_ms: 10000
   upstream_health:
     stability: stable

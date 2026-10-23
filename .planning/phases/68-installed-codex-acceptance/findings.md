@@ -48,3 +48,9 @@
 - Codex app-server mcpServerStatus/list reported Exa 3.4.2 and Tavily 0.2.22 with tool schemas and toolsError=null.
 - Fresh Codex headless discovery/search attempts reached tavily-mcp but returned: MCP tool call requires approval, but approval policy is never.
 - Kept safety settings unchanged. Codex-specific setup/doctor hints now describe process-env visibility, not guaranteed query failure.
+
+## 2026-10-23 Remaining-blocker recheck
+- At 08:11 local time, the same 109854-byte generated design-consultation skill copied and renamed successfully through Git Bash in a fresh temp root.
+- The same copy/rename also succeeded under the actual Codex skills namespace using a unique gstack-harnessed-probe name. Only test-owned paths were moved; the copy was retained outside the skills namespace afterward.
+- These probes do not establish the original cause. No evidence justifies changing ACLs or blaming a particular scanner.
+- Retrying official upstream setup once with --host codex --no-browser after the successful probes; existing ownership protection remains in effect.

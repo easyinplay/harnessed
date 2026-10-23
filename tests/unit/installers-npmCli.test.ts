@@ -15,6 +15,10 @@ import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
+vi.mock('../../src/installers/lib/binaryProbe.js', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../../src/installers/lib/binaryProbe.js')>()
+  return { ...real, binaryOnPath: vi.fn(() => false) }
+})
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(async () => undefined),
   readFile: vi.fn(async () => {
@@ -33,8 +37,11 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
+import { writeFile } from 'node:fs/promises'
+import { binaryOnPath } from '../../src/installers/lib/binaryProbe.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { installNpmCli } from '../../src/installers/npmCli.js'
+import { validateManifestFile } from '../../src/manifest/validate.js'
 
 const spawnMock = vi.mocked(spawn)
 
@@ -128,6 +135,155 @@ function ctx(over?: Partial<InstallOpts>, modifyManifest?: (m: Manifest) => void
 describe('installNpmCli', () => {
   beforeEach(() => {
     spawnMock.mockReset()
+    vi.mocked(binaryOnPath).mockReset().mockReturnValue(false)
+    vi.mocked(writeFile).mockClear()
+  })
+
+  it.each([
+    false,
+    true,
+  ])('verify strips credentials and startup hooks for updateInstalled=%s while install retains them', async (updateInstalled) => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'fixture-parent-key')
+    vi.stubEnv('BASH_ENV', 'fixture-parent-startup')
+    vi.stubEnv('NODE_OPTIONS', '--require=fixture-parent-hook')
+    try {
+      const c = ctx({ updateInstalled, system: updateInstalled, quiet: true })
+      c.manifest.spec.install.env = {
+        OPENAI_API_KEY: 'fixture-install-key',
+        NPM_TOKEN: 'fixture-install-token',
+        PYTHONSTARTUP: 'fixture-install-startup',
+        PLAYWRIGHT_AUTH_TOKEN: 'fixture-browser-token',
+        GSTACK_AUTH_TOKEN: 'fixture-gstack-token',
+        CODEX_HOME: '',
+        PLAYWRIGHT_BROWSERS_PATH: '/fixture/browsers',
+      }
+      vi.mocked(binaryOnPath).mockReturnValue(true)
+      spawnMock.mockImplementation(
+        () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+
+      await expect(installNpmCli(c)).resolves.toMatchObject({ ok: true })
+      expect(spawnMock).toHaveBeenCalledTimes(updateInstalled ? 2 : 1)
+      const env = spawnMock.mock.calls.at(-1)?.[2]?.env
+      for (const key of [
+        'ANTHROPIC_API_KEY',
+        'OPENAI_API_KEY',
+        'NPM_TOKEN',
+        'BASH_ENV',
+        'NODE_OPTIONS',
+        'PYTHONSTARTUP',
+        'PLAYWRIGHT_AUTH_TOKEN',
+        'GSTACK_AUTH_TOKEN',
+      ]) {
+        expect(env?.[key], key).toBeUndefined()
+      }
+      expect(env?.CODEX_HOME).toBe('')
+      expect(env?.PLAYWRIGHT_BROWSERS_PATH).toBe('/fixture/browsers')
+      if (updateInstalled) {
+        const installEnv = spawnMock.mock.calls[0]?.[2]?.env
+        expect(installEnv?.ANTHROPIC_API_KEY).toBe('fixture-parent-key')
+        expect(installEnv?.OPENAI_API_KEY).toBe('fixture-install-key')
+        expect(installEnv?.NODE_OPTIONS).toBe('--require=fixture-parent-hook')
+      }
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('a detected CLI with broken verify fails without installing globally or recording a receipt', async () => {
+    vi.mocked(binaryOnPath).mockReturnValue(true)
+    spawnMock.mockImplementation(
+      () =>
+        makeChild({ exitCode: 1, stderr: 'runtime missing' }) as unknown as ReturnType<
+          typeof spawn
+        >,
+    )
+
+    const result = await installNpmCli(ctx({ updateInstalled: false, system: false, quiet: true }))
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'verify',
+      error: { keyword: 'verify-failed' },
+    })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).toContain('ctx7 --version')
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('npm install')
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('no-update verifies a detected CLI and records it without an L4 install', async () => {
+    vi.mocked(binaryOnPath).mockReturnValue(true)
+    spawnMock.mockImplementation(
+      () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+    )
+
+    await expect(
+      installNpmCli(ctx({ updateInstalled: false, system: false, quiet: true })),
+    ).resolves.toMatchObject({ ok: true, alreadyInstalled: true })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).toContain('ctx7 --version')
+    expect(writeFile).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    0, 1,
+  ])('the real Playwright manifest verifies detected PATH presence without reinstalling (exit %i)', async (exitCode) => {
+    const fs = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
+    const path = 'manifests/tools/playwright-cli.yaml'
+    const loaded = validateManifestFile(await fs.readFile(path, 'utf8'), path)
+    if (!loaded.ok) throw new Error(JSON.stringify(loaded.errors))
+    const c = ctx({ updateInstalled: false, system: false, quiet: true })
+    c.manifest = loaded.manifest
+    const install = c.manifest.spec.install
+    if (install.method !== 'npm-cli') throw new Error('expected the real npm-cli manifest')
+    expect(c.manifest.spec.verify.cmd).toMatch(/^set -eu\n/)
+    vi.mocked(binaryOnPath).mockImplementation((bin) => bin === 'playwright-cli')
+    spawnMock.mockImplementation(
+      () => makeChild({ exitCode }) as unknown as ReturnType<typeof spawn>,
+    )
+
+    const result = await installNpmCli(c)
+
+    expect(binaryOnPath).toHaveBeenCalledExactlyOnceWith('playwright-cli')
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.at(-1)).toBe(c.manifest.spec.verify.cmd)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('npm install')
+    if (exitCode === 0) {
+      expect(result).toMatchObject({ ok: true, alreadyInstalled: true })
+      expect(writeFile).toHaveBeenCalledTimes(1)
+      const state = JSON.parse(String(vi.mocked(writeFile).mock.calls[0]?.[1]))
+      expect(state.installed['playwright-cli'].version).toBe(install.npm_version)
+    } else {
+      expect(result).toMatchObject({
+        ok: false,
+        phase: 'verify',
+        error: { keyword: 'verify-failed' },
+      })
+      expect(writeFile).not.toHaveBeenCalled()
+    }
+  })
+
+  it('dry-run does not verify or record a CLI even when its binary is present', async () => {
+    vi.mocked(binaryOnPath).mockReturnValue(true)
+
+    await expect(
+      installNpmCli(ctx({ updateInstalled: false, apply: false, dryRun: true, quiet: true })),
+    ).resolves.toMatchObject({ aborted: true })
+    expect(binaryOnPath).not.toHaveBeenCalled()
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('force-update of a detected CLI still requires --system before any global install', async () => {
+    vi.mocked(binaryOnPath).mockReturnValue(true)
+
+    await expect(
+      installNpmCli(ctx({ updateInstalled: true, system: false, quiet: true })),
+    ).resolves.toMatchObject({ aborted: true, reason: 'level-flag-missing' })
+    expect(binaryOnPath).not.toHaveBeenCalled()
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
   })
 
   it('dispatch-mismatch: non-npm-cli method short-circuits to preflight failure', async () => {

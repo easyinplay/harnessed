@@ -320,6 +320,8 @@ primitives:
 # ─────────────────────────────────────────────────────────────────────────────
 host_map_notes:
   codex:
+    - "Codex planning helper 路径优先于上游 legacy 示例:先把 `~/.agents/skills/planning-with-files/scripts/session-catchup.py` 展开为绝对路径,再用可运行的 Python 3 interpreter 和 `-B` 调用。Windows 的 native `init-session.ps1`、`check-complete.ps1` 从同一 scripts 目录解析;Linux/macOS 使用对应 `.sh` 文件。模板位于 `~/.agents/skills/planning-with-files/templates/`。这些安装路径覆盖 `$CLAUDE_PLUGIN_ROOT` 和 `~/.claude/skills/planning-with-files` 示例;不要创建 legacy Claude 目录或改写上游 skill。路径映射不会在 Codex 注册 Claude plugin hooks。"
+    - "Codex UI helper 路径优先于上游 legacy 示例:把 `~/.agents/skills/ui-ux-pro-max/scripts/search.py` 展开为绝对路径,用可运行的 Python 3 interpreter 和 `-B` 调用。其 `data/` 属于同一个已安装 skill 根目录。不要相对项目 cwd 解析 `.shared/ui-ux-pro-max/scripts/search.py`,也不要创建该 legacy 项目目录。无论当前工作目录在哪,都优先使用已解析的安装绝对路径。"
     - "`request_user_input` —— TODO(未验证):该工具在上游确实存在(`codex-rs/core/src/tools/handlers/request_user_input{,_spec}.rs`),但**本机是否默认启用未实测**。`codex features list` 里的 `default_mode_request_user_input` 是某个模式的 flag,不是该工具自身的开关。若澄清 round-trip 不可用,**不要猜** —— 停下并输出 `STATUS: NEEDS_CLARIFICATION` + 问题列表。"
     - "Codex user-skill 映射:从 `~/.agents/skills/planning-with-files/SKILL.md` 读取 `planning-with-files`,调用 `$planning-with-files`;从 `~/.agents/skills/ui-ux-pro-max/SKILL.md` 读取 `ui-ux-pro-max`,调用 `$ui-ux-pro-max`。规划产物保持相同:`task_plan.md`、`progress.md`、`findings.md`。本宿主上,旧正文中 planning-with-files `/plan` 的引用和这两项组件的 Claude Code plugin 要求均按其 Codex user-skill 映射解释;绝不能为 planning-with-files 调用 harnessed 的 `/plan` master,否则会递归。"
     - "仍 unsupported 的 Claude Code plugin 组件:`code-review` 和 `code-simplifier` 没有声明 Codex 安装映射,在本宿主上仍不可用。请记录 skip,不要自行找等价物替代。"

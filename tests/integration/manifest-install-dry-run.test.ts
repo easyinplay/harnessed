@@ -55,6 +55,16 @@ const CASES: DryRunCase[] = [
     yamlPath: 'manifests/tools/playwright-test.yaml',
     expectedMethod: 'npx-skill-installer',
   },
+  {
+    name: 'playwright-cli',
+    yamlPath: 'manifests/tools/playwright-cli.yaml',
+    expectedMethod: 'npm-cli',
+  },
+  {
+    name: 'webapp-testing',
+    yamlPath: 'manifests/tools/webapp-testing.yaml',
+    expectedMethod: 'npx-skill-installer',
+  },
   // 4.32.22 final — chrome-devtools-mcp back as an OPTIONAL fallback manifest
   // (manifests/optional/, mcp-stdio-add @^1.6.0): either/or with ecc (bonus
   // tier; ECC bundles the same-name connector — doctor's `ecc` check warns on
@@ -131,7 +141,7 @@ describe('Phase 2.3 Wave 1 — 5 NEW adapter manifest install dry-run e2e', () =
     })
   }
 
-  it('all 5 manifests share Wave 1 category invariants (design | content | testing)', () => {
+  it('all manifests share category invariants (design | content | testing)', () => {
     const categories = CASES.map((c) => {
       const yamlSrc = readFileSync(resolve(process.cwd(), c.yamlPath), 'utf8')
       const v = validateManifestFile(yamlSrc, c.yamlPath)

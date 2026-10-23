@@ -22,10 +22,10 @@ Date: 2026-10-23 (Asia/Shanghai)
 | ui-ux-pro-max | Installed search.py returned products.csv results | PASS helper check |
 | planning-with-files | SKILL.md and scripts readable; capability/source mapping repaired separately | PRESENT |
 | design-taste-frontend | Declared skill file readable | PRESENT |
-| playwright-test | playwright-cli skill readable; executable not on PATH | SKILL ONLY; browser runtime unverified |
+| playwright-test / playwright-cli | Initial skill-only defect confirmed; CLI 0.1.22 and Chromium now installed, actual render/title/close passed | PASS CLI/browser check; not project runner installation |
 | Tavily MCP | Registered/enabled; initialization, tools/list, and a real SDK search succeeded | SERVER PASS; Codex headless call requires approval |
 | Exa MCP | Registered/enabled; initialization and tools/list succeeded; real web_search_exa returned 401 | BLOCKED: EXA_API_KEY authentication |
-| gstack | New Codex setup failed at staged Windows directory rename; old installation remains | PARTIAL; not accepted as complete |
+| gstack | Setup retry installed 56 readable Codex skills; installed browser launch passed after dependency bridge; independent lease probe fails on an empty isolated directory | BLOCKED: upstream lease primitive; not complete workflow readiness |
 
 ## Real behavior checks
 - Command: node scripts/codex-live/installed-acceptance.mjs
@@ -52,12 +52,13 @@ Date: 2026-10-23 (Asia/Shanghai)
 - Exa search returned 401 requiring EXA_API_KEY. Configure it locally before repeating that search acceptance. No keys were copied from another harness or printed.
 - Tavily SDK search returned results despite no TAVILY_API_KEY in this process env. Its credential source was not investigated. The probe now reports keys not visible to this check rather than asserting all queries must fail.
 - Codex app-server mcpServerStatus/list saw both servers and tools with toolsError=null. A fresh headless Tavily call was blocked by approval policy never: MCP tool call requires approval, but approval policy is never. No approval or sandbox settings were disabled.
-- gstack upstream Windows installation remains partial; no ACL changes or user-skill deletion were used to hide the failure.
+- gstack's earlier staged rename error did not repeat. Its installed browser now works, but the upstream lease token cannot be created in this machine's Git Bash environment. Upstream 1.91.181.0 still has the same lease implementation. No ACL, policy or lease-protocol changes were used to hide this blocker.
 - GSD upstream installer warns of 80 remaining .claude references in 42 assets; this was not represented as full GSD workflow acceptance.
 - Codex warns that disable_response_storage is unrecognized. User configuration was not automatically edited to suppress it.
 - The existing source-only Codex fixes require a future release before the installed binary includes them.
 
 ## Source regression verification
+- This section records the previous source baseline. The newer runtime dependency audit and its final regression results are tracked in `SETUP-RUNTIME-AUDIT.md`.
 - Full suite: 344 files passed / three skipped; 3567 tests passed / five skipped / one todo.
 - build, lint, build:schema, workflow schema, host-primitives gate, skill i18n parity, and production eval 14/14 passed.
 - Lint retains 17 baseline warnings, with no errors.

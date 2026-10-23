@@ -256,6 +256,15 @@ describe('isAlreadyInstalled npm-cli binary probe (v4.16.1 T1)', () => {
     expect(binOnPathMock).toHaveBeenCalledWith('ctx7')
   })
 
+  it('cli-binary probes the manifest name rather than a verifier helper executable', async () => {
+    const c = ctx7Ctx()
+    c.manifest.spec.verify.cmd = 'verifier-helper --check ctx7'
+    binOnPathMock.mockImplementation((bin) => bin === 'ctx7')
+
+    await expect(isAlreadyInstalled(c)).resolves.toBe(true)
+    expect(binOnPathMock).toHaveBeenCalledExactlyOnceWith('ctx7')
+  })
+
   it('binary absent → falls through to the legacy probes → false', async () => {
     await expect(isAlreadyInstalled(ctx7Ctx())).resolves.toBe(false)
   })
@@ -265,6 +274,43 @@ describe('isAlreadyInstalled npm-cli binary probe (v4.16.1 T1)', () => {
     const ctx = ctx7Ctx()
     ctx.opts.updateInstalled = true
     await expect(isAlreadyInstalled(ctx)).resolves.toBe(false)
+    expect(binOnPathMock).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'ctx7',
+    'context7',
+  ])('plugin %s cannot substitute for the PATH executable', async (plugin) => {
+    vi.mocked(isPluginRegistered).mockImplementation(async (name) => name === plugin)
+    try {
+      await expect(isAlreadyInstalled(ctx7Ctx())).resolves.toBe(false)
+    } finally {
+      vi.mocked(isPluginRegistered).mockResolvedValue(false)
+    }
+  })
+
+  it('a same-name skill directory cannot substitute for the PATH executable', async () => {
+    accessPresent(['/.claude/skills/ctx7'])
+
+    await expect(isAlreadyInstalled(ctx7Ctx())).resolves.toBe(false)
+  })
+
+  it('a successful plugin/skill shell fallback cannot prove CLI presence', async () => {
+    const c = ctx7Ctx()
+    c.manifest.spec.install.idempotent_check = 'claude plugin list'
+    vi.mocked(spawnCmd).mockClear()
+    vi.mocked(spawnCmd).mockResolvedValue({ ok: true, exitCode: 0, stdout: '', stderr: '' })
+
+    await expect(isAlreadyInstalled(c)).resolves.toBe(false)
+    expect(spawnCmd).not.toHaveBeenCalled()
+  })
+
+  it('dry-run bypasses even a present PATH executable', async () => {
+    const c = ctx7Ctx()
+    c.opts.dryRun = true
+    binOnPathMock.mockReturnValue(true)
+
+    await expect(isAlreadyInstalled(c)).resolves.toBe(false)
     expect(binOnPathMock).not.toHaveBeenCalled()
   })
 })

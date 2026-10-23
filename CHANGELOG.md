@@ -14,10 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `setup` returns exit 1 when base components failed, after completing workflow installation and recovery work.
 - Codex update/rollback messages and missing-search-key hints name the active host and its usable configuration surface.
 - Codex planning-with-files and UI/UX capabilities use their declared user-skill installation paths and native skill invocation; planning instructions no longer recurse through the harnessed plan master. Claude renderings stay unchanged.
+- Existing npm, git, and npx-skill installations run verification before recording success; a plugin registration cannot substitute for a required CLI executable.
+- Setup preserves approved L4 rescue and force-update outcomes instead of discarding later failures. Explicit `setup --system` authorization is propagated to base installers; the default still does not authorize global installs.
+- Codex gstack setup preserves existing source checkouts, bridges missing runtime dependencies only after confirmation, and checks browser launch from the installed runtime rather than the source tree.
+- GSD and Codex planning/UI helpers validate their required resources, interpreters, and data instead of accepting a lone skill file. Doctor output distinguishes partial content, registration, enablement, and unverified runtime/authentication evidence.
+- Codex gstack readiness checks the upstream lease protocol in an isolated, bounded scratch directory. A lock-primitive failure is reported as an upstream blocker, not as a usable installation or assumed live-lock contention; no native symlink policy or user lease is changed.
+- Verification subprocesses receive an exact runtime environment allowlist instead of unrelated provider credentials or startup hooks. Installation subprocesses keep their existing environment, and explicit empty `CODEX_HOME` follows the upstream default-home semantics.
 
 ### Added
 
 - `scripts/codex-live/installed-acceptance.mjs` verifies an installed binary against fresh Codex turns, checkpoint promise guards, and document-hook decisions in scratch repositories.
+- A separate L4 `playwright-cli` manifest installs the pinned CLI and Chromium and verifies rendering in a uniquely named browser session. The legacy `playwright-test` manifest remains skill-only; project test dependencies are not installed globally or written into user projects.
+- A separate L2 `webapp-testing` manifest installs the Anthropic skill and verifies its server helper. Its capability no longer points at a nonexistent gstack-bundled skill; Python Playwright remains a project dependency.
 
 ## [4.49.1] - 2026-10-23
 

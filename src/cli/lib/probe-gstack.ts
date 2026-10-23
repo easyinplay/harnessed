@@ -12,9 +12,9 @@
 // points at `harnessed setup`.
 
 import { spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { accessSync, constants, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { harnessSkillsDirs } from '../../platform/platform.js'
+import { detectPlatform, getSkillsDir, harnessSkillsDirs } from '../../platform/platform.js'
 
 export type GstackPrefix = 'gstack-' | ''
 
@@ -40,14 +40,31 @@ function probeOne(cmd: string): boolean {
 
 /** v4.15.1 — gstack skills-dir probe: current layout (root-level skill dirs,
  *  office-hours/SKILL.md) + pre-rename layout (skills/office-hours.md). */
-function gstackSkillsDirInstalled(exists: (p: string) => boolean): string | null {
-  for (const dir of harnessSkillsDirs()) {
+function gstackSkillsDirInstalled(
+  exists: (p: string) => boolean,
+): { root: string; prefix: GstackPrefix } | null {
+  const platform = detectPlatform()
+  const dirs =
+    platform.id === 'codex'
+      ? [join(process.env.CODEX_HOME || platform.homeDir, 'skills'), getSkillsDir()]
+      : harnessSkillsDirs()
+  for (const dir of dirs) {
     const root = join(dir, 'gstack')
+    if (platform.id === 'codex') {
+      if (
+        exists(join(dir, 'gstack-office-hours', 'SKILL.md')) &&
+        exists(join(root, 'SKILL.md')) &&
+        exists(join(root, 'bin', 'gstack-browser-ensure'))
+      ) {
+        return { root, prefix: 'gstack-' }
+      }
+      continue
+    }
     if (
       exists(join(root, 'office-hours', 'SKILL.md')) ||
       exists(join(root, 'skills', 'office-hours.md'))
     ) {
-      return root
+      return { root, prefix: '' }
     }
   }
   return null
@@ -61,7 +78,8 @@ export function probeGstackPrefix(deps?: Partial<ProbeGstackDeps>): ProbeResult 
     deps?.exists ??
     ((p: string) => {
       try {
-        return existsSync(p)
+        accessSync(p, constants.R_OK)
+        return statSync(p).isFile()
       } catch {
         return false
       }
@@ -69,10 +87,18 @@ export function probeGstackPrefix(deps?: Partial<ProbeGstackDeps>): ProbeResult 
   const hasGstack = probeOne('gstack-office-hours')
   const hasBare = probeOne('office-hours')
   if (hasGstack && !hasBare) {
-    return { status: 'pass', prefix: 'gstack-', detail: 'gstack-office-hours found' }
+    return {
+      status: 'pass',
+      prefix: 'gstack-',
+      detail: 'gstack-office-hours found (command prefix only; browser not checked)',
+    }
   }
   if (!hasGstack && hasBare) {
-    return { status: 'pass', prefix: '', detail: 'office-hours found (--no-prefix mode)' }
+    return {
+      status: 'pass',
+      prefix: '',
+      detail: 'office-hours found (--no-prefix mode; command prefix only; browser not checked)',
+    }
   }
   if (hasGstack && hasBare) {
     return {
@@ -87,13 +113,13 @@ export function probeGstackPrefix(deps?: Partial<ProbeGstackDeps>): ProbeResult 
   if (skillsRoot !== null) {
     return {
       status: 'pass',
-      prefix: '',
-      detail: `gstack skills dir found (${skillsRoot})`,
+      prefix: skillsRoot.prefix,
+      detail: `gstack skills dir found (${skillsRoot.root}; content/prefix only; browser not checked)`,
     }
   }
   return {
     status: 'fail',
     detail: 'neither gstack-office-hours nor office-hours found in PATH, and no gstack skills dir',
-    fix: 'install gstack: run `harnessed setup` (git-clones gstack into ~/.claude/skills/gstack) — see https://github.com/garrytan/gstack',
+    fix: 'install gstack for the active host: run `harnessed setup` (browser readiness is checked separately by install verification)',
   }
 }

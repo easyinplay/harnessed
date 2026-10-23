@@ -33,6 +33,21 @@ describe('extractVerifyBinary (v4.16.1 T1)', () => {
   it('returns fallback when verify cmd is undefined', () => {
     expect(extractVerifyBinary(undefined, 'ctx7')).toBe('ctx7')
   })
+
+  it.each([
+    'set -eu\nplaywright-cli --version',
+    'if command -v playwright-cli; then playwright-cli --version; fi',
+    'trap cleanup EXIT\nplaywright-cli --version',
+    'export CI=1\nplaywright-cli --version',
+    'unset NODE_OPTIONS\nplaywright-cli --version',
+    'for mode in chromium; do playwright-cli --version; done',
+    'while false; do playwright-cli --version; done',
+    'case "$CI" in 1) playwright-cli --version;; esac',
+    'exec playwright-cli --version',
+  ])('never treats shell setup or control flow as a component executable: %s', (cmd) => {
+    expect(extractVerifyBinary(cmd, 'playwright-cli')).toBe('playwright-cli')
+    expect(extractVerifyBinary(cmd, '')).toBeNull()
+  })
 })
 
 describe('binaryOnPath (v4.16.1 T1)', () => {

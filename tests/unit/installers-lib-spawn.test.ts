@@ -275,6 +275,39 @@ describe('spawnCmd', () => {
     expect(opts.env.PATH).toBeDefined()
   })
 
+  it('verify env mode filters parent and install secrets before launching the shell', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'fixture-parent-secret')
+    vi.stubEnv('BASH_ENV', 'fixture-parent-hook')
+    try {
+      spawnMock.mockReturnValueOnce(
+        makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+      )
+      const c = ctx((m) => {
+        m.spec.install.env = {
+          OPENAI_API_KEY: 'fixture-install-secret',
+          NODE_OPTIONS: 'fixture-install-hook',
+          CODEX_HOME: '',
+          PLAYWRIGHT_BROWSERS_PATH: '/fixture/browsers',
+          MSYS_NO_PATHCONV: 'existing-policy',
+        }
+      })
+
+      const result = await spawnCmd(c, 'sp-test --version', [], 5000, { envMode: 'verify' })
+
+      expect(isSpawnOk(result)).toBe(true)
+      const env = spawnMock.mock.calls[0]?.[2]?.env
+      expect(env?.ANTHROPIC_API_KEY).toBeUndefined()
+      expect(env?.OPENAI_API_KEY).toBeUndefined()
+      expect(env?.BASH_ENV).toBeUndefined()
+      expect(env?.NODE_OPTIONS).toBeUndefined()
+      expect(env?.CODEX_HOME).toBe('')
+      expect(env?.PLAYWRIGHT_BROWSERS_PATH).toBe('/fixture/browsers')
+      expect(env?.MSYS_NO_PATHCONV).toBe('existing-policy')
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
   it('returns spawn-error InstallResult on child error event', async () => {
     spawnMock.mockReturnValueOnce(
       makeChild({ emitError: new Error('ENOENT') }) as unknown as ReturnType<typeof spawn>,

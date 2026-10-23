@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=../../schemas/manifest.v1.schema.json
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: playwright-cli
+  display_name: Playwright CLI Runtime
+  description: Global browser automation CLI and Chromium runtime; not the project-level @playwright/test runner.
+  upstream:
+    source: "@playwright/cli"
+    homepage: https://github.com/microsoft/playwright-cli
+    repository: https://github.com/microsoft/playwright-cli.git
+    license: Apache-2.0
+    notice: Microsoft Playwright CLI runtime, separate from the playwright-test browser automation skill and project-level test dependencies.
+spec:
+  type: cli-npm
+  component_type: cli-binary
+  category: testing
+  install_type: npm
+  install:
+    method: npm-cli
+    cmd: "npm install -g @playwright/cli@0.1.22 && playwright-cli install-browser chromium"
+    npm_version: "0.1.22"
+    idempotent_check: "playwright-cli --version | grep -Fx '0.1.22'"
+  verify:
+    # npm-cli runs this in neutralCwd, outside the user's project.
+    # Avoid command substitution: manifest security rejects $() and backticks.
+    cmd: |
+      set -eu
+      playwright-cli --version | grep -Fx '0.1.22'
+      session="harnessed-playwright-verify-$$"
+      mkdir "$session"
+      cleanup() {
+        status=$?
+        set +e
+        trap - 0 HUP INT TERM
+        playwright-cli -s="$session" close >"$session/close.log" 2>&1
+        close_status=$?
+        cat "$session/close.log"
+        if grep -q '^### Error' "$session/close.log"; then close_status=1; fi
+        rm -f "$session/render.log" "$session/close.log"
+        rmdir "$session"
+        if [ "$status" -eq 0 ]; then status=$close_status; fi
+        exit "$status"
+      }
+      trap cleanup 0
+      trap 'exit 129' HUP
+      trap 'exit 130' INT
+      trap 'exit 143' TERM
+      playwright-cli -s="$session" open --browser chromium
+      playwright-cli -s="$session" --raw run-code 'async page => { await page.setContent("<title>harnessed-playwright-runtime</title><h1>Runtime ready</h1>"); return await page.title(); }' >"$session/render.log"
+      cat "$session/render.log"
+      grep -Fxq '"harnessed-playwright-runtime"' "$session/render.log"
+    timeout_ms: 60000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "npm uninstall -g @playwright/cli"
+  upstream_health:
+    stability: unstable
+    last_check: "2026-10-23"
+    last_known_good_version: "0.1.22"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

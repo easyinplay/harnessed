@@ -27,8 +27,8 @@
 // No plain-table fallback, deliberately. `codex plugin list` has one because a codex
 // without `--json` was a real possibility there; here the flag is present on the
 // pinned version, and a table parser would have to chew through output that can carry
-// bearer tokens in the HTTP-transport rows. Unknown → `null` → callers treat it as
-// "not registered" (fail-closed: a verify that cannot confirm must not pass).
+// bearer tokens in the HTTP-transport rows. Unknown stays null in the listing
+// APIs; the legacy boolean API returns false when registration cannot be confirmed.
 //
 // One spawn costs ~1.7 s and setup probes several manifests, so the listing is
 // memoized per process. Installers MUST invalidate after adding a server: the
@@ -41,38 +41,64 @@
 import { runHarnessArgs } from './runClaudeArgs.js'
 import { getMcpSpawnCwd } from './safeCwd.js'
 
-/** Registered server names, or null when the listing is unrecognizable. */
-export function parseCodexMcpList(stdout: string): Set<string> | null {
+/** Only registration and enablement metadata; never transport or credentials. */
+export interface CodexMcpServerMetadata {
+  readonly name: string
+  readonly enabled: boolean | null
+}
+
+export function parseCodexMcpMetadata(stdout: string): readonly CodexMcpServerMetadata[] | null {
   const text = stdout.trim()
   if (!text.startsWith('[')) return null
   try {
     const parsed = JSON.parse(text) as unknown
     if (!Array.isArray(parsed)) return null
-    const names = new Set<string>()
-    for (const entry of parsed as { name?: unknown }[]) {
-      if (typeof entry?.name === 'string' && entry.name !== '') names.add(entry.name)
+    const servers: CodexMcpServerMetadata[] = []
+    for (const entry of parsed as { name?: unknown; enabled?: unknown }[]) {
+      if (typeof entry?.name === 'string' && entry.name !== '') {
+        servers.push({
+          name: entry.name,
+          enabled: typeof entry.enabled === 'boolean' ? entry.enabled : null,
+        })
+      }
     }
-    return names
+    return servers
   } catch {
     return null
   }
 }
 
-let cache: Promise<Set<string> | null> | null = null
+/** Registered server names, or null when the listing is unrecognizable. */
+export function parseCodexMcpList(stdout: string): Set<string> | null {
+  const servers = parseCodexMcpMetadata(stdout)
+  return servers === null ? null : new Set(servers.map((server) => server.name))
+}
+
+let cache: Promise<readonly CodexMcpServerMetadata[] | null> | null = null
 
 export function invalidateCodexMcpCache(): void {
   cache = null
 }
 
-async function listOnce(): Promise<Set<string> | null> {
-  const r = await runHarnessArgs('codex', ['mcp', 'list', '--json'], getMcpSpawnCwd(), 30_000)
-  return r.exitCode === 0 ? parseCodexMcpList(r.stdout) : null
+async function listOnce(): Promise<readonly CodexMcpServerMetadata[] | null> {
+  try {
+    const r = await runHarnessArgs('codex', ['mcp', 'list', '--json'], getMcpSpawnCwd(), 30_000)
+    return r.exitCode === 0 ? parseCodexMcpMetadata(r.stdout) : null
+  } catch {
+    return null
+  }
 }
 
-/** Memoized registered set; null = unknown (codex absent / unparseable). */
-export function listCodexMcpServers(): Promise<Set<string> | null> {
+/** Shared memoized, sanitized listing; null = unknown, not known missing. */
+export function listCodexMcpServerMetadata(): Promise<readonly CodexMcpServerMetadata[] | null> {
   cache = cache ?? listOnce()
   return cache
+}
+
+/** Memoized registered set; disabled entries still count as registered. */
+export async function listCodexMcpServers(): Promise<Set<string> | null> {
+  const servers = await listCodexMcpServerMetadata()
+  return servers === null ? null : new Set(servers.map((server) => server.name))
 }
 
 export async function isCodexMcpServerRegistered(name: string): Promise<boolean> {

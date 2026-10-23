@@ -255,6 +255,19 @@ export async function isAlreadyInstalled(
   if (ctx.opts.dryRun) return false
 
   const installCfg = ctx.manifest.spec.install
+  // CLI presence is authoritative on PATH, never in a same-name skill/plugin.
+  // npm-distributed skill packs (e.g. GSD with a test-based verify) keep their probes.
+  if (
+    installCfg.method === 'npm-cli' &&
+    (ctx.manifest.spec.component_type === 'cli-binary' ||
+      extractVerifyBinary(ctx.manifest.spec.verify?.cmd, '') !== null)
+  ) {
+    const bin = extractVerifyBinary(
+      ctx.manifest.spec.component_type === 'cli-binary' ? undefined : ctx.manifest.spec.verify?.cmd,
+      ctx.manifest.metadata.name,
+    )
+    return bin !== null && binaryOnPath(bin)
+  }
   // Codex MCP registration is authoritative; legacy fallbacks can match Claude installs.
   if (
     (installCfg.method === 'mcp-stdio-add' || installCfg.method === 'mcp-http-add') &&
