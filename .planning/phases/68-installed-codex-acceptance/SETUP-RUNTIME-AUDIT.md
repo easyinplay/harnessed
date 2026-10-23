@@ -48,3 +48,7 @@ An installed skill or registration is not sufficient evidence that its executabl
 - Final post-change build passed; full regression: 353 files passed / 3 skipped, 3918 tests passed / 6 skipped / 1 todo. Production eval passed 14/14. Lint exited 0 with the same 17 baseline warnings. Host-primitives, workflow schema, YAML parity and diff checks passed.
 - Final post-change real setup again returned 0 installed / 12 already-installed / 0 skipped / 1 failed in 17.5 seconds, exit 1. The sole failure remains the independently reproduced upstream gstack lease primitive. All local test/setup sessions and subagents finished; the separate Claude session and MCP services were left alone.
 - Harnessed-side audit and fixes are complete, but complete upstream workflow acceptance remains blocked by gstack and the separately recorded authentication/approval limits. No new tag or package version was published; the official PATH binary remains 4.49.1.
+
+## Publication Follow-up
+
+User subsequently approved publication. Fixes shipped as 4.49.2 at dfc1427 / v4.49.2 after correcting the lease test canonical-path expectation and passing nine-job CI. Publish 39899939875 passed all four jobs; registry latest and downloaded npm/binary artifacts were verified. This does not resolve the upstream lease or external-authentication blockers above. Full release evidence: `../../releases/4.49.2.md`.
