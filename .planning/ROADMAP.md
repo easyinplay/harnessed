@@ -40,6 +40,8 @@
 
 ## Backlog / Deferred (future milestones)
 
+- **Requested public release npm 5.0.0**: TypeScript/Bun optimization with no forced Bun dependency for binary/npm users; optional Bun route; tabbed website onboarding and GitHub-sourced stable version. [Scope and acceptance brief](research/npm-5.0-runtime-onboarding-brief.md). Detailed design/governance pending; this is not the historical internal v5.0 milestone or a release-complete claim.
+
 - **Phase 69 release/native follow-up**: local implementation and acceptance complete (4327 tests; independent source/npm/Windows compiled smoke), retaining shared engine/manifests for Claude Code/Codex. [Verification and limits](phases/69-host-installation-contract/VERIFICATION.md). Native gstack remains blocked/notrun; no live migration, global replacement or release authorized. Workspace deletion-policy limitations are recorded separately.
 
 - ~~Deferred non-goal (v7.0 discuss): cross-harness breadth~~ → **un-deferred 2026-06-23** (→ v9.0): demand changed (user direction 守宽做深 + cross-platform) AND feasibility changed (upstreams gstack/ECC verified already cross-harness). routing L2-LLM-supervisor simplification still deferred.

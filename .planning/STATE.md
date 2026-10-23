@@ -29,6 +29,8 @@ progress:
 
 ## Current Position
 
+- **Requested npm 5.0.0 (2026-10-24)**: TS/Bun optimization with no forced Bun dependency for binary/npm users; optional Bun route, website installation tabs and GitHub-sourced stable version. Scope and acceptance: `research/npm-5.0-runtime-onboarding-brief.md`. Detailed design/governance pending; not the archived internal v5.0 milestone and not yet implemented or released.
+
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 
 - **Phase 69 安装契约本地交付(2026-10-23)**:保留共享 engine/manifests,双宿主 context/plan、组件安装/安全卸载与产物契约已落地;全仓串行 4327 pass、eval 14/14、三渠道隔离验收通过。`f5ca347` 已 push;首轮 CI 39980176901 为 8/9,Windows 旧 PowerShell ANSI 债务已补窄修,最新结果以对应 commit check 为准。详 `phases/69-host-installation-contract/VERIFICATION.md`;native gstack blocked/notrun,未发版。根目录空文件为 0(非被拒绝命令的功劳);误建 cache 待清理,详 EXECUTION。
