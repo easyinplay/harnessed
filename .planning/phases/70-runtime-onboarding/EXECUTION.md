@@ -53,3 +53,10 @@ All selected observations exited 0. Fresh first invocations were 270.9 ms Node, 
 - The full serialized suite was intentionally cancelled during review-driven source changes; no partial run is counted as a pass. It must be restarted after the final registry patch freezes.
 - Documentation contracts passed 19/19. The initial full lint found only new JSON evidence formatting and documentation-test formatting/import order errors; scoped Biome fixes were applied without touching unrelated warnings.
 - Production browser report in the site repository now pins English locale and asserts EN/ZH document languages. Four desktop/mobile cases pass; sticky headings clear the 100px navigation. A GitHub 503 case retains four consistent 4.49.2 labels, and Windows OS selection is verified. Mock 5.0.0 values in the success case are test data, not a release claim.
+
+## First Candidate CI
+
+- Candidate `5feac89` was pushed. CI `40010192023` passed the Linux/macOS binary jobs, all three installer jobs and the Linux main test job at first inspection; Windows/macOS main tests were still progressing.
+- Windows binary smoke failed before launching any channel: Git Bash `command -v bun` supplied an extensionless path, and Node realpath correctly rejected the nonexistent Windows file. The workflow now asks Bun for its actual `process.execPath` instead of guessing an extension or weakening validation. Product runtime logic is unchanged.
+- The corrected workflow invocation was executed through local Git Bash: all three channel/owned-hook results passed. This is local Windows evidence; the follow-up remote run remains required.
+- The read-only release preflight passed changelog, version, tracked git cleanliness and tag absence after the candidate commit. It is not publication permission, final CI success or a native governance receipt.

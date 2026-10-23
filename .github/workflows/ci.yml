@@ -395,7 +395,7 @@ jobs:
       - name: Runtime channel and owned hook contracts
         run: |
           BIN=$(ls dist-bin/harnessed-* | grep -v '\.sha256$')
-          node scripts/runtime-channel-smoke.mjs --node-cli dist/cli.mjs --binary "$BIN" --bun "$(command -v bun)"
+          node scripts/runtime-channel-smoke.mjs --node-cli dist/cli.mjs --binary "$BIN" --bun "$(bun -p 'process.execPath')"
       - name: smoke — version + asset unpack + 29 workflows from a foreign cwd
         run: |
           # 4.27.0 — dist-bin now also carries <asset>.sha256; the smoke wants the exe only.
