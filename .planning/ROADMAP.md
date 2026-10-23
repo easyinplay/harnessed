@@ -1,7 +1,7 @@
 # ROADMAP — harnessed
 
 > Shipped history = indexed archive (do NOT re-plan). **No active milestone** — v16.0 Codex Host Parity closed 2026-09-30; queue in TODOS.md.
-> Current published npm: **4.46.0** (2026-09-30; v16.0 close — codex as a first-class host) · milestone codenames (vN.0) are spec/era names, NOT npm versions.
+> Current published npm: see `.planning/STATE.md` and `.planning/releases/` (single release-status home). Milestone codenames (vN.0) are spec/era names, NOT npm versions.
 >
 > **This table stops at v13.0 by design.** Milestones from v14.0 on are indexed in `.planning/MILESTONES.md`,
 > which is the single home for the milestone index — duplicating the rows here would give the same fact two
@@ -39,6 +39,8 @@
 ---
 
 ## Backlog / Deferred (future milestones)
+
+- **Phase 69: Host installation contract (design draft, not executing)**: retain shared engine/manifests, first-stage Claude Code/Codex only. Contract, six ordered implementation slices and planned acceptance: [phase plan](phases/69-host-installation-contract/PLAN.md). Detailed approval/native architecture gate unresolved; no release authorized.
 
 - ~~Deferred non-goal (v7.0 discuss): cross-harness breadth~~ → **un-deferred 2026-06-23** (→ v9.0): demand changed (user direction 守宽做深 + cross-platform) AND feasibility changed (upstreams gstack/ECC verified already cross-harness). routing L2-LLM-supervisor simplification still deferred.
 - Security hardening pass (threat-model-gated): shell-injection `security.ts`/`spawn.ts`/`path-guard.ts`; concurrency hazards `sigintTrap.ts`/`before-commit.ts`.
