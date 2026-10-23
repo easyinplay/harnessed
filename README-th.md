@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | **ไทย**
+[English](./README.md) | [简体中文](./README-zh.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | **ไทย**
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness package manager + composition orchestrator_ — ประกอบส่วนประกอบที่ดีที่สุดของระบบนิเวศ open-source ให้เป็น engine ที่รันได้หนึ่งเดียว ต่อสายด้วยเมธดวิทยาสามชั้น **BDD → SDD → TDD**
 
@@ -20,15 +20,7 @@
 
 ## 📦 Quick Install
 
-**ผ่าน npm** (แนะนำ — ทั้งสองช่องทางเป็น first-class และซิงก์เวอร์ชันกัน):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x ไม่รองรับการเชื่อมคำสั่งด้วย `&&` — ใช้ `;` หรือแยกเป็นสองบรรทัด (`npm install -g harnessed; harnessed setup`) แทน ส่วน bash / zsh / PowerShell 7+ / cmd.exe ใช้งานได้ปกติ
-
-**ไม่มี Node.js? ไบนารีแบบสแตนด์อโลน** — แยกตามแพลตฟอร์ม อัปเดตตัวเองผ่าน `harnessed update`:
+**ไบนารีแบบสแตนด์อโลน (recommended / แนะนำ)**: แยกตามแพลตฟอร์ม อัปเดตตัวเองผ่าน `harnessed update`:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -39,6 +31,16 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
+
+> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+
+**ผ่าน npm (ยังรองรับ; ต้องใช้ Node.js >= 22)**:
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x ไม่รองรับการเชื่อมคำสั่งด้วย `&&` — ใช้ `;` หรือแยกเป็นสองบรรทัด (`npm install -g harnessed; harnessed setup`) แทน ส่วน bash / zsh / PowerShell 7+ / cmd.exe ใช้งานได้ปกติ
 
 🤖 **หรือจะให้ AI ติดตั้งให้แทนก็ได้** — วางประโยคนี้ใน Claude Code (หรือ AI assistant ตัวไหนก็ได้):
 

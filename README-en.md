@@ -2,7 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-**English** | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+**English** | [简体中文](./README-zh.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+
+> Compatibility mirror of the canonical English [README.md](./README.md).
 
 > _AI coding harness package manager + composition orchestrator_ — it assembles the best of the open-source ecosystem into one executable engine, wired by the three-layer **BDD → SDD → TDD** methodology.
 
@@ -18,15 +20,7 @@
 
 ## 📦 Quick Install
 
-**Via npm** (recommended — both channels are first-class and stay in sync):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
-
-**No Node.js? Standalone binary** — per-platform, self-updates via `harnessed update`:
+**Standalone binary (recommended)** - per-platform, self-updates via `harnessed update`:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -37,6 +31,16 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
+
+> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+
+**Via npm (supported alternative; Node.js >= 22 required)**:
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
 
 🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
 

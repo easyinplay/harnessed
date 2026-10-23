@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | **한국어** | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README.md) | [简体中文](./README-zh.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | **한국어** | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness 패키지 매니저 + composition orchestrator_ — 오픈소스 생태계의 최고의 컴포넌트를 하나의 실행 가능한 engine으로 조립하고, 3계층 **BDD → SDD → TDD** 방법론으로 연결합니다.
 
@@ -20,15 +20,7 @@
 
 ## 📦 빠른 설치
 
-**npm으로** (권장 — 두 채널 모두 1급 지원, 버전 동기화 유지):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x는 `&&` 체이닝을 지원하지 않습니다 — `;` 또는 두 줄로 나눠서 사용하세요 (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe는 모두 정상 동작합니다.
-
-**Node.js가 없다면 독립 실행 바이너리** — 플랫폼별, 이후 `harnessed update`로 자가 업데이트:
+**독립 실행 바이너리 (recommended / 권장)**: 플랫폼별, 이후 `harnessed update`로 자가 업데이트:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -39,6 +31,16 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
+
+> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+
+**npm도 계속 지원** (Node.js >= 22 필요):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x는 `&&` 체이닝을 지원하지 않습니다 — `;` 또는 두 줄로 나눠서 사용하세요 (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe는 모두 정상 동작합니다.
 
 🤖 **또는 AI에게 설치를 맡기세요** — Claude Code(또는 다른 AI 어시스턴트)에 이 문장을 붙여 넣으세요:
 

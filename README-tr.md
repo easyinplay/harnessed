@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | **Türkçe** | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README.md) | [简体中文](./README-zh.md) | [繁體中文](./README-tw.md) | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | **Türkçe** | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness paket yöneticisi + composition orchestrator_ — açık kaynak ekosisteminin en iyi bileşenlerini tek bir çalıştırılabilir engine içinde bir araya getirir; üç katmanlı **BDD → SDD → TDD** metodolojisiyle bağlanır.
 
@@ -20,15 +20,7 @@
 
 ## 📦 Hızlı Kurulum
 
-**npm ile** (önerilen — iki kanal da birinci sınıftır ve senkron kalır):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
-
-**Node.js yok mu? Bağımsız binary** — platforma göre, sonrasında `harnessed update` ile kendini günceller:
+**Bağımsız binary (recommended / önerilen)**: platforma göre, sonrasında `harnessed update` ile kendini günceller:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -39,6 +31,16 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
+
+> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+
+**npm ile (desteklenen alternatif; Node.js >= 22 gerekir)**:
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
 
 🤖 **Veya bir yapay zekaya kurdurun** — bu cümleyi Claude Code'a (ya da herhangi bir yapay zeka asistanına) yapıştırın:
 

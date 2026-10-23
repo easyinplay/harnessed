@@ -13,6 +13,7 @@
 - **Status**: 🎯 v0.4.0 SHIPPED & ARCHIVED 2026-05-19 (17/20 phases 85%); v0.5.0 v1.0-RC2 minor STARTING; 🎯 v1.0 GA target 2026-05-22~23
 - **Stack**: Node.js 22 + TypeScript + pnpm + vitest + biome
 - **Commit safety**: NEVER push to remote without user explicit approval (CLAUDE.md commit safety)
+- **Future commit/release language**: Write all new commit subjects and bodies, new CHANGELOG/Unreleased entries, GitHub release notes, and release log documents in English. Do not translate or rewrite historical records. This does not change the default conversation language or relax commit/push authorization.
 - **Biome preempt**: TS/JS commit 前必跑 `pnpm exec biome check --write` (3 CI-red recurrences project memory)
 - **Phase cadence**: 三层栈完整方法论严格遵守 (gstack governance → GSD orchestration → superpowers brainstorming + karpathy 心法 + mattpocock 招式 + harnessed 自有 completion gate → verify)
 

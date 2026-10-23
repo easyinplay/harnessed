@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: none
 milestone_name: (none — v16.0 Codex Host Parity CLOSED 2026-09-30, npm 4.46.0)
 status: completed
-last_updated: "2026-10-23T15:27:50.255Z"
-last_activity: 2026-10-23
+last_updated: "2026-10-24T01:14:22+08:00"
+last_activity: 2026-10-24
 progress:
   total_phases: 1
   completed_phases: 1
@@ -28,6 +28,8 @@ progress:
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
 
 ## Current Position
+
+- **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 
 - **Phase 69 安装契约本地交付(2026-10-23)**:保留共享 engine/manifests,双宿主 context/plan、组件安装/安全卸载与产物契约已落地;全仓串行 4327 pass、eval 14/14、三渠道隔离验收通过。`f5ca347` 已 push;首轮 CI 39980176901 为 8/9,Windows 旧 PowerShell ANSI 债务已补窄修,最新结果以对应 commit check 为准。详 `phases/69-host-installation-contract/VERIFICATION.md`;native gstack blocked/notrun,未发版。根目录空文件为 0(非被拒绝命令的功劳);误建 cache 待清理,详 EXECUTION。
 
@@ -72,6 +74,7 @@ progress:
 - Biome preempt before every TS/JS commit; `pnpm lint` 全域真实退出码(禁 `| tail` 掩蔽)。
 - Every `.planning/` edit self-exemplifies doc-discipline (STATE digest <100 lines; overview pointers not inlined narrative)。
 - **Commit 即 push main**(2026-07-05 坏盘事故后用户批准);tag/发版仍需用户确认。
+- **Language policy (2026-10-24)**: New commit subjects/bodies, CHANGELOG entries, GitHub release notes and release logs use English. `README.md` is the canonical English entry; Chinese remains a translation. Do not rewrite historical commits or release logs for translation.
 - `~/.harnessed` 是遗留根,永不可作安装目标(启动迁移蒸发陷阱,4.28.0 真机实证)。
 - typebox 改动必须 `pnpm build && pnpm build:schema` 并提交 schemas/;vi.mock factory 模块禁加新导出(独立新模块)。
 

@@ -34,6 +34,8 @@ Read primary source and tests at these commits; do not use supported-platform co
 
 No installation architecture change has been implemented or approved in detail. Source/test inspection is not an upstream runtime acceptance run.
 
+Comet Native/Classic methodology and runtime-contract decisions are tracked separately in [Method Contract Strategy](./method-contract-strategy.md). Host installation, method contract and verification strength are independent dimensions; this installation research does not authorize a new workflow mode or a methodology switch.
+
 ### Comet
 
 Facts verified at aeb1a6598034e28ce46b8422d4dbd8785e607bd7:

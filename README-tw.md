@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README-en.md) | [简体中文](./README.md) | **繁體中文** | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README.md) | [简体中文](./README-zh.md) | **繁體中文** | [日本語](./README-ja.md) | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness 套件管理器 + composition orchestrator_ —— 它將開源生態最優秀的元件裝配成一個可執行的 engine，由三層 **BDD → SDD → TDD** 方法論接線。
 
@@ -20,15 +20,7 @@
 
 ## 📦 快速安裝
 
-**使用 npm**(推薦 —— 兩條通道皆為一等公民,版本保持同步):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x 不支援 `&&` 串連 —— 請改用 `;` 或分兩行執行（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe 皆可正常使用。
-
-**沒有 Node.js?獨立二進位檔** —— 分平台安裝,後續以 `harnessed update` 自我更新:
+**獨立二進位檔 (recommended / 推薦)**: 分平台安裝,後續以 `harnessed update` 自我更新:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -39,6 +31,16 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
+
+> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+
+**npm 仍受支援** (需要 Node.js >= 22):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x 不支援 `&&` 串連 —— 請改用 `;` 或分兩行執行（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe 皆可正常使用。
 
 🤖 **或者讓 AI 幫你安裝** —— 將這句話貼給 Claude Code（或任何 AI 助理）：
 

@@ -4,20 +4,13 @@
 
 ---
 
-帮我安装 **harnessed**(AI coding harness 包管理器,把 gstack + GSD + superpowers + karpathy + mattpocock 等 Claude Code 生态组件 composition 成统一 5-stage 工作流。npm: `harnessed`,仓库 https://github.com/easyinplay/harnessed,Apache-2.0)。请按以下流程执行,每步遇到错误自动诊断并修复,最后报告结果。
+帮我安装 **harnessed**(AI coding harness 包管理器,把 gstack + GSD + superpowers + karpathy + mattpocock 等 Claude Code 生态组件 composition 成统一 5-stage 工作流。npm: `harnessed`,仓库 https://github.com/easyinplay/harnessed,Apache-2.0)。请按以下流程执行,在已批准的范围和权限内诊断错误并修复,最后报告结果。需要提升权限、卸载已有安装或修改额外配置时先取得批准,不得把缺失依赖或未验证步骤记为成功。
 
 ## 步骤
 
-1. **首选:npm 渠道**(需要 Node.js ≥ 22;npm 与二进制两条通道同为一等公民)
-   ```bash
-   node --version    # <22 或未装 → 用户愿装 Node 则引导 https://nodejs.org / nvm / fnm;不愿装 → 转步骤 2
-   npm install -g harnessed
-   ```
-   - macOS / Linux 权限报错 → `sudo npm install -g harnessed` 或改 npm prefix 到用户目录 (`npm config set prefix ~/.npm-global` + 加 `~/.npm-global/bin` 到 PATH)
-   - Windows 权限报错 → 用管理员 PowerShell / cmd 重跑
-   - npm 装后 **不会** 自动跑 setup → 继续步骤 3
+1. **首选:独立二进制 (recommended),一行安装器,分平台**
 
-2. **无 Node.js 回退:一行安装器(独立二进制,分平台)**
+   此通道只免除 harnessed 自身的 Node.js 依赖,不保证宿主或全部上游组件免 Node。上游所需 runtime 仍须单独检查。
 
    先检测 OS,跑对应脚本:
    ```bash
@@ -29,13 +22,23 @@
    irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
    ```
    - 脚本自带 sha256 校验 + `--version` smoke;落位 unix `~/.local/bin` / Windows `%LOCALAPPDATA%\harnessed\bin`
-   - **交互式会征询 `run 'harnessed setup' now? (Y/n)`**:同意则安装器已按绝对路径跑完 setup → **跳过步骤 3**;非交互(纯管道无 TTY)不征询 → 照步骤 3 手动跑
+   - **交互式会征询 `run 'harnessed setup' now? (Y/n)`**:Claude Code 用户同意且 setup 成功后 → **跳过步骤 3**;Codex 用户应拒绝默认 setup,在步骤 3 显式选择宿主;非交互(纯管道无 TTY)不征询 → 照步骤 3 手动跑
    - **二进制安装成功不等于 setup 成功**:如果随后显示 `setup failed` 或 `setup incomplete`,保留已安装的二进制,按错误原因处理,再执行安装器打印的绝对路径 setup 重试命令。此时不能把流程记为完整安装成功,也不应仅重复下载二进制。
    - **注意 PATH 提示 + shadow 警告**:输出含 PATH 指令则替用户执行后重开 shell;若输出 `another 'harnessed' ... will shadow this binary`(先前 npm 全局装过),说明 bare `harnessed` 仍指旧那份 → 按提示 `npm uninstall -g harnessed`,或用打印的绝对路径调用
    - 后续升级 `harnessed update`(二进制原地自替换,保留上一版可回滚)
-   - 不支持的平台(如 Intel Mac)脚本明确报错并指向 npm 渠道 → 回步骤 1
+   - 不支持的平台(如 Intel Mac)脚本明确报错并指向 npm 渠道 → 转步骤 2
 
-3. **跑 setup 装 workflow skills**(步骤 2 安装器已征询跑过则跳过)
+2. **npm 仍受支持**(用户选择 npm,或无对应平台二进制时使用;需要 Node.js ≥ 22)
+   ```bash
+   node --version
+   npm install -g harnessed
+   ```
+   - Node.js 未装或版本低于 22 → 经用户同意后引导 https://nodejs.org / nvm / fnm;不要为仅运行 harnessed 二进制而要求安装 Node
+   - macOS / Linux 权限报错 → 优先使用用户可写的 npm prefix,先批准再修改配置;不自动 `sudo`
+   - Windows 权限报错 → 优先使用用户可写目录,确需管理员权限时先取得批准
+   - npm 装后 **不会** 自动跑 setup → 继续步骤 3
+
+3. **跑 setup 装 workflow skills**(步骤 1 安装器已在目标宿主成功跑过则跳过)
    ```bash
    harnessed setup
    ```
@@ -64,7 +67,7 @@
 ## 常见错误
 
 - `harnessed: command not found` (安装器装后) — 落位目录不在 PATH。unix 把 `~/.local/bin` 加进 PATH;Windows 执行安装器打印的 `SetEnvironmentVariable` 指令后重开终端。
-- `npm: command not found` — Node 没装 / 未加 PATH。走步骤 2 的一行安装器(无需 Node),或引导装 Node 22+。
+- `npm: command not found` — Node 没装 / 未加 PATH。走步骤 1 的一行安装器(harnessed 本身无需 Node),或在用户选择 npm / 上游需要时引导装 Node 22+。
 - `harnessed: command not found` (npm 装后) — npm global bin 不在 PATH。跑 `npm config get prefix` 看路径,把 `<prefix>/bin` 加进 PATH。
 - 二进制装后 `harnessed --version` 报的版本比刚装的旧 — 先前 npm 全局装过,PATH 上更靠前的那份遮蔽了新二进制。安装器已打印 shadow 警告:`npm uninstall -g harnessed` 移除旧的,或按打印的绝对路径调用新二进制。
 - `~/.claude/ does not exist` — 先确认选择的宿主。Codex 不需要为了安装 harnessed 而安装 Claude Code;使用 `--platform codex`。

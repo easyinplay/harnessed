@@ -52,6 +52,8 @@ corepack pnpm test
 
 ## Commit Message 格式
 
+从本次政策变更起,新 commit 的 subject 和 body、新增 `CHANGELOG.md` / `Unreleased` 条目、GitHub release notes 及 release log 文档全部使用英文。保留既有格式约定;不翻译或重写历史 commit、CHANGELOG、release notes 或 release logs。此规则只约束新增发布记录,不改变日常对话语言或已有本地化文档。
+
 格式：`phase-<N.M>: T<N>.<M> <action>`
 
 示例：

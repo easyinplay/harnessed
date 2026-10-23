@@ -2,9 +2,9 @@
   <img src="./assets/logo.svg" alt="harnessed" width="440">
 </p>
 
-[English](./README-en.md) | [简体中文](./README.md) | [繁體中文](./README-tw.md) | **日本語** | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
+[English](./README.md) | [简体中文](./README-zh.md) | [繁體中文](./README-tw.md) | **日本語** | [한국어](./README-ko.md) | [Português (Brasil)](./README-pt-BR.md) | [Türkçe](./README-tr.md) | [Русский](./README-ru.md) | [Tiếng Việt](./README-vi.md) | [ไทย](./README-th.md)
 
-> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README-en.md](./README-en.md). For the latest and authoritative content, refer to the English version.
+> **Note (best-effort translation):** This translation is generated/best-effort and may lag behind the English [README.md](./README.md). For the latest and authoritative content, refer to the English version.
 
 > _AI coding harness パッケージマネージャー + composition orchestrator_ —— オープンソースエコシステムの最良のコンポーネントを 1 つの実行可能な engine に組み立て、三層の **BDD → SDD → TDD** メソドロジーで配線する。
 
@@ -20,15 +20,7 @@
 
 ## 📦 Quick Install
 
-**npm 経由**(推奨 —— 両チャネルとも第一級サポート、バージョンは同期):
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x は `&&` チェーンに対応していません —— `;` を使うか 2 行に分けてください（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe はすべて正常に動作します。
-
-**Node.js がない場合はスタンドアロンバイナリ** —— プラットフォーム別。以後は `harnessed update` で自己更新:
+**スタンドアロンバイナリ (recommended / 推奨)**: プラットフォーム別。以後は `harnessed update` で自己更新:
 
 ```bash
 # macOS (Apple Silicon) / Linux (x64)
@@ -39,6 +31,16 @@ curl -fsSL https://raw.githubusercontent.com/easyinplay/harnessed/main/install.s
 # Windows (x64)
 irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | iex
 ```
+
+> The standalone binary removes only harnessed's own Node.js dependency; upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
+
+**npm 経由もサポート** (Node.js >= 22 が必要):
+
+```bash
+npm install -g harnessed && harnessed setup
+```
+
+> Windows PowerShell 5.x は `&&` チェーンに対応していません —— `;` を使うか 2 行に分けてください（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe はすべて正常に動作します。
 
 🤖 **または AI にインストールさせる** —— Claude Code（または任意の AI アシスタント）に以下の文を貼り付けてください:
 
