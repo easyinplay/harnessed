@@ -29,7 +29,7 @@ progress:
 
 ## Current Position
 
-- **Phase 69 安装契约本地交付(2026-10-23)**:保留共享 engine/manifests,Claude Code/Codex 的 context/plan、组件安装/预览/安全卸载、native/probe 与自有产物契约已落地;全仓串行 4327 pass、eval 14/14、source/npm/Windows binary 隔离验收通过。详 `phases/69-host-installation-contract/VERIFICATION.md`;native gstack blocked/notrun,无真实迁移或新发版。根目录空文件最新为 0(不归功于被拒绝的删除命令);误建 smoke cache 仍受策略阻断待清理,详 EXECUTION。
+- **Phase 69 安装契约本地交付(2026-10-23)**:保留共享 engine/manifests,双宿主 context/plan、组件安装/安全卸载与产物契约已落地;全仓串行 4327 pass、eval 14/14、三渠道隔离验收通过。`f5ca347` 已 push;首轮 CI 39980176901 为 8/9,Windows 旧 PowerShell ANSI 债务已补窄修,最新结果以对应 commit check 为准。详 `phases/69-host-installation-contract/VERIFICATION.md`;native gstack blocked/notrun,未发版。根目录空文件为 0(非被拒绝命令的功劳);误建 cache 待清理,详 EXECUTION。
 
 - **Phase 68 实机 Codex 验收(2026-10-23)**:修复随 4.49.2 发布,用户后续通过一行安装器更新 standalone 至 4.49.2。完整 Codex setup:13 个 base 中 12 个通过 manifest 验收,gstack lease 上游缺陷仍阻断(exit 1);Exa 401/Tavily 审批限制独立存在。详 `phases/68-installed-codex-acceptance/SETUP-RUNTIME-AUDIT.md`。
 

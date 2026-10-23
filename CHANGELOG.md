@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - One-line installers distinguish a successfully installed binary from a failed setup, preserve setup failure evidence, and show a retry command instead of success-only update guidance.
 - Setup includes failures of explicitly selected optional components in its final result, keeps optional counts separate from base configuration, and no longer prints a successful completion message when installation failed.
+- PowerShell installer executable strings stay ASCII so legacy Windows PowerShell ANSI decoding cannot turn UTF-8 punctuation into a closing quote and reject the shadow/setup instructions before execution.
 - Codex component teardown no longer inherits Claude commands or cleanup paths. Unknown inverse operations fail before execution; the reviewed global CLI exceptions and native resource operations retain separate safety policies.
 - Captured installation targets thread through native CLI/RPC, verification, state and backup paths rather than reselecting another host after planning. Native home overrides remain independent of harnessed state roots and shared Codex workflow skills.
 - Presence receipts do not authorize external updates or establish historical ownership. Explicit-context probes preserve existing receipt history, while unknown external update targets and disabled or unverified native components remain visible instead of being treated as ready.

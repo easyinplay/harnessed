@@ -68,3 +68,9 @@ Independent static reviews found and closed nine issues, followed by a CLI previ
 The native PowerShell deletion command for seven pre-existing root zero-byte files was rejected by execution policy. Two final directory scans now report zero root zero-byte files and Git no longer lists those seven paths. Their removal is not attributed to this agent's rejected commands, and they were not staged.
 
 An invalid earlier smoke used the readonly PowerShell `$HOME` name and was terminated. It left a newly generated 53-byte `C:\Users\easyi\state\update-check.json`; its bounded cleanup was also rejected before execution. This residual and its parent directory remain. No alternate deletion mechanism was used. The invalid run supplies no acceptance evidence; only the guarded retries above are counted. Details, timestamps and intermediate failures are preserved in EXECUTION.md.
+
+## CI Encoding Follow-Up
+
+The first pushed core commit `f5ca347` ran CI `39980176901`: Ubuntu/macOS test jobs and all six binary/installer smoke jobs passed; the Windows test job alone failed. Its PowerShell 5.1 installer fixture decoded UTF-8 script bytes as ANSI, turning the one non-ASCII executable string into malformed quotes. The same failure also appears on the prior `841605a` CI run; this is an installer compatibility debt exposed by CI, not a host-contract test exemption.
+
+Main reproduced 7 PowerShell parse errors from Windows-1252-decoded source, added a portable executable-line ASCII regression and observed RED, then replaced one diagnostic punctuation character with ASCII. The decoded source now has zero parse errors; the complete installer fixture passes 19 tests with five Windows-inapplicable Unix cases skipped. No original assertion, consent, exit propagation or install strategy was relaxed. The supplemental change does not alter the source/npm/compiled runtime payloads hashed above. The next CI run verifies this separate correction.

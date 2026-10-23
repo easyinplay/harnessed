@@ -77,3 +77,9 @@ Fresh final source, npm-prefix and Windows compiled payloads passed 12 previews 
 All static review findings are closed by regressions and the final gate. Native gstack remains blocked/notrun; native/auth/browser and other-OS live acceptance are not inferred. code-simplifier is unavailable/notrun and was not silently substituted. Version remains 4.49.2; no tag/publication/global installation replacement occurred. Workspace cleanup remains incomplete exactly as recorded above.
 
 Final hygiene correction: two fresh PowerShell scans now report zero root zero-byte files, and Git no longer lists the seven original empty paths. Their removal is not attributed to this agent's rejected commands. The incorrectly generated `C:\Users\easyi\state\update-check.json` still exists at 53 bytes with the same timestamp; that separate cleanup remains blocked. Earlier seven-file observations above are historical, not current state.
+
+## CI Follow-Up After Push
+
+Core commit `f5ca347` was pushed immediately per repository policy. CI `39980176901` passed 8/9 jobs, including both Unix test jobs and all six installer/binary smokes, but Windows tests reproduced an existing PowerShell ANSI-decoding failure also present on the previous `841605a` run. Source line 138 was the only executable non-ASCII line; its punctuation could decode into a quote before the following ampersand instruction.
+
+Main used the approved trivial-edit exception (one production line plus an eight-line test): native parser reproduction produced 7 errors, the new portable ASCII regression was genuinely RED, then replacing that diagnostic punctuation with ASCII produced zero parser errors and 19 passed / 5 platform-skipped installer tests. Biome passed. There was no change to consent, failure exit codes, installation targets or package payload hashes. This is a separate narrow compatibility fix, not a test skip or CI-security workaround. A fresh CI run is required for the follow-up commit.

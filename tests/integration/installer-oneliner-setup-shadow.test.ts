@@ -198,6 +198,14 @@ describe.skipIf(windows)('Unix installer execution', () => {
 })
 
 describe('one-line installer: consent-gated auto-setup', () => {
+  it('keeps executable PowerShell lines ASCII for legacy ANSI decoding', () => {
+    const executable = ps1
+      .split(/\r?\n/)
+      .filter((line) => !line.trimStart().startsWith('#'))
+      .join('\n')
+    expect([...executable].every((char) => char.charCodeAt(0) <= 0x7f)).toBe(true)
+  })
+
   it('install.ps1 runs setup by absolute path (not a bare `harnessed`)', () => {
     // & $BinPath setup — guarantees the freshly-installed build runs its setup.
     expect(ps1).toMatch(/&\s+\$BinPath\s+setup/)
