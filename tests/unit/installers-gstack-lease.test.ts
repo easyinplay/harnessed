@@ -159,7 +159,10 @@ describe('gstack Codex lease readiness', () => {
     expect(execFile).toHaveBeenCalledOnce()
     const call = vi.mocked(execFile).mock.calls[0]
     expect(call?.[1]?.[5]?.replace(/\\/g, '/')).toBe(
-      join(descriptor.homeDir, 'skills', 'gstack', 'bin', 'gstack-lease').replace(/\\/g, '/'),
+      (await realpath(join(descriptor.homeDir, 'skills', 'gstack', 'bin', 'gstack-lease'))).replace(
+        /\\/g,
+        '/',
+      ),
     )
     expect(call?.[2]).toMatchObject({ cwd: await realpath(source) })
     expect(await readdir(source)).toEqual([])
