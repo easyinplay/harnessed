@@ -47,7 +47,7 @@
 
 - **Conventional Commits 格式**：`<type>(<scope>): <summary>` (sister Phase 1.X+ all commits 遵循；type ∈ feat/fix/docs/refactor/perf/style/chore/test)
 - **scope 格式**：`phase-{N.M}-w{W}` 或 `phase-{N.M}` (sister `docs(phase-4.2-w1): ...` precedent)
-- **Karpathy hard cap**：源码 ≤200L per file + docs ≤150L per file (sister B-06 + B-26 + Phase 3.4 D-04 explicit；详 [CLAUDE.md](../CLAUDE.md))
+- **Karpathy hard cap**：源码 ≤200L per file + docs ≤150L per file (sister B-06 + B-26 + Phase 3.4 D-04 explicit；详 [bundled disciplines](../workflows/disciplines/))
 - **Biome preempt MANDATORY**：commit .ts/.js/.mjs 前先跑 `pnpm exec biome check --write` (project memory `feedback_biome-preempt.md` 3 CI-red recurrences terminus；详 [CONTRIBUTING.md § Commit Message 格式](../CONTRIBUTING.md))
 - 详细 commit 规则 + scope 表 + body 模板见 [CONTRIBUTING.md](../CONTRIBUTING.md)
 

@@ -30,6 +30,8 @@ coverage/
 .omc/
 
 # Local tooling runtime state (untracked working-tree litter; not harnessed scope)
+/.claude/
+/CLAUDE.md
 .bg-shell/
 .gsd/
 .cate/
