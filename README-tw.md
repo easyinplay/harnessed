@@ -37,14 +37,24 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 **透過 Bun 安裝 (次要推薦; 可選)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
-bun run --bun harnessed setup --platform codex
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed update --package-manager bun
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-也可使用 `bun add -g harnessed`。Bun 僅在自選此渠道時必需;npm 仍使用 Node.js >= 22,不需要 Bun。安裝不會自動選擇 runtime,裸 `harnessed` shim 仍可能呼叫 Node;後續命令請保留 `bun run --bun harnessed`。Claude Code 請將 setup 的 `codex` 換成 `claude`。runtime 不代表安裝來源,package 更新預設仍是 npm;Bun 必須明確傳入 `--package-manager bun`。三渠道擇一,不要全部安裝。僅在使用者明確決定卸載時手動執行 `bun remove -g harnessed`。詳見 [安裝指南](./INSTALL-WITH-AI.md)。
+`setup` 預設自動偵測宿主 (Claude Code / Codex),不要求 `--platform`,成功完成後無需重複。二進位檔安裝程式在互動工作階段徵得同意後提供 setup;若跳過、失敗或以非互動方式安裝,請執行 `harnessed setup`。
+
+```bash
+# Optional: verification and maintenance
+bun run --bun harnessed --version
+bun run --bun harnessed doctor --host codex
+bun add -g harnessed@latest
+```
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+也可使用 `bun add -g harnessed`。Bun 僅在自選此渠道時必需;npm 仍使用 Node.js >= 22,不需要 Bun。安裝不會自動選擇 runtime,裸 `harnessed` shim 仍可能呼叫 Node;後續命令請保留 `bun run --bun harnessed`。只有手動指定宿主時才使用 `--platform codex` (Codex) 或 `--platform claude` (Claude Code)。runtime 不代表安裝來源,package 更新預設仍是 npm。Bun 渠道請用跨 CLI 版本可用的 `bun add -g harnessed@latest` 更新。三渠道擇一,不要全部安裝。僅在使用者明確決定卸載時手動執行 `bun remove -g harnessed`。詳見 [安裝指南](./INSTALL-WITH-AI.md)。
 
 **npm 仍受支援** (需要 Node.js >= 22):
 

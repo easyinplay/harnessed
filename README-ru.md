@@ -37,14 +37,24 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 **Через Bun (второй рекомендуемый вариант; необязательно)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
-bun run --bun harnessed setup --platform codex
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed update --package-manager bun
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`bun add -g harnessed` равнозначен. Bun нужен только при выборе этого канала; npm работает с Node.js >= 22 и не требует Bun. Установка не выбирает runtime автоматически: обычный shim `harnessed` может вызывать Node. Для последующих команд сохраняйте `bun run --bun harnessed`. Для Claude Code замените `codex` на `claude` в setup. runtime не определяет источник установки: обновление пакета по умолчанию использует npm, для Bun явно нужен `--package-manager bun`. Выберите один канал. Выполняйте `bun remove -g harnessed` вручную только при явном решении пользователя удалить эту установку. См. [руководство по установке](./INSTALL-WITH-AI.md).
+По умолчанию `setup` автоматически определяет хост (Claude Code / Codex); `--platform` не обязателен. После успешного завершения не повторяйте setup. Установщик бинарного файла предлагает setup с вашего согласия в интерактивном сеансе. При пропуске, ошибке или неинтерактивной установке выполните `harnessed setup`.
+
+```bash
+# Optional: verification and maintenance
+bun run --bun harnessed --version
+bun run --bun harnessed doctor --host codex
+bun add -g harnessed@latest
+```
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+`bun add -g harnessed` равнозначен. Bun нужен только при выборе этого канала; npm работает с Node.js >= 22 и не требует Bun. Установка не выбирает runtime автоматически: обычный shim `harnessed` может вызывать Node. Для последующих команд сохраняйте `bun run --bun harnessed`. Используйте `--platform codex` (Codex) или `--platform claude` (Claude Code) только для ручного выбора хоста. runtime не определяет источник установки: обновление пакета по умолчанию использует npm. Для обновления через Bun независимо от версии CLI используйте `bun add -g harnessed@latest`. Выберите один канал. Выполняйте `bun remove -g harnessed` вручную только при явном решении пользователя удалить эту установку. См. [руководство по установке](./INSTALL-WITH-AI.md).
 
 **Через npm (поддерживаемая альтернатива; требуется Node.js >= 22)**:
 

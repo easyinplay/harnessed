@@ -34,29 +34,34 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > The standalone binary embeds its runtime: harnessed itself needs neither external Node.js nor Bun. Upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
 
+The binary installer offers setup with your consent in interactive sessions. Do not repeat it if it completed successfully. If setup was skipped or failed, or you installed noninteractively, run `harnessed setup`.
+
 **Via Bun (secondary recommendation; optional)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`bun add -g harnessed` is an equivalent install command. Bun is required only if you choose this channel; it is not a prerequisite for the standalone binary or npm channel. Installing with Bun does not automatically select the runtime: the bare `harnessed` shim may still use a Node.js shebang. Use the explicit Bun runner for setup and subsequent CLI commands:
+This installs harnessed and runs setup in one step. `setup` defaults to automatic host detection for Claude Code or Codex; `--platform` is not required.
 
-```text
-bun run --bun harnessed setup --platform <host>
-```
-
-Replace `<host>` with `claude` for Claude Code or `codex` for Codex; do not type the angle brackets in your shell. For example:
+`bun add -g harnessed` is an equivalent install command. Bun is required only if you choose this channel, not for the standalone binary or npm channel. Installing with Bun does not select the runtime: the bare `harnessed` shim may still use a Node.js shebang. Keep the explicit Bun runner for subsequent commands:
 
 ```bash
-bun run --bun harnessed setup --platform codex
+# Optional: verification and maintenance
+bun run --bun harnessed --version
 bun run --bun harnessed doctor --host codex
 bun run --bun harnessed status
-bun run --bun harnessed update --package-manager bun
+bun add -g harnessed@latest
 ```
 
-The runtime does not identify the install manager: package updates keep the npm default unless you explicitly pass `--package-manager bun`. Upstream tools still have their own requirements.
+Optional advanced override: use `--platform codex` for Codex or `--platform claude` for Claude Code only when you want to select a host manually:
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+The runtime does not identify the install manager: package updates keep the npm default. Use `bun add -g harnessed@latest` to update a Bun-managed install across CLI versions. Upstream tools still have their own requirements.
 
 Only when you explicitly choose to remove a Bun-managed installation, run `bun remove -g harnessed`; do not uninstall another channel automatically.
 
@@ -68,9 +73,9 @@ Bun is not required for this channel; Node.js >= 22 remains supported.
 npm install -g harnessed && harnessed setup
 ```
 
-> Windows PowerShell 5.x does not support `&&` chaining — use `;` or two lines (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe all work normally.
+> Windows PowerShell 5.x does not support `&&`. For either package channel, run the install command first, then run setup only if installation succeeds. bash / zsh / PowerShell 7+ / cmd.exe support the chain.
 
-For binary/npm installs, Codex users should run `harnessed setup --platform codex` instead of the default setup; Claude Code users can select `--platform claude`. Choose one install channel, not all three.
+Choose one install channel, not all three. The Bun and npm commands above include setup; do not repeat it if it completed successfully.
 
 🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
 

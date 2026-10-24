@@ -37,14 +37,24 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 **Bun ile (ikinci öneri; isteğe bağlı)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
-bun run --bun harnessed setup --platform codex
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed update --package-manager bun
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`bun add -g harnessed` eşdeğerdir. Bun yalnızca bu kanal seçilirse gereklidir; npm, Node.js >= 22 ile çalışır ve Bun gerektirmez. Kurulum runtime'ı otomatik seçmez: yalın `harnessed` shim'i Node çağırabilir. Sonraki komutlarda da `bun run --bun harnessed` kullanın. Claude Code için setup içindeki `codex` yerine `claude` yazın. runtime kurulum kaynağını belirlemez: paket güncellemesinin varsayılanı npm olarak kalır; Bun için `--package-manager bun` açıkça verilmelidir. Yalnızca bir kanal seçin. `bun remove -g harnessed` komutunu ancak kullanıcı bu kurulumu kaldırmaya açıkça karar verdiğinde elle çalıştırın. [Kurulum kılavuzuna](./INSTALL-WITH-AI.md) bakın.
+`setup` varsayılan olarak host'u (Claude Code / Codex) otomatik algılar; `--platform` gerekmez. Başarıyla tamamlandıysa tekrarlamayın. Binary yükleyici, etkileşimli oturumlarda onayınızla setup sunar. Atlandıysa, başarısız olduysa veya etkileşimsiz kurulum yapıldıysa `harnessed setup` çalıştırın.
+
+```bash
+# Optional: verification and maintenance
+bun run --bun harnessed --version
+bun run --bun harnessed doctor --host codex
+bun add -g harnessed@latest
+```
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+`bun add -g harnessed` eşdeğerdir. Bun yalnızca bu kanal seçilirse gereklidir; npm, Node.js >= 22 ile çalışır ve Bun gerektirmez. Kurulum runtime'ı otomatik seçmez: yalın `harnessed` shim'i Node çağırabilir. Sonraki komutlarda da `bun run --bun harnessed` kullanın. Yalnızca host'u elle seçmek için `--platform codex` (Codex) veya `--platform claude` (Claude Code) kullanın. runtime kurulum kaynağını belirlemez: paket güncellemesinin varsayılanı npm olarak kalır. Bun ile CLI sürümleri arasında güncellemek için `bun add -g harnessed@latest` kullanın. Yalnızca bir kanal seçin. `bun remove -g harnessed` komutunu ancak kullanıcı bu kurulumu kaldırmaya açıkça karar verdiğinde elle çalıştırın. [Kurulum kılavuzuna](./INSTALL-WITH-AI.md) bakın.
 
 **npm ile (desteklenen alternatif; Node.js >= 22 gerekir)**:
 

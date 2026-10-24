@@ -71,11 +71,11 @@ Candidate artifact SHA-256 values at measurement/acceptance:
 
 ## Website
 
-Separate repository: `D:/GitCode/harnessed-site`. Final local build produces 121 pages; 42/42 tests pass. One Quickstart appears immediately after Hero; the old lower 60-second block and duplicate Hero install command are removed. Stable GitHub metadata drives shared version/link surfaces, with 4-second fetch bounds, 15-minute cache and fallback.
+Separate repository: `D:/GitCode/harnessed-site`. The latest website build produces 121 pages and 81/81 tests pass. Following the user's layout revisions, Hero contains the tabbed installation area with a localized separator, and WhyCards is followed by the independent two-action workflow/progress module. The old lower 60-second duplicate is removed. Stable GitHub metadata drives shared version/link surfaces, with 4-second fetch bounds, 15-minute cache and fallback.
 
 Production-preview Chromium checks cover English and Simplified Chinese at 1440x1000 and 390x844: locale assertions, one three-step region, four tabs, keyboard selection, host-specific prompts/setup, explicit Bun status/resume, real clipboard success plus simulated denial, no horizontal overflow and no sticky-header heading obstruction. GitHub failure falls back to four consistent stable labels. A valid-but-tampered expired 999.0.0 cache is corrected by successful API data and persisted; later locale navigation uses the corrected fresh cache with one API request.
 
-Evidence lives in the site repository under `.planning/npm-onboarding/browser-verification.json` and `screenshots/`. Mock 5.0.0 and 4.49.3 releases are test data, not publication evidence. Preview: `http://127.0.0.1:4322/`. No website commit, push or production deployment is claimed here.
+Earlier preview evidence lives in the site repository under `.planning/npm-onboarding/`. Mock 5.0.0 and 4.49.3 releases are test data, not publication evidence. The user subsequently authorized the website independently; source `daa0e2b` was deployed successfully and real public-domain EN/ZH desktop/mobile checks passed with no mocked network. The exact build/check identity, stable-version compatibility correction and production evidence are recorded in [the website receipt](../../releases/site-2026-10-24.md).
 
 Existing site checks remain explicit: full formatting reports pre-existing differences in untouched files; Astro's configured typecheck lacks @astrojs/check, and standalone tsc reports existing Starlight dependency type conflicts. Scoped changed-file checks and production build pass without weakening configuration.
 
@@ -83,10 +83,10 @@ Existing site checks remain explicit: full formatting reports pre-existing diffe
 
 Independent static reviews found and corrected SDK import hoisting, UTF-8 output-budget expansion, registry-source mismatch and non-healing high cache versions. These are not native gstack execution receipts.
 
-Native gstack startup did not complete; native office-hours/CEO/architecture/review gates are not marked passed. The main session asked the user whether the documented static reviews and real verification may substitute for this release. CI is now green and the read-only preflight passed four checks on the clean candidate. The substitution decision is still pending: do not push a version tag, publish npm or deploy the new site against the old stable package. Re-run preflight on the eventual release commit. Existing upstream gstack/MCP readiness limitations remain unchanged.
+Native gstack startup did not complete; native office-hours/CEO/architecture/review gates are not marked passed. The main session asked the user whether the documented static reviews and real verification may substitute for the CLI release. Its substitution decision is still pending: do not push a CLI version tag or publish npm. Re-run preflight on the eventual CLI release commit. The later explicit website deployment authorization was handled separately, with instructions corrected for the existing stable CLI; it does not mark the native CLI gate passed. Existing upstream gstack/MCP readiness limitations remain unchanged.
 
 ## CI Closure
 
 Initial CI `40010192023` passed 8/9 jobs. The sole failure was an extensionless Bun path returned by Windows Git Bash, before any runtime test launched. Follow-up `a7a93d3` asks Bun for its real executable path; local Git Bash rehearsal passed, then `40011089288` passed all three main test jobs, three binary jobs and three installer jobs. No smoke check, runtime validation or security gate was removed.
 
-This verification-record update is documentation-only; its CI is separate from the already-green runtime candidate. There is no 5.0.0 publication or website deployment receipt yet.
+This verification-record update is documentation-only; its CI is separate from the already-green runtime candidate. There is no CLI 5.0.0 publication receipt yet. The independent website deployment receipt is linked above.

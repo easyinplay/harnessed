@@ -12,7 +12,7 @@
 
 项目继续以 TypeScript 为主,本节的 Node.js + pnpm 开发流程保持不变。面向用户的安装优先级见 [README.md](./README.md):standalone binary 首要推荐、Bun 次要推荐 (可选)、npm (Node.js >= 22) 第三。binary 内嵌 runtime,不需要外部 Node.js 或 Bun;npm 运行不需要 Bun。Bun 仅在用户选择 Bun package 渠道或贡献者执行 `build:binary` 时需要,不是其他渠道的硬依赖。上游组件仍可能需要 Node/npm、Git、Bun、Python 或浏览器系统库。
 
-package manager 必须与 runtime 区分:用 Bun 执行 package CLI 时使用 `bun run --bun harnessed ...`,不能由 runtime 推断安装来源。Bun 渠道更新显式使用 `bun run --bun harnessed update --package-manager bun`;省略 manager 的 package 更新保留 npm 默认语义。
+package manager 必须与 runtime 区分:用 Bun 执行 package CLI 时使用 `bun run --bun harnessed ...`,不能由 runtime 推断安装来源。跨版本更新 Bun 管理的包使用 `bun add -g harnessed@latest`;CLI 5.0+ 另外支持显式 `bun run --bun harnessed update --package-manager bun`,省略 manager 的 package 更新保留 npm 默认语义。
 
 Runtime 验证限制:已有真机隔离记录覆盖 Bun 1.4.4 安装 harnessed 4.49.2,以及无 Node PATH 下的显式版本与 Codex setup dry-run。这些 smoke checks 不能替代 Bun-owned hooks、显式 Bun updater 及 5.0 runtime 整合的验收,尚待主 session 最终验收。真机 upstream 可用性不作保证,必须按具体工具另行验证,不得据此声明全部上游或全流程验证通过。
 

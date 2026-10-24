@@ -37,14 +37,24 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 **Qua Bun (khuyến nghị thứ hai; tùy chọn)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
-bun run --bun harnessed setup --platform codex
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed update --package-manager bun
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`bun add -g harnessed` là lệnh tương đương. Chỉ cần Bun khi chọn kênh này; npm vẫn dùng Node.js >= 22 và không cần Bun. Cài đặt không tự chọn runtime: shim `harnessed` có thể gọi Node. Hãy giữ `bun run --bun harnessed` cho các lệnh sau. Với Claude Code, đổi `codex` thành `claude` trong setup. runtime không xác định nguồn cài đặt: cập nhật package mặc định vẫn dùng npm; Bun cần chỉ rõ `--package-manager bun`. Chỉ chọn một kênh. Chỉ chạy thủ công `bun remove -g harnessed` khi người dùng quyết định rõ ràng muốn gỡ bản cài đó. Xem [hướng dẫn cài đặt](./INSTALL-WITH-AI.md).
+`setup` mặc định tự động nhận diện host (Claude Code / Codex), không bắt buộc `--platform`. Không chạy lại nếu đã thành công. Trình cài binary cung cấp setup trong phiên tương tác khi bạn đồng ý. Nếu đã bỏ qua, thất bại hoặc cài không tương tác, hãy chạy `harnessed setup`.
+
+```bash
+# Optional: verification and maintenance
+bun run --bun harnessed --version
+bun run --bun harnessed doctor --host codex
+bun add -g harnessed@latest
+```
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+`bun add -g harnessed` là lệnh tương đương. Chỉ cần Bun khi chọn kênh này; npm vẫn dùng Node.js >= 22 và không cần Bun. Cài đặt không tự chọn runtime: shim `harnessed` có thể gọi Node. Hãy giữ `bun run --bun harnessed` cho các lệnh sau. Chỉ dùng `--platform codex` (Codex) hoặc `--platform claude` (Claude Code) khi muốn chọn host thủ công. runtime không xác định nguồn cài đặt: cập nhật package mặc định vẫn dùng npm. Để cập nhật qua Bun giữa các phiên bản CLI, dùng `bun add -g harnessed@latest`. Chỉ chọn một kênh. Chỉ chạy thủ công `bun remove -g harnessed` khi người dùng quyết định rõ ràng muốn gỡ bản cài đó. Xem [hướng dẫn cài đặt](./INSTALL-WITH-AI.md).
 
 **Qua npm (vẫn được hỗ trợ; cần Node.js >= 22)**:
 

@@ -67,3 +67,20 @@ All selected observations exited 0. Fresh first invocations were 270.9 ms Node, 
 - Follow-up commit `a7a93d3979b8ac31b4069c56521bc3fb377898c3` passed CI `40011089288`: 9/9 completed successfully, including Windows runtime-channel smoke. The owned `gh run watch` session exited 0.
 - The only remaining intentional background service is the website production preview on port 4322. All workers and test/watch exec sessions ended.
 - User approval for substituting the incomplete native gstack gate is still awaited. No version tag, npm release, global binary replacement or site deployment was performed.
+
+## Follow-Up Website Layout And Setup Defaults
+
+- User moved tabbed install commands back to the original Hero location and the workflow/progress-resume module after WhyCards. The old lower 60-second block must remain absent.
+- User requested combined install/setup for Bun and npm, without appending setup to standalone installer commands. Follow-up clarified that `--platform` must not appear mandatory.
+- Source confirmation: setup registers platform as optional and defaults to the existing resolver. The 4-file host/setup suite passed 73 tests; no CLI detection logic was changed for the website revision.
+- Built CLI isolation checks also passed without any platform argument or host environment selection: a fresh Claude-only home previewed `.claude/skills`, and a fresh Codex-only home previewed `.agents/skills`; both exited 0. These are setup dry-run checks, not live upstream installation claims.
+- A bounded website worker owns the component split, centralized default command changes and regression tests. Host selection in the workflow module must not force platform arguments in the install command.
+- The revised site now passes 56 tests and a 121-page build. Eight main-session browser cases (EN/ZH, desktop through 320x640) verify Hero installation, WhyCards then the two-action module, combined package setup without required platform flags, no binary duplicate setup, clipboard/keyboard behavior and explicit Bun continuation. Source/records remain local; no publication gate was changed.
+
+## Website Deployment And README Merge
+
+- User explicitly authorized the separate website deployment and README Bun chain merge. This supersedes the website hold, not the CLI 5.0.0 publication gate.
+- Website source `daa0e2bb469a3195e44914dc4fc777ac74c89021` was pushed; Cloudflare build `8918041d-d261-4d77-a3c6-d22505dcbaae` completed successfully. Real public EN/ZH desktop/mobile and installation documentation checks pass with no network mocks; GitHub API200 returns consistent v4.49.2 labels/links.
+- Public copy was made compatible with the existing stable CLI before pushing: native Bun updates and the 4.x hook Node prerequisite replace an unconditional unreleased updater flag.
+- Fresh site tests81, build121, scoped checks and four production browser cases pass. README merging across 11 files passes30 contracts. Exact source/check IDs, screenshots and remaining limits: `.planning/releases/site-2026-10-24.md`.
+- No CLI tag, npm publication, global installation replacement or native security-policy change was performed. Managed deployment monitoring and browser processes ended normally.

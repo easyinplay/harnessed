@@ -37,14 +37,24 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 **Via Bun (recomendação secundária; opcional)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
-bun run --bun harnessed setup --platform codex
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed update --package-manager bun
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`bun add -g harnessed` é equivalente. Bun só é necessário ao escolher este canal; npm continua usando Node.js >= 22, sem exigir Bun. A instalação não escolhe o runtime automaticamente: o shim `harnessed` pode chamar Node. Mantenha `bun run --bun harnessed` nos próximos comandos. Para Claude Code, troque `codex` por `claude` no setup. O runtime não identifica a origem da instalação: atualizações de pacote mantêm npm como padrão; Bun exige `--package-manager bun`. Escolha apenas um canal. Execute `bun remove -g harnessed` manualmente apenas quando o usuário decidir remover essa instalação. Veja o [guia de instalação](./INSTALL-WITH-AI.md).
+Por padrão, `setup` detecta automaticamente o host (Claude Code / Codex); `--platform` não é obrigatório. Não repita se concluído com sucesso. O instalador binário oferece setup com seu consentimento em sessões interativas. Se foi ignorado, falhou ou a instalação foi não interativa, execute `harnessed setup`.
+
+```bash
+# Optional: verification and maintenance
+bun run --bun harnessed --version
+bun run --bun harnessed doctor --host codex
+bun add -g harnessed@latest
+```
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+`bun add -g harnessed` é equivalente. Bun só é necessário ao escolher este canal; npm continua usando Node.js >= 22, sem exigir Bun. A instalação não escolhe o runtime automaticamente: o shim `harnessed` pode chamar Node. Mantenha `bun run --bun harnessed` nos próximos comandos. Use `--platform codex` (Codex) ou `--platform claude` (Claude Code) somente para selecionar o host manualmente. O runtime não identifica a origem da instalação: atualizações de pacote mantêm npm como padrão. Para atualizar pelo Bun entre versões da CLI, use `bun add -g harnessed@latest`. Escolha apenas um canal. Execute `bun remove -g harnessed` manualmente apenas quando o usuário decidir remover essa instalação. Veja o [guia de instalação](./INSTALL-WITH-AI.md).
 
 **Via npm (alternativa suportada; requer Node.js >= 22)**:
 

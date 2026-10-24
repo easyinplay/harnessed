@@ -124,4 +124,4 @@
 
 后续 shell 命令按渠道选择:binary/npm 使用 `harnessed doctor`、`harnessed status`、`harnessed resume`;Bun 使用 `bun run --bun harnessed doctor`、`bun run --bun harnessed status`、`bun run --bun harnessed resume`。
 
-升级:二进制使用 `harnessed update` 原地自替换;npm 使用 `harnessed update` (保留 `npm i -g harnessed@latest` 默认语义);Bun 显式使用 `bun run --bun harnessed update --package-manager bun`。runtime 不代表 package manager 或安装来源,即使用 Bun runtime,省略 manager 也不会自动切换到 Bun 更新。doctor 与 status 的调用同样遵循所选 runner。只有用户明确选择卸载 Bun 渠道时才手动运行 `bun remove -g harnessed`,不得自动卸载。
+升级:二进制使用 `harnessed update` 原地自替换;npm 使用 `harnessed update` (保留 `npm i -g harnessed@latest` 默认语义);Bun 管理的安装使用跨版本命令 `bun add -g harnessed@latest`。runtime 不代表 package manager 或安装来源,即使用 Bun runtime,也不能据此自动切换安装管理器。doctor 与 status 的调用同样遵循所选 runner。只有用户明确选择卸载 Bun 渠道时才手动运行 `bun remove -g harnessed`,不得自动卸载。

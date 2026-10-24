@@ -37,14 +37,24 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 **Bun으로 설치 (보조 권장 경로; 선택 사항)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
-bun run --bun harnessed setup --platform codex
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed update --package-manager bun
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`bun add -g harnessed`도 동일합니다. Bun은 이 경로를 선택할 때만 필요하며, npm 경로는 Node.js >= 22를 사용하고 Bun은 필요 없습니다. 설치만으로 runtime이 자동 선택되지 않습니다. 기본 `harnessed` shim은 Node를 호출할 수 있으므로 이후에도 `bun run --bun harnessed`를 사용하세요. Claude Code에서는 setup의 `codex`를 `claude`로 바꾸세요. runtime으로 설치 출처를 추론하지 않습니다. package 업데이트 기본값은 npm이며 Bun은 `--package-manager bun`을 명시해야 합니다. 세 경로 중 하나만 선택하고, 사용자가 명시적으로 삭제를 선택한 경우에만 `bun remove -g harnessed`를 수동 실행하세요. [설치 가이드](./INSTALL-WITH-AI.md)를 참조하세요.
+`setup`은 기본적으로 호스트 (Claude Code / Codex)를 자동 감지하므로 `--platform`은 필요 없습니다. 성공 후 반복하지 마세요. 바이너리 설치 프로그램은 대화형 세션에서 동의를 받아 setup을 제공합니다. 건너뛰거나 실패했거나 비대화형으로 설치했다면 `harnessed setup`을 실행하세요.
+
+```bash
+# Optional: verification and maintenance
+bun run --bun harnessed --version
+bun run --bun harnessed doctor --host codex
+bun add -g harnessed@latest
+```
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+`bun add -g harnessed`도 동일합니다. Bun은 이 경로를 선택할 때만 필요하며, npm 경로는 Node.js >= 22를 사용하고 Bun은 필요 없습니다. 설치만으로 runtime이 자동 선택되지 않습니다. 기본 `harnessed` shim은 Node를 호출할 수 있으므로 이후에도 `bun run --bun harnessed`를 사용하세요. 호스트를 수동으로 선택할 때만 `--platform codex` (Codex) 또는 `--platform claude` (Claude Code)를 사용하세요. runtime으로 설치 출처를 추론하지 않습니다. package 업데이트 기본값은 npm입니다. Bun 경로는 CLI 버전과 관계없이 `bun add -g harnessed@latest`로 업데이트할 수 있습니다. 세 경로 중 하나만 선택하고, 사용자가 명시적으로 삭제를 선택한 경우에만 `bun remove -g harnessed`를 수동 실행하세요. [설치 가이드](./INSTALL-WITH-AI.md)를 참조하세요.
 
 **npm도 계속 지원** (Node.js >= 22 필요):
 

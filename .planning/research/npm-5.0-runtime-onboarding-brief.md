@@ -48,6 +48,19 @@ Source discovery located a separate, clean repository at `D:/GitCode/harnessed-s
 
 Verified website edit surfaces are `src/components/Quickstart.astro`, `InstallCommand.astro`, `Hero.astro`, `PromoBar.astro`, `CommunityStats.astro`, ten `src/i18n/` dictionaries and the English/Simplified Chinese installation/quickstart documentation. The website currently has a 60-second quickstart, not a First 5 Minutes section; the latter is imported conceptually from the CLI README. Source dictionaries contain static v4.43.0 values in multiple locations. Existing `src/lib/npmDownloads.ts` provides a build-time fetch plus browser-refresh pattern worth reviewing before adding infrastructure.
 
+## Follow-Up Layout And Default Command Revision
+
+The user's later layout request supersedes the original single-region placement: keep the tabbed installation commands inside Hero at the original install-command location (after the introductory copy and before the CTAs). Place workflow start and progress/resume in one separate module immediately after WhyCards. Do not restore the old lower 60-second quickstart or duplicate installation commands.
+
+The binary installer already offers setup through its consent prompt; do not append a second setup command. Bun and npm should show a single copyable install-and-setup chain. Default to existing CLI auto-detection, not a forced host argument:
+
+```bash
+bun install -g harnessed && bun run --bun harnessed setup
+npm install -g harnessed && harnessed setup
+```
+
+`setup --platform` is optional, as confirmed in the existing registration and host resolver. Retain it as a documented manual override, not a prerequisite. The workflow display's Claude/Codex selector chooses prompt syntax only; it must not silently force the installation command's host. Bun selection must still keep the separated progress/resume commands on the explicit Bun runtime. Existing auto-detection uses environment/session signals, saved selection and host directories; with both hosts and no stronger signal the current implementation prefers Claude Code. This UI revision does not change that policy.
+
 ## Dynamic Release Version
 
 Use the GitHub latest published stable release for `easyinplay/harnessed` as the source of truth, excluding draft/prerelease versions. Do not derive the public version from the main branch's package.json or display 5.0.0 before it is actually released.

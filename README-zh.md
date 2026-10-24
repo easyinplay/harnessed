@@ -32,29 +32,34 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > 独立二进制内嵌 runtime,harnessed 自身不需要外部 Node.js 或 Bun;上游组件仍可能要求 Node/npm、Git、Bun、Python 或浏览器系统库。
 
+二进制安装脚本在交互会话中征得同意后提供 setup。成功完成后无需重复;若跳过、失败或使用非交互安装,请运行 `harnessed setup`。
+
 **通过 Bun 安装 (次要推荐; 可选)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-也可使用等价的 `bun add -g harnessed`。Bun 只在你自选此渠道时必需,不是独立二进制或 npm 渠道的前置依赖。用 Bun 安装不代表自动选择 Bun runtime:裸 `harnessed` shim 的 shebang 仍可能调用 Node.js。setup 和后续 CLI 命令都应显式使用 Bun runner:
+这条命令将安装与 setup 一次完成。`setup` 默认自动检测宿主 (Claude Code 或 Codex),不要求 `--platform`。
 
-```text
-bun run --bun harnessed setup --platform <host>
-```
-
-将 `<host>` 替换为 Claude Code 对应的 `claude` 或 Codex 对应的 `codex`,不要把尖括号输入 shell。例如:
+也可使用等价的 `bun add -g harnessed`。Bun 只在你自选此渠道时必需,不是独立二进制或 npm 渠道的前置依赖。用 Bun 安装不代表自动选择 Bun runtime:裸 `harnessed` shim 的 shebang 仍可能调用 Node.js。后续 CLI 命令也应显式使用 Bun runner:
 
 ```bash
-bun run --bun harnessed setup --platform codex
+# Optional: verification and maintenance
+bun run --bun harnessed --version
 bun run --bun harnessed doctor --host codex
 bun run --bun harnessed status
-bun run --bun harnessed update --package-manager bun
+bun add -g harnessed@latest
 ```
 
-runtime 不等于 install manager:package 更新保留 npm 默认语义,选择 Bun 必须显式传入 `--package-manager bun`。上游工具仍有各自依赖。
+可选的高级手动覆盖:只有需要手动指定宿主时才使用 `--platform codex` (Codex) 或 `--platform claude` (Claude Code),不是安装必需步骤:
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+runtime 不等于 install manager:package 更新保留 npm 默认语义。Bun 渠道请用跨 CLI 版本可用的 `bun add -g harnessed@latest` 更新。上游工具仍有各自依赖。
 
 仅当你明确决定卸载 Bun 渠道时,手动运行 `bun remove -g harnessed`;不要自动卸载其他渠道。
 
@@ -66,9 +71,9 @@ runtime 不等于 install manager:package 更新保留 npm 默认语义,选择 B
 npm install -g harnessed && harnessed setup
 ```
 
-> Windows PowerShell 5.x 不支持 `&&` 链接 —— 改用 `;` 或分两行 (`npm install -g harnessed; harnessed setup`)。bash / zsh / PowerShell 7+ / cmd.exe 都正常。
+> Windows PowerShell 5.x 不支持 `&&`。两个 package 渠道都应先执行安装命令,成功后再单独执行 setup。bash / zsh / PowerShell 7+ / cmd.exe 支持此 chain。
 
-binary/npm 渠道的 Codex 用户应以 `harnessed setup --platform codex` 替代默认 setup;Claude Code 用户可显式选择 `--platform claude`。三个安装渠道选一个即可。
+三个安装渠道选一个即可。以上 Bun 和 npm 命令已包含 setup,成功完成后无需重复。
 
 🤖 **或让 AI 帮你装** —— 把下面这句话发给 Claude Code (或任何 AI 助手):
 

@@ -69,7 +69,7 @@ for (const file of readmes) {
       'bun run --bun harnessed --version',
       'bun run --bun harnessed setup --platform codex',
       'bun run --bun harnessed doctor --host codex',
-      'bun run --bun harnessed update --package-manager bun',
+      'bun add -g harnessed@latest',
     ])
       assert.ok(install.includes(command), `${file}: ${command}`)
     assert.ok(install.includes('Node.js >= 22'), file)
@@ -77,6 +77,26 @@ for (const file of readmes) {
     assert.ok(install.includes('Python'), file)
     assert.ok(install.includes('shim'), file)
     assert.ok(install.includes('claude'), file)
+  })
+
+  test(`${file}: Bun install includes setup with automatic host detection; overrides are optional`, () => {
+    const install = installPrefix(read(file))
+    const blocks = [...install.matchAll(/```(?:bash|powershell|sh|text)\n([\s\S]*?)```/g)]
+    const chain = 'bun install -g harnessed && bun run --bun harnessed setup'
+    const bunBlock = blocks.find(([, block]) => block.includes('bun install -g harnessed'))
+    assert.equal(bunBlock?.[1].trim(), chain, `${file}: first Bun block is install + setup`)
+    assert.doesNotMatch(install, /--platform(?:\s+|=)auto\b/)
+    assert.doesNotMatch(install, /--package-manager bun/)
+    assert.ok(install.includes('npm install -g harnessed && harnessed setup'), file)
+    const setupBlocks = blocks.filter(([, block]) =>
+      block.includes('bun run --bun harnessed setup'),
+    )
+    assert.equal(setupBlocks.length, 2, `${file}: default chain and optional override only`)
+    assert.match(setupBlocks[1][1], /^# Optional: manual host override[^\n]*\n/)
+    assert.doesNotMatch(
+      install.slice(0, install.indexOf('bun install -g harnessed')),
+      /^harnessed setup/m,
+    )
   })
 }
 
@@ -102,7 +122,8 @@ test('First 5 Minutes distinguishes Claude Code and Codex prompts from shell com
 test('English and Chinese keep runtime requirements independent from the install manager', () => {
   for (const file of ['README.md', 'README-zh.md']) {
     const install = installPrefix(read(file))
-    assert.ok(install.includes('bun run --bun harnessed setup --platform <host>'))
+    assert.ok(install.includes('bun run --bun harnessed setup --platform codex'))
+    assert.match(install, /automatic host detection|自动检测宿主/)
     for (const token of ['runtime', 'shebang', 'install manager']) {
       assert.ok(install.includes(token), `${file}: ${token}`)
     }
@@ -143,7 +164,7 @@ test('AI guide preserves consent, package-manager defaults, and explicit user re
     '不得把缺失依赖或未验证步骤记为成功',
     'bun remove -g harnessed',
     'npm i -g harnessed@latest',
-    'bun run --bun harnessed update --package-manager bun',
+    'bun add -g harnessed@latest',
     '/auto "<需求>"',
     '$auto "<需求>"',
   ])

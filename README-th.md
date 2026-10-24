@@ -37,14 +37,24 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 **ผ่าน Bun (คำแนะนำลำดับที่สอง; ไม่บังคับ)**:
 
 ```bash
-bun install -g harnessed
-bun run --bun harnessed --version
-bun run --bun harnessed setup --platform codex
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed update --package-manager bun
+bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-ใช้ `bun add -g harnessed` แทนได้ ต้องมี Bun เฉพาะเมื่อเลือกช่องทางนี้ ส่วน npm ยังคงใช้ Node.js >= 22 โดยไม่ต้องมี Bun การติดตั้งไม่ได้เลือก runtime อัตโนมัติ เพราะ shim `harnessed` อาจเรียก Node ให้ใช้ `bun run --bun harnessed` ต่อไป สำหรับ Claude Code ให้เปลี่ยน `codex` เป็น `claude` ใน setup runtime ไม่ได้ระบุแหล่งติดตั้ง การอัปเดต package ยังใช้ npm เป็นค่าเริ่มต้น ต้องระบุ `--package-manager bun` เมื่อเลือก Bun เลือกเพียงช่องทางเดียว และรัน `bun remove -g harnessed` ด้วยตนเองเฉพาะเมื่อผู้ใช้ตัดสินใจถอนการติดตั้งอย่างชัดเจน ดู[คู่มือติดตั้ง](./INSTALL-WITH-AI.md)
+`setup` ตรวจหา host (Claude Code / Codex) โดยอัตโนมัติเป็นค่าเริ่มต้น จึงไม่ต้องระบุ `--platform` และไม่ต้องทำซ้ำหากสำเร็จ ตัวติดตั้ง binary เสนอ setup ในเซสชันแบบโต้ตอบเมื่อได้รับความยินยอม หากข้าม ล้มเหลว หรือติดตั้งแบบไม่โต้ตอบ ให้รัน `harnessed setup`
+
+```bash
+# Optional: verification and maintenance
+bun run --bun harnessed --version
+bun run --bun harnessed doctor --host codex
+bun add -g harnessed@latest
+```
+
+```bash
+# Optional: manual host override (not required after installation)
+bun run --bun harnessed setup --platform codex
+```
+
+ใช้ `bun add -g harnessed` แทนได้ ต้องมี Bun เฉพาะเมื่อเลือกช่องทางนี้ ส่วน npm ยังคงใช้ Node.js >= 22 โดยไม่ต้องมี Bun การติดตั้งไม่ได้เลือก runtime อัตโนมัติ เพราะ shim `harnessed` อาจเรียก Node ให้ใช้ `bun run --bun harnessed` ต่อไป ใช้ `--platform codex` (Codex) หรือ `--platform claude` (Claude Code) เฉพาะเมื่อต้องการเลือก host ด้วยตนเอง runtime ไม่ได้ระบุแหล่งติดตั้ง การอัปเดต package ยังใช้ npm เป็นค่าเริ่มต้น อัปเดตผ่าน Bun ข้ามเวอร์ชัน CLI ได้ด้วย `bun add -g harnessed@latest` เลือกเพียงช่องทางเดียว และรัน `bun remove -g harnessed` ด้วยตนเองเฉพาะเมื่อผู้ใช้ตัดสินใจถอนการติดตั้งอย่างชัดเจน ดู[คู่มือติดตั้ง](./INSTALL-WITH-AI.md)
 
 **ผ่าน npm (ยังรองรับ; ต้องใช้ Node.js >= 22)**:
 

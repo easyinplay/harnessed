@@ -1,0 +1,101 @@
+{
+  "ok": true,
+  "kind": "live-production-browser",
+  "base": "https://harnessed.cc",
+  "mockedNetwork": false,
+  "at": "2026-10-24T03:45:21.236Z",
+  "deployedCommit": "daa0e2bb469a3195e44914dc4fc777ac74c89021",
+  "checks": [
+    {
+      "viewport": "desktop-en",
+      "url": "https://harnessed.cc/",
+      "status": 200,
+      "heading": "Quick install",
+      "layout": true,
+      "tabs": 4,
+      "workflowSteps": 2,
+      "copy": true,
+      "keyboard": true,
+      "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+      ],
+      "githubApiStatuses": [200],
+      "errors": []
+    },
+    {
+      "viewport": "desktop-zh",
+      "url": "https://harnessed.cc/zh-hans/",
+      "status": 200,
+      "heading": "一键安装",
+      "layout": true,
+      "tabs": 4,
+      "workflowSteps": 2,
+      "copy": true,
+      "keyboard": true,
+      "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+      ],
+      "githubApiStatuses": [200],
+      "errors": []
+    },
+    {
+      "viewport": "mobile-en",
+      "url": "https://harnessed.cc/",
+      "status": 200,
+      "heading": "Quick install",
+      "layout": true,
+      "tabs": 4,
+      "workflowSteps": 2,
+      "copy": true,
+      "keyboard": true,
+      "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+      ],
+      "githubApiStatuses": [200],
+      "errors": []
+    },
+    {
+      "viewport": "mobile-zh",
+      "url": "https://harnessed.cc/zh-hans/",
+      "status": 200,
+      "heading": "一键安装",
+      "layout": true,
+      "tabs": 4,
+      "workflowSteps": 2,
+      "copy": true,
+      "keyboard": true,
+      "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+        "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+      ],
+      "githubApiStatuses": [200],
+      "errors": []
+    },
+    {
+      "url": "https://harnessed.cc/docs/getting-started/installation/",
+      "status": 200,
+      "stableInstructions": true
+    },
+    {
+      "url": "https://harnessed.cc/zh-hans/docs/getting-started/installation/",
+      "status": 200,
+      "stableInstructions": true
+    }
+  ],
+  "artifacts": "D:/GitCode/harnessed/.planning/releases/site-2026-10-24"
+}
