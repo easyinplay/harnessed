@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Package-update dry-runs no longer reinstall upstream components when the selected npm version is current or ahead. The read-only guard now applies to default npm, explicit npm and explicit Bun selections under both supported package runtimes, including `--upstreams` and `--all`.
+
+### Changed
+
+- Installation sections across all README translations now keep one Bun install/setup command and a short explicit-runner caveat. Removed the redundant AI installation guide and promotional instructions; README is the shared installation entry for people and AI assistants.
+- Project-local `.claude/` content and the root `CLAUDE.md` are no longer tracked. Existing local copies remain intact and are ignored; generated user-level Claude Code installation targets are unchanged.
+
 ## [5.0.0] - 2026-10-24
 
 ### Changed

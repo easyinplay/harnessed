@@ -208,18 +208,61 @@ describe('harnessed update', () => {
     else expect(stdout).toContain('99.0.0')
   })
 
-  it('Bun dry-run is read-only even when current and --upstreams is set', async () => {
-    vi.mocked(fetchLatestBunVersion).mockResolvedValue(pkg.version)
-    const { stdout } = await runCli([
-      'update',
-      '--package-manager',
-      'bun',
-      '--dry-run',
-      '--upstreams',
-    ])
-    expect(execFileSync).not.toHaveBeenCalled()
-    expect(installBaseProfile).not.toHaveBeenCalled()
-    expect(stdout).toContain('upstreams')
+  describe.each(['Node', 'Bun'])('%s runtime upstream safety', (runtime) => {
+    beforeEach(() => {
+      if (runtime === 'Bun') useBun()
+      else Reflect.deleteProperty(process.versions, 'bun')
+    })
+
+    describe.each([
+      { label: 'default npm', manager: 'npm', args: [] },
+      { label: 'explicit npm', manager: 'npm', args: ['--package-manager', 'npm'] },
+      { label: 'explicit Bun', manager: 'bun', args: ['--package-manager', 'bun'] },
+    ])('$label', ({ manager, args }) => {
+      const selectedQuery = manager === 'bun' ? fetchLatestBunVersion : fetchLatestNpmVersion
+      const otherQuery = manager === 'bun' ? fetchLatestNpmVersion : fetchLatestBunVersion
+
+      it.each([
+        { status: 'current', latest: pkg.version, flag: '--upstreams' },
+        { status: 'current', latest: pkg.version, flag: '--all' },
+        { status: 'ahead', latest: '0.0.0', flag: '--upstreams' },
+        { status: 'ahead', latest: '0.0.0', flag: '--all' },
+      ])('$status --dry-run $flag never installs', async ({ latest, flag }) => {
+        vi.mocked(selectedQuery).mockResolvedValue(latest)
+
+        const { code, stdout } = await runCli(['update', ...args, '--dry-run', flag])
+
+        expect(code).toBe(0)
+        expect(selectedQuery).toHaveBeenCalledTimes(1)
+        expect(otherQuery).not.toHaveBeenCalled()
+        expect(fetchLatestVersion).not.toHaveBeenCalled()
+        expect(execFileSync).not.toHaveBeenCalled()
+        expect(runBinarySelfUpdate).not.toHaveBeenCalled()
+        expect(runBinaryRollback).not.toHaveBeenCalled()
+        expect(installBaseProfile).not.toHaveBeenCalled()
+        expect(stdout).toContain('nothing installed')
+      })
+
+      it.each(['--upstreams', '--all'])('current %s still installs upstreams', async (flag) => {
+        vi.mocked(selectedQuery).mockResolvedValue(pkg.version)
+
+        const { code } = await runCli(['update', ...args, flag])
+
+        expect(code).toBe(0)
+        expect(selectedQuery).toHaveBeenCalledTimes(1)
+        expect(otherQuery).not.toHaveBeenCalled()
+        expect(execFileSync).not.toHaveBeenCalled()
+        expect(installBaseProfile).toHaveBeenCalledTimes(1)
+        expect(installBaseProfile).toHaveBeenCalledWith({
+          apply: true,
+          dryRun: false,
+          system: false,
+          nonInteractive: true,
+          fullDiff: false,
+          color: 'auto',
+        })
+      })
+    })
   })
 
   it('Bun runtime without a manager override preserves npm and explains how to opt in', async () => {
@@ -295,10 +338,15 @@ describe('harnessed update', () => {
     expect(stdout.toLowerCase()).toContain('up to date')
   })
 
-  it('--upstreams re-runs the base profile after self-update', async () => {
+  it.each([
+    '--upstreams',
+    '--all',
+  ])('%s re-runs the base profile after self-update', async (flag) => {
     vi.mocked(fetchLatestNpmVersion).mockResolvedValue('99.0.0')
-    await runCli(['update', '--upstreams'])
-    expect(installBaseProfile).toHaveBeenCalled()
+    await runCli(['update', flag])
+    expect(execFileSync).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(execFileSync).mock.calls[0]?.[1]).toEqual(['i', '-g', 'harnessed@latest'])
+    expect(installBaseProfile).toHaveBeenCalledTimes(1)
   })
 
   it('npm unreachable (fetch null) → no install, friendly message', async () => {
@@ -352,6 +400,7 @@ describe('harnessed update', () => {
     const { stdout } = await runCli(['update', '--dry-run'])
     expect(stdout).toContain('npm i -g harnessed@latest')
     expect(execFileSync).not.toHaveBeenCalled()
+    expect(installBaseProfile).not.toHaveBeenCalled()
   })
 
   it('compiled update error → non-zero exit + manual-restore/npm guidance surfaced', async () => {

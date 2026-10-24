@@ -41,4 +41,4 @@
 
 ## Active
 
-_None._ Public npm5.0.0 Runtime And Onboarding closed2026-10-24; source, publication and known-limit evidence: `phases/70-runtime-onboarding/SUMMARY.md` and `releases/5.0.0.md`. This public version is distinct from the historical internal v5.0 milestone. Next milestone queue lives in `TODOS.md`; the subsequent screenshot refinement is site-only.
+Public npm5.0.0 Runtime And Onboarding closed2026-10-24; source, publication and known-limit evidence: `phases/70-runtime-onboarding/SUMMARY.md` and `releases/5.0.0.md`. Corrective5.x compatibility maintenance continues in `phases/71-bun5-follow-through/PLAN.md`, without a new release authorization. This public version remains distinct from the historical internal v5.0 milestone. Future product milestones remain queued in `TODOS.md`.

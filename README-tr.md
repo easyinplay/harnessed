@@ -34,41 +34,25 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > Binary kendi runtime'ını içerir; harici Node.js veya Bun gerekmez. Upstream bileşenleri yine de Node/npm, Git, Bun, Python veya tarayıcı sistem kitaplıkları gerektirebilir.
 
+Binary yükleyici, etkileşimli oturumlarda onayınızla setup sunar. Atlandıysa, başarısız olduysa veya etkileşimsiz kurulum yapıldıysa `harnessed setup` çalıştırın.
+
 **Bun ile (ikinci öneri; isteğe bağlı)**:
 
 ```bash
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`setup` varsayılan olarak host'u (Claude Code / Codex) otomatik algılar; `--platform` gerekmez. Başarıyla tamamlandıysa tekrarlamayın. Binary yükleyici, etkileşimli oturumlarda onayınızla setup sunar. Atlandıysa, başarısız olduysa veya etkileşimsiz kurulum yapıldıysa `harnessed setup` çalıştırın.
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun add -g harnessed@latest
-```
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-`bun add -g harnessed` eşdeğerdir. Bun yalnızca bu kanal seçilirse gereklidir; npm, Node.js >= 22 ile çalışır ve Bun gerektirmez. Kurulum runtime'ı otomatik seçmez: yalın `harnessed` shim'i Node çağırabilir. Sonraki komutlarda da `bun run --bun harnessed` kullanın. Yalnızca host'u elle seçmek için `--platform codex` (Codex) veya `--platform claude` (Claude Code) kullanın. runtime kurulum kaynağını belirlemez: paket güncellemesinin varsayılanı npm olarak kalır. Bun ile CLI sürümleri arasında güncellemek için `bun add -g harnessed@latest` kullanın. Yalnızca bir kanal seçin. `bun remove -g harnessed` komutunu ancak kullanıcı bu kurulumu kaldırmaya açıkça karar verdiğinde elle çalıştırın. [Kurulum kılavuzuna](./INSTALL-WITH-AI.md) bakın.
+Sonraki Bun komutlarında `bun run --bun harnessed` kullanın; yalın `harnessed` shim hâlâ Node.js çağırabilir.
 
 **npm ile (desteklenen alternatif; Node.js >= 22 gerekir)**:
+
+Bu kanal Bun gerektirmez; Node.js >= 22 desteklenmeye devam eder.
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
-
-🤖 **Veya bir yapay zekaya kurdurun** — bu cümleyi Claude Code'a (ya da herhangi bir yapay zeka asistanına) yapıştırın:
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-Yapay zeka dokümanı otomatik olarak çeker ve kurulumu gerçekleştirir; işletim sistemi / izinler / PATH / corepack uç durumlarını sizin yerinize halleder — büyük metin parçaları kopyalamanıza gerek yoktur.
 
 > [!TIP]
 > 🚀 **Çok sevilen Agent Teams ve Subagent özellikleri harnessed'da göreve göre otomatik etkinleştirilir!**

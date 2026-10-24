@@ -34,41 +34,25 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > ไบนารีมี runtime ในตัว ไม่ต้องใช้ Node.js หรือ Bun ภายนอก แต่ส่วนประกอบ upstream อาจยังต้องใช้ Node/npm, Git, Bun, Python หรือไลบรารีระบบสำหรับเบราว์เซอร์
 
+ตัวติดตั้ง binary เสนอ setup ในเซสชันแบบโต้ตอบเมื่อได้รับความยินยอม หากข้าม ล้มเหลว หรือติดตั้งแบบไม่โต้ตอบ ให้รัน `harnessed setup`
+
 **ผ่าน Bun (คำแนะนำลำดับที่สอง; ไม่บังคับ)**:
 
 ```bash
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`setup` ตรวจหา host (Claude Code / Codex) โดยอัตโนมัติเป็นค่าเริ่มต้น จึงไม่ต้องระบุ `--platform` และไม่ต้องทำซ้ำหากสำเร็จ ตัวติดตั้ง binary เสนอ setup ในเซสชันแบบโต้ตอบเมื่อได้รับความยินยอม หากข้าม ล้มเหลว หรือติดตั้งแบบไม่โต้ตอบ ให้รัน `harnessed setup`
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun add -g harnessed@latest
-```
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-ใช้ `bun add -g harnessed` แทนได้ ต้องมี Bun เฉพาะเมื่อเลือกช่องทางนี้ ส่วน npm ยังคงใช้ Node.js >= 22 โดยไม่ต้องมี Bun การติดตั้งไม่ได้เลือก runtime อัตโนมัติ เพราะ shim `harnessed` อาจเรียก Node ให้ใช้ `bun run --bun harnessed` ต่อไป ใช้ `--platform codex` (Codex) หรือ `--platform claude` (Claude Code) เฉพาะเมื่อต้องการเลือก host ด้วยตนเอง runtime ไม่ได้ระบุแหล่งติดตั้ง การอัปเดต package ยังใช้ npm เป็นค่าเริ่มต้น อัปเดตผ่าน Bun ข้ามเวอร์ชัน CLI ได้ด้วย `bun add -g harnessed@latest` เลือกเพียงช่องทางเดียว และรัน `bun remove -g harnessed` ด้วยตนเองเฉพาะเมื่อผู้ใช้ตัดสินใจถอนการติดตั้งอย่างชัดเจน ดู[คู่มือติดตั้ง](./INSTALL-WITH-AI.md)
+สำหรับคำสั่ง Bun ถัดไป ให้ใช้ `bun run --bun harnessed` เพราะ shim `harnessed` ยังอาจเรียก Node.js
 
 **ผ่าน npm (ยังรองรับ; ต้องใช้ Node.js >= 22)**:
+
+ช่องทางนี้ไม่ต้องใช้ Bun และยังรองรับ Node.js >= 22
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x ไม่รองรับการเชื่อมคำสั่งด้วย `&&` — ใช้ `;` หรือแยกเป็นสองบรรทัด (`npm install -g harnessed; harnessed setup`) แทน ส่วน bash / zsh / PowerShell 7+ / cmd.exe ใช้งานได้ปกติ
-
-🤖 **หรือจะให้ AI ติดตั้งให้แทนก็ได้** — วางประโยคนี้ใน Claude Code (หรือ AI assistant ตัวไหนก็ได้):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI จะดึงเอกสารมาเองแล้วรันการติดตั้ง รองรับ edge case ด้าน OS / permissions / PATH / corepack — ไม่ต้อง copy ข้อความยาว ๆ มาวางเอง
 
 > [!TIP]
 > 🚀 **ฟีเจอร์ Agent Teams และ Subagents ที่ทุกคนชื่นชอบ เปิดใช้งานอัตโนมัติใน harnessed ตามประเภทงาน!**

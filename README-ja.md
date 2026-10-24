@@ -34,41 +34,25 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > バイナリは runtime を内蔵し、外部の Node.js や Bun は不要です。上流コンポーネントには Node/npm、Git、Bun、Python、ブラウザー用システムライブラリが必要な場合があります。
 
+バイナリのインストーラーは対話セッションで同意を得て setup を提供します。スキップ、失敗、非対話インストールの場合は `harnessed setup` を実行してください。
+
 **Bun 経由 (第 2 の推奨手段; 任意)**:
 
 ```bash
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`setup` は既定でホスト (Claude Code / Codex) を自動検出し、`--platform` は不要です。成功後に繰り返す必要はありません。バイナリのインストーラーは対話セッションで同意を得て setup を提供します。スキップ、失敗、非対話インストールの場合は `harnessed setup` を実行してください。
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun add -g harnessed@latest
-```
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-`bun add -g harnessed` も同等です。Bun が必要なのはこの経路を選ぶ場合だけです。npm は Node.js >= 22 を使い、Bun は不要です。インストールは runtime を自動選択しません。裸の `harnessed` shim は Node を呼ぶ場合があるため、以後も `bun run --bun harnessed` を使ってください。手動でホストを選ぶ場合のみ、`--platform codex` (Codex) または `--platform claude` (Claude Code) を使います。runtime からインストール元は判定しません。package 更新の既定は npm のままです。Bun 経路の更新には CLI バージョンを問わず `bun add -g harnessed@latest` を使えます。3 経路から 1 つだけ選び、削除はユーザーが明示的に選んだ場合のみ `bun remove -g harnessed` で手動実行します。[インストールガイド](./INSTALL-WITH-AI.md)も参照してください。
+以後の Bun コマンドには `bun run --bun harnessed` を使ってください。裸の `harnessed` shim は Node.js を呼び出す場合があります。
 
 **npm 経由もサポート** (Node.js >= 22 が必要):
+
+この経路では Bun は不要で、Node.js >= 22 を引き続きサポートします。
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x は `&&` チェーンに対応していません —— `;` を使うか 2 行に分けてください（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe はすべて正常に動作します。
-
-🤖 **または AI にインストールさせる** —— Claude Code（または任意の AI アシスタント）に以下の文を貼り付けてください:
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI がドキュメントを自動取得してインストールを実行します。OS / パーミッション / PATH / corepack のエッジケースも対処するので、長いテキストをコピペする必要はありません。
 
 > [!TIP]
 > 🚀 **大好評の Agent Teams と Subagent 機能は、harnessed がタスクに応じて自動で有効化します!**

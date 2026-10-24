@@ -40,28 +40,7 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-这条命令将安装与 setup 一次完成。`setup` 默认自动检测宿主 (Claude Code 或 Codex),不要求 `--platform`。
-
-也可使用等价的 `bun add -g harnessed`。Bun 只在你自选此渠道时必需,不是独立二进制或 npm 渠道的前置依赖。用 Bun 安装不代表自动选择 Bun runtime:裸 `harnessed` shim 的 shebang 仍可能调用 Node.js。后续 CLI 命令也应显式使用 Bun runner:
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed status
-bun add -g harnessed@latest
-```
-
-可选的高级手动覆盖:只有需要手动指定宿主时才使用 `--platform codex` (Codex) 或 `--platform claude` (Claude Code),不是安装必需步骤:
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-runtime 不等于 install manager:package 更新保留 npm 默认语义。Bun 渠道请用跨 CLI 版本可用的 `bun add -g harnessed@latest` 更新。上游工具仍有各自依赖。
-
-仅当你明确决定卸载 Bun 渠道时,手动运行 `bun remove -g harnessed`;不要自动卸载其他渠道。
+后续 Bun 命令请使用 `bun run --bun harnessed`;裸 `harnessed` shim 仍可能调用 Node.js。
 
 **npm 仍受支持** (需要 Node.js >= 22):
 
@@ -72,14 +51,6 @@ npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x 不支持 `&&`。两个 package 渠道都应先执行安装命令,成功后再单独执行 setup。bash / zsh / PowerShell 7+ / cmd.exe 支持此 chain。
-
-三个安装渠道选一个即可。以上 Bun 和 npm 命令已包含 setup,成功完成后无需重复。
-
-🤖 **或让 AI 帮你装** —— 把下面这句话发给 Claude Code (或任何 AI 助手):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI 会自动 fetch 文档 + 跑安装,处理 OS / 权限 / PATH / corepack 等 edge case —— 无需复制大段文字。
 
 > [!TIP]
 > 🚀 **很多人喜爱的 Agent Teams 和 Subagent 功能,在 harnessed 中会根据任务自动启用!**

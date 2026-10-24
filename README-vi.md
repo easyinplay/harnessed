@@ -34,41 +34,25 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > Binary tích hợp runtime, không cần Node.js hay Bun bên ngoài. Các thành phần upstream vẫn có thể cần Node/npm, Git, Bun, Python hoặc thư viện hệ thống cho trình duyệt.
 
+Trình cài binary cung cấp setup trong phiên tương tác khi bạn đồng ý. Nếu đã bỏ qua, thất bại hoặc cài không tương tác, hãy chạy `harnessed setup`.
+
 **Qua Bun (khuyến nghị thứ hai; tùy chọn)**:
 
 ```bash
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`setup` mặc định tự động nhận diện host (Claude Code / Codex), không bắt buộc `--platform`. Không chạy lại nếu đã thành công. Trình cài binary cung cấp setup trong phiên tương tác khi bạn đồng ý. Nếu đã bỏ qua, thất bại hoặc cài không tương tác, hãy chạy `harnessed setup`.
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun add -g harnessed@latest
-```
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-`bun add -g harnessed` là lệnh tương đương. Chỉ cần Bun khi chọn kênh này; npm vẫn dùng Node.js >= 22 và không cần Bun. Cài đặt không tự chọn runtime: shim `harnessed` có thể gọi Node. Hãy giữ `bun run --bun harnessed` cho các lệnh sau. Chỉ dùng `--platform codex` (Codex) hoặc `--platform claude` (Claude Code) khi muốn chọn host thủ công. runtime không xác định nguồn cài đặt: cập nhật package mặc định vẫn dùng npm. Để cập nhật qua Bun giữa các phiên bản CLI, dùng `bun add -g harnessed@latest`. Chỉ chọn một kênh. Chỉ chạy thủ công `bun remove -g harnessed` khi người dùng quyết định rõ ràng muốn gỡ bản cài đó. Xem [hướng dẫn cài đặt](./INSTALL-WITH-AI.md).
+Với các lệnh Bun tiếp theo, dùng `bun run --bun harnessed`; shim `harnessed` vẫn có thể gọi Node.js.
 
 **Qua npm (vẫn được hỗ trợ; cần Node.js >= 22)**:
+
+Kênh này không cần Bun; Node.js >= 22 vẫn được hỗ trợ.
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x không hỗ trợ chuỗi `&&` — dùng `;` hoặc hai dòng riêng (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe đều hoạt động bình thường.
-
-🤖 **Hoặc nhờ AI cài giúp** — dán câu này vào Claude Code (hoặc bất kỳ AI assistant nào):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI sẽ tự fetch tài liệu + chạy install, xử lý các edge case về OS / permissions / PATH / corepack — không cần sao chép những đoạn văn bản dài.
 
 > [!TIP]
 > 🚀 **Các tính năng Agent Teams và Subagent được yêu thích đã được harnessed tự động bật dựa trên task!**

@@ -34,41 +34,25 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > 바이너리는 runtime을 내장하므로 외부 Node.js나 Bun이 필요 없습니다. 상위 컴포넌트는 Node/npm, Git, Bun, Python 또는 브라우저 시스템 라이브러리가 필요할 수 있습니다.
 
+바이너리 설치 프로그램은 대화형 세션에서 동의를 받아 setup을 제공합니다. 건너뛰거나 실패했거나 비대화형으로 설치했다면 `harnessed setup`을 실행하세요.
+
 **Bun으로 설치 (보조 권장 경로; 선택 사항)**:
 
 ```bash
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-`setup`은 기본적으로 호스트 (Claude Code / Codex)를 자동 감지하므로 `--platform`은 필요 없습니다. 성공 후 반복하지 마세요. 바이너리 설치 프로그램은 대화형 세션에서 동의를 받아 setup을 제공합니다. 건너뛰거나 실패했거나 비대화형으로 설치했다면 `harnessed setup`을 실행하세요.
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun add -g harnessed@latest
-```
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-`bun add -g harnessed`도 동일합니다. Bun은 이 경로를 선택할 때만 필요하며, npm 경로는 Node.js >= 22를 사용하고 Bun은 필요 없습니다. 설치만으로 runtime이 자동 선택되지 않습니다. 기본 `harnessed` shim은 Node를 호출할 수 있으므로 이후에도 `bun run --bun harnessed`를 사용하세요. 호스트를 수동으로 선택할 때만 `--platform codex` (Codex) 또는 `--platform claude` (Claude Code)를 사용하세요. runtime으로 설치 출처를 추론하지 않습니다. package 업데이트 기본값은 npm입니다. Bun 경로는 CLI 버전과 관계없이 `bun add -g harnessed@latest`로 업데이트할 수 있습니다. 세 경로 중 하나만 선택하고, 사용자가 명시적으로 삭제를 선택한 경우에만 `bun remove -g harnessed`를 수동 실행하세요. [설치 가이드](./INSTALL-WITH-AI.md)를 참조하세요.
+이후 Bun 명령에는 `bun run --bun harnessed`를 사용하세요. 기본 `harnessed` shim은 여전히 Node.js를 호출할 수 있습니다.
 
 **npm도 계속 지원** (Node.js >= 22 필요):
+
+이 경로는 Bun이 필요 없으며 Node.js >= 22를 계속 지원합니다.
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x는 `&&` 체이닝을 지원하지 않습니다 — `;` 또는 두 줄로 나눠서 사용하세요 (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe는 모두 정상 동작합니다.
-
-🤖 **또는 AI에게 설치를 맡기세요** — Claude Code(또는 다른 AI 어시스턴트)에 이 문장을 붙여 넣으세요:
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI가 문서를 자동으로 가져와 설치를 실행하며, OS / 권한 / PATH / corepack 엣지 케이스까지 처리해 줍니다 — 긴 텍스트를 복사할 필요가 없습니다.
 
 > [!TIP]
 > 🚀 **많은 사랑을 받는 Agent Teams와 Subagent 기능이 harnessed에서 작업에 따라 자동으로 활성화됩니다!**

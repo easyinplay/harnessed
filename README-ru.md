@@ -34,41 +34,25 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > Бинарник содержит runtime и не требует внешних Node.js или Bun. Компонентам upstream всё ещё могут понадобиться Node/npm, Git, Bun, Python или системные библиотеки браузера.
 
+Установщик бинарного файла предлагает setup с вашего согласия в интерактивном сеансе. При пропуске, ошибке или неинтерактивной установке выполните `harnessed setup`.
+
 **Через Bun (второй рекомендуемый вариант; необязательно)**:
 
 ```bash
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-По умолчанию `setup` автоматически определяет хост (Claude Code / Codex); `--platform` не обязателен. После успешного завершения не повторяйте setup. Установщик бинарного файла предлагает setup с вашего согласия в интерактивном сеансе. При пропуске, ошибке или неинтерактивной установке выполните `harnessed setup`.
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun add -g harnessed@latest
-```
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-`bun add -g harnessed` равнозначен. Bun нужен только при выборе этого канала; npm работает с Node.js >= 22 и не требует Bun. Установка не выбирает runtime автоматически: обычный shim `harnessed` может вызывать Node. Для последующих команд сохраняйте `bun run --bun harnessed`. Используйте `--platform codex` (Codex) или `--platform claude` (Claude Code) только для ручного выбора хоста. runtime не определяет источник установки: обновление пакета по умолчанию использует npm. Для обновления через Bun независимо от версии CLI используйте `bun add -g harnessed@latest`. Выберите один канал. Выполняйте `bun remove -g harnessed` вручную только при явном решении пользователя удалить эту установку. См. [руководство по установке](./INSTALL-WITH-AI.md).
+Для последующих команд Bun используйте `bun run --bun harnessed`; обычный shim `harnessed` всё ещё может вызывать Node.js.
 
 **Через npm (поддерживаемая альтернатива; требуется Node.js >= 22)**:
+
+Для этого канала Bun не нужен; Node.js >= 22 по-прежнему поддерживается.
 
 ```bash
 npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x не поддерживает цепочку `&&` — используйте `;` или две строки (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe работают нормально.
-
-🤖 **Или пусть AI установит за вас** — вставьте это предложение в Claude Code (или любой AI-ассистент):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-AI автоматически скачает документ и выполнит установку, обработав крайние случаи с ОС / правами / PATH / corepack — не нужно копировать большие блоки текста.
 
 > [!TIP]
 > 🚀 **Любимые всеми функции Agent Teams и Subagent в harnessed включаются автоматически в зависимости от задачи!**

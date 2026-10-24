@@ -243,7 +243,7 @@ export function registerUpdate(program: Command): void {
         console.log(`[harnessed] already up to date (${pkg.version}).`)
       }
 
-      if (manager === 'bun' && opts.dryRun === true) {
+      if (opts.dryRun === true) {
         if (opts.upstreams === true || opts.all === true)
           console.log(
             '[harnessed] update --dry-run: would re-run base manifests for upstreams; nothing installed.',

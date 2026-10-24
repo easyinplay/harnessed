@@ -40,28 +40,7 @@ The binary installer offers setup with your consent in interactive sessions. Do 
 bun install -g harnessed && bun run --bun harnessed setup
 ```
 
-This installs harnessed and runs setup in one step. `setup` defaults to automatic host detection for Claude Code or Codex; `--platform` is not required.
-
-`bun add -g harnessed` is an equivalent install command. Bun is required only if you choose this channel, not for the standalone binary or npm channel. Installing with Bun does not select the runtime: the bare `harnessed` shim may still use a Node.js shebang. Keep the explicit Bun runner for subsequent commands:
-
-```bash
-# Optional: verification and maintenance
-bun run --bun harnessed --version
-bun run --bun harnessed doctor --host codex
-bun run --bun harnessed status
-bun add -g harnessed@latest
-```
-
-Optional advanced override: use `--platform codex` for Codex or `--platform claude` for Claude Code only when you want to select a host manually:
-
-```bash
-# Optional: manual host override (not required after installation)
-bun run --bun harnessed setup --platform codex
-```
-
-The runtime does not identify the install manager: package updates keep the npm default. Use `bun add -g harnessed@latest` to update a Bun-managed install across CLI versions. Upstream tools still have their own requirements.
-
-Only when you explicitly choose to remove a Bun-managed installation, run `bun remove -g harnessed`; do not uninstall another channel automatically.
+For later Bun commands, use `bun run --bun harnessed`; the bare `harnessed` shim may still invoke Node.js.
 
 **Via npm (supported alternative; Node.js >= 22 required)**:
 
@@ -72,14 +51,6 @@ npm install -g harnessed && harnessed setup
 ```
 
 > Windows PowerShell 5.x does not support `&&`. For either package channel, run the install command first, then run setup only if installation succeeds. bash / zsh / PowerShell 7+ / cmd.exe support the chain.
-
-Choose one install channel, not all three. The Bun and npm commands above include setup; do not repeat it if it completed successfully.
-
-🤖 **Or have an AI install it for you** — paste this sentence to Claude Code (or any AI assistant):
-
-> Install harnessed for me following the guide at `https://github.com/easyinplay/harnessed/blob/main/INSTALL-WITH-AI.md`
-
-The AI will auto-fetch the doc + run the install, handling OS / permissions / PATH / corepack edge cases — no need to copy large chunks of text.
 
 > [!TIP]
 > 🚀 **The much-loved Agent Teams and Subagent features are auto-enabled in harnessed based on the task!**

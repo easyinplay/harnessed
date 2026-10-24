@@ -17,6 +17,16 @@
 
 Plan: [Phase 70](phases/70-runtime-onboarding/PLAN.md). Scope: [approved brief](research/npm-5.0-runtime-onboarding-brief.md). Native governance limitations must remain explicit.
 
+## Active 5.x Maintenance
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| MAINT-01 | Current Bun5.x guidance describes owned hook/runtime independence and explicit update manager, without obsolete homepage4.x warnings | Phase71 and site onboarding contracts | Site101tests and local/real production4/4 verified; Cloudflare status separately pending |
+| MAINT-02 | README remains the concise installation source for people and AI; remove marked maintenance/override clutter and the redundant AI guide across all locales | Phase71 README receipt and installation documentation contracts | Complete locally; docs30/30 and live-link checks pass |
+| MAINT-03 | Package update dry-run never invokes installation for default/explicit npm or explicit Bun, including current/ahead with upstreams/all | Phase71 dry-run receipt and updater tests | Local RED/GREEN and4468fullsuite pass; source not yet published as a new CLI version |
+
+These are corrective continuations, not approval for another release or a new method/host architecture.
+
 ---
 
 ## Shipped requirement families (delivered baseline — all Done)

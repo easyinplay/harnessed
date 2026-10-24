@@ -5,14 +5,12 @@
 
 ## From /plan-ceo-review 2026-09-22 (codex 宿主对等 — CEO plan: `~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-09-22-codex-host-parity.md`)
 
-- [ ] **跨宿主接力(CC ⇄ codex workflow 认领)** — P2 / L,**已批准开发**(2026-10-14)
-  Why: CC 额度耗尽时切到 codex 接着跑同一 leaf。设计已裁定:账本迁共享中立根(非 `~/.harnessed`,候选 XDG
-  `$XDG_STATE_HOME/harnessed` / Windows `%LOCALAPPDATA%\harnessed`),复用 proper-lockfile;显式
-  `harnessed checkpoint adopt [--from claude|codex]`,无隐式回退(防 issue #10 串槽);迁移并存 + 撞 key 加
-  conflict 后缀,零覆盖。需 ADR 推翻 v9.0 28-CONTEXT「不做跨平台状态迁移」。
-  Trigger: 维护者在 codex 里真跑 ≥3 次长活并有记录。Depends: codex 宿主对等 milestone Phase 1。
-  **2026-10-14 维护者裁决**：**做**。原触发条件(「在 codex 里真跑 ≥3 次长活并有记录」)被直接豁免 —— 不再等 dogfood 数据。
-  仍需一份 ADR 推翻 v9.0 28-CONTEXT「不做跨平台状态迁移」;设计已裁定的部分见本条上文。
+- [x] **Cross-host workflow adoption (Claude Code / Codex)** — SHIPPED 4.49.0; reconciled 2026-10-25.
+  `harnessed checkpoint adopt [--from claude|codex]` is implemented by `src/checkpoint/adoptSlot.ts`
+  and the checkpoint CLI. The earlier shared-root proposal was rejected by accepted ADR-0043;
+  production copies from the read-only source root into the existing target ledger, preserving
+  active-slot rejection and paused-slot recovery. See `.planning/phases/67-cross-host-relay-adopt/SUMMARY.md`.
+  Isolated two-host fixtures passed; real dual-host workflow handoff remains separately unverified.
 - [x] **AGENTS.md 同源生成** — **CLOSED 2026-10-07**,`harnessed agents-md`(opt-in 命令)。
   范围经维护者当场裁定「只放 harnessed 自己那段」:命令清单 + 宿主原语对照 + caveat,
   全部从真相源派生(命令取 `writeAllCommands` 的同一集合;对照表**嵌** `buildHostMapSection()`
@@ -145,10 +143,10 @@
   **2026-10-14 维护者裁决**：**按建议办** = 继续停。它的前置(发布节奏先有 beta 轨道:预发 tag 约定 + publish.yml 分轨)
   本身是产品决定「要不要一条预发通道」,维护者未表态要 → 不投机建设。想要时先做轨道再做订阅侧。
 - [x] **`harnessed update --rollback`** — SHIPPED 4.32.20:`runBinaryRollback`(同款 rename dance,被换下的二进制先 bank 回 bin-backup/<curver>/ 保可逆;`--rollback [version]`,缺省取最高 banked 版;npm 模式明确拒绝导向 `npm i -g`)。
-- [ ] **undici EnvHttpProxyAgent 代理支持** — P3 / S,**已批准开发**(2026-10-14)
-  Why: 受限网络下 update 下载不走系统代理。等真实用户信号;当前以可操作报错 + npm 渠道兜底。
-  **2026-10-14 维护者裁决**：**做**。不再等用户信号。范围:`harnessed update` 的下载走 `EnvHttpProxyAgent`,
-  尊重 `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY`;保留现有的可操作报错与 npm 渠道兜底作为退路。
+- [x] **System proxy support for binary updates** — SHIPPED 4.49.0; reconciled 2026-10-25.
+  `src/cli/lib/proxyDispatcher.ts` provides Node-side `EnvHttpProxyAgent` handling;
+  `src/cli/lib/selfUpdateBinary.ts` invokes it before download. Compiled Bun retains its native
+  proxy path. This closes the implementation TODO, not an independent fresh network acceptance claim.
 - [x] **Slice 2:curl/PowerShell 一行安装器** — **已发,本条目过期**(2026-10-07 对账补勾)。
   按产物核实而非凭记忆:仓库里有 `install.sh` / `install.ps1`,CHANGELOG 记着
   「B 路线 Phase 3 Slice 2:一行安装器」交付(含 unix `~/.local/bin/harnessed` 与 Windows

@@ -9,7 +9,6 @@ const root = fileURLToPath(new URL('../../', import.meta.url))
 const read = (file) => readFileSync(resolve(root, file), 'utf8').replaceAll('\r\n', '\n')
 const readmes = readdirSync(root).filter((file) => /^README(?:-[\w-]+)?\.md$/.test(file))
 const english = read('README.md')
-const guide = read('INSTALL-WITH-AI.md')
 const installPrefix = (text) => text.slice(0, text.indexOf('\n## ', text.indexOf('\n## ') + 1))
 const firstMinutes = (text) => text.split('\n## ')[2]
 
@@ -54,45 +53,47 @@ test('Bun is a secondary recommendation and remains optional in every locale', (
       .find((line) => /^\*\*[^\n]*Bun/.test(line))
     assert.ok(heading?.includes(labels[file]), `${file}: secondary and optional label`)
   }
-  assert.ok(guide.includes('Bun (次要推荐; 可选)'))
 })
 
 for (const file of readmes) {
-  test(`${file}: binary before Bun before npm, with explicit Bun commands`, () => {
+  test(`${file}: binary before optional Bun before npm, with runtime boundaries`, () => {
     const install = installPrefix(read(file))
     const binary = install.indexOf('install.sh | bash')
     const bun = install.indexOf('bun install -g harnessed')
     const npm = install.indexOf('npm install -g harnessed')
     assert.ok(binary >= 0 && binary < bun && bun < npm, file)
-    for (const command of [
-      'bun add -g harnessed',
-      'bun run --bun harnessed --version',
-      'bun run --bun harnessed setup --platform codex',
-      'bun run --bun harnessed doctor --host codex',
-      'bun add -g harnessed@latest',
-    ])
-      assert.ok(install.includes(command), `${file}: ${command}`)
     assert.ok(install.includes('Node.js >= 22'), file)
     assert.ok(install.includes('Node/npm'), file)
     assert.ok(install.includes('Python'), file)
-    assert.ok(install.includes('shim'), file)
-    assert.ok(install.includes('claude'), file)
+    assert.ok(install.slice(0, bun).includes('runtime'), `${file}: embedded binary runtime`)
+    assert.ok(install.includes('Windows PowerShell 5.x'), file)
+    assert.ok(install.includes('PowerShell 7+'), file)
   })
 
-  test(`${file}: Bun install includes setup with automatic host detection; overrides are optional`, () => {
+  test(`${file}: Bun has one install/setup block and one short explicit-runner caveat`, () => {
     const install = installPrefix(read(file))
     const blocks = [...install.matchAll(/```(?:bash|powershell|sh|text)\n([\s\S]*?)```/g)]
     const chain = 'bun install -g harnessed && bun run --bun harnessed setup'
     const bunBlock = blocks.find(([, block]) => block.includes('bun install -g harnessed'))
     assert.equal(bunBlock?.[1].trim(), chain, `${file}: first Bun block is install + setup`)
+    assert.equal(blocks.length, 4, `${file}: two binary blocks and one per package channel`)
     assert.doesNotMatch(install, /--platform(?:\s+|=)auto\b/)
     assert.doesNotMatch(install, /--package-manager bun/)
     assert.ok(install.includes('npm install -g harnessed && harnessed setup'), file)
     const setupBlocks = blocks.filter(([, block]) =>
       block.includes('bun run --bun harnessed setup'),
     )
-    assert.equal(setupBlocks.length, 2, `${file}: default chain and optional override only`)
-    assert.match(setupBlocks[1][1], /^# Optional: manual host override[^\n]*\n/)
+    assert.equal(setupBlocks.length, 1, `${file}: only the default setup chain`)
+    const bunStart = install.indexOf('bun install -g harnessed')
+    const npmHeading = install.indexOf('\n**', bunStart)
+    const bun = install.slice(bunStart, npmHeading)
+    const caveat = bun.slice(bun.indexOf('```') + 3).trim()
+    assert.equal(caveat.split(/\n\s*\n/).length, 1, `${file}: one caveat paragraph`)
+    for (const token of ['`bun run --bun harnessed`', '`harnessed`', 'shim', 'Node.js']) {
+      assert.ok(caveat.includes(token), `${file}: ${token}`)
+    }
+    assert.ok(caveat.length <= 240, `${file}: concise runner caveat`)
+    assert.doesNotMatch(bun, /--platform|bun add -g|bun remove -g|--version|doctor|@latest/)
     assert.doesNotMatch(
       install.slice(0, install.indexOf('bun install -g harnessed')),
       /^harnessed setup/m,
@@ -122,57 +123,30 @@ test('First 5 Minutes distinguishes Claude Code and Codex prompts from shell com
 test('English and Chinese keep runtime requirements independent from the install manager', () => {
   for (const file of ['README.md', 'README-zh.md']) {
     const install = installPrefix(read(file))
-    assert.ok(install.includes('bun run --bun harnessed setup --platform codex'))
-    assert.match(install, /automatic host detection|自动检测宿主/)
-    for (const token of ['runtime', 'shebang', 'install manager']) {
-      assert.ok(install.includes(token), `${file}: ${token}`)
-    }
+    assert.ok(install.includes('bun install -g harnessed && bun run --bun harnessed setup'))
+    assert.ok(install.includes('npm install -g harnessed && harnessed setup'))
     assert.match(install, /neither external Node\.js nor Bun|不需要外部 Node\.js 或 Bun/)
     assert.match(install, /Bun is not required for this channel|此渠道不需要 Bun/)
-    assert.match(install, /package updates keep the npm default|package 更新保留 npm 默认语义/)
   }
 })
 
-test('AI guide keeps the five-step binary/package-alternative/setup/doctor/skills flow', () => {
-  assert.deepEqual(
-    [...guide.matchAll(/^(\d+)\. \*\*/gm)].map((match) => Number(match[1])),
-    [1, 2, 3, 4, 5],
-  )
-  const steps = guide.split(/^\d+\. \*\*/m).slice(1)
-  assert.ok(steps[0].includes('install.sh | bash'))
-  assert.ok(steps[0].includes('跳过步骤 3'))
-  assert.ok(steps[0].includes('转步骤 2'))
-  assert.ok(
-    steps[1].indexOf('bun install -g harnessed') < steps[1].indexOf('npm install -g harnessed'),
-  )
-  assert.ok(steps[1].includes('二选一'))
-  assert.ok(steps[2].includes('bun run --bun harnessed setup --platform <host>'))
-  assert.ok(
-    steps[2].includes('bun run --bun harnessed setup --platform codex --system --non-interactive'),
-  )
-  assert.ok(steps[3].includes('bun run --bun harnessed doctor --host codex'))
-  assert.ok(steps[4].includes('~/.agents/skills/'))
-  assert.ok(steps[4].includes('~/.codex/skills/'))
+test('README is the installation source without a separate AI guide', () => {
+  assert.equal(existsSync(resolve(root, 'INSTALL-WITH-AI.md')), false)
 })
 
-test('AI guide preserves consent, package-manager defaults, and explicit user removal', () => {
-  for (const token of [
-    '先取得批准',
-    '不要自动卸载旧安装',
-    '不得自动卸载',
-    '不能只为让检查通过而扩大授权',
-    '不得把缺失依赖或未验证步骤记为成功',
-    'bun remove -g harnessed',
-    'npm i -g harnessed@latest',
-    'bun add -g harnessed@latest',
-    '/auto "<需求>"',
-    '$auto "<需求>"',
-  ])
-    assert.ok(guide.includes(token), token)
+test('all READMEs drop the AI-install promotion but retain the unrelated Agent Teams tip', () => {
+  for (const file of readmes) {
+    const text = read(file)
+    assert.doesNotMatch(text, /INSTALL-WITH-AI\.md|Install harnessed for me following the guide/)
+    const install = installPrefix(text)
+    assert.ok(install.includes('> [!TIP]'), file)
+    assert.ok(install.includes('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS'), file)
+    assert.ok(install.includes('~/.claude/settings.json'), file)
+  }
 })
 
-test('README/guide links and CONTRIBUTING runtime-section links resolve', () => {
-  for (const file of [...readmes, 'INSTALL-WITH-AI.md', 'CONTRIBUTING.md']) {
+test('README links and CONTRIBUTING runtime-section links resolve', () => {
+  for (const file of [...readmes, 'CONTRIBUTING.md']) {
     // Existing contributor history links are outside this installation-doc contract.
     const text =
       file === 'CONTRIBUTING.md'
