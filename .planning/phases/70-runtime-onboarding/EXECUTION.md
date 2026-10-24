@@ -84,3 +84,10 @@ All selected observations exited 0. Fresh first invocations were 270.9 ms Node, 
 - Public copy was made compatible with the existing stable CLI before pushing: native Bun updates and the 4.x hook Node prerequisite replace an unconditional unreleased updater flag.
 - Fresh site tests81, build121, scoped checks and four production browser cases pass. README merging across 11 files passes30 contracts. Exact source/check IDs, screenshots and remaining limits: `.planning/releases/site-2026-10-24.md`.
 - No CLI tag, npm publication, global installation replacement or native security-policy change was performed. Managed deployment monitoring and browser processes ended normally.
+
+## Continuation After Website Closure
+
+- Latest source `338b4be` CI `40060190611` completed success, 9/9. Fresh README contracts30 and whole-repository lint pass; mechanical preflight passes4 checks. Remote v5.0.0 tag remains absent and stable latest remains4.49.2.
+- Re-ran the opt-in installed gstack lease test: it confirms the expected real exit3 blocker remains, not readiness. No native policy or shared lock change was attempted.
+- Bun-hosted existing isolated-only Codex harness completed16/16 with native registration/trust/removal in temporary HOME; no model turn or real config touched. Inner cleanup warning was followed by successful outer cleanup and an absent-root check. Npm-mode shell timing was not relabeled Bun-mode timing.
+- Exact evidence and limitations: RESUME-AUDIT.md. Native governance substitution is still an explicit user decision, not inferred from continuation.

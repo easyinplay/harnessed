@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: npm-5.0.0
 milestone_name: Runtime And Onboarding
 status: in_progress
-last_updated: "2026-10-24T11:47:30+08:00"
+last_updated: "2026-10-24T18:45:00+08:00"
 last_activity: 2026-10-24
 progress:
   total_phases: 1
@@ -29,7 +29,7 @@ progress:
 
 ## Current Position
 
-- **Active npm 5.0.0 (2026-10-24)**: Runtime candidate `a7a93d3` CI `40011089288` passed9/9; CLI tag/npm publication still await native-gstack substitution decision. Website independently authorized and deployed as `daa0e2b`; Cloudflare/live EN/ZH desktop/mobile pass, site81 tests. README30 contracts pass. Receipt: `releases/site-2026-10-24.md`; runtime evidence: `phases/70-runtime-onboarding/VERIFICATION.md`.
+- **Active npm 5.0.0 (2026-10-24)**: Final source338b4be CI40060190611 passed9/9; resumed README30/lint and Bun-hosted isolated Codex16/16 pass. Installed gstack lease still exit3; CLI tag/npm awaits explicit native-governance substitution decision. Details: `phases/70-runtime-onboarding/RESUME-AUDIT.md`. Website already deployed as daa0e2b; receipt `releases/site-2026-10-24.md`.
 
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 

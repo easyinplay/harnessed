@@ -9,16 +9,16 @@ Date: 2026-10-24. Candidate package version: 5.0.0. Not yet published.
 | Build / TypeScript | `corepack pnpm build`, final 5.0.0 source | Pass |
 | Full serialized Vitest | 373 files passed, 3 skipped; 4432 tests passed, 11 skipped, 1 todo; 304.47 seconds | Pass before the final test-fixture-only npm config separation |
 | Post-fixture focused regression | runtime harness, product SDK boundary and dispatch imports: 3 files / 32 tests | Pass |
-| Documentation contracts | `corepack pnpm test:docs`: 19/19 | Pass |
+| Documentation contracts | `corepack pnpm test:docs`: 30/30 on resumed final README tree | Pass |
 | Production eval | built CLI, 14 pass / 0 fail / 0 error / no updated goldens | Pass |
 | Manifest schema | Ajv strict validation | Pass |
 | Schema consumers | 204 declared fields; no unevaluated field; existing shape-only/exempt declarations explicit | Pass |
 | Workflow / host / locale contracts | workflow schema, host primitives, SKILL and YAML parity scripts | Pass |
-| Lint | full Biome, exit 0; 16 warnings retained, no suppression/config relaxation | Pass before the final fixture/evidence formatting; final precommit check required |
+| Lint | full Biome, exit 0 on resumed source 338b4be; existing warnings retained, no suppression/config relaxation | Pass |
 | Windows binary | Bun compile, 167 bundled assets, 5.0.0 | Pass |
 | Runtime channel smoke | [runtime-channel-smoke.json](./runtime-channel-smoke.json) | Three channels pass |
 | Real packed npm acceptance | [packed-runtime-acceptance.json](./packed-runtime-acceptance.json); 182 files, 1,198,608 bytes, installed in owned temporary prefix | Three channels pass |
-| Remote CI | `40011089288`, exact runtime candidate `a7a93d3979b8ac31b4069c56521bc3fb377898c3`; all 9 jobs completed successfully | Pass |
+| Remote CI | `40060190611`, exact final source `338b4be7232be208995f60b4455184177d7a2fdf`; all 9 jobs completed successfully | Pass |
 
 The first fullsuite during source review was cancelled and is not counted. The final 4432-pass run includes the registry-selection fix and version 5.0.0. A subsequent six-line test-harness correction gives npm distinct empty user/global config files; the production package did not change after the fullsuite. Targeted tests, real packed-package acceptance and the successful three-platform CI cover that correction.
 
@@ -32,7 +32,7 @@ Both source-built and genuinely packed npm paths were exercised with controlled 
 | Compiled binary | node, nodejs, bun, bunx | Pass |
 | Explicit Bun | node, nodejs, bunx | Pass |
 
-PATH checks are not an OS sandbox. Empty trap logs do not prove zero attempted absolute-path executions. The evidence is that the controlled paths and actual required hook outcomes succeeded. No real upstream installation, model call, host security-policy change or global CLI replacement was performed. Codex command/trust/teardown and real shim behavior have unit/contract coverage; new Bun-mode native Codex plugin activation is not certified by the Claude-hook smoke.
+PATH checks are not an OS sandbox. Empty trap logs do not prove zero attempted absolute-path executions. The evidence is that the controlled paths and actual required hook outcomes succeeded. No real upstream installation, model call, host security-policy change or global CLI replacement was performed. Codex command/trust/teardown and real shim behavior have unit/contract coverage. The resumed Bun-hosted isolated Codex probe additionally passes real plugin registration/trust/removal; full Bun-mode live-model activation remains outside this evidence. See [resume audit](./RESUME-AUDIT.md).
 
 The isolated Bun global resolution probe used published 4.49.2. Final candidate 5.0.0 additionally passed a real `update --check --package-manager bun` query via native `bun info`: installed 5.0.0, latest 4.49.2, status ahead. No update was installed. npm and Bun queries now delegate registry/config handling to the explicitly selected manager; no auth configuration is read by a new parser.
 
