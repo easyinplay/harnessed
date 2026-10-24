@@ -1,0 +1,1293 @@
+{
+  "ok": true,
+  "kind": "live-production-browser",
+  "base": "https://harnessed.cc",
+  "expectedVersion": "v5.0.0",
+  "expectedReleaseUrl": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+  "mockedNetwork": false,
+  "at": "2026-10-24T13:55:58.317Z",
+  "runtime": {
+    "node": "v24.22.1",
+    "playwright": "1.60.0",
+    "executablePath": "C:/Users/easyi/AppData/Local/ms-playwright/chromium-1247/chrome-win64/chrome.exe",
+    "browserRevision": "1247",
+    "browserVersion": "155.0.8059.12"
+  },
+  "isolation": {
+    "freshContextPerCaseAndAttempt": true,
+    "persistentProfile": false,
+    "userProfileUsed": false,
+    "authenticationUsed": false,
+    "storageStateImported": false,
+    "serviceWorkers": "block",
+    "pageDataModified": false,
+    "observerOnlyInitScript": true
+  },
+  "limits": {
+    "apiWaitMaxMs": 600000,
+    "apiRequestTimeoutMs": 15000,
+    "apiPollIntervalMs": 20000,
+    "browserMaxAttempts": 3,
+    "pageNavigationTimeoutMs": 45000,
+    "dynamicVersionTimeoutMs": 20000,
+    "productFixes": 0,
+    "sourceEdits": 0,
+    "deploys": 0,
+    "configChanges": 0,
+    "commits": 0,
+    "pushes": 0,
+    "publicationActions": 0,
+    "scope": "EN/ZH homepages, Chromium desktop 1440x1000 and mobile 390x844; no claim about other browsers, documents, devices or later uptime",
+    "totalFixRetryAttemptsMax": 3,
+    "totalAttemptAccounting": "Attempt 1: default browser launch failed before contexts; attempt 2 and optional attempt 3: existing isolated browser binary."
+  },
+  "guidance": {
+    "read": [
+      "superpowers:using-superpowers",
+      "playwright-cli",
+      "playwright-cli/references/running-code.md",
+      "webapp-testing",
+      "superpowers:verification-before-completion",
+      "D:/GitCode/harnessed-site/AGENTS.md",
+      ".planning/releases/site-2026-10-24/production-browser.json",
+      "D:/GitCode/harnessed-site/src/lib/releases.ts",
+      "superpowers:systematic-debugging"
+    ],
+    "missing": [
+      "C:/Users/easyi/.Codex/rules/web-testing.md",
+      "C:/Users/easyi/.Codex/rules/web-search.md",
+      "C:/Users/easyi/.agents/skills/ego-browser/SKILL.md"
+    ],
+    "ralphLoop": "Native ralph-loop unavailable; bounded browser retry loop, max 3 attempts, no product fixes."
+  },
+  "apiPolls": [
+    {
+      "at": "2026-10-24T13:55:58.318Z",
+      "elapsedMs": 0,
+      "url": "https://api.github.com/repos/easyinplay/harnessed/releases/latest",
+      "anonymous": true,
+      "status": 200,
+      "headers": {
+        "date": "Sat, 24 Oct 2026 13:57:03 GMT",
+        "content-type": "application/json; charset=utf-8",
+        "cache-control": "public, max-age=60, s-maxage=60",
+        "age": null,
+        "etag": "W/\"148d55a0d48ed1c3929e7091d3c505feac339f1a34fba945b28959b5fa9850d3\"",
+        "x-github-request-id": "8856:3829EA:30220B:3555D1:6ADCB92F",
+        "x-ratelimit-limit": "60",
+        "x-ratelimit-remaining": "57",
+        "x-ratelimit-reset": "1792851060"
+      },
+      "release": {
+        "id": 422761176,
+        "tag_name": "v5.0.0",
+        "html_url": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "name": "v5.0.0",
+        "draft": false,
+        "prerelease": false,
+        "immutable": false,
+        "created_at": "2026-10-24T13:51:31Z",
+        "updated_at": "2026-10-24T13:54:10Z",
+        "published_at": "2026-10-24T13:53:23Z",
+        "target_commitish": "main"
+      },
+      "exposesExpectedStable": true
+    }
+  ],
+  "attempts": [
+    {
+      "attempt": 2,
+      "at": "2026-10-24T13:57:31.984Z",
+      "checks": [
+        {
+          "viewport": "desktop-en",
+          "ok": true,
+          "detailsReference": "checks[viewport=desktop-en,attempt=2]"
+        },
+        {
+          "viewport": "desktop-zh",
+          "ok": true,
+          "detailsReference": "checks[viewport=desktop-zh,attempt=2]"
+        },
+        {
+          "viewport": "mobile-en",
+          "ok": true,
+          "detailsReference": "checks[viewport=mobile-en,attempt=2]"
+        },
+        {
+          "viewport": "mobile-zh",
+          "ok": true,
+          "detailsReference": "checks[viewport=mobile-zh,attempt=2]"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "viewport": "desktop-en",
+      "viewportSize": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "https://harnessed.cc/",
+      "attempt": 2,
+      "at": "2026-10-24T13:57:31.986Z",
+      "ok": true,
+      "errors": [],
+      "consoleErrors": [],
+      "requestFailures": [],
+      "githubApiResponses": [
+        {
+          "url": "https://api.github.com/repos/easyinplay/harnessed/releases/latest",
+          "status": 200,
+          "at": "2026-10-24T13:57:34.663Z",
+          "headers": {
+            "date": "Sat, 24 Oct 2026 13:58:39 GMT",
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "public, max-age=60, s-maxage=60",
+            "age": null,
+            "etag": "W/\"148d55a0d48ed1c3929e7091d3c505feac339f1a34fba945b28959b5fa9850d3\"",
+            "x-github-request-id": "E1AE:190C7A:2C3EF53:41A6225:6ADCB98E",
+            "x-ratelimit-limit": "60",
+            "x-ratelimit-remaining": "59",
+            "x-ratelimit-reset": "1792853919"
+          },
+          "release": {
+            "id": 422761176,
+            "tag_name": "v5.0.0",
+            "html_url": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "name": "v5.0.0",
+            "draft": false,
+            "prerelease": false,
+            "immutable": false,
+            "created_at": "2026-10-24T13:51:31Z",
+            "updated_at": "2026-10-24T13:54:10Z",
+            "published_at": "2026-10-24T13:53:23Z",
+            "target_commitish": "main"
+          }
+        }
+      ],
+      "httpFailures": [],
+      "initialCookies": [],
+      "status": 200,
+      "documentHeaders": {
+        "date": "Sat, 24 Oct 2026 13:58:38 GMT",
+        "content-type": "text/html",
+        "cache-control": "public, max-age=0, must-revalidate",
+        "age": null,
+        "etag": null,
+        "x-github-request-id": null,
+        "x-ratelimit-limit": null,
+        "x-ratelimit-remaining": null,
+        "x-ratelimit-reset": null
+      },
+      "serverRendered": {
+        "lang": "en",
+        "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+        "releaseLinks": [
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+        ],
+        "seed": "{\"version\":\"4.49.2\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v4.49.2\",\"publishedAt\":\"2026-10-23T04:22:43Z\"}"
+      },
+      "dynamicWaitPassed": true,
+      "finalUrl": "https://harnessed.cc/",
+      "title": "harnessed — AI coding harness package manager",
+      "documentLanguage": "en",
+      "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+      ],
+      "transitions": [
+        {
+          "at": 760.5999999940395,
+          "versions": ["v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 761.1999999880791,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 762.0999999940395,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 1929.4000000059605,
+          "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+          ]
+        }
+      ],
+      "layoutMetrics": {
+        "innerWidth": 1440,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "overflowElements": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "className": "promo-track flex items-center gap-0 whitespace-nowrap astro-4lzkkhj6",
+            "left": -79.37249755859375,
+            "right": 3005.4087524414062
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": -79.37249755859375,
+            "right": 149.33062744140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": -55.37249755859375,
+            "right": -48.62249755859375
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": -36.62249755859375,
+            "right": 125.33062744140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1280.95556640625,
+            "right": 1463.01806640625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1463.01806640625,
+            "right": 1691.72119140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1487.01806640625,
+            "right": 1493.76806640625
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": 1505.76806640625,
+            "right": 1667.72119140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": 1633.03369140625,
+            "right": 1667.72119140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1691.72119140625,
+            "right": 2105.67431640625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1715.72119140625,
+            "right": 1722.47119140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2105.67431640625,
+            "right": 2434.67431640625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2129.67431640625,
+            "right": 2136.42431640625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2434.67431640625,
+            "right": 2823.34619140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2458.67431640625,
+            "right": 2465.42431640625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2823.34619140625,
+            "right": 3005.40869140625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2847.34619140625,
+            "right": 2854.09619140625
+          }
+        ]
+      },
+      "releaseStorage": "{\"release\":{\"version\":\"5.0.0\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v5.0.0\",\"publishedAt\":\"2026-10-24T13:53:23Z\"},\"checkedAt\":1792850254666}",
+      "heading": "The package manager for AI coding harnesses",
+      "layout": true,
+      "screenshot": "D:\\GitCode\\harnessed\\.planning\\releases\\5.0.0\\desktop-en-attempt-2.png",
+      "githubApiStatuses": [200],
+      "versionNodesAllExpected": true,
+      "releaseLinksAllExpected": true,
+      "observedVersionTransition": true,
+      "observedLinkTransition": true,
+      "apiVerified": true,
+      "languageCorrect": true,
+      "finishedAt": "2026-10-24T13:57:36.183Z"
+    },
+    {
+      "viewport": "desktop-zh",
+      "viewportSize": {
+        "width": 1440,
+        "height": 1000
+      },
+      "url": "https://harnessed.cc/zh-hans/",
+      "attempt": 2,
+      "at": "2026-10-24T13:57:36.185Z",
+      "ok": true,
+      "errors": [],
+      "consoleErrors": [],
+      "requestFailures": [],
+      "githubApiResponses": [
+        {
+          "url": "https://api.github.com/repos/easyinplay/harnessed/releases/latest",
+          "status": 200,
+          "at": "2026-10-24T13:57:38.667Z",
+          "headers": {
+            "date": "Sat, 24 Oct 2026 13:58:39 GMT",
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "public, max-age=60, s-maxage=60",
+            "age": null,
+            "etag": "W/\"148d55a0d48ed1c3929e7091d3c505feac339f1a34fba945b28959b5fa9850d3\"",
+            "x-github-request-id": "E1B8:1EA775:2A95549:3F5FFD7:6ADCB993",
+            "x-ratelimit-limit": "60",
+            "x-ratelimit-remaining": "58",
+            "x-ratelimit-reset": "1792853919"
+          },
+          "release": {
+            "id": 422761176,
+            "tag_name": "v5.0.0",
+            "html_url": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "name": "v5.0.0",
+            "draft": false,
+            "prerelease": false,
+            "immutable": false,
+            "created_at": "2026-10-24T13:51:31Z",
+            "updated_at": "2026-10-24T13:54:10Z",
+            "published_at": "2026-10-24T13:53:23Z",
+            "target_commitish": "main"
+          }
+        }
+      ],
+      "httpFailures": [],
+      "initialCookies": [],
+      "status": 200,
+      "documentHeaders": {
+        "date": "Sat, 24 Oct 2026 13:58:42 GMT",
+        "content-type": "text/html",
+        "cache-control": "public, max-age=0, must-revalidate",
+        "age": null,
+        "etag": null,
+        "x-github-request-id": null,
+        "x-ratelimit-limit": null,
+        "x-ratelimit-remaining": null,
+        "x-ratelimit-reset": null
+      },
+      "serverRendered": {
+        "lang": "zh-Hans",
+        "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+        "releaseLinks": [
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+        ],
+        "seed": "{\"version\":\"4.49.2\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v4.49.2\",\"publishedAt\":\"2026-10-23T04:22:43Z\"}"
+      },
+      "dynamicWaitPassed": true,
+      "finalUrl": "https://harnessed.cc/zh-hans/",
+      "title": "harnessed — AI 编程脚手架包管理器",
+      "documentLanguage": "zh-Hans",
+      "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+      ],
+      "transitions": [
+        {
+          "at": 409.30000001192093,
+          "versions": ["v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 639.4000000059605,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 640.7000000178814,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 1594.800000011921,
+          "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+          ]
+        }
+      ],
+      "layoutMetrics": {
+        "innerWidth": 1440,
+        "documentClientWidth": 1440,
+        "documentScrollWidth": 1440,
+        "bodyScrollWidth": 1440,
+        "overflowElements": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "className": "promo-track flex items-center gap-0 whitespace-nowrap astro-4lzkkhj6",
+            "left": -56.92485046386719,
+            "right": 2569.668899536133
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": -56.92485046386719,
+            "right": 126.73139953613281
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": -32.92485046386719,
+            "right": -26.174850463867188
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": -14.174850463867188,
+            "right": 102.73139953613281
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1440.0283203125,
+            "right": 1789.8095703125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1464.0283203125,
+            "right": 1470.7783203125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1789.8095703125,
+            "right": 2090.0908203125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1813.8095703125,
+            "right": 1820.5595703125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2090.0908203125,
+            "right": 2369.6376953125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2114.0908203125,
+            "right": 2120.8408203125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2369.6376953125,
+            "right": 2569.6689453125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2393.6376953125,
+            "right": 2400.3876953125
+          }
+        ]
+      },
+      "releaseStorage": "{\"release\":{\"version\":\"5.0.0\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v5.0.0\",\"publishedAt\":\"2026-10-24T13:53:23Z\"},\"checkedAt\":1792850258690}",
+      "heading": "AI 编程脚手架的包管理器",
+      "layout": true,
+      "screenshot": "D:\\GitCode\\harnessed\\.planning\\releases\\5.0.0\\desktop-zh-attempt-2.png",
+      "githubApiStatuses": [200],
+      "versionNodesAllExpected": true,
+      "releaseLinksAllExpected": true,
+      "observedVersionTransition": true,
+      "observedLinkTransition": true,
+      "apiVerified": true,
+      "languageCorrect": true,
+      "finishedAt": "2026-10-24T13:57:39.763Z"
+    },
+    {
+      "viewport": "mobile-en",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "https://harnessed.cc/",
+      "attempt": 2,
+      "at": "2026-10-24T13:57:39.764Z",
+      "ok": true,
+      "errors": [],
+      "consoleErrors": [],
+      "requestFailures": [],
+      "githubApiResponses": [
+        {
+          "url": "https://api.github.com/repos/easyinplay/harnessed/releases/latest",
+          "status": 200,
+          "at": "2026-10-24T13:57:42.617Z",
+          "headers": {
+            "date": "Sat, 24 Oct 2026 13:58:39 GMT",
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "public, max-age=60, s-maxage=60",
+            "age": null,
+            "etag": "W/\"148d55a0d48ed1c3929e7091d3c505feac339f1a34fba945b28959b5fa9850d3\"",
+            "x-github-request-id": "A470:1344FF:2AD26AA:3F92827:6ADCB997",
+            "x-ratelimit-limit": "60",
+            "x-ratelimit-remaining": "57",
+            "x-ratelimit-reset": "1792853919"
+          },
+          "release": {
+            "id": 422761176,
+            "tag_name": "v5.0.0",
+            "html_url": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "name": "v5.0.0",
+            "draft": false,
+            "prerelease": false,
+            "immutable": false,
+            "created_at": "2026-10-24T13:51:31Z",
+            "updated_at": "2026-10-24T13:54:10Z",
+            "published_at": "2026-10-24T13:53:23Z",
+            "target_commitish": "main"
+          }
+        }
+      ],
+      "httpFailures": [],
+      "initialCookies": [],
+      "status": 200,
+      "documentHeaders": {
+        "date": "Sat, 24 Oct 2026 13:58:45 GMT",
+        "content-type": "text/html",
+        "cache-control": "public, max-age=0, must-revalidate",
+        "age": null,
+        "etag": null,
+        "x-github-request-id": null,
+        "x-ratelimit-limit": null,
+        "x-ratelimit-remaining": null,
+        "x-ratelimit-reset": null
+      },
+      "serverRendered": {
+        "lang": "en",
+        "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+        "releaseLinks": [
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+        ],
+        "seed": "{\"version\":\"4.49.2\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v4.49.2\",\"publishedAt\":\"2026-10-23T04:22:43Z\"}"
+      },
+      "dynamicWaitPassed": true,
+      "finalUrl": "https://harnessed.cc/",
+      "title": "harnessed — AI coding harness package manager",
+      "documentLanguage": "en",
+      "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+      ],
+      "transitions": [
+        {
+          "at": 885.5,
+          "versions": ["v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 886,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 886.9000000059605,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 1923.800000011921,
+          "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+          ]
+        }
+      ],
+      "layoutMetrics": {
+        "innerWidth": 390,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "overflowElements": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "className": "promo-track flex items-center gap-0 whitespace-nowrap astro-4lzkkhj6",
+            "left": -67.47595977783203,
+            "right": 3017.305290222168
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": -67.47595977783203,
+            "right": 161.22716522216797
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": -43.47595977783203,
+            "right": -36.72595977783203
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": -24.72595977783203,
+            "right": 137.22716522216797
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 161.2271728515625,
+            "right": 575.1802978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 575.1802978515625,
+            "right": 904.1802978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 599.1802978515625,
+            "right": 605.9302978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 904.1802978515625,
+            "right": 1292.8521728515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 928.1802978515625,
+            "right": 934.9302978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1292.8521728515625,
+            "right": 1474.9146728515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1316.8521728515625,
+            "right": 1323.6021728515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1474.9146728515625,
+            "right": 1703.6177978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1498.9146728515625,
+            "right": 1505.6646728515625
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": 1517.6646728515625,
+            "right": 1679.6177978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": 1644.9302978515625,
+            "right": 1679.6177978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1703.6177978515625,
+            "right": 2117.57080078125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1727.6177978515625,
+            "right": 1734.3677978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2117.57080078125,
+            "right": 2446.57080078125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2141.57080078125,
+            "right": 2148.32080078125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2446.57080078125,
+            "right": 2835.24267578125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2470.57080078125,
+            "right": 2477.32080078125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2835.24267578125,
+            "right": 3017.30517578125
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2859.24267578125,
+            "right": 2865.99267578125
+          },
+          {
+            "tag": "TABLE",
+            "id": "",
+            "className": "w-full text-left border-collapse",
+            "left": 25,
+            "right": 444.953125
+          },
+          {
+            "tag": "THEAD",
+            "id": "",
+            "className": "",
+            "left": 25,
+            "right": 444.953125
+          },
+          {
+            "tag": "TR",
+            "id": "",
+            "className": "bg-[#15151D]",
+            "left": 25,
+            "right": 444.953125
+          },
+          {
+            "tag": "TH",
+            "id": "",
+            "className": "text-zinc-300 text-sm font-medium px-5 py-3",
+            "left": 247.109375,
+            "right": 444.953125
+          },
+          {
+            "tag": "TBODY",
+            "id": "",
+            "className": "",
+            "left": 25,
+            "right": 444.953125
+          },
+          {
+            "tag": "TR",
+            "id": "",
+            "className": "border-t border-violet-400/5 bg-[#0A0A0F]/50",
+            "left": 25,
+            "right": 444.953125
+          },
+          {
+            "tag": "TD",
+            "id": "",
+            "className": "px-5 py-3 text-sm text-zinc-400",
+            "left": 247.109375,
+            "right": 444.953125
+          }
+        ]
+      },
+      "releaseStorage": "{\"release\":{\"version\":\"5.0.0\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v5.0.0\",\"publishedAt\":\"2026-10-24T13:53:23Z\"},\"checkedAt\":1792850262618}",
+      "heading": "The package manager for AI coding harnesses",
+      "layout": true,
+      "screenshot": "D:\\GitCode\\harnessed\\.planning\\releases\\5.0.0\\mobile-en-attempt-2.png",
+      "githubApiStatuses": [200],
+      "versionNodesAllExpected": true,
+      "releaseLinksAllExpected": true,
+      "observedVersionTransition": true,
+      "observedLinkTransition": true,
+      "apiVerified": true,
+      "languageCorrect": true,
+      "finishedAt": "2026-10-24T13:57:43.533Z"
+    },
+    {
+      "viewport": "mobile-zh",
+      "viewportSize": {
+        "width": 390,
+        "height": 844
+      },
+      "url": "https://harnessed.cc/zh-hans/",
+      "attempt": 2,
+      "at": "2026-10-24T13:57:43.535Z",
+      "ok": true,
+      "errors": [],
+      "consoleErrors": [],
+      "requestFailures": [],
+      "githubApiResponses": [
+        {
+          "url": "https://api.github.com/repos/easyinplay/harnessed/releases/latest",
+          "status": 200,
+          "at": "2026-10-24T13:57:46.178Z",
+          "headers": {
+            "date": "Sat, 24 Oct 2026 13:58:39 GMT",
+            "content-type": "application/json; charset=utf-8",
+            "cache-control": "public, max-age=60, s-maxage=60",
+            "age": null,
+            "etag": "W/\"148d55a0d48ed1c3929e7091d3c505feac339f1a34fba945b28959b5fa9850d3\"",
+            "x-github-request-id": "A47C:34CD51:2C01F08:411B9C0:6ADCB99A",
+            "x-ratelimit-limit": "60",
+            "x-ratelimit-remaining": "56",
+            "x-ratelimit-reset": "1792853919"
+          },
+          "release": {
+            "id": 422761176,
+            "tag_name": "v5.0.0",
+            "html_url": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "name": "v5.0.0",
+            "draft": false,
+            "prerelease": false,
+            "immutable": false,
+            "created_at": "2026-10-24T13:51:31Z",
+            "updated_at": "2026-10-24T13:54:10Z",
+            "published_at": "2026-10-24T13:53:23Z",
+            "target_commitish": "main"
+          }
+        }
+      ],
+      "httpFailures": [],
+      "initialCookies": [],
+      "status": 200,
+      "documentHeaders": {
+        "date": "Sat, 24 Oct 2026 13:58:49 GMT",
+        "content-type": "text/html",
+        "cache-control": "public, max-age=0, must-revalidate",
+        "age": null,
+        "etag": null,
+        "x-github-request-id": null,
+        "x-ratelimit-limit": null,
+        "x-ratelimit-remaining": null,
+        "x-ratelimit-reset": null
+      },
+      "serverRendered": {
+        "lang": "zh-Hans",
+        "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+        "releaseLinks": [
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+          "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+        ],
+        "seed": "{\"version\":\"4.49.2\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v4.49.2\",\"publishedAt\":\"2026-10-23T04:22:43Z\"}"
+      },
+      "dynamicWaitPassed": true,
+      "finalUrl": "https://harnessed.cc/zh-hans/",
+      "title": "harnessed — AI 编程脚手架包管理器",
+      "documentLanguage": "zh-Hans",
+      "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+      "releaseLinks": [
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+        "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+      ],
+      "transitions": [
+        {
+          "at": 525,
+          "versions": ["v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 741.5,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 742.9000000059605,
+          "versions": ["v4.49.2", "v4.49.2", "v4.49.2", "v4.49.2"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2",
+            "https://github.com/easyinplay/harnessed/releases/tag/v4.49.2"
+          ]
+        },
+        {
+          "at": 1754.5,
+          "versions": ["v5.0.0", "v5.0.0", "v5.0.0", "v5.0.0"],
+          "releaseLinks": [
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+            "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0"
+          ]
+        }
+      ],
+      "layoutMetrics": {
+        "innerWidth": 390,
+        "documentClientWidth": 390,
+        "documentScrollWidth": 390,
+        "bodyScrollWidth": 390,
+        "overflowElements": [
+          {
+            "tag": "DIV",
+            "id": "",
+            "className": "promo-track flex items-center gap-0 whitespace-nowrap astro-4lzkkhj6",
+            "left": -52.1189079284668,
+            "right": 2574.474842071533
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": -52.1189079284668,
+            "right": 131.5373420715332
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": -28.118907928466797,
+            "right": -21.368907928466797
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": -9.368907928466797,
+            "right": 107.5373420715332
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 131.53733825683594,
+            "right": 481.31858825683594
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 481.318603515625,
+            "right": 781.599853515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 505.318603515625,
+            "right": 512.068603515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 781.599853515625,
+            "right": 1061.146728515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 805.599853515625,
+            "right": 812.349853515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1061.146728515625,
+            "right": 1261.177978515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1085.146728515625,
+            "right": 1091.896728515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1261.177978515625,
+            "right": 1444.834228515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1285.177978515625,
+            "right": 1291.927978515625
+          },
+          {
+            "tag": "A",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": 1303.927978515625,
+            "right": 1420.834228515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "astro-4lzkkhj6",
+            "left": 1386.146728515625,
+            "right": 1420.834228515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1444.834228515625,
+            "right": 1794.615478515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1468.834228515625,
+            "right": 1475.584228515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 1794.615478515625,
+            "right": 2094.896728515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 1818.615478515625,
+            "right": 1825.365478515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2094.896728515625,
+            "right": 2374.443603515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2118.896728515625,
+            "right": 2125.646728515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-xs text-zinc-400 px-6 astro-4lzkkhj6",
+            "left": 2374.443603515625,
+            "right": 2574.474853515625
+          },
+          {
+            "tag": "SPAN",
+            "id": "",
+            "className": "text-violet-400/60 mr-3 astro-4lzkkhj6",
+            "left": 2398.443603515625,
+            "right": 2405.193603515625
+          }
+        ]
+      },
+      "releaseStorage": "{\"release\":{\"version\":\"5.0.0\",\"url\":\"https://github.com/easyinplay/harnessed/releases/tag/v5.0.0\",\"publishedAt\":\"2026-10-24T13:53:23Z\"},\"checkedAt\":1792850266179}",
+      "heading": "AI 编程脚手架的包管理器",
+      "layout": true,
+      "screenshot": "D:\\GitCode\\harnessed\\.planning\\releases\\5.0.0\\mobile-zh-attempt-2.png",
+      "githubApiStatuses": [200],
+      "versionNodesAllExpected": true,
+      "releaseLinksAllExpected": true,
+      "observedVersionTransition": true,
+      "observedLinkTransition": true,
+      "apiVerified": true,
+      "languageCorrect": true,
+      "finishedAt": "2026-10-24T13:57:46.887Z"
+    }
+  ],
+  "artifacts": "D:/GitCode/harnessed/.planning/releases/5.0.0",
+  "apiWaitElapsedMs": 510,
+  "apiReady": true,
+  "environmentProblems": [
+    {
+      "attempt": 1,
+      "error": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\easyi\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1223\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝",
+      "diagnosis": "Installed Playwright 1.60.0 expects missing revision 1223; existing isolated Playwright Chromium revision 1247 will be used with explicit executablePath; no install or profile access."
+    }
+  ],
+  "finishedAt": "2026-10-24T13:57:47.390Z",
+  "deploymentScope": {
+    "userIdentifiedDeployedCommit": "daa0e2b",
+    "commitMappingIndependentlyVerified": false,
+    "previousProductionEvidenceCommit": "daa0e2bb469a3195e44914dc4fc777ac74c89021",
+    "previousProductionEvidence": ".planning/releases/site-2026-10-24/production-browser.json",
+    "scope": "Live v5.0.0 dynamic version and release-link propagation on the deployment identified by the user; excludes subsequent installation divider, tab label and Hero CTA refinements being edited locally by another worker.",
+    "futureRefinementCertified": false
+  },
+  "cleanup": {
+    "allCreatedContextsClosed": true,
+    "launchedBrowserClosed": true,
+    "persistentProfileCreated": false,
+    "temporaryScriptFilesCreated": false
+  },
+  "screenshotLimitations": [
+    "Full-page screenshots were captured from the initial scroll position. Scroll-triggered below-fold reveal sections may remain hidden; these screenshots are not a full-page visual or interaction audit."
+  ],
+  "evidenceCompaction": {
+    "omitted": "Full raw API bodies and unrelated release metadata (release notes, assets and author metadata); duplicated successful attempt check details replaced with references to checks.",
+    "preserved": "HTTP statuses and response headers; timestamps; stable release identity and public flags; exact version/link nodes and DOM transition history; exceptions, request/console/page errors; initial launch failure, retry outcome and screenshots."
+  }
+}

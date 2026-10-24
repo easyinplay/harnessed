@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: npm-5.0.0
 milestone_name: Runtime And Onboarding
-status: in_progress
-last_updated: "2026-10-24T18:45:00+08:00"
+status: completed
+last_updated: "2026-10-24T22:08:00+08:00"
 last_activity: 2026-10-24
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 100
 ---
 
 # STATE — harnessed
@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v4.49.2** 2026-10-23(Codex setup/runtime 验收、Playwright CLI/browser 与 webapp helper、退出码和 verify 环境隔离;CI 39899533104 九 job success,publish 39899939875 四 job success,registry latest=4.49.2;九附件及下载签名/版本核验通过;详 `releases/4.49.2.md`)。上一版 **v4.49.1** 同日发布,详 `releases/4.49.1.md`。
+- **Latest shipped (npm)**: **v5.0.0**, 2026-10-24. TS/lazy initialization, optional Bun lifecycle and host installation contracts; binary/npm require no external Bun. Source047cdac CI40087428094 succeeded; publish40100043369 passed4/4; registry latest5.0.0, actual npm installation and all three signed binaries verified. Receipt: `releases/5.0.0.md`. Previous4.49.2: `releases/4.49.2.md`.
 - **Previous releases**: **v4.49.0** 2026-10-16(Phase 67 `checkpoint adopt` 跨宿主接力 + `gc` 槽位修剪 + win32 `repoKey` 归一 + `update` 走系统代理;publish 4 job success + `npm view` latest=4.49.0 + release 9 assets)。上一版:**v4.48.0** 2026-10-08(`harnessed agents-md` + 更正 README 对 Codex 的两处错误断言;三重核实:publish step 日志 `+ harnessed@4.48.0` + registry 直查 `dist-tags.latest=4.48.0` + `npm view`,release 9 assets)。上一版:**v4.47.0** 2026-10-07(codex 不再读 config.toml + 语言 pin + gate fail-closed 扩三类/ADR-0042)· **v4.46.0** 2026-09-30(v16.0 收官版:Phase 66 T3b-T5 + 凭据备份缺陷)。更早:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
@@ -29,7 +29,7 @@ progress:
 
 ## Current Position
 
-- **Active npm 5.0.0 (2026-10-24)**: Final source338b4be CI40060190611 passed9/9; resumed README30/lint and Bun-hosted isolated Codex16/16 pass. Installed gstack lease still exit3; CLI tag/npm awaits explicit native-governance substitution decision. Details: `phases/70-runtime-onboarding/RESUME-AUDIT.md`. Website already deployed as daa0e2b; receipt `releases/site-2026-10-24.md`.
+- **npm5.0.0 closed (2026-10-24)**: Published and downloaded acceptance passed; Phase70 summary and release receipt retain exact evidence. User explicitly accepted independent review/real verification for this release only; native gstack lease remains exit3, not passed. Website daa0e2b dynamically shows5.0.0 in four live contexts; latest screenshot refinement is a separate site-only follow-up, not another CLI release.
 
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 

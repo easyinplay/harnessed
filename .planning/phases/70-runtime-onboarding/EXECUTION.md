@@ -91,3 +91,10 @@ All selected observations exited 0. Fresh first invocations were 270.9 ms Node, 
 - Re-ran the opt-in installed gstack lease test: it confirms the expected real exit3 blocker remains, not readiness. No native policy or shared lock change was attempted.
 - Bun-hosted existing isolated-only Codex harness completed16/16 with native registration/trust/removal in temporary HOME; no model turn or real config touched. Inner cleanup warning was followed by successful outer cleanup and an absent-root check. Npm-mode shell timing was not relabeled Bun-mode timing.
 - Exact evidence and limitations: RESUME-AUDIT.md. Native governance substitution is still an explicit user decision, not inferred from continuation.
+
+## Authorized Publication
+
+- The user's explicit publication request accepted the documented independent reviews and real verification for this CLI release only. Native gstack remains blocked; no lock bypass or native security-policy change was made.
+- Final source `047cdacf925fdff5f848df0a6d04b6fadf5eac2a` passed CI `40087428094`. Fresh isolated preflight passed4/4; remote tag and public npm5.0.0 were absent before mutation.
+- Pushed `v5.0.0` once to the verified source. Publish `40100043369` passed4/4, including npm and all three binary jobs. GitHub release is public/stable with nine assets; release notes are English.
+- Downloaded binary/package and live website evidence is maintained in `.planning/releases/5.0.0.md`. No duplicate publication or real PATH installation replacement was performed.

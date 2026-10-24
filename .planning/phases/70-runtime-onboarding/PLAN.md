@@ -1,7 +1,7 @@
 # Phase 70: Runtime Efficiency And Website Onboarding
 
 Target release: public npm/GitHub `5.0.0`.
-Status: Scope approved by the user; execution started 2026-10-24. Publication remains gated on verification and explicit accounting for unresolved governance limits.
+Status: Complete; published as5.0.0 after exact-source CI, fresh preflight and explicit per-release governance substitution approval. Downloaded npm/three-platform signed binary acceptance passed; see the release receipt.
 Scope source: [approved brief](../../research/npm-5.0-runtime-onboarding-brief.md).
 
 ## Locked Design
@@ -23,7 +23,7 @@ Scope source: [approved brief](../../research/npm-5.0-runtime-onboarding-brief.m
 | T3 Optional Bun lifecycle | Bun worker owns runtime/hooks/update/hints | Verified invocation/update/hook route, Node/npm never shells out to Bun; standalone first-party paths need neither external runtime | Source/packed smoke, registry and Bun-hosted isolated Codex registration/trust/removal pass; full live-model activation not certified |
 | T4 Website onboarding/version | website worker owns site source/tests/docs | No old 60-second section; responsive accessible tabs/copy/host flow; stable release loading/failure/cache tests; English/Chinese docs aligned | Independently authorized and deployed; Cloudflare/live checks pass; see website receipt |
 | T5 Integration and review | main plus independent reviewers | Build, schemas, lint, full serialized regression, eval, runtime channel smoke and real desktop/mobile browser evidence | Final source 338b4be verified; CI 40060190611 9/9; resumed evidence in RESUME-AUDIT.md |
-| T6 Release 5.0.0 | main only after gates | English CHANGELOG/logs, CI on three platforms, preflight, tag once, registry and signed binary assets verified; website deployment checked separately | Awaiting explicit native-gstack substitution decision; not published |
+| T6 Release 5.0.0 | main only after gates | English CHANGELOG/logs, CI on three platforms, preflight, tag once, registry and signed binary assets verified; website deployment checked separately | Complete; publish40100043369 passed4/4; actual npm installation, three signed binaries and live website5.0.0 verified |
 
 Do not concurrently rebuild dist while the baseline measurement is being captured. Workers must not commit, push or publish; the main session handles atomic commits and immediate pushes under the standing policy. Preserve unrelated untracked files.
 

@@ -2,7 +2,7 @@
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
 > Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v10.0 i18n Surface (✅ npm v4.8.0).
-> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Active target: public npm **5.0.0 Runtime And Onboarding**; the older requirement families below remain historical records.
+> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.0 Runtime And Onboarding** is published and verified; the older requirement families below remain historical records.
 
 ## Active npm 5.0.0 Requirements
 
@@ -13,7 +13,7 @@
 | RT-03 | Explicit optional Bun invocation and owned lifecycle are verified, not inferred from package installation | Phase 70 Bun route acceptance | Core/CC live and Codex contract coverage; native activation not certified |
 | WEB-01 | Replace old 60-second quickstart with one tabbed install / first workflow / progress-recovery flow | Site source, build and real browser evidence | Deployed and live verified; Hero installation and post-WhyCards workflow module |
 | WEB-02 | Share latest stable GitHub version metadata with timeout/cache/fallback and no client secrets | Site metadata and browser tests | Deployed; live browser/API verified; website receipt records exact source/check |
-| REL-01 | Release 5.0.0 only after regression/CI/evidence, with English records and verified published artifacts | Phase 70 release review and release log | Pending |
+| REL-01 | Release 5.0.0 only after regression/CI/evidence, with English records and verified published artifacts | Phase 70 release review and release log | Published and downloaded npm/three-platform signed assets verified; explicit per-release governance substitution recorded |
 
 Plan: [Phase 70](phases/70-runtime-onboarding/PLAN.md). Scope: [approved brief](research/npm-5.0-runtime-onboarding-brief.md). Native governance limitations must remain explicit.
 

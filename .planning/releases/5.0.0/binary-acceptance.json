@@ -1,0 +1,619 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "startedAt": "2026-10-24T14:04:41.668Z",
+  "repository": "easyinplay/harnessed",
+  "version": "5.0.0",
+  "expectedSourceSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a",
+  "verificationAttempt": 2,
+  "maxVerificationAttempts": 3,
+  "previousAttempts": [
+    {
+      "status": "failed",
+      "startedAt": "2026-10-24T14:02:05.895Z",
+      "finishedAt": "2026-10-24T14:03:36.536Z",
+      "failure": {
+        "name": "AssertionError",
+        "message": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'harnessed: unpacked 167 bundled asset file(s) to C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-CSseFb\\\\state\\\\assets\\\\5.0.0\\n'\n- ''\n",
+        "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'harnessed: unpacked 167 bundled asset file(s) to C:\\\\Users\\\\easyi\\\\AppData\\\\Local\\\\Temp\\\\harnessed-runtime-CSseFb\\\\state\\\\assets\\\\5.0.0\\n'\n- ''\n\n    at file:///D:/GitCode/harnessed/.planning/releases/5.0.0/binary-acceptance.verify.mjs:222:10\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+      },
+      "downloadedAssets": 9,
+      "verifiedSignatures": 3,
+      "windowsExecution": {
+        "executableAssetId": 672395178,
+        "executableSha256": "aeeed63acb530ab1a4fc3a148307b91a84f4540df8e56e12b3582076e0db6cf0",
+        "args": ["--version"],
+        "helper": "scripts/benchmark-runtime.mjs#runCommand",
+        "timeoutMs": 30000,
+        "cwd": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\repo",
+        "isolatedEnvironment": {
+          "HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\home",
+          "USERPROFILE": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\home",
+          "CODEX_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\codex",
+          "CLAUDE_CONFIG_DIR": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\home\\.claude",
+          "HARNESSED_ROOT_OVERRIDE": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\state",
+          "APPDATA": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\appdata",
+          "LOCALAPPDATA": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\localappdata",
+          "XDG_CONFIG_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\config",
+          "XDG_CACHE_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\cache",
+          "XDG_DATA_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\data",
+          "XDG_STATE_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\state",
+          "TEMP": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\tmp",
+          "TMP": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\tmp",
+          "TMPDIR": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\tmp"
+        },
+        "pathUnchanged": true,
+        "durationMs": 600.3205000000016,
+        "exitCode": 0,
+        "signal": null,
+        "timedOut": false,
+        "outputLimitExceeded": false,
+        "error": null,
+        "stdout": "5.0.0\n",
+        "stderr": "harnessed: unpacked 167 bundled asset file(s) to C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb\\state\\assets\\5.0.0\n",
+        "rawOutputBytes": 133,
+        "returnedOutputBytes": 133,
+        "rssBytes": null,
+        "rssStatus": "unsupported"
+      },
+      "fixture": {
+        "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CSseFb",
+        "createdBy": "scripts/benchmark-runtime.mjs#createFixture",
+        "cleanup": "passed",
+        "cleanupHelper": "scripts/benchmark-runtime.mjs#cleanupFixture",
+        "removalVerified": true
+      },
+      "networkFailures": []
+    }
+  ],
+  "verifier": {
+    "node": "v24.22.1",
+    "platform": "win32",
+    "architecture": "x64",
+    "scriptSha256": "6b81d16c4f5a9d819fa891ceee1fc15660d86571ea0e480f4d273b1b215ff8c3",
+    "nativeRalphLoop": "unavailable; bounded explicit verification, no simulated pass",
+    "maxAttemptsPerNetworkOperation": 3,
+    "networkConnectTimeoutSeconds": 15,
+    "networkTransferTimeoutSeconds": 110,
+    "subprocessTimeoutMs": 120000
+  },
+  "networkAttempts": [
+    {
+      "operation": "gh api repos/easyinplay/harnessed",
+      "attempt": 1,
+      "success": true
+    },
+    {
+      "operation": "gh api repos/easyinplay/harnessed/releases/tags/v5.0.0",
+      "attempt": 1,
+      "success": true
+    },
+    {
+      "operation": "gh api repos/easyinplay/harnessed/actions/runs/40100043369",
+      "attempt": 1,
+      "success": true
+    },
+    {
+      "operation": "gh api repos/easyinplay/harnessed/actions/runs/40100043369/jobs?per_page=100",
+      "attempt": 1,
+      "success": true
+    },
+    {
+      "operation": "https://api.github.com/repos/easyinplay/harnessed/releases/tags/v5.0.0",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 1100.7127,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-darwin-arm64",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 12091.808700000001,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-darwin-arm64.sha256",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 934.4776999999995,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-darwin-arm64.sha256.sig",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 936.4690999999984,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-linux-x64",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 15603.333799999997,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-linux-x64.sha256",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 905.4320000000007,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-linux-x64.sha256.sig",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 1004.3949999999968,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-windows-x64.exe",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 20461.552499999998,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-windows-x64.exe.sha256",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 982.0705999999991,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-windows-x64.exe.sha256.sig",
+      "attempt": 1,
+      "success": true,
+      "durationMs": 1069.7912999999971,
+      "exitCode": 0,
+      "httpStatus": "200",
+      "timedOut": false,
+      "error": null,
+      "stderr": ""
+    },
+    {
+      "operation": "gh api repos/easyinplay/harnessed/releases/tags/v5.0.0",
+      "attempt": 1,
+      "success": true
+    }
+  ],
+  "assets": [
+    {
+      "id": 672394285,
+      "name": "harnessed-darwin-arm64",
+      "size": 68317154,
+      "expectedSize": 68317154,
+      "sha256": "02986a503723330c7913fe886493cbe76c3c4cd69b0d10b278c2bf0e4da90508",
+      "githubDigest": "sha256:02986a503723330c7913fe886493cbe76c3c4cd69b0d10b278c2bf0e4da90508",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-darwin-arm64",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672394285",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:53:39Z",
+      "updatedAt": "2026-10-24T13:53:42Z"
+    },
+    {
+      "id": 672394284,
+      "name": "harnessed-darwin-arm64.sha256",
+      "size": 89,
+      "expectedSize": 89,
+      "sha256": "46ce46d6d43f51f82bf5c0859b7aa32f5fee7df6524b396810126bbd03fd2187",
+      "githubDigest": "sha256:46ce46d6d43f51f82bf5c0859b7aa32f5fee7df6524b396810126bbd03fd2187",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-darwin-arm64.sha256",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672394284",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:53:39Z",
+      "updatedAt": "2026-10-24T13:53:39Z"
+    },
+    {
+      "id": 672394286,
+      "name": "harnessed-darwin-arm64.sha256.sig",
+      "size": 88,
+      "expectedSize": 88,
+      "sha256": "e53de2a975e2f2b1ad176dd84cad780f5684aada751e27fc66079898ee014a43",
+      "githubDigest": "sha256:e53de2a975e2f2b1ad176dd84cad780f5684aada751e27fc66079898ee014a43",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-darwin-arm64.sha256.sig",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672394286",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:53:39Z",
+      "updatedAt": "2026-10-24T13:53:39Z"
+    },
+    {
+      "id": 672394396,
+      "name": "harnessed-linux-x64",
+      "size": 99416192,
+      "expectedSize": 99416192,
+      "sha256": "51fbb8216c5bed5346f3b26c127b14a06ef546c42d29d9cf325c4d5dbf2e4390",
+      "githubDigest": "sha256:51fbb8216c5bed5346f3b26c127b14a06ef546c42d29d9cf325c4d5dbf2e4390",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-linux-x64",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672394396",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:53:43Z",
+      "updatedAt": "2026-10-24T13:53:47Z"
+    },
+    {
+      "id": 672394397,
+      "name": "harnessed-linux-x64.sha256",
+      "size": 86,
+      "expectedSize": 86,
+      "sha256": "2cccef145cbba483c869b7277d183a1784c1f9a31f84b2f3c0c523154a69c1a6",
+      "githubDigest": "sha256:2cccef145cbba483c869b7277d183a1784c1f9a31f84b2f3c0c523154a69c1a6",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-linux-x64.sha256",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672394397",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:53:43Z",
+      "updatedAt": "2026-10-24T13:53:43Z"
+    },
+    {
+      "id": 672394395,
+      "name": "harnessed-linux-x64.sha256.sig",
+      "size": 88,
+      "expectedSize": 88,
+      "sha256": "ba19f1258d0b45b04cd7a33af7c681305449fc3fa27218ccb6fabe575aeadbf1",
+      "githubDigest": "sha256:ba19f1258d0b45b04cd7a33af7c681305449fc3fa27218ccb6fabe575aeadbf1",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-linux-x64.sha256.sig",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672394395",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:53:43Z",
+      "updatedAt": "2026-10-24T13:53:43Z"
+    },
+    {
+      "id": 672395178,
+      "name": "harnessed-windows-x64.exe",
+      "size": 103307776,
+      "expectedSize": 103307776,
+      "sha256": "aeeed63acb530ab1a4fc3a148307b91a84f4540df8e56e12b3582076e0db6cf0",
+      "githubDigest": "sha256:aeeed63acb530ab1a4fc3a148307b91a84f4540df8e56e12b3582076e0db6cf0",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-windows-x64.exe",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672395178",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:54:06Z",
+      "updatedAt": "2026-10-24T13:54:10Z"
+    },
+    {
+      "id": 672395180,
+      "name": "harnessed-windows-x64.exe.sha256",
+      "size": 92,
+      "expectedSize": 92,
+      "sha256": "9b03f57f31b8fcc5a0e0900931b055124d2dae751d1d386a3478ffe5be1e75ef",
+      "githubDigest": "sha256:9b03f57f31b8fcc5a0e0900931b055124d2dae751d1d386a3478ffe5be1e75ef",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-windows-x64.exe.sha256",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672395180",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:54:07Z",
+      "updatedAt": "2026-10-24T13:54:07Z"
+    },
+    {
+      "id": 672395179,
+      "name": "harnessed-windows-x64.exe.sha256.sig",
+      "size": 88,
+      "expectedSize": 88,
+      "sha256": "6fbfc3aae64bbe49fe2b30a08b9ff9c2c3ea05d8dc81909215d76ef60cd46002",
+      "githubDigest": "sha256:6fbfc3aae64bbe49fe2b30a08b9ff9c2c3ea05d8dc81909215d76ef60cd46002",
+      "digestMatches": true,
+      "lengthMatches": true,
+      "sourceUrl": "https://github.com/easyinplay/harnessed/releases/download/v5.0.0/harnessed-windows-x64.exe.sha256.sig",
+      "githubApiUrl": "https://api.github.com/repos/easyinplay/harnessed/releases/assets/672395179",
+      "downloadAttempt": 1,
+      "createdAt": "2026-10-24T13:54:06Z",
+      "updatedAt": "2026-10-24T13:54:07Z"
+    }
+  ],
+  "platformVerification": [
+    {
+      "name": "harnessed-darwin-arm64",
+      "binaryAssetId": 672394285,
+      "sha256": "02986a503723330c7913fe886493cbe76c3c4cd69b0d10b278c2bf0e4da90508",
+      "size": 68317154,
+      "checksumAssetId": 672394284,
+      "signatureAssetId": 672394286,
+      "signedChecksumText": "02986a503723330c7913fe886493cbe76c3c4cd69b0d10b278c2bf0e4da90508  harnessed-darwin-arm64\n",
+      "signedChecksumBase64": "MDI5ODZhNTAzNzIzMzMwYzc5MTNmZTg4NjQ5M2NiZTc2YzNjNGNkNjliMGQxMGIyNzhjMmJmMGU0ZGE5MDUwOCAgaGFybmVzc2VkLWRhcndpbi1hcm02NAo=",
+      "signatureBase64": "1pMj5zOn3xZ7/UmofjnLvSEFzlcgRAd45bSsRn9yrF2onV0cGvT7ZVvXmD7lVJ50gd6muq2mw/MBzhnwzQ5FAw==",
+      "signatureBytes": 64,
+      "checksumFileNameAndHashMatch": true,
+      "exactChecksumBytesSigned": true,
+      "signatureVerified": true,
+      "tamperNegativeControlPassed": true,
+      "signatureNegativeControlPassed": true,
+      "execution": "not-run: foreign platform; download, hash and signature verification only"
+    },
+    {
+      "name": "harnessed-linux-x64",
+      "binaryAssetId": 672394396,
+      "sha256": "51fbb8216c5bed5346f3b26c127b14a06ef546c42d29d9cf325c4d5dbf2e4390",
+      "size": 99416192,
+      "checksumAssetId": 672394397,
+      "signatureAssetId": 672394395,
+      "signedChecksumText": "51fbb8216c5bed5346f3b26c127b14a06ef546c42d29d9cf325c4d5dbf2e4390  harnessed-linux-x64\n",
+      "signedChecksumBase64": "NTFmYmI4MjE2YzViZWQ1MzQ2ZjNiMjZjMTI3YjE0YTA2ZWY1NDZjNDJkMjlkOWNmMzI1YzRkNWRiZjJlNDM5MCAgaGFybmVzc2VkLWxpbnV4LXg2NAo=",
+      "signatureBase64": "kGo/0jyEFI7JWPygeOdIzG196ZhqLqji0Yns/V2WPbbz1d0G49yOWAV269A/byeqmACLNb7AAg6S3JvDnvYyAA==",
+      "signatureBytes": 64,
+      "checksumFileNameAndHashMatch": true,
+      "exactChecksumBytesSigned": true,
+      "signatureVerified": true,
+      "tamperNegativeControlPassed": true,
+      "signatureNegativeControlPassed": true,
+      "execution": "not-run: foreign platform; download, hash and signature verification only"
+    },
+    {
+      "name": "harnessed-windows-x64.exe",
+      "binaryAssetId": 672395178,
+      "sha256": "aeeed63acb530ab1a4fc3a148307b91a84f4540df8e56e12b3582076e0db6cf0",
+      "size": 103307776,
+      "checksumAssetId": 672395180,
+      "signatureAssetId": 672395179,
+      "signedChecksumText": "aeeed63acb530ab1a4fc3a148307b91a84f4540df8e56e12b3582076e0db6cf0  harnessed-windows-x64.exe\n",
+      "signedChecksumBase64": "YWVlZWQ2M2FjYjUzMGFiMWE0ZmMzYTE0ODMwN2I5MWE4NGY0NTQwZGY4ZTU2ZTEyYjM1ODIwNzZlMGRiNmNmMCAgaGFybmVzc2VkLXdpbmRvd3MteDY0LmV4ZQo=",
+      "signatureBase64": "Z4WoaNV+wP5/NMNvD/9ksYdAFjEEDyOeKSeb371iUhmKQSOLTIXob3R9x0/EnMe2X39rdor2sAswqSt8P5OwAA==",
+      "signatureBytes": 64,
+      "checksumFileNameAndHashMatch": true,
+      "exactChecksumBytesSigned": true,
+      "signatureVerified": true,
+      "tamperNegativeControlPassed": true,
+      "signatureNegativeControlPassed": true,
+      "execution": "passed: actual downloaded binary --version returned 5.0.0"
+    }
+  ],
+  "fixture": {
+    "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof",
+    "createdBy": "scripts/benchmark-runtime.mjs#createFixture",
+    "cleanup": "passed",
+    "cleanupHelper": "scripts/benchmark-runtime.mjs#cleanupFixture",
+    "removalVerified": true
+  },
+  "repositoryMetadata": {
+    "id": 1235802542,
+    "fullName": "easyinplay/harnessed",
+    "private": false,
+    "visibility": "public"
+  },
+  "release": {
+    "id": 422761176,
+    "tag": "v5.0.0",
+    "draft": false,
+    "prerelease": false,
+    "publishedAt": "2026-10-24T13:53:23Z",
+    "assets": [
+      {
+        "id": 672394285,
+        "name": "harnessed-darwin-arm64",
+        "size": 68317154,
+        "digest": "sha256:02986a503723330c7913fe886493cbe76c3c4cd69b0d10b278c2bf0e4da90508",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:53:42Z"
+      },
+      {
+        "id": 672394284,
+        "name": "harnessed-darwin-arm64.sha256",
+        "size": 89,
+        "digest": "sha256:46ce46d6d43f51f82bf5c0859b7aa32f5fee7df6524b396810126bbd03fd2187",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:53:39Z"
+      },
+      {
+        "id": 672394286,
+        "name": "harnessed-darwin-arm64.sha256.sig",
+        "size": 88,
+        "digest": "sha256:e53de2a975e2f2b1ad176dd84cad780f5684aada751e27fc66079898ee014a43",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:53:39Z"
+      },
+      {
+        "id": 672394396,
+        "name": "harnessed-linux-x64",
+        "size": 99416192,
+        "digest": "sha256:51fbb8216c5bed5346f3b26c127b14a06ef546c42d29d9cf325c4d5dbf2e4390",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:53:47Z"
+      },
+      {
+        "id": 672394397,
+        "name": "harnessed-linux-x64.sha256",
+        "size": 86,
+        "digest": "sha256:2cccef145cbba483c869b7277d183a1784c1f9a31f84b2f3c0c523154a69c1a6",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:53:43Z"
+      },
+      {
+        "id": 672394395,
+        "name": "harnessed-linux-x64.sha256.sig",
+        "size": 88,
+        "digest": "sha256:ba19f1258d0b45b04cd7a33af7c681305449fc3fa27218ccb6fabe575aeadbf1",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:53:43Z"
+      },
+      {
+        "id": 672395178,
+        "name": "harnessed-windows-x64.exe",
+        "size": 103307776,
+        "digest": "sha256:aeeed63acb530ab1a4fc3a148307b91a84f4540df8e56e12b3582076e0db6cf0",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:54:10Z"
+      },
+      {
+        "id": 672395180,
+        "name": "harnessed-windows-x64.exe.sha256",
+        "size": 92,
+        "digest": "sha256:9b03f57f31b8fcc5a0e0900931b055124d2dae751d1d386a3478ffe5be1e75ef",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:54:07Z"
+      },
+      {
+        "id": 672395179,
+        "name": "harnessed-windows-x64.exe.sha256.sig",
+        "size": 88,
+        "digest": "sha256:6fbfc3aae64bbe49fe2b30a08b9ff9c2c3ea05d8dc81909215d76ef60cd46002",
+        "state": "uploaded",
+        "updated_at": "2026-10-24T13:54:07Z"
+      }
+    ],
+    "htmlUrl": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.0",
+    "targetCommitish": "main",
+    "immutable": false,
+    "publicStableNonDraft": true,
+    "anonymousPublicApiConfirmed": true,
+    "unchangedAfterVerification": true
+  },
+  "tag": {
+    "tag": "v5.0.0",
+    "tagObjectSha": "edee7d817eedda47f501a033f25db8a0dc120881",
+    "peeledCommitSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a",
+    "raw": "edee7d817eedda47f501a033f25db8a0dc120881\trefs/tags/v5.0.0\n047cdacf925fdff5f848df0a6d04b6fadf5eac2a\trefs/tags/v5.0.0^{}\n",
+    "unchangedAfterVerification": true
+  },
+  "pipeline": {
+    "id": 40100043369,
+    "headSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a",
+    "status": "completed",
+    "conclusion": "success",
+    "url": "https://github.com/easyinplay/harnessed/actions/runs/40100043369",
+    "jobs": [
+      {
+        "id": 120890141237,
+        "name": "npm publish",
+        "status": "completed",
+        "conclusion": "success",
+        "headSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a"
+      },
+      {
+        "id": 120890248060,
+        "name": "binary macos-latest",
+        "status": "completed",
+        "conclusion": "success",
+        "headSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a"
+      },
+      {
+        "id": 120890248061,
+        "name": "binary ubuntu-latest",
+        "status": "completed",
+        "conclusion": "success",
+        "headSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a"
+      },
+      {
+        "id": 120890248081,
+        "name": "binary windows-latest",
+        "status": "completed",
+        "conclusion": "success",
+        "headSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a"
+      }
+    ]
+  },
+  "signatureKey": {
+    "sourcePath": "src/cli/lib/updateSignature.ts",
+    "sourceSha": "047cdacf925fdff5f848df0a6d04b6fadf5eac2a",
+    "matchesTaggedSource": true,
+    "algorithm": "ed25519",
+    "spkiDerSha256": "1c27b767b5d5a5406204b294b2b2a042dd231df157ce81b62efdbd4e5663ebc7",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAgCsfkZ+uCRNIBSHGfiOzp+TCSwQqOVJW1tsCW/beF4g=\n-----END PUBLIC KEY-----\n",
+    "implementation": "node:crypto.verify(null, exactDownloadedSha256Bytes, publicKey, signature)",
+    "privateKeyAccessed": false
+  },
+  "windowsExecution": {
+    "executableAssetId": 672395178,
+    "executableSha256": "aeeed63acb530ab1a4fc3a148307b91a84f4540df8e56e12b3582076e0db6cf0",
+    "args": ["--version"],
+    "helper": "scripts/benchmark-runtime.mjs#runCommand",
+    "timeoutMs": 30000,
+    "cwd": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\repo",
+    "isolatedEnvironment": {
+      "HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\home",
+      "USERPROFILE": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\home",
+      "CODEX_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\codex",
+      "CLAUDE_CONFIG_DIR": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\home\\.claude",
+      "HARNESSED_ROOT_OVERRIDE": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\state",
+      "APPDATA": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\appdata",
+      "LOCALAPPDATA": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\localappdata",
+      "XDG_CONFIG_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\config",
+      "XDG_CACHE_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\cache",
+      "XDG_DATA_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\data",
+      "XDG_STATE_HOME": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\state",
+      "TEMP": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\tmp",
+      "TMP": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\tmp",
+      "TMPDIR": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\tmp"
+    },
+    "pathUnchanged": true,
+    "durationMs": 628.8510999999999,
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "outputLimitExceeded": false,
+    "error": null,
+    "stdout": "5.0.0\n",
+    "stderr": "harnessed: unpacked 167 bundled asset file(s) to C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\state\\assets\\5.0.0\n",
+    "rawOutputBytes": 133,
+    "returnedOutputBytes": 133,
+    "rssBytes": null,
+    "rssStatus": "unsupported",
+    "isolatedUnpack": {
+      "fileCount": 167,
+      "target": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-72wxof\\state\\assets\\5.0.0",
+      "expectedDiagnostic": true
+    },
+    "version": "5.0.0",
+    "passed": true
+  },
+  "safety": {
+    "parentEnvironmentUnchanged": true,
+    "realPathUnchanged": true,
+    "realHomeConfigOrGlobalInstallationWrites": false,
+    "setupRun": false,
+    "upstreamWrites": false,
+    "committed": false,
+    "pushed": false,
+    "privateSigningKeyInspected": false
+  },
+  "finishedAt": "2026-10-24T14:05:46.641Z"
+}

@@ -1,6 +1,6 @@
 # Phase 70 Verification
 
-Date: 2026-10-24. Candidate package version: 5.0.0. Not yet published.
+Date: 2026-10-24. Public package version: 5.0.0. Publication and downloaded acceptance are tracked in [the release receipt](../../releases/5.0.0.md).
 
 ## Local Gates
 
@@ -83,10 +83,10 @@ Existing site checks remain explicit: full formatting reports pre-existing diffe
 
 Independent static reviews found and corrected SDK import hoisting, UTF-8 output-budget expansion, registry-source mismatch and non-healing high cache versions. These are not native gstack execution receipts.
 
-Native gstack startup did not complete; native office-hours/CEO/architecture/review gates are not marked passed. The main session asked the user whether the documented static reviews and real verification may substitute for the CLI release. Its substitution decision is still pending: do not push a CLI version tag or publish npm. Re-run preflight on the eventual CLI release commit. The later explicit website deployment authorization was handled separately, with instructions corrected for the existing stable CLI; it does not mark the native CLI gate passed. Existing upstream gstack/MCP readiness limitations remain unchanged.
+Native gstack startup did not complete; native office-hours/CEO/architecture/review gates are not marked passed. The user subsequently explicitly authorized publication after the substitution decision was presented. The documented independent reviews and real verification are accepted for this CLI release only, without changing future workflow defaults or upstream readiness. Fresh preflight passed on the exact release commit before tagging. The earlier website deployment authorization remains independent. Existing upstream gstack/MCP readiness limitations remain unchanged.
 
 ## CI Closure
 
 Initial CI `40010192023` passed 8/9 jobs. The sole failure was an extensionless Bun path returned by Windows Git Bash, before any runtime test launched. Follow-up `a7a93d3` asks Bun for its real executable path; local Git Bash rehearsal passed, then `40011089288` passed all three main test jobs, three binary jobs and three installer jobs. No smoke check, runtime validation or security gate was removed.
 
-This verification-record update is documentation-only; its CI is separate from the already-green runtime candidate. There is no CLI 5.0.0 publication receipt yet. The independent website deployment receipt is linked above.
+The final documentation source `047cdacf925fdff5f848df0a6d04b6fadf5eac2a` passed CI `40087428094`. It was tagged once as `v5.0.0`; publish `40100043369` passed npm and all three binary jobs. Actual downloaded acceptance and the public registry receipt are maintained in [the release receipt](../../releases/5.0.0.md). The independent website deployment receipt is linked above.

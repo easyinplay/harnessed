@@ -6,7 +6,7 @@
 > Full narrative: `CHANGELOG.md` + `.planning/RETROSPECTIVE.md`.
 >
 > Note: milestone codenames are NOT npm release versions. harnessed publishes by npm semver
-> (latest published: **4.46.0**, 2026-09-30); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
+> (current publication receipt: `.planning/STATE.md` and `.planning/releases/`); milestone names (v2.0, v3.0, v5.0, v5.1) are spec/era codenames.
 > Shipped order below is chronological, not version-monotonic.
 
 ## Shipped
@@ -41,4 +41,4 @@
 
 ## Active
 
-_None._ v16.0 Codex Host Parity closed 2026-09-30 — next milestone queue lives in `TODOS.md`.
+_None._ Public npm5.0.0 Runtime And Onboarding closed2026-10-24; source, publication and known-limit evidence: `phases/70-runtime-onboarding/SUMMARY.md` and `releases/5.0.0.md`. This public version is distinct from the historical internal v5.0 milestone. Next milestone queue lives in `TODOS.md`; the subsequent screenshot refinement is site-only.

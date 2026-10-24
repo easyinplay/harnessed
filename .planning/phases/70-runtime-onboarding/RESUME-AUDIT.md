@@ -2,7 +2,7 @@
 
 Date: 2026-10-24, Asia/Shanghai.
 Source under review: `338b4be7232be208995f60b4455184177d7a2fdf`.
-Status: Additional verification complete; CLI publication remains gated on the native-governance decision.
+Status: Additional verification complete; the user subsequently authorized publication and the per-release governance substitution. See the publication follow-up below.
 
 ## Confirmed Completed Work
 
@@ -49,3 +49,7 @@ Evidence limits:
 The user requested continuing, but has not explicitly accepted replacement of the incomplete native gstack governance gates. This audit does not grant that exception. The release can proceed either after those original gates are genuinely completed, or after the user explicitly accepts the documented independent reviews and real verification as the substitute for this CLI release only.
 
 Once that decision is resolved: re-run preflight on the actual release commit, publish the version tag once, wait for npm and all three binary jobs, verify registry/latest, signed asset checksums and executable/package versions, and record the publication receipt. None of these future steps is marked complete here. Do not change the upstream gstack readiness result or disable its safety checks to obtain a green release.
+
+## Publication Follow-Up
+
+The user's explicit publication request resolved the decision above for CLI 5.0.0 only. Exact release source `047cdacf925fdff5f848df0a6d04b6fadf5eac2a` passed CI `40087428094` and fresh isolated preflight before tag `v5.0.0` was pushed once. Tag-triggered publish `40100043369` completed all four jobs successfully; npm and the public stable GitHub release were created, with all nine binary/hash/signature assets. Downloaded artifact and live website acceptance are recorded separately in [the release receipt](../../releases/5.0.0.md). The original audit above remains a historical record, not the current publication hold. Native gstack is still blocked, not passed.

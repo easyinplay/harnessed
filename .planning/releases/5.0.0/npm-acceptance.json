@@ -1,0 +1,842 @@
+{
+  "schemaVersion": 1,
+  "kind": "published-npm-acceptance",
+  "package": "harnessed",
+  "version": "5.0.0",
+  "startedAt": "2026-10-24T14:03:01.858Z",
+  "platform": "win32",
+  "arch": "x64",
+  "node": "v24.22.1",
+  "tools": {
+    "node": "C:\\Program Files\\nodejs\\node.exe",
+    "npmCli": "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+    "helper": "scripts/benchmark-runtime.mjs"
+  },
+  "limits": {
+    "maxAttempts": 1,
+    "subprocessTimeoutMs": 120000,
+    "fetchTimeoutMs": 60000
+  },
+  "priorAcceptance": {
+    "schemaVersion": 1,
+    "kind": "published-npm-acceptance",
+    "package": "harnessed",
+    "version": "5.0.0",
+    "startedAt": "2026-10-24T13:58:17.645Z",
+    "platform": "win32",
+    "arch": "x64",
+    "node": "v24.22.1",
+    "tools": {
+      "node": "C:\\Program Files\\nodejs\\node.exe",
+      "npmCli": "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+      "helper": "scripts/benchmark-runtime.mjs"
+    },
+    "limits": {
+      "maxAttempts": 3,
+      "subprocessTimeoutMs": 120000,
+      "fetchTimeoutMs": 60000
+    },
+    "safety": {
+      "publicationActions": false,
+      "commitOrPush": false,
+      "realGlobalReplacement": false,
+      "pathModified": false,
+      "realNpmConfigOrCredentialsRead": false,
+      "installScope": "owned fixture prefix only; normal dependencies and lifecycle behavior",
+      "metadataFieldsAllowlist": [
+        "name",
+        "version",
+        "dist-tags.latest",
+        "dist.tarball",
+        "dist.integrity",
+        "dist.shasum",
+        "engines",
+        "dependencies",
+        "bin"
+      ],
+      "metadataMethod": "public npm view with explicit field arguments; no unfiltered metadata persisted",
+      "nativeRalphLoop": "unavailable; bounded maximum of 3 attempts with explicit evidence"
+    },
+    "baseline": {
+      "receipt": ".planning/releases/4.49.2.md",
+      "expectedFiles": [
+        "bin/harnessed-check-docs.mjs",
+        "manifests/tools/playwright-cli.yaml",
+        "manifests/tools/webapp-testing.yaml"
+      ]
+    },
+    "attempts": [
+      {
+        "attempt": 1,
+        "startedAt": "2026-10-24T13:58:17.646Z",
+        "commands": [
+          {
+            "label": "public-registry-metadata",
+            "executable": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+              "view",
+              "harnessed@5.0.0",
+              "name",
+              "version",
+              "dist-tags.latest",
+              "dist.tarball",
+              "dist.integrity",
+              "dist.shasum",
+              "engines",
+              "dependencies",
+              "bin",
+              "--json",
+              "--registry=https://registry.npmjs.org/"
+            ],
+            "shell": false,
+            "durationMs": 2157.6779,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "{\n  \"name\": \"harnessed\",\n  \"version\": \"5.0.0\",\n  \"dist-tags.latest\": \"5.0.0\",\n  \"dist.tarball\": \"https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz\",\n  \"dist.integrity\": \"sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==\",\n  \"dist.shasum\": \"54c9b88a8d2f9495eee331abdcc1be6380824a3a\",\n  \"engines\": {\n    \"node\": \">=22.0.0\"\n  },\n  \"dependencies\": {\n    \"ajv\": \"^8.20.0\",\n    \"diff\": \"^9.0.0\",\n    \"yaml\": \"^2.9.0\",\n    \"undici\": \"^8.12.1\",\n    \"commander\": \"^13.0.0\",\n    \"expr-eval\": \"^2.0.2\",\n    \"ajv-errors\": \"^3.0.0\",\n    \"picocolors\": \"^1.1.1\",\n    \"ajv-formats\": \"^3.0.1\",\n    \"@clack/prompts\": \"^0.10.1\",\n    \"proper-lockfile\": \"^4.1.2\",\n    \"@sinclair/typebox\": \"^0.34.49\",\n    \"@anthropic-ai/claude-agent-sdk\": \"0.3.142\"\n  },\n  \"bin\": {\n    \"harnessed\": \"dist/cli.mjs\",\n    \"harnessed-inject-state\": \"bin/harnessed-inject-state.mjs\"\n  }\n}\n",
+            "stderr": "",
+            "rawOutputBytes": 901,
+            "returnedOutputBytes": 901,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "label": "install-verified-tarball-with-dependencies",
+            "executable": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+              "install",
+              "--prefix",
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\install",
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\harnessed-5.0.0.tgz",
+              "--registry=https://registry.npmjs.org/",
+              "--no-save",
+              "--package-lock=false",
+              "--no-audit",
+              "--no-fund",
+              "--fetch-retries=0",
+              "--fetch-timeout=45000"
+            ],
+            "shell": false,
+            "durationMs": 28918.670099999996,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "\nadded 117 packages in 28s\n",
+            "stderr": "",
+            "rawOutputBytes": 27,
+            "returnedOutputBytes": 27,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        ],
+        "ok": false,
+        "fixture": {
+          "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs",
+          "cwd": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\repo",
+          "home": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\home",
+          "prefix": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\install",
+          "cache": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\cache",
+          "userconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\empty.npmrc",
+          "globalconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\empty-global.npmrc",
+          "blankConfigsVerified": true,
+          "offlineDeleted": true,
+          "cleaned": true
+        },
+        "metadata": {
+          "name": "harnessed",
+          "version": "5.0.0",
+          "dist-tags.latest": "5.0.0",
+          "dist.tarball": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+          "dist.integrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "dist.shasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "engines": {
+            "node": ">=22.0.0"
+          },
+          "dependencies": {
+            "ajv": "^8.20.0",
+            "diff": "^9.0.0",
+            "yaml": "^2.9.0",
+            "undici": "^8.12.1",
+            "commander": "^13.0.0",
+            "expr-eval": "^2.0.2",
+            "ajv-errors": "^3.0.0",
+            "picocolors": "^1.1.1",
+            "ajv-formats": "^3.0.1",
+            "@clack/prompts": "^0.10.1",
+            "proper-lockfile": "^4.1.2",
+            "@sinclair/typebox": "^0.34.49",
+            "@anthropic-ai/claude-agent-sdk": "0.3.142"
+          },
+          "bin": {
+            "harnessed": "dist/cli.mjs",
+            "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+          }
+        },
+        "tarball": {
+          "url": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+          "httpStatus": 200,
+          "bytes": 1199055,
+          "downloadDurationMs": 2826,
+          "expectedIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "actualIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "expectedShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "actualShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "sha512Verified": true,
+          "sha1Verified": true,
+          "localPath": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-BKSOqs\\harnessed-5.0.0.tgz"
+        },
+        "error": {
+          "name": "AssertionError",
+          "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   'harnessed-inject-state': './bin/harnessed-inject-state.mjs',\n+   harnessed: './dist/cli.mjs'\n-   'harnessed-inject-state': 'bin/harnessed-inject-state.mjs',\n-   harnessed: 'dist/cli.mjs'\n  }\n",
+          "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   'harnessed-inject-state': './bin/harnessed-inject-state.mjs',\n+   harnessed: './dist/cli.mjs'\n-   'harnessed-inject-state': 'bin/harnessed-inject-state.mjs',\n-   harnessed: 'dist/cli.mjs'\n  }\n\n    at file:///D:/GitCode/harnessed/.planning/releases/.npm-acceptance-5.0.0.owned.mjs:100:12\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+        },
+        "finishedAt": "2026-10-24T13:58:53.272Z"
+      },
+      {
+        "attempt": 2,
+        "startedAt": "2026-10-24T13:58:53.272Z",
+        "commands": [
+          {
+            "label": "public-registry-metadata",
+            "executable": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+              "view",
+              "harnessed@5.0.0",
+              "name",
+              "version",
+              "dist-tags.latest",
+              "dist.tarball",
+              "dist.integrity",
+              "dist.shasum",
+              "engines",
+              "dependencies",
+              "bin",
+              "--json",
+              "--registry=https://registry.npmjs.org/"
+            ],
+            "shell": false,
+            "durationMs": 1624.1092000000062,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "{\n  \"name\": \"harnessed\",\n  \"version\": \"5.0.0\",\n  \"dist-tags.latest\": \"5.0.0\",\n  \"dist.tarball\": \"https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz\",\n  \"dist.integrity\": \"sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==\",\n  \"dist.shasum\": \"54c9b88a8d2f9495eee331abdcc1be6380824a3a\",\n  \"engines\": {\n    \"node\": \">=22.0.0\"\n  },\n  \"dependencies\": {\n    \"ajv\": \"^8.20.0\",\n    \"diff\": \"^9.0.0\",\n    \"yaml\": \"^2.9.0\",\n    \"undici\": \"^8.12.1\",\n    \"commander\": \"^13.0.0\",\n    \"expr-eval\": \"^2.0.2\",\n    \"ajv-errors\": \"^3.0.0\",\n    \"picocolors\": \"^1.1.1\",\n    \"ajv-formats\": \"^3.0.1\",\n    \"@clack/prompts\": \"^0.10.1\",\n    \"proper-lockfile\": \"^4.1.2\",\n    \"@sinclair/typebox\": \"^0.34.49\",\n    \"@anthropic-ai/claude-agent-sdk\": \"0.3.142\"\n  },\n  \"bin\": {\n    \"harnessed\": \"dist/cli.mjs\",\n    \"harnessed-inject-state\": \"bin/harnessed-inject-state.mjs\"\n  }\n}\n",
+            "stderr": "",
+            "rawOutputBytes": 901,
+            "returnedOutputBytes": 901,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "label": "install-verified-tarball-with-dependencies",
+            "executable": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+              "install",
+              "--prefix",
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\install",
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\harnessed-5.0.0.tgz",
+              "--registry=https://registry.npmjs.org/",
+              "--no-save",
+              "--package-lock=false",
+              "--no-audit",
+              "--no-fund",
+              "--fetch-retries=0",
+              "--fetch-timeout=45000"
+            ],
+            "shell": false,
+            "durationMs": 42338.8144,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "\nadded 117 packages in 42s\n",
+            "stderr": "",
+            "rawOutputBytes": 27,
+            "returnedOutputBytes": 27,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        ],
+        "ok": false,
+        "fixture": {
+          "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW",
+          "cwd": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\repo",
+          "home": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\home",
+          "prefix": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\install",
+          "cache": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\cache",
+          "userconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\empty.npmrc",
+          "globalconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\empty-global.npmrc",
+          "blankConfigsVerified": true,
+          "offlineDeleted": true,
+          "cleaned": true
+        },
+        "metadata": {
+          "name": "harnessed",
+          "version": "5.0.0",
+          "dist-tags.latest": "5.0.0",
+          "dist.tarball": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+          "dist.integrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "dist.shasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "engines": {
+            "node": ">=22.0.0"
+          },
+          "dependencies": {
+            "ajv": "^8.20.0",
+            "diff": "^9.0.0",
+            "yaml": "^2.9.0",
+            "undici": "^8.12.1",
+            "commander": "^13.0.0",
+            "expr-eval": "^2.0.2",
+            "ajv-errors": "^3.0.0",
+            "picocolors": "^1.1.1",
+            "ajv-formats": "^3.0.1",
+            "@clack/prompts": "^0.10.1",
+            "proper-lockfile": "^4.1.2",
+            "@sinclair/typebox": "^0.34.49",
+            "@anthropic-ai/claude-agent-sdk": "0.3.142"
+          },
+          "bin": {
+            "harnessed": "dist/cli.mjs",
+            "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+          }
+        },
+        "tarball": {
+          "url": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+          "httpStatus": 200,
+          "bytes": 1199055,
+          "downloadDurationMs": 1274,
+          "expectedIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "actualIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "expectedShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "actualShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "sha512Verified": true,
+          "sha1Verified": true,
+          "localPath": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-Ul1NwW\\harnessed-5.0.0.tgz"
+        },
+        "error": {
+          "name": "AssertionError",
+          "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   'harnessed-inject-state': './bin/harnessed-inject-state.mjs',\n+   harnessed: './dist/cli.mjs'\n-   'harnessed-inject-state': 'bin/harnessed-inject-state.mjs',\n-   harnessed: 'dist/cli.mjs'\n  }\n",
+          "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   'harnessed-inject-state': './bin/harnessed-inject-state.mjs',\n+   harnessed: './dist/cli.mjs'\n-   'harnessed-inject-state': 'bin/harnessed-inject-state.mjs',\n-   harnessed: 'dist/cli.mjs'\n  }\n\n    at file:///D:/GitCode/harnessed/.planning/releases/.npm-acceptance-5.0.0.owned.mjs:100:12"
+        },
+        "finishedAt": "2026-10-24T13:59:40.562Z"
+      },
+      {
+        "attempt": 3,
+        "startedAt": "2026-10-24T13:59:40.562Z",
+        "commands": [
+          {
+            "label": "public-registry-metadata",
+            "executable": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+              "view",
+              "harnessed@5.0.0",
+              "name",
+              "version",
+              "dist-tags.latest",
+              "dist.tarball",
+              "dist.integrity",
+              "dist.shasum",
+              "engines",
+              "dependencies",
+              "bin",
+              "--json",
+              "--registry=https://registry.npmjs.org/"
+            ],
+            "shell": false,
+            "durationMs": 1997.6603000000032,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "{\n  \"name\": \"harnessed\",\n  \"version\": \"5.0.0\",\n  \"dist-tags.latest\": \"5.0.0\",\n  \"dist.tarball\": \"https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz\",\n  \"dist.integrity\": \"sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==\",\n  \"dist.shasum\": \"54c9b88a8d2f9495eee331abdcc1be6380824a3a\",\n  \"engines\": {\n    \"node\": \">=22.0.0\"\n  },\n  \"dependencies\": {\n    \"ajv\": \"^8.20.0\",\n    \"diff\": \"^9.0.0\",\n    \"yaml\": \"^2.9.0\",\n    \"undici\": \"^8.12.1\",\n    \"commander\": \"^13.0.0\",\n    \"expr-eval\": \"^2.0.2\",\n    \"ajv-errors\": \"^3.0.0\",\n    \"picocolors\": \"^1.1.1\",\n    \"ajv-formats\": \"^3.0.1\",\n    \"@clack/prompts\": \"^0.10.1\",\n    \"proper-lockfile\": \"^4.1.2\",\n    \"@sinclair/typebox\": \"^0.34.49\",\n    \"@anthropic-ai/claude-agent-sdk\": \"0.3.142\"\n  },\n  \"bin\": {\n    \"harnessed\": \"dist/cli.mjs\",\n    \"harnessed-inject-state\": \"bin/harnessed-inject-state.mjs\"\n  }\n}\n",
+            "stderr": "",
+            "rawOutputBytes": 901,
+            "returnedOutputBytes": 901,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          },
+          {
+            "label": "install-verified-tarball-with-dependencies",
+            "executable": "C:\\Program Files\\nodejs\\node.exe",
+            "args": [
+              "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+              "install",
+              "--prefix",
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\install",
+              "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\harnessed-5.0.0.tgz",
+              "--registry=https://registry.npmjs.org/",
+              "--no-save",
+              "--package-lock=false",
+              "--no-audit",
+              "--no-fund",
+              "--fetch-retries=0",
+              "--fetch-timeout=45000"
+            ],
+            "shell": false,
+            "durationMs": 41735.816000000006,
+            "exitCode": 0,
+            "signal": null,
+            "timedOut": false,
+            "outputLimitExceeded": false,
+            "error": null,
+            "stdout": "\nadded 117 packages in 41s\n",
+            "stderr": "",
+            "rawOutputBytes": 27,
+            "returnedOutputBytes": 27,
+            "rssBytes": null,
+            "rssStatus": "unsupported"
+          }
+        ],
+        "ok": false,
+        "fixture": {
+          "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ",
+          "cwd": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\repo",
+          "home": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\home",
+          "prefix": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\install",
+          "cache": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\cache",
+          "userconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\empty.npmrc",
+          "globalconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\empty-global.npmrc",
+          "blankConfigsVerified": true,
+          "offlineDeleted": true,
+          "cleaned": true
+        },
+        "metadata": {
+          "name": "harnessed",
+          "version": "5.0.0",
+          "dist-tags.latest": "5.0.0",
+          "dist.tarball": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+          "dist.integrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "dist.shasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "engines": {
+            "node": ">=22.0.0"
+          },
+          "dependencies": {
+            "ajv": "^8.20.0",
+            "diff": "^9.0.0",
+            "yaml": "^2.9.0",
+            "undici": "^8.12.1",
+            "commander": "^13.0.0",
+            "expr-eval": "^2.0.2",
+            "ajv-errors": "^3.0.0",
+            "picocolors": "^1.1.1",
+            "ajv-formats": "^3.0.1",
+            "@clack/prompts": "^0.10.1",
+            "proper-lockfile": "^4.1.2",
+            "@sinclair/typebox": "^0.34.49",
+            "@anthropic-ai/claude-agent-sdk": "0.3.142"
+          },
+          "bin": {
+            "harnessed": "dist/cli.mjs",
+            "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+          }
+        },
+        "tarball": {
+          "url": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+          "httpStatus": 200,
+          "bytes": 1199055,
+          "downloadDurationMs": 1014,
+          "expectedIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "actualIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+          "expectedShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "actualShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+          "sha512Verified": true,
+          "sha1Verified": true,
+          "localPath": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-UuPHFQ\\harnessed-5.0.0.tgz"
+        },
+        "error": {
+          "name": "AssertionError",
+          "message": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   'harnessed-inject-state': './bin/harnessed-inject-state.mjs',\n+   harnessed: './dist/cli.mjs'\n-   'harnessed-inject-state': 'bin/harnessed-inject-state.mjs',\n-   harnessed: 'dist/cli.mjs'\n  }\n",
+          "stack": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   'harnessed-inject-state': './bin/harnessed-inject-state.mjs',\n+   harnessed: './dist/cli.mjs'\n-   'harnessed-inject-state': 'bin/harnessed-inject-state.mjs',\n-   harnessed: 'dist/cli.mjs'\n  }\n\n    at file:///D:/GitCode/harnessed/.planning/releases/.npm-acceptance-5.0.0.owned.mjs:100:12"
+        },
+        "finishedAt": "2026-10-24T14:00:27.228Z"
+      }
+    ],
+    "ok": false,
+    "finishedAt": "2026-10-24T14:00:27.228Z"
+  },
+  "verifierCorrection": {
+    "reason": "Previous verifier incorrectly deep-compared registry-normalized bin targets against package targets with ./ prefixes; not a product failure.",
+    "policy": "Preserve raw registry/package/source values. Assert canonical package/source targets, then compare normalized targets individually. One new run only; any other failure stops.",
+    "canonicalBin": {
+      "harnessed": "./dist/cli.mjs",
+      "harnessed-inject-state": "./bin/harnessed-inject-state.mjs"
+    },
+    "source": {
+      "path": "package.json",
+      "bin": {
+        "harnessed": "./dist/cli.mjs",
+        "harnessed-inject-state": "./bin/harnessed-inject-state.mjs"
+      }
+    },
+    "regressionCheck": "Raw deep comparison reproduces failure; normalized comparison accepts equivalent targets and rejects a different target.",
+    "authorizedContinuation": "User explicitly authorized one corrected acceptance run after three verifier-only failures."
+  },
+  "safety": {
+    "publicationActions": false,
+    "commitOrPush": false,
+    "realGlobalReplacement": false,
+    "pathModified": false,
+    "realNpmConfigOrCredentialsRead": false,
+    "installScope": "owned fixture prefix only; normal dependencies and lifecycle behavior",
+    "metadataFieldsAllowlist": [
+      "name",
+      "version",
+      "dist-tags.latest",
+      "dist.tarball",
+      "dist.integrity",
+      "dist.shasum",
+      "engines",
+      "dependencies",
+      "bin"
+    ],
+    "metadataMethod": "public npm view with explicit field arguments; no unfiltered metadata persisted",
+    "nativeRalphLoop": "unavailable; exactly one corrected attempt permitted; prior three verifier-only failures retained"
+  },
+  "baseline": {
+    "receipt": ".planning/releases/4.49.2.md",
+    "expectedFiles": [
+      "bin/harnessed-check-docs.mjs",
+      "manifests/tools/playwright-cli.yaml",
+      "manifests/tools/webapp-testing.yaml"
+    ]
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "startedAt": "2026-10-24T14:03:01.859Z",
+      "commands": [
+        {
+          "label": "public-registry-metadata",
+          "executable": "C:\\Program Files\\nodejs\\node.exe",
+          "args": [
+            "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+            "view",
+            "harnessed@5.0.0",
+            "name",
+            "version",
+            "dist-tags.latest",
+            "dist.tarball",
+            "dist.integrity",
+            "dist.shasum",
+            "engines",
+            "dependencies",
+            "bin",
+            "--json",
+            "--registry=https://registry.npmjs.org/"
+          ],
+          "shell": false,
+          "durationMs": 5702.2523,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "{\n  \"name\": \"harnessed\",\n  \"version\": \"5.0.0\",\n  \"dist-tags.latest\": \"5.0.0\",\n  \"dist.tarball\": \"https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz\",\n  \"dist.integrity\": \"sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==\",\n  \"dist.shasum\": \"54c9b88a8d2f9495eee331abdcc1be6380824a3a\",\n  \"engines\": {\n    \"node\": \">=22.0.0\"\n  },\n  \"dependencies\": {\n    \"ajv\": \"^8.20.0\",\n    \"diff\": \"^9.0.0\",\n    \"yaml\": \"^2.9.0\",\n    \"undici\": \"^8.12.1\",\n    \"commander\": \"^13.0.0\",\n    \"expr-eval\": \"^2.0.2\",\n    \"ajv-errors\": \"^3.0.0\",\n    \"picocolors\": \"^1.1.1\",\n    \"ajv-formats\": \"^3.0.1\",\n    \"@clack/prompts\": \"^0.10.1\",\n    \"proper-lockfile\": \"^4.1.2\",\n    \"@sinclair/typebox\": \"^0.34.49\",\n    \"@anthropic-ai/claude-agent-sdk\": \"0.3.142\"\n  },\n  \"bin\": {\n    \"harnessed\": \"dist/cli.mjs\",\n    \"harnessed-inject-state\": \"bin/harnessed-inject-state.mjs\"\n  }\n}\n",
+          "stderr": "",
+          "rawOutputBytes": 901,
+          "returnedOutputBytes": 901,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "install-verified-tarball-with-dependencies",
+          "executable": "C:\\Program Files\\nodejs\\node.exe",
+          "args": [
+            "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+            "install",
+            "--prefix",
+            "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\install",
+            "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\harnessed-5.0.0.tgz",
+            "--registry=https://registry.npmjs.org/",
+            "--no-save",
+            "--package-lock=false",
+            "--no-audit",
+            "--no-fund",
+            "--fetch-retries=0",
+            "--fetch-timeout=45000"
+          ],
+          "shell": false,
+          "durationMs": 49198.8403,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "\nadded 117 packages in 49s\n",
+          "stderr": "",
+          "rawOutputBytes": 27,
+          "returnedOutputBytes": 27,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        },
+        {
+          "label": "installed-cli-version",
+          "executable": "C:\\Program Files\\nodejs\\node.exe",
+          "args": [
+            "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\install\\node_modules\\harnessed\\dist\\cli.mjs",
+            "--version"
+          ],
+          "shell": false,
+          "durationMs": 916.0507999999973,
+          "exitCode": 0,
+          "signal": null,
+          "timedOut": false,
+          "outputLimitExceeded": false,
+          "error": null,
+          "stdout": "5.0.0\n",
+          "stderr": "",
+          "rawOutputBytes": 6,
+          "returnedOutputBytes": 6,
+          "rssBytes": null,
+          "rssStatus": "unsupported"
+        }
+      ],
+      "ok": true,
+      "fixture": {
+        "root": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY",
+        "cwd": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\repo",
+        "home": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\home",
+        "prefix": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\install",
+        "cache": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\cache",
+        "userconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\empty.npmrc",
+        "globalconfig": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\empty-global.npmrc",
+        "blankConfigsVerified": true,
+        "offlineDeleted": true,
+        "cleaned": true
+      },
+      "metadata": {
+        "name": "harnessed",
+        "version": "5.0.0",
+        "dist-tags.latest": "5.0.0",
+        "dist.tarball": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+        "dist.integrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+        "dist.shasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+        "engines": {
+          "node": ">=22.0.0"
+        },
+        "dependencies": {
+          "ajv": "^8.20.0",
+          "diff": "^9.0.0",
+          "yaml": "^2.9.0",
+          "undici": "^8.12.1",
+          "commander": "^13.0.0",
+          "expr-eval": "^2.0.2",
+          "ajv-errors": "^3.0.0",
+          "picocolors": "^1.1.1",
+          "ajv-formats": "^3.0.1",
+          "@clack/prompts": "^0.10.1",
+          "proper-lockfile": "^4.1.2",
+          "@sinclair/typebox": "^0.34.49",
+          "@anthropic-ai/claude-agent-sdk": "0.3.142"
+        },
+        "bin": {
+          "harnessed": "dist/cli.mjs",
+          "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+        }
+      },
+      "tarball": {
+        "url": "https://registry.npmjs.org/harnessed/-/harnessed-5.0.0.tgz",
+        "httpStatus": 200,
+        "bytes": 1199055,
+        "downloadDurationMs": 4280,
+        "expectedIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+        "actualIntegrity": "sha512-ssnhI6lVLsJnt9rJIiFFqgKKmdlmhwlkLgD6LmR7P4eiRZ5OTlavJ9aU/O4Rp8igf1TNAF7rQLXouNfWi2sqdg==",
+        "expectedShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+        "actualShasum": "54c9b88a8d2f9495eee331abdcc1be6380824a3a",
+        "sha512Verified": true,
+        "sha1Verified": true,
+        "localPath": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\harnessed-5.0.0.tgz"
+      },
+      "installed": {
+        "packageRoot": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-CLncxY\\install\\node_modules\\harnessed",
+        "name": "harnessed",
+        "version": "5.0.0",
+        "engines": {
+          "node": ">=22.0.0"
+        },
+        "dependencies": {
+          "@anthropic-ai/claude-agent-sdk": "0.3.142",
+          "@clack/prompts": "^0.10.1",
+          "@sinclair/typebox": "^0.34.49",
+          "ajv": "^8.20.0",
+          "ajv-errors": "^3.0.0",
+          "ajv-formats": "^3.0.1",
+          "commander": "^13.0.0",
+          "diff": "^9.0.0",
+          "expr-eval": "^2.0.2",
+          "picocolors": "^1.1.1",
+          "proper-lockfile": "^4.1.2",
+          "undici": "^8.12.1",
+          "yaml": "^2.9.0"
+        },
+        "bin": {
+          "harnessed": "./dist/cli.mjs",
+          "harnessed-inject-state": "./bin/harnessed-inject-state.mjs"
+        },
+        "binVerification": {
+          "rawRegistry": {
+            "harnessed": "dist/cli.mjs",
+            "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+          },
+          "rawInstalled": {
+            "harnessed": "./dist/cli.mjs",
+            "harnessed-inject-state": "./bin/harnessed-inject-state.mjs"
+          },
+          "rawSource": {
+            "harnessed": "./dist/cli.mjs",
+            "harnessed-inject-state": "./bin/harnessed-inject-state.mjs"
+          },
+          "normalizedSourceBin": {
+            "harnessed": "dist/cli.mjs",
+            "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+          },
+          "normalizedRegistryBin": {
+            "harnessed": "dist/cli.mjs",
+            "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+          },
+          "normalizedInstalledBin": {
+            "harnessed": "dist/cli.mjs",
+            "harnessed-inject-state": "bin/harnessed-inject-state.mjs"
+          },
+          "canonicalPackageTargetsVerified": true,
+          "sourceTargetsMatch": true
+        },
+        "metadataMatches": true,
+        "directDependencies": [
+          {
+            "name": "@anthropic-ai/claude-agent-sdk",
+            "requested": "0.3.142",
+            "installedVersion": "0.3.142",
+            "present": true
+          },
+          {
+            "name": "@clack/prompts",
+            "requested": "^0.10.1",
+            "installedVersion": "0.10.1",
+            "present": true
+          },
+          {
+            "name": "@sinclair/typebox",
+            "requested": "^0.34.49",
+            "installedVersion": "0.34.52",
+            "present": true
+          },
+          {
+            "name": "ajv",
+            "requested": "^8.20.0",
+            "installedVersion": "8.20.0",
+            "present": true
+          },
+          {
+            "name": "ajv-errors",
+            "requested": "^3.0.0",
+            "installedVersion": "3.0.0",
+            "present": true
+          },
+          {
+            "name": "ajv-formats",
+            "requested": "^3.0.1",
+            "installedVersion": "3.0.1",
+            "present": true
+          },
+          {
+            "name": "commander",
+            "requested": "^13.0.0",
+            "installedVersion": "13.1.0",
+            "present": true
+          },
+          {
+            "name": "diff",
+            "requested": "^9.0.0",
+            "installedVersion": "9.0.0",
+            "present": true
+          },
+          {
+            "name": "expr-eval",
+            "requested": "^2.0.2",
+            "installedVersion": "2.0.2",
+            "present": true
+          },
+          {
+            "name": "picocolors",
+            "requested": "^1.1.1",
+            "installedVersion": "1.1.1",
+            "present": true
+          },
+          {
+            "name": "proper-lockfile",
+            "requested": "^4.1.2",
+            "installedVersion": "4.1.2",
+            "present": true
+          },
+          {
+            "name": "undici",
+            "requested": "^8.12.1",
+            "installedVersion": "8.12.3",
+            "present": true
+          },
+          {
+            "name": "yaml",
+            "requested": "^2.9.0",
+            "installedVersion": "2.9.1",
+            "present": true
+          }
+        ],
+        "files": [
+          {
+            "path": "package.json",
+            "bytes": 3046,
+            "sha256": "ac6160d862797aaa0259b1af9d44c3fb5b2237cba29c1bdcd717b8ce5c453ed9",
+            "present": true
+          },
+          {
+            "path": "dist/cli.mjs",
+            "bytes": 837818,
+            "sha256": "007bedcc91f56a6631b9e4416b7d8b35d203fc3902623f2fbfbeff0369670b99",
+            "present": true
+          },
+          {
+            "path": "bin/harnessed-inject-state.mjs",
+            "bytes": 23279,
+            "sha256": "04a3af508df1c7a7913490f9c231681f8e72cec74d5fcf3d3ec8c36225526804",
+            "present": true
+          },
+          {
+            "path": "bin/harnessed-check-docs.mjs",
+            "bytes": 21146,
+            "sha256": "18a81d85b71532856c2afdfc1a5a1d6e2bec00376aa96c77b6b7719f977908db",
+            "present": true
+          },
+          {
+            "path": "manifests/tools/playwright-cli.yaml",
+            "bytes": 2487,
+            "sha256": "d67219fcaa82ee75baf9e049678512cf34d706ff89ed202d8ddd3d2e7ce5c39d",
+            "present": true
+          },
+          {
+            "path": "manifests/tools/webapp-testing.yaml",
+            "bytes": 4606,
+            "sha256": "b19f1b566fc8e75072614ee1d9d6ce02fc2a90764ad10fedb7333b6e47f8998d",
+            "present": true
+          }
+        ],
+        "cliVersion": "5.0.0"
+      },
+      "finishedAt": "2026-10-24T14:04:05.082Z"
+    }
+  ],
+  "ok": true,
+  "finishedAt": "2026-10-24T14:04:05.082Z"
+}
