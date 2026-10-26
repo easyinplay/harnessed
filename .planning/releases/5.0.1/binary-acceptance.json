@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "kind": "published-binary-acceptance",
+  "version": "5.0.1",
+  "startedAt": "2026-10-26T23:22:00.912Z",
+  "release": {
+    "httpStatus": 200,
+    "id": 424464170,
+    "tagName": "v5.0.1",
+    "url": "https://github.com/easyinplay/harnessed/releases/tag/v5.0.1",
+    "publishedAt": "2026-10-26T16:02:49Z",
+    "draft": false,
+    "prerelease": false,
+    "targetCommitish": "main",
+    "assetCount": 9,
+    "assetNames": [
+      "harnessed-darwin-arm64",
+      "harnessed-darwin-arm64.sha256",
+      "harnessed-darwin-arm64.sha256.sig",
+      "harnessed-linux-x64",
+      "harnessed-linux-x64.sha256",
+      "harnessed-linux-x64.sha256.sig",
+      "harnessed-windows-x64.exe",
+      "harnessed-windows-x64.exe.sha256",
+      "harnessed-windows-x64.exe.sha256.sig"
+    ],
+    "expectedAssetNames": [
+      "harnessed-darwin-arm64",
+      "harnessed-darwin-arm64.sha256",
+      "harnessed-darwin-arm64.sha256.sig",
+      "harnessed-linux-x64",
+      "harnessed-linux-x64.sha256",
+      "harnessed-linux-x64.sha256.sig",
+      "harnessed-windows-x64.exe",
+      "harnessed-windows-x64.exe.sha256",
+      "harnessed-windows-x64.exe.sha256.sig"
+    ]
+  },
+  "tag": {
+    "tagObjectSha": "e4901ac426430accb243a87077ebd5f0a3a41992",
+    "peeledCommitSha": "96f338cb97706415aa5ca3add12eef727d2084b2"
+  },
+  "platformVerification": [
+    {
+      "name": "harnessed-darwin-arm64",
+      "binaryAssetId": 678678384,
+      "size": 68317154,
+      "remoteSize": 68317154,
+      "sha256": "c07a8474bd7665cd175b1e54fbcc7f739de8e3e9e97eb6cedeb6f2e5340ca93b",
+      "checksumText": "c07a8474bd7665cd175b1e54fbcc7f739de8e3e9e97eb6cedeb6f2e5340ca93b  harnessed-darwin-arm64\n",
+      "signatureAssetId": 678678385,
+      "signatureBase64": "ITa/S9m5Yk14h51K8DgGLeZVEEL04Mg923+s//yHnon6WlWLDgDZ68dcmt4r2eu8i3K/D7SRvnvJErgcEHvXCA==",
+      "hashValid": true,
+      "sizeMatches": true,
+      "signatureValid": true,
+      "tamperRejected": true,
+      "passed": true
+    },
+    {
+      "name": "harnessed-linux-x64",
+      "binaryAssetId": 678678232,
+      "size": 99420288,
+      "remoteSize": 99420288,
+      "sha256": "9b39ebe598cc6c015db1938f2e98b28e20f014d8896e3837c3312bbeefe5a267",
+      "checksumText": "9b39ebe598cc6c015db1938f2e98b28e20f014d8896e3837c3312bbeefe5a267  harnessed-linux-x64\n",
+      "signatureAssetId": 678678227,
+      "signatureBase64": "talDwQ8mS0rQJIG9cBJAwEhhVFhpw2y4IVp38WRtoSRedbLGyMj2Ri7ummyzYujIgB6wWpcmuiHhLF7WRcKiAw==",
+      "hashValid": true,
+      "sizeMatches": true,
+      "signatureValid": true,
+      "tamperRejected": true,
+      "passed": true
+    },
+    {
+      "name": "harnessed-windows-x64.exe",
+      "binaryAssetId": 678680471,
+      "size": 103308800,
+      "remoteSize": 103308800,
+      "sha256": "76d8e2ee97fff5f0492435b67111968888088da66374c8fbfd66af51b38e8c4c",
+      "checksumText": "76d8e2ee97fff5f0492435b67111968888088da66374c8fbfd66af51b38e8c4c  harnessed-windows-x64.exe\n",
+      "signatureAssetId": 678680466,
+      "signatureBase64": "DFQyQxPkdKyYQ2DUHwrck+F0CdTCh+yMKpprTk3i2hEm9GtI+OQz1H8SAL3S5exlRFZqOkFxelt+TyB8cvZ9Bw==",
+      "hashValid": true,
+      "sizeMatches": true,
+      "signatureValid": true,
+      "tamperRejected": true,
+      "passed": true
+    }
+  ],
+  "windowsExecution": {
+    "exitCode": 0,
+    "stdout": "5.0.1\n",
+    "stderr": "harnessed: unpacked 167 bundled asset file(s) to C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-runtime-cnnuAD\\state\\assets\\5.0.1\n",
+    "timedOut": false,
+    "isolatedUnpack": {
+      "expectedDiagnostic": true
+    },
+    "version": "5.0.1",
+    "passed": true
+  },
+  "signatureKey": {
+    "algorithm": "ed25519",
+    "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAgCsfkZ+uCRNIBSHGfiOzp+TCSwQqOVJW1tsCW/beF4g=\n-----END PUBLIC KEY-----\n",
+    "privateKeyAccessed": false
+  },
+  "verifier": {
+    "node": "v24.22.1",
+    "platform": "win32",
+    "arch": "x64",
+    "initialVerifierError": "The first inline pass passed ASCII base64 signature bytes directly to crypto.verify and incorrectly reported all three signatures invalid; the corrected pass decodes base64 before verification."
+  },
+  "safety": {
+    "realPathUnchanged": true,
+    "realHomeConfigOrGlobalInstallationWrites": false,
+    "setupRun": false,
+    "upstreamWrites": false,
+    "privateSigningKeyInspected": false
+  },
+  "status": "passed",
+  "ok": true,
+  "finishedAt": "2026-10-26T23:22:01.431Z"
+}

@@ -2,7 +2,7 @@
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
 > Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v10.0 i18n Surface (✅ npm v4.8.0).
-> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.0 Runtime And Onboarding** is published and verified; the older requirement families below remain historical records.
+> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.1 Maintenance Release** is published and verified; the older requirement families below remain historical records.
 
 ## Active npm 5.0.0 Requirements
 
@@ -31,7 +31,7 @@ These are corrective continuations, not approval for another release or a new me
 
 | ID | Requirement | Acceptance Home | Status |
 | --- | --- | --- | --- |
-| PATCH-01 | Cut and publish only the verified Phase71 corrections as a patch release | Phase72 plan and release receipt | Candidate in progress; tag/publication not yet authorized |
+| PATCH-01 | Cut and publish only the verified Phase71 corrections as a patch release | Phase72 plan and release receipt | Published and downloaded npm/three-platform assets verified |
 | PATCH-02 | Preserve the 5.0 runtime/channel contracts and native/upstream limitations | Phase71 verification carried into release review | No contract change; native gstack remains blocked |
 
 ---

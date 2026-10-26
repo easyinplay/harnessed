@@ -1,6 +1,6 @@
 # Phase 72: npm 5.0.1 Maintenance Release
 
-Date: 2026-10-26. Status: candidate in progress. This patch cuts the already verified Phase71 corrections; it does not add a new product surface.
+Date: 2026-10-26. Status: complete; published and downloaded acceptance passed. This patch cut the already verified Phase71 corrections without adding a new product surface.
 
 ## Scope
 
@@ -22,3 +22,11 @@ Date: 2026-10-26. Status: candidate in progress. This patch cuts the already ver
 ## Boundaries
 
 No runtime-mode, host, schema, state or security-policy change is included. The known native gstack Windows lease blocker remains explicit. The release-only governance substitution approved for5.0.0 does not automatically extend to this release.
+
+## Outcome
+
+- Candidate96f338c passed exact-source CI40353980387 on all nine jobs. Isolated release-preflight passed four checks, and public version/tag vacancy was confirmed before the user explicitly authorized publication.
+- Annotated tagv5.0.1 was pushed once and peeled to96f338c. Publish40355172102 passed npm plus all three platform binary jobs.
+- Public npm converged to version/latest5.0.1; actual tarball integrity, normal temporary dependency installation and installed CLI version passed.
+- All nine release assets were downloaded. Three hashes and Ed25519 signatures passed, tampering was rejected, and the downloaded Windows executable printed5.0.1 in isolation.
+- Four fresh production website contexts observed all version/link nodes move fromv5.0.0 tov5.0.1. Native gstack remains blocked, not passed. See the release receipt and SUMMARY.
