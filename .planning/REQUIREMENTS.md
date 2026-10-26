@@ -27,6 +27,13 @@ Plan: [Phase 70](phases/70-runtime-onboarding/PLAN.md). Scope: [approved brief](
 
 These are corrective continuations, not approval for another release or a new method/host architecture.
 
+## Active npm 5.0.1 Release
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| PATCH-01 | Cut and publish only the verified Phase71 corrections as a patch release | Phase72 plan and release receipt | Candidate in progress; tag/publication not yet authorized |
+| PATCH-02 | Preserve the 5.0 runtime/channel contracts and native/upstream limitations | Phase71 verification carried into release review | No contract change; native gstack remains blocked |
+
 ---
 
 ## Shipped requirement families (delivered baseline — all Done)

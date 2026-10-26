@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> Shipped history = indexed archive (do NOT re-plan). **Public npm5.0.0 shipped; active5.x compatibility maintenance**: [Phase71 plan](phases/71-bun5-follow-through/PLAN.md). [Phase70 summary](phases/70-runtime-onboarding/SUMMARY.md); historical v16.0 remains closed.
+> Shipped history = indexed archive (do NOT re-plan). **Active npm5.0.1 maintenance-release candidate**: [Phase72 plan](phases/72-5.0.1-maintenance-release/PLAN.md). [Phase71 summary](phases/71-bun5-follow-through/SUMMARY.md); [Phase70 summary](phases/70-runtime-onboarding/SUMMARY.md); historical v16.0 remains closed.
 > Current published npm: see `.planning/STATE.md` and `.planning/releases/` (single release-status home). Milestone codenames (vN.0) are spec/era names, NOT npm versions.
 >
 > **This table stops at v13.0 by design.** Milestones from v14.0 on are indexed in `.planning/MILESTONES.md`,
@@ -40,7 +40,7 @@
 
 ## Backlog / Deferred (future milestones)
 
-- **Active5.x compatibility maintenance**: Current Bun website guidance, concise localized README installation and removal of the redundant AI guide; audited package-update dry-run safety fix. [Phase71 plan](phases/71-bun5-follow-through/PLAN.md). No new host, Rust rewrite, runtime-mode change or new version publication.
+- **Active npm5.0.1 maintenance release**: Publish the verified Phase71 corrections: manager-neutral update dry-run safety, concise localized README installation and removal of the redundant AI guide, and untracked project-local Claude files. [Phase72 plan](phases/72-5.0.1-maintenance-release/PLAN.md). No new host, Rust rewrite or runtime-mode change; tag/publication requires explicit confirmation.
 
 - **Public npm5.0.0 shipped**: TypeScript/Bun optimization with no forced Bun dependency for binary/npm users; optional Bun route; replacement website onboarding and GitHub-sourced stable version. [Phase70 summary](phases/70-runtime-onboarding/SUMMARY.md) and [release receipt](releases/5.0.0.md). This is distinct from the historical internal v5.0 milestone. Subsequent screenshot refinement stays site-only.
 

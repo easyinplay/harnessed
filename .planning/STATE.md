@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: npm-5.x-follow-through
-milestone_name: Compatibility Maintenance
-status: completed
-last_updated: "2026-10-25T00:33:00+08:00"
-last_activity: 2026-10-25
+milestone: npm-5.0.1
+milestone_name: Maintenance Release
+status: in_progress
+last_updated: "2026-10-26T00:00:00+08:00"
+last_activity: 2026-10-26
 progress:
   total_phases: 1
-  completed_phases: 1
+  completed_phases: 0
   total_plans: 1
-  completed_plans: 1
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -30,6 +30,8 @@ progress:
 ## Current Position
 
 - **5.x maintenance delivered (2026-10-25)**: Phase71 fixes package dry-run safety, simplifies11READMEs/removes the AI guide, untracks localClaude files, and updates Bun5.x website guidance. Local4468tests/docs30/site101 and real production4/4 pass; final pushed-source CI is checked separately. Summary: `phases/71-bun5-follow-through/SUMMARY.md`. Latest shipped remains5.0.0; no new CLI publication. Native gstack remains blocked; website check remains in_progress despite verified visible content.
+
+- **Active npm5.0.1 candidate (2026-10-26)**: Cut the verified Phase71 maintenance as a patch release. Candidate scope is limited to manager-neutral update dry-run safety, concise localized installation docs/AI-guide removal, and untracking project-local Claude files. Plan: `phases/72-5.0.1-maintenance-release/PLAN.md`. Tag/publication still requires explicit user confirmation; native gstack remains blocked.
 
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-10-26
+
 ### Fixed
 
 - Package-update dry-runs no longer reinstall upstream components when the selected npm version is current or ahead. The read-only guard now applies to default npm, explicit npm and explicit Bun selections under both supported package runtimes, including `--upstreams` and `--all`.
