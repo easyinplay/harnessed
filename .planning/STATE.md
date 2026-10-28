@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: npm-5.0.2
 milestone_name: Maintenance Release
-status: in_progress
+status: completed
 last_updated: "2026-10-29"
 last_activity: 2026-10-29
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 1
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 100
 ---
 
 # STATE — harnessed
@@ -21,7 +21,7 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v5.0.1**, 2026-10-27. Patch contains manager-neutral update dry-run safety, concise localized installation docs/AI-guide removal, and project Claude-config untracking. Source96f338c CI40353980387 passed9/9; publish40355172102 passed4/4; registry latest5.0.1, actual npm installation and all three signed binaries verified. Receipt: `releases/5.0.1.md`. Previous5.0.0: `releases/5.0.0.md`.
+- **Latest shipped (npm)**: **v5.0.2**, 2026-10-29, published and verified complete. Windows setup and force-update corrections; commit `b5f7bee5d47ea50b20e03ae07d3f6407e592c49d`, CI `40736906479` 9/9, tag `v5.0.2` pushed once, publish `40737857022` 4/4. npm version/latest5.0.2, real install117 packages/CLI5.0.2, stable GitHub release9 assets, three-platform SHA256/signatures pass; Windows exe5.0.2/167 assets. Receipt: `releases/5.0.2.md`. Previous5.0.1: `releases/5.0.1.md`; 5.0.0: `releases/5.0.0.md`.
 - **Previous releases**: **v4.49.0** 2026-10-16(Phase 67 `checkpoint adopt` 跨宿主接力 + `gc` 槽位修剪 + win32 `repoKey` 归一 + `update` 走系统代理;publish 4 job success + `npm view` latest=4.49.0 + release 9 assets)。上一版:**v4.48.0** 2026-10-08(`harnessed agents-md` + 更正 README 对 Codex 的两处错误断言;三重核实:publish step 日志 `+ harnessed@4.48.0` + registry 直查 `dist-tags.latest=4.48.0` + `npm view`,release 9 assets)。上一版:**v4.47.0** 2026-10-07(codex 不再读 config.toml + 语言 pin + gate fail-closed 扩三类/ADR-0042)· **v4.46.0** 2026-09-30(v16.0 收官版:Phase 66 T3b-T5 + 凭据备份缺陷)。更早:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
@@ -32,7 +32,7 @@ progress:
 - **5.x maintenance delivered (2026-10-25)**: Phase71 fixes package dry-run safety, simplifies11READMEs/removes the AI guide, untracks localClaude files, and updates Bun5.x website guidance. Local4468tests/docs30/site101 and real production4/4 pass; final pushed-source CI is checked separately. Summary: `phases/71-bun5-follow-through/SUMMARY.md`. These CLI corrections shipped in5.0.1; historical native gstack and website-check limits remain in that receipt.
 
 - **npm5.0.1 closed (2026-10-27)**: User explicitly confirmed publication. Candidate96f338c passed CI/preflight; tag/publish, actual npm, three signed binaries and live site propagation all passed. Summary: `phases/72-5.0.1-maintenance-release/SUMMARY.md`. Native gstack remains blocked; no new runtime/host/schema/security-policy surface.
-- **Active npm 5.0.2 candidate (2026-10-29; not published)**: Phase73 packages the verified Windows setup and force-update fixes. Candidate serialized4495 tests, build/types/hooks, lint0 with16 existing warnings, CLI5.0.2 and npm pack dry-run pass; earlier focused132 tests, real Windows probes and gstack `/review` also pass. Latest shipped remains5.0.1; user authorized publication, but exact-source CI and release-preflight must pass before the single tag push. No runtime-mode/host/schema/state/security-policy change. Plan: `phases/73-5.0.2-maintenance-release/PLAN.md`; receipt: `releases/5.0.2.md`.
+- **npm5.0.2 closed (2026-10-29; published and verified complete)**: Phase73 complete (1/1 phase, 1/1 plan). Candidate4495 tests/build/types/hooks/lint and earlier focused132 tests/Windows probes/gstack review are carried-forward evidence; publication and public acceptance passed as recorded above. No runtime-mode/host/schema/state/security-policy change. Summary: `phases/73-5.0.2-maintenance-release/SUMMARY.md`; exact hashes/sizes/integrity: `releases/5.0.2.md`. Website browser not verified; policy denied TEMP cleanup, retaining `C:/Users/easyi/AppData/Local/Temp/harnessed-502-accept-20261029-main`. This documentation closeout performs no commit/push/tag/publication.
 
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 

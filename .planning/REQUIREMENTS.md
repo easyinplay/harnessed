@@ -1,18 +1,18 @@
 # REQUIREMENTS — harnessed
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
-> Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm remains 5.0.1.
-> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.1 Maintenance Release** is published and verified; the older requirement families below remain historical records.
+> Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm is 5.0.2.
+> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.2 Maintenance Release** is published and verified complete; the older requirement families below remain historical records.
 
-## Active npm 5.0.2 Candidate
+## Shipped npm 5.0.2 Release
 
 | ID | Requirement | Acceptance Home | Status |
 | --- | --- | --- | --- |
-| PATCH-502-01 | Limit the patch to same-root resource-only `webapp-testing` verification without Python, Windows-compatible read-only/notifier-free `playwright-cli` exact `0.1.22` and Chromium metadata verification without browser/daemon startup, and structured force-update failure classification | Phase 73 plan and 5.0.2 candidate receipt | Candidate; existing Phase 22/23 implementation evidence carried forward |
-| PATCH-502-02 | Preserve fresh-install `update-unsupported` fatality, generic failure probe behavior and provenance checks; no runtime-mode, host, schema, state or security-policy change | Phase 23 RED/GREEN and combined regression evidence | Existing evidence verified; no boundary expansion |
-| PATCH-502-03 | Record version, English changelog, release plan and receipt without claiming publication | Phase 73 plan and 5.0.2 candidate receipt | Active candidate, not published; latest shipped remains 5.0.1; user explicitly authorized tag/publication, but this task performs neither |
+| PATCH-502-01 | Limit the patch to same-root resource-only `webapp-testing` verification without Python, Windows-compatible read-only/notifier-free `playwright-cli` exact `0.1.22` and Chromium metadata verification without browser/daemon startup, and structured force-update failure classification | Phase 73 plan and 5.0.2 release receipt | Complete; published and verified with carried-forward Phase 22/23 implementation evidence |
+| PATCH-502-02 | Preserve fresh-install `update-unsupported` fatality, generic failure probe behavior and provenance checks; no runtime-mode, host, schema, state or security-policy change | Phase 23 RED/GREEN and combined regression evidence | Complete; evidence verified, no boundary expansion |
+| PATCH-502-03 | Record version, English changelog, completed release plan, publication and public acceptance receipt | Phase 73 summary and 5.0.2 release receipt | Published and verified complete; npm version/latest 5.0.2, actual npm/CLI and three-platform signed artifacts passed |
 
-Plan: [Phase 73](phases/73-5.0.2-maintenance-release/PLAN.md). Receipt: [5.0.2 candidate](releases/5.0.2.md). Only JSON/Markdown/line-count/diff static validation runs for metadata; release build, exact-source CI, preflight and published-artifact acceptance remain separate gates. Push the authorized tag only after candidate exact-source CI and release-preflight pass.
+Plan: [Phase 73](phases/73-5.0.2-maintenance-release/PLAN.md). Summary: [Phase 73 complete](phases/73-5.0.2-maintenance-release/SUMMARY.md). Receipt: [5.0.2](releases/5.0.2.md). Published commit `b5f7bee5d47ea50b20e03ae07d3f6407e592c49d`, CI `40736906479` 9/9, tag `v5.0.2` pushed once, publish `40737857022` 4/4; stable GitHub release has 9 assets. Website browser verification was not run; TEMP cleanup was denied by policy and the retained path is recorded in the receipt. This Markdown-only closeout records supplied evidence and runs only content/line-count/diff checks; it does not rerun publication or acceptance.
 
 ## Shipped npm 5.0.0 Requirements
 
@@ -35,7 +35,7 @@ Plan: [Phase 70](phases/70-runtime-onboarding/PLAN.md). Scope: [approved brief](
 | MAINT-02 | README remains the concise installation source for people and AI; remove marked maintenance/override clutter and the redundant AI guide across all locales | Phase71 README receipt and installation documentation contracts | Complete locally; docs30/30 and live-link checks pass |
 | MAINT-03 | Package update dry-run never invokes installation for default/explicit npm or explicit Bun, including current/ahead with upstreams/all | Phase71 dry-run receipt and updater tests | Local RED/GREEN and4468fullsuite pass; shipped in npm5.0.1 |
 
-These are corrective continuations, not approval for a new method/host architecture. The explicit 5.0.2 tag/publication authorization is recorded separately in the active candidate requirements above.
+These are corrective continuations, not approval for a new method/host architecture. The completed, explicitly authorized 5.0.2 publication is recorded in the shipped release requirements above.
 
 ## Shipped npm 5.0.1 Release
 
