@@ -9,7 +9,7 @@
 // reclassifyForceUpdateFailures is a pure, probe-injectable function so we can
 // TDD the failed→keptExisting reclassification without spawning real installs.
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { reclassifyForceUpdateFailures, type StepBResult } from '../../src/cli/lib/setup-helpers.js'
 
 function mkResult(p: Partial<StepBResult>): StepBResult {
@@ -31,6 +31,78 @@ function probeFrom(present: string[]): (name: string) => Promise<boolean> {
 }
 
 describe('reclassifyForceUpdateFailures — Fix C kept-existing fail-soft', () => {
+  it.each([
+    'false',
+    'throw',
+  ] as const)('keeps a prior install on structured update-unsupported without calling a %s probe', async (probeOutcome) => {
+    const first = mkResult({ alreadyInstalled: ['existing-skill'] })
+    const force = mkResult({ failed: ['existing-skill: opaque preflight refusal'] })
+    Object.assign(force, { failureKeywords: { 'existing-skill': 'update-unsupported' } })
+    const probe = vi.fn(async () => {
+      if (probeOutcome === 'throw') throw new Error('runtime unavailable')
+      return false
+    })
+
+    const result = await reclassifyForceUpdateFailures(first, force, probe)
+
+    expect(result.keptExisting).toEqual([
+      { name: 'existing-skill', reason: 'opaque preflight refusal' },
+    ])
+    expect(result.failed).toEqual([])
+    expect(probe).not.toHaveBeenCalled()
+  })
+
+  it('keeps a fresh structured update-unsupported failure fatal without probing', async () => {
+    const first = mkResult({ installed: ['fresh-skill'], alreadyInstalled: ['other-skill'] })
+    const force = mkResult({ failed: ['fresh-skill: opaque preflight refusal'] })
+    Object.assign(force, { failureKeywords: { 'fresh-skill': 'update-unsupported' } })
+    const probe = vi.fn(async () => true)
+
+    const result = await reclassifyForceUpdateFailures(first, force, probe)
+
+    expect(result.failed).toEqual(['fresh-skill: opaque preflight refusal'])
+    expect(result.keptExisting).toEqual([])
+    expect(probe).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'verify-failed',
+    'spawn-failed',
+    undefined,
+  ])('uses the probe for generic keyword %s even when the message says update-unsupported', async (keyword) => {
+    const first = mkResult({ alreadyInstalled: ['existing-skill'] })
+    const force = mkResult({ failed: ['existing-skill: update-unsupported'] })
+    if (keyword) Object.assign(force, { failureKeywords: { 'existing-skill': keyword } })
+    const probe = vi.fn(async () => true)
+
+    const result = await reclassifyForceUpdateFailures(first, force, probe)
+
+    expect(result.keptExisting).toEqual([{ name: 'existing-skill', reason: 'update-unsupported' }])
+    expect(result.failed).toEqual([])
+    expect(probe).toHaveBeenCalledExactlyOnceWith('existing-skill')
+  })
+
+  it.each([
+    ['verify-failed', 'false'],
+    ['verify-failed', 'throw'],
+    ['spawn-failed', 'false'],
+    ['spawn-failed', 'throw'],
+  ] as const)('keeps %s fatal when the probe returns %s', async (keyword, probeOutcome) => {
+    const first = mkResult({ alreadyInstalled: ['existing-skill'] })
+    const force = mkResult({ failed: ['existing-skill: update-unsupported'] })
+    Object.assign(force, { failureKeywords: { 'existing-skill': keyword } })
+    const probe = vi.fn(async () => {
+      if (probeOutcome === 'throw') throw new Error('probe unavailable')
+      return false
+    })
+
+    const result = await reclassifyForceUpdateFailures(first, force, probe)
+
+    expect(result.failed).toEqual(['existing-skill: update-unsupported'])
+    expect(result.keptExisting).toEqual([])
+    expect(probe).toHaveBeenCalledExactlyOnceWith('existing-skill')
+  })
+
   it('failed ∩ alreadyInstalled & probe→present → moved to keptExisting (out of failed)', async () => {
     const first = mkResult({ alreadyInstalled: ['gstack', 'gsd'] })
     const force = mkResult({ failed: ['gstack: git-clone-with-setup cmd exited 1'] })

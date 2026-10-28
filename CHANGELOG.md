@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.2] - 2026-10-29
+
+### Fixed
+
+- `webapp-testing` setup verification no longer requires Python and checks only same-root installed resources, not project runtime dependencies.
+- `playwright-cli` verification now works on Windows and is read-only and notifier-free. It checks exact version `0.1.22` and Chromium metadata without starting a browser or daemon.
+- Force-update preserves the structured installer failure keyword and classifies prior-installed `update-unsupported` preflight refusals as `kept-existing` without a runtime re-probe. Fresh-install `update-unsupported` failures remain fatal, and generic failures retain the existing idempotent-probe safety boundary; provenance checks are unchanged.
+
 ## [5.0.1] - 2026-10-26
 
 ### Fixed

@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: npm-5.0.1
+milestone: npm-5.0.2
 milestone_name: Maintenance Release
-status: completed
-last_updated: "2026-10-27T00:20:00+08:00"
-last_activity: 2026-10-27
+status: in_progress
+last_updated: "2026-10-29"
+last_activity: 2026-10-29
 progress:
   total_phases: 1
-  completed_phases: 1
+  completed_phases: 0
   total_plans: 1
-  completed_plans: 1
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # STATE — harnessed
@@ -29,9 +29,10 @@ progress:
 
 ## Current Position
 
-- **5.x maintenance delivered (2026-10-25)**: Phase71 fixes package dry-run safety, simplifies11READMEs/removes the AI guide, untracks localClaude files, and updates Bun5.x website guidance. Local4468tests/docs30/site101 and real production4/4 pass; final pushed-source CI is checked separately. Summary: `phases/71-bun5-follow-through/SUMMARY.md`. Latest shipped remains5.0.0; no new CLI publication. Native gstack remains blocked; website check remains in_progress despite verified visible content.
+- **5.x maintenance delivered (2026-10-25)**: Phase71 fixes package dry-run safety, simplifies11READMEs/removes the AI guide, untracks localClaude files, and updates Bun5.x website guidance. Local4468tests/docs30/site101 and real production4/4 pass; final pushed-source CI is checked separately. Summary: `phases/71-bun5-follow-through/SUMMARY.md`. These CLI corrections shipped in5.0.1; historical native gstack and website-check limits remain in that receipt.
 
 - **npm5.0.1 closed (2026-10-27)**: User explicitly confirmed publication. Candidate96f338c passed CI/preflight; tag/publish, actual npm, three signed binaries and live site propagation all passed. Summary: `phases/72-5.0.1-maintenance-release/SUMMARY.md`. Native gstack remains blocked; no new runtime/host/schema/security-policy surface.
+- **Active npm 5.0.2 candidate (2026-10-29; not published)**: Phase73 packages the verified Windows setup and force-update fixes. Candidate serialized4495 tests, build/types/hooks, lint0 with16 existing warnings, CLI5.0.2 and npm pack dry-run pass; earlier focused132 tests, real Windows probes and gstack `/review` also pass. Latest shipped remains5.0.1; user authorized publication, but exact-source CI and release-preflight must pass before the single tag push. No runtime-mode/host/schema/state/security-policy change. Plan: `phases/73-5.0.2-maintenance-release/PLAN.md`; receipt: `releases/5.0.2.md`.
 
 - **Documentation decisions (2026-10-24)**: Keep the three-layer methodology as the default; separate host, method contract and verification strength. The accepted Comet comparison is recorded in `research/method-contract-strategy.md`; no new runtime mode or SDK adoption is authorized. English `README.md` is canonical, standalone binary installation is recommended before npm, and future commit descriptions and release logs must be English.
 

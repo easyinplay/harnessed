@@ -237,7 +237,14 @@ describe('installNpmCli', () => {
     c.manifest = loaded.manifest
     const install = c.manifest.spec.install
     if (install.method !== 'npm-cli') throw new Error('expected the real npm-cli manifest')
-    expect(c.manifest.spec.verify.cmd).toMatch(/^set -eu\n/)
+    const verify = c.manifest.spec.verify.cmd
+    expect(verify).toContain('if (run(["--version"]).trim() !== "0.1.22")')
+    expect(verify).toContain('run(["install-browser", "chromium", "--dry-run"])')
+    expect(verify).toContain('run(["install-browser", "chromium", "--list"])')
+    expect(verify).toContain('NO_UPDATE_NOTIFIER: "1"')
+    expect(verify).not.toContain(' open ')
+    expect(verify).not.toContain('run-code')
+    expect(verify).not.toMatch(/\b(?:session|daemon)\b/)
     vi.mocked(binaryOnPath).mockImplementation((bin) => bin === 'playwright-cli')
     spawnMock.mockImplementation(
       () => makeChild({ exitCode }) as unknown as ReturnType<typeof spawn>,

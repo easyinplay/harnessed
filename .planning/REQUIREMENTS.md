@@ -1,10 +1,20 @@
 # REQUIREMENTS — harnessed
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
-> Shipped families = delivered baseline (do NOT re-plan). Latest shipped = v10.0 i18n Surface (✅ npm v4.8.0).
+> Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm remains 5.0.1.
 > Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.1 Maintenance Release** is published and verified; the older requirement families below remain historical records.
 
-## Active npm 5.0.0 Requirements
+## Active npm 5.0.2 Candidate
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| PATCH-502-01 | Limit the patch to same-root resource-only `webapp-testing` verification without Python, Windows-compatible read-only/notifier-free `playwright-cli` exact `0.1.22` and Chromium metadata verification without browser/daemon startup, and structured force-update failure classification | Phase 73 plan and 5.0.2 candidate receipt | Candidate; existing Phase 22/23 implementation evidence carried forward |
+| PATCH-502-02 | Preserve fresh-install `update-unsupported` fatality, generic failure probe behavior and provenance checks; no runtime-mode, host, schema, state or security-policy change | Phase 23 RED/GREEN and combined regression evidence | Existing evidence verified; no boundary expansion |
+| PATCH-502-03 | Record version, English changelog, release plan and receipt without claiming publication | Phase 73 plan and 5.0.2 candidate receipt | Active candidate, not published; latest shipped remains 5.0.1; user explicitly authorized tag/publication, but this task performs neither |
+
+Plan: [Phase 73](phases/73-5.0.2-maintenance-release/PLAN.md). Receipt: [5.0.2 candidate](releases/5.0.2.md). Only JSON/Markdown/line-count/diff static validation runs for metadata; release build, exact-source CI, preflight and published-artifact acceptance remain separate gates. Push the authorized tag only after candidate exact-source CI and release-preflight pass.
+
+## Shipped npm 5.0.0 Requirements
 
 | ID | Requirement | Acceptance Home | Status |
 | --- | --- | --- | --- |
@@ -23,11 +33,11 @@ Plan: [Phase 70](phases/70-runtime-onboarding/PLAN.md). Scope: [approved brief](
 | --- | --- | --- | --- |
 | MAINT-01 | Current Bun5.x guidance describes owned hook/runtime independence and explicit update manager, without obsolete homepage4.x warnings | Phase71 and site onboarding contracts | Site101tests and local/real production4/4 verified; Cloudflare status separately pending |
 | MAINT-02 | README remains the concise installation source for people and AI; remove marked maintenance/override clutter and the redundant AI guide across all locales | Phase71 README receipt and installation documentation contracts | Complete locally; docs30/30 and live-link checks pass |
-| MAINT-03 | Package update dry-run never invokes installation for default/explicit npm or explicit Bun, including current/ahead with upstreams/all | Phase71 dry-run receipt and updater tests | Local RED/GREEN and4468fullsuite pass; source not yet published as a new CLI version |
+| MAINT-03 | Package update dry-run never invokes installation for default/explicit npm or explicit Bun, including current/ahead with upstreams/all | Phase71 dry-run receipt and updater tests | Local RED/GREEN and4468fullsuite pass; shipped in npm5.0.1 |
 
-These are corrective continuations, not approval for another release or a new method/host architecture.
+These are corrective continuations, not approval for a new method/host architecture. The explicit 5.0.2 tag/publication authorization is recorded separately in the active candidate requirements above.
 
-## Active npm 5.0.1 Release
+## Shipped npm 5.0.1 Release
 
 | ID | Requirement | Acceptance Home | Status |
 | --- | --- | --- | --- |

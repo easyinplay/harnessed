@@ -80,6 +80,7 @@ export interface StepBResult {
   // line read "[B] skipped <name>" with no explanation.
   skipped: { name: string; reason: string }[]
   failed: string[]
+  failureKeywords?: Record<string, string>
   elapsedMs: number
   // v3.9.21 — per-manifest display group for grouped output in setup display.
   // Map<name, 'mcp-tool' | 'cli-binary' | 'command'>; missing entries display as 'other'.
@@ -163,6 +164,7 @@ export async function runStepBInstall(
   }
   const start = Date.now()
   const componentTypes: Record<string, string> = {}
+  const failureKeywords: Record<string, string> = {}
   const total = manifestPaths.length
   let done = 0
   const emit = (entry: StepBEntry): StepBEntry => {
@@ -227,6 +229,7 @@ export async function runStepBInstall(
       if (r.ok && 'alreadyInstalled' in r && r.alreadyInstalled)
         return emit({ status: 'already-installed', name })
       if (r.ok) return emit({ status: 'installed', name })
+      if (r.error.keyword) failureKeywords[name] = r.error.keyword
       return emit({ status: 'failed', name, reason: r.error.message })
     } catch (e) {
       return emit({ status: 'failed', name, reason: String(e) })
@@ -269,6 +272,7 @@ export async function runStepBInstall(
     alreadyInstalled,
     skipped,
     failed,
+    failureKeywords,
     elapsedMs: Date.now() - start,
     componentTypes,
   }
@@ -312,6 +316,10 @@ export async function reclassifyForceUpdateFailures(
     const m = entry.match(/^([^:]+):\s*(.*)$/s)
     const name = (m?.[1] ?? entry).trim()
     if (priorlyInstalled.has(name)) {
+      if (forcePass.failureKeywords?.[name] === 'update-unsupported') {
+        keptExisting.push({ name, reason: m?.[2]?.trim() ?? '' })
+        continue
+      }
       let present = false
       try {
         present = await probe(name)

@@ -636,6 +636,40 @@ describe('setup L4 rescue result through registerSetup', () => {
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('1 base manifests configured'))
   })
 
+  it.each([
+    'false',
+    'throw',
+  ] as const)('reports structured update-unsupported as kept-existing and exits zero without a %s runtime probe', async (probeOutcome) => {
+    vi.mocked(runInstall)
+      .mockReset()
+      .mockResolvedValueOnce({ ok: true, alreadyInstalled: true } as never)
+      .mockResolvedValueOnce({
+        ok: false,
+        phase: 'preflight',
+        error: { message: 'opaque provenance refusal', keyword: 'update-unsupported' },
+      } as never)
+    vi.mocked(isAlreadyInstalled).mockImplementation(async () => {
+      if (probeOutcome === 'throw') throw new Error('runtime unavailable')
+      return false
+    })
+    vi.mocked(verifyInstalled).mockRejectedValue(new Error('runtime must not be checked'))
+
+    await expect(runSetup(['--system'])).rejects.toMatchObject({ code: 0 })
+
+    const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
+    expect(result.keptExisting).toEqual([{ name: 'gstack', reason: 'opaque provenance refusal' }])
+    expect(result.failed).toEqual([])
+    expect(result.alreadyInstalled).toEqual([])
+    expect(isAlreadyInstalled).not.toHaveBeenCalled()
+    expect(verifyInstalled).not.toHaveBeenCalled()
+    expect(runInstall).toHaveBeenCalledTimes(2)
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining('0 installed / 1 kept-existing / 0 still-already-installed'),
+    )
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('1 base manifests configured'))
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+  })
+
   it('presence without runtime health remains a genuine force-update failure', async () => {
     const first = stepB({ alreadyInstalled: ['gstack'] })
     vi.mocked(runStepBInstall)

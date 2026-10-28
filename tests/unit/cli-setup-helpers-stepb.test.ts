@@ -142,6 +142,24 @@ describe('runStepBInstall — v4.13.0 MCP serialization + onProgress', () => {
     expect(runInstallMock).toHaveBeenCalledTimes(1)
   })
 
+  it.each([
+    ['preflight', 'update-unsupported'],
+    ['verify', 'verify-failed'],
+    ['spawn', 'spawn-failed'],
+  ] as const)('preserves the structured %s failure keyword %s', async (phase, keyword) => {
+    wireValidate({ 'skill.yaml': { name: 'existing-skill', method: 'npx-skill-installer' } })
+    runInstallMock.mockResolvedValue({
+      ok: false,
+      phase,
+      error: { message: 'opaque installer failure', keyword },
+    } as never)
+
+    const result = await runStepBInstall(['skill.yaml'], { quiet: true, updateInstalled: true })
+
+    expect(result.failed).toEqual(['existing-skill: opaque installer failure'])
+    expect(result).toHaveProperty('failureKeywords', { 'existing-skill': keyword })
+  })
+
   // v4.16.2 T3 — force-update bypasses the idempotent probe, so an already-
   // installed L4 tool (ctx7) hits the --system gate every force pass and used
   // to print the misleading bare 'level-flag-missing'. The FORCE pass gets an

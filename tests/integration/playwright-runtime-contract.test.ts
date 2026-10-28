@@ -9,13 +9,12 @@ import {
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { resolveBash } from '../../src/installers/lib/resolveBash.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
 const roots: string[] = []
-const title = 'harnessed-playwright-runtime'
 
 afterEach(() => {
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
@@ -40,51 +39,30 @@ function quote(value: string): string {
 
 interface Call {
   command: string
-  session?: string
   args: string[]
+  noUpdateNotifier?: string
 }
 
 // Only the external CLI is substituted; the manifest runs in a real POSIX shell.
 const stub = String.raw`
 const fs = require('node:fs');
-const path = require('node:path');
 const args = process.argv.slice(2);
-const sessionArg = args.find(arg => arg.startsWith('-s='));
-const session = sessionArg?.slice(3);
-const command = args.find(arg => ['--version', 'open', 'run-code', 'eval', 'close'].includes(arg)) ?? 'unknown';
-fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({ command, session, args }) + '\n');
+const command = args[0];
+fs.appendFileSync(process.env.STUB_LOG, JSON.stringify({ command, args, noUpdateNotifier: process.env.NO_UPDATE_NOTIFIER }) + '\n');
 if (command === '--version') {
   console.log(process.env.STUB_VERSION ?? '0.1.22');
-  process.exit(0);
+  process.exit(Number(process.env.STUB_VERSION_EXIT ?? 0));
 }
-if (!/^harnessed-playwright-verify-\d+$/.test(session ?? '')) process.exit(90);
-const state = path.join(process.env.STUB_ROOT, session + '.session');
-if (command === 'open') {
-  if (args[args.indexOf('--browser') + 1] !== 'chromium') process.exit(91);
-  fs.writeFileSync(state, 'open');
-  process.exit(Number(process.env.STUB_OPEN_EXIT ?? 0));
+if (JSON.stringify(args) === JSON.stringify(['install-browser', 'chromium', '--dry-run'])) {
+  console.log(process.env.STUB_DRY_RUN ?? 'Chrome for Testing 155.0 (playwright chromium v1247)\n  Install location: /cache/chromium-1247\n  Download url: https://example.invalid/chromium.zip');
+  process.exit(Number(process.env.STUB_DRY_EXIT ?? 0));
 }
-if (command === 'close') {
-  fs.rmSync(state, { force: true });
-  process.exit(Number(process.env.STUB_CLOSE_EXIT ?? 0));
+if (JSON.stringify(args) === JSON.stringify(['install-browser', 'chromium', '--list'])) {
+  console.log(process.env.STUB_LIST ?? 'Playwright version: 1.64.0\n  Browsers:\n    /cache/chromium-1247\n  References:\n    /global/node_modules/@playwright/cli/node_modules/playwright-core');
+  process.exit(Number(process.env.STUB_LIST_EXIT ?? 0));
 }
-if (!fs.existsSync(state)) process.exit(92);
-if (process.env.STUB_RENDER_EXIT) process.exit(Number(process.env.STUB_RENDER_EXIT));
-if (process.env.STUB_RENDER_ERROR) {
-  console.log('### Error\nError: render failed');
-  process.exit(0);
-}
-(async () => {
-  let html = '';
-  const page = {
-    setContent: async value => { html = value; },
-    title: async () => process.env.STUB_TITLE ?? html.match(/<title>([^<]+)<\/title>/)?.[1],
-  };
-  const code = args[args.indexOf(command) + 1];
-  const result = await new Function('return (' + code + ')')()(page);
-  if (!html.includes('<h1>Runtime ready</h1>')) process.exit(93);
-  console.log('### Result\n' + JSON.stringify(result));
-})().catch(error => { console.error(error); process.exit(94); });
+console.error('Browser/daemon startup or download is forbidden');
+process.exit(23);
 `
 
 function fixture() {
@@ -95,6 +73,10 @@ function fixture() {
   const log = join(root, 'calls.jsonl')
   const unrelated = join(root, 'user-work.session')
   writeFileSync(script, stub)
+  writeFileSync(
+    join(root, 'playwright-cli.cmd'),
+    `@echo off\r\n"${process.execPath}" "${script}" %*\r\n`,
+  )
   writeFileSync(
     cli,
     `#!/bin/sh\nexec ${quote(shellPath(process.execPath))} ${quote(shellPath(script))} "$@"\n`,
@@ -107,9 +89,10 @@ function fixture() {
 function run(cmd: string, f: ReturnType<typeof fixture>, env: NodeJS.ProcessEnv = {}) {
   const shell = process.platform === 'win32' ? resolveBash().path : '/bin/sh'
   if (!shell) throw new Error('A working POSIX shell is required for runtime contracts')
-  const result = spawnSync(shell, ['-c', `PATH=${quote(shellPath(f.root))}:"$PATH"\n${cmd}`], {
+  const path = `${quote(shellPath(f.root))}:${quote(shellPath(dirname(process.execPath)))}:/usr/bin:/bin`
+  const result = spawnSync(shell, ['-c', `PATH=${path}\n${cmd}`], {
     cwd: f.root,
-    env: { ...process.env, ...env, STUB_LOG: f.log, STUB_ROOT: f.root },
+    env: { ...process.env, ...env, STUB_LOG: f.log },
     encoding: 'utf8',
     timeout: 30_000,
   })
@@ -166,51 +149,124 @@ describe('Playwright runtime manifest contract', () => {
   })
 
   it.each([
-    ['successful render', {}, 0],
-    ['open failure', { STUB_OPEN_EXIT: '23' }, 23],
-    ['render failure', { STUB_RENDER_EXIT: '31' }, 31],
-    ['render error with exit zero', { STUB_RENDER_ERROR: '1' }, 1],
-    ['wrong title', { STUB_TITLE: 'wrong-title' }, 1],
-    ['title substring', { STUB_TITLE: 'harnessed-playwright-runtime-extra' }, 1],
-    ['cleanup failure', { STUB_CLOSE_EXIT: '57' }, 57],
-    ['open and cleanup failure', { STUB_OPEN_EXIT: '23', STUB_CLOSE_EXIT: '57' }, 23],
-    ['render and cleanup failure', { STUB_RENDER_EXIT: '31', STUB_CLOSE_EXIT: '57' }, 31],
-  ] as const)('handles %s and closes only its session', (_, env, status) => {
+    ['valid browser metadata', {}, 0],
+    ['dry-run failure', { STUB_DRY_EXIT: '31' }, 31],
+    ['list failure', { STUB_LIST_EXIT: '57' }, 57],
+    ['version failure', { STUB_VERSION_EXIT: '19' }, 19],
+    [
+      'dry-run error with exit zero',
+      { STUB_DRY_RUN: '### Error\nInstall location: /cache/chromium-1247' },
+      1,
+    ],
+    [
+      'list error with exit zero',
+      { STUB_LIST: '### Error\n/global/node_modules/@playwright/cli' },
+      1,
+    ],
+    ['empty dry-run', { STUB_DRY_RUN: '' }, 1],
+    [
+      'wrong browser metadata',
+      {
+        STUB_DRY_RUN:
+          'Firefox (playwright firefox v1500)\n  Install location: /cache/firefox\n  Download url: https://example.invalid/firefox.zip',
+      },
+      1,
+    ],
+    ['empty list', { STUB_LIST: '' }, 1],
+    [
+      'list metadata without a version header',
+      {
+        STUB_LIST:
+          'Browsers:\n    /cache/chromium-1247\n  References:\n    /global/node_modules/@playwright/cli/node_modules/playwright-core',
+      },
+      1,
+    ],
+    [
+      'header preamble cannot satisfy a later unrelated block',
+      {
+        STUB_LIST:
+          'Browsers:\n    /cache/chromium-1247\nReferences:\n    /global/node_modules/@playwright/cli/node_modules/playwright-core\n\nPlaywright version: 1.64.0\n  Browsers:\n    /cache/firefox-1500\n  References:\n    /project/node_modules/playwright-core',
+      },
+      1,
+    ],
+    [
+      'project-only browser reference',
+      {
+        STUB_LIST:
+          'Playwright version: 1.64.0\n  Browsers:\n    /cache/chromium-1247\n  References:\n    /project/node_modules/playwright-core',
+      },
+      1,
+    ],
+    [
+      'CLI name substring',
+      {
+        STUB_LIST:
+          'Playwright version: 1.64.0\n  Browsers:\n    /cache/chromium-1247\n  References:\n    /global/node_modules/@playwright/cliff/node_modules/playwright-core',
+      },
+      1,
+    ],
+    [
+      'no Chromium browser',
+      {
+        STUB_LIST:
+          'Playwright version: 1.64.0\n  Browsers:\n    /cache/firefox-1500\n  References:\n    /global/node_modules/@playwright/cli/node_modules/playwright-core',
+      },
+      1,
+    ],
+    [
+      'unrelated browser block',
+      {
+        STUB_LIST:
+          'Playwright version: 1.63.0\n  Browsers:\n    /cache/chromium-1247\n  References:\n    /project/node_modules/playwright-core\n\nPlaywright version: 1.64.0\n  Browsers:\n    /cache/firefox-1500\n  References:\n    /global/node_modules/@playwright/cli/node_modules/playwright-core',
+      },
+      1,
+    ],
+    [
+      'Windows paths and CRLF',
+      {
+        STUB_LIST:
+          'Playwright version: 1.64.0\r\n  Browsers:\r\n    C:\\Browser cache\\chromium-1247\r\n  References:\r\n    C:\\Global npm\\node_modules\\@playwright\\cli\\node_modules\\playwright-core',
+      },
+      0,
+    ],
+  ] as const)('handles %s without starting, downloading or changing browsers', (_, env, status) => {
     const f = fixture()
+    const before = readdirSync(f.root).map((name) => [
+      name,
+      readFileSync(join(f.root, name), 'utf8'),
+    ])
     const result = run(loadManifest('playwright-cli.yaml').spec.verify.cmd, f, env)
     expect(result.status, result.stderr).toBe(status)
-    const calls = result.calls.filter((call) => call.command !== '--version')
-    expect(calls.map((call) => call.command)).toEqual(
-      'STUB_OPEN_EXIT' in env ? ['open', 'close'] : ['open', 'run-code', 'close'],
-    )
-    expect(calls[0]?.session).toMatch(/harnessed-playwright-verify-\d+$/)
-    expect(new Set(calls.map((call) => call.session)).size).toBe(1)
-    expect(readdirSync(f.root).filter((name) => name.endsWith('.session'))).toEqual([
-      'user-work.session',
-    ])
+    const expected = [['--version']]
+    if (!('STUB_VERSION_EXIT' in env)) {
+      expected.push(['install-browser', 'chromium', '--dry-run'])
+      if (!('STUB_DRY_EXIT' in env || 'STUB_DRY_RUN' in env))
+        expected.push(['install-browser', 'chromium', '--list'])
+    }
+    expect(result.calls.map((call) => call.args)).toEqual(expected)
+    expect(result.calls.map((call) => call.noUpdateNotifier)).toEqual(expected.map(() => '1'))
     expect(readFileSync(f.unrelated, 'utf8')).toBe('keep')
     expect(
-      readdirSync(f.root).filter((name) => name.startsWith('harnessed-playwright-verify-')),
-    ).toEqual([])
-    if (status === 0) expect(result.stdout).toContain(JSON.stringify(title))
+      readdirSync(f.root)
+        .filter((name) => name !== 'calls.jsonl')
+        .map((name) => [name, readFileSync(join(f.root, name), 'utf8')]),
+    ).toEqual(before)
   })
 
-  it('gives each shell a unique PID-based session', () => {
-    const cmd = loadManifest('playwright-cli.yaml').spec.verify.cmd
-    const sessions = [fixture(), fixture()].map((f) => {
-      const result = run(cmd, f)
-      expect(result.status, result.stderr).toBe(0)
-      return result.calls.find((call) => call.command === 'open')?.session
-    })
-    expect(sessions[0]).toMatch(/harnessed-playwright-verify-\d+$/)
-    expect(sessions[1]).not.toBe(sessions[0])
+  it('fails when the fixture PATH has no CLI shim', () => {
+    const f = fixture()
+    rmSync(join(f.root, 'playwright-cli'))
+    rmSync(join(f.root, 'playwright-cli.cmd'))
+    const result = run(loadManifest('playwright-cli.yaml').spec.verify.cmd, f)
+    expect(result.status, result.stderr).not.toBe(0)
+    expect(result.calls).toEqual([])
   })
 
   it.each([
     '0.1.21',
     '0.1.220',
     '0.1.22-beta',
-  ])('rejects version %s before opening a browser', (version) => {
+  ])('rejects version %s before browser metadata checks', (version) => {
     const spec = loadManifest('playwright-cli.yaml').spec
     for (const cmd of [spec.verify.cmd, spec.install.idempotent_check]) {
       expect(cmd).toBeTypeOf('string')

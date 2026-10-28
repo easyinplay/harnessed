@@ -2,6 +2,7 @@
 
 > Shipped history = indexed archive (do NOT re-plan). **Public npm5.0.1 Maintenance Release shipped and verified**: [Phase72 summary](phases/72-5.0.1-maintenance-release/SUMMARY.md). [Phase71 summary](phases/71-bun5-follow-through/SUMMARY.md); [Phase70 summary](phases/70-runtime-onboarding/SUMMARY.md); historical v16.0 remains closed.
 > Current published npm: see `.planning/STATE.md` and `.planning/releases/` (single release-status home). Milestone codenames (vN.0) are spec/era names, NOT npm versions.
+> **Active npm 5.0.2 candidate (not published)**: [Phase 73 plan](phases/73-5.0.2-maintenance-release/PLAN.md) and [candidate receipt](releases/5.0.2.md). Latest shipped remains **5.0.1**. User explicitly authorized tag/publication; push the tag only after candidate exact-source CI and release-preflight pass. This metadata task does not commit, push, tag or publish. No runtime-mode, host, schema, state or security-policy change.
 >
 > **This table stops at v13.0 by design.** Milestones from v14.0 on are indexed in `.planning/MILESTONES.md`,
 > which is the single home for the milestone index — duplicating the rows here would give the same fact two

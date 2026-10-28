@@ -9,15 +9,7 @@ import { resolveBash } from '../../src/installers/lib/resolveBash.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
 const homes: string[] = []
-const helper = `import argparse, sys
-assert sys.flags.isolated and sys.flags.dont_write_bytecode and sys.flags.no_site
-parser = argparse.ArgumentParser(description="Run command with one or more servers")
-parser.add_argument("--server", action="append", required=True)
-parser.add_argument("--port", action="append", type=int, required=True)
-parser.add_argument("--timeout", type=int, default=30)
-parser.parse_args()
-raise RuntimeError("Only --help is permitted during verification")
-`
+const helper = 'raise RuntimeError("Setup must not execute project runtime")\n'
 
 afterEach(() => {
   for (const home of homes.splice(0)) rmSync(home, { recursive: true, force: true })
@@ -119,7 +111,7 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
     '.agents/skills',
     '.codex/skills',
     '.claude/skills',
-  ])('reads same-root resources and runs only isolated helper --help under %s', (directory) => {
+  ])('reads same-root resources without executing the helper under %s', (directory) => {
     const root = home()
     const skill = join(root, directory, 'webapp-testing')
     put(join(skill, 'SKILL.md'), '# Webapp testing\n')
@@ -128,8 +120,7 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
     const before = snapshot(root)
     const result = verify(root)
     expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain('Run command with one or more servers')
-    expect(result.stdout).toContain('--server')
+    expect(result.stdout).toBe('')
     expect(snapshot(root)).toEqual(before)
   })
 
@@ -155,7 +146,7 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
     const before = snapshot(root)
     const result = verify(root, { HARNESSED_PLATFORM: platform, CODEX_HOME: codexHome })
     expect(result.status, result.stderr).toBe(0)
-    expect(result.stdout).toContain('Run command with one or more servers')
+    expect(result.stdout).toBe('')
     expect(snapshot(root)).toEqual(before)
   })
 
@@ -177,19 +168,13 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
     expect(verify(root).status).not.toBe(0)
   })
 
-  it('preserves a failing helper exit code instead of accepting installed SKILL.md', () => {
+  it('does not execute the helper during setup verification', () => {
     const root = home()
     const skill = join(root, '.agents/skills/webapp-testing')
     put(join(skill, 'SKILL.md'), '# Skill\n')
     put(join(skill, 'scripts/with_server.py'), 'raise SystemExit(37)\n')
-    expect(verify(root).status).toBe(37)
-  })
-
-  it('rejects a helper returning zero without the expected help output', () => {
-    const root = home()
-    const skill = join(root, '.agents/skills/webapp-testing')
-    put(join(skill, 'SKILL.md'), '# Skill\n')
-    put(join(skill, 'scripts/with_server.py'), 'print("not helper usage")\n')
-    expect(verify(root).status).not.toBe(0)
+    const before = snapshot(root)
+    expect(verify(root).status).toBe(0)
+    expect(snapshot(root)).toEqual(before)
   })
 })

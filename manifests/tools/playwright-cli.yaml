@@ -23,33 +23,40 @@ spec:
     idempotent_check: "playwright-cli --version | grep -Fx '0.1.22'"
   verify:
     # npm-cli runs this in neutralCwd, outside the user's project.
-    # Avoid command substitution: manifest security rejects $() and backticks.
+    # Read-only metadata verification; never start a browser or daemon here.
     cmd: |
-      set -eu
-      playwright-cli --version | grep -Fx '0.1.22'
-      session="harnessed-playwright-verify-$$"
-      mkdir "$session"
-      cleanup() {
-        status=$?
-        set +e
-        trap - 0 HUP INT TERM
-        playwright-cli -s="$session" close >"$session/close.log" 2>&1
-        close_status=$?
-        cat "$session/close.log"
-        if grep -q '^### Error' "$session/close.log"; then close_status=1; fi
-        rm -f "$session/render.log" "$session/close.log"
-        rmdir "$session"
-        if [ "$status" -eq 0 ]; then status=$close_status; fi
-        exit "$status"
+      node -e '
+      const spawnSync = require("node:child_process").spawnSync;
+      function run(args) {
+        const windows = process.platform === "win32";
+        const result = spawnSync(windows ? process.env.COMSPEC || "cmd.exe" : "playwright-cli", windows ? ["/d", "/s", "/c", "playwright-cli", ...args] : args, { encoding: "utf8", windowsHide: true, shell: false, stdio: ["ignore", "pipe", "pipe"], timeout: 15000, maxBuffer: 262144, env: { ...process.env, NO_UPDATE_NOTIFIER: "1" } });
+        if (result.error) throw result.error;
+        process.stdout.write(result.stdout);
+        process.stderr.write(result.stderr);
+        if (result.status !== 0) process.exit(result.status || 1);
+        if (/^### Error/m.test(result.stdout)) throw new Error("Playwright CLI reported an error");
+        return result.stdout;
       }
-      trap cleanup 0
-      trap 'exit 129' HUP
-      trap 'exit 130' INT
-      trap 'exit 143' TERM
-      playwright-cli -s="$session" open --browser chromium
-      playwright-cli -s="$session" --raw run-code 'async page => { await page.setContent("<title>harnessed-playwright-runtime</title><h1>Runtime ready</h1>"); return await page.title(); }' >"$session/render.log"
-      cat "$session/render.log"
-      grep -Fxq '"harnessed-playwright-runtime"' "$session/render.log"
+      if (run(["--version"]).trim() !== "0.1.22") throw new Error("Expected playwright-cli 0.1.22");
+      const dryRun = run(["install-browser", "chromium", "--dry-run"]);
+      if (!/\(playwright chromium v\d+\)/.test(dryRun) || !/^\s*Install location:\s*\S.*$/m.test(dryRun)) throw new Error("Chromium installation metadata is missing");
+      const listed = run(["install-browser", "chromium", "--list"]);
+      const installed = listed.split(/(?=^Playwright version:\s*\S)/m).some(block => {
+        if (!/^Playwright version:\s*\S/.test(block)) return false;
+        let section = "";
+        let chromium = false;
+        let cli = false;
+        for (const line of block.split(/\r?\n/)) {
+          if (/^\s*Browsers:\s*$/.test(line)) section = "browsers";
+          else if (/^\s*References:\s*$/.test(line)) section = "references";
+          else if (/^\s*[A-Za-z][A-Za-z ]*:\s*$/.test(line)) section = "";
+          else if (section === "browsers" && /(?:^|[\/\x5c])chromium-\d+(?=$|[\/\x5c\s])/.test(line)) chromium = true;
+          else if (section === "references" && /(?:^|[\/\x5c])@playwright[\/\x5c]cli(?=$|[\/\x5c\s])/.test(line)) cli = true;
+        }
+        return chromium && cli;
+      });
+      if (!installed) throw new Error("No installed Chromium browser reference from @playwright/cli");
+      '
     timeout_ms: 60000
     expected_exit_code: 0
   uninstall:
