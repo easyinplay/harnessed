@@ -33,14 +33,19 @@ export function sanitizeOutputTailEnd(raw: string, cap = 300): string {
     .map((l) => l.replace(/[^\x20-\x7E]/g, '').trim())
     .filter((l) => l.length > 0)
   if (lines.length === 0) return '(unreadable output)'
-  let out = ''
+  const exception = lines.find((line) => /^(?:Error|[A-Za-z]+Error)(?:\s*\[[^\]]+\])?:/.test(line))
+  const tailCap = exception ? Math.max(0, cap - exception.length - 3) : cap
+  let tail = ''
   for (let i = lines.length - 1; i >= 0; i--) {
-    const cand = out ? `${lines[i]} | ${out}` : (lines[i] as string)
-    if (cand.length > cap) break
-    out = cand
+    if (lines[i] === exception) continue
+    const cand = tail ? `${lines[i]} | ${tail}` : (lines[i] as string)
+    if (cand.length > tailCap) break
+    tail = cand
   }
+  if (exception)
+    return tail.length > 0 ? `${exception.slice(0, cap)} | ${tail}` : exception.slice(0, cap)
   // Single final line longer than cap: keep its head (the error name/prefix).
-  return out || `${(lines[lines.length - 1] as string).slice(0, cap)}…`
+  return tail || `${(lines[lines.length - 1] as string).slice(0, cap)}…`
 }
 
 /** v4.16.0 T5 — install-spawn failure message with the same tail contract as

@@ -401,6 +401,175 @@ describe('setup L4 rescue result through registerSetup', () => {
     })
   })
 
+  function useCtx7Manifest(
+    provenance: 'tools' | 'skill-packs' = 'tools',
+    installType: 'npm' | null = 'npm',
+  ): void {
+    vi.mocked(readdir).mockImplementation(async (path, options?: unknown) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (options && typeof options === 'object' && 'withFileTypes' in options) {
+        return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+          name,
+          isDirectory: () => false,
+        })) as never
+      }
+      return (
+        normalized.endsWith('/workflows')
+          ? ['demo']
+          : normalized.endsWith(`/manifests/${provenance}`)
+            ? ['ctx7.yaml']
+            : []
+      ) as never
+    })
+    vi.spyOn(manifestValidation, 'validateManifestFile').mockReturnValue({
+      ok: true,
+      manifest: {
+        metadata: { name: 'ctx7' },
+        spec: {
+          type: 'cli-npm',
+          component_type: 'cli-binary',
+          ...(installType ? { install_type: installType } : {}),
+          install: { method: 'npm-cli', cmd: 'npm install -g ctx7' },
+        },
+      },
+    } as never)
+  }
+
+  function verifyFailedBase(reason = 'old verify reason'): StepBResult {
+    return stepB({
+      failed: [`ctx7: ${reason}`],
+      failureKeywords: { ctx7: 'verify-failed' },
+      componentTypes: { ctx7: 'cli-binary' },
+    })
+  }
+
+  it('approved cli-binary verify repair forces update and removes the original failure', async () => {
+    useCtx7Manifest()
+    const initial = verifyFailedBase()
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(initial)
+    vi.mocked(runInstall)
+      .mockReset()
+      .mockResolvedValue({ ok: true } as never)
+
+    await expect(runSetup([])).rejects.toMatchObject({ code: 0 })
+
+    expect(runInstall).toHaveBeenCalledOnce()
+    expect(runInstall).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ system: true, nonInteractive: true, updateInstalled: true }),
+      expect.objectContaining({ hostId: 'codex' }),
+    )
+    expect(initial.installed).toEqual(['ctx7'])
+    expect(initial.failed).toEqual([])
+  })
+
+  it('failed cli-binary verify repair replaces the original failure reason', async () => {
+    useCtx7Manifest()
+    const initial = verifyFailedBase()
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(initial)
+    vi.mocked(runInstall)
+      .mockReset()
+      .mockResolvedValue({
+        ok: false,
+        phase: 'verify',
+        error: { message: 'latest verify reason' },
+      } as never)
+
+    await expect(runSetup([])).rejects.toMatchObject({ code: 1 })
+
+    expect(initial.failed).toEqual(['ctx7: latest verify reason'])
+  })
+
+  it.each([
+    'declined',
+    'cancelled',
+  ] as const)('%s cli-binary verify repair preserves the original failure', async (answer) => {
+    useCtx7Manifest()
+    const initial = verifyFailedBase()
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(initial)
+    vi.mocked(confirm).mockResolvedValue(answer === 'declined' ? false : Symbol('cancel'))
+    vi.mocked(isCancel).mockReturnValue(answer === 'cancelled')
+
+    await expect(runSetup([])).rejects.toMatchObject({ code: 1 })
+
+    expect(initial.failed).toEqual(['ctx7: old verify reason'])
+    expect(runInstall).not.toHaveBeenCalled()
+  })
+
+  it('does not offer verify repair for skill-pack provenance', async () => {
+    useCtx7Manifest('skill-packs')
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(verifyFailedBase())
+
+    await expect(runSetup([])).rejects.toMatchObject({ code: 1 })
+
+    expect(confirm).not.toHaveBeenCalled()
+    expect(runInstall).not.toHaveBeenCalled()
+  })
+
+  it('does not offer verify repair without npm install_type', async () => {
+    useCtx7Manifest('tools', null)
+    vi.mocked(runStepBInstall).mockReset()
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(verifyFailedBase())
+
+    await expect(runSetup([])).rejects.toMatchObject({ code: 1 })
+
+    expect(confirm).not.toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('ctx7') }),
+    )
+    expect(runInstall).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['declined', false],
+    ['failed', true],
+  ] as const)('converges duplicate skipped and failed states after verify repair %s', async (outcome, shouldInstall) => {
+    useCtx7Manifest()
+    const initial = stepB({
+      skipped: [{ name: 'ctx7', reason: 'level-flag-missing' }],
+      failed: ['ctx7: old verify reason'],
+      failureKeywords: { ctx7: 'verify-failed' },
+      componentTypes: { ctx7: 'cli-binary' },
+    })
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(initial)
+    vi.mocked(confirm).mockResolvedValue(outcome !== 'declined')
+    if (shouldInstall) {
+      vi.mocked(runInstall)
+        .mockReset()
+        .mockResolvedValue({
+          ok: false,
+          phase: 'verify',
+          error: { message: 'latest verify reason' },
+        } as never)
+    }
+
+    await expect(runSetup([])).rejects.toMatchObject({ code: 1 })
+
+    expect(confirm).toHaveBeenCalledOnce()
+    expect(initial.skipped).toEqual([])
+    expect(initial.failed).toEqual([
+      shouldInstall ? 'ctx7: latest verify reason' : 'ctx7: old verify reason',
+    ])
+  })
+
+  it.each([
+    ['--non-interactive', ['--non-interactive']],
+    ['non-TTY', []],
+  ] as const)('%s verify repair prints the forced-update command', async (mode, args) => {
+    useCtx7Manifest()
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(verifyFailedBase())
+    if (mode === 'non-TTY') {
+      Object.defineProperty(process.stdin, 'isTTY', { value: false, configurable: true })
+    }
+
+    await expect(runSetup([...args])).rejects.toMatchObject({ code: 1 })
+
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('harnessed setup --system --non-interactive --update-installed'),
+    )
+    expect(confirm).not.toHaveBeenCalled()
+    expect(runInstall).not.toHaveBeenCalled()
+  })
+
   it.each([
     ['spawn', 'npm install exited 1'],
     ['verify', 'verify failed: ctx7 --version exited 1'],
@@ -420,7 +589,7 @@ describe('setup L4 rescue result through registerSetup', () => {
     expect(runInstall).toHaveBeenCalledTimes(2)
     expect(runInstall).toHaveBeenLastCalledWith(
       expect.anything(),
-      expect.objectContaining({ system: true, nonInteractive: true }),
+      expect.objectContaining({ system: true, nonInteractive: true, updateInstalled: false }),
       expect.objectContaining({ hostId: 'codex' }),
     )
     expect(vi.mocked(runInstall).mock.invocationCallOrder[1]).toBeGreaterThan(

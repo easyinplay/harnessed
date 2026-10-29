@@ -31,43 +31,103 @@ export interface L4RescueResult {
   installed: string[]
   skipped: string[]
   failed: { name: string; reason: string }[]
+  pending?: string[]
+  repairCandidates?: string[]
+}
+
+export interface L4RescueInput {
+  skipped: { name: string; reason: string }[]
+  failed: string[]
+  failureKeywords?: Record<string, string>
+  componentTypes?: Record<string, string>
+}
+
+interface L4RescueTarget {
+  name: string
+  updateInstalled: boolean
 }
 
 /** Prompt for + run system-scope installs for Step B skips whose reason is
  *  `level-flag-missing`. Caller guards TTY / --non-interactive / --dry-run. */
 export async function runL4Rescue(
   manifestPaths: string[],
-  skipped: { name: string; reason: string }[],
+  input: L4RescueInput | { name: string; reason: string }[],
   hostContext: HostInstallContext = captureHostInstallContext(),
+  options: { interactive?: boolean } = {},
 ): Promise<L4RescueResult> {
+  const legacyInput = Array.isArray(input)
   const out: L4RescueResult = { installed: [], skipped: [], failed: [] }
-  const targets = skipped.filter((s) => s.reason === 'level-flag-missing')
-  if (targets.length === 0) return out
+  const normalized: L4RescueInput = legacyInput ? { skipped: input, failed: [] } : input
+  const candidates = new Map<string, L4RescueTarget>()
+  for (const entry of normalized.skipped) {
+    if (entry.reason === 'level-flag-missing') {
+      candidates.set(entry.name, { name: entry.name, updateInstalled: false })
+    }
+  }
+  for (const failure of normalized.failed) {
+    const name = failure.split(': ', 1)[0] ?? failure
+    if (
+      normalized.failureKeywords?.[name] === 'verify-failed' &&
+      normalized.componentTypes?.[name] === 'cli-binary'
+    ) {
+      candidates.set(name, { name, updateInstalled: true })
+    }
+  }
+  if (candidates.size === 0) return out
 
   // Resolve target manifests by name (re-read is cheap local I/O).
-  const byName = new Map<string, ResolvedComponentPlan>()
+  const byName = new Map<
+    string,
+    { path: string; rawInstallType: string | undefined; plan: ResolvedComponentPlan }
+  >()
   for (const path of manifestPaths) {
     try {
       const v = validateManifestFile(await readFile(path, 'utf8'), path)
-      if (v.ok)
-        byName.set(
-          v.manifest.metadata.name,
-          resolveComponentPlan(v.manifest, hostContext, 'install'),
-        )
+      if (v.ok) {
+        byName.set(v.manifest.metadata.name, {
+          path: path.replaceAll('\\', '/'),
+          rawInstallType: v.manifest.spec.install_type,
+          plan: resolveComponentPlan(v.manifest, hostContext, 'install'),
+        })
+      }
     } catch {
       /* unreadable manifest → absent from map → reported as failed below */
     }
   }
 
+  const targets = [...candidates.values()].filter((target) => {
+    if (!target.updateInstalled) return true
+    const resolved = byName.get(target.name)
+    if (!resolved?.path.includes('/manifests/tools/')) return false
+    const spec = resolved.plan.manifest.spec
+    return (
+      resolved.rawInstallType === 'npm' &&
+      resolved.plan.status === 'supported' &&
+      spec.type === 'cli-npm' &&
+      spec.component_type === 'cli-binary' &&
+      spec.install_type === 'npm' &&
+      spec.install.method === 'npm-cli' &&
+      /\bnpm\s+install\s+-g\b/.test(spec.install.cmd)
+    )
+  })
+  if (!legacyInput) {
+    out.repairCandidates = targets
+      .filter((target) => target.updateInstalled)
+      .map((target) => target.name)
+    out.pending = targets.map((target) => target.name)
+  }
+  if (targets.length === 0 || options.interactive === false) return out
+
   console.log(
     `\n${targets.length} component(s) need a system-wide (L4) install — harnessed can run them now:`,
   )
   for (const t of targets) {
-    const plan = byName.get(t.name)
-    if (!plan) {
+    const resolved = byName.get(t.name)
+    if (!resolved) {
       out.failed.push({ name: t.name, reason: 'manifest not found for L4 rescue' })
       continue
     }
+    const { plan } = resolved
     if (plan.status === 'unsupported') {
       out.skipped.push(t.name)
       console.log(`  skipped ${t.name} (${plan.reason})`)
@@ -91,7 +151,7 @@ export async function runL4Rescue(
       nonInteractive: true, // consent already given via the confirm above
       fullDiff: false,
       color: 'auto',
-      updateInstalled: false,
+      updateInstalled: t.updateInstalled,
       quiet: true,
     }
     const r = await runInstall(manifest, opts, plan.context)

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.3] - 2026-10-29
+
+### Fixed
+
+- Windows `playwright-cli` `verify-failed` L4 repair now re-installs the eligible CLI with `--update-installed` after the user confirms system scope.
+- Non-interactive and non-TTY setup output now prints the executable repair command: `harnessed setup --system --non-interactive --update-installed`.
+- Node verify failures retain the exception's first line while preserving tail diagnostics.
+
 ## [5.0.2] - 2026-10-29
 
 ### Fixed

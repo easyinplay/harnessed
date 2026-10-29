@@ -711,44 +711,68 @@ export function registerSetup(program: Command): void {
       await enableAgentTeamsInSettings(setupContext)
       await enableUserLangInSettings(raw.userLang, setupContext)
 
-      // L4 rescue: without --system, Step B skips global npm installs with
-      // level-flag-missing. Offer
-      // an interactive opt-in here (TTY only; dynamic import mirrors the
-      // runAutoInstall pattern so setup tests need no new mock exports).
-      if (
-        !dryRun &&
-        raw.nonInteractive !== true &&
-        b.skipped.some((s) => s.reason === 'level-flag-missing')
-      ) {
+      // L4 rescue: repair explicit level-gate skips and verified broken global
+      // CLI binaries. The latter is restricted inside l4-rescue to reviewed
+      // tools manifests with an effective L4 npm-cli declaration.
+      let pendingNonInteractiveL4Repair = false
+      const hasL4RepairCandidate =
+        b.skipped.some((s) => s.reason === 'level-flag-missing') ||
+        b.failed.some((failure) => {
+          const name = failure.split(': ', 1)[0] ?? failure
+          return (
+            b.failureKeywords?.[name] === 'verify-failed' && b.componentTypes[name] === 'cli-binary'
+          )
+        })
+      if (!dryRun && hasL4RepairCandidate) {
         const isTty = process.stdin.isTTY === true && process.stdout.isTTY === true
-        if (isTty) {
-          const { runL4Rescue } = await import('./lib/l4-rescue.js')
-          const rescue = await runL4Rescue(manifestPaths, b.skipped, setupContext)
+        const interactive = isTty && raw.nonInteractive !== true
+        const { runL4Rescue } = await import('./lib/l4-rescue.js')
+        const rescue = await runL4Rescue(
+          manifestPaths,
+          {
+            skipped: b.skipped,
+            failed: b.failed,
+            failureKeywords: b.failureKeywords,
+            componentTypes: b.componentTypes,
+          },
+          setupContext,
+          { interactive },
+        )
+        pendingNonInteractiveL4Repair = !interactive && (rescue.pending?.length ?? 0) > 0
+        if (interactive) {
+          const repairCandidates = new Set(rescue.repairCandidates ?? [])
+          const resolved = new Set([
+            ...rescue.installed,
+            ...rescue.failed.map((failure) => failure.name),
+          ])
+          b.failed = b.failed.filter((failure) => {
+            const name = failure.split(': ', 1)[0] ?? failure
+            return !resolved.has(name)
+          })
           b.installed.push(...rescue.installed)
           for (const failure of rescue.failed) {
             const detail = `${failure.name}: ${failure.reason}`
             b.failed.push(detail)
             console.error(`  [L4 rescue] ${detail}`)
           }
-          const resolved = new Set([
-            ...rescue.installed,
-            ...rescue.failed.map((failure) => failure.name),
-          ])
           b.skipped = b.skipped.filter(
-            (skip) => skip.reason !== 'level-flag-missing' || !resolved.has(skip.name),
+            (skip) =>
+              skip.reason !== 'level-flag-missing' ||
+              (!resolved.has(skip.name) && !repairCandidates.has(skip.name)),
           )
         }
       }
 
       if (
         raw.system !== true &&
-        b.skipped.some(
-          (skip) =>
-            skip.reason === 'level-flag-missing' || skip.reason.startsWith('L4 system-scope'),
-        )
+        (pendingNonInteractiveL4Repair ||
+          b.skipped.some(
+            (skip) =>
+              skip.reason === 'level-flag-missing' || skip.reason.startsWith('L4 system-scope'),
+          ))
       ) {
         console.warn(
-          '\nL4 system-wide installs remain skipped. To explicitly authorize them, run: harnessed setup --system --non-interactive',
+          '\nL4 system-wide installs remain skipped or need repair. Run: harnessed setup --system --non-interactive --update-installed',
         )
       }
 

@@ -163,7 +163,12 @@ describe('setup single context routing', () => {
     })
     expect(vi.mocked(runStepBInstall).mock.calls[1]?.[1]?.hostContext).toBe(context)
     expect(makeIdempotentProbe).toHaveBeenCalledWith(expect.any(Array), context)
-    expect(runL4Rescue).toHaveBeenCalledWith(expect.any(Array), expect.any(Array), context)
+    expect(runL4Rescue).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.objectContaining({ skipped: expect.any(Array), failed: expect.any(Array) }),
+      context,
+      { interactive: true },
+    )
     expect(runOptionalOffer).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ interactive: true }),

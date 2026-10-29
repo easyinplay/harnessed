@@ -35,6 +35,20 @@ describe('formatVerifyFail (v4.15.1 T3)', () => {
     const m = formatVerifyFail('bash ./setup', 1, 0, '', stderr)
     expect(m).toContain('THE ACTUAL FAILURE')
   })
+
+  it('keeps a Node throw reason while retaining tail diagnostics', () => {
+    const stderr = [
+      'Error: ctx7 runtime entrypoint is missing',
+      ...Array.from(
+        { length: 8 },
+        (_, i) => `    at frame${i} (file:///tmp/runtime.js:${i + 1}:1)`,
+      ),
+      'Node.js v26.13.0',
+    ].join('\n')
+    const m = formatVerifyFail('ctx7 --version', 1, 0, '', stderr)
+    expect(m).toContain('Error: ctx7 runtime entrypoint is missing')
+    expect(m).toContain('Node.js v26.13.0')
+  })
 })
 
 describe('formatSpawnFail (v4.16.0 T5)', () => {
