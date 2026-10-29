@@ -4,6 +4,17 @@
 > Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm is 5.0.4.
 > Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.4 Maintenance Release** is published and verified complete; Phase 74 is complete. The older requirement families below remain historical records.
 
+## Candidate npm-5.0.5 Requirements
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| PATCH-505-01 | Structured exact-ID readiness: validate `claude plugin list --json` as a top-level array; require the exact marketplace-qualified ID, settings enablement `true`, CLI entry `enabled: true` and a non-empty `installPath`; preserve subsequent runtime/lease checks | Phase 75 task plan and findings | Implementation/validation complete; candidate ready, not published |
+| PATCH-505-02 | Claude marketplace presence detection is authoritative with no shell fallback; skip generic manifest verification without weakening provenance refusal or the read-only retained-version probe | Phase 75 findings and focused regression evidence | Implementation/validation complete; candidate ready, not published |
+| PATCH-505-03 | Fail-closed negative matrix: CLI nonzero, malformed/non-array/null output, missing entries, similar IDs, wrong marketplaces, disabled, unreadable and runtime-unhealthy plugins remain fatal | Phase 75 findings and focused regression evidence | Validation complete; two final review tracks found no blocking issues |
+| PATCH-505-04 | Record release metadata, validation and review while keeping commit/push pending and tag/publish unauthorized; no claim of completed CI or npm publication, no release receipt/SUMMARY | Phase 75 task plan and progress | Task 5 in progress (metadata/review complete; commit/push pending); Task 6 pending |
+
+Plan: [Phase 75](phases/75-5.0.5-plugin-retention-probe/task_plan.md). Supplied final validation: focused 7 files/204 tests; full Vitest 375 files/4561 passed/11 skipped/1 todo; build, typecheck, docs 30, schema, lint (exit 0, 16 existing warnings), diff-check and npm pack dry-run passed. Non-blocking info: if future Claude CLI output contains conflicting duplicate qualified IDs, any healthy exact match currently passes; not observed in the real CLI and outside this scope. Latest shipped public npm remains **5.0.4**.
+
 ## Shipped npm 5.0.4 Release
 
 | ID | Requirement | Acceptance Home | Status |

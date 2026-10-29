@@ -1,3 +1,4 @@
+import { listClaudePluginMetadata } from './claudePlugins.js'
 import { codexHookPluginId } from './codexHookPlugin.js'
 import { isHarnessedHookKey, listCodexHooks } from './codexHookTrust.js'
 import { listCodexMcpServerMetadata } from './codexMcpServers.js'
@@ -68,6 +69,28 @@ export async function verifyInstalled(
           ),
         },
       }
+    if (ctx.hostContext.hostId === 'claude' && install.method === 'cc-plugin-marketplace') {
+      const entries = await listClaudePluginMetadata(ctx.hostContext)
+      const ready = entries?.some(
+        (entry) => entry.id === id && entry.enabled === true && !!entry.installPath?.trim(),
+      )
+      if (!ready)
+        return {
+          ok: false,
+          phase: 'verify',
+          error: err(
+            ctx,
+            '/spec/verify/cmd',
+            entries === null
+              ? `Claude plugin metadata is unknown for ${id}; readiness is not established.`
+              : `Claude plugin ${id} is missing, disabled or has no installPath; readiness is not established.`,
+            'verify-failed',
+          ),
+        }
+      const leaseFailure = await verifyGstackLease(ctx)
+      if (leaseFailure) return leaseFailure
+      return verifySkillRuntime(ctx)
+    }
   }
   if (ctx.hostContext?.hostId === 'codex' && install.method === 'cc-hook-add' && !ctx.opts.dryRun) {
     const id = codexHookPluginId(ctx.manifest.metadata.name)

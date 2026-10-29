@@ -29,13 +29,13 @@ spec:
     # pin 的 2.37.0 在 win32 上 /clear 恢复完全不工作)+ opt-in --autonomous
     # (省 per-tool 重注入 token)+ PLANNING_DISABLED=1 逃生口(v3.4.0)。
     git_ref: v3.4.1
-    idempotent_check: "/plugin list | grep -q planning-with-files"
+    idempotent_check: "claude plugin list --json"
     marketplace_source:        # ADR 0005 — third-party marketplace structured metadata
       source: github
       repo: OthmanAdi/planning-with-files
   verify:
     # Claude plugin payload verification remains a separate installer-channel follow-up.
-    cmd: "/plugin list | grep -q planning-with-files"
+    cmd: "claude plugin list --json"
     timeout_ms: 5000
   uninstall:
     cmd: "/plugin uninstall planning-with-files@planning-with-files"

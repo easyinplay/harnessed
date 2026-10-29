@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.5] - 2026-10-29
+
+### Fixed
+
+- Claude retained-version probes for `superpowers` and `planning-with-files` now validate the top-level array from `claude plugin list --json`, requiring an exact marketplace-qualified ID, settings enablement, an enabled CLI entry and a non-empty install path. CLI failures, invalid output and missing or mismatched entries fail closed. Native Claude marketplace presence detection is authoritative without a shell fallback; generic manifest verification is skipped while subsequent runtime/lease checks and provenance protections remain enforced.
+
 ## [5.0.4] - 2026-10-29
 
 ### Fixed

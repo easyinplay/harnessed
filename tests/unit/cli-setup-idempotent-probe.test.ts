@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeIdempotentProbe } from '../../src/cli/lib/setup-helpers.js'
 import * as installers from '../../src/installers/index.js'
 import { isAlreadyInstalled } from '../../src/installers/lib/idempotent.js'
+import { runHarnessArgs } from '../../src/installers/lib/runClaudeArgs.js'
 import { spawnCmd } from '../../src/installers/lib/spawn.js'
 import type { Manifest } from '../../src/installers/lib/types.js'
 import { verifyInstalled } from '../../src/installers/lib/verifyInstalled.js'
@@ -29,6 +30,10 @@ vi.mock('../../src/installers/lib/idempotent.js', async (importOriginal) => ({
   isAlreadyInstalled: vi.fn(),
 }))
 vi.mock('../../src/installers/lib/verifyInstalled.js', () => ({ verifyInstalled: vi.fn() }))
+vi.mock('../../src/installers/lib/runClaudeArgs.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/installers/lib/runClaudeArgs.js')>()),
+  runHarnessArgs: vi.fn(),
+}))
 vi.mock('../../src/manifest/validate.js', () => ({ validateManifestFile: vi.fn() }))
 vi.mock('../../src/installers/lib/spawn.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/installers/lib/spawn.js')>()),
@@ -348,6 +353,56 @@ describe('setup retained-version probe', () => {
     expect(await probe('demo')).toBe(false)
     expect(spawnCmd).toHaveBeenCalledOnce()
     expect(vi.mocked(spawnCmd).mock.calls[0]?.[1]).toBe('test -f ~/.claude/skills/demo/SKILL.md')
+  })
+
+  it.each([
+    ['superpowers', 'manifests/tools/superpowers.yaml', 'superpowers@superpowers-marketplace'],
+    [
+      'planning-with-files',
+      'manifests/skill-packs/planning-with-files.yaml',
+      'planning-with-files@planning-with-files',
+    ],
+  ])('retains enabled Claude plugin %s through exact metadata verification', async (name, path, pluginId) => {
+    const { readFile: realReadFile } =
+      await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
+    const { validateManifestFile: realValidate } = await vi.importActual<
+      typeof import('../../src/manifest/validate.js')
+    >('../../src/manifest/validate.js')
+    const { verifyInstalled: realVerify } = await vi.importActual<
+      typeof import('../../src/installers/lib/verifyInstalled.js')
+    >('../../src/installers/lib/verifyInstalled.js')
+    const context = hostContext('claude')
+    const settingsPath = join(context.nativeHome, 'settings.json')
+    vi.mocked(readFile).mockImplementation(async (file) => {
+      if (String(file) === path) return realReadFile(path, 'utf8')
+      if (String(file) === settingsPath)
+        return JSON.stringify({ enabledPlugins: { [pluginId]: true } })
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    vi.mocked(validateManifestFile).mockImplementation(realValidate)
+    vi.mocked(verifyInstalled).mockImplementation(realVerify)
+    vi.mocked(runHarnessArgs).mockResolvedValue({
+      exitCode: 0,
+      stdout: JSON.stringify([{ id: pluginId, enabled: true, installPath: '/installed-plugin' }]),
+      stderr: '',
+    })
+    const probe = await makeIdempotentProbe([path], context)
+
+    const retained = await probe(name)
+
+    expect(isAlreadyInstalled).toHaveBeenCalledOnce()
+    expect(verifyInstalled).toHaveBeenCalledOnce()
+    expect(readFile).toHaveBeenCalledWith(settingsPath, 'utf8')
+    expect(runHarnessArgs).toHaveBeenCalledOnce()
+    expect(runHarnessArgs).toHaveBeenCalledWith(
+      'claude',
+      ['plugin', 'list', '--json'],
+      context.userHome,
+      15_000,
+      context,
+    )
+    expect(spawnCmd).not.toHaveBeenCalled()
+    expect(retained).toBe(true)
   })
 
   it('the real verifier accepts healthy resources without enabling writes', async () => {

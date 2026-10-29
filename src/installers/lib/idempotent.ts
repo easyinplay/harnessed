@@ -384,6 +384,11 @@ export async function isAlreadyInstalled(
   // v3.9.9 — native detection first (Windows compat: cmd.exe /c can't run
   // `/plugin list`, `test`, `grep -q`, etc. that appear in idempotent_checks).
   const native = await detectNative(ctx)
+  if (
+    installCfg.method === 'cc-plugin-marketplace' &&
+    (ctx.hostContext?.hostId ?? detectPlatform().id) === 'claude'
+  )
+    return native
   if (native) return true
 
   // Fallback: shell spawn (legacy idempotent_check manifest field).

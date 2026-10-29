@@ -28,9 +28,9 @@ spec:
     # v6.1.1 Codex `hooks: {}` 修复(不再误注册 Claude SessionStart hook)。
     # Gemini CLI 支持上游移除(Google EOL)— harnessed 无 gemini 平台面,无涉。
     git_ref: v6.1.1
-    idempotent_check: "/plugin list | grep -q superpowers"
+    idempotent_check: "claude plugin list --json"
   verify:
-    cmd: "/plugin list | grep -q superpowers"
+    cmd: "claude plugin list --json"
     timeout_ms: 5000
   uninstall:
     cmd: "/plugin uninstall superpowers@superpowers-marketplace"
