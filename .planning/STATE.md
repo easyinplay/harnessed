@@ -1,6 +1,6 @@
 ---
 gsd_state_version: 1.0
-milestone: npm-5.0.2
+milestone: npm-5.0.4
 milestone_name: Maintenance Release
 status: completed
 last_updated: "2026-10-29"
@@ -21,13 +21,15 @@ progress:
 ## Project Reference
 
 - **Core value**: executable engine of the full three-layer-stack methodology — orchestration brain + prompt library, machine-codifying CLAUDE.md collaboration rules into a subagent-isolated routing engine. Does NOT vendor upstream code; composes + arbitrates heterogeneous upstreams (gstack/ECC/GSD/superpowers/…).
-- **Latest shipped (npm)**: **v5.0.2**, 2026-10-29, published and verified complete. Windows setup and force-update corrections; commit `b5f7bee5d47ea50b20e03ae07d3f6407e592c49d`, CI `40736906479` 9/9, tag `v5.0.2` pushed once, publish `40737857022` 4/4. npm version/latest5.0.2, real install117 packages/CLI5.0.2, stable GitHub release9 assets, three-platform SHA256/signatures pass; Windows exe5.0.2/167 assets. Receipt: `releases/5.0.2.md`. Previous5.0.1: `releases/5.0.1.md`; 5.0.0: `releases/5.0.0.md`.
+- **Latest shipped (npm)**: **v5.0.4**, 2026-10-29, published and verified complete. Health-gated explicit force-update classification and Claude active-root npx materialization; commit `c9a3dc3aba151901e4854b38b25ea8e3344b0e43`, CI `40810930373` 9/9, annotated tag `v5.0.4`, publish `40811493097` 4/4. npm version/latest 5.0.4, real install 117 packages/CLI 5.0.4, stable GitHub release 9 assets, three-platform SHA256/Ed25519 pass; Windows exe 5.0.4/167 assets. Receipt: `releases/5.0.4.md`. Earlier receipts: `releases/5.0.2.md`, `releases/5.0.1.md`, `releases/5.0.0.md`.
 - **Previous releases**: **v4.49.0** 2026-10-16(Phase 67 `checkpoint adopt` 跨宿主接力 + `gc` 槽位修剪 + win32 `repoKey` 归一 + `update` 走系统代理;publish 4 job success + `npm view` latest=4.49.0 + release 9 assets)。上一版:**v4.48.0** 2026-10-08(`harnessed agents-md` + 更正 README 对 Codex 的两处错误断言;三重核实:publish step 日志 `+ harnessed@4.48.0` + registry 直查 `dist-tags.latest=4.48.0` + `npm view`,release 9 assets)。上一版:**v4.47.0** 2026-10-07(codex 不再读 config.toml + 语言 pin + gate fail-closed 扩三类/ADR-0042)· **v4.46.0** 2026-09-30(v16.0 收官版:Phase 66 T3b-T5 + 凭据备份缺陷)。更早:**v4.45.0** 2026-09-30(Phase 65 正文宿主原语化 + 66 T1)· **v4.44.0** 2026-09-23(v16.0 Phase 64 codex hooks 经本地插件 + 程序化信任;含凭据备份修复;`npm dist-tag ls` 核实,release 9 assets)。以下为 4.29.0 之前的弧线摘要:Since v13.0 (4.12.0) a 16-version arc = **v14.0 Hardening & Distribution**(retro-closed),three sub-arcs (detail: CHANGELOG per version + `milestones/v14.0-phases/`):
   1. **Setup 治理 + cross-harness**(4.13–4.18):setup 五根因修复(串行化/stdin/进度/rescue/表格)→ 14/14 全绿;codex 全对齐;环境免疫(WSL bash 探针/中性 spawn cwd/hook schema)。
   2. **/auto 合规 + 双守卫 + issues**(4.21–4.26):checkpoint intent/perturn 护栏/evidence guard 多基解析;GateGuard env 豁免单通道;issues #2-#5 关闭(skill 完整性五态台账+自愈+备份、deferrable relay 门、gate undefined-variable fail-closed + skip-sub 别名);intel 五家对照借鉴(备份后覆盖/Red Flags/注入 delta/严重度分级/串行次序守卫)。
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
 
 ## Current Position
+
+- **npm5.0.4 closed (2026-10-29; published and verified complete)**: Phase 74 complete (1/1 phase, 1/1 plan). Focused handoff 161/161, candidate focused 3/3, full Vitest 374 files/4546 passed/11 skipped/1 todo, build/typecheck/lint/diff-check passed (16 existing lint warnings). Pre-publication `node dist/cli.mjs release-preflight` passed 4/4, result `release-ready` (details in receipt). Initial parallel test/build contention caused 3 fixture failures; serial reruns passed. Summary: `phases/74-5.0.4-maintenance-release/SUMMARY.md`; exact tag/hash/integrity evidence: `releases/5.0.4.md`. Website browser not run; acceptance root `C:/Users/easyi/AppData/Local/Temp/harnessed-504-accept-20261029-main` retained, not cleaned. Closeout docs will be committed and pushed separately, without recreating the tag, repeating publication or rerunning runtime acceptance.
 
 - **5.x maintenance delivered (2026-10-25)**: Phase71 fixes package dry-run safety, simplifies11READMEs/removes the AI guide, untracks localClaude files, and updates Bun5.x website guidance. Local4468tests/docs30/site101 and real production4/4 pass; final pushed-source CI is checked separately. Summary: `phases/71-bun5-follow-through/SUMMARY.md`. These CLI corrections shipped in5.0.1; historical native gstack and website-check limits remain in that receipt.
 

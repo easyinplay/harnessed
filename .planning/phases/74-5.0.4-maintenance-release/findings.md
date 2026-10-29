@@ -1,6 +1,6 @@
 # Phase 74 Findings
 
-Status: `v5.0.4` local release gate passed; not shipped.
+Status: `v5.0.4` published and verified complete.
 
 ## 2026-10-29
 
@@ -23,4 +23,15 @@ Status: `v5.0.4` local release gate passed; not shipped.
 - Supplied implementation verification: focused tests passed 161/161; findings from both review rounds are closed with final `PASS` / `Ship` verdicts.
 - Fresh local release gate on 2026-10-29: focused `install-aliases` fixture passed 3/3; full Vitest passed 374 files and 4546 tests with 11 skipped and 1 todo; production build, typecheck, lint, and `git diff --check` passed. Lint reports 16 existing warnings and no errors.
 - The first parallel full-test attempt overlapped `build`, which temporarily removed `dist/cli.mjs` and caused the 3 `install-aliases` failures. The fixture and full suite both passed when rerun serially after build; this was test/build output contention, not a product regression.
-- CI, `harnessed release-preflight`, tag publication, npm latest, GitHub release assets, signatures, and Windows binary acceptance remain pending. This record is not yet a release receipt.
+- Publication and public acceptance are now complete, as supplied in the release closeout handoff. Exact evidence is recorded below and in [the release receipt](../../releases/5.0.4.md).
+- The release owner confirmed that pre-publication `node dist/cli.mjs release-preflight` passed all four checks: `CHANGELOG has [5.0.4]`, `package version 5.0.4`, `tracked working tree clean`, `v5.0.4 tag absent`; result `release-ready`. The tag-absent check records the pre-tag state and must not be interpreted as the current published state.
+
+## Publication Evidence And Closeout Limits
+
+- Release commit `c9a3dc3aba151901e4854b38b25ea8e3344b0e43`; CI `40810930373` 9/9 success. Annotated `v5.0.4` has object `301a0f75e61dce275ec8a834dece89fecab4e654` and peels to that commit; publish `40811493097` 4/4 success. Local commit/tag identity was checked again during documentation closeout.
+- npm version/latest both 5.0.4; shasum `6655b216e05d5ef62d532f7154879235e3d03b33`; integrity `sha512-+kgTFalx36YfDXd2Q/0yhhAkeJF61uxEhBtP+OqfnulNKEfcgHzIdQ/I4LKd/tt3wQ9Q0hvC0ly+x2gPgRV4Uw==`. Real npm install added 117 packages and CLI printed 5.0.4.
+- Stable GitHub release `v5.0.4` published 2026-10-29 with 9 assets. All three binary SHA256 and Ed25519 checks passed; exact hashes and sizes are in the release receipt.
+- Windows exe printed 5.0.4 and unpacked 167 assets under `C:/Users/easyi/AppData/Local/Temp/harnessed-504-accept-20261029-main/state/assets/5.0.4`. The directory exists; the acceptance root remains retained and was not cleaned up.
+- Website browser verification was not run. Public release evidence does not establish website propagation or resolve historical native gstack limitations.
+- This documentation-only closeout records supplied test/build/preflight/public acceptance evidence; it does not rerun those operations, alter implementation/tests/package metadata or recreate the tag. Closeout docs will be committed and pushed separately, without repeating publication or runtime acceptance.
+- Final document checks matched 26 exact receipt evidence markers and resolved all 30 relative Markdown links across the eight authorized files; STATE contains 98 lines and records `npm-5.0.4` completed with Phase 74 complete. All six plan tasks are closed.

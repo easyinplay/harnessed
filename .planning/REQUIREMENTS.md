@@ -1,8 +1,18 @@
 # REQUIREMENTS — harnessed
 
 > Regenerated 2026-06-05 from `.planning/intel/requirements.md` reconciliation; forward-scope reconciled v6.0→v10.0 at 2026-06-24 milestone-open.
-> Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm is 5.0.2.
-> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.2 Maintenance Release** is published and verified complete; the older requirement families below remain historical records.
+> Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm is 5.0.4.
+> Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.4 Maintenance Release** is published and verified complete; Phase 74 is complete. The older requirement families below remain historical records.
+
+## Shipped npm 5.0.4 Release
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| PATCH-504-01 | For explicit `--system --non-interactive --update-installed`, classify structured `update-unsupported` as `kept-existing` only after read-only active-host presence and runtime-health probes pass; fresh, shared-only, unhealthy and other failures remain fatal | Phase 74 findings/summary and 5.0.4 release receipt | Complete; focused handoff 161/161 and candidate full suite passed; published |
+| PATCH-504-02 | Materialize Claude Code npx shared-only skills into the active native root and honor `CLAUDE_CONFIG_DIR`; preserve provenance, dry-run no-write behavior, Codex roots and multi-pack indicators | Phase 74 findings/summary and 5.0.4 release receipt | Complete; regression evidence retained without weakening safety boundaries; published |
+| PATCH-504-03 | Record candidate validation, pre-publication release-preflight, exact commit/CI/annotated tag/publish identity, real npm/CLI acceptance and three-platform signed artifacts; synchronize completed release state without inventing website or cleanup evidence | Phase 74 task plan, summary and 5.0.4 release receipt | Published and verified complete; preflight 4/4 passed with result `release-ready`; npm version/latest 5.0.4, real npm/CLI, stable release 9 assets and three-platform SHA256/Ed25519 passed |
+
+Plan: [Phase 74](phases/74-5.0.4-maintenance-release/task_plan.md). Summary: [Phase 74 complete](phases/74-5.0.4-maintenance-release/SUMMARY.md). Receipt: [5.0.4](releases/5.0.4.md). Pre-publication `node dist/cli.mjs release-preflight` passed 4/4, result `release-ready`. Commit `c9a3dc3aba151901e4854b38b25ea8e3344b0e43`; CI `40810930373` 9/9; annotated `v5.0.4`; publish `40811493097` 4/4. Candidate full Vitest: 374 files, 4546 passed, 11 skipped, 1 todo; build/typecheck/lint/diff-check passed with 16 existing lint warnings. Initial parallel test/build contention caused 3 fixture failures; serial reruns passed. Website browser verification was not run; the acceptance root remains retained, not cleaned. Exact tag object, npm integrity/shasum, binary hashes/sizes and retained path are in the receipt. Closeout docs will be committed and pushed separately, without recreating the tag, repeating publication or rerunning runtime acceptance.
 
 ## Shipped npm 5.0.2 Release
 
