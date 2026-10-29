@@ -10,7 +10,7 @@ progress:
   completed_phases: 0
   total_plans: 1
   completed_plans: 0
-  percent: 67
+  percent: 83
 ---
 
 # STATE — harnessed
@@ -29,7 +29,7 @@ progress:
 
 ## Current Position
 
-- **npm-5.0.5 candidate ready (2026-10-29; in progress, not published)**: Phase 75 implementation/validation/review complete; Tasks 1-4 complete, Task 5 in progress (release metadata/review complete; commit/push pending), Task 6 pending (tag/publish not authorized). Supplied final validation: focused 7 files/204 tests; full Vitest 375 files/4561 passed/11 skipped/1 todo; build/typecheck/docs 30/schema/lint (exit 0, 16 existing warnings)/diff-check/npm pack dry-run passed. Two final review tracks found no blocking issues; non-blocking duplicate-qualified-ID caveat is recorded in `phases/75-5.0.5-plugin-retention-probe/findings.md`. Plan: `phases/75-5.0.5-plugin-retention-probe/task_plan.md`. Latest public npm remains 5.0.4; no 5.0.5 CI, tag or publication completion claimed.
+- **npm-5.0.5 candidate pushed-main (2026-10-29; CI pending, not published)**: Phase 75 implementation/validation/review complete; Tasks 1-5 complete, Task 6 pending (tag/publish not authorized). Implementation/version/planning commit `33965c97e2c4a51892008d22fc351e583627c09b` pushed to `origin/main`; CI pending observation. Supplied final validation: focused 7 files/204 tests; full Vitest 375 files/4561 passed/11 skipped/1 todo; build/typecheck/docs 30/schema/lint (exit 0, 16 existing warnings)/diff-check/npm pack dry-run passed. Two final review tracks found no blocking issues; non-blocking duplicate-qualified-ID caveat is recorded in `phases/75-5.0.5-plugin-retention-probe/findings.md`. Plan: `phases/75-5.0.5-plugin-retention-probe/task_plan.md`. Latest public npm remains 5.0.4; no 5.0.5 CI, tag, npm or release completion claimed.
 - **npm5.0.4 closed (2026-10-29; published and verified complete)**: Phase 74 complete (1/1 phase, 1/1 plan). Focused handoff 161/161, candidate focused 3/3, full Vitest 374 files/4546 passed/11 skipped/1 todo, build/typecheck/lint/diff-check passed (16 existing lint warnings). Pre-publication `node dist/cli.mjs release-preflight` passed 4/4, result `release-ready` (details in receipt). Initial parallel test/build contention caused 3 fixture failures; serial reruns passed. Summary: `phases/74-5.0.4-maintenance-release/SUMMARY.md`; exact tag/hash/integrity evidence: `releases/5.0.4.md`. Website browser not run; acceptance root `C:/Users/easyi/AppData/Local/Temp/harnessed-504-accept-20261029-main` retained, not cleaned. Closeout docs will be committed and pushed separately, without recreating the tag, repeating publication or rerunning runtime acceptance.
 
 - **5.x maintenance delivered (2026-10-25)**: Phase71 fixes package dry-run safety, simplifies11READMEs/removes the AI guide, untracks localClaude files, and updates Bun5.x website guidance. Local4468tests/docs30/site101 and real production4/4 pass; final pushed-source CI is checked separately. Summary: `phases/71-bun5-follow-through/SUMMARY.md`. These CLI corrections shipped in5.0.1; historical native gstack and website-check limits remain in that receipt.
