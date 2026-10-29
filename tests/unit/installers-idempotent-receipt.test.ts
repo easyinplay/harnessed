@@ -25,7 +25,8 @@ const runtimeVerifyMock = vi.hoisted(() =>
 vi.mock('../../src/installers/lib/skillRuntime.js', () => ({
   verifySkillRuntime: runtimeVerifyMock,
 }))
-vi.mock('../../src/installers/lib/idempotent.js', () => ({
+vi.mock('../../src/installers/lib/idempotent.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/installers/lib/idempotent.js')>()),
   isAlreadyInstalled: vi.fn(async () => true),
   extractSkillName: vi.fn(() => 'ctx7'),
   detectSkillPresence: vi.fn(async () => true),
@@ -39,6 +40,7 @@ vi.mock('../../src/installers/lib/spawn.js', async (importOriginal) => {
   }
 })
 vi.mock('node:fs/promises', () => ({
+  access: vi.fn(async () => undefined),
   mkdir: vi.fn(async () => undefined),
   readFile: vi.fn(async () => {
     const e = new Error('ENOENT') as NodeJS.ErrnoException

@@ -9,6 +9,7 @@
 // v3.6.1 — removed renderDeprecationBlock re-export + ScanResult.deprecated field.
 
 import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { runInstall } from '../../installers/index.js'
 import {
   effectiveInstallMethod,
@@ -16,7 +17,7 @@ import {
   type ResolvedComponentPlan,
   resolveComponentPlan,
 } from '../../installers/lib/componentPlan.js'
-import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
+import { isAlreadyInstalled, npxActiveTargetNames } from '../../installers/lib/idempotent.js'
 import type { InstallContext, InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
 import {
@@ -343,7 +344,13 @@ export async function makeIdempotentProbe(
   manifestPaths: string[],
   context: HostInstallContext = captureHostInstallContext(),
 ): Promise<(name: string) => Promise<boolean>> {
-  const byName = new Map<string, { manifest: Manifest; hostContext: HostInstallContext }>()
+  const byName = new Map<
+    string,
+    {
+      manifest: Manifest
+      hostContext: HostInstallContext
+    }
+  >()
   for (const path of manifestPaths) {
     try {
       const yamlSrc = await readFile(path, 'utf8')
@@ -365,6 +372,30 @@ export async function makeIdempotentProbe(
     const selected = byName.get(name)
     if (!selected) return false
     const { manifest, hostContext } = selected
+    if (manifest.spec.install.method === 'npx-skill-installer') {
+      const install = manifest.spec.install
+      const targets = npxActiveTargetNames(
+        install.cmd,
+        manifest.metadata.name,
+        install.installs_skills,
+      )
+      const roots =
+        hostContext.hostId === 'claude'
+          ? [join(hostContext.nativeHome, 'skills')]
+          : [hostContext.platform.skillsDir, join(hostContext.nativeHome, 'skills')]
+      let activeSkillReadable = false
+      for (const root of roots) {
+        for (const target of targets) {
+          try {
+            await readFile(join(root, target, 'SKILL.md'), 'utf8')
+            activeSkillReadable = true
+            break
+          } catch {}
+        }
+        if (activeSkillReadable) break
+      }
+      if (!activeSkillReadable) return false
+    }
     const opts: InstallOpts = {
       apply: false,
       dryRun: false,

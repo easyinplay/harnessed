@@ -14,6 +14,7 @@
 // Mocks: child_process / fs/promises / @clack/prompts / node:os (homedir).
 
 import { EventEmitter } from 'node:events'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
@@ -30,6 +31,8 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(async () => undefined),
   rename: vi.fn(async () => undefined),
   access: (p: string) => accessMock(p),
+  lstat: vi.fn(),
+  stat: vi.fn(),
 }))
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),
@@ -43,9 +46,11 @@ vi.mock('node:os', async () => {
 })
 
 import { spawn } from 'node:child_process'
-import { writeFile } from 'node:fs/promises'
+import { lstat, readFile, stat, writeFile } from 'node:fs/promises'
 import type { InstallContext, InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { installNpxSkillInstaller } from '../../src/installers/npxSkillInstaller.js'
+import { createHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import { claudeDescriptor, codexDescriptor } from '../../src/platform/platform.js'
 
 const spawnMock = vi.mocked(spawn)
 
@@ -142,6 +147,13 @@ function baseManifest(): Manifest {
     },
   } as Manifest
 }
+function setInstalledSkills(manifest: Manifest, skills: string[]): void {
+  const install = manifest.spec.install
+  if (install.method !== 'npx-skill-installer') {
+    throw new Error(`expected npx-skill-installer, got ${install.method}`)
+  }
+  install.installs_skills = skills
+}
 function ctx(over?: Partial<InstallOpts>, modify?: (m: Manifest) => void): InstallContext {
   const manifest = baseManifest()
   modify?.(manifest)
@@ -152,12 +164,20 @@ describe('installNpxSkillInstaller', () => {
   beforeEach(() => {
     spawnMock.mockReset()
     vi.mocked(writeFile).mockClear()
+    vi.mocked(readFile)
+      .mockReset()
+      .mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+    vi.mocked(stat)
+      .mockReset()
+      .mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     accessMock.mockReset()
     // Default: SKILL.md exists (happy path); individual tests override.
     accessMock.mockResolvedValue(undefined)
   })
 
   it('an existing skill must pass verify without automatically invoking npx to repair it', async () => {
+    vi.mocked(stat).mockResolvedValue({ isFile: () => true } as Awaited<ReturnType<typeof stat>>)
+    vi.mocked(readFile).mockResolvedValue('# skill')
     spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 1, stderr: 'runtime missing' }]))
 
     const result = await installNpxSkillInstaller(ctx({ updateInstalled: false, quiet: true }))
@@ -339,6 +359,372 @@ describe('installNpxSkillInstaller', () => {
     } finally {
       s.restore()
     }
+  })
+})
+
+describe('installNpxSkillInstaller — active target materialization', () => {
+  const userHome = '/tmp/fake-home'
+  const sharedSkill = join(userHome, '.agents', 'skills', 'webapp-testing')
+
+  function webappContext(nativeHome = join(userHome, '.claude')): InstallContext {
+    const context = ctx({ updateInstalled: false, quiet: true }, (manifest) => {
+      manifest.metadata.name = 'webapp-testing'
+      manifest.spec.install.cmd =
+        'npx --yes skills@latest add anthropics/skills --skill webapp-testing --copy --global -y'
+      setInstalledSkills(manifest, ['webapp-testing'])
+    })
+    context.hostContext = createHostInstallContext(claudeDescriptor(userHome), {
+      os: process.platform,
+      userHome,
+      nativeHome,
+    })
+    return context
+  }
+
+  function codexContext(nativeHome = join(userHome, '.codex')): InstallContext {
+    const context = webappContext()
+    context.hostContext = createHostInstallContext(codexDescriptor(userHome), {
+      os: process.platform,
+      userHome,
+      nativeHome,
+    })
+    return context
+  }
+
+  function missing(): NodeJS.ErrnoException {
+    return Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+  }
+
+  beforeEach(() => {
+    spawnMock.mockReset()
+    vi.mocked(writeFile).mockClear()
+    vi.mocked(lstat).mockReset()
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === sharedSkill) return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    accessMock.mockReset()
+  })
+
+  it.each([
+    '.claude',
+    'custom claude home',
+  ])('materializes a shared-only skill into the active %s root', async (directory) => {
+    const nativeHome = join(userHome, directory)
+    const activeSkill = join(nativeHome, 'skills', 'webapp-testing', 'SKILL.md')
+    let materialized = false
+    accessMock.mockImplementation(async (path) => {
+      if (path === join(sharedSkill, 'SKILL.md') || (path === activeSkill && materialized)) return
+      throw missing()
+    })
+    spawnMock.mockImplementation((_command, args) => {
+      if (args?.join(' ').includes('skills@latest add')) materialized = true
+      return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
+    })
+
+    const result = await installNpxSkillInstaller(webappContext(nativeHome))
+
+    expect(result).toMatchObject({ ok: true, appliedFiles: [activeSkill] })
+    expect(materialized).toBe(true)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).toContain('--agent claude-code')
+    expect(
+      vi.mocked(writeFile).mock.calls.some(([path]) => String(path).startsWith(sharedSkill)),
+    ).toBe(false)
+  })
+
+  it('keeps an existing active target idempotent during a normal install', async () => {
+    vi.mocked(lstat).mockResolvedValue({} as Awaited<ReturnType<typeof lstat>>)
+    accessMock.mockResolvedValue(undefined)
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }]))
+
+    const context = webappContext()
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({ ok: true, alreadyInstalled: true })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('skills@latest add')
+  })
+
+  it('keeps dryRun on the preview path without verify or state receipt writes', async () => {
+    vi.mocked(lstat).mockResolvedValue({} as Awaited<ReturnType<typeof lstat>>)
+    accessMock.mockResolvedValue(undefined)
+    const context = webappContext()
+    context.opts.dryRun = true
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toEqual({ aborted: true, reason: 'user-cancel' })
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('rejects an active target directory that exists without SKILL.md', async () => {
+    const activeSkillDir = join(userHome, '.claude', 'skills', 'webapp-testing')
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === activeSkillDir || String(path) === sharedSkill)
+        return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    accessMock.mockImplementation(async (path) => {
+      if (path === join(sharedSkill, 'SKILL.md')) return
+      throw missing()
+    })
+
+    const result = await installNpxSkillInstaller(webappContext())
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'preflight',
+      error: { keyword: 'update-unsupported' },
+    })
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'shared',
+    'legacy',
+  ] as const)('recognizes an existing Codex active target in the %s root', async (rootKind) => {
+    const nativeHome = join(userHome, 'custom codex home')
+    const activeRoot =
+      rootKind === 'shared' ? join(userHome, '.agents', 'skills') : join(nativeHome, 'skills')
+    const activeSkillDir = join(activeRoot, 'webapp-testing')
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === activeSkillDir) return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    accessMock.mockImplementation(async (path) => {
+      if (path === join(activeSkillDir, 'SKILL.md')) return
+      throw missing()
+    })
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }]))
+
+    const result = await installNpxSkillInstaller(codexContext(nativeHome))
+
+    expect(result).toMatchObject({ ok: true, alreadyInstalled: true })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('skills@latest add')
+  })
+
+  it.each([
+    'shared',
+    'legacy',
+  ] as const)('accepts Codex postinstall materialization in the %s root', async (rootKind) => {
+    const nativeHome = join(userHome, 'custom codex home')
+    const activeRoot =
+      rootKind === 'shared' ? join(userHome, '.agents', 'skills') : join(nativeHome, 'skills')
+    const activeSkill = join(activeRoot, 'webapp-testing', 'SKILL.md')
+    let materialized = false
+    vi.mocked(lstat).mockRejectedValue(missing())
+    accessMock.mockImplementation(async (path) => {
+      if (materialized && path === activeSkill) return
+      throw missing()
+    })
+    spawnMock.mockImplementation((_command, args) => {
+      if (args?.join(' ').includes('skills@latest add')) materialized = true
+      return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
+    })
+
+    const result = await installNpxSkillInstaller(codexContext(nativeHome))
+
+    expect(result).toMatchObject({ ok: true })
+    expect(result).not.toHaveProperty('alreadyInstalled')
+    expect(materialized).toBe(true)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    'tdd',
+    'diagnosing-bugs',
+  ])('verifies a multi-skill pack when indicator %s is materialized in the active root', async (skillName) => {
+    const context = webappContext()
+    context.manifest = baseManifest()
+    setInstalledSkills(context.manifest, ['research', 'tdd', 'diagnosing-bugs'])
+    const activeSkill = join(userHome, '.claude', 'skills', skillName, 'SKILL.md')
+    let materialized = false
+    accessMock.mockImplementation(async (path) => {
+      if (materialized && path === activeSkill) return
+      throw missing()
+    })
+    spawnMock.mockImplementation((_command, args) => {
+      if (args?.join(' ').includes('skills@1.5.7 add')) materialized = true
+      return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
+    })
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({ ok: true })
+    expect(result).not.toHaveProperty('alreadyInstalled')
+    expect(materialized).toBe(true)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    'tdd',
+    'diagnosing-bugs',
+  ])('recognizes pack indicator %s without requiring the repo segment', async (skillName) => {
+    const context = webappContext()
+    context.manifest = baseManifest()
+    setInstalledSkills(context.manifest, ['research', 'tdd', 'diagnosing-bugs'])
+    accessMock.mockImplementation(async (path) => {
+      if (path === join(userHome, '.claude', 'skills', skillName, 'SKILL.md')) return
+      throw missing()
+    })
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === join(userHome, '.claude', 'skills', skillName))
+        return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }]))
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({ ok: true, alreadyInstalled: true })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('skills@1.5.7 add')
+  })
+
+  it('materializes when only colliding research is active and shared tdd exists', async () => {
+    const context = webappContext()
+    context.manifest = baseManifest()
+    setInstalledSkills(context.manifest, ['research', 'tdd', 'diagnosing-bugs'])
+    const activeRoot = join(userHome, '.claude', 'skills')
+    const sharedRoot = join(userHome, '.agents', 'skills')
+    let materialized = false
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === join(activeRoot, 'research') || String(path) === join(sharedRoot, 'tdd'))
+        return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    accessMock.mockImplementation(async (path) => {
+      if (
+        path === join(activeRoot, 'research', 'SKILL.md') ||
+        path === join(sharedRoot, 'tdd', 'SKILL.md') ||
+        (materialized && path === join(activeRoot, 'tdd', 'SKILL.md'))
+      )
+        return
+      throw missing()
+    })
+    spawnMock.mockImplementation((_command, args) => {
+      if (args?.join(' ').includes('skills@1.5.7 add')) materialized = true
+      return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
+    })
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({ ok: true })
+    expect(result).not.toHaveProperty('alreadyInstalled')
+    expect(materialized).toBe(true)
+    expect(spawnMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('materializes the explicit selected skill even when another declared active target exists', async () => {
+    const context = webappContext()
+    setInstalledSkills(context.manifest, ['other-skill', 'webapp-testing'])
+    const activeRoot = join(userHome, '.claude', 'skills')
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === join(activeRoot, 'other-skill'))
+        return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    let materialized = false
+    accessMock.mockImplementation(async (path) => {
+      if (
+        path === join(activeRoot, 'other-skill', 'SKILL.md') ||
+        (materialized && path === join(activeRoot, 'webapp-testing', 'SKILL.md'))
+      )
+        return
+      throw missing()
+    })
+    spawnMock.mockImplementation((_command, args) => {
+      if (args?.join(' ').includes('skills@latest add')) materialized = true
+      return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
+    })
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({ ok: true })
+    expect(result).not.toHaveProperty('alreadyInstalled')
+    expect(materialized).toBe(true)
+  })
+
+  it('does not verify the selected skill using another declared active SKILL.md', async () => {
+    const context = webappContext()
+    setInstalledSkills(context.manifest, ['other-skill', 'webapp-testing'])
+    accessMock.mockImplementation(async (path) => {
+      if (path === join(userHome, '.claude', 'skills', 'other-skill', 'SKILL.md')) return
+      throw missing()
+    })
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }]))
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'verify',
+      error: { keyword: 'verify-failed' },
+    })
+    expect(spawnMock).toHaveBeenCalledTimes(1)
+  })
+
+  it.each([
+    'shared',
+    'active',
+  ])('rejects updateInstalled with an existing %s target', async (target) => {
+    if (target === 'active')
+      vi.mocked(lstat).mockResolvedValue({} as Awaited<ReturnType<typeof lstat>>)
+    const context = webappContext()
+    context.opts.updateInstalled = true
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'preflight',
+      error: { keyword: 'update-unsupported' },
+    })
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('rejects updateInstalled when only an unselected declared shared target exists', async () => {
+    const context = webappContext()
+    context.opts.updateInstalled = true
+    setInstalledSkills(context.manifest, ['other-skill', 'webapp-testing'])
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === join(userHome, '.agents', 'skills', 'other-skill'))
+        return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    accessMock.mockRejectedValue(missing())
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'preflight',
+      error: { keyword: 'update-unsupported' },
+    })
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('rejects a successful spawn that leaves only the shared target present', async () => {
+    accessMock.mockImplementation(async (path) => {
+      if (path === join(sharedSkill, 'SKILL.md')) return
+      throw missing()
+    })
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }]))
+
+    const result = await installNpxSkillInstaller(webappContext())
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'verify',
+      error: { keyword: 'verify-failed' },
+    })
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).toContain('skills@latest add')
+    expect(spawnMock).toHaveBeenCalledTimes(1)
   })
 })
 

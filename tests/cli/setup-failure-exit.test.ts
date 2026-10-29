@@ -222,6 +222,184 @@ describe('setup base-install exit status through registerSetup', () => {
   })
 })
 
+describe('setup explicit force-update retained installs through registerSetup', () => {
+  const args = ['--system', '--non-interactive', '--update-installed']
+  const streams = [process.stdin, process.stdout]
+  const ttyDescriptors = streams.map((stream) => Object.getOwnPropertyDescriptor(stream, 'isTTY'))
+  const reason = 'opaque provenance refusal: external install has no update metadata'
+
+  beforeEach(() => {
+    for (const stream of streams) {
+      Object.defineProperty(stream, 'isTTY', { value: true, configurable: true })
+    }
+    vi.mocked(runInstall).mockResolvedValue({
+      ok: false,
+      phase: 'preflight',
+      error: { message: reason, keyword: 'update-unsupported' },
+    } as never)
+  })
+
+  afterEach(() => {
+    streams.forEach((stream, index) => {
+      const descriptor = ttyDescriptors[index]
+      if (descriptor) Object.defineProperty(stream, 'isTTY', descriptor)
+      else Reflect.deleteProperty(stream, 'isTTY')
+    })
+  })
+
+  it.each([
+    true,
+    false,
+  ])('keeps a healthy retained install before the first summary with TTY=%s', async (tty) => {
+    for (const stream of streams) {
+      Object.defineProperty(stream, 'isTTY', { value: tty, configurable: true })
+    }
+    vi.mocked(isAlreadyInstalled).mockResolvedValue(true)
+
+    await expect(runSetup(args)).rejects.toMatchObject({ code: 0 })
+
+    const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
+    expect(result.failed).toEqual([])
+    expect(result.keptExisting).toEqual([{ name: 'gstack', reason }])
+    expect(runStepBInstall).toHaveBeenCalledExactlyOnceWith(
+      expect.anything(),
+      expect.objectContaining({ updateInstalled: true, system: true }),
+    )
+    expect(runInstall).toHaveBeenCalledExactlyOnceWith(
+      expect.anything(),
+      expect.objectContaining({ updateInstalled: true, system: true, nonInteractive: true }),
+      expect.objectContaining({ hostId: 'codex' }),
+    )
+    expect(isAlreadyInstalled).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ hostContext: expect.objectContaining({ hostId: 'codex' }) }),
+    )
+    expect(verifyInstalled).toHaveBeenCalledOnce()
+    expect(confirm).not.toHaveBeenCalled()
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('0 failed'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('1 failed'))
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('1 base manifests configured'))
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining(reason))
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+    const summaryIndex = vi
+      .mocked(console.log)
+      .mock.calls.findIndex(([message]) => String(message).includes('0 failed'))
+    expect(vi.mocked(verifyInstalled).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(console.log).mock.invocationCallOrder[summaryIndex] ?? 0,
+    )
+  })
+
+  it.each([
+    'presence-false',
+    'presence-throw',
+    'runtime-false',
+    'runtime-throw',
+  ] as const)('keeps the provenance failure fatal when the retained probe is %s', async (outcome) => {
+    vi.mocked(isAlreadyInstalled).mockImplementation(async () => {
+      if (outcome === 'presence-throw') throw new Error('presence unavailable')
+      return outcome !== 'presence-false'
+    })
+    if (outcome === 'runtime-false') {
+      vi.mocked(verifyInstalled).mockResolvedValue({
+        ok: false,
+        phase: 'verify',
+        error: { message: 'retained runtime broken' },
+      } as never)
+    } else if (outcome === 'runtime-throw') {
+      vi.mocked(verifyInstalled).mockRejectedValue(new Error('runtime unavailable'))
+    }
+
+    await expect(runSetup(args)).rejects.toMatchObject({ code: 1 })
+
+    const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
+    expect(result.failed).toEqual([`gstack: ${reason}`])
+    expect(result.keptExisting ?? []).toEqual([])
+    expect(isAlreadyInstalled).toHaveBeenCalledOnce()
+    expect(verifyInstalled).toHaveBeenCalledTimes(outcome.startsWith('runtime') ? 1 : 0)
+    expect(runStepBInstall).toHaveBeenCalledTimes(1)
+    expect(runInstall).toHaveBeenCalledTimes(1)
+    expect(confirm).not.toHaveBeenCalled()
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+  })
+
+  it('keeps only healthy structured refusals in a mixed batch and leaves genuine failures fatal', async () => {
+    vi.mocked(readdir).mockImplementation(async (path, options?: unknown) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (options && typeof options === 'object' && 'withFileTypes' in options) {
+        return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+          name,
+          isDirectory: () => false,
+        })) as never
+      }
+      return (
+        normalized.endsWith('/workflows')
+          ? ['demo']
+          : normalized.endsWith('/skill-packs')
+            ? ['gstack.yaml', 'broken.yaml', 'fresh.yaml', 'unstructured.yaml', 'updated.yaml']
+            : []
+      ) as never
+    })
+    vi.spyOn(manifestValidation, 'validateManifestFile').mockImplementation(
+      (_source, path) =>
+        ({
+          ok: true,
+          manifest: {
+            metadata: { name: String(path).split(/[\\/]/).at(-1)?.replace('.yaml', '') },
+            spec: { install: { method: 'git-clone-with-setup' } },
+          },
+        }) as never,
+    )
+    vi.mocked(runInstall).mockImplementation(async (manifest) => {
+      const name = manifest.metadata.name
+      if (name === 'updated') return { ok: true } as never
+      return {
+        ok: false,
+        phase: name === 'fresh' ? 'spawn' : 'preflight',
+        error: {
+          message:
+            name === 'fresh' ? 'fresh install failed' : 'update-unsupported: provenance refusal',
+          ...(name === 'gstack' || name === 'broken'
+            ? { keyword: 'update-unsupported' }
+            : name === 'fresh'
+              ? { keyword: 'spawn-failed' }
+              : {}),
+        },
+      } as never
+    })
+    vi.mocked(isAlreadyInstalled).mockResolvedValue(true)
+    vi.mocked(verifyInstalled).mockImplementation(async (context) =>
+      context.manifest.metadata.name === 'broken'
+        ? ({ ok: false, phase: 'verify', error: { message: 'runtime broken' } } as never)
+        : null,
+    )
+
+    await expect(runSetup(args)).rejects.toMatchObject({ code: 1 })
+
+    const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
+    expect(result.keptExisting).toEqual([
+      { name: 'gstack', reason: 'update-unsupported: provenance refusal' },
+    ])
+    expect(result.failed).toEqual([
+      'broken: update-unsupported: provenance refusal',
+      'fresh: fresh install failed',
+      'unstructured: update-unsupported: provenance refusal',
+    ])
+    expect(result.installed).toEqual(['updated'])
+    expect(
+      vi.mocked(isAlreadyInstalled).mock.calls.map(([context]) => context.manifest.metadata.name),
+    ).toEqual(['broken', 'gstack'])
+    expect(verifyInstalled).toHaveBeenCalledTimes(2)
+    expect(runStepBInstall).toHaveBeenCalledTimes(1)
+    expect(confirm).not.toHaveBeenCalled()
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('3 failed'))
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /setup incomplete.*2 base component\(s\) configured.*3 component\(s\) failed/,
+      ),
+    )
+  })
+})
+
 describe('setup optional outcomes through registerSetup', () => {
   const streams = [process.stdin, process.stdout]
   const ttyDescriptors = streams.map((stream) => Object.getOwnPropertyDescriptor(stream, 'isTTY'))

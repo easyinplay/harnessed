@@ -37,9 +37,10 @@ spec:
       const platform = process.env.HARNESSED_PLATFORM;
       const codex = platform ? platform === "codex" : Boolean(process.env.CODEX_HOME || process.env.CODEX_SESSION_ID);
       const codexHome = path.resolve(process.env.CODEX_HOME || path.join(home, ".codex"));
+      const claudeHome = path.resolve(process.env.CLAUDE_CONFIG_DIR || path.join(home, ".claude"));
       const roots = codex
         ? [path.join(home, ".agents", "skills", "webapp-testing"), path.join(codexHome, "skills", "webapp-testing")]
-        : [".agents", ".codex", ".claude"].map(dir => path.join(home, dir, "skills", "webapp-testing"));
+        : [path.join(claudeHome, "skills", "webapp-testing")];
       const root = roots.find(dir => fs.existsSync(path.join(dir, "SKILL.md")));
       if (!root) throw new Error("webapp-testing SKILL.md is missing");
       for (const resource of ["SKILL.md", "scripts/with_server.py"]) {

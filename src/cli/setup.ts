@@ -395,6 +395,25 @@ export function registerSetup(program: Command): void {
         onProgress: progress.onProgress,
       })
       progress.done()
+      if (forceFirstPass && b.failed.length > 0) {
+        const probe = await makeIdempotentProbe(manifestPaths, setupContext)
+        const failed: string[] = []
+        for (const entry of b.failed) {
+          const match = entry.match(/^([^:]+):\s*(.*)$/s)
+          const name = (match?.[1] ?? entry).trim()
+          let retained = false
+          if (b.failureKeywords?.[name] === 'update-unsupported') {
+            try {
+              retained = await probe(name)
+            } catch {}
+          }
+          if (retained) {
+            b.keptExisting ??= []
+            b.keptExisting.push({ name, reason: match?.[2]?.trim() ?? '' })
+          } else failed.push(entry)
+        }
+        b.failed = failed
+      }
       const stepBMs = (b.elapsedMs / 1000).toFixed(1)
       console.log(
         t('setup.step_b_complete', {

@@ -55,6 +55,7 @@ function verify(root: string, env: NodeJS.ProcessEnv = {}) {
       USERPROFILE: root,
       HARNESSED_PLATFORM: 'claude',
       CODEX_HOME: '',
+      CLAUDE_CONFIG_DIR: '',
       ...env,
     },
     encoding: 'utf8',
@@ -108,17 +109,17 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
   })
 
   it.each([
-    '.agents/skills',
-    '.codex/skills',
-    '.claude/skills',
-  ])('reads same-root resources without executing the helper under %s', (directory) => {
+    ['claude', '.claude/skills'],
+    ['codex', '.agents/skills'],
+    ['codex', '.codex/skills'],
+  ])('reads same-root resources for %s under %s without executing the helper', (platform, directory) => {
     const root = home()
     const skill = join(root, directory, 'webapp-testing')
     put(join(skill, 'SKILL.md'), '# Webapp testing\n')
     put(join(skill, 'scripts/with_server.py'), helper)
     put(join(root, 'package.json'), '{"private":true}\n')
     const before = snapshot(root)
-    const result = verify(root)
+    const result = verify(root, { HARNESSED_PLATFORM: platform })
     expect(result.status, result.stderr).toBe(0)
     expect(result.stdout).toBe('')
     expect(snapshot(root)).toEqual(before)
@@ -130,6 +131,41 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
     put(join(skill, 'SKILL.md'), '# Claude-only skill\n')
     put(join(skill, 'scripts/with_server.py'), helper)
     const result = verify(root, { HARNESSED_PLATFORM: 'codex' })
+    expect(result.status, result.stdout).not.toBe(0)
+    expect(result.stderr).toContain('webapp-testing SKILL.md is missing')
+  })
+
+  it('does not accept a shared-only payload for active Claude', () => {
+    const root = home()
+    const skill = join(root, '.agents/skills/webapp-testing')
+    put(join(skill, 'SKILL.md'), '# Shared-only skill\n')
+    put(join(skill, 'scripts/with_server.py'), helper)
+    const result = verify(root, { CLAUDE_CONFIG_DIR: '' })
+    expect(result.status, result.stdout).not.toBe(0)
+    expect(result.stderr).toContain('webapp-testing SKILL.md is missing')
+  })
+
+  it('accepts the active CLAUDE_CONFIG_DIR without modifying shared resources', () => {
+    const root = home()
+    const claudeHome = join(root, 'custom claude home')
+    put(join(claudeHome, 'skills/webapp-testing/SKILL.md'), '# Active skill\n')
+    put(join(claudeHome, 'skills/webapp-testing/scripts/with_server.py'), helper)
+    put(join(root, '.agents/skills/webapp-testing/SKILL.md'), '# Shared skill\n')
+    const before = snapshot(root)
+
+    const result = verify(root, { CLAUDE_CONFIG_DIR: claudeHome })
+
+    expect(result.status, result.stderr).toBe(0)
+    expect(snapshot(root)).toEqual(before)
+  })
+
+  it('does not fall back to the default Claude root when CLAUDE_CONFIG_DIR is active', () => {
+    const root = home()
+    put(join(root, '.claude/skills/webapp-testing/SKILL.md'), '# Inactive skill\n')
+    put(join(root, '.claude/skills/webapp-testing/scripts/with_server.py'), helper)
+
+    const result = verify(root, { CLAUDE_CONFIG_DIR: join(root, 'custom claude home') })
+
     expect(result.status, result.stdout).not.toBe(0)
     expect(result.stderr).toContain('webapp-testing SKILL.md is missing')
   })
@@ -152,14 +188,14 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
 
   it('rejects resources split across different roots', () => {
     const root = home()
-    put(join(root, '.agents/skills/webapp-testing/SKILL.md'), '# Skill\n')
+    put(join(root, '.claude/skills/webapp-testing/SKILL.md'), '# Skill\n')
     put(join(root, '.codex/skills/webapp-testing/scripts/with_server.py'), helper)
     expect(verify(root).status).not.toBe(0)
   })
 
   it.each(['SKILL.md', 'scripts/with_server.py'])('rejects a missing or empty %s', (resource) => {
     const root = home()
-    const skill = join(root, '.agents/skills/webapp-testing')
+    const skill = join(root, '.claude/skills/webapp-testing')
     put(join(skill, 'SKILL.md'), '# Skill\n')
     put(join(skill, 'scripts/with_server.py'), helper)
     rmSync(join(skill, resource))
@@ -170,7 +206,7 @@ describe('Anthropic webapp-testing skill runtime contract', () => {
 
   it('does not execute the helper during setup verification', () => {
     const root = home()
-    const skill = join(root, '.agents/skills/webapp-testing')
+    const skill = join(root, '.claude/skills/webapp-testing')
     put(join(skill, 'SKILL.md'), '# Skill\n')
     put(join(skill, 'scripts/with_server.py'), 'raise SystemExit(37)\n')
     const before = snapshot(root)

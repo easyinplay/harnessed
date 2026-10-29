@@ -33,14 +33,14 @@
 // — direct fs is faster, doesn't depend on /bin/test or cmd.exe behavior,
 // and produces a clean Promise without process plumbing.
 
-import { lstat } from 'node:fs/promises'
+import { access, lstat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { detectPlatform, getSkillsDir } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
-import { detectSkillPresence, extractSkillName, isAlreadyInstalled } from './lib/idempotent.js'
+import { extractSkillName, isAlreadyInstalled, npxActiveTargetNames } from './lib/idempotent.js'
 import {
   auditPostInstall,
   snapshotSkillNames,
@@ -76,6 +76,42 @@ function unprovenSkillTarget(ctx: InstallContext): InstallResult {
         'Manage the existing skills with the upstream skills CLI. For a fresh update request, select one explicit --skill with an absent target; a presence receipt does not authorize replacement.',
     },
   }
+}
+
+async function activeSkillPresent(
+  skillsDirs: readonly string[],
+  names: readonly string[],
+): Promise<boolean> {
+  for (const skillsDir of skillsDirs) {
+    for (const name of names) {
+      if (
+        await access(join(skillsDir, name, 'SKILL.md')).then(
+          () => true,
+          () => false,
+        )
+      )
+        return true
+    }
+  }
+  return false
+}
+
+async function activeTargetDirectoryExists(
+  skillsDirs: readonly string[],
+  names: readonly string[],
+): Promise<boolean> {
+  for (const skillsDir of skillsDirs) {
+    for (const name of names) {
+      if (
+        await lstat(join(skillsDir, name)).then(
+          () => true,
+          (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
+        )
+      )
+        return true
+    }
+  }
+  return false
 }
 
 export const installNpxSkillInstaller: Installer = async (ctx) => {
@@ -124,13 +160,37 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   }
 
   const skillSegment = extractSkillName(install.cmd, ctx.manifest.metadata.name)
-  let existingTarget = false
+  const selections = [
+    ...install.cmd.matchAll(
+      /(?:^|\s)(?:--skill|-s)\s+['"]?([a-zA-Z0-9][a-zA-Z0-9._-]*)['"]?(?=\s+-|\s*$)/g,
+    ),
+  ]
+  const selectionFlags = [...install.cmd.matchAll(/(?:^|\s)(?:--skill|-s)(?:\s|=)/g)]
+  const selectedSkill =
+    selections.length === 1 && selectionFlags.length === 1 ? selections[0]?.[1] : undefined
+  const activeTargetNames = npxActiveTargetNames(
+    install.cmd,
+    ctx.manifest.metadata.name,
+    install.installs_skills,
+  )
+  const activeSkillsDirs = ctx.hostContext
+    ? [
+        ...new Set(
+          ctx.hostContext.hostId === 'codex'
+            ? [ctx.hostContext.platform.skillsDir, join(ctx.hostContext.nativeHome, 'skills')]
+            : [join(ctx.hostContext.nativeHome, 'skills')],
+        ),
+      ]
+    : [getSkillsDir()]
+  const primaryActiveSkillsDir = activeSkillsDirs[0] ?? getSkillsDir()
+  let anyExistingTarget = false
   if (ctx.hostContext) {
     const names = [...new Set([skillSegment, ...(install.installs_skills ?? [])])]
     if (names.some((name) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)))
       return unprovenSkillTarget(ctx)
     const roots = [
       ...new Set([
+        ...activeSkillsDirs,
         ctx.hostContext.platform.skillsDir,
         join(ctx.hostContext.nativeHome, 'skills'),
         join(ctx.hostContext.userHome, '.agents', 'skills'),
@@ -143,27 +203,25 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
             () => true,
             (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
           )
-        )
-          existingTarget = true
+        ) {
+          anyExistingTarget = true
+        }
       }
     }
-    const selections = [
-      ...install.cmd.matchAll(
-        /(?:^|\s)(?:--skill|-s)\s+['"]?([a-zA-Z0-9][a-zA-Z0-9._-]*)['"]?(?=\s+-|\s*$)/g,
-      ),
-    ]
-    const selectionFlags = [...install.cmd.matchAll(/(?:^|\s)(?:--skill|-s)(?:\s|=)/g)]
-    const singleSkill =
-      selections.length === 1 && selectionFlags.length === 1 && !/[;&|<>`$\r\n]/.test(install.cmd)
+    const singleSkill = selectedSkill !== undefined && !/[;&|<>`$\r\n]/.test(install.cmd)
     if (
       ctx.opts.updateInstalled &&
       (!singleSkill ||
-        existingTarget ||
+        anyExistingTarget ||
         (await isAlreadyInstalled(ctx, { honorUpdateFlag: false })))
     )
       return unprovenSkillTarget(ctx)
   }
-  if (await isAlreadyInstalled(ctx)) {
+  const activeTargetExists = await activeSkillPresent(activeSkillsDirs, activeTargetNames)
+  const alreadyInstalled = ctx.hostContext
+    ? !ctx.opts.dryRun && activeTargetExists
+    : await isAlreadyInstalled(ctx)
+  if (alreadyInstalled) {
     const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
     if (verifyFailure) return verifyFailure
     await recordObservedInstall(
@@ -175,7 +233,12 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
     )
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
-  if (existingTarget) return unprovenSkillTarget(ctx)
+  if (
+    ctx.hostContext &&
+    !activeTargetExists &&
+    (await activeTargetDirectoryExists(activeSkillsDirs, activeTargetNames))
+  )
+    return unprovenSkillTarget(ctx)
 
   // v4.14.0 T4 — per-platform --agent injection. The skills CLI targets a
   // specific agent's skills dir; pinning it in manifest cmds hardcoded CC
@@ -197,7 +260,7 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   // the target file under HOME scope. rollback = rm -rf the skill dir.
   // v4.14.0 — skillsDir via descriptor (was hardcoded ~/.claude/skills).
   const name = ctx.manifest.metadata.name
-  const skillDir = join(ctx.hostContext?.platform.skillsDir ?? getSkillsDir(), skillSegment)
+  const skillDir = join(primaryActiveSkillsDir, skillSegment)
   const skillMdPath = join(skillDir, 'SKILL.md')
   const plan: DiffPlan = {
     files: [
@@ -263,16 +326,7 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   )
 
   // D2.1-6 CRITICAL — real-path verify. npx exit 0 ≠ files actually written.
-  // v4.13.0 — probe via detectSkillPresence (shared with the idempotent_check
-  // detector): indicator sub-skills + `--skill` name across ~/.claude/skills AND
-  // ~/.agents/skills. Pre-4.13.0 this checked ONE hardcoded ~/.claude/skills
-  // path built from the repo segment — multi-skill packs (mattpocock) and
-  // --skill installs (design-taste-frontend) failed verify even on success.
-  const present = await detectSkillPresence(
-    install.cmd,
-    name,
-    ...(ctx.hostContext ? [ctx.hostContext] : []),
-  )
+  const present = await activeSkillPresent(activeSkillsDirs, activeTargetNames)
   if (!present) {
     return {
       ok: false,

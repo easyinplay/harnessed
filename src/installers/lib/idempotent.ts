@@ -100,6 +100,29 @@ const INSTALLED_INDICATORS: Record<string, string[]> = {
   'mattpocock-skills': ['tdd', 'diagnosing-bugs', 'grill-with-docs', 'diagnose'],
 }
 
+function extractSingleSkillSelection(cmd: string): string | undefined {
+  const selections = [
+    ...cmd.matchAll(
+      /(?:^|\s)(?:--skill|-s)\s+['"]?([a-zA-Z0-9][a-zA-Z0-9._-]*)['"]?(?=\s+-|\s*$)/g,
+    ),
+  ]
+  const selectionFlags = [...cmd.matchAll(/(?:^|\s)(?:--skill|-s)(?:\s|=)/g)]
+  return selections.length === 1 && selectionFlags.length === 1 ? selections[0]?.[1] : undefined
+}
+
+export function npxActiveTargetNames(
+  cmd: string,
+  manifestName: string,
+  installsSkills?: readonly string[],
+): readonly string[] {
+  const selectedSkill = extractSingleSkillSelection(cmd)
+  if (selectedSkill) return [selectedSkill]
+  const indicators = INSTALLED_INDICATORS[manifestName]
+  if (indicators?.length) return [...indicators]
+  if (installsSkills?.length === 1 && installsSkills[0]) return [installsSkills[0]]
+  return [extractSkillName(cmd, manifestName)]
+}
+
 function skillProbeDirs(context?: HostInstallContext): string[] {
   if (context)
     return [
@@ -146,15 +169,20 @@ export async function detectSkillPresence(
   cmd: string,
   name: string,
   context?: HostInstallContext,
+  installsSkills?: readonly string[],
 ): Promise<boolean> {
-  if (await indicatorPresent(name, context)) return true
-  const skillName = extractSkillName(cmd, name)
+  if (!extractSingleSkillSelection(cmd) && INSTALLED_INDICATORS[name]?.length) {
+    return indicatorPresent(name, context)
+  }
+  const targetNames = npxActiveTargetNames(cmd, name, installsSkills)
   for (const skillsDir of skillProbeDirs(context)) {
-    try {
-      await access(join(skillsDir, skillName, 'SKILL.md'))
-      return true
-    } catch {
-      /* try next */
+    for (const targetName of targetNames) {
+      try {
+        await access(join(skillsDir, targetName, 'SKILL.md'))
+        return true
+      } catch {
+        /* try next */
+      }
     }
   }
   return false
@@ -168,7 +196,8 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   // v3.9.18 — check indicator sub-skills first (skill packs that don't install
   // a single dir matching `name`). Cross-method since the pack format varies.
   // v4.13.0 — probes all harness skills dirs (see indicatorPresent).
-  if (await indicatorPresent(name, ctx.hostContext)) return true
+  if (method !== 'npx-skill-installer' && (await indicatorPresent(name, ctx.hostContext)))
+    return true
 
   // v4.14.0 — native MCP registration probe (platform-aware: claude JSON map /
   // codex `codex mcp list --json` via isMcpServerRegistered). Only-if-registered
@@ -201,15 +230,20 @@ async function detectNative(ctx: InstallContext): Promise<boolean> {
   }
 
   if (method === 'npx-skill-installer') {
-    const skillName = extractSkillName(cmd, name)
-    // Claude keeps cross-host compatibility; Codex probes only shared + legacy roots.
-    for (const skillsDir of skillProbeDirs(ctx.hostContext)) {
-      const skillMd = join(skillsDir, skillName, 'SKILL.md')
-      try {
-        await access(skillMd)
-        return true
-      } catch {
-        /* try next */
+    if (!extractSingleSkillSelection(cmd) && INSTALLED_INDICATORS[name]?.length) {
+      if (await indicatorPresent(name, ctx.hostContext)) return true
+    } else {
+      const targetNames = npxActiveTargetNames(cmd, name, ctx.manifest.spec.install.installs_skills)
+      // Claude keeps cross-host compatibility; Codex probes only shared + legacy roots.
+      for (const skillsDir of skillProbeDirs(ctx.hostContext)) {
+        for (const targetName of targetNames) {
+          try {
+            await access(join(skillsDir, targetName, 'SKILL.md'))
+            return true
+          } catch {
+            /* try next */
+          }
+        }
       }
     }
   }

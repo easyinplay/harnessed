@@ -78,7 +78,7 @@ describe('manifest verification through the installer shell', () => {
     runtimes,
   )('verifies webapp-testing without Python or executing the helper (%s)', async (runtime) => {
     const ctx = fixture('webapp-testing')
-    const skill = join(ctx.cwd, '.agents/skills/webapp-testing')
+    const skill = join(ctx.cwd, '.claude/skills/webapp-testing')
     mkdirSync(join(skill, 'scripts'), { recursive: true })
     writeFileSync(join(skill, 'SKILL.md'), '# Webapp testing\n')
     writeFileSync(join(skill, 'scripts/with_server.py'), 'raise RuntimeError("Must not execute")\n')

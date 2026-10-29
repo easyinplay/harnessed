@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.4] - 2026-10-29
+
+### Fixed
+
+- Explicit `harnessed setup --system --non-interactive --update-installed` now reclassifies structured `update-unsupported` provenance refusals as `kept-existing` only after read-only active-host presence and runtime-health checks pass. Missing or unhealthy installs and other failures remain fatal; the single forced install pass and provenance protections are preserved.
+- Claude Code npx skills with only a shared installation now materialize the active native skills root instead of treating the shared copy as host-ready. `webapp-testing` verification honors `CLAUDE_CONFIG_DIR` and checks the active Claude native root; provenance protections, dry-run behavior, Codex shared/legacy roots, and multi-pack indicator safety boundaries are preserved.
+
 ## [5.0.3] - 2026-10-29
 
 ### Fixed

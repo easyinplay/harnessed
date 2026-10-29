@@ -1,5 +1,6 @@
 import { ChildProcess, execFile } from 'node:child_process'
 import { access, cp, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeIdempotentProbe } from '../../src/cli/lib/setup-helpers.js'
 import * as installers from '../../src/installers/index.js'
@@ -8,6 +9,8 @@ import { spawnCmd } from '../../src/installers/lib/spawn.js'
 import type { Manifest } from '../../src/installers/lib/types.js'
 import { verifyInstalled } from '../../src/installers/lib/verifyInstalled.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
+import { createHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import { claudeDescriptor, codexDescriptor } from '../../src/platform/platform.js'
 
 vi.mock('node:child_process', async (importOriginal) => {
   const original = await importOriginal<typeof import('node:child_process')>()
@@ -21,7 +24,10 @@ vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(),
   writeFile: vi.fn(),
 }))
-vi.mock('../../src/installers/lib/idempotent.js', () => ({ isAlreadyInstalled: vi.fn() }))
+vi.mock('../../src/installers/lib/idempotent.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/installers/lib/idempotent.js')>()),
+  isAlreadyInstalled: vi.fn(),
+}))
 vi.mock('../../src/installers/lib/verifyInstalled.js', () => ({ verifyInstalled: vi.fn() }))
 vi.mock('../../src/manifest/validate.js', () => ({ validateManifestFile: vi.fn() }))
 vi.mock('../../src/installers/lib/spawn.js', async (importOriginal) => ({
@@ -37,6 +43,45 @@ function manifest(): Manifest {
       verify: { cmd: 'test -f ~/.claude/skills/demo/SKILL.md' },
     },
   } as Manifest
+}
+
+function npxManifest(
+  cmd = 'npx --yes skills@latest add example/demo --skill selected --copy -y',
+  installsSkills?: string[],
+): Manifest {
+  return {
+    metadata: { name: 'demo' },
+    spec: {
+      install: {
+        method: 'npx-skill-installer',
+        cmd,
+        npm_version: '^1.0.0',
+        ...(installsSkills ? { installs_skills: installsSkills } : {}),
+      },
+      verify: { cmd: 'test -f selected/SKILL.md' },
+    },
+  } as Manifest
+}
+
+function hostContext(hostId: 'claude' | 'codex') {
+  const userHome = '/selected-home'
+  return createHostInstallContext(
+    hostId === 'claude' ? claudeDescriptor(userHome) : codexDescriptor(userHome),
+    {
+      os: process.platform,
+      userHome,
+      nativeHome: `/selected-${hostId}`,
+    },
+  )
+}
+
+function readableSkillPaths(manifestPath: string, ...skillPaths: string[]): void {
+  const readable = new Set(skillPaths)
+  vi.mocked(readFile).mockImplementation(async (path) => {
+    if (String(path) === manifestPath) return 'fixture manifest'
+    if (readable.has(String(path))) return '# skill'
+    throw new Error('ENOENT')
+  })
 }
 
 beforeEach(() => {
@@ -61,6 +106,139 @@ afterEach(() => {
 })
 
 describe('setup retained-version probe', () => {
+  it('rejects a Claude npx skill found only in the shared root', async () => {
+    const context = hostContext('claude')
+    vi.mocked(validateManifestFile).mockReturnValue({ ok: true, manifest: npxManifest() })
+    readableSkillPaths(
+      'demo.yaml',
+      join(context.userHome, '.agents', 'skills', 'selected', 'SKILL.md'),
+    )
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('demo')).toBe(false)
+    expect(isAlreadyInstalled).not.toHaveBeenCalled()
+    expect(verifyInstalled).not.toHaveBeenCalled()
+  })
+
+  it('accepts a readable explicitly selected skill in the Claude active root', async () => {
+    const context = hostContext('claude')
+    vi.mocked(validateManifestFile).mockReturnValue({ ok: true, manifest: npxManifest() })
+    readableSkillPaths('demo.yaml', join(context.nativeHome, 'skills', 'selected', 'SKILL.md'))
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('demo')).toBe(true)
+    expect(isAlreadyInstalled).toHaveBeenCalledOnce()
+    expect(verifyInstalled).toHaveBeenCalledOnce()
+  })
+
+  it('accepts a readable explicitly selected skill in the Codex legacy root', async () => {
+    const context = hostContext('codex')
+    vi.mocked(validateManifestFile).mockReturnValue({ ok: true, manifest: npxManifest() })
+    readableSkillPaths('demo.yaml', join(context.nativeHome, 'skills', 'selected', 'SKILL.md'))
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('demo')).toBe(true)
+    expect(isAlreadyInstalled).toHaveBeenCalledOnce()
+    expect(verifyInstalled).toHaveBeenCalledOnce()
+  })
+
+  it.each([
+    'first-skill',
+    'second-skill',
+  ])('does not accept arbitrary multi-skill declarations as active presence: %s', async (skillName) => {
+    const context = hostContext('claude')
+    vi.mocked(validateManifestFile).mockReturnValue({
+      ok: true,
+      manifest: npxManifest('npx --yes skills@latest add example/pack --copy -y', [
+        'first-skill',
+        'second-skill',
+      ]),
+    })
+    readableSkillPaths('demo.yaml', join(context.nativeHome, 'skills', skillName, 'SKILL.md'))
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('demo')).toBe(false)
+    expect(isAlreadyInstalled).not.toHaveBeenCalled()
+    expect(verifyInstalled).not.toHaveBeenCalled()
+  })
+
+  it('rejects colliding research when only shared tdd proves the pack', async () => {
+    const context = hostContext('claude')
+    const pack = npxManifest('npx --yes skills@latest add mattpocock/skills --copy -y', [
+      'research',
+      'tdd',
+      'diagnosing-bugs',
+    ])
+    pack.metadata.name = 'mattpocock-skills'
+    vi.mocked(validateManifestFile).mockReturnValue({ ok: true, manifest: pack })
+    readableSkillPaths(
+      'demo.yaml',
+      join(context.nativeHome, 'skills', 'research', 'SKILL.md'),
+      join(context.userHome, '.agents', 'skills', 'tdd', 'SKILL.md'),
+    )
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('mattpocock-skills')).toBe(false)
+    expect(isAlreadyInstalled).not.toHaveBeenCalled()
+    expect(verifyInstalled).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    'tdd',
+    'diagnosing-bugs',
+  ])('accepts mattpocock pack indicator %s in the active root', async (skillName) => {
+    const context = hostContext('claude')
+    const pack = npxManifest('npx --yes skills@latest add mattpocock/skills --copy -y', [
+      'research',
+      'tdd',
+      'diagnosing-bugs',
+    ])
+    pack.metadata.name = 'mattpocock-skills'
+    vi.mocked(validateManifestFile).mockReturnValue({ ok: true, manifest: pack })
+    readableSkillPaths('demo.yaml', join(context.nativeHome, 'skills', skillName, 'SKILL.md'))
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('mattpocock-skills')).toBe(true)
+    expect(isAlreadyInstalled).toHaveBeenCalledOnce()
+    expect(verifyInstalled).toHaveBeenCalledOnce()
+  })
+
+  it('does not substitute another declared skill for an explicit selection', async () => {
+    const context = hostContext('claude')
+    vi.mocked(validateManifestFile).mockReturnValue({
+      ok: true,
+      manifest: npxManifest(undefined, ['other-skill', 'selected']),
+    })
+    readableSkillPaths('demo.yaml', join(context.nativeHome, 'skills', 'other-skill', 'SKILL.md'))
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('demo')).toBe(false)
+    expect(isAlreadyInstalled).not.toHaveBeenCalled()
+    expect(verifyInstalled).not.toHaveBeenCalled()
+  })
+
+  it('falls back to the repo skill segment when no targets are declared', async () => {
+    const context = hostContext('claude')
+    vi.mocked(validateManifestFile).mockReturnValue({
+      ok: true,
+      manifest: npxManifest('npx --yes skills@latest add example/repo-skill --copy -y'),
+    })
+    readableSkillPaths('demo.yaml', join(context.nativeHome, 'skills', 'repo-skill', 'SKILL.md'))
+
+    const probe = await makeIdempotentProbe(['demo.yaml'], context)
+
+    expect(await probe('demo')).toBe(true)
+    expect(isAlreadyInstalled).toHaveBeenCalledOnce()
+    expect(verifyInstalled).toHaveBeenCalledOnce()
+  })
+
   it('presence plus failed verify is not a working retained version', async () => {
     vi.mocked(verifyInstalled).mockResolvedValue({
       ok: false,

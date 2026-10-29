@@ -1,5 +1,15 @@
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, rename, rm, symlink, writeFile } from 'node:fs/promises'
+import {
+  access,
+  lstat,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rename,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -27,7 +37,12 @@ vi.mock('@clack/prompts', () => ({
 }))
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof import('node:fs/promises')>()
-  return { ...actual, rm: vi.fn(actual.rm) }
+  return {
+    ...actual,
+    access: vi.fn(actual.access),
+    lstat: vi.fn(actual.lstat),
+    rm: vi.fn(actual.rm),
+  }
 })
 vi.mock('../../src/installers/lib/confirm.js', () => ({
   confirmAt: vi.fn(async () => ({ proceed: true })),
@@ -35,11 +50,15 @@ vi.mock('../../src/installers/lib/confirm.js', () => ({
 vi.mock('../../src/installers/lib/backup.js', () => ({
   backup: vi.fn(async () => ({ ok: true, backupId: 'fixture-backup' })),
 }))
-vi.mock('../../src/installers/lib/idempotent.js', () => ({
-  isAlreadyInstalled: vi.fn(async () => false),
-  detectSkillPresence: vi.fn(async () => true),
-  extractSkillName: vi.fn(() => 'fixture'),
-}))
+vi.mock('../../src/installers/lib/idempotent.js', async (original) => {
+  const actual = await original<typeof import('../../src/installers/lib/idempotent.js')>()
+  return {
+    ...actual,
+    isAlreadyInstalled: vi.fn(async () => false),
+    detectSkillPresence: vi.fn(async () => true),
+    extractSkillName: vi.fn(() => 'fixture'),
+  }
+})
 vi.mock('../../src/installers/lib/verifyInstalled.js', () => ({
   verifyInstalled: vi.fn(async () => null),
 }))
@@ -127,7 +146,7 @@ import {
 } from '../../src/installers/lib/codexPlugins.js'
 import { confirmAt } from '../../src/installers/lib/confirm.js'
 import { repairGstackCodexRuntimeAfterConfirm } from '../../src/installers/lib/gstackRuntime.js'
-import { detectSkillPresence, isAlreadyInstalled } from '../../src/installers/lib/idempotent.js'
+import { isAlreadyInstalled } from '../../src/installers/lib/idempotent.js'
 import { auditPostInstall, snapshotSkillNames } from '../../src/installers/lib/packSkillAudit.js'
 import {
   isMcpServerRegistered,
@@ -220,6 +239,14 @@ function fixture(method: string, cmd: string, name = 'fixture'): InstallContext 
     } as Manifest,
   }
 }
+function materializeNpxSkillOnSpawn(skillsDir = pinned.platform.skillsDir, name = 'fixture') {
+  vi.mocked(spawnCmd).mockImplementationOnce(async () => {
+    const skillDir = join(skillsDir, name)
+    await mkdir(skillDir, { recursive: true })
+    await writeFile(join(skillDir, 'SKILL.md'), '# fixture\n')
+    return { ok: true, exitCode: 0, stdout: '', stderr: '' }
+  })
+}
 const methods: [string, Installer, string][] = [
   ['npm-cli', installNpmCli, 'npm install -g fixture'],
   ['npx-skill-installer', installNpxSkillInstaller, 'npx skills add owner/fixture --copy'],
@@ -303,6 +330,7 @@ describe('native installer captured targets', () => {
   it.each(
     methods,
   )('%s pins fresh receipts after environment drift', async (method, install, cmd) => {
+    if (method === 'npx-skill-installer') materializeNpxSkillOnSpawn()
     expect(await install(fixture(method, cmd))).toMatchObject({ ok: true })
     expect(updateInstalled).toHaveBeenCalledWith(
       root,
@@ -321,6 +349,16 @@ describe('native installer captured targets', () => {
       drift()
       return true
     })
+    if (method === 'npx-skill-installer') {
+      const skillDir = join(pinned.platform.skillsDir, 'fixture')
+      await mkdir(skillDir, { recursive: true })
+      await writeFile(join(skillDir, 'SKILL.md'), '# fixture\n')
+      const actualFs = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
+      vi.mocked(access).mockImplementationOnce(async (path, mode) => {
+        drift()
+        await actualFs.access(path, mode)
+      })
+    }
     expect(await install(fixture(method, cmd))).toMatchObject({ ok: true, alreadyInstalled: true })
     expect(recordObservedInstall).toHaveBeenCalledWith(
       root,
@@ -333,6 +371,7 @@ describe('native installer captured targets', () => {
     )
     expect(runHarnessArgs).not.toHaveBeenCalled()
     expect(spawnCmd).not.toHaveBeenCalled()
+    if (method === 'npx-skill-installer') expect(isAlreadyInstalled).not.toHaveBeenCalled()
   })
   it.each(
     methods.slice(3),
@@ -358,6 +397,7 @@ describe('native installer captured targets', () => {
   it('keeps shared skills on descriptor policy and pins post-write presence/audits', async () => {
     drift('claude')
     const ctx = fixture('npx-skill-installer', 'npx skills add owner/fixture --copy')
+    materializeNpxSkillOnSpawn()
     expect(await installNpxSkillInstaller(ctx)).toMatchObject({
       ok: true,
       appliedFiles: [join(pinned.userHome, '.agents', 'skills', 'fixture', 'SKILL.md')],
@@ -369,11 +409,8 @@ describe('native installer captured targets', () => {
       60_000,
       { neutralCwd: true },
     )
-    expect(detectSkillPresence).toHaveBeenCalledWith(
-      ctx.manifest.spec.install.cmd,
-      'fixture',
-      pinned,
-    )
+    expect(lstat).toHaveBeenCalledWith(join(pinned.platform.skillsDir, 'fixture'))
+    expect(access).toHaveBeenCalledWith(join(pinned.platform.skillsDir, 'fixture', 'SKILL.md'))
     expect(snapshotSkillNames).toHaveBeenCalledWith(pinned.platform.skillsDir)
     expect(auditPostInstall).toHaveBeenCalledWith(ctx, new Set(), pinned.platform.skillsDir)
   })
@@ -1022,7 +1059,7 @@ describe('unproven external update policy', () => {
   it.each(
     methods.slice(0, 4),
   )('%s refuses manual/shared or channel-drift updates before consent or writes', async (method, install, cmd) => {
-    const ctx = fixture(method, cmd)
+    const ctx = fixture(method, method === 'npx-skill-installer' ? `${cmd} --skill fixture` : cmd)
     ctx.opts.updateInstalled = true
     if (method === 'npm-cli') ctx.manifest.spec.component_type = 'command'
     vi.mocked(isAlreadyInstalled).mockImplementation(
@@ -1039,6 +1076,9 @@ describe('unproven external update policy', () => {
     expect(runHarnessArgs).not.toHaveBeenCalled()
     expect(updateInstalled).not.toHaveBeenCalled()
     expect(recordObservedInstall).not.toHaveBeenCalled()
+    if (method === 'npx-skill-installer') {
+      expect(isAlreadyInstalled).toHaveBeenCalledWith(ctx, { honorUpdateFlag: false })
+    }
   })
   it.each(
     methods.slice(0, 4),
@@ -1051,6 +1091,7 @@ describe('unproven external update policy', () => {
           : cmd
     const ctx = fixture(method, knownCmd)
     ctx.opts.updateInstalled = true
+    if (method === 'npx-skill-installer') materializeNpxSkillOnSpawn()
     expect(await install(ctx)).toMatchObject({ ok: true })
     expect(updateInstalled).toHaveBeenCalled()
   })

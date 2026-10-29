@@ -76,7 +76,7 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { spawn } from 'node:child_process'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { access, mkdir, writeFile } from 'node:fs/promises'
 import { runInstall } from '../../src/installers/index.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 
@@ -558,6 +558,11 @@ for (const method of methods) {
     it('contract: backup-location', async () => {
       const cap = captureStdout()
       try {
+        if (method === 'npx-skill-installer') {
+          vi.mocked(access).mockRejectedValueOnce(
+            Object.assign(new Error('ENOENT'), { code: 'ENOENT' }),
+          )
+        }
         // Make spawn always succeed so we get past install + verify steps.
         spawnMock.mockImplementation(
           () =>
