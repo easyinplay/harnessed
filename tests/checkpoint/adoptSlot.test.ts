@@ -17,6 +17,7 @@
 // root is byte-identical — content AND mtime. Seeds freeze mtime to a fixed past
 // instant so any write at all is decisive.
 
+import { createHash } from 'node:crypto'
 import {
   mkdirSync,
   mkdtempSync,
@@ -139,6 +140,35 @@ function tearDownDestHost(): void {
   rmSync(join(home, '.codex', 'prompts'), { recursive: true, force: true })
 }
 
+function useClaudeDestination(): void {
+  srcRoot = join(home, '.codex', 'harnessed')
+  destRoot = join(home, 'state-override', 'claude-harnessed')
+  mkdirSync(destRoot, { recursive: true })
+  vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+  vi.stubEnv('HARNESSED_ROOT_OVERRIDE', destRoot)
+}
+
+function seedClaudeWorkflowSkill(
+  content = '# task\n<!-- harnessed-generated:v5.0.5 -->\n',
+  ledgerHash?: string,
+): void {
+  const skillDir = join(home, '.claude', 'skills', 'task')
+  mkdirSync(skillDir, { recursive: true })
+  writeFileSync(join(skillDir, 'SKILL.md'), content, 'utf8')
+  if (ledgerHash === undefined) return
+  writeFileSync(
+    join(destRoot, 'skill-hashes.json'),
+    JSON.stringify({
+      task: { sha256: ledgerHash, version: '5.0.5', rendered_at: '2026-10-29T00:00:00.000Z' },
+    }),
+    'utf8',
+  )
+}
+
+function sha256(text: string): string {
+  return createHash('sha256').update(text, 'utf8').digest('hex')
+}
+
 beforeEach(() => {
   // realpath: on macOS tmpdir() sits under the /var → /private/var symlink, and the
   // repo key is derived from the resolved path.
@@ -251,6 +281,60 @@ describe('adoptSlot — refusals', () => {
     const r = await run('claude')
     if (r.ok || r.refusal.kind !== 'dest-not-set-up') throw new Error('expected dest-not-set-up')
     expect(r.refusal.commandsDir).toBe(prompts)
+  })
+
+  it('T5 — Claude destination is ready when a marked workflow skill matches skill-hashes.json', async () => {
+    useClaudeDestination()
+    const content = '# task\n<!-- harnessed-generated:v5.0.5 -->\n'
+    seedClaudeWorkflowSkill(content, sha256(content))
+    seedSource({ workflows: { [key]: envelope('phase-7') } })
+
+    expect((await run('codex')).ok).toBe(true)
+  })
+
+  it('T5 — Claude destination rejects an unmarked user-authored skill', async () => {
+    useClaudeDestination()
+    const content = '# my task skill\n'
+    seedClaudeWorkflowSkill(content, sha256(content))
+    seedSource({ workflows: { [key]: envelope('phase-7') } })
+
+    const result = await run('codex')
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal.kind).toBe('dest-not-set-up')
+  })
+
+  it('T5 — Claude destination rejects a marked skill without skill-hashes.json', async () => {
+    useClaudeDestination()
+    seedClaudeWorkflowSkill()
+    seedSource({ workflows: { [key]: envelope('phase-7') } })
+
+    const result = await run('codex')
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal.kind).toBe('dest-not-set-up')
+  })
+
+  it('T5 — Claude destination rejects a marked skill whose installed hash diverges', async () => {
+    useClaudeDestination()
+    seedClaudeWorkflowSkill('# changed\n<!-- harnessed-generated:v5.0.5 -->\n', sha256('old'))
+    seedSource({ workflows: { [key]: envelope('phase-7') } })
+
+    const result = await run('codex')
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal.kind).toBe('dest-not-set-up')
+  })
+
+  it('T5 — Codex destination still requires a generated prompt marker', async () => {
+    seedSource({ workflows: { [key]: envelope('phase-7') } })
+    expect((await run('claude')).ok).toBe(true)
+
+    tearDownDestHost()
+    const result = await run('claude')
+    expect(result.ok).toBe(false)
+    if (result.ok) return
+    expect(result.refusal.kind).toBe('dest-not-set-up')
   })
 
   it('D14 — source host has NO ledger (file absent)', async () => {

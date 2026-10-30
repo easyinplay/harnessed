@@ -9,11 +9,12 @@ export function registerReleasePreflight(program: Command): void {
     .description(
       'Read-only release-readiness gate (CHANGELOG / version / git-clean / tag). Exits 1 if not ready.',
     )
-    .action(async () => {
+    .option('--release-version <semver>', 'explicit target release version (overrides manifests)')
+    .action(async (options: { releaseVersion?: string }) => {
       const { collectPreflight, anyFailed, defaultDeps } = await import(
         './lib/release-preflight.js'
       )
-      const checks = collectPreflight(defaultDeps(process.cwd()))
+      const checks = collectPreflight(defaultDeps(process.cwd(), options.releaseVersion))
       console.log('\n  release preflight (read-only — nothing is pushed/published):\n')
       for (const c of checks) {
         const mark = c.status === 'pass' ? '✓' : c.status === 'warn' ? '⚠' : '✗'

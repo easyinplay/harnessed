@@ -11,6 +11,7 @@
 // try/catch 容忍 undefined(sister resolveBash realWhere 模式)。
 
 import { spawnSync } from 'node:child_process'
+import { isWindowsToolPath, requireNativeTool } from './nativeToolResolver.js'
 
 /** Injectable probes — production defaults read the real system; tests inject. */
 export interface BinaryProbeDeps {
@@ -112,9 +113,20 @@ function realRun(finder: string, bin: string): { status: number | null; stdout: 
  *  callers fall through to the legacy detection chain (never a false positive). */
 export function binaryOnPath(bin: string, deps?: Partial<BinaryProbeDeps>): boolean {
   const platform = deps?.platform ?? process.platform
+  if (platform === 'linux' && !deps?.run) {
+    try {
+      return requireNativeTool(bin, { platform }) !== null
+    } catch {
+      return false
+    }
+  }
   const run = deps?.run ?? realRun
   const finder = platform === 'win32' ? 'where' : 'which'
   const r = run(finder, bin)
   if (!r || r.status !== 0) return false
+  if (platform === 'linux') {
+    const first = r.stdout.trim().split(/\r?\n/)[0]
+    return !!first && !isWindowsToolPath(first)
+  }
   return r.stdout.trim().length > 0
 }

@@ -22,11 +22,30 @@ const HOOKS = [
   { entry: 'src/checkpoint/stopHookMain.ts', out: 'bin/harnessed-stop-hook.mjs' },
   { entry: 'src/checkpoint/injectStateMain.ts', out: 'bin/harnessed-inject-state.mjs' },
   { entry: 'src/cli/checkDocsHookMain.ts', out: 'bin/harnessed-check-docs.mjs' },
+  {
+    entry: 'src/compile/updateReminderEntrypoint.ts',
+    out: 'bin/harnessed-update-reminder.mjs',
+    run: 'runUpdateReminderEntrypoint',
+  },
+  {
+    entry: 'src/compile/updateReminderEntrypoint.ts',
+    out: 'bin/harnessed-update-reminder-worker.mjs',
+    run: 'runUpdateReminderWorkerEntrypoint',
+  },
 ]
 
-for (const { entry, out } of HOOKS) {
+for (const { entry, out, run } of HOOKS) {
   await build({
-    entryPoints: [entry],
+    ...(run
+      ? {
+          stdin: {
+            contents: `import { ${run} } from './${entry}'; await ${run}();`,
+            resolveDir: process.cwd(),
+            sourcefile: `${out}.entry.ts`,
+            loader: 'ts',
+          },
+        }
+      : { entryPoints: [entry] }),
     outfile: out,
     bundle: true,
     platform: 'node',
@@ -41,6 +60,11 @@ for (const { entry, out } of HOOKS) {
         '// biome-ignore-all format: esbuild-generated (hook drift gate owns this file)',
         '// biome-ignore-all lint: esbuild-generated',
         '// biome-ignore-all assist/source/organizeImports: esbuild-generated',
+        ...(run === 'runUpdateReminderWorkerEntrypoint'
+          ? [
+              "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);",
+            ]
+          : []),
       ].join('\n'),
     },
     legalComments: 'none',

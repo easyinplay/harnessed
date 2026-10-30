@@ -62,6 +62,17 @@ export function resolveCodexHome(hostContext?: HostInstallContext): string {
   return env ? env : detectPlatform().homeDir
 }
 
+function reminderStateRoot(hostContext: HostInstallContext | undefined): string {
+  if (!hostContext)
+    return resolve(process.env.HARNESSED_ROOT_OVERRIDE || join(resolveCodexHome(), 'harnessed'))
+  const defaultRoot = join(hostContext.platform.homeDir, 'harnessed')
+  return resolve(
+    hostContext.platform.stateRoot !== defaultRoot
+      ? hostContext.platform.stateRoot
+      : join(hostContext.nativeHome, 'harnessed'),
+  )
+}
+
 export function codexHookPaths(codexHome: string, manifestName: string) {
   const pluginName = codexHookPluginName(manifestName)
   const marketplaceRoot = join(codexHome, 'harnessed', 'marketplace')
@@ -176,12 +187,14 @@ export async function installCodexHook(ctx: InstallContext): Promise<InstallResu
     }
   const name = ctx.manifest.metadata.name
   const mode: CodexHookMode = isCompiledRuntime() ? 'binary' : isBunRuntime() ? 'bun' : 'npm'
+  const stateRoot = name === 'update-reminder' ? reminderStateRoot(ctx.hostContext) : undefined
   const rendered = renderCodexHookPlugin(
     {
       manifestName: name,
       event: install.hook_event,
       ...(install.hook_matcher !== undefined ? { matcher: install.hook_matcher } : {}),
       hookCommand: install.hook_command,
+      ...(stateRoot !== undefined ? { reminderStateRoot: stateRoot } : {}),
     },
     mode,
   )
@@ -210,7 +223,12 @@ export async function installCodexHook(ctx: InstallContext): Promise<InstallResu
   }
   const others = (await harnessedPluginDirs(paths.pluginsDir)).filter((n) => n !== paths.pluginName)
   const info = `${JSON.stringify(
-    { mode, assetsRoot: getAssetsRoot(), harnessedVersion: pkg.version },
+    {
+      mode,
+      assetsRoot: getAssetsRoot(),
+      harnessedVersion: pkg.version,
+      ...(stateRoot !== undefined ? { reminderStateRoot: stateRoot } : {}),
+    },
     null,
     2,
   )}\n`
@@ -429,14 +447,23 @@ async function generatedHookFiles(
     mode?: unknown
     assetsRoot?: unknown
     harnessedVersion?: unknown
+    reminderStateRoot?: unknown
   }
+  const pluginIsReminder = pluginName === 'harnessed-update-reminder'
   if (
     !info ||
     (info.mode !== 'npm' && info.mode !== 'bun' && info.mode !== 'binary') ||
     typeof info.assetsRoot !== 'string' ||
     !isAbsolute(info.assetsRoot) ||
     !knownVersion(info.harnessedVersion) ||
-    Object.keys(info).sort().join(',') !== 'assetsRoot,harnessedVersion,mode'
+    (!pluginIsReminder && info.reminderStateRoot !== undefined) ||
+    (pluginIsReminder &&
+      info.reminderStateRoot !== undefined &&
+      (typeof info.reminderStateRoot !== 'string' || !isAbsolute(info.reminderStateRoot))) ||
+    Object.keys(info).sort().join(',') !==
+      (pluginIsReminder && info.reminderStateRoot !== undefined
+        ? 'assetsRoot,harnessedVersion,mode,reminderStateRoot'
+        : 'assetsRoot,harnessedVersion,mode')
   )
     throw new Error(`Unrecognized first-party install info: ${pluginDir}`)
   const hooks = JSON.parse(await readFile(join(pluginDir, 'hooks', 'hooks.json'), 'utf8')) as {
@@ -455,12 +482,19 @@ async function generatedHookFiles(
   const suffix = ' --platform codex'
   if (typeof command !== 'string' || !command.startsWith(head) || !command.endsWith(suffix))
     throw new Error(`Unrecognized first-party hook command: ${pluginDir}`)
+  const hookCommand =
+    pluginIsReminder && info.reminderStateRoot !== undefined
+      ? 'harnessed update-reminder'
+      : `harnessed ${command.slice(head.length, -suffix.length)}`
   const rendered = renderCodexHookPlugin(
     {
       manifestName: pluginName.slice('harnessed-'.length),
       event,
       ...(group?.matcher !== undefined ? { matcher: group.matcher } : {}),
-      hookCommand: `harnessed ${command.slice(head.length, -suffix.length)}`,
+      hookCommand,
+      ...(pluginIsReminder && typeof info.reminderStateRoot === 'string'
+        ? { reminderStateRoot: info.reminderStateRoot }
+        : {}),
     },
     info.mode,
   )

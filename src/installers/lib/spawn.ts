@@ -33,6 +33,7 @@ import { homedir } from 'node:os'
 import { checkCmdString } from '../../manifest/security.js'
 import { killProcessTree } from './killTree.js'
 import { evalTestChain } from './nativeTest.js'
+import { checkNativeCommand, NativeToolError } from './nativeToolResolver.js'
 import { resolveBash } from './resolveBash.js'
 import { withHostInstallEnv } from './runClaudeArgs.js'
 import { getNeutralSpawnCwd } from './safeCwd.js'
@@ -177,6 +178,24 @@ export async function spawnCmd(
   const cwd =
     installCfg.cwd ??
     (opts?.neutralCwd ? (getNeutralSpawnCwd(ctx.hostContext) ?? ctx.cwd) : ctx.cwd)
+
+  try {
+    checkNativeCommand(joinedCmd, { platform, env, cwd })
+  } catch (error) {
+    if (!(error instanceof NativeToolError)) throw error
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: {
+        file: ctx.manifest.metadata.name,
+        path: '/spec/install/cmd',
+        message: error.message,
+        line: null,
+        column: null,
+        keyword: error.keyword,
+      },
+    }
+  }
 
   let child: ChildProcess
   // v23 (4.5.1) — POSIX-shell cmds (git-clone-with-setup install + all verify cmds

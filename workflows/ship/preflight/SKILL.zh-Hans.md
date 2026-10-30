@@ -20,10 +20,20 @@ trigger_phrases:
 
 | 检查项 | 通过条件 |
 | ----- | ----------- |
-| `changelog` | `## [Unreleased]` 下有实质性内容（本次发布已有文档） |
-| `version` | `package.json` 包含有效的 semver 版本号 |
+| `changelog` | `## [Unreleased]` 下有实质性内容，或存在有效目标版本对应的章节 |
+| `version` | 发现静态有效的 SemVer，或通过 `--release-version <semver>` 显式指定 |
 | `git-clean` | 工作区无未提交的改动 |
 | `tag-absent` | `v<version>` tag 尚不存在 |
+
+版本来源为 `package.json.version`、`pyproject.toml [project].version`、
+`pyproject.toml [tool.poetry].version` 和 `Cargo.toml [package].version`。
+`harnessed release-preflight --release-version <semver>` 优先级最高；显式值无效时
+直接失败，不回退到 manifest。发现的有效版本相同则允许，不同则 fail closed，必须
+显式 override。不从 git tag 推断目标版本。缺失、动态、workspace 继承或损坏的版本
+不能提供静态目标。如果无法确定有效目标，`version` 失败，`tag-absent` 标记为
+warn/not-run，绝不检查字面量 tag `v`。只有有效目标版本才检查 CHANGELOG 的对应章节，
+`[Unreleased]` 路径保持独立。根 `harnessed --version` 仍输出 harnessed CLI 自身版本，
+不是目标发布版本。
 
 ## Process
 

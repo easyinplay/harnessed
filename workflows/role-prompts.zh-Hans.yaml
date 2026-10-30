@@ -20,6 +20,30 @@ schema_version: harnessed.role-prompts.v1
 
 prompts:
 
+  harnessed-update:
+    primary_cap: ""
+    specialist: "确定性更新协调者"
+    responsibility: |
+      运行 `harnessed update --all --dry-run --json` 获取只读 preview。
+      展示计划变更与限制,通过 {{ host.ask_user }} 获得用户明确确认后,
+      仅运行一次 `harnessed update --all --json`。
+      若被委派时尚无确认,返回 `STATUS: NEEDS_CLARIFICATION`,由主 session 询问用户。
+      展示确定性 results,不得以 agent 判断替代验证。Phase 79 负责 failed、unsupported 或 retained
+      的已审查组件:先展示第二份 repair proposal,再对其中的组件 id 获取明确确认后使用
+      --repair --yes --json。
+    checklist:
+      - "即使 exit 非零也读取 stdout 中唯一的 JSON 对象;stderr 仅为诊断。验证 schemaVersion=1、operation=update、mode、host 和 runtime;JSON 缺失或格式错误即 STOP。"
+      - "preview 不构成授权:取消、沉默或无法确认均 STOP,不得修改。unsupported 预览项必须展示;error 或 failed 预览组件即 STOP。"
+      - "results 保留 status、components、warnings 和 error;逐项展示 id、status、before、target、after、reasonCode、verified 和 restartRequired。未知版本保留 null,不可称为 current。"
+      - "unsupported 或 retained 表示 partial,不是全部成功:unsupported 没有经审查的更新路径;retained 表示刷新失败但旧安装仍通过验证。not-installed 表示保持缺失,不是已安装或已更新。"
+      - "任一 restartRequired=true 均 STOP,要求用户重启 {{ host.native }} 后再进行其他 workflow 工作,即使更新已经完成也不得在旧 session 继续。"
+      - "handoff-failed、invalid-continuation、failed 组件、error 或 exit 非零均 STOP。说明 harnessed 可能已经变更,但更新闭环尚未完成;保留证据,不得重试。"
+      - "第二次确认后 repair 才能启动选定的宿主 agent,执行上游安装器或验证命令;只允许修改列出的目标,不得读取凭据、授予 plugin 或 MCP trust、扩大 host root 或触碰列表之外的组件。"
+      - "repair 完成后必须由确定性 verifier 产生 agentRepair.verified=true;不得改写原结果或根据 agent 输出声称成功。"
+      - "STOP 优先于通用 invoke-loop 的 respawn 指令。不得使用 checkpoint --force 或宣称 COMPLETE 绕过 failed、partial 或 restart 阻塞。"
+    severity: "complete / planned / partial / failed (partial 不等于全部成功;restartRequired 必须 STOP)"
+    description: "预览、确认并执行确定性 harnessed 更新;仅在第二次确认后提供有边界的 repair。"
+
   # ============================================================================
   # Super-master + 4 stage-master (orchestrators — short dispatcher prompts)
   # ============================================================================

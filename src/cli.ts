@@ -1,47 +1,56 @@
 #!/usr/bin/env node
 import { join } from 'node:path'
-import { Command } from 'commander'
 import pkg from '../package.json' with { type: 'json' }
-import { migrateRepoKeyCase } from './checkpoint/workflowStore.js'
-import { registerAdvance } from './cli/advance.js'
-import { registerAgentsMd } from './cli/agents-md.js'
-import { registerAudit } from './cli/audit.js'
-import { registerAuditLog } from './cli/audit-log.js'
-import { registerBackupList } from './cli/backup-list.js'
-import { registerCheckDocs } from './cli/checkDocs.js'
-import { registerCheckpoint } from './cli/checkpoint.js'
-import { registerCompact } from './cli/compact-cmd.js'
-import { registerDoctor } from './cli/doctor.js'
-import { registerEval } from './cli/evalCmd.js'
-import { registerExemptGateguard } from './cli/exempt-gateguard.js'
-import { registerFacts } from './cli/facts.js'
-import { registerGates } from './cli/gates.js'
-import { registerGc } from './cli/gc.js'
-import { registerInjectState } from './cli/injectStateCmd.js'
-import { registerInstall } from './cli/install.js'
-import { registerInstallBase } from './cli/install-base.js'
-import { registerLearn } from './cli/learn.js'
-import { formatFatalEnvelope, wantsJsonEnvelope } from './cli/lib/fatalError.js'
-import { parseBareInvocation, runHere } from './cli/lib/here.js'
-import { registerManifestAdd } from './cli/manifest-add.js'
-import { registerNext } from './cli/next.js'
-import { registerPrompt } from './cli/prompt.js'
-import { registerReject } from './cli/reject.js'
-import { registerReleasePreflight } from './cli/release-preflight.js'
-import { registerResearch } from './cli/research.js'
-import { registerResume } from './cli/resume.js'
-import { registerRetro } from './cli/retro.js'
-import { registerRollback } from './cli/rollback.js'
-import { registerRun } from './cli/run.js'
-import { registerSetup } from './cli/setup.js'
-import { registerStatus } from './cli/status.js'
-import { registerStopHook } from './cli/stopHookCmd.js'
-import { registerUninstall } from './cli/uninstall.js'
-import { registerUpdate } from './cli/update.js'
-import { registerWorkflows } from './cli/workflows.js'
-import { setLocale, wireMessagesDir } from './i18n/index.js'
-import { getAssetsRoot } from './platform/assetsRoot.js'
-import { migrateLegacyHarnessedRoot } from './platform/harnessedRoot.js'
+
+const entryArgs = process.argv.slice(2)
+if (entryArgs.length === 1 && entryArgs[0] === '--internal-update-identity') {
+  process.stdout.write(`${pkg.version}\n`)
+  process.exit(0)
+}
+
+const { Command } = await import('commander')
+const { migrateRepoKeyCase } = await import('./checkpoint/workflowStore.js')
+const { registerAdvance } = await import('./cli/advance.js')
+const { registerAgentsMd } = await import('./cli/agents-md.js')
+const { registerAudit } = await import('./cli/audit.js')
+const { registerAuditLog } = await import('./cli/audit-log.js')
+const { registerBackupList } = await import('./cli/backup-list.js')
+const { registerCheckDocs } = await import('./cli/checkDocs.js')
+const { registerCheckpoint } = await import('./cli/checkpoint.js')
+const { registerCompact } = await import('./cli/compact-cmd.js')
+const { registerDoctor } = await import('./cli/doctor.js')
+const { registerEval } = await import('./cli/evalCmd.js')
+const { registerExemptGateguard } = await import('./cli/exempt-gateguard.js')
+const { registerFacts } = await import('./cli/facts.js')
+const { registerGates } = await import('./cli/gates.js')
+const { registerGc } = await import('./cli/gc.js')
+const { registerInjectState } = await import('./cli/injectStateCmd.js')
+const { registerInstall } = await import('./cli/install.js')
+const { registerInstallBase } = await import('./cli/install-base.js')
+const { registerLearn } = await import('./cli/learn.js')
+const { formatFatalEnvelope, wantsJsonEnvelope } = await import('./cli/lib/fatalError.js')
+const { parseBareInvocation, runHere } = await import('./cli/lib/here.js')
+const { emitUpdateResult, hasWrittenUpdateEnvelope, updateFailureResult, wantsUpdateEnvelope } =
+  await import('./cli/lib/updateCoordinator.js')
+const { registerManifestAdd } = await import('./cli/manifest-add.js')
+const { registerNext } = await import('./cli/next.js')
+const { registerPrompt } = await import('./cli/prompt.js')
+const { registerReject } = await import('./cli/reject.js')
+const { registerReleasePreflight } = await import('./cli/release-preflight.js')
+const { registerResearch } = await import('./cli/research.js')
+const { registerResume } = await import('./cli/resume.js')
+const { registerRetro } = await import('./cli/retro.js')
+const { registerRollback } = await import('./cli/rollback.js')
+const { registerRun } = await import('./cli/run.js')
+const { registerSetup } = await import('./cli/setup.js')
+const { registerStatus } = await import('./cli/status.js')
+const { registerStopHook } = await import('./cli/stopHookCmd.js')
+const { registerUninstall } = await import('./cli/uninstall.js')
+const { registerUpdate } = await import('./cli/update.js')
+const { registerWorkflows } = await import('./cli/workflows.js')
+const { setLocale, wireMessagesDir } = await import('./i18n/index.js')
+const { getAssetsRoot } = await import('./platform/assetsRoot.js')
+const { migrateLegacyHarnessedRoot } = await import('./platform/harnessedRoot.js')
 
 // B2 (v4.20.0, D5) — messages/ 的 assetsRoot 接线,惰性注入(thunk 到首次 t()
 // 才求值)。只在真 CLI 进程入口 wire — vitest 的 setupFiles 预加载 i18n 时不经
@@ -52,7 +61,7 @@ wireMessagesDir(() => join(getAssetsRoot(), 'messages'))
 
 // v3.0.3 — migrate any pre-v3.0.3 `~/.harnessed/` to `~/.claude/harnessed/`
 // before any subcommand runs. Idempotent on subsequent invocations.
-migrateLegacyHarnessedRoot()
+const updateInvocation = entryArgs.includes('update')
 
 // v3.4.0 — pre-parse `--lang` flag so subcommand action handlers see the
 // correct locale before they emit any t()-wrapped strings. Commander parses
@@ -84,7 +93,9 @@ for (let i = 2; i < argv.length; i++) {
 // {error:{message}} envelope to stdout so machine consumers (driver loops, hooks)
 // parsing stdout can surface WHY instead of seeing exit 1 with empty stdout.
 const fatal = (msg: string): never => {
-  if (wantsJsonEnvelope(process.argv)) console.log(formatFatalEnvelope(msg))
+  if (wantsUpdateEnvelope(process.argv)) {
+    if (!hasWrittenUpdateEnvelope()) emitUpdateResult(updateFailureResult(msg), true)
+  } else if (wantsJsonEnvelope(process.argv)) console.log(formatFatalEnvelope(msg))
   console.error(`error: ${msg}`)
   process.exit(1)
 }
@@ -102,13 +113,17 @@ process.on('uncaughtException', (err) => {
 // zero elsewhere. Fail-SOFT: a concurrent lock holder (per-turn inject hook, a
 // parallel `checkpoint complete`) must not break the invocation — the migration
 // is idempotent and simply retries on the next run.
-await migrateRepoKeyCase().catch((e: unknown) => {
-  console.error(
-    `[harnessed] WARN: repo-key case migration deferred: ${e instanceof Error ? e.message : String(e)}`,
-  )
-})
+if (!updateInvocation) {
+  migrateLegacyHarnessedRoot()
+  await migrateRepoKeyCase().catch((e: unknown) => {
+    console.error(
+      `[harnessed] WARN: repo-key case migration deferred: ${e instanceof Error ? e.message : String(e)}`,
+    )
+  })
+}
 
 const program = new Command()
+if (wantsUpdateEnvelope(process.argv)) program.exitOverride()
 
 program
   .name('harnessed')
@@ -165,5 +180,17 @@ const bare = parseBareInvocation(process.argv.slice(2))
 if (bare.here) {
   void runHere({ json: bare.json })
 } else {
-  program.parse(process.argv)
+  try {
+    await program.parseAsync(process.argv)
+  } catch (error) {
+    if (wantsUpdateEnvelope(process.argv) && !hasWrittenUpdateEnvelope()) {
+      const code = (error as { code?: string }).code
+      if (code === 'commander.helpDisplayed' || code === 'commander.version') process.exitCode = 0
+      else
+        emitUpdateResult(
+          updateFailureResult(error, code?.startsWith('commander.') ? 'arguments' : 'fatal'),
+          true,
+        )
+    } else throw error
+  }
 }

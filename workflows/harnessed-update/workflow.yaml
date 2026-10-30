@@ -1,0 +1,19 @@
+schema_version: harnessed.workflow.v3
+workflow: harnessed-update
+description: |
+  Interactive deterministic update: preview, explicit confirmation, then
+  harnessed update --all --json. Report partial results honestly. When the
+  deterministic result retains or fails reviewed third-party components, show a
+  bounded repair proposal and require a second explicit confirmation before
+  harnessed update --all --repair --yes --json.
+
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: []
+
+phases:
+  - id: 01-update
+    name: Preview, confirm, repair and report the update
+    upstream: harnessed
+    capability: harnessed update --all --json
+    model: sonnet
+    max_iterations: 1

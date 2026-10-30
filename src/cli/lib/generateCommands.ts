@@ -39,6 +39,9 @@ import {
   renderHostPrimitives,
   toHostId,
 } from './hostPrimitives.js'
+import { shouldOverwriteFile } from './legacyCommandCleanup.js'
+
+export { shouldOverwriteFile } from './legacyCommandCleanup.js'
 
 /** Single generated command file (filename + content). */
 export interface GeneratedCommand {
@@ -515,34 +518,6 @@ function nameToYamlHintPath(name: string): string {
  *  v3.4.5+ patches can re-overwrite without losing the property. */
 // v4.1.2 — digit-loose across majors so a future marker bump (e.g. v4.x) stays
 // self-overwriting instead of being misread as user-authored + skipped on upgrade.
-const HARNESSED_MARKER_RX = /<!--\s*harnessed-generated:v\d+\.\d+\.\d+\s*-->/
-
-/** Detect the v3.4.3 dual-path body shape — overwrite even though it has no
- *  marker because it shipped before markers existed. Two-signal AND so we don't
- *  false-positive on user files that happen to mention "SlashCommand". Matches
- *  the sub-workflow variant (preferred=SlashCommand, fallback=Task spawn). */
-const V3_4_3_SIGNATURE_SUB_RX =
-  /\*\*Preferred path\*\*[\s\S]*use the SlashCommand tool[\s\S]*\*\*Fallback path\*\*[\s\S]*use the Task tool to spawn/
-
-/** Detect the v3.4.3 master/standalone-orchestrator dispatcher variant — bodies
- *  for /auto, /discuss, /plan, /task, /verify, /research used "dispatch to the
- *  per-sub-workflow slash commands" instead of "use the SlashCommand tool", so
- *  V3_4_3_SIGNATURE_SUB_RX missed them and they were misclassified as
- *  user-authored. This phrase is distinctive enough that **Preferred path**
- *  + the literal sub-workflow dispatch sentence is a safe two-signal AND. */
-const V3_4_3_SIGNATURE_MASTER_RX = /\*\*Preferred path\*\*[\s\S]*dispatch to the per-sub-workflow/
-
-/** Returns true when the file is harnessed-generated (any version) and may be
- *  safely overwritten by `harnessed setup`. User-authored files (neither marker
- *  nor v3.4.3 signature present) are skipped with a warning. */
-export function shouldOverwriteFile(content: string): boolean {
-  return (
-    HARNESSED_MARKER_RX.test(content) ||
-    V3_4_3_SIGNATURE_SUB_RX.test(content) ||
-    V3_4_3_SIGNATURE_MASTER_RX.test(content)
-  )
-}
-
 /** One rendered command payload; writeAllCommands applies the existing marker
  * policy before consuming it. No directory-wide ownership is inferred. */
 export function generateCommandArtifact(

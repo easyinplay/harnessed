@@ -18,6 +18,7 @@
 // Pure module: builds file contents only. The installer (codexHookAdd.ts) owns fs
 // + codex CLI + trust RPC.
 
+import { isAbsolute } from 'node:path'
 import { hookScriptMarker } from './hookEntry.js'
 
 export const CODEX_HOOK_MARKETPLACE = 'harnessed-local'
@@ -37,6 +38,7 @@ export interface CodexHookSpec {
   event: string
   matcher?: string
   hookCommand: string
+  reminderStateRoot?: string
 }
 
 export interface RenderedFile {
@@ -47,14 +49,18 @@ export interface RenderedFile {
 
 /** Hook ids that have a codex port (R2). stop-hook reads Claude Code transcript
  *  shapes — no codex counterpart, so stop-hook-recover stays claude-only. */
-const PORTABLE_IDS: ReadonlySet<string> = new Set(['inject-state', 'check-docs'])
+const PORTABLE_IDS: ReadonlySet<string> = new Set(['inject-state', 'check-docs', 'update-reminder'])
 /** Ids whose behavior depends on the host: codex hook processes carry NO CODEX_*
  *  env (measured), so the host must be passed explicitly (R3). check-docs joined
  *  after the three-shell contract test: codex runs hooks via `pwsh -NoProfile
  *  -Command` on Windows, which collapses any non-zero exit to 1, so the exit-2
  *  PreToolUse block never reaches codex — under codex the gate answers with the
  *  JSON `permissionDecision: deny` form on stdout (exit 0) instead. */
-const HOST_AWARE_IDS: ReadonlySet<string> = new Set(['inject-state', 'check-docs'])
+const HOST_AWARE_IDS: ReadonlySet<string> = new Set([
+  'inject-state',
+  'check-docs',
+  'update-reminder',
+])
 
 export function codexHookPluginName(manifestName: string): string {
   return `harnessed-${manifestName}`
@@ -81,14 +87,36 @@ export function isCodexPortableHook(hookCommand: string): boolean {
   return ident !== null && PORTABLE_IDS.has(ident.id)
 }
 
+function quotePosix(value: string): string {
+  if (Array.from(value).some((character) => character < ' ' || character === '\x7f'))
+    throw new Error('Invalid control character in state root')
+  return `'${value.replaceAll("'", "'\\''")}'`
+}
+
+function quotePowerShell(value: string): string {
+  if (Array.from(value).some((character) => character < ' ' || character === '\x7f'))
+    throw new Error('Invalid control character in state root')
+  return `'${value.replaceAll("'", "''")}'`
+}
+
 /** The hash-stable command literal (R4). `command` and `commandWindows` use it verbatim. */
-export function codexHookCommand(ident: HookIdentity, mode: CodexHookMode): string {
+export function codexHookCommand(
+  ident: HookIdentity,
+  mode: CodexHookMode,
+  stateRoot?: string,
+  windows = false,
+): string {
   const host = HOST_AWARE_IDS.has(ident.id) ? ['--platform', 'codex'] : []
+  const args = [...ident.args]
+  if (ident.id === 'update-reminder' && stateRoot !== undefined) {
+    if (!isAbsolute(stateRoot)) throw new Error('Reminder state root must be absolute')
+    args.push('--state-root', windows ? quotePowerShell(stateRoot) : quotePosix(stateRoot))
+  }
   const head =
     mode === 'binary'
       ? ['harnessed']
       : [mode === 'bun' ? 'bun' : 'node', `"\${PLUGIN_ROOT}/hook.cjs"`]
-  return [...head, ident.id, ...ident.args, ...host].join(' ')
+  return [...head, ident.id, ...args, ...host].join(' ')
 }
 
 /** Deterministic trust key for the single group/handler we generate (measured shape). */
@@ -115,6 +143,7 @@ export interface CodexInstallInfo {
   /** harnessed assets root (npm: package root) — the shim resolves bin/ + dist/ here. */
   assetsRoot: string
   harnessedVersion: string
+  reminderStateRoot?: string
 }
 
 const json = (v: unknown) => `${JSON.stringify(v, null, 2)}\n`
@@ -127,10 +156,11 @@ export function renderCodexHookPlugin(
   const ident = parseHookIdentity(spec.hookCommand)
   if (ident === null || !PORTABLE_IDS.has(ident.id)) return null
   const pluginName = codexHookPluginName(spec.manifestName)
-  const command = codexHookCommand(ident, mode)
+  const command = codexHookCommand(ident, mode, spec.reminderStateRoot)
+  const commandWindows = codexHookCommand(ident, mode, spec.reminderStateRoot, true)
   const group = {
     ...(spec.matcher !== undefined ? { matcher: spec.matcher } : {}),
-    hooks: [{ type: 'command', command, commandWindows: command }],
+    hooks: [{ type: 'command', command, commandWindows }],
   }
   const base = `plugins/${pluginName}`
   const files: RenderedFile[] = [
@@ -179,6 +209,7 @@ const id = process.argv[2]
 const info = installInfo()
 if (!info || typeof info.assetsRoot !== 'string' || !/^[a-z][a-z-]*$/.test(id || '')) process.exit(0)
 const bin = join(info.assetsRoot, 'bin', 'harnessed-' + id + '.mjs')
+if (id === 'update-reminder' && !existsSync(bin)) process.exit(0)
 const target = existsSync(bin) ? bin : join(info.assetsRoot, 'dist', 'cli.mjs')
 import(pathToFileURL(target).href).catch(() => process.exit(0))
 `

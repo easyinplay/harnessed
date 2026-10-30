@@ -14,9 +14,10 @@
 //   1 → fs.cp failed or base/selected optional failed (after all setup tail work)
 //   2 → no SKILL.md workflows found (nothing to install)
 
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
+import { resolveUpdateReminderRuntime } from '../compile/updateReminderEntrypoint.js'
 import { getLocale, t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
@@ -28,6 +29,7 @@ import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
 import { enableUserLangInSettings } from './lib/enableUserLangInSettings.js'
 import { type CommandRenderOptions, writeAllCommands } from './lib/generateCommands.js'
 import { loadHostPrimitives, renderHostPrimitives, toHostId } from './lib/hostPrimitives.js'
+import { removeLegacyClaudeCommands } from './lib/legacyCommandCleanup.js'
 import { loadCapabilities, renderAllSkills } from './lib/renderSkillTemplates.js'
 import {
   makeIdempotentProbe,
@@ -49,6 +51,7 @@ interface RawOpts {
   autoInstall?: boolean // v3.9.0 P4 — commander `--no-auto-install` flag flips this to false
   updateInstalled?: boolean // v3.9.6 — force re-install for already-installed plugins (excludes MCP)
   trustCodexHooks?: boolean // v16.0 Phase 64 (R8) — explicit codex hook trust consent
+  updateReminder?: boolean
 }
 
 /** Known platform ids accepted by `setup --platform <id>`.
@@ -104,12 +107,19 @@ async function applyPlatformOption(platform: string, persist: boolean): Promise<
   }
 }
 
-async function listBaseManifests(pkgRoot: string): Promise<string[]> {
+async function listBaseManifests(pkgRoot: string, updateReminder: boolean): Promise<string[]> {
   const out: string[] = []
   for (const d of ['manifests/tools', 'manifests/skill-packs']) {
     try {
       const entries = await readdir(resolve(pkgRoot, d))
       for (const f of entries.sort()) if (f.endsWith('.yaml')) out.push(resolve(pkgRoot, d, f))
+    } catch {}
+  }
+  if (updateReminder) {
+    const reminder = resolve(pkgRoot, 'manifests/cc-hooks/update-reminder.yaml')
+    try {
+      await access(reminder)
+      out.push(reminder)
     } catch {}
   }
   return out
@@ -309,6 +319,10 @@ export function registerSetup(program: Command): void {
     .option('--non-interactive', 'skip all confirm prompts (CI / scripted setup)')
     .option('--system', 'allow L4 system-wide installs (e.g. global npm install)')
     .option('--no-auto-install', 'do not prompt to auto-install missing plugins (advisory only)')
+    .option(
+      '--no-update-reminder',
+      'persistently disable update reminders; to re-enable, remove update-reminder-preferences.json from the reminder state root and run setup',
+    )
     // v3.9.6 — force re-install for already-installed third-party plugins
     // (skip idempotent_check probe). MCP installers ignore this flag —
     // existing mcpServers config is never overwritten unconditionally.
@@ -380,7 +394,24 @@ export function registerSetup(program: Command): void {
       // the concrete already-installed list so they can decide informed.
       // CLI flag `--update-installed` skips the prompt and forces from the
       // first pass (CI / scripted use).
-      const manifestPaths = await listBaseManifests(pkgRoot)
+      const reminder = resolveUpdateReminderRuntime({ args: ['--platform', setupContext.hostId] })
+      if (reminder) {
+        try {
+          await mkdir(reminder.stateRoot, { recursive: true })
+          await writeFile(
+            reminder.preferencesPath,
+            JSON.stringify({ schemaVersion: 1, enabled: raw.updateReminder !== false }),
+            { encoding: 'utf8', flag: raw.updateReminder === false ? 'w' : 'wx' },
+          )
+        } catch (error) {
+          if (raw.updateReminder === false) throw error
+          if ((error as NodeJS.ErrnoException).code !== 'EEXIST')
+            console.warn(
+              `  [update-reminder] could not initialize preferences (${(error as Error).message})`,
+            )
+        }
+      }
+      const manifestPaths = await listBaseManifests(pkgRoot, raw.updateReminder !== false)
       const forceFirstPass = raw.updateInstalled === true
       // v4.13.0 live progress, 4.36.0 transient — see makeProgressPrinter.
       const progress = makeProgressPrinter()
@@ -608,72 +639,68 @@ export function registerSetup(program: Command): void {
         /* advisory ledger — see above */
       }
 
-      // ── Step A.6: Generate ~/.claude/commands/<x>.md (v3.4.3) ───────────────
-      // v3.4.3 — SKILL.md alone does NOT register a slash command. Claude Code
-      // platform-level slash commands require `~/.claude/commands/<x>.md`
-      // (filename = slash name; YAML frontmatter + body = prompt). This step
-      // writes one per installed sub-workflow, with a dual-path body: preferred
-      // (upstream slash cmd) + fallback (Task-spawn self-contained role prompt
-      // adapted from gstack expert prompts). Skip + warn if user already has
-      // a same-named commands/ file (additive only — never overwrite).
+      // ── Step A.6: Codex prompts; Claude legacy command cleanup ──────────────
+      // Current Claude Code registers user skills directly in `/`, so generated
+      // commands duplicate every workflow. Codex still requires prompts/ files.
       const commandsBase = join(
         setupContext.nativeHome,
         setupContext.hostId === 'codex' ? 'prompts' : 'commands',
       )
-      try {
-        await mkdir(commandsBase, { recursive: true })
-      } catch (e) {
-        console.warn(
-          `  [A.6] could not create ${commandsBase} — skipping commands/ generation (${(e as Error).message})`,
-        )
-      }
-      let capabilitiesMap = {}
-      try {
-        capabilitiesMap = await loadCapabilities(workflowsDir)
-      } catch (e) {
-        console.warn(
-          `  [A.6] capabilities.yaml unreadable — skipping commands/ generation (${(e as Error).message})`,
-        )
-      }
-      const rolePrompts = await loadRolePrompts(workflowsDir)
-      const installedPlugins = readInstalledPlugins(undefined, setupContext)
-      const installedUserSkills = readInstalledUserSkills(undefined, setupContext)
-      // v16.0 Phase 65 batch D — resolve the host + load host-primitives.yaml ONCE
-      // for the whole commands/ pass (sister renderAllSkills one-shot rule).
-      // locale is pinned to `en`: the command BODY template is English by
-      // construction (only `prompt.description` localizes, via loadRolePrompts),
-      // and the zh sibling localizes e.g. `spawn_subagent.plural`, which would
-      // splice Chinese into an English sentence.
-      // `descriptionTable` is the locale-matched second table, used for
-      // `prompt.description` ONLY — that is the one field on this surface that comes
-      // from the localized role-prompts sibling, so rendering it off the en table
-      // would put the English codex gloss inside a Chinese sentence. On an en
-      // install both tables are the same object and behaviour is unchanged.
+      let rolePrompts: Awaited<ReturnType<typeof loadRolePrompts>> = {}
+      let commandHostRender: CommandRenderOptions | undefined
       const commandLocale = getLocale()
-      const commandHostRender: CommandRenderOptions = {
-        host: toHostId(setupContext.hostId),
-        table: await loadHostPrimitives({ workflowsDir, locale: 'en' }),
-        descriptionTable:
-          commandLocale === 'en'
-            ? undefined
-            : await loadHostPrimitives({ workflowsDir, locale: commandLocale }),
-      }
-      const cmdResult = await writeAllCommands(
-        skillNames,
-        commandsBase,
-        rolePrompts,
-        capabilitiesMap,
-        installedPlugins,
-        installedUserSkills,
-        async (p, c) => writeFile(p, c, 'utf8'),
-        undefined,
-        undefined,
-        commandHostRender,
-      )
-      const writtenCount = cmdResult.results.filter((r) => r.written).length
-      const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
-      if (writtenCount > 0 || skippedCount > 0) {
-        console.log(`  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`)
+      if (setupContext.hostId === 'claude') {
+        const cleanup = await removeLegacyClaudeCommands(commandsBase)
+        for (const warning of cleanup.warnings) console.warn(`  [A.6] ${warning}`)
+        if (cleanup.removed.length > 0) {
+          console.log(`  removed ${cleanup.removed.length} legacy commands/<x>.md file(s)`)
+        }
+      } else {
+        try {
+          await mkdir(commandsBase, { recursive: true })
+        } catch (e) {
+          console.warn(
+            `  [A.6] could not create ${commandsBase} — skipping commands/ generation (${(e as Error).message})`,
+          )
+        }
+        let capabilitiesMap = {}
+        try {
+          capabilitiesMap = await loadCapabilities(workflowsDir)
+        } catch (e) {
+          console.warn(
+            `  [A.6] capabilities.yaml unreadable — skipping commands/ generation (${(e as Error).message})`,
+          )
+        }
+        rolePrompts = await loadRolePrompts(workflowsDir)
+        const installedPlugins = readInstalledPlugins(undefined, setupContext)
+        const installedUserSkills = readInstalledUserSkills(undefined, setupContext)
+        commandHostRender = {
+          host: toHostId(setupContext.hostId),
+          table: await loadHostPrimitives({ workflowsDir, locale: 'en' }),
+          descriptionTable:
+            commandLocale === 'en'
+              ? undefined
+              : await loadHostPrimitives({ workflowsDir, locale: commandLocale }),
+        }
+        const cmdResult = await writeAllCommands(
+          skillNames,
+          commandsBase,
+          rolePrompts,
+          capabilitiesMap,
+          installedPlugins,
+          installedUserSkills,
+          async (p, c) => writeFile(p, c, 'utf8'),
+          undefined,
+          undefined,
+          commandHostRender,
+        )
+        const writtenCount = cmdResult.results.filter((r) => r.written).length
+        const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
+        if (writtenCount > 0 || skippedCount > 0) {
+          console.log(
+            `  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`,
+          )
+        }
       }
 
       // ── Step A.7: <CODEX_HOME>/agents/harnessed-<sub>.toml (v16.0 Phase 66) ─
@@ -686,7 +713,7 @@ export function registerSetup(program: Command): void {
       // the commands pass, whose English body template has no localized sibling.
       // Dynamic imports mirror l4-rescue / optional-offer — setup tests that
       // factory-mock this module's static imports need no new mock exports.
-      if (setupContext.hostId === 'codex') {
+      if (setupContext.hostId === 'codex' && commandHostRender) {
         try {
           const [agentRoles, { renderRolePromptsForHost }] = await Promise.all([
             import('../installers/lib/codexAgentRoles.js'),

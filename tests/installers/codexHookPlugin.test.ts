@@ -5,6 +5,10 @@
 // upgrades / reinstalls / node moves: it may name only `${PLUGIN_ROOT}` and a
 // PATH-resolved first token, never an absolute install path.
 
+import { spawnSync } from 'node:child_process'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   CODEX_HOOK_MARKETPLACE,
@@ -17,6 +21,60 @@ import {
   renderCodexHookPlugin,
 } from '../../src/installers/lib/codexHookPlugin.js'
 
+describe('Phase 78 T5 minimal reminder delivery', () => {
+  it.each([
+    'npm',
+    'bun',
+    'binary',
+  ] as const)('quotes a fixed reminder root in %s delivery', (mode) => {
+    const stateRoot = join(tmpdir(), "state's $;&` root")
+    const rendered = renderCodexHookPlugin(
+      {
+        manifestName: 'update-reminder',
+        event: 'SessionStart',
+        hookCommand: 'node bin/harnessed-update-reminder.mjs',
+        reminderStateRoot: stateRoot,
+      },
+      mode,
+    )
+    const hooks = JSON.parse(
+      rendered?.files.find((file) => file.path.endsWith('hooks/hooks.json'))?.content ?? '{}',
+    )
+    const hook = hooks.hooks.SessionStart[0].hooks[0]
+    expect(hook.command).toContain(
+      `--state-root '${stateRoot.replaceAll("'", "'\\''")}' --platform codex`,
+    )
+    expect(hook.commandWindows).toContain(
+      `--state-root '${stateRoot.replaceAll("'", "''")}' --platform codex`,
+    )
+    expect(() => codexHookCommand({ id: 'update-reminder', args: [] }, mode, 'relative')).toThrow()
+    expect(() =>
+      codexHookCommand({ id: 'update-reminder', args: [] }, mode, `${stateRoot}\n`),
+    ).toThrow()
+  })
+
+  it('keeps reminder and invalidation trust keys separate', () => {
+    expect(codexHookTrustKey('harnessed-update-reminder', 'SessionStart')).not.toBe(
+      codexHookTrustKey('harnessed-inject-state', 'SessionStart'),
+    )
+    expect(parseHookIdentity('harnessed update-reminder --platform codex')).toEqual({
+      id: 'update-reminder',
+      args: ['--platform', 'codex'],
+    })
+  })
+
+  it('recognizes a distinct portable reminder identity', () => {
+    const hookCommand = 'node bin/harnessed-update-reminder.mjs'
+    expect(parseHookIdentity(hookCommand)).toEqual({ id: 'update-reminder', args: [] })
+    expect(
+      renderCodexHookPlugin(
+        { manifestName: 'update-reminder', event: 'SessionStart', hookCommand },
+        'npm',
+      ),
+    ).not.toBeNull()
+  })
+})
+
 describe('parseHookIdentity — manifest hook_command → first-party hook id + tail args', () => {
   it.each([
     ['node bin/harnessed-inject-state.mjs', { id: 'inject-state', args: [] }],
@@ -26,6 +84,7 @@ describe('parseHookIdentity — manifest hook_command → first-party hook id + 
     ],
     ['harnessed check-docs --hook', { id: 'check-docs', args: ['--hook'] }],
     ['node bin/harnessed-stop-hook.mjs', { id: 'stop-hook', args: [] }],
+    ['node bin/harnessed-update-reminder.mjs', { id: 'update-reminder', args: [] }],
   ])('%s', (cmd, expected) => {
     expect(parseHookIdentity(cmd)).toEqual(expected)
   })
@@ -67,6 +126,14 @@ describe('codexHookCommand — hash-stable literal (R4)', () => {
     expect(codexHookCommand({ id: 'check-docs', args: ['--hook'] }, 'binary')).toBe(
       'harnessed check-docs --hook --platform codex',
     )
+  })
+
+  it.each([
+    ['npm', 'node "${PLUGIN_ROOT}/hook.cjs" update-reminder --platform codex'],
+    ['bun', 'bun "${PLUGIN_ROOT}/hook.cjs" update-reminder --platform codex'],
+    ['binary', 'harnessed update-reminder --platform codex'],
+  ] as const)('routes update-reminder through the fixed %s host command', (mode, expected) => {
+    expect(codexHookCommand({ id: 'update-reminder', args: [] }, mode)).toBe(expected)
   })
 })
 
@@ -162,6 +229,57 @@ describe('renderCodexHookPlugin — one plugin per hook manifest (CQ2)', () => {
         'npm',
       ),
     ).toBeNull()
+  })
+
+  it('renders update-reminder as a portable host-aware plugin in every mode', () => {
+    for (const mode of ['npm', 'bun', 'binary'] as const) {
+      const rendered = renderCodexHookPlugin(
+        {
+          manifestName: 'update-reminder',
+          event: 'SessionStart',
+          hookCommand: 'node bin/harnessed-update-reminder.mjs',
+        },
+        mode,
+      )
+      expect(rendered?.pluginName).toBe('harnessed-update-reminder')
+      const hooks = JSON.parse(
+        rendered?.files.find((file) => file.path.endsWith('hooks/hooks.json'))?.content ?? '{}',
+      )
+      expect(hooks.hooks.SessionStart[0].hooks[0].command).toContain(
+        'update-reminder --platform codex',
+      )
+    }
+  })
+
+  it('never falls back to the full CLI when the standalone reminder bin is missing', () => {
+    const root = mkdtempSync(join(tmpdir(), 'harnessed-reminder-shim-'))
+    try {
+      const pluginRoot = join(root, 'plugin')
+      const assetsRoot = join(root, 'assets')
+      const marker = join(root, 'cli-imported')
+      mkdirSync(join(assetsRoot, 'dist'), { recursive: true })
+      mkdirSync(pluginRoot, { recursive: true })
+      writeFileSync(join(pluginRoot, 'hook.cjs'), CODEX_HOOK_SHIM)
+      writeFileSync(join(pluginRoot, 'install.json'), JSON.stringify({ assetsRoot }))
+      writeFileSync(
+        join(assetsRoot, 'dist', 'cli.mjs'),
+        `import { writeFileSync } from 'node:fs'; writeFileSync(${JSON.stringify(marker)}, 'bad');`,
+      )
+      const result = spawnSync(
+        process.execPath,
+        [join(pluginRoot, 'hook.cjs'), 'update-reminder'],
+        {
+          cwd: root,
+          encoding: 'utf8',
+        },
+      )
+      expect(result.status).toBe(0)
+      expect(result.stdout).toBe('')
+      expect(result.stderr).toBe('')
+      expect(existsSync(marker)).toBe(false)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
   })
 
   it('the generated literal never embeds an absolute path (hash-stable)', () => {

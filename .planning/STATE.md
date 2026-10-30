@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: npm-5.0.5
 milestone_name: Claude Plugin Retention Probe
 status: in_progress
-last_updated: "2026-10-29"
-last_activity: 2026-10-29
+last_updated: "2026-10-30"
+last_activity: 2026-10-30
 progress:
   total_phases: 1
   completed_phases: 0
@@ -28,7 +28,7 @@ progress:
   3. **B 路线 Phase 3**(4.27–4.28):`harnessed update` compiled 分支(sha256/原子替换/回滚网)+ hook 自包含(inject-state 子命令)+ 一行安装器(install.sh/ps1 → 平台惯例目录)+ installer/update CI 演习(3-OS)。资产命名契约冻结公共 API。CEO plan:`~/.gstack/projects/easyinplay-harnessed/ceo-plans/2026-07-12-b5-phase3-slice1.md`。
 
 ## Current Position
-
+- **Phase 79 implemented locally (2026-10-30)**: user-confirmed, exact-component-scope Agent repair with bounded `claude -p` / `codex exec`, explicit `--repair --yes`, filtered environment, no automatic trust, and deterministic post-repair verification. Full local Vitest: 395 passed files / 4 skipped, 5039 passed tests / 43 skipped / 1 todo; build and typecheck pass; lint exit 0 with 18 pre-existing warnings. No Phase 79 commit/push/tag/publish; latest published npm **5.0.4**, package candidate **5.0.5** unpublished.
 - **npm-5.0.5 candidate pushed-main (2026-10-29; CI pending, not published)**: Phase 75 implementation/validation/review complete; Tasks 1-5 complete, Task 6 pending (tag/publish not authorized). Implementation/version/planning commit `33965c97e2c4a51892008d22fc351e583627c09b` pushed to `origin/main`; CI pending observation. Supplied final validation: focused 7 files/204 tests; full Vitest 375 files/4561 passed/11 skipped/1 todo; build/typecheck/docs 30/schema/lint (exit 0, 16 existing warnings)/diff-check/npm pack dry-run passed. Two final review tracks found no blocking issues; non-blocking duplicate-qualified-ID caveat is recorded in `phases/75-5.0.5-plugin-retention-probe/findings.md`. Plan: `phases/75-5.0.5-plugin-retention-probe/task_plan.md`. Latest public npm remains 5.0.4; no 5.0.5 CI, tag, npm or release completion claimed.
 - **npm5.0.4 closed (2026-10-29; published and verified complete)**: Phase 74 complete (1/1 phase, 1/1 plan). Focused handoff 161/161, candidate focused 3/3, full Vitest 374 files/4546 passed/11 skipped/1 todo, build/typecheck/lint/diff-check passed (16 existing lint warnings). Pre-publication `node dist/cli.mjs release-preflight` passed 4/4, result `release-ready` (details in receipt). Initial parallel test/build contention caused 3 fixture failures; serial reruns passed. Summary: `phases/74-5.0.4-maintenance-release/SUMMARY.md`; exact tag/hash/integrity evidence: `releases/5.0.4.md`. Website browser not run; acceptance root `C:/Users/easyi/AppData/Local/Temp/harnessed-504-accept-20261029-main` retained, not cleaned. Closeout docs will be committed and pushed separately, without recreating the tag, repeating publication or rerunning runtime acceptance.
 

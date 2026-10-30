@@ -24,6 +24,7 @@ import {
   shouldOverwriteFile,
   writeAllCommands,
 } from '../../src/cli/lib/generateCommands.js'
+import { removeLegacyClaudeCommands } from '../../src/cli/lib/legacyCommandCleanup.js'
 import { loadRolePrompts, type RolePrompt } from '../../src/workflow/rolePrompts.js'
 
 let tmpRoot: string
@@ -346,6 +347,76 @@ describe('writeAllCommands — directory integration', () => {
     expect(existsSync(join(commandsDir, 'task-deliver.md'))).toBe(true)
     // Should NOT pollute namespace with prefix variants
     expect(existsSync(join(commandsDir, 'harnessed-verify-paranoid.md'))).toBe(false)
+  })
+})
+
+describe('removeLegacyClaudeCommands — Claude skill-menu migration', () => {
+  it('removes only harnessed-owned marker and v3.4.3 legacy command files', async () => {
+    const commandsDir = join(tmpRoot, 'commands')
+    mkdirSync(commandsDir, { recursive: true })
+    const marked = join(commandsDir, 'verify.md')
+    const legacy = join(commandsDir, 'auto.md')
+    const userAuthored = join(commandsDir, 'task.md')
+    writeFileSync(marked, '# generated\n<!-- harnessed-generated:v5.0.5 -->\n', 'utf8')
+    writeFileSync(
+      legacy,
+      '**Preferred path** (master orchestrator): dispatch to the per-sub-workflow slash commands\n**Fallback path**: run inline',
+      'utf8',
+    )
+    writeFileSync(userAuthored, '# my custom task command\n', 'utf8')
+
+    const result = await removeLegacyClaudeCommands(commandsDir)
+
+    expect(existsSync(marked)).toBe(false)
+    expect(existsSync(legacy)).toBe(false)
+    expect(readFileSync(userAuthored, 'utf8')).toBe('# my custom task command\n')
+    expect(result.removed.sort()).toEqual([marked, legacy].sort())
+    expect(result.skipped).toEqual([userAuthored])
+    expect(result.warnings).toEqual([])
+  })
+
+  it('reports read and unlink failures instead of silently leaving duplicate entries', async () => {
+    const commandsDir = join(tmpRoot, 'commands')
+    const readFailure = join(commandsDir, 'read-failure.md')
+    const unlinkFailure = join(commandsDir, 'unlink-failure.md')
+    const result = await removeLegacyClaudeCommands(commandsDir, {
+      readdir: async () => ['read-failure.md', 'unlink-failure.md'],
+      readFile: async (path) => {
+        if (path === readFailure) throw new Error('read denied')
+        return '<!-- harnessed-generated:v5.0.5 -->'
+      },
+      unlink: async () => {
+        throw new Error('unlink denied')
+      },
+    })
+
+    expect(result.removed).toEqual([])
+    expect(result.skipped).toEqual([readFailure, unlinkFailure])
+    expect(result.warnings).toEqual([
+      `${readFailure}: read failed (read denied)`,
+      `${unlinkFailure}: remove failed (unlink denied)`,
+    ])
+  })
+
+  it('treats an absent commands directory as idempotent but reports other directory failures', async () => {
+    const commandsDir = join(tmpRoot, 'commands')
+    const absent = await removeLegacyClaudeCommands(commandsDir, {
+      readdir: async () => {
+        throw Object.assign(new Error('missing'), { code: 'ENOENT' })
+      },
+      readFile: async () => '',
+      unlink: async () => undefined,
+    })
+    const denied = await removeLegacyClaudeCommands(commandsDir, {
+      readdir: async () => {
+        throw Object.assign(new Error('denied'), { code: 'EACCES' })
+      },
+      readFile: async () => '',
+      unlink: async () => undefined,
+    })
+
+    expect(absent).toEqual({ removed: [], skipped: [], warnings: [] })
+    expect(denied.warnings).toEqual([`${commandsDir}: directory read failed (denied)`])
   })
 })
 

@@ -13,9 +13,15 @@ schema_version: harnessed.workflow.v3
 workflow: ship-preflight
 description: |
   Stage ⑤.a release-preflight gate — runs `harnessed release-preflight` (read-only:
-  CHANGELOG [Unreleased] non-empty + package.json version + git working tree clean +
-  v<version> tag absent). A failing gate BLOCKS shipping until the release is documented
-  and the tree is clean. Nothing is pushed, published, or tagged here.
+  CHANGELOG [Unreleased] non-empty or valid version section + static SemVer from
+  package.json.version, pyproject.toml [project].version / [tool.poetry].version,
+  or Cargo.toml [package].version + git working tree clean + v<version> tag absent).
+  Use `harnessed release-preflight --release-version <semver>` to override manifests.
+  Equal discovered versions are accepted; conflicting valid versions fail closed and
+  require an explicit override. Missing, dynamic, workspace-inherited or malformed
+  versions fail when no static valid target can be determined; tag-absent is warn/not-run.
+  Git tags never determine the target version. A failing gate BLOCKS shipping.
+  Nothing is pushed, published, or tagged here.
 
 disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
 tools_available: [release-preflight]

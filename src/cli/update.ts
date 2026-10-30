@@ -12,52 +12,102 @@ import { type Command, Option } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
-import { detectPlatform } from '../platform/platform.js'
-import { bunExecutable, isBunRuntime } from '../platform/runtime.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../platform/hostInstallContext.js'
+import { isBunRuntime } from '../platform/runtime.js'
+import { preparePackageUpdate } from './lib/packageUpdateTarget.js'
+import {
+  emitUpdateResult,
+  executeUpdate,
+  type UpdateOptions,
+  updateFailureResult,
+  updateTarget,
+  validateUpdateOptions,
+} from './lib/updateCoordinator.js'
 
-interface UpdateOpts {
-  packageManager?: 'npm' | 'bun'
-  check?: boolean
-  upstreams?: boolean
-  all?: boolean
-  migrationReport?: boolean
-  dryRun?: boolean
-  /** TODOS 3 (4.32.20) — compiled-only: restore a banked binary from
-   *  bin-backup/. `true` = newest banked version; a string = that version. */
-  rollback?: boolean | string
+class LegacyUpdateExit extends Error {
+  constructor(readonly code: number) {
+    super(`exit ${code}`)
+  }
+}
+
+function finishLegacyUpdate(code: number): never {
+  throw new LegacyUpdateExit(code)
+}
+
+async function withLegacyUpdateLock(
+  opts: UpdateOptions,
+  work: (
+    context?: HostInstallContext,
+    target?: { entryPath?: string; targetKey: string },
+  ) => Promise<void>,
+): Promise<void> {
+  const run = async (
+    context?: HostInstallContext,
+    target?: { entryPath?: string; targetKey: string },
+  ) => {
+    try {
+      await work(context, target)
+    } catch (error) {
+      if (!(error instanceof LegacyUpdateExit)) throw error
+      process.exitCode = error.code
+    }
+  }
+  if (
+    opts.json ||
+    opts.updateContinuation !== undefined ||
+    opts.check ||
+    opts.dryRun ||
+    opts.migrationReport ||
+    (!opts.rollback && (opts.all || opts.upstreams || opts.platform || opts.nonInteractive)) ||
+    validateUpdateOptions(opts)
+  ) {
+    await run()
+    return
+  }
+  const { withUpdateLock } = await import('./lib/updateLock.js')
+  const context = captureHostInstallContext({ hostId: opts.platform })
+  const target = updateTarget()
+  const result = await withUpdateLock(
+    { stateRoot: context.platform.stateRoot, target: target.target },
+    (lock) => run(context, { entryPath: target.entryPath, targetKey: lock.targetKey }),
+  )
+  if (result.status === 'busy') {
+    console.warn('[harnessed] Another update owns this executable target')
+    process.exitCode = 1
+  }
 }
 
 /** 4.27.0 (B3 T2) — compiled-branch flow. Returns true when handled (the npm
  *  flow must not run), false = fall through to npm (safety-valve 'refused').
  *  Exit-code contract: 'error' exits non-zero with the actionable message. */
-async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
-  const hostName = detectPlatform().id === 'codex' ? 'Codex' : 'Claude Code'
+async function runCompiledFlow(opts: UpdateOptions, context: HostInstallContext): Promise<boolean> {
+  const hostName = context.hostId === 'codex' ? 'Codex' : 'Claude Code'
   const { realSelfUpdateDeps, runBinaryRollback, runBinarySelfUpdate } = await import(
     './lib/selfUpdateBinary.js'
   )
   // TODOS 3 (4.32.20) — --rollback: restore from bin-backup/ (E4 net) via the
   // same rename dance; the replaced binary is banked first (reversible).
   if (opts.rollback !== undefined && opts.rollback !== false) {
-    const r = await runBinaryRollback(realSelfUpdateDeps(), {
+    const r = await runBinaryRollback(realSelfUpdateDeps(context), {
       version: typeof opts.rollback === 'string' ? opts.rollback : undefined,
     })
     switch (r.status) {
       case 'refused':
         console.warn(`[harnessed] rollback refused: ${r.reason} — use npm to change versions`)
-        process.exit(1)
-        return true
+        return finishLegacyUpdate(1)
       case 'error':
         console.warn(`[harnessed] rollback failed: ${r.message}`)
-        process.exit(1)
-        return true
+        return finishLegacyUpdate(1)
       case 'rolled-back':
         console.log(`[harnessed] rolled back ${r.from} → ${r.to} (from ${r.backupUsed}).`)
         console.log(`[harnessed] restart ${hostName} so the restored version takes effect.`)
-        process.exit(0)
-        return true
+        return finishLegacyUpdate(0)
     }
   }
-  const r = await runBinarySelfUpdate(realSelfUpdateDeps(), {
+  const r = await runBinarySelfUpdate(realSelfUpdateDeps(context), {
     dryRun: opts.dryRun === true,
     check: opts.check === true,
   })
@@ -67,17 +117,14 @@ async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
       return false
     case 'checked':
       console.log(`  installed: ${r.installed}\n  latest:    ${r.latest}\n  status:    ${r.cmp}`)
-      process.exit(0)
-      return true
+      return finishLegacyUpdate(0)
     case 'dry-run':
       console.log('[harnessed] update --dry-run (compiled binary) — would run:')
       for (const s of r.steps) console.log(`  - ${s}`)
-      process.exit(0)
-      return true
+      return finishLegacyUpdate(0)
     case 'current':
       console.log(`[harnessed] already up to date (${r.version}).`)
-      process.exit(0)
-      return true
+      return finishLegacyUpdate(0)
     case 'updated': {
       console.log(`[harnessed] updated ${r.from} → ${r.to}.`)
       if (r.backupDir) console.log(`  previous binary kept at: ${r.backupDir}`)
@@ -90,7 +137,7 @@ async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
         const { gcCompiledArtifacts } = await import('./gc.js')
         await gcCompiledArtifacts({
           keepVersions: [r.from, r.to],
-          stateRoot: detectPlatform().stateRoot,
+          stateRoot: context.platform.stateRoot,
           execPath: null, // never sweep .bak in the same run that created it
         })
       } catch {
@@ -100,18 +147,12 @@ async function runCompiledFlow(opts: UpdateOpts): Promise<boolean> {
         `[harnessed] restart ${hostName} so the new version + hooks take effect. ` +
           `Manual rollback if needed: copy the binary back from the bin-backup dir above.`,
       )
-      process.exit(0)
-      return true
+      return finishLegacyUpdate(0)
     }
     case 'error':
       console.warn(`[harnessed] update failed: ${r.message}`)
-      process.exit(1)
-      return true
+      return finishLegacyUpdate(1)
   }
-}
-
-function npmExecutable(): string {
-  return process.platform === 'win32' ? 'npm.cmd' : 'npm'
 }
 
 function changelogTop(): string | null {
@@ -139,6 +180,12 @@ export function registerUpdate(program: Command): void {
     .option('--all', 'alias for --upstreams (self + upstreams)')
     .option('--migration-report', 'read-only inventory of stale harnessed state (deletes nothing)')
     .option('--dry-run', 'preview what the update would do without writing anything')
+    .option('--json', 'emit one structured update result')
+    .option('--platform <host>', 'target host: claude | codex')
+    .option('--non-interactive', 'skip prompts')
+    .option('--repair', 'request explicitly authorized third-party agent repair')
+    .option('--yes', 'authorize the listed repair scope in automation')
+    .addOption(new Option('--update-continuation <payload>').hideHelp())
     .addOption(
       new Option(
         '--package-manager <npm|bun>',
@@ -149,124 +196,135 @@ export function registerUpdate(program: Command): void {
       '--rollback [version]',
       'compiled binary only — restore a previous version from bin-backup/ (default: newest banked)',
     )
-    .action(async (opts: UpdateOpts) => {
-      if (opts.packageManager !== undefined && isCompiledRuntime()) {
-        console.warn(
-          '[harnessed] --package-manager is not applicable to compiled binaries; omit it to keep binary self-update (no channel switch).',
-        )
-        process.exit(1)
-        return
-      }
-      // --migration-report: read-only, no version check, no install.
-      if (opts.migrationReport === true) {
-        const { collectMigrationReport } = await import('./lib/migration-report.js')
-        const items = collectMigrationReport(process.cwd(), getHarnessedRoot())
-        console.log('\n  migration report (read-only — nothing is deleted):\n')
-        for (const it of items) {
-          console.log(`  ${it.present ? 'present' : 'absent '}  ${it.name}`)
-          console.log(`           ${it.path}`)
-          if (it.present) console.log(`           hint: ${it.hint}`)
-        }
-        process.exit(0)
-      }
-
-      // 4.27.0 (B3 T2, rev3 issue 4) — mode detection BEFORE any npm touch:
-      // the npm-flow preflight below exits 0 when npm is unreachable, and
-      // compiled machines usually have no npm — a later check would short-
-      // circuit the compiled branch forever. Latest source on this branch is
-      // GitHub releases/latest, never `npm view`.
-      if (isCompiledRuntime()) {
-        const handled = await runCompiledFlow(opts)
-        if (handled) return
-      } else if (opts.rollback !== undefined && opts.rollback !== false) {
-        // npm-managed installs version-switch via npm, not bin-backup.
-        console.warn(
-          opts.packageManager === 'bun'
-            ? '[harnessed] --rollback is compiled-binary only; for Bun use `bun add --global harnessed@<version>`'
-            : '[harnessed] --rollback is compiled-binary only — on npm use `npm i -g harnessed@<version>`',
-        )
-        process.exit(1)
-      }
-
-      const manager = opts.packageManager ?? 'npm'
-      if (isBunRuntime() && opts.packageManager === undefined) {
-        console.warn(
-          '[harnessed] Bun runtime does not identify the install manager. Keeping the original npm update default; use --package-manager bun explicitly for a Bun-managed package.',
-        )
-      }
-      const { compareVersions, fetchLatestNpmVersion, fetchLatestBunVersion } = await import(
-        './lib/version-check.js'
-      )
-      const latest =
-        manager === 'bun' ? await fetchLatestBunVersion() : await fetchLatestNpmVersion()
-      if (!latest) {
-        console.warn(
-          manager === 'bun'
-            ? '[harnessed] could not check the latest version via bun info (unavailable, timed out, or invalid output); no update performed. Try again with the selected package manager.'
-            : '[harnessed] could not reach npm to check the latest version — try again later',
-        )
-        process.exit(0)
-      }
-      const cmp = compareVersions(pkg.version, latest)
-
-      if (opts.check === true) {
-        console.log(`  installed: ${pkg.version}\n  latest:    ${latest}\n  status:    ${cmp}`)
-        process.exit(0)
-      }
-
-      if (cmp === 'behind') {
-        if (opts.dryRun === true) {
-          console.log(
-            `[harnessed] update --dry-run — would run: ${manager === 'bun' ? 'bun add --global' : 'npm i -g'} harnessed@latest (${pkg.version} → ${latest})`,
+    .action(async (localOpts: UpdateOptions, command: Command) => {
+      const lang = command.optsWithGlobals().lang as string | undefined
+      const opts = lang === undefined ? localOpts : { ...localOpts, lang }
+      return withLegacyUpdateLock(opts, async (context, target) => {
+        const invalid = validateUpdateOptions(opts)
+        if (
+          opts.json ||
+          opts.updateContinuation !== undefined ||
+          invalid ||
+          ((opts.all || opts.upstreams || opts.platform || opts.nonInteractive || opts.repair) &&
+            !opts.migrationReport &&
+            !opts.rollback)
+        ) {
+          const result = invalid
+            ? updateFailureResult(invalid, 'arguments', opts)
+            : await executeUpdate(opts)
+          emitUpdateResult(
+            result,
+            opts.json === true || opts.updateContinuation !== undefined,
+            opts,
           )
-          process.exit(0)
+          return
         }
-        console.log(`[harnessed] updating ${pkg.version} → ${latest} ...`)
-        if (manager === 'bun') {
-          execFileSync(bunExecutable(), ['add', '--global', 'harnessed@latest'], {
+        if (opts.packageManager !== undefined && isCompiledRuntime()) {
+          console.warn(
+            '[harnessed] --package-manager is not applicable to compiled binaries; omit it to keep binary self-update (no channel switch).',
+          )
+          finishLegacyUpdate(1)
+        }
+        // --migration-report: read-only, no version check, no install.
+        if (opts.migrationReport === true) {
+          const { collectMigrationReport } = await import('./lib/migration-report.js')
+          const items = collectMigrationReport(process.cwd(), getHarnessedRoot())
+          console.log('\n  migration report (read-only — nothing is deleted):\n')
+          for (const it of items) {
+            console.log(`  ${it.present ? 'present' : 'absent '}  ${it.name}`)
+            console.log(`           ${it.path}`)
+            if (it.present) console.log(`           hint: ${it.hint}`)
+          }
+          finishLegacyUpdate(0)
+        }
+
+        // 4.27.0 (B3 T2, rev3 issue 4) — mode detection BEFORE any npm touch:
+        // the npm-flow preflight below exits 0 when npm is unreachable, and
+        // compiled machines usually have no npm — a later check would short-
+        // circuit the compiled branch forever. Latest source on this branch is
+        // GitHub releases/latest, never `npm view`.
+        if (isCompiledRuntime()) {
+          const handled = await runCompiledFlow(
+            opts,
+            context ?? captureHostInstallContext({ hostId: opts.platform }),
+          )
+          if (handled) return
+        } else if (opts.rollback !== undefined && opts.rollback !== false) {
+          // npm-managed installs version-switch via npm, not bin-backup.
+          console.warn(
+            opts.packageManager === 'bun'
+              ? '[harnessed] --rollback is compiled-binary only; for Bun use `bun add --global harnessed@<version>`'
+              : '[harnessed] --rollback is compiled-binary only — on npm use `npm i -g harnessed@<version>`',
+          )
+          finishLegacyUpdate(1)
+        }
+
+        const manager = opts.packageManager ?? 'npm'
+        if (isBunRuntime() && opts.packageManager === undefined) {
+          console.warn(
+            '[harnessed] Bun runtime does not identify the install manager. Keeping the original npm update default; use --package-manager bun explicitly for a Bun-managed package.',
+          )
+        }
+        const { compareVersions, fetchLatestNpmVersion, fetchLatestBunVersion } = await import(
+          './lib/version-check.js'
+        )
+        const latest =
+          manager === 'bun' ? await fetchLatestBunVersion() : await fetchLatestNpmVersion()
+        if (!latest) {
+          console.warn(
+            manager === 'bun'
+              ? '[harnessed] could not check the latest version via bun info (unavailable, timed out, or invalid output); no update performed. Try again with the selected package manager.'
+              : '[harnessed] could not reach npm to check the latest version — try again later',
+          )
+          finishLegacyUpdate(0)
+        }
+        const cmp = compareVersions(pkg.version, latest)
+
+        if (opts.check === true) {
+          console.log(`  installed: ${pkg.version}\n  latest:    ${latest}\n  status:    ${cmp}`)
+          finishLegacyUpdate(0)
+        }
+
+        if (cmp === 'behind') {
+          if (opts.dryRun === true) {
+            console.log(
+              `[harnessed] update --dry-run — would run: ${manager === 'bun' ? 'bun add --global' : 'npm i -g'} harnessed@latest (${pkg.version} → ${latest})`,
+            )
+            finishLegacyUpdate(0)
+          }
+          const plan = preparePackageUpdate(manager, target ?? { targetKey: '' })
+          if (!plan.ok) {
+            console.warn(`[harnessed] ${plan.reasonCode}: ${plan.message}`)
+            finishLegacyUpdate(1)
+          }
+          console.log(`[harnessed] updating ${pkg.version} → ${latest} ...`)
+          execFileSync(plan.command, plan.args, {
+            ...plan.options,
             stdio: 'inherit',
-            shell: false,
+            timeout: 300_000,
           })
+          const cl = changelogTop()
+          if (cl) console.log(`\n${cl}\n`)
+          const hostName =
+            (context ?? captureHostInstallContext({ hostId: opts.platform })).hostId === 'codex'
+              ? 'Codex'
+              : 'Claude Code'
+          console.log(
+            `[harnessed] updated. Restart ${hostName} so the new version + hooks take effect.`,
+          )
         } else {
-          execFileSync(npmExecutable(), ['i', '-g', 'harnessed@latest'], {
-            stdio: 'inherit',
-            shell: process.platform === 'win32',
-          })
+          console.log(`[harnessed] already up to date (${pkg.version}).`)
         }
-        const cl = changelogTop()
-        if (cl) console.log(`\n${cl}\n`)
-        const hostName = detectPlatform().id === 'codex' ? 'Codex' : 'Claude Code'
-        console.log(
-          `[harnessed] updated. Restart ${hostName} so the new version + hooks take effect.`,
-        )
-      } else {
-        console.log(`[harnessed] already up to date (${pkg.version}).`)
-      }
 
-      if (opts.dryRun === true) {
-        if (opts.upstreams === true || opts.all === true)
-          console.log(
-            '[harnessed] update --dry-run: would re-run base manifests for upstreams; nothing installed.',
-          )
-        process.exit(0)
-        return
-      }
+        if (opts.dryRun === true) {
+          if (opts.upstreams === true || opts.all === true)
+            console.log(
+              '[harnessed] update --dry-run: would re-run base manifests for upstreams; nothing installed.',
+            )
+          finishLegacyUpdate(0)
+        }
 
-      if (opts.upstreams === true || opts.all === true) {
-        console.log('[harnessed] re-running base manifests to upgrade upstream plugins ...')
-        const { installBaseProfile } = await import('./install-base.js')
-        const r = await installBaseProfile({
-          apply: true,
-          dryRun: false,
-          system: false,
-          nonInteractive: true,
-          fullDiff: false,
-          color: 'auto',
-        })
-        console.log(
-          `  upstreams — installed: ${r.installed.length} / already: ${r.alreadyInstalled.length} / skipped: ${r.skipped.length} / failed: ${r.failed.length}`,
-        )
-      }
-      process.exit(0)
+        finishLegacyUpdate(0)
+      })
     })
 }

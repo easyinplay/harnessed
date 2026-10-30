@@ -1,10 +1,15 @@
 import { execFile } from 'node:child_process'
 import { constants } from 'node:fs'
-import { access, stat } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { access, realpath, stat } from 'node:fs/promises'
+import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import type {
+  UpdateObservation,
+  UpdateRuntimeVerification,
+} from '../../cli/lib/updateAdapters/types.js'
 import type { HostInstallContext } from '../../platform/hostInstallContext.js'
-import { detectPlatform } from '../../platform/platform.js'
+import { detectPlatform, isHostId } from '../../platform/platform.js'
 import { err } from './err.js'
+import { requireNativeTool } from './nativeToolResolver.js'
 import { withHostInstallEnv } from './runClaudeArgs.js'
 import type { InstallContext, InstallResult } from './types.js'
 
@@ -51,13 +56,7 @@ async function verifyGsd(
   }
   const script = join(root, 'gsd-core', 'bin', 'gsd-tools.cjs')
   // A standalone harnessed binary is not Node; load the installed shim with external node.
-  const output = await run('node', [script, 'runtime-identity'], cwd, context)
-  let identity: { packageName?: unknown; version?: unknown } | null
-  try {
-    identity = JSON.parse(output)
-  } catch {
-    throw new Error(`GSD runtime-identity did not return JSON: ${script}`)
-  }
+  const identity = await probeGsdRuntimeIdentity(script, cwd, context)
   if (
     identity?.packageName !== '@opengsd/gsd-core' ||
     typeof identity.version !== 'string' ||
@@ -66,6 +65,95 @@ async function verifyGsd(
     throw new Error(
       `GSD runtime-identity did not prove @opengsd/gsd-core with a version: ${script}`,
     )
+  }
+}
+
+async function probeGsdRuntimeIdentity(
+  script: string,
+  cwd: string,
+  context?: HostInstallContext,
+): Promise<Record<string, unknown>> {
+  const output = await run('node', [script, 'runtime-identity'], cwd, context)
+  let identity: unknown
+  try {
+    identity = JSON.parse(output)
+  } catch {
+    throw new Error(`GSD runtime-identity did not return JSON: ${script}`)
+  }
+  if (!identity || typeof identity !== 'object' || Array.isArray(identity))
+    throw new Error(`GSD runtime-identity did not return an object: ${script}`)
+  return identity as Record<string, unknown>
+}
+
+/** Read-only GSD identity evidence for reviewed update adapters. */
+export async function observeGsdRuntimeIdentity(ctx: InstallContext): Promise<UpdateObservation> {
+  const context = ctx.hostContext
+  if (!context || !isHostId(context.hostId) || context.hostId !== context.platform.id)
+    return { kind: 'unknown', reasonCode: 'unknown-host' }
+  if (!isAbsolute(context.nativeHome))
+    return { kind: 'unknown', reasonCode: 'unproven-scope', evidence: context.nativeHome }
+  const script = join(context.nativeHome, 'gsd-core', 'bin', 'gsd-tools.cjs')
+  try {
+    await requireFile(script)
+  } catch {
+    return { kind: 'not-installed', reasonCode: 'runtime-missing', evidence: script }
+  }
+  try {
+    const runtimePath = relative(await realpath(context.nativeHome), await realpath(script))
+    if (runtimePath === '..' || runtimePath.startsWith(`..${sep}`) || isAbsolute(runtimePath))
+      return { kind: 'unknown', reasonCode: 'unproven-scope', evidence: script }
+  } catch {
+    return { kind: 'unknown', reasonCode: 'unproven-scope', evidence: script }
+  }
+  let identity: Record<string, unknown>
+  try {
+    identity = await probeGsdRuntimeIdentity(script, ctx.cwd, ctx.hostContext)
+  } catch (error) {
+    return {
+      kind: 'unknown',
+      reasonCode: 'runtime-probe-failed',
+      evidence: error instanceof Error ? error.message : script,
+    }
+  }
+  if (
+    typeof identity.packageName !== 'string' ||
+    typeof identity.version !== 'string' ||
+    !identity.version.trim()
+  ) {
+    return { kind: 'unknown', reasonCode: 'runtime-identity-incomplete', evidence: script }
+  }
+  if (identity.packageName !== '@opengsd/gsd-core')
+    return { kind: 'unknown', reasonCode: 'wrong-package', evidence: script }
+  return {
+    kind: 'known',
+    identity: {
+      packageName: identity.packageName,
+      version: identity.version,
+      host: context.hostId,
+      scope: 'global',
+    },
+    evidence: script,
+  }
+}
+
+export async function verifyGsdRuntimeIntegrity(
+  ctx: InstallContext,
+): Promise<UpdateRuntimeVerification> {
+  const context = ctx.hostContext
+  if (!context || !isHostId(context.hostId) || context.hostId !== context.platform.id)
+    return { ok: false, reasonCode: 'unknown-host' }
+  const observation = await observeGsdRuntimeIdentity(ctx)
+  if (observation.kind !== 'known') return { ok: false, reasonCode: observation.reasonCode }
+  const root = context.nativeHome
+  const codex = context.hostId === 'codex'
+  const dirs = [
+    ...new Set([codex ? context.platform.skillsDir : join(root, 'skills'), join(root, 'skills')]),
+  ]
+  try {
+    await verifyGsd(root, dirs, codex, ctx.cwd, context)
+    return { ok: true }
+  } catch {
+    return { ok: false, reasonCode: 'skill-runtime-incomplete' }
   }
 }
 
@@ -86,8 +174,13 @@ function run(
     PYTHONUTF8: '1',
   }
   return new Promise((resolveOutput, reject) => {
+    const runtimeEnv = context ? withHostInstallEnv(env, context) : env
+    const nativeBinary = requireNativeTool(binary, {
+      env: runtimeEnv,
+      cwd,
+    })
     const child = execFile(
-      binary,
+      nativeBinary ?? binary,
       args,
       {
         cwd,
@@ -97,7 +190,7 @@ function run(
         maxBuffer: 256 * 1024,
         encoding: 'utf8',
         // Probes need an interpreter, not the host's provider credentials or Python startup hooks.
-        env: context ? withHostInstallEnv(env, context) : env,
+        env: runtimeEnv,
       },
       (error, stdout, stderr) => {
         if (error)

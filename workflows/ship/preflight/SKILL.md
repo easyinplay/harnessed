@@ -21,10 +21,22 @@ ready to tag a release:
 
 | check | passes when |
 | ----- | ----------- |
-| `changelog` | `## [Unreleased]` has entries (this release is documented) |
-| `version` | `package.json` has a valid semver |
+| `changelog` | `## [Unreleased]` has entries, or a section exists for the valid target version |
+| `version` | A static valid SemVer is discovered, or supplied with `--release-version <semver>` |
 | `git-clean` | the working tree has no uncommitted changes |
 | `tag-absent` | a `v<version>` tag does NOT already exist |
+
+Version sources are `package.json.version`, `pyproject.toml [project].version`,
+`pyproject.toml [tool.poetry].version`, and `Cargo.toml [package].version`.
+`harnessed release-preflight --release-version <semver>` takes highest priority;
+an invalid explicit value fails without falling back to manifests. Matching discovered
+versions are accepted. Conflicting valid versions fail closed and require an explicit
+override. No target version is inferred from git tags. Missing, dynamic,
+workspace-inherited or malformed versions cannot supply a static target. If no valid
+target can be determined, `version` fails and `tag-absent` is warn/not-run, never a check
+against the literal tag `v`. Version-specific CHANGELOG sections are checked only for
+a valid target; `[Unreleased]` remains independent. Root `harnessed --version` still
+prints the harnessed CLI version, not the target release version.
 
 ## Process
 

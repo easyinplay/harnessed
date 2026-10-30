@@ -59,4 +59,39 @@ describe('collectPreflight', () => {
     const checks = collectPreflight({ ...ready, version: '' })
     expect(check(checks, 'version')?.status).toBe('fail')
   })
+
+  it.each([
+    '',
+    '1.0.0garbage',
+    '01.0.0',
+    '1.0.0-01',
+    '1.0.0\n',
+    'v1.0.0',
+  ])('invalid version %j fails and skips tag/version-section checks', (version) => {
+    const checks = collectPreflight({
+      ...ready,
+      version,
+      changelog: `# Changelog\n\n## [${version}]\n- not a valid release\n`,
+      gitTags: ['v', `v${version}`],
+    })
+    expect(check(checks, 'version')?.status).toBe('fail')
+    expect(check(checks, 'changelog')?.status).toBe('fail')
+    expect(check(checks, 'tag-absent')).toMatchObject({ status: 'warn' })
+    expect(check(checks, 'tag-absent')?.message).toMatch(/not run|skipped/i)
+  })
+
+  it.each([
+    '0.0.0',
+    '1.2.3-alpha.1+build.009',
+    '1.2.3+001',
+    '1.2.3-0',
+  ])('accepts full SemVer %s', (version) => {
+    expect(check(collectPreflight({ ...ready, version }), 'version')?.status).toBe('pass')
+  })
+
+  it('Unreleased entries remain usable without a valid target version', () => {
+    const checks = collectPreflight({ ...ready, version: '' })
+    expect(check(checks, 'changelog')?.status).toBe('pass')
+    expect(check(checks, 'tag-absent')?.status).toBe('warn')
+  })
 })

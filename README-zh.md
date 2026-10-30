@@ -34,6 +34,10 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 二进制安装脚本在交互会话中征得同意后提供 setup。成功完成后无需重复;若跳过、失败或使用非交互安装,请运行 `harnessed setup`。
 
+`harnessed setup` 默认安装 cache-only **SessionStart 更新提醒**。其 foreground 路径只读取有大小上限的本地 cache:零网络请求、零文件系统 mutation,失败时静默退出 `0`。仅在 cache 表明有可用更新时显示提醒;cache 缺失或过期时可启动 detached background worker 刷新版本信息,不会安装更新。Codex 使用 local plugin,可能需要用户批准 trust;setup 不会自动授予 trust。
+
+`harnessed setup --no-update-reminder` 持久禁用提醒,后续 setup/update 会保留该选择。重新启用时,删除对应的 `update-reminder-preferences.json`,再运行 `harnessed setup`。Claude Code 默认路径为 `~/.claude/harnessed/update-reminder-preferences.json`,Codex 默认路径为 `~/.codex/harnessed/update-reminder-preferences.json`;若使用 `CLAUDE_CONFIG_DIR`、`CODEX_HOME` 或 `HARNESSED_ROOT_OVERRIDE`,则使用对应 reminder state root 下的文件。
+
 **通过 Bun 安装 (次要推荐; 可选)**:
 
 ```bash
@@ -303,6 +307,8 @@ graph TD
 > Master orchestrator 自动 gate-route 到合适的 sub (chain-isolation 铁律 —— 不 fire 的 sub 透明声明跳过)。
 > 直接调用 sub 也可绕过 master 单跑某 stage,例如 `/discuss-strategic "新功能 X"`。
 
+**更新 workflow:** setup 后,在 Claude Code 中使用 `/harnessed-update`,在 Codex 中使用 `$harnessed-update`。它先运行 `harnessed update --all --dry-run --json` 预览,请求明确确认,再仅执行一次 `harnessed update --all --json` 并展示结构化结果。如果已审查第三方组件仍为 `failed`、`unsupported` 或 `retained`,会展示第二份有边界的 repair proposal。只有用户对精确组件列表再次确认后,才允许执行 `harnessed update --all --repair --yes --json`,该命令可能调用 `claude -p` 或 `codex exec`。repair 不会授予 plugin/MCP trust、读取凭据、扩大 host root,也不会在没有确定性复核时声称成功。
+
 ---
 
 ## ⚡ 使用流程
@@ -502,7 +508,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 
 | 命令 | 说明 |
 | ---- | ---- |
-| `harnessed setup` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` + MCP 到 `~/.claude.json` |
+| `harnessed setup [--no-update-reminder]` | 一次性 setup,装 workflow skills 到 `~/.claude/skills/` + MCP 到 `~/.claude.json`;默认安装 cache-only SessionStart 更新提醒;`--no-update-reminder` 持久禁用提醒 |
 | `harnessed gates <master>` | 评估某 master stage 下哪些 sub-workflow 会 fire (JSON: fire/skip/parallelism)。供 slash command 编排 native spawn |
 | `harnessed prompt <sub>` | 输出某 sub-workflow 的 spawn-ready prompt (role + checklist + disciplines + completion/clarification 协议) |
 | `harnessed checkpoint <action> <sub>` | 记录 sub-workflow 的 start/complete/fail 到 `~/.claude/harnessed/checkpoints/` |
@@ -518,7 +524,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed resume` | session 中断后从最近 checkpoint 恢复 |
 | `harnessed status` | 当前 phase + lock holder |
 | `harnessed doctor` | 健康检查 (Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 冲突 / update-available 等) |
-| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自更新,按安装通道分流:二进制安装从 GitHub releases 原地自替换(sha256 + ed25519 签名双重校验 —— releases 附带 `<asset>.sha256.sig`,4.32.19 起为签名发布契约;被替换的版本存档备回滚);npm 安装执行 `npm i -g harnessed@latest`。`--check` 报告最新版本;`--rollback [version]`(仅二进制安装)原子恢复已存档的上一版二进制 —— npm 安装则被指引执行 `npm i -g harnessed@<version>`;`--upstreams` 重跑基础 manifests;`--migration-report` 为只读陈旧状态盘点 |
+| `harnessed update [--check\|--dry-run\|--rollback [version]\|--all\|--upstreams\|--migration-report] [--json] [--platform <host>] [--non-interactive] [--repair --yes]` | 自更新,按安装通道分流:二进制安装从 GitHub releases 原地自替换(sha256 + ed25519 签名双重校验 —— releases 附带 `<asset>.sha256.sig`,4.32.19 起为签名发布契约;被替换的版本存档备回滚);npm 安装执行 `npm i -g harnessed@latest`。`--check` 报告版本但不安装;`--dry-run` 预览不写盘;`--rollback [version]`(仅二进制安装)原子恢复已存档的上一版二进制 —— npm 安装则被指引执行 `npm i -g harnessed@<version>`;`--all`(别名 `--upstreams`)请求 fresh-runtime closure,包含自有 assets 和 reviewed 第三方更新;`--json` 输出单个结构化结果;`--platform <host>` 选择 `claude` 或 `codex`;`--non-interactive` 跳过 prompt,而 repair 自动化还必须显式使用 `--repair --yes`;`--repair --yes` 启动有边界且经过用户授权的 agent repair,随后执行确定性验证;`--migration-report` 为只读陈旧状态盘点 |
 | `harnessed release-preflight` | Read-only 发布就绪关卡 (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent);未就绪则 exit 1。即 Ship-stage 关卡 |
 | `harnessed retro --done` | 跑完 `/retro` 后重置 retro-reminder phase 计数器 (清掉每轮的 RETRO-DUE 提醒) |
 | `harnessed install <name>` | 装上游 manifest |
@@ -527,6 +533,12 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed rollback <timestamp>` | 一行回滚**备份快照** (EOL preserve + sha1 verify) —— 区别于 `update --rollback`:后者恢复的是上一版**编译二进制** |
 | `harnessed gc` | 清理过期 backup |
 | `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
+
+**Fresh-runtime closure (Phase 78):** `harnessed update --all --json` 先自更新,再通过可执行文件/package entry 的绝对路径交接到经过验证的 fresh runtime。仅该 runtime 刷新 harnessed-owned workflow/hook assets,并通过 reviewed adapter 更新所选宿主中已安装的第三方组件。自更新失败时不修改第三方组件;handoff 失败时,即使 harnessed 自身已变化也会报告 closure 未完成。GSD 是首个 reviewed adapter,在其 upstream-owned 更新操作前后验证 runtime identity/version。没有 reviewed adapter 的组件报告 `unsupported`;缺失的第三方组件保持 `not-installed`,不会被安装。
+
+`--json` 在 stdout 只输出一个 JSON 对象(`status`、`components`、`warnings`、`error`,以及 schema/operation/mode/host/runtime 元数据);诊断和子进程输出写到 stderr。`unsupported` 和 `retained` 产生顶层 `partial` 并退出 `1`,不算全部成功:`retained` 表示更新失败,但旧安装仍通过验证。更新完成或有效预览(`complete` / `planned`)退出 `0`;执行失败或未完成退出 `1`;参数/protocol 无效退出 `2`。继续前需遵守每个组件的 `restartRequired`。
+
+Package 自更新仅在证明所选 npm executable 的 global `harnessed` package 与当前运行且已加锁的 package 一致后执行,并验证其声明的 binary entry。更新器探测 `npm prefix -g` 和 `npm root -g --prefix <prefix>`,安装时固定使用同一 prefix。目标无法证明、不匹配或 global package slot 为 symlink/junction 时,以 exit `1` 阻断,不执行 installer、fresh-runtime handoff 或第三方更新。当前 Bun package apply 返回 `package-target-unproven`,不回退 npm;版本检查、预览和已是当前版本的安装不受影响。
 
 ### 参数 (Flags)
 

@@ -23,6 +23,7 @@
 // zero `t()` calls, so checkpoint's user-facing English/Chinese is written in place
 // by convention. Everything here returns STRUCTURED data.
 
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -66,12 +67,10 @@ const DISPLACED = '::displaced-'
  *  that gets worse every time an adopt or a migration archives something. */
 const ARCHIVE_SEGMENT_PREFIXES = ['displaced-', 'premigrate-'] as const
 
-/** The marker every `harnessed setup`-generated command file carries as its last
- *  non-blank line. The WRITER is `src/cli/lib/generateCommands.ts` (`MARKER`);
- *  this is the version-loose prefix of it, matched here rather than imported so
- *  that the per-command rendering stack (yaml + capability resolution) is not
- *  dragged into this module. `grep harnessed-generated` finds both sites. */
-const GENERATED_COMMAND_MARKER = 'harnessed-generated:'
+/** The marker every `harnessed setup`-generated prompt or workflow skill carries
+ *  as its last non-blank line. It is matched locally so checkpoint readiness does
+ *  not import the CLI rendering or skill-integrity stacks. */
+const HARNESSED_GENERATED_MARKER_RX = /<!--\s*harnessed-generated:v\d+\.\d+\.\d+\s*-->/
 
 export interface AdoptSlotOptions {
   /** Source host id, verbatim from `--from`. Omitted → inferred as the other
@@ -99,8 +98,14 @@ export type AdoptRefusal =
       reason: HostResolutionReason
       skipped: HostResolutionSkip[]
     }
-  /** T5 — the destination host has no harnessed-generated commands to run. */
-  | { kind: 'dest-not-set-up'; host: ResolvedHostId; commandsDir: string }
+  /** T5 — the destination host lacks its host-specific runnable workflow surface. */
+  | {
+      kind: 'dest-not-set-up'
+      host: ResolvedHostId
+      commandsDir: string
+      skillsDir: string
+      skillHashLedgerPath: string
+    }
   /** D14 — the source host has no ledger at all. */
   | { kind: 'no-source-ledger'; from: HostId; path: string }
   /** D14 — the source ledger exists but could not be read (damaged / wrong schema). */
@@ -161,20 +166,7 @@ class AdoptRefused extends Error {
 
 const refuse = (refusal: AdoptRefusal): AdoptOutcome => ({ ok: false, refusal })
 
-/**
- * Does `commandsDir` hold at least one `harnessed setup`-generated command?
- *
- * T5 / ADR Decision 14 — the ledger is not all the destination needs. `commandsDir`
- * and `skillsDir` are populated only by `harnessed setup --platform <id>`, so
- * without this precondition the happy path is "adopt says OK, and the destination
- * has no command to run".
- *
- * Keyed on the GENERATED MARKER rather than mere non-emptiness: `~/.claude/commands`
- * routinely holds the user's own and their plugins' command files, and counting
- * those as "harnessed is set up here" would pass exactly the case this refusal
- * exists to catch.
- */
-async function destIsSetUp(commandsDir: string): Promise<boolean> {
+async function codexDestIsSetUp(commandsDir: string): Promise<boolean> {
   let names: string[]
   try {
     names = (await readdir(commandsDir)).filter((n) => n.endsWith('.md'))
@@ -183,7 +175,7 @@ async function destIsSetUp(commandsDir: string): Promise<boolean> {
   }
   for (const n of names) {
     try {
-      if ((await readFile(join(commandsDir, n), 'utf8')).includes(GENERATED_COMMAND_MARKER)) {
+      if (HARNESSED_GENERATED_MARKER_RX.test(await readFile(join(commandsDir, n), 'utf8'))) {
         return true
       }
     } catch {
@@ -191,6 +183,39 @@ async function destIsSetUp(commandsDir: string): Promise<boolean> {
     }
   }
   return false
+}
+
+async function claudeDestIsSetUp(
+  descriptor: PlatformDescriptor,
+  stateRoot: string,
+): Promise<boolean> {
+  let ledger: unknown
+  try {
+    ledger = JSON.parse(await readFile(join(stateRoot, 'skill-hashes.json'), 'utf8'))
+  } catch {
+    return false
+  }
+  if (ledger === null || typeof ledger !== 'object' || Array.isArray(ledger)) return false
+  for (const [name, record] of Object.entries(ledger)) {
+    if (name.includes('/') || name.includes('\\')) continue
+    if (record === null || typeof record !== 'object' || Array.isArray(record)) continue
+    const sha256 = (record as { sha256?: unknown }).sha256
+    if (typeof sha256 !== 'string') continue
+    try {
+      const content = await readFile(join(descriptor.skillsDir, name, 'SKILL.md'), 'utf8')
+      if (!HARNESSED_GENERATED_MARKER_RX.test(content)) continue
+      if (createHash('sha256').update(content, 'utf8').digest('hex') === sha256) return true
+    } catch {
+      // Missing or unreadable skills do not prove setup readiness.
+    }
+  }
+  return false
+}
+
+async function destIsSetUp(descriptor: PlatformDescriptor, stateRoot: string): Promise<boolean> {
+  return descriptor.id === 'claude'
+    ? claudeDestIsSetUp(descriptor, stateRoot)
+    : codexDestIsSetUp(descriptor.commandsDir)
 }
 
 /**
@@ -317,11 +342,14 @@ export async function adoptSlot(options: AdoptSlotOptions = {}): Promise<AdoptOu
 
   // 4. T5 — refuse before touching either ledger when the destination cannot run
   //    anything anyway.
-  if (!(await destIsSetUp(me.descriptor.commandsDir))) {
+  const destStateRoot = getHarnessedRoot()
+  if (!(await destIsSetUp(me.descriptor, destStateRoot))) {
     return refuse({
       kind: 'dest-not-set-up',
       host: destHost,
       commandsDir: me.descriptor.commandsDir,
+      skillsDir: me.descriptor.skillsDir,
+      skillHashLedgerPath: join(destStateRoot, 'skill-hashes.json'),
     })
   }
 
@@ -412,7 +440,7 @@ export async function adoptSlot(options: AdoptSlotOptions = {}): Promise<AdoptOu
     key,
     sourceKey,
     sourceRoot,
-    destRoot: getHarnessedRoot(),
+    destRoot: destStateRoot,
     phase: slot.phase,
     status: slot.status,
     // D12 — verbatim. The evidence file itself is NOT copied.

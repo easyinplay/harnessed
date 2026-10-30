@@ -9,18 +9,28 @@
 // Any pre-swap failure leaves the original untouched; a failed temp→exec rename
 // rolls back from .bak. Real fs against tmpdirs; failure injection via fsOps.
 
+import { execFile } from 'node:child_process'
 import { createHash, sign as edSign, generateKeyPairSync } from 'node:crypto'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
-import { mkdir, readdir } from 'node:fs/promises'
+import { copyFile, mkdir, readdir, rename, unlink } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { promisify } from 'node:util'
+import { describe, expect, it, vi } from 'vitest'
 import {
   assetNameFor,
+  finalizeBinarySelfUpdate,
+  realSelfUpdateDeps,
   runBinaryRollback,
   runBinarySelfUpdate,
   type SelfUpdateDeps,
 } from '../../../src/cli/lib/selfUpdateBinary.js'
+import { captureHostInstallContext } from '../../../src/platform/hostInstallContext.js'
+
+vi.mock('node:child_process', async (original) => ({
+  ...(await original<typeof import('node:child_process')>()),
+  execFile: vi.fn(),
+}))
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 
@@ -31,6 +41,55 @@ const TEST_KEYS = generateKeyPairSync('ed25519')
 const TEST_PUBKEY_PEM = TEST_KEYS.publicKey.export({ type: 'spki', format: 'pem' }).toString()
 const signSha = (shaText: string) =>
   edSign(null, Buffer.from(shaText, 'utf8'), TEST_KEYS.privateKey).toString('base64')
+
+describe('realSelfUpdateDeps captured host', () => {
+  it('pins smoke child environment to the captured explicit host', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/captured/codex')
+    vi.stubEnv('CODEX_HOME', '/captured/native-codex')
+    const context = captureHostInstallContext({ hostId: 'codex' })
+    const run = vi.fn(async (_file: string, _args: string[], _options: unknown) => ({
+      stdout: '5.0.5',
+      stderr: '',
+    }))
+    Object.assign(execFile, { [promisify.custom]: run })
+    try {
+      const deps = realSelfUpdateDeps(context)
+      vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/wrong/ambient-root')
+      vi.stubEnv('CODEX_HOME', '/wrong/native-home')
+      expect(await deps.smoke('/fixture/harnessed.exe')).toBe('5.0.5')
+      expect(run).toHaveBeenCalledWith(
+        '/fixture/harnessed.exe',
+        ['--version'],
+        expect.objectContaining({
+          shell: false,
+          env: expect.objectContaining({
+            HARNESSED_PLATFORM: 'codex',
+            HARNESSED_ROOT_OVERRIDE: '/captured/codex',
+            CODEX_HOME: '/captured/native-codex',
+          }),
+        }),
+      )
+    } finally {
+      Reflect.deleteProperty(execFile, promisify.custom)
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it('keeps the explicit state root after ambient host and root change', () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
+    const context = captureHostInstallContext({ hostId: 'codex' })
+    try {
+      const deps = realSelfUpdateDeps(context)
+      vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+      vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/wrong/ambient-root')
+      expect(deps.stateRoot()).toBe(join(context.userHome, '.codex', 'harnessed'))
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+})
 
 /** Build a tmp world: exec file + local source dir with a "new binary" +
  *  .sha256 + .sha256.sig (#12). */
@@ -158,6 +217,35 @@ describe('runBinarySelfUpdate — signature verification (#12, GitHub mode)', ()
     smoke: async () => '9.9.9',
   })
 
+  it.each([
+    '1.0.0',
+    '3.0.0-rc.1',
+    '3.0.0+old',
+    '3.0.0 unexpected output',
+  ])('rejects a validly signed binary reporting %s for release 3.0.0 before swap', async (actualVersion) => {
+    const w = world()
+    const r = await runBinarySelfUpdate(
+      {
+        ...ghDeps(w, 'valid'),
+        currentVersion: '2.0.0',
+        resolveRelease: async () => ({
+          version: '3.0.0',
+          assetUrl: 'https://gh/asset',
+          shaUrl: 'https://gh/asset.sha256',
+        }),
+        smoke: async () => actualVersion,
+      },
+      {},
+    )
+    expect(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+    expect(await readdir(w.dir)).toEqual([w.asset])
+    expect(await readdir(w.stateRoot)).toEqual([])
+    expect(r.status).toBe('error')
+    if (r.status !== 'error') return
+    expect(r.message).toContain('3.0.0')
+    expect(r.message).toContain(actualVersion)
+  })
+
   it('missing .sha256.sig → error, exec unchanged', async () => {
     const w = world()
     const r = await runBinarySelfUpdate(ghDeps(w, 'missing'), {})
@@ -280,7 +368,96 @@ describe('runBinaryRollback (--rollback)', () => {
   })
 })
 
+describe('runBinarySelfUpdate - sourceDir check (zero writes)', () => {
+  it.each([
+    { platform: 'linux', version: '4.27.0', cmp: 'behind' },
+    { platform: 'win32', version: '4.26.0', cmp: 'current' },
+    { platform: 'linux', version: '1.0.0', cmp: 'ahead' },
+    { platform: 'win32', version: '4.27.0-rc.1', cmp: 'behind' },
+    { platform: 'linux', version: '4.27.0+rehearsal', cmp: 'unknown' },
+  ])('checks $platform candidate $version without staging, swap or backup', async ({
+    platform,
+    version,
+    cmp,
+  }) => {
+    const w = world({ platform })
+    const sourceNames = await readdir(w.srcDir)
+    const sourceContents = sourceNames.map((name) => readFileSync(join(w.srcDir, name), 'utf8'))
+    const fsOps = { rename: vi.fn(rename), copyFile: vi.fn(copyFile), unlink: vi.fn(unlink) }
+    const smoke = vi.fn(async (bin: string) => {
+      readFileSync(bin)
+      return ` ${version}\n`
+    })
+    const result = await runBinarySelfUpdate(
+      { ...w.deps, fsOps, smoke },
+      { check: true, retainBackupForContinuation: true },
+    )
+
+    expect.soft(fsOps.rename).not.toHaveBeenCalled()
+    expect.soft(fsOps.copyFile).not.toHaveBeenCalled()
+    expect.soft(fsOps.unlink).not.toHaveBeenCalled()
+    expect.soft(readFileSync(w.execPath, 'utf8')).toBe('OLD-BINARY')
+    expect.soft(await readdir(w.dir)).toEqual([w.asset])
+    expect.soft(await readdir(w.stateRoot)).toEqual([])
+    expect.soft(await readdir(w.srcDir)).toEqual(sourceNames)
+    expect
+      .soft(sourceNames.map((name) => readFileSync(join(w.srcDir, name), 'utf8')))
+      .toEqual(sourceContents)
+    expect.soft(smoke).toHaveBeenCalledExactlyOnceWith(join(w.srcDir, w.asset))
+    expect(result).toEqual({ status: 'checked', installed: '4.26.0', latest: version, cmp })
+  })
+
+  it.each([
+    'not-a-version',
+    '4.27.0 unexpected output',
+    '4.27.0\nextra',
+  ])('rejects invalid candidate identity %j without staging or cleanup writes', async (output) => {
+    const w = world()
+    const fsOps = { rename: vi.fn(rename), copyFile: vi.fn(copyFile), unlink: vi.fn(unlink) }
+    const result = await runBinarySelfUpdate(
+      { ...w.deps, fsOps, smoke: async () => output },
+      { check: true },
+    )
+    expect.soft(await readdir(w.dir)).toEqual([w.asset])
+    expect.soft(await readdir(w.stateRoot)).toEqual([])
+    expect.soft(fsOps.rename).not.toHaveBeenCalled()
+    expect.soft(fsOps.copyFile).not.toHaveBeenCalled()
+    expect.soft(fsOps.unlink).not.toHaveBeenCalled()
+    expect(result.status).toBe('error')
+  })
+
+  it('reports a failed source version probe without staging or cleanup writes', async () => {
+    const w = world()
+    const fsOps = { rename: vi.fn(rename), copyFile: vi.fn(copyFile), unlink: vi.fn(unlink) }
+    const result = await runBinarySelfUpdate(
+      {
+        ...w.deps,
+        fsOps,
+        smoke: async () => {
+          throw new Error('spawn EACCES')
+        },
+      },
+      { check: true },
+    )
+    expect.soft(await readdir(w.dir)).toEqual([w.asset])
+    expect.soft(await readdir(w.stateRoot)).toEqual([])
+    expect.soft(fsOps.rename).not.toHaveBeenCalled()
+    expect.soft(fsOps.copyFile).not.toHaveBeenCalled()
+    expect.soft(fsOps.unlink).not.toHaveBeenCalled()
+    expect(result).toEqual({ status: 'error', message: expect.stringContaining('spawn EACCES') })
+  })
+})
+
 describe('runBinarySelfUpdate — sourceDir swap (happy path)', () => {
+  it('still allows a forced rehearsal to an older smoke version', async () => {
+    const w = world()
+    const r = await runBinarySelfUpdate({ ...w.deps, smoke: async () => '1.0.0' }, {})
+    expect(r.status).toBe('updated')
+    if (r.status !== 'updated') return
+    expect(r.to).toBe('1.0.0')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('NEW-BINARY')
+  })
+
   it('replaces the exec, keeps a bin-backup copy, reports versions', async () => {
     const w = world()
     const r = await runBinarySelfUpdate(w.deps, {})
@@ -357,6 +534,20 @@ describe('runBinarySelfUpdate — swap failure rollback', () => {
 })
 
 describe('runBinarySelfUpdate — post-swap fail-soft', () => {
+  it('retains the old compiled image until P2 completes, then removes it', async () => {
+    const w = world({ platform: 'win32' })
+    const r = await runBinarySelfUpdate(w.deps, { retainBackupForContinuation: true })
+
+    expect(r.status).toBe('updated')
+    if (r.status !== 'updated') return
+    expect(readFileSync(w.execPath, 'utf8')).toBe('NEW-BINARY')
+    expect(readFileSync(r.bakPath, 'utf8')).toBe('OLD-BINARY')
+    expect(r.bakRemoved).toBe(false)
+
+    await finalizeBinarySelfUpdate(w.deps, r)
+    expect(existsSync(r.bakPath)).toBe(false)
+  })
+
   it('bin-backup copy failure → still updated, .bak kept (skip delete), warn logged', async () => {
     const w = world()
     const r = await runBinarySelfUpdate(

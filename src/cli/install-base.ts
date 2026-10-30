@@ -9,7 +9,7 @@
 //   exit: 0 if installed > 0 + failed === 0; 1 if failed > 0; 2 if 全 skipped.
 // - v3.3.0: `--apply` backward-compat alias removed; default is apply-immediate.
 
-import { readdir, readFile } from 'node:fs/promises'
+import { access, readdir, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import type { Command } from 'commander'
 import { runInstall } from '../installers/index.js'
@@ -33,6 +33,11 @@ async function listBaseManifests(cwd: string): Promise<string[]> {
       for (const f of entries.sort()) if (f.endsWith('.yaml')) out.push(resolve(cwd, d, f))
     } catch {}
   }
+  const reminder = resolve(cwd, 'manifests/cc-hooks/update-reminder.yaml')
+  try {
+    await access(reminder)
+    out.push(reminder)
+  } catch {}
   return out
 }
 

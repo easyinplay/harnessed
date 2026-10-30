@@ -851,12 +851,19 @@ function renderAdoptRefusal(r: AdoptRefusal): string[] {
       return lines
     }
     case 'dest-not-set-up':
-      return [
-        `refused: 目标宿主 ${r.host} 还没 setup 过`,
-        `  证据: 命令目录里没有 harnessed 生成的命令: ${tildify(r.commandsDir)}`,
-        '  账本不是目标宿主需要的全部 —— 没有命令,adopt 成功了也没东西可跑。先跑:',
-        `    harnessed setup --platform ${r.host}`,
-      ]
+      return r.host === 'claude'
+        ? [
+            `refused: 目标宿主 ${r.host} 还没 setup 过`,
+            `  证据: 没有 hash 匹配的 harnessed-generated workflow skill: ${r.skillsDir}`,
+            `  安装时 hash ledger: ${r.skillHashLedgerPath}`,
+            `    harnessed setup --platform ${r.host}`,
+          ]
+        : [
+            `refused: 目标宿主 ${r.host} 还没 setup 过`,
+            `  证据: 命令目录里没有 harnessed 生成的命令: ${tildify(r.commandsDir)}`,
+            '  账本不是目标宿主需要的全部 —— 没有命令,adopt 成功了也没东西可跑。先跑:',
+            `    harnessed setup --platform ${r.host}`,
+          ]
     case 'no-source-ledger':
       return [`refused: 源宿主 ${r.from} 还没有账本`, `  查过: ${tildify(r.path)}`]
     case 'source-ledger-unreadable':

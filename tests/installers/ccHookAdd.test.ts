@@ -52,6 +52,8 @@ import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
 import { installCodexHook, removeCodexHook } from '../../src/installers/codexHookAdd.js'
 import { runInstall } from '../../src/installers/index.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
+import { createHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import { descriptorFor } from '../../src/platform/platform.js'
 import { uninstallCcHookAdd } from '../../src/uninstallers/ccHookAdd.js'
 
 const SETTINGS_PATH = join(homedir(), '.claude', 'settings.json')
@@ -111,6 +113,20 @@ function ccHookManifest(): Manifest {
   } as unknown as Manifest
 }
 
+function updateReminderManifest(): Manifest {
+  const manifest = ccHookManifest()
+  manifest.metadata.name = 'update-reminder'
+  manifest.metadata.display_name = 'Harnessed Update Reminder'
+  if (manifest.spec.install.method !== 'cc-hook-add') throw new Error('invalid fixture')
+  manifest.spec.install.cmd = 'node bin/harnessed-update-reminder.mjs'
+  manifest.spec.install.hook_event = 'SessionStart'
+  manifest.spec.install.hook_matcher = undefined
+  manifest.spec.install.hook_command = 'node bin/harnessed-update-reminder.mjs'
+  manifest.spec.install.idempotent_check =
+    'grep -q harnessed-update-reminder ~/.claude/settings.json'
+  return manifest
+}
+
 const baseOpts: InstallOpts = {
   apply: true,
   dryRun: false,
@@ -121,6 +137,52 @@ const baseOpts: InstallOpts = {
 }
 
 describe('cc-hook-add installer', () => {
+  it('keeps update-reminder distinct from inject-state invalidation under a custom nativeHome', async () => {
+    for (const key of Object.keys(fakeFs)) delete fakeFs[key]
+    const userHome = join(homedir(), 'custom-claude-user')
+    const nativeHome = join(userHome, '.claude-custom')
+    const settingsPath = join(nativeHome, 'settings.json')
+    const invalidation = {
+      hooks: [{ type: 'command', command: 'node bin/harnessed-inject-state.mjs --invalidate' }],
+    }
+    fakeFs[settingsPath] = JSON.stringify({
+      theme: 'dark',
+      hooks: { SessionStart: [invalidation] },
+    })
+    const hostContext = createHostInstallContext(descriptorFor('claude', userHome), {
+      os: process.platform,
+      userHome,
+      nativeHome,
+    })
+    const cap = captureStdout()
+    try {
+      const context = {
+        manifest: updateReminderManifest(),
+        opts: baseOpts,
+        level: 'L3' as const,
+        cwd: process.cwd(),
+        hostContext,
+      }
+      expect(await installCcHookAdd(context)).toMatchObject({ ok: true })
+      const written = JSON.parse(fakeFs[settingsPath] ?? '{}')
+      expect(written.theme).toBe('dark')
+      expect(written.hooks.SessionStart).toHaveLength(2)
+      expect(written.hooks.SessionStart[0]).toEqual(invalidation)
+      expect(written.hooks.SessionStart[1].hooks[0].command).toMatch(
+        /^node ".*\/bin\/harnessed-update-reminder\.mjs"$/,
+      )
+      expect(await installCcHookAdd(context)).toMatchObject({
+        ok: true,
+        alreadyInstalled: true,
+        backupId: 'idempotent-skip',
+      })
+      expect(JSON.parse(fakeFs[settingsPath] ?? '{}').hooks.SessionStart).toHaveLength(2)
+      expect(fakeFs[SETTINGS_PATH]).toBeUndefined()
+    } finally {
+      cap.restore()
+    }
+  })
+
   it('a Bun runtime writes the first-party command through the existing CC schema', async () => {
     const previous = Object.getOwnPropertyDescriptor(process.versions, 'bun')
     Object.defineProperty(process.versions, 'bun', { configurable: true, value: '1.4.4' })

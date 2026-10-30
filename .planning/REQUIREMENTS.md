@@ -4,6 +4,28 @@
 > Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm is 5.0.4.
 > Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.4 Maintenance Release** is published and verified complete; Phase 74 is complete. The older requirement families below remain historical records.
 
+## Phase 78: Deterministic Update Closure
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| UPDATE-78-01 | Deterministic JSON/exit contract and reviewed GSD adapter; no missing installs or false success for unsupported/retained/partial outcomes | Phase 78 VERIFICATION, repaired acceptance and real GSD smoke | Complete locally; GSD 1.18.0 to 1.19.0 updated/verified true; reminder retained/hook-trust-pending, top partial exit 1 |
+| UPDATE-78-02 | Verified absolute-path fresh P2, target-global locking/busy/release and proven npm target binding | Phase 78 VERIFICATION, Windows compiled smoke and fixture limits | Complete locally; Windows paths with spaces passed; npm manager subprocess uses mock/isolated fixtures; Bun apply intentionally fail-closed |
+| UPDATE-78-03 | Default cache-only fail-soft SessionStart reminder, persistent opt-out, explicit host trust and `/harnessed-update` on both hosts | Phase 78 VERIFICATION, live SessionStart and workflow acceptance | Complete locally; 29 live checks, zero foreground network, pending/accepted trust cases |
+| UPDATE-78-04 | Close final local gates and review findings without claiming CI or publication | Phase 78 VERIFICATION and SUMMARY | Complete locally, 8/8; final Vitest 394 passed files / 4 skipped files, 5029 passed tests / 43 skipped tests / 1 todo; build/schema/docs/diff pass; lint exit 0 with 18 pre-existing warnings |
+
+[Verification and limits](phases/78-deterministic-update-closure/VERIFICATION.md) records initial 5 security findings and code findings, subsequent 2 P2 findings and final code-review findings fixed; follow-up security 0 CRITICAL/HIGH/MEDIUM. Existing build warnings remain. CI, other OS and actual release signature download were not executed this round. Latest published npm remains **5.0.4**, package candidate **5.0.5** remains unpublished; no Phase 78 commit/push/tag/publish.
+
+## Phase 79: Confirmed Agent Repair
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| UPDATE-79-01 | Default-off, user-confirmed repair for reviewed failed/unsupported/retained components with exact component scope | Phase 79 ARCHITECTURE and focused contract tests | Complete locally |
+| UPDATE-79-02 | Bounded `claude -p` / `codex exec` invocation with shell-disabled argv, filtered environment, host-root checks, no trust or credential escalation | Phase 79 ARCHITECTURE, runner tests and host primitive gate | Complete locally |
+| UPDATE-79-03 | Deterministic post-repair verification preserves the original result and never treats agent output as success authority | Phase 79 progress and full Vitest | Complete locally; 395 files passed, 5039 tests passed |
+| UPDATE-79-04 | English/Chinese `/harnessed-update` workflow requires a second confirmation and documents permissions, trust, command execution and host boundaries | Workflow sources, role prompts and golden tests | Complete locally |
+
+Phase 79 has not been committed, pushed, tagged or published. Latest published npm remains **5.0.4**; package candidate **5.0.5** remains unpublished.
+
 ## Candidate npm-5.0.5 Requirements
 
 | ID | Requirement | Acceptance Home | Status |

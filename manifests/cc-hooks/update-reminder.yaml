@@ -1,0 +1,39 @@
+apiVersion: harnessed/v1
+kind: Manifest
+metadata:
+  name: update-reminder
+  display_name: Harnessed Update Reminder
+  description: Cache-only SessionStart reminder for available harnessed updates.
+  upstream:
+    source: update-reminder
+    homepage: https://github.com/easyinplay/harnessed
+    repository: https://github.com/easyinplay/harnessed.git
+    license: Apache-2.0
+    notice: First-party harnessed update reminder.
+spec:
+  type: cc-hook
+  component_type: command
+  category: meta
+  install_type: hook
+  install:
+    method: cc-hook-add
+    cmd: "node bin/harnessed-update-reminder.mjs"
+    hook_event: SessionStart
+    hook_command: "node bin/harnessed-update-reminder.mjs"
+    idempotent_check: "grep -q harnessed-update-reminder ~/.claude/settings.json"
+  verify:
+    cmd: "grep -q harnessed-update-reminder ~/.claude/settings.json"
+    timeout_ms: 5000
+    expected_exit_code: 0
+  uninstall:
+    cmd: "true"
+  upstream_health:
+    stability: stable
+    last_check: "2026-10-30"
+    last_known_good_version: "5.0.5"
+    fallback_action: warn
+  signed_by: easyinplay
+  platforms:
+    - linux
+    - darwin
+    - win32

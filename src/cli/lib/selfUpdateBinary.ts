@@ -34,7 +34,8 @@ import {
 } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import pkg from '../../../package.json' with { type: 'json' }
-import { detectPlatform } from '../../platform/platform.js'
+import { withHostInstallEnv } from '../../installers/lib/runClaudeArgs.js'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { ensureProxyDispatcher } from './proxyDispatcher.js'
 import { verifyShaSignature } from './updateSignature.js'
 import { compareVersions } from './version-check.js'
@@ -118,7 +119,7 @@ function parseShaText(text: string): string | null {
 
 export async function runBinarySelfUpdate(
   deps: SelfUpdateDeps,
-  opts: { dryRun?: boolean; check?: boolean },
+  opts: { dryRun?: boolean; check?: boolean; retainBackupForContinuation?: boolean },
 ): Promise<SelfUpdateOutcome> {
   const rename = deps.fsOps?.rename ?? fsRename
   const copyFile = deps.fsOps?.copyFile ?? fsCopyFile
@@ -146,6 +147,25 @@ export async function runBinarySelfUpdate(
   if (deps.sourceDir) {
     sourceAsset = join(deps.sourceDir, asset)
     sourceSha = join(deps.sourceDir, `${asset}.sha256`)
+    if (opts.check) {
+      try {
+        const version = (await deps.smoke(sourceAsset)).trim()
+        if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(version)) {
+          throw new Error(`--version smoke returned unexpected output: ${version.slice(0, 80)}`)
+        }
+        return {
+          status: 'checked',
+          installed: deps.currentVersion,
+          latest: version,
+          cmp: compareVersions(deps.currentVersion, version),
+        }
+      } catch (e) {
+        return {
+          status: 'error',
+          message: `could not check the local binary version: ${(e as Error).message}`,
+        }
+      }
+    }
   } else {
     const rel = await deps.resolveRelease()
     if (rel === null) {
@@ -257,6 +277,9 @@ export async function runBinarySelfUpdate(
     const out = (await deps.smoke(tempPath)).trim()
     const m = /^(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/.exec(out)
     if (!m) throw new Error(`--version smoke returned unexpected output: ${out.slice(0, 80)}`)
+    if (targetVersion !== null && out !== targetVersion) {
+      throw new Error(`--version mismatch: expected ${targetVersion}, got ${out.slice(0, 80)}`)
+    }
     targetVersion = targetVersion ?? m[1] ?? null
   } catch (e) {
     await unlink(tempPath).catch(() => {})
@@ -311,7 +334,7 @@ export async function runBinarySelfUpdate(
     )
   }
   let bakRemoved = false
-  if (copied) {
+  if (copied && !opts.retainBackupForContinuation) {
     try {
       await unlink(bakPath)
       bakRemoved = true
@@ -328,6 +351,21 @@ export async function runBinarySelfUpdate(
     bakPath,
     bakRemoved,
     backupDir,
+  }
+}
+
+export async function finalizeBinarySelfUpdate(
+  deps: SelfUpdateDeps,
+  outcome: Extract<SelfUpdateOutcome, { status: 'updated' }>,
+): Promise<boolean> {
+  if (outcome.bakRemoved || outcome.backupDir === null) return outcome.bakRemoved
+  const unlink = deps.fsOps?.unlink ?? fsUnlink
+  try {
+    await unlink(outcome.bakPath)
+    outcome.bakRemoved = true
+    return true
+  } catch {
+    return false
   }
 }
 
@@ -516,9 +554,7 @@ export async function resolveLatestRelease(
   }
 }
 
-/** Production deps for update.ts. stateRoot is lazy (detectPlatform is only
- *  touched on the compiled path — same discipline as assetsRoot). */
-export function realSelfUpdateDeps(): SelfUpdateDeps {
+export function realSelfUpdateDeps(context: HostInstallContext): SelfUpdateDeps {
   return {
     execPath: process.execPath,
     platform: process.platform,
@@ -543,12 +579,12 @@ export function realSelfUpdateDeps(): SelfUpdateDeps {
       const { stdout } = await promisify(execFile)(bin, ['--version'], {
         timeout: 30_000,
         windowsHide: true,
+        shell: false,
+        env: withHostInstallEnv(process.env, context),
       })
       return stdout
     },
-    // Lazy thunk — detectPlatform() only runs when the compiled path actually
-    // reaches the bin-backup step (assetsRoot.ts:31-33 discipline).
-    stateRoot: () => detectPlatform().stateRoot,
+    stateRoot: () => context.platform.stateRoot,
     log: (l) => console.warn(l),
     pid: process.pid,
   }

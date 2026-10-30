@@ -7,6 +7,7 @@ import { enableAgentTeamsInSettings } from '../../src/cli/lib/enableAgentTeamsIn
 import { enableUserLangInSettings } from '../../src/cli/lib/enableUserLangInSettings.js'
 import { writeAllCommands } from '../../src/cli/lib/generateCommands.js'
 import { runL4Rescue } from '../../src/cli/lib/l4-rescue.js'
+import { removeLegacyClaudeCommands } from '../../src/cli/lib/legacyCommandCleanup.js'
 import { runOptionalOffer } from '../../src/cli/lib/optional-offer.js'
 import { renderAllSkills } from '../../src/cli/lib/renderSkillTemplates.js'
 import { searchMcpKeyHintLines } from '../../src/cli/lib/search-mcp-keys.js'
@@ -34,7 +35,7 @@ vi.mock('../../src/cli/lib/setup-helpers.js', () => ({
   makeIdempotentProbe: vi.fn(async () => async () => true),
   reclassifyForceUpdateFailures: vi.fn(async () => ({ failed: [], keptExisting: [] })),
   scanWorkflowsWithSkill: vi.fn(async () => ({
-    workflows: [{ name: 'demo', relPath: 'demo', isMaster: false }],
+    workflows: [{ name: 'harnessed-update', relPath: 'harnessed-update', isMaster: false }],
   })),
   warnIfAgentTeamsMissing: vi.fn(),
 }))
@@ -55,6 +56,9 @@ vi.mock('../../src/cli/lib/renderSkillTemplates.js', () => ({
 }))
 vi.mock('../../src/cli/lib/generateCommands.js', () => ({
   writeAllCommands: vi.fn(async () => ({ results: [] })),
+}))
+vi.mock('../../src/cli/lib/legacyCommandCleanup.js', () => ({
+  removeLegacyClaudeCommands: vi.fn(async () => ({ removed: [], skipped: [], warnings: [] })),
 }))
 vi.mock('../../src/workflow/rolePrompts.js', () => ({ loadRolePrompts: async () => ({}) }))
 vi.mock('../../src/cli/lib/hostPrimitives.js', () => ({
@@ -77,7 +81,7 @@ vi.mock('../../src/cli/lib/capabilityResolver.js', () => ({
 vi.mock('../../src/cli/lib/skillIntegrity.js', () => ({
   readHashLedger: vi.fn(async () => ({})),
   recordSkillHashes: vi.fn(),
-  auditInstalledSkills: vi.fn(async () => [{ name: 'demo', status: 'missing' }]),
+  auditInstalledSkills: vi.fn(async () => [{ name: 'harnessed-update', status: 'missing' }]),
   attachCulprits: (entries: unknown) => entries,
   buildCulpritIndex: async () => ({}),
   integrityReportLines: () => [],
@@ -150,6 +154,23 @@ describe('setup single context routing', () => {
     'claude',
   ])('pins %s roots, render, ledger, backup and lifecycle entrypoints across StepB drift', async (host) => {
     vi.stubEnv('HARNESSED_PLATFORM', host)
+    if (host === 'claude') {
+      vi.mocked(removeLegacyClaudeCommands).mockResolvedValueOnce({
+        removed: ['/selected-native/commands/old.md'],
+        skipped: ['/selected-native/commands/demo.md'],
+        warnings: ['/selected-native/commands/demo.md: remove failed (denied)'],
+      })
+    }
+    vi.mocked(writeAllCommands).mockResolvedValueOnce({
+      results: [
+        {
+          name: 'harnessed-update',
+          path: '/selected-native/prompts/harnessed-update.md',
+          written: true,
+        },
+      ],
+      warnings: [],
+    })
     const program = new Command().exitOverride()
     registerSetup(program)
     await expect(
@@ -185,27 +206,40 @@ describe('setup single context routing', () => {
       host === 'codex' ? context?.platform.skillsDir : join('/selected-native', 'skills')
     expect(renderAllSkills).toHaveBeenCalledTimes(2)
     for (const call of vi.mocked(renderAllSkills).mock.calls) {
+      expect(call[0]).toContain('harnessed-update')
       expect(call[1]).toBe(skills)
       expect(call[5]).toBe(host)
     }
-    expect(writeAllCommands).toHaveBeenCalledWith(
-      expect.any(Array),
-      join('/selected-native', host === 'codex' ? 'prompts' : 'commands'),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.any(Function),
-      undefined,
-      undefined,
-      expect.objectContaining({ host }),
-    )
-    if (host === 'codex')
+    const setupOutput = vi.mocked(console.log).mock.calls.flat().map(String).join('\n')
+    if (host === 'codex') {
+      expect(removeLegacyClaudeCommands).not.toHaveBeenCalled()
+      expect(writeAllCommands).toHaveBeenCalledWith(
+        expect.arrayContaining(['harnessed-update']),
+        join('/selected-native', 'prompts'),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        expect.any(Function),
+        undefined,
+        undefined,
+        expect.objectContaining({ host: 'codex' }),
+      )
+      expect(setupOutput).toContain('generated 1 commands/<x>.md file(s)')
       expect(writeCodexAgentRoles).toHaveBeenCalledWith(
         join('/selected-native', 'agents'),
         expect.any(Array),
       )
-    else expect(writeCodexAgentRoles).not.toHaveBeenCalled()
+    } else {
+      expect(writeAllCommands).not.toHaveBeenCalled()
+      expect(removeLegacyClaudeCommands).toHaveBeenCalledWith(join('/selected-native', 'commands'))
+      expect(setupOutput).not.toContain('generated 1 commands/<x>.md file(s)')
+      expect(setupOutput).toContain('removed 1 legacy commands/<x>.md file(s)')
+      expect(vi.mocked(console.warn).mock.calls.flat().map(String).join('\n')).toContain(
+        '[A.6] /selected-native/commands/demo.md: remove failed (denied)',
+      )
+      expect(writeCodexAgentRoles).not.toHaveBeenCalled()
+    }
     expect(readHashLedger).toHaveBeenCalledWith(join('/selected-state', 'skill-hashes.json'))
     for (const call of vi.mocked(recordSkillHashes).mock.calls)
       expect(call[2]).toBe(join('/selected-state', 'skill-hashes.json'))

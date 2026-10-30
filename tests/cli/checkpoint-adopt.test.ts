@@ -243,6 +243,23 @@ describe('checkpoint adopt — refusal wording', () => {
     expect(r.err).toContain('harnessed setup --platform codex')
   })
 
+  it('T5 Claude destination refusal names workflow skill hash readiness, not commands', async () => {
+    srcRoot = join(home, '.codex', 'harnessed')
+    destRoot = join(home, '.claude', 'harnessed')
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', destRoot)
+    writeStore(srcRoot, { workflows: { [key]: envelope('phase-7') } })
+
+    const r = await adopt('codex')
+
+    expect(r.code).toBe(1)
+    expect(r.err).toContain('refused: 目标宿主 claude 还没 setup 过')
+    expect(r.err).toContain('没有 hash 匹配的 harnessed-generated workflow skill')
+    expect(r.err).toContain(join(destRoot, 'skill-hashes.json'))
+    expect(r.err).not.toContain('命令目录里没有 harnessed 生成的命令')
+    expect(r.err).toContain('harnessed setup --platform claude')
+  })
+
   it('unknown --from lists the known host ids', async () => {
     const r = await adopt('gemini')
     expect(r.code).toBe(1)

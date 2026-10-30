@@ -316,6 +316,9 @@ describe('owned payload declarations consumed by production writers', () => {
               event: block.hook_event,
               matcher: block.hook_matcher,
               hookCommand: block.hook_command,
+              ...(manifest.metadata.name === 'update-reminder'
+                ? { reminderStateRoot: resolve(root, 'state') }
+                : {}),
             },
             mode,
           )

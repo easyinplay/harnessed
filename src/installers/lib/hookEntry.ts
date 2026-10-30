@@ -58,7 +58,12 @@ export interface HookCmdDeps {
  *  `check-docs` (doc-discipline-gate, 4.34.0) — see resolveHookCommand for why
  *  that one could not be listed until the compiled rewrite preserved trailing
  *  arguments. */
-export const COMPILED_HOOK_IDENTITIES = ['inject-state', 'stop-hook', 'check-docs'] as const
+export const COMPILED_HOOK_IDENTITIES = [
+  'inject-state',
+  'stop-hook',
+  'check-docs',
+  'update-reminder',
+] as const
 
 const ABSOLUTE_RE = /^([A-Za-z]:[\\/]|[\\/])/
 

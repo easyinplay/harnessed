@@ -51,6 +51,33 @@ describe('extractVerifyBinary (v4.16.1 T1)', () => {
 })
 
 describe('binaryOnPath (v4.16.1 T1)', () => {
+  it.each([
+    '/mnt/c/Program Files/nodejs/node.exe',
+    '/mnt/c/Program Files/nodejs/npm',
+    '/mnt/c/Users/u/AppData/Roaming/npm/ctx7',
+    '/mnt/d/custom-prefix/ctx7.cmd',
+    '/mnt/c/bin/ctx7.bat',
+  ])('rejects a Linux PATH hit belonging to Windows: %s', (path) => {
+    expect(
+      binaryOnPath('ctx7', {
+        platform: 'linux',
+        run: () => ({ status: 0, stdout: `${path}\n/usr/bin/ctx7\n` }),
+      }),
+    ).toBe(false)
+  })
+
+  it('accepts native-first Linux results even with Windows entries later', () => {
+    expect(
+      binaryOnPath('ctx7', {
+        platform: 'linux',
+        run: () => ({
+          status: 0,
+          stdout: '/usr/local/bin/ctx7\n/mnt/c/Users/u/AppData/Roaming/npm/ctx7\n',
+        }),
+      }),
+    ).toBe(true)
+  })
+
   it('true when the finder reports a hit', () => {
     expect(
       binaryOnPath('ctx7', {

@@ -36,6 +36,10 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 The binary installer offers setup with your consent in interactive sessions. Do not repeat it if it completed successfully. If setup was skipped or failed, or you installed noninteractively, run `harnessed setup`.
 
+`harnessed setup` installs a cache-only **SessionStart update reminder** by default. Its foreground path only reads a bounded local cache: zero network requests, zero filesystem mutation, and fail-soft exit `0`. It only displays a reminder for a cached available update; missing or stale cache may launch a detached background worker to refresh version information, never to install updates. Codex uses a local plugin and may require user trust approval; setup does not grant trust automatically.
+
+`harnessed setup --no-update-reminder` persistently disables the reminder; later setup/update runs preserve that choice. To re-enable it, delete the corresponding `update-reminder-preferences.json` and run `harnessed setup` again. Default locations are `~/.claude/harnessed/update-reminder-preferences.json` for Claude Code and `~/.codex/harnessed/update-reminder-preferences.json` for Codex; when using `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or `HARNESSED_ROOT_OVERRIDE`, use the corresponding reminder state root instead.
+
 **Via Bun (secondary recommendation; optional)**:
 
 ```bash
@@ -307,6 +311,8 @@ graph TD
 > Master orchestrator auto gate-routes to the right sub (chain-isolation rule — non-firing subs are transparently declared skipped).
 > Direct sub invocation also bypasses the master to run a single stage, e.g. `/discuss-strategic "new feature X"`.
 
+**Update workflow:** use `/harnessed-update` in Claude Code or `$harnessed-update` in Codex after setup. It previews with `harnessed update --all --dry-run --json`, asks for explicit confirmation, then runs `harnessed update --all --json` exactly once and reports the structured result. If reviewed third-party components remain `failed`, `unsupported`, or `retained`, it shows a second bounded repair proposal. Only after explicit confirmation for the exact component list may it run `harnessed update --all --repair --yes --json`, which can invoke `claude -p` or `codex exec`. Repair never grants plugin/MCP trust, reads credentials, expands host roots, or declares success without deterministic re-verification.
+
 ---
 
 ## ⚡ Usage Flow
@@ -506,7 +512,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 
 | Command | Description |
 | ---- | ---- |
-| `harnessed setup` | One-time setup; installs workflow skills to `~/.claude/skills/` + MCP to `~/.claude.json` |
+| `harnessed setup [--no-update-reminder]` | One-time setup; installs workflow skills to `~/.claude/skills/` + MCP to `~/.claude.json`; installs the cache-only SessionStart update reminder by default; `--no-update-reminder` persists an opt-out |
 | `harnessed gates <master>` | Evaluate which sub-workflows fire for a master stage (JSON: fire/skip/parallelism). Used by slash commands to orchestrate native spawns. |
 | `harnessed prompt <sub>` | Output a spawn-ready prompt (role + checklist + disciplines + completion/clarification protocols) for a sub-workflow. |
 | `harnessed checkpoint <action> <sub>` | Record sub-workflow start/complete/fail to `~/.claude/harnessed/checkpoints/`. |
@@ -522,7 +528,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed resume` | Resume from the most recent checkpoint after a session interruption |
 | `harnessed status` | Current phase + lock holder |
 | `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / skill integrity / GateGuard conflict / update-available / stale hooks, etc.). The **stale hooks** check flags orphaned harnessed `Stop`/`UserPromptSubmit` entries in `~/.claude/settings.json` that point at a deleted `bin/*.mjs` — the cause of a `MODULE_NOT_FOUND` error on every prompt after a raw `npm uninstall -g harnessed`. Fix: run `harnessed uninstall` (it strips them) **before** removing the package. |
-| `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Self-update, channel-aware: binary installs replace themselves in place from GitHub releases (sha256 + ed25519-signature verified — releases ship `<asset>.sha256.sig`, signed-release contract since 4.32.19; the replaced version is banked for rollback); npm installs run `npm i -g harnessed@latest`. `--check` reports the latest version; `--rollback [version]` (binary installs only) atomically restores a banked previous binary — npm installs are pointed at `npm i -g harnessed@<version>`; `--upstreams` re-runs the base manifests; `--migration-report` is a read-only stale-state inventory |
+| `harnessed update [--check\|--dry-run\|--rollback [version]\|--all\|--upstreams\|--migration-report] [--json] [--platform <host>] [--non-interactive] [--repair --yes]` | Self-update, channel-aware: binary installs replace themselves in place from GitHub releases (sha256 + ed25519-signature verified — releases ship `<asset>.sha256.sig`, signed-release contract since 4.32.19; the replaced version is banked for rollback); npm installs run `npm i -g harnessed@latest`. `--check` reports versions without installing; `--dry-run` previews without writing; `--rollback [version]` (binary installs only) atomically restores a banked previous binary — npm installs are pointed at `npm i -g harnessed@<version>`; `--all` (alias `--upstreams`) requests fresh-runtime closure, including owned assets and reviewed third-party updates; `--json` emits one structured result; `--platform <host>` selects `claude` or `codex`; `--non-interactive` skips prompts, and repair automation additionally requires explicit `--repair --yes`; `--repair --yes` invokes a bounded, user-authorized agent repair and then deterministic verification; `--migration-report` is a read-only stale-state inventory |
 | `harnessed release-preflight` | Read-only release-readiness gate (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exits 1 if not ready. The Ship-stage gate. |
 | `harnessed retro --done` | Reset the retro-reminder phase counter after running `/retro` (clears the per-turn RETRO-DUE nudge). |
 | `harnessed install <name>` | Install an upstream manifest |
@@ -531,6 +537,12 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed rollback <timestamp>` | One-line rollback of a **backup snapshot** (EOL preserve + sha1 verify) — distinct from `update --rollback`, which restores a previous **compiled binary** |
 | `harnessed gc` | Clean up expired backups |
 | `harnessed audit-log` | Routing transparency log query (supports `--filter` jq expression) |
+
+**Fresh-runtime closure (Phase 78):** `harnessed update --all --json` first performs self-update, then hands off to a verified fresh runtime through an absolute executable/package entry path. Only that runtime refreshes harnessed-owned workflow/hook assets and updates already-installed third-party components through reviewed adapters for the selected host. Self-update failure prevents third-party mutation; handoff failure reports incomplete closure even if harnessed itself changed. GSD is the first reviewed adapter, with runtime identity/version verification before and after its upstream-owned update action. Components without a reviewed adapter report `unsupported`; missing third-party components remain `not-installed` and are not installed.
+
+`--json` writes exactly one JSON object to stdout (`status`, `components`, `warnings`, `error`, plus schema/operation/mode/host/runtime metadata); diagnostics and child-process output go to stderr. `unsupported` and `retained` produce top-level `partial` and exit `1`, never all-success: `retained` means an update failed but the previous installation still verifies. Completed updates and valid previews (`complete` / `planned`) exit `0`; failed/incomplete execution exits `1`; invalid arguments/protocol exit `2`. Respect each component's `restartRequired` before continuing.
+
+Package self-update applies only after proving that the selected npm executable's global `harnessed` package is the running, locked package (including its declared binary entry). The updater probes `npm prefix -g` and `npm root -g --prefix <prefix>`, then pins the same prefix for installation. Unknown/mismatched targets and linked global package slots fail closed with exit `1`, before any installer, fresh-runtime handoff or third-party update. Bun package apply is currently refused as `package-target-unproven`, without npm fallback; version checks, previews and already-current installs remain available.
 
 ### Flags
 

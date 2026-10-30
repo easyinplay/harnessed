@@ -24,7 +24,11 @@ vi.mock('../../src/installers/lib/runClaudeArgs.js', () => ({
       return {
         exitCode: 0,
         stdout: JSON.stringify({
-          installed: [...installedIds].map((pluginId) => ({ pluginId, installed: true })),
+          installed: [...installedIds].map((pluginId) => ({
+            pluginId,
+            installed: true,
+            enabled: true,
+          })),
         }),
         stderr: '',
       }
@@ -59,10 +63,15 @@ import { invalidateCodexPluginCache } from '../../src/installers/lib/codexPlugin
 import { isAlreadyInstalled } from '../../src/installers/lib/idempotent.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
 import { isCompiledRuntime } from '../../src/platform/assetsRoot.js'
-import { captureHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import {
+  captureHostInstallContext,
+  createHostInstallContext,
+} from '../../src/platform/hostInstallContext.js'
+import { descriptorFor } from '../../src/platform/platform.js'
 import { uninstallCcHookAdd } from '../../src/uninstallers/ccHookAdd.js'
 
 const KEY = 'harnessed-perturn-inject@harnessed-local:hooks/hooks.json:user_prompt_submit:0:0'
+const REMINDER_KEY = 'harnessed-update-reminder@harnessed-local:hooks/hooks.json:session_start:0:0'
 
 function manifest(name: string, hookCommand: string, event = 'UserPromptSubmit', matcher?: string) {
   return {
@@ -140,8 +149,84 @@ const install = (m: Manifest, opts: Partial<InstallOpts> = {}) =>
   installCcHookAdd({ manifest: m, opts: { ...OPTS, ...opts }, level: 'L3', cwd })
 
 const PERTURN = () => manifest('perturn-inject', 'node bin/harnessed-inject-state.mjs')
+const REMINDER = () =>
+  manifest('update-reminder', 'node bin/harnessed-update-reminder.mjs', 'SessionStart')
 
 describe('install on codex', () => {
+  it('installs update-reminder under the explicit nativeHome without global config or trust writes', async () => {
+    const nativeHome = join(home, "portable Codex home's $;&` root")
+    mkdirSync(nativeHome, { recursive: true })
+    writeFileSync(join(nativeHome, 'config.toml'), '# custom decoy\n')
+    writeFileSync(join(nativeHome, 'hooks.json'), '{"hooks":{"user":[]}}\n')
+    const hostContext = createHostInstallContext(descriptorFor('codex', home), {
+      os: process.platform,
+      userHome: home,
+      nativeHome,
+    })
+    list.mockResolvedValue({
+      ok: true,
+      value: [
+        {
+          key: REMINDER_KEY,
+          trustStatus: 'untrusted',
+          currentHash: 'h',
+          eventName: 'SessionStart',
+        },
+      ],
+    })
+    const context = {
+      manifest: REMINDER(),
+      opts: OPTS,
+      level: 'L3' as const,
+      cwd,
+      hostContext,
+    }
+    const result = await installCcHookAdd(context)
+    expect(result).toMatchObject({
+      ok: true,
+      trustPending: expect.stringContaining('--trust-codex-hooks'),
+    })
+    expect(trust).not.toHaveBeenCalled()
+    const pluginRoot = join(
+      nativeHome,
+      'harnessed',
+      'marketplace',
+      'plugins',
+      'harnessed-update-reminder',
+    )
+    const hooks = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'))
+    const stateRoot = join(nativeHome, 'harnessed')
+    const commandHead = `node "\${PLUGIN_ROOT}/hook.cjs" update-reminder --state-root `
+    expect(hooks.hooks.SessionStart[0].hooks[0]).toMatchObject({
+      command: `${commandHead}'${stateRoot.replaceAll("'", "'\\''")}' --platform codex`,
+      commandWindows: `${commandHead}'${stateRoot.replaceAll("'", "''")}' --platform codex`,
+    })
+    const installInfo = readFileSync(join(pluginRoot, 'install.json'), 'utf8')
+    expect(JSON.parse(installInfo)).toMatchObject({ reminderStateRoot: stateRoot })
+    expect(
+      readFileSync(
+        join(
+          nativeHome,
+          'plugins',
+          'data',
+          'harnessed-update-reminder-harnessed-local',
+          'install.json',
+        ),
+        'utf8',
+      ),
+    ).toBe(installInfo)
+    expect(readFileSync(join(nativeHome, 'config.toml'), 'utf8')).toBe('# custom decoy\n')
+    expect(readFileSync(join(nativeHome, 'hooks.json'), 'utf8')).toBe('{"hooks":{"user":[]}}\n')
+    expect(existsSync(MKT())).toBe(false)
+    invalidateCodexPluginCache(hostContext)
+    expect(await installCcHookAdd(context)).toMatchObject({ ok: true, alreadyInstalled: true })
+    untrust.mockResolvedValue({ ok: true, value: { removed: [REMINDER_KEY] } })
+    expect(await removeCodexHook('update-reminder', 'SessionStart', hostContext)).toMatchObject({
+      ok: true,
+    })
+    expect(existsSync(pluginRoot)).toBe(false)
+  })
+
   it('changing npm to Bun still requires consent for the modified trust literal', async () => {
     list.mockResolvedValue({ ok: true, value: [{ key: KEY, trustStatus: 'trusted' }] })
     await install(PERTURN())
