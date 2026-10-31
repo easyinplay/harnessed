@@ -10,11 +10,20 @@ import { realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, relative, resolve as resolvePath } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import { claudeDescriptor } from '../../src/platform/platform.js'
 
 const spawnCmdMock = vi.fn()
 vi.mock('../../src/installers/lib/spawn.js', () => ({
   spawnCmd: (...a: unknown[]) => spawnCmdMock(...a),
   DEFAULT_INSTALL_TIMEOUT_MS: 300_000,
+}))
+const withInstallOwnershipLockMock = vi.fn(
+  async (_context: unknown, work: () => Promise<unknown>) => work(),
+)
+vi.mock('../../src/installers/lib/installOwnershipLock.js', () => ({
+  withInstallOwnershipLock: (context: unknown, work: () => Promise<unknown>) =>
+    withInstallOwnershipLockMock(context, work),
 }))
 const rmMock = vi.fn(async (_p: string, _o?: unknown) => undefined)
 const lstatMock = vi.fn(async (_p: string) => ({ isDirectory: () => true }))
@@ -36,6 +45,7 @@ const removeOwnedDirectoryViaQuarantineMock = vi.fn<(snapshot: unknown) => Promi
 const removeOwnedFileViaQuarantineMock = vi.fn<(snapshot: unknown) => Promise<void>>(
   async () => undefined,
 )
+const withQuarantineTransactionMock = vi.fn()
 vi.mock('../../src/lib/quarantineDelete.js', () => ({
   prepareOwnedPathRemoval: (root: string, target: string) =>
     prepareOwnedPathRemovalMock(root, target),
@@ -43,10 +53,14 @@ vi.mock('../../src/lib/quarantineDelete.js', () => ({
   removeOwnedDirectoryViaQuarantine: (snapshot: unknown) =>
     removeOwnedDirectoryViaQuarantineMock(snapshot),
   removeOwnedFileViaQuarantine: (snapshot: unknown) => removeOwnedFileViaQuarantineMock(snapshot),
+  withQuarantineTransaction: (operation: () => Promise<unknown>, commit: () => Promise<void>) =>
+    withQuarantineTransactionMock(operation, commit),
 }))
 const readReceiptMock = vi.fn()
 const removeReceiptMock = vi.fn(async () => undefined)
-const removeOwnedSkillPathMock = vi.fn(async (_receipt: unknown, _path: string) => undefined)
+const removeOwnedSkillPathMock = vi.fn(
+  async (_receipt: unknown, _path: string, _ctx?: unknown) => undefined,
+)
 const verifyOwnedSkillPathMock = vi.fn(async (_receipt: unknown, _path: string) => undefined)
 const writeReceiptMock = vi.fn(
   async (_ctx: unknown, _roots: readonly string[], _paths: readonly string[]) => undefined,
@@ -60,7 +74,8 @@ vi.mock('../../src/installers/lib/skillOwnershipReceipt.js', () => ({
     )
   },
   readSkillOwnershipReceipt: (ctx: unknown) => readReceiptMock(ctx),
-  removeOwnedSkillPath: (receipt: unknown, path: string) => removeOwnedSkillPathMock(receipt, path),
+  removeOwnedSkillPath: (receipt: unknown, path: string, ctx: unknown) =>
+    removeOwnedSkillPathMock(receipt, path, ctx),
   removeSkillOwnershipReceipt: (_ctx: unknown) => removeReceiptMock(),
   verifyOwnedSkillPath: (receipt: unknown, path: string) => verifyOwnedSkillPathMock(receipt, path),
   writeSkillOwnershipReceipt: (ctx: unknown, roots: readonly string[], paths: readonly string[]) =>
@@ -110,7 +125,17 @@ function manifestWith(uninstall: { cmd: string; cleanup_paths?: string[] }): Man
 }
 
 function ctxFor(m: Manifest, dryRun = false): UninstallContext {
-  return { manifest: m, opts: { apply: true, dryRun, yes: true }, cwd: process.cwd() }
+  const descriptor = claudeDescriptor(homedir())
+  return {
+    manifest: m,
+    opts: { apply: true, dryRun, yes: true },
+    cwd: process.cwd(),
+    hostContext: createHostInstallContext(descriptor, {
+      os: process.platform,
+      userHome: homedir(),
+      nativeHome: descriptor.homeDir,
+    }),
+  }
 }
 
 function canonicalFixturePath(path: string): string {
@@ -130,6 +155,7 @@ beforeEach(() => {
   removeReceiptMock.mockReset().mockResolvedValue(undefined)
   verifyOwnedSkillPathMock.mockReset().mockResolvedValue(undefined)
   writeReceiptMock.mockReset().mockResolvedValue(undefined)
+  withInstallOwnershipLockMock.mockClear()
   spawnCmdMock.mockResolvedValue(spawnOk())
   rmMock.mockResolvedValue(undefined)
   prepareOwnedPathRemovalMock.mockReset().mockImplementation((root: string, target: string) => ({
@@ -144,6 +170,13 @@ beforeEach(() => {
   assertOwnedPathUnchangedMock.mockReset().mockResolvedValue(undefined)
   removeOwnedDirectoryViaQuarantineMock.mockReset().mockResolvedValue(undefined)
   removeOwnedFileViaQuarantineMock.mockReset().mockResolvedValue(undefined)
+  withQuarantineTransactionMock
+    .mockReset()
+    .mockImplementation(async (operation: () => Promise<unknown>, commit: () => Promise<void>) => {
+      const value = await operation()
+      await commit()
+      return { value, cleanupFailures: [] }
+    })
 })
 afterEach(() => vi.restoreAllMocks())
 
@@ -176,22 +209,45 @@ describe('confineCleanupPath', () => {
 })
 
 describe('runDeclaredTeardown', () => {
-  it('removes only receipt-owned skill paths without running the declared cmd', async () => {
-    const target = resolvePath(join(homedir(), '.claude/skills/gsd-plan-phase'))
-    const root = resolvePath(join(target, '..'))
-    const m = manifestWith({ cmd: 'dangerous-upstream-uninstall', cleanup_paths: [] })
+  it('fails closed before uninstall when the receipt has no owned paths', async () => {
+    const m = manifestWith({ cmd: 'true', cleanup_paths: [] })
     ;(m.spec.install as { installs_skills?: string[] }).installs_skills = []
-    readReceiptMock.mockResolvedValue({ createdPaths: [target], skillRoots: [root] })
+    readReceiptMock.mockRejectedValue(new Error('skill ownership receipt is empty'))
 
     const res = await runDeclaredTeardown(ctxFor(m))
 
+    expect(res).toMatchObject({ ok: false, phase: 'preflight' })
+    expect(String('error' in res ? res.error : '')).toMatch(/empty|missing|corrupt/i)
+    expect(removeOwnedSkillPathMock).not.toHaveBeenCalled()
+    expect(removeReceiptMock).not.toHaveBeenCalled()
+  })
+
+  it('preverifies and removes all receipt-owned paths in one quarantine transaction', async () => {
+    const root = resolvePath(join(homedir(), '.claude/skills'))
+    const first = resolvePath(join(root, 'gsd-plan-phase'))
+    const second = resolvePath(join(root, 'gsd-execute-phase'))
+    const m = manifestWith({ cmd: 'dangerous-upstream-uninstall', cleanup_paths: [] })
+    ;(m.spec.install as { installs_skills?: string[] }).installs_skills = []
+    readReceiptMock.mockResolvedValue({ createdPaths: [first, second], skillRoots: [root] })
+    const ctx = ctxFor(m)
+
+    const res = await runDeclaredTeardown(ctx)
+
     expect(spawnCmdMock).not.toHaveBeenCalled()
-    expect(verifyOwnedSkillPathMock).toHaveBeenCalledOnce()
-    expect(removeOwnedSkillPathMock).toHaveBeenCalledWith(expect.anything(), target)
+    expect(verifyOwnedSkillPathMock.mock.calls.map((call) => call[1])).toEqual([first, second])
+    expect(removeOwnedSkillPathMock.mock.calls.map((call) => call.slice(1))).toEqual([
+      [first, ctx],
+      [second, ctx],
+    ])
+    expect(Math.max(...verifyOwnedSkillPathMock.mock.invocationCallOrder)).toBeLessThan(
+      Math.min(...removeOwnedSkillPathMock.mock.invocationCallOrder),
+    )
+    expect(withQuarantineTransactionMock).toHaveBeenCalledOnce()
     expect(rmMock).not.toHaveBeenCalled()
     expect(writeReceiptMock).not.toHaveBeenCalled()
     expect(removeReceiptMock).toHaveBeenCalledTimes(1)
-    expect(res).toEqual({ ok: true, removedPaths: [target] })
+    expect(withInstallOwnershipLockMock).toHaveBeenCalledTimes(1)
+    expect(res).toEqual({ ok: true, removedPaths: [first, second] })
   })
 
   it('fails closed before side effects when receipt validation rejects an injected skill root', async () => {
@@ -209,55 +265,72 @@ describe('runDeclaredTeardown', () => {
     expect(rmMock).not.toHaveBeenCalled()
   })
 
-  it('fails verification and retains the receipt when a removed path still exists', async () => {
-    const target = resolvePath(join(homedir(), '.claude/skills/gsd-plan-phase'))
-    const root = resolvePath(join(target, '..'))
-    const m = manifestWith({ cmd: 'dangerous-upstream-uninstall', cleanup_paths: [] })
-    ;(m.spec.install as { installs_skills?: string[] }).installs_skills = []
-    readReceiptMock.mockResolvedValue({ createdPaths: [target], skillRoots: [root] })
-    removeOwnedSkillPathMock.mockRejectedValue(new Error('quarantine verification failed'))
-
-    const res = await runDeclaredTeardown(ctxFor(m))
-
-    expect(res).toMatchObject({ ok: false, phase: 'verify' })
-    expect(removeReceiptMock).not.toHaveBeenCalled()
-  })
-
-  it('persists remaining receipt paths after partial failure so retry skips removed paths', async () => {
+  it('does not commit the receipt when the second quarantine fails', async () => {
     const root = resolvePath(join(homedir(), '.claude/skills'))
     const first = resolvePath(join(root, 'gsd-plan-phase'))
     const second = resolvePath(join(root, 'gsd-execute-phase'))
     const m = manifestWith({ cmd: 'dangerous-upstream-uninstall', cleanup_paths: [] })
     ;(m.spec.install as { installs_skills?: string[] }).installs_skills = []
-    let receipt = { createdPaths: [first, second], skillRoots: [root] }
-    readReceiptMock.mockImplementation(async () => receipt)
-    writeReceiptMock.mockImplementation(async (_ctx, roots, paths) => {
-      receipt = { createdPaths: [...paths], skillRoots: [...roots] }
-    })
-    let secondRemovalAttempts = 0
+    readReceiptMock.mockResolvedValue({ createdPaths: [first, second], skillRoots: [root] })
     removeOwnedSkillPathMock.mockImplementation(async (_receipt, path) => {
-      if (path === second && secondRemovalAttempts++ === 0) {
-        throw new Error('quarantine verification failed')
-      }
+      if (path === second) throw new Error('second quarantine failed')
     })
+
+    const res = await runDeclaredTeardown(ctxFor(m))
+
+    expect(res).toMatchObject({ ok: false, phase: 'verify' })
+    expect('error' in res && res.error).toMatch(/second quarantine failed/i)
+    expect(removeReceiptMock).not.toHaveBeenCalled()
+  })
+
+  it('returns remove-receipt commit failure and succeeds on retry', async () => {
+    const root = resolvePath(join(homedir(), '.claude/skills'))
+    const first = resolvePath(join(root, 'gsd-plan-phase'))
+    const second = resolvePath(join(root, 'gsd-execute-phase'))
+    const m = manifestWith({ cmd: 'dangerous-upstream-uninstall', cleanup_paths: [] })
+    ;(m.spec.install as { installs_skills?: string[] }).installs_skills = []
+    readReceiptMock.mockResolvedValue({ createdPaths: [first, second], skillRoots: [root] })
+    removeReceiptMock.mockRejectedValueOnce(new Error('remove receipt failed'))
 
     const firstAttempt = await runDeclaredTeardown(ctxFor(m))
     const retry = await runDeclaredTeardown(ctxFor(m))
 
     expect(firstAttempt).toMatchObject({ ok: false, phase: 'verify' })
-    expect(writeReceiptMock).toHaveBeenCalledWith(expect.anything(), [root], [second])
+    expect('error' in firstAttempt && firstAttempt.error).toMatch(/remove receipt failed/i)
+    expect(writeReceiptMock).not.toHaveBeenCalled()
     expect(removeOwnedSkillPathMock.mock.calls.map((call) => call[1])).toEqual([
       first,
       second,
+      first,
       second,
     ])
     expect(verifyOwnedSkillPathMock.mock.calls.map((call) => call[1])).toEqual([
       first,
       second,
+      first,
       second,
     ])
-    expect(removeReceiptMock).toHaveBeenCalledTimes(1)
-    expect(retry).toEqual({ ok: true, removedPaths: [second] })
+    expect(removeReceiptMock).toHaveBeenCalledTimes(2)
+    expect(retry).toEqual({ ok: true, removedPaths: [first, second] })
+  })
+
+  it('reports post-commit cleanup failures with retained quarantine paths', async () => {
+    const target = resolvePath(join(homedir(), '.claude/skills/gsd-plan-phase'))
+    const root = resolvePath(join(target, '..'))
+    const m = manifestWith({ cmd: 'dangerous-upstream-uninstall', cleanup_paths: [] })
+    ;(m.spec.install as { installs_skills?: string[] }).installs_skills = []
+    readReceiptMock.mockResolvedValue({ createdPaths: [target], skillRoots: [root] })
+    withQuarantineTransactionMock.mockResolvedValue({
+      value: undefined,
+      cleanupFailures: [
+        `cleanup failed for ${target}: access denied; retained at ${root}/.harnessed-quarantine-x`,
+      ],
+    })
+
+    const res = await runDeclaredTeardown(ctxFor(m))
+
+    expect(res).toMatchObject({ ok: false, phase: 'verify' })
+    expect('error' in res && res.error).toMatch(/cleanup failed.*retained at/i)
   })
 
   it('runs the declared cmd through the spawn seam and removes cleanup_paths', async () => {

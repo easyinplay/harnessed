@@ -194,6 +194,62 @@ const HarnessOverrides = Type.Object(
   { additionalProperties: false },
 )
 
+const OwnershipRoot = Type.Union([
+  Type.Literal('platform-skills'),
+  Type.Literal('native-home'),
+  Type.Literal('host-agents'),
+  Type.Literal('host-commands'),
+])
+
+const OwnershipSelector = Type.Union([
+  Type.Object(
+    { names: Type.Array(Type.String({ minLength: 1 }), { minItems: 1, uniqueItems: true }) },
+    { additionalProperties: false },
+  ),
+  Type.Object({ prefix: Type.String({ minLength: 1 }) }, { additionalProperties: false }),
+])
+
+const DirectoryOwnershipResource = Type.Object(
+  {
+    root: OwnershipRoot,
+    kind: Type.Literal('directory'),
+    selector: OwnershipSelector,
+    marker: Type.Object(
+      {
+        path: Type.String({
+          minLength: 1,
+          pattern: '^(?!/)(?![A-Za-z]:/)(?!.*//)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))[^\\\\]+$',
+        }),
+        contains: Type.String({ minLength: 1 }),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+)
+
+const FileOwnershipResource = Type.Object(
+  {
+    root: OwnershipRoot,
+    kind: Type.Literal('file'),
+    selector: OwnershipSelector,
+    marker: Type.Object(
+      { contains: Type.String({ minLength: 1 }) },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+)
+
+const Ownership = Type.Object(
+  {
+    resources: Type.Array(Type.Union([DirectoryOwnershipResource, FileOwnershipResource]), {
+      minItems: 1,
+    }),
+  },
+  { additionalProperties: false },
+)
+
 export const SpecSchema = Type.Object(
   {
     type: TypeEnum,
@@ -224,6 +280,7 @@ export const SpecSchema = Type.Object(
     provides: Type.Optional(Type.Array(ProvidedUnit, { minItems: 2, uniqueItems: true })),
     // Per-harness install/verify/uninstall interfaces (codex only for now).
     harness_overrides: Type.Optional(HarnessOverrides),
+    ownership: Type.Optional(Ownership),
   },
   { additionalProperties: false },
 )

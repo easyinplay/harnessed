@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { createHash, randomBytes } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { lstat, realpath, rename, rm } from 'node:fs/promises'
@@ -14,9 +15,26 @@ export interface OwnedPathSnapshot {
   contentDigest: string | null
 }
 
-interface QuarantineOptions {
+export interface QuarantineOptions {
   verify?: (quarantinePath: string) => Promise<void>
 }
+
+export interface QuarantineTransactionResult<T> {
+  value: T
+  cleanupFailures: string[]
+}
+
+interface QuarantinedPath {
+  snapshot: OwnedPathSnapshot
+  quarantinePath: string
+  verify?: (quarantinePath: string) => Promise<void>
+}
+
+interface QuarantineTransaction {
+  paths: QuarantinedPath[]
+}
+
+const quarantineTransactions = new AsyncLocalStorage<QuarantineTransaction>()
 
 function isDirectChild(root: string, target: string): boolean {
   const rel = relative(root, target)
@@ -99,6 +117,79 @@ async function restoreQuarantine(quarantinePath: string, target: string): Promis
   }
 }
 
+async function rollbackQuarantines(transaction: QuarantineTransaction): Promise<string[]> {
+  const failures: string[] = []
+  for (const quarantined of [...transaction.paths].reverse()) {
+    const { snapshot, quarantinePath } = quarantined
+    try {
+      await reverifyQuarantinedPath(quarantined)
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      failures.push(
+        `rollback reverify failed for ${snapshot.target}: ${detail}; retained at ${quarantinePath}`,
+      )
+      continue
+    }
+    const restoreError = await restoreQuarantine(quarantinePath, snapshot.target)
+    if (restoreError !== null) {
+      failures.push(
+        `rollback failed for ${snapshot.target}: ${restoreError}; retained at ${quarantinePath}`,
+      )
+    }
+  }
+  return failures
+}
+
+async function finalizeQuarantines(transaction: QuarantineTransaction): Promise<string[]> {
+  const failures: string[] = []
+  for (const quarantined of transaction.paths) {
+    const { snapshot, quarantinePath } = quarantined
+    try {
+      await reverifyQuarantinedPath(quarantined)
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      failures.push(
+        `cleanup reverify failed for ${snapshot.target}: ${detail}; retained at ${quarantinePath}`,
+      )
+      continue
+    }
+    try {
+      await rm(
+        quarantinePath,
+        snapshot.isDirectory ? { recursive: true, force: true, maxRetries: 3 } : { force: true },
+      )
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      failures.push(
+        `cleanup failed for ${snapshot.target}: ${detail}; retained at ${quarantinePath}`,
+      )
+    }
+  }
+  return failures
+}
+
+export async function withQuarantineTransaction<T>(
+  operation: () => Promise<T>,
+  commit: () => Promise<void>,
+): Promise<QuarantineTransactionResult<T>> {
+  if (quarantineTransactions.getStore()) {
+    throw new Error('nested quarantine transactions are not supported')
+  }
+  const transaction: QuarantineTransaction = { paths: [] }
+  let value: T
+  try {
+    value = await quarantineTransactions.run(transaction, operation)
+    await commit()
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    const rollbackFailures = await rollbackQuarantines(transaction)
+    throw new Error(
+      rollbackFailures.length === 0 ? detail : `${detail}; ${rollbackFailures.join('; ')}`,
+    )
+  }
+  return { value, cleanupFailures: await finalizeQuarantines(transaction) }
+}
+
 async function verifyQuarantine(
   snapshot: OwnedPathSnapshot,
   quarantinePath: string,
@@ -158,7 +249,20 @@ async function verifyQuarantinedFile(
   }
 }
 
-export async function removeOwnedFileViaQuarantine(snapshot: OwnedPathSnapshot): Promise<void> {
+async function reverifyQuarantinedPath(quarantined: QuarantinedPath): Promise<void> {
+  const { snapshot, quarantinePath, verify } = quarantined
+  if (snapshot.isDirectory) {
+    await verifyQuarantine(snapshot, quarantinePath, verify)
+    return
+  }
+  await verifyQuarantinedFile(snapshot, quarantinePath)
+  await verify?.(quarantinePath)
+}
+
+export async function removeOwnedFileViaQuarantine(
+  snapshot: OwnedPathSnapshot,
+  options: QuarantineOptions = {},
+): Promise<void> {
   if (snapshot.isDirectory) {
     throw new Error(`refusing non-recursive removal of directory: ${snapshot.target}`)
   }
@@ -176,6 +280,7 @@ export async function removeOwnedFileViaQuarantine(snapshot: OwnedPathSnapshot):
 
   try {
     await verifyQuarantinedFile(snapshot, quarantinePath)
+    await options.verify?.(quarantinePath)
   } catch (error) {
     const restoreError = await restoreQuarantine(quarantinePath, snapshot.target)
     const detail = error instanceof Error ? error.message : String(error)
@@ -186,6 +291,11 @@ export async function removeOwnedFileViaQuarantine(snapshot: OwnedPathSnapshot):
     )
   }
 
+  const transaction = quarantineTransactions.getStore()
+  if (transaction) {
+    transaction.paths.push({ snapshot, quarantinePath, verify: options.verify })
+    return
+  }
   await rm(quarantinePath, { force: true })
 }
 
@@ -220,5 +330,10 @@ export async function removeOwnedDirectoryViaQuarantine(
     )
   }
 
+  const transaction = quarantineTransactions.getStore()
+  if (transaction) {
+    transaction.paths.push({ snapshot, quarantinePath, verify: options.verify })
+    return
+  }
   await rm(quarantinePath, { recursive: true, force: true, maxRetries: 3 })
 }

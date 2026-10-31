@@ -1,0 +1,27 @@
+# Findings
+
+- Existing work changed GSD and mattpocock uninstall declarations to receipt-only (`cmd: "true"`, empty `cleanup_paths`).
+- Existing fresh-install code snapshots `declaredSkillPaths`; GSD declares `installs_skills: []`, so this cannot discover dynamic GSD skills or non-skill resources.
+- The receipt schema currently assumes every owned path is an immediate child of a skill root and validates ownership by declared skill basename. It must be extended carefully for host resources.
+- The workspace has extensive concurrent changes. Do not revert or absorb unrelated edits.
+- The local Codex installation has 72 `gsd-*` skill directories, one `gsd-core/` tree, and host agents under the native home. Current GSD installs do not expose separate command resources, but the contract must capture them when an upstream version creates them.
+- Reliable fresh-install markers exist without treating the prefix alone as ownership: GSD skill and agent files reference `gsd-core`; `gsd-core/bin/gsd-tools.cjs` identifies itself as `GSD Tools`; mattpocock resources use exact `installs_skills` names plus each directory's `SKILL.md` marker. Existing resources are never adopted.
+- The existing manifest schema has no legal carrier for these rules and rejects undeclared spec properties. Encoding the contract requires a scoped schema change plus generated schema and contract tests; otherwise a code-only GSD special case would violate the requested real-manifest contract.
+- Ordinary installer `alreadyInstalled` branches do not create receipts. Any future repair flow must remain separate from fresh-install receipt creation and use the host-effective manifest and context from `resolveComponentPlan()`.
+- A same-user external process can always edit unsigned JSON receipts without a separate privilege or sandbox boundary. Phase 82 targets the repository's application trust model: the supported parent-process path restores agent receipt tampering and writes receipts only through the production writer.
+- Preinstall ownership snapshots must be existence-only inventories. Marker, kind, symlink, and realpath checks belong exclusively to postinstall discovery; otherwise an upstream installer can replace a preexisting selector match and make it appear freshly owned.
+- Ownership marker paths use a platform-independent contract: POSIX-relative only, with Windows drive absolute paths and all backslash forms rejected by both runtime and generated schema.
+- Receipt digest verification is not a substitute for the explicit declared marker contract. Uninstall now rechecks the marker against the quarantine path before deletion and restores on failure.
+- The installer orchestration tests mock the receipt writer because their filesystem fixtures do not materialize real skill trees; receipt emptiness and production writer behavior remain covered by dedicated ownership and receipt tests.
+- `runAuthorizedAgentRepair()` is invoked only after `withUpdateLock()` releases, so repair adoption can use a dedicated lock without extending the executable update lock lifetime.
+- `runAgentRepair()` performs deterministic verification inside its `verify` callback and returns `completed` only when that callback passes; adoption must occur after the returned result is both `completed` and `verified`, while the dedicated lock remains held.
+- `repairableComponents()` currently excludes `current`, so ownership receipt defects cannot enter the exact confirmed repair path even though deterministic component verification succeeds.
+- `matchesDeclaredResource()` currently returns `true` when `spec.ownership` is absent, allowing any direct child supplied to the writer; fallback must be limited to exact declared skill names.
+- Fresh installer snapshots are outside a shared install ownership lock, so concurrent external writers can both observe absence and over-claim paths.
+- `npmCli` and `npxSkillInstaller` use marker-valid discovery to decide whether a target already exists; candidate snapshots must block marker-invalid files, directories, and symlinks before execution.
+- The real GSD manifest intentionally uses receipt-only `cmd: "true"` teardown with ownership declarations; two reviewer tests still assert the removed upstream uninstall command.
+- Final review found no remaining scoped blocker after removing fail-open candidate suppression, rejecting malformed ownership declarations, and making the lock test deterministic.
+- Final informational review reproduced a lock gap: receipt-only uninstall reads, verifies, quarantines, commits, and finalizes outside the host ownership lock already used by fresh install and adoption.
+- Receipt parent operations directly use `mkdir`, `readFile`, `rm`, and `rename`; no shared helper captures the canonical regular-directory identity or rejects a redirected `skill-ownership` parent.
+- Final closure uses one host ownership lock for fresh install, confirmed repair adoption, and receipt-only uninstall. Receipt parent I/O shares a canonical regular-directory identity guard and fails closed on symlink, junction, or identity replacement.
+- `ralph-loop`, `ralph`, and `x ralph-loop` are unavailable in this environment. Completion is enforced with deterministic RED/GREEN regressions and the requested validation matrix.

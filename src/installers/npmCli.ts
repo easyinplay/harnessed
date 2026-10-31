@@ -11,7 +11,7 @@
 // helper. This installer is a thin orchestrator; if you find yourself adding
 // fs/spawn/diff logic *here*, lift it to lib/.
 
-import { lstat, readdir } from 'node:fs/promises'
+import { lstat } from 'node:fs/promises'
 import { join } from 'node:path'
 import * as p from '@clack/prompts'
 import { backup } from './lib/backup.js'
@@ -19,6 +19,12 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
+import { withInstallOwnershipLock } from './lib/installOwnershipLock.js'
+import {
+  discoverDeclaredOwnership,
+  snapshotDeclaredOwnership,
+  writeDeclaredOwnershipReceipt,
+} from './lib/ownershipContract.js'
 import {
   auditPostInstall,
   skillRootsForContext,
@@ -60,7 +66,7 @@ function unprovenPackTarget(ctx: InstallContext): InstallResult {
   }
 }
 
-export const installNpmCli: Installer = async (ctx) => {
+const installNpmCliUnlocked: Installer = async (ctx) => {
   // Discriminator narrow — index.ts only routes here when method === 'npm-cli'.
   const install = ctx.manifest.spec.install
   if (install.method !== 'npm-cli') {
@@ -82,49 +88,45 @@ export const installNpmCli: Installer = async (ctx) => {
     const e = pre.errors[0] ?? err(ctx, '/', 'preflight failed (no detail)', 'preflight')
     return { ok: false, phase: 'preflight', error: e }
   }
+  const managesSkillOwnership = isSkillOwnershipManaged(ctx.manifest)
+  const ownershipCandidateSnapshot = managesSkillOwnership
+    ? await snapshotDeclaredOwnership(ctx)
+    : undefined
+  const usesDeclaredOwnership = Array.isArray(
+    (ctx.manifest.spec as unknown as { ownership?: { resources?: unknown } }).ownership?.resources,
+  )
   // v3.9.6 — idempotent_check probe (skip install if already-installed).
   let existingPackTarget = false
   if (
     ctx.hostContext &&
     (ctx.manifest.spec.component_type !== 'cli-binary' || install.installs_skills !== undefined)
   ) {
-    const names = [ctx.manifest.metadata.name, ...(install.installs_skills ?? [])]
-    if (names.some((name) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)))
-      return unprovenPackTarget(ctx)
-    const roots = [
-      ...new Set([
-        ctx.hostContext.platform.skillsDir,
-        join(ctx.hostContext.nativeHome, 'skills'),
-        join(ctx.hostContext.userHome, '.agents', 'skills'),
-      ]),
-    ]
-    const targets = roots.flatMap((root) => names.map((name) => join(root, name)))
-    if (ctx.manifest.metadata.name === 'gsd') {
-      targets.push(join(ctx.hostContext.nativeHome, 'gsd-core'))
-      for (const root of [
-        ...roots,
-        join(ctx.hostContext.nativeHome, 'agents'),
-        ctx.hostContext.platform.commandsDir,
-      ]) {
-        try {
-          if ((await readdir(root)).some((entry) => entry === 'gsd' || entry.startsWith('gsd-')))
-            existingPackTarget = true
-        } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') existingPackTarget = true
-        }
+    if (usesDeclaredOwnership) {
+      existingPackTarget = (ownershipCandidateSnapshot?.paths.length ?? 0) > 0
+    } else {
+      const names = [ctx.manifest.metadata.name, ...(install.installs_skills ?? [])]
+      if (names.some((name) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)))
+        return unprovenPackTarget(ctx)
+      const roots = [
+        ...new Set([
+          ctx.hostContext.platform.skillsDir,
+          join(ctx.hostContext.nativeHome, 'skills'),
+          join(ctx.hostContext.userHome, '.agents', 'skills'),
+        ]),
+      ]
+      const targets = roots.flatMap((root) => names.map((name) => join(root, name)))
+      for (const target of targets) {
+        if (
+          await lstat(target).then(
+            () => true,
+            (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
+          )
+        )
+          existingPackTarget = true
       }
     }
-    for (const target of targets) {
-      if (
-        await lstat(target).then(
-          () => true,
-          (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
-        )
-      )
-        existingPackTarget = true
-    }
     // npm skill-pack scripts do not provide a bounded writer contract.
-    if (ctx.opts.updateInstalled) return unprovenPackTarget(ctx)
+    if (ctx.opts.updateInstalled && !usesDeclaredOwnership) return unprovenPackTarget(ctx)
   }
   if (await isAlreadyInstalled(ctx)) {
     const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
@@ -189,10 +191,13 @@ export const installNpmCli: Installer = async (ctx) => {
   // user's shell cwd (ambient devEngines package.json → EBADDEVENGINES dogfood).
   // 4.23.0 (issue #3) — flat-namespace collision audit (gsd-core writes gsd-* skills).
   await warnDeclaredCollisions(ctx)
-  const managesSkillOwnership = isSkillOwnershipManaged(ctx.manifest)
   const skillRoots = managesSkillOwnership ? skillRootsForContext(ctx) : []
   const pathSnapshot = new Set(
-    managesSkillOwnership ? await declaredSkillPaths(ctx, skillRoots) : [],
+    usesDeclaredOwnership
+      ? (ownershipCandidateSnapshot?.paths ?? [])
+      : managesSkillOwnership
+        ? await declaredSkillPaths(ctx, skillRoots)
+        : [],
   )
   const packSnapshot = await snapshotSkillNames(
     ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
@@ -223,12 +228,20 @@ export const installNpmCli: Installer = async (ctx) => {
   if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
   if (managesSkillOwnership) {
     try {
-      const afterPaths = await declaredSkillPaths(ctx, skillRoots)
-      await writeSkillOwnershipReceipt(
-        ctx,
-        skillRoots,
-        afterPaths.filter((path) => !pathSnapshot.has(path)),
-      )
+      if (usesDeclaredOwnership) {
+        const discovered = await discoverDeclaredOwnership(ctx)
+        await writeDeclaredOwnershipReceipt(ctx, {
+          roots: discovered.roots,
+          paths: discovered.paths.filter((path) => !pathSnapshot.has(path)),
+        })
+      } else {
+        const afterPaths = await declaredSkillPaths(ctx, skillRoots)
+        await writeSkillOwnershipReceipt(
+          ctx,
+          skillRoots,
+          afterPaths.filter((path) => !pathSnapshot.has(path)),
+        )
+      }
     } catch (error) {
       return {
         ok: false,
@@ -256,4 +269,11 @@ export const installNpmCli: Installer = async (ctx) => {
     ...(ctx.hostContext ? [ctx.hostContext] : []),
   )
   return { ok: true, backupId: bk.backupId, appliedFiles: [] }
+}
+
+export const installNpmCli: Installer = async (ctx) => {
+  if (!ctx.hostContext || !isSkillOwnershipManaged(ctx.manifest)) {
+    return installNpmCliUnlocked(ctx)
+  }
+  return withInstallOwnershipLock(ctx.hostContext, () => installNpmCliUnlocked(ctx))
 }

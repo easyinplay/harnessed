@@ -8,6 +8,7 @@ import {
   declaredSkillPaths,
   isSkillOwnershipManaged,
   readSkillOwnershipReceipt,
+  removeOwnedSkillPath,
   removeSkillOwnershipReceipt,
   skillOwnershipReceiptPath,
   verifyOwnedSkillPath,
@@ -107,7 +108,7 @@ describe('skill ownership receipt', () => {
     await writeSkillOwnershipReceipt(ctx, [root], [created])
 
     await expect(readSkillOwnershipReceipt(ctx)).resolves.toMatchObject({
-      version: 2,
+      version: 3,
       component: 'fixture-pack',
       hostId: 'claude',
       nativeRoot: ctx.hostContext?.nativeHome,
@@ -125,6 +126,17 @@ describe('skill ownership receipt', () => {
       .digest('hex')
     expect(receipt.manifestSha256).toBe(fingerprint)
     expect(await readdir(dirname(skillOwnershipReceiptPath(ctx)))).toEqual(['fixture-pack.json'])
+  })
+
+  it('rejects an arbitrary direct child when ownership is not declared', async () => {
+    const { ctx, root } = await fixture()
+    const created = join(root, 'undeclared-skill')
+    await mkdir(created, { recursive: true })
+    await writeFile(join(created, 'SKILL.md'), '# fixture\n', 'utf8')
+
+    await expect(writeSkillOwnershipReceipt(ctx, [root], [created])).rejects.toThrow(
+      /declared ownership marker/i,
+    )
   })
 
   it('replaces stale paths instead of merging an older receipt', async () => {
@@ -161,7 +173,29 @@ describe('skill ownership receipt', () => {
     await writeFile(path, JSON.stringify({ version: 0 }), 'utf8')
     await expect(readSkillOwnershipReceipt(ctx)).rejects.toThrow(/legacy.*repair or reinstall/i)
 
-    await writeSkillOwnershipReceipt(ctx, [hostContext.platform.skillsDir], [])
+    await expect(
+      writeSkillOwnershipReceipt(ctx, [hostContext.platform.skillsDir], []),
+    ).rejects.toThrow(/empty/i)
+    await writeFile(
+      path,
+      JSON.stringify({
+        version: 3,
+        component: 'fixture-pack',
+        hostId: hostContext.hostId,
+        nativeRoot: hostContext.nativeHome,
+        manifestSha256: '0'.repeat(64),
+        skillRoots: [hostContext.platform.skillsDir],
+        createdPaths: [],
+        contentSha256: {},
+        pathKinds: {},
+      }),
+      'utf8',
+    )
+    await expect(readSkillOwnershipReceipt(ctx)).rejects.toThrow(/empty/i)
+    const owned = join(hostContext.platform.skillsDir, 'new-skill')
+    await mkdir(owned, { recursive: true })
+    await writeFile(join(owned, 'SKILL.md'), 'owned\n', 'utf8')
+    await writeSkillOwnershipReceipt(ctx, [hostContext.platform.skillsDir], [owned])
     const receipt = JSON.parse(await readFile(path, 'utf8'))
     receipt.nativeRoot = join(hostContext.userHome, '.other')
     await writeFile(path, JSON.stringify(receipt), 'utf8')
@@ -254,6 +288,59 @@ describe('skill ownership receipt', () => {
     await expect(readSkillOwnershipReceipt(ctx)).rejects.toThrow(/is missing/i)
   })
 
+  it('records and removes an owned file with its receipt digest', async () => {
+    const { ctx, root } = await fixture()
+    const created = join(root, 'owned-marker.txt')
+    ctx.manifest.spec.ownership = {
+      resources: [
+        {
+          root: 'platform-skills',
+          kind: 'file',
+          selector: { names: ['owned-marker.txt'] },
+          marker: { contains: 'owned' },
+        },
+      ],
+    } as never
+    await mkdir(root, { recursive: true })
+    await writeFile(created, 'owned\n', 'utf8')
+    await writeSkillOwnershipReceipt(ctx, [root], [created])
+
+    const receipt = await readSkillOwnershipReceipt(ctx)
+    expect(receipt.pathKinds[created]).toBe('file')
+    await removeOwnedSkillPath(receipt, created)
+    await expect(readFile(created, 'utf8')).rejects.toMatchObject({ code: 'ENOENT' })
+  })
+
+  it('restores an owned file when its declared marker fails after quarantine', async () => {
+    const { ctx, root } = await fixture()
+    const created = join(root, 'owned-marker.txt')
+    ctx.manifest.spec.ownership = {
+      resources: [
+        {
+          root: 'platform-skills',
+          kind: 'file',
+          selector: { names: ['owned-marker.txt'] },
+          marker: { contains: 'owned' },
+        },
+      ],
+    } as never
+    await mkdir(root, { recursive: true })
+    await writeFile(created, 'owned\n', 'utf8')
+    await writeSkillOwnershipReceipt(ctx, [root], [created])
+    const receipt = await readSkillOwnershipReceipt(ctx)
+    const ownership = ctx.manifest.spec.ownership as unknown as {
+      resources: Array<{ marker: { contains: string } }>
+    }
+    const resource = ownership.resources[0]
+    if (!resource) throw new Error('missing ownership resource')
+    resource.marker.contains = 'different marker'
+
+    await expect(removeOwnedSkillPath(receipt, created, ctx)).rejects.toThrow(
+      /declared ownership marker/i,
+    )
+    await expect(readFile(created, 'utf8')).resolves.toBe('owned\n')
+  })
+
   it('rejects symlinked skill targets', async () => {
     const { ctx, root } = await fixture()
     const target = join(root, 'target')
@@ -265,5 +352,26 @@ describe('skill ownership receipt', () => {
     await expect(writeSkillOwnershipReceipt(ctx, [root], [linked])).rejects.toThrow(
       /symbolic link|real directory/i,
     )
+  })
+
+  it(`rejects a ${process.platform === 'win32' ? 'junction' : 'symlink'} receipt parent without touching its target`, async () => {
+    const { ctx, root, stateRoot } = await fixture()
+    const created = join(root, 'new-skill')
+    const parent = join(stateRoot, 'skill-ownership')
+    const external = join(stateRoot, 'external-receipts')
+    const externalReceipt = join(external, 'fixture-pack.json')
+    await mkdir(created, { recursive: true })
+    await writeFile(join(created, 'SKILL.md'), '# fixture\n', 'utf8')
+    await mkdir(external, { recursive: true })
+    await writeFile(externalReceipt, 'external sentinel', 'utf8')
+    await symlink(external, parent, process.platform === 'win32' ? 'junction' : 'dir')
+
+    await expect(writeSkillOwnershipReceipt(ctx, [root], [created])).rejects.toThrow(
+      /receipt parent/i,
+    )
+    await expect(readSkillOwnershipReceipt(ctx)).rejects.toThrow(/receipt parent/i)
+    await expect(removeSkillOwnershipReceipt(ctx)).rejects.toThrow(/receipt parent/i)
+    await expect(readFile(externalReceipt, 'utf8')).resolves.toBe('external sentinel')
+    await expect(readdir(external)).resolves.toEqual(['fixture-pack.json'])
   })
 })

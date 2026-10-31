@@ -1343,6 +1343,197 @@
               }
             }
           }
+        },
+        "ownership": {
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "resources"
+          ],
+          "properties": {
+            "resources": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "root",
+                      "kind",
+                      "selector",
+                      "marker"
+                    ],
+                    "properties": {
+                      "root": {
+                        "anyOf": [
+                          {
+                            "const": "platform-skills",
+                            "type": "string"
+                          },
+                          {
+                            "const": "native-home",
+                            "type": "string"
+                          },
+                          {
+                            "const": "host-agents",
+                            "type": "string"
+                          },
+                          {
+                            "const": "host-commands",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "kind": {
+                        "const": "directory",
+                        "type": "string"
+                      },
+                      "selector": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "names"
+                            ],
+                            "properties": {
+                              "names": {
+                                "minItems": 1,
+                                "uniqueItems": true,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "prefix"
+                            ],
+                            "properties": {
+                              "prefix": {
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "marker": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "contains"
+                        ],
+                        "properties": {
+                          "path": {
+                            "minLength": 1,
+                            "pattern": "^(?!/)(?![A-Za-z]:/)(?!.*//)(?!.*(?:^|/)(?:\\.|\\.\\.)(?:/|$))[^\\\\]+$",
+                            "type": "string"
+                          },
+                          "contains": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "additionalProperties": false,
+                    "type": "object",
+                    "required": [
+                      "root",
+                      "kind",
+                      "selector",
+                      "marker"
+                    ],
+                    "properties": {
+                      "root": {
+                        "anyOf": [
+                          {
+                            "const": "platform-skills",
+                            "type": "string"
+                          },
+                          {
+                            "const": "native-home",
+                            "type": "string"
+                          },
+                          {
+                            "const": "host-agents",
+                            "type": "string"
+                          },
+                          {
+                            "const": "host-commands",
+                            "type": "string"
+                          }
+                        ]
+                      },
+                      "kind": {
+                        "const": "file",
+                        "type": "string"
+                      },
+                      "selector": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "names"
+                            ],
+                            "properties": {
+                              "names": {
+                                "minItems": 1,
+                                "uniqueItems": true,
+                                "type": "array",
+                                "items": {
+                                  "minLength": 1,
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "additionalProperties": false,
+                            "type": "object",
+                            "required": [
+                              "prefix"
+                            ],
+                            "properties": {
+                              "prefix": {
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            }
+                          }
+                        ]
+                      },
+                      "marker": {
+                        "additionalProperties": false,
+                        "type": "object",
+                        "required": [
+                          "contains"
+                        ],
+                        "properties": {
+                          "contains": {
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
         }
       }
     }

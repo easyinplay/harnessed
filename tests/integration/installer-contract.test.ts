@@ -74,6 +74,11 @@ vi.mock('../../src/cli/lib/settingsTransactionLock.js', () => ({
     work(),
   ),
 }))
+vi.mock('../../src/installers/lib/installOwnershipLock.js', () => ({
+  withInstallOwnershipLock: vi.fn(async (_hostContext: unknown, work: () => Promise<unknown>) =>
+    work(),
+  ),
+}))
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),
   select: vi.fn(async () => 'abort'),

@@ -1,16 +1,18 @@
 import { createHash } from 'node:crypto'
+import type { BigIntStats } from 'node:fs'
 import { lstat, mkdir, readdir, readFile, realpath, rename, rm, writeFile } from 'node:fs/promises'
-import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import {
   prepareOwnedPathRemoval,
   removeOwnedDirectoryViaQuarantine,
+  removeOwnedFileViaQuarantine,
 } from '../../lib/quarantineDelete.js'
 import { detectPlatform } from '../../platform/platform.js'
 import { skillRootsForContext } from './packSkillAudit.js'
 import type { InstallContext } from './types.js'
 
 export interface SkillOwnershipReceipt {
-  version: 2
+  version: 3
   component: string
   hostId: string
   nativeRoot: string
@@ -18,6 +20,7 @@ export interface SkillOwnershipReceipt {
   skillRoots: string[]
   createdPaths: string[]
   contentSha256: Record<string, string>
+  pathKinds: Record<string, 'file' | 'directory'>
 }
 
 interface ReceiptContext {
@@ -25,6 +28,82 @@ interface ReceiptContext {
   hostId: string
   nativeRoot: string
   stateRoot: string
+}
+
+export interface SkillOwnershipReceiptParentIdentity {
+  path: string
+  canonicalPath: string
+  device: bigint
+  inode: bigint
+  type: 'directory'
+}
+
+interface ReceiptParentOptions {
+  create?: boolean
+}
+
+function receiptParentFailure(reason: string): Error {
+  return new Error(`skill ownership receipt parent ${reason}`)
+}
+
+export async function captureSkillOwnershipReceiptParent(
+  receiptPath: string,
+  options: ReceiptParentOptions = {},
+): Promise<SkillOwnershipReceiptParentIdentity | null> {
+  const parent = dirname(resolve(receiptPath))
+  if (basename(parent) !== 'skill-ownership') {
+    throw receiptParentFailure('has an unexpected path')
+  }
+  let info: BigIntStats
+  try {
+    info = await lstat(parent, { bigint: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    if (!options.create) return null
+    await mkdir(parent, { recursive: true })
+    info = await lstat(parent, { bigint: true })
+  }
+  if (info.isSymbolicLink() || !info.isDirectory()) {
+    throw receiptParentFailure('is a symlink, junction, reparse redirect, or non-directory')
+  }
+  const [canonicalPath, canonicalStateRoot] = await Promise.all([
+    realpath(parent),
+    realpath(dirname(parent)),
+  ])
+  if (resolve(canonicalPath) !== resolve(canonicalStateRoot, basename(parent))) {
+    throw receiptParentFailure('canonical path is redirected')
+  }
+  const canonicalInfo = await lstat(canonicalPath, { bigint: true })
+  if (
+    canonicalInfo.isSymbolicLink() ||
+    !canonicalInfo.isDirectory() ||
+    canonicalInfo.dev !== info.dev ||
+    canonicalInfo.ino !== info.ino
+  ) {
+    throw receiptParentFailure('canonical identity is not a regular directory')
+  }
+  return {
+    path: parent,
+    canonicalPath: resolve(canonicalPath),
+    device: info.dev,
+    inode: info.ino,
+    type: 'directory',
+  }
+}
+
+export async function assertSkillOwnershipReceiptParent(
+  expected: SkillOwnershipReceiptParentIdentity,
+): Promise<void> {
+  const current = await captureSkillOwnershipReceiptParent(join(expected.path, '.identity-check'))
+  if (
+    !current ||
+    current.canonicalPath !== expected.canonicalPath ||
+    current.device !== expected.device ||
+    current.inode !== expected.inode ||
+    current.type !== expected.type
+  ) {
+    throw receiptParentFailure('identity changed')
+  }
 }
 
 function receiptContext(ctx: Pick<InstallContext, 'manifest' | 'hostContext'>): ReceiptContext {
@@ -37,8 +116,24 @@ function receiptContext(ctx: Pick<InstallContext, 'manifest' | 'hostContext'>): 
   }
 }
 
-function fail(reason: string): Error {
-  return new Error(`skill ownership receipt ${reason}; run repair or reinstall before uninstalling`)
+export type SkillOwnershipReceiptErrorKind = 'missing' | 'legacy' | 'corrupt'
+
+export class SkillOwnershipReceiptError extends Error {
+  constructor(
+    readonly kind: SkillOwnershipReceiptErrorKind,
+    reason: string,
+  ) {
+    super(`skill ownership receipt ${reason}; run repair or reinstall before uninstalling`)
+    this.name = 'SkillOwnershipReceiptError'
+  }
+}
+
+export function isSkillOwnershipReceiptError(error: unknown): error is SkillOwnershipReceiptError {
+  return error instanceof SkillOwnershipReceiptError
+}
+
+function fail(reason: string, kind: SkillOwnershipReceiptErrorKind = 'corrupt'): Error {
+  return new SkillOwnershipReceiptError(kind, reason)
 }
 
 function canonicalJson(value: unknown): string {
@@ -56,6 +151,10 @@ function ownershipFingerprint(ctx: Pick<InstallContext, 'manifest'>): string {
   const value = {
     metadata: ctx.manifest.metadata,
     install: ctx.manifest.spec.install,
+    ...(((ctx.manifest.spec as unknown as { ownership?: unknown }).ownership !== undefined && {
+      ownership: (ctx.manifest.spec as unknown as { ownership: unknown }).ownership,
+    }) ||
+      {}),
   }
   return createHash('sha256').update(canonicalJson(value)).digest('hex')
 }
@@ -63,6 +162,85 @@ function ownershipFingerprint(ctx: Pick<InstallContext, 'manifest'>): string {
 function pathInsideRoot(root: string, path: string): boolean {
   const rel = relative(root, path)
   return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel)
+}
+
+function rootForPath(roots: readonly string[], path: string): string | undefined {
+  return (
+    roots.find((root) => dirname(path) === root) ?? roots.find((root) => pathInsideRoot(root, path))
+  )
+}
+
+interface OwnershipResourceDeclaration {
+  root: string
+  kind: 'file' | 'directory'
+  selector: { names?: string[]; prefix?: string }
+  marker: { path?: string; contains: string }
+}
+
+function declaredRootPath(
+  ctx: Pick<InstallContext, 'hostContext'>,
+  root: string,
+): string | undefined {
+  const host = ctx.hostContext
+  if (!host) return undefined
+  const roots: Record<string, string> = {
+    'platform-skills': host.platform.skillsDir,
+    'native-home': host.nativeHome,
+    'host-agents': join(host.nativeHome, 'agents'),
+    'host-commands': host.platform.commandsDir,
+  }
+  return roots[root] ? resolve(roots[root]) : undefined
+}
+
+async function matchesDeclaredResource(
+  ctx: Pick<InstallContext, 'manifest' | 'hostContext'>,
+  path: string,
+  kind: 'file' | 'directory',
+  actualPath = path,
+): Promise<boolean> {
+  const ownership = (ctx.manifest.spec as unknown as { ownership?: { resources?: unknown } })
+    .ownership
+  if (ownership === undefined) {
+    if (kind !== 'directory') return false
+    const roots = skillRootsForContext(ctx as InstallContext).map((root) => resolve(root))
+    return (
+      roots.includes(resolve(dirname(path))) && authorizedSkillNames(ctx).includes(basename(path))
+    )
+  }
+  const resources = ownership.resources
+  if (!Array.isArray(resources)) return false
+  if (resources.length === 0) return false
+  for (const resource of resources as OwnershipResourceDeclaration[]) {
+    const root = declaredRootPath(ctx, resource.root)
+    if (!root || resource.kind !== kind || dirname(path) !== root) continue
+    const name = path.slice(root.length + 1)
+    const names = resource.selector?.names
+    const prefix = resource.selector?.prefix
+    if (!names?.includes(name) && !(prefix && name.startsWith(prefix))) continue
+    const markerPath = resource.marker?.path ? join(actualPath, resource.marker.path) : actualPath
+    if (kind === 'directory' && !pathInsideRoot(actualPath, markerPath)) continue
+    try {
+      const targetInfo = await lstat(actualPath)
+      const markerInfo = await lstat(markerPath)
+      if (
+        targetInfo.isSymbolicLink() ||
+        markerInfo.isSymbolicLink() ||
+        !markerInfo.isFile() ||
+        (kind === 'directory' && !targetInfo.isDirectory()) ||
+        (kind === 'file' && !targetInfo.isFile())
+      )
+        continue
+      if (kind === 'directory') {
+        const [physicalPath, physicalMarker] = await Promise.all([
+          realpath(actualPath),
+          realpath(markerPath),
+        ])
+        if (!pathInsideRoot(physicalPath, physicalMarker)) continue
+      }
+      if ((await readFile(markerPath, 'utf8')).includes(resource.marker.contains)) return true
+    } catch {}
+  }
+  return false
 }
 
 export function authorizedSkillNames(ctx: Pick<InstallContext, 'manifest'>): string[] {
@@ -142,12 +320,15 @@ function validateCreatedPaths(
     throw fail('contains a non-absolute path')
   }
   return [...new Set(createdPaths.map((path) => resolve(path)))].map((path) => {
-    const root = roots.find((candidate) => {
-      return pathInsideRoot(candidate, path)
-    })
-    if (!root) throw new Error(`skill ownership path is outside an allowed skill root: ${path}`)
+    const root = rootForPath(roots, path)
+    if (!root || dirname(path) !== root)
+      throw new Error(`skill ownership path is outside an allowed skill root: ${path}`)
     return path
   })
+}
+
+function requireCreatedPaths(paths: readonly string[]): void {
+  if (paths.length === 0) throw fail('is empty')
 }
 
 export function isSkillOwnershipManaged(
@@ -155,8 +336,11 @@ export function isSkillOwnershipManaged(
 ): boolean {
   const install = ctx.spec.install
   const installsSkills = (install as { installs_skills?: unknown }).installs_skills
+  const resources = (ctx.spec as unknown as { ownership?: { resources?: unknown } }).ownership
+    ?.resources
   return (
     install.method === 'npx-skill-installer' ||
+    (Array.isArray(resources) && resources.length > 0) ||
     (Array.isArray(installsSkills) && installsSkills.length > 0)
   )
 }
@@ -179,20 +363,32 @@ export async function writeSkillOwnershipReceipt(
   const binding = receiptContext(ctx)
   const roots = normalizeRoots(skillRoots).sort()
   const paths = validateCreatedPaths(roots, createdPaths).sort()
+  requireCreatedPaths(paths)
   const contentSha256: Record<string, string> = {}
+  const pathKinds: Record<string, 'file' | 'directory'> = {}
   for (const path of paths) {
-    const root = roots.find((candidate) => pathInsideRoot(candidate, path))
+    const root = rootForPath(roots, path)
     if (!root) throw fail(`contains a path outside an allowed skill root: ${path}`)
+    if (dirname(path) !== root)
+      throw fail(`target is not a direct child of its captured root: ${path}`)
     const info = await lstat(path)
     if (info.isSymbolicLink()) throw fail(`target is a symbolic link: ${path}`)
-    if (!info.isDirectory()) throw fail(`target is not a real directory: ${path}`)
+    if (!info.isDirectory() && !info.isFile()) throw fail(`target is not a regular path: ${path}`)
     const [physicalRoot, physicalPath] = await Promise.all([realpath(root), realpath(path)])
     if (!pathInsideRoot(physicalRoot, physicalPath))
       throw fail(`target escapes its captured skill root: ${path}`)
-    contentSha256[path] = await hashSkillTree(path)
+    contentSha256[path] = info.isDirectory()
+      ? await hashSkillTree(path)
+      : createHash('sha256')
+          .update(await readFile(path))
+          .digest('hex')
+    pathKinds[path] = info.isDirectory() ? 'directory' : 'file'
+    if (!(await matchesDeclaredResource(ctx, path, pathKinds[path]))) {
+      throw fail('contains a path without a declared ownership marker')
+    }
   }
   const receipt: SkillOwnershipReceipt = {
-    version: 2,
+    version: 3,
     component: binding.component,
     hostId: binding.hostId,
     nativeRoot: binding.nativeRoot,
@@ -200,28 +396,37 @@ export async function writeSkillOwnershipReceipt(
     skillRoots: roots,
     createdPaths: paths,
     contentSha256,
+    pathKinds,
   }
   const path = skillOwnershipReceiptPath(ctx)
-  await mkdir(dirname(path), { recursive: true })
+  const parent = await captureSkillOwnershipReceiptParent(path, { create: true })
+  if (!parent) throw receiptParentFailure('could not be created')
   const tmpPath = `${path}.${process.pid}.${Date.now()}.tmp`
+  await assertSkillOwnershipReceiptParent(parent)
   await writeFile(tmpPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
+  await assertSkillOwnershipReceiptParent(parent)
   await rename(tmpPath, path)
+  await assertSkillOwnershipReceiptParent(parent)
 }
 
 export async function readSkillOwnershipReceipt(
   ctx: Pick<InstallContext, 'manifest' | 'hostContext'>,
 ): Promise<SkillOwnershipReceipt> {
   const path = skillOwnershipReceiptPath(ctx)
+  const parent = await captureSkillOwnershipReceiptParent(path)
+  if (!parent) throw fail('is missing', 'missing')
   let value: unknown
   try {
-    value = JSON.parse(await readFile(path, 'utf8'))
+    const bytes = await readFile(path, 'utf8')
+    await assertSkillOwnershipReceiptParent(parent)
+    value = JSON.parse(bytes)
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw fail('is missing')
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw fail('is missing', 'missing')
     throw fail('is corrupt')
   }
   if (!value || typeof value !== 'object') throw fail('is corrupt')
   const receipt = value as Partial<SkillOwnershipReceipt>
-  if (receipt.version !== 2) throw fail('is legacy or unsupported')
+  if (receipt.version !== 3) throw fail('is legacy or unsupported', 'legacy')
   if (
     typeof receipt.component !== 'string' ||
     typeof receipt.hostId !== 'string' ||
@@ -232,10 +437,15 @@ export async function readSkillOwnershipReceipt(
     !Array.isArray(receipt.createdPaths) ||
     !receipt.createdPaths.every((path) => typeof path === 'string') ||
     !receipt.contentSha256 ||
-    typeof receipt.contentSha256 !== 'object'
+    typeof receipt.contentSha256 !== 'object' ||
+    Array.isArray(receipt.contentSha256) ||
+    !receipt.pathKinds ||
+    typeof receipt.pathKinds !== 'object' ||
+    Array.isArray(receipt.pathKinds)
   ) {
     throw fail('is corrupt')
   }
+  requireCreatedPaths(receipt.createdPaths)
   const binding = receiptContext(ctx)
   if (
     receipt.component !== binding.component ||
@@ -246,7 +456,16 @@ export async function readSkillOwnershipReceipt(
   }
   if (receipt.manifestSha256 !== ownershipFingerprint(ctx)) throw fail('manifest identity changed')
   const currentRoots = new Set(
-    skillRootsForContext(ctx as InstallContext).map((root) => resolve(root)),
+    [
+      ...skillRootsForContext(ctx as InstallContext),
+      ...(ctx.hostContext
+        ? [
+            ctx.hostContext.nativeHome,
+            join(ctx.hostContext.nativeHome, 'agents'),
+            ctx.hostContext.platform.commandsDir,
+          ]
+        : []),
+    ].map((root) => resolve(root)),
   )
   const normalizedReceiptRoots = normalizeRoots(receipt.skillRoots)
   if (normalizedReceiptRoots.some((root) => !currentRoots.has(root))) {
@@ -261,12 +480,29 @@ export async function readSkillOwnershipReceipt(
   }
   for (const path of createdPaths) {
     const digest = receipt.contentSha256[path]
-    if (typeof digest !== 'string' || !/^[a-f0-9]{64}$/.test(digest)) {
+    const kind = receipt.pathKinds[path]
+    const root = rootForPath(skillRoots, path)
+    if (
+      !root ||
+      dirname(path) !== root ||
+      (kind !== 'file' && kind !== 'directory') ||
+      typeof digest !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(digest)
+    ) {
       throw fail('contains an invalid or undeclared owned skill path')
     }
+    if (!(await matchesDeclaredResource(ctx, path, kind))) {
+      throw fail('contains a path without a declared ownership marker')
+    }
+  }
+  if (
+    Object.keys(receipt.contentSha256).length !== createdPaths.length ||
+    Object.keys(receipt.contentSha256).some((path) => !createdPaths.includes(path))
+  ) {
+    throw fail('contains undeclared content digests')
   }
   return {
-    version: receipt.version,
+    version: 3,
     component: receipt.component,
     hostId: receipt.hostId,
     nativeRoot: binding.nativeRoot,
@@ -274,6 +510,7 @@ export async function readSkillOwnershipReceipt(
     skillRoots,
     createdPaths,
     contentSha256: receipt.contentSha256,
+    pathKinds: receipt.pathKinds,
   }
 }
 
@@ -285,17 +522,21 @@ export async function verifyOwnedSkillPath(
   const root = receipt.skillRoots.find((candidate) => dirname(path) === candidate)
   if (!root) throw fail('contains an owned path outside its captured roots')
   const [rootInfo, targetInfo] = await Promise.all([lstat(root), lstat(actualPath)])
-  if (
-    rootInfo.isSymbolicLink() ||
-    targetInfo.isSymbolicLink() ||
-    !rootInfo.isDirectory() ||
-    !targetInfo.isDirectory()
-  ) {
+  if (rootInfo.isSymbolicLink() || targetInfo.isSymbolicLink() || !rootInfo.isDirectory()) {
     throw fail('target is a symbolic link, junction, or non-directory')
+  }
+  const expectedKind = receipt.pathKinds[path]
+  if (expectedKind !== (targetInfo.isDirectory() ? 'directory' : 'file')) {
+    throw fail('target type changed after installation')
   }
   const [physicalRoot, physicalPath] = await Promise.all([realpath(root), realpath(actualPath)])
   if (dirname(physicalPath) !== physicalRoot) throw fail('target escapes its captured skill root')
-  if ((await hashSkillTree(actualPath)) !== receipt.contentSha256[path]) {
+  const digest = targetInfo.isDirectory()
+    ? await hashSkillTree(actualPath)
+    : createHash('sha256')
+        .update(await readFile(actualPath))
+        .digest('hex')
+  if (digest !== receipt.contentSha256[path]) {
     throw fail('target content changed after installation')
   }
 }
@@ -303,17 +544,44 @@ export async function verifyOwnedSkillPath(
 export async function removeOwnedSkillPath(
   receipt: SkillOwnershipReceipt,
   path: string,
+  ctx?: Pick<InstallContext, 'manifest' | 'hostContext'>,
 ): Promise<void> {
   const root = receipt.skillRoots.find((candidate) => dirname(path) === candidate)
   if (!root) throw fail('contains an owned path outside its captured roots')
+  await verifyOwnedSkillPath(receipt, path)
   const snapshot = await prepareOwnedPathRemoval(root, path)
-  await removeOwnedDirectoryViaQuarantine(snapshot, {
-    verify: async (quarantinePath) => verifyOwnedSkillPath(receipt, path, quarantinePath),
-  })
+  const verifyQuarantinedOwnership = async (quarantinePath: string): Promise<void> => {
+    await verifyOwnedSkillPath(receipt, path, quarantinePath)
+    if (
+      ctx &&
+      !(await matchesDeclaredResource(
+        ctx,
+        path,
+        receipt.pathKinds[path] as 'file' | 'directory',
+        quarantinePath,
+      ))
+    ) {
+      throw fail('target no longer matches its declared ownership marker')
+    }
+  }
+  if (snapshot.isDirectory) {
+    await removeOwnedDirectoryViaQuarantine(snapshot, {
+      verify: verifyQuarantinedOwnership,
+    })
+  } else {
+    await removeOwnedFileViaQuarantine(snapshot, {
+      verify: verifyQuarantinedOwnership,
+    })
+  }
 }
 
 export async function removeSkillOwnershipReceipt(
   ctx: Pick<InstallContext, 'manifest' | 'hostContext'>,
 ): Promise<void> {
-  await rm(skillOwnershipReceiptPath(ctx), { force: true })
+  const path = skillOwnershipReceiptPath(ctx)
+  const parent = await captureSkillOwnershipReceiptParent(path)
+  if (!parent) return
+  await assertSkillOwnershipReceiptParent(parent)
+  await rm(path, { force: true })
+  await assertSkillOwnershipReceiptParent(parent)
 }

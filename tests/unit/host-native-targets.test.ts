@@ -153,6 +153,7 @@ import {
 import { confirmAt } from '../../src/installers/lib/confirm.js'
 import { repairGstackCodexRuntimeAfterConfirm } from '../../src/installers/lib/gstackRuntime.js'
 import { isAlreadyInstalled } from '../../src/installers/lib/idempotent.js'
+import { snapshotDeclaredOwnership } from '../../src/installers/lib/ownershipContract.js'
 import { auditPostInstall, snapshotSkillNames } from '../../src/installers/lib/packSkillAudit.js'
 import {
   isMcpServerRegistered,
@@ -223,6 +224,7 @@ function fixture(method: string, cmd: string, name = 'fixture'): InstallContext 
         install: {
           method,
           cmd,
+          ...(method === 'npx-skill-installer' ? { installs_skills: ['fixture'] } : {}),
           npm_version: '1.0.0',
           git_ref: 'abcdef1234567',
           idempotent_check: 'fixture probe',
@@ -904,10 +906,21 @@ describe('unproven external update policy', () => {
   ])('preserves incomplete GSD native resources for update=%s without a ready probe', async (update) => {
     const ctx = fixture('npm-cli', 'npx @opengsd/gsd-core --codex --global', 'gsd')
     ctx.manifest.spec.component_type = 'command'
+    ctx.manifest.spec.ownership = {
+      resources: [
+        {
+          root: 'native-home',
+          kind: 'directory',
+          selector: { names: ['gsd-core'] },
+          marker: { path: 'bin/gsd-tools.cjs', contains: 'GSD Tools' },
+        },
+      ],
+    } as never
     ctx.opts.updateInstalled = update
     const target = join(pinned.nativeHome, 'gsd-core')
     await mkdir(target, { recursive: true })
     await writeFile(join(target, 'USER.txt'), 'manual content')
+    await expect(snapshotDeclaredOwnership(ctx)).resolves.toMatchObject({ paths: [target] })
     expect(await installNpmCli(ctx)).toMatchObject({
       ok: false,
       phase: 'preflight',

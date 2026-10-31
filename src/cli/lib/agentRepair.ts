@@ -15,7 +15,10 @@ export type AgentRepairStatus =
 
 export interface RepairComponentRequest {
   id: string
-  status: Extract<UpdateComponentResult['status'], 'failed' | 'unsupported' | 'retained'>
+  status: Extract<
+    UpdateComponentResult['status'],
+    'current' | 'failed' | 'unsupported' | 'retained'
+  >
   reasonCode: string | null
 }
 
@@ -144,8 +147,8 @@ export function createRepairRequest(
   result: UpdateResult,
   context: HostInstallContext,
   authorization: RepairAuthorization,
+  components: RepairComponentRequest[] = repairableComponents(result),
 ): RepairRequest {
-  const components = repairableComponents(result)
   return {
     host: context.hostId,
     runtime: result.runtime,

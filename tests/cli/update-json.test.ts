@@ -10,6 +10,7 @@ import {
 } from '../../src/cli/lib/updateContinuation.js'
 import {
   executeUpdate,
+  runAuthorizedAgentRepair,
   runUpdateCoordinator,
   updateTarget,
   validateUpdateOptions,
@@ -21,6 +22,8 @@ import {
   getUpdateExitCode,
 } from '../../src/cli/lib/updateResult.js'
 import { getLocale, type SupportedLocale, setLocale } from '../../src/i18n/index.js'
+import { createHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import { codexDescriptor } from '../../src/platform/platform.js'
 
 vi.mock('../../src/cli/lib/refreshOwnedUpdate.js', () => ({ refreshOwnedUpdate: vi.fn() }))
 vi.mock('../../src/cli/lib/updateAdapters/registry.js', () => ({
@@ -132,6 +135,122 @@ describe('T6 pure coordinator contract', () => {
     })
     expect(getUpdateExitCode(result)).toBe(1)
     expect(deps.continueUpdate).not.toHaveBeenCalled()
+  })
+
+  it('routes exact authorized repair through parent ownership adoption', async () => {
+    const home = resolve('fixtures', 'authorized-repair-home')
+    const descriptor = codexDescriptor(home)
+    const context = createHostInstallContext(descriptor, {
+      os: process.platform,
+      userHome: home,
+      nativeHome: descriptor.homeDir,
+    })
+    const deterministic = buildUpdateResult({
+      mode: 'apply',
+      host: 'codex',
+      runtime: 'node',
+      components: [
+        current(),
+        createUpdateComponent({ id: 'gsd', status: 'retained', reasonCode: 'fixture' }),
+      ],
+    })
+    const completed = {
+      requested: true,
+      authorized: true,
+      components: ['gsd'],
+      execution: 'codex' as const,
+      status: 'completed' as const,
+      verified: true,
+      reasonCode: null,
+    }
+    const runAgentRepair = vi.fn(async () => completed)
+    const runOwnershipAdoption = vi.fn(async ({ request, runRepair }) => {
+      expect(request.authorization).toMatchObject({
+        confirmed: true,
+        mode: 'explicit-yes',
+        components: ['gsd'],
+      })
+      return runRepair()
+    })
+    const result = await runAuthorizedAgentRepair(
+      deterministic,
+      { all: true, repair: true, yes: true },
+      context,
+      { runAgentRepair, runOwnershipAdoption },
+    )
+    expect(runOwnershipAdoption).toHaveBeenCalledOnce()
+    expect(runAgentRepair).toHaveBeenCalledOnce()
+    expect(result.agentRepair).toEqual(completed)
+  })
+
+  it('adds exact current ownership receipt candidates only for explicit repair authorization', async () => {
+    const home = resolve('fixtures', 'authorized-current-repair-home')
+    const descriptor = codexDescriptor(home)
+    const context = createHostInstallContext(descriptor, {
+      os: process.platform,
+      userHome: home,
+      nativeHome: descriptor.homeDir,
+    })
+    const deterministic = buildUpdateResult({
+      mode: 'apply',
+      host: 'codex',
+      runtime: 'node',
+      components: [createUpdateComponent({ id: 'gsd', status: 'current', verified: true })],
+    })
+    const candidate = {
+      id: 'gsd',
+      status: 'current' as const,
+      reasonCode: 'ownership-receipt-repair-required',
+    }
+    const findOwnershipRepairCandidates = vi.fn(async () => [candidate])
+    const runOwnershipAdoption = vi.fn(async ({ request }) => {
+      expect(request.components).toEqual([candidate])
+      expect(request.authorization.components).toEqual(['gsd'])
+      return {
+        requested: true,
+        authorized: true,
+        components: ['gsd'],
+        execution: 'codex' as const,
+        status: 'completed' as const,
+        verified: true,
+        reasonCode: null,
+      }
+    })
+
+    await runAuthorizedAgentRepair(deterministic, { all: true, repair: true, yes: true }, context, {
+      findOwnershipRepairCandidates,
+      runOwnershipAdoption,
+    })
+
+    expect(findOwnershipRepairCandidates).toHaveBeenCalledOnce()
+    expect(runOwnershipAdoption).toHaveBeenCalledOnce()
+  })
+
+  it('does not inspect current ownership receipts without explicit yes authorization', async () => {
+    const home = resolve('fixtures', 'unauthorized-current-repair-home')
+    const descriptor = codexDescriptor(home)
+    const context = createHostInstallContext(descriptor, {
+      os: process.platform,
+      userHome: home,
+      nativeHome: descriptor.homeDir,
+    })
+    const deterministic = buildUpdateResult({
+      mode: 'apply',
+      host: 'codex',
+      runtime: 'node',
+      components: [createUpdateComponent({ id: 'gsd', status: 'current', verified: true })],
+    })
+    const findOwnershipRepairCandidates = vi.fn(async () => [])
+
+    const result = await runAuthorizedAgentRepair(
+      deterministic,
+      { all: true, repair: true },
+      context,
+      { findOwnershipRepairCandidates },
+    )
+
+    expect(findOwnershipRepairCandidates).not.toHaveBeenCalled()
+    expect(result.agentRepair).toMatchObject({ status: 'not-requested' })
   })
 
   it.each([

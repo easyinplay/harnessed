@@ -1,0 +1,68 @@
+# Progress
+
+## 2026-10-31
+- Started confirmed-repair-only legacy ownership adoption in subagent `01a19096-a641-7d70-be57-21661967c8cb` using focused TDD.
+- Reconfirmed that the ordinary update lock is released before repair; the new dedicated adoption lock must cover pre-snapshot through receipt restoration and production commit.
+- Reconfirmed that effective manifests and host roots come from `resolveComponentPlan()`, and that Codex `platform-skills` must use the effective `platform.skillsDir` rather than `nativeHome`.
+- Read GSD, planning-with-files, TDD, and verification guidance.
+- Inspected real manifests, receipt writer, installer diffs, and current worktree state.
+- Confirmed the empty-GSD-declaration fresh receipt defect and missing already-installed adoption path.
+- Spawned the implementation subagent with a fail-closed clarification protocol.
+- Audited the real local GSD layout: 72 skills on both active hosts, host-specific agents, and `gsd-core` markers. No existing command resources were found.
+- Started RED for a real-manifest fresh GSD receipt covering dynamic skills, `gsd-core`, agents, and commands through the production writer.
+- Parent clarification identified that schema files are outside the delegated ownership list. Removed the temporary ownership schema, manifest blocks, generic resource writer, and lifecycle tests without touching prior receipt work.
+- Focused sanity check passed: `corepack pnpm vitest run tests/unit/installers-lib-skillOwnershipReceipt.test.ts tests/unit/uninstallers-declaredTeardown.test.ts` (2 files, 28 tests).
+- `corepack pnpm typecheck` is blocked by unrelated concurrent syntax errors in `tests/unit/package-publish-contract.test.ts`.
+- Final status: `NEEDS_CLARIFICATION` pending explicit authorization for the manifest schema surface.
+- Parent authorization received; resumed with the minimum schema/manifest/receipt slice.
+- Independent review found four blockers: marker-invalid preexisting paths could become fresh-owned, ordinary legacy adoption could claim user resources, file quarantine had a digest TOCTOU gap, and empty receipts could report successful no-op uninstall.
+- Locked ordinary setup/update to fail closed for preexisting resources. Confirmed legacy adoption will use only `update --repair --yes` after successful deterministic verification.
+- Read-only adoption analysis identified the effective component plan, pre/post intersection, parent-process receipt writer, and receipt tamper restoration as the minimum safe integration.
+- `gh issue view 19` and `gh issue list` both failed with `Post "https://api.github.com/graphql": EOF`; no identical retry was attempted.
+- Added explicit empty-receipt uninstall failure and installer-level no-adoption assertions for GSD `npmCli` and mattpocock `npx`.
+- `ralph-loop` is unavailable in this CLI session; completion is enforced by focused tests, schema validation, typecheck, Biome, and diff checks.
+- Three planning patch attempts failed before changing files: a PowerShell UTF-16 pipe, unavailable WSL Bash, and multiline argument parsing. The successful retry used Git Bash to feed UTF-8 directly to `apply_patch`.
+- Took over the blocker review and fixed preinstall snapshots so every selector-matching directory entry is treated as preexisting, including wrong-kind files and symlinks later replaced by valid resources.
+- Unified runtime and schema marker paths as safe POSIX-relative paths and added the cross-platform `C:/x` parity regression.
+- Added quarantine-time declared marker verification using the quarantined path; marker failure restores the original owned file.
+- Preserved ordinary already-installed non-adoption and did not implement confirmed repair adoption.
+- `corepack pnpm build:schema` passed and regenerated `schemas/manifest.v1.schema.json`.
+- `corepack pnpm validate:schema` passed with Ajv 8 strict validation.
+- Focused tests passed: 9 files, 188 tests, including `installers-npmCli.test.ts` and `installers-npxSkillInstaller.test.ts`.
+- `corepack pnpm typecheck` passed.
+- Targeted Biome passed for 16 schema/source/test files.
+- `git diff --check` passed.
+- Final review status: all five ownership receipt blockers are covered by implementation and regression tests; no full suite was run per parent instruction.
+- Added parent-side confirmed-repair ownership adoption with exact authorization and effective-plan resolution before any agent execution.
+- Added a dedicated adoption lock and enforced snapshot -> agent -> deterministic verify -> receipt restore -> post-discovery intersection -> production writer ordering.
+- Adoption commits only the marker-valid `(path, root, kind)` pre/post intersection, excludes agent-created or invalidated resources, restores fake receipt bytes/absence, and rolls back receipts on writer failure.
+- Effective plans are resolved for every authorized repair component; only components with non-empty `spec.ownership.resources` enter receipt adoption. Pure non-ownership and mixed scopes retain the full repair authorization/result binding without empty-receipt failure.
+- Focused validation passed: 9 files, 167 tests covering Cases 1-8 plus installer non-adoption regressions; `corepack pnpm typecheck`, targeted Biome, `git diff --check`, `corepack pnpm build`, `build:schema`, and `validate:schema` passed.
+- A full Vitest run was started before the parent cancellation directive arrived. The isolated run finished with 7 failures in existing GSD Codex uninstall and host-native Issue #19 tests; no broad-suite fixes were attempted, and no further broad validation was run.
+- Started Phase 82 review closure within the newly authorized ownership/update files; `declaredTeardown.ts` and `quarantineDelete.ts` remain untouched.
+- Reproduced the reviewer regression set with `corepack pnpm vitest run tests/unit/host-native-targets.test.ts tests/unit/manifest-codex-uninstall.test.ts tests/unit/gsd-codex-component-plan.test.ts tests/unit/host-teardown-contract.test.ts`: 5 failures, 187 passes.
+- Locked the fixes to exact confirmed-repair candidate discovery, declared fallback ownership, receipt-only plan policy, install serialization, adoption rollback status, and direct tests.
+- Added current-status ownership receipt candidate discovery for missing, legacy, and corrupt receipts, gated to exact `--all|--upstreams --repair --yes` authorization.
+- Added one shared host ownership lock covering installer snapshots through receipt commits and confirmed-repair adoption.
+- Restricted non-`spec.ownership` receipts to exact declared skill names, required ownership declarations for receipt-only teardown, blocked marker-invalid preexisting targets, and distinguished adoption rollback failure.
+- Scoped review found and fixed three follow-ups: fail-open candidate error swallowing, invalid ownership fallback, and a timing-dependent lock test.
+- Final reviewer regression command passed: 4 files, 192 tests.
+- Final ownership-focused command passed: 14 files, 264 tests.
+- `corepack pnpm typecheck`, scoped Biome over 30 files, and `git diff --check` passed. No full suite was run per instruction.
+- `src/uninstallers/lib/declaredTeardown.ts` and `src/lib/quarantineDelete.ts` were not edited during this review closure.
+- Started final informational closure for uninstall/install serialization and receipt-parent redirect defense.
+- Confirmed fresh install and adoption already share `withInstallOwnershipLock`; receipt-only uninstall is the missing participant.
+- Confirmed writer/read/remove/adoption snapshot/restore bypass a common parent identity guard.
+- RED verification: 5 new assertions failed for the intended reasons across 4 files; 42 existing assertions passed.
+- Implemented the shared parent identity guard and receipt-only uninstall lock; the same 4-file regression set passed 47/47.
+- Full typecheck and `git diff --check` passed; scoped Biome found one explicit-type cleanup before broader validation.
+- Added explicit `BigIntStats` typing; focused regression rerun passed 47/47 and scoped Biome passed.
+- Ownership-focused validation passed: 15 files, 273 tests.
+- Full reviewer regression passed: 4 files, 192 tests.
+- Final typecheck and `git diff --check` passed. Full Biome checked 887 files and exited zero with one unrelated warning in `src/cli/facts.ts:134`.
+- No full suite was run and no commit was created, per instruction.
+- Rebuilt the final CLI and hooks after receipt-parent and uninstall-lock hardening; build and schema validation passed.
+- Final full Vitest passed: 420 files, 5339 tests, 43 skipped, 1 todo.
+- Final coverage passed: 87.70% statements, 82.33% branches, 91.04% functions, and 89.26% lines.
+- Full Biome exited zero with the existing `src/cli/facts.ts:134` style warning; `git diff --check` passed.
+- Prepared the v5.0.7 changelog and package metadata for Issue #19 release.

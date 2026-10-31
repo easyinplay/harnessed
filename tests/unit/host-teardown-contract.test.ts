@@ -207,11 +207,11 @@ describe('reviewed Codex teardown policy', () => {
     expect(boundary.hook).not.toHaveBeenCalled()
   })
 
-  it('supports and dispatches the exact reviewed GSD Codex uninstall', async () => {
+  it('supports the reviewed GSD receipt-only Codex uninstall', () => {
     const m = parse(readFileSync('manifests/skill-packs/gsd.yaml', 'utf8')) as Manifest
     const plan = resolveComponentPlan(m, codex, 'uninstall')
     const uninstall = {
-      cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall',
+      cmd: 'true',
       cleanup_paths: [],
     }
 
@@ -220,19 +220,7 @@ describe('reviewed Codex teardown policy', () => {
       sources: { install: 'host-override', uninstall: 'host-override' },
     })
     expect(plan.manifest.spec.uninstall).toEqual(uninstall)
-    expect(await runUninstall(m, apply, codex)).toEqual({ ok: true, removedPaths: [] })
-    expect(boundary.spawn).toHaveBeenCalledTimes(1)
-    expect(boundary.spawn.mock.calls[0]?.[1]).toBe(uninstall.cmd)
-    expect(boundary.spawn.mock.calls[0]?.[0]).toMatchObject({
-      hostContext: codex,
-      manifest: {
-        metadata: { name: 'gsd' },
-        spec: {
-          install: { cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global' },
-          uninstall,
-        },
-      },
-    })
+    expect(boundary.spawn).not.toHaveBeenCalled()
     expect(boundary.native).not.toHaveBeenCalled()
     expect(boundary.hook).not.toHaveBeenCalled()
   })

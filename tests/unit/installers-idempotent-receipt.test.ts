@@ -22,8 +22,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const runtimeVerifyMock = vi.hoisted(() =>
   vi.fn<(ctx: InstallContext) => Promise<InstallResult | null>>(async () => null),
 )
+const writeDeclaredOwnershipReceiptMock = vi.hoisted(() => vi.fn(async () => undefined))
 vi.mock('../../src/installers/lib/skillRuntime.js', () => ({
   verifySkillRuntime: runtimeVerifyMock,
+}))
+vi.mock('../../src/installers/lib/ownershipContract.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/installers/lib/ownershipContract.js')>()),
+  writeDeclaredOwnershipReceipt: writeDeclaredOwnershipReceiptMock,
 }))
 vi.mock('../../src/installers/lib/idempotent.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/installers/lib/idempotent.js')>()),
@@ -145,6 +150,83 @@ describe('installer idempotent path — records a receipt (Phase 59)', () => {
     const state = writtenState()
     expect(state, 'no state.json payload was written on the idempotent path').not.toBeNull()
     expect(state?.installed.ctx7?.version).toBe('^0.5.0')
+  })
+
+  it('does not adopt ownership on an already-installed GSD or mattpocock path', async () => {
+    const c = ctx()
+    c.manifest.metadata.name = 'gsd'
+    c.manifest.spec.ownership = {
+      resources: [
+        {
+          root: 'platform-skills',
+          kind: 'directory',
+          selector: { prefix: 'gsd-' },
+          marker: { path: 'SKILL.md', contains: 'gsd-core' },
+        },
+      ],
+    }
+    writeFileMock.mockClear()
+    await expect(installNpmCli(c)).resolves.toMatchObject({
+      ok: true,
+      alreadyInstalled: true,
+    })
+    expect(
+      writeFileMock.mock.calls.some(
+        ([_, body]) => typeof body === 'string' && body.includes('"version": 3'),
+      ),
+    ).toBe(false)
+
+    c.manifest.metadata.name = 'mattpocock-skills'
+    writeFileMock.mockClear()
+    await expect(installNpmCli(c)).resolves.toMatchObject({
+      ok: true,
+      alreadyInstalled: true,
+    })
+    expect(
+      writeFileMock.mock.calls.some(
+        ([_, body]) => typeof body === 'string' && body.includes('"version": 3'),
+      ),
+    ).toBe(false)
+  })
+
+  it('does not call the ownership writer on GSD npmCli or mattpocock npx already-installed paths', async () => {
+    const gsd = ctx()
+    gsd.manifest.metadata.name = 'gsd'
+    gsd.manifest.spec.ownership = {
+      resources: [
+        {
+          root: 'platform-skills',
+          kind: 'directory',
+          selector: { prefix: 'gsd-' },
+          marker: { path: 'SKILL.md', contains: 'gsd-core' },
+        },
+      ],
+    } as never
+    writeDeclaredOwnershipReceiptMock.mockClear()
+    await expect(installNpmCli(gsd)).resolves.toMatchObject({ alreadyInstalled: true })
+    expect(writeDeclaredOwnershipReceiptMock).not.toHaveBeenCalled()
+
+    const matt = ctx()
+    matt.manifest.metadata.name = 'mattpocock-skills'
+    matt.manifest.spec.install = {
+      method: 'npx-skill-installer',
+      cmd: 'npx --yes skills@1.5.7 add owner/mattpocock-skills --copy --global',
+      npm_version: '1.5.7',
+      idempotent_check: 'test -f ~/.claude/skills/tdd/SKILL.md',
+    }
+    matt.manifest.spec.ownership = {
+      resources: [
+        {
+          root: 'platform-skills',
+          kind: 'directory',
+          selector: { names: ['tdd'] },
+          marker: { path: 'SKILL.md', contains: 'name: tdd' },
+        },
+      ],
+    } as never
+    writeDeclaredOwnershipReceiptMock.mockClear()
+    await expect(installNpxSkillInstaller(matt)).resolves.toMatchObject({ alreadyInstalled: true })
+    expect(writeDeclaredOwnershipReceiptMock).not.toHaveBeenCalled()
   })
 })
 

@@ -17,7 +17,19 @@ import { EventEmitter } from 'node:events'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { writeSkillOwnershipReceiptMock } = vi.hoisted(() => ({
+  writeSkillOwnershipReceiptMock: vi.fn(async () => undefined),
+}))
+
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
+vi.mock('../../src/installers/lib/skillOwnershipReceipt.js', async (importOriginal) => {
+  const real =
+    await importOriginal<typeof import('../../src/installers/lib/skillOwnershipReceipt.js')>()
+  return {
+    ...real,
+    writeSkillOwnershipReceipt: writeSkillOwnershipReceiptMock,
+  }
+})
 // fs/promises: mkdir/writeFile/rename for backup; readFile for state;
 // access for D2.1-6 SKILL.md real-path verify (controlled per-test).
 const accessMock = vi.fn(async (_p: string) => undefined)
@@ -173,6 +185,7 @@ describe('installNpxSkillInstaller', () => {
     accessMock.mockReset()
     // Default: SKILL.md exists (happy path); individual tests override.
     accessMock.mockResolvedValue(undefined)
+    writeSkillOwnershipReceiptMock.mockReset().mockResolvedValue(undefined)
   })
 
   it('an existing skill must pass verify without automatically invoking npx to repair it', async () => {
@@ -454,6 +467,26 @@ describe('installNpxSkillInstaller — active target materialization', () => {
     const result = await installNpxSkillInstaller(context)
 
     expect(result).toEqual({ aborted: true, reason: 'user-cancel' })
+    expect(spawnMock).not.toHaveBeenCalled()
+    expect(writeFile).not.toHaveBeenCalled()
+  })
+
+  it('rejects an unbounded host install without declared targets or ownership', async () => {
+    const context = webappContext()
+    const install = context.manifest.spec.install
+    if (install.method !== 'npx-skill-installer') {
+      throw new Error(`expected npx-skill-installer, got ${install.method}`)
+    }
+    install.cmd = 'npx --yes skills@latest add anthropics/skills --copy --global -y'
+    delete install.installs_skills
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({
+      ok: false,
+      phase: 'preflight',
+      error: { keyword: 'update-unsupported' },
+    })
     expect(spawnMock).not.toHaveBeenCalled()
     expect(writeFile).not.toHaveBeenCalled()
   })

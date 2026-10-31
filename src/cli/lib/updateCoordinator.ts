@@ -18,6 +18,8 @@ import {
   repairableComponents,
 } from './agentRepair.js'
 import { runAgentRepair } from './agentRepairRunner.js'
+import { runOwnershipAdoption } from './ownershipAdoption.js'
+import { findOwnershipRepairCandidates } from './ownershipAdoptionCandidate.js'
 import { preparePackageUpdate } from './packageUpdateTarget.js'
 import {
   buildUpdateResult,
@@ -703,12 +705,36 @@ export async function executeUpdate(options: UpdateOptions): Promise<UpdateResul
   }
 }
 
-async function runAuthorizedAgentRepair(
+export interface AuthorizedAgentRepairDependencies {
+  runAgentRepair?: typeof runAgentRepair
+  runOwnershipAdoption?: typeof runOwnershipAdoption
+  findOwnershipRepairCandidates?: typeof findOwnershipRepairCandidates
+}
+
+export async function runAuthorizedAgentRepair(
   deterministicResult: UpdateResult,
   options: UpdateOptions,
   context: HostInstallContext,
+  dependencies: AuthorizedAgentRepairDependencies = {},
 ): Promise<UpdateResult> {
-  const components = repairableComponents(deterministicResult)
+  const deterministicComponents = repairableComponents(deterministicResult)
+  const ownershipCandidates =
+    options.repair === true &&
+    options.yes === true &&
+    (options.all === true || options.upstreams === true)
+      ? await (dependencies.findOwnershipRepairCandidates ?? findOwnershipRepairCandidates)(
+          deterministicResult,
+          context,
+        )
+      : []
+  const components = [
+    ...new Map(
+      [...deterministicComponents, ...ownershipCandidates].map((component) => [
+        component.id,
+        component,
+      ]),
+    ).values(),
+  ]
   if (components.length === 0)
     return {
       ...deterministicResult,
@@ -738,23 +764,32 @@ async function runAuthorizedAgentRepair(
         components: [],
         grantedAt: null,
       }
-  const request = createRepairRequest(deterministicResult, context, authorization)
-  const repair = await runAgentRepair(request, {
-    verify: async (verificationRequest) => {
-      const verification = await executeUpdate({
-        all: true,
-        check: true,
-        json: true,
-        nonInteractive: true,
-        platform: verificationRequest.host,
-        packageManager: options.packageManager,
-      })
-      const checked = new Map(verification.components.map((component) => [component.id, component]))
-      return verificationRequest.components.every((component) => {
-        const current = checked.get(component.id)
-        return current?.verified === true && ['current', 'updated'].includes(current.status)
-      })
-    },
+  const request = createRepairRequest(deterministicResult, context, authorization, components)
+  const repairRunner = dependencies.runAgentRepair ?? runAgentRepair
+  const adoptionRunner = dependencies.runOwnershipAdoption ?? runOwnershipAdoption
+  const repair = await adoptionRunner({
+    context,
+    request,
+    runRepair: () =>
+      repairRunner(request, {
+        verify: async (verificationRequest) => {
+          const verification = await executeUpdate({
+            all: true,
+            check: true,
+            json: true,
+            nonInteractive: true,
+            platform: verificationRequest.host,
+            packageManager: options.packageManager,
+          })
+          const checked = new Map(
+            verification.components.map((component) => [component.id, component]),
+          )
+          return verificationRequest.components.every((component) => {
+            const current = checked.get(component.id)
+            return current?.verified === true && ['current', 'updated'].includes(current.status)
+          })
+        },
+      }),
   })
   return {
     ...deterministicResult,

@@ -61,6 +61,7 @@ export function isReviewedNeutralTeardown(manifest: Manifest): boolean {
     spec.uninstall?.cmd === 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall' &&
     emptyCleanup
   return (
+    isDeclaredReceiptOnlyTeardown(manifest) ||
     reviewedGsdCodex ||
     (Object.hasOwn(commands, manifest.metadata.name) &&
       spec.type === 'cli-npm' &&
@@ -69,6 +70,18 @@ export function isReviewedNeutralTeardown(manifest: Manifest): boolean {
       Value.Check(NpmCli, spec.install) &&
       spec.uninstall?.cmd === commands[manifest.metadata.name] &&
       emptyCleanup)
+  )
+}
+
+function isDeclaredReceiptOnlyTeardown(manifest: Manifest): boolean {
+  const uninstall = manifest.spec.uninstall
+  const resources = (manifest.spec as unknown as { ownership?: { resources?: unknown } }).ownership
+    ?.resources
+  return (
+    uninstall?.cmd.trim() === 'true' &&
+    (uninstall.cleanup_paths === undefined || uninstall.cleanup_paths.length === 0) &&
+    Array.isArray(resources) &&
+    resources.length > 0
   )
 }
 
@@ -132,7 +145,12 @@ export function resolveComponentPlan(
     // remain mandatory even for a declaration supported by this policy.
     const validName = /^[a-z0-9][a-z0-9-]*$/.test(effective.metadata.name)
     const portableHook = method === 'cc-hook-add' && nativeTeardown && !override?.uninstall
-    if (validName && (isReviewedNeutralTeardown(effective) || portableHook)) {
+    if (
+      validName &&
+      (isReviewedNeutralTeardown(effective) ||
+        isDeclaredReceiptOnlyTeardown(effective) ||
+        portableHook)
+    ) {
       return Object.freeze({ ...fields, status: 'supported' })
     }
     let detail = `no safe codex uninstall contract for '${manifest.metadata.name}'`

@@ -72,6 +72,96 @@ spec:
     # Skill removal is receipt-driven; upstream installs a flat set of names.
     cmd: "true"
     cleanup_paths: []
+  ownership:
+    resources:
+      - root: platform-skills
+        kind: directory
+        selector: { names: [ask-matt] }
+        marker: { path: SKILL.md, contains: "name: ask-matt" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [code-review] }
+        marker: { path: SKILL.md, contains: "name: code-review" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [codebase-design] }
+        marker: { path: SKILL.md, contains: "name: codebase-design" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [diagnosing-bugs] }
+        marker: { path: SKILL.md, contains: "name: diagnosing-bugs" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [domain-modeling] }
+        marker: { path: SKILL.md, contains: "name: domain-modeling" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [grill-with-docs] }
+        marker: { path: SKILL.md, contains: "name: grill-with-docs" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [implement] }
+        marker: { path: SKILL.md, contains: "name: implement" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [improve-codebase-architecture] }
+        marker: { path: SKILL.md, contains: "name: improve-codebase-architecture" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [prototype] }
+        marker: { path: SKILL.md, contains: "name: prototype" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [research] }
+        marker: { path: SKILL.md, contains: "name: research" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [resolving-merge-conflicts] }
+        marker: { path: SKILL.md, contains: "name: resolving-merge-conflicts" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [setup-matt-pocock-skills] }
+        marker: { path: SKILL.md, contains: "name: setup-matt-pocock-skills" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [tdd] }
+        marker: { path: SKILL.md, contains: "name: tdd" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [to-spec] }
+        marker: { path: SKILL.md, contains: "name: to-spec" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [to-tickets] }
+        marker: { path: SKILL.md, contains: "name: to-tickets" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [triage] }
+        marker: { path: SKILL.md, contains: "name: triage" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [wayfinder] }
+        marker: { path: SKILL.md, contains: "name: wayfinder" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [grill-me] }
+        marker: { path: SKILL.md, contains: "name: grill-me" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [grilling] }
+        marker: { path: SKILL.md, contains: "name: grilling" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [handoff] }
+        marker: { path: SKILL.md, contains: "name: handoff" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [teach] }
+        marker: { path: SKILL.md, contains: "name: teach" }
+      - root: platform-skills
+        kind: directory
+        selector: { names: [writing-great-skills] }
+        marker: { path: SKILL.md, contains: "name: writing-great-skills" }
   upstream_health:
     stability: stable
     last_check: "2026-09-10"

@@ -153,6 +153,33 @@ describe('resolveComponentPlan', () => {
     expect(resolveComponentPlan(fixture(), claude, 'uninstall').status).toBe('supported')
   })
 
+  it('requires declared ownership for receipt-only Codex teardown', () => {
+    const manifest = fixture()
+    const override = codexOverride(manifest)
+    override.uninstall = { cmd: 'true', cleanup_paths: [] }
+    manifest.spec.ownership = {
+      resources: [
+        {
+          root: 'platform-skills',
+          kind: 'directory',
+          selector: { names: ['fixture'] },
+          marker: { path: 'SKILL.md', contains: 'fixture' },
+        },
+      ],
+    } as never
+
+    expect(resolveComponentPlan(manifest, codex, 'uninstall')).toMatchObject({
+      status: 'supported',
+      sources: { uninstall: 'host-override' },
+    })
+
+    delete (manifest.spec as unknown as { ownership?: unknown }).ownership
+    expect(resolveComponentPlan(manifest, codex, 'uninstall')).toMatchObject({
+      status: 'unsupported',
+      reason: 'unsupported-operation',
+    })
+  })
+
   it.each([
     ['npm-cli', 'cli-binary'],
     ['mcp-stdio-add', 'mcp-tool'],

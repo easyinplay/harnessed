@@ -22,13 +22,13 @@ import { lstat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, isAbsolute, resolve as resolvePath, sep } from 'node:path'
 import { isReviewedNeutralTeardown } from '../../installers/lib/componentPlan.js'
+import { withInstallOwnershipLock } from '../../installers/lib/installOwnershipLock.js'
 import {
   isSkillOwnershipManaged,
   readSkillOwnershipReceipt,
   removeOwnedSkillPath,
   removeSkillOwnershipReceipt,
   verifyOwnedSkillPath,
-  writeSkillOwnershipReceipt,
 } from '../../installers/lib/skillOwnershipReceipt.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from '../../installers/lib/spawn.js'
 import type { InstallContext } from '../../installers/lib/types.js'
@@ -37,6 +37,7 @@ import {
   prepareOwnedPathRemoval,
   removeOwnedDirectoryViaQuarantine,
   removeOwnedFileViaQuarantine,
+  withQuarantineTransaction,
 } from '../../lib/quarantineDelete.js'
 import { checkPathSafe } from '../../manifest/lib/path-guard.js'
 import { dryRunGate } from './runOrPreview.js'
@@ -72,6 +73,50 @@ export function confineCleanupPath(raw: string, userHome = homedir()): string | 
   if (abs === home) return null // never rm $HOME itself
   if (!abs.startsWith(home + sep)) return null // must live under $HOME
   return abs
+}
+
+async function runReceiptOwnedTeardownUnlocked(ctx: UninstallContext): Promise<UninstallResult> {
+  let receipt: Awaited<ReturnType<typeof readSkillOwnershipReceipt>>
+  try {
+    receipt = await readSkillOwnershipReceipt(ctx)
+  } catch (error) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+  try {
+    for (const path of receipt.createdPaths) await verifyOwnedSkillPath(receipt, path)
+  } catch (error) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+  try {
+    const transaction = await withQuarantineTransaction(
+      async () => {
+        for (const path of receipt.createdPaths) await removeOwnedSkillPath(receipt, path, ctx)
+      },
+      async () => removeSkillOwnershipReceipt(ctx),
+    )
+    if (transaction.cleanupFailures.length > 0) {
+      return {
+        ok: false,
+        phase: 'verify',
+        error: transaction.cleanupFailures.join('; '),
+      }
+    }
+  } catch (error) {
+    return {
+      ok: false,
+      phase: 'verify',
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+  return { ok: true, removedPaths: [...receipt.createdPaths] }
 }
 
 /** Resolve existing ancestors too, so a missing leaf cannot hide a junction escape. */
@@ -127,54 +172,14 @@ export async function runDeclaredTeardown(ctx: UninstallContext): Promise<Uninst
   if (abort) return abort
 
   if (isSkillOwnershipManaged(ctx.manifest)) {
-    let receipt: Awaited<ReturnType<typeof readSkillOwnershipReceipt>>
-    try {
-      receipt = await readSkillOwnershipReceipt(ctx)
-    } catch (error) {
+    if (!ctx.hostContext) {
       return {
         ok: false,
         phase: 'preflight',
-        error: error instanceof Error ? error.message : String(error),
+        error: 'receipt-only uninstall requires a resolved host context',
       }
     }
-    try {
-      for (const path of receipt.createdPaths) await verifyOwnedSkillPath(receipt, path)
-    } catch (error) {
-      return {
-        ok: false,
-        phase: 'preflight',
-        error: error instanceof Error ? error.message : String(error),
-      }
-    }
-    const removedPaths: string[] = []
-    const remainingPaths = [...receipt.createdPaths]
-    for (const path of receipt.createdPaths) {
-      try {
-        await removeOwnedSkillPath(receipt, path)
-      } catch (error) {
-        return {
-          ok: false,
-          phase: 'verify',
-          error: error instanceof Error ? error.message : String(error),
-        }
-      }
-      removedPaths.push(path)
-      remainingPaths.shift()
-      try {
-        if (remainingPaths.length > 0) {
-          await writeSkillOwnershipReceipt(ctx, receipt.skillRoots, remainingPaths)
-        } else {
-          await removeSkillOwnershipReceipt(ctx)
-        }
-      } catch (error) {
-        return {
-          ok: false,
-          phase: 'verify',
-          error: error instanceof Error ? error.message : String(error),
-        }
-      }
-    }
-    return { ok: true, removedPaths }
+    return withInstallOwnershipLock(ctx.hostContext, () => runReceiptOwnedTeardownUnlocked(ctx))
   }
 
   // 1. Confine every cleanup_path up front — refuse before any side effect.

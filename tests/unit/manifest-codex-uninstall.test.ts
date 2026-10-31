@@ -128,20 +128,20 @@ describe('real skill-pack uninstall contracts', () => {
   const gsd = parse(readFileSync('manifests/skill-packs/gsd.yaml', 'utf8'))
   const mattpocock = parse(readFileSync('manifests/skill-packs/mattpocock-skills.yaml', 'utf8'))
 
-  it('uses the upstream GSD uninstall commands for Claude and Codex', () => {
-    expect(gsd.spec).not.toHaveProperty('ownership')
+  it('uses receipt-only GSD uninstall contracts for Claude and Codex', () => {
+    expect(gsd.spec).toHaveProperty('ownership.resources')
     expect(gsd.spec.uninstall).toEqual({
-      cmd: 'npx --yes @opengsd/gsd-core@latest --claude --global --uninstall',
+      cmd: 'true',
       cleanup_paths: [],
     })
     expect(gsd.spec.harness_overrides.codex.uninstall).toEqual({
-      cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall',
+      cmd: 'true',
       cleanup_paths: [],
     })
   })
 
   it('keeps the mattpocock no-op uninstall and declared skill set', () => {
-    expect(mattpocock.spec).not.toHaveProperty('ownership')
+    expect(mattpocock.spec).toHaveProperty('ownership.resources')
     expect(mattpocock.spec.uninstall).toEqual({ cmd: 'true', cleanup_paths: [] })
     expect(mattpocock.spec.install.installs_skills).toEqual([
       'ask-matt',

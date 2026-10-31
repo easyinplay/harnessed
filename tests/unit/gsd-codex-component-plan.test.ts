@@ -28,7 +28,7 @@ beforeEach(() => {
 })
 
 describe('reviewed GSD Codex uninstall command', () => {
-  it('plans and dispatches the exact official command', async () => {
+  it('plans and dispatches the receipt-only ownership teardown', async () => {
     const context = codexContext()
     const plan = resolveComponentPlan(gsd, context, 'uninstall')
 
@@ -37,7 +37,7 @@ describe('reviewed GSD Codex uninstall command', () => {
       sources: { install: 'host-override', uninstall: 'host-override' },
     })
     expect(plan.manifest.spec.uninstall).toEqual({
-      cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall',
+      cmd: 'true',
       cleanup_paths: [],
     })
 
@@ -49,7 +49,7 @@ describe('reviewed GSD Codex uninstall command', () => {
         manifest: expect.objectContaining({
           spec: expect.objectContaining({
             uninstall: {
-              cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall',
+              cmd: 'true',
               cleanup_paths: [],
             },
           }),
@@ -59,12 +59,16 @@ describe('reviewed GSD Codex uninstall command', () => {
   })
 
   it.each([
-    ['different component', (manifest: Manifest) => (manifest.metadata.name = 'fixture')],
+    [
+      'missing ownership declaration',
+      (manifest: Manifest) =>
+        delete (manifest.spec as unknown as { ownership?: unknown }).ownership,
+    ],
     [
       'different command',
       (manifest: Manifest) => {
         const uninstall = manifest.spec.harness_overrides?.codex?.uninstall
-        if (uninstall) uninstall.cmd += ' --force'
+        if (uninstall) uninstall.cmd = 'echo unsafe'
       },
     ],
     [

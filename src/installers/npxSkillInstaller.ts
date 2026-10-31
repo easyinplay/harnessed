@@ -41,6 +41,12 @@ import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
 import { extractSkillName, isAlreadyInstalled, npxActiveTargetNames } from './lib/idempotent.js'
+import { withInstallOwnershipLock } from './lib/installOwnershipLock.js'
+import {
+  discoverDeclaredOwnership,
+  snapshotDeclaredOwnership,
+  writeDeclaredOwnershipReceipt,
+} from './lib/ownershipContract.js'
 import {
   auditPostInstall,
   skillRootsForContext,
@@ -116,7 +122,7 @@ async function activeTargetDirectoryExists(
   return false
 }
 
-export const installNpxSkillInstaller: Installer = async (ctx) => {
+const installNpxSkillInstallerUnlocked: Installer = async (ctx) => {
   const install = ctx.manifest.spec.install
   if (install.method !== 'npx-skill-installer') {
     return {
@@ -170,6 +176,14 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   const selectionFlags = [...install.cmd.matchAll(/(?:^|\s)(?:--skill|-s)(?:\s|=)/g)]
   const selectedSkill =
     selections.length === 1 && selectionFlags.length === 1 ? selections[0]?.[1] : undefined
+  const singleSkill = selectedSkill !== undefined && !/[;&|<>`$\r\n]/.test(install.cmd)
+  const hasDeclaredTargets = (install.installs_skills?.length ?? 0) > 0
+  const ownershipResources = (
+    ctx.manifest.spec as unknown as { ownership?: { resources?: unknown } }
+  ).ownership?.resources
+  const usesDeclaredOwnership = Array.isArray(ownershipResources) && ownershipResources.length > 0
+  if (ctx.hostContext && !singleSkill && !hasDeclaredTargets && !usesDeclaredOwnership)
+    return unprovenSkillTarget(ctx)
   const activeTargetNames = npxActiveTargetNames(
     install.cmd,
     ctx.manifest.metadata.name,
@@ -185,32 +199,36 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
       ]
     : [getSkillsDir()]
   const primaryActiveSkillsDir = activeSkillsDirs[0] ?? getSkillsDir()
+  const ownershipCandidateSnapshot = await snapshotDeclaredOwnership(ctx)
   let anyExistingTarget = false
   if (ctx.hostContext) {
-    const names = [...new Set([skillSegment, ...(install.installs_skills ?? [])])]
-    if (names.some((name) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)))
-      return unprovenSkillTarget(ctx)
-    const roots = [
-      ...new Set([
-        ...activeSkillsDirs,
-        ctx.hostContext.platform.skillsDir,
-        join(ctx.hostContext.nativeHome, 'skills'),
-        join(ctx.hostContext.userHome, '.agents', 'skills'),
-      ]),
-    ]
-    for (const root of roots) {
-      for (const name of names) {
-        if (
-          await lstat(join(root, name)).then(
-            () => true,
-            (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
-          )
-        ) {
-          anyExistingTarget = true
+    if (usesDeclaredOwnership) {
+      anyExistingTarget = ownershipCandidateSnapshot.paths.length > 0
+    } else {
+      const names = [...new Set([skillSegment, ...(install.installs_skills ?? [])])]
+      if (names.some((name) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)))
+        return unprovenSkillTarget(ctx)
+      const roots = [
+        ...new Set([
+          ...activeSkillsDirs,
+          ctx.hostContext.platform.skillsDir,
+          join(ctx.hostContext.nativeHome, 'skills'),
+          join(ctx.hostContext.userHome, '.agents', 'skills'),
+        ]),
+      ]
+      for (const root of roots) {
+        for (const name of names) {
+          if (
+            await lstat(join(root, name)).then(
+              () => true,
+              (error: NodeJS.ErrnoException) => error.code !== 'ENOENT',
+            )
+          ) {
+            anyExistingTarget = true
+          }
         }
       }
     }
-    const singleSkill = selectedSkill !== undefined && !/[;&|<>`$\r\n]/.test(install.cmd)
     if (
       ctx.opts.updateInstalled &&
       (!singleSkill ||
@@ -295,7 +313,11 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   // 4.23.0 (issue #3) — flat-namespace collision audit around the external writer.
   await warnDeclaredCollisions(ctx)
   const skillRoots = skillRootsForContext(ctx)
-  const pathSnapshot = new Set(await declaredSkillPaths(ctx, skillRoots))
+  const pathSnapshot = new Set(
+    usesDeclaredOwnership
+      ? ownershipCandidateSnapshot.paths
+      : await declaredSkillPaths(ctx, skillRoots),
+  )
   const packSnapshot = await snapshotSkillNames(
     ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
   )
@@ -352,12 +374,20 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
 
   try {
-    const afterPaths = await declaredSkillPaths(ctx, skillRoots)
-    await writeSkillOwnershipReceipt(
-      ctx,
-      skillRoots,
-      afterPaths.filter((path) => !pathSnapshot.has(path)),
-    )
+    if (usesDeclaredOwnership) {
+      const discovered = await discoverDeclaredOwnership(ctx)
+      await writeDeclaredOwnershipReceipt(ctx, {
+        roots: discovered.roots,
+        paths: discovered.paths.filter((path) => !pathSnapshot.has(path)),
+      })
+    } else {
+      const afterPaths = await declaredSkillPaths(ctx, skillRoots)
+      await writeSkillOwnershipReceipt(
+        ctx,
+        skillRoots,
+        afterPaths.filter((path) => !pathSnapshot.has(path)),
+      )
+    }
   } catch (error) {
     return {
       ok: false,
@@ -383,4 +413,9 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
     ...(ctx.hostContext ? [ctx.hostContext] : []),
   )
   return { ok: true, backupId: bk.backupId, appliedFiles: [skillMdPath] }
+}
+
+export const installNpxSkillInstaller: Installer = async (ctx) => {
+  if (!ctx.hostContext) return installNpxSkillInstallerUnlocked(ctx)
+  return withInstallOwnershipLock(ctx.hostContext, () => installNpxSkillInstallerUnlocked(ctx))
 }
