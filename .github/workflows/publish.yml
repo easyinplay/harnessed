@@ -82,8 +82,7 @@ jobs:
         run: npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - if: inputs.mode == 'dist-tag-fix'
-        run: npm dist-tag add "harnessed@$PACKAGE_VERSION" latest
+      - run: npm dist-tag add "harnessed@$PACKAGE_VERSION" latest
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PACKAGE_VERSION: ${{ steps.release.outputs.package_version }}
