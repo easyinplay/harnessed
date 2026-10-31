@@ -127,8 +127,8 @@ describe('npm publish contract', () => {
     )
     const release = publish.steps.find((step) => step.name === 'GitHub release')
 
+    expect(distTag?.if).toBeUndefined()
     expect(distTag).toMatchObject({
-      if: "inputs.mode == 'dist-tag-fix'",
       run: 'npm dist-tag add "harnessed@$PACKAGE_VERSION" latest',
       env: { PACKAGE_VERSION: `\${{ steps.release.outputs.package_version }}` },
     })
