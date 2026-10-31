@@ -7,6 +7,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>()
+  const content = Buffer.from('uninstall.test quarantine digest fixture')
+  return {
+    ...actual,
+    createReadStream: vi.fn(() => ({
+      async *[Symbol.asyncIterator]() {
+        yield content
+      },
+    })),
+  }
+})
 vi.mock('node:fs/promises', () => ({
   lstat: vi.fn(),
   realpath: vi.fn(),
@@ -37,7 +49,9 @@ vi.mock('../../src/platform/assetsRoot.js', () => ({
 }))
 
 import { spawn } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import { lstat, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { basename, dirname, resolve as resolvePath } from 'node:path'
 import * as p from '@clack/prompts'
 import { Command } from 'commander'
 import { registerUninstall } from '../../src/cli/uninstall.js'
@@ -98,6 +112,22 @@ function mockPathInfo(path: string) {
     ino: 1,
     isDirectory: () => isDirectory,
     isSymbolicLink: () => false,
+  }
+}
+
+function canonicalMockPath(path: string): string {
+  let candidate = path
+  const missing: string[] = []
+  for (;;) {
+    try {
+      return resolvePath(realpathSync(candidate), ...missing)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+      const parent = dirname(candidate)
+      if (parent === candidate) throw error
+      missing.unshift(basename(candidate))
+      candidate = parent
+    }
   }
 }
 
@@ -337,7 +367,7 @@ describe('cli/uninstall <name> — per-manifest', () => {
     vi.clearAllMocks()
     isCancelMock.mockReturnValue(false)
     lstatMock.mockImplementation(async (path) => mockPathInfo(String(path)) as never)
-    realpathMock.mockImplementation(async (path) => String(path) as never)
+    realpathMock.mockImplementation(async (path) => canonicalMockPath(String(path)) as never)
     renameMock.mockImplementation(async (source, target) => {
       quarantinedPathKinds.set(String(target), mockPathInfo(String(source)).isDirectory())
     })
@@ -482,7 +512,10 @@ describe('cli/uninstall <name> — per-manifest', () => {
     rmMock.mockResolvedValue(undefined)
     confirmMock.mockResolvedValue(true)
     await runCli(['uninstall', 'my-skill'])
-    expect(rmMock.mock.calls[0]?.[1]).toMatchObject({ recursive: true, force: true })
+    expect(rmMock).toHaveBeenCalledWith(
+      expect.stringMatching(/[/\\]\.claude[/\\]skills[/\\]\.harnessed-quarantine-/),
+      expect.objectContaining({ recursive: true, force: true, maxRetries: 3 }),
+    )
   })
 })
 
@@ -499,7 +532,7 @@ describe('cli/uninstall (no name) — unified', () => {
     readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     statMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     lstatMock.mockImplementation(async (path) => mockPathInfo(String(path)) as never)
-    realpathMock.mockImplementation(async (path) => String(path) as never)
+    realpathMock.mockImplementation(async (path) => canonicalMockPath(String(path)) as never)
     renameMock.mockImplementation(async (source, target) => {
       quarantinedPathKinds.set(String(target), mockPathInfo(String(source)).isDirectory())
     })

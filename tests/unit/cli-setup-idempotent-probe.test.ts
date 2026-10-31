@@ -1,6 +1,6 @@
 import { ChildProcess, execFile } from 'node:child_process'
 import { access, cp, mkdir, readFile, stat, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, extname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeIdempotentProbe } from '../../src/cli/lib/setup-helpers.js'
 import * as installers from '../../src/installers/index.js'
@@ -427,8 +427,11 @@ describe('setup retained-version probe', () => {
     expect(await probe('gsd')).toBe(true)
     expect(stat).toHaveBeenCalledWith(expect.stringContaining('gsd-core'))
     expect(execFile).toHaveBeenCalledOnce()
+    expect([process.execPath, basename(process.execPath, extname(process.execPath))]).toContain(
+      vi.mocked(execFile).mock.calls[0]?.[0],
+    )
     expect(execFile).toHaveBeenCalledWith(
-      'node',
+      expect.any(String),
       [expect.stringMatching(/[\\/]gsd-core[\\/]bin[\\/]gsd-tools\.cjs$/), 'runtime-identity'],
       expect.objectContaining({ shell: false, windowsHide: true }),
       expect.any(Function),

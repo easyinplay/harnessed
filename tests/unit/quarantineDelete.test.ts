@@ -5,6 +5,7 @@ import {
   mkdtemp,
   readdir,
   readFile,
+  rename,
   rm,
   symlink,
   unlink,
@@ -14,6 +15,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  assertOwnedPathUnchanged,
   prepareOwnedPathRemoval,
   removeOwnedDirectoryViaQuarantine,
   removeOwnedFileViaQuarantine,
@@ -90,19 +92,49 @@ describe('removeOwnedFileViaQuarantine', () => {
     const fixture = await mkdtemp(join(tmpdir(), 'harnessed-quarantine-file-swap-'))
     const root = join(fixture, 'owned')
     const target = join(root, 'state.json')
+    const replacement = join(root, 'replacement-state.json')
 
     try {
       await mkdir(root, { recursive: true })
       await writeFile(target, 'owned state')
       const snapshot = await prepareOwnedPathRemoval(root, target)
 
+      await writeFile(replacement, 'replacement state')
       await unlink(target)
-      await writeFile(target, 'replacement')
+      await rename(replacement, target)
 
       await expect(removeOwnedFileViaQuarantine(snapshot)).rejects.toThrow(
         /identity changed after preflight/i,
       )
-      expect(await readFile(target, 'utf8')).toBe('replacement')
+      expect(await readFile(target, 'utf8')).toBe('replacement state')
+    } finally {
+      await removeWithoutFollowingLinks(fixture)
+    }
+  })
+
+  it('rejects a same-inode content replacement after preflight', async () => {
+    const fixture = await mkdtemp(join(tmpdir(), 'harnessed-quarantine-file-content-'))
+    const root = join(fixture, 'owned')
+    const target = join(root, 'state.json')
+
+    try {
+      await mkdir(root, { recursive: true })
+      await writeFile(target, 'owned state')
+      const snapshot = await prepareOwnedPathRemoval(root, target)
+      const before = await lstat(target)
+
+      await writeFile(target, 'replacement state')
+      const after = await lstat(target)
+      expect(after.dev).toBe(before.dev)
+      expect(after.ino).toBe(before.ino)
+
+      await expect(assertOwnedPathUnchanged(snapshot)).rejects.toThrow(
+        /path changed after preflight/i,
+      )
+      await expect(removeOwnedFileViaQuarantine(snapshot)).rejects.toThrow(
+        /content changed after preflight/i,
+      )
+      expect(await readFile(target, 'utf8')).toBe('replacement state')
     } finally {
       await removeWithoutFollowingLinks(fixture)
     }

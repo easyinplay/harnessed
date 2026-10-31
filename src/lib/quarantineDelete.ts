@@ -1,4 +1,5 @@
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
+import { createReadStream } from 'node:fs'
 import { lstat, realpath, rename, rm } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
@@ -10,6 +11,7 @@ export interface OwnedPathSnapshot {
   isDirectory: boolean
   device: number
   inode: number
+  contentDigest: string | null
 }
 
 interface QuarantineOptions {
@@ -19,6 +21,12 @@ interface QuarantineOptions {
 function isDirectChild(root: string, target: string): boolean {
   const rel = relative(root, target)
   return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel) && dirname(target) === root
+}
+
+async function digestFile(path: string): Promise<string> {
+  const hash = createHash('sha256')
+  for await (const chunk of createReadStream(path)) hash.update(chunk)
+  return hash.digest('hex')
 }
 
 async function inspectRoot(root: string): Promise<{ canonicalRoot: string }> {
@@ -49,14 +57,16 @@ export async function prepareOwnedPathRemoval(
   if (dirname(canonicalTarget) !== canonicalRoot) {
     throw new Error(`refusing canonical path outside authorized root: ${target}`)
   }
+  const isDirectory = targetInfo.isDirectory()
   return {
     root: resolvedRoot,
     target: resolvedTarget,
     canonicalRoot,
     canonicalTarget,
-    isDirectory: targetInfo.isDirectory(),
+    isDirectory,
     device: targetInfo.dev,
     inode: targetInfo.ino,
+    contentDigest: isDirectory ? null : await digestFile(resolvedTarget),
   }
 }
 
@@ -67,7 +77,8 @@ export async function assertOwnedPathUnchanged(snapshot: OwnedPathSnapshot): Pro
     current.canonicalTarget !== snapshot.canonicalTarget ||
     current.device !== snapshot.device ||
     current.inode !== snapshot.inode ||
-    current.isDirectory !== snapshot.isDirectory
+    current.isDirectory !== snapshot.isDirectory ||
+    current.contentDigest !== snapshot.contentDigest
   ) {
     throw new Error(`refusing path changed after preflight: ${snapshot.target}`)
   }
@@ -137,6 +148,9 @@ async function verifyQuarantinedFile(
     throw new Error(
       `refusing quarantined path identity changed after preflight: ${snapshot.target}`,
     )
+  }
+  if ((await digestFile(quarantinePath)) !== snapshot.contentDigest) {
+    throw new Error(`refusing quarantined path content changed after preflight: ${snapshot.target}`)
   }
   const canonicalQuarantine = await realpath(quarantinePath)
   if (dirname(canonicalQuarantine) !== canonicalRoot) {

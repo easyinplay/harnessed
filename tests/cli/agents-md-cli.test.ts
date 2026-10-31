@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const captureHostInstallContextMock = vi.hoisted(() => vi.fn())
@@ -44,13 +45,13 @@ describe('agents-md CLI context capture', () => {
 
     const program = new Command().exitOverride()
     registerAgentsMd(program)
-    await program.parseAsync(['node', 'harnessed', 'agents-md'])
+    await program.parseAsync([process.execPath, 'harnessed', 'agents-md'])
 
     expect(captureHostInstallContextMock).toHaveBeenCalledWith({ hostId: 'codex' })
     expect(runAgentsMdMock).toHaveBeenCalledWith(
       expect.objectContaining({
         hostContext: context,
-        workflowsDir: '\\assets\\workflows',
+        workflowsDir: join('/assets', 'workflows'),
       }),
     )
   })

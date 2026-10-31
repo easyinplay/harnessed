@@ -210,16 +210,17 @@ describe('package self-update target binding', () => {
       const result = prepare()
       expect(result.ok).toBe(true)
       if (!result.ok) throw new Error(result.message)
+      const resolvedShim = realpathSync.native(shim)
       const planned = planWindowsSpawn(
         'npm',
         ['i', '-g', '--prefix', prefix, 'harnessed@latest'],
-        shim,
+        resolvedShim,
       )
       expect(result.args).toEqual(planned.args)
       expect(result.options).toMatchObject({ shell: false, windowsVerbatimArguments: true })
       expect(result.command).toBe(resolveWindowsBin('cmd.exe', env))
       expect(vi.mocked(execFileSync).mock.calls[1]?.[1]).toEqual(
-        planWindowsSpawn('npm', ['root', '-g', '--prefix', prefix], shim).args,
+        planWindowsSpawn('npm', ['root', '-g', '--prefix', prefix], resolvedShim).args,
       )
     },
   )

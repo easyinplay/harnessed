@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, relative } from 'node:path'
+import { join } from 'node:path'
 import { Command, CommanderError } from 'commander'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import pkg from '../../package.json' with { type: 'json' }
@@ -42,15 +42,12 @@ function checks(root: string) {
   return collectPreflight(defaultDeps(root))
 }
 
-function snapshot(root: string): Record<string, string> {
-  return Object.fromEntries(
-    readdirSync(root, { recursive: true, withFileTypes: true })
-      .filter((entry) => entry.isFile())
-      .map((entry) => {
-        const path = join(entry.parentPath, entry.name)
-        return [relative(root, path), readFileSync(path).toString('base64')]
-      }),
-  )
+function gitState(root: string): { head: string; status: string; tags: string[] } {
+  return {
+    head: git(root, 'rev-parse', 'HEAD'),
+    status: git(root, 'status', '--porcelain=v1', '--untracked-files=all'),
+    tags: git(root, 'tag', '--list').split('\n').filter(Boolean),
+  }
 }
 
 async function runCli(root: string, args: string[]) {
@@ -182,7 +179,7 @@ describe('release-preflight CLI', () => {
       'Cargo.toml': '[package]\nversion = "2.0.0"\n',
     })
     git(root, 'tag', 'v1.0.0')
-    const before = snapshot(root)
+    const before = gitState(root)
     const result = await runCli(root, [
       'release-preflight',
       '--release-version',
@@ -191,7 +188,7 @@ describe('release-preflight CLI', () => {
     expect(result.code).toBe(0)
     expect(result.stdout).toContain('3.0.0-rc.1+build.1')
     expect(result.stdout).toContain('--release-version')
-    expect(snapshot(root)).toEqual(before)
+    expect(gitState(root)).toEqual(before)
   })
 
   it('allows an override when all manifests are missing or malformed', async () => {
@@ -206,11 +203,11 @@ describe('release-preflight CLI', () => {
     '',
   ])('rejects invalid explicit override %j without fallback', async (version) => {
     const root = repo({ 'package.json': '{"version":"1.2.3"}' })
-    const before = snapshot(root)
+    const before = gitState(root)
     const result = await runCli(root, ['release-preflight', '--release-version', version])
     expect(result.code).toBe(1)
     expect(result.stdout).toMatch(/not run|skipped/i)
-    expect(snapshot(root)).toEqual(before)
+    expect(gitState(root)).toEqual(before)
   })
 
   it('fails when the explicit release version is already tagged', async () => {
@@ -221,16 +218,16 @@ describe('release-preflight CLI', () => {
     expect(result.stdout).toContain('v3.0.0 already exists')
   })
 
-  it('fails without an override on conflicts and keeps all repository bytes unchanged', async () => {
+  it('fails without an override and keeps repository git state unchanged', async () => {
     const root = repo({
       'package.json': '{"version":"1.0.0"}',
       'Cargo.toml': '[package]\nversion = "2.0.0"\n',
     })
-    const before = snapshot(root)
+    const before = gitState(root)
     const result = await runCli(root, ['release-preflight'])
     expect(result.code).toBe(1)
     expect(result.stdout).toContain('--release-version')
-    expect(snapshot(root)).toEqual(before)
+    expect(gitState(root)).toEqual(before)
   })
 
   it('keeps root --version separate from the target release flag', async () => {

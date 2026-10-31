@@ -1,7 +1,7 @@
 import { ChildProcess, execFile, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { basename, dirname, extname, join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 import {
@@ -480,7 +480,11 @@ describe('installed helper contracts: GSD', () => {
       vi
         .mocked(execFile)
         .mock.calls.some(
-          (call) => call[0] === 'node' && JSON.stringify(call[1]).includes('runtime-identity'),
+          (call) =>
+            typeof call[0] === 'string' &&
+            basename(call[0], extname(process.execPath)) ===
+              basename(process.execPath, extname(process.execPath)) &&
+            JSON.stringify(call[1]).includes('runtime-identity'),
         ),
     ).toBe(true)
   })
