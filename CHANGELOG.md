@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.7] - 2026-10-31
+
+### Fixed
+
+- GSD and mattpocock installs now record manifest-declared ownership receipts for only resources proven to be created by the current install.
+- Existing resources can receive destructive ownership only through exact component-scoped `update --repair --yes` confirmation and post-repair verification.
+- Receipt-only uninstall now validates markers and digests, serializes against installs, quarantines resources transactionally, and rolls back when receipt commits fail.
+- Ownership receipt I/O rejects redirected state directories, empty or mismatched receipts, unsafe marker paths, and unbounded npx skill installs before side effects.
+- Codex GSD receipt-only teardown and legacy receipt repair now use the effective host plan without restoring prefix-based deletion.
+
 ## [5.0.6] - 2026-10-31
 
 ### Fixed
