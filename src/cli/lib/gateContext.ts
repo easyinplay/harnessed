@@ -99,6 +99,8 @@ export function buildDefaultGateContext(task: string, stage: string): DefaultGat
       // nulls with hints so the model supplies the real answer.
       has_ai_phase: false,
       requires_coverage_audit: false,
+      requires_spec: false,
+      builds_ai_system: false,
       requires_creative_polish: false,
       // T2.1 OQ2(c) — withdrawn: gated stage-routing.plan-architecture-delegate,
       // which meant /plan always spawned the eng-review architecture sub.

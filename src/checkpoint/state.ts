@@ -41,7 +41,7 @@ function lockTarget(): string {
 function lockOpts() {
   return {
     stale: 10_000,
-    retries: { retries: 3, factor: 2, minTimeout: 100 },
+    retries: { retries: 20, factor: 1.3, minTimeout: 50, maxTimeout: 250, randomize: true },
     lockfilePath: harnessedFile('.lock'),
   }
 }

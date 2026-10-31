@@ -19,18 +19,35 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(),
   rename: vi.fn(),
   mkdir: vi.fn(),
+  rm: vi.fn(),
+  stat: vi.fn(),
 }))
 
 vi.mock('../../src/platform/harnessedRoot.js', () => ({
+  harnessedFile: (name: string) => `/fake-home/.claude/harnessed/${name}`,
   harnessedSubdir: (name: string) => `/fake-home/.claude/harnessed/${name}`,
 }))
 
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+vi.mock('proper-lockfile', () => ({
+  default: { lock: vi.fn(async () => vi.fn(async () => undefined)) },
+}))
+
+import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
 
 const readFileMock = vi.mocked(readFile)
 const writeFileMock = vi.mocked(writeFile)
 const renameMock = vi.mocked(rename)
 const mkdirMock = vi.mocked(mkdir)
+const statMock = vi.mocked(stat)
+
+function mockSettingsFile(raw: string): void {
+  readFileMock.mockImplementation(async (path) => {
+    if (String(path).includes('settings-env-ownership.json')) {
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    }
+    return raw
+  })
+}
 
 const ENV_KEYS = ['HARNESSED_LANG', 'LC_ALL', 'LANG', 'LANGUAGE'] as const
 const savedEnv: Record<string, string | undefined> = {}
@@ -42,9 +59,11 @@ beforeEach(() => {
   writeFileMock.mockReset()
   renameMock.mockReset()
   mkdirMock.mockReset()
+  statMock.mockReset()
   mkdirMock.mockResolvedValue(undefined as never)
   writeFileMock.mockResolvedValue(undefined as never)
   renameMock.mockResolvedValue(undefined as never)
+  statMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
 })
 
 afterEach(() => {
@@ -84,7 +103,7 @@ describe('enableUserLangInSettings — v3.4.0', () => {
 
   it('3. existing key set + no override → idempotent no-op (respect user)', async () => {
     process.env.LANG = 'zh_CN.UTF-8'
-    readFileMock.mockResolvedValue(JSON.stringify({ env: { HARNESSED_USER_LANG: 'en' } }))
+    mockSettingsFile(JSON.stringify({ env: { HARNESSED_USER_LANG: 'en' } }))
     const { enableUserLangInSettings } = await import(
       '../../src/cli/lib/enableUserLangInSettings.js'
     )
@@ -96,7 +115,7 @@ describe('enableUserLangInSettings — v3.4.0', () => {
   })
 
   it('4. existing key + explicit override → backup + overwrite', async () => {
-    readFileMock.mockResolvedValue(JSON.stringify({ env: { HARNESSED_USER_LANG: 'en' } }))
+    mockSettingsFile(JSON.stringify({ env: { HARNESSED_USER_LANG: 'en' } }))
     const { enableUserLangInSettings } = await import(
       '../../src/cli/lib/enableUserLangInSettings.js'
     )
@@ -110,7 +129,7 @@ describe('enableUserLangInSettings — v3.4.0', () => {
 
   it('5. file exists missing key → backup + merge non-destructive', async () => {
     process.env.LANG = 'en_US.UTF-8'
-    readFileMock.mockResolvedValue(
+    mockSettingsFile(
       JSON.stringify({
         env: { CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1', SOME_OTHER_VAR: 'preserved' },
         hooks: { keep: true },

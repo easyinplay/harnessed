@@ -7,7 +7,7 @@ description: |
   judgments.tdd-gate.tdd-strongly-suggested.fires + invokes_tools[{if: test_fail,
   tool: diagnose}]）。Alias /tdd (mattpocock-skills) 可替代 superpowers TDD per D-13。
   schema_version: harnessed.workflow.v3，含 disciplines_applied [6] + tools_available
-  [tdd, diagnose]。通过 harnessed CLI `harnessed task-test --task <text>` 或
+  [tdd, diagnose]。通过 headless CLI `harnessed run task-test` 或
   `harnessed setup` 后的斜杠命令 `/task-test` 触发。
 trigger_phrases:
   - "test this subtask"

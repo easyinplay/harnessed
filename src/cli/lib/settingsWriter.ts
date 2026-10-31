@@ -14,11 +14,13 @@
 // warn outcome (NOT throw) so `harnessed setup` stays non-blocking (sister fallback
 // 铁律 1).
 
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { harnessedSubdir } from '../../platform/harnessedRoot.js'
 import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform, getSettingsPath } from '../../platform/platform.js'
+import { recordSettingsEnvOwnershipUnlocked } from './settingsOwnershipReceipt.js'
+import { withSettingsTransactionLock } from './settingsTransactionLock.js'
 
 /**
  * Discriminated outcome of a settings env-key merge.
@@ -63,13 +65,30 @@ export async function mergeSettingsEnvKey(
       ? join(hostContext.nativeHome, 'settings.json')
       : null
     : getSettingsPath()
-  // v16.0 Phase 63 — codex has no JSON settings file: warn, never touch config.toml.
   if (path === null)
     return {
       outcome: 'warn',
       message: `no settings file on ${hostContext?.hostId ?? detectPlatform().id} — skipped`,
     }
+  try {
+    return await withSettingsTransactionLock(hostContext, () =>
+      mergeSettingsEnvKeyUnlocked(path, key, value, opts, hostContext),
+    )
+  } catch (error) {
+    return {
+      outcome: 'warn',
+      message: `settings transaction lock failed: ${(error as Error).message}`,
+    }
+  }
+}
 
+async function mergeSettingsEnvKeyUnlocked(
+  path: string,
+  key: string,
+  value: string,
+  opts: MergeOpts,
+  hostContext?: HostInstallContext,
+): Promise<MergeOutcome> {
   let raw: string
   try {
     raw = await readFile(path, 'utf8')
@@ -79,7 +98,7 @@ export async function mergeSettingsEnvKey(
       return { outcome: 'warn', message: `read ${path} failed: ${(err as Error).message}` }
     }
     // Case (a): file does not exist → create fresh.
-    return createFresh(path, key, value)
+    return createFresh(path, key, value, hostContext)
   }
 
   let data: Record<string, unknown>
@@ -93,6 +112,9 @@ export async function mergeSettingsEnvKey(
     return { outcome: 'warn', message: `${path} malformed JSON: ${(err as Error).message}` }
   }
 
+  if (data.env !== undefined && !isPlainRecord(data.env)) {
+    return { outcome: 'warn', message: `${path} env is not a JSON object` }
+  }
   const env = (data.env ?? {}) as Record<string, unknown>
   const existing = env[key]
   if (
@@ -112,10 +134,31 @@ export async function mergeSettingsEnvKey(
   const writeErr = await atomicWrite(path, `${JSON.stringify(data, null, 2)}\n`)
   if (writeErr) return { outcome: 'warn', message: writeErr }
 
+  try {
+    await recordSettingsEnvOwnershipUnlocked(
+      key,
+      value,
+      { present: Object.hasOwn(env, key), value: existing },
+      hostContext,
+    )
+  } catch (err) {
+    const rollbackErr = await atomicWrite(path, raw)
+    const suffix = rollbackErr ? `; rollback failed: ${rollbackErr}` : '; settings restored'
+    return {
+      outcome: 'warn',
+      message: `ownership receipt failed: ${(err as Error).message}${suffix}`,
+    }
+  }
+
   return { outcome: 'merged', path, backupPath: backup.path }
 }
 
-async function createFresh(path: string, key: string, value: string): Promise<MergeOutcome> {
+async function createFresh(
+  path: string,
+  key: string,
+  value: string,
+  hostContext?: HostInstallContext,
+): Promise<MergeOutcome> {
   const data = { env: { [key]: value } }
   try {
     await mkdir(dirname(path), { recursive: true })
@@ -124,7 +167,27 @@ async function createFresh(path: string, key: string, value: string): Promise<Me
   }
   const writeErr = await atomicWrite(path, `${JSON.stringify(data, null, 2)}\n`)
   if (writeErr) return { outcome: 'warn', message: writeErr }
+  try {
+    await recordSettingsEnvOwnershipUnlocked(key, value, { present: false }, hostContext)
+  } catch (err) {
+    let rollbackMessage = '; created settings removed'
+    try {
+      await rm(path, { force: true })
+    } catch (rollbackError) {
+      rollbackMessage = `; rollback failed: ${(rollbackError as Error).message}`
+    }
+    return {
+      outcome: 'warn',
+      message: `ownership receipt failed: ${(err as Error).message}${rollbackMessage}`,
+    }
+  }
   return { outcome: 'created', path }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
 }
 
 async function backupOriginal(
@@ -145,13 +208,18 @@ async function backupOriginal(
   }
 }
 
-async function atomicWrite(path: string, content: string): Promise<string | undefined> {
+export async function atomicWrite(path: string, content: string): Promise<string | undefined> {
   const tmpPath = `${path}.tmp-${process.pid}-${Date.now()}`
   try {
     await writeFile(tmpPath, content, 'utf8')
     await rename(tmpPath, path)
     return undefined
   } catch (err) {
+    try {
+      await rm(tmpPath, { force: true })
+    } catch {
+      // Preserve the original write error; cleanup is best effort.
+    }
     return `write ${path} failed: ${(err as Error).message}`
   }
 }

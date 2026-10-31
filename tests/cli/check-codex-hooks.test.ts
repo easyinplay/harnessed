@@ -26,7 +26,7 @@ function deps(over: Partial<CodexHooksDeps> = {}): CodexHooksDeps {
             hooks: [
               {
                 type: 'command',
-                command: 'node "${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex',
+                command: `node "\${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex`,
               },
             ],
           },

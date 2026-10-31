@@ -8,6 +8,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
 vi.mock('node:fs/promises', () => ({
+  lstat: vi.fn(),
+  realpath: vi.fn(),
+  rename: vi.fn(),
   readdir: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
@@ -17,6 +20,11 @@ vi.mock('node:fs/promises', () => ({
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(),
   isCancel: vi.fn().mockReturnValue(false),
+}))
+vi.mock('../../src/cli/lib/settingsTransactionLock.js', () => ({
+  withSettingsTransactionLock: vi.fn(async (_context: unknown, work: () => Promise<unknown>) =>
+    work(),
+  ),
 }))
 // assetsRoot mocked so the CLI-removal hint's channel branch (isCompiledRuntime)
 // is controllable; getAssetsRoot returns a stub (readdir/readFile are mocked, so
@@ -29,12 +37,15 @@ vi.mock('../../src/platform/assetsRoot.js', () => ({
 }))
 
 import { spawn } from 'node:child_process'
-import { readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { lstat, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import * as p from '@clack/prompts'
 import { Command } from 'commander'
 import { registerUninstall } from '../../src/cli/uninstall.js'
 
 const spawnMock = vi.mocked(spawn)
+const lstatMock = vi.mocked(lstat)
+const realpathMock = vi.mocked(realpath)
+const renameMock = vi.mocked(rename)
 const rmMock = vi.mocked(rm)
 const readFileMock = vi.mocked(readFile)
 const readdirMock = vi.mocked(readdir)
@@ -42,6 +53,7 @@ const statMock = vi.mocked(stat)
 const writeFileMock = vi.mocked(writeFile)
 const confirmMock = vi.mocked(p.confirm)
 const isCancelMock = vi.mocked(p.isCancel)
+const quarantinedPathKinds = new Map<string, boolean>()
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -72,6 +84,20 @@ async function runCli(argv: string[]): Promise<{ code: number; stdout: string; s
   } catch (e) {
     if (e instanceof ExitError) return { code: e.code, stdout, stderr }
     throw e
+  }
+}
+
+function mockPathInfo(path: string) {
+  const name = path.replace(/\\/g, '/').split('/').at(-1) ?? ''
+  const isDirectory =
+    quarantinedPathKinds.get(path) ??
+    (['.claude', '.codex', 'agents', 'commands', 'harnessed', 'skills'].includes(name) ||
+      !name.includes('.'))
+  return {
+    dev: 1,
+    ino: 1,
+    isDirectory: () => isDirectory,
+    isSymbolicLink: () => false,
   }
 }
 
@@ -310,6 +336,11 @@ describe('cli/uninstall <name> — per-manifest', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     isCancelMock.mockReturnValue(false)
+    lstatMock.mockImplementation(async (path) => mockPathInfo(String(path)) as never)
+    realpathMock.mockImplementation(async (path) => String(path) as never)
+    renameMock.mockImplementation(async (source, target) => {
+      quarantinedPathKinds.set(String(target), mockPathInfo(String(source)).isDirectory())
+    })
   })
   afterEach(() => vi.restoreAllMocks())
 
@@ -362,8 +393,8 @@ describe('cli/uninstall <name> — per-manifest', () => {
     // cross-platform removal is the confined cleanup_paths fs.rm — not the
     // per-method reverse-parsed clone dest.
     expect(rmMock).toHaveBeenCalledWith(
-      expect.stringMatching(/[/\\]\.claude[/\\]skills[/\\]my-skill$/),
-      expect.objectContaining({ recursive: true, force: true }),
+      expect.stringMatching(/[/\\]\.claude[/\\]skills[/\\]\.harnessed-quarantine-/),
+      expect.objectContaining({ recursive: true, force: true, maxRetries: 3 }),
     )
   })
 
@@ -411,6 +442,22 @@ describe('cli/uninstall <name> — per-manifest', () => {
     expect(parsed.hooks?.PreToolUse?.[0]?.command).toBe('other-cmd')
   })
 
+  it('cc-hook-add → atomic settings replacement leaves the original path as rename target', async () => {
+    mockManifestFile(CC_HOOK_MANIFEST_YAML)
+    readFileMock.mockImplementation(async (path: unknown) => {
+      const p = String(path)
+      if (p.includes('settings.json'))
+        return JSON.stringify({ hooks: { PreToolUse: [{ command: 'my-hook-cmd' }] } }) as never
+      return CC_HOOK_MANIFEST_YAML as never
+    })
+    confirmMock.mockResolvedValue(true)
+    await runCli(['uninstall', 'my-hook'])
+    expect(renameMock).toHaveBeenCalledWith(
+      expect.stringContaining('settings.json.tmp-'),
+      expect.stringContaining('settings.json'),
+    )
+  })
+
   it('interactive confirm declined → exit 2', async () => {
     mockManifestFile(NPM_CLI_MANIFEST_YAML)
     confirmMock.mockResolvedValue(false)
@@ -444,15 +491,22 @@ describe('cli/uninstall <name> — per-manifest', () => {
 describe('cli/uninstall (no name) — unified', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    quarantinedPathKinds.clear()
     isCancelMock.mockReturnValue(false)
     assetsMock.compiled = false
     // Default: nothing installed
     readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     readFileMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     statMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+    lstatMock.mockImplementation(async (path) => mockPathInfo(String(path)) as never)
+    realpathMock.mockImplementation(async (path) => String(path) as never)
+    renameMock.mockImplementation(async (source, target) => {
+      quarantinedPathKinds.set(String(target), mockPathInfo(String(source)).isDirectory())
+    })
   })
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
     if (originalBun) Object.defineProperty(process.versions, 'bun', originalBun)
     else Reflect.deleteProperty(process.versions, 'bun')
   })
@@ -461,6 +515,8 @@ describe('cli/uninstall (no name) — unified', () => {
     readdirMock.mockImplementation(async (p: unknown) => {
       const path = String(p)
       if (path.includes('commands')) return ['discuss.md', 'plan.md'] as never
+      if (path.endsWith('harnessed'))
+        return ['backups', 'settings-env-ownership.json', 'state.json'] as never
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
     })
     readFileMock.mockImplementation(async (p: unknown) => {
@@ -468,6 +524,16 @@ describe('cli/uninstall (no name) — unified', () => {
       if (path.endsWith('.md')) return '<!-- harnessed-generated:v3.4.4 -->\ncontent' as never
       if (path.includes('settings.json'))
         return JSON.stringify({ env: { CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1' } }) as never
+      if (path.includes('settings-env-ownership.json'))
+        return JSON.stringify({
+          version: 1,
+          entries: {
+            CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: {
+              installedValue: '1',
+              previous: { present: false },
+            },
+          },
+        }) as never
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
     })
     rmMock.mockResolvedValue(undefined)
@@ -511,13 +577,91 @@ describe('cli/uninstall (no name) — unified', () => {
     mockArtifacts()
     confirmMock.mockResolvedValue(true)
     await runCli(['uninstall'])
-    const rmCalls = rmMock.mock.calls.map((c) => String(c[0]))
-    expect(rmCalls.some((p) => p.includes('discuss.md'))).toBe(true)
-    expect(rmCalls.some((p) => p.includes('plan.md'))).toBe(true)
+    const renameSources = renameMock.mock.calls.map((c) => String(c[0]))
+    expect(renameSources.some((p) => p.includes('discuss.md'))).toBe(true)
+    expect(renameSources.some((p) => p.includes('plan.md'))).toBe(true)
+    expect(
+      rmMock.mock.calls.some(([path]) => String(path).includes('.harnessed-quarantine-')),
+    ).toBe(true)
   })
 
-  it('removes settings env vars, preserves others', async () => {
-    readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
+  it('updates AGENTS.md with atomic temp+rename instead of a direct write', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CODEX_HOME', 'C:\\codex')
+    readdirMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('harnessed')) return ['state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('AGENTS.md')) {
+        return [
+          'user text',
+          '<!-- harnessed:agents-md:start -->',
+          'generated',
+          '<!-- harnessed:agents-md:end -->',
+          '',
+        ].join('\n') as never
+      }
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    writeFileMock.mockResolvedValue(undefined)
+    confirmMock.mockResolvedValue(true)
+
+    const { code } = await runCli(['uninstall'])
+
+    expect(code).toBe(0)
+    const tempWrite = writeFileMock.mock.calls.find(([path]) =>
+      String(path).includes('AGENTS.md.tmp-'),
+    )
+    expect(tempWrite).toBeDefined()
+    expect(writeFileMock.mock.calls.some(([path]) => String(path).endsWith('AGENTS.md'))).toBe(
+      false,
+    )
+    expect(renameMock).toHaveBeenCalledWith(
+      expect.stringContaining('AGENTS.md.tmp-'),
+      expect.stringMatching(/AGENTS\.md$/),
+    )
+  })
+
+  it('fails closed when the AGENTS.md atomic rename loses a symlink race', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CODEX_HOME', 'C:\\codex')
+    readdirMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('harnessed')) return ['state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('AGENTS.md')) {
+        return [
+          'user text',
+          '<!-- harnessed:agents-md:start -->',
+          'generated',
+          '<!-- harnessed:agents-md:end -->',
+          '',
+        ].join('\n') as never
+      }
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    writeFileMock.mockResolvedValue(undefined)
+    renameMock.mockRejectedValueOnce(new Error('symlink race'))
+    rmMock.mockResolvedValue(undefined)
+    confirmMock.mockResolvedValue(true)
+
+    const { code, stderr } = await runCli(['uninstall'])
+
+    expect(code).toBe(1)
+    expect(stderr).toContain('symlink race')
+    expect(writeFileMock.mock.calls.some(([path]) => String(path).endsWith('AGENTS.md'))).toBe(
+      false,
+    )
+    expect(rmMock.mock.calls.every(([path]) => String(path).includes('AGENTS.md.tmp-'))).toBe(true)
+  })
+
+  it('restores only journal-owned settings env vars and preserves others', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      if (String(p).endsWith('harnessed')) return ['settings-env-ownership.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
     readFileMock.mockImplementation(async (p: unknown) => {
       const path = String(p)
       if (path.includes('settings.json'))
@@ -526,6 +670,20 @@ describe('cli/uninstall (no name) — unified', () => {
             CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1',
             HARNESSED_USER_LANG: 'en',
             OTHER_VAR: 'keep-me',
+          },
+        }) as never
+      if (path.includes('settings-env-ownership.json'))
+        return JSON.stringify({
+          version: 1,
+          entries: {
+            CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: {
+              installedValue: '1',
+              previous: { present: false },
+            },
+            HARNESSED_USER_LANG: {
+              installedValue: 'en',
+              previous: { present: true, value: 'zh-Hans' },
+            },
           },
         }) as never
       throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
@@ -537,8 +695,24 @@ describe('cli/uninstall (no name) — unified', () => {
     expect(writeFileMock).toHaveBeenCalled()
     const written = JSON.parse(String(writeFileMock.mock.calls[0]?.[1]))
     expect(written.env?.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS).toBeUndefined()
-    expect(written.env?.HARNESSED_USER_LANG).toBeUndefined()
+    expect(written.env?.HARNESSED_USER_LANG).toBe('zh-Hans')
     expect(written.env?.OTHER_VAR).toBe('keep-me')
+  })
+
+  it('does not remove matching env keys without an ownership journal', async () => {
+    readdirMock.mockImplementation(async (p: unknown) => {
+      if (String(p).endsWith('harnessed')) return ['state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (p: unknown) => {
+      if (String(p).includes('settings.json'))
+        return JSON.stringify({ env: { CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1' } }) as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    rmMock.mockResolvedValue(undefined)
+    confirmMock.mockResolvedValue(true)
+    await runCli(['uninstall'])
+    expect(writeFileMock).not.toHaveBeenCalled()
   })
 
   it('strips orphaned harnessed hooks, preserves unrelated hooks (issue #8)', async () => {
@@ -552,8 +726,7 @@ describe('cli/uninstall (no name) — unified', () => {
                 hooks: [
                   {
                     type: 'command',
-                    command:
-                      'node "C:/gone/npm/node_modules/harnessed/bin/harnessed-inject-state.mjs"',
+                    command: 'node "/fake/pkg/bin/harnessed-inject-state.mjs"',
                   },
                 ],
               },
@@ -563,7 +736,7 @@ describe('cli/uninstall (no name) — unified', () => {
                 hooks: [
                   {
                     type: 'command',
-                    command: 'node "C:/gone/harnessed/bin/harnessed-stop-hook.mjs"',
+                    command: 'node "/fake/pkg/bin/harnessed-stop-hook.mjs"',
                   },
                 ],
               },
@@ -623,7 +796,10 @@ describe('cli/uninstall (no name) — unified', () => {
             UserPromptSubmit: [
               {
                 hooks: [
-                  { type: 'command', command: 'node "C:/gone/bin/harnessed-inject-state.mjs"' },
+                  {
+                    type: 'command',
+                    command: 'node "/fake/pkg/bin/harnessed-inject-state.mjs"',
+                  },
                 ],
               },
             ],
@@ -637,13 +813,202 @@ describe('cli/uninstall (no name) — unified', () => {
     expect(writeFileMock).not.toHaveBeenCalled()
   })
 
-  it('state dir removed last', async () => {
+  it('removes state entries last while preserving backups and the state root', async () => {
     mockArtifacts()
     confirmMock.mockResolvedValue(true)
     await runCli(['uninstall'])
     const rmCalls = rmMock.mock.calls.map((c) => String(c[0]))
-    const stateDirIdx = rmCalls.findLastIndex((p) => p.includes('harnessed'))
-    expect(stateDirIdx).toBe(rmCalls.length - 1)
+    expect(rmCalls.some((p) => p.endsWith('backups'))).toBe(false)
+    expect(rmCalls.some((p) => p.endsWith('harnessed'))).toBe(false)
+    expect(renameMock.mock.calls.at(-1)?.[0]).toMatch(/harnessed[\\/]state\.json$/)
+    expect(rmCalls.at(-1)).toContain('.harnessed-quarantine-')
+  })
+
+  it('quarantines state entries under an authorized custom host root', async () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', 'D:\\shared')
+    readdirMock.mockImplementation(async (path: unknown) => {
+      if (String(path).replace(/\\/g, '/') === 'D:/shared/harnessed') return ['state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    rmMock.mockResolvedValue(undefined)
+    confirmMock.mockResolvedValue(true)
+
+    const { code } = await runCli(['uninstall'])
+
+    expect(code).toBe(0)
+    expect(
+      renameMock.mock.calls.some(([source]) =>
+        String(source).replace(/\\/g, '/').endsWith('shared/harnessed/state.json'),
+      ),
+    ).toBe(true)
+  })
+
+  it('fails before any mutation when the state root is a symlink or junction', async () => {
+    mockArtifacts()
+    lstatMock.mockImplementation(async (path) =>
+      String(path).endsWith('harnessed')
+        ? ({ isSymbolicLink: () => true } as never)
+        : ({ isSymbolicLink: () => false } as never),
+    )
+    confirmMock.mockResolvedValue(true)
+
+    const { code, stderr } = await runCli(['uninstall'])
+
+    expect(code).toBe(1)
+    expect(stderr).toMatch(/canonical|symbolic|junction|refusing/i)
+    expect(rmMock).not.toHaveBeenCalled()
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('preserves the ownership receipt and exits 1 when settings cannot be parsed', async () => {
+    readdirMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('harnessed'))
+        return ['settings-env-ownership.json', 'state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).includes('settings-env-ownership.json'))
+        return JSON.stringify({
+          version: 1,
+          entries: {
+            HARNESSED_USER_LANG: {
+              installedValue: 'zh-Hans',
+              previous: { present: false },
+            },
+          },
+        }) as never
+      if (String(path).includes('settings.json')) return '{bad json' as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+
+    const { code, stderr, stdout } = await runCli(['uninstall'])
+
+    expect(code).toBe(1)
+    expect(stderr).toContain('settings.json')
+    expect(stdout).not.toContain('uninstall complete')
+    expect(rmMock).not.toHaveBeenCalled()
+  })
+
+  it('preserves the ownership receipt and exits 1 when settings cannot be read', async () => {
+    readdirMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('harnessed'))
+        return ['settings-env-ownership.json', 'state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).includes('settings-env-ownership.json'))
+        return JSON.stringify({
+          version: 1,
+          entries: {
+            HARNESSED_USER_LANG: {
+              installedValue: 'zh-Hans',
+              previous: { present: false },
+            },
+          },
+        }) as never
+      if (String(path).includes('settings.json'))
+        throw Object.assign(new Error('access denied'), { code: 'EACCES' })
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+
+    const { code, stderr, stdout } = await runCli(['uninstall'])
+
+    expect(code).toBe(1)
+    expect(stderr).toContain('access denied')
+    expect(stdout).not.toContain('uninstall complete')
+    expect(rmMock).not.toHaveBeenCalled()
+  })
+
+  it('cleans receipt and state when settings ownership exists but settings.json is absent', async () => {
+    readdirMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('harnessed'))
+        return ['settings-env-ownership.json', 'state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).includes('settings-env-ownership.json'))
+        return JSON.stringify({
+          version: 1,
+          entries: {
+            HARNESSED_USER_LANG: {
+              installedValue: 'zh-Hans',
+              previous: { present: false },
+            },
+          },
+        }) as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    lstatMock.mockImplementation(async (path) => {
+      if (String(path).includes('settings.json'))
+        throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+      return mockPathInfo(String(path)) as never
+    })
+    rmMock.mockResolvedValue(undefined)
+    confirmMock.mockResolvedValue(true)
+
+    const { code, stderr } = await runCli(['uninstall'])
+
+    expect(code).toBe(0)
+    expect(stderr).not.toContain('settings.json')
+    expect(lstatMock.mock.calls.some(([path]) => String(path).includes('settings.json'))).toBe(
+      false,
+    )
+    expect(
+      renameMock.mock.calls.some(([path]) => String(path).endsWith('settings-env-ownership.json')),
+    ).toBe(true)
+    expect(renameMock.mock.calls.some(([path]) => String(path).endsWith('state.json'))).toBe(true)
+  })
+
+  it('fails closed before mutation when the ownership receipt is corrupt', async () => {
+    readdirMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('harnessed'))
+        return ['settings-env-ownership.json', 'state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).includes('settings-env-ownership.json')) return '{bad receipt' as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+
+    const { code, stderr } = await runCli(['uninstall'])
+
+    expect(code).toBe(1)
+    expect(stderr).toContain('ownership')
+    expect(rmMock).not.toHaveBeenCalled()
+    expect(writeFileMock).not.toHaveBeenCalled()
+  })
+
+  it('exits 1 and does not print complete when any removal fails', async () => {
+    mockArtifacts()
+    confirmMock.mockResolvedValue(true)
+    rmMock.mockRejectedValueOnce(new Error('locked'))
+
+    const { code, stdout, stderr } = await runCli(['uninstall'])
+
+    expect(code).toBe(1)
+    expect(stderr).toContain('locked')
+    expect(stdout).not.toContain('uninstall complete')
+  })
+
+  it('does not remove a same-named user skill without ownership evidence', async () => {
+    readdirMock.mockImplementation(async (path: unknown) => {
+      const value = String(path)
+      if (value.includes('workflows')) return ['auto'] as never
+      if (value.endsWith('harnessed')) return ['state.json'] as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    readFileMock.mockImplementation(async (path: unknown) => {
+      if (String(path).endsWith('SKILL.md')) return '# user-owned skill' as never
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
+    })
+    confirmMock.mockResolvedValue(true)
+
+    const { code } = await runCli(['uninstall'])
+
+    expect(code).toBe(0)
+    expect(rmMock.mock.calls.some((call) => String(call[0]).match(/[\\/]skills[\\/]auto$/))).toBe(
+      false,
+    )
   })
 
   // ── CLI-removal hint (channel-aware; closes "uninstall not unified" gap) ──
@@ -698,5 +1063,21 @@ describe('cli/uninstall (no name) — unified', () => {
     expect(code).toBe(0)
     expect(stdout).toContain('nothing to do')
     expect(stdout).toContain('to remove the harnessed CLI itself')
+  })
+
+  it('fails closed when both host homes are set without --platform', async () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', '/custom/claude')
+    vi.stubEnv('CODEX_HOME', '/custom/codex')
+    const { code, stderr } = await runCli(['uninstall'])
+    expect(code).toBe(1)
+    expect(stderr).toContain('--platform')
+  })
+
+  it('accepts --platform to disambiguate dual host homes', async () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', '/custom/claude')
+    vi.stubEnv('CODEX_HOME', '/custom/codex')
+    const { code, stderr } = await runCli(['uninstall', '--platform', 'codex'])
+    expect(code).toBe(0)
+    expect(stderr).not.toContain('unknown option')
   })
 })

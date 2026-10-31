@@ -1,0 +1,12 @@
+schema_version: harnessed.workflow.v3
+workflow: plan-ui
+description: GSD ui-phase design contract before ordinary phase planning.
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-ui-phase]
+phases:
+  - id: 01-ui-phase
+    name: gsd-ui-phase
+    upstream: gsd
+    capability: '{{ capabilities.gsd-ui-phase.cmd }}'
+    model: sonnet
+    gate: judgments.stage-phase-gate.gsd-ui-phase.fires

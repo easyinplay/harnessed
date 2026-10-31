@@ -4,6 +4,8 @@
 // or absolute .mjs, compiled `<binary> <id>`, legacy flat, nested) so unified
 // uninstall + doctor self-heal can strip them without a manifest in hand.
 
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   countHarnessedHooks,
@@ -12,6 +14,19 @@ import {
   harnessedStaleHookPaths,
   stripHarnessedHooks,
 } from '../../src/installers/lib/harnessedHookTeardown.js'
+import { getAssetsRoot } from '../../src/platform/assetsRoot.js'
+
+const TRUSTED_ASSETS_ROOT = getAssetsRoot().replace(/\\/g, '/').replace(/\/$/, '')
+const trustedScriptPath = (id: string) => `${TRUSTED_ASSETS_ROOT}/bin/harnessed-${id}.mjs`
+const trustedScriptCommand = (id: string, runtime = 'node') =>
+  `${runtime} "${trustedScriptPath(id)}"`
+const TRUSTED_WINDOWS_BINARY = join(
+  process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'),
+  'harnessed',
+  'bin',
+  'harnessed.exe',
+).replace(/\\/g, '/')
+const TRUSTED_UNIX_BINARY = join(homedir(), '.local', 'bin', 'harnessed').replace(/\\/g, '/')
 
 describe('harnessedHookIdentity', () => {
   it('npm relative .mjs → identity', () => {
@@ -19,20 +34,18 @@ describe('harnessedHookIdentity', () => {
     expect(harnessedHookIdentity('node bin/harnessed-stop-hook.mjs')).toBe('stop-hook')
   })
 
-  it('npm absolute quoted .mjs (issue #8 stale orphan, forward-slash) → identity', () => {
-    const raw =
-      'node "C:/Users/x/AppData/Roaming/npm/node_modules/harnessed/bin/harnessed-inject-state.mjs"'
+  it('captured assetsRoot absolute quoted .mjs → identity', () => {
+    const raw = trustedScriptCommand('inject-state')
     expect(harnessedHookIdentity(raw)).toBe('inject-state')
-    const stop =
-      'node "/home/u/.local/share/npm/lib/node_modules/harnessed/bin/harnessed-stop-hook.mjs"'
+    const stop = trustedScriptCommand('stop-hook')
     expect(harnessedHookIdentity(stop)).toBe('stop-hook')
+    const assets = trustedScriptCommand('inject-state', 'bun')
+    expect(harnessedHookIdentity(assets)).toBe('inject-state')
   })
 
   it('compiled binary form `"<binary>" <id>` → identity', () => {
-    expect(
-      harnessedHookIdentity('"C:/Users/x/AppData/Local/harnessed/bin/harnessed.exe" inject-state'),
-    ).toBe('inject-state')
-    expect(harnessedHookIdentity('"/home/u/.local/bin/harnessed" stop-hook')).toBe('stop-hook')
+    expect(harnessedHookIdentity(`"${TRUSTED_WINDOWS_BINARY}" inject-state`)).toBe('inject-state')
+    expect(harnessedHookIdentity(`"${TRUSTED_UNIX_BINARY}" stop-hook`)).toBe('stop-hook')
   })
 
   it('bare PATH form `harnessed <id>` → identity', () => {
@@ -44,13 +57,11 @@ describe('harnessedHookIdentity', () => {
   // unified `harnessed uninstall` + doctor self-heal did not see it at all.
   it('doc-discipline-gate forms (bare CLI / compiled, WITH a trailing flag) → identity', () => {
     expect(harnessedHookIdentity('harnessed check-docs --hook')).toBe('check-docs')
-    expect(harnessedHookIdentity('"C:/Users/x/bin/harnessed.exe" check-docs --hook')).toBe(
+    expect(harnessedHookIdentity(`"${TRUSTED_WINDOWS_BINARY}" check-docs --hook`)).toBe(
       'check-docs',
     )
-    expect(harnessedHookIdentity('"/home/u/.local/bin/harnessed" check-docs --hook')).toBe(
-      'check-docs',
-    )
-    // left-boundary guard still applies — a user's own lookalike is NOT owned
+    expect(harnessedHookIdentity(`"${TRUSTED_UNIX_BINARY}" check-docs --hook`)).toBe('check-docs')
+    // A user's own lookalike is not owned.
     expect(harnessedHookIdentity('"C:/tools/myharnessed.exe" check-docs --hook')).toBeNull()
   })
 
@@ -61,16 +72,20 @@ describe('harnessedHookIdentity', () => {
     expect(harnessedHookIdentity('node harnessed-inject-statement.mjs')).toBeNull()
   })
 
-  it('requires a LEFT boundary — a user script merely ENDING in the name is NOT owned', () => {
-    // review finding: no left boundary → silent deletion of a user's own hook.
+  it('third-party exact-basename scripts and vendor binaries are NOT owned', () => {
+    expect(harnessedHookIdentity('node "C:/vendor/harnessed-inject-state.mjs"')).toBeNull()
+    expect(harnessedHookIdentity('bun /opt/vendor/harnessed-stop-hook.mjs')).toBeNull()
+    expect(harnessedHookIdentity('"C:/vendor/harnessed.exe" inject-state')).toBeNull()
+  })
+
+  it('requires a trusted path — a user script merely ENDING in the name is NOT owned', () => {
+    // A matching suffix alone must never trigger silent deletion of a user's hook.
     expect(harnessedHookIdentity('node ./scripts/team-harnessed-stop-hook.mjs')).toBeNull()
     expect(harnessedHookIdentity('node my-harnessed-inject-state.mjs')).toBeNull()
     expect(harnessedHookIdentity('"C:/tools/myharnessed.exe" inject-state')).toBeNull()
-    // but a genuine harnessed path (separator/quote/start boundary) still matches
-    expect(harnessedHookIdentity('node "C:/x/harnessed/bin/harnessed-stop-hook.mjs"')).toBe(
-      'stop-hook',
-    )
-    expect(harnessedHookIdentity('"C:/x/harnessed.exe" inject-state')).toBe('inject-state')
+    // but the captured first-party assets path still matches
+    expect(harnessedHookIdentity(trustedScriptCommand('stop-hook'))).toBe('stop-hook')
+    expect(harnessedHookIdentity(`"${TRUSTED_WINDOWS_BINARY}" inject-state`)).toBe('inject-state')
   })
 })
 
@@ -84,11 +99,9 @@ describe('harnessedHookScriptPath', () => {
   })
 
   it('compiled form → the binary path', () => {
-    expect(
-      harnessedHookScriptPath(
-        '"C:/Users/x/AppData/Local/harnessed/bin/harnessed.exe" inject-state',
-      ),
-    ).toBe('C:/Users/x/AppData/Local/harnessed/bin/harnessed.exe')
+    expect(harnessedHookScriptPath(`"${TRUSTED_WINDOWS_BINARY}" inject-state`)).toBe(
+      TRUSTED_WINDOWS_BINARY,
+    )
   })
 
   it('bare form → the bare token (unstattable, caller skips)', () => {
@@ -119,9 +132,9 @@ describe('harnessedHookScriptPath', () => {
 describe('stripHarnessedHooks', () => {
   it('Bun first-party commands are removed without owning a lookalike or sibling', () => {
     const commands = [
-      'bun "C:/bun packages/harnessed/bin/harnessed-inject-state.mjs"',
-      'bun "C:/bun packages/harnessed/bin/harnessed-stop-hook.mjs" --verbose',
-      'bun "C:/bun packages/harnessed/bin/harnessed-check-docs.mjs" --hook',
+      trustedScriptCommand('inject-state', 'bun'),
+      `${trustedScriptCommand('stop-hook', 'bun')} --verbose`,
+      `${trustedScriptCommand('check-docs', 'bun')} --hook`,
     ]
     const sibling = { type: 'command', command: 'bun scripts/team-harnessed-stop-hook.mjs' }
     const hooks = {
@@ -131,7 +144,7 @@ describe('stripHarnessedHooks', () => {
     }
     for (const command of commands) {
       expect(harnessedHookIdentity(command)).not.toBeNull()
-      expect(harnessedHookScriptPath(command)).toMatch(/^C:\/bun packages\/harnessed\/bin\//)
+      expect(harnessedHookScriptPath(command)).toMatch(`${TRUSTED_ASSETS_ROOT}/bin/`)
     }
     expect(countHarnessedHooks(hooks)).toBe(3)
     expect(stripHarnessedHooks(hooks)).toEqual({ removed: 3 })
@@ -143,15 +156,13 @@ describe('stripHarnessedHooks', () => {
     const hooks: Record<string, unknown[]> = {
       UserPromptSubmit: [
         {
-          hooks: [
-            { type: 'command', command: 'node "/x/harnessed/bin/harnessed-inject-state.mjs"' },
-          ],
+          hooks: [{ type: 'command', command: trustedScriptCommand('inject-state') }],
         },
         { hooks: [{ type: 'command', command: 'node bin/other.mjs' }] },
       ],
       Stop: [
         {
-          hooks: [{ type: 'command', command: 'node "/x/harnessed/bin/harnessed-stop-hook.mjs"' }],
+          hooks: [{ type: 'command', command: trustedScriptCommand('stop-hook') }],
         },
       ],
       PreToolUse: [{ hooks: [{ type: 'command', command: 'node bin/guard.mjs' }] }],
@@ -169,7 +180,7 @@ describe('stripHarnessedHooks', () => {
         {
           matcher: '',
           hooks: [
-            { type: 'command', command: 'node "/x/harnessed/bin/harnessed-inject-state.mjs"' },
+            { type: 'command', command: trustedScriptCommand('inject-state') },
             { type: 'command', command: 'node /x/my-tool.mjs' },
           ],
         },
@@ -198,8 +209,8 @@ describe('stripHarnessedHooks', () => {
         UserPromptSubmit: [
           {
             hooks: [
-              { command: 'node /x/harnessed-inject-state.mjs' },
-              { command: 'node /x/harnessed-stop-hook.mjs' },
+              { command: trustedScriptCommand('inject-state') },
+              { command: trustedScriptCommand('stop-hook') },
               { command: 'node /x/keep.mjs' },
             ],
           },
@@ -241,7 +252,7 @@ describe('stripHarnessedHooks', () => {
   it('non-mutating counter agrees with strip and does not mutate', () => {
     const hooks = {
       Stop: [
-        { hooks: [{ type: 'command', command: '"/home/u/.local/bin/harnessed" stop-hook' }] },
+        { hooks: [{ type: 'command', command: `"${TRUSTED_UNIX_BINARY}" stop-hook` }] },
         { hooks: [{ type: 'command', command: 'node bin/keep.mjs' }] },
       ],
     }
@@ -249,33 +260,40 @@ describe('stripHarnessedHooks', () => {
     // counter did not mutate
     expect(hooks.Stop).toHaveLength(2)
   })
+
+  it('preserves third-party exact-basename scripts and vendor binaries', () => {
+    const hooks = {
+      UserPromptSubmit: [
+        { hooks: [{ type: 'command', command: 'node "C:/vendor/harnessed-inject-state.mjs"' }] },
+      ],
+      Stop: [{ hooks: [{ type: 'command', command: '"C:/vendor/harnessed.exe" stop-hook' }] }],
+    }
+    expect(countHarnessedHooks(hooks as never)).toBe(0)
+    expect(stripHarnessedHooks(hooks as never)).toEqual({ removed: 0 })
+    expect(hooks.UserPromptSubmit).toHaveLength(1)
+    expect(hooks.Stop).toHaveLength(1)
+  })
 })
 
 describe('harnessedStaleHookPaths', () => {
   const hooks = {
     UserPromptSubmit: [
       {
-        hooks: [
-          { type: 'command', command: 'node "C:/gone/harnessed/bin/harnessed-inject-state.mjs"' },
-        ],
+        hooks: [{ type: 'command', command: trustedScriptCommand('inject-state') }],
       },
     ],
     Stop: [
       {
-        hooks: [
-          { type: 'command', command: 'node "C:/live/harnessed/bin/harnessed-stop-hook.mjs"' },
-        ],
+        hooks: [{ type: 'command', command: trustedScriptCommand('stop-hook') }],
       },
     ],
     PreToolUse: [{ hooks: [{ type: 'command', command: 'harnessed inject-state' }] }],
   }
 
   it('reports only absolute harnessed paths that do not exist', () => {
-    const exists = (p: string) => p.includes('/live/')
+    const exists = (p: string) => p.endsWith('harnessed-stop-hook.mjs')
     const stale = harnessedStaleHookPaths(hooks as never, exists)
-    expect(stale).toEqual([
-      { event: 'UserPromptSubmit', path: 'C:/gone/harnessed/bin/harnessed-inject-state.mjs' },
-    ])
+    expect(stale).toEqual([{ event: 'UserPromptSubmit', path: trustedScriptPath('inject-state') }])
   })
 
   it('skips bare PATH tokens (unstattable) and non-harnessed hooks', () => {
@@ -288,6 +306,14 @@ describe('harnessedStaleHookPaths', () => {
     expect(harnessedStaleHookPaths(onlyBare as never, () => false)).toEqual([])
   })
 
+  it('does not report third-party exact-basename scripts or vendor binaries', () => {
+    const thirdParty = {
+      UserPromptSubmit: [{ hooks: [{ command: 'node "C:/vendor/harnessed-inject-state.mjs"' }] }],
+      Stop: [{ hooks: [{ command: '"C:/vendor/harnessed.exe" stop-hook' }] }],
+    }
+    expect(harnessedStaleHookPaths(thirdParty as never, () => false)).toEqual([])
+  })
+
   it('reports a RELATIVE harnessed .mjs (pre-4.20.0 broken shape) regardless of exists', () => {
     // review finding: relative orphan errors every prompt but was reported pass.
     const rel = {
@@ -297,26 +323,25 @@ describe('harnessedStaleHookPaths', () => {
     expect(stale).toEqual([{ event: 'UserPromptSubmit', path: 'bin/harnessed-inject-state.mjs' }])
   })
 
-  it('reports an absolute path WITH SPACES that is missing (review finding: not skipped)', () => {
+  it('does not report an untrusted absolute path WITH SPACES', () => {
+    const path = 'C:/Program Files/npm/node_modules/harnessed/bin/harnessed-stop-hook.mjs'
     const spaced = {
-      Stop: [{ hooks: [{ command: 'node "C:/Program Files/npm/harnessed-stop-hook.mjs"' }] }],
+      Stop: [{ hooks: [{ command: `node "${path}"` }] }],
     }
     const stale = harnessedStaleHookPaths(spaced as never, () => false)
-    expect(stale).toEqual([{ event: 'Stop', path: 'C:/Program Files/npm/harnessed-stop-hook.mjs' }])
+    expect(stale).toEqual([])
   })
 
   it('doc-discipline-gate: missing compiled binary → stale; bare PATH form → skipped (4.34.1)', () => {
     const compiled = {
       PreToolUse: [
         {
-          hooks: [
-            { type: 'command', command: '"C:/gone/harnessed/harnessed.exe" check-docs --hook' },
-          ],
+          hooks: [{ type: 'command', command: `"${TRUSTED_WINDOWS_BINARY}" check-docs --hook` }],
         },
       ],
     }
     expect(harnessedStaleHookPaths(compiled as never, () => false)).toEqual([
-      { event: 'PreToolUse', path: 'C:/gone/harnessed/harnessed.exe' },
+      { event: 'PreToolUse', path: TRUSTED_WINDOWS_BINARY },
     ])
     const bare = {
       PreToolUse: [{ hooks: [{ type: 'command', command: 'harnessed check-docs --hook' }] }],

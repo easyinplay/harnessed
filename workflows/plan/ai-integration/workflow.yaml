@@ -1,0 +1,12 @@
+schema_version: harnessed.workflow.v3
+workflow: plan-ai-integration
+description: GSD ai-integration-phase AI-SPEC contract before ordinary phase planning.
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-ai-integration-phase]
+phases:
+  - id: 01-ai-integration-phase
+    name: gsd-ai-integration-phase
+    upstream: gsd
+    capability: '{{ capabilities.gsd-ai-integration-phase.cmd }}'
+    model: sonnet
+    gate: judgments.stage-phase-gate.gsd-ai-integration-phase.fires

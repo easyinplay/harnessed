@@ -4,6 +4,30 @@
 > Shipped families = delivered baseline (do NOT re-plan). Historical v10.0 i18n Surface shipped as npm v4.8.0; latest shipped npm is 5.0.4.
 > Current publication status: `.planning/STATE.md` and `.planning/releases/`. Public npm **5.0.4 Maintenance Release** is published and verified complete; Phase 74 is complete. The older requirement families below remain historical records.
 
+## Phase 81: Open Issues Triage And Repair
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| TRIAGE-81-01 | First-party hook identity and platform pins cannot claim or corrupt another tool/host (#28, #29), legacy migration follows the captured host root (#15 residual), and path comparison case-folds only Windows drive/UNC forms while preserving POSIX exact case. | Phase 81 W1 focused tests, including POSIX case-variant, Windows drive, and UNC regressions | Complete locally; final hook case gate 5 files / 85 tests |
+| TRIAGE-81-02 | Settings mutations are atomic across setup/uninstall (#31); teardown ownership is explicit and shared Playwright cache is not misclassified as harnessed-owned (#30). | Phase 81 W2 focused tests and non-issue evidence | Complete locally; #30 non-issue |
+| TRIAGE-81-03 | Concurrent checkpoint completion preserves every update and failed checkpoints are machine-readable with legacy compatibility (#32, #33). | Phase 81 W3 contention/resume tests | Complete locally |
+| TRIAGE-81-04 | Backup preservation and npm package lifecycle claims are executable, including `prepack` proof (#14, #16). | Phase 81 residual verification | Complete locally; `prepublishOnly` subclaim non-issue |
+
+GitHub #14-#33 remain Open. Commit, push, CI, publication, tag, and issue closure were not executed.
+
+## Phase 80: Open Issues Hardening
+
+| ID | Requirement | Acceptance Home | Status |
+| --- | --- | --- | --- |
+| HARDEN-80-01 | Uninstall preserves backups and user-owned state, resolves custom host homes consistently, and treats legacy skill ownership without a receipt as fail-closed (#14, #15, #18, #19) | Phase 80 W1 focused tests and uninstall acceptance | Complete locally; remote issues remain Open |
+| HARDEN-80-02 | npm/package and setup paths ship required assets, detect compiled hooks idempotently, and exit 1 on real setup write failures (#16, #17, #20) | Phase 80 W2 package/setup matrix | Complete locally; `prepublishOnly` subclaim is a non-issue |
+| HARDEN-80-03 | Nested masters expand one flat root ledger, spawn failures are visible and bounded, and checkpoint/archive paths are owner-scoped with cwd warn-only (#22, #23, #24) | Phase 80 W3 checkpoint matrix | Complete locally; final nested replay offset review passed |
+| HARDEN-80-04 | `--staged` only pauses serial stages and all gate fields have declared schema plus supported producers (#25, #26) | Phase 80 W4 orchestrator/gate tests | Complete locally |
+| HARDEN-80-05 | CI executes and structurally guards its hard gates through a small split with explicit advisory semantics (#21) | Phase 80 W5 workflow contract tests and observed CI | Complete locally; GitHub CI not executed |
+| HARDEN-80-06 | Workflow docs name only executable CLI forms and a registry guard prevents command drift (#27) | Phase 80 W6 docs/CLI contract tests | Complete locally |
+
+GitHub lists issues #14-#33 as Open on 2026-10-31. #12/#13 have v5.0.5 candidate fixes and remain baseline context rather than new Phase 80 implementation scope. #14-#27 are implemented and locally verified; commit, push, GitHub CI, publication, tag, and remote issue closure were not executed.
+
 ## Phase 78: Deterministic Update Closure
 
 | ID | Requirement | Acceptance Home | Status |

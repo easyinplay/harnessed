@@ -9,9 +9,9 @@
 // inspection); hence no token budget — only checkpoint.json is enforced.
 
 import { mkdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { harnessedSubdir } from '../platform/harnessedRoot.js'
+import { dirname } from 'node:path'
 import { writeFileSyncAtomic } from './atomicWrite.js'
+import { ownerPath } from './ownerPath.js'
 
 export class ArchiveWriteError extends Error {
   constructor(message: string) {
@@ -31,7 +31,7 @@ export function writeArchive(phase: string, rawTurns: unknown[]): string {
     throw new ArchiveWriteError('rawTurns must be an array')
   }
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const path = join(harnessedSubdir('archive'), `phase-${phase}`, `raw-${timestamp}.json`)
+  const path = ownerPath('archive', [`phase-${phase}`, `raw-${timestamp}.json`])
   mkdirSync(dirname(path), { recursive: true })
   writeFileSyncAtomic(path, JSON.stringify(rawTurns, null, 2))
   return path

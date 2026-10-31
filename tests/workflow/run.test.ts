@@ -30,7 +30,15 @@ const pauseMock = vi.fn(async () => {})
 const loadPhasesMock = vi.fn()
 const resolveJudgmentGateMock = vi.fn<() => Promise<boolean>>()
 const runMasterOrchestratorMock =
-  vi.fn<() => Promise<{ master: string; fired: string[]; skipped: string[] }>>()
+  vi.fn<
+    (
+      master: string,
+      ctx: Record<string, unknown>,
+      root: string,
+      spawnDriver: unknown,
+      opts: unknown,
+    ) => Promise<{ master: string; fired: string[]; skipped: string[] }>
+  >()
 const loadDisciplinesForPhaseMock = vi.fn<() => Promise<Map<string, unknown>>>()
 // T3.5.W1.5 — 3 phase-level hook mock。
 interface FiredCapShape {
@@ -63,10 +71,13 @@ vi.mock('../../src/workflow/judgmentResolver.js', () => ({
 }))
 vi.mock('../../src/workflow/masterOrchestrator.js', () => ({
   runMasterOrchestrator: (
-    _master: string,
-    _ctx: Record<string, unknown>,
-    _root: string,
-  ): Promise<{ master: string; fired: string[]; skipped: string[] }> => runMasterOrchestratorMock(),
+    master: string,
+    ctx: Record<string, unknown>,
+    root: string,
+    spawnDriver: unknown,
+    opts: unknown,
+  ): Promise<{ master: string; fired: string[]; skipped: string[] }> =>
+    runMasterOrchestratorMock(master, ctx, root, spawnDriver, opts),
 }))
 vi.mock('../../src/discipline/enforcement/before-phase-execute.js', () => ({
   loadDisciplinesForPhase: (
@@ -296,6 +307,36 @@ describe('runWorkflow — D-03 WIRED + D-04 PUSH + B-01 fix', () => {
     expect(activatePhaseMock).toHaveBeenCalledWith('discuss')
     expect(completePhaseMock).toHaveBeenCalledTimes(1)
     expect(completePhaseMock.mock.calls[0]?.[0]).toMatchObject({ phaseId: 'discuss' })
+  })
+
+  it('6b. masterOpts bridge forwards staged pause without injecting pre-flight hooks', async () => {
+    loadPhasesMock.mockReturnValue({
+      workflow: 'auto',
+      delegates_to: [{ sub: 'discuss' }, { sub: 'plan' }],
+      phases: undefined,
+    })
+    runMasterOrchestratorMock.mockResolvedValue({
+      master: 'auto',
+      fired: ['discuss', 'plan'],
+      skipped: [],
+    })
+
+    await runWorkflow(
+      'workflows/auto/workflow.yaml',
+      {},
+      {
+        packageRoot: '/tmp/fake-root',
+        masterOpts: { pauseBetweenStages: true },
+      },
+    )
+
+    expect(runMasterOrchestratorMock).toHaveBeenCalledWith(
+      'auto',
+      {},
+      '/tmp/fake-root',
+      undefined,
+      { pauseBetweenStages: true },
+    )
   })
 
   it('7. T3.5.W0.2 — master detect: workflow ∉ 4 master name → fall through to phase path', async () => {

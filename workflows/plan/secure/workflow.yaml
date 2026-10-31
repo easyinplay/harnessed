@@ -1,0 +1,12 @@
+schema_version: harnessed.workflow.v3
+workflow: plan-secure
+description: GSD secure-phase threat-model contract before ordinary phase planning.
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-secure-phase]
+phases:
+  - id: 01-secure-phase
+    name: gsd-secure-phase
+    upstream: gsd
+    capability: '{{ capabilities.gsd-secure-phase.cmd }}'
+    model: sonnet
+    gate: judgments.stage-phase-gate.gsd-secure-phase.fires

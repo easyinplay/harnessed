@@ -26,6 +26,21 @@ describe('normalizeGolden (T3)', () => {
     expect(out.p).toBe('<TMP>/a/b')
   })
 
+  it('normalizes checkpoint and archive owner hashes without touching unrelated hex segments', () => {
+    const out = normalizeGolden(
+      {
+        checkpoint: '/tmp/root/checkpoints/0123456789abcdef/verify.json',
+        archive: 'C:\\tmp\\root\\archive\\fedcba9876543210\\phase-verify\\raw.json',
+        unrelated: '/tmp/root/cache/0123456789abcdef/value.json',
+      },
+      ['/tmp/root', 'C:\\tmp\\root'],
+    ) as Record<string, string>
+
+    expect(out.checkpoint).toBe('<TMP>/checkpoints/<OWNER>/verify.json')
+    expect(out.archive).toBe('<TMP>/archive/<OWNER>/phase-verify/raw.json')
+    expect(out.unrelated).toBe('<TMP>/cache/0123456789abcdef/value.json')
+  })
+
   it('strips timestamp fields recursively (started_at/completed_at/paused_at/timestamp)', () => {
     const out = normalizeGolden(
       {

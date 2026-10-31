@@ -14,7 +14,7 @@ import {
 describe('updateSignature (#12 ed25519 over .sha256)', () => {
   const pair = generateKeyPairSync('ed25519')
   const pubPem = pair.publicKey.export({ type: 'spki', format: 'pem' }).toString()
-  const shaText = 'a'.repeat(64) + '  harnessed-linux-x64\n'
+  const shaText = `${'a'.repeat(64)}  harnessed-linux-x64\n`
   const goodSig = edSign(null, Buffer.from(shaText, 'utf8'), pair.privateKey).toString('base64')
 
   it('valid signature over the exact sha text → true', () => {

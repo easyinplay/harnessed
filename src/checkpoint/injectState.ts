@@ -122,6 +122,19 @@ export function buildWorkflowStateBlock(
       `REOPENED: sub '${next}' was sent back (attempt ${nextEntry.fail_count}${nextEntry.attempt_budget !== undefined ? `/${nextEntry.attempt_budget}` : ''}) — ${nextEntry.reason}. Address THAT before re-running it; a repeat of the same attempt burns the budget.`,
     )
   }
+  // issue #23 — the spawn-failure kind was WRITTEN to the ledger but never READ:
+  // the block kept saying "drive sub 'X'" for a sub whose spawn had already
+  // died, and never said WHY (timeout / auth / non-zero exit / refusal /
+  // malformed output). A deterministic failure then looked like a fresh pending
+  // sub forever. The kind IS the actionable part — the model has to change
+  // strategy, not retry blindly. Settled subs are skipped: a sub whose spawn
+  // failed and later succeeded must not keep shouting about the old attempt.
+  for (const e of ledger) {
+    if (!e.spawn_failure || isSettled(e)) continue
+    lines.push(
+      `SPAWN-FAILED: sub '${e.sub}' failed to spawn (${e.spawn_failure}) — attempt ${e.fail_count ?? 0}; fix the cause before respawning it`,
+    )
+  }
   // Phase 39 (D6) — per-turn current→next pointer. Emitted ONLY when this workflow
   // is done (no pending sub → no ENGINE line) AND a concrete cross-unit next exists
   // (phase|task; done/blocked yield no pointer). Keeps the agent moving forward

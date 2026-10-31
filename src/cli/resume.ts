@@ -28,6 +28,10 @@ export function registerResume(program: Command): void {
         console.error(t('resume.corrupt', { error: r.error, path: r.path }))
         process.exit(1)
       }
+      if (r.status === 'failed') {
+        console.error(t('resume.fail', { error: r.error }))
+        process.exit(1)
+      }
       if (r.cwdWarn) console.error(r.cwdWarn)
       if (r.driftWarn) for (const w of r.driftWarn) console.error(w)
       console.log(`phase: ${r.checkpoint.phase}`)

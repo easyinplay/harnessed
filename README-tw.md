@@ -514,7 +514,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `harnessed status` | 目前 phase + 鎖定持有者 |
 | `harnessed doctor` | 健康檢查(Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 衝突 / update-available 等) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自我更新,依安裝通道分流:二進位安裝從 GitHub releases 原地自替換(sha256 + ed25519 簽章雙重驗證 —— releases 附帶 `<asset>.sha256.sig`,4.32.19 起為簽章發布契約;被替換的版本會封存以供回滾);npm 安裝執行 `npm i -g harnessed@latest`。`--check` 回報最新版本;`--rollback [version]`(僅二進位安裝)原子還原已封存的上一版二進位檔 —— npm 安裝則被指引執行 `npm i -g harnessed@<version>`;`--upstreams` 重跑基礎 manifests;`--migration-report` 為唯讀過期狀態盤點 |
-| `harnessed release-preflight` | Read-only 發布就緒關卡（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；未就緒則 exit 1。即 Ship-stage 關卡 |
+| `harnessed release-preflight [--release-version <semver>]` | Read-only 發布就緒關卡（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；`--release-version` 可覆寫 manifest 自動探索；未就緒則 exit 1。即 Ship-stage 關卡 |
 | `harnessed retro --done` | 執行完 `/retro` 後重置 retro-reminder phase 計數器（清除每輪的 RETRO-DUE 提醒） |
 | `harnessed install <name>` | 安裝上游 manifest |
 | `harnessed uninstall [name]` | 反向解除安裝 —— 對安裝 skill 的方法（`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`）執行 manifest 宣告的 `spec.uninstall` teardown（cmd + 限定 `$HOME` 內、冪等 `cleanup_paths`）；其餘方法沿用各自的 per-method 反向邏輯 |
@@ -522,6 +522,15 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `harnessed rollback <timestamp>` | 一行還原**備份快照**（EOL 保留 + sha1 驗證） —— 有別於 `update --rollback`:後者還原的是上一版**編譯後的二進位檔** |
 | `harnessed gc` | 清除過期備份 |
 | `harnessed audit-log` | 路由透明度日誌查詢（支援 `--filter` jq 運算式） |
+| `harnessed agents-md` | 寫入或更新 `<CODEX_HOME>/AGENTS.md` 中帶 marker 的 harnessed 區塊，不變更區塊外內容 |
+| `harnessed audit` | 稽核 manifest 與 runtime 的一致性（`--skip-runtime` 僅檢查 manifest） |
+| `harnessed check-docs` | 檢查 `.planning/` 文件紀律，發現 advisory 或 blocking 問題時回傳非零 exit code |
+| `harnessed eval` | 執行確定性的編排行為回歸套件；`harnessed eval record` 可記錄可重播情境 |
+| `harnessed exempt-gateguard` | 持久化 `.planning/**` GateGuard 豁免，解決雙 guard 衝突 |
+| `harnessed facts <master>` | 輸出供 `harnessed gates --context-file` 使用的確定性與待判斷 gate facts |
+| `harnessed install-base [--dry-run]` | 安裝 phase 1.3 base profile；`--dry-run` 僅預覽不寫入 |
+| `harnessed manifest-add <upstream>` | 透過 EE-5 merge gate 新增 upstream adapter |
+| `harnessed research --query <text>` | 執行 headless research workflow；`--dry-run` 僅預覽不 spawn |
 
 ### 旗標
 

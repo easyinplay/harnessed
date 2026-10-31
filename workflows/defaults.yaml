@@ -45,6 +45,18 @@ ralph_max_iterations:
   plan-architecture:
     01-plan-eng-review: 3
 
+  plan-spec:
+    01-spec-phase: 5
+
+  plan-ui:
+    01-ui-phase: 5
+
+  plan-secure:
+    01-secure-phase: 5
+
+  plan-ai-integration:
+    01-ai-integration-phase: 5
+
   plan-phase:
     01-gsd-plan: 5
     02-persist: 5

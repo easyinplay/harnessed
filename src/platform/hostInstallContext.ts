@@ -1,6 +1,6 @@
 import { homedir } from 'node:os'
 import type { HostId, PlatformDescriptor } from './platform.js'
-import { descriptorFor, detectPlatform, isHostId } from './platform.js'
+import { descriptorForConfiguredHome, detectPlatform, isHostId } from './platform.js'
 
 export interface HostInstallContext {
   readonly hostId: HostId
@@ -51,19 +51,18 @@ export function captureHostInstallContext(
     throw new Error(`unsupported host: ${options.hostId}`)
   }
   const userHome = options.userHome ?? homedir()
-  let platform: PlatformDescriptor
-  if (options.hostId === undefined) {
-    platform = detectPlatform(userHome)
-  } else {
-    platform = descriptorFor(options.hostId as HostId, userHome)
-    const stateRoot = process.env.HARNESSED_ROOT_OVERRIDE
-    if (stateRoot !== undefined && stateRoot !== '') platform = { ...platform, stateRoot }
-  }
+  const platformEnv = process.env.HARNESSED_PLATFORM?.trim()
+  const explicitHost =
+    options.hostId ?? (platformEnv !== undefined && isHostId(platformEnv) ? platformEnv : undefined)
+  const hostId = explicitHost ?? detectPlatform(userHome).id
+  if (!isHostId(hostId)) throw new Error(`unsupported host: ${hostId}`)
+  const platform: PlatformDescriptor = descriptorForConfiguredHome(hostId, userHome)
   const rootKey = platform.id === 'codex' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR'
+  const nativeHome = process.env[rootKey]?.trim() || platform.homeDir
   return createHostInstallContext(platform, {
     os: options.os ?? process.platform,
     userHome,
-    nativeHome: process.env[rootKey],
+    nativeHome,
     neutralSpawnCwd: process.env.HARNESSED_SPAWN_CWD,
   })
 }

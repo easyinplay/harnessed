@@ -29,6 +29,7 @@
 //                          optional per InstallError shape — keyword non-empty)
 
 import { EventEmitter } from 'node:events'
+import { dirname, join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // --- Mocks (declared before importing SUT; vitest hoists vi.mock calls) ----
@@ -68,6 +69,11 @@ vi.mock('../../src/installers/lib/idempotent.js', async () => {
   )
   return { ...actual, isAlreadyInstalled: vi.fn(async () => false) }
 })
+vi.mock('../../src/cli/lib/settingsTransactionLock.js', () => ({
+  withSettingsTransactionLock: vi.fn(async (_hostContext: unknown, work: () => Promise<unknown>) =>
+    work(),
+  ),
+}))
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),
   select: vi.fn(async () => 'abort'),
@@ -79,6 +85,7 @@ import { spawn } from 'node:child_process'
 import { access, mkdir, writeFile } from 'node:fs/promises'
 import { runInstall } from '../../src/installers/index.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
+import { captureHostInstallContext } from '../../src/platform/hostInstallContext.js'
 
 const spawnMock = vi.mocked(spawn)
 const mkdirMock = vi.mocked(mkdir)
@@ -551,10 +558,9 @@ for (const method of methods) {
       }
     })
 
-    // C3 — backups land under <harnessed-root>/backups/<ts>/. v3.0.3 path:
-    // `~/.claude/harnessed/backups/<ts>/` (sister v2.0.1 `~/.harnessed/backups/`
-    // root migration generalised to co-located Claude Code dir). backup.ts
-    // always mkdir's the timestamp dir even for empty plans.
+    // C3 — backups land under the captured install context's
+    // `<stateRoot>/backups/<ts>/`. backup.ts always mkdir's the timestamp dir
+    // even for empty plans.
     it('contract: backup-location', async () => {
       const cap = captureStdout()
       try {
@@ -570,9 +576,11 @@ for (const method of methods) {
               typeof spawn
             >,
         )
-        await runInstall(factories[method as Method](), applyOpts(method))
+        const hostContext = captureHostInstallContext()
+        await runInstall(factories[method as Method](), applyOpts(method), hostContext)
         const calls = mkdirMock.mock.calls.map((c) => String(c[0]))
-        const hasBackupDir = calls.some((p) => /\.claude[/\\]harnessed[/\\]backups/.test(p))
+        const backupRoot = join(hostContext.platform.stateRoot, 'backups')
+        const hasBackupDir = calls.some((path) => dirname(path) === backupRoot)
         expect(hasBackupDir).toBe(true)
       } finally {
         cap.restore()

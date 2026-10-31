@@ -514,7 +514,7 @@ planning-with-files /plan (cross-cutting 도구) → .planning/<phase-id>/에 �
 | `harnessed status` | 현재 Phase + 잠금 보유자 |
 | `harnessed doctor` | 헬스 체크 (Node / MCP / jq / Win bash / routing / token budget / skill 무결성 / GateGuard 충돌 / update-available 등) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 자가 업데이트, 설치 채널별 분기: 바이너리 설치는 GitHub releases에서 제자리 자가 교체(sha256 + ed25519 서명 검증 — 릴리스마다 `<asset>.sha256.sig` 동봉, 4.32.19부터 서명 릴리스 계약; 교체된 이전 버전은 롤백용으로 보관); npm 설치는 `npm i -g harnessed@latest` 실행. `--check`는 최신 버전 보고; `--rollback [version]`(바이너리 설치 전용)은 보관된 이전 바이너리를 원자적으로 복원 — npm 설치는 `npm i -g harnessed@<version>` 안내; `--upstreams`는 기본 manifests 재실행; `--migration-report`는 읽기 전용 상태 인벤토리 |
-| `harnessed release-preflight` | 읽기 전용 릴리스 준비 게이트 (CHANGELOG `[Unreleased]` / 버전 / git-clean / tag-absent); 준비되지 않으면 exit 1. Ship Stage 게이트 |
+| `harnessed release-preflight [--release-version <semver>]` | 읽기 전용 릴리스 준비 게이트 (CHANGELOG `[Unreleased]` / 버전 / git-clean / tag-absent); `--release-version`은 manifest 탐색을 재정의; 준비되지 않으면 exit 1. Ship Stage 게이트 |
 | `harnessed retro --done` | `/retro` 실행 후 retro 알림 Phase 카운터 리셋 (turn마다 뜨는 RETRO-DUE nudge 해제) |
 | `harnessed install <name>` | Upstream manifest 설치 |
 | `harnessed uninstall [name]` | 통합 제거 — skill 설치 계열 method(`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`)는 manifest에 선언된 `spec.uninstall` teardown(cmd + `$HOME` 범위 제한, 멱등 `cleanup_paths`) 실행; 그 외 method는 각자의 method별 역방향 제거 유지 |
@@ -522,6 +522,15 @@ planning-with-files /plan (cross-cutting 도구) → .planning/<phase-id>/에 �
 | `harnessed rollback <timestamp>` | **백업 스냅샷**의 원라인 롤백 (EOL 보존 + sha1 검증) — 이전 **컴파일된 바이너리**를 복원하는 `update --rollback`과는 별개 |
 | `harnessed gc` | 만료된 백업 정리 |
 | `harnessed audit-log` | 라우팅 투명성 로그 조회 (`--filter` jq 표현식 지원) |
+| `harnessed agents-md` | `<CODEX_HOME>/AGENTS.md`의 marker 구분 harnessed 블록을 작성/갱신하고 바깥 문장은 유지 |
+| `harnessed audit` | manifest와 runtime 자체 일관성 감사 (`--skip-runtime`은 manifest만 검사) |
+| `harnessed check-docs` | `.planning/` 문서 규율 검사; advisory 또는 blocking 발견 시 0이 아닌 exit code 반환 |
+| `harnessed eval` | 결정론적 orchestrator 동작 회귀 suite 실행; `harnessed eval record`로 재생 가능한 scenario 기록 |
+| `harnessed exempt-gateguard` | 이중 guard 충돌을 해결하는 `.planning/**` GateGuard 예외를 영구 저장 |
+| `harnessed facts <master>` | `harnessed gates --context-file`용 결정/미결정 gate facts 출력 |
+| `harnessed install-base [--dry-run]` | phase 1.3 base profile 설치; `--dry-run`은 쓰기 없이 preview |
+| `harnessed manifest-add <upstream>` | EE-5 merge gate를 통해 upstream adapter 추가 |
+| `harnessed research --query <text>` | headless research workflow 실행; `--dry-run`은 spawn 없이 preview |
 
 ### 플래그
 

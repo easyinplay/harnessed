@@ -15,7 +15,7 @@
     {
       "kind": "checkpoint",
       "exitCode": 0,
-      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"],
+      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/<OWNER>/verify.json"],
       "stderr": []
     },
     {
@@ -31,7 +31,7 @@
     "schemaVersion": "harnessed.current-workflow.v1",
     "phase": "verify",
     "status": "active",
-    "last_checkpoint_path": "<TMP>/checkpoints/verify.json",
+    "last_checkpoint_path": "<TMP>/checkpoints/<OWNER>/verify.json",
     "sub_progress": [
       {
         "sub": "progress",

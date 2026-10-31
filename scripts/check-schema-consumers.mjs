@@ -204,7 +204,7 @@ function declaredFields(files) {
     const lines = stripComments(readFileSync(f, 'utf8')).split(/\r?\n/)
     for (let i = 0; i < lines.length; i++) {
       const m = re.exec(lines[i] ?? '')
-      if (!m || !m[1]) continue
+      if (!m?.[1]) continue
       const name = m[1]
       if (fields.has(name)) continue
       // A declaration can span lines, and the CONSTRAINT is often on a later one:

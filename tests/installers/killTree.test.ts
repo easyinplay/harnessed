@@ -23,7 +23,8 @@ afterEach(() => {
       // already gone
     }
   }
-  for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
+  for (const d of dirs.splice(0))
+    rmSync(d, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
 })
 
 function isAlive(pid: number): boolean {

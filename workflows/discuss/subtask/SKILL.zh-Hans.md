@@ -5,7 +5,7 @@ description: |
   API contract / 错误成本高）。schema_version: harnessed.workflow.v3 with disciplines_applied (6
   default) + tools_available (superpowers-brainstorming + grill-with-docs + grill-me) + 1 phase
   （01-brainstorm，含 spec_ambiguous + no_docs 条件调用 invokes_tools）。Triggered by
-  harnessed CLI `harnessed discuss-subtask --task <text>` or slash command `/discuss-subtask`
+  headless CLI `harnessed run discuss-subtask` or slash command `/discuss-subtask`
   after `harnessed setup`.
 trigger_phrases:
   - "discuss subtask"

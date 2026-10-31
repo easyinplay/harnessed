@@ -222,7 +222,15 @@ export function registerRun(program: Command): void {
 
       let result: Awaited<ReturnType<typeof runWorkflow>>
       try {
-        result = await runWorkflow(yamlPath, {}, { packageRoot: PACKAGE_ROOT, gateContext })
+        result = await runWorkflow(
+          yamlPath,
+          {},
+          {
+            packageRoot: PACKAGE_ROOT,
+            gateContext,
+            ...(name === 'auto' && raw.staged ? { masterOpts: { pauseBetweenStages: true } } : {}),
+          },
+        )
       } catch (err) {
         // A configured halt already printed its UX text; exit with the yaml's code.
         if (err instanceof WorkflowHaltError) {

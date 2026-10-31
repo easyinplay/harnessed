@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import * as p from '@clack/prompts'
 import { Command } from 'commander'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -125,15 +125,14 @@ afterEach(() => {
 
 describe('per-manifest uninstall preview/confirm contract', () => {
   it.each([
-    false,
-    true,
-  ])('refuses Codex GSD before preview or confirm (dryRun=%s)', async (dryRun) => {
+    [false, 0],
+    [true, 2],
+  ])('allows reviewed Codex GSD uninstall (dryRun=%s)', async (dryRun, exitCode) => {
     const result = await runCli(gsd, dryRun)
-    expect(result.code).toBe(1)
-    expect(result.stderr).toContain('unsupported-operation')
-    expect(result.stdout).not.toContain('[dry-run]')
-    expect(p.confirm).not.toHaveBeenCalled()
-    expect(runUninstall).not.toHaveBeenCalled()
+    expect(result.code).toBe(exitCode)
+    expect(result.stderr).not.toContain('unsupported-operation')
+    expect(p.confirm).toHaveBeenCalledTimes(dryRun ? 0 : 1)
+    expect(runUninstall).toHaveBeenCalledTimes(dryRun ? 0 : 1)
     expect(boundary.mutation).not.toHaveBeenCalled()
   })
 
@@ -216,7 +215,9 @@ describe('per-manifest uninstall preview/confirm contract', () => {
     expect(context).toMatchObject({
       hostId: host,
       nativeHome: host === 'codex' ? '/selected-codex' : '/selected-claude',
-      platform: { stateRoot: '/selected-state' },
+      platform: {
+        stateRoot: join(host === 'codex' ? '/selected-codex' : '/selected-claude', 'harnessed'),
+      },
     })
     expect(runUninstall).toHaveBeenCalledWith(
       expect.objectContaining({ metadata: expect.objectContaining({ name: 'ctx7' }) }),

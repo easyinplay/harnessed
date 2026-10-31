@@ -27,6 +27,21 @@ vi.mock('../../src/manifest/validate.js', () => ({
   validateManifestFile: vi.fn(),
 }))
 
+vi.mock('../../src/cli/lib/enableAgentTeamsInSettings.js', () => ({
+  enableAgentTeamsInSettings: vi.fn(async () => ({
+    status: 'already-enabled',
+    path: '/fixture/settings.json',
+  })),
+}))
+
+vi.mock('../../src/cli/lib/enableUserLangInSettings.js', () => ({
+  enableUserLangInSettings: vi.fn(async () => ({
+    status: 'already-set',
+    path: '/fixture/settings.json',
+    existing: 'en',
+  })),
+}))
+
 import { cp, readdir, readFile, stat } from 'node:fs/promises'
 import { Command } from 'commander'
 import { makeProgressPrinter, printGrouped, registerSetup } from '../../src/cli/setup.js'

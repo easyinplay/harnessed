@@ -27,6 +27,9 @@ vi.mock('node:fs/promises', () => {
       fs[String(to)] = fs[String(from)] ?? ''
       delete fs[String(from)]
     }),
+    rm: vi.fn(async (p: string) => {
+      delete fs[String(p)]
+    }),
     access: vi.fn(async () => undefined),
     // Expose helper for test setup.
     __fs: fs,
@@ -45,9 +48,23 @@ vi.mock('@clack/prompts', () => ({
   isCancel: vi.fn(() => false),
 }))
 
+const settingsLockState = vi.hoisted(() => ({ active: false, calls: 0 }))
+vi.mock('../../src/cli/lib/settingsTransactionLock.js', () => ({
+  withSettingsTransactionLock: vi.fn(async (_context: unknown, work: () => Promise<unknown>) => {
+    settingsLockState.calls++
+    settingsLockState.active = true
+    try {
+      return await work()
+    } finally {
+      settingsLockState.active = false
+    }
+  }),
+}))
+
 import * as fsp from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
+import * as clack from '@clack/prompts'
 import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
 import { installCodexHook, removeCodexHook } from '../../src/installers/codexHookAdd.js'
 import { runInstall } from '../../src/installers/index.js'
@@ -58,6 +75,19 @@ import { uninstallCcHookAdd } from '../../src/uninstallers/ccHookAdd.js'
 
 const SETTINGS_PATH = join(homedir(), '.claude', 'settings.json')
 const fakeFs = (fsp as unknown as { __fs: Record<string, string> }).__fs
+
+function restoreMutationMocks(): void {
+  vi.mocked(fsp.writeFile).mockImplementation(async (p, data) => {
+    fakeFs[String(p)] = String(data)
+  })
+  vi.mocked(fsp.rename).mockImplementation(async (from, to) => {
+    fakeFs[String(to)] = fakeFs[String(from)] ?? ''
+    delete fakeFs[String(from)]
+  })
+  vi.mocked(fsp.rm).mockImplementation(async (p) => {
+    delete fakeFs[String(p)]
+  })
+}
 
 function captureStdout(): { restore: () => void } {
   const original = process.stdout.write.bind(process.stdout)
@@ -137,6 +167,51 @@ const baseOpts: InstallOpts = {
 }
 
 describe('cc-hook-add installer', () => {
+  it('runs interactive confirmation before acquiring the settings transaction lock', async () => {
+    for (const key of Object.keys(fakeFs)) delete fakeFs[key]
+    settingsLockState.calls = 0
+    settingsLockState.active = false
+    vi.mocked(clack.confirm).mockImplementation(async () => {
+      expect(settingsLockState.active).toBe(false)
+      return true
+    })
+    const cap = captureStdout()
+    try {
+      const result = await installCcHookAdd({
+        manifest: ccHookManifest(),
+        opts: { ...baseOpts, nonInteractive: false },
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect(result).toMatchObject({ ok: true })
+      expect(settingsLockState.calls).toBe(1)
+      expect(clack.confirm).toHaveBeenCalledTimes(2)
+    } finally {
+      cap.restore()
+      vi.mocked(clack.confirm).mockReset().mockResolvedValue(true)
+    }
+  })
+
+  it('runs hook uninstall read-modify-write under the settings transaction lock', async () => {
+    for (const key of Object.keys(fakeFs)) delete fakeFs[key]
+    settingsLockState.calls = 0
+    fakeFs[SETTINGS_PATH] = JSON.stringify({
+      hooks: {
+        SessionStart: [
+          { hooks: [{ type: 'command', command: 'node scripts/no-such-fixture.mjs --no-open' }] },
+        ],
+      },
+    })
+
+    const result = await uninstallCcHookAdd({
+      manifest: ccHookManifest(),
+      opts: { dryRun: false },
+      cwd: process.cwd(),
+    } as never)
+
+    expect(result).toMatchObject({ ok: true })
+    expect(settingsLockState.calls).toBe(1)
+  })
   it('keeps update-reminder distinct from inject-state invalidation under a custom nativeHome', async () => {
     for (const key of Object.keys(fakeFs)) delete fakeFs[key]
     const userHome = join(homedir(), 'custom-claude-user')
@@ -292,6 +367,97 @@ describe('cc-hook-add installer', () => {
     }
   })
 
+  it('install preserves a third-party command that only contains a harnessed hook name', async () => {
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    const thirdParty = 'node scripts/team-harnessed-stop-hook.mjs'
+    fakeFs[SETTINGS_PATH] = JSON.stringify({
+      hooks: { Stop: [{ hooks: [{ type: 'command', command: thirdParty }] }] },
+    })
+    const manifest = ccHookManifest()
+    if (manifest.spec.install.method !== 'cc-hook-add') throw new Error('invalid fixture')
+    manifest.spec.install.hook_event = 'Stop'
+    manifest.spec.install.hook_matcher = undefined
+    manifest.spec.install.hook_command = 'node bin/harnessed-stop-hook.mjs'
+    const cap = captureStdout()
+    try {
+      const result = await installCcHookAdd({
+        manifest,
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect(result).toMatchObject({ ok: true })
+      const written = JSON.parse(fakeFs[SETTINGS_PATH] ?? '{}')
+      expect(written.hooks.Stop).toHaveLength(2)
+      expect(written.hooks.Stop[0].hooks[0].command).toBe(thirdParty)
+    } finally {
+      cap.restore()
+    }
+  })
+
+  it('atomic settings tmp write failure preserves the original and leaves no tmp file', async () => {
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    const original = JSON.stringify({ hooks: { SessionStart: [{ command: 'echo keep' }] } })
+    fakeFs[SETTINGS_PATH] = original
+    vi.mocked(fsp.writeFile).mockImplementation(async (p, data) => {
+      if (String(p).startsWith(`${SETTINGS_PATH}.tmp-`)) throw new Error('tmp write failed')
+      fakeFs[String(p)] = String(data)
+    })
+    const cap = captureStdout()
+    try {
+      const result = await installCcHookAdd({
+        manifest: ccHookManifest(),
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect(result).toMatchObject({
+        ok: false,
+        phase: 'spawn',
+        error: { keyword: 'settings-write-failed' },
+      })
+      expect(fakeFs[SETTINGS_PATH]).toBe(original)
+      expect(
+        Object.keys(fakeFs).filter((path) => path.startsWith(`${SETTINGS_PATH}.tmp-`)),
+      ).toEqual([])
+    } finally {
+      cap.restore()
+      restoreMutationMocks()
+    }
+  })
+
+  it('atomic settings rename failure preserves the original and removes the tmp file', async () => {
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    const original = JSON.stringify({ hooks: { SessionStart: [{ command: 'echo keep' }] } })
+    fakeFs[SETTINGS_PATH] = original
+    vi.mocked(fsp.rename).mockImplementation(async (from, to) => {
+      if (String(to) === SETTINGS_PATH) throw new Error('rename failed')
+      fakeFs[String(to)] = fakeFs[String(from)] ?? ''
+      delete fakeFs[String(from)]
+    })
+    const cap = captureStdout()
+    try {
+      const result = await installCcHookAdd({
+        manifest: ccHookManifest(),
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect(result).toMatchObject({
+        ok: false,
+        phase: 'spawn',
+        error: { keyword: 'settings-write-failed' },
+      })
+      expect(fakeFs[SETTINGS_PATH]).toBe(original)
+      expect(
+        Object.keys(fakeFs).filter((path) => path.startsWith(`${SETTINGS_PATH}.tmp-`)),
+      ).toEqual([])
+    } finally {
+      cap.restore()
+      restoreMutationMocks()
+    }
+  })
+
   // settings.json is hand-editable and shared. `null`, a bare number/string and an
   // array are all valid JSON, so JSON.parse accepted them and `settings.hooks = …`
   // then threw an UNCAUGHT TypeError — nothing above this installer catches, so a
@@ -420,6 +586,67 @@ describe('cc-hook-add installer', () => {
       const scriptPath = cmd.slice('node '.length).replace(/^"|"$/g, '')
       expect(scriptPath.endsWith('harnessed-inject-state.mjs')).toBe(true)
       expect(isAbsolute(scriptPath)).toBe(true)
+    } finally {
+      cap.restore()
+    }
+  })
+
+  it('preserves a third-party absolute lookalike across install and uninstall', async () => {
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    const userHome = join(homedir(), 'hook-identity-user')
+    const nativeHome = join(userHome, '.claude-custom')
+    const settingsPath = join(nativeHome, 'settings.json')
+    const thirdPartyScript = {
+      hooks: [{ type: 'command', command: 'node "C:/vendor/harnessed-inject-state.mjs"' }],
+    }
+    const thirdPartyBinary = {
+      hooks: [{ type: 'command', command: '"C:/vendor/harnessed.exe" inject-state' }],
+    }
+    fakeFs[settingsPath] = JSON.stringify({
+      hooks: { UserPromptSubmit: [thirdPartyScript, thirdPartyBinary] },
+    })
+
+    const manifest = ccHookManifest()
+    if (manifest.spec.install.method !== 'cc-hook-add') throw new Error('invalid fixture')
+    manifest.spec.install.hook_event = 'UserPromptSubmit'
+    manifest.spec.install.hook_matcher = undefined
+    manifest.spec.install.hook_command = 'node bin/harnessed-inject-state.mjs'
+    const hostContext = createHostInstallContext(descriptorFor('claude', userHome), {
+      os: process.platform,
+      userHome,
+      nativeHome,
+    })
+    const cap = captureStdout()
+    try {
+      expect(
+        await installCcHookAdd({
+          manifest,
+          opts: baseOpts,
+          level: 'L3',
+          cwd: process.cwd(),
+          hostContext,
+        }),
+      ).toMatchObject({ ok: true })
+
+      const installed = JSON.parse(fakeFs[settingsPath] ?? '{}')
+      expect(installed.hooks.UserPromptSubmit).toHaveLength(3)
+      expect(installed.hooks.UserPromptSubmit.slice(0, 2)).toEqual([
+        thirdPartyScript,
+        thirdPartyBinary,
+      ])
+
+      expect(
+        await uninstallCcHookAdd({
+          manifest,
+          opts: { dryRun: false },
+          cwd: process.cwd(),
+          hostContext,
+        } as never),
+      ).toMatchObject({ ok: true })
+
+      expect(JSON.parse(fakeFs[settingsPath] ?? '{}')).toEqual({
+        hooks: { UserPromptSubmit: [thirdPartyScript, thirdPartyBinary] },
+      })
     } finally {
       cap.restore()
     }

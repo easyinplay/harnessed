@@ -9,8 +9,14 @@ import { mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { completePhase } from '../../src/checkpoint/engineHook.js'
+import { ownerPath } from '../../src/checkpoint/ownerPath.js'
 import { runResume } from '../../src/checkpoint/resume.js'
-import { activate as stateActivate, pause as statePause } from '../../src/checkpoint/state.js'
+import {
+  readCurrentWorkflow,
+  activate as stateActivate,
+  pause as statePause,
+} from '../../src/checkpoint/state.js'
 import { writeCheckpoint } from '../../src/checkpoint/template.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
@@ -62,17 +68,13 @@ afterEach(() => {
 function harnessedFilePath(name: string): string {
   return join(tmp, '.claude', 'harnessed', name)
 }
-function harnessedSubdirPath(...segments: string[]): string {
-  return join(tmp, '.claude', 'harnessed', ...segments)
-}
-
 describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', () => {
   it('1. SIGINT-equivalent state → current-workflow paused + checkpoint session_id captured', async () => {
     // Setup: simulate engineHook activate → SIGINT trap path (writeCheckpoint + state.pause).
     // We invoke the underlying state + template ops directly because actually firing process.on
     // ('SIGINT', ...) inside vitest would exit the test runner. The handler body is unit-covered
     // in tests/checkpoint/sigint.test.ts; here we verify the *output artifacts* compose correctly.
-    const cpPath = harnessedSubdirPath('checkpoints', '3.1-e2e.json')
+    const cpPath = ownerPath('checkpoints', ['3.1-e2e.json'])
     await stateActivate('3.1-e2e', cpPath)
     const captured = 'sess-trap-1'
     writeCheckpoint({
@@ -85,7 +87,7 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
       session_id: captured,
       cwd: process.cwd(),
       timestamp: new Date().toISOString(),
-      archive_path: `${harnessedSubdirPath('archive', 'phase-3.1-e2e')}/`,
+      archive_path: `${ownerPath('archive', ['phase-3.1-e2e'])}/`,
     })
     await statePause()
 
@@ -101,7 +103,7 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
 
   it('2. harnessed resume → outputs session_id hint + ok status', async () => {
     // Setup: state from previous cycle pattern (paused + session_id captured).
-    const cpPath = harnessedSubdirPath('checkpoints', '3.1-e2e.json')
+    const cpPath = ownerPath('checkpoints', ['3.1-e2e.json'])
     await stateActivate('3.1-e2e', cpPath)
     writeCheckpoint({
       schemaVersion: SCHEMA_VERSIONS.checkpoint,
@@ -113,7 +115,7 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
       session_id: 'sess-trap-1',
       cwd: process.cwd(),
       timestamp: new Date().toISOString(),
-      archive_path: `${harnessedSubdirPath('archive', 'phase-3.1-e2e')}/`,
+      archive_path: `${ownerPath('archive', ['phase-3.1-e2e'])}/`,
     })
     await statePause()
 
@@ -125,6 +127,22 @@ describe('Phase 3.1 e2e — SIGINT → resume → SDK redirect (D-04 WIRE-IN)', 
     expect(r.resumeHint).toContain('sess-trap-1')
     expect(r.resumeHint).toContain('/gsd-execute-phase 3.1-e2e')
     expect(r.resumeHint).toContain('resumable only on the host that created it')
+  })
+
+  it('issue #33: failed checkpoint outranks the intentionally active workflow', async () => {
+    const cpPath = ownerPath('checkpoints', ['failed-e2e.json'])
+    await stateActivate('failed-e2e', cpPath)
+    await completePhase({
+      phaseId: 'failed-e2e',
+      status: 'failed',
+      lastTask: 'FAILED: real checkpoint failure',
+      transitionWorkflowComplete: false,
+    })
+
+    expect((await readCurrentWorkflow())?.status).toBe('active')
+    const r = await runResume()
+    expect(r.status).toBe('failed')
+    if (r.status === 'failed') expect(r.checkpoint.status).toBe('failed')
   })
 
   it('3. SDK redirect — sdkSpawn invoked with options.resume === captured session_id', async () => {

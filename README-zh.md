@@ -525,7 +525,7 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed status` | 当前 phase + lock holder |
 | `harnessed doctor` | 健康检查 (Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 冲突 / update-available 等) |
 | `harnessed update [--check\|--dry-run\|--rollback [version]\|--all\|--upstreams\|--migration-report] [--json] [--platform <host>] [--non-interactive] [--repair --yes]` | 自更新,按安装通道分流:二进制安装从 GitHub releases 原地自替换(sha256 + ed25519 签名双重校验 —— releases 附带 `<asset>.sha256.sig`,4.32.19 起为签名发布契约;被替换的版本存档备回滚);npm 安装执行 `npm i -g harnessed@latest`。`--check` 报告版本但不安装;`--dry-run` 预览不写盘;`--rollback [version]`(仅二进制安装)原子恢复已存档的上一版二进制 —— npm 安装则被指引执行 `npm i -g harnessed@<version>`;`--all`(别名 `--upstreams`)请求 fresh-runtime closure,包含自有 assets 和 reviewed 第三方更新;`--json` 输出单个结构化结果;`--platform <host>` 选择 `claude` 或 `codex`;`--non-interactive` 跳过 prompt,而 repair 自动化还必须显式使用 `--repair --yes`;`--repair --yes` 启动有边界且经过用户授权的 agent repair,随后执行确定性验证;`--migration-report` 为只读陈旧状态盘点 |
-| `harnessed release-preflight` | Read-only 发布就绪关卡 (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent);未就绪则 exit 1。即 Ship-stage 关卡 |
+| `harnessed release-preflight [--release-version <semver>]` | Read-only 发布就绪关卡 (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent);`--release-version` 可覆盖 manifest 自动发现;未就绪则 exit 1。即 Ship-stage 关卡 |
 | `harnessed retro --done` | 跑完 `/retro` 后重置 retro-reminder phase 计数器 (清掉每轮的 RETRO-DUE 提醒) |
 | `harnessed install <name>` | 装上游 manifest |
 | `harnessed uninstall [name]` | 反向卸载 —— 对装 skill 的方法 (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`) 执行 manifest 声明的 `spec.uninstall` teardown (cmd + 限定 `$HOME` 内、幂等 `cleanup_paths`);其余方法沿用各自的 per-method 反向逻辑 |
@@ -533,6 +533,15 @@ planning-with-files /plan (cross-cutting tool) → write artifacts to .planning/
 | `harnessed rollback <timestamp>` | 一行回滚**备份快照** (EOL preserve + sha1 verify) —— 区别于 `update --rollback`:后者恢复的是上一版**编译二进制** |
 | `harnessed gc` | 清理过期 backup |
 | `harnessed audit-log` | 路由透明日志 query (支持 `--filter` jq 表达式) |
+| `harnessed agents-md` | 写入或更新 `<CODEX_HOME>/AGENTS.md` 中带 marker 的 harnessed 区块，不改动区块外内容 |
+| `harnessed audit` | 审计 manifest 与 runtime 的自洽性 (`--skip-runtime` 仅检查 manifest) |
+| `harnessed check-docs` | 检查 `.planning/` 文档纪律，发现 advisory 或 blocking 问题时返回非零 exit code |
+| `harnessed eval` | 运行确定性的编排行为回归套件;`harnessed eval record` 可记录可重放场景 |
+| `harnessed exempt-gateguard` | 持久化 `.planning/**` GateGuard 豁免，解决双 guard 冲突 |
+| `harnessed facts <master>` | 输出供 `harnessed gates --context-file` 使用的确定性与待判断 gate facts |
+| `harnessed install-base [--dry-run]` | 安装 phase 1.3 base profile;`--dry-run` 仅预览不写入 |
+| `harnessed manifest-add <upstream>` | 通过 EE-5 merge gate 新增 upstream adapter |
+| `harnessed research --query <text>` | 运行 headless research workflow;`--dry-run` 仅预览不 spawn |
 
 **Fresh-runtime closure (Phase 78):** `harnessed update --all --json` 先自更新,再通过可执行文件/package entry 的绝对路径交接到经过验证的 fresh runtime。仅该 runtime 刷新 harnessed-owned workflow/hook assets,并通过 reviewed adapter 更新所选宿主中已安装的第三方组件。自更新失败时不修改第三方组件;handoff 失败时,即使 harnessed 自身已变化也会报告 closure 未完成。GSD 是首个 reviewed adapter,在其 upstream-owned 更新操作前后验证 runtime identity/version。没有 reviewed adapter 的组件报告 `unsupported`;缺失的第三方组件保持 `not-installed`,不会被安装。
 

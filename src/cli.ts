@@ -50,6 +50,7 @@ const { registerUpdate } = await import('./cli/update.js')
 const { registerWorkflows } = await import('./cli/workflows.js')
 const { setLocale, wireMessagesDir } = await import('./i18n/index.js')
 const { getAssetsRoot } = await import('./platform/assetsRoot.js')
+const { captureHostInstallContext } = await import('./platform/hostInstallContext.js')
 const { migrateLegacyHarnessedRoot } = await import('./platform/harnessedRoot.js')
 
 // B2 (v4.20.0, D5) — messages/ 的 assetsRoot 接线,惰性注入(thunk 到首次 t()
@@ -62,6 +63,16 @@ wireMessagesDir(() => join(getAssetsRoot(), 'messages'))
 // v3.0.3 — migrate any pre-v3.0.3 `~/.harnessed/` to `~/.claude/harnessed/`
 // before any subcommand runs. Idempotent on subsequent invocations.
 const updateInvocation = entryArgs.includes('update')
+
+function explicitPlatform(args: string[]): string | undefined {
+  for (let index = 0; index < args.length; index++) {
+    const arg = args[index]
+    if (arg === '--') return undefined
+    if (arg === '--platform') return args[index + 1]
+    if (arg?.startsWith('--platform=')) return arg.slice('--platform='.length)
+  }
+  return undefined
+}
 
 // v3.4.0 — pre-parse `--lang` flag so subcommand action handlers see the
 // correct locale before they emit any t()-wrapped strings. Commander parses
@@ -114,7 +125,8 @@ process.on('uncaughtException', (err) => {
 // parallel `checkpoint complete`) must not break the invocation — the migration
 // is idempotent and simply retries on the next run.
 if (!updateInvocation) {
-  migrateLegacyHarnessedRoot()
+  const hostId = explicitPlatform(entryArgs)
+  migrateLegacyHarnessedRoot(captureHostInstallContext(hostId === undefined ? {} : { hostId }))
   await migrateRepoKeyCase().catch((e: unknown) => {
     console.error(
       `[harnessed] WARN: repo-key case migration deferred: ${e instanceof Error ? e.message : String(e)}`,

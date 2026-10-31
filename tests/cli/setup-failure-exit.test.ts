@@ -4,7 +4,11 @@ import { Command } from 'commander'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runAutoInstall } from '../../src/cli/lib/auto-install.js'
 import { checkGuardConflict } from '../../src/cli/lib/check-guard-conflict.js'
+import { enableAgentTeamsInSettings } from '../../src/cli/lib/enableAgentTeamsInSettings.js'
+import { enableUserLangInSettings } from '../../src/cli/lib/enableUserLangInSettings.js'
+import { writeAllCommands } from '../../src/cli/lib/generateCommands.js'
 import { runOptionalOffer } from '../../src/cli/lib/optional-offer.js'
+import { renderAllSkills } from '../../src/cli/lib/renderSkillTemplates.js'
 import { searchMcpKeyHintLines } from '../../src/cli/lib/search-mcp-keys.js'
 import { runStepBInstall, type StepBResult } from '../../src/cli/lib/setup-helpers.js'
 import { backupSkillDir } from '../../src/cli/lib/skillBackup.js'
@@ -58,7 +62,7 @@ vi.mock('../../src/cli/lib/capabilityResolver.js', () => ({
   readInstalledUserSkills: () => [],
 }))
 vi.mock('../../src/cli/lib/renderSkillTemplates.js', () => ({
-  renderAllSkills: vi.fn(async () => ({ aggregatedWarnings: [] })),
+  renderAllSkills: vi.fn(async () => ({ results: [], aggregatedWarnings: [] })),
   loadCapabilities: async () => ({}),
 }))
 vi.mock('../../src/workflow/rolePrompts.js', () => ({ loadRolePrompts: async () => ({}) }))
@@ -68,7 +72,7 @@ vi.mock('../../src/cli/lib/hostPrimitives.js', () => ({
   renderHostPrimitives: (body: string) => body,
 }))
 vi.mock('../../src/cli/lib/generateCommands.js', () => ({
-  writeAllCommands: async () => ({ results: [] }),
+  writeAllCommands: vi.fn(async () => ({ results: [], warnings: [] })),
 }))
 vi.mock('../../src/installers/codexHookAdd.js', () => ({
   resolveCodexHome: () => '/fixture/codex',
@@ -121,6 +125,18 @@ class ExitError extends Error {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(writeAllCommands).mockResolvedValue({ results: [], warnings: [] })
+  vi.mocked(renderAllSkills).mockResolvedValue({ results: [], aggregatedWarnings: [] })
+  vi.mocked(enableAgentTeamsInSettings).mockResolvedValue({
+    status: 'warn',
+    message:
+      "platform 'codex' does not support env-key settings writes (capability-absent) — CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS skipped",
+  })
+  vi.mocked(enableUserLangInSettings).mockResolvedValue({
+    status: 'pinned',
+    path: '/fixture/user-lang',
+    detected: 'en',
+  })
   vi.mocked(runInstall).mockReset()
   vi.mocked(isAlreadyInstalled).mockReset().mockResolvedValue(false)
   vi.mocked(verifyInstalled).mockReset().mockResolvedValue(null)
@@ -162,9 +178,13 @@ afterEach(() => {
 })
 
 async function runSetup(args = ['--non-interactive']): Promise<void> {
+  return runSetupForPlatform('codex', args)
+}
+
+async function runSetupForPlatform(platform: 'claude' | 'codex', args: string[]): Promise<void> {
   const program = new Command().exitOverride()
   registerSetup(program)
-  await program.parseAsync(['node', 'harnessed', 'setup', '--platform', 'codex', ...args])
+  await program.parseAsync(['node', 'harnessed', 'setup', '--platform', platform, ...args])
 }
 
 function stepB(overrides: Partial<StepBResult>): StepBResult {
@@ -178,6 +198,122 @@ function stepB(overrides: Partial<StepBResult>): StepBResult {
     ...overrides,
   }
 }
+
+describe('setup surface write failures through registerSetup', () => {
+  it('keeps codex capability absence advisory and exits zero', async () => {
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 0 })
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('capability-absent'))
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+  })
+
+  it.each([
+    'capabilities.yaml load failed: access denied',
+    'host-primitive render failed in /fixture/skills/demo/SKILL.md — missing primitive',
+    'write failed: read-only filesystem',
+  ])('counts a real skill render failure and exits one: %s', async (error) => {
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
+    vi.mocked(renderAllSkills).mockResolvedValueOnce({
+      results: [
+        {
+          name: 'demo',
+          skillPath: '/fixture/skills/demo/SKILL.md',
+          rendered: false,
+          warnings: [],
+          error,
+        },
+      ],
+      aggregatedWarnings: [`demo: ${error}`],
+    })
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 1 })
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining(error))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+  })
+
+  it('counts a thrown skill render load failure and exits one', async () => {
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
+    vi.mocked(renderAllSkills).mockRejectedValueOnce(new Error('host primitives unreadable'))
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 1 })
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('host primitives unreadable'))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+  })
+
+  it.each([
+    'read /fixture/settings.json failed: access denied',
+    '/fixture/settings.json malformed JSON: Unexpected token }',
+    'backup /fixture/backups/settings.json.bak failed: disk full',
+    'write /fixture/settings.json failed: read-only filesystem',
+  ])('counts a Claude settings failure and preserves its detail: %s', async (message) => {
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
+    vi.mocked(enableAgentTeamsInSettings).mockResolvedValueOnce({ status: 'warn', message })
+    vi.mocked(enableUserLangInSettings).mockResolvedValueOnce({
+      status: 'already-set',
+      path: '/fixture/settings.json',
+      existing: 'en',
+    })
+
+    await expect(runSetupForPlatform('claude', ['--non-interactive'])).rejects.toMatchObject({
+      code: 1,
+    })
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining(message))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+  })
+
+  it.each([
+    'host-primitive render failed for commands/demo.md — missing primitive',
+    'write failed for commands/demo.md: permission denied',
+  ])('counts a real command failure and reports it once: %s', async (warning) => {
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
+    vi.mocked(writeAllCommands).mockResolvedValueOnce({
+      results: [{ name: 'demo', path: '/fixture/prompts/demo.md', written: false, warning }],
+      warnings: [warning, warning],
+    })
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 1 })
+
+    const warnings = vi
+      .mocked(console.warn)
+      .mock.calls.flat()
+      .map(String)
+      .filter((line) => line.includes(warning))
+    expect(warnings).toEqual([expect.stringContaining(warning)])
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+  })
+
+  it('keeps advisory and user-authored command skips successful while deduplicating warnings', async () => {
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
+    const userAuthored =
+      'commands/demo.md is user-authored (no harnessed marker) — leaving unchanged. Delete the file to force regenerate.'
+    const advisory = "capability 'gstack-review' is not installed"
+    vi.mocked(writeAllCommands).mockResolvedValueOnce({
+      results: [
+        {
+          name: 'demo',
+          path: '/fixture/prompts/demo.md',
+          written: false,
+          warning: userAuthored,
+        },
+      ],
+      warnings: [advisory, advisory],
+    })
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 0 })
+
+    const warnings = vi.mocked(console.warn).mock.calls.flat().map(String)
+    expect(warnings.filter((line) => line.includes(userAuthored))).toHaveLength(1)
+    expect(warnings.filter((line) => line.includes(advisory))).toHaveLength(1)
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+  })
+})
 
 describe('setup base-install exit status through registerSetup', () => {
   it('reports upstream gstack failure only after workflow installation, backup and self-heal', async () => {

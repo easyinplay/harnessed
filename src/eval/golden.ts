@@ -29,7 +29,9 @@ function normalizeString(s: string, roots: string[]): string {
     out = out.split(root).join('<TMP>')
     out = out.split(fwd).join('<TMP>')
   }
-  return out.replace(/\\/g, '/')
+  return out
+    .replace(/\\/g, '/')
+    .replace(/\/(checkpoints|archive)\/[0-9a-f]{16}(?=\/)/g, '/$1/<OWNER>')
 }
 
 /** Recursively normalize an engine-output value for golden storage/compare. */

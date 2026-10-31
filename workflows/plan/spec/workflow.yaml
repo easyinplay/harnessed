@@ -1,0 +1,12 @@
+schema_version: harnessed.workflow.v3
+workflow: plan-spec
+description: GSD spec-phase design contract before ordinary phase planning.
+disciplines_applied: [karpathy, output-style, language, operational, priority, protocols]
+tools_available: [gsd-spec-phase]
+phases:
+  - id: 01-spec-phase
+    name: gsd-spec-phase
+    upstream: gsd
+    capability: '{{ capabilities.gsd-spec-phase.cmd }}'
+    model: sonnet
+    gate: judgments.stage-phase-gate.gsd-spec-phase.fires

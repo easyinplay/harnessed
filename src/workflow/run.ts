@@ -40,7 +40,7 @@ import {
 import { dispatchSpawn } from './lib/spawnDispatch.js'
 import { classifySpawnError, type SpawnFailure } from './lib/spawnFailure.js'
 import { loadPhases } from './loadPhases.js'
-import { type MasterName, runMasterOrchestrator } from './masterOrchestrator.js'
+import { type MasterName, type MasterRunOpts, runMasterOrchestrator } from './masterOrchestrator.js'
 import { loadRolePrompts, type RolePrompt } from './rolePrompts.js'
 
 export type { FallbackMaxIterationsExceededConfig } from './lib/ralphLoop.js'
@@ -474,6 +474,7 @@ function loadMaxIterTable(packageRoot: string): Record<string, Record<string, nu
 export interface RunWorkflowOpts {
   packageRoot?: string
   gateContext?: Record<string, unknown>
+  masterOpts?: MasterRunOpts
   /** Set when this run is a sub spawned by a master orchestrator (the master's
    *  name). current-workflow.json is ONE global record: a sub must not replace it
    *  (activate) or flip it complete — the master owns it, and under a parallel
@@ -532,7 +533,13 @@ export async function runWorkflow(
   const ownsRecord = opts.subOf === undefined
   if (isMaster) {
     if (ownsRecord) await activatePhase(workflowName)
-    const r = await runMasterOrchestrator(workflowName as MasterName, gateContext, packageRoot)
+    const r = await runMasterOrchestrator(
+      workflowName as MasterName,
+      gateContext,
+      packageRoot,
+      undefined,
+      opts.masterOpts,
+    )
     if (ownsRecord) {
       await completePhase({
         phaseId: workflowName,
@@ -690,7 +697,8 @@ export async function runWorkflow(
         : {}),
     })
     if (r.status !== 'ok') {
-      // ── v16.0 Phase 66 T4 — carry the spawn classification onto the leaf ledger.
+      // ── v16.0 Phase 66 T4 + issue #23 — carry the spawn classification onto the
+      // leaf ledger.
       //
       // IN-PROCESS on purpose, not a shell-out to `harnessed checkpoint fail`: this
       // loop already writes its own terminal checkpoint below and already imports
@@ -702,19 +710,36 @@ export async function runWorkflow(
       // `<master>-<sub>` names seeded by `checkpoint start --plan` (task-code),
       // while `ph.id` is a phase inside that sub (01-code).
       //
-      // ANNOTATE, never transition: `markSub(..., 'failed')` would bump fail_count
-      // for an attempt the checkpoint CLI may also count, and that counter is the
-      // sole input to BREAK-LOOP / BUDGET-EXHAUSTED.
+      // TRANSITION, not annotate (issue #23): the old annotate-only write left the
+      // entry `pending` with fail_count 0, so BREAK-LOOP / BUDGET-EXHAUSTED could
+      // never fire and every per-turn injection kept urging a retry of a sub whose
+      // spawn failed deterministically. One `markSub(..., 'failed', {spawn_failure})`
+      // does all three: the status transition, the counted attempt, and the kind —
+      // ONE write, ONE count.
       //
-      // Dynamic import + fail-soft (ADR 0029). A missing ledger entry is already a
-      // no-op inside `annotateSpawnFailure`; the catch covers the write itself —
-      // recording a diagnostic detail must never change a run's verdict.
+      // Dynamic import + fail-soft (ADR 0029). Direct leaf runs may not have been
+      // seeded by `checkpoint start --plan`, so the locked mutation upserts the
+      // failed entry instead of dropping the only bounded-loop signal.
       if (r.failure) {
         try {
           const { mutateSubProgress } = await import('../checkpoint/state.js')
-          const { annotateSpawnFailure } = await import('../checkpoint/ledger.js')
+          const { markSub } = await import('../checkpoint/ledger.js')
           const failure = r.failure
-          await mutateSubProgress((entries) => annotateSpawnFailure(entries, workflowName, failure))
+          await mutateSubProgress((entries) => {
+            if (!entries.some((e) => e.sub === workflowName)) {
+              return [
+                ...entries,
+                {
+                  sub: workflowName,
+                  status: 'failed',
+                  gate_fired: true,
+                  fail_count: 1,
+                  spawn_failure: failure,
+                },
+              ]
+            }
+            return markSub(entries, workflowName, 'failed', { spawn_failure: failure })
+          })
         } catch (err) {
           console.warn(
             `⚠️ could not record spawn failure '${r.failure}' for ${workflowName} on the ledger ` +

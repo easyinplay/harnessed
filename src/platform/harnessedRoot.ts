@@ -36,8 +36,8 @@
 // by Claude Code itself when the user installs CC, so the parent always exists.
 
 import { existsSync, mkdirSync, renameSync } from 'node:fs'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { captureHostInstallContext, type HostInstallContext } from './hostInstallContext.js'
 import { detectPlatform } from './platform.js'
 
 /**
@@ -94,6 +94,19 @@ export function harnessedFile(name: string): string {
   return join(getHarnessedRoot(), name)
 }
 
+function renameLegacyRoot(source: string, target: string): boolean {
+  try {
+    renameSync(source, target)
+    return true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error
+    console.error(
+      `[harnessed] WARN: could not rename legacy state directory ${source} to ${target} (EXDEV); leaving legacy data in place`,
+    )
+    return false
+  }
+}
+
 /**
  * Migrate the legacy `~/.harnessed/` directory (created by v2.0.1+ for
  * `backups/` and by v3.0.2 for state surfaces) to the new co-located
@@ -111,22 +124,24 @@ export function harnessedFile(name: string): string {
  * harnessed root to be in its final location before any other helper composes
  * a path against it. The performance cost of a single rename is negligible.
  *
- * No catch-and-swallow: filesystem errors propagate to the caller so the
- * harness fails loudly rather than silently writing to the wrong location.
+ * Cross-device renames warn and leave legacy data in place. Other filesystem
+ * errors propagate so the harness fails loudly rather than writing elsewhere.
  * Idempotency is preserved by the `migrationAttempted` guard above + by
  * checking the legacy-bak sentinel before renaming a second time.
  */
-export function migrateLegacyHarnessedRoot(): void {
-  const legacyRoot = join(homedir(), '.harnessed')
-  const newRoot = join(homedir(), '.claude', 'harnessed')
-  const claudeParent = join(homedir(), '.claude')
+export function migrateLegacyHarnessedRoot(
+  context: HostInstallContext = captureHostInstallContext(),
+): void {
+  const legacyRoot = join(context.userHome, '.harnessed')
+  const newRoot = context.platform.stateRoot
+  const targetParent = dirname(newRoot)
 
   if (!existsSync(legacyRoot)) return // cases 2 + 4: nothing to do
 
   if (!existsSync(newRoot)) {
     // Case 1: clean migration.
-    mkdirSync(claudeParent, { recursive: true })
-    renameSync(legacyRoot, newRoot)
+    mkdirSync(targetParent, { recursive: true })
+    if (!renameLegacyRoot(legacyRoot, newRoot)) return
     console.error(
       `[harnessed] migrated legacy state directory ${legacyRoot} → ${newRoot} (v3.0.3 path change)`,
     )
@@ -136,14 +151,14 @@ export function migrateLegacyHarnessedRoot(): void {
   // Case 3: both exist — preserve legacy under a sibling bak path. If the
   // bak path already exists, a prior run already did the rescue + the legacy
   // path is somehow back; surface that clearly rather than overwriting.
-  const safetyBak = join(homedir(), '.harnessed.legacy-bak')
+  const safetyBak = join(context.userHome, '.harnessed.legacy-bak')
   if (existsSync(safetyBak)) {
     console.error(
       `[harnessed] WARN: ${legacyRoot} reappeared after a prior migration (existing bak at ${safetyBak}); leaving in place — inspect manually if needed`,
     )
     return
   }
-  renameSync(legacyRoot, safetyBak)
+  if (!renameLegacyRoot(legacyRoot, safetyBak)) return
   console.error(
     `[harnessed] both ${legacyRoot} and ${newRoot} existed — legacy directory preserved at ${safetyBak} (review manually if you need data from it; v3.0.3 path change)`,
   )

@@ -194,7 +194,6 @@ describe('reviewed Codex teardown policy', () => {
 
   it.each([
     'tools/superpowers',
-    'skill-packs/gsd',
     'skill-packs/gstack',
     'skill-packs/planning-with-files',
     'skill-packs/ui-ux-pro-max',
@@ -204,6 +203,36 @@ describe('reviewed Codex teardown policy', () => {
     expect(resolveComponentPlan(m, codex, 'uninstall').status).toBe('unsupported')
     expect(await runUninstall(m, apply, codex)).toMatchObject({ ok: false, phase: 'preflight' })
     expect(boundary.spawn).not.toHaveBeenCalled()
+    expect(boundary.native).not.toHaveBeenCalled()
+    expect(boundary.hook).not.toHaveBeenCalled()
+  })
+
+  it('supports and dispatches the exact reviewed GSD Codex uninstall', async () => {
+    const m = parse(readFileSync('manifests/skill-packs/gsd.yaml', 'utf8')) as Manifest
+    const plan = resolveComponentPlan(m, codex, 'uninstall')
+    const uninstall = {
+      cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall',
+      cleanup_paths: [],
+    }
+
+    expect(plan).toMatchObject({
+      status: 'supported',
+      sources: { install: 'host-override', uninstall: 'host-override' },
+    })
+    expect(plan.manifest.spec.uninstall).toEqual(uninstall)
+    expect(await runUninstall(m, apply, codex)).toEqual({ ok: true, removedPaths: [] })
+    expect(boundary.spawn).toHaveBeenCalledTimes(1)
+    expect(boundary.spawn.mock.calls[0]?.[1]).toBe(uninstall.cmd)
+    expect(boundary.spawn.mock.calls[0]?.[0]).toMatchObject({
+      hostContext: codex,
+      manifest: {
+        metadata: { name: 'gsd' },
+        spec: {
+          install: { cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global' },
+          uninstall,
+        },
+      },
+    })
     expect(boundary.native).not.toHaveBeenCalled()
     expect(boundary.hook).not.toHaveBeenCalled()
   })
@@ -287,7 +316,7 @@ describe('reviewed Codex teardown policy', () => {
     })
   })
 
-  it('preserves existing Claude fail-soft behavior for a failed declared command', async () => {
+  it('preserves cleanup attempts but reports a failed Claude declared command', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     boundary.spawn.mockResolvedValueOnce({
       ok: true,
@@ -295,7 +324,10 @@ describe('reviewed Codex teardown policy', () => {
       stderr: 'npm failed',
       stdout: '',
     })
-    expect(await runUninstall(manifest(), apply, claude)).toMatchObject({ ok: true })
+    expect(await runUninstall(manifest(), apply, claude)).toMatchObject({
+      ok: false,
+      phase: 'spawn',
+    })
     expect(warn).toHaveBeenCalled()
   })
 

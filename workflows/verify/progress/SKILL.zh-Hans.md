@@ -6,7 +6,7 @@ description: |
   gsd-verify-work UAT-driven acceptance + gsd-progress 状态同步，顺序不可调换）。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gsd-verify-work + gsd-progress + planning-with-files) + 3 phases (serial 01→02 + persist
-  progress.md sink)。Triggered by harnessed CLI `harnessed verify-progress --phase <num>` or
+  progress.md sink)。Triggered by headless CLI `harnessed run verify-progress` or
   slash command `/verify-progress` after `harnessed setup`.
 trigger_phrases:
   - "verify progress"

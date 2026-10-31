@@ -16,7 +16,7 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const pem = process.env.HARNESSED_SIGNING_KEY
-if (!pem || !pem.includes('PRIVATE KEY')) {
+if (!pem?.includes('PRIVATE KEY')) {
   console.error('[sign-binaries] FATAL: HARNESSED_SIGNING_KEY secret missing or not a PEM')
   process.exit(1)
 }

@@ -4,8 +4,10 @@
 // Sister: src/installers/ccHookAdd.ts — inverse of install-time merge.
 
 import { existsSync } from 'node:fs'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { withSettingsTransactionLock } from '../cli/lib/settingsTransactionLock.js'
+import { atomicWrite } from '../cli/lib/settingsWriter.js'
 import { removeCodexHook } from '../installers/codexHookAdd.js'
 import {
   type AnyHookEntry,
@@ -49,53 +51,62 @@ export const uninstallCcHookAdd: Uninstaller = async (ctx) => {
     context.platform.settingsPath === null ? null : join(context.nativeHome, 'settings.json')
   // v16.0 Phase 63 — no JSON settings file (codex) → no hook can be registered.
   if (settingsPath === null) return { ok: true, removedPaths: [] }
-  let existing: string
   try {
-    existing = await readFile(settingsPath, 'utf8')
-  } catch {
-    // File absent — hook can't be present, idempotent noop.
-    return { ok: true, removedPaths: [] }
-  }
+    return await withSettingsTransactionLock(context, async () => {
+      let existing: string
+      try {
+        existing = await readFile(settingsPath, 'utf8')
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return { ok: true, removedPaths: [] }
+        }
+        return { ok: false, phase: 'preflight', error: (error as Error).message }
+      }
 
-  let settings: Settings
-  try {
-    settings = JSON.parse(existing) as Settings
-  } catch (e) {
+      let settings: Settings
+      try {
+        settings = JSON.parse(existing) as Settings
+      } catch (e) {
+        return {
+          ok: false,
+          phase: 'preflight',
+          error: `malformed settings.json: ${(e as Error).message.slice(0, 200)}`,
+        }
+      }
+      if (settings === null || typeof settings !== 'object' || Array.isArray(settings)) {
+        return { ok: false, phase: 'preflight', error: 'malformed settings.json: expected object' }
+      }
+
+      const ev = install.hook_event
+      const cmd = install.hook_command
+      if (!settings.hooks?.[ev]) return { ok: true, removedPaths: [] }
+      if (!Array.isArray(settings.hooks[ev])) {
+        return {
+          ok: false,
+          phase: 'preflight',
+          error: `malformed settings.json: hooks.${ev} must be an array`,
+        }
+      }
+
+      const resolved = resolveHookCommand(cmd, { assetsRoot: getAssetsRoot, exists: existsSync })
+      const marker = hookScriptMarker(cmd)
+      const before = settings.hooks[ev].length
+      settings.hooks[ev] = settings.hooks[ev].filter(
+        (hook) => !entryMatchesRegistration(hook, cmd, resolved, marker),
+      )
+      if (settings.hooks[ev].length === before) return { ok: true, removedPaths: [] }
+      if (settings.hooks[ev].length === 0) delete settings.hooks[ev]
+      if (Object.keys(settings.hooks).length === 0) delete settings.hooks
+
+      const writeError = await atomicWrite(settingsPath, `${JSON.stringify(settings, null, 2)}\n`)
+      if (writeError) return { ok: false, phase: 'spawn', error: writeError }
+      return { ok: true, removedPaths: [settingsPath] }
+    })
+  } catch (error) {
     return {
       ok: false,
       phase: 'preflight',
-      error: `malformed settings.json: ${(e as Error).message.slice(0, 200)}`,
+      error: `settings transaction lock failed: ${(error as Error).message}`,
     }
   }
-
-  const ev = install.hook_event
-  const cmd = install.hook_command
-
-  if (!settings.hooks?.[ev]) {
-    // Hook event block absent — idempotent noop.
-    return { ok: true, removedPaths: [] }
-  }
-
-  // v4.20.0 hotfix — remove ALL shape/path variants of this registration:
-  // legacy flat { command }, hand-fixed nested-but-relative, and the corrected
-  // nested-absolute form (sister installers/lib/hookEntry matching).
-  const resolved = resolveHookCommand(cmd, { assetsRoot: getAssetsRoot, exists: existsSync })
-  const marker = hookScriptMarker(cmd)
-  const before = settings.hooks[ev].length
-  settings.hooks[ev] = settings.hooks[ev].filter(
-    (h) => !entryMatchesRegistration(h, cmd, resolved, marker),
-  )
-
-  // Clean up empty hook event array.
-  if (settings.hooks[ev].length === 0) delete settings.hooks[ev]
-  if (Object.keys(settings.hooks).length === 0) delete settings.hooks
-
-  if (settings.hooks?.[ev]?.length === before || before === settings.hooks?.[ev]?.length) {
-    // No change — hook was not present, idempotent noop.
-  }
-
-  const newText = `${JSON.stringify(settings, null, 2)}\n`
-  await writeFile(settingsPath, newText)
-
-  return { ok: true, removedPaths: [settingsPath] }
 }

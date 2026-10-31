@@ -6,7 +6,8 @@ description: |
   publish.yml CI (tag push 触发)。schema_version: harnessed.workflow.v3 with delegates_to
   (1 sub: preflight serial order 1) + disciplines_applied (6 default) + tools_available
   (release-preflight + ship + planning-with-files)。Triggered by `/ship` (bare per ADR 0030)
-  or `harnessed ship` after `harnessed verify`. Deploy boundary = TAG-READY (no push/publish/tag).
+  or headless CLI `harnessed run ship` after `harnessed run verify`. Deploy boundary =
+  TAG-READY (no push/publish/tag).
 trigger_phrases:
   - "ship"
   - "发布阶段"

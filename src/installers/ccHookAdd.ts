@@ -17,8 +17,10 @@
 // corrected entry on install — damaged users re-run setup/install and recover.
 
 import { existsSync } from 'node:fs'
-import { readFile, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { withSettingsTransactionLock } from '../cli/lib/settingsTransactionLock.js'
+import { atomicWrite } from '../cli/lib/settingsWriter.js'
 import { checkCmdString } from '../manifest/security.js'
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import { detectPlatform, getSettingsPath } from '../platform/platform.js'
@@ -37,11 +39,161 @@ import {
 } from './lib/hookEntry.js'
 import { preflight } from './lib/preflight.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
-import type { DiffPlan, Installer } from './lib/types.js'
+import type { DiffPlan, Installer, InstallResult } from './lib/types.js'
 
 interface Settings {
   hooks?: Record<string, AnyHookEntry[]>
   [k: string]: unknown
+}
+
+type PreparedHookSettings =
+  | { ok: false; result: InstallResult }
+  | {
+      ok: true
+      existing: string | null
+      resolvedCmd: string
+      desired: boolean
+      plan: DiffPlan
+    }
+
+async function prepareHookSettings(
+  ctx: Parameters<Installer>[0],
+  settingsPath: string,
+): Promise<PreparedHookSettings> {
+  const install = ctx.manifest.spec.install
+  if (install.method !== 'cc-hook-add') {
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        phase: 'preflight',
+        error: err(
+          ctx,
+          '/spec/install/method',
+          `dispatch bug: ${install.method}`,
+          'dispatch-mismatch',
+        ),
+      },
+    }
+  }
+  let existing: string | null
+  try {
+    existing = await readFile(settingsPath, 'utf8')
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      return {
+        ok: false,
+        result: {
+          ok: false,
+          phase: 'preflight',
+          error: err(
+            ctx,
+            '/',
+            `read settings.json failed: ${(error as Error).message}`,
+            'settings-json-malformed',
+          ),
+        },
+      }
+    }
+    existing = null
+  }
+  let settings: Settings
+  try {
+    settings = JSON.parse(existing ?? '{}') as Settings
+  } catch (error) {
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        phase: 'preflight',
+        error: err(
+          ctx,
+          '/',
+          `malformed settings.json: ${(error as Error).message.slice(0, 200)}`,
+          'settings-json-malformed',
+        ),
+      },
+    }
+  }
+  if (settings === null || typeof settings !== 'object' || Array.isArray(settings)) {
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        phase: 'preflight',
+        error: err(
+          ctx,
+          '/',
+          `malformed settings.json: top-level value must be a JSON object, got ${
+            settings === null ? 'null' : Array.isArray(settings) ? 'array' : typeof settings
+          }`,
+          'settings-json-malformed',
+        ),
+      },
+    }
+  }
+  if (
+    settings.hooks !== undefined &&
+    (settings.hooks === null || typeof settings.hooks !== 'object' || Array.isArray(settings.hooks))
+  ) {
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        phase: 'preflight',
+        error: err(
+          ctx,
+          '/',
+          'malformed settings.json: hooks must be a JSON object',
+          'settings-json-malformed',
+        ),
+      },
+    }
+  }
+  settings.hooks = settings.hooks ?? {}
+  const cmdDeps = {
+    assetsRoot: getAssetsRoot,
+    exists: existsSync,
+    compiledExecPath: () => (isCompiledRuntime() ? process.execPath : null),
+  }
+  const resolvedCmd = resolveHookCommand(install.hook_command, cmdDeps)
+  const marker = hookScriptMarker(install.hook_command)
+  const arr = settings.hooks[install.hook_event] ?? []
+  if (!Array.isArray(arr)) {
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        phase: 'preflight',
+        error: err(
+          ctx,
+          '/',
+          `malformed settings.json: hooks.${install.hook_event} must be an array`,
+          'settings-json-malformed',
+        ),
+      },
+    }
+  }
+  const ours = arr.filter((entry) =>
+    entryMatchesRegistration(entry, install.hook_command, resolvedCmd, marker),
+  )
+  const desired =
+    ours.length === 1 && isDesiredHookEntry(ours[0] ?? {}, install.hook_matcher, resolvedCmd)
+  const others = arr.filter(
+    (entry) => !entryMatchesRegistration(entry, install.hook_command, resolvedCmd, marker),
+  )
+  settings.hooks[install.hook_event] = [
+    ...others,
+    desiredHookEntry(install.hook_matcher, resolvedCmd),
+  ]
+  const newText = `${JSON.stringify(settings, null, 2)}\n`
+  return {
+    ok: true,
+    existing,
+    resolvedCmd,
+    desired,
+    plan: { files: [{ target: settingsPath, scope: 'HOME', oldText: existing ?? '', newText }] },
+  }
 }
 
 export const installCcHookAdd: Installer = async (ctx) => {
@@ -74,50 +226,7 @@ export const installCcHookAdd: Installer = async (ctx) => {
     : getSettingsPath()
   // v16.0 Phase 63 — no JSON settings file on this (non-claude, non-codex) platform.
   if (settingsPath === null) return { aborted: true, reason: 'platform-mismatch' }
-  // Sentinel `null` ⇒ file does not exist (oldText='' so backup() emits pure-create).
-  let existing: string | null
-  try {
-    existing = await readFile(settingsPath, 'utf8')
-  } catch {
-    existing = null
-  }
-  let settings: Settings
-  try {
-    settings = JSON.parse(existing ?? '{}') as Settings
-  } catch (e) {
-    return {
-      ok: false,
-      phase: 'preflight',
-      error: err(
-        ctx,
-        '/',
-        `malformed settings.json: ${(e as Error).message.slice(0, 200)}`,
-        'settings-json-malformed',
-      ),
-    }
-  }
-  // `JSON.parse` succeeds on `null`, a number, a string or an array — all valid
-  // JSON, none a settings object. settings.json is a hand-editable shared file, and
-  // `settings.hooks = …` on `null` threw an uncaught TypeError that nothing above
-  // this installer catches, aborting the whole setup run. Route non-objects to the
-  // same structured error as unparseable JSON (sister guard: hookEntry.ts).
-  if (settings === null || typeof settings !== 'object' || Array.isArray(settings)) {
-    return {
-      ok: false,
-      phase: 'preflight',
-      error: err(
-        ctx,
-        '/',
-        `malformed settings.json: top-level value must be a JSON object, got ${
-          settings === null ? 'null' : Array.isArray(settings) ? 'array' : typeof settings
-        }`,
-        'settings-json-malformed',
-      ),
-    }
-  }
-  settings.hooks = settings.hooks ?? {}
   const ev = install.hook_event
-  const matcher = install.hook_matcher
   const cmd = install.hook_command
   // Defense in depth: validate() now screens hook_command, but a manifest can reach
   // an installer without passing through it, and this string is persisted into
@@ -139,37 +248,44 @@ export const installCcHookAdd: Installer = async (ctx) => {
   // v4.20.0 — authoritative command resolution + CC-schema entry shape + self-heal.
   // 4.27.0 (B3 T1 / D6) — compiled binaries register `"<binary>" inject-state`
   // (the hook calls the binary itself; no host node needed).
-  const cmdDeps = {
-    assetsRoot: getAssetsRoot,
-    exists: existsSync,
-    compiledExecPath: () => (isCompiledRuntime() ? process.execPath : null),
-  }
-  const resolvedCmd = resolveHookCommand(cmd, cmdDeps)
-  const marker = hookScriptMarker(cmd)
-  const arr = settings.hooks[ev] ?? []
-  const ours = arr.filter((e) => entryMatchesRegistration(e, cmd, resolvedCmd, marker))
-  if (ours.length === 1 && isDesiredHookEntry(ours[0] ?? {}, matcher, resolvedCmd)) {
-    // Phase 59 wrote the receipt on every other installer's idempotent path and
-    // missed this one; it also returned the plain success shape, so setup
-    // reported "installed" on every re-run of an already-registered hook.
-    if (ctx.opts.apply && !ctx.opts.dryRun) {
-      await recordObservedInstall(
-        ctx.cwd,
-        ctx.manifest.metadata.name,
-        '',
-        '',
-        ...(ctx.hostContext ? [ctx.hostContext] : []),
-      )
+  const preview = await prepareHookSettings(ctx, settingsPath)
+  if (!preview.ok) return preview.result
+  if (preview.desired) {
+    let result: InstallResult | null
+    try {
+      result = await withSettingsTransactionLock(ctx.hostContext, async () => {
+        const current = await prepareHookSettings(ctx, settingsPath)
+        if (!current.ok) return current.result
+        return current.desired
+          ? ({ ok: true, alreadyInstalled: true, backupId: 'idempotent-skip' } as const)
+          : null
+      })
+    } catch (error) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error: err(
+          ctx,
+          '/',
+          `settings transaction lock failed: ${(error as Error).message}`,
+          'settings-write-failed',
+        ),
+      }
     }
-    return { ok: true, alreadyInstalled: true, backupId: 'idempotent-skip' }
+    if (result !== null) {
+      if ('ok' in result && result.ok && ctx.opts.apply && !ctx.opts.dryRun) {
+        await recordObservedInstall(
+          ctx.cwd,
+          ctx.manifest.metadata.name,
+          '',
+          '',
+          ...(ctx.hostContext ? [ctx.hostContext] : []),
+        )
+      }
+      return result
+    }
   }
-  const others = arr.filter((e) => !entryMatchesRegistration(e, cmd, resolvedCmd, marker))
-  settings.hooks[ev] = [...others, desiredHookEntry(matcher, resolvedCmd)]
-  const newText = `${JSON.stringify(settings, null, 2)}\n`
-  const plan: DiffPlan = {
-    files: [{ target: settingsPath, scope: 'HOME', oldText: existing ?? '', newText }],
-  }
-  if (!ctx.opts.quiet) process.stdout.write(renderDiff(plan, ctx))
+  if (!ctx.opts.quiet) process.stdout.write(renderDiff(preview.plan, ctx))
 
   const conf = await confirmAt('L3', { ...ctx, level: 'L3' })
   if (!conf.proceed) {
@@ -178,41 +294,71 @@ export const installCcHookAdd: Installer = async (ctx) => {
   }
   if (ctx.opts.dryRun) return { aborted: true, reason: 'user-cancel' }
 
-  const bk = await backup(plan, ctx)
-  if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error }
-  await writeFile(settingsPath, newText)
-
-  // R7 — re-read + grep cmd presence; ENOENT/malformed post-write ⇒ verify-failed.
-  let verify: Settings
+  let transaction: InstallResult
   try {
-    verify = JSON.parse(await readFile(settingsPath, 'utf8')) as Settings
-  } catch (e) {
+    transaction = await withSettingsTransactionLock(ctx.hostContext, async () => {
+      const current = await prepareHookSettings(ctx, settingsPath)
+      if (!current.ok) return current.result
+      if (current.desired) return { ok: true, alreadyInstalled: true, backupId: 'idempotent-skip' }
+      const bk = await backup(current.plan, ctx)
+      if (!bk.ok) return { ok: false, phase: 'preflight', error: bk.error } as const
+      const writeError = await atomicWrite(settingsPath, current.plan.files[0]?.newText ?? '')
+      if (writeError) {
+        return {
+          ok: false,
+          phase: 'spawn',
+          backupId: bk.backupId,
+          error: err(ctx, '/', writeError, 'settings-write-failed'),
+        } as const
+      }
+      let verify: Settings
+      try {
+        verify = JSON.parse(await readFile(settingsPath, 'utf8')) as Settings
+      } catch (error) {
+        return {
+          ok: false,
+          phase: 'verify',
+          backupId: bk.backupId,
+          error: err(
+            ctx,
+            '/spec/install/hook_command',
+            `verify re-read fail: ${(error as Error).message.slice(0, 200)}`,
+            'verify-failed',
+          ),
+        } as const
+      }
+      if (
+        !verify.hooks?.[ev]?.some((entry) =>
+          isDesiredHookEntry(entry, install.hook_matcher, current.resolvedCmd),
+        )
+      ) {
+        return {
+          ok: false,
+          phase: 'verify',
+          backupId: bk.backupId,
+          error: err(
+            ctx,
+            '/spec/install/hook_command',
+            `hook '${current.resolvedCmd.slice(0, 80)}' missing in hooks.${ev}[] after write`,
+            'verify-failed',
+          ),
+        } as const
+      }
+      return { ok: true, backupId: bk.backupId, appliedFiles: [settingsPath] }
+    })
+  } catch (error) {
     return {
       ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
+      phase: 'preflight',
       error: err(
         ctx,
-        '/spec/install/hook_command',
-        `verify re-read fail: ${(e as Error).message.slice(0, 200)}`,
-        'verify-failed',
+        '/',
+        `settings transaction lock failed: ${(error as Error).message}`,
+        'settings-write-failed',
       ),
     }
   }
-  // v4.20.0 — nested-shape verify against the RESOLVED command.
-  if (!verify.hooks?.[ev]?.some((e) => isDesiredHookEntry(e, matcher, resolvedCmd))) {
-    return {
-      ok: false,
-      phase: 'verify',
-      backupId: bk.backupId,
-      error: err(
-        ctx,
-        '/spec/install/hook_command',
-        `hook '${resolvedCmd.slice(0, 80)}' missing in hooks.${ev}[] after write`,
-        'verify-failed',
-      ),
-    }
-  }
+  if (!('ok' in transaction) || !transaction.ok) return transaction
 
   await updateInstalled(
     ctx.cwd,
@@ -221,5 +367,5 @@ export const installCcHookAdd: Installer = async (ctx) => {
     '',
     ...(ctx.hostContext ? [ctx.hostContext] : []),
   )
-  return { ok: true, backupId: bk.backupId, appliedFiles: [settingsPath] }
+  return transaction
 }

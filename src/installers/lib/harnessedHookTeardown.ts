@@ -8,42 +8,81 @@
 // resolves, and hookScriptMarker() returns null for absolute tokens (it only
 // normalizes RELATIVE file tokens), so exact-match teardown misses it.
 //
-// These helpers identify a harnessed hook registration from the recorded
-// command string ALONE, in every shape harnessed has ever written:
+// These helpers identify a harnessed hook registration from explicit
+// first-party evidence in every shape harnessed has written:
 //   npm relative : node bin/harnessed-inject-state.mjs
-//   npm absolute : node "C:/.../harnessed/bin/harnessed-stop-hook.mjs"
+//   npm absolute : node "<captured-assets-root>/bin/harnessed-stop-hook.mjs"
 //   compiled     : "C:/.../harnessed.exe" inject-state   (4.27.0/4.30.0)
 //   bare PATH    : harnessed inject-state
 //   subcommand+flags : harnessed check-docs --hook       (4.34.0/4.34.1 — the id
 //                      is the subcommand; trailing flags are part of the command
 //                      and must never change ownership)
-// Pure, dependency-free — safe to call from uninstall + doctor without I/O.
+// Captures assetsRoot once; hook identity checks perform no target filesystem I/O.
 //
 // The hook-id set + the command-string enumerator are SHARED with hookEntry.ts
 // (single SoT — a drift between the two would silently skip a new hook, exactly
 // the issue #8 class). Only the ABSOLUTE-token matching that hookScriptMarker
 // deliberately omits lives here.
 
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+import { getAssetsRoot } from '../../platform/assetsRoot.js'
 import { type AnyHookEntry, COMPILED_HOOK_IDENTITIES, entryCommands } from './hookEntry.js'
 
 export type HarnessedHookId = (typeof COMPILED_HOOK_IDENTITIES)[number]
-/** `inject-state|stop-hook|check-docs` — the id alternation for building matchers. */
 const ID_ALT = COMPILED_HOOK_IDENTITIES.join('|')
-// A first-party token must start at a command boundary (start-of-string, space,
-// quote, or path separator) — NOT mid-token — so a user's own
-// `team-harnessed-stop-hook.mjs` / `myharnessed.exe` is never mis-owned and
-// silently deleted. `=` covers `--flag=…harnessed…` style tokens.
-const LEFT = `(?:^|[\\s"'=/\\\\])`
+const ABSOLUTE_RE = /^([A-Za-z]:[\\/]|[\\/])/
+const CAPTURED_ASSETS_ROOT = getAssetsRoot().replace(/\\/g, '/').replace(/\/$/, '')
+
+function pathKey(path: string): string {
+  const normalized = path.replace(/\\/g, '/')
+  return /^(?:[A-Za-z]:\/|\/\/)/.test(normalized) ? normalized.toLowerCase() : normalized
+}
+
+function commandScriptPath(raw: string, id: HarnessedHookId): string | null {
+  const match = raw.match(/^\s*(?:node|bun)\s+(?:"([^"]+)"|'([^']+)'|(\S+))(?:\s|$)/)
+  const path = match?.[1] ?? match?.[2] ?? match?.[3]
+  if (!path) return null
+  const normalized = path.replace(/\\/g, '/')
+  return pathKey(normalized).split('/').at(-1) === `harnessed-${id}.mjs` ? normalized : null
+}
+
+function isTrustedScriptPath(path: string, id: HarnessedHookId): boolean {
+  const file = `harnessed-${id}.mjs`
+  const relative = path.replace(/^\.\//, '')
+  if (relative === `bin/${file}`) return true
+  if (!ABSOLUTE_RE.test(path)) return false
+  const resolved = `${CAPTURED_ASSETS_ROOT}/bin/${file}`
+  if (pathKey(path) === pathKey(resolved)) return true
+  const versioned = new RegExp(`^(.+/assets/)[^/]+(/bin/${file})$`)
+  const candidate = pathKey(path).match(versioned)
+  const captured = pathKey(resolved).match(versioned)
+  if (!candidate || !captured) return false
+  return candidate[1] === captured[1] && candidate[2] === captured[2]
+}
+
+function trustedCompiledPaths(): Set<string> {
+  const paths = new Set<string>()
+  const localAppData = process.env.LOCALAPPDATA
+  if (localAppData) paths.add(pathKey(join(localAppData, 'harnessed', 'bin', 'harnessed.exe')))
+  paths.add(pathKey(join(homedir(), 'AppData', 'Local', 'harnessed', 'bin', 'harnessed.exe')))
+  paths.add(pathKey(join(homedir(), '.local', 'bin', 'harnessed')))
+  return paths
+}
+
+function commandBinaryPath(raw: string, id: HarnessedHookId): string | null {
+  const match = raw.match(new RegExp(`^\\s*(?:"([^"]+)"|'([^']+)'|(\\S+))\\s+${id}(?:\\s|$)`))
+  return match?.[1] ?? match?.[2] ?? match?.[3] ?? null
+}
 
 /** Which harnessed hook (if any) this recorded command string belongs to. */
 export function harnessedHookIdentity(raw: string): HarnessedHookId | null {
   for (const id of COMPILED_HOOK_IDENTITIES) {
-    // npm form: the script basename harnessed-<id>.mjs, boundary-anchored on
-    // BOTH sides (`team-harnessed-stop-hook.mjs` / `harnessed-inject-statement.mjs`
-    // must NOT match).
-    if (new RegExp(`${LEFT}harnessed-${id}\\.mjs(?:["']|\\s|$)`).test(raw)) return id
-    // compiled/bare form: `harnessed[.exe][" ] <id>` as a boundary-anchored word.
-    if (new RegExp(`${LEFT}harnessed(?:\\.exe)?["']?\\s+${id}(?:\\s|$)`).test(raw)) return id
+    const scriptPath = commandScriptPath(raw, id)
+    if (scriptPath && isTrustedScriptPath(scriptPath, id)) return id
+    const binaryPath = commandBinaryPath(raw, id)
+    if (binaryPath === 'harnessed') return id
+    if (binaryPath && trustedCompiledPaths().has(pathKey(binaryPath))) return id
   }
   return null
 }
@@ -127,8 +166,6 @@ export function countHarnessedHooks(hooks: Record<string, AnyHookEntry[]>): numb
   }
   return n
 }
-
-const ABSOLUTE_RE = /^([A-Za-z]:[\\/]|[\\/])/
 
 /** Harnessed hook registrations pointing at a script that cannot resolve, so the
  *  hook errors MODULE_NOT_FOUND every prompt (issue #8). Reports:

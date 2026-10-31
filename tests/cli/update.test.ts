@@ -277,6 +277,7 @@ describe('harnessed update', () => {
   it('legacy compiled GC uses the same captured root despite ambient changes during swap', async () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/captured/state')
+    const capturedStateRoot = join(homedir(), '.codex', 'harnessed')
     vi.mocked(isCompiledRuntime).mockReturnValue(true)
     vi.mocked(runBinarySelfUpdate).mockImplementationOnce(async () => {
       vi.stubEnv('HARNESSED_PLATFORM', 'claude')
@@ -287,7 +288,7 @@ describe('harnessed update', () => {
         to: '5.0.5',
         bakPath: '/fixture/bak',
         bakRemoved: true,
-        backupDir: '/captured/state/bin-backup/5.0.4',
+        backupDir: join(capturedStateRoot, 'bin-backup', '5.0.4'),
       }
     })
     const result = await runCli(['update'])
@@ -295,12 +296,12 @@ describe('harnessed update', () => {
     expect(realSelfUpdateDeps).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         hostId: 'codex',
-        platform: expect.objectContaining({ stateRoot: '/captured/state' }),
+        platform: expect.objectContaining({ stateRoot: capturedStateRoot }),
       }),
     )
     expect(gcCompiledArtifacts).toHaveBeenCalledWith({
       keepVersions: ['5.0.4', '5.0.5'],
-      stateRoot: '/captured/state',
+      stateRoot: capturedStateRoot,
       execPath: null,
     })
     expect(result.stdout).toContain('restart Codex')

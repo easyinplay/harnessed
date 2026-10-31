@@ -7,6 +7,7 @@
 //   - decline → skipped, runInstall NOT called
 //   - install failure → failed bucket with reason
 
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:fs/promises', () => ({
@@ -98,7 +99,7 @@ describe('runL4Rescue', () => {
     expect(runInstallMock.mock.calls[0]?.[2]).toMatchObject({
       hostId: 'codex',
       nativeHome: '/selected-native',
-      platform: { stateRoot: '/selected-state' },
+      platform: { stateRoot: join('/selected-native', 'harnessed') },
     })
     expect(manifest.spec.install.cmd).toBe('npm install -g ctx7')
   })

@@ -58,6 +58,8 @@ const writeFileMock = vi.mocked(writeFile)
 
 const PLATFORM_KEY = 'HARNESSED_PLATFORM'
 const OVERRIDE_KEY = 'HARNESSED_ROOT_OVERRIDE'
+const CLAUDE_ROOT_KEY = 'CLAUDE_CONFIG_DIR'
+const CODEX_ROOT_KEY = 'CODEX_HOME'
 
 class ExitError extends Error {
   constructor(public code: number) {
@@ -91,12 +93,18 @@ async function runCli(argv: string[]): Promise<{ code: number; stderr: string }>
 describe('setup --platform (Phase C / D5)', () => {
   let savedPlatform: string | undefined
   let savedOverride: string | undefined
+  let savedClaudeRoot: string | undefined
+  let savedCodexRoot: string | undefined
 
   beforeEach(() => {
     savedPlatform = process.env[PLATFORM_KEY]
     savedOverride = process.env[OVERRIDE_KEY]
+    savedClaudeRoot = process.env[CLAUDE_ROOT_KEY]
+    savedCodexRoot = process.env[CODEX_ROOT_KEY]
     delete process.env[PLATFORM_KEY]
     delete process.env[OVERRIDE_KEY]
+    delete process.env[CLAUDE_ROOT_KEY]
+    delete process.env[CODEX_ROOT_KEY]
     readdirMock.mockReset()
     readFileMock.mockReset()
     mkdirMock.mockReset()
@@ -111,6 +119,10 @@ describe('setup --platform (Phase C / D5)', () => {
     else process.env[PLATFORM_KEY] = savedPlatform
     if (savedOverride === undefined) delete process.env[OVERRIDE_KEY]
     else process.env[OVERRIDE_KEY] = savedOverride
+    if (savedClaudeRoot === undefined) delete process.env[CLAUDE_ROOT_KEY]
+    else process.env[CLAUDE_ROOT_KEY] = savedClaudeRoot
+    if (savedCodexRoot === undefined) delete process.env[CODEX_ROOT_KEY]
+    else process.env[CODEX_ROOT_KEY] = savedCodexRoot
     vi.restoreAllMocks()
   })
 
@@ -160,54 +172,47 @@ describe('setup --platform (Phase C / D5)', () => {
     expect(pinWrites[0]?.[1]).toBe('claude')
   })
 
-  // ADR 0040 amendment — switching hosts: a stale pin at the OTHER host's
-  // stateRoot (read first when it is codex) would silently win. Rewrite it when
-  // it exists with a different id; never create it (no ~/.claude on codex-only).
-  describe('pin switch rewrites the other host pin only when it exists', () => {
+  it.each([
+    ['codex', CODEX_ROOT_KEY, '/custom/codex'],
+    ['claude', CLAUDE_ROOT_KEY, '/custom/claude'],
+  ] as const)('--platform %s → pin follows the captured custom native root', async (host, key, root) => {
+    process.env[CLAUDE_ROOT_KEY] = '/other/claude'
+    process.env[CODEX_ROOT_KEY] = '/other/codex'
+    process.env[key] = root
+    const { code } = await runCli(['setup', '--platform', host])
+    expect(code).toBe(2)
+    const pinWrites = writeFileMock.mock.calls.filter((call) =>
+      String(call[0]).endsWith('.platform'),
+    )
+    expect(pinWrites).toHaveLength(1)
+    expect(String(pinWrites[0]?.[0]).replace(/\\/g, '/')).toBe(`${root}/harnessed/.platform`)
+    expect(pinWrites[0]?.[1]).toBe(host)
+  })
+
+  // A setup invocation owns only the selected host's pin. The other host may be
+  // installed independently and must remain untouched.
+  describe('pin writes are scoped to the selected host', () => {
     const norm = (x: unknown) => String(x).replace(/\\/g, '/')
     const codexPin = () => `${norm(codexDescriptor().stateRoot)}/.platform`
     const claudePin = () => `${norm(claudeDescriptor().stateRoot)}/.platform`
-    function existingPins(pins: Record<string, string>): void {
-      readFileMock.mockImplementation((async (p: unknown) => {
-        const v = pins[norm(p)]
-        if (v !== undefined) return v
-        if (norm(p).endsWith('/.platform')) {
-          throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' })
-        }
-        return undefined
-      }) as never)
-    }
     const pinWrites = () =>
       writeFileMock.mock.calls
         .filter((c) => norm(c[0]).endsWith('/.platform'))
         .map((c) => [norm(c[0]), c[1]])
 
-    it('codex → claude: stale codex pin rewritten to claude', async () => {
-      existingPins({ [codexPin()]: 'codex\n' })
+    it('codex → claude: stale codex pin remains codex and is not rewritten', async () => {
+      readFileMock.mockResolvedValue('codex\n' as never)
       await runCli(['setup', '--platform', 'claude'])
-      expect(pinWrites()).toEqual(
-        expect.arrayContaining([
-          [claudePin(), 'claude'],
-          [codexPin(), 'claude'],
-        ]),
-      )
-      expect(pinWrites()).toHaveLength(2)
+      expect(pinWrites()).toEqual([[claudePin(), 'claude']])
     })
 
-    it('claude → codex: stale claude pin rewritten to codex', async () => {
-      existingPins({ [claudePin()]: 'claude' })
+    it('claude → codex: stale claude pin remains claude and is not rewritten', async () => {
+      readFileMock.mockResolvedValue('claude' as never)
       await runCli(['setup', '--platform', 'codex'])
-      expect(pinWrites()).toEqual(
-        expect.arrayContaining([
-          [codexPin(), 'codex'],
-          [claudePin(), 'codex'],
-        ]),
-      )
-      expect(pinWrites()).toHaveLength(2)
+      expect(pinWrites()).toEqual([[codexPin(), 'codex']])
     })
 
     it('other side has no pin → nothing created there (no ~/.claude on codex-only)', async () => {
-      existingPins({})
       await runCli(['setup', '--platform', 'codex'])
       expect(pinWrites()).toEqual([[codexPin(), 'codex']])
       const claudeHome = norm(claudeDescriptor().homeDir)
@@ -215,7 +220,7 @@ describe('setup --platform (Phase C / D5)', () => {
     })
 
     it('other side already agrees → not rewritten', async () => {
-      existingPins({ [claudePin()]: 'codex' })
+      readFileMock.mockResolvedValue('codex' as never)
       await runCli(['setup', '--platform', 'codex'])
       expect(pinWrites()).toEqual([[codexPin(), 'codex']])
     })

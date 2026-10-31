@@ -155,6 +155,13 @@ describe('runAgentsMd — fs behaviour', () => {
     expect(p).not.toContain('config.toml')
   })
 
+  it('uses the captured host context instead of ambient platform detection', () => {
+    const nativeHome = join(home, 'custom-codex')
+    const path = agentsMdPath({ nativeHome }).replace(/\\/g, '/')
+
+    expect(path).toBe(`${nativeHome.replace(/\\/g, '/')}/AGENTS.md`)
+  })
+
   it('--dry-run computes the body and writes NOTHING', async () => {
     const writes: string[] = []
     const r = await runAgentsMd({

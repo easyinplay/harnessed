@@ -16,6 +16,7 @@ vi.mock('../../src/checkpoint/state.js', () => ({
   pause: pauseMock,
 }))
 
+import { ownerPath } from '../../src/checkpoint/ownerPath.js'
 import { registerSigintTrap, resetSigintTrap } from '../../src/checkpoint/sigintTrap.js'
 
 class ExitError extends Error {
@@ -83,6 +84,7 @@ describe('sigintTrap — Phase 3.1 W4 T4.5 (fixtures 19-23)', () => {
     expect(arg.phase).toBe('3.1')
     expect(arg.session_id).toBe('sess-1')
     expect(arg.last_task).toBe('T4.1 ship')
+    expect(arg.archive_path).toBe(`${ownerPath('archive', ['phase-3.1'])}/`)
     expect(pauseMock).toHaveBeenCalledTimes(1)
   })
 

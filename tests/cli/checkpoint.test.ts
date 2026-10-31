@@ -44,7 +44,8 @@ vi.mock('../../src/checkpoint/scale.js', () => ({
 
 import { activatePhase, completePhase } from '../../src/checkpoint/engineHook.js'
 import { checkArtifacts } from '../../src/checkpoint/evidence.js'
-import { readCurrentWorkflow } from '../../src/checkpoint/state.js'
+import type { CurrentWorkflowV1Type } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
+import { mutateWorkflow, readCurrentWorkflow } from '../../src/checkpoint/state.js'
 import { registerCheckpoint } from '../../src/cli/checkpoint.js'
 
 class ExitError extends Error {
@@ -122,6 +123,55 @@ describe('cli/checkpoint — start/complete/fail', () => {
     expect(stdout).toContain('/fake/path/task-code.json')
   })
 
+  it('issue #22 — nested master start expands the root ledger atomically and is idempotent', async () => {
+    let stored: CurrentWorkflowV1Type = {
+      schemaVersion: 'harnessed.current-workflow.v1',
+      phase: 'auto',
+      status: 'active',
+      last_checkpoint_path: '/root/checkpoints/auto.json',
+      started_at: '2026-10-30T00:00:00.000Z',
+      sub_progress: [
+        { sub: 'discuss', status: 'done', gate_fired: true, mode: 'serial', order: 1 },
+        { sub: 'plan', status: 'pending', gate_fired: true, mode: 'serial', order: 2 },
+        { sub: 'task', status: 'pending', gate_fired: true, mode: 'serial', order: 3 },
+      ],
+    }
+    vi.mocked(mutateWorkflow).mockImplementation(async (transform) => {
+      stored = transform(stored)
+    })
+    const plan = JSON.stringify({
+      master: 'plan',
+      fire: [{ sub: 'phase', mode: 'serial', order: 1 }],
+      skip: [{ sub: 'architecture', reason: 'not complex' }],
+    })
+
+    const first = await runCli(['checkpoint', 'start', 'plan', '--plan', plan])
+    expect(first.code).toBe(0)
+    expect(activatePhase).not.toHaveBeenCalled()
+    expect(mutateWorkflow).toHaveBeenCalledTimes(1)
+    expect(stored.phase).toBe('auto')
+    expect(stored.started_at).toBe('2026-10-30T00:00:00.000Z')
+    expect(stored.last_checkpoint_path).toBe('/root/checkpoints/auto.json')
+    expect(stored.sub_progress?.map((entry) => entry.sub)).toEqual([
+      'discuss',
+      'phase',
+      'architecture',
+      'task',
+    ])
+
+    stored = {
+      ...stored,
+      sub_progress: stored.sub_progress?.map((entry) =>
+        entry.sub === 'phase' ? { ...entry, status: 'done' } : entry,
+      ),
+    }
+    const second = await runCli(['checkpoint', 'start', 'plan', '--plan', plan])
+    expect(second.code).toBe(0)
+    expect(activatePhase).not.toHaveBeenCalled()
+    expect(mutateWorkflow).toHaveBeenCalledTimes(2)
+    expect(stored.sub_progress?.find((entry) => entry.sub === 'phase')?.status).toBe('done')
+  })
+
   it('cell 2 — complete task-code --summary "done X" → completePhase with lastTask "done X", exit 0', async () => {
     const { code } = await runCli(['checkpoint', 'complete', 'task-code', '--summary', 'done X'])
     expect(code).toBe(0)
@@ -154,7 +204,7 @@ describe('cli/checkpoint — start/complete/fail', () => {
     expect(completePhase).toHaveBeenCalledTimes(1)
     const arg = vi.mocked(completePhase).mock.calls[0]?.[0]
     expect(arg?.phaseId).toBe('task-code')
-    expect(arg?.status).toBe('complete')
+    expect(arg?.status).toBe('failed')
     expect(arg?.lastTask).toContain('FAILED')
     expect(arg?.lastTask).toContain('boom')
     // v5.0 Spec 1 — a failed sub never flips the workflow to 'complete'.

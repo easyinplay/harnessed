@@ -456,8 +456,7 @@ describe('installMcpHttpAdd — codex platform (v4.14.0)', () => {
     try {
       process.env.HTTP_TEST_KEY = 'sk-123'
       const c = ctx({}, (m) => {
-        m.spec.install.cmd =
-          'claude mcp add --transport http exa-mcp-http https://exa.example.com/mcp --header "X-Key: ${HTTP_TEST_KEY}"'
+        m.spec.install.cmd = `claude mcp add --transport http exa-mcp-http https://exa.example.com/mcp --header "X-Key: \${HTTP_TEST_KEY}"`
       })
       const r = await installMcpHttpAdd(c)
       expect(r).toMatchObject({ ok: false, phase: 'preflight' })

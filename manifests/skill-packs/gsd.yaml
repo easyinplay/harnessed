@@ -44,9 +44,8 @@ spec:
       && test -f ~/.claude/agents/gsd-verifier.md
     timeout_ms: 10000
   uninstall:
-    cmd: "npx --yes @opengsd/gsd-core@latest --uninstall --claude"
-    cleanup_paths:
-      - ~/.claude/skills/gsd-plan-phase
+    cmd: "npx --yes @opengsd/gsd-core@latest --claude --global --uninstall"
+    cleanup_paths: []
   # GSD 1.18.0 on Codex installs skills under ~/.agents/skills; retain the legacy
   # ~/.codex/skills path for existing installs. Probe files, not empty directories.
   harness_overrides:
@@ -78,6 +77,9 @@ spec:
           agents/gsd-verifier.toml;
           do test -f "$GSD_VERIFY_ROOT/$GSD_VERIFY_RESOURCE" && test -r "$GSD_VERIFY_ROOT/$GSD_VERIFY_RESOURCE" && test -s "$GSD_VERIFY_ROOT/$GSD_VERIFY_RESOURCE" || exit 1; done
         timeout_ms: 10000
+      uninstall:
+        cmd: "npx --yes @opengsd/gsd-core@latest --codex --global --uninstall"
+        cleanup_paths: []
   upstream_health:
     stability: stable
     # 4.32.3 re-sync (2026-07-15) — gsd-core 1.7.0 GA 已发(npm latest=1.7.0,

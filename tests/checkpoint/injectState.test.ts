@@ -16,7 +16,10 @@ import {
   parseLearnings,
   selectWithinBudget,
 } from '../../src/checkpoint/injectState.js'
-import type { CurrentWorkflowV1Type } from '../../src/checkpoint/schema/currentWorkflow.v1.js'
+import type {
+  CurrentWorkflowV1Type,
+  SubProgressEntryType,
+} from '../../src/checkpoint/schema/currentWorkflow.v1.js'
 import { normalizeRepoKey } from '../../src/checkpoint/workflowStore.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
@@ -1030,5 +1033,81 @@ describe('bin delta injection (4.25.0 — session pc cache)', () => {
       cwd: join(tmp, 'repo'),
     })
     expect(out).toBe('')
+  })
+})
+
+// ── issue #23 — the spawn-failure kind was WRITTEN to the ledger but never READ.
+//
+// The per-turn block kept telling the model "drive sub 'X'" for a sub whose
+// spawn had already failed, and never said WHY (timeout / auth / non-zero
+// exit / refusal / malformed output). A deterministic failure therefore looked
+// like a fresh pending sub forever. The kind must be visible in the injection. ──
+
+describe('buildWorkflowStateBlock — spawn failure visibility (issue #23)', () => {
+  const wf = (entries: SubProgressEntryType[]): CurrentWorkflowV1Type => ({
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: 'task',
+    status: 'active',
+    last_checkpoint_path: null,
+    started_at: '2026-10-30T00:00:00.000Z',
+    sub_progress: entries,
+  })
+
+  it('surfaces the spawn-failure kind of a failed sub', () => {
+    const out = buildWorkflowStateBlock(
+      wf([
+        {
+          sub: 'task-code',
+          status: 'failed',
+          gate_fired: true,
+          fail_count: 1,
+          spawn_failure: 'SpawnAuthFailed',
+        },
+      ]),
+    )
+    expect(out).toContain('SPAWN-FAILED')
+    expect(out).toContain("sub 'task-code'")
+    expect(out).toContain('SpawnAuthFailed')
+  })
+
+  it('emits no such line for a sub that never failed to spawn', () => {
+    const out = buildWorkflowStateBlock(
+      wf([{ sub: 'task-code', status: 'failed', gate_fired: true, fail_count: 1 }]),
+    )
+    expect(out).not.toContain('SPAWN-FAILED')
+  })
+
+  it('a spawn-failed sub is no longer urged to run (it is failed, not pending)', () => {
+    const out = buildWorkflowStateBlock(
+      wf([
+        {
+          sub: 'task-code',
+          status: 'failed',
+          gate_fired: true,
+          fail_count: 1,
+          spawn_failure: 'SpawnTimeout',
+        },
+      ]),
+    )
+    expect(out).not.toContain("drive sub 'task-code'")
+    expect(out).not.toContain('next: task-code')
+  })
+
+  it('buildInjection carries the kind through to the composed output', () => {
+    const out = buildInjection(
+      '/no/such/repo',
+      wf([
+        {
+          sub: 'task-code',
+          status: 'failed',
+          gate_fired: true,
+          fail_count: 1,
+          spawn_failure: 'SpawnExitNonZero',
+        },
+      ]),
+      '',
+      DEFAULT_INJECT_BUDGET,
+    )
+    expect(out).toContain('SpawnExitNonZero')
   })
 })

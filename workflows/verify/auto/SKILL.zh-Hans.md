@@ -6,7 +6,7 @@ description: |
   并行 conditional → simplify 末尾 → multispec 关键发布 Pattern C 4-specialist {{ host.team.singular }}。
   schema_version: harnessed.workflow.v3，含 delegates_to（7 sub：progress serial order 1 +
   5 parallel conditional + simplify serial order 99）+ disciplines_applied（6 default）+
-  tools_available（10 entry）。通过 harnessed CLI `harnessed verify --phase <num>` 或
+  tools_available（10 entry）。通过 headless CLI `harnessed run verify` 或
   `harnessed setup` 后的斜杠命令 `/verify`（裸命令，per ADR 0030 命名空间规范 D-02 LOCK）触发。
 trigger_phrases:
   - "verify"

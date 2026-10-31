@@ -1,5 +1,12 @@
 import { defineConfig } from 'vitest/config'
 
+export function testExcludes(env: Record<string, string | undefined> = process.env) {
+  const excluded = ['**/node_modules/**']
+  if (!env.RUN_PERF_TESTS) excluded.push('tests/**/*.perf.test.ts')
+  if (env.CI) excluded.push('tests/**/*.dogfood.test.ts', 'tests/workflow/research-v2.test.ts')
+  return excluded
+}
+
 export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
@@ -23,9 +30,7 @@ export default defineConfig({
     // CI excludes dev-machine-only dogfood tests (real-probe Agent Teams env var /
     // planning-with-files plugin install / etc — CI runner 没这些 setup 自然 fail);
     // Phase 3.4 W1.1 research schema v2→v3 后 research-v2.test.ts 死代码留 baseline。
-    exclude: process.env.CI
-      ? ['**/node_modules/**', 'tests/**/*.dogfood.test.ts', 'tests/workflow/research-v2.test.ts']
-      : ['**/node_modules/**'],
+    exclude: testExcludes(),
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'lcov'],

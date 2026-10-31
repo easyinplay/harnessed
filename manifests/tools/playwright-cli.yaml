@@ -61,6 +61,10 @@ spec:
     expected_exit_code: 0
   uninstall:
     cmd: "npm uninstall -g @playwright/cli"
+    # Playwright CLI 0.1.22 has no uninstall-browser command. Its ms-playwright
+    # cache is shared by every Playwright installation on the host, so harnessed
+    # deliberately leaves browser binaries in place rather than deleting data it
+    # cannot safely attribute to this component.
   upstream_health:
     stability: unstable
     last_check: "2026-10-23"

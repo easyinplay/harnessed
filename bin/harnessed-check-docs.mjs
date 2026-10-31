@@ -24,6 +24,7 @@ var en_default = {
   'setup.step_a_render.complete': '  generated {{count}}/{{total}} command files',
   'setup.step_a_render.warnings_header':
     '  [A.5] warnings \u2014 some capability cmds could not be fully resolved:',
+  'setup.command_warning': '  [A.6] {{message}}',
   'setup.step_c.created': '  [C] created {{path}} + enabled Agent Teams',
   'setup.step_c.already_enabled': '  [C] Agent Teams already enabled ({{path}})',
   'setup.step_c.enabled_backup':

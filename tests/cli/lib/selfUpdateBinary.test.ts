@@ -65,7 +65,7 @@ describe('realSelfUpdateDeps captured host', () => {
           shell: false,
           env: expect.objectContaining({
             HARNESSED_PLATFORM: 'codex',
-            HARNESSED_ROOT_OVERRIDE: '/captured/codex',
+            HARNESSED_ROOT_OVERRIDE: join(context.nativeHome, 'harnessed'),
             CODEX_HOME: '/captured/native-codex',
           }),
         }),

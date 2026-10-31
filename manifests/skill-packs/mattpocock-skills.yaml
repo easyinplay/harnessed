@@ -69,9 +69,9 @@ spec:
     cmd: "test -f ~/.claude/skills/tdd/SKILL.md || test -f ~/.agents/skills/tdd/SKILL.md || test -f ~/.claude/skills/diagnosing-bugs/SKILL.md || test -f ~/.agents/skills/diagnosing-bugs/SKILL.md"
     timeout_ms: 5000
   uninstall:
-    cmd: "rm -rf ~/.claude/skills/mattpocock-skills"
-    cleanup_paths:
-      - ~/.claude/skills/mattpocock-skills
+    # Skill removal is receipt-driven; upstream installs a flat set of names.
+    cmd: "true"
+    cleanup_paths: []
   upstream_health:
     stability: stable
     last_check: "2026-09-10"

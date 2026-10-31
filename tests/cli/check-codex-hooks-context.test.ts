@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { checkCodexHooks } from '../../src/cli/lib/check-codex-hooks.js'
 import { listCodexHooks } from '../../src/installers/lib/codexHookTrust.js'
@@ -68,7 +69,7 @@ describe('Codex doctor default context', () => {
     expect(context).toMatchObject({
       hostId: 'codex',
       nativeHome: '/selected-native',
-      platform: { stateRoot: '/selected-state' },
+      platform: { stateRoot: join('/selected-native', 'harnessed') },
     })
     expect(listCodexPluginMetadata).toHaveBeenCalledWith(context)
     expect(listCodexHooks).toHaveBeenCalledWith({ hostContext: context })

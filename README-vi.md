@@ -514,7 +514,7 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `harnessed status` | Phase hiện tại + lock holder |
 | `harnessed doctor` | Kiểm tra sức khỏe (Node / MCP / jq / Win bash / routing / token budget / toàn vẹn skill / xung đột GateGuard / update-available, v.v.) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Tự cập nhật theo kênh cài đặt: bản cài binary tự thay thế tại chỗ từ GitHub releases (xác minh sha256 + chữ ký ed25519 — các release kèm `<asset>.sha256.sig`, hợp đồng signed-release từ 4.32.19; phiên bản bị thay thế được lưu lại để rollback); bản cài npm chạy `npm i -g harnessed@latest`. `--check` báo phiên bản mới nhất; `--rollback [version]` (chỉ bản cài binary) khôi phục nguyên tử một binary trước đó đã lưu — bản cài npm được chỉ tới `npm i -g harnessed@<version>`; `--upstreams` chạy lại các manifests cơ sở; `--migration-report` là bản kiểm kê trạng thái cũ chỉ-đọc |
-| `harnessed release-preflight` | Gate sẵn-sàng-release chỉ-đọc (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exit 1 nếu chưa sẵn sàng. Đây là gate của Stage Ship. |
+| `harnessed release-preflight [--release-version <semver>]` | Gate sẵn-sàng-release chỉ-đọc (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); `--release-version` ghi đè việc dò manifests; exit 1 nếu chưa sẵn sàng. Đây là gate của Stage Ship. |
 | `harnessed retro --done` | Reset bộ đếm phase của retro-reminder sau khi chạy `/retro` (xóa nudge RETRO-DUE mỗi lượt). |
 | `harnessed install <name>` | Cài một upstream manifest |
 | `harnessed uninstall [name]` | Gỡ cài đặt ngược — chạy teardown `spec.uninstall` khai báo trong manifest (cmd + giới hạn trong `$HOME`, `cleanup_paths` idempotent) cho các method cài skill (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); các method khác giữ cơ chế reverse theo từng method |
@@ -522,6 +522,15 @@ planning-with-files /plan (công cụ xuyên suốt) → ghi artifact vào .plan
 | `harnessed rollback <timestamp>` | Rollback một dòng lệnh cho **backup snapshot** (giữ EOL + xác minh sha1) — khác với `update --rollback`, vốn khôi phục một **binary đã biên dịch** trước đó |
 | `harnessed gc` | Dọn dẹp backup đã hết hạn |
 | `harnessed audit-log` | Truy vấn log minh bạch routing (hỗ trợ biểu thức jq `--filter`) |
+| `harnessed agents-md` | Ghi hoặc cập nhật harnessed block có marker trong `<CODEX_HOME>/AGENTS.md`, giữ nguyên văn bản bên ngoài |
+| `harnessed audit` | Audit tính nhất quán của manifest và runtime (`--skip-runtime` chỉ kiểm tra manifest) |
+| `harnessed check-docs` | Kiểm tra discipline tài liệu `.planning/`; advisory hoặc blocking trả về exit code khác 0 |
+| `harnessed eval` | Chạy deterministic orchestrator regression suite; `harnessed eval record` ghi scenario có thể replay |
+| `harnessed exempt-gateguard` | Lưu ngoại lệ GateGuard `.planning/**` để giải quyết xung đột dual-guard |
+| `harnessed facts <master>` | Xuất gate facts đã xác định và chưa quyết định cho `harnessed gates --context-file` |
+| `harnessed install-base [--dry-run]` | Cài phase 1.3 base profile; `--dry-run` chỉ preview, không ghi |
+| `harnessed manifest-add <upstream>` | Thêm upstream adapter qua EE-5 merge gate |
+| `harnessed research --query <text>` | Chạy headless research workflow; `--dry-run` preview mà không spawn |
 
 ### Flags
 

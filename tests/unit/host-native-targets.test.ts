@@ -67,6 +67,12 @@ vi.mock('../../src/installers/lib/state.js', () => ({
   recordObservedInstall: vi.fn(async () => undefined),
 }))
 vi.mock('../../src/installers/lib/packSkillAudit.js', () => ({
+  skillRootsForContext: vi.fn((ctx: { hostContext?: HostInstallContext }) =>
+    ctx.hostContext
+      ? [ctx.hostContext.platform.skillsDir, join(ctx.hostContext.nativeHome, 'skills')]
+      : [join(process.env.HOME ?? '', '.claude', 'skills')],
+  ),
+  snapshotSkillPaths: vi.fn(async () => new Set<string>()),
   snapshotSkillNames: vi.fn(async () => new Set<string>()),
   warnDeclaredCollisions: vi.fn(async () => undefined),
   auditPostInstall: vi.fn(async () => undefined),

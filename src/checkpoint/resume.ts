@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises'
 import { Value } from '@sinclair/typebox/value'
 import { branchOnSchemaVersion } from '../types/schemaVersion.js'
 import { detectDrift } from './evidence.js'
+import { isFailedCheckpoint } from './failure.js'
 import { recoveryActions } from './recovery.js'
 import { CheckpointV1, type CheckpointV1Type, type EvidenceRefType } from './schema/index.js'
 import { readCurrentWorkflow } from './state.js'
@@ -14,6 +15,7 @@ import { readCurrentWorkflow } from './state.js'
 export type ResumeResult =
   | { status: 'no-paused-phase'; error: string }
   | { status: 'corrupt'; error: string; path: string }
+  | { status: 'failed'; error: string; checkpoint: CheckpointV1Type }
   | {
       status: 'ok'
       checkpoint: CheckpointV1Type
@@ -37,13 +39,13 @@ export async function runResume(): Promise<ResumeResult> {
       error: 'no current-workflow.json found under <harnessed-root>',
     }
   }
-  if (current.status !== 'paused') {
-    return {
-      status: 'no-paused-phase',
-      error: `workflow status is '${current.status}', not 'paused'`,
-    }
-  }
   if (!current.last_checkpoint_path) {
+    if (current.status !== 'paused') {
+      return {
+        status: 'no-paused-phase',
+        error: `workflow status is '${current.status}', not 'paused'`,
+      }
+    }
     return { status: 'corrupt', error: 'last_checkpoint_path missing', path: '' }
   }
   const path = current.last_checkpoint_path
@@ -51,12 +53,24 @@ export async function runResume(): Promise<ResumeResult> {
   try {
     raw = await readFile(path, 'utf8')
   } catch (e) {
+    if (current.status !== 'paused') {
+      return {
+        status: 'no-paused-phase',
+        error: `workflow status is '${current.status}', not 'paused'`,
+      }
+    }
     return { status: 'corrupt', error: `checkpoint missing: ${(e as Error).message}`, path }
   }
   let parsed: unknown
   try {
     parsed = JSON.parse(raw)
   } catch (e) {
+    if (current.status !== 'paused') {
+      return {
+        status: 'no-paused-phase',
+        error: `workflow status is '${current.status}', not 'paused'`,
+      }
+    }
     return {
       status: 'corrupt',
       error: `checkpoint JSON parse failed: ${(e as Error).message}`,
@@ -69,8 +83,27 @@ export async function runResume(): Promise<ResumeResult> {
     unknown: () => null,
   })
   if (!validated) {
+    if (current.status !== 'paused') {
+      return {
+        status: 'no-paused-phase',
+        error: `workflow status is '${current.status}', not 'paused'`,
+      }
+    }
     const errs = [...Value.Errors(CheckpointV1, parsed)].map((e) => e.message).join('; ')
     return { status: 'corrupt', error: `checkpoint schema validation failed: ${errs}`, path }
+  }
+  if (isFailedCheckpoint(validated)) {
+    return {
+      status: 'failed',
+      error: `checkpoint phase '${validated.phase}' failed: ${validated.last_task}`,
+      checkpoint: validated,
+    }
+  }
+  if (current.status !== 'paused') {
+    return {
+      status: 'no-paused-phase',
+      error: `workflow status is '${current.status}', not 'paused'`,
+    }
   }
   const cwd = process.cwd()
   const cwdWarn =

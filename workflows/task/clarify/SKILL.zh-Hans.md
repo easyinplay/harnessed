@@ -7,8 +7,8 @@ description: |
   (judgments.subtask-gate.brainstorming.fires) 是否激活 brainstorming + 条件性
   fire grill-with-docs (phase.spec_ambiguous == true)。
   schema_version: harnessed.workflow.v3 with disciplines_applied [6] + tools_available
-  [superpowers-brainstorming, grill-with-docs]. Triggered by harnessed CLI
-  `harnessed task-clarify --task <text>` or slash command `/task-clarify` after
+  [superpowers-brainstorming, grill-with-docs]. Triggered by headless CLI
+  `harnessed run task-clarify` or slash command `/task-clarify` after
   `harnessed setup`.
 trigger_phrases:
   - "clarify this subtask"

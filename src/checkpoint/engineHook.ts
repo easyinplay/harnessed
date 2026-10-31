@@ -8,16 +8,16 @@
 // v3.0.3 — checkpoint + archive path routed through `getHarnessedRoot()` SoT
 // (homedir-rooted; EPERM-free in read-only CWD). Sister v2.0.1 backup pattern.
 
-import { join } from 'node:path'
-import { harnessedSubdir } from '../platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
+import { hasLegacyFailedTask } from './failure.js'
+import { ownerPath } from './ownerPath.js'
 import { activate as stateActivate, complete as stateComplete } from './state.js'
 import { writeCheckpoint } from './template.js'
 
 export interface EngineCheckpointHookCtx {
   phaseId: string
   sessionId?: string
-  status: 'active' | 'complete' // 'paused' goes through sigintTrap.ts (W4), not this hook
+  status: 'active' | 'complete' | 'failed' // 'paused' goes through sigintTrap.ts (W4)
   lastTask?: string
   keyDecisions?: string[]
   canonicalRefs?: string[]
@@ -32,7 +32,7 @@ export interface EngineCheckpointHookCtx {
  *  Lock acquired transitively via stateActivate → writeCurrentWorkflow
  *  (sister W-01 PLAN-CHECK resolve Path A: state.ts self-locks; no double-lock). */
 export async function activatePhase(phaseId: string): Promise<{ checkpointPath: string }> {
-  const checkpointPath = join(harnessedSubdir('checkpoints'), `${phaseId}.json`)
+  const checkpointPath = ownerPath('checkpoints', [`${phaseId}.json`])
   await stateActivate(phaseId, checkpointPath)
   return { checkpointPath }
 }
@@ -43,20 +43,20 @@ export async function activatePhase(phaseId: string): Promise<{ checkpointPath: 
 export async function completePhase(ctx: EngineCheckpointHookCtx): Promise<void> {
   if (ctx.phaseId === 'unknown') {
     console.error(
-      `[harnessed] WARN engineHook: phaseId="unknown" — checkpoint paths fall back to ${join(harnessedSubdir('checkpoints'), 'unknown.json')} (Karpathy fail-loud non-blocking; W-04 mitigation)`,
+      `[harnessed] WARN engineHook: phaseId="unknown" — checkpoint paths fall back to ${ownerPath('checkpoints', ['unknown.json'])} (Karpathy fail-loud non-blocking; W-04 mitigation)`,
     )
   }
   writeCheckpoint({
     schemaVersion: SCHEMA_VERSIONS.checkpoint,
     phase: ctx.phaseId,
-    status: 'complete',
+    status: ctx.status === 'failed' || hasLegacyFailedTask(ctx.lastTask) ? 'failed' : ctx.status,
     last_task: ctx.lastTask ?? 'engine.runRouting complete',
     key_decisions: ctx.keyDecisions ?? [],
     canonical_refs: ctx.canonicalRefs ?? [],
     ...(ctx.sessionId ? { session_id: ctx.sessionId } : {}),
     cwd: process.cwd(),
     timestamp: new Date().toISOString(),
-    archive_path: `${join(harnessedSubdir('archive'), `phase-${ctx.phaseId}`)}/`,
+    archive_path: `${ownerPath('archive', [`phase-${ctx.phaseId}`])}/`,
   })
   // v5.0 Spec 1 — only flip workflow status when this completion finishes the
   // whole chain. transitionWorkflowComplete defaults to true (engine.ts path);

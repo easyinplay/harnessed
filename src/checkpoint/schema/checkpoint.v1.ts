@@ -8,19 +8,19 @@
 // captured via `sdkSpawn` `onSessionId` callback (CD-4 closure-ready) and
 // archived in the checkpoint envelope so a future `--resume` can replay.
 //
-// Status is the same 3-state union as `currentWorkflow.v1` (D-02 KARPATHY
-// lock — no FSM lib). Drift across the two unions = test-time mismatch in
-// `tests/checkpoint/schema.test.ts`.
+// Checkpoints add a terminal failed outcome. The live workflow remains a
+// 3-state lifecycle because a failed leaf stays recoverable inside it.
 
 import { type Static, Type } from '@sinclair/typebox'
 import { SCHEMA_VERSIONS } from '../../types/schemaVersion.js'
 
-/** 3-state checkpoint status (D-02 KARPATHY lock). Matches `WorkflowStatus`
- *  in `currentWorkflow.v1.ts` by convention. */
+/** Checkpoint lifecycle/outcome. Readers also accept legacy complete envelopes
+ *  whose last_task starts with FAILED:. */
 export const CheckpointStatus = Type.Union([
   Type.Literal('active'),
   Type.Literal('paused'),
   Type.Literal('complete'),
+  Type.Literal('failed'),
 ])
 
 /** Checkpoint envelope — workflow snapshot persisted to

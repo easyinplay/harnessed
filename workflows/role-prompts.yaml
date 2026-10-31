@@ -92,13 +92,11 @@ prompts:
     is_master: true
     specialist: "Stage 2 plan dispatcher"
     responsibility: |
-      Drive the 2-step plan stage: architecture review first (`/plan-architecture`
-      — only if `phase.is_complex_architecture == true`), then unconditional
-      phase planning (`/plan-phase` — GSD plan-phase + planning-with-files
-      persistence).
+      Drive conditional architecture, spec, UI, security, and AI-integration
+      design contracts in order, then unconditional `/plan-phase`.
     checklist: []
-    severity: "ordered serial — architecture (conditional) → phase (always)"
-    description: "Stage 2 Plan master — architecture review (conditional) then phase planning (always, persisted)."
+    severity: "architecture? → spec? → ui? → secure? → ai-integration? → phase"
+    description: "Stage 2 Plan master — conditional design contracts followed by persisted phase planning."
 
   task:
     primary_cap: ""
@@ -273,6 +271,38 @@ prompts:
       - "Document tradeoffs of the rejected alternatives (so reviewers see the road not taken)"
     severity: "approved / approved-with-changes / blocked"
     description: "Staff Engineer architecture review for complex changes (lock design before plan-phase)."
+
+  plan-spec:
+    primary_cap: "gsd-spec-phase"
+    specialist: "Specification contract planner"
+    responsibility: "Lock the SDD specification before ordinary phase planning."
+    checklist: ["Run `/gsd-spec-phase`", "Resolve blocking decisions", "Produce the spec artifact"]
+    severity: "ready / blocked"
+    description: "Conditional GSD spec-phase contract before plan-phase."
+
+  plan-ui:
+    primary_cap: "gsd-ui-phase"
+    specialist: "UI contract planner"
+    responsibility: "Lock the UI design contract before ordinary phase planning."
+    checklist: ["Run `/gsd-ui-phase`", "Lock layout and interaction contracts", "Produce the UI artifact"]
+    severity: "ready / blocked"
+    description: "Conditional GSD ui-phase contract before plan-phase."
+
+  plan-secure:
+    primary_cap: "gsd-secure-phase"
+    specialist: "Security contract planner"
+    responsibility: "Lock the threat model before ordinary phase planning."
+    checklist: ["Run `/gsd-secure-phase`", "Lock mitigations and trust boundaries", "Produce the security artifact"]
+    severity: "ready / blocked"
+    description: "Conditional GSD secure-phase contract before plan-phase."
+
+  plan-ai-integration:
+    primary_cap: "gsd-ai-integration-phase"
+    specialist: "AI integration contract planner"
+    responsibility: "Lock the AI-SPEC contract before ordinary phase planning."
+    checklist: ["Run `/gsd-ai-integration-phase`", "Lock evaluations and guardrails", "Produce the AI-SPEC artifact"]
+    severity: "ready / blocked"
+    description: "Conditional GSD ai-integration-phase contract before plan-phase."
 
   plan-phase:
     primary_cap: "gsd-plan-phase"

@@ -28,7 +28,7 @@ import { existsSync } from 'node:fs'
 import { access, readFile, stat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import { getAssetsRoot } from '../../platform/assetsRoot.js'
+import { getAssetsRoot, isCompiledRuntime } from '../../platform/assetsRoot.js'
 import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import {
   detectPlatform,
@@ -376,6 +376,7 @@ export async function isAlreadyInstalled(
       installCfg.hook_matcher,
       {
         assetsRoot: getAssetsRoot,
+        compiledExecPath: () => (isCompiledRuntime() ? process.execPath : null),
         exists: existsSync,
       },
     )

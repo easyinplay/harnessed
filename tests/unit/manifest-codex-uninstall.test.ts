@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { Ajv } from 'ajv'
 import * as ajvFormatsNs from 'ajv-formats'
 import { describe, expect, it } from 'vitest'
-import { Document, isMap, isScalar, isSeq, stringify } from 'yaml'
+import { Document, isMap, isScalar, isSeq, parse, stringify } from 'yaml'
 import { ManifestSchema } from '../../src/manifest/schema/index.js'
 import { validateManifestFile } from '../../src/manifest/validate.js'
 
@@ -105,6 +105,68 @@ describe.each([
         spec: { ...manifest.spec, harness_overrides: { cursor: { install } } },
       }),
     ).toBe(false)
+  })
+
+  it('rejects the removed ownership contract', () => {
+    expect(
+      validate({
+        ...base,
+        spec: {
+          ...base.spec,
+          ownership: {
+            source: 'fixture',
+            version: '1.0.0',
+            resources: [],
+          },
+        },
+      }),
+    ).toBe(false)
+  })
+})
+
+describe('real skill-pack uninstall contracts', () => {
+  const gsd = parse(readFileSync('manifests/skill-packs/gsd.yaml', 'utf8'))
+  const mattpocock = parse(readFileSync('manifests/skill-packs/mattpocock-skills.yaml', 'utf8'))
+
+  it('uses the upstream GSD uninstall commands for Claude and Codex', () => {
+    expect(gsd.spec).not.toHaveProperty('ownership')
+    expect(gsd.spec.uninstall).toEqual({
+      cmd: 'npx --yes @opengsd/gsd-core@latest --claude --global --uninstall',
+      cleanup_paths: [],
+    })
+    expect(gsd.spec.harness_overrides.codex.uninstall).toEqual({
+      cmd: 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall',
+      cleanup_paths: [],
+    })
+  })
+
+  it('keeps the mattpocock no-op uninstall and declared skill set', () => {
+    expect(mattpocock.spec).not.toHaveProperty('ownership')
+    expect(mattpocock.spec.uninstall).toEqual({ cmd: 'true', cleanup_paths: [] })
+    expect(mattpocock.spec.install.installs_skills).toEqual([
+      'ask-matt',
+      'code-review',
+      'codebase-design',
+      'diagnosing-bugs',
+      'domain-modeling',
+      'grill-with-docs',
+      'implement',
+      'improve-codebase-architecture',
+      'prototype',
+      'research',
+      'resolving-merge-conflicts',
+      'setup-matt-pocock-skills',
+      'tdd',
+      'to-spec',
+      'to-tickets',
+      'triage',
+      'wayfinder',
+      'grill-me',
+      'grilling',
+      'handoff',
+      'teach',
+      'writing-great-skills',
+    ])
   })
 })
 

@@ -14,15 +14,18 @@
 //   1 → fs.cp failed or base/selected optional failed (after all setup tail work)
 //   2 → no SKILL.md workflows found (nothing to install)
 
-import { access, mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
+import { access, mkdir, readdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { Command } from 'commander'
 import { resolveUpdateReminderRuntime } from '../compile/updateReminderEntrypoint.js'
 import { getLocale, t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
-import { captureHostInstallContext } from '../platform/hostInstallContext.js'
-import { claudeDescriptor, codexDescriptor, HOST_IDS } from '../platform/platform.js'
+import {
+  captureHostInstallContext,
+  type HostInstallContext,
+} from '../platform/hostInstallContext.js'
+import { HOST_IDS } from '../platform/platform.js'
 import { loadRolePrompts } from '../workflow/rolePrompts.js'
 import { readInstalledPlugins, readInstalledUserSkills } from './lib/capabilityResolver.js'
 import { enableAgentTeamsInSettings } from './lib/enableAgentTeamsInSettings.js'
@@ -59,15 +62,32 @@ interface RawOpts {
  *  platform.ts, not a second literal of its own. */
 const KNOWN_PLATFORMS = HOST_IDS
 
+function isAdvisorySettingsWarning(message: string): boolean {
+  return message.includes('capability-absent')
+}
+
+function isCommandFailureWarning(warning: string): boolean {
+  return (
+    warning.startsWith('no role-prompts.yaml entry') ||
+    warning.startsWith('host-primitive render failed') ||
+    warning.startsWith('write failed')
+  )
+}
+
+function isDuplicateCommandFailureSummary(warning: string): boolean {
+  return (
+    warning.startsWith('role-prompts.yaml missing entry') ||
+    /^commands\/.+: host-primitive render failed$/.test(warning)
+  )
+}
+
 /**
  * Phase C / D5: apply `setup --platform <id>`. Validates the id, sets
  * `process.env.HARNESSED_PLATFORM` for the run (so the resolver-backed
- * getSkillsDir/getCommandsDir/getHarnessedRoot route to the chosen platform),
- * and persists a `.platform` pin at the now-resolved stateRoot. Invalid id →
- * error + exit(1). Pin-write failure is non-blocking (warn) — env is already set
- * so the run still routes correctly.
+ * getSkillsDir/getCommandsDir/getHarnessedRoot route to the chosen platform).
+ * Invalid id → error + exit(1).
  */
-async function applyPlatformOption(platform: string, persist: boolean): Promise<void> {
+function applyPlatformOption(platform: string): void {
   if (!(KNOWN_PLATFORMS as readonly string[]).includes(platform)) {
     console.error(
       `--platform: unknown id '${platform}' (expected one of: ${KNOWN_PLATFORMS.join(' | ')})`,
@@ -75,33 +95,15 @@ async function applyPlatformOption(platform: string, persist: boolean): Promise<
     process.exit(1)
   }
   process.env.HARNESSED_PLATFORM = platform
-  // --dry-run must not write anything, and that includes the pin: the env var
-  // above already routes this run's resolvers to the chosen platform.
-  if (!persist) return
-  // ADR 0040: the pin lives at the chosen host's OWN stateRoot — detectPlatform()
-  // reads the codex stateRoot first, then the claude one — so a codex-only host
-  // never grows a ~/.claude directory just to hold the pin.
-  const [own, other] =
-    platform === 'codex'
-      ? [codexDescriptor().stateRoot, claudeDescriptor().stateRoot]
-      : [claudeDescriptor().stateRoot, codexDescriptor().stateRoot]
+}
+
+/** Persist the selected host only after its native root has been captured. */
+async function persistPlatformPin(context: HostInstallContext): Promise<void> {
+  const platform = context.hostId
+  const own = join(context.nativeHome, 'harnessed')
   try {
     await mkdir(own, { recursive: true })
     await writeFile(join(own, '.platform'), platform, 'utf8')
-    // A stale pin naming the other host would still win (the codex pin is read
-    // first; a legacy codex pin sits at the claude root), so a host switch rewrites
-    // it — only if it already exists: no delete, no mkdir on the other side.
-    const otherPin = join(other, '.platform')
-    let existing: string | undefined
-    try {
-      const raw: unknown = await readFile(otherPin, 'utf8')
-      existing = typeof raw === 'string' ? raw.trim() : undefined
-    } catch {
-      existing = undefined // absent → leave it absent
-    }
-    if (existing !== undefined && existing !== platform) {
-      await writeFile(otherPin, platform, 'utf8')
-    }
   } catch (e) {
     console.warn(`  [--platform] could not persist .platform pin (${(e as Error).message})`)
   }
@@ -346,10 +348,14 @@ export function registerSetup(program: Command): void {
       await printSetupVersionBanner()
 
       const dryRun = raw.dryRun === true
+      const setupFailures: string[] = []
       // Phase C / D5 — apply --platform FIRST so all resolver-backed paths below
       // (skills/commands/state) route to the chosen platform for this run.
-      if (raw.platform !== undefined) await applyPlatformOption(raw.platform, !dryRun)
-      const setupContext = captureHostInstallContext()
+      if (raw.platform !== undefined) applyPlatformOption(raw.platform)
+      const setupContext = captureHostInstallContext(
+        raw.platform === undefined ? {} : { hostId: raw.platform },
+      )
+      if (raw.platform !== undefined && !dryRun) await persistPlatformPin(setupContext)
       const skillLedgerPath = join(setupContext.platform.stateRoot, 'skill-hashes.json')
       const pkgRoot = getAssetsRoot()
       const workflowsDir = resolve(pkgRoot, 'workflows')
@@ -609,15 +615,26 @@ export function registerSetup(program: Command): void {
       // dest SKILL.md carries the locale-correct body. `--lang` is a global flag
       // pre-parsed in src/cli.ts (→ setLocale) BEFORE this action runs, so
       // getLocale() already reflects it; en → byte-identical to pre-29 behavior.
-      const rendered = await renderAllSkills(
-        skillNames,
-        skillsBase,
-        workflowsDir,
-        undefined,
-        getLocale(),
-        setupContext.hostId,
-        setupContext,
+      let rendered: Awaited<ReturnType<typeof renderAllSkills>>
+      try {
+        rendered = await renderAllSkills(
+          skillNames,
+          skillsBase,
+          workflowsDir,
+          undefined,
+          getLocale(),
+          setupContext.hostId,
+          setupContext,
+        )
+      } catch (err) {
+        const message = `skill render failed: ${(err as Error).message}`
+        setupFailures.push(message)
+        rendered = { results: [], aggregatedWarnings: [message] }
+      }
+      const renderErrors = new Set(
+        rendered.results.filter((result) => result.error).map((result) => result.error as string),
       )
+      setupFailures.push(...renderErrors)
       // (Step A.5 render count suppressed — internal detail)
       if (rendered.aggregatedWarnings.length > 0) {
         console.warn(t('setup.step_a_render.warnings_header'))
@@ -696,6 +713,18 @@ export function registerSetup(program: Command): void {
         )
         const writtenCount = cmdResult.results.filter((r) => r.written).length
         const skippedCount = cmdResult.results.filter((r) => !r.written && r.warning).length
+        const commandWarnings = new Set<string>()
+        for (const result of cmdResult.results) {
+          if (!result.warning) continue
+          commandWarnings.add(result.warning)
+          if (isCommandFailureWarning(result.warning)) setupFailures.push(result.warning)
+        }
+        for (const warning of cmdResult.warnings ?? []) {
+          if (!isDuplicateCommandFailureSummary(warning)) commandWarnings.add(warning)
+        }
+        for (const warning of commandWarnings) {
+          console.warn(t('setup.command_warning', { message: warning }))
+        }
         if (writtenCount > 0 || skippedCount > 0) {
           console.log(
             `  generated ${writtenCount} commands/<x>.md file(s) (${skippedCount} skipped)`,
@@ -754,8 +783,20 @@ export function registerSetup(program: Command): void {
       }
 
       // ── Step C: Agent Teams auto-enable ────────────────────────────────
-      await enableAgentTeamsInSettings(setupContext)
-      await enableUserLangInSettings(raw.userLang, setupContext)
+      const agentTeamsResult = await enableAgentTeamsInSettings(setupContext)
+      if (agentTeamsResult?.status === 'warn') {
+        console.warn(t('setup.step_c.skipped', { message: agentTeamsResult.message }))
+        if (!isAdvisorySettingsWarning(agentTeamsResult.message)) {
+          setupFailures.push(agentTeamsResult.message)
+        }
+      }
+      const userLangResult = await enableUserLangInSettings(raw.userLang, setupContext)
+      if (userLangResult?.status === 'warn') {
+        console.warn(t('setup.step_d.skipped', { message: userLangResult.message }))
+        if (!isAdvisorySettingsWarning(userLangResult.message)) {
+          setupFailures.push(userLangResult.message)
+        }
+      }
 
       // L4 rescue: repair explicit level-gate skips and verified broken global
       // CLI binaries. The latter is restricted inside l4-rescue to reviewed
@@ -852,7 +893,7 @@ export function registerSetup(program: Command): void {
       // v4.15.1 — honest failure trailer: a long grouped table scrolls the
       // failed rows away; restate the count + retry path right before the
       // "setup complete" line so a failed setup never reads as fully green.
-      const failedCount = b.failed.length + optionalFailed
+      const failedCount = b.failed.length + optionalFailed + setupFailures.length
       if (failedCount > 0) {
         console.error(
           `\n${failedCount} component(s) failed — see the notes above; re-run \`harnessed setup\` to retry, or run \`harnessed doctor\` for environment diagnostics.`,
@@ -862,7 +903,7 @@ export function registerSetup(program: Command): void {
         b.installed.length + b.alreadyInstalled.length + (b.keptExisting?.length ?? 0)
       if (failedCount > 0) {
         console.error(
-          `setup incomplete - ${skillsInstalled} workflow(s) installed; ${configured} base component(s) configured; ${failedCount} component(s) failed (${b.failed.length} base, ${optionalFailed} optional).`,
+          `setup incomplete - ${skillsInstalled} workflow(s) installed; ${configured} base component(s) configured; ${failedCount} component(s) failed (${b.failed.length} base, ${optionalFailed} optional, ${setupFailures.length} setup).`,
         )
       } else {
         console.log(

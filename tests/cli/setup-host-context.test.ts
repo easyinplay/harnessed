@@ -1,4 +1,4 @@
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { Command } from 'commander'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -112,8 +112,8 @@ const ttyDescriptors = streams.map((stream) => Object.getOwnPropertyDescriptor(s
 beforeEach(() => {
   vi.clearAllMocks()
   vi.stubEnv('HARNESSED_PLATFORM', 'codex')
-  vi.stubEnv('CODEX_HOME', '/selected-native')
-  vi.stubEnv('CLAUDE_CONFIG_DIR', '/selected-native')
+  vi.stubEnv('CODEX_HOME', '/selected-codex')
+  vi.stubEnv('CLAUDE_CONFIG_DIR', '/selected-claude')
   vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/selected-state')
   vi.spyOn(console, 'log').mockImplementation(() => {})
   vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -154,18 +154,19 @@ describe('setup single context routing', () => {
     'claude',
   ])('pins %s roots, render, ledger, backup and lifecycle entrypoints across StepB drift', async (host) => {
     vi.stubEnv('HARNESSED_PLATFORM', host)
+    const selectedNative = host === 'codex' ? '/selected-codex' : '/selected-claude'
     if (host === 'claude') {
       vi.mocked(removeLegacyClaudeCommands).mockResolvedValueOnce({
-        removed: ['/selected-native/commands/old.md'],
-        skipped: ['/selected-native/commands/demo.md'],
-        warnings: ['/selected-native/commands/demo.md: remove failed (denied)'],
+        removed: [join(selectedNative, 'commands', 'old.md')],
+        skipped: [join(selectedNative, 'commands', 'demo.md')],
+        warnings: [`${join(selectedNative, 'commands', 'demo.md')}: remove failed (denied)`],
       })
     }
     vi.mocked(writeAllCommands).mockResolvedValueOnce({
       results: [
         {
           name: 'harnessed-update',
-          path: '/selected-native/prompts/harnessed-update.md',
+          path: join(selectedNative, 'prompts', 'harnessed-update.md'),
           written: true,
         },
       ],
@@ -174,14 +175,19 @@ describe('setup single context routing', () => {
     const program = new Command().exitOverride()
     registerSetup(program)
     await expect(
-      program.parseAsync(['node', 'harnessed', 'setup', '--user-lang', 'en']),
+      program.parseAsync(['node', 'harnessed', 'setup', '--platform', host, '--user-lang', 'en']),
     ).rejects.toThrow('exit:0')
     const context = vi.mocked(runStepBInstall).mock.calls[0]?.[1]?.hostContext
     expect(context).toMatchObject({
       hostId: host,
-      nativeHome: '/selected-native',
-      platform: { stateRoot: '/selected-state' },
+      nativeHome: selectedNative,
+      platform: { stateRoot: join(selectedNative, 'harnessed') },
     })
+    expect(vi.mocked(writeFile)).toHaveBeenCalledWith(
+      join(selectedNative, 'harnessed', '.platform'),
+      host,
+      'utf8',
+    )
     expect(vi.mocked(runStepBInstall).mock.calls[1]?.[1]?.hostContext).toBe(context)
     expect(makeIdempotentProbe).toHaveBeenCalledWith(expect.any(Array), context)
     expect(runL4Rescue).toHaveBeenCalledWith(
@@ -202,8 +208,7 @@ describe('setup single context routing', () => {
     expect(enableAgentTeamsInSettings).toHaveBeenCalledWith(context)
     expect(enableUserLangInSettings).toHaveBeenCalledWith('en', context)
     expect(searchMcpKeyHintLines).toHaveBeenCalledWith(context)
-    const skills =
-      host === 'codex' ? context?.platform.skillsDir : join('/selected-native', 'skills')
+    const skills = host === 'codex' ? context?.platform.skillsDir : join(selectedNative, 'skills')
     expect(renderAllSkills).toHaveBeenCalledTimes(2)
     for (const call of vi.mocked(renderAllSkills).mock.calls) {
       expect(call[0]).toContain('harnessed-update')
@@ -215,7 +220,7 @@ describe('setup single context routing', () => {
       expect(removeLegacyClaudeCommands).not.toHaveBeenCalled()
       expect(writeAllCommands).toHaveBeenCalledWith(
         expect.arrayContaining(['harnessed-update']),
-        join('/selected-native', 'prompts'),
+        join(selectedNative, 'prompts'),
         expect.anything(),
         expect.anything(),
         expect.anything(),
@@ -227,24 +232,24 @@ describe('setup single context routing', () => {
       )
       expect(setupOutput).toContain('generated 1 commands/<x>.md file(s)')
       expect(writeCodexAgentRoles).toHaveBeenCalledWith(
-        join('/selected-native', 'agents'),
+        join(selectedNative, 'agents'),
         expect.any(Array),
       )
     } else {
       expect(writeAllCommands).not.toHaveBeenCalled()
-      expect(removeLegacyClaudeCommands).toHaveBeenCalledWith(join('/selected-native', 'commands'))
+      expect(removeLegacyClaudeCommands).toHaveBeenCalledWith(join(selectedNative, 'commands'))
       expect(setupOutput).not.toContain('generated 1 commands/<x>.md file(s)')
       expect(setupOutput).toContain('removed 1 legacy commands/<x>.md file(s)')
       expect(vi.mocked(console.warn).mock.calls.flat().map(String).join('\n')).toContain(
-        '[A.6] /selected-native/commands/demo.md: remove failed (denied)',
+        `[A.6] ${join(selectedNative, 'commands', 'demo.md')}: remove failed (denied)`,
       )
       expect(writeCodexAgentRoles).not.toHaveBeenCalled()
     }
-    expect(readHashLedger).toHaveBeenCalledWith(join('/selected-state', 'skill-hashes.json'))
+    expect(readHashLedger).toHaveBeenCalledWith(join(selectedNative, 'harnessed', 'skill-hashes.json'))
     for (const call of vi.mocked(recordSkillHashes).mock.calls)
-      expect(call[2]).toBe(join('/selected-state', 'skill-hashes.json'))
+      expect(call[2]).toBe(join(selectedNative, 'harnessed', 'skill-hashes.json'))
     for (const call of vi.mocked(newBackupSessionDir).mock.calls)
-      expect(call[1]).toBe(join('/selected-state', 'backups'))
+      expect(call[1]).toBe(join(selectedNative, 'harnessed', 'backups'))
     expect(auditInstalledSkills).toHaveBeenCalledWith(
       expect.any(Array),
       skills,

@@ -47,15 +47,28 @@ export function isReviewedNeutralTeardown(manifest: Manifest): boolean {
     'playwright-cli': 'npm uninstall -g @playwright/cli',
   }
   const spec = manifest.spec
-  return (
-    Object.hasOwn(commands, manifest.metadata.name) &&
+  const emptyCleanup =
+    spec.uninstall?.cleanup_paths === undefined ||
+    (Array.isArray(spec.uninstall.cleanup_paths) && spec.uninstall.cleanup_paths.length === 0)
+  const reviewedGsdCodex =
+    manifest.metadata.name === 'gsd' &&
+    manifest.metadata.upstream.source === '@opengsd/gsd-core' &&
     spec.type === 'cli-npm' &&
-    spec.component_type === 'cli-binary' &&
+    spec.component_type === 'command' &&
     spec.install_type === 'npm' &&
     Value.Check(NpmCli, spec.install) &&
-    spec.uninstall?.cmd === commands[manifest.metadata.name] &&
-    (spec.uninstall.cleanup_paths === undefined ||
-      (Array.isArray(spec.uninstall.cleanup_paths) && spec.uninstall.cleanup_paths.length === 0))
+    spec.install.cmd === 'npx --yes @opengsd/gsd-core@latest --codex --global' &&
+    spec.uninstall?.cmd === 'npx --yes @opengsd/gsd-core@latest --codex --global --uninstall' &&
+    emptyCleanup
+  return (
+    reviewedGsdCodex ||
+    (Object.hasOwn(commands, manifest.metadata.name) &&
+      spec.type === 'cli-npm' &&
+      spec.component_type === 'cli-binary' &&
+      spec.install_type === 'npm' &&
+      Value.Check(NpmCli, spec.install) &&
+      spec.uninstall?.cmd === commands[manifest.metadata.name] &&
+      emptyCleanup)
   )
 }
 

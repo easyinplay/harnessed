@@ -1,5 +1,7 @@
 // issue #8 — doctor stale-hook self-heal probe.
 
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { checkStaleHooks } from '../../src/cli/lib/check-stale-hooks.js'
 
@@ -29,6 +31,7 @@ describe('checkStaleHooks', () => {
   })
 
   it('harnessed hook pointing at a MISSING absolute script → warn + fix', () => {
+    const binary = join(homedir(), 'AppData', 'Local', 'harnessed', 'bin', 'harnessed.exe')
     const r = withSettings(
       {
         hooks: {
@@ -37,7 +40,7 @@ describe('checkStaleHooks', () => {
               hooks: [
                 {
                   type: 'command',
-                  command: 'node "C:/gone/harnessed/bin/harnessed-inject-state.mjs"',
+                  command: `"${binary}" inject-state`,
                 },
               ],
             },
@@ -94,6 +97,7 @@ describe('checkStaleHooks', () => {
   // 4.34.1 — doc-discipline-gate (PreToolUse/Bash) was invisible to self-heal
   // because `check-docs` was not a first-party hook identity.
   it('orphaned doc-discipline-gate (compiled binary gone) → warn', () => {
+    const binary = join(homedir(), 'AppData', 'Local', 'harnessed', 'bin', 'harnessed.exe')
     const r = withSettings(
       {
         hooks: {
@@ -101,7 +105,10 @@ describe('checkStaleHooks', () => {
             {
               matcher: 'Bash',
               hooks: [
-                { type: 'command', command: '"C:/gone/harnessed/harnessed.exe" check-docs --hook' },
+                {
+                  type: 'command',
+                  command: `"${binary}" check-docs --hook`,
+                },
               ],
             },
           ],
@@ -111,7 +118,7 @@ describe('checkStaleHooks', () => {
     )
     expect(r.status).toBe('warn')
     expect(r.message).toContain('PreToolUse')
-    expect(r.message).toContain('C:/gone/harnessed/harnessed.exe')
+    expect(r.message).toContain(binary)
     expect(r.fix).toContain('harnessed uninstall')
   })
 

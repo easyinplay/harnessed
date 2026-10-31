@@ -173,20 +173,21 @@ describe('captured setup settings and language writes', () => {
     const original = '{"env":{"OTHER":"keep"}}\n'
     await writeFile(path, original)
     const host = { ...claude, platform: { ...claude.platform, stateRoot: join(blocker, 'nested') } }
-    expect(await mergeSettingsEnvKey('FIXTURE_KEY', 'yes', { hostContext: host })).toMatchObject({
-      outcome: 'warn',
-    })
+    expect(
+      await mergeSettingsEnvKey('GATEGUARD_EXEMPT_GLOBS', 'yes', { hostContext: host }),
+    ).toMatchObject({ outcome: 'warn' })
     expect(await readFile(path, 'utf8')).toBe(original)
     expect(existsSync(join(root, 'ambient-state'))).toBe(false)
   })
 
   it('creates settings under captured nativeHome after ambient host and native home drift', async () => {
     const path = join(claude.nativeHome, 'settings.json')
-    expect(await mergeSettingsEnvKey('FIXTURE_KEY', 'yes', { hostContext: claude })).toEqual({
-      outcome: 'created',
-      path,
+    expect(
+      await mergeSettingsEnvKey('GATEGUARD_EXEMPT_GLOBS', 'yes', { hostContext: claude }),
+    ).toEqual({ outcome: 'created', path })
+    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({
+      env: { GATEGUARD_EXEMPT_GLOBS: 'yes' },
     })
-    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({ env: { FIXTURE_KEY: 'yes' } })
     expect(existsSync(join(claude.platform.homeDir, 'settings.json'))).toBe(false)
     expect(existsSync(join(root, 'ambient-claude'))).toBe(false)
   })
@@ -196,18 +197,20 @@ describe('captured setup settings and language writes', () => {
     const original = '{"env":{"OTHER":"keep"},"hooks":{"fixture":[]}}\r\n'
     await mkdir(claude.nativeHome, { recursive: true })
     await writeFile(path, original)
-    const result = await mergeSettingsEnvKey('FIXTURE_KEY', 'yes', { hostContext: claude })
+    const result = await mergeSettingsEnvKey('GATEGUARD_EXEMPT_GLOBS', 'yes', {
+      hostContext: claude,
+    })
     expect(result.outcome).toBe('merged')
     if (result.outcome !== 'merged') throw new Error('expected backed-up settings merge')
     expect(result.backupPath.startsWith(join(claude.platform.stateRoot, 'backups'))).toBe(true)
     expect(await readFile(result.backupPath, 'utf8')).toBe(original)
     expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({
-      env: { OTHER: 'keep', FIXTURE_KEY: 'yes' },
+      env: { OTHER: 'keep', GATEGUARD_EXEMPT_GLOBS: 'yes' },
       hooks: { fixture: [] },
     })
     const backups = await readdir(join(claude.platform.stateRoot, 'backups'))
     expect(
-      await mergeSettingsEnvKey('FIXTURE_KEY', 'yes', {
+      await mergeSettingsEnvKey('GATEGUARD_EXEMPT_GLOBS', 'yes', {
         hostContext: claude,
         skipIfPresent: () => true,
       }),
@@ -239,9 +242,9 @@ describe('captured setup settings and language writes', () => {
   it('never writes Claude JSON for a captured Codex host even when ambient selection is Claude', async () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'claude')
     expect(await enableAgentTeamsInSettings(codex)).toMatchObject({ status: 'warn' })
-    expect(await mergeSettingsEnvKey('FIXTURE_KEY', 'yes', { hostContext: codex })).toMatchObject({
-      outcome: 'warn',
-    })
+    expect(
+      await mergeSettingsEnvKey('GATEGUARD_EXEMPT_GLOBS', 'yes', { hostContext: codex }),
+    ).toMatchObject({ outcome: 'warn' })
     const path = join(codex.platform.stateRoot, 'user-lang')
     expect(await enableUserLangInSettings('zh-CN', codex)).toEqual({
       status: 'pinned',
@@ -266,5 +269,31 @@ describe('captured setup settings and language writes', () => {
     }
     expect(existsSync(join(root, 'ambient-state'))).toBe(false)
     expect(existsSync(join(root, 'changed-state'))).toBe(false)
+  })
+
+  it('removes a fresh settings file when its ownership receipt cannot be committed', async () => {
+    const receiptPath = join(claude.platform.stateRoot, 'settings-env-ownership.json')
+    await mkdir(receiptPath, { recursive: true })
+    const path = join(claude.nativeHome, 'settings.json')
+    const result = await mergeSettingsEnvKey('HARNESSED_USER_LANG', 'en', {
+      hostContext: claude,
+    })
+    expect(result).toMatchObject({ outcome: 'warn' })
+    expect(existsSync(path)).toBe(false)
+  })
+
+  it('restores existing settings when its ownership receipt cannot be committed', async () => {
+    const path = join(claude.nativeHome, 'settings.json')
+    const original = '{"env":{"OTHER":"keep"}}\n'
+    await mkdir(claude.nativeHome, { recursive: true })
+    await writeFile(path, original)
+    await mkdir(join(claude.platform.stateRoot, 'settings-env-ownership.json'), {
+      recursive: true,
+    })
+    const result = await mergeSettingsEnvKey('HARNESSED_USER_LANG', 'en', {
+      hostContext: claude,
+    })
+    expect(result).toMatchObject({ outcome: 'warn' })
+    expect(await readFile(path, 'utf8')).toBe(original)
   })
 })

@@ -12,7 +12,7 @@
       "kind": "gates",
       "exitCode": 0,
       "stdout": [
-        "{\n  \"master\": \"plan\",\n  \"fire\": [\n    {\n      \"sub\": \"plan-phase\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"architecture\",\n      \"reason\": \"gate judgments.stage-routing.plan-architecture-delegate.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+        "{\n  \"master\": \"plan\",\n  \"fire\": [\n    {\n      \"sub\": \"plan-phase\",\n      \"order\": 6,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"architecture\",\n      \"reason\": \"gate judgments.stage-routing.plan-architecture-delegate.fires = false\"\n    },\n    {\n      \"sub\": \"spec\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-spec-phase.fires = false\"\n    },\n    {\n      \"sub\": \"ui\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-ui-phase.fires = false\"\n    },\n    {\n      \"sub\": \"secure\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-secure-phase.fires = false\"\n    },\n    {\n      \"sub\": \"ai-integration\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-ai-integration-phase.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
       ],
       "stderr": []
     },

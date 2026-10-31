@@ -123,7 +123,7 @@ Sister `workflows/capabilities.yaml`:
 {{ host.teams_step_note.skill }}
 {{ host.teams_teardown_note }}
 5. 否则,对 `order` 里每个 fired sub(serial 串行、parallel 并发):
-   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed facts <sub> --out .harnessed-facts.json`(填完 null)→ `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → 对它的 fired subs 重复本循环。
+   - **若该项 `is_master: true`**(本身是 stage master —— 如 `/auto` fire `plan`/`task`/`verify`):**不要**直接 prompt+spawn。RECURSE:跑该 master 自己的 `harnessed facts <sub> --out .harnessed-facts.json`(填完 null)→ `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → 对它的 fired subs 重复本循环。nested `checkpoint start` 会在现有 root ledger 内展开 parent entry；不得替换 root workflow owner、时间戳、checkpoint path 或 sibling entries。
    - **否则(leaf sub):**
      a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → 解析 `{prompt, max_iterations, model}`。
      b. 用 {{ host.native }} subagent({{ host.spawn_subagent.zh_tool }})以该 `prompt` + `model` spawn,然后用 harnessed 自己的完成闸门驱动交付:

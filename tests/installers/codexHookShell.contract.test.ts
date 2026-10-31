@@ -99,7 +99,7 @@ function exec(shell: Shell, cmd: string, env: Record<string, string | undefined>
 }
 
 /** What codex does before handing the command to the shell. */
-const expand = (literal: string) => literal.replaceAll('${PLUGIN_ROOT}', pluginRoot)
+const expand = (literal: string) => literal.replaceAll(`\${PLUGIN_ROOT}`, pluginRoot)
 
 describe.each(SHELLS)('codex hook command through $name', (shell) => {
   const ok = available(shell)

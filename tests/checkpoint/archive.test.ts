@@ -9,6 +9,7 @@ const mkdirCalls: string[] = []
 vi.mock('node:fs', () => ({
   writeFileSync: (p: string, data: string) => void fsState.set(p, data),
   mkdirSync: (p: string) => void mkdirCalls.push(p),
+  existsSync: (_p: string) => false,
   // v4.1.3 — atomic write does writeFileSync(tmp) + renameSync(tmp, path).
   renameSync: (src: string, dst: string) => {
     fsState.set(dst, fsState.get(src) as string)
@@ -29,7 +30,7 @@ describe('archive — writeArchive raw dump (T2.4 fixtures 21-24)', () => {
     const p = writeArchive('3.1', [{ role: 'user', content: 'hi' }])
     // v3.0.3 — archive path now under ~/.claude/harnessed/archive/phase-<X.Y>/
     // (homedir-rooted via getHarnessedRoot SoT). Match cross-platform.
-    expect(p).toMatch(/\.claude[\\/]harnessed[\\/]archive[\\/]phase-3\.1[\\/]raw-/)
+    expect(p).toMatch(/\.claude[\\/]harnessed[\\/]archive[\\/][a-f0-9]{16}[\\/]phase-3\.1[\\/]raw-/)
     expect(p.endsWith('.json')).toBe(true)
     expect(fsState.get(p)).toBeDefined()
     expect(mkdirCalls.some((d) => d.includes('phase-3.1'))).toBe(true)

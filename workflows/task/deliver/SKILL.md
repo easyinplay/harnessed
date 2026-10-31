@@ -10,7 +10,7 @@ description: |
   schema_version: harnessed.workflow.v3 with disciplines_applied [6] + tools_available
   [completion-gate, verification-before-completion, agent-teams-create,
   agent-teams-send-message, agent-teams-shutdown,
-  planning-with-files]. Triggered by harnessed CLI `harnessed task-deliver --task <text>`
+  planning-with-files]. Triggered by headless CLI `harnessed run task-deliver`
   or slash command `/task-deliver` after `harnessed setup`.
 trigger_phrases:
   - "deliver this subtask"

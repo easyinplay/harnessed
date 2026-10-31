@@ -78,13 +78,11 @@ prompts:
     is_master: true
     specialist: "Stage 2 plan 分发器"
     responsibility: |
-      驱动 2 步 plan 阶段:先做架构审查(`/plan-architecture` ——
-      仅当 `phase.is_complex_architecture == true` 时),再做无条件的
-      phase 规划(`/plan-phase` —— GSD plan-phase + planning-with-files
-      持久化)。
+      按顺序执行条件架构、spec、UI、安全和 AI integration 设计契约，
+      最后无条件执行 `/plan-phase`。
     checklist: []
-    severity: "有序串行 — 架构(视情况)→ phase(总是)"
-    description: "Stage 2 Plan master — 架构审查(视情况)后接 phase 规划(总是执行并持久化)。"
+    severity: "architecture? → spec? → ui? → secure? → ai-integration? → phase"
+    description: "Stage 2 Plan master — 条件设计契约后执行持久化 phase 规划。"
 
   task:
     primary_cap: ""
@@ -254,6 +252,38 @@ prompts:
       - "记录被否决备选方案的 tradeoff(让 reviewer 看到那条没走的路)"
     severity: "approved / approved-with-changes / blocked"
     description: "针对复杂改动的 Staff Engineer 架构审查(在 plan-phase 前锁定设计)。"
+
+  plan-spec:
+    primary_cap: "gsd-spec-phase"
+    specialist: "Specification contract planner"
+    responsibility: "在常规 phase 规划前锁定 SDD specification。"
+    checklist: ["运行 `/gsd-spec-phase`", "解决阻塞决策", "产出 spec artifact"]
+    severity: "ready / blocked"
+    description: "plan-phase 前的条件 GSD spec-phase 契约。"
+
+  plan-ui:
+    primary_cap: "gsd-ui-phase"
+    specialist: "UI contract planner"
+    responsibility: "在常规 phase 规划前锁定 UI 设计契约。"
+    checklist: ["运行 `/gsd-ui-phase`", "锁定 layout 与 interaction contract", "产出 UI artifact"]
+    severity: "ready / blocked"
+    description: "plan-phase 前的条件 GSD ui-phase 契约。"
+
+  plan-secure:
+    primary_cap: "gsd-secure-phase"
+    specialist: "Security contract planner"
+    responsibility: "在常规 phase 规划前锁定 threat model。"
+    checklist: ["运行 `/gsd-secure-phase`", "锁定 mitigation 与 trust boundary", "产出 security artifact"]
+    severity: "ready / blocked"
+    description: "plan-phase 前的条件 GSD secure-phase 契约。"
+
+  plan-ai-integration:
+    primary_cap: "gsd-ai-integration-phase"
+    specialist: "AI integration contract planner"
+    responsibility: "在常规 phase 规划前锁定 AI-SPEC contract。"
+    checklist: ["运行 `/gsd-ai-integration-phase`", "锁定 evaluation 与 guardrail", "产出 AI-SPEC artifact"]
+    severity: "ready / blocked"
+    description: "plan-phase 前的条件 GSD ai-integration-phase 契约。"
 
   plan-phase:
     primary_cap: "gsd-plan-phase"

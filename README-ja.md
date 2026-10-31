@@ -514,7 +514,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `harnessed status` | 現在の phase + ロックホルダー |
 | `harnessed doctor` | ヘルスチェック(Node / MCP / jq / Win bash / routing / token budget / skill 完全性 / GateGuard 競合 / update-available など) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自己更新(インストールチャネルで分岐):バイナリ版は GitHub releases からその場で自己置換(sha256 + ed25519 署名検証 —— releases には `<asset>.sha256.sig` が同梱、4.32.19 以降は署名付きリリース契約;置換された前バージョンはロールバック用に退避);npm 版は `npm i -g harnessed@latest` を実行。`--check` は最新バージョンを報告;`--rollback [version]`(バイナリ版のみ)は退避済みの前バージョンバイナリをアトミックに復元 —— npm 版は `npm i -g harnessed@<version>` を案内;`--upstreams` はベース manifests を再実行;`--migration-report` は読み取り専用の陳腐化状態インベントリ |
-| `harnessed release-preflight` | Read-only のリリース準備ゲート（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；準備未完了なら exit 1。Ship-stage のゲート |
+| `harnessed release-preflight [--release-version <semver>]` | Read-only のリリース準備ゲート（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；`--release-version` は manifest 検出を上書き。準備未完了なら exit 1。Ship-stage のゲート |
 | `harnessed retro --done` | `/retro` 実行後に retro-reminder フェーズカウンターをリセット（各ターンの RETRO-DUE ナッジをクリア） |
 | `harnessed install <name>` | 上流 manifest をインストール |
 | `harnessed uninstall [name]` | リバースアンインストール —— skill をインストールするメソッド(`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`)では manifest が宣言する `spec.uninstall` teardown(cmd + `$HOME` 内に限定、冪等な `cleanup_paths`)を実行;その他のメソッドは従来どおり per-method の逆適用 |
@@ -522,6 +522,15 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `harnessed rollback <timestamp>` | **バックアップスナップショット**のワンラインロールバック（EOL 保持 + sha1 検証） —— `update --rollback` とは別物:あちらは前バージョンの**コンパイル済みバイナリ**を復元 |
 | `harnessed gc` | 期限切れバックアップのクリーンアップ |
 | `harnessed audit-log` | ルーティング透過ログのクエリ（`--filter` jq 式に対応） |
+| `harnessed agents-md` | `<CODEX_HOME>/AGENTS.md` の marker 区切り harnessed ブロックを書き込み・更新し、外側の文章は保持 |
+| `harnessed audit` | manifest と runtime の自己整合性を監査（`--skip-runtime` は manifest のみ） |
+| `harnessed check-docs` | `.planning/` の文書規律を検査し、advisory / blocking 検出時は非ゼロで終了 |
+| `harnessed eval` | 決定論的な orchestrator 行動回帰 suite を実行；`harnessed eval record` で再生可能 scenario を記録 |
+| `harnessed exempt-gateguard` | 二重 guard 衝突を解消する `.planning/**` GateGuard 免除を永続化 |
+| `harnessed facts <master>` | `harnessed gates --context-file` 用の確定済み・未確定 gate facts を出力 |
+| `harnessed install-base [--dry-run]` | phase 1.3 base profile をインストール；`--dry-run` は書き込まず preview |
+| `harnessed manifest-add <upstream>` | EE-5 merge gate を通して upstream adapter を追加 |
+| `harnessed research --query <text>` | headless research workflow を実行；`--dry-run` は spawn せず preview |
 
 ### フラグ
 

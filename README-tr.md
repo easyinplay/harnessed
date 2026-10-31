@@ -514,7 +514,7 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `harnessed status` | Mevcut phase + kilit sahibi |
 | `harnessed doctor` | Sağlık kontrolü (Node / MCP / jq / Win bash / routing / token budget / skill bütünlüğü / GateGuard çakışması / update-available vb.) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Kanala göre kendini güncelleme: binary kurulumlar GitHub releases'ten yerinde kendini değiştirir (sha256 + ed25519 imza doğrulamalı — release'ler `<asset>.sha256.sig` içerir, 4.32.19'dan beri imzalı-release sözleşmesi; değiştirilen sürüm rollback için saklanır); npm kurulumları `npm i -g harnessed@latest` çalıştırır. `--check` en son sürümü bildirir; `--rollback [version]` (yalnızca binary kurulumlar) saklanan önceki binary'yi atomik olarak geri yükler — npm kurulumları `npm i -g harnessed@<version>` komutuna yönlendirilir; `--upstreams` temel manifest'leri yeniden çalıştırır; `--migration-report` salt-okunur eski durum envanteridir |
-| `harnessed release-preflight` | Salt-okunur sürüm-hazırlık kapısı (CHANGELOG `[Unreleased]` / sürüm / git-clean / tag-yokluğu); hazır değilse 1 ile çıkar. Ship-aşaması kapısı. |
+| `harnessed release-preflight [--release-version <semver>]` | Salt-okunur sürüm-hazırlık kapısı (CHANGELOG `[Unreleased]` / sürüm / git-clean / tag-yokluğu); `--release-version` manifest keşfini geçersiz kılar; hazır değilse 1 ile çıkar. Ship-aşaması kapısı. |
 | `harnessed retro --done` | `/retro` çalıştırdıktan sonra retro-hatırlatıcı phase sayacını sıfırlar (tur başına RETRO-DUE dürtmesini temizler). |
 | `harnessed install <isim>` | Upstream manifest'i kurar |
 | `harnessed uninstall [isim]` | Ters kaldırma — skill kuran method'lar (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`) için manifest'te bildirilen `spec.uninstall` teardown'ını çalıştırır (cmd + `$HOME` ile sınırlı, idempotent `cleanup_paths`); diğer method'lar kendi method-başına ters işlemlerini korur |
@@ -522,6 +522,15 @@ planning-with-files /plan (çapraz-kesim araç) → artifact'ları .planning/<ph
 | `harnessed rollback <zaman_damgası>` | Bir **yedek anlık görüntüsünün** tek satır geri alınması (EOL koruma + sha1 doğrulama) — önceki bir **derlenmiş binary**'yi geri yükleyen `update --rollback`'ten farklıdır |
 | `harnessed gc` | Süresi dolmuş yedekleri temizler |
 | `harnessed audit-log` | Yönlendirme şeffaflık günlüğü sorgusu (`--filter` jq ifadesini destekler) |
+| `harnessed agents-md` | `<CODEX_HOME>/AGENTS.md` içindeki marker-sınırlı harnessed bloğunu yazar/günceller, dış metni korur |
+| `harnessed audit` | Manifest ve runtime öz-tutarlılığını denetler (`--skip-runtime` yalnız manifesti kontrol eder) |
+| `harnessed check-docs` | `.planning/` belge disiplinini kontrol eder; advisory veya blocking bulguda sıfır olmayan exit code döndürür |
+| `harnessed eval` | Deterministik orchestrator davranış regression suite'ini çalıştırır; `harnessed eval record` replay edilebilir scenario kaydeder |
+| `harnessed exempt-gateguard` | Çift guard çakışmasını çözen `.planning/**` GateGuard muafiyetini kalıcılaştırır |
+| `harnessed facts <master>` | `harnessed gates --context-file` için belirli ve kararsız gate facts üretir |
+| `harnessed install-base [--dry-run]` | Phase 1.3 base profile kurar; `--dry-run` yazmadan preview gösterir |
+| `harnessed manifest-add <upstream>` | EE-5 merge gate üzerinden upstream adapter ekler |
+| `harnessed research --query <text>` | Headless research workflow çalıştırır; `--dry-run` spawn etmeden preview gösterir |
 
 ### Bayraklar
 

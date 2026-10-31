@@ -191,21 +191,23 @@ describe('cli/run — 15 cells per v3.4.4 PHASE-1-SPEC.md', () => {
     expect(parsed).toHaveProperty('gateContext')
   })
 
-  it('cell 12 — --max-iterations 5 --model haiku --staged → gateContext carries all three', async () => {
-    await runCli([
-      'run',
-      'verify-paranoid',
-      '--max-iterations',
-      '5',
-      '--model',
-      'haiku',
-      '--staged',
-    ])
+  it('cell 12 — auto --staged bridges only the serial stage pause option', async () => {
+    await runCli(['run', 'auto', '--max-iterations', '5', '--model', 'haiku', '--staged'])
     const calls = vi.mocked(runWorkflow).mock.calls
     const [, , opts] = calls[0] ?? []
     expect(opts?.gateContext?.maxIterations).toBe(5)
     expect(opts?.gateContext?.modelOverride).toBe('haiku')
     expect(opts?.gateContext?.staged).toBe(true)
+    expect(opts?.masterOpts).toEqual({ pauseBetweenStages: true })
+    expect(opts?.masterOpts?.assessComplexity).toBeUndefined()
+    expect(opts?.masterOpts?.prompter).toBeUndefined()
+    expect(opts?.masterOpts?.promptUserUnderstanding).toBeUndefined()
+  })
+
+  it('cell 12a — auto without --staged relies on orchestrator pre-flight defaults', async () => {
+    await runCli(['run', 'auto'])
+    const [, , opts] = vi.mocked(runWorkflow).mock.calls[0] ?? []
+    expect(opts?.masterOpts).toBeUndefined()
   })
 
   it('cell 12b — --skip-sub clarify,test → gateContext.skip_subs array (v3.9.26 Option A)', async () => {

@@ -1,8 +1,9 @@
 import {
   existsSync,
   lstatSync,
+  mkdirSync,
   readFileSync,
-  renameSync,
+  rmSync,
   symlinkSync,
   unlinkSync,
   writeFileSync,
@@ -77,17 +78,16 @@ describe('isolated fixtures and bounded subprocesses', () => {
   it('refuses a junction-swapped owned root without touching the target', () => {
     const fixture = createFixture()
     const target = createFixture()
-    const parked = join(target.root, 'parked-fixture')
     const sentinel = join(target.cwd, 'retain')
     writeFileSync(sentinel, 'retain')
-    renameSync(fixture.root, parked)
+    rmSync(fixture.root, { recursive: true, force: true })
     try {
       symlinkSync(target.cwd, fixture.root, process.platform === 'win32' ? 'junction' : 'dir')
       expect(() => cleanupFixture(fixture)).toThrow(/unsafe/i)
       expect(readFileSync(sentinel, 'utf8')).toBe('retain')
     } finally {
       if (lstatSync(fixture.root).isSymbolicLink()) unlinkSync(fixture.root)
-      renameSync(parked, fixture.root)
+      mkdirSync(fixture.root, { recursive: true })
       cleanupFixture(fixture)
       cleanupFixture(target)
     }

@@ -9,7 +9,7 @@ import { refreshOwnedUpdate } from '../../src/cli/lib/refreshOwnedUpdate.js'
 import { readHashLedger, recordSkillHashes } from '../../src/cli/lib/skillIntegrity.js'
 import { setLocale } from '../../src/i18n/index.js'
 import { runInstall } from '../../src/installers/index.js'
-import { createHostInstallContext } from '../../src/platform/hostInstallContext.js'
+import { captureHostInstallContext } from '../../src/platform/hostInstallContext.js'
 import { claudeDescriptor, codexDescriptor, type HostId } from '../../src/platform/platform.js'
 
 const fixture = vi.hoisted(() => ({ assets: '', deniedPath: '' }))
@@ -35,15 +35,9 @@ const skillBody = '<!-- harnessed-generated:v5.0.5 -->\n# Discuss\n'
 const bundledDefinition = 'name: discuss\n'
 
 function contextFor(host: HostId, stateRoot?: string) {
-  const platform = host === 'codex' ? codexDescriptor(root) : claudeDescriptor(root)
-  return createHostInstallContext(
-    { ...platform, ...(stateRoot ? { stateRoot } : {}) },
-    {
-      os: process.platform,
-      userHome: root,
-      nativeHome: join(root, `custom ${host} home`),
-    },
-  )
+  vi.stubEnv('HARNESSED_PLATFORM', host)
+  vi.stubEnv('HARNESSED_ROOT_OVERRIDE', stateRoot ?? '')
+  return captureHostInstallContext({ hostId: host, userHome: root })
 }
 
 function skillsBase(context: ReturnType<typeof contextFor>) {
@@ -114,9 +108,10 @@ describe('refreshOwnedUpdate reminder opt-out', () => {
     'codex',
   ] as const)('%s honors opt-out under the captured custom native home rather than the descriptor default', async (host) => {
     const context = contextFor(host)
-    const preferences = await seedPreferences(join(context.nativeHome, 'harnessed'), false)
+    const preferences = await seedPreferences(context.platform.stateRoot, false)
     const before = await readFile(preferences, 'utf8')
-    await seedPreferences(context.platform.stateRoot, true)
+    const descriptor = host === 'codex' ? codexDescriptor(root) : claudeDescriptor(root)
+    await seedPreferences(descriptor.stateRoot, true)
     vi.mocked(runInstall).mockResolvedValue({
       ok: true,
       backupId: '',
@@ -131,16 +126,18 @@ describe('refreshOwnedUpdate reminder opt-out', () => {
     ])
     expect(runInstall).not.toHaveBeenCalled()
     expect(await readFile(preferences, 'utf8')).toBe(before)
+    expect(context.nativeHome).toBe(join(root, `custom ${host} home`))
+    expect(context.platform.stateRoot).toBe(join(context.nativeHome, 'harnessed'))
   })
 
   it.each([
     'claude',
     'codex',
-  ] as const)('%s gives an explicit captured state root priority over native-home preferences and later environment changes', async (host) => {
+  ] as const)('%s ignores an explicit root override and preserves native-home opt-out after environment drift', async (host) => {
     const override = join(root, 'explicit state root')
     const context = contextFor(host, override)
-    const preferences = await seedPreferences(override, false)
-    await seedPreferences(join(context.nativeHome, 'harnessed'), true)
+    await seedPreferences(override, true)
+    const preferences = await seedPreferences(context.platform.stateRoot, false)
     vi.stubEnv('HARNESSED_ROOT_OVERRIDE', join(root, 'unrelated environment root'))
     vi.stubEnv(
       host === 'codex' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR',
@@ -153,6 +150,8 @@ describe('refreshOwnedUpdate reminder opt-out', () => {
       expect.objectContaining({ id: 'harnessed-workflows', status: 'updated', verified: true }),
     ])
     expect(runInstall).not.toHaveBeenCalled()
+    expect(context.platform.stateRoot).toBe(join(context.nativeHome, 'harnessed'))
+    expect(context.platform.stateRoot).not.toBe(override)
     expect(JSON.parse(await readFile(preferences, 'utf8'))).toEqual({
       schemaVersion: 1,
       enabled: false,
@@ -174,6 +173,10 @@ describe('refreshOwnedUpdate workflow closure', () => {
     expect(await readFile(join(skillsBase(context), 'discuss', 'SKILL.md'), 'utf8')).toContain(
       '# Discuss',
     )
+    if (host === 'codex') {
+      expect(context.platform.skillsDir).toBe(join(root, '.agents', 'skills'))
+      expect(existsSync(join(context.nativeHome, 'skills', 'discuss'))).toBe(false)
+    }
     const ledger = await readHashLedger(join(context.platform.stateRoot, 'skill-hashes.json'))
     expect(ledger?.discuss?.sha256).toMatch(/^[a-f0-9]{64}$/)
     expect(existsSync(join(context.platform.stateRoot, 'backups'))).toBe(false)

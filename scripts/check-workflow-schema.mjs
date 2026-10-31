@@ -37,6 +37,8 @@ import { basename, dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Type } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
+import { Parser } from 'expr-eval'
+import ts from 'typescript'
 import { parse as parseYaml } from 'yaml'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -44,6 +46,152 @@ const DEFAULT_ROOT = resolve(__dirname, '..')
 const ROOT = process.env.HARNESSED_CHECK_ROOT
   ? resolve(process.env.HARNESSED_CHECK_ROOT)
   : DEFAULT_ROOT
+
+function propertyNameText(name) {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text
+  }
+  return null
+}
+
+function unwrapExpression(expression) {
+  let current = expression
+  while (
+    ts.isAsExpression(current) ||
+    ts.isParenthesizedExpression(current) ||
+    ts.isSatisfiesExpression(current)
+  ) {
+    current = current.expression
+  }
+  return current
+}
+
+function findVariableInitializer(sourceFile, variableName) {
+  let initializer = null
+  function visit(node) {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === variableName &&
+      node.initializer
+    ) {
+      initializer = unwrapExpression(node.initializer)
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  return initializer
+}
+
+function typeBoxObjectLiteral(sourceFile, variableName) {
+  const initializer = findVariableInitializer(sourceFile, variableName)
+  if (!initializer || !ts.isCallExpression(initializer)) {
+    throw new Error(`Could not find Type.Object initializer for ${variableName}`)
+  }
+  const expression = initializer.expression
+  if (
+    !ts.isPropertyAccessExpression(expression) ||
+    expression.expression.getText(sourceFile) !== 'Type' ||
+    expression.name.text !== 'Object'
+  ) {
+    throw new Error(`${variableName} must be declared with Type.Object(...)`)
+  }
+  const properties = initializer.arguments[0]
+  if (!properties || !ts.isObjectLiteralExpression(properties)) {
+    throw new Error(`${variableName} Type.Object(...) must receive an object literal`)
+  }
+  return properties
+}
+
+function isOptionalType(initializer, sourceFile) {
+  const expression = unwrapExpression(initializer)
+  return (
+    ts.isCallExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    expression.expression.expression.getText(sourceFile) === 'Type' &&
+    expression.expression.name.text === 'Optional'
+  )
+}
+
+function typeBoxMembers(sourceFile, variableName) {
+  const members = new Map()
+  for (const property of typeBoxObjectLiteral(sourceFile, variableName).properties) {
+    if (!ts.isPropertyAssignment(property)) continue
+    const name = propertyNameText(property.name)
+    if (name) members.set(name, { optional: isOptionalType(property.initializer, sourceFile) })
+  }
+  return members
+}
+
+function findReturnedObject(sourceFile, functionName) {
+  let returned = null
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === functionName && node.body) {
+      for (const statement of node.body.statements) {
+        if (ts.isReturnStatement(statement) && statement.expression) {
+          const expression = unwrapExpression(statement.expression)
+          if (ts.isObjectLiteralExpression(expression)) returned = expression
+        }
+      }
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(sourceFile)
+  if (!returned) throw new Error(`Could not find object return in ${functionName}`)
+  return returned
+}
+
+function objectLiteralMembers(objectLiteral) {
+  const root = new Set()
+  const nested = new Map()
+  for (const property of objectLiteral.properties) {
+    if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) continue
+    const name = propertyNameText(property.name)
+    if (!name) continue
+    root.add(name)
+    if (!ts.isPropertyAssignment(property)) continue
+    const initializer = unwrapExpression(property.initializer)
+    if (!ts.isObjectLiteralExpression(initializer)) continue
+    const childNames = new Set()
+    for (const child of initializer.properties) {
+      if (!ts.isPropertyAssignment(child) && !ts.isShorthandPropertyAssignment(child)) continue
+      const childName = propertyNameText(child.name)
+      if (childName) childNames.add(childName)
+    }
+    nested.set(name, childNames)
+  }
+  return { root, nested }
+}
+
+function loadRuntimeContextContract() {
+  const schemaPath = resolve(DEFAULT_ROOT, 'src/workflow/schema/phaseFactContext.ts')
+  const schemaSource = ts.createSourceFile(
+    schemaPath,
+    readFileSync(schemaPath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
+  const defaultPath = resolve(DEFAULT_ROOT, 'src/cli/lib/gateContext.ts')
+  const defaultSource = ts.createSourceFile(
+    defaultPath,
+    readFileSync(defaultPath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  )
+  return {
+    schemaRoot: typeBoxMembers(schemaSource, 'PhaseFactContext'),
+    schemaNested: new Map([
+      ['phase', typeBoxMembers(schemaSource, 'PhaseShape')],
+      ['subtask', typeBoxMembers(schemaSource, 'SubtaskShape')],
+      ['user', typeBoxMembers(schemaSource, 'UserShape')],
+    ]),
+    defaults: objectLiteralMembers(findReturnedObject(defaultSource, 'buildDefaultGateContext')),
+  }
+}
 
 // ── Capabilities schema — mirrors src/workflow/schema/capabilities.ts ─────────
 const RequiresShape = Type.Object(
@@ -315,23 +463,42 @@ const ORPHAN_TRIGGER_EXEMPTIONS = new Map([
     'stage-routing.ship-preflight-always',
     '(a) workflows/ship/auto/workflow.yaml delegates `preflight` unconditionally (always-fire)',
   ],
-  [
-    'stage-phase-gate.gsd-spec-phase',
-    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
-  ],
-  [
-    'stage-phase-gate.gsd-ui-phase',
-    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
-  ],
-  [
-    'stage-phase-gate.gsd-secure-phase',
-    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
-  ],
-  [
-    'stage-phase-gate.gsd-ai-integration-phase',
-    '(b) GSD design-contract phase — no sub-workflow exists yet (built-but-unwired; plan-stage scope, not T2.3)',
-  ],
 ])
+
+const expressionParser = new Parser()
+const runtimeContextContract = loadRuntimeContextContract()
+
+function validateExpressionMembers(label, triggerName, field, expression) {
+  let variables
+  try {
+    variables = expressionParser.parse(expression).variables({ withMembers: true })
+  } catch {
+    return
+  }
+  for (const variable of variables) {
+    const [root, member] = variable.split('.')
+    if (root === 'env') continue
+    const schemaMember = member
+      ? runtimeContextContract.schemaNested.get(root)?.get(member)
+      : runtimeContextContract.schemaRoot.get(root)
+    if (!schemaMember) {
+      console.error(
+        `::error::FAIL ${label} — triggers.${triggerName}.${field} unknown runtime expression member '${variable}'`,
+      )
+      failed++
+      continue
+    }
+    const suppliedByDefault = member
+      ? runtimeContextContract.defaults.nested.get(root)?.has(member)
+      : runtimeContextContract.defaults.root.has(root)
+    if (!schemaMember.optional && !suppliedByDefault) {
+      console.error(
+        `::error::FAIL ${label} — triggers.${triggerName}.${field} required runtime expression member '${variable}' is missing from buildDefaultGateContext`,
+      )
+      failed++
+    }
+  }
+}
 
 /** All triggers declared across triggers-shaped judgment files: `<file>.<trigger>`. */
 const declaredTriggers = new Set()
@@ -436,6 +603,12 @@ if (existsSync(judgmentsDir)) {
       declaredTriggers.add(`${base}.${trigName}`)
     }
     for (const [trigName, trig] of Object.entries(parsed.triggers ?? {})) {
+      if (typeof trig.fires_when === 'string') {
+        validateExpressionMembers(label, trigName, 'fires_when', trig.fires_when)
+      }
+      if (typeof trig.skips_when === 'string') {
+        validateExpressionMembers(label, trigName, 'skips_when', trig.skips_when)
+      }
       for (const inv of trig.invokes ?? []) {
         if (capNames.size > 0 && !capNames.has(inv.capability)) {
           console.error(

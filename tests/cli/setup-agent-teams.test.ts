@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('node:fs/promises', () => ({
   readdir: vi.fn(),
   readFile: vi.fn(),
+  writeFile: vi.fn(),
   stat: vi.fn(),
   cp: vi.fn(),
   mkdir: vi.fn(),
@@ -27,7 +28,26 @@ vi.mock('../../src/cli/lib/checkAgentTeams.js', () => ({
   checkAgentTeams: vi.fn(),
 }))
 
-import { cp, readdir, readFile, stat } from 'node:fs/promises'
+vi.mock('../../src/cli/lib/generateCommands.js', () => ({
+  writeAllCommands: vi.fn(async () => ({ results: [], warnings: [] })),
+}))
+
+vi.mock('../../src/cli/lib/enableAgentTeamsInSettings.js', () => ({
+  enableAgentTeamsInSettings: vi.fn(async () => ({
+    status: 'already-enabled',
+    path: '/fixture/settings.json',
+  })),
+}))
+
+vi.mock('../../src/cli/lib/enableUserLangInSettings.js', () => ({
+  enableUserLangInSettings: vi.fn(async () => ({
+    status: 'already-set',
+    path: '/fixture/settings.json',
+    existing: 'en',
+  })),
+}))
+
+import { cp, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { Command } from 'commander'
 import { checkAgentTeams } from '../../src/cli/lib/checkAgentTeams.js'
 import { registerSetup } from '../../src/cli/setup.js'
@@ -47,6 +67,7 @@ const readdirMock = vi.mocked(readdir)
 const statMock = vi.mocked(stat)
 const cpMock = vi.mocked(cp)
 const readFileMock = vi.mocked(readFile)
+const writeFileMock = vi.mocked(writeFile)
 const runInstallMock = vi.mocked(runInstall)
 const validateManifestFileMock = vi.mocked(validateManifestFile)
 const checkAgentTeamsMock = vi.mocked(checkAgentTeams)
@@ -108,6 +129,7 @@ function setupHappyPathMocks() {
   })
   cpMock.mockResolvedValue(undefined)
   readFileMock.mockResolvedValue('yaml-content' as never)
+  writeFileMock.mockResolvedValue(undefined)
   validateManifestFileMock.mockReturnValue({
     ok: true,
     errors: [],
@@ -122,6 +144,7 @@ describe('cli/setup — Phase v2.0-2.3 W1.1 (Agent Teams probe + Pure bundled hi
     statMock.mockReset()
     cpMock.mockReset()
     readFileMock.mockReset()
+    writeFileMock.mockReset()
     runInstallMock.mockReset()
     validateManifestFileMock.mockReset()
     checkAgentTeamsMock.mockReset()

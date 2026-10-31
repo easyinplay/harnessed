@@ -59,6 +59,7 @@ const SearchType = Type.Union([
 
 const PhaseShape = Type.Object(
   {
+    stage: Type.Optional(Type.String()),
     type: PhaseType,
     open_decisions: Type.Number(),
     scope_days: Type.Number(),
@@ -88,6 +89,8 @@ const PhaseShape = Type.Object(
     // built-but-unwired class as T2.3's needs_browser_automation.
     has_ai_phase: Type.Boolean(), // gsd-eval-review — AI phase eval coverage audit
     requires_coverage_audit: Type.Boolean(), // gsd-validate-phase — Nyquist coverage backfill
+    requires_spec: Type.Boolean(), // gsd-spec-phase — SDD contract before plan execution
+    builds_ai_system: Type.Boolean(), // gsd-ai-integration-phase — AI-SPEC contract
     // T2.1 D-2 NEW — deterministically DERIVED by `harnessed facts` from
     // `git diff --name-only` (worktree ∪ index), never asked of the model. Makes
     // the "phase scope > 5 files" half of the phase-tier criterion expressible;
@@ -143,6 +146,7 @@ export const PhaseFactContext = Type.Object(
     phase: PhaseShape,
     subtask: SubtaskShape,
     user: UserShape,
+    user_understanding_unclear: Type.Optional(Type.Boolean()),
     // 5 Agent Teams flag (per parallelism-gate.yaml flat fires_when array, D-11).
     teammate_send_message_needed: Type.Boolean(),
     subagent_context_overflow: Type.Boolean(),

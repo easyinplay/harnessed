@@ -9,10 +9,10 @@
 // Token estimation: 1 char ≈ 0.25 token via Buffer.byteLength (R § 3 heuristic).
 
 import { mkdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
+import { dirname } from 'node:path'
 import { Value } from '@sinclair/typebox/value'
-import { harnessedSubdir } from '../platform/harnessedRoot.js'
 import { writeFileSyncAtomic } from './atomicWrite.js'
+import { ownerPath } from './ownerPath.js'
 import { CheckpointV1, type CheckpointV1Type } from './schema/index.js'
 
 const BUDGET_TOKEN = 1000
@@ -66,7 +66,7 @@ export function writeCheckpoint(c: CheckpointV1Type, customPath?: string): strin
     throw new CheckpointWriteError(`Schema validation failed: ${errs}`)
   }
   const enforced = enforceBudget(c)
-  const path = customPath ?? join(harnessedSubdir('checkpoints'), `${enforced.phase}.json`)
+  const path = customPath ?? ownerPath('checkpoints', [`${enforced.phase}.json`])
   mkdirSync(dirname(path), { recursive: true })
   writeFileSyncAtomic(path, JSON.stringify(enforced, null, 2))
   return path

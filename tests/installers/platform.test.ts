@@ -25,6 +25,7 @@ import {
 } from '../../src/platform/platform.js'
 
 const ENV_KEY = 'HARNESSED_ROOT_OVERRIDE'
+const HOST_HOME_KEYS = ['CLAUDE_CONFIG_DIR', 'CODEX_HOME', 'HARNESSED_PLATFORM'] as const
 
 describe('platform — PlatformDescriptor seam (Phase A)', () => {
   let savedOverride: string | undefined
@@ -32,11 +33,13 @@ describe('platform — PlatformDescriptor seam (Phase A)', () => {
   beforeEach(() => {
     savedOverride = process.env[ENV_KEY]
     delete process.env[ENV_KEY]
+    for (const key of HOST_HOME_KEYS) delete process.env[key]
   })
 
   afterEach(() => {
     if (savedOverride === undefined) delete process.env[ENV_KEY]
     else process.env[ENV_KEY] = savedOverride
+    for (const key of HOST_HOME_KEYS) delete process.env[key]
   })
 
   it('claudeDescriptor() returns the claude paths (mcpConfigPath is a homedir sibling)', () => {
@@ -86,6 +89,23 @@ describe('platform — PlatformDescriptor seam (Phase A)', () => {
     process.env[ENV_KEY] = '/tmp/x'
     expect(getHarnessedRoot()).toBe('/tmp/x')
     expect(getHarnessedRoot()).toBe(detectPlatform().stateRoot)
+  })
+
+  it('getHarnessedRoot() follows a custom Claude config home', () => {
+    process.env.CLAUDE_CONFIG_DIR = join(homedir(), '.claude-custom')
+    expect(getHarnessedRoot()).toBe(join(homedir(), '.claude-custom', 'harnessed'))
+  })
+
+  it('getHarnessedRoot() follows a custom Codex home without moving shared skills', () => {
+    process.env.CODEX_HOME = join(homedir(), '.codex-custom')
+    expect(getHarnessedRoot()).toBe(join(homedir(), '.codex-custom', 'harnessed'))
+    expect(getSkillsDir()).toBe(join(homedir(), '.agents', 'skills'))
+  })
+
+  it('getHarnessedRoot() fails closed when both custom homes lack an explicit host', () => {
+    process.env.CLAUDE_CONFIG_DIR = join(homedir(), '.claude-custom')
+    process.env.CODEX_HOME = join(homedir(), '.codex-custom')
+    expect(() => getHarnessedRoot()).toThrow(/both CLAUDE_CONFIG_DIR and CODEX_HOME/)
   })
 })
 

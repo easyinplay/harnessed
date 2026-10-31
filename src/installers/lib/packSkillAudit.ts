@@ -18,7 +18,7 @@
 // workflows tree must never fail an install.
 
 import { readdir } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 import { getAssetsRoot } from '../../platform/assetsRoot.js'
 import { getSkillsDir } from '../../platform/platform.js'
 import { scanWorkflowsNested } from '../../workflow/scan-nested.js'
@@ -32,6 +32,35 @@ export async function snapshotSkillNames(skillsDir: string = getSkillsDir()): Pr
   } catch {
     return new Set()
   }
+}
+
+/** Absolute paths of direct child skill directories across the captured roots. */
+export async function snapshotSkillPaths(
+  skillsDirs: readonly string[] = [getSkillsDir()],
+): Promise<Set<string>> {
+  const paths = new Set<string>()
+  for (const skillsDir of skillsDirs) {
+    try {
+      const entries = await readdir(skillsDir, { withFileTypes: true })
+      for (const entry of entries) {
+        if (entry.isDirectory()) paths.add(resolve(skillsDir, entry.name))
+      }
+    } catch {
+      // External writers may target a root that does not exist yet.
+    }
+  }
+  return paths
+}
+
+/** Skill roots an external pack writer may use for the active host. */
+export function skillRootsForContext(ctx: InstallContext): string[] {
+  if (!ctx.hostContext) return [resolve(getSkillsDir())]
+  return [
+    ...new Set([
+      resolve(ctx.hostContext.platform.skillsDir),
+      resolve(join(ctx.hostContext.nativeHome, 'skills')),
+    ]),
+  ]
 }
 
 let workflowNamesCache: Set<string> | null = null

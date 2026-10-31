@@ -173,10 +173,38 @@ export function descriptorFor(id: HostId, home: string = homedir()): PlatformDes
   return id === 'codex' ? codexDescriptor(home) : claudeDescriptor(home)
 }
 
-/** Known platform descriptors keyed by id (HARNESSED_PLATFORM / .platform pin lookup).
- *  Tolerates arbitrary text because both callers pass unvalidated user input. */
-function descriptorById(id: string, home: string): PlatformDescriptor | undefined {
-  return isHostId(id) ? descriptorFor(id, home) : undefined
+function configuredHome(envVar: 'CLAUDE_CONFIG_DIR' | 'CODEX_HOME'): string | undefined {
+  const value = process.env[envVar]?.trim()
+  return value || undefined
+}
+
+export function descriptorForConfiguredHome(
+  id: HostId,
+  home: string = homedir(),
+): PlatformDescriptor {
+  const descriptor = descriptorFor(id, home)
+  const nativeHome = configuredHome(id === 'codex' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR')
+  if (nativeHome === undefined) return descriptor
+
+  if (id === 'codex') {
+    return {
+      ...descriptor,
+      homeDir: nativeHome,
+      stateRoot: join(nativeHome, 'harnessed'),
+      commandsDir: join(nativeHome, 'prompts'),
+      mcpConfigPath: join(nativeHome, 'config.toml'),
+    }
+  }
+
+  return {
+    ...descriptor,
+    homeDir: nativeHome,
+    stateRoot: join(nativeHome, 'harnessed'),
+    settingsPath: join(nativeHome, 'settings.json'),
+    skillsDir: join(nativeHome, 'skills'),
+    commandsDir: join(nativeHome, 'commands'),
+    pluginsRegistry: join(nativeHome, 'plugins', 'installed_plugins.json'),
+  }
 }
 
 /**
@@ -185,15 +213,18 @@ function descriptorById(id: string, home: string): PlatformDescriptor | undefine
  * ADR 0040 precedence (v16.0 Phase 63) — first hit wins:
  *   1. `HARNESSED_PLATFORM=<id>` env (also how `setup --platform <id>` reaches the
  *      process) → that descriptor (claude | codex). Unknown id → fall through.
- *   2. host env sniff — effective only when EXACTLY ONE is set (non-blank):
+ *   2. a single custom host home (`CLAUDE_CONFIG_DIR` or `CODEX_HOME`) selects
+ *      that host and rebases its host-owned paths. Both custom homes without a
+ *      valid explicit host fail closed.
+ *   3. host env sniff — effective only when EXACTLY ONE is set (non-blank):
  *        `CLAUDE_CODE_SESSION_ID` → claude, `CODEX_SESSION_ID` → codex.
  *      Both set (one harness launched inside the other) → ambiguous, fall through.
- *   3. `.platform` pin — codex stateRoot first, then the claude stateRoot (which
+ *   4. `.platform` pin — codex stateRoot first, then the claude stateRoot (which
  *      also carries pins written by pre-0040 `setup --platform codex`). Absent /
  *      unreadable / unknown id → fall through.
- *   4. directory probe: `~/.claude/` exists → claude (incumbent); else `~/.codex/`
+ *   5. directory probe: `~/.claude/` exists → claude (incumbent); else `~/.codex/`
  *      exists → codex.
- *   5. fallback → claude.
+ *   6. fallback → claude.
  *
  * `HARNESSED_ROOT_OVERRIDE` replaces ONLY `stateRoot` of whatever was resolved
  * above — it no longer short-circuits to claude (ADR 0040 behavior change). Pins
@@ -227,7 +258,11 @@ function resolveHost(home: string): PlatformDescriptor {
  */
 export type HostResolutionReason =
   /** 1. `HARNESSED_PLATFORM=<value>` named a known host. */
-  | { kind: 'env-platform'; envVar: 'HARNESSED_PLATFORM'; value: string }
+  | {
+      kind: 'env-platform'
+      envVar: 'HARNESSED_PLATFORM' | 'CLAUDE_CONFIG_DIR' | 'CODEX_HOME'
+      value: string
+    }
   /** 2. Exactly one host session env was set, and it names this host. */
   | { kind: 'host-session-env'; envVar: 'CLAUDE_CODE_SESSION_ID' | 'CODEX_SESSION_ID' }
   /** 3. A `.platform` pin at `pinPath` held a known host id. */
@@ -281,13 +316,21 @@ export interface HostResolution {
  * lives under the override.
  */
 export function resolveHostWithReason(home: string = homedir()): HostResolution {
-  const base = claudeDescriptor(home)
+  const claudeHome = configuredHome('CLAUDE_CONFIG_DIR')
+  const codexHome = configuredHome('CODEX_HOME')
+  const envPlatform = process.env.HARNESSED_PLATFORM?.trim()
+  const explicitHost = envPlatform !== undefined && isHostId(envPlatform) ? envPlatform : undefined
+  if (explicitHost === undefined && claudeHome !== undefined && codexHome !== undefined) {
+    throw new Error('both CLAUDE_CONFIG_DIR and CODEX_HOME are set; pass --platform claude|codex')
+  }
+
+  const base = descriptorForConfiguredHome('claude', home)
+  const codex = descriptorForConfiguredHome('codex', home)
   const skipped: HostResolutionSkip[] = []
 
   // 1. HARNESSED_PLATFORM env (explicit).
-  const envPlatform = process.env.HARNESSED_PLATFORM
   if (envPlatform !== undefined && envPlatform !== '') {
-    const d = descriptorById(envPlatform, home)
+    const d = isHostId(envPlatform) ? descriptorForConfiguredHome(envPlatform, home) : undefined
     if (d) {
       return {
         descriptor: d,
@@ -299,12 +342,27 @@ export function resolveHostWithReason(home: string = homedir()): HostResolution 
     skipped.push({ kind: 'env-platform-unknown', envVar: 'HARNESSED_PLATFORM', value: envPlatform })
   }
 
+  // A single custom native home is an explicit host signal for all consumers,
+  // including checkpoint/status paths that do not capture an install context.
+  if (claudeHome !== undefined || codexHome !== undefined) {
+    const id: HostId = claudeHome !== undefined ? 'claude' : 'codex'
+    return {
+      descriptor: id === 'claude' ? base : codex,
+      reason: {
+        kind: 'env-platform',
+        envVar: id === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME',
+        value: id === 'claude' ? (claudeHome as string) : (codexHome as string),
+      },
+      skipped,
+    }
+  }
+
   // 2. host env sniff — a single session env names the host; both = nested → ambiguous.
   const inClaude = Boolean(process.env.CLAUDE_CODE_SESSION_ID?.trim())
   const inCodex = Boolean(process.env.CODEX_SESSION_ID?.trim())
   if (inClaude !== inCodex) {
     return {
-      descriptor: inClaude ? base : codexDescriptor(home),
+      descriptor: inClaude ? base : codex,
       reason: {
         kind: 'host-session-env',
         envVar: inClaude ? 'CLAUDE_CODE_SESSION_ID' : 'CODEX_SESSION_ID',
@@ -315,11 +373,11 @@ export function resolveHostWithReason(home: string = homedir()): HostResolution 
   if (inClaude && inCodex) skipped.push({ kind: 'host-session-env-ambiguous' })
 
   // 3. `.platform` pin — codex stateRoot first, then claude stateRoot.
-  for (const pinRoot of [codexDescriptor(home).stateRoot, base.stateRoot]) {
+  for (const pinRoot of [codex.stateRoot, base.stateRoot]) {
     const pinPath = join(pinRoot, '.platform')
     try {
       const value = readFileSync(pinPath, 'utf8').trim()
-      const d = descriptorById(value, home)
+      const d = isHostId(value) ? descriptorForConfiguredHome(value, home) : undefined
       if (d) return { descriptor: d, reason: { kind: 'platform-pin', pinPath, value }, skipped }
       skipped.push({ kind: 'platform-pin-unknown', pinPath, value })
     } catch {
@@ -341,7 +399,6 @@ export function resolveHostWithReason(home: string = homedir()): HostResolution 
         skipped,
       }
     }
-    const codex = codexDescriptor(home)
     if (existsSync(codex.homeDir)) {
       return {
         descriptor: codex,

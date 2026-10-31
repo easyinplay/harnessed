@@ -125,7 +125,7 @@ Do NOT pipe to `harnessed run auto` — that is the CI/headless path ({{ host.ha
 {{ host.teams_step_note.skill }}
 {{ host.teams_teardown_note }}
 5. Otherwise, for each fired sub in `order` (serial subs sequentially, parallel subs concurrently):
-   - **If the entry has `is_master: true`** (a stage master — e.g. `/auto` firing `plan`/`task`/`verify`): do NOT prompt+spawn it. RECURSE: run that master’s own `harnessed facts <sub> --out .harnessed-facts.json` (fill the nulls) → `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → repeat this loop for ITS fired subs.
+   - **If the entry has `is_master: true`** (a stage master — e.g. `/auto` firing `plan`/`task`/`verify`): do NOT prompt+spawn it. RECURSE: run that master’s own `harnessed facts <sub> --out .harnessed-facts.json` (fill the nulls) → `harnessed gates <sub> --task "<spec>" --context-file .harnessed-facts.json --skip-sub discuss` → `harnessed checkpoint start <sub> --plan '<json>'` → repeat this loop for ITS fired subs. The nested `checkpoint start` expands that parent entry inside the existing root ledger; it must not replace the root workflow owner, timestamps, checkpoint path, or sibling entries.
    - **Else (leaf sub):**
      a. Bash: `harnessed prompt <sub> --task "<spec>" --json` → parse `{prompt, max_iterations, model}`.
      b. Spawn a {{ host.native }} subagent ({{ host.spawn_subagent }}) with that `prompt` and `model`, then drive delivery with harnessed's own completion gate:

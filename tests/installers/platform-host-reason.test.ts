@@ -39,6 +39,8 @@ const HOST_ENV = [
   'HARNESSED_PLATFORM',
   'CLAUDE_CODE_SESSION_ID',
   'CODEX_SESSION_ID',
+  'CLAUDE_CONFIG_DIR',
+  'CODEX_HOME',
 ] as const
 
 let home: string
@@ -69,6 +71,45 @@ describe('detectPlatform ladder — the five rules + two fall-throughs (Phase 67
   it('rule 1: HARNESSED_PLATFORM names the host', () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'codex')
     expect(detectPlatform(home)).toEqual(codexDescriptor(home))
+  })
+
+  it('a single custom Claude home routes the descriptor and state root', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', join(home, 'custom-claude'))
+    expect(detectPlatform(home)).toEqual({
+      ...claudeDescriptor(home),
+      homeDir: join(home, 'custom-claude'),
+      stateRoot: join(home, 'custom-claude', 'harnessed'),
+      settingsPath: join(home, 'custom-claude', 'settings.json'),
+      skillsDir: join(home, 'custom-claude', 'skills'),
+      commandsDir: join(home, 'custom-claude', 'commands'),
+      pluginsRegistry: join(home, 'custom-claude', 'plugins', 'installed_plugins.json'),
+    })
+  })
+
+  it('a single custom Codex home routes state and prompts but keeps shared skills', () => {
+    vi.stubEnv('CODEX_HOME', join(home, 'custom-codex'))
+    const descriptor = detectPlatform(home)
+    expect(descriptor).toEqual({
+      ...codexDescriptor(home),
+      homeDir: join(home, 'custom-codex'),
+      stateRoot: join(home, 'custom-codex', 'harnessed'),
+      commandsDir: join(home, 'custom-codex', 'prompts'),
+      mcpConfigPath: join(home, 'custom-codex', 'config.toml'),
+    })
+    expect(descriptor.skillsDir).toBe(join(home, '.agents', 'skills'))
+  })
+
+  it('fails closed when both custom homes are set without an explicit host', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', join(home, 'custom-claude'))
+    vi.stubEnv('CODEX_HOME', join(home, 'custom-codex'))
+    expect(() => detectPlatform(home)).toThrow(/both CLAUDE_CONFIG_DIR and CODEX_HOME/)
+  })
+
+  it('explicit HARNESSED_PLATFORM selects one custom home when both are set', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', join(home, 'custom-claude'))
+    vi.stubEnv('CODEX_HOME', join(home, 'custom-codex'))
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    expect(detectPlatform(home).stateRoot).toBe(join(home, 'custom-codex', 'harnessed'))
   })
 
   it('rule 2: exactly one session env names the host', () => {
@@ -122,6 +163,14 @@ describe('resolveHostWithReason — names the deciding rule (Phase 67 T3)', () =
     expect(r.descriptor).toEqual(codexDescriptor(home))
     expect(r.reason).toEqual({ kind: 'env-platform', envVar: 'HARNESSED_PLATFORM', value: 'codex' })
     expect(r.skipped).toEqual([])
+  })
+
+  it('reports the custom home env that selected the host', () => {
+    const customHome = join(home, 'custom-codex')
+    vi.stubEnv('CODEX_HOME', customHome)
+    const r = resolveHostWithReason(home)
+    expect(r.descriptor.stateRoot).toBe(join(customHome, 'harnessed'))
+    expect(r.reason).toEqual({ kind: 'env-platform', envVar: 'CODEX_HOME', value: customHome })
   })
 
   it('rule 2 → host-session-env, carrying which session env was set', () => {

@@ -1,6 +1,7 @@
 // v4.20.0 hotfix — hookEntry helpers (CC hook shape + resolution + migration
 // matching). Dogfood: perturn-inject wrote flat `{command}` + relative path.
 
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
@@ -20,6 +21,16 @@ const deps = (existing: string[]) => ({
 
 const INJECT = 'node bin/harnessed-inject-state.mjs'
 const INJECT_ABS = join(ROOT, 'bin', 'harnessed-inject-state.mjs')
+const TRUSTED_COMPILED =
+  process.platform === 'win32'
+    ? join(
+        process.env.LOCALAPPDATA ?? join(homedir(), 'AppData', 'Local'),
+        'harnessed',
+        'bin',
+        'harnessed.exe',
+      )
+    : join(homedir(), '.local', 'bin', 'harnessed')
+const TRUSTED_COMPILED_CMD = `"${TRUSTED_COMPILED.replace(/\\/g, '/')}"`
 // v4.21.0 dogfood — resolved paths are emitted forward-slash + ALWAYS quoted
 // (unquoted backslashes are eaten as shell escapes when CC runs the hook →
 // MODULE_NOT_FOUND on every prompt). Expectations mirror that contract.
@@ -123,6 +134,13 @@ describe('hookScriptMarker', () => {
   it('yields null for commands without a relative file token', () => {
     expect(hookScriptMarker('codegraph prompt-hook')).toBeNull()
   })
+
+  it.each([
+    ['node scripts/team-harnessed-stop-hook.mjs', 'team-harnessed-stop-hook.mjs'],
+    ['node scripts/harnessed-inject-statement.mjs', 'harnessed-inject-statement.mjs'],
+  ])('does not normalize a third-party lookalike: %s', (command, basename) => {
+    expect(hookScriptMarker(command)).toBe(basename)
+  })
 })
 
 describe('4.27.0 compiled routing (D6 hook self-containment)', () => {
@@ -150,7 +168,7 @@ describe('4.27.0 compiled routing (D6 hook self-containment)', () => {
 
   it('cross-form identity: npm-form entry matches a compiled-mode registration (and vice versa)', () => {
     const marker = hookScriptMarker(INJECT)
-    const compiledCmd = '"C:/bin/harnessed.exe" inject-state'
+    const compiledCmd = `${TRUSTED_COMPILED_CMD} inject-state`
     // old mjs entry in settings vs new registration
     expect(entryMatchesRegistration({ command: INJECT }, INJECT, compiledCmd, marker)).toBe(true)
     // new compiled entry in settings vs npm registration
@@ -187,7 +205,7 @@ describe('4.30.0 stop-hook identity (issue #6 — second compiled hook)', () => 
 
   it('cross-form migration for stop-hook (npm ↔ compiled)', () => {
     const marker = hookScriptMarker(STOP)
-    const compiledCmd = '"C:/bin/harnessed.exe" stop-hook'
+    const compiledCmd = `${TRUSTED_COMPILED_CMD} stop-hook`
     expect(entryMatchesRegistration({ command: STOP }, STOP, compiledCmd, marker)).toBe(true)
     const e = { hooks: [{ type: 'command', command: compiledCmd }] }
     expect(entryMatchesRegistration(e, STOP, `node ${STOP_ABS}`, marker)).toBe(true)
@@ -202,8 +220,8 @@ describe('4.30.0 stop-hook identity (issue #6 — second compiled hook)', () => 
 // the identity token must survive it.
 describe('4.34.1 compiled routing preserves args after the identity token', () => {
   const DOCS = 'harnessed check-docs --hook'
-  const EXE = 'C:\\Users\\x\\bin\\harnessed.exe'
-  const EXE_Q = '"C:/Users/x/bin/harnessed.exe"'
+  const EXE = TRUSTED_COMPILED
+  const EXE_Q = TRUSTED_COMPILED_CMD
   const compiled = { ...deps([]), compiledExecPath: () => EXE }
 
   it('check-docs is a first-party identity in the bare-CLI and compiled forms', () => {
@@ -252,6 +270,53 @@ describe('4.34.1 compiled routing preserves args after the identity token', () =
     const e = { hooks: [{ type: 'command', command: compiledCmd }] }
     expect(entryMatchesRegistration(e, DOCS, DOCS, marker)).toBe(true)
   })
+
+  it('matches an explicit first-party bare CLI token without matching a path token', () => {
+    const marker = hookScriptMarker(DOCS)
+    expect(
+      entryMatchesRegistration({ command: 'harnessed check-docs --hook' }, DOCS, DOCS, marker),
+    ).toBe(true)
+    expect(
+      entryMatchesRegistration(
+        { command: '"C:/vendor/harnessed.exe" check-docs --hook' },
+        DOCS,
+        DOCS,
+        marker,
+      ),
+    ).toBe(false)
+    expect(
+      entryMatchesRegistration(
+        { command: `${TRUSTED_COMPILED_CMD} check-docs --hook` },
+        DOCS,
+        DOCS,
+        marker,
+      ),
+    ).toBe(true)
+  })
+
+  it('matches an old assetsRoot absolute script when only quoting changed', () => {
+    const marker = hookScriptMarker(INJECT)
+    const oldCommand = `node ${INJECT_ABS}`
+    const currentResolved = `node "${INJECT_ABS.replace(/\\/g, '/')}"`
+    expect(entryMatchesRegistration({ command: oldCommand }, INJECT, currentResolved, marker)).toBe(
+      true,
+    )
+  })
+
+  it('migrates an older version under the same compiled assets base', () => {
+    const marker = hookScriptMarker(INJECT)
+    const previous = 'node "C:/home/.claude/harnessed/assets/5.0.4/bin/harnessed-inject-state.mjs"'
+    const current = 'node "C:/home/.claude/harnessed/assets/5.0.5/bin/harnessed-inject-state.mjs"'
+    expect(entryMatchesRegistration({ command: previous }, INJECT, current, marker)).toBe(true)
+    expect(
+      entryMatchesRegistration(
+        { command: 'node "C:/vendor/harnessed-inject-state.mjs"' },
+        INJECT,
+        current,
+        marker,
+      ),
+    ).toBe(false)
+  })
 })
 
 describe('entryMatchesRegistration + isDesiredHookEntry', () => {
@@ -270,6 +335,18 @@ describe('entryMatchesRegistration + isDesiredHookEntry', () => {
 
   it('does not match unrelated entries', () => {
     const e = { hooks: [{ type: 'command', command: 'codegraph prompt-hook' }] }
+    expect(entryMatchesRegistration(e, INJECT, resolved, marker)).toBe(false)
+  })
+
+  it.each([
+    'node scripts/harnessed-inject-statement.mjs',
+    'bun scripts/harnessed-inject-statement.mjs',
+    'node scripts/team-harnessed-inject-state.mjs',
+    'node "C:/vendor/harnessed-inject-state.mjs"',
+    'bun C:/vendor/harnessed-inject-state.mjs',
+    '"C:/vendor/harnessed.exe" inject-state',
+  ])('does not claim a third-party lookalike during migration: %s', (command) => {
+    const e = { hooks: [{ type: 'command', command }] }
     expect(entryMatchesRegistration(e, INJECT, resolved, marker)).toBe(false)
   })
 

@@ -39,15 +39,15 @@ vi.mock('proper-lockfile', () => ({
 }))
 
 // Imports AFTER mocks
-import { join as pathJoin } from 'node:path'
 import { activatePhase, completePhase } from '../../src/checkpoint/engineHook.js'
-import { harnessedFile, harnessedSubdir } from '../../src/platform/harnessedRoot.js'
+import { ownerPath } from '../../src/checkpoint/ownerPath.js'
+import { harnessedFile } from '../../src/platform/harnessedRoot.js'
 import { ralphLoopWrap } from '../../src/workflow/lib/ralphLoop.js'
 
 // v3.0.3 — paths resolve under ~/.claude/harnessed/ now.
 const CURRENT_WORKFLOW_PATH = harnessedFile('current-workflow.json')
-const CHECKPOINT_3_1_PATH = pathJoin(harnessedSubdir('checkpoints'), '3.1.json')
-const CHECKPOINT_UNKNOWN_PATH = pathJoin(harnessedSubdir('checkpoints'), 'unknown.json')
+const CHECKPOINT_3_1_PATH = ownerPath('checkpoints', ['3.1.json'])
+const CHECKPOINT_UNKNOWN_PATH = ownerPath('checkpoints', ['unknown.json'])
 
 beforeEach(() => {
   fsState.clear()
@@ -116,6 +116,18 @@ describe('sdk-wire — session_id capture end-to-end (T3.3 fixtures 21-27)', () 
     const cp = JSON.parse(fsState.get(CHECKPOINT_3_1_PATH) as string)
     expect('session_id' in cp).toBe(false) // Optional field NOT written
     expect(cp.status).toBe('complete')
+  })
+
+  it('issue #33: legacy FAILED: caller writes machine-readable failed status', async () => {
+    await activatePhase('3.1')
+    await completePhase({
+      phaseId: '3.1',
+      status: 'complete',
+      lastTask: 'FAILED: legacy workflow caller',
+      transitionWorkflowComplete: false,
+    })
+    const cp = JSON.parse(fsState.get(CHECKPOINT_3_1_PATH) as string)
+    expect(cp.status).toBe('failed')
   })
 
   it('26. engineHook with phaseId="unknown" → fail-loud warn (W-04 mitigation, non-blocking)', async () => {

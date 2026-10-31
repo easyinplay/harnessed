@@ -301,7 +301,7 @@ describe('Capabilities v3 discriminated union — T3.3.W0.7', () => {
 
 // Phase v3.0-3.3 W0 T3.3.W0.8 — phaseFactContext extend 13 NEW field MIN scope.
 describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
-  test('PF1: full valid v3 context passes (50 field — 20 phase + 19 subtask + 1 user + 10 root-flat)', () => {
+  test('PF1: full valid v3 context passes with plan design-contract facts', () => {
     const ok = makeValidPhaseFactContext()
     expect(Value.Check(PhaseFactContext, ok)).toBe(true)
   })
@@ -352,6 +352,15 @@ describe('PhaseFactContext v3 extend — T3.3.W0.8', () => {
     const bad = makeValidPhaseFactContext()
     // biome-ignore lint/suspicious/noExplicitAny: intentional invalid mutation for test
     delete (bad as any).requires_second_opinion
+    expect(Value.Check(PhaseFactContext, bad)).toBe(false)
+  })
+
+  test.each([
+    'requires_spec',
+    'builds_ai_system',
+  ] as const)('PF8: phase.%s is a required boolean', (field) => {
+    const bad = makeValidPhaseFactContext()
+    delete bad.phase[field]
     expect(Value.Check(PhaseFactContext, bad)).toBe(false)
   })
 })
@@ -544,6 +553,8 @@ function makeValidPhaseFactContext() {
       // T2.1 gap-close — stage-routing verify-eval-review / verify-validate-phase
       has_ai_phase: false,
       requires_coverage_audit: false,
+      requires_spec: false,
+      builds_ai_system: false,
     },
     subtask: {
       type: 'crud' as const,

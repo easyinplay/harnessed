@@ -14,10 +14,22 @@
 import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const { writeSkillOwnershipReceiptMock } = vi.hoisted(() => ({
+  writeSkillOwnershipReceiptMock: vi.fn(async () => undefined),
+}))
+
 vi.mock('node:child_process', () => ({ spawn: vi.fn() }))
 vi.mock('../../src/installers/lib/binaryProbe.js', async (importOriginal) => {
   const real = await importOriginal<typeof import('../../src/installers/lib/binaryProbe.js')>()
   return { ...real, binaryOnPath: vi.fn(() => false) }
+})
+vi.mock('../../src/installers/lib/skillOwnershipReceipt.js', async (importOriginal) => {
+  const real =
+    await importOriginal<typeof import('../../src/installers/lib/skillOwnershipReceipt.js')>()
+  return {
+    ...real,
+    writeSkillOwnershipReceipt: writeSkillOwnershipReceiptMock,
+  }
 })
 vi.mock('node:fs/promises', () => ({
   mkdir: vi.fn(async () => undefined),
@@ -137,6 +149,7 @@ describe('installNpmCli', () => {
     spawnMock.mockReset()
     vi.mocked(binaryOnPath).mockReset().mockReturnValue(false)
     vi.mocked(writeFile).mockClear()
+    writeSkillOwnershipReceiptMock.mockReset().mockResolvedValue(undefined)
   })
 
   it.each([
@@ -354,6 +367,16 @@ describe('installNpmCli', () => {
     } finally {
       s.restore()
     }
+  })
+
+  it('does not write a receipt for a non-ownership-managed npm CLI', async () => {
+    spawnMock.mockImplementation(
+      () => makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>,
+    )
+
+    await expect(installNpmCli(ctx({ quiet: true }))).resolves.toMatchObject({ ok: true })
+
+    expect.soft(writeSkillOwnershipReceiptMock).not.toHaveBeenCalled()
   })
 
   // v4.20.1 — install spawn must run from the NEUTRAL cwd, not the user's shell

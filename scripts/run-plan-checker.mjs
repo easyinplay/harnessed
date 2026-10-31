@@ -7,22 +7,21 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { parse as parseYaml } from 'yaml'
+import { PLAN_FILE, selectPlanCheckTargets } from './ci/plan-check-scope.mjs'
 
 const ENFORCE = process.env.ENFORCE !== 'false'
 const SCHEMA = parseYaml(readFileSync('routing/plan-review-schema.yaml', 'utf8'))
-const targetArg = process.argv[2] ?? '.planning/'
-
 function walk(dir, out = []) {
   if (!existsSync(dir)) return out
   const st = statSync(dir)
   if (st.isFile()) {
-    if (/task_plan\.md$|PLAN\.md$/.test(dir)) out.push(dir)
+    if (PLAN_FILE.test(dir)) out.push(dir)
     return out
   }
   for (const name of readdirSync(dir)) {
     const p = join(dir, name)
     if (statSync(p).isDirectory()) walk(p, out)
-    else if (/task_plan\.md$|PLAN\.md$/.test(name)) out.push(p)
+    else if (PLAN_FILE.test(name)) out.push(p)
   }
   return out
 }
@@ -91,7 +90,7 @@ function scoreWeasel(c) {
 const t = SCHEMA.spec.dimensions
 const s = SCHEMA.spec.scoring
 let totalBLOCKER = 0
-for (const file of walk(targetArg)) {
+for (const file of targets()) {
   const c = readFileSync(file, 'utf8')
   const fr = scoreFileRefs(c)
   const sr = scoreSourceRefs(c)
@@ -128,3 +127,21 @@ for (const file of walk(targetArg)) {
   }
 }
 process.exit(ENFORCE && totalBLOCKER > 0 ? 1 : 0)
+
+function targets() {
+  const args = process.argv.slice(2)
+  if (args[0] !== '--ci') {
+    const requested = args.length > 0 ? args : ['.planning/']
+    return [...new Set(requested.flatMap((arg) => walk(arg)))]
+  }
+  let files
+  try {
+    files = selectPlanCheckTargets()
+  } catch (error) {
+    console.error(`::error::${error.message}`)
+    process.exit(1)
+  }
+  console.log(`plan-check scope: ${files.length} active/changed plan file(s)`)
+  for (const file of files) console.log(`  - ${file}`)
+  return files
+}

@@ -514,7 +514,7 @@ planning-with-files /plan (сквозной инструмент) → запис
 | `harnessed status` | Текущая фаза + владелец блокировки |
 | `harnessed doctor` | Проверка здоровья (Node / MCP / jq / Win bash / routing / token budget / целостность скиллов / конфликт GateGuard / update-available и др.) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Самообновление с учётом канала установки: бинарная установка заменяет себя на месте из GitHub releases (проверка sha256 + подписи ed25519 — релизы поставляются с `<asset>.sha256.sig`, контракт подписанных релизов начиная с 4.32.19; заменённая версия сохраняется для отката); npm-установка выполняет `npm i -g harnessed@latest`. `--check` сообщает последнюю версию; `--rollback [version]` (только бинарные установки) атомарно восстанавливает сохранённый предыдущий бинарник — npm-установкам предлагается `npm i -g harnessed@<version>`; `--upstreams` перезапускает базовые manifests; `--migration-report` — read-only инвентаризация устаревшего состояния |
-| `harnessed release-preflight` | Read-only ворота готовности к релизу (CHANGELOG `[Unreleased]` / версия / git-clean / отсутствие тега); выход 1, если не готово. Ворота стадии Ship. |
+| `harnessed release-preflight [--release-version <semver>]` | Read-only ворота готовности к релизу (CHANGELOG `[Unreleased]` / версия / git-clean / отсутствие тега); `--release-version` переопределяет поиск по manifests; выход 1, если не готово. Ворота стадии Ship. |
 | `harnessed retro --done` | Сбрасывает счётчик фаз retro-напоминания после запуска `/retro` (очищает per-turn подсказку RETRO-DUE). |
 | `harnessed install <name>` | Установить Manifest апстрима |
 | `harnessed uninstall [name]` | Обратное удаление — выполняет объявленный в manifest teardown `spec.uninstall` (cmd + ограничение `$HOME`, идемпотентные `cleanup_paths`) для методов, устанавливающих скиллы (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); остальные методы сохраняют свой per-method reverse |
@@ -522,6 +522,15 @@ planning-with-files /plan (сквозной инструмент) → запис
 | `harnessed rollback <timestamp>` | Откат **снимка резервной копии** одной командой (сохранение EOL + проверка sha1) — не путать с `update --rollback`, который восстанавливает предыдущий **скомпилированный бинарник** |
 | `harnessed gc` | Очистить устаревшие резервные копии |
 | `harnessed audit-log` | Запрос лога прозрачности маршрутизации (поддерживает `--filter` jq-выражение) |
+| `harnessed agents-md` | Записывает или обновляет ограниченный markers блок harnessed в `<CODEX_HOME>/AGENTS.md`, сохраняя внешний текст |
+| `harnessed audit` | Проверяет согласованность manifest и runtime (`--skip-runtime` проверяет только manifest) |
+| `harnessed check-docs` | Проверяет дисциплину документации `.planning/`; advisory или blocking находки дают ненулевой exit code |
+| `harnessed eval` | Запускает детерминированный regression suite orchestrator; `harnessed eval record` записывает воспроизводимый scenario |
+| `harnessed exempt-gateguard` | Сохраняет исключение GateGuard `.planning/**`, устраняющее конфликт двух guards |
+| `harnessed facts <master>` | Выводит определённые и нерешённые gate facts для `harnessed gates --context-file` |
+| `harnessed install-base [--dry-run]` | Устанавливает base profile phase 1.3; `--dry-run` показывает preview без записи |
+| `harnessed manifest-add <upstream>` | Добавляет upstream adapter через EE-5 merge gate |
+| `harnessed research --query <text>` | Запускает headless research workflow; `--dry-run` показывает preview без spawn |
 
 ### Флаги
 

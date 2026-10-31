@@ -18,12 +18,26 @@
 // any side effect — a blocklist alone is insufficient for a delete.
 
 import { realpathSync } from 'node:fs'
-import { rm } from 'node:fs/promises'
+import { lstat } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { basename, dirname, isAbsolute, resolve as resolvePath, sep } from 'node:path'
 import { isReviewedNeutralTeardown } from '../../installers/lib/componentPlan.js'
+import {
+  isSkillOwnershipManaged,
+  readSkillOwnershipReceipt,
+  removeOwnedSkillPath,
+  removeSkillOwnershipReceipt,
+  verifyOwnedSkillPath,
+  writeSkillOwnershipReceipt,
+} from '../../installers/lib/skillOwnershipReceipt.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from '../../installers/lib/spawn.js'
 import type { InstallContext } from '../../installers/lib/types.js'
+import {
+  type OwnedPathSnapshot,
+  prepareOwnedPathRemoval,
+  removeOwnedDirectoryViaQuarantine,
+  removeOwnedFileViaQuarantine,
+} from '../../lib/quarantineDelete.js'
 import { checkPathSafe } from '../../manifest/lib/path-guard.js'
 import { dryRunGate } from './runOrPreview.js'
 import type { UninstallContext, UninstallResult } from './types.js'
@@ -112,13 +126,72 @@ export async function runDeclaredTeardown(ctx: UninstallContext): Promise<Uninst
   const abort = dryRunGate(ctx)
   if (abort) return abort
 
+  if (isSkillOwnershipManaged(ctx.manifest)) {
+    let receipt: Awaited<ReturnType<typeof readSkillOwnershipReceipt>>
+    try {
+      receipt = await readSkillOwnershipReceipt(ctx)
+    } catch (error) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error: error instanceof Error ? error.message : String(error),
+      }
+    }
+    try {
+      for (const path of receipt.createdPaths) await verifyOwnedSkillPath(receipt, path)
+    } catch (error) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error: error instanceof Error ? error.message : String(error),
+      }
+    }
+    const removedPaths: string[] = []
+    const remainingPaths = [...receipt.createdPaths]
+    for (const path of receipt.createdPaths) {
+      try {
+        await removeOwnedSkillPath(receipt, path)
+      } catch (error) {
+        return {
+          ok: false,
+          phase: 'verify',
+          error: error instanceof Error ? error.message : String(error),
+        }
+      }
+      removedPaths.push(path)
+      remainingPaths.shift()
+      try {
+        if (remainingPaths.length > 0) {
+          await writeSkillOwnershipReceipt(ctx, receipt.skillRoots, remainingPaths)
+        } else {
+          await removeSkillOwnershipReceipt(ctx)
+        }
+      } catch (error) {
+        return {
+          ok: false,
+          phase: 'verify',
+          error: error instanceof Error ? error.message : String(error),
+        }
+      }
+    }
+    return { ok: true, removedPaths }
+  }
+
   // 1. Confine every cleanup_path up front — refuse before any side effect.
-  const confined: string[] = []
-  const canonicalTargets = new Map<string, string>()
+  const cleanupTargets: { abs: string; snapshot: OwnedPathSnapshot | null }[] = []
+  const userHome = ctx.hostContext?.userHome ?? homedir()
+  const canonicalHome = canonicalPath(resolvePath(userHome))
+  if ((u.cleanup_paths?.length ?? 0) > 0 && !canonicalHome) {
+    return {
+      ok: false,
+      phase: 'preflight',
+      error: 'refusing cleanup_path: canonical home could not be verified',
+    }
+  }
   for (const raw of u.cleanup_paths ?? []) {
     let abs: string | null
     try {
-      abs = confineCleanupPath(raw, ctx.hostContext?.userHome)
+      abs = confineCleanupPath(raw, userHome)
     } catch {
       return {
         ok: false,
@@ -133,19 +206,40 @@ export async function runDeclaredTeardown(ctx: UninstallContext): Promise<Uninst
         error: `refusing to remove cleanup_path outside $HOME: ${raw}`,
       }
     }
-    if (ctx.hostContext) {
-      const canonicalHome = canonicalPath(resolvePath(ctx.hostContext.userHome))
-      const canonicalTarget = canonicalPath(abs)
-      if (!canonicalHome || !canonicalTarget?.startsWith(canonicalHome + sep)) {
+    const canonicalTarget = canonicalPath(abs)
+    if (!canonicalHome || !canonicalTarget?.startsWith(canonicalHome + sep)) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error: 'refusing cleanup_path: canonical target escapes captured home',
+      }
+    }
+    let snapshot: OwnedPathSnapshot | null
+    try {
+      snapshot = await prepareOwnedPathRemoval(dirname(abs), abs)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') snapshot = null
+      else {
         return {
           ok: false,
           phase: 'preflight',
-          error: 'refusing cleanup_path: canonical target escapes captured home',
+          error: error instanceof Error ? error.message : String(error),
         }
       }
-      canonicalTargets.set(abs, canonicalTarget)
     }
-    confined.push(abs)
+    if (
+      snapshot &&
+      (snapshot.canonicalTarget !== canonicalTarget ||
+        (snapshot.canonicalRoot !== canonicalHome &&
+          !snapshot.canonicalRoot.startsWith(canonicalHome + sep)))
+    ) {
+      return {
+        ok: false,
+        phase: 'preflight',
+        error: 'refusing cleanup_path: ownership snapshot escapes canonical home',
+      }
+    }
+    cleanupTargets.push({ abs, snapshot })
   }
 
   // 2. Run the declared cmd through the shared spawn seam. It only reads
@@ -159,22 +253,24 @@ export async function runDeclaredTeardown(ctx: UninstallContext): Promise<Uninst
     opts: { apply: true, dryRun: false, yes: true },
   } as unknown as InstallContext
   let spawnRes: Awaited<ReturnType<typeof spawnCmd>>
+  let spawnFailure: { ok: false; phase: 'preflight' | 'spawn' | 'verify'; error: string } | null =
+    null
   try {
     spawnRes = await spawnCmd(spawnCtx, u.cmd, [], DEFAULT_INSTALL_TIMEOUT_MS, {
       posixShell: true,
     })
   } catch (error) {
-    if (ctx.hostContext?.hostId !== 'codex') throw error
-    return {
+    spawnFailure = {
       ok: false,
       phase: 'spawn',
       error: error instanceof Error ? error.message : String(error),
     }
+    spawnRes = { ok: false, phase: 'spawn', error: { message: spawnFailure.error } } as never
   }
   if (ctx.hostContext?.hostId === 'codex') {
     if ('exitCode' in spawnRes) {
       if (spawnRes.exitCode !== 0) {
-        return {
+        spawnFailure = {
           ok: false,
           phase: 'spawn',
           error:
@@ -184,14 +280,18 @@ export async function runDeclaredTeardown(ctx: UninstallContext): Promise<Uninst
         }
       }
     } else if ('error' in spawnRes) {
-      return {
+      spawnFailure = {
         ok: false,
         phase:
           spawnRes.phase === 'preflight' || spawnRes.phase === 'verify' ? spawnRes.phase : 'spawn',
         error: spawnRes.error.message,
       }
     } else {
-      return { ok: false, phase: 'spawn', error: 'declared uninstall cmd did not complete' }
+      spawnFailure = {
+        ok: false,
+        phase: 'spawn',
+        error: 'declared uninstall cmd did not complete',
+      }
     }
   }
   // spawnCmd returns SpawnOk (has `exitCode`) on completion, else an
@@ -201,11 +301,25 @@ export async function runDeclaredTeardown(ctx: UninstallContext): Promise<Uninst
   const name = ctx.manifest.metadata.name
   if (!('exitCode' in spawnRes)) {
     const msg = 'error' in spawnRes ? spawnRes.error.message : 'unknown spawn failure'
+    spawnFailure ??= {
+      ok: false,
+      phase:
+        'phase' in spawnRes && (spawnRes.phase === 'preflight' || spawnRes.phase === 'verify')
+          ? spawnRes.phase
+          : 'spawn',
+      error: msg,
+    }
     console.warn(
       `declared uninstall cmd for '${name}' could not run (${msg}); ` +
         'continuing to cleanup_paths (best-effort teardown).',
     )
   } else if (spawnRes.exitCode !== 0) {
+    spawnFailure ??= {
+      ok: false,
+      phase: 'spawn',
+      error:
+        spawnRes.stderr || spawnRes.stdout || `declared uninstall cmd exited ${spawnRes.exitCode}`,
+    }
     console.warn(
       `declared uninstall cmd for '${name}' exited ${spawnRes.exitCode} ` +
         '(best-effort teardown; continuing to cleanup_paths): ' +
@@ -213,20 +327,57 @@ export async function runDeclaredTeardown(ctx: UninstallContext): Promise<Uninst
     )
   }
 
-  // 3. Remove confined paths — force:true makes an already-absent path a no-op
-  //    (the ui-ux-pro-max self-cleaning-clone case).
+  // 3. Remove only the identities captured before spawn. Directories move to a
+  //    same-parent quarantine and are reverified before recursive deletion;
+  //    ordinary files are revalidated and unlinked non-recursively. A target
+  //    absent at preflight remains an idempotent no-op only if it stays absent.
   const removedPaths: string[] = []
-  for (const abs of confined) {
-    if (ctx.hostContext && canonicalPath(abs) !== canonicalTargets.get(abs)) {
+  for (const { abs, snapshot } of cleanupTargets) {
+    if (snapshot === null) {
+      try {
+        await lstat(abs)
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          removedPaths.push(abs)
+          continue
+        }
+        return {
+          ok: false,
+          phase: 'verify',
+          error: error instanceof Error ? error.message : String(error),
+        }
+      }
       return {
         ok: false,
-        phase: 'preflight',
-        error: 'refusing cleanup_path: canonical target changed during teardown',
+        phase: 'verify',
+        error: `refusing cleanup_path that appeared after preflight: ${abs}`,
       }
     }
-    await rm(abs, { recursive: true, force: true, maxRetries: 3 })
+    try {
+      await lstat(abs)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        removedPaths.push(abs)
+        continue
+      }
+      return {
+        ok: false,
+        phase: 'verify',
+        error: error instanceof Error ? error.message : String(error),
+      }
+    }
+    try {
+      if (snapshot.isDirectory) await removeOwnedDirectoryViaQuarantine(snapshot)
+      else await removeOwnedFileViaQuarantine(snapshot)
+    } catch (error) {
+      return {
+        ok: false,
+        phase: 'verify',
+        error: error instanceof Error ? error.message : String(error),
+      }
+    }
     removedPaths.push(abs)
   }
 
-  return { ok: true, removedPaths }
+  return spawnFailure ?? { ok: true, removedPaths }
 }

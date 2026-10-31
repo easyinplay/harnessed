@@ -14,6 +14,7 @@ import {
   auditPostInstall,
   resetShippedWorkflowNamesCache,
   snapshotSkillNames,
+  snapshotSkillPaths,
   warnDeclaredCollisions,
 } from '../../src/installers/lib/packSkillAudit.js'
 import type { InstallContext } from '../../src/installers/lib/types.js'
@@ -51,6 +52,15 @@ describe('snapshotSkillNames', () => {
     mkdirSync(join(skillsDir, 'retro'))
     expect(await snapshotSkillNames(skillsDir)).toEqual(new Set(['research', 'retro']))
     expect(await snapshotSkillNames(join(skillsDir, 'nope'))).toEqual(new Set())
+  })
+
+  it('returns newly-created skill directories as absolute paths', async () => {
+    const before = await snapshotSkillPaths([skillsDir])
+    const created = join(skillsDir, 'new-skill')
+    mkdirSync(created)
+
+    const after = await snapshotSkillPaths([skillsDir])
+    expect([...after].filter((path) => !before.has(path))).toEqual([created])
   })
 })
 

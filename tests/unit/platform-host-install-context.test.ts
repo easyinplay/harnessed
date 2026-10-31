@@ -46,6 +46,38 @@ describe('HostInstallContext', () => {
     ).toBe(expected)
   })
 
+  it('rebases host-owned paths onto effective config homes without moving Codex shared skills', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', '/custom/claude')
+    const claude = captureHostInstallContext({ hostId: 'claude', userHome: '/fixture' })
+    expect(claude.platform.homeDir).toBe('/custom/claude')
+    expect(claude.platform.stateRoot).toBe(join('/custom/claude', 'harnessed'))
+    expect(claude.platform.skillsDir).toBe(join('/custom/claude', 'skills'))
+
+    vi.stubEnv('CODEX_HOME', '/custom/codex')
+    const codex = captureHostInstallContext({ hostId: 'codex', userHome: '/fixture' })
+    expect(codex.platform.homeDir).toBe('/custom/codex')
+    expect(codex.platform.stateRoot).toBe(join('/custom/codex', 'harnessed'))
+    expect(codex.platform.commandsDir).toBe(join('/custom/codex', 'prompts'))
+    expect(codex.platform.skillsDir).toBe(join('/fixture', '.agents', 'skills'))
+    expect(codex.platform.skillsDir).not.toBe(join('/custom/codex', 'skills'))
+  })
+
+  it('fails closed when both config-home env vars are set without an explicit host', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', '/custom/claude')
+    vi.stubEnv('CODEX_HOME', '/custom/codex')
+    expect(() => captureHostInstallContext({ userHome: '/fixture' })).toThrow(/--platform/)
+  })
+
+  it('treats a valid HARNESSED_PLATFORM as an explicit host with both custom roots present', () => {
+    vi.stubEnv('CLAUDE_CONFIG_DIR', '/custom/claude')
+    vi.stubEnv('CODEX_HOME', '/custom/codex')
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    const codex = captureHostInstallContext({ userHome: '/fixture' })
+    expect(codex.hostId).toBe('codex')
+    expect(codex.nativeHome).toBe('/custom/codex')
+    expect(codex.platform.stateRoot).toBe(join('/custom/codex', 'harnessed'))
+  })
+
   it('creates an immutable fixture from a descriptor without ambient selection', () => {
     vi.stubEnv('HARNESSED_PLATFORM', 'claude')
     vi.stubEnv('CODEX_HOME', '/ambient-secret-home')
@@ -83,7 +115,7 @@ describe('HostInstallContext', () => {
     vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/later-state')
     expect(context.hostId).toBe('codex')
     expect(context.nativeHome).toBe('/native')
-    expect(context.platform.stateRoot).toBe('/state')
+    expect(context.platform.stateRoot).toBe(join('/native', 'harnessed'))
     expect(JSON.stringify(context)).not.toMatch(/private-session|private-token|API_TOKEN/)
     expect(Object.keys(context).sort()).toEqual([
       'hostId',
@@ -92,6 +124,27 @@ describe('HostInstallContext', () => {
       'platform',
       'userHome',
     ])
+  })
+
+  it('keeps the captured destructive state root canonical despite a test override', () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.stubEnv('CODEX_HOME', '/native')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/test-state')
+
+    const context = captureHostInstallContext({ userHome: '/fixture' })
+
+    expect(context.platform.stateRoot).toBe(join('/native', 'harnessed'))
+  })
+
+  it('rebuilds a canonical state root after ambient host detection', () => {
+    vi.stubEnv('HARNESSED_PLATFORM', '')
+    vi.stubEnv('CLAUDE_CONFIG_DIR', '/native')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '/fixture')
+
+    const context = captureHostInstallContext({ userHome: '/fixture' })
+
+    expect(context.hostId).toBe('claude')
+    expect(context.platform.stateRoot).toBe(join('/native', 'harnessed'))
   })
 
   it('preserves session-env precedence without an explicit target', () => {
@@ -108,8 +161,8 @@ describe('HostInstallContext', () => {
     const context = captureHostInstallContext({ hostId: 'claude', userHome: '/fixture' })
     expect(context.hostId).toBe('claude')
     expect(context.nativeHome).toBe('/claude-native')
-    expect(context.platform.stateRoot).toBe('/state')
-    expect(context.platform.homeDir).toBe(join('/fixture', '.claude'))
+    expect(context.platform.stateRoot).toBe(join('/claude-native', 'harnessed'))
+    expect(context.platform.homeDir).toBe('/claude-native')
   })
 
   it.each(['cursor', 'agents', 'unknown', ''])('refuses explicit unsupported host %j', (hostId) => {

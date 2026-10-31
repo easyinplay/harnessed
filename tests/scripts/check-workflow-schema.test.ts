@@ -11,7 +11,7 @@
 // `node scripts/check-workflow-schema.mjs`, assert exit code + stderr content.
 
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -336,13 +336,79 @@ describe('check-workflow-schema — T2.3 orphan judgment trigger gate', () => {
     expect(r.code).toBe(0)
   })
 
-  it('21. allowlisted exemption (stage-phase-gate.gsd-ui-phase) is not reported', () => {
+  it('21. stage-phase trigger without workflow wiring is reported as an orphan', () => {
     writeCaps()
     writeJudgment('stage-phase-gate', {
       'gsd-ui-phase': { fires_when: 'phase.has_ui_changes == true' },
     })
     const r = runScript()
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain('judgments.stage-phase-gate.gsd-ui-phase')
+  })
+})
+
+describe('check-workflow-schema — runtime expression member parity', () => {
+  it.each([
+    ['root', 'not_declared == true'],
+    ['phase', 'phase.not_declared == true'],
+    ['subtask', 'subtask.not_declared == true'],
+    ['user', "'force' in user.not_declared"],
+  ])('rejects unknown %s member', (_group, expression) => {
+    writeCaps()
+    writeJudgment('member-parity', { route: { fires_when: expression } })
+    writeWorkflow('plan', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'plan',
+      phases: [{ id: '01-a', gate: 'judgments.member-parity.route.fires' }],
+    })
+    const r = runScript()
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain('unknown runtime expression member')
+  })
+
+  it('allows env.* members because the host supplies them dynamically', () => {
+    writeCaps()
+    writeJudgment('member-parity', {
+      route: { fires_when: "env.HARNESSED_USER_LANG == 'zh-Hans'" },
+    })
+    writeWorkflow('plan', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'plan',
+      phases: [{ id: '01-a', gate: 'judgments.member-parity.route.fires' }],
+    })
+    const r = runScript()
     expect(r.code).toBe(0)
+  })
+
+  it('reads phase members from the real TypeBox schema instead of a copied list', () => {
+    writeCaps()
+    writeJudgment('member-parity', {
+      route: { fires_when: "phase.stage == 'plan' and phase.requires_spec == true" },
+    })
+    writeWorkflow('plan', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'plan',
+      phases: [{ id: '01-a', gate: 'judgments.member-parity.route.fires' }],
+    })
+    const r = runScript()
+    expect(r.code).toBe(0)
+    expect(readFileSync(SCRIPT, 'utf8')).not.toContain('RUNTIME_MEMBERS')
+  })
+
+  it('rejects required schema members that the default runtime context does not supply', () => {
+    writeCaps()
+    writeJudgment('member-parity', {
+      route: { fires_when: 'phase.unfamiliar_module == true' },
+    })
+    writeWorkflow('plan', {
+      schema_version: 'harnessed.workflow.v3',
+      workflow: 'plan',
+      phases: [{ id: '01-a', gate: 'judgments.member-parity.route.fires' }],
+    })
+    const r = runScript()
+    expect(r.code).toBe(1)
+    expect(r.stderr).toContain("required runtime expression member 'phase.unfamiliar_module'")
+    expect(r.stderr).toContain('missing from buildDefaultGateContext')
   })
 })
 

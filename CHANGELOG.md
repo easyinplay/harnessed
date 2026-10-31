@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.6] - 2026-10-31
+
+### Fixed
+
+- Uninstall now preserves user data, respects custom host roots, and writes settings atomically.
+- Checkpoints now record failed states safely, serialize concurrent updates, and replay nested plans deterministically.
+- Hooks now use stable identity checks with pinned platform behavior.
+- GSD Codex uninstall now uses the official component allowlist.
+- Published artifacts now bind immutable publish metadata to their SHA.
+- POSIX and Windows path comparisons now follow platform-correct case semantics.
+
 ## [5.0.5] - 2026-10-29
 
 ### Fixed

@@ -14,7 +14,7 @@ var init_package = __esm({
   'package.json'() {
     package_default = {
       name: 'harnessed',
-      version: '5.0.5',
+      version: '5.0.6',
       description: 'AI coding harness package manager + composition orchestrator',
       type: 'module',
       license: 'Apache-2.0',
@@ -65,6 +65,7 @@ var init_package = __esm({
         'routing',
         'config-templates',
         'schemas',
+        'CHANGELOG.md',
         'README.md',
         'README-en.md',
         'README-zh.md',
@@ -75,6 +76,7 @@ var init_package = __esm({
       scripts: {
         dev: 'tsup --watch',
         build: 'tsc --noEmit && tsup && node ./scripts/build-hooks.mjs',
+        prepack: 'npm run build',
         'build:hooks': 'node ./scripts/build-hooks.mjs',
         'build:schema': 'node ./scripts/build-schema.mjs',
         'validate:schema': 'node ./scripts/validate-schema.mjs',

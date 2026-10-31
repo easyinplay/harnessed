@@ -283,7 +283,7 @@ function shellTiming(lib) {
     }
     for (const [label, bin, prefix, verbatim] of shells) {
       for (const c of cases) {
-        const cmd = c.command.replaceAll('${PLUGIN_ROOT}', dir)
+        const cmd = c.command.replaceAll(`\${PLUGIN_ROOT}`, dir)
         const warm = run(bin, prefix, cmd, c, verbatim)
         if (warm.status !== 0) {
           check(`shell ${label} ${c.id} warmup exit 0`, false, warm.stderr.slice(0, 200))

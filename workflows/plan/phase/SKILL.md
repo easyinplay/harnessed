@@ -6,8 +6,8 @@ description: |
   progress.md (bundled Plan-stage cadence: GSD + planning-with-files)。Stage ② 铁律:
   dual capability (GSD orchestration + planning-with-files plugin)。schema_version:
   harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available [gsd-plan-phase,
-  planning-with-files] + 2 phases (01-gsd-plan + 02-persist)。Triggered by harnessed CLI
-  `harnessed plan-phase --phase <num>` or slash command `/plan-phase` after `harnessed setup`.
+  planning-with-files] + 2 phases (01-gsd-plan + 02-persist)。Triggered by headless CLI
+  `harnessed run plan-phase` or slash command `/plan-phase` after `harnessed setup`.
 trigger_phrases:
   - "plan phase"
   - "计划层 phase"

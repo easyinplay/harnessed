@@ -514,7 +514,7 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `harnessed status` | Phase ปัจจุบัน + lock holder |
 | `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / ความสมบูรณ์ของ skill / ความขัดแย้ง GateGuard / update-available ฯลฯ) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | อัปเดตตัวเองตามช่องทางติดตั้ง: การติดตั้งแบบไบนารีจะแทนที่ตัวเองจาก GitHub releases (ตรวจ sha256 + ลายเซ็น ed25519 — releases มาพร้อม `<asset>.sha256.sig` ตามสัญญา signed-release ตั้งแต่ 4.32.19; เวอร์ชันที่ถูกแทนที่จะถูกเก็บไว้สำหรับ rollback); การติดตั้งแบบ npm รัน `npm i -g harnessed@latest`. `--check` รายงานเวอร์ชันล่าสุด; `--rollback [version]` (เฉพาะการติดตั้งแบบไบนารี) กู้คืนไบนารีเวอร์ชันก่อนหน้าที่เก็บไว้แบบ atomic — การติดตั้งแบบ npm จะถูกชี้ไปที่ `npm i -g harnessed@<version>`; `--upstreams` รันฐาน manifests ใหม่; `--migration-report` เป็นรายการสถานะเก่าแบบอ่านอย่างเดียว |
-| `harnessed release-preflight` | Release-readiness gate แบบ read-only (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); exit 1 หากยังไม่พร้อม คือ gate ของ Stage Ship |
+| `harnessed release-preflight [--release-version <semver>]` | Release-readiness gate แบบ read-only (CHANGELOG `[Unreleased]` / version / git-clean / tag-absent); `--release-version` override การค้นหาจาก manifests; exit 1 หากยังไม่พร้อม คือ gate ของ Stage Ship |
 | `harnessed retro --done` | รีเซ็ตตัวนับ phase ของ retro-reminder หลังรัน `/retro` (เคลียร์ RETRO-DUE nudge ต่อ turn) |
 | `harnessed install <name>` | ติดตั้ง upstream manifest |
 | `harnessed uninstall [name]` | การถอนการติดตั้งแบบย้อนกลับ — รัน teardown `spec.uninstall` ที่ประกาศไว้ใน manifest (cmd + จำกัดขอบเขตใน `$HOME`, `cleanup_paths` แบบ idempotent) สำหรับ method ที่ติดตั้ง skill (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); method อื่นยังคงใช้ reverse ตาม method เดิม |
@@ -522,6 +522,15 @@ planning-with-files /plan (cross-cutting tool) → เขียน artifacts ไ
 | `harnessed rollback <timestamp>` | Rollback หนึ่งบรรทัดของ **backup snapshot** (EOL preserve + sha1 verify) — ต่างจาก `update --rollback` ซึ่งกู้คืน **compiled binary** เวอร์ชันก่อนหน้า |
 | `harnessed gc` | ล้าง backup ที่หมดอายุ |
 | `harnessed audit-log` | Query log ความโปร่งใสของ routing (รองรับ `--filter` jq expression) |
+| `harnessed agents-md` | เขียนหรืออัปเดต harnessed block ที่คั่นด้วย marker ใน `<CODEX_HOME>/AGENTS.md` โดยไม่แก้ข้อความภายนอก |
+| `harnessed audit` | Audit ความสอดคล้องของ manifest และ runtime (`--skip-runtime` ตรวจเฉพาะ manifest) |
+| `harnessed check-docs` | ตรวจ discipline ของเอกสาร `.planning/`; advisory หรือ blocking จะคืน exit code ที่ไม่ใช่ศูนย์ |
+| `harnessed eval` | รัน deterministic orchestrator regression suite; `harnessed eval record` บันทึก scenario ที่ replay ได้ |
+| `harnessed exempt-gateguard` | บันทึกข้อยกเว้น GateGuard `.planning/**` เพื่อแก้ dual-guard conflict |
+| `harnessed facts <master>` | ส่งออก gate facts ที่ทราบและยังต้องตัดสินสำหรับ `harnessed gates --context-file` |
+| `harnessed install-base [--dry-run]` | ติดตั้ง phase 1.3 base profile; `--dry-run` preview โดยไม่เขียน |
+| `harnessed manifest-add <upstream>` | เพิ่ม upstream adapter ผ่าน EE-5 merge gate |
+| `harnessed research --query <text>` | รัน headless research workflow; `--dry-run` preview โดยไม่ spawn |
 
 ### Flags
 

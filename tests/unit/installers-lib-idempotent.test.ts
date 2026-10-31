@@ -25,10 +25,15 @@ const readFileMock = vi.fn(async (_p: string, _encoding?: string): Promise<strin
   e.code = 'ENOENT'
   throw e
 })
+const isCompiledRuntimeMock = vi.fn(() => false)
 vi.mock('node:fs/promises', () => ({
   access: (p: string) => accessMock(p),
   stat: (p: string) => statMock(p),
   readFile: (p: string, encoding?: string) => readFileMock(p, encoding),
+}))
+vi.mock('../../src/platform/assetsRoot.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/platform/assetsRoot.js')>()),
+  isCompiledRuntime: () => isCompiledRuntimeMock(),
 }))
 
 // platform.js factory — idempotent.ts consumes getSkillsDir + harnessSkillsDirs;
@@ -55,6 +60,9 @@ vi.mock('../../src/installers/lib/readClaudeConfig.js', () => ({
   isMcpServerRegistered: vi.fn(async () => false),
   isPluginRegistered: vi.fn(async () => false),
 }))
+vi.mock('../../src/installers/lib/codexPlugins.js', () => ({
+  isCodexPluginInstalled: vi.fn(async () => false),
+}))
 vi.mock('../../src/installers/lib/spawn.js', () => ({
   spawnCmd: vi.fn(async () => ({ ok: true, exitCode: 0, stdout: '', stderr: '' })),
 }))
@@ -67,6 +75,7 @@ vi.mock('../../src/installers/lib/binaryProbe.js', async (importOriginal) => {
   return { ...real, binaryOnPath: (b: string) => binOnPathMock(b) }
 })
 
+import { isCodexPluginInstalled } from '../../src/installers/lib/codexPlugins.js'
 import {
   detectSkillPresence,
   extractSkillName,
@@ -312,6 +321,80 @@ describe('isAlreadyInstalled npm-cli binary probe (v4.16.1 T1)', () => {
 
     await expect(isAlreadyInstalled(c)).resolves.toBe(false)
     expect(binOnPathMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('isAlreadyInstalled cc-hook-add host contract', () => {
+  const ctx = (): InstallContext => ({
+    manifest: {
+      metadata: { name: 'inject-state' },
+      spec: {
+        install: {
+          method: 'cc-hook-add',
+          cmd: 'node bin/harnessed-inject-state.mjs',
+          hook_event: 'UserPromptSubmit',
+          hook_command: 'node bin/harnessed-inject-state.mjs',
+        },
+      },
+    } as unknown as Manifest,
+    opts: {
+      apply: true,
+      dryRun: false,
+      system: false,
+      nonInteractive: true,
+      fullDiff: false,
+      color: 'auto',
+    },
+    level: 'L4',
+    cwd: '/tmp',
+  })
+
+  beforeEach(() => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    readFileMock.mockReset()
+    isCompiledRuntimeMock.mockReset().mockReturnValue(false)
+    vi.mocked(isCodexPluginInstalled).mockReset().mockResolvedValue(false)
+  })
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('accepts the desired compiled Claude hook entry', async () => {
+    isCompiledRuntimeMock.mockReturnValue(true)
+    const command = `"${process.execPath.replace(/\\/g, '/')}" inject-state`
+    readFileMock.mockResolvedValue(
+      JSON.stringify({
+        hooks: {
+          UserPromptSubmit: [{ hooks: [{ type: 'command', command }] }],
+        },
+      }),
+    )
+
+    await expect(isAlreadyInstalled(ctx())).resolves.toBe(true)
+    expect(readFileMock).toHaveBeenCalledOnce()
+    expect(isCodexPluginInstalled).not.toHaveBeenCalled()
+  })
+
+  it('accepts the desired Node/npm Claude hook entry', async () => {
+    const command = `node "${join(process.cwd(), 'bin', 'harnessed-inject-state.mjs').replace(/\\/g, '/')}"`
+    readFileMock.mockResolvedValue(
+      JSON.stringify({
+        hooks: {
+          UserPromptSubmit: [{ hooks: [{ type: 'command', command }] }],
+        },
+      }),
+    )
+
+    await expect(isAlreadyInstalled(ctx())).resolves.toBe(true)
+  })
+
+  it('uses the Codex plugin probe without reading Claude settings', async () => {
+    vi.stubEnv('HARNESSED_PLATFORM', 'codex')
+    vi.mocked(isCodexPluginInstalled).mockResolvedValue(true)
+
+    await expect(isAlreadyInstalled(ctx())).resolves.toBe(true)
+    expect(isCodexPluginInstalled).toHaveBeenCalledExactlyOnceWith(
+      'harnessed-inject-state@harnessed-local',
+    )
+    expect(readFileMock).not.toHaveBeenCalled()
   })
 })
 

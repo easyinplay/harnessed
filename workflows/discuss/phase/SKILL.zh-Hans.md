@@ -5,7 +5,7 @@ description: |
   实现决策 / 跨 phase API contract 不清 / phase scope > 1 天 / 灰色地带）。
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gsd-discuss-phase + planning-with-files) + 2 phases（01-gsd-discuss + 02-persist findings.md
-  + knowledge.md）。Triggered by harnessed CLI `harnessed discuss-phase --phase <num>` or slash
+  + knowledge.md）。Triggered by headless CLI `harnessed run discuss-phase` or slash
   command `/discuss-phase` after `harnessed setup`.
 trigger_phrases:
   - "discuss phase"

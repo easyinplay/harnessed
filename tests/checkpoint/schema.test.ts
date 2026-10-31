@@ -170,6 +170,33 @@ describe('additive G1/G6/G7 schema fields', () => {
     )
   })
 
+  it('rejects a fractional order on a sub entry', () => {
+    const bad = { sub: 's', status: 'pending', gate_fired: true, order: 1.5 }
+    expect(Value.Check(SubProgressEntry, bad)).toBe(false)
+  })
+
+  it('accepts integer nested expansion identity metadata', () => {
+    const entry = {
+      sub: 'child',
+      status: 'pending',
+      gate_fired: true,
+      order: 2,
+      nested_expansion: { parent: 'plan', index: 0, length: 2, start: 1 },
+    }
+    expect(Value.Check(SubProgressEntry, entry)).toBe(true)
+  })
+
+  it('rejects fractional nested expansion positions', () => {
+    const bad = {
+      sub: 'child',
+      status: 'pending',
+      gate_fired: true,
+      order: 2,
+      nested_expansion: { parent: 'plan', index: 0.5, length: 2, start: 1 },
+    }
+    expect(Value.Check(SubProgressEntry, bad)).toBe(false)
+  })
+
   it('rejects an unrecognized mode value on a sub entry (2-enum)', () => {
     const bad = { sub: 's', status: 'pending', gate_fired: true, mode: 'sequential' }
     expect(Value.Check(SubProgressEntry, bad)).toBe(false)
@@ -187,7 +214,7 @@ describe('additive G1/G6/G7 schema fields', () => {
     expect(Value.Check(CurrentWorkflowV1, bad)).toBe(false)
   })
 
-  it('D-02 lock: top-level WorkflowStatus/CheckpointStatus stay 3-state', () => {
+  it('D-02 lifecycle: workflow stays 3-state while checkpoint has failed outcome', () => {
     expect(WorkflowStatus.anyOf.map((s: { const: string }) => s.const)).toEqual([
       'active',
       'paused',
@@ -197,6 +224,7 @@ describe('additive G1/G6/G7 schema fields', () => {
       'active',
       'paused',
       'complete',
+      'failed',
     ])
   })
 })

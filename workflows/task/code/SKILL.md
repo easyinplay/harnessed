@@ -8,7 +8,7 @@ description: |
   /plan 更新 progress.md 跨 session 进度同步)。
   schema_version: harnessed.workflow.v3 with disciplines_applied [6] + tools_available
   [improve-codebase-architecture, diagnose, planning-with-files]. Triggered
-  by harnessed CLI `harnessed task-code --task <text>` or slash command `/task-code`
+  by headless CLI `harnessed run task-code` or slash command `/task-code`
   after `harnessed setup`.
 trigger_phrases:
   - "code this subtask"

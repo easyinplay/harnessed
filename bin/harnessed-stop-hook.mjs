@@ -66,8 +66,32 @@ function isHostId(id) {
 function descriptorFor(id, home = homedir()) {
   return id === 'codex' ? codexDescriptor(home) : claudeDescriptor(home)
 }
-function descriptorById(id, home) {
-  return isHostId(id) ? descriptorFor(id, home) : void 0
+function configuredHome(envVar) {
+  const value = process.env[envVar]?.trim()
+  return value || void 0
+}
+function descriptorForConfiguredHome(id, home = homedir()) {
+  const descriptor = descriptorFor(id, home)
+  const nativeHome = configuredHome(id === 'codex' ? 'CODEX_HOME' : 'CLAUDE_CONFIG_DIR')
+  if (nativeHome === void 0) return descriptor
+  if (id === 'codex') {
+    return {
+      ...descriptor,
+      homeDir: nativeHome,
+      stateRoot: join(nativeHome, 'harnessed'),
+      commandsDir: join(nativeHome, 'prompts'),
+      mcpConfigPath: join(nativeHome, 'config.toml'),
+    }
+  }
+  return {
+    ...descriptor,
+    homeDir: nativeHome,
+    stateRoot: join(nativeHome, 'harnessed'),
+    settingsPath: join(nativeHome, 'settings.json'),
+    skillsDir: join(nativeHome, 'skills'),
+    commandsDir: join(nativeHome, 'commands'),
+    pluginsRegistry: join(nativeHome, 'plugins', 'installed_plugins.json'),
+  }
 }
 function detectPlatform(home = homedir()) {
   const resolved = resolveHost(home)
@@ -79,11 +103,18 @@ function resolveHost(home) {
   return resolveHostWithReason(home).descriptor
 }
 function resolveHostWithReason(home = homedir()) {
-  const base = claudeDescriptor(home)
+  const claudeHome = configuredHome('CLAUDE_CONFIG_DIR')
+  const codexHome = configuredHome('CODEX_HOME')
+  const envPlatform = process.env.HARNESSED_PLATFORM?.trim()
+  const explicitHost = envPlatform !== void 0 && isHostId(envPlatform) ? envPlatform : void 0
+  if (explicitHost === void 0 && claudeHome !== void 0 && codexHome !== void 0) {
+    throw new Error('both CLAUDE_CONFIG_DIR and CODEX_HOME are set; pass --platform claude|codex')
+  }
+  const base = descriptorForConfiguredHome('claude', home)
+  const codex = descriptorForConfiguredHome('codex', home)
   const skipped = []
-  const envPlatform = process.env.HARNESSED_PLATFORM
   if (envPlatform !== void 0 && envPlatform !== '') {
-    const d = descriptorById(envPlatform, home)
+    const d = isHostId(envPlatform) ? descriptorForConfiguredHome(envPlatform, home) : void 0
     if (d) {
       return {
         descriptor: d,
@@ -93,11 +124,23 @@ function resolveHostWithReason(home = homedir()) {
     }
     skipped.push({ kind: 'env-platform-unknown', envVar: 'HARNESSED_PLATFORM', value: envPlatform })
   }
+  if (claudeHome !== void 0 || codexHome !== void 0) {
+    const id = claudeHome !== void 0 ? 'claude' : 'codex'
+    return {
+      descriptor: id === 'claude' ? base : codex,
+      reason: {
+        kind: 'env-platform',
+        envVar: id === 'claude' ? 'CLAUDE_CONFIG_DIR' : 'CODEX_HOME',
+        value: id === 'claude' ? claudeHome : codexHome,
+      },
+      skipped,
+    }
+  }
   const inClaude = Boolean(process.env.CLAUDE_CODE_SESSION_ID?.trim())
   const inCodex = Boolean(process.env.CODEX_SESSION_ID?.trim())
   if (inClaude !== inCodex) {
     return {
-      descriptor: inClaude ? base : codexDescriptor(home),
+      descriptor: inClaude ? base : codex,
       reason: {
         kind: 'host-session-env',
         envVar: inClaude ? 'CLAUDE_CODE_SESSION_ID' : 'CODEX_SESSION_ID',
@@ -106,11 +149,11 @@ function resolveHostWithReason(home = homedir()) {
     }
   }
   if (inClaude && inCodex) skipped.push({ kind: 'host-session-env-ambiguous' })
-  for (const pinRoot of [codexDescriptor(home).stateRoot, base.stateRoot]) {
+  for (const pinRoot of [codex.stateRoot, base.stateRoot]) {
     const pinPath = join(pinRoot, '.platform')
     try {
       const value = readFileSync(pinPath, 'utf8').trim()
-      const d = descriptorById(value, home)
+      const d = isHostId(value) ? descriptorForConfiguredHome(value, home) : void 0
       if (d) return { descriptor: d, reason: { kind: 'platform-pin', pinPath, value }, skipped }
       skipped.push({ kind: 'platform-pin-unknown', pinPath, value })
     } catch {}
@@ -123,7 +166,6 @@ function resolveHostWithReason(home = homedir()) {
         skipped,
       }
     }
-    const codex = codexDescriptor(home)
     if (existsSync(codex.homeDir)) {
       return {
         descriptor: codex,

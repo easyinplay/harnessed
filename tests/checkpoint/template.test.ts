@@ -10,13 +10,15 @@ const mkdirCalls: string[] = []
 vi.mock('node:fs', () => ({
   writeFileSync: (p: string, data: string) => void fsState.set(p, data),
   mkdirSync: (p: string) => void mkdirCalls.push(p),
+  existsSync: (_p: string) => false,
   renameSync: (src: string, dst: string) => {
     fsState.set(dst, fsState.get(src) as string)
     fsState.delete(src)
   },
 }))
 
-import { join as pathJoin } from 'node:path'
+import { dirname } from 'node:path'
+import { ownerPath } from '../../src/checkpoint/ownerPath.js'
 import type { CheckpointV1Type } from '../../src/checkpoint/schema/index.js'
 import {
   CheckpointTooLargeError,
@@ -25,7 +27,6 @@ import {
   estimateTokens,
   writeCheckpoint,
 } from '../../src/checkpoint/template.js'
-import { harnessedSubdir } from '../../src/platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../../src/types/schemaVersion.js'
 
 const makeCheckpoint = (overrides: Partial<CheckpointV1Type> = {}): CheckpointV1Type => ({
@@ -52,10 +53,10 @@ describe('template — writeCheckpoint + enforceBudget (T2.4 fixtures 14-18)', (
     const cp = makeCheckpoint()
     const p = writeCheckpoint(cp)
     // v3.0.3 — default path is under the homedir-rooted harness root.
-    const expected = pathJoin(harnessedSubdir('checkpoints'), '3.1.json')
+    const expected = ownerPath('checkpoints', ['3.1.json'])
     expect(p).toBe(expected)
     expect(fsState.get(p)).toBe(JSON.stringify(cp, null, 2))
-    expect(mkdirCalls).toContain(harnessedSubdir('checkpoints'))
+    expect(mkdirCalls).toContain(dirname(expected))
   })
 
   it('15. budget within: 500-token checkpoint → no truncation, JSON content === input', () => {

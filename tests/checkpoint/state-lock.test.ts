@@ -114,7 +114,9 @@ describe('R10.2 concurrent write lock (T2.4 — 5 cells)', () => {
     expect(lockMock).toHaveBeenCalledTimes(1)
     expect(lockMock).toHaveBeenCalledWith(
       HARNESSED_ROOT,
-      expect.objectContaining({ retries: expect.objectContaining({ retries: 3 }) }),
+      expect.objectContaining({
+        retries: expect.objectContaining({ retries: 20, maxTimeout: 250 }),
+      }),
     )
     // mkdir should have been called for the harness root before lock
     expect(mkdirCalls).toContain(HARNESSED_ROOT)

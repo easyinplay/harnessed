@@ -1,5 +1,6 @@
 // Phase 3.1 Wave 1 T1.2 — current-workflow state machine schema (8th surface).
-// Sister of `checkpoint.v1.ts` (same 3-state union by convention).
+// Sister of `checkpoint.v1.ts`; workflow lifecycle stays 3-state while a
+// checkpoint can additionally record a terminal failed outcome.
 //
 // Persisted to `.harnessed/current-workflow.json` and read by the state
 // machine in `src/checkpoint/state.ts` (T1.3). D-02 KARPATHY 3-state lock
@@ -13,8 +14,8 @@ import { SCHEMA_VERSIONS } from '../../types/schemaVersion.js'
 // `spawnFailure.ts` has no imports of its own, so nothing is dragged in here.
 import { SPAWN_FAILURES } from '../../workflow/lib/spawnFailure.js'
 
-/** 3-state workflow status (D-02 KARPATHY lock). Mirrors `CheckpointStatus`
- *  in `checkpoint.v1.ts` by convention. */
+/** 3-state workflow lifecycle. Failed leaf outcomes live in checkpoint status
+ *  and the sub-progress ledger, leaving this workflow recoverable. */
 export const WorkflowStatus = Type.Union([
   Type.Literal('active'),
   Type.Literal('paused'),
@@ -67,6 +68,20 @@ export const SubProgressEntry = Type.Object(
     // (back-compat fail-soft; comet 0.3.9 phase-skip lesson).
     mode: Type.Optional(Type.Union([Type.Literal('serial'), Type.Literal('parallel')])),
     order: Type.Optional(Type.Integer()),
+    // Nested master replay identity. Additive-optional for old ledgers; new
+    // expansions stamp every child so replay can prove the exact parent,
+    // relative position, and child-plan length instead of matching a name prefix.
+    nested_expansion: Type.Optional(
+      Type.Object(
+        {
+          parent: Type.String({ minLength: 1 }),
+          index: Type.Integer({ minimum: 0 }),
+          length: Type.Integer({ minimum: 1 }),
+          start: Type.Integer({ minimum: 0 }),
+        },
+        { additionalProperties: false },
+      ),
+    ),
     // ── T2.7 (loop internalization) — three additive-optional fields that move the
     // completion GUARANTEE from the dead `harnessed run` path onto the ledger. Old
     // envelopes without them still Value.Check-pass → NO schemaVersion bump.

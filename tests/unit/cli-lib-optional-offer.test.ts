@@ -16,6 +16,7 @@
 //   - non-interactive → advisory line only, no prompt, no install
 //   - empty/missing optional dir → empty result
 
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('node:fs/promises', () => ({
@@ -144,7 +145,7 @@ describe('runOptionalOffer', () => {
     expect(runInstallMock.mock.calls[0]?.[2]).toMatchObject({
       hostId: 'codex',
       nativeHome: '/selected-native',
-      platform: { stateRoot: '/selected-state' },
+      platform: { stateRoot: join('/selected-native', 'harnessed') },
     })
     expect(manifest.spec.install.cmd).toBe('claude plugin install wrong-base')
   })

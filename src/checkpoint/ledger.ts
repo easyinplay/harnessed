@@ -87,6 +87,145 @@ export function seedLedger(plan: GatesPlan): SubProgressEntryType[] {
   return [...fireEntries.map((e) => e.entry), ...skipEntries]
 }
 
+export interface ExpandNestedMasterResult {
+  entries: SubProgressEntryType[]
+  matched: boolean
+}
+
+function orderBySequence(entries: SubProgressEntryType[]): SubProgressEntryType[] {
+  return entries
+    .map((entry, index) => ({ entry, index }))
+    .sort((left, right) => {
+      const orderDelta =
+        (left.entry.order ?? PARALLEL_MID_ANCHOR) - (right.entry.order ?? PARALLEL_MID_ANCHOR)
+      if (orderDelta !== 0) return orderDelta
+      if ((left.entry.order === undefined) !== (right.entry.order === undefined)) {
+        return left.entry.order === undefined ? -1 : 1
+      }
+      return left.index - right.index
+    })
+    .map(({ entry }) => entry)
+}
+
+function renumberSequence(entries: SubProgressEntryType[]): SubProgressEntryType[] {
+  return entries.map((entry, index) => ({
+    ...entry,
+    order: index + 1,
+    ...(entry.nested_expansion
+      ? {
+          nested_expansion: {
+            ...entry.nested_expansion,
+            start: index - entry.nested_expansion.index,
+          },
+        }
+      : {}),
+  }))
+}
+
+function isEquivalentReplay(
+  entries: SubProgressEntryType[],
+  children: SubProgressEntryType[],
+  parent: string,
+): boolean {
+  if (children.length === 0) return false
+  if (entries.some((entry, index) => entry.order !== index + 1)) return false
+
+  const childSubs = new Set(children.map((entry) => entry.sub))
+  if (entries.filter((entry) => childSubs.has(entry.sub)).length !== children.length) return false
+
+  return entries.some((_, start) =>
+    children.every((expected, offset) => {
+      const actual = entries[start + offset]
+      if (!actual) return false
+      if (
+        actual.sub !== expected.sub ||
+        actual.gate_fired !== expected.gate_fired ||
+        actual.mode !== expected.mode ||
+        actual.order !== start + offset + 1 ||
+        actual.nested_expansion?.parent !== parent ||
+        actual.nested_expansion.index !== offset ||
+        actual.nested_expansion.length !== children.length ||
+        actual.nested_expansion.start !== start
+      ) {
+        return false
+      }
+      return (
+        expected.status !== 'skipped' ||
+        (actual.status === 'skipped' && actual.reason === expected.reason)
+      )
+    }),
+  )
+}
+
+/** Replace a pending master entry with its child plan without replacing the
+ * owning workflow envelope. Existing effective sequence order is stabilized,
+ * the parent slot is replaced in place, then array positions become the sole
+ * integer order. Replaying the same start is an identity operation only when the
+ * complete child segment still has the same identities and sequence position. */
+export function expandNestedMaster(
+  entries: SubProgressEntryType[],
+  parent: string,
+  plan: GatesPlan,
+): ExpandNestedMasterResult {
+  const seededChildren = orderBySequence(seedLedger(plan))
+  const childSubs = seededChildren.map((entry) => entry.sub)
+  if (childSubs.includes(parent)) {
+    throw new Error(
+      `expandNestedMaster: child sub '${parent}' conflicts with the parent ledger identity; ` +
+        `nested expansion for '${parent}' was refused.`,
+    )
+  }
+  const duplicateChild = childSubs.find((sub, index) => childSubs.indexOf(sub) !== index)
+  if (duplicateChild) {
+    throw new Error(
+      `expandNestedMaster: child sub '${duplicateChild}' conflicts with an existing ledger identity; ` +
+        `nested expansion for '${parent}' was refused.`,
+    )
+  }
+  const parentIndex = entries.findIndex(
+    (entry) => entry.sub === parent && entry.status === 'pending',
+  )
+
+  if (parentIndex === -1) {
+    if (entries.some((entry) => entry.sub === parent)) return { entries, matched: false }
+    return { entries, matched: isEquivalentReplay(entries, seededChildren, parent) }
+  }
+
+  const conflictingSibling = entries.find(
+    (entry, index) => index !== parentIndex && childSubs.includes(entry.sub),
+  )
+  if (conflictingSibling) {
+    throw new Error(
+      `expandNestedMaster: child sub '${conflictingSibling.sub}' conflicts with an existing ledger identity; ` +
+        `nested expansion for '${parent}' was refused.`,
+    )
+  }
+
+  const orderedEntries = orderBySequence(entries)
+  const orderedParentIndex = orderedEntries.findIndex(
+    (entry) => entry.sub === parent && entry.status === 'pending',
+  )
+  const children = seededChildren.map((entry, index) => ({
+    ...entry,
+    nested_expansion: {
+      parent,
+      index,
+      length: seededChildren.length,
+      start: orderedParentIndex,
+    },
+  }))
+  const expanded = [
+    ...orderedEntries.slice(0, orderedParentIndex),
+    ...children,
+    ...orderedEntries.slice(orderedParentIndex + 1),
+  ]
+
+  return {
+    entries: renumberSequence(expanded),
+    matched: true,
+  }
+}
+
 /** Return a NEW ledger array with the named sub's entry flipped to `status`,
  *  optionally attaching evidence + evidence_status. Input array and its entries
  *  are never mutated. Throws if `sub` is not present in the ledger. */

@@ -61,6 +61,8 @@ describe('compiled pre-assets platform hint', () => {
         HARNESSED_ASSETS_OVERRIDE: '',
         CLAUDE_CODE_SESSION_ID: 'ambient-session',
         CODEX_SESSION_ID: '',
+        CLAUDE_CONFIG_DIR: ambient === 'claude' ? join(root, '.claude') : '',
+        CODEX_HOME: ambient === 'codex' ? join(root, '.codex') : '',
       },
     })
   }

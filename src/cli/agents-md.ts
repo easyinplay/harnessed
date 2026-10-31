@@ -13,6 +13,7 @@ import { join } from 'node:path'
 import type { Command } from 'commander'
 import { getLocale } from '../i18n/index.js'
 import { getAssetsRoot } from '../platform/assetsRoot.js'
+import { captureHostInstallContext } from '../platform/hostInstallContext.js'
 import { detectPlatform } from '../platform/platform.js'
 import { runAgentsMd } from './lib/agentsMd.js'
 
@@ -41,8 +42,10 @@ export function registerAgentsMd(program: Command): void {
       }
       const locale = getLocale()
       try {
+        const hostContext = captureHostInstallContext({ hostId: 'codex' })
         const r = await runAgentsMd({
           workflowsDir: join(getAssetsRoot(), 'workflows'),
+          hostContext,
           dryRun: raw.dryRun === true,
           remove: raw.remove === true,
           locale: locale === 'zh-Hans' ? 'zh-Hans' : 'en',

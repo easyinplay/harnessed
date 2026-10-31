@@ -296,14 +296,35 @@ export async function runCheckpointStart(
   } catch {
     // fail-soft — the pre-check must never break start.
   }
-  const { checkpointPath } = await activatePhase(sub)
-  // D3 graceful degrade — seed the ledger only when a plan is supplied; a
-  // missing/empty/invalid --plan leaves an empty ledger, no error.
   const plan = await parsePlan(opts.plan)
+  let checkpointPath: string | undefined
+  let nestedMaster = false
+
   if (plan) {
-    const { seedLedger } = await import('../checkpoint/ledger.js')
-    const { mutateSubProgress } = await import('../checkpoint/state.js')
-    await mutateSubProgress(() => seedLedger(plan))
+    const { expandNestedMaster } = await import('../checkpoint/ledger.js')
+    const { mutateWorkflow } = await import('../checkpoint/state.js')
+    await mutateWorkflow((workflow) => {
+      if (workflow.phase === sub) return workflow
+      const expanded = expandNestedMaster(workflow.sub_progress ?? [], sub, plan)
+      if (!expanded.matched) return workflow
+      nestedMaster = true
+      checkpointPath = workflow.last_checkpoint_path ?? `[root workflow ${workflow.phase}]`
+      return expanded.entries === workflow.sub_progress
+        ? workflow
+        : { ...workflow, sub_progress: expanded.entries }
+    })
+  }
+
+  if (!nestedMaster) {
+    const activated = await activatePhase(sub)
+    checkpointPath = activated.checkpointPath
+    // D3 graceful degrade — seed the ledger only when a plan is supplied; a
+    // missing/empty/invalid --plan leaves an empty ledger, no error.
+    if (plan) {
+      const { seedLedger } = await import('../checkpoint/ledger.js')
+      const { mutateSubProgress } = await import('../checkpoint/state.js')
+      await mutateSubProgress(() => seedLedger(plan))
+    }
   }
   // 4.22.0 — absorb this session's pending intent: start IS the engagement
   // the intent was waiting for, so the per-turn nag stops here. Fail-soft
@@ -646,7 +667,7 @@ export async function runCheckpointFail(
   // decides STOP. Workflow stays 'active'.
   await completePhase({
     phaseId: sub,
-    status: 'complete',
+    status: 'failed',
     lastTask: `FAILED: ${opts.summary ?? ''}`,
     transitionWorkflowComplete: false,
   })

@@ -85,6 +85,14 @@ describe('buildDefaultGateContext', () => {
     expect(phase.requires_coverage_audit).toBe(false)
   })
 
+  it('issue #26 — plan design-contract facts are declared and default false', () => {
+    const phase = buildDefaultGateContext('do X', 'plan').phase as Record<string, unknown>
+    expect(phase.requires_spec).toBe(false)
+    expect(phase.builds_ai_system).toBe(false)
+    expect('requires_spec' in phase).toBe(true)
+    expect('builds_ai_system' in phase).toBe(true)
+  })
+
   it('T2.1 gap-close — the two verify sub gates are reachable once the facts are filled', () => {
     const base = buildDefaultGateContext('do X', 'verify')
     const evalExpr = evalGate

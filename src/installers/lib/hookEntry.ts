@@ -18,6 +18,7 @@
 // Pure functions with injected deps (exists/assetsRoot) — new module rather
 // than new exports on ccHookAdd.ts/idempotent.ts (mock-export-gap 教训).
 
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { isBunRuntime } from '../../platform/runtime.js'
 
@@ -88,6 +89,60 @@ function splitTokens(raw: string): string[] {
   return raw.split(/\s+/).filter((t) => t.length > 0)
 }
 
+function commandScriptPath(command: string, marker: string): string | null {
+  const match = command.match(/^\s*(?:node|bun)\s+(?:"([^"]+)"|'([^']+)'|(\S+))(?:\s|$)/)
+  const path = match?.[1] ?? match?.[2] ?? match?.[3]
+  if (!path) return null
+  const normalized = path.replace(/\\/g, '/')
+  return normalized.split('/').at(-1) === `harnessed-${marker}.mjs` ? normalized : null
+}
+
+function versionedAssetsIdentity(path: string, marker: string): string | null {
+  const match = path.match(new RegExp(`^(.*/assets/)[^/]+(/bin/harnessed-${marker}\\.mjs)$`, 'i'))
+  return match?.[1] && match[2] ? `${match[1].toLowerCase()}*${match[2].toLowerCase()}` : null
+}
+
+function isTrustedAssetsScript(command: string, resolved: string, marker: string): boolean {
+  const commandPath = commandScriptPath(command, marker)
+  const resolvedPath = commandScriptPath(resolved, marker)
+  if (!commandPath || !resolvedPath) return false
+  if (commandPath.toLowerCase() === resolvedPath.toLowerCase()) return true
+  const commandIdentity = versionedAssetsIdentity(commandPath, marker)
+  return (
+    commandIdentity !== null && commandIdentity === versionedAssetsIdentity(resolvedPath, marker)
+  )
+}
+
+function trustedCompiledPaths(resolved: string): Set<string> {
+  const paths = new Set<string>()
+  const normalize = (path: string) => path.replace(/\\/g, '/').toLowerCase()
+  const localAppData = process.env.LOCALAPPDATA
+  if (localAppData) paths.add(normalize(join(localAppData, 'harnessed', 'bin', 'harnessed.exe')))
+  paths.add(normalize(join(homedir(), 'AppData', 'Local', 'harnessed', 'bin', 'harnessed.exe')))
+  paths.add(normalize(join(homedir(), '.local', 'bin', 'harnessed')))
+
+  const resolvedPath =
+    commandScriptPath(resolved, 'inject-state') ??
+    commandScriptPath(resolved, 'stop-hook') ??
+    commandScriptPath(resolved, 'check-docs') ??
+    commandScriptPath(resolved, 'update-reminder')
+  const hostHome = resolvedPath?.match(/^(.*)\/(?:\.claude|\.codex)\/harnessed\/assets\//i)?.[1]
+  if (hostHome) {
+    paths.add(normalize(`${hostHome}/.local/bin/harnessed`))
+    paths.add(normalize(`${hostHome}/AppData/Local/harnessed/bin/harnessed.exe`))
+  }
+  return paths
+}
+
+function isTrustedCompiledTransport(command: string, resolved: string, marker: string): boolean {
+  const match = command.match(
+    new RegExp(`^\\s*(?:"([^"]+)"|'([^']+)'|(\\S+))\\s+${marker}(?:\\s|$)`),
+  )
+  const path = match?.[1] ?? match?.[2] ?? match?.[3]
+  if (!path) return false
+  return trustedCompiledPaths(resolved).has(path.replace(/\\/g, '/').toLowerCase())
+}
+
 /** hookScriptMarker + WHERE the marker token sits, so the compiled rewrite can
  *  carry everything that follows it. See hookScriptMarker for the identity rules. */
 function hookMarkerAt(raw: string): { marker: string; index: number } | null {
@@ -99,7 +154,7 @@ function hookMarkerAt(raw: string): { marker: string; index: number } | null {
     const base = seg[seg.length - 1]
     if (base === undefined) return null
     // npm form: harnessed-<id>.mjs basename normalizes to its known identity.
-    const id = COMPILED_HOOK_IDENTITIES.find((k) => base.includes(k))
+    const id = COMPILED_HOOK_IDENTITIES.find((k) => base === `harnessed-${k}.mjs`)
     return { marker: id ?? base, index: i }
   }
   // compiled/bare-CLI form: no relative file token — the bare subcommand token
@@ -211,9 +266,9 @@ export function entryCommands(entry: AnyHookEntry | null | undefined): string[] 
 }
 
 /** Does this settings entry (flat legacy OR nested) belong to our registration?
- *  Match by script marker when the command carries one; else exact raw/resolved
- *  command equality. Matcher is deliberately NOT part of the identity — the
- *  migration collapses shape/path variants of the same script. */
+ *  Match exact raw/resolved commands first, then explicit first-party bare or
+ *  compiled transports and versioned scripts under the same assets base. A script
+ *  basename alone is never sufficient because a third-party path can reuse it. */
 export function entryMatchesRegistration(
   entry: AnyHookEntry,
   raw: string,
@@ -222,7 +277,19 @@ export function entryMatchesRegistration(
 ): boolean {
   const cmds = entryCommands(entry)
   if (cmds.length === 0) return false
-  if (marker) return cmds.some((c) => c.includes(marker))
+  if (marker) {
+    const known = (COMPILED_HOOK_IDENTITIES as readonly string[]).includes(marker)
+    return cmds.some((command) => {
+      if (command === raw || command === resolved) return true
+      if (!known) return false
+      const tokens = splitTokens(command).map((token) => stripQuotes(token).bare)
+      return (
+        (tokens[0] === 'harnessed' && tokens[1] === marker) ||
+        isTrustedCompiledTransport(command, resolved, marker) ||
+        isTrustedAssetsScript(command, resolved, marker)
+      )
+    })
+  }
   return cmds.some((c) => c === raw || c === resolved)
 }
 

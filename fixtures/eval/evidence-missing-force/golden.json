@@ -9,7 +9,7 @@
     {
       "kind": "checkpoint",
       "exitCode": 0,
-      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/verify.json"],
+      "stdout": ["[harnessed] checkpoint started: verify → <TMP>/checkpoints/<OWNER>/verify.json"],
       "stderr": [
         "⚠️ [harnessed] step 0 skeleton missing (.planning/ROADMAP.md) — the evidence guard's planning-sync gate will block `checkpoint complete`. Create the skeleton first (see the /auto SKILL step 0)."
       ]
@@ -38,7 +38,7 @@
     "schemaVersion": "harnessed.current-workflow.v1",
     "phase": "verify",
     "status": "complete",
-    "last_checkpoint_path": "<TMP>/checkpoints/verify.json",
+    "last_checkpoint_path": "<TMP>/checkpoints/<OWNER>/verify.json",
     "sub_progress": [
       {
         "sub": "verify-progress",

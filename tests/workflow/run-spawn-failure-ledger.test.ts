@@ -10,10 +10,12 @@
 // flattened `<master>-<sub>` names seeded by `checkpoint start --plan`
 // (`task-code`), while `ph.id` is a phase inside that sub (`01-code`).
 //
-// Two invariants:
-//   * a spawn failure annotates the entry WITHOUT flipping status or fail_count
-//     (run.ts is not the status writer — the checkpoint CLI is, and double
-//     counting would mislead BREAK-LOOP / BUDGET-EXHAUSTED).
+// Two invariants (issue #23 flipped the first one):
+//   * a spawn failure TRANSITIONS the entry to `failed` — status + fail_count
+//     +1 + the kind — in ONE write. The old behaviour annotated the kind only
+//     (status stayed `pending`, fail_count stayed 0), so BREAK-LOOP /
+//     BUDGET-EXHAUSTED could never fire and every turn kept urging a retry of
+//     a sub whose spawn failed deterministically.
 //   * a non-spawn failure (ralph-loop exhaustion, gate config error) writes
 //     nothing at all.
 
@@ -75,7 +77,7 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 
 describe('T4 — run.ts writes the spawn-failure kind onto the leaf ledger', () => {
-  it('annotates the entry named by the WORKFLOW (task-code), not the phase id', async () => {
+  it('transitions the entry named by the WORKFLOW (task-code), not the phase id', async () => {
     vi.spyOn(_dispatchSkillStub, 'fn').mockResolvedValue({
       status: 'fail',
       output: 'sdkSpawn failed for 01-code: boom',
@@ -84,15 +86,41 @@ describe('T4 — run.ts writes the spawn-failure kind onto the leaf ledger', () 
     const r = await runWorkflow('/fake/workflows/task/code/workflow.yaml', {})
 
     expect(r.status).toBe('failed')
+    // ONE write for this path — no annotate-then-transition (issue #23)
     expect(mutateSubProgressMock).toHaveBeenCalledTimes(1)
     const after = replay(SEED)
     expect(after[0]?.sub).toBe('task-code')
     expect(after[0]?.spawn_failure).toBe('SpawnRefused')
-    // untouched status / counter — run.ts annotates, it does not transition
-    expect(after[0]?.status).toBe('pending')
-    expect(after[0]?.fail_count).toBeUndefined()
+    // the transition itself: failed + exactly ONE counted attempt
+    expect(after[0]?.status).toBe('failed')
+    expect(after[0]?.fail_count).toBe(1)
     // sibling entry byte-identical
     expect(JSON.stringify(after[1])).toBe(JSON.stringify(SEED[1]))
+  })
+
+  it('atomically inserts a failed entry when a direct leaf run was never seeded', async () => {
+    vi.spyOn(_dispatchSkillStub, 'fn').mockResolvedValue({
+      status: 'fail',
+      output: 'boom',
+      failure: 'SpawnTimeout',
+    })
+    const r = await runWorkflow('/fake/workflows/task/code/workflow.yaml', {})
+
+    expect(r.status).toBe('failed')
+    expect(mutateSubProgressMock).toHaveBeenCalledTimes(1)
+    const unseeded: SubProgressEntryType[] = [
+      { sub: 'task-other', status: 'pending', gate_fired: true },
+    ]
+    const after = replay(unseeded)
+    expect(after).toHaveLength(2)
+    expect(after[0]).toBe(unseeded[0])
+    expect(after[1]).toEqual({
+      sub: 'task-code',
+      status: 'failed',
+      gate_fired: true,
+      fail_count: 1,
+      spawn_failure: 'SpawnTimeout',
+    })
   })
 
   it('still records the terminal FAILED checkpoint (the annotation is additive)', async () => {

@@ -41,6 +41,8 @@ spec:
     timeout_ms: 10000
     expected_exit_code: 0
   uninstall:
+    # Upstream 1.6.0 documents this command as removing agent wiring and the CLI
+    # itself, including npm-global packages, standalone bundles, and launchers.
     cmd: "codegraph uninstall --yes"
   upstream_health:
     stability: stable

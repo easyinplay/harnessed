@@ -2,9 +2,8 @@
 // isShuttingDown guard prevents double-fire; 2nd Ctrl+C force quits (OS behavior Node cannot override).
 // 30s timeout fallback for async checkpoint hangs. Standard SIGINT exit code 128+2 = 130.
 // v3.0.3 — archive path routed through `getHarnessedRoot()` SoT (sister engineHook).
-import { join } from 'node:path'
-import { harnessedSubdir } from '../platform/harnessedRoot.js'
 import { SCHEMA_VERSIONS } from '../types/schemaVersion.js'
+import { ownerPath } from './ownerPath.js'
 import { pause } from './state.js'
 import { writeCheckpoint } from './template.js'
 
@@ -54,7 +53,7 @@ function buildPausedCheckpoint(ctx: ActiveCtx) {
     ...(ctx.sessionId ? { session_id: ctx.sessionId } : {}),
     cwd: process.cwd(),
     timestamp: new Date().toISOString(),
-    archive_path: `${join(harnessedSubdir('archive'), `phase-${ctx.phase}`)}/`,
+    archive_path: `${ownerPath('archive', [`phase-${ctx.phase}`])}/`,
   }
 }
 

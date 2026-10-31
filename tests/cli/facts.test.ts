@@ -195,6 +195,19 @@ describe('collectGatedFactNames — derived from the shipped yaml, never hardcod
     expect(got).toContain('subtask.lines')
     expect(got.length).toBeLessThan(20)
   })
+
+  it('plan exposes every conditional design-contract fact', async () => {
+    const got = await collectGatedFactNames('plan', REPO_ROOT)
+    expect(got).toEqual(
+      expect.arrayContaining([
+        'phase.is_complex_architecture',
+        'phase.requires_spec',
+        'phase.has_ui_changes',
+        'phase.has_auth_or_secrets',
+        'phase.builds_ai_system',
+      ]),
+    )
+  })
 })
 
 // ── envelope shape ────────────────────────────────────────────────────────────
@@ -216,6 +229,16 @@ describe('harnessed facts <master> envelope', () => {
       }
     }
     expect(env.usage).toContain('--context-file')
+  })
+
+  it('plan hints explain requires_spec and builds_ai_system', async () => {
+    const { envelope } = await runFacts('plan')
+    const env = envelope as FactsEnvelope
+    const phase = env.facts.phase as Record<string, unknown>
+    expect(phase.requires_spec).toBeNull()
+    expect(phase.builds_ai_system).toBeNull()
+    expect(env.hints['phase.requires_spec']).toMatch(/spec/i)
+    expect(env.hints['phase.builds_ai_system']).toMatch(/AI-SPEC|AI system/i)
   })
 
   it('derived facts carry a value + provenance and are NOT left for the model', async () => {

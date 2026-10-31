@@ -294,6 +294,10 @@ const FACT_HINTS: Record<string, string> = {
   'phase.has_ai_phase': 'true if this phase ships LLM/AI behaviour needing an eval-coverage audit.',
   'phase.requires_coverage_audit':
     'true if the phase needs a requirements-coverage audit rather than ordinary verification.',
+  'phase.requires_spec':
+    'true if execution needs a locked SDD specification before ordinary phase planning.',
+  'phase.builds_ai_system':
+    'true if the phase builds an AI system that needs an AI-SPEC.md design contract.',
   // subtask tier
   'subtask.type':
     "Subtask kind: 'crud' | 'core_logic' | 'algorithm' | 'ui_polish' | 'docs_only' | 'single_command_query' | 'standard_lib_call'. The first, last and 'ui_polish'/'docs_only' are what legitimately skip brainstorming / TDD.",

@@ -21,10 +21,16 @@ import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
 import {
   auditPostInstall,
+  skillRootsForContext,
   snapshotSkillNames,
   warnDeclaredCollisions,
 } from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
+import {
+  declaredSkillPaths,
+  isSkillOwnershipManaged,
+  writeSkillOwnershipReceipt,
+} from './lib/skillOwnershipReceipt.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, InstallContext, Installer, InstallResult, Level } from './lib/types.js'
@@ -183,6 +189,11 @@ export const installNpmCli: Installer = async (ctx) => {
   // user's shell cwd (ambient devEngines package.json → EBADDEVENGINES dogfood).
   // 4.23.0 (issue #3) — flat-namespace collision audit (gsd-core writes gsd-* skills).
   await warnDeclaredCollisions(ctx)
+  const managesSkillOwnership = isSkillOwnershipManaged(ctx.manifest)
+  const skillRoots = managesSkillOwnership ? skillRootsForContext(ctx) : []
+  const pathSnapshot = new Set(
+    managesSkillOwnership ? await declaredSkillPaths(ctx, skillRoots) : [],
+  )
   const packSnapshot = await snapshotSkillNames(
     ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
   )
@@ -210,6 +221,31 @@ export const installNpmCli: Installer = async (ctx) => {
   )
   const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
   if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
+  if (managesSkillOwnership) {
+    try {
+      const afterPaths = await declaredSkillPaths(ctx, skillRoots)
+      await writeSkillOwnershipReceipt(
+        ctx,
+        skillRoots,
+        afterPaths.filter((path) => !pathSnapshot.has(path)),
+      )
+    } catch (error) {
+      return {
+        ok: false,
+        phase: 'verify',
+        backupId: bk.backupId,
+        error: {
+          ...err(
+            ctx,
+            '/spec/install',
+            `failed to persist skill ownership receipt: ${(error as Error).message}`,
+            'verify-failed',
+          ),
+          suggest: 'run repair or reinstall before uninstalling this skill pack',
+        },
+      }
+    }
+  }
   // manifest sha1 capture is a Wave 5 CLI concern (it owns the raw yaml bytes);
   // T3.1 records empty-string placeholder per state.ts schema.
   await updateInstalled(

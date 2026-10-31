@@ -104,18 +104,18 @@ describe('codexHookCommand — hash-stable literal (R4)', () => {
     )
   })
 
-  it('npm mode: unquoted `node` first token + ${PLUGIN_ROOT} shim; --platform codex for inject-state', () => {
+  it(`npm mode: unquoted \`node\` first token + \${PLUGIN_ROOT} shim; --platform codex for inject-state`, () => {
     expect(codexHookCommand({ id: 'inject-state', args: [] }, 'npm')).toBe(
-      'node "${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex',
+      `node "\${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex`,
     )
     expect(codexHookCommand({ id: 'inject-state', args: ['--invalidate'] }, 'npm')).toBe(
-      'node "${PLUGIN_ROOT}/hook.cjs" inject-state --invalidate --platform codex',
+      `node "\${PLUGIN_ROOT}/hook.cjs" inject-state --invalidate --platform codex`,
     )
   })
 
   it('check-docs also carries --platform codex (pwsh collapses exit 2 → JSON deny under codex)', () => {
     expect(codexHookCommand({ id: 'check-docs', args: ['--hook'] }, 'npm')).toBe(
-      'node "${PLUGIN_ROOT}/hook.cjs" check-docs --hook --platform codex',
+      `node "\${PLUGIN_ROOT}/hook.cjs" check-docs --hook --platform codex`,
     )
   })
 
@@ -129,8 +129,8 @@ describe('codexHookCommand — hash-stable literal (R4)', () => {
   })
 
   it.each([
-    ['npm', 'node "${PLUGIN_ROOT}/hook.cjs" update-reminder --platform codex'],
-    ['bun', 'bun "${PLUGIN_ROOT}/hook.cjs" update-reminder --platform codex'],
+    ['npm', `node "\${PLUGIN_ROOT}/hook.cjs" update-reminder --platform codex`],
+    ['bun', `bun "\${PLUGIN_ROOT}/hook.cjs" update-reminder --platform codex`],
     ['binary', 'harnessed update-reminder --platform codex'],
   ] as const)('routes update-reminder through the fixed %s host command', (mode, expected) => {
     expect(codexHookCommand({ id: 'update-reminder', args: [] }, mode)).toBe(expected)

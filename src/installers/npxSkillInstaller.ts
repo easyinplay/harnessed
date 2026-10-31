@@ -43,10 +43,12 @@ import { err } from './lib/err.js'
 import { extractSkillName, isAlreadyInstalled, npxActiveTargetNames } from './lib/idempotent.js'
 import {
   auditPostInstall,
+  skillRootsForContext,
   snapshotSkillNames,
   warnDeclaredCollisions,
 } from './lib/packSkillAudit.js'
 import { preflight } from './lib/preflight.js'
+import { declaredSkillPaths, writeSkillOwnershipReceipt } from './lib/skillOwnershipReceipt.js'
 import { DEFAULT_INSTALL_TIMEOUT_MS, spawnCmd } from './lib/spawn.js'
 import { recordObservedInstall, updateInstalled } from './lib/state.js'
 import type { DiffPlan, InstallContext, Installer, InstallResult } from './lib/types.js'
@@ -292,6 +294,8 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
   // install with EBADDEVENGINES (dogfood). Global-semantics install → neutral cwd.
   // 4.23.0 (issue #3) — flat-namespace collision audit around the external writer.
   await warnDeclaredCollisions(ctx)
+  const skillRoots = skillRootsForContext(ctx)
+  const pathSnapshot = new Set(await declaredSkillPaths(ctx, skillRoots))
   const packSnapshot = await snapshotSkillNames(
     ...(ctx.hostContext ? [ctx.hostContext.platform.skillsDir] : []),
   )
@@ -346,6 +350,30 @@ export const installNpxSkillInstaller: Installer = async (ctx) => {
 
   const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
   if (verifyFailure) return { ...verifyFailure, backupId: bk.backupId } as InstallResult
+
+  try {
+    const afterPaths = await declaredSkillPaths(ctx, skillRoots)
+    await writeSkillOwnershipReceipt(
+      ctx,
+      skillRoots,
+      afterPaths.filter((path) => !pathSnapshot.has(path)),
+    )
+  } catch (error) {
+    return {
+      ok: false,
+      phase: 'verify',
+      backupId: bk.backupId,
+      error: {
+        ...err(
+          ctx,
+          '/spec/install',
+          `failed to persist skill ownership receipt: ${(error as Error).message}`,
+          'verify-failed',
+        ),
+        suggest: 'run repair or reinstall before uninstalling this skill pack',
+      },
+    }
+  }
 
   await updateInstalled(
     ctx.cwd,

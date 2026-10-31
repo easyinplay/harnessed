@@ -106,15 +106,10 @@ export async function runMasterOrchestrator(
   // v3.2.0 — /auto super-master pre-flight (Phase 0 complexity + Phase 0.5 understanding)。
   // Hooks set ctx fact `user_understanding_unclear` consumed by research gate; large
   // complexity → auto-switch to --staged OR abort (user-elected manual /discuss path)。
-  // Pre-flight 仅当 assessComplexity OR prompter OR promptUserUnderstanding 任一显式传入
-  // 才激活 — 保护 sister v3.1.0 fixture (无 hooks) backward-compat (避免 readline 阻塞)。
+  // Production defaults are bounded in non-TTY mode, so every /auto run performs
+  // the complexity + understanding/research gate even without injected hooks.
   let effectiveOpts = opts
-  const preflightActive =
-    masterName === 'auto' &&
-    (opts.assessComplexity !== undefined ||
-      opts.prompter !== undefined ||
-      opts.promptUserUnderstanding !== undefined)
-  if (preflightActive) {
+  if (masterName === 'auto') {
     const pre = await runAutoPreFlight(context, opts)
     if (!pre.proceed) {
       console.log(`[${masterName} master] Aborted by user (complexity gate decline).`)

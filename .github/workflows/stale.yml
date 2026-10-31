@@ -1,7 +1,7 @@
 # .github/workflows/stale.yml
 # Phase 4.2 R8.3 — stale-bot 90-day auto-close issue + PR
 # D-02 LOCKED: 90-day default, issue+PR scope, mark-stale-at-60 + close-at-90 semantic
-# actions/stale@v10 verified current (v10.2.0 Feb 2026 per R2 § 2 finding correction; NOT @v9 outdated)
+# actions/stale@v10 verified current (v10.4.0 Jul 2026; NOT @v9 outdated)
 
 name: 'Close stale issues and PRs'
 
@@ -18,8 +18,9 @@ permissions:
 jobs:
   stale:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/stale@v10
+      - uses: actions/stale@1e223db275d687790206a7acac4d1a11bd6fe629 # v10.4.0
         with:
           # 90-day total window per R8.3 spec verbatim
           # Mark stale at day 60 (warning), close 30 days later at day 90

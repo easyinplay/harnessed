@@ -5,7 +5,7 @@ description: |
   (has_design_changes 触发, 可选 conditional; bundled verify-stage optional /design-review step).
   schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
   (gstack-design-review + ui-ux-pro-max + design-taste-frontend) + 1 phase (gate ref has_design_changes
-  conditional)。Triggered by harnessed CLI `harnessed verify-design --phase <num>` or slash
+  conditional)。Triggered by headless CLI `harnessed run verify-design` or slash
   command `/verify-design` after `harnessed setup`.
 trigger_phrases:
   - "verify design"

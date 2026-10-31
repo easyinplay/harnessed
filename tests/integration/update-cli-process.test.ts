@@ -580,7 +580,7 @@ console.log(JSON.stringify({ packageName: '@opengsd/gsd-core', version: require(
     expect(probes[0].args[2].env).toMatchObject({
       HARNESSED_PLATFORM: 'codex',
       CODEX_HOME: join(home, '.codex'),
-      HARNESSED_ROOT_OVERRIDE: join(home, 'state'),
+      HARNESSED_ROOT_OVERRIDE: join(home, '.codex', 'harnessed'),
     })
   })
 

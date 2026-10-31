@@ -4,6 +4,8 @@
 // Phase 3.1 W4 T4.4 — add sigintTrap / compact / resume (Wave 4 trio).
 export * from './archive.js'
 export * from './compact.js'
+export * from './failure.js'
+export * from './ownerPath.js'
 export * from './resume.js'
 export * from './schema/index.js'
 export * from './sigintTrap.js'

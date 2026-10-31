@@ -9,14 +9,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  test:
-    name: ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        node: [22]
+  quality:
+    name: quality (ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         shell: bash
@@ -34,7 +30,9 @@ jobs:
       - run: corepack enable
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
-          node-version: ${{ matrix.node }}
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
       # Phase 1.1.1 hotfix H2 + Phase 1.2 H5 + Phase 1.2.5 wedge + Phase 1.3 ADR 0007 errata + Phase 1.4 ADR 0008 errata + Phase 1.5 ADR 0009 errata + Phase 2.1 ADR 0010 errata + Phase 2.2 ADR 0011 errata + Phase 2.3 ADR 0012 errata + Phase 2.4 ADR 0013 errata + Phase 3.1 ADR 0014 errata + Phase 3.2 ADR 0015 errata + Phase 3.3 ADR 0016 errata + Phase 3.4 ADR 0017 errata:
       # A7 acceptance bar enforces ADR 0001-0017 main body 守恒 (unchanged
       # since each adr-NNNN-accepted baseline tag). Any drift fails CI.
@@ -90,32 +88,8 @@ jobs:
       # 0018→0021 per RESEARCH § 5 critical finding absorbed T2.8 CRITICAL fix):
       # Phase v2.0-2.6 W1 ADR 0024-0029 backfill — iter 0023→0029 (6 ADR: workflow schema v2 + capabilities baseline + judgments multi-file + research/verify-work workflows + ralph-loop+TDD+Agent Teams + fallback 3 铁律 + 4-stage 机器化 close).
       # Phase v3.0-3.6 W1 ADR 0030-0032 backfill — iter 0029→0032 (3 ADR: namespace policy bare slash cmd + 4-stage namespace-layered architecture + cross-cutting disciplines + execution mechanism).
-      - name: A7 acceptance bar — ADR 0001-0032 main body 守恒
-        run: |
-          missing_tags=()
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029 0030 0031 0032; do
-            if ! git fetch origin "tag" "adr-${n}-accepted" --no-tags 2>/dev/null; then
-              missing_tags+=("adr-${n}-accepted")
-              continue
-            fi
-          done
-          if [ ${#missing_tags[@]} -gt 0 ]; then
-            echo "::warning::baseline tag(s) not yet pushed — skipping A7 守恒 check for: ${missing_tags[*]}"
-            exit 0
-          fi
-          fail=0
-          for n in 0001 0002 0003 0004 0005 0006 0007 0008 0009 0010 0011 0012 0013 0014 0015 0016 0017 0018 0019 0020 0021 0022 0023 0024 0025 0026 0027 0028 0029 0030 0031 0032; do
-            diff_out=$(git diff "adr-${n}-accepted" -- "docs/adr/${n}-*.md")
-            if [ -n "$diff_out" ]; then
-              echo "::error::A7 acceptance bar violated — ADR ${n} main body changed since adr-${n}-accepted tag"
-              echo "$diff_out"
-              fail=1
-            fi
-          done
-          if [ "$fail" -ne 0 ]; then
-            exit 1
-          fi
-          echo "A7 ✅ ADR 0001-0032 main body unchanged"
+      - name: A7 acceptance bar - ADR 0001-0032 main body conservation
+        run: node scripts/ci/check-adr-baselines.mjs
       # Phase 2.1 T1.7 — transparency verdict-marker gate (ADR 0010, D2.1-7/8).
       # Scans .planning verdict docs for closure-marker lines missing an N/N
       # ratio + miss: declaration. W3: warn-only round 1 (script exits 0 even
@@ -156,9 +130,8 @@ jobs:
       # Phase 2.3 Wave 0 T0.8 — Deferred items review cadence (T5).
       # 沿袭 transparency gate W3 warn-only round 1 模式 (Phase 2.2 flip ENFORCE=true 前置).
       # D-OOS-1 .omc/ 2026-05-13 → 2026-05-15 三 phase 未 review process bug 根治.
-      - name: Deferred items review (Phase 2.3 Wave 0 T5, warn-only round 1)
+      - name: Deferred items review
         run: node scripts/check-deferred-items.mjs
-        continue-on-error: true
       # Phase 30 (v10.0) — en↔zh-Hans skill sync-guard (REQ-v100-sync-guard).
       # HARD-FAIL (no continue-on-error) per design doc "hard gate, not advisory".
       # Dep-free pure-node → runs BEFORE pnpm install (sister check-provenance above).
@@ -217,43 +190,25 @@ jobs:
       # Walker scripts/run-plan-checker.mjs (T2.2 f986d42) consumes T2.1 schema
       # routing/plan-review-schema.yaml; BLOCKER (<=2/4 dims) -> exit 1 + ::error::
       # annotation; manual /gsd-plan-phase rerun required (B-12, NOT auto-spawn).
-      # W6 ship: deferred-items #3 RESOLVED — moved AFTER pnpm install (was BEFORE,
-      # caused yaml ERR_MODULE_NOT_FOUND on 3-OS CI per runs 25955198823+25958484645
-      # masked by continue-on-error:true). ENFORCE=false retained as W2 warn-only
-      # round 1 sister-pattern; deferred-items #2 phase-2.4 self-check end-state
-      # 评估 → fr score 受 NEW files Wave 6 ship + meta-discussion weasel 影响
-      # (inherent self-referential) → keep warn-only this ship, flip ENFORCE=true
-      # post-Wave-6 v0.3.0 W0 prep.
-      - name: EE-4 plan-checker quant gate (Phase 2.4 W6 T6.2 — post-pnpm-install fix)
+      # Hard only for the active phase and plan files changed by this PR/push;
+      # archived historical plans remain evidence, not mutable CI scope.
+      - name: EE-4 plan-checker quant gate
         env:
-          ENFORCE: 'false'
-        run: node scripts/run-plan-checker.mjs .planning/
-        continue-on-error: true
+          PLAN_CHECK_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: node scripts/run-plan-checker.mjs --ci
       - run: corepack pnpm typecheck
-      - run: corepack pnpm lint
+      - name: Hard lint (zero unbaselined warnings)
+        run: node scripts/ci/check-biome.mjs
       # Phase 3.4 CI hotfix (2026-05-17) — build BEFORE test so dist/cli.mjs
       # exists for integration tests added at Phase 3.3 W2 T2.3 (commit 245955b):
       # install-aliases / install-known-good / install-silent-redirect all spawn
       # `node dist/cli.mjs`. Pre-hotfix: 3-OS test step failed `Cannot find
       # module dist/cli.mjs` because build was sequenced AFTER test.
       - run: corepack pnpm build
-      - run: corepack pnpm test
+      - run: corepack pnpm test:coverage
       - name: Installation documentation contracts
         run: node --test tests/docs/install-channels.contract.mjs
-      # Phase 2.4 W4 T4.3 — ralph-loop Win sentinel (B-30 MIN 5 fixture).
-      # Sister Phase 2.3 W0 T0.6 provenance pwsh sentinel pattern (above). Verifies
-      # ralph-loop wrapper contract (isComplete / MaxIterationsExceededError /
-      # resumeSessionId propagation / structured_output PRIMARY path) under Win
-      # event-loop + Git Bash fork timing (Phase 1.1 finding: WSL bash.exe breaks
-      # subagent fork; doctor.ts T1.2 验过 Git Bash 路径 per B-04). Mock subagent
-      # per B-30 + O5 (real CC SDK 需 ANTHROPIC_API_KEY OOS). shell:bash per B-04
-      # (Git Bash path verified; pwsh sister reserved for provenance gate only).
-      # Note: pnpm test (L127 above) already runs ALL tests; this step explicitly
-      # invokes the Win-only sentinel for fail-fast surfacing in CI logs.
-      - name: ralph-loop Win sentinel (Phase 2.4 W4 T4.3 — MIN 5 fixture per B-30)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: corepack pnpm exec vitest run tests/workflow/ralph-loop-win-sentinel.test.ts
+
       - run: corepack pnpm build:schema
       # Phase 2.3 Wave 0 T0.4 — M1 schema regen drift gate (Phase 2.2 RETROSPECTIVE
       # Lesson 6 自我建议落地). Catches spec.ts → schemas/manifest.v1.schema.json
@@ -281,7 +236,6 @@ jobs:
       # covered by the unit matrix above. Sequencing: `pnpm build` ran at the top
       # of this job — eval executes the dist artifact (production truth, OV4).
       - name: eval trap suite (4.31.0 Slice A)
-        if: matrix.os == 'ubuntu-latest'
         run: node dist/cli.mjs eval --dir fixtures/eval
       # Phase 2.3 Wave 0 T0.5 — schemaVersion consumer call site gate (T1.2).
       # B1 plan-check fix (≥7 → ≥2 honest baseline) — Phase 2.2 W2 schemaVersion
@@ -364,14 +318,45 @@ jobs:
           # short-circuits before any global-PATH mutation.
           ok_or_dryrun node ./dist/cli.mjs install ctx7 --dry-run --non-interactive --system
           ok_or_dryrun node ./dist/cli.mjs install gsd --dry-run --non-interactive --system
+
+  test:
+    name: test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - run: corepack enable
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: corepack enable
+      - run: corepack pnpm install --frozen-lockfile
+      - run: corepack pnpm build
+      - run: corepack pnpm test
+      - name: Installation documentation contracts
+        run: node --test tests/docs/install-channels.contract.mjs
+      - name: ralph-loop Win sentinel
+        if: runner.os == 'Windows'
+        run: corepack pnpm exec vitest run tests/workflow/ralph-loop-win-sentinel.test.ts
+
   # B2 (v4.20.0) — bun-compile 单文件二进制冒烟(task_plan _phase-b2-compile-pipeline)。
   # 独立 job(不阻塞 test 主 job 的失败归因):3-OS 原生编译(交叉编译 --target 未实测,
-  # D4 锁定不作为 CI 路径)→ 异地 cwd 冒烟:--version 断言 + setup --dry-run 30 workflows
+  # D4 锁定不作为 CI 路径)→ 异地 cwd 冒烟:--version 断言 + setup --dry-run 34 workflows
   # (资产解包全链路:entry 首跑解包 → getAssetsRoot compiled 分支 → readdir)。
   # doctor 不作断言(runner 环境差异:jq/bash flavor 等 check 与二进制机制无关)。
   binary-smoke:
     name: binary-smoke ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -385,6 +370,8 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
       # SHA pin 同仓库 H1 惯例;对应 oven-sh/setup-bun v2.2.0 (2026-07 解析)。
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -396,7 +383,7 @@ jobs:
         run: |
           BIN=$(ls dist-bin/harnessed-* | grep -v '\.sha256$')
           node scripts/runtime-channel-smoke.mjs --node-cli dist/cli.mjs --binary "$BIN" --bun "$(bun -p 'process.execPath')"
-      - name: smoke — version + asset unpack + 30 workflows from a foreign cwd
+      - name: smoke — version + asset unpack + 34 workflows from a foreign cwd
         run: |
           # 4.27.0 — dist-bin now also carries <asset>.sha256; the smoke wants the exe only.
           BIN=$(ls dist-bin/harnessed-* | grep -v '\.sha256$')
@@ -409,12 +396,12 @@ jobs:
           out=$("./$EXE" --version)
           [ "$out" = "$VER" ] || { echo "::error::--version '$out' != '$VER'"; exit 1; }
           count=$("./$EXE" setup --dry-run 2>/dev/null | grep -c "  →  ")
-          # Phase 78 T7 — 30 since workflows/harnessed-update/ landed.
-          [ "$count" -eq 30 ] || { echo "::error::expected 30 workflows in dry-run, got $count"; exit 1; }
+          # Phase 80 — 34 after the conditional plan workflows landed.
+          [ "$count" -eq 34 ] || { echo "::error::expected 34 workflows in dry-run, got $count"; exit 1; }
           # 二次运行不得重复解包(stderr 无 unpacked 行 — 幂等)。
           second=$("./$EXE" --version 2>&1 >/dev/null || true)
           case "$second" in *unpacked*) echo "::error::second run re-unpacked assets (idempotency broken)"; exit 1;; esac
-          echo "binary-smoke ✅ $EXE v$VER (30 workflows, idempotent unpack)"
+          echo "binary-smoke ✅ $EXE v$VER (34 workflows, idempotent unpack)"
       # 4.27.0 (B3 T6 / OV3 用户裁决) — update rehearsal on the REAL compiled
       # product, 3-OS: covers Bun-runtime rename/EPERM/spawn semantics and a
       # genuine Windows PE smoke that fixture unit tests cannot fake. Zero
@@ -454,6 +441,7 @@ jobs:
   installer-smoke:
     name: installer-smoke ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -464,6 +452,8 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: '1.3.14'

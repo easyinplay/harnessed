@@ -286,7 +286,7 @@ describe('install on codex', () => {
     const pdir = join(MKT(), 'plugins', 'harnessed-perturn-inject')
     const hooks = JSON.parse(readFileSync(join(pdir, 'hooks', 'hooks.json'), 'utf8'))
     expect(hooks.hooks.UserPromptSubmit[0].hooks[0].command).toBe(
-      'node "${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex',
+      `node "\${PLUGIN_ROOT}/hook.cjs" inject-state --platform codex`,
     )
     expect(existsSync(join(pdir, 'hook.cjs'))).toBe(true)
     const mkt = JSON.parse(

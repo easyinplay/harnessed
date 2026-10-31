@@ -514,7 +514,7 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `harnessed status` | Phase atual + detentor do lock |
 | `harnessed doctor` | Health check (Node / MCP / jq / Win bash / routing / token budget / integridade de skills / conflito GateGuard / update-available etc.) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | Auto-atualização por canal: instalações binárias se substituem no local a partir dos GitHub releases (verificação sha256 + assinatura ed25519 — os releases incluem `<asset>.sha256.sig`, contrato de release assinado desde 4.32.19; a versão substituída é guardada para rollback); instalações npm executam `npm i -g harnessed@latest`. `--check` informa a versão mais recente; `--rollback [version]` (apenas instalações binárias) restaura atomicamente um binário anterior guardado — instalações npm são direcionadas a `npm i -g harnessed@<version>`; `--upstreams` reexecuta os manifests base; `--migration-report` é um inventário read-only de estado obsoleto |
-| `harnessed release-preflight` | Gate de prontidão para release somente leitura (CHANGELOG `[Unreleased]` / versão / git-clean / tag-absent); sai com 1 se não estiver pronto. O gate do stage Ship. |
+| `harnessed release-preflight [--release-version <semver>]` | Gate de prontidão para release somente leitura (CHANGELOG `[Unreleased]` / versão / git-clean / tag-absent); `--release-version` substitui a descoberta pelos manifests; sai com 1 se não estiver pronto. O gate do stage Ship. |
 | `harnessed retro --done` | Reseta o contador de phases do lembrete de retro após rodar `/retro` (limpa o nudge RETRO-DUE por turno). |
 | `harnessed install <name>` | Instala um Manifest upstream |
 | `harnessed uninstall [name]` | Desinstalação reversa — executa o teardown `spec.uninstall` declarado no manifest (cmd + confinado a `$HOME`, `cleanup_paths` idempotente) para os métodos que instalam skills (`npm-cli` / `git-clone-with-setup` / `npx-skill-installer`); os demais métodos mantêm sua reversão por método |
@@ -522,6 +522,15 @@ planning-with-files /plan (ferramenta transversal) → grava artifacts em .plann
 | `harnessed rollback <timestamp>` | Rollback em um único comando de um **snapshot de backup** (preservação de EOL + verificação sha1) — distinto de `update --rollback`, que restaura um **binário compilado** anterior |
 | `harnessed gc` | Limpa backups expirados |
 | `harnessed audit-log` | Consulta do log de transparência de roteamento (suporta expressão jq com `--filter`) |
+| `harnessed agents-md` | Grava ou atualiza o bloco harnessed delimitado por markers em `<CODEX_HOME>/AGENTS.md`, preservando o texto externo |
+| `harnessed audit` | Audita a autoconsistência do manifest e runtime (`--skip-runtime` verifica só o manifest) |
+| `harnessed check-docs` | Verifica a disciplina de documentação em `.planning/` e retorna exit não zero para achados advisory ou blocking |
+| `harnessed eval` | Executa a suite determinística de regressão do orchestrator; `harnessed eval record` grava um cenário reproduzível |
+| `harnessed exempt-gateguard` | Persiste a exceção `.planning/**` do GateGuard que resolve o conflito entre guards |
+| `harnessed facts <master>` | Emite gate facts determinados e pendentes para `harnessed gates --context-file` |
+| `harnessed install-base [--dry-run]` | Instala o base profile da phase 1.3; `--dry-run` apenas mostra o preview |
+| `harnessed manifest-add <upstream>` | Adiciona um upstream adapter pelo EE-5 merge gate |
+| `harnessed research --query <text>` | Executa o research workflow headless; `--dry-run` mostra o preview sem spawn |
 
 ### Flags
 

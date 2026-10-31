@@ -58,6 +58,16 @@ function seedPausedWorkflow(cpPath: string = CP_PATH) {
   })
 }
 
+function seedActiveWorkflow(cpPath: string = CP_PATH) {
+  seedStore({
+    schemaVersion: SCHEMA_VERSIONS.currentWorkflow,
+    phase: '3.1',
+    status: 'active',
+    last_checkpoint_path: cpPath,
+    started_at: '2026-05-16T10:00:00.000Z',
+  })
+}
+
 function seedCheckpoint(overrides: Record<string, unknown> = {}, path: string = CP_PATH) {
   fsState.set(
     path,
@@ -195,6 +205,49 @@ describe('cli/resume + runResume — Phase 3.1 W4 T4.5 (fixtures 24-30)', () => 
     const payload = JSON.parse(cli.stdout) as { status: string; cwdWarn?: string }
     expect(payload.status).toBe('ok')
     expect(payload.cwdWarn).toBeDefined()
+  })
+
+  it('issue #33: machine-readable failed checkpoint is not resumable success', async () => {
+    seedActiveWorkflow()
+    seedCheckpoint({ status: 'failed', last_task: 'FAILED: task-code: tests failed' })
+    const r = await runResume()
+    expect(r.status).toBe('failed')
+    const cli = await runCli(['resume'])
+    expect(cli.code).toBe(1)
+    expect(cli.stderr).toContain('FAILED: task-code: tests failed')
+    expect(cli.stdout).not.toContain('→ next:')
+  })
+
+  it('issue #33: legacy complete plus FAILED: remains failure-compatible', async () => {
+    seedActiveWorkflow()
+    seedCheckpoint({ status: 'complete', last_task: 'FAILED: legacy failure' })
+    expect((await runResume()).status).toBe('failed')
+    const cli = await runCli(['resume', '--json'])
+    expect(cli.code).toBe(1)
+    expect((JSON.parse(cli.stdout) as { status: string }).status).toBe('failed')
+  })
+
+  it('issue #33: active workflow with non-failed checkpoint remains no-paused-phase', async () => {
+    seedActiveWorkflow()
+    seedCheckpoint({ status: 'complete', last_task: 'task completed normally' })
+    const r = await runResume()
+    expect(r.status).toBe('no-paused-phase')
+    const cli = await runCli(['resume', '--json'])
+    expect(cli.code).toBe(1)
+    expect((JSON.parse(cli.stdout) as { status: string }).status).toBe('no-paused-phase')
+  })
+
+  it('issue #33: active workflow with schema-invalid checkpoint remains no-paused-phase', async () => {
+    seedActiveWorkflow()
+    fsState.set(
+      CP_PATH,
+      JSON.stringify({ schemaVersion: SCHEMA_VERSIONS.checkpoint, status: 'failed' }),
+    )
+    const r = await runResume()
+    expect(r.status).toBe('no-paused-phase')
+    const cli = await runCli(['resume', '--json'])
+    expect(cli.code).toBe(1)
+    expect((JSON.parse(cli.stdout) as { status: string }).status).toBe('no-paused-phase')
   })
 })
 

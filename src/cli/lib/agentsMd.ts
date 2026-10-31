@@ -26,6 +26,7 @@
 
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import type { HostInstallContext } from '../../platform/hostInstallContext.js'
 import { detectPlatform } from '../../platform/platform.js'
 import { loadRolePrompts } from '../../workflow/rolePrompts.js'
 import { scanWorkflowsNested } from '../../workflow/scan-nested.js'
@@ -41,8 +42,8 @@ export const AGENTS_MD_START = '<!-- harnessed:agents-md:start -->'
 export const AGENTS_MD_END = '<!-- harnessed:agents-md:end -->'
 
 /** `<CODEX_HOME>/AGENTS.md`(codex 的 homeDir 就是 CODEX_HOME)。 */
-export function agentsMdPath(): string {
-  return join(detectPlatform().homeDir, 'AGENTS.md')
+export function agentsMdPath(context?: Pick<HostInstallContext, 'nativeHome'>): string {
+  return join(context?.nativeHome ?? detectPlatform().homeDir, 'AGENTS.md')
 }
 
 export interface AgentsMdSectionOptions {
@@ -145,6 +146,7 @@ export type AgentsMdOutcome =
 
 export interface RunAgentsMdOptions {
   workflowsDir: string
+  hostContext?: HostInstallContext
   /** true → 只算不写。 */
   dryRun?: boolean
   /** true → 剥除区间而非写入(卸载往返的另一半)。 */
@@ -160,7 +162,7 @@ export interface RunAgentsMdOptions {
  * 移除场景返回 `absent`,不创建空文件。
  */
 export async function runAgentsMd(opts: RunAgentsMdOptions): Promise<AgentsMdOutcome> {
-  const path = agentsMdPath()
+  const path = agentsMdPath(opts.hostContext)
   const read = opts.deps?.readFile ?? ((p: string) => readFile(p, 'utf8'))
   const write = opts.deps?.writeFile ?? ((p: string, c: string) => writeFile(p, c, 'utf8'))
 
@@ -183,7 +185,7 @@ export async function runAgentsMd(opts: RunAgentsMdOptions): Promise<AgentsMdOut
   const locale = opts.locale ?? 'en'
   const section = buildAgentsMdSection({
     commands: await resolveCommandNames(opts.workflowsDir),
-    commandsDir: detectPlatform().commandsDir,
+    commandsDir: opts.hostContext?.platform.commandsDir ?? detectPlatform().commandsDir,
     table: await loadHostPrimitives({ workflowsDir: opts.workflowsDir, locale }),
     notes: await loadHostMapNotes({ workflowsDir: opts.workflowsDir, locale, host: 'codex' }),
   })

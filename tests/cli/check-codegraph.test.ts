@@ -67,4 +67,12 @@ describe('manifests/optional/codegraph.yaml (catalog manifest)', () => {
     expect(v.manifest.metadata.name).toBe('codegraph')
     expect(v.manifest.metadata.upstream.license).toBe('MIT')
   })
+
+  it('delegates complete teardown to CodeGraph without a duplicate npm uninstall', () => {
+    const src = readFileSync(path, 'utf8')
+    const v = validateManifestFile(src, path)
+    if (!v.ok) throw new Error('manifest invalid')
+    expect(v.manifest.spec.uninstall?.cmd).toBe('codegraph uninstall --yes')
+    expect(src).toContain('including npm-global packages')
+  })
 })

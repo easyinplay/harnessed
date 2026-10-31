@@ -1,3 +1,5 @@
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { installers, runInstall } from '../../src/installers/index.js'
 import type { InstallOpts, Manifest } from '../../src/installers/lib/types.js'
@@ -79,7 +81,7 @@ describe('runInstall host selection boundary', () => {
       appliedFiles: [],
     })
     await runInstall(fixture(), opts)
-    expect(selection).toHaveBeenCalledOnce()
+    expect(selection).not.toHaveBeenCalled()
     const call = dispatch.mock.calls[0]?.[0]
     expect(call).toBeDefined()
     if (!call) throw new Error('installer did not dispatch')
@@ -88,7 +90,7 @@ describe('runInstall host selection boundary', () => {
     expect(call.hostContext).toMatchObject({
       hostId: 'codex',
       nativeHome: '/manifest-native',
-      platform: { stateRoot: '/state' },
+      platform: { stateRoot: join(homedir(), '.codex', 'harnessed') },
     })
   })
 

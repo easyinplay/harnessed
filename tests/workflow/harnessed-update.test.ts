@@ -27,18 +27,18 @@ describe('Phase 78 T7 deterministic update workflow', () => {
     ])
   })
 
-  it('discovers workflow 30 and keeps the binary CI assertion and text in sync', async () => {
+  it('discovers workflow 34 and keeps the binary CI assertion and text in sync', async () => {
     const { workflows } = await scanWorkflowsNested(WORKFLOWS, await readdir(WORKFLOWS))
     expect(workflows).toContainEqual({ name: NAME, relPath: NAME, isMaster: false })
-    expect(workflows).toHaveLength(30)
+    expect(workflows).toHaveLength(34)
     const ci = parseYaml(readFileSync(join(ROOT, '.github/workflows/ci.yml'), 'utf8'))
     const smoke = ci.jobs['binary-smoke'].steps.find((step: { name?: string }) =>
       step.name?.includes('workflows from a foreign cwd'),
     )
-    expect(smoke.name).toContain('30 workflows')
-    expect(smoke.run).toContain('[ "$count" -eq 30 ]')
-    expect(smoke.run).toContain('expected 30 workflows')
-    expect(smoke.run).toContain('(30 workflows, idempotent unpack)')
+    expect(smoke.name).toContain('34 workflows')
+    expect(smoke.run).toContain('[ "$count" -eq 34 ]')
+    expect(smoke.run).toContain('expected 34 workflows')
+    expect(smoke.run).toContain('(34 workflows, idempotent unpack)')
   })
 
   it.each([

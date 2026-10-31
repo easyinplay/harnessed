@@ -17,9 +17,8 @@
 //   1 → uninstall failed
 //   2 → user-aborted / dry-run preview
 
-import { readdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { dirname, join, resolve as pathResolve, sep } from 'node:path'
+import { readdir, readFile, rm } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import * as p from '@clack/prompts'
 import type { Command } from 'commander'
 import { t } from '../i18n/index.js'
@@ -28,22 +27,37 @@ import {
   countHarnessedHooks,
   stripHarnessedHooks,
 } from '../installers/lib/harnessedHookTeardown.js'
+import {
+  assertOwnedPathUnchanged,
+  type OwnedPathSnapshot,
+  prepareOwnedPathRemoval,
+  removeOwnedDirectoryViaQuarantine,
+  removeOwnedFileViaQuarantine,
+} from '../lib/quarantineDelete.js'
 import { checkPathSafe } from '../manifest/lib/path-guard.js'
 import { validateManifestFile } from '../manifest/validate.js'
 import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
-import { getHarnessedRoot } from '../platform/harnessedRoot.js'
 import {
   captureHostInstallContext,
   type HostInstallContext,
 } from '../platform/hostInstallContext.js'
-import { detectPlatform } from '../platform/platform.js'
+import { HOST_IDS } from '../platform/platform.js'
 import { isBunRuntime } from '../platform/runtime.js'
 import { runUninstall } from '../uninstallers/index.js'
-import { scanWorkflowsNested } from '../workflow/scan-nested.js'
 import { shouldOverwriteFile } from './lib/generateCommands.js'
+import {
+  loadSettingsOwnershipReceipt,
+  restoreOwnedSettingsEnv,
+  type SettingsOwnershipReceipt,
+  settingsOwnershipReceiptPath,
+} from './lib/settingsOwnershipReceipt.js'
+import { withSettingsTransactionLock } from './lib/settingsTransactionLock.js'
+import { atomicWrite } from './lib/settingsWriter.js'
+import { readHashLedger, sha256Of } from './lib/skillIntegrity.js'
 
 interface RawOpts {
   dryRun?: boolean
+  platform?: string
 }
 
 // ── Unified uninstall helpers ──────────────────────────────────────
@@ -71,38 +85,78 @@ async function discoverCommandFiles(commandsDir: string): Promise<string[]> {
 
 /** Harnessed-owned codex agent roles, or `[]` when anything about that surface
  *  is unavailable (uninstall must never fail over an advisory inventory). */
-async function discoverCodexAgentRoles(): Promise<string[]> {
+async function discoverCodexAgentRoles(context: HostInstallContext): Promise<string[]> {
   try {
-    const [{ resolveCodexHome }, m] = await Promise.all([
-      import('../installers/codexHookAdd.js'),
-      import('../installers/lib/codexAgentRoles.js'),
-    ])
-    return await m.discoverCodexAgentRoleFiles(m.codexAgentsDir(resolveCodexHome()))
+    const m = await import('../installers/lib/codexAgentRoles.js')
+    return await m.discoverCodexAgentRoleFiles(m.codexAgentsDir(context.nativeHome))
   } catch {
     return []
   }
 }
 
-async function checkSettingsEnv(settingsPath: string | null): Promise<{
-  hasAgentTeams: boolean
-  hasUserLang: boolean
-  staleHooks: number
-}> {
+async function discoverOwnedSkillDirs(
+  skillsDir: string,
+  stateRoot: string,
+): Promise<{ dirs: string[]; failures: string[]; expectedHashes: Map<string, string> }> {
+  const ledger = await readHashLedger(join(stateRoot, 'skill-hashes.json'))
+  if (ledger === null) return { dirs: [], failures: [], expectedHashes: new Map() }
+  const dirs: string[] = []
+  const failures: string[] = []
+  const expectedHashes = new Map<string, string>()
+  for (const [name, record] of Object.entries(ledger)) {
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)) {
+      failures.push(`invalid owned skill name in skill-hashes.json: ${name}`)
+      continue
+    }
+    const dir = join(skillsDir, name)
+    try {
+      const body = await readFile(join(dir, 'SKILL.md'), 'utf8')
+      if (sha256Of(body) !== record.sha256) {
+        failures.push(`${dir}: installed skill differs from the ownership ledger; repair first`)
+        continue
+      }
+      dirs.push(dir)
+      expectedHashes.set(dir, record.sha256)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        failures.push(`${dir}: ${(error as Error).message}`)
+      }
+    }
+  }
+  return { dirs, failures, expectedHashes }
+}
+
+type SettingsInspection =
+  | { status: 'absent'; hasOwnedEnv: false; staleHooks: 0 }
+  | { status: 'ok'; hasOwnedEnv: boolean; staleHooks: number }
+  | { status: 'error'; error: string; hasOwnedEnv: false; staleHooks: 0 }
+
+async function checkSettingsEnv(
+  settingsPath: string | null,
+  receipt: SettingsOwnershipReceipt | null,
+): Promise<SettingsInspection> {
   // v16.0 Phase 63 — no JSON settings file (codex) → no settings footprint to remove.
-  if (settingsPath === null) return { hasAgentTeams: false, hasUserLang: false, staleHooks: 0 }
+  if (settingsPath === null) return { status: 'absent', hasOwnedEnv: false, staleHooks: 0 }
   try {
     const raw = await readFile(settingsPath, 'utf8')
     const data = JSON.parse(raw) as Record<string, unknown>
-    const env = (data.env ?? {}) as Record<string, unknown>
     const hooks = data.hooks
     return {
-      hasAgentTeams: 'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' in env,
-      hasUserLang: 'HARNESSED_USER_LANG' in env,
+      status: 'ok',
+      hasOwnedEnv: receipt ? restoreOwnedSettingsEnv(data, receipt).changed : false,
       // issue #8 — count orphaned harnessed-owned Stop/UserPromptSubmit hooks.
       staleHooks: hooks && typeof hooks === 'object' ? countHarnessedHooks(hooks as never) : 0,
     }
-  } catch {
-    return { hasAgentTeams: false, hasUserLang: false, staleHooks: 0 }
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { status: 'absent', hasOwnedEnv: false, staleHooks: 0 }
+    }
+    return {
+      status: 'error',
+      error: error instanceof Error ? error.message : String(error),
+      hasOwnedEnv: false,
+      staleHooks: 0,
+    }
   }
 }
 
@@ -111,32 +165,35 @@ async function checkSettingsEnv(settingsPath: string | null): Promise<{
  *  actually changed so the caller can report each independently. */
 async function removeSettingsFootprint(
   settingsPath: string,
+  context: HostInstallContext,
 ): Promise<{ envRemoved: boolean; hooksRemoved: number }> {
-  const raw = await readFile(settingsPath, 'utf8')
-  const data = JSON.parse(raw) as Record<string, unknown>
-  const env = (data.env ?? {}) as Record<string, unknown>
-  let envRemoved = false
-  if ('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' in env) {
-    delete env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
-    envRemoved = true
-  }
-  if ('HARNESSED_USER_LANG' in env) {
-    delete env.HARNESSED_USER_LANG
-    envRemoved = true
-  }
+  return withSettingsTransactionLock(context, async () => {
+    const receiptResult = await loadSettingsOwnershipReceipt(context)
+    if (receiptResult.status === 'corrupt' || receiptResult.status === 'error') {
+      throw new Error(receiptResult.error)
+    }
+    const receipt = receiptResult.status === 'ok' ? receiptResult.receipt : null
+    const raw = await readFile(settingsPath, 'utf8')
+    const data = JSON.parse(raw) as Record<string, unknown>
+    if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+      throw new Error('settings.json top-level value must be a JSON object')
+    }
+    const envRemoved = receipt ? restoreOwnedSettingsEnv(data, receipt).changed : false
 
-  let hooksRemoved = 0
-  const hooks = data.hooks
-  if (hooks && typeof hooks === 'object') {
-    hooksRemoved = stripHarnessedHooks(hooks as never).removed
-    if (Object.keys(hooks as object).length === 0) delete data.hooks
-  }
+    let hooksRemoved = 0
+    const hooks = data.hooks
+    if (hooks && typeof hooks === 'object' && !Array.isArray(hooks)) {
+      hooksRemoved = stripHarnessedHooks(hooks as never).removed
+      if (Object.keys(hooks as object).length === 0) delete data.hooks
+    }
 
-  if (!envRemoved && hooksRemoved === 0) return { envRemoved: false, hooksRemoved: 0 }
-  if (Object.keys(env).length === 0) delete data.env
-  else data.env = env
-  await writeFile(settingsPath, `${JSON.stringify(data, null, 2)}\n`, 'utf8')
-  return { envRemoved, hooksRemoved }
+    if (envRemoved || hooksRemoved > 0) {
+      const writeError = await atomicWrite(settingsPath, `${JSON.stringify(data, null, 2)}\n`)
+      if (writeError) throw new Error(writeError)
+    }
+    if (receipt !== null) await rm(settingsOwnershipReceiptPath(context), { force: true })
+    return { envRemoved, hooksRemoved }
+  })
 }
 
 /** Unified uninstall only tears down the setup footprint (skills/commands/
@@ -168,24 +225,31 @@ function printCliRemovalHint(): void {
   console.log(t('uninstall.unified.cli_hint_other'))
 }
 
-async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void> {
+async function runUnifiedUninstall(context: HostInstallContext, dryRun: boolean): Promise<void> {
   // v4.14.0 — dirs via the active PlatformDescriptor (claude byte-identical:
   // commandsDir/skillsDir/settingsPath resolve to the pre-4.14.0 ~/.claude paths).
-  const platform = detectPlatform(home)
+  const platform = context.platform
   const commandsDir = platform.commandsDir
   const skillsDir = platform.skillsDir
   const settingsPath = platform.settingsPath
-  const harnessedRoot = getHarnessedRoot()
-
-  // Discover workflow names from bundled workflows/
-  const pkgRoot = getAssetsRoot()
-  let workflowNames: string[] = []
+  const harnessedRoot = platform.stateRoot
+  const ownershipReceiptResult = await loadSettingsOwnershipReceipt(context)
+  if (ownershipReceiptResult.status === 'corrupt' || ownershipReceiptResult.status === 'error') {
+    console.error(`settings ownership receipt preflight failed: ${ownershipReceiptResult.error}`)
+    process.exit(1)
+  }
+  const ownershipReceipt =
+    ownershipReceiptResult.status === 'ok' ? ownershipReceiptResult.receipt : null
+  const inventoryFailures: string[] = []
+  let stateEntries: string[] = []
   try {
-    const wfEntries = await readdir(pathResolve(pkgRoot, 'workflows'))
-    const scanResult = await scanWorkflowsNested(pathResolve(pkgRoot, 'workflows'), wfEntries)
-    workflowNames = scanResult.workflows.map((w) => w.name)
-  } catch {
-    // workflows dir missing → skip skill discovery
+    stateEntries = (await readdir(harnessedRoot))
+      .filter((entry) => entry !== 'backups')
+      .map((entry) => join(harnessedRoot, entry))
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+      inventoryFailures.push(`${harnessedRoot}: ${(error as Error).message}`)
+    }
   }
 
   const commandFiles = await discoverCommandFiles(commandsDir)
@@ -194,21 +258,62 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   // `harnessed-` prefix and the generated-by marker are claimed, so the roles
   // other tools put in that directory (33 GSD ones on a typical host) are never
   // listed and never removed. Dynamic import mirrors setup's Step A.7.
-  const agentRoleFiles = platform.id === 'codex' ? await discoverCodexAgentRoles() : []
-  const settingsEnv = await checkSettingsEnv(settingsPath)
-  const hasSettingsChanges = settingsEnv.hasAgentTeams || settingsEnv.hasUserLang
+  const agentRoleFiles = platform.id === 'codex' ? await discoverCodexAgentRoles(context) : []
+  const settingsEnv = await checkSettingsEnv(settingsPath, ownershipReceipt)
+  if (settingsEnv.status === 'error' && settingsPath !== null) {
+    inventoryFailures.push(`${settingsPath}: ${settingsEnv.error}`)
+  }
+  const hasSettingsChanges = settingsEnv.hasOwnedEnv
   const staleHooks = settingsEnv.staleHooks
+  const settingsRemovalPath =
+    settingsPath !== null &&
+    settingsEnv.status === 'ok' &&
+    (ownershipReceipt !== null || hasSettingsChanges || staleHooks > 0)
+      ? settingsPath
+      : null
 
-  // Verify skill dirs exist before counting
-  const skillDirs: string[] = []
-  for (const name of workflowNames) {
-    const dir = join(skillsDir, name)
+  const ownedSkills = await discoverOwnedSkillDirs(skillsDir, harnessedRoot)
+  const skillDirs = ownedSkills.dirs
+  inventoryFailures.push(...ownedSkills.failures)
+
+  let agentsMdUpdate: { path: string; body: string } | null = null
+  if (platform.id === 'codex') {
+    const { agentsMdPath, stripAgentsMdSection } = await import('./lib/agentsMd.js')
+    const path = agentsMdPath(context)
     try {
-      await stat(dir)
-      skillDirs.push(dir)
-    } catch {
-      // not installed → skip
+      const before = await readFile(path, 'utf8')
+      const after = stripAgentsMdSection(before)
+      if (after !== before) agentsMdUpdate = { path, body: after }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        inventoryFailures.push(`${path}: ${(error as Error).message}`)
+      }
     }
+  }
+
+  const destructivePaths = [
+    ...commandFiles.map((target) => ({ root: commandsDir, target })),
+    ...agentRoleFiles.map((target) => ({ root: join(context.nativeHome, 'agents'), target })),
+    ...skillDirs.map((target) => ({ root: skillsDir, target })),
+    ...(agentsMdUpdate ? [{ root: context.nativeHome, target: agentsMdUpdate.path }] : []),
+    ...(settingsRemovalPath !== null
+      ? [{ root: context.nativeHome, target: settingsRemovalPath }]
+      : []),
+    ...stateEntries.map((target) => ({ root: harnessedRoot, target })),
+  ]
+  const canonicalPaths = new Map<string, OwnedPathSnapshot>()
+  for (const item of destructivePaths) {
+    try {
+      canonicalPaths.set(item.target, await prepareOwnedPathRemoval(item.root, item.target))
+    } catch (error) {
+      inventoryFailures.push(`${item.target}: ${(error as Error).message}`)
+    }
+  }
+
+  if (inventoryFailures.length > 0) {
+    console.error(t('uninstall.unified.partial_failure', { count: inventoryFailures.length }))
+    for (const failure of inventoryFailures) console.error(`  ${failure}`)
+    process.exit(1)
   }
 
   // ── Summary ─────────────────────────────────────────────────
@@ -217,7 +322,8 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
     agentRoleFiles.length +
     skillDirs.length +
     (hasSettingsChanges ? 1 : 0) +
-    (staleHooks > 0 ? 1 : 0)
+    (staleHooks > 0 ? 1 : 0) +
+    stateEntries.length
   if (discoverable === 0) {
     console.log(t('uninstall.unified.nothing'))
     printCliRemovalHint()
@@ -254,41 +360,54 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   // ── Removal (ordered: commands → skills → settings → state dir) ──
   console.log(t('uninstall.unified.removing'))
   const failures: string[] = []
+  const revalidate = async (path: string): Promise<boolean> => {
+    const snapshot = canonicalPaths.get(path)
+    if (!snapshot) {
+      failures.push(`${path}: missing canonical preflight`)
+      return false
+    }
+    try {
+      await assertOwnedPathUnchanged(snapshot)
+      return true
+    } catch (error) {
+      failures.push(`${path}: ${(error as Error).message}`)
+      return false
+    }
+  }
 
   let removedCommands = 0
   for (const path of commandFiles) {
     try {
-      await rm(path, { force: true })
+      if (!(await revalidate(path))) continue
+      const snapshot = canonicalPaths.get(path)
+      if (!snapshot) throw new Error('missing canonical preflight')
+      await removeOwnedFileViaQuarantine(snapshot)
       removedCommands++
     } catch (e) {
       failures.push(`${path}: ${(e as Error).message}`)
     }
   }
 
-  // v16.0 post-close — the other half of the `harnessed agents-md` round trip. The file
-  // itself is the maintainer's, so uninstall strips ONLY the marker-delimited block and
-  // leaves everything they hand-wrote. Absent file / absent block = silent no-op: an
-  // opt-in feature nobody enabled must not make uninstall look like it did something.
   let removedAgentsMdBlock = false
-  if (platform.id === 'codex') {
+  if (agentsMdUpdate) {
     try {
-      const { agentsMdPath, stripAgentsMdSection } = await import('./lib/agentsMd.js')
-      const p = agentsMdPath()
-      const before = await readFile(p, 'utf8')
-      const after = stripAgentsMdSection(before)
-      if (after !== before) {
-        await writeFile(p, after, 'utf8')
+      if (await revalidate(agentsMdUpdate.path)) {
+        const writeError = await atomicWrite(agentsMdUpdate.path, agentsMdUpdate.body)
+        if (writeError) throw new Error(writeError)
         removedAgentsMdBlock = true
       }
-    } catch {
-      /* no AGENTS.md (or unreadable) — nothing to strip, never a failure */
+    } catch (error) {
+      failures.push(`${agentsMdUpdate.path}: ${(error as Error).message}`)
     }
   }
 
   let removedAgentRoles = 0
   for (const path of agentRoleFiles) {
     try {
-      await rm(path, { force: true })
+      if (!(await revalidate(path))) continue
+      const snapshot = canonicalPaths.get(path)
+      if (!snapshot) throw new Error('missing canonical preflight')
+      await removeOwnedFileViaQuarantine(snapshot)
       removedAgentRoles++
     } catch (e) {
       failures.push(`${path}: ${(e as Error).message}`)
@@ -300,7 +419,17 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
   let removedSkills = 0
   for (const dir of skillDirs) {
     try {
-      await rm(dir, { recursive: true, force: true })
+      const snapshot = canonicalPaths.get(dir)
+      const expectedHash = ownedSkills.expectedHashes.get(dir)
+      if (!snapshot || !expectedHash) throw new Error('missing owned skill preflight')
+      await removeOwnedDirectoryViaQuarantine(snapshot, {
+        verify: async (quarantinePath) => {
+          const body = await readFile(join(quarantinePath, 'SKILL.md'), 'utf8')
+          if (sha256Of(body) !== expectedHash) {
+            throw new Error('installed skill differs from the ownership ledger; repair first')
+          }
+        },
+      })
       removedSkills++
     } catch (e) {
       failures.push(`${dir}: ${(e as Error).message}`)
@@ -309,30 +438,41 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
 
   let removedSettings = false
   let removedHooks = 0
-  if (settingsPath !== null && (hasSettingsChanges || staleHooks > 0)) {
+  let settingsRemovalSucceeded = false
+  let settingsWriteFailed = false
+  if (settingsRemovalPath !== null) {
     try {
-      const r = await removeSettingsFootprint(settingsPath)
-      removedSettings = r.envRemoved
-      removedHooks = r.hooksRemoved
+      if (await revalidate(settingsRemovalPath)) {
+        const r = await removeSettingsFootprint(settingsRemovalPath, context)
+        removedSettings = r.envRemoved
+        removedHooks = r.hooksRemoved
+        settingsRemovalSucceeded = true
+      } else {
+        settingsWriteFailed = true
+      }
     } catch (e) {
-      failures.push(`${settingsPath}: ${(e as Error).message}`)
+      settingsWriteFailed = true
+      failures.push(`${settingsRemovalPath}: ${(e as Error).message}`)
     }
   }
 
-  // Defense-in-depth: validate state dir is under the platform home dir
-  // (~/.claude or ~/.codex) before recursive rm. Claude behavior unchanged.
-  const normalizedRoot = pathResolve(harnessedRoot)
-  const platformHome = platform.homeDir
-  if (!normalizedRoot.startsWith(pathResolve(platformHome) + sep)) {
-    console.error(`error: state dir ${harnessedRoot} is not under ${platformHome} — refusing`)
-    process.exit(1)
-  }
-  let removedStateDir = false
-  try {
-    await rm(harnessedRoot, { recursive: true, force: true })
-    removedStateDir = true
-  } catch (e) {
-    failures.push(`${harnessedRoot}: ${(e as Error).message}`)
+  const receiptPath = settingsOwnershipReceiptPath(context)
+  let removedStateEntries = 0
+  for (const path of stateEntries) {
+    if (settingsRemovalSucceeded && path === receiptPath) continue
+    if (failures.length > 0 || (settingsWriteFailed && path === receiptPath)) continue
+    try {
+      const snapshot = canonicalPaths.get(path)
+      if (!snapshot) throw new Error('missing canonical preflight')
+      if (snapshot.isDirectory) await removeOwnedDirectoryViaQuarantine(snapshot)
+      else {
+        if (!(await revalidate(path))) continue
+        await removeOwnedFileViaQuarantine(snapshot)
+      }
+      removedStateEntries++
+    } catch (e) {
+      failures.push(`${path}: ${(e as Error).message}`)
+    }
   }
 
   // ── Completion ──────────────────────────────────────────────
@@ -344,10 +484,12 @@ async function runUnifiedUninstall(home: string, dryRun: boolean): Promise<void>
     console.log(t('uninstall.unified.removed_skills', { count: removedSkills }))
   if (removedSettings) console.log(t('uninstall.unified.removed_settings'))
   if (removedHooks > 0) console.log(t('uninstall.unified.removed_hooks', { count: removedHooks }))
-  if (removedStateDir) console.log(t('uninstall.unified.removed_state_dir'))
+  if (removedStateEntries > 0) console.log(t('uninstall.unified.removed_state_dir'))
   if (failures.length > 0) {
     console.error(t('uninstall.unified.partial_failure', { count: failures.length }))
     for (const f of failures) console.error(`  ${f}`)
+    printCliRemovalHint()
+    process.exit(1)
   }
   console.log(t('uninstall.unified.complete'))
   printCliRemovalHint()
@@ -363,23 +505,34 @@ export function registerUninstall(program: Command): void {
       'Uninstall an upstream by name, or remove all harnessed own files when no name given',
     )
     .option('--dry-run', 'preview only — do not delete files')
+    .option('--platform <id>', 'target harness platform (claude | codex)')
     .action(async (name: string | undefined, raw: RawOpts) => {
       const dryRun = raw.dryRun === true
 
-      // ── Unified uninstall (no name argument) ──
-      if (!name) {
-        await runUnifiedUninstall(homedir(), dryRun)
-        return
+      if (raw.platform !== undefined && !(HOST_IDS as readonly string[]).includes(raw.platform)) {
+        console.error(
+          `--platform: unknown id '${raw.platform}' (expected one of: ${HOST_IDS.join(' | ')})`,
+        )
+        process.exit(1)
       }
 
-      // ── Per-manifest uninstall (<name> provided) ──
       let context: HostInstallContext
       try {
-        context = captureHostInstallContext()
+        context = captureHostInstallContext(
+          raw.platform === undefined ? {} : { hostId: raw.platform },
+        )
       } catch (error) {
         console.error(`error: invalid uninstall context: ${(error as Error).message}`)
         process.exit(1)
       }
+
+      // ── Unified uninstall (no name argument) ──
+      if (!name) {
+        await runUnifiedUninstall(context, dryRun)
+        return
+      }
+
+      // ── Per-manifest uninstall (<name> provided) ──
       const { resolveAlias } = await import('../manifest/aliases.js')
       const resolvedName = resolveAlias(name) ?? name
       checkPathSafe(resolvedName)
@@ -390,7 +543,7 @@ export function registerUninstall(program: Command): void {
       let yamlSrc: string | undefined
       let chosenPath: string | undefined
       for (const dir of ['tools', 'skill-packs', 'optional']) {
-        const candidate = pathResolve(getAssetsRoot(), `manifests/${dir}/${resolvedName}.yaml`)
+        const candidate = join(getAssetsRoot(), `manifests/${dir}/${resolvedName}.yaml`)
         try {
           yamlSrc = await readFile(candidate, 'utf8')
           chosenPath = candidate
