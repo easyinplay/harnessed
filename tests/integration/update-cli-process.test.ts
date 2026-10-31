@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import {
   chmod,
   copyFile,
@@ -107,7 +107,7 @@ describe('built update CLI process contract', () => {
 
   beforeEach(async () => {
     expect(existsSync(builtCli), 'Run corepack pnpm build before process tests').toBe(true)
-    root = await mkdtemp(join(tmpdir(), 'harnessed-update-process-'))
+    root = realpathSync(await mkdtemp(join(tmpdir(), 'harnessed-update-process-')))
     home = join(root, 'home')
     calls = join(root, 'calls.jsonl')
     const prefix = join(root, 'prefix space & 100% (global)')

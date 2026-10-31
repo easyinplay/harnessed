@@ -45,3 +45,4 @@ Thumbs.db
 *.swp
 .gstack/
 scripts/evidence-pack/runs/
+/.tmp/

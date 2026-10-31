@@ -1,3 +1,4 @@
+import { join, resolve } from 'node:path'
 import { PassThrough, Readable } from 'node:stream'
 import { describe, expect, it, vi } from 'vitest'
 import {
@@ -10,6 +11,9 @@ import {
 } from '../../src/cli/lib/agentRepair.js'
 import { runAgentRepair } from '../../src/cli/lib/agentRepairRunner.js'
 import { buildUpdateResult, createUpdateComponent } from '../../src/cli/lib/updateResult.js'
+
+const fixtureHome = resolve('fixtures', 'agent-repair-home')
+const fixtureParent = resolve(fixtureHome, '..')
 
 function result() {
   return buildUpdateResult({
@@ -29,14 +33,14 @@ function request(confirmed: boolean): RepairRequest {
     result(),
     {
       hostId: 'codex',
-      os: 'win32',
-      userHome: 'C:\\Users\\tester',
-      nativeHome: 'C:\\Users\\tester',
-      neutralSpawnCwd: 'C:\\Users\\tester',
+      os: process.platform,
+      userHome: fixtureHome,
+      nativeHome: fixtureHome,
+      neutralSpawnCwd: fixtureHome,
       platform: {
         id: 'codex',
-        homeDir: 'C:\\Users\\tester',
-        stateRoot: 'C:\\Users\\tester\\.codex',
+        homeDir: fixtureHome,
+        stateRoot: join(fixtureHome, '.codex'),
       } as never,
     },
     {
@@ -137,7 +141,7 @@ describe('agent repair contract', () => {
   })
 
   it('rejects a broader parent root even when it contains the host home', () => {
-    expect(() => assertRepairRoots('C:\\Users\\tester', ['C:\\'])).toThrow(
+    expect(() => assertRepairRoots(fixtureHome, [fixtureParent])).toThrow(
       'repair host root is outside the allowed roots',
     )
   })

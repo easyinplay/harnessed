@@ -15,6 +15,7 @@
       "!**/*.snap",
       "!**/.tscache",
       "!**/coverage",
+      "!**/.tmp",
       "!schemas/*.schema.json"
     ]
   },

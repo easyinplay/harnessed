@@ -6,8 +6,9 @@
 // shared spawn seam, removes cleanup_paths $HOME-confined + idempotently, is
 // fail-soft on a non-zero cmd exit, and refuses paths escaping $HOME.
 
+import { realpathSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, resolve as resolvePath } from 'node:path'
+import { join, relative, resolve as resolvePath } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const spawnCmdMock = vi.fn()
@@ -112,6 +113,13 @@ function ctxFor(m: Manifest, dryRun = false): UninstallContext {
   return { manifest: m, opts: { apply: true, dryRun, yes: true }, cwd: process.cwd() }
 }
 
+function canonicalFixturePath(path: string): string {
+  const home = resolvePath(homedir())
+  const canonicalHome = realpathSync(home)
+  const suffix = relative(home, path)
+  return suffix.startsWith('..') ? resolvePath(path) : resolvePath(canonicalHome, suffix)
+}
+
 beforeEach(() => {
   spawnCmdMock.mockReset()
   rmMock.mockReset()
@@ -127,8 +135,8 @@ beforeEach(() => {
   prepareOwnedPathRemovalMock.mockReset().mockImplementation((root: string, target: string) => ({
     root,
     target,
-    canonicalRoot: resolvePath(root),
-    canonicalTarget: resolvePath(target),
+    canonicalRoot: canonicalFixturePath(root),
+    canonicalTarget: canonicalFixturePath(target),
     isDirectory: true,
     device: 1,
     inode: 1,
@@ -279,8 +287,8 @@ describe('runDeclaredTeardown', () => {
     prepareOwnedPathRemovalMock.mockImplementation((root: string, target: string) => ({
       root,
       target,
-      canonicalRoot: resolvePath(root),
-      canonicalTarget: resolvePath(target),
+      canonicalRoot: canonicalFixturePath(root),
+      canonicalTarget: canonicalFixturePath(target),
       isDirectory: false,
       device: 2,
       inode: 3,

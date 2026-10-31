@@ -1,11 +1,12 @@
 import { execFileSync } from 'node:child_process'
+import { realpathSync } from 'node:fs'
 import { chmod, mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { preparePackageUpdate } from '../../src/cli/lib/packageUpdateTarget.js'
 import { updateTargetKey } from '../../src/cli/lib/updateLock.js'
-import { planWindowsSpawn } from '../../src/installers/lib/winSpawn.js'
+import { planWindowsSpawn, resolveWindowsBin } from '../../src/installers/lib/winSpawn.js'
 
 vi.mock('node:child_process', () => ({ execFileSync: vi.fn() }))
 
@@ -20,7 +21,7 @@ describe('package self-update target binding', () => {
   let env: NodeJS.ProcessEnv
 
   beforeEach(async () => {
-    root = await mkdtemp(join(tmpdir(), 'harnessed-package-target-'))
+    root = realpathSync(await mkdtemp(join(tmpdir(), 'harnessed-package-target-')))
     prefix = join(root, 'prefix space & 100% ^ ! (global)')
     modules = join(prefix, ...(process.platform === 'win32' ? [] : ['lib']), 'node_modules')
     packageRoot = join(modules, 'harnessed')
@@ -61,18 +62,19 @@ describe('package self-update target binding', () => {
     const result = prepare()
     expect(result.ok).toBe(true)
     if (!result.ok) throw new Error(result.message)
-    expect(result.command).toBe(npm)
+    const resolvedNpm = realpathSync.native(npm)
+    expect(result.command).toBe(resolvedNpm)
     expect(result.args).toEqual(['i', '-g', '--prefix', prefix, 'harnessed@latest'])
     expect(result.options).toMatchObject({ cwd: root, env, shell: false, windowsHide: true })
     expect(execFileSync).toHaveBeenNthCalledWith(
       1,
-      npm,
+      resolvedNpm,
       ['prefix', '-g'],
       expect.objectContaining({ cwd: root, env, shell: false, timeout: 15_000 }),
     )
     expect(execFileSync).toHaveBeenNthCalledWith(
       2,
-      npm,
+      resolvedNpm,
       ['root', '-g', '--prefix', prefix],
       expect.objectContaining({ cwd: root, env, shell: false }),
     )
@@ -215,7 +217,7 @@ describe('package self-update target binding', () => {
       )
       expect(result.args).toEqual(planned.args)
       expect(result.options).toMatchObject({ shell: false, windowsVerbatimArguments: true })
-      expect(result.command).toMatch(/^[a-z]:\\.*cmd\.exe$/i)
+      expect(result.command).toBe(resolveWindowsBin('cmd.exe', env))
       expect(vi.mocked(execFileSync).mock.calls[1]?.[1]).toEqual(
         planWindowsSpawn('npm', ['root', '-g', '--prefix', prefix], shim).args,
       )

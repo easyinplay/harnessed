@@ -245,7 +245,9 @@ describe('setup single context routing', () => {
       )
       expect(writeCodexAgentRoles).not.toHaveBeenCalled()
     }
-    expect(readHashLedger).toHaveBeenCalledWith(join(selectedNative, 'harnessed', 'skill-hashes.json'))
+    expect(readHashLedger).toHaveBeenCalledWith(
+      join(selectedNative, 'harnessed', 'skill-hashes.json'),
+    )
     for (const call of vi.mocked(recordSkillHashes).mock.calls)
       expect(call[2]).toBe(join(selectedNative, 'harnessed', 'skill-hashes.json'))
     for (const call of vi.mocked(newBackupSessionDir).mock.calls)
