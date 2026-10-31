@@ -24,9 +24,8 @@ Verification complete locally:
 - npm pack dry-run: passed; `CHANGELOG.md` included and no `skills/` package tree.
 - Production eval: 14/14 scenarios passed; owner-scoped golden output is deterministic.
 
-Pending external actions:
+External closeout completed:
 
-- Commit and push the Phase 80 implementation.
-- Observe GitHub CI and real host/package acceptance.
-- Close #12-#27 with pushed commit and CI evidence.
-- Release/publication decision remains separate.
+- Phase 80 implementation is included in the v5.0.6 release and remote `main`.
+- GitHub CI and package/release checks passed, including CI `41157702328` (9/9 jobs).
+- Issues covered by Phase 80 were closed with issue-specific evidence; #19 remains open for Phase 82.
