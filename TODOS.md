@@ -195,3 +195,35 @@
 
   **2026-10-14 维护者裁决**：**开**。方向级设计 → 走 `/discuss-strategic`(或 gstack `/office-hours`)出方案再决定是否立项,
   本条本身不产出代码。
+
+## From the 2026-11-02 credential-hygiene pass (machine-local incident, not a repo defect)
+
+背景:本机 `~/.claude/settings.json` 的 `env` 里同时躺着两枚**互不相同**的凭据,都已扩散到
+Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。本轮把能自动化的部分做掉,
+剩下的两件必须维护者本人在浏览器里做。
+
+- [ ] **撤销泄漏的 GitHub OAuth token(需维护者本人操作,无法脚本化)** — 泄漏的那枚是
+  `gho_Go58Vf…`(2026-11-02 实测仍有效:`GET /user` 返回 200;scopes `delete_repo, gist, read:org,
+  repo, workflow`)。它**不是** gh keyring 里那枚(`gho_8qzd…`,scopes 多 `admin:org` / `user`)。
+  GitHub 的 `DELETE /applications/{client_id}/token` 需要该 OAuth app 的 client secret,拿不到 →
+  只能网页撤销:GitHub → Settings → Applications → Authorized OAuth Apps → 对应应用 → Revoke。
+  撤销后如果 `gh` 也失效,`gh auth login`(device flow)重登。
+  已做:从 `~/.claude/settings.json` 删除;从 harness install 备份快照 + CC 日志里抹除(备份快照的
+  `metadata.json` sha1 已同步重算,`harnessed rollback` 的完整性校验不受影响)。
+  仍在:旧 session transcript(`.claude/projects/**.jsonl`、`.codex/sessions/**.jsonl`)—— 撤销后即失效。
+- [ ] **轮换 Context7 API key** — `ctx7sk-…` 同样已从 `~/.claude/settings.json` 删除;
+  context7 MCP 走自己的 OAuth(`~/.claude/.credentials.json` → `mcpOAuth` → `plugin:context7:context7`),
+  删 env key 不影响 MCP 使用。但旧 transcript 里仍有明文,建议到 context7 dashboard 作废并重发。
+- [ ] **installer 备份整份 `settings.json`(含明文凭据)—— 待定方案,未改代码** —
+  `src/installers/lib/backup.ts` 对 `plan.files` 里每个文件做整份字节备份;装 `update-reminder` 时
+  `~/.claude/settings.json` 会被原样复制到 `~/.claude/harnessed/backups/<id>/HOME/.claude/settings.json`,
+  于是凭据多出第二份。**当前刻意不改**:`src/cli/rollback.ts` 用 `metadata.json` 的 sha1 校验备份完整性,
+  整份脱敏会破坏回滚保真(回滚要把原样文件写回去)。候选方案:
+  (a) 只备份被改动的 JSON 子树(本例只有 `hooks`),rollback 做子树还原;
+  (b) 备份时对 secret 形态的值脱敏,rollback 还原时保留当前值;
+  (c) 维持现状 + 文档化「settings.json 不放长期凭据」。
+  选 (a)/(b) 需要独立 phase + TDD(备份/回滚保真 + sha1 契约都有既有测试)。
+- [ ] **gh keyring token 权限过大** — 当前那枚是 user-to-server OAuth token,scopes 含 `admin:org` +
+  `delete_repo` + `workflow`。若要长期用 GitHub,换成 fine-grained PAT(按 repo 授权)更合适。
+- [ ] **会话里不要 echo 凭据** — 本轮 `gh auth token` 的输出被 Claude Code 记进
+  `~/.claude/bash-commands.log` 与 `cost-tracker.log`(已抹除)。查凭据一律只打印前缀与长度。
