@@ -76,7 +76,25 @@
 - Commit + push — **complete**: `df202412` (the four fixes) + `d9d369a` (the lock-retry scope +
   the stale-state test) on remote `main`. CI `41366996735` (headSha `d9d369a`) passed **9/9**,
   `conclusion=success`. The previous commit's CI was red (`41185715671`) — see the follow-up section.
-- Release / tag / npm publish — NOT started, needs explicit user confirmation
+- Release — **complete**: `9ba5a6a` (chore(release): prepare v5.0.8) → CI `41388714691` 9/9 green →
+  tag `v5.0.8` → publish run `41389215133` success (npm publish + 3 binary jobs). Verified: npm
+  `dist-tags.latest` = **5.0.8** (queried from the registry directly, not the local cache),
+  GitHub release `v5.0.8` with **9 assets** (3 binaries × [bin, .sha256, .sha256.sig]).
+- Issues — **complete**: #34/#35/#36/#37 each got a verification comment and were closed.
+
+## Live verification on this machine (after the release)
+
+- `harnessed.exe update` → `[harnessed] updated 5.0.7 → 5.0.8` — the binary downloaded itself from
+  the **api.github.com asset endpoint** (issue #34 end-to-end), sha256 + ed25519 verified.
+- The handover line did NOT appear, and that is expected: the process that performed the swap was
+  5.0.7, which predates the handover. The refresh can only be driven by the NEW binary, so the
+  first upgrade onto the fixed version needs one explicit refresh; every later update does it
+  automatically.
+- `harnessed.exe --internal-owned-refresh` → `owned state refreshed (2 component(s):
+  harnessed-workflows, update-reminder)`.
+- `harnessed doctor` now reports `✓ workflow skill integrity — 34 installed workflow skill(s) match
+  their install-time hash ledger` (it reported 5 MISSING skills before) and `✓ stale hooks — no
+  orphaned harnessed hooks`. `~/.claude/commands/` is empty — the duplicate slash commands are gone.
 
 ## Follow-up found while watching CI (pre-existing main red)
 
