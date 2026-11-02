@@ -255,3 +255,23 @@ and still rejects 0.1.21, 0.1.22-beta and 0.2.0.
 
 Live proof with the local build (repo manifests, same host): `playwright-cli` moved from
 `✗ failed` to `○ already-installed`; the only remaining failure is planning-with-files.
+
+## v5.0.10 shipped (2026-11-02)
+
+Both defects above went out in **v5.0.10**:
+
+- `e8e5406` — the BREAK-LOOP directive fix (A + D: no dangling skill reference, the stop rule
+  stated in the directive itself).
+- `89f8864` — the playwright-cli range contract.
+- `2fa1af5` — CHANGELOG + this record; `a0481b5` — `chore(release): prepare v5.0.10`
+  (version bump + regenerated `bin/` artifacts + the biome formatting the previous CI run
+  caught on `tests/integration/playwright-runtime-contract.test.ts`).
+
+CI `41465517232` (a0481b5) passed 9/9 → tag `v5.0.10` → publish run `41467229953` success
+(npm publish + 3 binary jobs). Verified from the registry, not the local cache:
+`dist-tags.latest` = **5.0.10**, release `v5.0.10` with **9 assets**.
+
+Live on this machine with the shipped binary: `harnessed update` → 5.0.9 → 5.0.10 with the
+owned-state refresh; `harnessed setup --platform codex --system` → `playwright-cli` reports
+`○ already-installed` (the host's 0.1.23 now satisfies the range) and the only remaining
+failure is planning-with-files.
