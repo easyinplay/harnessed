@@ -172,3 +172,16 @@ Open, not ours to close here: the three real component failures of the user's co
 (gstack upstream lease held by a live process, planning-with-files ownership refusal from the
 in-flight ownership-guard work, playwright-cli pinned-version verify against a declined L4
 install).
+
+### Live verification of the #35 handover (5.0.8 → 5.0.9)
+
+`harnessed update` on this machine: `[harnessed] updated 5.0.8 → 5.0.9` followed by
+`[harnessed] refreshed workflow skills + hooks for 5.0.9 (owned state re-synced)`. This is the
+FIRST live run of the handover — the earlier 5.0.7 → 5.0.8 jump could not print it because the
+5.0.7 binary predates the fix. After the update: `harnessed --version` = 5.0.9, doctor reports
+`✓ workflow skill integrity — 34 installed workflow skill(s) match their install-time hash
+ledger`, `✓ update — up to date (5.0.9)`, `✓ stale hooks — no orphaned harnessed hooks`.
+
+`harnessed doctor --host codex` on the codex host is clean apart from warnings (origin URL, token
+budget, MCP key visibility, codex hook trust for `update-reminder`); the codex host binary is
+still 5.0.8 and needs the 5.0.9 install to pick up the setup fix.
