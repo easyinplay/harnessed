@@ -33,19 +33,27 @@ vi.mock('../../src/installers/lib/skillOwnershipReceipt.js', async (importOrigin
 // fs/promises: mkdir/writeFile/rename for backup; readFile for state;
 // access for D2.1-6 SKILL.md real-path verify (controlled per-test).
 const accessMock = vi.fn(async (_p: string) => undefined)
-vi.mock('node:fs/promises', () => ({
-  mkdir: vi.fn(async () => undefined),
-  readFile: vi.fn(async () => {
-    const e = new Error('ENOENT') as NodeJS.ErrnoException
-    e.code = 'ENOENT'
-    throw e
-  }),
-  writeFile: vi.fn(async () => undefined),
-  rename: vi.fn(async () => undefined),
-  access: (p: string) => accessMock(p),
-  lstat: vi.fn(),
-  stat: vi.fn(),
-}))
+vi.mock('node:fs/promises', async () => {
+  const actual = await vi.importActual<typeof import('node:fs/promises')>('node:fs/promises')
+  return {
+    // mkdir stays REAL: the install-ownership lock creates the state root
+    // before locking it, and proper-lockfile then creates the lock directory
+    // inside it. A mocked mkdir left the root missing, so the lock failed
+    // with ENOENT on any machine without a leftover directory from an earlier
+    // run — the test only passed where that leftover happened to exist.
+    mkdir: actual.mkdir,
+    readFile: vi.fn(async () => {
+      const e = new Error('ENOENT') as NodeJS.ErrnoException
+      e.code = 'ENOENT'
+      throw e
+    }),
+    writeFile: vi.fn(async () => undefined),
+    rename: vi.fn(async () => undefined),
+    access: (p: string) => accessMock(p),
+    lstat: vi.fn(),
+    stat: vi.fn(),
+  }
+})
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),
   select: vi.fn(async () => 'abort'),

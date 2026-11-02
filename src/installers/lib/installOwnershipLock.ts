@@ -25,18 +25,54 @@ export function isLockContention(error: unknown): boolean {
   return (error as NodeJS.ErrnoException | undefined)?.code === 'ELOCKED'
 }
 
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+
+/** Delay before attempt N+1: doubles from minTimeout, capped at maxTimeout. */
+function backoffDelay(attempt: number): number {
+  return Math.min(
+    INSTALL_OWNERSHIP_LOCK_RETRIES.minTimeout * 2 ** attempt,
+    INSTALL_OWNERSHIP_LOCK_RETRIES.maxTimeout,
+  )
+}
+
+/**
+ * Acquire the lock, retrying ONLY on contention.
+ *
+ * proper-lockfile's own `retries` option re-runs the attempt on ANY error —
+ * a missing state root, a permission problem, a bad path — so a permanent
+ * failure would silently burn the whole budget (over a minute) before it
+ * surfaced. Doing the backoff here keeps the retry scoped to the only error
+ * that is worth retrying: somebody else holds the lock right now.
+ */
+async function acquireOwnershipLock(root: string): Promise<() => Promise<void>> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await lockfile.lock(root, {
+        lockfilePath: join(root, '.ownership.lock'),
+        realpath: false,
+        stale: 10 * 60 * 1000,
+        // One attempt only — the loop below owns the backoff.
+        retries: 0,
+      })
+    } catch (error) {
+      if (!isLockContention(error) || attempt >= INSTALL_OWNERSHIP_LOCK_RETRIES.retries) {
+        throw error
+      }
+      await sleep(backoffDelay(attempt))
+    }
+  }
+}
+
 export async function withInstallOwnershipLock<T>(
   context: HostInstallContext,
   work: () => Promise<T>,
 ): Promise<T> {
   const root = context.platform.stateRoot
   await mkdir(root, { recursive: true })
-  const release = await lockfile.lock(root, {
-    lockfilePath: join(root, '.ownership.lock'),
-    realpath: false,
-    stale: 10 * 60 * 1000,
-    retries: INSTALL_OWNERSHIP_LOCK_RETRIES,
-  })
+  const release = await acquireOwnershipLock(root)
   try {
     return await work()
   } finally {

@@ -75,3 +75,25 @@
   102); all 13 `scripts/check-*.mjs` CI gates exit 0; `git diff --check` exit 0.
 - Commit + push — in progress
 - Release / tag / npm publish — NOT started, needs explicit user confirmation
+
+## Follow-up found while watching CI (pre-existing main red)
+
+The first push (`df202412`) turned CI red — but on a failure that was ALREADY red on the
+previous commit (`742e111`, itself red since `cb990f8`): `tests/unit/installers-npxSkillInstaller.test.ts`
+failed with `ENOENT: ... mkdir 'D:\tmp\fake-home\.claude\harnessed\.ownership.lock'` on all three OSes.
+Cause: `cb990f8` put the npx skill installer behind `withInstallOwnershipLock`, and that test
+mocks `node:fs/promises` with a no-op `mkdir` — so the state root is never created and
+proper-lockfile cannot create the lock directory inside it. The test only passed on machines
+where an earlier run had left `D:\tmp\fake-home` behind.
+
+Two fixes:
+
+1. `src/installers/lib/installOwnershipLock.ts` — the backoff now lives in our own loop and
+   re-attempts ONLY `ELOCKED`. proper-lockfile's own `retries` option re-runs the attempt on ANY
+   error, so the enlarged budget would have turned that ENOENT into a ~108 s stall per test
+   instead of a fast failure.
+2. `tests/unit/installers-npxSkillInstaller.test.ts` — the mock keeps the REAL `mkdir`, so the
+   state root exists exactly as it does in production.
+
+New: `tests/unit/installers-ownershipLock-retry.test.ts` (a non-contention failure is not retried;
+contention is).
