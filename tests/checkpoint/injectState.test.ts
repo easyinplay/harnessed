@@ -76,7 +76,13 @@ describe('buildWorkflowStateBlock', () => {
       started_at: '2026-06-12T00:00:00.000Z',
       sub_progress: [{ sub: 'a', status: 'failed', gate_fired: true, fail_count: 3 }],
     }
-    expect(buildWorkflowStateBlock(wf)).toContain('BREAK-LOOP')
+    const out = buildWorkflowStateBlock(wf)
+    expect(out).toContain('BREAK-LOOP')
+    // The directive must be actionable on its own. It once told the model to "run
+    // break-loop skill" — a skill harnessed never ships on any host, so a codex
+    // agent stopped the workflow and asked the user where that skill was.
+    expect(out).not.toMatch(/break-loop skill/i)
+    expect(out).toContain('re-scope the subtask')
   })
 
   // 4.23.0 (issue #3, T4/D4) — staleness: a pending sub whose ledger file has

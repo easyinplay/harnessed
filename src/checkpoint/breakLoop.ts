@@ -1,6 +1,10 @@
 // src/checkpoint/breakLoop.ts — G6 anti-thrash. Pure detector: subs that have failed
 // >= LOOP_THRESHOLD times are in a fix-forget-repeat loop (Trellis break-loop analog).
-// The 5-dimension root-cause framework lives in the break-loop skill doc, not here.
+// The stop rule itself is NOT in a skill: the directive that reaches the model names
+// the action (re-scope the subtask, fix the blocker, or escalate to the user) and the
+// shipped workflow docs (task / verify-*) carry the same rule. A directive that points
+// at a skill harnessed does not ship is unsatisfiable — it once made a codex agent stop
+// and ask for a skill that does not exist on any host.
 
 import type { SubProgressEntryType } from './schema/currentWorkflow.v1.js'
 

@@ -147,7 +147,7 @@ export function buildWorkflowStateBlock(
   }
   for (const l of loops) {
     lines.push(
-      `BREAK-LOOP: sub '${l.sub}' failed ${l.count}x — stop retrying, run break-loop skill`,
+      `BREAK-LOOP: sub '${l.sub}' failed ${l.count}x — stop retrying: re-scope the subtask, fix the blocker, or escalate to the user`,
     )
   }
   // T2.7 D-2/D-3 — the two damping stops, re-emitted EVERY turn from the persisted

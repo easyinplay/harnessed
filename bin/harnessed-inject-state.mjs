@@ -471,7 +471,7 @@ function buildWorkflowStateBlock(wf, forward, ledgerAgeMs) {
   }
   for (const l of loops) {
     lines.push(
-      `BREAK-LOOP: sub '${l.sub}' failed ${l.count}x \u2014 stop retrying, run break-loop skill`,
+      `BREAK-LOOP: sub '${l.sub}' failed ${l.count}x \u2014 stop retrying: re-scope the subtask, fix the blocker, or escalate to the user`,
     )
   }
   for (const e of ledger) {

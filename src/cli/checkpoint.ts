@@ -681,7 +681,8 @@ export async function runCheckpointFail(
   if (looped) {
     deps.error(
       `[harnessed] BREAK-LOOP: sub '${sub}' failed ${looped.count}x (>= ${LOOP_THRESHOLD}). ` +
-        'Stop retrying — run the break-loop skill for root-cause analysis and capture the lesson to .planning/.',
+        'Stop retrying: re-scope the subtask, fix the blocker, or escalate to the user, ' +
+        'and capture the lesson to .planning/.',
     )
   }
 
@@ -792,8 +793,8 @@ export async function runCheckpointReopen(
   if (looped) {
     deps.error(
       `[harnessed] BREAK-LOOP: sub '${sub}' has been sent back / failed ${looped.count}x ` +
-        `(>= ${LOOP_THRESHOLD}). Stop retrying — run the break-loop skill for root-cause ` +
-        'analysis and capture the lesson to .planning/.',
+        `(>= ${LOOP_THRESHOLD}). Stop retrying: re-scope the subtask, fix the blocker, or ` +
+        'escalate to the user, and capture the lesson to .planning/.',
     )
   }
 
