@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.9] - 2026-11-02
+
 ### Fixed
 
 - `harnessed setup` no longer counts a workflow without a standalone slash-command surface as a failed component. A workflow that has no `role-prompts.yaml` entry is skipped on purpose (the update path already treats it as an expected skip), so counting it made every install exit 1 even when nothing had failed. The skip stays visible as a warning; an unrenderable or unwritable command still fails the setup.
