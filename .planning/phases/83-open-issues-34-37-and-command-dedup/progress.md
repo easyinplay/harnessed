@@ -73,7 +73,9 @@
   (1 pre-existing warning in the untouched `src/cli/facts.ts`); full `vitest run` 424 files passed /
   4 skipped, **5375 tests passed** / 43 skipped / 1 todo (baseline was 5273 — the four fixes add
   102); all 13 `scripts/check-*.mjs` CI gates exit 0; `git diff --check` exit 0.
-- Commit + push — in progress
+- Commit + push — **complete**: `df202412` (the four fixes) + `d9d369a` (the lock-retry scope +
+  the stale-state test) on remote `main`. CI `41366996735` (headSha `d9d369a`) passed **9/9**,
+  `conclusion=success`. The previous commit's CI was red (`41185715671`) — see the follow-up section.
 - Release / tag / npm publish — NOT started, needs explicit user confirmation
 
 ## Follow-up found while watching CI (pre-existing main red)
@@ -97,3 +99,15 @@ Two fixes:
 
 New: `tests/unit/installers-ownershipLock-retry.test.ts` (a non-contention failure is not retried;
 contention is).
+
+## End-to-end smoke of the #35 handover (isolated HOME)
+
+`node dist/cli.mjs --internal-owned-refresh` against a throwaway home
+(`HOME`/`USERPROFILE`/`CLAUDE_CONFIG_DIR` pointed at a temp dir):
+
+- exit 0, `[harnessed] owned state refreshed (2 component(s): harnessed-workflows, update-reminder)`
+- 34 workflow skill directories written, `settings.json` created with the owned hook registered
+- a seeded legacy command file carrying `<!-- harnessed-generated:v3.4.4 -->` was REMOVED, while a
+  user-authored command file in the same directory was left untouched
+
+That is the duplicate-slash-command repair running through the shipped code path.

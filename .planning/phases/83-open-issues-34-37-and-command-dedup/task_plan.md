@@ -11,15 +11,19 @@ remove the local duplicate `/retro` slash command, whose second entry is a stale
 
 ## Verified facts (measured before planning)
 
-- Local install is the **compiled binary channel**, version **4.49.2** (`AppData/Local/harnessed/bin/harnessed`).
-  npm latest is 5.0.7, so the local host is 4 majors behind.
-- `~/.claude/commands/` holds **26** files, every one carrying `<!-- harnessed-generated:v3.4.4 -->`.
+- Local install is the **compiled binary channel** (`AppData/Local/harnessed/bin/harnessed.exe`).
+  Version re-measured on 2026-11-02: **5.0.7** (an earlier note in this file said 4.49.2 — that was
+  stale; the binary was updated to 5.0.7 on 2026-11-01 23:10, next to a `harnessed.exe.bak-4.43.0`).
+  npm latest is also 5.0.7.
+- `~/.claude/commands/` held **26** files, every one carrying `<!-- harnessed-generated:v3.4.4 -->`.
   All 26 names also exist as harnessed workflow skills under `~/.claude/skills/<name>/`.
   Claude Code registers both surfaces, so every one of them is a duplicate slash command.
   `/retro` in the screenshot is exactly this pair: `skills/retro/SKILL.md` (row 1) and
   `commands/retro.md` (row 2, tagged `(user)`).
 - The cleanup that removes those files (`src/cli/lib/legacyCommandCleanup.ts`, added 2026-10-30 in
-  `b1efa54`) postdates the local 4.49.2 binary, which is why the stale files survived.
+  `b1efa54`) only runs from `harnessed setup` / the update refresh — and the compiled binary's
+  self-update never triggered it (that is issue #35), which is why the stale files survived every
+  upgrade.
 - `refreshOwnedUpdate()` (`src/cli/lib/refreshOwnedUpdate.ts`) already does all three repairs the
   duplicate needs: refresh workflow skills, re-register owned hooks, and delete legacy Claude
   command files. It is wired only into the **npm** channel continuation
