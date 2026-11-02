@@ -78,6 +78,10 @@ vi.mock('../../src/installers/lib/installOwnershipLock.js', () => ({
   withInstallOwnershipLock: vi.fn(async (_hostContext: unknown, work: () => Promise<unknown>) =>
     work(),
   ),
+  // The installer dispatch classifies a lock-contention throw by this helper;
+  // the mocked module has to answer it like the real one does.
+  isLockContention: (error: unknown) =>
+    (error as NodeJS.ErrnoException | undefined)?.code === 'ELOCKED',
 }))
 vi.mock('@clack/prompts', () => ({
   confirm: vi.fn(async () => true),

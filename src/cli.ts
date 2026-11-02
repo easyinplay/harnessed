@@ -134,6 +134,19 @@ if (!updateInvocation) {
   })
 }
 
+// issue #35 — internal owned-state refresh handover. After a compiled-binary
+// self-update the NEW binary owns the NEW assets, so only it can install the
+// new workflow skills, re-register the harness-owned hooks and delete the
+// stale legacy Claude command files (the duplicate `/retro` symptom). The OLD
+// binary spawns the new one with this flag. Hidden on purpose: it is not a
+// public command — the CLI surface contract pins the public command set and
+// requires every public command in all README locales.
+const { OWNED_REFRESH_FLAG } = await import('./cli/lib/ownedRefreshFlag.js')
+if (entryArgs.length === 1 && entryArgs[0] === OWNED_REFRESH_FLAG) {
+  const { runOwnedRefreshEntry } = await import('./cli/lib/ownedRefresh.js')
+  process.exit(await runOwnedRefreshEntry())
+}
+
 const program = new Command()
 if (wantsUpdateEnvelope(process.argv)) program.exitOverride()
 

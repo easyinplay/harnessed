@@ -22,6 +22,8 @@ import pkg from '../../package.json' with { type: 'json' }
 import { pruneSlots } from '../checkpoint/pruneSlots.js'
 import { t } from '../i18n/index.js'
 import { getBackupRoot } from '../installers/lib/backup.js'
+import { type AnyHookEntry, entryCommands } from '../installers/lib/hookEntry.js'
+import { getSettingsPath } from '../platform/platform.js'
 import { compareVersions } from './lib/version-check.js'
 
 /** Ascending by semver; names that are not X.Y.Z fall back to string order so an
@@ -50,15 +52,73 @@ export interface CompiledGcResult {
   kept: string[]
 }
 
+/** A hook command pointing at `…/assets/<version>/(bin|scripts)/<script>.mjs`
+ *  references that assets version. */
+const REFERENCED_ASSETS_RE = /\/assets\/([^/]+)\/(?:bin|scripts)\/[^\s"']*\.mjs/
+
+/** Asset versions the host settings.json still references from a hook
+ *  command. A stale registration (`…/assets/4.32.0/bin/harnessed-stop-hook.mjs`)
+ *  keeps that directory alive: deleting it turns a recoverable registration
+ *  into MODULE_NOT_FOUND on every prompt (issue #36).
+ *
+ *  Fail-soft: an unreadable or malformed settings.json yields an empty set, so
+ *  gc keeps its previous behaviour instead of failing the command. */
+export async function referencedAssetVersions(settingsPath: string | null): Promise<Set<string>> {
+  const versions = new Set<string>()
+  if (!settingsPath) return versions
+  let raw: string
+  try {
+    raw = await readFile(settingsPath, 'utf8')
+  } catch {
+    return versions
+  }
+  let parsed: { hooks?: Record<string, unknown> }
+  try {
+    parsed = JSON.parse(raw) as typeof parsed
+  } catch {
+    return versions
+  }
+  const hooks = parsed.hooks
+  if (!hooks || typeof hooks !== 'object') return versions
+  for (const arr of Object.values(hooks)) {
+    if (!Array.isArray(arr)) continue
+    for (const entry of arr) {
+      for (const command of entryCommands(entry as AnyHookEntry)) {
+        const match = command.replace(/\\/g, '/').match(REFERENCED_ASSETS_RE)
+        if (match?.[1]) versions.add(match[1])
+      }
+    }
+  }
+  return versions
+}
+
+/** The host settings file, or null when the host has none (codex). Fail-soft:
+ *  an ambiguous host configuration must not break gc. */
+function hostSettingsPath(): string | null {
+  try {
+    return getSettingsPath()
+  } catch {
+    return null
+  }
+}
+
 export async function gcCompiledArtifacts(opts: {
   keepVersions: string[]
   stateRoot: string
   execPath?: string | null
   dryRun?: boolean
+  /** Host settings.json — hook registrations there may still reference an
+   *  `assets/<version>` dir. `undefined` → the detected host's settings file;
+   *  `null` → no settings file on this host → nothing is referenced. */
+  settingsPath?: string | null
 }): Promise<CompiledGcResult> {
   const removed: string[] = []
   const kept: string[] = []
   const keep = new Set(opts.keepVersions)
+  // issue #36 — a version the host settings still point at is NOT garbage.
+  const referenced = await referencedAssetVersions(
+    opts.settingsPath === undefined ? hostSettingsPath() : opts.settingsPath,
+  )
 
   // assets/<ver> — remove versions outside the keep-set
   try {
@@ -66,7 +126,7 @@ export async function gcCompiledArtifacts(opts: {
     for (const e of await readdir(assetsDir, { withFileTypes: true })) {
       if (!e.isDirectory()) continue
       const p = join(assetsDir, e.name)
-      if (keep.has(e.name)) {
+      if (keep.has(e.name) || referenced.has(e.name)) {
         kept.push(p)
         continue
       }

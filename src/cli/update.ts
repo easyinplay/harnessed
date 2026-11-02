@@ -132,6 +132,23 @@ async function runCompiledFlow(opts: UpdateOptions, context: HostInstallContext)
         console.log(
           `  note: ${r.bakPath} left in place (running image / rollback net) — gc sweeps it later`,
         )
+      // issue #35 — the OLD binary owns the OLD assets; only the NEW binary can
+      // install the NEW workflow skills, re-register the owned hooks and delete
+      // the stale legacy command files. Hand that over to the binary that now
+      // sits at execPath. Fail-soft: the swap already succeeded, so a failed
+      // handover is reported with a remedy, never an exit code change.
+      const { spawnOwnedRefresh } = await import('./lib/ownedRefresh.js')
+      const refresh = await spawnOwnedRefresh(process.execPath, context)
+      if (refresh.ok) {
+        console.log(
+          `[harnessed] refreshed workflow skills + hooks for ${r.to} (owned state re-synced).`,
+        )
+      } else {
+        console.warn(
+          `[harnessed] could not refresh skills/hooks after the update ` +
+            `(${refresh.error ?? `exit ${refresh.exitCode}`}) — run 'harnessed setup' to finish.`,
+        )
+      }
       // D7 — opportunistic gc: keep {old, new} asset versions (fail-soft).
       try {
         const { gcCompiledArtifacts } = await import('./gc.js')

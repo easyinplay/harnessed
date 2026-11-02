@@ -25,6 +25,12 @@ export interface StaleHooksDeps {
 
 const NAME = 'stale hooks'
 
+/** A versioned assets path (`…/assets/4.32.0/bin/harnessed-stop-hook.mjs`) is a
+ *  registration harnessed STILL ships — only its version is stale. Re-running
+ *  setup/update re-registers it; `harnessed uninstall` would strip a hook the
+ *  user still wants (issue #36). */
+const VERSIONED_ASSETS_RE = /\/assets\/[^/]+\//
+
 export function checkStaleHooks(deps?: Partial<StaleHooksDeps>): CheckResult {
   const settingsPath = deps?.settingsPath ?? getSettingsPath()
   const readText =
@@ -73,10 +79,23 @@ export function checkStaleHooks(deps?: Partial<StaleHooksDeps>): CheckResult {
     return { name: NAME, status: 'pass', message: 'no orphaned harnessed hooks' }
   }
   const list = stale.map((s) => `${s.event} → ${s.path}`).join('; ')
+  // issue #36 — a version-stale registration is fixed by RE-REGISTERING it, not
+  // by uninstalling it (the hook itself is still wanted). A genuinely orphaned
+  // entry (the package is gone) keeps the uninstall advice.
+  const versioned = stale.filter((s) => VERSIONED_ASSETS_RE.test(s.path.replace(/\\/g, '/')))
+  const orphaned = stale.filter((s) => !VERSIONED_ASSETS_RE.test(s.path.replace(/\\/g, '/')))
+  const fix =
+    versioned.length > 0
+      ? `run 'harnessed setup' (or 'harnessed update') to re-register the stale harnessed hook(s) to the current version, or delete the matching Stop/UserPromptSubmit entries from ${settingsPath}${
+          orphaned.length > 0
+            ? " — entries whose package is gone can also be removed with 'harnessed uninstall'"
+            : ''
+        }`
+      : `run 'harnessed uninstall' to strip them, or delete the matching Stop/UserPromptSubmit entries from ${settingsPath}`
   return {
     name: NAME,
     status: 'warn',
     message: `${stale.length} harnessed hook(s) point at a missing/unresolvable script — Claude Code errors MODULE_NOT_FOUND every prompt (${list})`,
-    fix: `run 'harnessed uninstall' to strip them, or delete the matching Stop/UserPromptSubmit entries from ${settingsPath}`,
+    fix,
   }
 }

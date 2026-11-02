@@ -13,7 +13,12 @@ import { captureHostInstallContext } from '../../src/platform/hostInstallContext
 import { claudeDescriptor, codexDescriptor, type HostId } from '../../src/platform/platform.js'
 
 const fixture = vi.hoisted(() => ({ assets: '', deniedPath: '' }))
-vi.mock('../../src/platform/assetsRoot.js', () => ({ getAssetsRoot: () => fixture.assets }))
+vi.mock('../../src/platform/assetsRoot.js', () => ({
+  getAssetsRoot: () => fixture.assets,
+  // The cc-hook-add idempotency probe calls this on the compiled-runtime
+  // branch; without it the probe throws and the hook is never refreshed.
+  isCompiledRuntime: () => false,
+}))
 vi.mock('../../src/installers/index.js', () => ({ runInstall: vi.fn() }))
 vi.mock('node:fs/promises', async (original) => {
   const actual = await original<typeof import('node:fs/promises')>()
@@ -156,6 +161,73 @@ describe('refreshOwnedUpdate reminder opt-out', () => {
       schemaVersion: 1,
       enabled: false,
     })
+  })
+})
+
+describe('refreshOwnedUpdate stale-hook migration (issue #36)', () => {
+  /** Re-home the fixture assets under a compiled-layout dir
+   *  (`<root>/assets/<version>`) so the version-agnostic assets comparison
+   *  has a base to match — that is the layout a self-update produces. */
+  async function useCompiledAssetsLayout() {
+    fixture.assets = join(root, 'assets', '9.9.9')
+    await cp(join(root, 'assets', 'workflows'), join(fixture.assets, 'workflows'), {
+      recursive: true,
+    })
+    await cp(join(root, 'assets', 'manifests'), join(fixture.assets, 'manifests'), {
+      recursive: true,
+    })
+    await cp(
+      resolve('manifests/optional/perturn-inject.yaml'),
+      join(fixture.assets, 'manifests', 'optional', 'perturn-inject.yaml'),
+    )
+  }
+
+  it('re-installs an owned hook whose registration is STALE (still first-party, wrong version)', async () => {
+    const context = contextFor('claude')
+    await useCompiledAssetsLayout()
+    await mkdir(context.nativeHome, { recursive: true })
+    await writeFile(
+      join(context.nativeHome, 'settings.json'),
+      JSON.stringify({
+        hooks: {
+          UserPromptSubmit: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command: `node "${join(root, 'assets', '4.32.0', 'bin', 'harnessed-inject-state.mjs').replace(/\\/g, '/')}"`,
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+
+    const results = await refreshOwnedUpdate(context)
+
+    expect(results).toContainEqual(
+      expect.objectContaining({ id: 'perturn-inject', status: 'updated', verified: true }),
+    )
+    expect(runInstall).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: expect.objectContaining({ name: 'perturn-inject' }) }),
+      expect.anything(),
+      expect.anything(),
+    )
+  })
+
+  it('still skips an optional hook the user never registered', async () => {
+    const context = contextFor('claude')
+    await useCompiledAssetsLayout()
+
+    const results = await refreshOwnedUpdate(context)
+
+    expect(results.map((r) => r.id)).not.toContain('perturn-inject')
+    expect(runInstall).not.toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: expect.objectContaining({ name: 'perturn-inject' }) }),
+      expect.anything(),
+      expect.anything(),
+    )
   })
 })
 

@@ -54,8 +54,25 @@ export function assetNameFor(platform: string, arch: string): string {
 
 export interface ReleaseInfo {
   version: string
+  /** Primary download URL — the `api.github.com` asset endpoint when available
+   *  (same host as the metadata hop), else the `browser_download_url`. */
   assetUrl: string
   shaUrl: string
+  /** Detached-signature URL. The `.sha256.sig` file is a SEPARATE release asset,
+   *  so it has its own id/url — it is NOT `${shaUrl}.sig` (that derivation only
+   *  works for the `browser_download_url` shape). */
+  sigUrl?: string
+  /** Alternate URLs tried when the primary host is unreachable (e.g. a network
+   *  partition where `api.github.com` answers but `github.com` does not). */
+  assetFallbackUrl?: string
+  shaFallbackUrl?: string
+  sigFallbackUrl?: string
+}
+
+/** Net-layer injection seam (tests inject a fake fetch + instant sleep). */
+export interface SelfUpdateNetDeps {
+  fetchImpl?: typeof fetch
+  sleep?: (ms: number) => Promise<void>
 }
 
 export interface SelfUpdateDeps {
@@ -69,8 +86,8 @@ export interface SelfUpdateDeps {
   /** GitHub mode: latest release info, null = unreachable, {error} = actionable
    *  (missing platform asset — publish window / failed matrix job). */
   resolveRelease: () => Promise<ReleaseInfo | { error: string } | null>
-  downloadTo: (url: string, dest: string) => Promise<void>
-  fetchShaText: (url: string) => Promise<string>
+  downloadTo: (url: string, dest: string, fallbackUrl?: string) => Promise<void>
+  fetchShaText: (url: string, fallbackUrl?: string) => Promise<string>
   /** Spawn `<bin> --version`, resolve its stdout. */
   smoke: (bin: string) => Promise<string>
   stateRoot: () => string
@@ -104,6 +121,25 @@ export type SelfUpdateOutcome =
 
 function normalized(p: string): string {
   return p.replace(/\\/g, '/')
+}
+
+/**
+ * Issue #34 — a bare "socket connection was closed" tells the user nothing
+ * actionable. Name the resolved version, the URL that was tried, and the two
+ * ways out that do not depend on GitHub being reachable.
+ */
+function downloadFailureMessage(
+  error: unknown,
+  version: string | null,
+  url: string | null,
+): string {
+  const detail = error instanceof Error ? error.message : String(error)
+  const target = version ? ` for release v${version}` : ''
+  return (
+    `download failed${target}${url ? ` (tried ${url})` : ''}: ${detail} — ` +
+    `if the network blocks GitHub, use the npm channel (\`npm i -g harnessed@latest\`) ` +
+    `or a local build via \`HARNESSED_UPDATE_SOURCE_DIR=<dir> harnessed update\``
+  )
 }
 
 async function sha256File(p: string): Promise<string> {
@@ -142,6 +178,10 @@ export async function runBinarySelfUpdate(
   let targetVersion: string | null = null
   let assetUrl: string | null = null
   let shaUrl: string | null = null
+  let sigUrl: string | null = null
+  let assetFallbackUrl: string | undefined
+  let shaFallbackUrl: string | undefined
+  let sigFallbackUrl: string | undefined
   let sourceAsset: string | null = null
   let sourceSha: string | null = null
   if (deps.sourceDir) {
@@ -173,7 +213,8 @@ export async function runBinarySelfUpdate(
         status: 'error',
         message:
           'could not reach GitHub releases to resolve the latest binary — check the network ' +
-          'or use the npm channel (`npm i -g harnessed@latest`)',
+          'or use the npm channel (`npm i -g harnessed@latest`), or point ' +
+          '`HARNESSED_UPDATE_SOURCE_DIR=<dir>` at a local build and re-run `harnessed update`',
       }
     }
     if ('error' in rel) {
@@ -186,6 +227,10 @@ export async function runBinarySelfUpdate(
     targetVersion = rel.version
     assetUrl = rel.assetUrl
     shaUrl = rel.shaUrl
+    sigUrl = rel.sigUrl ?? null
+    assetFallbackUrl = rel.assetFallbackUrl
+    shaFallbackUrl = rel.shaFallbackUrl
+    sigFallbackUrl = rel.sigFallbackUrl
     if (opts.check) {
       return {
         status: 'checked',
@@ -226,11 +271,11 @@ export async function runBinarySelfUpdate(
     if (deps.sourceDir && sourceAsset) {
       await fsCopyFile(sourceAsset, tempPath)
     } else if (assetUrl) {
-      await deps.downloadTo(assetUrl, tempPath)
+      await deps.downloadTo(assetUrl, tempPath, assetFallbackUrl)
     }
   } catch (e) {
     await unlink(tempPath).catch(() => {})
-    return { status: 'error', message: `download failed: ${(e as Error).message}` }
+    return { status: 'error', message: downloadFailureMessage(e, targetVersion, assetUrl) }
   }
 
   // ── integrity (contractual — a missing .sha256 is a hard error). #12: in
@@ -244,7 +289,7 @@ export async function runBinarySelfUpdate(
   try {
     const shaText = deps.sourceDir
       ? await readFile(sourceSha ?? '', 'utf8')
-      : await deps.fetchShaText(shaUrl ?? '')
+      : await deps.fetchShaText(shaUrl ?? '', shaFallbackUrl)
     const expected = parseShaText(shaText)
     if (!expected) throw new Error(`malformed .sha256 content`)
     const actual = await sha256File(tempPath)
@@ -254,9 +299,13 @@ export async function runBinarySelfUpdate(
       )
     }
     if (!deps.sourceDir) {
-      const sigText = await deps.fetchShaText(`${shaUrl ?? ''}.sig`).catch(() => {
-        throw new Error(`missing .sha256.sig (signature is contractual since 4.32.19)`)
-      })
+      // The `.sha256.sig` is a SEPARATE release asset — resolved as its own
+      // entry (with its own api id) rather than by suffixing the checksum URL.
+      const sigText = await deps
+        .fetchShaText(sigUrl ?? `${shaUrl ?? ''}.sig`, sigFallbackUrl)
+        .catch(() => {
+          throw new Error(`missing .sha256.sig (signature is contractual since 4.32.19)`)
+        })
       if (!verifyShaSignature(shaText, sigText, deps.publicKeyPem)) {
         throw new Error(
           `ed25519 signature over .sha256 did not verify — the release assets may be tampered`,
@@ -503,7 +552,12 @@ export async function runBinaryRollback(
 
 // ── real deps (impure; update.ts wires these) ─────────────────────────────
 
-async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs: number,
+  net: SelfUpdateNetDeps = {},
+  headers: Record<string, string> = {},
+): Promise<Response> {
   // 受限网络:Node 默认**忽略** HTTP_PROXY(实测 2026-10-14,见 proxyDispatcher.ts 的表),
   // 所以在第一次出网前把 EnvHttpProxyAgent 装成全局 dispatcher。幂等、fail-soft,
   // 编译二进制(bun 原生认代理)那条会自己 return,不做任何事。
@@ -511,66 +565,161 @@ async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Respons
   // 全功能共三处出网:本处、`update-check-cache.ts` 的 GitHub API(同样已接),
   // 以及 npm 版本检查 —— 那条走子进程 `npm view`,代理由 npm 自己处理,不经这里。
   await ensureProxyDispatcher()
+  const doFetch = net.fetchImpl ?? fetch
   const ac = new AbortController()
   const timer = setTimeout(() => ac.abort(), timeoutMs)
   try {
-    return await fetch(url, {
+    return await doFetch(url, {
       signal: ac.signal,
-      headers: { 'user-agent': `harnessed/${pkg.version}` },
+      headers: { 'user-agent': `harnessed/${pkg.version}`, ...headers },
+      // GitHub's asset endpoint answers 302 → release-assets.githubusercontent.com
+      // only when the Accept header asks for the raw bytes; without it the API
+      // returns asset METADATA JSON instead of the file.
+      redirect: 'follow',
     })
   } finally {
     clearTimeout(timer)
   }
 }
 
+/** Transient network failures worth one more attempt (issue #34). A reset
+ *  connection or a closed socket is not a verdict on the release. */
+function isTransientNetworkError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException | undefined)?.code
+  if (code && ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE', 'EAI_AGAIN'].includes(code)) {
+    return true
+  }
+  const message = error instanceof Error ? error.message : String(error)
+  return /socket connection was closed|ECONNRESET|ETIMEDOUT|network|terminated|fetch failed/i.test(
+    message,
+  )
+}
+
+const DOWNLOAD_ATTEMPTS = 3
+
+/**
+ * Fetch with exponential backoff, then try the fallback URL when the primary
+ * host is unreachable. `label` names the artifact in the thrown error so the
+ * caller can report which URL failed.
+ */
+async function fetchAsset(
+  url: string,
+  fallbackUrl: string | undefined,
+  timeoutMs: number,
+  net: SelfUpdateNetDeps,
+  label: string,
+): Promise<Response> {
+  const sleep = net.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
+  const attempts: string[] = []
+  let lastError: unknown
+  for (const candidate of [url, fallbackUrl].filter((u): u is string => !!u)) {
+    for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
+      try {
+        const res = await fetchWithTimeout(candidate, timeoutMs, net, {
+          accept: 'application/octet-stream',
+        })
+        if (res.ok) return res
+        lastError = new Error(`HTTP ${res.status} downloading ${candidate}`)
+        // 4xx is a verdict (asset gone) — retrying it is pointless.
+        if (res.status < 500) break
+      } catch (error) {
+        lastError = error
+        if (!isTransientNetworkError(error)) break
+      }
+      attempts.push(candidate)
+      if (attempt < DOWNLOAD_ATTEMPTS) await sleep(250 * attempt)
+    }
+  }
+  throw new Error(
+    `${label} download failed (${attempts.length} attempt(s) over ${[url, fallbackUrl]
+      .filter(Boolean)
+      .join(', ')}): ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+  )
+}
+
 /** GitHub releases/latest → ReleaseInfo for THIS platform's asset (or an
  *  actionable {error} when the asset/sha is missing — OV2), null when
- *  unreachable. */
+ *  unreachable.
+ *
+ *  #34 — the API asset endpoint (`asset.url`, `api.github.com/repos/.../releases/assets/{id}`)
+ *  is the PRIMARY download form: same host as the metadata hop, and it 302s to
+ *  `release-assets.githubusercontent.com`. The `browser_download_url` form points at
+ *  `github.com` — a DIFFERENT host with a different CDN, unreachable in some
+ *  network partitions (China mainland: api.github.com answers, github.com:443
+ *  times out). So: primary = api endpoint, fallback = browser url.
+ *
+ *  The `.sha256.sig` is a SEPARATE release asset with its own id — deriving it as
+ *  `${shaUrl}.sig` is only correct for the `browser_download_url` shape, so it is
+ *  resolved as its own asset entry here. */
 export async function resolveLatestRelease(
   platform: string = process.platform,
   arch: string = process.arch,
+  net: SelfUpdateNetDeps = {},
 ): Promise<ReleaseInfo | { error: string } | null> {
   try {
-    const res = await fetchWithTimeout(RELEASES_LATEST_URL, 10_000)
+    const res = await fetchWithTimeout(RELEASES_LATEST_URL, 10_000, net)
     if (!res.ok) return null
     const body = (await res.json()) as {
       tag_name?: string
-      assets?: { name?: string; browser_download_url?: string }[]
+      assets?: { name?: string; url?: string; browser_download_url?: string }[]
     }
     const version = (body.tag_name ?? '').replace(/^v/, '')
     if (!/^\d+\.\d+\.\d+/.test(version)) return null
     const asset = assetNameFor(platform, arch)
-    const found = body.assets?.find((a) => a.name === asset)
-    const sha = body.assets?.find((a) => a.name === `${asset}.sha256`)
-    if (!found?.browser_download_url) {
+    const pick = (name: string) => body.assets?.find((a) => a.name === name)
+    const found = pick(asset)
+    const sha = pick(`${asset}.sha256`)
+    const sig = pick(`${asset}.sha256.sig`)
+    if (!found?.browser_download_url && !found?.url) {
       return { error: `asset ${asset} not found on release v${version}` }
     }
-    if (!sha?.browser_download_url) {
+    if (!sha?.browser_download_url && !sha?.url) {
       return { error: `asset ${asset}.sha256 not found on release v${version}` }
     }
-    return { version, assetUrl: found.browser_download_url, shaUrl: sha.browser_download_url }
+    // Primary = api endpoint when the release exposes one; the browser url
+    // becomes the fallback (and vice versa when the api url is absent).
+    const pair = (a: { url?: string; browser_download_url?: string } | undefined) => {
+      const api = a?.url
+      const browser = a?.browser_download_url
+      return api && browser
+        ? { primary: api, fallback: browser }
+        : { primary: api ?? browser ?? '', fallback: undefined }
+    }
+    const assetPair = pair(found)
+    const shaPair = pair(sha)
+    const sigPair = pair(sig)
+    return {
+      version,
+      assetUrl: assetPair.primary,
+      shaUrl: shaPair.primary,
+      sigUrl: sigPair.primary || undefined,
+      assetFallbackUrl: assetPair.fallback,
+      shaFallbackUrl: shaPair.fallback,
+      sigFallbackUrl: sigPair.fallback,
+    }
   } catch {
     return null
   }
 }
 
-export function realSelfUpdateDeps(context: HostInstallContext): SelfUpdateDeps {
+export function realSelfUpdateDeps(
+  context: HostInstallContext,
+  net: SelfUpdateNetDeps = {},
+): SelfUpdateDeps {
   return {
     execPath: process.execPath,
     platform: process.platform,
     arch: process.arch,
     currentVersion: pkg.version,
     sourceDir: process.env.HARNESSED_UPDATE_SOURCE_DIR?.trim() || null,
-    resolveRelease: () => resolveLatestRelease(),
-    downloadTo: async (url, dest) => {
-      const res = await fetchWithTimeout(url, 120_000)
-      if (!res.ok) throw new Error(`HTTP ${res.status} downloading ${url}`)
+    resolveRelease: () => resolveLatestRelease(process.platform, process.arch, net),
+    downloadTo: async (url, dest, fallbackUrl) => {
+      const res = await fetchAsset(url, fallbackUrl, 120_000, net, 'binary')
       const buf = Buffer.from(await res.arrayBuffer())
       await writeFile(dest, buf)
     },
-    fetchShaText: async (url) => {
-      const res = await fetchWithTimeout(url, 30_000)
-      if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`)
+    fetchShaText: async (url, fallbackUrl) => {
+      const res = await fetchAsset(url, fallbackUrl, 30_000, net, 'checksum')
       return res.text()
     },
     smoke: async (bin) => {

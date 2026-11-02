@@ -61,8 +61,9 @@ vi.mock('../../src/cli/lib/settingsTransactionLock.js', () => ({
   }),
 }))
 
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import * as fsp from 'node:fs/promises'
-import { homedir } from 'node:os'
+import { homedir, tmpdir } from 'node:os'
 import { isAbsolute, join } from 'node:path'
 import * as clack from '@clack/prompts'
 import { installCcHookAdd } from '../../src/installers/ccHookAdd.js'
@@ -649,6 +650,48 @@ describe('cc-hook-add installer', () => {
       })
     } finally {
       cap.restore()
+    }
+  })
+
+  // issue #36 — a compiled-binary self-update leaves the OLD assets version in
+  // settings.json. The stale registration is still OURS (same first-party
+  // script, older version) and must be collapsed into ONE current entry —
+  // otherwise it survives as a duplicate pointing at a deleted directory and
+  // errors MODULE_NOT_FOUND on every prompt.
+  it('install — collapses a STALE versioned-assets registration into ONE desired entry (issue #36)', async () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'harnessed-issue36-'))
+    const assetsRoot = join(tmp, 'assets', '9.9.9')
+    mkdirSync(join(assetsRoot, 'bin'), { recursive: true })
+    writeFileSync(join(assetsRoot, 'bin', 'harnessed-stop-hook.mjs'), '// fixture')
+    vi.stubEnv('HARNESSED_ASSETS_OVERRIDE', assetsRoot)
+    for (const k of Object.keys(fakeFs)) delete fakeFs[k]
+    const stale = `node "${join(tmp, 'assets', '4.32.0', 'bin', 'harnessed-stop-hook.mjs').replace(/\\/g, '/')}"`
+    fakeFs[SETTINGS_PATH] = JSON.stringify({
+      hooks: { Stop: [{ hooks: [{ type: 'command', command: stale }] }] },
+    })
+    const manifest = ccHookManifest()
+    if (manifest.spec.install.method !== 'cc-hook-add') throw new Error('invalid fixture')
+    manifest.spec.install.hook_event = 'Stop'
+    manifest.spec.install.hook_matcher = undefined
+    manifest.spec.install.hook_command = 'node bin/harnessed-stop-hook.mjs'
+    const cap = captureStdout()
+    try {
+      const result = await installCcHookAdd({
+        manifest,
+        opts: baseOpts,
+        level: 'L3',
+        cwd: process.cwd(),
+      })
+      expect(result).toMatchObject({ ok: true })
+      const written = JSON.parse(fakeFs[SETTINGS_PATH] ?? '{}')
+      expect(written.hooks.Stop).toHaveLength(1)
+      expect(written.hooks.Stop[0].hooks[0].command).toBe(
+        `node "${assetsRoot.replace(/\\/g, '/')}/bin/harnessed-stop-hook.mjs"`,
+      )
+    } finally {
+      cap.restore()
+      vi.unstubAllEnvs()
+      rmSync(tmp, { recursive: true, force: true })
     }
   })
 

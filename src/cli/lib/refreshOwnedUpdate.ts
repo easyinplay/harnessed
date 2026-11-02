@@ -3,6 +3,7 @@ import { join, resolve } from 'node:path'
 import { getLocale } from '../../i18n/index.js'
 import { runInstall } from '../../installers/index.js'
 import { resolveComponentPlan } from '../../installers/lib/componentPlan.js'
+import { harnessedHookRegistrations } from '../../installers/lib/harnessedHookTeardown.js'
 import { isAlreadyInstalled } from '../../installers/lib/idempotent.js'
 import type { InstallOpts, Manifest } from '../../installers/lib/types.js'
 import { validateManifestFile } from '../../manifest/validate.js'
@@ -116,6 +117,42 @@ async function reminderEnabled(context: HostInstallContext): Promise<boolean> {
   }
 }
 
+/** Does the host settings.json still carry a FIRST-PARTY registration of this
+ *  hook — in any form, including the stale `assets/<oldVersion>/…` shape a
+ *  self-update leaves behind (issue #36)?
+ *
+ *  The stale shape makes the idempotency probe fail (the recorded command no
+ *  longer matches the current one), so the refresh used to SKIP the hook and
+ *  the broken registration survived every update. The EVENT discriminates two
+ *  hooks that share a script (per-turn injection vs its cache invalidation). */
+async function hasFirstPartyRegistration(
+  context: HostInstallContext,
+  hookEvent: string,
+  hookCommand: string,
+): Promise<boolean> {
+  let raw: string
+  try {
+    raw = await readFile(join(context.nativeHome, 'settings.json'), 'utf8')
+  } catch {
+    return false // no settings.json (or unreadable) → nothing registered
+  }
+  let parsed: { hooks?: Record<string, unknown> }
+  try {
+    parsed = JSON.parse(raw) as typeof parsed
+  } catch {
+    return false
+  }
+  const hooks = parsed.hooks
+  if (!hooks || typeof hooks !== 'object') return false
+  try {
+    return harnessedHookRegistrations(hooks, hookCommand).some(
+      (registration) => registration.event === hookEvent,
+    )
+  } catch {
+    return false
+  }
+}
+
 export async function refreshOwnedUpdate(
   context: HostInstallContext,
 ): Promise<UpdateComponentResult[]> {
@@ -175,9 +212,12 @@ export async function refreshOwnedUpdate(
       )
         throw new Error(`Invalid first-party hook: ${name}`)
       const plan = resolveComponentPlan(validated.manifest, context, 'install')
-      if (
-        name !== 'update-reminder' &&
-        !(await isAlreadyInstalled(
+      if (name !== 'update-reminder') {
+        // issue #36 — skip ONLY when there is no first-party registration of
+        // this hook at all (the user never opted in). A STALE registration
+        // (still ours, wrong version) must be re-installed so the migration
+        // replaces it instead of leaving it broken.
+        const installed = await isAlreadyInstalled(
           {
             manifest: structuredClone(plan.manifest) as Manifest,
             opts,
@@ -186,9 +226,16 @@ export async function refreshOwnedUpdate(
             hostContext: context,
           },
           { honorUpdateFlag: false },
-        ))
-      )
-        continue
+        )
+        if (!installed) {
+          const registered = await hasFirstPartyRegistration(
+            context,
+            validated.manifest.spec.install.hook_event,
+            validated.manifest.spec.install.hook_command,
+          )
+          if (!registered) continue
+        }
+      }
       const result = await runInstall(validated.manifest, opts, context)
       results.push(
         createUpdateComponent({

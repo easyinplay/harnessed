@@ -87,6 +87,127 @@ export function harnessedHookIdentity(raw: string): HarnessedHookId | null {
   return null
 }
 
+// ── issue #36 — version-agnostic first-party registration identity ──────────
+//
+// A compiled-binary self-update unpacks a NEW `<stateRoot>/assets/<version>`
+// and the OLD registration survives in settings.json pointing at
+// `…/assets/<oldVersion>/bin/harnessed-<id>.mjs`. That entry is still OURS —
+// same first-party script, older version — but the shape-based matcher in
+// hookEntry.ts compares against the CURRENT resolved command and misses it, so
+// the stale entry survives next to the fresh one (duplicate) and gc deletes the
+// directory it points at (MODULE_NOT_FOUND on every prompt).
+//
+// The helpers below recognise a registration by the SCRIPT it points at,
+// version-agnostically: the trust base is the assets root, and the version
+// segment between `assets/` and the script is not part of the identity.
+
+/** Package-relative script token of a command (`node <path>` / `bun <path>`),
+ *  independent of the script's basename. */
+function commandScriptToken(raw: string): string | null {
+  const match = raw.match(/^\s*(?:node|bun)\s+(?:"([^"]+)"|'([^']+)'|(\S+))(?:\s|$)/)
+  return match?.[1] ?? match?.[2] ?? match?.[3] ?? null
+}
+
+/** The subcommand a compiled-transport command dispatches on, when it is one
+ *  of the known first-party hook identities (`"<binary>" stop-hook`). */
+function commandTransportSubcommand(raw: string): string | null {
+  const match = raw.match(/^\s*(?:"([^"]+)"|'([^']+)'|(\S+))\s+(\S+)/)
+  const sub = match?.[4]
+  return sub && (COMPILED_HOOK_IDENTITIES as readonly string[]).includes(sub) ? sub : null
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Is `path` a trusted form of the package-relative script `rel`?
+ *  Trusted forms:
+ *   - the package-relative token itself (`bin/harnessed-stop-hook.mjs`),
+ *   - the CURRENT absolute form (`<assetsRoot>/bin/harnessed-stop-hook.mjs`),
+ *   - a STALE absolute form under the same assets base with ANY version
+ *     (`<assetsRoot>/assets/<oldVersion>/bin/harnessed-stop-hook.mjs`).
+ *  The version-agnostic comparison is the issue #36 shape; a third-party path
+ *  under a DIFFERENT assets base never matches it. */
+function isTrustedScriptFile(path: string, rel: string, assetsRoot: string): boolean {
+  const normalized = path.replace(/\\/g, '/')
+  const relNormalized = rel.replace(/\\/g, '/')
+  if (normalized === relNormalized) return true
+  const root = assetsRoot.replace(/\\/g, '/').replace(/\/+$/, '')
+  const resolved = `${root}/${relNormalized}`
+  if (pathKey(normalized) === pathKey(resolved)) return true
+  const versioned = new RegExp(`^(.+/assets/)[^/]+(/${escapeRegExp(relNormalized)})$`)
+  const candidate = pathKey(normalized).match(versioned)
+  const captured = pathKey(resolved).match(versioned)
+  return (
+    candidate !== null &&
+    captured !== null &&
+    candidate[1] === captured[1] &&
+    candidate[2] === captured[2]
+  )
+}
+
+/** The package-relative script token that identifies a hook registration:
+ *  the script form's own token (`bin/harnessed-stop-hook.mjs`,
+ *  `scripts/dashboard.mjs`) or `bin/harnessed-<subcommand>.mjs` for the
+ *  compiled transport. */
+function referenceScriptToken(hookCommand: string): string | null {
+  const script = commandScriptToken(hookCommand)
+  if (script) {
+    const normalized = script.replace(/\\/g, '/')
+    return ABSOLUTE_RE.test(normalized) ? null : normalized
+  }
+  const sub = commandTransportSubcommand(hookCommand)
+  return sub ? `bin/harnessed-${sub}.mjs` : null
+}
+
+/** Does `recorded` point at the SAME first-party hook as `reference`? */
+function isRegistrationOf(recorded: string, reference: string, assetsRoot: string): boolean {
+  const script = commandScriptToken(recorded)
+  if (script) return isTrustedScriptFile(script, reference, assetsRoot)
+  const sub = commandTransportSubcommand(recorded)
+  if (!sub) return false
+  if (`bin/harnessed-${sub}.mjs` !== reference) return false
+  // A vendor binary with the same subcommand is NOT our registration.
+  return harnessedHookIdentity(recorded) === sub
+}
+
+/** Every FIRST-PARTY registration of one hook in a settings `hooks` map.
+ *
+ * `hookCommand` is the hook's OWN registration command (the manifest's
+ * `hook_command`, e.g. `node bin/harnessed-stop-hook.mjs`); it defines the
+ * hook's identity. A recorded command counts as a registration of that hook
+ * when it points at the SAME first-party script in ANY recorded form:
+ *   - the package-relative form (`node bin/harnessed-stop-hook.mjs`),
+ *   - the current absolute form (`node "<assetsRoot>/bin/harnessed-stop-hook.mjs"`),
+ *   - a STALE absolute form under the same assets base with ANY version
+ *     (`node "<assetsRoot>/assets/4.32.0/bin/harnessed-stop-hook.mjs"`) — the
+ *     issue #36 shape a shape-based matcher misses,
+ *   - the compiled transport (`"<our binary>" stop-hook`, `harnessed stop-hook`).
+ *
+ * Third-party lookalikes (a different assets base, a vendor binary, a
+ * non-harnessed script) never match. The EVENT is returned alongside the
+ * command: two hooks may share a script (per-turn injection vs its cache
+ * invalidation) and only the event tells them apart. */
+export function harnessedHookRegistrations(
+  hooks: Record<string, unknown>,
+  hookCommand: string,
+  deps?: { assetsRoot?: () => string },
+): { event: string; command: string }[] {
+  const reference = referenceScriptToken(hookCommand)
+  if (!reference) return []
+  const assetsRoot = (deps?.assetsRoot ?? getAssetsRoot)()
+  const out: { event: string; command: string }[] = []
+  for (const [event, arr] of Object.entries(hooks)) {
+    if (!Array.isArray(arr)) continue
+    for (const entry of arr) {
+      for (const command of entryCommands(entry as AnyHookEntry)) {
+        if (isRegistrationOf(command, reference, assetsRoot)) out.push({ event, command })
+      }
+    }
+  }
+  return out
+}
+
 /** Filesystem path the hook points at (script for npm form, binary for compiled),
  *  for staleness (existence) checks. Only reached AFTER harnessedHookIdentity has
  *  confirmed ownership, so it can be lenient. Quoted paths may contain spaces

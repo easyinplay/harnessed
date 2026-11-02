@@ -156,6 +156,10 @@ function mergeStepBResults(first: StepBResult, next: StepBResult): void {
   first.keptExisting = (first.keptExisting ?? [])
     .filter((entry) => !replaced.has(entry.name))
     .concat(next.keptExisting ?? [])
+  // The next pass owns the surviving failure entries, so its keywords win —
+  // without this a second-pass failure loses its classification (e.g. a lock
+  // contention would silently count as a fatal failure again).
+  first.failureKeywords = { ...first.failureKeywords, ...next.failureKeywords }
   first.componentTypes = { ...first.componentTypes, ...next.componentTypes }
   first.elapsedMs += next.elapsedMs
 }
@@ -893,17 +897,36 @@ export function registerSetup(program: Command): void {
       // v4.15.1 — honest failure trailer: a long grouped table scrolls the
       // failed rows away; restate the count + retry path right before the
       // "setup complete" line so a failed setup never reads as fully green.
-      const failedCount = b.failed.length + optionalFailed + setupFailures.length
+      // Lock contention is NOT a broken install: the component was never
+      // touched, the shared ownership lock was just busy. Re-running finishes
+      // it, so it must not count toward the fatal failures.
+      const lockContentionFailures = b.failed.filter(
+        (failure) =>
+          b.failureKeywords?.[failure.split(': ', 1)[0] ?? failure] === 'lock-contention',
+      )
+      const fatalBaseFailures = b.failed.length - lockContentionFailures.length
+      const failedCount = fatalBaseFailures + optionalFailed + setupFailures.length
       if (failedCount > 0) {
         console.error(
           `\n${failedCount} component(s) failed — see the notes above; re-run \`harnessed setup\` to retry, or run \`harnessed doctor\` for environment diagnostics.`,
+        )
+      }
+      if (lockContentionFailures.length > 0) {
+        console.warn(
+          `\n${lockContentionFailures.length} component(s) hit install lock contention — re-run \`harnessed setup\` to finish them.`,
         )
       }
       const configured =
         b.installed.length + b.alreadyInstalled.length + (b.keptExisting?.length ?? 0)
       if (failedCount > 0) {
         console.error(
-          `setup incomplete - ${skillsInstalled} workflow(s) installed; ${configured} base component(s) configured; ${failedCount} component(s) failed (${b.failed.length} base, ${optionalFailed} optional, ${setupFailures.length} setup).`,
+          `setup incomplete - ${skillsInstalled} workflow(s) installed; ${configured} base component(s) configured; ${failedCount} component(s) failed (${fatalBaseFailures} base, ${optionalFailed} optional, ${setupFailures.length} setup).`,
+        )
+      } else if (lockContentionFailures.length > 0) {
+        // Retryable, not fatal — the components were never touched, so the
+        // setup is unfinished but a plain re-run completes it.
+        console.warn(
+          `setup finished with ${lockContentionFailures.length} component(s) awaiting a re-run — ${configured} base component(s) configured.`,
         )
       } else {
         console.log(

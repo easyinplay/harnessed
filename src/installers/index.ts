@@ -24,6 +24,7 @@ import { installCcHookAdd } from './ccHookAdd.js'
 import { installCcPluginMarketplace } from './ccPluginMarketplace.js'
 import { installGitCloneWithSetup } from './gitCloneWithSetup.js'
 import { resolveComponentPlan } from './lib/componentPlan.js'
+import { isLockContention } from './lib/installOwnershipLock.js'
 import type { Installer, InstallOpts, InstallResult, Level, Manifest } from './lib/types.js'
 import { installMcpHttpAdd } from './mcpHttpAdd.js'
 import { installMcpStdioAdd } from './mcpStdioAdd.js'
@@ -109,16 +110,22 @@ export async function runInstall(
     })
   } catch (e) {
     const code = (e as NodeJS.ErrnoException).code
+    // Lock contention is not a broken install: the component was never
+    // touched, the shared ownership lock was just busy. It gets its own
+    // keyword so `setup` can report it as retryable instead of fatal.
+    const contention = isLockContention(e)
     return {
       ok: false,
       phase: 'spawn',
       error: {
         file: manifest.metadata.name,
         path: '/spec/install',
-        message: `installer threw unexpectedly${code ? ` (${code})` : ''}: ${(e as Error).message ?? String(e)}`,
+        message: contention
+          ? `install lock contention${code ? ` (${code})` : ''}: ${(e as Error).message ?? String(e)} — retryable, re-run to install this component`
+          : `installer threw unexpectedly${code ? ` (${code})` : ''}: ${(e as Error).message ?? String(e)}`,
         line: null,
         column: null,
-        keyword: 'installer-exception',
+        keyword: contention ? 'lock-contention' : 'installer-exception',
       },
     }
   }

@@ -69,12 +69,19 @@ vi.mock('../../src/cli/gc.js', () => ({
   registerGc: vi.fn(),
   gcCompiledArtifacts: vi.fn(async () => ({ removed: [], kept: [] })),
 }))
+// issue #35 — the compiled update hands the owned-state refresh to the new
+// binary (it owns the new assets). The handover itself is unit-tested in
+// tests/cli/lib/ownedRefresh.test.ts; here it must simply be requested.
+vi.mock('../../src/cli/lib/ownedRefresh.js', () => ({
+  spawnOwnedRefresh: vi.fn(async () => ({ ok: true, exitCode: 0 })),
+}))
 
 import { execFileSync, spawn } from 'node:child_process'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { gcCompiledArtifacts } from '../../src/cli/gc.js'
 import { installBaseProfile } from '../../src/cli/install-base.js'
+import { spawnOwnedRefresh } from '../../src/cli/lib/ownedRefresh.js'
 import { preparePackageUpdate } from '../../src/cli/lib/packageUpdateTarget.js'
 import {
   finalizeBinarySelfUpdate,
@@ -775,8 +782,13 @@ describe('harnessed update', () => {
       expect(stdout).toBe(
         '[harnessed] updated 4.43.0 → 4.49.1.\n' +
           '  previous binary kept at: /state/bin-backup/4.43.0\n' +
+          '[harnessed] refreshed workflow skills + hooks for 4.49.1 (owned state re-synced).\n' +
           `${updateHint}\n`,
       )
+      // issue #35 — the refresh must be handed to the binary that now sits at
+      // execPath (the new one), because only it owns the new assets.
+      expect(spawnOwnedRefresh).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(spawnOwnedRefresh).mock.calls[0]?.[0]).toBe(process.execPath)
       expect(fetchLatestNpmVersion).not.toHaveBeenCalled()
       expect(execFileSync).not.toHaveBeenCalled()
     })

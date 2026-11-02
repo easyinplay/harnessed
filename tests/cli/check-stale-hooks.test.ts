@@ -1,8 +1,9 @@
 // issue #8 — doctor stale-hook self-heal probe.
 
-import { homedir } from 'node:os'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { checkStaleHooks } from '../../src/cli/lib/check-stale-hooks.js'
 
 const P = '/fake/settings.json'
@@ -149,5 +150,35 @@ describe('checkStaleHooks', () => {
       () => false,
     )
     expect(r.status).toBe('pass')
+  })
+
+  // issue #36 — a stale VERSIONED assets path is a registration harnessed still
+  // ships: re-registering it (setup/update) fixes it, uninstalling does not.
+  // The trust base is the current assets root, so the module is re-imported
+  // with the assets root pointed at a compiled-layout fixture dir.
+  it('versioned-assets stale path → fix points at re-registration, NOT uninstall', async () => {
+    const tmp = await mkdtemp(join(tmpdir(), 'harnessed-issue36-'))
+    const assetsRoot = join(tmp, 'assets', '9.9.9')
+    await mkdir(join(assetsRoot, 'bin'), { recursive: true })
+    await writeFile(join(assetsRoot, 'bin', 'harnessed-stop-hook.mjs'), '// fixture')
+    vi.stubEnv('HARNESSED_ASSETS_OVERRIDE', assetsRoot)
+    vi.resetModules()
+    try {
+      const { checkStaleHooks: fresh } = await import('../../src/cli/lib/check-stale-hooks.js')
+      const stale = `node "${join(tmp, 'assets', '4.32.0', 'bin', 'harnessed-stop-hook.mjs').replace(/\\/g, '/')}"`
+      const r = fresh({
+        settingsPath: P,
+        readText: () =>
+          JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: stale }] }] } }),
+        exists: () => false,
+      })
+      expect(r.status).toBe('warn')
+      expect(r.fix).toContain('harnessed setup')
+      expect(r.fix).not.toContain('harnessed uninstall')
+      expect(r.fix).toContain(P)
+    } finally {
+      vi.unstubAllEnvs()
+      await rm(tmp, { recursive: true, force: true })
+    }
   })
 })

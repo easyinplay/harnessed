@@ -29,9 +29,11 @@ import { backup } from './lib/backup.js'
 import { confirmAt } from './lib/confirm.js'
 import { renderDiff } from './lib/diff.js'
 import { err } from './lib/err.js'
+import { harnessedHookRegistrations } from './lib/harnessedHookTeardown.js'
 import {
   type AnyHookEntry,
   desiredHookEntry,
+  entryCommands,
   entryMatchesRegistration,
   hookScriptMarker,
   isDesiredHookEntry,
@@ -174,14 +176,24 @@ async function prepareHookSettings(
       },
     }
   }
-  const ours = arr.filter((entry) =>
-    entryMatchesRegistration(entry, install.hook_command, resolvedCmd, marker),
+  // issue #36 — a compiled-binary self-update leaves the OLD assets version in
+  // settings.json. That registration is still OURS (same first-party script,
+  // older version) but the shape-based matcher compares against the CURRENT
+  // resolved command and misses it, so it survived as a duplicate pointing at
+  // a directory gc had already swept. Count it as ours → the single desired
+  // entry replaces it.
+  const firstParty = new Set(
+    harnessedHookRegistrations({ [install.hook_event]: arr }, install.hook_command, {
+      assetsRoot: cmdDeps.assetsRoot,
+    }).map((registration) => registration.command),
   )
+  const isOurs = (entry: AnyHookEntry): boolean =>
+    entryMatchesRegistration(entry, install.hook_command, resolvedCmd, marker) ||
+    entryCommands(entry).some((command) => firstParty.has(command))
+  const ours = arr.filter(isOurs)
   const desired =
     ours.length === 1 && isDesiredHookEntry(ours[0] ?? {}, install.hook_matcher, resolvedCmd)
-  const others = arr.filter(
-    (entry) => !entryMatchesRegistration(entry, install.hook_command, resolvedCmd, marker),
-  )
+  const others = arr.filter((entry) => !isOurs(entry))
   settings.hooks[install.hook_event] = [
     ...others,
     desiredHookEntry(install.hook_matcher, resolvedCmd),

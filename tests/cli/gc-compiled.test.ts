@@ -53,6 +53,7 @@ describe('gcCompiledArtifacts', () => {
       keepVersions: ['1.0.0', '2.0.0'],
       stateRoot: w.stateRoot,
       execPath: w.execPath,
+      settingsPath: null,
     })
     expect(existsSync(join(w.stateRoot, 'assets', '0.9.0'))).toBe(false)
     expect(existsSync(join(w.stateRoot, 'assets', '1.0.0'))).toBe(true)
@@ -74,6 +75,7 @@ describe('gcCompiledArtifacts', () => {
       stateRoot: w.stateRoot,
       execPath: w.execPath,
       dryRun: true,
+      settingsPath: null,
     })
     expect(r.removed.length).toBeGreaterThanOrEqual(3)
     expect(existsSync(join(w.stateRoot, 'assets', '0.9.0'))).toBe(true)
@@ -82,7 +84,60 @@ describe('gcCompiledArtifacts', () => {
 
   it('missing dirs → no-op (fail-soft), empty result', async () => {
     const stateRoot = join(mkdtempSync(join(tmpdir(), 'gc-empty-')), 'nope')
-    const r = await gcCompiledArtifacts({ keepVersions: ['1.0.0'], stateRoot, execPath: null })
+    const r = await gcCompiledArtifacts({
+      keepVersions: ['1.0.0'],
+      stateRoot,
+      execPath: null,
+      settingsPath: null,
+    })
     expect(r.removed).toEqual([])
+  })
+
+  // issue #36 — a hook registration in settings.json still points at
+  // `assets/<oldVersion>/…`. Deleting that directory turns a recoverable
+  // registration into MODULE_NOT_FOUND on every prompt, so gc must keep every
+  // version the host settings still reference.
+  it('keeps an assets/<version> dir still referenced by settings.json, sweeps the others', async () => {
+    const w = world()
+    for (const v of ['4.32.0', '4.31.0']) {
+      mkdirSync(join(w.stateRoot, 'assets', v), { recursive: true })
+    }
+    const settingsPath = join(mkdtempSync(join(tmpdir(), 'gc-settings-')), 'settings.json')
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        hooks: {
+          Stop: [
+            {
+              hooks: [
+                {
+                  type: 'command',
+                  command:
+                    'node "C:/Users/x/.claude/harnessed/assets/4.32.0/bin/harnessed-stop-hook.mjs"',
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    )
+    const r = await gcCompiledArtifacts({
+      keepVersions: [],
+      stateRoot: w.stateRoot,
+      settingsPath,
+    })
+    expect(existsSync(join(w.stateRoot, 'assets', '4.32.0'))).toBe(true)
+    expect(existsSync(join(w.stateRoot, 'assets', '4.31.0'))).toBe(false)
+    expect(r.removed).toContain(join(w.stateRoot, 'assets', '4.31.0'))
+    expect(r.kept).toContain(join(w.stateRoot, 'assets', '4.32.0'))
+  })
+
+  it('an unreadable or malformed settings.json never breaks gc (fail-soft)', async () => {
+    const w = world()
+    const settingsPath = join(mkdtempSync(join(tmpdir(), 'gc-broken-')), 'settings.json')
+    writeFileSync(settingsPath, '{not json')
+    const r = await gcCompiledArtifacts({ keepVersions: [], stateRoot: w.stateRoot, settingsPath })
+    expect(existsSync(join(w.stateRoot, 'assets', '0.9.0'))).toBe(false)
+    expect(r.removed.length).toBeGreaterThanOrEqual(1)
   })
 })

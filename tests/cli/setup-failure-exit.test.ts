@@ -1342,3 +1342,98 @@ describe('setup L4 rescue result through registerSetup', () => {
     expect(checkGuardConflict).toHaveBeenCalledOnce()
   })
 })
+
+describe('setup install lock contention through registerSetup', () => {
+  it('keeps a lock-contention base failure retryable and exits zero', async () => {
+    vi.mocked(runInstall).mockResolvedValue({
+      ok: false,
+      phase: 'spawn',
+      error: {
+        message:
+          'install lock contention (ELOCKED): Lock file is already being held — retryable, re-run to install this component',
+        keyword: 'lock-contention',
+      },
+    } as never)
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 0 })
+
+    const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
+    expect(result.failed).toEqual([
+      'gstack: install lock contention (ELOCKED): Lock file is already being held — retryable, re-run to install this component',
+    ])
+    expect(result.failureKeywords).toEqual({ gstack: 'lock-contention' })
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('hit install lock contention'),
+    )
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('re-run `harnessed setup` to finish them'),
+    )
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('component(s) failed'))
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+  })
+
+  it('still exits one when a genuine failure accompanies the lock contention', async () => {
+    vi.mocked(readdir).mockImplementation(async (path, options?: unknown) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (options && typeof options === 'object' && 'withFileTypes' in options) {
+        return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+          name,
+          isDirectory: () => false,
+        })) as never
+      }
+      return (
+        normalized.endsWith('/workflows')
+          ? ['demo']
+          : normalized.endsWith('/skill-packs')
+            ? ['contended.yaml', 'broken.yaml']
+            : []
+      ) as never
+    })
+    vi.spyOn(manifestValidation, 'validateManifestFile').mockImplementation(
+      (_source, path) =>
+        ({
+          ok: true,
+          manifest: {
+            metadata: { name: String(path).split(/[\\/]/).at(-1)?.replace('.yaml', '') },
+            spec: { install: { method: 'git-clone-with-setup' } },
+          },
+        }) as never,
+    )
+    vi.mocked(runInstall).mockImplementation(async (manifest) => {
+      const name = manifest.metadata.name
+      return {
+        ok: false,
+        phase: 'spawn',
+        error: {
+          message: name === 'contended' ? 'lock contention' : 'npm install exited 1',
+          keyword: name === 'contended' ? 'lock-contention' : 'spawn-failed',
+        },
+      } as never
+    })
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 1 })
+
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('hit install lock contention'),
+    )
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+  })
+
+  it('keeps a genuine base failure fatal on its own', async () => {
+    vi.mocked(runInstall).mockResolvedValue({
+      ok: false,
+      phase: 'spawn',
+      error: { message: 'npm install exited 1', keyword: 'spawn-failed' },
+    } as never)
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 1 })
+
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('setup incomplete'))
+    expect(console.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('hit install lock contention'),
+    )
+  })
+})
