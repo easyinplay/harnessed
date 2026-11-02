@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.8] - 2026-11-02
+
 ### Fixed
 
 - Compiled binary self-update now downloads the release asset from the `api.github.com` asset endpoint (the same host as the metadata hop) and keeps the `browser_download_url` as a fallback, resolves the `.sha256.sig` as its own release asset, retries transient download failures, and reports the release, the attempted URL and both escapes (`npm i -g harnessed@latest`, `HARNESSED_UPDATE_SOURCE_DIR`).
