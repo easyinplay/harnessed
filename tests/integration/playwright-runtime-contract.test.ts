@@ -121,7 +121,7 @@ describe('Playwright runtime manifest contract', () => {
     )
   })
 
-  it('provides a schema-valid pinned L4 runtime without shared-cache removal', () => {
+  it('provides a schema-valid version-ranged L4 runtime without shared-cache removal', () => {
     const { metadata, spec } = loadManifest('playwright-cli.yaml')
     expect(metadata.name).toBe('playwright-cli')
     expect(spec).toMatchObject({
@@ -131,8 +131,8 @@ describe('Playwright runtime manifest contract', () => {
       install_type: 'npm',
       install: {
         method: 'npm-cli',
-        npm_version: '0.1.22',
-        cmd: 'npm install -g @playwright/cli@0.1.22 && playwright-cli install-browser chromium',
+        npm_version: '^0.1.22',
+        cmd: 'npm install -g "@playwright/cli@^0.1.22" && playwright-cli install-browser chromium',
       },
       uninstall: { cmd: 'npm uninstall -g @playwright/cli' },
     })
@@ -140,7 +140,7 @@ describe('Playwright runtime manifest contract', () => {
     expect(spec.verify.timeout_ms).toBeGreaterThanOrEqual(60_000)
   })
 
-  it('accepts the exact installed version without launching during idempotence', () => {
+  it('accepts an in-range installed version without launching during idempotence', () => {
     const cmd = loadManifest('playwright-cli.yaml').spec.install.idempotent_check
     expect(cmd).toBeTypeOf('string')
     const result = run(cmd ?? '', fixture())
@@ -264,8 +264,8 @@ describe('Playwright runtime manifest contract', () => {
 
   it.each([
     '0.1.21',
-    '0.1.220',
     '0.1.22-beta',
+    '0.2.0',
   ])('rejects version %s before browser metadata checks', (version) => {
     const spec = loadManifest('playwright-cli.yaml').spec
     for (const cmd of [spec.verify.cmd, spec.install.idempotent_check]) {
@@ -275,4 +275,16 @@ describe('Playwright runtime manifest contract', () => {
       expect(result.calls.map((call) => call.command)).toEqual(['--version'])
     }
   })
+
+  it.each(['0.1.23', '0.1.220'])(
+    'accepts the newer 0.1.x patch %s — the range is the contract, not one exact version',
+    (version) => {
+      const spec = loadManifest('playwright-cli.yaml').spec
+      for (const cmd of [spec.verify.cmd, spec.install.idempotent_check]) {
+        expect(cmd).toBeTypeOf('string')
+        const result = run(cmd ?? '', fixture(), { STUB_VERSION: version })
+        expect(result.status, result.stderr).toBe(0)
+      }
+    },
+  )
 })

@@ -95,11 +95,23 @@ describe('manifest verification through the installer shell', () => {
 
   it.each(
     runtimes.flatMap((runtime) =>
-      ['posix', 'windows'].map((pathStyle) => ({ runtime, pathStyle })),
+      ['posix', 'windows'].flatMap((pathStyle) =>
+        // The manifest verifies playwright-cli by CAPABILITY, not by an exact
+        // version: a host that already carries a newer 0.1.x patch must not turn
+        // the component red. The floor (0.1.22) still rejects older minors.
+        [
+          { cliVersion: '0.1.22', expected: 'pass' },
+          { cliVersion: '0.1.23', expected: 'pass' },
+          { cliVersion: '0.1.21', expected: 'fail' },
+          { cliVersion: '0.2.0', expected: 'fail' },
+        ].map((versionCase) => ({ runtime, pathStyle, ...versionCase })),
+      ),
     ),
-  )('verifies Playwright metadata without a daemon ($runtime, $pathStyle paths)', async ({
+  )('verifies Playwright metadata without a daemon ($runtime, $pathStyle paths, $cliVersion)', async ({
     runtime,
     pathStyle,
+    cliVersion,
+    expected,
   }) => {
     const ctx = fixture('playwright-cli')
     const script = join(ctx.cwd, 'playwright-stub.cjs')
@@ -120,7 +132,7 @@ const args = process.argv.slice(2);
 const command = args[0];
 fs.appendFileSync(path.join(__dirname, 'calls.jsonl'), JSON.stringify({command, args, noUpdateNotifier: process.env.NO_UPDATE_NOTIFIER}) + '\\n');
 if (args.some(arg => ['open', 'run-code', 'close'].includes(arg))) process.exit(91);
-if (command === '--version') console.log('0.1.22');
+if (command === '--version') console.log('${cliVersion}');
 else if (JSON.stringify(args) === JSON.stringify(['install-browser', 'chromium', '--dry-run']))
   console.log('Chrome for Testing 155.0 (playwright chromium v1247)\\n  Install location: /cache/chromium-1247');
 else if (JSON.stringify(args) === JSON.stringify(['install-browser', 'chromium', '--list']))
@@ -139,6 +151,10 @@ else { console.error('Browser/daemon startup is forbidden'); process.exitCode = 
     )
     chmodSync(shim, 0o755)
     const result = await verify(ctx, runtime)
+    if (expected === 'fail') {
+      expect(result, JSON.stringify(result)).not.toBeNull()
+      return
+    }
     expect(result, JSON.stringify(result)).toBeNull()
     const calls = readFileSync(join(ctx.cwd, 'calls.jsonl'), 'utf8')
       .trim()

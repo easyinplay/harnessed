@@ -251,7 +251,8 @@ describe('installNpmCli', () => {
     const install = c.manifest.spec.install
     if (install.method !== 'npm-cli') throw new Error('expected the real npm-cli manifest')
     const verify = c.manifest.spec.verify.cmd
-    expect(verify).toContain('if (run(["--version"]).trim() !== "0.1.22")')
+    expect(verify).toContain('const version = run(["--version"]).trim();')
+    expect(verify).toContain('Number(release[1]) < 22')
     expect(verify).toContain('run(["install-browser", "chromium", "--dry-run"])')
     expect(verify).toContain('run(["install-browser", "chromium", "--list"])')
     expect(verify).toContain('NO_UPDATE_NOTIFIER: "1"')

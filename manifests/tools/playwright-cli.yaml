@@ -18,9 +18,13 @@ spec:
   install_type: npm
   install:
     method: npm-cli
-    cmd: "npm install -g @playwright/cli@0.1.22 && playwright-cli install-browser chromium"
-    npm_version: "0.1.22"
-    idempotent_check: "playwright-cli --version | grep -Fx '0.1.22'"
+    # The version is a RANGE, not an exact pin: the CLI is verified by capability
+    # (see spec.verify), and an exact pin turned every host that already had a
+    # newer 0.1.x patch into a red component. The range is quoted so cmd.exe does
+    # not eat the caret as an escape character.
+    cmd: "npm install -g \"@playwright/cli@^0.1.22\" && playwright-cli install-browser chromium"
+    npm_version: ^0.1.22
+    idempotent_check: 'playwright-cli --version | grep -E "^0\.1\.(2[2-9]|[3-9][0-9]|[0-9]{3,})$"'
   verify:
     # npm-cli runs this in neutralCwd, outside the user's project.
     # Read-only metadata verification; never start a browser or daemon here.
@@ -37,7 +41,9 @@ spec:
         if (/^### Error/m.test(result.stdout)) throw new Error("Playwright CLI reported an error");
         return result.stdout;
       }
-      if (run(["--version"]).trim() !== "0.1.22") throw new Error("Expected playwright-cli 0.1.22");
+      const version = run(["--version"]).trim();
+      const release = /^0\.1\.(\d+)$/.exec(version);
+      if (!release || Number(release[1]) < 22) throw new Error("Expected playwright-cli 0.1.22 or a newer 0.1.x, got " + version);
       const dryRun = run(["install-browser", "chromium", "--dry-run"]);
       if (!/\(playwright chromium v\d+\)/.test(dryRun) || !/^\s*Install location:\s*\S.*$/m.test(dryRun)) throw new Error("Chromium installation metadata is missing");
       const listed = run(["install-browser", "chromium", "--list"]);
@@ -61,14 +67,14 @@ spec:
     expected_exit_code: 0
   uninstall:
     cmd: "npm uninstall -g @playwright/cli"
-    # Playwright CLI 0.1.22 has no uninstall-browser command. Its ms-playwright
+    # Playwright CLI 0.1.x has no uninstall-browser command. Its ms-playwright
     # cache is shared by every Playwright installation on the host, so harnessed
     # deliberately leaves browser binaries in place rather than deleting data it
     # cannot safely attribute to this component.
   upstream_health:
     stability: unstable
-    last_check: "2026-10-23"
-    last_known_good_version: "0.1.22"
+    last_check: "2026-11-02"
+    last_known_good_version: "0.1.23"
     fallback_action: warn
   signed_by: easyinplay
   platforms:
