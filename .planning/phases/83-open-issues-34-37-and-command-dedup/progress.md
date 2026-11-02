@@ -185,3 +185,43 @@ ledger`, `✓ update — up to date (5.0.9)`, `✓ stale hooks — no orphaned h
 `harnessed doctor --host codex` on the codex host is clean apart from warnings (origin URL, token
 budget, MCP key visibility, codex hook trust for `update-reminder`); the codex host binary is
 still 5.0.8 and needs the 5.0.9 install to pick up the setup fix.
+
+## 2026-11-02 — codex-host install re-run with v5.0.9
+
+`install.ps1` re-run (binary 5.0.9) plus `harnessed setup --platform codex` — the fix is
+visible in the real run: the three `[A.6] no role-prompts.yaml entry` skips are warnings only
+and the summary reads `0 setup` failures (`3 base, 0 optional, 0 setup`). Before the fix the
+same three skips were counted as failed components, which is what made the install exit 1.
+
+Two of the three genuine failures were then closed on the machine:
+
+- **gstack Codex lease** — `gstack-lease: the lease directory is locked by live process ;`
+  with an EMPTY owner: nobody held the lock. `bin/gstack-lease` locks with a `ln -s` symlink
+  (`$DIR/.lock`), and this host's Git Bash cannot create symlinks (Developer Mode is enabled
+  in the registry but the user is not in the Developers group and the process is not elevated;
+  `New-Item -ItemType SymbolicLink` → "Administrator privilege required for this operation").
+  Fix: `MSYS=winsymlinks:lnk` (written to the Windows user environment). Measured: `ln -s`
+  creates `.lock.lnk`, `readlink .lock` returns the owner string, a second `ln -s` fails with
+  "File exists" — the lock protocol is intact, not bypassed — and `gstack-lease touch`/`list`
+  exit 0. gstack then reports `already-installed`.
+- **playwright-cli** — the host had `@playwright/cli@0.1.23` while
+  `manifests/tools/playwright-cli.yaml` pins `0.1.22` (exact match in `npm_version`,
+  `idempotent_check` and the verify script), so the verify failed with
+  "Expected playwright-cli 0.1.22". `harnessed setup --system` does NOT downgrade it: the
+  component is already in harnessed's ledger, so the run verifies instead of installing.
+  Installed the pinned version on the machine
+  (`npm install -g @playwright/cli@0.1.22` + `playwright-cli install-browser chromium`).
+
+Remaining: **planning-with-files** — `Existing shared skill source or external write footprint
+is unproven; refusing replacement.` The skill itself is intact
+(`~/.agents/skills/planning-with-files/` with SKILL.md + scripts + templates) and `harnessed
+status` lists `planning-with-files @ ^1.5.7 (installed 2026-10-23)`; the guard only refuses to
+REPLACE it because its ownership cannot be proven. That is the in-flight manifest-ownership
+work's territory (`src/installers/npmCli.ts`, `skillOwnershipReceipt.ts`, manifest schema) — not
+duplicated here. Until it lands, the codex host's `harnessed setup` keeps exiting 1 for that one
+component alone.
+
+Evidence: `Upstream components: 0 installed / 13 already-installed / 0 skipped / 1 failed`,
+`setup incomplete - 34 workflow(s) installed; 13 base component(s) configured; 1 component(s)
+failed (1 base, 0 optional, 0 setup)`, `harnessed doctor --host codex` → all checks ok (with
+warnings).

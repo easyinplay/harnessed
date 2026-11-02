@@ -227,3 +227,41 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
   `delete_repo` + `workflow`。若要长期用 GitHub,换成 fine-grained PAT(按 repo 授权)更合适。
 - [ ] **会话里不要 echo 凭据** — 本轮 `gh auth token` 的输出被 Claude Code 记进
   `~/.claude/bash-commands.log` 与 `cost-tracker.log`(已抹除)。查凭据一律只打印前缀与长度。
+
+## From the 2026-11-02 codex-host setup repair (v5.0.9 live run)
+
+用户在 codex 宿主跑 `install.ps1`,`harnessed setup` 退出 1。用 v5.0.9 重跑并逐条定位后,
+3 个失败里 2 个已修好,剩下的 1 个属于另一条在途改动。
+
+- [x] **gstack Codex lease:需要 POSIX symlink,本机 Git Bash 没有 symlink 权限** — 已修。
+  现象:`gstack-lease: the lease directory is locked by live process ; lease <pid> not renewed`
+  —— 持有者是**空的**,其实没人占锁。根因:`bin/gstack-lease` 的锁是 `ln -s` 造的 symlink
+  (`$DIR/.lock`,target = `<pid> <start identity>`),而本机 Git Bash 的 `ln -s` 直接失败
+  (`failed to create symbolic link: No such file or directory`);Developer Mode 的注册表值是 1,
+  但用户不在 Developers 组、进程非管理员,`New-Item -ItemType SymbolicLink` 报
+  "Administrator privilege required for this operation" → symlink 原语不可用 → 锁永远拿不到。
+  解法:`MSYS=winsymlinks:lnk`(已写进 Windows 用户级环境变量)。实测:`ln -s` 造出 `.lock.lnk`,
+  `readlink .lock` 读回持有者字符串,第二次 `ln -s` 报 "File exists" —— **锁语义完整,没有绕过**;
+  `gstack-lease touch`/`list` 退出 0,gstack 组件随即变成 `already-installed`。
+  待决:要不要让 harnessed 在 win32 上为 lease 子进程自动带这个变量(`src/installers/lib/gstackLease.ts`),
+  或向上游 gstack 提一个「Windows 无 symlink 权限时退化为 .lnk」的 PR。
+- [x] **playwright-cli 版本与 manifest 钉的版本不一致** — 已修(本机侧)。
+  主机全局是 `@playwright/cli@0.1.23`,而 `manifests/tools/playwright-cli.yaml` 钉的是 `0.1.22`
+  (`npm_version` + `idempotent_check` + verify 脚本里都是精确匹配),于是 verify 报
+  "Expected playwright-cli 0.1.22"。注意:`harnessed setup --system` 也**不会**自动降级它 ——
+  组件在 harnessed 的账本里记着"已安装",走的分支是"只 verify 不 install"。
+  本机已执行 `npm install -g @playwright/cli@0.1.22` + `playwright-cli install-browser chromium`,
+  setup 里该组件转 `already-installed`。
+  待决:manifest 的 `upstream_health.last_check` 还停在 2026-10-23、`stability: unstable`,
+  要不要把钉的版本推到 0.1.23(需改 manifest + verify 脚本 + 发版),还是继续钉 known-good。
+  回滚本机改动:`npm install -g @playwright/cli@0.1.23`。
+- [ ] **planning-with-files 被 ownership guard 拒绝替换** — 未解决,归属另一条在途改动。
+  现象:`Existing shared skill source or external write footprint is unproven; refusing replacement.`
+  (`src/installers/npmCli.ts` 的 `unprovenPackTarget`)。组件**功能上是好的**:
+  `~/.agents/skills/planning-with-files/` 内容完整(SKILL.md + scripts + templates),
+  `harnessed status` 也列着 `planning-with-files @ ^1.5.7 (installed 2026-10-23)`;
+  setup 之所以报红,是既有副本的所有权无法证明(没有 receipt、manifest 也还没声明 ownership)。
+  在途的「Manifest ownership declaration for GSD legacy adoption」正在改
+  `src/installers/npmCli.ts` + `src/installers/lib/skillOwnershipReceipt.ts` + manifest schema,
+  那边落地后 legacy adoption 才能逐条验证并写 receipt —— **本项不重复开工**。
+  在此之前 codex 宿主的 `harnessed setup` 会一直 exit 1(仅此一个组件)。
