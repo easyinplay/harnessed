@@ -67,11 +67,14 @@ function isAdvisorySettingsWarning(message: string): boolean {
 }
 
 function isCommandFailureWarning(warning: string): boolean {
-  return (
-    warning.startsWith('no role-prompts.yaml entry') ||
-    warning.startsWith('host-primitive render failed') ||
-    warning.startsWith('write failed')
-  )
+  // 'no role-prompts.yaml entry' is NOT a failure: a workflow without a
+  // standalone slash-command surface (the conditional verify-phase sub-skills
+  // harnessed ships but does not expose as commands) is skipped on purpose.
+  // The update path already treats it as an expected skip
+  // (`isExpectedCommandSkip` in refreshOwnedUpdate.ts) — counting it here made
+  // every codex setup exit 1 even when nothing failed. It stays visible as a
+  // warning; only an unrenderable or unwritable command is a failure.
+  return warning.startsWith('host-primitive render failed') || warning.startsWith('write failed')
 }
 
 function isDuplicateCommandFailureSummary(warning: string): boolean {

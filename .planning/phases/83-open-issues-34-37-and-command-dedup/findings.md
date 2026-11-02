@@ -86,3 +86,32 @@ CI run `41185715671` (on `742e111`, the commit before this phase) was red on all
 proper-lockfile cannot create the lock directory inside it. The test only passed on machines
 where an earlier run had left `D:\tmp\fake-home` behind — which is exactly why it was green
 locally and red on the CI runners. Fix: keep the REAL `mkdir` in the mock.
+
+## F9 — `setup` counted an expected command skip as a failed component
+
+A live codex-host install pasted by the user exited 1 with three real component failures
+(gstack lease held by a live process, planning-with-files ownership refusal, playwright-cli
+pinned-version verify) **plus three false failures**. The false ones came from
+`src/cli/setup.ts` → `isCommandFailureWarning()`: it treated the warning
+`no role-prompts.yaml entry for '<workflow>' — skipping commands/<workflow>.md generation`
+as a component failure. A workflow without a `role-prompts.yaml` entry has no standalone
+slash-command surface **by design** (the conditional verify-phase sub-skills harnessed ships
+but does not expose as commands), and the update path already classifies the same warning as
+an expected skip (`isExpectedCommandSkip` in `src/cli/lib/refreshOwnedUpdate.ts`). Counting it
+in setup therefore made every codex setup exit 1 even when nothing had failed.
+
+Fix: drop that prefix from the failure classification. The warning stays visible; only an
+unrenderable (`host-primitive render failed`) or unwritable (`write failed`) command is a
+failure.
+
+## F10 — Two integration failures were a stale `dist/`, not a code regression
+
+`tests/integration/update-cli-process.test.ts` failed twice after the v5.0.8 release:
+
+- `expected '5.0.7\n' to be '5.0.8\n'` — the built CLI in `dist/cli.mjs` was compiled before the
+  version bump, so it still reported the old version.
+- `expected [ …(4) ] to have a length of 1 but got 4` — same stale artifact: the old build
+  drove a different number of `execFileSync` probes.
+
+`pnpm build` (which refreshes `dist/`) made both pass (39/39). The lesson: this suite exercises
+the BUILT CLI, so a green run requires a build that matches `package.json`.

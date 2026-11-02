@@ -129,3 +129,27 @@ contention is).
   user-authored command file in the same directory was left untouched
 
 That is the duplicate-slash-command repair running through the shipped code path.
+
+## 2026-11-02 (late) — follow-up defect from the live codex-host install
+
+The user pasted a real `install.ps1` run on the codex host: v5.0.8 installed, but
+`harnessed setup` exited 1, so `install.ps1` threw a PowerShell exception.
+
+Diagnosis: 3 REAL component failures + 3 FALSE ones.
+
+- gstack — the upstream lease was held by a live process; re-run `harnessed setup` when no
+  gstack process is running.
+- planning-with-files — ownership refusal from the in-flight ownership-guard work
+  (`cb990f8`); the shared skill's ownership could not be proven, so the install declined
+  to replace it.
+- playwright-cli — the pinned-version verify failed because the L4 install was declined.
+
+The 3 false failures were ours: `src/cli/setup.ts` → `isCommandFailureWarning()` counted
+`no role-prompts.yaml entry for '<workflow>'` (an expected skip, already treated as such by
+the update path) as a component failure. Fixed (F9); the skip stays a visible warning, an
+unrenderable or unwritable command still fails. Regression test added to
+`tests/cli/setup-failure-exit.test.ts`.
+
+Also cleared the two `tests/integration/update-cli-process.test.ts` failures: both came from a
+stale `dist/cli.mjs` built before the 5.0.8 version bump (F10). After `pnpm build` the file is
+39/39 green.

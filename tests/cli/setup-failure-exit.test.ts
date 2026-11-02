@@ -289,6 +289,35 @@ describe('setup surface write failures through registerSetup', () => {
     expect(console.error).toHaveBeenCalledWith(expect.stringContaining('1 component(s) failed'))
   })
 
+  it('does not count a workflow without a standalone command surface as a failure', async () => {
+    // A shipped workflow with no role-prompts.yaml entry has no slash-command
+    // surface by design (the conditional verify-phase sub-skills). The update
+    // path already treats that skip as expected; counting it as a failure made
+    // every codex setup exit 1 even when nothing failed.
+    vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
+    vi.mocked(writeAllCommands).mockResolvedValueOnce({
+      results: [
+        {
+          name: 'verify-eval-review',
+          path: '/fixture/prompts/verify-eval-review.md',
+          written: false,
+          warning:
+            "no role-prompts.yaml entry for 'verify-eval-review' — skipping commands/verify-eval-review.md generation",
+        },
+      ],
+      warnings: [],
+    })
+
+    await expect(runSetup()).rejects.toMatchObject({ code: 0 })
+
+    // The skip stays visible as a warning; it just is not a failure.
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining("no role-prompts.yaml entry for 'verify-eval-review'"),
+    )
+    expect(console.error).not.toHaveBeenCalledWith(expect.stringContaining('component(s) failed'))
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('setup complete'))
+  })
+
   it('keeps advisory and user-authored command skips successful while deduplicating warnings', async () => {
     vi.mocked(runStepBInstall).mockResolvedValueOnce(stepB({ installed: ['gstack'] }))
     const userAuthored =
