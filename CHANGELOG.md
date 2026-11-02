@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.10] - 2026-11-02
+
 ### Fixed
 
 - The `BREAK-LOOP` stop directive no longer tells the agent to run a `break-loop` skill. Harnessed never shipped that skill on any host, so a strict agent (codex) treated the directive as an unsatisfiable precondition, stopped the workflow and asked the user for a skill that does not exist. The directive now states the stop rule itself — re-scope the subtask, fix the blocker, or escalate to the user — which is the rule the shipped `task` / `verify-*` workflow docs already carry.

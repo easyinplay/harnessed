@@ -65,7 +65,7 @@ var init_package = __esm({
   'package.json'() {
     package_default = {
       name: 'harnessed',
-      version: '5.0.9',
+      version: '5.0.10',
       description: 'AI coding harness package manager + composition orchestrator',
       type: 'module',
       license: 'Apache-2.0',

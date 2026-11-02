@@ -276,15 +276,15 @@ describe('Playwright runtime manifest contract', () => {
     }
   })
 
-  it.each(['0.1.23', '0.1.220'])(
-    'accepts the newer 0.1.x patch %s — the range is the contract, not one exact version',
-    (version) => {
-      const spec = loadManifest('playwright-cli.yaml').spec
-      for (const cmd of [spec.verify.cmd, spec.install.idempotent_check]) {
-        expect(cmd).toBeTypeOf('string')
-        const result = run(cmd ?? '', fixture(), { STUB_VERSION: version })
-        expect(result.status, result.stderr).toBe(0)
-      }
-    },
-  )
+  it.each([
+    '0.1.23',
+    '0.1.220',
+  ])('accepts the newer 0.1.x patch %s — the range is the contract, not one exact version', (version) => {
+    const spec = loadManifest('playwright-cli.yaml').spec
+    for (const cmd of [spec.verify.cmd, spec.install.idempotent_check]) {
+      expect(cmd).toBeTypeOf('string')
+      const result = run(cmd ?? '', fixture(), { STUB_VERSION: version })
+      expect(result.status, result.stderr).toBe(0)
+    }
+  })
 })
