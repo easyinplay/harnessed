@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The `BREAK-LOOP` stop directive no longer tells the agent to run a `break-loop` skill. Harnessed never shipped that skill on any host, so a strict agent (codex) treated the directive as an unsatisfiable precondition, stopped the workflow and asked the user for a skill that does not exist. The directive now states the stop rule itself — re-scope the subtask, fix the blocker, or escalate to the user — which is the rule the shipped `task` / `verify-*` workflow docs already carry.
+- The `playwright-cli` manifest no longer pins one exact version. It installs `^0.1.22` and verifies by capability (a 0.1.x patch of at least 0.1.22, plus the Chromium metadata the CLI needs), so a host that already carries a newer 0.1.x patch is no longer reported as a failed component. Older 0.1.x releases, pre-releases and other minors are still rejected.
+
 ## [5.0.9] - 2026-11-02
 
 ### Fixed

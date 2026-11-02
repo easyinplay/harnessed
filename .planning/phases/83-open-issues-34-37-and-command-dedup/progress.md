@@ -225,3 +225,33 @@ Evidence: `Upstream components: 0 installed / 13 already-installed / 0 skipped /
 `setup incomplete - 34 workflow(s) installed; 13 base component(s) configured; 1 component(s)
 failed (1 base, 0 optional, 0 setup)`, `harnessed doctor --host codex` → all checks ok (with
 warnings).
+
+## Two further defects found while repairing the codex host
+
+**1. The `BREAK-LOOP` directive named a skill harnessed never ships.** A codex agent reported
+"当前工作流要求连续失败后先执行 break-loop，但技能目录及插件缓存中未找到该技能" and stopped the
+workflow. `break-loop` exists nowhere: not in `workflows/`, not in the installed skill dirs of
+either host, not in the plugin cache. The G6 commit `7314aa1` added only the detector
+(`src/checkpoint/breakLoop.ts`) and the message text — its own comment pointed at a skill doc
+that was never written ("Trellis break-loop analog"). The stop rule actually lives in the shipped
+workflow docs (`workflows/task/SKILL.md`, `workflows/verify/*/SKILL.md`: "任一触发即 STOP ——
+重新收敛范围、修掉阻塞点或上报用户"), and both hosts have those installed. Fix: the three runtime
+messages (`src/checkpoint/injectState.ts`, `src/cli/checkpoint.ts` × 2) now state the action
+instead of naming a skill, and the stale comment was corrected. Regression: the inject-state test
+asserts the directive carries no `break-loop skill` reference and does carry the stop rule.
+
+**2. `playwright-cli` was the only npm component pinned to one exact version.** Survey of every
+manifest: `webapp-testing ^1.7.4`, `tavily-mcp ^0.2.0`, `playwright-test ^1.5.25`,
+`exa-mcp ^3.2.0`, `ctx7 ^0.5.0`, `planning-with-files ^1.5.7`, `mattpocock-skills ^1.5.7`,
+`gsd ^1.7.0`, `codegraph ^1.0.0` — all ranges; `playwright-cli` alone was `"0.1.22"` with an
+exact-equality `idempotent_check` AND an exact-equality assert inside verify. That is what turned
+a host carrying 0.1.23 into a red component. Measured on this host: 0.1.23 satisfies every
+capability assertion of the verify script (version → Chromium metadata → the @playwright/cli
+reference), so only the exact-equality assert was wrong. Fix: `npm_version: ^0.1.22`, install
+`npm install -g "@playwright/cli@^0.1.22"` (quoted so cmd.exe does not eat the caret), an
+`idempotent_check` that accepts any 0.1.x patch ≥ 22, and a verify that asserts the same range
+instead of one exact string. Contract tests updated: the range accepts 0.1.22 / 0.1.23 / 0.1.220,
+and still rejects 0.1.21, 0.1.22-beta and 0.2.0.
+
+Live proof with the local build (repo manifests, same host): `playwright-cli` moved from
+`✗ failed` to `○ already-installed`; the only remaining failure is planning-with-files.
