@@ -153,3 +153,22 @@ unrenderable or unwritable command still fails. Regression test added to
 Also cleared the two `tests/integration/update-cli-process.test.ts` failures: both came from a
 stale `dist/cli.mjs` built before the 5.0.8 version bump (F10). After `pnpm build` the file is
 39/39 green.
+
+## 2026-11-02 — fix shipped as v5.0.9
+
+- Fix commit `91ec691` (`fix(setup): stop counting an expected command skip as a failed
+  component`) pushed to `main`; CI `41392546250` passed.
+- Release prep `f7b04d4` (`chore(release): prepare v5.0.9`: version bump + `CHANGELOG.md`
+  `## [5.0.9]` section + regenerated `bin/` artifacts); CI `41416432147` passed 9/9.
+- Tag `v5.0.9` pushed → publish run `41417121623` success (npm publish + 3 binary jobs).
+- Verified: npm registry `dist-tags.latest` = **5.0.9** (queried from the registry, not the local
+  cache), GitHub release `v5.0.9` with **9 assets** (3 binaries × [bin, .sha256, .sha256.sig]).
+- Local gate status before the release commit: `tsc --noEmit` exit 0, Biome clean on the changed
+  files, `tests/cli tests/unit tests/integration` = 3568 passed / 1 flaky-failed
+  (`tests/unit/update-lock.test.ts`, an `EPERM` rename in the Windows temp dir — 22/22 green in
+  isolation, unrelated to this change), all 12 `scripts/check-*.mjs` gates exit 0.
+
+Open, not ours to close here: the three real component failures of the user's codex-host install
+(gstack upstream lease held by a live process, planning-with-files ownership refusal from the
+in-flight ownership-guard work, playwright-cli pinned-version verify against a declined L4
+install).
