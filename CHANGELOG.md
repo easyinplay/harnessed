@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.11] - 2026-11-03
+
 ### Fixed
 
 - `harnessed setup` no longer fails the `planning-with-files` component on the codex host. The npx skill pack's target set was not declared, so the ownership guard refused it as unproven before it could check the installed state. The manifest now declares `installs_skills: [planning-with-files]`, so the component is detected as already installed (or installs normally on a fresh host) and setup no longer exits 1.
