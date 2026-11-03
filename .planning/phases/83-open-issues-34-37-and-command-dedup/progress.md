@@ -332,3 +332,27 @@ target set，失败信息列出 offender），并在 installer 层加用例（�
 CI：`41632560006`（ec91eef）9/9、`41633631131`（7a2f64a）9/9，均绿。本地：tsc 0、
 biome 硬门 0 blocking（1 条 facts.ts 基线 warning 非本次）、schema validate OK、
 受影响测试 282 + 45 全绿。
+
+## v5.0.11 shipped (2026-11-03)
+
+提交链：`ec91eef`（移除组件）→ `7a2f64a`（codex 修复）→ `e98c2c0`（planning 记录）→
+`440a1de`（chore(release): prepare v5.0.11）→ `61c7e71`（stop-hook 身份移除窗口入计划）。
+
+发版：`440a1de` 的 CI 被 `61c7e71` 的推送取消（ci.yml `cancel-in-progress: true`），
+改用 `61c7e71`（含 release prep 的最新提交）打 tag → CI `41642137276` 9/9 绿 →
+tag `v5.0.11` → publish run `41643135405` success（npm publish + 3 个 binary job）。
+Registry 直查（不走本地缓存）：`dist-tags.latest` = **5.0.11**，`versions["5.0.11"]` 存在；
+release `v5.0.11` 9 个 asset（3 binary + 3 .sha256 + 3 .sha256.sig）。
+
+本机真机（binary 通道，用户裁定保留 binary、去掉 npm 全局）：
+
+- `harnessed update` 没能把 binary 从 5.0.10 升到 5.0.11 —— 报
+  `could not reach GitHub releases to resolve the latest binary`，重跑则挂住 10 分钟以上。
+  但同一时刻 `curl` / `node fetch` / `bun fetch` 都能拿到 v5.0.11，api.github.com 也不限流。
+  **真因是下载太慢而不是解析失败**：windows asset 有 103,795,200 字节（≈99MB），
+  `curl` 拉完用了 660 秒（≈157 KB/s），binary 内置超时扛不住，而报错文案把锅甩给了
+  「解析 release」。绕过：`curl -L` 拉 asset + `sha256sum` 对 `.sha256` 校验（一致）→
+  覆盖 `harnessed.exe`（旧版留 `harnessed.exe.bak-5.0.10`）。改进项已入 `TODOS.md`。
+- 换成 5.0.11 后：`harnessed --version` → 5.0.11（自带资产解包到
+  `~/.claude/harnessed/assets/5.0.11`）；codex 宿主 `harnessed setup --non-interactive`
+  → **0 failed / exit 0**，optional 清单 3 → 2（stop-hook-recover 已不在）。

@@ -296,3 +296,23 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
     `~/.claude/settings.json` 的 `Stop` 条目(或先跑一次 `harnessed uninstall`)。
   验收:移除后 `harnessed doctor` 不再报 Stop 残留、`harnessed uninstall` 不再误摘
     第三方同名 hook(左边界匹配已有防护,别破坏它)。
+
+## From the 2026-11-03 v5.0.11 live install (本机 Windows)
+
+- [ ] **binary 自更新在慢链路上失败,且报错信息指错了地方** — 未修。
+  现象:本机 `harnessed update`(5.0.10 binary)报
+  `could not reach GitHub releases to resolve the latest binary`;重跑一次则**挂住** 10 分钟以上。
+  但同一时刻 `curl` / `node fetch` / `bun fetch` 都能正常拿到 `v5.0.11`,api.github.com
+  也不限流(49/60 剩余)。真因不是「解析 release」失败,而是**资产下载太慢**:
+  `harnessed-windows-x64.exe` 有 **103,795,200 字节(≈99MB)**,实测 `curl` 拉完用了
+  **660 秒**(≈157 KB/s)—— binary 内置的下载超时扛不住,失败后错误信息却写成了
+  「无法访问 GitHub releases 解析最新版」,把人指向网络/代理方向,而不是慢链路。
+  两个改进方向:
+  1. **区分阶段**:解析 release 失败 vs 资产下载超时,分别给不同的报错文案(现在两者共用
+     同一句 `could not reach GitHub releases`)。
+  2. **下载策略**:给资产下载单独设更长/更贴身的超时(按 99MB 量级估),或支持断点续传;
+     必要时在文案里带上「本机链路约 X KB/s,预计 N 分钟」。
+  本机绕过方式(已用):`curl -L` 拉 asset + `sha256sum` 对 `.sha256` 校验 → 覆盖
+  `~/AppData/Local/harnessed/bin/harnessed.exe`(旧版留 `harnessed.exe.bak-5.0.10`)→
+  跑 `harnessed setup` 刷新自有状态。**另**:binary 体积 99MB 是否还能瘦(内嵌 assets /
+  bun runtime 占比)值得单独立项。
