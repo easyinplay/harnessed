@@ -275,3 +275,55 @@ Live on this machine with the shipped binary: `harnessed update` → 5.0.9 → 5
 owned-state refresh; `harnessed setup --platform codex --system` → `playwright-cli` reports
 `○ already-installed` (the host's 0.1.23 now satisfies the range) and the only remaining
 failure is planning-with-files.
+
+## 2026-11-03 stop-hook-recover 下线 + codex 宿主 planning-with-files 修复
+
+两件事都进了 `main`，未发版（下一个 patch 是 v5.0.11）。
+
+### 1. `stop-hook-recover` optional 组件彻底移除（`ec91eef`）
+
+用户裁定：Claude Code 的「工具调用被当纯文本吐出」症状已消失，这个防御网不再需要，选
+**彻底移除**（而非只下线 / 只撤出 offer）。
+
+删除：manifest、`src/checkpoint/stopHookMain.ts`、`src/checkpoint/modeBDetect.ts`、
+`src/cli/stopHookCmd.ts`（`harnessed stop-hook` 子命令）、生成产物
+`bin/harnessed-stop-hook.mjs`，以及 `refreshOwnedUpdate` 的 owned 列表条目。
+setup 的 optional 清单由 3 项变 2 项（chrome-devtools-mcp / ecc）。
+
+**保留**：`COMPILED_HOOK_IDENTITIES` 里的 `stop-hook` 身份（仅识别用）。teardown 用这张表
+判定「已存在的注册是不是我们的」，身份一删，`harnessed uninstall` 就摘不掉旧装机留下的
+Stop 注册，doctor 也不再报残留 —— 旧注册仍在同一台机器上，就必须能被识别和清理。
+
+### 2. codex 宿主 setup exit 1 根因与修复（`7a2f64a`）
+
+用户贴的 install.ps1 日志显示 codex 宿主 setup 恒失败一个组件：
+`planning-with-files` → `Existing shared skill source or external write footprint is
+unproven; refusing replacement.` → setup exit 1 → 安装器抛 `setup failed (exit code 1)`。
+
+根因不在 ownership 声明本身，而在**顺序**：`src/installers/npxSkillInstaller.ts` 的
+拒绝分支在「是否已安装」判定**之前**：
+
+```ts
+if (ctx.hostContext && !singleSkill && !hasDeclaredTargets && !usesDeclaredOwnership)
+  return unprovenSkillTarget(ctx)
+```
+
+`planning-with-files` 是唯一既没写 `--skill` 单选、也没声明 `installs_skills` 的
+npx-skill-installer manifest → codex 上被无条件拒绝。而本机
+`~/.agents/skills/planning-with-files/` 其实完整存在（SKILL.md / session-catchup.py /
+三个 templates 都在，manifest 的 codex verify 也过），所以正确结论是 already-installed。
+
+修法（manifest 层，不动另一会话正在改的 installer / receipt 文件）：codex override 的
+install 块声明 `installs_skills: [planning-with-files]` —— 这正是该 repo 的唯一 skill
+目录，target set 可证 → 拒绝分支不再触发 → 组件被认成 already-installed。
+
+真机验证（本地构建 + `HARNESSED_PLATFORM=codex`）：`Upstream components: 1 installed /
+13 already-installed / 0 skipped / **0 failed**` → `setup exit=0`。
+
+回归护栏：新增 manifest 契约测试（每个 npx-skill-installer install 块都必须能证明
+target set，失败信息列出 offender），并在 installer 层加用例（有声明的 pack 不再被
+`update-unsupported` 拒绝；无声明的拒绝用例保留）。
+
+CI：`41632560006`（ec91eef）9/9、`41633631131`（7a2f64a）9/9，均绿。本地：tsc 0、
+biome 硬门 0 blocking（1 条 facts.ts 基线 warning 非本次）、schema validate OK、
+受影响测试 282 + 45 全绿。
