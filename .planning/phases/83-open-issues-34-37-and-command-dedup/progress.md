@@ -294,6 +294,11 @@ setup 的 optional 清单由 3 项变 2 项（chrome-devtools-mcp / ecc）。
 判定「已存在的注册是不是我们的」，身份一删，`harnessed uninstall` 就摘不掉旧装机留下的
 Stop 注册，doctor 也不再报残留 —— 旧注册仍在同一台机器上，就必须能被识别和清理。
 
+**用户裁定（2026-11-03）**：该身份**保留 3 个月**（即到 2027-02-03），之后移除，移除动作
+已列入 `TODOS.md`（含移除清单：hookEntry 身份项、teardown 的 legacy 形态字符串、
+check-stale-hooks 引用、以 `harnessed-stop-hook.mjs` 为样本的测试断言，以及发版说明里
+提醒旧装机手工清理 `Stop` 注册）。
+
 ### 2. codex 宿主 setup exit 1 根因与修复（`7a2f64a`）
 
 用户贴的 install.ps1 日志显示 codex 宿主 setup 恒失败一个组件：

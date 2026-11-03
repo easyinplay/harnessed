@@ -255,13 +255,44 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
   待决:manifest 的 `upstream_health.last_check` 还停在 2026-10-23、`stability: unstable`,
   要不要把钉的版本推到 0.1.23(需改 manifest + verify 脚本 + 发版),还是继续钉 known-good。
   回滚本机改动:`npm install -g @playwright/cli@0.1.23`。
-- [ ] **planning-with-files 被 ownership guard 拒绝替换** — 未解决,归属另一条在途改动。
+- [x] **planning-with-files 被 ownership guard 拒绝替换** — 已修(2026-11-03,`7a2f64a`,v5.0.11)。
   现象:`Existing shared skill source or external write footprint is unproven; refusing replacement.`
-  (`src/installers/npmCli.ts` 的 `unprovenPackTarget`)。组件**功能上是好的**:
-  `~/.agents/skills/planning-with-files/` 内容完整(SKILL.md + scripts + templates),
-  `harnessed status` 也列着 `planning-with-files @ ^1.5.7 (installed 2026-10-23)`;
-  setup 之所以报红,是既有副本的所有权无法证明(没有 receipt、manifest 也还没声明 ownership)。
-  在途的「Manifest ownership declaration for GSD legacy adoption」正在改
-  `src/installers/npmCli.ts` + `src/installers/lib/skillOwnershipReceipt.ts` + manifest schema,
-  那边落地后 legacy adoption 才能逐条验证并写 receipt —— **本项不重复开工**。
-  在此之前 codex 宿主的 `harnessed setup` 会一直 exit 1(仅此一个组件)。
+  组件**功能上是好的**:`~/.agents/skills/planning-with-files/` 内容完整(SKILL.md + scripts +
+  templates),manifest 的 codex verify 也过。真正的根因不是「缺 receipt」,而是**顺序**:
+  `src/installers/npxSkillInstaller.ts` 的拒绝分支跑在「是否已安装」判定**之前**,而
+  `planning-with-files` 是唯一既没写 `--skill` 单选、也没声明 `installs_skills` 的
+  npx-skill-installer manifest → codex 上被**无条件**拒绝,连"已装好了"都不问。
+  解法(manifest 层,不碰另一会话正在改的 installer / receipt 文件):codex override 声明
+  `installs_skills: [planning-with-files]`(该 repo 就是这一个 skill 目录,target set 可证)
+  → 拒绝分支不再触发 → 组件判 already-installed。真机验证:codex 宿主 setup
+  `0 failed` / exit 0,`install.ps1` 不再抛。回归护栏:manifest 契约测试 + installer 层用例。
+  另一会话的「Manifest ownership declaration for GSD legacy adoption」仍在推进
+  (`npmCli.ts` / `skillOwnershipReceipt.ts` / manifest schema),那条线解决的是
+  **receipt 与 legacy adoption**,与本项不重叠,继续做即可。
+
+## From the 2026-11-03 stop-hook-recover retirement (v5.0.11)
+
+组件本体已在 v5.0.11 彻底删除(manifest / 运行时 / `harnessed stop-hook` 子命令 /
+生成产物),但**识别用的 `stop-hook` 身份刻意保留**。用户裁定:保留 3 个月,之后移除,
+移除动作列入计划。
+
+- [ ] **`stop-hook` 身份在 2027-02-03 之后移除** — 待办(用户已排期)。
+  身份在 `src/installers/lib/hookEntry.ts` 的 `COMPILED_HOOK_IDENTITIES` 里,现在只用于
+  **识别**:teardown(`harnessedHookTeardown.ts`)靠它判定"settings.json 里这条注册是不是
+  我们的",doctor 的 stale-hook 探针(`check-stale-hooks.ts`)也靠它报残留。
+  为什么不能立刻删:旧装机(4.30.0–5.0.10 装过该组件的机器)`~/.claude/settings.json` 里
+  还留着 `Stop` 注册,身份一删,`harnessed uninstall` 摘不掉它、doctor 也不再提示,
+  用户只能手改 settings.json。
+  窗口到期时的移除清单(一起做,别只删身份):
+  - `src/installers/lib/hookEntry.ts` — 移除 `'stop-hook'` 身份条目;
+  - `src/installers/lib/harnessedHookTeardown.ts` — 移除 legacy 形态字符串
+    (`node …/bin/harnessed-stop-hook.mjs` / `"<binary>" stop-hook` / `assets/<ver>/…`);
+  - `src/cli/lib/check-stale-hooks.ts` — 若还引用旧形态,一并清;
+  - 测试:`tests/installers/harnessedHookTeardown*.test.ts`、`issue36-hook-identity.test.ts`、
+    `tests/unit/installers-lib-hookEntry.test.ts`、`tests/cli/uninstall.test.ts`、
+    `tests/cli/check-stale-hooks.test.ts`、`tests/cli/gc-compiled.test.ts` 里以
+    `harnessed-stop-hook.mjs` 为样本的 legacy 断言;
+  - CHANGELOG 记一笔,并在发版说明里提示:2027-02-03 之后仍带旧注册的机器需要手工清理
+    `~/.claude/settings.json` 的 `Stop` 条目(或先跑一次 `harnessed uninstall`)。
+  验收:移除后 `harnessed doctor` 不再报 Stop 残留、`harnessed uninstall` 不再误摘
+    第三方同名 hook(左边界匹配已有防护,别破坏它)。

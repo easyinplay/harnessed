@@ -61,11 +61,20 @@ export interface HookCmdDeps {
  *  `stop-hook` is a RETIRED identity, not an installable hook: it is kept here
  *  purely so a legacy registration written by an older install is still
  *  recognized (and therefore stripped by `harnessed uninstall` and reported by
- *  doctor). No manifest ships it any more. */
+ *  doctor). No manifest ships it any more.
+ *
+ *  Removal window (user ruling, 2026-11-03): the identity is kept for THREE
+ *  MONTHS after the 5.0.11 release, i.e. until 2027-02-03, and its removal is
+ *  on the plan. Dropping it earlier leaves a stale `Stop` registration that
+ *  neither `harnessed uninstall` nor `harnessed doctor` can recognize or
+ *  remove — the user would have to hand-edit settings.json. When the window
+ *  closes, remove the identity together with the legacy-recognition paths in
+ *  harnessedHookTeardown / check-stale-hooks and the tests that cover them. */
 export const COMPILED_HOOK_IDENTITIES = [
   'inject-state',
   // retired in 5.0.11 — no manifest ships this hook any more; the identity is
   // kept so legacy registrations can still be recognized and stripped.
+  // Removal planned after 2027-02-03 (3-month window, see the doc comment).
   'stop-hook',
   'check-docs',
   'update-reminder',
