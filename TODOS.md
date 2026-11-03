@@ -316,3 +316,12 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
   `~/AppData/Local/harnessed/bin/harnessed.exe`(旧版留 `harnessed.exe.bak-5.0.10`)→
   跑 `harnessed setup` 刷新自有状态。**另**:binary 体积 99MB 是否还能瘦(内嵌 assets /
   bun runtime 占比)值得单独立项。
+- [ ] **doctor 的「双通道并存」告警会假阳性** — 未修。
+  现象:本机其实**只装了 binary 通道**(npm 全局前缀 `C:\Users\easyi\AppData\Roaming\npm`
+  下没有 `harnessed.cmd`,`npm ls -g` 也没有 harnessed),但 doctor 仍报
+  "both harnessed install channels are present"。
+  根因:`src/cli/lib/check-install-channels.ts:111` 的
+  `npmPresent = running === 'npm' || (npmCand != null && exists(npmCand))` ——
+  **运行通道默认视为存在**,所以只要是从源码树 / npm 渠道跑的(`node dist/cli.mjs`),
+  就一定报「双通道」,哪怕磁盘上根本没有 npm 全局 shim。判定应当以磁盘上的 shim 为准,
+  `running` 只用于决定文案。
