@@ -499,6 +499,84 @@ describe('installNpxSkillInstaller — active target materialization', () => {
     expect(writeFile).not.toHaveBeenCalled()
   })
 
+  // v5.0.11 — the ownership guard refuses a pack whose target set it cannot
+  // PROVE, and it refuses BEFORE it checks whether the component is already
+  // installed. A pack that declares `installs_skills` proves its target set,
+  // so the guard must let it through (planning-with-files on codex shipped
+  // without the declaration and broke every `harnessed setup` with exit 1).
+  it('accepts a declared-target pack on codex instead of refusing it as unproven', async () => {
+    const nativeHome = join(userHome, '.codex')
+    const sharedTarget = join(userHome, '.agents', 'skills', 'webapp-testing')
+    vi.mocked(lstat).mockImplementation(async (path) => {
+      if (String(path) === sharedTarget) return {} as Awaited<ReturnType<typeof lstat>>
+      throw missing()
+    })
+    accessMock.mockImplementation(async (path) => {
+      if (path === join(sharedTarget, 'SKILL.md')) return
+      throw missing()
+    })
+    spawnMock.mockImplementation(scriptedSpawn([{ exitCode: 0 }]))
+
+    const context = ctx({ updateInstalled: false, quiet: true }, (manifest) => {
+      manifest.metadata.name = 'webapp-testing'
+      // No explicit `--skill <name>` selection — the declared target set is
+      // the only proof, exactly like the planning-with-files codex override.
+      ;(manifest.spec.install as { cmd: string }).cmd =
+        'npx --yes skills@latest add anthropics/skills --copy --global -y'
+      setInstalledSkills(manifest, ['webapp-testing'])
+    })
+    context.hostContext = createHostInstallContext(codexDescriptor(userHome), {
+      os: process.platform,
+      userHome,
+      nativeHome,
+    })
+
+    const result = await installNpxSkillInstaller(context)
+
+    expect(result).toMatchObject({ ok: true, alreadyInstalled: true })
+    expect(spawnMock.mock.calls[0]?.[1]?.join(' ')).not.toContain('skills@latest add')
+  })
+
+  it('installs a declared-target pack on codex instead of refusing it as unproven', async () => {
+    const nativeHome = join(userHome, '.codex')
+    const activeRoot = join(userHome, '.agents', 'skills')
+    const activeSkill = join(activeRoot, 'webapp-testing', 'SKILL.md')
+    let materialized = false
+    vi.mocked(lstat).mockRejectedValue(missing())
+    accessMock.mockImplementation(async (path) => {
+      if (materialized && path === activeSkill) return
+      throw missing()
+    })
+    spawnMock.mockImplementation((_command, args) => {
+      if (args?.join(' ').includes('skills@latest add')) materialized = true
+      return makeChild({ exitCode: 0 }) as unknown as ReturnType<typeof spawn>
+    })
+
+    const context = ctx({ updateInstalled: false, quiet: true }, (manifest) => {
+      manifest.metadata.name = 'webapp-testing'
+      ;(manifest.spec.install as { cmd: string }).cmd =
+        'npx --yes skills@latest add anthropics/skills --copy --global -y'
+      setInstalledSkills(manifest, ['webapp-testing'])
+    })
+    context.hostContext = createHostInstallContext(codexDescriptor(userHome), {
+      os: process.platform,
+      userHome,
+      nativeHome,
+    })
+
+    const s = silence()
+    let result: Awaited<ReturnType<typeof installNpxSkillInstaller>>
+    try {
+      result = await installNpxSkillInstaller(context)
+    } finally {
+      s.restore()
+    }
+
+    expect(result).toMatchObject({ ok: true })
+    expect(result).not.toHaveProperty('alreadyInstalled')
+    expect(materialized).toBe(true)
+  })
+
   it('rejects an active target directory that exists without SKILL.md', async () => {
     const activeSkillDir = join(userHome, '.claude', 'skills', 'webapp-testing')
     vi.mocked(lstat).mockImplementation(async (path) => {

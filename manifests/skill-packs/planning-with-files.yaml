@@ -47,6 +47,12 @@ spec:
         method: npx-skill-installer
         cmd: "npx --yes skills@latest add OthmanAdi/planning-with-files --copy -y"
         npm_version: ^1.5.7
+        # The skill target is exactly `planning-with-files` (one repo segment ==
+        # one skill dir). Declaring it makes the target set provable, so the
+        # ownership guard stops refusing the install and the component reports
+        # already-installed instead of failing the whole setup.
+        installs_skills:
+          - planning-with-files
         idempotent_check: "test -d ~/.agents/skills/planning-with-files || test -d ~/.claude/skills/planning-with-files"
       verify:
         # A Claude skill cannot supply Codex helpers. verifySkillRuntime additionally

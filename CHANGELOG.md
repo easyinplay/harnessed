@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `harnessed setup` no longer fails the `planning-with-files` component on the codex host. The npx skill pack's target set was not declared, so the ownership guard refused it as unproven before it could check the installed state. The manifest now declares `installs_skills: [planning-with-files]`, so the component is detected as already installed (or installs normally on a fresh host) and setup no longer exits 1.
+
 ### Removed
 
 - The optional `stop-hook-recover` component (Tool-Call Auto-Recovery Stop hook) has been removed. Its manifest, the `harnessed stop-hook` internal subcommand and the generated `bin/harnessed-stop-hook.mjs` are gone; `harnessed setup` no longer offers it and `harnessed install stop-hook-recover` no longer resolves. The `stop-hook` hook identity is kept internally, so a registration left behind by an earlier install is still recognized and removed by the unified `harnessed uninstall` and is still flagged by `harnessed doctor`.
