@@ -35,7 +35,6 @@ export interface SmokeChannelResult {
     command: string
     invocation: HookInvocation
     result: CommandResult
-    retryResults?: CommandResult[]
   }>
 }
 

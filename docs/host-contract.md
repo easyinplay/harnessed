@@ -509,7 +509,7 @@ serde 报错里读出 167 个方法名)。`thread/start {goal: …}` 的参数�
 |---|---|---|
 | codex 上 `pluginsRegistry: null` | `readInstalledPlugins` 返回空集 → **每个 `install_type: plugin` 的能力在 codex 上都告警**(实测为 4 条 + `caveman`,`renderAllSkills` 全局去重后整次 setup 最多 5 行,不是逐条刷屏)。告警文本本身已按宿主分叉:codex 上不再建议 `claude plugin install`(该宿主无插件注册表,那个动作不可能有用),改为直说不可用并要求记录 skip —— 与 `host_map_notes.codex` 第 2 条同源 | `platform.ts:135`;`capabilityResolver.ts:93-96` |
 | `setup.ts` 的 `loadRolePrompts()` 未显式传 locale | 落到 `rolePrompts.ts:43` 的默认参数,与同函数上游显式线程下来的 locale **不同源**。当前行为一致,属隐患 | `setup.ts` role-prompts 加载点 |
-| `stop-hook-recover` 在 codex 上不可用 | 它依赖 CC transcript 形态,在 codex 上**诚实返回 `harness-mismatch`**(不是伪装成成功) | ADR 0041 § Consequences |
+| `stop-hook-recover` 已退役(不再随包分发) | 组件下线:manifest、`harnessed stop-hook` 子命令、`bin/harnessed-stop-hook.mjs` 全部移除,codex 上不再有 `harness-mismatch` 这条缺口。旧版本装过的机器上 `~/.claude/settings.json` 可能还留着 `Stop` 注册,统一 `harnessed uninstall` 会摘掉它,`harnessed doctor` 会标出残留注册 | CHANGELOG `Unreleased` |
 | `dashboard-autospawn` 不 port | 任何 CLI 路径都不扫描 `manifests/cc-hooks/`,在 claude 上同样不可达 | ADR 0041 § Consequences |
 
 ---

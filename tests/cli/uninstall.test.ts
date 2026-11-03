@@ -748,6 +748,9 @@ describe('cli/uninstall (no name) — unified', () => {
     expect(writeFileMock).not.toHaveBeenCalled()
   })
 
+  // Retired component (stop-hook runtime removed in 5.0.11): the Stop entry
+  // below is a LEGACY registration. The `stop-hook` identity is retained on
+  // purpose so uninstall can still recognise and strip it — keep this guard.
   it('strips orphaned harnessed hooks, preserves unrelated hooks (issue #8)', async () => {
     readdirMock.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }))
     readFileMock.mockImplementation(async (p: unknown) => {

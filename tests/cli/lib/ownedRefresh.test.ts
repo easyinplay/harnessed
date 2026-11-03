@@ -57,14 +57,14 @@ describe('refreshOwnedState', () => {
   it('reports the refreshed components and stays ok when none failed', async () => {
     refreshOwnedUpdate.mockResolvedValue([
       createUpdateComponent({ id: 'harnessed-workflows', status: 'updated' }),
-      createUpdateComponent({ id: 'stop-hook-recover', status: 'updated' }),
+      createUpdateComponent({ id: 'doc-discipline-gate', status: 'updated' }),
     ])
 
     const outcome = await refreshOwnedState(context)
 
     expect(refreshOwnedUpdate).toHaveBeenCalledWith(context)
     expect(outcome.ok).toBe(true)
-    expect(outcome.updated).toEqual(['harnessed-workflows', 'stop-hook-recover'])
+    expect(outcome.updated).toEqual(['harnessed-workflows', 'doc-discipline-gate'])
     expect(outcome.failed).toEqual([])
   })
 

@@ -4,10 +4,10 @@
 // uninstalling it. Before this, the only way to get a clean control arm was to
 // uninstall the hooks and put them back afterwards.
 //
-// Scope is the ALWAYS-ON surface — the four hook entry points that Claude Code
+// Scope is the ALWAYS-ON surface — the three hook entry points that Claude Code
 // fires on its own (`bin/harnessed-inject-state.mjs` for both UserPromptSubmit
-// and the SessionStart `--invalidate` half, `bin/harnessed-stop-hook.mjs`,
-// `harnessed check-docs --hook`, `scripts/dashboard.mjs`). Explicit CLI calls
+// and the SessionStart `--invalidate` half, `harnessed check-docs --hook`,
+// `scripts/dashboard.mjs`). Explicit CLI calls
 // (`harnessed run`, `gates`, `checkpoint`) are deliberately NOT gated: in a
 // control arm you simply do not invoke them, and a `harnessed run` that
 // silently did nothing would be a worse trap than one that runs.

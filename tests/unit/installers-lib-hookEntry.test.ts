@@ -177,7 +177,16 @@ describe('4.27.0 compiled routing (D6 hook self-containment)', () => {
   })
 })
 
-describe('4.30.0 stop-hook identity (issue #6 — second compiled hook)', () => {
+// 4.30.0 stop-hook identity (issue #6 — second compiled hook).
+//
+// The stop-hook RUNTIME was retired in 5.0.11 (bin/harnessed-stop-hook.mjs no
+// longer ships), but the `stop-hook` IDENTITY stays in COMPILED_HOOK_IDENTITIES
+// on purpose: harnessedHookTeardown derives the identity of an EXISTING
+// settings.json registration from that list, so a legacy registration (npm form
+// or compiled form) is still recognised and can still be stripped by uninstall /
+// doctor. The assertions below are therefore recognition coverage, not install
+// coverage — do NOT delete them.
+describe('4.30.0 stop-hook identity (issue #6 — retired runtime, retained identity)', () => {
   const STOP = 'node bin/harnessed-stop-hook.mjs'
   const STOP_ABS = join(ROOT, 'bin', 'harnessed-stop-hook.mjs')
 
@@ -194,9 +203,13 @@ describe('4.30.0 stop-hook identity (issue #6 — second compiled hook)', () => 
     expect(r).toBe('"C:/Users/x/bin/harnessed.exe" stop-hook')
   })
 
-  it('npm mode → legacy node+mjs resolution', () => {
-    const r = resolveHookCommand(STOP, { ...deps([STOP_ABS]), compiledExecPath: () => null })
-    expect(r).toBe(`node "${STOP_ABS.replace(/\\/g, '/')}"`)
+  // The retired script no longer exists under the assets root, so npm mode
+  // takes the fail-open branch and leaves the relative token verbatim. (The
+  // "existing relative token → absolute quoted path" contract is covered for a
+  // SHIPPING script by the resolveHookCommand describe above.)
+  it('npm mode → the retired stop-hook script is left verbatim (it no longer ships)', () => {
+    const r = resolveHookCommand(STOP, { ...deps([]), compiledExecPath: () => null })
+    expect(r).toBe(STOP)
   })
 
   it('stop-hook identity does not collide with inject-state', () => {

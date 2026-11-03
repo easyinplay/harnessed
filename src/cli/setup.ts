@@ -871,7 +871,7 @@ export function registerSetup(program: Command): void {
       }
 
       // v4.18.0 — optional-tier offer (manifests/optional/: codegraph / ecc /
-      // chrome-devtools-mcp / perturn-inject / stop-hook-recover; 4.32.22 final
+      // chrome-devtools-mcp / perturn-inject; 4.32.22 final
       // — ecc stays optional as BONUS TIER with an informed offer note, and
       // chrome-devtools-mcp is the either/or fallback for non-ecc users).
       // Phase 18 D2 keeps optional/ out of Step B's auto-glob

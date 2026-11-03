@@ -198,7 +198,7 @@ export async function installCodexHook(ctx: InstallContext): Promise<InstallResu
     },
     mode,
   )
-  // R2 — no codex port for this hook (stop-hook-recover: CC transcript-shaped).
+  // R2 — no codex port for this hook (renders null).
   if (!rendered) return { aborted: true, reason: 'harness-mismatch' }
 
   // Defense in depth (sister ccHookAdd): the manifest's tail args land in a command

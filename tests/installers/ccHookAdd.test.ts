@@ -368,6 +368,10 @@ describe('cc-hook-add installer', () => {
     }
   })
 
+  // Retired component (runtime removed in 5.0.11): the `stop-hook` identity is
+  // retained, so this fixture still exercises "a third-party sibling that only
+  // LOOKS like a harnessed hook is not touched". The manifest is inline — no
+  // deleted manifest file is loaded.
   it('install preserves a third-party command that only contains a harnessed hook name', async () => {
     for (const k of Object.keys(fakeFs)) delete fakeFs[k]
     const thirdParty = 'node scripts/team-harnessed-stop-hook.mjs'

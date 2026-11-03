@@ -386,10 +386,12 @@ describe('install on codex', () => {
     ])
   })
 
-  it('stop-hook-recover has no codex port → harness-mismatch, zero side effects', async () => {
-    const r = await install(
-      manifest('stop-hook-recover', 'node bin/harnessed-stop-hook.mjs', 'Stop'),
-    )
+  // The `stop-hook` component was retired in 5.0.11 (its runtime no longer
+  // ships), but the IDENTITY is retained — and it still has no codex port, so
+  // the codex plugin refuses it honestly instead of writing a broken
+  // registration. The manifest here is inline; no deleted manifest is loaded.
+  it('a first-party hook id with no codex port → harness-mismatch, zero side effects', async () => {
+    const r = await install(manifest('stop-hook', 'node bin/harnessed-stop-hook.mjs', 'Stop'))
     expect(r).toEqual({ aborted: true, reason: 'harness-mismatch' })
     expect(codexCalls).toEqual([])
     expect(existsSync(MKT())).toBe(false)

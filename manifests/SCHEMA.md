@@ -60,7 +60,7 @@ spec: {...}                # 见 § 3
 | `platforms` | ✅ | enum[] | 至少 1 个：`linux` / `darwin` / `win32`，去重 |
 | `harness_overrides.codex.install` | optional | object | v4.14.0 — codex 平台整块替换 install（复用 § 4 install 判别 union;runInstall dispatch 前按 detectPlatform().id 合并） |
 | `harness_overrides.codex.uninstall` | optional | object | Phase 69 Task 3：复用主 `uninstall` shape，`cmd` 为非空必填 string，`cleanup_paths` 为可选 string[]，禁止额外字段。uninstall plan 整块选择该声明，但 selection 不证明 ownership，也不自动授权执行 |
-| `harness_overrides.codex.verify` | optional | object | v4.14.0 — codex 平台替换 verify(缺省沿用主 verify);无 override 的 `cc-plugin-marketplace` 在非 claude 平台 → `harness-mismatch` 诚实跳过。v16.0 Phase 64(ADR 0041)起 `cc-hook-add` 在 codex 上不再需要 override:first-party hook(`inject-state` / `check-docs`)生成本地 codex 插件 `harnessed-<name>@harnessed-local` 安装;无 codex port 的 hook(`stop-hook`)仍 `harness-mismatch` |
+| `harness_overrides.codex.verify` | optional | object | v4.14.0 — codex 平台替换 verify(缺省沿用主 verify);无 override 的 `cc-plugin-marketplace` 在非 claude 平台 → `harness-mismatch` 诚实跳过。v16.0 Phase 64(ADR 0041)起 `cc-hook-add` 在 codex 上不再需要 override:first-party hook(`inject-state` / `check-docs`)生成本地 codex 插件 `harnessed-<name>@harnessed-local` 安装;无 codex port 的 hook 仍 `harness-mismatch`(`stop-hook` 组件已退役,不再有随包 manifest;`hook_event` 的 `Stop` 枚举值保留,供第三方 manifest 使用) |
 
 ---
 

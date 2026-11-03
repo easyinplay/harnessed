@@ -25,7 +25,6 @@ const OWNED_HOOKS = [
   ['cc-hooks', 'update-reminder'],
   ['optional', 'perturn-inject'],
   ['optional', 'perturn-inject-invalidate'],
-  ['optional', 'stop-hook-recover'],
   ['cc-hooks', 'dashboard-autospawn'],
 ] as const
 

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+// `stop-hook` is a RETIRED component (runtime removed in 5.0.11). These
+// case-sensitivity assertions are kept deliberately: the identity is retained
+// so a legacy registration can still be recognised and stripped.
+
 async function identityWithAssetsRoot(root: string) {
   vi.stubEnv('HARNESSED_ASSETS_OVERRIDE', root)
   vi.resetModules()

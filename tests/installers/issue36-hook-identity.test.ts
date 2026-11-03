@@ -6,6 +6,11 @@
 // The trust base is the CURRENT assets root, so the fixture points the assets
 // root at `<tmp>/assets/9.9.9` — the compiled layout (`<stateRoot>/assets/<ver>`)
 // the version-agnostic comparison keys on.
+//
+// `stop-hook` is a RETIRED component (runtime removed in 5.0.11). The identity
+// is retained on purpose, so this matrix stays the regression guard that a
+// legacy registration is recognised as first-party (and therefore strippable)
+// while a third-party lookalike never is.
 
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

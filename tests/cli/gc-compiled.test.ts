@@ -97,6 +97,9 @@ describe('gcCompiledArtifacts', () => {
   // `assets/<oldVersion>/…`. Deleting that directory turns a recoverable
   // registration into MODULE_NOT_FOUND on every prompt, so gc must keep every
   // version the host settings still reference.
+  // (The registration points at the RETIRED stop-hook script — the identity is
+  // retained on purpose, so gc still protects a version a legacy registration
+  // references.)
   it('keeps an assets/<version> dir still referenced by settings.json, sweeps the others', async () => {
     const w = world()
     for (const v of ['4.32.0', '4.31.0']) {

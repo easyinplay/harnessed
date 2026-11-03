@@ -25,7 +25,7 @@ export interface StaleHooksDeps {
 
 const NAME = 'stale hooks'
 
-/** A versioned assets path (`…/assets/4.32.0/bin/harnessed-stop-hook.mjs`) is a
+/** A versioned assets path (`…/assets/4.32.0/bin/harnessed-inject-state.mjs`) is a
  *  registration harnessed STILL ships — only its version is stale. Re-running
  *  setup/update re-registers it; `harnessed uninstall` would strip a hook the
  *  user still wants (issue #36). */

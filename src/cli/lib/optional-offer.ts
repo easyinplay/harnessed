@@ -1,7 +1,7 @@
 // v4.18.0 — setup optional-tier offer(用户指示: setup 能装 codegraph)。
 //
-// manifests/optional/(codegraph / ecc / chrome-devtools-mcp / perturn-inject /
-// stop-hook-recover;4.32.22 终局 — ecc 为 bonus tier 留在 optional,offer 时打
+// manifests/optional/(codegraph / ecc / chrome-devtools-mcp / perturn-inject;
+// 4.32.22 终局 — ecc 为 bonus tier 留在 optional,offer 时打
 // 知情提示;chrome-devtools-mcp 为不装 ecc 用户的兜底,与 ecc 二选一)per Phase 18 D2 特意不进
 // Step B 的 auto-glob(opt-in 锁定)——但 pre-4.18.0 setup 没有任何入口,唯一路径是
 // 用户自己知道 `harnessed install <name>`(三层解析 install.ts:72 已通,却无人引导)。

@@ -251,12 +251,16 @@ describe('no-external-runtime smoke safeguards', () => {
   it('validates only owned registrations and rejects unexpected commands', () => {
     const npmRoot = resolve('npm root')
     const binary = resolve('harnessed binary.exe')
+    // The smoke script's owned-identity allow-list is ['inject-state',
+    // 'check-docs'] — the retired stop-hook runtime (removed in 5.0.11) is no
+    // longer a smoke-owned hook.
+    const injectScript = join(npmRoot, 'bin', 'harnessed-inject-state.mjs')
     expect(
-      parseOwnedHook(`node "${join(npmRoot, 'bin', 'harnessed-stop-hook.mjs')}"`, 'stop-hook', {
+      parseOwnedHook(`node "${injectScript}"`, 'inject-state', {
         id: 'node-npm',
         packageRoot: npmRoot,
       }),
-    ).toEqual({ executable: 'node', args: [join(npmRoot, 'bin', 'harnessed-stop-hook.mjs')] })
+    ).toEqual({ executable: 'node', args: [injectScript] })
     expect(
       parseOwnedHook(`"${binary}" inject-state`, 'inject-state', {
         id: 'bun-compiled',
@@ -264,12 +268,11 @@ describe('no-external-runtime smoke safeguards', () => {
       }),
     ).toEqual({ executable: binary, args: ['inject-state'] })
     expect(
-      parseOwnedHook(
-        `node "${join(npmRoot, 'bin', 'harnessed-stop-hook.mjs').replace(/\\/g, '/')}"`,
-        'stop-hook',
-        { id: 'node-npm', packageRoot: npmRoot },
-      ),
-    ).toEqual({ executable: 'node', args: [join(npmRoot, 'bin', 'harnessed-stop-hook.mjs')] })
+      parseOwnedHook(`node "${injectScript.replace(/\\/g, '/')}"`, 'inject-state', {
+        id: 'node-npm',
+        packageRoot: npmRoot,
+      }),
+    ).toEqual({ executable: 'node', args: [injectScript] })
     expect(
       parseOwnedHook(`"${binary.replace(/\\/g, '/')}" inject-state`, 'inject-state', {
         id: 'bun-compiled',
@@ -277,14 +280,13 @@ describe('no-external-runtime smoke safeguards', () => {
       }),
     ).toEqual({ executable: binary, args: ['inject-state'] })
     expect(
-      parseOwnedHook(
-        `bun "${join(npmRoot, 'bin', 'harnessed-stop-hook.mjs').replace(/\\/g, '/')}"`,
-        'stop-hook',
-        { id: 'bun-explicit', packageRoot: npmRoot },
-      ),
-    ).toEqual({ executable: 'bun', args: [join(npmRoot, 'bin', 'harnessed-stop-hook.mjs')] })
+      parseOwnedHook(`bun "${injectScript.replace(/\\/g, '/')}"`, 'inject-state', {
+        id: 'bun-explicit',
+        packageRoot: npmRoot,
+      }),
+    ).toEqual({ executable: 'bun', args: [injectScript] })
     expect(() =>
-      parseOwnedHook(`node "${join(npmRoot, 'bin', 'harnessed-stop-hook.mjs')}"`, 'stop-hook', {
+      parseOwnedHook(`node "${injectScript}"`, 'inject-state', {
         id: 'bun-explicit',
         packageRoot: npmRoot,
       }),
@@ -296,7 +298,7 @@ describe('no-external-runtime smoke safeguards', () => {
       `"${binary}" inject-state`,
     ]) {
       expect(() =>
-        parseOwnedHook(command, 'stop-hook', { id: 'bun-compiled', executable: binary }),
+        parseOwnedHook(command, 'check-docs', { id: 'bun-compiled', executable: binary }),
       ).toThrow()
     }
   })

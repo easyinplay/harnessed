@@ -218,11 +218,14 @@ describe('renderCodexHookPlugin — one plugin per hook manifest (CQ2)', () => {
     expect(hooks.hooks.PreToolUse[0].matcher).toBe('Bash')
   })
 
-  it('stop-hook-recover is NOT portable (CC transcript-shaped) → null', () => {
+  // The `stop-hook` component was retired in 5.0.11 (its runtime no longer
+  // ships), but the IDENTITY is retained — and it is still NOT portable to
+  // codex (CC transcript-shaped), so no plugin is rendered for it.
+  it('the stop-hook identity is NOT portable (CC transcript-shaped) → null', () => {
     expect(
       renderCodexHookPlugin(
         {
-          manifestName: 'stop-hook-recover',
+          manifestName: 'stop-hook',
           event: 'Stop',
           hookCommand: 'node bin/harnessed-stop-hook.mjs',
         },

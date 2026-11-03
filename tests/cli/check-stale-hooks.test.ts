@@ -1,4 +1,8 @@
 // issue #8 — doctor stale-hook self-heal probe.
+//
+// The stop-hook registrations below are LEGACY (that runtime was removed in
+// 5.0.11). The `stop-hook` identity is retained on purpose so doctor still
+// warns about a retired registration — keep these guards.
 
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { homedir, tmpdir } from 'node:os'

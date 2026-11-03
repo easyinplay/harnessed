@@ -44,7 +44,6 @@ const { registerRollback } = await import('./cli/rollback.js')
 const { registerRun } = await import('./cli/run.js')
 const { registerSetup } = await import('./cli/setup.js')
 const { registerStatus } = await import('./cli/status.js')
-const { registerStopHook } = await import('./cli/stopHookCmd.js')
 const { registerUninstall } = await import('./cli/uninstall.js')
 const { registerUpdate } = await import('./cli/update.js')
 const { registerWorkflows } = await import('./cli/workflows.js')
@@ -190,7 +189,6 @@ registerUpdate(program) // 25th — Phase 20 update: self-update + --upstreams +
 registerReleasePreflight(program) // 26th — Phase 21 ship: read-only release-readiness gate
 registerRetro(program) // 27th — Phase 22 retro-reminder reset (--done zeroes the phase counter)
 registerInjectState(program) // 28th — 4.27.0 B3 D6: perturn hook via the binary itself (no host node)
-registerStopHook(program) // 29th — 4.30.0 issue #6: mode-B tool-call corruption auto-recovery Stop hook
 registerEval(program) // 30th — 4.31.0 eval Slice A: orchestrator-behavior regression trap suite
 registerCheckDocs(program) // 31st — T2.5: doc-discipline gate that actually SHIPS (scripts/ is not in `files`)
 registerFacts(program) // 32nd — T2.1: gate-fact production chain (feeds `gates --context-file`)

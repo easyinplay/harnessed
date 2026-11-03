@@ -33,7 +33,6 @@ import { registerRollback } from '../../src/cli/rollback.js'
 import { registerRun } from '../../src/cli/run.js'
 import { registerSetup } from '../../src/cli/setup.js'
 import { registerStatus } from '../../src/cli/status.js'
-import { registerStopHook } from '../../src/cli/stopHookCmd.js'
 import { registerUninstall } from '../../src/cli/uninstall.js'
 import { registerUpdate } from '../../src/cli/update.js'
 import { registerWorkflows } from '../../src/cli/workflows.js'
@@ -71,7 +70,6 @@ const registrars = {
   registerRun,
   registerSetup,
   registerStatus,
-  registerStopHook,
   registerUninstall,
   registerUpdate,
   registerWorkflows,
@@ -91,7 +89,9 @@ function commandPaths(command: Command, parent: string[] = []): string[] {
   })
 }
 
-const internalTopLevel = new Set(['help', 'inject-state', 'stop-hook'])
+// `stop-hook` left this set in 5.0.11: the internal subcommand was retired with
+// the component, so it is no longer registered at all (not merely filtered out).
+const internalTopLevel = new Set(['help', 'inject-state'])
 const paths = commandPaths(program).filter(
   (path) => !internalTopLevel.has(path.split(' ')[0] ?? ''),
 )

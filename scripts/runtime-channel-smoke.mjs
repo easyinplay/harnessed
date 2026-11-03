@@ -1,13 +1,6 @@
 #!/usr/bin/env node
 // Only first-party hook installs into mkdtemp homes; never installs upstreams.
-import {
-  copyFileSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { delimiter, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import {
@@ -22,8 +15,7 @@ import {
 
 export function parseOwnedHook(command, identity, channel) {
   const normalized = command.replace(/\\/g, '/')
-  if (!['stop-hook', 'inject-state', 'check-docs'].includes(identity))
-    throw new Error('Not an owned smoke hook')
+  if (!['inject-state', 'check-docs'].includes(identity)) throw new Error('Not an owned smoke hook')
   const tail = identity === 'check-docs' ? ['--hook'] : []
   const suffix = tail.length ? ` ${tail.join(' ')}` : ''
   if (channel.id === 'bun-compiled') {
@@ -168,26 +160,16 @@ export async function smokeChannel(channel, options) {
           throw new Error('Invalid prompt output')
       }
     }
-    await run('install-stop-hook', ['install', 'stop-hook-recover', '--non-interactive'])
     await run('install-inject-hook', ['install', 'perturn-inject', '--non-interactive'])
     const settings = JSON.parse(
       readFileSync(join(fixture.home, '.claude', 'settings.json'), 'utf8'),
     )
-    for (const [event, identity] of [
-      ['Stop', 'stop-hook'],
-      ['UserPromptSubmit', 'inject-state'],
-    ]) {
+    for (const [event, identity] of [['UserPromptSubmit', 'inject-state']]) {
       const command = registration(settings, event)
       const invocation = parseOwnedHook(command, identity, channel)
-      const transcript = join(fixture.root, 'transcript.jsonl')
-      writeFileSync(
-        transcript,
-        `${JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: '<invoke name="read"><parameter name="path">fixture</parameter></invoke>' }] } })}\n`,
-      )
       const stdin = JSON.stringify({
         session_id: 'runtime-smoke',
         cwd: fixture.cwd,
-        transcript_path: transcript,
       })
       const result = await runCommand(invocation.executable, invocation.args, fixture, {
         ...options,
@@ -195,34 +177,8 @@ export async function smokeChannel(channel, options) {
       })
       hooks.push({ event, identity, command, invocation, result })
       requireSuccess(result, identity)
-      if (identity === 'stop-hook') {
-        if (JSON.parse(result.stdout).decision !== 'block')
-          throw new Error('Stop hook did not detect corrupt tool text')
-        // A real state-root write, not the hook's fail-soft empty success path.
-        const retries = join(fixture.state, 'stop-hook-retries')
-        if (
-          !existsSync(retries) ||
-          !readdirSync(retries).some(
-            (f) => JSON.parse(readFileSync(join(retries, f), 'utf8')).count === 1,
-          )
-        )
-          throw new Error('Stop hook ignored isolated state root')
-        const second = await runCommand(invocation.executable, invocation.args, fixture, {
-          ...options,
-          stdin,
-        })
-        const third = await runCommand(invocation.executable, invocation.args, fixture, {
-          ...options,
-          stdin,
-        })
-        hooks.at(-1).retryResults = [second, third]
-        requireSuccess(second, 'Stop retry')
-        requireSuccess(third, 'Stop retry cap')
-        if (JSON.parse(second.stdout).decision !== 'block' || third.stdout.trim() !== '')
-          throw new Error('Stop retry cap did not persist')
-      } else if (!result.stdout.includes('<workflow-intent>') || !result.stdout.includes('/task')) {
+      if (!result.stdout.includes('<workflow-intent>') || !result.stdout.includes('/task'))
         throw new Error('Inject hook did not read the checkpoint intent')
-      }
     }
     trapInfo.unexpectedCalls = readFileSync(traps.logPath, 'utf8')
       .trim()

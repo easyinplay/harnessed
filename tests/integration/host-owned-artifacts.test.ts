@@ -323,7 +323,7 @@ describe('owned payload declarations consumed by production writers', () => {
             mode,
           )
           if (!rendered) {
-            expect(['stop-hook-recover', 'dashboard-autospawn']).toContain(manifest.metadata.name)
+            expect(['dashboard-autospawn']).toContain(manifest.metadata.name)
             exceptions.add(manifest.metadata.name)
             continue
           }
@@ -337,7 +337,7 @@ describe('owned payload declarations consumed by production writers', () => {
           metadata.add(`codex/harnessed/marketplace/plugins/${rendered.pluginName}/install.json`)
           metadata.add(`codex/plugins/data/${rendered.pluginName}-harnessed-local/install.json`)
         }
-        expect(exceptions).toEqual(new Set(['stop-hook-recover', 'dashboard-autospawn']))
+        expect(exceptions).toEqual(new Set(['dashboard-autospawn']))
         expect(manifests.length).toBeGreaterThan(0)
         for (let pass = 0; pass < 2; pass++) {
           for (const manifest of manifests) {
@@ -381,10 +381,12 @@ describe('owned payload declarations consumed by production writers', () => {
             ).toBe(true)
           }
         }
+        // The stop-hook component was retired in 5.0.11, but its identity is
+        // retained — and it still has no codex port (CC transcript-shaped).
         expect(
           renderCodexHookPlugin(
             {
-              manifestName: 'stop-hook-recover',
+              manifestName: 'stop-hook',
               event: 'Stop',
               hookCommand: 'node bin/harnessed-stop-hook.mjs',
             },

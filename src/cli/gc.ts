@@ -57,7 +57,7 @@ export interface CompiledGcResult {
 const REFERENCED_ASSETS_RE = /\/assets\/([^/]+)\/(?:bin|scripts)\/[^\s"']*\.mjs/
 
 /** Asset versions the host settings.json still references from a hook
- *  command. A stale registration (`…/assets/4.32.0/bin/harnessed-stop-hook.mjs`)
+ *  command. A stale registration (`…/assets/4.32.0/bin/harnessed-inject-state.mjs`)
  *  keeps that directory alive: deleting it turns a recoverable registration
  *  into MODULE_NOT_FOUND on every prompt (issue #36).
  *

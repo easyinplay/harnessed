@@ -3,6 +3,11 @@
 // identify first-party harnessed hook registrations in ANY shape (npm relative
 // or absolute .mjs, compiled `<binary> <id>`, legacy flat, nested) so unified
 // uninstall + doctor self-heal can strip them without a manifest in hand.
+//
+// `stop-hook` is a RETIRED component (runtime removed in 5.0.11) — the
+// assertions below are kept deliberately: the identity is retained so legacy
+// `node …/bin/harnessed-stop-hook.mjs` / `"<binary>" stop-hook` registrations
+// can still be recognised and stripped. Do not weaken or delete them.
 
 import { homedir } from 'node:os'
 import { join } from 'node:path'

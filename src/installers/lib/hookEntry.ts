@@ -50,17 +50,22 @@ export interface HookCmdDeps {
 
 /** Normalized registration identities for first-party harnessed hooks. The
  *  identity is the CLI subcommand the binary dispatches on; the npm form is
- *  either `node …/harnessed-<id>.mjs` (inject-state / stop-hook — a dep-free bin
- *  script) or the bare CLI form `harnessed <id> …` (check-docs — a plain
- *  subcommand, no bin script), and the compiled form is always
- *  `"<binary>" <id> …`. All forms share ONE identity so entryMatchesRegistration
- *  migrates/dedupes across mode switches in either direction. 4.30.0 added
- *  `stop-hook` (issue #6) alongside 4.27.0's `inject-state`; 4.34.1 added
- *  `check-docs` (doc-discipline-gate, 4.34.0) — see resolveHookCommand for why
- *  that one could not be listed until the compiled rewrite preserved trailing
- *  arguments. */
+ *  either `node …/harnessed-<id>.mjs` (inject-state — a dep-free bin script) or
+ *  the bare CLI form `harnessed <id> …` (check-docs — a plain subcommand, no bin
+ *  script), and the compiled form is always `"<binary>" <id> …`. All forms share
+ *  ONE identity so entryMatchesRegistration migrates/dedupes across mode switches
+ *  in either direction. 4.27.0 added `inject-state`; 4.34.1 added `check-docs`
+ *  (doc-discipline-gate, 4.34.0) — see resolveHookCommand for why that one could
+ *  not be listed until the compiled rewrite preserved trailing arguments.
+ *
+ *  `stop-hook` is a RETIRED identity, not an installable hook: it is kept here
+ *  purely so a legacy registration written by an older install is still
+ *  recognized (and therefore stripped by `harnessed uninstall` and reported by
+ *  doctor). No manifest ships it any more. */
 export const COMPILED_HOOK_IDENTITIES = [
   'inject-state',
+  // retired in 5.0.11 — no manifest ships this hook any more; the identity is
+  // kept so legacy registrations can still be recognized and stripped.
   'stop-hook',
   'check-docs',
   'update-reminder',

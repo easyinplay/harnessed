@@ -47,8 +47,8 @@ export interface RenderedFile {
   content: string
 }
 
-/** Hook ids that have a codex port (R2). stop-hook reads Claude Code transcript
- *  shapes — no codex counterpart, so stop-hook-recover stays claude-only. */
+/** Hook ids that have a codex port (R2). An id outside this set has no codex
+ *  counterpart — `renderCodexHookPlugin` returns null for it. */
 const PORTABLE_IDS: ReadonlySet<string> = new Set(['inject-state', 'check-docs', 'update-reminder'])
 /** Ids whose behavior depends on the host: codex hook processes carry NO CODEX_*
  *  env (measured), so the host must be passed explicitly (R3). check-docs joined

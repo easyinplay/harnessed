@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- The optional `stop-hook-recover` component (Tool-Call Auto-Recovery Stop hook) has been removed. Its manifest, the `harnessed stop-hook` internal subcommand and the generated `bin/harnessed-stop-hook.mjs` are gone; `harnessed setup` no longer offers it and `harnessed install stop-hook-recover` no longer resolves. The `stop-hook` hook identity is kept internally, so a registration left behind by an earlier install is still recognized and removed by the unified `harnessed uninstall` and is still flagged by `harnessed doctor`.
+
 ## [5.0.10] - 2026-11-02
 
 ### Fixed

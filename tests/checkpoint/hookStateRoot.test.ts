@@ -14,8 +14,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+// The state-root contract is exercised through the inject bin. The Stop hook bin
+// (bin/harnessed-stop-hook.mjs) was retired in 5.0.11 and no longer ships, so it
+// is not a second vehicle for this contract — the inject bin is.
 const INJECT_BIN = join(process.cwd(), 'bin', 'harnessed-inject-state.mjs')
-const STOP_BIN = join(process.cwd(), 'bin', 'harnessed-stop-hook.mjs')
 
 let home: string
 
@@ -89,8 +91,8 @@ describe('bin/harnessed-inject-state.mjs resolves the root through detectPlatfor
 })
 
 describe('hook bins stay dependency-free', () => {
-  it.each([INJECT_BIN, STOP_BIN])('%s bundles no typebox', (bin) => {
-    expect(readFileSync(bin, 'utf8')).not.toMatch(/typebox/i)
+  it(`${INJECT_BIN} bundles no typebox`, () => {
+    expect(readFileSync(INJECT_BIN, 'utf8')).not.toMatch(/typebox/i)
   })
 
   it('the precedence replica is gone from the bundle (single SoT: detectPlatform)', () => {

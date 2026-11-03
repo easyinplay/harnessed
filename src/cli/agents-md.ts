@@ -4,8 +4,8 @@
 // 那是维护者的个人指令文件,harnessed 只在被明确要求时碰它,而且只碰标记区间内。
 //
 // codex-only,且是**诚实拒绝**而非假装成功:claude 上没有 AGENTS.md 这个加载契约,
-// 悄悄写一个文件在那儿只会制造一份没人读的副本(与 `stop-hook-recover` 在 codex 上
-// 返回 harness-mismatch 同一个姿态,ADR 0041 § Consequences)。
+// 悄悄写一个文件在那儿只会制造一份没人读的副本(与无 codex port 的 hook 返回
+// harness-mismatch 同一个姿态,ADR 0041 § Consequences)。
 //
 // 退出码:0 = 写了 / 无变化 / 预览 / 移除;1 = 宿主不符或写入失败。
 
