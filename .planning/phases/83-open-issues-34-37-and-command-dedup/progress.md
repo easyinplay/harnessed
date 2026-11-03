@@ -356,3 +356,29 @@ release `v5.0.11` 9 个 asset（3 binary + 3 .sha256 + 3 .sha256.sig）。
 - 换成 5.0.11 后：`harnessed --version` → 5.0.11（自带资产解包到
   `~/.claude/harnessed/assets/5.0.11`）；codex 宿主 `harnessed setup --non-interactive`
   → **0 failed / exit 0**，optional 清单 3 → 2（stop-hook-recover 已不在）。
+
+## v5.0.12 shipped (2026-11-03)
+
+两个 TODO（同批修完同批发）：
+
+1. **binary 自更新在慢链路上失败且报错指错方向** —— 真因是**资产太大 + 下载整块进内存**：
+   windows asset 103,795,200 字节（≈99MB），本机链路 ≈157 KB/s（`curl` 拉完 660 秒）；
+   旧实现 `res.arrayBuffer()` 把 99MB 全塞内存再落盘，所以下载期间磁盘上没有临时文件、
+   屏幕上没有输出，看着像挂死；metadata 跳的 10 s 超时在这种链路上也会误报成
+   「无法访问 GitHub releases 解析最新版」。修法（`src/cli/lib/selfUpdateBinary.ts`）：
+   metadata 预算 10 s → **30 s** + **分阶段报错**（timeout / network / HTTP status /
+   解析失败各一条，「release 还在发布中」只留给真正属于发布中的情况）；资产**流式落盘**；
+   **停滞守卫** 120 s 无数据即中止并报「已收字节数 + 用时 + 平均速率」；进度行 60 s 一行。
+   新增 13 条测试（`tests/cli/lib/selfUpdateBinary-stream.test.ts`）。
+2. **doctor 的「双通道并存」是假阳性** —— `npmPresent` 把**运行通道**直接当存在，
+   于是源码树运行（`node dist/cli.mjs`）也算一路；本机其实只装了 binary。
+   修法：存在性一律**按磁盘判定**，单通道那行改报**磁盘上真实存在**的通道名。
+   真机验证：源码树与 binary 两侧都是 `✓ install channel — single channel (binary)`。
+
+提交：`18328a7`（两个修复 + 测试 + CHANGELOG + TODOS）→ `f5f35e9`（chore(release):
+prepare v5.0.12）。CI `41656038418` 9/9 绿 → tag `v5.0.12` → publish run `41657144025`
+success（npm publish + 3 binary job）。Registry 直查：`dist-tags.latest` = **5.0.12**，
+`versions["5.0.12"]` 存在；release `v5.0.12` 9 个 asset。
+
+本机验证：`tests/cli` 全量 118 文件 / 1465 测试绿，tsc 0，biome 干净；顺手清掉 23 个
+agent 内联命令留下的 0 字节垃圾文件（untracked + 0 字节才清，另一会话的文件保留）。

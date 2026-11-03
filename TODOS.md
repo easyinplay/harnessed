@@ -299,6 +299,27 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
 
 ## From the 2026-11-03 v5.0.11 live install (本机 Windows)
 
+- [ ] **自动检测新版本并自动更新** — 候选(维护者提问,尚未立项;属新功能,开工前应走
+  `/office-hours` + `/plan-ceo-review`)。现状拆三块看:
+  - **检测已有**:`update-reminder` SessionStart hook(`manifests/cc-hooks/update-reminder.yaml`)
+    + `src/cli/lib/update-check-cache.ts` 的 **24h TTL 缓存**(`DEFAULT_UPDATE_CHECK_TTL_MS`);
+    缓存命中时 hot path 不出网,无缓存才查(npm view / GitHub API,fail-soft,null 不入缓存)。
+    `harnessed update --check` 同源。
+  - **自动替换已有**:`runBinarySelfUpdate`(`src/cli/lib/selfUpdateBinary.ts`)是完整的自替换
+    管线 —— 下载 → sha256 → **ed25519 签名校验**(合同级)→ `--version` 冒烟 → 同目录同卷
+    rename(exec → .bak,temp → exec)→ 失败回滚 → `bin-backup/` 副本;成功后由**新 binary
+    接管**刷新 skills/hooks(v5.0.8 的 owned-state handover)。
+  - **缺的是自动触发**:update-reminder **只提醒不动手**,真正的自替换只在手动
+    `harnessed update` 时发生。要补三件事:
+    1. **consent 开关**:自动换 binary 是有副作用的动作,默认关;现成的
+       `update-reminder-preferences.json` 加一个 `autoUpdate` 字段最省事。
+    2. **调度**:不能发生在会话开始(阻塞),要放进 SessionStart 的后台 worker
+       (`harnessed-update-reminder-worker.mjs` 已经在后台跑)下载,**下次会话前完成切换**。
+    3. **慢链路策略**:本机 99MB 曾用 11 分钟(后来恢复到 27 秒),所以后台下载必须
+       支持「慢慢下 + 失败重试 + 断点」,且下载中不占会话。v5.0.12 的流式落盘 + 进度行 +
+       停滞守卫正是这件事的前提(不然后台下载既看不见也卡不住)。
+  - 风险点:**切换时机**与**失败后用户状态一致性**(新 binary 没起来时旧 binary 要能回退)。
+
 - [x] **binary 自更新在慢链路上失败,且报错信息指错了地方** — 已修(2026-11-03)。
   现象:本机 `harnessed update`(5.0.10 binary)报
   `could not reach GitHub releases to resolve the latest binary`;重跑一次则**挂住** 10 分钟以上。
