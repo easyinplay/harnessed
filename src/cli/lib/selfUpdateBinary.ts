@@ -21,6 +21,7 @@
 // tmpdirs and inject failures via fsOps.
 
 import { createHash } from 'node:crypto'
+import { createWriteStream } from 'node:fs'
 import {
   access,
   chmod,
@@ -30,9 +31,10 @@ import {
   mkdir,
   readdir,
   readFile,
-  writeFile,
 } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
+import { Readable, Transform } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import pkg from '../../../package.json' with { type: 'json' }
 import { withHostInstallEnv } from '../../installers/lib/runClaudeArgs.js'
 import type { HostInstallContext } from '../../platform/hostInstallContext.js'
@@ -73,6 +75,31 @@ export interface ReleaseInfo {
 export interface SelfUpdateNetDeps {
   fetchImpl?: typeof fetch
   sleep?: (ms: number) => Promise<void>
+  /** Test seam: shorten the asset stall guard so the failure path is reachable
+   *  without waiting the production 120 s budget. */
+  stallTimeoutMs?: number
+  /** Test seam: shorten the progress cadence so the progress line is reachable
+   *  without waiting the production 60 s cadence. */
+  progressIntervalMs?: number
+}
+
+/**
+ * Why the metadata hop failed. The stages are NOT interchangeable for the
+ * user: a timeout needs patience (or a proxy), a bad HTTP status needs the
+ * release looked at, and a missing asset is a publish-window fact. Before
+ * this split every failure printed the same "could not reach GitHub" line,
+ * which pointed the maintainer at the network for a slow link (2026-11-03).
+ *
+ * `kind` is optional: an injected `{ error }` without a kind means the
+ * original "asset missing on the release" case, which is the ONLY one that
+ * may carry the "may still be publishing" hint.
+ */
+export type ReleaseResolveFailureKind = 'network' | 'timeout' | 'http' | 'parse' | 'publishing'
+
+export interface ReleaseResolveFailure {
+  /** Human-readable, already stage-specific. */
+  error: string
+  kind?: ReleaseResolveFailureKind
 }
 
 export interface SelfUpdateDeps {
@@ -84,8 +111,9 @@ export interface SelfUpdateDeps {
    *  `<asset>` + `<asset>.sha256`; skips GitHub AND the version compare. */
   sourceDir: string | null
   /** GitHub mode: latest release info, null = unreachable, {error} = actionable
-   *  (missing platform asset — publish window / failed matrix job). */
-  resolveRelease: () => Promise<ReleaseInfo | { error: string } | null>
+   *  (missing platform asset — publish window / failed matrix job; the
+   *  `kind` says WHICH stage failed, so the caller can pick the right remedy). */
+  resolveRelease: () => Promise<ReleaseInfo | ReleaseResolveFailure | null>
   downloadTo: (url: string, dest: string, fallbackUrl?: string) => Promise<void>
   fetchShaText: (url: string, fallbackUrl?: string) => Promise<string>
   /** Spawn `<bin> --version`, resolve its stdout. */
@@ -137,8 +165,8 @@ function downloadFailureMessage(
   const target = version ? ` for release v${version}` : ''
   return (
     `download failed${target}${url ? ` (tried ${url})` : ''}: ${detail} — ` +
-    `if the network blocks GitHub, use the npm channel (\`npm i -g harnessed@latest\`) ` +
-    `or a local build via \`HARNESSED_UPDATE_SOURCE_DIR=<dir> harnessed update\``
+    `the original binary was left untouched; if the network blocks GitHub, use the npm channel ` +
+    `(\`npm i -g harnessed@latest\`) or a local build via \`HARNESSED_UPDATE_SOURCE_DIR=<dir> harnessed update\``
   )
 }
 
@@ -212,17 +240,21 @@ export async function runBinarySelfUpdate(
       return {
         status: 'error',
         message:
-          'could not reach GitHub releases to resolve the latest binary — check the network ' +
-          'or use the npm channel (`npm i -g harnessed@latest`), or point ' +
+          'could not resolve the latest release from GitHub (no release information returned) — ' +
+          'use the npm channel (`npm i -g harnessed@latest`), or point ' +
           '`HARNESSED_UPDATE_SOURCE_DIR=<dir>` at a local build and re-run `harnessed update`',
       }
     }
     if ('error' in rel) {
       // OV2: actionable error, original untouched, NO fallback to older releases.
-      return {
-        status: 'error',
-        message: `${rel.error} — the release may still be publishing (retry in a few minutes) or use the npm channel (\`npm i -g harnessed@latest\`)`,
-      }
+      // The "may still be publishing" hint belongs to the ASSET-missing case
+      // ONLY — attaching it to a timeout is what misled the maintainer into
+      // blaming the publish window for a slow link (2026-11-03).
+      const publishing = rel.kind === undefined || rel.kind === 'publishing'
+      const remedy = publishing
+        ? 'the release may still be publishing (retry in a few minutes) or use the npm channel (`npm i -g harnessed@latest`)'
+        : 'the original binary was left untouched; use the npm channel (`npm i -g harnessed@latest`) or point `HARNESSED_UPDATE_SOURCE_DIR=<dir>` at a local build and re-run `harnessed update`'
+      return { status: 'error', message: `${rel.error} — ${remedy}` }
     }
     targetVersion = rel.version
     assetUrl = rel.assetUrl
@@ -552,11 +584,56 @@ export async function runBinaryRollback(
 
 // ── real deps (impure; update.ts wires these) ─────────────────────────────
 
+/**
+ * The releases/latest hop asks for ONE small JSON document. The maintainer's
+ * link measured ~157 KB/s end-to-end on 2026-11-03 and the old 10 s budget
+ * turned a slow-but-working link into a false "GitHub unreachable" verdict.
+ * 30 s leaves room for a slow TLS handshake + RTT without turning a dead
+ * socket into a long wait.
+ */
+const RELEASE_METADATA_TIMEOUT_MS = 30_000
+
+/**
+ * The asset hop's HEADER budget. The BODY is deliberately NOT covered by it:
+ * the header timer is cleared once the response resolves, so a body that
+ * stops mid-transfer used to hang forever. The body gets its own stall guard
+ * (ASSET_STALL_TIMEOUT_MS) instead.
+ */
+const ASSET_HEADERS_TIMEOUT_MS = 120_000
+
+/** The `.sha256` / `.sha256.sig` text hops are tiny; 30 s is generous. */
+const CHECKSUM_TIMEOUT_MS = 30_000
+
+/**
+ * Stall guard: abort the transfer when NO chunk arrives for this long. The
+ * measured transfer is slow (103,795,200 bytes @ ~157 KB/s ≈ 11 min) but
+ * never silent for minutes, so 120 s of silence means the link died — not
+ * that it is slow. Without this the old code waited forever.
+ */
+const ASSET_STALL_TIMEOUT_MS = 120_000
+
+/**
+ * Progress cadence for the streamed download. 60 s keeps the measured
+ * 11-minute download down to ~11 lines (the ~12-line budget) and still
+ * reports well inside the 120 s stall window, so a live transfer always
+ * shows progress before the guard can fire.
+ */
+const ASSET_PROGRESS_INTERVAL_MS = 60_000
+
+/** "The hop ran out of time" — distinct from "the network failed": the
+ *  remedy differs (a slow link needs patience, a blocked host needs a proxy). */
+class RequestTimeoutError extends Error {}
+
+/** A stalled transfer is a verdict on THIS attempt (the link is dead), not a
+ *  transient blip — retrying would only buy another 120 s of silence. */
+class TransferStalledError extends Error {}
+
 async function fetchWithTimeout(
   url: string,
   timeoutMs: number,
   net: SelfUpdateNetDeps = {},
   headers: Record<string, string> = {},
+  controller?: AbortController,
 ): Promise<Response> {
   // 受限网络:Node 默认**忽略** HTTP_PROXY(实测 2026-10-14,见 proxyDispatcher.ts 的表),
   // 所以在第一次出网前把 EnvHttpProxyAgent 装成全局 dispatcher。幂等、fail-soft,
@@ -566,8 +643,14 @@ async function fetchWithTimeout(
   // 以及 npm 版本检查 —— 那条走子进程 `npm view`,代理由 npm 自己处理,不经这里。
   await ensureProxyDispatcher()
   const doFetch = net.fetchImpl ?? fetch
-  const ac = new AbortController()
-  const timer = setTimeout(() => ac.abort(), timeoutMs)
+  // The caller may own the controller: the asset path needs to abort the
+  // BODY mid-transfer (stall guard), which a controller created here could
+  // not reach — the header timer below is cleared as soon as the response
+  // resolves.
+  const ac = controller ?? new AbortController()
+  const timer = setTimeout(() => {
+    ac.abort(new RequestTimeoutError(`the request to ${url} timed out after ${timeoutMs} ms`))
+  }, timeoutMs)
   try {
     return await doFetch(url, {
       signal: ac.signal,
@@ -600,29 +683,47 @@ const DOWNLOAD_ATTEMPTS = 3
 /**
  * Fetch with exponential backoff, then try the fallback URL when the primary
  * host is unreachable. `label` names the artifact in the thrown error so the
- * caller can report which URL failed.
+ * caller can report which URL failed. `consume` receives the response AND the
+ * controller of this attempt, so a consumer that reads the body can abort
+ * THIS attempt (the asset path's stall guard) without touching the others.
  */
-async function fetchAsset(
+async function fetchAsset<T>(
   url: string,
   fallbackUrl: string | undefined,
   timeoutMs: number,
   net: SelfUpdateNetDeps,
   label: string,
-): Promise<Response> {
+  consume: (res: Response, attempt: AbortController) => Promise<T>,
+): Promise<T> {
   const sleep = net.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
   const attempts: string[] = []
   let lastError: unknown
   for (const candidate of [url, fallbackUrl].filter((u): u is string => !!u)) {
     for (let attempt = 1; attempt <= DOWNLOAD_ATTEMPTS; attempt++) {
+      // One controller per attempt: the header timeout AND the body stall
+      // guard abort THIS attempt only.
+      const ac = new AbortController()
       try {
-        const res = await fetchWithTimeout(candidate, timeoutMs, net, {
-          accept: 'application/octet-stream',
-        })
-        if (res.ok) return res
-        lastError = new Error(`HTTP ${res.status} downloading ${candidate}`)
-        // 4xx is a verdict (asset gone) — retrying it is pointless.
-        if (res.status < 500) break
+        const res = await fetchWithTimeout(
+          candidate,
+          timeoutMs,
+          net,
+          {
+            accept: 'application/octet-stream',
+          },
+          ac,
+        )
+        if (!res.ok) {
+          lastError = new Error(`HTTP ${res.status} downloading ${candidate}`)
+          // 4xx is a verdict (asset gone) — retrying it is pointless.
+          if (res.status < 500) break
+        } else {
+          return await consume(res, ac)
+        }
       } catch (error) {
+        // A stalled transfer is a verdict, not a blip: surface it verbatim so
+        // the byte/rate evidence survives the generic wrapper.
+        if (error instanceof TransferStalledError) throw error
         lastError = error
         if (!isTransientNetworkError(error)) break
       }
@@ -637,9 +738,107 @@ async function fetchAsset(
   )
 }
 
-/** GitHub releases/latest → ReleaseInfo for THIS platform's asset (or an
- *  actionable {error} when the asset/sha is missing — OV2), null when
- *  unreachable.
+function formatBytes(n: number): string {
+  if (n >= 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`
+  if (n >= 1024) return `${(n / 1024).toFixed(1)} KB`
+  return `${n} B`
+}
+
+function formatRate(received: number, elapsedMs: number): string {
+  if (received <= 0 || elapsedMs <= 0) return '0 KB/s'
+  return `${(received / 1024 / (elapsedMs / 1000)).toFixed(1)} KB/s`
+}
+
+/** The evidence a slow link needs: how much arrived, how long it took, and
+ *  the average rate — so "slow link" reads as slow link, not as "broken". */
+function transferStats(received: number, elapsedMs: number): string {
+  const seconds = (elapsedMs / 1000).toFixed(1)
+  const rate = received > 0 ? `, ${formatRate(received, elapsedMs)} average` : ''
+  return `${received} bytes received in ${seconds} s${rate}`
+}
+
+/**
+ * Stream the release asset to `dest`.
+ *
+ * Why streamed: the windows asset is 103,795,200 bytes (measured 2026-11-03)
+ * and the old implementation buffered it whole with `res.arrayBuffer()` — the
+ * entire asset sat in RAM and the temp file did not exist until the transfer
+ * ended, so an 11-minute download looked exactly like a hang. Streaming keeps
+ * memory flat and puts the temp file on disk while the bytes arrive.
+ *
+ * The stall guard aborts the transfer when no chunk arrives for
+ * `stallTimeoutMs`; the header timeout never covered the body.
+ */
+async function streamAssetToFile(
+  res: Response,
+  dest: string,
+  ac: AbortController,
+  stallTimeoutMs: number,
+  progressIntervalMs: number,
+  log: (line: string) => void,
+): Promise<void> {
+  if (!res.body) throw new Error('the release asset response carried no body')
+  const started = Date.now()
+  let received = 0
+  let lastProgressAt = started
+  let stalled = false
+  let stallTimer: NodeJS.Timeout | undefined
+
+  const resetStall = () => {
+    if (stallTimer) clearTimeout(stallTimer)
+    stallTimer = setTimeout(() => {
+      stalled = true
+      ac.abort(
+        new TransferStalledError(`no data received for ${Math.round(stallTimeoutMs / 1000)} s`),
+      )
+    }, stallTimeoutMs)
+  }
+
+  const meter = new Transform({
+    transform(chunk: Buffer, _encoding, callback) {
+      received += chunk.length
+      const now = Date.now()
+      if (now - lastProgressAt >= progressIntervalMs) {
+        lastProgressAt = now
+        log(`downloading ${formatBytes(received)} (${formatRate(received, now - started)})`)
+      }
+      resetStall()
+      callback(null, chunk)
+    },
+  })
+
+  resetStall()
+  try {
+    await pipeline(
+      // undici types the body as a DOM-ish ReadableStream; node:stream/web's
+      // class is the one Readable.fromWeb accepts.
+      Readable.fromWeb(res.body as unknown as import('node:stream/web').ReadableStream<Uint8Array>),
+      meter,
+      // flags 'w' truncates: a retried attempt must not append to the bytes
+      // a previous attempt already wrote.
+      createWriteStream(dest),
+      { signal: ac.signal },
+    )
+  } catch (e) {
+    if (stalled) {
+      throw new TransferStalledError(
+        `the download stalled — no data for ${Math.round(stallTimeoutMs / 1000)} s ` +
+          `(${transferStats(received, Date.now() - started)})`,
+      )
+    }
+    throw e
+  } finally {
+    if (stallTimer) clearTimeout(stallTimer)
+  }
+}
+
+/** GitHub releases/latest → ReleaseInfo for THIS platform's asset.
+ *
+ *  Failures are STAGE-SPECIFIC ({error, kind}): a timed-out/failed request, a
+ *  non-OK HTTP status, an unparseable body, and a missing asset are four
+ *  different user stories and used to collapse into one "could not reach
+ *  GitHub" line (2026-11-03). `null` is only returned when a caller injected
+ *  a resolver that had nothing to say.
  *
  *  #34 — the API asset endpoint (`asset.url`, `api.github.com/repos/.../releases/assets/{id}`)
  *  is the PRIMARY download form: same host as the metadata hop, and it 302s to
@@ -655,50 +854,73 @@ export async function resolveLatestRelease(
   platform: string = process.platform,
   arch: string = process.arch,
   net: SelfUpdateNetDeps = {},
-): Promise<ReleaseInfo | { error: string } | null> {
+): Promise<ReleaseInfo | ReleaseResolveFailure | null> {
+  let res: Response
   try {
-    const res = await fetchWithTimeout(RELEASES_LATEST_URL, 10_000, net)
-    if (!res.ok) return null
-    const body = (await res.json()) as {
-      tag_name?: string
-      assets?: { name?: string; url?: string; browser_download_url?: string }[]
-    }
-    const version = (body.tag_name ?? '').replace(/^v/, '')
-    if (!/^\d+\.\d+\.\d+/.test(version)) return null
-    const asset = assetNameFor(platform, arch)
-    const pick = (name: string) => body.assets?.find((a) => a.name === name)
-    const found = pick(asset)
-    const sha = pick(`${asset}.sha256`)
-    const sig = pick(`${asset}.sha256.sig`)
-    if (!found?.browser_download_url && !found?.url) {
-      return { error: `asset ${asset} not found on release v${version}` }
-    }
-    if (!sha?.browser_download_url && !sha?.url) {
-      return { error: `asset ${asset}.sha256 not found on release v${version}` }
-    }
-    // Primary = api endpoint when the release exposes one; the browser url
-    // becomes the fallback (and vice versa when the api url is absent).
-    const pair = (a: { url?: string; browser_download_url?: string } | undefined) => {
-      const api = a?.url
-      const browser = a?.browser_download_url
-      return api && browser
-        ? { primary: api, fallback: browser }
-        : { primary: api ?? browser ?? '', fallback: undefined }
-    }
-    const assetPair = pair(found)
-    const shaPair = pair(sha)
-    const sigPair = pair(sig)
+    res = await fetchWithTimeout(RELEASES_LATEST_URL, RELEASE_METADATA_TIMEOUT_MS, net)
+  } catch (e) {
+    const budget = `${RELEASE_METADATA_TIMEOUT_MS / 1000} s timeout budget`
     return {
-      version,
-      assetUrl: assetPair.primary,
-      shaUrl: shaPair.primary,
-      sigUrl: sigPair.primary || undefined,
-      assetFallbackUrl: assetPair.fallback,
-      shaFallbackUrl: shaPair.fallback,
-      sigFallbackUrl: sigPair.fallback,
+      error:
+        e instanceof RequestTimeoutError
+          ? `the request to the GitHub releases API timed out (${budget})`
+          : `the request to the GitHub releases API failed or timed out (${budget}): ${e instanceof Error ? e.message : String(e)}`,
+      kind: e instanceof RequestTimeoutError ? 'timeout' : 'network',
     }
-  } catch {
-    return null
+  }
+  if (!res.ok) {
+    return { error: `the GitHub releases API returned HTTP ${res.status}`, kind: 'http' }
+  }
+  let body: {
+    tag_name?: string
+    assets?: { name?: string; url?: string; browser_download_url?: string }[]
+  }
+  try {
+    body = (await res.json()) as typeof body
+  } catch (e) {
+    return {
+      error: `the GitHub releases API response could not be parsed: ${e instanceof Error ? e.message : String(e)}`,
+      kind: 'parse',
+    }
+  }
+  const version = (body.tag_name ?? '').replace(/^v/, '')
+  if (!/^\d+\.\d+\.\d+/.test(version)) {
+    return {
+      error: `the GitHub releases API response could not be parsed: unexpected tag_name "${body.tag_name ?? ''}"`,
+      kind: 'parse',
+    }
+  }
+  const asset = assetNameFor(platform, arch)
+  const pick = (name: string) => body.assets?.find((a) => a.name === name)
+  const found = pick(asset)
+  const sha = pick(`${asset}.sha256`)
+  const sig = pick(`${asset}.sha256.sig`)
+  if (!found?.browser_download_url && !found?.url) {
+    return { error: `asset ${asset} not found on release v${version}`, kind: 'publishing' }
+  }
+  if (!sha?.browser_download_url && !sha?.url) {
+    return { error: `asset ${asset}.sha256 not found on release v${version}`, kind: 'publishing' }
+  }
+  // Primary = api endpoint when the release exposes one; the browser url
+  // becomes the fallback (and vice versa when the api url is absent).
+  const pair = (a: { url?: string; browser_download_url?: string } | undefined) => {
+    const api = a?.url
+    const browser = a?.browser_download_url
+    return api && browser
+      ? { primary: api, fallback: browser }
+      : { primary: api ?? browser ?? '', fallback: undefined }
+  }
+  const assetPair = pair(found)
+  const shaPair = pair(sha)
+  const sigPair = pair(sig)
+  return {
+    version,
+    assetUrl: assetPair.primary,
+    shaUrl: shaPair.primary,
+    sigUrl: sigPair.primary || undefined,
+    assetFallbackUrl: assetPair.fallback,
+    shaFallbackUrl: shaPair.fallback,
+    sigFallbackUrl: sigPair.fallback,
   }
 }
 
@@ -706,6 +928,9 @@ export function realSelfUpdateDeps(
   context: HostInstallContext,
   net: SelfUpdateNetDeps = {},
 ): SelfUpdateDeps {
+  const log = (line: string) => console.warn(line)
+  const stallTimeoutMs = net.stallTimeoutMs ?? ASSET_STALL_TIMEOUT_MS
+  const progressIntervalMs = net.progressIntervalMs ?? ASSET_PROGRESS_INTERVAL_MS
   return {
     execPath: process.execPath,
     platform: process.platform,
@@ -714,13 +939,15 @@ export function realSelfUpdateDeps(
     sourceDir: process.env.HARNESSED_UPDATE_SOURCE_DIR?.trim() || null,
     resolveRelease: () => resolveLatestRelease(process.platform, process.arch, net),
     downloadTo: async (url, dest, fallbackUrl) => {
-      const res = await fetchAsset(url, fallbackUrl, 120_000, net, 'binary')
-      const buf = Buffer.from(await res.arrayBuffer())
-      await writeFile(dest, buf)
+      // Streamed, not buffered: a ~99 MB asset buffered whole sat in RAM and
+      // left no temp file on disk until the transfer ended, so an 11-minute
+      // download on a ~157 KB/s link looked like a hang (2026-11-03).
+      await fetchAsset(url, fallbackUrl, ASSET_HEADERS_TIMEOUT_MS, net, 'binary', (res, attempt) =>
+        streamAssetToFile(res, dest, attempt, stallTimeoutMs, progressIntervalMs, log),
+      )
     },
     fetchShaText: async (url, fallbackUrl) => {
-      const res = await fetchAsset(url, fallbackUrl, 30_000, net, 'checksum')
-      return res.text()
+      return fetchAsset(url, fallbackUrl, CHECKSUM_TIMEOUT_MS, net, 'checksum', (res) => res.text())
     },
     smoke: async (bin) => {
       const { execFile } = await import('node:child_process')
@@ -734,7 +961,7 @@ export function realSelfUpdateDeps(
       return stdout
     },
     stateRoot: () => context.platform.stateRoot,
-    log: (l) => console.warn(l),
+    log,
     pid: process.pid,
   }
 }

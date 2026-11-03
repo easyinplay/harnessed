@@ -299,29 +299,35 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
 
 ## From the 2026-11-03 v5.0.11 live install (本机 Windows)
 
-- [ ] **binary 自更新在慢链路上失败,且报错信息指错了地方** — 未修。
+- [x] **binary 自更新在慢链路上失败,且报错信息指错了地方** — 已修(2026-11-03)。
   现象:本机 `harnessed update`(5.0.10 binary)报
   `could not reach GitHub releases to resolve the latest binary`;重跑一次则**挂住** 10 分钟以上。
   但同一时刻 `curl` / `node fetch` / `bun fetch` 都能正常拿到 `v5.0.11`,api.github.com
   也不限流(49/60 剩余)。真因不是「解析 release」失败,而是**资产下载太慢**:
   `harnessed-windows-x64.exe` 有 **103,795,200 字节(≈99MB)**,实测 `curl` 拉完用了
-  **660 秒**(≈157 KB/s)—— binary 内置的下载超时扛不住,失败后错误信息却写成了
-  「无法访问 GitHub releases 解析最新版」,把人指向网络/代理方向,而不是慢链路。
-  两个改进方向:
-  1. **区分阶段**:解析 release 失败 vs 资产下载超时,分别给不同的报错文案(现在两者共用
-     同一句 `could not reach GitHub releases`)。
-  2. **下载策略**:给资产下载单独设更长/更贴身的超时(按 99MB 量级估),或支持断点续传;
-     必要时在文案里带上「本机链路约 X KB/s,预计 N 分钟」。
-  本机绕过方式(已用):`curl -L` 拉 asset + `sha256sum` 对 `.sha256` 校验 → 覆盖
+  **660 秒**(≈157 KB/s)—— 而且旧实现是 `res.arrayBuffer()` **整块进内存再落盘**,所以
+  下载期间磁盘上看不到临时文件、屏幕上也毫无输出,看着像挂死;metadata 跳的 10 s 超时
+  在这种链路上也会误报成「无法访问 GitHub releases」。
+  修法(`src/cli/lib/selfUpdateBinary.ts`):metadata 预算 10 s → **30 s**;失败**分阶段**
+  报错(timeout / network / HTTP 状态 / 解析失败各一条),「release 还在发布中」那句提示
+  只留给真正属于发布中��那种;资产改为**流式落盘**(99MB 不再整块进内存,下载期间能看到
+  临时文件与进度行),**停滞守卫** 120 s 无数据即中止并报「已收字节数 + 用时 + 平均速率」,
+  进度行每 60 s 一行(11 分钟 ≈ 11 行)。新增测试 13 条
+  (`tests/cli/lib/selfUpdateBinary-stream.test.ts`)。
+  本机绕过方式(当时已用):`curl -L` 拉 asset + `sha256sum` 对 `.sha256` 校验 → 覆盖
   `~/AppData/Local/harnessed/bin/harnessed.exe`(旧版留 `harnessed.exe.bak-5.0.10`)→
-  跑 `harnessed setup` 刷新自有状态。**另**:binary 体积 99MB 是否还能瘦(内嵌 assets /
-  bun runtime 占比)值得单独立项。
-- [ ] **doctor 的「双通道并存」告警会假阳性** — 未修。
+  跑 `harnessed setup` 刷新自有状态。
+- [ ] **binary 体积 99MB** — 未立项。windows asset 实测 103,795,200 字节;内嵌 assets /
+  bun runtime 各占多少、能否瘦(例如 assets 改为运行时按需解包)值得单独立项。
+- [x] **doctor 的「双通道并存」告警会假阳性** — 已修(2026-11-03)。
   现象:本机其实**只装了 binary 通道**(npm 全局前缀 `C:\Users\easyi\AppData\Roaming\npm`
   下没有 `harnessed.cmd`,`npm ls -g` 也没有 harnessed),但 doctor 仍报
   "both harnessed install channels are present"。
-  根因:`src/cli/lib/check-install-channels.ts:111` 的
+  根因:`src/cli/lib/check-install-channels.ts` 的
   `npmPresent = running === 'npm' || (npmCand != null && exists(npmCand))` ——
   **运行通道默认视为存在**,所以只要是从源码树 / npm 渠道跑的(`node dist/cli.mjs`),
-  就一定报「双通道」,哪怕磁盘上根本没有 npm 全局 shim。判定应当以磁盘上的 shim 为准,
-  `running` 只用于决定文案。
+  就一定报「双通道」,哪怕磁盘上根本没有 npm 全局 shim。
+  修法:通道**存在性一律按磁盘判定**(npm shim / binary 文件是否真的在),`running` 只用于
+  文案;单通道那行也改成报**磁盘上真实存在**的通道名(源码树运行时不再自称 npm 通道,
+  一个都没装时明说 "no install channel on disk")。真机验证:源码树与 binary 两侧都是
+  `✓ install channel — single channel (binary)`。

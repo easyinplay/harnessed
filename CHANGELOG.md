@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The compiled-binary self-update now survives a slow link and says what actually failed. The release-metadata hop gets a 30 s budget instead of 10 s and reports the stage it failed in — a timeout, a network error, an HTTP status, or an unparsable response — instead of one generic "could not reach GitHub releases" line, and the "the release may still be publishing" hint is now shown only for the case it describes. The binary asset is streamed to disk instead of being buffered in memory (it is ≈99 MB), the transfer aborts if no data arrives for 120 s, a progress line reports the downloaded size and rate while it runs, and a failed download states how many bytes arrived, how long it took and the average rate.
+- `harnessed doctor` no longer reports a second install channel that is not installed. Channel presence is decided by what exists on disk, so running from a source checkout no longer counts as an npm-global install, and the single-channel line names the channel that is actually installed.
+
 ## [5.0.11] - 2026-11-03
 
 ### Fixed

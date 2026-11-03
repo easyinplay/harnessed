@@ -33,7 +33,8 @@ export interface InstallChannelsResult {
   npmPath: string | null
   /** Which channel THIS process was launched from. */
   running: InstallChannel
-  /** True when both channels are present — the only state worth warning about. */
+  /** True when both channels are actually installed on disk — the only state
+   *  worth warning about. Presence is never inferred from `running`. */
   both: boolean
 }
 
@@ -100,16 +101,23 @@ export function detectInstallChannels(
   const npmPrefix = deps?.npmPrefix ?? realNpmPrefix
   const running = deps?.running ?? (isCompiledRuntime() ? 'binary' : 'npm')
 
-  // The channel we're running IS present by definition; detect the OTHER by path.
+  // Channel PRESENCE is decided by what is on DISK — never by which channel is
+  // running. A source checkout (`node dist/cli.mjs`) reports `running: 'npm'`
+  // even though no npm-global shim exists; treating the running channel as
+  // present made `both` true and fired a false dual-install warning.
   const binCand = binaryCandidate(platform, home, env)
+  // The compiled binary we ARE is trivially present (its canonical path may
+  // differ from the running exe path, so keep the `running` short-circuit).
   const binaryPresent = running === 'binary' || exists(binCand)
   // Prefer the real running exe path when we ARE the binary (canonical may differ).
   const binaryPath = running === 'binary' ? execPath : binaryPresent ? binCand : null
 
   const prefix = npmPrefix()
   const npmCand = prefix ? npmCandidate(platform, prefix) : null
-  const npmPresent = running === 'npm' || (npmCand != null && exists(npmCand))
+  // The npm-global shim must actually exist on disk — running from a source
+  // tree is not an npm-global install.
   const npmPath = npmCand != null && exists(npmCand) ? npmCand : null
+  const npmPresent = npmPath != null
 
   return { binaryPath, npmPath, running, both: binaryPresent && npmPresent }
 }
@@ -129,6 +137,8 @@ function bunPackageAdvisory(binaryPath: string | null): string[] {
 export function dualChannelLines(r: InstallChannelsResult): string[] {
   if (isBunRuntime()) return bunPackageAdvisory(r.binaryPath)
   if (!r.both) return []
+  // `both` now means "both channels are really on disk", so both paths are
+  // known here; the fallbacks stay as a safety net only.
   const bin = r.binaryPath ?? 'the standalone binary'
   const npm = r.npmPath ?? 'the npm-global package'
   return [
@@ -158,10 +168,17 @@ export function checkInstallChannels(deps?: Partial<DetectInstallChannelsDeps>):
   }
   const r = detectInstallChannels(deps)
   if (!r.both) {
+    // Name the channel that is actually ON DISK. `running` is 'npm' for a
+    // source checkout (`node dist/cli.mjs`) even when no npm-global shim
+    // exists anywhere — using it as the installed-channel label told the
+    // maintainer they had two channels when they had one.
+    const installed = r.npmPath ? 'npm' : r.binaryPath ? 'binary' : null
     return {
       name: 'install channel',
       status: 'pass',
-      message: `single channel (${r.running})`,
+      message: installed
+        ? `single channel (${installed})`
+        : 'no install channel on disk (running from a source checkout?)',
     }
   }
   return {
