@@ -183,6 +183,21 @@ var en_default = {
     '[manifest-add] EE-5 gate passed (dry-run); would write {{path}}',
   'resume.fail': '\u2717 {{error}}',
   'resume.corrupt': '\u2717 {{error}}\n    path: {{path}}',
+  'auto_update.consent_on': '[harnessed] auto-update ON',
+  'auto_update.consent_off': '[harnessed] auto-update OFF',
+  'auto_update.preferences_replaced':
+    '[harnessed] the preferences file was unreadable (invalid JSON) \u2014 it has been replaced.',
+  'auto_update.reminder_off_note': `[harnessed] the update reminder is OFF \u2014 the "new version available" notice will not be printed. Use 'harnessed auto-update status' to check on it.`,
+  'auto_update.path.host': '  host:        {{host}}',
+  'auto_update.path.preferences': '  preferences: {{path}}',
+  'auto_update.path.status': '  status:      {{path}}',
+  'auto_update.error.unsupported_host': 'unsupported host: {{host}} (expected claude or codex)',
+  'auto_update.error.runtime': 'could not resolve the {{host}} update-reminder runtime',
+  'auto_update.notice.updated_from': 'harnessed updated {{from}} -> {{to}}.',
+  'auto_update.notice.updated_to': 'harnessed updated to {{to}}.',
+  'auto_update.notice.restart': 'Restart {{host}} so the new version + hooks take effect.',
+  'auto_update.notice.codex_trust':
+    "Codex hooks still need your trust confirmed \u2014 approve the harness hook registration in Codex (or run 'harnessed setup' there).",
 }
 
 // src/i18n/index.ts

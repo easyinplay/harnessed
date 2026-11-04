@@ -1,10 +1,13 @@
 import { createHash } from 'node:crypto'
-import { closeSync, constants, fstatSync, openSync, readSync, statSync } from 'node:fs'
+import { statSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, isAbsolute, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import pkg from '../../package.json' with { type: 'json' }
+import { autoUpdateStatusPath } from '../cli/lib/autoUpdateStatus.js'
+import { readUpdateReminderPreferencesFile } from '../cli/lib/updateReminderPreferences.js'
 import { runUpdateReminderHook } from '../cli/updateReminderHookMain.js'
+import { canonicalStateRoot } from '../platform/stateRoot.js'
 
 export const UPDATE_REMINDER_OPERATION = 'update-reminder'
 export const UPDATE_REMINDER_WORKER_OPERATION = 'update-reminder-worker'
@@ -47,9 +50,9 @@ export function resolveUpdateReminderRuntime(options: UpdateReminderEntryOptions
     (host === 'codex' ? process.env.CODEX_HOME?.trim() : process.env.CLAUDE_CONFIG_DIR) ||
       join(homedir(), host === 'codex' ? '.codex' : '.claude'),
   )
-  const stateRoot =
-    explicitStateRoot ??
-    resolve(process.env.HARNESSED_ROOT_OVERRIDE || join(nativeHome, 'harnessed'))
+  // R15: ONE state-root derivation for every consumer. An explicit
+  // `--state-root` still wins — it is an explicit instruction.
+  const stateRoot = explicitStateRoot ?? canonicalStateRoot(host)
   const channel = options.compiled ? 'binary' : process.versions.bun ? 'bun' : 'npm'
   const source = channel === 'binary' ? BINARY_SOURCE : `${channel}:harnessed`
   const fingerprint = createHash('sha256')
@@ -67,6 +70,9 @@ export function resolveUpdateReminderRuntime(options: UpdateReminderEntryOptions
     nativeHome,
     cachePath: join(stateRoot, `update-reminder-${host}.json`),
     preferencesPath: join(stateRoot, UPDATE_REMINDER_PREFERENCES_FILE),
+    // The auto-update status file of THIS host — the hook reads the pending
+    // update notice from it, the worker writes the run state into it.
+    statusPath: autoUpdateStatusPath(stateRoot),
     installed: pkg.version,
     identity: {
       host,
@@ -89,33 +95,43 @@ export function resolveUpdateReminderRuntime(options: UpdateReminderEntryOptions
   }
 }
 
-function reminderEnabled(path: string): boolean {
-  let descriptor: number | undefined
-  try {
-    descriptor = openSync(path, constants.O_RDONLY | constants.O_NONBLOCK)
-    const info = fstatSync(descriptor)
-    if (!info.isFile() || info.size > 1024) return false
-    const buffer = Buffer.alloc(1025)
-    const bytes = readSync(descriptor, buffer, 0, buffer.length, 0)
-    if (bytes > 1024 || bytes < info.size) return false
-    const value = JSON.parse(buffer.toString('utf8', 0, bytes)) as unknown
-    return (
-      typeof value === 'object' &&
-      value !== null &&
-      'schemaVersion' in value &&
-      value.schemaVersion === 1 &&
-      'enabled' in value &&
-      value.enabled === true
-    )
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === 'ENOENT'
-  } finally {
-    if (descriptor !== undefined) {
-      try {
-        closeSync(descriptor)
-      } catch {}
-    }
-  }
+/**
+ * The two consents of the preferences file, in the shape the chain needs.
+ *
+ * They are INDEPENDENT (T1/R3): silencing the reminder must not revoke an
+ * auto-update consent, and an auto-update consent must not resurrect the
+ * reminder. Both fail closed on an unreadable file and on an unknown schema
+ * version — the same rule the two pre-existing readers used.
+ */
+interface ReminderConsents {
+  /** The "a new version is available" reminder may print. */
+  enabled: boolean
+  /** The background worker may replace the binary itself. */
+  autoUpdate: boolean
+}
+
+function readConsents(path: string): ReminderConsents {
+  // The single canonical reader owns the file semantics; this gate only adds
+  // the schema-version check the local readers used to do inline.
+  const { preferences, missing, document } = readUpdateReminderPreferencesFile(path)
+  if (preferences.unreadable) return { enabled: false, autoUpdate: false }
+  // No preferences file at all → the reminder is opt-out, so it stays on;
+  // the auto-update consent is opt-in, so it stays off.
+  if (missing) return { enabled: true, autoUpdate: false }
+  const known = document?.schemaVersion === 1
+  return { enabled: known && preferences.enabled, autoUpdate: known && preferences.autoUpdate }
+}
+
+/**
+ * Does ANY consent ask for work?
+ *
+ * The whole chain (hook, worker) runs when EITHER consent is on. Gating it on
+ * the reminder consent alone was the bug that made "auto-update on" a switch
+ * that never fires: a user who silenced the reminder kept an auto-update
+ * consent that nothing acted on.
+ */
+function anyConsent(consents: ReminderConsents): boolean {
+  return consents.enabled || consents.autoUpdate
 }
 
 export async function runUpdateReminderEntrypoint(
@@ -123,9 +139,15 @@ export async function runUpdateReminderEntrypoint(
 ): Promise<0> {
   try {
     const runtime = resolveUpdateReminderRuntime(options)
-    if (!runtime || !reminderEnabled(runtime.preferencesPath)) return 0
+    if (!runtime) return 0
+    const consents = readConsents(runtime.preferencesPath)
+    if (!anyConsent(consents)) return 0
     if (!statSync(runtime.stateRoot).isDirectory()) return 0
-    return await runUpdateReminderHook({ ...runtime, enabled: true })
+    return await runUpdateReminderHook({
+      ...runtime,
+      enabled: consents.enabled,
+      autoUpdate: consents.autoUpdate,
+    })
   } catch {}
   return 0
 }
@@ -135,7 +157,9 @@ export async function runUpdateReminderWorkerEntrypoint(
 ): Promise<0> {
   try {
     const runtime = resolveUpdateReminderRuntime(options)
-    if (!runtime || !reminderEnabled(runtime.preferencesPath)) return 0
+    if (!runtime) return 0
+    const consents = readConsents(runtime.preferencesPath)
+    if (!anyConsent(consents)) return 0
     const { runUpdateReminderWorker } = await import('../cli/updateReminderWorkerMain.js')
     return await runUpdateReminderWorker({
       ...runtime,

@@ -7,6 +7,7 @@ import { registerAdvance } from '../../src/cli/advance.js'
 import { registerAgentsMd } from '../../src/cli/agents-md.js'
 import { registerAudit } from '../../src/cli/audit.js'
 import { registerAuditLog } from '../../src/cli/audit-log.js'
+import { registerAutoUpdate } from '../../src/cli/autoUpdateCmd.js'
 import { registerBackupList } from '../../src/cli/backup-list.js'
 import { registerCheckDocs } from '../../src/cli/checkDocs.js'
 import { registerCheckpoint } from '../../src/cli/checkpoint.js'
@@ -44,6 +45,7 @@ const registrars = {
   registerAgentsMd,
   registerAudit,
   registerAuditLog,
+  registerAutoUpdate,
   registerBackupList,
   registerCheckDocs,
   registerCheckpoint,
@@ -137,7 +139,7 @@ describe('CLI documentation surface contract', () => {
   })
 
   it('documents every public top-level command in every README locale', () => {
-    expect(publicTopLevel.size).toBe(32)
+    expect(publicTopLevel.size).toBe(33)
     expect(readmes).toHaveLength(11)
     for (const file of readmes) expect(documentedTopLevel(file), file).toEqual(publicTopLevel)
   })
