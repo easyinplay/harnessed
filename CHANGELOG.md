@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `harnessed setup` no longer fails the `playwright-cli` component on Windows with `npm error code EINVALIDPACKAGENAME`. A manifest install command that quotes a package specifier — `npm install -g "@playwright/cli@^0.1.22" && playwright-cli install-browser chromium` — reached npm with its quotes doubled (`""@playwright/cli@^0.1.22""`), because the command was handed to `cmd.exe` through Node's argument escaping, which escapes a quote as `\"`, a convention `cmd.exe` does not share. The command string now reaches `cmd.exe` verbatim, so the quotes reach npm exactly as the manifest wrote them. The quotes stay in the manifest: without them `cmd.exe` eats the caret of the version range.
+
 ## [5.0.12] - 2026-11-03
 
 ### Fixed
