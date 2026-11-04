@@ -1,13 +1,7 @@
 ---
 name: plan-architecture
 description: |
-  Stage ②.a 架构层 plan 子工作流 — gstack /plan-eng-review（复杂架构强制治理关卡；
-  打包的 plan-stage 节奏：复杂架构阶段前必须执行）。schema_version:
-  harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  [plan-eng-review] + 1 phase (01-plan-eng-review) + gate literal expr
-  `phase.is_complex_architecture == true`。Triggered by harnessed CLI `harnessed
-  plan-architecture --module <name>` or slash command `/plan-architecture` after
-  `harnessed setup`.
+  复杂架构阶段进入规划前，跑 gstack /plan-eng-review 架构审查。
 trigger_phrases:
   - "plan architecture"
   - "架构审查"

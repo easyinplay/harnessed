@@ -1,12 +1,7 @@
 ---
 name: verify-design
 description: |
-  Stage ④.f verify 子工作流 — gstack /design-review 设计系统一致性 + AI 审美问题识别
-  (has_design_changes 触发, 可选 conditional; bundled verify-stage optional /design-review step).
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gstack-design-review + ui-ux-pro-max + design-taste-frontend) + 1 phase (gate ref has_design_changes
-  conditional)。Triggered by headless CLI `harnessed run verify-design` or slash
-  command `/verify-design` after `harnessed setup`.
+  可选：改动涉及设计时，用 gstack /design-review 做设计系统一致性与 AI 审美审查。
 trigger_phrases:
   - "verify design"
   - "设计审查"

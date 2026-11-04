@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The workflow skills harnessed installs now describe themselves in one uniform voice. Every description used to carry the workflow's internal bookkeeping — the schema version, the delegated sub-workflows, the applied disciplines, the available tools, the phase and ADR numbers it was bumped in, and the note that it is triggered by a slash command — and that is what the model reads when it decides whether to invoke a skill, and what the user sees in the skill list. The descriptions now say what the skill does and when to use it, in the same plain sentence style the upstream plugin skills already use, and the steps that only run under a condition say so explicitly. Nothing was dropped from the machine-readable surface: the authoritative metadata stays in the workflow's `workflow.yaml` and the behavioral detail stays in the skill body.
+
 ## [5.0.12] - 2026-11-03
 
 ### Fixed

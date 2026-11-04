@@ -1,13 +1,9 @@
 ---
 name: discuss-strategic
 description: |
-  Stage ①.a 战略层 discuss sub-workflow — gstack /office-hours + /plan-ceo-review 新功能 / 新
-  milestone / 新产品方向启动前强制治理关卡 (bundled gstack governance gate, mandatory before new-feature)。
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gstack-office-hours + gstack-plan-ceo-review + planning-with-files) + 3 phases (gate
-  judgments.strategic-gate.* fires + planning-with-files /plan findings.md 持久化)。
-  Triggered by slash command
-  `/discuss-strategic` after `harnessed setup`.
+  Run the gstack strategic governance gates before starting a new feature, milestone, or
+  product direction. Use it when the commercial scope or user value of the work is still
+  unclear.
 trigger_phrases:
   - "discuss strategic"
   - "战略层澄清"

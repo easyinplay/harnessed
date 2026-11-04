@@ -1,14 +1,7 @@
 ---
 name: task-test
 description: |
-  task-test 工作流 v3 — Stage ③.c 子任务测试 sub-workflow (superpowers TDD
-  red-green-refactor 强制 + diagnose 条件调用)。单阶段组合：
-  01-test（能力 `superpowers:test-driven-development` + 关卡
-  judgments.tdd-gate.tdd-strongly-suggested.fires + invokes_tools[{if: test_fail,
-  tool: diagnose}]）。Alias /tdd (mattpocock-skills) 可替代 superpowers TDD per D-13。
-  schema_version: harnessed.workflow.v3，含 disciplines_applied [6] + tools_available
-  [tdd, diagnose]。通过 headless CLI `harnessed run task-test` 或
-  `harnessed setup` 后的斜杠命令 `/task-test` 触发。
+  用 red-green-refactor 循环为子任务写并跑测试，测试挂了走排障流程。代码写完、交付之前跑它。
 trigger_phrases:
   - "test this subtask"
   - "task-test workflow"

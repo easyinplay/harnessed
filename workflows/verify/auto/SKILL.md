@@ -1,13 +1,8 @@
 ---
 name: verify
 description: |
-  Stage ④ Verify master orchestrator — 7 sub conditional per bundled Verify-stage cadence:
-  progress 必跑 → code-review 并行 → paranoid 关键模块强制 → qa/security/design 可选
-  并行 conditional → simplify 末尾 → multispec 关键发布 Pattern C 4-specialist {{ host.team.singular }}。
-  schema_version: harnessed.workflow.v3 with delegates_to (7 sub: progress serial order 1 +
-  5 parallel conditional + simplify serial order 99) + disciplines_applied (6 default) +
-  tools_available (10 entry)。Triggered by headless CLI `harnessed run verify` or
-  slash command `/verify` (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
+  Run the Verify stage end to end: progress, code review, paranoid review, the conditional
+  checks, simplification, and the release review. Use it to close out a completed phase.
 trigger_phrases:
   - "verify"
   - "验证阶段"

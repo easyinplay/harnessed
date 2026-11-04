@@ -1,9 +1,7 @@
 ---
 name: ship-preflight
 description: |
-  Stage ⑤.a Ship sub — release-preflight gate. Runs `harnessed release-preflight`
-  (read-only: CHANGELOG [Unreleased] non-empty + version + git-clean + tag-absent).
-  A failing gate blocks shipping. Nothing is pushed/published/tagged here.
+  Check that the repo is ready to tag a release: the changelog has unreleased entries, the version resolves, the tree is clean, and the tag does not exist yet. Run it before shipping; a failed check blocks the release.
 trigger_phrases:
   - "release preflight"
   - "release ready"

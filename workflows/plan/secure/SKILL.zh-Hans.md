@@ -1,6 +1,6 @@
 ---
 name: plan-secure
-description: 在 plan-phase 前按条件运行 GSD secure-phase threat-model 契约。
+description: 可选：改动涉及鉴权或密钥时，在 plan-phase 前产出 GSD 威胁模型契约。
 trigger_phrases: ["plan secure", "gsd secure phase"]
 ---
 

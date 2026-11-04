@@ -1,17 +1,7 @@
 ---
 name: task-deliver
 description: |
-  task-deliver workflow v3 — Stage ③.d 子任务交付 sub-workflow (harnessed 自有 completion-gate
-  + {{ host.team.attributive }} conditional escalation + R20.10 explicit max_iterations_exceeded
-  fallback)。2-phase composition: 01-deliver (completion-gate with completion_promise
-  verbatim "COMPLETE" + parallelism judgments.parallelism-gate.completion-gate-wrapper.fires +
-  fallback emit_warning_and_halt exit_code 1) → 02-progress-mark (Claude Code plugin
-  /plan mark subtask complete in progress.md)。
-  schema_version: harnessed.workflow.v3 with disciplines_applied [6] + tools_available
-  [completion-gate, verification-before-completion, agent-teams-create,
-  agent-teams-send-message, agent-teams-shutdown,
-  planning-with-files]. Triggered by headless CLI `harnessed run task-deliver`
-  or slash command `/task-deliver` after `harnessed setup`.
+  Close out a subtask behind a completion gate and mark it complete in progress.md. Run it after the tests pass, before you start the next subtask.
 trigger_phrases:
   - "deliver this subtask"
   - "task-deliver workflow"

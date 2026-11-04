@@ -1,15 +1,7 @@
 ---
 name: verify-multispec
 description: |
-  Stage ④.h verify 子工作流 — 4-specialist {{ host.team.singular }} Pattern C 多维度审查（关键发布 /
-  大重构 PR 升级，code-review + gstack-review + gstack-cso + gstack-qa 4 {{ host.teammate }} 互相
-  {{ host.send_message }} 质询，NOT fire-and-forget subagent fan-out；bundled {{ host.team.attributive }} Pattern C
-  routing）。Cleanup 必跑：{{ host.teams_cleanup_note.shutdown_phrase }}（bundled cleanup discipline）。
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (agent-teams 3 + 4 specialist capability) + 2 phase (01-team-create on critical-release
-  invoke / 02-team-cleanup mandatory shutdown)。
-  Triggered by slash command
-  `/verify-multispec` after `harnessed setup`.
+  可选：关键发布时开四专家交叉审查，让各专家互相质询发现的问题，而不是各自独立出报告。
 trigger_phrases:
   - "verify multispec"
   - "4-specialist Agent Team"

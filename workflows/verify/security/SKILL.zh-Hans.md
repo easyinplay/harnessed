@@ -1,12 +1,7 @@
 ---
 name: verify-security
 description: |
-  Stage ④.e 验证子工作流 — gstack /cso 安全审查 OWASP/auth/secrets (has_auth_or_secrets
-  触发, 可选 conditional; 捆绑 verify 阶段可选 /cso 步骤).
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gstack-cso) + 1 phase (gate ref has_auth_or_secrets conditional)。
-  Triggered by slash command
-  `/verify-security` after `harnessed setup`.
+  可选：改动涉及鉴权或密钥时，用 gstack /cso 做 OWASP 安全审查。
 trigger_phrases:
   - "verify security"
   - "安全审查"

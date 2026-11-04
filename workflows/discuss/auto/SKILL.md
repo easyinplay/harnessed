@@ -1,12 +1,9 @@
 ---
 name: discuss
 description: |
-  Stage ① Discuss master orchestrator — 3 sub-workflow parallel gate-eval (chain-isolation 铁律)。
-  战略层 / Phase 层 / 子任务层独立判断 gate, 可能 3 个全跑 / 1-2 个 / 全跳 + 透明声明。
-  schema_version: harnessed.workflow.v3 with delegates_to (3 sub: strategic + phase + subtask, mode parallel)
-  + disciplines_applied (6 default) + tools_available (planning-with-files)。
-  Triggered by slash command `/discuss`
-  (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
+  Decide which clarification layers a piece of work needs, then run them in parallel —
+  strategic, phase, and subtask are judged independently. Use it at the start of new work
+  to settle scope before planning.
 trigger_phrases:
   - "discuss"
   - "讨论澄清"

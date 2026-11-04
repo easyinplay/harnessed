@@ -1,12 +1,7 @@
 ---
 name: verify-second-opinion
 description: |
-  Stage ④ verify 子工作流 — 跨模型第二意见 (cross-AI peer review),仅在本次发版触及
-  编排契约面时触发。
-  schema_version: harnessed.workflow.v3,含 disciplines_applied (6 默认) + tools_available
-  (codex) + 1 phase (gate ref requires_second_opinion,机械派生)。
-  斜杠命令
-  `/verify-second-opinion`(`harnessed setup` 之后可用)。
+  可选：改动触及编排契约本身时，请另一个 AI 模型做第二意见审查。
 trigger_phrases:
   - "verify second opinion"
   - "cross model review"

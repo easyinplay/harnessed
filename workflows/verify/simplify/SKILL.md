@@ -1,12 +1,8 @@
 ---
 name: verify-simplify
 description: |
-  Stage ④.g verify sub-workflow — code-simplifier 末尾串行 (移除重复 / 多余逻辑;
-  bundled verify-stage cadence — tail-step code-simplifier).
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (code-simplifier) + 1 phase (gate ref is_final_step 末尾串行)。
-  Triggered by slash command
-  `/verify-simplify` after `harnessed setup`.
+  Remove duplicated and unnecessary logic from the changed code with the code-simplifier
+  skill. Run it last in the Verify stage.
 trigger_phrases:
   - "verify simplify"
   - "code simplify"
