@@ -1,6 +1,6 @@
 ---
 name: plan-ui
-description: Run the conditional GSD ui-phase design contract before plan-phase.
+description: "Optional: produce the GSD UI design contract before plan-phase when the change touches the UI."
 trigger_phrases: ["plan ui", "gsd ui phase"]
 ---
 

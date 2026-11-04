@@ -1,13 +1,7 @@
 ---
 name: verify-qa
 description: |
-  Stage ④.d 验证子工作流 — gstack /qa 端到端 QA 验收 (has_ui_changes 触发, 可选 conditional;
-  捆绑 verify 阶段可选 /qa 步骤).
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gstack-qa + browse + playwright-cli + playwright-test + webapp-testing + chrome-devtools-mcp)
-  + 5 phase (01-qa gate ref has_ui_changes conditional + 4 条 web-testing-routing lane)。
-  Triggered by slash command
-  `/verify-qa` after `harnessed setup`.
+  可选：改动涉及 UI 时，用 gstack /qa 跑端到端验收。
 trigger_phrases:
   - "verify qa"
   - "端到端 QA"

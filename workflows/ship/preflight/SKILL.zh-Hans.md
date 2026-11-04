@@ -1,9 +1,7 @@
 ---
 name: ship-preflight
 description: |
-  Stage ⑤.a Ship 子工作流 — 发布前置门控。运行 `harnessed release-preflight`
-  （只读检查：CHANGELOG [Unreleased] 非空 + 版本号 + git 工作区干净 + tag 不存在）。
-  任一检查失败则阻断发布流程。此处不会推送/发布/打 tag。
+  发布前置门控：CHANGELOG 有未发布条目、版本号可解析、工作区干净、tag 不存在。发布前跑它，失败就阻断发布。
 trigger_phrases:
   - "release preflight"
   - "release ready"

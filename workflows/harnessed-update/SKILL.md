@@ -1,8 +1,9 @@
 ---
 name: harnessed-update
 description: |
-  Preview, confirm and execute a deterministic harnessed update. Report partial
-  outcomes honestly; offer bounded agent repair only after a second confirmation.
+  Preview, confirm, and execute a deterministic harnessed update when you want to upgrade
+  harnessed itself. Report partial outcomes honestly and offer bounded agent repair only
+  after a second confirmation.
 trigger_phrases:
   - "harnessed update"
   - "update harnessed"

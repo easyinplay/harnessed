@@ -1,13 +1,7 @@
 ---
 name: plan-phase
 description: |
-  Stage ②.b 计划层 plan sub-workflow — GSD /gsd-plan-phase Wave A research + Wave B planner +
-  Wave C plan-checker + planning-with-files Claude Code plugin /plan 持久化 task_plan.md +
-  progress.md (bundled Plan-stage cadence: GSD + planning-with-files)。Stage ② 铁律:
-  dual capability (GSD orchestration + planning-with-files plugin)。schema_version:
-  harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available [gsd-plan-phase,
-  planning-with-files] + 2 phases (01-gsd-plan + 02-persist)。Triggered by headless CLI
-  `harnessed run plan-phase` or slash command `/plan-phase` after `harnessed setup`.
+  Build the phase plan with GSD /gsd-plan-phase, then persist it to task_plan.md and progress.md.
 trigger_phrases:
   - "plan phase"
   - "计划层 phase"

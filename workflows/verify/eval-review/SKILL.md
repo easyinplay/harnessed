@@ -1,12 +1,8 @@
 ---
 name: verify-eval-review
 description: |
-  Stage ④ verify sub-workflow — GSD /gsd-eval-review AI phase eval 覆盖审计 (has_ai_phase 触发,
-  可选 conditional; pairs with plan 侧 gsd-ai-integration-phase AI-SPEC eval strategy).
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gsd-eval-review) + 1 phase (gate ref has_ai_phase conditional)。
-  Triggered by slash command
-  `/verify-eval-review` after `harnessed setup`.
+  Optional: run an AI-phase evaluation coverage audit with GSD /gsd-eval-review when the
+  phase ships an AI feature.
 trigger_phrases:
   - "verify eval review"
   - "eval 覆盖审计"

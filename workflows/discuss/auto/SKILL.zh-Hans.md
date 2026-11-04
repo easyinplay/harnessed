@@ -1,12 +1,7 @@
 ---
 name: discuss
 description: |
-  Stage ① Discuss 主控编排器 — 3 个子工作流并行门控评估（chain-isolation 铁律）。
-  战略层 / Phase 层 / 子任务层独立判断 gate, 可能 3 个全跑 / 1-2 个 / 全跳 + 透明声明。
-  schema_version: harnessed.workflow.v3 with delegates_to (3 sub: strategic + phase + subtask, mode parallel)
-  + disciplines_applied (6 default) + tools_available (planning-with-files)。
-  Triggered by slash command `/discuss`
-  (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
+  判断工作需要哪几层澄清（战略层、Phase 层、子任务层），再并行执行，各层独立判断。用于开工前定范围。
 trigger_phrases:
   - "discuss"
   - "讨论澄清"

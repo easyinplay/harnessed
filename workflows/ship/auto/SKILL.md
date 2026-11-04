@@ -1,13 +1,7 @@
 ---
 name: ship
 description: |
-  Stage ⑤ Ship master orchestrator — the release stage after Verify. ship-preflight
-  必跑串行 (release-readiness gate) → 委派 PR/deploy 给 gstack /ship → publish 留
-  publish.yml CI (tag push 触发)。schema_version: harnessed.workflow.v3 with delegates_to
-  (1 sub: preflight serial order 1) + disciplines_applied (6 default) + tools_available
-  (release-preflight + ship + planning-with-files)。Triggered by `/ship` (bare per ADR 0030)
-  or headless CLI `harnessed run ship` after `harnessed run verify`. Deploy boundary =
-  TAG-READY (no push/publish/tag).
+  Run the release stage after verification: check release readiness, then hand the PR and deploy to gstack /ship; the tag push triggers the publish CI. Use it when the work is verified and ready to ship.
 trigger_phrases:
   - "ship"
   - "发布阶段"

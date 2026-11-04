@@ -1,12 +1,7 @@
 ---
 name: verify-validate-phase
 description: |
-  Stage ④ 验证子工作流 — GSD /gsd-validate-phase Nyquist 覆盖审计 (requires_coverage_audit
-  触发, 可选 conditional; 补 TDD 前向写测试之外的后向 requirement→test 覆盖查漏).
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gsd-validate-phase) + 1 phase (gate ref requires_coverage_audit conditional)。
-  Triggered by slash command
-  `/verify-validate-phase` after `harnessed setup`.
+  可选：phase 完成后回溯审计 requirement→test 覆盖，找出漏掉的需求。
 trigger_phrases:
   - "verify validate phase"
   - "Nyquist 覆盖审计"

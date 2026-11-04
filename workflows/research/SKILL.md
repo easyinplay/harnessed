@@ -1,6 +1,6 @@
 ---
 name: research
-description: 多源调研 workflow — Tavily/Exa/ctx7 多源 fan-out + GSD discuss synth aggregate; harnessed v2.0 NEW per R20.7 (Stage ① Discuss 独立 call); schema bumped to harnessed.workflow.v3 in Phase v3.0-3.4 W1.1 (T3.4.W1.1) with disciplines_applied [6] + tools_available [tavily-mcp, exa-mcp, ctx7, gsd-discuss-phase], phases reuse v2 verbatim. Triggered by slash command `/research` after `harnessed setup`.
+description: Research a question across multiple sources in parallel, then aggregate and deduplicate the findings into one synthesis. Use it when the answer needs current external information rather than what the repo already knows.
 preamble-tier: 2
 schema_version: harnessed.workflow.v3
 ---

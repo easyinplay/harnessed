@@ -1,6 +1,6 @@
 ---
 name: plan-ai-integration
-description: Run the conditional GSD ai-integration-phase AI-SPEC contract before plan-phase.
+description: "Optional: produce the GSD AI-SPEC contract before plan-phase when the phase builds an AI system."
 trigger_phrases: ["plan ai integration", "gsd ai integration phase"]
 ---
 

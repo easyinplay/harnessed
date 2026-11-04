@@ -1,13 +1,8 @@
 ---
 name: verify
 description: |
-  Stage ④ Verify 主控编排器 — 7 个条件子工作流，按打包的 Verify 阶段节奏执行：
-  progress 必跑 → code-review 并行 → paranoid 关键模块强制 → qa/security/design 可选
-  并行 conditional → simplify 末尾 → multispec 关键发布 Pattern C 4-specialist {{ host.team.singular }}。
-  schema_version: harnessed.workflow.v3，含 delegates_to（7 sub：progress serial order 1 +
-  5 parallel conditional + simplify serial order 99）+ disciplines_applied（6 default）+
-  tools_available（10 entry）。通过 headless CLI `harnessed run verify` 或
-  `harnessed setup` 后的斜杠命令 `/verify`（裸命令，per ADR 0030 命名空间规范 D-02 LOCK）触发。
+  端到端跑 Verify 阶段：进度、代码审查、关键模块审查、可选检查、简化与发布审查。
+  用于在收尾一个已完成的 phase 时做整体验收。
 trigger_phrases:
   - "verify"
   - "验证阶段"

@@ -1,15 +1,8 @@
 ---
 name: retro
 description: |
-  Standalone post-④ Verify retrospective workflow — gstack /retro 经验教训 / 决策 / lessons
-  系统总结 (项目 / 里程碑结束可选, bundled milestone-close retrospective cadence)
-  + planning-with-files RETROSPECTIVE.md 持久化 (sister Phase
-  v2.0-2.5 RETROSPECTIVE pattern)。Capability ref retro-gstack alias suffix per Pattern A
-  E.2 LOCK (NOT bare retro 避免 standalone workflow / capability namespace 冲突)。
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (retro-gstack + planning-with-files) + 2 phase (01-retro gstack invoke + 02-persist
-  RETROSPECTIVE.md sink)。Triggered by harnessed CLI `harnessed retro --milestone <name>` or
-  slash command `/retro` after `harnessed setup`.
+  Optional: retrospect over the work just finished and summarize the lessons and decisions
+  with gstack /retro, when a project or milestone ends.
 trigger_phrases:
   - "项目总结"
   - "里程碑结束"

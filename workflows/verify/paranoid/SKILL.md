@@ -1,14 +1,7 @@
 ---
 name: verify-paranoid
 description: |
-  Stage ④.c verify sub-workflow — gstack /review Paranoid Staff Engineer 关键模块 PR 前强制
-  (bundled gstack governance gate — mandatory before critical-module PR)。Gate:
-  judgments.stage-routing.verify-paranoid-critical.fires (phase.is_critical_module == true) —
-  默认 critical fire only; 非关键模块 skip。
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gstack-review) + 1 phase (gate ref is_critical_module conditional)。
-  Triggered by slash command
-  `/verify-paranoid` after `harnessed setup`.
+  Run the gstack Paranoid Staff Engineer review before a critical-module PR.
 trigger_phrases:
   - "verify paranoid"
   - "paranoid staff engineer review"

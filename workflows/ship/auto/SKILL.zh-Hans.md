@@ -1,13 +1,7 @@
 ---
 name: ship
 description: |
-  Stage ⑤ Ship 主控编排器 — Verify 之后的发布阶段。ship-preflight
-  必跑串行（release-readiness 关卡）→ 委派 PR/deploy 给 gstack /ship → publish 留
-  publish.yml CI（tag push 触发）。schema_version: harnessed.workflow.v3 with delegates_to
-  (1 sub: preflight serial order 1) + disciplines_applied (6 default) + tools_available
-  (release-preflight + ship + planning-with-files)。Triggered by `/ship` (bare per ADR 0030)
-  or headless CLI `harnessed run ship` after `harnessed run verify`. Deploy boundary =
-  TAG-READY (no push/publish/tag).
+  跑 Verify 后的发布阶段：先过发布就绪关卡，再把 PR 与部署交给 gstack /ship。准备上线时用它。
 trigger_phrases:
   - "ship"
   - "发布阶段"

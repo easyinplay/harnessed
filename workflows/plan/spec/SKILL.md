@@ -1,6 +1,6 @@
 ---
 name: plan-spec
-description: Run the conditional GSD spec-phase design contract before plan-phase.
+description: "Optional: produce the GSD design contract before plan-phase when the phase requires a spec."
 trigger_phrases: ["plan spec", "gsd spec phase"]
 ---
 

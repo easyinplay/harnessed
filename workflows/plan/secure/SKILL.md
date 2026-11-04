@@ -1,6 +1,6 @@
 ---
 name: plan-secure
-description: Run the conditional GSD secure-phase threat-model contract before plan-phase.
+description: "Optional: produce the GSD threat-model contract before plan-phase when the change touches auth or secrets."
 trigger_phrases: ["plan secure", "gsd secure phase"]
 ---
 

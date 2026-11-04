@@ -1,8 +1,7 @@
 ---
 name: harnessed-update
 description: |
-  预览、确认并执行确定性 harnessed 更新。如实展示 partial,
-  只有在第二次确认后才提供有边界的 agent repair。
+  想升级 harnessed 时，预览、确认并执行确定性更新，如实报告部分结果；二次确认后才提供有界的 agent 修复。
 trigger_phrases:
   - "harnessed update"
   - "update harnessed"

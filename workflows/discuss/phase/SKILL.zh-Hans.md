@@ -1,12 +1,7 @@
 ---
 name: discuss-phase
 description: |
-  Stage ①.b Phase 层 discuss 子工作流 — GSD /gsd-discuss-phase 灰色澄清（≥2 个开放
-  实现决策 / 跨 phase API contract 不清 / phase scope > 1 天 / 灰色地带）。
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gsd-discuss-phase + planning-with-files) + 2 phases（01-gsd-discuss + 02-persist findings.md
-  + knowledge.md）。Triggered by headless CLI `harnessed run discuss-phase` or slash
-  command `/discuss-phase` after `harnessed setup`.
+  可选：用 GSD 澄清 phase 灰色地带，落盘 findings.md，在多决策未定、跨阶段契约不清或范围超一天。
 trigger_phrases:
   - "discuss phase"
   - "phase 层澄清"

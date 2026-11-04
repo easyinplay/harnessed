@@ -1,14 +1,7 @@
 ---
 name: task
 description: |
-  Stage ③ Task master orchestrator — 串行 invoke 4 sub per subtask (clarify → code → test → deliver)。
-  completion gate (harnessed 自有 checkpoint CLI) 在 deliver phase 内 (D-10 orthogonal wrapper)。tdd-gate conditional
-  fire on test sub。schema_version: harnessed.workflow.v3 with delegates_to (4 sub: clarify order 1
-  conditional + code order 2 + test order 3 conditional + deliver order 4) + disciplines_applied
-  (6 default) + tools_available (8 entry: superpowers-brainstorming + tdd + grill-with-docs +
-  improve-codebase-architecture + diagnose + completion-gate + planning-with-files)。
-  Triggered by slash command `/task`
-  (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
+  Run one subtask end to end: clarify the approach, write the code, test it, then deliver it behind a completion gate. Use it at the start of every subtask you implement.
 trigger_phrases:
   - "task"
   - "子任务执行"
