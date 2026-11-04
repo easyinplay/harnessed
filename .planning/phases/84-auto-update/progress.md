@@ -161,7 +161,31 @@ preferences 文件内容正确,i18n 跟随 locale。
 
 ## 待办(实施后)
 
-- [ ] `/plan-eng-review`(GSTACK REVIEW REPORT 标注:PR 前必需,尚未跑)
+- [x] `/plan-eng-review` —— 2026-11-04 跑完,3 个问题(2 个 P2 + 1 个 P3),0 critical gap,
+      0 unresolved;两项 P2 按批准契约当场落地(见下节);review log + decision log 已持久化,
+      `PLAN_REALITY: phase=eng rows=7/7 unverified=0 verdict=complete`
+- [x] commit + push(带 pathspec)—— `250343b`,已推 main
 - [ ] T9 剩余部分:binary 通道的真实自动更新 —— **只能在 v5.0.13 发布后发生**
       (被自动替换的 binary 必须自带本功能)
-- [ ] commit + push(带 pathspec)
+
+## 2026-11-04 eng review(gstack `/plan-eng-review`)
+
+评审对象 = 实施后的工作树(不是计划文本)。两个决策由用户拍板:
+
+- **D1 = A(保持 8 个新模块)**:`changelogSection` 必须独立(拖进 update.ts 会把整个
+  update 命令塞进 compiled worker);`notice` 与 `status` 关注点不同;
+  `stateRoot` 要能一眼 grep 到。
+- **D2 = A(状态文件驱动续传节奏)**:见 F-01。
+
+评审挖出的 3 个问题(全部已修 + 回归测试):
+
+| ID | 级别 | 问题 | 处置 |
+|---|---|---|---|
+| F-01 | P2 | 自动更新那一轮的节奏被提醒缓存的 24h TTL 卡住 → 断流后 `.part` 无人续传,契约写的是「下次会话直接续传」 | 状态文件新增 `hasResumableAutoUpdateWork()`;`[resumable]` 标记迁到状态模块(写者+读者都要);hook 读到痕迹就唤醒 worker |
+| F-02 | P2 | D3 要求 status 显示「auto-update needs the binary channel」,实现只印 `(npm-channel)` | `formatAutoUpdateStatus` 加 `REASON_TEXT` 映射 |
+| F-03 | P3 | `isAutoUpdateInProgress` 只有测试引用(死代码) | 删掉(连同 15 分钟窗口常量与 4 条测试) |
+
+另外补了 R15 明确要求但漏掉的 README 注明(11 个 locale:默认宿主 = 检测到的那个)。
+
+评审后全量验收:vitest **5514 通过 / 0 失败**(439 文件);`tsc --noEmit` 干净;
+biome 硬门 0 blocking;`build` + `build:hooks` 成功;CI 硬门脚本全 0。
