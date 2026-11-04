@@ -8,10 +8,27 @@ import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const unreadable = vi.hoisted(() => new Set<string>())
+// Plugin cache keeps old version directories and readdir returns them
+// lexicographically, so the listing order is pinned to keep the
+// "newest version wins" expectation deterministic across filesystems.
+const dirOrder = vi.hoisted(() => new Map<string, string[]>())
 vi.mock('node:fs/promises', async (importOriginal) => {
   const real = await importOriginal<typeof import('node:fs/promises')>()
   return {
     ...real,
+    readdir: ((path: unknown, ...rest: unknown[]) => {
+      const ordered = dirOrder.get(String(path))
+      if (ordered) {
+        return Promise.resolve(
+          ordered.map((name) => ({
+            name,
+            isDirectory: () => true,
+            isFile: () => false,
+          })),
+        )
+      }
+      return (real.readdir as (...args: unknown[]) => unknown)(path, ...rest)
+    }) as typeof real.readdir,
     readFile: ((path: unknown, ...rest: unknown[]) => {
       if (unreadable.has(String(path))) {
         return Promise.reject(
@@ -144,6 +161,20 @@ describe('mattpocock requires readable indicator content, not directory presence
     expect(r.status).toBe('pass')
     expect(r.message).toContain('grill-with-docs')
     expect(r.message).toMatch(/content/i)
+  })
+
+  it('reports the newest cached plugin version, not the first listed one', async () => {
+    // `claude plugin update` keeps the older version directories and readdir
+    // returns them lexicographically, so probing in listing order would point
+    // the user at a stale copy of the plugin.
+    file(`${plugin}/1.2.0/skills/tdd/SKILL.md`)
+    file(`${plugin}/2.0.0/skills/tdd/SKILL.md`)
+    dirOrder.set(join(tmpRoot, plugin), ['1.2.0', '2.0.0'])
+    const { checkMattpocockSkills } = await import('../../src/cli/lib/check-mattpocock-skills.js')
+    const r = await checkMattpocockSkills()
+    expect(r.status).toBe('pass')
+    expect(r.message).toContain(join('2.0.0', 'skills'))
+    expect(r.message).not.toContain(join('1.2.0', 'skills'))
   })
 
   it.each([

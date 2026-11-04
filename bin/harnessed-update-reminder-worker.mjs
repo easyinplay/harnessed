@@ -1938,6 +1938,7 @@ var init_runtime = __esm({
 // src/cli/lib/version-check.ts
 var version_check_exports = {}
 __export(version_check_exports, {
+  compareVersionNames: () => compareVersionNames,
   compareVersions: () => compareVersions,
   fetchLatestBunVersion: () => fetchLatestBunVersion,
   fetchLatestNpmVersion: () => fetchLatestNpmVersion,
@@ -1964,6 +1965,24 @@ function compareVersions(installed, latest) {
   if (!a.pre && b.pre) return 'ahead'
   if (a.pre && b.pre && a.pre !== b.pre) return a.pre < b.pre ? 'behind' : 'ahead'
   return 'current'
+}
+function compareVersionNames(a, b) {
+  const relation = compareVersions(a, b)
+  if (relation === 'ahead') return 1
+  if (relation === 'behind') return -1
+  if (relation === 'current') return 0
+  const segments = (v) =>
+    v.split('.').map((part) => {
+      const n = Number.parseInt(part, 10)
+      return Number.isNaN(n) ? 0 : n
+    })
+  const as = segments(a)
+  const bs = segments(b)
+  for (let i = 0; i < Math.max(as.length, bs.length); i++) {
+    const diff = (as[i] ?? 0) - (bs[i] ?? 0)
+    if (diff !== 0) return diff
+  }
+  return 0
 }
 function npmExecutable() {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm'

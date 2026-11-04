@@ -41,6 +41,34 @@ export function compareVersions(installed: string, latest: string): VersionCompa
   return 'current'
 }
 
+/** Pure — order two VERSION-LIKE names (plugin cache directory names such as
+ *  `2.34.0` / `3.28.0`). Positive when `a` is the newer one.
+ *
+ *  Plugin caches keep the OLD version directories next to the new one
+ *  (`claude plugin update` never removes them) and `readdir` returns them
+ *  lexicographically, so "the first entry that matches" is the OLDEST cached
+ *  version. Segments compare numerically (10.0.0 outranks 9.1.0), never as
+ *  strings. `compareVersions` handles strict `x.y.z[-pre]`; shorter or
+ *  non-semver names fall back to a numeric segment compare. */
+export function compareVersionNames(a: string, b: string): number {
+  const relation = compareVersions(a, b)
+  if (relation === 'ahead') return 1
+  if (relation === 'behind') return -1
+  if (relation === 'current') return 0
+  const segments = (v: string): number[] =>
+    v.split('.').map((part) => {
+      const n = Number.parseInt(part, 10)
+      return Number.isNaN(n) ? 0 : n
+    })
+  const as = segments(a)
+  const bs = segments(b)
+  for (let i = 0; i < Math.max(as.length, bs.length); i++) {
+    const diff = (as[i] ?? 0) - (bs[i] ?? 0)
+    if (diff !== 0) return diff
+  }
+  return 0
+}
+
 function npmExecutable(): string {
   return process.platform === 'win32' ? 'npm.cmd' : 'npm'
 }

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `harnessed doctor` no longer reports the oldest cached copy of the `planning-with-files` plugin as the installed one. The presence check walked the plugin cache directory in listing order and took the first version directory it found, while `claude plugin update` keeps the previous version directories next to the new one — so a host that had updated the plugin was told it was still on 2.34.0. The cached versions are now probed from the newest down, and the version is compared by numeric segment, so the report names the version that is actually installed. The `mattpocock-skills` presence check walked the plugin cache the same way and reported the oldest cached copy too; it now probes the newest version first as well.
+
 ## [5.0.12] - 2026-11-03
 
 ### Fixed

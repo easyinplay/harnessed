@@ -2,7 +2,11 @@
 // fetchLatestVersion takes an injectable runner so the unit test never spawns npm.
 
 import { describe, expect, it } from 'vitest'
-import { compareVersions, fetchLatestVersion } from '../../src/cli/lib/version-check.js'
+import {
+  compareVersionNames,
+  compareVersions,
+  fetchLatestVersion,
+} from '../../src/cli/lib/version-check.js'
 
 describe('compareVersions', () => {
   it('behind / ahead / current', () => {
@@ -22,6 +26,20 @@ describe('compareVersions', () => {
     expect(compareVersions('x', '4.4.0')).toBe('unknown')
     expect(compareVersions('', '4.4.0')).toBe('unknown')
     expect(compareVersions('4.4.0', 'nope')).toBe('unknown')
+  })
+})
+
+describe('compareVersionNames (plugin cache directory names)', () => {
+  it('orders full semver numerically, not lexicographically', () => {
+    expect(compareVersionNames('3.28.0', '3.17.2')).toBeGreaterThan(0)
+    expect(compareVersionNames('10.0.0', '9.1.0')).toBeGreaterThan(0)
+    expect(compareVersionNames('2.34.0', '3.28.0')).toBeLessThan(0)
+    expect(compareVersionNames('3.28.0', '3.28.0')).toBe(0)
+  })
+  it('orders short version names numerically too', () => {
+    expect(compareVersionNames('2.34', '2.9')).toBeGreaterThan(0)
+    expect(compareVersionNames('10.0', '9.1')).toBeGreaterThan(0)
+    expect(compareVersionNames('2.34', '2.34.0')).toBe(0)
   })
 })
 
