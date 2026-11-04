@@ -1,12 +1,7 @@
 ---
 name: discuss-subtask
 description: |
-  Stage ①.c 子任务层 discuss 子工作流 — superpowers brainstorming（≥2 种方案 / 核心算法 /
-  API contract / 错误成本高）。schema_version: harnessed.workflow.v3 with disciplines_applied (6
-  default) + tools_available (superpowers-brainstorming + grill-with-docs + grill-me) + 1 phase
-  （01-brainstorm，含 spec_ambiguous + no_docs 条件调用 invokes_tools）。Triggered by
-  headless CLI `harnessed run discuss-subtask` or slash command `/discuss-subtask`
-  after `harnessed setup`.
+  可选：用 brainstorming 探索子任务的多种实现方案，当设计有分歧、涉及核心算法或 API 契约、易出错时。
 trigger_phrases:
   - "discuss subtask"
   - "子任务澄清"

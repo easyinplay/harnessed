@@ -1,6 +1,6 @@
 ---
 name: plan-ai-integration
-description: 在 plan-phase 前按条件运行 GSD ai-integration-phase AI-SPEC 契约。
+description: 可选：阶段涉及 AI 系统时，在 plan-phase 前产出 GSD AI-SPEC 契约。
 trigger_phrases: ["plan ai integration", "gsd ai integration phase"]
 ---
 

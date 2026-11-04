@@ -154,6 +154,9 @@ const REMINDER = () =>
 
 describe('install on codex', () => {
   it('installs update-reminder under the explicit nativeHome without global config or trust writes', async () => {
+    // No root override here: the portable-home rule is about the CONTEXT's
+    // native home. The override rule has its own test below (R15).
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', '')
     const nativeHome = join(home, "portable Codex home's $;&` root")
     mkdirSync(nativeHome, { recursive: true })
     writeFileSync(join(nativeHome, 'config.toml'), '# custom decoy\n')
@@ -225,6 +228,40 @@ describe('install on codex', () => {
       ok: true,
     })
     expect(existsSync(pluginRoot)).toBe(false)
+  })
+
+  it('points the update-reminder hook at the root override when one is set (R15)', async () => {
+    const nativeHome = join(home, 'portable codex home')
+    mkdirSync(nativeHome, { recursive: true })
+    const hostContext = createHostInstallContext(descriptorFor('codex', home), {
+      os: process.platform,
+      userHome: home,
+      nativeHome,
+    })
+    list.mockResolvedValue({ ok: true, value: [] })
+    const override = join(home, 'explicit state root')
+    vi.stubEnv('HARNESSED_ROOT_OVERRIDE', override)
+    const result = await installCcHookAdd({
+      manifest: REMINDER(),
+      opts: OPTS,
+      level: 'L3' as const,
+      cwd,
+      hostContext,
+    })
+    expect(result).toMatchObject({ ok: true })
+    const pluginRoot = join(
+      nativeHome,
+      'harnessed',
+      'marketplace',
+      'plugins',
+      'harnessed-update-reminder',
+    )
+    const hooks = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'))
+    const commandHead = `node "\${PLUGIN_ROOT}/hook.cjs" update-reminder --state-root `
+    expect(hooks.hooks.SessionStart[0].hooks[0]).toMatchObject({
+      command: `${commandHead}'${override}' --platform codex`,
+      commandWindows: `${commandHead}'${override}' --platform codex`,
+    })
   })
 
   it('changing npm to Bun still requires consent for the modified trust literal', async () => {

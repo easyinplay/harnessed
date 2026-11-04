@@ -186,6 +186,17 @@
   评估结论:host-integration interface(ADR-1239)+ destSubpath write-confinement 未改
   claude runtime 写入路径(本机 1.7.0 实测 gsd-* 仍装 ~/.claude/skills/,71 skill)。
   manifest re-sync 完成(npm_version ^1.7.0 / last_known_good 1.7.0 / 4.32.3)。
+- [ ] **quarantine 身份判定在 Windows runner 上偶发命中另一条拒绝理由** — 2026-11-04 首次记录:
+  Phase 84 的 push(`77bf63f`)让 `test windows-latest` 红过一次,失败点是
+  `tests/unit/quarantineDelete.test.ts` 的「restores and preserves a replacement file swapped in
+  after preflight」—— 断言要 `identity changed after preflight`,实际抛
+  `content changed after preflight`。两条都是「preflight 之后文件被换掉」的**拒绝**路径(都安全),
+  只是命中了不同的守卫(身份判定比对 `dev`/`ino`,内容判定比对摘要)。
+  证据:同一次 push 的 `gh run rerun --failed` 9/9 全绿;本机 Windows 跑该文件 11 测试全绿;
+  `src/lib/quarantineDelete.ts` 只 import node 内置模块,与自动更新改动无关 → 判为 Windows
+  runner 上的时序/文件标识复用类 flake(测试负载变化会把它顶出来)。
+  待办:把「身份不符」与「内容不符」的判定顺序固定,或让断言接受两条拒绝理由,
+  免得红色 CI 掩盖真失败。
 
 ## Earlier deferrals (intel 回填表镜像,详 .planning/intel/omc-comparison.md)
 

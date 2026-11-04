@@ -1,6 +1,6 @@
 ---
 name: plan-ui
-description: 在 plan-phase 前按条件运行 GSD ui-phase 设计契约。
+description: 可选：改动涉及 UI 时，在 plan-phase 前产出 GSD UI 设计契约。
 trigger_phrases: ["plan ui", "gsd ui phase"]
 ---
 

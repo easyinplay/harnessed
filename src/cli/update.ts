@@ -6,17 +6,16 @@
 // Self-update assumes a global install (the documented `npm install -g harnessed`
 // path); the command prints the exact npm invocation, so non-global users see it.
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { type Command, Option } from 'commander'
 import pkg from '../../package.json' with { type: 'json' }
-import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
+import { isCompiledRuntime } from '../platform/assetsRoot.js'
 import { getHarnessedRoot } from '../platform/harnessedRoot.js'
 import {
   captureHostInstallContext,
   type HostInstallContext,
 } from '../platform/hostInstallContext.js'
 import { isBunRuntime } from '../platform/runtime.js'
+import { changelogSection } from './lib/changelogSection.js'
 import { preparePackageUpdate } from './lib/packageUpdateTarget.js'
 import {
   emitUpdateResult,
@@ -172,21 +171,15 @@ async function runCompiledFlow(opts: UpdateOptions, context: HostInstallContext)
   }
 }
 
-function changelogTop(): string | null {
-  try {
-    const p = join(getAssetsRoot(), 'CHANGELOG.md')
-    if (!existsSync(p)) return null
-    const body = readFileSync(p, 'utf8')
-    // first "## " section (Keep-a-Changelog entry) bounded for readability
-    const start = body.indexOf('\n## ')
-    if (start < 0) return null
-    const rest = body.slice(start + 1)
-    const next = rest.indexOf('\n## ', 1)
-    return (next > 0 ? rest.slice(0, next) : rest).trim().slice(0, 1200)
-  } catch {
-    return null
-  }
-}
+/**
+ * The shipped CHANGELOG, excerpted.
+ *
+ * The implementation lives in `src/cli/lib/changelogSection.ts` — the
+ * auto-update handover runs inside the new binary's refresh path, and pulling
+ * this whole update command in there would bloat the compiled worker bundle
+ * for one file read.
+ */
+export const changelogTop = changelogSection
 
 export function registerUpdate(program: Command): void {
   program

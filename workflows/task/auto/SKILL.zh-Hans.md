@@ -1,14 +1,7 @@
 ---
 name: task
 description: |
-  Stage ③ Task 主控编排器 — 串行 invoke 4 sub per subtask (clarify → code → test → deliver)。
-  completion gate (harnessed 自有 checkpoint CLI) 在 deliver phase 内 (D-10 orthogonal wrapper)。tdd-gate conditional
-  fire on test sub。schema_version: harnessed.workflow.v3 with delegates_to (4 sub: clarify order 1
-  conditional + code order 2 + test order 3 conditional + deliver order 4) + disciplines_applied
-  (6 default) + tools_available (8 entry: superpowers-brainstorming + tdd + grill-with-docs +
-  improve-codebase-architecture + diagnose + completion-gate + planning-with-files)。
-  Triggered by slash command `/task`
-  (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
+  跑完一个子任务：先澄清方案，再编码、测试，最后通过完成闸门交付。每个子任务开始时用它。
 trigger_phrases:
   - "task"
   - "子任务执行"

@@ -1,6 +1,6 @@
 ---
 name: plan-spec
-description: 在 plan-phase 前按条件运行 GSD spec-phase 设计契约。
+description: 可选：阶段需要规格说明时，在 plan-phase 前产出 GSD 设计契约。
 trigger_phrases: ["plan spec", "gsd spec phase"]
 ---
 

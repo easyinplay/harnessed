@@ -6,12 +6,16 @@
 // "no binary at exec path" window):
 //   resolve latest (GitHub releases/latest OR HARNESSED_UPDATE_SOURCE_DIR
 //   rehearsal seam — the seam skips the version compare: forced) →
-//   download to a same-dir pid-unique temp (.exe suffix on win32 so the
-//   smoke step can spawn it) → sha256 verify against the per-asset
-//   `<asset>.sha256` (frozen public contract, publish.yml matrix uploads) →
-//   chmod 755 (unix) → `--version` smoke → in-place rename exec →
+//   download into a same-dir RESUME FRAGMENT
+//   (`.harnessed-update-<version>.part` — version-stable, NO pid, so a later
+//   process can continue a dropped ~99 MB transfer instead of restarting it)
+//   → sha256 verify against the per-asset `<asset>.sha256` (frozen public
+//   contract, publish.yml matrix uploads) → rename the verified fragment to
+//   the version-stable staging file `.harnessed-update-<version><ext>` (the
+//   .exe suffix on win32 is what the smoke step can spawn) → chmod 755
+//   (unix) → `--version` smoke → in-place rename exec →
 //   `<exec>.bak-<oldver>` (same volume — cross-volume move of a running exe
-//   dies on the file lock) → temp → exec → COPY (not move) the .bak to
+//   dies on the file lock) → staging → exec → COPY (not move) the .bak to
 //   `<stateRoot>/bin-backup/<oldver>/` (E4 rollback net) → delete .bak
 //   fail-soft (Windows: the .bak IS the running image, delete = EPERM; and
 //   when the bin-backup copy failed we deliberately KEEP the .bak — it is
@@ -31,6 +35,7 @@ import {
   mkdir,
   readdir,
   readFile,
+  stat,
 } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { Readable, Transform } from 'node:stream'
@@ -114,6 +119,9 @@ export interface SelfUpdateDeps {
    *  (missing platform asset — publish window / failed matrix job; the
    *  `kind` says WHICH stage failed, so the caller can pick the right remedy). */
   resolveRelease: () => Promise<ReleaseInfo | ReleaseResolveFailure | null>
+  /** Download the asset into `dest`. `dest` doubles as the RESUME FRAGMENT:
+   *  whatever is already on disk is the resume point (the Range request asks
+   *  for the remainder). The rehearsal seam never goes through here. */
   downloadTo: (url: string, dest: string, fallbackUrl?: string) => Promise<void>
   fetchShaText: (url: string, fallbackUrl?: string) => Promise<string>
   /** Spawn `<bin> --version`, resolve its stdout. */
@@ -145,7 +153,12 @@ export type SelfUpdateOutcome =
   | { status: 'checked'; installed: string; latest: string; cmp: string }
   | { status: 'dry-run'; steps: string[] }
   | { status: 'refused'; reason: string }
-  | { status: 'error'; message: string }
+  /** `critical` marks the ONE failure that leaves no binary at the exec path
+   *  (the swap failed AND the rollback failed). The caller (the auto-update
+   *  orchestration) must not treat it as an ordinary failure: it has to
+   *  record it as CRITICAL, print the restore command and turn the consent
+   *  off. Every other error leaves the original binary intact. */
+  | { status: 'error'; message: string; critical?: boolean }
 
 function normalized(p: string): string {
   return p.replace(/\\/g, '/')
@@ -198,7 +211,8 @@ export async function runBinarySelfUpdate(
   const execDir = dirname(deps.execPath)
   const execBase = basename(deps.execPath)
   const ext = deps.platform === 'win32' ? '.exe' : ''
-  // pid-unique (F2 用户裁决: no lockfile, last-wins) + .exe suffix (win32 spawn).
+  // pid-unique + .exe suffix (win32 spawn) — the REHEARSAL SEAM's staging
+  // file (a local copy is disposable, so it needs no version-stable name).
   const tempPath = join(execDir, `.harnessed-update-${deps.pid}${ext}`)
   const bakPath = join(execDir, `${execBase}.bak-${deps.currentVersion}`)
 
@@ -277,13 +291,33 @@ export async function runBinarySelfUpdate(
     }
   }
 
+  // ── the two version-stable paths ──
+  // Version-stable and PID-free on purpose: a LATER process must be able to
+  // continue a dropped download (the measured link needs ~11 min for the
+  // windows asset — restarting from zero is the expensive mistake). Two runs
+  // for the SAME version are serialized by the update lock, not by these
+  // names.
+  // The rehearsal seam (sourceDir) bypasses both: a local copy has nothing to
+  // resume and nothing to keep.
+  const partPath = deps.sourceDir
+    ? null
+    : join(execDir, `.harnessed-update-${targetVersion ?? 'unknown'}.part`)
+  // What the integrity check runs on: the fragment (GitHub) or the seam's copy.
+  const verifyPath = partPath ?? tempPath
+  // What the smoke step spawns and the swap moves. Version-stable (NOT
+  // pid-scoped) so a smoke failure can rename it BACK to the fragment and the
+  // bytes survive for the next attempt. The seam keeps the pid-scoped temp.
+  const stagingPath = deps.sourceDir
+    ? tempPath
+    : join(execDir, `.harnessed-update-${targetVersion ?? 'unknown'}${ext}`)
+
   // ── dry-run: zero writes, human-readable step preview ──
   if (opts.dryRun) {
     const backupDir = 'bin-backup/<oldver>/ under the harnessed state root'
     const steps = [
       deps.sourceDir
-        ? `copy ${sourceAsset} → ${tempPath} (local source dir — rehearsal seam)`
-        : `download ${assetUrl ?? `latest ${asset}`} → ${tempPath}`,
+        ? `copy ${sourceAsset} → ${stagingPath} (local source dir — rehearsal seam)`
+        : `download ${assetUrl ?? `latest ${asset}`} → ${partPath} (resumable fragment)`,
       `verify sha256 against ${deps.sourceDir ? sourceSha : (shaUrl ?? `${asset}.sha256`)}`,
       ...(deps.sourceDir
         ? []
@@ -291,22 +325,25 @@ export async function runBinarySelfUpdate(
       ...(deps.platform === 'win32' ? [] : ['chmod 755 the downloaded binary']),
       'smoke: spawn `--version` on the new binary',
       `rename ${deps.execPath} → ${bakPath} (same-dir, same-volume)`,
-      `rename ${tempPath} → ${deps.execPath}`,
+      `rename ${stagingPath} → ${deps.execPath}`,
       `copy the .bak to ${backupDir} (rollback net)`,
       'delete the .bak (fail-soft — kept on Windows EPERM or when the backup copy failed)',
     ]
     return { status: 'dry-run', steps }
   }
 
-  // ── fetch to temp ──
+  // ── fetch to the resume fragment (GitHub) / to the temp file (seam) ──
   try {
     if (deps.sourceDir && sourceAsset) {
       await fsCopyFile(sourceAsset, tempPath)
-    } else if (assetUrl) {
-      await deps.downloadTo(assetUrl, tempPath, assetFallbackUrl)
+    } else if (assetUrl && partPath) {
+      await deps.downloadTo(assetUrl, partPath, assetFallbackUrl)
     }
   } catch (e) {
-    await unlink(tempPath).catch(() => {})
+    // A dropped transfer KEEPS the fragment: the bytes that did arrive are
+    // the resume point for the next attempt. The rehearsal seam's copy is a
+    // disposable local file → remove it.
+    if (!partPath) await unlink(tempPath).catch(() => {})
     return { status: 'error', message: downloadFailureMessage(e, targetVersion, assetUrl) }
   }
 
@@ -318,13 +355,14 @@ export async function runBinarySelfUpdate(
   // sourceDir rehearsal seam is LOCAL TRUST (like rollback's bin-backup) and
   // skips the signature — the release channel is the attack surface, not a
   // local dir the operator staged. ──
+  // The check runs ON the fragment — the file that will become the binary.
   try {
     const shaText = deps.sourceDir
       ? await readFile(sourceSha ?? '', 'utf8')
       : await deps.fetchShaText(shaUrl ?? '', shaFallbackUrl)
     const expected = parseShaText(shaText)
     if (!expected) throw new Error(`malformed .sha256 content`)
-    const actual = await sha256File(tempPath)
+    const actual = await sha256File(verifyPath)
     if (actual !== expected) {
       throw new Error(
         `sha256 mismatch — expected ${expected.slice(0, 12)}…, got ${actual.slice(0, 12)}…`,
@@ -345,17 +383,39 @@ export async function runBinarySelfUpdate(
       }
     }
   } catch (e) {
-    await unlink(tempPath).catch(() => {})
+    // An integrity failure means the fragment is worthless → delete it.
+    await unlink(verifyPath).catch(() => {})
     return {
       status: 'error',
       message: `integrity verification failed: ${(e as Error).message} — aborted; original binary untouched`,
     }
   }
 
+  // ── stage: the verified fragment becomes the file the smoke step spawns ──
+  if (partPath) {
+    try {
+      // win32's rename does NOT overwrite an existing target → drop the stale
+      // staging file first (the fragment is the source, nothing is lost).
+      await unlink(stagingPath).catch(() => {})
+      await rename(partPath, stagingPath)
+    } catch (e) {
+      // KEEP the fragment: it is verified → the next attempt can go straight
+      // to the smoke instead of re-downloading 99 MB.
+      return {
+        status: 'error',
+        message:
+          `could not stage the verified download: ${(e as Error).message} — ` +
+          `the download was kept for the next attempt; original binary untouched`,
+      }
+    }
+  }
+
   // ── chmod + smoke ──
+  let smokeRan = false
   try {
-    if (deps.platform !== 'win32') await chmod(tempPath, 0o755)
-    const out = (await deps.smoke(tempPath)).trim()
+    if (deps.platform !== 'win32') await chmod(stagingPath, 0o755)
+    const out = (await deps.smoke(stagingPath)).trim()
+    smokeRan = true
     const m = /^(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)/.exec(out)
     if (!m) throw new Error(`--version smoke returned unexpected output: ${out.slice(0, 80)}`)
     if (targetVersion !== null && out !== targetVersion) {
@@ -363,35 +423,51 @@ export async function runBinarySelfUpdate(
     }
     targetVersion = targetVersion ?? m[1] ?? null
   } catch (e) {
-    await unlink(tempPath).catch(() => {})
+    // A smoke failure KEEPS the bytes when the binary could not even RUN (an
+    // environment problem): rename the staging file back to the fragment so
+    // the next attempt re-verifies and re-smokes it without touching the
+    // network. A binary that RAN and reported another version is the WRONG
+    // asset → discard it (keeping it would fail the next attempt the same
+    // way).
+    if (partPath && !smokeRan) {
+      await rename(stagingPath, partPath).catch(() => {})
+    } else {
+      await unlink(stagingPath).catch(() => {})
+    }
     return {
       status: 'error',
       message: `new binary failed the --version smoke: ${(e as Error).message} — aborted; original binary untouched`,
     }
   }
 
-  // ── swap: exec → .bak, temp → exec (rollback on failure) ──
+  // ── swap: exec → .bak, staging → exec (rollback on failure) ──
   try {
     await rename(deps.execPath, bakPath)
   } catch (e) {
-    await unlink(tempPath).catch(() => {})
+    // A rename failure KEEPS the fragment for the next attempt.
+    if (partPath) await rename(stagingPath, partPath).catch(() => {})
+    else await unlink(stagingPath).catch(() => {})
     return {
       status: 'error',
       message: `could not move the current binary aside: ${(e as Error).message} — original untouched`,
     }
   }
   try {
-    await rename(tempPath, deps.execPath)
+    await rename(stagingPath, deps.execPath)
   } catch (e) {
     try {
       await rename(bakPath, deps.execPath)
+      if (partPath) await rename(stagingPath, partPath).catch(() => {})
+      else await unlink(stagingPath).catch(() => {})
       return {
         status: 'error',
         message: `swap failed (${(e as Error).message}) — rolled back to the previous binary`,
       }
     } catch (rb) {
+      if (partPath) await rename(stagingPath, partPath).catch(() => {})
       return {
         status: 'error',
+        critical: true,
         message:
           `CRITICAL: swap failed AND rollback failed (${(rb as Error).message}). ` +
           `Restore manually: copy "${bakPath}" "${deps.execPath}"`,
@@ -625,8 +701,59 @@ const ASSET_PROGRESS_INTERVAL_MS = 60_000
 class RequestTimeoutError extends Error {}
 
 /** A stalled transfer is a verdict on THIS attempt (the link is dead), not a
- *  transient blip — retrying would only buy another 120 s of silence. */
+ *  transient blip — but the bytes that did arrive stay on disk, so the next
+ *  attempt resumes from there. */
 class TransferStalledError extends Error {}
+
+/** The server answered 206 but its Content-Range start is NOT the offset we
+ *  asked for → the two sides disagree about the asset → the fragment must be
+ *  discarded and the download restarted from zero (splicing would corrupt
+ *  the file). Distinct from a plain failure: it is retryable-after-reset. */
+class RangeMismatchError extends Error {}
+
+/** 416 — our Range start is at (or past) the asset size → the fragment on
+ *  disk already IS the whole asset. Not a failure: the download is done. */
+class RangeNotSatisfiableError extends Error {
+  constructor(readonly total: number | null) {
+    super('the requested range is not satisfiable')
+  }
+}
+
+/** A response header, defensively — test doubles may omit the headers map. */
+function headerOf(res: Response, name: string): string | null {
+  const headers = (res as { headers?: Headers }).headers
+  if (!headers || typeof headers.get !== 'function') return null
+  return headers.get(name)
+}
+
+/** `bytes 100-199/200` → {start: 100, total: 200}; the 416 shape
+ *  (`bytes <star>/200`) → {start: null, total: 200}. */
+function parseContentRange(
+  value: string | null | undefined,
+): { start: number | null; total: number | null } | null {
+  if (!value) return null
+  const text = value.trim()
+  const unsat = /^bytes\s+\*\/(\d+|\*)$/i.exec(text)
+  if (unsat) return { start: null, total: unsat[1] === '*' ? null : Number(unsat[1]) }
+  const m = /^bytes\s+(\d+)-(\d+)\/(\d+|\*)$/i.exec(text)
+  if (!m) return null
+  return { start: Number(m[1]), total: m[3] === '*' ? null : Number(m[3]) }
+}
+
+function numberOrUndefined(value: string | null): number | undefined {
+  if (value === null) return undefined
+  const n = Number(value)
+  return Number.isFinite(n) ? n : undefined
+}
+
+/** Byte size of a file, 0 when it does not exist. */
+async function fileSize(p: string): Promise<number> {
+  try {
+    return (await stat(p)).size
+  } catch {
+    return 0
+  }
+}
 
 async function fetchWithTimeout(
   url: string,
@@ -683,9 +810,16 @@ const DOWNLOAD_ATTEMPTS = 3
 /**
  * Fetch with exponential backoff, then try the fallback URL when the primary
  * host is unreachable. `label` names the artifact in the thrown error so the
- * caller can report which URL failed. `consume` receives the response AND the
- * controller of this attempt, so a consumer that reads the body can abort
- * THIS attempt (the asset path's stall guard) without touching the others.
+ * caller can report which URL failed. `consume` receives the response, the
+ * controller of this attempt AND the byte offset the request asked for (the
+ * resume point), so a consumer that reads the body can abort THIS attempt
+ * (the asset path's stall guard) without touching the others.
+ *
+ * `extra.existingBytes` is the resume point: the bytes already on disk. It
+ * is read ONCE per request and the SAME value is handed to `consume`, so the
+ * Range header and the writer can never disagree about where the response
+ * starts. A getter (not a number) because the retry loop re-reads it between
+ * attempts: the previous attempt may have written bytes before it stalled.
  */
 async function fetchAsset<T>(
   url: string,
@@ -693,7 +827,13 @@ async function fetchAsset<T>(
   timeoutMs: number,
   net: SelfUpdateNetDeps,
   label: string,
-  consume: (res: Response, attempt: AbortController) => Promise<T>,
+  consume: (res: Response, attempt: AbortController, offset: number) => Promise<T>,
+  extra?: {
+    /** Extra request headers (merged over the default accept). */
+    headers?: Record<string, string>
+    /** The byte count already on disk → the Range offset. */
+    existingBytes?: number | (() => number | Promise<number>)
+  },
 ): Promise<T> {
   const sleep = net.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)))
   const attempts: string[] = []
@@ -704,28 +844,48 @@ async function fetchAsset<T>(
       // guard abort THIS attempt only.
       const ac = new AbortController()
       try {
-        const res = await fetchWithTimeout(
-          candidate,
-          timeoutMs,
-          net,
-          {
-            accept: 'application/octet-stream',
-          },
-          ac,
-        )
+        const offset =
+          extra?.existingBytes === undefined
+            ? 0
+            : await (typeof extra.existingBytes === 'function'
+                ? extra.existingBytes()
+                : extra.existingBytes)
+        const headers: Record<string, string> = {
+          accept: 'application/octet-stream',
+          ...extra?.headers,
+        }
+        // The Range request is what turns a dropped ~99 MB transfer into a
+        // resumable one instead of a restart from zero.
+        if (offset > 0) headers.range = `bytes=${offset}-`
+        const res = await fetchWithTimeout(candidate, timeoutMs, net, headers, ac)
         if (!res.ok) {
+          if (res.status === 416) {
+            // Our Range start is at (or past) the asset size → the fragment
+            // on disk already IS the whole asset. The caller decides.
+            throw new RangeNotSatisfiableError(
+              parseContentRange(headerOf(res, 'content-range'))?.total ?? null,
+            )
+          }
           lastError = new Error(`HTTP ${res.status} downloading ${candidate}`)
           // 4xx is a verdict (asset gone) — retrying it is pointless.
           if (res.status < 500) break
         } else {
-          return await consume(res, ac)
+          return await consume(res, ac, offset)
         }
       } catch (error) {
-        // A stalled transfer is a verdict, not a blip: surface it verbatim so
-        // the byte/rate evidence survives the generic wrapper.
-        if (error instanceof TransferStalledError) throw error
+        // 416 is not a failure — the caller decides (the fragment may be
+        // complete already).
+        if (error instanceof RangeNotSatisfiableError) throw error
         lastError = error
-        if (!isTransientNetworkError(error)) break
+        // A Range mismatch is retryable-after-reset: the consumer dropped the
+        // fragment and reset the offset, so the next attempt asks for the
+        // whole asset. A stall is this attempt's verdict, but the bytes that
+        // did arrive stay on disk → the next attempt resumes from there.
+        const retryable =
+          error instanceof RangeMismatchError ||
+          error instanceof TransferStalledError ||
+          isTransientNetworkError(error)
+        if (!retryable) break
       }
       attempts.push(candidate)
       if (attempt < DOWNLOAD_ATTEMPTS) await sleep(250 * attempt)
@@ -768,6 +928,12 @@ function transferStats(received: number, elapsedMs: number): string {
  *
  * The stall guard aborts the transfer when no chunk arrives for
  * `stallTimeoutMs`; the header timeout never covered the body.
+ *
+ * `opts.append` turns `dest` into a RESUME fragment: a 206 answer is
+ * appended to the bytes already on disk (flags 'a'), a 200 answer truncates
+ * and rewrites them (flags 'w'). `opts.initialBytes` is the byte count that
+ * was already there — the SAME value the Range header asked for — so the
+ * received counter starts where the file does.
  */
 async function streamAssetToFile(
   res: Response,
@@ -776,10 +942,20 @@ async function streamAssetToFile(
   stallTimeoutMs: number,
   progressIntervalMs: number,
   log: (line: string) => void,
+  opts?: {
+    /** Append to the fragment instead of truncating it (a 206 answer). */
+    append?: boolean
+    /** Bytes already on disk → the counter starts here. */
+    initialBytes?: number
+    /** The asset's full size (Content-Length / Content-Range total). */
+    totalBytes?: number
+  },
 ): Promise<void> {
   if (!res.body) throw new Error('the release asset response carried no body')
   const started = Date.now()
-  let received = 0
+  const initialBytes = opts?.initialBytes ?? 0
+  let received = initialBytes
+  let attemptBytes = 0
   let lastProgressAt = started
   let stalled = false
   let stallTimer: NodeJS.Timeout | undefined
@@ -797,10 +973,16 @@ async function streamAssetToFile(
   const meter = new Transform({
     transform(chunk: Buffer, _encoding, callback) {
       received += chunk.length
+      attemptBytes += chunk.length
       const now = Date.now()
       if (now - lastProgressAt >= progressIntervalMs) {
         lastProgressAt = now
-        log(`downloading ${formatBytes(received)} (${formatRate(received, now - started)})`)
+        const total = opts?.totalBytes
+        const totalPart = total ? ` / ${formatBytes(total)}` : ''
+        log(
+          `downloading ${formatBytes(received)}${totalPart} ` +
+            `(${formatRate(attemptBytes, now - started)})`,
+        )
       }
       resetStall()
       callback(null, chunk)
@@ -814,22 +996,120 @@ async function streamAssetToFile(
       // class is the one Readable.fromWeb accepts.
       Readable.fromWeb(res.body as unknown as import('node:stream/web').ReadableStream<Uint8Array>),
       meter,
-      // flags 'w' truncates: a retried attempt must not append to the bytes
-      // a previous attempt already wrote.
-      createWriteStream(dest),
+      // flags 'a' appends (a 206 continues the fragment); 'w' truncates (a
+      // 200 rewrites it — a retried attempt must not append to the bytes a
+      // previous attempt already wrote).
+      createWriteStream(dest, { flags: opts?.append ? 'a' : 'w' }),
       { signal: ac.signal },
     )
   } catch (e) {
     if (stalled) {
       throw new TransferStalledError(
         `the download stalled — no data for ${Math.round(stallTimeoutMs / 1000)} s ` +
-          `(${transferStats(received, Date.now() - started)})`,
+          `(${transferStats(attemptBytes, Date.now() - started)})`,
       )
     }
     throw e
   } finally {
     if (stallTimer) clearTimeout(stallTimer)
   }
+}
+
+/**
+ * Download the release asset into `dest` — the RESUME FRAGMENT.
+ *
+ * The measured link carries the ~99 MB windows asset at ~157 KB/s (≈11 min),
+ * so a dropped transfer must not restart from zero: whatever is already on
+ * disk is the resume point (a Range request asks for the remainder).
+ *
+ * The Range contract:
+ *   206 + Content-Range start == the fragment size → APPEND;
+ *   206 + a different start → the server's Range semantics differ from ours
+ *     → discard the fragment and download the whole asset again (splicing
+ *     would corrupt it);
+ *   200 → the server ignored the Range → truncate and rewrite;
+ *   416 → the fragment already IS the whole asset → the download is done.
+ */
+async function downloadResumableAsset(
+  url: string,
+  fallbackUrl: string | undefined,
+  dest: string,
+  net: SelfUpdateNetDeps,
+  log: (line: string) => void,
+): Promise<void> {
+  const stallTimeoutMs = net.stallTimeoutMs ?? ASSET_STALL_TIMEOUT_MS
+  const progressIntervalMs = net.progressIntervalMs ?? ASSET_PROGRESS_INTERVAL_MS
+
+  // The byte count already on disk — the resume point. It is read ONCE per
+  // request and the SAME value feeds the Range header AND the writer (append
+  // vs truncate + the received counter), so the two can never disagree.
+  // `forceFullDownload` is the mismatch reset: the fragment was dropped, so
+  // the next attempt asks for the whole asset.
+  let forceFullDownload = false
+  const offsetOf = async (): Promise<number> => {
+    if (forceFullDownload) return 0
+    return await fileSize(dest)
+  }
+
+  // Round 0 resumes; round 1 is the "the fragment was unusable" restart.
+  for (let round = 0; round < 2; round++) {
+    try {
+      await fetchAsset(
+        url,
+        fallbackUrl,
+        ASSET_HEADERS_TIMEOUT_MS,
+        net,
+        'binary',
+        async (res, attempt, requested) => {
+          const range = parseContentRange(headerOf(res, 'content-range'))
+          const start = range ? range.start : null
+          const totalBytes =
+            res.status === 206
+              ? (range?.total ?? undefined)
+              : numberOrUndefined(headerOf(res, 'content-length'))
+          if (res.status === 206) {
+            if (start === null || start !== requested) {
+              // The server's Range semantics differ from ours → the fragment
+              // is unusable: drop it, reset the offset and let the next
+              // attempt download the whole asset.
+              await fsUnlink(dest).catch(() => {})
+              forceFullDownload = true
+              throw new RangeMismatchError(
+                `the server answered 206 starting at ${start ?? '?'}, not ${requested}`,
+              )
+            }
+            await streamAssetToFile(res, dest, attempt, stallTimeoutMs, progressIntervalMs, log, {
+              append: true,
+              initialBytes: requested,
+              totalBytes,
+            })
+            return
+          }
+          // 200 → the server ignored the Range → truncate and rewrite.
+          await streamAssetToFile(res, dest, attempt, stallTimeoutMs, progressIntervalMs, log, {
+            append: false,
+            initialBytes: 0,
+            totalBytes,
+          })
+        },
+        { existingBytes: offsetOf },
+      )
+      return
+    } catch (e) {
+      if (e instanceof RangeNotSatisfiableError) {
+        // 416 → the fragment may already BE the complete asset → the download
+        // is finished, verification takes it from here.
+        const have = await fileSize(dest)
+        if (e.total !== null && e.total === have) return
+        // Not complete → drop it and download the whole thing (round 1).
+        await fsUnlink(dest).catch(() => {})
+        forceFullDownload = true
+        continue
+      }
+      throw e
+    }
+  }
+  throw new Error('the release asset could not be downloaded (the server ignored the resume range)')
 }
 
 /** GitHub releases/latest → ReleaseInfo for THIS platform's asset.
@@ -929,8 +1209,6 @@ export function realSelfUpdateDeps(
   net: SelfUpdateNetDeps = {},
 ): SelfUpdateDeps {
   const log = (line: string) => console.warn(line)
-  const stallTimeoutMs = net.stallTimeoutMs ?? ASSET_STALL_TIMEOUT_MS
-  const progressIntervalMs = net.progressIntervalMs ?? ASSET_PROGRESS_INTERVAL_MS
   return {
     execPath: process.execPath,
     platform: process.platform,
@@ -939,12 +1217,12 @@ export function realSelfUpdateDeps(
     sourceDir: process.env.HARNESSED_UPDATE_SOURCE_DIR?.trim() || null,
     resolveRelease: () => resolveLatestRelease(process.platform, process.arch, net),
     downloadTo: async (url, dest, fallbackUrl) => {
-      // Streamed, not buffered: a ~99 MB asset buffered whole sat in RAM and
-      // left no temp file on disk until the transfer ended, so an 11-minute
-      // download on a ~157 KB/s link looked like a hang (2026-11-03).
-      await fetchAsset(url, fallbackUrl, ASSET_HEADERS_TIMEOUT_MS, net, 'binary', (res, attempt) =>
-        streamAssetToFile(res, dest, attempt, stallTimeoutMs, progressIntervalMs, log),
-      )
+      // Streamed, not buffered, and RESUMABLE: a ~99 MB asset buffered whole
+      // sat in RAM and left no file on disk until the transfer ended, so an
+      // 11-minute download on a ~157 KB/s link looked like a hang (2026-11-03).
+      // `dest` doubles as the resume fragment — whatever is already on disk is
+      // the resume point (a Range request asks for the remainder).
+      await downloadResumableAsset(url, fallbackUrl, dest, net, log)
     },
     fetchShaText: async (url, fallbackUrl) => {
       return fetchAsset(url, fallbackUrl, CHECKSUM_TIMEOUT_MS, net, 'checksum', (res) => res.text())

@@ -1,13 +1,7 @@
 ---
 name: plan
 description: |
-  Stage ② Plan master orchestrator — 串行 invoke 2 sub (architecture conditional → phase always)。
-  复杂架构 gstack /plan-eng-review 锁定架构后再 GSD /gsd-plan-phase + planning-with-files 持久化
-  task_plan.md。schema_version: harnessed.workflow.v3 with delegates_to (2 sub: architecture
-  serial order 1 + phase serial order 2) + disciplines_applied (6 default) + tools_available
-  (planning-with-files + plan-eng-review + gsd-plan-phase)。
-  Triggered by slash command `/plan`
-  (bare per ADR 0030 namespace policy D-02 LOCK) after `harnessed setup`.
+  Turn a settled discussion into an executable plan — lock the architecture for complex work first, then persist it to task_plan.md.
 trigger_phrases:
   - "plan"
   - "计划阶段"

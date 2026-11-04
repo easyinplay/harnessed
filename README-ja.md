@@ -514,6 +514,7 @@ planning-with-files /plan（クロスカッティングツール）→ アーテ
 | `harnessed status` | 現在の phase + ロックホルダー |
 | `harnessed doctor` | ヘルスチェック(Node / MCP / jq / Win bash / routing / token budget / skill 完全性 / GateGuard 競合 / update-available など) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自己更新(インストールチャネルで分岐):バイナリ版は GitHub releases からその場で自己置換(sha256 + ed25519 署名検証 —— releases には `<asset>.sha256.sig` が同梱、4.32.19 以降は署名付きリリース契約;置換された前バージョンはロールバック用に退避);npm 版は `npm i -g harnessed@latest` を実行。`--check` は最新バージョンを報告;`--rollback [version]`(バイナリ版のみ)は退避済みの前バージョンバイナリをアトミックに復元 —— npm 版は `npm i -g harnessed@<version>` を案内;`--upstreams` はベース manifests を再実行;`--migration-report` は読み取り専用の陳腐化状態インベントリ |
+| `harnessed auto-update on\|off\|status` | 自動更新の同意スイッチと状態:`on` と `off` はホストの preferences ファイルで `autoUpdate` の同意を読み書きする(他のキーはすべて保持);`status` はその同意と直近の実行状態をマージして表示する。`--platform claude\|codex` でホストを選択、`--json` でマージ結果を 1 つの JSON オブジェクトとして出力する。既定のホストは検出された側;両方のホストが入っている環境では `--platform` でもう一方のホストのルートを指定する。 |
 | `harnessed release-preflight [--release-version <semver>]` | Read-only のリリース準備ゲート（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；`--release-version` は manifest 検出を上書き。準備未完了なら exit 1。Ship-stage のゲート |
 | `harnessed retro --done` | `/retro` 実行後に retro-reminder フェーズカウンターをリセット（各ターンの RETRO-DUE ナッジをクリア） |
 | `harnessed install <name>` | 上流 manifest をインストール |

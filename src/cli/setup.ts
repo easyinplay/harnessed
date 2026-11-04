@@ -43,6 +43,7 @@ import {
   scanWorkflowsWithSkill,
   warnIfAgentTeamsMissing,
 } from './lib/setup-helpers.js'
+import { readUpdateReminderPreferencesFile } from './lib/updateReminderPreferences.js'
 import { printSetupVersionBanner } from './lib/version-banner.js'
 
 interface RawOpts {
@@ -411,11 +412,26 @@ export function registerSetup(program: Command): void {
       if (reminder) {
         try {
           await mkdir(reminder.stateRoot, { recursive: true })
-          await writeFile(
-            reminder.preferencesPath,
-            JSON.stringify({ schemaVersion: 1, enabled: raw.updateReminder !== false }),
-            { encoding: 'utf8', flag: raw.updateReminder === false ? 'w' : 'wx' },
-          )
+          if (raw.updateReminder === false) {
+            // `--no-update-reminder` only turns the reminder off. The same
+            // document carries the independent auto-update consent, so a full
+            // overwrite would silently revoke it → read-modify-write that
+            // keeps every key we do not own.
+            const existing = readUpdateReminderPreferencesFile(reminder.preferencesPath)
+            await writeFile(
+              reminder.preferencesPath,
+              JSON.stringify({ ...(existing.document ?? { schemaVersion: 1 }), enabled: false }),
+              { encoding: 'utf8', flag: 'w' },
+            )
+          } else {
+            // 'wx' → an existing file (which may carry an auto-update
+            // consent) is left untouched.
+            await writeFile(
+              reminder.preferencesPath,
+              JSON.stringify({ schemaVersion: 1, enabled: true }),
+              { encoding: 'utf8', flag: 'wx' },
+            )
+          }
         } catch (error) {
           if (raw.updateReminder === false) throw error
           if ((error as NodeJS.ErrnoException).code !== 'EEXIST')

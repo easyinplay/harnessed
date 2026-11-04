@@ -14,6 +14,7 @@ const { registerAdvance } = await import('./cli/advance.js')
 const { registerAgentsMd } = await import('./cli/agents-md.js')
 const { registerAudit } = await import('./cli/audit.js')
 const { registerAuditLog } = await import('./cli/audit-log.js')
+const { registerAutoUpdate } = await import('./cli/autoUpdateCmd.js')
 const { registerBackupList } = await import('./cli/backup-list.js')
 const { registerCheckDocs } = await import('./cli/checkDocs.js')
 const { registerCheckpoint } = await import('./cli/checkpoint.js')
@@ -192,6 +193,7 @@ registerInjectState(program) // 28th — 4.27.0 B3 D6: perturn hook via the bina
 registerEval(program) // 30th — 4.31.0 eval Slice A: orchestrator-behavior regression trap suite
 registerCheckDocs(program) // 31st — T2.5: doc-discipline gate that actually SHIPS (scripts/ is not in `files`)
 registerFacts(program) // 32nd — T2.1: gate-fact production chain (feeds `gates --context-file`)
+registerAutoUpdate(program) // 33rd — Phase 84 T3: auto-update consent switch + status view
 
 // v8.0 Phase 24 — zero-arg `harnessed` you-are-here entry (comet `/comet` analog).
 // D3 explicit bare-invocation detection BEFORE program.parse: ONLY `[]` / `['--json']`

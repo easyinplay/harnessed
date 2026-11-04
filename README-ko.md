@@ -514,6 +514,7 @@ planning-with-files /plan (cross-cutting 도구) → .planning/<phase-id>/에 �
 | `harnessed status` | 현재 Phase + 잠금 보유자 |
 | `harnessed doctor` | 헬스 체크 (Node / MCP / jq / Win bash / routing / token budget / skill 무결성 / GateGuard 충돌 / update-available 등) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 자가 업데이트, 설치 채널별 분기: 바이너리 설치는 GitHub releases에서 제자리 자가 교체(sha256 + ed25519 서명 검증 — 릴리스마다 `<asset>.sha256.sig` 동봉, 4.32.19부터 서명 릴리스 계약; 교체된 이전 버전은 롤백용으로 보관); npm 설치는 `npm i -g harnessed@latest` 실행. `--check`는 최신 버전 보고; `--rollback [version]`(바이너리 설치 전용)은 보관된 이전 바이너리를 원자적으로 복원 — npm 설치는 `npm i -g harnessed@<version>` 안내; `--upstreams`는 기본 manifests 재실행; `--migration-report`는 읽기 전용 상태 인벤토리 |
+| `harnessed auto-update on\|off\|status` | 자동 업데이트 동의 스위치와 상태:`on` 과 `off` 는 호스트의 preferences 파일에서 `autoUpdate` 동의를 읽고 쓴다(다른 키는 모두 유지);`status` 는 그 동의와 마지막 실행 상태를 병합해 출력한다. `--platform claude\|codex` 로 호스트를 선택하고, `--json` 는 병합 결과를 하나의 JSON 객체로 출력한다. 기본 호스트는 감지된 쪽이며, 두 호스트가 모두 설치된 환경에서는 `--platform` 으로 다른 호스트의 루트를 지정한다. |
 | `harnessed release-preflight [--release-version <semver>]` | 읽기 전용 릴리스 준비 게이트 (CHANGELOG `[Unreleased]` / 버전 / git-clean / tag-absent); `--release-version`은 manifest 탐색을 재정의; 준비되지 않으면 exit 1. Ship Stage 게이트 |
 | `harnessed retro --done` | `/retro` 실행 후 retro 알림 Phase 카운터 리셋 (turn마다 뜨는 RETRO-DUE nudge 해제) |
 | `harnessed install <name>` | Upstream manifest 설치 |

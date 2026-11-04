@@ -1,12 +1,8 @@
 ---
 name: verify-second-opinion
 description: |
-  Stage ④ verify sub-workflow — 跨模型第二意见 (cross-AI peer review), fired only when this
-  release-in-progress touched the ORCHESTRATION SURFACE.
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (codex) + 1 phase (gate ref requires_second_opinion, mechanically derived).
-  Triggered by slash command
-  `/verify-second-opinion` after `harnessed setup`.
+  Optional: ask a second AI model for a peer review when the change touches the
+  orchestration contract itself.
 trigger_phrases:
   - "verify second opinion"
   - "cross model review"

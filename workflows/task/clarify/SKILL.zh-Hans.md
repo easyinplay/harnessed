@@ -1,15 +1,7 @@
 ---
 name: task-clarify
 description: |
-  task-clarify workflow v3 — Stage ③.a 子任务澄清 sub-workflow (superpowers
-  brainstorm + mattpocock /grill-with-docs conditional invoke)。Per-subtask
-  repeat invoke 入口 — execute-task 每个 subtask 起步先走 task-clarify 评估 gate
-  (judgments.subtask-gate.brainstorming.fires) 是否激活 brainstorming + 条件性
-  fire grill-with-docs (phase.spec_ambiguous == true)。
-  schema_version: harnessed.workflow.v3 with disciplines_applied [6] + tools_available
-  [superpowers-brainstorming, grill-with-docs]. Triggered by headless CLI
-  `harnessed run task-clarify` or slash command `/task-clarify` after
-  `harnessed setup`.
+  判断子任务在动手写代码前是否需要头脑风暴并锁定 spec。每个子任务起步跑一次，常规子任务透明跳过。
 trigger_phrases:
   - "clarify this subtask"
   - "task-clarify workflow"

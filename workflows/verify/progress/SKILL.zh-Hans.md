@@ -1,13 +1,8 @@
 ---
 name: verify-progress
 description: |
-  Stage ④.a verify 子工作流 — gsd-verify-work + gsd-progress 必跑串行（verify-work 起点）
-  + planning-with-files progress.md 持久化（bundled verify-stage cadence — mandatory serial:
-  gsd-verify-work UAT-driven acceptance + gsd-progress 状态同步，顺序不可调换）。
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (gsd-verify-work + gsd-progress + planning-with-files) + 3 phases (serial 01→02 + persist
-  progress.md sink)。Triggered by headless CLI `harnessed run verify-progress` or
-  slash command `/verify-progress` after `harnessed setup`.
+  先按验收标准核对工作成果，再同步 ROADMAP 状态与 planning 进度文件。
+  Verify 阶段的第一个必跑步骤。
 trigger_phrases:
   - "verify progress"
   - "进度同步"

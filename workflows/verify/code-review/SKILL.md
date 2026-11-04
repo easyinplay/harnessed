@@ -1,13 +1,8 @@
 ---
 name: verify-code-review
 description: |
-  Stage ④.b verify sub-workflow — code-review 多 agent 并行 fan-out 高置信度 finding
-  (subagent default per bundled parallelism gate — {{ host.spawn_subagent.zh_tool }} spawn
-  多 subagent fan-out, context 隔离, token 敏感)。
-  schema_version: harnessed.workflow.v3 with disciplines_applied (6 default) + tools_available
-  (code-review) + 1 phase (parallelism ref judgments.parallelism-gate.subagent-default.fires)。
-  Triggered by slash command
-  `/verify-code-review` after `harnessed setup`.
+  Run a multi-agent code review that fans out reviewers in parallel and reports only
+  high-confidence findings. Use it to review the changes before they land.
 trigger_phrases:
   - "verify code review"
   - "代码审查"

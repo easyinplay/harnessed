@@ -1,15 +1,7 @@
 ---
 name: task-code
 description: |
-  task-code workflow v3 — Stage ③.b 子任务编码 sub-workflow (karpathy 4 心法
-  always-on + mattpocock conditional route + planning-with-files progress.md update)。
-  2-phase composition: 01-code (karpathy 心法 + improve-arch
-  周期审查 / diagnose bug conditional invokes_tools) → 02-progress (Claude Code plugin
-  /plan 更新 progress.md 跨 session 进度同步)。
-  schema_version: harnessed.workflow.v3 with disciplines_applied [6] + tools_available
-  [improve-codebase-architecture, diagnose, planning-with-files]. Triggered
-  by headless CLI `harnessed run task-code` or slash command `/task-code`
-  after `harnessed setup`.
+  按锁定的 spec 写子任务代码，并把进度写回 progress.md 以便跨 session 续跑。测试之前跑它。
 trigger_phrases:
   - "code this subtask"
   - "task-code workflow"

@@ -1,17 +1,7 @@
 ---
 name: auto
 description: |
-  超级主控编排器 — 一行命令跑完整 6-stage 功能开发流 (research conditional →
-  discuss → plan → task → verify → retro mandatory), 适合 trivial / well-defined feature OR 你
-  想 hands-off。每 stage 内部仍 fan-out sub-workflow per 现有 stage-master orchestrator pattern。
-  v3.2.0 强化:Phase 0 AI 1-shot complexity assessment + Phase 0.5 understanding check prompt
-  + Phase 5 `/retro` mandatory。
-  schema_version: harnessed.workflow.v3 with delegates_to (6 sub: research conditional order 0 +
-  4 stage-master order 1-4 + retro mandatory order 5) + disciplines_applied (6 default)
-  + tools_available (agent-teams-create + planning-with-files)。Fail-fast default; opt-in
-  `--staged` flag 重现 stage gate UX (每 stage 完停 user review)。
-  Triggered by slash command `/auto` (bare per ADR 0030 namespace policy D-02 LOCK)
-  after `harnessed setup`.
+  一行命令跑完功能开发流：按需调研、澄清、计划、任务、验证、回顾。适合想 hands-off 跑完的简单或边界明确的功能。
 trigger_phrases:
   - "auto"
   - "自动跑完"

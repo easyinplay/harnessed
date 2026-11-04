@@ -514,6 +514,7 @@ planning-with-files /plan（橫切工具）→ 將產出物寫入 .planning/<pha
 | `harnessed status` | 目前 phase + 鎖定持有者 |
 | `harnessed doctor` | 健康檢查(Node / MCP / jq / Win bash / routing / token budget / skill 完整性 / GateGuard 衝突 / update-available 等) |
 | `harnessed update [--check\|--rollback [version]\|--upstreams\|--migration-report]` | 自我更新,依安裝通道分流:二進位安裝從 GitHub releases 原地自替換(sha256 + ed25519 簽章雙重驗證 —— releases 附帶 `<asset>.sha256.sig`,4.32.19 起為簽章發布契約;被替換的版本會封存以供回滾);npm 安裝執行 `npm i -g harnessed@latest`。`--check` 回報最新版本;`--rollback [version]`(僅二進位安裝)原子還原已封存的上一版二進位檔 —— npm 安裝則被指引執行 `npm i -g harnessed@<version>`;`--upstreams` 重跑基礎 manifests;`--migration-report` 為唯讀過期狀態盤點 |
+| `harnessed auto-update on\|off\|status` | 自動更新的授權開關與狀態:`on` 與 `off` 在宿主機的 preferences 檔案裡讀寫 `autoUpdate` 授權(其餘鍵全部保留);`status` 把該授權與上次執行狀態合併輸出。`--platform claude\|codex` 選擇宿主機;`--json` 以單一 JSON 物件輸出合併結果。預設宿主機 = 偵測到的那个;兩個宿主都裝了的機器,用 `--platform` 指定另一個宿主機的根。 |
 | `harnessed release-preflight [--release-version <semver>]` | Read-only 發布就緒關卡（CHANGELOG `[Unreleased]` / version / git-clean / tag-absent）；`--release-version` 可覆寫 manifest 自動探索；未就緒則 exit 1。即 Ship-stage 關卡 |
 | `harnessed retro --done` | 執行完 `/retro` 後重置 retro-reminder phase 計數器（清除每輪的 RETRO-DUE 提醒） |
 | `harnessed install <name>` | 安裝上游 manifest |
