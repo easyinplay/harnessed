@@ -25,6 +25,7 @@ import {
   getSkillsDir,
   harnessSkillsDirs,
 } from '../../platform/platform.js'
+import { compareVersionNames } from './version-check.js'
 
 interface CheckResult {
   name: string
@@ -97,9 +98,15 @@ export async function checkMattpocockSkills(): Promise<CheckResult> {
   if (getPluginsRegistry() !== null) {
     try {
       const entries = await readdir(pluginRoot, { withFileTypes: true })
-      for (const version of entries) {
-        if (!version.isDirectory() || !/^\d+\.\d+/.test(version.name)) continue
-        const root = join(pluginRoot, version.name, 'skills')
+      // Newest version first: `claude plugin update` keeps the older cache
+      // directories and readdir returns them lexicographically, so probing in
+      // listing order would report an outdated copy as the local content.
+      const versions = entries
+        .filter((entry) => entry.isDirectory() && /^\d+\.\d+/.test(entry.name))
+        .map((entry) => entry.name)
+        .sort((a, b) => compareVersionNames(b, a))
+      for (const version of versions) {
+        const root = join(pluginRoot, version, 'skills')
         const indicator = await findIndicator(root)
         if (indicator) return contentDetected(indicator, root)
       }

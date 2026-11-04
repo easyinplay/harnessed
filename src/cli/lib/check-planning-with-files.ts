@@ -14,6 +14,7 @@ import { getPluginsRegistry } from '../../platform/platform.js'
 // v16.0 Phase 66 T5 — shared CheckResult (its `status` now carries `skipped`)
 // instead of a local re-declaration that would have to be widened in parallel.
 import type { CheckResult } from './check-builtin.js'
+import { compareVersionNames } from './version-check.js'
 
 // v3.9.1 — planning-with-files lives in OthmanAdi/planning-with-files
 // marketplace (NOT default claude marketplace). Two-step install:
@@ -79,16 +80,23 @@ export async function checkPlanningWithFiles(): Promise<CheckResult> {
   )
   try {
     const entries = await readdir(root, { withFileTypes: true })
-    for (const version of entries) {
-      if (!version.isDirectory() || !/^\d+\.\d+/.test(version.name)) continue
-      const versionRoot = join(root, version.name)
+    // `claude plugin update` keeps the OLD version directories next to the new
+    // one, and readdir order is lexicographic (not version order). Probing in
+    // descending version order makes the report name the version that is
+    // actually installed instead of the oldest cached one.
+    const versions = entries
+      .filter((entry) => entry.isDirectory() && /^\d+\.\d+/.test(entry.name))
+      .map((entry) => entry.name)
+      .sort((a, b) => compareVersionNames(b, a))
+    for (const version of versions) {
+      const versionRoot = join(root, version)
       // Resources must accompany SKILL.md at the same candidate root.
       for (const candidate of [join(versionRoot, 'skills', 'planning-with-files'), versionRoot]) {
         if (await hasPlanningContent(candidate)) {
           return {
             name: 'planning-with-files plugin',
             status: 'pass',
-            message: `local planning-with-files content detected (version ${version.name}; SKILL.md, scripts and templates); runtime execution not verified`,
+            message: `local planning-with-files content detected (version ${version}; SKILL.md, scripts and templates); runtime execution not verified`,
           }
         }
       }

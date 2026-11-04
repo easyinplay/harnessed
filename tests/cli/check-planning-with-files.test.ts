@@ -4,10 +4,28 @@ import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const unreadable = vi.hoisted(() => new Set<string>())
+// Cache-root listing order is NOT version order (`claude plugin update` keeps
+// old version directories, and readdir returns them lexicographically). The
+// check must pick the highest version regardless of listing order, so the
+// fixture pins the listing order explicitly instead of relying on the FS.
+const dirOrder = vi.hoisted(() => new Map<string, string[]>())
 vi.mock('node:fs/promises', async (importOriginal) => {
   const real = await importOriginal<typeof import('node:fs/promises')>()
   return {
     ...real,
+    readdir: ((path: unknown, ...rest: unknown[]) => {
+      const ordered = dirOrder.get(String(path))
+      if (ordered) {
+        return Promise.resolve(
+          ordered.map((name) => ({
+            name,
+            isDirectory: () => true,
+            isFile: () => false,
+          })),
+        )
+      }
+      return (real.readdir as (...args: unknown[]) => unknown)(path, ...rest)
+    }) as typeof real.readdir,
     readFile: ((path: unknown, ...rest: unknown[]) => {
       if (unreadable.has(String(path))) {
         return Promise.reject(
@@ -211,6 +229,36 @@ describe('planning-with-files local content, not version-name presence', () => {
     expect(result.message).toContain('2.33.0')
     expect(result.message).not.toMatch(/version[^;.]*2\.99\.0/)
     expect(result.message).toMatch(/local[^;.]*content|content[^;.]*detect/i)
+  })
+
+  it('reports the highest cached version, not the first listed one', async () => {
+    // `claude plugin update` keeps the older version directories, and readdir
+    // returns them lexicographically — reporting the first listed version
+    // makes the doctor claim the plugin is stale when it is current.
+    complete('2.34.0/skills/planning-with-files')
+    complete('3.17.2/skills/planning-with-files')
+    complete('3.28.0/skills/planning-with-files')
+    dirOrder.set(root, ['2.34.0', '3.17.2', '3.28.0'])
+    const { checkPlanningWithFiles } = await import(
+      '../../src/cli/lib/check-planning-with-files.js'
+    )
+    const result = await checkPlanningWithFiles()
+    expect(result.status).toBe('pass')
+    expect(result.message).toContain('version 3.28.0')
+    expect(result.message).not.toContain('version 2.34.0')
+  })
+
+  it('compares version segments numerically so 10.0.0 outranks 9.1.0', async () => {
+    complete('9.1.0/skills/planning-with-files')
+    complete('10.0.0/skills/planning-with-files')
+    dirOrder.set(root, ['9.1.0', '10.0.0'])
+    const { checkPlanningWithFiles } = await import(
+      '../../src/cli/lib/check-planning-with-files.js'
+    )
+    const result = await checkPlanningWithFiles()
+    expect(result.status).toBe('pass')
+    expect(result.message).toContain('version 10.0.0')
+    expect(result.message).not.toContain('version 9.1.0')
   })
 
   it('one readable nonblank resource in each directory suffices despite other placeholders', async () => {
