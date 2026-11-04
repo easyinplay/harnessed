@@ -239,12 +239,43 @@ export async function spawnCmd(
       // v3.9.8 — expand `~/` because cmd.exe doesn't (POSIX-only convention).
       const expandedCmd = expandTildeForWindows(cmd, ctx.hostContext?.userHome)
       const expandedArgs = args.map((arg) => expandTildeForWindows(arg, ctx.hostContext?.userHome))
-      child = spawn('cmd.exe', ['/c', expandedCmd, ...expandedArgs], {
-        cwd,
-        env,
-        windowsHide: true,
-        stdio,
-      })
+      if (expandedArgs.length === 0) {
+        // Windows cmd quoting fix — deliver the cmd string to cmd.exe VERBATIM.
+        //
+        // Node/libuv quotes any argv element that contains whitespace or a
+        // quote with MSVCRT rules before the command line reaches
+        // CreateProcess, so the manifest cmd
+        //   npm install -g "@playwright/cli@^0.1.22" && playwright-cli install-browser chromium
+        // reaches cmd.exe as
+        //   "npm install -g \"@playwright/cli@^0.1.22\" && ..."
+        // cmd.exe has no backslash escape, so the escaped quotes arrive at the
+        // program as LITERAL quotes: npm saw the doubled package name
+        // ""@playwright/cli@^0.1.22"" and answered EINVALIDPACKAGENAME.
+        //
+        // `windowsVerbatimArguments` skips libuv's quoting entirely, so the cmd
+        // string reaches cmd.exe byte-for-byte and cmd's own parser owns the
+        // quotes (and `&&`, and the caret inside a quoted specifier).
+        //
+        // ONLY the no-extra-args branch: the extra-args branch (the update
+        // install in cli/lib/updateCoordinator.ts) deliberately relies on
+        // libuv's argv escaping to carry arguments with spaces across the
+        // cmd.exe boundary — turning it off there would re-open the argv
+        // splitting hazard lib/winSpawn.ts exists to prevent.
+        child = spawn('cmd.exe', ['/c', expandedCmd], {
+          cwd,
+          env,
+          windowsHide: true,
+          stdio,
+          windowsVerbatimArguments: true,
+        })
+      } else {
+        child = spawn('cmd.exe', ['/c', expandedCmd, ...expandedArgs], {
+          cwd,
+          env,
+          windowsHide: true,
+          stdio,
+        })
+      }
     }
   } else {
     child = spawn('/bin/sh', ['-c', joinedCmd], { cwd, env, stdio })

@@ -159,14 +159,38 @@ export async function gcCompiledArtifacts(opts: {
     /* no bin-backup dir */
   }
 
-  // <execDir>/<base>.bak-* — self-update leftovers next to the binary
+  // <execDir>/<base>.bak-* — self-update leftovers next to the binary, and
+  // <execDir>/.harnessed-update-<ver>[.part|.exe] — the download fragment and
+  // the smoke target (R19).
+  //
+  // A fragment NEWER than the installed version may be a download in progress
+  // (or the resume point of the next attempt) → keep it. A fragment at or
+  // below the installed version can never be used again → sweep it. Without an
+  // exec path the caller has not opted into the exec directory at all, so
+  // nothing there is touched.
   if (opts.execPath) {
     try {
       const dir = dirname(opts.execPath)
       const base = basename(opts.execPath)
       for (const e of await readdir(dir, { withFileTypes: true })) {
-        if (!e.isFile() || !e.name.startsWith(`${base}.bak-`)) continue
+        if (!e.isFile()) continue
         const p = join(dir, e.name)
+        if (e.name.startsWith(`${base}.bak-`)) {
+          removed.push(p)
+          if (!opts.dryRun) await rm(p, { force: true })
+          continue
+        }
+        const fragment = updateFragmentVersion(e.name)
+        if (fragment === null) continue
+        const relation = compareVersions(fragment, pkg.version)
+        if (relation === 'ahead') {
+          kept.push(p)
+          continue
+        }
+        if (relation === 'unknown') {
+          kept.push(p)
+          continue
+        }
         removed.push(p)
         if (!opts.dryRun) await rm(p, { force: true })
       }
@@ -176,6 +200,21 @@ export async function gcCompiledArtifacts(opts: {
   }
 
   return { removed, kept }
+}
+
+/**
+ * The version encoded in a self-update leftover file name, or null when the
+ * name is not one of ours.
+ *
+ * Matches `.harnessed-update-<version>` with an optional `.part` (the
+ * download fragment) or platform extension (the smoke target). The version
+ * pattern is anchored on the digits so the optional suffix cannot be mistaken
+ * for part of the version.
+ */
+function updateFragmentVersion(name: string): string | null {
+  const match =
+    /^\.harnessed-update-(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\.part|\.[A-Za-z0-9]+)?$/.exec(name)
+  return match?.[1] ?? null
 }
 
 interface BackupMetadata {

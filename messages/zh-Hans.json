@@ -135,5 +135,19 @@
   "manifest_add.gate_passed_dry_run": "[manifest-add] EE-5 gate passed (dry-run); would write {{path}}",
 
   "resume.fail": "✗ {{error}}",
-  "resume.corrupt": "✗ {{error}}\n    path: {{path}}"
+  "resume.corrupt": "✗ {{error}}\n    path: {{path}}",
+
+  "auto_update.consent_on": "[harnessed] 自动更新已开启",
+  "auto_update.consent_off": "[harnessed] 自动更新已关闭",
+  "auto_update.preferences_replaced": "[harnessed] 偏好设置文件无法解析(非法 JSON)——已替换。",
+  "auto_update.reminder_off_note": "[harnessed] 更新提醒已关闭——「有新版本可用」提示不会再打印。用 'harnessed auto-update status' 查看。",
+  "auto_update.path.host": "  宿主:        {{host}}",
+  "auto_update.path.preferences": "  偏好设置:   {{path}}",
+  "auto_update.path.status": "  状态文件:   {{path}}",
+  "auto_update.error.unsupported_host": "不支持的宿主: {{host}}(期望 claude 或 codex)",
+  "auto_update.error.runtime": "无法解析 {{host}} 的 update-reminder 运行时",
+  "auto_update.notice.updated_from": "harnessed 已从 {{from}} 更新到 {{to}}。",
+  "auto_update.notice.updated_to": "harnessed 已更新到 {{to}}。",
+  "auto_update.notice.restart": "请重启 {{host}},让新版本与 hooks 生效。",
+  "auto_update.notice.codex_trust": "Codex hooks 仍需你确认信任——请在 Codex 中批准该 harness hook 注册(或在该机器上运行 'harnessed setup')。"
 }

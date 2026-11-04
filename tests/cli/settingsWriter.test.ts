@@ -238,7 +238,14 @@ describe('settingsWriter.mergeSettingsEnvKey — D3 shared writer', () => {
     expect(lockfile.lock).toHaveBeenCalledTimes(1)
     const lockOptions = vi.mocked(lockfile.lock).mock.calls[0]?.[1]
     expect(lockOptions?.stale).toBeGreaterThanOrEqual(60_000)
-    expect(lockOptions?.retries).toMatchObject({ retries: 20, maxTimeout: 250 })
+    // Contention is retried by withSettingsTransactionLock itself (one attempt
+    // per backoff step, and only on ELOCKED), so proper-lockfile must not add
+    // its own retries on top.
+    expect(lockOptions?.retries).toBe(0)
+    const { SETTINGS_TRANSACTION_LOCK_RETRIES } = await import(
+      '../../src/cli/lib/settingsTransactionLock.js'
+    )
+    expect(SETTINGS_TRANSACTION_LOCK_RETRIES.retries).toBeGreaterThan(0)
     const release = await vi.mocked(lockfile.lock).mock.results[0]?.value
     expect(release).toHaveBeenCalledTimes(1)
   })

@@ -20,9 +20,11 @@
 // `harnessed setup` next step instead of a stack trace.
 
 import { spawn } from 'node:child_process'
+import pkg from '../../../package.json' with { type: 'json' }
 import { killProcessTree } from '../../installers/lib/killTree.js'
 import { withHostInstallEnv } from '../../installers/lib/runClaudeArgs.js'
 import type { HostInstallContext } from '../../platform/hostInstallContext.js'
+import { AUTO_UPDATE_STATUS_PATH_ENV } from './autoUpdateStatus.js'
 import { OWNED_REFRESH_FLAG } from './ownedRefreshFlag.js'
 
 /** How long the handover may take before it is abandoned (fail-soft). */
@@ -60,6 +62,7 @@ export async function runOwnedRefreshEntry(): Promise<number> {
   const { captureHostInstallContext } = await import('../../platform/hostInstallContext.js')
   const context = captureHostInstallContext()
   const outcome = await refreshOwnedState(context)
+  writeAutoUpdateNoticeForNewBinary(context)
   if (outcome.ok) {
     console.log(
       `[harnessed] owned state refreshed (${outcome.updated.length} component(s): ${outcome.updated.join(', ')})`,
@@ -70,6 +73,46 @@ export async function runOwnedRefreshEntry(): Promise<number> {
     `[harnessed] owned state refresh incomplete (${outcome.failed.join(', ')}) — run 'harnessed setup' to finish`,
   )
   return 1
+}
+
+/**
+ * Write the "you were updated" notice — the user-facing half of the automatic
+ * update (D11 / R14 / R16).
+ *
+ * ONLY the new binary can do this: it owns the NEW assets, so it is the only
+ * process that can excerpt the CHANGELOG section of the version it just
+ * installed. The old binary's assets are the old ones.
+ *
+ * The status file's path travels in the environment (R17): the new binary must
+ * NOT derive it, or the notice lands in another root and silently disappears.
+ * Without that env var there is nothing to write into (an ordinary
+ * `harnessed update` has no auto-update notice to publish).
+ *
+ * Fail-soft: the swap already succeeded — a notice problem must never turn a
+ * successful update into a failed one.
+ */
+export async function writeAutoUpdateNoticeForNewBinary(
+  context: HostInstallContext,
+): Promise<void> {
+  const statusPath = process.env[AUTO_UPDATE_STATUS_PATH_ENV]
+  if (!statusPath) return
+  try {
+    const [{ readAutoUpdateNotice, writeAutoUpdateNotice }, { changelogSection }] =
+      await Promise.all([import('./autoUpdateNotice.js'), import('./changelogSection.js')])
+    const version = pkg.version
+    const previous = readAutoUpdateNotice(statusPath)
+    writeAutoUpdateNotice(statusPath, {
+      // The `from` version was recorded by the OLD binary before the spawn.
+      from: previous?.from ?? '',
+      to: version,
+      changelog: changelogSection(version) ?? '',
+      restart: context.hostId === 'codex' ? 'Codex' : 'Claude Code',
+      at: Date.now(),
+      consumedAt: 0,
+    })
+  } catch {
+    /* fail-soft — see the doc comment */
+  }
 }
 
 export interface OwnedRefreshSpawnResult {
