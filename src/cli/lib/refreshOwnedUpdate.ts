@@ -18,6 +18,7 @@ import { removeLegacyClaudeCommands } from './legacyCommandCleanup.js'
 import { loadCapabilities, renderAllSkills } from './renderSkillTemplates.js'
 import { backupSkillDir, newBackupSessionDir } from './skillBackup.js'
 import { recordSkillHashes } from './skillIntegrity.js'
+import { readUpdateReminderPreferencesFile } from './updateReminderPreferences.js'
 import { createUpdateComponent, type UpdateComponentResult } from './updateResult.js'
 import { copyWorkflowArtifacts } from './workflowArtifacts.js'
 
@@ -100,20 +101,30 @@ async function refreshWorkflows(context: HostInstallContext, assets: string): Pr
 }
 
 async function reminderEnabled(context: HostInstallContext): Promise<boolean> {
+  // The root comes from the CAPTURED install context, not from the ambient
+  // environment: the refresh acts on the install it was given, and the
+  // environment may have drifted since the context was captured (a v16.0-era
+  // guarantee, locked by tests/unit/refresh-owned-update.test.ts).
+  //
+  // This is the one place that deliberately does NOT use
+  // `canonicalStateRoot()` (R15): the auto-update CONSENT path (command →
+  // hook → worker) is canonical, and this reader only decides whether the
+  // reminder hook is re-registered — a decision about the captured install.
   const defaultRoot = join(context.platform.homeDir, 'harnessed')
   const stateRoot = resolve(
     context.platform.stateRoot !== defaultRoot
       ? context.platform.stateRoot
       : join(context.nativeHome, 'harnessed'),
   )
-  try {
-    const value = JSON.parse(
-      await readFile(join(stateRoot, 'update-reminder-preferences.json'), 'utf8'),
-    )
-    return value.schemaVersion === 1 && value.enabled === true
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === 'ENOENT'
-  }
+  // Same canonical reader as the compiled reminder entrypoint — only the
+  // stateRoot derivation above is specific to this call site.
+  const { preferences, missing, document } = readUpdateReminderPreferencesFile(
+    join(stateRoot, 'update-reminder-preferences.json'),
+  )
+  if (preferences.unreadable) return false
+  // No preferences file at all → the reminder is opt-out, so it stays on.
+  if (missing) return true
+  return document?.schemaVersion === 1 && preferences.enabled
 }
 
 /** Does the host settings.json still carry a FIRST-PARTY registration of this

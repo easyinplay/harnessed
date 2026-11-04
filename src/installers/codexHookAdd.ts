@@ -28,6 +28,7 @@ import { getAssetsRoot, isCompiledRuntime } from '../platform/assetsRoot.js'
 import type { HostInstallContext } from '../platform/hostInstallContext.js'
 import { detectPlatform } from '../platform/platform.js'
 import { isBunRuntime } from '../platform/runtime.js'
+import { canonicalStateRoot } from '../platform/stateRoot.js'
 import { backup } from './lib/backup.js'
 import {
   CODEX_HOOK_MARKETPLACE,
@@ -62,9 +63,26 @@ export function resolveCodexHome(hostContext?: HostInstallContext): string {
   return env ? env : detectPlatform().homeDir
 }
 
+/**
+ * The state root the codex hook command points at.
+ *
+ * R15: the ONE rule, in this order:
+ *
+ *   1. `HARNESSED_ROOT_OVERRIDE` wins — it is an explicit instruction and it
+ *      must move EVERY consumer together. The codex path used to ignore it
+ *      while the CLI honoured it → the CLI wrote the auto-update consent into
+ *      root A and the codex worker read root B ("the user turned it on and it
+ *      never fires").
+ *   2. Without an override: the CONTEXT's native home wins. The portable
+ *      codex home feature points the hook at the home the user actually uses,
+ *      not at the ambient `CODEX_HOME`. This is byte-identical to what the
+ *      previous, local derivation produced → the installed hook command
+ *      literal does not change and no re-registration is needed.
+ */
 function reminderStateRoot(hostContext: HostInstallContext | undefined): string {
-  if (!hostContext)
-    return resolve(process.env.HARNESSED_ROOT_OVERRIDE || join(resolveCodexHome(), 'harnessed'))
+  const override = process.env.HARNESSED_ROOT_OVERRIDE?.trim()
+  if (override) return resolve(override)
+  if (!hostContext) return canonicalStateRoot('codex')
   const defaultRoot = join(hostContext.platform.homeDir, 'harnessed')
   return resolve(
     hostContext.platform.stateRoot !== defaultRoot

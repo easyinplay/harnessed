@@ -263,7 +263,7 @@ describe('asset download — streamed to disk', () => {
     expect(readFileSync(dest).toString('utf8')).toBe('FALLBACK-BYTES')
   })
 
-  it('a stalled transfer fails fast with the byte/rate evidence and the temp file is cleaned up', async () => {
+  it('a stalled transfer fails fast with the byte/rate evidence and keeps the resume point', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'selfupd-stall-'))
     const execPath = join(dir, HOST_ASSET)
     writeFileSync(execPath, 'OLD-BINARY')
@@ -295,8 +295,10 @@ describe('asset download — streamed to disk', () => {
     expect(r.message).toMatch(/original binary was left untouched/)
     expect(r.message).toContain('npm i -g harnessed@latest')
     expect(r.message).toContain('HARNESSED_UPDATE_SOURCE_DIR')
-    // the temp file is unlinked on the failure path
-    expect(readdirSync(dir)).toEqual([HOST_ASSET])
+    // The partial download STAYS on disk as the resume point (R4/R5): the
+    // next attempt continues it instead of downloading the whole asset
+    // again. The old binary is untouched.
+    expect(readdirSync(dir).sort()).toEqual([`.harnessed-update-9.9.9.part`, HOST_ASSET].sort())
     expect(readFileSync(execPath, 'utf8')).toBe('OLD-BINARY')
   })
 
