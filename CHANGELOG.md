@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The binary channel can now update itself in the background. With `harnessed auto-update on`, a new release is detected by the existing update-reminder worker, downloaded in the background (resumable — a dropped transfer continues from the bytes already on disk instead of starting over), verified (sha256 + ed25519 signature), swapped in under the same lock the manual `harnessed update` takes, and the new binary then refreshes the owned skills and hooks. The next session prints a one-time notice with the version change, the changelog excerpt and the restart hint. The consent lives in `update-reminder-preferences.json` as `autoUpdate` and is off by default; the reminder consent and the auto-update consent are independent, so silencing the reminder no longer silences the auto-update. `harnessed auto-update status` shows the consent, the resolved host, both file paths and the last run. Only the binary channel self-replaces — the npm and bun channels keep reminding, and the status says so.
+
 ## [5.0.12] - 2026-11-03
 
 ### Fixed
