@@ -19,7 +19,7 @@
         "  1. Token-cost gate: estimate team_cost vs 2 × subagent_cost; only escalate when team wins",
         "  2. Spawn 4 background teammates (the first spawn forms the team; `team_name` is ignored): code-review / gstack-review / gstack-cso / gstack-qa",
         "  3. Each teammate's brief is self-contained (no shared session context to lean on)",
-        "  4. Delivery contract: a named/background teammate's FINAL message is discarded by the platform — every finding must arrive via SendMessage to the lead or be written to a file the lead reads back; never rely on the teammate's last output",
+        "  4. Delivery contract: a named/background teammate's FINAL message is discarded by the platform — every finding must arrive via SendMessage to the lead or be written to a result file the lead reads back; the completion credential is that result file, never the last output of the teammate",
         "  5. Round-trip findings: each teammate sends top-3 findings; others rate (real / false-positive / nit)",
         "  6. Lead arbitrates conflicts; produces final report ordered CRITICAL → HIGH → MEDIUM",
         "  7. Cleanup MANDATORY: ask each of the 4 teammates to shut down by name and confirm it stopped — that request IS the teardown (no delete tool exists); the team dirs are removed automatically at session exit, and a teammate that ignores the request is only guaranteed stopped when the session ends",

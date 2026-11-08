@@ -12,6 +12,9 @@ const ROOT = resolve(__dirname, '../..')
 const WORKFLOWS = join(ROOT, 'workflows')
 const NAME = 'harnessed-update'
 
+/** The generated-section marker, matched version-agnostically (semver-shaped). */
+const GENERATED_MARKER_RX = /<!--\s*harnessed-generated:v\d+\.\d+\.\d+\s*-->/
+
 describe('Phase 78 T7 deterministic update workflow', () => {
   it('ships a flat v3 workflow with the deterministic CLI and no retry budget', () => {
     const workflow = parseYaml(readFileSync(join(WORKFLOWS, NAME, 'workflow.yaml'), 'utf8'))
@@ -49,6 +52,9 @@ describe('Phase 78 T7 deterministic update workflow', () => {
     expect(prompt).toBeDefined()
     const filename = locale === 'en' ? 'SKILL.md' : 'SKILL.zh-Hans.md'
     const skill = readFileSync(join(WORKFLOWS, NAME, filename), 'utf8')
+    const invokeHeading = locale === 'en' ? '## How to invoke' : '## 如何调用'
+    const invokeHeadingAt = skill.indexOf(invokeHeading)
+    expect(invokeHeadingAt).toBeGreaterThanOrEqual(0)
     const role = [prompt?.responsibility, ...(prompt?.checklist ?? [])].join('\n')
     for (const body of [skill, role]) {
       const preview = body.indexOf('harnessed update --all --dry-run --json')
@@ -89,6 +95,17 @@ describe('Phase 78 T7 deterministic update workflow', () => {
     expect(prompt?.severity).toContain('partial')
     expect(skill).toContain(`harnessed prompt ${NAME}`)
     expect(skill).toContain(`harnessed checkpoint complete ${NAME}`)
-    expect(skill).toContain('<!-- harnessed-generated:v4.12.0 -->')
+    // Phase 86 bumped the generated-invoke marker (v4.12.0 → v4.13.0), so the
+    // assertion is version-agnostic — but it still proves the invoke section is
+    // the GENERATED one: the marker must be a well-formed semver marker, it must
+    // live inside the invoke section (after the invoke heading), and it must be
+    // the file's last non-empty line (the generator terminates the section with
+    // it). Weaker checks like `toContain('harnessed-generated')` would pass for a
+    // hand-written marker and are deliberately not used here.
+    const marker = GENERATED_MARKER_RX.exec(skill)
+    expect(marker).not.toBeNull()
+    const markerAt = marker?.index ?? -1
+    expect(markerAt).toBeGreaterThan(invokeHeadingAt)
+    expect(skill.slice(markerAt).trim()).toBe(marker?.[0])
   })
 })

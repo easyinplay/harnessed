@@ -18,7 +18,7 @@
         "  1. Token-cost gate: estimate team_cost vs 2 × subagent_cost; only escalate when team wins",
         "  2. Spawn 4 background agents (one `spawn_agent(agent_type, message)` call per agent; `agent_type` is an agent role, not a task label, so name the specialist in the message; there is no create step and no team handle): code-review / gstack-review / gstack-cso / gstack-qa",
         "  3. Each agent's brief is self-contained (no shared session context to lean on)",
-        "  4. Delivery contract: every finding must arrive via `send_input` to the lead or be written to a file the lead reads back; call `wait_agent` before reading. TODO(未验证): whether codex returns a spawned agent's final message to the lead — do not rely on it.",
+        "  4. Delivery contract: every finding must arrive via `send_input` to the lead or be written to a result file the lead reads back; call `wait_agent` before reading. The completion credential is that result file, not the final message of the agent. TODO(未验证): whether codex returns a spawned agent's final message to the lead — do not rely on it.",
         "  5. Round-trip findings: each agent sends top-3 findings; others rate (real / false-positive / nit)",
         "  6. Lead arbitrates conflicts; produces final report ordered CRITICAL → HIGH → MEDIUM",
         "  7. Cleanup MANDATORY: call `close_agent` for each of the 4 agents and confirm it stopped. TODO(未验证): whether codex reclaims agents at session exit — close them explicitly rather than relying on it",

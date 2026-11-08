@@ -31,7 +31,19 @@ export interface GatesPlan {
   master?: string
   fire: GatesPlanFireEntry[]
   skip: GatesPlanSkipEntry[]
-  parallelism?: { escalate_to_teams: boolean; reason: string | null }
+  parallelism?: {
+    escalate_to_teams: boolean
+    reason: string | null
+    // Phase 86 — the gates plan also carries the team-capability verdict and the
+    // transport contract (teams_active / transport / result_contract /
+    // bounded_wait). They are accepted here so `checkpoint start --plan` does
+    // not drop or reject them, but they are NOT persisted: the ledger entry
+    // schema is unchanged.
+    teams_active?: boolean
+    transport?: 'subagent' | 'teammate'
+    result_contract?: 'result-file'
+    bounded_wait?: boolean
+  }
 }
 
 export type SubStatus = SubProgressEntryType['status']

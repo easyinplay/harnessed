@@ -20,6 +20,7 @@ import { isStaticGateConfigError } from '../workflow/exprBuilder.js'
 import { resolveJudgmentGate } from '../workflow/judgmentResolver.js'
 import { resolveSkipVeto } from '../workflow/skipGate.js'
 import { matchSkipSub, warnUnmatchedSkips } from '../workflow/skipSubs.js'
+import { checkAgentTeams, resolveAgentTeamsStatus } from './lib/checkAgentTeams.js'
 import { detectHeadless } from './lib/detectHeadless.js'
 import { buildDefaultGateContext, mergeGateContext } from './lib/gateContext.js'
 
@@ -81,7 +82,18 @@ interface GatesPlan {
   master: string
   fire: FireEntry[]
   skip: SkipEntry[]
-  parallelism: { escalate_to_teams: boolean; reason: string | null }
+  parallelism: {
+    escalate_to_teams: boolean
+    reason: string | null
+    /** Phase 86 — can THIS host form a team right now? (env / settings.json probe) */
+    teams_active: boolean
+    /** Phase 86 — the parallel shape this plan actually asks for. */
+    transport: 'subagent' | 'teammate'
+    /** Phase 86 — completion of a parallel sub is proven by its result file. */
+    result_contract: 'result-file'
+    /** Phase 86 — the result-file wait is bounded (never an open-ended hang). */
+    bounded_wait: boolean
+  }
 }
 
 /** Exported so `harnessed facts` resolves the SAME yaml `harnessed gates` will
@@ -286,21 +298,61 @@ export async function runGatesPlan(
   // (lost on /resume) and their background spawns leave orphan subprocesses whose
   // piped stdio blocks the host from exiting (the 11h hang). Suppress the upgrade
   // BEFORE evaluating the gate — never fire teams in headless.
-  let parallelism: GatesPlan['parallelism'] = { escalate_to_teams: false, reason: null }
+  //
+  // Phase 86 — the judgment gate says "this stage wants a team"; the probe says
+  // whether THIS host can form one at all. CC 2.1.178+ only forms a team when
+  // CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS is set (env or settings.json) — without
+  // it the flag is a no-op and no team ever appears. An escalate_to_teams=true
+  // handed to a host that cannot form a team is an instruction the orchestrator
+  // cannot execute, so the capability gates the decision (fail-closed).
+  const teamProbe = await checkAgentTeams()
+  const teamsActive = resolveAgentTeamsStatus({
+    envValue: teamProbe.envValue,
+    settingsValue: teamProbe.settingsValue,
+  }).active
+  // The transport contract is CONSTANT: however the subs run, a parallel
+  // sub-workflow is completed by its result file, and the wait for that file is
+  // bounded. The orchestrator reads these two fields as a promise, not a hint.
+  const parallelismContract = {
+    teams_active: teamsActive,
+    result_contract: 'result-file' as const,
+    bounded_wait: true,
+  }
+  // `transport` is DERIVED from the decision: an escalated plan runs its subs
+  // as teammates, every other plan runs them as a plain subagent fan-out.
+  const parallelismBlock = (
+    escalate: boolean,
+    reason: string | null,
+  ): GatesPlan['parallelism'] => ({
+    escalate_to_teams: escalate,
+    reason,
+    ...parallelismContract,
+    transport: escalate ? 'teammate' : 'subagent',
+  })
+
+  let parallelism: GatesPlan['parallelism']
   const hl = detectHeadless(process.env, Boolean(process.stdout.isTTY))
   if (hl.headless) {
-    parallelism = {
-      escalate_to_teams: false,
-      reason: 'headless mode — Agent Teams are session-scoped, incompatible with -p (issue #7)',
-    }
+    parallelism = parallelismBlock(
+      false,
+      'headless mode — Agent Teams are session-scoped, incompatible with -p (issue #7)',
+    )
   } else {
     try {
       const escalate = await resolveJudgmentGate(PARALLELISM_GATE, ctx, packageRoot)
-      parallelism = escalate
-        ? { escalate_to_teams: true, reason: 'agent-teams-upgrade gate fired' }
-        : { escalate_to_teams: false, reason: null }
+      if (!escalate) {
+        parallelism = parallelismBlock(false, null)
+      } else if (!teamsActive) {
+        // Fail-closed — the gate fired, but this host cannot form a team. Say so
+        // and route the orchestrator to the transport that always works.
+        parallelism = parallelismBlock(false, 'agent-teams 未启用，不能成团，改用 subagent fan-out')
+      } else {
+        parallelism = parallelismBlock(true, 'agent-teams-upgrade gate fired')
+      }
     } catch {
-      parallelism = { escalate_to_teams: false, reason: null }
+      // Fail-soft → conservative false (unchanged contract: an eval fault must
+      // never hand the orchestrator a team it cannot form).
+      parallelism = parallelismBlock(false, null)
     }
   }
 

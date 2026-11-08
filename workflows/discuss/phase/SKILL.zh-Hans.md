@@ -61,7 +61,7 @@ Sister `workflows/judgments/phase-gate.yaml`:
 
 产出:一份 locked spec,执行阶段(`/plan` → `/task` → `/verify`)无需再问用户即可消费。
 
-<!-- harnessed-generated:v4.12.0 -->
+<!-- harnessed-generated:v4.13.0 -->
 
 ## 参考资料
 

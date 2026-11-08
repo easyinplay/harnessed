@@ -4,7 +4,7 @@
       "kind": "gates",
       "exitCode": 0,
       "stdout": [
-        "{\n  \"master\": \"discuss\",\n  \"fire\": [\n    {\n      \"sub\": \"discuss-phase\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.phase-gate.gsd-discuss-phase.fires\"\n    },\n    {\n      \"sub\": \"discuss-subtask\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"strategic\",\n      \"reason\": \"gate judgments.strategic-gate.strategic-tier-delegate.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+        "{\n  \"master\": \"discuss\",\n  \"fire\": [\n    {\n      \"sub\": \"discuss-phase\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.phase-gate.gsd-discuss-phase.fires\"\n    },\n    {\n      \"sub\": \"discuss-subtask\",\n      \"mode\": \"parallel\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"strategic\",\n      \"reason\": \"gate judgments.strategic-gate.strategic-tier-delegate.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null,\n    \"teams_active\": true,\n    \"result_contract\": \"result-file\",\n    \"bounded_wait\": true,\n    \"transport\": \"subagent\"\n  }\n}"
       ],
       "stderr": []
     },
@@ -12,7 +12,7 @@
       "kind": "gates",
       "exitCode": 0,
       "stdout": [
-        "{\n  \"master\": \"plan\",\n  \"fire\": [\n    {\n      \"sub\": \"plan-phase\",\n      \"order\": 6,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"architecture\",\n      \"reason\": \"gate judgments.stage-routing.plan-architecture-delegate.fires = false\"\n    },\n    {\n      \"sub\": \"spec\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-spec-phase.fires = false\"\n    },\n    {\n      \"sub\": \"ui\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-ui-phase.fires = false\"\n    },\n    {\n      \"sub\": \"secure\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-secure-phase.fires = false\"\n    },\n    {\n      \"sub\": \"ai-integration\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-ai-integration-phase.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+        "{\n  \"master\": \"plan\",\n  \"fire\": [\n    {\n      \"sub\": \"plan-phase\",\n      \"order\": 6,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [\n    {\n      \"sub\": \"architecture\",\n      \"reason\": \"gate judgments.stage-routing.plan-architecture-delegate.fires = false\"\n    },\n    {\n      \"sub\": \"spec\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-spec-phase.fires = false\"\n    },\n    {\n      \"sub\": \"ui\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-ui-phase.fires = false\"\n    },\n    {\n      \"sub\": \"secure\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-secure-phase.fires = false\"\n    },\n    {\n      \"sub\": \"ai-integration\",\n      \"reason\": \"gate judgments.stage-phase-gate.gsd-ai-integration-phase.fires = false\"\n    }\n  ],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null,\n    \"teams_active\": true,\n    \"result_contract\": \"result-file\",\n    \"bounded_wait\": true,\n    \"transport\": \"subagent\"\n  }\n}"
       ],
       "stderr": []
     },
@@ -20,7 +20,7 @@
       "kind": "gates",
       "exitCode": 0,
       "stdout": [
-        "{\n  \"master\": \"task\",\n  \"fire\": [\n    {\n      \"sub\": \"task-clarify\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    },\n    {\n      \"sub\": \"task-code\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    },\n    {\n      \"sub\": \"task-test\",\n      \"order\": 3,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.tdd-gate.tdd-strongly-suggested.fires\"\n    },\n    {\n      \"sub\": \"task-deliver\",\n      \"order\": 4,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+        "{\n  \"master\": \"task\",\n  \"fire\": [\n    {\n      \"sub\": \"task-clarify\",\n      \"order\": 1,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.subtask-gate.brainstorming.fires\"\n    },\n    {\n      \"sub\": \"task-code\",\n      \"order\": 2,\n      \"mode\": \"serial\"\n    },\n    {\n      \"sub\": \"task-test\",\n      \"order\": 3,\n      \"mode\": \"serial\",\n      \"gate\": \"judgments.tdd-gate.tdd-strongly-suggested.fires\"\n    },\n    {\n      \"sub\": \"task-deliver\",\n      \"order\": 4,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null,\n    \"teams_active\": true,\n    \"result_contract\": \"result-file\",\n    \"bounded_wait\": true,\n    \"transport\": \"subagent\"\n  }\n}"
       ],
       "stderr": []
     },
@@ -28,7 +28,7 @@
       "kind": "gates",
       "exitCode": 0,
       "stdout": [
-        "{\n  \"master\": \"ship\",\n  \"fire\": [\n    {\n      \"sub\": \"ship-preflight\",\n      \"order\": 1,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null\n  }\n}"
+        "{\n  \"master\": \"ship\",\n  \"fire\": [\n    {\n      \"sub\": \"ship-preflight\",\n      \"order\": 1,\n      \"mode\": \"serial\"\n    }\n  ],\n  \"skip\": [],\n  \"parallelism\": {\n    \"escalate_to_teams\": false,\n    \"reason\": null,\n    \"teams_active\": true,\n    \"result_contract\": \"result-file\",\n    \"bounded_wait\": true,\n    \"transport\": \"subagent\"\n  }\n}"
       ],
       "stderr": []
     }

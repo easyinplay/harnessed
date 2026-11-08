@@ -32,6 +32,7 @@ import {
   renderHostPrimitives,
   toHostId,
 } from './lib/hostPrimitives.js'
+import { resultArtifactPath } from './lib/resultArtifact.js'
 import { renderRolePromptsForHost } from './lib/rolePromptHostRender.js'
 import { readUserLangPin } from './lib/userLangPin.js'
 
@@ -299,6 +300,37 @@ STATUS: NEEDS_CLARIFICATION
 The main session will relay these to the user and re-spawn you with answers.
 `
 
+/**
+ * Phase 86 — the result-delivery contract.
+ *
+ * The completion signal is the FILE, not the final chat message: under
+ * claude-code's agent-teams mode a re-parented teammate's completion
+ * notification is routed to the parent and never reaches the orchestrator
+ * (open-gsd/gsd-core#1355). The orchestrator therefore polls this artifact, and
+ * the final message is demoted to a fast-path wake-up.
+ *
+ * Host-agnostic on purpose. The transport is the same file contract on claude and
+ * on codex; a host-specific wording would fork the contract the orchestrator has
+ * to honour, and the orchestrator does not know which host produced the sub.
+ *
+ * The path is passed in rather than computed here: it embeds the absolute path of
+ * THIS session's results dir, which is machine- and session-specific and so
+ * deliberately outside the byte-golden prompt surface (tests/cli/promptHostGolden).
+ */
+function buildResultDeliverySection(resultFile: string): string {
+  return `
+## Result delivery
+Write your final result to this exact absolute path:
+${resultFile}
+
+Rules:
+- The file MUST contain your final result AND the verbatim line \`<promise>COMPLETE</promise>\`.
+- The orchestrator reads THIS FILE as the completion signal. Do NOT rely on your final chat message being delivered — a background or re-parented agent's message may never arrive.
+- The file is polled while you write it: create the parent directory if it does not exist, then write the file in one shot (write a temp file next to it, then rename over it) — a half-written file reads as "not complete yet".
+- If you cannot write the file, say so explicitly in your final message and name the blocker. Never claim a completion you did not deliver.
+`
+}
+
 interface RawOpts {
   task?: string
   json?: boolean
@@ -340,6 +372,10 @@ export interface BuiltPrompt {
   model: string
   /** Specialist title (role-prompts entry, or the generic fallback). */
   specialist: string
+  /** Phase 86 — absolute path of the result artifact the sub must write.
+   *  `undefined` when the caller did not supply one (the delivery section is
+   *  omitted then, so the static prompt template stays byte-stable). */
+  resultFile?: string
 }
 
 /** Options for {@link buildPromptText}. */
@@ -350,6 +386,10 @@ export interface BuildPromptOptions {
   locale?: SupportedLocale
   /** Host to render `{{ host.* }}` for. Defaults to the harness we RUN under. */
   host?: HostId
+  /** Phase 86 — absolute path of the result artifact. When present, a
+   *  `## Result delivery` section is appended telling the sub to write its final
+   *  result (plus the verbatim `<promise>COMPLETE</promise>` line) there. */
+  resultFile?: string
 }
 
 /**
@@ -389,11 +429,13 @@ export async function buildPromptText(
   const toolsSection = await buildToolsSection(sub, packageRoot, host)
   const disciplinesSection = await buildDisciplinesSection(sub, packageRoot, locale)
   const languageSection = await buildLanguageSection(packageRoot, host)
+  const resultDeliverySection = opts.resultFile ? buildResultDeliverySection(opts.resultFile) : ''
 
   return {
-    prompt: `${taskSection}${body}\n${toolsSection}${disciplinesSection}${PROTOCOLS}${languageSection}`,
+    prompt: `${taskSection}${body}\n${toolsSection}${disciplinesSection}${PROTOCOLS}${resultDeliverySection}${languageSection}`,
     model: def.model ?? DEFAULT_MODEL,
     specialist: rolePrompts[sub]?.specialist ?? DEFAULT_SPECIALIST,
+    ...(opts.resultFile !== undefined ? { resultFile: opts.resultFile } : {}),
   }
 }
 
@@ -405,7 +447,10 @@ export function registerPrompt(program: Command): void {
     )
     .argument('<sub>', 'sub-workflow name (e.g. task-code, verify-paranoid)')
     .option('--task <text>', 'task description prepended as a ## Task section')
-    .option('--json', 'emit JSON {prompt, max_iterations, model, specialist} instead of text')
+    .option(
+      '--json',
+      'emit JSON {prompt, max_iterations, model, specialist, result_file} instead of text',
+    )
     .action(async (sub: string, raw: RawOpts) => {
       // Same guard `harnessed run` has had since R10.4; this entry point skipped it,
       // so `harnessed prompt ../../x` resolved and rendered an arbitrary workflow.yaml.
@@ -417,6 +462,10 @@ export function registerPrompt(program: Command): void {
         return
       }
       const packageRoot = getAssetsRoot()
+      // Phase 86 — the result artifact path is computed ONCE here and threaded into
+      // the prompt body, so the text and the --json form carry the SAME path: the
+      // sub writes to it, and the orchestrator polls that very file.
+      const resultFile = resultArtifactPath(sub, process.cwd())
 
       const {
         prompt: fullPrompt,
@@ -424,6 +473,7 @@ export function registerPrompt(program: Command): void {
         specialist,
       } = await buildPromptText(sub, packageRoot, {
         ...(typeof raw.task === 'string' ? { task: raw.task } : {}),
+        resultFile,
       })
 
       if (raw.json) {
@@ -434,6 +484,7 @@ export function registerPrompt(program: Command): void {
             max_iterations: maxIterations,
             model,
             specialist,
+            result_file: resultFile,
           }),
         )
         process.exit(0)

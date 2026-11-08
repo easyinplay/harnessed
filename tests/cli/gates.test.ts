@@ -41,6 +41,7 @@ vi.mock('../../src/platform/packagePath.js', () => ({
 }))
 
 import { registerGates } from '../../src/cli/gates.js'
+import { getSettingsPath } from '../../src/platform/platform.js'
 
 const PACKAGE_ROOT = '/fake-root'
 
@@ -126,8 +127,13 @@ beforeEach(() => {
   resolveJudgmentGateMock.mockReset()
   readFileMock.mockClear()
   yamlFileMap.clear()
+  // Phase 86 — the agent-teams capability probe reads the LIVE env. Pin it to
+  // OFF so the suite never depends on the developer's machine state; the cells
+  // that exercise the enabled path opt in explicitly.
+  vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '0')
 })
 afterEach(() => {
+  vi.unstubAllEnvs()
   vi.restoreAllMocks()
 })
 
@@ -271,6 +277,9 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
   it('cell 6 — parallelism field present + boolean escalate_to_teams', async () => {
     setMaster('task', [clauseLine('code')].join('\n'))
     resolveJudgmentGateMock.mockResolvedValue(true)
+    // Phase 86 — the gate says "this stage wants a team"; the probe says
+    // "this host can form one". Both must hold before the plan escalates.
+    vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '1')
     const { code, stdout } = await runCli(['gates', 'task'])
     expect(code).toBe(0)
     const parsed = JSON.parse(stdout)
@@ -279,6 +288,54 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     // gate fired → parallelism eval returns true here
     expect(parsed.parallelism.escalate_to_teams).toBe(true)
     expect(parsed.parallelism.reason).toMatch(/agent-teams/)
+    // Phase 86 — transport contract fields.
+    expect(parsed.parallelism.teams_active).toBe(true)
+    expect(parsed.parallelism.transport).toBe('teammate')
+    expect(parsed.parallelism.result_contract).toBe('result-file')
+    expect(parsed.parallelism.bounded_wait).toBe(true)
+  })
+
+  // Phase 86 — fail-closed. The judgment gate fired, but agent-teams is NOT
+  // enabled on this host (CC 2.1.178+ forms no team without the env flag), so
+  // escalate_to_teams=true would be an instruction the orchestrator cannot
+  // execute. The plan must route to the transport that always works.
+  it('cell 6b — gate fires but agent-teams NOT enabled → escalate_to_teams=false + subagent fan-out', async () => {
+    setMaster('task', [clauseLine('code')].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '0')
+    const { code, stdout } = await runCli(['gates', 'task'])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.parallelism.escalate_to_teams).toBe(false)
+    expect(parsed.parallelism.reason).toMatch(/agent-teams/)
+    expect(parsed.parallelism.reason).toMatch(/subagent fan-out/)
+    expect(parsed.parallelism.teams_active).toBe(false)
+    expect(parsed.parallelism.transport).toBe('subagent')
+    expect(parsed.parallelism.result_contract).toBe('result-file')
+    expect(parsed.parallelism.bounded_wait).toBe(true)
+  })
+
+  // Phase 86 — the capability has TWO sources (env + settings.json). A host
+  // that only carries the settings.json switch can still form a team.
+  it('cell 6c — teams enabled via settings.json only → escalate_to_teams=true', async () => {
+    setMaster('task', [clauseLine('code')].join('\n'))
+    resolveJudgmentGateMock.mockResolvedValue(true)
+    vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '0')
+    vi.stubEnv('HARNESSED_PLATFORM', 'claude')
+    const settingsPath = getSettingsPath()
+    expect(settingsPath).not.toBeNull()
+    yamlFileMap.set(
+      settingsPath as string,
+      JSON.stringify({ env: { CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS: '1' } }),
+    )
+    const { code, stdout } = await runCli(['gates', 'task'])
+    expect(code).toBe(0)
+    const parsed = JSON.parse(stdout)
+    expect(parsed.parallelism.escalate_to_teams).toBe(true)
+    expect(parsed.parallelism.teams_active).toBe(true)
+    expect(parsed.parallelism.transport).toBe('teammate')
+    expect(parsed.parallelism.result_contract).toBe('result-file')
+    expect(parsed.parallelism.bounded_wait).toBe(true)
   })
 
   it('cell 7 — parallelism gate throws → escalate_to_teams false, reason null', async () => {
@@ -295,11 +352,17 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     const parsed = JSON.parse(stdout)
     expect(parsed.parallelism.escalate_to_teams).toBe(false)
     expect(parsed.parallelism.reason).toBe(null)
+    // Phase 86 — a gate fault must never hand out a team: fail-soft stays
+    // conservative, and the transport falls back to the plain fan-out.
+    expect(parsed.parallelism.transport).toBe('subagent')
+    expect(parsed.parallelism.result_contract).toBe('result-file')
+    expect(parsed.parallelism.bounded_wait).toBe(true)
   })
 
   it('cell 7b — HARNESSED_HEADLESS=1 forces escalate_to_teams=false even when gate fires (issue #7)', async () => {
     setMaster('task', [clauseLine('code')].join('\n'))
     resolveJudgmentGateMock.mockResolvedValue(true) // parallelism gate WOULD fire
+    vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '1')
     const prev = process.env.HARNESSED_HEADLESS
     process.env.HARNESSED_HEADLESS = '1'
     try {
@@ -308,6 +371,12 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
       const parsed = JSON.parse(stdout)
       expect(parsed.parallelism.escalate_to_teams).toBe(false)
       expect(parsed.parallelism.reason).toMatch(/headless/i)
+      // Phase 86 — headless outranks the capability: the team transport is
+      // off, so the plan falls back to the subagent fan-out.
+      expect(parsed.parallelism.teams_active).toBe(true)
+      expect(parsed.parallelism.transport).toBe('subagent')
+      expect(parsed.parallelism.result_contract).toBe('result-file')
+      expect(parsed.parallelism.bounded_wait).toBe(true)
     } finally {
       if (prev === undefined) delete process.env.HARNESSED_HEADLESS
       else process.env.HARNESSED_HEADLESS = prev
@@ -317,6 +386,7 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
   it('cell 7c — no HARNESSED_HEADLESS → gate behavior unchanged (fires → true)', async () => {
     setMaster('task', [clauseLine('code')].join('\n'))
     resolveJudgmentGateMock.mockResolvedValue(true)
+    vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '1')
     const prev = process.env.HARNESSED_HEADLESS
     delete process.env.HARNESSED_HEADLESS
     try {
@@ -430,6 +500,7 @@ describe('cli/gates — gate eval plan (no spawn)', () => {
     // every gate (incl. parallelism) returns true → with team vars now in default
     // context, the parallelism gate is reachable (no undefined-var throw).
     resolveJudgmentGateMock.mockResolvedValue(true)
+    vi.stubEnv('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS', '1')
     const { stdout } = await runCli(['gates', 'task', '--task', 'x'])
     const parsed = JSON.parse(stdout)
     expect(parsed.parallelism.escalate_to_teams).toBe(true)

@@ -23,6 +23,16 @@
 //                                  + completePhase(complete) terminal checkpoint, exit 0
 //   fail <sub> [--summary]       → markSub failed + completePhase w/ FAILED: prefix, exit 1.
 //
+// Phase 86 — `complete <sub> --wait <seconds> --result-file <path>` adds a
+// BOUNDED wait on the result artifact. The completion signal is the artifact the
+// sub was told to write, not the chat notification: under claude-code's
+// agent-teams mode a re-parented teammate's completion message never reaches the
+// orchestrator (open-gsd/gsd-core#1355). The wait polls the file with the SAME
+// predicate the promise gate uses (`verifyCompletionClaim` → `isComplete`), so it
+// adds no new notion of "done" — it only bounds HOW LONG the orchestrator waits.
+// A timeout fails closed (exit 1, ledger stays pending) and lands in the SAME
+// blocking list, so `--force` keeps ONE meaning: an audited override.
+//
 // 4.31.0 (eval Slice A wave 0) — the action bodies for start/complete/fail are
 // extracted into exported runCheckpointStart/Complete/Fail(sub, opts, deps)
 // orchestration functions (behavior-preserving; deps = platform/runDeps.ts seam,
@@ -69,8 +79,13 @@ function markIfSeeded(
 import { findSerialBlockers, markSub as markSubImpl } from '../checkpoint/ledger.js'
 
 /** Parse the `--plan` gates JSON. Returns null on missing/empty/invalid input so
- *  the caller can degrade to an empty ledger (D3) instead of throwing. */
-async function parsePlan(
+ *  the caller can degrade to an empty ledger (D3) instead of throwing.
+ *
+ *  Phase 86 — exported so the plan-parsing contract is directly pinnable: the
+ *  gates plan carries the team-capability / transport fields (teams_active,
+ *  transport, result_contract, bounded_wait) and `--plan` must carry them
+ *  through instead of dropping or rejecting them. */
+export async function parsePlan(
   raw: string | undefined,
 ): Promise<import('../checkpoint/ledger.js').GatesPlan | null> {
   if (!raw || raw.trim() === '') return null
@@ -102,7 +117,21 @@ async function parsePlan(
   }
   if (typeof p.master === 'string') plan.master = p.master
   if (p.parallelism && typeof p.parallelism === 'object' && !Array.isArray(p.parallelism)) {
-    plan.parallelism = p.parallelism as import('../checkpoint/ledger.js').GatesPlan['parallelism']
+    // P1-1 (same discipline as the top level): the `--plan` JSON is untrusted
+    // CLI input — pick the KNOWN parallelism keys only, never spread the object.
+    const par = p.parallelism as Record<string, unknown>
+    const parallelism: NonNullable<import('../checkpoint/ledger.js').GatesPlan['parallelism']> = {
+      escalate_to_teams: typeof par.escalate_to_teams === 'boolean' ? par.escalate_to_teams : false,
+      reason: typeof par.reason === 'string' ? par.reason : null,
+    }
+    // Phase 86 — team capability + transport contract.
+    if (typeof par.teams_active === 'boolean') parallelism.teams_active = par.teams_active
+    if (par.transport === 'subagent' || par.transport === 'teammate') {
+      parallelism.transport = par.transport
+    }
+    if (par.result_contract === 'result-file') parallelism.result_contract = par.result_contract
+    if (typeof par.bounded_wait === 'boolean') parallelism.bounded_wait = par.bounded_wait
+    plan.parallelism = parallelism
   }
   return plan
 }
@@ -187,6 +216,70 @@ export interface CheckpointCompleteOpts {
   result?: string
   /** Same, read from a file — the quoting-safe channel on Windows. */
   resultFile?: string
+  /** Phase 86 — bounded wait (seconds) for `resultFile` to carry the completion
+   *  marker. 0 = no wait (the pre-Phase-86 behaviour). */
+  wait?: number
+  /** Test seam for the wait poll interval. Production: {@link RESULT_WAIT_POLL_MS}. */
+  waitPollMs?: number
+}
+
+/** Phase 86 — upper bound for `--wait`. The wait is a LIVENESS guard, not a
+ *  budget: a sub that has not signalled completion after ten minutes is not
+ *  slow, it is stuck, and the orchestrator must fail closed instead of hanging. */
+const RESULT_WAIT_MAX_SECONDS = 600
+
+/** Poll interval for the bounded wait. 2s: fast enough to feel immediate, slow
+ *  enough that a ten-minute wait does not spin the CPU. */
+const RESULT_WAIT_POLL_MS = 2000
+
+/**
+ * Parse the `--wait` value: an integer number of seconds in [0, 600].
+ *
+ * Returns null for anything else (non-integer, negative, above the cap) so the
+ * caller can refuse it as a PARAMETER error instead of silently clamping a typo
+ * into a ten-minute hang.
+ */
+export function parseWaitSeconds(raw: string | undefined): number | null {
+  if (raw === undefined) return null
+  const trimmed = raw.trim()
+  if (!/^\d+$/.test(trimmed)) return null
+  const seconds = Number(trimmed)
+  if (!Number.isInteger(seconds) || seconds < 0 || seconds > RESULT_WAIT_MAX_SECONDS) return null
+  return seconds
+}
+
+/** Sleep helper for the bounded wait. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Phase 86 — bounded wait for the result artifact to carry the completion marker.
+ *
+ * The SUCCESS PREDICATE is the existing one (`verifyCompletionClaim` → `isComplete`):
+ * a verbatim `<promise>COMPLETE</promise>` OR a structured COMPLETE status. The wait
+ * introduces no new notion of "done" — it only bounds HOW LONG the orchestrator
+ * waits for that verdict to appear in the file.
+ *
+ * Tolerates a file that does not exist yet AND a file that is still being written:
+ * both read as "no marker yet" and keep the wait alive.
+
+ * Returns true once the marker showed up, false on timeout.
+ */
+async function waitForResultClaim(
+  resultFile: string,
+  seconds: number,
+  pollMs: number,
+): Promise<boolean> {
+  const { verifyCompletionClaim } = await import('../checkpoint/completionClaim.js')
+  const deadline = Date.now() + seconds * 1000
+  for (;;) {
+    const claim = await verifyCompletionClaim({ resultFile })
+    if (claim.verdict === 'complete') return true
+    const remaining = deadline - Date.now()
+    if (remaining <= 0) return false
+    await sleep(Math.min(pollMs, remaining))
+  }
 }
 
 /** 4.38.0 — `checkpoint reopen`. `reason` is required by the CLI, not optional
@@ -364,6 +457,37 @@ export async function runCheckpointComplete(
     deps.exit(1)
     return
   }
+  // ── Phase 86 — bounded wait on the result artifact. The completion signal is
+  // the FILE, not a notification: under agent-teams a re-parented teammate's
+  // completion message never reaches the orchestrator (open-gsd/gsd-core#1355),
+  // so the orchestrator polls the artifact the sub was told to write.
+  //
+  // Placed AFTER the serial-order guard (a transition violation is a violation
+  // whatever the sub produced) and BEFORE the evidence guards, and it WEAKENS
+  // none of them: the promise verdict is still enforced below, on the very same
+  // predicate the poll used. ──
+  const waitSeconds = opts.wait ?? 0
+  let waitTimeoutMessage: string | undefined
+  if (waitSeconds > 0) {
+    const resultFile = opts.resultFile
+    if (!resultFile) {
+      deps.error(
+        '[harnessed] checkpoint complete: --wait 必须搭配 --result-file —— 没有可等待的结果文件',
+      )
+      deps.exit(2)
+      return
+    }
+    const pollMs = opts.waitPollMs ?? RESULT_WAIT_POLL_MS
+    deps.log(
+      `[harnessed] 等待 ${waitSeconds}s 内 ${resultFile} 携带完成标记（每 ${pollMs}ms 轮询一次）`,
+    )
+    const ready = await waitForResultClaim(resultFile, waitSeconds, pollMs)
+    if (ready) {
+      deps.log(`[harnessed] 结果文件已就绪: ${resultFile}`)
+    } else {
+      waitTimeoutMessage = `result-wait-timeout: 等待 ${waitSeconds}s 后 ${resultFile} 仍未携带完成标记（既没有 verbatim <promise>COMPLETE</promise>，也没有结构化 COMPLETE 状态）`
+    }
+  }
   const { checkArtifacts } = await import('../checkpoint/evidence.js')
   const { mutateSubProgress } = await import('../checkpoint/state.js')
   // B1 (v4.19.0): workflows/ 是运行时资产 — 经 assetsRoot seam(npm/dev 下
@@ -422,7 +546,23 @@ export async function runCheckpointComplete(
   // T2.7 extends the same blocker set with the boundary and promise findings so
   // `--force` keeps ONE meaning: an audited override recorded as `overridden`.
   // The ledger entry stays 'pending'; no done flip; exit 1.
-  const allMissing = [...result.missing, ...syncResult.missing, ...boundaryBlocks, ...claimBlocks]
+  // Phase 86 — the wait timeout joins the blocker set as its OWN item: it is a
+  // distinct failure (no signal arrived) from the promise verdict (the signal
+  // that did arrive failed the predicate), and both must land in the same
+  // fail-closed list so `--force` keeps ONE meaning — an audited override.
+  const waitBlocks = waitTimeoutMessage !== undefined ? [waitTimeoutMessage] : []
+  const allMissing = [
+    ...result.missing,
+    ...syncResult.missing,
+    ...boundaryBlocks,
+    ...claimBlocks,
+    ...waitBlocks,
+  ]
+  if (waitTimeoutMessage !== undefined && opts.force) {
+    deps.warn(
+      `[harnessed] checkpoint complete ${waitTimeoutMessage}（--force: 已记为 audited override）`,
+    )
+  }
   if (allMissing.length > 0 && !opts.force) {
     deps.error(
       `[harnessed] checkpoint complete BLOCKED: ${sub} — ${allMissing.length} item(s) missing (evidence guard + .planning/ sync, fail-closed):`,
@@ -998,6 +1138,13 @@ export function registerCheckpoint(program: Command): void {
       '--result-file <path>',
       'complete only — same as --result but read from a file (quoting-safe on Windows); wins over --result',
     )
+    // Phase 86 — bounded wait on the result artifact. The completion signal is
+    // the file, not the notification (open-gsd/gsd-core#1355), so the orchestrator
+    // polls the artifact the sub was told to write.
+    .option(
+      '--wait <seconds>',
+      `complete only — bounded wait (integer seconds, 0..${RESULT_WAIT_MAX_SECONDS}) for --result-file to carry the completion marker (polled every 2s); on timeout the completion fails closed with result-wait-timeout`,
+    )
     // T2.7 D-3 — the preferred no-progress metric. A measurement, not a self-assessment.
     .option(
       '--reason <text>',
@@ -1029,6 +1176,7 @@ export function registerCheckpoint(program: Command): void {
           tokens?: string
           result?: string
           resultFile?: string
+          wait?: string
           failingTests?: string
           reason?: string
           failure?: string
@@ -1040,6 +1188,16 @@ export function registerCheckpoint(program: Command): void {
             `[harnessed] checkpoint: unknown action "${action}" — expected one of ${ACTIONS.join(', ')}`,
           )
           process.exit(1)
+          return
+        }
+
+        // Phase 86 — `--wait` belongs to `complete` alone. On any other action it
+        // would be silently dropped, and a silently dropped wait is a hang.
+        if (opts.wait !== undefined && action !== 'complete') {
+          console.error(
+            `[harnessed] checkpoint ${action}: --wait 只对 \`checkpoint complete\` 有效`,
+          )
+          process.exit(2)
           return
         }
 
@@ -1123,7 +1281,35 @@ export function registerCheckpoint(program: Command): void {
         }
 
         if (action === 'complete') {
-          await runCheckpointComplete(sub, opts)
+          // Phase 86 — `--wait` refusals are PARAMETER errors (exit 2): a malformed
+          // value, and a wait with no file to wait on.
+          let waitSeconds: number | undefined
+          if (opts.wait !== undefined) {
+            const parsed = parseWaitSeconds(opts.wait)
+            if (parsed === null) {
+              console.error(
+                `[harnessed] checkpoint complete: --wait 取值无效 "${opts.wait}" —— 需要 0..${RESULT_WAIT_MAX_SECONDS} 之间的整数秒`,
+              )
+              process.exit(2)
+              return
+            }
+            if (!opts.resultFile) {
+              console.error(
+                '[harnessed] checkpoint complete: --wait 必须搭配 --result-file —— 没有可等待的结果文件',
+              )
+              process.exit(2)
+              return
+            }
+            waitSeconds = parsed
+          }
+          await runCheckpointComplete(sub, {
+            ...(opts.summary !== undefined ? { summary: opts.summary } : {}),
+            ...(opts.force !== undefined ? { force: opts.force } : {}),
+            ...(opts.tokens !== undefined ? { tokens: opts.tokens } : {}),
+            ...(opts.result !== undefined ? { result: opts.result } : {}),
+            ...(opts.resultFile !== undefined ? { resultFile: opts.resultFile } : {}),
+            ...(waitSeconds !== undefined ? { wait: waitSeconds } : {}),
+          })
           return
         }
 
