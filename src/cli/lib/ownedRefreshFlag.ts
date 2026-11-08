@@ -9,7 +9,7 @@
 //
 // Deliberately NOT a commander subcommand: the CLI surface contract pins the
 // public top-level command set (32) and requires every public command to be
-// documented in all 11 README locales. This flag must stay invisible in both.
+// documented in all 10 README locales. This flag must stay invisible in both.
 //
 // Own module (not ownedRefresh.ts) so `src/cli.ts` can recognise the flag
 // without pulling the installer graph into every CLI start.

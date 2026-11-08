@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The README set no longer ships a second English copy. `README-en.md` was a compatibility mirror of `README.md` that no locale linked to and that had to be kept in step by hand, so it is removed, and the documentation contract now pins the ten locales that actually exist. The installation section of every README also documents one channel only — the standalone binary — instead of three, so the page a reader lands on names the same install path on every host. The npm and bun channels are unchanged in the product: the install scripts still fall back to them on unsupported platforms, `harnessed update` still updates an npm install in place, and the npm package is still published.
+
 ## [5.0.13] - 2026-11-08
 
 ### Added

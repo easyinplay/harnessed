@@ -140,7 +140,7 @@ describe('CLI documentation surface contract', () => {
 
   it('documents every public top-level command in every README locale', () => {
     expect(publicTopLevel.size).toBe(33)
-    expect(readmes).toHaveLength(11)
+    expect(readmes).toHaveLength(10)
     for (const file of readmes) expect(documentedTopLevel(file), file).toEqual(publicTopLevel)
   })
 

@@ -34,30 +34,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > Бинарник содержит runtime и не требует внешних Node.js или Bun. Компонентам upstream всё ещё могут понадобиться Node/npm, Git, Bun, Python или системные библиотеки браузера.
 
-Установщик бинарного файла предлагает setup с вашего согласия в интерактивном сеансе. При пропуске, ошибке или неинтерактивной установке выполните `harnessed setup`.
-
-**Через Bun (второй рекомендуемый вариант; необязательно)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-Для последующих команд Bun используйте `bun run --bun harnessed`; обычный shim `harnessed` всё ещё может вызывать Node.js.
-
-**Через npm (поддерживаемая альтернатива; требуется Node.js >= 22)**:
-
-Для этого канала Bun не нужен; Node.js >= 22 по-прежнему поддерживается.
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x не поддерживает цепочку `&&` — используйте `;` или две строки (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe работают нормально.
-
-> [!TIP]
-> 🚀 **Любимые всеми функции Agent Teams и Subagent в harnessed включаются автоматически в зависимости от задачи!**
-> Нет необходимости вручную настраивать `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` записывает это в `~/.claude/settings.json` автоматически. Pattern A полностековая трёхсторонняя / Pattern C 4-специалиста и другие multi-agent workflow работают «из коробки».
-
 ---
 
 ## ⏱️ First 5 Minutes

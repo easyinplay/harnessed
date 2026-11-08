@@ -32,34 +32,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > The standalone binary embeds its runtime: harnessed itself needs neither external Node.js nor Bun. Upstream components may still require Node/npm, Git, Bun, Python, or browser system libraries.
 
-The binary installer offers setup with your consent in interactive sessions. Do not repeat it if it completed successfully. If setup was skipped or failed, or you installed noninteractively, run `harnessed setup`.
-
-`harnessed setup` installs a cache-only **SessionStart update reminder** by default. Its foreground path only reads a bounded local cache: zero network requests, zero filesystem mutation, and fail-soft exit `0`. It only displays a reminder for a cached available update; missing or stale cache may launch a detached background worker to refresh version information, never to install updates. Codex uses a local plugin and may require user trust approval; setup does not grant trust automatically.
-
-`harnessed setup --no-update-reminder` persistently disables the reminder; later setup/update runs preserve that choice. To re-enable it, delete the corresponding `update-reminder-preferences.json` and run `harnessed setup` again. Default locations are `~/.claude/harnessed/update-reminder-preferences.json` for Claude Code and `~/.codex/harnessed/update-reminder-preferences.json` for Codex; when using `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, or `HARNESSED_ROOT_OVERRIDE`, use the corresponding reminder state root instead.
-
-**Via Bun (secondary recommendation; optional)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-For later Bun commands, use `bun run --bun harnessed`; the bare `harnessed` shim may still invoke Node.js.
-
-**Via npm (supported alternative; Node.js >= 22 required)**:
-
-Bun is not required for this channel; Node.js >= 22 remains supported.
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x does not support `&&`. For either package channel, run the install command first, then run setup only if installation succeeds. bash / zsh / PowerShell 7+ / cmd.exe support the chain.
-
-> [!TIP]
-> 🚀 **The much-loved Agent Teams and Subagent features are auto-enabled in harnessed based on the task!**
-> No need to manually configure `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` writes it to `~/.claude/settings.json` automatically. Pattern A full-stack three-way / Pattern C 4-specialist and other multi-agent workflows work out of the box.
-
 ---
 
 ## ⏱️ First 5 Minutes

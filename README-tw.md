@@ -34,30 +34,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > 獨立二進位檔內嵌 runtime,不需要外部 Node.js 或 Bun;上游元件仍可能需要 Node/npm、Git、Bun、Python 或瀏覽器系統函式庫。
 
-二進位檔安裝程式在互動工作階段徵得同意後提供 setup;若跳過、失敗或以非互動方式安裝,請執行 `harnessed setup`。
-
-**透過 Bun 安裝 (次要推薦; 可選)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-後續 Bun 命令請使用 `bun run --bun harnessed`;裸 `harnessed` shim 仍可能呼叫 Node.js。
-
-**npm 仍受支援** (需要 Node.js >= 22):
-
-此渠道不需要 Bun,仍支援 Node.js >= 22。
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x 不支援 `&&` 串連 —— 請改用 `;` 或分兩行執行（`npm install -g harnessed; harnessed setup`）。bash / zsh / PowerShell 7+ / cmd.exe 皆可正常使用。
-
-> [!TIP]
-> 🚀 **備受喜愛的 Agent Teams 與 Subagent 功能在 harnessed 中會根據任務自動啟用！**
-> 無需手動設定 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` —— `harnessed setup` 會自動將其寫入 `~/.claude/settings.json`。Pattern A 全端三路協同 / Pattern C 四專家審查等多 agent workflow 皆可直接使用。
-
 ---
 
 ## ⏱️ First 5 Minutes

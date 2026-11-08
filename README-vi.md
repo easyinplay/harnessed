@@ -34,30 +34,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > Binary tích hợp runtime, không cần Node.js hay Bun bên ngoài. Các thành phần upstream vẫn có thể cần Node/npm, Git, Bun, Python hoặc thư viện hệ thống cho trình duyệt.
 
-Trình cài binary cung cấp setup trong phiên tương tác khi bạn đồng ý. Nếu đã bỏ qua, thất bại hoặc cài không tương tác, hãy chạy `harnessed setup`.
-
-**Qua Bun (khuyến nghị thứ hai; tùy chọn)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-Với các lệnh Bun tiếp theo, dùng `bun run --bun harnessed`; shim `harnessed` vẫn có thể gọi Node.js.
-
-**Qua npm (vẫn được hỗ trợ; cần Node.js >= 22)**:
-
-Kênh này không cần Bun; Node.js >= 22 vẫn được hỗ trợ.
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x không hỗ trợ chuỗi `&&` — dùng `;` hoặc hai dòng riêng (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe đều hoạt động bình thường.
-
-> [!TIP]
-> 🚀 **Các tính năng Agent Teams và Subagent được yêu thích đã được harnessed tự động bật dựa trên task!**
-> Không cần cấu hình thủ công `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` tự ghi vào `~/.claude/settings.json`. Pattern A full-stack ba chiều / Pattern C 4-specialist và các workflow multi-agent khác hoạt động ngay lập tức.
-
 ---
 
 ## ⏱️ 5 Phút Đầu Tiên

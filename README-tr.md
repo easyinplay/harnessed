@@ -34,30 +34,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > Binary kendi runtime'ını içerir; harici Node.js veya Bun gerekmez. Upstream bileşenleri yine de Node/npm, Git, Bun, Python veya tarayıcı sistem kitaplıkları gerektirebilir.
 
-Binary yükleyici, etkileşimli oturumlarda onayınızla setup sunar. Atlandıysa, başarısız olduysa veya etkileşimsiz kurulum yapıldıysa `harnessed setup` çalıştırın.
-
-**Bun ile (ikinci öneri; isteğe bağlı)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-Sonraki Bun komutlarında `bun run --bun harnessed` kullanın; yalın `harnessed` shim hâlâ Node.js çağırabilir.
-
-**npm ile (desteklenen alternatif; Node.js >= 22 gerekir)**:
-
-Bu kanal Bun gerektirmez; Node.js >= 22 desteklenmeye devam eder.
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x `&&` zincirlemesini desteklemez — `;` kullanın ya da iki satıra bölün (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe normal çalışır.
-
-> [!TIP]
-> 🚀 **Çok sevilen Agent Teams ve Subagent özellikleri harnessed'da göreve göre otomatik etkinleştirilir!**
-> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`'i elle yapılandırmanıza gerek yok — `harnessed setup` bunu `~/.claude/settings.json`'a otomatik olarak yazar. Pattern A tam-yığın üçlü / Pattern C 4-uzman ve diğer çok-ajan Workflow'ları kutudan çıktığı gibi çalışır.
-
 ---
 
 ## ⏱️ İlk 5 Dakika

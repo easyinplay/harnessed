@@ -34,30 +34,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > 바이너리는 runtime을 내장하므로 외부 Node.js나 Bun이 필요 없습니다. 상위 컴포넌트는 Node/npm, Git, Bun, Python 또는 브라우저 시스템 라이브러리가 필요할 수 있습니다.
 
-바이너리 설치 프로그램은 대화형 세션에서 동의를 받아 setup을 제공합니다. 건너뛰거나 실패했거나 비대화형으로 설치했다면 `harnessed setup`을 실행하세요.
-
-**Bun으로 설치 (보조 권장 경로; 선택 사항)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-이후 Bun 명령에는 `bun run --bun harnessed`를 사용하세요. 기본 `harnessed` shim은 여전히 Node.js를 호출할 수 있습니다.
-
-**npm도 계속 지원** (Node.js >= 22 필요):
-
-이 경로는 Bun이 필요 없으며 Node.js >= 22를 계속 지원합니다.
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x는 `&&` 체이닝을 지원하지 않습니다 — `;` 또는 두 줄로 나눠서 사용하세요 (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe는 모두 정상 동작합니다.
-
-> [!TIP]
-> 🚀 **많은 사랑을 받는 Agent Teams와 Subagent 기능이 harnessed에서 작업에 따라 자동으로 활성화됩니다!**
-> `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`를 수동으로 설정할 필요 없습니다 — `harnessed setup`이 `~/.claude/settings.json`에 자동으로 작성합니다. Pattern A 풀스택 3방향 / Pattern C 4-specialist 등 멀티 에이전트 Workflow가 바로 동작합니다.
-
 ---
 
 ## ⏱️ 처음 5분

@@ -67,7 +67,6 @@ var init_package = __esm({
         'schemas',
         'CHANGELOG.md',
         'README.md',
-        'README-en.md',
         'README-zh.md',
         'LICENSE',
         'NOTICE',

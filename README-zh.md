@@ -32,34 +32,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > 独立二进制内嵌 runtime,harnessed 自身不需要外部 Node.js 或 Bun;上游组件仍可能要求 Node/npm、Git、Bun、Python 或浏览器系统库。
 
-二进制安装脚本在交互会话中征得同意后提供 setup。成功完成后无需重复;若跳过、失败或使用非交互安装,请运行 `harnessed setup`。
-
-`harnessed setup` 默认安装 cache-only **SessionStart 更新提醒**。其 foreground 路径只读取有大小上限的本地 cache:零网络请求、零文件系统 mutation,失败时静默退出 `0`。仅在 cache 表明有可用更新时显示提醒;cache 缺失或过期时可启动 detached background worker 刷新版本信息,不会安装更新。Codex 使用 local plugin,可能需要用户批准 trust;setup 不会自动授予 trust。
-
-`harnessed setup --no-update-reminder` 持久禁用提醒,后续 setup/update 会保留该选择。重新启用时,删除对应的 `update-reminder-preferences.json`,再运行 `harnessed setup`。Claude Code 默认路径为 `~/.claude/harnessed/update-reminder-preferences.json`,Codex 默认路径为 `~/.codex/harnessed/update-reminder-preferences.json`;若使用 `CLAUDE_CONFIG_DIR`、`CODEX_HOME` 或 `HARNESSED_ROOT_OVERRIDE`,则使用对应 reminder state root 下的文件。
-
-**通过 Bun 安装 (次要推荐; 可选)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-后续 Bun 命令请使用 `bun run --bun harnessed`;裸 `harnessed` shim 仍可能调用 Node.js。
-
-**npm 仍受支持** (需要 Node.js >= 22):
-
-此渠道不需要 Bun,继续兼容 Node.js >= 22。
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> Windows PowerShell 5.x 不支持 `&&`。两个 package 渠道都应先执行安装命令,成功后再单独执行 setup。bash / zsh / PowerShell 7+ / cmd.exe 支持此 chain。
-
-> [!TIP]
-> 🚀 **很多人喜爱的 Agent Teams 和 Subagent 功能,在 harnessed 中会根据任务自动启用!**
-> 无需手动配置 `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` —— `harnessed setup` 会自动写入 `~/.claude/settings.json`。Pattern A 全栈三路 / Pattern C 4-specialist 等 multi-agent workflow 即开即用。
-
 ---
 
 ## ⏱️ First 5 Minutes

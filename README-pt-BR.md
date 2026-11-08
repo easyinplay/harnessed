@@ -34,30 +34,6 @@ irm https://raw.githubusercontent.com/easyinplay/harnessed/main/install.ps1 | ie
 
 > O binário inclui seu runtime e não precisa de Node.js nem Bun externos. Componentes upstream ainda podem exigir Node/npm, Git, Bun, Python ou bibliotecas de sistema do navegador.
 
-O instalador binário oferece setup com seu consentimento em sessões interativas. Se foi ignorado, falhou ou a instalação foi não interativa, execute `harnessed setup`.
-
-**Via Bun (recomendação secundária; opcional)**:
-
-```bash
-bun install -g harnessed && bun run --bun harnessed setup
-```
-
-Nos próximos comandos Bun, use `bun run --bun harnessed`; o shim `harnessed` ainda pode chamar Node.js.
-
-**Via npm (alternativa suportada; requer Node.js >= 22)**:
-
-Este canal não exige Bun; Node.js >= 22 continua sendo suportado.
-
-```bash
-npm install -g harnessed && harnessed setup
-```
-
-> O Windows PowerShell 5.x não suporta encadeamento com `&&` — use `;` ou duas linhas (`npm install -g harnessed; harnessed setup`). bash / zsh / PowerShell 7+ / cmd.exe funcionam normalmente.
-
-> [!TIP]
-> 🚀 **Os adorados recursos Agent Teams e Subagents são habilitados automaticamente no harnessed com base na tarefa!**
-> Não é necessário configurar manualmente `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS` — `harnessed setup` grava o valor em `~/.claude/settings.json` automaticamente. O Pattern A de três vias full-stack / Pattern C de 4 especialistas e outros Workflows multi-agente funcionam imediatamente.
-
 ---
 
 ## ⏱️ Primeiros 5 Minutos
