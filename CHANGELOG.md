@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.0.13] - 2026-11-08
+
 ### Added
 
 - Parallel sub-workflows now have a completion signal that does not depend on a chat notification. `harnessed prompt <sub>` prints the exact result file the sub must write (its final result plus the verbatim `<promise>COMPLETE</promise>` line), and `harnessed checkpoint complete <sub> --result-file <path> --wait <seconds>` waits for that file with a bounded poll instead of an unbounded wait. A sub that never signals now fails closed with `result-wait-timeout` and leaves the ledger pending, so a lost or mis-routed completion message can no longer hang the orchestrator. The wait uses the same predicate as the promise gate, so it bounds how long the orchestrator waits without inventing a second notion of "done".

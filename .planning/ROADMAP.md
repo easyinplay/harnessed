@@ -1,5 +1,7 @@
 # ROADMAP — harnessed
 
+> **Phase 86 shipped as v5.0.13 (2026-11-08)**: parallel sub-workflows complete from a persisted result artifact with a bounded wait, and `harnessed gates` refuses a team escalation that cannot execute. [plan](phases/86-agent-teams-safe-transport/task_plan.md) · [findings](phases/86-agent-teams-safe-transport/findings.md) · [progress](phases/86-agent-teams-safe-transport/progress.md)
+
 > **Phase 81 closeout complete (2026-10-31)**: issues #14-#18 and #20-#33 were individually verified and closed; #30 is a verified non-issue and was closed as `not planned`. #19 remains open for Phase 82 ownership-receipt schema work. Final review tightened unified hook identity, nested replay offsets, immutable publish SHA handoff, and the official GSD Codex uninstall allowlist. Full Vitest passed 413 files/5274 tests locally; remote CI `41157702328` passed 9/9; npm/release v5.0.6 are verified.
 
 > **Phase 80 closeout complete (2026-10-31)**: [plan](phases/80-open-issues-hardening/task_plan.md), [findings](phases/80-open-issues-hardening/findings.md), [progress](phases/80-open-issues-hardening/progress.md). #14-#27 are implemented, shipped in v5.0.6, remotely verified, and closed where applicable. #19 remains open because its ownership-receipt schema expansion is reserved for Phase 82.

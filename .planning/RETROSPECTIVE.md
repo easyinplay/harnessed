@@ -1261,6 +1261,10 @@ Phase 6.1 = 🎯 v1.0 GA FINAL phase — PRODUCTION RELEASE (NOT close ceremony)
   intel 双清单 → 逐候选裁决 → 4.24–4.26 三连落地;外部教训以"现状对账"方式消化,避免照抄。
 - **relay 契约实战自证**(4.23.1 建,4.28.0 用):安装器 fork 真机演习证伪落位目录(遗留根
   迁移蒸发),NEEDS_CLARIFICATION 停驻 → relay → 用户裁决 → SendMessage 续跑 — 机制全链路可用。
+- **本弧线方法论状态**(2026-07-12,自 STATE.md digest 归档):relay 契约(4.23.1)首次完整实战 —
+  4.28.0 安装器 fork 真机证伪 D2 落位目录 → `STATUS: NEEDS_CLARIFICATION` 停驻 → 主 session
+  relay → 用户裁决 → SendMessage 续跑。gate 治理(4.23.2 fail-closed 分型 + judgments 审计测试)
+  与 skill 完整性(4.23.0 台账 + 4.24.0 备份)为当前防线基座。
 - **演习 seam 模式**(HARNESSED_UPDATE_SOURCE_DIR / HARNESSED_INSTALLER_SOURCE_DIR):
   真产物 + 零网络的 3-OS CI 实证,弥补"单测跑 Node、生产跑 Bun"的语义分叉。
 - **完整 CEO review 只用在刀刃**(Phase 3 Slice 1 一次):spec loop 3 轮抓出"repo 已有
