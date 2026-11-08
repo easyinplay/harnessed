@@ -71,3 +71,10 @@
   → 445 passed / 4 skipped files, 5584 passed / 43 skipped / 1 todo tests, zero
   failures. The first worktree run failed only because a fresh checkout has no
   `dist/` and the process-level tests require `pnpm build` first.
+- Released as **v5.0.13**: commits `4b8c804` (the fix) + `f67edaf` (release
+  metadata), pushed to `main`; `harnessed release-preflight` on the clean
+  release tree reported 4/4 (changelog / version / git-clean / tag-absent);
+  annotated tag `v5.0.13` pushed; publish run `42492300009` succeeded (4 jobs);
+  GitHub release `v5.0.13` carries 9 assets (3 platforms x binary + sha256 +
+  sha256.sig); npm `harnessed@5.0.13` is published and `dist-tags.latest` is
+  5.0.13.
