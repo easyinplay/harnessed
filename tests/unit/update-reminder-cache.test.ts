@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
 import { build } from 'esbuild'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ReminderCache, ReminderProbeFailure } from '../../src/cli/lib/updateReminderCache.js'
 
 const cacheApi = await import('../../src/cli/lib/updateReminderCache.js').catch(() => undefined)
 const workerApi = await import('../../src/cli/updateReminderWorkerMain.js').catch(() => undefined)
@@ -40,8 +41,9 @@ afterEach(async () => {
 })
 const save = (extra = {}) => writeFile(cachePath, JSON.stringify(record(extra)))
 const read = () => cacheApi?.readReminderCache(cachePath, identity, now)
+type Observation = { latest: string | null; reason?: ReminderProbeFailure | null }
 const refresh = (
-  observe = vi.fn(async (): Promise<{ latest: string | null }> => ({ latest: '2.0.0' })),
+  observe: () => Promise<Observation> = vi.fn(async () => ({ latest: '2.0.0' })),
   time = now,
 ) =>
   workerApi?.runUpdateReminderWorker({
@@ -180,6 +182,9 @@ module.exports.runUpdateReminderWorker({...options, observe: async () => {
         state: 'unknown',
         latest: null,
         retryAfter: now + 3_600_000,
+        // The npm channel cannot tell a network failure from an unparsable
+        // answer, so it reports the generic registry failure.
+        lastError: 'npm-unavailable',
       }),
     )
     const recovered = vi.fn(async () => ({ latest: '3.0.0' }))
@@ -195,5 +200,99 @@ module.exports.runUpdateReminderWorker({...options, observe: async () => {
   ])('derives %s observation as %s without running an update', async (latest, state) => {
     expect(await refresh(vi.fn(async () => ({ latest })))).toBe(0)
     expect(JSON.parse(await readFile(cachePath, 'utf8')).state).toBe(state)
+  })
+})
+
+describe('retained observation across a failed probe', () => {
+  it('keeps a known newer version and asks for an early retry', async () => {
+    // A record that is due for a refresh (older than the 24 h TTL) and that
+    // already knows about a newer version.
+    await save({ state: 'behind', latest: '2.0.0', checkedAt: now - 86_400_000, retryAfter: 0 })
+    const observe = vi.fn(async () => ({ latest: null, reason: 'github-timeout' as const }))
+    expect(await refresh(observe, now)).toBe(0)
+    const written = JSON.parse(await readFile(cachePath, 'utf8'))
+    expect(written).toEqual({
+      schemaVersion: 1,
+      identity,
+      installed: '1.0.0',
+      latest: '2.0.0',
+      state: 'behind',
+      checkedAt: now,
+      retryAfter: now + 3_600_000,
+      stale: true,
+      lastError: 'github-timeout',
+    })
+    // The retained record must survive the strict cache validation.
+    expect(read()).toEqual(written)
+  })
+
+  it('keeps the unknown backoff when nothing was ever known', async () => {
+    const observe = vi.fn(async () => ({ latest: null, reason: 'github-unavailable' as const }))
+    expect(await refresh(observe, now)).toBe(0)
+    expect(JSON.parse(await readFile(cachePath, 'utf8'))).toEqual({
+      schemaVersion: 1,
+      identity,
+      installed: '1.0.0',
+      latest: null,
+      state: 'unknown',
+      checkedAt: now,
+      retryAfter: now + 3_600_000,
+      lastError: 'github-unavailable',
+    })
+  })
+
+  it('records a fresh observation without the stale marker', async () => {
+    expect(
+      await refresh(
+        vi.fn(async () => ({ latest: '3.0.0' })),
+        now,
+      ),
+    ).toBe(0)
+    const written = JSON.parse(await readFile(cachePath, 'utf8'))
+    expect(written.stale).toBeUndefined()
+    expect(written.lastError).toBeUndefined()
+    expect(written.state).toBe('behind')
+    expect(written.retryAfter).toBe(0)
+  })
+
+  it('retries a stale record at its own retryAfter, not at the 24h TTL', async () => {
+    const stale: ReminderCache = {
+      schemaVersion: 1,
+      identity,
+      installed: '1.0.0',
+      latest: '2.0.0',
+      state: 'behind',
+      checkedAt: now,
+      retryAfter: now + 3_600_000,
+      stale: true,
+    }
+    expect(cacheApi?.shouldRefreshReminder(stale, now)).toBe(false)
+    expect(cacheApi?.shouldRefreshReminder(stale, now + 3_600_000)).toBe(true)
+  })
+
+  it('reads an old record that has no stale field', async () => {
+    await save()
+    expect(read()).toEqual(record())
+    expect(read()?.stale).toBeUndefined()
+  })
+
+  it('reads a record that says stale false as a fresh observation', async () => {
+    await save({ stale: false })
+    expect(read()).toEqual(record())
+  })
+
+  it('reads a stale record with its early retry', async () => {
+    await save({ stale: true, retryAfter: now + 3_600_000 })
+    expect(read()).toEqual({ ...record(), stale: true, retryAfter: now + 3_600_000 })
+  })
+
+  it.each([
+    { stale: true, state: 'unknown', latest: null, retryAfter: now + 3_600_000 },
+    { stale: true, retryAfter: 0 },
+    { stale: 'yes' },
+    { lastError: 'boom' },
+  ])('rejects an inconsistent record %j', async (extra) => {
+    await save(extra)
+    expect(read()).toBeNull()
   })
 })

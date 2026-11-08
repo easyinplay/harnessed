@@ -151,6 +151,38 @@ describe('cache-only foreground reminder', () => {
     expect(hook.spawn).not.toHaveBeenCalled()
     expect(hook.write).not.toHaveBeenCalled()
   })
+  it('marks a retained reminder as last known', async () => {
+    await save({ stale: true, retryAfter: now + 3_600_000 })
+    const hook = harness()
+    expect(await hook.run()).toBe(0)
+    expect(hook.write).toHaveBeenCalledExactlyOnceWith(
+      'Harnessed update available: 1.0.0 -> 2.0.0 (last known). Run /harnessed-update.\n',
+    )
+    // The early retry is not due yet, so no worker is spawned.
+    expect(hook.spawn).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+  it('retries a retained reminder once its early retry is due', async () => {
+    await save({ stale: true, checkedAt: now - 7_200_000, retryAfter: now - 3_600_000 })
+    const hook = harness()
+    expect(await hook.run()).toBe(0)
+    expect(hook.spawn).toHaveBeenCalledExactlyOnceWith(worker.executable, worker.args, {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      shell: false,
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+  it('ignores a stale record that carries no known version', async () => {
+    await save({ stale: true, state: 'unknown', latest: null, retryAfter: now + 3_600_000 })
+    const hook = harness()
+    expect(await hook.run()).toBe(0)
+    expect(hook.write).not.toHaveBeenCalled()
+    // The record is rejected as inconsistent, so the worker is asked to
+    // re-probe from scratch.
+    expect(hook.spawn).toHaveBeenCalledTimes(1)
+  })
   it('absorbs asynchronous spawn errors', async () => {
     const hook = harness()
     expect(await hook.run()).toBe(0)

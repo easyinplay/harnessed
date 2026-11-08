@@ -5,6 +5,27 @@ export const REMINDER_RETRY_MS = 60 * 60 * 1000
 export const REMINDER_MAX_BYTES = 16 * 1024
 export const REMINDER_LOCK_STALE_MS = 30_000
 
+/**
+ * The CLOSED set of probe failure reasons the cache may record.
+ *
+ * Diagnosis only — nothing in the reminder decision reads it. Keeping the set
+ * closed is what makes the field safe to persist: no free-form text (a URL, a
+ * stack trace, a proxy password) can ever reach the cache file.
+ */
+export const REMINDER_PROBE_FAILURES = [
+  'github-rate-limited',
+  'github-timeout',
+  'github-unavailable',
+  'npm-unavailable',
+  'invalid-version',
+] as const
+
+export type ReminderProbeFailure = (typeof REMINDER_PROBE_FAILURES)[number]
+
+export function isReminderProbeFailure(value: unknown): value is ReminderProbeFailure {
+  return typeof value === 'string' && (REMINDER_PROBE_FAILURES as readonly string[]).includes(value)
+}
+
 export interface ReminderIdentity {
   host: 'claude' | 'codex'
   runtime: string
@@ -21,6 +42,14 @@ export interface ReminderCache {
   state: 'behind' | 'current' | 'ahead' | 'unknown'
   checkedAt: number
   retryAfter: number
+  /**
+   * The record's `latest` comes from an EARLIER successful observation, not
+   * from the probe that produced this record. A failed probe must not erase a
+   * known "there is a newer version" fact — it downgrades it to "last known".
+   */
+  stale?: boolean
+  /** Why the last probe failed. Diagnosis only; never part of a decision. */
+  lastError?: ReminderProbeFailure
 }
 
 export function isReminderVersion(value: unknown): value is string {
@@ -47,7 +76,7 @@ function parseCache(text: string, identity: ReminderIdentity, now: number): Remi
       return null
     }
   }
-  const { installed, latest, state, checkedAt, retryAfter } = cache
+  const { installed, latest, state, checkedAt, retryAfter, stale, lastError } = cache
   if (
     !isReminderVersion(installed) ||
     typeof checkedAt !== 'number' ||
@@ -59,14 +88,23 @@ function parseCache(text: string, identity: ReminderIdentity, now: number): Remi
     retryAfter < 0
   )
     return null
+  // A missing `stale` means "not stale" — old cache files stay readable.
+  if (stale !== undefined && typeof stale !== 'boolean') return null
+  if (lastError !== undefined && !isReminderProbeFailure(lastError)) return null
   if (state === 'unknown') {
+    // Never observed a version: no version, and one retry hour away.
     if (latest !== null || retryAfter !== checkedAt + REMINDER_RETRY_MS) return null
-  } else if (
-    !['behind', 'current', 'ahead'].includes(state ?? '') ||
-    !isReminderVersion(latest) ||
-    retryAfter !== 0
-  )
-    return null
+    // A stale record always carries a KNOWN version.
+    if (stale === true) return null
+  } else {
+    if (!['behind', 'current', 'ahead'].includes(state ?? '') || !isReminderVersion(latest))
+      return null
+    if (stale === true) {
+      // A retained observation asks for an EARLY retry (its retryAfter is a
+      // deadline after the failed probe), never the 24 h TTL.
+      if (retryAfter <= checkedAt) return null
+    } else if (retryAfter !== 0) return null
+  }
   return {
     schemaVersion: 1,
     identity: { ...identity },
@@ -75,6 +113,8 @@ function parseCache(text: string, identity: ReminderIdentity, now: number): Remi
     state: state as ReminderCache['state'],
     checkedAt,
     retryAfter,
+    ...(stale === true ? { stale: true } : {}),
+    ...(lastError !== undefined ? { lastError } : {}),
   }
 }
 
@@ -106,6 +146,9 @@ export function readReminderCache(
 export function shouldRefreshReminder(cache: ReminderCache | null, now: number): boolean {
   if (!cache) return true
   if (cache.retryAfter > now) return false
+  // A stale record already carries a known version: it only asks for the next
+  // probe at its own (short) retryAfter, never at the 24 h TTL.
+  if (cache.stale === true) return true
   return cache.state === 'unknown' || now - cache.checkedAt >= REMINDER_TTL_MS
 }
 

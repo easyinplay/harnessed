@@ -165,23 +165,26 @@ export async function runUpdateReminderWorkerEntrypoint(
       ...runtime,
       observe: async (signal) => {
         if (runtime.identity.channel === 'binary') {
-          const response = await fetch(BINARY_SOURCE, {
-            signal,
-            headers: { 'user-agent': `harnessed/${pkg.version}` },
-          })
-          if (!response.ok) return { latest: null }
-          const value = (await response.json()) as { tag_name?: unknown }
-          return {
-            latest: typeof value.tag_name === 'string' ? value.tag_name.replace(/^v/, '') : null,
-          }
+          // GitHub releases first (the authoritative source for the binary
+          // assets), npm registry as the fallback. The probe is fail-soft and
+          // classifies its failures; it never throws.
+          const { probeLatestPublishedVersion } = await import(
+            '../cli/lib/latestPublishedVersion.js'
+          )
+          const result = await probeLatestPublishedVersion({ signal })
+          return { latest: result.latest, reason: result.reason }
         }
         const { fetchLatestBunVersion, fetchLatestNpmVersion } = await import(
           '../cli/lib/version-check.js'
         )
+        const latest = await (runtime.identity.channel === 'bun'
+          ? fetchLatestBunVersion()
+          : fetchLatestNpmVersion())
+        // The bun/npm channels read their registry through a subprocess,
+        // which cannot tell a network failure from an unparsable answer.
         return {
-          latest: await (runtime.identity.channel === 'bun'
-            ? fetchLatestBunVersion()
-            : fetchLatestNpmVersion()),
+          latest,
+          reason: latest === null ? 'npm-unavailable' : null,
         }
       },
     })

@@ -744,6 +744,9 @@ var init_autoUpdateNotice = __esm({
 
 // src/cli/lib/updateReminderCache.ts
 import fs from 'node:fs'
+function isReminderProbeFailure(value) {
+  return typeof value === 'string' && REMINDER_PROBE_FAILURES.includes(value)
+}
 function isReminderVersion(value) {
   return (
     typeof value === 'string' &&
@@ -767,7 +770,7 @@ function parseCache(text, identity, now) {
       return null
     }
   }
-  const { installed: installed2, latest, state, checkedAt, retryAfter } = cache2
+  const { installed: installed2, latest, state, checkedAt, retryAfter, stale, lastError } = cache2
   if (
     !isReminderVersion(installed2) ||
     typeof checkedAt !== 'number' ||
@@ -779,14 +782,18 @@ function parseCache(text, identity, now) {
     retryAfter < 0
   )
     return null
+  if (stale !== void 0 && typeof stale !== 'boolean') return null
+  if (lastError !== void 0 && !isReminderProbeFailure(lastError)) return null
   if (state === 'unknown') {
     if (latest !== null || retryAfter !== checkedAt + REMINDER_RETRY_MS) return null
-  } else if (
-    !['behind', 'current', 'ahead'].includes(state ?? '') ||
-    !isReminderVersion(latest) ||
-    retryAfter !== 0
-  )
-    return null
+    if (stale === true) return null
+  } else {
+    if (!['behind', 'current', 'ahead'].includes(state ?? '') || !isReminderVersion(latest))
+      return null
+    if (stale === true) {
+      if (retryAfter <= checkedAt) return null
+    } else if (retryAfter !== 0) return null
+  }
   return {
     schemaVersion: 1,
     identity: { ...identity },
@@ -795,6 +802,8 @@ function parseCache(text, identity, now) {
     state,
     checkedAt,
     retryAfter,
+    ...(stale === true ? { stale: true } : {}),
+    ...(lastError !== void 0 ? { lastError } : {}),
   }
 }
 function readReminderCache(cachePath, identity, now = Date.now()) {
@@ -820,9 +829,14 @@ function readReminderCache(cachePath, identity, now = Date.now()) {
 function shouldRefreshReminder(cache2, now) {
   if (!cache2) return true
   if (cache2.retryAfter > now) return false
+  if (cache2.stale === true) return true
   return cache2.state === 'unknown' || now - cache2.checkedAt >= REMINDER_TTL_MS
 }
-var REMINDER_TTL_MS, REMINDER_RETRY_MS, REMINDER_MAX_BYTES, REMINDER_LOCK_STALE_MS
+var REMINDER_TTL_MS,
+  REMINDER_RETRY_MS,
+  REMINDER_MAX_BYTES,
+  REMINDER_LOCK_STALE_MS,
+  REMINDER_PROBE_FAILURES
 var init_updateReminderCache = __esm({
   'src/cli/lib/updateReminderCache.ts'() {
     'use strict'
@@ -830,6 +844,13 @@ var init_updateReminderCache = __esm({
     REMINDER_RETRY_MS = 60 * 60 * 1e3
     REMINDER_MAX_BYTES = 16 * 1024
     REMINDER_LOCK_STALE_MS = 3e4
+    REMINDER_PROBE_FAILURES = [
+      'github-rate-limited',
+      'github-timeout',
+      'github-unavailable',
+      'npm-unavailable',
+      'invalid-version',
+    ]
   },
 })
 
@@ -4424,6 +4445,10 @@ function autoUpdateChannel(channel) {
   }
   return 'npm'
 }
+function probeFailure(reason, channel) {
+  if (isReminderProbeFailure(reason)) return reason
+  return channel === 'binary' ? 'github-unavailable' : 'npm-unavailable'
+}
 function resumeFragmentBytes(execPath, version) {
   try {
     return statSync2(join8(dirname6(execPath), `.harnessed-update-${version}.part`)).size
@@ -4517,9 +4542,10 @@ async function runUpdateReminderWorker(options) {
       },
     })
     owned = true
-    const cache2 = readReminderCache(options.cachePath, options.identity, now())
-    if (!shouldRefreshReminder(cache2, now())) return 0
+    const previous = readReminderCache(options.cachePath, options.identity, now())
+    if (!shouldRefreshReminder(previous, now())) return 0
     let latest = null
+    let failure = null
     try {
       const observation = await Promise.race([
         options.observe(controller.signal),
@@ -4531,10 +4557,23 @@ async function runUpdateReminderWorker(options) {
         }),
       ])
       if (isReminderVersion(observation.latest)) latest = observation.latest
-    } catch {}
+      else failure = probeFailure(observation.reason, options.identity.channel)
+    } catch {
+      failure = probeFailure(null, options.identity.channel)
+    }
+    let stale = false
+    if (
+      latest === null &&
+      previous !== null &&
+      previous.state !== 'unknown' &&
+      previous.latest !== null
+    ) {
+      latest = previous.latest
+      stale = true
+    }
     const checkedAt = now()
     const state = latest === null ? 'unknown' : compareVersions(options.installed, latest)
-    if (state === 'behind' && latest !== null) autoUpdateTarget = latest
+    if (state === 'behind' && latest !== null && !stale) autoUpdateTarget = latest
     const result = {
       schemaVersion: 1,
       identity: { ...options.identity },
@@ -4542,7 +4581,11 @@ async function runUpdateReminderWorker(options) {
       latest,
       state,
       checkedAt,
-      retryAfter: state === 'unknown' ? checkedAt + REMINDER_RETRY_MS : 0,
+      // A stale record asks for the next probe after ONE hour, not after the
+      // 24 h TTL: the network may come back at any time.
+      retryAfter: state === 'unknown' || stale ? checkedAt + REMINDER_RETRY_MS : 0,
+      ...(stale ? { stale: true } : {}),
+      ...(failure ? { lastError: failure } : {}),
     }
     const text = `${JSON.stringify(result)}
 `
@@ -4574,6 +4617,169 @@ var init_updateReminderWorkerMain = __esm({
     init_updateReminderCache()
     init_updateReminderPreferences()
     init_version_check()
+  },
+})
+
+// src/cli/lib/latestPublishedVersion.ts
+var latestPublishedVersion_exports = {}
+__export(latestPublishedVersion_exports, {
+  PROBE_TIMEOUT_MS: () => PROBE_TIMEOUT_MS,
+  probeLatestPublishedVersion: () => probeLatestPublishedVersion,
+})
+function isVersion(value) {
+  return typeof value === 'string' && VERSION_PATTERN.test(value)
+}
+async function defaultFetchJson(url, init) {
+  const response = await fetch(url, init)
+  const headers = {}
+  response.headers?.forEach((value, key) => {
+    headers[key.toLowerCase()] = value
+  })
+  return {
+    ok: response.ok,
+    status: response.status,
+    headers,
+    json: () => response.json(),
+  }
+}
+async function fetchJsonWithTimeout(fetchJson, url, timeoutMs, signal) {
+  const controller = new AbortController()
+  let timedOut = false
+  let timer
+  const onExternalAbort = () => controller.abort()
+  if (signal) {
+    if (signal.aborted) controller.abort()
+    else signal.addEventListener('abort', onExternalAbort, { once: true })
+  }
+  try {
+    const response = await Promise.race([
+      fetchJson(url, {
+        signal: controller.signal,
+        headers: { 'user-agent': `harnessed/${package_default.version}` },
+      }),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          timedOut = true
+          controller.abort()
+          reject(new ProbeTimeout())
+        }, timeoutMs)
+      }),
+    ])
+    return { response, timedOut }
+  } catch {
+    return { timedOut }
+  } finally {
+    if (timer) clearTimeout(timer)
+    if (signal) signal.removeEventListener('abort', onExternalAbort)
+  }
+}
+async function isRateLimited(response) {
+  if (response.headers?.['x-ratelimit-remaining'] === '0') return true
+  try {
+    const body = await response.json()
+    const message = typeof body?.message === 'string' ? body.message.toLowerCase() : ''
+    return message.includes('rate limit')
+  } catch {
+    return false
+  }
+}
+async function probeGitHub(fetchJson, url, timeoutMs, signal) {
+  if (signal?.aborted) {
+    return { source: 'github', version: null, reason: 'github-unavailable' }
+  }
+  const { response, timedOut } = await fetchJsonWithTimeout(fetchJson, url, timeoutMs, signal)
+  if (!response) {
+    return {
+      source: 'github',
+      version: null,
+      reason: timedOut ? 'github-timeout' : 'github-unavailable',
+    }
+  }
+  if (!response.ok) {
+    const rateLimited = await isRateLimited(response)
+    return {
+      source: 'github',
+      version: null,
+      reason: rateLimited ? 'github-rate-limited' : 'github-unavailable',
+    }
+  }
+  let body
+  try {
+    body = await response.json()
+  } catch {
+    return { source: 'github', version: null, reason: 'invalid-version' }
+  }
+  const tag = body?.tag_name
+  const version = typeof tag === 'string' ? tag.replace(/^v/, '') : ''
+  if (!isVersion(version)) {
+    return { source: 'github', version: null, reason: 'invalid-version' }
+  }
+  return { source: 'github', version, reason: null }
+}
+async function probeNpm(fetchJson, url, timeoutMs, signal) {
+  if (signal?.aborted) {
+    return { source: 'npm', version: null, reason: 'npm-unavailable' }
+  }
+  const { response } = await fetchJsonWithTimeout(fetchJson, url, timeoutMs, signal)
+  if (!response) {
+    return { source: 'npm', version: null, reason: 'npm-unavailable' }
+  }
+  if (!response.ok) {
+    return { source: 'npm', version: null, reason: 'npm-unavailable' }
+  }
+  let body
+  try {
+    body = await response.json()
+  } catch {
+    return { source: 'npm', version: null, reason: 'invalid-version' }
+  }
+  const version = body?.version
+  if (!isVersion(version)) {
+    return { source: 'npm', version: null, reason: 'invalid-version' }
+  }
+  return { source: 'npm', version, reason: null }
+}
+function pickReason(github, npm) {
+  if (github === 'github-rate-limited') return 'github-rate-limited'
+  if (github === 'github-timeout') return 'github-timeout'
+  if (github === 'github-unavailable') return 'github-unavailable'
+  if (npm === 'npm-unavailable') return 'npm-unavailable'
+  return 'invalid-version'
+}
+async function probeLatestPublishedVersion(deps = {}) {
+  const fetchJson = deps.fetchJson ?? defaultFetchJson
+  const ensureProxy = deps.ensureProxy ?? (() => ensureProxyDispatcher())
+  const timeoutMs = deps.timeoutMs ?? PROBE_TIMEOUT_MS
+  const githubUrl = deps.githubUrl ?? GITHUB_LATEST_URL
+  const npmUrl = deps.npmUrl ?? NPM_LATEST_URL
+  const signal = deps.signal
+  try {
+    await ensureProxy()
+  } catch {}
+  const github = await probeGitHub(fetchJson, githubUrl, timeoutMs, signal)
+  if (github.version !== null) {
+    return { latest: github.version, source: 'github', reason: null, github, npm: null }
+  }
+  try {
+    await ensureProxy()
+  } catch {}
+  const npm = await probeNpm(fetchJson, npmUrl, timeoutMs, signal)
+  if (npm.version !== null) {
+    return { latest: npm.version, source: 'npm', reason: null, github, npm }
+  }
+  return { latest: null, source: null, reason: pickReason(github.reason, npm.reason), github, npm }
+}
+var PROBE_TIMEOUT_MS, GITHUB_LATEST_URL, NPM_LATEST_URL, VERSION_PATTERN, ProbeTimeout
+var init_latestPublishedVersion = __esm({
+  'src/cli/lib/latestPublishedVersion.ts'() {
+    'use strict'
+    init_package()
+    init_proxyDispatcher()
+    PROBE_TIMEOUT_MS = 3e3
+    GITHUB_LATEST_URL = 'https://api.github.com/repos/easyinplay/harnessed/releases/latest'
+    NPM_LATEST_URL = 'https://registry.npmjs.org/harnessed/latest'
+    VERSION_PATTERN = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+    ProbeTimeout = class extends Error {}
   },
 })
 
@@ -4696,24 +4902,23 @@ async function runUpdateReminderWorkerEntrypoint(options = {}) {
       ...runtime,
       observe: async (signal) => {
         if (runtime.identity.channel === 'binary') {
-          const response = await fetch(BINARY_SOURCE, {
-            signal,
-            headers: { 'user-agent': `harnessed/${package_default.version}` },
-          })
-          if (!response.ok) return { latest: null }
-          const value = await response.json()
-          return {
-            latest: typeof value.tag_name === 'string' ? value.tag_name.replace(/^v/, '') : null,
-          }
+          const { probeLatestPublishedVersion: probeLatestPublishedVersion2 } =
+            await Promise.resolve().then(
+              () => (init_latestPublishedVersion(), latestPublishedVersion_exports),
+            )
+          const result = await probeLatestPublishedVersion2({ signal })
+          return { latest: result.latest, reason: result.reason }
         }
         const {
           fetchLatestBunVersion: fetchLatestBunVersion2,
           fetchLatestNpmVersion: fetchLatestNpmVersion2,
         } = await Promise.resolve().then(() => (init_version_check(), version_check_exports))
+        const latest = await (runtime.identity.channel === 'bun'
+          ? fetchLatestBunVersion2()
+          : fetchLatestNpmVersion2())
         return {
-          latest: await (runtime.identity.channel === 'bun'
-            ? fetchLatestBunVersion2()
-            : fetchLatestNpmVersion2()),
+          latest,
+          reason: latest === null ? 'npm-unavailable' : null,
         }
       },
     })

@@ -17,12 +17,14 @@ import {
   writeAutoUpdateStatus,
 } from './lib/autoUpdateStatus.js'
 import {
+  isReminderProbeFailure,
   isReminderVersion,
   REMINDER_LOCK_STALE_MS,
   REMINDER_MAX_BYTES,
   REMINDER_RETRY_MS,
   type ReminderCache,
   type ReminderIdentity,
+  type ReminderProbeFailure,
   readReminderCache,
   shouldRefreshReminder,
 } from './lib/updateReminderCache.js'
@@ -33,7 +35,11 @@ export interface UpdateReminderWorkerOptions {
   cachePath: string
   identity: ReminderIdentity
   installed: string
-  observe: (signal: AbortSignal) => Promise<{ latest: string | null }>
+  observe: (signal: AbortSignal) => Promise<{
+    latest: string | null
+    /** Why the probe failed — a closed-set value, diagnosis only. */
+    reason?: ReminderProbeFailure | null
+  }>
   now?: () => number
   /** The preferences file — the worker reads the auto-update consent itself (R11). */
   preferencesPath?: string
@@ -47,6 +53,21 @@ function autoUpdateChannel(channel: string): AutoUpdateChannel {
     return channel
   }
   return 'npm'
+}
+
+/**
+ * The failure reason to record when a probe produced no version.
+ *
+ * The recorded value set is closed, so a reason outside it is replaced by the
+ * channel's generic one: the binary channel talks to GitHub first, the other
+ * channels talk to the npm registry.
+ */
+function probeFailure(
+  reason: ReminderProbeFailure | null | undefined,
+  channel: string,
+): ReminderProbeFailure {
+  if (isReminderProbeFailure(reason)) return reason
+  return channel === 'binary' ? 'github-unavailable' : 'npm-unavailable'
 }
 
 /**
@@ -190,9 +211,12 @@ export async function runUpdateReminderWorker(options: UpdateReminderWorkerOptio
       },
     })
     owned = true
-    const cache = readReminderCache(options.cachePath, options.identity, now())
-    if (!shouldRefreshReminder(cache, now())) return 0
+    // The cache read BEFORE the probe is the only witness of what was known:
+    // a failed probe must not erase a known "a newer version exists" fact.
+    const previous = readReminderCache(options.cachePath, options.identity, now())
+    if (!shouldRefreshReminder(previous, now())) return 0
     let latest: string | null = null
+    let failure: ReminderProbeFailure | null = null
     try {
       const observation = await Promise.race([
         options.observe(controller.signal),
@@ -204,10 +228,29 @@ export async function runUpdateReminderWorker(options: UpdateReminderWorkerOptio
         }),
       ])
       if (isReminderVersion(observation.latest)) latest = observation.latest
-    } catch {}
+      else failure = probeFailure(observation.reason, options.identity.channel)
+    } catch {
+      failure = probeFailure(null, options.identity.channel)
+    }
+    // A failed probe downgrades a known observation to "last known" instead of
+    // erasing it. Without any previous observation the record stays `unknown`
+    // with the existing one hour backoff.
+    let stale = false
+    if (
+      latest === null &&
+      previous !== null &&
+      previous.state !== 'unknown' &&
+      previous.latest !== null
+    ) {
+      latest = previous.latest
+      stale = true
+    }
     const checkedAt = now()
     const state = latest === null ? 'unknown' : compareVersions(options.installed, latest)
-    if (state === 'behind' && latest !== null) autoUpdateTarget = latest
+    // Only a FRESH observation may drive the automatic update: a retained
+    // version may already be outdated, and the update flow downloads from the
+    // same GitHub source that just failed.
+    if (state === 'behind' && latest !== null && !stale) autoUpdateTarget = latest
     const result: ReminderCache = {
       schemaVersion: 1,
       identity: { ...options.identity },
@@ -215,7 +258,11 @@ export async function runUpdateReminderWorker(options: UpdateReminderWorkerOptio
       latest,
       state,
       checkedAt,
-      retryAfter: state === 'unknown' ? checkedAt + REMINDER_RETRY_MS : 0,
+      // A stale record asks for the next probe after ONE hour, not after the
+      // 24 h TTL: the network may come back at any time.
+      retryAfter: state === 'unknown' || stale ? checkedAt + REMINDER_RETRY_MS : 0,
+      ...(stale ? { stale: true } : {}),
+      ...(failure ? { lastError: failure } : {}),
     }
     const text = `${JSON.stringify(result)}\n`
     if (!owned || Buffer.byteLength(text) > REMINDER_MAX_BYTES) return 0

@@ -672,6 +672,9 @@ var init_autoUpdateNotice = __esm({
 
 // src/cli/lib/updateReminderCache.ts
 import fs from 'node:fs'
+function isReminderProbeFailure(value) {
+  return typeof value === 'string' && REMINDER_PROBE_FAILURES.includes(value)
+}
 function isReminderVersion(value) {
   return (
     typeof value === 'string' &&
@@ -695,7 +698,7 @@ function parseCache(text, identity, now) {
       return null
     }
   }
-  const { installed, latest, state, checkedAt, retryAfter } = cache2
+  const { installed, latest, state, checkedAt, retryAfter, stale, lastError } = cache2
   if (
     !isReminderVersion(installed) ||
     typeof checkedAt !== 'number' ||
@@ -707,14 +710,18 @@ function parseCache(text, identity, now) {
     retryAfter < 0
   )
     return null
+  if (stale !== void 0 && typeof stale !== 'boolean') return null
+  if (lastError !== void 0 && !isReminderProbeFailure(lastError)) return null
   if (state === 'unknown') {
     if (latest !== null || retryAfter !== checkedAt + REMINDER_RETRY_MS) return null
-  } else if (
-    !['behind', 'current', 'ahead'].includes(state ?? '') ||
-    !isReminderVersion(latest) ||
-    retryAfter !== 0
-  )
-    return null
+    if (stale === true) return null
+  } else {
+    if (!['behind', 'current', 'ahead'].includes(state ?? '') || !isReminderVersion(latest))
+      return null
+    if (stale === true) {
+      if (retryAfter <= checkedAt) return null
+    } else if (retryAfter !== 0) return null
+  }
   return {
     schemaVersion: 1,
     identity: { ...identity },
@@ -723,6 +730,8 @@ function parseCache(text, identity, now) {
     state,
     checkedAt,
     retryAfter,
+    ...(stale === true ? { stale: true } : {}),
+    ...(lastError !== void 0 ? { lastError } : {}),
   }
 }
 function readReminderCache(cachePath, identity, now = Date.now()) {
@@ -748,6 +757,7 @@ function readReminderCache(cachePath, identity, now = Date.now()) {
 function shouldRefreshReminder(cache2, now) {
   if (!cache2) return true
   if (cache2.retryAfter > now) return false
+  if (cache2.stale === true) return true
   return cache2.state === 'unknown' || now - cache2.checkedAt >= REMINDER_TTL_MS
 }
 function isReminderWorkerActive(cachePath, now) {
@@ -758,7 +768,11 @@ function isReminderWorkerActive(cachePath, now) {
     return false
   }
 }
-var REMINDER_TTL_MS, REMINDER_RETRY_MS, REMINDER_MAX_BYTES, REMINDER_LOCK_STALE_MS
+var REMINDER_TTL_MS,
+  REMINDER_RETRY_MS,
+  REMINDER_MAX_BYTES,
+  REMINDER_LOCK_STALE_MS,
+  REMINDER_PROBE_FAILURES
 var init_updateReminderCache = __esm({
   'src/cli/lib/updateReminderCache.ts'() {
     'use strict'
@@ -766,6 +780,13 @@ var init_updateReminderCache = __esm({
     REMINDER_RETRY_MS = 60 * 60 * 1e3
     REMINDER_MAX_BYTES = 16 * 1024
     REMINDER_LOCK_STALE_MS = 3e4
+    REMINDER_PROBE_FAILURES = [
+      'github-rate-limited',
+      'github-timeout',
+      'github-unavailable',
+      'npm-unavailable',
+      'invalid-version',
+    ]
   },
 })
 
@@ -826,8 +847,9 @@ async function runUpdateReminderHook(options) {
     const cache2 = readReminderCache(options.cachePath, options.identity, now)
     if (options.enabled && cache2?.state === 'behind') {
       try {
+        const known = cache2.stale === true ? ' (last known)' : ''
         write(
-          `Harnessed update available: ${cache2.installed} -> ${cache2.latest}. Run /harnessed-update.
+          `Harnessed update available: ${cache2.installed} -> ${cache2.latest}${known}. Run /harnessed-update.
 `,
         )
       } catch {}

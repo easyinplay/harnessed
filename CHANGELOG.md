@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The update reminder no longer goes silent when one version check fails. The check itself was the fragile part: the binary channel asked the GitHub releases API and nothing else, so a timeout, a rate limit or a blocked host turned "a newer version exists" into "we could not determine" and the reminder printed nothing for the next day. The probe now asks GitHub first (the authoritative source for the downloadable assets) and falls back to the npm registry over plain HTTP, and it reports the reason it failed so a rate-limited probe can be told apart from an unreachable network. A failed check also no longer erases what was already known: the last successful observation is kept and marked as last known, so one bad network moment leaves the reminder in place instead of deleting it. Only a machine that never managed a single successful check stays silent, and the next check then happens within the hour rather than after a day.
+
 ### Changed
 
 - The README set no longer ships a second English copy. `README-en.md` was a compatibility mirror of `README.md` that no locale linked to and that had to be kept in step by hand, so it is removed, and the documentation contract now pins the ten locales that actually exist. The installation section of every README also documents one channel only — the standalone binary — instead of three, so the page a reader lands on names the same install path on every host. The npm and bun channels are unchanged in the product: the install scripts still fall back to them on unsupported platforms, `harnessed update` still updates an npm install in place, and the npm package is still published.

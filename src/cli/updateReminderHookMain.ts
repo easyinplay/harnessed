@@ -87,8 +87,11 @@ export async function runUpdateReminderHook(options: UpdateReminderHookOptions):
     const cache = readReminderCache(options.cachePath, options.identity, now)
     if (options.enabled && cache?.state === 'behind') {
       try {
+        // A stale record is a RETAINED observation: the version is known, but
+        // the last probe failed. Say so instead of implying a fresh check.
+        const known = cache.stale === true ? ' (last known)' : ''
         write(
-          `Harnessed update available: ${cache.installed} -> ${cache.latest}. Run /harnessed-update.\n`,
+          `Harnessed update available: ${cache.installed} -> ${cache.latest}${known}. Run /harnessed-update.\n`,
         )
       } catch {}
     }
