@@ -60,3 +60,26 @@
 - The foreground bundle does not contain the probe: `registry.npmjs.org` and
   `x-ratelimit-remaining` are absent from `bin/harnessed-update-reminder.mjs`
   and present in the worker bundle.
+
+## Release receipt (v5.0.14, 2026-11-09)
+- Commits: `80d48ae` (README cleanup) + `79dcfd6` (probe robustness) +
+  `3c9f3e6` (STATE correction) + `c4ec11b` (release preparation).
+- Clean-worktree verification (a linked worktree at the release commit, so the
+  maintainer's in-flight Phase 85 work was never touched): `pnpm install
+  --frozen-lockfile` + `pnpm build` exit 0 and produced NO tree difference (the
+  committed artifacts are byte-identical to a fresh build), and `pnpm test` was
+  446 files / 5608 tests with 0 failures. That is the same suite that fails 5
+  cases in the maintainer's working tree, which confirms those 5 belong to the
+  Phase 85 work and not to this release.
+- `harnessed release-preflight` in that clean worktree: 4/4 pass (changelog,
+  version 5.0.14, git-clean, tag-absent).
+- CI: `42500290590` (README) 9/9 success, `42502901367` (probe fix) 9/9
+  success, `42503655806` (release prep) success.
+- Publish run `42503917114`: 4 jobs success (npm publish, binary ubuntu /
+  windows / macos).
+- GitHub Release `v5.0.14` carries 9 assets (3 platforms x binary + sha256 +
+  sha256.sig). npm `harnessed@5.0.14` is published and `dist-tags.latest` is
+  5.0.14 (registry direct query, not the local cache).
+- The published tarball was unpacked and checked: `README-en.md` is GONE. The
+  v5.0.13 tarball still carried it, so this release is the one that drops the
+  duplicate English mirror from the npm package.
