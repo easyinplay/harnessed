@@ -286,6 +286,15 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
   // GIT_CEILING_DIRECTORIES stops the upward walk at the tmp root, making the
   // outcome deterministic everywhere: not-a-repo → fail-soft {ready:false}.
   const prevCeiling = process.env.GIT_CEILING_DIRECTORIES
+  // Phase 86 hermeticity — the same class as the git-ceiling pin above, one
+  // level up: `harnessed gates` now publishes the agent-teams capability probe
+  // in its plan, so a developer's ambient `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`
+  // (harnessed setup writes it into ~/.claude/settings.json!) would land in the
+  // golden as `teams_active: true` while CI — where nothing enables it — sees
+  // `false`. The suite pins the capability ON so the recorded plan is identical
+  // on every machine; the OFF branch is covered by tests/cli/gates.test.ts with
+  // a stubbed env, not by a machine-dependent golden.
+  const prevAgentTeams = process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
   // v16.0 Phase 65 T13 — scenario-scoped `env`. Saved per key (undefined = the
   // key did not exist) and restored in the same finally as the three overrides
   // above, so a scenario that pins its harness cannot re-key the next one: the
@@ -316,6 +325,7 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
       process.env[key] = value
     }
     process.env.GIT_CEILING_DIRECTORIES = tmpdir()
+    process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = '1'
     process.env.HARNESSED_ROOT_OVERRIDE = stateRoot
     if (scenario.assets_dir) {
       process.env.HARNESSED_ASSETS_OVERRIDE = isAbsolute(scenario.assets_dir)
@@ -353,6 +363,8 @@ export async function runScenarioDir(dir: string, opts: RunOptions): Promise<Sce
     else process.env.HARNESSED_ASSETS_OVERRIDE = prevAssets
     if (prevCeiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES
     else process.env.GIT_CEILING_DIRECTORIES = prevCeiling
+    if (prevAgentTeams === undefined) delete process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS
+    else process.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS = prevAgentTeams
     // Restored LAST (mirror of the apply order): if a scenario named one of the
     // three keys above, the loop above has already put back the value this
     // scenario inherited, and this loop writes the same value again. Absent

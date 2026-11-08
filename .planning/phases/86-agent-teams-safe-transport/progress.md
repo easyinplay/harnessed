@@ -78,3 +78,20 @@
   GitHub release `v5.0.13` carries 9 assets (3 platforms x binary + sha256 +
   sha256.sig); npm `harnessed@5.0.13` is published and `dist-tags.latest` is
   5.0.13.
+- CI on the v5.0.13 push went RED on 3 jobs (quality ubuntu / test windows /
+  test macos), all with the SAME single failing test: `tests/eval/fixtures.test.ts`.
+  Root cause: the eval goldens are recorded from a real `harnessed gates` run, and
+  the plan now carries the agent-teams capability probe — the goldens were
+  recorded on a machine where `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (harnessed
+  setup writes it into `~/.claude/settings.json`), so they said
+  `teams_active: true` while CI, where nothing enables it, produced `false`.
+  The golden was machine-dependent; the clean-tree local verification missed it
+  precisely because the local machine HAS the flag on.
+- Fix (forward, no re-release): the eval runner now PINS
+  `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` for every scenario, the same
+  hermeticity move as the existing `GIT_CEILING_DIRECTORIES` pin (ambient env
+  leaking into goldens → 3-OS red). Proof: the suite passes 14/14 with the env
+  unset, `'0'` and `'1'`, and re-recording changes 0 golden bytes. The OFF
+  branch stays covered by `tests/cli/gates.test.ts` (stubbed env), not by a
+  machine-dependent golden. The published package is unaffected: `fixtures/` is
+  not in the npm `files` list, so v5.0.13's shipped behaviour is unchanged.
