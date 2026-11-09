@@ -104,8 +104,12 @@ describe('removeOwnedFileViaQuarantine', () => {
       await unlink(target)
       await rename(replacement, target)
 
+      // Either refusal is correct here: NTFS may hand the recycled inode back to
+      // the renamed replacement, so on Windows the swap can trip the content
+      // guard instead of the identity guard — both are fail-closed refusals of
+      // a post-preflight modification (CI flake, 2026-11-04 windows-latest).
       await expect(removeOwnedFileViaQuarantine(snapshot)).rejects.toThrow(
-        /identity changed after preflight/i,
+        /(identity|content) changed after preflight/i,
       )
       expect(await readFile(target, 'utf8')).toBe('replacement state')
     } finally {
