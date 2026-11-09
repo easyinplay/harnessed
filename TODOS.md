@@ -186,7 +186,8 @@
   评估结论:host-integration interface(ADR-1239)+ destSubpath write-confinement 未改
   claude runtime 写入路径(本机 1.7.0 实测 gsd-* 仍装 ~/.claude/skills/,71 skill)。
   manifest re-sync 完成(npm_version ^1.7.0 / last_known_good 1.7.0 / 4.32.3)。
-- [ ] **quarantine 身份判定在 Windows runner 上偶发命中另一条拒绝理由** — 2026-11-04 首次记录:
+- [x] **quarantine 身份判定在 Windows runner 上偶发命中另一条拒绝理由** — FIXED 2026-11-09(`e7ec448`):
+  断言改为接受两条拒绝理由(NTFS inode 回收会让 rename 后的替换文件命中 content guard 而非 identity guard,两条都是正确 fail-closed)。原记录:
   Phase 84 的 push(`77bf63f`)让 `test windows-latest` 红过一次,失败点是
   `tests/unit/quarantineDelete.test.ts` 的「restores and preserves a replacement file swapped in
   after preflight」—— 断言要 `identity changed after preflight`,实际抛
