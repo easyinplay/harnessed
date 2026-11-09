@@ -226,15 +226,24 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
 - [ ] **轮换 Context7 API key** — `ctx7sk-…` 同样已从 `~/.claude/settings.json` 删除;
   context7 MCP 走自己的 OAuth(`~/.claude/.credentials.json` → `mcpOAuth` → `plugin:context7:context7`),
   删 env key 不影响 MCP 使用。但旧 transcript 里仍有明文,建议到 context7 dashboard 作废并重发。
-- [ ] **installer 备份整份 `settings.json`(含明文凭据)—— 待定方案,未改代码** —
+- [ ] **installer 备份整份 `settings.json`(含明文凭据)—— 方案已定 (a) 子树备份,待实施(独立 phase + TDD)** —
   `src/installers/lib/backup.ts` 对 `plan.files` 里每个文件做整份字节备份;装 `update-reminder` 时
   `~/.claude/settings.json` 会被原样复制到 `~/.claude/harnessed/backups/<id>/HOME/.claude/settings.json`,
-  于是凭据多出第二份。**当前刻意不改**:`src/cli/rollback.ts` 用 `metadata.json` 的 sha1 校验备份完整性,
-  整份脱敏会破坏回滚保真(回滚要把原样文件写回去)。候选方案:
-  (a) 只备份被改动的 JSON 子树(本例只有 `hooks`),rollback 做子树还原;
-  (b) 备份时对 secret 形态的值脱敏,rollback 还原时保留当前值;
-  (c) 维持现状 + 文档化「settings.json 不放长期凭据」。
-  选 (a)/(b) 需要独立 phase + TDD(备份/回滚保真 + sha1 契约都有既有测试)。
+  于是凭据多出第二份。
+  **2026-11-09 双意见一致裁决 (a)**(本 session 独立判断 + 第二意见 subagent 同向,未走用户裁决):
+  - **核心机制(第二意见补强,关键!)**:`plan.files[]` 已带 `oldText`/`newText`(types.ts:103-104)——
+    对两者都能 parse 成 JSON 对象的文件,`backup()` 自己 diff 出被改动的 key path
+    (对象键递归、数组按原子值处理),只存旧值子树。**无需 manifest 声明、对现在和未来所有
+    JSON-merge installer 自动生效**。非 JSON/不可解析文件回退整份字节备份(保覆盖)。
+  - **rollback 语义变**:「parse 当前 JSON → 替换/删除记录的 path → 重写」而非整文件回写;
+    附带修好第二个潜在 bug —— 现状 verbatim 回写会**覆盖用户在 install 后对未动键的编辑**。
+    sha1 完整性校验照旧(对子树字节算)。当前文件与 newText 不一致时:**warn 不 refuse**
+    (回滚我们那棵子树、保住用户编辑正是目的)。
+  - **metadata 需版本化条目**(`kind: 'bytes' | 'json-subtree'`),既有 legacy sentinel 处理并存;
+    整文件保真测试要改写成子树语义。
+  - **否决 (b)** 理由:secret 探测是启发式 + fail-open(无前缀 base64 token 漏检、误报毁备份),
+    与 fail-closed 文化冲突;**否决 (c)**:把泄漏原样留给用户行为。
+  - **scope 注意**:本机已存在备份里的明文凭据不在本条范围 —— 落地时附一笔一次性清理/轮换提示。
 - [ ] **gh keyring token 权限过大** — 当前那枚是 user-to-server OAuth token,scopes 含 `admin:org` +
   `delete_repo` + `workflow`。若要长期用 GitHub,换成 fine-grained PAT(按 repo 授权)更合适。
 - [ ] **会话里不要 echo 凭据** — 本轮 `gh auth token` 的输出被 Claude Code 记进
