@@ -3519,7 +3519,7 @@ async function runBinarySelfUpdate(deps, opts) {
   try {
     const dir = join6(deps.stateRoot(), 'bin-backup', deps.currentVersion)
     await mkdir(dir, { recursive: true })
-    await copyFile(bakPath, join6(dir, execBase))
+    await copyFile(bakPath, join6(dir, asset))
     backupDir = dir
     copied = true
   } catch (e) {
@@ -3563,20 +3563,25 @@ async function runBinaryRollback(deps, opts) {
   }
   const asset = assetNameFor(deps.platform, deps.arch)
   const backupsRoot = join6(deps.stateRoot(), 'bin-backup')
-  let versions = []
+  const execBase = basename(deps.execPath)
+  const banked = /* @__PURE__ */ new Map()
   try {
     const entries = await readdir(backupsRoot, { withFileTypes: true })
     for (const e of entries) {
       if (!e.isDirectory()) continue
-      const has = await access(join6(backupsRoot, e.name, asset)).then(
-        () => true,
-        () => false,
-      )
-      if (has) versions.push(e.name)
+      for (const name of asset === execBase ? [asset] : [asset, execBase]) {
+        const has = await access(join6(backupsRoot, e.name, name)).then(
+          () => true,
+          () => false,
+        )
+        if (has) {
+          banked.set(e.name, name)
+          break
+        }
+      }
     }
-  } catch {
-    versions = []
-  }
+  } catch {}
+  const versions = [...banked.keys()]
   if (versions.length === 0) {
     return {
       status: 'error',
@@ -3595,9 +3600,8 @@ async function runBinaryRollback(deps, opts) {
   } else {
     target = versions.reduce((a, b) => (compareVersions(a, b) === 'behind' ? b : a))
   }
-  const backupBin = join6(backupsRoot, target, asset)
+  const backupBin = join6(backupsRoot, target, banked.get(target) ?? asset)
   const execDir = dirname4(deps.execPath)
-  const execBase = basename(deps.execPath)
   const ext = deps.platform === 'win32' ? '.exe' : ''
   const tempPath = join6(execDir, `.harnessed-rollback-${deps.pid}${ext}`)
   const bakPath = join6(execDir, `${execBase}.bak-${deps.currentVersion}`)
@@ -3644,7 +3648,7 @@ async function runBinaryRollback(deps, opts) {
   try {
     const dir = join6(backupsRoot, deps.currentVersion)
     await mkdir(dir, { recursive: true })
-    await copyFile(bakPath, join6(dir, execBase))
+    await copyFile(bakPath, join6(dir, asset))
     copied = true
   } catch (e) {
     deps.log(`warning: could not bank the replaced binary (${e.message}) \u2014 keeping ${bakPath}`)
