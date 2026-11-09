@@ -481,7 +481,7 @@ export async function runBinarySelfUpdate(
   try {
     const dir = join(deps.stateRoot(), 'bin-backup', deps.currentVersion)
     await mkdir(dir, { recursive: true })
-    await copyFile(bakPath, join(dir, execBase))
+    await copyFile(bakPath, join(dir, asset))
     backupDir = dir
     copied = true
   } catch (e) {
@@ -553,20 +553,29 @@ export async function runBinaryRollback(
 
   const asset = assetNameFor(deps.platform, deps.arch)
   const backupsRoot = join(deps.stateRoot(), 'bin-backup')
-  let versions: string[] = []
+  const execBase = basename(deps.execPath)
+  // Banks written before the asset-name contract held use the exec basename
+  // (4.32.20–5.0.15) — accept both names so those backups stay reachable.
+  const banked = new Map<string, string>()
   try {
     const entries = await readdir(backupsRoot, { withFileTypes: true })
     for (const e of entries) {
       if (!e.isDirectory()) continue
-      const has = await access(join(backupsRoot, e.name, asset)).then(
-        () => true,
-        () => false,
-      )
-      if (has) versions.push(e.name)
+      for (const name of asset === execBase ? [asset] : [asset, execBase]) {
+        const has = await access(join(backupsRoot, e.name, name)).then(
+          () => true,
+          () => false,
+        )
+        if (has) {
+          banked.set(e.name, name)
+          break
+        }
+      }
     }
   } catch {
-    versions = []
+    /* no bin-backup dir — banked stays empty */
   }
+  const versions = [...banked.keys()]
   if (versions.length === 0) {
     return {
       status: 'error',
@@ -587,10 +596,9 @@ export async function runBinaryRollback(
     // highest banked semver = the most recent pre-update image
     target = versions.reduce((a, b) => (compareVersions(a, b) === 'behind' ? b : a))
   }
-  const backupBin = join(backupsRoot, target, asset)
+  const backupBin = join(backupsRoot, target, banked.get(target) ?? asset)
 
   const execDir = dirname(deps.execPath)
-  const execBase = basename(deps.execPath)
   const ext = deps.platform === 'win32' ? '.exe' : ''
   const tempPath = join(execDir, `.harnessed-rollback-${deps.pid}${ext}`)
   const bakPath = join(execDir, `${execBase}.bak-${deps.currentVersion}`)
@@ -646,7 +654,7 @@ export async function runBinaryRollback(
   try {
     const dir = join(backupsRoot, deps.currentVersion)
     await mkdir(dir, { recursive: true })
-    await copyFile(bakPath, join(dir, execBase))
+    await copyFile(bakPath, join(dir, asset))
     copied = true
   } catch (e) {
     deps.log(

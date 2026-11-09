@@ -99,7 +99,7 @@ finding above. Run with Claude Code or Codex; checkbox as you ship.
   - Surfaced by: Section 9 — CI 有 `bin/` drift 硬门禁
   - Files: `bin/harnessed-update-reminder*.mjs`(重生成)
   - Verify: `corepack pnpm build:hooks` 后 `git diff --exit-code bin/` 干净
-- [ ] **T9 (P2, human: ~3h / CC: ~15min)** — 本机实测(AC13)
+- [x] **T9 (P2, human: ~3h / CC: ~15min)** — 本机实测(AC13)
   - Surfaced by: Section 9 — 发布门
   - Files: 无(验证步骤)
   - Verify: 真实 release 自动更新一次,版本变化 + hooks 刷新 + status 正确 + rollback 可用

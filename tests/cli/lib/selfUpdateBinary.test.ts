@@ -102,6 +102,8 @@ function world(opts?: {
   sigOverride?: string
   platform?: string
   arch?: string
+  /** A real install's exec is named `harnessed(.exe)`, not the asset name. */
+  execName?: string
 }) {
   const platform = opts?.platform ?? 'linux'
   const arch = opts?.arch ?? 'x64'
@@ -109,7 +111,7 @@ function world(opts?: {
   const srcDir = mkdtempSync(join(tmpdir(), 'selfupd-src-'))
   const stateRoot = mkdtempSync(join(tmpdir(), 'selfupd-state-'))
   const asset = assetNameFor(platform, arch)
-  const execPath = join(dir, asset)
+  const execPath = join(dir, opts?.execName ?? asset)
   writeFileSync(execPath, 'OLD-BINARY')
   const newContent = opts?.newContent ?? 'NEW-BINARY'
   if (!opts?.omitAsset) writeFileSync(join(srcDir, asset), newContent)
@@ -322,6 +324,32 @@ describe('runBinaryRollback (--rollback)', () => {
     const r = await runBinaryRollback(deps, { version: '4.25.0' })
     expect(r.status).toBe('rolled-back')
     expect(readFileSync(w.execPath, 'utf8')).toBe('OLDER-BINARY')
+  })
+
+  // Real-machine AC13 (5.0.15): the bank was written under the exec basename
+  // (`harnessed`/`harnessed.exe`) while the rollback scan looked for the asset
+  // name — on a real install the two never match, so rollback saw no backups.
+  it('finds a backup banked under the exec basename (pre-asset-name banks)', async () => {
+    const w = world({ execName: 'harnessed' })
+    const dir = join(w.stateRoot, 'bin-backup', '4.26.5')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'harnessed'), 'LEGACY-BANK')
+    const deps = { ...w.deps, currentVersion: '4.27.0', smoke: async () => '4.26.5' }
+    const r = await runBinaryRollback(deps, {})
+    expect(r.status).toBe('rolled-back')
+    expect(readFileSync(w.execPath, 'utf8')).toBe('LEGACY-BANK')
+  })
+
+  it('banks an update under the asset name even when the exec is named differently', async () => {
+    const w = world({ execName: 'harnessed' })
+    const u = await runBinarySelfUpdate(w.deps, {})
+    expect(u.status).toBe('updated')
+    expect(readFileSync(join(w.stateRoot, 'bin-backup', '4.26.0', w.asset), 'utf8')).toBe(
+      'OLD-BINARY',
+    )
+    const deps = { ...w.deps, currentVersion: '4.27.0', smoke: async () => '4.26.0' }
+    const r = await runBinaryRollback(deps, {})
+    expect(r.status).toBe('rolled-back')
   })
 
   it('no backups → error naming the bin-backup dir, exec unchanged', async () => {

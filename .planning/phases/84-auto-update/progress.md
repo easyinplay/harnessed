@@ -189,3 +189,38 @@ preferences 文件内容正确,i18n 跟随 locale。
 
 评审后全量验收:vitest **5514 通过 / 0 失败**(439 文件);`tsc --noEmit` 干净;
 biome 硬门 0 blocking;`build` + `build:hooks` 成功;CI 硬门脚本全 0。
+
+## 2026-11-09 AC13 真机验收(Devin session,binary 通道)
+
+**路径**:本机 exe 5.0.12 → 换 5.0.14(gh api 下载 + sha256 校验)→ `auto-update on --platform claude`
+→ 真实 `harnessed.exe update-reminder`(SessionStart 原样命令)→ detached worker 自动更新到 5.0.15。
+
+**结果**:全链路真实通过 —— status `updated`、lastResult `5.0.15`、exec 换入 5.0.15、
+`bin-backup/5.0.14` 入 bank、`skill-hashes.json` 被新 binary 重写(owned-state 交接跑了)、
+`auto-update status` 合同输出正确。
+
+**真机抓出 2 个 unit-test 不可见的 bug(均已修 + 回归锁)**:
+
+1. **update notice 永远写不进去**(AC7 实际失效):`runOwnedRefreshEntry` 里
+   `writeAutoUpdateNoticeForNewBinary(context)` 是 floating promise,而调用方是
+   `process.exit(await runOwnedRefreshEntry())` —— 函数一返回进程硬退,notice 的
+   dynamic-import+写盘续体每次必被杀。refresh(有 await)永远成功,所以测试全绿、
+   生产必丢。修复:加 `await`(一行)。回归锁:ownedRefresh.test.ts 新增用例,mock
+   changelogSection 模块工厂延时 30ms,断言 entry resolve 时 notice 已完整
+   (buggy 版确定性红,已验证)。另用 `node dist/cli.mjs --internal-owned-refresh` +
+   真 status 文件端到端复验:notice 现在完整(from 5.0.14 → to 5.0.15 + CHANGELOG
+   摘录 + restart Claude Code,consumedAt 0 待打印)。
+2. **`update --rollback` 找不到自己的 bank**(4.32.20 起即存在):写侧把被换 binary
+   存成 `<stateRoot>/bin-backup/<ver>/<execBase>`(`harnessed.exe`),读侧扫
+   `<ver>/<asset>`(`harnessed-windows-x64.exe`)—— 真机上两者永不相等,rollback
+   永远 "no rollback candidates"。测试夹具 execPath basename == asset 名,天然遮蔽。
+   修复:写侧两处(update + rollback 自 re-bank)改存 asset 名;读侧 asset +
+   legacy execBase 双名兼容(救 4.32.20–5.0.15 全量已存 bank)。回归锁:
+   selfUpdateBinary.test.ts 新增 execName 夹具项 + 2 用例(legacy bank 命中 +
+   exec 真名 round-trip)。
+
+**rollback 真机验证**:把 `bin-backup/5.0.14/harnessed.exe` 手动改名 asset 名后,
+`harnessed.exe update --platform claude --rollback` → 5.0.15→5.0.14 换入成功 →
+`harnessed update` → 回 5.0.15。机制本身可用;5.0.15 已发版内的命名 bug 由上述修复覆盖。
+
+**遗留说明**:修复随下一版发布才进 binary;本机 consent 保持 `autoUpdate: on`(claude+codex)。

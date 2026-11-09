@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- The "you were updated" notice is now written on a real auto-update. The owned-state refresh that runs in the new binary launched the notice write without awaiting it, and the entry point exits the process the moment the refresh entry returns — so on every real update the notice write was killed mid-flight and the status file kept the half-written skeleton the worker records before the handover. The refresh itself always completed (it is awaited); only the notice was lost, which is why the defect was invisible to every test that keeps the process alive. The next session after an auto-update now prints the version change, the changelog excerpt and the restart hint exactly once, as designed.
+- `harnessed update --rollback` can now find what an update banked. A self-update copied the replaced binary into `bin-backup/<version>/` under the exec's own filename (`harnessed`, `harnessed.exe`), while the rollback scan looked for the release asset name (`harnessed-windows-x64.exe`, …) — on a real install the two never match, so rollback reported "no rollback candidates" against a full `bin-backup/`. Every test world named the exec file exactly like the asset, which is why the mismatch never showed up. New banks are written under the asset name the contract documents, and the scan also accepts the exec basename so every backup banked since 4.32.20 stays reachable.
+
 ## [5.0.15] - 2026-11-09
 
 ### Fixed

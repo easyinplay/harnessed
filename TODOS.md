@@ -310,8 +310,9 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
 
 ## From the 2026-11-03 v5.0.11 live install (本机 Windows)
 
-- [ ] **自动检测新版本并自动更新** — 候选(维护者提问,尚未立项;属新功能,开工前应走
-  `/office-hours` + `/plan-ceo-review`)。现状拆三块看:
+- [x] **自动检测新版本并自动更新** — 已发(v5.0.13,Phase 84);**AC13 真机验收 2026-11-09 完成**,
+  真机抓出 2 个 bug 已修(详见 `.planning/phases/84-auto-update/progress.md` 末节)。
+  现状拆三块看:
   - **检测已有**:`update-reminder` SessionStart hook(`manifests/cc-hooks/update-reminder.yaml`)
     + `src/cli/lib/update-check-cache.ts` 的 **24h TTL 缓存**(`DEFAULT_UPDATE_CHECK_TTL_MS`);
     缓存命中时 hot path 不出网,无缓存才查(npm view / GitHub API,fail-soft,null 不入缓存)。
