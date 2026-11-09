@@ -128,10 +128,16 @@ function renameLegacyRoot(source: string, target: string): boolean {
  * errors propagate so the harness fails loudly rather than writing elsewhere.
  * Idempotency is preserved by the `migrationAttempted` guard above + by
  * checking the legacy-bak sentinel before renaming a second time.
+ *
+ * Skips the migration entirely when `HARNESSED_ROOT_OVERRIDE` is set to a
+ * nonempty value — the override redirects the caller's state root but not
+ * `context.userHome`, so migrating would still mutate the real/native home.
  */
 export function migrateLegacyHarnessedRoot(
   context: HostInstallContext = captureHostInstallContext(),
 ): void {
+  const override = process.env.HARNESSED_ROOT_OVERRIDE
+  if (override !== undefined && override !== '') return
   const legacyRoot = join(context.userHome, '.harnessed')
   const newRoot = context.platform.stateRoot
   const targetParent = dirname(newRoot)
