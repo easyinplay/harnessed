@@ -351,8 +351,12 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
   本机绕过方式(当时已用):`curl -L` 拉 asset + `sha256sum` 对 `.sha256` 校验 → 覆盖
   `~/AppData/Local/harnessed/bin/harnessed.exe`(旧版留 `harnessed.exe.bak-5.0.10`)→
   跑 `harnessed setup` 刷新自有状态。
-- [ ] **binary 体积 99MB** — 未立项。windows asset 实测 103,795,200 字节;内嵌 assets /
-  bun runtime 各占多少、能否瘦(例如 assets 改为运行时按需解包)值得单独立项。
+- [ ] **binary 体积 99MB** — 未立项;**2026-11-09 已量构成**:内嵌 assets 全量解包仅 **2.0MB**
+  (`~/.claude/harnessed/assets/5.0.15/`),即 ≈97MB 是 bun runtime + bundled JS ——
+  「assets 改按需解包」路线价值证伪(收益上限 ~2%)。剩下的瘦身方向只有:(a) 接受
+  (bun --compile 内嵌整个 runtime,Windows 底噪 ~90MB 是同类工具的常态);
+  (b) 换编译器/运行时(大架构变更);(c) bun --minify/bytecode(收益边际)。
+  建议:立项前先答「是否接受 bun runtime 成本」,若接受则关闭本条。
 - [x] **doctor 的「双通道并存」告警会假阳性** — 已修(2026-11-03)。
   现象:本机其实**只装了 binary 通道**(npm 全局前缀 `C:\Users\easyi\AppData\Roaming\npm`
   下没有 `harnessed.cmd`,`npm ls -g` 也没有 harnessed),但 doctor 仍报
