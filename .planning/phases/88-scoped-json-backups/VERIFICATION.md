@@ -1,5 +1,10 @@
 # Phase 88 — verification evidence
 
+Final pushed source: `0292f3a` (includes `ce2de35` backup fix and the minify
+follow-up). CI `42638404206` verified success, all 9 jobs, including Windows
+and macOS tests and binary/installer smoke on Windows, Linux, and macOS.
+Raw receipt: `evidence/ci-view-42638404206.json`; no tag or release created.
+
 All commands run from repo root, Git Bash. Exit codes captured without pipes.
 
 | Gate | Command | Exit | Evidence |

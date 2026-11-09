@@ -7,6 +7,9 @@ not published, not a source version bump. Sections below the
 Bun 1.4.4 section is retained as the earlier (unpinned) measurement and any
 "comparison still needed" wording there is superseded by the pinned data.
 
+Delivered in `0292f3a`; CI `42638404206` verified success (9/9), including
+compiled binary smoke on Windows, Linux, and macOS. No release created.
+
 ## Method (lead-authored, executed once — do not rerun)
 
 Temp script `C:/WINDOWS/TEMP/harnessed-size-probe-20261109.mts` (outside repo,

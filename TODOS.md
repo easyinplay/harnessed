@@ -229,8 +229,8 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
 - [ ] **轮换 Context7 API key** — `ctx7sk-…` 同样已从 `~/.claude/settings.json` 删除;
   context7 MCP 走自己的 OAuth(`~/.claude/.credentials.json` → `mcpOAuth` → `plugin:context7:context7`),
   删 env key 不影响 MCP 使用。但旧 transcript 里仍有明文,建议到 context7 dashboard 作废并重发。
-- [x] **installer 备份整份 `settings.json`(含明文凭据)—— Phase 88 子树备份已实现并本地验证(未提交/未发布)** —
-  worktree 行为(详 `.planning/phases/88-scoped-json-backups/` SUMMARY + VERIFICATION):
+- [x] **installer 备份整份 `settings.json`(含明文凭据)—— Phase 88 已实现、验证并推送 main(未发布)** —
+  交付行为(详 `.planning/phases/88-scoped-json-backups/` SUMMARY + VERIFICATION):
   old/new plan image 同为 JSON 对象时备份只存被改 key 的旧值 diff(`kind:'json-subtree'`,
   `sha1` 存 `json-subtree-v1` 判别符 + `payloadSha1` 存真 digest,旧版 reader 必然 fail-closed),
   rollback 只回写被管 path、保留未动键与装后用户编辑;stale plan / 不可往返数值(1e400、>2^53-1)/
