@@ -62,7 +62,7 @@ export async function runOwnedRefreshEntry(): Promise<number> {
   const { captureHostInstallContext } = await import('../../platform/hostInstallContext.js')
   const context = captureHostInstallContext()
   const outcome = await refreshOwnedState(context)
-  writeAutoUpdateNoticeForNewBinary(context)
+  await writeAutoUpdateNoticeForNewBinary(context)
   if (outcome.ok) {
     console.log(
       `[harnessed] owned state refreshed (${outcome.updated.length} component(s): ${outcome.updated.join(', ')})`,

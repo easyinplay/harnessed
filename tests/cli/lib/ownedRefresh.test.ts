@@ -14,8 +14,13 @@
 
 import { EventEmitter } from 'node:events'
 import { readFileSync } from 'node:fs'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import pkg from '../../../package.json' with { type: 'json' }
+import { AUTO_UPDATE_STATUS_PATH_ENV } from '../../../src/cli/lib/autoUpdateStatus.js'
 import {
   refreshOwnedState,
   runOwnedRefreshEntry,
@@ -31,6 +36,13 @@ import { descriptorFor } from '../../../src/platform/platform.js'
 
 const { refreshOwnedUpdate } = vi.hoisted(() => ({ refreshOwnedUpdate: vi.fn() }))
 vi.mock('../../../src/cli/lib/refreshOwnedUpdate.js', () => ({ refreshOwnedUpdate }))
+// The notice write's only `await` is the dynamic `import()` — a slow module
+// factory stretches that gap so a floating (un-awaited) write provably has
+// not settled by the time the entry resolves.
+vi.mock('../../../src/cli/lib/changelogSection.js', async () => {
+  await new Promise((resolve) => setTimeout(resolve, 30))
+  return { changelogSection: () => '## excerpt' }
+})
 
 const userHome = 'C:/fixture/home'
 const nativeHome = 'C:/fixture/home/.claude'
@@ -97,6 +109,49 @@ describe('runOwnedRefreshEntry', () => {
 
     await expect(runOwnedRefreshEntry()).resolves.toBe(1)
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('harnessed setup'))
+  })
+
+  // The caller is `process.exit(await runOwnedRefreshEntry())` — a floating
+  // notice write is killed by the hard exit on the real path, so the entry
+  // must not resolve before the notice is fully written (real-machine AC13:
+  // the shipped 5.0.13–5.0.15 binaries refreshed the owned state but always
+  // left the notice half-written).
+  it('resolves only after the update notice is fully written', async () => {
+    refreshOwnedUpdate.mockResolvedValue([
+      createUpdateComponent({ id: 'harnessed-workflows', status: 'updated' }),
+    ])
+    const directory = await mkdtemp(join(tmpdir(), 'owned-refresh-entry-'))
+    const statusPath = join(directory, 'auto-update-status.json')
+    try {
+      await writeFile(
+        statusPath,
+        JSON.stringify({
+          schemaVersion: 1,
+          consent: { autoUpdate: true, enabled: true },
+          channel: 'binary',
+          installed: '5.0.14',
+          latest: '9.9.9',
+          state: 'updated',
+          progress: { received: 0, total: 0, updatedAt: Date.now() },
+          lastResult: null,
+          history: [],
+          notice: { from: '5.0.14', to: '', changelog: '', restart: '', at: 1, consumedAt: 0 },
+        }),
+      )
+      vi.stubEnv(AUTO_UPDATE_STATUS_PATH_ENV, statusPath)
+
+      await expect(runOwnedRefreshEntry()).resolves.toBe(0)
+
+      const status = JSON.parse(await readFile(statusPath, 'utf8')) as {
+        notice: { from: string; to: string; changelog: string; restart: string }
+      }
+      expect(status.notice.from).toBe('5.0.14')
+      expect(status.notice.to).toBe(pkg.version)
+      expect(status.notice.changelog).toBe('## excerpt')
+      expect(status.notice.restart).toBe('Claude Code')
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
   })
 })
 
