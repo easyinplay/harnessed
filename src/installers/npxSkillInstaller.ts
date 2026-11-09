@@ -43,6 +43,7 @@ import { err } from './lib/err.js'
 import { extractSkillName, isAlreadyInstalled, npxActiveTargetNames } from './lib/idempotent.js'
 import { withInstallOwnershipLock } from './lib/installOwnershipLock.js'
 import {
+  declaredCoversSkillNames,
   discoverDeclaredOwnership,
   snapshotDeclaredOwnership,
   writeDeclaredOwnershipReceipt,
@@ -200,6 +201,19 @@ const installNpxSkillInstallerUnlocked: Installer = async (ctx) => {
     : [getSkillsDir()]
   const primaryActiveSkillsDir = activeSkillsDirs[0] ?? getSkillsDir()
   const ownershipCandidateSnapshot = await snapshotDeclaredOwnership(ctx)
+  // Phase 85 — declared ownership is the AUTHORIZATION for a force-update
+  // refresh: every existing candidate target passing the manifest's marker
+  // check proves the footprint is ours, so re-running the installer command
+  // overwrites our own writes (never an external writer's).
+  const declaredProven =
+    usesDeclaredOwnership &&
+    // Phase 85 — every skill the manifest claims to install must be declared,
+    // or the declaration does not bound what a refresh may overwrite.
+    declaredCoversSkillNames(ctx, install.installs_skills) &&
+    (await (async () => {
+      const discovered = await discoverDeclaredOwnership(ctx)
+      return ownershipCandidateSnapshot.paths.every((path) => discovered.paths.includes(path))
+    })())
   let anyExistingTarget = false
   if (ctx.hostContext) {
     if (usesDeclaredOwnership) {
@@ -231,6 +245,7 @@ const installNpxSkillInstallerUnlocked: Installer = async (ctx) => {
     }
     if (
       ctx.opts.updateInstalled &&
+      !declaredProven &&
       (!singleSkill ||
         anyExistingTarget ||
         (await isAlreadyInstalled(ctx, { honorUpdateFlag: false })))
@@ -241,7 +256,10 @@ const installNpxSkillInstallerUnlocked: Installer = async (ctx) => {
   const alreadyInstalled = ctx.hostContext
     ? !ctx.opts.dryRun && activeTargetExists
     : await isAlreadyInstalled(ctx)
-  if (alreadyInstalled) {
+  // Phase 85 — an authorized force refresh must NOT take the idempotent
+  // early-return: the whole point is to re-run the installer command over the
+  // proven-ours footprint.
+  if (alreadyInstalled && !(ctx.opts.updateInstalled && declaredProven)) {
     const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
     if (verifyFailure) return verifyFailure
     await recordObservedInstall(
@@ -376,9 +394,16 @@ const installNpxSkillInstallerUnlocked: Installer = async (ctx) => {
   try {
     if (usesDeclaredOwnership) {
       const discovered = await discoverDeclaredOwnership(ctx)
+      // Phase 85 — an AUTHORIZED refresh re-owns the footprint it just proved
+      // ours: the refresh creates nothing new, so a "new paths only" receipt
+      // would be empty and the install would fail on its own receipt. The
+      // proven set IS the owned set here.
+      const refreshAuthorized = ctx.opts.updateInstalled && declaredProven
       await writeDeclaredOwnershipReceipt(ctx, {
         roots: discovered.roots,
-        paths: discovered.paths.filter((path) => !pathSnapshot.has(path)),
+        paths: refreshAuthorized
+          ? discovered.paths
+          : discovered.paths.filter((path) => !pathSnapshot.has(path)),
       })
     } else {
       const afterPaths = await declaredSkillPaths(ctx, skillRoots)

@@ -93,6 +93,10 @@ export interface StepBResult {
   // 4.32.21-era chrome-devtools form) belongs under "Commands & Skills",
   // where force-update DOES apply.
   componentTypes: Record<string, string>
+  // Phase 85 — the components whose install command is a GLOBAL npm install
+  // (`npm install -g <pkg>`). The force pass upgrades exactly these in system
+  // scope, so the consent prompt can name them.
+  globalNpmComponents?: string[]
   // Patch 4.10.1 Fix C — force-update refresh failures whose component is still
   // present on disk (prior version retained). Rendered as a WARN bucket, not an
   // error: "kept existing — refresh failed, prior version retained". Only ever
@@ -100,7 +104,10 @@ export interface StepBResult {
   // v4.15.2 T3 — carries the underlying failure reason (pre-4.15.2 the reason was
   // swallowed by reclassification; user dogfood could not diagnose WHY mattpocock
   // refresh failed).
-  keptExisting?: { name: string; reason: string }[]
+  // Phase 85 — `retryable` is false when a retry cannot change the outcome
+  // (an unproven source / external write footprint is refused by contract, not
+  // by a transient error). The summary must not tell the user to retry those.
+  keptExisting?: { name: string; reason: string; retryable?: boolean }[]
 }
 
 /** v4.13.0 — per-manifest completion event for live setup progress output.
@@ -142,12 +149,34 @@ export function installGroupOf(
  *  (shared ~/.claude.json writer race); all other manifests keep full
  *  Promise.allSettled parallelism. The two groups run concurrently with each
  *  other. `runOpts.onProgress` fires once per finished manifest. */
+/**
+ * Phase 85 — does this component install a GLOBAL npm package?
+ *
+ * The official upgrade path of a globally installed CLI is `npm install -g
+ * <pkg>` — the same command the manifest carries. That command writes into the
+ * npm global prefix, which is package-name scoped (not a shared flat
+ * namespace), so it needs no ownership proof.
+ */
+function isGlobalNpmInstall(plan: ResolvedComponentPlan): boolean {
+  if (effectiveInstallMethod(plan) !== 'npm-cli') return false
+  return /\bnpm\s+install\s+-g\b/.test(plan.manifest.spec.install.cmd)
+}
+
 export async function runStepBInstall(
   manifestPaths: string[],
   runOpts: {
     hostContext?: HostInstallContext
     updateInstalled?: boolean
     system?: boolean
+    /**
+     * Phase 85 — the FORCE pass upgrades global npm tools with the official
+     * command (`npm install -g <pkg>`), which is a system-scope (L4) write.
+     * The force pass is an explicit user decision ("update the already-installed
+     * components"), and the official npm upgrade is the host's own update path
+     * for a globally installed CLI — so the L4 `--system` gate does not apply to
+     * those components there. Every other component keeps the normal gate.
+     */
+    forceSystemScope?: boolean
     quiet?: boolean
     onProgress?: (ev: StepBProgressEvent) => void
   } = {},
@@ -165,6 +194,7 @@ export async function runStepBInstall(
   }
   const start = Date.now()
   const componentTypes: Record<string, string> = {}
+  const globalNpmComponents: string[] = []
   const failureKeywords: Record<string, string> = {}
   const total = manifestPaths.length
   let done = 0
@@ -203,13 +233,24 @@ export async function runStepBInstall(
     }
     const plan = resolveComponentPlan(v.manifest, hostContext, 'install')
     componentTypes[v.manifest.metadata.name] = installGroupForPlan(plan)
+    if (isGlobalNpmInstall(plan)) globalNpmComponents.push(v.manifest.metadata.name)
     valid.push({ manifest: v.manifest, plan })
   }
 
-  const runOne = async (manifest: Manifest): Promise<StepBEntry> => {
+  const runOne = async (manifest: Manifest, plan?: ResolvedComponentPlan): Promise<StepBEntry> => {
     const name = manifest.metadata.name
     try {
-      const r = await runInstall(manifest, opts, hostContext)
+      // Phase 85 — the force pass grants system scope to global-npm components
+      // only (the official `npm install -g` upgrade path). The manifest cmd is
+      // read from the EFFECTIVE plan, so a host override cannot smuggle a
+      // different command past this check.
+      const forceSystem =
+        runOpts.forceSystemScope === true && plan !== undefined && isGlobalNpmInstall(plan)
+      const r = await runInstall(
+        manifest,
+        forceSystem ? { ...opts, system: true } : opts,
+        hostContext,
+      )
       if ('aborted' in r) {
         // v4.14.0 — bare 'harness-mismatch' tells the user nothing; expand to a
         // self-explanatory skip note (platform id from the active descriptor).
@@ -245,12 +286,12 @@ export async function runStepBInstall(
   const rest = valid.filter((v) => !MCP_METHODS.has(effectiveInstallMethod(v.plan)))
   const runMcpSerial = async (): Promise<StepBEntry[]> => {
     const out: StepBEntry[] = []
-    for (const { manifest } of mcp) out.push(await runOne(manifest))
+    for (const { manifest, plan } of mcp) out.push(await runOne(manifest, plan))
     return out
   }
   const [mcpEntries, restSettled] = await Promise.all([
     runMcpSerial(),
-    Promise.allSettled(rest.map(({ manifest }) => runOne(manifest))),
+    Promise.allSettled(rest.map(({ manifest, plan }) => runOne(manifest, plan))),
   ])
   const restEntries: StepBEntry[] = restSettled.map((s) =>
     s.status === 'fulfilled'
@@ -276,6 +317,7 @@ export async function runStepBInstall(
     failureKeywords,
     elapsedMs: Date.now() - start,
     componentTypes,
+    globalNpmComponents,
   }
 }
 
@@ -297,7 +339,7 @@ export interface ForceUpdateReclassification {
   /** Components whose refresh failed but whose prior install survives.
    *  v4.15.2 — reason preserved for the summary table (was: bare names, which
    *  swallowed the diagnosis; user dogfood could not tell WHY a refresh failed). */
-  keptExisting: { name: string; reason: string }[]
+  keptExisting: { name: string; reason: string; retryable?: boolean }[]
 }
 
 /** Pure (probe-injected) reclassification. For each force-pass failure that was
@@ -312,13 +354,13 @@ export async function reclassifyForceUpdateFailures(
 ): Promise<ForceUpdateReclassification> {
   const priorlyInstalled = new Set(firstPass.alreadyInstalled)
   const failed: string[] = []
-  const keptExisting: { name: string; reason: string }[] = []
+  const keptExisting: { name: string; reason: string; retryable?: boolean }[] = []
   for (const entry of forcePass.failed) {
     const m = entry.match(/^([^:]+):\s*(.*)$/s)
     const name = (m?.[1] ?? entry).trim()
     if (priorlyInstalled.has(name)) {
       if (forcePass.failureKeywords?.[name] === 'update-unsupported') {
-        keptExisting.push({ name, reason: m?.[2]?.trim() ?? '' })
+        keptExisting.push({ name, reason: m?.[2]?.trim() ?? '', retryable: false })
         continue
       }
       let present = false
@@ -328,7 +370,7 @@ export async function reclassifyForceUpdateFailures(
         present = false
       }
       if (present) {
-        keptExisting.push({ name, reason: m?.[2]?.trim() ?? '' })
+        keptExisting.push({ name, reason: m?.[2]?.trim() ?? '', retryable: true })
         continue
       }
     }

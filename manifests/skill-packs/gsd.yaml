@@ -47,11 +47,18 @@ spec:
     cmd: "true"
     cleanup_paths: []
   ownership:
+    # Phase 85 — the markers have to hold for EVERY GSD artifact of that
+    # selector, or the declaration does not prove ownership and the
+    # force-update pass keeps refusing. The upstream GSD pack ships skills,
+    # agents and commands whose bodies do not all mention `gsd-core` (the
+    # ns-*, mempalace-* and review-backlog ones never do), so the marker is
+    # the artifact's own `gsd-` identity - present in every file the selector
+    # admits, on both hosts (claude writes `name: gsd-x`, codex `name: "gsd-x"`).
     resources:
       - root: platform-skills
         kind: directory
         selector: { prefix: gsd- }
-        marker: { path: SKILL.md, contains: gsd-core }
+        marker: { path: SKILL.md, contains: gsd- }
       - root: native-home
         kind: directory
         selector: { names: [gsd-core] }
@@ -59,11 +66,11 @@ spec:
       - root: host-agents
         kind: file
         selector: { prefix: gsd- }
-        marker: { contains: gsd-core }
+        marker: { contains: gsd- }
       - root: host-commands
         kind: file
         selector: { prefix: gsd- }
-        marker: { contains: gsd-core }
+        marker: { contains: gsd- }
   # GSD 1.18.0 on Codex installs skills under ~/.agents/skills; retain the legacy
   # ~/.codex/skills path for existing installs. Probe files, not empty directories.
   harness_overrides:

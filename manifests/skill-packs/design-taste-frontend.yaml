@@ -44,6 +44,15 @@ spec:
     cmd: "rm -rf ~/.claude/skills/design-taste-frontend"
     cleanup_paths:
       - ~/.claude/skills/design-taste-frontend
+  # Phase 85 — the `skills` CLI installs this pack (no --global) into
+  # ~/.agents/skills and links it into the host skills dir, so the owned
+  # footprint is the agents-skills root.
+  ownership:
+    resources:
+      - root: agents-skills
+        kind: directory
+        selector: { names: [design-taste-frontend] }
+        marker: { path: SKILL.md, contains: "name: design-taste-frontend" }
   upstream_health:
     stability: stable
     last_check: "2026-09-10"

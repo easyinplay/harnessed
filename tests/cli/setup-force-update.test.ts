@@ -45,8 +45,10 @@ describe('reclassifyForceUpdateFailures — Fix C kept-existing fail-soft', () =
 
     const result = await reclassifyForceUpdateFailures(first, force, probe)
 
+    // Phase 85 — an update-unsupported refusal is a contract decision: a
+    // retry cannot change the outcome, so the entry is marked not retryable.
     expect(result.keptExisting).toEqual([
-      { name: 'existing-skill', reason: 'opaque preflight refusal' },
+      { name: 'existing-skill', reason: 'opaque preflight refusal', retryable: false },
     ])
     expect(result.failed).toEqual([])
     expect(probe).not.toHaveBeenCalled()
@@ -77,7 +79,9 @@ describe('reclassifyForceUpdateFailures — Fix C kept-existing fail-soft', () =
 
     const result = await reclassifyForceUpdateFailures(first, force, probe)
 
-    expect(result.keptExisting).toEqual([{ name: 'existing-skill', reason: 'update-unsupported' }])
+    expect(result.keptExisting).toEqual([
+      { name: 'existing-skill', reason: 'update-unsupported', retryable: true },
+    ])
     expect(result.failed).toEqual([])
     expect(probe).toHaveBeenCalledExactlyOnceWith('existing-skill')
   })
@@ -109,7 +113,7 @@ describe('reclassifyForceUpdateFailures — Fix C kept-existing fail-soft', () =
     const r = await reclassifyForceUpdateFailures(first, force, probeFrom(['gstack']))
     // v4.15.2 T3 — keptExisting carries the underlying reason (was: bare names).
     expect(r.keptExisting).toEqual([
-      { name: 'gstack', reason: 'git-clone-with-setup cmd exited 1' },
+      { name: 'gstack', reason: 'git-clone-with-setup cmd exited 1', retryable: true },
     ])
     expect(r.failed).toEqual([])
   })

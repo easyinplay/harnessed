@@ -425,7 +425,9 @@ describe('setup explicit force-update retained installs through registerSetup', 
 
     const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
     expect(result.failed).toEqual([])
-    expect(result.keptExisting).toEqual([{ name: 'gstack', reason }])
+    // Phase 85 — a structured refusal is a contract decision, not a retryable
+    // transient failure, so the entry carries retryable: false.
+    expect(result.keptExisting).toEqual([{ name: 'gstack', reason, retryable: false }])
     expect(runStepBInstall).toHaveBeenCalledExactlyOnceWith(
       expect.anything(),
       expect.objectContaining({ updateInstalled: true, system: true }),
@@ -542,7 +544,7 @@ describe('setup explicit force-update retained installs through registerSetup', 
 
     const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
     expect(result.keptExisting).toEqual([
-      { name: 'gstack', reason: 'update-unsupported: provenance refusal' },
+      { name: 'gstack', reason: 'update-unsupported: provenance refusal', retryable: false },
     ])
     expect(result.failed).toEqual([
       'broken: update-unsupported: provenance refusal',
@@ -577,7 +579,9 @@ describe('setup optional outcomes through registerSetup', () => {
     base = stepB({
       installed: ['gstack'],
       alreadyInstalled: ['base-mcp'],
-      keptExisting: [{ name: 'base-retained', reason: 'verified prior version retained' }],
+      keptExisting: [
+        { name: 'base-retained', reason: 'verified prior version retained', retryable: true },
+      ],
     })
     vi.mocked(runStepBInstall).mockResolvedValueOnce(base)
   })
@@ -614,7 +618,7 @@ describe('setup optional outcomes through registerSetup', () => {
     expect(base.installed).toEqual(['gstack'])
     expect(base.alreadyInstalled).toEqual(['base-mcp'])
     expect(base.keptExisting).toEqual([
-      { name: 'base-retained', reason: 'verified prior version retained' },
+      { name: 'base-retained', reason: 'verified prior version retained', retryable: true },
     ])
     expect(base.failed).toEqual([])
     expect(base.skipped).toEqual([])
@@ -1140,7 +1144,9 @@ describe('setup L4 rescue result through registerSetup', () => {
 
     await expect(runSetup(['--system'])).rejects.toMatchObject({ code: 0 })
 
-    expect(first.keptExisting).toEqual([{ name: 'gstack', reason: 'refresh failed' }])
+    expect(first.keptExisting).toEqual([
+      { name: 'gstack', reason: 'refresh failed', retryable: true },
+    ])
     expect(first.failed).toEqual([])
     expect(first.alreadyInstalled).toEqual([])
     expect(verifyInstalled).toHaveBeenCalledOnce()
@@ -1169,7 +1175,9 @@ describe('setup L4 rescue result through registerSetup', () => {
     await expect(runSetup(['--system'])).rejects.toMatchObject({ code: 0 })
 
     const result = await vi.mocked(runStepBInstall).mock.results[0]?.value
-    expect(result.keptExisting).toEqual([{ name: 'gstack', reason: 'opaque provenance refusal' }])
+    expect(result.keptExisting).toEqual([
+      { name: 'gstack', reason: 'opaque provenance refusal', retryable: false },
+    ])
     expect(result.failed).toEqual([])
     expect(result.alreadyInstalled).toEqual([])
     expect(isAlreadyInstalled).not.toHaveBeenCalled()
@@ -1254,9 +1262,8 @@ describe('setup L4 rescue result through registerSetup', () => {
 
   it.each([
     'installed',
-    'declined',
     'failed',
-  ] as const)('force-update preserves an L4 skip for the subsequent rescue: %s', async (outcome) => {
+  ] as const)('the force pass upgrades a global npm tool in system scope instead of skipping it: %s', async (outcome) => {
     vi.mocked(readdir).mockImplementation(async (path, options?: unknown) => {
       const normalized = String(path).replaceAll('\\', '/')
       if (options && typeof options === 'object' && 'withFileTypes' in options) {
@@ -1290,10 +1297,7 @@ describe('setup L4 rescue result through registerSetup', () => {
         },
       } as never
     })
-    vi.mocked(confirm)
-      .mockReset()
-      .mockResolvedValueOnce(true)
-      .mockResolvedValueOnce(outcome !== 'declined')
+    vi.mocked(confirm).mockReset().mockResolvedValueOnce(true)
     vi.mocked(runInstall)
       .mockReset()
       .mockImplementation(async (manifest, opts) => {
@@ -1312,9 +1316,72 @@ describe('setup L4 rescue result through registerSetup', () => {
 
     expect(runStepBInstall).toHaveBeenCalledTimes(2)
     const forceResult = await vi.mocked(runStepBInstall).mock.results[1]?.value
-    expect(forceResult.skipped).toEqual([
-      { name: 'ctx7', reason: expect.stringContaining('L4 system-scope') },
-    ])
+    // Phase 85 — the force pass runs the official `npm install -g` command
+    // for a global npm tool, so it is no longer skipped for L4 scope.
+    expect(forceResult.skipped).toEqual([])
+    // The consent prompt names the system-scope upgrade before it happens.
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('ctx7'),
+      }),
+    )
+    const authorized = vi.mocked(runInstall).mock.calls.filter(([, opts]) => opts.system)
+    expect(authorized).toHaveLength(1)
+  })
+
+  it('the L4 rescue still offers the tool when the force pass does not run', async () => {
+    vi.mocked(readdir).mockImplementation(async (path, options?: unknown) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (options && typeof options === 'object' && 'withFileTypes' in options) {
+        return ['SKILL.md', 'workflow.yaml'].map((name) => ({
+          name,
+          isDirectory: () => false,
+        })) as never
+      }
+      return (
+        normalized.endsWith('/workflows')
+          ? ['demo']
+          : normalized.endsWith('/tools')
+            ? ['ctx7.yaml']
+            : normalized.endsWith('/skill-packs')
+              ? ['gstack.yaml']
+              : []
+      ) as never
+    })
+    vi.spyOn(manifestValidation, 'validateManifestFile').mockImplementation((_source, path) => {
+      const l4 = String(path).endsWith('ctx7.yaml')
+      return {
+        ok: true,
+        manifest: {
+          metadata: { name: l4 ? 'ctx7' : 'gstack' },
+          spec: {
+            install: {
+              method: l4 ? 'npm-cli' : 'git-clone-with-setup',
+              cmd: l4 ? 'npm install -g ctx7' : 'git clone fixture',
+            },
+          },
+        },
+      } as never
+    })
+    // The force prompt is declined → the force pass never runs → the rescue
+    // still offers the L4 install, and the user accepts it.
+    vi.mocked(confirm).mockReset().mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+    vi.mocked(runInstall)
+      .mockReset()
+      .mockImplementation(async (manifest, opts) => {
+        if (manifest.metadata.name !== 'ctx7') {
+          return opts.updateInstalled
+            ? ({ ok: true } as never)
+            : ({ ok: true, alreadyInstalled: true } as never)
+        }
+        if (!opts.system) return { aborted: true, reason: 'level-flag-missing' }
+        return { ok: true } as never
+      })
+
+    await expect(runSetup([])).rejects.toMatchObject({ code: 0 })
+
+    expect(runStepBInstall).toHaveBeenCalledTimes(1)
     expect(confirm).toHaveBeenCalledTimes(2)
     expect(confirm).toHaveBeenNthCalledWith(
       2,
@@ -1323,18 +1390,15 @@ describe('setup L4 rescue result through registerSetup', () => {
       }),
     )
     const authorized = vi.mocked(runInstall).mock.calls.filter(([, opts]) => opts.system)
-    expect(authorized).toHaveLength(outcome === 'declined' ? 0 : 1)
-    if (outcome !== 'declined') {
-      expect(vi.mocked(runInstall).mock.invocationCallOrder.at(-1)).toBeGreaterThan(
-        vi.mocked(confirm).mock.invocationCallOrder[1] ?? 0,
-      )
-    }
-    const finalResult = await vi.mocked(runStepBInstall).mock.results[0]?.value
-    expect(finalResult.installed).toEqual(outcome === 'installed' ? ['gstack', 'ctx7'] : ['gstack'])
-    expect(finalResult.skipped).toEqual(
-      outcome === 'declined' ? [{ name: 'ctx7', reason: 'level-flag-missing' }] : [],
+    expect(authorized).toHaveLength(1)
+    expect(vi.mocked(runInstall).mock.invocationCallOrder.at(-1)).toBeGreaterThan(
+      vi.mocked(confirm).mock.invocationCallOrder[1] ?? 0,
     )
-    expect(finalResult.failed).toEqual(outcome === 'failed' ? ['ctx7: ctx7 runtime failed'] : [])
+    const finalResult = await vi.mocked(runStepBInstall).mock.results[0]?.value
+    expect(finalResult.installed).toEqual(['ctx7'])
+    expect(finalResult.alreadyInstalled).toEqual(['gstack'])
+    expect(finalResult.skipped).toEqual([])
+    expect(finalResult.failed).toEqual([])
     expect(checkGuardConflict).toHaveBeenCalledOnce()
   })
 

@@ -469,7 +469,14 @@ export function registerSetup(program: Command): void {
           }
           if (retained) {
             b.keptExisting ??= []
-            b.keptExisting.push({ name, reason: match?.[2]?.trim() ?? '' })
+            // Phase 85 — an `update-unsupported` refusal is a CONTRACT decision
+            // (the existing source is not provably ours), not a transient
+            // failure: re-running the same setup cannot change the outcome.
+            b.keptExisting.push({
+              name,
+              reason: match?.[2]?.trim() ?? '',
+              retryable: b.failureKeywords?.[name] !== 'update-unsupported',
+            })
           } else failed.push(entry)
         }
         b.failed = failed
@@ -491,6 +498,9 @@ export function registerSetup(program: Command): void {
       // decision. MCP installers (mcpStdioAdd / mcpHttpAdd) ignore the
       // updateInstalled flag — existing mcpServers config is never
       // overwritten by force-update.
+      // Phase 85 — the components the force pass upgraded with system scope.
+      // The L4 rescue below must not offer them a second time.
+      let forceInstalledNames: string[] = []
       if (
         !forceFirstPass &&
         !dryRun &&
@@ -510,8 +520,20 @@ export function registerSetup(program: Command): void {
             mcpExcluded.length > 0
               ? ` (${mcpExcluded.length} MCP server(s) excluded — they ignore force-update: ${mcpExcluded.join(', ')})`
               : ''
+          // Phase 85 — the force pass runs global npm tools with the official
+          // `npm install -g` command, which is a system-scope write. Name them
+          // in the consent prompt: the scope change is the point of the
+          // question, so it has to be visible before it is granted. The list
+          // is the components the force pass WILL touch — including a global
+          // tool the first pass could not install (it was skipped for the very
+          // same system-scope reason).
+          const globalNpm = b.globalNpmComponents ?? []
+          const systemNote =
+            globalNpm.length > 0
+              ? ` (${globalNpm.join(', ')} will be installed/upgraded in system scope via the official \`npm install -g\` command)`
+              : ''
           const ans = await confirm({
-            message: `Update ${b.alreadyInstalled.length} already-installed plugin(s) listed above?${exclusionNote}`,
+            message: `Update ${b.alreadyInstalled.length} already-installed plugin(s) listed above?${exclusionNote}${systemNote}`,
             initialValue: false,
           })
           if (!isCancel(ans) && ans === true) {
@@ -525,6 +547,11 @@ export function registerSetup(program: Command): void {
               hostContext: setupContext,
               updateInstalled: true,
               system: raw.system === true,
+              // Phase 85 — the force pass upgrades global npm tools with the
+              // official command (`npm install -g <pkg>`). The user already
+              // confirmed this pass; the L4 gate does not apply to the official
+              // npm upgrade path.
+              forceSystemScope: true,
               quiet: true,
               onProgress: progress.onProgress,
             })
@@ -541,11 +568,24 @@ export function registerSetup(program: Command): void {
             console.log(
               `\nForce-update pass complete: ${b2.installed.length} installed / ${b2.keptExisting.length} kept-existing / ${b2.alreadyInstalled.length} still-already-installed (MCP) / ${b2.skipped.length} skipped / ${b2.failed.length} failed [parallel ${stepB2Ms}s]`,
             )
+            forceInstalledNames = b2.installed
             printGrouped(b2, '[force-update] ')
             if (b2.keptExisting.length > 0) {
-              console.warn(
-                `\n  ${b2.keptExisting.length} plugin(s) kept their existing version — refresh failed but the prior install is still usable. Re-run \`harnessed setup\` later to retry the update.`,
-              )
+              // Phase 85 — honest split. A refusal (unproven source / external
+              // write footprint) is a CONTRACT decision: re-running setup cannot
+              // change the outcome, so telling the user to retry is a lie.
+              const blocked = b2.keptExisting.filter((entry) => entry.retryable === false)
+              const retryable = b2.keptExisting.filter((entry) => entry.retryable !== false)
+              if (retryable.length > 0) {
+                console.warn(
+                  `\n  ${retryable.length} plugin(s) kept their existing version — refresh failed but the prior install is still usable. Re-run \`harnessed setup\` later to retry the update.`,
+                )
+              }
+              if (blocked.length > 0) {
+                console.warn(
+                  `\n  ${blocked.length} component(s) kept their existing version — harnessed refuses to replace them (existing source or write footprint not provably ours). Update them with their upstream tool: ${blocked.map((entry) => entry.name).join(', ')}`,
+                )
+              }
             }
             mergeStepBResults(b, b2)
           }
@@ -819,6 +859,18 @@ export function registerSetup(program: Command): void {
         if (!isAdvisorySettingsWarning(userLangResult.message)) {
           setupFailures.push(userLangResult.message)
         }
+      }
+
+      // Phase 85 — a component the force pass already upgraded in system scope
+      // has nothing left to repair: drop its first-pass skip/failure so the L4
+      // rescue does not ask the same question twice.
+      if (forceInstalledNames.length > 0) {
+        const upgraded = new Set(forceInstalledNames)
+        b.skipped = b.skipped.filter((entry) => !upgraded.has(entry.name))
+        b.failed = b.failed.filter((failure) => {
+          const name = failure.split(': ', 1)[0] ?? failure
+          return !upgraded.has(name)
+        })
       }
 
       // L4 rescue: repair explicit level-gate skips and verified broken global

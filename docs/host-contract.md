@@ -75,6 +75,8 @@
 
 更新也不能用 presence receipt 认领资源。来源不明的已有 skill/plugin、无法确定输出边界的复合安装命令或不完整用户目录，不能凭 `--update-installed` 自动接管。返回明确拒绝与上游管理工具指引；不新增 ownership 数据库。harnessed 自有 workflow 的既有 backup/warn/overwrite 和 self-heal 策略保持独立，不被替换成 blanket no-overwrite。
 
+接管需要**可证明的归属**，而不是 presence receipt（Phase 85）。按安装通道分四种证明：manifest 声明所有权（`ownership.resources`）且其覆盖的每个既有条目都通过 marker 校验；宿主插件注册表里存在**限定名**（`name@marketplace`）注册；既有 checkout 的 git origin 等于 manifest 的 clone URL 且命令不写出该 checkout 之外；全局 npm 安装（`npm install -g <pkg>`，按包名隔离，不进共享命名空间）。任一证明不成立即维持拒绝，拒绝文案给出上游管理工具指引，且不谎称重试可解。
+
 ### 1.4 自有产物与证据边界
 
 workflow copy、generated commands、namespaced agent roles 和 first-party hook payload 的声明由真实 production writer 消费，并通过双向测试检查缺失或未声明写入。workflow definitions/assets 一并枚举，locale 输入副本单独分类；state metadata、backup 和外部 upstream 输出不冒充自有 payload。

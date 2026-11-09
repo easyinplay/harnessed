@@ -185,6 +185,8 @@ function declaredRootPath(
   if (!host) return undefined
   const roots: Record<string, string> = {
     'platform-skills': host.platform.skillsDir,
+    // Phase 85 — the `skills` CLI's default install root.
+    'agents-skills': join(host.userHome, '.agents', 'skills'),
     'native-home': host.nativeHome,
     'host-agents': join(host.nativeHome, 'agents'),
     'host-commands': host.platform.commandsDir,

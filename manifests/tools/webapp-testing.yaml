@@ -56,6 +56,14 @@ spec:
     cmd: "rm -rf ~/.claude/skills/webapp-testing"
     cleanup_paths:
       - ~/.claude/skills/webapp-testing
+  # Phase 85 — the owned footprint of this pack. The force-update pass may
+  # replace it only when the marker proves the existing skill is ours.
+  ownership:
+    resources:
+      - root: platform-skills
+        kind: directory
+        selector: { names: [webapp-testing] }
+        marker: { path: SKILL.md, contains: "name: webapp-testing" }
   upstream_health:
     stability: stable
     last_check: "2026-10-23"

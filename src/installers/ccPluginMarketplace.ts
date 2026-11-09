@@ -153,10 +153,22 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
     ctx.hostContext && selectedPlugin && existingPlugin
       ? !(await isPluginRegistered(selectedPlugin, ctx.hostContext))
       : false
+  // Phase 85 — a plugin registered under its QUALIFIED name (name@marketplace,
+  // the exact identity this cmd installs from) is proven to be OUR source, and
+  // `claude/codex plugin install` is the host's own official update path. That
+  // registration authorizes the force-update refresh; anything less (bare name
+  // under a different marketplace, or only a presence receipt) does not.
+  const qualifiedProven = Boolean(
+    ctx.hostContext &&
+      existingPlugin &&
+      selectedPlugin &&
+      (await isPluginRegistered(selectedPlugin, ctx.hostContext)),
+  )
   if (
     conflictingPlugin ||
     (ctx.hostContext &&
       ctx.opts.updateInstalled &&
+      !qualifiedProven &&
       (existingPlugin || (await isAlreadyInstalled(ctx, { honorUpdateFlag: false }))))
   ) {
     return {
@@ -174,7 +186,10 @@ export const installCcPluginMarketplace: Installer = async (ctx) => {
       },
     }
   }
-  if (existingPlugin || (await isAlreadyInstalled(ctx))) {
+  if (
+    (existingPlugin && !(ctx.opts.updateInstalled && qualifiedProven)) ||
+    (await isAlreadyInstalled(ctx))
+  ) {
     if (ctx.hostContext) {
       const parsed = parseCmd(install.cmd)
       if (!parsed)

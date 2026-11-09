@@ -26,7 +26,7 @@
 // silent skip), aligned with ADR 0001's reproducibility requirement.
 
 import { spawn } from 'node:child_process'
-import { lstat, readdir } from 'node:fs/promises'
+import { lstat, readdir, readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { detectPlatform } from '../platform/platform.js'
 import { backup } from './lib/backup.js'
@@ -118,6 +118,78 @@ function unprovenCloneTarget(ctx: InstallContext): InstallResult {
   }
 }
 
+/** Normalize a git URL for identity comparison: `.git` suffix and trailing
+ *  slashes are cosmetic (`https://x/y` and `https://x/y.git` clone the same
+ *  repository), everything else is not. */
+function normalizeGitUrl(url: string): string {
+  return url.replace(/\/+$/, '').replace(/\.git$/, '')
+}
+
+/** The clone URL token of a `git clone [flags] <url> <dest>` command — the
+ *  first non-flag argument after `clone`. */
+export function extractCloneUrl(cmd: string): string | null {
+  const m = cmd.match(/\bgit\s+clone\s+((?:-{1,2}[\w-]+(?:\s+\S+)?\s+)*)(\S+)/)
+  return m?.[2] ?? null
+}
+
+/**
+ * Phase 85 — the paths a command writes to or removes OUTSIDE its clone dest.
+ *
+ * A command whose footprint stays inside the checkout it clones is bounded by
+ * the checkout proof: `rm -rf <dest> && git clone <url> <dest> && cd <dest> &&
+ * bash ./setup` (the gstack shape) only ever rewrites what it cloned. A command
+ * that copies its payload somewhere else (`cp -R <cache>/… <shared>/…`, the
+ * ui-ux-pro-max shape) writes into a shared namespace that the checkout proof
+ * says nothing about — that one stays refused.
+ */
+export function externalWriteTargets(cmd: string, destRaw: string): string[] {
+  const dest = destRaw.replace(/\/+$/, '')
+  const inside = (target: string): boolean => {
+    const normalized = target.replace(/\/+$/, '')
+    return normalized === dest || normalized.startsWith(`${dest}/`)
+  }
+  const out: string[] = []
+  for (const segment of cmd.split(/\s*(?:&&|\|\||;|\|)\s*/)) {
+    const tokens = segment.split(/\s+/).filter(Boolean)
+    for (let index = 0; index < tokens.length; index++) {
+      const token = tokens[index]
+      if (token === 'rm') {
+        let next = index + 1
+        while (next < tokens.length && (tokens[next] as string).startsWith('-')) next++
+        const target = tokens[next]
+        if (target && !inside(target)) out.push(target)
+        index = next
+        continue
+      }
+      if (token === 'cp' || token === 'mv' || token === 'rsync') {
+        const target = tokens[tokens.length - 1]
+        if (target && target !== token && !inside(target)) out.push(target)
+        index = tokens.length
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * Phase 85 — an existing checkout whose `origin` remote matches the manifest
+ * clone URL is provably OUR checkout, which authorizes a force-update refresh
+ * (the command's own rm-rf/clone hygiene then regenerates it). A checkout with
+ * a different origin — or no readable `.git` at all — is somebody else's write
+ * footprint and stays refused.
+ */
+async function cloneOriginProven(checkoutDir: string, cmdUrl: string | null): Promise<boolean> {
+  if (!cmdUrl) return false
+  try {
+    const config = await readFile(join(checkoutDir, '.git', 'config'), 'utf8')
+    const section = config.match(/\[remote "origin"\]([^[]*)/)
+    const url = section?.[1]?.match(/url\s*=\s*(\S+)/)?.[1]
+    return url !== undefined && normalizeGitUrl(url) === normalizeGitUrl(cmdUrl)
+  } catch {
+    return false
+  }
+}
+
 /** v4.16.2 — does the cmd remove its OWN clone dest after cloning (ui-ux-pro-max
  *  pattern: clone into .cache/, cp the payload out, rm the cache)? For such
  *  cmds the D-15 SHA check is unverifiable EVERY run by design — the caller
@@ -181,7 +253,8 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
   // Parse clone target from cmd. Required for D-15 SHA-verify cwd; fail clear
   // if the manifest cmd shape is unsupported (`git clone <url> <dest>`).
   const cloneTarget = extractCloneTarget(install.cmd, ctx.hostContext?.userHome)
-  if (!cloneTarget) {
+  const parsedDest = extractRawCloneDest(install.cmd)
+  if (!cloneTarget || !parsedDest) {
     return {
       ok: false,
       phase: 'preflight',
@@ -230,13 +303,40 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
     }
   }
   const plainClone = /^\s*git\s+clone\s+[^;&|<>`$\r\n]+$/.test(install.cmd)
-  if (ctx.hostContext && ctx.opts.updateInstalled) {
-    if (
-      !plainClone ||
-      existingTarget ||
-      (await isAlreadyInstalled(ctx, { honorUpdateFlag: false }))
-    )
-      return unprovenCloneTarget(ctx)
+  // Phase 85 — the PRIMARY checkout's git origin is the identity proof for a
+  // force refresh: same remote as the manifest clones from → our checkout, and
+  // the command's own dest hygiene (rm -rf pre-clean or a self-cleaning cache
+  // clone) regenerates it. Skill-dir targets downstream of the checkout are
+  // the same component's writes.
+  //
+  // The proof is read ALWAYS, not only when the target exists: a component
+  // whose install probe says "installed" but whose checkout carries no
+  // matching origin is somebody else's write, and a checkout that does not
+  // exist cannot prove anything.
+  const originProven = await cloneOriginProven(
+    resolve(install.cwd ?? ctx.cwd, cloneTarget),
+    extractCloneUrl(install.cmd),
+  )
+  // Phase 85 — a command that writes OUTSIDE the checkout it clones (the
+  // copy-out shape) has a footprint the checkout proof says nothing about;
+  // such a command stays refused. A command that only rewrites its own
+  // checkout (the pre-clean + in-checkout setup shape) is bounded by it.
+  const footprintBounded = externalWriteTargets(install.cmd, parsedDest.raw).length === 0
+  // "Something is already installed" — the checkout on disk OR the install
+  // probe. The v5.0.0 contract refused to touch either one without proof.
+  //
+  // The probe runs ONLY in the force pass with a host context: outside it the
+  // idempotent probe belongs to the normal flow (it runs once, later, and its
+  // spawn is part of the install script sequence).
+  const installedSignal =
+    existingTarget ||
+    (ctx.hostContext && ctx.opts.updateInstalled
+      ? await isAlreadyInstalled(ctx, { honorUpdateFlag: false })
+      : false)
+  const refreshAuthorized =
+    ctx.opts.updateInstalled && installedSignal && originProven && footprintBounded
+  if (ctx.hostContext && ctx.opts.updateInstalled && !refreshAuthorized) {
+    if (!plainClone || installedSignal) return unprovenCloneTarget(ctx)
   }
   if (await isAlreadyInstalled(ctx)) {
     const verifyFailure = await verifyInstalled(ctx)
@@ -250,7 +350,7 @@ export const installGitCloneWithSetup: Installer = async (ctx) => {
     )
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
-  if (existingTarget) return unprovenCloneTarget(ctx)
+  if (existingTarget && !refreshAuthorized) return unprovenCloneTarget(ctx)
 
   // L2 — per-user (~/.claude/skills/<name>/). pure-create DiffPlan:
   // oldText:'' so backup writes a sentinel; rollback = `rm -rf` cloned dir.

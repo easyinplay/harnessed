@@ -21,6 +21,7 @@ import { err } from './lib/err.js'
 import { isAlreadyInstalled } from './lib/idempotent.js'
 import { withInstallOwnershipLock } from './lib/installOwnershipLock.js'
 import {
+  declaredCoversSkillNames,
   discoverDeclaredOwnership,
   snapshotDeclaredOwnership,
   writeDeclaredOwnershipReceipt,
@@ -92,9 +93,26 @@ const installNpmCliUnlocked: Installer = async (ctx) => {
   const ownershipCandidateSnapshot = managesSkillOwnership
     ? await snapshotDeclaredOwnership(ctx)
     : undefined
-  const usesDeclaredOwnership = Array.isArray(
-    (ctx.manifest.spec as unknown as { ownership?: { resources?: unknown } }).ownership?.resources,
-  )
+  const ownershipResources = (
+    ctx.manifest.spec as unknown as { ownership?: { resources?: unknown } }
+  ).ownership?.resources
+  const usesDeclaredOwnership = Array.isArray(ownershipResources) && ownershipResources.length > 0
+  // Phase 85 — declared ownership with every existing target passing the
+  // manifest's marker check AUTHORIZES a force-update refresh (the footprint
+  // is provably ours, so the official npm command overwrites our own writes).
+  const declaredSnapshot =
+    ownershipCandidateSnapshot ??
+    (usesDeclaredOwnership ? await snapshotDeclaredOwnership(ctx) : undefined)
+  const declaredProven =
+    usesDeclaredOwnership &&
+    // Phase 85 — every skill the manifest claims to install must be declared,
+    // or the declaration does not bound what a refresh may overwrite.
+    declaredCoversSkillNames(ctx, install.installs_skills) &&
+    declaredSnapshot !== undefined &&
+    (await (async () => {
+      const discovered = await discoverDeclaredOwnership(ctx)
+      return declaredSnapshot.paths.every((path) => discovered.paths.includes(path))
+    })())
   // v3.9.6 — idempotent_check probe (skip install if already-installed).
   let existingPackTarget = false
   if (
@@ -102,7 +120,7 @@ const installNpmCliUnlocked: Installer = async (ctx) => {
     (ctx.manifest.spec.component_type !== 'cli-binary' || install.installs_skills !== undefined)
   ) {
     if (usesDeclaredOwnership) {
-      existingPackTarget = (ownershipCandidateSnapshot?.paths.length ?? 0) > 0
+      existingPackTarget = (declaredSnapshot?.paths.length ?? 0) > 0
     } else {
       const names = [ctx.manifest.metadata.name, ...(install.installs_skills ?? [])]
       if (names.some((name) => !/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name)))
@@ -125,8 +143,9 @@ const installNpmCliUnlocked: Installer = async (ctx) => {
           existingPackTarget = true
       }
     }
-    // npm skill-pack scripts do not provide a bounded writer contract.
-    if (ctx.opts.updateInstalled && !usesDeclaredOwnership) return unprovenPackTarget(ctx)
+    // npm skill-pack scripts do not provide a bounded writer contract — only a
+    // marker-proven declaration authorizes running one over existing writes.
+    if (ctx.opts.updateInstalled && !declaredProven) return unprovenPackTarget(ctx)
   }
   if (await isAlreadyInstalled(ctx)) {
     const verifyFailure = await verifyInstalled(ctx, { neutralCwd: true })
@@ -142,7 +161,8 @@ const installNpmCliUnlocked: Installer = async (ctx) => {
     )
     return { ok: true, alreadyInstalled: true, backupId: 'noop-idempotent' }
   }
-  if (existingPackTarget) return unprovenPackTarget(ctx)
+  if (existingPackTarget && !(ctx.opts.updateInstalled && declaredProven))
+    return unprovenPackTarget(ctx)
   let level = detectLevel(install.cmd)
   let cmd = install.cmd
   const plan: DiffPlan = { files: [] }
@@ -230,9 +250,15 @@ const installNpmCliUnlocked: Installer = async (ctx) => {
     try {
       if (usesDeclaredOwnership) {
         const discovered = await discoverDeclaredOwnership(ctx)
+        // Phase 85 — an AUTHORIZED refresh creates nothing new, so a "new paths
+        // only" receipt would be empty and fail the install on its own
+        // receipt. The proven set IS the owned set on that path.
+        const refreshAuthorized = ctx.opts.updateInstalled && declaredProven
         await writeDeclaredOwnershipReceipt(ctx, {
           roots: discovered.roots,
-          paths: discovered.paths.filter((path) => !pathSnapshot.has(path)),
+          paths: refreshAuthorized
+            ? discovered.paths
+            : discovered.paths.filter((path) => !pathSnapshot.has(path)),
         })
       } else {
         const afterPaths = await declaredSkillPaths(ctx, skillRoots)

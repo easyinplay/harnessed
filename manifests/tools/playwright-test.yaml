@@ -46,6 +46,14 @@ spec:
     cmd: "rm -rf ~/.claude/skills/playwright-cli"
     cleanup_paths:
       - ~/.claude/skills/playwright-cli
+  # Phase 85 — the owned footprint of this pack. The force-update pass may
+  # replace it only when the marker proves the existing skill is ours.
+  ownership:
+    resources:
+      - root: platform-skills
+        kind: directory
+        selector: { names: [playwright-cli] }
+        marker: { path: SKILL.md, contains: "name: playwright-cli" }
   upstream_health:
     stability: stable
     last_check: "2026-09-10"

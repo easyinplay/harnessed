@@ -5,7 +5,12 @@ import { writeSkillOwnershipReceipt } from './skillOwnershipReceipt.js'
 import type { InstallContext } from './types.js'
 
 type OwnershipKind = 'file' | 'directory'
-type OwnershipRoot = 'platform-skills' | 'native-home' | 'host-agents' | 'host-commands'
+type OwnershipRoot =
+  | 'platform-skills'
+  | 'agents-skills'
+  | 'native-home'
+  | 'host-agents'
+  | 'host-commands'
 
 export interface DeclaredOwnershipResource {
   path: string
@@ -31,7 +36,13 @@ function isResource(value: unknown): value is OwnershipResource {
   const resource = value as Partial<OwnershipResource>
   const selector = resource.selector
   const marker = resource.marker
-  const roots: OwnershipRoot[] = ['platform-skills', 'native-home', 'host-agents', 'host-commands']
+  const roots: OwnershipRoot[] = [
+    'platform-skills',
+    'agents-skills',
+    'native-home',
+    'host-agents',
+    'host-commands',
+  ]
   const hasNames =
     Array.isArray(selector?.names) &&
     selector.names.length > 0 &&
@@ -74,6 +85,9 @@ function rootPath(ctx: InstallContext, root: OwnershipRoot): string | null {
   if (!host) return null
   const roots: Record<OwnershipRoot, string> = {
     'platform-skills': host.platform.skillsDir,
+    // Phase 85 — the `skills` CLI's default install root (the real files of a
+    // host-skills-dir symlink live here).
+    'agents-skills': join(host.userHome, '.agents', 'skills'),
     'native-home': host.nativeHome,
     'host-agents': join(host.nativeHome, 'agents'),
     'host-commands': host.platform.commandsDir,
@@ -89,6 +103,28 @@ function isInside(root: string, path: string): boolean {
 function selected(resource: OwnershipResource, name: string): boolean {
   const { names, prefix } = resource.selector
   return Boolean(names?.includes(name) || (prefix?.length && name.startsWith(prefix)))
+}
+
+/**
+ * Phase 85 — does the declaration cover every skill the manifest claims to
+ * install?
+ *
+ * The marker proof only says something about the DECLARED entries. A pack that
+ * installs a skill its declaration does not name could still overwrite a
+ * foreign directory of that name — the exact write footprint the refusal
+ * exists for. The manifest's own `installs_skills` list is the claim, so a
+ * name outside the declaration means the declaration is incomplete and the
+ * refresh is not authorized.
+ */
+export function declaredCoversSkillNames(
+  ctx: InstallContext,
+  names: readonly string[] | undefined,
+): boolean {
+  const claimed = (names ?? []).filter((name) => name.length > 0)
+  if (claimed.length === 0) return true
+  const resources = resourcesFor(ctx)
+  if (resources.length === 0) return false
+  return claimed.every((name) => resources.some((resource) => selected(resource, name)))
 }
 
 async function regularMarker(

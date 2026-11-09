@@ -196,6 +196,9 @@ const HarnessOverrides = Type.Object(
 
 const OwnershipRoot = Type.Union([
   Type.Literal('platform-skills'),
+  // Phase 85 — the `skills` CLI installs into ~/.agents/skills by default and
+  // links it into the host skills dir; the real files live here.
+  Type.Literal('agents-skills'),
   Type.Literal('native-home'),
   Type.Literal('host-agents'),
   Type.Literal('host-commands'),

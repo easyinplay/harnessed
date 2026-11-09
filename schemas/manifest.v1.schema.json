@@ -1373,6 +1373,10 @@
                             "type": "string"
                           },
                           {
+                            "const": "agents-skills",
+                            "type": "string"
+                          },
+                          {
                             "const": "native-home",
                             "type": "string"
                           },
@@ -1460,6 +1464,10 @@
                         "anyOf": [
                           {
                             "const": "platform-skills",
+                            "type": "string"
+                          },
+                          {
+                            "const": "agents-skills",
                             "type": "string"
                           },
                           {
