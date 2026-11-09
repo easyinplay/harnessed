@@ -61,3 +61,11 @@ Current node: awaiting lead final review. No commit/push performed.
       hook/skills/subagent probing still required before any contract.
 - [x] STATE/ROADMAP Phase 88 lines shortened to pointers.
 - [x] No commit/push; no source behavior changes in this round.
+
+## Closeout (supersedes earlier "awaiting lead review" node)
+
+- Lead accepted implementation + rework + compat evidence; landed as
+  `ce2de35` (fix) + `9f10531` (docs) on main.
+- CI `42637178399` on `9f10531` VERIFIED success — all 9 jobs.
+- Follow-up: `--minify` flag implemented + pinned-build smoke green
+  (research doc evidence section); not published.

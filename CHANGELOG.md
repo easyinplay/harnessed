@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Compiled binaries now build with `bun build --compile --minify`. A controlled same-source Windows measurement against the CI-pinned Bun 1.3.14 shows a 1,307,648-byte (~1.26%) size reduction; the embedded runtime still dominates the ~100MB binary, so this is a modest reduction rather than a size fix. No startup-time claims are made.
+
 ### Fixed
 
 - `harnessed rollback` backups for JSON settings files now record only the keys the install actually changed. Every mutated file used to be byte-copied into `~/.claude/harnessed/backups/`, which swept unrelated `env` credentials out of `settings.json` into the backup dir and let a rollback clobber keys the install never touched — including edits made after install. When a plan's old and new images both parse as JSON objects, the backup now stores a scoped diff of the old values only (`kind: "json-subtree"`), and rollback reverts exactly those paths while preserving every other current key. Compatibility: scoped snapshots carry a `json-subtree-v1` format discriminator in place of the file checksum, so released rollbacks always refuse them with a checksum mismatch instead of writing diff JSON into the target file — restore scoped snapshots with this version or newer. Scoped backups and restores also refuse JSON containing numbers `JSON.stringify` cannot round-trip (non-finite values, integers beyond 2^53-1) rather than silently corrupting them; byte backups for non-JSON files are unchanged.

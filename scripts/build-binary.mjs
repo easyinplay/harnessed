@@ -42,6 +42,7 @@ mkdirSync(dirname(outfile), { recursive: true })
 const buildArgs = [
   'build',
   '--compile',
+  '--minify',
   join(root, 'src', 'compile', 'entry.ts'),
   '--outfile',
   outfile,

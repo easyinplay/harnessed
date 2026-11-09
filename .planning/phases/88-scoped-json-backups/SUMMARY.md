@@ -1,6 +1,6 @@
 # Phase 88 — SUMMARY: scoped JSON backups
 
-## Implemented locally — not published (uncommitted, awaiting commit/push authorization)
+## Committed + pushed — not published (commits `ce2de35` + `9f10531` on main; CI `42637178399` verified success 9/9 on `9f10531`)
 
 **Problem.** `backup()` byte-copied every file the install plan mutates. For
 JSON settings files (`~/.claude/settings.json`) that copied unrelated `env`

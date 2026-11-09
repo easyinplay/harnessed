@@ -1,7 +1,7 @@
 # Phase 88 — Scoped JSON backups (settings safety fix)
 
-Status: executing. Design settled by lead handoff; this file records it verbatim,
-not a redesign.
+Status: complete. Implementation `ce2de35`, docs `9f10531`; CI `42637178399`
+verified success (9/9). See `VERIFICATION.md` and `REVIEW.md`.
 
 ## Problem
 
@@ -19,7 +19,10 @@ after install).
    versioned diff document
    `{version:1, changes:[{path:string[], existed:boolean, value?}]}` recording
    OLD values only. No `newText`/whole-JSON anywhere in payload/metadata/logs.
-   - sha1 continues to hash the exact stored payload bytes.
+   - Entry `sha1` holds the `json-subtree-v1` discriminator (non-hex, so
+     released readers always fail closed); `payloadSha1` holds the actual
+     digest of the exact stored payload bytes, and rollback validates
+     against that field.
    - Recursive object diff; arrays/scalars/type transitions atomic; unchanged
      objects produce zero changes (never a whole-copy snapshot).
    - Added keys: `{path, existed:false}` (no value). Deleted/changed:
@@ -83,4 +86,4 @@ after install).
 
 - No manifest contract changes, no `src/cli/facts.ts`, no auto-deletion or
   rotation of old backups, no post-image hash.
-- Full-suite run deferred to lead's final gate.
+- Full-suite gate completed — see `VERIFICATION.md` (5697 pass / 0 fail).

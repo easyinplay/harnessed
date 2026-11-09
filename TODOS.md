@@ -352,11 +352,12 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
   本机绕过方式(当时已用):`curl -L` 拉 asset + `sha256sum` 对 `.sha256` 校验 → 覆盖
   `~/AppData/Local/harnessed/bin/harnessed.exe`(旧版留 `harnessed.exe.bak-5.0.10`)→
   跑 `harnessed setup` 刷新自有状态。
-- [ ] **binary 体积 ~100-120MB** — **保持 OPEN**。受控本地测量(2026-11-09,Bun 1.4.4)→
-  `.planning/research/binary-size-2026-11-09.md` + 同目录 measurements.json。
-  结论:baseline ~115.3MB(runtime 主导),payload ~5.3MB,--minify 省 ~1.2MB(~1%);
-  早前「assets 2MB ⇒ 上限 2%」说法已被纠正(raw 解包 ≠ 内嵌贡献)。**同 Bun 1.3.14
-  (CI 锁定版本)对比仍是下一步必要测量**,之后才谈 build flag / runtime 变更。
+- [ ] **binary 体积 ~100-120MB** — **保持 OPEN**(大头是 runtime 成本,是否接受尚未裁决)。
+  受控本地测量(同 Bun 1.4.4 + CI 锁定 Bun 1.3.14,2026-11-09)→
+  `.planning/research/binary-size-2026-11-09.md` + 同目录两份 measurements.json。
+  已验证:`build-binary.mjs` 加 `--minify`(pinned 同源码省 ~1.31MB ≈1.26%,
+  smoke `runtime-channel-smoke.mjs` 三通道通过)。**未决**:是否接受 bun runtime
+  成本 / 更大动作(换编译器、bytecode、瘦身 runtime)——仍需立项裁决。
 - [x] **doctor 的「双通道并存」告警会假阳性** — 已修(2026-11-03)。
   现象:本机其实**只装了 binary 通道**(npm 全局前缀 `C:\Users\easyi\AppData\Roaming\npm`
   下没有 `harnessed.cmd`,`npm ls -g` 也没有 harnessed),但 doctor 仍报
