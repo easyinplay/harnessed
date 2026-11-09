@@ -163,6 +163,9 @@ So a plain `git push` will fail. Two supported paths:
    `%B` appends a newline and changes the SHA) and finally PATCH the ref. The
    published commit SHA then equals the local one, so there is no divergence.
    Reference implementation: the flow used on 2026-11-09 is reproduced in §9.
+   Note that the API transport itself times out intermittently
+   (`UND_ERR_CONNECT_TIMEOUT`) even when the host is up — wrap every call in a
+   retry loop and only treat a non-2xx response as a real error.
 
 Also note `gh auth token` prints a **credential** — never echo it into a file,
 a commit, a log or a chat message. It was already leaked once (see
