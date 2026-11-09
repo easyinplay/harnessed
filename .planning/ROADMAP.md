@@ -1,6 +1,6 @@
 # ROADMAP — harnessed
 
-> **Phase 89 implemented and locally verified (2026-11-09, not published)**: legacy migration skips nonempty root overrides; full tests and gates pass. [plan](phases/89-legacy-migration-override-isolation/task_plan.md) · [verification](phases/89-legacy-migration-override-isolation/VERIFICATION.md)
+> **Phase 89 committed + pushed (2026-11-10, not published)**: legacy migration skips nonempty root overrides; root-isolation defect repro-proven then fixed. Source `0e6b00b`; CI `42658347518` verified success 9/9. [plan](phases/89-legacy-migration-override-isolation/task_plan.md) · [verification](phases/89-legacy-migration-override-isolation/VERIFICATION.md) · [summary](phases/89-legacy-migration-override-isolation/SUMMARY.md)
 
 > **Phase 88 committed + pushed (2026-11-09, not published)**: JSON settings backups scoped to changed keys; released readers fail closed on the new format. Commits `ce2de35` + `9f10531`; CI `42637178399` verified success 9/9. [plan](phases/88-scoped-json-backups/task_plan.md) · [summary](phases/88-scoped-json-backups/SUMMARY.md) · [verification](phases/88-scoped-json-backups/VERIFICATION.md) · [review](phases/88-scoped-json-backups/REVIEW.md)
 

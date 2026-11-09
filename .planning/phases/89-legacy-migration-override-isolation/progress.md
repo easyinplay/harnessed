@@ -34,3 +34,10 @@ diffcheck re-verified exit 0 (`evidence/biome-accept.log`).
 Status: **locally verified and lead-accepted; commit/push authorized** by
 the user's explicit Phase 89 approval. Remote CI will be checked after push.
 No version bump, tag, or publication is authorized.
+
+## Closeout record (2026-11-10)
+
+Source committed + pushed by lead as `0e6b00b` under explicit user approval.
+CI `42658347518` on `0e6b00b` — lead-verified completed success, all 9 jobs
+(raw receipt outside repo: `C:/WINDOWS/TEMP/harnessed-phase89-ci-42658347518.json`).
+Earlier "awaiting commit/push authority" nodes are superseded; not published.

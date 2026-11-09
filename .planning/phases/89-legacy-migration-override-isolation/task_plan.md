@@ -1,6 +1,7 @@
 # Phase 89 — legacy-migration root-override isolation fix
 
-Status: complete (locally verified; not published). Commit/push authorized. Design settled by lead + independent second opinion;
+Status: complete — committed `0e6b00b` + pushed; CI `42658347518` success
+9/9 (2026-11-10); not published (no tag/release). Design settled by lead + independent second opinion;
 recorded verbatim, not redesigned.
 
 ## Confirmed defect

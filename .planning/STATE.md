@@ -1,16 +1,10 @@
 ---
 gsd_state_version: 1.0
-milestone: npm-5.0.6
-milestone_name: Claude Plugin Retention Probe
-status: in_progress
-last_updated: "2026-11-04"
-last_activity: 2026-11-04
-progress:
-  total_phases: 1
-  completed_phases: 0
-  total_plans: 1
-  completed_plans: 0
-  percent: 83
+current_phase: "89"
+current_phase_name: Legacy Migration Override Isolation
+status: completed
+last_updated: "2026-11-10"
+last_activity: "2026-11-10"
 ---
 
 # STATE — harnessed
@@ -26,7 +20,7 @@ progress:
   - v14.0 Hardening & Distribution(4.13–4.28,retro-closed):setup 治理 + cross-harness · /auto 合规 + 双守卫 + issues #2-#5 · B 路线 compiled `harnessed update` 分支。
 
 ## Current Position
-- **Phase 89 implemented and locally verified (2026-11-09, not published)**: legacy migration skips nonempty root overrides; full tests and gates pass. Commit/push authorized; remote CI tracked separately. Details: `phases/89-legacy-migration-override-isolation/`.
+- **Phase 89 committed + pushed (2026-11-10, not published)**: source `0e6b00b`; CI `42658347518` verified success 9/9. Details: `phases/89-legacy-migration-override-isolation/` (SUMMARY / VERIFICATION).
 - **Phase 88 committed + pushed (2026-11-09, not published)**: JSON settings backups scoped to changed keys; `json-subtree-v1` discriminator + `payloadSha1` keeps released readers fail-closed (proven on real v5.0.15). Local gates all green; commits `ce2de35` (fix) + `9f10531` (docs) on main — CI `42637178399` VERIFIED success 9/9 jobs on `9f10531`. Details: `phases/88-scoped-json-backups/` (SUMMARY · VERIFICATION · REVIEW).
 - **Phase 86 shipped as v5.0.13 (2026-11-08)**: parallel sub-workflows now complete from a persisted result artifact, not a chat notification — `harnessed prompt` prints the file the sub must write, `harnessed checkpoint complete --result-file --wait <seconds>` polls it with a bounded wait (timeout -> `result-wait-timeout`, fail-closed), and `harnessed gates` refuses a team escalation that cannot execute. Sourced from GSD 1.18.0's fix for open-gsd/gsd-core#1355; Claude Code (two model tiers) confirmed the artifact transport as load-bearing and rejected refusing teammate mode (setup auto-enables the env key, so it would be permanently true and would fix no robustness). Commit `4b8c804`; clean-tree verification 445 files / 5584 tests, 0 failures. Plan: `phases/86-agent-teams-safe-transport/`.
 - **Phase 83 shipped as v5.0.8 + v5.0.9 (2026-11-02)**: issues #34-#37 fixed and closed — #34 self-update downloads from the `api.github.com` asset endpoint with a browser-URL fallback and retries; #35 a compiled self-update hands the owned-state refresh to the NEW binary (skills + owned hooks + stale legacy command files re-synced); #36 stale first-party hook registrations are migrated, `gc` keeps a referenced `assets/<version>`, doctor advises re-registering instead of uninstalling; #37 install lock contention retries with backoff and is a retryable warn instead of exit 1. The local duplicate `/retro` was cleared (26 stale `~/.claude/commands/*.md` removed via the shipped ownership rule, backup in `~/.claude/harnessed/backups/legacy-commands-20261102/`). v5.0.9 adds the follow-up fix: `setup` counted a `no role-prompts.yaml entry` skip as a component failure, so every codex setup exited 1 — now a warning only (F9). Commits `df202412` + `d9d369a` + `9ba5a6a` + `91ec691` + `f7b04d4`; CI `41416432147` 9/9; publish run `41417121623` success; npm `latest` 5.0.9. Plan: `phases/83-open-issues-34-37-and-command-dedup/`. · **v5.0.11 shipped (2026-11-03)**: `stop-hook-recover` 彻底移除(`ec91eef`,识别用身份保留到 2027-02-03)+ codex 宿主 setup exit 1 根因修掉(`7a2f64a`)—— 细节见「Latest shipped」行与本 phase progress.md。 · **Phase 84 in progress (2026-11-04)**: 自动检测+自动更新(binary 通道)。维护者批准 consent 默认关 / 只做 binary 通道 / 公开子命令 `harnessed auto-update`(代价:公开命令面 32→33 + 11 个 README locale)/ 交接复用既有 `spawnOwnedRefresh` / 慢链路 Range 续传 / 下载进度与失败历史可见。三轮对抗性 spec review(4/10 → 6/10 → 7/10,Scope PASS)挖出的 R1-R28 全部折进计划;ADR 0044。**实施 + eng review 完成(T1-T8 + T10)**:vitest 5514 通过 / 0 失败,biome 门禁 0 blocking,CI 硬门脚本全绿,`build` + `build:hooks` 已重生成 `bin/`;命令面本机实测通过;gstack `/plan-eng-review` 3 个问题(2 P2 + 1 P3)/ 0 critical gap / 0 unresolved,两项 P2 当场修掉(状态文件驱动续传节奏、D3 的 npm 通道文案)。实施期修掉三个真 bug:入口 gate 只认 reminder consent(开了永不触发)/ 公告无一次性消费(每次会话刷屏)/ 新 binary 写不了公告。commits `250343b` + `0d2a0cb` + `70003fb` 已推 main。**剩:发布后的 binary 通道真机实测(AC13,被自动替换的 binary 必须自带本功能 → 只能 v5.0.13 之后)**。详 `phases/84-auto-update/`(CONTEXT=契约与台账 · ERRORS=错误救援表 · TASKS=测试图与任务 · progress=实施日志)。
@@ -92,7 +86,7 @@ progress:
 ### Open todos / carry-forward (non-blocking)
 
 - `TODOS.md`(repo 根,4.28.0 起):E1 签名 / E3 channel / --rollback / proxy / Slice 2✅(已发)/ Slice 3 / eval harness / ambiguity 阈值。
-- 历史遗留(v9.0 系):`migrateLegacyHarnessedRoot` 已 context-routed(host descriptor,Phase 69+);残余 `~/.claude` hardcodes 个别存疑。Phase 89 修复其 bypass `HARNESSED_ROOT_OVERRIDE` 仍动 native home 的隔离缺陷(guard 已在 worktree 验证)。(phases/ 归档 pass ✅ 2026-07-12 完成,unmapped 2 目录见 audit。)
+- 历史遗留(v9.0 系):`migrateLegacyHarnessedRoot` 已 context-routed(host descriptor,Phase 69+);残余 `~/.claude` hardcodes 个别存疑。Phase 89 修复其 bypass `HARNESSED_ROOT_OVERRIDE` 仍动 native home 的隔离缺陷(已推 main `0e6b00b`,CI 9/9)。(phases/ 归档 pass ✅ 2026-07-12 完成,unmapped 2 目录见 audit。)
 - **Untracked noise (never add)**: `.understand-anything/`, `AGENTS.md`, `phases/_rogue-impl-reference/`。
 
 ## Session Continuity

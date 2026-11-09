@@ -1,6 +1,6 @@
 # Phase 89 — SUMMARY: root-override legacy-migration isolation
 
-## Implemented and locally verified — not published
+## Committed + pushed — not published (source `0e6b00b`; CI `42658347518` verified success 9/9, 2026-11-10)
 
 **Problem.** `migrateLegacyHarnessedRoot()` ran at every CLI startup using a
 host context that deliberately ignores `HARNESSED_ROOT_OVERRIDE`. Any

@@ -49,3 +49,12 @@ remain valid.
 - Root F6 old hardcoding was superseded by host-context routing since
   Phase 69 — the Phase 89 defect was override-isolation only.
 - No new product milestone is implied by any of the above.
+
+## STATE frontmatter correction (2026-11-10)
+
+Original frontmatter still asserted `milestone: npm-5.0.6` /
+`Claude Plugin Retention Probe` / `in_progress 83%` — obsolete vs the
+verified Phase 89 state. Replaced with `current_phase: "89"` /
+`status: completed` per lead; stale `milestone`/`progress` keys omitted
+rather than asserting a cumulative-completion claim. Links to Phase 89
+only — no new milestone or calculated progress is declared.
