@@ -28,12 +28,15 @@
   `TeamCreate` / `TeamDelete` 在 Claude Code 已删;且有「Codex Agent Teams + `TeamCreate`」——
   名字本地化了机制没换,codex 无 Agent Teams。
 
-- [ ] **gemini 宿主 milestone** — P2 / L,**已批准开发**(2026-10-14)
-  Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。先实测 gemini hook / subagent / skills 目录。
+- [ ] **antigravity-cli (agy) 宿主 milestone(原 gemini 宿主,用户改判目标)— P2 / L,用户明确暂缓** —
+  **2026-11-09 用户裁决更新**:第三宿主目标改为 **antigravity-cli(`agy`)**,非 Gemini;
+  本 milestone 由用户**明确暂缓(postponed)**,不做 HostAdapter 实现。
+  目前仅做了初步 help/目录探测:本机已装 agy 1.5.3;`~/.gemini/` 下未见 hooks help flag —
+  **但「探测不到 flag」≠ 证明不支持 hooks**,只能算未探明。
+  Why: 复用 codex milestone 收敛出的 HostAdapter 契约加第三宿主。
   Criterion: 实际用不用(design doc 2026-08-26 OQ4)。Depends: codex 宿主对等 milestone 收口。
-  **2026-10-14 维护者裁决**：**做**。OQ4「实际用不用」由维护者直接答「做」。
-  新 milestone → 按三层栈须先过 gstack `/office-hours` + `/plan-ceo-review`,再 GSD plan-phase。
-  先做的事:实测 gemini 的 hook / subagent / skills 目录三面(不实测不得写进 HostAdapter 契约)。
+  恢复时先做:**真实实测** agy 的 hook / skills / subagent 三面(不实测不得写进 HostAdapter 契约),
+  再按三层栈过 gstack `/office-hours` + `/plan-ceo-review` → GSD plan-phase。
 - [x] **codex goal 桥接** — **永久关闭 2026-10-07**,结构性不成立(实测,codex-cli 0.155.1)。
   本项原记「只有维护者能在 TUI 里实测」。那判断划得太宽:整条路可以**零推理**地在 app-server
   协议层判定,不需要 TUI、不花额度、不碰真实 CODEX_HOME(探针全部在临时目录,`harnessed-probe-*`)。
@@ -203,10 +206,10 @@
 
 - [x] **B4 eval harness** — Slice A SHIPPED 4.31.0(trap suite + coverage 导航;B1 证据包 SHIPPED(逮住 issue #7);Slice C 录制导出 SHIPPED 4.32.0(harnessed eval record,默认脱敏,round-trip);后续差异化实验需另一形态(模糊 spec/跨 session))
 - [x] **SOP 文本 `--skip-sub clarify` 改名 `discuss`** — SHIPPED 4.32.20:generator(generateCommands + rewrite-skill-invoke-sections)+ 全部 workflows/*/SKILL{,.zh-Hans}.md 改 `--skip-sub discuss`;engine 侧 clarify→discuss synonym 保留(兼容已装旧文本)。
-- [ ] **G5/OMC ambiguity 量化阈值** — P3,**已批准开 discuss**(2026-10-14)
-
-  **2026-10-14 维护者裁决**：**开**。方向级设计 → 走 `/discuss-strategic`(或 gstack `/office-hours`)出方案再决定是否立项,
-  本条本身不产出代码。
+- [x] **G5/OMC ambiguity 量化阈值** — P3,discuss 完成 2026-11-09 → `.planning/research/g5-ambiguity-direction.md`
+  结论:不引进数值阈值(无标注数据/无校准,0.2 只是 OMC 产品策略),不改 fail-closed 现网;
+  后续只在「structured reason records」最小实验另行立项时再做。数值实现**未交付也未静默开工**;
+  重开条件 = 出现具体「漏决策/无谓打断」案例。
 
 ## From the 2026-11-02 credential-hygiene pass (machine-local incident, not a repo defect)
 
@@ -226,24 +229,13 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
 - [ ] **轮换 Context7 API key** — `ctx7sk-…` 同样已从 `~/.claude/settings.json` 删除;
   context7 MCP 走自己的 OAuth(`~/.claude/.credentials.json` → `mcpOAuth` → `plugin:context7:context7`),
   删 env key 不影响 MCP 使用。但旧 transcript 里仍有明文,建议到 context7 dashboard 作废并重发。
-- [ ] **installer 备份整份 `settings.json`(含明文凭据)—— 方案已定 (a) 子树备份,待实施(独立 phase + TDD)** —
-  `src/installers/lib/backup.ts` 对 `plan.files` 里每个文件做整份字节备份;装 `update-reminder` 时
-  `~/.claude/settings.json` 会被原样复制到 `~/.claude/harnessed/backups/<id>/HOME/.claude/settings.json`,
-  于是凭据多出第二份。
-  **2026-11-09 双意见一致裁决 (a)**(本 session 独立判断 + 第二意见 subagent 同向,未走用户裁决):
-  - **核心机制(第二意见补强,关键!)**:`plan.files[]` 已带 `oldText`/`newText`(types.ts:103-104)——
-    对两者都能 parse 成 JSON 对象的文件,`backup()` 自己 diff 出被改动的 key path
-    (对象键递归、数组按原子值处理),只存旧值子树。**无需 manifest 声明、对现在和未来所有
-    JSON-merge installer 自动生效**。非 JSON/不可解析文件回退整份字节备份(保覆盖)。
-  - **rollback 语义变**:「parse 当前 JSON → 替换/删除记录的 path → 重写」而非整文件回写;
-    附带修好第二个潜在 bug —— 现状 verbatim 回写会**覆盖用户在 install 后对未动键的编辑**。
-    sha1 完整性校验照旧(对子树字节算)。当前文件与 newText 不一致时:**warn 不 refuse**
-    (回滚我们那棵子树、保住用户编辑正是目的)。
-  - **metadata 需版本化条目**(`kind: 'bytes' | 'json-subtree'`),既有 legacy sentinel 处理并存;
-    整文件保真测试要改写成子树语义。
-  - **否决 (b)** 理由:secret 探测是启发式 + fail-open(无前缀 base64 token 漏检、误报毁备份),
-    与 fail-closed 文化冲突;**否决 (c)**:把泄漏原样留给用户行为。
-  - **scope 注意**:本机已存在备份里的明文凭据不在本条范围 —— 落地时附一笔一次性清理/轮换提示。
+- [x] **installer 备份整份 `settings.json`(含明文凭据)—— Phase 88 子树备份已实现并本地验证(未提交/未发布)** —
+  worktree 行为(详 `.planning/phases/88-scoped-json-backups/` SUMMARY + VERIFICATION):
+  old/new plan image 同为 JSON 对象时备份只存被改 key 的旧值 diff(`kind:'json-subtree'`,
+  `sha1` 存 `json-subtree-v1` 判别符 + `payloadSha1` 存真 digest,旧版 reader 必然 fail-closed),
+  rollback 只回写被管 path、保留未动键与装后用户编辑;stale plan / 不可往返数值(1e400、>2^53-1)/
+  元数据组合不一致全部拒止。**注意:本机既有旧备份快照里的明文凭据仍敏感**,不在本条范围 ——
+  无用户授权不做清理或轮换(与上面凭据轮换条目独立)。
 - [ ] **gh keyring token 权限过大** — 当前那枚是 user-to-server OAuth token,scopes 含 `admin:org` +
   `delete_repo` + `workflow`。若要长期用 GitHub,换成 fine-grained PAT(按 repo 授权)更合适。
 - [ ] **会话里不要 echo 凭据** — 本轮 `gh auth token` 的输出被 Claude Code 记进
@@ -360,12 +352,11 @@ Claude Code / Codex 的 session transcript 与 harness 的 install 备份里。�
   本机绕过方式(当时已用):`curl -L` 拉 asset + `sha256sum` 对 `.sha256` 校验 → 覆盖
   `~/AppData/Local/harnessed/bin/harnessed.exe`(旧版留 `harnessed.exe.bak-5.0.10`)→
   跑 `harnessed setup` 刷新自有状态。
-- [ ] **binary 体积 99MB** — 未立项;**2026-11-09 已量构成**:内嵌 assets 全量解包仅 **2.0MB**
-  (`~/.claude/harnessed/assets/5.0.15/`),即 ≈97MB 是 bun runtime + bundled JS ——
-  「assets 改按需解包」路线价值证伪(收益上限 ~2%)。剩下的瘦身方向只有:(a) 接受
-  (bun --compile 内嵌整个 runtime,Windows 底噪 ~90MB 是同类工具的常态);
-  (b) 换编译器/运行时(大架构变更);(c) bun --minify/bytecode(收益边际)。
-  建议:立项前先答「是否接受 bun runtime 成本」,若接受则关闭本条。
+- [ ] **binary 体积 ~100-120MB** — **保持 OPEN**。受控本地测量(2026-11-09,Bun 1.4.4)→
+  `.planning/research/binary-size-2026-11-09.md` + 同目录 measurements.json。
+  结论:baseline ~115.3MB(runtime 主导),payload ~5.3MB,--minify 省 ~1.2MB(~1%);
+  早前「assets 2MB ⇒ 上限 2%」说法已被纠正(raw 解包 ≠ 内嵌贡献)。**同 Bun 1.3.14
+  (CI 锁定版本)对比仍是下一步必要测量**,之后才谈 build flag / runtime 变更。
 - [x] **doctor 的「双通道并存」告警会假阳性** — 已修(2026-11-03)。
   现象:本机其实**只装了 binary 通道**(npm 全局前缀 `C:\Users\easyi\AppData\Roaming\npm`
   下没有 `harnessed.cmd`,`npm ls -g` 也没有 harnessed),但 doctor 仍报

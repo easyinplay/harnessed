@@ -1,0 +1,14 @@
+{
+  "artifactDir": "C:\\Users\\easyi\\AppData\\Local\\Temp\\harnessed-size-rdUqza",
+  "bun": "1.4.4",
+  "platform": "win32",
+  "arch": "x64",
+  "packageVersion": "5.0.15",
+  "assetFileCount": 183,
+  "assetLogicalBytes": 1662458,
+  "assetBundleJsonBytes": 2224355,
+  "baselineBytes": 115271680,
+  "fullBytes": 120578560,
+  "minifiedBytes": 119398912,
+  "installedReleaseBytes": 104075776
+}
