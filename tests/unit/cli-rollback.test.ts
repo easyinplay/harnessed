@@ -24,6 +24,7 @@ vi.mock('node:fs/promises', () => ({
 import { readFile, rm, stat, unlink, writeFile } from 'node:fs/promises'
 import { Command } from 'commander'
 import { registerRollback } from '../../src/cli/rollback.js'
+import { SUBTREE_ENTRY_SHA1 } from '../../src/installers/lib/jsonSubtree.js'
 
 const readFileMock = vi.mocked(readFile)
 const writeFileMock = vi.mocked(writeFile)
@@ -210,5 +211,385 @@ describe('cli/rollback', () => {
     expect(code).toBe(0)
     expect(rmMock).not.toHaveBeenCalled()
     expect(unlinkMock).not.toHaveBeenCalled()
+  })
+
+  // Phase 88 — json-subtree rollback. Pass1 must verify payload checksum,
+  // validate the payload shape, parse the CURRENT target JSON, and compute the
+  // restored buffer — all before Pass2 mutates anything.
+  describe('json-subtree restore', () => {
+    const SECRET = 'sk-fake-NEWSECRET-999'
+    const target = '/home/u/.claude/settings.json'
+    const backupPath = '/tmp/.harnessed-backup/ts/HOME/.claude/settings.json'
+
+    function subtreeMeta(over: Record<string, unknown> = {}, extraFiles: unknown[] = []) {
+      const payload = over.payload ?? {
+        version: 1,
+        changes: [
+          {
+            path: ['hooks', 'SessionStart'],
+            existed: true,
+            value: [{ type: 'command', command: 'old-hook' }],
+          },
+          { path: ['harnessedManaged'], existed: false },
+          { path: ['removedByInstall'], existed: true, value: 'bring-me-back' },
+        ],
+      }
+      const payloadBuf = Buffer.from(JSON.stringify(payload), 'utf8')
+      const payloadSha1 = createHash('sha1').update(payloadBuf).digest('hex')
+      const file: Record<string, unknown> = {
+        target,
+        backup: backupPath,
+        sha1: SUBTREE_ENTRY_SHA1, // format discriminator; real digest → payloadSha1
+        payloadSha1,
+        eol: 'lf',
+        kind: 'json-subtree',
+      }
+      return {
+        meta: {
+          installer: 'foo',
+          manifest: 'foo',
+          timestamp: '2026-05-12T00-00-00.000Z',
+          files: [file, ...extraFiles],
+        },
+        payloadBuf,
+      }
+    }
+
+    const currentSettings = () =>
+      JSON.stringify(
+        {
+          env: { API_KEY: SECRET }, // user's NEW secret — must survive
+          hooks: {
+            SessionStart: [{ type: 'command', command: 'harnessed-hook' }],
+            Stop: [{ type: 'command', command: 'user-stop-edit' }], // user's sibling edit — must survive
+          },
+          harnessedManaged: { junk: true }, // added by install → removed
+          userAdded: 'stay', // unrelated user key — must survive
+        },
+        null,
+        2,
+      )
+
+    function mockFs(meta: unknown, payload: Buffer | string, current: string | Error) {
+      readFileMock.mockImplementation((async (p: unknown) => {
+        const path = String(p)
+        if (path.endsWith('metadata.json')) return JSON.stringify(meta)
+        if (path === backupPath) return payload
+        if (path === target) {
+          if (current instanceof Error) throw current
+          return current
+        }
+        throw new Error(`unexpected readFile ${path}`)
+        // biome-ignore lint/suspicious/noExplicitAny: readFile overloads
+      }) as any)
+    }
+
+    function writtenJson(): Record<string, unknown> {
+      expect(writeFileMock).toHaveBeenCalledTimes(1)
+      const [path, data] = writeFileMock.mock.calls[0] as [string, Buffer]
+      expect(path).toBe(target)
+      return JSON.parse(data.toString('utf8')) as Record<string, unknown>
+    }
+
+    function expectNoMutations() {
+      expect(writeFileMock).not.toHaveBeenCalled()
+      expect(unlinkMock).not.toHaveBeenCalled()
+      expect(rmMock).not.toHaveBeenCalled()
+    }
+
+    it('restores old hook value, removes added path, restores deleted path, preserves user keys + new secret', async () => {
+      const { meta, payloadBuf } = subtreeMeta()
+      mockFs(meta, payloadBuf, currentSettings())
+      writeFileMock.mockResolvedValue(undefined)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(0)
+      const restored = writtenJson() as {
+        env: { API_KEY: string }
+        hooks: Record<string, unknown>
+        removedByInstall: string
+        userAdded: string
+      }
+      expect(restored.env.API_KEY).toBe(SECRET)
+      expect(restored.hooks.SessionStart).toEqual([{ type: 'command', command: 'old-hook' }])
+      expect(restored.hooks.Stop).toEqual([{ type: 'command', command: 'user-stop-edit' }])
+      expect(restored.removedByInstall).toBe('bring-me-back')
+      expect(restored.userAdded).toBe('stay')
+      expect('harnessedManaged' in restored).toBe(false)
+    })
+
+    it('serializes restored JSON with CRLF when entry.eol is crlf', async () => {
+      const { meta, payloadBuf } = subtreeMeta()
+      ;(meta.files[0] as Record<string, unknown>).eol = 'crlf'
+      mockFs(meta, payloadBuf, currentSettings())
+      writeFileMock.mockResolvedValue(undefined)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(0)
+      const data = (writeFileMock.mock.calls[0] as [string, Buffer])[1]
+      const text = data.toString('utf8')
+      expect(text).toContain('\r\n')
+      expect(text).not.toMatch(/[^\r]\n/)
+      expect(text.endsWith('\r\n')).toBe(true)
+    })
+
+    it('literal __proto__ key restores as own data property, no prototype pollution', async () => {
+      const { meta, payloadBuf } = subtreeMeta({
+        payload: {
+          version: 1,
+          changes: [{ path: ['__proto__'], existed: true, value: { polluted: 'yes' } }],
+        },
+      })
+      mockFs(meta, payloadBuf, currentSettings())
+      writeFileMock.mockResolvedValue(undefined)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(0)
+      const restored = writtenJson()
+      expect(Object.hasOwn(restored, '__proto__')).toBe(true)
+      // biome-ignore lint/suspicious/noExplicitAny: probing prototype pollution
+      expect(({} as any).polluted).toBeUndefined()
+    })
+
+    it('corrupt subtree payload checksum → exit 1, ZERO mutations', async () => {
+      const { meta } = subtreeMeta()
+      mockFs(meta, Buffer.from('{"tampered":true}'), currentSettings())
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it.each([
+      ['unknown version', { version: 2, changes: [] }],
+      ['non-array changes', { version: 1, changes: {} }],
+      ['empty path', { version: 1, changes: [{ path: [], existed: true, value: 1 }] }],
+      [
+        'non-string segment',
+        { version: 1, changes: [{ path: ['a', 1], existed: true, value: 1 }] },
+      ],
+      ['existed missing', { version: 1, changes: [{ path: ['a'], value: 1 }] }],
+      ['existed:true without value', { version: 1, changes: [{ path: ['a'], existed: true }] }],
+      [
+        'existed:false with value',
+        { version: 1, changes: [{ path: ['a'], existed: false, value: 1 }] },
+      ],
+      [
+        'duplicate paths',
+        {
+          version: 1,
+          changes: [
+            { path: ['a'], existed: true, value: 1 },
+            { path: ['a'], existed: true, value: 2 },
+          ],
+        },
+      ],
+      [
+        'ancestor/descendant overlap',
+        {
+          version: 1,
+          changes: [
+            { path: ['a'], existed: true, value: {} },
+            { path: ['a', 'b'], existed: true, value: 1 },
+          ],
+        },
+      ],
+    ])('malformed payload (%s) → exit 1, ZERO mutations', async (_label, payload) => {
+      const { meta, payloadBuf } = subtreeMeta({ payload })
+      mockFs(meta, payloadBuf, currentSettings())
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it('unknown entry kind → exit 1 before any mutation', async () => {
+      const { meta, payloadBuf } = subtreeMeta()
+      ;(meta.files[0] as Record<string, unknown>).kind = 'future-kind'
+      mockFs(meta, payloadBuf, currentSettings())
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it('non-JSON garbage payload bytes → exit 1, ZERO mutations', async () => {
+      const payload = 'this is not json {'
+      const payloadSha1 = createHash('sha1').update(payload).digest('hex')
+      const meta = {
+        installer: 'foo',
+        manifest: 'foo',
+        timestamp: '2026-05-12T00-00-00.000Z',
+        files: [
+          {
+            target,
+            backup: backupPath,
+            sha1: SUBTREE_ENTRY_SHA1,
+            payloadSha1,
+            eol: 'lf',
+            kind: 'json-subtree',
+          },
+        ],
+      }
+      mockFs(meta, payload, currentSettings())
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it.each([
+      ['real sha1 instead of discriminator', { sha1: 'a'.repeat(40) }],
+      ['missing payloadSha1', { payloadSha1: undefined }],
+      ['non-hex payloadSha1', { payloadSha1: 'not-a-digest' }],
+      ['empty backup path', { backup: '' }],
+      ['sentinel field set', { sentinel: 'created', backup: '' }],
+    ])('inconsistent subtree entry (%s) → exit 1, ZERO mutations', async (_label, over) => {
+      const { meta, payloadBuf } = subtreeMeta()
+      const file = meta.files[0] as Record<string, unknown>
+      for (const [k, v] of Object.entries(over)) {
+        if (v === undefined) delete file[k]
+        else file[k] = v
+      }
+      mockFs(meta, payloadBuf, currentSettings())
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it('non-subtree entry carrying payloadSha1 → exit 1, ZERO mutations', async () => {
+      const original = Buffer.from('hello\n', 'utf8')
+      const sha1 = createHash('sha1').update(original).digest('hex')
+      const meta = {
+        installer: 'foo',
+        manifest: 'foo',
+        timestamp: '2026-05-12T00-00-00.000Z',
+        files: [
+          { target: '/tmp/f.txt', backup: '/tmp/b/f.txt', sha1, payloadSha1: sha1, eol: 'lf' },
+        ],
+      }
+      readFileMock.mockImplementation((async (p: unknown) => {
+        const path = String(p)
+        if (path.endsWith('metadata.json')) return JSON.stringify(meta)
+        return original
+        // biome-ignore lint/suspicious/noExplicitAny: readFile overloads
+      }) as any)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it.each([
+      ['untouched non-finite in current', '{"env":{"API_KEY":"x"},"big":1e400}'],
+      ['untouched unsafe integer in current', '{"env":{"API_KEY":"x"},"big":9007199254740993}'],
+    ])('numeric fidelity (%s) → exit 1, ZERO mutations', async (_label, current) => {
+      const { meta, payloadBuf } = subtreeMeta()
+      mockFs(meta, payloadBuf, current)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it('unsafe number inside recorded old value → exit 1, ZERO mutations', async () => {
+      // Literal payload text: 1e400 parses to Infinity — a payload carrying it
+      // could never be faithfully re-serialized, so refuse. (Can't build this
+      // via JSON.stringify — it would emit null, masking the defect.)
+      const payloadBuf = Buffer.from(
+        '{"version":1,"changes":[{"path":["a"],"existed":true,"value":1e400}]}',
+        'utf8',
+      )
+      const meta = {
+        installer: 'foo',
+        manifest: 'foo',
+        timestamp: '2026-05-12T00-00-00.000Z',
+        files: [
+          {
+            target,
+            backup: backupPath,
+            sha1: SUBTREE_ENTRY_SHA1,
+            payloadSha1: createHash('sha1').update(payloadBuf).digest('hex'),
+            eol: 'lf',
+            kind: 'json-subtree',
+          },
+        ],
+      }
+      mockFs(meta, payloadBuf, JSON.stringify({ a: 1 }))
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it('nested constructor/prototype paths are literal data, not prototype manipulation', async () => {
+      const { meta, payloadBuf } = subtreeMeta({
+        payload: {
+          version: 1,
+          changes: [
+            { path: ['cfg', 'constructor'], existed: true, value: { x: 'old' } },
+            { path: ['cfg', 'prototype'], existed: false },
+          ],
+        },
+      })
+      const current = JSON.stringify({
+        cfg: { constructor: { x: 'new' }, prototype: true, keep: 1 },
+      })
+      mockFs(meta, payloadBuf, current)
+      writeFileMock.mockResolvedValue(undefined)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(0)
+      const restored = writtenJson() as { cfg: Record<string, unknown> }
+      expect(restored.cfg.constructor).toEqual({ x: 'old' })
+      expect('prototype' in restored.cfg).toBe(false)
+      expect(restored.cfg.keep).toBe(1)
+      // biome-ignore lint/suspicious/noExplicitAny: probing prototype pollution
+      expect(({} as any).x).toBeUndefined()
+    })
+
+    it.each([
+      ['missing target', Object.assign(new Error('ENOENT'), { code: 'ENOENT' })],
+      ['unparseable JSON', 'not json {'],
+      ['array root', '[1,2]'],
+      ['scalar root', '"str"'],
+      ['missing parent', JSON.stringify({ other: {} })],
+      ['scalar parent', JSON.stringify({ hooks: 'flat', env: {} })],
+    ])('current target unusable (%s) → exit 1, ZERO mutations', async (_label, current) => {
+      const { meta, payloadBuf } = subtreeMeta()
+      mockFs(meta, payloadBuf, current as string | Error)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it('duplicate target entries involving a subtree → fail closed in Pass1, ZERO mutations', async () => {
+      const { meta, payloadBuf } = subtreeMeta({}, [
+        { target, backup: '', sha1: '', eol: 'lf', sentinel: 'created' },
+      ])
+      mockFs(meta, payloadBuf, currentSettings())
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expectNoMutations()
+    })
+
+    it('multi-file rollback: subtree processed first, byte corruption second → still ZERO writes', async () => {
+      // meta.files order: corrupt byte entry FIRST, subtree LAST — Pass1 walks
+      // meta.files in reverse, so the subtree entry is processed first (its
+      // current-target read provably happens) before the corrupt byte entry
+      // aborts the whole pass. Zero writes either way.
+      const { meta, payloadBuf } = subtreeMeta()
+      meta.files.unshift({
+        target: '/tmp/other.txt',
+        backup: '/tmp/.harnessed-backup/ts/PROJECT/other.txt',
+        sha1: 'deadbeef'.repeat(5), // corrupt on purpose
+        eol: 'lf',
+      })
+      let targetWasRead = false
+      readFileMock.mockImplementation((async (p: unknown) => {
+        const path = String(p)
+        if (path.endsWith('metadata.json')) return JSON.stringify(meta)
+        if (path === backupPath) return payloadBuf
+        if (path === target) {
+          targetWasRead = true
+          return currentSettings()
+        }
+        return Buffer.from('tampered bytes')
+        // biome-ignore lint/suspicious/noExplicitAny: readFile overloads
+      }) as any)
+      const code = await runCli(['rollback', '2026-05-12T00-00-00.000Z'])
+      expect(code).toBe(1)
+      expect(targetWasRead).toBe(true) // subtree restore was attempted first
+      expectNoMutations()
+    })
   })
 })

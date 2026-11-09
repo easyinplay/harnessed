@@ -1,0 +1,28 @@
+{
+  "installer": "compat-probe",
+  "manifest": "compat-probe",
+  "timestamp": "2026-11-09T13-59-41.530Z",
+  "files": [
+    {
+      "target": "C:\\WINDOWS\\TEMP\\harnessed-compat-EIa5sG/settings.json",
+      "backup": "C:\\WINDOWS\\TEMP\\harnessed-compat-EIa5sG\\state\\backups\\2026-11-09T13-59-41.530Z\\HOME\\53cbea6e6f79e577",
+      "sha1": "json-subtree-v1",
+      "eol": "lf",
+      "kind": "json-subtree",
+      "payloadSha1": "4ceb8341f153270b119a74328861e3ed3532b779"
+    },
+    {
+      "target": "C:\\WINDOWS\\TEMP\\harnessed-compat-EIa5sG/plain.txt",
+      "backup": "C:\\WINDOWS\\TEMP\\harnessed-compat-EIa5sG\\state\\backups\\2026-11-09T13-59-41.530Z\\HOME\\f4956536d064a7f3",
+      "sha1": "aab0a850fe0095354b000d86882df8d1d64b8030",
+      "eol": "lf"
+    },
+    {
+      "target": "C:\\WINDOWS\\TEMP\\harnessed-compat-EIa5sG/newfile.txt",
+      "backup": "",
+      "sha1": "",
+      "eol": "lf",
+      "sentinel": "created"
+    }
+  ]
+}

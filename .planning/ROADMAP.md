@@ -1,5 +1,7 @@
 # ROADMAP — harnessed
 
+> **Phase 88 implemented locally (2026-11-09, uncommitted/not published)**: JSON settings backups scoped to changed keys; released readers fail closed on the new format. [plan](phases/88-scoped-json-backups/task_plan.md) · [summary](phases/88-scoped-json-backups/SUMMARY.md) · [verification](phases/88-scoped-json-backups/VERIFICATION.md) · [review](phases/88-scoped-json-backups/REVIEW.md)
+
 > **Phase 85 shipped as v5.0.15 (2026-11-09)**: the force-update pass can now update what harnessed installed — ownership is proven per install channel (declared footprint with marker proof, qualified marketplace registration, git-origin proof for clones, the official npm upgrade for global CLI tools), the refresh path no longer fails on its own empty ownership receipt, and the summary no longer promises a retry that cannot succeed. [context](phases/85-force-update-authorization/CONTEXT.md) · [summary](phases/85-force-update-authorization/SUMMARY.md) · [release receipt](releases/5.0.15.md)
 
 > **Phase 86 shipped as v5.0.13 (2026-11-08)**: parallel sub-workflows complete from a persisted result artifact with a bounded wait, and `harnessed gates` refuses a team escalation that cannot execute. [plan](phases/86-agent-teams-safe-transport/task_plan.md) · [findings](phases/86-agent-teams-safe-transport/findings.md) · [progress](phases/86-agent-teams-safe-transport/progress.md)

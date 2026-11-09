@@ -22,6 +22,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join, relative } from 'node:path'
 import { harnessedSubdir } from '../../platform/harnessedRoot.js'
 import type { HostInstallContext } from '../../platform/hostInstallContext.js'
+import {
+  containsUnsafeJsonNumber,
+  diffJsonObjects,
+  SUBTREE_ENTRY_SHA1,
+  tryParseJsonObject,
+} from './jsonSubtree.js'
 import type { DiffPlan, InstallContext, InstallError } from './types.js'
 
 // v2.0.1 fix: backup root migrated from `<ctx.cwd>/.harnessed-backup/` to
@@ -41,7 +47,10 @@ export function getBackupRoot(hostContext?: HostInstallContext): string {
 export interface BackupFileEntry {
   target: string // absolute path of original file
   backup: string // absolute path of backup copy
-  sha1: string // sha1 of original content
+  /** sha1 of the stored payload bytes. On 'json-subtree' entries this instead
+   *  holds the SUBTREE_ENTRY_SHA1 format discriminator and the real digest
+   *  lives in `payloadSha1`. */
+  sha1: string
   eol: 'lf' | 'crlf' // ASSUMPTIONS C3 — preserve original line ending
   /** Set only on sentinel entries (`backup === ''`), because rollback cannot tell
    *  the two cases apart after the fact and they need OPPOSITE handling:
@@ -53,6 +62,19 @@ export interface BackupFileEntry {
    *                         must LEAVE it — deleting would destroy user data.
    *  Absent on metadata written before this field existed. */
   sentinel?: 'created' | 'preexisting-dir'
+  /** Phase 88 — payload kind. Absent/'bytes' = legacy whole-file copy.
+   *  'json-subtree' = the backup file holds a versioned diff payload
+   *  (lib/jsonSubtree.ts) recording only the OLD values of changed keys, so
+   *  unrelated credentials are never copied and rollback preserves keys the
+   *  install did not touch. Unknown kinds must make rollback refuse before
+   *  any mutation. */
+  kind?: 'bytes' | 'json-subtree'
+  /** Real sha1 of the stored payload bytes — set only on 'json-subtree'
+   *  entries, where `sha1` instead holds the format discriminator
+   *  SUBTREE_ENTRY_SHA1 (a non-hex marker an old reader can never
+   *  checksum-match, so released rollbacks fail closed on scoped snapshots
+   *  rather than byte-writing diff JSON into the target file). */
+  payloadSha1?: string
 }
 
 export interface BackupMetadata {
@@ -167,13 +189,66 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
       }
     }
 
-    const sha1 = createHash('sha1').update(buf).digest('hex')
     const eol = detectEol(buf)
     const dest = mirrorPath(file.target, file.scope, backupDir, ctx.hostContext)
 
+    // Scoped JSON backup: when the plan's old/new images both parse as JSON
+    // objects, store the diff payload (OLD values only) instead of the whole
+    // file so unrelated credentials stay out of the backup dir. Two fail-closed
+    // gates, never a silent byte-fallback that would reintroduce the leak:
+    //   - stale plan: on-disk bytes differ from plan oldText
+    //   - unsafe numbers: 1e400→Infinity or >MAX_SAFE_INTEGER integers would
+    //     be corrupted when rollback re-serializes the file
+    const entry: BackupFileEntry = {
+      target: file.target,
+      backup: dest,
+      sha1: createHash('sha1').update(buf).digest('hex'),
+      eol,
+    }
+    let stored = buf
+    const oldJson = tryParseJsonObject(file.oldText)
+    const newJson = tryParseJsonObject(file.newText)
+    if (oldJson !== null && newJson !== null) {
+      if (buf.toString('utf8') !== file.oldText) {
+        return {
+          ok: false,
+          error: {
+            file: filename,
+            path: file.target,
+            message:
+              'on-disk content differs from plan oldText (stale plan); re-run the install to regenerate the plan',
+            line: null,
+            column: null,
+            keyword: 'backup-stale-plan',
+          },
+        }
+      }
+      if (containsUnsafeJsonNumber(oldJson) || containsUnsafeJsonNumber(newJson)) {
+        return {
+          ok: false,
+          error: {
+            file: filename,
+            path: file.target,
+            message:
+              'JSON contains a number that cannot round-trip through JSON.stringify (non-finite or unsafe integer); scoped backup refused — edit the file manually',
+            line: null,
+            column: null,
+            keyword: 'backup-json-unsafe-number',
+          },
+        }
+      }
+      stored = Buffer.from(
+        `${JSON.stringify({ version: 1, changes: diffJsonObjects(oldJson, newJson) }, null, 2)}\n`,
+        'utf8',
+      )
+      entry.kind = 'json-subtree'
+      entry.sha1 = SUBTREE_ENTRY_SHA1
+      entry.payloadSha1 = createHash('sha1').update(stored).digest('hex')
+    }
+
     try {
       await mkdir(dirname(dest), { recursive: true })
-      await writeFile(dest, buf)
+      await writeFile(dest, stored)
     } catch (err) {
       return {
         ok: false,
@@ -188,7 +263,7 @@ export async function backup(plan: DiffPlan, ctx: InstallContext): Promise<Backu
       }
     }
 
-    entries.push({ target: file.target, backup: dest, sha1, eol })
+    entries.push(entry)
   }
 
   // metadata.json — single source of truth for rollback.

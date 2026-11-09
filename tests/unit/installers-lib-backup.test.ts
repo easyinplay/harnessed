@@ -22,6 +22,7 @@ vi.mock('node:fs/promises', () => ({
 
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { backup } from '../../src/installers/lib/backup.js'
+import { SUBTREE_ENTRY_SHA1 } from '../../src/installers/lib/jsonSubtree.js'
 import type {
   DiffPlan,
   InstallContext,
@@ -262,5 +263,242 @@ describe('backup', () => {
     if (!r.ok) {
       expect(r.error.keyword).toBe('backup-write-failed')
     }
+  })
+
+  // Phase 88 — scoped JSON backups. When oldText AND newText both parse as
+  // JSON objects, backup records a json-subtree diff payload (OLD values only)
+  // instead of byte-copying the file — unrelated secrets/keys never leave the
+  // user's file.
+  describe('json-subtree backups', () => {
+    const SECRET = 'sk-fake-TESTSECRET-000'
+    const oldSettings = JSON.stringify(
+      {
+        env: { API_KEY: SECRET, OTHER: 'keep' },
+        hooks: {
+          SessionStart: [{ matcher: '*', hooks: [{ type: 'command', command: 'old-hook' }] }],
+          Stop: [{ matcher: '*', hooks: [{ type: 'command', command: 'stop-hook' }] }],
+        },
+      },
+      null,
+      2,
+    )
+    const newSettings = JSON.stringify(
+      {
+        env: { API_KEY: SECRET, OTHER: 'keep' },
+        hooks: {
+          SessionStart: [{ matcher: '*', hooks: [{ type: 'command', command: 'harnessed-hook' }] }],
+          Stop: [{ matcher: '*', hooks: [{ type: 'command', command: 'stop-hook' }] }],
+        },
+      },
+      null,
+      2,
+    )
+
+    function settingsPlan(oldText = oldSettings, newText = newSettings): DiffPlan {
+      return {
+        files: [
+          {
+            target: '/home/u/.claude/settings.json',
+            scope: 'HOME',
+            oldText,
+            newText,
+          },
+        ],
+      }
+    }
+
+    function metaFiles(): Array<Record<string, unknown>> {
+      const metaCall = writeCallMatching(/metadata\.json$/)
+      expect(metaCall).toBeDefined()
+      return JSON.parse(metaCall?.[1] as string).files
+    }
+
+    function subtreePayload(): { version: number; changes: Array<Record<string, unknown>> } {
+      const payloadCall = writeFileMock.mock.calls.find(
+        (c) => !/metadata\.json$/.test(String(c[0])),
+      )
+      expect(payloadCall).toBeDefined()
+      return JSON.parse(String(payloadCall?.[1]))
+    }
+
+    it('emits kind json-subtree recording ONLY the changed leaf — no secret, no unchanged hook', async () => {
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldSettings, 'utf8'))
+      const r = await backup(settingsPlan(), ctx())
+      expect(r.ok).toBe(true)
+      const files = metaFiles()
+      expect(files).toHaveLength(1)
+      expect(files[0]?.kind).toBe('json-subtree')
+      // sha1 holds the format discriminator (a released rollback can never
+      // checksum-match it → fails closed); the real digest is payloadSha1.
+      expect(files[0]?.sha1).toBe(SUBTREE_ENTRY_SHA1)
+      expect(files[0]?.payloadSha1).toMatch(/^[a-f0-9]{40}$/)
+
+      const payloadText = JSON.stringify(subtreePayload())
+      expect(payloadText).not.toContain(SECRET)
+      expect(payloadText).not.toContain('stop-hook')
+      expect(payloadText).not.toContain('harnessed-hook') // newText never recorded
+      const payload = subtreePayload()
+      expect(payload.version).toBe(1)
+      expect(payload.changes).toEqual([
+        {
+          path: ['hooks', 'SessionStart'],
+          existed: true,
+          value: [{ matcher: '*', hooks: [{ type: 'command', command: 'old-hook' }] }],
+        },
+      ])
+    })
+
+    it('records add (existed:false, no value) + delete + scalar + array changes', async () => {
+      const oldT = JSON.stringify({
+        keep: 1,
+        del: { a: 1 },
+        scalar: 'old',
+        arr: [1, 2, 3],
+        nested: { a: 1, b: 2 },
+      })
+      const newT = JSON.stringify({
+        keep: 1,
+        added: 'new',
+        scalar: 42,
+        arr: [1, 2, 4],
+        nested: { a: 1, b: 3, c: 4 },
+      })
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldT, 'utf8'))
+      const r = await backup(settingsPlan(oldT, newT), ctx())
+      expect(r.ok).toBe(true)
+      expect(subtreePayload().changes).toEqual([
+        { path: ['del'], existed: true, value: { a: 1 } },
+        { path: ['scalar'], existed: true, value: 'old' },
+        { path: ['arr'], existed: true, value: [1, 2, 3] },
+        { path: ['nested', 'b'], existed: true, value: 2 },
+        { path: ['nested', 'c'], existed: false },
+        { path: ['added'], existed: false },
+      ])
+    })
+
+    it('arrays are atomic: changed element yields one whole-array change', async () => {
+      const oldT = JSON.stringify({ a: [1, { x: 1 }] })
+      const newT = JSON.stringify({ a: [1, { x: 2 }] })
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldT, 'utf8'))
+      await backup(settingsPlan(oldT, newT), ctx())
+      expect(subtreePayload().changes).toEqual([
+        { path: ['a'], existed: true, value: [1, { x: 1 }] },
+      ])
+    })
+
+    it('type transitions (object → scalar) are atomic, not recursive', async () => {
+      const oldT = JSON.stringify({ a: { x: 1 } })
+      const newT = JSON.stringify({ a: 'flat' })
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldT, 'utf8'))
+      await backup(settingsPlan(oldT, newT), ctx())
+      expect(subtreePayload().changes).toEqual([{ path: ['a'], existed: true, value: { x: 1 } }])
+    })
+
+    it('unchanged objects produce zero changes, not a whole-copy snapshot', async () => {
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldSettings, 'utf8'))
+      const r = await backup(settingsPlan(oldSettings, oldSettings), ctx())
+      expect(r.ok).toBe(true)
+      expect(subtreePayload().changes).toEqual([])
+      expect(subtreePayload()).not.toHaveProperty('snapshot')
+    })
+
+    it('treats __proto__/constructor/prototype as literal data keys without polluting prototypes', async () => {
+      // Note: written as literal JSON text — an object literal `{__proto__:v}`
+      // would set the prototype, not an own key, and stringify would drop it.
+      const oldT = '{"__proto__":{"x":1},"constructor":"safe"}'
+      const newT = '{"constructor":"safe","prototype":{}}'
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldT, 'utf8'))
+      const r = await backup(settingsPlan(oldT, newT), ctx())
+      expect(r.ok).toBe(true)
+      const changes = subtreePayload().changes
+      expect(changes).toContainEqual({ path: ['__proto__'], existed: true, value: { x: 1 } })
+      expect(changes).toContainEqual({ path: ['prototype'], existed: false })
+      // biome-ignore lint/suspicious/noExplicitAny: probing prototype pollution
+      expect(({} as any).x).toBeUndefined()
+    })
+
+    it('refuses with backup-stale-plan when on-disk bytes differ from plan oldText (no byte fallback)', async () => {
+      readFileMock.mockResolvedValueOnce(Buffer.from('{"drifted":true}', 'utf8'))
+      const r = await backup(settingsPlan(), ctx())
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.error.keyword).toBe('backup-stale-plan')
+      }
+      // no payload written for that target (only allowed writes: none —
+      // backup errors out before even metadata.json)
+      const payloadCall = writeFileMock.mock.calls.find(
+        (c) => !/metadata\.json$/.test(String(c[0])),
+      )
+      expect(payloadCall).toBeUndefined()
+    })
+
+    it('legacy-compat pin: the sha1 discriminator is never a valid sha1 hex, so old readers always fail closed', () => {
+      // Released rollback hashes the stored payload and compares to entry.sha1.
+      // A non-hex discriminator can never equal any digest → guaranteed abort
+      // in Pass1, before a single write/unlink. This is the format-safety
+      // contract (restic-style: old readers must refuse new formats).
+      expect(SUBTREE_ENTRY_SHA1).not.toMatch(/^[a-f0-9]{40}$/)
+    })
+
+    it('refuses with backup-json-unsafe-number when old JSON contains 1e400 (→ Infinity)', async () => {
+      const oldT = '{"a":1,"untouched":1e400}'
+      const newT = '{"a":2,"untouched":1e400}'
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldT, 'utf8'))
+      const r = await backup(settingsPlan(oldT, newT), ctx())
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.error.keyword).toBe('backup-json-unsafe-number')
+      }
+      const payloadCall = writeFileMock.mock.calls.find(
+        (c) => !/metadata\.json$/.test(String(c[0])),
+      )
+      expect(payloadCall).toBeUndefined()
+    })
+
+    it.each([
+      ['old image', '{"big":9007199254740993}', '{"big":1}'],
+      ['new image', '{"big":1}', '{"big":9007199254740993}'],
+    ])('refuses unsafe integers (> MAX_SAFE_INTEGER) in the %s — no silent precision loss', async (_label, oldT, newT) => {
+      readFileMock.mockResolvedValueOnce(Buffer.from(oldT, 'utf8'))
+      const r = await backup(settingsPlan(oldT, newT), ctx())
+      expect(r.ok).toBe(false)
+      if (!r.ok) {
+        expect(r.error.keyword).toBe('backup-json-unsafe-number')
+      }
+    })
+
+    it('non-JSON files keep byte backup with no kind field', async () => {
+      readFileMock.mockResolvedValueOnce(Buffer.from('plain text content'))
+      const plan: DiffPlan = {
+        files: [
+          {
+            target: '/tmp/proj/readme.txt',
+            scope: 'PROJECT',
+            oldText: 'plain text content',
+            newText: 'changed',
+          },
+        ],
+      }
+      const r = await backup(plan, ctx())
+      expect(r.ok).toBe(true)
+      const files = metaFiles()
+      expect(files[0]?.kind).toBeUndefined()
+    })
+
+    it('JSON root arrays / scalars are NOT subtree candidates (byte backup)', async () => {
+      const arrOld = '[1,2,3]'
+      readFileMock.mockResolvedValueOnce(Buffer.from(arrOld))
+      const plan: DiffPlan = {
+        files: [
+          { target: '/tmp/proj/list.json', scope: 'PROJECT', oldText: arrOld, newText: '[4]' },
+        ],
+      }
+      const r = await backup(plan, ctx())
+      expect(r.ok).toBe(true)
+      const files = metaFiles()
+      expect(files[0]?.kind).toBeUndefined()
+      const copyCall = writeFileMock.mock.calls.find((c) => !/metadata\.json$/.test(String(c[0])))
+      expect(String(copyCall?.[1])).toBe(arrOld)
+    })
   })
 })
